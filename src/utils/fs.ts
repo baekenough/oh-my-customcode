@@ -1,0 +1,318 @@
+/**
+ * File system utilities
+ */
+
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/**
+ * Options for copying directories
+ */
+export interface CopyOptions {
+  /** Whether to overwrite existing files */
+  overwrite?: boolean;
+  /** File patterns to exclude (glob patterns) */
+  exclude?: string[];
+  /** File patterns to include (glob patterns) */
+  include?: string[];
+  /** Preserve file timestamps */
+  preserveTimestamps?: boolean;
+}
+
+/**
+ * Check if a file or directory exists
+ */
+export async function fileExists(path: string): Promise<boolean> {
+  const fs = await import('node:fs/promises');
+  try {
+    await fs.access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Ensure a directory exists, creating it if necessary
+ */
+export async function ensureDirectory(path: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  await fs.mkdir(path, { recursive: true });
+}
+
+/**
+ * Copy a directory recursively
+ */
+export async function copyDirectory(
+  src: string,
+  dest: string,
+  options: CopyOptions = {}
+): Promise<void> {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+
+  // Ensure destination directory exists
+  await ensureDirectory(dest);
+
+  // Read source directory
+  const entries = await fs.readdir(src, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+
+    // Check exclusions
+    if (options.exclude?.some((pattern) => matchesPattern(entry.name, pattern))) {
+      continue;
+    }
+
+    // Check inclusions (if specified)
+    if (
+      options.include &&
+      !options.include.some((pattern) => matchesPattern(entry.name, pattern))
+    ) {
+      continue;
+    }
+
+    if (entry.isDirectory()) {
+      // Recursively copy directory
+      await copyDirectory(srcPath, destPath, options);
+    } else {
+      // Check if file exists and overwrite option
+      const destExists = await fileExists(destPath);
+      if (destExists && !options.overwrite) {
+        continue;
+      }
+
+      // Copy file
+      await fs.copyFile(srcPath, destPath);
+
+      // Preserve timestamps if requested
+      if (options.preserveTimestamps) {
+        const stats = await fs.stat(srcPath);
+        await fs.utimes(destPath, stats.atime, stats.mtime);
+      }
+    }
+  }
+}
+
+/**
+ * Read a JSON file and parse it
+ */
+export async function readJsonFile<T>(path: string): Promise<T> {
+  const fs = await import('node:fs/promises');
+  const content = await fs.readFile(path, 'utf-8');
+  return JSON.parse(content) as T;
+}
+
+/**
+ * Write data to a JSON file
+ */
+export async function writeJsonFile(path: string, data: unknown): Promise<void> {
+  const fs = await import('node:fs/promises');
+  const content = JSON.stringify(data, null, 2);
+  await fs.writeFile(path, content, 'utf-8');
+}
+
+/**
+ * Read a text file
+ */
+export async function readTextFile(path: string): Promise<string> {
+  const fs = await import('node:fs/promises');
+  return fs.readFile(path, 'utf-8');
+}
+
+/**
+ * Write a text file
+ */
+export async function writeTextFile(path: string, content: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  await ensureDirectory(dirname(path));
+  await fs.writeFile(path, content, 'utf-8');
+}
+
+/**
+ * Delete a file or directory
+ */
+export async function remove(path: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  const stat = await fs.stat(path);
+
+  if (stat.isDirectory()) {
+    await fs.rm(path, { recursive: true, force: true });
+  } else {
+    await fs.unlink(path);
+  }
+}
+
+/**
+ * Get the package root directory
+ */
+export function getPackageRoot(): string {
+  // In ESM, we need to derive the package root from import.meta.url
+  // This works both in development and when installed as a package
+  const currentFile = fileURLToPath(import.meta.url);
+  const currentDir = dirname(currentFile);
+
+  // Navigate up from src/utils to package root
+  return resolve(currentDir, '..', '..');
+}
+
+/**
+ * Resolve a path relative to the templates directory
+ */
+export function resolveTemplatePath(relativePath: string): string {
+  const packageRoot = getPackageRoot();
+  return join(packageRoot, 'templates', relativePath);
+}
+
+/**
+ * List files in a directory
+ */
+export async function listFiles(
+  dir: string,
+  options: { recursive?: boolean; pattern?: string } = {}
+): Promise<string[]> {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const files: string[] = [];
+
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isDirectory() && options.recursive) {
+      const subFiles = await listFiles(fullPath, options);
+      files.push(...subFiles);
+    } else if (entry.isFile()) {
+      if (!options.pattern || matchesPattern(entry.name, options.pattern)) {
+        files.push(fullPath);
+      }
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Get file stats
+ */
+export async function getFileStats(path: string): Promise<{
+  size: number;
+  created: Date;
+  modified: Date;
+  isDirectory: boolean;
+  isFile: boolean;
+}> {
+  const fs = await import('node:fs/promises');
+  const stats = await fs.stat(path);
+
+  return {
+    size: stats.size,
+    created: stats.birthtime,
+    modified: stats.mtime,
+    isDirectory: stats.isDirectory(),
+    isFile: stats.isFile(),
+  };
+}
+
+/**
+ * Copy a single file
+ */
+export async function copyFile(src: string, dest: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  await ensureDirectory(dirname(dest));
+  await fs.copyFile(src, dest);
+}
+
+/**
+ * Move a file or directory
+ */
+export async function move(src: string, dest: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  await ensureDirectory(dirname(dest));
+  await fs.rename(src, dest);
+}
+
+/**
+ * Create a temporary directory
+ */
+export async function createTempDir(prefix = 'omcc-'): Promise<string> {
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+
+  const tempBase = os.tmpdir();
+  const tempDir = path.join(tempBase, `${prefix}${Date.now()}`);
+  await fs.mkdir(tempDir, { recursive: true });
+
+  return tempDir;
+}
+
+/**
+ * Calculate file checksum (MD5)
+ */
+export async function calculateChecksum(path: string): Promise<string> {
+  const fs = await import('node:fs/promises');
+  const crypto = await import('node:crypto');
+
+  const content = await fs.readFile(path);
+  const hash = crypto.createHash('md5');
+  hash.update(content);
+
+  return hash.digest('hex');
+}
+
+/**
+ * Check if two files are identical
+ */
+export async function filesAreIdentical(path1: string, path2: string): Promise<boolean> {
+  const [checksum1, checksum2] = await Promise.all([
+    calculateChecksum(path1),
+    calculateChecksum(path2),
+  ]);
+
+  return checksum1 === checksum2;
+}
+
+/**
+ * Simple pattern matching (supports * wildcard)
+ */
+function matchesPattern(filename: string, pattern: string): boolean {
+  // Convert glob pattern to regex
+  const regexPattern = pattern.replace(/\./g, '\\.').replace(/\*/g, '.*').replace(/\?/g, '.');
+
+  const regex = new RegExp(`^${regexPattern}$`);
+  return regex.test(filename);
+}
+
+/**
+ * Get relative path from base
+ */
+export function getRelativePath(basePath: string, fullPath: string): string {
+  const path = require('node:path');
+  return path.relative(basePath, fullPath);
+}
+
+/**
+ * Normalize path separators for cross-platform compatibility
+ */
+export function normalizePath(inputPath: string): string {
+  return inputPath.replace(/\\/g, '/');
+}
+
+/**
+ * Check if path is absolute
+ */
+export function isAbsolutePath(inputPath: string): boolean {
+  const path = require('node:path');
+  return path.isAbsolute(inputPath);
+}
+
+/**
+ * Resolve path relative to current working directory
+ */
+export function resolvePath(...paths: string[]): string {
+  return resolve(...paths);
+}

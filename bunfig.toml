@@ -1,0 +1,13 @@
+[install]
+# Faster installs
+auto-install-peers = true
+
+[test]
+# Coverage configuration
+coverage = true
+coverageDir = "coverage"
+coverageReporter = ["text", "lcov"]
+
+[run]
+# Bun runtime options
+smol = true

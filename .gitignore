@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# VitePress
+docs/.vitepress/cache
+docs/.vitepress/dist

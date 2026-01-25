@@ -1,0 +1,12 @@
+# Default owners for everything in the repo
+* @niceplugin
+
+# Workflow files require additional review
+/.github/ @niceplugin
+
+# Source code
+/src/ @niceplugin
+
+# Documentation
+/docs/ @niceplugin
+*.md @niceplugin
