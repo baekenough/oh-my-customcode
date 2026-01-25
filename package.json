@@ -1,6 +1,6 @@
 {
   "name": "oh-my-customcode",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Batteries-included agent harness for Claude Code",
   "type": "module",
   "bin": {
@@ -8,10 +8,20 @@
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "files": [
     "dist",
     "templates"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "dev": "bun run src/cli/index.ts",
     "build": "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node",

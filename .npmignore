@@ -1,0 +1,45 @@
+# Source files (only dist is needed)
+src/
+
+# Tests
+tests/
+coverage/
+*.test.ts
+*.spec.ts
+
+# Development configuration
+.husky/
+scripts/
+biome.json
+tsconfig.json
+bunfig.toml
+
+# Documentation (except README.md which is auto-included)
+docs/
+CHANGELOG.md
+CONTRIBUTING.md
+README_ko.md
+
+# GitHub
+.github/
+
+# Editor and IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package manager
+bun.lock
+node_modules/
+
+# Build artifacts
+*.tsbuildinfo
+
+# Misc
+*.log
+*.tmp

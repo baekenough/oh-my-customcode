@@ -1,0 +1,73 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.0] - 2026-01-25
+
+### Added
+
+- **CLI Tool (`omcc`)** - Command-line interface for managing Claude Code agent systems
+  - `omcc init` - Initialize agent system in current project
+  - `omcc init --lang ko` - Initialize with Korean language support
+  - `omcc init --backup` - Backup existing installation before init
+  - `omcc update` - Update to latest agents and skills
+  - `omcc list` - List all installed components (agents, skills, guides, rules)
+  - `omcc list --format json` - JSON output format support
+  - `omcc doctor` - Verify installation health
+  - `omcc doctor --fix` - Auto-fix common issues
+
+- **Pre-built Agents (36 total)**
+  - Orchestrator agents: planner (master), secretary, dev-lead, qa-lead
+  - Manager agents: creator, updater, supplier, gitnerd, sync-checker, sauron
+  - System agents: memory-keeper, naggy
+  - SW Engineer/Frontend: vercel-agent, vuejs-agent, svelte-agent
+  - SW Engineer/Backend: fastapi, springboot, go-backend, express, nestjs
+  - SW Engineer/Language: golang, python, rust, kotlin, typescript, java21
+  - SW Engineer/Tooling: npm-expert, optimizer, bun-expert
+  - SW Architect: documenter, speckit-agent
+  - Infra Engineer: docker-expert, aws-expert
+  - QA Team: qa-planner, qa-writer, qa-engineer
+
+- **Skills (17 total)**
+  - Development best practices for Go, Python, TypeScript, Kotlin, Rust, Java
+  - Backend framework skills for FastAPI, Spring Boot, Express, NestJS
+  - Infrastructure skills for Docker, AWS
+  - System skills for memory management, result aggregation
+  - Orchestration skills for pipeline execution, intent detection
+
+- **Guides (12 total)**
+  - Reference documentation for various technologies
+  - Claude Code usage guides
+
+- **Rules (18 total)**
+  - MUST rules: Safety, permissions, agent design, identification (enforced)
+  - SHOULD rules: Interaction, error handling, memory integration (recommended)
+  - MAY rules: Optimization guidelines (optional)
+
+- **Multi-language Support**
+  - English (default)
+  - Korean (`--lang ko`)
+
+- **Internationalization (i18n)**
+  - Full i18next integration
+  - Easily extensible for additional languages
+
+- **Template System**
+  - Pre-configured templates for agents, skills, guides, and rules
+  - Easy customization and extension
+
+### Changed
+
+- Nothing yet (initial release)
+
+### Fixed
+
+- Nothing yet (initial release)
+
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/baekenough/oh-my-customcode/releases/tag/v0.1.0

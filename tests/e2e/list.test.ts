@@ -1,0 +1,560 @@
+/**
+ * E2E tests for `omcc list` command
+ * Tests the actual CLI command execution end-to-end
+ */
+
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import { access, mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawn } from 'bun';
+
+describe('E2E: omcc list', () => {
+  let tempDir: string;
+  let cliPath: string;
+
+  beforeAll(() => {
+    // Path to the CLI entry point (run with bun)
+    // Using dirname to get the project root from the test file location
+    const projectRoot = join(import.meta.dir, '../..');
+    cliPath = join(projectRoot, 'src/cli/index.ts');
+  });
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'omcc-e2e-list-'));
+    // Change to temp directory for the test
+    process.chdir(tempDir);
+  });
+
+  afterEach(async () => {
+    // Reset to a safe directory before cleanup
+    process.chdir(tmpdir());
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  /**
+   * Helper to run CLI command using Bun.spawn
+   */
+  async function runCli(
+    ...args: string[]
+  ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
+    const proc = spawn({
+      cmd: ['bun', 'run', cliPath, ...args],
+      cwd: tempDir,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    const stdout = await new Response(proc.stdout).text();
+    const stderr = await new Response(proc.stderr).text();
+    const exitCode = await proc.exited;
+
+    return { exitCode, stdout, stderr };
+  }
+
+  /**
+   * Helper to initialize a project first
+   */
+  async function initProject(): Promise<void> {
+    await runCli('init');
+  }
+
+  /**
+   * Helper to create a test agent
+   */
+  async function createTestAgent(
+    type: string,
+    name: string,
+    options?: { description?: string; version?: string }
+  ): Promise<void> {
+    const agentDir = join(tempDir, 'agents', type, name);
+    await mkdir(agentDir, { recursive: true });
+
+    const agentMd = `# ${name.charAt(0).toUpperCase() + name.slice(1)} Agent
+
+> ${options?.description || `A test ${name} agent`}
+
+## Overview
+
+This is a test agent.
+`;
+    await writeFile(join(agentDir, 'AGENT.md'), agentMd);
+
+    if (options?.version || options?.description) {
+      const indexYaml = `metadata:
+  name: ${name}
+  type: ${type}
+  description: ${options?.description || `A test ${name} agent`}
+  version: ${options?.version || '1.0.0'}
+`;
+      await writeFile(join(agentDir, 'index.yaml'), indexYaml);
+    }
+  }
+
+  /**
+   * Helper to create a test skill
+   */
+  async function createTestSkill(
+    category: string,
+    name: string,
+    options?: { description?: string; version?: string }
+  ): Promise<void> {
+    const skillDir = join(tempDir, 'skills', category, name);
+    await mkdir(skillDir, { recursive: true });
+
+    const skillMd = `# ${name.charAt(0).toUpperCase() + name.slice(1)} Skill
+
+> ${options?.description || `A test ${name} skill`}
+
+## Usage
+
+This is a test skill.
+`;
+    await writeFile(join(skillDir, 'SKILL.md'), skillMd);
+
+    if (options?.version || options?.description) {
+      const indexYaml = `metadata:
+  name: ${name}
+  category: ${category}
+  description: ${options?.description || `A test ${name} skill`}
+  version: ${options?.version || '1.0.0'}
+`;
+      await writeFile(join(skillDir, 'index.yaml'), indexYaml);
+    }
+  }
+
+  /**
+   * Helper to create a test guide
+   */
+  async function createTestGuide(
+    category: string,
+    name: string,
+    description?: string
+  ): Promise<void> {
+    const guideDir = join(tempDir, 'guides', category);
+    await mkdir(guideDir, { recursive: true });
+
+    const content = `# ${name.charAt(0).toUpperCase() + name.slice(1)} Guide
+
+${description || `This is a guide about ${name}.`}
+
+## Content
+
+Guide content here.
+`;
+    await writeFile(join(guideDir, `${name}.md`), content);
+  }
+
+  /**
+   * Helper to create a test rule
+   */
+  async function createTestRule(
+    priority: string,
+    name: string,
+    description?: string
+  ): Promise<void> {
+    const rulesDir = join(tempDir, '.claude', 'rules');
+    await mkdir(rulesDir, { recursive: true });
+
+    const content = `# ${name.charAt(0).toUpperCase() + name.slice(1)} Rules
+
+> **Priority**: ${priority} - ${description || `${name} rules`}
+
+## Rules
+
+Rule content here.
+`;
+    await writeFile(join(rulesDir, `${priority}-${name}.md`), content);
+  }
+
+  describe('listing after init', () => {
+    beforeEach(async () => {
+      await initProject();
+    });
+
+    it('should show scanning message', async () => {
+      const result = await runCli('list');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout + result.stderr;
+      expect(output.toLowerCase()).toContain('scan');
+    });
+
+    it('should list all component types with default command', async () => {
+      // Create some test components
+      await createTestAgent('sw-engineer', 'test-agent');
+      await createTestSkill('development', 'test-skill');
+      await createTestGuide('testing', 'test-guide');
+
+      const result = await runCli('list');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Should show agents section
+      expect(output.toLowerCase()).toContain('agent');
+      // Should show the test agent
+      expect(output).toContain('test-agent');
+    });
+
+    it('should handle empty installation gracefully', async () => {
+      // Clear the agents directory content (keep structure)
+      const agentsDir = join(tempDir, 'agents');
+      const entries = await readdir(agentsDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const typeDir = join(agentsDir, entry.name);
+          const subEntries = await readdir(typeDir);
+          for (const subEntry of subEntries) {
+            await rm(join(typeDir, subEntry), { recursive: true, force: true });
+          }
+        }
+      }
+
+      const result = await runCli('list', 'agents');
+
+      expect(result.exitCode).toBe(0);
+      // Should handle empty list gracefully
+    });
+  });
+
+  describe('filtering by type', () => {
+    beforeEach(async () => {
+      await initProject();
+      // Create test data
+      await createTestAgent('sw-engineer', 'golang-expert', {
+        description: 'Go language expert',
+        version: '2.0.0',
+      });
+      await createTestAgent('backend-engineer', 'fastapi-expert', {
+        description: 'FastAPI framework expert',
+        version: '1.0.0',
+      });
+      await createTestSkill('development', 'go-best-practices', {
+        description: 'Go best practices skill',
+        version: '1.0.0',
+      });
+      await createTestGuide('architecture', 'clean-architecture', 'Clean architecture principles');
+      await createTestRule('MUST', 'safety', 'Critical safety rules');
+    });
+
+    it('should list only agents when "agents" type is specified', async () => {
+      const result = await runCli('list', 'agents');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Should contain agents
+      expect(output).toContain('golang-expert');
+      expect(output).toContain('fastapi-expert');
+
+      // Should NOT contain skills (unless in header)
+      expect(output.split('\n').filter((l) => l.includes('go-best-practices')).length).toBe(0);
+    });
+
+    it('should list only skills when "skills" type is specified', async () => {
+      const result = await runCli('list', 'skills');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Should contain skills
+      expect(output).toContain('go-best-practices');
+
+      // Should NOT contain agents
+      expect(output.split('\n').filter((l) => l.includes('golang-expert')).length).toBe(0);
+    });
+
+    it('should list only guides when "guides" type is specified', async () => {
+      const result = await runCli('list', 'guides');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Should contain guides
+      expect(output).toContain('clean-architecture');
+    });
+
+    it('should list only rules when "rules" type is specified', async () => {
+      const result = await runCli('list', 'rules');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Should contain rules
+      expect(output).toContain('MUST-safety');
+    });
+
+    it('should list all components when "all" type is specified', async () => {
+      const result = await runCli('list', 'all');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Should contain all types
+      expect(output).toContain('golang-expert');
+      expect(output).toContain('go-best-practices');
+      expect(output).toContain('clean-architecture');
+      expect(output).toContain('MUST-safety');
+    });
+  });
+
+  describe('--format option', () => {
+    beforeEach(async () => {
+      await initProject();
+      await createTestAgent('sw-engineer', 'test-agent', {
+        description: 'Test agent description',
+        version: '1.2.3',
+      });
+    });
+
+    it('should output valid JSON when --format json is specified', async () => {
+      const result = await runCli('list', 'agents', '--format', 'json');
+
+      expect(result.exitCode).toBe(0);
+
+      // Extract JSON from output (may have scanning message before)
+      const lines = result.stdout.trim().split('\n');
+      let jsonStartIndex = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('[') || lines[i].trim().startsWith('{')) {
+          jsonStartIndex = i;
+          break;
+        }
+      }
+      const jsonOutput = lines.slice(jsonStartIndex).join('\n');
+
+      // Should parse as valid JSON
+      let parsed: unknown[];
+      expect(() => {
+        parsed = JSON.parse(jsonOutput);
+      }).not.toThrow();
+
+      // Should be an array
+      expect(Array.isArray(parsed)).toBe(true);
+
+      // Should contain agent data
+      const agent = parsed?.find((a: unknown) => (a as { name: string }).name === 'test-agent');
+      expect(agent).toBeDefined();
+      expect((agent as { type: string }).type).toBe('sw-engineer');
+    });
+
+    it('should output JSON with correct structure', async () => {
+      const result = await runCli('list', 'agents', '--format', 'json');
+
+      expect(result.exitCode).toBe(0);
+
+      const lines = result.stdout.trim().split('\n');
+      let jsonStartIndex = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('[') || lines[i].trim().startsWith('{')) {
+          jsonStartIndex = i;
+          break;
+        }
+      }
+      const jsonOutput = lines.slice(jsonStartIndex).join('\n');
+      const parsed = JSON.parse(jsonOutput) as Array<{
+        name?: string;
+        type?: string;
+        path?: string;
+        description?: string;
+        version?: string;
+      }>;
+
+      // Find test-agent
+      const agent = parsed.find((a) => a.name === 'test-agent');
+      expect(agent).toBeDefined();
+
+      // Check structure
+      expect(agent?.name).toBe('test-agent');
+      expect(agent?.type).toBe('sw-engineer');
+      expect(agent?.path).toContain('agents/sw-engineer/test-agent');
+      expect(agent?.description).toBe('Test agent description');
+      expect(agent?.version).toBe('1.2.3');
+    });
+
+    it('should output table format by default', async () => {
+      const result = await runCli('list', 'agents');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Table format indicators
+      expect(output).toContain('Name');
+      expect(output).toContain('Type');
+      expect(output).toContain('Description');
+      // Should have separator lines
+      expect(output).toContain('─');
+    });
+
+    it('should output simple format when --format simple is specified', async () => {
+      const result = await runCli('list', 'agents', '--format', 'simple');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Simple format: name [type]
+      expect(output).toMatch(/test-agent\s*\[sw-engineer\]/);
+    });
+
+    it('should use short flag -f for format', async () => {
+      const result = await runCli('list', 'agents', '-f', 'json');
+
+      expect(result.exitCode).toBe(0);
+
+      const lines = result.stdout.trim().split('\n');
+      let jsonStartIndex = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('[') || lines[i].trim().startsWith('{')) {
+          jsonStartIndex = i;
+          break;
+        }
+      }
+      const jsonOutput = lines.slice(jsonStartIndex).join('\n');
+
+      // Should be valid JSON
+      expect(() => JSON.parse(jsonOutput)).not.toThrow();
+    });
+  });
+
+  describe('JSON output validation', () => {
+    beforeEach(async () => {
+      await initProject();
+    });
+
+    it('should output empty array for empty list', async () => {
+      // Create empty agents directory structure
+      const agentsDir = join(tempDir, 'agents', 'sw-engineer');
+      await mkdir(agentsDir, { recursive: true });
+      // No AGENT.md files, so should be empty
+
+      const result = await runCli('list', 'agents', '--format', 'json');
+
+      expect(result.exitCode).toBe(0);
+
+      const lines = result.stdout.trim().split('\n');
+      let jsonStartIndex = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('[') || lines[i].trim().startsWith('{')) {
+          jsonStartIndex = i;
+          break;
+        }
+      }
+      const jsonOutput = lines.slice(jsonStartIndex).join('\n');
+      const parsed = JSON.parse(jsonOutput);
+
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed.length).toBe(0);
+    });
+
+    it('should include all required fields in JSON output', async () => {
+      await createTestAgent('manager', 'creator', {
+        description: 'Creates new agents',
+        version: '2.0.0',
+      });
+
+      const result = await runCli('list', 'agents', '--format', 'json');
+
+      expect(result.exitCode).toBe(0);
+
+      const lines = result.stdout.trim().split('\n');
+      let jsonStartIndex = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('[') || lines[i].trim().startsWith('{')) {
+          jsonStartIndex = i;
+          break;
+        }
+      }
+      const jsonOutput = lines.slice(jsonStartIndex).join('\n');
+      const parsed = JSON.parse(jsonOutput) as Array<Record<string, unknown>>;
+
+      const creator = parsed.find((a) => a.name === 'creator');
+      expect(creator).toBeDefined();
+
+      // Required fields
+      expect(creator?.name).toBeDefined();
+      expect(creator?.type).toBeDefined();
+      expect(creator?.path).toBeDefined();
+    });
+
+    it('should handle special characters in descriptions', async () => {
+      await createTestAgent('sw-engineer', 'special-agent', {
+        description: 'Agent with "quotes" and <special> chars & more',
+        version: '1.0.0',
+      });
+
+      const result = await runCli('list', 'agents', '--format', 'json');
+
+      expect(result.exitCode).toBe(0);
+
+      const lines = result.stdout.trim().split('\n');
+      let jsonStartIndex = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('[') || lines[i].trim().startsWith('{')) {
+          jsonStartIndex = i;
+          break;
+        }
+      }
+      const jsonOutput = lines.slice(jsonStartIndex).join('\n');
+
+      // Should still be valid JSON
+      expect(() => JSON.parse(jsonOutput)).not.toThrow();
+
+      const parsed = JSON.parse(jsonOutput) as Array<{ name?: string; description?: string }>;
+      const agent = parsed.find((a) => a.name === 'special-agent');
+      expect(agent?.description).toContain('quotes');
+    });
+  });
+
+  describe('multiple components', () => {
+    beforeEach(async () => {
+      await initProject();
+    });
+
+    it('should list multiple agents sorted alphabetically', async () => {
+      await createTestAgent('sw-engineer', 'python-expert');
+      await createTestAgent('sw-engineer', 'golang-expert');
+      await createTestAgent('sw-engineer', 'rust-expert');
+
+      const result = await runCli('list', 'agents', '--format', 'json');
+
+      expect(result.exitCode).toBe(0);
+
+      const lines = result.stdout.trim().split('\n');
+      let jsonStartIndex = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('[') || lines[i].trim().startsWith('{')) {
+          jsonStartIndex = i;
+          break;
+        }
+      }
+      const jsonOutput = lines.slice(jsonStartIndex).join('\n');
+      const parsed = JSON.parse(jsonOutput) as Array<{ name: string }>;
+
+      const names = parsed.map((a) => a.name);
+
+      // Should contain all agents
+      expect(names).toContain('golang-expert');
+      expect(names).toContain('python-expert');
+      expect(names).toContain('rust-expert');
+
+      // Should be sorted alphabetically
+      const sortedNames = [...names].sort();
+      expect(names).toEqual(sortedNames);
+    });
+
+    it('should show correct counts in output', async () => {
+      await createTestAgent('sw-engineer', 'agent1');
+      await createTestAgent('sw-engineer', 'agent2');
+      await createTestAgent('manager', 'agent3');
+
+      const result = await runCli('list', 'agents');
+
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout;
+
+      // Should show count somewhere
+      expect(output).toMatch(/3|three/i);
+    });
+  });
+});
