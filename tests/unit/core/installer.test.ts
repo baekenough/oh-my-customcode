@@ -204,7 +204,7 @@ describe('installer', () => {
 
     it('should copy template files to target directory', async () => {
       // Create a test template source
-      const templateDir = getTemplateDir();
+      const _templateDir = getTemplateDir();
       const testPath = '.claude/rules';
 
       // copyTemplates requires the template to exist

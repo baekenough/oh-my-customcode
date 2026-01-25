@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
-import { access, mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'bun';

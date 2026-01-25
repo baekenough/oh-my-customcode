@@ -80,7 +80,7 @@ export async function checkUpdateAvailable(): Promise<boolean> {
  * @param options - Update options
  * @returns List of updated component paths
  */
-export async function applyUpdates(options: UpdateOptions): Promise<string[]> {
+export async function applyUpdates(_options: UpdateOptions): Promise<string[]> {
   const updatedComponents: string[] = [];
 
   // TODO: Implement actual update logic

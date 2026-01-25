@@ -376,7 +376,7 @@ export async function checkIndexFiles(targetDir: string): Promise<CheckResult> {
     try {
       const content = await fs.readFile(indexFile, 'utf-8');
       parseYaml(content);
-    } catch (error) {
+    } catch (_error) {
       invalidFiles.push(indexFile);
     }
   }
@@ -452,7 +452,7 @@ export async function checkSkills(targetDir: string): Promise<CheckResult> {
  * @param brokenSymlinks - List of broken symlink paths
  * @returns Number of fixed symlinks
  */
-async function fixBrokenSymlinks(targetDir: string, brokenSymlinks: string[]): Promise<number> {
+async function fixBrokenSymlinks(_targetDir: string, brokenSymlinks: string[]): Promise<number> {
   let fixed = 0;
 
   for (const symlink of brokenSymlinks) {
