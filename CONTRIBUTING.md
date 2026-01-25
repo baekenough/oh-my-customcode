@@ -2,6 +2,51 @@
 
 Thank you for your interest in contributing to oh-my-customcode!
 
+---
+
+## Development Principles
+
+### Principle #1: 100% Tests Pass
+
+**Every commit must pass all tests. No exceptions.**
+
+This isn't negotiable. Tests are our safety net that ensures oh-my-customcode works as intended for every user.
+
+### Testing Philosophy
+
+Our tests are NOT about testing implementation logic. They test:
+
+| Focus | Description | Example |
+|-------|-------------|---------|
+| **Philosophy** | Does the component behave according to our design principles? | Does the agent identification show up in every response? |
+| **Workflow** | Does the intended user workflow work end-to-end? | Can a user create a custom agent and have it detected? |
+| **Functionality** | Does the feature work as users expect? | Does `omcc init` create all required directories? |
+
+**Bad test** (tests implementation):
+```typescript
+it('should call fs.writeFile with correct parameters', () => {
+  // This tests HOW we do something, not WHAT we achieve
+});
+```
+
+**Good test** (tests intent):
+```typescript
+it('should create a working agent that Claude can use', async () => {
+  await createAgent('my-agent');
+  const agents = await listAgents();
+  expect(agents).toContainEqual(expect.objectContaining({ name: 'my-agent' }));
+});
+```
+
+### Other Principles
+
+2. **Customization is King** - Every feature should be easily customizable
+3. **Batteries Included** - Work out of the box, customize when needed
+4. **Non-Destructive** - User customizations are never overwritten
+5. **Simple > Complex** - If it needs a manual, it's too complicated
+
+---
+
 ## Development Setup
 
 1. **Clone the repository**
@@ -19,6 +64,8 @@ Thank you for your interest in contributing to oh-my-customcode!
    ```bash
    bun run setup:hooks
    ```
+
+---
 
 ## Development Workflow
 
@@ -38,11 +85,11 @@ We use Git Flow branching strategy:
    git checkout -b feature/my-feature
    ```
 
-2. Make your changes and ensure tests pass:
+2. Make your changes and ensure **ALL tests pass**:
    ```bash
-   bun test
-   bun run lint
-   bun run typecheck
+   bun test           # Must show 0 failures
+   bun run lint       # Must pass
+   bun run typecheck  # Must pass
    ```
 
 3. Commit with a descriptive message:
@@ -68,9 +115,52 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 The following checks run automatically before each commit:
 - TypeScript type checking
 - Biome linting
-- All tests
+- **All tests must pass**
 
-## Adding New Agents
+---
+
+## Testing Guidelines
+
+### Test Structure
+
+```
+tests/
+├── unit/           # Unit tests - test individual functions
+├── integration/    # Integration tests - test module interactions
+└── e2e/            # E2E tests - test full CLI workflows
+```
+
+### What to Test
+
+| Test Type | What to Verify |
+|-----------|----------------|
+| **Unit** | Individual functions work correctly |
+| **Integration** | Modules work together as expected |
+| **E2E** | Complete user workflows succeed |
+
+### Running Tests
+
+```bash
+bun test              # Run all tests (MUST pass before commit)
+bun test:unit         # Run unit tests only
+bun test:integration  # Run integration tests
+bun test:e2e          # Run end-to-end tests
+bun test --coverage   # Check coverage (target: 100%)
+```
+
+### Writing Tests
+
+When adding a feature, ask yourself:
+
+1. **What workflow does this enable?** → Write E2E test
+2. **How do modules interact?** → Write integration test
+3. **What edge cases exist?** → Write unit tests
+
+---
+
+## Adding New Components
+
+### Adding New Agents
 
 1. Create directory structure:
    ```
@@ -84,7 +174,9 @@ The following checks run automatically before each commit:
 
 3. Update `templates/skills/orchestration/intent-detection/patterns/agent-triggers.yaml` if adding intent triggers
 
-## Adding New Skills
+4. **Add tests** to verify the agent is detected and works
+
+### Adding New Skills
 
 1. Create directory structure:
    ```
@@ -95,25 +187,22 @@ The following checks run automatically before each commit:
 
 2. Link from relevant agents using symlinks in their `refs/` directory
 
+3. **Add tests** to verify the skill is loaded correctly
+
+---
+
 ## Code Style
 
 - TypeScript with strict mode
 - Biome for linting and formatting
 - No console.log in library code (CLI output is allowed)
 
-## Testing
-
-- Write tests for new functionality
-- Maintain test coverage
-- Run full test suite before submitting PR
-
-```bash
-bun test              # Run all tests
-bun test:unit         # Run unit tests only
-bun test:integration  # Run integration tests
-bun test:e2e          # Run end-to-end tests
-```
+---
 
 ## Questions?
 
 Open an issue or discussion on GitHub.
+
+---
+
+**Remember: If tests don't pass, the PR doesn't merge. This protects everyone.**

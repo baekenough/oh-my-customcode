@@ -10,7 +10,9 @@ import {
   checkRules,
   checkSkills,
   checkSymlinks,
+  doctorCommand,
   fixIssues,
+  printCheck,
 } from '../../../src/cli/doctor.js';
 
 describe('doctor command', () => {
@@ -502,6 +504,350 @@ describe('doctor command', () => {
       // Index files should warn (no files found)
       const indexCheck = results.find((r) => r.name === 'Index files');
       expect(indexCheck?.status).toBe('warn');
+    });
+  });
+
+  describe('printCheck', () => {
+    let consoleOutput: string[];
+    let consoleSpy: ReturnType<typeof spyOn>;
+
+    beforeEach(() => {
+      consoleOutput = [];
+      consoleSpy = spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+        consoleOutput.push(args.map(String).join(' '));
+      });
+    });
+
+    afterEach(() => {
+      consoleSpy.mockRestore();
+    });
+
+    it('should print pass status with [PASS] icon', () => {
+      const check: CheckResult = {
+        name: 'CLAUDE.md',
+        status: 'pass',
+        message: 'CLAUDE.md exists',
+        fixable: false,
+      };
+
+      printCheck(check);
+
+      expect(consoleOutput.length).toBe(1);
+      expect(consoleOutput[0]).toContain('[PASS]');
+      expect(consoleOutput[0]).toContain('CLAUDE.md');
+      expect(consoleOutput[0]).toContain('CLAUDE.md exists');
+    });
+
+    it('should print warn status with [WARN] icon', () => {
+      const check: CheckResult = {
+        name: 'Index files',
+        status: 'warn',
+        message: 'No index files found',
+        fixable: false,
+      };
+
+      printCheck(check);
+
+      expect(consoleOutput.length).toBe(1);
+      expect(consoleOutput[0]).toContain('[WARN]');
+      expect(consoleOutput[0]).toContain('Index files');
+    });
+
+    it('should print fail status with [FAIL] icon', () => {
+      const check: CheckResult = {
+        name: 'Rules',
+        status: 'fail',
+        message: 'Rules directory is missing',
+        fixable: true,
+      };
+
+      printCheck(check);
+
+      expect(consoleOutput.length).toBe(1);
+      expect(consoleOutput[0]).toContain('[FAIL]');
+      expect(consoleOutput[0]).toContain('Rules');
+    });
+
+    it('should print fixed label when check is fixed', () => {
+      const check: CheckResult = {
+        name: 'Rules',
+        status: 'fail',
+        message: 'Rules directory created',
+        fixable: true,
+        fixed: true,
+      };
+
+      printCheck(check);
+
+      expect(consoleOutput.length).toBe(1);
+      expect(consoleOutput[0]).toContain('(fixed)');
+    });
+
+    it('should print details when available and not fixed', () => {
+      const check: CheckResult = {
+        name: 'Symlinks',
+        status: 'fail',
+        message: 'Broken symlinks found',
+        fixable: true,
+        details: ['agents/refs/broken1', 'agents/refs/broken2', 'skills/refs/broken3'],
+      };
+
+      printCheck(check);
+
+      expect(consoleOutput.length).toBe(4);
+      expect(consoleOutput[1]).toContain('agents/refs/broken1');
+      expect(consoleOutput[2]).toContain('agents/refs/broken2');
+      expect(consoleOutput[3]).toContain('skills/refs/broken3');
+    });
+
+    it('should truncate details to first 5 and show count', () => {
+      const check: CheckResult = {
+        name: 'Symlinks',
+        status: 'fail',
+        message: 'Many broken symlinks',
+        fixable: true,
+        details: ['path1', 'path2', 'path3', 'path4', 'path5', 'path6', 'path7', 'path8'],
+      };
+
+      printCheck(check);
+
+      // 1 main line + 5 details + 1 "and X more" line
+      expect(consoleOutput.length).toBe(7);
+      expect(consoleOutput[6]).toContain('and 3 more');
+    });
+
+    it('should not print details when fixed is true', () => {
+      const check: CheckResult = {
+        name: 'Symlinks',
+        status: 'fail',
+        message: 'Symlinks fixed',
+        fixable: true,
+        fixed: true,
+        details: ['path1', 'path2'],
+      };
+
+      printCheck(check);
+
+      // Only 1 line, no details
+      expect(consoleOutput.length).toBe(1);
+      expect(consoleOutput[0]).toContain('(fixed)');
+    });
+  });
+
+  describe('doctorCommand', () => {
+    let originalCwd: typeof process.cwd;
+    let consoleSpy: ReturnType<typeof spyOn>;
+
+    beforeEach(() => {
+      originalCwd = process.cwd;
+      consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      process.cwd = originalCwd;
+      consoleSpy.mockRestore();
+    });
+
+    it('should run doctor command on current directory', async () => {
+      // Mock process.cwd to return temp dir
+      process.cwd = () => tempDir;
+
+      // Setup healthy installation
+      await writeFile(join(tempDir, 'CLAUDE.md'), '# Project');
+      await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'rules', 'MUST-safety.md'), '# Safety');
+      await mkdir(join(tempDir, 'agents', 'sw-engineer', 'test-agent'), { recursive: true });
+      await writeFile(join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'AGENT.md'), '# Agent');
+      await mkdir(join(tempDir, 'skills', 'development'), { recursive: true });
+
+      const result = await doctorCommand();
+
+      expect(result.success).toBe(true);
+      expect(result.checks.length).toBeGreaterThan(0);
+      expect(result.passCount).toBeGreaterThan(0);
+    });
+
+    it('should detect issues in empty directory', async () => {
+      process.cwd = () => tempDir;
+
+      const result = await doctorCommand();
+
+      expect(result.success).toBe(false);
+      expect(result.failCount).toBeGreaterThan(0);
+    });
+
+    it('should apply fixes when fix option is true', async () => {
+      process.cwd = () => tempDir;
+
+      // Create CLAUDE.md but leave other dirs missing
+      await writeFile(join(tempDir, 'CLAUDE.md'), '# Project');
+
+      const result = await doctorCommand({ fix: true });
+
+      // Some issues should be fixed
+      expect(result.fixedCount).toBeGreaterThan(0);
+    });
+
+    it('should respect quiet option', async () => {
+      process.cwd = () => tempDir;
+
+      // Setup healthy installation
+      await writeFile(join(tempDir, 'CLAUDE.md'), '# Project');
+      await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'rules', 'MUST-safety.md'), '# Safety');
+      await mkdir(join(tempDir, 'agents', 'sw-engineer', 'test-agent'), { recursive: true });
+      await writeFile(join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'AGENT.md'), '# Agent');
+      await mkdir(join(tempDir, 'skills', 'development'), { recursive: true });
+
+      const result = await doctorCommand({ quiet: true });
+
+      // Should still return result even in quiet mode
+      expect(result).toBeDefined();
+      expect(result.checks.length).toBeGreaterThan(0);
+    });
+
+    it('should count pass, warn, fail, and fixed correctly', async () => {
+      process.cwd = () => tempDir;
+
+      // Partial setup - some pass, some fail, some warn
+      await writeFile(join(tempDir, 'CLAUDE.md'), '# Project');
+      await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
+      // No rule files = warn for rules
+      await mkdir(join(tempDir, 'agents', 'sw-engineer'), { recursive: true });
+      // No AGENT.md = warn for agents
+      // Missing skills = fail
+
+      const result = await doctorCommand();
+
+      expect(result.passCount + result.warnCount + result.failCount).toBe(result.checks.length);
+    });
+
+    it('should suggest running with fix when fixable issues exist', async () => {
+      process.cwd = () => tempDir;
+
+      // Create CLAUDE.md only
+      await writeFile(join(tempDir, 'CLAUDE.md'), '# Project');
+
+      const result = await doctorCommand();
+
+      // Should have fixable issues
+      const fixableCount = result.checks.filter((c) => c.status === 'fail' && c.fixable).length;
+      expect(fixableCount).toBeGreaterThan(0);
+    });
+  });
+
+  describe('isValidSymlink edge cases', () => {
+    it('should return true for regular files (non-symlinks)', async () => {
+      // Create a regular file (not a symlink)
+      const regularFile = join(tempDir, 'regular-file.txt');
+      await writeFile(regularFile, 'test content');
+
+      // The isValidSymlink function should return true for non-symlinks
+      // because it checks lstat first, and if not a symlink, returns true (line 81)
+      const result = await checkSymlinks(tempDir);
+
+      // Since there are no broken symlinks, it should pass
+      expect(result.status).toBe('pass');
+    });
+
+    it('should handle refs directory with regular files', async () => {
+      // Create refs directory with regular files (not symlinks)
+      const refsDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'refs');
+      await mkdir(refsDir, { recursive: true });
+      await writeFile(join(refsDir, 'regular-file.md'), '# Not a symlink');
+
+      const result = await checkSymlinks(tempDir);
+
+      // Should pass since regular files are not symlinks
+      expect(result.status).toBe('pass');
+    });
+
+    it('should handle mixed regular files and broken symlinks in refs', async () => {
+      // Create refs directory with both regular files and broken symlinks
+      const refsDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'refs');
+      await mkdir(refsDir, { recursive: true });
+      await writeFile(join(refsDir, 'regular-file.md'), '# Regular file');
+      await symlink('/non/existent/path', join(refsDir, 'broken-link'));
+
+      const result = await checkSymlinks(tempDir);
+
+      // Should detect only the broken symlink, not the regular file
+      expect(result.status).toBe('fail');
+      expect(result.message).toContain('1 broken');
+    });
+  });
+
+  describe('symlinks in skills directory', () => {
+    it('should detect broken symlinks in skills refs directory', async () => {
+      // Setup: create skill with broken symlink in refs/
+      const skillDir = join(tempDir, 'skills', 'development', 'test-skill');
+      const refsDir = join(skillDir, 'refs');
+      await mkdir(refsDir, { recursive: true });
+
+      // Create broken symlink pointing to non-existent path
+      await symlink('/non/existent/path', join(refsDir, 'broken-link'));
+
+      const result = await checkSymlinks(tempDir);
+
+      expect(result.status).toBe('fail');
+      expect(result.message).toContain('1 broken');
+      expect(result.details).toBeDefined();
+    });
+
+    it('should detect broken symlinks in both agents and skills', async () => {
+      // Create broken symlink in agents
+      const agentRefsDir = join(tempDir, 'agents', 'sw-engineer', 'agent1', 'refs');
+      await mkdir(agentRefsDir, { recursive: true });
+      await symlink('/missing/agent/path', join(agentRefsDir, 'broken1'));
+
+      // Create broken symlink in skills
+      const skillRefsDir = join(tempDir, 'skills', 'development', 'skill1', 'refs');
+      await mkdir(skillRefsDir, { recursive: true });
+      await symlink('/missing/skill/path', join(skillRefsDir, 'broken2'));
+
+      const result = await checkSymlinks(tempDir);
+
+      expect(result.status).toBe('fail');
+      expect(result.message).toContain('2 broken');
+    });
+  });
+
+  describe('fixIssues edge cases', () => {
+    it('should handle symlinks fix with empty details', async () => {
+      const checks: CheckResult[] = [
+        {
+          name: 'Symlinks',
+          status: 'fail',
+          message: 'Broken symlinks',
+          fixable: true,
+          details: [],
+        },
+      ];
+
+      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+      const fixedChecks = await fixIssues(checks, tempDir);
+      consoleSpy.mockRestore();
+
+      // Should not crash and should not be marked as fixed (no details to fix)
+      expect(fixedChecks[0].fixed).toBeUndefined();
+    });
+
+    it('should handle unknown check name gracefully', async () => {
+      const checks: CheckResult[] = [
+        {
+          name: 'UnknownCheck',
+          status: 'fail',
+          message: 'Unknown issue',
+          fixable: true,
+        },
+      ];
+
+      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+      const fixedChecks = await fixIssues(checks, tempDir);
+      consoleSpy.mockRestore();
+
+      // Should not crash, not be marked as fixed
+      expect(fixedChecks[0].fixed).toBeUndefined();
     });
   });
 });

@@ -401,6 +401,27 @@ describe('logger utilities', () => {
       expect(consoleLogSpy).toHaveBeenCalledWith('Loading...');
       stop();
     });
+
+    it('should animate spinner when colors enabled', async () => {
+      setColors(true);
+      setLogLevel('info');
+
+      const stop = spinner('Processing...');
+
+      // Wait for at least one frame
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Should have written to stdout
+      expect(stdoutWriteSpy.mock.calls.length).toBeGreaterThan(0);
+
+      // Stop the spinner
+      stop();
+
+      // After stopping, should write final line with checkmark
+      const lastCall = stdoutWriteSpy.mock.calls[stdoutWriteSpy.mock.calls.length - 1][0];
+      expect(lastCall).toContain('✓');
+      expect(lastCall).toContain('Processing...');
+    });
   });
 
   describe('table', () => {
@@ -443,6 +464,17 @@ describe('logger utilities', () => {
       const headerCall = consoleLogSpy.mock.calls[0][0];
       // Should contain bold color code
       expect(headerCall).toContain('\x1b[1m');
+    });
+
+    it('should not use bold headers when colors disabled', () => {
+      setColors(false);
+
+      table(['Header'], [['Row']]);
+
+      const headerCall = consoleLogSpy.mock.calls[0][0];
+      // Should NOT contain ANSI color codes
+      expect(headerCall).not.toContain('\x1b[');
+      expect(headerCall).toContain('Header');
     });
 
     it('should handle empty cells', () => {

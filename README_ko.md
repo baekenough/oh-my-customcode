@@ -1,130 +1,287 @@
 # oh-my-customcode
 
+> **당신만의 Claude Code, 당신만의 방식으로**
+
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml)
 
-**Claude Code를 위한 올인원 에이전트 시스템**
+**에이전트, 스킬, 규칙으로 Claude Code를 커스터마이징하는 가장 쉬운 방법.**
 
-사전 구성된 에이전트, 스킬, 규칙으로 Claude Code 경험을 한 단계 업그레이드하세요.
+oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Claude Code 경험을 간단하고, 강력하고, 재미있게 개인화합니다.
 
-## 주요 기능
+## 왜 특별한가
 
-- **28개 에이전트** - 개발, 테스트, 문서화 등 전문 에이전트 제공
-- **체계화된 스킬** - 개발, 백엔드, 인프라, 오케스트레이션 스킬
-- **우선순위 규칙** - MUST/SHOULD/MAY 등급별 일관된 동작 보장
-- **다국어 지원** - 영어, 한국어 기본 지원
-- **간편한 설정** - 한 줄 명령어로 초기화
-- **상태 점검** - doctor 명령으로 설치 상태 확인
+| 특징 | 설명 |
+|------|------|
+| **바로 사용 가능** | 36개 에이전트, 17개 스킬, 18개 규칙이 기본 제공 |
+| **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
+| **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
+| **비파괴적** | 커스터마이징은 기본값과 함께 존재, 절대 덮어쓰지 않음 |
 
 ## 빠른 시작
 
-### 설치
-
 ```bash
+# 전역 설치
 npm install -g oh-my-customcode
-```
 
-### 프로젝트 초기화
-
-```bash
+# 프로젝트에서 초기화
 cd your-project
-omcc init --lang ko
+omcc init
 ```
 
-현재 디렉토리에 `.claude/` 폴더와 함께 모든 에이전트, 스킬, 규칙이 설정됩니다.
+끝. 이제 완벽하게 구성된 Claude Code 환경을 갖게 되었습니다.
+
+---
+
+## 커스터마이징이 핵심
+
+oh-my-customcode의 존재 이유입니다. **Claude Code를 당신 것으로 만드세요.**
+
+### 커스텀 에이전트 만들기 (파일 2개)
+
+데이터베이스 마이그레이션을 리뷰하는 에이전트가 필요하다면? 그냥 만드세요:
+
+```
+agents/sw-engineer/migration-expert/
+├── AGENT.md       # 에이전트가 하는 일
+└── index.yaml     # 메타데이터
+```
+
+**AGENT.md:**
+```markdown
+# Migration Expert Agent
+
+> **Type**: Worker
+
+## Purpose
+
+Expert in database migrations, schema design, and data integrity.
+
+## Capabilities
+
+1. Review migration files for safety issues
+2. Suggest rollback strategies
+3. Check for data loss risks
+4. Optimize migration performance
+
+## When to Use
+
+- Before running migrations in production
+- Designing new database schemas
+- Reviewing team members' migrations
+```
+
+**index.yaml:**
+```yaml
+metadata:
+  name: migration-expert
+  type: worker
+  category: sw-engineer
+  description: Database migration specialist
+```
+
+완료. 커스텀 에이전트가 바로 사용 가능합니다.
+
+### 커스텀 스킬 추가
+
+스킬은 에이전트가 **어떻게** 일하는지 정의합니다. 전문 지식을 만드세요:
+
+```
+skills/development/sql-optimization/
+├── SKILL.md       # 스킬 지침
+└── index.yaml     # 메타데이터
+```
+
+**SKILL.md:**
+```markdown
+# SQL Optimization Skill
+
+## Rules
+
+### Query Optimization
+- Always use EXPLAIN ANALYZE before suggesting changes
+- Prefer indexes over full table scans
+- Avoid SELECT * in production code
+- Use CTEs for complex queries
+
+### Migration Safety
+- Always include rollback scripts
+- Test migrations on production-like data
+- Never delete columns without deprecation period
+```
+
+### 규칙 수정
+
+규칙은 행동을 제어합니다. `.claude/rules/`에서 편집하세요:
+
+```
+.claude/rules/
+├── MUST-*.md      # 필수 (안전, 권한)
+├── SHOULD-*.md    # 권장 (상호작용, 에러 처리)
+└── MAY-*.md       # 선택 (최적화)
+```
+
+더 엄격한 코드 리뷰를 원하시나요? `SHOULD-interaction.md`를 편집하세요:
+
+```markdown
+## Code Review Standards
+
+### Before Approving Any Code
+- [ ] All tests pass
+- [ ] No security vulnerabilities
+- [ ] Performance impact assessed
+- [ ] Documentation updated
+```
+
+### 커스텀 파이프라인 생성
+
+`pipelines/`에서 반복 가능한 워크플로우를 정의하세요:
+
+```yaml
+# pipelines/deploy-review.yaml
+name: deploy-review
+description: Pre-deployment review workflow
+
+steps:
+  - id: security_scan
+    agent: qa-lead
+    action: security_review
+
+  - id: performance_check
+    agent: optimizer
+    action: analyze_performance
+
+  - id: migration_review
+    agent: migration-expert  # 방금 만든 커스텀 에이전트!
+    action: review_migrations
+```
+
+실행: `pipeline:run deploy-review`
+
+### 기본 제공 + 커스텀 조합
+
+진정한 힘은 모든 것을 결합하는 것입니다:
+
+```
+your-project/
+├── agents/
+│   ├── orchestrator/          # 기본 제공: planner, secretary
+│   ├── sw-engineer/
+│   │   ├── language/          # 기본 제공: golang, python, rust...
+│   │   └── migration-expert/  # 당신의 커스텀 에이전트
+│   └── your-team/             # 당신 팀 전용 에이전트
+├── skills/
+│   ├── development/           # 기본 제공: 베스트 프랙티스
+│   └── your-company/          # 당신 회사 표준
+└── .claude/rules/
+    ├── MUST-safety.md         # 기본 제공
+    └── MUST-your-policy.md    # 당신 회사 정책
+```
+
+---
+
+## 기본 제공 항목
+
+### 에이전트 (36개)
+
+| 카테고리 | 에이전트 |
+|----------|----------|
+| 오케스트레이터 | planner, secretary, dev-lead, qa-lead |
+| 매니저 | creator, updater, supplier, gitnerd, sync-checker, sauron |
+| 시스템 | memory-keeper, naggy |
+| 언어 | golang, python, rust, kotlin, typescript, java21 |
+| 프론트엔드 | vercel-agent, vuejs-agent, svelte-agent |
+| 백엔드 | fastapi, springboot, go-backend, express, nestjs |
+| 툴링 | npm-expert, optimizer, bun-expert |
+| 아키텍처 | documenter, speckit-agent |
+| 인프라 | docker-expert, aws-expert |
+| QA | qa-planner, qa-writer, qa-engineer |
+
+### 스킬 (17개)
+
+- **개발**: Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
+- **백엔드**: FastAPI, Spring Boot, Express, NestJS, Go Backend
+- **인프라**: Docker, AWS
+- **시스템**: 메모리 관리, 결과 집계
+- **오케스트레이션**: 파이프라인 실행, 인텐트 감지
+
+### 규칙 (18개)
+
+| 우선순위 | 개수 | 목적 |
+|----------|------|------|
+| MUST | 10 | 안전, 권한, 에이전트 설계 (강제) |
+| SHOULD | 6 | 상호작용, 에러 처리 (권장) |
+| MAY | 2 | 최적화 가이드라인 (선택) |
+
+---
 
 ## CLI 명령어
 
 | 명령어 | 설명 |
 |--------|------|
-| `omcc init` | 에이전트 시스템 초기화 |
+| `omcc init` | 현재 프로젝트에 초기화 |
 | `omcc init --lang ko` | 한국어로 초기화 |
-| `omcc update` | 최신 에이전트/스킬로 업데이트 |
-| `omcc list` | 설치된 컴포넌트 목록 |
-| `omcc list agents` | 에이전트 목록 |
-| `omcc list skills` | 스킬 목록 |
-| `omcc doctor` | 설치 상태 점검 |
-| `omcc doctor --fix` | 문제 자동 수정 |
+| `omcc update` | 최신 버전으로 업데이트 |
+| `omcc list` | 설치된 모든 컴포넌트 목록 |
+| `omcc list agents` | 에이전트만 목록 |
+| `omcc doctor` | 설치 상태 검사 |
+| `omcc doctor --fix` | 일반적인 문제 자동 수정 |
 
-## 포함 내용
-
-### 에이전트 (28개)
-
-| 분류 | 에이전트 |
-|------|----------|
-| Master | planner |
-| Orchestrator | secretary, dev-lead |
-| Manager | creator, updater, supplier, naggy, git-expert, sync-checker |
-| System | memory-keeper |
-| SW Engineer | golang, python, rust, kotlin, typescript, java21, vercel-frontend |
-| SW Architect | documenter, speckit-agent |
-| Backend Engineer | fastapi, springboot, go-backend, express, nestjs |
-| Infra Engineer | docker, aws |
-| QA Engineer | qa-lead |
-| Tutor | go-tutor |
-
-### 스킬
-
-- **Development** - 언어별 모범 사례 (Go, Python, TypeScript 등)
-- **Backend** - 프레임워크 스킬 (FastAPI, Spring Boot, Express, NestJS)
-- **Infrastructure** - Docker, AWS 배포 스킬
-- **System** - 메모리 관리, 결과 집계
-- **Orchestration** - 파이프라인 실행, 의도 감지
-
-### 규칙
-
-- **MUST** - 안전, 권한, 에이전트 설계, 식별 (필수)
-- **SHOULD** - 상호작용, 에러 처리, 메모리 통합 (권장)
-- **MAY** - 최적화 가이드라인 (선택)
-
-## 설정
-
-초기화 후 `.omccrc.json`으로 동작을 커스터마이즈할 수 있습니다:
-
-```json
-{
-  "language": "ko",
-  "agents": {
-    "enabled": ["*"],
-    "disabled": []
-  },
-  "rules": {
-    "strict": true
-  }
-}
-```
+---
 
 ## 프로젝트 구조
 
-`omcc init` 실행 후 프로젝트 구조:
+`omcc init` 후:
 
 ```
 your-project/
-├── CLAUDE.md              # 메인 설정 파일
+├── CLAUDE.md              # Claude 진입점
 ├── .claude/
-│   ├── rules/             # MUST/SHOULD/MAY 규칙
-│   ├── hooks/             # 라이프사이클 훅
-│   └── contexts/          # 컨텍스트 설정
-├── agents/                # 에이전트 정의
-├── skills/                # 스킬 정의
-├── guides/                # 참고 문서
+│   ├── rules/             # 행동 규칙
+│   ├── hooks/             # 이벤트 훅
+│   └── contexts/          # 컨텍스트 파일
+├── agents/                # 모든 에이전트
+├── skills/                # 모든 스킬
+├── guides/                # 참조 문서
+├── pipelines/             # 워크플로우 정의
 └── commands/              # 명령어 정의
 ```
 
-## 요구사항
+---
+
+## 개발
+
+```bash
+bun install          # 의존성 설치
+bun run dev          # 개발 모드
+bun test             # 테스트 실행
+bun run build        # 프로덕션 빌드
+```
+
+### 요구사항
 
 - Node.js >= 18.0.0
 - Claude Code CLI
 
-## 기여하기
+---
 
-기여를 환영합니다! 자세한 내용은 [기여 가이드](CONTRIBUTING.md)를 참고해주세요.
+## 기여
 
-## 라이선스
-
-[MIT](LICENSE) - 자세한 내용은 LICENSE 파일을 참고하세요.
+기여를 환영합니다! [CONTRIBUTING.md](CONTRIBUTING.md)를 참조하세요.
 
 ---
 
-Made with care by [baekenough](https://github.com/baekenough)
+## 라이선스
+
+[MIT](LICENSE)
+
+---
+
+<p align="center">
+  <strong>당신의 Claude Code. 당신의 규칙. 당신의 방식.</strong>
+</p>
+
+<p align="center">
+  Made with care by <a href="https://github.com/baekenough">baekenough</a>
+</p>

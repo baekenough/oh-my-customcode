@@ -1,186 +1,287 @@
 # oh-my-customcode
 
+> **Your Claude Code, Your Way**
+
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml)
 
-**Batteries-included agent harness for Claude Code**
+**The easiest way to customize Claude Code with agents, skills, and rules.**
 
-Transform your Claude Code experience with a pre-configured agent system, skills, and rules designed for maximum productivity.
+Like oh-my-zsh transformed shell customization, oh-my-customcode makes personalizing your Claude Code experience simple, powerful, and fun.
 
-## Features
+## What Makes It Special
 
-- **36 Pre-built Agents** - Specialized agents for development, testing, documentation, and more
-- **17 Skills** - Development best practices, orchestration patterns, and system utilities
-- **12 Guides** - Reference documentation for various technologies
-- **18 Rules** - Enforced coding standards and workflow patterns
-- **Full Customization** - Create, modify, and extend agents, skills, and rules
-- **Multi-language Support** - English and Korean out of the box
-- **Health Checks** - Built-in doctor command to verify installation
+| Feature | Description |
+|---------|-------------|
+| **Batteries Included** | 36 agents, 17 skills, 18 rules - ready to use out of the box |
+| **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
+| **Mix and Match** | Use built-in components, create your own, or combine both |
+| **Non-Destructive** | Your customizations live alongside defaults, never overwritten |
 
 ## Quick Start
 
-### Installation
-
 ```bash
+# Install globally
 npm install -g oh-my-customcode
-```
 
-### Initialize in Your Project
-
-```bash
+# Initialize in your project
 cd your-project
 omcc init
 ```
 
-This creates the agent system with all agents, skills, rules, and a configured `CLAUDE.md`.
+That's it. You now have a fully configured Claude Code environment.
+
+---
+
+## Customization First
+
+This is what oh-my-customcode is all about. **Making Claude Code yours.**
+
+### Create a Custom Agent (2 files)
+
+Want an agent that reviews database migrations? Just create:
+
+```
+agents/sw-engineer/migration-expert/
+├── AGENT.md       # What the agent does
+└── index.yaml     # Metadata
+```
+
+**AGENT.md:**
+```markdown
+# Migration Expert Agent
+
+> **Type**: Worker
+
+## Purpose
+
+Expert in database migrations, schema design, and data integrity.
+
+## Capabilities
+
+1. Review migration files for safety issues
+2. Suggest rollback strategies
+3. Check for data loss risks
+4. Optimize migration performance
+
+## When to Use
+
+- Before running migrations in production
+- Designing new database schemas
+- Reviewing team members' migrations
+```
+
+**index.yaml:**
+```yaml
+metadata:
+  name: migration-expert
+  type: worker
+  category: sw-engineer
+  description: Database migration specialist
+```
+
+Done. Your custom agent is ready to use.
+
+### Add a Custom Skill
+
+Skills define **how** agents do things. Create specialized knowledge:
+
+```
+skills/development/sql-optimization/
+├── SKILL.md       # The skill instructions
+└── index.yaml     # Metadata
+```
+
+**SKILL.md:**
+```markdown
+# SQL Optimization Skill
+
+## Rules
+
+### Query Optimization
+- Always use EXPLAIN ANALYZE before suggesting changes
+- Prefer indexes over full table scans
+- Avoid SELECT * in production code
+- Use CTEs for complex queries
+
+### Migration Safety
+- Always include rollback scripts
+- Test migrations on production-like data
+- Never delete columns without deprecation period
+```
+
+### Modify Rules
+
+Rules control behavior. Edit them in `.claude/rules/`:
+
+```
+.claude/rules/
+├── MUST-*.md      # Required (safety, permissions)
+├── SHOULD-*.md    # Recommended (interactions, error handling)
+└── MAY-*.md       # Optional (optimizations)
+```
+
+Want stricter code review? Edit `SHOULD-interaction.md`:
+
+```markdown
+## Code Review Standards
+
+### Before Approving Any Code
+- [ ] All tests pass
+- [ ] No security vulnerabilities
+- [ ] Performance impact assessed
+- [ ] Documentation updated
+```
+
+### Create Custom Pipelines
+
+Define repeatable workflows in `pipelines/`:
+
+```yaml
+# pipelines/deploy-review.yaml
+name: deploy-review
+description: Pre-deployment review workflow
+
+steps:
+  - id: security_scan
+    agent: qa-lead
+    action: security_review
+
+  - id: performance_check
+    agent: optimizer
+    action: analyze_performance
+
+  - id: migration_review
+    agent: migration-expert  # Your custom agent!
+    action: review_migrations
+```
+
+Run it: `pipeline:run deploy-review`
+
+### Mix Built-in + Custom
+
+The real power is combining everything:
+
+```
+your-project/
+├── agents/
+│   ├── orchestrator/          # Built-in: planner, secretary
+│   ├── sw-engineer/
+│   │   ├── language/          # Built-in: golang, python, rust...
+│   │   └── migration-expert/  # YOUR custom agent
+│   └── your-team/             # YOUR team-specific agents
+├── skills/
+│   ├── development/           # Built-in: best practices
+│   └── your-company/          # YOUR company standards
+└── .claude/rules/
+    ├── MUST-safety.md         # Built-in
+    └── MUST-your-policy.md    # YOUR company policy
+```
+
+---
+
+## What's Included
+
+### Agents (36)
+
+| Category | Agents |
+|----------|--------|
+| Orchestrators | planner, secretary, dev-lead, qa-lead |
+| Managers | creator, updater, supplier, gitnerd, sync-checker, sauron |
+| System | memory-keeper, naggy |
+| Languages | golang, python, rust, kotlin, typescript, java21 |
+| Frontend | vercel-agent, vuejs-agent, svelte-agent |
+| Backend | fastapi, springboot, go-backend, express, nestjs |
+| Tooling | npm-expert, optimizer, bun-expert |
+| Architecture | documenter, speckit-agent |
+| Infrastructure | docker-expert, aws-expert |
+| QA | qa-planner, qa-writer, qa-engineer |
+
+### Skills (17)
+
+- **Development**: Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
+- **Backend**: FastAPI, Spring Boot, Express, NestJS, Go Backend
+- **Infrastructure**: Docker, AWS
+- **System**: Memory management, result aggregation
+- **Orchestration**: Pipeline execution, intent detection
+
+### Rules (18)
+
+| Priority | Count | Purpose |
+|----------|-------|---------|
+| MUST | 10 | Safety, permissions, agent design (enforced) |
+| SHOULD | 6 | Interactions, error handling (recommended) |
+| MAY | 2 | Optimization guidelines (optional) |
+
+---
 
 ## CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `omcc init` | Initialize agent system in current project |
+| `omcc init` | Initialize in current project |
 | `omcc init --lang ko` | Initialize with Korean language |
-| `omcc init --backup` | Backup existing installation before init |
-| `omcc update` | Update to latest agents and skills |
+| `omcc update` | Update to latest version |
 | `omcc list` | List all installed components |
-| `omcc list agents` | List installed agents |
-| `omcc list skills` | List installed skills |
-| `omcc list --format json` | Output as JSON |
+| `omcc list agents` | List agents only |
 | `omcc doctor` | Verify installation health |
 | `omcc doctor --fix` | Auto-fix common issues |
 
-## What's Included
-
-### Agents (36 total)
-
-| Category | Count | Agents |
-|----------|-------|--------|
-| Orchestrator | 4 | planner (master), secretary, dev-lead, qa-lead |
-| Manager | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
-| System | 2 | memory-keeper, naggy |
-| SW Engineer/Frontend | 3 | vercel-agent, vuejs-agent, svelte-agent |
-| SW Engineer/Backend | 5 | fastapi, springboot, go-backend, express, nestjs |
-| SW Engineer/Language | 6 | golang, python, rust, kotlin, typescript, java21 |
-| SW Engineer/Tooling | 3 | npm-expert, optimizer, bun-expert |
-| SW Architect | 2 | documenter, speckit-agent |
-| Infra Engineer | 2 | docker-expert, aws-expert |
-| QA Team | 3 | qa-planner, qa-writer, qa-engineer |
-
-### Skills
-
-- **Development** - Language-specific best practices (Go, Python, TypeScript, Kotlin, Rust, Java)
-- **Backend** - Framework skills (FastAPI, Spring Boot, Express, NestJS)
-- **Infrastructure** - Docker, AWS deployment skills
-- **System** - Memory management, result aggregation
-- **Orchestration** - Pipeline execution, intent detection
-
-### Rules
-
-| Priority | Description | Count |
-|----------|-------------|-------|
-| **MUST** | Safety, permissions, agent design, identification (enforced) | 10 |
-| **SHOULD** | Interaction, error handling, memory integration (recommended) | 6 |
-| **MAY** | Optimization guidelines (optional) | 2 |
-
-## Customization
-
-oh-my-customcode is designed for full customization. You can:
-
-### Create Custom Agents
-
-```bash
-# Use the creator agent
-creator:agent my-custom-agent --type sw-engineer
-```
-
-Or manually create in `agents/{category}/{agent-name}/`:
-
-```
-agents/sw-engineer/my-custom-agent/
-├── AGENT.md       # Agent definition
-├── index.yaml     # Metadata
-└── refs/          # Symlinks to skills/guides
-```
-
-### Modify Rules
-
-Edit files in `.claude/rules/`:
-- `MUST-*.md` - Required rules (never violate)
-- `SHOULD-*.md` - Strongly recommended
-- `MAY-*.md` - Optional guidelines
-
-### Add Custom Skills
-
-Create in `skills/{category}/{skill-name}/`:
-
-```
-skills/development/my-skill/
-├── SKILL.md       # Skill instructions
-└── index.yaml     # Metadata
-```
-
-### Customize Workflows
-
-Edit pipeline definitions in `pipelines/` or create your own.
+---
 
 ## Project Structure
 
-After `omcc init`, your project will have:
+After `omcc init`:
 
 ```
 your-project/
-├── CLAUDE.md              # Main entry point for Claude
+├── CLAUDE.md              # Entry point for Claude
 ├── .claude/
-│   ├── rules/             # Global rules (R000-R017)
-│   ├── hooks/             # Hook scripts
+│   ├── rules/             # Behavior rules
+│   ├── hooks/             # Event hooks
 │   └── contexts/          # Context files
-├── agents/
-│   ├── orchestrator/      # planner, secretary, dev-lead, qa-lead
-│   ├── manager/           # creator, updater, supplier, gitnerd, sync-checker, sauron
-│   ├── system/            # memory-keeper, naggy
-│   ├── sw-engineer/       # Frontend, backend, language, tooling experts
-│   ├── sw-architect/      # documenter, speckit-agent
-│   ├── infra-engineer/    # docker-expert, aws-expert
-│   └── qa-team/           # qa-planner, qa-writer, qa-engineer
-├── skills/                # Skill definitions
-├── guides/                # Reference documentation
-├── pipelines/             # Pipeline definitions
+├── agents/                # All agents
+├── skills/                # All skills
+├── guides/                # Reference docs
+├── pipelines/             # Workflow definitions
 └── commands/              # Command definitions
 ```
+
+---
 
 ## Development
 
 ```bash
-# Install dependencies
-bun install
-
-# Run in development
-bun run dev
-
-# Run tests
-bun test
-
-# Run linter
-bun run lint
-
-# Build
-bun run build
+bun install          # Install dependencies
+bun run dev          # Development mode
+bun test             # Run tests
+bun run build        # Build for production
 ```
 
-## Requirements
+### Requirements
 
 - Node.js >= 18.0.0
 - Claude Code CLI
 
+---
+
 ## Contributing
 
-Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-## License
-
-[MIT](LICENSE) - see the LICENSE file for details.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-Made with care by [baekenough](https://github.com/baekenough)
+## License
+
+[MIT](LICENSE)
+
+---
+
+<p align="center">
+  <strong>Your Claude Code. Your rules. Your way.</strong>
+</p>
+
+<p align="center">
+  Made with care by <a href="https://github.com/baekenough">baekenough</a>
+</p>
