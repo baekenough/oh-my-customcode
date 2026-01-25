@@ -849,5 +849,41 @@ describe('doctor command', () => {
       // Should not crash, not be marked as fixed
       expect(fixedChecks[0].fixed).toBeUndefined();
     });
+
+    it('should handle mkdir failure gracefully', async () => {
+      // When mkdir fails, the fix function should handle it gracefully
+      // Create a file at the location where directory should be created
+      const claudeDir = join(tempDir, '.claude');
+      await mkdir(claudeDir, { recursive: true });
+      // Create a file named 'rules' which will conflict with mkdir('rules')
+      await writeFile(join(claudeDir, 'rules'), 'this is a file, not a directory');
+
+      const checks: CheckResult[] = [
+        {
+          name: 'Rules',
+          status: 'fail',
+          message: 'Rules directory is missing',
+          fixable: true,
+        },
+      ];
+
+      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+      const fixedChecks = await fixIssues(checks, tempDir);
+      consoleSpy.mockRestore();
+
+      // When mkdir fails, fixed is not set to true
+      // The behavior depends on implementation - it may be undefined or false
+      expect(fixedChecks[0].fixed).not.toBe(true);
+    });
+  });
+
+  describe('countDirectories error handling', () => {
+    it('should return 0 when directory does not exist', async () => {
+      // checkSkills internally uses countDirectories
+      // When skills directory doesn't exist, it should return fail (not error)
+      const result = await checkSkills(join(tempDir, 'nonexistent'));
+
+      expect(result.status).toBe('fail');
+    });
   });
 });

@@ -655,4 +655,41 @@ describe('logger utilities', () => {
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('formatMessage edge cases', () => {
+    it('should output info messages correctly', () => {
+      setColors(true);
+      setLogLevel('info');
+
+      // Info level message should output
+      info('install.start');
+
+      expect(consoleInfoSpy).toHaveBeenCalled();
+      const call = consoleInfoSpy.mock.calls[0][0];
+      // Should contain some text (the message)
+      expect(typeof call).toBe('string');
+      expect(call.length).toBeGreaterThan(0);
+    });
+
+    it('should fallback to key when message not found', () => {
+      info('nonexistent.key');
+
+      const call = consoleInfoSpy.mock.calls[0][0];
+      // Should return the key itself
+      expect(call).toContain('nonexistent.key');
+    });
+
+    it('should use message from current locale when available', () => {
+      // Add a message to both locales
+      addMessages('en', { 'test.message': 'English Message' });
+      addMessages('ko', { 'test.message': '한글 메시지' });
+      setLocale('ko');
+
+      info('test.message');
+
+      const call = consoleInfoSpy.mock.calls[0][0];
+      // Should use Korean message when locale is ko
+      expect(call).toContain('한글 메시지');
+    });
+  });
 });
