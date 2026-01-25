@@ -10,6 +10,23 @@
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
+║  ⚠️  ABSOLUTE PROHIBITION                                        ║
+║                                                                   ║
+║  DO NOT even ASK "커밋하시겠습니까?" after structural changes    ║
+║  until sauron:watch has been executed and passed.                ║
+║                                                                   ║
+║  WRONG:                                                          ║
+║    [Make changes] → "커밋하시겠습니까?"                          ║
+║                                                                   ║
+║  CORRECT:                                                        ║
+║    [Make changes] → sauron:watch → [All pass] → "커밋할까요?"   ║
+║                                                                   ║
+║  Asking to commit before verification = Rule violation           ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+```
+╔══════════════════════════════════════════════════════════════════╗
 ║  MANDATORY VERIFICATION PROCESS:                                 ║
 ║                                                                   ║
 ║  Phase 1: Manager Agent Verification (5 rounds)                  ║

@@ -3,7 +3,10 @@
  * Initializes oh-my-customcode in the current project
  */
 
+import { join } from 'node:path';
+import { type InstallResult as InstallerResult, install } from '../core/installer.js';
 import { i18n } from '../i18n/index.js';
+import { fileExists } from '../utils/fs.js';
 
 /**
  * Options for the init command
@@ -11,6 +14,8 @@ import { i18n } from '../i18n/index.js';
 export interface InitOptions {
   /** Language for templates and messages (en|ko) */
   lang: 'en' | 'ko';
+  /** Whether to overwrite existing files */
+  force?: boolean;
 }
 
 /**
@@ -29,63 +34,81 @@ export interface InitResult {
  * @returns True if .claude exists
  */
 export async function checkExistingInstallation(targetDir: string): Promise<boolean> {
-  // TODO: Implement actual check
-  // Use Bun.file or fs to check if targetDir/.claude exists
-  return false;
+  const claudeDir = join(targetDir, '.claude');
+  return fileExists(claudeDir);
+}
+
+/** Components that live under .claude directory */
+const CLAUDE_SUBDIR_COMPONENTS = new Set(['rules', 'hooks', 'contexts']);
+
+/**
+ * Convert component name to its full path
+ */
+function componentToPath(targetDir: string, component: string): string {
+  if (component === 'claude-md') {
+    return join(targetDir, 'CLAUDE.md');
+  }
+  if (CLAUDE_SUBDIR_COMPONENTS.has(component)) {
+    return join(targetDir, '.claude', component);
+  }
+  return join(targetDir, component);
 }
 
 /**
- * Backup existing .claude directory
- * @param targetDir - Target directory containing .claude
- * @returns Path to backup directory
+ * Build list of installed paths from components
  */
-export async function backupExisting(targetDir: string): Promise<string> {
-  // TODO: Implement backup logic
-  // Create .claude.backup.{timestamp} directory
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupPath = `${targetDir}/.claude.backup.${timestamp}`;
-  return backupPath;
+function buildInstalledPaths(targetDir: string, components: string[]): string[] {
+  return components.map((component) => componentToPath(targetDir, component));
 }
 
 /**
- * Copy templates to target directory
- * @param targetDir - Target directory
- * @param lang - Language for templates
- * @returns List of installed paths
+ * Log items with a prefix
  */
-export async function copyTemplates(targetDir: string, lang: 'en' | 'ko'): Promise<string[]> {
-  // TODO: Implement template copying
-  // Copy from templates/ directory based on language
-  const installedPaths: string[] = [];
-
-  // Placeholder: These would be actual paths copied
-  // installedPaths.push(`${targetDir}/.claude/rules`);
-  // installedPaths.push(`${targetDir}/agents`);
-  // installedPaths.push(`${targetDir}/skills`);
-  // installedPaths.push(`${targetDir}/guides`);
-  // installedPaths.push(`${targetDir}/commands`);
-  // installedPaths.push(`${targetDir}/CLAUDE.md`);
-
-  return installedPaths;
+function logItems(items: string[], formatter: (item: string) => void): void {
+  for (const item of items) {
+    formatter(item);
+  }
 }
 
 /**
- * Create symlinks in refs/ directories
- * @param targetDir - Target directory
+ * Log installation success details
  */
-export async function createSymlinks(targetDir: string): Promise<void> {
-  // TODO: Implement symlink creation
-  // Create refs/ directories in agents with symlinks to skills/guides
+function logSuccessDetails(installedPaths: string[], skippedComponents: string[]): void {
+  console.log(i18n.t('cli.init.success'));
+  console.log('\nInstalled paths:');
+  logItems(installedPaths, (path) => console.log(`  - ${path}`));
+
+  if (skippedComponents.length > 0) {
+    console.log('\nSkipped (already exist):');
+    logItems(skippedComponents, (component) => console.log(`  - ${component}`));
+  }
 }
 
 /**
- * Verify installation by running doctor checks
- * @param targetDir - Target directory
- * @returns True if verification passed
+ * Create a failure result
  */
-export async function verifyInstallation(targetDir: string): Promise<boolean> {
-  // TODO: Import and run doctor checks
-  return true;
+function createFailureResult(errorMessage: string): InitResult {
+  return {
+    success: false,
+    message: i18n.t('cli.init.failed'),
+    errors: [errorMessage],
+  };
+}
+
+/**
+ * Handle existing installation notification
+ */
+function notifyExistingInstallation(): void {
+  console.log(i18n.t('cli.init.exists'));
+  console.log(i18n.t('cli.init.backing_up'));
+}
+
+/**
+ * Log backup and warning information from install result
+ */
+function logInstallResultInfo(result: InstallerResult): void {
+  logItems(result.backedUpPaths, (path) => console.log(i18n.t('cli.init.backedUp', { path })));
+  logItems(result.warnings, (warning) => console.warn(`Warning: ${warning}`));
 }
 
 /**
@@ -95,57 +118,39 @@ export async function verifyInstallation(targetDir: string): Promise<boolean> {
  */
 export async function initCommand(options: InitOptions): Promise<InitResult> {
   const targetDir = process.cwd();
-
   console.log(i18n.t('cli.init.start'));
 
   try {
-    // Step 1: Check for existing installation
     const exists = await checkExistingInstallation(targetDir);
-
     if (exists) {
-      console.log(i18n.t('cli.init.exists'));
-      // TODO: Implement interactive prompt for backup confirmation
-      // For now, auto-backup
-      const backupPath = await backupExisting(targetDir);
-      console.log(i18n.t('cli.init.backedUp', { path: backupPath }));
+      notifyExistingInstallation();
     }
 
-    // Step 2: Copy templates based on language
     console.log(i18n.t('cli.init.copying'));
-    const installedPaths = await copyTemplates(targetDir, options.lang);
+    const installResult = await install({
+      targetDir,
+      language: options.lang,
+      force: options.force ?? false,
+      backup: exists,
+    });
 
-    // Step 3: Create symlinks
-    console.log(i18n.t('cli.init.symlinking'));
-    await createSymlinks(targetDir);
-
-    // Step 4: Verify installation
-    console.log(i18n.t('cli.init.verifying'));
-    const verified = await verifyInstallation(targetDir);
-
-    if (verified) {
-      console.log(i18n.t('cli.init.success'));
-      return {
-        success: true,
-        message: i18n.t('cli.init.success'),
-        installedPaths,
-      };
+    if (!installResult.success) {
+      return createFailureResult(installResult.error || 'Unknown error');
     }
+
+    const installedPaths = buildInstalledPaths(targetDir, installResult.installedComponents);
+    logInstallResultInfo(installResult);
+    logSuccessDetails(installedPaths, installResult.skippedComponents);
 
     return {
-      success: false,
-      message: i18n.t('cli.init.verificationFailed'),
+      success: true,
+      message: i18n.t('cli.init.success'),
       installedPaths,
-      errors: [i18n.t('cli.init.verificationFailed')],
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(i18n.t('cli.init.failed'), errorMessage);
-
-    return {
-      success: false,
-      message: i18n.t('cli.init.failed'),
-      errors: [errorMessage],
-    };
+    return createFailureResult(errorMessage);
   }
 }
 

@@ -3,12 +3,14 @@
 metadata:
   name: creator
   type: manager
-  description: Creates new agents following design guidelines (R006)
+  description: Creates new agents with automatic authoritative reference research
 
 source:
   type: internal
 
 capabilities:
+  - Research authoritative documentation for target technology
+  - Find "Effective Go"-equivalent canonical references
   - Create agent structure (AGENT.md, index.yaml, refs/)
   - Separate concerns (agent vs skills vs guides)
   - Handle external agent integration
@@ -17,6 +19,12 @@ capabilities:
 required_rules:
   - R000: Language Policy
   - R006: Agent Design Rules
+
+required_tools:
+  - WebSearch: Research official documentation
+  - WebFetch: Fetch and verify documentation URLs
+  - Write: Create agent files
+  - Edit: Update registry
 
 triggers:
   - "create agent"
@@ -30,6 +38,29 @@ inputs:
     - type: worker | orchestrator | manager
     - purpose: What the agent does
   optional:
+    - technology: Target technology/language/framework (auto-detected if not provided)
     - source_url: GitHub URL for external agents
     - skills: List of required skills
     - guides: List of reference guides
+
+workflow:
+  phase_0_research:
+    description: Research authoritative references (MANDATORY for tech agents)
+    criteria:
+      priority:
+        - Official documentation (highest)
+        - Semi-official style guides
+        - Widely-recognized community standards
+      exclusions:
+        - Simple tutorials
+        - Beginner guides
+        - Outdated docs
+      target: "Effective Go"-equivalent canonical reference
+    output: refs/REFERENCES.md
+
+  phase_1_create:
+    description: Create agent structure with research results
+    output:
+      - AGENT.md (with Key References section)
+      - index.yaml (with references block)
+      - refs/REFERENCES.md

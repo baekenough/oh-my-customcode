@@ -133,11 +133,9 @@ interface CustomizationManifest {
 
 const CUSTOMIZATION_MANIFEST_FILE = '.omcc-customizations.json';
 
-/**
- * Update oh-my-customcode installation
- */
-export async function update(options: UpdateOptions): Promise<UpdateResult> {
-  const result: UpdateResult = {
+/** Create initial update result */
+function createUpdateResult(): UpdateResult {
+  return {
     success: false,
     updatedComponents: [],
     skippedComponents: [],
@@ -147,15 +145,86 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     newVersion: '',
     warnings: [],
   };
+}
+
+/** Handle backup if requested */
+async function handleBackupIfRequested(
+  targetDir: string,
+  backup: boolean,
+  result: UpdateResult
+): Promise<void> {
+  if (!backup) return;
+  const backupPath = await backupInstallation(targetDir);
+  result.backedUpPaths.push(backupPath);
+  info('update.backup_created', { path: backupPath });
+}
+
+/** Process a single component update */
+async function processComponentUpdate(
+  targetDir: string,
+  component: UpdateComponent,
+  updateCheck: UpdateCheckResult,
+  customizations: CustomizationManifest | null,
+  options: UpdateOptions,
+  result: UpdateResult
+): Promise<void> {
+  const componentUpdate = updateCheck.updatableComponents.find((c) => c.name === component);
+
+  if (!componentUpdate && !options.force) {
+    result.skippedComponents.push(component);
+    return;
+  }
+
+  if (options.dryRun) {
+    debug('update.dry_run', { component });
+    result.updatedComponents.push(component);
+    return;
+  }
+
+  try {
+    const preserved = await updateComponent(targetDir, component, customizations, options);
+    result.updatedComponents.push(component);
+    result.preservedFiles.push(...preserved);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    result.warnings.push(`Failed to update ${component}: ${message}`);
+    result.skippedComponents.push(component);
+  }
+}
+
+/** Update all components */
+async function updateAllComponents(
+  targetDir: string,
+  components: UpdateComponent[],
+  updateCheck: UpdateCheckResult,
+  customizations: CustomizationManifest | null,
+  options: UpdateOptions,
+  result: UpdateResult
+): Promise<void> {
+  for (const component of components) {
+    await processComponentUpdate(
+      targetDir,
+      component,
+      updateCheck,
+      customizations,
+      options,
+      result
+    );
+  }
+}
+
+/**
+ * Update oh-my-customcode installation
+ */
+export async function update(options: UpdateOptions): Promise<UpdateResult> {
+  const result = createUpdateResult();
 
   try {
     info('update.start', { targetDir: options.targetDir });
 
-    // Load current config
     const config = await loadConfig(options.targetDir);
     result.previousVersion = config.version;
 
-    // Check for updates
     const updateCheck = await checkForUpdates(options.targetDir);
     result.newVersion = updateCheck.latestVersion;
 
@@ -166,63 +235,29 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       return result;
     }
 
-    // Backup if requested
-    if (options.backup) {
-      const backupPath = await backupInstallation(options.targetDir);
-      result.backedUpPaths.push(backupPath);
-      info('update.backup_created', { path: backupPath });
-    }
+    await handleBackupIfRequested(options.targetDir, !!options.backup, result);
 
-    // Load customization manifest
-    let customizations: CustomizationManifest | null = null;
-    if (options.preserveCustomizations !== false) {
-      customizations = await loadCustomizationManifest(options.targetDir);
-    }
+    const customizations =
+      options.preserveCustomizations !== false
+        ? await loadCustomizationManifest(options.targetDir)
+        : null;
 
-    // Determine components to update
     const components = options.components || getAllUpdateComponents();
+    await updateAllComponents(
+      options.targetDir,
+      components,
+      updateCheck,
+      customizations,
+      options,
+      result
+    );
 
-    // Update each component
-    for (const component of components) {
-      const componentUpdate = updateCheck.updatableComponents.find((c) => c.name === component);
-
-      if (!componentUpdate && !options.force) {
-        result.skippedComponents.push(component);
-        continue;
-      }
-
-      if (options.dryRun) {
-        debug('update.dry_run', { component });
-        result.updatedComponents.push(component);
-        continue;
-      }
-
-      try {
-        const preserved = await updateComponent(
-          options.targetDir,
-          component,
-          customizations,
-          options
-        );
-        result.updatedComponents.push(component);
-        result.preservedFiles.push(...preserved);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        result.warnings.push(`Failed to update ${component}: ${message}`);
-        result.skippedComponents.push(component);
-      }
-    }
-
-    // Update config
     config.version = result.newVersion;
     config.lastUpdated = new Date().toISOString();
     await saveConfig(options.targetDir, config);
 
     result.success = true;
-    success('update.success', {
-      from: result.previousVersion,
-      to: result.newVersion,
-    });
+    success('update.success', { from: result.previousVersion, to: result.newVersion });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;

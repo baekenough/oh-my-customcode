@@ -44,13 +44,15 @@ export function createProgram(): Command {
       await updateCommand();
     });
 
-  // omcc list [type]
+  // omcc list [type] [--format table|json|simple]
   program
     .command('list')
     .description(i18n.t('cli.list.description'))
     .argument('[type]', i18n.t('cli.list.typeArgument'), 'all')
-    .action(async (type) => {
-      await listCommand(type);
+    .option('-f, --format <format>', 'Output format: table, json, or simple', 'table')
+    .option('--verbose', 'Show detailed information')
+    .action(async (type, options) => {
+      await listCommand(type, { format: options.format, verbose: options.verbose });
     });
 
   // omcc doctor

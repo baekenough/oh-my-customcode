@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Pre-commit hook for oh-my-customcode
+# Runs typecheck, lint, and tests before allowing commit
+
+echo "Running pre-commit checks..."
+
+# Run TypeScript type checking
+echo "Checking types..."
+bun run typecheck
+if [ $? -ne 0 ]; then
+    echo "Type check failed. Please fix the errors before committing."
+    exit 1
+fi
+
+# Run linter
+echo "Running linter..."
+bun run lint
+if [ $? -ne 0 ]; then
+    echo "Lint check failed. Run 'bun run lint:fix' to auto-fix issues."
+    exit 1
+fi
+
+# Run tests
+echo "Running tests..."
+bun test
+if [ $? -ne 0 ]; then
+    echo "Tests failed. Please fix the failing tests before committing."
+    exit 1
+fi
+
+echo "All pre-commit checks passed!"

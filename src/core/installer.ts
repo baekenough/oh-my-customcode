@@ -2,7 +2,8 @@
  * Installer module - Install/copy baekgom-agents templates
  */
 
-import { dirname, join } from 'node:path';
+import { copyFile as fsCopyFile, rename } from 'node:fs/promises';
+import { basename, dirname, join } from 'node:path';
 import {
   copyDirectory,
   ensureDirectory,
@@ -133,76 +134,175 @@ const COMPONENT_PATHS: Record<InstallComponent, string> = {
 };
 
 /**
- * Install oh-my-customcode templates to target directory
+ * Get the template directory path from the installed package
  */
-export async function install(options: InstallOptions): Promise<InstallResult> {
-  const result: InstallResult = {
+export function getTemplateDir(): string {
+  const packageRoot = getPackageRoot();
+  return join(packageRoot, 'templates');
+}
+
+/**
+ * Initialize result object for installation
+ */
+function createInstallResult(targetDir: string): InstallResult {
+  return {
     success: false,
-    installedPath: options.targetDir,
+    installedPath: targetDir,
     installedComponents: [],
     skippedComponents: [],
     backedUpPaths: [],
     warnings: [],
   };
+}
+
+/**
+ * Ensure target directory exists
+ */
+async function ensureTargetDirectory(targetDir: string): Promise<void> {
+  const targetExists = await fileExists(targetDir);
+  if (!targetExists) {
+    await ensureDirectory(targetDir);
+  }
+}
+
+/**
+ * Handle backup of existing installation
+ */
+async function handleBackup(
+  targetDir: string,
+  shouldBackup: boolean,
+  result: InstallResult
+): Promise<void> {
+  if (!shouldBackup) return;
+
+  const backupPaths = await backupExistingInstallation(targetDir);
+  result.backedUpPaths.push(...backupPaths);
+  if (backupPaths.length > 0) {
+    info('install.backup', { path: backupPaths[0] });
+  }
+}
+
+/**
+ * Check for existing files and add warnings if needed
+ */
+async function checkAndWarnExisting(
+  targetDir: string,
+  force: boolean,
+  backup: boolean,
+  result: InstallResult
+): Promise<void> {
+  if (force || backup) return;
+
+  const existingPaths = await checkExistingPaths(targetDir);
+  if (existingPaths.length > 0) {
+    warn('install.exists');
+    result.warnings.push(
+      `Existing files found: ${existingPaths.join(', ')}. Use --force to overwrite or --backup to backup first.`
+    );
+  }
+}
+
+/**
+ * Verify template directory exists
+ */
+async function verifyTemplateDirectory(): Promise<void> {
+  const templateDir = getTemplateDir();
+  if (!(await fileExists(templateDir))) {
+    throw new Error(`Template directory not found: ${templateDir}`);
+  }
+}
+
+/**
+ * Install all components and track results
+ */
+async function installAllComponents(
+  targetDir: string,
+  options: InstallOptions,
+  result: InstallResult
+): Promise<void> {
+  const components = options.components || getAllComponents();
+
+  for (const component of components) {
+    await installSingleComponent(targetDir, component, options, result);
+  }
+}
+
+/**
+ * Install a single component with error handling
+ */
+async function installSingleComponent(
+  targetDir: string,
+  component: InstallComponent,
+  options: InstallOptions,
+  result: InstallResult
+): Promise<void> {
+  try {
+    const installed = await installComponent(targetDir, component, options);
+    if (installed) {
+      result.installedComponents.push(component);
+    } else {
+      result.skippedComponents.push(component);
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    result.warnings.push(`Failed to install ${component}: ${message}`);
+  }
+}
+
+/**
+ * Install CLAUDE.md and track result
+ */
+async function installClaudeMdWithTracking(
+  targetDir: string,
+  options: InstallOptions,
+  result: InstallResult
+): Promise<void> {
+  const language = options.language || 'en';
+  const overwrite = !!(options.force || options.backup);
+  const installed = await installClaudeMd(targetDir, language, overwrite);
+
+  if (installed) {
+    result.installedComponents.push('claude-md');
+  } else {
+    result.skippedComponents.push('claude-md');
+  }
+}
+
+/**
+ * Update configuration after installation
+ */
+async function updateInstallConfig(
+  targetDir: string,
+  options: InstallOptions,
+  installedComponents: InstallComponent[]
+): Promise<void> {
+  const config = await loadConfig(targetDir);
+  config.language = options.language || 'en';
+  config.installedAt = new Date().toISOString();
+  config.installedComponents = installedComponents;
+  await saveConfig(targetDir, config);
+}
+
+/**
+ * Install oh-my-customcode templates to target directory
+ */
+export async function install(options: InstallOptions): Promise<InstallResult> {
+  const result = createInstallResult(options.targetDir);
 
   try {
     info('install.start', { targetDir: options.targetDir });
 
-    // Check if target directory exists
-    const targetExists = await fileExists(options.targetDir);
-    if (!targetExists) {
-      await ensureDirectory(options.targetDir);
-    }
+    await ensureTargetDirectory(options.targetDir);
+    await handleBackup(options.targetDir, !!options.backup, result);
+    await checkAndWarnExisting(options.targetDir, !!options.force, !!options.backup, result);
+    await verifyTemplateDirectory();
 
-    // Check for existing .claude directory
-    const claudeDir = join(options.targetDir, '.claude');
-    const claudeExists = await fileExists(claudeDir);
-
-    if (claudeExists && !options.force) {
-      if (options.backup) {
-        const backupPath = await backupExisting(claudeDir);
-        result.backedUpPaths.push(backupPath);
-        info('install.backup', { path: backupPath });
-      } else {
-        warn('install.exists');
-        result.warnings.push(
-          'Existing .claude/ directory found. Use --force to overwrite or --backup to backup first.'
-        );
-      }
-    }
-
-    // Create directory structure
     await createDirectoryStructure(options.targetDir);
     debug('install.directories_created');
 
-    // Determine components to install
-    const components = options.components || getAllComponents();
-
-    // Copy templates for each component
-    for (const component of components) {
-      try {
-        const installed = await installComponent(options.targetDir, component, options);
-        if (installed) {
-          result.installedComponents.push(component);
-        } else {
-          result.skippedComponents.push(component);
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        result.warnings.push(`Failed to install ${component}: ${message}`);
-      }
-    }
-
-    // Install CLAUDE.md with selected language
-    await installClaudeMd(options.targetDir, options.language || 'en');
-    result.installedComponents.push('claude-md');
-
-    // Update config
-    const config = await loadConfig(options.targetDir);
-    config.language = options.language || 'en';
-    config.installedAt = new Date().toISOString();
-    config.installedComponents = result.installedComponents;
-    await saveConfig(options.targetDir, config);
+    await installAllComponents(options.targetDir, options, result);
+    await installClaudeMdWithTracking(options.targetDir, options, result);
+    await updateInstallConfig(options.targetDir, options, result.installedComponents);
 
     result.success = true;
     success('install.success');
@@ -221,13 +321,15 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 export async function copyTemplates(
   targetDir: string,
   templatePath: string,
-  options?: { overwrite?: boolean }
+  options?: { overwrite?: boolean; preserveSymlinks?: boolean }
 ): Promise<void> {
   const srcPath = resolveTemplatePath(templatePath);
   const destPath = join(targetDir, templatePath);
 
   await copyDirectory(srcPath, destPath, {
     overwrite: options?.overwrite ?? false,
+    preserveSymlinks: options?.preserveSymlinks ?? true,
+    preserveTimestamps: true,
   });
 }
 
@@ -289,7 +391,8 @@ async function installComponent(
   const destPath = join(targetDir, templatePath);
   const destExists = await fileExists(destPath);
 
-  if (destExists && !options.force) {
+  // Skip if exists and not forcing/backing up
+  if (destExists && !options.force && !options.backup) {
     debug('install.component_skipped', { component });
     return false;
   }
@@ -300,7 +403,12 @@ async function installComponent(
     return false;
   }
 
-  await copyDirectory(srcPath, destPath, { overwrite: options.force ?? false });
+  // Copy with symlink preservation for refs/ directories
+  await copyDirectory(srcPath, destPath, {
+    overwrite: !!(options.force || options.backup),
+    preserveSymlinks: true,
+    preserveTimestamps: true,
+  });
   debug('install.component_installed', { component });
   return true;
 }
@@ -308,27 +416,99 @@ async function installComponent(
 /**
  * Install CLAUDE.md with the selected language
  */
-async function installClaudeMd(targetDir: string, language: 'en' | 'ko'): Promise<void> {
+async function installClaudeMd(
+  targetDir: string,
+  language: 'en' | 'ko',
+  overwrite = false
+): Promise<boolean> {
   const templateFile = `CLAUDE.md.${language}`;
   const srcPath = resolveTemplatePath(templateFile);
   const destPath = join(targetDir, 'CLAUDE.md');
 
-  if (await fileExists(srcPath)) {
-    const fs = await import('node:fs/promises');
-    await fs.copyFile(srcPath, destPath);
-    debug('install.claude_md_installed', { language });
-  } else {
-    warn('install.claude_md_not_found', { language });
+  // Check if source template exists
+  if (!(await fileExists(srcPath))) {
+    warn('install.claude_md_not_found', { language, path: srcPath });
+    return false;
   }
+
+  // Check if destination exists and we're not overwriting
+  const destExists = await fileExists(destPath);
+  if (destExists && !overwrite) {
+    debug('install.claude_md_skipped', { reason: 'exists', language });
+    return false;
+  }
+
+  // Copy the template file to CLAUDE.md
+  await fsCopyFile(srcPath, destPath);
+  debug('install.claude_md_installed', { language });
+  return true;
 }
 
 /**
- * Backup existing directory
+ * Backup existing directory or file
  */
-async function backupExisting(path: string): Promise<string> {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupPath = `${path}.backup.${timestamp}`;
-  const fs = await import('node:fs/promises');
-  await fs.rename(path, backupPath);
+async function backupExisting(sourcePath: string, backupDir: string): Promise<string> {
+  const name = basename(sourcePath);
+  const backupPath = join(backupDir, name);
+
+  await rename(sourcePath, backupPath);
   return backupPath;
+}
+
+/**
+ * Check which installation paths already exist
+ */
+async function checkExistingPaths(targetDir: string): Promise<string[]> {
+  const pathsToCheck = [
+    'CLAUDE.md',
+    '.claude',
+    'agents',
+    'skills',
+    'guides',
+    'pipelines',
+    'commands',
+  ];
+
+  const existingPaths: string[] = [];
+
+  for (const relativePath of pathsToCheck) {
+    const fullPath = join(targetDir, relativePath);
+    if (await fileExists(fullPath)) {
+      existingPaths.push(relativePath);
+    }
+  }
+
+  return existingPaths;
+}
+
+/**
+ * Backup existing installation files to a timestamped directory
+ */
+async function backupExistingInstallation(targetDir: string): Promise<string[]> {
+  const existingPaths = await checkExistingPaths(targetDir);
+
+  if (existingPaths.length === 0) {
+    return [];
+  }
+
+  // Create backup directory with timestamp
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupDir = join(targetDir, `.claude-backup-${timestamp}`);
+  await ensureDirectory(backupDir);
+
+  const backedUpPaths: string[] = [];
+
+  for (const relativePath of existingPaths) {
+    const fullPath = join(targetDir, relativePath);
+    try {
+      const backupPath = await backupExisting(fullPath, backupDir);
+      backedUpPaths.push(backupPath);
+      debug('install.backed_up', { from: relativePath, to: backupPath });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      warn('install.backup_failed', { path: relativePath, error: message });
+    }
+  }
+
+  return backedUpPaths.length > 0 ? [backupDir] : [];
 }

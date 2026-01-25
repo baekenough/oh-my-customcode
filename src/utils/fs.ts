@@ -17,6 +17,8 @@ export interface CopyOptions {
   include?: string[];
   /** Preserve file timestamps */
   preserveTimestamps?: boolean;
+  /** Preserve symlinks instead of following them */
+  preserveSymlinks?: boolean;
 }
 
 /**
@@ -41,6 +43,102 @@ export async function ensureDirectory(path: string): Promise<void> {
 }
 
 /**
+ * Check if entry should be skipped based on include/exclude patterns
+ */
+function shouldSkipEntry(entryName: string, options: CopyOptions): boolean {
+  if (options.exclude?.some((pattern) => matchesPattern(entryName, pattern))) {
+    return true;
+  }
+  if (options.include && !options.include.some((pattern) => matchesPattern(entryName, pattern))) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Handle copying a symlink entry
+ */
+async function handleSymlink(
+  srcPath: string,
+  destPath: string,
+  options: CopyOptions,
+  fs: typeof import('node:fs/promises')
+): Promise<void> {
+  const destExists = await fileExists(destPath);
+  if (destExists && !options.overwrite) {
+    return;
+  }
+
+  if (options.preserveSymlinks !== false) {
+    await copyPreservedSymlink(srcPath, destPath, destExists, fs);
+  } else {
+    await copyFollowedSymlink(srcPath, destPath, destExists, options, fs);
+  }
+}
+
+/**
+ * Copy symlink while preserving the link
+ */
+async function copyPreservedSymlink(
+  srcPath: string,
+  destPath: string,
+  destExists: boolean,
+  fs: typeof import('node:fs/promises')
+): Promise<void> {
+  const linkTarget = await fs.readlink(srcPath);
+  if (destExists) {
+    await fs.unlink(destPath);
+  }
+  await fs.symlink(linkTarget, destPath);
+}
+
+/**
+ * Copy symlink by following it and copying the actual content
+ */
+async function copyFollowedSymlink(
+  srcPath: string,
+  destPath: string,
+  destExists: boolean,
+  options: CopyOptions,
+  fs: typeof import('node:fs/promises')
+): Promise<void> {
+  const realPath = await fs.realpath(srcPath);
+  const stat = await fs.stat(realPath);
+
+  if (stat.isDirectory()) {
+    await copyDirectory(realPath, destPath, options);
+    return;
+  }
+
+  if (destExists) {
+    await fs.unlink(destPath);
+  }
+  await fs.copyFile(realPath, destPath);
+}
+
+/**
+ * Handle copying a regular file entry
+ */
+async function handleFile(
+  srcPath: string,
+  destPath: string,
+  options: CopyOptions,
+  fs: typeof import('node:fs/promises')
+): Promise<void> {
+  const destExists = await fileExists(destPath);
+  if (destExists && !options.overwrite) {
+    return;
+  }
+
+  await fs.copyFile(srcPath, destPath);
+
+  if (options.preserveTimestamps) {
+    const stats = await fs.stat(srcPath);
+    await fs.utimes(destPath, stats.atime, stats.mtime);
+  }
+}
+
+/**
  * Copy a directory recursively
  */
 export async function copyDirectory(
@@ -51,47 +149,24 @@ export async function copyDirectory(
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
 
-  // Ensure destination directory exists
   await ensureDirectory(dest);
 
-  // Read source directory
   const entries = await fs.readdir(src, { withFileTypes: true });
 
   for (const entry of entries) {
+    if (shouldSkipEntry(entry.name, options)) {
+      continue;
+    }
+
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
 
-    // Check exclusions
-    if (options.exclude?.some((pattern) => matchesPattern(entry.name, pattern))) {
-      continue;
-    }
-
-    // Check inclusions (if specified)
-    if (
-      options.include &&
-      !options.include.some((pattern) => matchesPattern(entry.name, pattern))
-    ) {
-      continue;
-    }
-
-    if (entry.isDirectory()) {
-      // Recursively copy directory
+    if (entry.isSymbolicLink()) {
+      await handleSymlink(srcPath, destPath, options, fs);
+    } else if (entry.isDirectory()) {
       await copyDirectory(srcPath, destPath, options);
-    } else {
-      // Check if file exists and overwrite option
-      const destExists = await fileExists(destPath);
-      if (destExists && !options.overwrite) {
-        continue;
-      }
-
-      // Copy file
-      await fs.copyFile(srcPath, destPath);
-
-      // Preserve timestamps if requested
-      if (options.preserveTimestamps) {
-        const stats = await fs.stat(srcPath);
-        await fs.utimes(destPath, stats.atime, stats.mtime);
-      }
+    } else if (entry.isFile()) {
+      await handleFile(srcPath, destPath, options, fs);
     }
   }
 }

@@ -30,7 +30,7 @@ agents:
   manager:
     - name: creator
       path: ./manager/creator/
-      description: Creates new agents following design guidelines
+      description: Creates new agents with automatic authoritative reference research
       source:
         type: internal
 

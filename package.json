@@ -26,11 +26,14 @@
     "typecheck": "tsc --noEmit",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
+    "prepare": "sh scripts/setup-hooks.sh || true",
+    "setup:hooks": "sh scripts/setup-hooks.sh",
     "prepublishOnly": "bun run build && bun run test"
   },
   "dependencies": {
     "commander": "^12.1.0",
-    "i18next": "^24.2.2"
+    "i18next": "^24.2.2",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
