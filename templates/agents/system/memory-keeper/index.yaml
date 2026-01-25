@@ -1,0 +1,45 @@
+# Memory Keeper Agent
+
+metadata:
+  name: memory-keeper
+  type: system
+  description: Manages session memory persistence using claude-mem
+
+source:
+  type: internal
+
+capabilities:
+  - Save session context to claude-mem
+  - Restore context on session start
+  - Query memories semantically with project scope
+  - Tag memories with project, session, and task metadata
+  - Manage memory lifecycle (create, read, archive)
+
+required_rules:
+  - R000: Language Policy
+  - R007: Agent Identification
+  - R008: Tool Identification
+  - R011: Memory Integration
+
+triggers:
+  - "memory:save"
+  - "memory:recall"
+  - PreCompact hook
+  - SessionStart hook
+
+storage:
+  provider: claude-mem
+  collection: claude_memories
+  project_tag: baekgom-agents
+
+skills:
+  - name: memory-management
+    category: system
+    path: ../../../../skills/system/memory-management
+
+inputs:
+  required: []
+  optional:
+    - query: Search query for recall operations
+    - tags: Additional tags for save operations
+    - include_code: Whether to include code changes in save

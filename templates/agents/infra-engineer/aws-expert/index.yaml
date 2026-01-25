@@ -1,0 +1,27 @@
+# AWS Expert Agent
+
+metadata:
+  name: aws-expert
+  type: infra-engineer
+  description: Expert AWS cloud architect with Well-Architected Framework
+
+source:
+  type: internal
+
+capabilities:
+  - Design AWS architecture
+  - Implement infrastructure as code
+  - Configure networking
+  - Set up compute services
+  - Implement security
+  - Cost optimization
+
+skills:
+  - name: aws-best-practices
+    path: ../../../skills/infrastructure/aws-best-practices/
+    required: true
+
+guides:
+  - name: aws
+    path: ../../../guides/aws/
+    required: true

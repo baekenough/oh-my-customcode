@@ -1,0 +1,11 @@
+name: priority
+agent: naggy
+description: Set task priority level
+usage: naggy:priority <id> <level>
+arguments:
+  - name: id
+    required: true
+    description: Task ID to update
+  - name: level
+    required: true
+    description: Priority level (high, medium, low)

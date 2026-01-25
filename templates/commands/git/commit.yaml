@@ -1,0 +1,4 @@
+name: commit
+agent: gitnerd
+description: Create a proper commit with conventional message format
+usage: git:commit

@@ -1,0 +1,43 @@
+# Vercel Agent
+# External agent from vercel-labs/agent-skills
+
+metadata:
+  name: vercel-agent
+  type: sw-engineer/frontend
+  description: Frontend development agent with React/Next.js optimization, web design review, and Vercel deployment capabilities
+
+source:
+  type: external
+  origin: github
+  url: https://github.com/vercel-labs/agent-skills
+  version: "1.0.0"
+  last_updated: "2025-01-22"
+  update_command: "npx add-skill vercel-labs/agent-skills"
+  changelog_url: https://github.com/vercel-labs/agent-skills/releases
+
+skills:
+  - name: react-best-practices
+    category: development
+    path: ../../../../skills/development/react-best-practices
+
+  - name: web-design-guidelines
+    category: development
+    path: ../../../../skills/development/web-design-guidelines
+
+  - name: vercel-deploy
+    category: development
+    path: ../../../../skills/development/vercel-deploy
+
+capabilities:
+  - React/Next.js performance optimization
+  - UI code review (accessibility, UX)
+  - Vercel deployment automation
+  - Bundle size optimization
+  - Web design best practices
+
+triggers:
+  - "React optimization"
+  - "UI review"
+  - "Deploy to Vercel"
+  - "Performance check"
+  - "Accessibility audit"

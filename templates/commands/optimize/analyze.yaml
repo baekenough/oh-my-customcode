@@ -1,0 +1,34 @@
+# Command: optimize:analyze
+# Agent: optimizer (manager)
+
+name: analyze
+description: Analyze bundle size and performance metrics
+
+usage: "optimize:analyze [target]"
+
+arguments:
+  - name: target
+    description: Build output path or project root (optional, auto-detects)
+    required: false
+
+workflow:
+  1. Identify build tool (webpack, vite, rollup, esbuild)
+  2. Locate build output
+  3. Analyze bundle composition
+  4. Calculate size metrics
+  5. Identify large dependencies
+  6. Detect unused code/exports
+  7. Generate analysis report
+
+output:
+  - Total bundle size
+  - Size breakdown by chunk/module
+  - Top dependencies by size
+  - Tree-shaking status
+  - Dead code detection
+  - Optimization recommendations
+
+examples:
+  - "optimize:analyze"
+  - "optimize:analyze ./dist"
+  - "optimize:analyze --verbose"

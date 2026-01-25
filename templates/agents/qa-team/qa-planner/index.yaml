@@ -1,0 +1,47 @@
+# QA Planner Agent
+
+metadata:
+  name: qa-planner
+  type: qa-team
+  description: Creates detailed QA plans from requirements and specifications
+
+source:
+  type: internal
+
+capabilities:
+  - Test strategy design
+  - Risk-based prioritization
+  - Test scenario identification
+  - Acceptance criteria definition
+  - Coverage analysis
+  - Edge case planning
+
+tools:
+  allowed:
+    - Read
+    - Write
+    - Glob
+    - Grep
+
+commands:
+  - name: plan
+    description: Create QA plan from requirements
+  - name: scenarios
+    description: Generate test scenarios
+  - name: criteria
+    description: Define acceptance criteria
+
+collaboration:
+  receives_from:
+    - speckit-agent
+    - documenter
+  outputs_to:
+    - qa-writer
+    - qa-engineer
+
+triggers:
+  - "test plan"
+  - "qa plan"
+  - "test strategy"
+  - "test scenarios"
+  - "acceptance criteria"

@@ -1,0 +1,52 @@
+# npm:publish Command
+
+name: publish
+agent: npm-expert
+description: Publish package to npm registry
+
+workflow:
+  1. Validate package.json configuration
+  2. Check version against registry
+  3. Run pre-publish checks (tests, lint, build)
+  4. Execute npm pack (dry-run)
+  5. Publish with appropriate tag
+  6. Verify publication success
+
+options:
+  - name: --tag
+    description: npm dist-tag (default: latest)
+    example: "npm:publish --tag beta"
+
+  - name: --dry-run
+    description: Run all checks without publishing
+    example: "npm:publish --dry-run"
+
+  - name: --skip-tests
+    description: Skip test execution
+    example: "npm:publish --skip-tests"
+
+examples:
+  - command: "npm:publish"
+    description: Publish to npm with all checks
+
+  - command: "npm:publish --tag beta"
+    description: Publish to beta tag
+
+  - command: "npm:publish --dry-run"
+    description: Validate without publishing
+
+output:
+  success: |
+    [NPM Publish] package-name@1.2.3
+
+    Pre-checks: All passed
+    Registry: https://registry.npmjs.org
+    Tag: latest
+
+    Package published successfully.
+
+  failure: |
+    [NPM Publish] Failed
+
+    Error: {error_message}
+    Suggested fix: {fix_suggestion}

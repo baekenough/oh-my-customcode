@@ -1,0 +1,27 @@
+# HUD Statusline Hooks
+# Provides real-time status display during agent operations
+
+name: hud-statusline
+description: Real-time status display during operations
+rule: R012 (SHOULD-hud-statusline)
+
+scripts:
+  - name: update-status
+    path: ./update-status.sh
+    description: Update HUD statusline with agent/progress/parallel info
+    usage: update-status.sh <agent> [progress] [parallel_count]
+
+triggers:
+  - PreToolUse (Task)
+  - PostToolUse (Task)
+  - Agent activation
+  - Parallel spawn/complete
+
+components:
+  agent: Current agent name
+  progress: Task progress (n/total)
+  parallel: Parallel instance count
+
+installation:
+  step1: "chmod +x ~/.claude/hooks/hud/update-status.sh"
+  step2: "Hook is called automatically or manually via script"

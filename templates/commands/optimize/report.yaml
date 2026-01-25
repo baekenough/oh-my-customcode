@@ -1,0 +1,56 @@
+# Command: optimize:report
+# Agent: optimizer (manager)
+
+name: report
+description: Generate comprehensive optimization report
+
+usage: "optimize:report [options]"
+
+arguments:
+  - name: --baseline
+    description: Compare against previous report
+    required: false
+  - name: --format
+    description: Output format (text, json, markdown)
+    required: false
+    default: text
+
+workflow:
+  1. Run full analysis
+  2. Collect all metrics
+  3. Compare against baseline (if provided)
+  4. Calculate performance scores
+  5. Generate recommendations
+  6. Format report
+
+report_sections:
+  - Bundle Analysis
+    - Total size (raw and gzipped)
+    - Chunk breakdown
+    - Dependency tree
+  - Performance Metrics
+    - Estimated load times
+    - Core Web Vitals impact
+    - Build performance
+  - Code Quality
+    - Tree-shaking effectiveness
+    - Dead code percentage
+    - Duplicate code detection
+  - Recommendations
+    - High impact optimizations
+    - Quick wins
+    - Long-term improvements
+  - Comparison (if baseline)
+    - Size delta
+    - Performance delta
+    - Trend analysis
+
+output:
+  - Formatted report in requested format
+  - Performance grade (A-F)
+  - Priority action items
+
+examples:
+  - "optimize:report"
+  - "optimize:report --baseline ./previous-report.json"
+  - "optimize:report --format markdown"

@@ -1,0 +1,32 @@
+metadata:
+  name: sync-checker
+  type: manager
+  version: 1.0.0
+  description: Documentation synchronization verification agent
+
+source:
+  type: internal
+
+capabilities:
+  - agent_verification
+  - command_verification
+  - documentation_sync
+
+tools:
+  allowed:
+    - Read
+    - Glob
+    - Grep
+
+commands:
+  - name: check
+  - name: agents
+  - name: commands
+  - name: docs
+  - name: fix
+
+triggers:
+  - "sync check"
+  - "check sync"
+  - "verify docs"
+  - "documentation sync"

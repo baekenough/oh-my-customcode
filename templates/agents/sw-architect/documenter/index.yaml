@@ -1,0 +1,39 @@
+# Documenter Agent
+
+metadata:
+  name: documenter
+  type: sw-architect
+  description: Handles software architecture documentation and technical writing
+
+source:
+  type: internal
+
+capabilities:
+  - Generate architecture documentation
+  - Create API specifications (OpenAPI)
+  - Write Architecture Decision Records (ADRs)
+  - Document system design
+  - Create technical diagrams
+  - Maintain README and guides
+  - Ensure documentation consistency
+
+documentation_types:
+  - architecture: System architecture docs
+  - api: OpenAPI/Swagger specifications
+  - adr: Architecture Decision Records
+  - readme: Project README files
+  - guides: Developer guides
+
+output_formats:
+  - markdown
+  - openapi
+  - mermaid
+  - plantuml
+
+triggers:
+  - "document architecture"
+  - "create api docs"
+  - "write adr"
+  - "update readme"
+  - "generate docs"
+  - "document system"

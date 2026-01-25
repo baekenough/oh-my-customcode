@@ -1,0 +1,30 @@
+# Intent Detection Skill
+
+metadata:
+  name: intent-detection
+  category: orchestration
+  description: Automatically detect user intent and route to appropriate agent
+
+source:
+  type: internal
+
+provides:
+  - Keyword extraction from user input
+  - Action verb detection (Korean + English)
+  - File pattern matching
+  - Agent matching with confidence scores
+  - Transparent reasoning display
+  - Override support (@agent syntax)
+
+patterns:
+  location: ./patterns/agent-triggers.yaml
+
+thresholds:
+  auto_execute: 90
+  confirm: 70
+  unclear: 30
+
+used_by:
+  - secretary
+
+rule: R015

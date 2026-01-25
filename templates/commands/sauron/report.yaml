@@ -1,0 +1,4 @@
+name: report
+agent: sauron
+description: Generate verification status report
+usage: sauron:report

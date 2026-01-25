@@ -1,0 +1,225 @@
+# Baekgom Agents - Command Registry
+
+# Commands format: {agent}:{action}
+# Example: updater:docs, supplier:audit, creator:agent
+
+commands:
+  # System commands (no agent prefix)
+  system:
+    - name: lists
+      path: ./system/lists.md
+      description: Show all available commands
+
+    - name: status
+      path: ./system/status.md
+      description: Show system status
+
+    - name: help
+      path: ./system/help.md
+      description: Show help information
+
+  # Creator commands
+  creator:
+    - name: agent
+      path: ./creator/agent.md
+      description: Create a new agent
+      full_command: "creator:agent"
+
+  # Updater commands
+  updater:
+    - name: docs
+      path: ./updater/docs.md
+      description: Sync documentation with project structure
+      full_command: "updater:docs"
+
+    - name: external
+      path: ./updater/external.md
+      description: Update agents from external sources
+      full_command: "updater:external"
+
+  # Supplier commands
+  supplier:
+    - name: audit
+      path: ./supplier/audit.md
+      description: Audit agent dependencies
+      full_command: "supplier:audit"
+
+    - name: fix
+      path: ./supplier/fix.md
+      description: Fix broken references
+      full_command: "supplier:fix"
+
+  # Dev commands (language-agnostic)
+  dev:
+    - name: review
+      path: ./dev/review.md
+      description: Review code for best practices
+      full_command: "dev:review"
+
+    - name: refactor
+      path: ./dev/refactor.md
+      description: Refactor code
+      full_command: "dev:refactor"
+
+  # Memory commands
+  memory:
+    - name: save
+      path: ./memory/save.md
+      description: Save current session context to claude-mem
+      full_command: "memory:save"
+
+    - name: recall
+      path: ./memory/recall.md
+      description: Search and recall relevant memories
+      full_command: "memory:recall"
+
+  # Pipeline commands
+  pipeline:
+    - name: run
+      path: ./pipeline/run.md
+      description: Execute a defined pipeline
+      full_command: "pipeline:run"
+
+    - name: list
+      path: ./pipeline/list.md
+      description: List available pipelines
+      full_command: "pipeline:list"
+
+  # Intent commands
+  intent:
+    - name: explain
+      path: ./intent/explain.md
+      description: Explain intent detection system
+      full_command: "intent:explain"
+
+  # Naggy commands (TODO management)
+  naggy:
+    - name: list
+      path: ./naggy/list.yaml
+      description: List all pending TODOs
+      full_command: "naggy:list"
+
+    - name: add
+      path: ./naggy/add.yaml
+      description: Add new TODO item
+      full_command: "naggy:add"
+
+    - name: done
+      path: ./naggy/done.yaml
+      description: Mark task as complete
+      full_command: "naggy:done"
+
+    - name: priority
+      path: ./naggy/priority.yaml
+      description: Set task priority
+      full_command: "naggy:priority"
+
+    - name: remind
+      path: ./naggy/remind.yaml
+      description: Show overdue tasks
+      full_command: "naggy:remind"
+
+  # Git commands (gitnerd)
+  git:
+    - name: commit
+      path: ./git/commit.yaml
+      description: Create a proper commit with conventional message format
+      full_command: "git:commit"
+
+    - name: branch
+      path: ./git/branch.yaml
+      description: Create feature branch
+      full_command: "git:branch"
+
+    - name: pr
+      path: ./git/pr.yaml
+      description: Create pull request
+      full_command: "git:pr"
+
+    - name: sync
+      path: ./git/sync.yaml
+      description: Sync with remote
+      full_command: "git:sync"
+
+    - name: status
+      path: ./git/status.yaml
+      description: Show detailed git status
+      full_command: "git:status"
+
+  # Optimize commands (optimizer)
+  optimize:
+    - name: analyze
+      path: ./optimize/analyze.yaml
+      description: Analyze bundle and performance metrics
+      full_command: "optimize:analyze"
+
+    - name: bundle
+      path: ./optimize/bundle.yaml
+      description: Apply bundle optimizations
+      full_command: "optimize:bundle"
+
+    - name: report
+      path: ./optimize/report.yaml
+      description: Generate comprehensive optimization report
+      full_command: "optimize:report"
+
+  # NPM commands (npm-expert)
+  npm:
+    - name: publish
+      path: ./npm/publish.yaml
+      description: Publish package to npm registry
+      full_command: "npm:publish"
+
+    - name: version
+      path: ./npm/version.yaml
+      description: Manage semantic versions (major/minor/patch)
+      full_command: "npm:version"
+
+    - name: audit
+      path: ./npm/audit.yaml
+      description: Audit dependencies for security and updates
+      full_command: "npm:audit"
+
+  # Sauron commands (verification)
+  sauron:
+    - name: watch
+      path: ./sauron/watch.yaml
+      description: Full R017 verification (5+3 rounds)
+      full_command: "sauron:watch"
+
+    - name: quick
+      path: ./sauron/quick.yaml
+      description: Quick verification (single pass)
+      full_command: "sauron:quick"
+
+    - name: report
+      path: ./sauron/report.yaml
+      description: Generate verification status report
+      full_command: "sauron:report"
+
+  # Sync commands (sync-checker)
+  sync:
+    - name: check
+      path: ./sync/check.yaml
+      description: Run full synchronization check
+      full_command: "sync:check"
+
+    - name: agents
+      path: ./sync/agents.yaml
+      description: Check agent registry sync
+      full_command: "sync:agents"
+
+    - name: commands
+      path: ./sync/commands.yaml
+      description: Check command registry sync
+      full_command: "sync:commands"
+
+    - name: docs
+      path: ./sync/docs.yaml
+      description: Check documentation sync
+      full_command: "sync:docs"
+
+    - name: fix
+      path: ./sync/fix.yaml
+      description: Auto-fix simple inconsistencies
+      full_command: "sync:fix"

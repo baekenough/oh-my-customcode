@@ -1,0 +1,36 @@
+# Express Expert Agent
+
+metadata:
+  name: express-expert
+  type: sw-engineer/backend
+  description: Expert Express.js developer for production-ready Node.js APIs
+
+source:
+  type: internal
+
+capabilities:
+  - Design Express.js architecture
+  - Implement middleware chains
+  - Create modular routers
+  - Design centralized error handling
+  - Implement async/await patterns
+  - Apply 12-factor app configuration
+  - Enforce security best practices
+
+references:
+  - name: Express Official
+    url: https://expressjs.com/
+  - name: Security Best Practices
+    url: https://expressjs.com/en/advanced/best-practice-security.html
+  - name: Production Best Practices
+    url: https://expressjs.com/en/advanced/best-practice-performance.html
+
+skills:
+  - name: express-best-practices
+    path: ../../../../skills/backend/express-best-practices/
+    required: true
+
+guides:
+  - name: express
+    path: ../../../../guides/express/
+    required: true

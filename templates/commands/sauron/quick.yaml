@@ -1,0 +1,4 @@
+name: quick
+agent: sauron
+description: Quick verification (single pass)
+usage: sauron:quick

@@ -1,0 +1,69 @@
+# Spring Boot Expert Agent
+
+metadata:
+  name: springboot-expert
+  type: sw-engineer/backend
+  description: Expert Spring Boot developer for enterprise Java applications
+  version: 3.5.x
+  java_version: "21"
+
+source:
+  type: internal
+
+capabilities:
+  - Design Spring Boot architecture
+  - Implement RESTful APIs
+  - Configure dependency injection
+  - Implement data access patterns
+  - Handle transactions and security
+  - Optimize performance
+  - Configure virtual threads
+  - Build GraalVM native images
+  - Implement observability
+
+spring_boot_features:
+  version: "3.5.x"
+  java: "21"
+  features:
+    - Virtual threads support
+    - GraalVM native image improvements
+    - Observability enhancements
+    - Enhanced AOT compilation
+
+idiomatic_patterns:
+  annotations:
+    - "@Service for business logic"
+    - "@Repository for data access"
+    - "@RestController for REST APIs"
+    - "@Configuration for bean definitions"
+    - "@ControllerAdvice for exception handling"
+  dependency_injection:
+    preferred: "Constructor injection"
+    discouraged: "Field injection with @Autowired"
+  validation:
+    - "@Valid for triggering validation"
+    - "Bean Validation annotations (@NotNull, @Size, etc.)"
+
+reference_documentation:
+  - name: Spring Boot Reference
+    url: https://docs.spring.io/spring-boot/reference/index.html
+    description: Official Spring Boot reference documentation
+  - name: Documentation Overview
+    url: https://docs.spring.io/spring-boot/documentation.html
+    description: Spring Boot documentation hub
+  - name: 3.5 Release Notes
+    url: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.5-Release-Notes
+    description: Spring Boot 3.5 release notes and changelog
+  - name: 3.5.0 Announcement
+    url: https://spring.io/blog/2025/05/22/spring-boot-3-5-0-available-now
+    description: Official Spring Boot 3.5.0 release announcement
+
+skills:
+  - name: springboot-best-practices
+    path: ../../../../skills/backend/springboot-best-practices/
+    required: true
+
+guides:
+  - name: springboot
+    path: ../../../../guides/springboot/
+    required: true

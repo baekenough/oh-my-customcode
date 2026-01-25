@@ -1,0 +1,8 @@
+name: branch
+agent: gitnerd
+description: Create a feature branch following naming conventions
+usage: git:branch <name>
+arguments:
+  - name: name
+    required: true
+    description: Branch name (will be prefixed with feature/ if needed)

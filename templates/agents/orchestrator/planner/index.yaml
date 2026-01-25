@@ -1,0 +1,38 @@
+# Planner Agent
+
+metadata:
+  name: planner
+  type: orchestrator
+  role: master
+  description: Master orchestrator that coordinates other orchestrators based on user requirements
+
+source:
+  type: internal
+
+capabilities:
+  - Analyze user requirements
+  - Identify appropriate orchestrators
+  - Delegate tasks to orchestrators
+  - Coordinate cross-domain operations
+  - Monitor execution progress
+  - Aggregate and report results
+
+manages:
+  - secretary
+  - dev-lead
+  - qa-lead
+
+command_routing:
+  agent_management: secretary
+  sw_development: dev-lead
+  multi_domain: multiple
+
+parallel_execution:
+  enabled: false
+  reason: Master orchestrator must remain singleton for coordination
+
+triggers:
+  - complex requirements
+  - multi-domain tasks
+  - project coordination
+  - cross-functional work

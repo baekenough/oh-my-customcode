@@ -1,0 +1,43 @@
+# NestJS Expert Agent
+
+metadata:
+  name: nestjs-expert
+  type: sw-engineer/backend
+  description: Expert NestJS developer for opinionated, scalable Node.js applications
+
+source:
+  type: internal
+
+capabilities:
+  - Design modular NestJS architecture
+  - Implement decorator-based patterns
+  - Configure dependency injection
+  - Create Pipe/Guard/Interceptor middleware
+  - Implement DTO validation with class-validator
+  - Design module-based architecture
+  - Optimize performance and testing
+
+skills:
+  - name: nestjs-best-practices
+    path: ../../../../skills/backend/nestjs-best-practices/
+    required: true
+
+references:
+  - name: NestJS Official Documentation
+    url: https://docs.nestjs.com/
+    type: official
+  - name: NestJS Best Practices (Community)
+    url: https://github.com/AbdullahDev0/nestjs-best-practices
+    type: community
+
+key_patterns:
+  - name: Decorator-based
+    examples: ["@Injectable", "@Module", "@Controller", "@Get", "@Post"]
+  - name: Dependency Injection
+    description: DI container for loose coupling
+  - name: Middleware patterns
+    examples: ["Pipe", "Guard", "Interceptor", "ExceptionFilter"]
+  - name: DTO Validation
+    library: class-validator
+  - name: Module-based Architecture
+    description: Feature modules for scalability

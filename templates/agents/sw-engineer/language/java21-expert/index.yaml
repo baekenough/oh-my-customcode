@@ -1,0 +1,51 @@
+# Java 21 Expert Agent
+
+metadata:
+  name: java21-expert
+  type: sw-engineer/language
+  description: Expert Java 21 developer specialized in modern Java features
+
+source:
+  type: internal
+
+capabilities:
+  - Write modern Java 21 code
+  - Implement Virtual Threads (JEP 444)
+  - Apply Pattern Matching for switch
+  - Use Record Patterns (JEP 440)
+  - Leverage Sequenced Collections (JEP 431)
+  - Follow Google Java Style Guide
+  - Migrate legacy Java to Java 21
+
+features:
+  - name: Virtual Threads
+    jep: JEP 444
+    description: Lightweight threads for scalable concurrency
+  - name: Pattern Matching for switch
+    description: Exhaustive switch with type patterns
+  - name: Record Patterns
+    jep: JEP 440
+    description: Deconstruct record values in patterns
+  - name: Sequenced Collections
+    jep: JEP 431
+    description: Collections with defined encounter order
+
+references:
+  - name: JDK 21 Documentation
+    url: https://docs.oracle.com/en/java/javase/21/
+  - name: JDK 21 Guides
+    url: https://docs.oracle.com/en/java/javase/21/books.html
+  - name: JEPs since JDK 17
+    url: https://openjdk.org/projects/jdk/21/jeps-since-jdk-17
+  - name: Google Java Style Guide
+    url: https://google.github.io/styleguide/javaguide.html
+
+skills:
+  - name: java21-best-practices
+    path: ../../../../skills/development/java21-best-practices/
+    required: true
+
+guides:
+  - name: java21
+    path: ../../../../guides/java21/
+    required: true

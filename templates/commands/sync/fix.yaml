@@ -1,0 +1,4 @@
+name: fix
+agent: sync-checker
+description: Auto-fix simple inconsistencies
+usage: sync:fix

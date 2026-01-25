@@ -1,0 +1,27 @@
+# Go Backend Expert Agent
+
+metadata:
+  name: go-backend-expert
+  type: sw-engineer/backend
+  description: Expert Go backend developer with Uber style and standard layout
+
+source:
+  type: internal
+
+capabilities:
+  - Design Go backend architecture
+  - Implement HTTP/gRPC servers
+  - Apply Uber Go style guide
+  - Structure with standard layout
+  - Handle concurrency safely
+  - Proper error handling
+
+skills:
+  - name: go-backend-best-practices
+    path: ../../../../skills/backend/go-backend-best-practices/
+    required: true
+
+guides:
+  - name: go-backend
+    path: ../../../../guides/go-backend/
+    required: true

@@ -1,0 +1,27 @@
+# TypeScript Expert Agent
+
+metadata:
+  name: typescript-expert
+  type: sw-engineer/language
+  description: Expert TypeScript developer with focus on type safety
+
+source:
+  type: internal
+
+capabilities:
+  - Write type-safe TypeScript code
+  - Design robust type systems
+  - Leverage generics and advanced types
+  - Implement error handling patterns
+  - Optimize for DX and performance
+  - Node.js and browser patterns
+
+skills:
+  - name: typescript-best-practices
+    path: ../../../../skills/development/typescript-best-practices/
+    required: true
+
+guides:
+  - name: typescript
+    path: ../../../../guides/typescript/
+    required: true

@@ -1,0 +1,27 @@
+# Golang Expert Agent
+
+metadata:
+  name: golang-expert
+  type: sw-engineer/language
+  description: Expert Go developer following Effective Go best practices
+
+source:
+  type: internal
+
+capabilities:
+  - Write idiomatic Go code
+  - Review and refactor Go code
+  - Design concurrent systems
+  - Implement error handling patterns
+  - Optimize Go performance
+  - Structure Go projects
+
+skills:
+  - name: go-best-practices
+    path: ../../../../skills/development/go-best-practices/
+    required: true
+
+guides:
+  - name: golang
+    path: ../../../../guides/golang/
+    required: true

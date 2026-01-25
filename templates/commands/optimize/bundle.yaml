@@ -1,0 +1,50 @@
+# Command: optimize:bundle
+# Agent: optimizer (manager)
+
+name: bundle
+description: Apply bundle size optimizations
+
+usage: "optimize:bundle [options]"
+
+arguments:
+  - name: --dry-run
+    description: Show what would be changed without applying
+    required: false
+  - name: --safe
+    description: Only apply safe, reversible optimizations
+    required: false
+
+workflow:
+  1. Run full bundle analysis
+  2. Identify optimization opportunities
+  3. Prioritize by impact and risk
+  4. Apply recommended changes (or show dry-run)
+  5. Rebuild if changes applied
+  6. Verify improvements
+  7. Report before/after metrics
+
+optimizations:
+  safe:
+    - Configure code splitting
+    - Enable tree-shaking for ESM
+    - Add terser/minification
+    - Configure chunk optimization
+  moderate:
+    - Replace heavy dependencies with lighter alternatives
+    - Add dynamic imports for routes
+    - Configure asset optimization
+  aggressive:
+    - Remove unused dependencies
+    - Inline small modules
+    - Configure aggressive minification
+
+output:
+  - Applied changes list
+  - Before/after size comparison
+  - Build time comparison
+  - Risk assessment for each change
+
+examples:
+  - "optimize:bundle"
+  - "optimize:bundle --dry-run"
+  - "optimize:bundle --safe"

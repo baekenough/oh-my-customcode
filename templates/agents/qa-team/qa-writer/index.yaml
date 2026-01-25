@@ -1,0 +1,44 @@
+# QA Writer Agent
+
+metadata:
+  name: qa-writer
+  type: qa-team
+  description: Creates comprehensive QA documentation from detailed plans
+
+source:
+  type: internal
+
+capabilities:
+  - Test case documentation
+  - Test report writing
+  - Quality process documentation
+  - Test data specification
+  - Execution guideline creation
+
+tools:
+  allowed:
+    - Read
+    - Write
+    - Edit
+    - Glob
+
+commands:
+  - name: write
+    description: Generate test documentation
+  - name: report
+    description: Create test report
+  - name: template
+    description: Generate documentation templates
+
+collaboration:
+  receives_from:
+    - qa-planner
+  outputs_to:
+    - qa-engineer
+    - documenter
+
+triggers:
+  - "test case"
+  - "test documentation"
+  - "test report"
+  - "qa documentation"

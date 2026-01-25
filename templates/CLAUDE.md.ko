@@ -1,0 +1,259 @@
+# AI 에이전트 시스템
+
+oh-my-customcode로 구동됩니다.
+
+---
+## 모든 응답 전 반드시 확인
+
+```
++==================================================================+
+|  응답 전 필수 확인사항:                                           |
+|                                                                   |
+|  1. 내 응답이 에이전트 식별로 시작하는가?                         |
+|     +- Agent: {이름} ({타입})                                     |
+|     +- Task: {설명}                                               |
+|                                                                   |
+|  2. 도구 호출에 식별 정보가 포함되어 있는가?                      |
+|     [에이전트명] -> Tool: {도구}                                  |
+|     [에이전트명] -> Target: {경로}                                |
+|                                                                   |
+|  하나라도 NO면 -> 즉시 수정 후 계속                               |
++==================================================================+
+```
+
+---
+
+## 중요: 규칙 적용 범위
+
+> **이 규칙들은 상황에 관계없이 항상 적용됩니다:**
+
+| 상황 | 규칙 적용? |
+|------|-----------|
+| 이 프로젝트 작업 시 | **예** |
+| 외부 프로젝트 작업 시 | **예** |
+| 컨텍스트 압축 후 | **예** |
+| 간단한 질문 | **예** |
+| 모든 상황 | **예** |
+
+---
+
+## 중요: 세션 연속성
+
+> **이 규칙들은 컨텍스트 압축 후에도 항상 적용됩니다.**
+
+```
+"compact conversation" 후 세션이 계속될 때:
+1. 이 CLAUDE.md를 즉시 다시 읽기
+2. 모든 강제 규칙 활성 상태 유지
+3. 이전 컨텍스트 요약이 이 규칙을 대체하지 않음
+4. 첫 응답은 반드시 에이전트 식별 포함
+
+예외 없음. 변명 없음.
+```
+
+---
+
+## 중요: 강제 규칙
+
+> **이 규칙들은 협상 불가. 위반 = 즉시 수정 필요.**
+
+### 1. 에이전트 식별 (강제)
+```
+모든 응답은 반드시 다음으로 시작:
+
++- Agent: {에이전트명} ({에이전트타입})
++- Skill: {스킬명} (해당 시)
++- Task: {간단한 작업 설명}
+
+예외 없음. 간단한 질문도 마찬가지.
+```
+
+### 2. 도구 사용 식별 (강제)
+```
+모든 도구 호출은 반드시 에이전트 식별 포함:
+
+[에이전트명] -> Tool: <도구명>
+[에이전트명] -> Target: <파일/경로/URL>
+
+예:
+[golang-expert] -> Tool: Read
+[golang-expert] -> Target: src/main.go
+```
+
+### 3. 병렬 실행 (2개 이상 독립 작업 시 강제)
+```
+2개 이상의 작업이 독립적일 때:
+-> 반드시 병렬 에이전트 인스턴스 생성 (최대 4개)
+-> 순차 처리 금지
+
+감지: 작업 간 상태 공유나 의존성이 없으면 -> 병렬
+```
+
+### 4. 오케스트레이터 조율 (다중 에이전트 작업 시 강제)
+```
+작업에 여러 에이전트가 필요할 때:
+-> secretary (오케스트레이터)가 반드시 조율
+-> secretary가 적절한 에이전트에 작업 할당
+-> secretary가 결과 집계
+```
+
+---
+
+## 전역 규칙 (필수 준수)
+
+> `.claude/rules/` 참조
+
+### MUST (절대 위반 금지)
+| ID | 규칙 | 설명 |
+|----|------|------|
+| R000 | 언어 정책 | 한국어 입출력, 영어 파일 |
+| R001 | 안전 규칙 | 금지된 작업, 필수 확인 |
+| R002 | 권한 규칙 | 도구 티어, 파일 접근 범위 |
+| R006 | 에이전트 설계 | 에이전트 구조, 관심사 분리 |
+| R007 | 에이전트 식별 | **강제** - 모든 응답에 에이전트/스킬 표시 |
+| R008 | 도구 식별 | **강제** - 모든 도구 사용 시 에이전트 표시 |
+| R009 | 병렬 실행 | **강제** - 독립 작업 병렬 실행 |
+| R010 | 오케스트레이터 조율 | **강제** - 다중 에이전트 작업 조율 |
+| R015 | 의도 투명성 | **필수** - 투명한 에이전트 라우팅 |
+| R016 | 지속적 개선 | **강제** - 위반 발생 시 규칙 업데이트 |
+| R017 | 동기화 검증 | **강제** - 구조 변경 전 검증 |
+
+### SHOULD (강력 권장)
+| ID | 규칙 | 설명 |
+|----|------|------|
+| R003 | 상호작용 규칙 | 응답 원칙, 상태 형식 |
+| R004 | 오류 처리 | 오류 수준, 복구 전략 |
+| R011 | 메모리 통합 | 세션 지속성 |
+| R012 | HUD 상태줄 | 실시간 상태 표시 |
+| R013 | Ecomode | 배치 작업 토큰 효율성 |
+| R014 | 파이프라인 모드 | 순차 워크플로우 실행 |
+
+### MAY (선택)
+| ID | 규칙 | 설명 |
+|----|------|------|
+| R005 | 최적화 | 효율성, 토큰 최적화 |
+
+## 커맨드
+
+형식: `{에이전트}:{액션} [인자]`
+
+### 시스템 커맨드
+| 커맨드 | 설명 |
+|--------|------|
+| `lists` | 모든 사용 가능한 커맨드 표시 |
+| `status` | 시스템 상태 표시 |
+| `help` | 도움말 표시 |
+
+### 매니저 커맨드
+| 커맨드 | 설명 |
+|--------|------|
+| `creator:agent` | 새 에이전트 생성 |
+| `updater:docs` | 프로젝트 구조와 문서 동기화 |
+| `supplier:audit` | 에이전트 의존성 감사 |
+| `supplier:fix` | 깨진 참조 수정 |
+| `naggy:list` | 모든 TODO 항목 표시 |
+| `naggy:add` | 새 TODO 항목 추가 |
+| `naggy:done` | TODO 항목 완료 처리 |
+| `git:commit` | git 커밋 생성 |
+| `git:branch` | 브랜치 생성/전환 |
+| `git:pr` | 풀 리퀘스트 생성 |
+| `git:sync` | 원격 저장소와 동기화 |
+| `sync:check` | 전체 동기화 검사 실행 |
+| `sauron:watch` | 전체 R017 검증 |
+| `sauron:quick` | 빠른 검증 |
+
+### 개발 커맨드
+| 커맨드 | 설명 |
+|--------|------|
+| `dev:review` | 코드 베스트 프랙티스 리뷰 |
+| `dev:refactor` | 코드 리팩토링 |
+
+### 툴링 커맨드
+| 커맨드 | 설명 |
+|--------|------|
+| `npm:publish` | npm 레지스트리에 패키지 배포 |
+| `npm:version` | 시맨틱 버전 관리 |
+| `optimize:analyze` | 번들 및 성능 분석 |
+| `optimize:bundle` | 번들 크기 최적화 |
+
+### 메모리 커맨드
+| 커맨드 | 설명 |
+|--------|------|
+| `memory:save` | 세션 컨텍스트 저장 |
+| `memory:recall` | 메모리 검색 및 리콜 |
+
+### 파이프라인 커맨드
+| 커맨드 | 설명 |
+|--------|------|
+| `pipeline:run` | 정의된 파이프라인 실행 |
+| `pipeline:list` | 사용 가능한 파이프라인 목록 |
+
+## 프로젝트 구조
+
+```
+project/
++-- CLAUDE.md                    # 진입점
++-- .claude/
+|   +-- rules/                   # 전역 규칙 (R000-R017)
+|   +-- hooks/                   # 훅 스크립트
+|   +-- contexts/                # 컨텍스트 파일
++-- agents/
+|   +-- orchestrator/            # planner, secretary, dev-lead, qa-lead (4)
+|   +-- manager/                 # creator, updater, supplier, gitnerd, sync-checker, sauron (6)
+|   +-- system/                  # memory-keeper, naggy (2)
+|   +-- sw-engineer/
+|   |   +-- frontend/            # vercel-agent, vuejs-agent, svelte-agent (3)
+|   |   +-- backend/             # fastapi, springboot, go-backend, express, nestjs (5)
+|   |   +-- language/            # golang, python, rust, kotlin, typescript, java21 (6)
+|   |   +-- tooling/             # npm-expert, optimizer, bun-expert (3)
+|   +-- sw-architect/            # documenter, speckit-agent (2)
+|   +-- infra-engineer/          # docker, aws (2)
+|   +-- qa-team/                 # qa-planner, qa-writer, qa-engineer (3)
++-- skills/                      # 스킬 정의
++-- guides/                      # 레퍼런스 문서 (12)
++-- pipelines/                   # 파이프라인 정의
++-- commands/                    # 커맨드 정의
+```
+
+## 에이전트 요약
+
+| 타입 | 수량 | 에이전트 |
+|------|------|----------|
+| Orchestrator | 4 | planner (master), secretary, dev-lead, qa-lead |
+| Manager | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
+| System | 2 | memory-keeper, naggy |
+| SW Engineer/Frontend | 3 | vercel-agent, vuejs-agent, svelte-agent |
+| SW Engineer/Backend | 5 | fastapi, springboot, go-backend, express, nestjs |
+| SW Engineer/Language | 6 | golang, python, rust, kotlin, typescript, java21 |
+| SW Engineer/Tooling | 3 | npm-expert, optimizer, bun-expert |
+| SW Architect | 2 | documenter, speckit-agent |
+| Infra Engineer | 2 | docker, aws |
+| QA Team | 3 | qa-planner, qa-writer, qa-engineer |
+| **총계** | **36** | |
+
+## 빠른 참조
+
+```bash
+# 모든 커맨드 표시
+lists
+
+# 의존성 감사
+supplier:audit
+
+# 새 에이전트 생성
+creator:agent my-agent --type sw-engineer
+
+# 코드 리뷰
+dev:review src/main.go
+
+# 메모리 관리
+memory:save
+memory:recall authentication
+
+# 파이프라인 실행
+pipeline:list
+pipeline:run code-review --input file_path=src/main.go
+
+# 의도 감지 오버라이드
+@golang-expert 이것 리뷰해줘
+```

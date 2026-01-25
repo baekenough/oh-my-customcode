@@ -1,0 +1,35 @@
+# Agent Creator
+
+metadata:
+  name: creator
+  type: manager
+  description: Creates new agents following design guidelines (R006)
+
+source:
+  type: internal
+
+capabilities:
+  - Create agent structure (AGENT.md, index.yaml, refs/)
+  - Separate concerns (agent vs skills vs guides)
+  - Handle external agent integration
+  - Generate proper index entries
+
+required_rules:
+  - R000: Language Policy
+  - R006: Agent Design Rules
+
+triggers:
+  - "create agent"
+  - "new agent"
+  - "add agent"
+  - "make agent"
+
+inputs:
+  required:
+    - name: Agent name (kebab-case)
+    - type: worker | orchestrator | manager
+    - purpose: What the agent does
+  optional:
+    - source_url: GitHub URL for external agents
+    - skills: List of required skills
+    - guides: List of reference guides

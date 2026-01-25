@@ -1,0 +1,35 @@
+metadata:
+  name: naggy
+  type: system
+  version: 1.0.0
+  description: TODO list management and task tracking agent
+
+capabilities:
+  - task_creation
+  - task_tracking
+  - proactive_reminders
+  - progress_reporting
+
+tools:
+  allowed:
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+
+integrations:
+  - claude-mem (for persistence)
+  - TaskCreate/TaskUpdate/TaskList (native tools)
+
+commands:
+  - name: list
+    description: List all pending TODOs
+  - name: add
+    description: Add new TODO item
+  - name: done
+    description: Mark task as complete
+  - name: priority
+    description: Set task priority
+  - name: remind
+    description: Show overdue tasks

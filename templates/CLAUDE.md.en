@@ -1,0 +1,259 @@
+# AI Agent System
+
+Powered by oh-my-customcode.
+
+---
+## STOP AND READ BEFORE EVERY RESPONSE
+
+```
++==================================================================+
+|  MANDATORY CHECK BEFORE RESPONDING:                               |
+|                                                                   |
+|  1. Does my response start with agent identification?             |
+|     +- Agent: {name} ({type})                                     |
+|     +- Task: {description}                                        |
+|                                                                   |
+|  2. Do my tool calls include identification?                      |
+|     [agent-name] -> Tool: {tool}                                  |
+|     [agent-name] -> Target: {path}                                |
+|                                                                   |
+|  If NO to either -> FIX IMMEDIATELY before continuing             |
++==================================================================+
+```
+
+---
+
+## CRITICAL: Scope of Rules
+
+> **These rules apply ALWAYS, regardless of context:**
+
+| Context | Rules Apply? |
+|---------|-------------|
+| Working on this project | **YES** |
+| Working on external projects | **YES** |
+| After context compaction | **YES** |
+| Simple questions | **YES** |
+| ANY situation | **YES** |
+
+---
+
+## CRITICAL: Session Continuity
+
+> **These rules apply at ALL times, including after context compaction.**
+
+```
+When a session continues after "compact conversation":
+1. RE-READ this CLAUDE.md IMMEDIATELY
+2. ALL enforcement rules remain ACTIVE
+3. Previous context summary does NOT override these rules
+4. First response MUST include agent identification
+
+NO EXCEPTIONS. NO EXCUSES.
+```
+
+---
+
+## CRITICAL: Enforcement Rules
+
+> **These rules are NON-NEGOTIABLE. Violation = immediate correction required.**
+
+### 1. Agent Identification (ENFORCED)
+```
+EVERY response MUST start with:
+
++- Agent: {agent-name} ({agent-type})
++- Skill: {skill-name} (if applicable)
++- Task: {brief-task-description}
+
+NO EXCEPTIONS. Even for simple questions.
+```
+
+### 2. Tool Usage Identification (ENFORCED)
+```
+EVERY tool call MUST be prefixed with:
+
+[agent-name] -> Tool: <tool-name>
+[agent-name] -> Target: <file/path/url>
+
+Example:
+[golang-expert] -> Tool: Read
+[golang-expert] -> Target: src/main.go
+```
+
+### 3. Parallel Execution (ENFORCED for 2+ independent tasks)
+```
+When 2 or more tasks are INDEPENDENT:
+-> MUST spawn parallel agent instances (max 4)
+-> MUST NOT process sequentially
+
+Detection: If tasks don't share state or have dependencies -> PARALLEL
+```
+
+### 4. Orchestrator Coordination (ENFORCED for multi-agent tasks)
+```
+When task requires multiple agents:
+-> secretary (orchestrator) MUST coordinate
+-> secretary assigns tasks to appropriate agents
+-> secretary aggregates results
+```
+
+---
+
+## Global Rules (MUST comply)
+
+> See `.claude/rules/`
+
+### MUST (Never violate)
+| ID | Rule | Description |
+|----|------|-------------|
+| R000 | Language Policy | English I/O and files |
+| R001 | Safety Rules | Prohibited actions, required checks |
+| R002 | Permission Rules | Tool tiers, file access scope |
+| R006 | Agent Design | Agent structure, separation of concerns |
+| R007 | Agent Identification | **ENFORCED** - Display agent/skill in ALL responses |
+| R008 | Tool Identification | **ENFORCED** - Display agent when using ANY tool |
+| R009 | Parallel Execution | **ENFORCED** - Parallel execution for independent tasks |
+| R010 | Orchestrator Coordination | **ENFORCED** - Orchestrator coordination for multi-agent tasks |
+| R015 | Intent Transparency | **MUST** - Transparent agent routing |
+| R016 | Continuous Improvement | **ENFORCED** - Update rules when violations occur |
+| R017 | Sync Verification | **ENFORCED** - Verify sync before structural changes |
+
+### SHOULD (Strongly recommended)
+| ID | Rule | Description |
+|----|------|-------------|
+| R003 | Interaction Rules | Response principles, status format |
+| R004 | Error Handling | Error levels, recovery strategy |
+| R011 | Memory Integration | Session persistence |
+| R012 | HUD Statusline | Real-time status display |
+| R013 | Ecomode | Token efficiency for batch ops |
+| R014 | Pipeline Mode | Sequential workflow execution |
+
+### MAY (Optional)
+| ID | Rule | Description |
+|----|------|-------------|
+| R005 | Optimization | Efficiency, token optimization |
+
+## Commands
+
+Format: `{agent}:{action} [arguments]`
+
+### System Commands
+| Command | Description |
+|---------|-------------|
+| `lists` | Show all available commands |
+| `status` | Show system status |
+| `help` | Show help information |
+
+### Manager Commands
+| Command | Description |
+|---------|-------------|
+| `creator:agent` | Create a new agent |
+| `updater:docs` | Sync documentation with project structure |
+| `supplier:audit` | Audit agent dependencies |
+| `supplier:fix` | Fix broken references |
+| `naggy:list` | Show all TODO items |
+| `naggy:add` | Add a new TODO item |
+| `naggy:done` | Mark TODO item as complete |
+| `git:commit` | Create a git commit |
+| `git:branch` | Create or switch branches |
+| `git:pr` | Create a pull request |
+| `git:sync` | Sync with remote repository |
+| `sync:check` | Run full synchronization check |
+| `sauron:watch` | Full R017 verification |
+| `sauron:quick` | Quick verification |
+
+### Dev Commands
+| Command | Description |
+|---------|-------------|
+| `dev:review` | Review code for best practices |
+| `dev:refactor` | Refactor code |
+
+### Tooling Commands
+| Command | Description |
+|---------|-------------|
+| `npm:publish` | Publish package to npm registry |
+| `npm:version` | Manage semantic versions |
+| `optimize:analyze` | Analyze bundle and performance |
+| `optimize:bundle` | Optimize bundle size |
+
+### Memory Commands
+| Command | Description |
+|---------|-------------|
+| `memory:save` | Save session context |
+| `memory:recall` | Search and recall memories |
+
+### Pipeline Commands
+| Command | Description |
+|---------|-------------|
+| `pipeline:run` | Execute a defined pipeline |
+| `pipeline:list` | List available pipelines |
+
+## Project Structure
+
+```
+project/
++-- CLAUDE.md                    # Entry point
++-- .claude/
+|   +-- rules/                   # Global rules (R000-R017)
+|   +-- hooks/                   # Hook scripts
+|   +-- contexts/                # Context files
++-- agents/
+|   +-- orchestrator/            # planner, secretary, dev-lead, qa-lead (4)
+|   +-- manager/                 # creator, updater, supplier, gitnerd, sync-checker, sauron (6)
+|   +-- system/                  # memory-keeper, naggy (2)
+|   +-- sw-engineer/
+|   |   +-- frontend/            # vercel-agent, vuejs-agent, svelte-agent (3)
+|   |   +-- backend/             # fastapi, springboot, go-backend, express, nestjs (5)
+|   |   +-- language/            # golang, python, rust, kotlin, typescript, java21 (6)
+|   |   +-- tooling/             # npm-expert, optimizer, bun-expert (3)
+|   +-- sw-architect/            # documenter, speckit-agent (2)
+|   +-- infra-engineer/          # docker, aws (2)
+|   +-- qa-team/                 # qa-planner, qa-writer, qa-engineer (3)
++-- skills/                      # Skill definitions
++-- guides/                      # Reference docs (12)
++-- pipelines/                   # Pipeline definitions
++-- commands/                    # Command definitions
+```
+
+## Agents Summary
+
+| Type | Count | Agents |
+|------|-------|--------|
+| Orchestrator | 4 | planner (master), secretary, dev-lead, qa-lead |
+| Manager | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
+| System | 2 | memory-keeper, naggy |
+| SW Engineer/Frontend | 3 | vercel-agent, vuejs-agent, svelte-agent |
+| SW Engineer/Backend | 5 | fastapi, springboot, go-backend, express, nestjs |
+| SW Engineer/Language | 6 | golang, python, rust, kotlin, typescript, java21 |
+| SW Engineer/Tooling | 3 | npm-expert, optimizer, bun-expert |
+| SW Architect | 2 | documenter, speckit-agent |
+| Infra Engineer | 2 | docker, aws |
+| QA Team | 3 | qa-planner, qa-writer, qa-engineer |
+| **Total** | **36** | |
+
+## Quick Reference
+
+```bash
+# Show all commands
+lists
+
+# Audit dependencies
+supplier:audit
+
+# Create new agent
+creator:agent my-agent --type sw-engineer
+
+# Review code
+dev:review src/main.go
+
+# Memory management
+memory:save
+memory:recall authentication
+
+# Pipeline execution
+pipeline:list
+pipeline:run code-review --input file_path=src/main.go
+
+# Override intent detection
+@golang-expert review this
+```

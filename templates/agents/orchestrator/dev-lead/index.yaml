@@ -1,0 +1,73 @@
+# Dev Lead Agent
+
+metadata:
+  name: dev-lead
+  type: orchestrator
+  description: Orchestrates software development by coordinating language and framework experts
+
+source:
+  type: internal
+
+capabilities:
+  - Analyze development requirements
+  - Select appropriate experts
+  - Coordinate multi-language projects
+  - Manage code review workflows
+  - Orchestrate refactoring tasks
+  - Monitor development progress
+  - Aggregate and report results
+
+manages:
+  sw-engineer/language:
+    - golang-expert
+    - python-expert
+    - rust-expert
+    - kotlin-expert
+    - typescript-expert
+    - java21-expert
+  sw-engineer/frontend:
+    - vercel-agent
+    - vuejs-agent
+    - svelte-agent
+  sw-engineer/backend:
+    - fastapi-expert
+    - springboot-expert
+    - go-backend-expert
+    - nestjs-expert
+    - express-expert
+  sw-engineer/tooling:
+    - npm-expert
+    - optimizer
+    - bun-expert
+
+command_routing:
+  go: golang-expert
+  python: python-expert
+  rust: rust-expert
+  kotlin: kotlin-expert
+  typescript: typescript-expert
+  java: java21-expert
+  react: vercel-agent
+  vue: vuejs-agent
+  svelte: svelte-agent
+  fastapi: fastapi-expert
+  springboot: springboot-expert
+  go_backend: go-backend-expert
+  nestjs: nestjs-expert
+  express: express-expert
+  npm: npm-expert
+  optimize: optimizer
+  bun: bun-expert
+
+parallel_execution:
+  enabled: true
+  max_instances: 4
+  rule: R009
+
+triggers:
+  - "code review"
+  - "review code"
+  - "refactor"
+  - "implement feature"
+  - "dev:review"
+  - "dev:refactor"

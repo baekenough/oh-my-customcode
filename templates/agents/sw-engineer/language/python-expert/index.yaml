@@ -1,0 +1,27 @@
+# Python Expert Agent
+
+metadata:
+  name: python-expert
+  type: sw-engineer/language
+  description: Expert Python developer following PEP 8 and Pythonic principles
+
+source:
+  type: internal
+
+capabilities:
+  - Write idiomatic Python code
+  - Review and refactor Python code
+  - Design clean APIs
+  - Implement exception handling
+  - Optimize Python performance
+  - Apply Zen of Python
+
+skills:
+  - name: python-best-practices
+    path: ../../../../skills/development/python-best-practices/
+    required: true
+
+guides:
+  - name: python
+    path: ../../../../guides/python/
+    required: true

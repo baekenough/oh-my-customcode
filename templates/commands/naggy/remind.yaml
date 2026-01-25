@@ -1,0 +1,4 @@
+name: remind
+agent: naggy
+description: Show overdue and stale tasks
+usage: naggy:remind

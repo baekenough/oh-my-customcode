@@ -1,0 +1,4 @@
+name: agents
+agent: sync-checker
+description: Check agent registry sync
+usage: sync:agents

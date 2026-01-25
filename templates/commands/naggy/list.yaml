@@ -1,0 +1,4 @@
+name: list
+agent: naggy
+description: List all pending TODOs
+usage: naggy:list
