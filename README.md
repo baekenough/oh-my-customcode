@@ -10,11 +10,12 @@ Transform your Claude Code experience with a pre-configured agent system, skills
 
 ## Features
 
-- **28 Pre-built Agents** - Specialized agents for development, testing, documentation, and more
-- **Organized Skills** - Development, backend, infrastructure, and orchestration skills
-- **Enforced Rules** - MUST/SHOULD/MAY priority rules for consistent behavior
+- **36 Pre-built Agents** - Specialized agents for development, testing, documentation, and more
+- **17 Skills** - Development best practices, orchestration patterns, and system utilities
+- **12 Guides** - Reference documentation for various technologies
+- **18 Rules** - Enforced coding standards and workflow patterns
+- **Full Customization** - Create, modify, and extend agents, skills, and rules
 - **Multi-language Support** - English and Korean out of the box
-- **Easy Setup** - Single command initialization
 - **Health Checks** - Built-in doctor command to verify installation
 
 ## Quick Start
@@ -32,7 +33,7 @@ cd your-project
 omcc init
 ```
 
-This creates the `.claude/` directory with all agents, skills, rules, and a configured `CLAUDE.md`.
+This creates the agent system with all agents, skills, rules, and a configured `CLAUDE.md`.
 
 ## CLI Commands
 
@@ -40,33 +41,35 @@ This creates the `.claude/` directory with all agents, skills, rules, and a conf
 |---------|-------------|
 | `omcc init` | Initialize agent system in current project |
 | `omcc init --lang ko` | Initialize with Korean language |
+| `omcc init --backup` | Backup existing installation before init |
 | `omcc update` | Update to latest agents and skills |
 | `omcc list` | List all installed components |
 | `omcc list agents` | List installed agents |
 | `omcc list skills` | List installed skills |
+| `omcc list --format json` | Output as JSON |
 | `omcc doctor` | Verify installation health |
 | `omcc doctor --fix` | Auto-fix common issues |
 
 ## What's Included
 
-### Agents (28 total)
+### Agents (36 total)
 
-| Category | Agents |
-|----------|--------|
-| Master | planner |
-| Orchestrator | secretary, dev-lead |
-| Manager | creator, updater, supplier, naggy, git-expert, sync-checker |
-| System | memory-keeper |
-| SW Engineer | golang, python, rust, kotlin, typescript, java21, vercel-frontend |
-| SW Architect | documenter, speckit-agent |
-| Backend Engineer | fastapi, springboot, go-backend, express, nestjs |
-| Infra Engineer | docker, aws |
-| QA Engineer | qa-lead |
-| Tutor | go-tutor |
+| Category | Count | Agents |
+|----------|-------|--------|
+| Orchestrator | 4 | planner (master), secretary, dev-lead, qa-lead |
+| Manager | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
+| System | 2 | memory-keeper, naggy |
+| SW Engineer/Frontend | 3 | vercel-agent, vuejs-agent, svelte-agent |
+| SW Engineer/Backend | 5 | fastapi, springboot, go-backend, express, nestjs |
+| SW Engineer/Language | 6 | golang, python, rust, kotlin, typescript, java21 |
+| SW Engineer/Tooling | 3 | npm-expert, optimizer, bun-expert |
+| SW Architect | 2 | documenter, speckit-agent |
+| Infra Engineer | 2 | docker-expert, aws-expert |
+| QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 
 ### Skills
 
-- **Development** - Language-specific best practices (Go, Python, TypeScript, etc.)
+- **Development** - Language-specific best practices (Go, Python, TypeScript, Kotlin, Rust, Java)
 - **Backend** - Framework skills (FastAPI, Spring Boot, Express, NestJS)
 - **Infrastructure** - Docker, AWS deployment skills
 - **System** - Memory management, result aggregation
@@ -74,26 +77,52 @@ This creates the `.claude/` directory with all agents, skills, rules, and a conf
 
 ### Rules
 
-- **MUST** - Safety, permissions, agent design, identification (enforced)
-- **SHOULD** - Interaction, error handling, memory integration (recommended)
-- **MAY** - Optimization guidelines (optional)
+| Priority | Description | Count |
+|----------|-------------|-------|
+| **MUST** | Safety, permissions, agent design, identification (enforced) | 10 |
+| **SHOULD** | Interaction, error handling, memory integration (recommended) | 6 |
+| **MAY** | Optimization guidelines (optional) | 2 |
 
-## Configuration
+## Customization
 
-After initialization, customize behavior via `.omccrc.json`:
+oh-my-customcode is designed for full customization. You can:
 
-```json
-{
-  "language": "en",
-  "agents": {
-    "enabled": ["*"],
-    "disabled": []
-  },
-  "rules": {
-    "strict": true
-  }
-}
+### Create Custom Agents
+
+```bash
+# Use the creator agent
+creator:agent my-custom-agent --type sw-engineer
 ```
+
+Or manually create in `agents/{category}/{agent-name}/`:
+
+```
+agents/sw-engineer/my-custom-agent/
+├── AGENT.md       # Agent definition
+├── index.yaml     # Metadata
+└── refs/          # Symlinks to skills/guides
+```
+
+### Modify Rules
+
+Edit files in `.claude/rules/`:
+- `MUST-*.md` - Required rules (never violate)
+- `SHOULD-*.md` - Strongly recommended
+- `MAY-*.md` - Optional guidelines
+
+### Add Custom Skills
+
+Create in `skills/{category}/{skill-name}/`:
+
+```
+skills/development/my-skill/
+├── SKILL.md       # Skill instructions
+└── index.yaml     # Metadata
+```
+
+### Customize Workflows
+
+Edit pipeline definitions in `pipelines/` or create your own.
 
 ## Project Structure
 
@@ -101,15 +130,42 @@ After `omcc init`, your project will have:
 
 ```
 your-project/
-├── CLAUDE.md              # Main configuration
+├── CLAUDE.md              # Main entry point for Claude
 ├── .claude/
-│   ├── rules/             # MUST/SHOULD/MAY rules
-│   ├── hooks/             # Lifecycle hooks
-│   └── contexts/          # Context configurations
-├── agents/                # Agent definitions
+│   ├── rules/             # Global rules (R000-R017)
+│   ├── hooks/             # Hook scripts
+│   └── contexts/          # Context files
+├── agents/
+│   ├── orchestrator/      # planner, secretary, dev-lead, qa-lead
+│   ├── manager/           # creator, updater, supplier, gitnerd, sync-checker, sauron
+│   ├── system/            # memory-keeper, naggy
+│   ├── sw-engineer/       # Frontend, backend, language, tooling experts
+│   ├── sw-architect/      # documenter, speckit-agent
+│   ├── infra-engineer/    # docker-expert, aws-expert
+│   └── qa-team/           # qa-planner, qa-writer, qa-engineer
 ├── skills/                # Skill definitions
 ├── guides/                # Reference documentation
+├── pipelines/             # Pipeline definitions
 └── commands/              # Command definitions
+```
+
+## Development
+
+```bash
+# Install dependencies
+bun install
+
+# Run in development
+bun run dev
+
+# Run tests
+bun test
+
+# Run linter
+bun run lint
+
+# Build
+bun run build
 ```
 
 ## Requirements
