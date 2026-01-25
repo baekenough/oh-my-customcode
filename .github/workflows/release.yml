@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
   id-token: write
 
 jobs:
@@ -16,13 +17,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Setup Node.js
+      - name: Setup Node.js for npm
         uses: actions/setup-node@v6
         with:
           node-version: '20'
@@ -40,14 +43,82 @@ jobs:
       - name: Build
         run: bun run build
 
+      # Publish to npm
       - name: Publish to npm
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Re-configure for GitHub Packages
+      - name: Setup Node.js for GitHub Packages
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@baekenough'
+
+      # Publish to GitHub Packages
+      - name: Publish to GitHub Packages
+        run: |
+          # Update package name for GitHub Packages (scoped)
+          node -e "
+            const pkg = require('./package.json');
+            pkg.name = '@baekenough/oh-my-customcode';
+            pkg.publishConfig = {
+              registry: 'https://npm.pkg.github.com',
+              access: 'public'
+            };
+            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+          "
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Restore package.json
+      - name: Restore package.json
+        run: git checkout package.json
+
+      # Extract changelog for this version
+      - name: Extract Release Notes
+        id: changelog
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Extract changelog section for this version
+          if [ -f CHANGELOG.md ]; then
+            NOTES=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+            if [ -n "$NOTES" ]; then
+              echo "notes<<EOF" >> $GITHUB_OUTPUT
+              echo "$NOTES" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      # Create GitHub Release with changelog
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.notes }}
+
+            ---
+
+            ### Installation
+
+            ```bash
+            # npm
+            npm install oh-my-customcode@${{ steps.changelog.outputs.version }}
+
+            # or use npx
+            npx oh-my-customcode@${{ steps.changelog.outputs.version }} init
+            ```
+
+            ### Links
+            - [npm package](https://www.npmjs.com/package/oh-my-customcode/v/${{ steps.changelog.outputs.version }})
+            - [GitHub Package](https://github.com/baekenough/oh-my-customcode/pkgs/npm/oh-my-customcode)
           generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}

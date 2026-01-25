@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-25
+
+### Changed
+
+- Bump `i18next` from 24.2.3 to 25.8.0
+- Bump `commander` from 12.1.0 to 14.0.2
+- Bump `@biomejs/biome` from 1.9.4 to 2.3.12
+- Bump `actions/checkout` from v4 to v6
+- Bump `actions/setup-node` from v4 to v6
+- Migrate biome.json to v2 schema
+
+### Fixed
+
+- Fix biome lint configuration for v2 compatibility
+- Fix unused variable warnings in source files
+
 ## [0.1.0] - 2026-01-25
 
 ### Added
@@ -69,5 +85,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/baekenough/oh-my-customcode/releases/tag/v0.1.0
