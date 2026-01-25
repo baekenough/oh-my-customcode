@@ -38,6 +38,27 @@ it('should create a working agent that Claude can use', async () => {
 });
 ```
 
+### Coverage Policy
+
+| Metric | Target | Rationale |
+|--------|--------|-----------|
+| **Function Coverage** | 100% | Every function must be exercised |
+| **Line Coverage** | 95%+ | Defensive error handling may remain uncovered |
+
+**What we DON'T test:**
+- Error handling `catch` blocks that only exist for defensive programming
+- Edge cases that require mocking the file system
+- Internal implementation details
+
+**Why not 100% line coverage?**
+
+Uncovered lines should only be:
+1. `catch` blocks that handle unexpected filesystem errors
+2. Fallback code paths that protect against edge cases
+3. Code that would require mocking system APIs to test
+
+These defensive code paths exist for production safety, not for behavior specification. Testing them would mean testing implementation details, which violates our testing philosophy.
+
 ### Other Principles
 
 2. **Customization is King** - Every feature should be easily customizable
