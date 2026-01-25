@@ -46,7 +46,7 @@
     "yaml": "^2.8.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.3.12",
     "@types/bun": "^1.2.4",
     "typescript": "^5.7.3",
     "vitepress": "^1.6.3"
