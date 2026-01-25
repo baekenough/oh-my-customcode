@@ -318,7 +318,7 @@ describe('E2E: omcc doctor', () => {
       // Verify agents directory doesn't exist
       expect(await pathExists(join(tempDir, 'agents'))).toBe(false);
 
-      const result = await runCli('doctor', '--fix');
+      const _result = await runCli('doctor', '--fix');
 
       // Agents directory should now exist
       expect(await pathExists(join(tempDir, 'agents'))).toBe(true);
@@ -333,7 +333,7 @@ describe('E2E: omcc doctor', () => {
       // Verify skills directory doesn't exist
       expect(await pathExists(join(tempDir, 'skills'))).toBe(false);
 
-      const result = await runCli('doctor', '--fix');
+      const _result = await runCli('doctor', '--fix');
 
       // Skills directory should now exist
       expect(await pathExists(join(tempDir, 'skills'))).toBe(true);
@@ -400,7 +400,7 @@ describe('E2E: omcc doctor', () => {
       await runCli('doctor', '--fix');
 
       // Run doctor again without fix
-      const result = await runCli('doctor');
+      const _result = await runCli('doctor');
 
       // After fixing, directories should exist
       expect(await pathExists(join(tempDir, 'agents'))).toBe(true);

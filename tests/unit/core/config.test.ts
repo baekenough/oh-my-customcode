@@ -1,21 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
   type AgentConfig,
-  type OmccConfig,
   configExists,
   deleteConfig,
   getAgentConfig,
   getConfigPath,
-  getConfigValue,
   getConfiguredAgents,
+  getConfigValue,
   getDefaultConfig,
   getDefaultPreferences,
   loadConfig,
   mergeConfig,
+  type OmccConfig,
   removeAgentConfig,
   saveConfig,
   setAgentConfig,

@@ -4,37 +4,35 @@
  * Main library entry point - exports public API
  */
 
+export {
+  type AgentConfig,
+  getConfigPath,
+  getDefaultConfig,
+  loadConfig,
+  mergeConfig,
+  type OmccConfig,
+  saveConfig,
+} from './core/config.js';
 // Core modules
 export {
-  type InstallOptions,
-  type InstallResult,
-  type TemplateManifest,
-  install,
   copyTemplates,
   createDirectoryStructure,
   getTemplateManifest,
+  type InstallOptions,
+  type InstallResult,
+  install,
+  type TemplateManifest,
 } from './core/installer.js';
-
 export {
+  type AgentVersion,
+  applyUpdates,
+  checkForUpdates,
+  preserveCustomizations,
+  type UpdateCheckResult,
   type UpdateOptions,
   type UpdateResult,
-  type UpdateCheckResult,
-  type AgentVersion,
   update,
-  checkForUpdates,
-  applyUpdates,
-  preserveCustomizations,
 } from './core/updater.js';
-
-export {
-  type OmccConfig,
-  type AgentConfig,
-  loadConfig,
-  saveConfig,
-  getConfigPath,
-  getDefaultConfig,
-  mergeConfig,
-} from './core/config.js';
 
 // Utilities
 export {
@@ -42,23 +40,23 @@ export {
   copyDirectory,
   ensureDirectory,
   fileExists,
-  readJsonFile,
-  writeJsonFile,
   getPackageRoot,
+  readJsonFile,
   resolveTemplatePath,
+  writeJsonFile,
 } from './utils/fs.js';
 
 export {
-  type LogLevel,
-  type LoggerOptions,
   createLogger,
-  setLogLevel,
-  setLocale,
-  info,
-  warn,
-  error,
   debug,
+  error,
+  info,
+  type LoggerOptions,
+  type LogLevel,
+  setLocale,
+  setLogLevel,
   success,
+  warn,
 } from './utils/logger.js';
 
 // Version

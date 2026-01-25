@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 
 import {
-  DEFAULT_LANGUAGE,
-  SUPPORTED_LANGUAGES,
   changeLanguage,
+  DEFAULT_LANGUAGE,
   detectLanguage,
   getCurrentLanguage,
   i18n,
   i18next,
   initI18n,
+  SUPPORTED_LANGUAGES,
   t,
 } from '../../../src/i18n/index.js';
 

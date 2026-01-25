@@ -3,11 +3,10 @@
  */
 
 import i18next from 'i18next';
-import type { SupportedLanguage, TranslationKey } from './types.js';
-import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from './types.js';
-
 import en from './locales/en.json';
 import ko from './locales/ko.json';
+import type { SupportedLanguage, TranslationKey } from './types.js';
+import { DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from './types.js';
 
 /**
  * Detect system language

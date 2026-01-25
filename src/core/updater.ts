@@ -11,8 +11,8 @@ import {
   resolveTemplatePath,
   writeJsonFile,
 } from '../utils/fs.js';
-import { debug, error, info, success, warn } from '../utils/logger.js';
-import { type AgentConfig, type OmccConfig, loadConfig, saveConfig } from './config.js';
+import { debug, error, info, success } from '../utils/logger.js';
+import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 
 /**
  * Options for update operation
@@ -107,9 +107,9 @@ export interface AgentVersion {
 }
 
 /**
- * Component version tracking
+ * Component version tracking (reserved for future use)
  */
-interface ComponentVersions {
+interface _ComponentVersions {
   [component: string]: {
     version: string;
     lastUpdated: string;
@@ -361,7 +361,7 @@ async function getLatestVersion(): Promise<string> {
  * Check if a component has updates available
  */
 async function componentHasUpdate(
-  targetDir: string,
+  _targetDir: string,
   component: UpdateComponent,
   config: OmccConfig
 ): Promise<boolean> {

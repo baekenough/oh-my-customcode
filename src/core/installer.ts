@@ -3,7 +3,7 @@
  */
 
 import { copyFile as fsCopyFile, rename } from 'node:fs/promises';
-import { basename, dirname, join } from 'node:path';
+import { basename, join } from 'node:path';
 import {
   copyDirectory,
   ensureDirectory,
@@ -13,7 +13,7 @@ import {
   resolveTemplatePath,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
-import { type OmccConfig, loadConfig, saveConfig } from './config.js';
+import { loadConfig, saveConfig } from './config.js';
 
 /**
  * Options for installation

@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   type ComponentInfo,
-  type ListType,
   formatAsJson,
   formatAsSimple,
   formatAsTable,
