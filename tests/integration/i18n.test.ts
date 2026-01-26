@@ -20,7 +20,7 @@ describe('i18n integration', () => {
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-i18n-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-i18n-test-'));
     // Save original environment
     originalEnv = { ...process.env };
   });

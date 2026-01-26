@@ -14,7 +14,8 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 36 agents, 17 skills, 18 rules - ready to use out of the box |
+| **Batteries Included** | 37 agents, 17 skills, 12 guides - synced with baekgom-agents templates |
+| **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
 | **Non-Destructive** | Your customizations live alongside defaults, never overwritten |
@@ -27,7 +28,7 @@ npm install -g oh-my-customcode
 
 # Initialize in your project
 cd your-project
-omcc init
+omcustom init
 ```
 
 That's it. You now have a fully configured Claude Code environment.
@@ -183,36 +184,48 @@ your-project/
 
 ## What's Included
 
-### Agents (36)
+> **Templates synced from [baekgom-agents](https://github.com/baekenough/baekgom-agents)** - Battle-tested agent system with sub-agent orchestration support.
 
-| Category | Agents |
-|----------|--------|
-| Orchestrators | planner, secretary, dev-lead, qa-lead |
-| Managers | creator, updater, supplier, gitnerd, sync-checker, sauron |
-| System | memory-keeper, naggy |
-| Languages | golang, python, rust, kotlin, typescript, java21 |
-| Frontend | vercel-agent, vuejs-agent, svelte-agent |
-| Backend | fastapi, springboot, go-backend, express, nestjs |
-| Tooling | npm-expert, optimizer, bun-expert |
-| Architecture | documenter, speckit-agent |
-| Infrastructure | docker-expert, aws-expert |
-| QA | qa-planner, qa-writer, qa-engineer |
+### Agents (37)
+
+| Category | Count | Agents |
+|----------|-------|--------|
+| **Orchestrators** | 4 | planner, secretary, dev-lead, qa-lead |
+| **Managers** | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
+| **System** | 2 | memory-keeper, naggy |
+| **Languages** | 6 | golang, python, rust, kotlin, typescript, java21 |
+| **Frontend** | 3 | vercel-agent, vuejs-agent, svelte-agent |
+| **Backend** | 5 | fastapi, springboot, go-backend, express, nestjs |
+| **Tooling** | 3 | npm-expert, optimizer, bun-expert |
+| **Architecture** | 2 | documenter, speckit-agent |
+| **Infrastructure** | 2 | docker-expert, aws-expert |
+| **QA** | 3 | qa-planner, qa-writer, qa-engineer |
+| **Tutor** | 1 | go-tutor |
+| **Total** | **37** | |
 
 ### Skills (17)
 
-- **Development**: Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
-- **Backend**: FastAPI, Spring Boot, Express, NestJS, Go Backend
-- **Infrastructure**: Docker, AWS
-- **System**: Memory management, result aggregation
-- **Orchestration**: Pipeline execution, intent detection
+- **Development** (8): Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
+- **Backend** (5): FastAPI, Spring Boot, Express, NestJS, Go Backend
+- **Infrastructure** (2): Docker, AWS
+- **System** (2): Memory management, result aggregation
+- **Orchestration** (2): Pipeline execution, intent detection
+
+### Guides (12)
+
+Comprehensive reference documentation covering:
+- Agent creation and management
+- Skill development
+- Pipeline workflows
+- Best practices and patterns
 
 ### Rules (18)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
-| MUST | 10 | Safety, permissions, agent design (enforced) |
-| SHOULD | 6 | Interactions, error handling (recommended) |
-| MAY | 2 | Optimization guidelines (optional) |
+| **MUST** | 10 | Safety, permissions, agent design (enforced) |
+| **SHOULD** | 6 | Interactions, error handling (recommended) |
+| **MAY** | 2 | Optimization guidelines (optional) |
 
 ---
 
@@ -220,19 +233,19 @@ your-project/
 
 | Command | Description |
 |---------|-------------|
-| `omcc init` | Initialize in current project |
-| `omcc init --lang ko` | Initialize with Korean language |
-| `omcc update` | Update to latest version |
-| `omcc list` | List all installed components |
-| `omcc list agents` | List agents only |
-| `omcc doctor` | Verify installation health |
-| `omcc doctor --fix` | Auto-fix common issues |
+| `omcustom init` | Initialize in current project |
+| `omcustom init --lang ko` | Initialize with Korean language |
+| `omcustom update` | Update to latest version |
+| `omcustom list` | List all installed components |
+| `omcustom list agents` | List agents only |
+| `omcustom doctor` | Verify installation health |
+| `omcustom doctor --fix` | Auto-fix common issues |
 
 ---
 
 ## Project Structure
 
-After `omcc init`:
+After `omcustom init`:
 
 ```
 your-project/

@@ -7,7 +7,7 @@ describe('update command', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-update-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-update-test-'));
   });
 
   afterEach(async () => {

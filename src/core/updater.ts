@@ -131,7 +131,7 @@ interface CustomizationManifest {
   lastUpdated: string;
 }
 
-const CUSTOMIZATION_MANIFEST_FILE = '.omcc-customizations.json';
+const CUSTOMIZATION_MANIFEST_FILE = '.omcustom-customizations.json';
 
 /** Create initial update result */
 function createUpdateResult(): UpdateResult {
@@ -437,7 +437,7 @@ function getComponentPath(component: UpdateComponent): string {
  */
 async function backupInstallation(targetDir: string): Promise<string> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupDir = join(targetDir, `.omcc-backup-${timestamp}`);
+  const backupDir = join(targetDir, `.omcustom-backup-${timestamp}`);
   const fs = await import('node:fs/promises');
 
   await ensureDirectory(backupDir);

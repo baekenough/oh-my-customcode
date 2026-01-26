@@ -7,7 +7,7 @@ describe('init flow integration', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-init-flow-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-init-flow-test-'));
   });
 
   afterEach(async () => {

@@ -14,7 +14,7 @@
     "url": "https://github.com/baekenough/oh-my-customcode"
   },
   "bin": {
-    "omcc": "./dist/cli/index.js"
+    "omcustom": "./dist/cli/index.js"
   },
   "files": [
     "dist",

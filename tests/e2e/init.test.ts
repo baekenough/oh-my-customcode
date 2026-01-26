@@ -1,5 +1,5 @@
 /**
- * E2E tests for `omcc init` command
+ * E2E tests for `omcustom init` command
  * Tests the actual CLI command execution end-to-end
  */
 
@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'bun';
 
-describe('E2E: omcc init', () => {
+describe('E2E: omcustom init', () => {
   let tempDir: string;
   let cliPath: string;
 
@@ -21,7 +21,7 @@ describe('E2E: omcc init', () => {
   });
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-e2e-init-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-e2e-init-'));
     // Change to temp directory for the test
     process.chdir(tempDir);
   });

@@ -9,7 +9,9 @@ import {
   getTemplateManifest,
   install,
 } from '../../../src/core/installer.js';
-import { fileExists } from '../../../src/utils/fs.js';
+import * as fsUtils from '../../../src/utils/fs.js';
+
+const { fileExists } = fsUtils;
 
 describe('installer', () => {
   let tempDir: string;
@@ -20,7 +22,7 @@ describe('installer', () => {
   let consoleDebugSpy: ReturnType<typeof spyOn>;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-installer-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-installer-test-'));
     consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleInfoSpy = spyOn(console, 'info').mockImplementation(() => {});
     consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
@@ -327,6 +329,230 @@ describe('installer', () => {
       expect(result).toBeDefined();
       // Rules should be skipped since already installed
       expect(result.skippedComponents).toContain('rules');
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle template directory not found error (line 211)', async () => {
+      // Mock fileExists to return false for template directory check
+      const originalFileExists = fsUtils.fileExists;
+      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(async (path) => {
+        const pathStr = String(path);
+        // Return false only for the main templates directory check
+        if (pathStr.endsWith('templates') && !pathStr.includes(tempDir)) {
+          return false;
+        }
+        // Use original for all other checks
+        return originalFileExists(path);
+      });
+
+      const result = await install({
+        targetDir: tempDir,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Template directory not found');
+
+      fileExistsSpy.mockRestore();
+    });
+
+    it('should handle errors in installSingleComponent (lines 246-247)', async () => {
+      // Mock copyDirectory to throw an error during component installation
+      const copyDirectorySpy = spyOn(fsUtils, 'copyDirectory').mockRejectedValue(
+        new Error('Simulated copy error')
+      );
+
+      const result = await install({
+        targetDir: tempDir,
+        components: ['rules'],
+        force: true,
+        skipConfirm: true,
+      });
+
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.warnings.some((w) => w.includes('Failed to install rules'))).toBe(true);
+
+      copyDirectorySpy.mockRestore();
+    });
+
+    it('should handle non-Error exceptions in installSingleComponent (line 247)', async () => {
+      // Mock copyDirectory to throw a non-Error object
+      const copyDirectorySpy = spyOn(fsUtils, 'copyDirectory').mockImplementation(() => {
+        throw 'String error'; // Non-Error exception
+      });
+
+      const result = await install({
+        targetDir: tempDir,
+        components: ['agents'],
+        force: true,
+        skipConfirm: true,
+      });
+
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.warnings.some((w) => w.includes('Failed to install agents'))).toBe(true);
+
+      copyDirectorySpy.mockRestore();
+    });
+
+    it('should handle error in install() catch block (lines 309-311)', async () => {
+      // Mock ensureDirectory to throw an error in ensureTargetDirectory
+      const ensureDirectorySpy = spyOn(fsUtils, 'ensureDirectory').mockRejectedValue(
+        new Error('Permission denied')
+      );
+
+      const result = await install({
+        targetDir: tempDir,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Permission denied');
+
+      ensureDirectorySpy.mockRestore();
+    });
+
+    it('should handle non-Error exception in install() catch block (line 310)', async () => {
+      // Mock to throw a non-Error
+      const ensureDirectorySpy = spyOn(fsUtils, 'ensureDirectory').mockImplementation(() => {
+        throw { code: 'EACCES', message: 'Access denied' };
+      });
+
+      const result = await install({
+        targetDir: tempDir,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+
+      ensureDirectorySpy.mockRestore();
+    });
+
+    it('should return default manifest when manifest.json not found (lines 355, 358-368)', async () => {
+      // Mock fileExists to return false for manifest.json
+      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockResolvedValue(false);
+
+      const manifest = await getTemplateManifest();
+
+      expect(manifest.version).toBe('0.0.0');
+      expect(manifest.components.length).toBeGreaterThan(0);
+      expect(manifest.source).toBe('https://github.com/baekenough/baekgom-agents');
+      expect(manifest.components.every((c) => c.files === 0)).toBe(true);
+
+      fileExistsSpy.mockRestore();
+    });
+
+    it('should warn when template source not found (lines 402-403)', async () => {
+      // Create a spy that returns false for specific template source checks
+      const originalFileExists = fsUtils.fileExists;
+      let templateDirCheckDone = false;
+      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(async (path) => {
+        const pathStr = String(path);
+
+        // Allow initial template directory check to pass
+        if (
+          pathStr.includes('templates') &&
+          pathStr.endsWith('templates') &&
+          !templateDirCheckDone
+        ) {
+          templateDirCheckDone = true;
+          return true;
+        }
+
+        // Return false for component template source paths (the actual rules template)
+        if (
+          pathStr.includes('templates') &&
+          pathStr.includes('rules') &&
+          !pathStr.includes(tempDir)
+        ) {
+          return false;
+        }
+
+        // Use original implementation for other paths
+        return originalFileExists(path);
+      });
+
+      const result = await install({
+        targetDir: tempDir,
+        components: ['rules'],
+        force: true,
+        skipConfirm: true,
+      });
+
+      expect(result.skippedComponents).toContain('rules');
+
+      fileExistsSpy.mockRestore();
+    });
+
+    it('should warn when CLAUDE.md template not found (lines 430-431)', async () => {
+      // Mock fileExists to allow installation to proceed but fail on CLAUDE.md template
+      const originalFileExists = fsUtils.fileExists;
+      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(async (path) => {
+        const pathStr = String(path);
+        // Return false for CLAUDE.md.en and CLAUDE.md.ko templates
+        if (
+          (pathStr.includes('CLAUDE.md.en') || pathStr.includes('CLAUDE.md.ko')) &&
+          !pathStr.includes(tempDir)
+        ) {
+          return false;
+        }
+        // Use original for other checks
+        return originalFileExists(path);
+      });
+
+      const result = await install({
+        targetDir: tempDir,
+        language: 'en',
+        force: true,
+        skipConfirm: true,
+      });
+
+      expect(result.skippedComponents).toContain('claude-md');
+
+      fileExistsSpy.mockRestore();
+    });
+
+    it('should handle backup errors gracefully (lines 507-508)', async () => {
+      // Create existing files to trigger backup
+      await mkdir(join(tempDir, '.claude'), { recursive: true });
+      await writeFile(join(tempDir, 'CLAUDE.md'), '# Existing');
+
+      // Mock rename to throw an error
+      const renameSpy = spyOn(await import('node:fs/promises'), 'rename').mockRejectedValue(
+        new Error('Cannot move file')
+      );
+
+      const result = await install({
+        targetDir: tempDir,
+        backup: true,
+        skipConfirm: true,
+      });
+
+      expect(result).toBeDefined();
+      // Backup should have attempted and logged the error
+
+      renameSpy.mockRestore();
+    });
+
+    it('should handle non-Error exception in backup (line 508)', async () => {
+      // Create existing files
+      await mkdir(join(tempDir, 'agents'), { recursive: true });
+
+      // Mock rename to throw non-Error
+      const renameSpy = spyOn(await import('node:fs/promises'), 'rename').mockImplementation(() => {
+        throw 'Backup failed'; // Non-Error exception
+      });
+
+      const result = await install({
+        targetDir: tempDir,
+        backup: true,
+        skipConfirm: true,
+      });
+
+      expect(result).toBeDefined();
+
+      renameSpy.mockRestore();
     });
   });
 });

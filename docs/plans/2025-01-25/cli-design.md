@@ -4,18 +4,18 @@
 
 | Command | Description |
 |---------|-------------|
-| `omcc init` | Initialize .claude/ structure in current project |
-| `omcc init --lang ko` | Initialize with Korean |
-| `omcc init --lang en` | Initialize with English (default) |
-| `omcc update` | Update to latest agents/skills |
-| `omcc list agents` | List installed agents |
-| `omcc list skills` | List installed skills |
-| `omcc doctor` | Verify installation status |
+| `omcustom init` | Initialize .claude/ structure in current project |
+| `omcustom init --lang ko` | Initialize with Korean |
+| `omcustom init --lang en` | Initialize with English (default) |
+| `omcustom update` | Update to latest agents/skills |
+| `omcustom list agents` | List installed agents |
+| `omcustom list skills` | List installed skills |
+| `omcustom doctor` | Verify installation status |
 
 ## init Flow
 
 ```
-omcc init
+omcustom init
     │
     ├── 1. Check existing .claude/
     │      └── If exists: Confirm backup and merge
@@ -33,7 +33,7 @@ omcc init
     │
     ├── 4. Create symlinks (refs/)
     │
-    └── 5. Verify (auto-run omcc doctor)
+    └── 5. Verify (auto-run omcustom doctor)
 ```
 
 ## doctor Checks
@@ -46,7 +46,7 @@ omcc init
 ## Language Detection Priority
 
 ```
-1. --lang flag (omcc init --lang ko)
+1. --lang flag (omcustom init --lang ko)
 2. Environment variable (OMCC_LANG=ko)
 3. System locale detection
 4. Default (en)

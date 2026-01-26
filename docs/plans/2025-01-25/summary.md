@@ -9,7 +9,7 @@
 | License | MIT |
 | Repository | github.com/baekenough/oh-my-customcode |
 | npm Package | oh-my-customcode |
-| CLI Command | omcc |
+| CLI Command | omcustom |
 
 ## Tech Stack
 

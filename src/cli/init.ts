@@ -1,5 +1,5 @@
 /**
- * omcc init command
+ * omcustom init command
  * Initializes oh-my-customcode in the current project
  */
 

@@ -98,14 +98,14 @@ jobs:
       # 5. CLI operation tests
       - name: Test CLI commands
         run: |
-          omcc --version
-          omcc --help
+          omcustom --version
+          omcustom --help
 
       # 6. init test (real project)
       - name: Test init command
         run: |
           mkdir test-project && cd test-project
-          omcc init --lang en
+          omcustom init --lang en
           test -d .claude
           test -f .claude/rules/MUST-safety.md
           test -d agents
@@ -114,7 +114,7 @@ jobs:
       - name: Test doctor command
         run: |
           cd test-project
-          omcc doctor
+          omcustom doctor
 ```
 
 ## Deploy Test Checklist
@@ -122,12 +122,12 @@ jobs:
 - [ ] npm pack success
 - [ ] Local registry publish success
 - [ ] npm install -g success
-- [ ] omcc --version output
-- [ ] omcc --help output
-- [ ] omcc init execution success
+- [ ] omcustom --version output
+- [ ] omcustom --help output
+- [ ] omcustom init execution success
 - [ ] .claude/ structure created
 - [ ] agents/ structure created
-- [ ] omcc doctor passes
+- [ ] omcustom doctor passes
 
 ## Parallel Test Execution
 

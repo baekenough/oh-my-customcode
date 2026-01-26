@@ -38,15 +38,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **CLI Tool (`omcc`)** - Command-line interface for managing Claude Code agent systems
-  - `omcc init` - Initialize agent system in current project
-  - `omcc init --lang ko` - Initialize with Korean language support
-  - `omcc init --backup` - Backup existing installation before init
-  - `omcc update` - Update to latest agents and skills
-  - `omcc list` - List all installed components (agents, skills, guides, rules)
-  - `omcc list --format json` - JSON output format support
-  - `omcc doctor` - Verify installation health
-  - `omcc doctor --fix` - Auto-fix common issues
+- **CLI Tool (`omcustom`)** - Command-line interface for managing Claude Code agent systems
+  - `omcustom init` - Initialize agent system in current project
+  - `omcustom init --lang ko` - Initialize with Korean language support
+  - `omcustom init --backup` - Backup existing installation before init
+  - `omcustom update` - Update to latest agents and skills
+  - `omcustom list` - List all installed components (agents, skills, guides, rules)
+  - `omcustom list --format json` - JSON output format support
+  - `omcustom doctor` - Verify installation health
+  - `omcustom doctor --fix` - Auto-fix common issues
 
 - **Pre-built Agents (36 total)**
   - Orchestrator agents: planner (master), secretary, dev-lead, qa-lead

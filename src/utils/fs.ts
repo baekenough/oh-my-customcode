@@ -313,7 +313,7 @@ export async function move(src: string, dest: string): Promise<void> {
 /**
  * Create a temporary directory
  */
-export async function createTempDir(prefix = 'omcc-'): Promise<string> {
+export async function createTempDir(prefix = 'omcustom-'): Promise<string> {
   const fs = await import('node:fs/promises');
   const os = await import('node:os');
   const path = await import('node:path');
