@@ -76,11 +76,7 @@ async function isDirectory(targetPath: string): Promise<boolean> {
  */
 async function isValidSymlink(symlinkPath: string): Promise<boolean> {
   try {
-    const stat = await fs.lstat(symlinkPath);
-    if (!stat.isSymbolicLink()) {
-      return true; // Not a symlink, skip
-    }
-    // Try to read the target to see if it's valid
+    // Try to read the symlink target to see if it's valid
     await fs.stat(symlinkPath);
     return true;
   } catch {
@@ -171,12 +167,8 @@ async function findRefsSymlinks(dir: string): Promise<string[]> {
  * Count directories in a path (one level deep)
  */
 async function countDirectories(dirPath: string): Promise<number> {
-  try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    return entries.filter((e) => e.isDirectory()).length;
-  } catch {
-    return 0;
-  }
+  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+  return entries.filter((e) => e.isDirectory()).length;
 }
 
 /**

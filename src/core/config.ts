@@ -219,8 +219,7 @@ function migrateConfig(config: OmccConfig): OmccConfig {
     };
   }
 
-  // Add future migrations here
-  // if (config.configVersion < 2) { ... }
+  // Future migrations can be added here as needed
 
   migrated.configVersion = CURRENT_CONFIG_VERSION;
   return migrated;
