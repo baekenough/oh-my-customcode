@@ -28,7 +28,7 @@ describe('config', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-config-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-config-test-'));
   });
 
   afterEach(async () => {
@@ -68,12 +68,12 @@ describe('config', () => {
   describe('getConfigPath', () => {
     it('should return correct config path for given directory', () => {
       const path = getConfigPath('/some/project/dir');
-      expect(path).toBe('/some/project/dir/.omccrc.json');
+      expect(path).toBe('/some/project/dir/.omcustomrc.json');
     });
 
     it('should handle paths with trailing slash', () => {
       const path = getConfigPath(tempDir);
-      expect(path).toBe(join(tempDir, '.omccrc.json'));
+      expect(path).toBe(join(tempDir, '.omcustomrc.json'));
     });
   });
 
@@ -96,7 +96,7 @@ describe('config', () => {
         lastUpdated: '2025-01-01T00:00:00Z',
         installedComponents: ['agent1', 'agent2'],
       };
-      await writeFile(join(tempDir, '.omccrc.json'), JSON.stringify(customConfig));
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(customConfig));
 
       const config = await loadConfig(tempDir);
 
@@ -112,7 +112,7 @@ describe('config', () => {
         version: '1.0.0',
         language: 'ko',
       };
-      await writeFile(join(tempDir, '.omccrc.json'), JSON.stringify(partialConfig));
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(partialConfig));
 
       const config = await loadConfig(tempDir);
 
@@ -127,7 +127,7 @@ describe('config', () => {
 
     it('should handle invalid JSON gracefully', async () => {
       // Create an invalid JSON file
-      await writeFile(join(tempDir, '.omccrc.json'), 'invalid json content');
+      await writeFile(join(tempDir, '.omcustomrc.json'), 'invalid json content');
 
       const config = await loadConfig(tempDir);
 
@@ -146,7 +146,7 @@ describe('config', () => {
         lastUpdated: '2025-01-01T00:00:00Z',
         installedComponents: [],
       };
-      await writeFile(join(tempDir, '.omccrc.json'), JSON.stringify(oldConfig));
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(oldConfig));
 
       const config = await loadConfig(tempDir);
 
@@ -165,7 +165,7 @@ describe('config', () => {
 
       await saveConfig(tempDir, config);
 
-      const savedContent = await readFile(join(tempDir, '.omccrc.json'), 'utf-8');
+      const savedContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
       const savedConfig = JSON.parse(savedContent);
 
       expect(savedConfig.version).toBe('2.0.0');
@@ -178,7 +178,7 @@ describe('config', () => {
 
       await saveConfig(tempDir, config);
 
-      const savedContent = await readFile(join(tempDir, '.omccrc.json'), 'utf-8');
+      const savedContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
       const savedConfig = JSON.parse(savedContent);
       const lastUpdated = new Date(savedConfig.lastUpdated);
 
@@ -191,7 +191,7 @@ describe('config', () => {
 
       await saveConfig(nestedDir, config);
 
-      const savedContent = await readFile(join(nestedDir, '.omccrc.json'), 'utf-8');
+      const savedContent = await readFile(join(nestedDir, '.omcustomrc.json'), 'utf-8');
       const savedConfig = JSON.parse(savedContent);
       expect(savedConfig.configVersion).toBe(1);
     });
@@ -306,7 +306,7 @@ describe('config', () => {
       expect(updated.version).toBe('5.0.0');
 
       // Verify file was updated
-      const savedContent = await readFile(join(tempDir, '.omccrc.json'), 'utf-8');
+      const savedContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
       const savedConfig = JSON.parse(savedContent);
       expect(savedConfig.version).toBe('5.0.0');
     });
@@ -331,7 +331,7 @@ describe('config', () => {
 
       await setConfigValue(tempDir, 'language', 'ko');
 
-      const savedContent = await readFile(join(tempDir, '.omccrc.json'), 'utf-8');
+      const savedContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
       const savedConfig = JSON.parse(savedContent);
       expect(savedConfig.language).toBe('ko');
     });

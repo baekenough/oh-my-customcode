@@ -1,5 +1,5 @@
 /**
- * omcc doctor command
+ * omcustom doctor command
  * Checks and fixes configuration issues
  */
 

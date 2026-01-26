@@ -20,7 +20,7 @@ Our tests are NOT about testing implementation logic. They test:
 |-------|-------------|---------|
 | **Philosophy** | Does the component behave according to our design principles? | Does the agent identification show up in every response? |
 | **Workflow** | Does the intended user workflow work end-to-end? | Can a user create a custom agent and have it detected? |
-| **Functionality** | Does the feature work as users expect? | Does `omcc init` create all required directories? |
+| **Functionality** | Does the feature work as users expect? | Does `omcustom init` create all required directories? |
 
 **Bad test** (tests implementation):
 ```typescript

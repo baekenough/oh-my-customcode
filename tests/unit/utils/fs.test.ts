@@ -31,7 +31,7 @@ describe('fs utilities', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-fs-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-fs-test-'));
   });
 
   afterEach(async () => {

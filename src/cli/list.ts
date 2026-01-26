@@ -1,5 +1,5 @@
 /**
- * omcc list command
+ * omcustom list command
  * Lists installed agents, skills, guides, and rules
  */
 

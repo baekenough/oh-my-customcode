@@ -1,5 +1,5 @@
 /**
- * E2E tests for `omcc doctor` command
+ * E2E tests for `omcustom doctor` command
  * Tests the actual CLI command execution end-to-end
  */
 
@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'bun';
 
-describe('E2E: omcc doctor', () => {
+describe('E2E: omcustom doctor', () => {
   let tempDir: string;
   let cliPath: string;
 
@@ -21,7 +21,7 @@ describe('E2E: omcc doctor', () => {
   });
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-e2e-doctor-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-e2e-doctor-'));
     // Change to temp directory for the test
     process.chdir(tempDir);
   });

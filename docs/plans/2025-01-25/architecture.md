@@ -14,10 +14,10 @@ oh-my-customcode/
 ├── src/
 │   ├── cli/
 │   │   ├── index.ts            # Entry point
-│   │   ├── init.ts             # omcc init
-│   │   ├── update.ts           # omcc update
-│   │   ├── list.ts             # omcc list
-│   │   └── doctor.ts           # omcc doctor
+│   │   ├── init.ts             # omcustom init
+│   │   ├── update.ts           # omcustom update
+│   │   ├── list.ts             # omcustom list
+│   │   └── doctor.ts           # omcustom doctor
 │   ├── core/
 │   │   ├── installer.ts        # Install logic
 │   │   ├── updater.ts          # Update logic

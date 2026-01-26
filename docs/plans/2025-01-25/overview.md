@@ -9,7 +9,7 @@
 | License | MIT |
 | Repository | github.com/baekenough/oh-my-customcode |
 | npm Package | oh-my-customcode |
-| CLI Command | omcc |
+| CLI Command | omcustom |
 
 ## Core Values
 
@@ -24,10 +24,10 @@
 
 ```bash
 npm install -g oh-my-customcode
-omcc init           # Initialize .claude/ structure in project
-omcc init --lang ko # Initialize with Korean
-omcc update         # Update to latest version
-omcc doctor         # Verify installation
+omcustom init           # Initialize .claude/ structure in project
+omcustom init --lang ko # Initialize with Korean
+omcustom update         # Update to latest version
+omcustom doctor         # Verify installation
 ```
 
 ## Target Users

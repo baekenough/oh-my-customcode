@@ -33,7 +33,7 @@ bun add -g oh-my-customcode
 ### Verify Installation
 
 ```bash
-omcc --version
+omcustom --version
 ```
 
 ## Initialize Your Project
@@ -42,7 +42,7 @@ Navigate to your project directory and run:
 
 ```bash
 cd your-project
-omcc init
+omcustom init
 ```
 
 This creates:
@@ -66,7 +66,7 @@ your-project/
 Initialize with Korean language support:
 
 ```bash
-omcc init --lang ko
+omcustom init --lang ko
 ```
 
 ## Backup Existing Installation
@@ -74,7 +74,7 @@ omcc init --lang ko
 If you already have an agent system and want to preserve it:
 
 ```bash
-omcc init --backup
+omcustom init --backup
 ```
 
 This creates a backup of your existing `.claude` directory before initializing.
@@ -84,13 +84,13 @@ This creates a backup of your existing `.claude` directory before initializing.
 Run the doctor command to check that everything is set up correctly:
 
 ```bash
-omcc doctor
+omcustom doctor
 ```
 
 If issues are found, you can auto-fix common problems:
 
 ```bash
-omcc doctor --fix
+omcustom doctor --fix
 ```
 
 ## What's Next?
@@ -104,7 +104,7 @@ omcc doctor --fix
 Keep your agent system up to date:
 
 ```bash
-omcc update
+omcustom update
 ```
 
 This updates all agents, skills, and rules to the latest versions while preserving your customizations.

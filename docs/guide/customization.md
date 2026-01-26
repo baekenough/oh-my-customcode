@@ -268,7 +268,7 @@ Be careful when editing CLAUDE.md. Breaking changes may affect agent behavior.
 
 ## Preserving Customizations
 
-When running `omcc update`, your customizations are preserved by default:
+When running `omcustom update`, your customizations are preserved by default:
 
 - Custom agents in new directories are kept
 - Modified files are not overwritten
@@ -277,7 +277,7 @@ When running `omcc update`, your customizations are preserved by default:
 To force overwrite everything:
 
 ```bash
-omcc update --force
+omcustom update --force
 ```
 
 ::: tip

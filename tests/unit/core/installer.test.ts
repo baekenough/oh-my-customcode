@@ -20,7 +20,7 @@ describe('installer', () => {
   let consoleDebugSpy: ReturnType<typeof spyOn>;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-installer-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-installer-test-'));
     consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleInfoSpy = spyOn(console, 'info').mockImplementation(() => {});
     consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});

@@ -49,20 +49,20 @@ jobs:
         run: |
           npm install -g oh-my-customcode --registry http://localhost:4873/
 
-      - name: Test omcc --version
-        run: omcc --version
+      - name: Test omcustom --version
+        run: omcustom --version
 
-      - name: Test omcc --help
-        run: omcc --help
+      - name: Test omcustom --help
+        run: omcustom --help
 
-      - name: Test omcc init (dry run)
+      - name: Test omcustom init (dry run)
         run: |
           # Create a test directory
           mkdir -p /tmp/test-project
           cd /tmp/test-project
 
           # Test init command (use echo to simulate user input or --help for now)
-          omcc init --help || echo "Init help displayed"
+          omcustom init --help || echo "Init help displayed"
 
       - name: Cleanup
         if: always()

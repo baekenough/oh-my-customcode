@@ -27,7 +27,7 @@ npm install -g oh-my-customcode
 
 # 프로젝트에서 초기화
 cd your-project
-omcc init
+omcustom init
 ```
 
 끝. 이제 완벽하게 구성된 Claude Code 환경을 갖게 되었습니다.
@@ -220,19 +220,19 @@ your-project/
 
 | 명령어 | 설명 |
 |--------|------|
-| `omcc init` | 현재 프로젝트에 초기화 |
-| `omcc init --lang ko` | 한국어로 초기화 |
-| `omcc update` | 최신 버전으로 업데이트 |
-| `omcc list` | 설치된 모든 컴포넌트 목록 |
-| `omcc list agents` | 에이전트만 목록 |
-| `omcc doctor` | 설치 상태 검사 |
-| `omcc doctor --fix` | 일반적인 문제 자동 수정 |
+| `omcustom init` | 현재 프로젝트에 초기화 |
+| `omcustom init --lang ko` | 한국어로 초기화 |
+| `omcustom update` | 최신 버전으로 업데이트 |
+| `omcustom list` | 설치된 모든 컴포넌트 목록 |
+| `omcustom list agents` | 에이전트만 목록 |
+| `omcustom doctor` | 설치 상태 검사 |
+| `omcustom doctor --fix` | 일반적인 문제 자동 수정 |
 
 ---
 
 ## 프로젝트 구조
 
-`omcc init` 후:
+`omcustom init` 후:
 
 ```
 your-project/

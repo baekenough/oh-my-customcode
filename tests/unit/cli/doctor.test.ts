@@ -19,7 +19,7 @@ describe('doctor command', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-doctor-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-doctor-test-'));
   });
 
   afterEach(async () => {

@@ -18,7 +18,7 @@ describe('list command', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-list-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-list-test-'));
   });
 
   afterEach(async () => {

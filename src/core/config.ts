@@ -85,7 +85,7 @@ export interface AutoUpdateConfig {
 }
 
 /** Config file name */
-const CONFIG_FILE = '.omccrc.json';
+const CONFIG_FILE = '.omcustomrc.json';
 
 /** Current config version */
 const CURRENT_CONFIG_VERSION = 1;
