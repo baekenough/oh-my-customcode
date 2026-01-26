@@ -1,0 +1,13 @@
+#!/bin/bash
+# Sync baekgom-agents to oh-my-customcode/templates
+#
+# Copy this file to the project root as 'sync.sh' and update the path:
+#   cp scripts/sync.sh.example sync.sh
+#   chmod +x sync.sh
+#   # Edit BAEKGOM_PATH in sync.sh
+#   ./sync.sh
+
+BAEKGOM_PATH="/path/to/your/baekgom-agents"
+
+cd "$(dirname "$0")"
+bun run scripts/sync-core.ts "$BAEKGOM_PATH"

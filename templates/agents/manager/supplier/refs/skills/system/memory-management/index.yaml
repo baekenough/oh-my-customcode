@@ -1,0 +1,30 @@
+# Memory Management Skill
+
+metadata:
+  name: memory-management
+  category: system
+  description: Memory persistence operations using claude-mem
+
+source:
+  type: internal
+  reference: claude-mem MCP integration
+
+provides:
+  - Save session context to claude-mem
+  - Recall memories with semantic search
+  - Project-scoped memory isolation
+  - Metadata tagging for memories
+  - Query pattern guidelines
+
+operations:
+  - save: Store session context with metadata
+  - recall: Search and retrieve relevant memories
+  - get: Retrieve specific memory by ID
+
+storage:
+  provider: claude-mem
+  collection: claude_memories
+  project_tag: baekgom-agents
+
+used_by:
+  - memory-keeper

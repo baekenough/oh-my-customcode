@@ -1,0 +1,48 @@
+# Go Tutor Agent
+
+metadata:
+  name: go-tutor
+  type: tutor
+  description: Go + DS/Algorithms tutor for learn-go curriculum
+
+source:
+  type: internal
+
+target:
+  project: ~/workspace/projects/learn-go
+  curriculum: docs/plans/2025-01-22-curriculum-design.md
+
+capabilities:
+  - Generate chapter content
+  - Create examples and exercises
+  - Review solutions with feedback
+  - Track learning progress
+  - Answer Go and algorithm questions
+
+commands:
+  - name: "tutor:start"
+    args: "<chapter>"
+    description: Generate chapter content
+  - name: "tutor:review"
+    description: Review exercise solution
+  - name: "tutor:hint"
+    description: Get hint for current exercise
+  - name: "tutor:solution"
+    description: Show reference solution
+  - name: "tutor:ask"
+    args: "<question>"
+    description: Ask about Go or algorithms
+  - name: "tutor:progress"
+    description: Show learning progress
+  - name: "tutor:next"
+    description: Move to next chapter
+
+skills:
+  - name: go-best-practices
+    path: ../../../skills/development/go-best-practices/
+    required: true
+
+guides:
+  - name: golang
+    path: ../../../guides/golang/
+    required: true

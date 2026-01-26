@@ -1,0 +1,26 @@
+# Go Backend Best Practices Skill
+
+metadata:
+  name: go-backend-best-practices
+  category: backend
+  description: Go backend patterns from Uber style and standard layout
+
+source:
+  type: internal
+  reference:
+    - https://go.dev/doc/effective_go
+    - https://github.com/golang-standards/project-layout
+    - https://github.com/uber-go/guide/blob/master/style.md
+
+provides:
+  - Project structure (standard layout)
+  - Error handling patterns
+  - Concurrency patterns
+  - HTTP server design
+  - Dependency injection
+  - Configuration management
+  - Testing patterns
+  - Performance guidelines
+
+used_by:
+  - go-backend-expert

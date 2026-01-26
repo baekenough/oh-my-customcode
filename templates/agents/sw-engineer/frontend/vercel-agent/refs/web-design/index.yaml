@@ -1,0 +1,20 @@
+# Web Design Guide
+
+metadata:
+  name: web-design
+  description: Web design best practices and accessibility reference
+
+source:
+  type: external
+  origin: github
+  url: https://github.com/vercel-labs/agent-skills
+  related_skill: web-design-guidelines
+
+documents:
+  - name: accessibility
+    title: Accessibility Best Practices
+    path: ./accessibility.md
+
+  - name: performance
+    title: Performance Guidelines
+    path: ./performance.md

@@ -1,0 +1,51 @@
+# Claude Code Guide Index
+# Claude로 에이전트를 구축하기 위한 가이드 문서 인덱스
+
+documents:
+  - name: overview
+    title: 기능 개요
+    description: Claude의 핵심 기능 및 도구 요약
+    path: ./01-overview.md
+
+  - name: tools
+    title: 도구 사용
+    description: Claude와 도구 통합 방법
+    path: ./03-tools.md
+
+  - name: agent-skills
+    title: 에이전트 스킬
+    description: Skills로 Claude 기능 확장
+    path: ./04-agent-skills.md
+
+  - name: agent-sdk
+    title: 에이전트 SDK
+    description: Python/TypeScript로 에이전트 구축
+    path: ./05-agent-sdk.md
+
+  - name: mcp
+    title: MCP 커넥터
+    description: Model Context Protocol 서버 연결
+    path: ./06-mcp.md
+
+  - name: prompt-engineering
+    title: 프롬프트 엔지니어링
+    description: 프롬프트 최적화 기법
+    path: ./07-prompt-engineering.md
+
+  - name: testing
+    title: 테스트 및 평가
+    description: 품질 보장을 위한 테스트 방법
+    path: ./08-testing.md
+    status: placeholder  # 공식 문서 미공개
+
+  - name: guardrails
+    title: 가드레일 강화
+    description: 안전한 에이전트 운영을 위한 제약
+    path: ./09-guardrails.md
+    status: placeholder  # 공식 문서 미공개
+
+  - name: monitoring
+    title: 관리 및 모니터링
+    description: 프로덕션 에이전트 운영
+    path: ./10-monitoring.md
+    status: placeholder  # 공식 문서 미공개

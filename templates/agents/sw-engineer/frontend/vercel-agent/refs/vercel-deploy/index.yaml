@@ -1,0 +1,30 @@
+# Vercel Deploy Skill
+
+metadata:
+  name: vercel-deploy
+  category: development
+  description: Deploy applications to Vercel with auto-detection and preview URLs
+
+source:
+  type: external
+  origin: github
+  url: https://github.com/vercel-labs/agent-skills
+  path: skills/vercel-deploy-claimable
+  version: "1.0.0"
+  last_updated: "2025-01-22"
+
+triggers:
+  - "deploy to Vercel"
+  - "create preview"
+  - "publish site"
+  - "Vercel deployment"
+
+capabilities:
+  - Auto-detect 40+ frameworks
+  - Generate preview URLs
+  - Ownership transfer links
+  - Exclude node_modules, .git automatically
+
+requirements:
+  - Vercel CLI or API access
+  - Project with package.json
