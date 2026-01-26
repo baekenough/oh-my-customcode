@@ -1,0 +1,25 @@
+# FastAPI Best Practices Skill
+
+metadata:
+  name: fastapi-best-practices
+  category: backend
+  description: FastAPI patterns for high-performance async APIs
+
+source:
+  type: internal
+  reference:
+    - https://fastapi.tiangolo.com/
+    - https://github.com/zhanymkanov/fastapi-best-practices
+
+provides:
+  - Project structure patterns
+  - Async/await best practices
+  - Pydantic validation patterns
+  - Dependency injection design
+  - Error handling patterns
+  - Database integration
+  - API design guidelines
+  - Testing patterns
+
+used_by:
+  - fastapi-expert

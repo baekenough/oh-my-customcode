@@ -235,3 +235,9 @@ agents:
       source:
         type: internal
 
+  tutor:
+    - name: go-tutor
+      path: ./tutor/go-tutor/
+      description: Go + DS/Algorithms tutor for learn-go curriculum
+      source:
+        type: internal

@@ -1,0 +1,25 @@
+# Python Best Practices Skill
+
+metadata:
+  name: python-best-practices
+  category: development
+  description: Pythonic patterns from PEP 8 and PEP 20
+
+source:
+  type: internal
+  reference:
+    - https://peps.python.org/pep-0008/
+    - https://peps.python.org/pep-0020/
+    - https://google.github.io/styleguide/pyguide.html
+
+provides:
+  - Python code formatting standards
+  - Naming conventions
+  - Import organization
+  - Whitespace rules
+  - Comment and docstring guidelines
+  - Programming recommendations
+  - Pythonic idioms
+
+used_by:
+  - python-expert

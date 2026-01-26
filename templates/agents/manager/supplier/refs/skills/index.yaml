@@ -1,0 +1,129 @@
+# Baekgom Agents - Skill Registry
+
+categories:
+  development:
+    description: Development related skills
+    skills:
+      - name: react-best-practices
+        path: ./development/react-best-practices/
+        description: React/Next.js performance optimization (40+ rules)
+        source:
+          type: external
+          origin: github
+          url: https://github.com/vercel-labs/agent-skills
+
+      - name: web-design-guidelines
+        path: ./development/web-design-guidelines/
+        description: UI code review for accessibility and UX (100+ rules)
+        source:
+          type: external
+          origin: github
+          url: https://github.com/vercel-labs/agent-skills
+
+      - name: vercel-deploy
+        path: ./development/vercel-deploy/
+        description: Deploy applications to Vercel
+        source:
+          type: external
+          origin: github
+          url: https://github.com/vercel-labs/agent-skills
+
+      - name: go-best-practices
+        path: ./development/go-best-practices/
+        description: Idiomatic Go patterns from Effective Go
+        source:
+          type: internal
+
+      - name: python-best-practices
+        path: ./development/python-best-practices/
+        description: Pythonic patterns from PEP 8 and PEP 20
+        source:
+          type: internal
+
+      - name: rust-best-practices
+        path: ./development/rust-best-practices/
+        description: Idiomatic Rust patterns from official guidelines
+        source:
+          type: internal
+
+      - name: kotlin-best-practices
+        path: ./development/kotlin-best-practices/
+        description: Idiomatic Kotlin patterns from JetBrains conventions
+        source:
+          type: internal
+
+      - name: typescript-best-practices
+        path: ./development/typescript-best-practices/
+        description: Type-safe TypeScript patterns from industry standards
+        source:
+          type: internal
+
+  backend:
+    description: Backend development skills
+    skills:
+      - name: fastapi-best-practices
+        path: ./backend/fastapi-best-practices/
+        description: FastAPI patterns for high-performance async APIs
+        source:
+          type: internal
+
+      - name: springboot-best-practices
+        path: ./backend/springboot-best-practices/
+        description: Spring Boot patterns for enterprise Java applications
+        source:
+          type: internal
+
+      - name: go-backend-best-practices
+        path: ./backend/go-backend-best-practices/
+        description: Go backend patterns from Uber style and standard layout
+        source:
+          type: internal
+
+  infrastructure:
+    description: Infrastructure and DevOps skills
+    skills:
+      - name: docker-best-practices
+        path: ./infrastructure/docker-best-practices/
+        description: Docker patterns for optimized containerization
+        source:
+          type: internal
+
+      - name: aws-best-practices
+        path: ./infrastructure/aws-best-practices/
+        description: AWS patterns from Well-Architected Framework
+        source:
+          type: internal
+
+  system:
+    description: System-level operation skills
+    skills:
+      - name: memory-management
+        path: ./system/memory-management/
+        description: Session memory persistence with claude-mem
+        source:
+          type: internal
+
+      - name: result-aggregation
+        path: ./system/result-aggregation/
+        description: Multi-agent result aggregation and formatting
+        source:
+          type: internal
+
+  orchestration:
+    description: Orchestration and workflow skills
+    skills:
+      - name: pipeline-execution
+        path: ./orchestration/pipeline-execution/
+        description: Sequential pipeline execution with step management
+        source:
+          type: internal
+
+      - name: intent-detection
+        path: ./orchestration/intent-detection/
+        description: User intent classification and agent routing
+        source:
+          type: internal
+
+  localsystem:
+    description: Local system operation skills
+    skills: []

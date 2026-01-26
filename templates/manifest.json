@@ -1,0 +1,55 @@
+{
+  "version": "0.1.2",
+  "lastUpdated": "2026-01-26T10:56:52.395Z",
+  "components": [
+    {
+      "name": "rules",
+      "path": ".claude/rules",
+      "description": "Agent behavior rules and guidelines",
+      "files": 18
+    },
+    {
+      "name": "agents",
+      "path": "agents",
+      "description": "AI agent definitions",
+      "files": 37
+    },
+    {
+      "name": "skills",
+      "path": "skills",
+      "description": "Reusable skill modules",
+      "files": 17
+    },
+    {
+      "name": "guides",
+      "path": "guides",
+      "description": "Reference documentation",
+      "files": 12
+    },
+    {
+      "name": "pipelines",
+      "path": "pipelines",
+      "description": "Workflow pipeline definitions",
+      "files": 3
+    },
+    {
+      "name": "commands",
+      "path": "commands",
+      "description": "Custom command definitions",
+      "files": 1
+    },
+    {
+      "name": "hooks",
+      "path": ".claude/hooks",
+      "description": "Lifecycle hook scripts",
+      "files": 11
+    },
+    {
+      "name": "contexts",
+      "path": ".claude/contexts",
+      "description": "Context configuration files",
+      "files": 5
+    }
+  ],
+  "source": "https://github.com/baekenough/baekgom-agents"
+}

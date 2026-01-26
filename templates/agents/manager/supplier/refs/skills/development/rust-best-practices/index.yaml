@@ -1,0 +1,26 @@
+# Rust Best Practices Skill
+
+metadata:
+  name: rust-best-practices
+  category: development
+  description: Idiomatic Rust patterns from official guidelines
+
+source:
+  type: internal
+  reference:
+    - https://doc.rust-lang.org/book/
+    - https://rust-lang.github.io/api-guidelines/
+    - https://doc.rust-lang.org/nightly/style-guide/
+
+provides:
+  - Rust naming conventions
+  - Ownership and borrowing patterns
+  - Error handling patterns
+  - Trait and generic design
+  - Memory management guidelines
+  - Concurrency patterns
+  - API design guidelines
+  - Documentation standards
+
+used_by:
+  - rust-expert
