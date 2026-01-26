@@ -9,7 +9,7 @@ describe('init command', () => {
 
   beforeEach(async () => {
     // Create a temporary directory for each test
-    tempDir = await mkdtemp(join(tmpdir(), 'omcc-init-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-init-test-'));
   });
 
   afterEach(async () => {

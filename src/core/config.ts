@@ -85,7 +85,7 @@ export interface AutoUpdateConfig {
 }
 
 /** Config file name */
-const CONFIG_FILE = '.omccrc.json';
+const CONFIG_FILE = '.omcustomrc.json';
 
 /** Current config version */
 const CURRENT_CONFIG_VERSION = 1;
@@ -219,8 +219,7 @@ function migrateConfig(config: OmccConfig): OmccConfig {
     };
   }
 
-  // Add future migrations here
-  // if (config.configVersion < 2) { ... }
+  // Future migrations can be added here as needed
 
   migrated.configVersion = CURRENT_CONFIG_VERSION;
   return migrated;

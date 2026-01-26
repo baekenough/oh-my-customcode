@@ -85,7 +85,7 @@ body:
       label: Steps to Reproduce
       description: Steps to reproduce the behavior
       placeholder: |
-        1. Run `omcc init`
+        1. Run `omcustom init`
         2. ...
     validations:
       required: true

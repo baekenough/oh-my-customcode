@@ -1,5 +1,5 @@
 /**
- * omcc update command
+ * omcustom update command
  * Updates agents to the latest version from baekgom-agents
  */
 
@@ -41,7 +41,7 @@ export interface VersionInfo {
  * @returns Version info or null if not installed
  */
 export async function getCurrentVersion(): Promise<VersionInfo | null> {
-  // TODO: Implement version reading from .claude/.omcc-version or similar
+  // TODO: Implement version reading from .claude/.omcustom-version or similar
   // Read from installed templates metadata
   return null;
 }

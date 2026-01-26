@@ -23,11 +23,11 @@ export function createProgram(): Command {
   const program = new Command();
 
   program
-    .name('omcc')
+    .name('omcustom')
     .description(i18n.t('cli.description'))
     .version(packageJson.version, '-v, --version', i18n.t('cli.versionOption'));
 
-  // omcc init [--lang en|ko]
+  // omcustom init [--lang en|ko]
   program
     .command('init')
     .description(i18n.t('cli.init.description'))
@@ -36,7 +36,7 @@ export function createProgram(): Command {
       await initCommand(options);
     });
 
-  // omcc update
+  // omcustom update
   program
     .command('update')
     .description(i18n.t('cli.update.description'))
@@ -44,7 +44,7 @@ export function createProgram(): Command {
       await updateCommand();
     });
 
-  // omcc list [type] [--format table|json|simple]
+  // omcustom list [type] [--format table|json|simple]
   program
     .command('list')
     .description(i18n.t('cli.list.description'))
@@ -55,7 +55,7 @@ export function createProgram(): Command {
       await listCommand(type, { format: options.format, verbose: options.verbose });
     });
 
-  // omcc doctor
+  // omcustom doctor
   program
     .command('doctor')
     .description(i18n.t('cli.doctor.description'))

@@ -66,7 +66,7 @@ templates/
 ## Language Detection Priority
 
 ```
-1. --lang flag (omcc init --lang ko)
+1. --lang flag (omcustom init --lang ko)
 2. Environment variable (OMCC_LANG=ko)
 3. System locale detection
 4. Default (en)

@@ -42,7 +42,7 @@ npm install -g oh-my-customcode
 
 # Initialize in your project
 cd your-project
-omcc init
+omcustom init
 ```
 
 That's it! Your project now has a full agent system ready to use with Claude Code.

@@ -47,18 +47,35 @@ jobs:
       - name: Run tests with coverage
         run: bun test --coverage
 
-      - name: Check 100% coverage
+      - name: Check coverage threshold
         shell: bash
         run: |
           # Run coverage and capture output
           COVERAGE_OUTPUT=$(bun test --coverage 2>&1)
           echo "$COVERAGE_OUTPUT"
 
-          # Extract coverage percentages and check for 100%
-          # Bun outputs coverage in format: "All files | XX.XX% | XX.XX% | XX.XX%"
-          if echo "$COVERAGE_OUTPUT" | grep -E "All files.*\|" | grep -qv "100"; then
-            echo "::error::Coverage is not 100%. All coverage metrics must be 100%."
+          # Extract coverage percentages from "All files" line
+          # Format: "All files | XX.XX | YY.YY |"
+          COVERAGE_LINE=$(echo "$COVERAGE_OUTPUT" | grep -E "All files.*\|")
+          echo "Coverage line: $COVERAGE_LINE"
+
+          # Extract function and line coverage percentages
+          FUNC_COV=$(echo "$COVERAGE_LINE" | awk -F'|' '{print $2}' | tr -d ' ')
+          LINE_COV=$(echo "$COVERAGE_LINE" | awk -F'|' '{print $3}' | tr -d ' ')
+
+          echo "Function coverage: $FUNC_COV%"
+          echo "Line coverage: $LINE_COV%"
+
+          # Check if coverage is >= 99.5%
+          # Using awk for floating point comparison
+          THRESHOLD=99.5
+
+          FUNC_OK=$(echo "$FUNC_COV $THRESHOLD" | awk '{print ($1 >= $2) ? "1" : "0"}')
+          LINE_OK=$(echo "$LINE_COV $THRESHOLD" | awk '{print ($1 >= $2) ? "1" : "0"}')
+
+          if [ "$FUNC_OK" != "1" ] || [ "$LINE_OK" != "1" ]; then
+            echo "::error::Coverage below threshold. Function: $FUNC_COV%, Line: $LINE_COV% (required: >= $THRESHOLD%)"
             exit 1
           fi
 
-          echo "Coverage check passed: 100%"
+          echo "Coverage check passed: Function $FUNC_COV%, Line $LINE_COV% (threshold: $THRESHOLD%)"

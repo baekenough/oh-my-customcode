@@ -1,22 +1,22 @@
 # CLI Commands
 
-oh-my-customcode provides a CLI tool (`omcc`) for managing your agent system.
+oh-my-customcode provides a CLI tool (`omcustom`) for managing your agent system.
 
 ## Overview
 
 | Command | Description |
 |---------|-------------|
-| `omcc init` | Initialize agent system |
-| `omcc update` | Update to latest version |
-| `omcc list` | List installed components |
-| `omcc doctor` | Verify installation health |
+| `omcustom init` | Initialize agent system |
+| `omcustom update` | Update to latest version |
+| `omcustom list` | List installed components |
+| `omcustom doctor` | Verify installation health |
 
 ## init
 
 Initialize the agent system in your current project.
 
 ```bash
-omcc init [options]
+omcustom init [options]
 ```
 
 ### Options
@@ -31,16 +31,16 @@ omcc init [options]
 
 ```bash
 # Basic initialization
-omcc init
+omcustom init
 
 # Initialize with Korean language
-omcc init --lang ko
+omcustom init --lang ko
 
 # Backup existing and initialize
-omcc init --backup
+omcustom init --backup
 
 # Force overwrite existing files
-omcc init --force
+omcustom init --force
 ```
 
 ## update
@@ -48,7 +48,7 @@ omcc init --force
 Update agents, skills, and rules to the latest versions.
 
 ```bash
-omcc update [options]
+omcustom update [options]
 ```
 
 ### Options
@@ -62,10 +62,10 @@ omcc update [options]
 
 ```bash
 # Standard update (preserves customizations)
-omcc update
+omcustom update
 
 # Force update all files
-omcc update --force
+omcustom update --force
 ```
 
 ## list
@@ -73,7 +73,7 @@ omcc update --force
 List installed components in your project.
 
 ```bash
-omcc list [type] [options]
+omcustom list [type] [options]
 ```
 
 ### Arguments
@@ -92,13 +92,13 @@ omcc list [type] [options]
 
 ```bash
 # List all components
-omcc list
+omcustom list
 
 # List only agents
-omcc list agents
+omcustom list agents
 
 # List skills as JSON
-omcc list skills --format json
+omcustom list skills --format json
 ```
 
 ### Sample Output
@@ -122,7 +122,7 @@ Agents (36 total)
 Verify installation health and fix common issues.
 
 ```bash
-omcc doctor [options]
+omcustom doctor [options]
 ```
 
 ### Options
@@ -136,13 +136,13 @@ omcc doctor [options]
 
 ```bash
 # Check installation health
-omcc doctor
+omcustom doctor
 
 # Check and auto-fix issues
-omcc doctor --fix
+omcustom doctor --fix
 
 # Detailed health check
-omcc doctor --verbose
+omcustom doctor --verbose
 ```
 
 ### Health Checks
@@ -171,7 +171,7 @@ Checking installation health...
 ✗ Missing agent: agents/manager/creator/index.yaml
 
 Issues found: 1
-Run 'omcc doctor --fix' to auto-repair
+Run 'omcustom doctor --fix' to auto-repair
 ```
 
 ## Global Options
