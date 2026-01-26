@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-01-26
+
+### Changed
+
+- **BREAKING**: Rename CLI command from `omcc` to `omcustom`
+- Update templates from baekgom-agents (37 agents, 17 skills, 12 guides)
+- Add sub-agent model specification support in templates
+- Improve test coverage to 99.87% (100% function coverage)
+- Adjust CI coverage threshold to 99.5% for Bun V8 compatibility
+
+### Fixed
+
+- Remove unreachable defensive code in doctor.ts
+- Fix error handling tests for installer, list, and doctor modules
+
 ## [0.1.2] - 2026-01-25
 
 ### Added
