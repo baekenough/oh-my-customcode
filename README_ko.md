@@ -14,7 +14,8 @@ oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Clau
 
 | 특징 | 설명 |
 |------|------|
-| **바로 사용 가능** | 36개 에이전트, 17개 스킬, 18개 규칙이 기본 제공 |
+| **바로 사용 가능** | 37개 에이전트, 17개 스킬, 12개 가이드 - baekgom-agents 템플릿과 동기화 |
+| **서브 에이전트 모델** | 전문화된 역할의 계층적 에이전트 오케스트레이션 지원 |
 | **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
 | **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
 | **비파괴적** | 커스터마이징은 기본값과 함께 존재, 절대 덮어쓰지 않음 |
@@ -183,20 +184,24 @@ your-project/
 
 ## 기본 제공 항목
 
-### 에이전트 (36개)
+> **[baekgom-agents](https://github.com/baekenough/baekgom-agents)에서 동기화된 템플릿** - 서브 에이전트 오케스트레이션을 지원하는 실전 검증 에이전트 시스템.
 
-| 카테고리 | 에이전트 |
-|----------|----------|
-| 오케스트레이터 | planner, secretary, dev-lead, qa-lead |
-| 매니저 | creator, updater, supplier, gitnerd, sync-checker, sauron |
-| 시스템 | memory-keeper, naggy |
-| 언어 | golang, python, rust, kotlin, typescript, java21 |
-| 프론트엔드 | vercel-agent, vuejs-agent, svelte-agent |
-| 백엔드 | fastapi, springboot, go-backend, express, nestjs |
-| 툴링 | npm-expert, optimizer, bun-expert |
-| 아키텍처 | documenter, speckit-agent |
-| 인프라 | docker-expert, aws-expert |
-| QA | qa-planner, qa-writer, qa-engineer |
+### 에이전트 (37개)
+
+| 카테고리 | 수 | 에이전트 |
+|----------|-----|----------|
+| **오케스트레이터** | 4 | planner, secretary, dev-lead, qa-lead |
+| **매니저** | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
+| **시스템** | 2 | memory-keeper, naggy |
+| **언어** | 6 | golang, python, rust, kotlin, typescript, java21 |
+| **프론트엔드** | 3 | vercel-agent, vuejs-agent, svelte-agent |
+| **백엔드** | 5 | fastapi, springboot, go-backend, express, nestjs |
+| **툴링** | 3 | npm-expert, optimizer, bun-expert |
+| **아키텍처** | 2 | documenter, speckit-agent |
+| **인프라** | 2 | docker-expert, aws-expert |
+| **QA** | 3 | qa-planner, qa-writer, qa-engineer |
+| **튜터** | 1 | go-tutor |
+| **합계** | **37** | |
 
 ### 스킬 (17개)
 
@@ -205,6 +210,14 @@ your-project/
 - **인프라**: Docker, AWS
 - **시스템**: 메모리 관리, 결과 집계
 - **오케스트레이션**: 파이프라인 실행, 인텐트 감지
+
+### 가이드 (12개)
+
+종합 참조 문서:
+- 에이전트 생성 및 관리
+- 스킬 개발
+- 파이프라인 워크플로우
+- 베스트 프랙티스 및 패턴
 
 ### 규칙 (18개)
 
