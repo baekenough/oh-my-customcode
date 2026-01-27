@@ -28,6 +28,7 @@ Display real-time status information during agent operations for improved visibi
 | Component | Description | Example |
 |-----------|-------------|---------|
 | Agent | Active agent name | `golang-expert` |
+| Model | Model used (for parallel) | `sonnet` |
 | Progress | Task progress (current/total) | `2/5` |
 | Parallel | Parallel instance count | `3` |
 
@@ -39,10 +40,16 @@ Display real-time status information during agent operations for improved visibi
 ─── [Agent] creator | [Progress] 1/3 ───
 ```
 
-### With Parallel Execution
+### With Parallel Execution (Model Display REQUIRED)
 
 ```
 ─── [Agent] secretary | [Progress] 0/4 | [Parallel] 4 ───
+
+Instances:
+  [1] readme-update:sonnet
+  [2] code-review:haiku
+  [3] architecture:opus
+  [4] validation:haiku
 ```
 
 ### Completion

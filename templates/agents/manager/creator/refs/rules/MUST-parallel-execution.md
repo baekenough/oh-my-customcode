@@ -178,6 +178,41 @@ requirements:
   - Each instance has isolated context
 ```
 
+### 4. Model Specification (RECOMMENDED)
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  USE MODEL PARAMETER FOR COST/PERFORMANCE OPTIMIZATION           ║
+║                                                                   ║
+║  Task tool supports `model` parameter:                           ║
+║                                                                   ║
+║    Task(                                                         ║
+║      subagent_type: "general-purpose",                           ║
+║      prompt: "...",                                              ║
+║      model: "haiku"  ← Specify model                             ║
+║    )                                                             ║
+║                                                                   ║
+║  Model Selection:                                                ║
+║    - opus   : Complex reasoning (expensive, powerful)            ║
+║    - sonnet : General tasks (default, balanced)                  ║
+║    - haiku  : Simple tasks (fast, cheap)                         ║
+║                                                                   ║
+║  Parallel Task Optimization:                                     ║
+║    - Use haiku for file search/validation tasks                  ║
+║    - Use sonnet for code generation tasks                        ║
+║    - Use opus only when deep reasoning is required               ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+Example with model specification:
+```
+# Parallel tasks with appropriate models
+Task(prompt: "Search for auth files", model: "haiku")      ┐
+Task(prompt: "Implement feature A", model: "sonnet")       ├─ Optimized
+Task(prompt: "Implement feature B", model: "sonnet")       │
+Task(prompt: "Analyze architecture", model: "opus")        ┘
+```
+
 ## Instance Model
 
 ### Instantiation
@@ -310,7 +345,7 @@ requirements:
 
 ## Display Format
 
-When parallel execution occurs:
+When parallel execution occurs, MUST display `{task-name}:{model}` format:
 
 ```
 ┌─ Agent: secretary (orchestrator)
@@ -318,19 +353,41 @@ When parallel execution occurs:
 
 [Parallel] Spawning 4 instances...
 
-[Instance 1] creator → golang-expert
-[Instance 2] creator → python-expert
-[Instance 3] creator → rust-expert
-[Instance 4] creator → typescript-expert
+[Instance 1] creator-golang:sonnet → golang-expert
+[Instance 2] creator-python:sonnet → python-expert
+[Instance 3] creator-rust:sonnet → rust-expert
+[Instance 4] creator-typescript:sonnet → typescript-expert
 
 [Progress] ████████░░░░ 2/4
 
-[Instance 1] ✓ golang-expert created
-[Instance 2] ✓ python-expert created
-[Instance 3] ✓ rust-expert created
-[Instance 4] ✓ typescript-expert created
+[Instance 1] creator-golang:sonnet ✓ golang-expert created
+[Instance 2] creator-python:sonnet ✓ python-expert created
+[Instance 3] creator-rust:sonnet ✓ rust-expert created
+[Instance 4] creator-typescript:sonnet ✓ typescript-expert created
 
 [Summary] 4/4 tasks completed successfully
+```
+
+### Display Format Rules
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  PARALLEL AGENT DISPLAY FORMAT (MANDATORY)                       ║
+║                                                                   ║
+║  When announcing parallel agents, MUST show:                     ║
+║                                                                   ║
+║    {task-name}:{model}                                           ║
+║                                                                   ║
+║  Examples:                                                       ║
+║    [Instance 1] readme-update:sonnet ✓ README updated            ║
+║    [Instance 2] code-review:haiku ✓ Review complete              ║
+║    [Instance 3] architecture:opus ✓ Analysis done                ║
+║                                                                   ║
+║  This allows users to:                                           ║
+║    - See which model is used for each task                       ║
+║    - Understand cost implications                                ║
+║    - Debug model selection issues                                ║
+╚══════════════════════════════════════════════════════════════════╝
 ```
 
 ## Benefits
