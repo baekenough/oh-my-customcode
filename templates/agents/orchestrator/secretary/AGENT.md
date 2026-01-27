@@ -99,6 +99,55 @@ Secretary:
 Result: 3 agents created in parallel
 ```
 
+## Sub-agent Model Specification
+
+Use Task tool's `model` parameter to optimize cost and performance:
+
+### Model Selection
+
+| Model | Use Case | Cost |
+|-------|----------|------|
+| `opus` | Complex analysis, architecture | High |
+| `sonnet` | General development (default) | Medium |
+| `haiku` | Simple tasks, file search | Low |
+| `inherit` | Match parent model | Varies |
+
+### Task Call Examples
+
+```
+# Complex task requiring deep reasoning
+Task(
+  subagent_type: "general-purpose",
+  prompt: "Analyze agent dependencies and suggest improvements",
+  model: "opus"
+)
+
+# Standard manager task
+Task(
+  subagent_type: "general-purpose",
+  prompt: "Create new golang-expert agent following creator workflow",
+  model: "sonnet"
+)
+
+# Simple file operation
+Task(
+  subagent_type: "general-purpose",
+  prompt: "Search for all AGENT.md files",
+  model: "haiku"
+)
+```
+
+### Manager Agent Model Mapping
+
+| Agent | Recommended Model | Reason |
+|-------|-------------------|--------|
+| creator | `sonnet` | File generation, balanced |
+| updater | `sonnet` | External sync, web fetch |
+| supplier | `haiku` | File scan, validation |
+| gitnerd | `sonnet` | Commit message quality |
+| sync-checker | `haiku` | Fast verification |
+| sauron | `sonnet` | Multi-round verification |
+
 ## Error Handling
 
 ```yaml

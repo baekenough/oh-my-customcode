@@ -1,0 +1,50 @@
+# Pipeline Template
+# Copy this file and customize for your workflow
+
+name: my-pipeline
+description: Describe what this pipeline does
+
+# Define inputs that the pipeline accepts
+inputs:
+  - name: input_name
+    required: true
+    description: What this input is for
+    default: null  # Optional default value
+
+# Define the sequential steps
+steps:
+  # Step 1: First operation
+  - id: step_1
+    agent: agent-name        # Which agent executes this step
+    action: action_name      # What action to perform
+    input:                   # Input for this step
+      key: "${input_name}"   # Reference to pipeline input
+    output: step_1_result    # Variable name for this step's output
+
+  # Step 2: Uses output from step 1
+  - id: step_2
+    agent: another-agent
+    action: process
+    input:
+      data: "${step_1_result}"  # Reference to step 1 output
+    output: step_2_result
+    on_error: continue          # Optional: stop | continue | retry
+
+  # Step 3: Final aggregation
+  - id: final
+    agent: aggregator
+    action: summarize
+    input:
+      result_1: "${step_1_result}"
+      result_2: "${step_2_result}"
+    output: final_result
+
+# Optional: Error handling configuration
+error_handling:
+  default: stop
+
+# Optional: Metadata
+metadata:
+  author: your-name
+  version: 1.0.0
+  tags: [template, example]

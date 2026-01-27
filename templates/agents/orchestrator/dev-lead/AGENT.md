@@ -94,6 +94,53 @@ Dev Lead:
 Result: 3 reviews in parallel
 ```
 
+## Sub-agent Model Specification
+
+Use Task tool's `model` parameter for cost/performance optimization:
+
+### Model Selection
+
+| Model | Use Case | Cost |
+|-------|----------|------|
+| `opus` | Architecture analysis, complex refactoring | High |
+| `sonnet` | Code implementation, standard review (default) | Medium |
+| `haiku` | File search, quick validation | Low |
+
+### Task Call Examples
+
+```
+# Complex architecture analysis
+Task(
+  subagent_type: "general-purpose",
+  prompt: "Analyze module dependencies and suggest improvements",
+  model: "opus"
+)
+
+# Standard code review
+Task(
+  subagent_type: "general-purpose",
+  prompt: "Review Go code in src/handlers/",
+  model: "sonnet"
+)
+
+# Quick file search
+Task(
+  subagent_type: "Explore",
+  prompt: "Find all files importing auth package",
+  model: "haiku"
+)
+```
+
+### Expert Agent Model Mapping
+
+| Agent Type | Recommended Model | Reason |
+|------------|-------------------|--------|
+| Language experts | `sonnet` | Balanced code generation |
+| Frontend experts | `sonnet` | Component implementation |
+| Backend experts | `sonnet` | API implementation |
+| Architecture review | `opus` | Deep reasoning needed |
+| Quick validation | `haiku` | Fast response |
+
 ## Output Format
 
 ```

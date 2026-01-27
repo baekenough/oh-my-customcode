@@ -1,12 +1,12 @@
 {
   "version": "0.1.2",
-  "lastUpdated": "2026-01-26T10:56:52.395Z",
+  "lastUpdated": "2026-01-27T06:30:49.887Z",
   "components": [
     {
       "name": "rules",
       "path": ".claude/rules",
       "description": "Agent behavior rules and guidelines",
-      "files": 18
+      "files": 19
     },
     {
       "name": "agents",
@@ -36,13 +36,13 @@
       "name": "commands",
       "path": "commands",
       "description": "Custom command definitions",
-      "files": 1
+      "files": 40
     },
     {
       "name": "hooks",
       "path": ".claude/hooks",
       "description": "Lifecycle hook scripts",
-      "files": 11
+      "files": 8
     },
     {
       "name": "contexts",
