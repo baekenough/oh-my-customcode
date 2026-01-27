@@ -39,79 +39,71 @@ That's it. You now have a fully configured Claude Code environment.
 
 This is what oh-my-customcode is all about. **Making Claude Code yours.**
 
-### Create a Custom Agent
+### Just Tell Claude What You Need
 
-Want an agent that reviews database migrations? Just tell Claude Code:
-
-```
-creator:agent migration-expert --type sw-engineer
-```
-
-The creator agent scaffolds the full structure, registers it, and verifies dependencies automatically.
-
-**What gets created:**
-```
-agents/sw-engineer/migration-expert/
-├── AGENT.md       # What the agent does
-└── index.yaml     # Metadata
-```
-
-Other useful management commands:
-
-| Command | Description |
-|---------|-------------|
-| `creator:agent <name>` | Create a new agent |
-| `updater:docs` | Sync documentation with project structure |
-| `supplier:audit` | Verify agent dependencies |
-
-### Add a Custom Skill
-
-Skills define **how** agents do things. Create specialized knowledge:
+No manual file editing. Describe what you want in natural language, and the orchestrator delegates to the right agent:
 
 ```
-creator:agent migration-expert --type sw-engineer
+"Create a migration review expert agent"
+"Add a SQL optimization skill"
+"Make code reviews stricter"
+"Set up a deploy review pipeline"
 ```
 
-The creator agent can also scaffold skills. The generated structure:
+**How it works:**
 
 ```
-skills/development/sql-optimization/
-├── SKILL.md       # The skill instructions
-└── index.yaml     # Metadata
+User (natural language)
+  → secretary (orchestrator)
+    → creator:sonnet       — scaffolds agent, registers, verifies
+    → updater:sonnet       — syncs documentation
+    → supplier:haiku       — checks dependencies
 ```
 
-### Modify Rules
+The secretary analyzes your request, routes it to the appropriate manager agent, and the sub-agent handles everything automatically.
 
-Rules control behavior. Edit them in `.claude/rules/`:
+### Sub-Agent Model
+
+Each sub-agent runs on an optimized model for its task type:
+
+| Model | Usage | Examples |
+|-------|-------|---------|
+| `opus` | Complex reasoning, architecture | Code review, design analysis |
+| `sonnet` | General tasks (default) | Agent creation, code generation |
+| `haiku` | Fast, simple operations | File search, validation |
+
+The orchestrator selects the appropriate model and parallelizes independent tasks (up to 4 concurrent sub-agents):
 
 ```
-.claude/rules/
-├── MUST-*.md      # Required (safety, permissions)
-├── SHOULD-*.md    # Recommended (interactions, error handling)
-└── MAY-*.md       # Optional (optimizations)
+secretary
+  ├── creator:sonnet       — agent scaffolding
+  ├── supplier:haiku       — dependency check
+  └── sync-checker:haiku   — registry verification
+
+dev-lead
+  ├── golang-expert:sonnet — Go implementation
+  ├── python-expert:sonnet — Python implementation
+  └── qa-engineer:sonnet   — test generation
 ```
 
-Want stricter code review? Edit `SHOULD-interaction.md`:
+### Built-in Commands
 
-```markdown
-## Code Review Standards
+| Command | Agent | Description |
+|---------|-------|-------------|
+| `creator:agent <name>` | creator | Create a new agent |
+| `updater:docs` | updater | Sync docs with project structure |
+| `supplier:audit` | supplier | Verify agent dependencies |
+| `dev:review` | dev-lead | Review code with expert agents |
+| `pipeline:run <name>` | secretary | Execute a workflow pipeline |
+| `sync:check` | sync-checker | Full synchronization check |
 
-### Before Approving Any Code
-- [ ] All tests pass
-- [ ] No security vulnerabilities
-- [ ] Performance impact assessed
-- [ ] Documentation updated
-```
+### Custom Pipelines
 
-### Create Custom Pipelines
-
-Define repeatable workflows in `pipelines/`:
+Define repeatable multi-agent workflows:
 
 ```yaml
 # pipelines/deploy-review.yaml
 name: deploy-review
-description: Pre-deployment review workflow
-
 steps:
   - id: security_scan
     agent: qa-lead
@@ -122,31 +114,11 @@ steps:
     action: analyze_performance
 
   - id: migration_review
-    agent: migration-expert  # Your custom agent!
+    agent: migration-expert
     action: review_migrations
 ```
 
 Run it: `pipeline:run deploy-review`
-
-### Mix Built-in + Custom
-
-The real power is combining everything:
-
-```
-your-project/
-├── agents/
-│   ├── orchestrator/          # Built-in: planner, secretary
-│   ├── sw-engineer/
-│   │   ├── language/          # Built-in: golang, python, rust...
-│   │   └── migration-expert/  # YOUR custom agent
-│   └── your-team/             # YOUR team-specific agents
-├── skills/
-│   ├── development/           # Built-in: best practices
-│   └── your-company/          # YOUR company standards
-└── .claude/rules/
-    ├── MUST-safety.md         # Built-in
-    └── MUST-your-policy.md    # YOUR company policy
-```
 
 ---
 

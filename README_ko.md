@@ -39,74 +39,71 @@ omcustom init
 
 oh-my-customcode의 존재 이유입니다. **Claude Code를 당신 것으로 만드세요.**
 
-### 커스텀 에이전트 만들기
+### 자연어로 말하면 됩니다
 
-데이터베이스 마이그레이션을 리뷰하는 에이전트가 필요하다면? Claude Code에서:
-
-```
-creator:agent migration-expert --type sw-engineer
-```
-
-creator 에이전트가 구조 생성, 레지스트리 등록, 의존성 검증까지 자동으로 처리합니다.
-
-**생성되는 구조:**
-```
-agents/sw-engineer/migration-expert/
-├── AGENT.md       # 에이전트가 하는 일
-└── index.yaml     # 메타데이터
-```
-
-기타 관리 커맨드:
-
-| 커맨드 | 설명 |
-|--------|------|
-| `creator:agent <name>` | 새 에이전트 생성 |
-| `updater:docs` | 프로젝트 구조에 맞게 문서 동기화 |
-| `supplier:audit` | 에이전트 의존성 검증 |
-
-### 커스텀 스킬 추가
-
-스킬은 에이전트가 **어떻게** 일하는지 정의합니다. creator 에이전트로 스킬도 생성할 수 있습니다.
-
-**생성되는 구조:**
-```
-skills/development/sql-optimization/
-├── SKILL.md       # 스킬 지침
-└── index.yaml     # 메타데이터
-```
-
-### 규칙 수정
-
-규칙은 행동을 제어합니다. `.claude/rules/`에서 편집하세요:
+파일을 직접 편집할 필요 없습니다. 원하는 것을 자연어로 말하면 오케스트레이터가 적절한 에이전트에 위임합니다:
 
 ```
-.claude/rules/
-├── MUST-*.md      # 필수 (안전, 권한)
-├── SHOULD-*.md    # 권장 (상호작용, 에러 처리)
-└── MAY-*.md       # 선택 (최적화)
+"마이그레이션 리뷰 전문 에이전트를 만들어줘"
+"SQL 최적화 스킬을 추가해줘"
+"코드 리뷰를 더 엄격하게 해줘"
+"배포 전 리뷰 파이프라인을 만들어줘"
 ```
 
-더 엄격한 코드 리뷰를 원하시나요? `SHOULD-interaction.md`를 편집하세요:
+**동작 흐름:**
 
-```markdown
-## Code Review Standards
-
-### Before Approving Any Code
-- [ ] All tests pass
-- [ ] No security vulnerabilities
-- [ ] Performance impact assessed
-- [ ] Documentation updated
+```
+사용자 (자연어)
+  → secretary (오케스트레이터)
+    → creator:sonnet       — 에이전트 생성, 등록, 검증
+    → updater:sonnet       — 문서 동기화
+    → supplier:haiku       — 의존성 확인
 ```
 
-### 커스텀 파이프라인 생성
+secretary가 요청을 분석하고, 적절한 매니저 에이전트에 라우팅하면, 서브 에이전트가 모든 것을 자동으로 처리합니다.
 
-`pipelines/`에서 반복 가능한 워크플로우를 정의하세요:
+### 서브 에이전트 모델
+
+각 서브 에이전트는 작업 유형에 최적화된 모델로 실행됩니다:
+
+| 모델 | 용도 | 예시 |
+|------|------|------|
+| `opus` | 복잡한 추론, 아키텍처 설계 | 코드 리뷰, 설계 분석 |
+| `sonnet` | 일반 작업 (기본값) | 에이전트 생성, 코드 구현 |
+| `haiku` | 빠른 단순 작업 | 파일 검색, 검증 |
+
+오케스트레이터가 적절한 모델을 선택하고, 독립적인 작업은 병렬 실행합니다 (최대 4개 동시):
+
+```
+secretary
+  ├── creator:sonnet       — 에이전트 스캐폴딩
+  ├── supplier:haiku       — 의존성 확인
+  └── sync-checker:haiku   — 레지스트리 검증
+
+dev-lead
+  ├── golang-expert:sonnet — Go 구현
+  ├── python-expert:sonnet — Python 구현
+  └── qa-engineer:sonnet   — 테스트 생성
+```
+
+### 내장 커맨드
+
+| 커맨드 | 에이전트 | 설명 |
+|--------|----------|------|
+| `creator:agent <name>` | creator | 새 에이전트 생성 |
+| `updater:docs` | updater | 프로젝트 구조에 맞게 문서 동기화 |
+| `supplier:audit` | supplier | 에이전트 의존성 검증 |
+| `dev:review` | dev-lead | 전문 에이전트로 코드 리뷰 |
+| `pipeline:run <name>` | secretary | 워크플로우 파이프라인 실행 |
+| `sync:check` | sync-checker | 전체 동기화 검증 |
+
+### 커스텀 파이프라인
+
+반복 가능한 멀티 에이전트 워크플로우를 정의할 수 있습니다:
 
 ```yaml
 # pipelines/deploy-review.yaml
 name: deploy-review
-description: Pre-deployment review workflow
-
 steps:
   - id: security_scan
     agent: qa-lead
@@ -117,31 +114,11 @@ steps:
     action: analyze_performance
 
   - id: migration_review
-    agent: migration-expert  # 방금 만든 커스텀 에이전트!
+    agent: migration-expert
     action: review_migrations
 ```
 
 실행: `pipeline:run deploy-review`
-
-### 기본 제공 + 커스텀 조합
-
-진정한 힘은 모든 것을 결합하는 것입니다:
-
-```
-your-project/
-├── agents/
-│   ├── orchestrator/          # 기본 제공: planner, secretary
-│   ├── sw-engineer/
-│   │   ├── language/          # 기본 제공: golang, python, rust...
-│   │   └── migration-expert/  # 당신의 커스텀 에이전트
-│   └── your-team/             # 당신 팀 전용 에이전트
-├── skills/
-│   ├── development/           # 기본 제공: 베스트 프랙티스
-│   └── your-company/          # 당신 회사 표준
-└── .claude/rules/
-    ├── MUST-safety.md         # 기본 제공
-    └── MUST-your-policy.md    # 당신 회사 정책
-```
 
 ---
 
