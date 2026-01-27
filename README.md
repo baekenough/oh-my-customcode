@@ -84,6 +84,8 @@ metadata:
 
 Done. Your custom agent is ready to use.
 
+> **Tip:** The bundled manager agents can also handle this for you. Ask Claude Code `creator:agent migration-expert --type sw-engineer` to scaffold agents automatically, or use `updater:docs` to sync documentation and `supplier:audit` to verify dependencies.
+
 ### Add a Custom Skill
 
 Skills define **how** agents do things. Create specialized knowledge:
