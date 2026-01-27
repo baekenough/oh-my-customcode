@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-01-27
+
+### Added
+
+- Sync automation script (`scripts/sync-core.ts`) for baekgom-agents template synchronization
+- Sub-agent model specification support in rules (R008, R009, R010)
+- `[agent][model] → Tool` identification format in MUST-tool-identification
+- New guide: `guides/claude-code/11-sub-agents.md`
+
+### Changed
+
+- Disable Windows CI test matrix for Bun stability
+- Update orchestrator rules with model parameter documentation
+- Update secretary and dev-lead agent definitions
+
+### Removed
+
+- Remove tech-reviewer agent, guide, and skill (consolidated into baekgom-agents source)
+- Remove Windows-incompatible E2E and mock tests
+
 ## [0.1.3] - 2026-01-26
 
 ### Changed
@@ -111,7 +131,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.3...v0.1.4
+[0.1.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/baekenough/oh-my-customcode/releases/tag/v0.1.0
