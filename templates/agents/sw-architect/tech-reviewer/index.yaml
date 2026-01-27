@@ -1,0 +1,15 @@
+metadata:
+  name: tech-reviewer
+  type: worker
+  category: sw-architect
+  description: 기술 프로젝트/아키텍처 비판적 분석 및 개선안 제시
+
+skills:
+  - tech-review-methodology
+  - dependency-analysis
+
+triggers:
+  - 기술 리뷰
+  - 아키텍처 분석
+  - 종속성 검토
+  - 프로젝트 평가

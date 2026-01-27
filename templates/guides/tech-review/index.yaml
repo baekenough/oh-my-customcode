@@ -1,0 +1,8 @@
+metadata:
+  name: tech-review
+  description: 기술 프로젝트 리뷰 방법론 가이드
+
+topics:
+  - 오픈소스 라이선스 위험
+  - 추상화 레이어 패턴
+  - 토큰 효율화 전략
