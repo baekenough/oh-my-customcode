@@ -39,79 +39,40 @@ omcustom init
 
 oh-my-customcode의 존재 이유입니다. **Claude Code를 당신 것으로 만드세요.**
 
-### 커스텀 에이전트 만들기 (파일 2개)
+### 커스텀 에이전트 만들기
 
-데이터베이스 마이그레이션을 리뷰하는 에이전트가 필요하다면? 그냥 만드세요:
+데이터베이스 마이그레이션을 리뷰하는 에이전트가 필요하다면? Claude Code에서:
 
+```
+creator:agent migration-expert --type sw-engineer
+```
+
+creator 에이전트가 구조 생성, 레지스트리 등록, 의존성 검증까지 자동으로 처리합니다.
+
+**생성되는 구조:**
 ```
 agents/sw-engineer/migration-expert/
 ├── AGENT.md       # 에이전트가 하는 일
 └── index.yaml     # 메타데이터
 ```
 
-**AGENT.md:**
-```markdown
-# Migration Expert Agent
+기타 관리 커맨드:
 
-> **Type**: Worker
-
-## Purpose
-
-Expert in database migrations, schema design, and data integrity.
-
-## Capabilities
-
-1. Review migration files for safety issues
-2. Suggest rollback strategies
-3. Check for data loss risks
-4. Optimize migration performance
-
-## When to Use
-
-- Before running migrations in production
-- Designing new database schemas
-- Reviewing team members' migrations
-```
-
-**index.yaml:**
-```yaml
-metadata:
-  name: migration-expert
-  type: worker
-  category: sw-engineer
-  description: Database migration specialist
-```
-
-완료. 커스텀 에이전트가 바로 사용 가능합니다.
-
-> **Tip:** 기본 제공되는 매니저 에이전트를 활용할 수도 있습니다. Claude Code에서 `creator:agent migration-expert --type sw-engineer`로 에이전트를 자동 생성하거나, `updater:docs`로 문서 동기화, `supplier:audit`로 의존성 검증이 가능합니다.
+| 커맨드 | 설명 |
+|--------|------|
+| `creator:agent <name>` | 새 에이전트 생성 |
+| `updater:docs` | 프로젝트 구조에 맞게 문서 동기화 |
+| `supplier:audit` | 에이전트 의존성 검증 |
 
 ### 커스텀 스킬 추가
 
-스킬은 에이전트가 **어떻게** 일하는지 정의합니다. 전문 지식을 만드세요:
+스킬은 에이전트가 **어떻게** 일하는지 정의합니다. creator 에이전트로 스킬도 생성할 수 있습니다.
 
+**생성되는 구조:**
 ```
 skills/development/sql-optimization/
 ├── SKILL.md       # 스킬 지침
 └── index.yaml     # 메타데이터
-```
-
-**SKILL.md:**
-```markdown
-# SQL Optimization Skill
-
-## Rules
-
-### Query Optimization
-- Always use EXPLAIN ANALYZE before suggesting changes
-- Prefer indexes over full table scans
-- Avoid SELECT * in production code
-- Use CTEs for complex queries
-
-### Migration Safety
-- Always include rollback scripts
-- Test migrations on production-like data
-- Never delete columns without deprecation period
 ```
 
 ### 규칙 수정

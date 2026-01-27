@@ -39,79 +39,45 @@ That's it. You now have a fully configured Claude Code environment.
 
 This is what oh-my-customcode is all about. **Making Claude Code yours.**
 
-### Create a Custom Agent (2 files)
+### Create a Custom Agent
 
-Want an agent that reviews database migrations? Just create:
+Want an agent that reviews database migrations? Just tell Claude Code:
 
+```
+creator:agent migration-expert --type sw-engineer
+```
+
+The creator agent scaffolds the full structure, registers it, and verifies dependencies automatically.
+
+**What gets created:**
 ```
 agents/sw-engineer/migration-expert/
 ├── AGENT.md       # What the agent does
 └── index.yaml     # Metadata
 ```
 
-**AGENT.md:**
-```markdown
-# Migration Expert Agent
+Other useful management commands:
 
-> **Type**: Worker
-
-## Purpose
-
-Expert in database migrations, schema design, and data integrity.
-
-## Capabilities
-
-1. Review migration files for safety issues
-2. Suggest rollback strategies
-3. Check for data loss risks
-4. Optimize migration performance
-
-## When to Use
-
-- Before running migrations in production
-- Designing new database schemas
-- Reviewing team members' migrations
-```
-
-**index.yaml:**
-```yaml
-metadata:
-  name: migration-expert
-  type: worker
-  category: sw-engineer
-  description: Database migration specialist
-```
-
-Done. Your custom agent is ready to use.
-
-> **Tip:** The bundled manager agents can also handle this for you. Ask Claude Code `creator:agent migration-expert --type sw-engineer` to scaffold agents automatically, or use `updater:docs` to sync documentation and `supplier:audit` to verify dependencies.
+| Command | Description |
+|---------|-------------|
+| `creator:agent <name>` | Create a new agent |
+| `updater:docs` | Sync documentation with project structure |
+| `supplier:audit` | Verify agent dependencies |
 
 ### Add a Custom Skill
 
 Skills define **how** agents do things. Create specialized knowledge:
 
 ```
+creator:agent migration-expert --type sw-engineer
+```
+
+The creator agent can also scaffold skills. The generated structure:
+
+```
 skills/development/sql-optimization/
 ├── SKILL.md       # The skill instructions
 └── index.yaml     # Metadata
-```
-
-**SKILL.md:**
-```markdown
-# SQL Optimization Skill
-
-## Rules
-
-### Query Optimization
-- Always use EXPLAIN ANALYZE before suggesting changes
-- Prefer indexes over full table scans
-- Avoid SELECT * in production code
-- Use CTEs for complex queries
-
-### Migration Safety
-- Always include rollback scripts
-- Test migrations on production-like data
-- Never delete columns without deprecation period
 ```
 
 ### Modify Rules
