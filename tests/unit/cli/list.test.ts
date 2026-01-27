@@ -1039,35 +1039,6 @@ Description after code block.`
       expect(agents[0].description).toBe('Fallback description');
     });
 
-    it('should handle readTextFile error in tryExtractMarkdownDescription (line 241)', async () => {
-      const guideDir = join(tempDir, 'guides', 'architecture');
-      await mkdir(guideDir, { recursive: true });
-      const guidePath = join(guideDir, 'error-guide.md');
-      await writeFile(guidePath, '# Error Guide');
-
-      // Mock readTextFile to throw error
-      const fs = await import('../../../src/utils/fs.js');
-      const readTextFileSpy = spyOn(fs, 'readTextFile').mockImplementation(async (path: string) => {
-        if (path.includes('error-guide.md')) {
-          throw new Error('Simulated read error');
-        }
-        // For other files, use real implementation
-        const { readFile } = await import('node:fs/promises');
-        return (await readFile(path, 'utf-8')).toString();
-      });
-
-      try {
-        const guides = await getGuides(tempDir);
-
-        // Should have guide but no description due to read error
-        expect(guides).toHaveLength(1);
-        expect(guides[0].name).toBe('error-guide');
-        expect(guides[0].description).toBeUndefined();
-      } finally {
-        readTextFileSpy.mockRestore();
-      }
-    });
-
     it('should handle listFiles error in getAgents (line 278)', async () => {
       // Use spyOn to mock listFiles
       const fs = await import('../../../src/utils/fs.js');

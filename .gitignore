@@ -31,10 +31,6 @@ tmp/
 temp/
 *.tmp
 
-# Sync (personal config)
-sync.sh
-.syncconfig.yaml
-
 # VitePress
 docs/.vitepress/cache
 docs/.vitepress/dist

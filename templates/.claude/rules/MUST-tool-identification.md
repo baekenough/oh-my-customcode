@@ -6,15 +6,75 @@
 
 ## CRITICAL
 
-**EVERY tool call MUST be prefixed with agent identification. This is NON-NEGOTIABLE.**
+**EVERY tool call MUST be prefixed with agent and model identification. This is NON-NEGOTIABLE.**
 
 ```
 Before EVERY tool call, output:
-[agent-name] → Tool: <tool-name>
-[agent-name] → Target: <file/path/url>
+[agent-name][model] → Tool: <tool-name>
+[agent-name][model] → Target: <file/path/url>
 ```
 
 Failure to identify tool usage = Rule violation = Must be corrected immediately.
+
+### Self-Check Before EVERY Tool Call
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE INVOKING ANY TOOL, ASK YOURSELF:                         ║
+║                                                                   ║
+║  1. Did I output the tool identification line with MODEL?        ║
+║     [agent-name][model] → Tool: <tool-name>                      ║
+║     [agent-name][model] → Target: <target>                       ║
+║                                                                   ║
+║  2. Am I about to call multiple tools in parallel?               ║
+║     → EACH tool needs its own identification line                ║
+║     → List all identifications BEFORE the tool calls             ║
+║                                                                   ║
+║  If NO to #1 → STOP. Output identification FIRST.                ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+### Model Values
+
+| Model | When to Use |
+|-------|-------------|
+| `opus` | Complex reasoning, architecture design |
+| `sonnet` | General tasks, code generation (default) |
+| `haiku` | Fast simple tasks, file search |
+
+### Common Violations to Avoid
+
+```
+❌ WRONG: Calling tools without identification
+   "먼저 JD 내용을 확인하겠습니다."
+   <tool_call>WebFetch(...)</tool_call>
+
+❌ WRONG: Missing model in identification
+   [secretary] → Tool: WebFetch
+   [secretary] → Fetching: https://example.com/jd.md
+
+✓ CORRECT: Always identify with agent AND model
+   "먼저 JD 내용을 확인하겠습니다."
+   [secretary][opus] → Tool: WebFetch
+   [secretary][opus] → Fetching: https://example.com/jd.md
+   <tool_call>WebFetch(...)</tool_call>
+
+❌ WRONG: Parallel calls without listing all identifications
+   <tool_call>WebFetch(url1)</tool_call>
+   <tool_call>WebFetch(url2)</tool_call>
+   <tool_call>Bash(cmd)</tool_call>
+
+✓ CORRECT: List all identifications with models, then call
+   [secretary][opus] → Tool: WebFetch
+   [secretary][opus] → Fetching: url1
+   [secretary][opus] → Tool: WebFetch
+   [secretary][opus] → Fetching: url2
+   [secretary][opus] → Tool: Bash
+   [secretary][opus] → Running: cmd
+   <tool_call>WebFetch(url1)</tool_call>
+   <tool_call>WebFetch(url2)</tool_call>
+   <tool_call>Bash(cmd)</tool_call>
+```
 
 ## Purpose
 
@@ -22,23 +82,23 @@ Display which agent is using which tool for transparency and debugging. This ext
 
 ## Tool Usage Format
 
-When invoking a tool, prefix with agent identification:
+When invoking a tool, prefix with agent and model identification:
 
 ```
-[agent-name] → Tool: <tool-name>
+[agent-name][model] → Tool: <tool-name>
 ```
 
 ### Examples
 
 ```
-[golang-expert] → Tool: Read
-[golang-expert] → Reading: src/main.go
+[golang-expert][sonnet] → Tool: Read
+[golang-expert][sonnet] → Reading: src/main.go
 
-[supplier] → Tool: Glob
-[supplier] → Searching: agents/**/index.yaml
+[supplier][haiku] → Tool: Glob
+[supplier][haiku] → Searching: agents/**/index.yaml
 
-[creator] → Tool: Write
-[creator] → Writing: agents/sw-engineer/new-agent/AGENT.md
+[creator][sonnet] → Tool: Write
+[creator][sonnet] → Writing: agents/sw-engineer/new-agent/AGENT.md
 ```
 
 ## Extended Format (Verbose)
@@ -47,6 +107,7 @@ For detailed tracking:
 
 ```
 ┌─ Agent: golang-expert (sw-engineer)
+├─ Model: sonnet
 ├─ Skill: go-best-practices
 ├─ Tool: Read
 └─ Target: src/main.go
@@ -76,9 +137,9 @@ For detailed tracking:
 For inline operations:
 
 ```
-[supplier → Glob] agents/**/index.yaml
-[creator → Write] agents/sw-engineer/new-agent/AGENT.md
-[updater → WebFetch] https://github.com/...
+[supplier][haiku] → Glob: agents/**/index.yaml
+[creator][sonnet] → Write: agents/sw-engineer/new-agent/AGENT.md
+[updater][sonnet] → WebFetch: https://github.com/...
 ```
 
 ## Integration with R007
@@ -87,11 +148,12 @@ R008 extends R007 for tool operations:
 
 ```
 ┌─ Agent: creator (manager)
+├─ Model: sonnet
 └─ Task: Creating new agent
 
-[creator → Write] agents/sw-engineer/new-agent/AGENT.md
-[creator → Write] agents/sw-engineer/new-agent/index.yaml
-[creator → Edit] agents/index.yaml
+[creator][sonnet] → Write: agents/sw-engineer/new-agent/AGENT.md
+[creator][sonnet] → Write: agents/sw-engineer/new-agent/index.yaml
+[creator][sonnet] → Edit: agents/index.yaml
 
 [Done] Agent created successfully
 ```

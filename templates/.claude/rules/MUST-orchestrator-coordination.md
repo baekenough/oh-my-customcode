@@ -251,6 +251,49 @@ CORRECT:
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
+## CRITICAL: Sub-agent Model Specification
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  TASK TOOL MODEL PARAMETER (RECOMMENDED)                         ║
+║                                                                   ║
+║  Claude Code Task tool supports `model` parameter to specify     ║
+║  which model the sub-agent should use.                           ║
+║                                                                   ║
+║  Available models:                                                ║
+║    - opus   : Complex reasoning, architecture design             ║
+║    - sonnet : Balanced performance (default)                     ║
+║    - haiku  : Fast, simple tasks, file search                    ║
+║    - inherit: Use parent conversation's model                    ║
+║                                                                   ║
+║  Usage:                                                          ║
+║    Task(                                                         ║
+║      subagent_type: "general-purpose",                           ║
+║      prompt: "Analyze architecture",                             ║
+║      model: "opus"                                               ║
+║    )                                                             ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+### Model Selection by Task Type
+
+| Task Type | Recommended Model | Reason |
+|-----------|-------------------|--------|
+| Architecture analysis | `opus` | Deep reasoning required |
+| Code review | `opus` or `sonnet` | Quality judgment |
+| Code implementation | `sonnet` | Balanced performance |
+| File search/read | `haiku` | Fast, simple operation |
+| Simple validation | `haiku` | Low latency |
+
+### Model Selection by Agent Type
+
+| Agent Category | Model | Examples |
+|----------------|-------|----------|
+| Orchestrator judgment | `opus` | Complex routing decisions |
+| Manager agents | `sonnet` | creator, updater, supplier |
+| Simple utilities | `haiku` | File operations, search |
+| Expert agents | `sonnet` | golang-expert, python-expert |
+
 ## CRITICAL: Git Operations Delegation
 
 ```
