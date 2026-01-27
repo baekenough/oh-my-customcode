@@ -84,6 +84,8 @@ metadata:
 
 완료. 커스텀 에이전트가 바로 사용 가능합니다.
 
+> **Tip:** 기본 제공되는 매니저 에이전트를 활용할 수도 있습니다. Claude Code에서 `creator:agent migration-expert --type sw-engineer`로 에이전트를 자동 생성하거나, `updater:docs`로 문서 동기화, `supplier:audit`로 의존성 검증이 가능합니다.
+
 ### 커스텀 스킬 추가
 
 스킬은 에이전트가 **어떻게** 일하는지 정의합니다. 전문 지식을 만드세요:
