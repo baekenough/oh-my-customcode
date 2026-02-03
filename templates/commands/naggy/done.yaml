@@ -1,8 +1,0 @@
-name: done
-agent: naggy
-description: Mark task as complete
-usage: naggy:done <id>
-arguments:
-  - name: id
-    required: true
-    description: Task ID to mark as complete

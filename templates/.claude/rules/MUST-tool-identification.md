@@ -91,14 +91,14 @@ When invoking a tool, prefix with agent and model identification:
 ### Examples
 
 ```
-[golang-expert][sonnet] → Tool: Read
-[golang-expert][sonnet] → Reading: src/main.go
+[lang-golang-expert][sonnet] → Tool: Read
+[lang-golang-expert][sonnet] → Reading: src/main.go
 
-[supplier][haiku] → Tool: Glob
-[supplier][haiku] → Searching: agents/**/index.yaml
+[mgr-supplier][haiku] → Tool: Glob
+[mgr-supplier][haiku] → Searching: .claude/agents/*.md
 
-[creator][sonnet] → Tool: Write
-[creator][sonnet] → Writing: agents/sw-engineer/new-agent/AGENT.md
+[mgr-creator][sonnet] → Tool: Write
+[mgr-creator][sonnet] → Writing: .claude/agents/new-agent.md
 ```
 
 ## Extended Format (Verbose)
@@ -106,7 +106,7 @@ When invoking a tool, prefix with agent and model identification:
 For detailed tracking:
 
 ```
-┌─ Agent: golang-expert (sw-engineer)
+┌─ Agent: lang-golang-expert (sw-engineer)
 ├─ Model: sonnet
 ├─ Skill: go-best-practices
 ├─ Tool: Read
@@ -137,9 +137,9 @@ For detailed tracking:
 For inline operations:
 
 ```
-[supplier][haiku] → Glob: agents/**/index.yaml
-[creator][sonnet] → Write: agents/sw-engineer/new-agent/AGENT.md
-[updater][sonnet] → WebFetch: https://github.com/...
+[mgr-supplier][haiku] → Glob: .claude/agents/*.md
+[mgr-creator][sonnet] → Write: .claude/agents/new-agent.md
+[mgr-updater][sonnet] → WebFetch: https://github.com/...
 ```
 
 ## Integration with R007
@@ -147,13 +147,11 @@ For inline operations:
 R008 extends R007 for tool operations:
 
 ```
-┌─ Agent: creator (manager)
+┌─ Agent: mgr-creator (manager)
 ├─ Model: sonnet
 └─ Task: Creating new agent
 
-[creator][sonnet] → Write: agents/sw-engineer/new-agent/AGENT.md
-[creator][sonnet] → Write: agents/sw-engineer/new-agent/index.yaml
-[creator][sonnet] → Edit: agents/index.yaml
+[mgr-creator][sonnet] → Write: .claude/agents/new-agent.md
 
 [Done] Agent created successfully
 ```

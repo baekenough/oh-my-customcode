@@ -47,7 +47,7 @@ steps:
 
   # Step 4: Generate final report
   - id: report
-    agent: documenter
+    agent: arch-documenter
     action: generate_report
     input:
       file: "${file_path}"

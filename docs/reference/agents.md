@@ -1,6 +1,6 @@
 # Agents Reference
 
-oh-my-customcode includes 36 pre-built agents organized by category.
+oh-my-customcode includes 34 pre-built agents organized by category.
 
 ## Overview
 
@@ -13,9 +13,11 @@ oh-my-customcode includes 36 pre-built agents organized by category.
 | SW Engineer/Backend | 5 | Backend development |
 | SW Engineer/Language | 6 | Language-specific expertise |
 | SW Engineer/Tooling | 3 | Build tools and optimization |
+| SW Engineer/Database | 1 | Database expertise |
 | SW Architect | 2 | Architecture and documentation |
 | Infra Engineer | 2 | Infrastructure and DevOps |
 | QA Team | 3 | Quality assurance |
+| Tutor | 1 | Learning and education |
 
 ## Orchestrator Agents
 
@@ -57,7 +59,7 @@ Orchestrators coordinate other agents and manage complex workflows.
 
 Managers handle system-level operations and automation.
 
-### creator
+### mgr-creator
 
 **Role**: Create new agents, skills, and rules.
 
@@ -65,7 +67,7 @@ Managers handle system-level operations and automation.
 - Validates structure and metadata
 - Updates registries
 
-### updater
+### mgr-updater
 
 **Role**: Update agents from external sources.
 
@@ -73,7 +75,7 @@ Managers handle system-level operations and automation.
 - Syncs with remote templates
 - Manages versioning
 
-### supplier
+### mgr-supplier
 
 **Role**: Audit and verify dependencies.
 
@@ -81,7 +83,7 @@ Managers handle system-level operations and automation.
 - Checks for broken links
 - Reports dependency issues
 
-### gitnerd
+### mgr-gitnerd
 
 **Role**: Git operations and workflow automation.
 
@@ -89,7 +91,7 @@ Managers handle system-level operations and automation.
 - Handles merge operations
 - Automates git workflows
 
-### sync-checker
+### mgr-sync-checker
 
 **Role**: Verify synchronization across components.
 
@@ -97,7 +99,7 @@ Managers handle system-level operations and automation.
 - Validates documentation sync
 - Reports inconsistencies
 
-### sauron
+### mgr-sauron
 
 **Role**: System-wide monitoring and oversight.
 
@@ -109,7 +111,7 @@ Managers handle system-level operations and automation.
 
 System agents provide core functionality.
 
-### memory-keeper
+### sys-memory-keeper
 
 **Role**: Manage session memory and context.
 
@@ -117,7 +119,7 @@ System agents provide core functionality.
 - Recalls relevant memories
 - Handles context persistence
 
-### naggy
+### sys-naggy
 
 **Role**: Task reminders and TODO management.
 
@@ -127,7 +129,7 @@ System agents provide core functionality.
 
 ## SW Engineer Agents - Frontend
 
-### vercel-agent
+### fe-vercel-agent
 
 **Role**: Vercel and Next.js development.
 
@@ -135,7 +137,7 @@ System agents provide core functionality.
 - Next.js patterns
 - Vercel deployment
 
-### vuejs-agent
+### fe-vuejs-agent
 
 **Role**: Vue.js development.
 
@@ -143,7 +145,7 @@ System agents provide core functionality.
 - Vuex/Pinia state management
 - Vue ecosystem
 
-### svelte-agent
+### fe-svelte-agent
 
 **Role**: Svelte development.
 
@@ -153,7 +155,7 @@ System agents provide core functionality.
 
 ## SW Engineer Agents - Backend
 
-### fastapi-expert
+### be-fastapi-expert
 
 **Role**: FastAPI development.
 
@@ -161,7 +163,7 @@ System agents provide core functionality.
 - Pydantic models
 - FastAPI patterns
 
-### springboot-expert
+### be-springboot-expert
 
 **Role**: Spring Boot development.
 
@@ -169,7 +171,7 @@ System agents provide core functionality.
 - Spring ecosystem
 - Enterprise patterns
 
-### go-backend-expert
+### be-go-backend-expert
 
 **Role**: Go backend development.
 
@@ -177,7 +179,7 @@ System agents provide core functionality.
 - Go concurrency
 - Go ecosystem
 
-### express-expert
+### be-express-expert
 
 **Role**: Express.js development.
 
@@ -185,7 +187,7 @@ System agents provide core functionality.
 - Express middleware
 - JavaScript backend
 
-### nestjs-expert
+### be-nestjs-expert
 
 **Role**: NestJS development.
 
@@ -195,7 +197,7 @@ System agents provide core functionality.
 
 ## SW Engineer Agents - Language
 
-### golang-expert
+### lang-golang-expert
 
 **Role**: Go language expertise.
 
@@ -203,7 +205,7 @@ System agents provide core functionality.
 - Go tooling
 - Go best practices
 
-### python-expert
+### lang-python-expert
 
 **Role**: Python language expertise.
 
@@ -211,7 +213,7 @@ System agents provide core functionality.
 - Python tooling
 - Python best practices
 
-### rust-expert
+### lang-rust-expert
 
 **Role**: Rust language expertise.
 
@@ -219,7 +221,7 @@ System agents provide core functionality.
 - Rust patterns
 - Rust ecosystem
 
-### kotlin-expert
+### lang-kotlin-expert
 
 **Role**: Kotlin language expertise.
 
@@ -227,7 +229,7 @@ System agents provide core functionality.
 - Kotlin/JVM
 - Kotlin multiplatform
 
-### typescript-expert
+### lang-typescript-expert
 
 **Role**: TypeScript language expertise.
 
@@ -235,7 +237,7 @@ System agents provide core functionality.
 - Type system
 - TypeScript tooling
 
-### java21-expert
+### lang-java21-expert
 
 **Role**: Java 21 language expertise.
 
@@ -245,7 +247,7 @@ System agents provide core functionality.
 
 ## SW Engineer Agents - Tooling
 
-### npm-expert
+### tool-npm-expert
 
 **Role**: npm and package management.
 
@@ -253,7 +255,7 @@ System agents provide core functionality.
 - npm scripts
 - Dependency management
 
-### optimizer
+### tool-optimizer
 
 **Role**: Performance optimization.
 
@@ -261,7 +263,7 @@ System agents provide core functionality.
 - Build optimization
 - Runtime performance
 
-### bun-expert
+### tool-bun-expert
 
 **Role**: Bun runtime expertise.
 
@@ -269,9 +271,19 @@ System agents provide core functionality.
 - Bun tooling
 - Bun ecosystem
 
+## SW Engineer Agents - Database
+
+### db-supabase-expert
+
+**Role**: Supabase backend and database.
+
+- Supabase APIs
+- PostgreSQL database
+- Supabase auth and storage
+
 ## SW Architect Agents
 
-### documenter
+### arch-documenter
 
 **Role**: Documentation creation and maintenance.
 
@@ -279,7 +291,7 @@ System agents provide core functionality.
 - API documentation
 - Architecture docs
 
-### speckit-agent
+### arch-speckit-agent
 
 **Role**: Specification and design documents.
 
@@ -289,7 +301,7 @@ System agents provide core functionality.
 
 ## Infra Engineer Agents
 
-### docker-expert
+### infra-docker-expert
 
 **Role**: Docker and containerization.
 
@@ -297,7 +309,7 @@ System agents provide core functionality.
 - Docker Compose
 - Container orchestration
 
-### aws-expert
+### infra-aws-expert
 
 **Role**: AWS cloud services.
 
@@ -331,6 +343,17 @@ System agents provide core functionality.
 - Test frameworks
 - Bug reporting
 
+## Tutor Agents
+
+### tutor-go
+
+**Role**: Go language learning and tutorials.
+
+- Interactive Go lessons
+- Exercise guidance
+- Concept explanations
+- Practice problems
+
 ## Agent Structure
 
 Each agent follows this structure:
@@ -347,9 +370,9 @@ agents/{category}/{agent-name}/
 Agents are automatically selected based on intent detection, or you can explicitly invoke them:
 
 ```
-@golang-expert review this code
-@fastapi-expert create a new endpoint
-@docker-expert optimize the Dockerfile
+@lang-golang-expert review this code
+@be-fastapi-expert create a new endpoint
+@infra-docker-expert optimize the Dockerfile
 ```
 
 See [Customization](/guide/customization) for creating your own agents.

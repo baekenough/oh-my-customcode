@@ -6,20 +6,20 @@
 
 ## CRITICAL
 
-**After modifying agents, skills, guides, commands, or pipelines, you MUST run the full verification process before committing.**
+**After modifying agents, skills, or guides, you MUST run the full verification process before committing.**
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
 ║  ⚠️  ABSOLUTE PROHIBITION                                        ║
 ║                                                                   ║
 ║  DO NOT even ASK "커밋하시겠습니까?" after structural changes    ║
-║  until sauron:watch has been executed and passed.                ║
+║  until mgr-sauron:watch has been executed and passed.            ║
 ║                                                                   ║
 ║  WRONG:                                                          ║
 ║    [Make changes] → "커밋하시겠습니까?"                          ║
 ║                                                                   ║
 ║  CORRECT:                                                        ║
-║    [Make changes] → sauron:watch → [All pass] → "커밋할까요?"   ║
+║    [Make changes] → mgr-sauron:watch → [All pass] → "커밋할까요?" ║
 ║                                                                   ║
 ║  Asking to commit before verification = Rule violation           ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -30,9 +30,9 @@
 ║  MANDATORY VERIFICATION PROCESS:                                 ║
 ║                                                                   ║
 ║  Phase 1: Manager Agent Verification (5 rounds)                  ║
-║    - supplier:audit                                              ║
-║    - sync-checker:check                                          ║
-║    - updater:docs                                                ║
+║    - mgr-supplier:audit                                          ║
+║    - mgr-sync-checker:check                                      ║
+║    - mgr-updater:docs                                            ║
 ║                                                                   ║
 ║  Phase 2: Deep Review (3 rounds)                                 ║
 ║    - Workflow alignment                                          ║
@@ -41,7 +41,7 @@
 ║                                                                   ║
 ║  Phase 3: Fix all issues                                         ║
 ║                                                                   ║
-║  Phase 4: Commit via gitnerd                                     ║
+║  Phase 4: Commit via mgr-gitnerd                                 ║
 ║                                                                   ║
 ║  Skipping ANY phase = Rule violation                             ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -53,25 +53,25 @@ Run manager agents 5 times to catch all issues:
 
 ### Round 1-2: Basic Sync
 ```
-□ supplier:audit - Check all agent dependencies
-□ sync-checker:check - Verify registry synchronization
+□ mgr-supplier:audit - Check all agent dependencies
+□ mgr-sync-checker:check - Verify registry synchronization
 □ Fix any issues found
 ```
 
 ### Round 3-4: Deep Sync
 ```
-□ supplier:audit - Re-verify after fixes
-□ sync-checker:check - Re-verify registries
-□ updater:docs - Check documentation sync
+□ mgr-supplier:audit - Re-verify after fixes
+□ mgr-sync-checker:check - Re-verify registries
+□ mgr-updater:docs - Check documentation sync
 □ Fix any remaining issues
 ```
 
 ### Round 5: Final Verification
 ```
-□ All agent counts match (CLAUDE.md, index.yaml, actual files)
-□ All symlinks valid
-□ All command registries updated
-□ All intent-detection triggers present
+□ All agent counts match (CLAUDE.md, actual .md files in .claude/agents/)
+□ All agent frontmatter valid (required fields present)
+□ All skill references in agents exist in .claude/skills/
+□ All routing skill patterns updated
 ```
 
 ## Phase 2: Deep Review (3 Rounds)
@@ -79,24 +79,25 @@ Run manager agents 5 times to catch all issues:
 ### Deep Round 1: Workflow Alignment
 ```
 □ Agent creation workflow documented and functional
-□ Development workflow uses proper orchestrators
+□ Development workflow uses proper routing skills
 □ Deployment workflow defined (if applicable)
-□ All orchestrators have complete `manages:` sections
+□ All routing skills have complete agent pattern mappings
 ```
 
 ### Deep Round 2: Reference Verification
 ```
-□ All orchestrators properly reference their managed agents
+□ All routing skills properly reference their managed agents
 □ All rules are properly referenced
-□ No orphaned agents (not managed by any orchestrator)
+□ No orphaned agents (not referenced by any routing skill)
 □ No circular references
+□ All skill references in agent frontmatter are valid
 ```
 
 ### Deep Round 3: Philosophy Compliance
 ```
-□ R006: Separation of concerns (AGENT.md = role only, no details)
-□ R009: Parallel execution enabled for orchestrators
-□ R010: Multi-agent tasks use orchestrators
+□ R006: Separation of concerns (agent file = role only, no details)
+□ R009: Parallel execution enabled for main conversation
+□ R010: Multi-agent tasks use routing skills and Task tool
 □ R007/R008: Agent/tool identification documented
 □ All MUST rules enforced, SHOULD rules recommended
 ```
@@ -105,10 +106,10 @@ Run manager agents 5 times to catch all issues:
 
 ```
 Phase 1: Manager Verification (5x)
-  □ Round 1: supplier:audit
-  □ Round 2: sync-checker:check
-  □ Round 3: supplier:audit (re-verify)
-  □ Round 4: sync-checker:check + updater:docs
+  □ Round 1: mgr-supplier:audit
+  □ Round 2: mgr-sync-checker:check
+  □ Round 3: mgr-supplier:audit (re-verify)
+  □ Round 4: mgr-sync-checker:check + mgr-updater:docs
   □ Round 5: Final count verification
 
 Phase 2: Deep Review (3x)
@@ -122,7 +123,7 @@ Phase 3: Fix Issues
   □ Re-run verification if major fixes made
 
 Phase 4: Commit
-  □ Delegate to gitnerd
+  □ Delegate to mgr-gitnerd
   □ Meaningful commit message
 ```
 
@@ -132,14 +133,11 @@ Phase 4: Commit
 |--------|---------------------------|
 | Create new agent | **YES** |
 | Rename agent | **YES** |
-| Move agent | **YES** |
 | Delete agent | **YES** |
-| Modify agent structure | **YES** |
+| Modify agent frontmatter | **YES** |
 | Add/modify skill | **YES** |
 | Add/modify guide | **YES** |
-| Add/modify command | **YES** |
-| Add/modify pipeline | **YES** |
-| Change orchestrator manages section | **YES** |
+| Change routing skill patterns | **YES** |
 | Update rules | **YES** |
 
 ## Workflow Diagram
@@ -151,8 +149,8 @@ Content Change Made
 ┌───────────────────────────────┐
 │  Phase 1: Manager Verification │
 │  (5 rounds)                    │
-│  supplier → sync-checker →     │
-│  updater                       │
+│  mgr-supplier → mgr-sync-checker → │
+│  mgr-updater                   │
 └───────────────┬───────────────┘
                 │
                 ▼
@@ -174,7 +172,7 @@ Content Change Made
                 │
                 ▼
 ┌───────────────────────────────┐
-│  Phase 4: Commit via gitnerd   │
+│  Phase 4: Commit via mgr-gitnerd │
 └───────────────────────────────┘
 ```
 
@@ -188,7 +186,7 @@ Content Change Made
 ║  2. Did I complete all 3 rounds of deep review?                  ║
 ║  3. Did I fix ALL discovered issues?                             ║
 ║  4. Are all counts matching across all sources?                  ║
-║  5. Am I delegating to gitnerd for the commit?                   ║
+║  5. Am I delegating to mgr-gitnerd for the commit?               ║
 ║                                                                   ║
 ║  If NO to ANY → DO NOT COMMIT                                    ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -198,16 +196,25 @@ Content Change Made
 
 ```bash
 # Agent count check
-find agents -name "AGENT.md" | wc -l
+ls .claude/agents/*.md | wc -l
 
-# Broken symlinks
-find agents -type l ! -exec test -e {} \; -print
+# Skill count check
+find .claude/skills -name "SKILL.md" | wc -l
 
-# Index registry count
-grep -c "name:" agents/index.yaml
+# Frontmatter validation (check for missing YAML headers)
+for f in .claude/agents/*.md; do head -1 "$f" | grep -q "^---" || echo "MISSING FRONTMATTER: $f"; done
 
-# Intent trigger coverage
-grep -c "keywords:" skills/orchestration/intent-detection/patterns/agent-triggers.yaml
+# Check for agents with invalid skill references
+for f in .claude/agents/*.md; do
+  grep "^skills:" -A 10 "$f" | grep "  - " | sed 's/.*- //' | while read skill; do
+    [ -f ".claude/skills/$skill/SKILL.md" ] || echo "INVALID SKILL REF in $f: $skill"
+  done
+done
+
+# Routing skill pattern coverage
+grep -c "agent_patterns:" .claude/skills/secretary-routing/SKILL.md
+grep -c "agent_patterns:" .claude/skills/dev-lead-routing/SKILL.md
+grep -c "agent_patterns:" .claude/skills/qa-lead-routing/SKILL.md
 ```
 
 ## Integration with Other Rules
@@ -215,5 +222,5 @@ grep -c "keywords:" skills/orchestration/intent-detection/patterns/agent-trigger
 | Rule | Integration |
 |------|-------------|
 | R009 (Parallel) | Verification checks can run in parallel |
-| R010 (Orchestrator) | Delegate commit to gitnerd |
+| R010 (Orchestrator) | Delegate commit to mgr-gitnerd |
 | R016 (Improvement) | Update this rule if new issues found |

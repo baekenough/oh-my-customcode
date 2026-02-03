@@ -76,8 +76,8 @@ EVERY tool call MUST be prefixed with:
 [agent-name] -> Target: <file/path/url>
 
 Example:
-[golang-expert] -> Tool: Read
-[golang-expert] -> Target: src/main.go
+[lang-golang-expert] -> Tool: Read
+[lang-golang-expert] -> Target: src/main.go
 ```
 
 ### 3. Parallel Execution (ENFORCED for 2+ independent tasks)
@@ -89,12 +89,12 @@ When 2 or more tasks are INDEPENDENT:
 Detection: If tasks don't share state or have dependencies -> PARALLEL
 ```
 
-### 4. Orchestrator Coordination (ENFORCED for multi-agent tasks)
+### 4. Agent Routing (ENFORCED for multi-agent tasks)
 ```
 When task requires multiple agents:
--> secretary (orchestrator) MUST coordinate
--> secretary assigns tasks to appropriate agents
--> secretary aggregates results
+-> Routing skills analyze request and route to appropriate agents
+-> Agents execute tasks based on their expertise
+-> Results are aggregated and returned
 ```
 
 ---
@@ -113,7 +113,7 @@ When task requires multiple agents:
 | R007 | Agent Identification | **ENFORCED** - Display agent/skill in ALL responses |
 | R008 | Tool Identification | **ENFORCED** - Display agent when using ANY tool |
 | R009 | Parallel Execution | **ENFORCED** - Parallel execution for independent tasks |
-| R010 | Orchestrator Coordination | **ENFORCED** - Orchestrator coordination for multi-agent tasks |
+| R010 | Agent Routing | **ENFORCED** - Agent routing for multi-agent tasks |
 | R015 | Intent Transparency | **MUST** - Transparent agent routing |
 | R016 | Continuous Improvement | **ENFORCED** - Update rules when violations occur |
 | R017 | Sync Verification | **ENFORCED** - Verify sync before structural changes |
@@ -135,58 +135,58 @@ When task requires multiple agents:
 
 ## Commands
 
-Format: `{agent}:{action} [arguments]`
+Commands use `/slash-command` format.
 
 ### System Commands
 | Command | Description |
 |---------|-------------|
-| `lists` | Show all available commands |
-| `status` | Show system status |
-| `help` | Show help information |
+| `/lists` | Show all available commands |
+| `/status` | Show system status |
+| `/help` | Show help information |
 
 ### Manager Commands
 | Command | Description |
 |---------|-------------|
-| `creator:agent` | Create a new agent |
-| `updater:docs` | Sync documentation with project structure |
-| `supplier:audit` | Audit agent dependencies |
-| `supplier:fix` | Fix broken references |
-| `naggy:list` | Show all TODO items |
-| `naggy:add` | Add a new TODO item |
-| `naggy:done` | Mark TODO item as complete |
-| `git:commit` | Create a git commit |
-| `git:branch` | Create or switch branches |
-| `git:pr` | Create a pull request |
-| `git:sync` | Sync with remote repository |
-| `sync:check` | Run full synchronization check |
-| `sauron:watch` | Full R017 verification |
-| `sauron:quick` | Quick verification |
+| `/mgr-creator:agent` | Create a new agent |
+| `/mgr-updater:docs` | Sync documentation with project structure |
+| `/mgr-supplier:audit` | Audit agent dependencies |
+| `/mgr-supplier:fix` | Fix broken references |
+| `/sys-naggy:list` | Show all TODO items |
+| `/sys-naggy:add` | Add a new TODO item |
+| `/sys-naggy:done` | Mark TODO item as complete |
+| `/mgr-gitnerd:commit` | Create a git commit |
+| `/mgr-gitnerd:branch` | Create or switch branches |
+| `/mgr-gitnerd:pr` | Create a pull request |
+| `/mgr-gitnerd:sync` | Sync with remote repository |
+| `/mgr-sync-checker:check` | Run full synchronization check |
+| `/mgr-sauron:watch` | Full R017 verification |
+| `/mgr-sauron:quick` | Quick verification |
 
 ### Dev Commands
 | Command | Description |
 |---------|-------------|
-| `dev:review` | Review code for best practices |
-| `dev:refactor` | Refactor code |
+| `/dev:review` | Review code for best practices |
+| `/dev:refactor` | Refactor code |
 
 ### Tooling Commands
 | Command | Description |
 |---------|-------------|
-| `npm:publish` | Publish package to npm registry |
-| `npm:version` | Manage semantic versions |
-| `optimize:analyze` | Analyze bundle and performance |
-| `optimize:bundle` | Optimize bundle size |
+| `/tool-npm-expert:publish` | Publish package to npm registry |
+| `/tool-npm-expert:version` | Manage semantic versions |
+| `/tool-optimizer:analyze` | Analyze bundle and performance |
+| `/tool-optimizer:bundle` | Optimize bundle size |
 
 ### Memory Commands
 | Command | Description |
 |---------|-------------|
-| `memory:save` | Save session context |
-| `memory:recall` | Search and recall memories |
+| `/sys-memory-keeper:save` | Save session context |
+| `/sys-memory-keeper:recall` | Search and recall memories |
 
 ### Pipeline Commands
 | Command | Description |
 |---------|-------------|
-| `pipeline:run` | Execute a defined pipeline |
-| `pipeline:list` | List available pipelines |
+| `/pipeline:run` | Execute a defined pipeline |
+| `/pipeline:list` | List available pipelines |
 
 ## Project Structure
 
@@ -197,63 +197,64 @@ project/
 |   +-- rules/                   # Global rules (R000-R017)
 |   +-- hooks/                   # Hook scripts
 |   +-- contexts/                # Context files
-+-- agents/
-|   +-- orchestrator/            # planner, secretary, dev-lead, qa-lead (4)
-|   +-- manager/                 # creator, updater, supplier, gitnerd, sync-checker, sauron (6)
-|   +-- system/                  # memory-keeper, naggy (2)
-|   +-- sw-engineer/
-|   |   +-- frontend/            # vercel-agent, vuejs-agent, svelte-agent (3)
-|   |   +-- backend/             # fastapi, springboot, go-backend, express, nestjs (5)
-|   |   +-- language/            # golang, python, rust, kotlin, typescript, java21 (6)
-|   |   +-- tooling/             # npm-expert, optimizer, bun-expert (3)
-|   +-- sw-architect/            # documenter, speckit-agent (2)
-|   +-- infra-engineer/          # docker, aws (2)
-|   +-- qa-team/                 # qa-planner, qa-writer, qa-engineer (3)
-+-- skills/                      # Skill definitions
-+-- guides/                      # Reference docs (12)
+|   +-- agents/                  # Flat agent directory
+|   |   +-- lang-golang-expert/
+|   |   +-- lang-python-expert/
+|   |   +-- be-fastapi-expert/
+|   |   +-- fe-vercel-agent/
+|   |   +-- mgr-creator/
+|   |   +-- sys-memory-keeper/
+|   |   +-- ... (34 total)
+|   +-- skills/                  # Skill definitions
+|   |   +-- routing/
+|   |   +-- development/
+|   |   +-- backend/
+|   |   +-- infrastructure/
+|   |   +-- system/
++-- guides/                      # Reference docs
 +-- pipelines/                   # Pipeline definitions
-+-- commands/                    # Command definitions
 ```
 
 ## Agents Summary
 
 | Type | Count | Agents |
 |------|-------|--------|
-| Orchestrator | 4 | planner (master), secretary, dev-lead, qa-lead |
-| Manager | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
-| System | 2 | memory-keeper, naggy |
-| SW Engineer/Frontend | 3 | vercel-agent, vuejs-agent, svelte-agent |
-| SW Engineer/Backend | 5 | fastapi, springboot, go-backend, express, nestjs |
-| SW Engineer/Language | 6 | golang, python, rust, kotlin, typescript, java21 |
-| SW Engineer/Tooling | 3 | npm-expert, optimizer, bun-expert |
-| SW Architect | 2 | documenter, speckit-agent |
-| Infra Engineer | 2 | docker, aws |
-| QA Team | 3 | qa-planner, qa-writer, qa-engineer |
-| **Total** | **36** | |
+| Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| Backend | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
+| Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| Database | 1 | db-supabase-expert |
+| Architect | 2 | arch-documenter, arch-speckit-agent |
+| Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
+| QA | 3 | qa-planner, qa-writer, qa-engineer |
+| Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
+| System | 2 | sys-memory-keeper, sys-naggy |
+| Tutor | 1 | tutor-go |
+| **Total** | **34** | |
 
 ## Quick Reference
 
 ```bash
 # Show all commands
-lists
+/lists
 
 # Audit dependencies
-supplier:audit
+/mgr-supplier:audit
 
 # Create new agent
-creator:agent my-agent --type sw-engineer
+/mgr-creator:agent my-agent --type language
 
 # Review code
-dev:review src/main.go
+/dev:review src/main.go
 
 # Memory management
-memory:save
-memory:recall authentication
+/sys-memory-keeper:save
+/sys-memory-keeper:recall authentication
 
 # Pipeline execution
-pipeline:list
-pipeline:run code-review --input file_path=src/main.go
+/pipeline:list
+/pipeline:run code-review --input file_path=src/main.go
 
 # Override intent detection
-@golang-expert review this
+@lang-golang-expert review this
 ```

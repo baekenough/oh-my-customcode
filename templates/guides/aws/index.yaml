@@ -23,4 +23,4 @@ documents:
     description: Common AWS architecture patterns
 
 used_by:
-  - aws-expert
+  - infra-aws-expert

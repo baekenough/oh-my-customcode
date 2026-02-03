@@ -6,7 +6,30 @@
 
 ## CRITICAL
 
-**When a task requires multiple agents, the APPROPRIATE orchestrator MUST coordinate.**
+**The MAIN CONVERSATION is the sole orchestrator. It uses routing skills to delegate tasks to specialized subagents.**
+
+### Flat Architecture (MANDATORY)
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  NEW ARCHITECTURE: FLAT, NO HIERARCHY                            ║
+║                                                                   ║
+║  Main Conversation (orchestrator)                                ║
+║       │                                                          ║
+║       ├─ Uses routing skills:                                    ║
+║       │  • secretary-routing (agent/system tasks)                ║
+║       │  • dev-lead-routing (development tasks)                  ║
+║       │  • qa-lead-routing (QA tasks)                            ║
+║       │                                                          ║
+║       └─ Spawns subagents (Task tool):                           ║
+║          ├─ mgr-creator, mgr-updater, mgr-supplier (manager agents) ║
+║          ├─ lang-golang-expert, lang-python-expert (language experts) ║
+║          └─ be-springboot-expert, be-fastapi-expert (framework experts) ║
+║                                                                   ║
+║  IMPORTANT: Subagents CANNOT spawn other subagents               ║
+║            Only main conversation can spawn subagents            ║
+╚══════════════════════════════════════════════════════════════════╝
+```
 
 ### Session Continuity (MANDATORY)
 
@@ -16,120 +39,110 @@
 ║                                                                   ║
 ║  1. Re-read CLAUDE.md and rules IMMEDIATELY                      ║
 ║  2. Agent delegation rules STILL APPLY                           ║
-║  3. Orchestrator must NOT execute work directly                  ║
-║  4. Must spawn Task agents for actual work                       ║
+║  3. Main conversation uses routing skills to identify agents     ║
+║  4. Spawn subagents with Task tool for actual work               ║
 ║                                                                   ║
 ║  WRONG after session restart:                                    ║
-║    dev-lead → directly runs Bash/Edit/Write                     ║
+║    Main conversation → directly writes code/runs builds          ║
 ║                                                                   ║
 ║  CORRECT after session restart:                                  ║
-║    dev-lead → Task(springboot-expert) → runs Bash/Edit/Write    ║
+║    Main conversation → Task(be-springboot-expert) → code/build   ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-### Orchestrator Direct Action Prohibition (MANDATORY)
+### Routing Logic (MANDATORY)
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  ORCHESTRATORS (secretary, dev-lead) MUST NOT:                   ║
+║  HOW TO ROUTE TASKS                                              ║
 ║                                                                   ║
-║  ✗ Directly run Bash commands for code/build tasks              ║
-║  ✗ Directly Edit/Write source code files                        ║
-║  ✗ Directly modify project configuration                        ║
+║  Task Domain                    → Routing Skill → Agent          ║
+║  ──────────────────────────────────────────────────────────────  ║
+║  Agent creation/update/audit    → secretary-routing → mgr-creator ║
+║  Code review/refactoring        → dev-lead-routing → expert-*    ║
+║  Feature implementation         → dev-lead-routing → expert-*    ║
+║  Multi-language development     → dev-lead-routing → multiple    ║
+║  System operations              → secretary-routing → manager    ║
+║  QA/Testing tasks               → qa-lead-routing → qa-*         ║
 ║                                                                   ║
-║  ORCHESTRATORS MUST:                                             ║
-║                                                                   ║
-║  ✓ Analyze task and identify required agents                    ║
-║  ✓ Spawn Task agents with appropriate expert roles              ║
-║  ✓ Aggregate results from spawned agents                        ║
-║  ✓ Report summary to user                                       ║
-║                                                                   ║
-║  Only allowed direct tools: Read, Glob, Grep (for analysis)     ║
+║  Routing skills contain the logic for:                           ║
+║  • Which agent to use for which task                             ║
+║  • When to spawn multiple agents in parallel                     ║
+║  • How to aggregate results                                      ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-### Orchestrator Role Separation (MANDATORY)
+### Routing Skills
+
+| Routing Skill | Manages | Handles |
+|---------------|---------|---------|
+| **secretary-routing** | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, sys-memory-keeper | Agent management, system operations |
+| **dev-lead-routing** | language/framework experts | Development, code review, implementation |
+| **qa-lead-routing** | qa-planner, qa-writer, qa-engineer | Testing, quality assurance |
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  WHICH ORCHESTRATOR TO USE?                                      ║
-║                                                                   ║
-║  Task Domain                    → Orchestrator                   ║
-║  ─────────────────────────────────────────────────               ║
-║  Agent creation/update/audit    → secretary                      ║
-║  Code review/refactoring        → dev-lead                       ║
-║  Feature implementation         → dev-lead                       ║
-║  Multi-language development     → dev-lead                       ║
-║  Manager agent coordination     → secretary                      ║
-║  SW/Backend engineer tasks      → dev-lead                       ║
-║                                                                   ║
-║  WRONG: secretary directing kotlin-expert for code work         ║
-║  RIGHT: dev-lead directing kotlin-expert for code work          ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-### Orchestrator Responsibilities
-
-| Orchestrator | Supervises | Handles |
-|--------------|------------|---------|
-| **secretary** | manager/* (creator, updater, supplier, memory-keeper) | Agent management, system operations |
-| **dev-lead** | sw-engineer/*, sw-engineer/backend/* | Development, code review, implementation |
-
-```
-Multi-agent detection:
+Multi-agent detection (handled by routing skills):
 - Task spans multiple domains (frontend + backend)
-- Task requires different expertise (golang + python)
+- Task requires different expertise (lang-golang + lang-python)
 - Task involves batch operations on different resources
 
-If multi-agent needed → secretary MUST coordinate
+If multi-agent needed → Spawn multiple subagents in parallel
 ```
 
 ## Coordination Flow
 
 ```
-CORRECT:
+CORRECT (Flat Architecture):
 User Request
     │
     ▼
-┌─────────────────────────────┐
-│  secretary (orchestrator)    │
-│  - Analyzes task             │
-│  - Identifies required agents│
-│  - Plans execution           │
-└─────────────┬───────────────┘
+┌─────────────────────────────────┐
+│  Main Conversation               │
+│  - Analyzes task via routing     │
+│  - Identifies required agents    │
+│  - Plans execution               │
+└─────────────┬───────────────────┘
               │
     ┌─────────┼─────────┐
     ▼         ▼         ▼
-[Agent-1] [Agent-2] [Agent-3]
+[Subagent-1] [Subagent-2] [Subagent-3]
+(spawned via Task tool)
     │         │         │
     └─────────┼─────────┘
               ▼
-┌─────────────────────────────┐
-│  secretary (orchestrator)    │
-│  - Aggregates results        │
-│  - Reports to user           │
-└─────────────────────────────┘
+┌─────────────────────────────────┐
+│  Main Conversation               │
+│  - Aggregates results            │
+│  - Reports to user               │
+└─────────────────────────────────┘
 
-WRONG:
+WRONG (Hierarchical):
+User Request
+    │
+    ▼
+[Subagent-1] → spawns → [Subagent-2] → spawns → [Subagent-3]
+(Subagents cannot spawn other subagents)
+
+WRONG (No coordination):
 User Request
     │
     ▼
 [Agent-1] → [Agent-2] → [Agent-3]
-(No coordination, ad-hoc execution)
+(Sequential execution without planning)
 ```
 
-## Secretary Responsibilities
+## Main Conversation Responsibilities
 
 ```yaml
 before_execution:
   - Analyze user request
+  - Apply routing skill (secretary/dev-lead/qa-lead)
   - Identify required agents
-  - Check agent availability
   - Plan execution order (parallel vs sequential)
   - Announce coordination plan
 
 during_execution:
-  - Spawn agent instances
+  - Spawn subagent instances via Task tool
   - Monitor progress
   - Handle failures
   - Coordinate dependencies
@@ -142,40 +155,39 @@ after_execution:
 
 ## Announcement Format
 
-Secretary MUST announce before delegating:
+Main conversation MUST announce before delegating:
 
 ```
-┌─ Agent: secretary (orchestrator)
-└─ Task: Coordinating multi-agent task
+[Routing] Using dev-lead-routing for code review
 
 [Plan]
-├── Agent 1: golang-expert → Review Go code
-├── Agent 2: python-expert → Review Python code
-└── Agent 3: typescript-expert → Review TS code
+├── Agent 1: lang-golang-expert → Review Go code
+├── Agent 2: lang-python-expert → Review Python code
+└── Agent 3: lang-typescript-expert → Review TS code
 
 [Execution] Parallel (3 instances)
 
-Spawning agents...
+Spawning subagents...
 ```
 
-## When to Use Orchestrator
+## When to Spawn Subagents
 
-| Scenario | Orchestrator Required |
-|----------|----------------------|
-| Single domain, single file | No |
-| Single domain, multiple files | Maybe (if parallel) |
+| Scenario | Spawn Subagents? |
+|----------|------------------|
+| Single domain, single file | Maybe (if specialized agent needed) |
+| Single domain, multiple files | Yes (if parallel beneficial) |
 | Multiple domains | **Yes** |
 | Batch operations | **Yes** |
 | Complex workflow | **Yes** |
 
 ## Exception: Simple Tasks
 
-Orchestrator NOT required for:
-- Single file operations
-- Single domain questions
-- Direct tool usage (Read, Write, etc.)
+Subagent NOT required for:
+- Reading files for analysis
+- Simple file searches
+- Direct questions answered by main conversation
 
-These can be handled by the appropriate agent directly.
+For specialized work, ALWAYS delegate to appropriate subagent.
 
 ## CRITICAL: Use Specialized Manager Agents
 
@@ -187,10 +199,10 @@ These can be handled by the appropriate agent directly.
 ║                                                                   ║
 ║  Task Type              → Required Agent                         ║
 ║  ─────────────────────────────────────────────────               ║
-║  Create new agent       → creator                                ║
-║  Update external agent  → updater                                ║
-║  Audit dependencies     → supplier                               ║
-║  Memory operations      → memory-keeper                          ║
+║  Create new agent       → mgr-creator                            ║
+║  Update external agent  → mgr-updater                            ║
+║  Audit dependencies     → mgr-supplier                           ║
+║  Memory operations      → sys-memory-keeper                      ║
 ║                                                                   ║
 ║  DO NOT use general-purpose agents for these tasks.              ║
 ║  DO NOT have secretary do the work directly.                     ║
@@ -200,31 +212,31 @@ These can be handled by the appropriate agent directly.
 ### Correct Delegation Pattern
 
 ```
-User: "java21-expert 에이전트를 만들어줘"
+User: "lang-java21-expert 에이전트를 만들어줘"
 
 WRONG:
   secretary → Task(general-purpose) → creates files directly
 
 CORRECT:
-  secretary → Task(creator agent role) → follows creator workflow
+  secretary → Task(mgr-creator agent role) → follows creator workflow
 ```
 
 ### Manager Agents Reference
 
-| Agent | Location | Purpose |
-|-------|----------|---------|
-| creator | agents/manager/creator/ | Create new agents |
-| updater | agents/manager/updater/ | Update external sources |
-| supplier | agents/manager/supplier/ | Audit dependencies |
-| gitnerd | agents/manager/gitnerd/ | Git operations (commit, push, PR) |
-| sync-checker | agents/manager/sync-checker/ | Documentation sync verification |
+| Agent | File | Purpose |
+|-------|------|---------|
+| mgr-creator | .claude/agents/mgr-creator.md | Create new agents |
+| mgr-updater | .claude/agents/mgr-updater.md | Update external sources |
+| mgr-supplier | .claude/agents/mgr-supplier.md | Audit dependencies |
+| mgr-gitnerd | .claude/agents/mgr-gitnerd.md | Git operations (commit, push, PR) |
+| mgr-sync-checker | .claude/agents/mgr-sync-checker.md | Documentation sync verification |
 
 ### System Agents Reference
 
-| Agent | Location | Purpose |
-|-------|----------|---------|
-| memory-keeper | agents/system/memory-keeper/ | Memory operations |
-| naggy | agents/system/naggy/ | TODO management |
+| Agent | File | Purpose |
+|-------|------|---------|
+| sys-memory-keeper | .claude/agents/sys-memory-keeper.md | Memory operations |
+| sys-naggy | .claude/agents/sys-naggy.md | TODO management |
 
 ## CRITICAL: Use Specialized Expert Agents for Code Work
 
@@ -234,16 +246,16 @@ CORRECT:
 ║                                                                   ║
 ║  Language/Framework           → Required Agent                   ║
 ║  ─────────────────────────────────────────────────               ║
-║  Python/FastAPI backend       → python-expert or fastapi-expert  ║
-║  TypeScript/Next.js frontend  → typescript-expert or vercel-agent║
-║  Go code                      → golang-expert                    ║
-║  Kotlin/Spring                → kotlin-expert or springboot-expert║
+║  Python/FastAPI backend       → lang-python-expert or be-fastapi-expert ║
+║  TypeScript/Next.js frontend  → lang-typescript-expert or fe-vercel-agent ║
+║  Go code                      → lang-golang-expert               ║
+║  Kotlin/Spring                → lang-kotlin-expert or be-springboot-expert ║
 ║                                                                   ║
 ║  WRONG:                                                          ║
 ║    secretary → Task(general-purpose) → writes Python code        ║
 ║                                                                   ║
 ║  CORRECT:                                                        ║
-║    secretary → Task(python-expert) → writes Python code          ║
+║    secretary → Task(lang-python-expert) → writes Python code     ║
 ║                                                                   ║
 ║  general-purpose should ONLY be used when:                       ║
 ║  - No specialized agent exists for the task                      ║
@@ -290,32 +302,63 @@ CORRECT:
 | Agent Category | Model | Examples |
 |----------------|-------|----------|
 | Orchestrator judgment | `opus` | Complex routing decisions |
-| Manager agents | `sonnet` | creator, updater, supplier |
+| Manager agents | `sonnet` | mgr-creator, mgr-updater, mgr-supplier |
 | Simple utilities | `haiku` | File operations, search |
-| Expert agents | `sonnet` | golang-expert, python-expert |
+| Expert agents | `sonnet` | lang-golang-expert, lang-python-expert |
 
 ## CRITICAL: Git Operations Delegation
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  GIT OPERATIONS MUST BE DELEGATED TO gitnerd                    ║
+║  GIT OPERATIONS MUST BE DELEGATED TO mgr-gitnerd                 ║
 ║                                                                   ║
 ║  WRONG:                                                          ║
-║    secretary/dev-lead → directly runs git commit/push            ║
+║    Main conversation → directly runs git commit/push             ║
 ║                                                                   ║
 ║  CORRECT:                                                        ║
-║    secretary → Task(gitnerd) → git commit/push                   ║
+║    Main conversation → Task(mgr-gitnerd) → git commit/push       ║
 ║                                                                   ║
-║  gitnerd handles:                                                ║
+║  mgr-gitnerd handles:                                            ║
 ║  ✓ git commit (with proper message format)                       ║
 ║  ✓ git push                                                      ║
-║  ✓ git branch operations                                        ║
-║  ✓ PR creation                                                   ║
+║  ✓ git branch operations                                         ║
+║  ✓ PR creation (gh pr create)                                    ║
 ║                                                                   ║
 ║  This ensures:                                                   ║
 ║  - Consistent commit message format                              ║
-║  - Safety checks before destructive operations                  ║
-║  - Proper Co-Authored-By attribution                            ║
+║  - Safety checks before destructive operations                   ║
+║  - Proper Co-Authored-By attribution                             ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+## CRITICAL: External Skills vs Internal Rules
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  INTERNAL RULES ALWAYS TAKE PRECEDENCE OVER EXTERNAL SKILLS      ║
+║                                                                   ║
+║  External skills (e.g., finishing-a-development-branch) may      ║
+║  instruct direct git operations. IGNORE those instructions and   ║
+║  apply internal rules instead.                                   ║
+║                                                                   ║
+║  Translation:                                                    ║
+║    External skill says          → Internal rule requires         ║
+║  ─────────────────────────────────────────────────────────────   ║
+║    "git commit -m ..."          → Task(mgr-gitnerd) commit       ║
+║    "git push ..."               → Task(mgr-gitnerd) push         ║
+║    "gh pr create ..."           → Task(mgr-gitnerd) create PR    ║
+║    "git merge ..."              → Task(mgr-gitnerd) merge        ║
+║                                                                   ║
+║  WRONG:                                                          ║
+║    [Using finishing-a-development-branch skill]                  ║
+║    Main conversation → directly runs "git push" as skill says    ║
+║                                                                   ║
+║  CORRECT:                                                        ║
+║    [Using finishing-a-development-branch skill]                  ║
+║    Main conversation → Task(mgr-gitnerd) → git push              ║
+║                                                                   ║
+║  The skill's WORKFLOW is followed, but git EXECUTION is          ║
+║  delegated to mgr-gitnerd per R010.                              ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -323,12 +366,12 @@ CORRECT:
 
 ```
 Violation examples:
-✗ Reviewing Go + Python + TypeScript without secretary
+✗ Reviewing Go + Python + TypeScript without routing/delegation
 ✗ Creating multiple agents without coordination plan
 ✗ Running parallel tasks without announcing execution plan
 
 Correct examples:
-✓ Secretary announces plan, spawns agents, aggregates results
+✓ Main conversation announces plan, spawns agents, aggregates results
 ✓ Clear execution plan with agent assignments
 ✓ Progress updates during multi-agent execution
 ```

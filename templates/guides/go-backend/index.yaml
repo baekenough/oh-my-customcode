@@ -23,4 +23,4 @@ documents:
     description: Standard Go project layout
 
 used_by:
-  - go-backend-expert
+  - be-go-backend-expert

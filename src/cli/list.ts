@@ -113,26 +113,36 @@ function parseYamlMetadata(content: string): Record<string, string> {
 }
 
 /**
- * Extract agent type from path
- * Path format: agents/{type}/{subtype?}/{name}/
+ * Extract agent type from filename (prefix-based)
+ * Official Claude Code format: .claude/agents/{prefix}-{name}.md
+ * Prefixes: lang-, be-, fe-, tool-, db-, arch-, infra-, qa-, mgr-, sys-, tutor-
  */
-function extractAgentTypeFromPath(agentPath: string, baseDir: string): string {
-  const relativePath = relative(join(baseDir, 'agents'), agentPath);
-  const parts = relativePath.split('/').filter(Boolean);
+function extractAgentTypeFromFilename(filename: string): string {
+  const name = basename(filename, '.md');
+  const prefixMap: Record<string, string> = {
+    lang: 'language',
+    be: 'backend',
+    fe: 'frontend',
+    tool: 'tooling',
+    db: 'database',
+    arch: 'architect',
+    infra: 'infrastructure',
+    qa: 'qa',
+    mgr: 'manager',
+    sys: 'system',
+    tutor: 'tutor',
+  };
 
-  // Remove the agent name (last part)
-  parts.pop();
-
-  // Join remaining parts as the type
-  return parts.join('/') || 'unknown';
+  const prefix = name.split('-')[0];
+  return prefixMap[prefix] || 'unknown';
 }
 
 /**
  * Extract skill category from path
- * Path format: skills/{category}/{name}/
+ * Official Claude Code format: .claude/skills/{category}/{name}/
  */
 function extractSkillCategoryFromPath(skillPath: string, baseDir: string): string {
-  const relativePath = relative(join(baseDir, 'skills'), skillPath);
+  const relativePath = relative(join(baseDir, '.claude', 'skills'), skillPath);
   const parts = relativePath.split('/').filter(Boolean);
 
   // Return the first part as category
@@ -245,31 +255,31 @@ async function tryExtractMarkdownDescription(
 
 /**
  * Get list of installed agents
+ * Official Claude Code format: .claude/agents/{prefix}-{name}.md (flat structure)
  * @param targetDir - Target directory to scan
  * @returns List of agent information
  */
 export async function getAgents(targetDir: string): Promise<ComponentInfo[]> {
-  const agentsDir = join(targetDir, 'agents');
+  const agentsDir = join(targetDir, '.claude', 'agents');
 
   if (!(await fileExists(agentsDir))) return [];
 
   try {
-    const agentMdFiles = await listFiles(agentsDir, { recursive: true, pattern: 'AGENT.md' });
+    // In official Claude Code format, agents are flat .md files
+    const agentMdFiles = await listFiles(agentsDir, { recursive: false, pattern: '*.md' });
 
     const agents = await Promise.all(
       agentMdFiles.map(async (agentMdPath) => {
-        const agentDir = dirname(agentMdPath);
-        const indexYamlPath = join(agentDir, 'index.yaml');
-
-        const { description: yamlDesc, version } = await tryReadIndexYamlMetadata(indexYamlPath);
-        const description = yamlDesc ?? (await tryExtractMarkdownDescription(agentMdPath));
+        const filename = basename(agentMdPath);
+        const name = basename(filename, '.md');
+        const description = await tryExtractMarkdownDescription(agentMdPath);
 
         return {
-          name: basename(agentDir),
-          type: extractAgentTypeFromPath(agentDir, targetDir),
-          path: relative(targetDir, agentDir),
+          name,
+          type: extractAgentTypeFromFilename(filename),
+          path: relative(targetDir, agentMdPath),
           description,
-          version,
+          version: undefined,
         };
       })
     );
@@ -282,11 +292,12 @@ export async function getAgents(targetDir: string): Promise<ComponentInfo[]> {
 
 /**
  * Get list of installed skills
+ * Official Claude Code format: .claude/skills/{category}/{name}/SKILL.md
  * @param targetDir - Target directory to scan
  * @returns List of skill information
  */
 export async function getSkills(targetDir: string): Promise<ComponentInfo[]> {
-  const skillsDir = join(targetDir, 'skills');
+  const skillsDir = join(targetDir, '.claude', 'skills');
 
   if (!(await fileExists(skillsDir))) return [];
 

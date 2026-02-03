@@ -1,6 +1,6 @@
 {
-  "version": "0.1.2",
-  "lastUpdated": "2026-01-27T06:30:49.887Z",
+  "version": "0.2.0",
+  "lastUpdated": "2026-02-03T08:26:07.544Z",
   "components": [
     {
       "name": "rules",
@@ -10,33 +10,27 @@
     },
     {
       "name": "agents",
-      "path": "agents",
-      "description": "AI agent definitions",
-      "files": 37
+      "path": ".claude/agents",
+      "description": "AI agent definitions (flat .md files with prefixes)",
+      "files": 34
     },
     {
       "name": "skills",
-      "path": "skills",
-      "description": "Reusable skill modules",
-      "files": 17
+      "path": ".claude/skills",
+      "description": "Reusable skill modules (includes slash commands)",
+      "files": 42
     },
     {
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
-      "files": 12
+      "files": 13
     },
     {
       "name": "pipelines",
       "path": "pipelines",
       "description": "Workflow pipeline definitions",
       "files": 3
-    },
-    {
-      "name": "commands",
-      "path": "commands",
-      "description": "Custom command definitions",
-      "files": 40
     },
     {
       "name": "hooks",

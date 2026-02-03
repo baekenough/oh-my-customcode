@@ -26,7 +26,7 @@ Best practices for Go development including:
 - Testing strategies
 - Code organization
 
-**Used by**: golang-expert, go-backend-expert
+**Used by**: lang-golang-expert, be-go-backend-expert
 
 ### python-best-practices
 
@@ -40,7 +40,7 @@ Best practices for Python development including:
 - Virtual environments
 - Package management
 
-**Used by**: python-expert, fastapi-expert
+**Used by**: lang-python-expert, be-fastapi-expert
 
 ### typescript-best-practices
 
@@ -54,7 +54,7 @@ Best practices for TypeScript development including:
 - Testing strategies
 - Build configuration
 
-**Used by**: typescript-expert, nestjs-expert, express-expert
+**Used by**: lang-typescript-expert, be-nestjs-expert, be-express-expert
 
 ### kotlin-best-practices
 
@@ -68,7 +68,7 @@ Best practices for Kotlin development including:
 - Testing with JUnit
 - Gradle configuration
 
-**Used by**: kotlin-expert, springboot-expert
+**Used by**: lang-kotlin-expert, be-springboot-expert
 
 ### rust-best-practices
 
@@ -82,7 +82,7 @@ Best practices for Rust development including:
 - Cargo usage
 - Memory safety
 
-**Used by**: rust-expert
+**Used by**: lang-rust-expert
 
 ### react-best-practices
 
@@ -96,7 +96,7 @@ Best practices for React development including:
 - Performance optimization
 - Testing with Jest/RTL
 
-**Used by**: vercel-agent
+**Used by**: fe-vercel-agent
 
 ### web-design-guidelines
 
@@ -110,7 +110,7 @@ Web design principles including:
 - UI/UX principles
 - Performance
 
-**Used by**: vercel-agent, vuejs-agent, svelte-agent
+**Used by**: fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent
 
 ### vercel-deploy
 
@@ -124,7 +124,7 @@ Vercel deployment practices including:
 - Build optimization
 - Preview deployments
 
-**Used by**: vercel-agent
+**Used by**: fe-vercel-agent
 
 ## Backend Skills
 
@@ -140,7 +140,7 @@ FastAPI patterns and practices including:
 - OpenAPI documentation
 - Testing
 
-**Used by**: fastapi-expert
+**Used by**: be-fastapi-expert
 
 ### springboot-best-practices
 
@@ -154,7 +154,7 @@ Spring Boot patterns and practices including:
 - Testing
 - JPA/Hibernate
 
-**Used by**: springboot-expert
+**Used by**: be-springboot-expert
 
 ### go-backend-best-practices
 
@@ -168,7 +168,7 @@ Go backend patterns including:
 - Configuration
 - Testing
 
-**Used by**: go-backend-expert
+**Used by**: be-go-backend-expert
 
 ## Infrastructure Skills
 
@@ -184,7 +184,7 @@ Docker best practices including:
 - Compose patterns
 - Layer caching
 
-**Used by**: docker-expert
+**Used by**: infra-docker-expert
 
 ### aws-best-practices
 
@@ -198,7 +198,7 @@ AWS best practices including:
 - Security groups
 - CloudFormation/CDK
 
-**Used by**: aws-expert
+**Used by**: infra-aws-expert
 
 ## System Skills
 
@@ -214,7 +214,7 @@ Memory and context management including:
 - Query patterns
 - Cleanup strategies
 
-**Used by**: memory-keeper
+**Used by**: sys-memory-keeper
 
 ### result-aggregation
 

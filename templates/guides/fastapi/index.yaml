@@ -18,4 +18,4 @@ documents:
     description: FastAPI best practices and patterns
 
 used_by:
-  - fastapi-expert
+  - be-fastapi-expert

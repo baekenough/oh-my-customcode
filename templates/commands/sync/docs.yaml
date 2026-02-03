@@ -1,4 +1,0 @@
-name: docs
-agent: sync-checker
-description: Check documentation sync
-usage: sync:docs

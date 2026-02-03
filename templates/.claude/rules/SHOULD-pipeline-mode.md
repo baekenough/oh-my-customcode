@@ -126,7 +126,7 @@ steps:
     output: security
 
   - id: report
-    agent: documenter
+    agent: arch-documenter
     action: summarize
     input:
       analysis: "${analysis}"

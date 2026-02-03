@@ -81,10 +81,10 @@ CORRECT Response:
 ### Example 2: Wrong Agent Used
 
 ```
-User: "creator 에이전트를 써야 하는거 아닌가?"
+User: "mgr-creator 에이전트를 써야 하는거 아닌가?"
 
 WRONG Response:
-  "맞습니다. creator를 사용하겠습니다."
+  "맞습니다. mgr-creator를 사용하겠습니다."
   [continues without updating rules]
 
 CORRECT Response:
