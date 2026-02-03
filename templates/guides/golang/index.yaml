@@ -24,4 +24,4 @@ documents:
     description: Error handling patterns
 
 used_by:
-  - golang-expert
+  - lang-golang-expert

@@ -5,46 +5,67 @@
 
 ## Agent Structure
 
-### Required Files
+### Single File Format
 ```
-agents/{type}/{name}/
-├── AGENT.md          # Agent definition (REQUIRED)
-├── index.yaml        # Agent metadata (REQUIRED)
-└── refs/             # Symlinks to guides/skills (OPTIONAL)
+.claude/agents/{name}.md
+
+Format:
+---
+name: agent-name
+description: Brief agent description
+model: sonnet | opus | haiku
+tools:
+  - Read
+  - Write
+  - Bash
+skills:
+  - skill-name-1
+  - skill-name-2
+---
+
+# Agent Content
+
+Agent purpose and role description...
 ```
 
-### AGENT.md Must NOT Contain
+### Frontmatter Fields (REQUIRED)
+```yaml
+name: agent-name           # Unique identifier (kebab-case)
+description: Brief desc    # One-line summary
+model: sonnet             # Default model (sonnet | opus | haiku)
+tools: [Read, Write, ...]  # Allowed tools
+skills: [skill-1, ...]     # Required skill names
 ```
-✗ Detailed skill instructions (use skills/ instead)
+
+### Agent Content Must NOT Contain
+```
+✗ Detailed skill instructions (use .claude/skills/ instead)
 ✗ Reference documentation (use guides/ instead)
-✗ Implementation scripts (use skills/scripts/ instead)
+✗ Implementation scripts (use .claude/skills/{name}/scripts/ instead)
 ```
 
-### AGENT.md Should Contain
+### Agent Content Should Contain
 ```
 ✓ Agent purpose and role
 ✓ Capabilities overview (not details)
-✓ Required skills (by reference)
+✓ Required skills (by name reference)
 ✓ Workflow description
 ✓ Source info (if external)
 ```
 
 ## External Agent Requirements
 
-External agents (from GitHub, npm, etc.) MUST include:
+External agents (from GitHub, npm, etc.) MUST include source information in frontmatter:
 
-### index.yaml Fields
+### Frontmatter Source Fields
 ```yaml
-metadata:
-  name: agent-name
-  type: worker | orchestrator
-  source:
-    type: external
-    origin: github | npm | other
-    url: https://github.com/org/repo
-    version: 1.0.0
-    last_updated: 2025-01-22
-    update_command: "npx add-skill org/repo"
+source:
+  type: external
+  origin: github | npm | other
+  url: https://github.com/org/repo
+  version: 1.0.0
+  last_updated: 2025-01-22
+  update_command: "npx add-skill org/repo"
 ```
 
 ### Update Tracking
@@ -57,18 +78,19 @@ metadata:
 
 ## Separation of Concerns
 
-### agents/
+### .claude/agents/
 ```
 Purpose: Define WHAT the agent does
 Content: Role, capabilities, workflow
+Format: Single .md file with YAML frontmatter
 NOT: How to do it (that's skills/)
 ```
 
-### skills/
+### .claude/skills/
 ```
 Purpose: Define HOW to do tasks
 Content: Instructions, scripts, rules
-Location: skills/{category}/{name}/
+Location: .claude/skills/{name}/SKILL.md
 ```
 
 ### guides/
@@ -78,30 +100,26 @@ Content: Best practices, tutorials
 Location: guides/{topic}/
 ```
 
-## Linking
+## Agent → Skill References
 
-### Agent → Skills
+### In Frontmatter
 ```yaml
-# In AGENT.md or index.yaml
+---
+name: agent-name
 skills:
-  - category: development
-    name: react-best-practices
-    path: ../../../../skills/development/react-best-practices
+  - react-best-practices
+  - web-design-guidelines
+---
 ```
 
-### Agent → Guides
-```bash
-# Symlink in refs/
-ln -s ../../../../guides/web-design refs/web-design
-```
+Skills are referenced by name only. The system automatically discovers skills in `.claude/skills/` by scanning for `SKILL.md` files.
 
 ## Naming Conventions
 
 | Type | Pattern | Example |
 |------|---------|---------|
-| Agent folder | `kebab-case` | `vercel-agent` |
-| Skill folder | `kebab-case` | `react-best-practices` |
-| Guide folder | `kebab-case` | `web-design` |
-| AGENT.md | UPPERCASE | `AGENT.md` |
-| SKILL.md | UPPERCASE | `SKILL.md` |
-| index.yaml | lowercase | `index.yaml` |
+| Agent file | `kebab-case.md` | `.claude/agents/fe-vercel-agent.md` |
+| Skill directory | `kebab-case/` | `.claude/skills/react-best-practices/` |
+| Guide directory | `kebab-case/` | `guides/web-design/` |
+| Agent filename | lowercase | `{name}.md` |
+| Skill file | UPPERCASE | `SKILL.md` |

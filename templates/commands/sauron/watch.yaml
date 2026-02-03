@@ -1,4 +1,0 @@
-name: watch
-agent: sauron
-description: Full R017 verification (5+3 rounds)
-usage: sauron:watch

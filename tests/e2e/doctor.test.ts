@@ -33,7 +33,7 @@ describe('E2E: omcustom doctor', () => {
   });
 
   /**
-   * Helper to run CLI command using Bun.spawn
+   * Helper to run CLI command using Bun.spawn with timeout
    */
   async function runCli(
     ...args: string[]
@@ -45,11 +45,35 @@ describe('E2E: omcustom doctor', () => {
       stderr: 'pipe',
     });
 
-    const stdout = await new Response(proc.stdout).text();
-    const stderr = await new Response(proc.stderr).text();
-    const exitCode = await proc.exited;
+    // Add timeout to prevent hanging in CI
+    const timeout = 10000; // 10 seconds
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        proc.kill();
+        reject(new Error(`CLI command timed out after ${timeout}ms`));
+      }, timeout);
+    });
 
-    return { exitCode, stdout, stderr };
+    try {
+      const [stdout, stderr, exitCode] = await Promise.race([
+        Promise.all([
+          new Response(proc.stdout).text(),
+          new Response(proc.stderr).text(),
+          proc.exited,
+        ]),
+        timeoutPromise,
+      ]);
+
+      return { exitCode, stdout, stderr };
+    } catch (error) {
+      // Ensure process is killed on error
+      try {
+        proc.kill();
+      } catch {
+        // Ignore kill errors
+      }
+      throw error;
+    }
   }
 
   /**
@@ -159,10 +183,10 @@ describe('E2E: omcustom doctor', () => {
 
   describe('detecting issues', () => {
     it('should detect missing CLAUDE.md', async () => {
-      // Create partial structure without CLAUDE.md
+      // Create partial structure without CLAUDE.md (official Claude Code format paths)
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
-      await mkdir(join(tempDir, 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'skills'), { recursive: true });
 
       const result = await runCli('doctor');
 
@@ -175,12 +199,12 @@ describe('E2E: omcustom doctor', () => {
     });
 
     it('should detect missing rules directory', async () => {
-      // Create structure without .claude/rules
+      // Create structure without .claude/rules (official Claude Code format paths)
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Test');
       await mkdir(join(tempDir, '.claude'), { recursive: true });
       // No rules directory
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
-      await mkdir(join(tempDir, 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'skills'), { recursive: true });
 
       const result = await runCli('doctor');
 
@@ -193,11 +217,11 @@ describe('E2E: omcustom doctor', () => {
     });
 
     it('should detect missing agents directory', async () => {
-      // Create structure without agents
+      // Create structure without agents (official Claude Code format: .claude/agents)
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Test');
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
       await writeFile(join(tempDir, '.claude', 'rules', 'MUST-test.md'), '# Test Rule');
-      await mkdir(join(tempDir, 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'skills'), { recursive: true });
 
       const result = await runCli('doctor');
 
@@ -210,11 +234,11 @@ describe('E2E: omcustom doctor', () => {
     });
 
     it('should detect missing skills directory', async () => {
-      // Create structure without skills
+      // Create structure without skills (official Claude Code format: .claude/skills)
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Test');
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
       await writeFile(join(tempDir, '.claude', 'rules', 'MUST-test.md'), '# Test Rule');
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
 
       const result = await runCli('doctor');
 
@@ -229,11 +253,11 @@ describe('E2E: omcustom doctor', () => {
     it('should detect broken symlinks', async () => {
       await initProject();
 
-      // Create a broken symlink in an agent's refs directory
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      const refsDir = join(agentDir, 'refs');
+      // Create a broken symlink in skills (agents are now flat .md files in .claude/agents)
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
-      await writeFile(join(agentDir, 'AGENT.md'), '# Test Agent');
+      await writeFile(join(skillDir, 'SKILL.md'), '# Test Skill');
 
       // Create broken symlink
       const brokenSymlink = join(refsDir, 'broken-link');
@@ -249,25 +273,26 @@ describe('E2E: omcustom doctor', () => {
       ).toBe(true);
     });
 
-    it('should detect invalid index.yaml files', async () => {
+    it('should detect invalid frontmatter in agent files', async () => {
       await initProject();
 
-      // Create an agent with invalid index.yaml
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'broken-agent');
-      await mkdir(agentDir, { recursive: true });
-      await writeFile(join(agentDir, 'AGENT.md'), '# Broken Agent');
+      // Create an agent with invalid frontmatter (agents are now flat .md files with frontmatter)
+      const agentFile = join(tempDir, '.claude', 'agents', 'broken-agent.md');
       await writeFile(
-        join(agentDir, 'index.yaml'),
-        `invalid yaml content:
+        agentFile,
+        `---
+invalid yaml content:
   - broken: [[[
-  not valid syntax here`
+  not valid syntax here
+---
+# Broken Agent`
       );
 
       const result = await runCli('doctor');
 
       const output = result.stdout;
-      // Should detect invalid index files
-      expect(output.toLowerCase()).toContain('index');
+      // Should detect invalid agent files
+      expect(output.toLowerCase()).toContain('agent');
       expect(
         output.includes('[FAIL]') || output.includes('fail') || output.includes('invalid')
       ).toBe(true);
@@ -310,43 +335,43 @@ describe('E2E: omcustom doctor', () => {
     });
 
     it('should create missing agents directory with --fix', async () => {
-      // Create structure without agents
+      // Create structure without agents (official Claude Code format: .claude/agents)
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Test');
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
-      await mkdir(join(tempDir, 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'skills'), { recursive: true });
 
       // Verify agents directory doesn't exist
-      expect(await pathExists(join(tempDir, 'agents'))).toBe(false);
+      expect(await pathExists(join(tempDir, '.claude', 'agents'))).toBe(false);
 
       const _result = await runCli('doctor', '--fix');
 
       // Agents directory should now exist
-      expect(await pathExists(join(tempDir, 'agents'))).toBe(true);
+      expect(await pathExists(join(tempDir, '.claude', 'agents'))).toBe(true);
     });
 
     it('should create missing skills directory with --fix', async () => {
-      // Create structure without skills
+      // Create structure without skills (official Claude Code format: .claude/skills)
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Test');
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
 
       // Verify skills directory doesn't exist
-      expect(await pathExists(join(tempDir, 'skills'))).toBe(false);
+      expect(await pathExists(join(tempDir, '.claude', 'skills'))).toBe(false);
 
       const _result = await runCli('doctor', '--fix');
 
       // Skills directory should now exist
-      expect(await pathExists(join(tempDir, 'skills'))).toBe(true);
+      expect(await pathExists(join(tempDir, '.claude', 'skills'))).toBe(true);
     });
 
     it('should remove broken symlinks with --fix', async () => {
       await initProject();
 
-      // Create a broken symlink
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      const refsDir = join(agentDir, 'refs');
+      // Create a broken symlink in skills (agents are now flat .md files, no refs)
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
-      await writeFile(join(agentDir, 'AGENT.md'), '# Test Agent');
+      await writeFile(join(skillDir, 'SKILL.md'), '# Test Skill');
 
       const brokenSymlink = join(refsDir, 'broken-link');
       await symlink('/non/existent/path', brokenSymlink);
@@ -402,31 +427,32 @@ describe('E2E: omcustom doctor', () => {
       // Run doctor again without fix
       const _result = await runCli('doctor');
 
-      // After fixing, directories should exist
-      expect(await pathExists(join(tempDir, 'agents'))).toBe(true);
-      expect(await pathExists(join(tempDir, 'skills'))).toBe(true);
+      // After fixing, directories should exist (official Claude Code format)
+      expect(await pathExists(join(tempDir, '.claude', 'agents'))).toBe(true);
+      expect(await pathExists(join(tempDir, '.claude', 'skills'))).toBe(true);
     });
 
     it('should not try to fix non-fixable issues', async () => {
       await initProject();
 
-      // Create an agent with invalid index.yaml (not fixable by doctor)
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'broken-agent');
-      await mkdir(agentDir, { recursive: true });
-      await writeFile(join(agentDir, 'AGENT.md'), '# Broken Agent');
-      const invalidYamlContent = 'invalid: [[[';
-      await writeFile(join(agentDir, 'index.yaml'), invalidYamlContent);
+      // Create an agent with invalid frontmatter (not fixable by doctor)
+      const agentFile = join(tempDir, '.claude', 'agents', 'broken-agent.md');
+      const invalidContent = `---
+invalid: [[[
+---
+# Broken Agent`;
+      await writeFile(agentFile, invalidContent);
 
       const result = await runCli('doctor', '--fix');
 
-      // Invalid YAML is not fixable, should still be reported
+      // Invalid frontmatter is not fixable, should still be reported
       const output = result.stdout;
-      expect(output.toLowerCase()).toContain('index');
+      expect(output.toLowerCase()).toContain('agent');
 
-      // The invalid YAML should still be invalid
+      // The invalid content should still be invalid
       const { readFile } = await import('node:fs/promises');
-      const yamlContent = await readFile(join(agentDir, 'index.yaml'), 'utf-8');
-      expect(yamlContent).toBe(invalidYamlContent);
+      const fileContent = await readFile(agentFile, 'utf-8');
+      expect(fileContent).toBe(invalidContent);
     });
   });
 

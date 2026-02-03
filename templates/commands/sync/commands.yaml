@@ -1,4 +1,0 @@
-name: commands
-agent: sync-checker
-description: Check command registry sync
-usage: sync:commands

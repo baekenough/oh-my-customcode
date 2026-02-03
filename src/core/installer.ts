@@ -35,6 +35,7 @@ export interface InstallOptions {
 
 /**
  * Components that can be installed
+ * Updated for official Claude Code format (commands absorbed into skills)
  */
 export type InstallComponent =
   | 'claude-md'
@@ -43,7 +44,6 @@ export type InstallComponent =
   | 'skills'
   | 'guides'
   | 'pipelines'
-  | 'commands'
   | 'hooks'
   | 'contexts';
 
@@ -88,47 +88,35 @@ export interface TemplateManifest {
 
 /**
  * Directory structure to create
+ * Updated for official Claude Code format:
+ * - .claude/agents/ is flat (no subdirectories)
+ * - .claude/skills/ contains skill directories
+ * - commands/ removed (absorbed into skills)
  */
 const DIRECTORY_STRUCTURE = [
   '.claude',
   '.claude/rules',
   '.claude/hooks',
   '.claude/contexts',
-  'agents',
-  'agents/master',
-  'agents/orchestrator',
-  'agents/manager',
-  'agents/system',
-  'agents/sw-engineer',
-  'agents/sw-architect',
-  'agents/backend-engineer',
-  'agents/infra-engineer',
-  'agents/qa-engineer',
-  'agents/tutor',
-  'skills',
-  'skills/development',
-  'skills/backend',
-  'skills/infrastructure',
-  'skills/system',
-  'skills/orchestration',
+  '.claude/agents',
+  '.claude/skills',
   'guides',
   'pipelines',
   'pipelines/templates',
   'pipelines/examples',
-  'commands',
 ] as const;
 
 /**
  * Component to template path mapping
+ * Updated for official Claude Code format
  */
 const COMPONENT_PATHS: Record<InstallComponent, string> = {
   'claude-md': '',
   rules: '.claude/rules',
-  agents: 'agents',
-  skills: 'skills',
+  agents: '.claude/agents',
+  skills: '.claude/skills',
   guides: 'guides',
   pipelines: 'pipelines',
-  commands: 'commands',
   hooks: '.claude/hooks',
   contexts: '.claude/contexts',
 };
@@ -370,9 +358,10 @@ export async function getTemplateManifest(): Promise<TemplateManifest> {
 
 /**
  * Get all available components
+ * Updated: commands removed (absorbed into skills)
  */
 function getAllComponents(): InstallComponent[] {
-  return ['rules', 'agents', 'skills', 'guides', 'pipelines', 'commands', 'hooks', 'contexts'];
+  return ['rules', 'agents', 'skills', 'guides', 'pipelines', 'hooks', 'contexts'];
 }
 
 /**
@@ -457,17 +446,10 @@ async function backupExisting(sourcePath: string, backupDir: string): Promise<st
 
 /**
  * Check which installation paths already exist
+ * Updated: paths now under .claude/ for official format
  */
 async function checkExistingPaths(targetDir: string): Promise<string[]> {
-  const pathsToCheck = [
-    'CLAUDE.md',
-    '.claude',
-    'agents',
-    'skills',
-    'guides',
-    'pipelines',
-    'commands',
-  ];
+  const pathsToCheck = ['CLAUDE.md', '.claude', 'guides', 'pipelines'];
 
   const existingPaths: string[] = [];
 

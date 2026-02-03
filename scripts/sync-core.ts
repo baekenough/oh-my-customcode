@@ -27,6 +27,11 @@ interface Manifest {
 
 /**
  * Directory mappings from baekgom-agents to templates/
+ *
+ * Updated for official Claude Code format:
+ * - .claude/agents/ contains flat .md files with prefixes (lang-, be-, mgr-, etc.)
+ * - .claude/skills/ contains skill directories with SKILL.md
+ * - commands/ removed (absorbed into skills as slash commands)
  */
 const SYNC_MAPPINGS = [
   { source: '.claude/rules/', target: '.claude/rules/' },
@@ -34,10 +39,9 @@ const SYNC_MAPPINGS = [
   { source: '.claude/contexts/', target: '.claude/contexts/' },
   { source: '.claude/install-hooks.sh', target: '.claude/install-hooks.sh' },
   { source: '.claude/uninstall-hooks.sh', target: '.claude/uninstall-hooks.sh' },
-  { source: 'agents/', target: 'agents/' },
-  { source: 'skills/', target: 'skills/' },
+  { source: '.claude/agents/', target: '.claude/agents/' },
+  { source: '.claude/skills/', target: '.claude/skills/' },
   { source: 'guides/', target: 'guides/' },
-  { source: 'commands/', target: 'commands/' },
   { source: 'pipelines/', target: 'pipelines/' },
 ] as const;
 
@@ -72,10 +76,16 @@ function countFiles(dir: string, pattern?: RegExp): number {
 }
 
 /**
- * Count AGENT.md files in agents directory
+ * Count agent .md files in flat .claude/agents/ directory
+ * Official Claude Code format: .claude/agents/{prefix}-{name}.md
  */
 function countAgents(agentsDir: string): number {
-  return countFiles(agentsDir, /^AGENT\.md$/);
+  if (!fs.existsSync(agentsDir)) {
+    return 0;
+  }
+
+  const entries = fs.readdirSync(agentsDir, { withFileTypes: true });
+  return entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md')).length;
 }
 
 /**
@@ -109,36 +119,6 @@ function countGuides(guidesDir: string): number {
 }
 
 /**
- * Count command files (excluding index.yaml)
- */
-function countCommands(commandsDir: string): number {
-  if (!fs.existsSync(commandsDir)) {
-    return 0;
-  }
-
-  let count = 0;
-
-  function countInDir(dir: string) {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-
-      if (entry.isDirectory()) {
-        countInDir(fullPath);
-      } else if (entry.isFile() && entry.name !== 'index.yaml') {
-        if (entry.name.endsWith('.md') || entry.name.endsWith('.yaml')) {
-          count++;
-        }
-      }
-    }
-  }
-
-  countInDir(commandsDir);
-  return count;
-}
-
-/**
  * Update manifest.json with new file counts
  */
 function updateManifest(templatesDir: string): void {
@@ -152,13 +132,13 @@ function updateManifest(templatesDir: string): void {
   const manifest: Manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
   // Update file counts for each component
+  // Updated for official Claude Code format (agents and skills in .claude/)
   const componentCounts: Record<string, number> = {
     rules: countFiles(path.join(templatesDir, '.claude/rules'), /\.(md|yaml)$/),
-    agents: countAgents(path.join(templatesDir, 'agents')),
-    skills: countSkills(path.join(templatesDir, 'skills')),
+    agents: countAgents(path.join(templatesDir, '.claude/agents')),
+    skills: countSkills(path.join(templatesDir, '.claude/skills')),
     guides: countGuides(path.join(templatesDir, 'guides')),
     pipelines: countFiles(path.join(templatesDir, 'pipelines')),
-    commands: countCommands(path.join(templatesDir, 'commands')),
     hooks: countFiles(path.join(templatesDir, '.claude/hooks')),
     contexts: countFiles(path.join(templatesDir, '.claude/contexts')),
   };
@@ -178,9 +158,10 @@ function updateManifest(templatesDir: string): void {
 
 /**
  * Validate baekgom-agents directory structure
+ * Updated for official Claude Code format
  */
 function validateSource(sourcePath: string): boolean {
-  const requiredPaths = ['.claude/rules', 'agents', 'skills', 'guides'];
+  const requiredPaths = ['.claude/rules', '.claude/agents', '.claude/skills', 'guides'];
 
   for (const required of requiredPaths) {
     const fullPath = path.join(sourcePath, required);

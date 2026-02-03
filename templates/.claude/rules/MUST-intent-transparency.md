@@ -59,7 +59,7 @@ factors:
 ```
 [Intent Detected]
 ├── Input: "Go 코드 리뷰해줘"
-├── Agent: golang-expert
+├── Agent: lang-golang-expert
 ├── Confidence: 95%
 └── Reason: "Go" keyword (40%) + "리뷰" action verb (55%)
 
@@ -71,16 +71,16 @@ Executing...
 ```
 [Intent Detected]
 ├── Input: "백엔드 코드 체크해줘"
-├── Agent: go-backend-expert (?)
+├── Agent: be-go-backend-expert (?)
 ├── Confidence: 75%
 └── Reason: "백엔드" keyword (40%) + "체크" action (35%)
 
 Possible alternatives:
-  1. go-backend-expert (75%)
-  2. fastapi-expert (65%)
-  3. springboot-expert (60%)
+  1. be-go-backend-expert (75%)
+  2. be-fastapi-expert (65%)
+  3. be-springboot-expert (60%)
 
-Proceed with go-backend-expert? [Y/n/1-3]
+Proceed with be-go-backend-expert? [Y/n/1-3]
 ```
 
 ## Low Confidence Display (< 70%)
@@ -92,10 +92,10 @@ Proceed with go-backend-expert? [Y/n/1-3]
 └── Need more context
 
 Available agents for code review:
-  1. golang-expert (Go files)
-  2. python-expert (Python files)
-  3. typescript-expert (TypeScript files)
-  4. rust-expert (Rust files)
+  1. lang-golang-expert (Go files)
+  2. lang-python-expert (Python files)
+  3. lang-typescript-expert (TypeScript files)
+  4. lang-rust-expert (Rust files)
 
 Which agent should review the code? [1-4]
 ```
@@ -110,15 +110,15 @@ Users can explicitly specify an agent:
 
 Examples:
 ```
-@golang-expert review this code
-@python-expert src/main.py 분석해줘
+@lang-golang-expert review this code
+@lang-python-expert src/main.py 분석해줘
 @secretary create a new agent
 ```
 
 Override bypasses intent detection:
 
 ```
-[Override] Agent explicitly specified: python-expert
+[Override] Agent explicitly specified: lang-python-expert
 Executing...
 ```
 
@@ -150,30 +150,30 @@ detection_log:
     file_patterns: []
     action_verbs: ["리뷰"]
   matches:
-    - agent: golang-expert
+    - agent: lang-golang-expert
       score: 95
       breakdown:
         keyword_go: 40
         action_review: 40
         context: 15
-  selected: golang-expert
+  selected: lang-golang-expert
   confidence: 95%
 ```
 
 ## Agent Triggers
 
 Each agent has defined triggers in:
-`skills/orchestration/intent-detection/patterns/agent-triggers.yaml`
+`.claude/skills/intent-detection/patterns/agent-triggers.yaml`
 
 ```yaml
 agents:
-  golang-expert:
+  lang-golang-expert:
     keywords: [go, golang, "go 언어"]
     file_patterns: ["*.go", "go.mod", "go.sum"]
     actions: [review, analyze, fix, optimize]
     base_confidence: 40
 
-  python-expert:
+  lang-python-expert:
     keywords: [python, py, "파이썬"]
     file_patterns: ["*.py", "requirements.txt", "pyproject.toml"]
     actions: [review, analyze, fix, optimize]

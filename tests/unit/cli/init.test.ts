@@ -74,8 +74,8 @@ describe('init command', () => {
 
       expect(result.success).toBe(true);
 
-      // Verify agents directory exists
-      const agentsDir = join(tempDir, 'agents');
+      // Verify agents directory exists (official Claude Code format: .claude/agents)
+      const agentsDir = join(tempDir, '.claude', 'agents');
       const agentsDirStats = await stat(agentsDir);
       expect(agentsDirStats.isDirectory()).toBe(true);
     });
@@ -88,8 +88,8 @@ describe('init command', () => {
 
       expect(result.success).toBe(true);
 
-      // Verify skills directory exists
-      const skillsDir = join(tempDir, 'skills');
+      // Verify skills directory exists (official Claude Code format: .claude/skills)
+      const skillsDir = join(tempDir, '.claude', 'skills');
       const skillsDirStats = await stat(skillsDir);
       expect(skillsDirStats.isDirectory()).toBe(true);
     });
@@ -108,19 +108,7 @@ describe('init command', () => {
       expect(guidesDirStats.isDirectory()).toBe(true);
     });
 
-    it('should create commands directory', async () => {
-      const result = await install({
-        targetDir: tempDir,
-        language: 'en',
-      });
-
-      expect(result.success).toBe(true);
-
-      // Verify commands directory exists
-      const commandsDir = join(tempDir, 'commands');
-      const commandsDirStats = await stat(commandsDir);
-      expect(commandsDirStats.isDirectory()).toBe(true);
-    });
+    // commands/ removed in official Claude Code format (absorbed into skills)
 
     it('should create pipelines directory', async () => {
       const result = await install({

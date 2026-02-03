@@ -34,7 +34,7 @@ This context is loaded when ecomode is activated (4+ parallel tasks, batch opera
 
 Good (ecomode):
 ```
-[golang-expert] ✓ src/main.go: 3 issues found (2 style, 1 error handling)
+[lang-golang-expert] ✓ src/main.go: 3 issues found (2 style, 1 error handling)
 ```
 
 Bad (verbose):
@@ -49,10 +49,10 @@ When secretary aggregates results:
 
 ```
 [Batch Complete] 4/4
-├── golang-expert: ✓ 3 issues in 2 files
-├── python-expert: ✓ Clean, no issues
-├── rust-expert: ⚠ 1 warning (unsafe block)
-└── typescript-expert: ✓ 5 suggestions
+├── lang-golang-expert: ✓ 3 issues in 2 files
+├── lang-python-expert: ✓ Clean, no issues
+├── lang-rust-expert: ⚠ 1 warning (unsafe block)
+└── lang-typescript-expert: ✓ 5 suggestions
 ```
 
 ## Exit Conditions

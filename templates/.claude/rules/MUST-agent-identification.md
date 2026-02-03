@@ -28,7 +28,7 @@ Every response MUST start with an agent identification block:
 
 ### Single Agent Response
 ```
-┌─ Agent: creator (manager)
+┌─ Agent: mgr-creator (manager)
 └─ Task: Creating new agent
 
 [Response content...]
@@ -36,7 +36,7 @@ Every response MUST start with an agent identification block:
 
 ### With Skill Usage
 ```
-┌─ Agent: vercel-agent (worker)
+┌─ Agent: fe-vercel-agent (worker)
 ├─ Skill: react-best-practices
 └─ Task: Optimizing React component
 
@@ -45,7 +45,7 @@ Every response MUST start with an agent identification block:
 
 ### Multiple Skills
 ```
-┌─ Agent: vercel-agent (worker)
+┌─ Agent: fe-vercel-agent (worker)
 ├─ Skills: react-best-practices, web-design-guidelines
 └─ Task: Full code review
 
@@ -73,8 +73,8 @@ Every response MUST start with an agent identification block:
 
 | Type | Symbol | Example |
 |------|--------|---------|
-| manager | 🔧 | creator, updater |
-| worker | ⚙️ | vercel-agent |
+| manager | 🔧 | mgr-creator, mgr-updater |
+| worker | ⚙️ | fe-vercel-agent |
 | orchestrator | 🎯 | (future) |
 | default | 💬 | claude |
 
@@ -83,13 +83,13 @@ Every response MUST start with an agent identification block:
 For brief responses, use inline format:
 
 ```
-[creator] Creating agent structure...
+[mgr-creator] Creating agent structure...
 ```
 
 Or with skill:
 
 ```
-[vercel-agent → react-best-practices] Analyzing performance...
+[fe-vercel-agent → react-best-practices] Analyzing performance...
 ```
 
 ## Status Updates
@@ -97,12 +97,12 @@ Or with skill:
 During long tasks, show progress with agent context:
 
 ```
-┌─ Agent: updater (manager)
+┌─ Agent: mgr-updater (manager)
 └─ Task: Checking external updates
 
-[Progress] Scanning agents/index.yaml (1/3)
-[Progress] Scanning skills/index.yaml (2/3)
-[Progress] Scanning guides/index.yaml (3/3)
+[Progress] Scanning .claude/agents/ (1/3)
+[Progress] Scanning .claude/skills/ (2/3)
+[Progress] Scanning .claude/guides/ (3/3)
 
 [Done] Found 2 updates available
 ```

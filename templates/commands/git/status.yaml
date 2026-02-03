@@ -1,4 +1,0 @@
-name: status
-agent: gitnerd
-description: Show detailed git status including branch info and changes
-usage: git:status

@@ -27,7 +27,7 @@ Display real-time status information during agent operations for improved visibi
 
 | Component | Description | Example |
 |-----------|-------------|---------|
-| Agent | Active agent name | `golang-expert` |
+| Agent | Active agent name | `lang-golang-expert` |
 | Model | Model used (for parallel) | `sonnet` |
 | Progress | Task progress (current/total) | `2/5` |
 | Parallel | Parallel instance count | `3` |
@@ -37,7 +37,7 @@ Display real-time status information during agent operations for improved visibi
 ### Single Agent
 
 ```
-─── [Agent] creator | [Progress] 1/3 ───
+─── [Agent] mgr-creator | [Progress] 1/3 ───
 ```
 
 ### With Parallel Execution (Model Display REQUIRED)
@@ -55,7 +55,7 @@ Instances:
 ### Completion
 
 ```
-─── [Agent] supplier | [Progress] 5/5 | [Done] ───
+─── [Agent] mgr-supplier | [Progress] 5/5 | [Done] ───
 ```
 
 ## Implementation
@@ -91,6 +91,6 @@ The HUD statusline hook can be triggered via:
 ~/.claude/hooks/hud/update-status.sh <agent> [progress] [parallel_count]
 
 # Examples
-~/.claude/hooks/hud/update-status.sh "creator" "1/3"
+~/.claude/hooks/hud/update-status.sh "mgr-creator" "1/3"
 ~/.claude/hooks/hud/update-status.sh "secretary" "0/4" "4"
 ```
