@@ -14,7 +14,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 37 agents, 17 skills, 12 guides - synced with baekgom-agents templates |
+| **Batteries Included** | 34 agents, 42 skills, 13 guides - synced with baekgom-agents templates |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -54,13 +54,13 @@ No manual file editing. Describe what you want in natural language, and the orch
 
 ```
 User (natural language)
-  → secretary (orchestrator)
-    → creator:sonnet       — scaffolds agent, registers, verifies
-    → updater:sonnet       — syncs documentation
-    → supplier:haiku       — checks dependencies
+  → /create-agent (routing skill)
+    → mgr-creator:sonnet       — scaffolds agent, registers, verifies
+    → mgr-updater:sonnet       — syncs documentation
+    → mgr-supplier:haiku       — checks dependencies
 ```
 
-The secretary analyzes your request, routes it to the appropriate manager agent, and the sub-agent handles everything automatically.
+Claude Code's routing system analyzes your request, routes it to the appropriate skill and agent, and the sub-agent handles everything automatically.
 
 ### Sub-Agent Model
 
@@ -72,53 +72,53 @@ Each sub-agent runs on an optimized model for its task type:
 | `sonnet` | General tasks (default) | Agent creation, code generation |
 | `haiku` | Fast, simple operations | File search, validation |
 
-The orchestrator selects the appropriate model and parallelizes independent tasks (up to 4 concurrent sub-agents):
+Claude Code selects the appropriate model and parallelizes independent tasks (up to 4 concurrent sub-agents):
 
 ```
-secretary
-  ├── creator:sonnet       — agent scaffolding
-  ├── supplier:haiku       — dependency check
-  └── sync-checker:haiku   — registry verification
+/create-agent
+  ├── mgr-creator:sonnet       — agent scaffolding
+  ├── mgr-supplier:haiku       — dependency check
+  └── mgr-sync-checker:haiku   — registry verification
 
-dev-lead
-  ├── golang-expert:sonnet — Go implementation
-  ├── python-expert:sonnet — Python implementation
-  └── qa-engineer:sonnet   — test generation
+/code-review
+  ├── lang-golang-expert:sonnet — Go implementation
+  ├── lang-python-expert:sonnet — Python implementation
+  └── qa-engineer:sonnet        — test generation
 ```
 
 ### Built-in Commands
 
 | Command | Agent | Description |
 |---------|-------|-------------|
-| `creator:agent <name>` | creator | Create a new agent |
-| `updater:docs` | updater | Sync docs with project structure |
-| `supplier:audit` | supplier | Verify agent dependencies |
-| `dev:review` | dev-lead | Review code with expert agents |
-| `pipeline:run <name>` | secretary | Execute a workflow pipeline |
-| `sync:check` | sync-checker | Full synchronization check |
+| `/create-agent <name>` | mgr-creator | Create a new agent |
+| `/update-docs` | mgr-updater | Sync docs with project structure |
+| `/audit-dependencies` | mgr-supplier | Verify agent dependencies |
+| `/code-review` | lang-* experts | Review code with expert agents |
+| `/run-pipeline <name>` | pipeline skill | Execute a workflow pipeline |
+| `/sync-check` | mgr-sync-checker | Full synchronization check |
 
 ### Custom Pipelines
 
 Define repeatable multi-agent workflows:
 
 ```yaml
-# pipelines/deploy-review.yaml
+# .claude/skills/pipelines/deploy-review.yaml
 name: deploy-review
 steps:
   - id: security_scan
-    agent: qa-lead
+    agent: qa-planner
     action: security_review
 
   - id: performance_check
-    agent: optimizer
+    agent: tool-optimizer
     action: analyze_performance
 
   - id: migration_review
-    agent: migration-expert
+    agent: db-migration-expert
     action: review_migrations
 ```
 
-Run it: `pipeline:run deploy-review`
+Run it: `/run-pipeline deploy-review`
 
 ---
 
@@ -126,38 +126,42 @@ Run it: `pipeline:run deploy-review`
 
 > **Templates synced from [baekgom-agents](https://github.com/baekenough/baekgom-agents)** - Battle-tested agent system with sub-agent orchestration support.
 
-### Agents (37)
+### Agents (34)
 
 | Category | Count | Agents |
 |----------|-------|--------|
-| **Orchestrators** | 4 | planner, secretary, dev-lead, qa-lead |
-| **Managers** | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
-| **System** | 2 | memory-keeper, naggy |
-| **Languages** | 6 | golang, python, rust, kotlin, typescript, java21 |
-| **Frontend** | 3 | vercel-agent, vuejs-agent, svelte-agent |
-| **Backend** | 5 | fastapi, springboot, go-backend, express, nestjs |
-| **Tooling** | 3 | npm-expert, optimizer, bun-expert |
-| **Architecture** | 2 | documenter, speckit-agent |
-| **Infrastructure** | 2 | docker-expert, aws-expert |
+| **Managers** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
+| **System** | 2 | sys-memory-keeper, sys-naggy |
+| **Languages** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| **Frontend** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| **Backend** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
+| **Tooling** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| **Database** | 1 | db-supabase-expert |
+| **Architecture** | 2 | arch-documenter, arch-speckit-agent |
+| **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **Tutor** | 1 | go-tutor |
-| **Total** | **37** | |
+| **Tutor** | 1 | tutor-go |
+| **Total** | **34** | |
 
-### Skills (17)
+### Skills (42)
+
+Includes slash commands and capabilities:
 
 - **Development** (8): Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
 - **Backend** (5): FastAPI, Spring Boot, Express, NestJS, Go Backend
 - **Infrastructure** (2): Docker, AWS
 - **System** (2): Memory management, result aggregation
 - **Orchestration** (2): Pipeline execution, intent detection
+- **Slash Commands** (20+): /create-agent, /code-review, /audit-dependencies, /sync-check, /commit, /pr, and more
 
-### Guides (12)
+### Guides (13)
 
 Comprehensive reference documentation covering:
 - Agent creation and management
 - Skill development
 - Pipeline workflows
 - Best practices and patterns
+- Sub-agent orchestration
 
 ### Rules (18)
 
@@ -190,15 +194,22 @@ After `omcustom init`:
 ```
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
-├── .claude/
-│   ├── rules/             # Behavior rules
-│   ├── hooks/             # Event hooks
-│   └── contexts/          # Context files
-├── agents/                # All agents
-├── skills/                # All skills
-├── guides/                # Reference docs
-├── pipelines/             # Workflow definitions
-└── commands/              # Command definitions
+└── .claude/
+    ├── rules/             # Behavior rules (18 total)
+    ├── hooks/             # Event hooks
+    ├── contexts/          # Context files
+    ├── agents/            # All agents (flat structure, 34 total)
+    │   ├── lang-golang-expert/
+    │   ├── be-fastapi-expert/
+    │   ├── mgr-creator/
+    │   └── ...
+    ├── skills/            # All skills (42 total, includes slash commands)
+    │   ├── development/
+    │   ├── backend/
+    │   ├── infrastructure/
+    │   ├── system/
+    │   └── orchestration/
+    └── guides/            # Reference docs (13 total)
 ```
 
 ---

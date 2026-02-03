@@ -23,4 +23,4 @@ documents:
     description: PEP 20 - The Zen of Python
 
 used_by:
-  - python-expert
+  - lang-python-expert

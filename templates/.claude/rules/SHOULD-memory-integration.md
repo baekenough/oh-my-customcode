@@ -69,12 +69,12 @@ bad:
 
 | Command | Description |
 |---------|-------------|
-| `memory:save` | Save current context to claude-mem |
-| `memory:recall` | Search and recall relevant memories |
+| `sys-memory-keeper:save` | Save current context to claude-mem |
+| `sys-memory-keeper:recall` | Search and recall relevant memories |
 
 ## Integration with Agents
 
-### memory-keeper Agent
+### sys-memory-keeper Agent
 ```
 Responsible for:
 - Executing save/recall operations
@@ -84,7 +84,7 @@ Responsible for:
 
 ### Other Agents
 ```
-When to trigger memory:save:
+When to trigger sys-memory-keeper:save:
 - Before complex task completion
 - When making significant decisions
 - Before expected context compaction

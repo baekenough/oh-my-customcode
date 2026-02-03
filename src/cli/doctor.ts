@@ -172,38 +172,20 @@ async function countDirectories(dirPath: string): Promise<number> {
 }
 
 /**
- * Count agents in a single type directory
- */
-async function countAgentsInTypeDir(typePath: string): Promise<number> {
-  let count = 0;
-  try {
-    const entries = await fs.readdir(typePath, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      const agentMdPath = path.join(typePath, entry.name, 'AGENT.md');
-      if (await pathExists(agentMdPath)) {
-        count++;
-      }
-    }
-  } catch {
-    // Ignore errors
-  }
-  return count;
-}
-
-/**
- * Count all agent directories recursively
+ * Count agent .md files in flat .claude/agents/ directory
+ * Official Claude Code format: .claude/agents/{prefix}-{name}.md
  */
 async function countAgents(agentsDir: string): Promise<number> {
   let count = 0;
 
   try {
-    const typeEntries = await fs.readdir(agentsDir, { withFileTypes: true });
+    const entries = await fs.readdir(agentsDir, { withFileTypes: true });
 
-    for (const typeEntry of typeEntries) {
-      if (!typeEntry.isDirectory()) continue;
-      const typePath = path.join(agentsDir, typeEntry.name);
-      count += await countAgentsInTypeDir(typePath);
+    for (const entry of entries) {
+      // Count .md files (flat structure in official Claude Code format)
+      if (entry.isFile() && entry.name.endsWith('.md')) {
+        count++;
+      }
     }
   } catch {
     // Ignore errors
@@ -271,11 +253,12 @@ export async function checkRules(targetDir: string): Promise<CheckResult> {
 
 /**
  * Check if agents directory exists and has expected count
+ * Official Claude Code format: .claude/agents/
  * @param targetDir - Target directory
  * @returns Check result
  */
 export async function checkAgents(targetDir: string): Promise<CheckResult> {
-  const agentsDir = path.join(targetDir, 'agents');
+  const agentsDir = path.join(targetDir, '.claude', 'agents');
   const exists = await isDirectory(agentsDir);
 
   if (!exists) {
@@ -308,26 +291,16 @@ export async function checkAgents(targetDir: string): Promise<CheckResult> {
 
 /**
  * Check if all symlinks in refs/ are valid
+ * Official Claude Code format: .claude/agents/, .claude/skills/
  * @param targetDir - Target directory
  * @returns Check result
  */
 export async function checkSymlinks(targetDir: string): Promise<CheckResult> {
-  const agentsDir = path.join(targetDir, 'agents');
-  const skillsDir = path.join(targetDir, 'skills');
+  const skillsDir = path.join(targetDir, '.claude', 'skills');
 
   const brokenSymlinks: string[] = [];
 
-  // Check symlinks in agents directory
-  if (await isDirectory(agentsDir)) {
-    const agentSymlinks = await findRefsSymlinks(agentsDir);
-    for (const symlink of agentSymlinks) {
-      if (!(await isValidSymlink(symlink))) {
-        brokenSymlinks.push(symlink);
-      }
-    }
-  }
-
-  // Check symlinks in skills directory
+  // Check symlinks in skills directory (agents are now flat .md files, no refs)
   if (await isDirectory(skillsDir)) {
     const skillSymlinks = await findRefsSymlinks(skillsDir);
     for (const symlink of skillSymlinks) {
@@ -402,11 +375,12 @@ export async function checkIndexFiles(targetDir: string): Promise<CheckResult> {
 
 /**
  * Check if skills directory exists
+ * Official Claude Code format: .claude/skills/
  * @param targetDir - Target directory
  * @returns Check result
  */
 export async function checkSkills(targetDir: string): Promise<CheckResult> {
-  const skillsDir = path.join(targetDir, 'skills');
+  const skillsDir = path.join(targetDir, '.claude', 'skills');
   const exists = await isDirectory(skillsDir);
 
   if (!exists) {
@@ -482,8 +456,8 @@ async function createMissingDirectory(dirPath: string): Promise<boolean> {
 async function fixSingleIssue(check: CheckResult, targetDir: string): Promise<boolean> {
   const fixMap: Record<string, () => Promise<boolean>> = {
     Rules: () => createMissingDirectory(path.join(targetDir, '.claude', 'rules')),
-    Agents: () => createMissingDirectory(path.join(targetDir, 'agents')),
-    Skills: () => createMissingDirectory(path.join(targetDir, 'skills')),
+    Agents: () => createMissingDirectory(path.join(targetDir, '.claude', 'agents')),
+    Skills: () => createMissingDirectory(path.join(targetDir, '.claude', 'skills')),
     Symlinks: async () => {
       if (!check.details || check.details.length === 0) return false;
       const fullPaths = check.details.map((d) => path.join(targetDir, d));

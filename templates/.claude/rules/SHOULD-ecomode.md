@@ -79,12 +79,12 @@ ecomode:
 ### Normal Mode Output
 
 ```
-┌─ Agent: golang-expert (sw-engineer)
+┌─ Agent: lang-golang-expert (sw-engineer)
 ├─ Skill: go-best-practices
 └─ Task: Reviewing src/main.go
 
 Reading file...
-[golang-expert → Read] src/main.go
+[lang-golang-expert → Read] src/main.go
 
 Analyzing code structure...
 Found 3 functions, 2 structs, 1 interface.
@@ -105,7 +105,7 @@ Review Complete:
 ### Ecomode Output
 
 ```
-[golang-expert] ✓ src/main.go reviewed: 1 naming issue (handle_error → handleError)
+[lang-golang-expert] ✓ src/main.go reviewed: 1 naming issue (handle_error → handleError)
 ```
 
 ## Implementation Notes

@@ -1,4 +1,0 @@
-name: pr
-agent: gitnerd
-description: Create a pull request with proper description
-usage: git:pr

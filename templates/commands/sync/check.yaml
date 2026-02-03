@@ -1,4 +1,0 @@
-name: check
-agent: sync-checker
-description: Run full synchronization check
-usage: sync:check

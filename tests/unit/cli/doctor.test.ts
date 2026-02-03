@@ -14,11 +14,14 @@ import {
   fixIssues,
   printCheck,
 } from '../../../src/cli/doctor.js';
+import { initI18n } from '../../../src/i18n/index.js';
 
 describe('doctor command', () => {
   let tempDir: string;
 
   beforeEach(async () => {
+    // Initialize i18n before tests
+    await initI18n('en');
     tempDir = await mkdtemp(join(tmpdir(), 'omcustom-doctor-test-'));
   });
 
@@ -88,10 +91,10 @@ describe('doctor command', () => {
 
   describe('checkAgents', () => {
     it('should pass when agents directory exists with valid agents', async () => {
-      // Setup: create agents with AGENT.md files
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'golang-expert');
-      await mkdir(agentDir, { recursive: true });
-      await writeFile(join(agentDir, 'AGENT.md'), '# Golang Expert\n\nI am a Go expert.');
+      // Setup: create agents with flat .md files (official Claude Code format)
+      const agentsDir = join(tempDir, '.claude', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(join(agentsDir, 'golang-expert.md'), '# Golang Expert\n\nI am a Go expert.');
 
       const result = await checkAgents(tempDir);
 
@@ -111,8 +114,8 @@ describe('doctor command', () => {
     });
 
     it('should warn when agents directory exists but has no valid agents', async () => {
-      // Setup: create agents directory without AGENT.md files
-      const agentsDir = join(tempDir, 'agents', 'sw-engineer', 'incomplete-agent');
+      // Setup: create agents directory without any .md files
+      const agentsDir = join(tempDir, '.claude', 'agents');
       await mkdir(agentsDir, { recursive: true });
       await writeFile(join(agentsDir, 'index.yaml'), 'name: incomplete');
 
@@ -123,16 +126,12 @@ describe('doctor command', () => {
     });
 
     it('should count multiple agents correctly', async () => {
-      // Setup: create multiple agents
-      const agent1 = join(tempDir, 'agents', 'sw-engineer', 'golang-expert');
-      const agent2 = join(tempDir, 'agents', 'sw-engineer', 'python-expert');
-      const agent3 = join(tempDir, 'agents', 'backend-engineer', 'fastapi-expert');
-      await mkdir(agent1, { recursive: true });
-      await mkdir(agent2, { recursive: true });
-      await mkdir(agent3, { recursive: true });
-      await writeFile(join(agent1, 'AGENT.md'), '# Golang Expert');
-      await writeFile(join(agent2, 'AGENT.md'), '# Python Expert');
-      await writeFile(join(agent3, 'AGENT.md'), '# FastAPI Expert');
+      // Setup: create multiple agent .md files (official Claude Code format)
+      const agentsDir = join(tempDir, '.claude', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(join(agentsDir, 'golang-expert.md'), '# Golang Expert');
+      await writeFile(join(agentsDir, 'python-expert.md'), '# Python Expert');
+      await writeFile(join(agentsDir, 'fastapi-expert.md'), '# FastAPI Expert');
 
       const result = await checkAgents(tempDir);
 
@@ -143,8 +142,8 @@ describe('doctor command', () => {
 
   describe('checkSkills', () => {
     it('should pass when skills directory exists with categories', async () => {
-      // Setup: create skills directory with categories
-      const skillsDir = join(tempDir, 'skills');
+      // Setup: create skills directory with categories (official Claude Code format)
+      const skillsDir = join(tempDir, '.claude', 'skills');
       await mkdir(join(skillsDir, 'development'), { recursive: true });
       await mkdir(join(skillsDir, 'backend'), { recursive: true });
 
@@ -166,8 +165,8 @@ describe('doctor command', () => {
     });
 
     it('should warn when skills directory exists but is empty', async () => {
-      // Setup: create empty skills directory
-      await mkdir(join(tempDir, 'skills'), { recursive: true });
+      // Setup: create empty skills directory (official Claude Code format)
+      await mkdir(join(tempDir, '.claude', 'skills'), { recursive: true });
 
       const result = await checkSkills(tempDir);
 
@@ -178,10 +177,10 @@ describe('doctor command', () => {
 
   describe('checkSymlinks', () => {
     it('should pass when no broken symlinks exist', async () => {
-      // Setup: create agent with valid symlink in refs/
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      const refsDir = join(agentDir, 'refs');
-      const guidesDir = join(tempDir, 'guides', 'test-guide');
+      // Setup: create skill with valid symlink in refs/
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      const refsDir = join(skillDir, 'refs');
+      const guidesDir = join(tempDir, '.claude', 'guides', 'test-guide');
       await mkdir(refsDir, { recursive: true });
       await mkdir(guidesDir, { recursive: true });
       await writeFile(join(guidesDir, 'README.md'), '# Test Guide');
@@ -195,8 +194,8 @@ describe('doctor command', () => {
       expect(result.name).toBe('Symlinks');
     });
 
-    it('should pass when no symlinks exist (no agents/skills dirs)', async () => {
-      // No agents or skills directories
+    it('should pass when no symlinks exist (no skills dir)', async () => {
+      // No skills directory
 
       const result = await checkSymlinks(tempDir);
 
@@ -205,9 +204,9 @@ describe('doctor command', () => {
     });
 
     it('should fail when broken symlinks exist', async () => {
-      // Setup: create agent with broken symlink in refs/
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      const refsDir = join(agentDir, 'refs');
+      // Setup: create skill with broken symlink in refs/
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
 
       // Create broken symlink pointing to non-existent path
@@ -224,14 +223,14 @@ describe('doctor command', () => {
     });
 
     it('should detect multiple broken symlinks', async () => {
-      // Setup: create multiple broken symlinks
-      const agent1Refs = join(tempDir, 'agents', 'sw-engineer', 'agent1', 'refs');
-      const agent2Refs = join(tempDir, 'agents', 'backend-engineer', 'agent2', 'refs');
-      await mkdir(agent1Refs, { recursive: true });
-      await mkdir(agent2Refs, { recursive: true });
+      // Setup: create multiple broken symlinks in skills
+      const skill1Refs = join(tempDir, '.claude', 'skills', 'development', 'skill1', 'refs');
+      const skill2Refs = join(tempDir, '.claude', 'skills', 'backend', 'skill2', 'refs');
+      await mkdir(skill1Refs, { recursive: true });
+      await mkdir(skill2Refs, { recursive: true });
 
-      await symlink('/missing/path1', join(agent1Refs, 'broken1'));
-      await symlink('/missing/path2', join(agent2Refs, 'broken2'));
+      await symlink('/missing/path1', join(skill1Refs, 'broken1'));
+      await symlink('/missing/path2', join(skill2Refs, 'broken2'));
 
       const result = await checkSymlinks(tempDir);
 
@@ -243,12 +242,12 @@ describe('doctor command', () => {
 
   describe('checkIndexFiles', () => {
     it('should pass when all index.yaml files are valid', async () => {
-      // Setup: create valid index.yaml files
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      await mkdir(agentDir, { recursive: true });
+      // Setup: create valid index.yaml files (in skills, not agents - agents are flat .md now)
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      await mkdir(skillDir, { recursive: true });
       await writeFile(
-        join(agentDir, 'index.yaml'),
-        'metadata:\n  name: test-agent\n  type: worker\n'
+        join(skillDir, 'index.yaml'),
+        'metadata:\n  name: test-skill\n  type: skill\n'
       );
 
       const result = await checkIndexFiles(tempDir);
@@ -260,9 +259,9 @@ describe('doctor command', () => {
 
     it('should fail when index.yaml has invalid YAML syntax', async () => {
       // Setup: create invalid index.yaml
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      await mkdir(agentDir, { recursive: true });
-      await writeFile(join(agentDir, 'index.yaml'), 'invalid:\n  yaml: [\n  broken syntax');
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(join(skillDir, 'index.yaml'), 'invalid:\n  yaml: [\n  broken syntax');
 
       const result = await checkIndexFiles(tempDir);
 
@@ -284,12 +283,12 @@ describe('doctor command', () => {
 
     it('should report multiple invalid files', async () => {
       // Setup: create multiple invalid index.yaml files
-      const agent1Dir = join(tempDir, 'agents', 'sw-engineer', 'agent1');
-      const agent2Dir = join(tempDir, 'agents', 'sw-engineer', 'agent2');
-      await mkdir(agent1Dir, { recursive: true });
-      await mkdir(agent2Dir, { recursive: true });
-      await writeFile(join(agent1Dir, 'index.yaml'), 'broken: [syntax');
-      await writeFile(join(agent2Dir, 'index.yaml'), 'also: {bad');
+      const skill1Dir = join(tempDir, '.claude', 'skills', 'development', 'skill1');
+      const skill2Dir = join(tempDir, '.claude', 'skills', 'development', 'skill2');
+      await mkdir(skill1Dir, { recursive: true });
+      await mkdir(skill2Dir, { recursive: true });
+      await writeFile(join(skill1Dir, 'index.yaml'), 'broken: [syntax');
+      await writeFile(join(skill2Dir, 'index.yaml'), 'also: {bad');
 
       const result = await checkIndexFiles(tempDir);
 
@@ -343,7 +342,7 @@ describe('doctor command', () => {
       expect(fixedChecks[0].fixed).toBe(true);
 
       const { stat } = await import('node:fs/promises');
-      const agentsDir = join(tempDir, 'agents');
+      const agentsDir = join(tempDir, '.claude', 'agents');
       const dirStat = await stat(agentsDir);
       expect(dirStat.isDirectory()).toBe(true);
     });
@@ -365,15 +364,15 @@ describe('doctor command', () => {
       expect(fixedChecks[0].fixed).toBe(true);
 
       const { stat } = await import('node:fs/promises');
-      const skillsDir = join(tempDir, 'skills');
+      const skillsDir = join(tempDir, '.claude', 'skills');
       const dirStat = await stat(skillsDir);
       expect(dirStat.isDirectory()).toBe(true);
     });
 
     it('should remove broken symlinks', async () => {
-      // Setup: create broken symlink
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      const refsDir = join(agentDir, 'refs');
+      // Setup: create broken symlink in skills
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
       const brokenSymlink = join(refsDir, 'broken-link');
       await symlink('/non/existent/path', brokenSymlink);
@@ -384,7 +383,7 @@ describe('doctor command', () => {
           status: 'fail',
           message: 'Some symlinks are broken',
           fixable: true,
-          details: ['agents/sw-engineer/test-agent/refs/broken-link'],
+          details: ['.claude/skills/development/test-skill/refs/broken-link'],
         },
       ];
 
@@ -451,13 +450,20 @@ describe('doctor command', () => {
       await mkdir(rulesDir, { recursive: true });
       await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety');
 
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      await mkdir(agentDir, { recursive: true });
-      await writeFile(join(agentDir, 'AGENT.md'), '# Test Agent');
-      await writeFile(join(agentDir, 'index.yaml'), 'metadata:\n  name: test-agent\n');
+      const agentsDir = join(tempDir, '.claude', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(join(agentsDir, 'test-agent.md'), '# Test Agent\n\nI am a test agent.');
 
-      const skillsDir = join(tempDir, 'skills', 'development');
+      const skillsDir = join(tempDir, '.claude', 'skills', 'development');
       await mkdir(skillsDir, { recursive: true });
+
+      // Create an index.yaml in a skill to satisfy checkIndexFiles
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(
+        join(skillDir, 'index.yaml'),
+        'metadata:\n  name: test-skill\n  type: skill\n'
+      );
 
       // Run all checks
       const results = await Promise.all([
@@ -589,15 +595,19 @@ describe('doctor command', () => {
         status: 'fail',
         message: 'Broken symlinks found',
         fixable: true,
-        details: ['agents/refs/broken1', 'agents/refs/broken2', 'skills/refs/broken3'],
+        details: [
+          '.claude/skills/refs/broken1',
+          '.claude/skills/refs/broken2',
+          '.claude/skills/refs/broken3',
+        ],
       };
 
       printCheck(check);
 
       expect(consoleOutput.length).toBe(4);
-      expect(consoleOutput[1]).toContain('agents/refs/broken1');
-      expect(consoleOutput[2]).toContain('agents/refs/broken2');
-      expect(consoleOutput[3]).toContain('skills/refs/broken3');
+      expect(consoleOutput[1]).toContain('.claude/skills/refs/broken1');
+      expect(consoleOutput[2]).toContain('.claude/skills/refs/broken2');
+      expect(consoleOutput[3]).toContain('.claude/skills/refs/broken3');
     });
 
     it('should truncate details to first 5 and show count', () => {
@@ -656,9 +666,9 @@ describe('doctor command', () => {
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Project');
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
       await writeFile(join(tempDir, '.claude', 'rules', 'MUST-safety.md'), '# Safety');
-      await mkdir(join(tempDir, 'agents', 'sw-engineer', 'test-agent'), { recursive: true });
-      await writeFile(join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'AGENT.md'), '# Agent');
-      await mkdir(join(tempDir, 'skills', 'development'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'agents', 'test-agent.md'), '# Agent');
+      await mkdir(join(tempDir, '.claude', 'skills', 'development'), { recursive: true });
 
       const result = await doctorCommand();
 
@@ -695,9 +705,9 @@ describe('doctor command', () => {
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Project');
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
       await writeFile(join(tempDir, '.claude', 'rules', 'MUST-safety.md'), '# Safety');
-      await mkdir(join(tempDir, 'agents', 'sw-engineer', 'test-agent'), { recursive: true });
-      await writeFile(join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'AGENT.md'), '# Agent');
-      await mkdir(join(tempDir, 'skills', 'development'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'agents', 'test-agent.md'), '# Agent');
+      await mkdir(join(tempDir, '.claude', 'skills', 'development'), { recursive: true });
 
       const result = await doctorCommand({ quiet: true });
 
@@ -713,8 +723,8 @@ describe('doctor command', () => {
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Project');
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
       // No rule files = warn for rules
-      await mkdir(join(tempDir, 'agents', 'sw-engineer'), { recursive: true });
-      // No AGENT.md = warn for agents
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
+      // No agent .md files = warn for agents
       // Missing skills = fail
 
       const result = await doctorCommand();
@@ -738,8 +748,10 @@ describe('doctor command', () => {
 
   describe('isValidSymlink edge cases', () => {
     it('should return true for regular files (non-symlinks)', async () => {
-      // Create a regular file (not a symlink)
-      const regularFile = join(tempDir, 'regular-file.txt');
+      // Create a regular file (not a symlink) in skills refs
+      const refsDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill', 'refs');
+      await mkdir(refsDir, { recursive: true });
+      const regularFile = join(refsDir, 'regular-file.txt');
       await writeFile(regularFile, 'test content');
 
       // The isValidSymlink function should return true for non-symlinks
@@ -752,7 +764,7 @@ describe('doctor command', () => {
 
     it('should handle refs directory with regular files', async () => {
       // Create refs directory with regular files (not symlinks)
-      const refsDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'refs');
+      const refsDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill', 'refs');
       await mkdir(refsDir, { recursive: true });
       await writeFile(join(refsDir, 'regular-file.md'), '# Not a symlink');
 
@@ -764,7 +776,7 @@ describe('doctor command', () => {
 
     it('should handle mixed regular files and broken symlinks in refs', async () => {
       // Create refs directory with both regular files and broken symlinks
-      const refsDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'refs');
+      const refsDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill', 'refs');
       await mkdir(refsDir, { recursive: true });
       await writeFile(join(refsDir, 'regular-file.md'), '# Regular file');
       await symlink('/non/existent/path', join(refsDir, 'broken-link'));
@@ -780,7 +792,7 @@ describe('doctor command', () => {
   describe('symlinks in skills directory', () => {
     it('should detect broken symlinks in skills refs directory', async () => {
       // Setup: create skill with broken symlink in refs/
-      const skillDir = join(tempDir, 'skills', 'development', 'test-skill');
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
       const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
 
@@ -794,21 +806,16 @@ describe('doctor command', () => {
       expect(result.details).toBeDefined();
     });
 
-    it('should detect broken symlinks in both agents and skills', async () => {
-      // Create broken symlink in agents
-      const agentRefsDir = join(tempDir, 'agents', 'sw-engineer', 'agent1', 'refs');
-      await mkdir(agentRefsDir, { recursive: true });
-      await symlink('/missing/agent/path', join(agentRefsDir, 'broken1'));
-
+    it('should detect broken symlinks in skills', async () => {
       // Create broken symlink in skills
-      const skillRefsDir = join(tempDir, 'skills', 'development', 'skill1', 'refs');
+      const skillRefsDir = join(tempDir, '.claude', 'skills', 'development', 'skill1', 'refs');
       await mkdir(skillRefsDir, { recursive: true });
-      await symlink('/missing/skill/path', join(skillRefsDir, 'broken2'));
+      await symlink('/missing/skill/path', join(skillRefsDir, 'broken1'));
 
       const result = await checkSymlinks(tempDir);
 
       expect(result.status).toBe('fail');
-      expect(result.message).toContain('2 broken');
+      expect(result.message).toContain('1 broken');
     });
   });
 
@@ -889,7 +896,7 @@ describe('doctor command', () => {
     it('should handle permission errors in countDirectories gracefully', async () => {
       // Create skills directory but with a file instead of directory inside
       // This will cause readdir to fail
-      const skillsDir = join(tempDir, 'skills');
+      const skillsDir = join(tempDir, '.claude', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
       // Create a file that looks like a directory (to trigger errors)
@@ -921,7 +928,7 @@ describe('doctor command', () => {
   describe('isValidSymlink non-symlink handling', () => {
     it('should return true for non-symlink files in refs directory', async () => {
       // This specifically tests line 81: return true when !stat.isSymbolicLink()
-      const refsDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'refs');
+      const refsDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill', 'refs');
       await mkdir(refsDir, { recursive: true });
 
       // Create a regular file (not a symlink)
@@ -935,12 +942,12 @@ describe('doctor command', () => {
 
     it('should skip non-symlink files when checking for broken symlinks', async () => {
       // Test that regular files in refs are properly skipped (line 81 coverage)
-      const agentRefsDir = join(tempDir, 'agents', 'sw-engineer', 'agent1', 'refs');
-      await mkdir(agentRefsDir, { recursive: true });
+      const skillRefsDir = join(tempDir, '.claude', 'skills', 'development', 'skill1', 'refs');
+      await mkdir(skillRefsDir, { recursive: true });
 
       // Mix of regular files
-      await writeFile(join(agentRefsDir, 'file1.md'), 'content');
-      await writeFile(join(agentRefsDir, 'file2.txt'), 'content');
+      await writeFile(join(skillRefsDir, 'file1.md'), 'content');
+      await writeFile(join(skillRefsDir, 'file2.txt'), 'content');
 
       const result = await checkSymlinks(tempDir);
 
@@ -951,7 +958,7 @@ describe('doctor command', () => {
 
     it('should handle directories in refs (non-symlinks)', async () => {
       // Test line 81: directories are not symlinks and should be skipped
-      const refsDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent', 'refs');
+      const refsDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill', 'refs');
       await mkdir(refsDir, { recursive: true });
 
       // Create subdirectories in refs (not typical, but possible)
@@ -980,7 +987,8 @@ describe('doctor command', () => {
 
     it('should return 0 when readdir throws ENOTDIR', async () => {
       // Test line 177-178: when trying to readdir on a file (not a directory)
-      const skillsFile = join(tempDir, 'skills');
+      const skillsFile = join(tempDir, '.claude', 'skills');
+      await mkdir(join(tempDir, '.claude'), { recursive: true });
       await writeFile(skillsFile, 'this is a file, not a directory');
 
       // checkSkills will try to call isDirectory which will return false
@@ -992,7 +1000,7 @@ describe('doctor command', () => {
 
     it('should handle permission errors in readdir', async () => {
       // Test line 177-178: permission errors in countDirectories
-      const skillsDir = join(tempDir, 'skills');
+      const skillsDir = join(tempDir, '.claude', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
       // On Unix-like systems, we can't easily test permission errors in tests
@@ -1012,12 +1020,12 @@ describe('doctor command', () => {
   describe('collectSymlinksFromRefsDir error handling', () => {
     it('should handle lstat errors in refs directory', async () => {
       // Test coverage for error handling in collectSymlinksFromRefsDir
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      const refsDir = join(agentDir, 'refs');
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
 
       // Create a symlink
-      const guidesDir = join(tempDir, 'guides');
+      const guidesDir = join(tempDir, '.claude', 'guides', 'test-guide');
       await mkdir(guidesDir, { recursive: true });
       await symlink(guidesDir, join(refsDir, 'valid-link'));
 
@@ -1034,12 +1042,12 @@ describe('doctor command', () => {
       // Edge case: what if a file is deleted between readdir and lstat?
       // This is hard to test without mocking, but we can at least test
       // that having files alongside symlinks doesn't break things
-      const skillsDir = join(tempDir, 'skills', 'development', 'test-skill');
+      const skillsDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
       const refsDir = join(skillsDir, 'refs');
       await mkdir(refsDir, { recursive: true });
 
       // Mix of symlinks and regular files
-      const guidesDir = join(tempDir, 'guides', 'guide1');
+      const guidesDir = join(tempDir, '.claude', 'guides', 'guide1');
       await mkdir(guidesDir, { recursive: true });
       await symlink(guidesDir, join(refsDir, 'symlink1'));
       await writeFile(join(refsDir, 'file1.md'), 'content');
@@ -1063,22 +1071,15 @@ describe('doctor command', () => {
 
       // When the skills directory doesn't exist, it should fail
       expect(result.status).toBe('fail');
-      expect(result.message).toContain('Skills');
+      expect(result.message).toContain('Skills directory is missing');
     });
   });
 
   describe('edge cases for uncovered lines', () => {
     it('should handle empty skills directory to trigger countDirectories error path', async () => {
       // Explicitly test the error path in countDirectories (lines 177-178)
-      // Create skills as a file instead of a directory to trigger error
-      const skillsPath = join(tempDir, 'skills-as-file');
-      await writeFile(skillsPath, 'not a directory');
-
-      // This will cause isDirectory to return false, then countDirectories
-      // won't be called. We need a different approach.
-
-      // Instead, create skills directory but put a file where a subdirectory check happens
-      const skillsDir = join(tempDir, 'skills');
+      // Create skills directory with no subdirectories to test the warning path
+      const skillsDir = join(tempDir, '.claude', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
       // Since countDirectories does readdir on skillsDir, and we can't easily
@@ -1093,7 +1094,7 @@ describe('doctor command', () => {
 
     it('should test skills with broken internal structure', async () => {
       // Create skills directory with broken structure to trigger various error paths
-      const skillsDir = join(tempDir, 'skills');
+      const skillsDir = join(tempDir, '.claude', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
       // Create files instead of directories
@@ -1121,7 +1122,7 @@ describe('doctor command', () => {
       // that this path exists and is intentionally handled.
 
       // Create an empty skills directory
-      const skillsDir = join(tempDir, 'skills');
+      const skillsDir = join(tempDir, '.claude', 'skills');
       await mkdir(skillsDir, { recursive: true });
 
       const result = await checkSkills(tempDir);
@@ -1149,12 +1150,12 @@ describe('doctor command', () => {
       // The existence of this test documents this defensive behavior.
 
       // Create refs directory with regular files and symlinks
-      const agentDir = join(tempDir, 'agents', 'sw-engineer', 'test-agent');
-      const refsDir = join(agentDir, 'refs');
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'test-skill');
+      const refsDir = join(skillDir, 'refs');
       await mkdir(refsDir, { recursive: true });
 
       // Create a valid symlink
-      const targetDir = join(tempDir, 'target');
+      const targetDir = join(tempDir, '.claude', 'guides', 'test-guide');
       await mkdir(targetDir, { recursive: true });
       await symlink(targetDir, join(refsDir, 'valid-link'));
 

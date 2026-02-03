@@ -50,30 +50,46 @@ describe('installer', () => {
     it('should create all required directories', async () => {
       await createDirectoryStructure(tempDir);
 
-      // Check that main directories are created
+      // Check that main directories are created (official Claude Code format)
       expect(await fileExists(join(tempDir, '.claude'))).toBe(true);
       expect(await fileExists(join(tempDir, '.claude', 'rules'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'agents'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'skills'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'agents'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'skills'))).toBe(true);
       expect(await fileExists(join(tempDir, 'guides'))).toBe(true);
       expect(await fileExists(join(tempDir, 'pipelines'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'commands'))).toBe(true);
+      // commands/ removed in official Claude Code format (absorbed into skills)
     });
 
-    it('should create nested agent directories', async () => {
+    it('should create .claude subdirectories', async () => {
       await createDirectoryStructure(tempDir);
 
-      expect(await fileExists(join(tempDir, 'agents', 'master'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'agents', 'orchestrator'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'agents', 'sw-engineer'))).toBe(true);
+      // .claude/agents is flat (no subdirectories)
+      expect(await fileExists(join(tempDir, '.claude', 'agents'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'skills'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'hooks'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'contexts'))).toBe(true);
     });
 
-    it('should create skill category directories', async () => {
+    it('should use flat .claude structure (no nested agent/skill directories)', async () => {
       await createDirectoryStructure(tempDir);
 
-      expect(await fileExists(join(tempDir, 'skills', 'development'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'skills', 'backend'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'skills', 'infrastructure'))).toBe(true);
+      // Verify flat structure: .claude/agents (not .claude/agents/*)
+      expect(await fileExists(join(tempDir, '.claude', 'agents'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'skills'))).toBe(true);
+
+      // OLD structure (should NOT exist): agents/orchestrator/, agents/manager/, etc.
+      expect(await fileExists(join(tempDir, 'agents'))).toBe(false);
+      expect(await fileExists(join(tempDir, 'skills'))).toBe(false);
+
+      // commands/ component removed (absorbed into skills)
+      expect(await fileExists(join(tempDir, 'commands'))).toBe(false);
+    });
+
+    it('should create pipeline directories', async () => {
+      await createDirectoryStructure(tempDir);
+
+      expect(await fileExists(join(tempDir, 'pipelines', 'templates'))).toBe(true);
+      expect(await fileExists(join(tempDir, 'pipelines', 'examples'))).toBe(true);
     });
   });
 
@@ -95,6 +111,23 @@ describe('installer', () => {
       expect(componentNames).toContain('rules');
       expect(componentNames).toContain('agents');
       expect(componentNames).toContain('skills');
+    });
+
+    it('should return exactly 7 components (commands removed)', async () => {
+      const manifest = await getTemplateManifest();
+
+      // getAllComponents() returns 7 items: rules, agents, skills, guides, pipelines, hooks, contexts
+      expect(manifest.components.length).toBe(7);
+
+      const componentNames = manifest.components.map((c) => c.name);
+      expect(componentNames).toContain('rules');
+      expect(componentNames).toContain('agents');
+      expect(componentNames).toContain('skills');
+      expect(componentNames).toContain('guides');
+      expect(componentNames).toContain('pipelines');
+      expect(componentNames).toContain('hooks');
+      expect(componentNames).toContain('contexts');
+      expect(componentNames).not.toContain('commands'); // commands removed
     });
   });
 
@@ -141,8 +174,8 @@ describe('installer', () => {
     });
 
     it('should respect force option', async () => {
-      // Create existing directories
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
+      // Create existing directories (official Claude Code format)
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
 
       const result = await install({
         targetDir: tempDir,
@@ -184,9 +217,8 @@ describe('installer', () => {
     });
 
     it('should warn about existing files without force/backup', async () => {
-      // Create existing structure
-      await mkdir(join(tempDir, '.claude'), { recursive: true });
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
+      // Create existing structure (official Claude Code format)
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Existing');
 
       const result = await install({
@@ -220,24 +252,16 @@ describe('installer', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle install with all components', async () => {
+    it('should handle install with all components (7 total, no commands)', async () => {
       const result = await install({
         targetDir: tempDir,
-        components: [
-          'rules',
-          'agents',
-          'skills',
-          'guides',
-          'pipelines',
-          'commands',
-          'hooks',
-          'contexts',
-        ],
+        components: ['rules', 'agents', 'skills', 'guides', 'pipelines', 'hooks', 'contexts'],
         skipConfirm: true,
       });
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.installedComponents)).toBe(true);
+      // getAllComponents() should return 7 items (commands removed)
     });
 
     it('should skip claude-md component in components list', async () => {
@@ -251,13 +275,12 @@ describe('installer', () => {
     });
 
     it('should handle backup with multiple existing paths', async () => {
-      // Create multiple existing structures
+      // Create multiple existing structures (official Claude Code format)
       await mkdir(join(tempDir, '.claude', 'rules'), { recursive: true });
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
-      await mkdir(join(tempDir, 'skills'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'skills'), { recursive: true });
       await mkdir(join(tempDir, 'guides'), { recursive: true });
       await mkdir(join(tempDir, 'pipelines'), { recursive: true });
-      await mkdir(join(tempDir, 'commands'), { recursive: true });
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Existing');
 
       const result = await install({
@@ -297,9 +320,9 @@ describe('installer', () => {
     });
 
     it('should handle install with force and backup together', async () => {
-      // Create existing files
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
-      await writeFile(join(tempDir, 'agents', 'existing.md'), '# Existing');
+      // Create existing files (official Claude Code format)
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'agents', 'existing.md'), '# Existing');
 
       const result = await install({
         targetDir: tempDir,
@@ -536,8 +559,8 @@ describe('installer', () => {
     });
 
     it('should handle non-Error exception in backup (line 508)', async () => {
-      // Create existing files
-      await mkdir(join(tempDir, 'agents'), { recursive: true });
+      // Create existing files (official Claude Code format)
+      await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
 
       // Mock rename to throw non-Error
       const renameSpy = spyOn(await import('node:fs/promises'), 'rename').mockImplementation(() => {

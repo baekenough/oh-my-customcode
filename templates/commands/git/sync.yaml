@@ -1,4 +1,0 @@
-name: sync
-agent: gitnerd
-description: Sync local branch with remote (fetch and rebase)
-usage: git:sync

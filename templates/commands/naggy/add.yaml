@@ -1,8 +1,0 @@
-name: add
-agent: naggy
-description: Add new TODO item
-usage: naggy:add <task>
-arguments:
-  - name: task
-    required: true
-    description: Task description

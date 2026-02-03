@@ -76,8 +76,8 @@ oh-my-customcode로 구동됩니다.
 [에이전트명] -> Target: <파일/경로/URL>
 
 예:
-[golang-expert] -> Tool: Read
-[golang-expert] -> Target: src/main.go
+[lang-golang-expert] -> Tool: Read
+[lang-golang-expert] -> Target: src/main.go
 ```
 
 ### 3. 병렬 실행 (2개 이상 독립 작업 시 강제)
@@ -135,58 +135,58 @@ oh-my-customcode로 구동됩니다.
 
 ## 커맨드
 
-형식: `{에이전트}:{액션} [인자]`
+형식: `/slash-command [인자]`
 
 ### 시스템 커맨드
 | 커맨드 | 설명 |
 |--------|------|
-| `lists` | 모든 사용 가능한 커맨드 표시 |
-| `status` | 시스템 상태 표시 |
-| `help` | 도움말 표시 |
+| `/lists` | 모든 사용 가능한 커맨드 표시 |
+| `/status` | 시스템 상태 표시 |
+| `/help` | 도움말 표시 |
 
 ### 매니저 커맨드
 | 커맨드 | 설명 |
 |--------|------|
-| `creator:agent` | 새 에이전트 생성 |
-| `updater:docs` | 프로젝트 구조와 문서 동기화 |
-| `supplier:audit` | 에이전트 의존성 감사 |
-| `supplier:fix` | 깨진 참조 수정 |
-| `naggy:list` | 모든 TODO 항목 표시 |
-| `naggy:add` | 새 TODO 항목 추가 |
-| `naggy:done` | TODO 항목 완료 처리 |
-| `git:commit` | git 커밋 생성 |
-| `git:branch` | 브랜치 생성/전환 |
-| `git:pr` | 풀 리퀘스트 생성 |
-| `git:sync` | 원격 저장소와 동기화 |
-| `sync:check` | 전체 동기화 검사 실행 |
-| `sauron:watch` | 전체 R017 검증 |
-| `sauron:quick` | 빠른 검증 |
+| `/mgr-creator:agent` | 새 에이전트 생성 |
+| `/mgr-updater:docs` | 프로젝트 구조와 문서 동기화 |
+| `/mgr-supplier:audit` | 에이전트 의존성 감사 |
+| `/mgr-supplier:fix` | 깨진 참조 수정 |
+| `/sys-naggy:list` | 모든 TODO 항목 표시 |
+| `/sys-naggy:add` | 새 TODO 항목 추가 |
+| `/sys-naggy:done` | TODO 항목 완료 처리 |
+| `/mgr-gitnerd:commit` | git 커밋 생성 |
+| `/mgr-gitnerd:branch` | 브랜치 생성/전환 |
+| `/mgr-gitnerd:pr` | 풀 리퀘스트 생성 |
+| `/mgr-gitnerd:sync` | 원격 저장소와 동기화 |
+| `/mgr-sync-checker:check` | 전체 동기화 검사 실행 |
+| `/mgr-sauron:watch` | 전체 R017 검증 |
+| `/mgr-sauron:quick` | 빠른 검증 |
 
 ### 개발 커맨드
 | 커맨드 | 설명 |
 |--------|------|
-| `dev:review` | 코드 베스트 프랙티스 리뷰 |
-| `dev:refactor` | 코드 리팩토링 |
+| `/dev:review` | 코드 베스트 프랙티스 리뷰 |
+| `/dev:refactor` | 코드 리팩토링 |
 
 ### 툴링 커맨드
 | 커맨드 | 설명 |
 |--------|------|
-| `npm:publish` | npm 레지스트리에 패키지 배포 |
-| `npm:version` | 시맨틱 버전 관리 |
-| `optimize:analyze` | 번들 및 성능 분석 |
-| `optimize:bundle` | 번들 크기 최적화 |
+| `/tool-npm-expert:publish` | npm 레지스트리에 패키지 배포 |
+| `/tool-npm-expert:version` | 시맨틱 버전 관리 |
+| `/tool-optimizer:analyze` | 번들 및 성능 분석 |
+| `/tool-optimizer:bundle` | 번들 크기 최적화 |
 
 ### 메모리 커맨드
 | 커맨드 | 설명 |
 |--------|------|
-| `memory:save` | 세션 컨텍스트 저장 |
-| `memory:recall` | 메모리 검색 및 리콜 |
+| `/sys-memory-keeper:save` | 세션 컨텍스트 저장 |
+| `/sys-memory-keeper:recall` | 메모리 검색 및 리콜 |
 
 ### 파이프라인 커맨드
 | 커맨드 | 설명 |
 |--------|------|
-| `pipeline:run` | 정의된 파이프라인 실행 |
-| `pipeline:list` | 사용 가능한 파이프라인 목록 |
+| `/pipeline:run` | 정의된 파이프라인 실행 |
+| `/pipeline:list` | 사용 가능한 파이프라인 목록 |
 
 ## 프로젝트 구조
 
@@ -197,63 +197,63 @@ project/
 |   +-- rules/                   # 전역 규칙 (R000-R017)
 |   +-- hooks/                   # 훅 스크립트
 |   +-- contexts/                # 컨텍스트 파일
-+-- agents/
-|   +-- orchestrator/            # planner, secretary, dev-lead, qa-lead (4)
-|   +-- manager/                 # creator, updater, supplier, gitnerd, sync-checker, sauron (6)
-|   +-- system/                  # memory-keeper, naggy (2)
-|   +-- sw-engineer/
-|   |   +-- frontend/            # vercel-agent, vuejs-agent, svelte-agent (3)
-|   |   +-- backend/             # fastapi, springboot, go-backend, express, nestjs (5)
-|   |   +-- language/            # golang, python, rust, kotlin, typescript, java21 (6)
-|   |   +-- tooling/             # npm-expert, optimizer, bun-expert (3)
-|   +-- sw-architect/            # documenter, speckit-agent (2)
-|   +-- infra-engineer/          # docker, aws (2)
-|   +-- qa-team/                 # qa-planner, qa-writer, qa-engineer (3)
-+-- skills/                      # 스킬 정의
+|   +-- agents/                  # 에이전트 (플랫 구조)
+|   |   +-- lang-*               # 언어 전문가 (6)
+|   |   +-- be-*                 # 백엔드 전문가 (5)
+|   |   +-- fe-*                 # 프론트엔드 전문가 (3)
+|   |   +-- tool-*               # 툴링 전문가 (3)
+|   |   +-- db-*                 # 데이터베이스 전문가 (1)
+|   |   +-- arch-*               # 아키텍트 (2)
+|   |   +-- infra-*              # 인프라 전문가 (2)
+|   |   +-- qa-*                 # QA 팀 (3)
+|   |   +-- mgr-*                # 매니저 (6)
+|   |   +-- sys-*                # 시스템 (2)
+|   |   +-- tutor-*              # 튜터 (1)
+|   +-- skills/                  # 스킬 (routing/, execution/)
 +-- guides/                      # 레퍼런스 문서 (12)
 +-- pipelines/                   # 파이프라인 정의
-+-- commands/                    # 커맨드 정의
 ```
 
 ## 에이전트 요약
 
 | 타입 | 수량 | 에이전트 |
 |------|------|----------|
-| Orchestrator | 4 | planner (master), secretary, dev-lead, qa-lead |
-| Manager | 6 | creator, updater, supplier, gitnerd, sync-checker, sauron |
-| System | 2 | memory-keeper, naggy |
-| SW Engineer/Frontend | 3 | vercel-agent, vuejs-agent, svelte-agent |
-| SW Engineer/Backend | 5 | fastapi, springboot, go-backend, express, nestjs |
-| SW Engineer/Language | 6 | golang, python, rust, kotlin, typescript, java21 |
-| SW Engineer/Tooling | 3 | npm-expert, optimizer, bun-expert |
-| SW Architect | 2 | documenter, speckit-agent |
-| Infra Engineer | 2 | docker, aws |
-| QA Team | 3 | qa-planner, qa-writer, qa-engineer |
-| **총계** | **36** | |
+| Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| Backend | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
+| Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| Database | 1 | db-supabase-expert |
+| Architect | 2 | arch-documenter, arch-speckit-agent |
+| Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
+| QA | 3 | qa-planner, qa-writer, qa-engineer |
+| Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
+| System | 2 | sys-memory-keeper, sys-naggy |
+| Tutor | 1 | tutor-go |
+| **총계** | **34** | |
 
 ## 빠른 참조
 
 ```bash
 # 모든 커맨드 표시
-lists
+/lists
 
 # 의존성 감사
-supplier:audit
+/mgr-supplier:audit
 
 # 새 에이전트 생성
-creator:agent my-agent --type sw-engineer
+/mgr-creator:agent my-agent --type lang
 
 # 코드 리뷰
-dev:review src/main.go
+/dev:review src/main.go
 
 # 메모리 관리
-memory:save
-memory:recall authentication
+/sys-memory-keeper:save
+/sys-memory-keeper:recall authentication
 
 # 파이프라인 실행
-pipeline:list
-pipeline:run code-review --input file_path=src/main.go
+/pipeline:list
+/pipeline:run code-review --input file_path=src/main.go
 
 # 의도 감지 오버라이드
-@golang-expert 이것 리뷰해줘
+@lang-golang-expert 이것 리뷰해줘
 ```

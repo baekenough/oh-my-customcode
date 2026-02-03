@@ -48,7 +48,7 @@ Failure to parallelize independent tasks = Rule violation = Must be corrected.
 ║     → Spawn parallel agents instead.                             ║
 ║                                                                   ║
 ║  3. Are there domain-specific experts available?                 ║
-║     → YES: Delegate to them (kotlin-expert, springboot-expert)  ║
+║     → YES: Delegate to them (lang-kotlin-expert, be-springboot-expert) ║
 ║     → NO: Create general-purpose parallel agents                 ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
@@ -69,20 +69,20 @@ Failure to parallelize independent tasks = Rule violation = Must be corrected.
    Secretary writes domain/, usecase/, infrastructure/ sequentially
 
 ✓ CORRECT: Delegate to specialists
-   Task(kotlin-expert → domain layer)
-   Task(springboot-expert → infrastructure layer)
-   Task(kotlin-expert → usecase layer)
+   Task(lang-kotlin-expert → domain layer)
+   Task(be-springboot-expert → infrastructure layer)
+   Task(lang-kotlin-expert → usecase layer)
 
 ❌ WRONG: Single Task delegating to multiple agents
-   Task(dev-lead → "coordinate kotlin-expert and springboot-expert")
+   Task(dev-lead → "coordinate lang-kotlin-expert and be-springboot-expert")
 
    This creates a SEQUENTIAL bottleneck inside the Task!
 
 ✓ CORRECT: Multiple Tasks in parallel, one per agent
-   Task(kotlin-expert → usecase commands)    ┐
-   Task(kotlin-expert → usecase queries)     ├─ All spawned together
-   Task(springboot-expert → persistence)     │
-   Task(springboot-expert → security)        ┘
+   Task(lang-kotlin-expert → usecase commands)    ┐
+   Task(lang-kotlin-expert → usecase queries)     ├─ All spawned together
+   Task(be-springboot-expert → persistence)       │
+   Task(be-springboot-expert → security)          ┘
 ```
 
 ### Parallel Task Spawning Rule
@@ -257,10 +257,10 @@ User: "Create golang, python, rust, typescript expert agents"
 
 Orchestrator (secretary):
   │
-  ├── [golang-expert] creator instance #1
-  ├── [python-expert] creator instance #2
-  ├── [rust-expert] creator instance #3
-  └── [typescript-expert] creator instance #4
+  ├── [lang-golang-expert] mgr-creator instance #1
+  ├── [lang-python-expert] mgr-creator instance #2
+  ├── [lang-rust-expert] mgr-creator instance #3
+  └── [lang-typescript-expert] mgr-creator instance #4
 
 Execution: Parallel (4 instances)
 ```
@@ -272,9 +272,9 @@ User: "/dev:review src/*.go src/*.py src/*.ts"
 
 Orchestrator:
   │
-  ├── [src/*.go] golang-expert instance #1
-  ├── [src/*.py] python-expert instance #2
-  └── [src/*.ts] typescript-expert instance #3
+  ├── [src/*.go] lang-golang-expert instance #1
+  ├── [src/*.py] lang-python-expert instance #2
+  └── [src/*.ts] lang-typescript-expert instance #3
 
 Execution: Parallel (3 instances)
 ```
@@ -286,10 +286,10 @@ User: "Audit all agents"
 
 Orchestrator (secretary):
   │
-  ├── [agent-1] supplier instance #1
-  ├── [agent-2] supplier instance #2
-  ├── [agent-3] supplier instance #3
-  └── [agent-4] supplier instance #4
+  ├── [agent-1] mgr-supplier instance #1
+  ├── [agent-2] mgr-supplier instance #2
+  ├── [agent-3] mgr-supplier instance #3
+  └── [agent-4] mgr-supplier instance #4
 
 Execution: Parallel (4 instances, batched if > 4)
 ```
@@ -353,17 +353,17 @@ When parallel execution occurs, MUST display `{task-name}:{model}` format:
 
 [Parallel] Spawning 4 instances...
 
-[Instance 1] creator-golang:sonnet → golang-expert
-[Instance 2] creator-python:sonnet → python-expert
-[Instance 3] creator-rust:sonnet → rust-expert
-[Instance 4] creator-typescript:sonnet → typescript-expert
+[Instance 1] mgr-creator:sonnet → lang-golang-expert
+[Instance 2] mgr-creator:sonnet → lang-python-expert
+[Instance 3] mgr-creator:sonnet → lang-rust-expert
+[Instance 4] mgr-creator:sonnet → lang-typescript-expert
 
 [Progress] ████████░░░░ 2/4
 
-[Instance 1] creator-golang:sonnet ✓ golang-expert created
-[Instance 2] creator-python:sonnet ✓ python-expert created
-[Instance 3] creator-rust:sonnet ✓ rust-expert created
-[Instance 4] creator-typescript:sonnet ✓ typescript-expert created
+[Instance 1] mgr-creator:sonnet ✓ lang-golang-expert created
+[Instance 2] mgr-creator:sonnet ✓ lang-python-expert created
+[Instance 3] mgr-creator:sonnet ✓ lang-rust-expert created
+[Instance 4] mgr-creator:sonnet ✓ lang-typescript-expert created
 
 [Summary] 4/4 tasks completed successfully
 ```

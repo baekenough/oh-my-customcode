@@ -99,3 +99,12 @@ guides:
       type: external
       origin: aws.amazon.com
       url: https://docs.aws.amazon.com/wellarchitected/
+
+  # Database
+  - name: supabase-postgres
+    description: Supabase and PostgreSQL best practices reference
+    path: ./supabase-postgres/
+    source:
+      type: external
+      origin: github
+      url: https://github.com/supabase/agent-skills
