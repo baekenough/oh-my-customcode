@@ -855,7 +855,19 @@ This is the description of the unit testing guide that provides best practices.`
       const agentsDir = join(tempDir, '.claude', 'agents');
       await mkdir(agentsDir, { recursive: true });
 
-      const prefixes = ['lang', 'be', 'fe', 'tool', 'db', 'arch', 'infra', 'qa', 'mgr', 'sys', 'tutor'];
+      const prefixes = [
+        'lang',
+        'be',
+        'fe',
+        'tool',
+        'db',
+        'arch',
+        'infra',
+        'qa',
+        'mgr',
+        'sys',
+        'tutor',
+      ];
       for (const prefix of prefixes) {
         await writeFile(join(agentsDir, `${prefix}-test.md`), `# ${prefix} Test`);
       }
@@ -981,7 +993,10 @@ Description after code block.`
       await mkdir(agentsDir, { recursive: true });
 
       // Create a file that will fail to read (this scenario is hard to test, but we'll create a valid file)
-      await writeFile(join(agentsDir, 'lang-error-agent.md'), '# Error Agent\n\n> Fallback description');
+      await writeFile(
+        join(agentsDir, 'lang-error-agent.md'),
+        '# Error Agent\n\n> Fallback description'
+      );
 
       const agents = await getAgents(tempDir);
 

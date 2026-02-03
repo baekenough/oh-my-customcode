@@ -255,15 +255,7 @@ describe('installer', () => {
     it('should handle install with all components (7 total, no commands)', async () => {
       const result = await install({
         targetDir: tempDir,
-        components: [
-          'rules',
-          'agents',
-          'skills',
-          'guides',
-          'pipelines',
-          'hooks',
-          'contexts',
-        ],
+        components: ['rules', 'agents', 'skills', 'guides', 'pipelines', 'hooks', 'contexts'],
         skipConfirm: true,
       });
 

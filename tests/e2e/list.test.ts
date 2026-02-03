@@ -372,7 +372,9 @@ Rule content here.
       expect(Array.isArray(parsed)).toBe(true);
 
       // Should contain agent data (official Claude Code format: {prefix}-{name})
-      const agent = parsed?.find((a: unknown) => (a as { name: string }).name === 'lang-test-agent');
+      const agent = parsed?.find(
+        (a: unknown) => (a as { name: string }).name === 'lang-test-agent'
+      );
       expect(agent).toBeDefined();
       expect((agent as { type: string }).type).toBe('language');
     });

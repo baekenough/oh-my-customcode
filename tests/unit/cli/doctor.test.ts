@@ -595,7 +595,11 @@ describe('doctor command', () => {
         status: 'fail',
         message: 'Broken symlinks found',
         fixable: true,
-        details: ['.claude/skills/refs/broken1', '.claude/skills/refs/broken2', '.claude/skills/refs/broken3'],
+        details: [
+          '.claude/skills/refs/broken1',
+          '.claude/skills/refs/broken2',
+          '.claude/skills/refs/broken3',
+        ],
       };
 
       printCheck(check);
