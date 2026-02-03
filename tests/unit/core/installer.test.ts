@@ -65,8 +65,24 @@ describe('installer', () => {
 
       // .claude/agents is flat (no subdirectories)
       expect(await fileExists(join(tempDir, '.claude', 'agents'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'skills'))).toBe(true);
       expect(await fileExists(join(tempDir, '.claude', 'hooks'))).toBe(true);
       expect(await fileExists(join(tempDir, '.claude', 'contexts'))).toBe(true);
+    });
+
+    it('should use flat .claude structure (no nested agent/skill directories)', async () => {
+      await createDirectoryStructure(tempDir);
+
+      // Verify flat structure: .claude/agents (not .claude/agents/*)
+      expect(await fileExists(join(tempDir, '.claude', 'agents'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'skills'))).toBe(true);
+
+      // OLD structure (should NOT exist): agents/orchestrator/, agents/manager/, etc.
+      expect(await fileExists(join(tempDir, 'agents'))).toBe(false);
+      expect(await fileExists(join(tempDir, 'skills'))).toBe(false);
+
+      // commands/ component removed (absorbed into skills)
+      expect(await fileExists(join(tempDir, 'commands'))).toBe(false);
     });
 
     it('should create pipeline directories', async () => {
@@ -95,6 +111,23 @@ describe('installer', () => {
       expect(componentNames).toContain('rules');
       expect(componentNames).toContain('agents');
       expect(componentNames).toContain('skills');
+    });
+
+    it('should return exactly 7 components (commands removed)', async () => {
+      const manifest = await getTemplateManifest();
+
+      // getAllComponents() returns 7 items: rules, agents, skills, guides, pipelines, hooks, contexts
+      expect(manifest.components.length).toBe(7);
+
+      const componentNames = manifest.components.map((c) => c.name);
+      expect(componentNames).toContain('rules');
+      expect(componentNames).toContain('agents');
+      expect(componentNames).toContain('skills');
+      expect(componentNames).toContain('guides');
+      expect(componentNames).toContain('pipelines');
+      expect(componentNames).toContain('hooks');
+      expect(componentNames).toContain('contexts');
+      expect(componentNames).not.toContain('commands'); // commands removed
     });
   });
 
@@ -219,7 +252,7 @@ describe('installer', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle install with all components', async () => {
+    it('should handle install with all components (7 total, no commands)', async () => {
       const result = await install({
         targetDir: tempDir,
         components: [
@@ -236,6 +269,7 @@ describe('installer', () => {
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.installedComponents)).toBe(true);
+      // getAllComponents() should return 7 items (commands removed)
     });
 
     it('should skip claude-md component in components list', async () => {

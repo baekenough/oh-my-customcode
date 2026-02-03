@@ -182,6 +182,85 @@ interface DescriptionExtractionOptions {
 }
 
 /**
+ * Check if line should be skipped during description extraction
+ */
+function shouldSkipLine(trimmed: string, inFrontmatter: boolean): boolean {
+  if (inFrontmatter) return true;
+  if (trimmed.startsWith('#')) return true;
+  if (trimmed.startsWith('```')) return true;
+  if (trimmed === '---') return true;
+  return false;
+}
+
+/**
+ * Clean markdown formatting from text
+ */
+function cleanMarkdownFormatting(text: string): string {
+  return text.replace(/\*\*/g, '').replace(/\*/g, '');
+}
+
+/**
+ * Truncate text to max length
+ */
+function truncateText(text: string, maxLength?: number): string {
+  if (!maxLength || text.length <= maxLength) return text;
+  return `${text.substring(0, maxLength)}...`;
+}
+
+/**
+ * Process and format extracted description
+ */
+function processDescription(
+  text: string,
+  options: { cleanFormatting: boolean; maxLength?: number }
+): string {
+  const cleaned = options.cleanFormatting ? cleanMarkdownFormatting(text) : text;
+  return truncateText(cleaned, options.maxLength);
+}
+
+/**
+ * Extract description from a blockquote line
+ */
+function extractFromBlockquote(
+  trimmed: string,
+  options: { cleanFormatting: boolean; maxLength?: number }
+): string {
+  const text = trimmed.replace(/^>\s*/, '').trim();
+  return processDescription(text, options);
+}
+
+/**
+ * Skip frontmatter in markdown lines
+ */
+function* skipFrontmatter(lines: string[]): Generator<{ trimmed: string; lineIndex: number }> {
+  let inFrontmatter = false;
+  let lineIndex = 0;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Frontmatter detection
+    if (lineIndex === 0 && trimmed === '---') {
+      inFrontmatter = true;
+      lineIndex++;
+      continue;
+    }
+
+    if (inFrontmatter && trimmed === '---') {
+      inFrontmatter = false;
+      lineIndex++;
+      continue;
+    }
+
+    if (!inFrontmatter) {
+      yield { trimmed, lineIndex };
+    }
+
+    lineIndex++;
+  }
+}
+
+/**
  * Extract description from markdown content
  * Looks for first meaningful line (blockquote or regular text)
  */
@@ -192,30 +271,20 @@ function extractDescriptionFromMarkdown(
   const { maxLength, cleanFormatting = false } = options;
   const lines = content.split('\n');
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Skip headers, code blocks, and horizontal rules
-    if (trimmed.startsWith('#') || trimmed.startsWith('```') || trimmed.startsWith('---')) {
+  for (const { trimmed } of skipFrontmatter(lines)) {
+    // Skip unwanted lines
+    if (shouldSkipLine(trimmed, false)) {
       continue;
     }
 
     // Extract from blockquote
     if (trimmed.startsWith('>')) {
-      let description = trimmed.replace(/^>\s*/, '').trim();
-      if (cleanFormatting) {
-        description = description.replace(/\*\*/g, '').replace(/\*/g, '');
-      }
-      return description;
+      return extractFromBlockquote(trimmed, { cleanFormatting, maxLength });
     }
 
     // Regular non-empty line
     if (trimmed) {
-      let description = trimmed;
-      if (maxLength && description.length > maxLength) {
-        description = `${description.substring(0, maxLength)}...`;
-      }
-      return description;
+      return processDescription(trimmed, { cleanFormatting, maxLength });
     }
   }
 

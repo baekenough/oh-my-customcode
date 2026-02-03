@@ -72,14 +72,60 @@ describe('E2E: omcustom list', () => {
     await mkdir(agentsDir, { recursive: true });
 
     // Agent files are flat .md files with prefix based on type
-    const prefix = type === 'sw-engineer' ? 'lang' : type === 'backend-engineer' ? 'be' : 'mgr';
-    const agentMd = `# ${name.charAt(0).toUpperCase() + name.slice(1)} Agent
+    // Official Claude Code type mappings:
+    // - manager → mgr-
+    // - language specialist → lang-
+    // - backend specialist → be-
+    // - frontend specialist → fe-
+    // - infrastructure specialist → infra-
+    // - orchestrator → orch-
+    let prefix: string;
+    switch (type) {
+      case 'language':
+      case 'sw-engineer':
+        prefix = 'lang';
+        break;
+      case 'backend':
+      case 'backend-engineer':
+        prefix = 'be';
+        break;
+      case 'frontend':
+      case 'frontend-engineer':
+        prefix = 'fe';
+        break;
+      case 'infrastructure':
+      case 'infra-engineer':
+        prefix = 'infra';
+        break;
+      case 'manager':
+        prefix = 'mgr';
+        break;
+      case 'orchestrator':
+        prefix = 'orch';
+        break;
+      default:
+        prefix = 'mgr';
+    }
+
+    // Flat .md file with frontmatter format
+    const agentMd = `---
+type: ${type}
+description: ${options?.description || `A test ${name} agent`}
+${options?.version ? `version: ${options.version}` : ''}
+---
+
+# ${name.charAt(0).toUpperCase() + name.slice(1)} Agent
 
 > ${options?.description || `A test ${name} agent`}
 
 ## Overview
 
-This is a test agent.
+This is a test agent for end-to-end testing.
+
+## Capabilities
+
+- Test capability 1
+- Test capability 2
 `;
     await writeFile(join(agentsDir, `${prefix}-${name}.md`), agentMd);
   }
@@ -176,7 +222,7 @@ Rule content here.
 
     it('should list all component types with default command', async () => {
       // Create some test components
-      await createTestAgent('sw-engineer', 'test-agent');
+      await createTestAgent('language', 'test-agent');
       await createTestSkill('development', 'test-skill');
       await createTestGuide('testing', 'test-guide');
 
@@ -187,13 +233,13 @@ Rule content here.
 
       // Should show agents section
       expect(output.toLowerCase()).toContain('agent');
-      // Should show the test agent (official Claude Code format: lang-{name})
+      // Should show the test agent (official Claude Code format: {prefix}-{name})
       expect(output).toContain('lang-test-agent');
     });
 
     it('should handle empty installation gracefully', async () => {
       // Clear the agents directory content (keep structure)
-      // Official Claude Code format: .claude/agents is flat with .md files
+      // Official Claude Code format: .claude/agents/ contains flat .md files with prefixes
       const agentsDir = join(tempDir, '.claude', 'agents');
       const entries = await readdir(agentsDir, { withFileTypes: true });
       for (const entry of entries) {
@@ -213,11 +259,11 @@ Rule content here.
     beforeEach(async () => {
       await initProject();
       // Create test data
-      await createTestAgent('sw-engineer', 'golang-expert', {
+      await createTestAgent('language', 'golang-expert', {
         description: 'Go language expert',
         version: '2.0.0',
       });
-      await createTestAgent('backend-engineer', 'fastapi-expert', {
+      await createTestAgent('backend', 'fastapi-expert', {
         description: 'FastAPI framework expert',
         version: '1.0.0',
       });
@@ -235,7 +281,8 @@ Rule content here.
       expect(result.exitCode).toBe(0);
       const output = result.stdout;
 
-      // Should contain agents (official Claude Code format: lang-{name}, be-{name})
+      // Should contain agents (official Claude Code format: {prefix}-{name})
+      // language → lang-, backend → be-
       expect(output).toContain('lang-golang-expert');
       expect(output).toContain('be-fastapi-expert');
 
@@ -252,7 +299,7 @@ Rule content here.
       // Should contain skills
       expect(output).toContain('go-best-practices');
 
-      // Should NOT contain agents
+      // Should NOT contain agents (official Claude Code format: {prefix}-{name})
       expect(output.split('\n').filter((l) => l.includes('lang-golang-expert')).length).toBe(0);
     });
 
@@ -282,7 +329,7 @@ Rule content here.
       expect(result.exitCode).toBe(0);
       const output = result.stdout;
 
-      // Should contain all types (official Claude Code format)
+      // Should contain all types (official Claude Code format: {prefix}-{name} for agents)
       expect(output).toContain('lang-golang-expert');
       expect(output).toContain('go-best-practices');
       expect(output).toContain('clean-architecture');
@@ -293,7 +340,7 @@ Rule content here.
   describe('--format option', () => {
     beforeEach(async () => {
       await initProject();
-      await createTestAgent('sw-engineer', 'test-agent', {
+      await createTestAgent('language', 'test-agent', {
         description: 'Test agent description',
         version: '1.2.3',
       });
@@ -324,7 +371,7 @@ Rule content here.
       // Should be an array
       expect(Array.isArray(parsed)).toBe(true);
 
-      // Should contain agent data (official Claude Code format: lang-{name})
+      // Should contain agent data (official Claude Code format: {prefix}-{name})
       const agent = parsed?.find((a: unknown) => (a as { name: string }).name === 'lang-test-agent');
       expect(agent).toBeDefined();
       expect((agent as { type: string }).type).toBe('language');
@@ -352,16 +399,16 @@ Rule content here.
         version?: string;
       }>;
 
-      // Find test-agent (official Claude Code format: lang-{name})
+      // Find test-agent (official Claude Code format: {prefix}-{name})
       const agent = parsed.find((a) => a.name === 'lang-test-agent');
       expect(agent).toBeDefined();
 
-      // Check structure (flat .md files in .claude/agents/)
+      // Check structure (flat .md files with frontmatter in .claude/agents/)
       expect(agent?.name).toBe('lang-test-agent');
       expect(agent?.type).toBe('language');
       expect(agent?.path).toContain('.claude/agents/lang-test-agent.md');
       expect(agent?.description).toBeDefined();
-      // version is undefined in flat .md format
+      // version may be in frontmatter or undefined
     });
 
     it('should output table format by default', async () => {
@@ -384,7 +431,7 @@ Rule content here.
       expect(result.exitCode).toBe(0);
       const output = result.stdout;
 
-      // Simple format: name [type] (official Claude Code format)
+      // Simple format: {prefix}-name [type] (official Claude Code format)
       expect(output).toMatch(/lang-test-agent\s*\[language\]/);
     });
 
@@ -414,10 +461,10 @@ Rule content here.
     });
 
     it('should output empty array for empty list', async () => {
-      // Create empty agents directory structure
-      const agentsDir = join(tempDir, 'agents', 'sw-engineer');
+      // Create empty agents directory structure (official Claude Code format: .claude/agents/)
+      const agentsDir = join(tempDir, '.claude', 'agents');
       await mkdir(agentsDir, { recursive: true });
-      // No AGENT.md files, so should be empty
+      // No {prefix}-{name}.md files, so should be empty
 
       const result = await runCli('list', 'agents', '--format', 'json');
 
@@ -459,7 +506,7 @@ Rule content here.
       const jsonOutput = lines.slice(jsonStartIndex).join('\n');
       const parsed = JSON.parse(jsonOutput) as Array<Record<string, unknown>>;
 
-      const creator = parsed.find((a) => a.name === 'creator');
+      const creator = parsed.find((a) => a.name === 'mgr-creator');
       expect(creator).toBeDefined();
 
       // Required fields
@@ -469,7 +516,7 @@ Rule content here.
     });
 
     it('should handle special characters in descriptions', async () => {
-      await createTestAgent('sw-engineer', 'special-agent', {
+      await createTestAgent('language', 'special-agent', {
         description: 'Agent with "quotes" and <special> chars & more',
         version: '1.0.0',
       });
@@ -492,7 +539,7 @@ Rule content here.
       expect(() => JSON.parse(jsonOutput)).not.toThrow();
 
       const parsed = JSON.parse(jsonOutput) as Array<{ name?: string; description?: string }>;
-      const agent = parsed.find((a) => a.name === 'special-agent');
+      const agent = parsed.find((a) => a.name === 'lang-special-agent');
       expect(agent?.description).toContain('quotes');
     });
   });
@@ -503,9 +550,9 @@ Rule content here.
     });
 
     it('should list multiple agents sorted alphabetically', async () => {
-      await createTestAgent('sw-engineer', 'python-expert');
-      await createTestAgent('sw-engineer', 'golang-expert');
-      await createTestAgent('sw-engineer', 'rust-expert');
+      await createTestAgent('language', 'python-expert');
+      await createTestAgent('language', 'golang-expert');
+      await createTestAgent('language', 'rust-expert');
 
       const result = await runCli('list', 'agents', '--format', 'json');
 
@@ -524,7 +571,7 @@ Rule content here.
 
       const names = parsed.map((a) => a.name);
 
-      // Should contain all agents (official Claude Code format: lang-{name})
+      // Should contain all agents (official Claude Code format: {prefix}-{name})
       expect(names).toContain('lang-golang-expert');
       expect(names).toContain('lang-python-expert');
       expect(names).toContain('lang-rust-expert');
@@ -535,8 +582,8 @@ Rule content here.
     });
 
     it('should show correct counts in output', async () => {
-      await createTestAgent('sw-engineer', 'agent1');
-      await createTestAgent('sw-engineer', 'agent2');
+      await createTestAgent('language', 'agent1');
+      await createTestAgent('language', 'agent2');
       await createTestAgent('manager', 'agent3');
 
       const result = await runCli('list', 'agents');
