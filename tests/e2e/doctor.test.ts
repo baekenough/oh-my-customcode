@@ -33,7 +33,7 @@ describe('E2E: omcustom doctor', () => {
   });
 
   /**
-   * Helper to run CLI command using Bun.spawn
+   * Helper to run CLI command using Bun.spawn with timeout
    */
   async function runCli(
     ...args: string[]
@@ -45,11 +45,35 @@ describe('E2E: omcustom doctor', () => {
       stderr: 'pipe',
     });
 
-    const stdout = await new Response(proc.stdout).text();
-    const stderr = await new Response(proc.stderr).text();
-    const exitCode = await proc.exited;
+    // Add timeout to prevent hanging in CI
+    const timeout = 10000; // 10 seconds
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        proc.kill();
+        reject(new Error(`CLI command timed out after ${timeout}ms`));
+      }, timeout);
+    });
 
-    return { exitCode, stdout, stderr };
+    try {
+      const [stdout, stderr, exitCode] = await Promise.race([
+        Promise.all([
+          new Response(proc.stdout).text(),
+          new Response(proc.stderr).text(),
+          proc.exited,
+        ]),
+        timeoutPromise,
+      ]);
+
+      return { exitCode, stdout, stderr };
+    } catch (error) {
+      // Ensure process is killed on error
+      try {
+        proc.kill();
+      } catch {
+        // Ignore kill errors
+      }
+      throw error;
+    }
   }
 
   /**
