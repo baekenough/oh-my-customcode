@@ -92,9 +92,12 @@ oh-my-customcode로 구동됩니다.
 ### 4. 오케스트레이터 조율 (다중 에이전트 작업 시 강제)
 ```
 작업에 여러 에이전트가 필요할 때:
--> secretary (오케스트레이터)가 반드시 조율
--> secretary가 적절한 에이전트에 작업 할당
--> secretary가 결과 집계
+-> 메인 대화 (오케스트레이터)가 반드시 조율
+-> 메인 대화가 적절한 에이전트에 작업 할당
+-> 메인 대화가 결과 집계
+
+흐름:
+  사용자 -> 메인 대화 -> [agent-1, agent-2, agent-3] -> 메인 대화 -> 사용자
 ```
 
 ---
@@ -106,15 +109,14 @@ oh-my-customcode로 구동됩니다.
 ### MUST (절대 위반 금지)
 | ID | 규칙 | 설명 |
 |----|------|------|
-| R000 | 언어 정책 | 한국어 입출력, 영어 파일 |
+| R000 | 언어 정책 | 한국어 입출력, 영어 파일, 위임 모델 |
 | R001 | 안전 규칙 | 금지된 작업, 필수 확인 |
 | R002 | 권한 규칙 | 도구 티어, 파일 접근 범위 |
 | R006 | 에이전트 설계 | 에이전트 구조, 관심사 분리 |
 | R007 | 에이전트 식별 | **강제** - 모든 응답에 에이전트/스킬 표시 |
 | R008 | 도구 식별 | **강제** - 모든 도구 사용 시 에이전트 표시 |
-| R009 | 병렬 실행 | **강제** - 독립 작업 병렬 실행 |
-| R010 | 오케스트레이터 조율 | **강제** - 다중 에이전트 작업 조율 |
-| R015 | 의도 투명성 | **필수** - 투명한 에이전트 라우팅 |
+| R009 | 병렬 실행 | **강제** - 병렬 실행, 대규모 작업 분해 |
+| R010 | 오케스트레이터 조율 | **강제** - 오케스트레이터 조율, 세션 연속성, 직접 실행 금지 |
 | R016 | 지속적 개선 | **강제** - 위반 발생 시 규칙 업데이트 |
 | R017 | 동기화 검증 | **강제** - 구조 변경 전 검증 |
 
@@ -123,10 +125,11 @@ oh-my-customcode로 구동됩니다.
 |----|------|------|
 | R003 | 상호작용 규칙 | 응답 원칙, 상태 형식 |
 | R004 | 오류 처리 | 오류 수준, 복구 전략 |
-| R011 | 메모리 통합 | 세션 지속성 |
+| R011 | 메모리 통합 | claude-mem을 통한 세션 지속성 |
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
 | R014 | 파이프라인 모드 | 순차 워크플로우 실행 |
+| R015 | 의도 투명성 | **필수** - 투명한 에이전트 라우팅 |
 
 ### MAY (선택)
 | ID | 규칙 | 설명 |
@@ -135,58 +138,31 @@ oh-my-customcode로 구동됩니다.
 
 ## 커맨드
 
-형식: `/slash-command [인자]`
+### 슬래시 커맨드 (스킬 기반)
 
-### 시스템 커맨드
 | 커맨드 | 설명 |
 |--------|------|
+| `/create-agent` | 새 에이전트 생성 |
+| `/update-docs` | 프로젝트 구조와 문서 동기화 |
+| `/update-external` | 외부 소스에서 에이전트 업데이트 |
+| `/audit-agents` | 에이전트 의존성 감사 |
+| `/fix-refs` | 깨진 참조 수정 |
+| `/dev-review` | 코드 베스트 프랙티스 리뷰 |
+| `/dev-refactor` | 코드 리팩토링 |
+| `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
+| `/memory-recall` | 메모리 검색 및 리콜 |
+| `/pipeline-run` | 정의된 파이프라인 실행 |
+| `/pipeline-list` | 사용 가능한 파이프라인 목록 |
+| `/npm-publish` | npm 레지스트리에 패키지 배포 |
+| `/npm-version` | 시맨틱 버전 관리 |
+| `/npm-audit` | 의존성 감사 |
+| `/optimize-analyze` | 번들 및 성능 분석 |
+| `/optimize-bundle` | 번들 크기 최적화 |
+| `/optimize-report` | 최적화 리포트 생성 |
+| `/sauron-watch` | 전체 R017 검증 |
 | `/lists` | 모든 사용 가능한 커맨드 표시 |
 | `/status` | 시스템 상태 표시 |
 | `/help` | 도움말 표시 |
-
-### 매니저 커맨드
-| 커맨드 | 설명 |
-|--------|------|
-| `/mgr-creator:agent` | 새 에이전트 생성 |
-| `/mgr-updater:docs` | 프로젝트 구조와 문서 동기화 |
-| `/mgr-supplier:audit` | 에이전트 의존성 감사 |
-| `/mgr-supplier:fix` | 깨진 참조 수정 |
-| `/sys-naggy:list` | 모든 TODO 항목 표시 |
-| `/sys-naggy:add` | 새 TODO 항목 추가 |
-| `/sys-naggy:done` | TODO 항목 완료 처리 |
-| `/mgr-gitnerd:commit` | git 커밋 생성 |
-| `/mgr-gitnerd:branch` | 브랜치 생성/전환 |
-| `/mgr-gitnerd:pr` | 풀 리퀘스트 생성 |
-| `/mgr-gitnerd:sync` | 원격 저장소와 동기화 |
-| `/mgr-sync-checker:check` | 전체 동기화 검사 실행 |
-| `/mgr-sauron:watch` | 전체 R017 검증 |
-| `/mgr-sauron:quick` | 빠른 검증 |
-
-### 개발 커맨드
-| 커맨드 | 설명 |
-|--------|------|
-| `/dev:review` | 코드 베스트 프랙티스 리뷰 |
-| `/dev:refactor` | 코드 리팩토링 |
-
-### 툴링 커맨드
-| 커맨드 | 설명 |
-|--------|------|
-| `/tool-npm-expert:publish` | npm 레지스트리에 패키지 배포 |
-| `/tool-npm-expert:version` | 시맨틱 버전 관리 |
-| `/tool-optimizer:analyze` | 번들 및 성능 분석 |
-| `/tool-optimizer:bundle` | 번들 크기 최적화 |
-
-### 메모리 커맨드
-| 커맨드 | 설명 |
-|--------|------|
-| `/sys-memory-keeper:save` | 세션 컨텍스트 저장 |
-| `/sys-memory-keeper:recall` | 메모리 검색 및 리콜 |
-
-### 파이프라인 커맨드
-| 커맨드 | 설명 |
-|--------|------|
-| `/pipeline:run` | 정의된 파이프라인 실행 |
-| `/pipeline:list` | 사용 가능한 파이프라인 목록 |
 
 ## 프로젝트 구조
 
@@ -194,38 +170,38 @@ oh-my-customcode로 구동됩니다.
 project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
+|   +-- agents/                  # 서브에이전트 정의 (34 파일)
+|   +-- skills/                  # 스킬 (42 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R017)
-|   +-- hooks/                   # 훅 스크립트
-|   +-- contexts/                # 컨텍스트 파일
-|   +-- agents/                  # 에이전트 (플랫 구조)
-|   |   +-- lang-*               # 언어 전문가 (6)
-|   |   +-- be-*                 # 백엔드 전문가 (5)
-|   |   +-- fe-*                 # 프론트엔드 전문가 (3)
-|   |   +-- tool-*               # 툴링 전문가 (3)
-|   |   +-- db-*                 # 데이터베이스 전문가 (1)
-|   |   +-- arch-*               # 아키텍트 (2)
-|   |   +-- infra-*              # 인프라 전문가 (2)
-|   |   +-- qa-*                 # QA 팀 (3)
-|   |   +-- mgr-*                # 매니저 (6)
-|   |   +-- sys-*                # 시스템 (2)
-|   |   +-- tutor-*              # 튜터 (1)
-|   +-- skills/                  # 스킬 (routing/, execution/)
-+-- guides/                      # 레퍼런스 문서 (12)
+|   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
+|   +-- contexts/                # 컨텍스트 파일 (ecomode)
++-- guides/                      # 레퍼런스 문서 (13 토픽)
 +-- pipelines/                   # 파이프라인 정의
+|   +-- templates/
+|   +-- examples/
 ```
+
+## 오케스트레이션
+
+오케스트레이션은 메인 대화의 라우팅 스킬로 처리됩니다:
+- **secretary-routing**: 매니저 에이전트로 관리 작업 라우팅
+- **dev-lead-routing**: 언어/프레임워크 전문가에게 개발 작업 라우팅
+- **qa-lead-routing**: QA 워크플로우 조율
+
+메인 대화가 유일한 오케스트레이터 역할을 합니다. 서브에이전트는 다른 서브에이전트를 생성할 수 없습니다.
 
 ## 에이전트 요약
 
 | 타입 | 수량 | 에이전트 |
 |------|------|----------|
-| Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| Backend | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
-| Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
-| Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| Database | 1 | db-supabase-expert |
-| Architect | 2 | arch-documenter, arch-speckit-agent |
-| Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
-| QA | 3 | qa-planner, qa-writer, qa-engineer |
+| SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| SW Engineer/Backend | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
+| SW Engineer/Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| SW Engineer/Database | 1 | db-supabase-expert |
+| SW Architect | 2 | arch-documenter, arch-speckit-agent |
+| Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
+| QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
 | System | 2 | sys-memory-keeper, sys-naggy |
 | Tutor | 1 | tutor-go |
@@ -237,23 +213,22 @@ project/
 # 모든 커맨드 표시
 /lists
 
-# 의존성 감사
-/mgr-supplier:audit
-
-# 새 에이전트 생성
-/mgr-creator:agent my-agent --type lang
+# 에이전트 관리
+/create-agent my-agent
+/update-docs
+/audit-agents
 
 # 코드 리뷰
-/dev:review src/main.go
+/dev-review src/main.go
 
 # 메모리 관리
-/sys-memory-keeper:save
-/sys-memory-keeper:recall authentication
+/memory-save
+/memory-recall authentication
 
 # 파이프라인 실행
-/pipeline:list
-/pipeline:run code-review --input file_path=src/main.go
+/pipeline-list
+/pipeline-run code-review --input file_path=src/main.go
 
-# 의도 감지 오버라이드
-@lang-golang-expert 이것 리뷰해줘
+# 검증
+/sauron-watch
 ```

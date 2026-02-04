@@ -41,7 +41,6 @@ export type UpdateComponent =
   | 'skills'
   | 'guides'
   | 'pipelines'
-  | 'commands'
   | 'hooks'
   | 'contexts';
 
@@ -342,7 +341,7 @@ export async function preserveCustomizations(
  * Get all update components
  */
 function getAllUpdateComponents(): UpdateComponent[] {
-  return ['rules', 'agents', 'skills', 'guides', 'pipelines', 'commands', 'hooks', 'contexts'];
+  return ['rules', 'agents', 'skills', 'guides', 'pipelines', 'hooks', 'contexts'];
 }
 
 /**
@@ -421,11 +420,10 @@ async function updateComponent(
 function getComponentPath(component: UpdateComponent): string {
   const paths: Record<UpdateComponent, string> = {
     rules: '.claude/rules',
-    agents: 'agents',
-    skills: 'skills',
+    agents: '.claude/agents',
+    skills: '.claude/skills',
     guides: 'guides',
     pipelines: 'pipelines',
-    commands: 'commands',
     hooks: '.claude/hooks',
     contexts: '.claude/contexts',
   };
@@ -443,7 +441,7 @@ async function backupInstallation(targetDir: string): Promise<string> {
   await ensureDirectory(backupDir);
 
   // Backup key directories
-  const dirsToBackup = ['.claude', 'agents', 'skills', 'guides', 'pipelines', 'commands'];
+  const dirsToBackup = ['.claude', 'guides', 'pipelines'];
   for (const dir of dirsToBackup) {
     const srcPath = join(targetDir, dir);
     if (await fileExists(srcPath)) {

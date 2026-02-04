@@ -669,6 +669,12 @@ describe('doctor command', () => {
       await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
       await writeFile(join(tempDir, '.claude', 'agents', 'test-agent.md'), '# Agent');
       await mkdir(join(tempDir, '.claude', 'skills', 'development'), { recursive: true });
+      await mkdir(join(tempDir, 'guides', 'golang'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'hooks'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'hooks', 'hooks.json'), '{}');
+      await mkdir(join(tempDir, 'pipelines'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'contexts'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'contexts', 'dev.md'), '# Dev');
 
       const result = await doctorCommand();
 
@@ -708,6 +714,12 @@ describe('doctor command', () => {
       await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
       await writeFile(join(tempDir, '.claude', 'agents', 'test-agent.md'), '# Agent');
       await mkdir(join(tempDir, '.claude', 'skills', 'development'), { recursive: true });
+      await mkdir(join(tempDir, 'guides', 'golang'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'hooks'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'hooks', 'hooks.json'), '{}');
+      await mkdir(join(tempDir, 'pipelines'), { recursive: true });
+      await mkdir(join(tempDir, '.claude', 'contexts'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'contexts', 'dev.md'), '# Dev');
 
       const result = await doctorCommand({ quiet: true });
 

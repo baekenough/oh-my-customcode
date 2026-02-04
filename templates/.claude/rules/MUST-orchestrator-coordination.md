@@ -263,6 +263,42 @@ CORRECT:
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
+## CRITICAL: Use Specialized Agents for Documentation & Spec Writing
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  DOCUMENTATION/SPEC WORK MUST USE SPECIALIZED AGENTS             ║
+║                                                                   ║
+║  Document Type                → Required Agent                   ║
+║  ─────────────────────────────────────────────────               ║
+║  Architecture docs/ADR        → arch-documenter                  ║
+║  API specification (OpenAPI)  → arch-documenter                  ║
+║  Technical design docs        → arch-documenter                  ║
+║  Frontend UI/page specs       → fe-vercel-agent / fe-* agents    ║
+║  Component design specs       → fe-vercel-agent / fe-* agents    ║
+║  CI/CD pipeline specs         → mgr-gitnerd                      ║
+║  GitHub repository config     → mgr-gitnerd                      ║
+║  Docker/infra specs           → infra-docker-expert              ║
+║  AWS architecture specs       → infra-aws-expert                 ║
+║  Database schema specs        → db-supabase-expert               ║
+║  Test strategy/plans          → qa-planner                       ║
+║  Test case documentation      → qa-writer                        ║
+║                                                                   ║
+║  WRONG:                                                          ║
+║    orchestrator → Task(general-purpose) → writes API spec        ║
+║                                                                   ║
+║  CORRECT:                                                        ║
+║    orchestrator → Task(arch-documenter) → writes API spec        ║
+║                                                                   ║
+║  general-purpose should ONLY be used when:                       ║
+║  - No specialized agent exists for the document type             ║
+║  - Document is truly generic (meeting notes, simple lists)       ║
+║                                                                   ║
+║  RULE: If the document requires domain expertise to write        ║
+║        correctly, it MUST be delegated to the domain expert.     ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 ## CRITICAL: Sub-agent Model Specification
 
 ```

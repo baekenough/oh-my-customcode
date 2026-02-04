@@ -413,6 +413,143 @@ export async function checkSkills(targetDir: string): Promise<CheckResult> {
 }
 
 /**
+ * Check if guides directory exists
+ * @param targetDir - Target directory
+ * @returns Check result
+ */
+export async function checkGuides(targetDir: string): Promise<CheckResult> {
+  const guidesDir = path.join(targetDir, 'guides');
+  const exists = await isDirectory(guidesDir);
+
+  if (!exists) {
+    return {
+      name: 'Guides',
+      status: 'fail',
+      message: 'guides/ directory not found',
+      fixable: true,
+    };
+  }
+
+  const topicCount = await countDirectories(guidesDir);
+
+  if (topicCount === 0) {
+    return {
+      name: 'Guides',
+      status: 'warn',
+      message: 'guides/ directory is empty (0 topics found)',
+      fixable: false,
+    };
+  }
+
+  return {
+    name: 'Guides',
+    status: 'pass',
+    message: `Guides OK (${topicCount} topics)`,
+    fixable: false,
+  };
+}
+
+/**
+ * Check if hooks directory exists and has expected files
+ * @param targetDir - Target directory
+ * @returns Check result
+ */
+export async function checkHooks(targetDir: string): Promise<CheckResult> {
+  const hooksDir = path.join(targetDir, '.claude', 'hooks');
+  const exists = await isDirectory(hooksDir);
+
+  if (!exists) {
+    return {
+      name: 'Hooks',
+      status: 'fail',
+      message: '.claude/hooks/ directory not found',
+      fixable: true,
+    };
+  }
+
+  const hookFiles = await findFiles(hooksDir, /\.(sh|json|yaml)$/);
+
+  if (hookFiles.length === 0) {
+    return {
+      name: 'Hooks',
+      status: 'warn',
+      message: '.claude/hooks/ directory is empty',
+      fixable: false,
+    };
+  }
+
+  return {
+    name: 'Hooks',
+    status: 'pass',
+    message: `Hooks OK (${hookFiles.length} files)`,
+    fixable: false,
+  };
+}
+
+/**
+ * Check if pipelines directory exists
+ * @param targetDir - Target directory
+ * @returns Check result
+ */
+export async function checkPipelines(targetDir: string): Promise<CheckResult> {
+  const pipelinesDir = path.join(targetDir, 'pipelines');
+  const exists = await isDirectory(pipelinesDir);
+
+  if (!exists) {
+    return {
+      name: 'Pipelines',
+      status: 'fail',
+      message: 'pipelines/ directory not found',
+      fixable: true,
+    };
+  }
+
+  return {
+    name: 'Pipelines',
+    status: 'pass',
+    message: 'Pipelines OK',
+    fixable: false,
+  };
+}
+
+/**
+ * Check if contexts directory exists
+ * @param targetDir - Target directory
+ * @returns Check result
+ */
+export async function checkContexts(targetDir: string): Promise<CheckResult> {
+  const contextsDir = path.join(targetDir, '.claude', 'contexts');
+  const exists = await isDirectory(contextsDir);
+
+  if (!exists) {
+    return {
+      name: 'Contexts',
+      status: 'fail',
+      message: '.claude/contexts/ directory not found',
+      fixable: true,
+    };
+  }
+
+  const contextFiles = await findFiles(contextsDir, /\.md$/);
+
+  if (contextFiles.length === 0) {
+    return {
+      name: 'Contexts',
+      status: 'warn',
+      message: '.claude/contexts/ directory is empty',
+      fixable: false,
+    };
+  }
+
+  return {
+    name: 'Contexts',
+    status: 'pass',
+    message: `Contexts OK (${contextFiles.length} files)`,
+    fixable: false,
+  };
+}
+
+/**
  * Fix broken symlinks by removing them
  * @param targetDir - Target directory
  * @param brokenSymlinks - List of broken symlink paths
@@ -458,6 +595,10 @@ async function fixSingleIssue(check: CheckResult, targetDir: string): Promise<bo
     Rules: () => createMissingDirectory(path.join(targetDir, '.claude', 'rules')),
     Agents: () => createMissingDirectory(path.join(targetDir, '.claude', 'agents')),
     Skills: () => createMissingDirectory(path.join(targetDir, '.claude', 'skills')),
+    Guides: () => createMissingDirectory(path.join(targetDir, 'guides')),
+    Hooks: () => createMissingDirectory(path.join(targetDir, '.claude', 'hooks')),
+    Pipelines: () => createMissingDirectory(path.join(targetDir, 'pipelines')),
+    Contexts: () => createMissingDirectory(path.join(targetDir, '.claude', 'contexts')),
     Symlinks: async () => {
       if (!check.details || check.details.length === 0) return false;
       const fullPaths = check.details.map((d) => path.join(targetDir, d));
@@ -544,6 +685,10 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
     checkSkills(targetDir),
     checkSymlinks(targetDir),
     checkIndexFiles(targetDir),
+    checkGuides(targetDir),
+    checkHooks(targetDir),
+    checkPipelines(targetDir),
+    checkContexts(targetDir),
   ]);
 
   // Apply fixes if requested
