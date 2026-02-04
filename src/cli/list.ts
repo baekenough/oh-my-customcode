@@ -10,7 +10,15 @@ import { fileExists, listFiles, readTextFile } from '../utils/fs.js';
 /**
  * Types of components that can be listed
  */
-export type ListType = 'agents' | 'skills' | 'guides' | 'rules' | 'all';
+export type ListType =
+  | 'agents'
+  | 'skills'
+  | 'guides'
+  | 'rules'
+  | 'hooks'
+  | 'contexts'
+  | 'pipelines'
+  | 'all';
 
 /**
  * Options for the list command
@@ -536,6 +544,98 @@ export function formatAsJson(components: ComponentInfo[]): void {
   console.log(JSON.stringify(components, null, 2));
 }
 
+/**
+ * Get list of installed hooks
+ * @param targetDir - Target directory to scan
+ * @returns List of hook information
+ */
+export async function getHooks(targetDir: string): Promise<ComponentInfo[]> {
+  const hooksDir = join(targetDir, '.claude', 'hooks');
+
+  if (!(await fileExists(hooksDir))) return [];
+
+  try {
+    const hookFiles = await listFiles(hooksDir, { recursive: true, pattern: '*.sh' });
+    const hookConfigs = await listFiles(hooksDir, { recursive: true, pattern: '*.json' });
+    const hookYamls = await listFiles(hooksDir, { recursive: true, pattern: '*.yaml' });
+    const allFiles = [...hookFiles, ...hookConfigs, ...hookYamls];
+
+    return allFiles
+      .map((hookPath) => ({
+        name: basename(hookPath),
+        type: 'hook',
+        path: relative(targetDir, hookPath),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get list of installed contexts
+ * @param targetDir - Target directory to scan
+ * @returns List of context information
+ */
+export async function getContexts(targetDir: string): Promise<ComponentInfo[]> {
+  const contextsDir = join(targetDir, '.claude', 'contexts');
+
+  if (!(await fileExists(contextsDir))) return [];
+
+  try {
+    const mdFiles = await listFiles(contextsDir, { recursive: false, pattern: '*.md' });
+    const yamlFiles = await listFiles(contextsDir, { recursive: false, pattern: '*.yaml' });
+    const allFiles = [...mdFiles, ...yamlFiles];
+
+    const contexts = await Promise.all(
+      allFiles.map(async (ctxPath) => {
+        const ext = ctxPath.endsWith('.md') ? '.md' : '.yaml';
+        const description =
+          ext === '.md'
+            ? await tryExtractMarkdownDescription(ctxPath, { maxLength: 100 })
+            : undefined;
+
+        return {
+          name: basename(ctxPath, ext),
+          type: 'context',
+          path: relative(targetDir, ctxPath),
+          description,
+        };
+      })
+    );
+
+    return contexts.sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get list of installed pipelines
+ * @param targetDir - Target directory to scan
+ * @returns List of pipeline information
+ */
+export async function getPipelines(targetDir: string): Promise<ComponentInfo[]> {
+  const pipelinesDir = join(targetDir, 'pipelines');
+
+  if (!(await fileExists(pipelinesDir))) return [];
+
+  try {
+    const pipelineFiles = await listFiles(pipelinesDir, { recursive: true, pattern: '*.yaml' });
+
+    return pipelineFiles
+      .map((pipePath) => ({
+        name: basename(pipePath, '.yaml'),
+        type: 'pipeline',
+        category: relative(join(targetDir, 'pipelines'), dirname(pipePath)) || 'root',
+        path: relative(targetDir, pipePath),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return [];
+  }
+}
+
 /** Mapping from component type to getter function */
 const COMPONENT_GETTERS: Record<
   Exclude<ListType, 'all'>,
@@ -545,6 +645,9 @@ const COMPONENT_GETTERS: Record<
   skills: getSkills,
   guides: getGuides,
   rules: getRules,
+  hooks: getHooks,
+  contexts: getContexts,
+  pipelines: getPipelines,
 };
 
 /**
@@ -564,11 +667,14 @@ function displayComponents(components: ComponentInfo[], type: ListType, format: 
  * Handle displaying all component types
  */
 async function handleListAll(targetDir: string, format: string): Promise<ComponentInfo[]> {
-  const [agents, skills, guides, rules] = await Promise.all([
+  const [agents, skills, guides, rules, hooks, contexts, pipelines] = await Promise.all([
     getAgents(targetDir),
     getSkills(targetDir),
     getGuides(targetDir),
     getRules(targetDir),
+    getHooks(targetDir),
+    getContexts(targetDir),
+    getPipelines(targetDir),
   ]);
 
   if (format !== 'json') {
@@ -576,9 +682,12 @@ async function handleListAll(targetDir: string, format: string): Promise<Compone
     displayComponents(skills, 'skills', format);
     displayComponents(guides, 'guides', format);
     displayComponents(rules, 'rules', format);
+    displayComponents(hooks, 'hooks', format);
+    displayComponents(contexts, 'contexts', format);
+    displayComponents(pipelines, 'pipelines', format);
   }
 
-  return [...agents, ...skills, ...guides, ...rules];
+  return [...agents, ...skills, ...guides, ...rules, ...hooks, ...contexts, ...pipelines];
 }
 
 /**

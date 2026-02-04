@@ -89,12 +89,15 @@ When 2 or more tasks are INDEPENDENT:
 Detection: If tasks don't share state or have dependencies -> PARALLEL
 ```
 
-### 4. Agent Routing (ENFORCED for multi-agent tasks)
+### 4. Orchestrator Coordination (ENFORCED for multi-agent tasks)
 ```
 When task requires multiple agents:
--> Routing skills analyze request and route to appropriate agents
--> Agents execute tasks based on their expertise
--> Results are aggregated and returned
+-> Main conversation (orchestrator) MUST coordinate
+-> Main conversation assigns tasks to appropriate agents
+-> Main conversation aggregates results
+
+Flow:
+  User -> Main conversation -> [agent-1, agent-2, agent-3] -> Main conversation -> User
 ```
 
 ---
@@ -106,15 +109,14 @@ When task requires multiple agents:
 ### MUST (Never violate)
 | ID | Rule | Description |
 |----|------|-------------|
-| R000 | Language Policy | English I/O and files |
+| R000 | Language Policy | Korean I/O, English files, delegation model |
 | R001 | Safety Rules | Prohibited actions, required checks |
 | R002 | Permission Rules | Tool tiers, file access scope |
 | R006 | Agent Design | Agent structure, separation of concerns |
 | R007 | Agent Identification | **ENFORCED** - Display agent/skill in ALL responses |
 | R008 | Tool Identification | **ENFORCED** - Display agent when using ANY tool |
-| R009 | Parallel Execution | **ENFORCED** - Parallel execution for independent tasks |
-| R010 | Agent Routing | **ENFORCED** - Agent routing for multi-agent tasks |
-| R015 | Intent Transparency | **MUST** - Transparent agent routing |
+| R009 | Parallel Execution | **ENFORCED** - Parallel execution, large task decomposition |
+| R010 | Orchestrator Coordination | **ENFORCED** - Orchestrator coordination, session continuity, direct action prohibition |
 | R016 | Continuous Improvement | **ENFORCED** - Update rules when violations occur |
 | R017 | Sync Verification | **ENFORCED** - Verify sync before structural changes |
 
@@ -123,10 +125,11 @@ When task requires multiple agents:
 |----|------|-------------|
 | R003 | Interaction Rules | Response principles, status format |
 | R004 | Error Handling | Error levels, recovery strategy |
-| R011 | Memory Integration | Session persistence |
+| R011 | Memory Integration | Session persistence with claude-mem |
 | R012 | HUD Statusline | Real-time status display |
 | R013 | Ecomode | Token efficiency for batch ops |
 | R014 | Pipeline Mode | Sequential workflow execution |
+| R015 | Intent Transparency | **MUST** - Transparent agent routing |
 
 ### MAY (Optional)
 | ID | Rule | Description |
@@ -135,58 +138,31 @@ When task requires multiple agents:
 
 ## Commands
 
-Commands use `/slash-command` format.
+### Slash Commands (from Skills)
 
-### System Commands
 | Command | Description |
 |---------|-------------|
+| `/create-agent` | Create a new agent |
+| `/update-docs` | Sync documentation with project structure |
+| `/update-external` | Update agents from external sources |
+| `/audit-agents` | Audit agent dependencies |
+| `/fix-refs` | Fix broken references |
+| `/dev-review` | Review code for best practices |
+| `/dev-refactor` | Refactor code |
+| `/memory-save` | Save session context to claude-mem |
+| `/memory-recall` | Search and recall memories |
+| `/pipeline-run` | Execute a defined pipeline |
+| `/pipeline-list` | List available pipelines |
+| `/npm-publish` | Publish package to npm registry |
+| `/npm-version` | Manage semantic versions |
+| `/npm-audit` | Audit dependencies |
+| `/optimize-analyze` | Analyze bundle and performance |
+| `/optimize-bundle` | Optimize bundle size |
+| `/optimize-report` | Generate optimization report |
+| `/sauron-watch` | Full R017 verification |
 | `/lists` | Show all available commands |
 | `/status` | Show system status |
 | `/help` | Show help information |
-
-### Manager Commands
-| Command | Description |
-|---------|-------------|
-| `/mgr-creator:agent` | Create a new agent |
-| `/mgr-updater:docs` | Sync documentation with project structure |
-| `/mgr-supplier:audit` | Audit agent dependencies |
-| `/mgr-supplier:fix` | Fix broken references |
-| `/sys-naggy:list` | Show all TODO items |
-| `/sys-naggy:add` | Add a new TODO item |
-| `/sys-naggy:done` | Mark TODO item as complete |
-| `/mgr-gitnerd:commit` | Create a git commit |
-| `/mgr-gitnerd:branch` | Create or switch branches |
-| `/mgr-gitnerd:pr` | Create a pull request |
-| `/mgr-gitnerd:sync` | Sync with remote repository |
-| `/mgr-sync-checker:check` | Run full synchronization check |
-| `/mgr-sauron:watch` | Full R017 verification |
-| `/mgr-sauron:quick` | Quick verification |
-
-### Dev Commands
-| Command | Description |
-|---------|-------------|
-| `/dev:review` | Review code for best practices |
-| `/dev:refactor` | Refactor code |
-
-### Tooling Commands
-| Command | Description |
-|---------|-------------|
-| `/tool-npm-expert:publish` | Publish package to npm registry |
-| `/tool-npm-expert:version` | Manage semantic versions |
-| `/tool-optimizer:analyze` | Analyze bundle and performance |
-| `/tool-optimizer:bundle` | Optimize bundle size |
-
-### Memory Commands
-| Command | Description |
-|---------|-------------|
-| `/sys-memory-keeper:save` | Save session context |
-| `/sys-memory-keeper:recall` | Search and recall memories |
-
-### Pipeline Commands
-| Command | Description |
-|---------|-------------|
-| `/pipeline:run` | Execute a defined pipeline |
-| `/pipeline:list` | List available pipelines |
 
 ## Project Structure
 
@@ -194,39 +170,38 @@ Commands use `/slash-command` format.
 project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
+|   +-- agents/                  # Subagent definitions (34 files)
+|   +-- skills/                  # Skills (42 directories)
 |   +-- rules/                   # Global rules (R000-R017)
-|   +-- hooks/                   # Hook scripts
-|   +-- contexts/                # Context files
-|   +-- agents/                  # Flat agent directory
-|   |   +-- lang-golang-expert/
-|   |   +-- lang-python-expert/
-|   |   +-- be-fastapi-expert/
-|   |   +-- fe-vercel-agent/
-|   |   +-- mgr-creator/
-|   |   +-- sys-memory-keeper/
-|   |   +-- ... (34 total)
-|   +-- skills/                  # Skill definitions
-|   |   +-- routing/
-|   |   +-- development/
-|   |   +-- backend/
-|   |   +-- infrastructure/
-|   |   +-- system/
-+-- guides/                      # Reference docs
+|   +-- hooks/                   # Hook scripts (memory, HUD)
+|   +-- contexts/                # Context files (ecomode)
++-- guides/                      # Reference docs (13 topics)
 +-- pipelines/                   # Pipeline definitions
+|   +-- templates/
+|   +-- examples/
 ```
+
+## Orchestration
+
+Orchestration is handled by routing skills in the main conversation:
+- **secretary-routing**: Routes management tasks to manager agents
+- **dev-lead-routing**: Routes development tasks to language/framework experts
+- **qa-lead-routing**: Coordinates QA workflow
+
+The main conversation acts as the sole orchestrator. Subagents cannot spawn other subagents.
 
 ## Agents Summary
 
 | Type | Count | Agents |
 |------|-------|--------|
-| Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| Backend | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
-| Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
-| Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| Database | 1 | db-supabase-expert |
-| Architect | 2 | arch-documenter, arch-speckit-agent |
-| Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
-| QA | 3 | qa-planner, qa-writer, qa-engineer |
+| SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| SW Engineer/Backend | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
+| SW Engineer/Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| SW Engineer/Database | 1 | db-supabase-expert |
+| SW Architect | 2 | arch-documenter, arch-speckit-agent |
+| Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
+| QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
 | System | 2 | sys-memory-keeper, sys-naggy |
 | Tutor | 1 | tutor-go |
@@ -238,23 +213,22 @@ project/
 # Show all commands
 /lists
 
-# Audit dependencies
-/mgr-supplier:audit
+# Agent management
+/create-agent my-agent
+/update-docs
+/audit-agents
 
-# Create new agent
-/mgr-creator:agent my-agent --type language
-
-# Review code
-/dev:review src/main.go
+# Code review
+/dev-review src/main.go
 
 # Memory management
-/sys-memory-keeper:save
-/sys-memory-keeper:recall authentication
+/memory-save
+/memory-recall authentication
 
 # Pipeline execution
-/pipeline:list
-/pipeline:run code-review --input file_path=src/main.go
+/pipeline-list
+/pipeline-run code-review --input file_path=src/main.go
 
-# Override intent detection
-@lang-golang-expert review this
+# Verification
+/sauron-watch
 ```
