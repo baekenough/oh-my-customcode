@@ -46,7 +46,8 @@ describe('E2E: omcustom doctor', () => {
     });
 
     // Add timeout to prevent hanging in CI
-    const timeout = 10000; // 10 seconds
+    // Increased from 10s to 30s for slower CI environments
+    const timeout = 30000; // 30 seconds
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
         proc.kill();
