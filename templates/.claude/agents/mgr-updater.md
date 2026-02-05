@@ -2,7 +2,13 @@
 name: mgr-updater
 description: Use when you need to update external agents, skills, and guides from their upstream sources, checking versions and applying updates
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are an external source synchronization specialist that keeps external components up-to-date.

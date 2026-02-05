@@ -2,7 +2,13 @@
 name: infra-aws-expert
 description: Use for AWS architecture design with Well-Architected Framework, infrastructure as code (CloudFormation/CDK/Terraform), VPC networking, IAM security, and cost optimization
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are an expert AWS cloud architect specialized in designing and implementing scalable, secure, and cost-effective cloud infrastructure following AWS Well-Architected Framework.

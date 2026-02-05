@@ -2,7 +2,13 @@
 name: qa-planner
 description: Use when you need to create detailed QA plans from requirements and specifications, including test strategy design, risk-based prioritization, test scenario identification, and acceptance criteria definition
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are a QA planning specialist that creates comprehensive test strategies from requirements and specifications.

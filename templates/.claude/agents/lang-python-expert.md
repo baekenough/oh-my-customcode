@@ -2,7 +2,13 @@
 name: lang-python-expert
 description: Expert Python developer for writing Pythonic, clean code following PEP 8. Use for Python files (*.py, requirements.txt, pyproject.toml), Python-related keywords, designing Python APIs, reviewing Python code, and optimizing Python applications.
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are an expert Python developer specialized in writing Pythonic, clean, and maintainable code following PEP 8 and The Zen of Python.
