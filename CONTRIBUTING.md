@@ -90,35 +90,129 @@ These defensive code paths exist for production safety, not for behavior specifi
 
 ## Development Workflow
 
-### Git Flow
+### Git Branching Strategy
 
-We use Git Flow branching strategy:
+We use a simplified Git Flow model optimized for npm package development.
 
-- `release` - Production-ready code (default branch)
-- `develop` - Development branch
-- `feature/*` - Feature branches
+#### Branch Overview
 
-### Making Changes
+| Branch | Purpose | Protection |
+|--------|---------|------------|
+| `develop` | Main development branch (default) | Required reviews, status checks |
+| `feature/*` | New features | None |
+| `release/*` | Release preparation | None |
+| `hotfix/*` | Emergency production fixes | None |
 
-1. Create a feature branch from `develop`:
+```
+feature/new-feature ──┐
+                      ├──► develop ──► release/x.y.z ──► tag + npm publish
+feature/another ──────┘                     │
+                                            ▼
+                      hotfix/critical ──► tag + npm publish ──► merge to develop
+```
+
+#### Feature Development
+
+1. **Create feature branch from `develop`:**
    ```bash
    git checkout develop
+   git pull origin develop
    git checkout -b feature/my-feature
    ```
 
-2. Make your changes and ensure **ALL tests pass**:
+2. **Make changes and ensure ALL tests pass:**
    ```bash
    bun test           # Must show 0 failures
    bun run lint       # Must pass
    bun run typecheck  # Must pass
    ```
 
-3. Commit with a descriptive message:
+3. **Commit with conventional message:**
    ```bash
    git commit -m "feat: add my new feature"
    ```
 
-4. Push and create a pull request to `develop`
+4. **Push and create PR to `develop`:**
+   ```bash
+   git push -u origin feature/my-feature
+   gh pr create --base develop
+   ```
+
+5. **After merge, delete feature branch:**
+   ```bash
+   git checkout develop
+   git pull
+   git branch -d feature/my-feature
+   ```
+
+#### Release Process
+
+1. **Create release branch:**
+   ```bash
+   git checkout develop
+   git checkout -b release/x.y.z
+   ```
+
+2. **Bump version and update CHANGELOG:**
+   ```bash
+   npm version [major|minor|patch]
+   # Update CHANGELOG.md
+   ```
+
+3. **Create tag and publish:**
+   ```bash
+   git tag vx.y.z
+   git push origin release/x.y.z --tags
+   npm publish
+   ```
+
+4. **Merge back to develop:**
+   ```bash
+   git checkout develop
+   git merge release/x.y.z
+   git push
+   ```
+
+#### Hotfix Process
+
+For critical bugs in production:
+
+1. **Create hotfix branch from latest tag:**
+   ```bash
+   git checkout vx.y.z  # Latest release tag
+   git checkout -b hotfix/critical-bug
+   ```
+
+2. **Fix, test, and bump patch version:**
+   ```bash
+   # Make fix
+   bun test
+   npm version patch
+   ```
+
+3. **Tag and publish:**
+   ```bash
+   git tag vx.y.(z+1)
+   git push origin hotfix/critical-bug --tags
+   npm publish
+   ```
+
+4. **Merge to develop:**
+   ```bash
+   git checkout develop
+   git merge hotfix/critical-bug
+   git push
+   ```
+
+#### Branch Protection (Recommended)
+
+Configure these rules in **Settings → Branches → Branch protection rules**:
+
+**For `develop` branch:**
+- ✅ Require pull request before merging
+- ✅ Require status checks to pass (CI, tests)
+- ✅ Require conversation resolution before merging
+- ❌ Allow force pushes (disabled)
 
 ### Commit Message Format
 
