@@ -1,0 +1,74 @@
+name: Sync Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'templates/**'
+      - 'scripts/verify-sync.sh'
+  schedule:
+    # Run weekly on Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      baekgom_ref:
+        description: 'baekgom-agents branch/tag to compare against'
+        required: false
+        default: 'master'
+
+jobs:
+  sync-check:
+    name: Verify Template Sync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout oh-my-customcode
+        uses: actions/checkout@v4
+        with:
+          path: oh-my-customcode
+
+      - name: Checkout baekgom-agents
+        uses: actions/checkout@v4
+        with:
+          repository: baekenough/baekgom-agents
+          ref: ${{ github.event.inputs.baekgom_ref || 'master' }}
+          path: baekgom-agents
+
+      - name: Run sync verification
+        id: verify
+        working-directory: oh-my-customcode
+        run: |
+          chmod +x scripts/verify-sync.sh
+          ./scripts/verify-sync.sh ../baekgom-agents
+
+      - name: Create summary on success
+        if: success()
+        run: |
+          echo "## ✅ Sync Check Passed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Templates are in sync with [baekgom-agents](https://github.com/baekenough/baekgom-agents)." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Agents | ✅ Synced |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skills | ✅ Synced |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rules | ✅ Synced |" >> $GITHUB_STEP_SUMMARY
+          echo "| Hooks | ✅ Synced |" >> $GITHUB_STEP_SUMMARY
+          echo "| Contexts | ✅ Synced |" >> $GITHUB_STEP_SUMMARY
+          echo "| Guides | ✅ Synced |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pipelines | ✅ Synced |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create summary on failure
+        if: failure()
+        run: |
+          echo "## ❌ Sync Check Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Templates have drifted from [baekgom-agents](https://github.com/baekenough/baekgom-agents)." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Action Required" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. Clone baekgom-agents locally" >> $GITHUB_STEP_SUMMARY
+          echo "2. Run \`./sync.sh\` to sync templates" >> $GITHUB_STEP_SUMMARY
+          echo "3. Commit and push the changes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "See the job logs above for details on which files are out of sync." >> $GITHUB_STEP_SUMMARY
