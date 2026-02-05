@@ -112,22 +112,33 @@ jobs:
         if: steps.ghp_check.outputs.exists == 'false'
         run: git checkout package.json
 
-      # Extract changelog for this version
+      # Extract changelog for this version (REQUIRED)
       - name: Extract Release Notes
         id: changelog
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # Extract changelog section for this version
-          if [ -f CHANGELOG.md ]; then
-            NOTES=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
-            if [ -n "$NOTES" ]; then
-              echo "notes<<EOF" >> $GITHUB_OUTPUT
-              echo "$NOTES" >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
-            fi
+          # CHANGELOG.md is required
+          if [ ! -f CHANGELOG.md ]; then
+            echo "::error::CHANGELOG.md not found. Please create it before releasing."
+            exit 1
           fi
+
+          # Extract changelog section for this version
+          NOTES=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+
+          if [ -z "$NOTES" ]; then
+            echo "::error::No changelog entry found for version ${VERSION}."
+            echo "::error::Please add a '## [${VERSION}]' section to CHANGELOG.md before releasing."
+            exit 1
+          fi
+
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "::notice::Found changelog entry for v${VERSION}"
 
       # Create GitHub Release with changelog
       - name: Create GitHub Release
@@ -153,7 +164,6 @@ jobs:
             ### Links
             - [npm package](https://www.npmjs.com/package/oh-my-customcode/v/${{ steps.changelog.outputs.version }})
             - [GitHub Package](https://github.com/baekenough/oh-my-customcode/pkgs/npm/oh-my-customcode)
-          generate_release_notes: true
           draft: false
           prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
         env:
