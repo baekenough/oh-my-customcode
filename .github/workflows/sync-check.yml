@@ -7,8 +7,8 @@ on:
       - 'templates/**'
       - 'scripts/verify-sync.sh'
   schedule:
-    # Run weekly on Monday at 00:00 UTC
-    - cron: '0 0 * * 1'
+    # Run daily at 12:00 KST (03:00 UTC)
+    - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       baekgom_ref:
@@ -27,10 +27,11 @@ jobs:
         with:
           path: oh-my-customcode
 
-      - name: Checkout baekgom-agents
+      - name: Checkout baekgom-agents (private)
         uses: actions/checkout@v4
         with:
           repository: baekenough/baekgom-agents
+          token: ${{ secrets.OMCUSTOM_MASTER }}
           ref: ${{ github.event.inputs.baekgom_ref || 'master' }}
           path: baekgom-agents
 
