@@ -43,8 +43,24 @@ jobs:
       - name: Build
         run: bun run build
 
-      # Publish to npm
+      # Check if version already exists on npm
+      - name: Check npm version
+        id: npm_check
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Check if this version already exists on npm
+          if npm view oh-my-customcode@$VERSION version 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "::notice::Version $VERSION already exists on npm, skipping publish"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Publish to npm (skip if already exists)
       - name: Publish to npm
+        if: steps.npm_check.outputs.exists == 'false'
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -57,8 +73,25 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@baekenough'
 
-      # Publish to GitHub Packages
+      # Check if version already exists on GitHub Packages
+      - name: Check GitHub Packages version
+        id: ghp_check
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+
+          # Check if this version already exists on GitHub Packages
+          if npm view @baekenough/oh-my-customcode@$VERSION version --registry=https://npm.pkg.github.com 2>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "::notice::Version $VERSION already exists on GitHub Packages, skipping publish"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Publish to GitHub Packages (skip if already exists)
       - name: Publish to GitHub Packages
+        if: steps.ghp_check.outputs.exists == 'false'
         run: |
           # Update package name for GitHub Packages (scoped)
           node -e "
@@ -74,8 +107,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Restore package.json
+      # Restore package.json (only if we modified it)
       - name: Restore package.json
+        if: steps.ghp_check.outputs.exists == 'false'
         run: git checkout package.json
 
       # Extract changelog for this version
