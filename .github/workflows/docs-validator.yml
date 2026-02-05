@@ -1,0 +1,71 @@
+name: Documentation Validator
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "README.md"
+      - "README_ko.md"
+      - "templates/**"
+  pull_request:
+    branches: [develop]
+    paths:
+      - "README.md"
+      - "README_ko.md"
+      - "templates/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Validate documentation
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.DOCS_VALIDATOR }}
+        run: python .github/scripts/validate_docs.py > validation_result.md
+
+      - name: Upload validation result
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-validation-report
+          path: validation_result.md
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const result = fs.readFileSync('validation_result.md', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: result
+            });
+
+      - name: Check for errors
+        run: |
+          if grep -q "❌" validation_result.md; then
+            echo "Documentation validation found errors!"
+            cat validation_result.md
+            exit 1
+          fi
+          echo "Documentation validation passed!"
+          cat validation_result.md
