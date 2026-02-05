@@ -1,0 +1,78 @@
+name: Issue Analyzer
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  analyze-issue:
+    runs-on: ubuntu-latest
+    # Skip issues created by bots
+    if: ${{ !contains(github.event.issue.user.login, '[bot]') }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Analyze issue with Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ISSUE_ANALYZER }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ', ') }}
+        run: python .github/scripts/analyze_issue.py > analysis_result.md
+
+      - name: Post analysis comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('analysis_result.md', 'utf8');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: comment
+            });
+
+      - name: Add label based on analysis
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const result = fs.readFileSync('analysis_result.md', 'utf8');
+
+            // 분석 결과에서 분류 라벨 추출
+            let label = 'triage';
+            if (result.includes('🐛') || result.toLowerCase().includes('분류: bug')) {
+              label = 'bug';
+            } else if (result.includes('✨') || result.toLowerCase().includes('분류: feature')) {
+              label = 'enhancement';
+            } else if (result.includes('❓') || result.toLowerCase().includes('분류: question')) {
+              label = 'question';
+            }
+
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels: [label]
+              });
+              console.log(`Added label: ${label}`);
+            } catch (e) {
+              console.log(`Label "${label}" may not exist. Create it manually or ignore.`);
+            }
