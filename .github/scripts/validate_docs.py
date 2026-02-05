@@ -22,8 +22,11 @@ def collect_implementation_stats() -> dict:
 
     # Count skills (directories with SKILL.md)
     skill_dirs = glob.glob("templates/.claude/skills/*/")
-    stats["skill_count"] = len(skill_dirs)
-    stats["skill_names"] = [os.path.basename(d.rstrip("/")) for d in skill_dirs]
+    valid_skill_dirs = [
+        d for d in skill_dirs if os.path.isfile(os.path.join(d, "SKILL.md"))
+    ]
+    stats["skill_count"] = len(valid_skill_dirs)
+    stats["skill_names"] = [os.path.basename(d.rstrip("/")) for d in valid_skill_dirs]
 
     # Count rules
     rule_files = glob.glob("templates/.claude/rules/*.md")

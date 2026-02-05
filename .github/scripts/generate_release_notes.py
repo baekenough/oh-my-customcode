@@ -13,9 +13,23 @@ import anthropic
 
 def get_commits_since_tag(tag: str = None) -> str:
     """Get commit messages since the last tag or specified tag."""
-    try:
-        if tag:
-            # Get commits since specified tag
+    if tag:
+        # Get commits since specified tag
+        result = subprocess.run(
+            ["git", "log", f"{tag}..HEAD", "--pretty=format:%h %s"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    else:
+        # Get last tag
+        last_tag = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            capture_output=True,
+            text=True,
+        )
+        if last_tag.returncode == 0:
+            tag = last_tag.stdout.strip()
             result = subprocess.run(
                 ["git", "log", f"{tag}..HEAD", "--pretty=format:%h %s"],
                 capture_output=True,
@@ -23,37 +37,33 @@ def get_commits_since_tag(tag: str = None) -> str:
                 check=True,
             )
         else:
-            # Get last tag
-            last_tag = subprocess.run(
-                ["git", "describe", "--tags", "--abbrev=0"],
+            # No tags, get last 50 commits
+            result = subprocess.run(
+                ["git", "log", "-50", "--pretty=format:%h %s"],
                 capture_output=True,
                 text=True,
+                check=True,
             )
-            if last_tag.returncode == 0:
-                tag = last_tag.stdout.strip()
-                result = subprocess.run(
-                    ["git", "log", f"{tag}..HEAD", "--pretty=format:%h %s"],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-            else:
-                # No tags, get last 50 commits
-                result = subprocess.run(
-                    ["git", "log", "-50", "--pretty=format:%h %s"],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        return f"Error getting commits: {e}"
+    return result.stdout
 
 
 def get_changed_files(tag: str = None) -> str:
     """Get list of changed files since last tag."""
-    try:
-        if tag:
+    if tag:
+        result = subprocess.run(
+            ["git", "diff", "--name-status", f"{tag}..HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    else:
+        last_tag = subprocess.run(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            capture_output=True,
+            text=True,
+        )
+        if last_tag.returncode == 0:
+            tag = last_tag.stdout.strip()
             result = subprocess.run(
                 ["git", "diff", "--name-status", f"{tag}..HEAD"],
                 capture_output=True,
@@ -61,29 +71,13 @@ def get_changed_files(tag: str = None) -> str:
                 check=True,
             )
         else:
-            last_tag = subprocess.run(
-                ["git", "describe", "--tags", "--abbrev=0"],
+            result = subprocess.run(
+                ["git", "diff", "--name-status", "HEAD~50..HEAD"],
                 capture_output=True,
                 text=True,
+                check=True,
             )
-            if last_tag.returncode == 0:
-                tag = last_tag.stdout.strip()
-                result = subprocess.run(
-                    ["git", "diff", "--name-status", f"{tag}..HEAD"],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-            else:
-                result = subprocess.run(
-                    ["git", "diff", "--name-status", "HEAD~50..HEAD"],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        return f"Error getting changed files: {e}"
+    return result.stdout
 
 
 def build_prompt(version: str, commits: str, changed_files: str) -> str:
