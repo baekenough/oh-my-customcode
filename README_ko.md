@@ -6,6 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml)
 
+**[English Documentation](./README.md)**
+
 **에이전트, 스킬, 규칙으로 Claude Code를 커스터마이징하는 가장 쉬운 방법.**
 
 oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Claude Code 경험을 간단하고, 강력하고, 재미있게 개인화합니다.
