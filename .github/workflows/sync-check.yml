@@ -7,8 +7,8 @@ on:
       - 'templates/**'
       - 'scripts/verify-sync.sh'
   schedule:
-    # Run daily at 12:00 KST (03:00 UTC)
-    - cron: '0 3 * * *'
+    # Run daily at 04:00 KST (19:00 UTC previous day)
+    - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
       baekgom_ref:
