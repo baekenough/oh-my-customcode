@@ -232,3 +232,20 @@ The main conversation acts as the sole orchestrator. Subagents cannot spawn othe
 # Verification
 /sauron-watch
 ```
+
+## Git Workflow (MUST follow)
+
+| Branch | Purpose |
+|--------|---------|
+| `develop` | Main development branch (default) |
+| `feature/*` | New features -> PR to develop |
+| `release/*` | Release preparation -> tag -> npm publish |
+| `hotfix/*` | Critical fixes -> tag -> publish -> merge to develop |
+
+**Key rules:**
+- Create feature branches from `develop`
+- Use conventional commits: `feat:`, `fix:`, `docs:`, `chore:`
+- Include "Closes #N" in commit message to auto-close issues
+- Pre-commit hooks run tests automatically
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed workflow.
