@@ -1,0 +1,114 @@
+name: Docs Sync
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'README.md'
+      - 'README_ko.md'
+      - 'wiki/**'
+      - 'templates/**'
+  workflow_dispatch:
+
+jobs:
+  sync-wiki:
+    name: Sync Wiki Pages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout wiki
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: wiki-repo
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync wiki pages
+        run: |
+          if [ -d "wiki" ] && [ "$(ls -A wiki/*.md 2>/dev/null)" ]; then
+            cp wiki/*.md wiki-repo/
+            echo "Wiki pages synced"
+          else
+            echo "No wiki pages to sync"
+            exit 0
+          fi
+
+      - name: Check for changes
+        id: changes
+        working-directory: wiki-repo
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push wiki changes
+        if: steps.changes.outputs.has_changes == 'true'
+        working-directory: wiki-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Sync wiki from main repo"
+          git push
+
+      - name: Create summary
+        run: |
+          echo "## Wiki Sync Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.changes.outputs.has_changes }}" == "true" ]; then
+            echo "✅ Wiki pages updated successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ No changes to sync" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pages" >> $GITHUB_STEP_SUMMARY
+          ls wiki/*.md 2>/dev/null | while read f; do
+            echo "- $(basename "$f" .md)" >> $GITHUB_STEP_SUMMARY
+          done || echo "No wiki pages found" >> $GITHUB_STEP_SUMMARY
+
+  verify-readme-sync:
+    name: Verify README Consistency
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check README structure consistency
+        run: |
+          echo "## README Structure Verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Count sections in both READMEs
+          EN_SECTIONS=$(grep -c "^## " README.md || echo 0)
+          KO_SECTIONS=$(grep -c "^## " README_ko.md || echo 0)
+
+          echo "| File | Sections |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| README.md | $EN_SECTIONS |" >> $GITHUB_STEP_SUMMARY
+          echo "| README_ko.md | $KO_SECTIONS |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$EN_SECTIONS" != "$KO_SECTIONS" ]; then
+            echo "::warning::README section count mismatch: EN=$EN_SECTIONS, KO=$KO_SECTIONS"
+            echo "⚠️ **Warning:** Section count mismatch between README files" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ README structure is consistent" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check for agent count consistency
+          EN_AGENTS=$(grep -o "34 agents" README.md | head -1 || echo "not found")
+          KO_AGENTS=$(grep -o "34개 에이전트\|34개" README_ko.md | head -1 || echo "not found")
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Agent Count Check" >> $GITHUB_STEP_SUMMARY
+          if [ -n "$EN_AGENTS" ]; then
+            echo "✅ Agent count found in README.md" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Agent count not found in README.md" >> $GITHUB_STEP_SUMMARY
+          fi
