@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-02-05
+
+### Fixed
+- Increase e2e test timeout from 10s to 30s to prevent CI timeouts
+
+## [0.3.0] - 2026-02-05
+
+### Added
+- Claude API automation workflows (#17)
+  - Issue analyzer workflow (Claude-powered)
+  - Documentation validator workflow
+  - Release notes generator workflow
+- Language toggle links in READMEs (English ↔ Korean)
+
+### Changed
+- Sync-check runs daily at 04:00 KST with private repo access
+- CI simplified to macOS only with consolidated coverage checks
+- Clarified release branch publishing workflow in CONTRIBUTING.md
+- Release workflow skips publish if version already exists
+
+### Removed
+- CodeRabbit integration (too heavy for this project)
+
+## [0.2.1] - 2026-01-28
+
+### Fixed
+- Bug fixes and stability improvements
+
+## [0.2.0] - 2026-01-28
+
+### Added
+- Official Claude Code format support (flat agent structure)
+- Updated agent count to 34
+- Updated skill count to 42
+- Updated guide count to 13
+
+### Changed
+- Migrated from nested to flat agent directory structure
+- Updated templates to match baekgom-agents official format
+
 ## [0.1.4] - 2026-01-27
 
 ### Added
@@ -131,7 +171,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.3.0...v0.3.1
+[0.3.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.1.1...v0.1.2
