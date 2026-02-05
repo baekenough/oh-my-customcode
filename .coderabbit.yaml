@@ -1,0 +1,75 @@
+# CodeRabbit Configuration
+# https://docs.coderabbit.ai/guides/configure-coderabbit
+
+language: "en-US"
+
+early_access: false
+
+reviews:
+  # Review profile: "chill", "default", "assertive", "nitpicky"
+  profile: "assertive"
+
+  # Request changes workflow
+  request_changes_workflow: true
+
+  # High-level summary of changes
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+
+  # Generate a poem about the changes (fun!)
+  poem: false
+
+  # Review status indicator
+  review_status: true
+
+  # Collapse walkthrough after certain number of files
+  collapse_walkthrough: 10
+
+  # Auto-title PRs with [WIP] placeholder
+  auto_title_placeholder: "[WIP]"
+
+  # Path-based review instructions
+  path_instructions:
+    - path: "src/**/*.ts"
+      instructions: |
+        Review TypeScript code for:
+        - Type safety and proper typing
+        - Consistent error handling
+        - Bun/Node.js compatibility
+
+    - path: "templates/**"
+      instructions: |
+        These are Claude Code templates. Check for:
+        - YAML frontmatter validity
+        - Markdown formatting
+        - Consistent agent/skill naming conventions
+
+    - path: ".github/workflows/**"
+      instructions: |
+        Review GitHub Actions workflows for:
+        - Security best practices
+        - Proper secret handling
+        - Efficient job configuration
+
+chat:
+  # Auto-reply to comments
+  auto_reply: true
+
+# Files and patterns to ignore
+path_filters:
+  - "!dist/**"
+  - "!node_modules/**"
+  - "!coverage/**"
+  - "!bun.lock"
+  - "!*.lock"
+
+# Tone settings
+tone_instructions: |
+  Be helpful and constructive. Focus on:
+  - Security issues
+  - Performance concerns
+  - Code maintainability
+  - TypeScript best practices
+
+  This project is an npm package for customizing Claude Code.
+  Key concepts: agents, skills, rules, guides, pipelines.
