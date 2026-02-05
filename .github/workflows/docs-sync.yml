@@ -18,12 +18,12 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' }}
 
     steps:
-      - name: Check WIKI_PAT secret
+      - name: Check PAT secret
         run: |
-          if [ -z "${{ secrets.WIKI_PAT }}" ]; then
-            echo "::warning::WIKI_PAT secret is not configured. Skipping wiki sync."
+          if [ -z "${{ secrets.OMCUSTOM_MASTER }}" ]; then
+            echo "::warning::OMCUSTOM_MASTER secret is not configured. Skipping wiki sync."
             echo "To enable wiki sync, create a Personal Access Token with 'repo' scope"
-            echo "and add it as a repository secret named WIKI_PAT."
+            echo "and add it as a repository secret named OMCUSTOM_MASTER."
             exit 0
           fi
 
@@ -35,7 +35,7 @@ jobs:
         with:
           repository: ${{ github.repository }}.wiki
           path: wiki-repo
-          token: ${{ secrets.WIKI_PAT }}
+          token: ${{ secrets.OMCUSTOM_MASTER }}
         continue-on-error: true
 
       - name: Check wiki checkout
