@@ -227,6 +227,32 @@ bun run build        # 프로덕션 빌드
 - Node.js >= 18.0.0
 - Claude Code CLI
 
+### 동기화 검증
+
+oh-my-customcode 템플릿은 [baekgom-agents](https://github.com/baekenough/baekgom-agents)에서 동기화됩니다. 템플릿 동기화 상태를 확인하려면:
+
+```bash
+# 로컬 검증 (baekgom-agents 체크아웃 필요)
+./scripts/verify-sync.sh /path/to/baekgom-agents
+
+# 또는 환경 변수 사용
+BAEKGOM_AGENTS_PATH=/path/to/baekgom-agents ./scripts/verify-sync.sh
+```
+
+검증 대상 7개 디렉토리:
+- `.claude/agents/` (34개 에이전트)
+- `.claude/skills/` (42개 스킬)
+- `.claude/rules/` (18개 규칙)
+- `.claude/hooks/`
+- `.claude/contexts/`
+- `guides/`
+- `pipelines/`
+
+CI가 자동으로 동기화 검증을 실행합니다:
+- main에 push (템플릿 변경 시)
+- 주간 스케줄 (월요일 00:00 UTC)
+- 수동 워크플로우 디스패치
+
 ---
 
 ## 기여

@@ -228,6 +228,32 @@ bun run build        # Build for production
 - Node.js >= 18.0.0
 - Claude Code CLI
 
+### Sync Verification
+
+oh-my-customcode templates are synced from [baekgom-agents](https://github.com/baekenough/baekgom-agents). To verify templates are in sync:
+
+```bash
+# Local verification (requires baekgom-agents checkout)
+./scripts/verify-sync.sh /path/to/baekgom-agents
+
+# Or using environment variable
+BAEKGOM_AGENTS_PATH=/path/to/baekgom-agents ./scripts/verify-sync.sh
+```
+
+The verification checks 7 content directories:
+- `.claude/agents/` (34 agents)
+- `.claude/skills/` (42 skills)
+- `.claude/rules/` (18 rules)
+- `.claude/hooks/`
+- `.claude/contexts/`
+- `guides/`
+- `pipelines/`
+
+CI automatically runs sync verification on:
+- Push to main (when templates change)
+- Weekly schedule (Monday 00:00 UTC)
+- Manual workflow dispatch
+
 ---
 
 ## Contributing
