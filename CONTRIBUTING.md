@@ -147,9 +147,18 @@ feature/another ──────┘                     │
 
 #### Release Process
 
-1. **Create release branch:**
+**Important: All npm publishing MUST happen from a `release/*` branch, never from `develop`.**
+
+```
+develop ──► release/x.y.z ──► npm publish ──► merge back to develop
+                  │
+                  └── tag vx.y.z
+```
+
+1. **Create release branch from `develop`:**
    ```bash
    git checkout develop
+   git pull origin develop
    git checkout -b release/x.y.z
    ```
 
@@ -157,20 +166,33 @@ feature/another ──────┘                     │
    ```bash
    npm version [major|minor|patch]
    # Update CHANGELOG.md
+   git add .
+   git commit -m "chore: prepare release x.y.z"
    ```
 
-3. **Create tag and publish:**
+3. **Push release branch and create tag:**
    ```bash
+   git push -u origin release/x.y.z
    git tag vx.y.z
-   git push origin release/x.y.z --tags
+   git push origin vx.y.z
+   ```
+
+4. **Publish to npm (from release branch):**
+   ```bash
    npm publish
    ```
 
-4. **Merge back to develop:**
+5. **Merge release branch back to `develop`:**
    ```bash
    git checkout develop
    git merge release/x.y.z
-   git push
+   git push origin develop
+   ```
+
+6. **Delete release branch:**
+   ```bash
+   git branch -d release/x.y.z
+   git push origin --delete release/x.y.z
    ```
 
 #### Hotfix Process

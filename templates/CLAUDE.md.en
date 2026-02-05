@@ -239,11 +239,17 @@ The main conversation acts as the sole orchestrator. Subagents cannot spawn othe
 |--------|---------|
 | `develop` | Main development branch (default) |
 | `feature/*` | New features -> PR to develop |
-| `release/*` | Release preparation -> tag -> npm publish |
+| `release/*` | Release preparation -> **npm publish here only** |
 | `hotfix/*` | Critical fixes -> tag -> publish -> merge to develop |
+
+**Publishing flow:**
+```
+develop → release/x.y.z → npm publish → merge back to develop
+```
 
 **Key rules:**
 - Create feature branches from `develop`
+- **npm publish MUST only happen from release branch**
 - Use conventional commits: `feat:`, `fix:`, `docs:`, `chore:`
 - Include "Closes #N" in commit message to auto-close issues
 - Pre-commit hooks run tests automatically
