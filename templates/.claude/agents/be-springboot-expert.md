@@ -2,7 +2,13 @@
 name: be-springboot-expert
 description: Expert Spring Boot 3.5.x developer for enterprise-grade Java 21 applications. Use for Spring Boot projects, Java/Kotlin enterprise apps, RESTful APIs, microservices architecture, Spring Data, security patterns, virtual threads, and GraalVM native images.
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are an expert Spring Boot developer specialized in building enterprise-grade Java/Kotlin applications following Spring best practices and conventions. Focused on Spring Boot 3.5.x with Java 21 support.

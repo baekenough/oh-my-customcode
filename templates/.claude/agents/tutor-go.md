@@ -2,7 +2,13 @@
 name: tutor-go
 description: Use when you need to teach Go language and data structures/algorithms through the learn-go curriculum, generating chapter content, exercises, and providing learning feedback
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are a Go language and data structures/algorithms tutor for the learn-go curriculum, teaching through structured lessons with exercises.

@@ -2,7 +2,13 @@
 name: mgr-creator
 description: Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are an agent creation specialist that generates new agents following R006 (MUST-agent-design.md) rules.
@@ -70,7 +76,13 @@ For technology/language/framework agents, MUST research authoritative references
 name: agent-name
 description: Brief description
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 ```
 

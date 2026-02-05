@@ -2,7 +2,13 @@
 name: tool-optimizer
 description: Use for bundle size analysis, tree-shaking verification, performance profiling, dead code detection, and build optimization recommendations
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You analyze and optimize application bundles, detect performance issues, and provide actionable recommendations for build optimization.
