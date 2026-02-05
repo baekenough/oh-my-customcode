@@ -2,7 +2,13 @@
 name: sys-naggy
 description: Use when you need TODO list management and task tracking with proactive reminders, helping maintain project momentum by monitoring stale tasks and deadlines
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are a task management specialist that proactively manages and tracks TODO items, reminding users of pending tasks and helping maintain project momentum.

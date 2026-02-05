@@ -2,26 +2,42 @@
 
 > **Priority**: MUST - ENFORCED after any structural changes
 > **ID**: R017
-> **Violation**: Committing without verification = Rule violation
+> **Violation**: Committing or pushing without verification = Rule violation
 
 ## CRITICAL
 
-**After modifying agents, skills, or guides, you MUST run the full verification process before committing.**
+**After modifying agents, skills, or guides, you MUST run the full verification process before committing AND pushing.**
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
 ║  ⚠️  ABSOLUTE PROHIBITION                                        ║
 ║                                                                   ║
-║  DO NOT even ASK "커밋하시겠습니까?" after structural changes    ║
-║  until mgr-sauron:watch has been executed and passed.            ║
+║  DO NOT even ASK "커밋하시겠습니까?" or "푸시하시겠습니까?"      ║
+║  after structural changes until mgr-sauron:watch has been        ║
+║  executed and passed.                                            ║
 ║                                                                   ║
 ║  WRONG:                                                          ║
 ║    [Make changes] → "커밋하시겠습니까?"                          ║
+║    [Commit done] → "푸시하시겠습니까?"                           ║
 ║                                                                   ║
 ║  CORRECT:                                                        ║
-║    [Make changes] → mgr-sauron:watch → [All pass] → "커밋할까요?" ║
+║    [Make changes] → mgr-sauron:watch → [All pass] → commit → push ║
 ║                                                                   ║
-║  Asking to commit before verification = Rule violation           ║
+║  Asking to commit/push before verification = Rule violation      ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  ⚠️  PUSH REQUIRES SAURON VERIFICATION                           ║
+║                                                                   ║
+║  EVERY git push in this project MUST be preceded by:             ║
+║    mgr-sauron:watch → [All pass] → git push                      ║
+║                                                                   ║
+║  This applies to ALL pushes, not just structural changes.        ║
+║  Sauron verification is the quality gate for this repository.    ║
+║                                                                   ║
+║  NO EXCEPTIONS. NO SHORTCUTS.                                    ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -42,6 +58,9 @@
 ║  Phase 3: Fix all issues                                         ║
 ║                                                                   ║
 ║  Phase 4: Commit via mgr-gitnerd                                 ║
+║                                                                   ║
+║  Phase 5: Push via mgr-gitnerd                                   ║
+║    - ONLY after sauron verification passes                       ║
 ║                                                                   ║
 ║  Skipping ANY phase = Rule violation                             ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -125,6 +144,11 @@ Phase 3: Fix Issues
 Phase 4: Commit
   □ Delegate to mgr-gitnerd
   □ Meaningful commit message
+
+Phase 5: Push
+  □ mgr-sauron:watch passed (MANDATORY)
+  □ Delegate push to mgr-gitnerd
+  □ Verify push succeeded
 ```
 
 ## When to Run Full Verification
@@ -173,10 +197,16 @@ Content Change Made
                 ▼
 ┌───────────────────────────────┐
 │  Phase 4: Commit via mgr-gitnerd │
+└───────────────┬───────────────┘
+                │
+                ▼
+┌───────────────────────────────┐
+│  Phase 5: Push via mgr-gitnerd  │
+│  (ONLY after sauron passes)    │
 └───────────────────────────────┘
 ```
 
-## Self-Check Before Commit
+## Self-Check Before Commit and Push
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
@@ -189,6 +219,18 @@ Content Change Made
 ║  5. Am I delegating to mgr-gitnerd for the commit?               ║
 ║                                                                   ║
 ║  If NO to ANY → DO NOT COMMIT                                    ║
+╚══════════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE PUSHING, ASK YOURSELF:                                   ║
+║                                                                   ║
+║  1. Did mgr-sauron:watch complete successfully?                  ║
+║  2. Were ALL issues from sauron verification fixed?              ║
+║  3. Am I delegating to mgr-gitnerd for the push?                 ║
+║                                                                   ║
+║  If NO to ANY → DO NOT PUSH                                      ║
+║                                                                   ║
+║  SAURON VERIFICATION IS MANDATORY FOR ALL PUSHES.                ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 

@@ -2,7 +2,13 @@
 name: sys-memory-keeper
 description: Use when you need to manage session memory persistence using claude-mem, save context before compaction, restore context on session start, or query past memories
 model: sonnet
-tools: Read, Write, Edit, Grep, Glob, Bash
+tools:
+  - Read
+  - Write
+  - Edit
+  - Grep
+  - Glob
+  - Bash
 ---
 
 You are a session memory management specialist that ensures context survives across session compactions using claude-mem.
