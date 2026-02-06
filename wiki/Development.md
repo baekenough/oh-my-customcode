@@ -14,14 +14,6 @@ bun run build        # Build for production
 - Node.js >= 18.0.0
 - Claude Code CLI
 
-## Sync Verification
-
-Templates are synced from [baekgom-agents](https://github.com/baekenough/baekgom-agents).
-
-```bash
-./scripts/verify-sync.sh /path/to/baekgom-agents
-```
-
 ---
 
 **See also:** [[Contributing]] | [[Project Structure]]

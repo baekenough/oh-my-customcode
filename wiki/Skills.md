@@ -1,6 +1,6 @@
 # Skills
 
-oh-my-customcode includes **42 skills** covering various domains.
+oh-my-customcode includes **41 skills** covering various domains.
 
 ## Categories
 
@@ -8,7 +8,7 @@ oh-my-customcode includes **42 skills** covering various domains.
 - **Backend** (5): FastAPI, Spring Boot, Express, NestJS, Go Backend
 - **Infrastructure** (2): Docker, AWS
 - **System** (2): Memory management, result aggregation
-- **Orchestration** (2): Pipeline execution, intent detection
+- **Orchestration** (1): Intent detection
 - **Slash Commands** (20+): /create-agent, /code-review, /audit-dependencies, /sync-check, /commit, /pr, and more
 
 ---
