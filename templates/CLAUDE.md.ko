@@ -128,7 +128,6 @@ oh-my-customcode로 구동됩니다.
 | R011 | 메모리 통합 | claude-mem을 통한 세션 지속성 |
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
-| R014 | 파이프라인 모드 | 순차 워크플로우 실행 |
 | R015 | 의도 투명성 | **필수** - 투명한 에이전트 라우팅 |
 
 ### MAY (선택)
@@ -151,8 +150,6 @@ oh-my-customcode로 구동됩니다.
 | `/dev-refactor` | 코드 리팩토링 |
 | `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
-| `/pipeline-run` | 정의된 파이프라인 실행 |
-| `/pipeline-list` | 사용 가능한 파이프라인 목록 |
 | `/npm-publish` | npm 레지스트리에 패키지 배포 |
 | `/npm-version` | 시맨틱 버전 관리 |
 | `/npm-audit` | 의존성 감사 |
@@ -171,14 +168,11 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (34 파일)
-|   +-- skills/                  # 스킬 (42 디렉토리)
+|   +-- skills/                  # 스킬 (39 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R017)
 |   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- guides/                      # 레퍼런스 문서 (13 토픽)
-+-- pipelines/                   # 파이프라인 정의
-|   +-- templates/
-|   +-- examples/
 ```
 
 ## 오케스트레이션
@@ -224,10 +218,6 @@ project/
 # 메모리 관리
 /memory-save
 /memory-recall authentication
-
-# 파이프라인 실행
-/pipeline-list
-/pipeline-run code-review --input file_path=src/main.go
 
 # 검증
 /sauron-watch

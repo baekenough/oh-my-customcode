@@ -128,7 +128,6 @@ Flow:
 | R011 | Memory Integration | Session persistence with claude-mem |
 | R012 | HUD Statusline | Real-time status display |
 | R013 | Ecomode | Token efficiency for batch ops |
-| R014 | Pipeline Mode | Sequential workflow execution |
 | R015 | Intent Transparency | **MUST** - Transparent agent routing |
 
 ### MAY (Optional)
@@ -151,8 +150,6 @@ Flow:
 | `/dev-refactor` | Refactor code |
 | `/memory-save` | Save session context to claude-mem |
 | `/memory-recall` | Search and recall memories |
-| `/pipeline-run` | Execute a defined pipeline |
-| `/pipeline-list` | List available pipelines |
 | `/npm-publish` | Publish package to npm registry |
 | `/npm-version` | Manage semantic versions |
 | `/npm-audit` | Audit dependencies |
@@ -171,14 +168,11 @@ project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (34 files)
-|   +-- skills/                  # Skills (42 directories)
+|   +-- skills/                  # Skills (39 directories)
 |   +-- rules/                   # Global rules (R000-R017)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- guides/                      # Reference docs (13 topics)
-+-- pipelines/                   # Pipeline definitions
-|   +-- templates/
-|   +-- examples/
 ```
 
 ## Orchestration
@@ -224,10 +218,6 @@ The main conversation acts as the sole orchestrator. Subagents cannot spawn othe
 # Memory management
 /memory-save
 /memory-recall authentication
-
-# Pipeline execution
-/pipeline-list
-/pipeline-run code-review --input file_path=src/main.go
 
 # Verification
 /sauron-watch

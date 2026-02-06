@@ -113,21 +113,21 @@ describe('installer', () => {
       expect(componentNames).toContain('skills');
     });
 
-    it('should return exactly 7 components (commands removed)', async () => {
+    it('should return exactly 6 components (commands and pipelines removed)', async () => {
       const manifest = await getTemplateManifest();
 
-      // getAllComponents() returns 7 items: rules, agents, skills, guides, pipelines, hooks, contexts
-      expect(manifest.components.length).toBe(7);
+      // getAllComponents() returns 6 items: rules, agents, skills, guides, hooks, contexts
+      expect(manifest.components.length).toBe(6);
 
       const componentNames = manifest.components.map((c) => c.name);
       expect(componentNames).toContain('rules');
       expect(componentNames).toContain('agents');
       expect(componentNames).toContain('skills');
       expect(componentNames).toContain('guides');
-      expect(componentNames).toContain('pipelines');
       expect(componentNames).toContain('hooks');
       expect(componentNames).toContain('contexts');
       expect(componentNames).not.toContain('commands'); // commands removed
+      expect(componentNames).not.toContain('pipelines'); // pipelines removed
     });
   });
 
