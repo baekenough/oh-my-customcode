@@ -1,6 +1,6 @@
 {
   "version": "0.2.0",
-  "lastUpdated": "2026-02-05T08:54:15.660Z",
+  "lastUpdated": "2026-02-06T06:06:08.847Z",
   "components": [
     {
       "name": "rules",
@@ -18,7 +18,7 @@
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 39
+      "files": 41
     },
     {
       "name": "guides",
@@ -30,7 +30,7 @@
       "name": "hooks",
       "path": ".claude/hooks",
       "description": "Lifecycle hook scripts",
-      "files": 8
+      "files": 1
     },
     {
       "name": "contexts",

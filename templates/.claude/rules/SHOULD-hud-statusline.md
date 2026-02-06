@@ -46,10 +46,10 @@ Display real-time status information during agent operations for improved visibi
 ─── [Agent] secretary | [Progress] 0/4 | [Parallel] 4 ───
 
 Instances:
-  [1] readme-update:sonnet
-  [2] code-review:haiku
-  [3] architecture:opus
-  [4] validation:haiku
+  [1] Task(general-purpose):sonnet → README update
+  [2] Task(lang-golang-expert):haiku → Code review
+  [3] Task(Explore):opus → Architecture analysis
+  [4] Task(general-purpose):haiku → Validation
 ```
 
 ### Completion
@@ -85,12 +85,28 @@ echo "─── [Agent] $AGENT | [Progress] $PROGRESS ───" >&2
 
 ## Hook Usage
 
-The HUD statusline hook can be triggered via:
+The HUD statusline is implemented as an inline hook in `.claude/hooks/hooks.json` (PreToolUse → Task matcher).
 
-```bash
-~/.claude/hooks/hud/update-status.sh <agent> [progress] [parallel_count]
+The hook automatically displays subagent details when the Task tool is used:
 
-# Examples
-~/.claude/hooks/hud/update-status.sh "mgr-creator" "1/3"
-~/.claude/hooks/hud/update-status.sh "secretary" "0/4" "4"
 ```
+─── [Spawn] {subagent_type}:{model} | {description} ───
+─── [Resume] {subagent_type}:{model} | {description} ───
+```
+
+### Examples
+
+```
+─── [Spawn] mgr-gitnerd:sonnet | Commit and push ───
+─── [Spawn] lang-golang-expert:sonnet | Review Go code ───
+─── [Spawn] mgr-creator:sonnet | Create new agent ───
+─── [Resume] mgr-gitnerd:sonnet | Continue push ───
+```
+
+### Fields Displayed
+
+| Field | Source | Purpose |
+|-------|--------|---------|
+| `subagent_type` | Task tool parameter | Which agent is running |
+| `model` | Task tool parameter | Which model (opus/sonnet/haiku) |
+| `description` | Task tool parameter | What the agent is doing (max 40 chars) |

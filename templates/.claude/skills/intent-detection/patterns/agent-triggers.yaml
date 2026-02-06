@@ -313,6 +313,14 @@ agents:
     supported_actions: [watch, quick, report, verify]
     base_confidence: 40
 
+  mgr-claude-code-bible:
+    keywords:
+      korean: [공식문서, 바이블, 클로드코드 문서]
+      english: ["claude code docs", "official docs", bible, "code.claude.com", "native verification"]
+    file_patterns: []
+    supported_actions: [fetch, verify, check]
+    base_confidence: 40
+
   # Master
   planner:
     keywords:
@@ -339,11 +347,3 @@ agents:
     supported_actions: [manage, create, coordinate]
     base_confidence: 40
 
-  # Tutors
-  tutor-go:
-    keywords:
-      korean: [튜터, 학습, 튜토리얼, 고 튜토리얼, 강의]
-      english: [tutor, learn, tutorial, "golang tutorial", teach]
-    file_patterns: []
-    supported_actions: [teach, learn, tutorial]
-    base_confidence: 40

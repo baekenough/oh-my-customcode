@@ -1,6 +1,7 @@
 ---
 name: aws-best-practices
 description: AWS patterns from Well-Architected Framework
+user-invocable: false
 ---
 
 ## Purpose

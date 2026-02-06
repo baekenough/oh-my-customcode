@@ -2,6 +2,10 @@
 name: mgr-updater
 description: Use when you need to update external agents, skills, and guides from their upstream sources, checking versions and applying updates
 model: sonnet
+memory: project
+effort: medium
+skills:
+  - update-external
 tools:
   - Read
   - Write

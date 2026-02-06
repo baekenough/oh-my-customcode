@@ -2,6 +2,10 @@
 name: mgr-creator
 description: Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base
 model: sonnet
+memory: project
+effort: high
+skills:
+  - create-agent
 tools:
   - Read
   - Write
@@ -76,6 +80,8 @@ For technology/language/framework agents, MUST research authoritative references
 name: agent-name
 description: Brief description
 model: sonnet
+skills:
+  - create-agent
 tools:
   - Read
   - Write

@@ -1,6 +1,7 @@
 ---
 name: memory-management
 description: Memory persistence operations using claude-mem
+user-invocable: false
 ---
 
 ## Purpose

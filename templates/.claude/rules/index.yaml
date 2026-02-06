@@ -108,14 +108,6 @@ rules:
     priority: SHOULD
     scope: all
 
-  # Pipeline Mode - SHOULD
-  - id: R014
-    name: pipeline-mode
-    title: Pipeline Mode Rules
-    path: ./SHOULD-pipeline-mode.md
-    priority: SHOULD
-    scope: orchestrator
-
   # Intent Transparency - MUST
   - id: R015
     name: intent-transparency

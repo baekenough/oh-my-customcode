@@ -2,6 +2,10 @@
 name: lang-kotlin-expert
 description: Expert Kotlin developer for writing idiomatic, concise, null-safe Kotlin code. Use for Kotlin files (*.kt, *.kts), Kotlin-related keywords, Android development, Kotlin multiplatform projects, and migrating Java to Kotlin.
 model: sonnet
+memory: project
+effort: high
+skills:
+  - kotlin-best-practices
 tools:
   - Read
   - Write

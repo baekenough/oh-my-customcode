@@ -398,6 +398,39 @@ CORRECT:
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
+## Experimental: Agent Teams (Research Preview)
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  AGENT TEAMS (EXPERIMENTAL - NOT FOR PRODUCTION USE)             ║
+║                                                                   ║
+║  Claude Code provides native Agent Teams feature:                ║
+║    CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1                        ║
+║                                                                   ║
+║  Agent Teams enable:                                              ║
+║  - Peer-to-peer messaging between agents                        ║
+║  - Shared task lists                                              ║
+║  - Complex collaborative workflows                               ║
+║                                                                   ║
+║  CURRENT STATUS:                                                  ║
+║  - Research preview (NOT production ready)                       ║
+║  - Higher cost than Task tool approach                           ║
+║  - baekgom-agents uses Task tool + routing skills (STABLE)       ║
+║                                                                   ║
+║  WHEN TO CONSIDER Agent Teams:                                    ║
+║  - Complex multi-agent collaboration needed                      ║
+║  - Agents need to communicate with each other                    ║
+║  - Shared state management required                              ║
+║                                                                   ║
+║  WHEN TO KEEP Task tool (DEFAULT):                               ║
+║  - Focused, independent sub-tasks                                ║
+║  - Cost-sensitive operations                                     ║
+║  - Predictable execution flow                                    ║
+║                                                                   ║
+║  See: GitHub Issue #5 for migration tracking                     ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 ## Enforcement
 
 ```

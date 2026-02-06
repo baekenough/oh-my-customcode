@@ -2,6 +2,9 @@
 name: fe-vuejs-agent
 description: Use for Vue 3 Composition API development, single-file components, Pinia state management, and Vue Router navigation
 model: sonnet
+memory: project
+effort: medium
+skills: []
 tools:
   - Read
   - Write
