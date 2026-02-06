@@ -1,0 +1,85 @@
+name: Reusable Issue Analyzer
+
+on:
+  workflow_call:
+    inputs:
+      issue_number:
+        type: number
+        required: true
+        description: 'Issue number to analyze'
+      issue_title:
+        type: string
+        required: false
+        default: ''
+        description: 'Issue title (fetched from API if empty)'
+      issue_body:
+        type: string
+        required: false
+        default: ''
+        description: 'Issue body (fetched from API if empty)'
+      issue_author:
+        type: string
+        required: false
+        default: ''
+        description: 'Issue author login'
+      issue_labels:
+        type: string
+        required: false
+        default: ''
+        description: 'Comma-separated issue labels'
+      project_context:
+        type: string
+        required: false
+        default: ''
+        description: 'Custom project context for analysis'
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(inputs.issue_author, '[bot]') }}
+
+    steps:
+      - name: Checkout oh-my-customcode (scripts only)
+        uses: actions/checkout@v4
+        with:
+          repository: baekenough/oh-my-customcode
+          ref: develop
+          sparse-checkout: |
+            .github/scripts
+            package.json
+            bun.lock
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --production
+
+      - name: Analyze issue
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+          ISSUE_BODY: ${{ inputs.issue_body }}
+          ISSUE_AUTHOR: ${{ inputs.issue_author }}
+          ISSUE_LABELS: ${{ inputs.issue_labels }}
+          PROJECT_CONTEXT: ${{ inputs.project_context }}
+        run: bun run .github/scripts/analyze-issue.ts ${{ inputs.issue_number }}
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Issue Analysis Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Issue #${{ inputs.issue_number }} analyzed in ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "Two comments (English + Korean) posted." >> $GITHUB_STEP_SUMMARY

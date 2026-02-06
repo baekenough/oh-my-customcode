@@ -27,18 +27,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: pip install anthropic
+        run: bun install --production
 
       - name: Validate documentation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.OH_MY_CUSTOMCODE }}
-        run: python .github/scripts/validate_docs.py > validation_result.md
+        run: bun run .github/scripts/validate-docs.ts > validation_result.md
 
       - name: Upload validation result
         uses: actions/upload-artifact@v4
