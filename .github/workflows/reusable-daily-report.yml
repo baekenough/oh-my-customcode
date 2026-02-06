@@ -1,0 +1,64 @@
+name: Reusable Daily Issue Report
+
+on:
+  workflow_call:
+    inputs:
+      repositories:
+        type: string
+        required: true
+        description: 'Comma-separated list of repositories (e.g. owner/repo1,owner/repo2)'
+      report_email:
+        type: string
+        required: true
+        description: 'Email address to send report to'
+      gmail_user:
+        type: string
+        required: false
+        default: 'baekenough@gmail.com'
+        description: 'Gmail sender address'
+    secrets:
+      GITHUB_TOKEN:
+        required: true
+      GMAIL_APP_PASSWORD:
+        required: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout oh-my-customcode (scripts only)
+        uses: actions/checkout@v4
+        with:
+          repository: baekenough/oh-my-customcode
+          ref: develop
+          sparse-checkout: |
+            .github/scripts
+            package.json
+            bun.lock
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --production
+
+      - name: Send daily issue report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GMAIL_USER: ${{ inputs.gmail_user }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          REPORT_EMAIL: ${{ inputs.report_email }}
+          REPOSITORIES: ${{ inputs.repositories }}
+        run: bun run .github/scripts/send-report.ts
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Daily Issue Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Repositories: ${{ inputs.repositories }}" >> $GITHUB_STEP_SUMMARY
+          echo "Email: ${{ inputs.report_email }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Report sent at $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY

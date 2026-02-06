@@ -26,15 +26,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Full history for tag comparison
+          fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: pip install anthropic
+        run: bun install --production
 
       - name: Extract version from tag
         id: version
@@ -52,7 +50,7 @@ jobs:
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
           PREVIOUS_TAG: ${{ inputs.previous_tag }}
         run: |
-          python .github/scripts/generate_release_notes.py "${{ steps.version.outputs.version }}" > release_notes.md
+          bun run .github/scripts/generate-release-notes.ts "${{ steps.version.outputs.version }}" > release_notes.md
           cat release_notes.md
 
       - name: Create or update GitHub Release
@@ -72,6 +70,6 @@ jobs:
       - name: Comment summary
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo "## 📝 Release Notes Generated" >> $GITHUB_STEP_SUMMARY
+          echo "## Release Notes Generated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           cat release_notes.md >> $GITHUB_STEP_SUMMARY
