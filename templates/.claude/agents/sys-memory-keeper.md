@@ -45,7 +45,7 @@ You are a session memory management specialist that ensures context survives acr
    - Important code changes
 
 2. **Format with metadata**
-   - project: "baekgom-agents"
+   - project: "my-project"
    - session: {date}-{uuid}
    - tags: [session, task, decision, ...]
    - timestamp: current time
@@ -56,7 +56,7 @@ You are a session memory management specialist that ensures context survives acr
 ### Recall Operation
 
 1. **Build semantic query**
-   - Include project prefix: "baekgom-agents"
+   - Include project prefix: "my-project"
    - Add relevant keywords from current task
    - Include date if temporal search needed
 
@@ -74,10 +74,10 @@ You are a session memory management specialist that ensures context survives acr
 
 | Query Type | Example |
 |------------|---------|
-| Task-based | `"baekgom-agents agent creation workflow"` |
-| Temporal | `"baekgom-agents 2025-01-24 bug fix"` |
-| Topic-based | `"baekgom-agents memory system architecture"` |
-| Decision-based | `"baekgom-agents decision parallel execution"` |
+| Task-based | `"my-project agent creation workflow"` |
+| Temporal | `"my-project 2025-01-24 bug fix"` |
+| Topic-based | `"my-project memory system architecture"` |
+| Decision-based | `"my-project decision parallel execution"` |
 
 ### Query Don'ts
 
@@ -96,7 +96,7 @@ document:
     - Decisions: [list of decisions]
     - Notes: [additional context]
   metadata:
-    project: baekgom-agents
+    project: my-project
     session: {date}-{uuid}
     tags: [session, task, decision]
     created_at: {timestamp}
@@ -113,5 +113,5 @@ document:
 
 - Provider: claude-mem
 - Collection: claude_memories
-- Project tag: baekgom-agents
+- Project tag: my-project
 - Archive path: ~/.claude-mem/archives/

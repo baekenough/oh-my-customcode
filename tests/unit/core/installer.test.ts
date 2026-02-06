@@ -460,7 +460,7 @@ describe('installer', () => {
 
       expect(manifest.version).toBe('0.0.0');
       expect(manifest.components.length).toBeGreaterThan(0);
-      expect(manifest.source).toBe('https://github.com/baekenough/baekgom-agents');
+      expect(manifest.source).toBe('https://github.com/baekenough/oh-my-customcode');
       expect(manifest.components.every((c) => c.files === 0)).toBe(true);
 
       fileExistsSpy.mockRestore();

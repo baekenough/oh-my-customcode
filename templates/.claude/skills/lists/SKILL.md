@@ -19,7 +19,7 @@ Show all available commands with optional filtering and detailed information.
 
 ### Default
 ```
-Baekgom Agents - Available Commands
+AI Agent System - Available Commands
 
 System:
   lists              Show all available commands
@@ -44,7 +44,7 @@ Use "<command> --help" for detailed information.
 ```
 lists --verbose
 
-Baekgom Agents - Available Commands (Detailed)
+AI Agent System - Available Commands (Detailed)
 
 System Commands:
 ┌─────────┬──────────────────────────────────────────────┐

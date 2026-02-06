@@ -1,5 +1,5 @@
 /**
- * Installer module - Install/copy baekgom-agents templates
+ * Installer module - Install/copy templates
  */
 
 import { copyFile as fsCopyFile, rename } from 'node:fs/promises';
@@ -352,7 +352,7 @@ export async function getTemplateManifest(): Promise<TemplateManifest> {
       description: `${name} component`,
       files: 0,
     })),
-    source: 'https://github.com/baekenough/baekgom-agents',
+    source: 'https://github.com/baekenough/oh-my-customcode',
   };
 }
 

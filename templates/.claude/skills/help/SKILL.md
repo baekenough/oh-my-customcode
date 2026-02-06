@@ -20,7 +20,7 @@ Show help information for commands, agents, and system rules.
 
 ### Default Help
 ```
-Baekgom Agents - Help
+AI Agent System - Help
 
 Usage: {command} [arguments] [options]
 

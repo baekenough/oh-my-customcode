@@ -27,7 +27,7 @@ Search and recall relevant memories from claude-mem using semantic search.
 
 ```
 1. Build semantic query
-   ├── Prefix with "baekgom-agents"
+   ├── Prefix with "my-project"
    ├── Add user query terms
    └── Include date if specified
 
@@ -63,7 +63,7 @@ avoid:
 ```
 [sys-memory-keeper:recall authentication]
 
-Searching memories for: "baekgom-agents authentication"
+Searching memories for: "my-project authentication"
 
 Found 3 relevant memories:
 
@@ -89,7 +89,7 @@ Use "sys-memory-keeper:recall --verbose" for full content.
 ```
 [sys-memory-keeper:recall authentication --verbose]
 
-Searching memories for: "baekgom-agents authentication"
+Searching memories for: "my-project authentication"
 
 [1] mem_abc123 (Score: 0.95)
     Date: 2025-01-20
@@ -118,7 +118,7 @@ Searching memories for: "baekgom-agents authentication"
 ```
 [sys-memory-keeper:recall --recent]
 
-Fetching recent memories for: baekgom-agents
+Fetching recent memories for: my-project
 
 [1] mem_xyz999 (Score: 1.00)
     Date: 2025-01-24
@@ -137,7 +137,7 @@ Fetching recent memories for: baekgom-agents
 ```
 [sys-memory-keeper:recall "nonexistent topic"]
 
-Searching memories for: "baekgom-agents nonexistent topic"
+Searching memories for: "my-project nonexistent topic"
 
 No memories found matching your query.
 
