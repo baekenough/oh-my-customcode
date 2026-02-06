@@ -233,6 +233,44 @@ project/
 /sauron-watch
 ```
 
+## 외부 의존성
+
+### 필수 플러그인
+
+`/plugin install <이름>`으로 설치:
+
+| 플러그인 | 소스 | 용도 |
+|----------|------|------|
+| superpowers | claude-plugins-official | TDD, 디버깅, 협업 패턴 |
+| superpowers-developing-for-claude-code | superpowers-marketplace | Claude Code 개발 문서 |
+| elements-of-style | superpowers-marketplace | 글쓰기 명확성 가이드라인 |
+| double-shot-latte | superpowers-marketplace | 연속 프롬프트 자동화 |
+| obsidian-skills | - | 옵시디언 마크다운 지원 |
+| context7 | claude-plugins-official | 라이브러리 문서 조회 |
+
+### 필수 MCP 서버
+
+| 서버 | 용도 |
+|------|------|
+| claude-mem | 세션 메모리 영속성 (Chroma 기반) |
+
+### 설치 명령어
+
+```bash
+# 마켓플레이스 추가
+/plugin marketplace add obra/superpowers-marketplace
+
+# 플러그인 설치
+/plugin install superpowers
+/plugin install superpowers-developing-for-claude-code
+/plugin install elements-of-style
+/plugin install double-shot-latte
+
+# MCP 설정 (claude-mem)
+npm install -g claude-mem
+claude-mem setup
+```
+
 ## Git 워크플로우 (반드시 준수)
 
 | 브랜치 | 용도 |

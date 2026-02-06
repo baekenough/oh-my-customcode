@@ -233,6 +233,44 @@ The main conversation acts as the sole orchestrator. Subagents cannot spawn othe
 /sauron-watch
 ```
 
+## External Dependencies
+
+### Required Plugins
+
+Install via `/plugin install <name>`:
+
+| Plugin | Source | Purpose |
+|--------|--------|---------|
+| superpowers | claude-plugins-official | TDD, debugging, collaboration patterns |
+| superpowers-developing-for-claude-code | superpowers-marketplace | Claude Code development documentation |
+| elements-of-style | superpowers-marketplace | Writing clarity guidelines |
+| double-shot-latte | superpowers-marketplace | Continuation prompt automation |
+| obsidian-skills | - | Obsidian markdown support |
+| context7 | claude-plugins-official | Library documentation lookup |
+
+### Required MCP Servers
+
+| Server | Purpose |
+|--------|---------|
+| claude-mem | Session memory persistence (Chroma-based) |
+
+### Setup Commands
+
+```bash
+# Add marketplace
+/plugin marketplace add obra/superpowers-marketplace
+
+# Install plugins
+/plugin install superpowers
+/plugin install superpowers-developing-for-claude-code
+/plugin install elements-of-style
+/plugin install double-shot-latte
+
+# MCP setup (claude-mem)
+npm install -g claude-mem
+claude-mem setup
+```
+
 ## Git Workflow (MUST follow)
 
 | Branch | Purpose |
