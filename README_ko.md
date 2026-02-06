@@ -94,12 +94,11 @@ dev-lead (라우팅 스킬)
 
 | 커맨드 | 에이전트 | 설명 |
 |--------|----------|------|
-| `/creator <name>` | mgr-creator | 새 에이전트 생성 |
-| `/updater` | mgr-updater | 프로젝트 구조에 맞게 문서 동기화 |
-| `/supplier` | mgr-supplier | 에이전트 의존성 검증 |
-| `/review` | dev-lead 스킬 | 전문 에이전트로 코드 리뷰 |
-| `/pipeline <name>` | secretary 스킬 | 워크플로우 파이프라인 실행 |
-| `/sync` | mgr-sync-checker | 전체 동기화 검증 |
+| `/create-agent <name>` | mgr-creator | 새 에이전트 생성 |
+| `/update-docs` | mgr-updater | 프로젝트 구조에 맞게 문서 동기화 |
+| `/audit-agents` | mgr-supplier | 에이전트 의존성 검증 |
+| `/dev-review` | lang-* experts | 전문 에이전트로 코드 리뷰 |
+| `/sauron-watch` | mgr-sauron | 전체 동기화 검증 |
 
 또는 에이전트 이름 접두어를 사용할 수 있습니다:
 
@@ -107,29 +106,6 @@ dev-lead (라우팅 스킬)
 "mgr-creator: 새 에이전트 만들어줘"
 "lang-golang: main.go 리뷰해줘"
 ```
-
-### 커스텀 파이프라인
-
-반복 가능한 멀티 에이전트 워크플로우를 정의할 수 있습니다:
-
-```yaml
-# pipelines/deploy-review.yaml
-name: deploy-review
-steps:
-  - id: security_scan
-    agent: qa-lead
-    action: security_review
-
-  - id: performance_check
-    agent: optimizer
-    action: analyze_performance
-
-  - id: migration_review
-    agent: migration-expert
-    action: review_migrations
-```
-
-실행: `/pipeline deploy-review`
 
 ---
 
@@ -164,7 +140,7 @@ steps:
 종합 참조 문서:
 - 에이전트 생성 및 관리
 - 스킬 개발
-- 파이프라인 워크플로우
+- 멀티 에이전트 오케스트레이션
 - 베스트 프랙티스 및 패턴
 
 ### 규칙 (17개)
