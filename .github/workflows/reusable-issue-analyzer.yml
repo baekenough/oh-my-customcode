@@ -35,15 +35,24 @@ on:
     secrets:
       ANTHROPIC_API_KEY:
         required: true
+  push:
+    paths:
+      - '.github/workflows/reusable-issue-analyzer.yml'
 
 permissions:
   issues: write
   contents: read
 
 jobs:
+  push-guard:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Reusable workflow file updated. No direct execution needed."
+
   analyze:
     runs-on: ubuntu-latest
-    if: ${{ !contains(inputs.issue_author, '[bot]') }}
+    if: ${{ github.event_name != 'push' && !contains(inputs.issue_author, '[bot]') }}
 
     steps:
       - name: Checkout oh-my-customcode (scripts only)

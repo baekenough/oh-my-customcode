@@ -21,9 +21,19 @@ on:
         required: true
       GMAIL_APP_PASSWORD:
         required: true
+  push:
+    paths:
+      - '.github/workflows/reusable-daily-report.yml'
 
 jobs:
+  push-guard:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Reusable workflow file updated. No direct execution needed."
+
   report:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
 
     steps:
