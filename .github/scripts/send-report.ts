@@ -11,7 +11,7 @@
 
 import nodemailer from 'nodemailer';
 
-const REPOSITORIES = (process.env.REPOSITORIES || 'baekenough/oh-my-customcode,baekenough/baekgom-agents')
+const REPOSITORIES = (process.env.REPOSITORIES || 'baekenough/oh-my-customcode')
   .split(',')
   .map(r => r.trim());
 

@@ -143,13 +143,12 @@ steps:
 | **백엔드** | 5 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs |
 | **프론트엔드** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
 | **툴링** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| **데이터베이스** | 1 | db-expert |
+| **데이터베이스** | 1 | db-supabase-expert |
 | **아키텍처** | 2 | arch-documenter, arch-speckit-agent |
 | **인프라** | 2 | infra-docker-expert, infra-aws-expert |
-| **QA** | 3 | qa-qa-planner, qa-qa-writer, qa-qa-engineer |
-| **매니저** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
+| **QA** | 3 | qa-planner, qa-writer, qa-engineer |
+| **매니저** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
 | **시스템** | 2 | sys-memory-keeper, sys-naggy |
-| **튜터** | 1 | tutor-go-tutor |
 | **합계** | **34** | |
 
 ### 스킬 (41개)
@@ -168,13 +167,13 @@ steps:
 - 파이프라인 워크플로우
 - 베스트 프랙티스 및 패턴
 
-### 규칙 (18개)
+### 규칙 (17개)
 
 | 우선순위 | 개수 | 목적 |
 |----------|------|------|
-| MUST | 10 | 안전, 권한, 에이전트 설계 (강제) |
-| SHOULD | 6 | 상호작용, 에러 처리 (권장) |
-| MAY | 2 | 최적화 가이드라인 (선택) |
+| MUST | 11 | 안전, 권한, 에이전트 설계 (강제) |
+| SHOULD | 5 | 상호작용, 에러 처리 (권장) |
+| MAY | 1 | 최적화 가이드라인 (선택) |
 
 ---
 
@@ -205,8 +204,7 @@ your-project/
 │   ├── rules/             # 행동 규칙
 │   ├── hooks/             # 이벤트 훅
 │   └── contexts/          # 컨텍스트 파일
-├── guides/                # 참조 문서
-└── pipelines/             # 워크플로우 정의
+└── guides/                # 참조 문서
 ```
 
 **참고**: 공식 Claude Code 형식에서는 명령어 레지스트리가 없으며, 슬래시 커맨드나 자연어 에이전트 참조를 사용합니다.

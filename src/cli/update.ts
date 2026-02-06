@@ -1,6 +1,6 @@
 /**
  * omcustom update command
- * Updates agents to the latest version from baekgom-agents
+ * Updates agents to the latest version
  */
 
 import { i18n } from '../i18n/index.js';

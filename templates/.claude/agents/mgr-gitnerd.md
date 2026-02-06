@@ -84,7 +84,7 @@ Types: feat, fix, docs, style, refactor, test, chore
 
 ## Push Rules (R017 Compliance)
 
-**CRITICAL: All pushes in baekgom-agents require prior sauron verification.**
+**CRITICAL: All pushes require prior sauron verification.**
 
 Before executing `git push`:
 1. Confirm that mgr-sauron:watch has been run

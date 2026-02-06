@@ -22,7 +22,7 @@ steps:
      - Open items
      - Key code changes
   2. Format document:
-     - Add project tag: "baekgom-agents"
+     - Add project tag: "my-project"
      - Add session ID: {date}-{uuid}
      - Add relevant tags
   3. Store in claude-mem:
@@ -37,7 +37,7 @@ operation: recall
 description: Search and retrieve relevant memories
 steps:
   1. Build query:
-     - Always prefix with "baekgom-agents"
+     - Always prefix with "my-project"
      - Add user-provided search terms
      - Include date for temporal searches
   2. Search claude-mem:
@@ -65,11 +65,11 @@ steps:
 
 ```python
 # Always include project name
-chroma_query_documents(["baekgom-agents {search_terms}"])
+chroma_query_documents(["my-project {search_terms}"])
 
 # Examples:
-chroma_query_documents(["baekgom-agents authentication flow"])
-chroma_query_documents(["baekgom-agents 2025-01-24 memory system"])
+chroma_query_documents(["my-project authentication flow"])
+chroma_query_documents(["my-project 2025-01-24 memory system"])
 ```
 
 ### Get by ID
@@ -105,7 +105,7 @@ content: |
   Additional context...
 
 metadata:
-  project: baekgom-agents
+  project: my-project
   session: {date}-{uuid}
   tags: [session, task, decision, ...]
   created_at: {timestamp}
@@ -133,7 +133,7 @@ results:
 
 ```yaml
 do:
-  - Always include "baekgom-agents" prefix
+  - Always include "my-project" prefix
   - Use semantic, intent-based queries
   - Include dates for temporal searches
   - Use multiple queries for better coverage
