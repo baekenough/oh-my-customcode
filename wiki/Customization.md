@@ -10,7 +10,6 @@ No manual file editing. Describe what you want in natural language, and the orch
 "Create a migration review expert agent"
 "Add a SQL optimization skill"
 "Make code reviews stricter"
-"Set up a deploy review pipeline"
 ```
 
 ## How it works

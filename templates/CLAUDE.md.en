@@ -168,7 +168,7 @@ project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (34 files)
-|   +-- skills/                  # Skills (39 directories)
+|   +-- skills/                  # Skills (41 directories)
 |   +-- rules/                   # Global rules (R000-R017)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
@@ -196,9 +196,8 @@ The main conversation acts as the sole orchestrator. Subagents cannot spawn othe
 | SW Architect | 2 | arch-documenter, arch-speckit-agent |
 | Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
-| Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
+| Manager | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
-| Tutor | 1 | tutor-go |
 | **Total** | **34** | |
 
 ## Quick Reference

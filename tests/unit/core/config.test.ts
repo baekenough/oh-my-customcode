@@ -48,7 +48,7 @@ describe('config', () => {
       expect(config.componentVersions).toEqual({});
       expect(config.agents).toEqual({});
       expect(config.preferences).toBeDefined();
-      expect(config.sourceRepo).toBe('https://github.com/baekenough/baekgom-agents');
+      expect(config.sourceRepo).toBe('https://github.com/baekenough/oh-my-customcode');
       expect(config.autoUpdate).toBeDefined();
     });
   });

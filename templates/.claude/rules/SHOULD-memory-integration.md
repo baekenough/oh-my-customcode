@@ -91,7 +91,7 @@ It is NOT required for basic memory functionality.
 ```yaml
 provider: claude-mem
 collection: claude_memories
-project_tag: baekgom-agents
+project_tag: my-project
 status: optional
 ```
 

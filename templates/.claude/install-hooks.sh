@@ -1,7 +1,7 @@
 #!/bin/bash
 # Claude Code Hooks & Contexts Installer
 # Source: https://github.com/affaan-m/everything-claude-code
-# Adapted for baekgom-agents project
+# Hook installation script
 
 set -e
 

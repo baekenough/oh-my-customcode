@@ -19,7 +19,7 @@ Show comprehensive system status including agents, skills, guides, and health ch
 
 ### Default Status
 ```
-Baekgom Agents - Status
+AI Agent System - Status
 
 System:
   Rules: 10 loaded (R000-R009)
@@ -48,7 +48,7 @@ Health: ✓ OK
 ```
 status --verbose
 
-Baekgom Agents - Detailed Status
+AI Agent System - Detailed Status
 
 Rules:
   MUST:

@@ -104,7 +104,7 @@ export function getDefaultConfig(): OmccConfig {
     componentVersions: {},
     agents: {},
     preferences: getDefaultPreferences(),
-    sourceRepo: 'https://github.com/baekenough/baekgom-agents',
+    sourceRepo: 'https://github.com/baekenough/oh-my-customcode',
     autoUpdate: {
       enabled: false,
       checkIntervalHours: 24,

@@ -3,8 +3,8 @@
 /**
  * sync-core.ts
  *
- * Syncs baekgom-agents content to oh-my-customcode/templates
- * Usage: bun run scripts/sync-core.ts /path/to/baekgom-agents
+ * Syncs source content to oh-my-customcode/templates
+ * Usage: bun run scripts/sync-core.ts /path/to/source
  */
 
 import fs from 'node:fs';
@@ -26,7 +26,7 @@ interface Manifest {
 }
 
 /**
- * Directory mappings from baekgom-agents to templates/
+ * Directory mappings from source to templates/
  *
  * Updated for official Claude Code format:
  * - .claude/agents/ contains flat .md files with prefixes (lang-, be-, mgr-, etc.)
@@ -42,7 +42,6 @@ const SYNC_MAPPINGS = [
   { source: '.claude/agents/', target: '.claude/agents/' },
   { source: '.claude/skills/', target: '.claude/skills/' },
   { source: 'guides/', target: 'guides/' },
-  { source: 'pipelines/', target: 'pipelines/' },
 ] as const;
 
 /**
@@ -138,7 +137,6 @@ function updateManifest(templatesDir: string): void {
     agents: countAgents(path.join(templatesDir, '.claude/agents')),
     skills: countSkills(path.join(templatesDir, '.claude/skills')),
     guides: countGuides(path.join(templatesDir, 'guides')),
-    pipelines: countFiles(path.join(templatesDir, 'pipelines')),
     hooks: countFiles(path.join(templatesDir, '.claude/hooks')),
     contexts: countFiles(path.join(templatesDir, '.claude/contexts')),
   };
@@ -157,7 +155,7 @@ function updateManifest(templatesDir: string): void {
 }
 
 /**
- * Validate baekgom-agents directory structure
+ * Validate source directory structure
  * Updated for official Claude Code format
  */
 function validateSource(sourcePath: string): boolean {
@@ -205,17 +203,17 @@ async function syncPath(
 /**
  * Main sync function
  */
-async function sync(baekgomPath: string): Promise<void> {
-  console.log(`[sync] Starting sync from ${baekgomPath}`);
+async function sync(sourcePath: string): Promise<void> {
+  console.log(`[sync] Starting sync from ${sourcePath}`);
 
   // Validate source directory
-  if (!fs.existsSync(baekgomPath)) {
+  if (!fs.existsSync(sourcePath)) {
     console.error('[sync] ✗ Source path does not exist');
     process.exit(1);
   }
 
-  if (!validateSource(baekgomPath)) {
-    console.error('[sync] ✗ Invalid baekgom-agents structure');
+  if (!validateSource(sourcePath)) {
+    console.error('[sync] ✗ Invalid source structure');
     process.exit(1);
   }
 
@@ -232,18 +230,18 @@ async function sync(baekgomPath: string): Promise<void> {
 
   // Sync each mapping
   for (const mapping of SYNC_MAPPINGS) {
-    const sourcePath = path.join(baekgomPath, mapping.source);
+    const mappedSourcePath = path.join(sourcePath, mapping.source);
     const targetPath = path.join(templatesDir, mapping.target);
 
-    if (!fs.existsSync(sourcePath)) {
+    if (!fs.existsSync(mappedSourcePath)) {
       console.log(`[sync] ⊘ Skipping ${mapping.source} (not found)`);
       continue;
     }
 
-    const isDirectory = fs.statSync(sourcePath).isDirectory();
+    const isDirectory = fs.statSync(mappedSourcePath).isDirectory();
 
     try {
-      const fileCount = await syncPath(sourcePath, targetPath, isDirectory);
+      const fileCount = await syncPath(mappedSourcePath, targetPath, isDirectory);
       console.log(`[sync] ✓ ${mapping.source} (${fileCount} files)`);
       componentCount++;
     } catch (error) {
@@ -262,14 +260,14 @@ async function sync(baekgomPath: string): Promise<void> {
  * Entry point
  */
 async function main() {
-  const baekgomPath = process.argv[2];
+  const sourcePath = process.argv[2];
 
-  if (!baekgomPath) {
-    console.error('Usage: bun run scripts/sync-core.ts /path/to/baekgom-agents');
+  if (!sourcePath) {
+    console.error('Usage: bun run scripts/sync-core.ts /path/to/source');
     process.exit(1);
   }
 
-  const absolutePath = path.resolve(baekgomPath);
+  const absolutePath = path.resolve(sourcePath);
 
   try {
     await sync(absolutePath);
