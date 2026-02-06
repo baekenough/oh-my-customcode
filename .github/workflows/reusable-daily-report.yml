@@ -17,8 +17,6 @@ on:
         default: 'baekenough@gmail.com'
         description: 'Gmail sender address'
     secrets:
-      GITHUB_TOKEN:
-        required: true
       GMAIL_APP_PASSWORD:
         required: true
   push:

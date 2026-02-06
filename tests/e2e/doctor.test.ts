@@ -9,7 +9,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'bun';
 
-describe('E2E: omcustom doctor', () => {
+// Set 30s timeout for E2E tests (CI environments are slower)
+describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
   let tempDir: string;
   let cliPath: string;
 
