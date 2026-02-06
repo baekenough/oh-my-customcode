@@ -48,7 +48,7 @@ jobs:
 
       - name: Generate release notes
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.RELEASE_BOT }}
+          ANTHROPIC_API_KEY: ${{ secrets.OH_MY_CUSTOMCODE }}
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
           PREVIOUS_TAG: ${{ inputs.previous_tag }}
         run: |
