@@ -2,6 +2,10 @@
 name: mgr-sync-checker
 description: Use when you need to verify documentation and workflow synchronization, ensuring all docs, configs, and workflow definitions remain synchronized with the project structure
 model: haiku
+memory: local
+effort: low
+skills:
+  - update-docs
 tools:
   - Read
   - Write

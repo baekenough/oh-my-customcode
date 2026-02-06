@@ -1,6 +1,7 @@
 ---
 name: intent-detection
 description: Automatically detect user intent and route to appropriate agent
+user-invocable: false
 ---
 
 ## Purpose

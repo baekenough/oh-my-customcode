@@ -47,7 +47,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/strategic-compact/suggest-compact.sh"
+            "command": "#!/bin/bash\nCOUNTER_FILE=\"/tmp/claude-tool-count-$$\"\nTHRESHOLD=${COMPACT_THRESHOLD:-50}\nif [ -f \"$COUNTER_FILE\" ]; then COUNT=$(cat \"$COUNTER_FILE\"); COUNT=$((COUNT + 1)); else COUNT=1; fi\necho \"$COUNT\" > \"$COUNTER_FILE\"\nif [ \"$COUNT\" -eq \"$THRESHOLD\" ]; then echo '[StrategicCompact] Reached '$THRESHOLD' tool calls' >&2; echo '[StrategicCompact] Consider /compact if at a logical breakpoint' >&2; fi\nif [ \"$COUNT\" -gt \"$THRESHOLD\" ] && [ $(((COUNT - THRESHOLD) % 25)) -eq 0 ]; then echo \"[StrategicCompact] $COUNT tool calls - /compact reminder\" >&2; fi\ncat"
           }
         ],
         "description": "Suggest manual compaction at logical intervals"
@@ -57,34 +57,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nagent=$(echo \"$input\" | jq -r '.tool_input.description // \"agent\"' | head -c 30)\n~/.claude/hooks/hud/update-status.sh \"$agent\" \"\" \"1\"\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.tool_input.subagent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.tool_input.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.tool_input.description // \"\"' | head -c 40)\nresume=$(echo \"$input\" | jq -r '.tool_input.resume // empty')\nif [ -n \"$resume\" ]; then\n  echo \"─── [Resume] ${agent_type}:${model} | ${desc} ───\" >&2\nelse\n  echo \"─── [Spawn] ${agent_type}:${model} | ${desc} ───\" >&2\nfi\necho \"$input\""
           }
         ],
-        "description": "HUD statusline - show agent spawn via Task tool"
-      }
-    ],
-    "PreCompact": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/memory-persistence/pre-compact.sh"
-          }
-        ],
-        "description": "Save state before context compaction"
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/memory-persistence/session-start.sh"
-          }
-        ],
-        "description": "Load previous context on new session"
+        "description": "HUD statusline - show subagent_type, model, and description on Task spawn"
       }
     ],
     "PostToolUse": [
@@ -169,16 +145,6 @@
           }
         ],
         "description": "Final audit for console.log in modified files before session ends"
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/memory-persistence/session-end.sh"
-          }
-        ],
-        "description": "Persist session state on end"
       }
     ]
   }

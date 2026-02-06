@@ -1,6 +1,7 @@
 ---
 name: result-aggregation
 description: Aggregate parallel agent results into concise output
+user-invocable: false
 ---
 
 ## Purpose

@@ -9,6 +9,26 @@
 **When 2 or more tasks are INDEPENDENT, they MUST be executed in parallel.**
 
 ```
+╔══════════════════════════════════════════════════════════════════╗
+║  ⚠️  ABSOLUTE RULE: 2+ INDEPENDENT FILES = PARALLEL              ║
+║                                                                   ║
+║  If you are about to Write/Edit 2 or more independent files:     ║
+║  → STOP                                                          ║
+║  → Use Task tool to spawn parallel agents                        ║
+║  → Each agent handles a subset of files                          ║
+║                                                                   ║
+║  NO EXCEPTIONS for:                                              ║
+║  - Project scaffolding (package.json, tsconfig, src/*.ts)        ║
+║  - Multiple module creation                                       ║
+║  - Batch file updates                                            ║
+║  - Any multi-file operation                                      ║
+║                                                                   ║
+║  VIOLATION = Using Write/Edit 2+ times in sequence               ║
+║              when files are independent                          ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+```
 Detection criteria for parallel execution:
 - Tasks don't share mutable state
 - Tasks don't have sequential dependencies
@@ -64,6 +84,15 @@ Failure to parallelize independent tasks = Rule violation = Must be corrected.
    Task(agent2 → file2.kt)  ├─ All in single message
    Task(agent3 → file3.kt)  │
    Task(agent4 → file4.kt)  ┘
+
+❌ WRONG: Project scaffolding sequentially
+   Write(package.json) → Write(tsconfig.json) → Write(src/index.ts) → ...
+
+✓ CORRECT: Parallel scaffolding
+   Task(agent1 → "Create package.json, tsconfig.json")  ┐
+   Task(agent2 → "Create src/cli.ts, src/index.ts")     ├─ Parallel
+   Task(agent3 → "Create src/analyzer/*.ts")            │
+   Task(agent4 → "Create src/converter/*.ts")           ┘
 
 ❌ WRONG: Secretary doing all the work
    Secretary writes domain/, usecase/, infrastructure/ sequentially
@@ -178,7 +207,44 @@ requirements:
   - Each instance has isolated context
 ```
 
-### 4. Model Specification (RECOMMENDED)
+### 4. Subagent Visibility (MANDATORY)
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  TASK TOOL MUST USE SPECIFIC subagent_type (NOT general-purpose) ║
+║                                                                   ║
+║  When a specialized agent exists for the task:                   ║
+║    → MUST use that agent's subagent_type                         ║
+║    → DO NOT use "general-purpose" as a catch-all                 ║
+║                                                                   ║
+║  The HUD hook displays: [Spawn] {subagent_type}:{model} | {desc}║
+║  Using "general-purpose" makes all spawns look identical.        ║
+║                                                                   ║
+║  WRONG:                                                          ║
+║    Task(subagent_type: "general-purpose", desc: "Update agents") ║
+║    Task(subagent_type: "general-purpose", desc: "Update agents") ║
+║    → HUD shows: [Spawn] general-purpose:sonnet | Update agents   ║
+║    → HUD shows: [Spawn] general-purpose:sonnet | Update agents   ║
+║    → User cannot distinguish which is which                      ║
+║                                                                   ║
+║  CORRECT:                                                        ║
+║    Task(subagent_type: "mgr-creator", desc: "Create Go agent")   ║
+║    Task(subagent_type: "lang-golang-expert", desc: "Review code")║
+║    → HUD shows: [Spawn] mgr-creator:sonnet | Create Go agent    ║
+║    → HUD shows: [Spawn] lang-golang-expert:sonnet | Review code  ║
+║                                                                   ║
+║  When NO specialized agent exists (truly generic work):          ║
+║    → Use "general-purpose" but with UNIQUE descriptions          ║
+║    → Description MUST identify the specific batch/scope           ║
+║                                                                   ║
+║    Task(subagent_type: "general-purpose",                        ║
+║         desc: "batch1: lang-* agents")                           ║
+║    Task(subagent_type: "general-purpose",                        ║
+║         desc: "batch2: be-* fe-* agents")                        ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+### 5. Model Specification (RECOMMENDED)
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
@@ -345,7 +411,7 @@ requirements:
 
 ## Display Format
 
-When parallel execution occurs, MUST display `{task-name}:{model}` format:
+When parallel execution occurs, MUST display `Task({subagent_type}):{model}` format:
 
 ```
 ┌─ Agent: secretary (orchestrator)
@@ -353,17 +419,17 @@ When parallel execution occurs, MUST display `{task-name}:{model}` format:
 
 [Parallel] Spawning 4 instances...
 
-[Instance 1] mgr-creator:sonnet → lang-golang-expert
-[Instance 2] mgr-creator:sonnet → lang-python-expert
-[Instance 3] mgr-creator:sonnet → lang-rust-expert
-[Instance 4] mgr-creator:sonnet → lang-typescript-expert
+[Instance 1] Task(mgr-creator):sonnet → lang-golang-expert
+[Instance 2] Task(mgr-creator):sonnet → lang-python-expert
+[Instance 3] Task(mgr-creator):sonnet → lang-rust-expert
+[Instance 4] Task(mgr-creator):sonnet → lang-typescript-expert
 
 [Progress] ████████░░░░ 2/4
 
-[Instance 1] mgr-creator:sonnet ✓ lang-golang-expert created
-[Instance 2] mgr-creator:sonnet ✓ lang-python-expert created
-[Instance 3] mgr-creator:sonnet ✓ lang-rust-expert created
-[Instance 4] mgr-creator:sonnet ✓ lang-typescript-expert created
+[Instance 1] Task(mgr-creator):sonnet ✓ lang-golang-expert created
+[Instance 2] Task(mgr-creator):sonnet ✓ lang-python-expert created
+[Instance 3] Task(mgr-creator):sonnet ✓ lang-rust-expert created
+[Instance 4] Task(mgr-creator):sonnet ✓ lang-typescript-expert created
 
 [Summary] 4/4 tasks completed successfully
 ```
@@ -376,15 +442,20 @@ When parallel execution occurs, MUST display `{task-name}:{model}` format:
 ║                                                                   ║
 ║  When announcing parallel agents, MUST show:                     ║
 ║                                                                   ║
-║    {task-name}:{model}                                           ║
+║    Task({subagent_type}):{model}                                 ║
 ║                                                                   ║
 ║  Examples:                                                       ║
-║    [Instance 1] readme-update:sonnet ✓ README updated            ║
-║    [Instance 2] code-review:haiku ✓ Review complete              ║
-║    [Instance 3] architecture:opus ✓ Analysis done                ║
+║    [Instance 1] Task(general-purpose):sonnet → R006 업데이트      ║
+║    [Instance 2] Task(lang-golang-expert):sonnet → Go 코드 리뷰    ║
+║    [Instance 3] Task(Explore):haiku → 코드베이스 탐색              ║
+║    [Instance 4] Task(mgr-gitnerd):sonnet → git commit            ║
+║                                                                   ║
+║  The subagent_type MUST match the Task tool's subagent_type      ║
+║  parameter. Custom names are NOT allowed.                        ║
 ║                                                                   ║
 ║  This allows users to:                                           ║
 ║    - See which model is used for each task                       ║
+║    - See the exact subagent_type used                            ║
 ║    - Understand cost implications                                ║
 ║    - Debug model selection issues                                ║
 ╚══════════════════════════════════════════════════════════════════╝

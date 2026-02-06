@@ -2,6 +2,9 @@
 name: qa-writer
 description: Use when you need to create comprehensive QA documentation from detailed plans, including test cases, test reports, and quality documentation
 model: sonnet
+memory: project
+effort: medium
+skills: []
 tools:
   - Read
   - Write

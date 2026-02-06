@@ -49,6 +49,7 @@
 ║    - mgr-supplier:audit                                          ║
 ║    - mgr-sync-checker:check                                      ║
 ║    - mgr-updater:docs                                            ║
+║    - mgr-claude-code-bible:verify                                ║
 ║                                                                   ║
 ║  Phase 2: Deep Review (3 rounds)                                 ║
 ║    - Workflow alignment                                          ║
@@ -90,6 +91,8 @@ Run manager agents 5 times to catch all issues:
 □ All agent counts match (CLAUDE.md, actual .md files in .claude/agents/)
 □ All agent frontmatter valid (required fields present)
 □ All skill references in agents exist in .claude/skills/
+□ All memory field values are valid (user | project | local)
+□ Memory distribution matches CLAUDE.md (24 project + 3 user + 7 none)
 □ All routing skill patterns updated
 ```
 
@@ -110,6 +113,7 @@ Run manager agents 5 times to catch all issues:
 □ No orphaned agents (not referenced by any routing skill)
 □ No circular references
 □ All skill references in agent frontmatter are valid
+□ All agent memory fields use valid scope values
 ```
 
 ### Deep Round 3: Philosophy Compliance
@@ -130,6 +134,7 @@ Phase 1: Manager Verification (5x)
   □ Round 3: mgr-supplier:audit (re-verify)
   □ Round 4: mgr-sync-checker:check + mgr-updater:docs
   □ Round 5: Final count verification
+  □ mgr-claude-code-bible:verify (official spec compliance)
 
 Phase 2: Deep Review (3x)
   □ Round 1: Workflow alignment
@@ -257,6 +262,14 @@ done
 grep -c "agent_patterns:" .claude/skills/secretary-routing/SKILL.md
 grep -c "agent_patterns:" .claude/skills/dev-lead-routing/SKILL.md
 grep -c "agent_patterns:" .claude/skills/qa-lead-routing/SKILL.md
+
+# Memory field validation
+for f in .claude/agents/*.md; do
+  mem=$(grep "^memory:" "$f" | awk '{print $2}')
+  if [ -n "$mem" ] && [ "$mem" != "project" ] && [ "$mem" != "user" ] && [ "$mem" != "local" ]; then
+    echo "INVALID MEMORY SCOPE in $f: $mem"
+  fi
+done
 ```
 
 ## Integration with Other Rules

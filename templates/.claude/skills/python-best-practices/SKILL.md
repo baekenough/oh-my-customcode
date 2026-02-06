@@ -1,6 +1,7 @@
 ---
 name: python-best-practices
 description: Pythonic patterns from PEP 8 and PEP 20
+user-invocable: false
 ---
 
 ## Purpose

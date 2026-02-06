@@ -14,6 +14,7 @@ Format:
 name: agent-name
 description: Brief agent description
 model: sonnet | opus | haiku
+memory: project            # Optional
 tools:
   - Read
   - Write
@@ -33,9 +34,25 @@ Agent purpose and role description...
 name: agent-name           # Unique identifier (kebab-case)
 description: Brief desc    # One-line summary
 model: sonnet             # Default model (sonnet | opus | haiku)
+memory: project           # Persistent memory scope (user | project | local)
+effort: high              # Effort level (low | medium | high)
 tools: [Read, Write, ...]  # Allowed tools
 skills: [skill-1, ...]     # Required skill names
 ```
+
+### Memory Scope Reference
+| Scope | Location | Use Case |
+|-------|----------|----------|
+| `user` | `~/.claude/agent-memory/<name>/` | Cross-project learnings (infra, db) |
+| `project` | `.claude/agent-memory/<name>/` | Project-specific, versioned |
+| `local` | `.claude/agent-memory-local/<name>/` | Project-specific, not versioned |
+
+### Effort Level Reference
+| Level | Use Case | Agents |
+|-------|----------|--------|
+| `high` | Complex reasoning, design decisions | lang-*, be-*, arch-*, qa-planner |
+| `medium` | Routine operations, structured work | fe-*, tool-*, mgr-gitnerd |
+| `low` | Simple validation, file scanning | mgr-supplier, mgr-sync-checker, sys-naggy |
 
 ### Agent Content Must NOT Contain
 ```
@@ -52,6 +69,26 @@ skills: [skill-1, ...]     # Required skill names
 ✓ Workflow description
 ✓ Source info (if external)
 ```
+
+## Memory Scope (OPTIONAL)
+
+Agents can have persistent memory that survives across conversations.
+
+| Scope | Location | Use Case | Git Tracked |
+|-------|----------|----------|-------------|
+| `user` | `~/.claude/agent-memory/<name>/` | Cross-project learnings (infra, DB patterns) | No |
+| `project` | `.claude/agent-memory/<name>/` | Project-specific patterns | Yes |
+| `local` | `.claude/agent-memory-local/<name>/` | Local-only knowledge | No |
+
+When enabled:
+- First 200 lines of MEMORY.md loaded into agent's system prompt
+- Read/Write/Edit tools automatically enabled for memory directory
+- Agent builds knowledge across conversations
+
+Agents that should NOT have memory (stateless by design):
+- Manager agents for one-time operations (mgr-creator, mgr-updater, mgr-supplier)
+- Validation agents (mgr-sync-checker, mgr-claude-code-bible)
+- Meta-agents (sys-memory-keeper, sys-naggy)
 
 ## External Agent Requirements
 

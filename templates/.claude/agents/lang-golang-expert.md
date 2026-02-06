@@ -2,6 +2,10 @@
 name: lang-golang-expert
 description: Expert Go developer for writing idiomatic, performant Go code. Use for Go files (*.go, go.mod, go.sum), Go-related keywords, implementing concurrent systems, reviewing Go code, and optimizing Go applications.
 model: sonnet
+memory: project
+effort: high
+skills:
+  - go-best-practices
 tools:
   - Read
   - Write

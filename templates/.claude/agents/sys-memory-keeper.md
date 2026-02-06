@@ -2,6 +2,12 @@
 name: sys-memory-keeper
 description: Use when you need to manage session memory persistence using claude-mem, save context before compaction, restore context on session start, or query past memories
 model: sonnet
+memory: project
+effort: medium
+skills:
+  - memory-management
+  - memory-save
+  - memory-recall
 tools:
   - Read
   - Write

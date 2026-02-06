@@ -2,6 +2,9 @@
 name: fe-svelte-agent
 description: Use for Svelte compiler-based reactivity, reactive statements ($:), Svelte stores, and SvelteKit full-stack development with SSR
 model: sonnet
+memory: project
+effort: medium
+skills: []
 tools:
   - Read
   - Write

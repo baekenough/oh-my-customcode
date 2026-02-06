@@ -1,6 +1,7 @@
 ---
 name: typescript-best-practices
 description: Type-safe TypeScript patterns from industry standards
+user-invocable: false
 ---
 
 ## Purpose

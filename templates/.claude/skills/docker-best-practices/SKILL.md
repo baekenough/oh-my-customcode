@@ -1,6 +1,7 @@
 ---
 name: docker-best-practices
 description: Docker patterns for optimized containerization
+user-invocable: false
 ---
 
 ## Purpose
