@@ -443,7 +443,7 @@ CORRECT:
 ║  CURRENT STATUS:                                                  ║
 ║  - Research preview (NOT production ready)                       ║
 ║  - Higher cost than Task tool approach                           ║
-║  - baekgom-agents uses Task tool + routing skills (STABLE)       ║
+║  - This system uses Task tool + routing skills (STABLE)       ║
 ║                                                                   ║
 ║  WHEN TO CONSIDER Agent Teams:                                    ║
 ║  - Complex multi-agent collaboration needed                      ║

@@ -61,6 +61,6 @@ error_handling:
   default: stop
 
 metadata:
-  author: baekgom-agents
+  author: oh-my-customcode
   version: 1.0.0
   tags: [code-review, quality, security]

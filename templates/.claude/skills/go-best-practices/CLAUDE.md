@@ -5,5 +5,5 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #8 | 8:07 PM | 🔵 | Skill Definition Structure in Baekgom-agents | ~626 |
+| #8 | 8:07 PM | 🔵 | Skill Definition Structure | ~626 |
 </claude-mem-context>

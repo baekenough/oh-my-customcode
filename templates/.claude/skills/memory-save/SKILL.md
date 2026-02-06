@@ -28,7 +28,7 @@ Save current session context to claude-mem for persistence across context compac
    └── Code changes (if --include-code)
 
 2. Format with metadata
-   ├── project: baekgom-agents
+   ├── project: my-project
    ├── session: {date}-{uuid}
    ├── tags: [session, ...user_tags]
    └── created_at: {timestamp}
@@ -42,7 +42,7 @@ Save current session context to claude-mem for persistence across context compac
 ## Storage Format
 
 ```yaml
-project: baekgom-agents
+project: my-project
 session: {date}-{uuid}
 tags: [session, task, decision]
 content:
@@ -66,7 +66,7 @@ Context collected:
   Open items: 1 pending
 
 Metadata:
-  Project: baekgom-agents
+  Project: my-project
   Session: 2025-01-24-a1b2c3d4
   Tags: [session, task, decision]
 
@@ -81,7 +81,7 @@ Memory ID: mem_abc123
 Saving session context...
 
 Metadata:
-  Project: baekgom-agents
+  Project: my-project
   Session: 2025-01-24-a1b2c3d4
   Tags: [session, task, decision, authentication, oauth]
 

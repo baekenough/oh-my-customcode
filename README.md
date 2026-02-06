@@ -130,7 +130,7 @@ Run it: `/run-pipeline deploy-review`
 
 | Category | Count | Agents |
 |----------|-------|--------|
-| **Managers** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
+| **Managers** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
 | **System** | 2 | sys-memory-keeper, sys-naggy |
 | **Languages** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | **Frontend** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
@@ -140,7 +140,6 @@ Run it: `/run-pipeline deploy-review`
 | **Architecture** | 2 | arch-documenter, arch-speckit-agent |
 | **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **Tutor** | 1 | tutor-go |
 | **Total** | **34** | |
 
 ### Skills (41)
@@ -163,13 +162,13 @@ Comprehensive reference documentation covering:
 - Best practices and patterns
 - Sub-agent orchestration
 
-### Rules (18)
+### Rules (17)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
-| **MUST** | 10 | Safety, permissions, agent design (enforced) |
-| **SHOULD** | 6 | Interactions, error handling (recommended) |
-| **MAY** | 2 | Optimization guidelines (optional) |
+| **MUST** | 11 | Safety, permissions, agent design (enforced) |
+| **SHOULD** | 5 | Interactions, error handling (recommended) |
+| **MAY** | 1 | Optimization guidelines (optional) |
 
 ---
 
@@ -195,7 +194,7 @@ After `omcustom init`:
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
 └── .claude/
-    ├── rules/             # Behavior rules (18 total)
+    ├── rules/             # Behavior rules (17 total)
     ├── hooks/             # Event hooks
     ├── contexts/          # Context files
     ├── agents/            # All agents (flat structure, 34 total)
