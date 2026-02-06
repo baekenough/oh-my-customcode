@@ -43,7 +43,9 @@ jobs:
         id: verify
         continue-on-error: true
         working-directory: oh-my-customcode
+        shell: bash
         run: |
+          set -o pipefail
           chmod +x scripts/verify-sync.sh
           ./scripts/verify-sync.sh ../baekgom-agents 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | tee "$RUNNER_TEMP/sync-output.txt"
 
