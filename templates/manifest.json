@@ -6,7 +6,7 @@
       "name": "rules",
       "path": ".claude/rules",
       "description": "Agent behavior rules and guidelines",
-      "files": 19
+      "files": 18
     },
     {
       "name": "agents",
@@ -18,19 +18,13 @@
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 42
+      "files": 39
     },
     {
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
       "files": 13
-    },
-    {
-      "name": "pipelines",
-      "path": "pipelines",
-      "description": "Workflow pipeline definitions",
-      "files": 3
     },
     {
       "name": "hooks",
