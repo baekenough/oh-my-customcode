@@ -42,7 +42,6 @@ const SYNC_MAPPINGS = [
   { source: '.claude/agents/', target: '.claude/agents/' },
   { source: '.claude/skills/', target: '.claude/skills/' },
   { source: 'guides/', target: 'guides/' },
-  { source: 'pipelines/', target: 'pipelines/' },
 ] as const;
 
 /**
@@ -138,7 +137,6 @@ function updateManifest(templatesDir: string): void {
     agents: countAgents(path.join(templatesDir, '.claude/agents')),
     skills: countSkills(path.join(templatesDir, '.claude/skills')),
     guides: countGuides(path.join(templatesDir, 'guides')),
-    pipelines: countFiles(path.join(templatesDir, 'pipelines')),
     hooks: countFiles(path.join(templatesDir, '.claude/hooks')),
     contexts: countFiles(path.join(templatesDir, '.claude/contexts')),
   };
