@@ -27,7 +27,7 @@ jobs:
 
       - name: Analyze issue with Claude
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ISSUE_ANALYZER }}
+          ANTHROPIC_API_KEY: ${{ secrets.OH_MY_CUSTOMCODE }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}

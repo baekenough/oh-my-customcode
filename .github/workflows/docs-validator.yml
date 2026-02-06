@@ -37,7 +37,7 @@ jobs:
 
       - name: Validate documentation
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.DOCS_VALIDATOR }}
+          ANTHROPIC_API_KEY: ${{ secrets.OH_MY_CUSTOMCODE }}
         run: python .github/scripts/validate_docs.py > validation_result.md
 
       - name: Upload validation result
