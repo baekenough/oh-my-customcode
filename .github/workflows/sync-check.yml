@@ -2,7 +2,7 @@ name: Sync Check
 
 on:
   push:
-    branches: [main]
+    branches: [develop]
     paths:
       - 'templates/**'
       - 'scripts/verify-sync.sh'
