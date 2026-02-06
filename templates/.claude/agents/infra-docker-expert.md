@@ -2,6 +2,10 @@
 name: infra-docker-expert
 description: Use for creating optimized Dockerfiles, multi-stage builds, container security hardening, Docker Compose configurations, and image size optimization
 model: sonnet
+memory: user
+effort: medium
+skills:
+  - docker-best-practices
 tools:
   - Read
   - Write

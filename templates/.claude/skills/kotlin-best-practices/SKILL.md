@@ -1,6 +1,7 @@
 ---
 name: kotlin-best-practices
 description: Idiomatic Kotlin patterns from JetBrains conventions
+user-invocable: false
 ---
 
 ## Purpose

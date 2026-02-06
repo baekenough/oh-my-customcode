@@ -2,6 +2,9 @@
 name: qa-planner
 description: Use when you need to create detailed QA plans from requirements and specifications, including test strategy design, risk-based prioritization, test scenario identification, and acceptance criteria definition
 model: sonnet
+memory: project
+effort: high
+skills: []
 tools:
   - Read
   - Write

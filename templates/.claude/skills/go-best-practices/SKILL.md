@@ -1,6 +1,7 @@
 ---
 name: go-best-practices
 description: Idiomatic Go patterns from Effective Go
+user-invocable: false
 ---
 
 ## Purpose

@@ -156,6 +156,29 @@ R008 extends R007 for tool operations:
 [Done] Agent created successfully
 ```
 
+## Task Tool Display Format
+
+When spawning subagents via the Task tool, the display MUST use the actual `subagent_type` parameter:
+
+```
+Task(subagent_type):model → description
+```
+
+### Examples
+
+```
+[secretary][opus] → Spawning parallel agents:
+  [1] Task(lang-golang-expert):sonnet → Go code review
+  [2] Task(lang-python-expert):sonnet → Python code review
+  [3] Task(general-purpose):haiku → File validation
+```
+
+### Rules
+
+- `subagent_type` MUST match the actual Task tool parameter value
+- Custom/invented names are NOT allowed (e.g., `code-review:sonnet` is WRONG)
+- Model specification shows cost/performance intent
+
 ## Benefits
 
 1. **Debugging**: Know which agent performed which operation

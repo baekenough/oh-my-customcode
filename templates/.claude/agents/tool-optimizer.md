@@ -2,6 +2,12 @@
 name: tool-optimizer
 description: Use for bundle size analysis, tree-shaking verification, performance profiling, dead code detection, and build optimization recommendations
 model: sonnet
+memory: project
+effort: medium
+skills:
+  - optimize-analyze
+  - optimize-bundle
+  - optimize-report
 tools:
   - Read
   - Write

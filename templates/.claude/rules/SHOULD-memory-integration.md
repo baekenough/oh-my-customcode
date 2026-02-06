@@ -5,110 +5,128 @@
 
 ## Purpose
 
-Integrate claude-mem for session context persistence across compaction.
+Provide persistent memory for agents using Claude Code's native auto memory system.
 
-## Requirements
+## Architecture: Native First
 
-### 1. Save Before Compaction
+```
+Primary: Native Auto Memory (memory field in agent frontmatter)
+  - Agent-specific persistent knowledge
+  - Automatic system prompt injection (MEMORY.md)
+  - No external dependencies
+
+Supplementary: claude-mem MCP (optional)
+  - Session-level temporal observations
+  - Cross-agent semantic search
+  - Only if installed and configured
+
+RULE: If native auto memory can handle the task,
+      DO NOT use claude-mem.
+```
+
+## Native Auto Memory
+
+### How It Works
+
+1. Agent frontmatter includes `memory` field:
+   ```yaml
+   memory: project  # or user, local
+   ```
+
+2. System automatically:
+   - Creates memory directory for the agent
+   - Loads first 200 lines of MEMORY.md into system prompt
+   - Enables Read/Write/Edit tools for memory directory
+   - Agent learns and records patterns across conversations
+
+### Memory Scopes
+
+| Scope | Location | Use Case | Git Tracked |
+|-------|----------|----------|-------------|
+| `user` | `~/.claude/agent-memory/<name>/` | Cross-project patterns | No |
+| `project` | `.claude/agent-memory/<name>/` | Project-specific patterns | Yes |
+| `local` | `.claude/agent-memory-local/<name>/` | Local-only knowledge | No |
+
+### Current Agent Memory Map
+
+| Scope | Agents | Count |
+|-------|--------|-------|
+| `project` | lang-*, be-*, fe-*, arch-*, tool-*, qa-*, mgr-creator, mgr-updater, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible, sys-memory-keeper | 28 |
+| `user` | infra-docker-expert, infra-aws-expert, db-supabase-expert | 3 |
+| `local` | mgr-supplier, mgr-sync-checker, sys-naggy | 3 |
+
+### Memory Best Practices
+
 ```yaml
-trigger: PreCompact hook
-action:
-  - Collect session context (tasks, decisions, key info)
-  - Format with project tag "baekgom-agents"
-  - Store in claude-mem with metadata
+do:
+  - Let agents consult memory before starting work
+  - Update memory after discovering patterns or conventions
+  - Keep MEMORY.md under 200 lines (auto-curate if exceeded)
+  - Use separate topic files for detailed notes
+
+dont:
+  - Store sensitive data (API keys, credentials)
+  - Duplicate information already in CLAUDE.md
+  - Use memory for temporary session state
 ```
 
-### 2. Restore on Session Start
-```yaml
-trigger: SessionStart hook
-action:
-  - Build semantic query with project prefix
-  - Search claude-mem for relevant context
-  - Load and present context to agent
-```
+## Claude-mem (Optional Supplement)
 
-### 3. Project Isolation
-```yaml
-rule: Always include project name in queries
-reason: Prevent cross-contamination between projects
-```
+claude-mem MCP provides session-level observations and semantic search.
+It is NOT required for basic memory functionality.
 
-## Storage Format
+### When to Use claude-mem
 
-```yaml
-project: baekgom-agents
-session: {date}-{uuid}
-tags: [session, task, decision]
-content:
-  summary: Brief description of session context
-  tasks_completed: List of completed tasks
-  decisions: Key decisions made
-  open_items: Unfinished work
-```
+| Scenario | Use Native Memory | Use claude-mem |
+|----------|------------------|---------------|
+| Agent learns project patterns | Yes | |
+| Record debugging insights | Yes | |
+| Search across multiple sessions | | Yes |
+| Temporal queries (date-based) | | Yes |
+| Cross-agent knowledge sharing | | Yes |
+| Basic context persistence | Yes | |
 
-## Query Pattern
-
-Always include project name in queries:
-- `"baekgom-agents session authentication"`
-- `"baekgom-agents 2025-01-24 bug fix"`
-- `"baekgom-agents agent creation workflow"`
-
-### Effective Queries
-```yaml
-good:
-  - "baekgom-agents implementing oauth" (semantic, project-scoped)
-  - "baekgom-agents 2025-01-24 memory system" (temporal)
-  - "baekgom-agents decision agent architecture" (topic-based)
-
-bad:
-  - "implementing oauth" (missing project scope)
-  - "session context" (too generic)
-```
-
-## Commands
-
-| Command | Description |
-|---------|-------------|
-| `sys-memory-keeper:save` | Save current context to claude-mem |
-| `sys-memory-keeper:recall` | Search and recall relevant memories |
-
-## Integration with Agents
-
-### sys-memory-keeper Agent
-```
-Responsible for:
-- Executing save/recall operations
-- Managing session metadata
-- Handling PreCompact and SessionStart hooks
-```
-
-### Other Agents
-```
-When to trigger sys-memory-keeper:save:
-- Before complex task completion
-- When making significant decisions
-- Before expected context compaction
-```
-
-## Storage Provider
+### claude-mem Integration (if installed)
 
 ```yaml
 provider: claude-mem
 collection: claude_memories
 project_tag: baekgom-agents
-archive_path: ~/.claude-mem/archives/
+status: optional
+```
+
+## Context Compaction
+
+### Compaction Controls
+
+```yaml
+# Targeted compaction - preserve specific context
+/compact focus on {topic}
+
+# Examples
+/compact focus on agent routing decisions
+/compact focus on authentication implementation
+/compact focus on test failures and fixes
+```
+
+### Best Practices
+
+```
+do:
+  - Use /compact focus when nearing context limits
+  - Focus on the most relevant topic for current work
+  - Let auto-compaction handle routine cleanup
+
+dont:
+  - Manually compact when not near limits
+  - Lose important decision context by unfocused compaction
 ```
 
 ## Error Handling
 
 ```yaml
-on_save_failure:
+on_memory_write_failure:
   - Log error
   - Continue without blocking main task
-  - Notify user of memory save failure
-
-on_recall_failure:
-  - Log error
-  - Continue with available context
-  - Notify user that memory recall failed
+  - Memory is enhancement, not requirement
 ```

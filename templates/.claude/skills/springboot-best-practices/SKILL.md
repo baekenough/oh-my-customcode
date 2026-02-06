@@ -1,6 +1,7 @@
 ---
 name: springboot-best-practices
 description: Spring Boot patterns for enterprise Java applications
+user-invocable: false
 ---
 
 ## Purpose
