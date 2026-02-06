@@ -1,0 +1,93 @@
+name: Reusable Claude Native Verification
+
+on:
+  workflow_call:
+    inputs:
+      dry_run:
+        type: boolean
+        required: false
+        default: false
+        description: 'Run without creating GitHub issue'
+      force:
+        type: boolean
+        required: false
+        default: false
+        description: 'Force analysis even if docs hash unchanged'
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: project
+
+      - name: Checkout oh-my-customcode (scripts only)
+        uses: actions/checkout@v4
+        with:
+          repository: baekenough/oh-my-customcode
+          ref: develop
+          path: scripts
+          sparse-checkout: |
+            .github/scripts
+            package.json
+            bun.lock
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: bun install --production
+
+      - name: Run Claude Native Verification
+        working-directory: scripts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PROJECT_ROOT: ${{ github.workspace }}/project
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ "${{ inputs.force }}" = "true" ]; then
+            ARGS="$ARGS --force"
+          fi
+          bun run .github/scripts/verify-claude-native.ts $ARGS
+
+      - name: Commit hash update (if changed)
+        if: ${{ !inputs.dry_run }}
+        working-directory: ${{ github.workspace }}/project
+        run: |
+          if git diff --quiet .claude/claude-native-hash.txt 2>/dev/null; then
+            echo "No hash changes to commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .claude/claude-native-hash.txt 2>/dev/null || true
+            git commit -m "chore: update claude-native docs hash" 2>/dev/null || true
+            git push 2>/dev/null || true
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Claude Native Verification Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "Dry Run: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "Force: ${{ inputs.force }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check workflow logs for details." >> $GITHUB_STEP_SUMMARY
