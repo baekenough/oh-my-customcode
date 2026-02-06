@@ -16,7 +16,7 @@ oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Clau
 
 | 특징 | 설명 |
 |------|------|
-| **바로 사용 가능** | 34개 에이전트, 17개 스킬, 12개 가이드 - baekgom-agents 템플릿과 동기화 |
+| **바로 사용 가능** | 34개 에이전트, 41개 스킬, 14개 가이드 - 즉시 사용 가능 |
 | **서브 에이전트 모델** | 전문화된 역할의 계층적 에이전트 오케스트레이션 지원 |
 | **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
 | **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
@@ -135,8 +135,6 @@ steps:
 
 ## 기본 제공 항목
 
-> **[baekgom-agents](https://github.com/baekenough/baekgom-agents)에서 동기화된 템플릿** - 서브 에이전트 오케스트레이션을 지원하는 실전 검증 에이전트 시스템.
-
 ### 에이전트 (34개)
 
 | 카테고리 | 수 | 에이전트 (prefixed names) |
@@ -154,7 +152,7 @@ steps:
 | **튜터** | 1 | tutor-go-tutor |
 | **합계** | **34** | |
 
-### 스킬 (17개)
+### 스킬 (41개)
 
 - **개발**: Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
 - **백엔드**: FastAPI, Spring Boot, Express, NestJS, Go Backend
@@ -162,7 +160,7 @@ steps:
 - **시스템**: 메모리 관리, 결과 집계
 - **오케스트레이션**: 파이프라인 실행, 인텐트 감지
 
-### 가이드 (12개)
+### 가이드 (14개)
 
 종합 참조 문서:
 - 에이전트 생성 및 관리
@@ -228,32 +226,6 @@ bun run build        # 프로덕션 빌드
 
 - Node.js >= 18.0.0
 - Claude Code CLI
-
-### 동기화 검증
-
-oh-my-customcode 템플릿은 [baekgom-agents](https://github.com/baekenough/baekgom-agents)에서 동기화됩니다. 템플릿 동기화 상태를 확인하려면:
-
-```bash
-# 로컬 검증 (baekgom-agents 체크아웃 필요)
-./scripts/verify-sync.sh /path/to/baekgom-agents
-
-# 또는 환경 변수 사용
-BAEKGOM_AGENTS_PATH=/path/to/baekgom-agents ./scripts/verify-sync.sh
-```
-
-검증 대상 7개 디렉토리:
-- `.claude/agents/` (34개 에이전트)
-- `.claude/skills/` (42개 스킬)
-- `.claude/rules/` (18개 규칙)
-- `.claude/hooks/`
-- `.claude/contexts/`
-- `guides/`
-- `pipelines/`
-
-CI가 자동으로 동기화 검증을 실행합니다:
-- main에 push (템플릿 변경 시)
-- 주간 스케줄 (월요일 00:00 UTC)
-- 수동 워크플로우 디스패치
 
 ---
 

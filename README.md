@@ -16,7 +16,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 34 agents, 42 skills, 13 guides - synced with baekgom-agents templates |
+| **Batteries Included** | 34 agents, 41 skills, 14 guides - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -126,8 +126,6 @@ Run it: `/run-pipeline deploy-review`
 
 ## What's Included
 
-> **Templates synced from [baekgom-agents](https://github.com/baekenough/baekgom-agents)** - Battle-tested agent system with sub-agent orchestration support.
-
 ### Agents (34)
 
 | Category | Count | Agents |
@@ -145,7 +143,7 @@ Run it: `/run-pipeline deploy-review`
 | **Tutor** | 1 | tutor-go |
 | **Total** | **34** | |
 
-### Skills (42)
+### Skills (41)
 
 Includes slash commands and capabilities:
 
@@ -156,7 +154,7 @@ Includes slash commands and capabilities:
 - **Orchestration** (2): Pipeline execution, intent detection
 - **Slash Commands** (20+): /create-agent, /code-review, /audit-dependencies, /sync-check, /commit, /pr, and more
 
-### Guides (13)
+### Guides (14)
 
 Comprehensive reference documentation covering:
 - Agent creation and management
@@ -205,13 +203,13 @@ your-project/
     │   ├── be-fastapi-expert/
     │   ├── mgr-creator/
     │   └── ...
-    ├── skills/            # All skills (42 total, includes slash commands)
+    ├── skills/            # All skills (41 total, includes slash commands)
     │   ├── development/
     │   ├── backend/
     │   ├── infrastructure/
     │   ├── system/
     │   └── orchestration/
-    └── guides/            # Reference docs (13 total)
+    └── guides/            # Reference docs (14 total)
 ```
 
 ---
@@ -229,32 +227,6 @@ bun run build        # Build for production
 
 - Node.js >= 18.0.0
 - Claude Code CLI
-
-### Sync Verification
-
-oh-my-customcode templates are synced from [baekgom-agents](https://github.com/baekenough/baekgom-agents). To verify templates are in sync:
-
-```bash
-# Local verification (requires baekgom-agents checkout)
-./scripts/verify-sync.sh /path/to/baekgom-agents
-
-# Or using environment variable
-BAEKGOM_AGENTS_PATH=/path/to/baekgom-agents ./scripts/verify-sync.sh
-```
-
-The verification checks 7 content directories:
-- `.claude/agents/` (34 agents)
-- `.claude/skills/` (42 skills)
-- `.claude/rules/` (18 rules)
-- `.claude/hooks/`
-- `.claude/contexts/`
-- `guides/`
-- `pipelines/`
-
-CI automatically runs sync verification on:
-- Push to main (when templates change)
-- Weekly schedule (Monday 00:00 UTC)
-- Manual workflow dispatch
 
 ---
 

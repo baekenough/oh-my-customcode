@@ -4,7 +4,7 @@ oh-my-customcode includes **34 specialized agents** organized by category.
 
 | Category | Count | Agents |
 |----------|-------|--------|
-| **Managers** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron |
+| **Managers** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
 | **System** | 2 | sys-memory-keeper, sys-naggy |
 | **Languages** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | **Frontend** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
@@ -14,7 +14,6 @@ oh-my-customcode includes **34 specialized agents** organized by category.
 | **Architecture** | 2 | arch-documenter, arch-speckit-agent |
 | **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **Tutor** | 1 | tutor-go |
 
 ---
 

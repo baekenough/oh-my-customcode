@@ -263,6 +263,34 @@ CORRECT:
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
+## CRITICAL: All File Modifications Must Be Delegated
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  FILE EDITING = CODE WORK = MUST DELEGATE                        ║
+║                                                                   ║
+║  The orchestrator must NEVER use Edit/Write/Bash directly        ║
+║  to modify files. This applies to ALL file types:                ║
+║  - Source code (.ts, .py, .go, etc.)                             ║
+║  - Config files (manifest.json, tsconfig.json, etc.)             ║
+║  - Workflow files (.github/workflows/*.yml)                      ║
+║  - Documentation (CLAUDE.md, README.md, etc.)                   ║
+║  - Shell scripts (sync.sh, etc.)                                 ║
+║                                                                   ║
+║  WRONG (actual violation):                                       ║
+║    Orchestrator → Edit(CLAUDE.md.en) → Edit(CLAUDE.md.ko)        ║
+║    Orchestrator → Edit(sync-core.ts) → Bash(rm -rf pipelines/)   ║
+║    (Orchestrator edited 6+ files directly across 2 projects)     ║
+║                                                                   ║
+║  CORRECT:                                                        ║
+║    Orchestrator → Task(general-purpose) → edits config files     ║
+║    Orchestrator → Task(lang-typescript-expert) → edits .ts files ║
+║                                                                   ║
+║  Only READ operations (Read, Glob, Grep) may be used directly   ║
+║  by the orchestrator. All mutations go through subagents.        ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 ## CRITICAL: Use Specialized Agents for Documentation & Spec Writing
 
 ```
