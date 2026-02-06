@@ -6,7 +6,8 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { Glob } from 'bun';
+import fs from 'node:fs';
+import path from 'node:path';
 
 interface ImplementationStats {
   agent_count: number;
@@ -31,64 +32,52 @@ async function collectImplementationStats(): Promise<ImplementationStats> {
     context_count: 0,
   };
 
+  const templatesDir = 'templates';
+
   // Count agents
-  const agentGlob = new Glob('templates/.claude/agents/*.md');
-  const agentFiles: string[] = [];
-  for await (const file of agentGlob.scan('.')) {
-    agentFiles.push(file);
+  const agentsDir = path.join(templatesDir, '.claude/agents');
+  if (fs.existsSync(agentsDir)) {
+    const files = fs.readdirSync(agentsDir).filter((f) => f.endsWith('.md'));
+    stats.agent_count = files.length;
+    stats.agent_names = files.map((f) => f.replace('.md', ''));
   }
-  stats.agent_count = agentFiles.length;
-  stats.agent_names = agentFiles.map((f) =>
-    f.replace('templates/.claude/agents/', '').replace('.md', '')
-  );
 
   // Count skills (directories with SKILL.md)
-  const skillDirs: string[] = [];
-  const skillGlob = new Glob('templates/.claude/skills/*/SKILL.md');
-  for await (const file of skillGlob.scan('.')) {
-    const dirName = file.replace('templates/.claude/skills/', '').replace('/SKILL.md', '');
-    skillDirs.push(dirName);
+  const skillsDir = path.join(templatesDir, '.claude/skills');
+  if (fs.existsSync(skillsDir)) {
+    const dirs = fs
+      .readdirSync(skillsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .filter((d) => fs.existsSync(path.join(skillsDir, d.name, 'SKILL.md')));
+    stats.skill_count = dirs.length;
+    stats.skill_names = dirs.map((d) => d.name);
   }
-  stats.skill_count = skillDirs.length;
-  stats.skill_names = skillDirs;
 
   // Count rules
-  const ruleGlob = new Glob('templates/.claude/rules/*.md');
-  let ruleCount = 0;
-  for await (const _ of ruleGlob.scan('.')) {
-    ruleCount++;
+  const rulesDir = path.join(templatesDir, '.claude/rules');
+  if (fs.existsSync(rulesDir)) {
+    stats.rule_count = fs.readdirSync(rulesDir).filter((f) => f.endsWith('.md')).length;
   }
-  stats.rule_count = ruleCount;
 
-  // Count guides
-  const guideGlob = new Glob('templates/guides/*/');
-  const guideDirs = new Set<string>();
-  for await (const file of guideGlob.scan('.')) {
-    const dirName = file.replace('templates/guides/', '').split('/')[0];
-    if (dirName) {
-      guideDirs.add(dirName);
-    }
+  // Count guides (subdirectories)
+  const guidesDir = path.join(templatesDir, 'guides');
+  if (fs.existsSync(guidesDir)) {
+    stats.guide_count = fs
+      .readdirSync(guidesDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory()).length;
   }
-  stats.guide_count = guideDirs.size;
 
-  // Count hooks
-  const hookGlob = new Glob('templates/.claude/hooks/*/');
-  const hookDirs = new Set<string>();
-  for await (const file of hookGlob.scan('.')) {
-    const dirName = file.replace('templates/.claude/hooks/', '').split('/')[0];
-    if (dirName) {
-      hookDirs.add(dirName);
-    }
+  // Count hooks (files, not hidden)
+  const hooksDir = path.join(templatesDir, '.claude/hooks');
+  if (fs.existsSync(hooksDir)) {
+    stats.hook_count = fs.readdirSync(hooksDir).filter((f) => !f.startsWith('.')).length;
   }
-  stats.hook_count = hookDirs.size;
 
   // Count contexts
-  const contextGlob = new Glob('templates/.claude/contexts/*.md');
-  let contextCount = 0;
-  for await (const _ of contextGlob.scan('.')) {
-    contextCount++;
+  const contextsDir = path.join(templatesDir, '.claude/contexts');
+  if (fs.existsSync(contextsDir)) {
+    stats.context_count = fs.readdirSync(contextsDir).filter((f) => f.endsWith('.md')).length;
   }
-  stats.context_count = contextCount;
 
   return stats;
 }
