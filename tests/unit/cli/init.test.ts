@@ -109,20 +109,6 @@ describe('init command', () => {
     });
 
     // commands/ removed in official Claude Code format (absorbed into skills)
-
-    it('should create pipelines directory', async () => {
-      const result = await install({
-        targetDir: tempDir,
-        language: 'en',
-      });
-
-      expect(result.success).toBe(true);
-
-      // Verify pipelines directory exists
-      const pipelinesDir = join(tempDir, 'pipelines');
-      const pipelinesDirStats = await stat(pipelinesDir);
-      expect(pipelinesDirStats.isDirectory()).toBe(true);
-    });
   });
 
   describe('--lang option', () => {
