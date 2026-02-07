@@ -487,32 +487,6 @@ export async function checkHooks(targetDir: string): Promise<CheckResult> {
 }
 
 /**
- * Check if pipelines directory exists
- * @param targetDir - Target directory
- * @returns Check result
- */
-export async function checkPipelines(targetDir: string): Promise<CheckResult> {
-  const pipelinesDir = path.join(targetDir, 'pipelines');
-  const exists = await isDirectory(pipelinesDir);
-
-  if (!exists) {
-    return {
-      name: 'Pipelines',
-      status: 'fail',
-      message: 'pipelines/ directory not found',
-      fixable: true,
-    };
-  }
-
-  return {
-    name: 'Pipelines',
-    status: 'pass',
-    message: 'Pipelines OK',
-    fixable: false,
-  };
-}
-
-/**
  * Check if contexts directory exists
  * @param targetDir - Target directory
  * @returns Check result
@@ -597,7 +571,6 @@ async function fixSingleIssue(check: CheckResult, targetDir: string): Promise<bo
     Skills: () => createMissingDirectory(path.join(targetDir, '.claude', 'skills')),
     Guides: () => createMissingDirectory(path.join(targetDir, 'guides')),
     Hooks: () => createMissingDirectory(path.join(targetDir, '.claude', 'hooks')),
-    Pipelines: () => createMissingDirectory(path.join(targetDir, 'pipelines')),
     Contexts: () => createMissingDirectory(path.join(targetDir, '.claude', 'contexts')),
     Symlinks: async () => {
       if (!check.details || check.details.length === 0) return false;
@@ -687,7 +660,6 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
     checkIndexFiles(targetDir),
     checkGuides(targetDir),
     checkHooks(targetDir),
-    checkPipelines(targetDir),
     checkContexts(targetDir),
   ]);
 

@@ -490,6 +490,8 @@ Rule content here.
     it('should output empty array for empty list', async () => {
       // Create empty agents directory structure (official Claude Code format: .claude/agents/)
       const agentsDir = join(tempDir, '.claude', 'agents');
+      // Clear any files from initProject() to test empty listing
+      await rm(agentsDir, { recursive: true, force: true });
       await mkdir(agentsDir, { recursive: true });
       // No {prefix}-{name}.md files, so should be empty
 

@@ -56,7 +56,6 @@ describe('installer', () => {
       expect(await fileExists(join(tempDir, '.claude', 'agents'))).toBe(true);
       expect(await fileExists(join(tempDir, '.claude', 'skills'))).toBe(true);
       expect(await fileExists(join(tempDir, 'guides'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'pipelines'))).toBe(true);
       // commands/ removed in official Claude Code format (absorbed into skills)
     });
 
@@ -83,13 +82,6 @@ describe('installer', () => {
 
       // commands/ component removed (absorbed into skills)
       expect(await fileExists(join(tempDir, 'commands'))).toBe(false);
-    });
-
-    it('should create pipeline directories', async () => {
-      await createDirectoryStructure(tempDir);
-
-      expect(await fileExists(join(tempDir, 'pipelines', 'templates'))).toBe(true);
-      expect(await fileExists(join(tempDir, 'pipelines', 'examples'))).toBe(true);
     });
   });
 
@@ -252,16 +244,16 @@ describe('installer', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle install with all components (7 total, no commands)', async () => {
+    it('should handle install with all components (6 total, no commands or pipelines)', async () => {
       const result = await install({
         targetDir: tempDir,
-        components: ['rules', 'agents', 'skills', 'guides', 'pipelines', 'hooks', 'contexts'],
+        components: ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'],
         skipConfirm: true,
       });
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.installedComponents)).toBe(true);
-      // getAllComponents() should return 7 items (commands removed)
+      // getAllComponents() should return 6 items (commands and pipelines removed)
     });
 
     it('should skip claude-md component in components list', async () => {
@@ -280,7 +272,6 @@ describe('installer', () => {
       await mkdir(join(tempDir, '.claude', 'agents'), { recursive: true });
       await mkdir(join(tempDir, '.claude', 'skills'), { recursive: true });
       await mkdir(join(tempDir, 'guides'), { recursive: true });
-      await mkdir(join(tempDir, 'pipelines'), { recursive: true });
       await writeFile(join(tempDir, 'CLAUDE.md'), '# Existing');
 
       const result = await install({
