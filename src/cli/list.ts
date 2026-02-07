@@ -10,15 +10,7 @@ import { fileExists, listFiles, readTextFile } from '../utils/fs.js';
 /**
  * Types of components that can be listed
  */
-export type ListType =
-  | 'agents'
-  | 'skills'
-  | 'guides'
-  | 'rules'
-  | 'hooks'
-  | 'contexts'
-  | 'pipelines'
-  | 'all';
+export type ListType = 'agents' | 'skills' | 'guides' | 'rules' | 'hooks' | 'contexts' | 'all';
 
 /**
  * Options for the list command
@@ -493,7 +485,7 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
   // Print header
   console.log('');
   console.log(i18n.t('cli.list.header', { type, count: components.length }));
-  console.log('─'.repeat(80));
+  console.log('\u2500'.repeat(80));
 
   // Calculate column widths
   const nameWidth = Math.max(20, ...components.map((c) => c.name.length));
@@ -503,7 +495,9 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
   const nameHeader = 'Name'.padEnd(nameWidth);
   const typeHeader = (type === 'skills' ? 'Category' : 'Type').padEnd(typeWidth);
   console.log(`  ${nameHeader}  ${typeHeader}  Description`);
-  console.log(`  ${'─'.repeat(nameWidth)}  ${'─'.repeat(typeWidth)}  ${'─'.repeat(40)}`);
+  console.log(
+    `  ${'\u2500'.repeat(nameWidth)}  ${'\u2500'.repeat(typeWidth)}  ${'\u2500'.repeat(40)}`
+  );
 
   // Print each component
   for (const component of components) {
@@ -513,7 +507,7 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
     console.log(`  ${name}  ${typeOrCategory}  ${description}`);
   }
 
-  console.log('─'.repeat(80));
+  console.log('\u2500'.repeat(80));
   console.log(i18n.t('cli.list.total', { count: components.length, type }));
   console.log('');
 }
@@ -610,32 +604,6 @@ export async function getContexts(targetDir: string): Promise<ComponentInfo[]> {
   }
 }
 
-/**
- * Get list of installed pipelines
- * @param targetDir - Target directory to scan
- * @returns List of pipeline information
- */
-export async function getPipelines(targetDir: string): Promise<ComponentInfo[]> {
-  const pipelinesDir = join(targetDir, 'pipelines');
-
-  if (!(await fileExists(pipelinesDir))) return [];
-
-  try {
-    const pipelineFiles = await listFiles(pipelinesDir, { recursive: true, pattern: '*.yaml' });
-
-    return pipelineFiles
-      .map((pipePath) => ({
-        name: basename(pipePath, '.yaml'),
-        type: 'pipeline',
-        category: relative(join(targetDir, 'pipelines'), dirname(pipePath)) || 'root',
-        path: relative(targetDir, pipePath),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  } catch {
-    return [];
-  }
-}
-
 /** Mapping from component type to getter function */
 const COMPONENT_GETTERS: Record<
   Exclude<ListType, 'all'>,
@@ -647,7 +615,6 @@ const COMPONENT_GETTERS: Record<
   rules: getRules,
   hooks: getHooks,
   contexts: getContexts,
-  pipelines: getPipelines,
 };
 
 /**
@@ -667,14 +634,13 @@ function displayComponents(components: ComponentInfo[], type: ListType, format: 
  * Handle displaying all component types
  */
 async function handleListAll(targetDir: string, format: string): Promise<ComponentInfo[]> {
-  const [agents, skills, guides, rules, hooks, contexts, pipelines] = await Promise.all([
+  const [agents, skills, guides, rules, hooks, contexts] = await Promise.all([
     getAgents(targetDir),
     getSkills(targetDir),
     getGuides(targetDir),
     getRules(targetDir),
     getHooks(targetDir),
     getContexts(targetDir),
-    getPipelines(targetDir),
   ]);
 
   if (format !== 'json') {
@@ -684,10 +650,9 @@ async function handleListAll(targetDir: string, format: string): Promise<Compone
     displayComponents(rules, 'rules', format);
     displayComponents(hooks, 'hooks', format);
     displayComponents(contexts, 'contexts', format);
-    displayComponents(pipelines, 'pipelines', format);
   }
 
-  return [...agents, ...skills, ...guides, ...rules, ...hooks, ...contexts, ...pipelines];
+  return [...agents, ...skills, ...guides, ...rules, ...hooks, ...contexts];
 }
 
 /**

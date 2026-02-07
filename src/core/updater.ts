@@ -35,14 +35,7 @@ export interface UpdateOptions {
 /**
  * Components that can be updated
  */
-export type UpdateComponent =
-  | 'rules'
-  | 'agents'
-  | 'skills'
-  | 'guides'
-  | 'pipelines'
-  | 'hooks'
-  | 'contexts';
+export type UpdateComponent = 'rules' | 'agents' | 'skills' | 'guides' | 'hooks' | 'contexts';
 
 /**
  * Result of update operation
@@ -341,7 +334,7 @@ export async function preserveCustomizations(
  * Get all update components
  */
 function getAllUpdateComponents(): UpdateComponent[] {
-  return ['rules', 'agents', 'skills', 'guides', 'pipelines', 'hooks', 'contexts'];
+  return ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'];
 }
 
 /**
@@ -423,7 +416,6 @@ function getComponentPath(component: UpdateComponent): string {
     agents: '.claude/agents',
     skills: '.claude/skills',
     guides: 'guides',
-    pipelines: 'pipelines',
     hooks: '.claude/hooks',
     contexts: '.claude/contexts',
   };
@@ -441,7 +433,7 @@ async function backupInstallation(targetDir: string): Promise<string> {
   await ensureDirectory(backupDir);
 
   // Backup key directories
-  const dirsToBackup = ['.claude', 'guides', 'pipelines'];
+  const dirsToBackup = ['.claude', 'guides'];
   for (const dir of dirsToBackup) {
     const srcPath = join(targetDir, dir);
     if (await fileExists(srcPath)) {
