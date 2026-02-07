@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-02-07
+
+### Added
+- Recreated `verify-sync.sh` for read-only template drift detection (replaces deleted version)
+
+### Fixed
+- Fix init empty directories bug: `createDirectoryStructure()` pre-created empty dirs causing `installComponent()` to skip file copying for agents, skills, guides, rules, hooks, contexts
+- Fix `CLAUDE_SUBDIR_COMPONENTS` missing agents and skills entries in init.ts
+- Fix Issue Analyzer workflow missing @anthropic-ai/sdk (Closes #35)
+- Fix Release Notes Generator workflow missing @anthropic-ai/sdk (Closes #34)
+- Fix sync-check CI workflow referencing deleted verify-sync.sh
+
+### Removed
+- Remove deprecated `pipelines` and `examples` directories and all references
+- Remove `--production` flag from workflow bun install steps
+
 ## [0.4.0] - 2026-02-06
 
 ### Added
@@ -206,7 +222,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.3.0...v0.3.1
