@@ -43,7 +43,6 @@ export type InstallComponent =
   | 'agents'
   | 'skills'
   | 'guides'
-  | 'pipelines'
   | 'hooks'
   | 'contexts';
 
@@ -101,9 +100,6 @@ const DIRECTORY_STRUCTURE = [
   '.claude/agents',
   '.claude/skills',
   'guides',
-  'pipelines',
-  'pipelines/templates',
-  'pipelines/examples',
 ] as const;
 
 /**
@@ -116,7 +112,6 @@ const COMPONENT_PATHS: Record<InstallComponent, string> = {
   agents: '.claude/agents',
   skills: '.claude/skills',
   guides: 'guides',
-  pipelines: 'pipelines',
   hooks: '.claude/hooks',
   contexts: '.claude/contexts',
 };
@@ -285,9 +280,6 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     await checkAndWarnExisting(options.targetDir, !!options.force, !!options.backup, result);
     await verifyTemplateDirectory();
 
-    await createDirectoryStructure(options.targetDir);
-    debug('install.directories_created');
-
     await installAllComponents(options.targetDir, options, result);
     await installClaudeMdWithTracking(options.targetDir, options, result);
     await updateInstallConfig(options.targetDir, options, result.installedComponents);
@@ -361,7 +353,7 @@ export async function getTemplateManifest(): Promise<TemplateManifest> {
  * Updated: commands removed (absorbed into skills)
  */
 function getAllComponents(): InstallComponent[] {
-  return ['rules', 'agents', 'skills', 'guides', 'pipelines', 'hooks', 'contexts'];
+  return ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'];
 }
 
 /**
@@ -449,7 +441,7 @@ async function backupExisting(sourcePath: string, backupDir: string): Promise<st
  * Updated: paths now under .claude/ for official format
  */
 async function checkExistingPaths(targetDir: string): Promise<string[]> {
-  const pathsToCheck = ['CLAUDE.md', '.claude', 'guides', 'pipelines'];
+  const pathsToCheck = ['CLAUDE.md', '.claude', 'guides'];
 
   const existingPaths: string[] = [];
 

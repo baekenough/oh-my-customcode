@@ -39,7 +39,7 @@ export async function checkExistingInstallation(targetDir: string): Promise<bool
 }
 
 /** Components that live under .claude directory */
-const CLAUDE_SUBDIR_COMPONENTS = new Set(['rules', 'hooks', 'contexts']);
+const CLAUDE_SUBDIR_COMPONENTS = new Set(['rules', 'hooks', 'contexts', 'agents', 'skills']);
 
 /**
  * Convert component name to its full path
