@@ -20,14 +20,27 @@ async function getCommitsSinceTag(tag?: string): Promise<string> {
     const result = await $`git log ${tag}..HEAD --pretty=format:%h %s`.text();
     commits = result;
   } else {
-    // Try to get last tag
+    // Find the previous tag (skip the tag at HEAD if any)
     try {
-      const lastTagResult = await $`git describe --tags --abbrev=0`.text();
-      const lastTag = lastTagResult.trim();
-      const result = await $`git log ${lastTag}..HEAD --pretty=format:%h %s`.text();
-      commits = result;
+      const tagsResult = await $`git tag --sort=-version:refname`.text();
+      const tags = tagsResult.trim().split('\n').filter(t => t);
+
+      if (tags.length >= 2) {
+        // Use second tag (previous version) when HEAD is at a tag
+        const prevTag = tags[1];
+        const result = await $`git log ${prevTag}..HEAD --pretty=format:%h %s`.text();
+        commits = result;
+      } else if (tags.length === 1) {
+        // Only one tag exists, get all commits
+        const result = await $`git log --pretty=format:%h %s`.text();
+        commits = result;
+      } else {
+        // No tags at all
+        const result = await $`git log -50 --pretty=format:%h %s`.text();
+        commits = result;
+      }
     } catch {
-      // No tags, get last 50 commits
+      // Fallback: get last 50 commits
       const result = await $`git log -50 --pretty=format:%h %s`.text();
       commits = result;
     }
@@ -46,14 +59,20 @@ async function getChangedFiles(tag?: string): Promise<string> {
     const result = await $`git diff --name-status ${tag}..HEAD`.text();
     changedFiles = result;
   } else {
-    // Try to get last tag
+    // Find the previous tag (skip the tag at HEAD if any)
     try {
-      const lastTagResult = await $`git describe --tags --abbrev=0`.text();
-      const lastTag = lastTagResult.trim();
-      const result = await $`git diff --name-status ${lastTag}..HEAD`.text();
-      changedFiles = result;
+      const tagsResult = await $`git tag --sort=-version:refname`.text();
+      const tags = tagsResult.trim().split('\n').filter(t => t);
+
+      if (tags.length >= 2) {
+        const prevTag = tags[1];
+        const result = await $`git diff --name-status ${prevTag}..HEAD`.text();
+        changedFiles = result;
+      } else {
+        const result = await $`git diff --name-status HEAD~50..HEAD`.text();
+        changedFiles = result;
+      }
     } catch {
-      // No tags, get last 50 commits
       const result = await $`git diff --name-status HEAD~50..HEAD`.text();
       changedFiles = result;
     }
