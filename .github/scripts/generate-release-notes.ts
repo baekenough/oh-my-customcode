@@ -16,10 +16,17 @@ async function getCommitsSinceTag(tag?: string): Promise<string> {
   let commits: string;
 
   if (tag) {
-    // Get commits since specified tag
-    const result = await $`git log ${tag}..HEAD --pretty=format:%h %s`.text();
-    commits = result;
-  } else {
+    try {
+      // Get commits since specified tag
+      const result = await $`git log ${tag}..HEAD --pretty=format:%h %s`.text();
+      commits = result;
+    } catch {
+      // Tag not found or not fetchable, fall through to auto-detection
+      commits = "";
+    }
+  }
+
+  if (!tag || !commits) {
     // Find the previous tag (skip the tag at HEAD if any)
     try {
       const tagsResult = await $`git tag --sort=-version:refname`.text();
@@ -56,9 +63,16 @@ async function getChangedFiles(tag?: string): Promise<string> {
   let changedFiles: string;
 
   if (tag) {
-    const result = await $`git diff --name-status ${tag}..HEAD`.text();
-    changedFiles = result;
-  } else {
+    try {
+      const result = await $`git diff --name-status ${tag}..HEAD`.text();
+      changedFiles = result;
+    } catch {
+      // Tag not found or not fetchable, fall through to auto-detection
+      changedFiles = "";
+    }
+  }
+
+  if (!tag || !changedFiles) {
     // Find the previous tag (skip the tag at HEAD if any)
     try {
       const tagsResult = await $`git tag --sort=-version:refname`.text();
