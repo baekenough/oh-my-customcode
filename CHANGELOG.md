@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-02-08
+
+### Added
+- R018 (SHOULD-agent-teams.md): Agent Teams rule for active usage when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled
+- Agent Teams section in CLAUDE.md.en and CLAUDE.md.ko templates
+- Decision matrix for Task Tool vs Agent Teams selection
+
+### Changed
+- R010: Replace experimental Agent Teams disclaimer with active integration guidance
+- index.yaml: Add missing R016, R017 entries and new R018
+- index.yaml: Fix R007, R008, R009 priority mismatches (SHOULD/MAY → MUST)
+- Rule counts updated from 17 to 18 across all documentation
+- manifest.json: Updated rule file count (18 → 19) and timestamp
+
 ## [0.5.0] - 2026-02-07
 
 ### Added
