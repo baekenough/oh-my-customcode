@@ -252,7 +252,7 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
       ).toBe(true);
     });
 
-    it('should detect broken symlinks', async () => {
+    it('should detect broken symlinks', { timeout: 15000 }, async () => {
       await initProject();
 
       // Create a broken symlink in skills (agents are now flat .md files in .claude/agents)

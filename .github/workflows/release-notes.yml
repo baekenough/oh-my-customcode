@@ -44,11 +44,22 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Find previous tag
+        id: prev_tag
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+            PREV=$(git tag --sort=-version:refname | grep -v "^${CURRENT_TAG}$" | head -1)
+            echo "tag=$PREV" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Generate release notes
         env:
           ANTHROPIC_API_KEY: ${{ secrets.OH_MY_CUSTOMCODE }}
           RELEASE_VERSION: ${{ steps.version.outputs.version }}
-          PREVIOUS_TAG: ${{ inputs.previous_tag }}
+          PREVIOUS_TAG: ${{ steps.prev_tag.outputs.tag }}
         run: |
           bun run .github/scripts/generate-release-notes.ts "${{ steps.version.outputs.version }}" > release_notes.md
           cat release_notes.md
