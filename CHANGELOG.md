@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-02-08
+
+### Fixed
+- Release Notes Generator: auto-detect previous tag on tag push events
+- Release Notes Generator script: robust fallback using sorted tag list
+- E2E symlink test timeout increased to 15s for CI environments
+
 ## [0.6.0] - 2026-02-08
 
 ### Added
