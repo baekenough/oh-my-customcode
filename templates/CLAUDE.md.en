@@ -129,6 +129,7 @@ Flow:
 | R012 | HUD Statusline | Real-time status display |
 | R013 | Ecomode | Token efficiency for batch ops |
 | R015 | Intent Transparency | **MUST** - Transparent agent routing |
+| R018 | Agent Teams | Active use of Agent Teams when enabled |
 
 ### MAY (Optional)
 | ID | Rule | Description |
@@ -169,7 +170,7 @@ project/
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (34 files)
 |   +-- skills/                  # Skills (41 directories)
-|   +-- rules/                   # Global rules (R000-R017)
+|   +-- rules/                   # Global rules (R000-R018)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- guides/                      # Reference docs (13 topics)
@@ -199,6 +200,21 @@ The main conversation acts as the sole orchestrator. Subagents cannot spawn othe
 | Manager | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
 | **Total** | **34** | |
+
+## Agent Teams
+
+When Claude Code's Agent Teams feature is enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), actively use it for qualifying tasks.
+
+| Feature | Subagents (Default) | Agent Teams |
+|---------|---------------------|-------------|
+| Communication | Results to caller only | Peer-to-peer mailbox |
+| Coordination | Orchestrator manages | Shared task list |
+| Best for | Focused tasks | Research, review, debugging |
+| Token cost | Lower | Higher |
+
+**When enabled, actively use Agent Teams for complex collaborative tasks.**
+See R018 (SHOULD-agent-teams.md) for the decision matrix.
+Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ## Quick Reference
 

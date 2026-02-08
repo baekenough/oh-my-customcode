@@ -6,7 +6,7 @@ After `omcustom init`:
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
 └── .claude/
-    ├── rules/             # Behavior rules (17 total)
+    ├── rules/             # Behavior rules (18 total)
     ├── hooks/             # Event hooks
     ├── contexts/          # Context files
     ├── agents/            # All agents (flat structure, 34 total)

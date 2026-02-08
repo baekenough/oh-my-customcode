@@ -24,49 +24,26 @@ rules:
     priority: MUST
     scope: all
 
-  # SHOULD - Strongly recommended
-  - id: R003
-    name: interaction
-    title: Interaction Rules
-    path: ./SHOULD-interaction.md
-    priority: SHOULD
-    scope: all
-
-  - id: R004
-    name: error-handling
-    title: Error Handling Rules
-    path: ./SHOULD-error-handling.md
-    priority: SHOULD
-    scope: all
-
   - id: R007
     name: agent-identification
     title: Agent Identification Rules
-    path: ./SHOULD-agent-identification.md
-    priority: SHOULD
+    path: ./MUST-agent-identification.md
+    priority: MUST
     scope: all
 
   - id: R008
     name: tool-identification
     title: Tool Usage Identification Rules
-    path: ./SHOULD-tool-identification.md
-    priority: SHOULD
-    scope: all
-
-  # MAY - Optional
-  - id: R005
-    name: optimization
-    title: Optimization Guide
-    path: ./MAY-optimization.md
-    priority: MAY
+    path: ./MUST-tool-identification.md
+    priority: MUST
     scope: all
 
   - id: R009
     name: parallel-execution
     title: Parallel Execution Rules
-    path: ./MAY-parallel-execution.md
-    priority: MAY
-    scope: agents
+    path: ./MUST-parallel-execution.md
+    priority: MUST
+    scope: all
 
   # Agent Design - MUST
   - id: R006
@@ -83,6 +60,45 @@ rules:
     path: ./MUST-orchestrator-coordination.md
     priority: MUST
     scope: agents
+
+  # Intent Transparency - MUST
+  - id: R015
+    name: intent-transparency
+    title: Intent Transparency Rules
+    path: ./MUST-intent-transparency.md
+    priority: MUST
+    scope: orchestrator
+
+  # Continuous Improvement - MUST
+  - id: R016
+    name: continuous-improvement
+    title: Continuous Improvement Rules
+    path: ./MUST-continuous-improvement.md
+    priority: MUST
+    scope: all
+
+  # Sync Verification - MUST
+  - id: R017
+    name: sync-verification
+    title: Sync Verification Rules
+    path: ./MUST-sync-verification.md
+    priority: MUST
+    scope: all
+
+  # SHOULD - Strongly recommended
+  - id: R003
+    name: interaction
+    title: Interaction Rules
+    path: ./SHOULD-interaction.md
+    priority: SHOULD
+    scope: all
+
+  - id: R004
+    name: error-handling
+    title: Error Handling Rules
+    path: ./SHOULD-error-handling.md
+    priority: SHOULD
+    scope: all
 
   # Memory Integration - SHOULD
   - id: R011
@@ -108,10 +124,18 @@ rules:
     priority: SHOULD
     scope: all
 
-  # Intent Transparency - MUST
-  - id: R015
-    name: intent-transparency
-    title: Intent Transparency Rules
-    path: ./MUST-intent-transparency.md
-    priority: MUST
+  # Agent Teams - SHOULD
+  - id: R018
+    name: agent-teams
+    title: Agent Teams Rules
+    path: ./SHOULD-agent-teams.md
+    priority: SHOULD
     scope: orchestrator
+
+  # MAY - Optional
+  - id: R005
+    name: optimization
+    title: Optimization Guide
+    path: ./MAY-optimization.md
+    priority: MAY
+    scope: all
