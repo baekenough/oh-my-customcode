@@ -426,36 +426,33 @@ CORRECT:
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-## Experimental: Agent Teams (Research Preview)
+## Agent Teams Integration
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  AGENT TEAMS (EXPERIMENTAL - NOT FOR PRODUCTION USE)             ║
+║  AGENT TEAMS (ACTIVE WHEN ENABLED)                               ║
 ║                                                                   ║
-║  Claude Code provides native Agent Teams feature:                ║
-║    CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1                        ║
+║  When CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 is set:             ║
+║    → Actively use Agent Teams for qualifying tasks               ║
+║    → See R018 (SHOULD-agent-teams.md) for decision matrix        ║
 ║                                                                   ║
 ║  Agent Teams enable:                                              ║
 ║  - Peer-to-peer messaging between agents                        ║
 ║  - Shared task lists                                              ║
 ║  - Complex collaborative workflows                               ║
 ║                                                                   ║
-║  CURRENT STATUS:                                                  ║
-║  - Research preview (NOT production ready)                       ║
-║  - Higher cost than Task tool approach                           ║
-║  - This system uses Task tool + routing skills (STABLE)       ║
+║  WHEN Agent Teams IS ENABLED:                                    ║
+║  - Use for research, review, debugging tasks (3+ agents)        ║
+║  - Use for tasks requiring inter-agent communication             ║
+║  - Use for shared state management                               ║
 ║                                                                   ║
-║  WHEN TO CONSIDER Agent Teams:                                    ║
-║  - Complex multi-agent collaboration needed                      ║
-║  - Agents need to communicate with each other                    ║
-║  - Shared state management required                              ║
-║                                                                   ║
-║  WHEN TO KEEP Task tool (DEFAULT):                               ║
+║  WHEN Agent Teams IS NOT ENABLED (or for simple tasks):          ║
+║  - Use Task tool + routing skills (stable default)               ║
 ║  - Focused, independent sub-tasks                                ║
 ║  - Cost-sensitive operations                                     ║
-║  - Predictable execution flow                                    ║
 ║                                                                   ║
-║  See: GitHub Issue #5 for migration tracking                     ║
+║  Both approaches coexist. Agent Teams adds coordination          ║
+║  richness, not replacement of Task tool.                         ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 

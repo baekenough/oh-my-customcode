@@ -129,6 +129,7 @@ oh-my-customcode로 구동됩니다.
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
 | R015 | 의도 투명성 | **필수** - 투명한 에이전트 라우팅 |
+| R018 | Agent Teams | 활성화 시 Agent Teams 적극 사용 |
 
 ### MAY (선택)
 | ID | 규칙 | 설명 |
@@ -169,7 +170,7 @@ project/
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (34 파일)
 |   +-- skills/                  # 스킬 (41 디렉토리)
-|   +-- rules/                   # 전역 규칙 (R000-R017)
+|   +-- rules/                   # 전역 규칙 (R000-R018)
 |   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- guides/                      # 레퍼런스 문서 (13 토픽)
@@ -199,6 +200,21 @@ project/
 | Manager | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
 | **총계** | **34** | |
+
+## Agent Teams
+
+Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), 적격한 작업에 적극적으로 사용합니다.
+
+| 기능 | 서브에이전트 (기본) | Agent Teams |
+|------|---------------------|-------------|
+| 통신 | 호출자에게 결과만 반환 | 피어 투 피어 메시지 |
+| 조율 | 오케스트레이터가 관리 | 공유 작업 목록 |
+| 적합한 작업 | 집중된 작업 | 리서치, 리뷰, 디버깅 |
+| 토큰 비용 | 낮음 | 높음 |
+
+**활성화 시, 복잡한 협업 작업에 Agent Teams를 적극 사용합니다.**
+결정 매트릭스는 R018 (SHOULD-agent-teams.md)을 참조하세요.
+단순/비용 민감 작업에는 Task tool + 라우팅 스킬이 폴백으로 유지됩니다.
 
 ## 빠른 참조
 
