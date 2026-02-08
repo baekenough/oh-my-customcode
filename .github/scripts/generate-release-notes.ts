@@ -9,6 +9,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { $ } from "bun";
 
+const GIT_LOG_FORMAT = "--pretty=format:%h %s";
+
 async function getCommitsSinceTag(tag?: string): Promise<string> {
   /**
    * Get commit messages since the last tag or specified tag.
@@ -16,10 +18,17 @@ async function getCommitsSinceTag(tag?: string): Promise<string> {
   let commits: string;
 
   if (tag) {
-    // Get commits since specified tag
-    const result = await $`git log ${tag}..HEAD --pretty=format:%h %s`.text();
-    commits = result;
-  } else {
+    try {
+      // Get commits since specified tag
+      const result = await $`git log ${{ raw: `${tag}..HEAD` }} ${GIT_LOG_FORMAT}`.text();
+      commits = result;
+    } catch {
+      // Tag not found or not fetchable, fall through to auto-detection
+      commits = "";
+    }
+  }
+
+  if (!tag || !commits) {
     // Find the previous tag (skip the tag at HEAD if any)
     try {
       const tagsResult = await $`git tag --sort=-version:refname`.text();
@@ -28,20 +37,20 @@ async function getCommitsSinceTag(tag?: string): Promise<string> {
       if (tags.length >= 2) {
         // Use second tag (previous version) when HEAD is at a tag
         const prevTag = tags[1];
-        const result = await $`git log ${prevTag}..HEAD --pretty=format:%h %s`.text();
+        const result = await $`git log ${{ raw: `${prevTag}..HEAD` }} ${GIT_LOG_FORMAT}`.text();
         commits = result;
       } else if (tags.length === 1) {
         // Only one tag exists, get all commits
-        const result = await $`git log --pretty=format:%h %s`.text();
+        const result = await $`git log ${GIT_LOG_FORMAT}`.text();
         commits = result;
       } else {
         // No tags at all
-        const result = await $`git log -50 --pretty=format:%h %s`.text();
+        const result = await $`git log -50 ${GIT_LOG_FORMAT}`.text();
         commits = result;
       }
     } catch {
       // Fallback: get last 50 commits
-      const result = await $`git log -50 --pretty=format:%h %s`.text();
+      const result = await $`git log -50 ${GIT_LOG_FORMAT}`.text();
       commits = result;
     }
   }
@@ -56,9 +65,16 @@ async function getChangedFiles(tag?: string): Promise<string> {
   let changedFiles: string;
 
   if (tag) {
-    const result = await $`git diff --name-status ${tag}..HEAD`.text();
-    changedFiles = result;
-  } else {
+    try {
+      const result = await $`git diff --name-status ${{ raw: `${tag}..HEAD` }}`.text();
+      changedFiles = result;
+    } catch {
+      // Tag not found or not fetchable, fall through to auto-detection
+      changedFiles = "";
+    }
+  }
+
+  if (!tag || !changedFiles) {
     // Find the previous tag (skip the tag at HEAD if any)
     try {
       const tagsResult = await $`git tag --sort=-version:refname`.text();
@@ -66,7 +82,7 @@ async function getChangedFiles(tag?: string): Promise<string> {
 
       if (tags.length >= 2) {
         const prevTag = tags[1];
-        const result = await $`git diff --name-status ${prevTag}..HEAD`.text();
+        const result = await $`git diff --name-status ${{ raw: `${prevTag}..HEAD` }}`.text();
         changedFiles = result;
       } else {
         const result = await $`git diff --name-status HEAD~50..HEAD`.text();
