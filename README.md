@@ -138,7 +138,7 @@ Comprehensive reference documentation covering:
 - Best practices and patterns
 - Sub-agent orchestration
 
-### Rules (17)
+### Rules (18)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
@@ -170,7 +170,7 @@ After `omcustom init`:
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
 └── .claude/
-    ├── rules/             # Behavior rules (17 total)
+    ├── rules/             # Behavior rules (18 total)
     ├── hooks/             # Event hooks
     ├── contexts/          # Context files
     ├── agents/            # All agents (flat structure, 34 total)
