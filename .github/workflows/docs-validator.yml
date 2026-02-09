@@ -39,7 +39,7 @@ jobs:
         run: bun run .github/scripts/validate-docs.ts > validation_result.md
 
       - name: Upload validation result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docs-validation-report
           path: validation_result.md
