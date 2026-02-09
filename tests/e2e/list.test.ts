@@ -242,7 +242,10 @@ Rule content here.
 
       expect(result.exitCode).toBe(0);
       const output = result.stdout + result.stderr;
-      expect(output.toLowerCase()).toContain('scan');
+      // Should show scanning message (Korean: "검색 중" or English: "scan")
+      expect(
+        output.includes('검색') || output.includes('스캔') || output.toLowerCase().includes('scan')
+      ).toBe(true);
     });
 
     it('should list all component types with default command', async () => {

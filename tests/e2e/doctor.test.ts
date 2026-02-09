@@ -123,9 +123,12 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
       expect(result.exitCode).toBe(0);
       const output = result.stdout + result.stderr;
 
-      // Should show checking message
+      // Should show checking message (Korean: "진단 검사 실행 중" or English: "check"/"diagnos")
       expect(
-        output.toLowerCase().includes('check') || output.toLowerCase().includes('diagnos')
+        output.includes('진단') ||
+          output.includes('검사') ||
+          output.toLowerCase().includes('check') ||
+          output.toLowerCase().includes('diagnos')
       ).toBe(true);
     });
 
@@ -293,10 +296,14 @@ invalid yaml content:
       const result = await runCli('doctor');
 
       const output = result.stdout;
-      // Should detect invalid agent files
-      expect(output.toLowerCase()).toContain('agent');
+      // Should detect invalid agent files (contains agent reference in Korean or English)
+      expect(output.toLowerCase().includes('agent') || output.includes('에이전트')).toBe(true);
       expect(
-        output.includes('[FAIL]') || output.includes('fail') || output.includes('invalid')
+        output.includes('[FAIL]') ||
+          output.includes('fail') ||
+          output.includes('invalid') ||
+          output.includes('실패') ||
+          output.includes('잘못')
       ).toBe(true);
     });
 
