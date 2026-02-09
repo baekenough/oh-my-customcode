@@ -1,0 +1,60 @@
+name: Claude Native Check
+
+on:
+  schedule:
+    # Run weekly: every Sunday at 19:00 UTC (Monday 04:00 KST)
+    - cron: '0 19 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (no issue creation)'
+        type: boolean
+        default: false
+      force:
+        description: 'Force verification even if docs unchanged'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  verify:
+    name: Verify Claude Native Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --production
+
+      - name: Run Claude Native Verification
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.DOCS_VALIDATOR }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PROJECT_ROOT: ${{ github.workspace }}/templates
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          bun run .github/scripts/verify-claude-native.ts $ARGS
+
+      - name: Create summary
+        if: always()
+        run: |
+          echo "## 🔍 Claude Native Verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Weekly compliance check against official Claude Code documentation." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Project Root**: \`templates/\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "**Mode**: Dry Run (no issue creation)" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -45,7 +45,7 @@ const HASH_FILE = path.join(PROJECT_ROOT, '.claude/claude-native-hash.txt');
 const LOCAL_DOCS_DIR = path.join(process.env.HOME || '~', '.claude/references/claude-code');
 const LOCAL_DOCS_MAX_AGE_DAYS = 7;
 
-const BAEKGOM_UNIQUE_RULES = ['R007', 'R008', 'R009', 'R010', 'R017', 'R000'];
+const BAEKGOM_UNIQUE_RULES = ['R000', 'R007', 'R008', 'R009', 'R010', 'R016', 'R017', 'R018'];
 
 // ============================================================================
 // TypeScript Interfaces
@@ -118,7 +118,9 @@ interface UniqueFeaturesStatus {
   orchestrator: 'preserved' | 'at_risk' | 'missing' | 'unknown';
   agent_id: 'preserved' | 'at_risk' | 'missing' | 'unknown';
   tool_id: 'preserved' | 'at_risk' | 'missing' | 'unknown';
+  continuous_improvement: 'preserved' | 'at_risk' | 'missing' | 'unknown';
   sync_verify: 'preserved' | 'at_risk' | 'missing' | 'unknown';
+  agent_teams: 'preserved' | 'at_risk' | 'missing' | 'unknown';
 }
 
 interface Analysis {
@@ -507,7 +509,9 @@ ${JSON.stringify(projectStructure.rules.filter((r) => r.is_unique), null, 2)}
         "orchestrator": "preserved|at_risk|missing",
         "agent_id": "preserved|at_risk|missing",
         "tool_id": "preserved|at_risk|missing",
-        "sync_verify": "preserved|at_risk|missing"
+        "continuous_improvement": "preserved|at_risk|missing",
+        "sync_verify": "preserved|at_risk|missing",
+        "agent_teams": "preserved|at_risk|missing"
     },
     "summary": "Brief overall assessment"
 }
@@ -548,7 +552,9 @@ Respond with ONLY valid JSON, no markdown formatting.`;
         orchestrator: 'unknown',
         agent_id: 'unknown',
         tool_id: 'unknown',
+        continuous_improvement: 'unknown',
         sync_verify: 'unknown',
+        agent_teams: 'unknown',
       },
       summary: `Analysis failed: ${error}`,
       raw_response: responseText,
@@ -659,7 +665,9 @@ async function createGithubIssue(analysis: Analysis, dryRun: boolean = false): P
     orchestrator: 'R010: Orchestrator Coordination',
     agent_id: 'R007: Agent Identification',
     tool_id: 'R008: Tool Identification',
+    continuous_improvement: 'R016: Continuous Improvement',
     sync_verify: 'R017: Sync Verification',
+    agent_teams: 'R018: Agent Teams',
   };
 
   const statusEmoji: Record<string, string> = {
