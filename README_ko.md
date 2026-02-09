@@ -87,7 +87,7 @@ secretary (라우팅 스킬)
 dev-lead (라우팅 스킬)
   ├── lang-golang:sonnet   — Go 구현
   ├── lang-python:sonnet   — Python 구현
-  └── qa-qa-engineer:sonnet— 테스트 생성
+  └── qa-engineer:sonnet   — 테스트 생성
 ```
 
 ### 내장 슬래시 커맨드
