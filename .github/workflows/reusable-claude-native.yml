@@ -15,7 +15,7 @@ on:
         description: 'Force analysis even if docs hash unchanged'
     secrets:
       ANTHROPIC_API_KEY:
-        required: true
+        required: false
   push:
     paths:
       - '.github/workflows/reusable-claude-native.yml'
@@ -41,7 +41,29 @@ jobs:
         with:
           path: project
 
+      - name: Guardrail: check Claude layout
+        id: guard
+        run: |
+          if [ ! -d "${{ github.workspace }}/project/.claude" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "## Claude Native Verification Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Reason: .claude directory not found in project root." >> $GITHUB_STEP_SUMMARY
+            echo "This workflow only applies to Claude-native layouts." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate ANTHROPIC_API_KEY
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          if [ -z "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            echo "::error::ANTHROPIC_API_KEY is required for Claude Native Verification"
+            exit 1
+          fi
+
       - name: Checkout oh-my-customcode (scripts only)
+        if: steps.guard.outputs.skip != 'true'
         uses: actions/checkout@v4
         with:
           repository: baekenough/oh-my-customcode
@@ -54,13 +76,16 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Set up Bun
+        if: steps.guard.outputs.skip != 'true'
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
+        if: steps.guard.outputs.skip != 'true'
         working-directory: scripts
         run: bun install --production
 
       - name: Run Claude Native Verification
+        if: steps.guard.outputs.skip != 'true'
         working-directory: scripts
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -78,7 +103,7 @@ jobs:
           bun run .github/scripts/verify-claude-native.ts $ARGS
 
       - name: Commit hash update (if changed)
-        if: ${{ !inputs.dry_run }}
+        if: ${{ !inputs.dry_run && steps.guard.outputs.skip != 'true' }}
         working-directory: ${{ github.workspace }}/project
         run: |
           if git diff --quiet .claude/claude-native-hash.txt 2>/dev/null; then
@@ -92,7 +117,7 @@ jobs:
           fi
 
       - name: Summary
-        if: always()
+        if: steps.guard.outputs.skip != 'true'
         run: |
           echo "## Claude Native Verification Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

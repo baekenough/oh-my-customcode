@@ -35,8 +35,9 @@
     "init": {
       "description": "Initialize oh-my-customcode in the current directory",
       "langOption": "Language for templates (en or ko)",
+      "providerOption": "Provider to initialize (auto, claude, codex)",
       "start": "Initializing oh-my-customcode...",
-      "exists": "Existing .claude/ directory found.",
+      "exists": "Existing {{rootDir}} directory found.",
       "backing_up": "Creating backup...",
       "backedUp": "Backed up existing installation to: {{path}}",
       "copying": "Copying templates...",
@@ -78,6 +79,7 @@
     "list": {
       "description": "List installed components",
       "typeArgument": "Type to list: agents, skills, guides, rules, or all",
+      "providerOption": "Provider to list (auto, claude, codex)",
       "scanning": "Scanning installed components...",
       "empty": "No {{type}} found.",
       "header": "{{type}} ({{count}} installed)",
@@ -102,6 +104,7 @@
     "doctor": {
       "description": "Check and fix configuration issues",
       "fixOption": "Automatically fix issues that can be fixed",
+      "providerOption": "Provider to diagnose (auto, claude, codex)",
       "checking": "Running diagnostic checks...",
       "applyingFixes": "Applying fixes...",
       "fixing": "Fixing: {{name}}...",
@@ -141,6 +144,10 @@
         "claudeMd": {
           "pass": "CLAUDE.md exists",
           "fail": "CLAUDE.md not found"
+        },
+        "entryMd": {
+          "pass": "{{entry}} exists",
+          "fail": "{{entry}} not found"
         },
         "rules": {
           "pass": "Rules directory is valid",

@@ -4,6 +4,8 @@
  */
 
 import { basename, dirname, join, relative } from 'node:path';
+import { getProviderLayout, type ProviderPreference } from '../core/layout.js';
+import { detectProvider } from '../core/provider.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists, listFiles, readTextFile } from '../utils/fs.js';
 
@@ -20,6 +22,8 @@ export interface ListOptions {
   format?: 'table' | 'json' | 'simple';
   /** Show detailed information */
   verbose?: boolean;
+  /** Provider selection (auto|claude|codex) */
+  provider?: ProviderPreference;
 }
 
 /**
@@ -114,7 +118,7 @@ function parseYamlMetadata(content: string): Record<string, string> {
 
 /**
  * Extract agent type from filename (prefix-based)
- * Official Claude Code format: .claude/agents/{prefix}-{name}.md
+ * Official format: {root}/agents/{prefix}-{name}.md
  * Prefixes: lang-, be-, fe-, tool-, db-, arch-, infra-, qa-, mgr-, sys-, tutor-
  */
 function extractAgentTypeFromFilename(filename: string): string {
@@ -139,10 +143,10 @@ function extractAgentTypeFromFilename(filename: string): string {
 
 /**
  * Extract skill category from path
- * Official Claude Code format: .claude/skills/{category}/{name}/
+ * Official format: {root}/skills/{category}/{name}/
  */
-function extractSkillCategoryFromPath(skillPath: string, baseDir: string): string {
-  const relativePath = relative(join(baseDir, '.claude', 'skills'), skillPath);
+function extractSkillCategoryFromPath(skillPath: string, baseDir: string, rootDir: string): string {
+  const relativePath = relative(join(baseDir, rootDir, 'skills'), skillPath);
   const parts = relativePath.split('/').filter(Boolean);
 
   // Return the first part as category
@@ -324,12 +328,15 @@ async function tryExtractMarkdownDescription(
 
 /**
  * Get list of installed agents
- * Official Claude Code format: .claude/agents/{prefix}-{name}.md (flat structure)
+ * Official format: {root}/agents/{prefix}-{name}.md (flat structure)
  * @param targetDir - Target directory to scan
  * @returns List of agent information
  */
-export async function getAgents(targetDir: string): Promise<ComponentInfo[]> {
-  const agentsDir = join(targetDir, '.claude', 'agents');
+export async function getAgents(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<ComponentInfo[]> {
+  const agentsDir = join(targetDir, rootDir, 'agents');
 
   if (!(await fileExists(agentsDir))) return [];
 
@@ -361,12 +368,15 @@ export async function getAgents(targetDir: string): Promise<ComponentInfo[]> {
 
 /**
  * Get list of installed skills
- * Official Claude Code format: .claude/skills/{category}/{name}/SKILL.md
+ * Official format: {root}/skills/{category}/{name}/SKILL.md
  * @param targetDir - Target directory to scan
  * @returns List of skill information
  */
-export async function getSkills(targetDir: string): Promise<ComponentInfo[]> {
-  const skillsDir = join(targetDir, '.claude', 'skills');
+export async function getSkills(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<ComponentInfo[]> {
+  const skillsDir = join(targetDir, rootDir, 'skills');
 
   if (!(await fileExists(skillsDir))) return [];
 
@@ -383,7 +393,7 @@ export async function getSkills(targetDir: string): Promise<ComponentInfo[]> {
         return {
           name: basename(skillDir),
           type: 'skill',
-          category: extractSkillCategoryFromPath(skillDir, targetDir),
+          category: extractSkillCategoryFromPath(skillDir, targetDir, rootDir),
           path: relative(targetDir, skillDir),
           description,
           version,
@@ -438,8 +448,11 @@ const RULE_PRIORITY_ORDER: Record<string, number> = { MUST: 0, SHOULD: 1, MAY: 2
  * @param targetDir - Target directory to scan
  * @returns List of rule information
  */
-export async function getRules(targetDir: string): Promise<ComponentInfo[]> {
-  const rulesDir = join(targetDir, '.claude', 'rules');
+export async function getRules(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<ComponentInfo[]> {
+  const rulesDir = join(targetDir, rootDir, 'rules');
 
   if (!(await fileExists(rulesDir))) return [];
 
@@ -543,8 +556,11 @@ export function formatAsJson(components: ComponentInfo[]): void {
  * @param targetDir - Target directory to scan
  * @returns List of hook information
  */
-export async function getHooks(targetDir: string): Promise<ComponentInfo[]> {
-  const hooksDir = join(targetDir, '.claude', 'hooks');
+export async function getHooks(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<ComponentInfo[]> {
+  const hooksDir = join(targetDir, rootDir, 'hooks');
 
   if (!(await fileExists(hooksDir))) return [];
 
@@ -571,8 +587,11 @@ export async function getHooks(targetDir: string): Promise<ComponentInfo[]> {
  * @param targetDir - Target directory to scan
  * @returns List of context information
  */
-export async function getContexts(targetDir: string): Promise<ComponentInfo[]> {
-  const contextsDir = join(targetDir, '.claude', 'contexts');
+export async function getContexts(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<ComponentInfo[]> {
+  const contextsDir = join(targetDir, rootDir, 'contexts');
 
   if (!(await fileExists(contextsDir))) return [];
 
@@ -607,11 +626,11 @@ export async function getContexts(targetDir: string): Promise<ComponentInfo[]> {
 /** Mapping from component type to getter function */
 const COMPONENT_GETTERS: Record<
   Exclude<ListType, 'all'>,
-  (dir: string) => Promise<ComponentInfo[]>
+  (dir: string, rootDir: string) => Promise<ComponentInfo[]>
 > = {
   agents: getAgents,
   skills: getSkills,
-  guides: getGuides,
+  guides: async (dir) => getGuides(dir),
   rules: getRules,
   hooks: getHooks,
   contexts: getContexts,
@@ -633,14 +652,18 @@ function displayComponents(components: ComponentInfo[], type: ListType, format: 
 /**
  * Handle displaying all component types
  */
-async function handleListAll(targetDir: string, format: string): Promise<ComponentInfo[]> {
+async function handleListAll(
+  targetDir: string,
+  rootDir: string,
+  format: string
+): Promise<ComponentInfo[]> {
   const [agents, skills, guides, rules, hooks, contexts] = await Promise.all([
-    getAgents(targetDir),
-    getSkills(targetDir),
+    getAgents(targetDir, rootDir),
+    getSkills(targetDir, rootDir),
     getGuides(targetDir),
-    getRules(targetDir),
-    getHooks(targetDir),
-    getContexts(targetDir),
+    getRules(targetDir, rootDir),
+    getHooks(targetDir, rootDir),
+    getContexts(targetDir, rootDir),
   ]);
 
   if (format !== 'json') {
@@ -671,10 +694,17 @@ export async function listCommand(
   console.log(i18n.t('cli.list.scanning'));
 
   try {
+    const detection = await detectProvider({
+      targetDir,
+      override: options.provider,
+      preferProject: true,
+    });
+    const layout = getProviderLayout(detection.provider);
+
     const components =
       type === 'all'
-        ? await handleListAll(targetDir, format)
-        : await COMPONENT_GETTERS[type](targetDir);
+        ? await handleListAll(targetDir, layout.rootDir, format)
+        : await COMPONENT_GETTERS[type](targetDir, layout.rootDir);
 
     if (type === 'all' && format === 'json') {
       formatAsJson(components);

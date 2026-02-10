@@ -256,10 +256,10 @@ describe('installer', () => {
       // getAllComponents() should return 6 items (commands and pipelines removed)
     });
 
-    it('should skip claude-md component in components list', async () => {
+    it('should skip entry-md component in components list', async () => {
       const result = await install({
         targetDir: tempDir,
-        components: ['claude-md'],
+        components: ['entry-md'],
         skipConfirm: true,
       });
 
@@ -522,7 +522,7 @@ describe('installer', () => {
         skipConfirm: true,
       });
 
-      expect(result.skippedComponents).toContain('claude-md');
+      expect(result.skippedComponents).toContain('entry-md');
 
       fileExistsSpy.mockRestore();
     });

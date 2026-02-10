@@ -37,6 +37,18 @@ omcustom init
 
 ---
 
+## 듀얼 모드 (Claude + Codex)
+
+oh-my-customcode는 Claude-native와 Codex-native를 모두 지원합니다. CLI는 다음 순서로 제공자를 자동 감지합니다.
+
+1. 오버라이드 (`--provider` 또는 `OMCUSTOM_PROVIDER` / `LLM_SERVICE`)
+2. 설정 파일 (`.omcustomrc.json` provider)
+3. 환경 신호 (`OPENAI_API_KEY`, `CODEX_HOME`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_*`)
+4. 프로젝트 마커 (`AGENTS.md`/`.codex` vs `CLAUDE.md`/`.claude`)
+5. 기본값: `claude`
+
+---
+
 ## 커스터마이징이 핵심
 
 oh-my-customcode의 존재 이유입니다. **Claude Code를 당신 것으로 만드세요.**

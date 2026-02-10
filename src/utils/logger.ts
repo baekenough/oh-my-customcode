@@ -87,7 +87,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.start': 'Initializing oh-my-customcode...',
     'install.success': 'Successfully initialized!',
     'install.failed': 'Installation failed: {{error}}',
-    'install.exists': 'Existing .claude/ directory found',
+    'install.exists': 'Existing {{rootDir}} directory found',
     'install.backup': 'Backed up existing files to: {{path}}',
     'install.directories_created': 'Directory structure created',
     'install.component_skipped': 'Skipped {{component}} (already exists)',
@@ -95,6 +95,9 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.template_not_found': 'Template not found for {{component}}: {{path}}',
     'install.claude_md_installed': 'CLAUDE.md installed ({{language}})',
     'install.claude_md_not_found': 'CLAUDE.md template not found for {{language}}',
+    'install.entry_md_installed': '{{entry}} installed ({{language}})',
+    'install.entry_md_not_found': '{{entry}} template not found for {{language}}',
+    'install.entry_md_skipped': '{{entry}} skipped ({{reason}})',
 
     // Update messages
     'update.start': 'Checking for updates...',
@@ -122,7 +125,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.start': 'oh-my-customcode 초기화 중...',
     'install.success': '초기화 완료!',
     'install.failed': '설치 실패: {{error}}',
-    'install.exists': '기존 .claude/ 디렉토리 발견',
+    'install.exists': '기존 {{rootDir}} 디렉토리 발견',
     'install.backup': '기존 파일 백업 완료: {{path}}',
     'install.directories_created': '디렉토리 구조 생성 완료',
     'install.component_skipped': '{{component}} 건너뜀 (이미 존재)',
@@ -130,6 +133,9 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.template_not_found': '{{component}} 템플릿 없음: {{path}}',
     'install.claude_md_installed': 'CLAUDE.md 설치 완료 ({{language}})',
     'install.claude_md_not_found': '{{language}}용 CLAUDE.md 템플릿 없음',
+    'install.entry_md_installed': '{{entry}} 설치 완료 ({{language}})',
+    'install.entry_md_not_found': '{{language}}용 {{entry}} 템플릿 없음',
+    'install.entry_md_skipped': '{{entry}} 건너뜀 ({{reason}})',
 
     // Update messages
     'update.start': '업데이트 확인 중...',
