@@ -18,6 +18,9 @@ Routes development tasks to appropriate language and framework expert agents. Th
 | sw-engineer/frontend | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent | Frontend frameworks |
 | sw-engineer/backend | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-nestjs-expert, be-express-expert | Backend frameworks |
 | sw-engineer/tooling | tool-npm-expert, tool-optimizer, tool-bun-expert | Build tools and optimization |
+| sw-engineer/database | db-supabase-expert, db-postgres-expert, db-redis-expert | Database design and optimization |
+| sw-architect | arch-documenter, arch-speckit-agent | Architecture documentation and spec-driven development |
+| infra-engineer | infra-docker-expert, infra-aws-expert | Container and cloud infrastructure |
 
 ## Language/Framework Detection
 
@@ -34,6 +37,11 @@ Routes development tasks to appropriate language and framework expert agents. Th
 | `.js`, `.jsx` (React) | fe-vercel-agent | React/Next.js |
 | `.vue` | fe-vuejs-agent | Vue.js |
 | `.svelte` | fe-svelte-agent | Svelte |
+| `.sql` (PostgreSQL) | db-postgres-expert | PostgreSQL |
+| `.sql` (Supabase) | db-supabase-expert | Supabase PostgreSQL |
+| `Dockerfile`, `*.dockerfile` | infra-docker-expert | Docker |
+| `*.tf`, `*.tfvars` | infra-aws-expert | Terraform/IaC |
+| `*.yaml`, `*.yml` (CloudFormation) | infra-aws-expert | AWS CloudFormation |
 
 ### Keyword Mapping
 
@@ -55,6 +63,13 @@ Routes development tasks to appropriate language and framework expert agents. Th
 | "npm" | tool-npm-expert |
 | "optimize", "bundle" | tool-optimizer |
 | "bun" | tool-bun-expert |
+| "postgres", "postgresql", "pg_stat", "psql" | db-postgres-expert |
+| "redis", "cache", "pub/sub", "sorted set" | db-redis-expert |
+| "supabase", "rls", "edge function" | db-supabase-expert |
+| "docker", "dockerfile", "container", "compose" | infra-docker-expert |
+| "aws", "cloudformation", "cdk", "terraform", "vpc", "iam", "s3", "lambda" | infra-aws-expert |
+| "architecture", "adr", "openapi", "swagger", "diagram" | arch-documenter |
+| "spec", "specification", "tdd", "requirements" | arch-speckit-agent |
 
 ## Command Routing
 

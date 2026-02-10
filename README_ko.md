@@ -16,7 +16,7 @@ oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Clau
 
 | 특징 | 설명 |
 |------|------|
-| **바로 사용 가능** | 34개 에이전트, 41개 스킬, 14개 가이드 - 즉시 사용 가능 |
+| **바로 사용 가능** | 42개 에이전트, 51개 스킬, 22개 가이드 - 즉시 사용 가능 |
 | **서브 에이전트 모델** | 전문화된 역할의 계층적 에이전트 오케스트레이션 지원 |
 | **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
 | **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
@@ -111,7 +111,7 @@ dev-lead (라우팅 스킬)
 
 ## 기본 제공 항목
 
-### 에이전트 (34개)
+### 에이전트 (42개)
 
 | 카테고리 | 수 | 에이전트 (prefixed names) |
 |----------|-----|----------|
@@ -119,29 +119,34 @@ dev-lead (라우팅 스킬)
 | **백엔드** | 5 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs |
 | **프론트엔드** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
 | **툴링** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| **데이터베이스** | 1 | db-supabase-expert |
+| **데이터 엔지니어링** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
+| **데이터베이스** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
 | **아키텍처** | 2 | arch-documenter, arch-speckit-agent |
 | **인프라** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **매니저** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
 | **시스템** | 2 | sys-memory-keeper, sys-naggy |
-| **합계** | **34** | |
+| **합계** | **42** | |
 
-### 스킬 (41개)
+### 스킬 (51개)
 
 - **개발**: Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
 - **백엔드**: FastAPI, Spring Boot, Express, NestJS, Go Backend
+- **데이터 엔지니어링**: Airflow, dbt, Spark, Kafka, Snowflake, Pipeline
+- **데이터베이스**: Supabase, PostgreSQL, Redis
 - **인프라**: Docker, AWS
 - **시스템**: 메모리 관리, 결과 집계
-- **오케스트레이션**: 파이프라인 실행, 인텐트 감지
+- **오케스트레이션**: secretary-routing, dev-lead-routing, de-lead-routing
 
-### 가이드 (14개)
+### 가이드 (22개)
 
 종합 참조 문서:
 - 에이전트 생성 및 관리
 - 스킬 개발
 - 멀티 에이전트 오케스트레이션
 - 베스트 프랙티스 및 패턴
+- 데이터 엔지니어링 워크플로우
+- 데이터베이스 최적화
 
 ### 규칙 (18개)
 
