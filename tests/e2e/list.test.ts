@@ -39,7 +39,7 @@ describe('E2E: omcustom list', () => {
     ...args: string[]
   ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
     const proc = spawn({
-      cmd: ['bun', 'run', cliPath, ...args],
+      cmd: ['bun', 'run', cliPath, '--skip-version-check', ...args],
       cwd: tempDir,
       stdout: 'pipe',
       stderr: 'pipe',

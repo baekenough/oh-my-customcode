@@ -32,6 +32,17 @@
     "error": {
       "unexpected": "예기치 않은 오류가 발생했습니다:"
     },
+    "preflight": {
+      "checking": "CLI 도구 버전 확인 중...",
+      "updateAvailable": "⚠ {{name}} {{latest}} 사용 가능 (현재: {{current}})",
+      "upgradeCommand": "  실행: brew upgrade {{name}}",
+      "multipleUpdates": "다음을 실행하여 업그레이드하세요:",
+      "skipFlag": "  --skip-version-check 옵션으로 이 검사를 건너뛸 수 있습니다",
+      "skippedCi": "버전 확인 건너뜀 (CI 환경 감지)",
+      "skippedFlag": "버전 확인 건너뜀 (--skip-version-check)",
+      "homebrewNotFound": "Homebrew를 찾을 수 없어 버전 확인을 건너뜁니다",
+      "timeout": "버전 확인 시간 초과, 계속 진행합니다..."
+    },
     "init": {
       "description": "현재 디렉토리에 oh-my-customcode 초기화",
       "langOption": "템플릿 언어 (en 또는 ko)",

@@ -16,7 +16,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 51 skills, 22 guides, 18 rules, 1 hook, 4 contexts - ready to use out of the box |
+| **Batteries Included** | 42 agents, 52 skills, 22 guides, 18 rules, 1 hook, 1 context - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -46,6 +46,11 @@ oh-my-customcode can operate in both Claude-native and Codex-native modes. The C
 3. Environment signals (`OPENAI_API_KEY`, `CODEX_HOME`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_*`)
 4. Project markers (`AGENTS.md`/`.codex` vs `CLAUDE.md`/`.claude`)
 5. Default: `claude`
+
+**Claude Mode** generates `.claude/` directory with `CLAUDE.md` entry point.
+**Codex Mode** generates `.codex/` directory with `AGENTS.md` entry point.
+
+Both modes install the same agents, skills, guides, and rules — only the directory layout and entry file differ.
 
 ## Customization First
 
@@ -129,7 +134,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Total** | **42** | |
 
-### Skills (51)
+### Skills (52)
 
 Includes slash commands and capabilities:
 
@@ -165,9 +170,9 @@ Comprehensive reference documentation covering:
 
 Event-driven automation for Claude Code lifecycle events (PreToolUse, PostToolUse, etc.).
 
-### Contexts (4)
+### Contexts (1)
 
-Shared context files for cross-agent knowledge and mode configurations.
+Shared context file for cross-agent knowledge and mode configurations.
 
 ---
 
@@ -183,6 +188,13 @@ Shared context files for cross-agent knowledge and mode configurations.
 | `omcustom doctor` | Verify installation health |
 | `omcustom doctor --fix` | Auto-fix common issues |
 
+**Global Options:**
+| Option | Description |
+|--------|-------------|
+| `--skip-version-check` | Skip CLI tool version pre-flight check |
+| `-v, --version` | Show version number |
+| `-h, --help` | Show help |
+
 ---
 
 ## Project Structure
@@ -191,25 +203,21 @@ After `omcustom init`:
 
 ```
 your-project/
-├── CLAUDE.md              # Entry point for Claude
-└── .claude/
+├── CLAUDE.md              # Entry point for Claude (or AGENTS.md for Codex)
+└── .claude/               # (or .codex/)
     ├── rules/             # Behavior rules (18 total)
     ├── hooks/             # Event hooks (1 total)
-    ├── contexts/          # Context files (4 total)
-    ├── agents/            # All agents (flat structure, 42 total)
-    │   ├── lang-golang-expert/
-    │   ├── be-fastapi-expert/
-    │   ├── de-airflow-expert/
-    │   ├── mgr-creator/
+    ├── contexts/          # Context files (1 total)
+    ├── agents/            # Agent definitions (42 flat .md files)
+    │   ├── lang-golang-expert.md
+    │   ├── be-fastapi-expert.md
+    │   ├── mgr-creator.md
     │   └── ...
-    ├── skills/            # All skills (51 total, includes slash commands)
-    │   ├── development/
-    │   ├── backend/
-    │   ├── data-engineering/
-    │   ├── database/
-    │   ├── infrastructure/
-    │   ├── system/
-    │   └── orchestration/
+    ├── skills/            # Skill modules (52 directories, each with SKILL.md)
+    │   ├── go-best-practices/
+    │   ├── react-best-practices/
+    │   ├── secretary-routing/
+    │   └── ...
     └── guides/            # Reference docs (22 total)
 ```
 
@@ -227,7 +235,7 @@ bun run build        # Build for production
 ### Requirements
 
 - Node.js >= 18.0.0
-- Claude Code CLI
+- Claude Code CLI or OpenAI Codex CLI
 
 ---
 

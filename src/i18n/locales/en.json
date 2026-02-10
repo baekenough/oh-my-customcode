@@ -32,6 +32,17 @@
     "error": {
       "unexpected": "An unexpected error occurred:"
     },
+    "preflight": {
+      "checking": "Checking CLI tool versions...",
+      "updateAvailable": "⚠ {{name}} {{latest}} is available (current: {{current}})",
+      "upgradeCommand": "  Run: brew upgrade {{name}}",
+      "multipleUpdates": "Run the following to upgrade:",
+      "skipFlag": "  Use --skip-version-check to skip this check",
+      "skippedCi": "Skipping version check (CI environment detected)",
+      "skippedFlag": "Skipping version check (--skip-version-check)",
+      "homebrewNotFound": "Homebrew not found, skipping version check",
+      "timeout": "Version check timed out, continuing..."
+    },
     "init": {
       "description": "Initialize oh-my-customcode in the current directory",
       "langOption": "Language for templates (en or ko)",

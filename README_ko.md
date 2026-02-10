@@ -16,7 +16,7 @@ oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Clau
 
 | 특징 | 설명 |
 |------|------|
-| **바로 사용 가능** | 42개 에이전트, 51개 스킬, 22개 가이드, 18개 규칙, 1개 훅, 4개 컨텍스트 - 즉시 사용 가능 |
+| **바로 사용 가능** | 42개 에이전트, 52개 스킬, 22개 가이드, 18개 규칙, 1개 훅, 1개 컨텍스트 - 즉시 사용 가능 |
 | **서브 에이전트 모델** | 전문화된 역할의 계층적 에이전트 오케스트레이션 지원 |
 | **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
 | **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
@@ -46,6 +46,11 @@ oh-my-customcode는 Claude-native와 Codex-native를 모두 지원합니다. CLI
 3. 환경 신호 (`OPENAI_API_KEY`, `CODEX_HOME`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_*`)
 4. 프로젝트 마커 (`AGENTS.md`/`.codex` vs `CLAUDE.md`/`.claude`)
 5. 기본값: `claude`
+
+**Claude 모드**는 `CLAUDE.md` 진입점과 함께 `.claude/` 디렉토리를 생성합니다.
+**Codex 모드**는 `AGENTS.md` 진입점과 함께 `.codex/` 디렉토리를 생성합니다.
+
+두 모드 모두 동일한 에이전트, 스킬, 가이드, 규칙을 설치합니다 — 디렉토리 레이아웃과 진입 파일만 다릅니다.
 
 ---
 
@@ -140,7 +145,7 @@ dev-lead-routing (라우팅 스킬)
 | **시스템** | 2 | sys-memory-keeper, sys-naggy |
 | **합계** | **42** | |
 
-### 스킬 (51개)
+### 스킬 (52개)
 
 - **개발**: Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
 - **백엔드**: FastAPI, Spring Boot, Express, NestJS, Go Backend
@@ -172,7 +177,7 @@ dev-lead-routing (라우팅 스킬)
 
 Claude Code 라이프사이클 이벤트(PreToolUse, PostToolUse 등)에 대한 이벤트 기반 자동화.
 
-### 컨텍스트 (4개)
+### 컨텍스트 (1개)
 
 에이전트 간 지식 공유 및 모드 설정을 위한 공유 컨텍스트 파일.
 
@@ -190,6 +195,13 @@ Claude Code 라이프사이클 이벤트(PreToolUse, PostToolUse 등)에 대한 
 | `omcustom doctor` | 설치 상태 검사 |
 | `omcustom doctor --fix` | 일반적인 문제 자동 수정 |
 
+**글로벌 옵션:**
+| 옵션 | 설명 |
+|------|------|
+| `--skip-version-check` | CLI 도구 버전 사전 검사 건너뛰기 |
+| `-v, --version` | 버전 번호 표시 |
+| `-h, --help` | 도움말 표시 |
+
 ---
 
 ## 프로젝트 구조
@@ -198,14 +210,14 @@ Claude Code 라이프사이클 이벤트(PreToolUse, PostToolUse 등)에 대한 
 
 ```
 your-project/
-├── CLAUDE.md              # Claude 진입점
-├── .claude/
-│   ├── agents/            # 모든 에이전트 (플랫 구조)
-│   ├── skills/            # 모든 스킬
-│   ├── rules/             # 행동 규칙
+├── CLAUDE.md              # Claude 진입점 (또는 AGENTS.md for Codex)
+├── .claude/               # (또는 .codex/)
+│   ├── agents/            # 에이전트 정의 (42개 플랫 .md 파일)
+│   ├── skills/            # 스킬 모듈 (52개 디렉토리)
+│   ├── rules/             # 행동 규칙 (18개)
 │   ├── hooks/             # 이벤트 훅 (1개)
-│   └── contexts/          # 컨텍스트 파일 (4개)
-└── guides/                # 참조 문서
+│   └── contexts/          # 컨텍스트 파일 (1개)
+└── guides/                # 참조 문서 (22개)
 ```
 
 **참고**: 공식 Claude Code 형식에서는 명령어 레지스트리가 없으며, 슬래시 커맨드나 자연어 에이전트 참조를 사용합니다.
@@ -224,7 +236,7 @@ bun run build        # 프로덕션 빌드
 ### 요구사항
 
 - Node.js >= 18.0.0
-- Claude Code CLI
+- Claude Code CLI 또는 OpenAI Codex CLI
 
 ---
 
