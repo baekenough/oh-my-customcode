@@ -24,17 +24,21 @@ omcustom init [options]
 | Option | Description |
 |--------|-------------|
 | `--lang <code>` | Language for templates (`en` or `ko`). Default: `en` |
+| `--provider <name>` | Target provider (`claude` or `codex`). Default: auto-detect |
 | `--backup` | Backup existing installation before init |
 | `--force` | Overwrite existing files without prompting |
 
 ### Examples
 
 ```bash
-# Basic initialization
+# Basic initialization (auto-detect provider)
 omcustom init
 
 # Initialize with Korean language
 omcustom init --lang ko
+
+# Explicitly specify provider
+omcustom init --provider codex
 
 # Backup existing and initialize
 omcustom init --backup
@@ -86,12 +90,13 @@ omcustom list [type] [options]
 
 | Option | Description |
 |--------|-------------|
+| `--provider <name>` | Target provider (`claude` or `codex`). Default: auto-detect |
 | `--format <format>` | Output format: `table` (default) or `json` |
 
 ### Examples
 
 ```bash
-# List all components
+# List all components (auto-detect provider)
 omcustom list
 
 # List only agents
@@ -99,6 +104,9 @@ omcustom list agents
 
 # List skills as JSON
 omcustom list skills --format json
+
+# List agents for specific provider
+omcustom list agents --provider claude
 ```
 
 ### Sample Output
@@ -129,13 +137,14 @@ omcustom doctor [options]
 
 | Option | Description |
 |--------|-------------|
+| `--provider <name>` | Target provider (`claude` or `codex`). Default: auto-detect |
 | `--fix` | Auto-fix common issues |
 | `--verbose` | Show detailed output |
 
 ### Examples
 
 ```bash
-# Check installation health
+# Check installation health (auto-detect provider)
 omcustom doctor
 
 # Check and auto-fix issues
@@ -143,13 +152,16 @@ omcustom doctor --fix
 
 # Detailed health check
 omcustom doctor --verbose
+
+# Check specific provider
+omcustom doctor --provider codex
 ```
 
 ### Health Checks
 
 The doctor command verifies:
 
-- CLAUDE.md exists and is valid
+- Entry file exists and is valid (CLAUDE.md for Claude, AGENTS.md for Codex)
 - All required directories exist
 - Agent definitions are complete
 - Skill references are valid
@@ -164,11 +176,11 @@ oh-my-customcode Doctor
 
 Checking installation health...
 
-✓ CLAUDE.md exists
-✓ .claude/rules directory exists
-✓ agents directory exists
-✓ skills directory exists
-✗ Missing agent: agents/manager/creator/index.yaml
+✓ Entry file exists (CLAUDE.md or AGENTS.md)
+✓ Provider rules directory exists (.claude/rules or .codex/rules)
+✓ Provider agents directory exists (.claude/agents or .codex/agents)
+✓ Provider skills directory exists (.claude/skills or .codex/skills)
+✗ Missing agent: .claude/agents/mgr-creator.md
 
 Issues found: 1
 Run 'omcustom doctor --fix' to auto-repair

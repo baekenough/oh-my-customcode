@@ -752,6 +752,13 @@ async function main() {
   console.log('🔍 Claude Native Verification');
   console.log(`   Project root: ${PROJECT_ROOT}`);
 
+  try {
+    await stat(path.join(PROJECT_ROOT, '.claude'));
+  } catch {
+    console.log('Skip: .claude directory not found. Claude-native verification not applicable.');
+    return;
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     console.log('❌ ANTHROPIC_API_KEY environment variable not set');
     process.exit(1);

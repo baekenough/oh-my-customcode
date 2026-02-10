@@ -1,26 +1,31 @@
 # Project Structure
 
-After `omcustom init`:
+After `omcustom init` (provider-specific):
 
+Claude mode:
 ```
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
-└── .claude/
-    ├── rules/             # Behavior rules (18 total)
-    ├── hooks/             # Event hooks
-    ├── contexts/          # Context files
-    ├── agents/            # All agents (flat structure, 34 total)
-    │   ├── lang-golang-expert/
-    │   ├── be-fastapi-expert/
-    │   ├── mgr-creator/
-    │   └── ...
-    ├── skills/            # All skills (41 total, includes slash commands)
-    │   ├── development/
-    │   ├── backend/
-    │   ├── infrastructure/
-    │   ├── system/
-    │   └── orchestration/
-    └── guides/            # Reference docs (14 total)
+├── .claude/
+│   ├── rules/             # Behavior rules
+│   ├── hooks/             # Event hooks
+│   ├── contexts/          # Context files
+│   ├── agents/            # Agent definitions (flat .md files)
+│   └── skills/            # Skill definitions
+└── guides/                # Reference docs
+```
+
+Codex mode:
+```
+your-project/
+├── AGENTS.md              # Entry point for Codex
+├── .codex/
+│   ├── rules/             # Behavior rules
+│   ├── hooks/             # Event hooks
+│   ├── contexts/          # Context files
+│   ├── agents/            # Agent definitions (flat .md files)
+│   └── skills/            # Skill definitions
+└── guides/                # Reference docs
 ```
 
 ---

@@ -1,0 +1,105 @@
+name: Reusable Codex Native Verification
+
+on:
+  workflow_call:
+    inputs:
+      dry_run:
+        type: boolean
+        required: false
+        default: false
+        description: 'Run without updating hash'
+      force:
+        type: boolean
+        required: false
+        default: false
+        description: 'Force analysis even if hash unchanged'
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: project
+
+      - name: "Guardrail: check Codex layout"
+        id: guard
+        run: |
+          if [ ! -d "${{ github.workspace }}/project/.codex" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "## Codex Native Verification Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Reason: .codex directory not found in project root." >> $GITHUB_STEP_SUMMARY
+            echo "This workflow only applies to Codex-native layouts." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout oh-my-customcode (scripts only)
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: baekenough/oh-my-customcode
+          ref: develop
+          path: scripts
+          sparse-checkout: |
+            .github/scripts
+            package.json
+            bun.lock
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Bun
+        if: steps.guard.outputs.skip != 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        if: steps.guard.outputs.skip != 'true'
+        working-directory: scripts
+        run: bun install
+
+      - name: Run Codex Native Verification
+        if: steps.guard.outputs.skip != 'true'
+        working-directory: scripts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PROJECT_ROOT: ${{ github.workspace }}/project
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ "${{ inputs.force }}" = "true" ]; then
+            ARGS="$ARGS --force"
+          fi
+          bun run .github/scripts/verify-codex-native.ts $ARGS
+
+      - name: Commit hash update (if changed)
+        if: ${{ !inputs.dry_run && steps.guard.outputs.skip != 'true' }}
+        working-directory: ${{ github.workspace }}/project
+        run: |
+          if git diff --quiet .codex/codex-native-hash.txt 2>/dev/null; then
+            echo "No hash changes to commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .codex/codex-native-hash.txt 2>/dev/null || true
+            git commit -m "chore: update codex-native docs hash" 2>/dev/null || true
+            git push 2>/dev/null || true
+          fi
+
+      - name: Summary
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          echo "## Codex Native Verification Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Repository: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "Dry Run: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "Force: ${{ inputs.force }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check workflow logs for details." >> $GITHUB_STEP_SUMMARY

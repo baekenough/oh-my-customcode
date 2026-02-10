@@ -1,0 +1,39 @@
+# AGENTS.md
+
+Codex-native entry point for oh-my-customcode.
+
+## Core Values
+
+1. **Codex-native First** - Prefer Codex native tools and workflows over custom scripts when possible.
+2. **Single Orchestrator** - The main conversation coordinates work; use parallel tool calls for independent tasks.
+3. **Transparent Execution** - State decisions, tool usage, and results clearly.
+4. **Safe Changes** - Avoid destructive commands; verify before commits or pushes.
+5. **Dual-Mode Awareness** - This project supports both Claude and Codex; select behavior by provider detection.
+
+## Provider Detection (Auto)
+
+Detection order (first match wins):
+
+1. Override (`--provider` or `OMCUSTOM_PROVIDER` / `LLM_SERVICE`)
+2. Config (`.omcustomrc.json` provider)
+3. Environment signals (`OPENAI_API_KEY`, `CODEX_HOME`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_*`)
+4. Project markers (`AGENTS.md`/`.codex` vs `CLAUDE.md`/`.claude`)
+5. Default: `claude`
+
+## Project Structure
+
+```
+project/
+├── AGENTS.md
+├── .codex/
+│   ├── rules/
+│   ├── hooks/
+│   ├── contexts/
+│   ├── agents/
+│   └── skills/
+└── guides/
+```
+
+## Rules
+
+See `.codex/rules/` for detailed behavior rules.

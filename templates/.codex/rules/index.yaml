@@ -1,0 +1,141 @@
+# Global Rules
+# Priority: MUST > SHOULD > MAY
+
+rules:
+  # MUST - Never violate
+  - id: R000
+    name: language-policy
+    title: Language & Delegation Policy
+    path: ./MUST-language-policy.md
+    priority: MUST
+    scope: all
+
+  - id: R001
+    name: safety
+    title: Safety Rules
+    path: ./MUST-safety.md
+    priority: MUST
+    scope: all
+
+  - id: R002
+    name: permissions
+    title: Permission Rules
+    path: ./MUST-permissions.md
+    priority: MUST
+    scope: all
+
+  - id: R007
+    name: agent-identification
+    title: Agent Identification Rules
+    path: ./MUST-agent-identification.md
+    priority: MUST
+    scope: all
+
+  - id: R008
+    name: tool-identification
+    title: Tool Usage Identification Rules
+    path: ./MUST-tool-identification.md
+    priority: MUST
+    scope: all
+
+  - id: R009
+    name: parallel-execution
+    title: Parallel Execution Rules
+    path: ./MUST-parallel-execution.md
+    priority: MUST
+    scope: all
+
+  # Agent Design - MUST
+  - id: R006
+    name: agent-design
+    title: Agent Design Rules
+    path: ./MUST-agent-design.md
+    priority: MUST
+    scope: agents
+
+  # Orchestrator Coordination - MUST
+  - id: R010
+    name: orchestrator-coordination
+    title: Orchestrator Coordination Rules
+    path: ./MUST-orchestrator-coordination.md
+    priority: MUST
+    scope: agents
+
+  # Intent Transparency - MUST
+  - id: R015
+    name: intent-transparency
+    title: Intent Transparency Rules
+    path: ./MUST-intent-transparency.md
+    priority: MUST
+    scope: orchestrator
+
+  # Continuous Improvement - MUST
+  - id: R016
+    name: continuous-improvement
+    title: Continuous Improvement Rules
+    path: ./MUST-continuous-improvement.md
+    priority: MUST
+    scope: all
+
+  # Sync Verification - MUST
+  - id: R017
+    name: sync-verification
+    title: Sync Verification Rules
+    path: ./MUST-sync-verification.md
+    priority: MUST
+    scope: all
+
+  # SHOULD - Strongly recommended
+  - id: R003
+    name: interaction
+    title: Interaction Rules
+    path: ./SHOULD-interaction.md
+    priority: SHOULD
+    scope: all
+
+  - id: R004
+    name: error-handling
+    title: Error Handling Rules
+    path: ./SHOULD-error-handling.md
+    priority: SHOULD
+    scope: all
+
+  # Memory Integration - SHOULD
+  - id: R011
+    name: memory-integration
+    title: Memory Integration Rules
+    path: ./SHOULD-memory-integration.md
+    priority: SHOULD
+    scope: all
+
+  # HUD Statusline - SHOULD
+  - id: R012
+    name: hud-statusline
+    title: HUD Statusline Rules
+    path: ./SHOULD-hud-statusline.md
+    priority: SHOULD
+    scope: all
+
+  # Ecomode - SHOULD
+  - id: R013
+    name: ecomode
+    title: Ecomode Rules
+    path: ./SHOULD-ecomode.md
+    priority: SHOULD
+    scope: all
+
+  # Agent Teams - SHOULD
+  - id: R018
+    name: agent-teams
+    title: Agent Teams Rules
+    path: ./SHOULD-agent-teams.md
+    priority: SHOULD
+    scope: orchestrator
+
+  # MAY - Optional
+  - id: R005
+    name: optimization
+    title: Optimization Guide
+    path: ./MAY-optimization.md
+    priority: MAY
+    scope: all

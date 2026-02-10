@@ -8,7 +8,9 @@ import {
   formatAsSimple,
   formatAsTable,
   getAgents,
+  getContexts,
   getGuides,
+  getHooks,
   getRules,
   getSkills,
   listCommand,
@@ -1111,6 +1113,370 @@ Description after code block.`
         process.cwd = originalCwd;
         consoleLogSpy.mockRestore();
         consoleErrorSpy.mockRestore();
+      }
+    });
+  });
+
+  describe('getHooks', () => {
+    it('should return empty array when hooks directory does not exist', async () => {
+      const hooks = await getHooks(tempDir);
+      expect(hooks).toEqual([]);
+    });
+
+    it('should find shell script hooks', async () => {
+      const hooksDir = join(tempDir, '.claude', 'hooks');
+      await mkdir(hooksDir, { recursive: true });
+      await writeFile(join(hooksDir, 'pre-commit.sh'), '#!/bin/bash\necho "hook"');
+
+      const hooks = await getHooks(tempDir);
+
+      expect(hooks).toHaveLength(1);
+      expect(hooks[0].name).toBe('pre-commit.sh');
+      expect(hooks[0].type).toBe('hook');
+      expect(hooks[0].path).toBe('.claude/hooks/pre-commit.sh');
+    });
+
+    it('should find JSON hook configurations', async () => {
+      const hooksDir = join(tempDir, '.claude', 'hooks');
+      await mkdir(hooksDir, { recursive: true });
+      await writeFile(join(hooksDir, 'hooks.json'), '{"hooks": []}');
+
+      const hooks = await getHooks(tempDir);
+
+      expect(hooks).toHaveLength(1);
+      expect(hooks[0].name).toBe('hooks.json');
+      expect(hooks[0].type).toBe('hook');
+    });
+
+    it('should find YAML hook configurations', async () => {
+      const hooksDir = join(tempDir, '.claude', 'hooks');
+      await mkdir(hooksDir, { recursive: true });
+      await writeFile(join(hooksDir, 'hooks.yaml'), 'hooks: []');
+
+      const hooks = await getHooks(tempDir);
+
+      expect(hooks).toHaveLength(1);
+      expect(hooks[0].name).toBe('hooks.yaml');
+      expect(hooks[0].type).toBe('hook');
+    });
+
+    it('should find all hook file types and sort by name', async () => {
+      const hooksDir = join(tempDir, '.claude', 'hooks');
+      await mkdir(hooksDir, { recursive: true });
+      await writeFile(join(hooksDir, 'post-commit.sh'), '#!/bin/bash');
+      await writeFile(join(hooksDir, 'config.json'), '{}');
+      await writeFile(join(hooksDir, 'hooks.yaml'), 'hooks: []');
+      await writeFile(join(hooksDir, 'pre-commit.sh'), '#!/bin/bash');
+
+      const hooks = await getHooks(tempDir);
+
+      expect(hooks).toHaveLength(4);
+      // Should be sorted alphabetically
+      expect(hooks[0].name).toBe('config.json');
+      expect(hooks[1].name).toBe('hooks.yaml');
+      expect(hooks[2].name).toBe('post-commit.sh');
+      expect(hooks[3].name).toBe('pre-commit.sh');
+    });
+
+    it('should handle errors and return empty array', async () => {
+      const fs = await import('../../../src/utils/fs.js');
+      const listFilesSpy = spyOn(fs, 'listFiles').mockImplementation(async () => {
+        throw new Error('Simulated error');
+      });
+
+      try {
+        await mkdir(join(tempDir, '.claude', 'hooks'), { recursive: true });
+        const hooks = await getHooks(tempDir);
+        expect(hooks).toEqual([]);
+      } finally {
+        listFilesSpy.mockRestore();
+      }
+    });
+  });
+
+  describe('getContexts', () => {
+    it('should return empty array when contexts directory does not exist', async () => {
+      const contexts = await getContexts(tempDir);
+      expect(contexts).toEqual([]);
+    });
+
+    it('should find markdown context files', async () => {
+      const contextsDir = join(tempDir, '.claude', 'contexts');
+      await mkdir(contextsDir, { recursive: true });
+      await writeFile(
+        join(contextsDir, 'ecomode.md'),
+        '# Ecomode Context\n\nEcomode reduces token usage.'
+      );
+
+      const contexts = await getContexts(tempDir);
+
+      expect(contexts).toHaveLength(1);
+      expect(contexts[0].name).toBe('ecomode');
+      expect(contexts[0].type).toBe('context');
+      expect(contexts[0].path).toBe('.claude/contexts/ecomode.md');
+      expect(contexts[0].description).toBe('Ecomode reduces token usage.');
+    });
+
+    it('should find YAML context files', async () => {
+      const contextsDir = join(tempDir, '.claude', 'contexts');
+      await mkdir(contextsDir, { recursive: true });
+      await writeFile(join(contextsDir, 'config.yaml'), 'key: value');
+
+      const contexts = await getContexts(tempDir);
+
+      expect(contexts).toHaveLength(1);
+      expect(contexts[0].name).toBe('config');
+      expect(contexts[0].type).toBe('context');
+      expect(contexts[0].description).toBeUndefined();
+    });
+
+    it('should extract description from markdown contexts', async () => {
+      const contextsDir = join(tempDir, '.claude', 'contexts');
+      await mkdir(contextsDir, { recursive: true });
+      await writeFile(
+        join(contextsDir, 'debug.md'),
+        '# Debug Context\n\n> Enable debug mode for detailed logging\n\nMore content.'
+      );
+
+      const contexts = await getContexts(tempDir);
+
+      expect(contexts).toHaveLength(1);
+      expect(contexts[0].description).toBe('Enable debug mode for detailed logging');
+    });
+
+    it('should truncate long descriptions to 100 characters', async () => {
+      const contextsDir = join(tempDir, '.claude', 'contexts');
+      await mkdir(contextsDir, { recursive: true });
+      const longDesc = `${'A'.repeat(150)} This should be truncated`;
+      await writeFile(join(contextsDir, 'long.md'), `# Long Context\n\n${longDesc}`);
+
+      const contexts = await getContexts(tempDir);
+
+      expect(contexts).toHaveLength(1);
+      expect(contexts[0].description?.length).toBeLessThanOrEqual(103); // 100 + "..."
+      expect(contexts[0].description?.endsWith('...')).toBe(true);
+    });
+
+    it('should find both .md and .yaml contexts and sort by name', async () => {
+      const contextsDir = join(tempDir, '.claude', 'contexts');
+      await mkdir(contextsDir, { recursive: true });
+      await writeFile(join(contextsDir, 'verbose.md'), '# Verbose\n\nVerbose output.');
+      await writeFile(join(contextsDir, 'config.yaml'), 'setting: value');
+      await writeFile(join(contextsDir, 'ecomode.md'), '# Ecomode\n\nSave tokens.');
+
+      const contexts = await getContexts(tempDir);
+
+      expect(contexts).toHaveLength(3);
+      // Should be sorted alphabetically
+      expect(contexts[0].name).toBe('config');
+      expect(contexts[1].name).toBe('ecomode');
+      expect(contexts[2].name).toBe('verbose');
+    });
+
+    it('should handle errors and return empty array', async () => {
+      const fs = await import('../../../src/utils/fs.js');
+      const listFilesSpy = spyOn(fs, 'listFiles').mockImplementation(async () => {
+        throw new Error('Simulated error');
+      });
+
+      try {
+        await mkdir(join(tempDir, '.claude', 'contexts'), { recursive: true });
+        const contexts = await getContexts(tempDir);
+        expect(contexts).toEqual([]);
+      } finally {
+        listFilesSpy.mockRestore();
+      }
+    });
+  });
+
+  describe('frontmatter handling', () => {
+    it('should skip YAML frontmatter when extracting description', async () => {
+      const agentsDir = join(tempDir, '.claude', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(
+        join(agentsDir, 'lang-frontmatter-agent.md'),
+        `---
+name: frontmatter-agent
+description: This is in frontmatter
+version: 1.0.0
+---
+
+# Frontmatter Agent
+
+> This is the actual description after frontmatter
+
+More content here.`
+      );
+
+      const agents = await getAgents(tempDir);
+
+      expect(agents).toHaveLength(1);
+      expect(agents[0].name).toBe('lang-frontmatter-agent');
+      // Should extract description from blockquote after frontmatter, not from frontmatter
+      expect(agents[0].description).toBe('This is the actual description after frontmatter');
+    });
+
+    it('should handle agent with frontmatter but no blockquote', async () => {
+      const agentsDir = join(tempDir, '.claude', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(
+        join(agentsDir, 'mgr-frontmatter-test.md'),
+        `---
+name: frontmatter-test
+---
+
+# Frontmatter Test
+
+This is regular text after frontmatter.`
+      );
+
+      const agents = await getAgents(tempDir);
+
+      expect(agents).toHaveLength(1);
+      expect(agents[0].description).toBe('This is regular text after frontmatter.');
+    });
+  });
+
+  describe('parseYamlMetadata top-level keys', () => {
+    it('should parse top-level key-value pairs for backward compatibility', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'testing', 'legacy-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(join(skillDir, 'SKILL.md'), '# Legacy Skill');
+      await writeFile(
+        join(skillDir, 'index.yaml'),
+        `name: legacy-skill
+description: A legacy format skill with top-level keys
+version: 1.2.3
+`
+      );
+
+      const skills = await getSkills(tempDir);
+
+      expect(skills).toHaveLength(1);
+      expect(skills[0].description).toBe('A legacy format skill with top-level keys');
+      expect(skills[0].version).toBe('1.2.3');
+    });
+
+    it('should prefer metadata block over top-level keys', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'backend', 'mixed-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(join(skillDir, 'SKILL.md'), '# Mixed Skill');
+      await writeFile(
+        join(skillDir, 'index.yaml'),
+        `name: top-level-name
+description: Top level description
+metadata:
+  name: metadata-name
+  description: Metadata description
+  version: 2.0.0
+`
+      );
+
+      const skills = await getSkills(tempDir);
+
+      expect(skills).toHaveLength(1);
+      // metadata block takes precedence
+      expect(skills[0].description).toBe('Metadata description');
+      expect(skills[0].version).toBe('2.0.0');
+    });
+
+    it('should handle isNewTopLevelSection detection', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'development', 'section-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(join(skillDir, 'SKILL.md'), '# Section Skill');
+      await writeFile(
+        join(skillDir, 'index.yaml'),
+        `metadata:
+  description: Metadata description
+  version: 1.0.0
+scripts:
+  install: npm install
+`
+      );
+
+      const skills = await getSkills(tempDir);
+
+      expect(skills).toHaveLength(1);
+      expect(skills[0].description).toBe('Metadata description');
+      // scripts: should end the metadata section
+    });
+  });
+
+  describe('error handling for tryReadIndexYamlMetadata', () => {
+    it('should handle readTextFile error when reading index.yaml', async () => {
+      const skillDir = join(tempDir, '.claude', 'skills', 'testing', 'error-skill');
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(join(skillDir, 'SKILL.md'), '# Error Skill');
+      await writeFile(join(skillDir, 'index.yaml'), 'description: Test');
+
+      const fs = await import('../../../src/utils/fs.js');
+      const readTextFileSpy = spyOn(fs, 'readTextFile').mockImplementation(async (path) => {
+        if (path.endsWith('index.yaml')) {
+          throw new Error('Simulated read error');
+        }
+        // Allow SKILL.md to be read normally
+        return '# Error Skill';
+      });
+
+      try {
+        const skills = await getSkills(tempDir);
+
+        expect(skills).toHaveLength(1);
+        // When index.yaml read fails, description and version should be undefined
+        expect(skills[0].description).toBeUndefined();
+        expect(skills[0].version).toBeUndefined();
+      } finally {
+        readTextFileSpy.mockRestore();
+      }
+    });
+  });
+
+  describe('error handling for tryExtractMarkdownDescription', () => {
+    it('should handle readTextFile error when reading agent markdown', async () => {
+      const agentsDir = join(tempDir, '.claude', 'agents');
+      await mkdir(agentsDir, { recursive: true });
+      await writeFile(join(agentsDir, 'lang-read-error.md'), '# Read Error Agent\n\n> Description');
+
+      const fs = await import('../../../src/utils/fs.js');
+      const readTextFileSpy = spyOn(fs, 'readTextFile').mockImplementation(async (path) => {
+        if (path.endsWith('lang-read-error.md')) {
+          throw new Error('Simulated read error');
+        }
+        return '';
+      });
+
+      try {
+        const agents = await getAgents(tempDir);
+
+        expect(agents).toHaveLength(1);
+        // When markdown read fails, description should be undefined
+        expect(agents[0].description).toBeUndefined();
+      } finally {
+        readTextFileSpy.mockRestore();
+      }
+    });
+
+    it('should handle readTextFile error when reading guide markdown', async () => {
+      const guidesDir = join(tempDir, 'guides', 'testing');
+      await mkdir(guidesDir, { recursive: true });
+      await writeFile(join(guidesDir, 'error-guide.md'), '# Error Guide\n\nDescription');
+
+      const fs = await import('../../../src/utils/fs.js');
+      const readTextFileSpy = spyOn(fs, 'readTextFile').mockImplementation(async (path) => {
+        if (path.endsWith('error-guide.md')) {
+          throw new Error('Simulated read error');
+        }
+        return '';
+      });
+
+      try {
+        const guides = await getGuides(tempDir);
+
+        expect(guides).toHaveLength(1);
+        // When markdown read fails, description should be undefined
+        expect(guides[0].description).toBeUndefined();
+      } finally {
+        readTextFileSpy.mockRestore();
       }
     });
   });

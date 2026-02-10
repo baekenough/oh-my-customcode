@@ -35,8 +35,9 @@
     "init": {
       "description": "현재 디렉토리에 oh-my-customcode 초기화",
       "langOption": "템플릿 언어 (en 또는 ko)",
+      "providerOption": "초기화할 제공자 (auto, claude, codex)",
       "start": "oh-my-customcode 초기화 중...",
-      "exists": "기존 .claude/ 디렉토리가 발견되었습니다.",
+      "exists": "기존 {{rootDir}} 디렉토리가 발견되었습니다.",
       "backing_up": "백업을 생성합니다...",
       "backedUp": "기존 설치가 백업되었습니다: {{path}}",
       "copying": "템플릿 복사 중...",
@@ -78,6 +79,7 @@
     "list": {
       "description": "설치된 컴포넌트 목록 표시",
       "typeArgument": "표시할 타입: agents, skills, guides, rules 또는 all",
+      "providerOption": "표시할 제공자 (auto, claude, codex)",
       "scanning": "설치된 컴포넌트 검색 중...",
       "empty": "{{type}}이(가) 없습니다.",
       "header": "{{type}} ({{count}}개 설치됨)",
@@ -102,6 +104,7 @@
     "doctor": {
       "description": "설정 문제 확인 및 수정",
       "fixOption": "자동으로 수정 가능한 문제 수정",
+      "providerOption": "진단할 제공자 (auto, claude, codex)",
       "checking": "진단 검사 실행 중...",
       "applyingFixes": "수정 사항 적용 중...",
       "fixing": "수정 중: {{name}}...",
@@ -141,6 +144,10 @@
         "claudeMd": {
           "pass": "CLAUDE.md 존재함",
           "fail": "CLAUDE.md를 찾을 수 없음"
+        },
+        "entryMd": {
+          "pass": "{{entry}} 존재함",
+          "fail": "{{entry}}를 찾을 수 없음"
         },
         "rules": {
           "pass": "Rules 디렉토리 정상",
