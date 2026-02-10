@@ -56,6 +56,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -105,6 +106,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -143,6 +145,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -177,6 +180,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -214,6 +218,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -246,6 +251,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -278,6 +284,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -313,6 +320,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -389,6 +397,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -421,6 +430,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -452,6 +462,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -483,6 +494,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -514,6 +526,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -548,6 +561,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -581,6 +595,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),
@@ -606,6 +621,7 @@ describe('update command', () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
           provider: 'claude',
+          source: 'override',
           confidence: 'high',
           reason: 'test',
         }),

@@ -13,7 +13,7 @@ permissions:
 jobs:
   release:
     name: Build, Test and Publish
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
