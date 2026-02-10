@@ -169,12 +169,12 @@ oh-my-customcode로 구동됩니다.
 project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
-|   +-- agents/                  # 서브에이전트 정의 (34 파일)
-|   +-- skills/                  # 스킬 (41 디렉토리)
+|   +-- agents/                  # 서브에이전트 정의 (42 파일)
+|   +-- skills/                  # 스킬 (51 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R018)
 |   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
-+-- guides/                      # 레퍼런스 문서 (13 토픽)
++-- guides/                      # 레퍼런스 문서 (22 토픽)
 ```
 
 ## 오케스트레이션
@@ -182,6 +182,7 @@ project/
 오케스트레이션은 메인 대화의 라우팅 스킬로 처리됩니다:
 - **secretary-routing**: 매니저 에이전트로 관리 작업 라우팅
 - **dev-lead-routing**: 언어/프레임워크 전문가에게 개발 작업 라우팅
+- **de-lead-routing**: 데이터 엔지니어링 작업을 DE/파이프라인 전문가에게 라우팅
 - **qa-lead-routing**: QA 워크플로우 조율
 
 메인 대화가 유일한 오케스트레이터 역할을 합니다. 서브에이전트는 다른 서브에이전트를 생성할 수 없습니다.
@@ -194,13 +195,14 @@ project/
 | SW Engineer/Backend | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
 | SW Engineer/Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
 | SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| SW Engineer/Database | 1 | db-supabase-expert |
+| DE Engineer | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
+| SW Engineer/Database | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
 | SW Architect | 2 | arch-documenter, arch-speckit-agent |
 | Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
-| **총계** | **34** | |
+| **총계** | **42** | |
 
 ## Agent Teams
 
