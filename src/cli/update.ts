@@ -3,158 +3,161 @@
  * Updates agents to the latest version
  */
 
+import { detectProvider } from '../core/provider.js';
+import { type UpdateComponent, type UpdateOptions, update } from '../core/updater.js';
 import { i18n } from '../i18n/index.js';
 
 /**
- * Options for the update command
+ * CLI options for the update command
  */
-export interface UpdateOptions {
+export interface UpdateCommandOptions {
+  /** Show what would be updated without making changes */
+  dryRun?: boolean;
   /** Force update even if already at latest version */
   force?: boolean;
-  /** Specific component to update (agents|skills|guides|all) */
-  component?: 'agents' | 'skills' | 'guides' | 'all';
-}
-
-/**
- * Result of the update command
- */
-export interface UpdateResult {
-  success: boolean;
-  message: string;
-  updatedComponents?: string[];
-  currentVersion?: string;
-  newVersion?: string;
-  errors?: string[];
-}
-
-/**
- * Version information for installed components
- */
-export interface VersionInfo {
-  version: string;
-  lastUpdated: string;
-  source: string;
-}
-
-/**
- * Get current installed version
- * @returns Version info or null if not installed
- */
-export async function getCurrentVersion(): Promise<VersionInfo | null> {
-  // TODO: Implement version reading from .claude/.omcustom-version or similar
-  // Read from installed templates metadata
-  return null;
-}
-
-/**
- * Get latest available version from source
- * @returns Latest version info
- */
-export async function getLatestVersion(): Promise<VersionInfo> {
-  // TODO: Implement fetching latest version from GitHub/npm
-  return {
-    version: '0.0.0',
-    lastUpdated: new Date().toISOString(),
-    source: 'https://github.com/baekenough/oh-my-customcode',
-  };
-}
-
-/**
- * Check if update is available
- * @returns True if newer version is available
- */
-export async function checkUpdateAvailable(): Promise<boolean> {
-  const current = await getCurrentVersion();
-  const latest = await getLatestVersion();
-
-  if (!current) {
-    return true; // Not installed, needs update
-  }
-
-  // TODO: Implement proper semver comparison
-  return current.version !== latest.version;
-}
-
-/**
- * Download and apply updates
- * @param options - Update options
- * @returns List of updated component paths
- */
-export async function applyUpdates(_options: UpdateOptions): Promise<string[]> {
-  const updatedComponents: string[] = [];
-
-  // TODO: Implement actual update logic
-  // 1. Download latest templates
-  // 2. Backup current installation
-  // 3. Apply updates while preserving user customizations
-  // 4. Update version metadata
-
-  return updatedComponents;
+  /** Create backup before updating */
+  backup?: boolean;
+  /** Update only agents */
+  agents?: boolean;
+  /** Update only skills */
+  skills?: boolean;
+  /** Update only rules */
+  rules?: boolean;
+  /** Update only guides */
+  guides?: boolean;
+  /** Update only hooks */
+  hooks?: boolean;
+  /** Update only contexts */
+  contexts?: boolean;
+  /** Provider to update (auto, claude, codex) */
+  provider?: string;
 }
 
 /**
  * Execute the update command
- * @param options - Update command options
- * @returns Result of the update operation
  */
-export async function updateCommand(options: UpdateOptions = {}): Promise<UpdateResult> {
-  console.log(i18n.t('cli.update.checking'));
-
+export async function updateCommand(options: UpdateCommandOptions = {}): Promise<void> {
   try {
-    // Step 1: Get current and latest versions
-    const currentVersion = await getCurrentVersion();
-    const latestVersion = await getLatestVersion();
+    const targetDir = process.cwd();
 
-    if (!currentVersion) {
-      console.log(i18n.t('cli.update.notInstalled'));
-      return {
-        success: false,
-        message: i18n.t('cli.update.notInstalled'),
-        errors: [i18n.t('cli.update.runInitFirst')],
-      };
+    // Detect provider
+    const detection = await detectProvider({
+      targetDir,
+      override: options.provider as 'auto' | 'claude' | 'codex' | undefined,
+    });
+    const provider = detection.provider;
+
+    // Build components list from flags
+    const components = buildComponentsList(options);
+
+    // Show dry run header if applicable
+    if (options.dryRun) {
+      console.log(i18n.t('cli.update.dryRunHeader'));
     }
 
-    // Step 2: Check if update is needed
-    const updateAvailable = await checkUpdateAvailable();
-
-    if (!updateAvailable && !options.force) {
-      console.log(i18n.t('cli.update.alreadyLatest'));
-      return {
-        success: true,
-        message: i18n.t('cli.update.alreadyLatest'),
-        currentVersion: currentVersion.version,
-        newVersion: latestVersion.version,
-      };
-    }
-
-    // Step 3: Apply updates
-    console.log(
-      i18n.t('cli.update.updating', {
-        from: currentVersion.version,
-        to: latestVersion.version,
-      })
-    );
-
-    const updatedComponents = await applyUpdates(options);
-
-    console.log(i18n.t('cli.update.success'));
-    return {
-      success: true,
-      message: i18n.t('cli.update.success'),
-      updatedComponents,
-      currentVersion: currentVersion.version,
-      newVersion: latestVersion.version,
+    // Execute update
+    const updateOptions: UpdateOptions = {
+      targetDir,
+      provider,
+      components,
+      force: options.force,
+      preserveCustomizations: true,
+      dryRun: options.dryRun,
+      backup: options.backup,
     };
-  } catch (error) {
+
+    const result = await update(updateOptions);
+
+    // Print results
+    printUpdateResults(result);
+
+    // Exit with appropriate code
+    if (!result.success) {
+      process.exit(1);
+    }
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(i18n.t('cli.update.failed'), errorMessage);
-
-    return {
-      success: false,
-      message: i18n.t('cli.update.failed'),
-      errors: [errorMessage],
-    };
+    console.error(i18n.t('cli.update.summaryFailed', { error: errorMessage }));
+    process.exit(1);
   }
 }
+
+/**
+ * Build components list from CLI flags
+ */
+function buildComponentsList(options: UpdateCommandOptions): UpdateComponent[] | undefined {
+  const components: UpdateComponent[] = [];
+
+  if (options.agents) {
+    components.push('agents');
+  }
+  if (options.skills) {
+    components.push('skills');
+  }
+  if (options.rules) {
+    components.push('rules');
+  }
+  if (options.guides) {
+    components.push('guides');
+  }
+  if (options.hooks) {
+    components.push('hooks');
+  }
+  if (options.contexts) {
+    components.push('contexts');
+  }
+
+  // If no specific components selected, return undefined (update all)
+  return components.length > 0 ? components : undefined;
+}
+
+/**
+ * Print update results
+ */
+function printUpdateResults(result: UpdateResult): void {
+  // Show updated components
+  for (const component of result.updatedComponents) {
+    console.log(i18n.t('cli.update.componentUpdated', { component }));
+  }
+
+  // Show skipped components
+  for (const component of result.skippedComponents) {
+    console.log(i18n.t('cli.update.componentSkipped', { component }));
+  }
+
+  // Show preserved files
+  if (result.preservedFiles.length > 0) {
+    console.log(i18n.t('cli.update.preservedFiles', { count: result.preservedFiles.length }));
+  }
+
+  // Show backup path
+  if (result.backedUpPaths.length > 0) {
+    for (const path of result.backedUpPaths) {
+      console.log(i18n.t('cli.update.backupCreated', { path }));
+    }
+  }
+
+  // Show warnings
+  for (const warning of result.warnings) {
+    console.warn(warning);
+  }
+
+  // Show summary
+  if (result.success) {
+    console.log(
+      i18n.t('cli.update.summary', {
+        updated: result.updatedComponents.length,
+        skipped: result.skippedComponents.length,
+      })
+    );
+  } else if (result.error) {
+    console.error(i18n.t('cli.update.summaryFailed', { error: result.error }));
+  }
+}
+
+/**
+ * Import UpdateResult type from core
+ */
+type UpdateResult = Awaited<ReturnType<typeof update>>;
 
 export default updateCommand;
