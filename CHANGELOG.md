@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-02-10
+
+### Fixed
+- Resolve release workflow conflict by using `workflow_run` trigger instead of duplicate `push: tags` trigger (#59)
+
 ## [0.9.1] - 2026-02-10
 
 ### Fixed
