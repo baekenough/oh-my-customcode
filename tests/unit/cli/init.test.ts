@@ -294,7 +294,7 @@ describe('init command', () => {
   });
 
   describe('installedComponents tracking', () => {
-    it('should track installed claude-md component', async () => {
+    it('should track installed entry-md component', async () => {
       const result = await install({
         targetDir: tempDir,
         language: 'en',
@@ -302,7 +302,7 @@ describe('init command', () => {
 
       expect(result.success).toBe(true);
       // CLAUDE.md should always be installed in a fresh directory
-      expect(result.installedComponents).toContain('claude-md');
+      expect(result.installedComponents).toContain('entry-md');
     });
 
     it('should track skipped components when they already exist', async () => {
@@ -318,7 +318,7 @@ describe('init command', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.skippedComponents).toContain('claude-md');
+      expect(result.skippedComponents).toContain('entry-md');
     });
 
     it('should install components with force=true even when directories exist', async () => {
@@ -334,7 +334,7 @@ describe('init command', () => {
 
       expect(result.success).toBe(true);
       // With force, all components should be in installedComponents
-      expect(result.installedComponents).toContain('claude-md');
+      expect(result.installedComponents).toContain('entry-md');
       expect(result.installedComponents).toContain('rules');
       expect(result.installedComponents).toContain('agents');
     });

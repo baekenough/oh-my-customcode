@@ -5,6 +5,8 @@
 
 import { join } from 'node:path';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
+import { getProviderLayout, type LlmProvider, type ProviderPreference } from '../core/layout.js';
+import { detectProvider } from '../core/provider.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
 
@@ -14,6 +16,8 @@ import { fileExists } from '../utils/fs.js';
 export interface InitOptions {
   /** Language for templates and messages (en|ko) */
   lang: 'en' | 'ko';
+  /** Provider selection (auto|claude|codex) */
+  provider?: ProviderPreference;
   /** Whether to overwrite existing files */
   force?: boolean;
 }
@@ -29,27 +33,33 @@ export interface InitResult {
 }
 
 /**
- * Check if .claude directory already exists
+ * Check if provider root directory already exists
  * @param targetDir - Target directory to check
- * @returns True if .claude exists
+ * @returns True if provider root exists
  */
-export async function checkExistingInstallation(targetDir: string): Promise<boolean> {
-  const claudeDir = join(targetDir, '.claude');
-  return fileExists(claudeDir);
+export async function checkExistingInstallation(
+  targetDir: string,
+  provider: LlmProvider
+): Promise<boolean> {
+  const layout = getProviderLayout(provider);
+  const rootDir = join(targetDir, layout.rootDir);
+  return fileExists(rootDir);
 }
 
-/** Components that live under .claude directory */
-const CLAUDE_SUBDIR_COMPONENTS = new Set(['rules', 'hooks', 'contexts', 'agents', 'skills']);
+/** Components that live under provider root directory */
+const PROVIDER_SUBDIR_COMPONENTS = new Set(['rules', 'hooks', 'contexts', 'agents', 'skills']);
 
 /**
  * Convert component name to its full path
  */
-function componentToPath(targetDir: string, component: string): string {
-  if (component === 'claude-md') {
-    return join(targetDir, 'CLAUDE.md');
+function componentToPath(targetDir: string, provider: LlmProvider, component: string): string {
+  if (component === 'entry-md') {
+    const layout = getProviderLayout(provider);
+    return join(targetDir, layout.entryFile);
   }
-  if (CLAUDE_SUBDIR_COMPONENTS.has(component)) {
-    return join(targetDir, '.claude', component);
+  if (PROVIDER_SUBDIR_COMPONENTS.has(component)) {
+    const layout = getProviderLayout(provider);
+    return join(targetDir, layout.rootDir, component);
   }
   return join(targetDir, component);
 }
@@ -57,8 +67,12 @@ function componentToPath(targetDir: string, component: string): string {
 /**
  * Build list of installed paths from components
  */
-function buildInstalledPaths(targetDir: string, components: string[]): string[] {
-  return components.map((component) => componentToPath(targetDir, component));
+function buildInstalledPaths(
+  targetDir: string,
+  provider: LlmProvider,
+  components: string[]
+): string[] {
+  return components.map((component) => componentToPath(targetDir, provider, component));
 }
 
 /**
@@ -96,14 +110,6 @@ function createFailureResult(errorMessage: string): InitResult {
 }
 
 /**
- * Handle existing installation notification
- */
-function notifyExistingInstallation(): void {
-  console.log(i18n.t('cli.init.exists'));
-  console.log(i18n.t('cli.init.backing_up'));
-}
-
-/**
  * Log backup and warning information from install result
  */
 function logInstallResultInfo(result: InstallerResult): void {
@@ -121,15 +127,21 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
   console.log(i18n.t('cli.init.start'));
 
   try {
-    const exists = await checkExistingInstallation(targetDir);
+    const detection = await detectProvider({ targetDir, override: options.provider });
+    const provider = detection.provider;
+    const layout = getProviderLayout(provider);
+
+    const exists = await checkExistingInstallation(targetDir, provider);
     if (exists) {
-      notifyExistingInstallation();
+      console.log(i18n.t('cli.init.exists', { rootDir: layout.rootDir }));
+      console.log(i18n.t('cli.init.backing_up'));
     }
 
     console.log(i18n.t('cli.init.copying'));
     const installResult = await install({
       targetDir,
       language: options.lang,
+      provider,
       force: options.force ?? false,
       backup: exists,
     });
@@ -138,7 +150,11 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
       return createFailureResult(installResult.error || 'Unknown error');
     }
 
-    const installedPaths = buildInstalledPaths(targetDir, installResult.installedComponents);
+    const installedPaths = buildInstalledPaths(
+      targetDir,
+      provider,
+      installResult.installedComponents
+    );
     logInstallResultInfo(installResult);
     logSuccessDetails(installedPaths, installResult.skippedComponents);
 

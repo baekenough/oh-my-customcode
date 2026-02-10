@@ -5,6 +5,7 @@
 import { join } from 'node:path';
 import { ensureDirectory, fileExists, readJsonFile, writeJsonFile } from '../utils/fs.js';
 import { debug, warn } from '../utils/logger.js';
+import type { ProviderPreference } from './layout.js';
 
 /**
  * Main configuration for oh-my-customcode
@@ -16,6 +17,8 @@ export interface OmccConfig {
   version: string;
   /** User's preferred language */
   language: 'en' | 'ko';
+  /** Preferred provider (auto|claude|codex) */
+  provider?: ProviderPreference;
   /** Installation timestamp */
   installedAt: string;
   /** Last updated timestamp */
@@ -98,6 +101,7 @@ export function getDefaultConfig(): OmccConfig {
     configVersion: CURRENT_CONFIG_VERSION,
     version: '0.0.0',
     language: 'en',
+    provider: 'auto',
     installedAt: '',
     lastUpdated: '',
     installedComponents: [],

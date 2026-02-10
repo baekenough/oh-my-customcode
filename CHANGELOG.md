@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Dual-mode provider detection (Claude/Codex) with override/config/env/project markers
+- Codex templates: `.codex/` tree, `AGENTS.md` templates, `manifest.codex.json`
+- Provider export API for layout/detection utilities
+
+### Changed
+- CLI: `init`, `list`, `doctor` support `--provider` and auto-detection
+- Installer/updater now resolve component paths by provider root (`.claude` or `.codex`)
+- Config adds `provider` field (default `auto`)
+
 ## [0.8.0] - 2026-02-10
 
 ### Added

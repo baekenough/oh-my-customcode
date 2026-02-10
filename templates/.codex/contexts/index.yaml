@@ -1,0 +1,41 @@
+# Claude Code Contexts Configuration
+# Source: https://github.com/affaan-m/everything-claude-code
+
+contexts:
+  dev:
+    file: dev.md
+    mode: Active development
+    focus: Implementation, coding, building features
+    priority: Working > Correct > Clean
+
+  review:
+    file: review.md
+    mode: PR review and code analysis
+    focus: Quality, security, maintainability
+    checklist:
+      - Logic correctness
+      - Error handling
+      - Security
+      - Performance
+      - Readability
+      - Test coverage
+
+  research:
+    file: research.md
+    mode: Exploration and investigation
+    focus: Understanding before acting
+    process:
+      - Understand question
+      - Explore code/docs
+      - Form hypotheses
+      - Validate with evidence
+      - Summarize findings
+
+usage:
+  description: |
+    Use contexts to change Claude's behavior mode.
+    Include the context file content in your prompt or
+    reference it at the start of a session.
+  example: |
+    "Using review context, analyze this PR..."
+    "In dev mode, implement this feature..."

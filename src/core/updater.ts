@@ -13,6 +13,7 @@ import {
 } from '../utils/fs.js';
 import { debug, error, info, success } from '../utils/logger.js';
 import { loadConfig, type OmccConfig, saveConfig } from './config.js';
+import { getProviderLayout, type LlmProvider } from './layout.js';
 
 /**
  * Options for update operation
@@ -20,6 +21,8 @@ import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 export interface UpdateOptions {
   /** Target directory to update */
   targetDir: string;
+  /** Provider to update for (claude|codex) */
+  provider?: LlmProvider;
   /** Specific components to update (default: all) */
   components?: UpdateComponent[];
   /** Whether to force update even if no changes */
@@ -142,11 +145,12 @@ function createUpdateResult(): UpdateResult {
 /** Handle backup if requested */
 async function handleBackupIfRequested(
   targetDir: string,
+  provider: LlmProvider,
   backup: boolean,
   result: UpdateResult
 ): Promise<void> {
   if (!backup) return;
-  const backupPath = await backupInstallation(targetDir);
+  const backupPath = await backupInstallation(targetDir, provider);
   result.backedUpPaths.push(backupPath);
   info('update.backup_created', { path: backupPath });
 }
@@ -154,6 +158,7 @@ async function handleBackupIfRequested(
 /** Process a single component update */
 async function processComponentUpdate(
   targetDir: string,
+  provider: LlmProvider,
   component: UpdateComponent,
   updateCheck: UpdateCheckResult,
   customizations: CustomizationManifest | null,
@@ -174,7 +179,13 @@ async function processComponentUpdate(
   }
 
   try {
-    const preserved = await updateComponent(targetDir, component, customizations, options);
+    const preserved = await updateComponent(
+      targetDir,
+      provider,
+      component,
+      customizations,
+      options
+    );
     result.updatedComponents.push(component);
     result.preservedFiles.push(...preserved);
   } catch (err) {
@@ -187,6 +198,7 @@ async function processComponentUpdate(
 /** Update all components */
 async function updateAllComponents(
   targetDir: string,
+  provider: LlmProvider,
   components: UpdateComponent[],
   updateCheck: UpdateCheckResult,
   customizations: CustomizationManifest | null,
@@ -196,6 +208,7 @@ async function updateAllComponents(
   for (const component of components) {
     await processComponentUpdate(
       targetDir,
+      provider,
       component,
       updateCheck,
       customizations,
@@ -215,9 +228,10 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     info('update.start', { targetDir: options.targetDir });
 
     const config = await loadConfig(options.targetDir);
+    const provider = options.provider ?? (config.provider === 'codex' ? 'codex' : 'claude');
     result.previousVersion = config.version;
 
-    const updateCheck = await checkForUpdates(options.targetDir);
+    const updateCheck = await checkForUpdates(options.targetDir, provider);
     result.newVersion = updateCheck.latestVersion;
 
     if (!updateCheck.hasUpdates && !options.force) {
@@ -227,7 +241,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       return result;
     }
 
-    await handleBackupIfRequested(options.targetDir, !!options.backup, result);
+    await handleBackupIfRequested(options.targetDir, provider, !!options.backup, result);
 
     const customizations =
       options.preserveCustomizations !== false
@@ -237,6 +251,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     const components = options.components || getAllUpdateComponents();
     await updateAllComponents(
       options.targetDir,
+      provider,
       components,
       updateCheck,
       customizations,
@@ -262,18 +277,21 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 /**
  * Check for available updates
  */
-export async function checkForUpdates(targetDir: string): Promise<UpdateCheckResult> {
+export async function checkForUpdates(
+  targetDir: string,
+  provider: LlmProvider = 'claude'
+): Promise<UpdateCheckResult> {
   const config = await loadConfig(targetDir);
   const currentVersion = config.version;
 
   // Get latest version from templates
-  const latestVersion = await getLatestVersion();
+  const latestVersion = await getLatestVersion(provider);
 
   // Check each component for updates
   const updatableComponents: UpdateCheckResult['updatableComponents'] = [];
 
   for (const component of getAllUpdateComponents()) {
-    const hasUpdate = await componentHasUpdate(targetDir, component, config);
+    const hasUpdate = await componentHasUpdate(targetDir, provider, component, config);
     if (hasUpdate) {
       updatableComponents.push({
         name: component,
@@ -340,8 +358,9 @@ function getAllUpdateComponents(): UpdateComponent[] {
 /**
  * Get the latest version from package templates
  */
-async function getLatestVersion(): Promise<string> {
-  const manifestPath = resolveTemplatePath('manifest.json');
+async function getLatestVersion(provider: LlmProvider): Promise<string> {
+  const layout = getProviderLayout(provider);
+  const manifestPath = resolveTemplatePath(layout.manifestFile);
   if (await fileExists(manifestPath)) {
     const manifest = await readJsonFile<{ version: string }>(manifestPath);
     return manifest.version;
@@ -354,6 +373,7 @@ async function getLatestVersion(): Promise<string> {
  */
 async function componentHasUpdate(
   _targetDir: string,
+  provider: LlmProvider,
   component: UpdateComponent,
   config: OmccConfig
 ): Promise<boolean> {
@@ -363,7 +383,7 @@ async function componentHasUpdate(
   }
 
   // Simple version comparison (could be enhanced with semver)
-  const latestVersion = await getLatestVersion();
+  const latestVersion = await getLatestVersion(provider);
   return installedVersion !== latestVersion;
 }
 
@@ -372,12 +392,13 @@ async function componentHasUpdate(
  */
 async function updateComponent(
   targetDir: string,
+  provider: LlmProvider,
   component: UpdateComponent,
   customizations: CustomizationManifest | null,
   options: UpdateOptions
 ): Promise<string[]> {
   const preservedFiles: string[] = [];
-  const componentPath = getComponentPath(component);
+  const componentPath = getComponentPath(provider, component);
   const srcPath = resolveTemplatePath(componentPath);
   const destPath = join(targetDir, componentPath);
 
@@ -410,22 +431,18 @@ async function updateComponent(
 /**
  * Get the path for a component
  */
-function getComponentPath(component: UpdateComponent): string {
-  const paths: Record<UpdateComponent, string> = {
-    rules: '.claude/rules',
-    agents: '.claude/agents',
-    skills: '.claude/skills',
-    guides: 'guides',
-    hooks: '.claude/hooks',
-    contexts: '.claude/contexts',
-  };
-  return paths[component];
+function getComponentPath(provider: LlmProvider, component: UpdateComponent): string {
+  const layout = getProviderLayout(provider);
+  if (component === 'guides') {
+    return 'guides';
+  }
+  return `${layout.rootDir}/${component}`;
 }
 
 /**
  * Backup the current installation
  */
-async function backupInstallation(targetDir: string): Promise<string> {
+async function backupInstallation(targetDir: string, provider: LlmProvider): Promise<string> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupDir = join(targetDir, `.omcustom-backup-${timestamp}`);
   const fs = await import('node:fs/promises');
@@ -433,7 +450,8 @@ async function backupInstallation(targetDir: string): Promise<string> {
   await ensureDirectory(backupDir);
 
   // Backup key directories
-  const dirsToBackup = ['.claude', 'guides'];
+  const layout = getProviderLayout(provider);
+  const dirsToBackup = [layout.rootDir, 'guides'];
   for (const dir of dirsToBackup) {
     const srcPath = join(targetDir, dir);
     if (await fileExists(srcPath)) {
@@ -442,10 +460,10 @@ async function backupInstallation(targetDir: string): Promise<string> {
     }
   }
 
-  // Backup CLAUDE.md
-  const claudeMdPath = join(targetDir, 'CLAUDE.md');
-  if (await fileExists(claudeMdPath)) {
-    await fs.copyFile(claudeMdPath, join(backupDir, 'CLAUDE.md'));
+  // Backup entry doc
+  const entryPath = join(targetDir, layout.entryFile);
+  if (await fileExists(entryPath)) {
+    await fs.copyFile(entryPath, join(backupDir, layout.entryFile));
   }
 
   return backupDir;

@@ -149,7 +149,7 @@ omcustom doctor --verbose
 
 The doctor command verifies:
 
-- CLAUDE.md exists and is valid
+- Entry file exists and is valid (CLAUDE.md for Claude, AGENTS.md for Codex)
 - All required directories exist
 - Agent definitions are complete
 - Skill references are valid
@@ -164,11 +164,11 @@ oh-my-customcode Doctor
 
 Checking installation health...
 
-✓ CLAUDE.md exists
-✓ .claude/rules directory exists
-✓ agents directory exists
-✓ skills directory exists
-✗ Missing agent: agents/manager/creator/index.yaml
+✓ Entry file exists (CLAUDE.md or AGENTS.md)
+✓ Provider rules directory exists (.claude/rules or .codex/rules)
+✓ Provider agents directory exists (.claude/agents or .codex/agents)
+✓ Provider skills directory exists (.claude/skills or .codex/skills)
+✗ Missing agent: .claude/agents/mgr-creator.md
 
 Issues found: 1
 Run 'omcustom doctor --fix' to auto-repair
