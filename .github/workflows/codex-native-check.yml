@@ -51,9 +51,11 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           PROJECT_ROOT: ${{ github.workspace }}/templates
         run: |
+          DRY_RUN_INPUT="${{ github.event.inputs.dry_run }}"
+          FORCE_INPUT="${{ github.event.inputs.force }}"
           ARGS=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
-          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ "$DRY_RUN_INPUT" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "$FORCE_INPUT" = "true" ]; then ARGS="$ARGS --force"; fi
           bun run .github/scripts/verify-codex-native.ts $ARGS
 
       - name: Create summary
@@ -72,6 +74,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Project Root**: \`templates/\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
+          DRY_RUN_INPUT="${{ github.event.inputs.dry_run }}"
+          FORCE_INPUT="${{ github.event.inputs.force }}"
+          if [ -z "$DRY_RUN_INPUT" ]; then DRY_RUN_INPUT="false"; fi
+          if [ -z "$FORCE_INPUT" ]; then FORCE_INPUT="false"; fi
+          if [ "$DRY_RUN_INPUT" = "true" ]; then
             echo "**Mode**: Dry Run (no hash update)" >> $GITHUB_STEP_SUMMARY
           fi

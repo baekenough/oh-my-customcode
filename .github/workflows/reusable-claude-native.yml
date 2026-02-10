@@ -16,23 +16,13 @@ on:
     secrets:
       ANTHROPIC_API_KEY:
         required: false
-  push:
-    paths:
-      - '.github/workflows/reusable-claude-native.yml'
 
 permissions:
   issues: write
   contents: write
 
 jobs:
-  push-guard:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Reusable workflow file updated. No direct execution needed."
-
   verify:
-    if: github.event_name != 'push'
     runs-on: ubuntu-latest
 
     steps:
