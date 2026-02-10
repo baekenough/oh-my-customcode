@@ -50,6 +50,32 @@ Simple file operations
 When Agent Teams is not available
 ```
 
+## CRITICAL: Self-Check Before Spawning Task Tool
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE USING TASK TOOL, ASK YOURSELF:                           ║
+║                                                                   ║
+║  1. Is Agent Teams available? (TeamCreate tool exists?)          ║
+║     → YES: Continue to step 2                                    ║
+║     → NO: Task tool is fine                                      ║
+║                                                                   ║
+║  2. Does this task qualify for Agent Teams?                      ║
+║     - 3+ agents needed?                                          ║
+║     - Shared state or coordination required?                     ║
+║     - Inter-agent communication adds value?                      ║
+║     - Complex workflow (create + review + integrate)?            ║
+║     → ANY YES: MUST use Agent Teams                              ║
+║     → ALL NO: Task tool is fine                                  ║
+║                                                                   ║
+║  3. Am I defaulting to Task tool out of habit?                   ║
+║     → STOP. Evaluate honestly against the decision matrix.       ║
+║                                                                   ║
+║  Using Task tool for Agent Teams-qualifying tasks                ║
+║  when Agent Teams is available = Rule violation                  ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 ## Team Composition Guidelines
 
 ### Standard Team Patterns
@@ -133,5 +159,25 @@ Agent Teams consume more tokens due to:
 Rule of thumb:
   If task takes < 3 minutes with Task tool -> Use Task tool
   If task needs inter-agent communication  -> Use Agent Teams
-  If unsure -> Start with Task tool, escalate to Agent Teams if needed
+  If unsure -> Default to Agent Teams when available, downgrade to Task tool only if clearly unqualified
+```
+
+## Enforcement
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  VIOLATION EXAMPLES:                                             ║
+║                                                                   ║
+║  ✗ Agent Teams available + 4 parallel Task() calls for           ║
+║    coordinated work (creating agents + guides + routing skill)   ║
+║  ✗ Spawning Task tool agents that need to share results          ║
+║  ✗ Defaulting to Task tool without checking Agent Teams first    ║
+║                                                                   ║
+║  CORRECT EXAMPLES:                                               ║
+║                                                                   ║
+║  ✓ TeamCreate → TaskCreate → spawn team members for              ║
+║    multi-file coordinated creation                               ║
+║  ✓ Task tool for single independent delegation                   ║
+║  ✓ Task tool when Agent Teams is not available                   ║
+╚══════════════════════════════════════════════════════════════════╝
 ```

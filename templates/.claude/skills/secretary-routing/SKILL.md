@@ -20,6 +20,9 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
 | mgr-sync-checker | Sync verification | "sync check", "verify sync" |
 | mgr-sauron | R017 auto-verification | "verify", "full check" |
+| mgr-claude-code-bible | Claude Code spec compliance | "spec check", "verify compliance" |
+| sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
+| sys-naggy | TODO management | "todo", "track tasks", "task list" |
 
 ## Command Routing
 
@@ -32,6 +35,9 @@ audit    → mgr-supplier
 git      → mgr-gitnerd
 sync     → mgr-sync-checker
 verify   → mgr-sauron
+spec     → mgr-claude-code-bible
+memory   → sys-memory-keeper
+todo     → sys-naggy
 batch    → multiple (parallel)
 ```
 
@@ -48,6 +54,9 @@ batch    → multiple (parallel)
    - "git commit/push/pr" → mgr-gitnerd
    - "sync check" → mgr-sync-checker
    - "verify" → mgr-sauron
+   - "spec check" → mgr-claude-code-bible
+   - "save/recall memory" → sys-memory-keeper
+   - "todo/task list" → sys-naggy
 3. Spawn Task with selected agent role
 4. Monitor execution
 5. Report result to user
@@ -92,6 +101,9 @@ Use Task tool's `model` parameter to optimize cost and performance:
 | mgr-gitnerd | `sonnet` | Commit message quality |
 | mgr-sync-checker | `haiku` | Fast verification |
 | mgr-sauron | `sonnet` | Multi-round verification |
+| mgr-claude-code-bible | `sonnet` | Spec compliance checks |
+| sys-memory-keeper | `sonnet` | Memory operations, search |
+| sys-naggy | `haiku` | Simple TODO tracking |
 
 ### Task Call Examples
 
