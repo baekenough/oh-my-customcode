@@ -151,6 +151,7 @@ oh-my-customcode로 구동됩니다.
 | `/dev-refactor` | 코드 리팩토링 |
 | `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
+| `/monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
 | `/npm-publish` | npm 레지스트리에 패키지 배포 |
 | `/npm-version` | 시맨틱 버전 관리 |
 | `/npm-audit` | 의존성 감사 |
