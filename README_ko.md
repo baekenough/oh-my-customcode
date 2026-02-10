@@ -16,7 +16,7 @@ oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Clau
 
 | 특징 | 설명 |
 |------|------|
-| **바로 사용 가능** | 42개 에이전트, 51개 스킬, 22개 가이드 - 즉시 사용 가능 |
+| **바로 사용 가능** | 42개 에이전트, 51개 스킬, 22개 가이드, 18개 규칙, 1개 훅, 4개 컨텍스트 - 즉시 사용 가능 |
 | **서브 에이전트 모델** | 전문화된 역할의 계층적 에이전트 오케스트레이션 지원 |
 | **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
 | **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
@@ -97,8 +97,8 @@ secretary (라우팅 스킬)
   └── mgr-sync-checker:haiku   — 레지스트리 검증
 
 dev-lead (라우팅 스킬)
-  ├── lang-golang:sonnet   — Go 구현
-  ├── lang-python:sonnet   — Python 구현
+  ├── lang-golang-expert:sonnet   — Go 구현
+  ├── lang-python-expert:sonnet   — Python 구현
   └── qa-engineer:sonnet   — 테스트 생성
 ```
 
@@ -125,10 +125,10 @@ dev-lead (라우팅 스킬)
 
 ### 에이전트 (42개)
 
-| 카테고리 | 수 | 에이전트 (prefixed names) |
+| 카테고리 | 수 | 에이전트 |
 |----------|-----|----------|
-| **언어** | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java21 |
-| **백엔드** | 5 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs |
+| **언어** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| **백엔드** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
 | **프론트엔드** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
 | **툴링** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | **데이터 엔지니어링** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
@@ -168,6 +168,14 @@ dev-lead (라우팅 스킬)
 | SHOULD | 5 | 상호작용, 에러 처리 (권장) |
 | MAY | 1 | 최적화 가이드라인 (선택) |
 
+### 훅 (1개)
+
+Claude Code 라이프사이클 이벤트(PreToolUse, PostToolUse 등)에 대한 이벤트 기반 자동화.
+
+### 컨텍스트 (4개)
+
+에이전트 간 지식 공유 및 모드 설정을 위한 공유 컨텍스트 파일.
+
 ---
 
 ## CLI 명령어
@@ -195,8 +203,8 @@ your-project/
 │   ├── agents/            # 모든 에이전트 (플랫 구조)
 │   ├── skills/            # 모든 스킬
 │   ├── rules/             # 행동 규칙
-│   ├── hooks/             # 이벤트 훅
-│   └── contexts/          # 컨텍스트 파일
+│   ├── hooks/             # 이벤트 훅 (1개)
+│   └── contexts/          # 컨텍스트 파일 (4개)
 └── guides/                # 참조 문서
 ```
 

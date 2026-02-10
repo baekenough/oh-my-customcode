@@ -16,7 +16,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 51 skills, 22 guides - ready to use out of the box |
+| **Batteries Included** | 42 agents, 51 skills, 22 guides, 18 rules, 1 hook, 4 contexts - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -160,6 +160,14 @@ Comprehensive reference documentation covering:
 | **MUST** | 11 | Safety, permissions, agent design (enforced) |
 | **SHOULD** | 5 | Interactions, error handling (recommended) |
 | **MAY** | 1 | Optimization guidelines (optional) |
+
+### Hooks (1)
+
+Event-driven automation for Claude Code lifecycle events (PreToolUse, PostToolUse, etc.).
+
+### Contexts (4)
+
+Shared context files for cross-agent knowledge and mode configurations.
 
 ---
 
