@@ -1,7 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
+import { getProviderLayout } from '../../../src/core/layout.js';
+import {
+  applyUpdates,
+  checkForUpdates,
+  getAgentVersions,
+  preserveCustomizations,
+  saveCustomizationManifest,
+  type UpdateComponent,
+  update,
+} from '../../../src/core/updater.js';
 
 describe('updater', () => {
   let tempDir: string;
@@ -14,70 +25,568 @@ describe('updater', () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  describe('fetchLatestVersion', () => {
-    it('should fetch latest version from registry', async () => {
-      // TODO: Implement test
-      // - Mock registry API response
-      // - Call fetchLatestVersion
-      // - Verify returns version string
-      expect(true).toBe(true);
+  // Helper to create config file
+  async function createConfig(version = '0.1.0', componentVersions?: Record<string, string>) {
+    const config = getDefaultConfig();
+    config.version = version;
+    config.installedAt = '2025-01-01T00:00:00Z';
+    if (componentVersions) {
+      config.componentVersions = componentVersions;
+    }
+    await saveConfig(tempDir, config);
+  }
+
+  // Helper to create directory structure
+  async function createDirStructure(structure: Record<string, string>) {
+    for (const [path, content] of Object.entries(structure)) {
+      const fullPath = join(tempDir, path);
+      await mkdir(join(fullPath, '..'), { recursive: true });
+      await writeFile(fullPath, content);
+    }
+  }
+
+  // Helper to verify file exists with expected content
+  async function verifyFileContent(relativePath: string, expectedContent: string) {
+    const fullPath = join(tempDir, relativePath);
+    const content = await readFile(fullPath, 'utf-8');
+    expect(content).toBe(expectedContent);
+  }
+
+  describe('checkForUpdates', () => {
+    it('should detect updates when component versions differ', async () => {
+      await createConfig('0.1.0', {
+        rules: '0.1.0',
+        agents: '0.1.0',
+      });
+
+      const result = await checkForUpdates(tempDir, 'claude');
+
+      // Template version is 0.2.0 (from manifest.json)
+      expect(result.currentVersion).toBe('0.1.0');
+      expect(result.latestVersion).toBe('0.2.0');
+      expect(result.hasUpdates).toBe(true);
+      expect(result.updatableComponents.length).toBeGreaterThan(0);
+      expect(result.checkedAt).toBeDefined();
     });
 
-    it('should handle rate limiting', async () => {
-      // TODO: Implement test
-      // - Mock rate limit response
-      // - Call fetchLatestVersion
-      // - Verify appropriate handling (retry or error)
-      expect(true).toBe(true);
+    it('should return no updates when versions match', async () => {
+      await createConfig('0.2.0', {
+        rules: '0.2.0',
+        agents: '0.2.0',
+        skills: '0.2.0',
+        guides: '0.2.0',
+        hooks: '0.2.0',
+        contexts: '0.2.0',
+      });
+
+      const result = await checkForUpdates(tempDir, 'claude');
+
+      expect(result.currentVersion).toBe('0.2.0');
+      expect(result.latestVersion).toBe('0.2.0');
+      expect(result.hasUpdates).toBe(false);
+      expect(result.updatableComponents.length).toBe(0);
     });
 
-    it('should cache version check results', async () => {
-      // TODO: Implement test
-      // - Call fetchLatestVersion twice quickly
-      // - Verify second call uses cache
-      expect(true).toBe(true);
+    it('should handle missing config gracefully', async () => {
+      // No config file created, should use defaults
+      const result = await checkForUpdates(tempDir, 'claude');
+
+      expect(result.currentVersion).toBe('0.0.0'); // Default version
+      expect(result.latestVersion).toBe('0.2.0');
+      expect(result.hasUpdates).toBe(true);
+    });
+
+    it('should check each component individually', async () => {
+      await createConfig('0.1.0', {
+        rules: '0.2.0', // Up to date
+        agents: '0.1.0', // Out of date
+        skills: '0.1.0', // Out of date
+      });
+
+      const result = await checkForUpdates(tempDir, 'claude');
+
+      // Should have agents and skills as updatable (not rules)
+      const componentNames = result.updatableComponents.map((c) => c.name);
+      expect(componentNames).not.toContain('rules' as UpdateComponent);
+      expect(componentNames).toContain('agents' as UpdateComponent);
+      expect(componentNames).toContain('skills' as UpdateComponent);
+    });
+
+    it('should detect update when component version is missing', async () => {
+      await createConfig('0.2.0', {
+        // No componentVersions specified
+      });
+
+      const result = await checkForUpdates(tempDir, 'claude');
+
+      // All components should be updatable
+      expect(result.updatableComponents.length).toBe(6); // rules, agents, skills, guides, hooks, contexts
+    });
+
+    it('should work with codex provider', async () => {
+      await createConfig('0.1.0');
+
+      const result = await checkForUpdates(tempDir, 'codex');
+
+      // Should use codex layout
+      expect(result.hasUpdates).toBe(true);
+      expect(result.latestVersion).toBeDefined();
     });
   });
 
-  describe('compareVersions', () => {
-    it('should correctly compare semantic versions', async () => {
-      // TODO: Implement test
-      expect(true).toBe(true); // compareVersions("1.0.0", "1.0.1") -> -1
-      expect(true).toBe(true); // compareVersions("2.0.0", "1.9.9") -> 1
-      expect(true).toBe(true); // compareVersions("1.0.0", "1.0.0") -> 0
+  describe('update', () => {
+    it('should update components from templates to target', async () => {
+      await createConfig('0.1.0');
+
+      // Create target directory structure
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.updatedComponents).toContain('rules' as UpdateComponent);
+      expect(result.previousVersion).toBe('0.1.0');
+      expect(result.newVersion).toBe('0.2.0');
+
+      // Verify config was updated
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      expect(config.version).toBe('0.2.0');
     });
 
-    it('should handle pre-release versions', async () => {
-      // TODO: Implement test
-      // - Compare "1.0.0-beta" with "1.0.0"
-      // - Verify pre-release is considered lower
-      expect(true).toBe(true);
+    it('should skip components with no updates when not forced', async () => {
+      await createConfig('0.2.0', {
+        rules: '0.2.0',
+        agents: '0.2.0',
+        skills: '0.2.0',
+        guides: '0.2.0',
+        hooks: '0.2.0',
+        contexts: '0.2.0',
+      });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.updatedComponents.length).toBe(0);
+      expect(result.skippedComponents.length).toBe(6); // All components skipped
+    });
+
+    it('should force update all components with --force flag', async () => {
+      await createConfig('0.2.0', {
+        rules: '0.2.0',
+      });
+
+      // Create target directory structure
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        force: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.updatedComponents).toContain('rules' as UpdateComponent);
+      expect(result.skippedComponents.length).toBe(0);
+    });
+
+    it('should create backup when --backup is true', async () => {
+      await createConfig('0.1.0');
+
+      // Create existing component files to backup
+      const layout = getProviderLayout('claude');
+      await createDirStructure({
+        [`${layout.rootDir}/rules/test.md`]: 'existing rule',
+      });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        backup: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.backedUpPaths.length).toBe(1);
+      expect(result.backedUpPaths[0]).toContain('.omcustom-backup-');
+    });
+
+    it('should preserve customizations during update', async () => {
+      await createConfig('0.1.0');
+
+      // Create customization manifest
+      const customFile = '.claude/rules/custom-rule.md';
+      await createDirStructure({
+        [customFile]: 'custom content',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [customFile],
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        preserveCustomizations: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.preservedFiles).toContain(customFile);
+
+      // Verify custom file still exists
+      await verifyFileContent(customFile, 'custom content');
+    });
+
+    it('should handle dry run without file modifications', async () => {
+      await createConfig('0.1.0');
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        dryRun: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.updatedComponents).toContain('rules' as UpdateComponent);
+
+      // Verify no actual files were created (dry run)
+      const layout = getProviderLayout('claude');
+      const rulesPath = join(tempDir, layout.rootDir, 'rules');
+      const exists = await readFile(rulesPath, 'utf-8').catch(() => null);
+      expect(exists).toBeNull();
+    });
+
+    it('should handle errors gracefully', async () => {
+      // Create config in a non-existent directory to trigger error
+      // (tempDir exists but we'll try to update with a bad target)
+      await createConfig('0.1.0');
+
+      const result = await update({
+        targetDir: '/nonexistent/path/that/does/not/exist',
+        provider: 'claude',
+        components: ['rules'],
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+
+    it('should update config version after successful update', async () => {
+      await createConfig('0.1.0');
+
+      // Create target directory structure
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+      });
+
+      // Verify config version was updated
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      expect(config.version).toBe('0.2.0');
+      expect(config.lastUpdated).toBeDefined();
+    });
+
+    it('should use provider from config when not specified', async () => {
+      await createConfig('0.1.0');
+
+      // Modify config to use codex provider
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      config.provider = 'codex';
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+
+      // Create target directory structure
+      const layout = getProviderLayout('codex');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+        // Note: no provider specified, should use from config
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle component update failure and continue with others', async () => {
+      await createConfig('0.1.0');
+
+      // Create target directory structure
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      // Make rules directory a file (will cause copy to fail)
+      await writeFile(join(tempDir, layout.rootDir, 'rules'), 'invalid');
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules', 'hooks'],
+      });
+
+      // Update should complete but with warnings
+      expect(result.success).toBe(true);
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.warnings[0]).toContain('Failed to update rules');
+      expect(result.skippedComponents).toContain('rules' as UpdateComponent);
+    });
+
+    it('should disable preservation when preserveCustomizations is false', async () => {
+      await createConfig('0.1.0');
+
+      // Create customization manifest
+      const customFile = '.claude/rules/custom-rule.md';
+      await createDirStructure({
+        [customFile]: 'custom content',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [customFile],
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        preserveCustomizations: false,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.preservedFiles.length).toBe(0);
     });
   });
 
-  describe('performUpdate', () => {
-    it('should update to specified version', async () => {
-      // TODO: Implement test
-      // - Setup current version 1.0.0
-      // - Call performUpdate for 1.1.0
-      // - Verify version is updated
+  describe('preserveCustomizations', () => {
+    it('should save file contents for existing files', async () => {
+      await createDirStructure({
+        'file1.txt': 'content1',
+        'file2.txt': 'content2',
+        'subdir/file3.txt': 'content3',
+      });
+
+      const preserved = await preserveCustomizations(tempDir, [
+        'file1.txt',
+        'file2.txt',
+        'subdir/file3.txt',
+      ]);
+
+      expect(preserved.size).toBe(3);
+      expect(preserved.get('file1.txt')).toBe('content1');
+      expect(preserved.get('file2.txt')).toBe('content2');
+      expect(preserved.get('subdir/file3.txt')).toBe('content3');
+    });
+
+    it('should skip non-existent files', async () => {
+      await createDirStructure({
+        'existing.txt': 'content',
+      });
+
+      const preserved = await preserveCustomizations(tempDir, ['existing.txt', 'nonexistent.txt']);
+
+      expect(preserved.size).toBe(1);
+      expect(preserved.get('existing.txt')).toBe('content');
+      expect(preserved.has('nonexistent.txt')).toBe(false);
+    });
+
+    it('should return empty map for empty list', async () => {
+      const preserved = await preserveCustomizations(tempDir, []);
+
+      expect(preserved.size).toBe(0);
+    });
+
+    it('should handle unicode content correctly', async () => {
+      await createDirStructure({
+        'unicode.txt': '한글 테스트 🎉',
+      });
+
+      const preserved = await preserveCustomizations(tempDir, ['unicode.txt']);
+
+      expect(preserved.get('unicode.txt')).toBe('한글 테스트 🎉');
+    });
+  });
+
+  describe('applyUpdates', () => {
+    it('should write files to correct paths', async () => {
+      const updates = [
+        { path: 'file1.txt', content: 'content1' },
+        { path: 'subdir/file2.txt', content: 'content2' },
+      ];
+
+      await applyUpdates(tempDir, updates);
+
+      await verifyFileContent('file1.txt', 'content1');
+      await verifyFileContent('subdir/file2.txt', 'content2');
+    });
+
+    it('should create directories if needed', async () => {
+      const updates = [{ path: 'deep/nested/path/file.txt', content: 'nested content' }];
+
+      await applyUpdates(tempDir, updates);
+
+      await verifyFileContent('deep/nested/path/file.txt', 'nested content');
+    });
+
+    it('should handle empty updates array', async () => {
+      await applyUpdates(tempDir, []);
+
+      // Should not throw, just complete successfully
       expect(true).toBe(true);
     });
 
-    it('should rollback on failure', async () => {
-      // TODO: Implement test
-      // - Mock update failure mid-process
-      // - Call performUpdate
-      // - Verify rollback occurs
-      expect(true).toBe(true);
+    it('should overwrite existing files', async () => {
+      await createDirStructure({
+        'existing.txt': 'old content',
+      });
+
+      await applyUpdates(tempDir, [{ path: 'existing.txt', content: 'new content' }]);
+
+      await verifyFileContent('existing.txt', 'new content');
+    });
+  });
+
+  describe('saveCustomizationManifest', () => {
+    it('should write manifest JSON to correct path', async () => {
+      const manifest = {
+        modifiedFiles: ['file1.txt', 'file2.txt'],
+        preserveFiles: ['custom.txt'],
+        customComponents: ['my-agent'],
+        lastUpdated: '2025-01-01T00:00:00Z',
+      };
+
+      await saveCustomizationManifest(tempDir, manifest);
+
+      const savedContent = await readFile(join(tempDir, '.omcustom-customizations.json'), 'utf-8');
+      const saved = JSON.parse(savedContent);
+
+      expect(saved.modifiedFiles).toEqual(['file1.txt', 'file2.txt']);
+      expect(saved.preserveFiles).toEqual(['custom.txt']);
+      expect(saved.customComponents).toEqual(['my-agent']);
+      expect(saved.lastUpdated).toBe('2025-01-01T00:00:00Z');
     });
 
-    it('should preserve user configuration during update', async () => {
-      // TODO: Implement test
-      // - Setup custom user config
-      // - Call performUpdate
-      // - Verify custom config is preserved
-      expect(true).toBe(true);
+    it('should handle empty manifest', async () => {
+      const manifest = {
+        modifiedFiles: [],
+        preserveFiles: [],
+        customComponents: [],
+        lastUpdated: '2025-01-01T00:00:00Z',
+      };
+
+      await saveCustomizationManifest(tempDir, manifest);
+
+      const savedContent = await readFile(join(tempDir, '.omcustom-customizations.json'), 'utf-8');
+      const saved = JSON.parse(savedContent);
+
+      expect(saved.modifiedFiles).toEqual([]);
+      expect(saved.preserveFiles).toEqual([]);
+      expect(saved.customComponents).toEqual([]);
+    });
+  });
+
+  describe('getAgentVersions', () => {
+    it('should return versions from config', async () => {
+      await createConfig('1.0.0');
+
+      // Add agents to config
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      config.agents = {
+        'agent-1': {
+          version: '1.0.0',
+          source: 'local',
+          lastUpdated: '2025-01-01T00:00:00Z',
+          hasLocalModifications: false,
+          enabled: true,
+        },
+        'agent-2': {
+          version: '2.0.0',
+          source: 'https://github.com/example/agent',
+          lastUpdated: '2025-01-02T00:00:00Z',
+          hasLocalModifications: true,
+          enabled: true,
+        },
+      };
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+
+      const versions = await getAgentVersions(tempDir);
+
+      expect(versions.length).toBe(2);
+
+      const agent1 = versions.find((v) => v.name === 'agent-1');
+      expect(agent1).toBeDefined();
+      expect(agent1?.version).toBe('1.0.0');
+      expect(agent1?.source).toBe('local');
+      expect(agent1?.hasLocalModifications).toBe(false);
+
+      const agent2 = versions.find((v) => v.name === 'agent-2');
+      expect(agent2).toBeDefined();
+      expect(agent2?.version).toBe('2.0.0');
+      expect(agent2?.source).toBe('https://github.com/example/agent');
+      expect(agent2?.hasLocalModifications).toBe(true);
+    });
+
+    it('should return empty array when no agents configured', async () => {
+      await createConfig('1.0.0');
+
+      const versions = await getAgentVersions(tempDir);
+
+      expect(versions).toEqual([]);
+    });
+
+    it('should handle missing config gracefully', async () => {
+      // No config file created
+      const versions = await getAgentVersions(tempDir);
+
+      expect(versions).toEqual([]);
+    });
+
+    it('should handle agents with missing optional fields', async () => {
+      await createConfig('1.0.0');
+
+      // Add agent with minimal fields
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      config.agents = {
+        'minimal-agent': {
+          version: '1.0.0',
+          enabled: true,
+          // source, lastUpdated, hasLocalModifications not specified
+        },
+      };
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+
+      const versions = await getAgentVersions(tempDir);
+
+      expect(versions.length).toBe(1);
+      expect(versions[0].name).toBe('minimal-agent');
+      expect(versions[0].version).toBe('1.0.0');
+      expect(versions[0].source).toBe('local'); // Default
+      expect(versions[0].lastUpdated).toBe(''); // Default
+      expect(versions[0].hasLocalModifications).toBe(false); // Default
     });
   });
 });
