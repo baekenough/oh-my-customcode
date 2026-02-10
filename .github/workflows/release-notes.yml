@@ -1,9 +1,9 @@
 name: Release Notes Generator
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -21,6 +21,9 @@ permissions:
 jobs:
   generate-release-notes:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout repository
@@ -29,31 +32,55 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      - name: Determine version from workflow_run
+        if: github.event_name == 'workflow_run'
+        id: from_run
+        run: |
+          TAG="${{ github.event.workflow_run.head_branch }}"
+          # If head_branch doesn't look like a tag, find it from SHA
+          if [[ ! "$TAG" =~ ^v[0-9] ]]; then
+            SHA="${{ github.event.workflow_run.head_sha }}"
+            TAG=$(git tag --points-at "$SHA" | grep "^v" | head -1)
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Determine version from dispatch
+        if: github.event_name == 'workflow_dispatch'
+        id: from_dispatch
+        run: |
+          echo "tag=v${{ inputs.version }}" >> $GITHUB_OUTPUT
+          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_run" ]; then
+            echo "tag=${{ steps.from_run.outputs.tag }}" >> $GITHUB_OUTPUT
+            echo "version=${{ steps.from_run.outputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ steps.from_dispatch.outputs.tag }}" >> $GITHUB_OUTPUT
+            echo "version=${{ steps.from_dispatch.outputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout release tag
+        run: git checkout "${{ steps.version.outputs.tag }}"
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
         run: bun install
 
-      - name: Extract version from tag
-        id: version
-        run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            VERSION="${GITHUB_REF#refs/tags/v}"
-          else
-            VERSION="${{ inputs.version }}"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
       - name: Find previous tag
         id: prev_tag
         run: |
-          if [ "${{ github.event_name }}" == "push" ]; then
-            CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          CURRENT_TAG="${{ steps.version.outputs.tag }}"
+          if [ -n "${{ inputs.previous_tag }}" ]; then
+            echo "tag=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
+          else
             PREV=$(git tag --sort=-version:refname | grep -v "^${CURRENT_TAG}$" | head -1)
             echo "tag=$PREV" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ inputs.previous_tag }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Generate release notes
@@ -65,18 +92,21 @@ jobs:
           bun run .github/scripts/generate-release-notes.ts "${{ steps.version.outputs.version }}" > release_notes.md
           cat release_notes.md
 
-      - name: Create or update GitHub Release
-        if: github.event_name == 'push'
+      - name: Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
           body_path: release_notes.md
           draft: false
-          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+          prerelease: >-
+            ${{ contains(steps.version.outputs.tag, '-alpha') ||
+                contains(steps.version.outputs.tag, '-beta') ||
+                contains(steps.version.outputs.tag, '-rc') }}
 
       - name: Upload release notes artifact
         uses: actions/upload-artifact@v6
         with:
-          name: release-notes-v${{ steps.version.outputs.version }}
+          name: release-notes-${{ steps.version.outputs.tag }}
           path: release_notes.md
 
       - name: Comment summary
