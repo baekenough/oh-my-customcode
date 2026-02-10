@@ -47,12 +47,12 @@ jobs:
       - name: Run Codex Native Verification
         if: steps.guard.outputs.skip != 'true'
         env:
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || 'false' }}
+          FORCE_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' && 'true' || 'false' }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PROJECT_ROOT: ${{ github.workspace }}/templates
         run: |
-          DRY_RUN_INPUT="${{ github.event.inputs.dry_run }}"
-          FORCE_INPUT="${{ github.event.inputs.force }}"
           ARGS=""
           if [ "$DRY_RUN_INPUT" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ "$FORCE_INPUT" = "true" ]; then ARGS="$ARGS --force"; fi
@@ -60,6 +60,9 @@ jobs:
 
       - name: Create summary
         if: always()
+        env:
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || 'false' }}
+          FORCE_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' && 'true' || 'false' }}
         run: |
           if [ "${{ steps.guard.outputs.skip }}" = "true" ]; then
             echo "## Codex Native Verification Skipped" >> $GITHUB_STEP_SUMMARY
@@ -74,10 +77,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Project Root**: \`templates/\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          DRY_RUN_INPUT="${{ github.event.inputs.dry_run }}"
-          FORCE_INPUT="${{ github.event.inputs.force }}"
-          if [ -z "$DRY_RUN_INPUT" ]; then DRY_RUN_INPUT="false"; fi
-          if [ -z "$FORCE_INPUT" ]; then FORCE_INPUT="false"; fi
+          DRY_RUN_INPUT="${DRY_RUN_INPUT:-false}"
+          FORCE_INPUT="${FORCE_INPUT:-false}"
           if [ "$DRY_RUN_INPUT" = "true" ]; then
             echo "**Mode**: Dry Run (no hash update)" >> $GITHUB_STEP_SUMMARY
           fi
