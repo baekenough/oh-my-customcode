@@ -6,6 +6,7 @@
 
 import { createRequire } from 'node:module';
 import { Command } from 'commander';
+import { formatPreflightWarnings, runPreflightCheck } from '../core/preflight.js';
 import { detectLanguage, i18n, initI18n } from '../i18n/index.js';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
@@ -25,7 +26,8 @@ export function createProgram(): Command {
   program
     .name('omcustom')
     .description(i18n.t('cli.description'))
-    .version(packageJson.version, '-v, --version', i18n.t('cli.versionOption'));
+    .version(packageJson.version, '-v, --version', i18n.t('cli.versionOption'))
+    .option('--skip-version-check', 'Skip CLI version pre-flight check');
 
   // omcustom init [--lang en|ko]
   program
@@ -70,6 +72,20 @@ export function createProgram(): Command {
     .action(async (options) => {
       await doctorCommand(options);
     });
+
+  // Pre-flight hook: run before any command
+  program.hook('preAction', async (thisCommand) => {
+    const opts = thisCommand.optsWithGlobals() as { skipVersionCheck?: boolean };
+    const skipCheck = opts.skipVersionCheck || false;
+
+    const result = await runPreflightCheck({ skip: skipCheck });
+
+    if (result.hasUpdates) {
+      const warnings = formatPreflightWarnings(result);
+      console.warn(warnings);
+      console.warn(''); // Empty line for spacing
+    }
+  });
 
   return program;
 }
