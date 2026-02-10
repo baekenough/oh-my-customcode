@@ -7,15 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-02-10
+
 ### Added
 - Dual-mode provider detection (Claude/Codex) with override/config/env/project markers
 - Codex templates: `.codex/` tree, `AGENTS.md` templates, `manifest.codex.json`
 - Provider export API for layout/detection utilities
+- Codex native verification workflow (reusable GitHub Actions)
+- Hook and context documentation in READMEs
 
 ### Changed
 - CLI: `init`, `list`, `doctor` support `--provider` and auto-detection
 - Installer/updater now resolve component paths by provider root (`.claude` or `.codex`)
 - Config adds `provider` field (default `auto`)
+
+### Fixed
+- README agent names now use full filenames (e.g., `lang-golang-expert` not `lang-golang`)
+- Routing skill names use exact directory names in documentation
+- Orchestration skill count corrected (added qa-lead-routing)
+- Code coverage improved to 99.28%
 
 ## [0.8.0] - 2026-02-10
 
@@ -297,7 +307,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.6.2...v0.7.0
+[0.6.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.3.1...v0.3.2
