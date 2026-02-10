@@ -16,7 +16,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 34 agents, 41 skills, 14 guides - ready to use out of the box |
+| **Batteries Included** | 42 agents, 51 skills, 22 guides - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -102,7 +102,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 
 ## What's Included
 
-### Agents (34)
+### Agents (42)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -112,24 +112,27 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **Frontend** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
 | **Backend** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
 | **Tooling** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| **Database** | 1 | db-supabase-expert |
+| **Data Engineering** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
+| **Database** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
 | **Architecture** | 2 | arch-documenter, arch-speckit-agent |
 | **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **Total** | **34** | |
+| **Total** | **42** | |
 
-### Skills (41)
+### Skills (51)
 
 Includes slash commands and capabilities:
 
 - **Development** (8): Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
 - **Backend** (5): FastAPI, Spring Boot, Express, NestJS, Go Backend
+- **Data Engineering** (6): Airflow, dbt, Spark, Kafka, Snowflake, Pipeline
+- **Database** (3): Supabase, PostgreSQL, Redis
 - **Infrastructure** (2): Docker, AWS
 - **System** (2): Memory management, result aggregation
-- **Orchestration** (2): Pipeline execution, intent detection
+- **Orchestration** (3): secretary-routing, dev-lead-routing, de-lead-routing
 - **Slash Commands** (20+): /create-agent, /code-review, /audit-dependencies, /sync-check, /commit, /pr, and more
 
-### Guides (14)
+### Guides (22)
 
 Comprehensive reference documentation covering:
 - Agent creation and management
@@ -137,6 +140,8 @@ Comprehensive reference documentation covering:
 - Pipeline workflows
 - Best practices and patterns
 - Sub-agent orchestration
+- Data engineering workflows
+- Database optimization
 
 ### Rules (18)
 
@@ -171,20 +176,23 @@ your-project/
 ├── CLAUDE.md              # Entry point for Claude
 └── .claude/
     ├── rules/             # Behavior rules (18 total)
-    ├── hooks/             # Event hooks
-    ├── contexts/          # Context files
-    ├── agents/            # All agents (flat structure, 34 total)
+    ├── hooks/             # Event hooks (2 total)
+    ├── contexts/          # Context files (1 total)
+    ├── agents/            # All agents (flat structure, 42 total)
     │   ├── lang-golang-expert/
     │   ├── be-fastapi-expert/
+    │   ├── de-airflow-expert/
     │   ├── mgr-creator/
     │   └── ...
-    ├── skills/            # All skills (41 total, includes slash commands)
+    ├── skills/            # All skills (51 total, includes slash commands)
     │   ├── development/
     │   ├── backend/
+    │   ├── data-engineering/
+    │   ├── database/
     │   ├── infrastructure/
     │   ├── system/
     │   └── orchestration/
-    └── guides/            # Reference docs (14 total)
+    └── guides/            # Reference docs (22 total)
 ```
 
 ---
