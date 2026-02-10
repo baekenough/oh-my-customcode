@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-02-10
+
+### Added
+- Data Engineering agent ecosystem: 8 DE agents (de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-iceberg-expert, de-pipeline-architect, de-quality-engineer)
+- Database agents: db-postgres and db-redis
+- DE lead routing skill for data engineering task delegation
+- 8 best-practices skills: airflow, dbt, spark, kafka, snowflake, iceberg, postgres, redis
+- 8 reference guides: airflow, dbt, spark, kafka, snowflake, iceberg, postgres, redis
+- Pipeline architecture patterns skill
+
+### Changed
+- Agent count: 34 → 42
+- Skill count: 41 → 51
+- Guide count: 14 → 22
+- Secretary routing updated with missing agents (mgr-claude-code-bible, sys-memory-keeper, sys-naggy)
+- Dev-lead routing updated with missing agents (arch-documenter, arch-speckit-agent, infra-docker-expert, infra-aws-expert)
+
+### Fixed
+- README.md/README_ko.md counts updated to reflect new agents/skills/guides
+- Hook count corrected (2 → 1) and context count corrected (1 → 4) in README.md
+- 100% routing coverage achieved (42/42 agents routable)
+
 ## [0.7.0] - 2026-02-10
 
 ### Added
