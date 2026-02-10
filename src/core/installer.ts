@@ -14,6 +14,13 @@ import {
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { loadConfig, saveConfig } from './config.js';
+import {
+  getComponentPath,
+  getEntryTemplateName,
+  getProviderLayout,
+  type InstallComponent,
+  type LlmProvider,
+} from './layout.js';
 
 /**
  * Options for installation
@@ -21,8 +28,10 @@ import { loadConfig, saveConfig } from './config.js';
 export interface InstallOptions {
   /** Target directory to install to */
   targetDir: string;
-  /** Language for CLAUDE.md (en or ko) */
+  /** Language for entry doc (en or ko) */
   language?: 'en' | 'ko';
+  /** Provider to install for (claude|codex) */
+  provider?: LlmProvider;
   /** Whether to overwrite existing files */
   force?: boolean;
   /** Whether to backup existing files before overwriting */
@@ -35,16 +44,9 @@ export interface InstallOptions {
 
 /**
  * Components that can be installed
- * Updated for official Claude Code format (commands absorbed into skills)
+ * Updated for official format (commands absorbed into skills)
  */
-export type InstallComponent =
-  | 'claude-md'
-  | 'rules'
-  | 'agents'
-  | 'skills'
-  | 'guides'
-  | 'hooks'
-  | 'contexts';
+export type { InstallComponent };
 
 /**
  * Result of installation
@@ -87,34 +89,12 @@ export interface TemplateManifest {
 
 /**
  * Directory structure to create
- * Updated for official Claude Code format:
- * - .claude/agents/ is flat (no subdirectories)
- * - .claude/skills/ contains skill directories
+ * Updated for official format:
+ * - agents/ is flat (no subdirectories)
+ * - skills/ contains skill directories
  * - commands/ removed (absorbed into skills)
  */
-const DIRECTORY_STRUCTURE = [
-  '.claude',
-  '.claude/rules',
-  '.claude/hooks',
-  '.claude/contexts',
-  '.claude/agents',
-  '.claude/skills',
-  'guides',
-] as const;
-
-/**
- * Component to template path mapping
- * Updated for official Claude Code format
- */
-const COMPONENT_PATHS: Record<InstallComponent, string> = {
-  'claude-md': '',
-  rules: '.claude/rules',
-  agents: '.claude/agents',
-  skills: '.claude/skills',
-  guides: 'guides',
-  hooks: '.claude/hooks',
-  contexts: '.claude/contexts',
-};
+const DEFAULT_LANGUAGE: 'en' | 'ko' = 'en';
 
 /**
  * Get the template directory path from the installed package
@@ -153,12 +133,13 @@ async function ensureTargetDirectory(targetDir: string): Promise<void> {
  */
 async function handleBackup(
   targetDir: string,
+  provider: LlmProvider,
   shouldBackup: boolean,
   result: InstallResult
 ): Promise<void> {
   if (!shouldBackup) return;
 
-  const backupPaths = await backupExistingInstallation(targetDir);
+  const backupPaths = await backupExistingInstallation(targetDir, provider);
   result.backedUpPaths.push(...backupPaths);
   if (backupPaths.length > 0) {
     info('install.backup', { path: backupPaths[0] });
@@ -170,15 +151,17 @@ async function handleBackup(
  */
 async function checkAndWarnExisting(
   targetDir: string,
+  provider: LlmProvider,
   force: boolean,
   backup: boolean,
   result: InstallResult
 ): Promise<void> {
   if (force || backup) return;
 
-  const existingPaths = await checkExistingPaths(targetDir);
+  const existingPaths = await checkExistingPaths(targetDir, provider);
   if (existingPaths.length > 0) {
-    warn('install.exists');
+    const layout = getProviderLayout(provider);
+    warn('install.exists', { rootDir: layout.rootDir });
     result.warnings.push(
       `Existing files found: ${existingPaths.join(', ')}. Use --force to overwrite or --backup to backup first.`
     );
@@ -200,13 +183,14 @@ async function verifyTemplateDirectory(): Promise<void> {
  */
 async function installAllComponents(
   targetDir: string,
+  provider: LlmProvider,
   options: InstallOptions,
   result: InstallResult
 ): Promise<void> {
   const components = options.components || getAllComponents();
 
   for (const component of components) {
-    await installSingleComponent(targetDir, component, options, result);
+    await installSingleComponent(targetDir, provider, component, options, result);
   }
 }
 
@@ -215,12 +199,13 @@ async function installAllComponents(
  */
 async function installSingleComponent(
   targetDir: string,
+  provider: LlmProvider,
   component: InstallComponent,
   options: InstallOptions,
   result: InstallResult
 ): Promise<void> {
   try {
-    const installed = await installComponent(targetDir, component, options);
+    const installed = await installComponent(targetDir, provider, component, options);
     if (installed) {
       result.installedComponents.push(component);
     } else {
@@ -233,21 +218,22 @@ async function installSingleComponent(
 }
 
 /**
- * Install CLAUDE.md and track result
+ * Install entry doc and track result
  */
-async function installClaudeMdWithTracking(
+async function installEntryDocWithTracking(
   targetDir: string,
+  provider: LlmProvider,
   options: InstallOptions,
   result: InstallResult
 ): Promise<void> {
-  const language = options.language || 'en';
+  const language = options.language ?? DEFAULT_LANGUAGE;
   const overwrite = !!(options.force || options.backup);
-  const installed = await installClaudeMd(targetDir, language, overwrite);
+  const installed = await installEntryDoc(targetDir, provider, language, overwrite);
 
   if (installed) {
-    result.installedComponents.push('claude-md');
+    result.installedComponents.push('entry-md');
   } else {
-    result.skippedComponents.push('claude-md');
+    result.skippedComponents.push('entry-md');
   }
 }
 
@@ -256,11 +242,13 @@ async function installClaudeMdWithTracking(
  */
 async function updateInstallConfig(
   targetDir: string,
+  provider: LlmProvider,
   options: InstallOptions,
   installedComponents: InstallComponent[]
 ): Promise<void> {
   const config = await loadConfig(targetDir);
-  config.language = options.language || 'en';
+  config.language = options.language ?? DEFAULT_LANGUAGE;
+  config.provider = provider;
   config.installedAt = new Date().toISOString();
   config.installedComponents = installedComponents;
   await saveConfig(targetDir, config);
@@ -271,18 +259,25 @@ async function updateInstallConfig(
  */
 export async function install(options: InstallOptions): Promise<InstallResult> {
   const result = createInstallResult(options.targetDir);
+  const provider = options.provider ?? 'claude';
 
   try {
     info('install.start', { targetDir: options.targetDir });
 
     await ensureTargetDirectory(options.targetDir);
-    await handleBackup(options.targetDir, !!options.backup, result);
-    await checkAndWarnExisting(options.targetDir, !!options.force, !!options.backup, result);
+    await handleBackup(options.targetDir, provider, !!options.backup, result);
+    await checkAndWarnExisting(
+      options.targetDir,
+      provider,
+      !!options.force,
+      !!options.backup,
+      result
+    );
     await verifyTemplateDirectory();
 
-    await installAllComponents(options.targetDir, options, result);
-    await installClaudeMdWithTracking(options.targetDir, options, result);
-    await updateInstallConfig(options.targetDir, options, result.installedComponents);
+    await installAllComponents(options.targetDir, provider, options, result);
+    await installEntryDocWithTracking(options.targetDir, provider, options, result);
+    await updateInstallConfig(options.targetDir, provider, options, result.installedComponents);
 
     result.success = true;
     success('install.success');
@@ -316,8 +311,12 @@ export async function copyTemplates(
 /**
  * Create the directory structure for oh-my-customcode
  */
-export async function createDirectoryStructure(targetDir: string): Promise<void> {
-  for (const dir of DIRECTORY_STRUCTURE) {
+export async function createDirectoryStructure(
+  targetDir: string,
+  provider: LlmProvider = 'claude'
+): Promise<void> {
+  const layout = getProviderLayout(provider);
+  for (const dir of layout.directoryStructure) {
     const fullPath = join(targetDir, dir);
     await ensureDirectory(fullPath);
   }
@@ -326,9 +325,12 @@ export async function createDirectoryStructure(targetDir: string): Promise<void>
 /**
  * Get the template manifest
  */
-export async function getTemplateManifest(): Promise<TemplateManifest> {
+export async function getTemplateManifest(
+  provider: LlmProvider = 'claude'
+): Promise<TemplateManifest> {
   const packageRoot = getPackageRoot();
-  const manifestPath = join(packageRoot, 'templates', 'manifest.json');
+  const layout = getProviderLayout(provider);
+  const manifestPath = join(packageRoot, 'templates', layout.manifestFile);
 
   if (await fileExists(manifestPath)) {
     return readJsonFile<TemplateManifest>(manifestPath);
@@ -340,7 +342,7 @@ export async function getTemplateManifest(): Promise<TemplateManifest> {
     lastUpdated: new Date().toISOString(),
     components: getAllComponents().map((name) => ({
       name,
-      path: COMPONENT_PATHS[name],
+      path: getComponentPath(provider, name),
       description: `${name} component`,
       files: 0,
     })),
@@ -361,10 +363,15 @@ function getAllComponents(): InstallComponent[] {
  */
 async function installComponent(
   targetDir: string,
+  provider: LlmProvider,
   component: InstallComponent,
   options: InstallOptions
 ): Promise<boolean> {
-  const templatePath = COMPONENT_PATHS[component];
+  if (component === 'entry-md') {
+    return false;
+  }
+
+  const templatePath = getComponentPath(provider, component);
   if (!templatePath) {
     return false;
   }
@@ -395,33 +402,35 @@ async function installComponent(
 }
 
 /**
- * Install CLAUDE.md with the selected language
+ * Install entry doc with the selected language
  */
-async function installClaudeMd(
+async function installEntryDoc(
   targetDir: string,
+  provider: LlmProvider,
   language: 'en' | 'ko',
   overwrite = false
 ): Promise<boolean> {
-  const templateFile = `CLAUDE.md.${language}`;
+  const layout = getProviderLayout(provider);
+  const templateFile = getEntryTemplateName(provider, language);
   const srcPath = resolveTemplatePath(templateFile);
-  const destPath = join(targetDir, 'CLAUDE.md');
+  const destPath = join(targetDir, layout.entryFile);
 
   // Check if source template exists
   if (!(await fileExists(srcPath))) {
-    warn('install.claude_md_not_found', { language, path: srcPath });
+    warn('install.entry_md_not_found', { language, path: srcPath, entry: layout.entryFile });
     return false;
   }
 
   // Check if destination exists and we're not overwriting
   const destExists = await fileExists(destPath);
   if (destExists && !overwrite) {
-    debug('install.claude_md_skipped', { reason: 'exists', language });
+    debug('install.entry_md_skipped', { reason: 'exists', language, entry: layout.entryFile });
     return false;
   }
 
-  // Copy the template file to CLAUDE.md
+  // Copy the template file to entry doc
   await fsCopyFile(srcPath, destPath);
-  debug('install.claude_md_installed', { language });
+  debug('install.entry_md_installed', { language, entry: layout.entryFile });
   return true;
 }
 
@@ -438,10 +447,11 @@ async function backupExisting(sourcePath: string, backupDir: string): Promise<st
 
 /**
  * Check which installation paths already exist
- * Updated: paths now under .claude/ for official format
+ * Updated: paths now under provider root for official format
  */
-async function checkExistingPaths(targetDir: string): Promise<string[]> {
-  const pathsToCheck = ['CLAUDE.md', '.claude', 'guides'];
+async function checkExistingPaths(targetDir: string, provider: LlmProvider): Promise<string[]> {
+  const layout = getProviderLayout(provider);
+  const pathsToCheck = [layout.entryFile, layout.rootDir, 'guides'];
 
   const existingPaths: string[] = [];
 
@@ -458,8 +468,12 @@ async function checkExistingPaths(targetDir: string): Promise<string[]> {
 /**
  * Backup existing installation files to a timestamped directory
  */
-async function backupExistingInstallation(targetDir: string): Promise<string[]> {
-  const existingPaths = await checkExistingPaths(targetDir);
+async function backupExistingInstallation(
+  targetDir: string,
+  provider: LlmProvider
+): Promise<string[]> {
+  const layout = getProviderLayout(provider);
+  const existingPaths = await checkExistingPaths(targetDir, provider);
 
   if (existingPaths.length === 0) {
     return [];
@@ -467,7 +481,7 @@ async function backupExistingInstallation(targetDir: string): Promise<string[]> 
 
   // Create backup directory with timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupDir = join(targetDir, `.claude-backup-${timestamp}`);
+  const backupDir = join(targetDir, `${layout.backupDirPrefix}${timestamp}`);
   await ensureDirectory(backupDir);
 
   const backedUpPaths: string[] = [];

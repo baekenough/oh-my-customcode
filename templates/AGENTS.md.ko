@@ -1,0 +1,39 @@
+# AGENTS.md
+
+oh-my-customcode의 Codex-native 엔트리 포인트입니다.
+
+## 핵심 원칙
+
+1. **Codex-native 우선** - 가능한 한 Codex 기본 도구/워크플로를 우선합니다.
+2. **단일 오케스트레이터** - 메인 대화가 조율하며, 독립 작업은 병렬 툴 호출을 사용합니다.
+3. **투명한 실행** - 의사결정, 도구 사용, 결과를 명확히 공유합니다.
+4. **안전한 변경** - 파괴적 명령을 피하고, 커밋/푸시 전 검증합니다.
+5. **듀얼 모드 인식** - Claude/Codex 병행 유지하며 제공자 감지로 동작을 결정합니다.
+
+## 제공자 자동 감지
+
+감지 우선순위(먼저 매칭되는 항목 적용):
+
+1. 오버라이드 (`--provider` 또는 `OMCUSTOM_PROVIDER` / `LLM_SERVICE`)
+2. 설정 파일 (`.omcustomrc.json` provider)
+3. 환경 신호 (`OPENAI_API_KEY`, `CODEX_HOME`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_*`)
+4. 프로젝트 마커 (`AGENTS.md`/`.codex` vs `CLAUDE.md`/`.claude`)
+5. 기본값: `claude`
+
+## 프로젝트 구조
+
+```
+project/
+├── AGENTS.md
+├── .codex/
+│   ├── rules/
+│   ├── hooks/
+│   ├── contexts/
+│   ├── agents/
+│   └── skills/
+└── guides/
+```
+
+## 규칙
+
+세부 규칙은 `.codex/rules/`를 참고합니다.

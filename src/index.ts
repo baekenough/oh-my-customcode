@@ -24,6 +24,18 @@ export {
   type TemplateManifest,
 } from './core/installer.js';
 export {
+  getProviderLayout,
+  type InstallComponent,
+  type LlmProvider,
+  type ProviderPreference,
+} from './core/layout.js';
+export {
+  type DetectionConfidence,
+  type DetectionSource,
+  detectProvider,
+  type ProviderDetection,
+} from './core/provider.js';
+export {
   type AgentVersion,
   applyUpdates,
   checkForUpdates,

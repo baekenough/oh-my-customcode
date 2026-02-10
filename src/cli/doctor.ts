@@ -6,6 +6,8 @@
 import { constants, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import { getProviderLayout, type ProviderPreference } from '../core/layout.js';
+import { detectProvider } from '../core/provider.js';
 import { i18n } from '../i18n/index.js';
 
 /**
@@ -16,6 +18,8 @@ export interface DoctorOptions {
   fix?: boolean;
   /** Run in quiet mode (only show errors) */
   quiet?: boolean;
+  /** Provider selection (auto|claude|codex) */
+  provider?: ProviderPreference;
 }
 
 /**
@@ -172,8 +176,8 @@ async function countDirectories(dirPath: string): Promise<number> {
 }
 
 /**
- * Count agent .md files in flat .claude/agents/ directory
- * Official Claude Code format: .claude/agents/{prefix}-{name}.md
+ * Count agent .md files in flat {root}/agents/ directory
+ * Official format: {root}/agents/{prefix}-{name}.md
  */
 async function countAgents(agentsDir: string): Promise<number> {
   let count = 0;
@@ -195,31 +199,40 @@ async function countAgents(agentsDir: string): Promise<number> {
 }
 
 /**
- * Check if CLAUDE.md exists
+ * Check if entry doc exists
  * @param targetDir - Target directory
+ * @param entryFile - Entry file name (CLAUDE.md or AGENTS.md)
  * @returns Check result
  */
-export async function checkClaudeMd(targetDir: string): Promise<CheckResult> {
-  const claudeMdPath = path.join(targetDir, 'CLAUDE.md');
-  const exists = await pathExists(claudeMdPath);
+export async function checkEntryDoc(targetDir: string, entryFile: string): Promise<CheckResult> {
+  const entryPath = path.join(targetDir, entryFile);
+  const exists = await pathExists(entryPath);
 
   return {
-    name: 'CLAUDE.md',
+    name: entryFile,
     status: exists ? 'pass' : 'fail',
     message: exists
-      ? i18n.t('cli.doctor.checks.claudeMd.pass')
-      : i18n.t('cli.doctor.checks.claudeMd.fail'),
-    fixable: false, // CLAUDE.md should be created by init, not auto-fixed
+      ? i18n.t('cli.doctor.checks.entryMd.pass', { entry: entryFile })
+      : i18n.t('cli.doctor.checks.entryMd.fail', { entry: entryFile }),
+    fixable: false, // Entry doc should be created by init, not auto-fixed
   };
 }
 
+// Backward compatibility for older callers/tests
+export async function checkClaudeMd(targetDir: string): Promise<CheckResult> {
+  return checkEntryDoc(targetDir, 'CLAUDE.md');
+}
+
 /**
- * Check if .claude/rules directory exists and has required files
+ * Check if rules directory exists and has required files
  * @param targetDir - Target directory
  * @returns Check result
  */
-export async function checkRules(targetDir: string): Promise<CheckResult> {
-  const rulesDir = path.join(targetDir, '.claude', 'rules');
+export async function checkRules(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<CheckResult> {
+  const rulesDir = path.join(targetDir, rootDir, 'rules');
   const exists = await isDirectory(rulesDir);
 
   if (!exists) {
@@ -253,12 +266,15 @@ export async function checkRules(targetDir: string): Promise<CheckResult> {
 
 /**
  * Check if agents directory exists and has expected count
- * Official Claude Code format: .claude/agents/
+ * Official format: {root}/agents/
  * @param targetDir - Target directory
  * @returns Check result
  */
-export async function checkAgents(targetDir: string): Promise<CheckResult> {
-  const agentsDir = path.join(targetDir, '.claude', 'agents');
+export async function checkAgents(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<CheckResult> {
+  const agentsDir = path.join(targetDir, rootDir, 'agents');
   const exists = await isDirectory(agentsDir);
 
   if (!exists) {
@@ -291,12 +307,15 @@ export async function checkAgents(targetDir: string): Promise<CheckResult> {
 
 /**
  * Check if all symlinks in refs/ are valid
- * Official Claude Code format: .claude/agents/, .claude/skills/
+ * Official format: {root}/agents/, {root}/skills/
  * @param targetDir - Target directory
  * @returns Check result
  */
-export async function checkSymlinks(targetDir: string): Promise<CheckResult> {
-  const skillsDir = path.join(targetDir, '.claude', 'skills');
+export async function checkSymlinks(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<CheckResult> {
+  const skillsDir = path.join(targetDir, rootDir, 'skills');
 
   const brokenSymlinks: string[] = [];
 
@@ -375,12 +394,15 @@ export async function checkIndexFiles(targetDir: string): Promise<CheckResult> {
 
 /**
  * Check if skills directory exists
- * Official Claude Code format: .claude/skills/
+ * Official format: {root}/skills/
  * @param targetDir - Target directory
  * @returns Check result
  */
-export async function checkSkills(targetDir: string): Promise<CheckResult> {
-  const skillsDir = path.join(targetDir, '.claude', 'skills');
+export async function checkSkills(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<CheckResult> {
+  const skillsDir = path.join(targetDir, rootDir, 'skills');
   const exists = await isDirectory(skillsDir);
 
   if (!exists) {
@@ -454,15 +476,18 @@ export async function checkGuides(targetDir: string): Promise<CheckResult> {
  * @param targetDir - Target directory
  * @returns Check result
  */
-export async function checkHooks(targetDir: string): Promise<CheckResult> {
-  const hooksDir = path.join(targetDir, '.claude', 'hooks');
+export async function checkHooks(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<CheckResult> {
+  const hooksDir = path.join(targetDir, rootDir, 'hooks');
   const exists = await isDirectory(hooksDir);
 
   if (!exists) {
     return {
       name: 'Hooks',
       status: 'fail',
-      message: '.claude/hooks/ directory not found',
+      message: `${rootDir}/hooks/ directory not found`,
       fixable: true,
     };
   }
@@ -473,7 +498,7 @@ export async function checkHooks(targetDir: string): Promise<CheckResult> {
     return {
       name: 'Hooks',
       status: 'warn',
-      message: '.claude/hooks/ directory is empty',
+      message: `${rootDir}/hooks/ directory is empty`,
       fixable: false,
     };
   }
@@ -491,15 +516,18 @@ export async function checkHooks(targetDir: string): Promise<CheckResult> {
  * @param targetDir - Target directory
  * @returns Check result
  */
-export async function checkContexts(targetDir: string): Promise<CheckResult> {
-  const contextsDir = path.join(targetDir, '.claude', 'contexts');
+export async function checkContexts(
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<CheckResult> {
+  const contextsDir = path.join(targetDir, rootDir, 'contexts');
   const exists = await isDirectory(contextsDir);
 
   if (!exists) {
     return {
       name: 'Contexts',
       status: 'fail',
-      message: '.claude/contexts/ directory not found',
+      message: `${rootDir}/contexts/ directory not found`,
       fixable: true,
     };
   }
@@ -510,7 +538,7 @@ export async function checkContexts(targetDir: string): Promise<CheckResult> {
     return {
       name: 'Contexts',
       status: 'warn',
-      message: '.claude/contexts/ directory is empty',
+      message: `${rootDir}/contexts/ directory is empty`,
       fixable: false,
     };
   }
@@ -564,14 +592,18 @@ async function createMissingDirectory(dirPath: string): Promise<boolean> {
  * @param targetDir - Target directory
  * @returns true if fixed successfully
  */
-async function fixSingleIssue(check: CheckResult, targetDir: string): Promise<boolean> {
+async function fixSingleIssue(
+  check: CheckResult,
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<boolean> {
   const fixMap: Record<string, () => Promise<boolean>> = {
-    Rules: () => createMissingDirectory(path.join(targetDir, '.claude', 'rules')),
-    Agents: () => createMissingDirectory(path.join(targetDir, '.claude', 'agents')),
-    Skills: () => createMissingDirectory(path.join(targetDir, '.claude', 'skills')),
+    Rules: () => createMissingDirectory(path.join(targetDir, rootDir, 'rules')),
+    Agents: () => createMissingDirectory(path.join(targetDir, rootDir, 'agents')),
+    Skills: () => createMissingDirectory(path.join(targetDir, rootDir, 'skills')),
     Guides: () => createMissingDirectory(path.join(targetDir, 'guides')),
-    Hooks: () => createMissingDirectory(path.join(targetDir, '.claude', 'hooks')),
-    Contexts: () => createMissingDirectory(path.join(targetDir, '.claude', 'contexts')),
+    Hooks: () => createMissingDirectory(path.join(targetDir, rootDir, 'hooks')),
+    Contexts: () => createMissingDirectory(path.join(targetDir, rootDir, 'contexts')),
     Symlinks: async () => {
       if (!check.details || check.details.length === 0) return false;
       const fullPaths = check.details.map((d) => path.join(targetDir, d));
@@ -590,7 +622,11 @@ async function fixSingleIssue(check: CheckResult, targetDir: string): Promise<bo
  * @param targetDir - Target directory
  * @returns Updated check results with fix status
  */
-export async function fixIssues(checks: CheckResult[], targetDir: string): Promise<CheckResult[]> {
+export async function fixIssues(
+  checks: CheckResult[],
+  targetDir: string,
+  rootDir: string = '.claude'
+): Promise<CheckResult[]> {
   const fixedChecks: CheckResult[] = [];
 
   for (const check of checks) {
@@ -600,7 +636,7 @@ export async function fixIssues(checks: CheckResult[], targetDir: string): Promi
     }
 
     console.log(i18n.t('cli.doctor.fixing', { name: check.name }));
-    const fixed = await fixSingleIssue(check, targetDir);
+    const fixed = await fixSingleIssue(check, targetDir, rootDir);
 
     fixedChecks.push(
       fixed
@@ -650,17 +686,24 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
   console.log(i18n.t('cli.doctor.checking'));
   console.log('');
 
+  const detection = await detectProvider({
+    targetDir,
+    override: options.provider,
+    preferProject: true,
+  });
+  const layout = getProviderLayout(detection.provider);
+
   // Run all checks
   let checks: CheckResult[] = await Promise.all([
-    checkClaudeMd(targetDir),
-    checkRules(targetDir),
-    checkAgents(targetDir),
-    checkSkills(targetDir),
-    checkSymlinks(targetDir),
+    checkEntryDoc(targetDir, layout.entryFile),
+    checkRules(targetDir, layout.rootDir),
+    checkAgents(targetDir, layout.rootDir),
+    checkSkills(targetDir, layout.rootDir),
+    checkSymlinks(targetDir, layout.rootDir),
     checkIndexFiles(targetDir),
     checkGuides(targetDir),
-    checkHooks(targetDir),
-    checkContexts(targetDir),
+    checkHooks(targetDir, layout.rootDir),
+    checkContexts(targetDir, layout.rootDir),
   ]);
 
   // Apply fixes if requested
@@ -670,7 +713,7 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
     if (hasFixableIssues) {
       console.log(i18n.t('cli.doctor.applyingFixes'));
       console.log('');
-      checks = await fixIssues(checks, targetDir);
+      checks = await fixIssues(checks, targetDir, layout.rootDir);
       console.log('');
     }
   }

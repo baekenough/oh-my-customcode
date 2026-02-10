@@ -28,33 +28,67 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: "Guardrail: check Claude template"
+        id: guard
+        run: |
+          if [ ! -d "${{ github.workspace }}/templates/.claude" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate DOCS_VALIDATOR
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          if [ -z "${{ secrets.DOCS_VALIDATOR }}" ]; then
+            echo "::error::DOCS_VALIDATOR secret is required for Claude Native Verification"
+            exit 1
+          fi
+
       - name: Setup Bun
+        if: steps.guard.outputs.skip != 'true'
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: bun install --production
+        if: steps.guard.outputs.skip != 'true'
+        run: bun install
 
       - name: Run Claude Native Verification
+        if: steps.guard.outputs.skip != 'true'
         env:
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || 'false' }}
+          FORCE_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' && 'true' || 'false' }}
           ANTHROPIC_API_KEY: ${{ secrets.DOCS_VALIDATOR }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PROJECT_ROOT: ${{ github.workspace }}/templates
         run: |
           ARGS=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
-          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ "$DRY_RUN_INPUT" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "$FORCE_INPUT" = "true" ]; then ARGS="$ARGS --force"; fi
           bun run .github/scripts/verify-claude-native.ts $ARGS
 
       - name: Create summary
         if: always()
+        env:
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || 'false' }}
+          FORCE_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' && 'true' || 'false' }}
         run: |
+          if [ "${{ steps.guard.outputs.skip }}" = "true" ]; then
+            echo "## Claude Native Verification Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Reason: templates/.claude directory not found." >> $GITHUB_STEP_SUMMARY
+            echo "This workflow only applies to Claude-native templates." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
           echo "## 🔍 Claude Native Verification" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Weekly compliance check against official Claude Code documentation." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Project Root**: \`templates/\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
+          DRY_RUN_INPUT="${DRY_RUN_INPUT:-false}"
+          FORCE_INPUT="${FORCE_INPUT:-false}"
+          if [ "$DRY_RUN_INPUT" = "true" ]; then
             echo "**Mode**: Dry Run (no issue creation)" >> $GITHUB_STEP_SUMMARY
           fi

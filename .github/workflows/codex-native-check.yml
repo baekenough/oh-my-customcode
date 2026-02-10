@@ -1,0 +1,84 @@
+name: Codex Native Check
+
+on:
+  schedule:
+    # Run weekly: every Sunday at 19:00 UTC (Monday 04:00 KST)
+    - cron: '0 19 * * 0'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (no hash update)'
+        type: boolean
+        default: false
+      force:
+        description: 'Force verification even if hash unchanged'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Verify Codex Native Compliance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: "Guardrail: check Codex template"
+        id: guard
+        run: |
+          if [ ! -d "${{ github.workspace }}/templates/.codex" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Bun
+        if: steps.guard.outputs.skip != 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        if: steps.guard.outputs.skip != 'true'
+        run: bun install
+
+      - name: Run Codex Native Verification
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || 'false' }}
+          FORCE_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' && 'true' || 'false' }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PROJECT_ROOT: ${{ github.workspace }}/templates
+        run: |
+          ARGS=""
+          if [ "$DRY_RUN_INPUT" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ "$FORCE_INPUT" = "true" ]; then ARGS="$ARGS --force"; fi
+          bun run .github/scripts/verify-codex-native.ts $ARGS
+
+      - name: Create summary
+        if: always()
+        env:
+          DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || 'false' }}
+          FORCE_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' && 'true' || 'false' }}
+        run: |
+          if [ "${{ steps.guard.outputs.skip }}" = "true" ]; then
+            echo "## Codex Native Verification Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Reason: templates/.codex directory not found." >> $GITHUB_STEP_SUMMARY
+            echo "This workflow only applies to Codex-native templates." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          echo "## 🔍 Codex Native Verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Weekly compliance check for Codex-native templates." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Project Root**: \`templates/\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          DRY_RUN_INPUT="${DRY_RUN_INPUT:-false}"
+          FORCE_INPUT="${FORCE_INPUT:-false}"
+          if [ "$DRY_RUN_INPUT" = "true" ]; then
+            echo "**Mode**: Dry Run (no hash update)" >> $GITHUB_STEP_SUMMARY
+          fi
