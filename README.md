@@ -37,6 +37,16 @@ That's it. You now have a fully configured Claude Code environment.
 
 ---
 
+## Dual-Mode (Claude + Codex)
+
+oh-my-customcode can operate in both Claude-native and Codex-native modes. The CLI auto-detects the provider using the following order:
+
+1. Override (`--provider` or `OMCUSTOM_PROVIDER` / `LLM_SERVICE`)
+2. Config (`.omcustomrc.json` provider)
+3. Environment signals (`OPENAI_API_KEY`, `CODEX_HOME`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_*`)
+4. Project markers (`AGENTS.md`/`.codex` vs `CLAUDE.md`/`.claude`)
+5. Default: `claude`
+
 ## Customization First
 
 This is what oh-my-customcode is all about. **Making Claude Code yours.**
@@ -176,8 +186,8 @@ your-project/
 ├── CLAUDE.md              # Entry point for Claude
 └── .claude/
     ├── rules/             # Behavior rules (18 total)
-    ├── hooks/             # Event hooks (2 total)
-    ├── contexts/          # Context files (1 total)
+    ├── hooks/             # Event hooks (1 total)
+    ├── contexts/          # Context files (4 total)
     ├── agents/            # All agents (flat structure, 42 total)
     │   ├── lang-golang-expert/
     │   ├── be-fastapi-expert/
