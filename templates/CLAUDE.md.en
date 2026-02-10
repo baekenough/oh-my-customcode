@@ -151,6 +151,7 @@ Flow:
 | `/dev-refactor` | Refactor code |
 | `/memory-save` | Save session context to claude-mem |
 | `/memory-recall` | Search and recall memories |
+| `/monitoring-setup` | Enable/disable OTel console monitoring |
 | `/npm-publish` | Publish package to npm registry |
 | `/npm-version` | Manage semantic versions |
 | `/npm-audit` | Audit dependencies |
