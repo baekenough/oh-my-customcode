@@ -41,8 +41,18 @@ export function createProgram(): Command {
   program
     .command('update')
     .description(i18n.t('cli.update.description'))
-    .action(async () => {
-      await updateCommand();
+    .option('--dry-run', i18n.t('cli.update.dryRunOption'))
+    .option('--force', i18n.t('cli.update.forceOption'))
+    .option('--backup', i18n.t('cli.update.backupOption'))
+    .option('--agents', i18n.t('cli.update.agentsOption'))
+    .option('--skills', i18n.t('cli.update.skillsOption'))
+    .option('--rules', i18n.t('cli.update.rulesOption'))
+    .option('--guides', i18n.t('cli.update.guidesOption'))
+    .option('--hooks', i18n.t('cli.update.hooksOption'))
+    .option('--contexts', i18n.t('cli.update.contextsOption'))
+    .option('-p, --provider <provider>', i18n.t('cli.update.providerOption'), 'auto')
+    .action(async (options) => {
+      await updateCommand(options);
     });
 
   // omcustom list [type] [--format table|json|simple]
