@@ -6,9 +6,9 @@ Rules define coding standards, workflow patterns, and agent behavior. oh-my-cust
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
-| MUST | 10 | Required - never violate |
+| MUST | 11 | Required - never violate |
 | SHOULD | 6 | Recommended - strongly encouraged |
-| MAY | 2 | Optional - guidelines |
+| MAY | 1 | Optional - guidelines |
 
 ## MUST Rules
 
@@ -187,16 +187,16 @@ Ecomode for efficiency:
 - Result compression
 - Activation conditions
 
-### SHOULD-pipeline-mode
+### SHOULD-agent-teams
 
-**ID**: R014
+**ID**: R018
 
-Pipeline mode for workflows:
+Agent Teams integration:
 
-- Declarative workflow definition
-- Variable passing
-- Error handling
-- Step sequencing
+- Active use of Agent Teams when enabled
+- Decision matrix for Task tool vs Agent Teams
+- Team composition patterns
+- Graceful fallback behavior
 
 ## MAY Rules
 
@@ -212,16 +212,6 @@ Optimization guidelines:
 - Caching strategies
 - Lazy loading
 - Token optimization
-
-### MAY-context-efficiency
-
-**ID**: R018
-
-Context efficiency patterns:
-
-- Minimize redundant information
-- Summarize when appropriate
-- Reference instead of duplicate
 
 ## Rule Structure
 
@@ -274,7 +264,7 @@ Rules are stored in `.claude/rules/` (Claude) or `.codex/rules/` (Codex):
 ├── SHOULD-memory-integration.md
 ├── SHOULD-hud-statusline.md
 ├── SHOULD-ecomode.md
-├── SHOULD-pipeline-mode.md
+├── SHOULD-agent-teams.md
 └── MAY-optimization.md
 ```
 
