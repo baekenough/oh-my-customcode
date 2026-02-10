@@ -13,22 +13,12 @@ on:
         required: false
         default: false
         description: 'Force analysis even if hash unchanged'
-  push:
-    paths:
-      - '.github/workflows/reusable-codex-native.yml'
 
 permissions:
   contents: write
 
 jobs:
-  push-guard:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Reusable workflow file updated. No direct execution needed."
-
   verify:
-    if: github.event_name != 'push'
     runs-on: ubuntu-latest
 
     steps:
