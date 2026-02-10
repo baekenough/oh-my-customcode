@@ -60,7 +60,7 @@ jobs:
       - name: Install dependencies
         if: steps.guard.outputs.skip != 'true'
         working-directory: scripts
-        run: bun install --production
+        run: bun install
 
       - name: Run Codex Native Verification
         if: steps.guard.outputs.skip != 'true'

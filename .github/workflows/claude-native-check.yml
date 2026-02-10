@@ -51,7 +51,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.guard.outputs.skip != 'true'
-        run: bun install --production
+        run: bun install
 
       - name: Run Claude Native Verification
         if: steps.guard.outputs.skip != 'true'
