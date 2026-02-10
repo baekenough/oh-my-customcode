@@ -139,7 +139,7 @@ Includes slash commands and capabilities:
 - **Database** (3): Supabase, PostgreSQL, Redis
 - **Infrastructure** (2): Docker, AWS
 - **System** (2): Memory management, result aggregation
-- **Orchestration** (3): secretary-routing, dev-lead-routing, de-lead-routing
+- **Orchestration** (4): secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing
 - **Slash Commands** (20+): /create-agent, /code-review, /audit-dependencies, /sync-check, /commit, /pr, and more
 
 ### Guides (22)
