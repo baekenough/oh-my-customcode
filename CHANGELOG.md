@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-02-10
+
+### Added
+- `monitoring-setup` skill: OTel console monitoring enable/disable via `/monitoring-setup`
+- Natural language triggers for monitoring activation (Korean/English)
+
+### Changed
+- CLAUDE.md.en: Added `/monitoring-setup` to slash commands table
+- CLAUDE.md.ko: Added `/monitoring-setup` to slash commands table
+
+### Dependencies
+- Merged Dependabot PRs: upload-artifact v6, download-artifact v6, Anthropic SDK 0.74.0, nodemailer v8, @types/nodemailer v7
+- Fixed 3 E2E test failures (locale-agnostic assertions)
+- Added claude-native-check.yml workflow
+- Fixed README_ko.md typo (qa-qa-engineer → qa-engineer)
+
 ## [0.6.2] - 2026-02-08
 
 ### Fixed
