@@ -31,7 +31,7 @@ jobs:
         with:
           path: project
 
-      - name: Guardrail: check Claude layout
+      - name: "Guardrail: check Claude layout"
         id: guard
         run: |
           if [ ! -d "${{ github.workspace }}/project/.claude" ]; then
