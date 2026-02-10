@@ -27,7 +27,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Guardrail: check Codex template
+      - name: "Guardrail: check Codex template"
         id: guard
         run: |
           if [ ! -d "${{ github.workspace }}/templates/.codex" ]; then

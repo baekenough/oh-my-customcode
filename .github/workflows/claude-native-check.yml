@@ -28,7 +28,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Guardrail: check Claude template
+      - name: "Guardrail: check Claude template"
         id: guard
         run: |
           if [ ! -d "${{ github.workspace }}/templates/.claude" ]; then

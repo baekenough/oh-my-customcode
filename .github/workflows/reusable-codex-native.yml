@@ -27,7 +27,7 @@ jobs:
         with:
           path: project
 
-      - name: Guardrail: check Codex layout
+      - name: "Guardrail: check Codex layout"
         id: guard
         run: |
           if [ ! -d "${{ github.workspace }}/project/.codex" ]; then
