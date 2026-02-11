@@ -113,6 +113,37 @@ describe('preserveFiles feature', () => {
       expect(merged.customComponents?.[1].name).toBe('skill1');
     });
 
+    it('should deduplicate customComponents by path on merge', () => {
+      const defaults = getDefaultConfig();
+      defaults.customComponents = [
+        { type: 'agent', name: 'agent1', path: '.claude/agents/agent1.md', managed: false },
+      ];
+
+      const overrides: Partial<OmccConfig> = {
+        customComponents: [
+          {
+            type: 'agent',
+            name: 'agent1-updated',
+            path: '.claude/agents/agent1.md',
+            managed: false,
+          },
+          { type: 'skill', name: 'skill1', path: '.claude/skills/skill1/', managed: false },
+        ],
+      };
+
+      const merged = mergeConfig(defaults, overrides);
+
+      // Should have 2 entries (agent1 deduped by path, skill1 new)
+      expect(merged.customComponents?.length).toBe(2);
+      // Override should win for duplicated path
+      expect(
+        merged.customComponents?.find((c) => c.path === '.claude/agents/agent1.md')?.name
+      ).toBe('agent1-updated');
+      expect(merged.customComponents?.find((c) => c.path === '.claude/skills/skill1/')?.name).toBe(
+        'skill1'
+      );
+    });
+
     it('should handle empty preserveFiles in overrides', () => {
       const defaults = getDefaultConfig();
       defaults.preserveFiles = ['file1.txt'];
