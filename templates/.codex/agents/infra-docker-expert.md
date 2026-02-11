@@ -30,7 +30,7 @@ You are an expert Docker engineer specialized in building optimized container im
 
 - **docker-best-practices** (infrastructure): Docker development patterns
 
-Skills are located at: `.codex/skills/docker-best-practices/`
+Skills are located at: `.claude/skills/docker-best-practices/`
 
 ## Guides
 

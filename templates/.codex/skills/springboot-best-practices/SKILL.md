@@ -4,354 +4,215 @@ description: Spring Boot patterns for enterprise Java applications
 user-invocable: false
 ---
 
-## Purpose
-
-Apply Spring Boot patterns for building enterprise-grade applications.
-
 ## Rules
 
 ### 1. Project Structure
-
-```yaml
-structure:
-  layout: layered architecture
-  packages:
-    - controller: REST endpoints
-    - service: Business logic
-    - repository: Data access
-    - model/entity: Domain objects
-    - dto: Data transfer objects
-    - config: Configuration classes
-    - exception: Custom exceptions
-
-example: |
-  com.example.app/
-  ├── controller/
-  │   └── UserController.java
-  ├── service/
-  │   ├── UserService.java
-  │   └── impl/UserServiceImpl.java
-  ├── repository/
-  │   └── UserRepository.java
-  ├── model/
-  │   └── User.java
-  ├── dto/
-  │   ├── UserRequest.java
-  │   └── UserResponse.java
-  ├── config/
-  │   └── SecurityConfig.java
-  └── exception/
-      └── UserNotFoundException.java
-```
+Layered architecture: controller (REST), service (business logic), repository (data access), model/entity, dto, config, exception.
 
 ### 2. Dependency Injection
+Constructor injection preferred. Use @RequiredArgsConstructor with final fields. Avoid field injection with @Autowired.
 
-```yaml
-prefer:
-  - Constructor injection over field injection
-  - Interface-based dependencies
-  - @RequiredArgsConstructor with final fields
-
-patterns: |
-  // GOOD: Constructor injection
-  @Service
-  @RequiredArgsConstructor
-  public class UserService {
-      private final UserRepository userRepository;
-      private final EmailService emailService;
-  }
-
-  // AVOID: Field injection
-  @Service
-  public class UserService {
-      @Autowired
-      private UserRepository userRepository; // Not recommended
-  }
+```java
+// GOOD: Constructor injection
+@Service
+@RequiredArgsConstructor
+public class UserService {
+    private final UserRepository userRepository;
+    private final EmailService emailService;
+}
 ```
 
 ### 3. REST API Design
+@RestController + @RequestMapping. Use @Validated for input, ResponseEntity for responses, proper HTTP status codes.
 
-```yaml
-controller:
-  annotations:
-    - "@RestController"
-    - "@RequestMapping with base path"
-    - "@Validated for input validation"
+```java
+@RestController
+@RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
+public class UserController {
+    private final UserService userService;
 
-patterns: |
-  @RestController
-  @RequestMapping("/api/v1/users")
-  @RequiredArgsConstructor
-  public class UserController {
+    @GetMapping("/{id}")
+    public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.findById(id));
+    }
 
-      private final UserService userService;
-
-      @GetMapping("/{id}")
-      public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
-          return ResponseEntity.ok(userService.findById(id));
-      }
-
-      @PostMapping
-      @ResponseStatus(HttpStatus.CREATED)
-      public UserResponse createUser(@Valid @RequestBody UserRequest request) {
-          return userService.create(request);
-      }
-
-      @PutMapping("/{id}")
-      public UserResponse updateUser(
-          @PathVariable Long id,
-          @Valid @RequestBody UserRequest request
-      ) {
-          return userService.update(id, request);
-      }
-
-      @DeleteMapping("/{id}")
-      @ResponseStatus(HttpStatus.NO_CONTENT)
-      public void deleteUser(@PathVariable Long id) {
-          userService.delete(id);
-      }
-  }
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponse createUser(@Valid @RequestBody UserRequest request) {
+        return userService.create(request);
+    }
+}
 ```
 
 ### 4. Service Layer
+Business logic in services. @Transactional boundaries at service level. Interface + implementation pattern.
 
-```yaml
-principles:
-  - Business logic in service layer
-  - Transaction boundaries at service level
-  - Interface + implementation pattern
+```java
+@Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+    private final UserRepository userRepository;
 
-patterns: |
-  public interface UserService {
-      UserResponse findById(Long id);
-      UserResponse create(UserRequest request);
-  }
+    @Override
+    public UserResponse findById(Long id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException(id));
+        return userMapper.toResponse(user);
+    }
 
-  @Service
-  @Transactional(readOnly = true)
-  @RequiredArgsConstructor
-  public class UserServiceImpl implements UserService {
-
-      private final UserRepository userRepository;
-      private final UserMapper userMapper;
-
-      @Override
-      public UserResponse findById(Long id) {
-          User user = userRepository.findById(id)
-              .orElseThrow(() -> new UserNotFoundException(id));
-          return userMapper.toResponse(user);
-      }
-
-      @Override
-      @Transactional
-      public UserResponse create(UserRequest request) {
-          User user = userMapper.toEntity(request);
-          return userMapper.toResponse(userRepository.save(user));
-      }
-  }
+    @Override
+    @Transactional
+    public UserResponse create(UserRequest request) {
+        User user = userMapper.toEntity(request);
+        return userMapper.toResponse(userRepository.save(user));
+    }
+}
 ```
 
 ### 5. Data Access
+Spring Data JPA. @Query or method naming for custom queries. @Entity with proper JPA annotations.
 
-```yaml
-repository:
-  use: Spring Data JPA
-  custom_queries: "@Query annotation or method naming"
+```java
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByEmail(String email);
 
-patterns: |
-  public interface UserRepository extends JpaRepository<User, Long> {
+    @Query("SELECT u FROM User u WHERE u.status = :status")
+    List<User> findByStatus(@Param("status") UserStatus status);
+}
 
-      Optional<User> findByEmail(String email);
+@Entity
+@Table(name = "users")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-      @Query("SELECT u FROM User u WHERE u.status = :status")
-      List<User> findByStatus(@Param("status") UserStatus status);
+    @Column(nullable = false, unique = true)
+    private String email;
 
-      @Query(value = "SELECT * FROM users WHERE created_at > :date",
-             nativeQuery = true)
-      List<User> findRecentUsers(@Param("date") LocalDateTime date);
-  }
-
-entity: |
-  @Entity
-  @Table(name = "users")
-  @Getter
-  @NoArgsConstructor(access = AccessLevel.PROTECTED)
-  public class User {
-
-      @Id
-      @GeneratedValue(strategy = GenerationType.IDENTITY)
-      private Long id;
-
-      @Column(nullable = false, unique = true)
-      private String email;
-
-      @Enumerated(EnumType.STRING)
-      private UserStatus status;
-
-      @CreatedDate
-      private LocalDateTime createdAt;
-  }
+    @Enumerated(EnumType.STRING)
+    private UserStatus status;
+}
 ```
 
 ### 6. Exception Handling
+@RestControllerAdvice for global handling. Domain-specific exceptions with proper HTTP status mapping.
 
-```yaml
-global_handler:
-  use: "@ControllerAdvice"
-  custom_exceptions: domain-specific
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleUserNotFound(UserNotFoundException ex) {
+        return new ErrorResponse("USER_NOT_FOUND", ex.getMessage());
+    }
 
-patterns: |
-  @RestControllerAdvice
-  public class GlobalExceptionHandler {
-
-      @ExceptionHandler(UserNotFoundException.class)
-      @ResponseStatus(HttpStatus.NOT_FOUND)
-      public ErrorResponse handleUserNotFound(UserNotFoundException ex) {
-          return new ErrorResponse("USER_NOT_FOUND", ex.getMessage());
-      }
-
-      @ExceptionHandler(MethodArgumentNotValidException.class)
-      @ResponseStatus(HttpStatus.BAD_REQUEST)
-      public ErrorResponse handleValidation(MethodArgumentNotValidException ex) {
-          List<String> errors = ex.getBindingResult()
-              .getFieldErrors()
-              .stream()
-              .map(e -> e.getField() + ": " + e.getDefaultMessage())
-              .toList();
-          return new ErrorResponse("VALIDATION_ERROR", errors);
-      }
-  }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleValidation(MethodArgumentNotValidException ex) {
+        List<String> errors = ex.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(e -> e.getField() + ": " + e.getDefaultMessage())
+            .toList();
+        return new ErrorResponse("VALIDATION_ERROR", errors);
+    }
+}
 ```
 
 ### 7. Configuration
+Profile-based: application-{profile}.yml. @ConfigurationProperties for type-safe config. Externalize sensitive values.
 
 ```yaml
-profiles:
-  use: application-{profile}.yml
-  externalize: sensitive values
+# application.yml
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+```
 
-patterns: |
-  # application.yml
-  spring:
-    profiles:
-      active: ${SPRING_PROFILES_ACTIVE:local}
-    datasource:
-      url: ${DATABASE_URL}
-      username: ${DATABASE_USERNAME}
-      password: ${DATABASE_PASSWORD}
+```java
+@Configuration
+@ConfigurationProperties(prefix = "app")
+@Validated
+public class AppProperties {
+    @NotBlank
+    private String name;
 
-  # application-local.yml
-  spring:
-    datasource:
-      url: jdbc:h2:mem:testdb
-      driver-class-name: org.h2.Driver
-
-configuration_class: |
-  @Configuration
-  @ConfigurationProperties(prefix = "app")
-  @Validated
-  public class AppProperties {
-
-      @NotBlank
-      private String name;
-
-      @Min(1)
-      private int maxConnections;
-
-      // getters, setters
-  }
+    @Min(1)
+    private int maxConnections;
+}
 ```
 
 ### 8. Security
+Spring Security with SecurityFilterChain. Externalize secrets. Proper authentication/authorization patterns.
 
-```yaml
-principles:
-  - Use Spring Security
-  - Externalize secrets
-  - Implement proper authentication
-
-patterns: |
-  @Configuration
-  @EnableWebSecurity
-  @RequiredArgsConstructor
-  public class SecurityConfig {
-
-      private final JwtTokenProvider tokenProvider;
-
-      @Bean
-      public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-          return http
-              .csrf(csrf -> csrf.disable())
-              .sessionManagement(session ->
-                  session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-              .authorizeHttpRequests(auth -> auth
-                  .requestMatchers("/api/v1/auth/**").permitAll()
-                  .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                  .anyRequest().authenticated())
-              .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
-              .build();
-      }
-  }
+```java
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+public class SecurityConfig {
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        return http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated())
+            .build();
+    }
+}
 ```
 
 ### 9. Testing
+@WebMvcTest (controller), @DataJpaTest (repository), @SpringBootTest (integration), @MockBean for mocking.
 
-```yaml
-layers:
-  unit: "@MockBean, Mockito"
-  integration: "@SpringBootTest"
-  slice: "@WebMvcTest, @DataJpaTest"
+```java
+// Controller test
+@WebMvcTest(UserController.class)
+class UserControllerTest {
+    @Autowired
+    private MockMvc mockMvc;
 
-patterns: |
-  // Controller test
-  @WebMvcTest(UserController.class)
-  class UserControllerTest {
+    @MockBean
+    private UserService userService;
 
-      @Autowired
-      private MockMvc mockMvc;
+    @Test
+    void getUser_shouldReturnUser() throws Exception {
+        given(userService.findById(1L))
+            .willReturn(new UserResponse(1L, "test@example.com"));
 
-      @MockBean
-      private UserService userService;
+        mockMvc.perform(get("/api/v1/users/1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.email").value("test@example.com"));
+    }
+}
 
-      @Test
-      void getUser_shouldReturnUser() throws Exception {
-          given(userService.findById(1L))
-              .willReturn(new UserResponse(1L, "test@example.com"));
+// Repository test
+@DataJpaTest
+class UserRepositoryTest {
+    @Autowired
+    private UserRepository userRepository;
 
-          mockMvc.perform(get("/api/v1/users/1"))
-              .andExpect(status().isOk())
-              .andExpect(jsonPath("$.email").value("test@example.com"));
-      }
-  }
-
-  // Repository test
-  @DataJpaTest
-  class UserRepositoryTest {
-
-      @Autowired
-      private UserRepository userRepository;
-
-      @Test
-      void findByEmail_shouldReturnUser() {
-          User user = userRepository.save(new User("test@example.com"));
-
-          Optional<User> found = userRepository.findByEmail("test@example.com");
-
-          assertThat(found).isPresent();
-          assertThat(found.get().getEmail()).isEqualTo("test@example.com");
-      }
-  }
+    @Test
+    void findByEmail_shouldReturnUser() {
+        User user = userRepository.save(new User("test@example.com"));
+        Optional<User> found = userRepository.findByEmail("test@example.com");
+        assertThat(found).isPresent();
+    }
+}
 ```
 
 ## Application
 
-When writing Spring Boot code:
-
-1. **Always** use constructor injection
-2. **Always** use layered architecture
-3. **Prefer** interface-based services
-4. **Use** DTOs for API contracts
-5. **Handle** exceptions globally
-6. **Externalize** configuration
-7. **Secure** endpoints properly
-8. **Test** each layer appropriately
+Always: constructor injection, layered architecture, DTOs, global exception handling, externalized config, proper security, layer-appropriate tests.
