@@ -2,7 +2,7 @@
  * File system utilities
  */
 
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -148,14 +148,13 @@ function shouldSkipPath(destPath: string, destRoot: string, skipPaths?: string[]
     return false;
   }
 
-  const path = require('node:path');
-  const relativePath = path.relative(destRoot, destPath);
+  const relativePath = relative(destRoot, destPath);
 
   for (const skipPath of skipPaths) {
     // If skipPath ends with '/', it means skip entire directory
     if (skipPath.endsWith('/')) {
       const dirPath = skipPath.slice(0, -1);
-      if (relativePath === dirPath || relativePath.startsWith(dirPath + path.sep)) {
+      if (relativePath === dirPath || relativePath.startsWith(dirPath + sep)) {
         return true;
       }
     } else {
@@ -402,8 +401,7 @@ function matchesPattern(filename: string, pattern: string): boolean {
  * Get relative path from base
  */
 export function getRelativePath(basePath: string, fullPath: string): string {
-  const path = require('node:path');
-  return path.relative(basePath, fullPath);
+  return relative(basePath, fullPath);
 }
 
 /**
@@ -417,8 +415,7 @@ export function normalizePath(inputPath: string): string {
  * Check if path is absolute
  */
 export function isAbsolutePath(inputPath: string): boolean {
-  const path = require('node:path');
-  return path.isAbsolute(inputPath);
+  return isAbsolute(inputPath);
 }
 
 /**

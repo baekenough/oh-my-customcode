@@ -203,6 +203,17 @@ export async function saveConfig(targetDir: string, config: OmccConfig): Promise
 }
 
 /**
+ * Deduplicate custom components by path (later entries win)
+ */
+function deduplicateCustomComponents(components: CustomComponentConfig[]): CustomComponentConfig[] {
+  const seen = new Map<string, CustomComponentConfig>();
+  for (const c of components) {
+    seen.set(c.path, c); // Later entries win (overrides take precedence)
+  }
+  return [...seen.values()];
+}
+
+/**
  * Merge configuration with defaults
  */
 export function mergeConfig(defaults: OmccConfig, overrides: Partial<OmccConfig>): OmccConfig {
@@ -227,7 +238,10 @@ export function mergeConfig(defaults: OmccConfig, overrides: Partial<OmccConfig>
       ? [...new Set([...(defaults.preserveFiles || []), ...overrides.preserveFiles])]
       : defaults.preserveFiles,
     customComponents: overrides.customComponents
-      ? [...new Set([...(defaults.customComponents || []), ...overrides.customComponents])]
+      ? deduplicateCustomComponents([
+          ...(defaults.customComponents || []),
+          ...overrides.customComponents,
+        ])
       : defaults.customComponents,
   };
 }
