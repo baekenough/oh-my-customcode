@@ -35,6 +35,24 @@ export interface OmccConfig {
   sourceRepo?: string;
   /** Auto-update settings */
   autoUpdate?: AutoUpdateConfig;
+  /** Files/directories to preserve during update */
+  preserveFiles?: string[];
+  /** Custom components not managed by omcustom */
+  customComponents?: CustomComponentConfig[];
+}
+
+/**
+ * Custom component configuration
+ */
+export interface CustomComponentConfig {
+  /** Type of component */
+  type: 'agent' | 'skill' | 'rule' | 'guide' | 'hook' | 'context';
+  /** Component name */
+  name: string;
+  /** Relative path from project root */
+  path: string;
+  /** Always false - indicates this is custom, not managed by omcustom */
+  managed: false;
 }
 
 /**
@@ -114,6 +132,8 @@ export function getDefaultConfig(): OmccConfig {
       checkIntervalHours: 24,
       autoApplyMinor: false,
     },
+    preserveFiles: [],
+    customComponents: [],
   };
 }
 
@@ -183,6 +203,17 @@ export async function saveConfig(targetDir: string, config: OmccConfig): Promise
 }
 
 /**
+ * Deduplicate custom components by path (later entries win)
+ */
+function deduplicateCustomComponents(components: CustomComponentConfig[]): CustomComponentConfig[] {
+  const seen = new Map<string, CustomComponentConfig>();
+  for (const c of components) {
+    seen.set(c.path, c); // Later entries win (overrides take precedence)
+  }
+  return [...seen.values()];
+}
+
+/**
  * Merge configuration with defaults
  */
 export function mergeConfig(defaults: OmccConfig, overrides: Partial<OmccConfig>): OmccConfig {
@@ -203,6 +234,15 @@ export function mergeConfig(defaults: OmccConfig, overrides: Partial<OmccConfig>
       ...defaults.agents,
       ...overrides.agents,
     },
+    preserveFiles: overrides.preserveFiles
+      ? [...new Set([...(defaults.preserveFiles || []), ...overrides.preserveFiles])]
+      : defaults.preserveFiles,
+    customComponents: overrides.customComponents
+      ? deduplicateCustomComponents([
+          ...(defaults.customComponents || []),
+          ...overrides.customComponents,
+        ])
+      : defaults.customComponents,
   };
 }
 
