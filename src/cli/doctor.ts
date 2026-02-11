@@ -6,6 +6,7 @@
 import { constants, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import { loadConfig } from '../core/config.js';
 import { getProviderLayout, type ProviderPreference } from '../core/layout.js';
 import { detectProvider } from '../core/provider.js';
 import { i18n } from '../i18n/index.js';
@@ -552,6 +553,64 @@ export async function checkContexts(
 }
 
 /**
+ * Check if custom components (managed:false) exist
+ * @param targetDir - Target directory
+ * @param rootDir - Root directory (.claude or .codex)
+ * @returns Check result
+ */
+export async function checkCustomComponents(
+  targetDir: string,
+  _rootDir: string = '.claude'
+): Promise<CheckResult> {
+  try {
+    const config = await loadConfig(targetDir);
+    const customComponents = config.customComponents || [];
+
+    if (customComponents.length === 0) {
+      return {
+        name: 'Custom components',
+        status: 'pass',
+        message: 'No custom components configured',
+        fixable: false,
+      };
+    }
+
+    const missing: string[] = [];
+
+    for (const component of customComponents) {
+      const fullPath = path.join(targetDir, component.path);
+      if (!(await pathExists(fullPath))) {
+        missing.push(component.path);
+      }
+    }
+
+    if (missing.length > 0) {
+      return {
+        name: 'Custom components',
+        status: 'warn',
+        message: `Custom components: ${customComponents.length} items (${missing.length} missing)`,
+        fixable: false,
+        details: missing,
+      };
+    }
+
+    return {
+      name: 'Custom components',
+      status: 'pass',
+      message: `Custom components: ${customComponents.length} items (managed: false)`,
+      fixable: false,
+    };
+  } catch {
+    return {
+      name: 'Custom components',
+      status: 'pass',
+      message: 'No config file found',
+      fixable: false,
+    };
+  }
+}
+
+/**
  * Fix broken symlinks by removing them
  * @param targetDir - Target directory
  * @param brokenSymlinks - List of broken symlink paths
@@ -704,6 +763,7 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
     checkGuides(targetDir),
     checkHooks(targetDir, layout.rootDir),
     checkContexts(targetDir, layout.rootDir),
+    checkCustomComponents(targetDir, layout.rootDir),
   ]);
 
   // Apply fixes if requested

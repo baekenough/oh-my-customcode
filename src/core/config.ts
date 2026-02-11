@@ -35,6 +35,24 @@ export interface OmccConfig {
   sourceRepo?: string;
   /** Auto-update settings */
   autoUpdate?: AutoUpdateConfig;
+  /** Files/directories to preserve during update */
+  preserveFiles?: string[];
+  /** Custom components not managed by omcustom */
+  customComponents?: CustomComponentConfig[];
+}
+
+/**
+ * Custom component configuration
+ */
+export interface CustomComponentConfig {
+  /** Type of component */
+  type: 'agent' | 'skill' | 'rule' | 'guide' | 'hook' | 'context';
+  /** Component name */
+  name: string;
+  /** Relative path from project root */
+  path: string;
+  /** Always false - indicates this is custom, not managed by omcustom */
+  managed: false;
 }
 
 /**
@@ -114,6 +132,8 @@ export function getDefaultConfig(): OmccConfig {
       checkIntervalHours: 24,
       autoApplyMinor: false,
     },
+    preserveFiles: [],
+    customComponents: [],
   };
 }
 
@@ -203,6 +223,12 @@ export function mergeConfig(defaults: OmccConfig, overrides: Partial<OmccConfig>
       ...defaults.agents,
       ...overrides.agents,
     },
+    preserveFiles: overrides.preserveFiles
+      ? [...new Set([...(defaults.preserveFiles || []), ...overrides.preserveFiles])]
+      : defaults.preserveFiles,
+    customComponents: overrides.customComponents
+      ? [...new Set([...(defaults.customComponents || []), ...overrides.customComponents])]
+      : defaults.customComponents,
   };
 }
 
