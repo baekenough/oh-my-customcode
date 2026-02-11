@@ -37,22 +37,7 @@ omcustom init
 
 ---
 
-## 듀얼 모드 (Claude + Codex)
-
-oh-my-customcode는 Claude-native와 Codex-native를 모두 지원합니다. CLI는 다음 순서로 제공자를 자동 감지합니다.
-
-1. 오버라이드 (`--provider` 또는 `OMCUSTOM_PROVIDER` / `LLM_SERVICE`)
-2. 설정 파일 (`.omcustomrc.json` provider)
-3. 환경 신호 (`OPENAI_API_KEY`, `CODEX_HOME`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_*`)
-4. 프로젝트 마커 (`AGENTS.md`/`.codex` vs `CLAUDE.md`/`.claude`)
-5. 기본값: `claude`
-
-**Claude 모드**는 `CLAUDE.md` 진입점과 함께 `.claude/` 디렉토리를 생성합니다.
-**Codex 모드**는 `AGENTS.md` 진입점과 함께 `.codex/` 디렉토리를 생성합니다.
-
-두 모드 모두 동일한 에이전트, 스킬, 가이드, 규칙을 설치합니다 — 디렉토리 레이아웃과 진입 파일만 다릅니다.
-
----
+> **Codex CLI 지원**: 실험적 Codex CLI 모드를 지원합니다. Codex 네이티브 설정은 `AGENTS.md`와 `.codex/`를 참고하세요.
 
 ## 커스터마이징이 핵심
 

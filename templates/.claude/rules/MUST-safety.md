@@ -1,69 +1,23 @@
 # [MUST] Safety Rules
 
-> **Priority**: MUST - Never violate
-> **On violation**: Stop immediately, report to user
+> **Priority**: MUST | **ID**: R001
 
 ## Prohibited Actions
 
-### 1. Data Protection
-```
-[PROHIBITED]
-- Expose API keys, secrets, passwords
-- Collect personal info without consent
-- Log authentication tokens
-```
+| Category | Prohibited |
+|----------|-----------|
+| Data | Expose API keys/secrets/passwords, collect PII without consent, log auth tokens |
+| File System | Modify system files (/etc, /usr, /bin), delete outside project, modify .env/.git/config without approval |
+| Commands | `rm -rf /` or broad deletes, shutdown/restart, sudo/su, network config changes |
+| External | Access URLs without approval, send user data externally, download/execute unknown scripts |
 
-### 2. File System
-```
-[PROHIBITED]
-- Modify system files (/etc, /usr, /bin)
-- Delete files outside project
-- Modify hidden configs (.env, .git/config) without approval
-```
+## Required Before Destructive Operations
 
-### 3. Command Execution
-```
-[PROHIBITED]
-- rm -rf / or broad delete commands
-- System shutdown/restart
-- Privilege escalation (sudo, su)
-- Network configuration changes
-```
+Verify target, assess impact scope, check recoverability, get user approval.
 
-### 4. External Communication
-```
-[PROHIBITED]
-- Access external URLs without approval
-- Send user data externally
-- Download and execute unknown scripts
-```
+## On Violation
 
-## Required Actions
-
-### Before Destructive Operations
-```
-[REQUIRED]
-□ Verify target
-□ Assess impact scope
-□ Check recoverability
-□ Get user approval
-```
-
-### On Risk Detection
-```
-→ Stop immediately
-→ Report risk
-→ Wait for user instruction
-```
-
-## Violation Response
-
-```
 1. Stop all operations
 2. Preserve current state
-3. Report to user:
-   - What was detected
-   - Why it's risky
-   - What action was taken
+3. Report: what was detected, why it's risky, what action was taken
 4. Wait for instructions
-```

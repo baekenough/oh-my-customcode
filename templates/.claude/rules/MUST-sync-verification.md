@@ -1,215 +1,38 @@
 # [MUST] Sync Verification Rules
 
-> **Priority**: MUST - ENFORCED after any structural changes
-> **ID**: R017
-> **Violation**: Committing or pushing without verification = Rule violation
+> **Priority**: MUST - ENFORCED | **ID**: R017
 
-## CRITICAL
+## Core Rule
 
-**After modifying agents, skills, or guides, you MUST run the full verification process before committing AND pushing.**
+After modifying agents, skills, or guides: run full verification before committing AND pushing. Never ask to commit/push before `mgr-sauron:watch` passes.
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  ⚠️  ABSOLUTE PROHIBITION                                        ║
-║                                                                   ║
-║  DO NOT even ASK "커밋하시겠습니까?" or "푸시하시겠습니까?"      ║
-║  after structural changes until mgr-sauron:watch has been        ║
-║  executed and passed.                                            ║
-║                                                                   ║
-║  WRONG:                                                          ║
-║    [Make changes] → "커밋하시겠습니까?"                          ║
-║    [Commit done] → "푸시하시겠습니까?"                           ║
-║                                                                   ║
-║  CORRECT:                                                        ║
-║    [Make changes] → mgr-sauron:watch → [All pass] → commit → push ║
-║                                                                   ║
-║  Asking to commit/push before verification = Rule violation      ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+Every `git push` requires: `mgr-sauron:watch` → all pass → `git push`
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  ⚠️  PUSH REQUIRES SAURON VERIFICATION                           ║
-║                                                                   ║
-║  EVERY git push in this project MUST be preceded by:             ║
-║    mgr-sauron:watch → [All pass] → git push                      ║
-║                                                                   ║
-║  This applies to ALL pushes, not just structural changes.        ║
-║  Sauron verification is the quality gate for this repository.    ║
-║                                                                   ║
-║  NO EXCEPTIONS. NO SHORTCUTS.                                    ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+## Verification Phases
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  MANDATORY VERIFICATION PROCESS:                                 ║
-║                                                                   ║
-║  Phase 1: Manager Agent Verification (5 rounds)                  ║
-║    - mgr-supplier:audit                                          ║
-║    - mgr-sync-checker:check                                      ║
-║    - mgr-updater:docs                                            ║
-║    - mgr-claude-code-bible:verify                                ║
-║                                                                   ║
-║  Phase 2: Deep Review (3 rounds)                                 ║
-║    - Workflow alignment                                          ║
-║    - Reference verification                                      ║
-║    - Philosophy compliance                                       ║
-║                                                                   ║
-║  Phase 3: Fix all issues                                         ║
-║                                                                   ║
-║  Phase 4: Commit via mgr-gitnerd                                 ║
-║                                                                   ║
-║  Phase 5: Push via mgr-gitnerd                                   ║
-║    - ONLY after sauron verification passes                       ║
-║                                                                   ║
-║  Skipping ANY phase = Rule violation                             ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+### Phase 1: Manager Verification (5 rounds)
 
-## Phase 1: Manager Agent Verification (5 Rounds)
+| Round | Actions |
+|-------|---------|
+| 1-2 | mgr-supplier:audit, mgr-sync-checker:check, fix issues |
+| 3-4 | Re-verify + mgr-updater:docs, fix remaining |
+| 5 | Final: all counts match, frontmatter valid, skill refs exist, memory scopes valid, routing patterns updated |
 
-Run manager agents 5 times to catch all issues:
+Also run: mgr-claude-code-bible:verify (official spec compliance)
 
-### Round 1-2: Basic Sync
-```
-□ mgr-supplier:audit - Check all agent dependencies
-□ mgr-sync-checker:check - Verify registry synchronization
-□ Fix any issues found
-```
+### Phase 2: Deep Review (3 rounds)
 
-### Round 3-4: Deep Sync
-```
-□ mgr-supplier:audit - Re-verify after fixes
-□ mgr-sync-checker:check - Re-verify registries
-□ mgr-updater:docs - Check documentation sync
-□ Fix any remaining issues
-```
+| Round | Focus |
+|-------|-------|
+| 1 | Workflow alignment: routing skills have complete agent mappings |
+| 2 | References: no orphans, no circular refs, valid skill/memory refs |
+| 3 | Philosophy: R006 separation, R009 parallel, R010 delegation, R007/R008 identification |
 
-### Round 5: Final Verification
-```
-□ All agent counts match (CLAUDE.md, actual .md files in .claude/agents/)
-□ All agent frontmatter valid (required fields present)
-□ All skill references in agents exist in .claude/skills/
-□ All memory field values are valid (user | project | local)
-□ Memory distribution matches CLAUDE.md (24 project + 3 user + 7 none)
-□ All routing skill patterns updated
-```
+### Phase 3: Fix all discovered issues
 
-## Phase 2: Deep Review (3 Rounds)
+### Phase 4: Commit via mgr-gitnerd
 
-### Deep Round 1: Workflow Alignment
-```
-□ Agent creation workflow documented and functional
-□ Development workflow uses proper routing skills
-□ Deployment workflow defined (if applicable)
-□ All routing skills have complete agent pattern mappings
-```
-
-### Deep Round 2: Reference Verification
-```
-□ All routing skills properly reference their managed agents
-□ All rules are properly referenced
-□ No orphaned agents (not referenced by any routing skill)
-□ No circular references
-□ All skill references in agent frontmatter are valid
-□ All agent memory fields use valid scope values
-```
-
-### Deep Round 3: Philosophy Compliance
-```
-□ R006: Separation of concerns (agent file = role only, no details)
-□ R009: Parallel execution enabled for main conversation
-□ R010: Multi-agent tasks use routing skills and Task tool
-□ R007/R008: Agent/tool identification documented
-□ All MUST rules enforced, SHOULD rules recommended
-```
-
-## Verification Checklist Summary
-
-```
-Phase 1: Manager Verification (5x)
-  □ Round 1: mgr-supplier:audit
-  □ Round 2: mgr-sync-checker:check
-  □ Round 3: mgr-supplier:audit (re-verify)
-  □ Round 4: mgr-sync-checker:check + mgr-updater:docs
-  □ Round 5: Final count verification
-  □ mgr-claude-code-bible:verify (official spec compliance)
-
-Phase 2: Deep Review (3x)
-  □ Round 1: Workflow alignment
-  □ Round 2: Reference verification
-  □ Round 3: Philosophy compliance
-
-Phase 3: Fix Issues
-  □ All issues from Phase 1 fixed
-  □ All issues from Phase 2 fixed
-  □ Re-run verification if major fixes made
-
-Phase 4: Commit
-  □ Delegate to mgr-gitnerd
-  □ Meaningful commit message
-
-Phase 5: Push
-  □ mgr-sauron:watch passed (MANDATORY)
-  □ Delegate push to mgr-gitnerd
-  □ Verify push succeeded
-```
-
-## When to Run Full Verification
-
-| Action | Full Verification Required |
-|--------|---------------------------|
-| Create new agent | **YES** |
-| Rename agent | **YES** |
-| Delete agent | **YES** |
-| Modify agent frontmatter | **YES** |
-| Add/modify skill | **YES** |
-| Add/modify guide | **YES** |
-| Change routing skill patterns | **YES** |
-| Update rules | **YES** |
-
-## Workflow Diagram
-
-```
-Content Change Made
-        │
-        ▼
-┌───────────────────────────────┐
-│  Phase 1: Manager Verification │
-│  (5 rounds)                    │
-│  mgr-supplier → mgr-sync-checker → │
-│  mgr-updater                   │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│  Phase 2: Deep Review          │
-│  (3 rounds)                    │
-│  Workflow → References →       │
-│  Philosophy                    │
-└───────────────┬───────────────┘
-                │
-        ┌───────┴───────┐
-        ▼               ▼
-  [Issues Found]   [All Clean]
-        │               │
-        ▼               │
-   Fix Issues           │
-        │               │
-        └───────┬───────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│  Phase 4: Commit via mgr-gitnerd │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│  Phase 5: Push via mgr-gitnerd  │
-│  (ONLY after sauron passes)    │
-└───────────────────────────────┘
-```
+### Phase 5: Push via mgr-gitnerd (only after sauron passes)
 
 ## Self-Check Before Commit and Push
 
@@ -238,6 +61,10 @@ Content Change Made
 ║  SAURON VERIFICATION IS MANDATORY FOR ALL PUSHES.                ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
+
+## When Required
+
+Any change to: agents, agent frontmatter, skills, guides, routing patterns, rules.
 
 ## Quick Verification Commands
 
@@ -270,12 +97,29 @@ for f in .claude/agents/*.md; do
     echo "INVALID MEMORY SCOPE in $f: $mem"
   fi
 done
+
+# Hook count check
+ls .claude/hooks/*.json 2>/dev/null | wc -l
+
+# Context count check
+ls .claude/contexts/*.md 2>/dev/null | wc -l
+
+# Guide count check
+find guides -mindepth 1 -maxdepth 1 -type d | wc -l
+
+# Agent name accuracy (compare CLAUDE.md table with actual files)
+# Extract agent names from files
+ls .claude/agents/*.md | xargs -I{} basename {} .md | sort > /tmp/actual-agents.txt
+
+# Slash command skill existence
+for cmd in $(grep "^| \`/" CLAUDE.md | sed 's/.*`\///' | sed 's/`.*//' | sed 's/ .*//')
+do
+  [ -d ".claude/skills/$cmd" ] || echo "MISSING SKILL: $cmd"
+done
+
+# Routing skill completeness check
+ls -d .claude/skills/*-routing 2>/dev/null | xargs -I{} basename {} | sort
+
+# Verify routing skill names in CLAUDE.md
+grep -oP '(secretary|dev-lead|de-lead|qa-lead)-routing' CLAUDE.md | sort -u
 ```
-
-## Integration with Other Rules
-
-| Rule | Integration |
-|------|-------------|
-| R009 (Parallel) | Verification checks can run in parallel |
-| R010 (Orchestrator) | Delegate commit to mgr-gitnerd |
-| R016 (Improvement) | Update this rule if new issues found |
