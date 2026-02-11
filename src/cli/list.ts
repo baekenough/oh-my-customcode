@@ -4,6 +4,7 @@
  */
 
 import { basename, dirname, join, relative } from 'node:path';
+import { loadConfig } from '../core/config.js';
 import { getProviderLayout, type ProviderPreference } from '../core/layout.js';
 import { detectProvider } from '../core/provider.js';
 import { i18n } from '../i18n/index.js';
@@ -36,6 +37,8 @@ export interface ComponentInfo {
   description?: string;
   version?: string;
   category?: string;
+  /** true = template-managed, false = custom */
+  managed?: boolean;
 }
 
 /**
@@ -341,6 +344,13 @@ export async function getAgents(
   if (!(await fileExists(agentsDir))) return [];
 
   try {
+    // Load config to check custom components
+    const config = await loadConfig(targetDir);
+    const customComponents = config.customComponents || [];
+    const customAgentPaths = new Set(
+      customComponents.filter((c) => c.type === 'agent').map((c) => c.path)
+    );
+
     // In official Claude Code format, agents are flat .md files
     const agentMdFiles = await listFiles(agentsDir, { recursive: false, pattern: '*.md' });
 
@@ -349,13 +359,15 @@ export async function getAgents(
         const filename = basename(agentMdPath);
         const name = basename(filename, '.md');
         const description = await tryExtractMarkdownDescription(agentMdPath);
+        const relativePath = relative(targetDir, agentMdPath);
 
         return {
           name,
           type: extractAgentTypeFromFilename(filename),
-          path: relative(targetDir, agentMdPath),
+          path: relativePath,
           description,
           version: undefined,
+          managed: !customAgentPaths.has(relativePath),
         };
       })
     );
@@ -381,6 +393,13 @@ export async function getSkills(
   if (!(await fileExists(skillsDir))) return [];
 
   try {
+    // Load config to check custom components
+    const config = await loadConfig(targetDir);
+    const customComponents = config.customComponents || [];
+    const customSkillPaths = new Set(
+      customComponents.filter((c) => c.type === 'skill').map((c) => c.path)
+    );
+
     const skillMdFiles = await listFiles(skillsDir, { recursive: true, pattern: 'SKILL.md' });
 
     const skills = await Promise.all(
@@ -389,14 +408,16 @@ export async function getSkills(
         const indexYamlPath = join(skillDir, 'index.yaml');
 
         const { description, version } = await tryReadIndexYamlMetadata(indexYamlPath);
+        const relativePath = relative(targetDir, skillDir);
 
         return {
           name: basename(skillDir),
           type: 'skill',
           category: extractSkillCategoryFromPath(skillDir, targetDir, rootDir),
-          path: relative(targetDir, skillDir),
+          path: relativePath,
           description,
           version,
+          managed: !customSkillPaths.has(relativePath),
         };
       })
     );
@@ -418,18 +439,27 @@ export async function getGuides(targetDir: string): Promise<ComponentInfo[]> {
   if (!(await fileExists(guidesDir))) return [];
 
   try {
+    // Load config to check custom components
+    const config = await loadConfig(targetDir);
+    const customComponents = config.customComponents || [];
+    const customGuidePaths = new Set(
+      customComponents.filter((c) => c.type === 'guide').map((c) => c.path)
+    );
+
     const guideMdFiles = await listFiles(guidesDir, { recursive: true, pattern: '*.md' });
 
     const guides = await Promise.all(
       guideMdFiles.map(async (guideMdPath) => {
         const description = await tryExtractMarkdownDescription(guideMdPath, { maxLength: 100 });
+        const relativePath = relative(targetDir, guideMdPath);
 
         return {
           name: basename(guideMdPath, '.md'),
           type: 'guide',
           category: extractGuideCategoryFromPath(guideMdPath, targetDir),
-          path: relative(targetDir, guideMdPath),
+          path: relativePath,
           description,
+          managed: !customGuidePaths.has(relativePath),
         };
       })
     );
@@ -457,6 +487,13 @@ export async function getRules(
   if (!(await fileExists(rulesDir))) return [];
 
   try {
+    // Load config to check custom components
+    const config = await loadConfig(targetDir);
+    const customComponents = config.customComponents || [];
+    const customRulePaths = new Set(
+      customComponents.filter((c) => c.type === 'rule').map((c) => c.path)
+    );
+
     const ruleMdFiles = await listFiles(rulesDir, { recursive: false, pattern: '*.md' });
 
     const rules = await Promise.all(
@@ -465,12 +502,14 @@ export async function getRules(
         const description = await tryExtractMarkdownDescription(ruleMdPath, {
           cleanFormatting: true,
         });
+        const relativePath = relative(targetDir, ruleMdPath);
 
         return {
           name: basename(ruleMdPath, '.md'),
           type: extractRulePriorityFromFilename(filename),
-          path: relative(targetDir, ruleMdPath),
+          path: relativePath,
           description,
+          managed: !customRulePaths.has(relativePath),
         };
       })
     );
@@ -514,7 +553,8 @@ export function formatAsTable(components: ComponentInfo[], type: ListType): void
 
   // Print each component
   for (const component of components) {
-    const name = component.name.padEnd(nameWidth);
+    const managedTag = component.managed === false ? ' [custom]' : '';
+    const name = `${component.name}${managedTag}`.padEnd(nameWidth);
     const typeOrCategory = (component.category || component.type).padEnd(typeWidth);
     const description = component.description ? component.description.substring(0, 40) : '';
     console.log(`  ${name}  ${typeOrCategory}  ${description}`);
@@ -539,7 +579,8 @@ export function formatAsSimple(components: ComponentInfo[], type: ListType): voi
   console.log(`\n${type} (${components.length}):`);
   for (const component of components) {
     const typeInfo = component.category || component.type;
-    console.log(`  ${component.name} [${typeInfo}]`);
+    const managedTag = component.managed === false ? ' [custom]' : '';
+    console.log(`  ${component.name}${managedTag} [${typeInfo}]`);
   }
 }
 

@@ -2,7 +2,7 @@
  * File system utilities
  */
 
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -19,6 +19,8 @@ export interface CopyOptions {
   preserveTimestamps?: boolean;
   /** Preserve symlinks instead of following them */
   preserveSymlinks?: boolean;
+  /** Paths to skip during copy (relative to dest root) */
+  skipPaths?: string[];
 }
 
 /**
@@ -139,6 +141,34 @@ async function handleFile(
 }
 
 /**
+ * Check if path should be skipped based on skipPaths option
+ */
+function shouldSkipPath(destPath: string, destRoot: string, skipPaths?: string[]): boolean {
+  if (!skipPaths || skipPaths.length === 0) {
+    return false;
+  }
+
+  const relativePath = relative(destRoot, destPath);
+
+  for (const skipPath of skipPaths) {
+    // If skipPath ends with '/', it means skip entire directory
+    if (skipPath.endsWith('/')) {
+      const dirPath = skipPath.slice(0, -1);
+      if (relativePath === dirPath || relativePath.startsWith(dirPath + sep)) {
+        return true;
+      }
+    } else {
+      // Exact file match
+      if (relativePath === skipPath) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Copy a directory recursively
  */
 export async function copyDirectory(
@@ -160,6 +190,11 @@ export async function copyDirectory(
 
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
+
+    // Check if this path should be skipped
+    if (shouldSkipPath(destPath, dest, options.skipPaths)) {
+      continue;
+    }
 
     if (entry.isSymbolicLink()) {
       await handleSymlink(srcPath, destPath, options, fs);
@@ -366,8 +401,7 @@ function matchesPattern(filename: string, pattern: string): boolean {
  * Get relative path from base
  */
 export function getRelativePath(basePath: string, fullPath: string): string {
-  const path = require('node:path');
-  return path.relative(basePath, fullPath);
+  return relative(basePath, fullPath);
 }
 
 /**
@@ -381,8 +415,7 @@ export function normalizePath(inputPath: string): string {
  * Check if path is absolute
  */
 export function isAbsolutePath(inputPath: string): boolean {
-  const path = require('node:path');
-  return path.isAbsolute(inputPath);
+  return isAbsolute(inputPath);
 }
 
 /**

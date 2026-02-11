@@ -8,11 +8,14 @@ import {
   ensureDirectory,
   fileExists,
   readJsonFile,
+  readTextFile,
   resolveTemplatePath,
   writeJsonFile,
+  writeTextFile,
 } from '../utils/fs.js';
-import { debug, error, info, success } from '../utils/logger.js';
+import { debug, error, info, success, warn } from '../utils/logger.js';
 import { loadConfig, type OmccConfig, saveConfig } from './config.js';
+import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { getProviderLayout, type LlmProvider } from './layout.js';
 
 /**
@@ -219,6 +222,116 @@ async function updateAllComponents(
 }
 
 /**
+ * Get entry template name based on provider and language
+ */
+function getEntryTemplateName(provider: LlmProvider, language: 'en' | 'ko'): string {
+  const layout = getProviderLayout(provider);
+  const baseName = layout.entryFile.replace('.md', '');
+  return language === 'ko' ? `${baseName}.md.ko` : `${baseName}.md.en`;
+}
+
+/**
+ * Backup a file before overwriting it
+ */
+async function backupFile(filePath: string): Promise<void> {
+  const fs = await import('node:fs/promises');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = `${filePath}.backup-${timestamp}`;
+
+  if (await fileExists(filePath)) {
+    await fs.copyFile(filePath, backupPath);
+    debug('update.file_backed_up', { path: filePath, backup: backupPath });
+  }
+}
+
+/**
+ * Resolve customizations from manifest and config
+ */
+function resolveCustomizations(
+  customizations: CustomizationManifest | null,
+  configPreserveFiles: string[]
+): CustomizationManifest | null {
+  // No preserve files from either source
+  if (!customizations && configPreserveFiles.length === 0) {
+    return null;
+  }
+
+  // Merge both sources
+  if (customizations && configPreserveFiles.length > 0) {
+    customizations.preserveFiles = [
+      ...new Set([...customizations.preserveFiles, ...configPreserveFiles]),
+    ];
+    return customizations;
+  }
+
+  // Only config has preserve files
+  if (configPreserveFiles.length > 0) {
+    return {
+      modifiedFiles: [],
+      preserveFiles: configPreserveFiles,
+      customComponents: [],
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  // Only manifest has data
+  return customizations;
+}
+
+/**
+ * Update entry document with merge support
+ */
+async function updateEntryDoc(
+  targetDir: string,
+  provider: LlmProvider,
+  config: OmccConfig,
+  options: UpdateOptions
+): Promise<void> {
+  const layout = getProviderLayout(provider);
+  const entryPath = join(targetDir, layout.entryFile);
+  const templateName = getEntryTemplateName(provider, config.language);
+  const templatePath = resolveTemplatePath(templateName);
+
+  if (!(await fileExists(templatePath))) {
+    warn('update.entry_template_not_found', { template: templateName });
+    return;
+  }
+
+  const templateContent = await readTextFile(templatePath);
+
+  if (await fileExists(entryPath)) {
+    if (options.force) {
+      // Force: overwrite with backup
+      await backupFile(entryPath);
+      await writeTextFile(entryPath, templateContent);
+      info('update.entry_doc_force_updated', { path: layout.entryFile });
+    } else {
+      // Merge: preserve custom sections
+      const existingContent = await readTextFile(entryPath);
+      const mergeResult = mergeEntryDoc(existingContent, templateContent);
+
+      await writeTextFile(entryPath, mergeResult.content);
+
+      debug('update.entry_doc_merged', {
+        path: layout.entryFile,
+        managed: String(mergeResult.managedSections),
+        custom: String(mergeResult.customSections),
+      });
+
+      if (mergeResult.warnings.length > 0) {
+        for (const warning of mergeResult.warnings) {
+          warn('update.entry_merge_warning', { warning });
+        }
+      }
+    }
+  } else {
+    // New file: wrap in markers
+    await writeTextFile(entryPath, wrapInManagedMarkers(templateContent));
+    info('update.entry_doc_created', { path: layout.entryFile });
+  }
+}
+
+/**
  * Update oh-my-customcode installation
  */
 export async function update(options: UpdateOptions): Promise<UpdateResult> {
@@ -243,11 +356,17 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     await handleBackupIfRequested(options.targetDir, provider, !!options.backup, result);
 
-    const customizations =
+    // Load preservation config from BOTH sources
+    const manifestCustomizations =
       options.preserveCustomizations !== false
         ? await loadCustomizationManifest(options.targetDir)
         : null;
 
+    // Merge with preserveFiles from .omcustomrc.json
+    const configPreserveFiles = config.preserveFiles || [];
+    const customizations = resolveCustomizations(manifestCustomizations, configPreserveFiles);
+
+    // Update all components
     const components = options.components || getAllUpdateComponents();
     await updateAllComponents(
       options.targetDir,
@@ -258,6 +377,11 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       options,
       result
     );
+
+    // Update entry doc with merge (only on full update)
+    if (!options.components || options.components.length === 0) {
+      await updateEntryDoc(options.targetDir, provider, config, options);
+    }
 
     config.version = result.newVersion;
     config.lastUpdated = new Date().toISOString();
@@ -402,29 +526,41 @@ async function updateComponent(
   const srcPath = resolveTemplatePath(componentPath);
   const destPath = join(targetDir, componentPath);
 
-  // Preserve customizations
+  // Load config to check for managed:false components
+  const config = await loadConfig(targetDir);
+  const customComponents = config.customComponents || [];
+
+  // Build skipPaths list from preserved files and custom components
+  const skipPaths: string[] = [];
+
+  // Add preserved files to skipPaths
   if (customizations && options.preserveCustomizations !== false) {
     const toPreserve = customizations.preserveFiles.filter((f) => f.startsWith(componentPath));
-    if (toPreserve.length > 0) {
-      const preserved = await preserveCustomizations(targetDir, toPreserve);
-      preservedFiles.push(...preserved.keys());
-
-      // Update component
-      await copyDirectory(srcPath, destPath, { overwrite: true });
-
-      // Restore preserved files
-      const fs = await import('node:fs/promises');
-      for (const [path, content] of preserved) {
-        await fs.writeFile(join(targetDir, path), content, 'utf-8');
-      }
-    } else {
-      await copyDirectory(srcPath, destPath, { overwrite: true });
-    }
-  } else {
-    await copyDirectory(srcPath, destPath, { overwrite: true });
+    preservedFiles.push(...toPreserve);
+    skipPaths.push(...toPreserve);
   }
 
-  debug('update.component_updated', { component });
+  // Add custom components in this component path to skipPaths
+  for (const cc of customComponents) {
+    if (cc.path.startsWith(componentPath)) {
+      skipPaths.push(cc.path);
+    }
+  }
+
+  // Normalize skipPaths to be relative to destPath
+  const path = await import('node:path');
+  const normalizedSkipPaths = skipPaths.map((p) => path.relative(destPath, join(targetDir, p)));
+
+  // Update component with skipPaths
+  await copyDirectory(srcPath, destPath, {
+    overwrite: true,
+    skipPaths: normalizedSkipPaths.length > 0 ? normalizedSkipPaths : undefined,
+  });
+
+  debug('update.component_updated', {
+    component,
+    skippedPaths: String(normalizedSkipPaths.length),
+  });
   return preservedFiles;
 }
 
