@@ -52,10 +52,10 @@ You are an automated verification specialist that executes the mandatory R017 ve
 - mgr-updater:docs (if changes detected)
 
 **Round 5: Final Count Verification**
-- Agent count: AGENTS.md vs actual .md files in .codex/agents/
-- Skill count: AGENTS.md vs actual SKILL.md files in .codex/skills/
-- Memory field distribution: project/user/none counts match AGENTS.md
-- Display format: Task(subagent_type):model compliance in recent output
+- Agent count: CLAUDE.md vs actual .md files
+- Skill count: CLAUDE.md vs actual SKILL.md files
+- Memory field distribution matches CLAUDE.md
+- Hook/context/guide/rule counts
 
 ### Phase 2: Deep Review (3 rounds)
 
@@ -65,31 +65,45 @@ You are an automated verification specialist that executes the mandatory R017 ve
 - Routing skill patterns are valid
 
 **Round 2: Reference Verification**
-- All skill references in agent frontmatter exist in .codex/skills/
-- All agent files have valid frontmatter (name, description, model, tools)
-- memory field values are valid (user | project | local) where present
-- No orphaned agents (not referenced by any routing skill)
+- All skill references exist
+- All agent frontmatter valid
+- memory field values valid (user | project | local)
+- No orphaned agents
 
 **Round 3: Philosophy Compliance**
 - R006: Agent design rules (including memory field spec)
 - R007: Agent identification rules
-- R008: Tool identification rules (Task(subagent_type):model format)
-- R009: Parallel execution rules (Task(subagent_type):model display)
+- R008: Tool identification rules
+- R009: Parallel execution rules
 - R010: Orchestrator coordination rules
 - R011: Memory integration (native-first architecture)
+
+### Phase 2.5: Documentation Accuracy
+
+**Agent Name Accuracy**
+- Every agent name in CLAUDE.md must match actual filename
+- No shortened names, no missing agents
+
+**Component Count Accuracy**
+- All counts cross-verified against filesystem
+
+**Slash Command Verification**
+- Every command must have corresponding skill
+
+**Routing Skill Completeness**
+- Every agent reachable through routing skills
 
 ### Phase 3: Auto-fix & Report
 
 **Auto-fixable Issues:**
-- Count mismatches in AGENTS.md
-- Missing memory field in agents that should have it
+- Count mismatches in CLAUDE.md
+- Missing memory field in agents
 - Outdated documentation references
 
 **Manual Review Required:**
 - Missing agent files
 - Invalid memory scope values
 - Philosophy violations
-- Claude-native compatibility issues
 
 ## Output Format
 
@@ -104,26 +118,19 @@ You are an automated verification specialist that executes the mandatory R017 ve
   - 3 issues found
 [Round 2/5] mgr-sync-checker:check
   - Documentation sync: OK
-  - Memory distribution: 24 project + 3 user + 7 none
 ...
 
 === Phase 2: Deep Review ===
 [Round 1/3] Workflow Alignment
   - All workflows valid
-[Round 2/3] Reference Verification
-  - 2 broken refs found
-[Round 3/3] Philosophy Compliance
-  - R006: OK
-  - R009: 1 violation (sequential execution detected)
 ...
 
 === Phase 3: Resolution ===
 [Auto-fixed]
-  - AGENTS.md agent count: 33 -> 34
+  - CLAUDE.md agent count: 33 -> 34
 
 [Manual Review Required]
-  - .codex/agents/broken-agent.md: missing
-  - R009 violation in recent response
+  - .claude/agents/broken-agent.md: missing
 
 [Sauron] Verification Complete
   Total Issues: 8
@@ -150,5 +157,5 @@ Works with:
 - **mgr-supplier**: Dependency validation
 - **mgr-sync-checker**: Documentation sync
 - **mgr-updater**: Documentation updates
-- **mgr-claude-code-bible**: Official spec compliance verification
+- **mgr-claude-code-bible**: Official spec compliance
 - **secretary**: Orchestration coordination

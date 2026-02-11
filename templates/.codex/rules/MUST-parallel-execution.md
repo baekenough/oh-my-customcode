@@ -1,77 +1,26 @@
 # [MUST] Parallel Execution Rules
 
-> **Priority**: MUST - ENFORCED for 2+ independent tasks
-> **ID**: R009
-> **Violation**: Sequential execution of parallelizable tasks = Rule violation
+> **Priority**: MUST - ENFORCED | **ID**: R009
 
-## CRITICAL
+## Core Rule
 
-**When 2 or more tasks are INDEPENDENT, they MUST be executed in parallel.**
+**2+ independent tasks MUST execute in parallel.** Sequential execution of parallelizable tasks is a rule violation.
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  ⚠️  ABSOLUTE RULE: 2+ INDEPENDENT FILES = PARALLEL              ║
-║                                                                   ║
-║  If you are about to Write/Edit 2 or more independent files:     ║
-║  → STOP                                                          ║
-║  → Use Task tool to spawn parallel agents                        ║
-║  → Each agent handles a subset of files                          ║
-║                                                                   ║
-║  NO EXCEPTIONS for:                                              ║
-║  - Project scaffolding (package.json, tsconfig, src/*.ts)        ║
-║  - Multiple module creation                                       ║
-║  - Batch file updates                                            ║
-║  - Any multi-file operation                                      ║
-║                                                                   ║
-║  VIOLATION = Using Write/Edit 2+ times in sequence               ║
-║              when files are independent                          ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+## Detection Criteria
 
-```
-Detection criteria for parallel execution:
-- Tasks don't share mutable state
-- Tasks don't have sequential dependencies
-- Tasks can complete independently
-
-If ALL criteria met → MUST execute in parallel (max 4 instances)
-```
-
-### How to Detect Independent Tasks
-
-```
 Independent (MUST parallelize):
-✓ "Create agents A, B, C" → 3 separate creations
-✓ "Read files X, Y, Z" → 3 separate reads
-✓ "Review code in src/, test/, docs/" → 3 separate reviews
+- No shared mutable state between tasks
+- No sequential dependencies
+- Each completes independently
 
-Dependent (sequential OK):
-✗ "Create agent then configure it" → depends on creation
-✗ "Build then test" → test depends on build
-✗ "Read file then edit it" → edit depends on read content
-```
+Examples: creating multiple agents, reviewing multiple files, batch operations on different resources.
 
-Failure to parallelize independent tasks = Rule violation = Must be corrected.
+## Self-Check
 
-### Self-Check Before Every Multi-File Operation
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  BEFORE writing/creating multiple files, ASK YOURSELF:          ║
-║                                                                   ║
-║  1. Are these files independent of each other?                   ║
-║     → YES: Use Task tool to spawn parallel agents                ║
-║     → NO: Sequential is OK                                       ║
-║                                                                   ║
-║  2. Am I using Write/Edit sequentially for 3+ files?            ║
-║     → STOP. This is likely a violation.                         ║
-║     → Spawn parallel agents instead.                             ║
-║                                                                   ║
-║  3. Are there domain-specific experts available?                 ║
-║     → YES: Delegate to them (lang-kotlin-expert, be-springboot-expert) ║
-║     → NO: Create general-purpose parallel agents                 ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+Before writing/editing multiple files:
+1. Are files independent? → YES: spawn parallel Task agents
+2. Using Write/Edit sequentially for 2+ files? → STOP, parallelize
+3. Specialized agent available? → Use it (not general-purpose)
 
 ### Common Violations to Avoid
 
@@ -114,356 +63,35 @@ Failure to parallelize independent tasks = Rule violation = Must be corrected.
    Task(be-springboot-expert → security)          ┘
 ```
 
-### Parallel Task Spawning Rule
+## Execution Rules
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  PARALLEL MEANS PARALLEL AT THE TOOL CALL LEVEL                  ║
-║                                                                   ║
-║  When spawning Tasks for parallel work:                          ║
-║  - Each independent unit of work = separate Task tool call       ║
-║  - All Task calls in the SAME message = truly parallel           ║
-║  - One Task that "coordinates" others = still sequential inside  ║
-║                                                                   ║
-║  Rule: If work can be split, split it into separate Tasks.       ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+| Rule | Detail |
+|------|--------|
+| Max instances | 4 concurrent |
+| Not parallelizable | Orchestrator (must stay singleton) |
+| Instance independence | Isolated context, no shared state |
+| Large tasks (>3 min) | MUST split into parallel sub-tasks |
 
-### Large Task Decomposition (MANDATORY)
+## Task Tool Requirements
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  LARGE TASKS MUST BE SPLIT INTO PARALLEL SUB-TASKS               ║
-║                                                                   ║
-║  Before spawning a single large Task, ASK:                       ║
-║                                                                   ║
-║  1. Can this work be divided into independent parts?             ║
-║     → Query tests, Security tests, Exception tests               ║
-║     → Domain A, Domain B, Domain C                               ║
-║     → Layer 1, Layer 2, Layer 3                                  ║
-║                                                                   ║
-║  2. How many parallel slots available? (max 4)                   ║
-║     → If 3 slots free, split into 3 parallel Tasks              ║
-║     → Maximize parallelism to minimize total time                ║
-║                                                                   ║
-║  3. Is estimated Task duration > 3 minutes?                      ║
-║     → MUST split if work is decomposable                        ║
-║     → 12 min single Task → 4 min with 3 parallel Tasks          ║
-╚══════════════════════════════════════════════════════════════════╝
-
-Example - WRONG:
-  Task("Add tests for Query, Security, Exception, Domain")
-  → Single agent works 12+ minutes sequentially
-
-Example - CORRECT (3 parallel Tasks):
-  Task(agent1 → "Add Query usecase tests")      ┐
-  Task(agent2 → "Add Security tests")           ├─ ~4 min total
-  Task(agent3 → "Add Exception + Domain tests") ┘
-```
-
-## Purpose
-
-Enable parallel execution of agents as separate instances to improve throughput for batch operations and independent tasks.
-
-## Core Concept
-
-Each agent (except orchestrators) can be instantiated multiple times to work on independent tasks in parallel.
-
-```
-Agent (Template)
-    │
-    ├── Instance 1 → Task A
-    ├── Instance 2 → Task B
-    ├── Instance 3 → Task C
-    └── Instance 4 → Task D
-```
-
-## Rules
-
-### 1. Maximum Parallel Instances
-
-```yaml
-limit: 4
-reason: Balance between throughput and resource usage
-```
-
-### 2. Exclusions
-
-```yaml
-not_parallelizable:
-  - orchestrator/* (must remain singleton for coordination)
-
-reason: |
-  Orchestrator agents manage other agents and must maintain
-  a single point of coordination to prevent conflicts.
-```
-
-### 3. Instance Independence
-
-```yaml
-requirements:
-  - Tasks must be independent (no shared state)
-  - No cross-instance communication required
-  - Each instance has isolated context
-```
-
-### 4. Subagent Visibility (MANDATORY)
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  TASK TOOL MUST USE SPECIFIC subagent_type (NOT general-purpose) ║
-║                                                                   ║
-║  When a specialized agent exists for the task:                   ║
-║    → MUST use that agent's subagent_type                         ║
-║    → DO NOT use "general-purpose" as a catch-all                 ║
-║                                                                   ║
-║  The HUD hook displays: [Spawn] {subagent_type}:{model} | {desc}║
-║  Using "general-purpose" makes all spawns look identical.        ║
-║                                                                   ║
-║  WRONG:                                                          ║
-║    Task(subagent_type: "general-purpose", desc: "Update agents") ║
-║    Task(subagent_type: "general-purpose", desc: "Update agents") ║
-║    → HUD shows: [Spawn] general-purpose:sonnet | Update agents   ║
-║    → HUD shows: [Spawn] general-purpose:sonnet | Update agents   ║
-║    → User cannot distinguish which is which                      ║
-║                                                                   ║
-║  CORRECT:                                                        ║
-║    Task(subagent_type: "mgr-creator", desc: "Create Go agent")   ║
-║    Task(subagent_type: "lang-golang-expert", desc: "Review code")║
-║    → HUD shows: [Spawn] mgr-creator:sonnet | Create Go agent    ║
-║    → HUD shows: [Spawn] lang-golang-expert:sonnet | Review code  ║
-║                                                                   ║
-║  When NO specialized agent exists (truly generic work):          ║
-║    → Use "general-purpose" but with UNIQUE descriptions          ║
-║    → Description MUST identify the specific batch/scope           ║
-║                                                                   ║
-║    Task(subagent_type: "general-purpose",                        ║
-║         desc: "batch1: lang-* agents")                           ║
-║    Task(subagent_type: "general-purpose",                        ║
-║         desc: "batch2: be-* fe-* agents")                        ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-### 5. Model Specification (RECOMMENDED)
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  USE MODEL PARAMETER FOR COST/PERFORMANCE OPTIMIZATION           ║
-║                                                                   ║
-║  Task tool supports `model` parameter:                           ║
-║                                                                   ║
-║    Task(                                                         ║
-║      subagent_type: "general-purpose",                           ║
-║      prompt: "...",                                              ║
-║      model: "haiku"  ← Specify model                             ║
-║    )                                                             ║
-║                                                                   ║
-║  Model Selection:                                                ║
-║    - opus   : Complex reasoning (expensive, powerful)            ║
-║    - sonnet : General tasks (default, balanced)                  ║
-║    - haiku  : Simple tasks (fast, cheap)                         ║
-║                                                                   ║
-║  Parallel Task Optimization:                                     ║
-║    - Use haiku for file search/validation tasks                  ║
-║    - Use sonnet for code generation tasks                        ║
-║    - Use opus only when deep reasoning is required               ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-Example with model specification:
-```
-# Parallel tasks with appropriate models
-Task(prompt: "Search for auth files", model: "haiku")      ┐
-Task(prompt: "Implement feature A", model: "sonnet")       ├─ Optimized
-Task(prompt: "Implement feature B", model: "sonnet")       │
-Task(prompt: "Analyze architecture", model: "opus")        ┘
-```
-
-## Instance Model
-
-### Instantiation
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                   Agent Template                         │
-│  (agents/{type}/{name}/)                                │
-├─────────────────────────────────────────────────────────┤
-│  AGENT.md    - Role definition                          │
-│  index.yaml  - Configuration                            │
-│  refs/       - Skill/guide references                   │
-└────────────────────────┬────────────────────────────────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-        ▼                ▼                ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│ Instance #1  │ │ Instance #2  │ │ Instance #3  │
-│   Task: A    │ │   Task: B    │ │   Task: C    │
-│ Context: ... │ │ Context: ... │ │ Context: ... │
-└──────────────┘ └──────────────┘ └──────────────┘
-```
-
-### Instance Properties
-
-```yaml
-instance:
-  id: "{agent-name}-{uuid}"
-  template: "{agent-path}"
-  task: "{assigned-task}"
-  context: "{isolated-context}"
-  status: "pending|running|completed|failed"
-```
-
-## Usage Patterns
-
-### Batch Agent Creation
-
-```
-User: "Create golang, python, rust, typescript expert agents"
-
-Orchestrator (secretary):
-  │
-  ├── [lang-golang-expert] mgr-creator instance #1
-  ├── [lang-python-expert] mgr-creator instance #2
-  ├── [lang-rust-expert] mgr-creator instance #3
-  └── [lang-typescript-expert] mgr-creator instance #4
-
-Execution: Parallel (4 instances)
-```
-
-### Batch Code Review
-
-```
-User: "/dev:review src/*.go src/*.py src/*.ts"
-
-Orchestrator:
-  │
-  ├── [src/*.go] lang-golang-expert instance #1
-  ├── [src/*.py] lang-python-expert instance #2
-  └── [src/*.ts] lang-typescript-expert instance #3
-
-Execution: Parallel (3 instances)
-```
-
-### Batch Audit
-
-```
-User: "Audit all agents"
-
-Orchestrator (secretary):
-  │
-  ├── [agent-1] mgr-supplier instance #1
-  ├── [agent-2] mgr-supplier instance #2
-  ├── [agent-3] mgr-supplier instance #3
-  └── [agent-4] mgr-supplier instance #4
-
-Execution: Parallel (4 instances, batched if > 4)
-```
-
-## Coordination
-
-### Task Distribution
-
-```yaml
-strategy: round_robin
-max_instances: 4
-queue: remaining tasks wait for available instance
-```
-
-### Result Aggregation
-
-```
-Instance Results:
-  #1: ✓ Success (agent-a created)
-  #2: ✓ Success (agent-b created)
-  #3: ✗ Failed (agent-c: skill not found)
-  #4: ✓ Success (agent-d created)
-
-Aggregated Result:
-  Total: 4 tasks
-  Succeeded: 3
-  Failed: 1
-  Details: [...]
-```
-
-## Implementation Notes
-
-### For Orchestrators
-
-```yaml
-responsibilities:
-  - Identify parallelizable tasks
-  - Spawn instances (max 4)
-  - Monitor instance status
-  - Aggregate results
-  - Handle failures
-```
-
-### For Worker/Manager Agents
-
-```yaml
-requirements:
-  - Stateless task execution
-  - Isolated context per instance
-  - No shared mutable state
-  - Clear success/failure reporting
-```
+- Use specific `subagent_type` (not "general-purpose" when specialist exists)
+- Use `model` parameter for cost optimization (haiku for search, sonnet for code, opus for reasoning)
+- Each independent unit = separate Task tool call in the SAME message
 
 ## Display Format
 
-When parallel execution occurs, MUST display `Task({subagent_type}):{model}` format:
-
 ```
-┌─ Agent: secretary (orchestrator)
-└─ Task: Batch agent creation
-
-[Parallel] Spawning 4 instances...
-
-[Instance 1] Task(mgr-creator):sonnet → lang-golang-expert
-[Instance 2] Task(mgr-creator):sonnet → lang-python-expert
-[Instance 3] Task(mgr-creator):sonnet → lang-rust-expert
-[Instance 4] Task(mgr-creator):sonnet → lang-typescript-expert
-
-[Progress] ████████░░░░ 2/4
-
-[Instance 1] Task(mgr-creator):sonnet ✓ lang-golang-expert created
-[Instance 2] Task(mgr-creator):sonnet ✓ lang-python-expert created
-[Instance 3] Task(mgr-creator):sonnet ✓ lang-rust-expert created
-[Instance 4] Task(mgr-creator):sonnet ✓ lang-typescript-expert created
-
-[Summary] 4/4 tasks completed successfully
+[Instance 1] Task(mgr-creator):sonnet → Create Go agent
+[Instance 2] Task(lang-python-expert):sonnet → Review Python code
+[Instance 3] Task(Explore):haiku → Search codebase
 ```
 
-### Display Format Rules
+Must use `Task({subagent_type}):{model}` format. Custom names not allowed.
+
+## Result Aggregation
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  PARALLEL AGENT DISPLAY FORMAT (MANDATORY)                       ║
-║                                                                   ║
-║  When announcing parallel agents, MUST show:                     ║
-║                                                                   ║
-║    Task({subagent_type}):{model}                                 ║
-║                                                                   ║
-║  Examples:                                                       ║
-║    [Instance 1] Task(general-purpose):sonnet → R006 업데이트      ║
-║    [Instance 2] Task(lang-golang-expert):sonnet → Go 코드 리뷰    ║
-║    [Instance 3] Task(Explore):haiku → 코드베이스 탐색              ║
-║    [Instance 4] Task(mgr-gitnerd):sonnet → git commit            ║
-║                                                                   ║
-║  The subagent_type MUST match the Task tool's subagent_type      ║
-║  parameter. Custom names are NOT allowed.                        ║
-║                                                                   ║
-║  This allows users to:                                           ║
-║    - See which model is used for each task                       ║
-║    - See the exact subagent_type used                            ║
-║    - Understand cost implications                                ║
-║    - Debug model selection issues                                ║
-╚══════════════════════════════════════════════════════════════════╝
+[Summary] {succeeded}/{total} tasks completed
+  ✓ agent-1: success
+  ✗ agent-2: failed (reason)
 ```
-
-## Benefits
-
-1. **Throughput**: N tasks complete in ~1/N time
-2. **Efficiency**: Better resource utilization
-3. **User Experience**: Faster batch operations
-4. **Scalability**: Handles large workloads

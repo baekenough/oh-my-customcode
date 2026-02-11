@@ -37,20 +37,7 @@ That's it. You now have a fully configured Claude Code environment.
 
 ---
 
-## Dual-Mode (Claude + Codex)
-
-oh-my-customcode can operate in both Claude-native and Codex-native modes. The CLI auto-detects the provider using the following order:
-
-1. Override (`--provider` or `OMCUSTOM_PROVIDER` / `LLM_SERVICE`)
-2. Config (`.omcustomrc.json` provider)
-3. Environment signals (`OPENAI_API_KEY`, `CODEX_HOME`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_*`)
-4. Project markers (`AGENTS.md`/`.codex` vs `CLAUDE.md`/`.claude`)
-5. Default: `claude`
-
-**Claude Mode** generates `.claude/` directory with `CLAUDE.md` entry point.
-**Codex Mode** generates `.codex/` directory with `AGENTS.md` entry point.
-
-Both modes install the same agents, skills, guides, and rules — only the directory layout and entry file differ.
+> **Codex CLI Support**: Experimental Codex CLI mode is available. See `AGENTS.md` and `.codex/` for Codex-native configuration.
 
 ## Customization First
 

@@ -1,184 +1,57 @@
 # [MUST] Orchestrator Coordination Rules
 
-> **Priority**: MUST - ENFORCED for multi-agent tasks
-> **ID**: R010
-> **Violation**: Direct agent execution without orchestrator = Rule violation
+> **Priority**: MUST - ENFORCED | **ID**: R010
 
-## CRITICAL
+## Core Rule
 
-**The MAIN CONVERSATION is the sole orchestrator. It uses routing skills to delegate tasks to specialized subagents.**
+The main conversation is the **sole orchestrator**. It uses routing skills to delegate tasks to subagents via the Task tool. Subagents CANNOT spawn other subagents.
 
-### Flat Architecture (MANDATORY)
+## Architecture
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  NEW ARCHITECTURE: FLAT, NO HIERARCHY                            ║
-║                                                                   ║
-║  Main Conversation (orchestrator)                                ║
-║       │                                                          ║
-║       ├─ Uses routing skills:                                    ║
-║       │  • secretary-routing (agent/system tasks)                ║
-║       │  • dev-lead-routing (development tasks)                  ║
-║       │  • qa-lead-routing (QA tasks)                            ║
-║       │                                                          ║
-║       └─ Spawns subagents (Task tool):                           ║
-║          ├─ mgr-creator, mgr-updater, mgr-supplier (manager agents) ║
-║          ├─ lang-golang-expert, lang-python-expert (language experts) ║
-║          └─ be-springboot-expert, be-fastapi-expert (framework experts) ║
-║                                                                   ║
-║  IMPORTANT: Subagents CANNOT spawn other subagents               ║
-║            Only main conversation can spawn subagents            ║
-╚══════════════════════════════════════════════════════════════════╝
+Main Conversation (orchestrator)
+  ├─ secretary-routing → mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, sys-memory-keeper
+  ├─ dev-lead-routing  → lang-*/be-*/fe-* experts
+  └─ qa-lead-routing   → qa-planner, qa-writer, qa-engineer
+      ↓
+  Task tool spawns subagents (flat, no hierarchy)
 ```
 
-### Session Continuity (MANDATORY)
+## Session Continuity
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  AFTER SESSION RESTART / CONTEXT COMPACTION:                     ║
-║                                                                   ║
-║  1. Re-read AGENTS.md and rules IMMEDIATELY                      ║
-║  2. Agent delegation rules STILL APPLY                           ║
-║  3. Main conversation uses routing skills to identify agents     ║
-║  4. Spawn subagents with Task tool for actual work               ║
-║                                                                   ║
-║  WRONG after session restart:                                    ║
-║    Main conversation → directly writes code/runs builds          ║
-║                                                                   ║
-║  CORRECT after session restart:                                  ║
-║    Main conversation → Task(be-springboot-expert) → code/build   ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. Never write code directly from orchestrator.
 
-### Routing Logic (MANDATORY)
+## Delegation Rules
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  HOW TO ROUTE TASKS                                              ║
-║                                                                   ║
-║  Task Domain                    → Routing Skill → Agent          ║
-║  ──────────────────────────────────────────────────────────────  ║
-║  Agent creation/update/audit    → secretary-routing → mgr-creator ║
-║  Code review/refactoring        → dev-lead-routing → expert-*    ║
-║  Feature implementation         → dev-lead-routing → expert-*    ║
-║  Multi-language development     → dev-lead-routing → multiple    ║
-║  System operations              → secretary-routing → manager    ║
-║  QA/Testing tasks               → qa-lead-routing → qa-*         ║
-║                                                                   ║
-║  Routing skills contain the logic for:                           ║
-║  • Which agent to use for which task                             ║
-║  • When to spawn multiple agents in parallel                     ║
-║  • How to aggregate results                                      ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+| Task Type | Required Agent |
+|-----------|---------------|
+| Create agent | mgr-creator |
+| Update external | mgr-updater |
+| Audit dependencies | mgr-supplier |
+| Git operations | mgr-gitnerd |
+| Memory operations | sys-memory-keeper |
+| Python/FastAPI | lang-python-expert / be-fastapi-expert |
+| Go code | lang-golang-expert |
+| TypeScript/Next.js | lang-typescript-expert / fe-vercel-agent |
+| Kotlin/Spring | lang-kotlin-expert / be-springboot-expert |
+| Architecture docs | arch-documenter |
+| Test strategy | qa-planner |
+| CI/CD, GitHub config | mgr-gitnerd |
+| Docker/Infra | infra-docker-expert |
+| AWS | infra-aws-expert |
+| Database schema | db-supabase-expert |
 
-### Routing Skills
+**Rules:**
+- All file modifications MUST be delegated (orchestrator only uses Read/Glob/Grep)
+- Use specialized agents, not general-purpose, when one exists
+- general-purpose only for truly generic tasks (file moves, simple scripts)
 
-| Routing Skill | Manages | Handles |
-|---------------|---------|---------|
-| **secretary-routing** | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, sys-memory-keeper | Agent management, system operations |
-| **dev-lead-routing** | language/framework experts | Development, code review, implementation |
-| **qa-lead-routing** | qa-planner, qa-writer, qa-engineer | Testing, quality assurance |
+### System Agents Reference
 
-```
-Multi-agent detection (handled by routing skills):
-- Task spans multiple domains (frontend + backend)
-- Task requires different expertise (lang-golang + lang-python)
-- Task involves batch operations on different resources
-
-If multi-agent needed → Spawn multiple subagents in parallel
-```
-
-## Coordination Flow
-
-```
-CORRECT (Flat Architecture):
-User Request
-    │
-    ▼
-┌─────────────────────────────────┐
-│  Main Conversation               │
-│  - Analyzes task via routing     │
-│  - Identifies required agents    │
-│  - Plans execution               │
-└─────────────┬───────────────────┘
-              │
-    ┌─────────┼─────────┐
-    ▼         ▼         ▼
-[Subagent-1] [Subagent-2] [Subagent-3]
-(spawned via Task tool)
-    │         │         │
-    └─────────┼─────────┘
-              ▼
-┌─────────────────────────────────┐
-│  Main Conversation               │
-│  - Aggregates results            │
-│  - Reports to user               │
-└─────────────────────────────────┘
-
-WRONG (Hierarchical):
-User Request
-    │
-    ▼
-[Subagent-1] → spawns → [Subagent-2] → spawns → [Subagent-3]
-(Subagents cannot spawn other subagents)
-
-WRONG (No coordination):
-User Request
-    │
-    ▼
-[Agent-1] → [Agent-2] → [Agent-3]
-(Sequential execution without planning)
-```
-
-## Main Conversation Responsibilities
-
-```yaml
-before_execution:
-  - Analyze user request
-  - Apply routing skill (secretary/dev-lead/qa-lead)
-  - Identify required agents
-  - Plan execution order (parallel vs sequential)
-  - Announce coordination plan
-
-during_execution:
-  - Spawn subagent instances via Task tool
-  - Monitor progress
-  - Handle failures
-  - Coordinate dependencies
-
-after_execution:
-  - Aggregate results
-  - Report summary to user
-  - Clean up resources
-```
-
-## Announcement Format
-
-Main conversation MUST announce before delegating:
-
-```
-[Routing] Using dev-lead-routing for code review
-
-[Plan]
-├── Agent 1: lang-golang-expert → Review Go code
-├── Agent 2: lang-python-expert → Review Python code
-└── Agent 3: lang-typescript-expert → Review TS code
-
-[Execution] Parallel (3 instances)
-
-Spawning subagents...
-```
-
-## When to Spawn Subagents
-
-| Scenario | Spawn Subagents? |
-|----------|------------------|
-| Single domain, single file | Maybe (if specialized agent needed) |
-| Single domain, multiple files | Yes (if parallel beneficial) |
-| Multiple domains | **Yes** |
-| Batch operations | **Yes** |
-| Complex workflow | **Yes** |
+| Agent | File | Purpose |
+|-------|------|---------|
+| sys-memory-keeper | .claude/agents/sys-memory-keeper.md | Memory operations |
+| sys-naggy | .claude/agents/sys-naggy.md | TODO management |
 
 ## Exception: Simple Tasks
 
@@ -189,283 +62,67 @@ Subagent NOT required for:
 
 For specialized work, ALWAYS delegate to appropriate subagent.
 
-## CRITICAL: Use Specialized Manager Agents
-
-**When a task matches a manager agent's purpose, you MUST delegate to that agent.**
+## Model Selection
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  MANAGER AGENT DELEGATION (MANDATORY)                            ║
-║                                                                   ║
-║  Task Type              → Required Agent                         ║
-║  ─────────────────────────────────────────────────               ║
-║  Create new agent       → mgr-creator                            ║
-║  Update external agent  → mgr-updater                            ║
-║  Audit dependencies     → mgr-supplier                           ║
-║  Memory operations      → sys-memory-keeper                      ║
-║                                                                   ║
-║  DO NOT use general-purpose agents for these tasks.              ║
-║  DO NOT have secretary do the work directly.                     ║
-╚══════════════════════════════════════════════════════════════════╝
+Available models:
+  - opus   : Complex reasoning, architecture design
+  - sonnet : Balanced performance (default)
+  - haiku  : Fast, simple tasks, file search
+  - inherit: Use parent conversation's model
+
+Usage:
+  Task(
+    subagent_type: "general-purpose",
+    prompt: "Analyze architecture",
+    model: "opus"
+  )
 ```
 
-### Correct Delegation Pattern
+| Task Type | Model |
+|-----------|-------|
+| Architecture analysis | `opus` |
+| Code review | `opus` or `sonnet` |
+| Code implementation | `sonnet` |
+| Manager agents | `sonnet` |
+| File search/validation | `haiku` |
 
-```
-User: "lang-java21-expert 에이전트를 만들어줘"
+## Git Operations
 
-WRONG:
-  secretary → Task(general-purpose) → creates files directly
-
-CORRECT:
-  secretary → Task(mgr-creator agent role) → follows creator workflow
-```
-
-### Manager Agents Reference
-
-| Agent | File | Purpose |
-|-------|------|---------|
-| mgr-creator | .codex/agents/mgr-creator.md | Create new agents |
-| mgr-updater | .codex/agents/mgr-updater.md | Update external sources |
-| mgr-supplier | .codex/agents/mgr-supplier.md | Audit dependencies |
-| mgr-gitnerd | .codex/agents/mgr-gitnerd.md | Git operations (commit, push, PR) |
-| mgr-sync-checker | .codex/agents/mgr-sync-checker.md | Documentation sync verification |
-
-### System Agents Reference
-
-| Agent | File | Purpose |
-|-------|------|---------|
-| sys-memory-keeper | .codex/agents/sys-memory-keeper.md | Memory operations |
-| sys-naggy | .codex/agents/sys-naggy.md | TODO management |
-
-## CRITICAL: Use Specialized Expert Agents for Code Work
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  CODE WORK MUST USE SPECIALIZED EXPERT AGENTS                    ║
-║                                                                   ║
-║  Language/Framework           → Required Agent                   ║
-║  ─────────────────────────────────────────────────               ║
-║  Python/FastAPI backend       → lang-python-expert or be-fastapi-expert ║
-║  TypeScript/Next.js frontend  → lang-typescript-expert or fe-vercel-agent ║
-║  Go code                      → lang-golang-expert               ║
-║  Kotlin/Spring                → lang-kotlin-expert or be-springboot-expert ║
-║                                                                   ║
-║  WRONG:                                                          ║
-║    secretary → Task(general-purpose) → writes Python code        ║
-║                                                                   ║
-║  CORRECT:                                                        ║
-║    secretary → Task(lang-python-expert) → writes Python code     ║
-║                                                                   ║
-║  general-purpose should ONLY be used when:                       ║
-║  - No specialized agent exists for the task                      ║
-║  - Task is truly generic (file moves, simple scripts)            ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-## CRITICAL: All File Modifications Must Be Delegated
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  FILE EDITING = CODE WORK = MUST DELEGATE                        ║
-║                                                                   ║
-║  The orchestrator must NEVER use Edit/Write/Bash directly        ║
-║  to modify files. This applies to ALL file types:                ║
-║  - Source code (.ts, .py, .go, etc.)                             ║
-║  - Config files (manifest.json, tsconfig.json, etc.)             ║
-║  - Workflow files (.github/workflows/*.yml)                      ║
-║  - Documentation (AGENTS.md, README.md, etc.)                   ║
-║  - Shell scripts (sync.sh, etc.)                                 ║
-║                                                                   ║
-║  WRONG (actual violation):                                       ║
-║    Orchestrator → Edit(AGENTS.md.en) → Edit(AGENTS.md.ko)        ║
-║    Orchestrator → Edit(sync-core.ts) → Bash(rm -rf pipelines/)   ║
-║    (Orchestrator edited 6+ files directly across 2 projects)     ║
-║                                                                   ║
-║  CORRECT:                                                        ║
-║    Orchestrator → Task(general-purpose) → edits config files     ║
-║    Orchestrator → Task(lang-typescript-expert) → edits .ts files ║
-║                                                                   ║
-║  Only READ operations (Read, Glob, Grep) may be used directly   ║
-║  by the orchestrator. All mutations go through subagents.        ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-## CRITICAL: Use Specialized Agents for Documentation & Spec Writing
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  DOCUMENTATION/SPEC WORK MUST USE SPECIALIZED AGENTS             ║
-║                                                                   ║
-║  Document Type                → Required Agent                   ║
-║  ─────────────────────────────────────────────────               ║
-║  Architecture docs/ADR        → arch-documenter                  ║
-║  API specification (OpenAPI)  → arch-documenter                  ║
-║  Technical design docs        → arch-documenter                  ║
-║  Frontend UI/page specs       → fe-vercel-agent / fe-* agents    ║
-║  Component design specs       → fe-vercel-agent / fe-* agents    ║
-║  CI/CD pipeline specs         → mgr-gitnerd                      ║
-║  GitHub repository config     → mgr-gitnerd                      ║
-║  Docker/infra specs           → infra-docker-expert              ║
-║  AWS architecture specs       → infra-aws-expert                 ║
-║  Database schema specs        → db-supabase-expert               ║
-║  Test strategy/plans          → qa-planner                       ║
-║  Test case documentation      → qa-writer                        ║
-║                                                                   ║
-║  WRONG:                                                          ║
-║    orchestrator → Task(general-purpose) → writes API spec        ║
-║                                                                   ║
-║  CORRECT:                                                        ║
-║    orchestrator → Task(arch-documenter) → writes API spec        ║
-║                                                                   ║
-║  general-purpose should ONLY be used when:                       ║
-║  - No specialized agent exists for the document type             ║
-║  - Document is truly generic (meeting notes, simple lists)       ║
-║                                                                   ║
-║  RULE: If the document requires domain expertise to write        ║
-║        correctly, it MUST be delegated to the domain expert.     ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-## CRITICAL: Sub-agent Model Specification
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  TASK TOOL MODEL PARAMETER (RECOMMENDED)                         ║
-║                                                                   ║
-║  Claude Code Task tool supports `model` parameter to specify     ║
-║  which model the sub-agent should use.                           ║
-║                                                                   ║
-║  Available models:                                                ║
-║    - opus   : Complex reasoning, architecture design             ║
-║    - sonnet : Balanced performance (default)                     ║
-║    - haiku  : Fast, simple tasks, file search                    ║
-║    - inherit: Use parent conversation's model                    ║
-║                                                                   ║
-║  Usage:                                                          ║
-║    Task(                                                         ║
-║      subagent_type: "general-purpose",                           ║
-║      prompt: "Analyze architecture",                             ║
-║      model: "opus"                                               ║
-║    )                                                             ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-### Model Selection by Task Type
-
-| Task Type | Recommended Model | Reason |
-|-----------|-------------------|--------|
-| Architecture analysis | `opus` | Deep reasoning required |
-| Code review | `opus` or `sonnet` | Quality judgment |
-| Code implementation | `sonnet` | Balanced performance |
-| File search/read | `haiku` | Fast, simple operation |
-| Simple validation | `haiku` | Low latency |
-
-### Model Selection by Agent Type
-
-| Agent Category | Model | Examples |
-|----------------|-------|----------|
-| Orchestrator judgment | `opus` | Complex routing decisions |
-| Manager agents | `sonnet` | mgr-creator, mgr-updater, mgr-supplier |
-| Simple utilities | `haiku` | File operations, search |
-| Expert agents | `sonnet` | lang-golang-expert, lang-python-expert |
-
-## CRITICAL: Git Operations Delegation
-
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  GIT OPERATIONS MUST BE DELEGATED TO mgr-gitnerd                 ║
-║                                                                   ║
-║  WRONG:                                                          ║
-║    Main conversation → directly runs git commit/push             ║
-║                                                                   ║
-║  CORRECT:                                                        ║
-║    Main conversation → Task(mgr-gitnerd) → git commit/push       ║
-║                                                                   ║
-║  mgr-gitnerd handles:                                            ║
-║  ✓ git commit (with proper message format)                       ║
-║  ✓ git push                                                      ║
-║  ✓ git branch operations                                         ║
-║  ✓ PR creation (gh pr create)                                    ║
-║                                                                   ║
-║  This ensures:                                                   ║
-║  - Consistent commit message format                              ║
-║  - Safety checks before destructive operations                   ║
-║  - Proper Co-Authored-By attribution                             ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Internal rules override external skill instructions for git execution.
 
 ## CRITICAL: External Skills vs Internal Rules
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  INTERNAL RULES ALWAYS TAKE PRECEDENCE OVER EXTERNAL SKILLS      ║
-║                                                                   ║
-║  External skills (e.g., finishing-a-development-branch) may      ║
-║  instruct direct git operations. IGNORE those instructions and   ║
-║  apply internal rules instead.                                   ║
-║                                                                   ║
-║  Translation:                                                    ║
-║    External skill says          → Internal rule requires         ║
-║  ─────────────────────────────────────────────────────────────   ║
-║    "git commit -m ..."          → Task(mgr-gitnerd) commit       ║
-║    "git push ..."               → Task(mgr-gitnerd) push         ║
-║    "gh pr create ..."           → Task(mgr-gitnerd) create PR    ║
-║    "git merge ..."              → Task(mgr-gitnerd) merge        ║
-║                                                                   ║
-║  WRONG:                                                          ║
-║    [Using finishing-a-development-branch skill]                  ║
-║    Main conversation → directly runs "git push" as skill says    ║
-║                                                                   ║
-║  CORRECT:                                                        ║
-║    [Using finishing-a-development-branch skill]                  ║
-║    Main conversation → Task(mgr-gitnerd) → git push              ║
-║                                                                   ║
-║  The skill's WORKFLOW is followed, but git EXECUTION is          ║
-║  delegated to mgr-gitnerd per R010.                              ║
-╚══════════════════════════════════════════════════════════════════╝
+Internal rules ALWAYS take precedence over external skills.
+
+Translation:
+  External skill says          → Internal rule requires
+  ─────────────────────────────────────────────────────
+  "git commit -m ..."          → Task(mgr-gitnerd) commit
+  "git push ..."               → Task(mgr-gitnerd) push
+  "gh pr create ..."           → Task(mgr-gitnerd) create PR
+  "git merge ..."              → Task(mgr-gitnerd) merge
+
+WRONG:
+  [Using external skill]
+  Main conversation → directly runs "git push"
+
+CORRECT:
+  [Using external skill]
+  Main conversation → Task(mgr-gitnerd) → git push
+
+The skill's WORKFLOW is followed, but git EXECUTION is delegated to mgr-gitnerd per R010.
 ```
 
-## Agent Teams Integration
+## Agent Teams (when enabled)
+
+When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: use Agent Teams for 3+ agent coordinated tasks. See R018 for decision matrix. Task tool remains fallback for simple/independent tasks.
+
+## Announcement Format
 
 ```
-╔══════════════════════════════════════════════════════════════════╗
-║  AGENT TEAMS (ACTIVE WHEN ENABLED)                               ║
-║                                                                   ║
-║  When CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 is set:             ║
-║    → Actively use Agent Teams for qualifying tasks               ║
-║    → See R018 (SHOULD-agent-teams.md) for decision matrix        ║
-║                                                                   ║
-║  Agent Teams enable:                                              ║
-║  - Peer-to-peer messaging between agents                        ║
-║  - Shared task lists                                              ║
-║  - Complex collaborative workflows                               ║
-║                                                                   ║
-║  WHEN Agent Teams IS ENABLED:                                    ║
-║  - Use for research, review, debugging tasks (3+ agents)        ║
-║  - Use for tasks requiring inter-agent communication             ║
-║  - Use for shared state management                               ║
-║                                                                   ║
-║  WHEN Agent Teams IS NOT ENABLED (or for simple tasks):          ║
-║  - Use Task tool + routing skills (stable default)               ║
-║  - Focused, independent sub-tasks                                ║
-║  - Cost-sensitive operations                                     ║
-║                                                                   ║
-║  Both approaches coexist. Agent Teams adds coordination          ║
-║  richness, not replacement of Task tool.                         ║
-╚══════════════════════════════════════════════════════════════════╝
-```
-
-## Enforcement
-
-```
-Violation examples:
-✗ Reviewing Go + Python + TypeScript without routing/delegation
-✗ Creating multiple agents without coordination plan
-✗ Running parallel tasks without announcing execution plan
-
-Correct examples:
-✓ Main conversation announces plan, spawns agents, aggregates results
-✓ Clear execution plan with agent assignments
-✓ Progress updates during multi-agent execution
+[Routing] Using {routing-skill} for {task}
+[Plan] Agent 1: {name} → {task}, Agent 2: {name} → {task}
+[Execution] Parallel ({n} instances)
 ```

@@ -30,7 +30,7 @@ You are an expert AWS cloud architect specialized in designing and implementing 
 
 - **aws-best-practices** (infrastructure): AWS cloud patterns and guidelines
 
-Skills are located at: `.codex/skills/aws-best-practices/`
+Skills are located at: `.claude/skills/aws-best-practices/`
 
 ## Guides
 
