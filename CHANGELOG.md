@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-02-11
+
+### Added
+- `preserveFiles` config field: protect specific files/directories from being overwritten during `omcustom update` (Closes #69)
+- CLAUDE.md merge mechanism: `<!-- omcustom:start -->` / `<!-- omcustom:end -->` markers separate template content from user customizations (Closes #70)
+- Custom component tracking: `customComponents` config with `managed: false` flag for user-created agents, skills, rules, and guides (Closes #71)
+- `omcustom doctor` checks custom component path existence
+- `omcustom list` shows `[custom]` tag for unmanaged components
+- Entry document merge: preserves user-written sections while updating template-managed sections
+
+### Fixed
+- ESM compatibility: replaced `require('node:path')` with module-level imports in `shouldSkipPath`, `getRelativePath`, `isAbsolutePath`
+- `customComponents` deduplication now uses path-based comparison instead of broken `Set` reference equality
+
 ## [0.9.3] - 2026-02-10
 
 ### Added
@@ -330,7 +344,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.3...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.4...HEAD
+[0.9.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.0...v0.9.1
