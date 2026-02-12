@@ -279,25 +279,4 @@ npm install -g claude-mem
 claude-mem setup
 ```
 
-## Git Workflow (MUST follow)
-
-| Branch | Purpose |
-|--------|---------|
-| `develop` | Main development branch (default) |
-| `feature/*` | New features -> PR to develop |
-| `release/*` | Release preparation -> **npm publish here only** |
-| `hotfix/*` | Critical fixes -> tag -> publish -> merge to develop |
-
-**Publishing flow:**
-```
-develop → release/x.y.z → npm publish → merge back to develop
-```
-
-**Key rules:**
-- Create feature branches from `develop`
-- **npm publish MUST only happen from release branch**
-- Use conventional commits: `feat:`, `fix:`, `docs:`, `chore:`
-- Include "Closes #N" in commit message to auto-close issues
-- Pre-commit hooks run tests automatically
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed workflow.
+<!-- omcustom:git-workflow -->
