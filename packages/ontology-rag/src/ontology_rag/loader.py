@@ -4,6 +4,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from ontology_rag.ontology import Ontology
+from ontology_rag.graph import OntologyGraph
+
 
 @dataclass
 class LoadedContext:
@@ -67,7 +70,12 @@ class HierarchicalLoader:
         rules_dir: Optional path to directory containing rule markdown files.
     """
 
-    def __init__(self, ontology, graph, rules_dir: str | Path = None):
+    def __init__(
+        self,
+        ontology: Ontology,
+        graph: OntologyGraph,
+        rules_dir: str | Path | None = None,
+    ):
         """Initialize hierarchical loader.
 
         Args:
@@ -125,7 +133,8 @@ class HierarchicalLoader:
                 if tokens <= remaining_budget:
                     context.rule_summaries.append(summary)
                     remaining_budget -= tokens
-        context.loading_levels.append(1)
+        if context.rule_summaries:
+            context.loading_levels.append(1)
 
         # Level 2: Expand top rules (highest token estimate first = most important)
         if remaining_budget > 500 and self.rules_dir:
@@ -141,7 +150,8 @@ class HierarchicalLoader:
                         content = full_path.read_text()
                         context.expanded_rules.append(content)
                         remaining_budget -= rule.token_estimate
-            context.loading_levels.append(2)
+            if context.expanded_rules:
+                context.loading_levels.append(2)
 
         # Level 3: Skill summaries
         skill_names = deps.get("skills", [])
@@ -153,7 +163,8 @@ class HierarchicalLoader:
                 if tokens <= remaining_budget:
                     context.skill_summaries.append(summary)
                     remaining_budget -= tokens
-        context.loading_levels.append(3)
+        if context.skill_summaries:
+            context.loading_levels.append(3)
 
         # Level 4: Expand skills if budget allows (on-demand, not always)
         # This would be triggered explicitly, not automatically

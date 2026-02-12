@@ -96,7 +96,7 @@ class Ontology:
         if not path.exists():
             return
 
-        data = yaml.safe_load(path.read_text())
+        data = yaml.safe_load(path.read_text()) or {}
 
         # Parse classes section
         for class_name, class_data in data.get("classes", {}).items():
@@ -124,7 +124,7 @@ class Ontology:
         if not path.exists():
             return
 
-        data = yaml.safe_load(path.read_text())
+        data = yaml.safe_load(path.read_text()) or {}
 
         # Parse classes section
         for class_name, class_data in data.get("classes", {}).items():
@@ -150,7 +150,7 @@ class Ontology:
         if not path.exists():
             return
 
-        data = yaml.safe_load(path.read_text())
+        data = yaml.safe_load(path.read_text()) or {}
 
         # Parse categories section
         self.rule_categories = data.get("categories", {})

@@ -1,6 +1,6 @@
 """Token budget management for context loading."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 
 
@@ -65,7 +65,7 @@ class BudgetManager:
         Args:
             custom_budgets: Optional dictionary to override default budgets.
         """
-        self.budgets = dict(self.BUDGETS)
+        self.budgets = {k: replace(v) for k, v in self.BUDGETS.items()}
         if custom_budgets:
             self.budgets.update(custom_budgets)
 
@@ -83,34 +83,26 @@ class BudgetManager:
             QueryComplexity enum value.
         """
         query_lower = query.lower()
+        query_words = set(query_lower.split())
 
         # Batch: multiple agents or explicit batch keywords
-        if agent_count >= 4 or any(
-            kw in query_lower for kw in ["batch", "all agents", "parallel"]
-        ):
+        if agent_count >= 4 or query_words & {"batch", "parallel"} or "all agents" in query_lower:
             return QueryComplexity.BATCH
 
         # Complex: architectural/multi-agent keywords
-        if any(
-            kw in query_lower
-            for kw in [
-                "architect",
-                "design",
-                "refactor",
-                "migration",
-                "review all",
-                "analyze",
-                "comprehensive",
-                "full",
-            ]
-        ):
+        if query_words & {
+            "architect",
+            "design",
+            "refactor",
+            "migration",
+            "analyze",
+            "comprehensive",
+            "full",
+        } or "review all" in query_lower:
             return QueryComplexity.COMPLEX
 
         # Simple: clear single-action keywords
-        if any(
-            kw in query_lower
-            for kw in ["fix", "typo", "rename", "add", "remove", "delete", "format"]
-        ):
+        if query_words & {"fix", "typo", "rename", "add", "remove", "delete", "format"}:
             return QueryComplexity.SIMPLE
 
         # Default: moderate

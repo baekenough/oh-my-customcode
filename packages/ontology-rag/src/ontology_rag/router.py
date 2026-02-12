@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from typing import Optional
 import json
 
+from ontology_rag.ontology import Ontology
+from ontology_rag.graph import OntologyGraph
+
 
 @dataclass
 class RoutingResult:
@@ -50,7 +53,7 @@ class SemanticRouter:
         keyword_index: Inverted index for keyword-based fallback.
     """
 
-    def __init__(self, ontology, graph, llm_client=None):
+    def __init__(self, ontology: Ontology, graph: OntologyGraph, llm_client=None):
         """Initialize semantic router.
 
         Args:
@@ -144,9 +147,12 @@ Respond in JSON format only:
         prompt = self._build_classification_prompt(query)
 
         response = await self.llm_client.classify(prompt)
-        result = json.loads(response)
+        try:
+            result = json.loads(response)
+            agent_name = result["agent"]
+        except (json.JSONDecodeError, KeyError):
+            return self.route_with_keywords(query)
 
-        agent_name = result["agent"]
         agent_info = self.ontology.agents.get(agent_name)
 
         # Get dependencies from graph

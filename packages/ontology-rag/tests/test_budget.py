@@ -1,5 +1,7 @@
 """Tests for token budget management."""
 
+from dataclasses import replace
+
 from ontology_rag import BudgetManager, QueryComplexity
 
 
@@ -58,8 +60,9 @@ def test_budget_for_query():
 
 def test_custom_budgets():
     """Test custom budget configuration."""
-    custom = {QueryComplexity.SIMPLE: BudgetManager.BUDGETS[QueryComplexity.SIMPLE]}
-    custom[QueryComplexity.SIMPLE].total = 3000
+    original = BudgetManager.BUDGETS[QueryComplexity.SIMPLE]
+    custom_budget = replace(original, total=3000)
+    custom = {QueryComplexity.SIMPLE: custom_budget}
 
     mgr = BudgetManager(custom_budgets=custom)
     budget = mgr.get_budget(QueryComplexity.SIMPLE)
