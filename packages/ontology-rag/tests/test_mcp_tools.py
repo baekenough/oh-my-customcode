@@ -226,10 +226,10 @@ class TestOntologyTraverse:
 class TestToolDefinitions:
     """Test tool definition metadata."""
 
-    def test_has_four_tools(self, mcp_tools):
-        """Test that exactly 4 tools are defined."""
+    def test_has_five_tools(self, mcp_tools):
+        """Test that exactly 5 tools are defined."""
         tools = mcp_tools.get_tool_definitions()
-        assert len(tools) == 4
+        assert len(tools) == 5
 
     def test_tool_names(self, mcp_tools):
         """Test tool names are correct."""
@@ -240,6 +240,7 @@ class TestToolDefinitions:
             "get_agent_for_task",
             "load_skill_with_deps",
             "ontology_traverse",
+            "rebuild_ontology",
         }
 
     def test_tools_have_input_schema(self, mcp_tools):
@@ -253,3 +254,10 @@ class TestToolDefinitions:
         """Test calling an unknown tool."""
         result = await mcp_tools.call_tool("unknown_tool", {})
         assert "Unknown tool" in result[0].text
+
+    @pytest.mark.asyncio
+    async def test_rebuild_without_callback(self, mcp_tools):
+        """Test rebuild returns status when no callback."""
+        result = await mcp_tools.call_tool("rebuild_ontology", {})
+        data = json.loads(result[0].text)
+        assert data["status"] == "no_rebuild_callback"

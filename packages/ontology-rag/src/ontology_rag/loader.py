@@ -2,7 +2,10 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ontology_rag.community import CommunityEngine
 
 from ontology_rag.ontology import Ontology
 from ontology_rag.graph import OntologyGraph
@@ -14,6 +17,7 @@ class LoadedContext:
 
     Attributes:
         agent_summary: Summary of the agent.
+        community_summary: Level 0.5 community context.
         skill_summaries: List of skill summary strings.
         rule_summaries: List of rule summary strings.
         expanded_rules: Full content of expanded rules.
@@ -23,12 +27,13 @@ class LoadedContext:
     """
 
     agent_summary: str = ""
+    community_summary: str = ""
     skill_summaries: list[str] = field(default_factory=list)
     rule_summaries: list[str] = field(default_factory=list)
     expanded_rules: list[str] = field(default_factory=list)
     expanded_skills: list[str] = field(default_factory=list)
     total_tokens: int = 0
-    loading_levels: list[int] = field(default_factory=list)
+    loading_levels: list[float] = field(default_factory=list)
 
     def to_context_string(self) -> str:
         """Combine all loaded context into a single string for injection.
@@ -39,6 +44,8 @@ class LoadedContext:
         parts = []
         if self.agent_summary:
             parts.append(f"## Agent\n{self.agent_summary}")
+        if self.community_summary:
+            parts.append(f"## Related Groups\n{self.community_summary}")
         if self.rule_summaries:
             parts.append(
                 f"## Applicable Rules\n" + "\n".join(f"- {r}" for r in self.rule_summaries)
@@ -59,6 +66,7 @@ class HierarchicalLoader:
 
     Loading levels:
       Level 0: Category summaries (~500 tokens)
+      Level 0.5: Community summaries (~80 tokens)
       Level 1: Relevant entity summaries (~800 tokens)
       Level 2: Selected rules full content (~1500 tokens)
       Level 3: Skill summaries (~600 tokens)
@@ -68,6 +76,7 @@ class HierarchicalLoader:
         ontology: Ontology instance for querying entities.
         graph: OntologyGraph instance for traversing dependencies.
         rules_dir: Optional path to directory containing rule markdown files.
+        community_engine: Optional CommunityEngine for loading community context.
     """
 
     def __init__(
@@ -75,6 +84,7 @@ class HierarchicalLoader:
         ontology: Ontology,
         graph: OntologyGraph,
         rules_dir: str | Path | None = None,
+        community_engine: Optional["CommunityEngine"] = None,
     ):
         """Initialize hierarchical loader.
 
@@ -82,10 +92,12 @@ class HierarchicalLoader:
             ontology: Ontology instance
             graph: OntologyGraph instance
             rules_dir: Optional path to rules directory for expansion
+            community_engine: Optional CommunityEngine instance for community context
         """
         self.ontology = ontology
         self.graph = graph
         self.rules_dir = Path(rules_dir) if rules_dir else None
+        self.community_engine: Optional["CommunityEngine"] = community_engine
 
     def load_for_agent(self, agent_name: str, token_budget: int = 5000) -> LoadedContext:
         """Load hierarchical context for a specific agent within token budget.
@@ -114,6 +126,18 @@ class HierarchicalLoader:
         context.agent_summary = f"{agent.name} ({agent.agent_class}): {agent.summary}"
         remaining_budget -= self._estimate_tokens(context.agent_summary)
         context.loading_levels.append(0)
+
+        # Level 0.5: Community summary (~80 tokens)
+        if self.community_engine is not None and remaining_budget > 80:
+            community = self.community_engine.get_community_for_node(agent_name)
+            if community:
+                context.community_summary = community.summary
+                tokens = self._estimate_tokens(context.community_summary)
+                if tokens <= remaining_budget:
+                    remaining_budget -= tokens
+                    context.loading_levels.append(0.5)
+                else:
+                    context.community_summary = ""  # Revert if over budget
 
         # Level 1: Rule summaries
         deps = self.graph.get_agent_dependencies(agent_name)
