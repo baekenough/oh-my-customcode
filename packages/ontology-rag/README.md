@@ -13,6 +13,7 @@ Ontology+RAG context engine for oh-my-customcode agent systems.
 ## Installation
 
 ```bash
+# From the ontology-rag directory
 pip install -e ".[dev]"
 ```
 
@@ -45,5 +46,9 @@ print(context.to_context_string())
 ## Testing
 
 ```bash
+# Install with dev dependencies first
+pip install -e ".[dev]"
+
+# Run all tests
 pytest tests/ -v
 ```
