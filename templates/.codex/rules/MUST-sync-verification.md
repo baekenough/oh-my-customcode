@@ -1,6 +1,6 @@
 # [MUST] Sync Verification Rules
 
-> **Priority**: MUST - ENFORCED | **ID**: R017
+> **Priority**: MUST - ENFORCED | **ID**: R016
 
 ## Core Rule
 

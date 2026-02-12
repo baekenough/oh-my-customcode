@@ -1,6 +1,6 @@
 # [MUST] Intent Transparency Rules
 
-> **Priority**: MUST | **ID**: R015
+> **Priority**: MUST | **ID**: R014
 
 ## Core Rule
 

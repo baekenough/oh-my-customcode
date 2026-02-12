@@ -117,8 +117,8 @@ Flow:
 | R008 | Tool Identification | **ENFORCED** - Display agent when using ANY tool |
 | R009 | Parallel Execution | **ENFORCED** - Parallel execution, large task decomposition |
 | R010 | Orchestrator Coordination | **ENFORCED** - Orchestrator coordination, session continuity, direct action prohibition |
-| R016 | Continuous Improvement | **ENFORCED** - Update rules when violations occur |
-| R017 | Sync Verification | **ENFORCED** - Verify sync before structural changes |
+| R015 | Continuous Improvement | **ENFORCED** - Update rules when violations occur |
+| R016 | Sync Verification | **ENFORCED** - Verify sync before structural changes |
 
 ### SHOULD (Strongly recommended)
 | ID | Rule | Description |
@@ -128,8 +128,8 @@ Flow:
 | R011 | Memory Integration | Session persistence with claude-mem |
 | R012 | HUD Statusline | Real-time status display |
 | R013 | Ecomode | Token efficiency for batch ops |
-| R015 | Intent Transparency | **MUST** - Transparent agent routing |
-| R018 | Agent Teams | Active use of Agent Teams when enabled |
+| R014 | Intent Transparency | **MUST** - Transparent agent routing |
+| R017 | Agent Teams | Active use of Agent Teams when enabled |
 
 ### MAY (Optional)
 | ID | Rule | Description |
@@ -158,7 +158,7 @@ Flow:
 | `/optimize-analyze` | Analyze bundle and performance |
 | `/optimize-bundle` | Optimize bundle size |
 | `/optimize-report` | Generate optimization report |
-| `/sauron-watch` | Full R017 verification |
+| `/sauron-watch` | Full R016 verification |
 | `/lists` | Show all available commands |
 | `/status` | Show system status |
 | `/help` | Show help information |
@@ -171,7 +171,7 @@ project/
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (42 files)
 |   +-- skills/                  # Skills (51 directories)
-|   +-- rules/                   # Global rules (R000-R018)
+|   +-- rules/                   # Global rules (R000-R017)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- guides/                      # Reference docs (22 topics)
@@ -216,7 +216,7 @@ When Claude Code's Agent Teams feature is enabled (`CLAUDE_CODE_EXPERIMENTAL_AGE
 | Token cost | Lower | Higher |
 
 **When enabled, actively use Agent Teams for complex collaborative tasks.**
-See R018 (SHOULD-agent-teams.md) for the decision matrix.
+See R017 (SHOULD-agent-teams.md) for the decision matrix.
 Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ## Quick Reference
