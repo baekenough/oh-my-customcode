@@ -2,7 +2,7 @@
  * Installer module - Install/copy templates
  */
 
-import { copyFile as fsCopyFile, rename } from 'node:fs/promises';
+import { readFile as fsReadFile, writeFile as fsWriteFile, rename } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import {
   copyDirectory,
@@ -14,6 +14,12 @@ import {
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { loadConfig, saveConfig } from './config.js';
+import {
+  detectGitWorkflow,
+  getDefaultWorkflow,
+  renderGitWorkflowEN,
+  renderGitWorkflowKO,
+} from './git-workflow.js';
 import {
   getComponentPath,
   getEntryTemplateName,
@@ -401,8 +407,21 @@ async function installComponent(
   return true;
 }
 
+/** Placeholder in entry doc templates replaced with detected git workflow */
+const GIT_WORKFLOW_PLACEHOLDER = '<!-- omcustom:git-workflow -->';
+
+/**
+ * Render the git workflow section for the detected workflow and language
+ */
+function renderGitWorkflowSection(targetDir: string, language: 'en' | 'ko'): string {
+  const result = detectGitWorkflow(targetDir) ?? getDefaultWorkflow();
+  return language === 'ko' ? renderGitWorkflowKO(result) : renderGitWorkflowEN(result);
+}
+
 /**
  * Install entry doc with the selected language
+ *
+ * Reads the template, injects dynamic git workflow section, and writes to target.
  */
 async function installEntryDoc(
   targetDir: string,
@@ -428,8 +447,15 @@ async function installEntryDoc(
     return false;
   }
 
-  // Copy the template file to entry doc
-  await fsCopyFile(srcPath, destPath);
+  // Read template, inject git workflow, write to destination
+  let content = await fsReadFile(srcPath, 'utf-8');
+
+  if (content.includes(GIT_WORKFLOW_PLACEHOLDER)) {
+    const workflowSection = renderGitWorkflowSection(targetDir, language);
+    content = content.replace(GIT_WORKFLOW_PLACEHOLDER, workflowSection);
+  }
+
+  await fsWriteFile(destPath, content, 'utf-8');
   debug('install.entry_md_installed', { language, entry: layout.entryFile });
   return true;
 }
