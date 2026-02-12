@@ -120,3 +120,44 @@ def test_context_string_formatting(sample_ontology_dir):
     # Should have section headers
     assert "## Agent" in text or ctx.agent_summary != ""
     assert "## Applicable Rules" in text or len(ctx.rule_summaries) == 0
+
+
+def test_community_summary_loaded(sample_ontology_dir, sample_rules_dir):
+    """Test that community summary is loaded at Level 0.5."""
+    from ontology_rag.community import CommunityEngine
+
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    engine = CommunityEngine(onto, graph)
+    engine.detect_communities()
+    loader = HierarchicalLoader(onto, graph, rules_dir=sample_rules_dir, community_engine=engine)
+
+    ctx = loader.load_for_agent("lang-golang-expert", token_budget=5000)
+    assert ctx.community_summary != ""
+    assert 0.5 in ctx.loading_levels
+
+
+def test_community_summary_in_context_string(sample_ontology_dir, sample_rules_dir):
+    """Test that community summary appears in context string."""
+    from ontology_rag.community import CommunityEngine
+
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    engine = CommunityEngine(onto, graph)
+    engine.detect_communities()
+    loader = HierarchicalLoader(onto, graph, rules_dir=sample_rules_dir, community_engine=engine)
+
+    ctx = loader.load_for_agent("lang-golang-expert", token_budget=5000)
+    text = ctx.to_context_string()
+    assert "Related Groups" in text
+
+
+def test_loader_without_community_engine(sample_ontology_dir, sample_rules_dir):
+    """Loader works without community engine (Level 0.5 skipped)."""
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    loader = HierarchicalLoader(onto, graph, rules_dir=sample_rules_dir)
+
+    ctx = loader.load_for_agent("lang-golang-expert", token_budget=5000)
+    assert ctx.community_summary == ""
+    assert 0.5 not in ctx.loading_levels

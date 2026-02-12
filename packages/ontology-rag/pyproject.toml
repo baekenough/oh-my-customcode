@@ -1,6 +1,6 @@
 [project]
 name = "ontology-rag"
-version = "0.1.0"
+version = "0.2.0"
 description = "Ontology+RAG context engine for oh-my-customcode"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -8,6 +8,7 @@ license = {text = "MIT"}
 dependencies = [
     "pyyaml>=6.0",
     "mcp>=1.0.0",
+    "networkx>=3.0",
 ]
 
 [project.optional-dependencies]
@@ -15,6 +16,7 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
 ]
+watch = ["watchdog>=4.0"]
 
 [build-system]
 requires = ["hatchling"]

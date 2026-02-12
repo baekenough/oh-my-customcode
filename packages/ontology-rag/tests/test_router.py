@@ -1,6 +1,7 @@
 """Tests for semantic routing."""
 
 from ontology_rag import Ontology, OntologyGraph, SemanticRouter
+from ontology_rag.hybrid_search import HybridSearcher
 
 
 def test_keyword_routing(sample_ontology_dir):
@@ -101,3 +102,25 @@ def test_keyword_index_building(sample_ontology_dir):
         entry[0] == "agent" and entry[1] == "lang-golang-expert"
         for entry in router.keyword_index["golang"]
     )
+
+
+def test_route_with_hybrid_fallback(sample_ontology_dir):
+    """route_with_hybrid falls back to keywords when no hybrid searcher."""
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    router = SemanticRouter(onto, graph)
+    result = router.route_with_hybrid("golang code review")
+    assert result.agent == "lang-golang-expert"
+    assert result.confidence > 0
+
+
+def test_route_with_hybrid_with_searcher(sample_ontology_dir):
+    """route_with_hybrid uses hybrid searcher when available."""
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    searcher = HybridSearcher(onto, graph)
+    router = SemanticRouter(onto, graph, hybrid_searcher=searcher)
+    result = router.route_with_hybrid("golang code review")
+    assert result.agent != ""
+    assert result.confidence > 0
+    assert "Hybrid search" in result.reasoning

@@ -12,13 +12,17 @@ from mcp.types import Resource, TextContent, Tool
 
 from ontology_rag.budget import BudgetManager
 from ontology_rag.cache import SemanticCache
+from ontology_rag.community import CommunityEngine
 from ontology_rag.graph import OntologyGraph
+from ontology_rag.hybrid_search import HybridSearcher
 from ontology_rag.loader import HierarchicalLoader
 from ontology_rag.mcp_resources import OntologyMCPResources
 from ontology_rag.mcp_tools import OntologyMCPTools
 from ontology_rag.ontology import Ontology
+from ontology_rag.reranker import Reranker
 from ontology_rag.router import SemanticRouter
 from ontology_rag.token_logger import TokenLogger
+from ontology_rag.watcher import OntologyWatcher
 
 logger = logging.getLogger(__name__)
 
@@ -74,18 +78,33 @@ class OntologyMCPServer:
         # Initialize Phase 1 components
         self.ontology = Ontology(ontology_dir)
         self.graph = OntologyGraph(ontology_dir / "graphs")
-        self.router = SemanticRouter(self.ontology, self.graph)
-        self.loader = HierarchicalLoader(
-            self.ontology,
-            self.graph,
-            rules_dir=ontology_dir.parent / "rules",
-        )
         self.budget_manager = BudgetManager()
 
         # Initialize Phase 2 components
         cache_dir = ontology_dir / ".cache"
         self.cache = SemanticCache(cache_dir)
         self.token_logger = TokenLogger(cache_dir)
+
+        # Initialize Phase 3 components
+        self.community_engine = CommunityEngine(self.ontology, self.graph)
+        self.community_engine.detect_communities()
+
+        self.hybrid_searcher = HybridSearcher(
+            self.ontology, self.graph, self.community_engine
+        )
+        self.reranker = Reranker(self.graph, self.community_engine)
+        self.watcher = OntologyWatcher(ontology_dir)
+
+        # Inject Phase 3 into Phase 1/2 components
+        self.router = SemanticRouter(
+            self.ontology, self.graph, hybrid_searcher=self.hybrid_searcher
+        )
+        self.loader = HierarchicalLoader(
+            self.ontology,
+            self.graph,
+            rules_dir=ontology_dir.parent / "rules",
+            community_engine=self.community_engine,
+        )
 
         # Initialize MCP handlers
         self.tools = OntologyMCPTools(
@@ -96,6 +115,8 @@ class OntologyMCPServer:
             budget_manager=self.budget_manager,
             cache=self.cache,
             token_logger=self.token_logger,
+            watcher=self.watcher,
+            rebuild_callback=self._rebuild_ontology,
         )
         self.resources = OntologyMCPResources(
             ontology=self.ontology,
@@ -105,6 +126,48 @@ class OntologyMCPServer:
         # Initialize MCP server
         self.server = Server("ontology-rag")
         self._register_handlers()
+
+    def _rebuild_ontology(self):
+        """Rebuild all components after ontology file changes."""
+        # Reload core data
+        self.ontology = Ontology(self.ontology_dir)
+        self.graph = OntologyGraph(self.ontology_dir / "graphs")
+
+        # Rebuild Phase 3 components
+        self.community_engine = CommunityEngine(self.ontology, self.graph)
+        self.community_engine.detect_communities()
+        self.hybrid_searcher = HybridSearcher(
+            self.ontology, self.graph, self.community_engine
+        )
+        self.reranker = Reranker(self.graph, self.community_engine)
+
+        # Rebuild Phase 1/2 with updated Phase 3
+        self.router = SemanticRouter(
+            self.ontology, self.graph, hybrid_searcher=self.hybrid_searcher
+        )
+        self.loader = HierarchicalLoader(
+            self.ontology,
+            self.graph,
+            rules_dir=self.ontology_dir.parent / "rules",
+            community_engine=self.community_engine,
+        )
+
+        # Update tools handler
+        self.tools = OntologyMCPTools(
+            ontology=self.ontology,
+            graph=self.graph,
+            router=self.router,
+            loader=self.loader,
+            budget_manager=self.budget_manager,
+            cache=self.cache,
+            token_logger=self.token_logger,
+            watcher=self.watcher,
+            rebuild_callback=self._rebuild_ontology,
+        )
+
+        # Invalidate caches
+        self.cache.invalidate()
+        self.watcher.mark_rebuilt()
 
     def _register_handlers(self):
         """Register MCP protocol handlers."""

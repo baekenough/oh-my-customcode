@@ -18,11 +18,12 @@ from ontology_rag.token_logger import TokenLogger
 class OntologyMCPTools:
     """MCP tool implementations wrapping the ontology query engine.
 
-    Provides 4 tools:
+    Provides 5 tools:
     - get_relevant_context: Get context for a query with budget management
     - get_agent_for_task: Route a query to the best agent
     - load_skill_with_deps: Load a skill and its dependencies
     - ontology_traverse: Traverse the ontology graph from a starting node
+    - rebuild_ontology: Force rebuild of the ontology graph and caches
     """
 
     def __init__(
@@ -34,6 +35,8 @@ class OntologyMCPTools:
         budget_manager: BudgetManager,
         cache: SemanticCache,
         token_logger: TokenLogger,
+        watcher=None,
+        rebuild_callback=None,
     ):
         self.ontology = ontology
         self.graph = graph
@@ -42,6 +45,8 @@ class OntologyMCPTools:
         self.budget_manager = budget_manager
         self.cache = cache
         self.token_logger = token_logger
+        self.watcher = watcher
+        self._rebuild_callback = rebuild_callback
 
     def get_tool_definitions(self) -> list[Tool]:
         """Return MCP tool definitions."""
@@ -151,6 +156,18 @@ class OntologyMCPTools:
                     "required": ["start"],
                 },
             ),
+            Tool(
+                name="rebuild_ontology",
+                description=(
+                    "Force rebuild of the ontology graph and all caches. "
+                    "Useful after modifying agent, skill, or rule files."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                },
+            ),
         ]
 
     async def call_tool(
@@ -162,6 +179,7 @@ class OntologyMCPTools:
             "get_agent_for_task": self._get_agent_for_task,
             "load_skill_with_deps": self._load_skill_with_deps,
             "ontology_traverse": self._ontology_traverse,
+            "rebuild_ontology": self._rebuild_ontology,
         }
 
         handler = handlers.get(name)
@@ -177,6 +195,11 @@ class OntologyMCPTools:
         query = args["query"]
         max_tokens = args.get("max_tokens", 0)
         start = time.time()
+
+        # Check for ontology changes
+        if self.watcher and self.watcher.check_for_changes():
+            if self._rebuild_callback:
+                self._rebuild_callback()
 
         # Check cache
         cached = self.cache.get(query, "get_relevant_context")
@@ -233,6 +256,11 @@ class OntologyMCPTools:
         """Route a query to the best agent with caching."""
         query = args["query"]
         start = time.time()
+
+        # Check for ontology changes
+        if self.watcher and self.watcher.check_for_changes():
+            if self._rebuild_callback:
+                self._rebuild_callback()
 
         # Check cache
         cached = self.cache.get(query, "get_agent_for_task")
@@ -441,3 +469,35 @@ class OntologyMCPTools:
         )
 
         return [TextContent(type="text", text=result_json)]
+
+    async def _rebuild_ontology(self, args: dict[str, Any]) -> list[TextContent]:
+        """Force rebuild of ontology and all caches."""
+        start = time.time()
+
+        if self._rebuild_callback:
+            self._rebuild_callback()
+            duration_ms = (time.time() - start) * 1000
+
+            self.token_logger.log(
+                tool="rebuild_ontology",
+                query="manual_rebuild",
+                tokens_used=0,
+                duration_ms=duration_ms,
+            )
+
+            return [
+                TextContent(
+                    type="text",
+                    text=json.dumps({
+                        "status": "rebuilt",
+                        "duration_ms": round(duration_ms, 2),
+                    }),
+                )
+            ]
+
+        return [
+            TextContent(
+                type="text",
+                text=json.dumps({"status": "no_rebuild_callback"}),
+            )
+        ]

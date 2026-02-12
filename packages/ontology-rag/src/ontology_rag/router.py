@@ -6,11 +6,14 @@ in the Claude Code environment.
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import json
 
 from ontology_rag.ontology import Ontology
 from ontology_rag.graph import OntologyGraph
+
+if TYPE_CHECKING:
+    from ontology_rag.hybrid_search import HybridSearcher
 
 
 @dataclass
@@ -50,10 +53,11 @@ class SemanticRouter:
         ontology: Ontology instance with agents/skills/rules.
         graph: OntologyGraph instance for dependency traversal.
         llm_client: Optional LLM client for semantic routing.
+        hybrid_searcher: Optional HybridSearcher for hybrid routing.
         keyword_index: Inverted index for keyword-based fallback.
     """
 
-    def __init__(self, ontology: Ontology, graph: OntologyGraph, llm_client=None):
+    def __init__(self, ontology: Ontology, graph: OntologyGraph, llm_client=None, hybrid_searcher=None):
         """Initialize semantic router.
 
         Args:
@@ -61,10 +65,12 @@ class SemanticRouter:
             graph: OntologyGraph instance for dependency traversal
             llm_client: Optional LLM client for semantic routing.
                         If None, uses keyword-based fallback.
+            hybrid_searcher: Optional HybridSearcher instance for hybrid routing.
         """
         self.ontology = ontology
         self.graph = graph
         self.llm_client = llm_client
+        self.hybrid_searcher: Optional["HybridSearcher"] = hybrid_searcher
         self._build_keyword_index()
 
     def _build_keyword_index(self):
@@ -239,6 +245,40 @@ Respond in JSON format only:
             confidence=confidence,
             reasoning=f"Matched keywords: {matched_keywords.get(best_agent, [])}",
             matched_keywords=matched_keywords.get(best_agent, []),
+            suggested_skills=deps.get("skills", []),
+            suggested_rules=deps.get("rules", []),
+            category=agent_info.agent_class if agent_info else "",
+        )
+
+    def route_with_hybrid(self, query: str) -> RoutingResult:
+        """Route using hybrid search combining keyword, graph, and community signals.
+
+        Falls back to route_with_keywords() if hybrid_searcher is not available.
+
+        Args:
+            query: User query string.
+
+        Returns:
+            RoutingResult with best matching agent.
+        """
+        if self.hybrid_searcher is None:
+            return self.route_with_keywords(query)
+
+        # Search for agents only
+        results = self.hybrid_searcher.search(query, entity_type="Agent", top_k=1)
+
+        if not results:
+            return self.route_with_keywords(query)
+
+        best = results[0]
+        agent_info = self.ontology.agents.get(best.node_id)
+        deps = self.graph.get_agent_dependencies(best.node_id)
+
+        return RoutingResult(
+            agent=best.node_id,
+            confidence=min(best.score, 1.0),
+            reasoning=f"Hybrid search: kw={best.keyword_score:.2f} graph={best.graph_score:.2f} community={best.community_score:.2f}",
+            matched_keywords=[],  # Hybrid doesn't track individual keyword matches
             suggested_skills=deps.get("skills", []),
             suggested_rules=deps.get("rules", []),
             category=agent_info.agent_class if agent_info else "",

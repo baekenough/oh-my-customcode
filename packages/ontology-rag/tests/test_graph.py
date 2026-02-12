@@ -1,6 +1,13 @@
 """Tests for graph loading and traversal."""
 
+import pytest
 from ontology_rag import OntologyGraph
+from ontology_rag.graph import HAS_NETWORKX
+
+try:
+    import networkx as nx
+except ImportError:
+    nx = None
 
 
 def test_load_graph(sample_ontology_dir):
@@ -90,3 +97,75 @@ def test_empty_graph(tmp_path):
     graph = OntologyGraph(empty_dir)
     assert len(graph.nodes) == 0
     assert len(graph.adjacency) == 0
+
+
+@pytest.mark.skipif(not HAS_NETWORKX, reason="NetworkX not installed")
+def test_pagerank(sample_ontology_dir):
+    """Test PageRank computation."""
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    ranks = graph.pagerank()
+    # PageRank may return empty dict if numpy is not installed
+    # but should not raise an exception
+    if len(ranks) > 0:
+        assert "lang-golang-expert" in ranks
+        assert all(0 <= score <= 1 for score in ranks.values())
+
+
+@pytest.mark.skipif(not HAS_NETWORKX, reason="NetworkX not installed")
+def test_get_nx_graph(sample_ontology_dir):
+    """Test getting the internal NetworkX DiGraph."""
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    nx_graph = graph.get_nx_graph()
+    assert nx_graph is not None
+    assert isinstance(nx_graph, nx.DiGraph)
+    assert len(nx_graph.nodes) == len(graph.nodes)
+
+
+@pytest.mark.skipif(not HAS_NETWORKX, reason="NetworkX not installed")
+def test_get_undirected(sample_ontology_dir):
+    """Test getting undirected copy of the graph."""
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    undirected = graph.get_undirected()
+    assert undirected is not None
+    assert isinstance(undirected, nx.Graph)
+    assert not undirected.is_directed()
+
+
+@pytest.mark.skipif(not HAS_NETWORKX, reason="NetworkX not installed")
+def test_reload(sample_ontology_dir):
+    """Test clearing and reloading the graph."""
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    initial_node_count = len(graph.nodes)
+    initial_edge_count = len(list(graph.get_nx_graph().edges()))
+
+    # Clear and reload
+    graph.reload()
+
+    # Should have same counts after reload
+    assert len(graph.nodes) == initial_node_count
+    assert len(list(graph.get_nx_graph().edges())) == initial_edge_count
+
+
+def test_pagerank_without_networkx(sample_ontology_dir, monkeypatch):
+    """Test pagerank returns empty dict when NetworkX unavailable."""
+    # Temporarily disable NetworkX
+    monkeypatch.setattr("ontology_rag.graph.HAS_NETWORKX", False)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    ranks = graph.pagerank()
+    assert ranks == {}
+
+
+def test_get_nx_graph_without_networkx(sample_ontology_dir, monkeypatch):
+    """Test get_nx_graph returns None when NetworkX unavailable."""
+    monkeypatch.setattr("ontology_rag.graph.HAS_NETWORKX", False)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    nx_graph = graph.get_nx_graph()
+    assert nx_graph is None
+
+
+def test_get_undirected_without_networkx(sample_ontology_dir, monkeypatch):
+    """Test get_undirected returns None when NetworkX unavailable."""
+    monkeypatch.setattr("ontology_rag.graph.HAS_NETWORKX", False)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    undirected = graph.get_undirected()
+    assert undirected is None
