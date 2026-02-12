@@ -88,6 +88,7 @@
       "skipped": "업데이트 건너뜀",
       "dryRunOption": "변경 없이 업데이트할 내용 표시",
       "forceOption": "이미 최신 버전이어도 강제 업데이트",
+      "forceOverwriteAllOption": "모든 파일 보존 무시 (manifest 및 config)",
       "backupOption": "업데이트 전 백업 생성",
       "agentsOption": "에이전트만 업데이트",
       "skillsOption": "스킬만 업데이트",
