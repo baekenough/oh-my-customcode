@@ -52,3 +52,68 @@ pip install -e ".[dev]"
 # Run all tests
 pytest tests/ -v
 ```
+
+## MCP Server
+
+The package includes an MCP server for direct integration with Claude Code.
+
+### Running the Server
+
+```bash
+# Via entry point (after pip install)
+ontology-rag-server
+
+# Via Python module
+python -m ontology_rag.mcp_server
+
+# With custom ontology directory
+ONTOLOGY_DIR=/path/to/ontology python -m ontology_rag.mcp_server
+```
+
+### MCP Tools
+
+| Tool | Description | Input |
+|------|-------------|-------|
+| `get_relevant_context` | Get ontology context for a query with budget management | `query`, `max_tokens` (optional) |
+| `get_agent_for_task` | Route a query to the best agent | `query` |
+| `load_skill_with_deps` | Load a skill and its dependencies | `skill_name`, `depth` (optional) |
+| `ontology_traverse` | Traverse the ontology graph | `start`, `relation` (optional), `depth` (optional) |
+
+### MCP Resources
+
+| URI | Description |
+|-----|-------------|
+| `ontology://schema` | Schema definition with class hierarchies |
+| `ontology://agent/{name}` | Agent detail with skills and rules |
+| `ontology://rule/{id}` | Rule summary or full markdown text |
+
+### Claude Code Configuration
+
+Add to your `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ontology-rag": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "ontology_rag.mcp_server"],
+      "env": {
+        "ONTOLOGY_DIR": ".claude/ontology"
+      }
+    }
+  }
+}
+```
+
+### Caching
+
+Query results are cached in `{ontology_dir}/.cache/queries.db` (SQLite).
+
+- Exact match: hash-based lookup
+- Fuzzy match: Jaccard word-set similarity (threshold: 0.85)
+- TTL: 1 hour (configurable via `ONTOLOGY_CACHE_TTL` env var)
+
+### Token Logging
+
+All tool calls are logged to `{ontology_dir}/.cache/token_usage.jsonl` for monitoring.
