@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-02-12
+
 ### Added
 - CI security audit workflow: weekly scheduled scan + PR trigger (Closes #86)
 - Security audit job in CI pipeline (runs after lint and test)
 - Pre-commit coverage enforcement with 95% threshold (Closes #84)
 - Dependabot enhanced configuration: scoped commits, reviewer assignment, UTC scheduling
+- Bilingual PR analyzer workflow: Claude API-powered PR analysis with EN/KO comments
+- `--force-overwrite-all` CLI flag to bypass all file preservation mechanisms
+- i18n translations (en/ko) for new CLI option
 
 ### Changed
 - `noExcessiveCognitiveComplexity` biome rule elevated from `warn` to `error` (Closes #85)
@@ -19,19 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `update()` refactored: cognitive complexity 16 → ≤15 via helper extraction
 - Dependabot group renamed: `dev-dependencies` → `development-dependencies`
 - Dependabot labels updated: added `automated` tag
-
-## [0.9.5] - 2026-02-12
-
-### Fixed
-- Entry-merger false positive on markers inside fenced code blocks (Closes #73)
-
-### Changed
 - Reduce redundant `loadConfig()` calls: list module 4→1, updater module 6→1 (Closes #74)
 - Clarify `preserveCustomizations` option semantics with JSDoc documentation (Closes #75)
 
-### Added
-- `--force-overwrite-all` CLI flag to bypass all file preservation mechanisms
-- i18n translations (en/ko) for new CLI option
+### Fixed
+- Entry-merger false positive on markers inside fenced code blocks (Closes #73)
+- Pre-commit hook false positive: `grep "0 fail"` matching "10 fail" → `grep -qE '^ *0 fail'`
+- CI: `bun pm audit` → `npm audit` (bun pm audit doesn't exist)
+- CI: branch pattern `release` → `release/**` for proper matching
+- Documentation: skill count 52 → 51 in README.md and README_ko.md
+- Documentation: context count 1 → 4 in README.md and README_ko.md
+- Documentation: agent category order alignment between EN/KO README files
 
 ## [0.9.4] - 2026-02-11
 
@@ -370,8 +373,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.5...HEAD
-[0.9.5]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.4...v0.9.5
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.4...v0.10.0
 [0.9.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.1...v0.9.2
