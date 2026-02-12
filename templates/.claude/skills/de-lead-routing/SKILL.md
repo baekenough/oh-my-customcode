@@ -219,6 +219,19 @@ Pipeline design completed.
 - **secretary-routing**: DE agents accessible through secretary for management tasks
 - **qa-lead-routing**: Coordinates with QA for data quality testing
 
+## Agent Teams Awareness
+
+Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single-tool DE task | Task Tool |
+| Multi-tool pipeline design (3+ tools) | Agent Teams |
+| Cross-tool data quality analysis | Agent Teams |
+| Quick DAG/model validation | Task Tool |
+
 ## Usage
 
 This skill is NOT user-invocable. It should be automatically triggered when the main conversation detects data engineering intent.
