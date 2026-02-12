@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: baekenough/oh-my-customcode
-          ref: develop
+          ref: ${{ github.sha }}
           sparse-checkout: |
             .github/scripts
             package.json
