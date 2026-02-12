@@ -211,7 +211,7 @@ class TestOntologyMCPServerInit:
         assert server.tools.graph is server.graph
         assert server.tools.router is server.router
         assert server.tools.loader is server.loader
-        assert server.tools.budget_manager is server.budget_manager
+        assert server.tools.budget_manager is server.adaptive_budget
         assert server.tools.cache is server.cache
         assert server.tools.token_logger is server.token_logger
 
