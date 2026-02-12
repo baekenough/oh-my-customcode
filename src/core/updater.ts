@@ -10,6 +10,7 @@ import {
   readJsonFile,
   readTextFile,
   resolveTemplatePath,
+  validatePreserveFilePath,
   writeJsonFile,
   writeTextFile,
 } from '../utils/fs.js';
@@ -280,41 +281,85 @@ function resolveConfigPreserveFiles(options: UpdateOptions, config: OmccConfig):
     return [];
   }
 
-  return config.preserveFiles || [];
+  const preserveFiles = config.preserveFiles || [];
+
+  // Validate each path for security
+  const validatedPaths: string[] = [];
+  for (const filePath of preserveFiles) {
+    const validation = validatePreserveFilePath(filePath, options.targetDir);
+    if (validation.valid) {
+      validatedPaths.push(filePath);
+    } else {
+      warn('preserve_files.invalid_path', {
+        path: filePath,
+        reason: validation.reason ?? 'Invalid path',
+      });
+    }
+  }
+
+  return validatedPaths;
 }
 
 /**
  * Resolve customizations from manifest and config
  */
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Security validation adds necessary complexity
 function resolveCustomizations(
   customizations: CustomizationManifest | null,
-  configPreserveFiles: string[]
+  configPreserveFiles: string[],
+  targetDir: string
 ): CustomizationManifest | null {
-  // No preserve files from either source
-  if (!customizations && configPreserveFiles.length === 0) {
-    return null;
+  // Validate manifest preserveFiles
+  const validatedManifestFiles: string[] = [];
+  if (customizations && customizations.preserveFiles.length > 0) {
+    for (const filePath of customizations.preserveFiles) {
+      const validation = validatePreserveFilePath(filePath, targetDir);
+      if (validation.valid) {
+        validatedManifestFiles.push(filePath);
+      } else {
+        warn('preserve_files.invalid_path', {
+          path: filePath,
+          reason: validation.reason ?? 'Invalid path',
+          source: 'manifest',
+        });
+      }
+    }
+  }
+
+  // No preserve files from either source after validation
+  if (validatedManifestFiles.length === 0 && configPreserveFiles.length === 0) {
+    return customizations && customizations.modifiedFiles.length > 0 ? customizations : null;
   }
 
   // Merge both sources
-  if (customizations && configPreserveFiles.length > 0) {
-    customizations.preserveFiles = [
-      ...new Set([...customizations.preserveFiles, ...configPreserveFiles]),
-    ];
-    return customizations;
+  if (validatedManifestFiles.length > 0 && configPreserveFiles.length > 0) {
+    const merged = customizations || {
+      modifiedFiles: [],
+      preserveFiles: [],
+      customComponents: [],
+      lastUpdated: new Date().toISOString(),
+    };
+    merged.preserveFiles = [...new Set([...validatedManifestFiles, ...configPreserveFiles])];
+    return merged;
   }
 
   // Only config has preserve files
   if (configPreserveFiles.length > 0) {
     return {
-      modifiedFiles: [],
+      modifiedFiles: customizations?.modifiedFiles || [],
       preserveFiles: configPreserveFiles,
-      customComponents: [],
+      customComponents: customizations?.customComponents || [],
       lastUpdated: new Date().toISOString(),
     };
   }
 
-  // Only manifest has data
-  return customizations;
+  // Only manifest has preserve files
+  if (customizations) {
+    customizations.preserveFiles = validatedManifestFiles;
+    return customizations;
+  }
+
+  return null;
 }
 
 /**
@@ -398,7 +443,11 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     // Load preservation config from BOTH sources
     const manifestCustomizations = await resolveManifestCustomizations(options, options.targetDir);
     const configPreserveFiles = resolveConfigPreserveFiles(options, config);
-    const customizations = resolveCustomizations(manifestCustomizations, configPreserveFiles);
+    const customizations = resolveCustomizations(
+      manifestCustomizations,
+      configPreserveFiles,
+      options.targetDir
+    );
 
     // Update all components
     const components = options.components || getAllUpdateComponents();

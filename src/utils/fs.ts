@@ -2,8 +2,72 @@
  * File system utilities
  */
 
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+/**
+ * Result of path validation
+ */
+export interface PathValidationResult {
+  /** Whether the path is valid */
+  valid: boolean;
+  /** Reason for rejection (if invalid) */
+  reason?: string;
+}
+
+/**
+ * Validate a preserveFiles path for security (path traversal prevention)
+ *
+ * @param filePath - The file path to validate
+ * @param projectRoot - The project root directory
+ * @returns Validation result with reason if invalid
+ */
+export function validatePreserveFilePath(
+  filePath: string,
+  projectRoot: string
+): PathValidationResult {
+  // Reject empty strings
+  if (!filePath || filePath.trim() === '') {
+    return {
+      valid: false,
+      reason: 'Path cannot be empty',
+    };
+  }
+
+  // Reject absolute paths
+  if (isAbsolute(filePath)) {
+    return {
+      valid: false,
+      reason: 'Absolute paths are not allowed',
+    };
+  }
+
+  // Normalize the path to resolve . and .. segments
+  const normalizedPath = normalize(filePath);
+
+  // Check if normalized path tries to escape project root
+  // This catches patterns like ../../etc/passwd
+  if (normalizedPath.startsWith('..')) {
+    return {
+      valid: false,
+      reason: 'Path cannot traverse outside project root',
+    };
+  }
+
+  // Additional check: resolve path and verify it's within project root
+  const resolvedPath = resolve(projectRoot, normalizedPath);
+  const relativePath = relative(projectRoot, resolvedPath);
+
+  // If relative path starts with .. or is absolute, it escaped the project root
+  if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
+    return {
+      valid: false,
+      reason: 'Resolved path escapes project root',
+    };
+  }
+
+  return { valid: true };
+}
 
 /**
  * Options for copying directories
