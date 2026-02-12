@@ -17,7 +17,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 52 skills, 22 guides, 18 rules, 1 hook, 1 context - ready to use out of the box |
+| **Batteries Included** | 42 agents, 51 skills, 22 guides, 18 rules, 1 hook, 1 context - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -122,7 +122,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Total** | **42** | |
 
-### Skills (52)
+### Skills (51)
 
 Includes slash commands and capabilities:
 
@@ -201,7 +201,7 @@ your-project/
     │   ├── be-fastapi-expert.md
     │   ├── mgr-creator.md
     │   └── ...
-    ├── skills/            # Skill modules (52 directories, each with SKILL.md)
+    ├── skills/            # Skill modules (51 directories, each with SKILL.md)
     │   ├── go-best-practices/
     │   ├── react-best-practices/
     │   ├── secretary-routing/

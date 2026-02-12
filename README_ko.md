@@ -17,7 +17,7 @@ oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Clau
 
 | 특징 | 설명 |
 |------|------|
-| **바로 사용 가능** | 42개 에이전트, 52개 스킬, 22개 가이드, 18개 규칙, 1개 훅, 1개 컨텍스트 - 즉시 사용 가능 |
+| **바로 사용 가능** | 42개 에이전트, 51개 스킬, 22개 가이드, 18개 규칙, 1개 훅, 1개 컨텍스트 - 즉시 사용 가능 |
 | **서브 에이전트 모델** | 전문화된 역할의 계층적 에이전트 오케스트레이션 지원 |
 | **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
 | **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
@@ -118,20 +118,20 @@ dev-lead-routing (라우팅 스킬)
 
 | 카테고리 | 수 | 에이전트 |
 |----------|-----|----------|
+| **매니저** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
+| **시스템** | 2 | sys-memory-keeper, sys-naggy |
 | **언어** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| **백엔드** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
 | **프론트엔드** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| **백엔드** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
 | **툴링** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | **데이터 엔지니어링** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | **데이터베이스** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
 | **아키텍처** | 2 | arch-documenter, arch-speckit-agent |
 | **인프라** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **매니저** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
-| **시스템** | 2 | sys-memory-keeper, sys-naggy |
 | **합계** | **42** | |
 
-### 스킬 (52개)
+### 스킬 (51개)
 
 - **개발**: Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
 - **백엔드**: FastAPI, Spring Boot, Express, NestJS, Go Backend
@@ -199,7 +199,7 @@ your-project/
 ├── CLAUDE.md              # Claude 진입점 (또는 AGENTS.md for Codex)
 ├── .claude/               # (또는 .codex/)
 │   ├── agents/            # 에이전트 정의 (42개 플랫 .md 파일)
-│   ├── skills/            # 스킬 모듈 (52개 디렉토리)
+│   ├── skills/            # 스킬 모듈 (51개 디렉토리)
 │   ├── rules/             # 행동 규칙 (18개)
 │   ├── hooks/             # 이벤트 훅 (1개)
 │   └── contexts/          # 컨텍스트 파일 (1개)

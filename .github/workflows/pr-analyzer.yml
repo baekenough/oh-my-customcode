@@ -1,0 +1,28 @@
+name: PR Analyzer
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number to analyze'
+        required: true
+        type: number
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  analyze:
+    # Skip PRs created by bots and draft PRs on synchronize events
+    if: ${{ !contains(github.event.pull_request.user.login || '', '[bot]') && (github.event_name != 'pull_request' || github.event.pull_request.draft == false) }}
+    uses: ./.github/workflows/reusable-pr-analyzer.yml
+    with:
+      pr_number: ${{ github.event.pull_request.number || inputs.pr_number }}
+      pr_title: ${{ github.event.pull_request.title || '' }}
+      pr_body: ${{ github.event.pull_request.body || '' }}
+      pr_author: ${{ github.event.pull_request.user.login || '' }}
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.OH_MY_CUSTOMCODE }}

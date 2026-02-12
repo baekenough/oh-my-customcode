@@ -1,0 +1,88 @@
+name: Reusable PR Analyzer
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        type: number
+        required: true
+        description: 'PR number to analyze'
+      pr_title:
+        type: string
+        required: false
+        default: ''
+        description: 'PR title (fetched from API if empty)'
+      pr_body:
+        type: string
+        required: false
+        default: ''
+        description: 'PR body (fetched from API if empty)'
+      pr_author:
+        type: string
+        required: false
+        default: ''
+        description: 'PR author login'
+      project_context:
+        type: string
+        required: false
+        default: ''
+        description: 'Custom project context for analysis'
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: true
+  push:
+    paths:
+      - '.github/workflows/reusable-pr-analyzer.yml'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  push-guard:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Reusable workflow file updated. No direct execution needed."
+
+  analyze:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'push' && !contains(inputs.pr_author, '[bot]') }}
+
+    steps:
+      - name: Checkout oh-my-customcode (scripts only)
+        uses: actions/checkout@v4
+        with:
+          repository: baekenough/oh-my-customcode
+          ref: develop
+          sparse-checkout: |
+            .github/scripts
+            package.json
+            bun.lock
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Analyze PR
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          PR_TITLE: ${{ inputs.pr_title }}
+          PR_BODY: ${{ inputs.pr_body }}
+          PR_AUTHOR: ${{ inputs.pr_author }}
+          PROJECT_CONTEXT: ${{ inputs.project_context }}
+        run: bun run .github/scripts/analyze-pr.ts ${{ inputs.pr_number }}
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## PR Analysis Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "PR #${{ inputs.pr_number }} analyzed in ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "Two comments (English + Korean) posted." >> $GITHUB_STEP_SUMMARY
