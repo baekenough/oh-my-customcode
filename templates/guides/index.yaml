@@ -100,6 +100,55 @@ guides:
       origin: aws.amazon.com
       url: https://docs.aws.amazon.com/wellarchitected/
 
+  # Data Engineering
+  - name: airflow
+    description: Apache Airflow DAG development best practices
+    path: ./airflow/
+    source:
+      type: external
+      origin: airflow.apache.org
+      url: https://airflow.apache.org/docs/
+
+  - name: dbt
+    description: dbt SQL modeling and analytics engineering best practices
+    path: ./dbt/
+    source:
+      type: external
+      origin: docs.getdbt.com
+      url: https://docs.getdbt.com/
+
+  - name: kafka
+    description: Apache Kafka event streaming best practices
+    path: ./kafka/
+    source:
+      type: external
+      origin: kafka.apache.org
+      url: https://kafka.apache.org/documentation/
+
+  - name: spark
+    description: Apache Spark distributed data processing best practices
+    path: ./spark/
+    source:
+      type: external
+      origin: spark.apache.org
+      url: https://spark.apache.org/docs/latest/
+
+  - name: snowflake
+    description: Snowflake cloud data warehouse best practices
+    path: ./snowflake/
+    source:
+      type: external
+      origin: docs.snowflake.com
+      url: https://docs.snowflake.com/
+
+  - name: iceberg
+    description: Apache Iceberg open table format best practices
+    path: ./iceberg/
+    source:
+      type: external
+      origin: iceberg.apache.org
+      url: https://iceberg.apache.org/docs/latest/
+
   # Database
   - name: supabase-postgres
     description: Supabase and PostgreSQL best practices reference
@@ -108,3 +157,28 @@ guides:
       type: external
       origin: github
       url: https://github.com/supabase/agent-skills
+
+  - name: postgres
+    description: PostgreSQL database administration and PG-specific SQL patterns
+    path: ./postgres/
+    source:
+      type: external
+      origin: postgresql.org
+      url: https://www.postgresql.org/docs/current/
+
+  - name: redis
+    description: Redis in-memory data store best practices and command patterns
+    path: ./redis/
+    source:
+      type: external
+      origin: redis.io
+      url: https://redis.io/docs/
+
+  # Writing
+  - name: elements-of-style
+    description: The Elements of Style writing clarity guidelines
+    path: ./elements-of-style/
+    source:
+      type: external
+      origin: public-domain
+      url: https://www.gutenberg.org/ebooks/37134
