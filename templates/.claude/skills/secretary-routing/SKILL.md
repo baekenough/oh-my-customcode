@@ -79,6 +79,19 @@ When command requires multiple independent operations:
 | sys-memory-keeper | sonnet | Memory operations, search |
 | sys-naggy | haiku | Simple TODO tracking |
 
+## Agent Teams Awareness
+
+Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single manager task | Task Tool |
+| Batch agent creation (3+) | Agent Teams |
+| Multi-round verification (sauron) | Task Tool |
+| Agent audit + fix cycle | Agent Teams |
+
 ## Usage
 
 This skill is NOT user-invocable. It is automatically triggered when the main conversation detects agent management intent.
