@@ -4,7 +4,7 @@
  */
 
 import { basename, dirname, join, relative } from 'node:path';
-import { loadConfig } from '../core/config.js';
+import { loadConfig, type OmccConfig } from '../core/config.js';
 import { getProviderLayout, type ProviderPreference } from '../core/layout.js';
 import { detectProvider } from '../core/provider.js';
 import { i18n } from '../i18n/index.js';
@@ -333,11 +333,14 @@ async function tryExtractMarkdownDescription(
  * Get list of installed agents
  * Official format: {root}/agents/{prefix}-{name}.md (flat structure)
  * @param targetDir - Target directory to scan
+ * @param rootDir - Root directory (default: .claude)
+ * @param config - Optional pre-loaded config (avoids redundant loadConfig calls)
  * @returns List of agent information
  */
 export async function getAgents(
   targetDir: string,
-  rootDir: string = '.claude'
+  rootDir: string = '.claude',
+  config?: OmccConfig
 ): Promise<ComponentInfo[]> {
   const agentsDir = join(targetDir, rootDir, 'agents');
 
@@ -345,8 +348,8 @@ export async function getAgents(
 
   try {
     // Load config to check custom components
-    const config = await loadConfig(targetDir);
-    const customComponents = config.customComponents || [];
+    const resolvedConfig = config ?? (await loadConfig(targetDir));
+    const customComponents = resolvedConfig.customComponents || [];
     const customAgentPaths = new Set(
       customComponents.filter((c) => c.type === 'agent').map((c) => c.path)
     );
@@ -382,11 +385,14 @@ export async function getAgents(
  * Get list of installed skills
  * Official format: {root}/skills/{category}/{name}/SKILL.md
  * @param targetDir - Target directory to scan
+ * @param rootDir - Root directory (default: .claude)
+ * @param config - Optional pre-loaded config (avoids redundant loadConfig calls)
  * @returns List of skill information
  */
 export async function getSkills(
   targetDir: string,
-  rootDir: string = '.claude'
+  rootDir: string = '.claude',
+  config?: OmccConfig
 ): Promise<ComponentInfo[]> {
   const skillsDir = join(targetDir, rootDir, 'skills');
 
@@ -394,8 +400,8 @@ export async function getSkills(
 
   try {
     // Load config to check custom components
-    const config = await loadConfig(targetDir);
-    const customComponents = config.customComponents || [];
+    const resolvedConfig = config ?? (await loadConfig(targetDir));
+    const customComponents = resolvedConfig.customComponents || [];
     const customSkillPaths = new Set(
       customComponents.filter((c) => c.type === 'skill').map((c) => c.path)
     );
@@ -431,17 +437,18 @@ export async function getSkills(
 /**
  * Get list of installed guides
  * @param targetDir - Target directory to scan
+ * @param config - Optional pre-loaded config (avoids redundant loadConfig calls)
  * @returns List of guide information
  */
-export async function getGuides(targetDir: string): Promise<ComponentInfo[]> {
+export async function getGuides(targetDir: string, config?: OmccConfig): Promise<ComponentInfo[]> {
   const guidesDir = join(targetDir, 'guides');
 
   if (!(await fileExists(guidesDir))) return [];
 
   try {
     // Load config to check custom components
-    const config = await loadConfig(targetDir);
-    const customComponents = config.customComponents || [];
+    const resolvedConfig = config ?? (await loadConfig(targetDir));
+    const customComponents = resolvedConfig.customComponents || [];
     const customGuidePaths = new Set(
       customComponents.filter((c) => c.type === 'guide').map((c) => c.path)
     );
@@ -476,11 +483,14 @@ const RULE_PRIORITY_ORDER: Record<string, number> = { MUST: 0, SHOULD: 1, MAY: 2
 /**
  * Get list of installed rules
  * @param targetDir - Target directory to scan
+ * @param rootDir - Root directory (default: .claude)
+ * @param config - Optional pre-loaded config (avoids redundant loadConfig calls)
  * @returns List of rule information
  */
 export async function getRules(
   targetDir: string,
-  rootDir: string = '.claude'
+  rootDir: string = '.claude',
+  config?: OmccConfig
 ): Promise<ComponentInfo[]> {
   const rulesDir = join(targetDir, rootDir, 'rules');
 
@@ -488,8 +498,8 @@ export async function getRules(
 
   try {
     // Load config to check custom components
-    const config = await loadConfig(targetDir);
-    const customComponents = config.customComponents || [];
+    const resolvedConfig = config ?? (await loadConfig(targetDir));
+    const customComponents = resolvedConfig.customComponents || [];
     const customRulePaths = new Set(
       customComponents.filter((c) => c.type === 'rule').map((c) => c.path)
     );
@@ -667,11 +677,11 @@ export async function getContexts(
 /** Mapping from component type to getter function */
 const COMPONENT_GETTERS: Record<
   Exclude<ListType, 'all'>,
-  (dir: string, rootDir: string) => Promise<ComponentInfo[]>
+  (dir: string, rootDir: string, config?: OmccConfig) => Promise<ComponentInfo[]>
 > = {
   agents: getAgents,
   skills: getSkills,
-  guides: async (dir) => getGuides(dir),
+  guides: async (dir, _rootDir, config) => getGuides(dir, config),
   rules: getRules,
   hooks: getHooks,
   contexts: getContexts,
@@ -696,13 +706,15 @@ function displayComponents(components: ComponentInfo[], type: ListType, format: 
 async function handleListAll(
   targetDir: string,
   rootDir: string,
-  format: string
+  format: string,
+  config: OmccConfig
 ): Promise<ComponentInfo[]> {
+  // Config is passed from caller to avoid redundant loadConfig calls (#74)
   const [agents, skills, guides, rules, hooks, contexts] = await Promise.all([
-    getAgents(targetDir, rootDir),
-    getSkills(targetDir, rootDir),
-    getGuides(targetDir),
-    getRules(targetDir, rootDir),
+    getAgents(targetDir, rootDir, config),
+    getSkills(targetDir, rootDir, config),
+    getGuides(targetDir, config),
+    getRules(targetDir, rootDir, config),
     getHooks(targetDir, rootDir),
     getContexts(targetDir, rootDir),
   ]);
@@ -742,10 +754,13 @@ export async function listCommand(
     });
     const layout = getProviderLayout(detection.provider);
 
+    // Load config once for optimization (#74)
+    const config = await loadConfig(targetDir);
+
     const components =
       type === 'all'
-        ? await handleListAll(targetDir, layout.rootDir, format)
-        : await COMPONENT_GETTERS[type](targetDir, layout.rootDir);
+        ? await handleListAll(targetDir, layout.rootDir, format, config)
+        : await COMPONENT_GETTERS[type](targetDir, layout.rootDir, config);
 
     if (type === 'all' && format === 'json') {
       formatAsJson(components);
