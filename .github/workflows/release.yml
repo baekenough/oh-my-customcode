@@ -61,7 +61,16 @@ jobs:
       # Publish to npm (skip if already exists)
       - name: Publish to npm
         if: steps.npm_check.outputs.exists == 'false'
-        run: npm publish --provenance --access public
+        run: |
+          npm publish --provenance --access public 2>&1 || {
+            EXIT_CODE=$?
+            # Check if failure is due to version already existing (race condition with local publish)
+            if npm view oh-my-customcode@${{ steps.npm_check.outputs.version }} version 2>/dev/null; then
+              echo "::notice::Version ${{ steps.npm_check.outputs.version }} was published externally (race condition). Continuing."
+            else
+              exit $EXIT_CODE
+            fi
+          }
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -103,7 +112,16 @@ jobs:
             };
             require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
-          npm publish
+          npm publish 2>&1 || {
+            EXIT_CODE=$?
+            # Check if failure is due to version already existing (race condition with local publish)
+            VERSION=${GITHUB_REF#refs/tags/v}
+            if npm view @baekenough/oh-my-customcode@$VERSION version --registry=https://npm.pkg.github.com 2>/dev/null; then
+              echo "::notice::Version $VERSION was published externally (race condition). Continuing."
+            else
+              exit $EXIT_CODE
+            fi
+          }
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
