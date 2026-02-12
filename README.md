@@ -17,7 +17,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 51 skills, 22 guides, 18 rules, 1 hook, 1 context - ready to use out of the box |
+| **Batteries Included** | 42 agents, 51 skills, 22 guides, 18 rules, 1 hook, 4 contexts - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -158,9 +158,9 @@ Comprehensive reference documentation covering:
 
 Event-driven automation for Claude Code lifecycle events (PreToolUse, PostToolUse, etc.).
 
-### Contexts (1)
+### Contexts (4)
 
-Shared context file for cross-agent knowledge and mode configurations.
+Shared context files for cross-agent knowledge and mode configurations.
 
 ---
 
@@ -195,7 +195,7 @@ your-project/
 └── .claude/               # (or .codex/)
     ├── rules/             # Behavior rules (18 total)
     ├── hooks/             # Event hooks (1 total)
-    ├── contexts/          # Context files (1 total)
+    ├── contexts/          # Context files (4 total)
     ├── agents/            # Agent definitions (42 flat .md files)
     │   ├── lang-golang-expert.md
     │   ├── be-fastapi-expert.md
