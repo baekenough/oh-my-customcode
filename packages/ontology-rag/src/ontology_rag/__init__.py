@@ -10,6 +10,8 @@ from .graph import OntologyGraph, GraphNode, GraphEdge
 from .router import SemanticRouter, RoutingResult, IntentClassification
 from .loader import HierarchicalLoader, LoadedContext
 from .budget import BudgetManager, TokenBudget, QueryComplexity
+from .cache import SemanticCache
+from .token_logger import TokenLogger
 
 __version__ = "0.1.0"
 __all__ = [
@@ -28,4 +30,6 @@ __all__ = [
     "BudgetManager",
     "TokenBudget",
     "QueryComplexity",
+    "SemanticCache",
+    "TokenLogger",
 ]

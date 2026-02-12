@@ -1,0 +1,173 @@
+"""MCP server entry point for ontology-rag context engine."""
+
+import asyncio
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import Resource, TextContent, Tool
+
+from ontology_rag.budget import BudgetManager
+from ontology_rag.cache import SemanticCache
+from ontology_rag.graph import OntologyGraph
+from ontology_rag.loader import HierarchicalLoader
+from ontology_rag.mcp_resources import OntologyMCPResources
+from ontology_rag.mcp_tools import OntologyMCPTools
+from ontology_rag.ontology import Ontology
+from ontology_rag.router import SemanticRouter
+from ontology_rag.token_logger import TokenLogger
+
+logger = logging.getLogger(__name__)
+
+
+def discover_ontology_dir() -> Path:
+    """Discover the ontology directory.
+
+    Search order:
+    1. ONTOLOGY_DIR environment variable
+    2. Search upward from cwd for .claude/ontology/ or .codex/ontology/
+    3. Fallback: cwd/.claude/ontology/
+
+    Returns:
+        Path to the ontology directory.
+    """
+    # 1. Environment variable
+    env_dir = os.environ.get("ONTOLOGY_DIR")
+    if env_dir:
+        return Path(env_dir)
+
+    # 2. Search upward from cwd
+    current = Path.cwd()
+    for _ in range(10):  # Max 10 levels up
+        for provider_dir in [".claude", ".codex"]:
+            candidate = current / provider_dir / "ontology"
+            if candidate.is_dir():
+                return candidate
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+
+    # 3. Fallback
+    return Path.cwd() / ".claude" / "ontology"
+
+
+class OntologyMCPServer:
+    """MCP Server for ontology-rag context engine.
+
+    Wraps the ontology query engine as an MCP server,
+    providing tools and resources via stdio transport.
+    """
+
+    def __init__(self, ontology_dir: Path):
+        """Initialize the MCP server.
+
+        Args:
+            ontology_dir: Path to the ontology directory containing YAML files
+                         and graphs/ subdirectory.
+        """
+        self.ontology_dir = ontology_dir
+
+        # Initialize Phase 1 components
+        self.ontology = Ontology(ontology_dir)
+        self.graph = OntologyGraph(ontology_dir / "graphs")
+        self.router = SemanticRouter(self.ontology, self.graph)
+        self.loader = HierarchicalLoader(
+            self.ontology,
+            self.graph,
+            rules_dir=ontology_dir.parent / "rules",
+        )
+        self.budget_manager = BudgetManager()
+
+        # Initialize Phase 2 components
+        cache_dir = ontology_dir / ".cache"
+        self.cache = SemanticCache(cache_dir)
+        self.token_logger = TokenLogger(cache_dir)
+
+        # Initialize MCP handlers
+        self.tools = OntologyMCPTools(
+            ontology=self.ontology,
+            graph=self.graph,
+            router=self.router,
+            loader=self.loader,
+            budget_manager=self.budget_manager,
+            cache=self.cache,
+            token_logger=self.token_logger,
+        )
+        self.resources = OntologyMCPResources(
+            ontology=self.ontology,
+            ontology_dir=ontology_dir,
+        )
+
+        # Initialize MCP server
+        self.server = Server("ontology-rag")
+        self._register_handlers()
+
+    def _register_handlers(self):
+        """Register MCP protocol handlers."""
+
+        @self.server.list_tools()
+        async def list_tools() -> list[Tool]:
+            return self.tools.get_tool_definitions()
+
+        @self.server.call_tool()
+        async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
+            try:
+                return await self.tools.call_tool(name, arguments)
+            except Exception as e:
+                logger.exception("Tool execution failed: %s", e)
+                return [TextContent(type="text", text=f"Error: {e!s}")]
+
+        @self.server.list_resources()
+        async def list_resources() -> list[Resource]:
+            return self.resources.get_resource_list()
+
+        @self.server.read_resource()
+        async def read_resource(uri: str) -> str:
+            try:
+                return await self.resources.read_resource(str(uri))
+            except Exception as e:
+                logger.exception("Resource read failed: %s", e)
+                return f"Error: {e!s}"
+
+    async def run(self):
+        """Run the MCP server via stdio transport."""
+        logger.info("Starting ontology-rag MCP server (ontology_dir=%s)", self.ontology_dir)
+
+        async with stdio_server() as (read_stream, write_stream):
+            await self.server.run(
+                read_stream,
+                write_stream,
+                self.server.create_initialization_options(),
+            )
+
+
+async def async_main():
+    """Async entry point."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+
+    ontology_dir = discover_ontology_dir()
+    logger.info("Ontology directory: %s", ontology_dir)
+
+    if not ontology_dir.is_dir():
+        logger.error("Ontology directory not found: %s", ontology_dir)
+        logger.error("Set ONTOLOGY_DIR environment variable or run from a project with .claude/ontology/")
+        return
+
+    server = OntologyMCPServer(ontology_dir)
+    await server.run()
+
+
+def main():
+    """Entry point for the MCP server."""
+    asyncio.run(async_main())
+
+
+if __name__ == "__main__":
+    main()
