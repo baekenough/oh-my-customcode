@@ -223,7 +223,7 @@ class OntologyMCPTools:
             token_budget = budget.total
 
         # Route to best agent
-        routing = self.router.route_with_keywords(query)
+        routing = self.router.route_with_hybrid(query)
 
         # Load context
         if routing.agent:
@@ -280,7 +280,7 @@ class OntologyMCPTools:
             return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
         # Route
-        routing = self.router.route_with_keywords(query)
+        routing = self.router.route_with_hybrid(query)
 
         result = {
             "agent": routing.agent,

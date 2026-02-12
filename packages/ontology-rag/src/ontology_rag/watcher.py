@@ -12,7 +12,6 @@ from typing import Callable, Optional
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
-    HAS_WATCHDOG = False  # Will be set to True below
     HAS_WATCHDOG = True
 except ImportError:
     HAS_WATCHDOG = False
@@ -40,7 +39,6 @@ class OntologyWatcher:
         """
         self.ontology_dir = Path(ontology_dir)
         self._mtime_snapshot: dict[str, float] = {}
-        self._last_check: float = 0.0
         self._observer = None  # watchdog Observer if started
         self._rebuild_callback: Optional[Callable] = None
         self._take_snapshot()
@@ -68,7 +66,6 @@ class OntologyWatcher:
                 self._mtime_snapshot[str(f)] = f.stat().st_mtime
             except OSError:
                 pass
-        self._last_check = time.time()
 
     def check_for_changes(self) -> bool:
         """Check if any watched files changed since last snapshot.
