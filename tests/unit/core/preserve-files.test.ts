@@ -11,7 +11,7 @@ import {
 } from '../../../src/core/config.js';
 import { getProviderLayout } from '../../../src/core/layout.js';
 import { update } from '../../../src/core/updater.js';
-import { copyDirectory, fileExists } from '../../../src/utils/fs.js';
+import { copyDirectory, fileExists, validatePreserveFilePath } from '../../../src/utils/fs.js';
 
 describe('preserveFiles feature', () => {
   let tempDir: string;
@@ -370,6 +370,89 @@ describe('preserveFiles feature', () => {
       // preserveCustomizations:false skips manifest, but still respects config.preserveFiles
       expect(result.preservedFiles.length).toBe(1);
       expect(result.preservedFiles).toContain('.claude/rules/custom.md');
+    });
+  });
+
+  describe('path traversal validation', () => {
+    it('should reject path traversal attempts (../../)', () => {
+      const result = validatePreserveFilePath('../../etc/passwd', tempDir);
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBeDefined();
+      expect(result.reason).toContain('outside project root');
+    });
+
+    it('should reject path traversal with more segments', () => {
+      const result = validatePreserveFilePath('../other-project/.env', tempDir);
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBeDefined();
+    });
+
+    it('should reject absolute paths', () => {
+      const result = validatePreserveFilePath('/absolute/path', tempDir);
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('Absolute paths');
+    });
+
+    it('should normalize and accept safe paths with ..', () => {
+      const result = validatePreserveFilePath('./foo/../bar', tempDir);
+
+      expect(result.valid).toBe(true);
+      expect(result.reason).toBeUndefined();
+    });
+
+    it('should accept valid relative paths', () => {
+      const result = validatePreserveFilePath('.claude/rules/custom.md', tempDir);
+
+      expect(result.valid).toBe(true);
+      expect(result.reason).toBeUndefined();
+    });
+
+    it('should accept directory paths', () => {
+      const result = validatePreserveFilePath('.claude/skills/my-skill/', tempDir);
+
+      expect(result.valid).toBe(true);
+      expect(result.reason).toBeUndefined();
+    });
+
+    it('should reject empty strings', () => {
+      const result = validatePreserveFilePath('', tempDir);
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('empty');
+    });
+
+    it('should reject whitespace-only strings', () => {
+      const result = validatePreserveFilePath('   ', tempDir);
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toContain('empty');
+    });
+
+    it('should validate complex traversal attempts', () => {
+      // Try various sneaky paths
+      const maliciousPaths = [
+        '../../..',
+        './../../../etc/passwd',
+        'foo/../../..',
+        './.././../sensitive',
+      ];
+
+      for (const path of maliciousPaths) {
+        const result = validatePreserveFilePath(path, tempDir);
+        expect(result.valid).toBe(false);
+      }
+    });
+
+    it('should accept deeply nested valid paths', () => {
+      const result = validatePreserveFilePath(
+        '.claude/skills/my-skill/deeply/nested/file.md',
+        tempDir
+      );
+
+      expect(result.valid).toBe(true);
     });
   });
 
