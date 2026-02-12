@@ -3,7 +3,13 @@
  */
 
 import { join } from 'node:path';
-import { ensureDirectory, fileExists, readJsonFile, writeJsonFile } from '../utils/fs.js';
+import {
+  ensureDirectory,
+  fileExists,
+  readJsonFile,
+  validatePreserveFilePath,
+  writeJsonFile,
+} from '../utils/fs.js';
 import { debug, warn } from '../utils/logger.js';
 import type { ProviderPreference } from './layout.js';
 
@@ -166,7 +172,7 @@ export async function loadConfig(targetDir: string): Promise<OmccConfig> {
   if (await fileExists(configPath)) {
     try {
       const config = await readJsonFile<Partial<OmccConfig>>(configPath);
-      const merged = mergeConfig(getDefaultConfig(), config);
+      const merged = mergeConfig(getDefaultConfig(), config, targetDir);
 
       // Migrate if needed
       if (merged.configVersion < CURRENT_CONFIG_VERSION) {
@@ -216,7 +222,40 @@ function deduplicateCustomComponents(components: CustomComponentConfig[]): Custo
 /**
  * Merge configuration with defaults
  */
-export function mergeConfig(defaults: OmccConfig, overrides: Partial<OmccConfig>): OmccConfig {
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Security validation adds necessary complexity
+export function mergeConfig(
+  defaults: OmccConfig,
+  overrides: Partial<OmccConfig>,
+  targetDir?: string
+): OmccConfig {
+  // Merge preserveFiles arrays
+  let mergedPreserveFiles: string[] | undefined;
+  if (overrides.preserveFiles) {
+    const allFiles = [...new Set([...(defaults.preserveFiles || []), ...overrides.preserveFiles])];
+
+    // Validate paths if targetDir is provided
+    if (targetDir) {
+      const validatedFiles: string[] = [];
+      for (const filePath of allFiles) {
+        const validation = validatePreserveFilePath(filePath, targetDir);
+        if (validation.valid) {
+          validatedFiles.push(filePath);
+        } else {
+          warn('config.invalid_preserve_path', {
+            path: filePath,
+            reason: validation.reason ?? 'Invalid path',
+          });
+        }
+      }
+      mergedPreserveFiles = validatedFiles;
+    } else {
+      // No validation if targetDir not provided (backward compatibility)
+      mergedPreserveFiles = allFiles;
+    }
+  } else {
+    mergedPreserveFiles = defaults.preserveFiles;
+  }
+
   return {
     ...defaults,
     ...overrides,
@@ -234,9 +273,7 @@ export function mergeConfig(defaults: OmccConfig, overrides: Partial<OmccConfig>
       ...defaults.agents,
       ...overrides.agents,
     },
-    preserveFiles: overrides.preserveFiles
-      ? [...new Set([...(defaults.preserveFiles || []), ...overrides.preserveFiles])]
-      : defaults.preserveFiles,
+    preserveFiles: mergedPreserveFiles,
     customComponents: overrides.customComponents
       ? deduplicateCustomComponents([
           ...(defaults.customComponents || []),
@@ -277,7 +314,7 @@ export async function updateConfig(
   updates: Partial<OmccConfig>
 ): Promise<OmccConfig> {
   const current = await loadConfig(targetDir);
-  const updated = mergeConfig(current, updates);
+  const updated = mergeConfig(current, updates, targetDir);
   await saveConfig(targetDir, updated);
   return updated;
 }
