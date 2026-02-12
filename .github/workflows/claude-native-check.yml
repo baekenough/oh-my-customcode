@@ -37,11 +37,11 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Validate DOCS_VALIDATOR
+      - name: Validate OH_MY_CUSTOMCODE
         if: steps.guard.outputs.skip != 'true'
         run: |
-          if [ -z "${{ secrets.DOCS_VALIDATOR }}" ]; then
-            echo "::error::DOCS_VALIDATOR secret is required for Claude Native Verification"
+          if [ -z "${{ secrets.OH_MY_CUSTOMCODE }}" ]; then
+            echo "::error::OH_MY_CUSTOMCODE secret is required for Claude Native Verification"
             exit 1
           fi
 
@@ -58,7 +58,7 @@ jobs:
         env:
           DRY_RUN_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'true' || 'false' }}
           FORCE_INPUT: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force == 'true' && 'true' || 'false' }}
-          ANTHROPIC_API_KEY: ${{ secrets.DOCS_VALIDATOR }}
+          ANTHROPIC_API_KEY: ${{ secrets.OH_MY_CUSTOMCODE }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PROJECT_ROOT: ${{ github.workspace }}/templates
