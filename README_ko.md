@@ -5,6 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml)
 
 **[English Documentation](./README.md)**
 
@@ -217,6 +218,17 @@ bun run dev          # 개발 모드
 bun test             # 테스트 실행
 bun run build        # 프로덕션 빌드
 ```
+
+### 품질 게이트
+
+| 게이트 | 도구 | 기준 |
+|--------|------|------|
+| 린트 | Biome | 에러 0건 (복잡도 강제) |
+| 테스트 커버리지 | Bun test | 95% (pre-commit), 97% (CI) |
+| 보안 감사 | bun pm audit | high/critical 취약점 없음 |
+| Dependabot | GitHub | 주간 스캔, 업데이트 자동 PR |
+
+Pre-commit 훅이 커밋 전에 린트, 테스트, 커버리지 게이트를 자동으로 적용합니다.
 
 ### 요구사항
 

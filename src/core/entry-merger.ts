@@ -35,6 +35,53 @@ export interface MergeResult {
 }
 
 /**
+ * Check if a line is a code block delimiter
+ */
+function isCodeBlockDelimiter(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.startsWith('```') || trimmed.startsWith('~~~');
+}
+
+/**
+ * Handle managed section start marker
+ */
+function handleManagedStart(
+  currentLines: string[],
+  sections: Section[]
+): { currentSection: Section; currentLines: string[] } {
+  // Save any pending custom section
+  if (currentLines.length > 0) {
+    sections.push({
+      type: 'custom',
+      content: currentLines.join('\n'),
+    });
+  }
+  return {
+    currentSection: { type: 'managed', content: '' },
+    currentLines: [],
+  };
+}
+
+/**
+ * Handle managed section end marker
+ */
+function handleManagedEnd(
+  currentSection: Section | null,
+  currentLines: string[],
+  sections: Section[]
+): { currentSection: Section | null; currentLines: string[] } {
+  if (currentSection && currentSection.type === 'managed') {
+    currentSection.content = currentLines.join('\n');
+    sections.push(currentSection);
+    return {
+      currentSection: null,
+      currentLines: [],
+    };
+  }
+  return { currentSection, currentLines };
+}
+
+/**
  * Parse entry doc into managed and custom sections
  */
 export function parseEntryDoc(content: string): { sections: Section[] } {
@@ -45,34 +92,26 @@ export function parseEntryDoc(content: string): { sections: Section[] } {
   let insideCodeBlock = false;
 
   for (const line of lines) {
-    // Track fenced code block boundaries (``` or ~~~)
-    const trimmed = line.trim();
-    if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+    // Track fenced code block boundaries
+    if (isCodeBlockDelimiter(line)) {
       insideCodeBlock = !insideCodeBlock;
     }
 
-    // Skip marker detection inside code blocks
+    // Process markers only outside code blocks
     if (!insideCodeBlock) {
+      const trimmed = line.trim();
+
       if (trimmed === MANAGED_START) {
-        // Save any pending custom section
-        if (currentLines.length > 0) {
-          sections.push({
-            type: 'custom',
-            content: currentLines.join('\n'),
-          });
-          currentLines = [];
-        }
-        currentSection = { type: 'managed', content: '' };
+        const result = handleManagedStart(currentLines, sections);
+        currentSection = result.currentSection;
+        currentLines = result.currentLines;
         continue;
       }
 
       if (trimmed === MANAGED_END) {
-        if (currentSection && currentSection.type === 'managed') {
-          currentSection.content = currentLines.join('\n');
-          sections.push(currentSection);
-          currentSection = null;
-          currentLines = [];
-        }
+        const result = handleManagedEnd(currentSection, currentLines, sections);
+        currentSection = result.currentSection;
+        currentLines = result.currentLines;
         continue;
       }
     }

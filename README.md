@@ -5,6 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml)
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
@@ -218,6 +219,17 @@ bun run dev          # Development mode
 bun test             # Run tests
 bun run build        # Build for production
 ```
+
+### Quality Gates
+
+| Gate | Tool | Threshold |
+|------|------|-----------|
+| Lint | Biome | Zero errors (complexity enforced) |
+| Test Coverage | Bun test | 95% (pre-commit), 97% (CI) |
+| Security Audit | bun pm audit | No high/critical vulnerabilities |
+| Dependabot | GitHub | Weekly scans, auto-PR for updates |
+
+Pre-commit hooks automatically enforce lint, test, and coverage gates before each commit.
 
 ### Requirements
 

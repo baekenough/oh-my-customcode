@@ -251,6 +251,39 @@ async function backupFile(filePath: string): Promise<void> {
 }
 
 /**
+ * Resolve manifest customizations based on options
+ */
+function resolveManifestCustomizations(
+  options: UpdateOptions,
+  targetDir: string
+): Promise<CustomizationManifest | null> | null {
+  // When forceOverwriteAll is true, skip ALL preservation mechanisms
+  if (options.forceOverwriteAll) {
+    return null;
+  }
+
+  // When preserveCustomizations is false, skip manifest-based preservation
+  if (options.preserveCustomizations === false) {
+    return null;
+  }
+
+  // Load customization manifest
+  return loadCustomizationManifest(targetDir);
+}
+
+/**
+ * Resolve config preserve files based on options
+ */
+function resolveConfigPreserveFiles(options: UpdateOptions, config: OmccConfig): string[] {
+  // When forceOverwriteAll is true, skip config-based preservation
+  if (options.forceOverwriteAll) {
+    return [];
+  }
+
+  return config.preserveFiles || [];
+}
+
+/**
  * Resolve customizations from manifest and config
  */
 function resolveCustomizations(
@@ -363,16 +396,8 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     await handleBackupIfRequested(options.targetDir, provider, !!options.backup, result);
 
     // Load preservation config from BOTH sources
-    // When forceOverwriteAll is true, skip ALL preservation mechanisms
-    const manifestCustomizations = options.forceOverwriteAll
-      ? null
-      : options.preserveCustomizations !== false
-        ? await loadCustomizationManifest(options.targetDir)
-        : null;
-
-    // Merge with preserveFiles from .omcustomrc.json
-    // When forceOverwriteAll is true, skip config-based preservation as well
-    const configPreserveFiles = options.forceOverwriteAll ? [] : config.preserveFiles || [];
+    const manifestCustomizations = await resolveManifestCustomizations(options, options.targetDir);
+    const configPreserveFiles = resolveConfigPreserveFiles(options, config);
     const customizations = resolveCustomizations(manifestCustomizations, configPreserveFiles);
 
     // Update all components
