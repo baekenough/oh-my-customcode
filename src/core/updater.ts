@@ -472,7 +472,18 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     await saveConfig(options.targetDir, config);
 
     result.success = true;
-    success('update.success', { from: result.previousVersion, to: result.newVersion });
+
+    if (result.previousVersion !== result.newVersion) {
+      // Case 1: Version upgrade
+      success('update.success', { from: result.previousVersion, to: result.newVersion });
+    } else if (result.updatedComponents.length > 0) {
+      // Case 2: Component sync within same version
+      success('update.components_synced', {
+        version: result.newVersion,
+        components: result.updatedComponents.join(', '),
+      });
+    }
+    // Case 3: No changes - already handled by early return at line 434-439
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;

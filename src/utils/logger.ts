@@ -102,6 +102,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     // Update messages
     'update.start': 'Checking for updates...',
     'update.success': 'Updated from {{from}} to {{to}}',
+    'update.components_synced': 'Components synced (version {{version}}): {{components}}',
     'update.failed': 'Update failed: {{error}}',
     'update.no_updates': 'Already up to date',
     'update.backup_created': 'Backup created at: {{path}}',
@@ -140,6 +141,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     // Update messages
     'update.start': '업데이트 확인 중...',
     'update.success': '{{from}}에서 {{to}}로 업데이트 완료',
+    'update.components_synced': '컴포넌트 동기화 완료 (버전 {{version}}): {{components}}',
     'update.failed': '업데이트 실패: {{error}}',
     'update.no_updates': '이미 최신 버전입니다',
     'update.backup_created': '백업 생성됨: {{path}}',

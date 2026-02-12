@@ -542,6 +542,28 @@ describe('updater', () => {
       expect(result.success).toBe(true);
       expect(result.preservedFiles.length).toBe(0);
     });
+
+    it('should differentiate component sync from version upgrade (#111)', async () => {
+      // Config version matches template version, but components lack version tracking
+      await createConfig('0.2.0', {
+        // No component versions → all components show as "updatable"
+      });
+
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.previousVersion).toBe('0.2.0');
+      expect(result.newVersion).toBe('0.2.0');
+      // When versions match but components were updated, it's a component sync
+      expect(result.updatedComponents).toContain('rules' as UpdateComponent);
+    });
   });
 
   describe('preserveCustomizations', () => {
