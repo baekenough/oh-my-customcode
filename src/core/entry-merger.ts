@@ -42,29 +42,39 @@ export function parseEntryDoc(content: string): { sections: Section[] } {
   const lines = content.split('\n');
   let currentSection: Section | null = null;
   let currentLines: string[] = [];
+  let insideCodeBlock = false;
 
   for (const line of lines) {
-    if (line.trim() === MANAGED_START) {
-      // Save any pending custom section
-      if (currentLines.length > 0) {
-        sections.push({
-          type: 'custom',
-          content: currentLines.join('\n'),
-        });
-        currentLines = [];
-      }
-      currentSection = { type: 'managed', content: '' };
-      continue;
+    // Track fenced code block boundaries (``` or ~~~)
+    const trimmed = line.trim();
+    if (trimmed.startsWith('```') || trimmed.startsWith('~~~')) {
+      insideCodeBlock = !insideCodeBlock;
     }
 
-    if (line.trim() === MANAGED_END) {
-      if (currentSection && currentSection.type === 'managed') {
-        currentSection.content = currentLines.join('\n');
-        sections.push(currentSection);
-        currentSection = null;
-        currentLines = [];
+    // Skip marker detection inside code blocks
+    if (!insideCodeBlock) {
+      if (trimmed === MANAGED_START) {
+        // Save any pending custom section
+        if (currentLines.length > 0) {
+          sections.push({
+            type: 'custom',
+            content: currentLines.join('\n'),
+          });
+          currentLines = [];
+        }
+        currentSection = { type: 'managed', content: '' };
+        continue;
       }
-      continue;
+
+      if (trimmed === MANAGED_END) {
+        if (currentSection && currentSection.type === 'managed') {
+          currentSection.content = currentLines.join('\n');
+          sections.push(currentSection);
+          currentSection = null;
+          currentLines = [];
+        }
+        continue;
+      }
     }
 
     currentLines.push(line);

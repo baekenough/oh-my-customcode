@@ -378,6 +378,170 @@ describe('updater', () => {
       expect(result.success).toBe(true);
       expect(result.preservedFiles.length).toBe(0);
     });
+
+    it('should preserve config preserveFiles even when preserveCustomizations is false', async () => {
+      await createConfig('0.1.0');
+
+      // Update config to include preserveFiles
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      const configPreserveFile = '.claude/rules/config-preserved.md';
+      config.preserveFiles = [configPreserveFile];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+
+      // Create the file to preserve and a manifest file
+      const manifestPreserveFile = '.claude/rules/manifest-preserved.md';
+      await createDirStructure({
+        [configPreserveFile]: 'config preserved content',
+        [manifestPreserveFile]: 'manifest preserved content',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [manifestPreserveFile],
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        preserveCustomizations: false, // Disable manifest preservation
+      });
+
+      expect(result.success).toBe(true);
+      // Should preserve config file but not manifest file
+      expect(result.preservedFiles).toContain(configPreserveFile);
+      expect(result.preservedFiles).not.toContain(manifestPreserveFile);
+      // Verify file still exists with original content
+      await verifyFileContent(configPreserveFile, 'config preserved content');
+    });
+
+    it('should bypass all preservation when forceOverwriteAll is true', async () => {
+      await createConfig('0.1.0');
+
+      // Update config to include preserveFiles
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      const configPreserveFile = '.claude/rules/config-preserved.md';
+      config.preserveFiles = [configPreserveFile];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+
+      // Create manifest and config preserve files
+      const manifestPreserveFile = '.claude/rules/manifest-preserved.md';
+      await createDirStructure({
+        [configPreserveFile]: 'config preserved content',
+        [manifestPreserveFile]: 'manifest preserved content',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [manifestPreserveFile],
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        forceOverwriteAll: true, // Bypass ALL preservation
+      });
+
+      expect(result.success).toBe(true);
+      // Should preserve NOTHING when forceOverwriteAll is true
+      expect(result.preservedFiles.length).toBe(0);
+    });
+
+    it('should bypass manifest preservation when forceOverwriteAll is true', async () => {
+      await createConfig('0.1.0');
+
+      const manifestPreserveFile = '.claude/rules/manifest-preserved.md';
+      await createDirStructure({
+        [manifestPreserveFile]: 'manifest preserved content',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [manifestPreserveFile],
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        forceOverwriteAll: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.preservedFiles).not.toContain(manifestPreserveFile);
+    });
+
+    it('should bypass config preserveFiles when forceOverwriteAll is true', async () => {
+      await createConfig('0.1.0');
+
+      // Update config to include preserveFiles
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      const configPreserveFile = '.claude/rules/config-preserved.md';
+      config.preserveFiles = [configPreserveFile];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+
+      await createDirStructure({
+        [configPreserveFile]: 'config preserved content',
+      });
+
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        forceOverwriteAll: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.preservedFiles).not.toContain(configPreserveFile);
+    });
+
+    it('should override preserveCustomizations when forceOverwriteAll is true', async () => {
+      await createConfig('0.1.0');
+
+      const manifestPreserveFile = '.claude/rules/manifest-preserved.md';
+      await createDirStructure({
+        [manifestPreserveFile]: 'manifest preserved content',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [manifestPreserveFile],
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const layout = getProviderLayout('claude');
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        provider: 'claude',
+        components: ['rules'],
+        preserveCustomizations: true, // Explicitly enable
+        forceOverwriteAll: true, // Should override preserveCustomizations
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.preservedFiles.length).toBe(0);
+    });
   });
 
   describe('preserveCustomizations', () => {

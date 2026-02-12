@@ -45,6 +45,7 @@ export function createProgram(): Command {
     .description(i18n.t('cli.update.description'))
     .option('--dry-run', i18n.t('cli.update.dryRunOption'))
     .option('--force', i18n.t('cli.update.forceOption'))
+    .option('--force-overwrite-all', i18n.t('cli.update.forceOverwriteAllOption'))
     .option('--backup', i18n.t('cli.update.backupOption'))
     .option('--agents', i18n.t('cli.update.agentsOption'))
     .option('--skills', i18n.t('cli.update.skillsOption'))

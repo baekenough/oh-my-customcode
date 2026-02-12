@@ -367,7 +367,9 @@ describe('preserveFiles feature', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.preservedFiles.length).toBe(0);
+      // preserveCustomizations:false skips manifest, but still respects config.preserveFiles
+      expect(result.preservedFiles.length).toBe(1);
+      expect(result.preservedFiles).toContain('.claude/rules/custom.md');
     });
   });
 

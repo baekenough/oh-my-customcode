@@ -99,6 +99,132 @@ Unclosed managed section`;
       expect(result.sections[0].type).toBe('custom');
       expect(result.sections[0].content).toBe('Unclosed managed section');
     });
+
+    it('should ignore markers inside fenced code blocks with backticks', () => {
+      const content = `Custom intro
+\`\`\`markdown
+<!-- omcustom:start -->
+This is example code, not a real marker
+<!-- omcustom:end -->
+\`\`\`
+Custom outro`;
+
+      const result = parseEntryDoc(content);
+
+      // Entire content should be treated as one custom section
+      expect(result.sections.length).toBe(1);
+      expect(result.sections[0].type).toBe('custom');
+      expect(result.sections[0].content).toBe(content);
+    });
+
+    it('should ignore markers inside fenced code blocks with tildes', () => {
+      const content = `Custom intro
+~~~
+<!-- omcustom:start -->
+Example marker inside tilde code block
+<!-- omcustom:end -->
+~~~
+Custom outro`;
+
+      const result = parseEntryDoc(content);
+
+      // Entire content should be treated as one custom section
+      expect(result.sections.length).toBe(1);
+      expect(result.sections[0].type).toBe('custom');
+      expect(result.sections[0].content).toBe(content);
+    });
+
+    it('should handle markers in code blocks with language specifier', () => {
+      const content = `Documentation text
+\`\`\`typescript
+// Showing how markers work:
+<!-- omcustom:start -->
+<!-- omcustom:end -->
+\`\`\`
+More documentation`;
+
+      const result = parseEntryDoc(content);
+
+      expect(result.sections.length).toBe(1);
+      expect(result.sections[0].type).toBe('custom');
+      expect(result.sections[0].content).toBe(content);
+    });
+
+    it('should detect real markers after closing code block', () => {
+      const content = `\`\`\`
+<!-- omcustom:start -->
+Fake marker in code
+<!-- omcustom:end -->
+\`\`\`
+<!-- omcustom:start -->
+Real managed section
+<!-- omcustom:end -->`;
+
+      const result = parseEntryDoc(content);
+
+      expect(result.sections.length).toBe(2);
+      expect(result.sections[0].type).toBe('custom');
+      expect(result.sections[0].content).toContain('Fake marker in code');
+      expect(result.sections[1].type).toBe('managed');
+      expect(result.sections[1].content).toBe('Real managed section');
+    });
+
+    it('should handle multiple code blocks', () => {
+      const content = `Text
+\`\`\`
+<!-- omcustom:start -->
+\`\`\`
+Middle text
+\`\`\`
+<!-- omcustom:end -->
+\`\`\`
+End text`;
+
+      const result = parseEntryDoc(content);
+
+      // All markers are in code blocks, so all custom
+      expect(result.sections.length).toBe(1);
+      expect(result.sections[0].type).toBe('custom');
+      expect(result.sections[0].content).toBe(content);
+    });
+
+    it('should handle nested code block scenarios', () => {
+      const content = `Custom intro
+<!-- omcustom:start -->
+Managed content with code example:
+\`\`\`
+<!-- This marker in code should be ignored -->
+\`\`\`
+More managed content
+<!-- omcustom:end -->
+Custom outro`;
+
+      const result = parseEntryDoc(content);
+
+      expect(result.sections.length).toBe(3);
+      expect(result.sections[0].type).toBe('custom');
+      expect(result.sections[0].content).toBe('Custom intro');
+      expect(result.sections[1].type).toBe('managed');
+      expect(result.sections[1].content).toContain('Managed content with code example');
+      expect(result.sections[2].type).toBe('custom');
+      expect(result.sections[2].content).toBe('Custom outro');
+    });
+
+    it('should handle inline code with marker-like text', () => {
+      const content = `Use \`<!-- omcustom:start -->\` in your docs
+<!-- omcustom:start -->
+Real managed section
+<!-- omcustom:end -->`;
+
+      const result = parseEntryDoc(content);
+
+      // Inline code is NOT fenced blocks, so real markers still work
+      expect(result.sections.length).toBe(2);
+      expect(result.sections[0].type).toBe('custom');
+      expect(result.sections[0].content).toContain('Use `<!-- omcustom:start -->`');
+      expect(result.sections[1].type).toBe('managed');
+      expect(result.sections[1].content).toBe('Real managed section');
+    });
   });
 
   describe('mergeEntryDoc', () => {

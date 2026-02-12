@@ -88,6 +88,7 @@
       "skipped": "Update skipped",
       "dryRunOption": "Show what would be updated without making changes",
       "forceOption": "Force update even if already at latest version",
+      "forceOverwriteAllOption": "Bypass all file preservation (manifest and config)",
       "backupOption": "Create backup before updating",
       "agentsOption": "Update only agents",
       "skillsOption": "Update only skills",

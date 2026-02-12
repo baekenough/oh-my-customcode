@@ -15,6 +15,8 @@ export interface UpdateCommandOptions {
   dryRun?: boolean;
   /** Force update even if already at latest version */
   force?: boolean;
+  /** Bypass ALL file preservation (manifest and config) */
+  forceOverwriteAll?: boolean;
   /** Create backup before updating */
   backup?: boolean;
   /** Update only agents */
@@ -62,6 +64,7 @@ export async function updateCommand(options: UpdateCommandOptions = {}): Promise
       components,
       force: options.force,
       preserveCustomizations: true,
+      forceOverwriteAll: options.forceOverwriteAll,
       dryRun: options.dryRun,
       backup: options.backup,
     };
