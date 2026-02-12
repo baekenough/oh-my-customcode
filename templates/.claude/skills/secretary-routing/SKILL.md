@@ -19,7 +19,7 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 | mgr-supplier | Validate dependencies | "audit", "check deps" |
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
 | mgr-sync-checker | Sync verification | "sync check", "verify sync" |
-| mgr-sauron | R017 auto-verification | "verify", "full check" |
+| mgr-sauron | R016 auto-verification | "verify", "full check" |
 | mgr-claude-code-bible | Claude Code spec compliance | "spec check", "verify compliance" |
 | sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
 | sys-naggy | TODO management | "todo", "track tasks", "task list" |

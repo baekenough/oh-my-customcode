@@ -1,12 +1,12 @@
 ---
 name: sauron-watch
-description: Full R017 verification (5+3 rounds) before commit
+description: Full R016 verification (5+3 rounds) before commit
 disable-model-invocation: true
 ---
 
 # Sauron Watch Skill
 
-Execute full R017 verification process with 5 rounds of manager agent verification and 3 rounds of deep review.
+Execute full R016 verification process with 5 rounds of manager agent verification and 3 rounds of deep review.
 
 ## Purpose
 
@@ -84,7 +84,7 @@ Ensure complete synchronization of agents, commands, documentation, and project 
 ```
 [mgr-sauron:watch]
 
-Starting full R017 verification...
+Starting full R016 verification...
 
 ═══════════════════════════════════════════════════════════
  PHASE 1: Manager Agent Verification (5 rounds)
@@ -140,5 +140,5 @@ Ready to commit. 커밋할까요?
 
 ## Related
 
-- R017: Sync Verification Rules
+- R016: Sync Verification Rules
 - mgr-gitnerd: Git operations agent

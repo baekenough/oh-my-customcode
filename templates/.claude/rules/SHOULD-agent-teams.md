@@ -1,6 +1,6 @@
 # [SHOULD] Agent Teams Rules
 
-> **Priority**: SHOULD | **ID**: R018 | **Condition**: Agent Teams enabled locally
+> **Priority**: SHOULD | **ID**: R017 | **Condition**: Agent Teams enabled locally
 
 ## Detection
 
