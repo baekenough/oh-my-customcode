@@ -77,4 +77,18 @@ user-invocable: false
 
 Multi-language: detect all languages, route to parallel experts (max 4). Single-language: route to matching expert. Cross-layer (frontend + backend): multiple experts in parallel.
 
+## Agent Teams Awareness
+
+Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single-language review | Task Tool |
+| Multi-language code review (3+) | Agent Teams |
+| Code review + fix cycle | Agent Teams |
+| Cross-layer debugging (FE + BE + DB) | Agent Teams |
+| Simple file search/validation | Task Tool |
+
 Not user-invocable. Auto-triggered on development intent.
