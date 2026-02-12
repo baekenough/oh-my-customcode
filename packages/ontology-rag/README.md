@@ -185,6 +185,102 @@ Query results are cached in `{ontology_dir}/.cache/queries.db` (SQLite).
 
 All tool calls are logged to `{ontology_dir}/.cache/token_usage.jsonl` for monitoring.
 
+## Phase 4: Advanced Optimization + Monitoring
+
+### Overview
+
+Phase 4 introduces intelligent context compression, adaptive budgeting, real-time monitoring, and A/B testing to reduce token usage from 3,000 to 1,500 average while maintaining quality.
+
+### Components
+
+#### Context Compressor
+
+`ContextCompressor` uses `RuleDecomposer` to analyze rule markdown structure and extract query-relevant sections:
+
+```python
+from ontology_rag import ContextCompressor, RuleDecomposer
+
+compressor = ContextCompressor(RuleDecomposer())
+loader = HierarchicalLoader(ontology, graph, compressor=compressor)
+
+# Compression activates when query is provided
+context = loader.load_for_agent("lang-golang-expert", token_budget=5000, query="how to create an agent")
+print(context.compression_stats)  # {"rules_compressed": 3, "tokens_saved": 1200}
+```
+
+#### Adaptive Budget Manager
+
+`AdaptiveBudgetManager` learns from token usage history and adjusts budgets dynamically:
+
+```python
+from ontology_rag import AdaptiveBudgetManager
+
+budget_mgr = AdaptiveBudgetManager(token_logger=logger)
+analysis = budget_mgr.adapt_from_history(lookback_hours=24)
+print(f"Optimal budget: {analysis.optimal_budget} (samples: {analysis.samples})")
+
+# Detect waste
+waste = budget_mgr.detect_waste(query="simple fix", used=200, allocated=5000)
+if waste:
+    print(f"Wasted {waste['waste_pct']}% of budget")
+```
+
+#### Monitoring Dashboard
+
+`MonitoringDashboard` provides real-time metrics and phase comparison:
+
+```python
+from ontology_rag import MonitoringDashboard
+
+monitor = MonitoringDashboard(token_logger)
+monitor.set_baseline(3000.0)  # Phase 3 baseline
+
+snapshot = monitor.get_snapshot(period_hours=24)
+print(f"Queries: {snapshot.total_queries}, Tokens: {snapshot.total_tokens}")
+
+comparison = monitor.compare_phases(period_hours=24)
+print(f"Improvement: {comparison.improvement_pct}%")
+
+# Generate markdown report
+report = monitor.generate_report(period_hours=24)
+```
+
+#### A/B Test Runner
+
+`ABTestRunner` manages control vs treatment experiments:
+
+```python
+from ontology_rag import ABTestRunner, ABResult
+
+ab_runner = ABTestRunner(cache_dir)
+
+# Record results
+ab_runner.record_result(ABResult(
+    query="review code", group="control", tokens_used=3000, duration_ms=50.0
+))
+ab_runner.record_result(ABResult(
+    query="review code", group="treatment", tokens_used=1500, duration_ms=40.0
+))
+
+summary = ab_runner.get_summary()
+print(f"Winner: {summary.winner}, Reduction: {summary.token_reduction_pct}%")
+```
+
+### New MCP Tools
+
+| Tool | Description | Input |
+|------|-------------|-------|
+| `ontology_monitor` | Get monitoring snapshot | `period_hours` (optional) |
+| `ontology_compare_phases` | Compare current phase vs baseline | `period_hours` (optional) |
+| `ontology_report` | Generate markdown report | `period_hours` (optional) |
+
+### Token Reduction Target
+
+| Phase | Avg Tokens | Strategy |
+|-------|------------|----------|
+| Phase 3 | 3,000 | Hierarchical loading + caching |
+| Phase 4 | 1,500 | + Query-aware compression + adaptive budgets |
+
 ## Dependencies
 
 ### Required

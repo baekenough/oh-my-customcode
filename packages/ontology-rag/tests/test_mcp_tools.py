@@ -227,9 +227,9 @@ class TestToolDefinitions:
     """Test tool definition metadata."""
 
     def test_has_five_tools(self, mcp_tools):
-        """Test that exactly 5 tools are defined."""
+        """Test that exactly 8 tools are defined."""
         tools = mcp_tools.get_tool_definitions()
-        assert len(tools) == 5
+        assert len(tools) == 8
 
     def test_tool_names(self, mcp_tools):
         """Test tool names are correct."""
@@ -241,6 +241,9 @@ class TestToolDefinitions:
             "load_skill_with_deps",
             "ontology_traverse",
             "rebuild_ontology",
+            "ontology_monitor",
+            "ontology_compare_phases",
+            "ontology_report",
         }
 
     def test_tools_have_input_schema(self, mcp_tools):

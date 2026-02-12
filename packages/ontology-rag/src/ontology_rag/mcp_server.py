@@ -10,14 +10,17 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Resource, TextContent, Tool
 
-from ontology_rag.budget import BudgetManager
+from ontology_rag.ab_test import ABTestRunner
+from ontology_rag.budget import AdaptiveBudgetManager, BudgetManager
 from ontology_rag.cache import SemanticCache
 from ontology_rag.community import CommunityEngine
+from ontology_rag.compressor import ContextCompressor, RuleDecomposer
 from ontology_rag.graph import OntologyGraph
 from ontology_rag.hybrid_search import HybridSearcher
 from ontology_rag.loader import HierarchicalLoader
 from ontology_rag.mcp_resources import OntologyMCPResources
 from ontology_rag.mcp_tools import OntologyMCPTools
+from ontology_rag.monitor import MonitoringDashboard
 from ontology_rag.ontology import Ontology
 from ontology_rag.reranker import Reranker
 from ontology_rag.router import SemanticRouter
@@ -95,6 +98,13 @@ class OntologyMCPServer:
         self.reranker = Reranker(self.graph, self.community_engine)
         self.watcher = OntologyWatcher(ontology_dir)
 
+        # Initialize Phase 4 components
+        self.compressor = ContextCompressor(RuleDecomposer())
+        self.adaptive_budget = AdaptiveBudgetManager(token_logger=self.token_logger)
+        self.monitor = MonitoringDashboard(self.token_logger)
+        self.monitor.set_baseline(3000.0)  # Phase 3 average
+        self.ab_runner = ABTestRunner(cache_dir)
+
         # Inject Phase 3 into Phase 1/2 components
         self.router = SemanticRouter(
             self.ontology, self.graph, hybrid_searcher=self.hybrid_searcher
@@ -104,6 +114,7 @@ class OntologyMCPServer:
             self.graph,
             rules_dir=ontology_dir.parent / "rules",
             community_engine=self.community_engine,
+            compressor=self.compressor,
         )
 
         # Initialize MCP handlers
@@ -112,11 +123,13 @@ class OntologyMCPServer:
             graph=self.graph,
             router=self.router,
             loader=self.loader,
-            budget_manager=self.budget_manager,
+            budget_manager=self.adaptive_budget,
             cache=self.cache,
             token_logger=self.token_logger,
             watcher=self.watcher,
             rebuild_callback=self._rebuild_ontology,
+            monitor=self.monitor,
+            ab_runner=self.ab_runner,
         )
         self.resources = OntologyMCPResources(
             ontology=self.ontology,
@@ -150,6 +163,7 @@ class OntologyMCPServer:
             self.graph,
             rules_dir=self.ontology_dir.parent / "rules",
             community_engine=self.community_engine,
+            compressor=self.compressor,
         )
 
         # Update tools handler
@@ -158,11 +172,13 @@ class OntologyMCPServer:
             graph=self.graph,
             router=self.router,
             loader=self.loader,
-            budget_manager=self.budget_manager,
+            budget_manager=self.adaptive_budget,
             cache=self.cache,
             token_logger=self.token_logger,
             watcher=self.watcher,
             rebuild_callback=self._rebuild_ontology,
+            monitor=self.monitor,
+            ab_runner=self.ab_runner,
         )
 
         # Invalidate caches

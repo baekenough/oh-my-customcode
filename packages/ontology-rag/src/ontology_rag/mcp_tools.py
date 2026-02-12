@@ -6,10 +6,12 @@ from typing import Any
 
 from mcp.types import TextContent, Tool
 
+from ontology_rag.ab_test import ABTestRunner
 from ontology_rag.budget import BudgetManager
 from ontology_rag.cache import SemanticCache
 from ontology_rag.graph import OntologyGraph
 from ontology_rag.loader import HierarchicalLoader
+from ontology_rag.monitor import MonitoringDashboard
 from ontology_rag.ontology import Ontology
 from ontology_rag.router import SemanticRouter
 from ontology_rag.token_logger import TokenLogger
@@ -37,6 +39,8 @@ class OntologyMCPTools:
         token_logger: TokenLogger,
         watcher=None,
         rebuild_callback=None,
+        monitor: "MonitoringDashboard | None" = None,
+        ab_runner: "ABTestRunner | None" = None,
     ):
         self.ontology = ontology
         self.graph = graph
@@ -47,6 +51,8 @@ class OntologyMCPTools:
         self.token_logger = token_logger
         self.watcher = watcher
         self._rebuild_callback = rebuild_callback
+        self.monitor = monitor
+        self.ab_runner = ab_runner
 
     def get_tool_definitions(self) -> list[Tool]:
         """Return MCP tool definitions."""
@@ -168,6 +174,60 @@ class OntologyMCPTools:
                     "required": [],
                 },
             ),
+            Tool(
+                name="ontology_monitor",
+                description=(
+                    "Get monitoring snapshot of ontology-rag performance. "
+                    "Shows token usage, cache hit rates, and waste alerts."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "period_hours": {
+                            "type": "number",
+                            "description": "Hours to look back (default: 24)",
+                            "default": 24,
+                        },
+                    },
+                    "required": [],
+                },
+            ),
+            Tool(
+                name="ontology_compare_phases",
+                description=(
+                    "Compare current Phase 4 performance against "
+                    "Phase 3 baseline. Shows token reduction percentage."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "period_hours": {
+                            "type": "number",
+                            "description": "Hours to look back (default: 24)",
+                            "default": 24,
+                        },
+                    },
+                    "required": [],
+                },
+            ),
+            Tool(
+                name="ontology_report",
+                description=(
+                    "Generate a monthly performance report for the "
+                    "ontology-rag system in markdown format."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "period_hours": {
+                            "type": "number",
+                            "description": "Hours to cover (default: 720 = 30 days)",
+                            "default": 720,
+                        },
+                    },
+                    "required": [],
+                },
+            ),
         ]
 
     async def call_tool(
@@ -180,6 +240,9 @@ class OntologyMCPTools:
             "load_skill_with_deps": self._load_skill_with_deps,
             "ontology_traverse": self._ontology_traverse,
             "rebuild_ontology": self._rebuild_ontology,
+            "ontology_monitor": self._ontology_monitor,
+            "ontology_compare_phases": self._ontology_compare_phases,
+            "ontology_report": self._ontology_report,
         }
 
         handler = handlers.get(name)
@@ -227,9 +290,9 @@ class OntologyMCPTools:
 
         # Load context
         if routing.agent:
-            context = self.loader.load_for_agent(routing.agent, token_budget)
+            context = self.loader.load_for_agent(routing.agent, token_budget, query=query)
         else:
-            context = self.loader.load_for_agent("", token_budget)
+            context = self.loader.load_for_agent("", token_budget, query=query)
 
         result_text = context.to_context_string()
         tokens_used = context.total_tokens
@@ -501,3 +564,53 @@ class OntologyMCPTools:
                 text=json.dumps({"status": "no_rebuild_callback"}),
             )
         ]
+
+    async def _ontology_monitor(self, args: dict[str, Any]) -> list[TextContent]:
+        """Get monitoring snapshot."""
+        period_hours = args.get("period_hours", 24)
+
+        if not self.monitor:
+            return [TextContent(type="text", text=json.dumps({"error": "Monitoring not available"}))]
+
+        snapshot = self.monitor.get_snapshot(period_hours=period_hours)
+        result = {
+            "period_hours": snapshot.period_hours,
+            "total_queries": snapshot.total_queries,
+            "total_tokens": snapshot.total_tokens,
+            "avg_tokens_per_query": round(snapshot.avg_tokens_per_query, 1),
+            "cache_hit_rate": snapshot.cache_hit_rate,
+            "waste_alerts": snapshot.waste_alerts[:10],
+            "by_tool": snapshot.by_tool,
+            "recommendations": snapshot.recommendations,
+        }
+        return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    async def _ontology_compare_phases(self, args: dict[str, Any]) -> list[TextContent]:
+        """Compare current vs baseline performance."""
+        period_hours = args.get("period_hours", 24)
+
+        if not self.monitor:
+            return [TextContent(type="text", text=json.dumps({"error": "Monitoring not available"}))]
+
+        comparison = self.monitor.compare_phases(period_hours=period_hours)
+        if not comparison:
+            return [TextContent(type="text", text=json.dumps({"status": "no_baseline_set"}))]
+
+        result = {
+            "baseline_avg_tokens": comparison.baseline_avg,
+            "current_avg_tokens": comparison.current_avg,
+            "improvement_pct": comparison.improvement_pct,
+            "period_hours": comparison.period_hours,
+            "sample_count": comparison.sample_count,
+        }
+        return [TextContent(type="text", text=json.dumps(result, indent=2))]
+
+    async def _ontology_report(self, args: dict[str, Any]) -> list[TextContent]:
+        """Generate monthly performance report."""
+        period_hours = args.get("period_hours", 720)
+
+        if not self.monitor:
+            return [TextContent(type="text", text=json.dumps({"error": "Monitoring not available"}))]
+
+        report = self.monitor.generate_report(period_hours=period_hours)
+        return [TextContent(type="text", text=report)]

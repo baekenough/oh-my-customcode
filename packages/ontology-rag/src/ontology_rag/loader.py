@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ontology_rag.community import CommunityEngine
+    from ontology_rag.compressor import ContextCompressor
 
 from ontology_rag.ontology import Ontology
 from ontology_rag.graph import OntologyGraph
@@ -24,6 +25,7 @@ class LoadedContext:
         expanded_skills: Full content of expanded skills.
         total_tokens: Estimated total tokens used.
         loading_levels: Which hierarchical levels were loaded.
+        compression_stats: Stats from compression (if compressor was used).
     """
 
     agent_summary: str = ""
@@ -34,6 +36,7 @@ class LoadedContext:
     expanded_skills: list[str] = field(default_factory=list)
     total_tokens: int = 0
     loading_levels: list[float] = field(default_factory=list)
+    compression_stats: dict = field(default_factory=dict)
 
     def to_context_string(self) -> str:
         """Combine all loaded context into a single string for injection.
@@ -77,6 +80,7 @@ class HierarchicalLoader:
         graph: OntologyGraph instance for traversing dependencies.
         rules_dir: Optional path to directory containing rule markdown files.
         community_engine: Optional CommunityEngine for loading community context.
+        compressor: Optional ContextCompressor for section-aware compression.
     """
 
     def __init__(
@@ -85,6 +89,7 @@ class HierarchicalLoader:
         graph: OntologyGraph,
         rules_dir: str | Path | None = None,
         community_engine: Optional["CommunityEngine"] = None,
+        compressor: Optional["ContextCompressor"] = None,
     ):
         """Initialize hierarchical loader.
 
@@ -93,13 +98,15 @@ class HierarchicalLoader:
             graph: OntologyGraph instance
             rules_dir: Optional path to rules directory for expansion
             community_engine: Optional CommunityEngine instance for community context
+            compressor: Optional ContextCompressor instance for section-aware compression
         """
         self.ontology = ontology
         self.graph = graph
         self.rules_dir = Path(rules_dir) if rules_dir else None
         self.community_engine: Optional["CommunityEngine"] = community_engine
+        self.compressor: Optional["ContextCompressor"] = compressor
 
-    def load_for_agent(self, agent_name: str, token_budget: int = 5000) -> LoadedContext:
+    def load_for_agent(self, agent_name: str, token_budget: int = 5000, query: str = "") -> LoadedContext:
         """Load hierarchical context for a specific agent within token budget.
 
         This method loads context in levels, stopping when the budget is exhausted:
@@ -111,6 +118,7 @@ class HierarchicalLoader:
         Args:
             agent_name: Name of the agent to load context for.
             token_budget: Maximum tokens to use.
+            query: Optional query string for section-aware compression.
 
         Returns:
             LoadedContext with all loaded information.
@@ -160,20 +168,50 @@ class HierarchicalLoader:
         if context.rule_summaries:
             context.loading_levels.append(1)
 
-        # Level 2: Expand top rules (highest token estimate first = most important)
+        # Level 2: Expand top rules (section-aware if compressor available)
         if remaining_budget > 500 and self.rules_dir:
             expandable = sorted(
                 [self.ontology.get_rule(r) for r in rule_names if self.ontology.get_rule(r)],
                 key=lambda r: r.token_estimate,
                 reverse=True,
             )
-            for rule in expandable[:3]:  # Top 3 rules
-                if rule.filename and rule.token_estimate <= remaining_budget:
-                    full_path = self.rules_dir / rule.filename
-                    if full_path.exists():
-                        content = full_path.read_text()
-                        context.expanded_rules.append(content)
-                        remaining_budget -= rule.token_estimate
+
+            if self.compressor and query:
+                # Section-aware expansion: load only needed sections
+                rule_contents = []
+                for rule in expandable[:3]:
+                    if rule.filename:
+                        full_path = self.rules_dir / rule.filename
+                        if full_path.exists():
+                            rule_contents.append((rule.name, full_path.read_text()))
+
+                if rule_contents:
+                    original_tokens = sum(self._estimate_tokens(c) for _, c in rule_contents)
+                    compressed = self.compressor.compress_rules(
+                        rule_contents, query, max_tokens=remaining_budget
+                    )
+                    for content in compressed:
+                        tokens = self._estimate_tokens(content)
+                        if tokens <= remaining_budget:
+                            context.expanded_rules.append(content)
+                            remaining_budget -= tokens
+
+                    compressed_tokens = sum(
+                        self._estimate_tokens(c) for c in context.expanded_rules
+                    )
+                    context.compression_stats = self.compressor.get_compression_stats(
+                        original_tokens, compressed_tokens
+                    )
+            else:
+                # Original Phase 3 behavior: load full content
+                for rule in expandable[:3]:
+                    if rule.filename and rule.token_estimate <= remaining_budget:
+                        full_path = self.rules_dir / rule.filename
+                        if full_path.exists():
+                            content = full_path.read_text()
+                            context.expanded_rules.append(content)
+                            remaining_budget -= rule.token_estimate
+
             if context.expanded_rules:
                 context.loading_levels.append(2)
 
@@ -211,7 +249,7 @@ class HierarchicalLoader:
         """
         if not routing_result.agent:
             return LoadedContext()
-        return self.load_for_agent(routing_result.agent, token_budget)
+        return self.load_for_agent(routing_result.agent, token_budget, query=query)
 
     def _estimate_tokens(self, text: str) -> int:
         """Rough token estimation: words * 1.3.
