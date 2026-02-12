@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="assets/banner.webp" alt="oh-my-customcode banner" width="800" />
+</div>
+
 # oh-my-customcode
 
 > **Your Claude Code, Your Way**
