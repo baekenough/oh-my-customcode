@@ -5,6 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml)
 
 **[English Documentation](./README.md)**
 
@@ -16,7 +17,7 @@ oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 Clau
 
 | 특징 | 설명 |
 |------|------|
-| **바로 사용 가능** | 42개 에이전트, 52개 스킬, 22개 가이드, 18개 규칙, 1개 훅, 1개 컨텍스트 - 즉시 사용 가능 |
+| **바로 사용 가능** | 42개 에이전트, 51개 스킬, 22개 가이드, 18개 규칙, 1개 훅, 4개 컨텍스트 - 즉시 사용 가능 |
 | **서브 에이전트 모델** | 전문화된 역할의 계층적 에이전트 오케스트레이션 지원 |
 | **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
 | **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
@@ -117,20 +118,20 @@ dev-lead-routing (라우팅 스킬)
 
 | 카테고리 | 수 | 에이전트 |
 |----------|-----|----------|
+| **매니저** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
+| **시스템** | 2 | sys-memory-keeper, sys-naggy |
 | **언어** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| **백엔드** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
 | **프론트엔드** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| **백엔드** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
 | **툴링** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | **데이터 엔지니어링** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | **데이터베이스** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
 | **아키텍처** | 2 | arch-documenter, arch-speckit-agent |
 | **인프라** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **매니저** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
-| **시스템** | 2 | sys-memory-keeper, sys-naggy |
 | **합계** | **42** | |
 
-### 스킬 (52개)
+### 스킬 (51개)
 
 - **개발**: Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
 - **백엔드**: FastAPI, Spring Boot, Express, NestJS, Go Backend
@@ -162,7 +163,7 @@ dev-lead-routing (라우팅 스킬)
 
 Claude Code 라이프사이클 이벤트(PreToolUse, PostToolUse 등)에 대한 이벤트 기반 자동화.
 
-### 컨텍스트 (1개)
+### 컨텍스트 (4개)
 
 에이전트 간 지식 공유 및 모드 설정을 위한 공유 컨텍스트 파일.
 
@@ -198,10 +199,10 @@ your-project/
 ├── CLAUDE.md              # Claude 진입점 (또는 AGENTS.md for Codex)
 ├── .claude/               # (또는 .codex/)
 │   ├── agents/            # 에이전트 정의 (42개 플랫 .md 파일)
-│   ├── skills/            # 스킬 모듈 (52개 디렉토리)
+│   ├── skills/            # 스킬 모듈 (51개 디렉토리)
 │   ├── rules/             # 행동 규칙 (18개)
 │   ├── hooks/             # 이벤트 훅 (1개)
-│   └── contexts/          # 컨텍스트 파일 (1개)
+│   └── contexts/          # 컨텍스트 파일 (4개)
 └── guides/                # 참조 문서 (22개)
 ```
 
@@ -217,6 +218,17 @@ bun run dev          # 개발 모드
 bun test             # 테스트 실행
 bun run build        # 프로덕션 빌드
 ```
+
+### 품질 게이트
+
+| 게이트 | 도구 | 기준 |
+|--------|------|------|
+| 린트 | Biome | 에러 0건 (복잡도 강제) |
+| 테스트 커버리지 | Bun test | 95% (pre-commit), 97% (CI) |
+| 보안 감사 | bun pm audit | high/critical 취약점 없음 |
+| Dependabot | GitHub | 주간 스캔, 업데이트 자동 PR |
+
+Pre-commit 훅이 커밋 전에 린트, 테스트, 커버리지 게이트를 자동으로 적용합니다.
 
 ### 요구사항
 

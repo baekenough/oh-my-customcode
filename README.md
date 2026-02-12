@@ -5,6 +5,7 @@
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml)
+[![Security Audit](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml)
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
@@ -16,7 +17,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 52 skills, 22 guides, 18 rules, 1 hook, 1 context - ready to use out of the box |
+| **Batteries Included** | 42 agents, 51 skills, 22 guides, 18 rules, 1 hook, 4 contexts - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -121,7 +122,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Total** | **42** | |
 
-### Skills (52)
+### Skills (51)
 
 Includes slash commands and capabilities:
 
@@ -157,9 +158,9 @@ Comprehensive reference documentation covering:
 
 Event-driven automation for Claude Code lifecycle events (PreToolUse, PostToolUse, etc.).
 
-### Contexts (1)
+### Contexts (4)
 
-Shared context file for cross-agent knowledge and mode configurations.
+Shared context files for cross-agent knowledge and mode configurations.
 
 ---
 
@@ -194,13 +195,13 @@ your-project/
 └── .claude/               # (or .codex/)
     ├── rules/             # Behavior rules (18 total)
     ├── hooks/             # Event hooks (1 total)
-    ├── contexts/          # Context files (1 total)
+    ├── contexts/          # Context files (4 total)
     ├── agents/            # Agent definitions (42 flat .md files)
     │   ├── lang-golang-expert.md
     │   ├── be-fastapi-expert.md
     │   ├── mgr-creator.md
     │   └── ...
-    ├── skills/            # Skill modules (52 directories, each with SKILL.md)
+    ├── skills/            # Skill modules (51 directories, each with SKILL.md)
     │   ├── go-best-practices/
     │   ├── react-best-practices/
     │   ├── secretary-routing/
@@ -218,6 +219,17 @@ bun run dev          # Development mode
 bun test             # Run tests
 bun run build        # Build for production
 ```
+
+### Quality Gates
+
+| Gate | Tool | Threshold |
+|------|------|-----------|
+| Lint | Biome | Zero errors (complexity enforced) |
+| Test Coverage | Bun test | 95% (pre-commit), 97% (CI) |
+| Security Audit | bun pm audit | No high/critical vulnerabilities |
+| Dependabot | GitHub | Weekly scans, auto-PR for updates |
+
+Pre-commit hooks automatically enforce lint, test, and coverage gates before each commit.
 
 ### Requirements
 
