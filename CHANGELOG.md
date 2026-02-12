@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-02-12
+
+### Added
+- Brand assets (banner, badge, icon) and README/wiki banners (#102)
+
+### Fixed
+- Release workflow race condition in npm publish step (#101, #103)
+
 ## [0.10.1] - 2026-02-12
 
 ### Added
