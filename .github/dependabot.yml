@@ -6,13 +6,22 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "09:00"
+      timezone: "UTC"
     open-pull-requests-limit: 10
+    reviewers:
+      - "baekenough"
+    allow:
+      - dependency-type: "all"
     commit-message:
       prefix: "deps"
+      prefix-development: "deps(dev)"
+      include: "scope"
     labels:
       - "dependencies"
+      - "automated"
     groups:
-      dev-dependencies:
+      development-dependencies:
         dependency-type: "development"
         update-types:
           - "minor"
@@ -29,8 +38,11 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "09:00"
+      timezone: "UTC"
     commit-message:
       prefix: "ci"
+      include: "scope"
     labels:
-      - "dependencies"
-      - "github-actions"
+      - "ci"
+      - "automated"

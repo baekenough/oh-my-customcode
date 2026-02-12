@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- CI security audit workflow: weekly scheduled scan + PR trigger (Closes #86)
+- Security audit job in CI pipeline (runs after lint and test)
+- Pre-commit coverage enforcement with 95% threshold (Closes #84)
+- Dependabot enhanced configuration: scoped commits, reviewer assignment, UTC scheduling
+
+### Changed
+- `noExcessiveCognitiveComplexity` biome rule elevated from `warn` to `error` (Closes #85)
+- `parseEntryDoc()` refactored: cognitive complexity 22 → ≤15 via helper extraction
+- `update()` refactored: cognitive complexity 16 → ≤15 via helper extraction
+- Dependabot group renamed: `dev-dependencies` → `development-dependencies`
+- Dependabot labels updated: added `automated` tag
+
+## [0.9.5] - 2026-02-12
+
+### Fixed
+- Entry-merger false positive on markers inside fenced code blocks (Closes #73)
+
+### Changed
+- Reduce redundant `loadConfig()` calls: list module 4→1, updater module 6→1 (Closes #74)
+- Clarify `preserveCustomizations` option semantics with JSDoc documentation (Closes #75)
+
+### Added
+- `--force-overwrite-all` CLI flag to bypass all file preservation mechanisms
+- i18n translations (en/ko) for new CLI option
+
 ## [0.9.4] - 2026-02-11
 
 ### Added
@@ -344,7 +370,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.4...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.5...HEAD
+[0.9.5]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.4...v0.9.5
 [0.9.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.1...v0.9.2

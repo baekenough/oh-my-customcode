@@ -12,7 +12,7 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noExcessiveCognitiveComplexity": "warn"
+        "noExcessiveCognitiveComplexity": "error"
       },
       "style": {
         "noNonNullAssertion": "warn",
