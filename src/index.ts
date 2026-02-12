@@ -13,6 +13,14 @@ export {
   type OmccConfig,
   saveConfig,
 } from './core/config.js';
+export {
+  detectGitWorkflow,
+  type GitWorkflowResult,
+  type GitWorkflowType,
+  getDefaultWorkflow,
+  renderGitWorkflowEN,
+  renderGitWorkflowKO,
+} from './core/git-workflow.js';
 // Core modules
 export {
   copyTemplates,

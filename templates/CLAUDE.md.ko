@@ -279,25 +279,4 @@ npm install -g claude-mem
 claude-mem setup
 ```
 
-## Git 워크플로우 (반드시 준수)
-
-| 브랜치 | 용도 |
-|--------|------|
-| `develop` | 메인 개발 브랜치 (기본) |
-| `feature/*` | 새 기능 -> develop으로 PR |
-| `release/*` | 릴리스 준비 -> **npm 배포는 여기서만** |
-| `hotfix/*` | 긴급 수정 -> 태그 -> 배포 -> develop 머지 |
-
-**퍼블리싱 흐름:**
-```
-develop → release/x.y.z → npm publish → develop 머지
-```
-
-**핵심 규칙:**
-- `develop`에서 feature 브랜치 생성
-- **npm publish는 반드시 release 브랜치에서만**
-- Conventional commits 사용: `feat:`, `fix:`, `docs:`, `chore:`
-- 커밋 메시지에 "Closes #N" 포함시 이슈 자동 종료
-- Pre-commit 훅이 테스트 자동 실행
-
-자세한 워크플로우는 [CONTRIBUTING.md](CONTRIBUTING.md) 참조.
+<!-- omcustom:git-workflow -->
