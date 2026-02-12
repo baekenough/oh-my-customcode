@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-02-12
+
+### Added
+- Path traversal validation for `preserveFiles` configuration (Closes #76)
+  - Validates paths to prevent directory traversal attacks
+  - Blocks paths containing `..`, absolute paths, and paths starting with `/`
+  - Returns clear error messages for invalid paths
+
+### Changed
+- Refactored springboot-best-practices SKILL.md: extracted Java code examples into standalone files (Closes #67)
+  - Created 9 example files in `examples/` directory
+  - Reduced SKILL.md size by 66.7% (219 → 73 lines)
+  - Improved maintainability and on-demand loading
+
 ## [0.10.0] - 2026-02-12
 
 ### Added
