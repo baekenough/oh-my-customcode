@@ -29,7 +29,7 @@ echo "$COVERAGE_OUTPUT"
 
 # Check if tests passed first
 if [ $TEST_EXIT_CODE -ne 0 ]; then
-    if echo "$COVERAGE_OUTPUT" | grep -q "pass" && echo "$COVERAGE_OUTPUT" | grep -q "0 fail"; then
+    if echo "$COVERAGE_OUTPUT" | grep -q "pass" && echo "$COVERAGE_OUTPUT" | grep -qE '^ *0 fail'; then
         :
     else
         echo "Tests failed. Please fix the failing tests before committing."
@@ -47,6 +47,7 @@ if [ -n "$COVERAGE_LINE" ]; then
     echo "Function coverage: $FUNC_COV%"
     echo "Line coverage: $LINE_COV%"
 
+    # Pre-commit threshold: 95% (CI uses stricter 97%)
     THRESHOLD=95
 
     FUNC_OK=$(echo "$FUNC_COV $THRESHOLD" | awk '{print ($1 >= $2) ? "1" : "0"}')

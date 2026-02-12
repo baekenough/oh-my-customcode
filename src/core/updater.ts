@@ -253,10 +253,10 @@ async function backupFile(filePath: string): Promise<void> {
 /**
  * Resolve manifest customizations based on options
  */
-function resolveManifestCustomizations(
+async function resolveManifestCustomizations(
   options: UpdateOptions,
   targetDir: string
-): Promise<CustomizationManifest | null> | null {
+): Promise<CustomizationManifest | null> {
   // When forceOverwriteAll is true, skip ALL preservation mechanisms
   if (options.forceOverwriteAll) {
     return null;

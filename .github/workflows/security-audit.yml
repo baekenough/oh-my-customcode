@@ -8,7 +8,7 @@ on:
   pull_request:
     branches:
       - develop
-      - release
+      - 'release/**'
   # Allow manual trigger
   workflow_dispatch:
 
@@ -30,8 +30,10 @@ jobs:
 
       - name: Run security audit
         run: |
-          # Run audit and fail on high/critical vulnerabilities
-          bun pm audit --audit-level=high
+          # Generate package-lock.json for npm audit (bun uses bun.lock)
+          npm i --package-lock-only --ignore-scripts 2>/dev/null || true
+          # Run npm audit (fails on high/critical vulnerabilities)
+          npm audit --audit-level=high
 
       - name: Notify on failure
         if: failure()

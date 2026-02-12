@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - develop
-      - release
+      - 'release/**'
 
 jobs:
   lint:
@@ -91,5 +91,7 @@ jobs:
 
       - name: Run security audit
         run: |
-          # Bun's audit command (fails on high/critical vulnerabilities)
-          bun pm audit --audit-level=high
+          # Generate package-lock.json for npm audit (bun uses bun.lock)
+          npm i --package-lock-only --ignore-scripts 2>/dev/null || true
+          # Run npm audit (fails on high/critical vulnerabilities)
+          npm audit --audit-level=high
