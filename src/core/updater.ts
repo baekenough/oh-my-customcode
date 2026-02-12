@@ -32,6 +32,8 @@ export interface UpdateOptions {
   force?: boolean;
   /** Whether to preserve user customizations */
   preserveCustomizations?: boolean;
+  /** Force overwrite all files, bypassing all preservation mechanisms */
+  forceOverwriteAll?: boolean;
   /** Dry run - show what would be updated without making changes */
   dryRun?: boolean;
   /** Whether to backup before updating */
@@ -166,7 +168,8 @@ async function processComponentUpdate(
   updateCheck: UpdateCheckResult,
   customizations: CustomizationManifest | null,
   options: UpdateOptions,
-  result: UpdateResult
+  result: UpdateResult,
+  config: OmccConfig
 ): Promise<void> {
   const componentUpdate = updateCheck.updatableComponents.find((c) => c.name === component);
 
@@ -187,7 +190,8 @@ async function processComponentUpdate(
       provider,
       component,
       customizations,
-      options
+      options,
+      config
     );
     result.updatedComponents.push(component);
     result.preservedFiles.push(...preserved);
@@ -206,7 +210,8 @@ async function updateAllComponents(
   updateCheck: UpdateCheckResult,
   customizations: CustomizationManifest | null,
   options: UpdateOptions,
-  result: UpdateResult
+  result: UpdateResult,
+  config: OmccConfig
 ): Promise<void> {
   for (const component of components) {
     await processComponentUpdate(
@@ -216,7 +221,8 @@ async function updateAllComponents(
       updateCheck,
       customizations,
       options,
-      result
+      result,
+      config
     );
   }
 }
@@ -357,13 +363,16 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     await handleBackupIfRequested(options.targetDir, provider, !!options.backup, result);
 
     // Load preservation config from BOTH sources
-    const manifestCustomizations =
-      options.preserveCustomizations !== false
+    // When forceOverwriteAll is true, skip ALL preservation mechanisms
+    const manifestCustomizations = options.forceOverwriteAll
+      ? null
+      : options.preserveCustomizations !== false
         ? await loadCustomizationManifest(options.targetDir)
         : null;
 
     // Merge with preserveFiles from .omcustomrc.json
-    const configPreserveFiles = config.preserveFiles || [];
+    // When forceOverwriteAll is true, skip config-based preservation as well
+    const configPreserveFiles = options.forceOverwriteAll ? [] : config.preserveFiles || [];
     const customizations = resolveCustomizations(manifestCustomizations, configPreserveFiles);
 
     // Update all components
@@ -375,7 +384,8 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       updateCheck,
       customizations,
       options,
-      result
+      result,
+      config
     );
 
     // Update entry doc with merge (only on full update)
@@ -519,22 +529,25 @@ async function updateComponent(
   provider: LlmProvider,
   component: UpdateComponent,
   customizations: CustomizationManifest | null,
-  options: UpdateOptions
+  options: UpdateOptions,
+  config: OmccConfig
 ): Promise<string[]> {
   const preservedFiles: string[] = [];
   const componentPath = getComponentPath(provider, component);
   const srcPath = resolveTemplatePath(componentPath);
   const destPath = join(targetDir, componentPath);
 
-  // Load config to check for managed:false components
-  const config = await loadConfig(targetDir);
+  // Use provided config to check for managed:false components
   const customComponents = config.customComponents || [];
 
   // Build skipPaths list from preserved files and custom components
   const skipPaths: string[] = [];
 
   // Add preserved files to skipPaths
-  if (customizations && options.preserveCustomizations !== false) {
+  // Skip preservation only if forceOverwriteAll is true
+  // Note: preserveCustomizations flag is already handled in update() function
+  // when building the customizations object
+  if (customizations && !options.forceOverwriteAll) {
     const toPreserve = customizations.preserveFiles.filter((f) => f.startsWith(componentPath));
     preservedFiles.push(...toPreserve);
     skipPaths.push(...toPreserve);
