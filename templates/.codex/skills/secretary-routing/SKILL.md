@@ -19,7 +19,7 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 | mgr-supplier | Validate dependencies | "audit", "check deps" |
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
 | mgr-sync-checker | Sync verification | "sync check", "verify sync" |
-| mgr-sauron | R017 auto-verification | "verify", "full check" |
+| mgr-sauron | R016 auto-verification | "verify", "full check" |
 | mgr-claude-code-bible | Claude Code spec compliance | "spec check", "verify compliance" |
 | sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
 | sys-naggy | TODO management | "todo", "track tasks", "task list" |
@@ -178,6 +178,19 @@ failure_modes:
   critical_failure: Stop and escalate
   timeout: Retry or skip with notice
 ```
+
+## Agent Teams Awareness
+
+Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single manager task | Task Tool |
+| Batch agent creation (3+) | Agent Teams |
+| Multi-round verification (sauron) | Task Tool |
+| Agent audit + fix cycle | Agent Teams |
 
 ## Usage
 

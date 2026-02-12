@@ -40,6 +40,6 @@ Types: feat, fix, docs, style, refactor, test, chore
 - NEVER skip pre-commit hooks without reason
 - ALWAYS create new commits (avoid --amend unless requested)
 
-## Push Rules (R017)
+## Push Rules (R016)
 
 All pushes require prior mgr-sauron:watch verification. If sauron was not run, REFUSE the push.

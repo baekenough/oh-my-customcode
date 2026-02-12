@@ -1,6 +1,6 @@
 # [MUST] Continuous Improvement Rules
 
-> **Priority**: MUST | **ID**: R016 | **Trigger**: User points out rule violation
+> **Priority**: MUST | **ID**: R015 | **Trigger**: User points out rule violation
 
 ## Core Rule
 
