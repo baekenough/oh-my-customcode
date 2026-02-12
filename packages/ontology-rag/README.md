@@ -41,7 +41,73 @@ print(context.to_context_string())
 
 - No external ML dependencies (uses keyword matching + optional LLM)
 - Pure Python 3.10+
-- Only runtime dependency: pyyaml
+- Minimal dependencies: pyyaml, networkx, mcp
+
+## Phase 3: GraphRAG Pipeline
+
+### Community Detection
+
+`CommunityEngine` detects communities of related agents, skills, and rules using Louvain algorithm (NetworkX). For small graphs (<20 nodes), falls back to class-based grouping.
+
+```python
+from ontology_rag import CommunityEngine, Ontology, OntologyGraph
+
+ontology = Ontology(ontology_dir)
+graph = OntologyGraph(ontology_dir / "graphs")
+engine = CommunityEngine(ontology, graph)
+engine.detect_communities()
+
+# Get community for a node
+community = engine.get_community_for_node("lang-golang-expert")
+print(community.summary)  # "LanguageExpert: 2 members. Roles: go, golang, python"
+
+# Find relevant communities
+relevant = engine.get_relevant_communities(["golang", "review"], top_k=3)
+```
+
+### Hybrid Search
+
+`HybridSearcher` combines 4 ranking signals:
+
+| Signal | Weight | Source |
+|--------|--------|--------|
+| Keyword match | 50% | Inverted index from ontology |
+| Graph proximity | 30% | BFS depth from anchor node |
+| Community relevance | 15% | Jaccard similarity with community keywords |
+| Node importance | 5% | PageRank scores |
+
+```python
+from ontology_rag import HybridSearcher
+
+searcher = HybridSearcher(ontology, graph, community_engine=engine)
+results = searcher.search("golang review", anchor_node="lang-golang-expert")
+# results[0].score, .keyword_score, .graph_score, .community_score, .importance_score
+
+# Multi-hop query
+rules = searcher.search_multihop("what rules apply", start_node="lang-golang-expert")
+```
+
+### Reranking
+
+`Reranker` adjusts scores using PageRank and diversity penalties:
+
+```
+reranked_score = original_score * 0.7 + pagerank_normalized * 0.3 - diversity_penalty
+```
+
+### File Change Detection
+
+`OntologyWatcher` detects file changes via mtime comparison (zero dependencies). Optional watchdog support for real-time monitoring.
+
+```python
+from ontology_rag import OntologyWatcher
+
+watcher = OntologyWatcher(ontology_dir)
+if watcher.check_for_changes():  # < 0.1ms
+    # Trigger rebuild
+    pass
+watcher.mark_rebuilt()
+```
 
 ## Testing
 
@@ -78,6 +144,7 @@ ONTOLOGY_DIR=/path/to/ontology python -m ontology_rag.mcp_server
 | `get_agent_for_task` | Route a query to the best agent | `query` |
 | `load_skill_with_deps` | Load a skill and its dependencies | `skill_name`, `depth` (optional) |
 | `ontology_traverse` | Traverse the ontology graph | `start`, `relation` (optional), `depth` (optional) |
+| `rebuild_ontology` | Force rebuild of ontology graph and caches | None |
 
 ### MCP Resources
 
@@ -117,3 +184,13 @@ Query results are cached in `{ontology_dir}/.cache/queries.db` (SQLite).
 ### Token Logging
 
 All tool calls are logged to `{ontology_dir}/.cache/token_usage.jsonl` for monitoring.
+
+## Dependencies
+
+### Required
+- `pyyaml>=6.0` — YAML ontology parsing
+- `mcp>=1.0.0` — MCP server protocol
+- `networkx>=3.0` — Graph algorithms (PageRank, community detection)
+
+### Optional
+- `watchdog>=4.0` — Real-time file monitoring (`pip install ontology-rag[watch]`)

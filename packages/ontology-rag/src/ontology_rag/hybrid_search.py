@@ -62,6 +62,7 @@ class HybridSearcher:
         self.community_engine = community_engine
         self._keyword_index: dict[str, list[tuple[str, str, float]]] = {}
         self._pagerank_cache: Optional[dict[str, float]] = None
+        self._pagerank_max: float = 0.0  # Cached max PageRank value
         self._build_keyword_index()
 
     def _build_keyword_index(self):
@@ -99,6 +100,20 @@ class HybridSearcher:
                 self._keyword_index.setdefault(kw.lower(), []).append(
                     ("Rule", rule.name, 0.5)
                 )
+
+    def _precompute_bfs_depths(self, anchor_node: Optional[str]) -> Optional[dict[str, int]]:
+        """Precompute BFS depths from anchor node.
+
+        Args:
+            anchor_node: Starting node for BFS traversal
+
+        Returns:
+            Dictionary mapping node_id to depth from anchor_node,
+            or None if no anchor node provided.
+        """
+        if anchor_node is None:
+            return None
+        return self.graph.bfs(anchor_node, max_depth=5)
 
     def search(
         self,
@@ -139,11 +154,14 @@ class HybridSearcher:
             if entity_type is None or entity_type == "Rule":
                 all_nodes.append((rule.name, "Rule"))
 
+        # Precompute BFS depths from anchor (ONCE, not per-node)
+        bfs_depths = self._precompute_bfs_depths(anchor_node)
+
         # Score each node
         results = []
         for node_id, node_type in all_nodes:
             keyword_score = self._compute_keyword_score(query_words, node_id)
-            graph_score = self._compute_graph_score(node_id, anchor_node)
+            graph_score = self._compute_graph_score(node_id, bfs_depths)
             community_score = self._compute_community_score(query_words, node_id)
             importance_score = self._compute_importance_score(node_id)
 
@@ -196,12 +214,12 @@ class HybridSearcher:
         """
         query_words = [w.lower() for w in query.split()]
 
-        # BFS to find reachable nodes with depths
-        reachable = self.graph.bfs(start_node, max_depth=max_hops)
+        # BFS to find reachable nodes with depths (computed once)
+        bfs_depths = self.graph.bfs(start_node, max_depth=max_hops)
 
         # Score each reachable node
         results = []
-        for node_id, depth in reachable.items():
+        for node_id, depth in bfs_depths.items():
             if node_id == start_node:
                 continue  # Skip the start node itself
 
@@ -262,29 +280,26 @@ class HybridSearcher:
         # Normalize: 3 keyword matches = 1.0, capped at 1.0
         return min(total_weight / 3.0, 1.0)
 
-    def _compute_graph_score(self, node_id: str, anchor_node: Optional[str]) -> float:
-        """Compute graph proximity score.
-
-        Returns: 1.0 / (bfs_depth + 1) from anchor_node.
-        If no anchor, returns 0.0.
+    def _compute_graph_score(
+        self, node_id: str, bfs_depths: Optional[dict[str, int]]
+    ) -> float:
+        """Compute graph proximity score from precomputed BFS depths.
 
         Args:
             node_id: Node ID to score
-            anchor_node: Optional anchor node for distance calculation
+            bfs_depths: Precomputed BFS depth map from anchor node
 
         Returns:
-            Graph proximity score in [0.0, 1.0]
+            Graph proximity score in [0.0, 1.0].
+            Returns 1.0 / (depth + 1) if node is reachable, else 0.0.
         """
-        if anchor_node is None:
+        if bfs_depths is None:
             return 0.0
 
-        # BFS from anchor to find depth
-        reachable = self.graph.bfs(anchor_node, max_depth=5)
-
-        if node_id not in reachable:
+        depth = bfs_depths.get(node_id)
+        if depth is None:
             return 0.0
 
-        depth = reachable[node_id]
         return 1.0 / (depth + 1)
 
     def _compute_community_score(self, query_words: list[str], node_id: str) -> float:
@@ -324,7 +339,7 @@ class HybridSearcher:
         """Compute importance score from PageRank.
 
         Returns PageRank normalized to [0, 1] range.
-        Caches pagerank results.
+        Caches pagerank results and max value.
 
         Args:
             node_id: Node ID to score
@@ -334,17 +349,15 @@ class HybridSearcher:
         """
         if self._pagerank_cache is None:
             self._pagerank_cache = self.graph.pagerank()
+            self._pagerank_max = (
+                max(self._pagerank_cache.values()) if self._pagerank_cache else 0.0
+            )
 
-        if not self._pagerank_cache:
-            return 0.0
-
-        # Find max PageRank for normalization
-        max_pr = max(self._pagerank_cache.values())
-        if max_pr == 0:
+        if not self._pagerank_cache or self._pagerank_max == 0.0:
             return 0.0
 
         node_pr = self._pagerank_cache.get(node_id, 0.0)
-        return node_pr / max_pr
+        return node_pr / self._pagerank_max
 
     def rebuild_index(self):
         """Rebuild all internal indexes after ontology changes.
@@ -354,4 +367,5 @@ class HybridSearcher:
         """
         self._keyword_index.clear()
         self._pagerank_cache = None
+        self._pagerank_max = 0.0
         self._build_keyword_index()
