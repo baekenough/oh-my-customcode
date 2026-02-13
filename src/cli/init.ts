@@ -5,9 +5,8 @@
 
 import { join } from 'node:path';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
-import { getProviderLayout, type LlmProvider, type ProviderPreference } from '../core/layout.js';
+import { getProviderLayout } from '../core/layout.js';
 import { checkPythonAvailable, generateMCPConfig } from '../core/mcp-config.js';
-import { detectProvider } from '../core/provider.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
 
@@ -17,8 +16,6 @@ import { fileExists } from '../utils/fs.js';
 export interface InitOptions {
   /** Language for templates and messages (en|ko) */
   lang: 'en' | 'ko';
-  /** Provider selection (auto|claude|codex) */
-  provider?: ProviderPreference;
   /** Whether to overwrite existing files */
   force?: boolean;
 }
@@ -38,11 +35,8 @@ export interface InitResult {
  * @param targetDir - Target directory to check
  * @returns True if provider root exists
  */
-export async function checkExistingInstallation(
-  targetDir: string,
-  provider: LlmProvider
-): Promise<boolean> {
-  const layout = getProviderLayout(provider);
+export async function checkExistingInstallation(targetDir: string): Promise<boolean> {
+  const layout = getProviderLayout();
   const rootDir = join(targetDir, layout.rootDir);
   return fileExists(rootDir);
 }
@@ -53,13 +47,13 @@ const PROVIDER_SUBDIR_COMPONENTS = new Set(['rules', 'hooks', 'contexts', 'agent
 /**
  * Convert component name to its full path
  */
-function componentToPath(targetDir: string, provider: LlmProvider, component: string): string {
+function componentToPath(targetDir: string, component: string): string {
   if (component === 'entry-md') {
-    const layout = getProviderLayout(provider);
+    const layout = getProviderLayout();
     return join(targetDir, layout.entryFile);
   }
   if (PROVIDER_SUBDIR_COMPONENTS.has(component)) {
-    const layout = getProviderLayout(provider);
+    const layout = getProviderLayout();
     return join(targetDir, layout.rootDir, component);
   }
   return join(targetDir, component);
@@ -68,12 +62,8 @@ function componentToPath(targetDir: string, provider: LlmProvider, component: st
 /**
  * Build list of installed paths from components
  */
-function buildInstalledPaths(
-  targetDir: string,
-  provider: LlmProvider,
-  components: string[]
-): string[] {
-  return components.map((component) => componentToPath(targetDir, provider, component));
+function buildInstalledPaths(targetDir: string, components: string[]): string[] {
+  return components.map((component) => componentToPath(targetDir, component));
 }
 
 /**
@@ -128,11 +118,9 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
   console.log(i18n.t('cli.init.start'));
 
   try {
-    const detection = await detectProvider({ targetDir, override: options.provider });
-    const provider = detection.provider;
-    const layout = getProviderLayout(provider);
+    const layout = getProviderLayout();
 
-    const exists = await checkExistingInstallation(targetDir, provider);
+    const exists = await checkExistingInstallation(targetDir);
     if (exists) {
       console.log(i18n.t('cli.init.exists', { rootDir: layout.rootDir }));
       console.log(i18n.t('cli.init.backing_up'));
@@ -142,7 +130,6 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     const installResult = await install({
       targetDir,
       language: options.lang,
-      provider,
       force: options.force ?? false,
       backup: exists,
     });
@@ -151,11 +138,7 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
       return createFailureResult(installResult.error || 'Unknown error');
     }
 
-    const installedPaths = buildInstalledPaths(
-      targetDir,
-      provider,
-      installResult.installedComponents
-    );
+    const installedPaths = buildInstalledPaths(targetDir, installResult.installedComponents);
     logInstallResultInfo(installResult);
     logSuccessDetails(installedPaths, installResult.skippedComponents);
 
@@ -163,7 +146,7 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     const pythonAvailable = await checkPythonAvailable();
     if (pythonAvailable) {
       try {
-        await generateMCPConfig(targetDir, provider);
+        await generateMCPConfig(targetDir);
       } catch {
         console.warn('Warning: Failed to generate MCP config. You can configure it manually.');
       }

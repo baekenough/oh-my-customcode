@@ -1,6 +1,6 @@
 # CLI Commands
 
-oh-my-customcode provides a CLI tool (`omcustom`) for managing Claude/Codex agent system templates.
+oh-my-customcode provides a CLI tool (`omcustom`) for managing Claude agent system templates.
 
 ## Overview
 
@@ -24,19 +24,15 @@ omcustom init [options]
 | Option | Description |
 |--------|-------------|
 | `-l, --lang <language>` | Language for templates (`en` or `ko`). Default: `en` |
-| `-p, --provider <provider>` | Provider to initialize (`auto`, `claude`, `codex`). Default: `auto` |
 
 ### Examples
 
 ```bash
-# Auto-detect provider and initialize
+# Initialize with default settings
 omcustom init
 
 # Initialize with Korean templates
 omcustom init --lang ko
-
-# Force provider selection to Codex
-omcustom init --provider codex
 ```
 
 ## update
@@ -61,12 +57,11 @@ omcustom update [options]
 | `--guides` | Update only guides |
 | `--hooks` | Update only hooks |
 | `--contexts` | Update only contexts |
-| `-p, --provider <provider>` | Provider to update (`auto`, `claude`, `codex`). Default: `auto` |
 
 ### Examples
 
 ```bash
-# Update everything (provider auto-detected)
+# Update everything
 omcustom update
 
 # Preview changes only
@@ -74,9 +69,6 @@ omcustom update --dry-run
 
 # Update only agents and skills
 omcustom update --agents --skills
-
-# Update Codex components only
-omcustom update --provider codex
 ```
 
 ## list
@@ -99,7 +91,6 @@ omcustom list [options] [type]
 |--------|-------------|
 | `-f, --format <format>` | Output format: `table`, `json`, or `simple` (default: `table`) |
 | `--verbose` | Show detailed information |
-| `-p, --provider <provider>` | Provider to list (`auto`, `claude`, `codex`). Default: `auto` |
 
 ### Examples
 
@@ -112,9 +103,6 @@ omcustom list agents
 
 # List skills as JSON
 omcustom list skills --format json
-
-# List for specific provider
-omcustom list --provider codex
 ```
 
 ## doctor
@@ -130,7 +118,6 @@ omcustom doctor [options]
 | Option | Description |
 |--------|-------------|
 | `--fix` | Automatically fix issues that can be repaired |
-| `-p, --provider <provider>` | Provider to diagnose (`auto`, `claude`, `codex`). Default: `auto` |
 
 ### Examples
 
@@ -140,9 +127,6 @@ omcustom doctor
 
 # Auto-fix repairable issues
 omcustom doctor --fix
-
-# Diagnose Codex layout explicitly
-omcustom doctor --provider codex
 ```
 
 ## Global Options

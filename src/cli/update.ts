@@ -3,7 +3,6 @@
  * Updates agents to the latest version
  */
 
-import { detectProvider } from '../core/provider.js';
 import { type UpdateComponent, type UpdateOptions, update } from '../core/updater.js';
 import { i18n } from '../i18n/index.js';
 
@@ -31,8 +30,6 @@ export interface UpdateCommandOptions {
   hooks?: boolean;
   /** Update only contexts */
   contexts?: boolean;
-  /** Provider to update (auto, claude, codex) */
-  provider?: string;
 }
 
 /**
@@ -41,13 +38,6 @@ export interface UpdateCommandOptions {
 export async function updateCommand(options: UpdateCommandOptions = {}): Promise<void> {
   try {
     const targetDir = process.cwd();
-
-    // Detect provider
-    const detection = await detectProvider({
-      targetDir,
-      override: options.provider as 'auto' | 'claude' | 'codex' | undefined,
-    });
-    const provider = detection.provider;
 
     // Build components list from flags
     const components = buildComponentsList(options);
@@ -60,7 +50,6 @@ export async function updateCommand(options: UpdateCommandOptions = {}): Promise
     // Execute update
     const updateOptions: UpdateOptions = {
       targetDir,
-      provider,
       components,
       force: options.force,
       preserveCustomizations: true,

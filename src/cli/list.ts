@@ -5,8 +5,7 @@
 
 import { basename, dirname, join, relative } from 'node:path';
 import { loadConfig, type OmccConfig } from '../core/config.js';
-import { getProviderLayout, type ProviderPreference } from '../core/layout.js';
-import { detectProvider } from '../core/provider.js';
+import { getProviderLayout } from '../core/layout.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists, listFiles, readTextFile } from '../utils/fs.js';
 
@@ -23,8 +22,6 @@ export interface ListOptions {
   format?: 'table' | 'json' | 'simple';
   /** Show detailed information */
   verbose?: boolean;
-  /** Provider selection (auto|claude|codex) */
-  provider?: ProviderPreference;
 }
 
 /**
@@ -747,12 +744,7 @@ export async function listCommand(
   console.log(i18n.t('cli.list.scanning'));
 
   try {
-    const detection = await detectProvider({
-      targetDir,
-      override: options.provider,
-      preferProject: true,
-    });
-    const layout = getProviderLayout(detection.provider);
+    const layout = getProviderLayout();
 
     // Load config once for optimization (#74)
     const config = await loadConfig(targetDir);

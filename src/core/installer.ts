@@ -25,7 +25,6 @@ import {
   getEntryTemplateName,
   getProviderLayout,
   type InstallComponent,
-  type LlmProvider,
 } from './layout.js';
 
 /**
@@ -36,8 +35,6 @@ export interface InstallOptions {
   targetDir: string;
   /** Language for entry doc (en or ko) */
   language?: 'en' | 'ko';
-  /** Provider to install for (claude|codex) */
-  provider?: LlmProvider;
   /** Whether to overwrite existing files */
   force?: boolean;
   /** Whether to backup existing files before overwriting */
@@ -139,13 +136,12 @@ async function ensureTargetDirectory(targetDir: string): Promise<void> {
  */
 async function handleBackup(
   targetDir: string,
-  provider: LlmProvider,
   shouldBackup: boolean,
   result: InstallResult
 ): Promise<void> {
   if (!shouldBackup) return;
 
-  const backupPaths = await backupExistingInstallation(targetDir, provider);
+  const backupPaths = await backupExistingInstallation(targetDir);
   result.backedUpPaths.push(...backupPaths);
   if (backupPaths.length > 0) {
     info('install.backup', { path: backupPaths[0] });
@@ -157,16 +153,15 @@ async function handleBackup(
  */
 async function checkAndWarnExisting(
   targetDir: string,
-  provider: LlmProvider,
   force: boolean,
   backup: boolean,
   result: InstallResult
 ): Promise<void> {
   if (force || backup) return;
 
-  const existingPaths = await checkExistingPaths(targetDir, provider);
+  const existingPaths = await checkExistingPaths(targetDir);
   if (existingPaths.length > 0) {
-    const layout = getProviderLayout(provider);
+    const layout = getProviderLayout();
     warn('install.exists', { rootDir: layout.rootDir });
     result.warnings.push(
       `Existing files found: ${existingPaths.join(', ')}. Use --force to overwrite or --backup to backup first.`
@@ -189,14 +184,13 @@ async function verifyTemplateDirectory(): Promise<void> {
  */
 async function installAllComponents(
   targetDir: string,
-  provider: LlmProvider,
   options: InstallOptions,
   result: InstallResult
 ): Promise<void> {
   const components = options.components || getAllComponents();
 
   for (const component of components) {
-    await installSingleComponent(targetDir, provider, component, options, result);
+    await installSingleComponent(targetDir, component, options, result);
   }
 }
 
@@ -205,13 +199,12 @@ async function installAllComponents(
  */
 async function installSingleComponent(
   targetDir: string,
-  provider: LlmProvider,
   component: InstallComponent,
   options: InstallOptions,
   result: InstallResult
 ): Promise<void> {
   try {
-    const installed = await installComponent(targetDir, provider, component, options);
+    const installed = await installComponent(targetDir, component, options);
     if (installed) {
       result.installedComponents.push(component);
     } else {
@@ -228,13 +221,12 @@ async function installSingleComponent(
  */
 async function installEntryDocWithTracking(
   targetDir: string,
-  provider: LlmProvider,
   options: InstallOptions,
   result: InstallResult
 ): Promise<void> {
   const language = options.language ?? DEFAULT_LANGUAGE;
   const overwrite = !!(options.force || options.backup);
-  const installed = await installEntryDoc(targetDir, provider, language, overwrite);
+  const installed = await installEntryDoc(targetDir, language, overwrite);
 
   if (installed) {
     result.installedComponents.push('entry-md');
@@ -248,13 +240,11 @@ async function installEntryDocWithTracking(
  */
 async function updateInstallConfig(
   targetDir: string,
-  provider: LlmProvider,
   options: InstallOptions,
   installedComponents: InstallComponent[]
 ): Promise<void> {
   const config = await loadConfig(targetDir);
   config.language = options.language ?? DEFAULT_LANGUAGE;
-  config.provider = provider;
   config.installedAt = new Date().toISOString();
   config.installedComponents = installedComponents;
   await saveConfig(targetDir, config);
@@ -265,25 +255,18 @@ async function updateInstallConfig(
  */
 export async function install(options: InstallOptions): Promise<InstallResult> {
   const result = createInstallResult(options.targetDir);
-  const provider = options.provider ?? 'claude';
 
   try {
     info('install.start', { targetDir: options.targetDir });
 
     await ensureTargetDirectory(options.targetDir);
-    await handleBackup(options.targetDir, provider, !!options.backup, result);
-    await checkAndWarnExisting(
-      options.targetDir,
-      provider,
-      !!options.force,
-      !!options.backup,
-      result
-    );
+    await handleBackup(options.targetDir, !!options.backup, result);
+    await checkAndWarnExisting(options.targetDir, !!options.force, !!options.backup, result);
     await verifyTemplateDirectory();
 
-    await installAllComponents(options.targetDir, provider, options, result);
-    await installEntryDocWithTracking(options.targetDir, provider, options, result);
-    await updateInstallConfig(options.targetDir, provider, options, result.installedComponents);
+    await installAllComponents(options.targetDir, options, result);
+    await installEntryDocWithTracking(options.targetDir, options, result);
+    await updateInstallConfig(options.targetDir, options, result.installedComponents);
 
     result.success = true;
     success('install.success');
@@ -317,11 +300,8 @@ export async function copyTemplates(
 /**
  * Create the directory structure for oh-my-customcode
  */
-export async function createDirectoryStructure(
-  targetDir: string,
-  provider: LlmProvider = 'claude'
-): Promise<void> {
-  const layout = getProviderLayout(provider);
+export async function createDirectoryStructure(targetDir: string): Promise<void> {
+  const layout = getProviderLayout();
   for (const dir of layout.directoryStructure) {
     const fullPath = join(targetDir, dir);
     await ensureDirectory(fullPath);
@@ -331,11 +311,9 @@ export async function createDirectoryStructure(
 /**
  * Get the template manifest
  */
-export async function getTemplateManifest(
-  provider: LlmProvider = 'claude'
-): Promise<TemplateManifest> {
+export async function getTemplateManifest(): Promise<TemplateManifest> {
   const packageRoot = getPackageRoot();
-  const layout = getProviderLayout(provider);
+  const layout = getProviderLayout();
   const manifestPath = join(packageRoot, 'templates', layout.manifestFile);
 
   if (await fileExists(manifestPath)) {
@@ -348,7 +326,7 @@ export async function getTemplateManifest(
     lastUpdated: new Date().toISOString(),
     components: getAllComponents().map((name) => ({
       name,
-      path: getComponentPath(provider, name),
+      path: getComponentPath(name),
       description: `${name} component`,
       files: 0,
     })),
@@ -369,7 +347,6 @@ function getAllComponents(): InstallComponent[] {
  */
 async function installComponent(
   targetDir: string,
-  provider: LlmProvider,
   component: InstallComponent,
   options: InstallOptions
 ): Promise<boolean> {
@@ -377,7 +354,7 @@ async function installComponent(
     return false;
   }
 
-  const templatePath = getComponentPath(provider, component);
+  const templatePath = getComponentPath(component);
   if (!templatePath) {
     return false;
   }
@@ -425,12 +402,11 @@ function renderGitWorkflowSection(targetDir: string, language: 'en' | 'ko'): str
  */
 async function installEntryDoc(
   targetDir: string,
-  provider: LlmProvider,
   language: 'en' | 'ko',
   overwrite = false
 ): Promise<boolean> {
-  const layout = getProviderLayout(provider);
-  const templateFile = getEntryTemplateName(provider, language);
+  const layout = getProviderLayout();
+  const templateFile = getEntryTemplateName(language);
   const srcPath = resolveTemplatePath(templateFile);
   const destPath = join(targetDir, layout.entryFile);
 
@@ -475,8 +451,8 @@ async function backupExisting(sourcePath: string, backupDir: string): Promise<st
  * Check which installation paths already exist
  * Updated: paths now under provider root for official format
  */
-async function checkExistingPaths(targetDir: string, provider: LlmProvider): Promise<string[]> {
-  const layout = getProviderLayout(provider);
+async function checkExistingPaths(targetDir: string): Promise<string[]> {
+  const layout = getProviderLayout();
   const pathsToCheck = [layout.entryFile, layout.rootDir, 'guides'];
 
   const existingPaths: string[] = [];
@@ -494,12 +470,9 @@ async function checkExistingPaths(targetDir: string, provider: LlmProvider): Pro
 /**
  * Backup existing installation files to a timestamped directory
  */
-async function backupExistingInstallation(
-  targetDir: string,
-  provider: LlmProvider
-): Promise<string[]> {
-  const layout = getProviderLayout(provider);
-  const existingPaths = await checkExistingPaths(targetDir, provider);
+async function backupExistingInstallation(targetDir: string): Promise<string[]> {
+  const layout = getProviderLayout();
+  const existingPaths = await checkExistingPaths(targetDir);
 
   if (existingPaths.length === 0) {
     return [];

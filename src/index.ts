@@ -34,8 +34,6 @@ export {
 export {
   getProviderLayout,
   type InstallComponent,
-  type LlmProvider,
-  type ProviderPreference,
 } from './core/layout.js';
 export {
   type DetectionConfidence,

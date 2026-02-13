@@ -1,7 +1,7 @@
 {
   "name": "oh-my-customcode",
   "version": "0.12.1",
-  "description": "Batteries-included agent harness for Claude Code and OpenAI Codex",
+  "description": "Batteries-included agent harness for Claude Code",
   "type": "module",
   "bin": {
     "omcustom": "./dist/cli/index.js"
@@ -59,8 +59,6 @@
   "keywords": [
     "claude",
     "claude-code",
-    "codex",
-    "codex-cli",
     "openai",
     "ai",
     "agent",

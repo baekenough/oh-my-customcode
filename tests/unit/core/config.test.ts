@@ -42,7 +42,6 @@ describe('config', () => {
       expect(config.configVersion).toBe(1);
       expect(config.version).toBe('0.0.0');
       expect(config.language).toBe('en');
-      expect(config.provider).toBe('auto');
       expect(config.installedAt).toBe('');
       expect(config.lastUpdated).toBe('');
       expect(config.installedComponents).toEqual([]);

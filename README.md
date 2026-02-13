@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-**The easiest way to customize Claude Code and OpenAI Codex with agents, skills, and rules.**
+**The easiest way to customize Claude Code with agents, skills, and rules.**
 
 Like oh-my-zsh transformed shell customization, oh-my-customcode makes personalizing your coding agent workflow simple, powerful, and fun.
 
@@ -41,8 +41,6 @@ omcustom init
 That's it. You now have a fully configured agent environment.
 
 ---
-
-> **Dual Provider Support**: Claude and Codex are both supported. Use `--provider claude|codex` (or auto-detect) during `omcustom init`/`update`/`list`/`doctor`.
 
 ## Customization First
 
@@ -80,8 +78,6 @@ Each sub-agent runs on an optimized model for its task type:
 | `opus` | Complex reasoning, architecture | Code review, design analysis |
 | `sonnet` | General tasks (default) | Agent creation, code generation |
 | `haiku` | Fast, simple operations | File search, validation |
-
-> Note: Claude examples keep `opus/sonnet/haiku`. Codex-native templates use profile terms: `reasoning/balanced/fast`.
 
 Claude Code selects the appropriate model and parallelizes independent tasks (up to 4 concurrent sub-agents):
 
@@ -295,8 +291,8 @@ After `omcustom init`:
 
 ```
 your-project/
-├── CLAUDE.md              # Entry point for Claude (or AGENTS.md for Codex)
-└── .claude/               # (or .codex/)
+├── CLAUDE.md              # Entry point for Claude
+└── .claude/
     ├── rules/             # Behavior rules (18 total)
     ├── hooks/             # Event hooks (1 total)
     ├── contexts/          # Context files (4 total)
@@ -338,7 +334,7 @@ Pre-commit hooks automatically enforce lint, test, and coverage gates before eac
 ### Requirements
 
 - Node.js >= 18.0.0
-- Claude Code CLI or OpenAI Codex CLI
+- Claude Code CLI
 
 ---
 

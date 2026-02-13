@@ -5,7 +5,7 @@ This guide will help you install and set up oh-my-customcode in your project.
 ## Prerequisites
 
 - **Node.js** >= 18.0.0
-- **Claude Code CLI** (Claude mode) or **Codex CLI** (Codex mode) installed and configured
+- **Claude Code CLI** installed and configured
 
 ## Installation
 
@@ -45,26 +45,12 @@ cd your-project
 omcustom init
 ```
 
-This creates provider-specific layouts:
+This creates the following structure:
 
-Claude mode:
 ```
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
 ├── .claude/
-│   ├── rules/             # Global rules (MUST, SHOULD, MAY)
-│   ├── hooks/             # Hook scripts
-│   ├── contexts/          # Context files
-│   ├── agents/            # Agent definitions (flat .md files)
-│   └── skills/            # Skill definitions
-└── guides/                # Reference documentation
-```
-
-Codex mode:
-```
-your-project/
-├── AGENTS.md              # Entry point for Codex
-├── .codex/
 │   ├── rules/             # Global rules (MUST, SHOULD, MAY)
 │   ├── hooks/             # Hook scripts
 │   ├── contexts/          # Context files
@@ -89,7 +75,7 @@ If you already have an agent system and want to preserve it:
 omcustom init --backup
 ```
 
-This creates a backup of your existing `.claude` (Claude) or `.codex` (Codex) directory before initializing.
+This creates a backup of your existing `.claude` directory before initializing.
 
 ## Verify Installation
 

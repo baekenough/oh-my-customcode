@@ -244,7 +244,7 @@ Good and bad patterns.
 
 ## Rule Locations
 
-Rules are stored in `.claude/rules/` (Claude) or `.codex/rules/` (Codex):
+Rules are stored in `.claude/rules/`:
 
 ```
 .claude/rules/
@@ -268,24 +268,16 @@ Rules are stored in `.claude/rules/` (Claude) or `.codex/rules/` (Codex):
 └── MAY-optimization.md
 ```
 
-The Codex layout mirrors the same rule files under `.codex/rules/`.
-
 ## Modifying Rules
 
 Edit rules directly or create new ones:
 
 ```bash
-# Edit existing rule (Claude)
+# Edit existing rule
 code .claude/rules/MUST-safety.md
 
-# Edit existing rule (Codex)
-code .codex/rules/MUST-safety.md
-
-# Create new rule (Claude)
+# Create new rule
 code .claude/rules/SHOULD-my-rule.md
-
-# Create new rule (Codex)
-code .codex/rules/SHOULD-my-rule.md
 ```
 
 ## Rule Enforcement
