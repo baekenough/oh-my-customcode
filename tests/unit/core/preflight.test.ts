@@ -65,10 +65,11 @@ describe('preflight', () => {
       expect(result.hasUpdates).toBe(false);
     });
 
-    // Note: Additional tests for Homebrew integration would require mocking execSync
-    // which is complex in Bun's test environment without a mocking framework.
+    // Note: Testing timeout (lines 302-308) and error handling (lines 335-343) paths
+    // would require mocking execSync, which is read-only in Node.js and not easily
+    // mockable in Bun's test environment. These paths are defensive error handling
+    // and can be validated through integration tests or manual testing.
     // The core logic (CI detection, skip flags, formatting) is tested above.
-    // Homebrew-specific behavior can be validated through manual testing or E2E tests.
   });
 
   describe('formatPreflightWarnings', () => {

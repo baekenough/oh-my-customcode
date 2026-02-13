@@ -177,6 +177,18 @@ describe('git-workflow', () => {
       expect(rendered).toContain('Create feature branches from `develop`');
     });
 
+    it('should render git-flow section with bugfix pattern', () => {
+      const result: GitWorkflowResult = {
+        type: 'git-flow',
+        defaultBranch: 'develop',
+        hasDevelop: true,
+        branchPatterns: ['bugfix/*', 'feature/*'],
+      };
+      const rendered = renderGitWorkflowEN(result);
+      expect(rendered).toContain('`bugfix/*`');
+      expect(rendered).toContain('Bug fixes');
+    });
+
     it('should render github-flow section', () => {
       const result: GitWorkflowResult = {
         type: 'github-flow',
@@ -219,6 +231,18 @@ describe('git-workflow', () => {
       expect(rendered).toContain('## Git 워크플로우 (반드시 준수)');
       expect(rendered).toContain('메인 개발 브랜치');
       expect(rendered).toContain('feature 브랜치 생성');
+    });
+
+    it('should render git-flow section with hotfix pattern in Korean', () => {
+      const result: GitWorkflowResult = {
+        type: 'git-flow',
+        defaultBranch: 'develop',
+        hasDevelop: true,
+        branchPatterns: ['hotfix/*', 'feature/*'],
+      };
+      const rendered = renderGitWorkflowKO(result);
+      expect(rendered).toContain('`hotfix/*`');
+      expect(rendered).toContain('긴급 수정');
     });
 
     it('should render github-flow section in Korean', () => {
