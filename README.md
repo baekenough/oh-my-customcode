@@ -50,7 +50,7 @@ This is what oh-my-customcode is all about. **Making your coding workflow yours.
 
 ### Just Describe What You Need
 
-No manual file editing. Describe what you want in natural language, and the orchestrator delegates to the right agent:
+No manual file editing. Describe what you want in natural language, and routing skills plus manager agents delegate to the right sub-agent:
 
 ```
 "Create a migration review expert agent"
@@ -63,13 +63,13 @@ No manual file editing. Describe what you want in natural language, and the orch
 
 ```
 User (natural language)
-  → /create-agent (routing skill)
+  → secretary-routing (routing skill)
     → mgr-creator:sonnet       — scaffolds agent, registers, verifies
     → mgr-updater:sonnet       — syncs documentation
     → mgr-supplier:haiku       — checks dependencies
 ```
 
-The routing system analyzes your request, routes it to the appropriate skill and agent, and the sub-agent handles everything automatically.
+The routing chain analyzes your request, maps it to the appropriate skill and manager agent, and the selected sub-agent handles execution automatically.
 
 ### Sub-Agent Model
 
@@ -128,18 +128,110 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Total** | **42** | |
 
+Canonical agent IDs (`templates/.claude/agents/*.md`):
+
+```text
+arch-documenter
+arch-speckit-agent
+be-express-expert
+be-fastapi-expert
+be-go-backend-expert
+be-nestjs-expert
+be-springboot-expert
+db-postgres-expert
+db-redis-expert
+db-supabase-expert
+de-airflow-expert
+de-dbt-expert
+de-kafka-expert
+de-pipeline-expert
+de-snowflake-expert
+de-spark-expert
+fe-svelte-agent
+fe-vercel-agent
+fe-vuejs-agent
+infra-aws-expert
+infra-docker-expert
+lang-golang-expert
+lang-java21-expert
+lang-kotlin-expert
+lang-python-expert
+lang-rust-expert
+lang-typescript-expert
+mgr-claude-code-bible
+mgr-creator
+mgr-gitnerd
+mgr-sauron
+mgr-supplier
+mgr-sync-checker
+mgr-updater
+qa-engineer
+qa-planner
+qa-writer
+sys-memory-keeper
+sys-naggy
+tool-bun-expert
+tool-npm-expert
+tool-optimizer
+```
+
 ### Skills (51)
 
-Includes slash commands and capabilities:
+Canonical skill IDs (`templates/.claude/skills/*/SKILL.md`):
 
-- **Development** (8): Go, Python, TypeScript, Kotlin, Rust, Java, React, Vercel
-- **Backend** (5): FastAPI, Spring Boot, Express, NestJS, Go Backend
-- **Data Engineering** (6): Airflow, dbt, Spark, Kafka, Snowflake, Pipeline
-- **Database** (3): Supabase, PostgreSQL, Redis
-- **Infrastructure** (2): Docker, AWS
-- **System** (2): Memory management, result aggregation
-- **Orchestration** (4): secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing
-- **Slash Commands** (20+): /create-agent, /code-review, /audit-dependencies, /sync-check, /commit, /pr, and more
+```text
+airflow-best-practices
+audit-agents
+aws-best-practices
+claude-code-bible
+create-agent
+dbt-best-practices
+de-lead-routing
+dev-lead-routing
+dev-refactor
+dev-review
+docker-best-practices
+fastapi-best-practices
+fix-refs
+go-backend-best-practices
+go-best-practices
+help
+intent-detection
+kafka-best-practices
+kotlin-best-practices
+lists
+memory-management
+memory-recall
+memory-save
+monitoring-setup
+npm-audit
+npm-publish
+npm-version
+optimize-analyze
+optimize-bundle
+optimize-report
+pipeline-architecture-patterns
+postgres-best-practices
+python-best-practices
+qa-lead-routing
+react-best-practices
+redis-best-practices
+result-aggregation
+rust-best-practices
+sauron-watch
+secretary-routing
+snowflake-best-practices
+spark-best-practices
+springboot-best-practices
+status
+supabase-postgres-best-practices
+typescript-best-practices
+update-docs
+update-external
+vercel-deploy
+web-design-guidelines
+writing-clearly-and-concisely
+```
 
 ### Guides (22)
 
