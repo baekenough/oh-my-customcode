@@ -195,29 +195,6 @@ describe('doctor custom components', () => {
     expect(result.fixable).toBe(false);
   });
 
-  it('should work with different root directories', async () => {
-    const customComponents: CustomComponentConfig[] = [
-      {
-        type: 'agent',
-        name: 'codex-agent',
-        path: '.codex/agents/codex-agent.md',
-        managed: false,
-      },
-    ];
-
-    await createConfigWithCustomComponents(customComponents);
-
-    // Create component in .codex directory
-    await createDirStructure({
-      '.codex/agents/codex-agent.md': 'Codex agent',
-    });
-
-    const result = await checkCustomComponents(tempDir, '.codex');
-
-    expect(result.status).toBe('pass');
-    expect(result.message).toContain('1 items');
-  });
-
   it('should handle directory paths (trailing /)', async () => {
     const customComponents: CustomComponentConfig[] = [
       {

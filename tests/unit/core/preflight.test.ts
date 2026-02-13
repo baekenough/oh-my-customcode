@@ -131,7 +131,7 @@ describe('preflight', () => {
             installMethod: 'homebrew',
           },
           {
-            name: 'codex',
+            name: 'some-tool',
             installed: true,
             currentVersion: '0.5.0',
             latestVersion: '1.0.0',
@@ -148,7 +148,7 @@ describe('preflight', () => {
 
       expect(formatted).toContain('Run the following to upgrade:');
       expect(formatted).toContain('brew upgrade claude-code');
-      expect(formatted).toContain('brew upgrade codex');
+      expect(formatted).toContain('brew upgrade some-tool');
       expect(formatted).toContain('2.0.0');
       expect(formatted).toContain('1.0.0');
       expect(formatted).toContain('--skip-version-check');
@@ -166,7 +166,7 @@ describe('preflight', () => {
             installMethod: 'homebrew',
           },
           {
-            name: 'codex',
+            name: 'some-tool',
             installed: true,
             currentVersion: '1.0.0',
             latestVersion: '1.0.0',
@@ -182,7 +182,7 @@ describe('preflight', () => {
       const formatted = formatPreflightWarnings(result);
 
       expect(formatted).toContain('claude-code');
-      expect(formatted).not.toContain('codex');
+      expect(formatted).not.toContain('some-tool');
       // Should use single-tool format
       expect(formatted).toContain('⚠ claude-code 2.0.0 is available');
     });

@@ -122,16 +122,6 @@ describe('updater', () => {
       // All components should be updatable
       expect(result.updatableComponents.length).toBe(6); // rules, agents, skills, guides, hooks, contexts
     });
-
-    it('should work with codex provider', async () => {
-      await createConfig('0.1.0');
-
-      const result = await checkForUpdates(tempDir, 'codex');
-
-      // Should use codex layout
-      expect(result.hasUpdates).toBe(true);
-      expect(result.latestVersion).toBeDefined();
-    });
   });
 
   describe('update', () => {
@@ -139,12 +129,11 @@ describe('updater', () => {
       await createConfig('0.1.0');
 
       // Create target directory structure
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
       });
 
@@ -171,7 +160,6 @@ describe('updater', () => {
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
       });
 
       expect(result.success).toBe(true);
@@ -185,12 +173,11 @@ describe('updater', () => {
       });
 
       // Create target directory structure
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         force: true,
       });
@@ -204,14 +191,13 @@ describe('updater', () => {
       await createConfig('0.1.0');
 
       // Create existing component files to backup
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await createDirStructure({
         [`${layout.rootDir}/rules/test.md`]: 'existing rule',
       });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         backup: true,
       });
@@ -238,7 +224,6 @@ describe('updater', () => {
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         preserveCustomizations: true,
       });
@@ -255,7 +240,6 @@ describe('updater', () => {
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         dryRun: true,
       });
@@ -264,7 +248,7 @@ describe('updater', () => {
       expect(result.updatedComponents).toContain('rules' as UpdateComponent);
 
       // Verify no actual files were created (dry run)
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       const rulesPath = join(tempDir, layout.rootDir, 'rules');
       const exists = await readFile(rulesPath, 'utf-8').catch(() => null);
       expect(exists).toBeNull();
@@ -277,7 +261,6 @@ describe('updater', () => {
 
       const result = await update({
         targetDir: '/nonexistent/path/that/does/not/exist',
-        provider: 'claude',
         components: ['rules'],
       });
 
@@ -289,12 +272,11 @@ describe('updater', () => {
       await createConfig('0.1.0');
 
       // Create target directory structure
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
       });
 
@@ -305,33 +287,11 @@ describe('updater', () => {
       expect(config.lastUpdated).toBeDefined();
     });
 
-    it('should use provider from config when not specified', async () => {
-      await createConfig('0.1.0');
-
-      // Modify config to use codex provider
-      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
-      const config = JSON.parse(configContent);
-      config.provider = 'codex';
-      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
-
-      // Create target directory structure
-      const layout = getProviderLayout('codex');
-      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
-
-      const result = await update({
-        targetDir: tempDir,
-        components: ['rules'],
-        // Note: no provider specified, should use from config
-      });
-
-      expect(result.success).toBe(true);
-    });
-
     it('should handle component update failure and continue with others', async () => {
       await createConfig('0.1.0');
 
       // Create target directory structure
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       // Make rules directory a file (will cause copy to fail)
@@ -339,7 +299,6 @@ describe('updater', () => {
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules', 'hooks'],
       });
 
@@ -365,12 +324,11 @@ describe('updater', () => {
         }),
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         preserveCustomizations: false,
       });
@@ -402,12 +360,11 @@ describe('updater', () => {
         }),
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         preserveCustomizations: false, // Disable manifest preservation
       });
@@ -443,12 +400,11 @@ describe('updater', () => {
         }),
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         forceOverwriteAll: true, // Bypass ALL preservation
       });
@@ -472,12 +428,11 @@ describe('updater', () => {
         }),
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         forceOverwriteAll: true,
       });
@@ -500,12 +455,11 @@ describe('updater', () => {
         [configPreserveFile]: 'config preserved content',
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         forceOverwriteAll: true,
       });
@@ -528,12 +482,11 @@ describe('updater', () => {
         }),
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
         preserveCustomizations: true, // Explicitly enable
         forceOverwriteAll: true, // Should override preserveCustomizations
@@ -549,12 +502,11 @@ describe('updater', () => {
         // No component versions → all components show as "updatable"
       });
 
-      const layout = getProviderLayout('claude');
+      const layout = getProviderLayout();
       await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
       const result = await update({
         targetDir: tempDir,
-        provider: 'claude',
         components: ['rules'],
       });
 
