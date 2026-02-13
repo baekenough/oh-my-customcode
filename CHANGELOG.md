@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-02-13
+
+### Added
+- `omcustom init` now checks for newer `oh-my-customcode` releases in interactive sessions and prompts for self-update before initialization.
+- Self-update check includes a 24-hour local cache and automatically skips CI/non-interactive environments.
+
+### Changed
+- Codex docs fetch/source policy aligned to canonical OpenAI Codex docs URLs with explicit fallback/report output.
+- Codex template model taxonomy normalized to `reasoning | balanced | fast` across agents/skills/rules.
+- PR CI now includes a path-scoped Codex-native verification gate for Codex-related changes.
+
 ## [0.12.0] - 2026-02-13
 
 ### Changed
@@ -424,7 +435,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.3...v0.11.0
 [0.10.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.1...v0.10.3

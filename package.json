@@ -1,6 +1,6 @@
 {
   "name": "oh-my-customcode",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Batteries-included agent harness for Claude Code and OpenAI Codex",
   "type": "module",
   "bin": {
