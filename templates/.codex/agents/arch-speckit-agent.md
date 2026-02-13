@@ -1,7 +1,7 @@
 ---
 name: arch-speckit-agent
 description: Use for spec-driven development, transforming requirements into executable specifications, defining project constitution, creating technical plans, and generating TDD task lists
-model: sonnet
+model: balanced
 memory: project
 effort: high
 skills: []
@@ -38,7 +38,7 @@ External agent from https://github.com/github/spec-kit
 
 ## Workflow
 
-1. `specify init <project> --ai claude`
+1. `specify init <project> --ai codex`
 2. `/speckit.constitution` -> principles
 3. `/speckit.specify` -> feature spec
 4. `/speckit.clarify` -> Q&A

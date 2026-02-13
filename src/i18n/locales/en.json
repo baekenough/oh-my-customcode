@@ -19,7 +19,7 @@
     "unknownError": "An unknown error occurred"
   },
   "cli": {
-    "description": "Batteries-included agent harness for Claude Code",
+    "description": "Batteries-included agent harness for Claude Code and OpenAI Codex",
     "versionOption": "Show version number",
     "usage": "Usage: omcustom <command> [options]",
     "commands": "Commands",
@@ -42,6 +42,18 @@
       "skippedFlag": "Skipping version check (--skip-version-check)",
       "homebrewNotFound": "Homebrew not found, skipping version check",
       "timeout": "Version check timed out, continuing..."
+    },
+    "selfUpdate": {
+      "checking": "Checking for oh-my-customcode updates...",
+      "available": "📦 New version available: v{{current}} → v{{latest}}",
+      "prompt": "Would you like to update oh-my-customcode first? (Y/n): ",
+      "updatingGlobal": "⬆️ Updating oh-my-customcode globally to v{{version}}...",
+      "updatingNpx": "⬆️ Launching latest version via npx (v{{version}})...",
+      "updated": "✅ Updated to v{{version}}",
+      "declined": "Continuing with current version.",
+      "failed": "Self-update failed: {{error}}",
+      "relaunchFailed": "Failed to launch latest version via npx (status: {{status}}).",
+      "continueAfterFailure": "Continuing init with current version."
     },
     "init": {
       "description": "Initialize oh-my-customcode in the current directory",

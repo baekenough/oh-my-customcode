@@ -38,7 +38,7 @@ full_qa_cycle      → all agents (sequential)
 User: "Create test plan for feature X"
 
 Route:
-  Task(qa-planner role → create test plan, model: "sonnet")
+  Task(qa-planner role → create test plan, model: "balanced")
 
 Output:
   - Test scenarios
@@ -53,7 +53,7 @@ Output:
 User: "Document test cases for API"
 
 Route:
-  Task(qa-writer role → document test cases, model: "sonnet")
+  Task(qa-writer role → document test cases, model: "balanced")
 
 Output:
   - Test case specifications
@@ -68,7 +68,7 @@ Output:
 User: "Execute tests for module Y"
 
 Route:
-  Task(qa-engineer role → execute tests, model: "sonnet")
+  Task(qa-engineer role → execute tests, model: "balanced")
 
 Output:
   - Test execution results
@@ -85,8 +85,8 @@ When analysis is needed (parallel execution):
 User: "Analyze quality metrics"
 
 Route (parallel):
-  Task(qa-planner role → analyze strategy, model: "sonnet")
-  Task(qa-engineer role → analyze results, model: "sonnet")
+  Task(qa-planner role → analyze strategy, model: "balanced")
+  Task(qa-engineer role → analyze results, model: "balanced")
 
 Aggregate:
   Strategy insights + execution data
@@ -100,10 +100,10 @@ For complete quality assurance workflow:
 User: "Run full QA cycle for feature Z"
 
 Route (sequential):
-  1. Task(qa-planner role → create test plan, model: "sonnet")
-  2. Task(qa-writer role → document test cases, model: "sonnet")
-  3. Task(qa-engineer role → execute tests, model: "sonnet")
-  4. Task(qa-writer role → generate report, model: "sonnet")
+  1. Task(qa-planner role → create test plan, model: "balanced")
+  2. Task(qa-writer role → document test cases, model: "balanced")
+  3. Task(qa-engineer role → execute tests, model: "balanced")
+  4. Task(qa-writer role → generate report, model: "balanced")
 
 Aggregate and present final report
 ```
@@ -163,9 +163,9 @@ Only when tasks are truly independent:
 
 ```
 Example:
-  Task(qa-engineer role → test module A, model: "sonnet")
-  Task(qa-engineer role → test module B, model: "sonnet")
-  Task(qa-engineer role → test module C, model: "sonnet")
+  Task(qa-engineer role → test module A, model: "balanced")
+  Task(qa-engineer role → test module B, model: "balanced")
+  Task(qa-engineer role → test module C, model: "balanced")
 ```
 
 ## Sub-agent Model Selection
@@ -174,11 +174,11 @@ Example:
 
 | Agent | Recommended Model | Reason |
 |-------|-------------------|--------|
-| qa-planner | `sonnet` | Strategy requires balanced reasoning |
-| qa-writer | `sonnet` | Documentation quality matters |
-| qa-engineer | `sonnet` | Test execution needs accuracy |
+| qa-planner | `balanced` | Strategy requires balanced reasoning |
+| qa-writer | `balanced` | Documentation quality matters |
+| qa-engineer | `balanced` | Test execution needs accuracy |
 
-All QA agents typically use `sonnet` for balanced quality output.
+All QA agents typically use `balanced` for balanced quality output.
 
 ### Task Call Examples
 
@@ -187,21 +187,21 @@ All QA agents typically use `sonnet` for balanced quality output.
 Task(
   subagent_type: "general-purpose",
   prompt: "Create comprehensive test plan for authentication feature following qa-planner guidelines",
-  model: "sonnet"
+  model: "balanced"
 )
 
 # Test documentation
 Task(
   subagent_type: "general-purpose",
   prompt: "Document test cases for API endpoints following qa-writer guidelines",
-  model: "sonnet"
+  model: "balanced"
 )
 
 # Test execution
 Task(
   subagent_type: "general-purpose",
   prompt: "Execute integration tests and report results following qa-engineer guidelines",
-  model: "sonnet"
+  model: "balanced"
 )
 ```
 
@@ -232,8 +232,8 @@ Task(
 ```
 [Analyzing] Spawning parallel analysis...
 
-[Instance 1] strategy-analysis:sonnet → qa-planner
-[Instance 2] results-analysis:sonnet → qa-engineer
+[Instance 1] strategy-analysis:balanced → qa-planner
+[Instance 2] results-analysis:balanced → qa-engineer
 
 [Progress] ████████████ 2/2
 

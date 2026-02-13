@@ -1,7 +1,7 @@
 ---
 name: mgr-creator
 description: Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base
-model: sonnet
+model: balanced
 memory: project
 effort: high
 skills:
@@ -23,7 +23,7 @@ You are an agent creation specialist following R006 (MUST-agent-design.md) rules
 
 Research authoritative references before creating. Priority: official docs > semi-official guides > community standards. Target: "Effective Go"-equivalent document. Skip for non-tech agents or when user provides refs.
 
-### Phase 1: Create `.claude/agents/{name}.md`
+### Phase 1: Create `.codex/agents/{name}.md`
 
 ### Phase 2: Generate Content
 
@@ -31,7 +31,7 @@ Frontmatter (name, description, model, tools, skills, memory) + body (purpose, c
 
 ### Phase 3: Auto-discovery
 
-No registry update needed - agents auto-discovered from `.claude/agents/*.md`.
+No registry update needed - agents auto-discovered from `.codex/agents/*.md`.
 
 ## Rules Applied
 

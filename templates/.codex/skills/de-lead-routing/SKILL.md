@@ -131,21 +131,21 @@ For projects spanning multiple DE tools:
 
 | Task Type | Recommended Model | Reason |
 |-----------|-------------------|--------|
-| Pipeline architecture | `opus` | Deep reasoning required |
-| DAG/model review | `sonnet` | Balanced quality judgment |
-| Implementation | `sonnet` | Standard code generation |
-| Quick validation | `haiku` | Fast response |
+| Pipeline architecture | `reasoning` | Deep reasoning required |
+| DAG/model review | `balanced` | Balanced quality judgment |
+| Implementation | `balanced` | Standard code generation |
+| Quick validation | `fast` | Fast response |
 
 ### Model Mapping by Agent
 
 | Agent | Default Model | Alternative |
 |-------|---------------|-------------|
-| de-pipeline-expert | `sonnet` | `opus` for architecture |
-| de-airflow-expert | `sonnet` | `haiku` for DAG validation |
-| de-dbt-expert | `sonnet` | `haiku` for test checks |
-| de-spark-expert | `sonnet` | `opus` for optimization |
-| de-kafka-expert | `sonnet` | `opus` for topology design |
-| de-snowflake-expert | `sonnet` | `opus` for warehouse design |
+| de-pipeline-expert | `balanced` | `reasoning` for architecture |
+| de-airflow-expert | `balanced` | `fast` for DAG validation |
+| de-dbt-expert | `balanced` | `fast` for test checks |
+| de-spark-expert | `balanced` | `reasoning` for optimization |
+| de-kafka-expert | `balanced` | `reasoning` for topology design |
+| de-snowflake-expert | `balanced` | `reasoning` for warehouse design |
 
 ### Task Call Examples
 
@@ -154,21 +154,21 @@ For projects spanning multiple DE tools:
 Task(
   subagent_type: "general-purpose",
   prompt: "Design end-to-end pipeline architecture following de-pipeline-expert guidelines",
-  model: "opus"
+  model: "reasoning"
 )
 
 # Standard DAG review
 Task(
   subagent_type: "general-purpose",
   prompt: "Review Airflow DAGs in dags/ following de-airflow-expert guidelines",
-  model: "sonnet"
+  model: "balanced"
 )
 
 # Quick dbt test validation
 Task(
   subagent_type: "Explore",
   prompt: "Find all dbt models missing schema tests",
-  model: "haiku"
+  model: "fast"
 )
 ```
 
@@ -189,9 +189,9 @@ Detection:
   - kafka/ → de-kafka-expert
 
 Route (parallel):
-  Task(de-airflow-expert role → review dags/, model: "sonnet")
-  Task(de-dbt-expert role → review models/, model: "sonnet")
-  Task(de-kafka-expert role → review kafka/, model: "sonnet")
+  Task(de-airflow-expert role → review dags/, model: "balanced")
+  Task(de-dbt-expert role → review models/, model: "balanced")
+  Task(de-kafka-expert role → review kafka/, model: "balanced")
 ```
 
 ## Display Format
@@ -199,9 +199,9 @@ Route (parallel):
 ```
 [Analyzing] Detected: Airflow, dbt, Snowflake
 
-[Delegating] de-airflow-expert:sonnet → DAG design
-[Delegating] de-dbt-expert:sonnet → Model structure
-[Delegating] de-snowflake-expert:sonnet → Warehouse config
+[Delegating] de-airflow-expert:balanced → DAG design
+[Delegating] de-dbt-expert:balanced → Model structure
+[Delegating] de-snowflake-expert:balanced → Warehouse config
 
 [Progress] ███████████░ 2/3 experts completed
 

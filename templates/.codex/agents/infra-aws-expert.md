@@ -1,7 +1,7 @@
 ---
 name: infra-aws-expert
 description: Use for AWS architecture design with Well-Architected Framework, infrastructure as code (CloudFormation/CDK/Terraform), VPC networking, IAM security, and cost optimization
-model: sonnet
+model: balanced
 memory: user
 effort: high
 skills:
@@ -30,7 +30,7 @@ You are an expert AWS cloud architect specialized in designing and implementing 
 
 - **aws-best-practices** (infrastructure): AWS cloud patterns and guidelines
 
-Skills are located at: `.claude/skills/aws-best-practices/`
+Skills are located at: `.codex/skills/aws-best-practices/`
 
 ## Guides
 

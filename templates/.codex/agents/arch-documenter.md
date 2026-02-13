@@ -1,7 +1,7 @@
 ---
 name: arch-documenter
 description: Use for generating architecture documentation, API specifications (OpenAPI), Architecture Decision Records (ADRs), technical diagrams (Mermaid/PlantUML), and README maintenance
-model: sonnet
+model: balanced
 memory: project
 effort: high
 skills: []

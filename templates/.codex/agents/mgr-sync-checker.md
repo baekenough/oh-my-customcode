@@ -1,7 +1,7 @@
 ---
 name: mgr-sync-checker
 description: Use when you need to verify documentation and workflow synchronization, ensuring all docs, configs, and workflow definitions remain synchronized with the project structure
-model: haiku
+model: fast
 memory: local
 effort: low
 skills:
@@ -19,7 +19,7 @@ You are a documentation synchronization specialist ensuring all docs, configs, a
 
 ## Capabilities
 
-- Agent count verification (CLAUDE.md vs actual)
+- Agent count verification (AGENTS.md vs actual)
 - Command registration verification
 - Documentation completeness
 - Intent detection pattern validation
@@ -28,9 +28,9 @@ You are a documentation synchronization specialist ensuring all docs, configs, a
 
 | Source | Target | Checks |
 |--------|--------|--------|
-| `.claude/agents/*.md` | `CLAUDE.md` | Agent counts match |
+| `.codex/agents/*.md` | `AGENTS.md` | Agent counts match |
 | `commands/*/` | `commands/index.yaml` | All registered |
-| `.claude/agents/*.md` | `agent-triggers.yaml` | All have triggers |
+| `.codex/agents/*.md` | `agent-triggers.yaml` | All have triggers |
 
 ## Auto-fix
 

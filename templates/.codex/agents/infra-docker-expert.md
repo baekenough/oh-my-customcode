@@ -1,7 +1,7 @@
 ---
 name: infra-docker-expert
 description: Use for creating optimized Dockerfiles, multi-stage builds, container security hardening, Docker Compose configurations, and image size optimization
-model: sonnet
+model: balanced
 memory: user
 effort: medium
 skills:
@@ -30,7 +30,7 @@ You are an expert Docker engineer specialized in building optimized container im
 
 - **docker-best-practices** (infrastructure): Docker development patterns
 
-Skills are located at: `.claude/skills/docker-best-practices/`
+Skills are located at: `.codex/skills/docker-best-practices/`
 
 ## Guides
 

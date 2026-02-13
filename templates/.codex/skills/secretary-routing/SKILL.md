@@ -20,7 +20,7 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
 | mgr-sync-checker | Sync verification | "sync check", "verify sync" |
 | mgr-sauron | R016 auto-verification | "verify", "full check" |
-| mgr-claude-code-bible | Claude Code spec compliance | "spec check", "verify compliance" |
+| mgr-claude-code-bible | Codex spec compliance | "spec check", "verify compliance" |
 | sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
 | sys-naggy | TODO management | "todo", "track tasks", "task list" |
 
@@ -80,9 +80,9 @@ Example:
 User: "Create golang, python, rust expert agents"
 
 Route:
-  Task(mgr-creator role → create lang-golang-expert, model: "sonnet")
-  Task(mgr-creator role → create lang-python-expert, model: "sonnet")
-  Task(mgr-creator role → create lang-rust-expert, model: "sonnet")
+  Task(mgr-creator role → create lang-golang-expert, model: "balanced")
+  Task(mgr-creator role → create lang-python-expert, model: "balanced")
+  Task(mgr-creator role → create lang-rust-expert, model: "balanced")
 
 Result: 3 agents created in parallel
 ```
@@ -95,15 +95,15 @@ Use Task tool's `model` parameter to optimize cost and performance:
 
 | Agent | Recommended Model | Reason |
 |-------|-------------------|--------|
-| mgr-creator | `sonnet` | File generation, balanced |
-| mgr-updater | `sonnet` | External sync, web fetch |
-| mgr-supplier | `haiku` | File scan, validation |
-| mgr-gitnerd | `sonnet` | Commit message quality |
-| mgr-sync-checker | `haiku` | Fast verification |
-| mgr-sauron | `sonnet` | Multi-round verification |
-| mgr-claude-code-bible | `sonnet` | Spec compliance checks |
-| sys-memory-keeper | `sonnet` | Memory operations, search |
-| sys-naggy | `haiku` | Simple TODO tracking |
+| mgr-creator | `balanced` | File generation, balanced |
+| mgr-updater | `balanced` | External sync, web fetch |
+| mgr-supplier | `fast` | File scan, validation |
+| mgr-gitnerd | `balanced` | Commit message quality |
+| mgr-sync-checker | `fast` | Fast verification |
+| mgr-sauron | `balanced` | Multi-round verification |
+| mgr-claude-code-bible | `balanced` | Spec compliance checks |
+| sys-memory-keeper | `balanced` | Memory operations, search |
+| sys-naggy | `fast` | Simple TODO tracking |
 
 ### Task Call Examples
 
@@ -112,21 +112,21 @@ Use Task tool's `model` parameter to optimize cost and performance:
 Task(
   subagent_type: "general-purpose",
   prompt: "Analyze agent dependencies and suggest improvements",
-  model: "opus"
+  model: "reasoning"
 )
 
 # Standard manager task (create agent)
 Task(
   subagent_type: "general-purpose",
   prompt: "Create new lang-golang-expert agent following mgr-creator workflow",
-  model: "sonnet"
+  model: "balanced"
 )
 
 # Simple file operation
 Task(
   subagent_type: "general-purpose",
   prompt: "Search for all AGENT.md files and validate symlinks",
-  model: "haiku"
+  model: "fast"
 )
 ```
 
@@ -145,15 +145,15 @@ When spawning parallel tasks, use format: `{task-name}:{model}`
 ```
 [Parallel] Spawning 3 instances...
 
-[Instance 1] create-golang:sonnet → lang-golang-expert
-[Instance 2] create-python:sonnet → lang-python-expert
-[Instance 3] create-rust:sonnet → lang-rust-expert
+[Instance 1] create-golang:balanced → lang-golang-expert
+[Instance 2] create-python:balanced → lang-python-expert
+[Instance 3] create-rust:balanced → lang-rust-expert
 
 [Progress] ████████░░░░ 2/3
 
-[Instance 1] create-golang:sonnet ✓ lang-golang-expert created
-[Instance 2] create-python:sonnet ✓ lang-python-expert created
-[Instance 3] create-rust:sonnet ✓ lang-rust-expert created
+[Instance 1] create-golang:balanced ✓ lang-golang-expert created
+[Instance 2] create-python:balanced ✓ lang-python-expert created
+[Instance 3] create-rust:balanced ✓ lang-rust-expert created
 
 [Summary] 3/3 tasks completed successfully
 ```
