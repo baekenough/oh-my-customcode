@@ -4,7 +4,7 @@
 
 # oh-my-customcode
 
-> **Your Claude Code, Your Way**
+> **Your Coding Agent Stack, Your Way**
 
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,9 +13,9 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-**The easiest way to customize Claude Code with agents, skills, and rules.**
+**The easiest way to customize Claude Code and OpenAI Codex with agents, skills, and rules.**
 
-Like oh-my-zsh transformed shell customization, oh-my-customcode makes personalizing your Claude Code experience simple, powerful, and fun.
+Like oh-my-zsh transformed shell customization, oh-my-customcode makes personalizing your coding agent workflow simple, powerful, and fun.
 
 ## What Makes It Special
 
@@ -38,17 +38,17 @@ cd your-project
 omcustom init
 ```
 
-That's it. You now have a fully configured Claude Code environment.
+That's it. You now have a fully configured agent environment.
 
 ---
 
-> **Codex CLI Support**: Experimental Codex CLI mode is available. See `AGENTS.md` and `.codex/` for Codex-native configuration.
+> **Dual Provider Support**: Claude and Codex are both supported. Use `--provider claude|codex` (or auto-detect) during `omcustom init`/`update`/`list`/`doctor`.
 
 ## Customization First
 
-This is what oh-my-customcode is all about. **Making Claude Code yours.**
+This is what oh-my-customcode is all about. **Making your coding workflow yours.**
 
-### Just Tell Claude What You Need
+### Just Describe What You Need
 
 No manual file editing. Describe what you want in natural language, and the orchestrator delegates to the right agent:
 
@@ -69,7 +69,7 @@ User (natural language)
     → mgr-supplier:haiku       — checks dependencies
 ```
 
-Claude Code's routing system analyzes your request, routes it to the appropriate skill and agent, and the sub-agent handles everything automatically.
+The routing system analyzes your request, routes it to the appropriate skill and agent, and the sub-agent handles everything automatically.
 
 ### Sub-Agent Model
 
@@ -80,6 +80,8 @@ Each sub-agent runs on an optimized model for its task type:
 | `opus` | Complex reasoning, architecture | Code review, design analysis |
 | `sonnet` | General tasks (default) | Agent creation, code generation |
 | `haiku` | Fast, simple operations | File search, validation |
+
+> Note: Claude examples keep `opus/sonnet/haiku`. Codex-native templates use profile terms: `reasoning/balanced/fast`.
 
 Claude Code selects the appropriate model and parallelizes independent tasks (up to 4 concurrent sub-agents):
 
@@ -160,7 +162,7 @@ Comprehensive reference documentation covering:
 
 ### Hooks (1)
 
-Event-driven automation for Claude Code lifecycle events (PreToolUse, PostToolUse, etc.).
+Event-driven automation for agent lifecycle events (PreToolUse, PostToolUse, etc.).
 
 ### Contexts (4)
 
@@ -261,7 +263,7 @@ Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 ---
 
 <p align="center">
-  <strong>Your Claude Code. Your rules. Your way.</strong>
+  <strong>Your coding workflow. Your rules. Your way.</strong>
 </p>
 
 <p align="center">

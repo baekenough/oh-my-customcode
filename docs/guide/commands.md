@@ -1,13 +1,13 @@
 # CLI Commands
 
-oh-my-customcode provides a CLI tool (`omcustom`) for managing your agent system.
+oh-my-customcode provides a CLI tool (`omcustom`) for managing Claude/Codex agent system templates.
 
 ## Overview
 
 | Command | Description |
 |---------|-------------|
 | `omcustom init` | Initialize agent system |
-| `omcustom update` | Update to latest version |
+| `omcustom update` | Update managed components to latest templates |
 | `omcustom list` | List installed components |
 | `omcustom doctor` | Verify installation health |
 
@@ -23,33 +23,25 @@ omcustom init [options]
 
 | Option | Description |
 |--------|-------------|
-| `--lang <code>` | Language for templates (`en` or `ko`). Default: `en` |
-| `--provider <name>` | Target provider (`claude` or `codex`). Default: auto-detect |
-| `--backup` | Backup existing installation before init |
-| `--force` | Overwrite existing files without prompting |
+| `-l, --lang <language>` | Language for templates (`en` or `ko`). Default: `en` |
+| `-p, --provider <provider>` | Provider to initialize (`auto`, `claude`, `codex`). Default: `auto` |
 
 ### Examples
 
 ```bash
-# Basic initialization (auto-detect provider)
+# Auto-detect provider and initialize
 omcustom init
 
-# Initialize with Korean language
+# Initialize with Korean templates
 omcustom init --lang ko
 
-# Explicitly specify provider
+# Force provider selection to Codex
 omcustom init --provider codex
-
-# Backup existing and initialize
-omcustom init --backup
-
-# Force overwrite existing files
-omcustom init --force
 ```
 
 ## update
 
-Update agents, skills, and rules to the latest versions.
+Update managed components in the current project.
 
 ```bash
 omcustom update [options]
@@ -59,44 +51,60 @@ omcustom update [options]
 
 | Option | Description |
 |--------|-------------|
-| `--preserve-custom` | Keep custom modifications (default: true) |
-| `--force` | Force update all files |
+| `--dry-run` | Show what would change without writing files |
+| `--force` | Force update even if already at latest version |
+| `--force-overwrite-all` | Bypass preservation logic (manifest/config preserve rules) |
+| `--backup` | Create backup before updating |
+| `--agents` | Update only agents |
+| `--skills` | Update only skills |
+| `--rules` | Update only rules |
+| `--guides` | Update only guides |
+| `--hooks` | Update only hooks |
+| `--contexts` | Update only contexts |
+| `-p, --provider <provider>` | Provider to update (`auto`, `claude`, `codex`). Default: `auto` |
 
 ### Examples
 
 ```bash
-# Standard update (preserves customizations)
+# Update everything (provider auto-detected)
 omcustom update
 
-# Force update all files
-omcustom update --force
+# Preview changes only
+omcustom update --dry-run
+
+# Update only agents and skills
+omcustom update --agents --skills
+
+# Update Codex components only
+omcustom update --provider codex
 ```
 
 ## list
 
-List installed components in your project.
+List installed components.
 
 ```bash
-omcustom list [type] [options]
+omcustom list [options] [type]
 ```
 
 ### Arguments
 
 | Argument | Description |
 |----------|-------------|
-| `type` | Optional. One of: `agents`, `skills`, `rules`, `guides` |
+| `type` | One of `agents`, `skills`, `guides`, `rules`, or `all` (default: `all`) |
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
-| `--provider <name>` | Target provider (`claude` or `codex`). Default: auto-detect |
-| `--format <format>` | Output format: `table` (default) or `json` |
+| `-f, --format <format>` | Output format: `table`, `json`, or `simple` (default: `table`) |
+| `--verbose` | Show detailed information |
+| `-p, --provider <provider>` | Provider to list (`auto`, `claude`, `codex`). Default: `auto` |
 
 ### Examples
 
 ```bash
-# List all components (auto-detect provider)
+# List all components
 omcustom list
 
 # List only agents
@@ -105,29 +113,13 @@ omcustom list agents
 # List skills as JSON
 omcustom list skills --format json
 
-# List agents for specific provider
-omcustom list agents --provider claude
-```
-
-### Sample Output
-
-```
-Agents (36 total)
-┌─────────────────┬───────────────────┬──────────────────────────────┐
-│ Category        │ Agent             │ Description                  │
-├─────────────────┼───────────────────┼──────────────────────────────┤
-│ orchestrator    │ planner           │ Master orchestrator          │
-│ orchestrator    │ secretary         │ Task coordination            │
-│ orchestrator    │ dev-lead          │ Development coordination     │
-│ orchestrator    │ qa-lead           │ QA coordination              │
-│ manager         │ creator           │ Agent creation               │
-│ ...             │ ...               │ ...                          │
-└─────────────────┴───────────────────┴──────────────────────────────┘
+# List for specific provider
+omcustom list --provider codex
 ```
 
 ## doctor
 
-Verify installation health and fix common issues.
+Check installation health.
 
 ```bash
 omcustom doctor [options]
@@ -137,68 +129,34 @@ omcustom doctor [options]
 
 | Option | Description |
 |--------|-------------|
-| `--provider <name>` | Target provider (`claude` or `codex`). Default: auto-detect |
-| `--fix` | Auto-fix common issues |
-| `--verbose` | Show detailed output |
+| `--fix` | Automatically fix issues that can be repaired |
+| `-p, --provider <provider>` | Provider to diagnose (`auto`, `claude`, `codex`). Default: `auto` |
 
 ### Examples
 
 ```bash
-# Check installation health (auto-detect provider)
+# Run health checks
 omcustom doctor
 
-# Check and auto-fix issues
+# Auto-fix repairable issues
 omcustom doctor --fix
 
-# Detailed health check
-omcustom doctor --verbose
-
-# Check specific provider
+# Diagnose Codex layout explicitly
 omcustom doctor --provider codex
-```
-
-### Health Checks
-
-The doctor command verifies:
-
-- Entry file exists and is valid (CLAUDE.md for Claude, AGENTS.md for Codex)
-- All required directories exist
-- Agent definitions are complete
-- Skill references are valid
-- Rule files are properly formatted
-- No broken symlinks
-
-### Sample Output
-
-```
-oh-my-customcode Doctor
-=======================
-
-Checking installation health...
-
-✓ Entry file exists (CLAUDE.md or AGENTS.md)
-✓ Provider rules directory exists (.claude/rules or .codex/rules)
-✓ Provider agents directory exists (.claude/agents or .codex/agents)
-✓ Provider skills directory exists (.claude/skills or .codex/skills)
-✗ Missing agent: .claude/agents/mgr-creator.md
-
-Issues found: 1
-Run 'omcustom doctor --fix' to auto-repair
 ```
 
 ## Global Options
 
-These options work with all commands:
-
 | Option | Description |
 |--------|-------------|
-| `-h, --help` | Show help for command |
-| `-V, --version` | Show version number |
+| `--skip-version-check` | Skip CLI tool pre-flight version checks |
+| `-h, --help` | Show help |
+| `-v, --version` | Show version |
 
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
-| 0 | Success |
-| 1 | Error |
-| 2 | Invalid arguments |
+| `0` | Success |
+| `1` | Error |
+| `2` | Invalid arguments |

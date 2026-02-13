@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: oh-my-customcode
-  text: Batteries-included agent harness for Claude Code
-  tagline: Transform your Claude Code experience with a pre-configured agent system, skills, and rules designed for maximum productivity.
+  text: Batteries-included agent harness for Claude Code and OpenAI Codex
+  tagline: Transform your coding agent workflow with a pre-configured agent system, skills, and rules designed for maximum productivity.
   actions:
     - theme: brand
       text: Get Started
@@ -45,14 +45,14 @@ cd your-project
 omcustom init
 ```
 
-That's it! Your project now has a full agent system ready to use with Claude Code.
+That's it! Your project now has a full agent system ready to use with Claude or Codex.
 
 ## What's Included
 
 | Category | Count | Examples |
 |----------|-------|----------|
 | Orchestrator Agents | 4 | planner, secretary, dev-lead, qa-lead |
-| Manager Agents | 6 | creator, updater, supplier, gitnerd |
+| Manager Agents | 7 | creator, updater, supplier, gitnerd, sync-checker |
 | System Agents | 2 | memory-keeper, naggy |
 | SW Engineer Agents | 17 | golang, python, fastapi, springboot |
 | Architect Agents | 2 | documenter, speckit-agent |
@@ -61,7 +61,7 @@ That's it! Your project now has a full agent system ready to use with Claude Cod
 
 ## Why oh-my-customcode?
 
-Claude Code is powerful, but setting up an effective agent system takes time. oh-my-customcode provides:
+Claude and Codex are powerful, but setting up an effective agent system takes time. oh-my-customcode provides:
 
 - **Instant Productivity** - Start using specialized agents immediately
 - **Best Practices** - Built-in rules enforce good patterns
