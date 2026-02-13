@@ -6,6 +6,7 @@
 import { join } from 'node:path';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
 import { getProviderLayout, type LlmProvider, type ProviderPreference } from '../core/layout.js';
+import { checkPythonAvailable, generateMCPConfig } from '../core/mcp-config.js';
 import { detectProvider } from '../core/provider.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
@@ -157,6 +158,19 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     );
     logInstallResultInfo(installResult);
     logSuccessDetails(installedPaths, installResult.skippedComponents);
+
+    // Generate MCP config for ontology-rag if Python is available
+    const pythonAvailable = await checkPythonAvailable();
+    if (pythonAvailable) {
+      try {
+        await generateMCPConfig(targetDir, provider);
+      } catch {
+        console.warn('Warning: Failed to generate MCP config. You can configure it manually.');
+      }
+    } else {
+      console.warn('Warning: Python not found. Skipping MCP server configuration.');
+      console.warn('Install Python 3.10+ and ontology-rag to enable MCP integration.');
+    }
 
     return {
       success: true,

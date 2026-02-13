@@ -15,10 +15,10 @@ hero:
 
 features:
   - icon: "🤖"
-    title: 36 Pre-built Agents
+    title: 42 Pre-built Agents
     details: Specialized agents for development, testing, documentation, infrastructure, and more. Each agent has a clear role and expertise.
   - icon: "⚡"
-    title: 17 Skills
+    title: 51 Skills
     details: Development best practices, orchestration patterns, and system utilities. Skills encapsulate knowledge that agents can use.
   - icon: "📜"
     title: 18 Rules
