@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-02-14
+
+### Added
+- `codex-exec` skill for OpenAI Codex CLI integration
+  - Node.js wrapper script (`codex-wrapper.cjs`) with environment validation, command building, JSON Lines parsing, and timeout handling
+  - Supports hybrid Claude+Codex workflows for specialized code generation tasks
+- `/codex-exec` slash command registered in both English and Korean CLAUDE.md templates
+
+### Changed
+- Skill count updated from 52 to 53 across README.md and README_ko.md
+
 ## [0.12.2] - 2026-02-13
 
 ### Breaking Changes
@@ -456,7 +467,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.2...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.3...HEAD
+[0.12.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.11.0...v0.12.0
