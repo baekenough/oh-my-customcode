@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-02-13
+
 ### Changed
 - Documentation copy updated to consistently describe dual-provider support (Claude + Codex) across:
   - `README.md`, `README_ko.md`
   - `docs/index.md`
 - CLI command reference (`docs/guide/commands.md`) reconciled with actual CLI options and defaults.
 - Codex template/docs references aligned to Codex-native terminology and model profile terms (`reasoning|balanced|fast`).
+- Package metadata now explicitly reflects dual-provider scope (`Claude + Codex`).
 
 ## [0.11.0] - 2026-02-13
 
@@ -421,7 +424,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.3...v0.11.0
 [0.10.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.1...v0.10.3
 [0.10.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.0...v0.10.1
