@@ -155,6 +155,7 @@ Flow:
 | `/npm-publish` | Publish package to npm registry |
 | `/npm-version` | Manage semantic versions |
 | `/npm-audit` | Audit dependencies |
+| `/codex-exec` | Execute Codex CLI prompts |
 | `/optimize-analyze` | Analyze bundle and performance |
 | `/optimize-bundle` | Optimize bundle size |
 | `/optimize-report` | Generate optimization report |
