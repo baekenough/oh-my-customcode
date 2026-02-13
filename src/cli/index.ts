@@ -35,7 +35,6 @@ export function createProgram(): Command {
     .command('init')
     .description(i18n.t('cli.init.description'))
     .option('-l, --lang <language>', i18n.t('cli.init.langOption'), 'en')
-    .option('-p, --provider <provider>', i18n.t('cli.init.providerOption'), 'auto')
     .action(async (options) => {
       await initCommand(options);
     });
@@ -54,7 +53,6 @@ export function createProgram(): Command {
     .option('--guides', i18n.t('cli.update.guidesOption'))
     .option('--hooks', i18n.t('cli.update.hooksOption'))
     .option('--contexts', i18n.t('cli.update.contextsOption'))
-    .option('-p, --provider <provider>', i18n.t('cli.update.providerOption'), 'auto')
     .action(async (options) => {
       await updateCommand(options);
     });
@@ -66,12 +64,10 @@ export function createProgram(): Command {
     .argument('[type]', i18n.t('cli.list.typeArgument'), 'all')
     .option('-f, --format <format>', 'Output format: table, json, or simple', 'table')
     .option('--verbose', 'Show detailed information')
-    .option('-p, --provider <provider>', i18n.t('cli.list.providerOption'), 'auto')
     .action(async (type, options) => {
       await listCommand(type, {
         format: options.format,
         verbose: options.verbose,
-        provider: options.provider,
       });
     });
 
@@ -80,7 +76,6 @@ export function createProgram(): Command {
     .command('doctor')
     .description(i18n.t('cli.doctor.description'))
     .option('--fix', i18n.t('cli.doctor.fixOption'))
-    .option('-p, --provider <provider>', i18n.t('cli.doctor.providerOption'), 'auto')
     .action(async (options) => {
       await doctorCommand(options);
     });

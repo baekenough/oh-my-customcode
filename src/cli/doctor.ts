@@ -7,8 +7,7 @@ import { constants, promises as fs } from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { loadConfig } from '../core/config.js';
-import { getProviderLayout, type ProviderPreference } from '../core/layout.js';
-import { detectProvider } from '../core/provider.js';
+import { getProviderLayout } from '../core/layout.js';
 import { i18n } from '../i18n/index.js';
 
 /**
@@ -19,8 +18,6 @@ export interface DoctorOptions {
   fix?: boolean;
   /** Run in quiet mode (only show errors) */
   quiet?: boolean;
-  /** Provider selection (auto|claude|codex) */
-  provider?: ProviderPreference;
 }
 
 /**
@@ -555,7 +552,7 @@ export async function checkContexts(
 /**
  * Check if custom components (managed:false) exist
  * @param targetDir - Target directory
- * @param rootDir - Root directory (.claude or .codex)
+ * @param rootDir - Root directory (.claude)
  * @returns Check result
  */
 export async function checkCustomComponents(
@@ -745,12 +742,7 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
   console.log(i18n.t('cli.doctor.checking'));
   console.log('');
 
-  const detection = await detectProvider({
-    targetDir,
-    override: options.provider,
-    preferProject: true,
-  });
-  const layout = getProviderLayout(detection.provider);
+  const layout = getProviderLayout();
 
   // Run all checks
   let checks: CheckResult[] = await Promise.all([
