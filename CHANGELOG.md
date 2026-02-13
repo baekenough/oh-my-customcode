@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-02-13
+
+### Breaking Changes
+- Removed Codex (OpenAI) provider support - now Claude-only framework
+
+### Changed
+- Removed `LlmProvider` type system and `--provider` CLI flag
+- Simplified `layout.ts` from dual-provider to single `CLAUDE_LAYOUT` constant
+- Simplified `provider.ts` from 197-line detection to always-Claude return
+- Removed codex templates (123 files), CI workflows, and e2e tests
+
+### Fixed
+- Removed stale provider parameter from updater test calls
+- Removed codex references from ontology-rag package
+
+### Added
+- Comprehensive self-update integration tests (20 tests with mocked TTY/child_process)
+- Doctor check tests for empty directory warn paths (15 tests)
+- Git-workflow render tests for bugfix/hotfix patterns
+- Total test count: 768 (up from 688), line coverage: 97.87%
+
 ## [0.12.1] - 2026-02-13
 
 ### Added
@@ -435,7 +456,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.2...HEAD
+[0.12.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.3...v0.11.0
