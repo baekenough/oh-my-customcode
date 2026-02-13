@@ -17,7 +17,7 @@ import {
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
-import { getProviderLayout, type LlmProvider } from './layout.js';
+import { getProviderLayout } from './layout.js';
 
 /**
  * Options for update operation
@@ -25,8 +25,6 @@ import { getProviderLayout, type LlmProvider } from './layout.js';
 export interface UpdateOptions {
   /** Target directory to update */
   targetDir: string;
-  /** Provider to update for (claude|codex) */
-  provider?: LlmProvider;
   /** Specific components to update (default: all) */
   components?: UpdateComponent[];
   /** Whether to force update even if no changes */
@@ -151,12 +149,11 @@ function createUpdateResult(): UpdateResult {
 /** Handle backup if requested */
 async function handleBackupIfRequested(
   targetDir: string,
-  provider: LlmProvider,
   backup: boolean,
   result: UpdateResult
 ): Promise<void> {
   if (!backup) return;
-  const backupPath = await backupInstallation(targetDir, provider);
+  const backupPath = await backupInstallation(targetDir);
   result.backedUpPaths.push(backupPath);
   info('update.backup_created', { path: backupPath });
 }
@@ -164,7 +161,6 @@ async function handleBackupIfRequested(
 /** Process a single component update */
 async function processComponentUpdate(
   targetDir: string,
-  provider: LlmProvider,
   component: UpdateComponent,
   updateCheck: UpdateCheckResult,
   customizations: CustomizationManifest | null,
@@ -186,14 +182,7 @@ async function processComponentUpdate(
   }
 
   try {
-    const preserved = await updateComponent(
-      targetDir,
-      provider,
-      component,
-      customizations,
-      options,
-      config
-    );
+    const preserved = await updateComponent(targetDir, component, customizations, options, config);
     result.updatedComponents.push(component);
     result.preservedFiles.push(...preserved);
   } catch (err) {
@@ -206,7 +195,6 @@ async function processComponentUpdate(
 /** Update all components */
 async function updateAllComponents(
   targetDir: string,
-  provider: LlmProvider,
   components: UpdateComponent[],
   updateCheck: UpdateCheckResult,
   customizations: CustomizationManifest | null,
@@ -217,7 +205,6 @@ async function updateAllComponents(
   for (const component of components) {
     await processComponentUpdate(
       targetDir,
-      provider,
       component,
       updateCheck,
       customizations,
@@ -229,10 +216,10 @@ async function updateAllComponents(
 }
 
 /**
- * Get entry template name based on provider and language
+ * Get entry template name based on language
  */
-function getEntryTemplateName(provider: LlmProvider, language: 'en' | 'ko'): string {
-  const layout = getProviderLayout(provider);
+function getEntryTemplateName(language: 'en' | 'ko'): string {
+  const layout = getProviderLayout();
   const baseName = layout.entryFile.replace('.md', '');
   return language === 'ko' ? `${baseName}.md.ko` : `${baseName}.md.en`;
 }
@@ -367,13 +354,12 @@ function resolveCustomizations(
  */
 async function updateEntryDoc(
   targetDir: string,
-  provider: LlmProvider,
   config: OmccConfig,
   options: UpdateOptions
 ): Promise<void> {
-  const layout = getProviderLayout(provider);
+  const layout = getProviderLayout();
   const entryPath = join(targetDir, layout.entryFile);
-  const templateName = getEntryTemplateName(provider, config.language);
+  const templateName = getEntryTemplateName(config.language);
   const templatePath = resolveTemplatePath(templateName);
 
   if (!(await fileExists(templatePath))) {
@@ -425,10 +411,9 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     info('update.start', { targetDir: options.targetDir });
 
     const config = await loadConfig(options.targetDir);
-    const provider = options.provider ?? (config.provider === 'codex' ? 'codex' : 'claude');
     result.previousVersion = config.version;
 
-    const updateCheck = await checkForUpdates(options.targetDir, provider);
+    const updateCheck = await checkForUpdates(options.targetDir);
     result.newVersion = updateCheck.latestVersion;
 
     if (!updateCheck.hasUpdates && !options.force) {
@@ -438,7 +423,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       return result;
     }
 
-    await handleBackupIfRequested(options.targetDir, provider, !!options.backup, result);
+    await handleBackupIfRequested(options.targetDir, !!options.backup, result);
 
     // Load preservation config from BOTH sources
     const manifestCustomizations = await resolveManifestCustomizations(options, options.targetDir);
@@ -453,7 +438,6 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     const components = options.components || getAllUpdateComponents();
     await updateAllComponents(
       options.targetDir,
-      provider,
       components,
       updateCheck,
       customizations,
@@ -464,7 +448,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     // Update entry doc with merge (only on full update)
     if (!options.components || options.components.length === 0) {
-      await updateEntryDoc(options.targetDir, provider, config, options);
+      await updateEntryDoc(options.targetDir, config, options);
     }
 
     config.version = result.newVersion;
@@ -496,21 +480,18 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 /**
  * Check for available updates
  */
-export async function checkForUpdates(
-  targetDir: string,
-  provider: LlmProvider = 'claude'
-): Promise<UpdateCheckResult> {
+export async function checkForUpdates(targetDir: string): Promise<UpdateCheckResult> {
   const config = await loadConfig(targetDir);
   const currentVersion = config.version;
 
   // Get latest version from templates
-  const latestVersion = await getLatestVersion(provider);
+  const latestVersion = await getLatestVersion();
 
   // Check each component for updates
   const updatableComponents: UpdateCheckResult['updatableComponents'] = [];
 
   for (const component of getAllUpdateComponents()) {
-    const hasUpdate = await componentHasUpdate(targetDir, provider, component, config);
+    const hasUpdate = await componentHasUpdate(targetDir, component, config);
     if (hasUpdate) {
       updatableComponents.push({
         name: component,
@@ -577,8 +558,8 @@ function getAllUpdateComponents(): UpdateComponent[] {
 /**
  * Get the latest version from package templates
  */
-async function getLatestVersion(provider: LlmProvider): Promise<string> {
-  const layout = getProviderLayout(provider);
+async function getLatestVersion(): Promise<string> {
+  const layout = getProviderLayout();
   const manifestPath = resolveTemplatePath(layout.manifestFile);
   if (await fileExists(manifestPath)) {
     const manifest = await readJsonFile<{ version: string }>(manifestPath);
@@ -592,7 +573,6 @@ async function getLatestVersion(provider: LlmProvider): Promise<string> {
  */
 async function componentHasUpdate(
   _targetDir: string,
-  provider: LlmProvider,
   component: UpdateComponent,
   config: OmccConfig
 ): Promise<boolean> {
@@ -602,7 +582,7 @@ async function componentHasUpdate(
   }
 
   // Simple version comparison (could be enhanced with semver)
-  const latestVersion = await getLatestVersion(provider);
+  const latestVersion = await getLatestVersion();
   return installedVersion !== latestVersion;
 }
 
@@ -611,14 +591,13 @@ async function componentHasUpdate(
  */
 async function updateComponent(
   targetDir: string,
-  provider: LlmProvider,
   component: UpdateComponent,
   customizations: CustomizationManifest | null,
   options: UpdateOptions,
   config: OmccConfig
 ): Promise<string[]> {
   const preservedFiles: string[] = [];
-  const componentPath = getComponentPath(provider, component);
+  const componentPath = getComponentPath(component);
   const srcPath = resolveTemplatePath(componentPath);
   const destPath = join(targetDir, componentPath);
 
@@ -665,8 +644,8 @@ async function updateComponent(
 /**
  * Get the path for a component
  */
-function getComponentPath(provider: LlmProvider, component: UpdateComponent): string {
-  const layout = getProviderLayout(provider);
+function getComponentPath(component: UpdateComponent): string {
+  const layout = getProviderLayout();
   if (component === 'guides') {
     return 'guides';
   }
@@ -676,7 +655,7 @@ function getComponentPath(provider: LlmProvider, component: UpdateComponent): st
 /**
  * Backup the current installation
  */
-async function backupInstallation(targetDir: string, provider: LlmProvider): Promise<string> {
+async function backupInstallation(targetDir: string): Promise<string> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupDir = join(targetDir, `.omcustom-backup-${timestamp}`);
   const fs = await import('node:fs/promises');
@@ -684,7 +663,7 @@ async function backupInstallation(targetDir: string, provider: LlmProvider): Pro
   await ensureDirectory(backupDir);
 
   // Backup key directories
-  const layout = getProviderLayout(provider);
+  const layout = getProviderLayout();
   const dirsToBackup = [layout.rootDir, 'guides'];
   for (const dir of dirsToBackup) {
     const srcPath = join(targetDir, dir);

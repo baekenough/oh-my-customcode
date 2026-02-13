@@ -1,6 +1,6 @@
 /**
  * Pre-flight checks for CLI tool versions
- * Checks if claude-code and codex CLI tools need upgrading via Homebrew
+ * Checks if claude-code CLI tool needs upgrading via Homebrew
  */
 
 import { execSync } from 'node:child_process';
@@ -130,7 +130,7 @@ function getToolInfoFromBrew(toolName: string): CliTool {
 
     const info = JSON.parse(infoOutput) as BrewInfo;
 
-    // Check casks first (claude-code, codex are typically casks)
+    // Check casks first (claude-code is typically installed as a cask)
     if (info.casks && info.casks.length > 0) {
       const cask = info.casks[0];
       tool.latestVersion = cask.version;
@@ -263,7 +263,7 @@ function checkOutdated(tools: CliTool[]): void {
  * Run pre-flight check
  */
 export async function runPreflightCheck(options: PreflightOptions = {}): Promise<PreflightResult> {
-  const { skip = false, tools: toolNames = ['claude-code', 'codex'], timeout = 5000 } = options;
+  const { skip = false, tools: toolNames = ['claude-code'], timeout = 5000 } = options;
 
   // Check if should skip
   if (skip) {

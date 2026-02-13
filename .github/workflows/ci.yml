@@ -7,57 +7,6 @@ on:
       - 'release/**'
 
 jobs:
-  codex-native:
-    name: Codex Native
-    runs-on: ubuntu-latest
-    steps:
-      - name: Detect Codex-native related changes
-        id: changes
-        uses: dorny/paths-filter@v3
-        with:
-          token: ${{ github.token }}
-          filters: |
-            codex:
-              - 'templates/.codex/**'
-              - 'templates/AGENTS.md.*'
-              - '.github/scripts/verify-codex-native.ts'
-              - '.github/workflows/reusable-codex-native.yml'
-              - '.github/workflows/codex-native-check.yml'
-
-      - name: Summary (skipped)
-        if: steps.changes.outputs.codex != 'true'
-        run: |
-          echo "## Codex Native Verification Skipped" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "No Codex-native related files changed in this pull request." >> $GITHUB_STEP_SUMMARY
-
-      - name: Checkout
-        if: steps.changes.outputs.codex == 'true'
-        uses: actions/checkout@v6
-
-      - name: Setup Bun
-        if: steps.changes.outputs.codex == 'true'
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        if: steps.changes.outputs.codex == 'true'
-        run: bun install --frozen-lockfile
-
-      - name: Run verify-codex-native
-        if: steps.changes.outputs.codex == 'true'
-        env:
-          PROJECT_ROOT: ${{ github.workspace }}/templates
-        run: bun run .github/scripts/verify-codex-native.ts --force
-
-      - name: Summary (completed)
-        if: steps.changes.outputs.codex == 'true' && success()
-        run: |
-          echo "## Codex Native Verification Passed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Scope: templates/.codex + Codex verifier workflow/script changes." >> $GITHUB_STEP_SUMMARY
-
   lint:
     name: Lint
     runs-on: ubuntu-latest

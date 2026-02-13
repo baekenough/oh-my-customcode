@@ -19,7 +19,7 @@
     "unknownError": "An unknown error occurred"
   },
   "cli": {
-    "description": "Batteries-included agent harness for Claude Code and OpenAI Codex",
+    "description": "Batteries-included agent harness for Claude Code",
     "versionOption": "Show version number",
     "usage": "Usage: omcustom <command> [options]",
     "commands": "Commands",
@@ -58,7 +58,6 @@
     "init": {
       "description": "Initialize oh-my-customcode in the current directory",
       "langOption": "Language for templates (en or ko)",
-      "providerOption": "Provider to initialize (auto, claude, codex)",
       "start": "Initializing oh-my-customcode...",
       "exists": "Existing {{rootDir}} directory found.",
       "backing_up": "Creating backup...",
@@ -108,7 +107,6 @@
       "guidesOption": "Update only guides",
       "hooksOption": "Update only hooks",
       "contextsOption": "Update only contexts",
-      "providerOption": "Provider to update (auto, claude, codex)",
       "dryRunHeader": "Dry run - no changes will be made:",
       "componentUpdated": "✓ {{component}} updated",
       "componentSkipped": "- {{component}} skipped (no changes)",
@@ -121,7 +119,6 @@
     "list": {
       "description": "List installed components",
       "typeArgument": "Type to list: agents, skills, guides, rules, or all",
-      "providerOption": "Provider to list (auto, claude, codex)",
       "scanning": "Scanning installed components...",
       "empty": "No {{type}} found.",
       "header": "{{type}} ({{count}} installed)",
@@ -146,7 +143,6 @@
     "doctor": {
       "description": "Check and fix configuration issues",
       "fixOption": "Automatically fix issues that can be fixed",
-      "providerOption": "Provider to diagnose (auto, claude, codex)",
       "checking": "Running diagnostic checks...",
       "applyingFixes": "Applying fixes...",
       "fixing": "Fixing: {{name}}...",

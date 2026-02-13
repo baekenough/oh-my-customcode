@@ -19,7 +19,7 @@
     "unknownError": "알 수 없는 오류가 발생했습니다"
   },
   "cli": {
-    "description": "Claude Code와 OpenAI Codex를 위한 올인원 에이전트 하네스",
+    "description": "Claude Code를 위한 올인원 에이전트 하네스",
     "versionOption": "버전 번호 표시",
     "usage": "사용법: omcustom <명령어> [옵션]",
     "commands": "명령어",
@@ -58,7 +58,6 @@
     "init": {
       "description": "현재 디렉토리에 oh-my-customcode 초기화",
       "langOption": "템플릿 언어 (en 또는 ko)",
-      "providerOption": "초기화할 제공자 (auto, claude, codex)",
       "start": "oh-my-customcode 초기화 중...",
       "exists": "기존 {{rootDir}} 디렉토리가 발견되었습니다.",
       "backing_up": "백업을 생성합니다...",
@@ -108,7 +107,6 @@
       "guidesOption": "가이드만 업데이트",
       "hooksOption": "훅만 업데이트",
       "contextsOption": "컨텍스트만 업데이트",
-      "providerOption": "업데이트할 제공자 (auto, claude, codex)",
       "dryRunHeader": "드라이 런 - 변경사항 없음:",
       "componentUpdated": "✓ {{component}} 업데이트됨",
       "componentSkipped": "- {{component}} 건너뜀 (변경사항 없음)",
@@ -121,7 +119,6 @@
     "list": {
       "description": "설치된 컴포넌트 목록 표시",
       "typeArgument": "표시할 타입: agents, skills, guides, rules 또는 all",
-      "providerOption": "표시할 제공자 (auto, claude, codex)",
       "scanning": "설치된 컴포넌트 검색 중...",
       "empty": "{{type}}이(가) 없습니다.",
       "header": "{{type}} ({{count}}개 설치됨)",
@@ -146,7 +143,6 @@
     "doctor": {
       "description": "설정 문제 확인 및 수정",
       "fixOption": "자동으로 수정 가능한 문제 수정",
-      "providerOption": "진단할 제공자 (auto, claude, codex)",
       "checking": "진단 검사 실행 중...",
       "applyingFixes": "수정 사항 적용 중...",
       "fixing": "수정 중: {{name}}...",

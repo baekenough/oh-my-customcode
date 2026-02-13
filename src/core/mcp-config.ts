@@ -6,7 +6,7 @@ import { execSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileExists } from '../utils/fs.js';
-import { getProviderLayout, type LlmProvider } from './layout.js';
+import { getProviderLayout } from './layout.js';
 
 interface MCPServerConfig {
   type: string;
@@ -22,10 +22,9 @@ interface MCPConfig {
 /**
  * Generate .mcp.json with ontology-rag server configuration
  * @param targetDir - Project root directory
- * @param provider - LLM provider (claude or codex)
  */
-export async function generateMCPConfig(targetDir: string, provider: LlmProvider): Promise<void> {
-  const layout = getProviderLayout(provider);
+export async function generateMCPConfig(targetDir: string): Promise<void> {
+  const layout = getProviderLayout();
   const mcpConfigPath = join(targetDir, '.mcp.json');
   const ontologyDir = join(layout.rootDir, 'ontology');
 

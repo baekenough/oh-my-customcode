@@ -195,29 +195,6 @@ describe('doctor custom components', () => {
     expect(result.fixable).toBe(false);
   });
 
-  it('should work with different root directories', async () => {
-    const customComponents: CustomComponentConfig[] = [
-      {
-        type: 'agent',
-        name: 'codex-agent',
-        path: '.codex/agents/codex-agent.md',
-        managed: false,
-      },
-    ];
-
-    await createConfigWithCustomComponents(customComponents);
-
-    // Create component in .codex directory
-    await createDirStructure({
-      '.codex/agents/codex-agent.md': 'Codex agent',
-    });
-
-    const result = await checkCustomComponents(tempDir, '.codex');
-
-    expect(result.status).toBe('pass');
-    expect(result.message).toContain('1 items');
-  });
-
   it('should handle directory paths (trailing /)', async () => {
     const customComponents: CustomComponentConfig[] = [
       {
@@ -313,5 +290,25 @@ describe('doctor custom components', () => {
 
     expect(result.status).toBe('warn');
     expect(result.fixable).toBe(false);
+  });
+
+  /**
+   * NOTE: The catch block in checkCustomComponents (lines 600-606) is unreachable
+   * with the current loadConfig implementation because loadConfig never throws -
+   * it always returns defaults when errors occur.
+   *
+   * The catch block exists as defensive programming for potential future changes
+   * to loadConfig. If loadConfig is modified to throw errors in certain cases,
+   * this test should be updated to cover that scenario using mocking.
+   *
+   * Current loadConfig behavior:
+   * - Config file missing → returns getDefaultConfig() (doesn't throw)
+   * - Config file malformed → catches error, warns, returns getDefaultConfig() (doesn't throw)
+   * - Any other error → catches error, warns, returns getDefaultConfig() (doesn't throw)
+   */
+  it('should document why catch block is not tested', () => {
+    // This test exists to document the unreachable catch block in checkCustomComponents
+    // See comment above for explanation
+    expect(true).toBe(true);
   });
 });

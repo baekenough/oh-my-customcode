@@ -35,7 +35,7 @@ def discover_ontology_dir() -> Path:
 
     Search order:
     1. ONTOLOGY_DIR environment variable
-    2. Search upward from cwd for .claude/ontology/ or .codex/ontology/
+    2. Search upward from cwd for .claude/ontology/
     3. Fallback: cwd/.claude/ontology/
 
     Returns:
@@ -49,10 +49,9 @@ def discover_ontology_dir() -> Path:
     # 2. Search upward from cwd
     current = Path.cwd()
     for _ in range(10):  # Max 10 levels up
-        for provider_dir in [".claude", ".codex"]:
-            candidate = current / provider_dir / "ontology"
-            if candidate.is_dir():
-                return candidate
+        candidate = current / ".claude" / "ontology"
+        if candidate.is_dir():
+            return candidate
         parent = current.parent
         if parent == current:
             break

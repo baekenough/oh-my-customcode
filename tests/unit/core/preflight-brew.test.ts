@@ -109,10 +109,6 @@ describe('preflight - Homebrew integration', () => {
             ],
             formulae: [],
           }),
-          'brew info --json=v2 codex': JSON.stringify({
-            casks: [],
-            formulae: [],
-          }),
           'brew outdated --json=v2': JSON.stringify({ casks: [], formulae: [] }),
         })
       );
@@ -398,27 +394,12 @@ describe('preflight - Homebrew integration', () => {
             ],
             formulae: [],
           }),
-          'brew info --json=v2 codex': JSON.stringify({
-            casks: [
-              {
-                token: 'codex',
-                version: '3.0.0',
-                installed: '2.5.0',
-              },
-            ],
-            formulae: [],
-          }),
           'brew outdated --json=v2': JSON.stringify({
             casks: [
               {
                 name: 'claude-code',
                 installed_versions: ['1.0.0'],
                 current_version: '2.0.0',
-              },
-              {
-                name: 'codex',
-                installed_versions: ['2.5.0'],
-                current_version: '3.0.0',
               },
             ],
             formulae: [],
@@ -430,16 +411,12 @@ describe('preflight - Homebrew integration', () => {
 
       expect(result.skipped).toBe(false);
       expect(result.hasUpdates).toBe(true);
-      expect(result.tools.length).toBe(2);
+      expect(result.tools.length).toBe(1);
       expect(result.warnings.length).toBe(0);
 
       const claudeCode = result.tools.find((t) => t.name === 'claude-code');
       expect(claudeCode?.updateAvailable).toBe(true);
       expect(claudeCode?.latestVersion).toBe('2.0.0');
-
-      const codex = result.tools.find((t) => t.name === 'codex');
-      expect(codex?.updateAvailable).toBe(true);
-      expect(codex?.latestVersion).toBe('3.0.0');
     });
 
     it('should complete full flow with no updates', async () => {
@@ -456,16 +433,6 @@ describe('preflight - Homebrew integration', () => {
             ],
             formulae: [],
           }),
-          'brew info --json=v2 codex': JSON.stringify({
-            casks: [
-              {
-                token: 'codex',
-                version: '3.0.0',
-                installed: '3.0.0',
-              },
-            ],
-            formulae: [],
-          }),
           'brew outdated --json=v2': JSON.stringify({ casks: [], formulae: [] }),
         })
       );
@@ -474,7 +441,7 @@ describe('preflight - Homebrew integration', () => {
 
       expect(result.skipped).toBe(false);
       expect(result.hasUpdates).toBe(false);
-      expect(result.tools.length).toBe(2);
+      expect(result.tools.length).toBe(1);
 
       expect(result.tools.every((t) => !t.updateAvailable)).toBe(true);
     });
@@ -497,11 +464,9 @@ describe('preflight - Homebrew integration', () => {
 
       // The check completes but tools are unknown (brew and npm both failed)
       expect(result.skipped).toBe(false);
-      expect(result.tools.length).toBe(2);
+      expect(result.tools.length).toBe(1);
       expect(result.tools[0].installMethod).toBe('unknown');
-      expect(result.tools[1].installMethod).toBe('unknown');
       expect(result.tools[0].installed).toBe(false);
-      expect(result.tools[1].installed).toBe(false);
     });
 
     // Note: Testing the outer catch block (lines 335-343) is not feasible

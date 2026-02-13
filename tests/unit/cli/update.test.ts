@@ -89,7 +89,6 @@ describe('update command', () => {
       const callArgs = mockUpdate.mock.calls[0]?.[0];
       expect(callArgs).toBeDefined();
       expect(callArgs.targetDir).toBe(tempDir);
-      expect(callArgs.provider).toBe('claude');
       expect(callArgs.components).toBeUndefined(); // No specific components = all
       expect(callArgs.preserveCustomizations).toBe(true);
 
@@ -347,48 +346,6 @@ describe('update command', () => {
 
       const callArgs = mockUpdate.mock.calls[0]?.[0];
       expect(callArgs.components).toBeUndefined();
-    });
-  });
-
-  describe('updateCommand with provider override', () => {
-    it('should pass provider override to detectProvider', async () => {
-      const mockDetectProvider = mock(async () => ({
-        provider: 'codex',
-        confidence: 'high',
-        reason: 'override',
-      }));
-
-      mock.module('../../../src/core/provider.js', () => ({
-        detectProvider: mockDetectProvider,
-      }));
-
-      const mockUpdate = mock(async () => ({
-        success: true,
-        updatedComponents: [],
-        skippedComponents: [],
-        preservedFiles: [],
-        backedUpPaths: [],
-        previousVersion: '0.1.0',
-        newVersion: '0.1.0',
-        warnings: [],
-      }));
-
-      mock.module('../../../src/core/updater.js', () => ({
-        update: mockUpdate,
-      }));
-
-      const { updateCommand } = await import('../../../src/cli/update.js');
-
-      await updateCommand({ provider: 'codex' });
-
-      // Verify detectProvider was called with override
-      expect(mockDetectProvider).toHaveBeenCalledTimes(1);
-      const detectArgs = mockDetectProvider.mock.calls[0]?.[0];
-      expect(detectArgs.override).toBe('codex');
-
-      // Verify update was called with codex provider
-      const updateArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(updateArgs.provider).toBe('codex');
     });
   });
 
