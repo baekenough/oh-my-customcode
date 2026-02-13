@@ -47,7 +47,7 @@
 
 ### #54 - Pre-flight CLI version check (P2-Medium, M)
 
-**Goal:** `omcc` 실행 전 claude-code/codex CLI 버전 확인
+**Goal:** `omcc` 실행 전 claude-code CLI 버전 확인
 
 **Key Files to Create:**
 - `src/preflight/version-check.ts` - 버전 감지 + 비교
@@ -84,9 +84,10 @@ gh project item-add ... (기존 이슈 추가)
 ## Session Notes
 
 ### 2026-02-10 (current)
-- v0.9.0 릴리즈: Codex dual-mode + README 수정
+- v0.9.0 릴리즈: README 수정
 - v0.9.1 릴리즈: secretary-routing 템플릿 누락 수정 (#57)
 - v0.9.2 릴리즈: release workflow 충돌 수정 (#59)
+- v0.10.0 릴리즈: Claude-only mode enabled
 - Sauron Phase 2.5 문서 정확성 검증 추가
 - 4개 이슈 분석 완료 + 댓글 작성
 

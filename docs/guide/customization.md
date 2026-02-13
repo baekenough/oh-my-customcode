@@ -73,7 +73,7 @@ triggers:
 
 ## Modifying Rules
 
-Rules are stored in `.claude/rules/` (Claude) or `.codex/rules/` (Codex) with priority prefixes:
+Rules are stored in `.claude/rules/` with priority prefixes:
 
 | Prefix | Priority | Description |
 |--------|----------|-------------|
@@ -86,11 +86,8 @@ Rules are stored in `.claude/rules/` (Claude) or `.codex/rules/` (Codex) with pr
 Edit any rule file directly:
 
 ```bash
-# Edit the safety rules (Claude)
+# Edit the safety rules
 code .claude/rules/MUST-safety.md
-
-# Edit the safety rules (Codex)
-code .codex/rules/MUST-safety.md
 ```
 
 ### Creating New Rules
@@ -236,7 +233,7 @@ skills:
     path: ../../../../skills/development/my-skill
 ```
 
-## Customizing CLAUDE.md (Claude mode)
+## Customizing CLAUDE.md
 
 The main `CLAUDE.md` file is the entry point for Claude. Customize it to:
 
@@ -246,20 +243,7 @@ The main `CLAUDE.md` file is the entry point for Claude. Customize it to:
 - Add custom sections
 
 ::: warning
-Be careful when editing CLAUDE.md. Breaking changes may affect agent behavior in Claude mode.
-:::
-
-## Customizing AGENTS.md (Codex mode)
-
-The main `AGENTS.md` file is the entry point for Codex. Customize it to:
-
-- Add project-specific instructions
-- Modify command references
-- Change agent behavior
-- Add custom sections
-
-::: warning
-Be careful when editing AGENTS.md. Breaking changes may affect agent behavior in Codex mode.
+Be careful when editing CLAUDE.md. Breaking changes may affect agent behavior.
 :::
 
 ## Best Practices
