@@ -1,7 +1,7 @@
 ---
 name: mgr-updater
 description: Use when you need to update external agents, skills, and guides from their upstream sources, checking versions and applying updates
-model: sonnet
+model: balanced
 memory: project
 effort: medium
 skills:
@@ -19,7 +19,7 @@ You are an external source synchronization specialist keeping external component
 
 ## Workflow
 
-1. Scan `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, `guides/*/` for `source.type: external`
+1. Scan `.codex/agents/*.md`, `.codex/skills/*/SKILL.md`, `guides/*/` for `source.type: external`
 2. For each: read current version, check upstream, compare, fetch/update if newer
 3. Update frontmatter metadata (version, last_updated)
 4. Report summary

@@ -1,43 +1,43 @@
 #!/bin/bash
-# Claude Code Hooks & Contexts Installer
+# Codex Hooks & Contexts Installer
 # Source: https://github.com/affaan-m/everything-claude-code
 # Hook installation script
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLAUDE_HOME="${HOME}/.codex"
-SETTINGS_FILE="${CLAUDE_HOME}/settings.json"
+CODEX_HOME="${HOME}/.codex"
+SETTINGS_FILE="${CODEX_HOME}/settings.json"
 
 echo "┌─────────────────────────────────────────────┐"
-echo "│  Claude Code Hooks & Contexts Installer     │"
+echo "│  Codex Hooks & Contexts Installer     │"
 echo "└─────────────────────────────────────────────┘"
 echo ""
 
 # Create directories
 echo "[1/5] Creating directories..."
-mkdir -p "${CLAUDE_HOME}/hooks/memory-persistence"
-mkdir -p "${CLAUDE_HOME}/hooks/strategic-compact"
-mkdir -p "${CLAUDE_HOME}/sessions"
-mkdir -p "${CLAUDE_HOME}/skills/learned"
-mkdir -p "${CLAUDE_HOME}/contexts"
+mkdir -p "${CODEX_HOME}/hooks/memory-persistence"
+mkdir -p "${CODEX_HOME}/hooks/strategic-compact"
+mkdir -p "${CODEX_HOME}/sessions"
+mkdir -p "${CODEX_HOME}/skills/learned"
+mkdir -p "${CODEX_HOME}/contexts"
 echo "      ✓ Directories created"
 
 # Copy scripts
 echo "[2/5] Copying hook scripts..."
-cp "${SCRIPT_DIR}/hooks/memory-persistence/"*.sh "${CLAUDE_HOME}/hooks/memory-persistence/"
-cp "${SCRIPT_DIR}/hooks/strategic-compact/"*.sh "${CLAUDE_HOME}/hooks/strategic-compact/"
+cp "${SCRIPT_DIR}/hooks/memory-persistence/"*.sh "${CODEX_HOME}/hooks/memory-persistence/"
+cp "${SCRIPT_DIR}/hooks/strategic-compact/"*.sh "${CODEX_HOME}/hooks/strategic-compact/"
 echo "      ✓ Scripts copied"
 
 # Copy contexts
 echo "[3/5] Copying context files..."
-cp "${SCRIPT_DIR}/contexts/"*.md "${CLAUDE_HOME}/contexts/"
+cp "${SCRIPT_DIR}/contexts/"*.md "${CODEX_HOME}/contexts/"
 echo "      ✓ Contexts copied"
 
 # Set permissions
 echo "[4/5] Setting execute permissions..."
-chmod +x "${CLAUDE_HOME}/hooks/memory-persistence/"*.sh
-chmod +x "${CLAUDE_HOME}/hooks/strategic-compact/"*.sh
+chmod +x "${CODEX_HOME}/hooks/memory-persistence/"*.sh
+chmod +x "${CODEX_HOME}/hooks/strategic-compact/"*.sh
 echo "      ✓ Permissions set"
 
 # Handle settings.json
@@ -75,7 +75,7 @@ echo "┌───────────────────────�
 echo "│  Installation Complete!                     │"
 echo "└─────────────────────────────────────────────┘"
 echo ""
-echo "Installed to: ${CLAUDE_HOME}/"
+echo "Installed to: ${CODEX_HOME}/"
 echo ""
 echo "Structure:"
 echo "  ~/.codex/"
@@ -95,6 +95,6 @@ echo "  ├── sessions/              (auto-created logs)"
 echo "  └── skills/learned/        (for future use)"
 echo ""
 echo "Next steps:"
-echo "  1. Restart Claude Code to activate hooks"
+echo "  1. Restart Codex to activate hooks"
 echo "  2. Use contexts by referencing them in prompts"
 echo ""

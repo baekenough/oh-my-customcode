@@ -70,28 +70,28 @@ Any change to: agents, agent frontmatter, skills, guides, routing patterns, rule
 
 ```bash
 # Agent count check
-ls .claude/agents/*.md | wc -l
+ls .codex/agents/*.md | wc -l
 
 # Skill count check
-find .claude/skills -name "SKILL.md" | wc -l
+find .codex/skills -name "SKILL.md" | wc -l
 
 # Frontmatter validation (check for missing YAML headers)
-for f in .claude/agents/*.md; do head -1 "$f" | grep -q "^---" || echo "MISSING FRONTMATTER: $f"; done
+for f in .codex/agents/*.md; do head -1 "$f" | grep -q "^---" || echo "MISSING FRONTMATTER: $f"; done
 
 # Check for agents with invalid skill references
-for f in .claude/agents/*.md; do
+for f in .codex/agents/*.md; do
   grep "^skills:" -A 10 "$f" | grep "  - " | sed 's/.*- //' | while read skill; do
-    [ -f ".claude/skills/$skill/SKILL.md" ] || echo "INVALID SKILL REF in $f: $skill"
+    [ -f ".codex/skills/$skill/SKILL.md" ] || echo "INVALID SKILL REF in $f: $skill"
   done
 done
 
 # Routing skill pattern coverage
-grep -c "agent_patterns:" .claude/skills/secretary-routing/SKILL.md
-grep -c "agent_patterns:" .claude/skills/dev-lead-routing/SKILL.md
-grep -c "agent_patterns:" .claude/skills/qa-lead-routing/SKILL.md
+grep -c "agent_patterns:" .codex/skills/secretary-routing/SKILL.md
+grep -c "agent_patterns:" .codex/skills/dev-lead-routing/SKILL.md
+grep -c "agent_patterns:" .codex/skills/qa-lead-routing/SKILL.md
 
 # Memory field validation
-for f in .claude/agents/*.md; do
+for f in .codex/agents/*.md; do
   mem=$(grep "^memory:" "$f" | awk '{print $2}')
   if [ -n "$mem" ] && [ "$mem" != "project" ] && [ "$mem" != "user" ] && [ "$mem" != "local" ]; then
     echo "INVALID MEMORY SCOPE in $f: $mem"
@@ -99,27 +99,27 @@ for f in .claude/agents/*.md; do
 done
 
 # Hook count check
-ls .claude/hooks/*.json 2>/dev/null | wc -l
+ls .codex/hooks/*.json 2>/dev/null | wc -l
 
 # Context count check
-ls .claude/contexts/*.md 2>/dev/null | wc -l
+ls .codex/contexts/*.md 2>/dev/null | wc -l
 
 # Guide count check
 find guides -mindepth 1 -maxdepth 1 -type d | wc -l
 
-# Agent name accuracy (compare CLAUDE.md table with actual files)
+# Agent name accuracy (compare AGENTS.md table with actual files)
 # Extract agent names from files
-ls .claude/agents/*.md | xargs -I{} basename {} .md | sort > /tmp/actual-agents.txt
+ls .codex/agents/*.md | xargs -I{} basename {} .md | sort > /tmp/actual-agents.txt
 
 # Slash command skill existence
-for cmd in $(grep "^| \`/" CLAUDE.md | sed 's/.*`\///' | sed 's/`.*//' | sed 's/ .*//')
+for cmd in $(grep "^| \`/" AGENTS.md | sed 's/.*`\///' | sed 's/`.*//' | sed 's/ .*//')
 do
-  [ -d ".claude/skills/$cmd" ] || echo "MISSING SKILL: $cmd"
+  [ -d ".codex/skills/$cmd" ] || echo "MISSING SKILL: $cmd"
 done
 
 # Routing skill completeness check
-ls -d .claude/skills/*-routing 2>/dev/null | xargs -I{} basename {} | sort
+ls -d .codex/skills/*-routing 2>/dev/null | xargs -I{} basename {} | sort
 
-# Verify routing skill names in CLAUDE.md
-grep -oP '(secretary|dev-lead|de-lead|qa-lead)-routing' CLAUDE.md | sort -u
+# Verify routing skill names in AGENTS.md
+grep -oP '(secretary|dev-lead|de-lead|qa-lead)-routing' AGENTS.md | sort -u
 ```

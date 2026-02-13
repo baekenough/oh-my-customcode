@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "hooks": {
     "PreToolUse": [
       {
@@ -33,11 +32,11 @@
         "description": "Pause before git push to review changes"
       },
       {
-        "matcher": "tool == \"Write\" && tool_input.file_path matches \"\\\\.(md|txt)$\" && !(tool_input.file_path matches \"README\\\\.md|CLAUDE\\\\.md|AGENT\\\\.md|SKILL\\\\.md\")",
+        "matcher": "tool == \"Write\" && tool_input.file_path matches \"\\\\.(md|txt)$\" && !(tool_input.file_path matches \"README\\\\.md|AGENTS\\\\.md|SKILL\\\\.md\")",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [[ \"$file_path\" =~ \\.(md|txt)$ ]] && [[ ! \"$file_path\" =~ (README|CLAUDE|AGENT|SKILL)\\.md$ ]]; then\n  echo \"[Hook] BLOCKED: Unnecessary documentation file creation\" >&2\n  echo \"[Hook] File: $file_path\" >&2\n  echo \"[Hook] Use README.md or AGENT.md for documentation instead\" >&2\n  exit 1\nfi\n\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [[ \"$file_path\" =~ \\.(md|txt)$ ]] && [[ ! \"$file_path\" =~ (README|AGENTS|SKILL)\\.md$ ]]; then\n  echo \"[Hook] BLOCKED: Unnecessary documentation file creation\" >&2\n  echo \"[Hook] File: $file_path\" >&2\n  echo \"[Hook] Use README.md or AGENTS.md for documentation instead\" >&2\n  exit 1\nfi\n\necho \"$input\""
           }
         ],
         "description": "Block creation of random .md files - keeps docs consolidated"
@@ -47,7 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\nCOUNTER_FILE=\"/tmp/claude-tool-count-$$\"\nTHRESHOLD=${COMPACT_THRESHOLD:-50}\nif [ -f \"$COUNTER_FILE\" ]; then COUNT=$(cat \"$COUNTER_FILE\"); COUNT=$((COUNT + 1)); else COUNT=1; fi\necho \"$COUNT\" > \"$COUNTER_FILE\"\nif [ \"$COUNT\" -eq \"$THRESHOLD\" ]; then echo '[StrategicCompact] Reached '$THRESHOLD' tool calls' >&2; echo '[StrategicCompact] Consider /compact if at a logical breakpoint' >&2; fi\nif [ \"$COUNT\" -gt \"$THRESHOLD\" ] && [ $(((COUNT - THRESHOLD) % 25)) -eq 0 ]; then echo \"[StrategicCompact] $COUNT tool calls - /compact reminder\" >&2; fi\ncat"
+            "command": "#!/bin/bash\nCOUNTER_FILE=\"/tmp/codex-tool-count-$$\"\nTHRESHOLD=${COMPACT_THRESHOLD:-50}\nif [ -f \"$COUNTER_FILE\" ]; then COUNT=$(cat \"$COUNTER_FILE\"); COUNT=$((COUNT + 1)); else COUNT=1; fi\necho \"$COUNT\" > \"$COUNTER_FILE\"\nif [ \"$COUNT\" -eq \"$THRESHOLD\" ]; then echo '[StrategicCompact] Reached '$THRESHOLD' tool calls' >&2; echo '[StrategicCompact] Consider /compact if at a logical breakpoint' >&2; fi\nif [ \"$COUNT\" -gt \"$THRESHOLD\" ] && [ $(((COUNT - THRESHOLD) % 25)) -eq 0 ]; then echo \"[StrategicCompact] $COUNT tool calls - /compact reminder\" >&2; fi\ncat"
           }
         ],
         "description": "Suggest manual compaction at logical intervals"

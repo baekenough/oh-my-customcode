@@ -12,7 +12,7 @@ Every response MUST start with agent identification:
 └─ Task: {brief-task-description}
 ```
 
-Default (no specific agent): `┌─ Agent: claude (default)`
+Default (no specific agent): `┌─ Agent: codex (default)`
 
 ## Simplified Format
 
@@ -25,5 +25,5 @@ With skill: `[fe-vercel-agent → react-best-practices] Analyzing...`
 |-----------|---------|
 | Agent-specific task | Full header |
 | Using skill | Include skill name |
-| General conversation | "claude (default)" |
+| General conversation | "codex (default)" |
 | Long tasks | Show progress with agent context |

@@ -19,7 +19,7 @@ Main Conversation (orchestrator)
 
 ## Session Continuity
 
-After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. Never write code directly from orchestrator.
+After restart/compaction: re-read AGENTS.md, all delegation rules still apply. Never write code directly from orchestrator.
 
 ## Delegation Rules
 
@@ -50,8 +50,8 @@ After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. N
 
 | Agent | File | Purpose |
 |-------|------|---------|
-| sys-memory-keeper | .claude/agents/sys-memory-keeper.md | Memory operations |
-| sys-naggy | .claude/agents/sys-naggy.md | TODO management |
+| sys-memory-keeper | .codex/agents/sys-memory-keeper.md | Memory operations |
+| sys-naggy | .codex/agents/sys-naggy.md | TODO management |
 
 ## Exception: Simple Tasks
 
@@ -66,26 +66,26 @@ For specialized work, ALWAYS delegate to appropriate subagent.
 
 ```
 Available models:
-  - opus   : Complex reasoning, architecture design
-  - sonnet : Balanced performance (default)
-  - haiku  : Fast, simple tasks, file search
+  - reasoning   : Complex reasoning, architecture design
+  - balanced : Balanced performance (default)
+  - fast  : Fast, simple tasks, file search
   - inherit: Use parent conversation's model
 
 Usage:
   Task(
     subagent_type: "general-purpose",
     prompt: "Analyze architecture",
-    model: "opus"
+    model: "reasoning"
   )
 ```
 
 | Task Type | Model |
 |-----------|-------|
-| Architecture analysis | `opus` |
-| Code review | `opus` or `sonnet` |
-| Code implementation | `sonnet` |
-| Manager agents | `sonnet` |
-| File search/validation | `haiku` |
+| Architecture analysis | `reasoning` |
+| Code review | `reasoning` or `balanced` |
+| Code implementation | `balanced` |
+| Manager agents | `balanced` |
+| File search/validation | `fast` |
 
 ## Git Operations
 

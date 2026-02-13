@@ -316,7 +316,7 @@ agents:
   mgr-claude-code-bible:
     keywords:
       korean: [공식문서, 바이블, 클로드코드 문서]
-      english: ["claude code docs", "official docs", bible, "code.codex.com", "native verification"]
+      english: ["codex docs", "official docs", bible, "developers.openai.com/codex", "native verification"]
     file_patterns: []
     supported_actions: [fetch, verify, check]
     base_confidence: 40

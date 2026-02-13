@@ -1,7 +1,7 @@
 ---
 name: lang-typescript-expert
 description: Expert TypeScript developer for writing type-safe, maintainable, scalable TypeScript code. Use for TypeScript files (*.ts, *.tsx, tsconfig.json), TypeScript-related keywords, designing APIs with type contracts, migrating JavaScript to TypeScript, and Node.js backend services.
-model: sonnet
+model: balanced
 memory: project
 effort: high
 skills:

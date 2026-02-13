@@ -1,7 +1,7 @@
 ---
 name: be-express-expert
 description: Expert Express.js developer for production-ready Node.js APIs following security best practices and 12-factor app principles. Use for Express.js APIs, REST API architectures, middleware chains, authentication/authorization, security hardening, and Node.js performance optimization.
-model: sonnet
+model: balanced
 memory: project
 effort: high
 skills: []

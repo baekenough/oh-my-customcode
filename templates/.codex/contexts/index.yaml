@@ -1,4 +1,4 @@
-# Claude Code Contexts Configuration
+# Codex Contexts Configuration
 # Source: https://github.com/affaan-m/everything-claude-code
 
 contexts:
@@ -33,7 +33,7 @@ contexts:
 
 usage:
   description: |
-    Use contexts to change Claude's behavior mode.
+    Use contexts to change Codex behavior mode.
     Include the context file content in your prompt or
     reference it at the start of a session.
   example: |

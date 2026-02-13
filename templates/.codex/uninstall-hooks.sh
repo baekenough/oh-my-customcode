@@ -1,14 +1,14 @@
 #!/bin/bash
-# Claude Code Hooks & Contexts Uninstaller
+# Codex Hooks & Contexts Uninstaller
 # Removes hooks installed by install-hooks.sh
 
 set -e
 
-CLAUDE_HOME="${HOME}/.codex"
-SETTINGS_FILE="${CLAUDE_HOME}/settings.json"
+CODEX_HOME="${HOME}/.codex"
+SETTINGS_FILE="${CODEX_HOME}/settings.json"
 
 echo "┌─────────────────────────────────────────────┐"
-echo "│  Claude Code Hooks Uninstaller              │"
+echo "│  Codex Hooks Uninstaller              │"
 echo "└─────────────────────────────────────────────┘"
 echo ""
 
@@ -22,14 +22,14 @@ fi
 
 echo ""
 echo "[1/3] Removing hook scripts..."
-rm -rf "${CLAUDE_HOME}/hooks/memory-persistence"
-rm -rf "${CLAUDE_HOME}/hooks/strategic-compact"
+rm -rf "${CODEX_HOME}/hooks/memory-persistence"
+rm -rf "${CODEX_HOME}/hooks/strategic-compact"
 echo "      ✓ Hook scripts removed"
 
 echo "[2/3] Removing context files..."
-rm -f "${CLAUDE_HOME}/contexts/dev.md"
-rm -f "${CLAUDE_HOME}/contexts/review.md"
-rm -f "${CLAUDE_HOME}/contexts/research.md"
+rm -f "${CODEX_HOME}/contexts/dev.md"
+rm -f "${CODEX_HOME}/contexts/review.md"
+rm -f "${CODEX_HOME}/contexts/research.md"
 echo "      ✓ Context files removed"
 
 echo "[3/3] Cleaning settings.json..."

@@ -75,15 +75,15 @@ Before writing/editing multiple files:
 ## Task Tool Requirements
 
 - Use specific `subagent_type` (not "general-purpose" when specialist exists)
-- Use `model` parameter for cost optimization (haiku for search, sonnet for code, opus for reasoning)
+- Use `model` parameter for cost optimization (fast for search, balanced for code, reasoning for reasoning)
 - Each independent unit = separate Task tool call in the SAME message
 
 ## Display Format
 
 ```
-[Instance 1] Task(mgr-creator):sonnet → Create Go agent
-[Instance 2] Task(lang-python-expert):sonnet → Review Python code
-[Instance 3] Task(Explore):haiku → Search codebase
+[Instance 1] Task(mgr-creator):balanced → Create Go agent
+[Instance 2] Task(lang-python-expert):balanced → Review Python code
+[Instance 3] Task(Explore):fast → Search codebase
 ```
 
 Must use `Task({subagent_type}):{model}` format. Custom names not allowed.

@@ -7,6 +7,7 @@
 import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { formatPreflightWarnings, runPreflightCheck } from '../core/preflight.js';
+import { maybeHandleSelfUpdateForInit } from '../core/self-update.js';
 import { detectLanguage, i18n, initI18n } from '../i18n/index.js';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
@@ -85,9 +86,16 @@ export function createProgram(): Command {
     });
 
   // Pre-flight hook: run before any command
-  program.hook('preAction', async (thisCommand) => {
+  program.hook('preAction', async (thisCommand, actionCommand) => {
     const opts = thisCommand.optsWithGlobals() as { skipVersionCheck?: boolean };
     const skipCheck = opts.skipVersionCheck || false;
+
+    if (actionCommand.name() === 'init') {
+      await maybeHandleSelfUpdateForInit({
+        currentVersion: packageJson.version,
+        skip: skipCheck,
+      });
+    }
 
     const result = await runPreflightCheck({ skip: skipCheck });
 

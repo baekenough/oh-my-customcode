@@ -39,4 +39,4 @@ Users can specify agent directly with `@{agent-name} {command}`. Override bypass
 
 ## Agent Triggers
 
-Defined in `.claude/skills/intent-detection/patterns/agent-triggers.yaml`. Each agent has keywords, file patterns, actions, and base confidence.
+Defined in `.codex/skills/intent-detection/patterns/agent-triggers.yaml`. Each agent has keywords, file patterns, actions, and base confidence.

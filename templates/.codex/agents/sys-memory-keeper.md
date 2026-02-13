@@ -1,7 +1,7 @@
 ---
 name: sys-memory-keeper
 description: Use when you need to manage session memory persistence using claude-mem, save context before compaction, restore context on session start, or query past memories
-model: sonnet
+model: balanced
 memory: project
 effort: medium
 skills:
@@ -40,4 +40,4 @@ Always include project name. Use task-based, temporal, or topic-based queries. A
 
 ## Config
 
-Provider: claude-mem | Collection: claude_memories | Archive: ~/.claude-mem/archives/
+Provider: claude-mem | Collection: claude_memories | Archive: ~/.codex-mem/archives/

@@ -14,7 +14,7 @@ Multi-step tasks, parallel execution, long-running operations. Skip for single b
 
 ## Hook Implementation
 
-Implemented in `.claude/hooks/hooks.json` (PreToolUse → Task matcher):
+Implemented in `.codex/hooks/hooks.json` (PreToolUse → Task matcher):
 
 ```
 ─── [Spawn] {subagent_type}:{model} | {description} ───
@@ -25,8 +25,8 @@ Implemented in `.claude/hooks/hooks.json` (PreToolUse → Task matcher):
 
 ```
 ─── [Agent] secretary | [Parallel] 4 ───
-  [1] Task(mgr-creator):sonnet → Create agent
-  [2] Task(lang-golang-expert):haiku → Code review
+  [1] Task(mgr-creator):balanced → Create agent
+  [2] Task(lang-golang-expert):fast → Code review
 ```
 
 Integrates with R007 (Agent ID), R008 (Tool ID), R009 (Parallel).

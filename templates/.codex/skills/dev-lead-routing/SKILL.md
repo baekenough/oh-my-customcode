@@ -69,9 +69,9 @@ user-invocable: false
 
 | Task | Model |
 |------|-------|
-| Architecture analysis | opus |
-| Code review/implementation | sonnet |
-| Quick validation/search | haiku |
+| Architecture analysis | reasoning |
+| Code review/implementation | balanced |
+| Quick validation/search | fast |
 
 ## Routing Rules
 

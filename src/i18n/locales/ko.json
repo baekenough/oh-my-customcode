@@ -19,7 +19,7 @@
     "unknownError": "알 수 없는 오류가 발생했습니다"
   },
   "cli": {
-    "description": "Claude Code를 위한 올인원 에이전트 하네스",
+    "description": "Claude Code와 OpenAI Codex를 위한 올인원 에이전트 하네스",
     "versionOption": "버전 번호 표시",
     "usage": "사용법: omcustom <명령어> [옵션]",
     "commands": "명령어",
@@ -42,6 +42,18 @@
       "skippedFlag": "버전 확인 건너뜀 (--skip-version-check)",
       "homebrewNotFound": "Homebrew를 찾을 수 없어 버전 확인을 건너뜁니다",
       "timeout": "버전 확인 시간 초과, 계속 진행합니다..."
+    },
+    "selfUpdate": {
+      "checking": "oh-my-customcode 업데이트 확인 중...",
+      "available": "📦 새 버전 사용 가능: v{{current}} → v{{latest}}",
+      "prompt": "먼저 oh-my-customcode를 업데이트할까요? (Y/n): ",
+      "updatingGlobal": "⬆️ oh-my-customcode를 전역으로 v{{version}}로 업데이트 중...",
+      "updatingNpx": "⬆️ npx로 최신 버전(v{{version}})을 실행합니다...",
+      "updated": "✅ v{{version}}로 업데이트되었습니다",
+      "declined": "현재 버전으로 계속 진행합니다.",
+      "failed": "자체 업데이트 실패: {{error}}",
+      "relaunchFailed": "npx 최신 버전 실행 실패 (status: {{status}}).",
+      "continueAfterFailure": "현재 버전으로 init을 계속 진행합니다."
     },
     "init": {
       "description": "현재 디렉토리에 oh-my-customcode 초기화",

@@ -26,8 +26,8 @@ For parallel calls: list ALL identifications BEFORE the tool calls.
 
 ✓ CORRECT: Always identify with agent AND model
    "먼저 JD 내용을 확인하겠습니다."
-   [secretary][opus] → Tool: WebFetch
-   [secretary][opus] → Fetching: https://example.com/jd.md
+   [secretary][reasoning] → Tool: WebFetch
+   [secretary][reasoning] → Fetching: https://example.com/jd.md
    <tool_call>WebFetch(...)</tool_call>
 
 ❌ WRONG: Parallel calls without listing all identifications
@@ -36,12 +36,12 @@ For parallel calls: list ALL identifications BEFORE the tool calls.
    <tool_call>Bash(cmd)</tool_call>
 
 ✓ CORRECT: List all identifications with models, then call
-   [secretary][opus] → Tool: WebFetch
-   [secretary][opus] → Fetching: url1
-   [secretary][opus] → Tool: WebFetch
-   [secretary][opus] → Fetching: url2
-   [secretary][opus] → Tool: Bash
-   [secretary][opus] → Running: cmd
+   [secretary][reasoning] → Tool: WebFetch
+   [secretary][reasoning] → Fetching: url1
+   [secretary][reasoning] → Tool: WebFetch
+   [secretary][reasoning] → Fetching: url2
+   [secretary][reasoning] → Tool: Bash
+   [secretary][reasoning] → Running: cmd
    <tool_call>WebFetch(url1)</tool_call>
    <tool_call>WebFetch(url2)</tool_call>
    <tool_call>Bash(cmd)</tool_call>
@@ -51,9 +51,9 @@ For parallel calls: list ALL identifications BEFORE the tool calls.
 
 | Model | Use |
 |-------|-----|
-| `opus` | Complex reasoning, architecture |
-| `sonnet` | General tasks, code generation (default) |
-| `haiku` | Fast simple tasks, file search |
+| `reasoning` | Complex reasoning, architecture |
+| `balanced` | General tasks, code generation (default) |
+| `fast` | Fast simple tasks, file search |
 
 ## Tool Categories
 
@@ -75,8 +75,8 @@ Task(subagent_type):model → description
 ## Example
 
 ```
-[mgr-creator][sonnet] → Write: .claude/agents/new-agent.md
-[secretary][opus] → Spawning:
-  [1] Task(lang-golang-expert):sonnet → Go code review
-  [2] Task(lang-python-expert):sonnet → Python code review
+[mgr-creator][balanced] → Write: .codex/agents/new-agent.md
+[secretary][reasoning] → Spawning:
+  [1] Task(lang-golang-expert):balanced → Go code review
+  [2] Task(lang-python-expert):balanced → Python code review
 ```

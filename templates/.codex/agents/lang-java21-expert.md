@@ -1,7 +1,7 @@
 ---
 name: lang-java21-expert
 description: Expert Java 21 developer for modern Java with Virtual Threads, Pattern Matching, Record Patterns, and Sequenced Collections. Use for Java files (*.java, pom.xml, build.gradle), Java-related keywords, high-concurrency systems, data-centric APIs with Records, and migrating from older Java versions.
-model: sonnet
+model: balanced
 memory: project
 effort: high
 skills: []

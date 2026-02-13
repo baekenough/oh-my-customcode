@@ -17,9 +17,9 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 
 | Scope | Location | Git Tracked |
 |-------|----------|-------------|
-| `user` | `~/.claude/agent-memory/<name>/` | No |
-| `project` | `.claude/agent-memory/<name>/` | Yes |
-| `local` | `.claude/agent-memory-local/<name>/` | No |
+| `user` | `~/.codex/agent-memory/<name>/` | No |
+| `project` | `.codex/agent-memory/<name>/` | Yes |
+| `local` | `.codex/agent-memory-local/<name>/` | No |
 
 ## When to Use claude-mem
 
@@ -35,5 +35,5 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 - Consult memory before starting work
 - Update after discovering patterns
 - Keep MEMORY.md under 200 lines
-- Do not store sensitive data or duplicate CLAUDE.md content
+- Do not store sensitive data or duplicate AGENTS.md content
 - Memory write failures should not block main task

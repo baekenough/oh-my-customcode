@@ -1,12 +1,12 @@
 ---
 name: monitoring-setup
-description: Enable/disable OpenTelemetry console monitoring for Claude Code usage tracking
+description: Enable/disable OpenTelemetry console monitoring for Codex usage tracking
 argument-hint: "[enable|disable|status]"
 ---
 
 # Monitoring Setup Skill
 
-Enable or disable OpenTelemetry console monitoring. When enabled, Claude Code outputs usage metrics (cost, tokens, sessions, LOC, commits, PRs, active time) and events (tool results, API requests) to the terminal.
+Enable or disable OpenTelemetry console monitoring. When enabled, Codex outputs usage metrics (cost, tokens, sessions, LOC, commits, PRs, active time) and events (tool results, API requests) to the terminal.
 
 ## Natural Language Triggers
 
@@ -77,7 +77,7 @@ This skill activates when the user mentions any of:
 - `settings.local.json` is NOT git-tracked (local to user)
 - Each user enables monitoring independently
 - No infrastructure required for console mode
-- Metrics appear in stderr during Claude Code execution
+- Metrics appear in stderr during Codex execution
 - Default export interval: 60s for metrics, 5s for events
 
 ## Available Metrics
