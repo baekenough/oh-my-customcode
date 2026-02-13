@@ -166,6 +166,12 @@ Event-driven automation for Claude Code lifecycle events (PreToolUse, PostToolUs
 
 Shared context files for cross-agent knowledge and mode configurations.
 
+### Packages
+
+| Package | Version | Description |
+|---------|---------|-------------|
+| [ontology-rag](packages/ontology-rag/) | 0.3.0 | Ontology+RAG context engine for intelligent context loading. Reduces token usage by 75-95% through hierarchical loading, graph-based routing, and adaptive compression. |
+
 ---
 
 ## CLI Commands
