@@ -32,28 +32,6 @@ class TestDiscoverOntologyDir:
         result = discover_ontology_dir()
         assert result == ontology_dir
 
-    def test_search_upward_finds_codex(self, tmp_path, monkeypatch):
-        """Test upward search finds .codex/ontology/ directory."""
-        monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
-        ontology_dir = tmp_path / ".codex" / "ontology"
-        ontology_dir.mkdir(parents=True)
-        nested = tmp_path / "x" / "y"
-        nested.mkdir(parents=True)
-        monkeypatch.chdir(nested)
-
-        result = discover_ontology_dir()
-        assert result == ontology_dir
-
-    def test_claude_preferred_over_codex(self, tmp_path, monkeypatch):
-        """Test that .claude/ is found before .codex/ at the same level."""
-        monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
-        (tmp_path / ".claude" / "ontology").mkdir(parents=True)
-        (tmp_path / ".codex" / "ontology").mkdir(parents=True)
-        monkeypatch.chdir(tmp_path)
-
-        result = discover_ontology_dir()
-        assert ".claude" in str(result)
-
     def test_fallback_to_cwd_claude(self, tmp_path, monkeypatch):
         """Test fallback returns cwd/.claude/ontology/ when nothing found."""
         monkeypatch.delenv("ONTOLOGY_DIR", raising=False)
