@@ -59,7 +59,7 @@ describe('updater', () => {
         agents: '0.1.0',
       });
 
-      const result = await checkForUpdates(tempDir, 'claude');
+      const result = await checkForUpdates(tempDir);
 
       // Template version is 0.2.0 (from manifest.json)
       expect(result.currentVersion).toBe('0.1.0');
@@ -79,7 +79,7 @@ describe('updater', () => {
         contexts: '0.2.0',
       });
 
-      const result = await checkForUpdates(tempDir, 'claude');
+      const result = await checkForUpdates(tempDir);
 
       expect(result.currentVersion).toBe('0.2.0');
       expect(result.latestVersion).toBe('0.2.0');
@@ -89,7 +89,7 @@ describe('updater', () => {
 
     it('should handle missing config gracefully', async () => {
       // No config file created, should use defaults
-      const result = await checkForUpdates(tempDir, 'claude');
+      const result = await checkForUpdates(tempDir);
 
       expect(result.currentVersion).toBe('0.0.0'); // Default version
       expect(result.latestVersion).toBe('0.2.0');
@@ -103,7 +103,7 @@ describe('updater', () => {
         skills: '0.1.0', // Out of date
       });
 
-      const result = await checkForUpdates(tempDir, 'claude');
+      const result = await checkForUpdates(tempDir);
 
       // Should have agents and skills as updatable (not rules)
       const componentNames = result.updatableComponents.map((c) => c.name);
@@ -117,7 +117,7 @@ describe('updater', () => {
         // No componentVersions specified
       });
 
-      const result = await checkForUpdates(tempDir, 'claude');
+      const result = await checkForUpdates(tempDir);
 
       // All components should be updatable
       expect(result.updatableComponents.length).toBe(6); // rules, agents, skills, guides, hooks, contexts
