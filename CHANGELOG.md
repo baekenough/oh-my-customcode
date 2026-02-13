@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Documentation copy updated to consistently describe dual-provider support (Claude + Codex) across:
+  - `README.md`, `README_ko.md`
+  - `docs/index.md`
+- CLI command reference (`docs/guide/commands.md`) reconciled with actual CLI options and defaults.
+- Codex template/docs references aligned to Codex-native terminology and model profile terms (`reasoning|balanced|fast`).
+
 ## [0.11.0] - 2026-02-13
 
 ### Added
