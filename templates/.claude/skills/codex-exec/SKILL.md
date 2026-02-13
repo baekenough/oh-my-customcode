@@ -28,12 +28,12 @@ Execute OpenAI Codex CLI prompts in non-interactive mode and return structured r
    - Verify `codex` binary is installed (which codex || npx codex --version)
    - Verify authentication (OPENAI_API_KEY or logged in)
 2. Build command
-   - Base: codex exec --ephemeral -a never "<prompt>"
-   - Apply options: --json, --model, --full-auto overrides -a never
+   - Base: codex exec --ephemeral "<prompt>"
+   - Apply options: --json, --model, --full-auto, -C <dir>
    - Set --working-dir if specified
 3. Execute
    - Run via Bash tool with timeout (default 2min, max 10min)
-   - Or use helper script: node .claude/skills/codex-exec/scripts/codex-wrapper.js
+   - Or use helper script: node .claude/skills/codex-exec/scripts/codex-wrapper.cjs
 4. Parse output
    - Text mode: return raw stdout
    - JSON mode: parse JSON Lines, extract final assistant message
@@ -44,7 +44,7 @@ Execute OpenAI Codex CLI prompts in non-interactive mode and return structured r
 ## Safety Defaults
 
 - `--ephemeral`: No session persistence (conversations not saved)
-- `-a never`: No auto-approval (Codex won't execute commands by default)
+- Default mode: Normal approval (Codex prompts for confirmation)
 - Override with `--full-auto` only when explicitly requested
 
 ## Output Format
@@ -86,7 +86,7 @@ Suggested Fix: {suggestion}
 
 For complex executions, use the wrapper script:
 ```bash
-node .claude/skills/codex-exec/scripts/codex-wrapper.js --prompt "your prompt" [options]
+node .claude/skills/codex-exec/scripts/codex-wrapper.cjs --prompt "your prompt" [options]
 ```
 
 The wrapper provides:

@@ -121,9 +121,9 @@ function validateEnvironment() {
     }
   }
 
-  // Check for OpenAI API key
+  // Note: OPENAI_API_KEY is optional if codex has its own stored auth (via `codex auth`)
   if (!process.env.OPENAI_API_KEY) {
-    errors.push('OPENAI_API_KEY environment variable not set');
+    console.error('[codex-wrapper] Note: OPENAI_API_KEY not set, relying on codex built-in auth');
   }
 
   return {
@@ -140,11 +140,9 @@ function validateEnvironment() {
 function buildCommand(options) {
   const args = ['exec', '--ephemeral'];
 
-  // Approval mode
+  // Approval mode (default: normal, --full-auto: automatic execution)
   if (options.fullAuto) {
-    args.push('-a', 'full-auto');
-  } else {
-    args.push('-a', 'never');
+    args.push('--full-auto');
   }
 
   // JSON output
@@ -155,6 +153,11 @@ function buildCommand(options) {
   // Model selection
   if (options.model) {
     args.push('--model', options.model);
+  }
+
+  // Working directory
+  if (options.workingDir) {
+    args.push('-C', options.workingDir);
   }
 
   // Add prompt as last argument
@@ -260,8 +263,14 @@ function parseJsonLines(output) {
       const event = JSON.parse(line);
       events.push(event);
 
-      // Look for assistant message in various event structures
-      if (event.type === 'assistant_message' && event.content) {
+      // Codex CLI v0.99.0 format: item.completed events with agent_message type
+      if (event.type === 'item.completed' && event.item) {
+        if (event.item.type === 'agent_message' && event.item.text) {
+          finalMessage = event.item.text;
+        }
+      }
+      // Look for assistant message in various event structures (fallback for future API changes)
+      else if (event.type === 'assistant_message' && event.content) {
         finalMessage = event.content;
       } else if (event.message && event.message.role === 'assistant') {
         finalMessage = event.message.content || event.message.text;

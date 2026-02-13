@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 51 skills, 22 guides, 18 rules, 1 hook, 4 contexts - ready to use out of the box |
+| **Batteries Included** | 42 agents, 52 skills, 22 guides, 18 rules, 1 hook, 4 contexts - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -171,7 +171,7 @@ tool-npm-expert
 tool-optimizer
 ```
 
-### Skills (51)
+### Skills (52)
 
 Canonical skill IDs (`templates/.claude/skills/*/SKILL.md`):
 
@@ -180,6 +180,7 @@ airflow-best-practices
 audit-agents
 aws-best-practices
 claude-code-bible
+codex-exec
 create-agent
 dbt-best-practices
 de-lead-routing
@@ -301,7 +302,7 @@ your-project/
     │   ├── be-fastapi-expert.md
     │   ├── mgr-creator.md
     │   └── ...
-    ├── skills/            # Skill modules (51 directories, each with SKILL.md)
+    ├── skills/            # Skill modules (52 directories, each with SKILL.md)
     │   ├── go-best-practices/
     │   ├── react-best-practices/
     │   ├── secretary-routing/
