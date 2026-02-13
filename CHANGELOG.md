@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-02-13
+
+### Added
+- ontology-rag context engine package (Phase 1-4) with MCP server providing 8 tools
+  - Phase 1: Core ontology system with YAML-based rule indexing and graph-based relationships
+  - Phase 2: Semantic caching, token logging, and budget management
+  - Phase 3: Community detection, hybrid search (keyword + graph + community), and reranking
+  - Phase 4: Rule decomposition with extractive compression, adaptive budget management, monitoring dashboard, and A/B testing framework
+- Packages section in root README documenting ontology-rag v0.3.0
+
+### Changed
+- docs/index.md: Updated agent count (36 → 42) and skill count (17 → 51)
+
+### Fixed
+- Version display message incorrectly showing old version (#111)
+
+### Removed
+- AI PR analyzer workflow and related scripts (pr-analyzer.yml, reusable-pr-analyzer.yml, analyze-pr.ts)
+
 ## [0.10.3] - 2026-02-12
 
 ### Added
@@ -395,7 +414,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.3...v0.11.0
+[0.10.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.1...v0.10.3
+[0.10.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.4...v0.10.0
 [0.9.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.3...v0.9.4
 [0.9.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.9.2...v0.9.3
