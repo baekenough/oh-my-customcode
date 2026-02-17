@@ -219,6 +219,29 @@ Pipeline design completed.
 - **secretary-routing**: DE agents accessible through secretary for management tasks
 - **qa-lead-routing**: Coordinates with QA for data quality testing
 
+## No Match Fallback
+
+When a data engineering tool is detected but no matching agent exists:
+
+```
+User Input → No matching DE agent
+  ↓
+Detect: DE tool keyword or config file pattern
+  ↓
+Delegate to mgr-creator with context:
+  domain: detected DE tool
+  type: de-engineer
+  keywords: extracted tool names
+  file_patterns: detected config patterns
+  skills: auto-discover from .claude/skills/
+  guides: auto-discover from guides/
+```
+
+**Examples of dynamic creation triggers:**
+- New data tools (e.g., "Dagster DAG 만들어줘", "Flink 스트리밍 설정해줘")
+- Unfamiliar data formats or connectors
+- Data tool detected in project but no specialist agent
+
 ## Agent Teams Awareness
 
 Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
