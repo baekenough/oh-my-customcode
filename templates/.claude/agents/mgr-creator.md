@@ -37,3 +37,18 @@ No registry update needed - agents auto-discovered from `.claude/agents/*.md`.
 
 - R000: All files in English
 - R006: Agent file = role/capabilities only; skills = instructions; guides = reference docs
+
+## Dynamic Creation Mode
+
+When invoked as routing fallback (not explicit `/create-agent`):
+
+1. Receive context: detected domain, keywords, file patterns
+2. Auto-discover: scan `.claude/skills/` for matching skills
+3. Auto-connect: scan `guides/` for relevant reference docs
+4. Create minimal viable agent with:
+   - Detected skills and relevant guides
+   - `sonnet` model (default)
+   - `project` memory scope
+5. Agent is persisted (not ephemeral) for future reuse
+
+Dynamic mode skips user confirmation and creates the agent immediately to fulfill the pending task.

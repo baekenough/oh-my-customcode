@@ -176,8 +176,9 @@ Each agent defines:
 
 ## Error Handling
 
-### No Match
+### No Match (< 30% confidence)
 
+**Generic task** (no identifiable domain):
 ```
 [Intent Unclear]
 ├── Input: "도와줘"
@@ -188,6 +189,20 @@ How can I help? Please be more specific:
 - What type of task? (review, create, fix, ...)
 - What language/technology? (Go, Python, ...)
 - What file or project?
+```
+
+**Specialized task with identifiable domain** (keywords/files detected but no matching agent):
+```
+[No Matching Agent]
+├── Input: "Terraform 모듈 리뷰해줘"
+├── Domain: terraform (detected from keywords)
+├── Matching Agent: none
+└── Action: Trigger dynamic agent creation
+
+→ Delegating to mgr-creator with context:
+  domain: terraform
+  keywords: ["terraform", "모듈"]
+  file_patterns: ["*.tf"]
 ```
 
 ### Ambiguous Match
