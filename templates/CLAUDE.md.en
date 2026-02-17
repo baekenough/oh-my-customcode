@@ -171,7 +171,7 @@ project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (42 files)
-|   +-- skills/                  # Skills (51 directories)
+|   +-- skills/                  # Skills (52 directories)
 |   +-- rules/                   # Global rules (R000-R018)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
@@ -187,6 +187,17 @@ Orchestration is handled by routing skills in the main conversation:
 - **qa-lead-routing**: Coordinates QA workflow
 
 The main conversation acts as the sole orchestrator. Subagents cannot spawn other subagents.
+
+### Dynamic Agent Creation
+
+When no existing agent matches a specialized task, the system automatically creates one:
+
+1. Routing skill detects no matching expert
+2. Orchestrator delegates to mgr-creator with detected context
+3. mgr-creator auto-discovers relevant skills and guides
+4. New agent is created and used immediately
+
+This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect knowledge, and USE it."**
 
 ## Agents Summary
 
@@ -216,8 +227,9 @@ When Claude Code's Agent Teams feature is enabled (`CLAUDE_CODE_EXPERIMENTAL_AGE
 | Best for | Focused tasks | Research, review, debugging |
 | Token cost | Lower | Higher |
 
-**When enabled, actively use Agent Teams for complex collaborative tasks.**
+**When enabled, ACTIVELY prefer Agent Teams for qualifying collaborative tasks.**
 See R018 (SHOULD-agent-teams.md) for the decision matrix.
+Hybrid patterns (Claude + Codex, Dynamic Creation + Teams) are supported.
 Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ## Quick Reference
