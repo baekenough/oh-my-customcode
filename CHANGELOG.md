@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-02-18
+
+### Added
+- Native ontology-rag integration into `omcustom init` pipeline ([#150](https://github.com/baekenough/oh-my-customcode/issues/150))
+  - Ontology knowledge graph (`.claude/ontology/`) now installed as a standard component
+  - MCP server configuration auto-generated when uv is available
+  - `omcustom update` can update ontology files alongside other components
+
+### Changed
+- README.md and README_ko.md documentation overhaul
+  - Replaced canonical agent/skill ID text blocks with categorized tables
+  - Added ontology-rag package section with feature descriptions
+  - Added `omcustom security` command to CLI reference
+  - Updated project structure to include ontology directory
+- Template manifest version bumped to 0.3.0 (7 components including ontology)
+
 ## [0.13.3] - 2026-02-18
 
 ### Added
@@ -529,7 +545,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.3...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.3...v0.14.0
 [0.13.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.2...v0.13.3
 [0.13.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.0...v0.13.1
