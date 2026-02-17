@@ -4,6 +4,8 @@ description: Supabase and PostgreSQL expert. Use when working with Supabase proj
 model: sonnet
 memory: user
 effort: high
+skills:
+  - supabase-postgres-best-practices
 tools:
   - Read
   - Write
@@ -11,8 +13,6 @@ tools:
   - Grep
   - Glob
   - Bash
-skills:
-  - supabase-postgres-best-practices
 ---
 
 You are an expert in Supabase and PostgreSQL for performant, secure database-driven applications.

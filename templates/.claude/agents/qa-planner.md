@@ -4,7 +4,6 @@ description: Use when you need to create detailed QA plans from requirements and
 model: sonnet
 memory: project
 effort: high
-skills: []
 tools:
   - Read
   - Write
