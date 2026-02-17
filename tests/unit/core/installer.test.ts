@@ -105,11 +105,11 @@ describe('installer', () => {
       expect(componentNames).toContain('skills');
     });
 
-    it('should return exactly 6 components (commands and pipelines removed)', async () => {
+    it('should return exactly 7 components (commands and pipelines removed, ontology added)', async () => {
       const manifest = await getTemplateManifest();
 
-      // getAllComponents() returns 6 items: rules, agents, skills, guides, hooks, contexts
-      expect(manifest.components.length).toBe(6);
+      // getAllComponents() returns 7 items: rules, agents, skills, guides, hooks, contexts, ontology
+      expect(manifest.components.length).toBe(7);
 
       const componentNames = manifest.components.map((c) => c.name);
       expect(componentNames).toContain('rules');
@@ -118,6 +118,7 @@ describe('installer', () => {
       expect(componentNames).toContain('guides');
       expect(componentNames).toContain('hooks');
       expect(componentNames).toContain('contexts');
+      expect(componentNames).toContain('ontology');
       expect(componentNames).not.toContain('commands'); // commands removed
       expect(componentNames).not.toContain('pipelines'); // pipelines removed
     });
@@ -244,16 +245,16 @@ describe('installer', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle install with all components (6 total, no commands or pipelines)', async () => {
+    it('should handle install with all components (7 total, no commands or pipelines)', async () => {
       const result = await install({
         targetDir: tempDir,
-        components: ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'],
+        components: ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts', 'ontology'],
         skipConfirm: true,
       });
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.installedComponents)).toBe(true);
-      // getAllComponents() should return 6 items (commands and pipelines removed)
+      // getAllComponents() should return 7 items (commands and pipelines removed, ontology added)
     });
 
     it('should skip entry-md component in components list', async () => {
