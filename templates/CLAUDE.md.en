@@ -95,9 +95,12 @@ When task requires multiple agents:
 -> Main conversation (orchestrator) MUST coordinate
 -> Main conversation assigns tasks to appropriate agents
 -> Main conversation aggregates results
+-> Orchestrator MUST NEVER directly modify files
 
 Flow:
   User -> Main conversation -> [agent-1, agent-2, agent-3] -> Main conversation -> User
+
+Violation = immediate correction. No exception for "small changes".
 ```
 
 ---
