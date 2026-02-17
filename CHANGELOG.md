@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.4] - 2026-02-17
+
+### Changed
+- Replace Python dependency with uv for MCP server setup (#135)
+  - `checkPythonAvailable()` → `checkUvAvailable()` for reliable detection
+  - Create isolated `.venv` via `uv venv` during `omcustom init`
+  - Install `ontology-rag` into `.venv` via `uv pip install`
+  - Use `.venv/bin/python` in `.mcp.json` instead of system `python`
+
 ## [0.12.3] - 2026-02-14
 
 ### Added
