@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.3] - 2026-02-18
+
+### Added
+- `omcustom security` command for template and configuration security scanning ([#78](https://github.com/baekenough/oh-my-customcode/issues/78))
+  - Hook script audit: detects dangerous patterns (rm -rf, curl|bash, sudo, chmod 777, eval, base64 decode)
+  - Config secret scan: finds hardcoded credentials (AWS, GitHub tokens, API keys, private keys)
+  - Template integrity: checks for .env files and overly permissive file permissions
+
 ## [0.13.2] - 2026-02-18
 
 ### Fixed
@@ -521,7 +529,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.2...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.3...HEAD
+[0.13.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.2...v0.13.3
 [0.13.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.4...v0.13.0
