@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-02-18
+
+### Changed
+- R010 orchestrator coordination enforcement strengthened (#144)
+  - Added mandatory self-check box before any file modification
+  - Added Common Violations section with concrete ❌/✓ examples
+  - Stricter exception clause: "simple tasks" now means READ-ONLY only
+  - CLAUDE.md templates updated with stronger orchestrator wording
+- Agent Teams (R018) proactive usage directives strengthened (#145)
+  - Changed from "ACTIVELY prefer" to "DEFAULT to Agent Teams" for qualifying tasks
+  - Lowered threshold from 3+ to 2+ agents with shared state or iteration
+  - Added mandatory STOP-and-check in R018 and all 4 routing skills
+  - CLAUDE.md templates updated with stronger default-to language
+
 ## [0.13.0] - 2026-02-17
 
 ### Added
@@ -498,7 +512,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.4...v0.13.0
 [0.12.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.2...v0.12.3
