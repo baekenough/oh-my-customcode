@@ -117,7 +117,7 @@ The skill's WORKFLOW is followed, but git EXECUTION is delegated to mgr-gitnerd 
 
 ## Agent Teams (when enabled)
 
-When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: use Agent Teams for 3+ agent coordinated tasks. See R017 for decision matrix. Task tool remains fallback for simple/independent tasks.
+When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: use Agent Teams for 3+ agent coordinated tasks. See R018 for decision matrix. Task tool remains fallback for simple/independent tasks.
 
 ## Announcement Format
 
