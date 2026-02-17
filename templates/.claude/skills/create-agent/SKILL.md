@@ -23,6 +23,7 @@ Create a new agent with complete directory structure, files, and registration.
 --source, -s     External source URL (for external agents)
 --desc, -d       Description
 --skills         Comma-separated skills to include
+--dynamic        Auto-discover skills and guides from context (used by routing fallback)
 ```
 
 ## Workflow

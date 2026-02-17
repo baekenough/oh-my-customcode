@@ -4,7 +4,6 @@ description: Use for Bun runtime development, bunfig.toml configuration, Bun tes
 model: sonnet
 memory: project
 effort: medium
-skills: []
 tools:
   - Read
   - Write

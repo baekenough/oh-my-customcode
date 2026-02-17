@@ -4,7 +4,6 @@ description: Use for Vue 3 Composition API development, single-file components, 
 model: sonnet
 memory: project
 effort: medium
-skills: []
 tools:
   - Read
   - Write

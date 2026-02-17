@@ -4,7 +4,6 @@ description: Use when you need to create comprehensive QA documentation from det
 model: sonnet
 memory: project
 effort: medium
-skills: []
 tools:
   - Read
   - Write

@@ -4,7 +4,6 @@ description: Use when you need TODO list management and task tracking with proac
 model: sonnet
 memory: local
 effort: low
-skills: []
 tools:
   - Read
   - Write

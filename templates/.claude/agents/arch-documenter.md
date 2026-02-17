@@ -4,7 +4,6 @@ description: Use for generating architecture documentation, API specifications (
 model: sonnet
 memory: project
 effort: high
-skills: []
 tools:
   - Read
   - Write

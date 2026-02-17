@@ -265,6 +265,28 @@ metrics:
   test_case_count: number
 ```
 
+## No Match Fallback
+
+When a QA task involves unfamiliar testing patterns or tools:
+
+```
+User Input → QA task with unrecognized tool/pattern
+  ↓
+Detect: Testing framework or QA methodology keyword
+  ↓
+Delegate to mgr-creator with context:
+  domain: detected QA tool/methodology
+  type: qa-engineer
+  keywords: extracted testing terms
+  skills: auto-discover from .claude/skills/
+  guides: auto-discover from guides/
+```
+
+**Examples of dynamic creation triggers:**
+- New testing frameworks (e.g., "Cypress E2E 테스트 작성해줘", "k6 부하 테스트 설계해줘")
+- Specialized QA methodologies (e.g., "뮤테이션 테스트 전략 만들어줘")
+- Performance/security testing tools not covered by existing agents
+
 ## Agent Teams Awareness
 
 Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
