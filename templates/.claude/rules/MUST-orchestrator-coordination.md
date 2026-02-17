@@ -40,6 +40,7 @@ After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. N
 | Docker/Infra | infra-docker-expert |
 | AWS | infra-aws-expert |
 | Database schema | db-supabase-expert |
+| Unmatched specialized task | mgr-creator → dynamic agent creation |
 
 **Rules:**
 - All file modifications MUST be delegated (orchestrator only uses Read/Glob/Grep)
@@ -61,6 +62,23 @@ Subagent NOT required for:
 - Direct questions answered by main conversation
 
 For specialized work, ALWAYS delegate to appropriate subagent.
+
+## Dynamic Agent Creation (No-Match Fallback)
+
+When routing detects no matching agent for a specialized task:
+
+1. **Evaluate**: Is this a specialized task requiring domain expertise?
+   - YES → proceed to step 2
+   - NO → use general-purpose agent
+2. **Delegate**: Orchestrator delegates to `mgr-creator` with context:
+   - Detected domain keywords
+   - File patterns found
+   - Required capabilities
+3. **Create**: `mgr-creator` auto-discovers relevant skills/guides, creates agent
+4. **Execute**: Orchestrator uses newly created agent for the original task
+
+This is the core oh-my-customcode philosophy:
+> "No expert? CREATE one, connect knowledge, and USE it."
 
 ## Model Selection
 
