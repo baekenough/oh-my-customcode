@@ -4,7 +4,6 @@ description: Expert NestJS developer for opinionated, scalable Node.js applicati
 model: sonnet
 memory: project
 effort: high
-skills: []
 tools:
   - Read
   - Write

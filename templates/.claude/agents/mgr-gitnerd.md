@@ -4,7 +4,6 @@ description: Use when you need to handle Git operations and GitHub workflow mana
 model: sonnet
 memory: project
 effort: medium
-skills: []
 tools:
   - Read
   - Write

@@ -4,7 +4,6 @@ description: Use when you need to execute tests based on detailed plans and docu
 model: sonnet
 memory: project
 effort: medium
-skills: []
 tools:
   - Read
   - Write
