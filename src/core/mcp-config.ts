@@ -34,11 +34,21 @@ export async function generateMCPConfig(targetDir: string): Promise<void> {
     return;
   }
 
+  // Create venv and install ontology-rag
+  // Note: No user input in commands - safe to use execSync with fixed strings
+  try {
+    execSync('uv venv .venv', { cwd: targetDir, stdio: 'pipe' });
+    execSync('uv pip install ontology-rag', { cwd: targetDir, stdio: 'pipe' });
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to setup Python environment: ${msg}`);
+  }
+
   const config: MCPConfig = {
     mcpServers: {
       'ontology-rag': {
         type: 'stdio',
-        command: 'python',
+        command: '.venv/bin/python',
         args: ['-m', 'ontology_rag.mcp_server'],
         env: {
           ONTOLOGY_DIR: ontologyDir,
@@ -70,13 +80,13 @@ export async function generateMCPConfig(targetDir: string): Promise<void> {
 }
 
 /**
- * Check if Python is available for MCP server
- * @returns True if Python 3.x is installed and accessible
+ * Check if uv is available for Python environment management
+ * @returns True if uv is installed and accessible
  */
-export async function checkPythonAvailable(): Promise<boolean> {
+export async function checkUvAvailable(): Promise<boolean> {
   try {
     // Note: No user input - safe to use execSync
-    execSync('python --version', { stdio: 'pipe' });
+    execSync('uv --version', { stdio: 'pipe' });
     return true;
   } catch {
     return false;
