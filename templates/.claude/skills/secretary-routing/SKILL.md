@@ -92,6 +92,26 @@ Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EX
 | Multi-round verification (sauron) | Task Tool |
 | Agent audit + fix cycle | Agent Teams |
 
+## No Match Fallback
+
+When no manager agent matches the request but the task is clearly management-related:
+
+```
+User Input → No matching manager agent
+  ↓
+Evaluate: Is this a specialized management/tooling task?
+  YES → Delegate to mgr-creator with context:
+        domain: detected tool/technology
+        type: manager
+        skills: auto-discover from .claude/skills/
+  NO  → Ask user for clarification
+```
+
+**Examples of dynamic creation triggers:**
+- New CI/CD tool management (e.g., "ArgoCD 배포 관리해줘")
+- New monitoring tool setup (e.g., "Grafana 대시보드 관리")
+- Unfamiliar package manager operations
+
 ## Usage
 
 This skill is NOT user-invocable. It is automatically triggered when the main conversation detects agent management intent.
