@@ -12,6 +12,7 @@ import { detectLanguage, i18n, initI18n } from '../i18n/index.js';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
 import { listCommand } from './list.js';
+import { securityCommand } from './security.js';
 import { updateCommand } from './update.js';
 
 // Read version from package.json
@@ -78,6 +79,16 @@ export function createProgram(): Command {
     .option('--fix', i18n.t('cli.doctor.fixOption'))
     .action(async (options) => {
       await doctorCommand(options);
+    });
+
+  // omcustom security
+  program
+    .command('security')
+    .description(i18n.t('cli.security.description'))
+    .option('--verbose', i18n.t('cli.security.verboseOption'))
+    .action(async (options) => {
+      const result = await securityCommand(options);
+      process.exitCode = result.success ? 0 : 1;
     });
 
   // Pre-flight hook: run before any command
