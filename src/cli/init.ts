@@ -6,7 +6,7 @@
 import { join } from 'node:path';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
 import { getProviderLayout } from '../core/layout.js';
-import { checkPythonAvailable, generateMCPConfig } from '../core/mcp-config.js';
+import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
 
@@ -142,17 +142,18 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     logInstallResultInfo(installResult);
     logSuccessDetails(installedPaths, installResult.skippedComponents);
 
-    // Generate MCP config for ontology-rag if Python is available
-    const pythonAvailable = await checkPythonAvailable();
-    if (pythonAvailable) {
+    // Generate MCP config for ontology-rag if uv is available
+    const uvAvailable = await checkUvAvailable();
+    if (uvAvailable) {
       try {
         await generateMCPConfig(targetDir);
-      } catch {
-        console.warn('Warning: Failed to generate MCP config. You can configure it manually.');
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.warn(`Warning: Failed to setup MCP environment: ${msg}`);
       }
     } else {
-      console.warn('Warning: Python not found. Skipping MCP server configuration.');
-      console.warn('Install Python 3.10+ and ontology-rag to enable MCP integration.');
+      console.warn('Warning: uv not found. Skipping MCP server configuration.');
+      console.warn('Install uv (https://docs.astral.sh/uv/) to enable MCP integration.');
     }
 
     return {
