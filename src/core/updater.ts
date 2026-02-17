@@ -42,7 +42,14 @@ export interface UpdateOptions {
 /**
  * Components that can be updated
  */
-export type UpdateComponent = 'rules' | 'agents' | 'skills' | 'guides' | 'hooks' | 'contexts';
+export type UpdateComponent =
+  | 'rules'
+  | 'agents'
+  | 'skills'
+  | 'guides'
+  | 'hooks'
+  | 'contexts'
+  | 'ontology';
 
 /**
  * Result of update operation
@@ -552,7 +559,7 @@ export async function preserveCustomizations(
  * Get all update components
  */
 function getAllUpdateComponents(): UpdateComponent[] {
-  return ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'];
+  return ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts', 'ontology'];
 }
 
 /**

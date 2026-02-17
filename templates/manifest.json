@@ -1,6 +1,6 @@
 {
-  "version": "0.2.0",
-  "lastUpdated": "2026-02-17T07:30:00.000Z",
+  "version": "0.3.0",
+  "lastUpdated": "2026-02-18T00:00:00.000Z",
   "components": [
     {
       "name": "rules",
@@ -37,6 +37,12 @@
       "path": ".claude/contexts",
       "description": "Context configuration files",
       "files": 4
+    },
+    {
+      "name": "ontology",
+      "path": ".claude/ontology",
+      "description": "Ontology knowledge graph for RAG-powered agent context",
+      "files": 8
     }
   ],
   "source": "https://github.com/baekenough/oh-my-customcode"

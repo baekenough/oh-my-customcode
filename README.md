@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 52 skills, 22 guides, 18 rules, 1 hook, 4 contexts - ready to use out of the box |
+| **Batteries Included** | 42 agents, 52 skills, 22 guides, 18 rules, 1 hook, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -125,111 +125,20 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Total** | **42** | |
 
-Canonical agent IDs (`templates/.claude/agents/*.md`):
-
-```text
-arch-documenter
-arch-speckit-agent
-be-express-expert
-be-fastapi-expert
-be-go-backend-expert
-be-nestjs-expert
-be-springboot-expert
-db-postgres-expert
-db-redis-expert
-db-supabase-expert
-de-airflow-expert
-de-dbt-expert
-de-kafka-expert
-de-pipeline-expert
-de-snowflake-expert
-de-spark-expert
-fe-svelte-agent
-fe-vercel-agent
-fe-vuejs-agent
-infra-aws-expert
-infra-docker-expert
-lang-golang-expert
-lang-java21-expert
-lang-kotlin-expert
-lang-python-expert
-lang-rust-expert
-lang-typescript-expert
-mgr-claude-code-bible
-mgr-creator
-mgr-gitnerd
-mgr-sauron
-mgr-supplier
-mgr-sync-checker
-mgr-updater
-qa-engineer
-qa-planner
-qa-writer
-sys-memory-keeper
-sys-naggy
-tool-bun-expert
-tool-npm-expert
-tool-optimizer
-```
-
 ### Skills (52)
 
-Canonical skill IDs (`templates/.claude/skills/*/SKILL.md`):
-
-```text
-airflow-best-practices
-audit-agents
-aws-best-practices
-claude-code-bible
-codex-exec
-create-agent
-dbt-best-practices
-de-lead-routing
-dev-lead-routing
-dev-refactor
-dev-review
-docker-best-practices
-fastapi-best-practices
-fix-refs
-go-backend-best-practices
-go-best-practices
-help
-intent-detection
-kafka-best-practices
-kotlin-best-practices
-lists
-memory-management
-memory-recall
-memory-save
-monitoring-setup
-npm-audit
-npm-publish
-npm-version
-optimize-analyze
-optimize-bundle
-optimize-report
-pipeline-architecture-patterns
-postgres-best-practices
-python-best-practices
-qa-lead-routing
-react-best-practices
-redis-best-practices
-result-aggregation
-rust-best-practices
-sauron-watch
-secretary-routing
-snowflake-best-practices
-spark-best-practices
-springboot-best-practices
-status
-supabase-postgres-best-practices
-typescript-best-practices
-update-docs
-update-external
-vercel-deploy
-web-design-guidelines
-writing-clearly-and-concisely
-```
+| Category | Count | Skills |
+|----------|-------|--------|
+| **Routing** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
+| **Best Practices** | 18 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices |
+| **Development** | 5 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines |
+| **Data Engineering** | 2 | spark-best-practices, pipeline-architecture-patterns |
+| **Optimization** | 3 | optimize-analyze, optimize-bundle, optimize-report |
+| **Memory** | 3 | memory-save, memory-recall, memory-management |
+| **Package Management** | 3 | npm-publish, npm-version, npm-audit |
+| **Operations** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
+| **Utilities** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
+| **Deploy** | 2 | vercel-deploy, codex-exec |
 
 ### Guides (22)
 
@@ -260,9 +169,20 @@ Shared context files for cross-agent knowledge and mode configurations.
 
 ### Packages
 
-| Package | Version | Description |
-|---------|---------|-------------|
-| [ontology-rag](packages/ontology-rag/) | 0.3.0 | Ontology+RAG context engine for intelligent context loading. Reduces token usage by 75-95% through hierarchical loading, graph-based routing, and adaptive compression. |
+#### [ontology-rag](packages/ontology-rag/)
+
+Ontology+RAG context engine for intelligent agent context loading.
+
+| Feature | Description |
+|---------|-------------|
+| **Ontology Loading** | Parse YAML ontologies (agents, skills, rules) |
+| **Graph Traversal** | Navigate dependency graphs with BFS and PageRank |
+| **Semantic Routing** | LLM-based agent selection with keyword fallback |
+| **Hybrid Search** | 4-signal ranking (keyword, graph, community, importance) |
+| **Token Budget** | Adaptive budget management — reduces token usage by 75-95% |
+| **MCP Server** | Direct integration with Claude Code via MCP protocol |
+
+Automatically configured during `omcustom init` when [uv](https://docs.astral.sh/uv/) is available.
 
 ---
 
@@ -277,6 +197,7 @@ Shared context files for cross-agent knowledge and mode configurations.
 | `omcustom list agents` | List agents only |
 | `omcustom doctor` | Verify installation health |
 | `omcustom doctor --fix` | Auto-fix common issues |
+| `omcustom security` | Scan for security issues in hooks and configs |
 
 **Global Options:**
 | Option | Description |
@@ -308,6 +229,12 @@ your-project/
     │   ├── react-best-practices/
     │   ├── secretary-routing/
     │   └── ...
+    ├── ontology/          # Ontology knowledge graph for RAG context
+    │   ├── schema.yaml
+    │   ├── agents.yaml
+    │   ├── skills.yaml
+    │   ├── rules.yaml
+    │   └── graphs/
     └── guides/            # Reference docs (22 total)
 ```
 
