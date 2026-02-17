@@ -339,7 +339,7 @@ export async function getTemplateManifest(): Promise<TemplateManifest> {
  * Updated: commands removed (absorbed into skills)
  */
 function getAllComponents(): InstallComponent[] {
-  return ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'];
+  return ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts', 'ontology'];
 }
 
 /**

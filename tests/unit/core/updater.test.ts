@@ -61,28 +61,29 @@ describe('updater', () => {
 
       const result = await checkForUpdates(tempDir);
 
-      // Template version is 0.2.0 (from manifest.json)
+      // Template version is 0.3.0 (from manifest.json)
       expect(result.currentVersion).toBe('0.1.0');
-      expect(result.latestVersion).toBe('0.2.0');
+      expect(result.latestVersion).toBe('0.3.0');
       expect(result.hasUpdates).toBe(true);
       expect(result.updatableComponents.length).toBeGreaterThan(0);
       expect(result.checkedAt).toBeDefined();
     });
 
     it('should return no updates when versions match', async () => {
-      await createConfig('0.2.0', {
-        rules: '0.2.0',
-        agents: '0.2.0',
-        skills: '0.2.0',
-        guides: '0.2.0',
-        hooks: '0.2.0',
-        contexts: '0.2.0',
+      await createConfig('0.3.0', {
+        rules: '0.3.0',
+        agents: '0.3.0',
+        skills: '0.3.0',
+        guides: '0.3.0',
+        hooks: '0.3.0',
+        contexts: '0.3.0',
+        ontology: '0.3.0',
       });
 
       const result = await checkForUpdates(tempDir);
 
-      expect(result.currentVersion).toBe('0.2.0');
-      expect(result.latestVersion).toBe('0.2.0');
+      expect(result.currentVersion).toBe('0.3.0');
+      expect(result.latestVersion).toBe('0.3.0');
       expect(result.hasUpdates).toBe(false);
       expect(result.updatableComponents.length).toBe(0);
     });
@@ -92,13 +93,13 @@ describe('updater', () => {
       const result = await checkForUpdates(tempDir);
 
       expect(result.currentVersion).toBe('0.0.0'); // Default version
-      expect(result.latestVersion).toBe('0.2.0');
+      expect(result.latestVersion).toBe('0.3.0');
       expect(result.hasUpdates).toBe(true);
     });
 
     it('should check each component individually', async () => {
       await createConfig('0.1.0', {
-        rules: '0.2.0', // Up to date
+        rules: '0.3.0', // Up to date
         agents: '0.1.0', // Out of date
         skills: '0.1.0', // Out of date
       });
@@ -113,14 +114,14 @@ describe('updater', () => {
     });
 
     it('should detect update when component version is missing', async () => {
-      await createConfig('0.2.0', {
+      await createConfig('0.3.0', {
         // No componentVersions specified
       });
 
       const result = await checkForUpdates(tempDir);
 
       // All components should be updatable
-      expect(result.updatableComponents.length).toBe(6); // rules, agents, skills, guides, hooks, contexts
+      expect(result.updatableComponents.length).toBe(7); // rules, agents, skills, guides, hooks, contexts, ontology
     });
   });
 
@@ -140,22 +141,23 @@ describe('updater', () => {
       expect(result.success).toBe(true);
       expect(result.updatedComponents).toContain('rules' as UpdateComponent);
       expect(result.previousVersion).toBe('0.1.0');
-      expect(result.newVersion).toBe('0.2.0');
+      expect(result.newVersion).toBe('0.3.0');
 
       // Verify config was updated
       const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
       const config = JSON.parse(configContent);
-      expect(config.version).toBe('0.2.0');
+      expect(config.version).toBe('0.3.0');
     });
 
     it('should skip components with no updates when not forced', async () => {
-      await createConfig('0.2.0', {
-        rules: '0.2.0',
-        agents: '0.2.0',
-        skills: '0.2.0',
-        guides: '0.2.0',
-        hooks: '0.2.0',
-        contexts: '0.2.0',
+      await createConfig('0.3.0', {
+        rules: '0.3.0',
+        agents: '0.3.0',
+        skills: '0.3.0',
+        guides: '0.3.0',
+        hooks: '0.3.0',
+        contexts: '0.3.0',
+        ontology: '0.3.0',
       });
 
       const result = await update({
@@ -164,12 +166,12 @@ describe('updater', () => {
 
       expect(result.success).toBe(true);
       expect(result.updatedComponents.length).toBe(0);
-      expect(result.skippedComponents.length).toBe(6); // All components skipped
+      expect(result.skippedComponents.length).toBe(7); // All components skipped
     });
 
     it('should force update all components with --force flag', async () => {
-      await createConfig('0.2.0', {
-        rules: '0.2.0',
+      await createConfig('0.3.0', {
+        rules: '0.3.0',
       });
 
       // Create target directory structure
@@ -283,7 +285,7 @@ describe('updater', () => {
       // Verify config version was updated
       const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
       const config = JSON.parse(configContent);
-      expect(config.version).toBe('0.2.0');
+      expect(config.version).toBe('0.3.0');
       expect(config.lastUpdated).toBeDefined();
     });
 
@@ -498,7 +500,7 @@ describe('updater', () => {
 
     it('should differentiate component sync from version upgrade (#111)', async () => {
       // Config version matches template version, but components lack version tracking
-      await createConfig('0.2.0', {
+      await createConfig('0.3.0', {
         // No component versions → all components show as "updatable"
       });
 
@@ -511,8 +513,8 @@ describe('updater', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.previousVersion).toBe('0.2.0');
-      expect(result.newVersion).toBe('0.2.0');
+      expect(result.previousVersion).toBe('0.3.0');
+      expect(result.newVersion).toBe('0.3.0');
       // When versions match but components were updated, it's a component sync
       expect(result.updatedComponents).toContain('rules' as UpdateComponent);
     });
