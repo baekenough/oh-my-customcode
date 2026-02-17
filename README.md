@@ -26,6 +26,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
 | **Non-Destructive** | Your customizations live alongside defaults, never overwritten |
+| **Dynamic Agent Creation** | No matching expert? The system creates one on-the-fly, connecting relevant skills and guides |
 
 ## Quick Start
 

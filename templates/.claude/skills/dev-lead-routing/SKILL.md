@@ -77,6 +77,29 @@ user-invocable: false
 
 Multi-language: detect all languages, route to parallel experts (max 4). Single-language: route to matching expert. Cross-layer (frontend + backend): multiple experts in parallel.
 
+## No Match Fallback
+
+When file extension or keyword doesn't match any existing agent:
+
+```
+User Input → No matching development agent
+  ↓
+Detect: File extension (.rb, .swift, .dart, etc.) or language keyword
+  ↓
+Delegate to mgr-creator with context:
+  domain: detected language/framework
+  type: sw-engineer
+  keywords: extracted from user input
+  file_patterns: detected extensions
+  skills: auto-discover from .claude/skills/
+  guides: auto-discover from guides/
+```
+
+**Examples of dynamic creation triggers:**
+- Unrecognized file extension (e.g., `.rb` → Ruby expert, `.swift` → Swift expert)
+- New framework keyword (e.g., "Flutter 앱 리뷰해줘", "Rails API 만들어줘")
+- Language detected but no specialist exists
+
 ## Agent Teams Awareness
 
 Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).

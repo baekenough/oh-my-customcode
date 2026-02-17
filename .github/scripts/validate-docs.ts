@@ -20,6 +20,12 @@ interface ImplementationStats {
   context_count: number;
 }
 
+interface ValidationResult {
+  missingFromReadme: { agents: string[]; skills: string[] };
+  extraInReadme: { agents: string[]; skills: string[] };
+  countMismatches: { field: string; readme: number; actual: number }[];
+}
+
 async function collectImplementationStats(): Promise<ImplementationStats> {
   const stats: ImplementationStats = {
     agent_count: 0,
@@ -91,7 +97,61 @@ async function extractReadmeClaims(path: string): Promise<string> {
   }
 }
 
-function buildPrompt(stats: ImplementationStats, readmeEn: string, readmeKo: string): string {
+function extractNamesFromReadme(readme: string): { agents: string[]; skills: string[] } {
+  const agents: string[] = [];
+  const skills: string[] = [];
+
+  // Extract from "Canonical agent IDs" code block
+  const agentMatch = readme.match(/Canonical agent IDs[^`]*```(?:text)?\n([\s\S]*?)```/);
+  if (agentMatch) {
+    agents.push(...agentMatch[1].trim().split('\n').map((l) => l.trim()).filter(Boolean));
+  }
+
+  // Extract from "Canonical skill IDs" code block
+  const skillMatch = readme.match(/Canonical skill IDs[^`]*```(?:text)?\n([\s\S]*?)```/);
+  if (skillMatch) {
+    skills.push(...skillMatch[1].trim().split('\n').map((l) => l.trim()).filter(Boolean));
+  }
+
+  return { agents, skills };
+}
+
+function programmaticValidation(stats: ImplementationStats, readmeEn: string): ValidationResult {
+  const readme = extractNamesFromReadme(readmeEn);
+
+  const missingFromReadme = {
+    agents: stats.agent_names.filter((a) => !readme.agents.includes(a)),
+    skills: stats.skill_names.filter((s) => !readme.skills.includes(s)),
+  };
+
+  const extraInReadme = {
+    agents: readme.agents.filter((a) => !stats.agent_names.includes(a)),
+    skills: readme.skills.filter((s) => !stats.skill_names.includes(s)),
+  };
+
+  const countMismatches: { field: string; readme: number; actual: number }[] = [];
+
+  // Check counts mentioned in README (look for patterns like "42 agents" or "Agents (42)")
+  const agentCountMatch = readmeEn.match(/(?:Agents?\s*\(?(\d+)\)?|(\d+)\s*agents?)/i);
+  if (agentCountMatch) {
+    const readmeCount = parseInt(agentCountMatch[1] || agentCountMatch[2]);
+    if (readmeCount !== stats.agent_count) {
+      countMismatches.push({ field: 'agents', readme: readmeCount, actual: stats.agent_count });
+    }
+  }
+
+  const skillCountMatch = readmeEn.match(/(?:Skills?\s*\(?(\d+)\)?|(\d+)\s*skills?)/i);
+  if (skillCountMatch) {
+    const readmeCount = parseInt(skillCountMatch[1] || skillCountMatch[2]);
+    if (readmeCount !== stats.skill_count) {
+      countMismatches.push({ field: 'skills', readme: readmeCount, actual: stats.skill_count });
+    }
+  }
+
+  return { missingFromReadme, extraInReadme, countMismatches };
+}
+
+function buildPrompt(stats: ImplementationStats, readmeEn: string, readmeKo: string, validation: ValidationResult): string {
   const statsJson = JSON.stringify(stats, null, 2);
 
   return `당신은 oh-my-customcode 프로젝트의 문서 검증 전문가입니다.
@@ -104,6 +164,22 @@ function buildPrompt(stats: ImplementationStats, readmeEn: string, readmeKo: str
 \`\`\`json
 ${statsJson}
 \`\`\`
+
+---
+
+## 프로그래밍적 검증 결과 (확정 - 변경 금지)
+
+다음은 코드로 검증한 확정적 결과입니다. 이 결과를 절대 변경하거나 재해석하지 마세요.
+
+${validation.missingFromReadme.agents.length === 0 && validation.missingFromReadme.skills.length === 0 && validation.extraInReadme.agents.length === 0 && validation.extraInReadme.skills.length === 0 && validation.countMismatches.length === 0
+  ? '✅ 모든 agent/skill 이름과 개수가 README와 실제 구현에서 정확히 일치합니다.'
+  : `불일치 발견:
+${validation.missingFromReadme.agents.length > 0 ? `- README에 누락된 agents: ${validation.missingFromReadme.agents.join(', ')}` : ''}
+${validation.missingFromReadme.skills.length > 0 ? `- README에 누락된 skills: ${validation.missingFromReadme.skills.join(', ')}` : ''}
+${validation.extraInReadme.agents.length > 0 ? `- README에만 있는 agents (실제 미존재): ${validation.extraInReadme.agents.join(', ')}` : ''}
+${validation.extraInReadme.skills.length > 0 ? `- README에만 있는 skills (실제 미존재): ${validation.extraInReadme.skills.join(', ')}` : ''}
+${validation.countMismatches.map((m) => `- ${m.field} 개수: README=${m.readme}, 실제=${m.actual}`).join('\n')}`
+}
 
 ---
 
@@ -125,12 +201,15 @@ ${readmeKo.slice(0, 8000)}
 
 ## 검증 항목
 
-다음 항목들을 검증하세요:
+**중요**: agent/skill 이름 목록과 개수 비교는 위의 프로그래밍적 검증 결과를 그대로 사용하세요.
+이름 목록을 직접 비교하거나 재해석하지 마세요. 프로그래밍적 결과가 최종입니다.
 
-1. **숫자 일치**: README에 언급된 agent/skill/rule/guide 개수가 실제와 일치하는가?
-2. **목록 일치**: README에 나열된 agent/skill 이름이 실제 존재하는가?
-3. **언어 일관성**: README.md와 README_ko.md의 정보가 일치하는가?
-4. **오래된 정보**: 더 이상 존재하지 않는 기능이 문서에 남아있는가?
+당신은 다음만 검증하세요:
+
+1. **언어 일관성**: README.md와 README_ko.md의 정보가 일치하는가?
+2. **오래된 정보**: 더 이상 존재하지 않는 기능이 문서에 남아있는가?
+3. **의미적 일관성**: 기능 설명이 실제 구현과 맞는가?
+4. **누락된 기능**: 새로 추가된 기능이 문서에 반영되었는가?
 
 ---
 
@@ -173,6 +252,9 @@ async function validateDocs(): Promise<string> {
     return '⚠️ README.md를 찾을 수 없습니다.';
   }
 
+  // Programmatic validation before Claude API call
+  const validation = programmaticValidation(stats, readmeEn);
+
   // Call Claude API
   const client = new Anthropic();
 
@@ -182,7 +264,7 @@ async function validateDocs(): Promise<string> {
     messages: [
       {
         role: 'user',
-        content: buildPrompt(stats, readmeEn, readmeKo),
+        content: buildPrompt(stats, readmeEn, readmeKo, validation),
       },
     ],
   });

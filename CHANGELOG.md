@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-02-17
+
+### Added
+- Dynamic Agent Creation pattern: routing fallback creates specialized agents on-the-fly when no matching expert exists (#137)
+  - Core oh-my-customcode philosophy: "No expert? CREATE one, connect knowledge, and USE it."
+  - `mgr-creator` dynamic mode with auto-discovery of skills and guides
+  - `--dynamic` option for `create-agent` skill
+  - No Match Fallback in all 4 routing skills (secretary, dev-lead, de-lead, qa-lead)
+  - `intent-detection` now triggers dynamic creation for specialized unmatched tasks
+- Agent Teams hybrid patterns: Codex integration, dynamic creation in teams (#138)
+- codex-exec availability check and Agent Teams integration documentation (#139)
+
+### Fixed
+- Rule ID alignment with ontology numbering: R014-R017 → R015-R018 (#141)
+- Agent frontmatter standardization: removed 13 empty `skills: []`, fixed field order (#140)
+
+### Changed
+- Agent Teams rule (R018) strengthened with mandatory self-check, expanded decision matrix, hybrid/dynamic patterns
+- CLAUDE.md templates updated with Dynamic Agent Creation section and proactive Agent Teams language
+- README.md and README_ko.md updated with Dynamic Agent Creation as key feature
+- manifest.json timestamp and context count updated
+
 ## [0.12.4] - 2026-02-17
 
 ### Changed
@@ -476,7 +498,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.3...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.4...v0.13.0
+[0.12.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.3...v0.12.4
 [0.12.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.2...v0.12.3
 [0.12.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.1...v0.12.2
 [0.12.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.0...v0.12.1

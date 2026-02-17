@@ -4,7 +4,6 @@ description: Use for Svelte compiler-based reactivity, reactive statements ($:),
 model: sonnet
 memory: project
 effort: medium
-skills: []
 tools:
   - Read
   - Write

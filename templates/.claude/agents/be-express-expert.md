@@ -4,7 +4,6 @@ description: Expert Express.js developer for production-ready Node.js APIs follo
 model: sonnet
 memory: project
 effort: high
-skills: []
 tools:
   - Read
   - Write

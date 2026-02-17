@@ -4,7 +4,6 @@ description: Expert Java 21 developer for modern Java with Virtual Threads, Patt
 model: sonnet
 memory: project
 effort: high
-skills: []
 tools:
   - Read
   - Write

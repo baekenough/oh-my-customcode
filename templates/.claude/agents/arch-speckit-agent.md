@@ -4,7 +4,6 @@ description: Use for spec-driven development, transforming requirements into exe
 model: sonnet
 memory: project
 effort: high
-skills: []
 tools:
   - Read
   - Write

@@ -62,7 +62,7 @@ rules:
     scope: agents
 
   # Intent Transparency - MUST
-  - id: R014
+  - id: R015
     name: intent-transparency
     title: Intent Transparency Rules
     path: ./MUST-intent-transparency.md
@@ -70,7 +70,7 @@ rules:
     scope: orchestrator
 
   # Continuous Improvement - MUST
-  - id: R015
+  - id: R016
     name: continuous-improvement
     title: Continuous Improvement Rules
     path: ./MUST-continuous-improvement.md
@@ -78,7 +78,7 @@ rules:
     scope: all
 
   # Sync Verification - MUST
-  - id: R016
+  - id: R017
     name: sync-verification
     title: Sync Verification Rules
     path: ./MUST-sync-verification.md
@@ -125,7 +125,7 @@ rules:
     scope: all
 
   # Agent Teams - SHOULD
-  - id: R017
+  - id: R018
     name: agent-teams
     title: Agent Teams Rules
     path: ./SHOULD-agent-teams.md

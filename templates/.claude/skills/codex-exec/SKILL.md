@@ -2,7 +2,6 @@
 name: codex-exec
 description: Execute OpenAI Codex CLI prompts and return results
 argument-hint: "<prompt> [--json] [--output <path>] [--model <name>] [--timeout <ms>]"
-disable-model-invocation: true
 ---
 
 # Codex Exec Skill
@@ -121,3 +120,30 @@ Works with the orchestrator pattern:
 - Main conversation delegates Codex execution via this skill
 - Results are returned to the main conversation for further processing
 - Can be chained with other skills (e.g., dev-review after Codex generates code)
+
+## Availability Check
+
+codex-exec requires the Codex CLI binary to be installed and authenticated. The skill is only usable when:
+
+1. `codex` binary is found in PATH (`which codex` succeeds)
+2. Authentication is valid (OPENAI_API_KEY set or `codex` logged in)
+
+If either check fails, this skill cannot be used. Fall back to Claude agents for the task.
+
+> **Note**: `disable-model-invocation: true` is set intentionally. This skill must be explicitly invoked via `/codex-exec` or delegated by the orchestrator. It is NOT auto-invoked by the model.
+
+## Agent Teams Integration
+
+When used within Agent Teams (requires explicit invocation):
+
+1. **As delegated task**: orchestrator explicitly delegates codex-exec for code generation
+2. **Hybrid workflow**: Claude team member analyzes → orchestrator invokes codex-exec → Claude reviews
+3. **Iteration**: Team messaging enables review-fix cycles between Claude and Codex outputs
+
+```
+Orchestrator delegates generation task
+  → /codex-exec invoked explicitly
+  → Output returned to orchestrator
+  → Reviewer validates quality
+  → Iterate if needed
+```
