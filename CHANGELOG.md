@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-02-18
+
+### Fixed
+- Release workflow graceful fallback when CHANGELOG.md entry is missing (#133)
+  - Replace hard `exit 1` with warning when CHANGELOG entry not found
+  - Use GitHub auto-generated release notes as fallback
+  - Prevents half-release state (npm published but no GitHub Release)
+  - Release Notes Generator workflow now always triggers
+
 ## [0.13.1] - 2026-02-18
 
 ### Changed
@@ -512,7 +521,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.2...HEAD
+[0.13.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.1...v0.13.2
 [0.13.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.0...v0.13.1
 [0.13.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.4...v0.13.0
 [0.12.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.12.3...v0.12.4
