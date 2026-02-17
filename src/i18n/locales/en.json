@@ -208,6 +208,30 @@
           "fail": "Some index.yaml files are invalid"
         }
       }
+    },
+    "security": {
+      "description": "Scan for security issues in hooks, configs, and templates",
+      "verboseOption": "Show detailed scan results",
+      "scanning": "Running security scan...",
+      "passed": "Security scan passed! No issues found.",
+      "failed": "Security issues detected.",
+      "summary": "Security: {{pass}} passed, {{warn}} warnings, {{fail}} failed",
+      "checks": {
+        "hooks": {
+          "pass": "Hook scripts are safe",
+          "warn": "Hook scripts have potential concerns",
+          "fail": "Hook scripts contain dangerous patterns"
+        },
+        "secrets": {
+          "pass": "No secrets found in configuration files",
+          "fail": "Secrets or credentials found in configuration"
+        },
+        "integrity": {
+          "pass": "Template file permissions are secure",
+          "warn": "Some files have overly permissive settings",
+          "fail": "Security-sensitive files found in project"
+        }
+      }
     }
   },
   "init": {
