@@ -119,7 +119,9 @@ describe('mcp-config', () => {
       await generateMCPConfig(tempDir);
 
       expect(execCalls).toContain('uv venv .venv');
-      expect(execCalls).toContain('uv pip install ontology-rag');
+      expect(execCalls).toContain(
+        'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"'
+      );
     });
 
     it('should throw error if venv creation fails', async () => {
