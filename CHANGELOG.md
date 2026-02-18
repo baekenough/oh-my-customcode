@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-02-18
+
+### Fixed
+- Install `ontology-rag` from Git URL instead of PyPI registry during `omcustom init` (#152)
+
 ## [0.14.0] - 2026-02-18
 
 ### Added
@@ -545,7 +550,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.3...v0.14.0
 [0.13.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.2...v0.13.3
 [0.13.2]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.1...v0.13.2

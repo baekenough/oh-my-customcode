@@ -1,6 +1,6 @@
 {
   "name": "oh-my-customcode",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "Batteries-included agent harness for Claude Code",
   "type": "module",
   "bin": {
