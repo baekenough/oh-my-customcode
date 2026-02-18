@@ -38,7 +38,10 @@ export async function generateMCPConfig(targetDir: string): Promise<void> {
   // Note: No user input in commands - safe to use execSync with fixed strings
   try {
     execSync('uv venv .venv', { cwd: targetDir, stdio: 'pipe' });
-    execSync('uv pip install ontology-rag', { cwd: targetDir, stdio: 'pipe' });
+    execSync(
+      'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"',
+      { cwd: targetDir, stdio: 'pipe' }
+    );
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to setup Python environment: ${msg}`);
