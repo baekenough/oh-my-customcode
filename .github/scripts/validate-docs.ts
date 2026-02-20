@@ -194,7 +194,7 @@ ${validation.countMismatches.map((m) => `- ${m.field} 개수: README=${m.readme}
 ## README.md (English)
 
 \`\`\`markdown
-${readmeEn.slice(0, 8000)}
+${readmeEn}
 \`\`\`
 
 ---
@@ -202,7 +202,7 @@ ${readmeEn.slice(0, 8000)}
 ## README_ko.md (Korean)
 
 \`\`\`markdown
-${readmeKo.slice(0, 8000)}
+${readmeKo}
 \`\`\`
 
 ---
