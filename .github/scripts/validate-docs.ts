@@ -119,15 +119,23 @@ function extractNamesFromReadme(readme: string): { agents: string[]; skills: str
 function programmaticValidation(stats: ImplementationStats, readmeEn: string): ValidationResult {
   const readme = extractNamesFromReadme(readmeEn);
 
-  const missingFromReadme = {
-    agents: stats.agent_names.filter((a) => !readme.agents.includes(a)),
-    skills: stats.skill_names.filter((s) => !readme.skills.includes(s)),
-  };
+  // If canonical ID blocks are not found, skip name comparison
+  // to avoid false positives when README uses table format instead
+  const hasCanonicalBlocks = readme.agents.length > 0 || readme.skills.length > 0;
 
-  const extraInReadme = {
-    agents: readme.agents.filter((a) => !stats.agent_names.includes(a)),
-    skills: readme.skills.filter((s) => !stats.skill_names.includes(s)),
-  };
+  const missingFromReadme = hasCanonicalBlocks
+    ? {
+        agents: stats.agent_names.filter((a) => !readme.agents.includes(a)),
+        skills: stats.skill_names.filter((s) => !readme.skills.includes(s)),
+      }
+    : { agents: [], skills: [] };
+
+  const extraInReadme = hasCanonicalBlocks
+    ? {
+        agents: readme.agents.filter((a) => !stats.agent_names.includes(a)),
+        skills: readme.skills.filter((s) => !stats.skill_names.includes(s)),
+      }
+    : { agents: [], skills: [] };
 
   const countMismatches: { field: string; readme: number; actual: number }[] = [];
 
