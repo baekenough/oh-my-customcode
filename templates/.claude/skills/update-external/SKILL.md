@@ -37,6 +37,15 @@ web-design-guidelines:
   type: github
 ```
 
+### Skills (from skills.sh marketplace)
+```yaml
+<skill-name>:
+  source: <owner/repo>
+  type: skills-sh
+```
+
+Skills installed via `skills-sh-search` are tracked with `source-type: skills-sh` in their frontmatter. Update checks use `npx skills check`.
+
 ### Guides (reference documentation)
 ```yaml
 golang:
@@ -58,6 +67,7 @@ python:
 
 2. Check for updates
    ├── GitHub: Check releases/commits
+   ├── skills-sh: Run "npx skills check"
    ├── Documentation: Check last-modified
    └── Compare with current version
 
@@ -89,6 +99,14 @@ source:
       date: "2026-01-20"
     - version: "1.2.0"
       date: "2026-01-22"
+
+# skills.sh source
+source:
+  type: external
+  origin: skills-sh
+  registry: https://skills.sh
+  installed_via: "npx skills add <owner/repo>"
+  last_checked: "2026-02-20"
 ```
 
 ## Output Format
