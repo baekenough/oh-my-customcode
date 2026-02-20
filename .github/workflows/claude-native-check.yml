@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: "Guardrail: check Claude template"
         id: guard
@@ -48,6 +48,15 @@ jobs:
       - name: Setup Bun
         if: steps.guard.outputs.skip != 'true'
         uses: oven-sh/setup-bun@v2
+
+      - name: Cache Bun dependencies
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
 
       - name: Install dependencies
         if: steps.guard.outputs.skip != 'true'
