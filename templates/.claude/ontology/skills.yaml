@@ -65,6 +65,10 @@ classes:
     skills: [monitoring-setup]
     description: "Monitoring configuration"
 
+  ExternalSkillSourceSkill:
+    skills: [skills-sh-search]
+    description: "External skill marketplace discovery and installation"
+
 # Skill instances
 skills:
   airflow-best-practices:
@@ -418,6 +422,15 @@ skills:
     summary: "Idiomatic Rust patterns and best practices from official documentation"
     keywords: [rust, ownership, borrowing, safety, concurrency]
     rule_references: []
+
+  skills-sh-search:
+    class: ExternalSkillSourceSkill
+    description: "Search and install skills from skills.sh marketplace when internal skills are insufficient"
+    user_invocable: true
+    model_invocable: true
+    summary: "Search skills.sh marketplace for external skills and install them into the project"
+    keywords: [skills-sh, marketplace, external, install, search, discover, npx]
+    rule_references: [R003, R006]
 
   sauron-watch:
     class: VerificationSkill
