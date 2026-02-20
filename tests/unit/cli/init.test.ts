@@ -94,6 +94,25 @@ describe('init command', () => {
       expect(skillsDirStats.isDirectory()).toBe(true);
     });
 
+    it('should install skills-sh-search skill', async () => {
+      const result = await install({
+        targetDir: tempDir,
+        language: 'en',
+      });
+
+      expect(result.success).toBe(true);
+
+      // Verify skills-sh-search skill is installed with valid SKILL.md
+      const skillMdPath = join(tempDir, '.claude', 'skills', 'skills-sh-search', 'SKILL.md');
+      const skillMdStats = await stat(skillMdPath);
+      expect(skillMdStats.isFile()).toBe(true);
+
+      const { readFile } = await import('node:fs/promises');
+      const content = await readFile(skillMdPath, 'utf-8');
+      expect(content).toContain('name: skills-sh-search');
+      expect(content).toContain('skills.sh');
+    });
+
     it('should create guides directory', async () => {
       const result = await install({
         targetDir: tempDir,

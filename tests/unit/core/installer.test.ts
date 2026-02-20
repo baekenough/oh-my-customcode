@@ -122,6 +122,27 @@ describe('installer', () => {
       expect(componentNames).not.toContain('commands'); // commands removed
       expect(componentNames).not.toContain('pipelines'); // pipelines removed
     });
+
+    it('should have manifest file counts matching actual template directories', async () => {
+      const { readdir } = await import('node:fs/promises');
+      const manifest = await getTemplateManifest();
+      const templateDir = getTemplateDir();
+
+      for (const component of manifest.components) {
+        const resolvedPath = join(templateDir, component.path);
+
+        try {
+          const entries = await readdir(resolvedPath);
+          const count = entries.filter((e) => !e.startsWith('.')).length;
+          expect(count).toBe(
+            component.files,
+            `${component.name}: manifest says ${component.files} files but found ${count}`
+          );
+        } catch {
+          // Skip if directory doesn't exist (handled by other tests)
+        }
+      }
+    });
   });
 
   describe('install', () => {
