@@ -59,7 +59,7 @@ const CONFIG = {
 };
 
 const DEFAULT_PROJECT_CONTEXT = `oh-my-customcode is an npm package for customizing Claude Code.
-Key components: Agents (34), Skills (42), Rules (18), Guides (13).
+Key components: Agents (42), Skills (53), Rules (19), Guides (22).
 Commands: omcustom init, list, doctor.
 Tech: TypeScript/Bun, GitHub Actions, npm.`;
 

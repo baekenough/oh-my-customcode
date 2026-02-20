@@ -126,8 +126,8 @@ jobs:
           fi
 
           # Check for agent count consistency
-          EN_AGENTS=$(grep -o "34 agents" README.md | head -1 || echo "not found")
-          KO_AGENTS=$(grep -o "34개 에이전트\|34개" README_ko.md | head -1 || echo "not found")
+          EN_AGENTS=$(grep -oE '[0-9]+ agents' README.md | head -1 || echo "not found")
+          KO_AGENTS=$(grep -oE '[0-9]+개 에이전트' README_ko.md | head -1 || echo "not found")
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Agent Count Check" >> $GITHUB_STEP_SUMMARY
