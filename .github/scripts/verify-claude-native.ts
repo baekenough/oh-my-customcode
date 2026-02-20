@@ -519,7 +519,7 @@ ${JSON.stringify(projectStructure.rules.filter((r) => r.is_unique), null, 2)}
 Respond with ONLY valid JSON, no markdown formatting.`;
 
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
     max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
   });

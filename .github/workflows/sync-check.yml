@@ -27,12 +27,12 @@ jobs:
 
     steps:
       - name: Checkout oh-my-customcode
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: oh-my-customcode
 
       - name: Checkout source repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: baekenough/baekgom-agents
           token: ${{ secrets.OMCUSTOM_MASTER }}
