@@ -35,3 +35,12 @@ temp/
 # VitePress
 docs/.vitepress/cache
 docs/.vitepress/dist
+
+# omcustom init output (templates/ is the source of truth)
+.claude/
+guides/
+ontology/
+CLAUDE.md
+.omcustomrc.json
+.mcp.json
+test-validator.ts
