@@ -224,10 +224,11 @@ async function analyzeIssueWithClaude(issue: IssueData): Promise<AnalysisResult>
     let jsonStr = textContent.trim();
 
     // Remove markdown code block if present
-    if (jsonStr.startsWith('```json')) {
-      jsonStr = jsonStr.replace(/^```json\s*\n/, '').replace(/\n```\s*$/, '');
+    const jsonMatch = jsonStr.match(/```json?\s*\n([\s\S]*?)\n```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1];
     } else if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/^```\s*\n/, '').replace(/\n```\s*$/, '');
+      jsonStr = jsonStr.replace(/^```\w*\s*\n/, '').replace(/\n```\s*$/, '');
     }
 
     const analysis: AnalysisResult = JSON.parse(jsonStr);
