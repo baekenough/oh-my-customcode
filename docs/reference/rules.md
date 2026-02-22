@@ -6,8 +6,8 @@ Rules define coding standards, workflow patterns, and agent behavior. oh-my-cust
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
-| MUST | 11 | Required - never violate |
-| SHOULD | 6 | Recommended - strongly encouraged |
+| MUST | 12 | Required - never violate |
+| SHOULD | 5 | Recommended - strongly encouraged |
 | MAY | 1 | Optional - guidelines |
 
 ## MUST Rules
@@ -128,6 +128,17 @@ Synchronization verification:
 - Check documentation sync
 - Report discrepancies
 
+### MUST-agent-teams
+
+**ID**: R018
+
+Agent Teams integration (conditional - when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`):
+
+- Mandatory use of Agent Teams for qualifying coordinated tasks
+- Decision matrix for Task tool vs Agent Teams
+- Team composition patterns
+- Graceful fallback to Task tool when disabled
+
 ## SHOULD Rules
 
 SHOULD rules are strongly recommended but may have exceptions.
@@ -186,17 +197,6 @@ Ecomode for efficiency:
 - Aggregation patterns
 - Result compression
 - Activation conditions
-
-### SHOULD-agent-teams
-
-**ID**: R018
-
-Agent Teams integration:
-
-- Active use of Agent Teams when enabled
-- Decision matrix for Task tool vs Agent Teams
-- Team composition patterns
-- Graceful fallback behavior
 
 ## MAY Rules
 
@@ -259,12 +259,12 @@ Rules are stored in `.claude/rules/`:
 ├── MUST-intent-transparency.md
 ├── MUST-continuous-improvement.md
 ├── MUST-sync-verification.md
+├── MUST-agent-teams.md
 ├── SHOULD-interaction.md
 ├── SHOULD-error-handling.md
 ├── SHOULD-memory-integration.md
 ├── SHOULD-hud-statusline.md
 ├── SHOULD-ecomode.md
-├── SHOULD-agent-teams.md
 └── MAY-optimization.md
 ```
 
