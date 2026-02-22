@@ -22,7 +22,7 @@ permissions:
 jobs:
   verify:
     name: Verify Claude Native Compliance
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nuc13]
 
     steps:
       - name: Checkout repository
