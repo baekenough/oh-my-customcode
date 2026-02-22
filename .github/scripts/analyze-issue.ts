@@ -3,7 +3,7 @@
 /**
  * GitHub Issue Analysis Script (Universal)
  *
- * Analyzes GitHub issues using Claude API and posts bilingual comments.
+ * Analyzes GitHub issues using Claude API and posts Korean analysis comments.
  * Can be used in any repository by providing PROJECT_CONTEXT.
  *
  * Environment Variables:
@@ -29,7 +29,7 @@ interface IssueData {
   labels: string[];
 }
 
-interface AnalysisSection {
+interface AnalysisResult {
   summary: string;
   type: string;
   priority: string;
@@ -39,11 +39,6 @@ interface AnalysisSection {
   suggested_approach: string[];
   related_areas: string[];
   questions: string[];
-}
-
-interface BilingualAnalysis {
-  en: AnalysisSection;
-  ko: AnalysisSection;
 }
 
 // ============================================================================
@@ -59,7 +54,7 @@ const CONFIG = {
 };
 
 const DEFAULT_PROJECT_CONTEXT = `oh-my-customcode is an npm package for customizing Claude Code.
-Key components: Agents (42), Skills (53), Rules (19), Guides (22).
+Key components: Agents (42), Skills (55), Rules (19), Guides (22).
 Commands: omcustom init, list, doctor.
 Tech: TypeScript/Bun, GitHub Actions, npm.`;
 
@@ -151,7 +146,8 @@ function getIssueData(issueNumber: number): Promise<IssueData> {
 function buildPrompt(issue: IssueData): string {
   const projectContext = process.env.PROJECT_CONTEXT || DEFAULT_PROJECT_CONTEXT;
 
-  return `Analyze this GitHub issue and provide insights in BOTH English and Korean.
+  return `GitHub 이슈를 분석하고 한국어로 인사이트를 제공하세요.
+기술 용어, 파일명, 코드 참조는 영어 그대로 유지하세요.
 
 ## Project Context
 ${projectContext}
@@ -164,53 +160,40 @@ ${projectContext}
 **Body**:
 ${issue.body}
 
-## Analysis Required
+## 분석 항목
 
-Provide BILINGUAL output (English AND Korean) with the following structure:
+다음 구조로 한국어 분석을 제공하세요:
 
-1. **Summary**: Brief overview of what this issue is about
-2. **Type**: Classify as one of: Bug, Feature Request, Documentation, Question, Enhancement, Refactor, Other
-3. **Priority**: High/Medium/Low with clear reasoning
-4. **Technical Points**: Key technical aspects to consider
-5. **Challenges**: Potential difficulties or blockers
-6. **Suggested Approach**: Step-by-step implementation suggestions
-7. **Related Areas**: Other parts of the codebase that might be affected
-8. **Questions**: Clarifying questions for the issue author (if needed)
+1. **요약**: 이 이슈가 무엇에 대한 것인지 간략히
+2. **유형**: Bug, Feature Request, Documentation, Question, Enhancement, Refactor, Other 중 하나
+3. **우선순위**: High/Medium/Low + 명확한 이유
+4. **기술적 고려사항**: 고려할 핵심 기술 측면
+5. **예상 난관**: 잠재적 어려움이나 차단 요소
+6. **제안 접근법**: 단계별 구현 제안
+7. **연관 영역**: 영향받을 수 있는 코드베이스 영역
+8. **질문**: 이슈 작성자에게 명확화 질문 (필요 시)
 
-Respond in JSON format with this structure:
+JSON 형식으로 응답:
 {
-  "en": {
-    "summary": "...",
-    "type": "...",
-    "priority": "...",
-    "priority_reason": "...",
-    "technical_points": ["...", "..."],
-    "challenges": ["...", "..."],
-    "suggested_approach": ["...", "..."],
-    "related_areas": ["...", "..."],
-    "questions": ["...", "..."]
-  },
-  "ko": {
-    "summary": "...",
-    "type": "...",
-    "priority": "...",
-    "priority_reason": "...",
-    "technical_points": ["...", "..."],
-    "challenges": ["...", "..."],
-    "suggested_approach": ["...", "..."],
-    "related_areas": ["...", "..."],
-    "questions": ["...", "..."]
-  }
+  "summary": "...",
+  "type": "...",
+  "priority": "...",
+  "priority_reason": "...",
+  "technical_points": ["...", "..."],
+  "challenges": ["...", "..."],
+  "suggested_approach": ["...", "..."],
+  "related_areas": ["...", "..."],
+  "questions": ["...", "..."]
 }
 
-Important:
-- Provide actionable, specific insights
-- Be concise but comprehensive
-- If information is missing, note it in questions
-- Keep both English and Korean versions semantically equivalent`;
+중요:
+- 실행 가능하고 구체적인 인사이트 제공
+- 간결하지만 포괄적으로
+- 정보가 부족하면 질문에 기재
+- 기술 용어(API, CLI, TypeScript 등), 파일명(*.ts, CLAUDE.md 등), 코드(함수명, 변수명)는 영어 유지`;
 }
 
-async function analyzeIssueWithClaude(issue: IssueData): Promise<BilingualAnalysis> {
+async function analyzeIssueWithClaude(issue: IssueData): Promise<AnalysisResult> {
   console.log('🤖 Analyzing issue with Claude API...');
 
   const client = new Anthropic({
@@ -241,17 +224,26 @@ async function analyzeIssueWithClaude(issue: IssueData): Promise<BilingualAnalys
     let jsonStr = textContent.trim();
 
     // Remove markdown code block if present
-    if (jsonStr.startsWith('```json')) {
-      jsonStr = jsonStr.replace(/^```json\s*\n/, '').replace(/\n```\s*$/, '');
+    const jsonMatch = jsonStr.match(/```json?\s*\n([\s\S]*?)\n```/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[1];
     } else if (jsonStr.startsWith('```')) {
-      jsonStr = jsonStr.replace(/^```\s*\n/, '').replace(/\n```\s*$/, '');
+      jsonStr = jsonStr.replace(/^```\w*\s*\n/, '').replace(/\n```\s*$/, '');
     }
 
-    const analysis: BilingualAnalysis = JSON.parse(jsonStr);
+    const analysis: AnalysisResult = JSON.parse(jsonStr);
 
     // Validate structure
-    if (!analysis.en || !analysis.ko) {
-      throw new Error('Invalid analysis structure: missing en or ko');
+    if (!analysis.summary || !analysis.type) {
+      throw new Error('Invalid analysis structure: missing required fields');
+    }
+
+    // Ensure array fields are arrays (guard against malformed AI responses)
+    const arrayFields = ['technical_points', 'challenges', 'suggested_approach', 'related_areas', 'questions'] as const;
+    for (const field of arrayFields) {
+      if (!Array.isArray(analysis[field])) {
+        analysis[field] = [];
+      }
     }
 
     console.log('✅ Analysis completed successfully');
@@ -266,49 +258,16 @@ async function analyzeIssueWithClaude(issue: IssueData): Promise<BilingualAnalys
   }
 }
 
-function formatComment(analysis: AnalysisSection, language: 'en' | 'ko'): string {
-  const headers = {
-    en: {
-      title: '🤖 AI Issue Analysis',
-      summary: 'Summary',
-      classification: 'Classification',
-      type: 'Type',
-      priority: 'Priority',
-      reason: 'Reason',
-      technical: 'Technical Points',
-      challenges: 'Challenges',
-      approach: 'Suggested Approach',
-      related: 'Related Areas',
-      questions: 'Questions for Author',
-      footer: 'This analysis was generated by Claude AI to help with issue triage.',
-    },
-    ko: {
-      title: '🤖 AI 이슈 분석',
-      summary: '요약',
-      classification: '분류',
-      type: '유형',
-      priority: '우선순위',
-      reason: '이유',
-      technical: '기술적 고려사항',
-      challenges: '예상 난관',
-      approach: '제안 접근법',
-      related: '연관 영역',
-      questions: '작성자에게 질문',
-      footer: '이 분석은 이슈 트리아지를 돕기 위해 Claude AI가 생성했습니다.',
-    },
-  };
-
-  const h = headers[language];
-
-  let comment = `## ${h.title}\n\n`;
-  comment += `### ${h.summary}\n${analysis.summary}\n\n`;
-  comment += `### ${h.classification}\n`;
-  comment += `- **${h.type}**: ${analysis.type}\n`;
-  comment += `- **${h.priority}**: ${analysis.priority}\n`;
-  comment += `- **${h.reason}**: ${analysis.priority_reason}\n\n`;
+function formatComment(analysis: AnalysisResult): string {
+  let comment = `## 🤖 AI 이슈 분석\n\n`;
+  comment += `### 요약\n${analysis.summary}\n\n`;
+  comment += `### 분류\n`;
+  comment += `- **유형**: ${analysis.type}\n`;
+  comment += `- **우선순위**: ${analysis.priority}\n`;
+  comment += `- **이유**: ${analysis.priority_reason}\n\n`;
 
   if (analysis.technical_points.length > 0) {
-    comment += `### ${h.technical}\n`;
+    comment += `### 기술적 고려사항\n`;
     analysis.technical_points.forEach(point => {
       comment += `- ${point}\n`;
     });
@@ -316,7 +275,7 @@ function formatComment(analysis: AnalysisSection, language: 'en' | 'ko'): string
   }
 
   if (analysis.challenges.length > 0) {
-    comment += `### ${h.challenges}\n`;
+    comment += `### 예상 난관\n`;
     analysis.challenges.forEach(challenge => {
       comment += `- ${challenge}\n`;
     });
@@ -324,7 +283,7 @@ function formatComment(analysis: AnalysisSection, language: 'en' | 'ko'): string
   }
 
   if (analysis.suggested_approach.length > 0) {
-    comment += `### ${h.approach}\n`;
+    comment += `### 제안 접근법\n`;
     analysis.suggested_approach.forEach((step, idx) => {
       comment += `${idx + 1}. ${step}\n`;
     });
@@ -332,7 +291,7 @@ function formatComment(analysis: AnalysisSection, language: 'en' | 'ko'): string
   }
 
   if (analysis.related_areas.length > 0) {
-    comment += `### ${h.related}\n`;
+    comment += `### 연관 영역\n`;
     analysis.related_areas.forEach(area => {
       comment += `- ${area}\n`;
     });
@@ -340,14 +299,14 @@ function formatComment(analysis: AnalysisSection, language: 'en' | 'ko'): string
   }
 
   if (analysis.questions.length > 0) {
-    comment += `### ${h.questions}\n`;
+    comment += `### 작성자에게 질문\n`;
     analysis.questions.forEach(question => {
       comment += `- ${question}\n`;
     });
     comment += '\n';
   }
 
-  comment += `---\n*${h.footer}*\n`;
+  comment += `---\n*이 분석은 이슈 트리아지를 돕기 위해 Claude AI가 생성했습니다.*\n`;
 
   return comment;
 }
@@ -401,19 +360,11 @@ async function main(): Promise<void> {
   // Analyze with Claude
   const analysis = await analyzeIssueWithClaude(issue);
 
-  // Format comments
-  const commentEn = formatComment(analysis.en, 'en');
-  const commentKo = formatComment(analysis.ko, 'ko');
+  // Format comment (Korean with English technical terms)
+  const comment = formatComment(analysis);
 
-  console.log('\n📤 Posting comments to GitHub...');
-
-  // Post English comment
-  console.log('  Posting English analysis...');
-  await postComment(issueNumber, commentEn);
-
-  // Post Korean comment
-  console.log('  Posting Korean analysis...');
-  await postComment(issueNumber, commentKo);
+  console.log('\n📤 Posting comment to GitHub...');
+  await postComment(issueNumber, comment);
 
   console.log('\n✨ Issue analysis completed successfully!');
 }

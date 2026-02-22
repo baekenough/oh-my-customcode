@@ -23,7 +23,7 @@ permissions:
 jobs:
   sync-check:
     name: Verify Template Sync
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nuc13]
 
     steps:
       - name: Checkout oh-my-customcode

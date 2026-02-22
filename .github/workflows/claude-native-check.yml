@@ -22,7 +22,7 @@ permissions:
 jobs:
   verify:
     name: Verify Claude Native Compliance
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nuc13]
 
     steps:
       - name: Checkout repository
@@ -60,7 +60,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.guard.outputs.skip != 'true'
-        run: bun install
+        run: bun install --frozen-lockfile
 
       - name: Run Claude Native Verification
         if: steps.guard.outputs.skip != 'true'
