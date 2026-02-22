@@ -293,7 +293,7 @@ describe('Hooks Validation', () => {
       expect(stageBlockingHook?.hooks[0].type).toBe('command');
     });
 
-    it('should have the stage-based hook command referencing /tmp/.claude-dev-stage', async () => {
+    it('should have the stage-based hook command referencing stage-blocker script', async () => {
       const { parsed } = await loadHooksJson();
       const data = parsed as HooksStructure;
       const entries = data.hooks.PreToolUse ?? [];
@@ -303,24 +303,31 @@ describe('Hooks Validation', () => {
       );
 
       expect(stageBlockingHook).toBeDefined();
-      expect(stageBlockingHook?.hooks[0].command).toContain('/tmp/.claude-dev-stage');
+      const command = stageBlockingHook?.hooks[0].command ?? '';
+      expect(command).toContain('stage-blocker.sh');
+
+      // Read the script file to verify it references /tmp/.claude-dev-stage
+      const scriptPath = resolve(
+        import.meta.dir,
+        '../../../templates/.claude/hooks/scripts/stage-blocker.sh'
+      );
+      const scriptContent = await readFile(scriptPath, 'utf-8');
+      expect(scriptContent).toContain('/tmp/.claude-dev-stage');
     });
 
     it('should block Write/Edit in plan, verify-plan, verify-impl, and compound stages', async () => {
-      const { parsed } = await loadHooksJson();
-      const data = parsed as HooksStructure;
-      const entries = data.hooks.PreToolUse ?? [];
-
-      const stageBlockingHook = entries.find(
-        (entry) => entry.matcher === 'tool == "Write" || tool == "Edit"'
+      // Read the stage-blocker script to verify stage names
+      const scriptPath = resolve(
+        import.meta.dir,
+        '../../../templates/.claude/hooks/scripts/stage-blocker.sh'
       );
-      const command = stageBlockingHook?.hooks[0].command ?? '';
+      const scriptContent = await readFile(scriptPath, 'utf-8');
 
-      expect(command).toContain('plan');
-      expect(command).toContain('verify-plan');
-      expect(command).toContain('verify-impl');
-      expect(command).toContain('compound');
-      expect(command).toContain('done');
+      expect(scriptContent).toContain('plan');
+      expect(scriptContent).toContain('verify-plan');
+      expect(scriptContent).toContain('verify-impl');
+      expect(scriptContent).toContain('compound');
+      expect(scriptContent).toContain('done');
     });
 
     it('should have a description for the stage-based hook', async () => {
