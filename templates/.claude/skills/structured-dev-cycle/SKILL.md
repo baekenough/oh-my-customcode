@@ -32,7 +32,7 @@ Stage state is tracked via a marker file for hook enforcement:
 # Set stage (used by orchestrator or skill)
 echo "plan" > /tmp/.claude-dev-stage
 
-# Valid stage values:
+# Valid stage values (all block Write/Edit except 'implement'):
 # plan, verify-plan, implement, verify-impl, compound, done
 
 # Clear stage (disable blocking)
@@ -155,6 +155,11 @@ echo "compound" > /tmp/.claude-dev-stage        # Enter compound testing
 echo "done" > /tmp/.claude-dev-stage            # Mark done
 rm -f /tmp/.claude-dev-stage                    # Clear (disable blocking)
 ```
+
+## Limitations
+
+- **Single session**: The fixed path `/tmp/.claude-dev-stage` does not support concurrent Claude Code sessions. Running multiple sessions simultaneously may cause stage state conflicts.
+- **World-writable path**: The `/tmp/` directory is accessible to all users. For multi-user environments, consider using a user-scoped path like `/tmp/.claude-dev-stage-$(id -u)`.
 
 ## Display Format
 
