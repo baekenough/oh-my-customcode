@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f /tmp/.claude-dev-stage ]; then stage=$(cat /tmp/.claude-dev-stage); case \"$stage\" in plan|verify-plan|verify-impl|compound) echo \"⛔ BLOCKED: Write/Edit disabled in '$stage' stage. Only allowed during 'implement' stage. Use 'echo implement > /tmp/.claude-dev-stage' to transition.\"; exit 2;; esac; fi"
+            "command": "if [ -f /tmp/.claude-dev-stage ]; then stage=$(cat /tmp/.claude-dev-stage | tr -d '[:space:]'); if [ -z \"$stage\" ]; then exit 0; fi; case \"$stage\" in plan|verify-plan|verify-impl|compound) echo \"⛔ BLOCKED: Write/Edit disabled in '$stage' stage. Only allowed during 'implement' stage. Use 'echo implement > /tmp/.claude-dev-stage' to transition.\"; exit 2;; esac; fi"
           }
         ],
         "description": "Block Write/Edit tools during plan/verify/compound stages — only allow in implement stage"
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\necho '[Hook] Review changes before push...' >&2\necho '[Hook] Press Enter to continue with push or Ctrl+C to abort...' >&2\nread -r"
+            "command": "#!/bin/bash\necho '[Hook] Review changes before push...' >&2\nif [ -t 0 ]; then echo '[Hook] Press Enter to continue or Ctrl+C to abort...' >&2; read -r; else echo '[Hook] Non-interactive mode, proceeding...' >&2; fi"
           }
         ],
         "description": "Pause before git push to review changes"
