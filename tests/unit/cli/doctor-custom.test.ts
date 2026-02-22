@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -292,23 +292,27 @@ describe('doctor custom components', () => {
     expect(result.fixable).toBe(false);
   });
 
-  /**
-   * NOTE: The catch block in checkCustomComponents (lines 600-606) is unreachable
-   * with the current loadConfig implementation because loadConfig never throws -
-   * it always returns defaults when errors occur.
-   *
-   * The catch block exists as defensive programming for potential future changes
-   * to loadConfig. If loadConfig is modified to throw errors in certain cases,
-   * this test should be updated to cover that scenario using mocking.
-   *
-   * Current loadConfig behavior:
-   * - Config file missing → returns getDefaultConfig() (doesn't throw)
-   * - Config file malformed → catches error, warns, returns getDefaultConfig() (doesn't throw)
-   * - Any other error → catches error, warns, returns getDefaultConfig() (doesn't throw)
-   */
-  it('should document why catch block is not tested', () => {
-    // This test exists to document the unreachable catch block in checkCustomComponents
-    // See comment above for explanation
-    expect(true).toBe(true);
+  it('should return pass with "No config file found" when loadConfig throws', async () => {
+    // Mock loadConfig to simulate an unexpected error (e.g. permission denied)
+    // This covers the defensive catch block in checkCustomComponents (lines 600-606).
+    // Under normal circumstances loadConfig never throws because it catches all
+    // internal errors and returns getDefaultConfig(), so a mock is required.
+    mock.module('../../../src/core/config.js', () => ({
+      loadConfig: async () => {
+        throw new Error('Permission denied');
+      },
+      getDefaultConfig,
+      saveConfig,
+    }));
+
+    const result = await checkCustomComponents(tempDir, '.claude');
+
+    expect(result.status).toBe('pass');
+    expect(result.name).toBe('Custom components');
+    expect(result.message).toBe('No config file found');
+    expect(result.fixable).toBe(false);
+
+    // Restore real module
+    mock.restore();
   });
 });

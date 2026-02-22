@@ -2,7 +2,7 @@
  * File system utilities
  */
 
-import { dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /**
@@ -42,27 +42,16 @@ export function validatePreserveFilePath(
     };
   }
 
-  // Normalize the path to resolve . and .. segments
-  const normalizedPath = normalize(filePath);
-
-  // Check if normalized path tries to escape project root
-  // This catches patterns like ../../etc/passwd
-  if (normalizedPath.startsWith('..')) {
-    return {
-      valid: false,
-      reason: 'Path cannot traverse outside project root',
-    };
-  }
-
-  // Additional check: resolve path and verify it's within project root
-  const resolvedPath = resolve(projectRoot, normalizedPath);
+  // Resolve the path against the project root and verify it stays within bounds.
+  // This handles all traversal patterns (../../etc/passwd) on both POSIX and Windows.
+  const resolvedPath = resolve(projectRoot, filePath);
   const relativePath = relative(projectRoot, resolvedPath);
 
   // If relative path starts with .. or is absolute, it escaped the project root
   if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
     return {
       valid: false,
-      reason: 'Resolved path escapes project root',
+      reason: 'Path cannot traverse outside project root',
     };
   }
 
