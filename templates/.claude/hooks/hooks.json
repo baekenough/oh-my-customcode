@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash templates/.claude/hooks/scripts/stage-blocker.sh"
+            "command": "bash .claude/hooks/scripts/stage-blocker.sh"
           }
         ],
         "description": "Block Write/Edit tools during plan/verify/compound stages — only allow in implement stage"
