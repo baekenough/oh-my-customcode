@@ -7,6 +7,7 @@ to reduce token usage by 75-95% while maintaining quality.
 
 from .ontology import Ontology, AgentInfo, SkillInfo, RuleInfo
 from .graph import OntologyGraph, GraphNode, GraphEdge, HAS_NETWORKX
+from ._rust_backend import HAS_RUST as HAS_RUST_BACKEND
 from .router import SemanticRouter, RoutingResult, IntentClassification
 from .loader import HierarchicalLoader, LoadedContext
 from .budget import BudgetManager, TokenBudget, QueryComplexity, AdaptiveBudgetManager, BudgetAnalysis
@@ -31,6 +32,7 @@ __all__ = [
     "GraphNode",
     "GraphEdge",
     "HAS_NETWORKX",
+    "HAS_RUST_BACKEND",
     "SemanticRouter",
     "RoutingResult",
     "IntentClassification",

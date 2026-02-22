@@ -1,0 +1,3 @@
+[workspace]
+members = ["rust/ontology-graph-rs"]
+resolver = "2"
