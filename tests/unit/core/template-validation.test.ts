@@ -195,7 +195,7 @@ async function validateAgentFrontmatter(
   const requiredFields = ['name', 'description', 'model', 'tools'];
   for (const field of requiredFields) {
     // tools may be a multiline array (tools:\n  - Read), so use hasField
-    if (!hasField(result, field) && !result.fields[field]) {
+    if (!hasField(result, field)) {
       errors.push(`${agentFile}: missing required field '${field}'`);
     }
   }

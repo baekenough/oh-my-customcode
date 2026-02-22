@@ -214,10 +214,10 @@ async function analyzeIssueWithClaude(issue: IssueData): Promise<AnalysisResult>
       ],
     });
 
-    // Extract text content
+    // Extract text content using type narrowing (ContentBlock is a discriminated union)
     const textContent = message.content
-      .filter((block) => block.type === 'text')
-      .map((block) => (block as any).text)
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
       .join('\n');
 
     // Parse JSON response (handle code blocks)
