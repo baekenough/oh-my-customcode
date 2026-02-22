@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 import {
   type AgentConfig,
+  type CustomComponentConfig,
   configExists,
   deleteConfig,
   getAgentConfig,
@@ -46,7 +47,7 @@ describe('config', () => {
       expect(config.lastUpdated).toBe('');
       expect(config.installedComponents).toEqual([]);
       expect(config.componentVersions).toEqual({});
-      expect(config.agents).toEqual({});
+      expect(config.agents).toBeUndefined();
       expect(config.preferences).toBeDefined();
       expect(config.sourceRepo).toBe('https://github.com/baekenough/oh-my-customcode');
       expect(config.autoUpdate).toBeDefined();
@@ -342,6 +343,67 @@ describe('config', () => {
 
       expect(merged.agents).toHaveProperty('agent1');
       expect(merged.agents).toHaveProperty('agent2');
+    });
+
+    it('should include valid preserveFiles paths when targetDir is provided', () => {
+      const defaults = getDefaultConfig();
+      const overrides: Partial<OmccConfig> = {
+        preserveFiles: ['valid/path.txt'],
+      };
+
+      const merged = mergeConfig(defaults, overrides, tempDir);
+
+      expect(merged.preserveFiles).toContain('valid/path.txt');
+    });
+
+    it('should warn and exclude invalid preserveFiles paths when targetDir is provided', () => {
+      const defaults = getDefaultConfig();
+      const overrides: Partial<OmccConfig> = {
+        preserveFiles: ['../../etc/passwd'],
+      };
+
+      const merged = mergeConfig(defaults, overrides, tempDir);
+
+      expect(merged.preserveFiles).not.toContain('../../etc/passwd');
+      expect(merged.preserveFiles).toHaveLength(0);
+    });
+
+    it('should deduplicate customComponents by path — later entry wins (line 213)', () => {
+      const defaults = getDefaultConfig();
+      const firstComponent: CustomComponentConfig = {
+        type: 'agent',
+        name: 'my-agent-v1',
+        path: '.claude/agents/my-agent.md',
+        managed: false,
+      };
+      const secondComponent: CustomComponentConfig = {
+        type: 'agent',
+        name: 'my-agent-v2',
+        path: '.claude/agents/my-agent.md', // same path → triggers seen.set on second iteration
+        managed: false,
+      };
+      const overrides: Partial<OmccConfig> = {
+        customComponents: [firstComponent, secondComponent],
+      };
+
+      const merged = mergeConfig(defaults, overrides);
+
+      // Only one entry should survive (later entry wins)
+      expect(merged.customComponents).toHaveLength(1);
+      expect(merged.customComponents?.[0].name).toBe('my-agent-v2');
+    });
+
+    it('should assign allFiles directly when targetDir is not provided (line 247)', () => {
+      const defaults = getDefaultConfig();
+      const overrides: Partial<OmccConfig> = {
+        preserveFiles: ['some/file.txt', 'another/file.md'],
+      };
+
+      // No targetDir argument — skips validation and hits the else branch at line 247
+      const merged = mergeConfig(defaults, overrides);
+
+      expect(merged.preserveFiles).toContain('some/file.txt');
+      expect(merged.preserveFiles).toContain('another/file.md');
     });
   });
 

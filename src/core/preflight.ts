@@ -49,6 +49,13 @@ export interface PreflightOptions {
   tools?: string[];
   /** Timeout in milliseconds (default: 5000) */
   timeout?: number;
+  /**
+   * Override the internal tool collection function (for testing only).
+   * When provided, this function is called instead of collectToolResults.
+   * Supports both synchronous and asynchronous collectors.
+   * @internal
+   */
+  _collectFn?: (toolNames: string[]) => PreflightResult | Promise<PreflightResult>;
 }
 
 /**
@@ -260,10 +267,40 @@ function checkOutdated(tools: CliTool[]): void {
 }
 
 /**
+ * Perform the actual tool collection and outdated check.
+ * Exported for testing purposes.
+ *
+ * @internal
+ */
+export function collectToolResults(toolNames: string[]): PreflightResult {
+  const tools: CliTool[] = [];
+
+  for (const toolName of toolNames) {
+    const tool = getToolInfo(toolName);
+    tools.push(tool);
+  }
+
+  checkOutdated(tools);
+
+  const hasUpdates = tools.some((t) => t.updateAvailable);
+  return {
+    tools,
+    hasUpdates,
+    warnings: [],
+    skipped: false,
+  };
+}
+
+/**
  * Run pre-flight check
  */
 export async function runPreflightCheck(options: PreflightOptions = {}): Promise<PreflightResult> {
-  const { skip = false, tools: toolNames = ['claude-code'], timeout = 5000 } = options;
+  const {
+    skip = false,
+    tools: toolNames = ['claude-code'],
+    timeout = 5000,
+    _collectFn = collectToolResults,
+  } = options;
 
   // Check if should skip
   if (skip) {
@@ -297,9 +334,9 @@ export async function runPreflightCheck(options: PreflightOptions = {}): Promise
     };
   }
 
-  // Run check with timeout
-  return new Promise((resolve) => {
-    const timeoutId = setTimeout(() => {
+  // Build a timeout promise
+  const timeoutPromise: Promise<PreflightResult> = new Promise((resolve) => {
+    setTimeout(() => {
       resolve({
         tools: [],
         hasUpdates: false,
@@ -308,42 +345,26 @@ export async function runPreflightCheck(options: PreflightOptions = {}): Promise
         skipReason: 'Timeout',
       });
     }, timeout);
-
-    try {
-      const tools: CliTool[] = [];
-
-      // Get tool information
-      for (const toolName of toolNames) {
-        const tool = getToolInfo(toolName);
-        tools.push(tool);
-      }
-
-      // Check for outdated versions
-      checkOutdated(tools);
-
-      // Build result
-      const hasUpdates = tools.some((t) => t.updateAvailable);
-      const warnings: string[] = [];
-
-      clearTimeout(timeoutId);
-      resolve({
-        tools,
-        hasUpdates,
-        warnings,
-        skipped: false,
-      });
-    } catch (error: unknown) {
-      clearTimeout(timeoutId);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      resolve({
-        tools: [],
-        hasUpdates: false,
-        warnings: [`Pre-flight check failed: ${errorMessage}`],
-        skipped: true,
-        skipReason: 'Error during check',
-      });
-    }
   });
+
+  // Build the collection promise
+  const collectPromise: Promise<PreflightResult> = (async () => {
+    const result = await _collectFn(toolNames);
+    return result;
+  })().catch((error: unknown) => {
+    // Handle errors that escape the collect function
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return {
+      tools: [] as CliTool[],
+      hasUpdates: false,
+      warnings: [`Pre-flight check failed: ${errorMessage}`],
+      skipped: true,
+      skipReason: 'Error during check',
+    };
+  });
+
+  // Race: whichever resolves first wins
+  return Promise.race([collectPromise, timeoutPromise]);
 }
 
 /**

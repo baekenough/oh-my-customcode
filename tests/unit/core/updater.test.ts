@@ -209,6 +209,28 @@ describe('updater', () => {
       expect(result.backedUpPaths[0]).toContain('.omcustom-backup-');
     });
 
+    it('should backup entry doc when it exists during backup operation', async () => {
+      await createConfig('0.1.0');
+
+      // Create existing entry doc (CLAUDE.md) and component files to backup
+      const layout = getProviderLayout();
+      await createDirStructure({
+        [`${layout.rootDir}/rules/test.md`]: 'existing rule',
+        [layout.entryFile]: '# Existing CLAUDE.md',
+      });
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+        backup: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.backedUpPaths.length).toBe(1);
+      // The backup should include the entry doc backup (line 677 in backupInstallation)
+      expect(result.backedUpPaths[0]).toContain('.omcustom-backup-');
+    });
+
     it('should preserve customizations during update', async () => {
       await createConfig('0.1.0');
 
@@ -517,6 +539,212 @@ describe('updater', () => {
       expect(result.newVersion).toBe('0.3.0');
       // When versions match but components were updated, it's a component sync
       expect(result.updatedComponents).toContain('rules' as UpdateComponent);
+    });
+
+    it('should skip specific components that are already up-to-date while others have updates', async () => {
+      // Config version is old (hasUpdates: true due to version mismatch),
+      // but rules component specifically is at latest version (0.3.0)
+      await createConfig('0.1.0', {
+        rules: '0.3.0', // rules is already up-to-date
+        agents: '0.1.0', // agents needs update
+      });
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      // Update only 'rules' component - hasUpdates is true (version mismatch)
+      // but rules is not in updatableComponents (it's already at 0.3.0)
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+      });
+
+      expect(result.success).toBe(true);
+      // Rules should be skipped since its component version is already current
+      expect(result.skippedComponents).toContain('rules' as UpdateComponent);
+      expect(result.updatedComponents).not.toContain('rules' as UpdateComponent);
+    });
+
+    it('should update entry doc when no components specified (full update - new file)', async () => {
+      await createConfig('0.1.0');
+
+      // Create target directory structure
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      // Full update (no components specified) triggers updateEntryDoc
+      // No existing CLAUDE.md → creates new file
+      const result = await update({
+        targetDir: tempDir,
+        // No components specified = full update
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.newVersion).toBe('0.3.0');
+      // Entry doc was created
+      const layout2 = getProviderLayout();
+      const entryExists = await readFile(join(tempDir, layout2.entryFile), 'utf-8').catch(
+        () => null
+      );
+      expect(entryExists).not.toBeNull();
+    });
+
+    it('should merge existing entry doc during full update (no force)', async () => {
+      await createConfig('0.1.0');
+
+      // Create target directory structure with existing CLAUDE.md
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      // Create existing CLAUDE.md with custom content
+      const existingContent = `# My Custom Content\n\n<!-- MANAGED-SECTION-START -->\nManaged content\n<!-- MANAGED-SECTION-END -->\n`;
+      await writeFile(join(tempDir, layout.entryFile), existingContent);
+
+      // Full update without force → merge path (378-393)
+      const result = await update({
+        targetDir: tempDir,
+        force: false, // Merge mode
+      });
+
+      expect(result.success).toBe(true);
+      // Verify entry doc was updated (merged content)
+      const updatedContent = await readFile(join(tempDir, layout.entryFile), 'utf-8');
+      expect(updatedContent).toBeDefined();
+    });
+
+    it('should force overwrite entry doc during full update with --force', async () => {
+      await createConfig('0.1.0');
+
+      // Create target directory structure with existing CLAUDE.md
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      // Create existing CLAUDE.md
+      const existingContent = '# Existing Content\nSome content here';
+      await writeFile(join(tempDir, layout.entryFile), existingContent);
+
+      // Full update with force → backup + overwrite (371, 373-376)
+      const result = await update({
+        targetDir: tempDir,
+        force: true, // Force overwrite mode
+      });
+
+      expect(result.success).toBe(true);
+      // Verify entry doc was overwritten
+      const updatedContent = await readFile(join(tempDir, layout.entryFile), 'utf-8');
+      expect(updatedContent).not.toBe(existingContent);
+    });
+
+    it('should update guides component (testing getComponentPath guides path)', async () => {
+      await createConfig('0.1.0');
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['guides'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.updatedComponents).toContain('guides' as UpdateComponent);
+    });
+
+    it('should skip custom components that match the component path', async () => {
+      await createConfig('0.1.0');
+
+      // Create config with customComponents that should be skipped during update
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      config.customComponents = [
+        {
+          name: 'my-custom-agent',
+          path: '.claude/agents/my-custom-agent.md',
+          enabled: true,
+        },
+      ];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+
+      // Create the custom agent file
+      await createDirStructure({
+        '.claude/agents/my-custom-agent.md': '# Custom Agent Content',
+      });
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['agents'],
+      });
+
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('resolveCustomizations edge cases', () => {
+    it('should warn and skip invalid path traversal in manifest preserveFiles', async () => {
+      await createConfig('0.1.0');
+
+      // Create manifest with an invalid path that traverses outside project root
+      await createDirStructure({
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: ['../../etc/passwd'], // Invalid: path traversal
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      // Should warn about invalid path but still succeed
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+        preserveCustomizations: true,
+      });
+
+      expect(result.success).toBe(true);
+      // Invalid path should be silently skipped (warn logged internally)
+    });
+
+    it('should merge manifest and config preserveFiles when both have valid paths', async () => {
+      await createConfig('0.1.0');
+
+      // Add config-level preserveFiles
+      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
+      const config = JSON.parse(configContent);
+      const configPreserveFile = '.claude/rules/config-rule.md';
+      config.preserveFiles = [configPreserveFile];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+
+      // Add manifest-level preserveFiles
+      const manifestPreserveFile = '.claude/rules/manifest-rule.md';
+      await createDirStructure({
+        [configPreserveFile]: 'config rule content',
+        [manifestPreserveFile]: 'manifest rule content',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [manifestPreserveFile], // Valid path in manifest
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      // Both manifest and config have preserveFiles → merge path (322-329)
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+        preserveCustomizations: true, // Enable manifest preservation
+        // No forceOverwriteAll, so config preserveFiles are also included
+      });
+
+      expect(result.success).toBe(true);
+      // Both files should be preserved
+      expect(result.preservedFiles).toContain(configPreserveFile);
+      expect(result.preservedFiles).toContain(manifestPreserveFile);
     });
   });
 

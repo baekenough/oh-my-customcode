@@ -23,6 +23,7 @@ import {
   remove,
   resolvePath,
   resolveTemplatePath,
+  validatePreserveFilePath,
   writeJsonFile,
   writeTextFile,
 } from '../../../src/utils/fs.js';
@@ -737,6 +738,69 @@ describe('fs utilities', () => {
       expect(templatePath).toContain('templates');
       expect(templatePath).toContain('rules');
       expect(templatePath).toContain('example.md');
+    });
+  });
+
+  describe('validatePreserveFilePath', () => {
+    it('should return valid for a simple relative path', () => {
+      const result = validatePreserveFilePath('src/file.ts', '/project/root');
+
+      expect(result.valid).toBe(true);
+      expect(result.reason).toBeUndefined();
+    });
+
+    it('should return valid for a nested relative path', () => {
+      const result = validatePreserveFilePath('deep/nested/path/file.txt', '/project/root');
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('should return valid for a simple filename', () => {
+      const result = validatePreserveFilePath('file.txt', '/project/root');
+
+      expect(result.valid).toBe(true);
+    });
+
+    it('should return invalid for empty string', () => {
+      const result = validatePreserveFilePath('', '/project/root');
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe('Path cannot be empty');
+    });
+
+    it('should return invalid for whitespace-only string', () => {
+      const result = validatePreserveFilePath('   ', '/project/root');
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe('Path cannot be empty');
+    });
+
+    it('should return invalid for absolute path', () => {
+      const result = validatePreserveFilePath('/etc/passwd', '/project/root');
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe('Absolute paths are not allowed');
+    });
+
+    it('should return invalid for path traversal with ../', () => {
+      const result = validatePreserveFilePath('../../etc/passwd', '/project/root');
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe('Path cannot traverse outside project root');
+    });
+
+    it('should return invalid for path traversal with nested ../', () => {
+      const result = validatePreserveFilePath('subdir/../../../etc/passwd', '/project/root');
+
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe('Path cannot traverse outside project root');
+    });
+
+    it('should return valid for path with safe dot-dot that stays within root', () => {
+      // subdir/../file.ts normalizes to file.ts which is still inside root
+      const result = validatePreserveFilePath('subdir/../file.ts', '/project/root');
+
+      expect(result.valid).toBe(true);
     });
   });
 });

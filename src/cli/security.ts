@@ -41,15 +41,13 @@ async function pathExists(targetPath: string): Promise<boolean> {
 }
 
 /**
- * Check if content is valid UTF-8 text
+ * Check if content is valid UTF-8 text.
+ * Buffer.toString('utf-8') never throws — invalid bytes are silently replaced
+ * with U+FFFD. We detect non-text content by checking for null bytes instead,
+ * which are absent in well-formed text files but common in binary files.
  */
 function isValidUtf8Text(content: Buffer): boolean {
-  try {
-    content.toString('utf-8');
-    return true;
-  } catch {
-    return false;
-  }
+  return !content.includes(0x00);
 }
 
 /**

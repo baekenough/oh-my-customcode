@@ -147,6 +147,131 @@ describe('git-workflow', () => {
       const result = assertDetected(detectGitWorkflow(tempDir));
       expect(result.branchPatterns).toContain('bugfix/*');
     });
+
+    it('should detect default branch from remote HEAD (line 72)', async () => {
+      // Create a bare repo that acts as origin
+      const bareDir = join(tmpdir(), `omcustom-git-bare-${Date.now()}`);
+      await mkdir(bareDir, { recursive: true });
+      try {
+        git(['init', '--bare', '-b', 'main'], bareDir);
+
+        // Clone the bare repo — this sets up refs/remotes/origin/HEAD
+        const cloneDir = join(tmpdir(), `omcustom-git-clone-${Date.now()}`);
+        await mkdir(cloneDir, { recursive: true });
+        try {
+          execFileSync('git', ['clone', bareDir, cloneDir], {
+            encoding: 'utf-8',
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined },
+          });
+          git(['config', 'user.email', 'test@test.com'], cloneDir);
+          git(['config', 'user.name', 'Test'], cloneDir);
+          git(['config', 'core.hooksPath', '/dev/null'], cloneDir);
+          await writeFile(join(cloneDir, 'README.md'), '# Test\n');
+          git(['add', '.'], cloneDir);
+          git(['commit', '-m', 'initial'], cloneDir);
+          git(['push', 'origin', 'main'], cloneDir);
+
+          // Explicitly set origin/HEAD so refs/remotes/origin/HEAD is a symbolic ref
+          git(['remote', 'set-head', 'origin', 'main'], cloneDir);
+
+          // Verify refs/remotes/origin/HEAD exists (prerequisite for line 72)
+          const remoteHead = git(['symbolic-ref', 'refs/remotes/origin/HEAD'], cloneDir);
+          expect(remoteHead).toBeTruthy();
+
+          const result = assertDetected(detectGitWorkflow(cloneDir));
+          // Line 72: remoteHead.replace('refs/remotes/origin/', '') → 'main'
+          expect(result.defaultBranch).toBe('main');
+        } finally {
+          await rm(cloneDir, { recursive: true, force: true });
+        }
+      } finally {
+        await rm(bareDir, { recursive: true, force: true });
+      }
+    });
+
+    it('should fall back to HEAD branch when no common branch names exist (lines 84-86)', async () => {
+      // Create repo on a non-standard branch (not main/master/develop)
+      // so the common-name loop (lines 77-81) finds nothing,
+      // and HEAD symbolic-ref (lines 84-86) becomes the fallback
+      const dir = tempDir;
+      git(['init', '-b', 'trunk'], dir);
+      git(['config', 'user.email', 'test@test.com'], dir);
+      git(['config', 'user.name', 'Test'], dir);
+      git(['config', 'core.hooksPath', '/dev/null'], dir);
+      await writeFile(join(dir, 'README.md'), '# Test\n');
+      git(['add', '.'], dir);
+      git(['commit', '-m', 'initial'], dir);
+
+      const result = assertDetected(detectGitWorkflow(dir));
+      // Lines 84-86: symbolic-ref --short HEAD returns 'trunk'
+      expect(result.defaultBranch).toBe('trunk');
+      expect(result.type).toBe('trunk-based');
+    });
+
+    it('should fall back to "main" when HEAD is detached and no common branches exist (lines 87, 89)', async () => {
+      // Create repo on a non-standard branch with a commit, then detach HEAD
+      // so symbolic-ref --short HEAD fails (returns ''), triggering the final fallback
+      const dir = tempDir;
+      git(['init', '-b', 'trunk'], dir);
+      git(['config', 'user.email', 'test@test.com'], dir);
+      git(['config', 'user.name', 'Test'], dir);
+      git(['config', 'core.hooksPath', '/dev/null'], dir);
+      await writeFile(join(dir, 'README.md'), '# Test\n');
+      git(['add', '.'], dir);
+      git(['commit', '-m', 'initial'], dir);
+
+      // Detach HEAD by checking out the commit hash directly
+      const commitHash = git(['rev-parse', 'HEAD'], dir);
+      git(['checkout', commitHash], dir);
+
+      const result = assertDetected(detectGitWorkflow(dir));
+      // Line 89: return 'main' (final fallback when HEAD is detached)
+      expect(result.defaultBranch).toBe('main');
+    });
+
+    it('should parse remote branches correctly (lines 107-111)', async () => {
+      // Create a bare repo and clone, then push multiple branches so
+      // getRemoteBranches can exercise split/filter/map/filter(HEAD)
+      const bareDir = join(tmpdir(), `omcustom-git-bare2-${Date.now()}`);
+      await mkdir(bareDir, { recursive: true });
+      try {
+        git(['init', '--bare', '-b', 'main'], bareDir);
+
+        const cloneDir = join(tmpdir(), `omcustom-git-clone2-${Date.now()}`);
+        await mkdir(cloneDir, { recursive: true });
+        try {
+          execFileSync('git', ['clone', bareDir, cloneDir], {
+            encoding: 'utf-8',
+            stdio: ['pipe', 'pipe', 'pipe'],
+            env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined },
+          });
+          git(['config', 'user.email', 'test@test.com'], cloneDir);
+          git(['config', 'user.name', 'Test'], cloneDir);
+          git(['config', 'core.hooksPath', '/dev/null'], cloneDir);
+          await writeFile(join(cloneDir, 'README.md'), '# Test\n');
+          git(['add', '.'], cloneDir);
+          git(['commit', '-m', 'initial'], cloneDir);
+          git(['push', 'origin', 'main'], cloneDir);
+
+          // Create and push a feature branch to exercise remote branch listing
+          git(['checkout', '-b', 'feature/remote-test'], cloneDir);
+          git(['push', 'origin', 'feature/remote-test'], cloneDir);
+          git(['checkout', 'main'], cloneDir);
+
+          // detectGitWorkflow calls getRemoteBranches which exercises lines 107-111
+          const result = assertDetected(detectGitWorkflow(cloneDir));
+          // Remote branches should include 'feature/remote-test' (stripped of origin/ prefix)
+          // and 'HEAD' entry should be filtered out
+          expect(result.branchPatterns).toContain('feature/*');
+          expect(result.type).toBe('github-flow');
+        } finally {
+          await rm(cloneDir, { recursive: true, force: true });
+        }
+      } finally {
+        await rm(bareDir, { recursive: true, force: true });
+      }
+    });
   });
 
   describe('getDefaultWorkflow', () => {

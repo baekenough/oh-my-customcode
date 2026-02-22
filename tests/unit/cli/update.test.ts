@@ -315,6 +315,72 @@ describe('update command', () => {
       expect(callArgs.components?.length).toBe(3);
     });
 
+    it('should update only guides when guides flag is set', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['guides'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.2.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ guides: true });
+
+      const callArgs = mockUpdate.mock.calls[0]?.[0];
+      expect(callArgs.components).toEqual(['guides']);
+    });
+
+    it('should update only hooks when hooks flag is set', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['hooks'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.2.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ hooks: true });
+
+      const callArgs = mockUpdate.mock.calls[0]?.[0];
+      expect(callArgs.components).toEqual(['hooks']);
+    });
+
     it('should update all components when no flags are set', async () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
@@ -346,6 +412,39 @@ describe('update command', () => {
 
       const callArgs = mockUpdate.mock.calls[0]?.[0];
       expect(callArgs.components).toBeUndefined();
+    });
+
+    it('should update only contexts when contexts flag is set', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['contexts'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.2.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ contexts: true });
+
+      const callArgs = mockUpdate.mock.calls[0]?.[0];
+      expect(callArgs.components).toEqual(['contexts']);
     });
   });
 
