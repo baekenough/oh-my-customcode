@@ -12,6 +12,9 @@ try:
 except ImportError:
     HAS_NETWORKX = False
 
+from ontology_rag._rust_backend import HAS_RUST
+import ontology_rag._rust_backend as _rust
+
 
 @dataclass
 class GraphNode:
@@ -153,6 +156,11 @@ class OntologyGraph:
         Returns:
             List of neighbor node IDs.
         """
+        if HAS_RUST:
+            result = _rust.neighbors(self.adjacency, node_id, relation)
+            if result is not None:
+                return result
+
         if HAS_NETWORKX and self._nx_graph is not None:
             if node_id not in self._nx_graph:
                 return []
@@ -180,6 +188,11 @@ class OntologyGraph:
         Returns:
             List of source node IDs that point to this node.
         """
+        if HAS_RUST:
+            result = _rust.reverse_neighbors(self.reverse_adjacency, node_id, relation)
+            if result is not None:
+                return result
+
         if HAS_NETWORKX and self._nx_graph is not None:
             if node_id not in self._nx_graph:
                 return []
@@ -213,6 +226,11 @@ class OntologyGraph:
         Returns:
             Dictionary mapping reachable node IDs to their depth from start.
         """
+        if HAS_RUST:
+            result = _rust.bfs(self.adjacency, start, max_depth, relation_filter)
+            if result is not None:
+                return result
+
         visited = {start: 0}
         queue = deque([(start, 0)])
 
@@ -337,6 +355,20 @@ class OntologyGraph:
             Dictionary mapping node IDs to PageRank scores.
             Empty dict if NetworkX is not available or if numpy is missing.
         """
+        if HAS_RUST:
+            node_ids = list(self.nodes.keys())
+            edges = []
+            if HAS_NETWORKX and self._nx_graph is not None:
+                edges = [(s, t) for s, t in self._nx_graph.edges()]
+            else:
+                for src, rels in self.adjacency.items():
+                    for targets in rels.values():
+                        for tgt in targets:
+                            edges.append((src, tgt))
+            result = _rust.pagerank(node_ids, edges)
+            if result is not None:
+                return result
+
         if not HAS_NETWORKX or self._nx_graph is None:
             return {}
 

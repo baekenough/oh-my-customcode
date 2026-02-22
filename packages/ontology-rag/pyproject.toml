@@ -17,6 +17,7 @@ dev = [
     "pytest-asyncio>=0.23",
 ]
 watch = ["watchdog>=4.0"]
+rust = ["maturin>=1.7"]
 
 [build-system]
 requires = ["hatchling"]
