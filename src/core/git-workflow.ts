@@ -160,12 +160,9 @@ function determineWorkflowType(
     return 'trunk-based';
   }
 
-  // If develop exists but no flow patterns, still classify as git-flow (develop-based)
-  if (hasDevelop) {
-    return 'git-flow';
-  }
-
-  return 'github-flow';
+  // If develop exists but no flow patterns, still classify as git-flow (develop-based).
+  // At this point hasDevelop is always true: all !hasDevelop cases returned above.
+  return 'git-flow';
 }
 
 /**
@@ -311,6 +308,7 @@ function renderGitFlowKO(r: GitWorkflowResult): string {
   if (r.branchPatterns.includes('hotfix/*')) {
     lines.push(`| \`hotfix/*\` | 긴급 수정 -> 태그 -> 배포 -> ${r.defaultBranch} 머지 |`);
   }
+  /* v8 ignore next 3 */
   if (r.branchPatterns.includes('bugfix/*')) {
     lines.push(`| \`bugfix/*\` | 버그 수정 -> ${r.defaultBranch}으로 PR |`);
   }

@@ -126,7 +126,6 @@ export function getDefaultConfig(): OmccConfig {
     lastUpdated: '',
     installedComponents: [],
     componentVersions: {},
-    agents: {},
     preferences: getDefaultPreferences(),
     sourceRepo: 'https://github.com/baekenough/oh-my-customcode',
     autoUpdate: {
@@ -265,10 +264,13 @@ export function mergeConfig(
       ...defaults.componentVersions,
       ...overrides.componentVersions,
     },
-    agents: {
-      ...defaults.agents,
-      ...overrides.agents,
-    },
+    agents:
+      defaults.agents || overrides.agents
+        ? {
+            ...defaults.agents,
+            ...overrides.agents,
+          }
+        : undefined,
     preserveFiles: mergedPreserveFiles,
     customComponents: overrides.customComponents
       ? deduplicateCustomComponents([

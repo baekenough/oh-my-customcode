@@ -3,7 +3,7 @@
  * These tests achieve coverage of internal functions that interact with execSync
  */
 
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, jest, mock } from 'bun:test';
 
 // Track execSync calls to return different results based on command
 let execSyncMock: ReturnType<typeof mock>;
@@ -446,9 +446,57 @@ describe('preflight - Homebrew integration', () => {
       expect(result.tools.every((t) => !t.updateAvailable)).toBe(true);
     });
 
-    // Note: Testing timeout behavior is not feasible with synchronous mocks
-    // because execSync blocks the event loop, preventing setTimeout from firing.
-    // The timeout logic is tested through E2E tests or manual testing.
+    it('should handle outer catch when collect function throws unexpectedly', async () => {
+      execSyncMock.mockImplementation(
+        createExecSyncMock({
+          'which brew': '/opt/homebrew/bin/brew\n',
+        })
+      );
+
+      const result = await runPreflightCheck({
+        _collectFn: () => {
+          throw new Error('Unexpected collection failure');
+        },
+      });
+
+      expect(result.skipped).toBe(true);
+      expect(result.skipReason).toBe('Error during check');
+      expect(result.warnings).toContain('Pre-flight check failed: Unexpected collection failure');
+    });
+
+    it('should return timeout result when setTimeout fires via fake timers', async () => {
+      jest.useFakeTimers();
+
+      execSyncMock.mockImplementation(
+        createExecSyncMock({
+          'which brew': '/opt/homebrew/bin/brew\n',
+        })
+      );
+
+      // Use a _collectFn that never resolves (hangs forever)
+      const neverResolvingCollect = (_toolNames: string[]): Promise<never> => {
+        return new Promise(() => {
+          // This promise never resolves, so the timeout will win the race
+        });
+      };
+
+      // Start the check with a short timeout
+      const checkPromise = runPreflightCheck({
+        timeout: 1000,
+        _collectFn: neverResolvingCollect,
+      });
+
+      // Advance fake timers past the timeout
+      jest.advanceTimersByTime(1001);
+
+      const result = await checkPromise;
+
+      expect(result.skipped).toBe(true);
+      expect(result.skipReason).toBe('Timeout');
+      expect(result.warnings).toContain('Version check timed out');
+
+      jest.useRealTimers();
+    });
 
     it('should handle errors during check by returning unknown tools', async () => {
       execSyncMock.mockImplementation(
@@ -468,11 +516,6 @@ describe('preflight - Homebrew integration', () => {
       expect(result.tools[0].installMethod).toBe('unknown');
       expect(result.tools[0].installed).toBe(false);
     });
-
-    // Note: Testing the outer catch block (lines 335-343) is not feasible
-    // because all internal functions (getToolInfo, getToolInfoFromBrew, etc.)
-    // have their own try-catch blocks that swallow errors. The outer catch
-    // is for truly unexpected errors and is tested through E2E or manual testing.
 
     it('should support custom tool list', async () => {
       execSyncMock.mockImplementation(
@@ -500,7 +543,103 @@ describe('preflight - Homebrew integration', () => {
     });
   });
 
+  describe('runPreflightCheck() skip options', () => {
+    it('should skip when skip option is true', async () => {
+      const result = await runPreflightCheck({ skip: true });
+
+      expect(result.skipped).toBe(true);
+      expect(result.skipReason).toBe('Skipped by --skip-version-check flag');
+      expect(result.hasUpdates).toBe(false);
+      expect(result.tools.length).toBe(0);
+    });
+
+    it('should skip when CI environment is detected', async () => {
+      process.env.CI = 'true';
+
+      const result = await runPreflightCheck();
+
+      expect(result.skipped).toBe(true);
+      expect(result.skipReason).toBe('CI environment detected');
+      expect(result.hasUpdates).toBe(false);
+      expect(result.tools.length).toBe(0);
+    });
+
+    it('should skip when GITHUB_ACTIONS is set', async () => {
+      process.env.GITHUB_ACTIONS = 'true';
+
+      const result = await runPreflightCheck();
+
+      expect(result.skipped).toBe(true);
+      expect(result.skipReason).toBe('CI environment detected');
+    });
+
+    it('should skip when OMCUSTOM_SKIP_PREFLIGHT is set', async () => {
+      process.env.OMCUSTOM_SKIP_PREFLIGHT = 'true';
+
+      const result = await runPreflightCheck();
+
+      expect(result.skipped).toBe(true);
+      expect(result.skipReason).toBe('CI environment detected');
+    });
+  });
+
   describe('Integration with formatPreflightWarnings()', () => {
+    it('should return empty string when no updates available', () => {
+      const result = {
+        tools: [
+          {
+            name: 'claude-code',
+            installed: true,
+            currentVersion: '2.0.0',
+            latestVersion: '2.0.0',
+            updateAvailable: false,
+            installMethod: 'homebrew' as const,
+          },
+        ],
+        hasUpdates: false,
+        warnings: [],
+        skipped: false,
+      };
+
+      const formatted = formatPreflightWarnings(result);
+
+      expect(formatted).toBe('');
+    });
+
+    it('should format warnings for multiple tools with updates', () => {
+      const result = {
+        tools: [
+          {
+            name: 'claude-code',
+            installed: true,
+            currentVersion: '1.0.0',
+            latestVersion: '2.0.0',
+            updateAvailable: true,
+            installMethod: 'homebrew' as const,
+          },
+          {
+            name: 'some-tool',
+            installed: true,
+            currentVersion: '3.0.0',
+            latestVersion: '4.0.0',
+            updateAvailable: true,
+            installMethod: 'homebrew' as const,
+          },
+        ],
+        hasUpdates: true,
+        warnings: [],
+        skipped: false,
+      };
+
+      const formatted = formatPreflightWarnings(result);
+
+      expect(formatted).toContain('Run the following to upgrade:');
+      expect(formatted).toContain('brew upgrade claude-code');
+      expect(formatted).toContain('brew upgrade some-tool');
+      expect(formatted).toContain('2.0.0 available');
+      expect(formatted).toContain('4.0.0 available');
+    });
+
     it('should format warnings for tools detected via Homebrew', async () => {
       execSyncMock.mockImplementation(
         createExecSyncMock({

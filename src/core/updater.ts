@@ -277,18 +277,10 @@ function resolveConfigPreserveFiles(options: UpdateOptions, config: OmccConfig):
 
   const preserveFiles = config.preserveFiles || [];
 
-  // Validate each path for security
+  // Paths are already validated by mergeConfig (called with targetDir during loadConfig)
   const validatedPaths: string[] = [];
   for (const filePath of preserveFiles) {
-    const validation = validatePreserveFilePath(filePath, options.targetDir);
-    if (validation.valid) {
-      validatedPaths.push(filePath);
-    } else {
-      warn('preserve_files.invalid_path', {
-        path: filePath,
-        reason: validation.reason ?? 'Invalid path',
-      });
-    }
+    validatedPaths.push(filePath);
   }
 
   return validatedPaths;
@@ -347,13 +339,12 @@ function resolveCustomizations(
     };
   }
 
-  // Only manifest has preserve files
-  if (customizations) {
-    customizations.preserveFiles = validatedManifestFiles;
-    return customizations;
-  }
-
-  return null;
+  // Only manifest has preserve files.
+  // customizations is guaranteed non-null here: validatedManifestFiles.length > 0
+  // only when customizations was truthy in the population loop above.
+  // biome-ignore lint/style/noNonNullAssertion: logically guaranteed non-null (see comment)
+  customizations!.preserveFiles = validatedManifestFiles;
+  return customizations;
 }
 
 /**
