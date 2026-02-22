@@ -63,16 +63,18 @@ jobs:
           set +e
           rm -f /tmp/coverage-output.txt
           bun test --coverage 2>&1 | tee /tmp/coverage-output.txt
+          # PIPESTATUS is bash-specific (requires shell: bash above)
           TEST_EXIT=${PIPESTATUS[0]}
           set -e
 
           COVERAGE_OUTPUT=$(cat /tmp/coverage-output.txt)
 
-          # Fail if tests themselves failed (not just coverage)
+          # Workaround: bun test --coverage may exit non-zero even when tests pass
+          # This heuristic checks actual test results in output (fragile if bun changes output format)
+          # TODO(bun-update): Re-evaluate after bun stable release (currently using latest)
           if [ $TEST_EXIT -ne 0 ]; then
-            # Check if tests actually passed but exit code is non-zero (bun coverage quirk)
             if echo "$COVERAGE_OUTPUT" | grep -qE "[0-9]+ pass" && ! echo "$COVERAGE_OUTPUT" | grep -qE "[0-9]+ fail"; then
-              echo "::warning::bun test exited with $TEST_EXIT but tests passed. Continuing..."
+              echo "::warning::bun test exited with $TEST_EXIT but tests passed (known bun coverage quirk). Continuing..."
             else
               echo "::error::Tests failed with exit code $TEST_EXIT"
               exit 1
