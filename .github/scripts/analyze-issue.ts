@@ -54,7 +54,7 @@ const CONFIG = {
 };
 
 const DEFAULT_PROJECT_CONTEXT = `oh-my-customcode is an npm package for customizing Claude Code.
-Key components: Agents (42), Skills (53), Rules (19), Guides (22).
+Key components: Agents (42), Skills (55), Rules (19), Guides (22).
 Commands: omcustom init, list, doctor.
 Tech: TypeScript/Bun, GitHub Actions, npm.`;
 
@@ -236,6 +236,14 @@ async function analyzeIssueWithClaude(issue: IssueData): Promise<AnalysisResult>
     // Validate structure
     if (!analysis.summary || !analysis.type) {
       throw new Error('Invalid analysis structure: missing required fields');
+    }
+
+    // Ensure array fields are arrays (guard against malformed AI responses)
+    const arrayFields = ['technical_points', 'challenges', 'suggested_approach', 'related_areas', 'questions'] as const;
+    for (const field of arrayFields) {
+      if (!Array.isArray(analysis[field])) {
+        analysis[field] = [];
+      }
     }
 
     console.log('✅ Analysis completed successfully');

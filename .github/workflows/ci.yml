@@ -61,6 +61,7 @@ jobs:
         run: |
           # Run coverage: tee shows output in real-time AND saves to file
           set +e
+          rm -f /tmp/coverage-output.txt
           bun test --coverage 2>&1 | tee /tmp/coverage-output.txt
           TEST_EXIT=${PIPESTATUS[0]}
           set -e
@@ -70,7 +71,7 @@ jobs:
           # Fail if tests themselves failed (not just coverage)
           if [ $TEST_EXIT -ne 0 ]; then
             # Check if tests actually passed but exit code is non-zero (bun coverage quirk)
-            if echo "$COVERAGE_OUTPUT" | grep -qE "[0-9]+ pass"; then
+            if echo "$COVERAGE_OUTPUT" | grep -qE "[0-9]+ pass" && ! echo "$COVERAGE_OUTPUT" | grep -qE "[0-9]+ fail"; then
               echo "::warning::bun test exited with $TEST_EXIT but tests passed. Continuing..."
             else
               echo "::error::Tests failed with exit code $TEST_EXIT"

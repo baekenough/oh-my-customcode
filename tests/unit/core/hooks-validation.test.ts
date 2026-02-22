@@ -262,16 +262,7 @@ describe('Hooks Validation', () => {
 
       // Duplicates are allowed but we verify the detection logic works
       // This test documents any intentional duplicates explicitly
-      const knownIntentionalDuplicates = new Set([
-        'tool == "Edit" && tool_input.file_path matches "\\\\.(ts|tsx|js|jsx)$"',
-        'tool == "Edit" && tool_input.file_path matches "\\\\.(py)$"',
-      ]);
-
-      const unexpectedDuplicates = duplicates.filter(
-        ([matcher]) => !knownIntentionalDuplicates.has(matcher)
-      );
-
-      expect(unexpectedDuplicates).toEqual([]);
+      expect(duplicates).toEqual([]);
     });
   });
 
@@ -281,7 +272,9 @@ describe('Hooks Validation', () => {
       const data = parsed as HooksStructure;
       const entries = data.hooks.PreToolUse ?? [];
 
-      const stageBlockingHook = entries.find((entry) => entry.matcher === 'Write|Edit');
+      const stageBlockingHook = entries.find(
+        (entry) => entry.matcher === 'tool == "Write" || tool == "Edit"'
+      );
 
       expect(stageBlockingHook).toBeDefined();
     });
@@ -291,7 +284,9 @@ describe('Hooks Validation', () => {
       const data = parsed as HooksStructure;
       const entries = data.hooks.PreToolUse ?? [];
 
-      const stageBlockingHook = entries.find((entry) => entry.matcher === 'Write|Edit');
+      const stageBlockingHook = entries.find(
+        (entry) => entry.matcher === 'tool == "Write" || tool == "Edit"'
+      );
 
       expect(stageBlockingHook).toBeDefined();
       expect(stageBlockingHook?.hooks.length).toBeGreaterThan(0);
@@ -303,7 +298,9 @@ describe('Hooks Validation', () => {
       const data = parsed as HooksStructure;
       const entries = data.hooks.PreToolUse ?? [];
 
-      const stageBlockingHook = entries.find((entry) => entry.matcher === 'Write|Edit');
+      const stageBlockingHook = entries.find(
+        (entry) => entry.matcher === 'tool == "Write" || tool == "Edit"'
+      );
 
       expect(stageBlockingHook).toBeDefined();
       expect(stageBlockingHook?.hooks[0].command).toContain('/tmp/.claude-dev-stage');
@@ -314,13 +311,16 @@ describe('Hooks Validation', () => {
       const data = parsed as HooksStructure;
       const entries = data.hooks.PreToolUse ?? [];
 
-      const stageBlockingHook = entries.find((entry) => entry.matcher === 'Write|Edit');
+      const stageBlockingHook = entries.find(
+        (entry) => entry.matcher === 'tool == "Write" || tool == "Edit"'
+      );
       const command = stageBlockingHook?.hooks[0].command ?? '';
 
       expect(command).toContain('plan');
       expect(command).toContain('verify-plan');
       expect(command).toContain('verify-impl');
       expect(command).toContain('compound');
+      expect(command).toContain('done');
     });
 
     it('should have a description for the stage-based hook', async () => {
@@ -328,7 +328,9 @@ describe('Hooks Validation', () => {
       const data = parsed as HooksStructure;
       const entries = data.hooks.PreToolUse ?? [];
 
-      const stageBlockingHook = entries.find((entry) => entry.matcher === 'Write|Edit');
+      const stageBlockingHook = entries.find(
+        (entry) => entry.matcher === 'tool == "Write" || tool == "Edit"'
+      );
 
       expect(stageBlockingHook?.description.trim().length).toBeGreaterThan(0);
     });
