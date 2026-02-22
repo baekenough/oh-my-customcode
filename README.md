@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 55 skills, 22 guides, 18 rules, 1 hook, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 42 agents, 55 skills, 22 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -161,7 +161,7 @@ Comprehensive reference documentation covering:
 | **SHOULD** | 5 | Interactions, error handling (recommended) |
 | **MAY** | 1 | Optimization guidelines (optional) |
 
-### Hooks (1)
+### Hooks (2)
 
 Event-driven automation for agent lifecycle events (PreToolUse, PostToolUse, etc.).
 
@@ -219,7 +219,7 @@ your-project/
 ├── CLAUDE.md              # Entry point for Claude
 └── .claude/
     ├── rules/             # Behavior rules (18 total)
-    ├── hooks/             # Event hooks (1 total)
+    ├── hooks/             # Event hooks (2 total)
     ├── contexts/          # Context files (4 total)
     ├── agents/            # Agent definitions (42 flat .md files)
     │   ├── lang-golang-expert.md
