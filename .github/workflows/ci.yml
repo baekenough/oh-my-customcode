@@ -103,3 +103,22 @@ jobs:
           fi
 
           echo "Coverage check passed: Function $FUNC_COV%, Line $LINE_COV% (threshold: $THRESHOLD%)"
+
+  rust-test:
+    name: Rust Tests
+    runs-on: [self-hosted, nuc13]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/ontology-rag
+
+      - name: Run Rust tests
+        working-directory: packages/ontology-rag
+        run: cargo test --all

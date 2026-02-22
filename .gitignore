@@ -44,3 +44,9 @@ CLAUDE.md
 .omcustomrc.json
 .mcp.json
 test-validator.ts
+
+# Rust build artifacts
+target/
+*.so
+*.pyd
+*.dylib
