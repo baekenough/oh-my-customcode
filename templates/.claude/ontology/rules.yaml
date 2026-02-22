@@ -6,10 +6,10 @@ generated_at: "2026-02-12T00:00:00Z"
 # Rule priority classes
 classes:
   MustRule:
-    rules: [R000, R001, R002, R006, R007, R008, R009, R010, R015, R016, R017]
+    rules: [R000, R001, R002, R006, R007, R008, R009, R010, R015, R016, R017, R018]
     description: "Mandatory rules - violation requires immediate correction"
   ShouldRule:
-    rules: [R003, R004, R011, R012, R013, R018]
+    rules: [R003, R004, R011, R012, R013]
     description: "Recommended rules - strong guidance"
   MayRule:
     rules: [R005]
@@ -231,21 +231,21 @@ rules:
     applies_to: [agent-modification, skill-modification, guide-modification, rules-modification]
 
   R018:
-    class: ShouldRule
+    class: MustRule
     categories: [teams]
-    title: "Agent Teams Rules"
-    filename: "SHOULD-agent-teams.md"
-    summary: "Use Agent Teams for 3+ agent coordinated tasks with shared state. Task tool for simple/independent work."
-    keywords: [agent-teams, coordination, shared-state, task-tool, broadcast, message, cost]
-    token_estimate: 267
+    title: "Agent Teams Rules (Conditional)"
+    filename: "MUST-agent-teams.md"
+    summary: "When Agent Teams enabled, MANDATORY for 3+ agent coordinated tasks with shared state or review cycles. Task tool fallback when disabled."
+    keywords: [agent-teams, coordination, shared-state, task-tool, broadcast, message, cost, mandatory]
+    token_estimate: 850
     applies_to: [multi-agent-coordination, complex-research]
 
 # Metadata
 metadata:
   total_rules: 18
-  must_rules: 11
-  should_rules: 6
+  must_rules: 12
+  should_rules: 5
   may_rules: 1
-  total_tokens_estimate: 5318
+  total_tokens_estimate: 5901
   source_directory: "templates/.claude/rules/"
   generated_by: "claude (default)"

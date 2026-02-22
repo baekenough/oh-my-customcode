@@ -124,12 +124,12 @@ rules:
     priority: SHOULD
     scope: all
 
-  # Agent Teams - SHOULD
+  # Agent Teams - MUST (Conditional)
   - id: R018
     name: agent-teams
-    title: Agent Teams Rules
-    path: ./SHOULD-agent-teams.md
-    priority: SHOULD
+    title: Agent Teams Rules (Conditional)
+    path: ./MUST-agent-teams.md
+    priority: MUST
     scope: orchestrator
 
   # MAY - Optional

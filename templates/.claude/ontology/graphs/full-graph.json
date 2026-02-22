@@ -111,7 +111,7 @@
     "R011": { "type": "Rule", "class": "ShouldRule" },
     "R012": { "type": "Rule", "class": "ShouldRule" },
     "R013": { "type": "Rule", "class": "ShouldRule" },
-    "R018": { "type": "Rule", "class": "ShouldRule" },
+    "R018": { "type": "Rule", "class": "MustRule" },
     "R005": { "type": "Rule", "class": "MayRule" }
   },
   "edges": [
