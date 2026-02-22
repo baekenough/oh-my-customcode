@@ -59,13 +59,13 @@ jobs:
       - name: Run tests with coverage and check threshold
         shell: bash
         run: |
-          # Run coverage and capture output (don't fail on exit code yet)
+          # Run coverage: tee shows output in real-time AND saves to file
           set +e
-          COVERAGE_OUTPUT=$(bun test --coverage 2>&1)
-          TEST_EXIT=$?
+          bun test --coverage 2>&1 | tee /tmp/coverage-output.txt
+          TEST_EXIT=${PIPESTATUS[0]}
           set -e
 
-          echo "$COVERAGE_OUTPUT"
+          COVERAGE_OUTPUT=$(cat /tmp/coverage-output.txt)
 
           # Fail if tests themselves failed (not just coverage)
           if [ $TEST_EXIT -ne 0 ]; then
