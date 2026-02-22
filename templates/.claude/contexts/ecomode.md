@@ -61,3 +61,50 @@ Ecomode deactivates when:
 - User requests "verbose" or "full details"
 - Single task execution
 - Explicit "ecomode off"
+
+## Effort Level Integration
+
+Agent frontmatter `effort` field maps to runtime behavior:
+
+| Effort | Model Preference | Output Length | Detail Level | Token Budget |
+|--------|-----------------|---------------|--------------|--------------|
+| `low` | haiku | ≤100 tokens | Minimal — result only | Conservative |
+| `medium` | sonnet | ≤200 tokens | Summary + key details | Balanced |
+| `high` | opus | ≤500 tokens | Full reasoning + examples | Generous |
+
+### Effort ↔ Ecomode Interaction
+
+| Condition | Behavior |
+|-----------|----------|
+| Ecomode ON + effort: high | Ecomode wins — compress output regardless |
+| Ecomode OFF + effort: low | Low effort wins — concise output |
+| Ecomode OFF + effort: high | Full detailed output |
+| Ecomode ON + effort: low | Maximum compression |
+
+### Effort-Based Configuration
+
+```yaml
+effort_levels:
+  low:
+    result_format: minimal
+    max_result_length: 100
+    skip_intermediate_steps: true
+    output_style: concise
+  medium:
+    result_format: summary
+    max_result_length: 200
+    skip_intermediate_steps: false
+    output_style: balanced
+  high:
+    result_format: detailed
+    max_result_length: 500
+    skip_intermediate_steps: false
+    output_style: explanatory
+```
+
+### Application
+
+When spawning agents, the orchestrator should consider the agent's effort level:
+- `effort: low` agents → Assign to simple tasks (validation, search, formatting)
+- `effort: medium` agents → Assign to standard tasks (implementation, review)
+- `effort: high` agents → Assign to complex tasks (architecture, security, design)
