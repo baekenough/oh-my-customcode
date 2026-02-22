@@ -5,6 +5,8 @@ from typing import Optional, TYPE_CHECKING
 
 from ontology_rag.graph import OntologyGraph
 from ontology_rag.ontology import Ontology
+from ontology_rag._rust_backend import HAS_RUST
+import ontology_rag._rust_backend as _rust
 
 if TYPE_CHECKING:
     from ontology_rag.community import CommunityEngine
@@ -157,7 +159,39 @@ class HybridSearcher:
         # Precompute BFS depths from anchor (ONCE, not per-node)
         bfs_depths = self._precompute_bfs_depths(anchor_node)
 
-        # Score each node
+        # Try Rust batch scoring
+        if HAS_RUST:
+            all_node_ids = [nid for nid, _ in all_nodes]
+            node_type_map = {nid: ntype for nid, ntype in all_nodes}
+
+            kw_scores = {nid: self._compute_keyword_score(query_words, nid) for nid in all_node_ids}
+            comm_scores = {nid: self._compute_community_score(query_words, nid) for nid in all_node_ids}
+
+            if self._pagerank_cache is None:
+                self._pagerank_cache = self.graph.pagerank()
+                self._pagerank_max = max(self._pagerank_cache.values()) if self._pagerank_cache else 0.0
+
+            weights = (self.KEYWORD_WEIGHT, self.GRAPH_WEIGHT, self.COMMUNITY_WEIGHT, self.IMPORTANCE_WEIGHT)
+
+            batch_result = _rust.batch_hybrid_score(
+                all_node_ids, kw_scores,
+                bfs_depths if bfs_depths else {},
+                comm_scores, self._pagerank_cache, weights,
+            )
+
+            if batch_result is not None:
+                results = [
+                    SearchResult(
+                        node_id=nid, node_type=node_type_map[nid],
+                        score=final, keyword_score=kw, graph_score=gs,
+                        community_score=cs, importance_score=imp,
+                    )
+                    for nid, final, kw, gs, cs, imp in batch_result
+                ]
+                results.sort(key=lambda r: r.score, reverse=True)
+                return results[:top_k]
+
+        # Score each node (Python fallback)
         results = []
         for node_id, node_type in all_nodes:
             keyword_score = self._compute_keyword_score(query_words, node_id)
