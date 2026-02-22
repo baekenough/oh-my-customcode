@@ -13,7 +13,7 @@ on:
 jobs:
   sync-wiki:
     name: Sync Wiki Pages
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nuc13]
     # Only run if WIKI_PAT secret is configured
     if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' }}
 
@@ -97,7 +97,7 @@ jobs:
 
   verify-readme-sync:
     name: Verify README Consistency
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, nuc13]
 
     steps:
       - name: Checkout repository
