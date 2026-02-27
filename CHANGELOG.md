@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-02-27
+
+### Features
+- **Statusline**: Replace model name with API cost estimate ($X.XX) with color coding (#187, #190)
+- **Statusline**: Add PR number display and clickable branch link (#182)
+- **Statusline**: Add Claude Code statusline script (#162, #180)
+- **Memory**: Session-end auto-save and MCP dependency reclassification (#184)
+
+### Fixes
+- **R010**: Add git delegation enforcement mechanisms (#186, #188)
+- **Statusline**: Fix space between PR and # in display
+
+### Chores
+- **Agents**: Remove mgr-sync-checker and clean up mgr-claude-code-bible (#181, #189)
+
 ## [0.16.4] - 2026-02-27
 
 ### Fixed
@@ -562,7 +577,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.16.4...v0.17.0
+[0.16.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.1...v0.16.4
 [0.14.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.3...v0.14.0
 [0.13.3]: https://github.com/baekenough/oh-my-customcode/compare/v0.13.2...v0.13.3
