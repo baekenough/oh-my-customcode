@@ -1,10 +1,10 @@
 # Agents
 
-oh-my-customcode includes **34 specialized agents** organized by category.
+oh-my-customcode includes **33 specialized agents** organized by category.
 
 | Category | Count | Agents |
 |----------|-------|--------|
-| **Managers** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
+| **Managers** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | **System** | 2 | sys-memory-keeper, sys-naggy |
 | **Languages** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | **Frontend** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |

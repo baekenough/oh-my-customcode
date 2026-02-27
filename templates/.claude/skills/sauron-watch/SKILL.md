@@ -1,75 +1,89 @@
 ---
 name: sauron-watch
-description: Full R016 verification (5+3 rounds) before commit
+description: Full R017 verification (5+3 rounds) before commit
 disable-model-invocation: true
 ---
 
 # Sauron Watch Skill
 
-Execute full R016 verification process with 5 rounds of manager agent verification and 3 rounds of deep review.
+Execute full R017 verification process with 5 rounds of manager agent verification and 3 rounds of deep review.
 
 ## Purpose
 
-Ensure complete synchronization of agents, commands, documentation, and project structure before committing changes.
+Ensure complete synchronization of agents, skills, documentation, and project structure before committing changes.
 
 ## Workflow
 
 ### Phase 1: Manager Agent Verification (5 rounds)
 
-#### Round 1-2: Basic Sync
+#### Round 1-2: Basic Checks
 ```
-□ /audit-agents - Check all agent dependencies
-□ /sync-check - Verify registry synchronization
+□ mgr-supplier:audit - Check all agent dependencies and skill refs
+□ mgr-updater:docs - Verify documentation sync
 □ Fix any issues found
 ```
 
-#### Round 3-4: Deep Sync
+#### Round 3-4: Re-verify + Update
 ```
-□ /audit-agents - Re-verify after fixes
-□ /sync-check - Re-verify registries
-□ /update-docs - Check documentation sync
+□ mgr-supplier:audit - Re-verify after fixes
+□ mgr-updater:docs - Re-run and apply any detected changes
 □ Fix any remaining issues
 ```
 
-#### Round 5: Final Verification
+#### Round 5: Final Count Verification
 ```
-□ All agent counts match (CLAUDE.md, index.yaml, actual files)
-□ All symlinks valid
-□ All command registries updated
-□ All intent-detection triggers present
+□ Agent count matches: CLAUDE.md vs actual .md files
+□ Skill count matches: CLAUDE.md vs actual SKILL.md files
+□ Memory field distribution correct
+□ Hook/context/guide/rule counts match
+□ All frontmatter valid
+□ All skill refs exist
+□ All memory scopes valid (project|user|local)
+□ Routing patterns updated
 ```
 
 ### Phase 2: Deep Review (3 rounds)
 
 #### Deep Round 1: Workflow Alignment
 ```
-□ Agent creation workflow documented and functional
-□ Development workflow uses proper orchestrators
-□ Deployment workflow defined (if applicable)
-□ All orchestrators have complete `manages:` sections
+□ Agent workflows match purpose
+□ Command definitions match implementations
+□ Routing skill patterns are valid
+□ All routing skills have complete agent mappings
 ```
 
 #### Deep Round 2: Reference Verification
 ```
-□ All orchestrators properly reference their managed agents
-□ All rules are properly referenced
-□ No orphaned agents (not managed by any orchestrator)
+□ All skill references exist
+□ All agent frontmatter valid
+□ memory field values valid (user | project | local)
+□ No orphaned agents
 □ No circular references
 ```
 
 #### Deep Round 3: Philosophy Compliance
 ```
-□ R006: Separation of concerns (AGENT.md = role only, no details)
-□ R009: Parallel execution enabled for orchestrators
-□ R010: Multi-agent tasks use orchestrators
-□ R007/R008: Agent/tool identification documented
+□ R006: Agent design rules (including memory field spec)
+□ R007: Agent identification rules
+□ R008: Tool identification rules
+□ R009: Parallel execution rules
+□ R010: Orchestrator coordination rules
+□ R011: Memory integration (native-first architecture)
 □ All MUST rules enforced, SHOULD rules recommended
+```
+
+### Phase 2.5: Documentation Accuracy
+```
+□ Every agent name in CLAUDE.md matches actual filename
+□ All counts cross-verified against filesystem
+□ Every slash command has corresponding skill
+□ Every agent reachable through routing skills
 ```
 
 ### Phase 3: Fix Issues
 ```
-□ All issues from Phase 1 fixed
-□ All issues from Phase 2 fixed
+□ Auto-fix: count mismatches, missing fields, outdated refs
+□ Report: missing files, invalid scopes, philosophy violations
 □ Re-run verification if major fixes made
 ```
 
@@ -84,43 +98,41 @@ Ensure complete synchronization of agents, commands, documentation, and project 
 ```
 [mgr-sauron:watch]
 
-Starting full R016 verification...
+Starting full R017 verification...
 
 ═══════════════════════════════════════════════════════════
  PHASE 1: Manager Agent Verification (5 rounds)
 ═══════════════════════════════════════════════════════════
 
-[Round 1/5] Basic sync - /audit-agents
-  ✓ All agents have valid dependencies
+[Round 1/5] mgr-supplier:audit
+  ✓ 41 agents checked, 0 issues
 
-[Round 2/5] Basic sync - /sync-check
-  ✓ All registries synchronized
+[Round 2/5] mgr-updater:docs
+  ✓ Documentation sync: OK
 
-[Round 3/5] Deep sync - /audit-agents
-  ✓ Dependencies verified after fixes
+[Round 3/5] Re-verify: mgr-supplier:audit
+  ✓ All dependencies valid
 
-[Round 4/5] Deep sync - /sync-check + /update-docs
-  ✓ Registries verified
-  ✓ Documentation synchronized
+[Round 4/5] Re-verify: mgr-updater:docs
+  ✓ No changes needed
 
-[Round 5/5] Final verification
-  ✓ Agent counts match across all sources
-  ✓ All symlinks valid
-  ✓ Command registries updated
-  ✓ Intent triggers present
+[Round 5/5] Final count verification
+  ✓ Agents: 41/41 match
+  ✓ Skills: 55/55 match
+  ✓ All frontmatter valid
+  ✓ All skill refs valid
+  ✓ All memory scopes valid
 
 ═══════════════════════════════════════════════════════════
  PHASE 2: Deep Review (3 rounds)
 ═══════════════════════════════════════════════════════════
 
 [Round 1/3] Workflow alignment
-  ✓ Agent creation workflow documented
-  ✓ Development workflow uses orchestrators
-  ✓ Orchestrators have complete manages sections
+  ✓ All routing skills have complete agent mappings
+  ✓ Command definitions match implementations
 
 [Round 2/3] Reference verification
-  ✓ All orchestrator references valid
-  ✓ All rules referenced
+  ✓ All skill references valid
   ✓ No orphaned agents
 
 [Round 3/3] Philosophy compliance
@@ -140,5 +152,5 @@ Ready to commit. 커밋할까요?
 
 ## Related
 
-- R016: Sync Verification Rules
+- R017: Sync Verification Rules
 - mgr-gitnerd: Git operations agent

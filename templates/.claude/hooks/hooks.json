@@ -68,9 +68,13 @@
           {
             "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.tool_input.subagent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.tool_input.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.tool_input.description // \"\"' | head -c 40)\nresume=$(echo \"$input\" | jq -r '.tool_input.resume // empty')\nif [ -n \"$resume\" ]; then\n  echo \"─── [Resume] ${agent_type}:${model} | ${desc} ───\" >&2\nelse\n  echo \"─── [Spawn] ${agent_type}:${model} | ${desc} ───\" >&2\nfi\necho \"$input\""
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/git-delegation-guard.sh"
           }
         ],
-        "description": "HUD statusline - show subagent_type, model, and description on Task spawn"
+        "description": "HUD statusline + R010 git delegation guard on Task spawn"
       }
     ],
     "PostToolUse": [

@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 42 agents, 55 skills, 22 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 41 agents, 55 skills, 22 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -85,8 +85,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 ```
 /create-agent
   ├── mgr-creator:sonnet       — agent scaffolding
-  ├── mgr-supplier:haiku       — dependency check
-  └── mgr-sync-checker:haiku   — registry verification
+  └── mgr-supplier:haiku       — dependency check
 
 /code-review
   ├── lang-golang-expert:sonnet — Go implementation
@@ -108,11 +107,11 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 
 ## What's Included
 
-### Agents (42)
+### Agents (41)
 
 | Category | Count | Agents |
 |----------|-------|--------|
-| **Managers** | 7 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible |
+| **Managers** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | **System** | 2 | sys-memory-keeper, sys-naggy |
 | **Languages** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | **Frontend** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
@@ -123,7 +122,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **Architecture** | 2 | arch-documenter, arch-speckit-agent |
 | **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **Total** | **42** | |
+| **Total** | **41** | |
 
 ### Skills (55)
 
@@ -221,7 +220,7 @@ your-project/
     ├── rules/             # Behavior rules (18 total)
     ├── hooks/             # Event hooks (2 total)
     ├── contexts/          # Context files (4 total)
-    ├── agents/            # Agent definitions (42 flat .md files)
+    ├── agents/            # Agent definitions (41 flat .md files)
     │   ├── lang-golang-expert.md
     │   ├── be-fastapi-expert.md
     │   ├── mgr-creator.md
