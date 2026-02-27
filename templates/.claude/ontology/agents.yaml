@@ -33,7 +33,7 @@ classes:
     agents: [qa-planner, qa-writer, qa-engineer]
     description: "QA and testing"
   ManagerAgent:
-    agents: [mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible]
+    agents: [mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible]
     description: "System management agents"
   SystemAgent:
     agents: [sys-memory-keeper, sys-naggy]
@@ -484,18 +484,6 @@ agents:
     summary: "Git operations specialist for commits, branches, and PRs with safety rules"
     keywords: [git, github, commit, branch, pull-request, conventional-commits, rebase, merge]
     file_patterns: [".git/*", ".github/*"]
-
-  mgr-sync-checker:
-    class: ManagerAgent
-    description: "Use when you need to verify documentation and workflow synchronization, ensuring all docs, configs, and workflow definitions remain synchronized with the project structure"
-    model: haiku
-    memory: local
-    effort: low
-    skills: [update-docs]
-    tools: [Read, Write, Edit, Grep, Glob, Bash]
-    summary: "Documentation synchronization validator for project structure consistency"
-    keywords: [synchronization, documentation, verification, consistency, agent-count, commands]
-    file_patterns: ["CLAUDE.md", ".claude/agents/*.md", "commands/index.yaml"]
 
   mgr-sauron:
     class: ManagerAgent
