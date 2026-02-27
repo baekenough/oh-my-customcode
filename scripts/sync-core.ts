@@ -88,29 +88,44 @@ function countAgents(agentsDir: string): number {
 }
 
 /**
- * Count SKILL.md files in skills directory
+ * Count subdirectories (not files) in a directory.
+ * Used for skills and guides, which are measured by directory count.
  */
-function countSkills(skillsDir: string): number {
-  return countFiles(skillsDir, /^SKILL\.md$/);
+function countDirectories(dir: string): number {
+  if (!fs.existsSync(dir)) {
+    return 0;
+  }
+
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  return entries.filter((entry) => entry.isDirectory()).length;
 }
 
 /**
- * Count guide topics (index.yaml files in guide subdirectories)
+ * Count skill directories in .claude/skills/
+ * Each skill is a subdirectory (not a SKILL.md file count).
  */
-function countGuides(guidesDir: string): number {
-  if (!fs.existsSync(guidesDir)) {
+function countSkillDirectories(skillsDir: string): number {
+  return countDirectories(skillsDir);
+}
+
+/**
+ * Count all files recursively including one level of subdirectories.
+ * Used for ontology, which stores files both at root and in subdirectories.
+ */
+function countFilesRecursive(dir: string): number {
+  if (!fs.existsSync(dir)) {
     return 0;
   }
 
   let count = 0;
-  const entries = fs.readdirSync(guidesDir, { withFileTypes: true });
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
 
   for (const entry of entries) {
-    if (entry.isDirectory()) {
-      const indexYaml = path.join(guidesDir, entry.name, 'index.yaml');
-      if (fs.existsSync(indexYaml)) {
-        count++;
-      }
+    if (entry.isFile()) {
+      count++;
+    } else if (entry.isDirectory()) {
+      const subEntries = fs.readdirSync(path.join(dir, entry.name), { withFileTypes: true });
+      count += subEntries.filter((e) => e.isFile()).length;
     }
   }
 
@@ -132,13 +147,15 @@ function updateManifest(templatesDir: string): void {
 
   // Update file counts for each component
   // Updated for official Claude Code format (agents and skills in .claude/)
+  // Counting methods must match test expectations in template-validation.test.ts
   const componentCounts: Record<string, number> = {
-    rules: countFiles(path.join(templatesDir, '.claude/rules'), /\.(md|yaml)$/),
+    rules: countFiles(path.join(templatesDir, '.claude/rules'), /\.md$/),
     agents: countAgents(path.join(templatesDir, '.claude/agents')),
-    skills: countSkills(path.join(templatesDir, '.claude/skills')),
-    guides: countGuides(path.join(templatesDir, 'guides')),
-    hooks: countFiles(path.join(templatesDir, '.claude/hooks')),
-    contexts: countFiles(path.join(templatesDir, '.claude/contexts')),
+    skills: countSkillDirectories(path.join(templatesDir, '.claude/skills')),
+    guides: countDirectories(path.join(templatesDir, 'guides')),
+    hooks: countFiles(path.join(templatesDir, '.claude/hooks'), /\.json$/),
+    contexts: countFiles(path.join(templatesDir, '.claude/contexts'), /\.md$/),
+    ontology: countFilesRecursive(path.join(templatesDir, '.claude/ontology')),
   };
 
   // Update manifest
