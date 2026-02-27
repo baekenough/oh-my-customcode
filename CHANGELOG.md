@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.4] - 2026-02-27
+
+### Fixed
+- Correct ontology installed path display in init command (#178)
+
+### Changed
+- Remove baekgom-agents sync-check CI and verify-sync script
+
+### Dependencies
+- Bump @anthropic-ai/sdk from 0.74.0 to 0.78.0 (#177)
+- Bump actions/cache from 4 to 5 (#176)
+
 ## [0.14.1] - 2026-02-18
 
 ### Fixed
