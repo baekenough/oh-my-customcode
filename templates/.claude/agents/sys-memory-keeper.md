@@ -1,6 +1,6 @@
 ---
 name: sys-memory-keeper
-description: Use when you need to manage session memory persistence using claude-mem, save context before compaction, restore context on session start, or query past memories
+description: Use when you need to manage session memory persistence using claude-mem, save context before compaction, restore context on session start, query past memories, or perform session-end dual-system auto-save
 model: sonnet
 memory: project
 effort: medium
@@ -41,3 +41,18 @@ Always include project name. Use task-based, temporal, or topic-based queries. A
 ## Config
 
 Provider: claude-mem | Collection: claude_memories | Archive: ~/.claude-mem/archives/
+
+## Session-End Auto-Save
+
+When triggered by session-end signal from orchestrator:
+
+1. **Collect** session summary: completed tasks, key decisions, open items
+2. **Save to claude-mem** (if available): `mcp__claude-mem__save_memory` with project name, session date, and summary
+3. **Verify episodic-memory** (if available): `mcp__episodic-memory__search` to confirm session is indexed
+4. **Report** results to orchestrator: saved/skipped/failed per system
+
+### Failure Handling
+
+- claude-mem unavailable → skip, report warning
+- episodic-memory unavailable → skip, report warning
+- Both unavailable → warn orchestrator, do not block session end
