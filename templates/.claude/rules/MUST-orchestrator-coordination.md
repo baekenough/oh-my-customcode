@@ -30,6 +30,32 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
+## Self-Check (Mandatory Before Delegating Tasks)
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE DELEGATING A TASK TO ANY AGENT, ASK YOURSELF:            ║
+║                                                                   ║
+║  1. Does the task prompt contain git commands?                   ║
+║     (commit, push, revert, merge, rebase, checkout, branch,     ║
+║      reset, cherry-pick, tag)                                    ║
+║     YES → The git part MUST go to mgr-gitnerd                   ║
+║     NO  → Proceed                                                ║
+║                                                                   ║
+║  2. Am I bundling git operations with file editing?              ║
+║     YES → STOP. Split into separate delegations:                 ║
+║           - File editing → appropriate specialist                ║
+║           - Git operations → mgr-gitnerd                         ║
+║     NO  → Good. Continue.                                        ║
+║                                                                   ║
+║  3. Is the target agent mgr-gitnerd for ALL git operations?     ║
+║     YES → Good. Continue.                                        ║
+║     NO  → STOP. This is a VIOLATION. Re-route to mgr-gitnerd.   ║
+║                                                                   ║
+║  If ANY answer is wrong → SPLIT THE TASK                         ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 ## Architecture
 
 ```
@@ -72,6 +98,22 @@ Main Conversation (orchestrator)
 
 ✓ CORRECT: Always delegate, no matter how small
    Task(appropriate-agent) → create config file
+
+❌ WRONG: Bundling git operations with file editing in non-gitnerd agent
+   Main conversation → Task(general-purpose) → "git revert + edit file + git commit"
+   Main conversation → Task(lang-typescript-expert) → "fix bug and commit"
+
+✓ CORRECT: Separate file editing from git operations
+   Main conversation → Task(lang-typescript-expert) → "fix bug" (file edit only)
+   Main conversation → Task(mgr-gitnerd) → "git commit" (git operation only)
+
+❌ WRONG: Including git commands in non-gitnerd agent prompt for "convenience"
+   Task(general-purpose, prompt="revert the last commit, edit the file, then commit the fix")
+
+✓ CORRECT: Split into separate delegations
+   Task(mgr-gitnerd, prompt="revert the last commit")
+   Task(appropriate-expert, prompt="edit the file to fix the issue")
+   Task(mgr-gitnerd, prompt="commit the fix")
 ```
 
 ## Session Continuity

@@ -6,6 +6,7 @@ memory: project
 effort: medium
 skills:
   - update-external
+  - update-docs
 tools:
   - Read
   - Write

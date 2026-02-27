@@ -297,14 +297,6 @@ agents:
     supported_actions: [commit, branch, pr, sync, status, push, pull, merge]
     base_confidence: 40
 
-  mgr-sync-checker:
-    keywords:
-      korean: [동기화, 싱크, 검증]
-      english: [sync, synchronization, check, verify]
-    file_patterns: ["index.yaml", "CLAUDE.md", "COMMANDS.md"]
-    supported_actions: [check, agents, commands, docs, fix]
-    base_confidence: 40
-
   mgr-sauron:
     keywords:
       korean: [검증, 전체검증, 무결성, 사우론]
