@@ -91,14 +91,6 @@ Managers handle system-level operations and automation.
 - Handles merge operations
 - Automates git workflows
 
-### mgr-sync-checker
-
-**Role**: Verify synchronization across components.
-
-- Checks agent/skill consistency
-- Validates documentation sync
-- Reports inconsistencies
-
 ### mgr-sauron
 
 **Role**: System-wide monitoring and oversight.

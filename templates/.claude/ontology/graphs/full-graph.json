@@ -39,7 +39,6 @@
     "mgr-updater": { "type": "Agent", "class": "ManagerAgent" },
     "mgr-supplier": { "type": "Agent", "class": "ManagerAgent" },
     "mgr-gitnerd": { "type": "Agent", "class": "ManagerAgent" },
-    "mgr-sync-checker": { "type": "Agent", "class": "ManagerAgent" },
     "mgr-sauron": { "type": "Agent", "class": "ManagerAgent" },
     "mgr-claude-code-bible": { "type": "Agent", "class": "ManagerAgent" },
     "sys-memory-keeper": { "type": "Agent", "class": "SystemAgent" },
@@ -146,7 +145,6 @@
     { "source": "mgr-creator", "target": "create-agent", "relation": "requires" },
     { "source": "mgr-updater", "target": "update-external", "relation": "requires" },
     { "source": "mgr-supplier", "target": "audit-agents", "relation": "requires" },
-    { "source": "mgr-sync-checker", "target": "update-docs", "relation": "requires" },
     { "source": "mgr-sauron", "target": "sauron-watch", "relation": "requires" },
     { "source": "mgr-claude-code-bible", "target": "claude-code-bible", "relation": "requires" },
     { "source": "sys-memory-keeper", "target": "memory-management", "relation": "requires" },
@@ -164,7 +162,6 @@
     { "source": "secretary-routing", "target": "mgr-updater", "relation": "routes_to" },
     { "source": "secretary-routing", "target": "mgr-supplier", "relation": "routes_to" },
     { "source": "secretary-routing", "target": "mgr-gitnerd", "relation": "routes_to" },
-    { "source": "secretary-routing", "target": "mgr-sync-checker", "relation": "routes_to" },
     { "source": "secretary-routing", "target": "mgr-sauron", "relation": "routes_to" },
     { "source": "secretary-routing", "target": "mgr-claude-code-bible", "relation": "routes_to" },
     { "source": "secretary-routing", "target": "sys-memory-keeper", "relation": "routes_to" },
@@ -352,10 +349,6 @@
       "requires": [],
       "routed_by": ["secretary-routing"]
     },
-    "mgr-sync-checker": {
-      "requires": ["update-docs"],
-      "routed_by": ["secretary-routing"]
-    },
     "mgr-sauron": {
       "requires": ["sauron-watch"],
       "routed_by": ["secretary-routing"]
@@ -497,7 +490,7 @@
       "depends_on": []
     },
     "update-docs": {
-      "required_by": ["mgr-sync-checker"],
+      "required_by": ["mgr-updater"],
       "depends_on": []
     },
     "sauron-watch": {
@@ -521,7 +514,7 @@
       "depends_on": ["R011"]
     },
     "secretary-routing": {
-      "routes_to": ["mgr-creator", "mgr-updater", "mgr-supplier", "mgr-gitnerd", "mgr-sync-checker", "mgr-sauron", "mgr-claude-code-bible", "sys-memory-keeper", "sys-naggy"],
+      "routes_to": ["mgr-creator", "mgr-updater", "mgr-supplier", "mgr-gitnerd", "mgr-sauron", "mgr-claude-code-bible", "sys-memory-keeper", "sys-naggy"],
       "depends_on": []
     },
     "dev-lead-routing": {

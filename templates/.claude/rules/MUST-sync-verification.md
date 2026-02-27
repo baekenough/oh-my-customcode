@@ -14,8 +14,8 @@ Every `git push` requires: `mgr-sauron:watch` → all pass → `git push`
 
 | Round | Actions |
 |-------|---------|
-| 1-2 | mgr-supplier:audit, mgr-sync-checker:check, fix issues |
-| 3-4 | Re-verify + mgr-updater:docs, fix remaining |
+| 1-2 | mgr-supplier:audit, mgr-updater:docs (sync check), fix issues |
+| 3-4 | Re-verify mgr-supplier:audit + re-run mgr-updater:docs, fix remaining |
 | 5 | Final: all counts match, frontmatter valid, skill refs exist, memory scopes valid, routing patterns updated |
 
 Also run: mgr-claude-code-bible:verify (official spec compliance)
