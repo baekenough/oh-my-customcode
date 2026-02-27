@@ -1,0 +1,117 @@
+---
+name: secretary-routing
+description: Routes agent management tasks to the correct manager agent. Use when user requests agent creation, updates, audits, git operations, sync checks, or verification.
+user-invocable: false
+---
+
+# Secretary Routing Skill
+
+## Purpose
+
+Routes agent management tasks to the appropriate manager agent. This skill contains the coordination logic for orchestrating manager agents (mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron).
+
+## Manager Agents
+
+| Agent | Purpose | Triggers |
+|-------|---------|----------|
+| mgr-creator | Create new agents | "create agent", "new agent" |
+| mgr-updater | Update external agents | "update agent", "sync" |
+| mgr-supplier | Validate dependencies | "audit", "check deps" |
+| mgr-gitnerd | Git operations | "commit", "push", "pr" |
+| mgr-sauron | R016 auto-verification | "verify", "full check" |
+| mgr-sync-checker | Documentation sync verification | "sync check", "sync verification", "synchronization", "동기화 검증", "동기화 체크" |
+| mgr-claude-code-bible | Claude Code spec compliance | "spec check", "verify compliance" |
+| sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
+| sys-naggy | TODO management | "todo", "track tasks", "task list" |
+
+## Command Routing
+
+```
+User Input → Routing → Manager Agent
+
+create   → mgr-creator
+update   → mgr-updater
+audit    → mgr-supplier
+git      → mgr-gitnerd
+verify   → mgr-sauron
+sync     → mgr-sync-checker
+spec     → mgr-claude-code-bible
+memory   → sys-memory-keeper
+todo     → sys-naggy
+batch    → multiple (parallel)
+```
+
+## Routing Rules
+
+### 1. Single Task Routing
+
+```
+1. Parse user command and identify intent
+2. Select appropriate manager agent
+3. Spawn Task with selected agent role
+4. Monitor execution
+5. Report result to user
+```
+
+### 2. Batch/Parallel Task Routing
+
+When command requires multiple independent operations:
+
+```
+1. Break down into sub-tasks
+2. Identify parallelizable tasks (max 4)
+3. Spawn parallel Task instances
+4. Aggregate results
+5. Report summary to user
+```
+
+## Sub-agent Model Selection
+
+| Agent | Recommended Model | Reason |
+|-------|-------------------|--------|
+| mgr-creator | sonnet | File generation, balanced |
+| mgr-updater | sonnet | External sync, web fetch |
+| mgr-supplier | haiku | File scan, validation |
+| mgr-gitnerd | sonnet | Commit message quality |
+| mgr-sauron | sonnet | Multi-round verification |
+| mgr-sync-checker | haiku | Doc sync checks, lightweight validation |
+| mgr-claude-code-bible | sonnet | Spec compliance checks |
+| sys-memory-keeper | sonnet | Memory operations, search |
+| sys-naggy | haiku | Simple TODO tracking |
+
+## Agent Teams Awareness
+
+Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single manager task | Task Tool |
+| Batch agent creation (3+) | Agent Teams |
+| Multi-round verification (sauron) | Task Tool |
+| Agent audit + fix cycle | Agent Teams |
+
+## No Match Fallback
+
+When no manager agent matches the request but the task is clearly management-related:
+
+```
+User Input → No matching manager agent
+  ↓
+Evaluate: Is this a specialized management/tooling task?
+  YES → Delegate to mgr-creator with context:
+        domain: detected tool/technology
+        type: manager
+        skills: auto-discover from .claude/skills/
+  NO  → Ask user for clarification
+```
+
+**Examples of dynamic creation triggers:**
+- New CI/CD tool management (e.g., "ArgoCD 배포 관리해줘")
+- New monitoring tool setup (e.g., "Grafana 대시보드 관리")
+- Unfamiliar package manager operations
+
+## Usage
+
+This skill is NOT user-invocable. It is automatically triggered when the main conversation detects agent management intent.
