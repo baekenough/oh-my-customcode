@@ -448,7 +448,7 @@ skills:
     model_invocable: true
     summary: "Routes agent management tasks to appropriate manager agents"
     keywords: [routing, management, agent-creation, git, memory, verification]
-    routes_to: [mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron, mgr-claude-code-bible, sys-memory-keeper, sys-naggy]
+    routes_to: [mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible, sys-memory-keeper, sys-naggy]
     rule_references: []
 
   snowflake-best-practices:

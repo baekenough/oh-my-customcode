@@ -1,6 +1,6 @@
 ---
 name: secretary-routing
-description: Routes agent management tasks to the correct manager agent. Use when user requests agent creation, updates, audits, git operations, sync checks, or verification.
+description: Routes agent management tasks to the correct manager agent. Use when user requests agent creation, updates, audits, git operations, or verification.
 user-invocable: false
 ---
 
@@ -18,8 +18,7 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 | mgr-updater | Update external agents | "update agent", "sync" |
 | mgr-supplier | Validate dependencies | "audit", "check deps" |
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
-| mgr-sauron | R016 auto-verification | "verify", "full check" |
-| mgr-sync-checker | Documentation sync verification | "sync check", "sync verification", "synchronization", "동기화 검증", "동기화 체크" |
+| mgr-sauron | R017 auto-verification | "verify", "full check" |
 | mgr-claude-code-bible | Claude Code spec compliance | "spec check", "verify compliance" |
 | sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
 | sys-naggy | TODO management | "todo", "track tasks", "task list" |
@@ -34,7 +33,6 @@ update   → mgr-updater
 audit    → mgr-supplier
 git      → mgr-gitnerd
 verify   → mgr-sauron
-sync     → mgr-sync-checker
 spec     → mgr-claude-code-bible
 memory   → sys-memory-keeper
 todo     → sys-naggy
@@ -74,7 +72,6 @@ When command requires multiple independent operations:
 | mgr-supplier | haiku | File scan, validation |
 | mgr-gitnerd | sonnet | Commit message quality |
 | mgr-sauron | sonnet | Multi-round verification |
-| mgr-sync-checker | haiku | Doc sync checks, lightweight validation |
 | mgr-claude-code-bible | sonnet | Spec compliance checks |
 | sys-memory-keeper | sonnet | Memory operations, search |
 | sys-naggy | haiku | Simple TODO tracking |
