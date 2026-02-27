@@ -42,7 +42,14 @@ export async function checkExistingInstallation(targetDir: string): Promise<bool
 }
 
 /** Components that live under provider root directory */
-const PROVIDER_SUBDIR_COMPONENTS = new Set(['rules', 'hooks', 'contexts', 'agents', 'skills']);
+const PROVIDER_SUBDIR_COMPONENTS = new Set([
+  'rules',
+  'hooks',
+  'contexts',
+  'agents',
+  'skills',
+  'ontology',
+]);
 
 /**
  * Convert component name to its full path
