@@ -108,34 +108,7 @@ if [[ -f "$git_head_file" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 8. PR number — cached by branch to avoid gh call on every refresh
-# ---------------------------------------------------------------------------
-pr_display=""
-if [[ -n "$git_branch" ]] && command -v gh >/dev/null 2>&1; then
-    cache_file="/tmp/statusline-pr-${project_name}"
-    cached_branch=""
-    cached_pr=""
-
-    if [[ -f "$cache_file" ]]; then
-        IFS=$'\t' read -r cached_branch cached_pr < "$cache_file"
-    fi
-
-    if [[ "$cached_branch" == "$git_branch" ]]; then
-        # Cache hit — use cached PR number
-        pr_number="$cached_pr"
-    else
-        # Cache miss — query gh and update cache
-        pr_number="$(gh pr view --json number -q .number 2>/dev/null || echo "")"
-        printf '%s\t%s\n' "$git_branch" "$pr_number" > "$cache_file"
-    fi
-
-    if [[ -n "$pr_number" ]]; then
-        pr_display=" | PR # ${pr_number}"
-    fi
-fi
-
-# ---------------------------------------------------------------------------
-# 9. Context percentage with color
+# 8. Context percentage with color
 # ---------------------------------------------------------------------------
 # ctx_pct may arrive as a float (e.g. 42.5); truncate to integer for comparison
 ctx_int="${ctx_pct%%.*}"
@@ -155,23 +128,23 @@ fi
 ctx_display="CTX:${ctx_int}%"
 
 # ---------------------------------------------------------------------------
-# 10. Cost formatting — always two decimal places
+# 9. Cost formatting — always two decimal places
 # ---------------------------------------------------------------------------
 cost_display="$(printf '$%.2f' "$cost_usd")"
 
 # ---------------------------------------------------------------------------
-# 11. Assemble and output the status line
+# 10. Assemble and output the status line
 # ---------------------------------------------------------------------------
 # Build segments; omit git branch segment when unavailable
 if [[ -n "$git_branch" ]]; then
-    printf "${model_color}%s${COLOR_RESET} | %s | %s${pr_display} | ${ctx_color}%s${COLOR_RESET} | %s\n" \
+    printf "${model_color}%s${COLOR_RESET} | %s | %s | ${ctx_color}%s${COLOR_RESET} | %s\n" \
         "$model_display" \
         "$project_name" \
         "$git_branch" \
         "$ctx_display" \
         "$cost_display"
 else
-    printf "${model_color}%s${COLOR_RESET} | %s${pr_display} | ${ctx_color}%s${COLOR_RESET} | %s\n" \
+    printf "${model_color}%s${COLOR_RESET} | %s | ${ctx_color}%s${COLOR_RESET} | %s\n" \
         "$model_display" \
         "$project_name" \
         "$ctx_display" \
