@@ -59,7 +59,7 @@ fi
 # 4. Single jq call — extract all fields as TSV
 #    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd
 # ---------------------------------------------------------------------------
-read -r model_name project_dir ctx_pct ctx_size cost_usd <<< "$(
+IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd <<< "$(
     printf '%s' "$json" | jq -r '[
         (.model.display_name // "unknown"),
         (.workspace.current_dir // ""),
