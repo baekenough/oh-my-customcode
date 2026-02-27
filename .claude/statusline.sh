@@ -4,13 +4,14 @@
 # Reads JSON from stdin (Claude Code statusline API, ~300ms intervals)
 # and outputs a formatted status line, e.g.:
 #
-#   Opus | my-project | develop | PR #160 | CTX:42%
+#   $0.05 | my-project | develop | PR #160 | CTX:42%
 #
 # JSON input structure:
 #   {
 #     "model": { "display_name": "claude-opus-4-6" },
 #     "workspace": { "current_dir": "/path/to/project" },
-#     "context_window": { "used_percentage": 42, "context_window_size": 200000 }
+#     "context_window": { "used_percentage": 42, "context_window_size": 200000 },
+#     "cost": { "total_cost_usd": 0.05 }
 #   }
 
 # ---------------------------------------------------------------------------
@@ -56,19 +57,21 @@ fi
 
 # ---------------------------------------------------------------------------
 # 4. Single jq call — extract all fields as TSV
-#    Fields: model_name, project_dir, ctx_pct, ctx_size
+#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd
 # ---------------------------------------------------------------------------
-IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size <<< "$(
+IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd <<< "$(
     printf '%s' "$json" | jq -r '[
         (.model.display_name // "unknown"),
         (.workspace.current_dir // ""),
         (.context_window.used_percentage // 0),
-        (.context_window.context_window_size // 0)
+        (.context_window.context_window_size // 0),
+        (.cost.total_cost_usd // 0)
     ] | @tsv'
 )"
 
 # ---------------------------------------------------------------------------
 # 5. Model display name + color (bash 3.2 compatible case pattern matching)
+#    Model detection (kept for internal reference, not displayed in statusline)
 # ---------------------------------------------------------------------------
 case "$model_name" in
     *[Oo]pus*)   model_display="Opus";   model_color="${COLOR_OPUS}" ;;
@@ -76,6 +79,30 @@ case "$model_name" in
     *[Hh]aiku*)  model_display="Haiku";  model_color="${COLOR_HAIKU}" ;;
     *)           model_display="$model_name"; model_color="${COLOR_RESET}" ;;
 esac
+
+# ---------------------------------------------------------------------------
+# 5b. Cost display — format and colorize session API cost
+# ---------------------------------------------------------------------------
+# Ensure cost_usd is a valid number (fallback to 0)
+if [[ -z "$cost_usd" ]] || ! printf '%f' "$cost_usd" >/dev/null 2>&1; then
+    cost_usd="0"
+fi
+
+cost_display=$(printf '$%.2f' "$cost_usd")
+
+# Color by cost threshold (cents for integer comparison)
+cost_cents=$(printf '%.0f' "$(echo "$cost_usd * 100" | bc 2>/dev/null || echo 0)")
+if ! [[ "$cost_cents" =~ ^[0-9]+$ ]]; then
+    cost_cents=0
+fi
+
+if [[ "$cost_cents" -ge 500 ]]; then
+    cost_color="${COLOR_CTX_CRIT}"    # Red    (>= $5.00)
+elif [[ "$cost_cents" -ge 100 ]]; then
+    cost_color="${COLOR_CTX_WARN}"    # Yellow ($1.00 - $4.99)
+else
+    cost_color="${COLOR_CTX_OK}"      # Green  (< $1.00)
+fi
 
 # ---------------------------------------------------------------------------
 # 6. Project name — basename of workspace current_dir
@@ -221,15 +248,15 @@ if [[ -n "$pr_display" ]]; then
 fi
 
 if [[ -n "$git_branch" ]]; then
-    printf "${model_color}%s${COLOR_RESET} | %s | %s%s | ${ctx_color}%s${COLOR_RESET}\n" \
-        "$model_display" \
+    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+        "$cost_display" \
         "$project_name" \
         "$branch_display" \
         "$pr_segment" \
         "$ctx_display"
 else
-    printf "${model_color}%s${COLOR_RESET} | %s%s | ${ctx_color}%s${COLOR_RESET}\n" \
-        "$model_display" \
+    printf "${cost_color}%s${COLOR_RESET} | %s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+        "$cost_display" \
         "$project_name" \
         "$pr_segment" \
         "$ctx_display"
