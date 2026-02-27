@@ -76,5 +76,9 @@
   "homepage": "https://github.com/baekenough/oh-my-customcode#readme",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "overrides": {
+    "rollup": "^4.59.0",
+    "esbuild": "^0.25.0"
   }
 }
