@@ -271,7 +271,7 @@ Install via `/plugin install <name>`:
 | obsidian-skills | - | Obsidian markdown support |
 | context7 | claude-plugins-official | Library documentation lookup |
 
-### Required MCP Servers
+### Recommended MCP Servers
 
 | Server | Purpose |
 |--------|---------|
