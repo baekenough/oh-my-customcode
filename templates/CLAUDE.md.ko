@@ -271,7 +271,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 | obsidian-skills | - | 옵시디언 마크다운 지원 |
 | context7 | claude-plugins-official | 라이브러리 문서 조회 |
 
-### 필수 MCP 서버
+### 권장 MCP 서버
 
 | 서버 | 용도 |
 |------|------|
