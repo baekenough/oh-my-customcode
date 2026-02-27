@@ -43,13 +43,12 @@ You are an automated verification specialist that executes the mandatory R016 ve
 ### Phase 1: Manager Verification (5 rounds)
 
 **Round 1-2: Basic Checks**
-- mgr-supplier:audit (all agents)
-- mgr-sync-checker:check
+- mgr-supplier:audit (all agents, dependency validation)
+- mgr-updater:docs (documentation sync check)
 
 **Round 3-4: Re-verify + Update**
 - Re-run mgr-supplier:audit
-- Re-run mgr-sync-checker:check
-- mgr-updater:docs (if changes detected)
+- Re-run mgr-updater:docs (apply any detected changes)
 
 **Round 5: Final Count Verification**
 - Agent count: CLAUDE.md vs actual .md files
@@ -116,7 +115,7 @@ You are an automated verification specialist that executes the mandatory R016 ve
 [Round 1/5] mgr-supplier:audit
   - 34 agents checked
   - 3 issues found
-[Round 2/5] mgr-sync-checker:check
+[Round 2/5] mgr-updater:docs
   - Documentation sync: OK
 ...
 
@@ -155,7 +154,6 @@ Run 'mgr-sauron:watch' for full verification
 
 Works with:
 - **mgr-supplier**: Dependency validation
-- **mgr-sync-checker**: Documentation sync
-- **mgr-updater**: Documentation updates
+- **mgr-updater**: Documentation updates and sync
 - **mgr-claude-code-bible**: Official spec compliance
 - **secretary**: Orchestration coordination

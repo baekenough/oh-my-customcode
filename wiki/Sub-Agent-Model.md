@@ -15,8 +15,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 ```
 /create-agent
   |-- mgr-creator:sonnet       - agent scaffolding
-  |-- mgr-supplier:haiku       - dependency check
-  +-- mgr-sync-checker:haiku   - registry verification
+  +-- mgr-supplier:haiku       - dependency check
 
 /code-review
   |-- lang-golang-expert:sonnet - Go implementation

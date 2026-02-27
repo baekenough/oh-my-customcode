@@ -8,7 +8,7 @@ user-invocable: false
 
 ## Purpose
 
-Routes agent management tasks to the appropriate manager agent. This skill contains the coordination logic for orchestrating manager agents (mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sync-checker, mgr-sauron).
+Routes agent management tasks to the appropriate manager agent. This skill contains the coordination logic for orchestrating manager agents (mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron).
 
 ## Manager Agents
 
@@ -18,8 +18,8 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 | mgr-updater | Update external agents | "update agent", "sync" |
 | mgr-supplier | Validate dependencies | "audit", "check deps" |
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
-| mgr-sync-checker | Sync verification | "sync check", "verify sync" |
 | mgr-sauron | R016 auto-verification | "verify", "full check" |
+| mgr-sync-checker | Documentation sync verification | "sync check", "sync verification", "synchronization", "동기화 검증", "동기화 체크" |
 | mgr-claude-code-bible | Claude Code spec compliance | "spec check", "verify compliance" |
 | sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
 | sys-naggy | TODO management | "todo", "track tasks", "task list" |
@@ -33,8 +33,8 @@ create   → mgr-creator
 update   → mgr-updater
 audit    → mgr-supplier
 git      → mgr-gitnerd
-sync     → mgr-sync-checker
 verify   → mgr-sauron
+sync     → mgr-sync-checker
 spec     → mgr-claude-code-bible
 memory   → sys-memory-keeper
 todo     → sys-naggy
@@ -73,8 +73,8 @@ When command requires multiple independent operations:
 | mgr-updater | sonnet | External sync, web fetch |
 | mgr-supplier | haiku | File scan, validation |
 | mgr-gitnerd | sonnet | Commit message quality |
-| mgr-sync-checker | haiku | Fast verification |
 | mgr-sauron | sonnet | Multi-round verification |
+| mgr-sync-checker | haiku | Doc sync checks, lightweight validation |
 | mgr-claude-code-bible | sonnet | Spec compliance checks |
 | sys-memory-keeper | sonnet | Memory operations, search |
 | sys-naggy | haiku | Simple TODO tracking |

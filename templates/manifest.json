@@ -1,6 +1,6 @@
 {
   "version": "0.3.0",
-  "lastUpdated": "2026-02-27T04:55:03.515Z",
+  "lastUpdated": "2026-02-27T06:08:34.127Z",
   "components": [
     {
       "name": "rules",
@@ -12,7 +12,7 @@
       "name": "agents",
       "path": ".claude/agents",
       "description": "AI agent definitions (flat .md files with prefixes)",
-      "files": 42
+      "files": 41
     },
     {
       "name": "skills",
