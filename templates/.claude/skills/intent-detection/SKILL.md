@@ -228,3 +228,65 @@ intent_detection:
   max_alternatives: 3
   korean_support: true
 ```
+
+## Research Intent Routing
+
+When a research/information gathering intent is detected:
+
+### Detection Keywords
+
+```yaml
+# Korean
+korean:
+  - "조사" → research
+  - "검색" → search
+  - "리서치" → research
+  - "탐색" → explore
+  - "찾아" → look up
+  - "알아봐" → find out
+  - "자료" → gather materials
+  - "정보 수집" → gather information
+
+# English
+english:
+  - "research"
+  - "investigate"
+  - "search for"
+  - "look up"
+  - "gather information"
+```
+
+### Routing Logic
+
+```
+Research intent detected (confidence >= 70%)
+    ↓
+Check Codex CLI availability
+    ├─ Available (codex binary + OPENAI_API_KEY)
+    │   → Use codex-exec skill with --effort xhigh
+    │   → Prompt: "Research and analyze: {user_request}"
+    │   → Returns: structured findings for orchestrator
+    └─ Unavailable
+        → Fall back to Claude's WebFetch/WebSearch
+        → Orchestrator handles directly or via general-purpose agent
+```
+
+### Confidence Scoring
+
+| Factor | Weight | Example |
+|--------|--------|---------|
+| Research keyword match | +40 | "조사해줘", "research" |
+| Action verb match | +30 | "찾아", "investigate" |
+| URL/topic present | +20 | specific URL or topic mentioned |
+| Context (previous research) | +10 | follow-up research request |
+
+### Output Format
+
+```
+[Intent Detected]
+├── Input: "{user input}"
+├── Workflow: research-workflow
+├── Confidence: {percentage}%
+├── Method: codex-exec (xhigh) | WebFetch fallback
+└── Reason: {explanation}
+```
