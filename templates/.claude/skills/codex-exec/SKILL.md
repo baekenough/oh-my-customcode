@@ -1,7 +1,7 @@
 ---
 name: codex-exec
 description: Execute OpenAI Codex CLI prompts and return results
-argument-hint: "<prompt> [--json] [--output <path>] [--model <name>] [--timeout <ms>]"
+argument-hint: "<prompt> [--json] [--output <path>] [--model <name>] [--timeout <ms>] [--effort <level>]"
 ---
 
 # Codex Exec Skill
@@ -18,6 +18,10 @@ Execute OpenAI Codex CLI prompts in non-interactive mode and return structured r
 --timeout <ms>    Execution timeout (default: 120000, max: 600000)
 --full-auto       Enable auto-approval mode (codex -a full-auto)
 --working-dir     Working directory for Codex execution
+--effort <level>  Set reasoning effort level (minimal, low, medium, high, xhigh)
+                  Maps to Codex CLI's model_reasoning_effort config
+                  Default: uses Codex CLI's configured default
+                  Recommended: xhigh for research/analysis tasks
 ```
 
 ## Workflow
@@ -147,3 +151,27 @@ Orchestrator delegates generation task
   → Reviewer validates quality
   → Iterate if needed
 ```
+
+## Research Workflow
+
+When the orchestrator detects a research/information gathering request:
+
+1. **Check Codex availability**: Verify `codex` binary and `OPENAI_API_KEY`
+2. **If available**: Execute with xhigh reasoning effort for thorough research
+3. **If unavailable**: Fall back to Claude's WebFetch/WebSearch
+
+### Research Command Pattern
+
+```
+/codex-exec "Research and analyze: {topic}. Provide structured findings with sources." --effort xhigh --full-auto --json
+```
+
+### Effort Level Guide
+
+| Level | Use Case | Speed | Depth |
+|-------|----------|-------|-------|
+| minimal | Quick lookups | Fastest | Surface |
+| low | Simple queries | Fast | Basic |
+| medium | General tasks | Balanced | Standard |
+| high | Complex analysis | Slower | Deep |
+| xhigh | Research & investigation | Slowest | Maximum |

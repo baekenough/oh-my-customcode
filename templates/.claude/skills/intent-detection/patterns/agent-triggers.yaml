@@ -288,6 +288,42 @@ agents:
     supported_actions: [save, recall, remember]
     base_confidence: 40
 
+  # ---------------------------------------------------------------------------
+  # Research / Information Gathering (skill-based, not agent)
+  # ---------------------------------------------------------------------------
+  research-workflow:
+    keywords:
+      korean:
+        - 조사
+        - 검색
+        - 리서치
+        - 탐색
+        - 찾아
+        - 알아봐
+        - 자료
+        - 정보 수집
+        - 웹에서
+      english:
+        - research
+        - investigate
+        - search for
+        - look up
+        - gather information
+        - web fetch
+        - find out
+        - explore topic
+    file_patterns: []
+    supported_actions:
+      - search
+      - fetch
+      - investigate
+      - research
+      - analyze
+      - gather
+    base_confidence: 50
+    action_weight: 30
+    routing_note: "Uses codex-exec skill with xhigh effort when available, falls back to WebFetch/WebSearch"
+
   # Managers (continued)
   mgr-gitnerd:
     keywords:
