@@ -368,6 +368,119 @@ describe('installer', () => {
     });
   });
 
+  describe('statusline installation', () => {
+    it('should install statusline.sh during init', async () => {
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const statuslinePath = join(tempDir, '.claude', 'statusline.sh');
+      expect(await fileExists(statuslinePath)).toBe(true);
+    });
+
+    it('should make statusline.sh executable', async () => {
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const statuslinePath = join(tempDir, '.claude', 'statusline.sh');
+      const fs = await import('node:fs/promises');
+      const stats = await fs.stat(statuslinePath);
+      // Check executable bit (owner execute = 0o100)
+      expect(stats.mode & 0o111).toBeGreaterThan(0);
+    });
+
+    it('should skip statusline.sh if already exists and no force', async () => {
+      // First install
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const statuslinePath = join(tempDir, '.claude', 'statusline.sh');
+
+      // Modify to detect overwrite
+      const fs = await import('node:fs/promises');
+      await fs.writeFile(statuslinePath, '#!/bin/bash\n# custom', 'utf-8');
+
+      // Second install without force
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      // Should still be our custom content
+      const content = await fs.readFile(statuslinePath, 'utf-8');
+      expect(content).toContain('# custom');
+    });
+
+    it('should overwrite statusline.sh with force option', async () => {
+      // First install
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const statuslinePath = join(tempDir, '.claude', 'statusline.sh');
+
+      // Modify to detect overwrite
+      const fs = await import('node:fs/promises');
+      await fs.writeFile(statuslinePath, '#!/bin/bash\n# custom', 'utf-8');
+
+      // Second install with force
+      await install({ targetDir: tempDir, force: true, skipConfirm: true });
+
+      // Should be overwritten (no longer custom)
+      const content = await fs.readFile(statuslinePath, 'utf-8');
+      expect(content).not.toContain('# custom');
+    });
+  });
+
+  describe('settings.local.json installation', () => {
+    it('should create settings.local.json during init', async () => {
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      expect(await fileExists(settingsPath)).toBe(true);
+    });
+
+    it('should include statusLine configuration', async () => {
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      const fs = await import('node:fs/promises');
+      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      expect(content.statusLine).toBeDefined();
+      expect(content.statusLine.type).toBe('command');
+      expect(content.statusLine.command).toBe('.claude/statusline.sh');
+      expect(content.statusLine.padding).toBe(0);
+    });
+
+    it('should merge statusLine into existing settings.local.json', async () => {
+      // Create existing settings.local.json with other settings
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      const fs = await import('node:fs/promises');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      await fs.writeFile(
+        settingsPath,
+        JSON.stringify({ enableAllProjectMcpServers: true }),
+        'utf-8'
+      );
+
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      // Original setting preserved
+      expect(content.enableAllProjectMcpServers).toBe(true);
+      // statusLine added
+      expect(content.statusLine).toBeDefined();
+      expect(content.statusLine.command).toBe('.claude/statusline.sh');
+    });
+
+    it('should not overwrite existing statusLine configuration', async () => {
+      // Create existing settings with custom statusLine
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      const fs = await import('node:fs/promises');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      const customSettings = {
+        statusLine: {
+          type: 'command',
+          command: '.claude/custom-statusline.sh',
+          padding: 2,
+        },
+      };
+      await fs.writeFile(settingsPath, JSON.stringify(customSettings), 'utf-8');
+
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      // Should keep custom statusLine, not overwrite
+      expect(content.statusLine.command).toBe('.claude/custom-statusline.sh');
+      expect(content.statusLine.padding).toBe(2);
+    });
+  });
+
   describe('error handling', () => {
     it('should handle template directory not found error (line 211)', async () => {
       // Mock fileExists to return false for template directory check
