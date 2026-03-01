@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-03-01
+
+### Added
+- Enable custom statusline for `omcustom init` users (#192)
+  - Sync template statusline.sh with latest version (cost display, PR caching, OSC 8 hyperlinks)
+  - Auto-generate `settings.local.json` with statusLine configuration during init
+  - Merge statusLine config into existing settings without overwriting user preferences
+  - Set executable permission on statusline.sh automatically
+
 ## [0.17.0] - 2026-02-27
 
 ### Features
@@ -577,7 +586,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet (initial release)
 
-[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.17.0...HEAD
+[Unreleased]: https://github.com/baekenough/oh-my-customcode/compare/v0.17.1...HEAD
+[0.17.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/baekenough/oh-my-customcode/compare/v0.16.4...v0.17.0
 [0.16.4]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.1...v0.16.4
 [0.14.1]: https://github.com/baekenough/oh-my-customcode/compare/v0.14.0...v0.14.1
