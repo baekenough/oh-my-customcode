@@ -51,6 +51,7 @@ function parseArgs() {
     timeout: DEFAULT_TIMEOUT_MS,
     fullAuto: false,
     workingDir: null,
+    effort: null,
   };
 
   for (let i = 2; i < process.argv.length; i++) {
@@ -89,6 +90,12 @@ function parseArgs() {
       case '--working-dir':
         if (i + 1 < process.argv.length) {
           args.workingDir = process.argv[++i];
+        }
+        break;
+      case '--effort':
+      case '--reasoning-effort':
+        if (i + 1 < process.argv.length) {
+          args.effort = process.argv[++i];
         }
         break;
     }
@@ -158,6 +165,16 @@ function buildCommand(options) {
   // Working directory
   if (options.workingDir) {
     args.push('-C', options.workingDir);
+  }
+
+  // Reasoning effort (maps to -c model_reasoning_effort="value")
+  if (options.effort) {
+    const validEfforts = ['minimal', 'low', 'medium', 'high', 'xhigh'];
+    if (validEfforts.includes(options.effort)) {
+      args.push('-c', `model_reasoning_effort="${options.effort}"`);
+    } else {
+      process.stderr.write(`Warning: Invalid effort level "${options.effort}". Valid: ${validEfforts.join(', ')}\n`);
+    }
   }
 
   // Add prompt as last argument
