@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-03-01
+
+### Added
+- Auto-route research requests to Codex with xhigh reasoning effort (#191)
+  - Add `--effort` parameter to codex-exec (minimal, low, medium, high, xhigh)
+  - Maps to Codex CLI's `-c model_reasoning_effort` configuration
+  - Add research-workflow triggers to intent-detection (조사, 검색, 리서치, etc.)
+  - Research Intent Routing with Codex availability check and WebFetch fallback
+
 ## [0.17.1] - 2026-03-01
 
 ### Added
