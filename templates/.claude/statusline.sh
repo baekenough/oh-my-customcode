@@ -4,7 +4,7 @@
 # Reads JSON from stdin (Claude Code statusline API, ~300ms intervals)
 # and outputs a formatted status line, e.g.:
 #
-#   Opus | my-project | develop | CTX:42% | $0.05
+#   $0.05 | my-project | develop | PR #160 | CTX:42%
 #
 # JSON input structure:
 #   {
@@ -71,6 +71,7 @@ IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd <<< "$(
 
 # ---------------------------------------------------------------------------
 # 5. Model display name + color (bash 3.2 compatible case pattern matching)
+#    Model detection (kept for internal reference, not displayed in statusline)
 # ---------------------------------------------------------------------------
 case "$model_name" in
     *[Oo]pus*)   model_display="Opus";   model_color="${COLOR_OPUS}" ;;
@@ -78,6 +79,30 @@ case "$model_name" in
     *[Hh]aiku*)  model_display="Haiku";  model_color="${COLOR_HAIKU}" ;;
     *)           model_display="$model_name"; model_color="${COLOR_RESET}" ;;
 esac
+
+# ---------------------------------------------------------------------------
+# 5b. Cost display — format and colorize session API cost
+# ---------------------------------------------------------------------------
+# Ensure cost_usd is a valid number (fallback to 0)
+if [[ -z "$cost_usd" ]] || ! printf '%f' "$cost_usd" >/dev/null 2>&1; then
+    cost_usd="0"
+fi
+
+cost_display=$(printf '$%.2f' "$cost_usd")
+
+# Color by cost threshold (cents for integer comparison)
+cost_cents=$(printf '%.0f' "$(echo "$cost_usd * 100" | bc 2>/dev/null || echo 0)")
+if ! [[ "$cost_cents" =~ ^[0-9]+$ ]]; then
+    cost_cents=0
+fi
+
+if [[ "$cost_cents" -ge 500 ]]; then
+    cost_color="${COLOR_CTX_CRIT}"    # Red    (>= $5.00)
+elif [[ "$cost_cents" -ge 100 ]]; then
+    cost_color="${COLOR_CTX_WARN}"    # Yellow ($1.00 - $4.99)
+else
+    cost_color="${COLOR_CTX_OK}"      # Green  (< $1.00)
+fi
 
 # ---------------------------------------------------------------------------
 # 6. Project name — basename of workspace current_dir
@@ -108,7 +133,85 @@ if [[ -f "$git_head_file" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 8. Context percentage with color
+# 7b. Branch URL — for OSC 8 clickable link
+# ---------------------------------------------------------------------------
+branch_url=""
+if [[ -n "$git_branch" && -n "$project_dir" ]]; then
+    # Get remote URL from git config
+    git_config="${project_dir}/.git/config"
+    if [[ -f "$git_config" ]]; then
+        # Extract remote origin URL from git config (no subprocess)
+        remote_url=""
+        in_remote_origin=false
+        while IFS= read -r line; do
+            case "$line" in
+                '[remote "origin"]')
+                    in_remote_origin=true
+                    ;;
+                '['*)
+                    in_remote_origin=false
+                    ;;
+                *)
+                    if $in_remote_origin; then
+                        case "$line" in
+                            *url\ =*)
+                                remote_url="${line#*url = }"
+                                ;;
+                        esac
+                    fi
+                    ;;
+            esac
+        done < "$git_config"
+
+        # Convert remote URL to HTTPS browse URL
+        if [[ -n "$remote_url" ]]; then
+            case "$remote_url" in
+                git@github.com:*)
+                    # git@github.com:owner/repo.git → https://github.com/owner/repo
+                    repo_path="${remote_url#git@github.com:}"
+                    repo_path="${repo_path%.git}"
+                    branch_url="https://github.com/${repo_path}/tree/${git_branch}"
+                    ;;
+                https://github.com/*)
+                    # https://github.com/owner/repo.git → https://github.com/owner/repo
+                    repo_path="${remote_url#https://github.com/}"
+                    repo_path="${repo_path%.git}"
+                    branch_url="https://github.com/${repo_path}/tree/${git_branch}"
+                    ;;
+            esac
+        fi
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 8. PR number — cached by branch to avoid gh call on every refresh
+# ---------------------------------------------------------------------------
+pr_display=""
+if [[ -n "$git_branch" ]] && command -v gh >/dev/null 2>&1; then
+    cache_file="/tmp/statusline-pr-${project_name}"
+    cached_branch=""
+    cached_pr=""
+
+    if [[ -f "$cache_file" ]]; then
+        IFS=$'\t' read -r cached_branch cached_pr < "$cache_file"
+    fi
+
+    if [[ "$cached_branch" == "$git_branch" ]]; then
+        # Cache hit — use cached PR number
+        pr_number="$cached_pr"
+    else
+        # Cache miss — query gh and update cache
+        pr_number="$(gh pr view --json number -q .number 2>/dev/null || echo "")"
+        printf '%s\t%s\n' "$git_branch" "$pr_number" > "$cache_file"
+    fi
+
+    if [[ -n "$pr_number" ]]; then
+        pr_display="PR #${pr_number}"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 9. Context percentage with color
 # ---------------------------------------------------------------------------
 # ctx_pct may arrive as a float (e.g. 42.5); truncate to integer for comparison
 ctx_int="${ctx_pct%%.*}"
@@ -128,25 +231,33 @@ fi
 ctx_display="CTX:${ctx_int}%"
 
 # ---------------------------------------------------------------------------
-# 9. Cost formatting — always two decimal places
-# ---------------------------------------------------------------------------
-cost_display="$(printf '$%.2f' "$cost_usd")"
-
-# ---------------------------------------------------------------------------
 # 10. Assemble and output the status line
 # ---------------------------------------------------------------------------
-# Build segments; omit git branch segment when unavailable
-if [[ -n "$git_branch" ]]; then
-    printf "${model_color}%s${COLOR_RESET} | %s | %s | ${ctx_color}%s${COLOR_RESET} | %s\n" \
-        "$model_display" \
-        "$project_name" \
-        "$git_branch" \
-        "$ctx_display" \
-        "$cost_display"
+# Format branch with optional OSC 8 hyperlink
+if [[ -n "$branch_url" && -n "${COLOR_RESET}" ]]; then
+    # OSC 8 hyperlink: ESC]8;;URL BEL visible-text ESC]8;; BEL
+    branch_display=$'\033]8;;'"${branch_url}"$'\a'"${git_branch}"$'\033]8;;\a'
 else
-    printf "${model_color}%s${COLOR_RESET} | %s | ${ctx_color}%s${COLOR_RESET} | %s\n" \
-        "$model_display" \
+    branch_display="$git_branch"
+fi
+
+# Build the PR segment (with separator) if present
+pr_segment=""
+if [[ -n "$pr_display" ]]; then
+    pr_segment=" | ${pr_display}"
+fi
+
+if [[ -n "$git_branch" ]]; then
+    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+        "$cost_display" \
         "$project_name" \
-        "$ctx_display" \
-        "$cost_display"
+        "$branch_display" \
+        "$pr_segment" \
+        "$ctx_display"
+else
+    printf "${cost_color}%s${COLOR_RESET} | %s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+        "$cost_display" \
+        "$project_name" \
+        "$pr_segment" \
+        "$ctx_display"
 fi
