@@ -6,11 +6,13 @@ import { readFile as fsReadFile, writeFile as fsWriteFile, rename } from 'node:f
 import { basename, join } from 'node:path';
 import {
   copyDirectory,
+  copyFile,
   ensureDirectory,
   fileExists,
   getPackageRoot,
   readJsonFile,
   resolveTemplatePath,
+  writeJsonFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { loadConfig, saveConfig } from './config.js';
@@ -217,6 +219,75 @@ async function installSingleComponent(
 }
 
 /**
+ * Install statusline.sh to the target directory and make it executable
+ */
+async function installStatusline(
+  targetDir: string,
+  options: InstallOptions,
+  _result: InstallResult
+): Promise<void> {
+  const layout = getProviderLayout();
+  const srcPath = resolveTemplatePath(join(layout.rootDir, 'statusline.sh'));
+  const destPath = join(targetDir, layout.rootDir, 'statusline.sh');
+
+  if (!(await fileExists(srcPath))) {
+    debug('install.statusline_not_found', { path: srcPath });
+    return;
+  }
+
+  if (await fileExists(destPath)) {
+    if (!options.force && !options.backup) {
+      debug('install.statusline_skipped', { reason: 'exists' });
+      return;
+    }
+  }
+
+  await copyFile(srcPath, destPath);
+
+  const fs = await import('node:fs/promises');
+  await fs.chmod(destPath, 0o755);
+
+  debug('install.statusline_installed', {});
+}
+
+/**
+ * Create or merge settings.local.json with statusLine configuration
+ */
+async function installSettingsLocal(targetDir: string, result: InstallResult): Promise<void> {
+  const layout = getProviderLayout();
+  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
+
+  const statusLineConfig = {
+    statusLine: {
+      type: 'command' as const,
+      command: '.claude/statusline.sh',
+      padding: 0,
+    },
+  };
+
+  if (await fileExists(settingsPath)) {
+    try {
+      const existing = await readJsonFile<Record<string, unknown>>(settingsPath);
+      if (!existing.statusLine) {
+        existing.statusLine = statusLineConfig.statusLine;
+        await writeJsonFile(settingsPath, existing);
+        debug('install.settings_local_merged', {});
+      } else {
+        debug('install.settings_local_skipped', { reason: 'statusLine exists' });
+      }
+    } catch {
+      result.warnings.push(
+        'Failed to parse existing settings.local.json, skipping statusLine config'
+      );
+    }
+    return;
+  }
+
+  await writeJsonFile(settingsPath, statusLineConfig);
+  debug('install.settings_local_created', {});
+}
+
+/**
  * Install entry doc and track result
  */
 async function installEntryDocWithTracking(
@@ -265,6 +336,8 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     await verifyTemplateDirectory();
 
     await installAllComponents(options.targetDir, options, result);
+    await installStatusline(options.targetDir, options, result);
+    await installSettingsLocal(options.targetDir, result);
     await installEntryDocWithTracking(options.targetDir, options, result);
     await updateInstallConfig(options.targetDir, options, result.installedComponents);
 
