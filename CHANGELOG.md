@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-03-02
+
+### Fixed
+- Standardize frontmatter field naming to hyphen-case (`user_invocable` → `user-invocable`) (#195)
+
 ## [0.18.0] - 2026-03-01
 
 ### Added
