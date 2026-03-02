@@ -2,7 +2,7 @@
 name: structured-dev-cycle
 description: 6-stage structured development cycle with stage-based tool restrictions
 version: 1.0.0
-user_invocable: false
+user-invocable: false
 ---
 
 # Structured Development Cycle
