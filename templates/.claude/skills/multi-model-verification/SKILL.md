@@ -2,7 +2,7 @@
 name: multi-model-verification
 description: Parallel code verification using multiple models with severity classification
 version: 1.0.0
-user_invocable: false
+user-invocable: false
 ---
 
 # Multi-Model Verification
