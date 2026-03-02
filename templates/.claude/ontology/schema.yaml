@@ -67,7 +67,7 @@ entity_types:
     properties:
       name: { type: string, required: true }
       description: { type: string, required: true }
-      user_invocable: { type: boolean, default: true }
+      user-invocable: { type: boolean, default: true }
       model_invocable: { type: boolean, default: true }
 
   Rule:
