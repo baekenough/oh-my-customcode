@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.3] - 2026-03-04
+
+### Fixed
+- Resolve npm audit vulnerabilities by updating dependency lock file (#199)
+  - rollup: Path Traversal (HIGH, GHSA-mw96-cpmx-2vgc)
+  - esbuild: CORS Bypass (MODERATE, GHSA-67mh-4wv8-2f99)
+
 ## [0.18.2] - 2026-03-04
 
 ### Fixed
