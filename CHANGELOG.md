@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.4] - 2026-03-05
+
+### Fixed
+- Sync root-level `.claude/` files (statusline.sh, install-hooks.sh, uninstall-hooks.sh) during `omcustom update` (#201)
+- Remove deprecated/renamed files during `omcustom update` using deprecation manifest (#202)
+
 ## [0.18.3] - 2026-03-04
 
 ### Fixed
