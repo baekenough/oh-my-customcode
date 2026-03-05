@@ -71,6 +71,10 @@ export interface UpdateResult {
   newVersion: string;
   /** Any warnings during update */
   warnings: string[];
+  /** Root-level files that were synced */
+  syncedRootFiles: string[];
+  /** Deprecated files that were removed */
+  removedDeprecatedFiles: string[];
   /** Error message if failed */
   error?: string;
 }
@@ -150,6 +154,8 @@ function createUpdateResult(): UpdateResult {
     previousVersion: '',
     newVersion: '',
     warnings: [],
+    syncedRootFiles: [],
+    removedDeprecatedFiles: [],
   };
 }
 
@@ -444,6 +450,18 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       config
     );
 
+    // Sync root-level files (statusline.sh, etc.)
+    if (!options.components || options.components.length === 0) {
+      const synced = await syncRootLevelFiles(options.targetDir, options);
+      result.syncedRootFiles = synced;
+    }
+
+    // Remove deprecated files (only on full update)
+    if (!options.components || options.components.length === 0) {
+      const removed = await removeDeprecatedFiles(options.targetDir, options);
+      result.removedDeprecatedFiles = removed;
+    }
+
     // Update entry doc with merge (only on full update)
     if (!options.components || options.components.length === 0) {
       await updateEntryDoc(options.targetDir, config, options);
@@ -637,6 +655,124 @@ async function updateComponent(
     skippedPaths: String(normalizedSkipPaths.length),
   });
   return preservedFiles;
+}
+
+/**
+ * Root-level files in .claude/ that should be synced during update
+ * These are files that exist directly under templates/.claude/ (not in subdirectories)
+ */
+const ROOT_LEVEL_FILES = ['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh'];
+
+/**
+ * Sync root-level files from templates/.claude/ to target .claude/ directory
+ * These files don't belong to any component subdirectory.
+ */
+async function syncRootLevelFiles(targetDir: string, options: UpdateOptions): Promise<string[]> {
+  if (options.dryRun) {
+    return ROOT_LEVEL_FILES;
+  }
+
+  const fs = await import('node:fs/promises');
+  const layout = getProviderLayout();
+  const synced: string[] = [];
+
+  for (const fileName of ROOT_LEVEL_FILES) {
+    const srcPath = resolveTemplatePath(join(layout.rootDir, fileName));
+
+    if (!(await fileExists(srcPath))) {
+      continue;
+    }
+
+    const destPath = join(targetDir, layout.rootDir, fileName);
+    await ensureDirectory(join(destPath, '..'));
+    await fs.copyFile(srcPath, destPath);
+
+    // Preserve execute permissions for shell scripts
+    if (fileName.endsWith('.sh')) {
+      await fs.chmod(destPath, 0o755);
+    }
+
+    synced.push(fileName);
+  }
+
+  if (synced.length > 0) {
+    debug('update.root_files_synced', { files: synced.join(', ') });
+  }
+
+  return synced;
+}
+
+/**
+ * Deprecated file entry in the manifest
+ */
+interface DeprecatedFileEntry {
+  /** Relative path to the deprecated file */
+  path: string;
+  /** Reason for deprecation */
+  reason: string;
+  /** Version since which the file was deprecated */
+  since: string;
+}
+
+/**
+ * Deprecated files manifest
+ */
+interface DeprecatedFilesManifest {
+  description: string;
+  files: DeprecatedFileEntry[];
+}
+
+/**
+ * Remove deprecated files from the target directory.
+ * Reads templates/deprecated-files.json and removes listed files if they exist.
+ */
+async function removeDeprecatedFiles(targetDir: string, options: UpdateOptions): Promise<string[]> {
+  const manifestPath = resolveTemplatePath('deprecated-files.json');
+
+  if (!(await fileExists(manifestPath))) {
+    return [];
+  }
+
+  const manifest = await readJsonFile<DeprecatedFilesManifest>(manifestPath);
+
+  if (!manifest.files || manifest.files.length === 0) {
+    return [];
+  }
+
+  if (options.dryRun) {
+    return manifest.files.map((f) => f.path);
+  }
+
+  const fs = await import('node:fs/promises');
+  const removed: string[] = [];
+
+  for (const entry of manifest.files) {
+    // Security: validate path is within targetDir
+    const validation = validatePreserveFilePath(entry.path, targetDir);
+    if (!validation.valid) {
+      warn('update.deprecated_file_invalid_path', {
+        path: entry.path,
+        reason: validation.reason ?? 'Invalid path',
+      });
+      continue;
+    }
+
+    const fullPath = join(targetDir, entry.path);
+    if (await fileExists(fullPath)) {
+      await fs.unlink(fullPath);
+      removed.push(entry.path);
+      info('update.deprecated_file_removed', {
+        path: entry.path,
+        reason: entry.reason,
+      });
+    }
+  }
+
+  if (removed.length > 0) {
+    debug('update.deprecated_files_cleaned', { count: String(removed.length) });
+  }
+
+  return removed;
 }
 
 /**
