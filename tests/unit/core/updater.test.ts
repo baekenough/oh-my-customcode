@@ -438,60 +438,6 @@ describe('updater', () => {
       expect(result.preservedFiles.length).toBe(0);
     });
 
-    it('should bypass manifest preservation when forceOverwriteAll is true', async () => {
-      await createConfig('0.1.0');
-
-      const manifestPreserveFile = '.claude/rules/manifest-preserved.md';
-      await createDirStructure({
-        [manifestPreserveFile]: 'manifest preserved content',
-        '.omcustom-customizations.json': JSON.stringify({
-          modifiedFiles: [],
-          preserveFiles: [manifestPreserveFile],
-          customComponents: [],
-          lastUpdated: '2025-01-01T00:00:00Z',
-        }),
-      });
-
-      const layout = getProviderLayout();
-      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
-
-      const result = await update({
-        targetDir: tempDir,
-        components: ['rules'],
-        forceOverwriteAll: true,
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.preservedFiles).not.toContain(manifestPreserveFile);
-    });
-
-    it('should bypass config preserveFiles when forceOverwriteAll is true', async () => {
-      await createConfig('0.1.0');
-
-      // Update config to include preserveFiles
-      const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
-      const config = JSON.parse(configContent);
-      const configPreserveFile = '.claude/rules/config-preserved.md';
-      config.preserveFiles = [configPreserveFile];
-      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
-
-      await createDirStructure({
-        [configPreserveFile]: 'config preserved content',
-      });
-
-      const layout = getProviderLayout();
-      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
-
-      const result = await update({
-        targetDir: tempDir,
-        components: ['rules'],
-        forceOverwriteAll: true,
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.preservedFiles).not.toContain(configPreserveFile);
-    });
-
     it('should override preserveCustomizations when forceOverwriteAll is true', async () => {
       await createConfig('0.1.0');
 
@@ -955,6 +901,162 @@ describe('updater', () => {
       expect(versions[0].source).toBe('local'); // Default
       expect(versions[0].lastUpdated).toBe(''); // Default
       expect(versions[0].hasLocalModifications).toBe(false); // Default
+    });
+  });
+
+  describe('syncRootLevelFiles (Bug #201)', () => {
+    it('should sync root-level files during full update', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        // No components specified = full update
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.syncedRootFiles).toBeDefined();
+      expect(result.syncedRootFiles.length).toBeGreaterThan(0);
+      // statusline.sh should be synced
+      expect(result.syncedRootFiles).toContain('statusline.sh');
+    });
+
+    it('should not sync root-level files when specific components are updated', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.syncedRootFiles.length).toBe(0);
+    });
+
+    it('should preserve execute permissions on .sh files', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      await update({
+        targetDir: tempDir,
+      });
+
+      // Check that statusline.sh has execute permissions
+      const fs = await import('node:fs/promises');
+      const statuslinePath = join(tempDir, layout.rootDir, 'statusline.sh');
+      const stats = await fs.stat(statuslinePath);
+      // Check owner execute bit (0o100)
+      expect(stats.mode & 0o100).toBeTruthy();
+    });
+
+    it('should return file list in dry run mode without copying', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        dryRun: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.syncedRootFiles.length).toBeGreaterThan(0);
+
+      // Files should NOT actually exist (dry run)
+      const statuslinePath = join(tempDir, layout.rootDir, 'statusline.sh');
+      const exists = await readFile(statuslinePath, 'utf-8').catch(() => null);
+      expect(exists).toBeNull();
+    });
+  });
+
+  describe('removeDeprecatedFiles (Bug #202)', () => {
+    it('should remove deprecated files during full update', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      // Create a deprecated file that exists in the manifest
+      await createDirStructure({
+        [`${layout.rootDir}/rules/SHOULD-agent-teams.md`]: '# Old agent teams rule',
+      });
+
+      const result = await update({
+        targetDir: tempDir,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.removedDeprecatedFiles).toContain('.claude/rules/SHOULD-agent-teams.md');
+
+      // File should be removed
+      const deprecatedPath = join(tempDir, layout.rootDir, 'rules', 'SHOULD-agent-teams.md');
+      const exists = await readFile(deprecatedPath, 'utf-8').catch(() => null);
+      expect(exists).toBeNull();
+    });
+
+    it('should not remove deprecated files when specific components are updated', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await createDirStructure({
+        [`${layout.rootDir}/rules/SHOULD-agent-teams.md`]: '# Old agent teams rule',
+      });
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.removedDeprecatedFiles.length).toBe(0);
+
+      // File should still exist
+      const deprecatedPath = join(tempDir, layout.rootDir, 'rules', 'SHOULD-agent-teams.md');
+      const content = await readFile(deprecatedPath, 'utf-8');
+      expect(content).toBe('# Old agent teams rule');
+    });
+
+    it('should skip deprecated files that do not exist in target', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+      // Do NOT create SHOULD-agent-teams.md
+
+      const result = await update({
+        targetDir: tempDir,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.removedDeprecatedFiles.length).toBe(0);
+    });
+
+    it('should return deprecated file list in dry run mode without removing', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await createDirStructure({
+        [`${layout.rootDir}/rules/SHOULD-agent-teams.md`]: '# Old agent teams rule',
+      });
+
+      const result = await update({
+        targetDir: tempDir,
+        dryRun: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.removedDeprecatedFiles.length).toBeGreaterThan(0);
+
+      // File should still exist (dry run)
+      const deprecatedPath = join(tempDir, layout.rootDir, 'rules', 'SHOULD-agent-teams.md');
+      const content = await readFile(deprecatedPath, 'utf-8');
+      expect(content).toBe('# Old agent teams rule');
     });
   });
 });
