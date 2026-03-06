@@ -124,7 +124,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Total** | **41** | |
 
-### Skills (55)
+### Skills (56)
 
 | Category | Count | Skills |
 |----------|-------|--------|
