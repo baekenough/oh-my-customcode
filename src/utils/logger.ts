@@ -414,9 +414,6 @@ export function table(
  * Add a message to i18n dictionary (for extensions)
  */
 export function addMessages(locale: 'en' | 'ko', messages: Record<string, string>): void {
-  if (!MESSAGES[locale]) {
-    MESSAGES[locale] = {};
-  }
   Object.assign(MESSAGES[locale], messages);
 }
 

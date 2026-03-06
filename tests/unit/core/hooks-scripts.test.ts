@@ -552,7 +552,7 @@ describe('agent-teams-advisor.sh', () => {
 
   beforeEach(() => {
     // Clean up session-scoped counter files before each test so counts reset.
-    const { execSync } = require('child_process');
+    const { execSync } = require('node:child_process');
     try {
       execSync('rm -f /tmp/.claude-task-count-*');
     } catch {
@@ -692,7 +692,7 @@ describe('session-env-check.sh', () => {
 
   afterEach(() => {
     // Clean up status files created during tests.
-    const { execSync } = require('child_process');
+    const { execSync } = require('node:child_process');
     try {
       execSync('rm -f /tmp/.claude-env-status-*');
     } catch {
@@ -753,7 +753,7 @@ describe('session-env-check.sh', () => {
 
   it('should create a status file in /tmp', async () => {
     await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
-    const { execSync } = require('child_process');
+    const { execSync } = require('node:child_process');
     // The file is named .claude-env-status-<PPID>; at least one must exist after the run.
     const output = execSync('ls /tmp/.claude-env-status-* 2>/dev/null || echo "none"')
       .toString()
