@@ -308,7 +308,6 @@ function renderGitFlowKO(r: GitWorkflowResult): string {
   if (r.branchPatterns.includes('hotfix/*')) {
     lines.push(`| \`hotfix/*\` | 긴급 수정 -> 태그 -> 배포 -> ${r.defaultBranch} 머지 |`);
   }
-  /* v8 ignore next 3 */
   if (r.branchPatterns.includes('bugfix/*')) {
     lines.push(`| \`bugfix/*\` | 버그 수정 -> ${r.defaultBranch}으로 PR |`);
   }

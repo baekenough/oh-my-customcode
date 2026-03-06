@@ -428,10 +428,6 @@ async function installComponent(
   }
 
   const templatePath = getComponentPath(component);
-  if (!templatePath) {
-    return false;
-  }
-
   const destPath = join(targetDir, templatePath);
   const destExists = await fileExists(destPath);
 

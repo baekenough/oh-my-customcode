@@ -322,7 +322,36 @@ agents:
       - gather
     base_confidence: 50
     action_weight: 30
-    routing_note: "Uses codex-exec skill with xhigh effort when available, falls back to WebFetch/WebSearch"
+    routing_rule: "MUST use codex-exec --effort xhigh when codex available, fallback to WebFetch/WebSearch"
+
+  # ---------------------------------------------------------------------------
+  # Code Generation (hybrid workflow, skill-based)
+  # ---------------------------------------------------------------------------
+  code-generation-workflow:
+    keywords:
+      korean:
+        - 구현
+        - 만들어
+        - 생성해
+        - 작성해
+        - 스캐폴딩
+        - 보일러플레이트
+      english:
+        - implement
+        - create
+        - generate
+        - scaffold
+        - boilerplate
+        - "write code"
+    file_patterns: []
+    supported_actions:
+      - implement
+      - create
+      - generate
+      - scaffold
+    base_confidence: 30
+    action_weight: 25
+    routing_rule: "Suggest codex-exec hybrid when codex available and task is new file creation"
 
   # Managers (continued)
   mgr-gitnerd:
@@ -374,4 +403,3 @@ agents:
     file_patterns: []
     supported_actions: [manage, create, coordinate]
     base_confidence: 40
-

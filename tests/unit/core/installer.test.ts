@@ -9,6 +9,7 @@ import {
   getTemplateManifest,
   install,
 } from '../../../src/core/installer.js';
+import { getComponentPath } from '../../../src/core/layout.js';
 import * as fsUtils from '../../../src/utils/fs.js';
 
 const { fileExists } = fsUtils;
@@ -702,6 +703,55 @@ describe('installer', () => {
       expect(result).toBeDefined();
 
       renameSpy.mockRestore();
+    });
+
+    it('should handle missing statusline template gracefully', async () => {
+      // Mock fileExists to return false for statusline.sh source path in templates
+      const originalFileExists = fsUtils.fileExists;
+      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(async (path) => {
+        const pathStr = String(path);
+        // Return false for statusline.sh template source
+        if (pathStr.includes('templates') && pathStr.endsWith('statusline.sh')) {
+          return false;
+        }
+        return originalFileExists(path);
+      });
+
+      const result = await install({
+        targetDir: tempDir,
+        skipConfirm: true,
+      });
+
+      // Install should still succeed even without statusline template
+      expect(result.success).toBe(true);
+
+      fileExistsSpy.mockRestore();
+    });
+
+    it('should handle malformed settings.local.json gracefully', async () => {
+      // Create a malformed settings.local.json
+      const fs = await import('node:fs/promises');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      await fs.writeFile(settingsPath, '{ invalid json content }', 'utf-8');
+
+      const result = await install({
+        targetDir: tempDir,
+        skipConfirm: true,
+      });
+
+      // Install should succeed, with a warning about the malformed JSON
+      expect(result.success).toBe(true);
+      expect(
+        result.warnings.some((w) => w.includes('Failed to parse existing settings.local.json'))
+      ).toBe(true);
+    });
+  });
+
+  describe('layout functions', () => {
+    it('should return CLAUDE.md path for entry-md component', () => {
+      const path = getComponentPath('entry-md');
+      expect(path).toBe('CLAUDE.md');
     });
   });
 });

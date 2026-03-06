@@ -45,6 +45,33 @@ Routes data engineering tasks to appropriate DE expert agents. This skill contai
 | Kafka configs, `*.properties` (Kafka), `streams/*.java` | de-kafka-expert |
 | Snowflake SQL, warehouse DDL | de-snowflake-expert |
 
+## Routing Decision (Priority Order)
+
+Before routing via Task tool, evaluate in this order:
+
+### Step 1: Agent Teams Eligibility (R018)
+Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single-tool DE task | Task Tool |
+| Multi-tool pipeline design (3+ tools) | Agent Teams |
+| Cross-tool data quality analysis | Agent Teams |
+| Quick DAG/model validation | Task Tool |
+
+### Step 2: Codex-Exec Hybrid (Code Generation)
+For **new pipeline code**, **DAG scaffolding**, or **SQL model generation**:
+
+1. Check `/tmp/.claude-env-status-*` for codex availability
+2. If codex available → suggest hybrid workflow for code generation
+3. If codex unavailable → use DE expert directly
+
+**Suitable**: New DAG files, dbt model scaffolding, SQL template generation
+**Unsuitable**: Existing pipeline modification, architecture decisions, data quality analysis
+
+### Step 3: Expert Selection
+Route to appropriate DE expert based on tool/framework detection.
+
 ## Command Routing
 
 ```
@@ -241,19 +268,6 @@ Delegate to mgr-creator with context:
 - New data tools (e.g., "Dagster DAG 만들어줘", "Flink 스트리밍 설정해줘")
 - Unfamiliar data formats or connectors
 - Data tool detected in project but no specialist agent
-
-## Agent Teams Awareness
-
-Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
-
-**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
-
-| Scenario | Preferred |
-|----------|-----------|
-| Single-tool DE task | Task Tool |
-| Multi-tool pipeline design (3+ tools) | Agent Teams |
-| Cross-tool data quality analysis | Agent Teams |
-| Quick DAG/model validation | Task Tool |
 
 ## Usage
 
