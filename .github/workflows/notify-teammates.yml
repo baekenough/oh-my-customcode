@@ -59,7 +59,7 @@ jobs:
 
       - name: Analyze and notify teammates
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.OH_MY_CUSTOMCODE }}
           # OH_MY_TEAMMATES_GH_PAT requires 'repo' scope for cross-repo issue creation in baekenough/oh-my-teammates
           # GITHUB_TOKEN cannot be used here as it is scoped to the current repository only
           GITHUB_TOKEN: ${{ secrets.OH_MY_TEAMMATES_GH_PAT }}
