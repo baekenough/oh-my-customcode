@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.19.2] - 2026-03-06
+## [0.19.3] - 2026-03-06
 
 ### Added
 - `/analysis` slash command for automatic project analysis and customization
