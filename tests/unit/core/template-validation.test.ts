@@ -465,7 +465,7 @@ describe('Template Validation', () => {
       const readmePath = resolve(import.meta.dir, '../../../README.md');
       const readmeContent = await readFile(readmePath, 'utf-8');
 
-      // Match "### Skills (55)" pattern
+      // Match "### Skills (56)" pattern
       const skillsHeaderMatch = readmeContent.match(/###\s+Skills\s+\((\d+)\)/);
       expect(skillsHeaderMatch).not.toBeNull();
 
