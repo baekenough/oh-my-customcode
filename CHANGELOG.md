@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.5] - 2026-03-06
+
+### Fixed
+- Extract Stop hook inline script to external `stop-console-audit.sh` with session diagnostics (#206)
+- Document Claude Code internal stop evaluator false positive as platform limitation (#206)
+
+### Added
+- Comprehensive hook script tests: 52 test cases for stop-console-audit, stage-blocker, git-delegation-guard
+
 ## [0.18.4] - 2026-03-05
 
 ### Fixed
