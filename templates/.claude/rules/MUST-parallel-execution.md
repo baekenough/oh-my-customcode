@@ -15,12 +15,30 @@ Independent (MUST parallelize):
 
 Examples: creating multiple agents, reviewing multiple files, batch operations on different resources.
 
+## Agent Teams Gate (R018 Integration)
+
+Before spawning parallel Task instances, evaluate Agent Teams eligibility:
+
+```
+2+ independent tasks detected
+  ↓
+Is Agent Teams available? (env or tools check)
+  ├─ NO → Proceed with Task tool (standard R009)
+  └─ YES → Check eligibility:
+       ├─ 3+ agents needed? → Agent Teams (MUST)
+       ├─ Review → fix cycle? → Agent Teams (MUST)
+       └─ Neither → Task tool (standard R009)
+```
+
+This gate is MANDATORY when Agent Teams is enabled. Skipping it is a violation of both R009 and R018.
+
 ## Self-Check
 
 Before writing/editing multiple files:
 1. Are files independent? → YES: spawn parallel Task agents
 2. Using Write/Edit sequentially for 2+ files? → STOP, parallelize
 3. Specialized agent available? → Use it (not general-purpose)
+4. Agent Teams available + 3+ agents or review cycle? → YES: use Agent Teams instead of Task
 
 ### Common Violations to Avoid
 

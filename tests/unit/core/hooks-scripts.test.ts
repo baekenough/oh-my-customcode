@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { execFileSync, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
@@ -11,6 +11,8 @@ const HOOKS_JSON_PATH = resolve(import.meta.dir, '../../../templates/.claude/hoo
 const STAGE_BLOCKER_SCRIPT = join(SCRIPTS_DIR, 'stage-blocker.sh');
 const GIT_DELEGATION_GUARD_SCRIPT = join(SCRIPTS_DIR, 'git-delegation-guard.sh');
 const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
+const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
+const SESSION_ENV_CHECK_SCRIPT = join(SCRIPTS_DIR, 'session-env-check.sh');
 
 const STAGE_FILE = '/tmp/.claude-dev-stage';
 
@@ -533,6 +535,255 @@ describe('git-delegation-guard.sh', () => {
 });
 
 // -------------------------------------------------------------------
+// agent-teams-advisor.sh
+// -------------------------------------------------------------------
+
+describe('agent-teams-advisor.sh', () => {
+  /** Build a Task hook JSON payload using the `description` field the script actually reads. */
+  function makeAdvisorInput(agentType: string, description: string): string {
+    return JSON.stringify({
+      tool_input: {
+        subagent_type: agentType,
+        description,
+        model: 'sonnet',
+      },
+    });
+  }
+
+  beforeEach(() => {
+    // Clean up session-scoped counter files before each test so counts reset.
+    const { execSync } = require('child_process');
+    try {
+      execSync('rm -f /tmp/.claude-task-count-*');
+    } catch {
+      // ignore if no files exist
+    }
+  });
+
+  // --- Basic pass-through behavior ---
+
+  it('should always exit with code 0', async () => {
+    const input = makeAdvisorInput('lang-typescript-expert', 'Review code');
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('should pass stdin through to stdout unchanged', async () => {
+    const input = makeAdvisorInput('lang-golang-expert', 'Write Go code');
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  // --- Counter and warning behavior ---
+
+  it('should not show warning on first Task call', async () => {
+    const input = makeAdvisorInput('lang-typescript-expert', 'First call');
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.stderr).not.toContain('R018 Advisor');
+    expect(result.stderr).not.toContain('Multiple Task calls');
+  });
+
+  it('should show R018 warning on second Task call', async () => {
+    const input = makeAdvisorInput('lang-typescript-expert', 'Second call');
+    // First call — no warning
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    // Second call — warning appears
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.stderr).toContain('R018 Advisor');
+    expect(result.stderr).toContain('Task tool call #2');
+  });
+
+  it('should show warning on third and subsequent calls', async () => {
+    const input = makeAdvisorInput('lang-typescript-expert', 'Call');
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.stderr).toContain('Task tool call #3');
+  });
+
+  it('should include agent type in warning', async () => {
+    const input = makeAdvisorInput('lang-golang-expert', 'Go review');
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.stderr).toContain('lang-golang-expert');
+  });
+
+  it('should include description preview in warning', async () => {
+    const input = makeAdvisorInput('fe-vercel-agent', 'React component optimization');
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.stderr).toContain('React component optimization');
+  });
+
+  it('should mention Agent Teams considerations in warning', async () => {
+    const input = makeAdvisorInput('lang-typescript-expert', 'Test');
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    // Verify all three consideration bullets are present
+    expect(result.stderr).toContain('3+ agents');
+    expect(result.stderr).toContain('review');
+    expect(result.stderr).toContain('shared state');
+  });
+
+  it('should increment counter correctly across multiple calls', async () => {
+    const input = makeAdvisorInput('test-agent', 'Counting test');
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input); // 1
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input); // 2
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input); // 3
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input); // 4
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input); // 5
+    expect(result.stderr).toContain('Task tool call #5');
+  });
+
+  it('should always pass through stdin even when warning is shown', async () => {
+    const input = makeAdvisorInput('mgr-gitnerd', 'Git push');
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.exitCode).toBe(0);
+  });
+
+  // --- Edge cases ---
+
+  it('should handle missing subagent_type gracefully', async () => {
+    const input = JSON.stringify({ tool_input: { description: 'no agent type' } });
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('should handle empty JSON input', async () => {
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, '{}');
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('should exit non-zero on malformed JSON due to set -euo pipefail', async () => {
+    // The script uses set -euo pipefail; jq parse error causes non-zero exit.
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, 'not json');
+    expect(result.exitCode).not.toBe(0);
+  });
+
+  it('should truncate long descriptions to 60 characters in warning', async () => {
+    const longDesc = 'A'.repeat(100);
+    const input = makeAdvisorInput('lang-typescript-expert', longDesc);
+    await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    // head -c 60 truncates; the full 100-char string must not appear
+    expect(result.stderr).not.toContain('A'.repeat(100));
+    // But the first 60 chars should be present
+    expect(result.stderr).toContain('A'.repeat(60));
+  });
+
+  it('should not block task execution — exit 0 on repeated calls', async () => {
+    const input = makeAdvisorInput('lang-typescript-expert', 'Important task');
+    for (let i = 0; i < 10; i++) {
+      const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+      expect(result.exitCode).toBe(0);
+    }
+  });
+});
+
+// -------------------------------------------------------------------
+// session-env-check.sh
+// -------------------------------------------------------------------
+
+describe('session-env-check.sh', () => {
+  const sessionInput = JSON.stringify({ event: 'session_start' });
+
+  afterEach(() => {
+    // Clean up status files created during tests.
+    const { execSync } = require('child_process');
+    try {
+      execSync('rm -f /tmp/.claude-env-status-*');
+    } catch {
+      // ignore if no files exist
+    }
+  });
+
+  // --- Basic pass-through behavior ---
+
+  it('should always exit with code 0', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('should pass stdin through to stdout', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    expect(result.stdout.trim()).toBe(sessionInput);
+  });
+
+  // --- Environment check output ---
+
+  it('should output environment check header to stderr', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    expect(result.stderr).toContain('Session Environment Check');
+  });
+
+  it('should report codex CLI status in stderr', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    expect(result.stderr).toContain('codex CLI:');
+  });
+
+  it('should report Agent Teams status in stderr', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    expect(result.stderr).toContain('Agent Teams:');
+  });
+
+  it('should show Agent Teams disabled when env var is not set to 1', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
+      CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '0',
+    });
+    expect(result.stderr).toContain('Agent Teams: disabled');
+  });
+
+  it('should show Agent Teams enabled when env var is 1', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
+      CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
+    });
+    expect(result.stderr).toContain('Agent Teams: enabled');
+  });
+
+  it('should show codex unavailable when binary is not in PATH', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
+      PATH: '/usr/bin:/bin',
+      OPENAI_API_KEY: '',
+    });
+    expect(result.stderr).toContain('codex CLI: unavailable');
+  });
+
+  it('should create a status file in /tmp', async () => {
+    await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    const { execSync } = require('child_process');
+    // The file is named .claude-env-status-<PPID>; at least one must exist after the run.
+    const output = execSync('ls /tmp/.claude-env-status-* 2>/dev/null || echo "none"')
+      .toString()
+      .trim();
+    expect(output).not.toBe('none');
+  });
+
+  it('should handle empty stdin gracefully', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, '');
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('should handle arbitrary JSON stdin and pass it through', async () => {
+    const input = JSON.stringify({ complex: { nested: true } });
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, input);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('should report both codex CLI and Agent Teams statuses in a single run', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
+    const stderrLines = result.stderr.split('\n');
+    const codexLine = stderrLines.find((l) => l.includes('codex CLI:'));
+    const teamsLine = stderrLines.find((l) => l.includes('Agent Teams:'));
+    expect(codexLine).toBeDefined();
+    expect(teamsLine).toBeDefined();
+  });
+});
+
+// -------------------------------------------------------------------
 // Script file validation
 // -------------------------------------------------------------------
 
@@ -541,6 +792,8 @@ describe('Script file validation', () => {
     'stage-blocker.sh',
     'git-delegation-guard.sh',
     'stop-console-audit.sh',
+    'agent-teams-advisor.sh',
+    'session-env-check.sh',
   ] as const;
 
   it('all expected scripts should exist in the templates directory', async () => {

@@ -73,6 +73,36 @@ user-invocable: false
 | Code review/implementation | sonnet |
 | Quick validation/search | haiku |
 
+## Routing Decision (Priority Order)
+
+Before selecting an expert agent, evaluate in this order:
+
+### Step 1: Agent Teams Eligibility (R018)
+Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single-language review | Task Tool |
+| Multi-language code review (3+) | Agent Teams |
+| Code review + fix cycle | Agent Teams |
+| Cross-layer debugging (FE + BE + DB) | Agent Teams |
+| Simple file search/validation | Task Tool |
+
+### Step 2: Codex-Exec Hybrid (Implementation Tasks)
+For **new file creation**, **boilerplate**, or **test code generation**:
+
+1. Check `/tmp/.claude-env-status-*` for codex availability
+2. If codex available → suggest hybrid workflow:
+   - codex-exec generates initial code (strength: fast generation)
+   - Claude expert reviews and refines (strength: reasoning, quality)
+3. If codex unavailable → use Claude expert directly
+
+**Suitable**: New file creation, boilerplate, scaffolding, test code
+**Unsuitable**: Existing code modification, architecture decisions, bug fixes
+
+### Step 3: Expert Agent Selection
+Route to appropriate language/framework expert based on file extension and keyword mapping.
+
 ## Routing Rules
 
 Multi-language: detect all languages, route to parallel experts (max 4). Single-language: route to matching expert. Cross-layer (frontend + backend): multiple experts in parallel.
@@ -99,19 +129,5 @@ Delegate to mgr-creator with context:
 - Unrecognized file extension (e.g., `.rb` → Ruby expert, `.swift` → Swift expert)
 - New framework keyword (e.g., "Flutter 앱 리뷰해줘", "Rails API 만들어줘")
 - Language detected but no specialist exists
-
-## Agent Teams Awareness
-
-Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
-
-**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
-
-| Scenario | Preferred |
-|----------|-----------|
-| Single-language review | Task Tool |
-| Multi-language code review (3+) | Agent Teams |
-| Code review + fix cycle | Agent Teams |
-| Cross-layer debugging (FE + BE + DB) | Agent Teams |
-| Simple file search/validation | Task Tool |
 
 Not user-invocable. Auto-triggered on development intent.
