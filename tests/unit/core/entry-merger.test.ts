@@ -88,6 +88,20 @@ Managed with whitespace
       expect(result.sections[0].content).toBe('Managed with whitespace');
     });
 
+    it('should handle stray end marker without matching start marker', () => {
+      const content = `Custom content
+<!-- omcustom:end -->
+More custom content`;
+
+      const result = parseEntryDoc(content);
+
+      // Stray end marker is ignored, all content treated as custom
+      expect(result.sections.length).toBe(1);
+      expect(result.sections[0].type).toBe('custom');
+      expect(result.sections[0].content).toContain('Custom content');
+      expect(result.sections[0].content).toContain('More custom content');
+    });
+
     it('should handle unclosed managed section', () => {
       const content = `<!-- omcustom:start -->
 Unclosed managed section`;

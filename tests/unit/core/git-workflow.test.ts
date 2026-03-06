@@ -370,6 +370,18 @@ describe('git-workflow', () => {
       expect(rendered).toContain('긴급 수정');
     });
 
+    it('should render git-flow section with bugfix pattern in Korean', () => {
+      const result: GitWorkflowResult = {
+        type: 'git-flow',
+        defaultBranch: 'develop',
+        hasDevelop: true,
+        branchPatterns: ['bugfix/*', 'feature/*'],
+      };
+      const rendered = renderGitWorkflowKO(result);
+      expect(rendered).toContain('`bugfix/*`');
+      expect(rendered).toContain('버그 수정');
+    });
+
     it('should render github-flow section in Korean', () => {
       const result: GitWorkflowResult = {
         type: 'github-flow',

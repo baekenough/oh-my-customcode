@@ -35,16 +35,16 @@ BEFORE using Task tool for 2+ agent tasks, this check is **ENFORCED**:
 ║     YES → MUST check criteria #2-#5                              ║
 ║     NO  → Proceed with Task tool                                ║
 ║                                                                   ║
-║  2. Do 2+ agents need to coordinate? → Agent Teams              ║
-║  3. Is there a review/fix/iterate cycle? → Agent Teams          ║
-║  4. Do agents need shared state? → Agent Teams                   ║
-║  5. Is research requiring synthesis? → Agent Teams              ║
+║  2. Will 3+ agents be involved?                                  ║
+║     YES → MUST use Agent Teams                                   ║
+║     NO  → Check #3                                               ║
 ║                                                                   ║
-║  If YES to #1 AND any of #2-#5:                                  ║
-║  → MUST use Agent Teams                                          ║
-║  → Using Task tool instead is a VIOLATION                        ║
+║  3. Is there a review → fix → re-review cycle?                  ║
+║     YES → MUST use Agent Teams                                   ║
+║     NO  → Proceed with Task tool                                 ║
 ║                                                                   ║
-║  Exception: Cost-sensitive batch ops with no inter-agent need    ║
+║  Simple rule: 3+ agents OR review cycle → Agent Teams            ║
+║  Everything else → Task tool                                     ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -156,12 +156,14 @@ TeamCreate → TaskCreate → Task(spawn members) → SendMessage(coordinate)
 
 ## Fallback
 
-When Agent Teams unavailable: use Task tool with R009/R010 rules. Both approaches produce results; Agent Teams adds coordination richness.
+When Agent Teams unavailable: use Task tool with R009/R010 rules.
+When Agent Teams available: actively prefer it for qualifying tasks. This is not optional.
 
 ## Cost Awareness
 
-Agent Teams uses more tokens (full context per member + message passing). Use Task tool when:
-- Task takes < 3 minutes
-- No inter-agent communication needed
-- Simple independent subtasks only
-- Cost is the primary concern
+Agent Teams actively preferred for qualifying collaborative tasks. Use Task tool only when:
+- 1-2 agents with no inter-dependency
+- No review → fix cycles
+- Simple independent subtasks
+
+Do NOT avoid Agent Teams solely for cost reasons when criteria are met.

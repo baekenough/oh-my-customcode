@@ -72,9 +72,25 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/git-delegation-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/agent-teams-advisor.sh"
           }
         ],
-        "description": "HUD statusline + R010 git delegation guard on Task spawn"
+        "description": "HUD statusline + R010 git delegation guard + R018 Agent Teams advisor on Task spawn"
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/session-env-check.sh"
+          }
+        ],
+        "description": "Check codex CLI and Agent Teams availability at session start"
       }
     ],
     "PostToolUse": [

@@ -23,6 +23,19 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 | sys-memory-keeper | Memory operations | "save memory", "recall", "memory search" |
 | sys-naggy | TODO management | "todo", "track tasks", "task list" |
 
+## Routing Decision (Priority Order)
+
+Before routing via Task tool, evaluate Agent Teams eligibility first:
+
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single manager task | Task Tool |
+| Batch agent creation (3+) | Agent Teams |
+| Multi-round verification (sauron) | Task Tool |
+| Agent audit + fix cycle | Agent Teams |
+
 ## Command Routing
 
 ```
@@ -75,19 +88,6 @@ When command requires multiple independent operations:
 | mgr-claude-code-bible | sonnet | Spec compliance checks |
 | sys-memory-keeper | sonnet | Memory operations, search |
 | sys-naggy | haiku | Simple TODO tracking |
-
-## Agent Teams Awareness
-
-Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
-
-**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
-
-| Scenario | Preferred |
-|----------|-----------|
-| Single manager task | Task Tool |
-| Batch agent creation (3+) | Agent Teams |
-| Multi-round verification (sauron) | Task Tool |
-| Agent audit + fix cycle | Agent Teams |
 
 ## No Match Fallback
 
