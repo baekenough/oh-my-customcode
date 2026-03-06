@@ -342,4 +342,37 @@ describe('Hooks Validation', () => {
       expect(stageBlockingHook?.description.trim().length).toBeGreaterThan(0);
     });
   });
+
+  describe('Stop hook', () => {
+    it('should reference stop-console-audit.sh script', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+      const entries = data.hooks.Stop ?? [];
+
+      const stopHook = entries.find((entry) => entry.matcher === '*');
+      expect(stopHook).toBeDefined();
+      const command = stopHook?.hooks[0].command ?? '';
+      expect(command).toContain('stop-console-audit.sh');
+    });
+
+    it('should have the stop-console-audit script file', async () => {
+      const scriptPath = resolve(
+        import.meta.dir,
+        '../../../templates/.claude/hooks/scripts/stop-console-audit.sh'
+      );
+      const scriptContent = await readFile(scriptPath, 'utf-8');
+      expect(scriptContent).toContain('console');
+      expect(scriptContent).toContain('exit 0');
+    });
+
+    it('should have session diagnostics in stop script', async () => {
+      const scriptPath = resolve(
+        import.meta.dir,
+        '../../../templates/.claude/hooks/scripts/stop-console-audit.sh'
+      );
+      const scriptContent = await readFile(scriptPath, 'utf-8');
+      expect(scriptContent).toContain('Session safe to terminate');
+      expect(scriptContent).toContain('audit');
+    });
+  });
 });
