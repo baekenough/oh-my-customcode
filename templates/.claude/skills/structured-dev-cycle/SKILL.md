@@ -77,6 +77,15 @@ A PreToolUse hook in `.claude/hooks/hooks.json` checks this marker and blocks Wr
 └── Output: Implementation complete
 ```
 
+**Codex-Exec Hybrid Option**: When entering Stage 3:
+1. Check `/tmp/.claude-env-status-*` for codex CLI availability
+2. If available AND task involves new file creation:
+   - Suggest: `[Codex Hybrid Available] New file generation can use codex-exec for faster scaffolding. Orchestrator may delegate initial code generation to codex-exec, then have Claude expert review.`
+3. If unavailable → proceed with standard implementation via Claude experts
+
+Suitable for codex hybrid: new files, boilerplate, test stubs, scaffolding
+Not suitable: modifying existing code, architecture-dependent changes
+
 **Exit criteria**: All planned files created/modified, tests written.
 
 ### Stage 4: Verify Implementation
@@ -127,11 +136,13 @@ Stage 2 (Verify Plan) and Stage 4 (Verify Implementation) can invoke the `multi-
 The stage marker file (`/tmp/.claude-dev-stage`) is read by a PreToolUse hook that enforces tool restrictions. This provides a safety net beyond instruction-based compliance.
 
 ### With Agent Teams
-For complex tasks, each stage can be handled by specialized team members:
+For complex tasks, Agent Teams is **preferred** when available (R018):
 - Plan: architect agent
-- Verify: reviewer agent(s)
-- Implement: domain expert agent
+- Verify: reviewer agent(s) — multi-model-verification via Agent Teams
+- Implement: domain expert agent (+ codex-exec hybrid if available)
 - Compound: QA agent
+
+When Agent Teams is enabled AND task involves 3+ agents or review→fix cycles, using Agent Teams is MANDATORY per R018.
 
 ## When to Use
 

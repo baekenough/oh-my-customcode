@@ -134,7 +134,7 @@ codex-exec requires the Codex CLI binary to be installed and authenticated. The 
 
 If either check fails, this skill cannot be used. Fall back to Claude agents for the task.
 
-> **Note**: `disable-model-invocation: true` is set intentionally. This skill must be explicitly invoked via `/codex-exec` or delegated by the orchestrator. It is NOT auto-invoked by the model.
+> **Note**: This skill is invoked via `/codex-exec` command, delegated by the orchestrator, or suggested by routing skills when codex is available. The intent-detection system can trigger it for research (xhigh) and code generation (hybrid) workflows.
 
 ## Agent Teams Integration
 
@@ -154,7 +154,7 @@ Orchestrator delegates generation task
 
 ## Research Workflow
 
-When the orchestrator detects a research/information gathering request:
+When the orchestrator or intent-detection detects a research/information gathering request (routing_rule in agent-triggers.yaml):
 
 1. **Check Codex availability**: Verify `codex` binary and `OPENAI_API_KEY`
 2. **If available**: Execute with xhigh reasoning effort for thorough research
@@ -175,3 +175,30 @@ When the orchestrator detects a research/information gathering request:
 | medium | General tasks | Balanced | Standard |
 | high | Complex analysis | Slower | Deep |
 | xhigh | Research & investigation | Slowest | Maximum |
+
+## Code Generation Workflow
+
+When routing skills detect a code generation task and codex is available:
+
+1. **Check availability**: Verify codex CLI via `/tmp/.claude-env-status-*`
+2. **If available + new file creation**: Suggest hybrid workflow
+3. **Hybrid pattern**:
+   - codex-exec generates initial code (fast, broad generation)
+   - Claude expert reviews for quality, patterns, best practices
+   - Iterate if needed
+
+### Suitable Tasks
+- New file scaffolding
+- Boilerplate generation
+- Test stub creation
+- Documentation generation
+
+### Unsuitable Tasks
+- Modifying existing code (Claude expert better at understanding context)
+- Architecture decisions (requires reasoning, not generation)
+- Bug fixes (requires deep code understanding)
+
+### Code Generation Command Pattern
+```
+/codex-exec "Generate {description} following {framework} best practices" --effort high --full-auto
+```

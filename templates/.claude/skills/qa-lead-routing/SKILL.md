@@ -18,6 +18,19 @@ Coordinates QA team activities by routing tasks to qa-planner, qa-writer, and qa
 | qa-writer | Documentation | Test cases, test reports, templates |
 | qa-engineer | Execution | Test results, defect reports, coverage reports |
 
+## Routing Decision (Priority Order)
+
+Before routing via Task tool, evaluate Agent Teams eligibility first:
+
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+
+| Scenario | Preferred |
+|----------|-----------|
+| Single QA phase (plan/write/execute) | Task Tool |
+| Full QA cycle (plan + write + execute + report) | Agent Teams |
+| Quality analysis (parallel strategy + results) | Agent Teams |
+| Quick test validation | Task Tool |
+
 ## Command Routing
 
 ```
@@ -286,19 +299,6 @@ Delegate to mgr-creator with context:
 - New testing frameworks (e.g., "Cypress E2E 테스트 작성해줘", "k6 부하 테스트 설계해줘")
 - Specialized QA methodologies (e.g., "뮤테이션 테스트 전략 만들어줘")
 - Performance/security testing tools not covered by existing agents
-
-## Agent Teams Awareness
-
-Before routing via Task tool, check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
-
-**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
-
-| Scenario | Preferred |
-|----------|-----------|
-| Single QA phase (plan/write/execute) | Task Tool |
-| Full QA cycle (plan + write + execute + report) | Agent Teams |
-| Quality analysis (parallel strategy + results) | Agent Teams |
-| Quick test validation | Task Tool |
 
 ## Usage
 

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-03-06
+
+### Added
+- Agent Teams advisor hook: automatic R018 eligibility warning on 2+ Task calls (#207)
+- Session environment check hook: codex CLI and Agent Teams availability at session start (#207)
+- Codex-exec code generation workflow for hybrid Claude+Codex implementation (#207)
+- Code generation trigger in intent-detection patterns (#207)
+
+### Changed
+- R009 (Parallel Execution): add Agent Teams Gate requiring R018 eligibility check before Task tool (#207)
+- R018 (Agent Teams): simplify self-check from 5 conditions to 2 heuristics (3+ agents OR review cycle) (#207)
+- R018 (Agent Teams): change tone from cost-avoidant to actively preferred (#207)
+- Move "Agent Teams Awareness" from document bottom to "Routing Decision" priority section in all 4 routing skills (#207)
+- Add codex-exec hybrid option to dev-lead-routing and de-lead-routing (#207)
+- Upgrade research-workflow routing_note to routing_rule (MUST) in agent-triggers.yaml (#207)
+- Add codex-exec suggestion to structured-dev-cycle Stage 3 (Implement) (#207)
+- Update codex-exec SKILL.md: remove disable-model-invocation note, add code generation workflow (#207)
+
 ## [0.18.5] - 2026-03-06
 
 ### Fixed
