@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-03-06
+
+### Added
+- `/analysis` slash command for automatic project analysis and customization
+- Project tech stack detection with agent/skill mapping for 24+ technologies
+- Gap analysis comparing detected stack with installed components
+- Auto-configuration workflow with dry-run and verbose options
+
 ## [0.19.0] - 2026-03-06
 
 ### Added

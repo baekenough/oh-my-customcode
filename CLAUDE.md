@@ -145,6 +145,7 @@ oh-my-customcode로 구동됩니다.
 
 | 커맨드 | 설명 |
 |--------|------|
+| `/analysis` | 프로젝트 분석 및 자동 커스터마이징 |
 | `/create-agent` | 새 에이전트 생성 |
 | `/update-docs` | 프로젝트 구조와 문서 동기화 |
 | `/update-external` | 외부 소스에서 에이전트 업데이트 |
@@ -174,7 +175,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (41 파일)
-|   +-- skills/                  # 스킬 (55 디렉토리)
+|   +-- skills/                  # 스킬 (56 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R018)
 |   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -238,6 +239,9 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 ## 빠른 참조
 
 ```bash
+# 프로젝트 분석
+/analysis
+
 # 모든 커맨드 표시
 /lists
 

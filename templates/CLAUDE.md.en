@@ -145,6 +145,7 @@ Violation = immediate correction. No exception for "small changes".
 
 | Command | Description |
 |---------|-------------|
+| `/analysis` | Analyze project and auto-configure customizations |
 | `/create-agent` | Create a new agent |
 | `/update-docs` | Sync documentation with project structure |
 | `/update-external` | Update agents from external sources |
@@ -174,7 +175,7 @@ project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (41 files)
-|   +-- skills/                  # Skills (55 directories)
+|   +-- skills/                  # Skills (56 directories)
 |   +-- rules/                   # Global rules (R000-R018)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
@@ -238,6 +239,9 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 ## Quick Reference
 
 ```bash
+# Project analysis
+/analysis
+
 # Show all commands
 /lists
 
