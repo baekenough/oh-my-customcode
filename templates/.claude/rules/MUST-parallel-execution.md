@@ -39,6 +39,7 @@ Before writing/editing multiple files:
 2. Using Write/Edit sequentially for 2+ files? → STOP, parallelize
 3. Specialized agent available? → Use it (not general-purpose)
 4. Agent Teams available + 3+ agents or review cycle? → YES: use Agent Teams instead of Task
+5. Agent Teams members? → ALL members MUST spawn in a single message (no partial spawning)
 
 ### Common Violations to Avoid
 
@@ -79,6 +80,18 @@ Before writing/editing multiple files:
    Task(lang-kotlin-expert → usecase queries)     ├─ All spawned together
    Task(be-springboot-expert → persistence)       │
    Task(be-springboot-expert → security)          ┘
+
+❌ WRONG: Agent Teams partial spawn (1 of N members)
+   TeamCreate("feature-team")
+   Message 1: Task(member-1)  ← only 1/3 spawned, VIOLATION
+   Message 2: Task(member-2)  ← sequential, VIOLATION
+   Message 3: Task(member-3)  ← sequential, VIOLATION
+
+✓ CORRECT: All Agent Teams members in single message
+   TeamCreate("feature-team")
+   Task(member-1)  ┐
+   Task(member-2)  ├─ Single message, all at once
+   Task(member-3)  ┘
 ```
 
 ## Execution Rules
