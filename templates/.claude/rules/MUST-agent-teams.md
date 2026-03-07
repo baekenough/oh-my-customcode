@@ -48,6 +48,28 @@ BEFORE using Task tool for 2+ agent tasks, this check is **ENFORCED**:
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
+### Spawn Completeness Check (MANDATORY)
+
+When spawning Agent Teams members:
+
+**ALL members MUST be spawned in a SINGLE message.** Partial spawning is a VIOLATION of both R018 and R009.
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE SPAWNING TEAM MEMBERS:                                   ║
+║                                                                   ║
+║  1. How many members does this team need?  N = ___               ║
+║  2. Am I spawning ALL N members in THIS message?                 ║
+║     YES → Good. Continue.                                        ║
+║     NO  → STOP. This is a VIOLATION.                             ║
+║           All N members MUST be in the same message.             ║
+║                                                                   ║
+║  Partial spawn (e.g., 1/3) = VIOLATION                           ║
+║  Sequential spawn (one per message) = VIOLATION                  ║
+║  All at once in single message = CORRECT                         ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 ## Common Violations
 
 ```
@@ -87,6 +109,19 @@ BEFORE using Task tool for 2+ agent tasks, this check is **ENFORCED**:
    Task(frontend-dev) + Task(backend-dev) → team members
    Shared TaskList for interface contracts
    SendMessage for API schema coordination
+
+❌ WRONG: Spawning team members one at a time
+   TeamCreate("research-team")
+   Message 1: Task(researcher-1) → Analysis 1   (only 1/3 spawned)
+   Message 2: Task(researcher-2) → Analysis 2   (late spawn)
+   Message 3: Task(researcher-3) → Analysis 3   (late spawn)
+
+✓ CORRECT: All members in a single message
+   TeamCreate("research-team")
+   Single message:
+     Task(researcher-1) → Analysis 1  ┐
+     Task(researcher-2) → Analysis 2  ├─ ALL spawned together
+     Task(researcher-3) → Analysis 3  ┘
 ```
 
 ## Cost Guidelines
