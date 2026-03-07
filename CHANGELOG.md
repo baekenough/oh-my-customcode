@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-03-07
+
+### Added
+- DAG Orchestration skill — YAML-based workflow engine with Kahn's topological sort and failure strategies
+- Task Decomposition skill — auto-decompose large tasks into DAG-compatible parallel subtasks
+- Common workflow templates: feature implementation, code review, multi-language, refactoring
+- Decomposition heuristics: by file independence, domain separation, and layer
+
 ## [0.20.0] - 2026-03-07
 
 ### Added
