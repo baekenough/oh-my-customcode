@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 41 agents, 55 skills, 22 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 41 agents, 60 skills, 22 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -124,20 +124,20 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Total** | **41** | |
 
-### Skills (58)
+### Skills (60)
 
 | Category | Count | Skills |
 |----------|-------|--------|
 | **Routing** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
 | **Best Practices** | 18 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices |
-| **Development** | 5 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines |
+| **Development** | 6 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines, analysis |
 | **Data Engineering** | 2 | spark-best-practices, pipeline-architecture-patterns |
 | **Optimization** | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | **Memory** | 3 | memory-save, memory-recall, memory-management |
 | **Package Management** | 3 | npm-publish, npm-version, npm-audit |
 | **Operations** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
 | **Utilities** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
-| **Quality & Workflow** | 4 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery |
+| **Quality & Workflow** | 6 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition |
 | **Deploy** | 2 | vercel-deploy, codex-exec |
 | **External** | 1 | skills-sh-search |
 
@@ -225,7 +225,7 @@ your-project/
     │   ├── be-fastapi-expert.md
     │   ├── mgr-creator.md
     │   └── ...
-    ├── skills/            # Skill modules (55 directories, each with SKILL.md)
+    ├── skills/            # Skill modules (60 directories, each with SKILL.md)
     │   ├── go-best-practices/
     │   ├── react-best-practices/
     │   ├── secretary-routing/
