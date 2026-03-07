@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.4] - 2026-03-07
+
+### Fixed
+- Strengthen R018 Agent Teams spawn completeness check with mandatory self-check box
+- Add partial spawn violation examples to R018 and R009 rules
+- Add Git workflow reminder to session-env-check.sh hook (branch detection + protected branch warning)
+- Force-add gitignored R018/R009 rule files to git tracking
+
 ## [0.19.3] - 2026-03-06
 
 ### Added
