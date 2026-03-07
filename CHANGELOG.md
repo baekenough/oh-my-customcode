@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1] - 2026-03-08
+
+### Fixed
+- Fixed MCP tool name references in sys-memory-keeper agent — session-end saves now correctly invoke `mcp__plugin_claude-mem_mcp-search__save_memory` and `mcp__plugin_episodic-memory_episodic-memory__search`
+- Updated R011 (SHOULD-memory-integration) rule with correct tool names
+
 ## [0.22.0] - 2026-03-08
 
 ### Added
