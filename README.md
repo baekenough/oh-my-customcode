@@ -124,7 +124,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Total** | **41** | |
 
-### Skills (56)
+### Skills (58)
 
 | Category | Count | Skills |
 |----------|-------|--------|
@@ -137,7 +137,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **Package Management** | 3 | npm-publish, npm-version, npm-audit |
 | **Operations** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
 | **Utilities** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
-| **Quality & Workflow** | 2 | multi-model-verification, structured-dev-cycle |
+| **Quality & Workflow** | 4 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery |
 | **Deploy** | 2 | vercel-deploy, codex-exec |
 | **External** | 1 | skills-sh-search |
 
