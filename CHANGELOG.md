@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-03-08
+
+### Added
+- **Worker-Reviewer Pipeline** skill: iterative Worker→Reviewer quality pipeline with configurable quality gates, Agent Teams integration, and review verdict format
+- **PR Auto-Improve** skill: opt-in post-PR analysis and improvement suggestions with structured improvement checklist and agent-specific fix delegation
+- **Pipeline Guards** skill: safety constraints for pipeline execution including max iterations, timeouts, quality gates, kill switch, and state preservation
+
+### Changed
+- Skill count updated: 60 → 63
+- README, CLAUDE.md, and manifest.json synchronized
+
+### Completed
+- Issue #213 Phase 3 (Pair Pipeline + PR Auto-Improvement) — all phases now complete
+- npm publish confirmed for v0.19.4, v0.20.0, v0.21.0
+
 ## [0.21.0] - 2026-03-07
 
 ### Added
