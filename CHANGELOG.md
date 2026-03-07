@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-03-07
+
+### Added
+- Model Escalation skill — advisory system tracking task outcomes and recommending model upgrades (haiku→sonnet→opus)
+- Task outcome recorder hook (PostToolUse) for logging success/failure of Task tool calls
+- Model escalation advisor hook (PreToolUse) with failure threshold and de-escalation support
+- Stuck Detection skill — loop detector identifying repetitive errors, edit loops, and tool spam
+- Stuck detector hook (PostToolUse) monitoring Edit/Write/Bash/Task for stuck patterns
+- Optional `escalation` field in R006 agent design frontmatter
+
 ## [0.19.4] - 2026-03-07
 
 ### Fixed
