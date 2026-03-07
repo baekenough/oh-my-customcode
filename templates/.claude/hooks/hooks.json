@@ -76,6 +76,10 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/agent-teams-advisor.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/model-escalation-advisor.sh"
           }
         ],
         "description": "HUD statusline + R010 git delegation guard + R018 Agent Teams advisor on Task spawn"
@@ -163,6 +167,26 @@
           }
         ],
         "description": "Type check Python files with ty after edits"
+      },
+      {
+        "matcher": "tool == \"Task\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
+          }
+        ],
+        "description": "Record task outcomes (success/failure) for model escalation decisions"
+      },
+      {
+        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/stuck-detector.sh"
+          }
+        ],
+        "description": "Detect repetitive failure loops and advise recovery strategies"
       }
     ],
     "Stop": [
