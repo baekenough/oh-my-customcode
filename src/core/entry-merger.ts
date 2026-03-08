@@ -144,11 +144,17 @@ export function mergeEntryDoc(existingContent: string, templateContent: string):
 
   if (!hasManagedSections) {
     const wrapped = wrapInManagedMarkers(templateContent);
+    const existingTrimmed = existingContent.trim();
+    const content = existingTrimmed ? `${wrapped}\n\n${existingTrimmed}` : wrapped;
     return {
-      content: wrapped,
+      content,
       managedSections: 1,
-      customSections: 0,
-      warnings: ['No managed sections found in existing content, wrapping template entirely'],
+      customSections: existingTrimmed ? 1 : 0,
+      warnings: existingTrimmed
+        ? [
+            'No managed sections found in existing content. Template inserted as managed section, existing content preserved below.',
+          ]
+        : ['No managed sections found in existing content, wrapping template entirely'],
     };
   }
 

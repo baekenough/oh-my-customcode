@@ -406,6 +406,46 @@ async function updateEntryDoc(
 }
 
 /**
+ * Handle full-update-only post-processing steps and log success
+ */
+async function runFullUpdatePostProcessing(
+  options: UpdateOptions,
+  result: UpdateResult,
+  config: OmccConfig
+): Promise<void> {
+  const isFullUpdate = !options.components || options.components.length === 0;
+
+  if (isFullUpdate) {
+    const synced = await syncRootLevelFiles(options.targetDir, options);
+    result.syncedRootFiles = synced;
+
+    const removed = await removeDeprecatedFiles(options.targetDir, options);
+    result.removedDeprecatedFiles = removed;
+
+    if (!options.dryRun) {
+      await updateEntryDoc(options.targetDir, config, options);
+    }
+  }
+
+  if (!options.dryRun) {
+    config.version = result.newVersion;
+    config.lastUpdated = new Date().toISOString();
+    await saveConfig(options.targetDir, config);
+  }
+
+  result.success = true;
+
+  if (result.previousVersion !== result.newVersion) {
+    success('update.success', { from: result.previousVersion, to: result.newVersion });
+  } else if (result.updatedComponents.length > 0) {
+    success('update.components_synced', {
+      version: result.newVersion,
+      components: result.updatedComponents.join(', '),
+    });
+  }
+}
+
+/**
  * Update oh-my-customcode installation
  */
 export async function update(options: UpdateOptions): Promise<UpdateResult> {
@@ -450,40 +490,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       config
     );
 
-    // Sync root-level files (statusline.sh, etc.)
-    if (!options.components || options.components.length === 0) {
-      const synced = await syncRootLevelFiles(options.targetDir, options);
-      result.syncedRootFiles = synced;
-    }
-
-    // Remove deprecated files (only on full update)
-    if (!options.components || options.components.length === 0) {
-      const removed = await removeDeprecatedFiles(options.targetDir, options);
-      result.removedDeprecatedFiles = removed;
-    }
-
-    // Update entry doc with merge (only on full update)
-    if (!options.components || options.components.length === 0) {
-      await updateEntryDoc(options.targetDir, config, options);
-    }
-
-    config.version = result.newVersion;
-    config.lastUpdated = new Date().toISOString();
-    await saveConfig(options.targetDir, config);
-
-    result.success = true;
-
-    if (result.previousVersion !== result.newVersion) {
-      // Case 1: Version upgrade
-      success('update.success', { from: result.previousVersion, to: result.newVersion });
-    } else if (result.updatedComponents.length > 0) {
-      // Case 2: Component sync within same version
-      success('update.components_synced', {
-        version: result.newVersion,
-        components: result.updatedComponents.join(', '),
-      });
-    }
-    // Case 3: No changes - already handled by early return at line 434-439
+    await runFullUpdatePostProcessing(options, result, config);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;

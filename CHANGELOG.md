@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-03-08
+
+### Fixed
+- **dry-run modifies files** (Issue #220): `omcustom update --dry-run` no longer modifies CLAUDE.md or config — entry doc update and config save are now guarded by dry-run check
+- **Content loss on update** (Issue #221): `omcustom update` now preserves existing project-specific CLAUDE.md content when no omcustom markers exist, instead of overwriting it entirely
+
 ## [0.23.0] - 2026-03-08
 
 ### Added

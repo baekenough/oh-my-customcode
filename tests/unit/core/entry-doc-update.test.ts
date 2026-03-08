@@ -31,7 +31,7 @@ describe('updateEntryDoc via update()', () => {
   // Test 1: merge mode - existing file with markers
   it('should merge entry doc preserving custom sections', async () => {
     await createConfig();
-    const layout = getProviderLayout('claude');
+    const layout = getProviderLayout();
 
     // Set up directory structure
     await mkdir(join(tempDir, layout.rootDir), { recursive: true });
@@ -56,7 +56,6 @@ describe('updateEntryDoc via update()', () => {
     // Run update without specifying components (triggers updateEntryDoc)
     const result = await update({
       targetDir: tempDir,
-      provider: 'claude',
       force: false,
     });
 
@@ -77,7 +76,7 @@ describe('updateEntryDoc via update()', () => {
   // Test 2: force mode - overwrite with backup
   it('should force overwrite entry doc with backup', async () => {
     await createConfig();
-    const layout = getProviderLayout('claude');
+    const layout = getProviderLayout();
     await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
     const templateName = `${layout.entryFile.replace('.md', '')}.md.en`;
@@ -91,7 +90,6 @@ describe('updateEntryDoc via update()', () => {
 
     const result = await update({
       targetDir: tempDir,
-      provider: 'claude',
       force: true,
     });
 
@@ -105,7 +103,7 @@ describe('updateEntryDoc via update()', () => {
   // Test 3: new file creation - wrap in markers
   it('should create entry doc with markers when it does not exist', async () => {
     await createConfig();
-    const layout = getProviderLayout('claude');
+    const layout = getProviderLayout();
     await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
     const templateName = `${layout.entryFile.replace('.md', '')}.md.en`;
@@ -119,7 +117,6 @@ describe('updateEntryDoc via update()', () => {
 
     const result = await update({
       targetDir: tempDir,
-      provider: 'claude',
       force: false,
     });
 
@@ -132,10 +129,65 @@ describe('updateEntryDoc via update()', () => {
     expect(content).toContain('<!-- omcustom:end -->');
   });
 
-  // Test 4: updateEntryDoc not called when specific components requested
+  // Test 4: dry-run must not modify entry doc
+  it('should NOT modify entry doc during dry-run', async () => {
+    await createConfig();
+    const layout = getProviderLayout();
+    await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+    const templateName = `${layout.entryFile.replace('.md', '')}.md.en`;
+    const templatePath = resolveTemplatePath(templateName);
+    if (!(await fileExists(templatePath))) {
+      return;
+    }
+
+    const entryPath = join(tempDir, layout.entryFile);
+    const originalContent = 'This content must NOT be modified during dry-run';
+    await writeFile(entryPath, originalContent);
+
+    const result = await update({
+      targetDir: tempDir,
+      force: true,
+      dryRun: true,
+    });
+
+    expect(result.success).toBe(true);
+
+    // Entry doc must remain unchanged during dry-run
+    const content = await readFile(entryPath, 'utf-8');
+    expect(content).toBe(originalContent);
+  });
+
+  // Test 5: dry-run must not update config version
+  it('should NOT update config during dry-run', async () => {
+    await createConfig({ version: '0.1.0' });
+    const layout = getProviderLayout();
+    await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+    // Capture config content before dry-run
+    const configPath = join(tempDir, '.omcustomrc.json');
+    const contentBefore = await readFile(configPath, 'utf-8');
+    const configBefore = JSON.parse(contentBefore);
+
+    const result = await update({
+      targetDir: tempDir,
+      force: true,
+      dryRun: true,
+    });
+
+    expect(result.success).toBe(true);
+
+    // Config version must remain unchanged during dry-run
+    const contentAfter = await readFile(configPath, 'utf-8');
+    const configAfter = JSON.parse(contentAfter);
+    expect(configAfter.version).toBe(configBefore.version);
+    expect(configAfter.version).toBe('0.1.0');
+  });
+
+  // Test 6: updateEntryDoc not called when specific components requested
   it('should not update entry doc when specific components are requested', async () => {
     await createConfig();
-    const layout = getProviderLayout('claude');
+    const layout = getProviderLayout();
     await mkdir(join(tempDir, layout.rootDir), { recursive: true });
 
     const entryPath = join(tempDir, layout.entryFile);
@@ -144,7 +196,6 @@ describe('updateEntryDoc via update()', () => {
 
     const result = await update({
       targetDir: tempDir,
-      provider: 'claude',
       components: ['rules'],
     });
 
