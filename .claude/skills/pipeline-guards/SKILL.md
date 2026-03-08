@@ -1,6 +1,7 @@
 ---
 name: pipeline-guards
 description: Safety constraints and quality gates for pipeline and workflow execution
+context: fork
 ---
 
 # Pipeline Guards Skill

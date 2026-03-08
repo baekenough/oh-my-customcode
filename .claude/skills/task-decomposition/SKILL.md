@@ -1,6 +1,7 @@
 ---
 name: task-decomposition
 description: Auto-decompose large tasks into DAG-compatible parallel subtasks
+context: fork
 ---
 
 # Task Decomposition Skill
