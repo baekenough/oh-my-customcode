@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, join as pathJoin } from 'node:path';
 import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
 import { getProviderLayout } from '../../../src/core/layout.js';
 import {
@@ -13,6 +14,11 @@ import {
   type UpdateComponent,
   update,
 } from '../../../src/core/updater.js';
+
+// Read manifest version dynamically to avoid hardcoding
+const MANIFEST_VERSION = JSON.parse(
+  readFileSync(pathJoin(import.meta.dir, '../../../templates/manifest.json'), 'utf-8')
+).version;
 
 describe('updater', () => {
   let tempDir: string;
@@ -61,29 +67,29 @@ describe('updater', () => {
 
       const result = await checkForUpdates(tempDir);
 
-      // Template version is 0.3.0 (from manifest.json)
+      // Template version read from manifest.json
       expect(result.currentVersion).toBe('0.1.0');
-      expect(result.latestVersion).toBe('0.3.0');
+      expect(result.latestVersion).toBe(MANIFEST_VERSION);
       expect(result.hasUpdates).toBe(true);
       expect(result.updatableComponents.length).toBeGreaterThan(0);
       expect(result.checkedAt).toBeDefined();
     });
 
     it('should return no updates when versions match', async () => {
-      await createConfig('0.3.0', {
-        rules: '0.3.0',
-        agents: '0.3.0',
-        skills: '0.3.0',
-        guides: '0.3.0',
-        hooks: '0.3.0',
-        contexts: '0.3.0',
-        ontology: '0.3.0',
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
       });
 
       const result = await checkForUpdates(tempDir);
 
-      expect(result.currentVersion).toBe('0.3.0');
-      expect(result.latestVersion).toBe('0.3.0');
+      expect(result.currentVersion).toBe(MANIFEST_VERSION);
+      expect(result.latestVersion).toBe(MANIFEST_VERSION);
       expect(result.hasUpdates).toBe(false);
       expect(result.updatableComponents.length).toBe(0);
     });
@@ -93,13 +99,13 @@ describe('updater', () => {
       const result = await checkForUpdates(tempDir);
 
       expect(result.currentVersion).toBe('0.0.0'); // Default version
-      expect(result.latestVersion).toBe('0.3.0');
+      expect(result.latestVersion).toBe(MANIFEST_VERSION);
       expect(result.hasUpdates).toBe(true);
     });
 
     it('should check each component individually', async () => {
       await createConfig('0.1.0', {
-        rules: '0.3.0', // Up to date
+        rules: MANIFEST_VERSION, // Up to date
         agents: '0.1.0', // Out of date
         skills: '0.1.0', // Out of date
       });
@@ -114,7 +120,7 @@ describe('updater', () => {
     });
 
     it('should detect update when component version is missing', async () => {
-      await createConfig('0.3.0', {
+      await createConfig(MANIFEST_VERSION, {
         // No componentVersions specified
       });
 
@@ -141,23 +147,23 @@ describe('updater', () => {
       expect(result.success).toBe(true);
       expect(result.updatedComponents).toContain('rules' as UpdateComponent);
       expect(result.previousVersion).toBe('0.1.0');
-      expect(result.newVersion).toBe('0.3.0');
+      expect(result.newVersion).toBe(MANIFEST_VERSION);
 
       // Verify config was updated
       const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
       const config = JSON.parse(configContent);
-      expect(config.version).toBe('0.3.0');
+      expect(config.version).toBe(MANIFEST_VERSION);
     });
 
     it('should skip components with no updates when not forced', async () => {
-      await createConfig('0.3.0', {
-        rules: '0.3.0',
-        agents: '0.3.0',
-        skills: '0.3.0',
-        guides: '0.3.0',
-        hooks: '0.3.0',
-        contexts: '0.3.0',
-        ontology: '0.3.0',
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
+        agents: MANIFEST_VERSION,
+        skills: MANIFEST_VERSION,
+        guides: MANIFEST_VERSION,
+        hooks: MANIFEST_VERSION,
+        contexts: MANIFEST_VERSION,
+        ontology: MANIFEST_VERSION,
       });
 
       const result = await update({
@@ -170,8 +176,8 @@ describe('updater', () => {
     });
 
     it('should force update all components with --force flag', async () => {
-      await createConfig('0.3.0', {
-        rules: '0.3.0',
+      await createConfig(MANIFEST_VERSION, {
+        rules: MANIFEST_VERSION,
       });
 
       // Create target directory structure
@@ -307,7 +313,7 @@ describe('updater', () => {
       // Verify config version was updated
       const configContent = await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8');
       const config = JSON.parse(configContent);
-      expect(config.version).toBe('0.3.0');
+      expect(config.version).toBe(MANIFEST_VERSION);
       expect(config.lastUpdated).toBeDefined();
     });
 
@@ -468,7 +474,7 @@ describe('updater', () => {
 
     it('should differentiate component sync from version upgrade (#111)', async () => {
       // Config version matches template version, but components lack version tracking
-      await createConfig('0.3.0', {
+      await createConfig(MANIFEST_VERSION, {
         // No component versions → all components show as "updatable"
       });
 
@@ -481,8 +487,8 @@ describe('updater', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.previousVersion).toBe('0.3.0');
-      expect(result.newVersion).toBe('0.3.0');
+      expect(result.previousVersion).toBe(MANIFEST_VERSION);
+      expect(result.newVersion).toBe(MANIFEST_VERSION);
       // When versions match but components were updated, it's a component sync
       expect(result.updatedComponents).toContain('rules' as UpdateComponent);
     });
@@ -491,7 +497,7 @@ describe('updater', () => {
       // Config version is old (hasUpdates: true due to version mismatch),
       // but rules component specifically is at latest version (0.3.0)
       await createConfig('0.1.0', {
-        rules: '0.3.0', // rules is already up-to-date
+        rules: MANIFEST_VERSION, // rules is already up-to-date
         agents: '0.1.0', // agents needs update
       });
 
@@ -526,7 +532,7 @@ describe('updater', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.newVersion).toBe('0.3.0');
+      expect(result.newVersion).toBe(MANIFEST_VERSION);
       // Entry doc was created
       const layout2 = getProviderLayout();
       const entryExists = await readFile(join(tempDir, layout2.entryFile), 'utf-8').catch(
