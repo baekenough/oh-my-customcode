@@ -74,6 +74,42 @@ When enabled: first 200 lines of MEMORY.md loaded into system prompt.
 
 Agent body: purpose, capabilities overview, workflow. NOT detailed instructions or reference docs.
 
+## Skill Frontmatter
+
+Location: `.claude/skills/{name}/SKILL.md`
+
+### Required Fields
+
+```yaml
+name: skill-name           # Unique identifier (kebab-case)
+description: Brief desc    # One-line summary
+```
+
+### Optional Fields
+
+```yaml
+context: fork              # Forked context for isolated execution
+version: 1.0.0             # Semantic version
+user-invocable: false      # Whether user can invoke directly
+disable-model-invocation: true  # Prevent model from auto-invoking
+```
+
+### Context Fork Criteria
+
+Use `context: fork` for skills that orchestrate multi-agent workflows. Cap at **10 total** across the project.
+
+| Use `context: fork` | Do NOT use `context: fork` |
+|---------------------|---------------------------|
+| Routing skills (secretary, dev-lead, etc.) | Best-practices skills |
+| Workflow orchestration (DAG, pipelines) | Hook/command skills |
+| Multi-agent coordination patterns | Single-agent reference skills |
+| Task decomposition/planning | External tool integrations |
+
+Current skills with `context: fork` (9/10 cap):
+- secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing
+- dag-orchestration, task-decomposition, worker-reviewer-pipeline
+- structured-dev-cycle, pipeline-guards
+
 ## Naming
 
 | Type | Pattern | Example |
