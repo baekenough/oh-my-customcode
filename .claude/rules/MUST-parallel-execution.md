@@ -112,12 +112,12 @@ Before writing/editing multiple files:
 ## Display Format
 
 ```
-[Instance 1] Agent(mgr-creator):sonnet → Create Go agent
-[Instance 2] Agent(lang-python-expert):sonnet → Review Python code
-[Instance 3] Agent(Explore):haiku → Search codebase
+[Instance 1] mgr-creator:sonnet → Create Go agent
+[Instance 2] lang-python-expert:sonnet → Review Python code
+[Instance 3] Explore:haiku → Search codebase
 ```
 
-Must use `Agent({subagent_type}):{model}` format. Custom names not allowed.
+Must use `{subagent_type}:{model}` format. Custom names not allowed.
 
 ## Result Aggregation
 
