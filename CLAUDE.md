@@ -175,8 +175,8 @@ oh-my-customcode로 구동됩니다.
 project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
-|   +-- agents/                  # 서브에이전트 정의 (41 파일)
-|   +-- skills/                  # 스킬 (64 디렉토리)
+|   +-- agents/                  # 서브에이전트 정의 (42 파일)
+|   +-- skills/                  # 스킬 (65 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R018)
 |   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -214,12 +214,13 @@ project/
 | SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | DE Engineer | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | SW Engineer/Database | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
+| Security | 1 | sec-codeql-expert |
 | SW Architect | 2 | arch-documenter, arch-speckit-agent |
 | Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
-| **총계** | **41** | |
+| **총계** | **42** | |
 
 ## Agent Teams (MUST when enabled)
 
