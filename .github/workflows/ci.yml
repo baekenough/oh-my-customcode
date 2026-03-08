@@ -124,3 +124,25 @@ jobs:
       - name: Run Rust tests
         working-directory: packages/ontology-rag
         run: cargo test --all
+
+  version-sync:
+    name: Version Sync
+    runs-on: [self-hosted, nuc13]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify package.json and manifest.json versions match
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          MANIFEST_VERSION=$(node -p "require('./templates/manifest.json').version")
+
+          echo "package.json version: $PKG_VERSION"
+          echo "manifest.json version: $MANIFEST_VERSION"
+
+          if [ "$PKG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "::error::Version mismatch! package.json ($PKG_VERSION) != templates/manifest.json ($MANIFEST_VERSION). Run: update manifest.json version to match package.json"
+            exit 1
+          fi
+
+          echo "Version sync check passed: $PKG_VERSION"
