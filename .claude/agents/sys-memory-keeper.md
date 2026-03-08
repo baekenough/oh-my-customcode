@@ -1,6 +1,6 @@
 ---
 name: sys-memory-keeper
-description: Use when you need to manage session memory persistence using claude-mem, save context before compaction, restore context on session start, query past memories, or perform session-end dual-system auto-save
+description: Use when you need to manage session memory persistence via native auto-memory, save context before compaction, restore context on session start, collect session summaries, or perform session-end memory operations
 model: sonnet
 memory: project
 effort: medium
@@ -47,12 +47,12 @@ Provider: claude-mem | Collection: claude_memories | Archive: ~/.claude-mem/arch
 When triggered by session-end signal from orchestrator:
 
 1. **Collect** session summary: completed tasks, key decisions, open items
-2. **Save to claude-mem** (if available): `mcp__plugin_claude-mem_mcp-search__save_memory` with project name, session date, and summary
-3. **Verify episodic-memory** (if available): `mcp__plugin_episodic-memory_episodic-memory__search` to confirm session is indexed
-4. **Report** results to orchestrator: saved/skipped/failed per system
+2. **Update native auto-memory** (MEMORY.md) with session learnings
+3. **Return formatted summary** to orchestrator for MCP persistence (claude-mem, episodic-memory)
+
+> **Note**: MCP tools (claude-mem, episodic-memory) are orchestrator-scoped and cannot be called from subagents. The orchestrator handles MCP saves directly after receiving the formatted summary.
 
 ### Failure Handling
 
-- claude-mem unavailable → skip, report warning
-- episodic-memory unavailable → skip, report warning
-- Both unavailable → warn orchestrator, do not block session end
+- MEMORY.md update failure → report error to orchestrator
+- MCP persistence is orchestrator's responsibility — not handled here

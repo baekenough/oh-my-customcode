@@ -49,23 +49,38 @@ Session-end detected when user says: "끝", "종료", "마무리", "done", "wrap
 ```
 User signals session end
   → Orchestrator delegates to sys-memory-keeper
-    → sys-memory-keeper performs dual-system save:
-       1. claude-mem save (if available)
-       2. episodic-memory verification (if available)
-    → Reports result to orchestrator
+    → sys-memory-keeper performs:
+       1. Collect session summary (tasks, decisions, open items)
+       2. Update native auto-memory (MEMORY.md)
+       3. Return formatted summary to orchestrator
+  → Orchestrator performs MCP saves directly:
+       1. claude-mem save (if available via ToolSearch)
+       2. episodic-memory verification (if available via ToolSearch)
   → Orchestrator confirms to user
 ```
 
+### Responsibility Split
+
+MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inherited by subagents. Therefore:
+
+| Responsibility | Owner | Reason |
+|----------------|-------|--------|
+| Session summary collection | sys-memory-keeper | Domain expertise in memory formatting |
+| Native auto-memory (MEMORY.md) | sys-memory-keeper | Has Write access to memory directory |
+| claude-mem MCP save | Orchestrator | MCP tools only available at orchestrator level |
+| episodic-memory MCP verification | Orchestrator | MCP tools only available at orchestrator level |
+
 ### Dual-System Save
 
-| System | Tool | Action | Required |
-|--------|------|--------|----------|
-| claude-mem | `mcp__plugin_claude-mem_mcp-search__save_memory` | Save session summary with project, tasks, decisions | No (best-effort) |
-| episodic-memory | `mcp__plugin_episodic-memory_episodic-memory__search` | Verify session is indexed for future retrieval | No (best-effort) |
+| System | Owner | Tool | Action | Required |
+|--------|-------|------|--------|----------|
+| Native auto-memory | sys-memory-keeper | Write | Update MEMORY.md with session learnings | Yes |
+| claude-mem | Orchestrator | `mcp__plugin_claude-mem_mcp-search__save_memory` | Save session summary with project, tasks, decisions | No (best-effort) |
+| episodic-memory | Orchestrator | `mcp__plugin_episodic-memory_episodic-memory__search` | Verify session is indexed for future retrieval | No (best-effort) |
 
 ### Failure Policy
 
-- Both saves are **non-blocking**: memory failure MUST NOT prevent session from ending
+- MCP saves are **non-blocking**: memory failure MUST NOT prevent session from ending
 - If claude-mem unavailable: skip, log warning
 - If episodic-memory unavailable: skip, log warning
 - If both unavailable: warn user, proceed with session end
