@@ -4,7 +4,7 @@
 
 ## Core Rule
 
-The main conversation is the **sole orchestrator**. It uses routing skills to delegate tasks to subagents via the Task tool. Subagents CANNOT spawn other subagents.
+The main conversation is the **sole orchestrator**. It uses routing skills to delegate tasks to subagents via the Agent tool (formerly Task tool). Subagents CANNOT spawn other subagents.
 
 **The orchestrator MUST NEVER directly write, edit, or create files. ALL file modifications MUST be delegated to appropriate subagents.**
 
@@ -19,7 +19,7 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ║     NO  → I am a subagent, proceed with task                    ║
 ║                                                                   ║
 ║  2. Have I identified the correct specialized agent?             ║
-║     YES → Delegate via Task tool                                 ║
+║     YES → Delegate via Agent tool                                ║
 ║     NO  → Check delegation table below                          ║
 ║                                                                   ║
 ║  3. Am I about to use Write/Edit tool from orchestrator?         ║
@@ -65,7 +65,7 @@ Main Conversation (orchestrator)
   ├─ de-lead-routing   → de-* experts
   └─ qa-lead-routing   → qa-planner, qa-writer, qa-engineer
       ↓
-  Task tool spawns subagents (flat, no hierarchy)
+  Agent tool spawns subagents (flat, no hierarchy)
 ```
 
 ## Common Violations
@@ -76,44 +76,44 @@ Main Conversation (orchestrator)
    Main conversation → Edit("package.json", old, new)
 
 ✓ CORRECT: Orchestrator delegates to specialist
-   Main conversation → Task(lang-golang-expert) → Write("src/main.go", content)
-   Main conversation → Task(tool-npm-expert) → Edit("package.json", old, new)
+   Main conversation → Agent(lang-golang-expert) → Write("src/main.go", content)
+   Main conversation → Agent(tool-npm-expert) → Edit("package.json", old, new)
 
 ❌ WRONG: Orchestrator runs git commands directly
    Main conversation → Bash("git commit -m 'fix'")
    Main conversation → Bash("git push origin main")
 
 ✓ CORRECT: Orchestrator delegates to mgr-gitnerd
-   Main conversation → Task(mgr-gitnerd) → git commit
-   Main conversation → Task(mgr-gitnerd) → git push
+   Main conversation → Agent(mgr-gitnerd) → git commit
+   Main conversation → Agent(mgr-gitnerd) → git push
 
 ❌ WRONG: Using general-purpose when specialist exists
-   Main conversation → Task(general-purpose) → "Write Go code"
+   Main conversation → Agent(general-purpose) → "Write Go code"
 
 ✓ CORRECT: Using the right specialist
-   Main conversation → Task(lang-golang-expert) → "Write Go code"
+   Main conversation → Agent(lang-golang-expert) → "Write Go code"
 
 ❌ WRONG: Orchestrator creates files "just this once"
    "It's just a small config file, I'll write it directly..."
 
 ✓ CORRECT: Always delegate, no matter how small
-   Task(appropriate-agent) → create config file
+   Agent(appropriate-agent) → create config file
 
 ❌ WRONG: Bundling git operations with file editing in non-gitnerd agent
-   Main conversation → Task(general-purpose) → "git revert + edit file + git commit"
-   Main conversation → Task(lang-typescript-expert) → "fix bug and commit"
+   Main conversation → Agent(general-purpose) → "git revert + edit file + git commit"
+   Main conversation → Agent(lang-typescript-expert) → "fix bug and commit"
 
 ✓ CORRECT: Separate file editing from git operations
-   Main conversation → Task(lang-typescript-expert) → "fix bug" (file edit only)
-   Main conversation → Task(mgr-gitnerd) → "git commit" (git operation only)
+   Main conversation → Agent(lang-typescript-expert) → "fix bug" (file edit only)
+   Main conversation → Agent(mgr-gitnerd) → "git commit" (git operation only)
 
 ❌ WRONG: Including git commands in non-gitnerd agent prompt for "convenience"
-   Task(general-purpose, prompt="revert the last commit, edit the file, then commit the fix")
+   Agent(general-purpose, prompt="revert the last commit, edit the file, then commit the fix")
 
 ✓ CORRECT: Split into separate delegations
-   Task(mgr-gitnerd, prompt="revert the last commit")
-   Task(appropriate-expert, prompt="edit the file to fix the issue")
-   Task(mgr-gitnerd, prompt="commit the fix")
+   Agent(mgr-gitnerd, prompt="revert the last commit")
+   Agent(appropriate-expert, prompt="edit the file to fix the issue")
+   Agent(mgr-gitnerd, prompt="commit the fix")
 ```
 
 ## Session Continuity
@@ -190,7 +190,7 @@ Available models:
   - inherit: Use parent conversation's model
 
 Usage:
-  Task(
+  Agent(
     subagent_type: "general-purpose",
     prompt: "Analyze architecture",
     model: "opus"
@@ -217,10 +217,10 @@ Internal rules ALWAYS take precedence over external skills.
 Translation:
   External skill says          → Internal rule requires
   ─────────────────────────────────────────────────────
-  "git commit -m ..."          → Task(mgr-gitnerd) commit
-  "git push ..."               → Task(mgr-gitnerd) push
-  "gh pr create ..."           → Task(mgr-gitnerd) create PR
-  "git merge ..."              → Task(mgr-gitnerd) merge
+  "git commit -m ..."          → Agent(mgr-gitnerd) commit
+  "git push ..."               → Agent(mgr-gitnerd) push
+  "gh pr create ..."           → Agent(mgr-gitnerd) create PR
+  "git merge ..."              → Agent(mgr-gitnerd) merge
 
 WRONG:
   [Using external skill]
@@ -228,7 +228,7 @@ WRONG:
 
 CORRECT:
   [Using external skill]
-  Main conversation → Task(mgr-gitnerd) → git push
+  Main conversation → Agent(mgr-gitnerd) → git push
 
 The skill's WORKFLOW is followed, but git EXECUTION is delegated to mgr-gitnerd per R010.
 ```
@@ -241,24 +241,24 @@ When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: Agent Teams is **MANDATORY** for 
 
 ```
 Main Conversation (orchestrator)
-  ├─ Simple/independent tasks → Task tool (R009)
+  ├─ Simple/independent tasks → Agent tool (R009)
   └─ Collaborative/iterative tasks → Agent Teams (R018)
       ├─ TeamCreate
       ├─ TaskCreate (shared tasks)
-      ├─ Task(spawn members)
+      ├─ Agent(spawn members)
       └─ SendMessage(coordinate)
 ```
 
-### When to Use Agent Teams vs Task Tool
+### When to Use Agent Teams vs Agent Tool
 
-| Criteria | Task Tool | Agent Teams (MUST) |
+| Criteria | Agent Tool | Agent Teams (MUST) |
 |----------|-----------|-------------------|
 | Agent count | 1-2 | 3+ |
 | Coordination needed | No | Yes |
 | Review/fix cycles | No | Yes |
 | Shared state | No | Yes |
 
-Using Task tool when Agent Teams criteria are met is a **VIOLATION** of R018.
+Using Agent tool when Agent Teams criteria are met is a **VIOLATION** of R018.
 
 ## Announcement Format
 

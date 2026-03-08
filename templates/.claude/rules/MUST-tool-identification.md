@@ -62,21 +62,23 @@ For parallel calls: list ALL identifications BEFORE the tool calls.
 | File Read | Read, Glob, Grep | Reading / Searching |
 | File Write | Write, Edit | Writing / Editing |
 | Network | WebFetch | Fetching |
-| Execution | Bash, Task | Running / Spawning |
+| Execution | Bash, Agent | Running / Spawning |
 
-## Task Tool Format
+## Agent Tool Format
 
 ```
-Task(subagent_type):model → description
+Agent(subagent_type):model → description
 ```
 
-`subagent_type` MUST match actual Task tool parameter. Custom names not allowed.
+`subagent_type` MUST match actual Agent tool parameter. Custom names not allowed.
+
+> **Note**: Claude Code v2.1.63+ renamed the Task tool to Agent tool. Both names refer to the same tool; `Agent(...)` is the current canonical form.
 
 ## Example
 
 ```
 [mgr-creator][sonnet] → Write: .claude/agents/new-agent.md
 [secretary][opus] → Spawning:
-  [1] Task(lang-golang-expert):sonnet → Go code review
-  [2] Task(lang-python-expert):sonnet → Python code review
+  [1] Agent(lang-golang-expert):sonnet → Go code review
+  [2] Agent(lang-python-expert):sonnet → Python code review
 ```

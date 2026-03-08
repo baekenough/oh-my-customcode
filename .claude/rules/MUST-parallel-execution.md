@@ -17,17 +17,17 @@ Examples: creating multiple agents, reviewing multiple files, batch operations o
 
 ## Agent Teams Gate (R018 Integration)
 
-Before spawning parallel Task instances, evaluate Agent Teams eligibility:
+Before spawning parallel Agent instances, evaluate Agent Teams eligibility:
 
 ```
 2+ independent tasks detected
   ↓
 Is Agent Teams available? (env or tools check)
-  ├─ NO → Proceed with Task tool (standard R009)
+  ├─ NO → Proceed with Agent tool (standard R009)
   └─ YES → Check eligibility:
        ├─ 3+ agents needed? → Agent Teams (MUST)
        ├─ Review → fix cycle? → Agent Teams (MUST)
-       └─ Neither → Task tool (standard R009)
+       └─ Neither → Agent tool (standard R009)
 ```
 
 This gate is MANDATORY when Agent Teams is enabled. Skipping it is a violation of both R009 and R018.
@@ -35,10 +35,10 @@ This gate is MANDATORY when Agent Teams is enabled. Skipping it is a violation o
 ## Self-Check
 
 Before writing/editing multiple files:
-1. Are files independent? → YES: spawn parallel Task agents
+1. Are files independent? → YES: spawn parallel agents
 2. Using Write/Edit sequentially for 2+ files? → STOP, parallelize
 3. Specialized agent available? → Use it (not general-purpose)
-4. Agent Teams available + 3+ agents or review cycle? → YES: use Agent Teams instead of Task
+4. Agent Teams available + 3+ agents or review cycle? → YES: use Agent Teams instead of Agent tool
 5. Agent Teams members? → ALL members MUST spawn in a single message (no partial spawning)
 
 ### Common Violations to Avoid
@@ -48,50 +48,50 @@ Before writing/editing multiple files:
    Write(file1.kt) → Write(file2.kt) → Write(file3.kt) → Write(file4.kt)
 
 ✓ CORRECT: Spawn parallel agents
-   Task(agent1 → file1.kt)  ┐
-   Task(agent2 → file2.kt)  ├─ All in single message
-   Task(agent3 → file3.kt)  │
-   Task(agent4 → file4.kt)  ┘
+   Agent(agent1 → file1.kt)  ┐
+   Agent(agent2 → file2.kt)  ├─ All in single message
+   Agent(agent3 → file3.kt)  │
+   Agent(agent4 → file4.kt)  ┘
 
 ❌ WRONG: Project scaffolding sequentially
    Write(package.json) → Write(tsconfig.json) → Write(src/index.ts) → ...
 
 ✓ CORRECT: Parallel scaffolding
-   Task(agent1 → "Create package.json, tsconfig.json")  ┐
-   Task(agent2 → "Create src/cli.ts, src/index.ts")     ├─ Parallel
-   Task(agent3 → "Create src/analyzer/*.ts")            │
-   Task(agent4 → "Create src/converter/*.ts")           ┘
+   Agent(agent1 → "Create package.json, tsconfig.json")  ┐
+   Agent(agent2 → "Create src/cli.ts, src/index.ts")     ├─ Parallel
+   Agent(agent3 → "Create src/analyzer/*.ts")            │
+   Agent(agent4 → "Create src/converter/*.ts")           ┘
 
 ❌ WRONG: Secretary doing all the work
    Secretary writes domain/, usecase/, infrastructure/ sequentially
 
 ✓ CORRECT: Delegate to specialists
-   Task(lang-kotlin-expert → domain layer)
-   Task(be-springboot-expert → infrastructure layer)
-   Task(lang-kotlin-expert → usecase layer)
+   Agent(lang-kotlin-expert → domain layer)
+   Agent(be-springboot-expert → infrastructure layer)
+   Agent(lang-kotlin-expert → usecase layer)
 
-❌ WRONG: Single Task delegating to multiple agents
-   Task(dev-lead → "coordinate lang-kotlin-expert and be-springboot-expert")
+❌ WRONG: Single Agent delegating to multiple agents
+   Agent(dev-lead → "coordinate lang-kotlin-expert and be-springboot-expert")
 
-   This creates a SEQUENTIAL bottleneck inside the Task!
+   This creates a SEQUENTIAL bottleneck inside the Agent!
 
-✓ CORRECT: Multiple Tasks in parallel, one per agent
-   Task(lang-kotlin-expert → usecase commands)    ┐
-   Task(lang-kotlin-expert → usecase queries)     ├─ All spawned together
-   Task(be-springboot-expert → persistence)       │
-   Task(be-springboot-expert → security)          ┘
+✓ CORRECT: Multiple Agents in parallel, one per agent
+   Agent(lang-kotlin-expert → usecase commands)    ┐
+   Agent(lang-kotlin-expert → usecase queries)     ├─ All spawned together
+   Agent(be-springboot-expert → persistence)       │
+   Agent(be-springboot-expert → security)          ┘
 
 ❌ WRONG: Agent Teams partial spawn (1 of N members)
    TeamCreate("feature-team")
-   Message 1: Task(member-1)  ← only 1/3 spawned, VIOLATION
-   Message 2: Task(member-2)  ← sequential, VIOLATION
-   Message 3: Task(member-3)  ← sequential, VIOLATION
+   Message 1: Agent(member-1)  ← only 1/3 spawned, VIOLATION
+   Message 2: Agent(member-2)  ← sequential, VIOLATION
+   Message 3: Agent(member-3)  ← sequential, VIOLATION
 
 ✓ CORRECT: All Agent Teams members in single message
    TeamCreate("feature-team")
-   Task(member-1)  ┐
-   Task(member-2)  ├─ Single message, all at once
-   Task(member-3)  ┘
+   Agent(member-1)  ┐
+   Agent(member-2)  ├─ Single message, all at once
+   Agent(member-3)  ┘
 ```
 
 ## Execution Rules
@@ -103,21 +103,21 @@ Before writing/editing multiple files:
 | Instance independence | Isolated context, no shared state |
 | Large tasks (>3 min) | MUST split into parallel sub-tasks |
 
-## Task Tool Requirements
+## Agent Tool Requirements
 
 - Use specific `subagent_type` (not "general-purpose" when specialist exists)
 - Use `model` parameter for cost optimization (haiku for search, sonnet for code, opus for reasoning)
-- Each independent unit = separate Task tool call in the SAME message
+- Each independent unit = separate Agent tool call in the SAME message
 
 ## Display Format
 
 ```
-[Instance 1] Task(mgr-creator):sonnet → Create Go agent
-[Instance 2] Task(lang-python-expert):sonnet → Review Python code
-[Instance 3] Task(Explore):haiku → Search codebase
+[Instance 1] Agent(mgr-creator):sonnet → Create Go agent
+[Instance 2] Agent(lang-python-expert):sonnet → Review Python code
+[Instance 3] Agent(Explore):haiku → Search codebase
 ```
 
-Must use `Task({subagent_type}):{model}` format. Custom names not allowed.
+Must use `Agent({subagent_type}):{model}` format. Custom names not allowed.
 
 ## Result Aggregation
 

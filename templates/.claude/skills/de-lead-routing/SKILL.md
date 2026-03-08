@@ -2,6 +2,7 @@
 name: de-lead-routing
 description: Routes data engineering tasks to the correct DE expert agent. Use when user requests data pipeline design, DAG authoring, SQL modeling, stream processing, or warehouse optimization.
 user-invocable: false
+context: fork
 ---
 
 # DE Lead Routing Skill
@@ -47,17 +48,17 @@ Routes data engineering tasks to appropriate DE expert agents. This skill contai
 
 ## Routing Decision (Priority Order)
 
-Before routing via Task tool, evaluate in this order:
+Before routing via Agent tool, evaluate in this order:
 
 ### Step 1: Agent Teams Eligibility (R018)
 Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
 
 | Scenario | Preferred |
 |----------|-----------|
-| Single-tool DE task | Task Tool |
+| Single-tool DE task | Agent Tool |
 | Multi-tool pipeline design (3+ tools) | Agent Teams |
 | Cross-tool data quality analysis | Agent Teams |
-| Quick DAG/model validation | Task Tool |
+| Quick DAG/model validation | Agent Tool |
 
 ### Step 2: Codex-Exec Hybrid (Code Generation)
 For **new pipeline code**, **DAG scaffolding**, or **SQL model generation**:
@@ -116,10 +117,10 @@ Detection:
   - Pipeline architecture → de-pipeline-expert
 
 Route (parallel where independent):
-  Task(de-pipeline-expert → overall architecture design)
-  Task(de-airflow-expert → DAG structure)
-  Task(de-dbt-expert → model design)
-  Task(de-snowflake-expert → warehouse setup)
+  Agent(de-pipeline-expert → overall architecture design)
+  Agent(de-airflow-expert → DAG structure)
+  Agent(de-dbt-expert → model design)
+  Agent(de-snowflake-expert → warehouse setup)
 
 Aggregate:
   Pipeline architecture defined
@@ -174,25 +175,25 @@ For projects spanning multiple DE tools:
 | de-kafka-expert | `sonnet` | `opus` for topology design |
 | de-snowflake-expert | `sonnet` | `opus` for warehouse design |
 
-### Task Call Examples
+### Agent Call Examples
 
 ```
 # Complex pipeline architecture
-Task(
+Agent(
   subagent_type: "general-purpose",
   prompt: "Design end-to-end pipeline architecture following de-pipeline-expert guidelines",
   model: "opus"
 )
 
 # Standard DAG review
-Task(
+Agent(
   subagent_type: "general-purpose",
   prompt: "Review Airflow DAGs in dags/ following de-airflow-expert guidelines",
   model: "sonnet"
 )
 
 # Quick dbt test validation
-Task(
+Agent(
   subagent_type: "Explore",
   prompt: "Find all dbt models missing schema tests",
   model: "haiku"
@@ -216,9 +217,9 @@ Detection:
   - kafka/ → de-kafka-expert
 
 Route (parallel):
-  Task(de-airflow-expert role → review dags/, model: "sonnet")
-  Task(de-dbt-expert role → review models/, model: "sonnet")
-  Task(de-kafka-expert role → review kafka/, model: "sonnet")
+  Agent(de-airflow-expert role → review dags/, model: "sonnet")
+  Agent(de-dbt-expert role → review models/, model: "sonnet")
+  Agent(de-kafka-expert role → review kafka/, model: "sonnet")
 ```
 
 ## Display Format

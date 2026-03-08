@@ -2,6 +2,7 @@
 name: secretary-routing
 description: Routes agent management tasks to the correct manager agent. Use when user requests agent creation, updates, audits, git operations, or verification.
 user-invocable: false
+context: fork
 ---
 
 # Secretary Routing Skill
