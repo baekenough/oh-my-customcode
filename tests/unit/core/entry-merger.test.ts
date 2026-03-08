@@ -250,11 +250,58 @@ Real managed section
 
       expect(result.content).toBe(`<!-- omcustom:start -->
 Template content
+<!-- omcustom:end -->
+
+Custom user content`);
+      expect(result.managedSections).toBe(1);
+      expect(result.customSections).toBe(1);
+      expect(result.warnings.length).toBe(1);
+      expect(result.warnings[0]).toContain('No managed sections found');
+      expect(result.warnings[0]).toContain('preserved below');
+    });
+
+    it('should only wrap template when existing content is empty', () => {
+      const existingContent = '';
+      const templateContent = 'Template content';
+
+      const result = mergeEntryDoc(existingContent, templateContent);
+
+      expect(result.content).toBe(`<!-- omcustom:start -->
+Template content
 <!-- omcustom:end -->`);
       expect(result.managedSections).toBe(1);
       expect(result.customSections).toBe(0);
       expect(result.warnings.length).toBe(1);
-      expect(result.warnings[0]).toContain('No managed sections found');
+      expect(result.warnings[0]).toContain('wrapping template entirely');
+    });
+
+    it('should preserve multiline project content when no markers exist', () => {
+      const existingContent = `# My Project
+
+This is a project-specific README.
+It has multiple lines of important content.
+
+## Setup
+Run \`npm install\` to get started.`;
+      const templateContent = 'Template content';
+
+      const result = mergeEntryDoc(existingContent, templateContent);
+
+      expect(result.content).toBe(`<!-- omcustom:start -->
+Template content
+<!-- omcustom:end -->
+
+# My Project
+
+This is a project-specific README.
+It has multiple lines of important content.
+
+## Setup
+Run \`npm install\` to get started.`);
+      expect(result.managedSections).toBe(1);
+      expect(result.customSections).toBe(1);
+      expect(result.warnings.length).toBe(1);
+      expect(result.warnings[0]).toContain('preserved below');
     });
 
     it('should replace managed section with new template', () => {
@@ -335,20 +382,6 @@ Custom content`);
       expect(result.customSections).toBe(1);
       expect(result.warnings.length).toBe(1);
       expect(result.warnings[0]).toContain('Multiple managed sections found');
-    });
-
-    it('should handle empty existing content', () => {
-      const existingContent = '';
-      const templateContent = 'Template content';
-
-      const result = mergeEntryDoc(existingContent, templateContent);
-
-      expect(result.content).toBe(`<!-- omcustom:start -->
-Template content
-<!-- omcustom:end -->`);
-      expect(result.managedSections).toBe(1);
-      expect(result.customSections).toBe(0);
-      expect(result.warnings.length).toBe(1);
     });
 
     it('should handle empty template content', () => {
