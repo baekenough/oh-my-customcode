@@ -112,12 +112,14 @@ Before writing/editing multiple files:
 ## Display Format
 
 ```
-[Instance 1] mgr-creator:sonnet → Create Go agent
-[Instance 2] lang-python-expert:sonnet → Review Python code
-[Instance 3] Explore:haiku → Search codebase
+[1] mgr-creator:sonnet → Create Go agent
+[2] lang-python-expert:sonnet → Review Python code
+[3] Explore:haiku → Search codebase
 ```
 
-Must use `{subagent_type}:{model}` format. Custom names not allowed.
+Must use `[N] {subagent_type}:{model}` format. `[N]` is 1-indexed and MUST match the `description` parameter prefix of the Agent tool call for Running display correlation.
+
+Single agent spawns do NOT use the `[N]` prefix.
 
 ## Result Aggregation
 

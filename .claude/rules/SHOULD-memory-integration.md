@@ -78,6 +78,31 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 | claude-mem | Orchestrator | `mcp__plugin_claude-mem_mcp-search__save_memory` | Save session summary with project, tasks, decisions | No (best-effort) |
 | episodic-memory | Orchestrator | `mcp__plugin_episodic-memory_episodic-memory__search` | Verify session is indexed for future retrieval | No (best-effort) |
 
+### Session-End Self-Check (MANDATORY)
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE CONFIRMING SESSION-END TO USER:                          ║
+║                                                                   ║
+║  1. Did sys-memory-keeper update MEMORY.md?                      ║
+║     YES → Continue                                               ║
+║     NO  → Delegate to sys-memory-keeper first                    ║
+║                                                                   ║
+║  2. Did I attempt claude-mem save?                               ║
+║     YES → Continue (even if it failed)                           ║
+║     NO  → ToolSearch + save now                                  ║
+║                                                                   ║
+║  3. Did I attempt episodic-memory verification?                  ║
+║     YES → Continue (even if it failed)                           ║
+║     NO  → ToolSearch + verify now  ← THIS IS THE COMMONLY       ║
+║           SKIPPED STEP. DO NOT SKIP IT.                          ║
+║                                                                   ║
+║  ALL THREE must be attempted before confirming to user.          ║
+║  "Attempted" means called the tool — failure is OK, skipping     ║
+║  is NOT.                                                          ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 ### Failure Policy
 
 - MCP saves are **non-blocking**: memory failure MUST NOT prevent session from ending
