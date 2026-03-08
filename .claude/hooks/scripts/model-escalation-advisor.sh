@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Model Escalation Advisor Hook
-# Trigger: PreToolUse, tool == "Task"
+# Trigger: PreToolUse, tool == "Task" || tool == "Agent"
 # Purpose: Advise model escalation when failure patterns detected
 # Protocol: stdin JSON -> process -> stdout pass-through, exit 0 always
 

@@ -33,15 +33,15 @@ Inspired by Pi Coding Agent Workflow Extension's multi-model verification patter
 
 ### Prerequisites
 - Agent Teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) for full parallel execution
-- Falls back to sequential Task tool execution if Agent Teams unavailable
+- Falls back to sequential Agent tool execution if Agent Teams unavailable
 
 ### Execution Flow
 
 1. **Input**: File path(s) or diff to verify
 2. **Spawn Parallel Reviewers**:
-   - `Task(opus)` → Architecture & design review
-   - `Task(sonnet)` → Code quality & correctness review
-   - `Task(haiku)` → Style & convention review
+   - `Agent(opus)` → Architecture & design review
+   - `Agent(sonnet)` → Code quality & correctness review
+   - `Agent(haiku)` → Style & convention review
 3. **Collect Results**: Each reviewer returns findings with severity
 4. **Aggregate**: Merge and deduplicate findings
 5. **Report**: Unified report sorted by severity
@@ -59,14 +59,14 @@ TeamCreate("verification-team")
 
 Members communicate findings via SendMessage for cross-cutting concerns.
 
-### Task Tool Fallback
+### Agent Tool Fallback
 
-When Agent Teams is unavailable, spawn parallel Task agents:
+When Agent Teams is unavailable, spawn parallel agents:
 
 ```
-[1] Task(general-purpose):opus → Architecture review
-[2] Task(general-purpose):sonnet → Code quality review
-[3] Task(general-purpose):haiku → Style & convention review
+[1] Agent(general-purpose):opus → Architecture review
+[2] Agent(general-purpose):sonnet → Code quality review
+[3] Agent(general-purpose):haiku → Style & convention review
 ```
 
 ## Output Format

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Stuck Detector Hook
-# Trigger: PostToolUse, tool matches "Edit|Write|Bash|Task"
+# Trigger: PostToolUse, tool matches "Edit|Write|Bash|Task|Agent"
 # Purpose: Detect repetitive failure loops and advise recovery
 # Protocol: stdin JSON -> process -> stdout pass-through, exit 0 always
 
