@@ -18,7 +18,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import yaml from 'js-yaml';
 import path from 'path';
-import { readFile, readdir, stat, mkdir, writeFile } from 'fs/promises';
+import { readFile, stat, mkdir, writeFile } from 'fs/promises';
 import { Glob } from 'bun';
 import { createHash } from 'crypto';
 
@@ -34,6 +34,10 @@ const KEY_DOC_PAGES = [
   '/en/sub-agents',
   '/en/hooks',
   '/en/features-overview',
+  '/en/agent-teams',
+  '/en/model-configuration',
+  '/en/settings',
+  '/en/mcp-servers',
 ];
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
@@ -45,7 +49,7 @@ const HASH_FILE = path.join(PROJECT_ROOT, '.claude/claude-native-hash.txt');
 const LOCAL_DOCS_DIR = path.join(process.env.HOME || '~', '.claude/references/claude-code');
 const LOCAL_DOCS_MAX_AGE_DAYS = 7;
 
-const BAEKGOM_UNIQUE_RULES = ['R000', 'R007', 'R008', 'R009', 'R010', 'R016', 'R017', 'R018'];
+const BAEKGOM_UNIQUE_RULES = ['R000', 'R007', 'R008', 'R009', 'R010', 'R015', 'R016', 'R017', 'R018'];
 
 // ============================================================================
 // TypeScript Interfaces
@@ -57,6 +61,13 @@ interface Frontmatter {
   model?: string;
   tools?: string[];
   skills?: string[];
+  disallowedTools?: string[];
+  hooks?: Record<string, any>;
+  permissionMode?: string;
+  isolation?: string;
+  background?: boolean;
+  maxTurns?: number;
+  mcpServers?: string[];
   [key: string]: any;
 }
 
@@ -84,10 +95,18 @@ interface RuleInfo {
   is_unique: boolean;
 }
 
+interface HookInfo {
+  event: string;
+  matchers: string[];
+  has_dual_matcher: boolean;
+  scripts: string[];
+}
+
 interface ProjectStructure {
   agents: AgentInfo[];
   skills: SkillInfo[];
   rules: RuleInfo[];
+  hooks: HookInfo[];
   agent_count: number;
   skill_count: number;
 }
@@ -402,15 +421,46 @@ async function analyzeRules(): Promise<RuleInfo[]> {
   return rules;
 }
 
+async function analyzeHooks(): Promise<HookInfo[]> {
+  const hooks: HookInfo[] = [];
+  const hooksFile = path.join(PROJECT_ROOT, '.claude/hooks/hooks.json');
+
+  try {
+    const content = await readFile(hooksFile, 'utf-8');
+    const hooksConfig = JSON.parse(content) as Record<string, unknown>;
+
+    for (const [event, entries] of Object.entries(hooksConfig)) {
+      if (!Array.isArray(entries)) continue;
+      for (const entry of entries as Array<Record<string, unknown>>) {
+        const matcher = typeof entry.matcher === 'string' ? entry.matcher : '';
+        const command = typeof entry.command === 'string' ? entry.command : '';
+        hooks.push({
+          event,
+          matchers: [matcher],
+          has_dual_matcher:
+            (matcher.includes('Task') && matcher.includes('Agent')) || !matcher.includes('Task'),
+          scripts: [command],
+        });
+      }
+    }
+  } catch (error) {
+    // hooks.json doesn't exist or is invalid
+  }
+
+  return hooks;
+}
+
 async function analyzeProjectStructure(): Promise<ProjectStructure> {
   const agents = await analyzeAgents();
   const skills = await analyzeSkills();
   const rules = await analyzeRules();
+  const hooks = await analyzeHooks();
 
   return {
     agents,
     skills,
     rules,
+    hooks,
     agent_count: agents.length,
     skill_count: skills.length,
   };
@@ -484,6 +534,9 @@ ${JSON.stringify(projectStructure.agents, null, 2)}
 ### Skills (${projectStructure.skill_count} total)
 ${JSON.stringify(projectStructure.skills, null, 2)}
 
+### Hooks (${projectStructure.hooks.length} matchers)
+${JSON.stringify(projectStructure.hooks, null, 2)}
+
 ### Unique Rules
 ${JSON.stringify(projectStructure.rules.filter((r) => r.is_unique), null, 2)}
 
@@ -493,6 +546,8 @@ ${JSON.stringify(projectStructure.rules.filter((r) => r.is_unique), null, 2)}
 2. **Field Validation**: Are frontmatter fields valid per official spec?
 3. **Documentation Updates**: Any new features in official docs we should adopt?
 4. **Unique Features**: Verify project unique rules are preserved
+5. **Hook Compatibility**: Check if hooks use dual matchers (Task|Agent) for forward compatibility
+6. **Tool Naming**: Verify documentation uses "Agent tool" (not just "Task tool") for Claude Code v2.1.63+ compatibility
 
 ## Response Format (JSON only)
 
@@ -519,7 +574,7 @@ ${JSON.stringify(projectStructure.rules.filter((r) => r.is_unique), null, 2)}
 Respond with ONLY valid JSON, no markdown formatting.`;
 
   const response = await client.messages.create({
-    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6-20250610',
     max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
   });

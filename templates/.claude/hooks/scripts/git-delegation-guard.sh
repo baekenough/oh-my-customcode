@@ -1,6 +1,6 @@
 #!/bin/bash
 # R010 git-delegation-guard hook
-# Warns when git operations are delegated to a non-mgr-gitnerd agent via Task tool.
+# Warns when git operations are delegated to a non-mgr-gitnerd agent via Agent/Task tool.
 # WARN only - does NOT block (exit 0, passes input through).
 
 input=$(cat)

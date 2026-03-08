@@ -12,28 +12,28 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 
 | Scenario | Preferred | Reason |
 |----------|-----------|--------|
-| Simple independent subtasks | Task Tool | Lower cost, no coordination overhead |
+| Simple independent subtasks | Agent Tool | Lower cost, no coordination overhead |
 | Multi-step with shared state | **Agent Teams** | Shared task list, peer messaging |
 | Research requiring discussion | **Agent Teams** | Iterative discovery, synthesis |
-| Cost-sensitive batch ops | Task Tool | Minimal token overhead |
+| Cost-sensitive batch ops | Agent Tool | Minimal token overhead |
 | Complex debugging across modules | **Agent Teams** | Cross-module state sharing |
 | Code review + fix cycle | **Agent Teams** | Review → fix → re-review loop |
-| Single file operations | Task Tool | Overkill for simple tasks |
+| Single file operations | Agent Tool | Overkill for simple tasks |
 | Dynamic agent creation + usage | **Agent Teams** | Create → test → iterate cycle |
 
 **When Agent Teams is enabled and criteria are met, usage is MANDATORY.**
 
-## Self-Check (MANDATORY Before Task Tool)
+## Self-Check (MANDATORY Before Agent Tool)
 
-BEFORE using Task tool for 2+ agent tasks, this check is **ENFORCED**:
+BEFORE using Agent tool for 2+ agent tasks, this check is **ENFORCED**:
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
-║  BEFORE USING Task TOOL FOR 2+ AGENTS:                          ║
+║  BEFORE USING Agent TOOL FOR 2+ AGENTS:                          ║
 ║                                                                   ║
 ║  1. Is Agent Teams available?                                    ║
 ║     YES → MUST check criteria #2-#5                              ║
-║     NO  → Proceed with Task tool                                ║
+║     NO  → Proceed with Agent tool                               ║
 ║                                                                   ║
 ║  2. Will 3+ agents be involved?                                  ║
 ║     YES → MUST use Agent Teams                                   ║
@@ -41,10 +41,10 @@ BEFORE using Task tool for 2+ agent tasks, this check is **ENFORCED**:
 ║                                                                   ║
 ║  3. Is there a review → fix → re-review cycle?                  ║
 ║     YES → MUST use Agent Teams                                   ║
-║     NO  → Proceed with Task tool                                 ║
+║     NO  → Proceed with Agent tool                                ║
 ║                                                                   ║
 ║  Simple rule: 3+ agents OR review cycle → Agent Teams            ║
-║  Everything else → Task tool                                     ║
+║  Everything else → Agent tool                                    ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -73,60 +73,60 @@ When spawning Agent Teams members:
 ## Common Violations
 
 ```
-❌ WRONG: Agent Teams enabled, 3+ research tasks using Task tool
-   Task(Explore):haiku → Analysis 1
-   Task(Explore):haiku → Analysis 2
-   Task(Explore):haiku → Analysis 3
+❌ WRONG: Agent Teams enabled, 3+ research tasks using Agent tool
+   Agent(Explore):haiku → Analysis 1
+   Agent(Explore):haiku → Analysis 2
+   Agent(Explore):haiku → Analysis 3
 
 ✓ CORRECT: TeamCreate → spawn researchers → coordinate via shared task list
    TeamCreate("research-team")
-   Task(researcher-1) → Analysis 1  ┐
-   Task(researcher-2) → Analysis 2  ├─ Spawned as team members
-   Task(researcher-3) → Analysis 3  ┘
+   Agent(researcher-1) → Analysis 1  ┐
+   Agent(researcher-2) → Analysis 2  ├─ Spawned as team members
+   Agent(researcher-3) → Analysis 3  ┘
    SendMessage(coordinate)
 
-❌ WRONG: Code review + fix as independent Tasks
-   Task(reviewer) → "Review code"
+❌ WRONG: Code review + fix as independent Agents
+   Agent(reviewer) → "Review code"
    (receive result)
-   Task(implementer) → "Fix issues"
+   Agent(implementer) → "Fix issues"
    (receive result)
-   Task(reviewer) → "Re-review"
+   Agent(reviewer) → "Re-review"
 
 ✓ CORRECT: Agent Teams for review-fix cycle
    TeamCreate("review-fix")
-   Task(reviewer) + Task(implementer) → team members
+   Agent(reviewer) + Agent(implementer) → team members
    reviewer → SendMessage(implementer, "issues found")
    implementer → fixes → SendMessage(reviewer, "fixed")
    reviewer → re-reviews → done
 
 ❌ WRONG: Multi-expert task without coordination
-   Task(lang-typescript-expert) → "Implement frontend"
-   Task(be-express-expert) → "Implement API"
+   Agent(lang-typescript-expert) → "Implement frontend"
+   Agent(be-express-expert) → "Implement API"
    (no shared state, results manually combined)
 
 ✓ CORRECT: Agent Teams for cross-domain work
    TeamCreate("fullstack")
-   Task(frontend-dev) + Task(backend-dev) → team members
+   Agent(frontend-dev) + Agent(backend-dev) → team members
    Shared TaskList for interface contracts
    SendMessage for API schema coordination
 
 ❌ WRONG: Spawning team members one at a time
    TeamCreate("research-team")
-   Message 1: Task(researcher-1) → Analysis 1   (only 1/3 spawned)
-   Message 2: Task(researcher-2) → Analysis 2   (late spawn)
-   Message 3: Task(researcher-3) → Analysis 3   (late spawn)
+   Message 1: Agent(researcher-1) → Analysis 1   (only 1/3 spawned)
+   Message 2: Agent(researcher-2) → Analysis 2   (late spawn)
+   Message 3: Agent(researcher-3) → Analysis 3   (late spawn)
 
 ✓ CORRECT: All members in a single message
    TeamCreate("research-team")
    Single message:
-     Task(researcher-1) → Analysis 1  ┐
-     Task(researcher-2) → Analysis 2  ├─ ALL spawned together
-     Task(researcher-3) → Analysis 3  ┘
+     Agent(researcher-1) → Analysis 1  ┐
+     Agent(researcher-2) → Analysis 2  ├─ ALL spawned together
+     Agent(researcher-3) → Analysis 3  ┘
 ```
 
 ## Cost Guidelines
 
-| Criteria | Task Tool | Agent Teams |
+| Criteria | Agent Tool | Agent Teams |
 |----------|-----------|-------------|
 | Agent count | 1-2 | 3+ |
 | Inter-task dependency | None | Present |
@@ -185,18 +185,18 @@ When Agent Teams creates a new agent via mgr-creator:
 ## Lifecycle
 
 ```
-TeamCreate → TaskCreate → Task(spawn members) → SendMessage(coordinate)
+TeamCreate → TaskCreate → Agent(spawn members) → SendMessage(coordinate)
   → TaskUpdate(progress) → ... → shutdown members → TeamDelete
 ```
 
 ## Fallback
 
-When Agent Teams unavailable: use Task tool with R009/R010 rules.
+When Agent Teams unavailable: use Agent tool with R009/R010 rules.
 When Agent Teams available: actively prefer it for qualifying tasks. This is not optional.
 
 ## Cost Awareness
 
-Agent Teams actively preferred for qualifying collaborative tasks. Use Task tool only when:
+Agent Teams actively preferred for qualifying collaborative tasks. Use Agent tool only when:
 - 1-2 agents with no inter-dependency
 - No review → fix cycles
 - Simple independent subtasks

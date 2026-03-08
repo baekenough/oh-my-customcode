@@ -2,6 +2,7 @@
 name: dev-lead-routing
 description: Routes development tasks to the correct language or framework expert agent. Use when user requests code review, implementation, refactoring, or debugging.
 user-invocable: false
+context: fork
 ---
 
 # Dev Lead Routing
