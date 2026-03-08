@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.2] - 2026-03-08
+
+### Fixed
+- **Manifest version desync** : `templates/manifest.json` version was stuck at `0.3.0` while package.json was at `0.23.1`, causing `omcustom update` to incorrectly report "no updates available" for users with existing installations
+
+### Added
+- **CI version sync guard**: New CI job `version-sync` verifies `package.json` and `templates/manifest.json` versions match on every PR
+
 ## [0.23.1] - 2026-03-08
 
 ### Fixed
