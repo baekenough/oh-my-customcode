@@ -91,9 +91,9 @@ TeamCreate("review-pipeline")
   Shared TaskList for tracking issues
 ```
 
-When Agent Teams is NOT available, falls back to sequential Task tool calls:
+When Agent Teams is NOT available, falls back to sequential Agent tool calls:
 ```
-Task(worker) → result → Task(reviewer) → verdict → Task(worker) → ...
+Agent(worker) → result → Agent(reviewer) → verdict → Agent(worker) → ...
 ```
 
 ## Display Format

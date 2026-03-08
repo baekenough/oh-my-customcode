@@ -2,6 +2,7 @@
 name: qa-lead-routing
 description: Coordinates QA workflow across planning, writing, and execution agents. Use when user requests testing, quality assurance, or test documentation.
 user-invocable: false
+context: fork
 ---
 
 # QA Lead Routing Skill
@@ -20,16 +21,16 @@ Coordinates QA team activities by routing tasks to qa-planner, qa-writer, and qa
 
 ## Routing Decision (Priority Order)
 
-Before routing via Task tool, evaluate Agent Teams eligibility first:
+Before routing via Agent tool, evaluate Agent Teams eligibility first:
 
-**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Task tool. See R018 for the full decision matrix.
+**Self-check:** Does this task need 3+ agents, shared state, or inter-agent communication? If yes, prefer Agent Teams over Agent tool. See R018 for the full decision matrix.
 
 | Scenario | Preferred |
 |----------|-----------|
-| Single QA phase (plan/write/execute) | Task Tool |
+| Single QA phase (plan/write/execute) | Agent Tool |
 | Full QA cycle (plan + write + execute + report) | Agent Teams |
 | Quality analysis (parallel strategy + results) | Agent Teams |
-| Quick test validation | Task Tool |
+| Quick test validation | Agent Tool |
 
 ## Command Routing
 
@@ -51,7 +52,7 @@ full_qa_cycle      → all agents (sequential)
 User: "Create test plan for feature X"
 
 Route:
-  Task(qa-planner role → create test plan, model: "sonnet")
+  Agent(qa-planner role → create test plan, model: "sonnet")
 
 Output:
   - Test scenarios
@@ -66,7 +67,7 @@ Output:
 User: "Document test cases for API"
 
 Route:
-  Task(qa-writer role → document test cases, model: "sonnet")
+  Agent(qa-writer role → document test cases, model: "sonnet")
 
 Output:
   - Test case specifications
@@ -81,7 +82,7 @@ Output:
 User: "Execute tests for module Y"
 
 Route:
-  Task(qa-engineer role → execute tests, model: "sonnet")
+  Agent(qa-engineer role → execute tests, model: "sonnet")
 
 Output:
   - Test execution results
@@ -98,8 +99,8 @@ When analysis is needed (parallel execution):
 User: "Analyze quality metrics"
 
 Route (parallel):
-  Task(qa-planner role → analyze strategy, model: "sonnet")
-  Task(qa-engineer role → analyze results, model: "sonnet")
+  Agent(qa-planner role → analyze strategy, model: "sonnet")
+  Agent(qa-engineer role → analyze results, model: "sonnet")
 
 Aggregate:
   Strategy insights + execution data
@@ -113,10 +114,10 @@ For complete quality assurance workflow:
 User: "Run full QA cycle for feature Z"
 
 Route (sequential):
-  1. Task(qa-planner role → create test plan, model: "sonnet")
-  2. Task(qa-writer role → document test cases, model: "sonnet")
-  3. Task(qa-engineer role → execute tests, model: "sonnet")
-  4. Task(qa-writer role → generate report, model: "sonnet")
+  1. Agent(qa-planner role → create test plan, model: "sonnet")
+  2. Agent(qa-writer role → document test cases, model: "sonnet")
+  3. Agent(qa-engineer role → execute tests, model: "sonnet")
+  4. Agent(qa-writer role → generate report, model: "sonnet")
 
 Aggregate and present final report
 ```
@@ -176,9 +177,9 @@ Only when tasks are truly independent:
 
 ```
 Example:
-  Task(qa-engineer role → test module A, model: "sonnet")
-  Task(qa-engineer role → test module B, model: "sonnet")
-  Task(qa-engineer role → test module C, model: "sonnet")
+  Agent(qa-engineer role → test module A, model: "sonnet")
+  Agent(qa-engineer role → test module B, model: "sonnet")
+  Agent(qa-engineer role → test module C, model: "sonnet")
 ```
 
 ## Sub-agent Model Selection
@@ -193,25 +194,25 @@ Example:
 
 All QA agents typically use `sonnet` for balanced quality output.
 
-### Task Call Examples
+### Agent Call Examples
 
 ```
 # Test planning
-Task(
+Agent(
   subagent_type: "general-purpose",
   prompt: "Create comprehensive test plan for authentication feature following qa-planner guidelines",
   model: "sonnet"
 )
 
 # Test documentation
-Task(
+Agent(
   subagent_type: "general-purpose",
   prompt: "Document test cases for API endpoints following qa-writer guidelines",
   model: "sonnet"
 )
 
 # Test execution
-Task(
+Agent(
   subagent_type: "general-purpose",
   prompt: "Execute integration tests and report results following qa-engineer guidelines",
   model: "sonnet"

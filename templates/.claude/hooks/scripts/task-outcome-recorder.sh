@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Task Outcome Recorder Hook
-# Trigger: PostToolUse, tool == "Task"
+# Task/Agent Outcome Recorder Hook
+# Trigger: PostToolUse, tool == "Task" || tool == "Agent"
 # Purpose: Record task outcomes for model escalation decisions
 # Protocol: stdin JSON -> process -> stdout pass-through, exit 0 always
 
@@ -52,7 +52,7 @@ fi
 # Report failures to stderr
 if [ "$outcome" = "failure" ]; then
   echo "" >&2
-  echo "--- [Task Outcome] FAILURE: ${agent_type}:${model} ---" >&2
+  echo "--- [Agent Outcome] FAILURE: ${agent_type}:${model} ---" >&2
   echo "  ${description}" >&2
   echo "  Error: $(echo "$error_summary" | head -c 100)" >&2
   echo "-----------------------------------------------" >&2

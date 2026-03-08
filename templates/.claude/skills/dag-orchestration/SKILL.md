@@ -1,6 +1,7 @@
 ---
 name: dag-orchestration
 description: YAML-based DAG workflow engine with topological execution and failure strategies
+context: fork
 ---
 
 # DAG Orchestration Skill

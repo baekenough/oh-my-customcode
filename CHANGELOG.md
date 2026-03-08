@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-03-08
+
+### Added
+- **Claude Code v2.1.x Compatibility**: Dual `Task|Agent` hook matchers for forward/backward compatibility
+- **SubagentStart/SubagentStop** hook events for agent lifecycle tracking
+- **Claude Code version detection** in session-env-check.sh with compatibility warnings
+- **7 new agent frontmatter fields**: `isolation`, `background`, `maxTurns`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools` documented in R006
+- **`context: fork`** support added to 5 routing/orchestration skills
+- **Hooks analysis** in claude-native CI checker for dual matcher verification
+- **Claude Code compatibility matrix** in CLAUDE.md
+
+### Changed
+- All rule files (R008, R009, R010, R012, R018) updated: "Task tool" → "Agent tool" naming
+- All routing skills updated: `Task(...)` → `Agent(...)` in examples
+- CLAUDE.md updated with Agent tool naming and compatibility section
+- claude-native checker upgraded: new frontmatter fields, hooks analysis, expanded doc pages, model update
+- Hook scripts updated with dual Agent/Task tool comments
+
+### Fixed
+- hooks.json matchers silently broken in Claude Code v2.1.63+ due to Task→Agent rename (Issue #218)
+
 ## [0.22.1] - 2026-03-08
 
 ### Fixed

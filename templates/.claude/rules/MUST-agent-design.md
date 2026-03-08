@@ -30,7 +30,19 @@ escalation:              # Model escalation policy (optional)
   enabled: true          # Enable auto-escalation advisory
   path: haiku → sonnet → opus  # Escalation sequence
   threshold: 2           # Failures before advisory
+isolation: worktree        # Run in isolated git worktree
+background: true           # Run in background
+maxTurns: 10               # Max conversation turns
+mcpServers: [server-1]     # MCP servers available
+hooks:                     # Agent-specific hooks
+  PreToolUse:
+    - matcher: "Edit"
+      command: "echo hook"
+permissionMode: bypassPermissions  # Permission mode
+disallowedTools: [Bash]    # Tools to disallow
 ```
+
+> **Note**: `isolation`, `background`, `maxTurns`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools` are supported in Claude Code v2.1.63+.
 
 ### Escalation Policy
 

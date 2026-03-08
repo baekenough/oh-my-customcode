@@ -8,7 +8,7 @@
 |--------|-----------|----------------|
 | Channel | stderr (hooks) | stdout (dedicated statusline) |
 | Location | Inline in conversation log | Persistent bar at screen bottom |
-| Trigger | PreToolUse (Task matcher) | Message update cycle (~300ms) |
+| Trigger | PreToolUse (Agent/Task matcher) | Message update cycle (~300ms) |
 | Role | Event notifications | Persistent session status |
 
 ## HUD Events (Hook-based)
@@ -26,14 +26,14 @@ Multi-step tasks, parallel execution, long-running operations. Skip for single b
 
 ### Implementation
 
-Implemented in `.claude/hooks/hooks.json` (PreToolUse → Task matcher).
+Implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher).
 
 ### Parallel Display
 
 ```
 ─── [Agent] secretary | [Parallel] 4 ───
-  [1] Task(mgr-creator):sonnet → Create agent
-  [2] Task(lang-golang-expert):haiku → Code review
+  [1] Agent(mgr-creator):sonnet → Create agent
+  [2] Agent(lang-golang-expert):haiku → Code review
 ```
 
 ## Statusline API (Command-based)

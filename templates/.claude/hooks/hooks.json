@@ -63,7 +63,7 @@
         "description": "Suggest manual compaction at logical intervals"
       },
       {
-        "matcher": "tool == \"Task\"",
+        "matcher": "tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",
@@ -82,7 +82,7 @@
             "command": "bash .claude/hooks/scripts/model-escalation-advisor.sh"
           }
         ],
-        "description": "HUD statusline + R010 git delegation guard + R018 Agent Teams advisor on Task spawn"
+        "description": "HUD statusline + R010 git delegation guard + R018 Agent Teams advisor on Agent/Task spawn"
       }
     ],
     "SessionStart": [
@@ -95,6 +95,30 @@
           }
         ],
         "description": "Check codex CLI and Agent Teams availability at session start"
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.agent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' | head -c 40)\necho \"─── [SubagentStart] ${agent_type}:${model} | ${desc} ───\" >&2\necho \"$input\""
+          }
+        ],
+        "description": "HUD display when a subagent starts (complements PreToolUse Agent matcher)"
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
+          }
+        ],
+        "description": "Record agent outcomes on subagent completion (complements PostToolUse Agent matcher)"
       }
     ],
     "PostToolUse": [
@@ -169,17 +193,17 @@
         "description": "Type check Python files with ty after edits"
       },
       {
-        "matcher": "tool == \"Task\"",
+        "matcher": "tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
           }
         ],
-        "description": "Record task outcomes (success/failure) for model escalation decisions"
+        "description": "Record agent/task outcomes (success/failure) for model escalation decisions"
       },
       {
-        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\"",
+        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",

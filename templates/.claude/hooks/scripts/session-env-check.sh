@@ -27,6 +27,23 @@ if [ "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-0}" = "1" ]; then
   AGENT_TEAMS_STATUS="enabled"
 fi
 
+# Claude Code version detection
+CLAUDE_VERSION="unknown"
+if command -v claude >/dev/null 2>&1; then
+  CLAUDE_VERSION=$(claude --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
+fi
+
+# Version compatibility check
+MIN_COMPAT_VERSION="2.1.63"
+COMPAT_STATUS="unknown"
+if [ "$CLAUDE_VERSION" != "unknown" ]; then
+  if printf '%s\n' "$MIN_COMPAT_VERSION" "$CLAUDE_VERSION" | sort -V | head -1 | grep -q "^${MIN_COMPAT_VERSION}$"; then
+    COMPAT_STATUS="compatible"
+  else
+    COMPAT_STATUS="outdated"
+  fi
+fi
+
 # Git workflow reminder
 CURRENT_BRANCH="unknown"
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -39,11 +56,17 @@ cat > "$STATUS_FILE" << ENVEOF
 codex=${CODEX_STATUS}
 agent_teams=${AGENT_TEAMS_STATUS}
 git_branch=${CURRENT_BRANCH}
+claude_version=${CLAUDE_VERSION}
+compat_status=${COMPAT_STATUS}
 ENVEOF
 
 # Report to stderr (visible in conversation)
 echo "  codex CLI: ${CODEX_STATUS}" >&2
 echo "  Agent Teams: ${AGENT_TEAMS_STATUS}" >&2
+echo "  Claude Code: v${CLAUDE_VERSION} (${COMPAT_STATUS})" >&2
+if [ "$COMPAT_STATUS" = "outdated" ]; then
+  echo "  ⚠ Claude Code v${MIN_COMPAT_VERSION}+ recommended for full hook compatibility" >&2
+fi
 echo "" >&2
 echo "  [Git Workflow Reminder]" >&2
 echo "  Current branch: ${CURRENT_BRANCH}" >&2
