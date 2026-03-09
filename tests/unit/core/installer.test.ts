@@ -754,4 +754,100 @@ describe('installer', () => {
       expect(path).toBe('CLAUDE.md');
     });
   });
+
+  describe('file preservation during backup', () => {
+    it('should preserve settings.local.json user properties during backup reinstall', async () => {
+      const fs = await import('node:fs/promises');
+
+      // First install
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      // Add user customizations to settings.local.json
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      const userSettings = {
+        enableAllProjectMcpServers: true,
+        enabledMcpjsonServers: ['ontology-rag'],
+        statusLine: {
+          type: 'command',
+          command: '.claude/statusline.sh',
+          padding: 0,
+        },
+      };
+      await fs.writeFile(settingsPath, JSON.stringify(userSettings), 'utf-8');
+
+      // Re-install with backup (simulates omcustom init on existing project)
+      const result = await install({
+        targetDir: tempDir,
+        backup: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(true);
+
+      // Verify user settings are preserved
+      const restored = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      expect(restored.enableAllProjectMcpServers).toBe(true);
+      expect(restored.enabledMcpjsonServers).toEqual(['ontology-rag']);
+      expect(restored.statusLine).toBeDefined();
+    });
+
+    it('should preserve settings.json during backup reinstall', async () => {
+      const fs = await import('node:fs/promises');
+
+      // Create initial .claude with settings.json
+      await mkdir(join(tempDir, '.claude'), { recursive: true });
+      await fs.writeFile(
+        join(tempDir, '.claude', 'settings.json'),
+        JSON.stringify({ projectSetting: 'value' }),
+        'utf-8'
+      );
+      await fs.writeFile(join(tempDir, 'CLAUDE.md'), '# Existing');
+
+      // Re-install with backup
+      const result = await install({
+        targetDir: tempDir,
+        backup: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(true);
+
+      // settings.json should be preserved
+      const settingsPath = join(tempDir, '.claude', 'settings.json');
+      expect(await fileExists(settingsPath)).toBe(true);
+      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      expect(content.projectSetting).toBe('value');
+    });
+
+    it('should preserve agent-memory directories during backup reinstall', async () => {
+      const fs = await import('node:fs/promises');
+
+      // First install
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      // Create agent memory
+      const memDir = join(tempDir, '.claude', 'agent-memory', 'test-agent');
+      await mkdir(memDir, { recursive: true });
+      await fs.writeFile(join(memDir, 'MEMORY.md'), '# Important agent memory');
+
+      // Re-install with backup
+      const result = await install({
+        targetDir: tempDir,
+        backup: true,
+        skipConfirm: true,
+      });
+
+      expect(result.success).toBe(true);
+
+      // Agent memory should be preserved
+      expect(
+        await fileExists(join(tempDir, '.claude', 'agent-memory', 'test-agent', 'MEMORY.md'))
+      ).toBe(true);
+      const content = await fs.readFile(
+        join(tempDir, '.claude', 'agent-memory', 'test-agent', 'MEMORY.md'),
+        'utf-8'
+      );
+      expect(content).toBe('# Important agent memory');
+    });
+  });
 });
