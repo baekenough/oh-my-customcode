@@ -17,7 +17,12 @@ Powered by oh-my-customcode.
 |     [agent-name] -> Tool: {tool}                                  |
 |     [agent-name] -> Target: {path}                                |
 |                                                                   |
-|  If NO to either -> FIX IMMEDIATELY before continuing             |
+|                                                                   |
+|  3. Am I about to spawn 2+ agents?                               |
+|     YES -> Check R018: Agent Teams may be REQUIRED                |
+|     3+ agents OR review cycle -> Agent Teams (MUST)               |
+|                                                                   |
+|  If NO to any -> FIX IMMEDIATELY before continuing                |
 +==================================================================+
 ```
 
@@ -164,6 +169,7 @@ Violation = immediate correction. No exception for "small changes".
 | `/optimize-bundle` | Optimize bundle size |
 | `/optimize-report` | Generate optimization report |
 | `/sauron-watch` | Full R017 verification |
+| `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/lists` | Show all available commands |
 | `/status` | Show system status |
 | `/help` | Show help information |
