@@ -174,12 +174,12 @@ Violation = immediate correction. No exception for "small changes".
 project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
-|   +-- agents/                  # Subagent definitions (41 files)
-|   +-- skills/                  # Skills (56 directories)
+|   +-- agents/                  # Subagent definitions (43 files)
+|   +-- skills/                  # Skills (67 directories)
 |   +-- rules/                   # Global rules (R000-R018)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
-+-- guides/                      # Reference docs (22 topics)
++-- guides/                      # Reference docs (23 topics)
 ```
 
 ## Orchestration
@@ -208,7 +208,7 @@ This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect 
 | Type | Count | Agents |
 |------|-------|--------|
 | SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| SW Engineer/Backend | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
+| SW Engineer/Backend | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
 | SW Engineer/Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
 | SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | DE Engineer | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
@@ -218,7 +218,7 @@ This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect 
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
-| **Total** | **41** | |
+| **Total** | **42** | |
 
 ## Agent Teams (MUST when enabled)
 
