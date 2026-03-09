@@ -17,6 +17,12 @@ import {
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { loadConfig, saveConfig } from './config.js';
 import {
+  cleanupPreservation,
+  extractCriticalFiles,
+  type PreservationResult,
+  restoreCriticalFiles,
+} from './file-preservation.js';
+import {
   detectGitWorkflow,
   getDefaultWorkflow,
   renderGitWorkflowEN,
@@ -140,14 +146,34 @@ async function handleBackup(
   targetDir: string,
   shouldBackup: boolean,
   result: InstallResult
-): Promise<void> {
-  if (!shouldBackup) return;
+): Promise<PreservationResult | null> {
+  if (!shouldBackup) return null;
+
+  const layout = getProviderLayout();
+  const rootDir = join(targetDir, layout.rootDir);
+
+  // Extract critical user files BEFORE backup moves .claude/ away
+  let preservation: PreservationResult | null = null;
+  if (await fileExists(rootDir)) {
+    const { createTempDir } = await import('../utils/fs.js');
+    const tempDir = await createTempDir('omcustom-preserve-');
+    preservation = await extractCriticalFiles(rootDir, tempDir);
+
+    if (preservation.extractedFiles.length > 0 || preservation.extractedDirs.length > 0) {
+      info('install.preserved', {
+        files: String(preservation.extractedFiles.length),
+        dirs: String(preservation.extractedDirs.length),
+      });
+    }
+  }
 
   const backupPaths = await backupExistingInstallation(targetDir);
   result.backedUpPaths.push(...backupPaths);
   if (backupPaths.length > 0) {
     info('install.backup', { path: backupPaths[0] });
   }
+
+  return preservation;
 }
 
 /**
@@ -331,7 +357,7 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     info('install.start', { targetDir: options.targetDir });
 
     await ensureTargetDirectory(options.targetDir);
-    await handleBackup(options.targetDir, !!options.backup, result);
+    const preservation = await handleBackup(options.targetDir, !!options.backup, result);
     await checkAndWarnExisting(options.targetDir, !!options.force, !!options.backup, result);
     await verifyTemplateDirectory();
 
@@ -339,6 +365,29 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     await installStatusline(options.targetDir, options, result);
     await installSettingsLocal(options.targetDir, result);
     await installEntryDocWithTracking(options.targetDir, options, result);
+
+    // Restore critical user files AFTER installation
+    if (preservation) {
+      const layout = getProviderLayout();
+      const rootDir = join(options.targetDir, layout.rootDir);
+      const restoration = await restoreCriticalFiles(rootDir, preservation);
+
+      if (restoration.restoredFiles.length > 0 || restoration.restoredDirs.length > 0) {
+        info('install.restored', {
+          files: String(restoration.restoredFiles.length),
+          dirs: String(restoration.restoredDirs.length),
+        });
+      }
+
+      if (restoration.failures.length > 0) {
+        for (const failure of restoration.failures) {
+          result.warnings.push(`Failed to restore ${failure.path}: ${failure.reason}`);
+        }
+      }
+
+      await cleanupPreservation(preservation.tempDir);
+    }
+
     await updateInstallConfig(options.targetDir, options, result.installedComponents);
 
     result.success = true;
