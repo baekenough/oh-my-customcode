@@ -4,11 +4,17 @@ import { resolve } from 'node:path';
 
 const HOOKS_FILE = resolve(import.meta.dir, '../../../templates/.claude/hooks/hooks.json');
 
-interface HookCommand {
-  type: string;
-  command?: string;
-  prompt?: string;
+interface CommandHook {
+  type: 'command';
+  command: string;
 }
+
+interface PromptHook {
+  type: 'prompt';
+  prompt: string;
+}
+
+type HookCommand = CommandHook | PromptHook;
 
 interface HookEntry {
   matcher: string;
@@ -223,10 +229,8 @@ describe('Hooks Validation', () => {
       const data = parsed as HooksStructure;
 
       for (const hookCmd of getAllHookCmds(data)) {
-        if (hookCmd.type === 'command')
-          expect((hookCmd.command ?? '').trim().length).toBeGreaterThan(0);
-        if (hookCmd.type === 'prompt')
-          expect((hookCmd.prompt ?? '').trim().length).toBeGreaterThan(0);
+        if (hookCmd.type === 'command') expect(hookCmd.command.trim().length).toBeGreaterThan(0);
+        if (hookCmd.type === 'prompt') expect(hookCmd.prompt.trim().length).toBeGreaterThan(0);
       }
     });
 
@@ -298,7 +302,8 @@ describe('Hooks Validation', () => {
       );
 
       expect(stageBlockingHook).toBeDefined();
-      const command = stageBlockingHook?.hooks[0].command ?? '';
+      const hookCmd = stageBlockingHook?.hooks[0];
+      const command = hookCmd?.type === 'command' ? hookCmd.command : '';
       expect(command).toContain('stage-blocker.sh');
 
       // Read the script file to verify it references /tmp/.claude-dev-stage
@@ -346,7 +351,8 @@ describe('Hooks Validation', () => {
 
       const stopHook = entries.find((entry) => entry.matcher === '*');
       expect(stopHook).toBeDefined();
-      const command = stopHook?.hooks[0].command ?? '';
+      const hookCmd = stopHook?.hooks[0];
+      const command = hookCmd?.type === 'command' ? hookCmd.command : '';
       expect(command).toContain('stop-console-audit.sh');
     });
 
