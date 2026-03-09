@@ -365,7 +365,7 @@ describe('config', () => {
       const merged = mergeConfig(defaults, overrides, tempDir);
 
       expect(merged.preserveFiles).not.toContain('../../etc/passwd');
-      expect(merged.preserveFiles).toHaveLength(0);
+      expect(merged.preserveFiles).toHaveLength(4);
     });
 
     it('should deduplicate customComponents by path — later entry wins (line 213)', () => {

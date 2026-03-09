@@ -133,7 +133,12 @@ export function getDefaultConfig(): OmccConfig {
       checkIntervalHours: 24,
       autoApplyMinor: false,
     },
-    preserveFiles: [],
+    preserveFiles: [
+      '.claude/settings.json',
+      '.claude/settings.local.json',
+      '.claude/agent-memory/',
+      '.claude/agent-memory-local/',
+    ],
     customComponents: [],
   };
 }
