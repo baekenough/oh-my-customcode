@@ -52,6 +52,12 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ║     YES → Good. Continue.                                        ║
 ║     NO  → STOP. This is a VIOLATION. Re-route to mgr-gitnerd.   ║
 ║                                                                   ║
+║  4. Am I about to spawn 2+ agents in parallel?                   ║
+║     YES → Check R018: Agent Teams may be REQUIRED                ║
+║           3+ agents → MUST use Agent Teams                       ║
+║           2+ issues in batch → SHOULD use Agent Teams            ║
+║     NO  → Proceed                                                ║
+║                                                                   ║
 ║  If ANY answer is wrong → SPLIT THE TASK                         ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```

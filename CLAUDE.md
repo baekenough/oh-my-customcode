@@ -17,6 +17,11 @@ oh-my-customcode로 구동됩니다.
 |     [에이전트명] -> Tool: {도구}                                  |
 |     [에이전트명] -> Target: {경로}                                |
 |                                                                   |
+|                                                                   |
+|  3. 2개 이상 에이전트를 스폰하려 하는가?                          |
+|     YES -> R018 체크: Agent Teams 필수 여부 확인                  |
+|     3+ 에이전트 OR 리뷰 사이클 -> Agent Teams 필수                |
+|                                                                   |
 |  하나라도 NO면 -> 즉시 수정 후 계속                               |
 +==================================================================+
 ```
@@ -165,6 +170,7 @@ oh-my-customcode로 구동됩니다.
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
 | `/sauron-watch` | 전체 R017 검증 |
+| `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/lists` | 모든 사용 가능한 커맨드 표시 |
 | `/status` | 시스템 상태 표시 |
 | `/help` | 도움말 표시 |
