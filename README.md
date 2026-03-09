@@ -107,7 +107,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 
 ## What's Included
 
-### Agents (42)
+### Agents (43)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -125,7 +125,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **Security** | 1 | sec-codeql-expert |
 | **Total** | **42** | |
 
-### Skills (66)
+### Skills (67)
 
 | Category | Count | Skills |
 |----------|-------|--------|
@@ -144,7 +144,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **Deploy** | 2 | vercel-deploy, codex-exec |
 | **External** | 1 | skills-sh-search |
 
-### Guides (22)
+### Guides (23)
 
 Comprehensive reference documentation covering:
 - Agent creation and management
