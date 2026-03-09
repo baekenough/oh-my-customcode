@@ -1,6 +1,6 @@
 {
-  "version": "0.23.2",
-  "lastUpdated": "2026-03-08T00:00:00.000Z",
+  "version": "0.24.0",
+  "lastUpdated": "2026-03-09T00:00:00.000Z",
   "components": [
     {
       "name": "rules",
@@ -12,13 +12,13 @@
       "name": "agents",
       "path": ".claude/agents",
       "description": "AI agent definitions (flat .md files with prefixes)",
-      "files": 41
+      "files": 42
     },
     {
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 63
+      "files": 66
     },
     {
       "name": "guides",
