@@ -1,7 +1,6 @@
 ---
 name: research
 description: 10-team parallel deep analysis with cross-verification for any topic, repository, or technology. Use when user invokes /research or asks for comprehensive research.
-context: fork
 user-invocable: true
 ---
 
