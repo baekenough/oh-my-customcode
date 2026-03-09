@@ -38,6 +38,56 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 - Do not store sensitive data or duplicate CLAUDE.md content
 - Memory write failures should not block main task
 
+## Confidence-Tracked Memory
+
+Memory entries in MEMORY.md should include confidence annotations to distinguish verified facts from hypotheses.
+
+### Confidence Levels
+
+| Level | Tag | Meaning | Example |
+|-------|-----|---------|---------|
+| High | `[confidence: high]` | Verified across multiple sessions or confirmed by user | Architecture decisions, confirmed patterns |
+| Medium | `[confidence: medium]` | Observed pattern, not yet fully verified | Code conventions seen in 2-3 files |
+| Low | `[confidence: low]` | Single observation or hypothesis | First-time discovery, untested assumption |
+
+### Format in MEMORY.md
+
+```
+### Key Patterns [confidence: high]
+- `.claude/` files are gitignored → always use `git add -f`
+- pre-commit hooks auto-detect README/manifest count mismatches
+
+### Hypotheses [confidence: medium]
+- Template sync might need CI enforcement (seen in 2 PRs)
+
+### Unverified [confidence: low]
+- Possible race condition in parallel hook execution (observed once)
+```
+
+### Confidence Lifecycle
+
+```
+[low] → observed again → [medium] → confirmed by user/testing → [high]
+[any] → contradicted by evidence → demoted or removed
+```
+
+### Rules
+
+| Rule | Detail |
+|------|--------|
+| New discoveries | Start at `[confidence: low]` unless user explicitly confirms |
+| Cross-session verification | Promote to `[confidence: medium]` when seen in 2+ sessions |
+| User confirmation | Promote to `[confidence: high]` when user confirms or tests pass |
+| Contradiction | Demote or remove when contradicted by new evidence |
+| Default | Entries without tags are treated as `[confidence: high]` (backward compatibility) |
+
+### Integration with Session-End
+
+When sys-memory-keeper updates MEMORY.md at session end:
+1. New findings from this session → `[confidence: low]`
+2. Findings that match existing entries → promote confidence
+3. Findings that contradict existing entries → flag for review
+
 ## Session-End Auto-Save
 
 ### Trigger
