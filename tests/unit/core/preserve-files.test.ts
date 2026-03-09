@@ -50,7 +50,7 @@ describe('preserveFiles feature', () => {
 
       expect(config.preserveFiles).toBeDefined();
       expect(Array.isArray(config.preserveFiles)).toBe(true);
-      expect(config.preserveFiles?.length).toBe(0);
+      expect(config.preserveFiles?.length).toBe(4);
     });
 
     it('should include customComponents in default config', () => {
