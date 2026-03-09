@@ -50,6 +50,38 @@ if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/n
   CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 fi
 
+# Drift Detection: compare git HEAD between sessions
+DRIFT_STATUS="not-git"
+if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  SESSION_STATE_DIR="$HOME/.claude/session-state"
+  mkdir -p "$SESSION_STATE_DIR"
+
+  PROJECT_HASH=$(echo "$(pwd)" | md5 2>/dev/null || echo "$(pwd)" | md5sum 2>/dev/null | cut -c1-8)
+  # md5 on macOS outputs "MD5 (stdin) = <hash>", extract just the hash
+  PROJECT_HASH=$(echo "$PROJECT_HASH" | grep -oE '[a-f0-9]{32}' | cut -c1-8)
+  STATE_FILE="${SESSION_STATE_DIR}/${PROJECT_HASH}.last-head"
+
+  CURRENT_HEAD=$(git log -1 --format="%H" 2>/dev/null || echo "")
+
+  if [ -n "$CURRENT_HEAD" ]; then
+    if [ -f "$STATE_FILE" ]; then
+      LAST_HEAD=$(cat "$STATE_FILE" 2>/dev/null || echo "")
+      if [ -n "$LAST_HEAD" ] && [ "$LAST_HEAD" != "$CURRENT_HEAD" ]; then
+        DRIFT_STATUS="drifted"
+        NEW_COMMITS=$(git rev-list --count "${LAST_HEAD}..${CURRENT_HEAD}" 2>/dev/null || echo "?")
+        CHANGED_FILES=$(git diff --name-only "${LAST_HEAD}..${CURRENT_HEAD}" 2>/dev/null | head -10)
+      else
+        DRIFT_STATUS="clean"
+      fi
+    else
+      DRIFT_STATUS="first-session"
+    fi
+
+    # Save current HEAD for next session
+    echo "$CURRENT_HEAD" > "$STATE_FILE"
+  fi
+fi
+
 # Write status to file for other hooks to reference
 STATUS_FILE="/tmp/.claude-env-status-${PPID}"
 cat > "$STATUS_FILE" << ENVEOF
@@ -58,6 +90,7 @@ agent_teams=${AGENT_TEAMS_STATUS}
 git_branch=${CURRENT_BRANCH}
 claude_version=${CLAUDE_VERSION}
 compat_status=${COMPAT_STATUS}
+drift_status=${DRIFT_STATUS}
 ENVEOF
 
 # Report to stderr (visible in conversation)
@@ -78,6 +111,31 @@ else
   echo "  ✓ Feature branch detected" >&2
 fi
 echo "  Rules: feature branch → commit → push → PR → merge" >&2
+echo "" >&2
+
+# Drift Detection report
+echo "  [Drift Detection]" >&2
+case "$DRIFT_STATUS" in
+  drifted)
+    echo "  ⚠ Repository changed since last session" >&2
+    echo "  New commits: ${NEW_COMMITS}" >&2
+    if [ -n "${CHANGED_FILES:-}" ]; then
+      echo "  Changed files:" >&2
+      echo "$CHANGED_FILES" | while IFS= read -r file; do
+        echo "    - ${file}" >&2
+      done
+    fi
+    ;;
+  clean)
+    echo "  ✓ No changes since last session" >&2
+    ;;
+  first-session)
+    echo "  First session for this project" >&2
+    ;;
+  not-git)
+    echo "  Skipped (not a git repository)" >&2
+    ;;
+esac
 echo "------------------------------------" >&2
 
 # Pass through
