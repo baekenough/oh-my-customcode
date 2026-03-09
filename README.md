@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 41 agents, 63 skills, 22 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 42 agents, 66 skills, 22 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -107,7 +107,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 
 ## What's Included
 
-### Agents (41)
+### Agents (42)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -122,9 +122,9 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **Architecture** | 2 | arch-documenter, arch-speckit-agent |
 | **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **Total** | **41** | |
+| **Total** | **42** | |
 
-### Skills (63)
+### Skills (66)
 
 | Category | Count | Skills |
 |----------|-------|--------|
@@ -225,7 +225,7 @@ your-project/
     │   ├── be-fastapi-expert.md
     │   ├── mgr-creator.md
     │   └── ...
-    ├── skills/            # Skill modules (63 directories, each with SKILL.md)
+    ├── skills/            # Skill modules (66 directories, each with SKILL.md)
     │   ├── go-best-practices/
     │   ├── react-best-practices/
     │   ├── secretary-routing/
