@@ -164,6 +164,7 @@ Violation = immediate correction. No exception for "small changes".
 | `/optimize-bundle` | Optimize bundle size |
 | `/optimize-report` | Generate optimization report |
 | `/sauron-watch` | Full R017 verification |
+| `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/lists` | Show all available commands |
 | `/status` | Show system status |
 | `/help` | Show help information |

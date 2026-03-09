@@ -165,6 +165,7 @@ oh-my-customcode로 구동됩니다.
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
 | `/sauron-watch` | 전체 R017 검증 |
+| `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/lists` | 모든 사용 가능한 커맨드 표시 |
 | `/status` | 시스템 상태 표시 |
 | `/help` | 도움말 표시 |
