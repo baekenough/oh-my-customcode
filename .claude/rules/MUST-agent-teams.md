@@ -186,7 +186,7 @@ Hybrid Workflow:
 | Step | Agent | Model |
 |------|-------|-------|
 | Analysis | Claude team member | sonnet/opus |
-| Generation | codex-exec | o3/o4-mini |
+| Generation | codex-exec | (Codex default) |
 | Review | Claude team member | sonnet |
 | Refinement | Appropriate expert | sonnet |
 
