@@ -35,9 +35,7 @@ const KEY_DOC_PAGES = [
   '/en/hooks',
   '/en/features-overview',
   '/en/agent-teams',
-  '/en/model-configuration',
   '/en/settings',
-  '/en/mcp-servers',
 ];
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
@@ -574,7 +572,7 @@ ${JSON.stringify(projectStructure.rules.filter((r) => r.is_unique), null, 2)}
 Respond with ONLY valid JSON, no markdown formatting.`;
 
   const response = await client.messages.create({
-    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6-20250610',
+    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
     max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
   });
