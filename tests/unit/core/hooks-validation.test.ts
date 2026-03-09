@@ -4,10 +4,17 @@ import { resolve } from 'node:path';
 
 const HOOKS_FILE = resolve(import.meta.dir, '../../../templates/.claude/hooks/hooks.json');
 
-interface HookCommand {
-  type: string;
+interface CommandHook {
+  type: 'command';
   command: string;
 }
+
+interface PromptHook {
+  type: 'prompt';
+  prompt: string;
+}
+
+type HookCommand = CommandHook | PromptHook;
 
 interface HookEntry {
   matcher: string;
@@ -189,59 +196,51 @@ describe('Hooks Validation', () => {
   });
 
   describe('Hook command format', () => {
-    it('should have type and command fields on every hook command', async () => {
-      const { parsed } = await loadHooksJson();
-      const data = parsed as HooksStructure;
-
+    function getAllHookCmds(data: HooksStructure): HookCommand[] {
       const allEntries: HookEntry[] = [
         ...(data.hooks.PreToolUse ?? []),
         ...(data.hooks.PostToolUse ?? []),
         ...(data.hooks.Stop ?? []),
       ];
+      return allEntries.flatMap((entry) => entry.hooks);
+    }
 
-      for (const entry of allEntries) {
-        for (const hookCmd of entry.hooks) {
-          expect(hookCmd).toHaveProperty('type');
-          expect(typeof hookCmd.type).toBe('string');
+    it('should have type and required payload fields on every hook command', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      for (const hookCmd of getAllHookCmds(data)) {
+        expect(hookCmd).toHaveProperty('type');
+        expect(typeof hookCmd.type).toBe('string');
+        // 'command' type requires command field; 'prompt' type requires prompt field
+        if (hookCmd.type === 'command') {
           expect(hookCmd).toHaveProperty('command');
           expect(typeof hookCmd.command).toBe('string');
+        }
+        if (hookCmd.type === 'prompt') {
+          expect(hookCmd).toHaveProperty('prompt');
+          expect(typeof hookCmd.prompt).toBe('string');
         }
       }
     });
 
-    it('should have non-empty command strings on all hook commands', async () => {
+    it('should have non-empty payload strings on all hook commands', async () => {
       const { parsed } = await loadHooksJson();
       const data = parsed as HooksStructure;
 
-      const allEntries: HookEntry[] = [
-        ...(data.hooks.PreToolUse ?? []),
-        ...(data.hooks.PostToolUse ?? []),
-        ...(data.hooks.Stop ?? []),
-      ];
-
-      for (const entry of allEntries) {
-        for (const hookCmd of entry.hooks) {
-          expect(hookCmd.command.trim().length).toBeGreaterThan(0);
-        }
+      for (const hookCmd of getAllHookCmds(data)) {
+        if (hookCmd.type === 'command') expect(hookCmd.command.trim().length).toBeGreaterThan(0);
+        if (hookCmd.type === 'prompt') expect(hookCmd.prompt.trim().length).toBeGreaterThan(0);
       }
     });
 
     it('should have valid type values on all hook commands', async () => {
       const { parsed } = await loadHooksJson();
       const data = parsed as HooksStructure;
+      const validTypes = new Set(['command', 'prompt']);
 
-      const validTypes = new Set(['command']);
-
-      const allEntries: HookEntry[] = [
-        ...(data.hooks.PreToolUse ?? []),
-        ...(data.hooks.PostToolUse ?? []),
-        ...(data.hooks.Stop ?? []),
-      ];
-
-      for (const entry of allEntries) {
-        for (const hookCmd of entry.hooks) {
-          expect(validTypes.has(hookCmd.type)).toBe(true);
-        }
+      for (const hookCmd of getAllHookCmds(data)) {
+        expect(validTypes.has(hookCmd.type)).toBe(true);
       }
     });
   });
@@ -303,7 +302,8 @@ describe('Hooks Validation', () => {
       );
 
       expect(stageBlockingHook).toBeDefined();
-      const command = stageBlockingHook?.hooks[0].command ?? '';
+      const hookCmd = stageBlockingHook?.hooks[0];
+      const command = hookCmd?.type === 'command' ? hookCmd.command : '';
       expect(command).toContain('stage-blocker.sh');
 
       // Read the script file to verify it references /tmp/.claude-dev-stage
@@ -351,7 +351,8 @@ describe('Hooks Validation', () => {
 
       const stopHook = entries.find((entry) => entry.matcher === '*');
       expect(stopHook).toBeDefined();
-      const command = stopHook?.hooks[0].command ?? '';
+      const hookCmd = stopHook?.hooks[0];
+      const command = hookCmd?.type === 'command' ? hookCmd.command : '';
       expect(command).toContain('stop-console-audit.sh');
     });
 
