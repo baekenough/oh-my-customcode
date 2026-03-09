@@ -203,6 +203,16 @@
         "description": "Record agent/task outcomes (success/failure) for model escalation decisions"
       },
       {
+        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\" || tool == \"Read\" || tool == \"Glob\" || tool == \"Grep\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/context-budget-advisor.sh"
+          }
+        ],
+        "description": "Context budget advisor — track tool usage patterns and advise ecomode activation"
+      },
+      {
         "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
