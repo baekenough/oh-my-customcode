@@ -17,7 +17,12 @@ Powered by oh-my-customcode.
 |     [agent-name] -> Tool: {tool}                                  |
 |     [agent-name] -> Target: {path}                                |
 |                                                                   |
-|  If NO to either -> FIX IMMEDIATELY before continuing             |
+|                                                                   |
+|  3. Am I about to spawn 2+ agents?                               |
+|     YES -> Check R018: Agent Teams may be REQUIRED                |
+|     3+ agents OR review cycle -> Agent Teams (MUST)               |
+|                                                                   |
+|  If NO to any -> FIX IMMEDIATELY before continuing                |
 +==================================================================+
 ```
 

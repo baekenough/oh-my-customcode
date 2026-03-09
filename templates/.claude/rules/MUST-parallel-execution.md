@@ -15,7 +15,12 @@ Independent (MUST parallelize):
 
 Examples: creating multiple agents, reviewing multiple files, batch operations on different resources.
 
-## Agent Teams Gate (R018 Integration)
+## CRITICAL: Agent Teams Gate (R018)
+
+> **WARNING**: Before spawning 2+ parallel agents, you MUST evaluate Agent Teams eligibility.
+> Skipping this check is a VIOLATION of both R009 and R018.
+>
+> Quick rule: **3+ agents OR review cycle OR 2+ issues in same batch → Agent Teams (MUST)**
 
 Before spawning parallel Agent instances, evaluate Agent Teams eligibility:
 
