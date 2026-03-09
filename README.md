@@ -93,15 +93,67 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
   └── qa-engineer:sonnet        — test generation
 ```
 
-### Built-in Commands
+### Slash Commands
 
-| Command | Agent | Description |
-|---------|-------|-------------|
-| `/create-agent <name>` | mgr-creator | Create a new agent |
-| `/update-docs` | mgr-updater | Sync docs with project structure |
-| `/audit-agents` | mgr-supplier | Verify agent dependencies |
-| `/dev-review` | lang-* experts | Review code with expert agents |
-| `/sauron-watch` | mgr-sauron | Full synchronization check |
+All commands are invoked inside the Claude Code conversation.
+
+#### Analysis & Research
+
+| Command | Description |
+|---------|-------------|
+| `/analysis` | Analyze project and auto-configure agents, skills, rules |
+| `/research` | 10-team parallel deep analysis with cross-verification |
+
+#### Development
+
+| Command | Description |
+|---------|-------------|
+| `/dev-review` | Code review against best practices |
+| `/dev-refactor` | Code refactoring for better structure |
+
+#### Agent Management
+
+| Command | Description |
+|---------|-------------|
+| `/create-agent` | Create new agent |
+| `/update-docs` | Sync project structure and documentation |
+| `/update-external` | Update agents from external sources |
+| `/audit-agents` | Audit agent dependencies |
+| `/fix-refs` | Fix broken references |
+
+#### Memory
+
+| Command | Description |
+|---------|-------------|
+| `/memory-save` | Save session context to claude-mem |
+| `/memory-recall` | Search and recall memories |
+
+#### DevOps & Publishing
+
+| Command | Description |
+|---------|-------------|
+| `/npm-publish` | Publish package to npm registry |
+| `/npm-version` | Semantic version management |
+| `/npm-audit` | Dependency security audit |
+
+#### Optimization
+
+| Command | Description |
+|---------|-------------|
+| `/optimize-analyze` | Bundle and performance analysis |
+| `/optimize-bundle` | Bundle size optimization |
+| `/optimize-report` | Generate optimization report |
+
+#### Verification & System
+
+| Command | Description |
+|---------|-------------|
+| `/sauron-watch` | Full R017 sync verification |
+| `/monitoring-setup` | OTel console monitoring enable/disable |
+| `/codex-exec` | Execute Codex CLI prompt |
+| `/lists` | Show all available commands |
+| `/status` | System status and health checks |
+| `/help` | Help information |
 
 ---
 
