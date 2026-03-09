@@ -19,7 +19,7 @@ Default (no specific agent): `┌─ Agent: claude (default)`
 For brief responses: `[mgr-creator] Creating agent structure...`
 With skill: `[fe-vercel-agent → react-best-practices] Analyzing...`
 
-## Routing Context
+## Routing & Skill Context
 
 When the orchestrator uses a routing skill, identification should reflect the active context:
 
@@ -38,6 +38,34 @@ When the orchestrator uses a routing skill, identification should reflect the ac
 | qa-lead-routing | `claude (qa-lead-routing)` |
 | Skill invocation | `claude → {skill-name}` |
 
+## Skill Invocation Format
+
+When the orchestrator invokes a skill via the Skill tool, the skill name MUST be integrated into the identification block — NOT displayed as a separate tool call.
+
+```
+┌─ Agent: claude → {skill-name}
+└─ Task: {brief-task-description}
+```
+
+### Common Violations
+
+```
+❌ WRONG: Skill as separate display
+   ┌─ Agent: claude (default)
+   └─ Task: research topic analysis
+
+   Skill(research)    ← separate, disconnected
+
+✓ CORRECT: Skill integrated into identification
+   ┌─ Agent: claude → research
+   └─ Task: research topic analysis
+
+✓ CORRECT: With sub-skill
+   ┌─ Agent: claude → research
+   ├─ Skill: result-aggregation
+   └─ Task: aggregate team findings
+```
+
 ## When to Display
 
 | Situation | Display |
@@ -46,3 +74,4 @@ When the orchestrator uses a routing skill, identification should reflect the ac
 | Using skill | Include skill name |
 | General conversation | "claude (default)" |
 | Long tasks | Show progress with agent context |
+| Skill invocation | Integrated `claude → {skill-name}` format |

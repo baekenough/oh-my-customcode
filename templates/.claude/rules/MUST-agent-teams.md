@@ -20,6 +20,7 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 | Code review + fix cycle | **Agent Teams** | Review → fix → re-review loop |
 | Single file operations | Agent Tool | Overkill for simple tasks |
 | Dynamic agent creation + usage | **Agent Teams** | Create → test → iterate cycle |
+| Multi-issue release batch | **Agent Teams** | Shared task tracking, coordinated release |
 
 **When Agent Teams is enabled and criteria are met, usage is MANDATORY.**
 
@@ -41,9 +42,14 @@ BEFORE using Agent tool for 2+ agent tasks, this check is **ENFORCED**:
 ║                                                                   ║
 ║  3. Is there a review → fix → re-review cycle?                  ║
 ║     YES → MUST use Agent Teams                                   ║
+║     NO  → Check #4                                               ║
+║                                                                   ║
+║  4. Are 2+ issues being fixed in the same release batch?        ║
+║     YES → SHOULD use Agent Teams (coordination benefit)          ║
 ║     NO  → Proceed with Agent tool                                ║
 ║                                                                   ║
-║  Simple rule: 3+ agents OR review cycle → Agent Teams            ║
+║  Simple rule: 3+ agents OR review cycle → Agent Teams (MUST)    ║
+║  2+ issues in same batch → Agent Teams (SHOULD)                  ║
 ║  Everything else → Agent tool                                    ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
@@ -122,6 +128,18 @@ When spawning Agent Teams members:
      Agent(researcher-1) → Analysis 1  ┐
      Agent(researcher-2) → Analysis 2  ├─ ALL spawned together
      Agent(researcher-3) → Analysis 3  ┘
+
+❌ WRONG: Multi-issue batch as independent agents
+   Agent(general-purpose) → "Fix issue #1"
+   Agent(general-purpose) → "Fix issue #2"
+   Agent(general-purpose) → "Fix issue #3"
+   (no coordination, no shared task tracking)
+
+✓ CORRECT: Agent Teams for multi-issue batches
+   TeamCreate("release-fixes")
+   TaskCreate for each issue
+   Agent(fixer-1) + Agent(fixer-2) + Agent(fixer-3) → team members
+   Shared task list tracks progress across all issues
 ```
 
 ## Cost Guidelines
@@ -202,3 +220,5 @@ Agent Teams actively preferred for qualifying collaborative tasks. Use Agent too
 - Simple independent subtasks
 
 Do NOT avoid Agent Teams solely for cost reasons when criteria are met.
+
+**Active preference rule**: When Agent Teams is available, default to using it for any multi-step or multi-issue work. Only fall back to Agent tool for truly simple, single-issue tasks with no verification needs.
