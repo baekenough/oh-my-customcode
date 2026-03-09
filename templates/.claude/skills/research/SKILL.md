@@ -211,6 +211,19 @@ Round N:
 |---|------|--------|----------|-------|
 ```
 
+## Post-Research Advisory
+
+After research completion, the orchestrator SHOULD display:
+
+```
+[Advisory] Research complete.
+├── For complex implementations (10+ files): /structured-dev-cycle
+├── For quick planning: EnterPlanMode (plan mode)
+└── For simple tasks (< 3 files): proceed directly
+```
+
+This advisory is informational only and does not block execution.
+
 ## Fallback Behavior
 
 | Scenario | Fallback |
