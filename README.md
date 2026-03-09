@@ -122,6 +122,7 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **Architecture** | 2 | arch-documenter, arch-speckit-agent |
 | **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
+| **Security** | 1 | sec-codeql-expert |
 | **Total** | **42** | |
 
 ### Skills (66)
@@ -138,6 +139,8 @@ Claude Code selects the appropriate model and parallelizes independent tasks (up
 | **Operations** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
 | **Utilities** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
 | **Quality & Workflow** | 9 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pr-auto-improve, pipeline-guards |
+| **Security** | 2 | cve-triage, jinja2-prompts |
+| **Research** | 1 | research |
 | **Deploy** | 2 | vercel-deploy, codex-exec |
 | **External** | 1 | skills-sh-search |
 
@@ -220,7 +223,7 @@ your-project/
     ├── rules/             # Behavior rules (18 total)
     ├── hooks/             # Event hooks (2 total)
     ├── contexts/          # Context files (4 total)
-    ├── agents/            # Agent definitions (41 flat .md files)
+    ├── agents/            # Agent definitions (42 flat .md files)
     │   ├── lang-golang-expert.md
     │   ├── be-fastapi-expert.md
     │   ├── mgr-creator.md
