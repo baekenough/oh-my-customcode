@@ -196,7 +196,7 @@ async function generateReleaseNotes(version?: string): Promise<string> {
   });
 
   const message = await client.messages.create({
-    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
     max_tokens: 2048,
     messages: [
       {
