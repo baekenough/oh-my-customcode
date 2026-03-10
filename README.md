@@ -151,6 +151,7 @@ All commands are invoked inside the Claude Code conversation.
 | `/sauron-watch` | Full R017 sync verification |
 | `/monitoring-setup` | OTel console monitoring enable/disable |
 | `/codex-exec` | Execute Codex CLI prompt |
+| `/structured-dev-cycle` | 6-phase structured development cycle |
 | `/lists` | Show all available commands |
 | `/status` | System status and health checks |
 | `/help` | Help information |
@@ -272,9 +273,6 @@ After `omcustom init`:
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
 ├── .claude/
-│   ├── rules/             # Behavior rules (18 total)
-│   ├── hooks/             # Event hooks (2 total)
-│   ├── contexts/          # Context files (4 total)
 │   ├── agents/            # Agent definitions (43 flat .md files)
 │   │   ├── lang-golang-expert.md
 │   │   ├── be-fastapi-expert.md
@@ -285,12 +283,15 @@ your-project/
 │   │   ├── react-best-practices/
 │   │   ├── secretary-routing/
 │   │   └── ...
-│   └── ontology/          # Ontology knowledge graph for RAG context
-│       ├── schema.yaml
-│       ├── agents.yaml
-│       ├── skills.yaml
-│       ├── rules.yaml
-│       └── graphs/
+│   ├── ontology/          # Ontology knowledge graph for RAG context
+│   │   ├── schema.yaml
+│   │   ├── agents.yaml
+│   │   ├── skills.yaml
+│   │   ├── rules.yaml
+│   │   └── graphs/
+│   ├── rules/             # Behavior rules (18 total)
+│   ├── hooks/             # Event hooks (2 total)
+│   └── contexts/          # Context files (4 total)
 └── guides/                # Reference docs (23 total)
 ```
 
