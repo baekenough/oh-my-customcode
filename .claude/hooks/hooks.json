@@ -238,6 +238,16 @@
         "matcher": "*",
         "hooks": [
           {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/session-compliance-report.sh"
+          }
+        ],
+        "description": "Session compliance report — summarize rule violations detected during session (advisory, non-blocking)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
             "type": "prompt",
             "prompt": "Session-end memory checkpoint (R011 enforcement). Check conversation history for these 3 steps: 1) sys-memory-keeper was delegated to update MEMORY.md 2) claude-mem save was attempted via ToolSearch + mcp__plugin_claude-mem_mcp-search__save_memory 3) episodic-memory verification was attempted via ToolSearch + mcp__plugin_episodic-memory_episodic-memory__search. Decision rules: If ALL 3 were attempted (success or failure both count): approve. If MCP tools are unavailable after ToolSearch attempt: approve with note. If session had no explicit session-end signal from user (quick question, no memory work): approve. If any step was NOT attempted despite user signaling session end: block with systemMessage listing the missing steps."
           }
