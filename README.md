@@ -167,7 +167,7 @@ All commands are invoked inside the Claude Code conversation.
 | **System** | 2 | sys-memory-keeper, sys-naggy |
 | **Languages** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | **Frontend** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
-| **Backend** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
+| **Backend** | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
 | **Tooling** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | **Data Engineering** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | **Database** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
@@ -211,7 +211,7 @@ Comprehensive reference documentation covering:
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
-| **MUST** | 11 | Safety, permissions, agent design (enforced) |
+| **MUST** | 12 | Safety, permissions, agent design (enforced) |
 | **SHOULD** | 5 | Interactions, error handling (recommended) |
 | **MAY** | 1 | Optimization guidelines (optional) |
 
@@ -271,27 +271,27 @@ After `omcustom init`:
 ```
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
-└── .claude/
-    ├── rules/             # Behavior rules (18 total)
-    ├── hooks/             # Event hooks (2 total)
-    ├── contexts/          # Context files (4 total)
-    ├── agents/            # Agent definitions (43 flat .md files)
-    │   ├── lang-golang-expert.md
-    │   ├── be-fastapi-expert.md
-    │   ├── mgr-creator.md
-    │   └── ...
-    ├── skills/            # Skill modules (67 directories, each with SKILL.md)
-    │   ├── go-best-practices/
-    │   ├── react-best-practices/
-    │   ├── secretary-routing/
-    │   └── ...
-    ├── ontology/          # Ontology knowledge graph for RAG context
-    │   ├── schema.yaml
-    │   ├── agents.yaml
-    │   ├── skills.yaml
-    │   ├── rules.yaml
-    │   └── graphs/
-    └── guides/            # Reference docs (23 total)
+├── .claude/
+│   ├── rules/             # Behavior rules (18 total)
+│   ├── hooks/             # Event hooks (2 total)
+│   ├── contexts/          # Context files (4 total)
+│   ├── agents/            # Agent definitions (43 flat .md files)
+│   │   ├── lang-golang-expert.md
+│   │   ├── be-fastapi-expert.md
+│   │   ├── mgr-creator.md
+│   │   └── ...
+│   ├── skills/            # Skill modules (67 directories, each with SKILL.md)
+│   │   ├── go-best-practices/
+│   │   ├── react-best-practices/
+│   │   ├── secretary-routing/
+│   │   └── ...
+│   └── ontology/          # Ontology knowledge graph for RAG context
+│       ├── schema.yaml
+│       ├── agents.yaml
+│       ├── skills.yaml
+│       ├── rules.yaml
+│       └── graphs/
+└── guides/                # Reference docs (23 total)
 ```
 
 ---

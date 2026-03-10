@@ -93,22 +93,68 @@ dev-lead-routing (라우팅 스킬)
   └── qa-engineer:sonnet   — 테스트 생성
 ```
 
-### 내장 슬래시 커맨드
+### 슬래시 커맨드
 
-| 커맨드 | 에이전트 | 설명 |
-|--------|----------|------|
-| `/create-agent <name>` | mgr-creator | 새 에이전트 생성 |
-| `/update-docs` | mgr-updater | 프로젝트 구조에 맞게 문서 동기화 |
-| `/audit-agents` | mgr-supplier | 에이전트 의존성 검증 |
-| `/dev-review` | lang-* experts | 전문 에이전트로 코드 리뷰 |
-| `/sauron-watch` | mgr-sauron | 전체 동기화 검증 |
+모든 커맨드는 Claude Code 대화 내에서 호출합니다.
 
-또는 에이전트 이름 접두어를 사용할 수 있습니다:
+#### 분석 & 리서치
 
-```
-"mgr-creator: 새 에이전트 만들어줘"
-"lang-golang: main.go 리뷰해줘"
-```
+| 커맨드 | 설명 |
+|--------|------|
+| `/analysis` | 프로젝트 분석 및 에이전트, 스킬, 규칙 자동 구성 |
+| `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
+
+#### 개발
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/dev-review` | 베스트 프랙티스 기반 코드 리뷰 |
+| `/dev-refactor` | 구조 개선을 위한 코드 리팩토링 |
+
+#### 에이전트 관리
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/create-agent` | 새 에이전트 생성 |
+| `/update-docs` | 프로젝트 구조와 문서 동기화 |
+| `/update-external` | 외부 소스에서 에이전트 업데이트 |
+| `/audit-agents` | 에이전트 의존성 감사 |
+| `/fix-refs` | 깨진 참조 수정 |
+
+#### 메모리
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
+| `/memory-recall` | 메모리 검색 및 리콜 |
+
+#### DevOps & 배포
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/npm-publish` | npm 레지스트리에 패키지 배포 |
+| `/npm-version` | 시맨틱 버전 관리 |
+| `/npm-audit` | 의존성 보안 감사 |
+
+#### 최적화
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/optimize-analyze` | 번들 및 성능 분석 |
+| `/optimize-bundle` | 번들 크기 최적화 |
+| `/optimize-report` | 최적화 리포트 생성 |
+
+#### 검증 & 시스템
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/sauron-watch` | 전체 R017 동기화 검증 |
+| `/monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
+| `/codex-exec` | Codex CLI 프롬프트 실행 |
+| `/structured-dev-cycle` | 6단계 구조적 개발 사이클 |
+| `/lists` | 모든 사용 가능한 커맨드 표시 |
+| `/status` | 시스템 상태 및 헬스 체크 |
+| `/help` | 도움말 정보 |
 
 ---
 
@@ -122,7 +168,7 @@ dev-lead-routing (라우팅 스킬)
 | **시스템** | 2 | sys-memory-keeper, sys-naggy |
 | **언어** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | **프론트엔드** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
-| **백엔드** | 5 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert |
+| **백엔드** | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
 | **툴링** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | **데이터 엔지니어링** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | **데이터베이스** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
@@ -156,6 +202,7 @@ dev-lead-routing (라우팅 스킬)
 종합 참조 문서:
 - 에이전트 생성 및 관리
 - 스킬 개발
+- 파이프라인 워크플로우
 - 멀티 에이전트 오케스트레이션
 - 베스트 프랙티스 및 패턴
 - 데이터 엔지니어링 워크플로우
@@ -165,7 +212,7 @@ dev-lead-routing (라우팅 스킬)
 
 | 우선순위 | 개수 | 목적 |
 |----------|------|------|
-| MUST | 11 | 안전, 권한, 에이전트 설계 (강제) |
+| MUST | 12 | 안전, 권한, 에이전트 설계 (강제) |
 | SHOULD | 5 | 상호작용, 에러 처리 (권장) |
 | MAY | 1 | 최적화 가이드라인 (선택) |
 
