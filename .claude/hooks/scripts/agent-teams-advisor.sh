@@ -26,6 +26,10 @@ echo "$COUNT" > "$COUNTER_FILE"
 
 # Warn from 2nd Task call onward -- Agent Teams may be more appropriate
 if [ "$COUNT" -ge 2 ]; then
+  # Log R018 violation when threshold reached
+  if [ "$COUNT" -eq 3 ]; then
+    echo "{\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"rule\":\"R018\",\"type\":\"agent-teams-threshold\",\"detail\":\"3+ Agent/Task calls without Agent Teams\"}" >> "/tmp/.claude-violations-${PPID}"
+  fi
   echo "" >&2
   echo "--- [R018 Advisor] Agent/Task tool call #${COUNT} in this session ---" >&2
   echo "  WARNING: Multiple Task calls detected. Consider Agent Teams if:" >&2
