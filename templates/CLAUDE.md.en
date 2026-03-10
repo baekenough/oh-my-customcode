@@ -125,6 +125,7 @@ Violation = immediate correction. No exception for "small changes".
 | R008 | Tool Identification | **ENFORCED** - Display agent when using ANY tool |
 | R009 | Parallel Execution | **ENFORCED** - Parallel execution, large task decomposition |
 | R010 | Orchestrator Coordination | **ENFORCED** - Orchestrator coordination, session continuity, direct action prohibition |
+| R015 | Intent Transparency | **ENFORCED** - Transparent agent routing |
 | R016 | Continuous Improvement | **ENFORCED** - Update rules when violations occur |
 | R017 | Sync Verification | **ENFORCED** - Verify sync before structural changes |
 | R018 | Agent Teams | **ENFORCED (Conditional)** - Mandatory for qualifying tasks when Agent Teams enabled |
@@ -137,7 +138,6 @@ Violation = immediate correction. No exception for "small changes".
 | R011 | Memory Integration | Session persistence with claude-mem |
 | R012 | HUD Statusline | Real-time status display |
 | R013 | Ecomode | Token efficiency for batch ops |
-| R015 | Intent Transparency | **MUST** - Transparent agent routing |
 
 ### MAY (Optional)
 | ID | Rule | Description |
@@ -219,12 +219,13 @@ This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect 
 | SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | DE Engineer | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | SW Engineer/Database | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
+| Security | 1 | sec-codeql-expert |
 | SW Architect | 2 | arch-documenter, arch-speckit-agent |
 | Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
-| **Total** | **42** | |
+| **Total** | **43** | |
 
 ## Agent Teams (MUST when enabled)
 
