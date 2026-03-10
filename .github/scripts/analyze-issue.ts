@@ -49,7 +49,7 @@ const CONFIG = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   githubToken: process.env.GITHUB_TOKEN,
   githubRepo: process.env.GITHUB_REPOSITORY,
-  model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514',
+  model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
   maxTokens: 8000,
 };
 
