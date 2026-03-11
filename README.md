@@ -295,6 +295,8 @@ your-project/
 └── guides/                # Reference docs (24 total)
 ```
 
+**Note**: In the official Claude Code format, there is no command registry — slash commands and natural language agent references are used.
+
 ---
 
 ## Development
