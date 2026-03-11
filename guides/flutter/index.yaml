@@ -36,5 +36,9 @@ documents:
     path: ./testing.md
     description: Widget tests, golden tests, integration tests, mocking
 
+  - name: security
+    path: ./security.md
+    description: OWASP Mobile Top 10, secure storage, certificate pinning, platform security
+
 used_by:
   - fe-flutter-agent
