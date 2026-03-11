@@ -183,7 +183,7 @@ dev-lead-routing (라우팅 스킬)
 | 카테고리 | 수 | 스킬 |
 |----------|-----|------|
 | **라우팅** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
-| **베스트 프랙티스** | 18 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices |
+| **베스트 프랙티스** | 19 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, django-best-practices |
 | **개발** | 6 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines, analysis |
 | **데이터 엔지니어링** | 2 | spark-best-practices, pipeline-architecture-patterns |
 | **최적화** | 3 | optimize-analyze, optimize-bundle, optimize-report |
@@ -274,7 +274,15 @@ your-project/
 ├── CLAUDE.md              # Claude 진입점
 ├── .claude/
 │   ├── agents/            # 에이전트 정의 (43개 플랫 .md 파일)
-│   ├── skills/            # 스킬 모듈 (67개 디렉토리)
+│   │   ├── lang-golang-expert.md
+│   │   ├── be-fastapi-expert.md
+│   │   ├── mgr-creator.md
+│   │   └── ...
+│   ├── skills/            # 스킬 모듈 (67개 디렉토리, 각 SKILL.md 포함)
+│   │   ├── go-best-practices/
+│   │   ├── react-best-practices/
+│   │   ├── secretary-routing/
+│   │   └── ...
 │   ├── ontology/          # RAG 컨텍스트용 온톨로지 지식 그래프
 │   │   ├── schema.yaml
 │   │   ├── agents.yaml

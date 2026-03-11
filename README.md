@@ -83,11 +83,11 @@ Each sub-agent runs on an optimized model for its task type:
 Claude Code selects the appropriate model and parallelizes independent tasks (up to 4 concurrent sub-agents):
 
 ```
-/create-agent
+secretary-routing (routing skill)
   ├── mgr-creator:sonnet       — agent scaffolding
   └── mgr-supplier:haiku       — dependency check
 
-/code-review
+dev-lead-routing (routing skill)
   ├── lang-golang-expert:sonnet — Go implementation
   ├── lang-python-expert:sonnet — Python implementation
   └── qa-engineer:sonnet        — test generation
@@ -183,7 +183,7 @@ All commands are invoked inside the Claude Code conversation.
 | Category | Count | Skills |
 |----------|-------|--------|
 | **Routing** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
-| **Best Practices** | 18 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices |
+| **Best Practices** | 19 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, django-best-practices |
 | **Development** | 6 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines, analysis |
 | **Data Engineering** | 2 | spark-best-practices, pipeline-architecture-patterns |
 | **Optimization** | 3 | optimize-analyze, optimize-bundle, optimize-report |
@@ -203,8 +203,8 @@ Comprehensive reference documentation covering:
 - Agent creation and management
 - Skill development
 - Pipeline workflows
+- Multi-agent orchestration
 - Best practices and patterns
-- Sub-agent orchestration
 - Data engineering workflows
 - Database optimization
 
@@ -294,6 +294,8 @@ your-project/
 │   └── contexts/          # Context files (4 total)
 └── guides/                # Reference docs (23 total)
 ```
+
+> **Note**: In the official Claude Code format, there is no command registry — slash commands and natural language agent references are used instead.
 
 ---
 

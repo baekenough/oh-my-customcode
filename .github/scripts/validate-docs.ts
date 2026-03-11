@@ -116,6 +116,50 @@ function extractNamesFromReadme(readme: string): { agents: string[]; skills: str
   return { agents, skills };
 }
 
+interface SkillTableResult {
+  skillNames: string[];
+  categoryCountSum: number;
+}
+
+/**
+ * Parses the Skills table from README.md between "### Skills" and "### Guides" headers.
+ * Each row format: | **Category Name** | N | skill-1, skill-2, skill-3 |
+ * Returns all individual skill names and the sum of all category counts.
+ */
+function extractSkillNamesFromTable(readme: string): SkillTableResult {
+  // Extract the Skills section: between "### Skills" and "### Guides"
+  const sectionMatch = readme.match(/###\s+Skills[^\n]*\n([\s\S]*?)(?=###\s+Guides)/);
+  if (!sectionMatch) {
+    return { skillNames: [], categoryCountSum: 0 };
+  }
+
+  const skillsSection = sectionMatch[1];
+  const skillNames: string[] = [];
+  let categoryCountSum = 0;
+
+  // Match table data rows: | **Category** | N | skill-1, skill-2, ... |
+  // Skip header row (contains "Category", "Count", "Skills") and separator row (contains dashes)
+  const tableRowRegex = /^\|\s*\*\*[^|]+\*\*\s*\|\s*(\d+)\s*\|\s*([^|]+)\s*\|/gm;
+  let rowMatch: RegExpExecArray | null;
+
+  while ((rowMatch = tableRowRegex.exec(skillsSection)) !== null) {
+    const count = parseInt(rowMatch[1], 10);
+    const skillsCell = rowMatch[2];
+
+    categoryCountSum += count;
+
+    // Parse comma-separated skill names, trimming whitespace
+    const names = skillsCell
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+
+    skillNames.push(...names);
+  }
+
+  return { skillNames, categoryCountSum };
+}
+
 function programmaticValidation(stats: ImplementationStats, readmeEn: string): ValidationResult {
   const readme = extractNamesFromReadme(readmeEn);
 
@@ -153,6 +197,39 @@ function programmaticValidation(stats: ImplementationStats, readmeEn: string): V
     const readmeCount = parseInt(skillCountMatch[1] || skillCountMatch[2]);
     if (readmeCount !== stats.skill_count) {
       countMismatches.push({ field: 'skills', readme: readmeCount, actual: stats.skill_count });
+    }
+  }
+
+  // Second pass: skill-name-level comparison against README Skills table
+  const skillTable = extractSkillNamesFromTable(readmeEn);
+  if (skillTable.skillNames.length > 0) {
+    const templateSkillNames = stats.skill_names.map((s) => s.toLowerCase());
+    const tableSkillNamesSet = new Set(skillTable.skillNames);
+    const templateSkillNamesSet = new Set(templateSkillNames);
+
+    // Skills in templates but missing from README table rows
+    const missingTableSkills = templateSkillNames.filter((s) => !tableSkillNamesSet.has(s));
+    if (missingTableSkills.length > 0) {
+      missingFromReadme.skills.push(
+        ...missingTableSkills.filter((s) => !missingFromReadme.skills.includes(s)),
+      );
+    }
+
+    // Skills in README table but not in templates (phantom entries)
+    const phantomTableSkills = skillTable.skillNames.filter((s) => !templateSkillNamesSet.has(s));
+    if (phantomTableSkills.length > 0) {
+      extraInReadme.skills.push(
+        ...phantomTableSkills.filter((s) => !extraInReadme.skills.includes(s)),
+      );
+    }
+
+    // Check if category count sum matches actual skill count
+    if (skillTable.categoryCountSum !== stats.skill_count) {
+      countMismatches.push({
+        field: 'skills (table category sum)',
+        readme: skillTable.categoryCountSum,
+        actual: stats.skill_count,
+      });
     }
   }
 
