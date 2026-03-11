@@ -13,9 +13,9 @@ classes:
     skills: [
       go-best-practices, python-best-practices, rust-best-practices,
       kotlin-best-practices, typescript-best-practices, react-best-practices,
-      fastapi-best-practices, springboot-best-practices, go-backend-best-practices,
-      docker-best-practices, aws-best-practices, postgres-best-practices,
-      redis-best-practices, supabase-postgres-best-practices,
+      flutter-best-practices, fastapi-best-practices, springboot-best-practices,
+      go-backend-best-practices, docker-best-practices, aws-best-practices,
+      postgres-best-practices, redis-best-practices, supabase-postgres-best-practices,
       airflow-best-practices, dbt-best-practices, kafka-best-practices,
       spark-best-practices, snowflake-best-practices, pipeline-architecture-patterns
     ]
@@ -74,7 +74,7 @@ skills:
   airflow-best-practices:
     class: BestPracticeSkill
     description: "Apache Airflow best practices for DAG authoring, testing, and production deployment"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Best practices for Airflow DAG authoring, scheduling, testing, and production deployment"
     keywords: [airflow, dag, scheduling, orchestration, testing, performance]
@@ -83,7 +83,7 @@ skills:
   audit-agents:
     class: ManagementSkill
     description: "Audit agent dependencies and references"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Audit agent dependencies to ensure all skill and guide references are valid"
     keywords: [audit, dependencies, validation, references]
@@ -92,7 +92,7 @@ skills:
   aws-best-practices:
     class: BestPracticeSkill
     description: "AWS patterns from Well-Architected Framework"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "AWS Well-Architected Framework patterns for scalable, secure cloud infrastructure"
     keywords: [aws, cloud, well-architected, security, performance, cost]
@@ -101,7 +101,7 @@ skills:
   claude-code-bible:
     class: ManagementSkill
     description: "Fetch and verify Claude Code official documentation. Use when checking official spec compliance or updating local reference docs."
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Maintain up-to-date local copies of Claude Code official documentation"
     keywords: [claude-code, documentation, spec, compliance, verification]
@@ -110,7 +110,7 @@ skills:
   create-agent:
     class: ManagementSkill
     description: "Create a new agent with complete structure"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Create a new agent with complete directory structure and validation"
     keywords: [create, agent, structure, validation]
@@ -119,7 +119,7 @@ skills:
   dbt-best-practices:
     class: BestPracticeSkill
     description: "dbt best practices for SQL modeling, testing, and analytics engineering workflows"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Best practices for dbt project structure, modeling, testing, and documentation"
     keywords: [dbt, sql, modeling, testing, analytics-engineering]
@@ -128,7 +128,7 @@ skills:
   de-lead-routing:
     class: RoutingSkill
     description: "Routes data engineering tasks to the correct DE expert agent. Use when user requests data pipeline design, DAG authoring, SQL modeling, stream processing, or warehouse optimization."
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Routes data engineering tasks to appropriate DE expert agents"
     keywords: [routing, data-engineering, pipeline, airflow, dbt, spark, kafka, snowflake]
@@ -138,24 +138,25 @@ skills:
   dev-lead-routing:
     class: RoutingSkill
     description: "Routes development tasks to the correct language or framework expert agent. Use when user requests code review, implementation, refactoring, or debugging."
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Routes development tasks to appropriate language or framework expert agents"
     keywords: [routing, development, code-review, implementation, refactoring]
     routes_to: [
       lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert,
       lang-typescript-expert, lang-java21-expert, fe-vercel-agent, fe-vuejs-agent,
-      fe-svelte-agent, be-fastapi-expert, be-springboot-expert, be-go-backend-expert,
-      be-nestjs-expert, be-express-expert, tool-npm-expert, tool-optimizer, tool-bun-expert,
-      db-supabase-expert, db-postgres-expert, db-redis-expert, arch-documenter,
-      arch-speckit-agent, infra-docker-expert, infra-aws-expert
+      fe-svelte-agent, fe-flutter-agent, be-fastapi-expert, be-springboot-expert,
+      be-go-backend-expert, be-nestjs-expert, be-express-expert, tool-npm-expert,
+      tool-optimizer, tool-bun-expert, db-supabase-expert, db-postgres-expert,
+      db-redis-expert, arch-documenter, arch-speckit-agent, infra-docker-expert,
+      infra-aws-expert
     ]
     rule_references: []
 
   dev-refactor:
     class: DevelopmentSkill
     description: "Refactor code for better structure and patterns"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Refactor code using language-specific expert agents for better structure and patterns"
     keywords: [refactor, structure, patterns, naming, complexity]
@@ -164,7 +165,7 @@ skills:
   dev-review:
     class: DevelopmentSkill
     description: "Review code against language-specific best practices"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Review code for best practices using language-specific expert agents"
     keywords: [review, code-review, best-practices, quality]
@@ -173,7 +174,7 @@ skills:
   docker-best-practices:
     class: BestPracticeSkill
     description: "Docker patterns for optimized containerization"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Docker patterns for building optimized and secure container images"
     keywords: [docker, container, multi-stage, security, optimization]
@@ -182,16 +183,25 @@ skills:
   fastapi-best-practices:
     class: BestPracticeSkill
     description: "FastAPI patterns for high-performance async APIs"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "FastAPI patterns for building high-performance async APIs with Python"
     keywords: [fastapi, python, async, api, performance]
     rule_references: []
 
+  flutter-best-practices:
+    class: BestPracticeSkill
+    description: "Flutter/Dart best practices for widget composition, state management (Riverpod, BLoC), and cross-platform performance optimization"
+    user_invocable: false
+    model_invocable: true
+    summary: "Flutter/Dart best practices for widget composition, state management, and cross-platform mobile/desktop development"
+    keywords: [flutter, dart, riverpod, bloc, widget, cross-platform, mobile, performance]
+    rule_references: []
+
   fix-refs:
     class: ManagementSkill
     description: "Fix broken agent references and symlinks"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Fix broken references, missing symlinks, and agent dependency issues"
     keywords: [fix, references, symlinks, dependencies]
@@ -200,7 +210,7 @@ skills:
   go-backend-best-practices:
     class: BestPracticeSkill
     description: "Go backend patterns from Uber style and standard layout"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Go backend patterns for building production-ready services"
     keywords: [go, golang, backend, uber-style, standard-layout]
@@ -209,7 +219,7 @@ skills:
   go-best-practices:
     class: BestPracticeSkill
     description: "Idiomatic Go patterns from Effective Go"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Idiomatic Go patterns and best practices from official documentation"
     keywords: [go, golang, effective-go, formatting, naming, concurrency]
@@ -218,7 +228,7 @@ skills:
   help:
     class: SystemSkill
     description: "Show help information for commands and system"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Show help information for commands, agents, and system rules"
     keywords: [help, documentation, commands, agents, rules]
@@ -227,7 +237,7 @@ skills:
   intent-detection:
     class: IntentSkill
     description: "Automatically detect user intent and route to appropriate agent"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Detect user intent and route to appropriate agent with transparency"
     keywords: [intent, detection, routing, confidence, transparency]
@@ -236,7 +246,7 @@ skills:
   kafka-best-practices:
     class: BestPracticeSkill
     description: "Apache Kafka best practices for event streaming, topic design, and producer-consumer patterns"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Best practices for Kafka producer-consumer patterns, topic design, and performance"
     keywords: [kafka, streaming, event, producer, consumer, performance]
@@ -245,7 +255,7 @@ skills:
   kotlin-best-practices:
     class: BestPracticeSkill
     description: "Idiomatic Kotlin patterns from JetBrains conventions"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Idiomatic Kotlin patterns and best practices from official JetBrains documentation"
     keywords: [kotlin, jetbrains, naming, null-safety, coroutines]
@@ -254,7 +264,7 @@ skills:
   lists:
     class: SystemSkill
     description: "Show all available commands"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Show all available commands with optional filtering and detailed information"
     keywords: [lists, commands, categories, system]
@@ -263,7 +273,7 @@ skills:
   memory-management:
     class: MemorySkill
     description: "Memory persistence operations using claude-mem"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Provide memory persistence operations using claude-mem for session context"
     keywords: [memory, claude-mem, persistence, session, context]
@@ -272,7 +282,7 @@ skills:
   memory-recall:
     class: MemorySkill
     description: "Search and recall memories from claude-mem"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Search and recall relevant memories from claude-mem using semantic search"
     keywords: [memory, recall, search, semantic, claude-mem]
@@ -281,7 +291,7 @@ skills:
   memory-save:
     class: MemorySkill
     description: "Save current session context to claude-mem"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Save current session context to claude-mem for persistence across compaction"
     keywords: [memory, save, session, context, claude-mem]
@@ -290,7 +300,7 @@ skills:
   monitoring-setup:
     class: MonitoringSkill
     description: "Enable/disable OpenTelemetry console monitoring for Claude Code usage tracking"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Enable or disable OpenTelemetry console monitoring for usage metrics"
     keywords: [monitoring, telemetry, otel, metrics, usage]
@@ -299,7 +309,7 @@ skills:
   npm-audit:
     class: PackageSkill
     description: "Audit npm dependencies for security and updates"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Audit npm dependencies for security vulnerabilities and outdated packages"
     keywords: [npm, audit, security, dependencies, vulnerabilities]
@@ -308,7 +318,7 @@ skills:
   npm-publish:
     class: PackageSkill
     description: "Publish package to npm registry with pre-checks"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Publish package to npm registry with comprehensive pre-publish checks"
     keywords: [npm, publish, package, registry, validation]
@@ -317,7 +327,7 @@ skills:
   npm-version:
     class: PackageSkill
     description: "Manage semantic versions for npm packages"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Manage semantic versions for npm packages with changelog and git integration"
     keywords: [npm, version, semantic, changelog, git]
@@ -326,7 +336,7 @@ skills:
   optimize-analyze:
     class: OptimizationSkill
     description: "Analyze bundle size and performance metrics"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Analyze bundle size and performance metrics for web applications"
     keywords: [optimize, analyze, bundle, performance, metrics]
@@ -335,7 +345,7 @@ skills:
   optimize-bundle:
     class: OptimizationSkill
     description: "Apply bundle size optimizations"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Apply bundle size optimizations to reduce build output and improve performance"
     keywords: [optimize, bundle, size, performance, build]
@@ -344,7 +354,7 @@ skills:
   optimize-report:
     class: OptimizationSkill
     description: "Generate comprehensive optimization report"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Generate comprehensive optimization report with analysis, metrics, and recommendations"
     keywords: [optimize, report, analysis, metrics, recommendations]
@@ -353,7 +363,7 @@ skills:
   pipeline-architecture-patterns:
     class: BestPracticeSkill
     description: "Data pipeline architecture patterns for ETL/ELT design, orchestration, and data quality frameworks"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Architecture patterns for ETL/ELT pipelines, orchestration, and data quality"
     keywords: [pipeline, architecture, etl, elt, orchestration, data-quality]
@@ -362,7 +372,7 @@ skills:
   postgres-best-practices:
     class: BestPracticeSkill
     description: "PostgreSQL best practices for database design, query optimization, and performance tuning"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "PostgreSQL best practices for query optimization, indexing, and performance tuning"
     keywords: [postgres, postgresql, database, optimization, performance]
@@ -371,7 +381,7 @@ skills:
   python-best-practices:
     class: BestPracticeSkill
     description: "Pythonic patterns from PEP 8 and PEP 20"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Idiomatic Python patterns and best practices from official Python documentation"
     keywords: [python, pep8, pep20, zen, idioms]
@@ -380,7 +390,7 @@ skills:
   qa-lead-routing:
     class: RoutingSkill
     description: "Coordinates QA workflow across planning, writing, and execution agents. Use when user requests testing, quality assurance, or test documentation."
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Coordinates QA team activities by routing tasks to qa-planner, qa-writer, and qa-engineer"
     keywords: [routing, qa, testing, quality-assurance, coordination]
@@ -390,7 +400,7 @@ skills:
   react-best-practices:
     class: BestPracticeSkill
     description: "React/Next.js performance optimization with 40+ rules in 8 categories"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "React/Next.js performance optimization patterns and best practices"
     keywords: [react, nextjs, performance, optimization, bundle]
@@ -399,7 +409,7 @@ skills:
   redis-best-practices:
     class: BestPracticeSkill
     description: "Redis best practices for caching, data structures, and in-memory data architecture"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Redis best practices for caching patterns, data structures, and performance"
     keywords: [redis, cache, data-structures, in-memory, performance]
@@ -408,7 +418,7 @@ skills:
   result-aggregation:
     class: IntentSkill
     description: "Aggregate parallel agent results into concise output"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Aggregate and format results from multiple parallel agent executions"
     keywords: [aggregation, parallel, batch, results, ecomode]
@@ -417,7 +427,7 @@ skills:
   rust-best-practices:
     class: BestPracticeSkill
     description: "Idiomatic Rust patterns from official guidelines"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Idiomatic Rust patterns and best practices from official documentation"
     keywords: [rust, ownership, borrowing, safety, concurrency]
@@ -426,7 +436,7 @@ skills:
   skills-sh-search:
     class: ExternalSkillSourceSkill
     description: "Search and install skills from skills.sh marketplace when internal skills are insufficient"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Search skills.sh marketplace for external skills and install them into the project"
     keywords: [skills-sh, marketplace, external, install, search, discover, npx]
@@ -435,7 +445,7 @@ skills:
   sauron-watch:
     class: VerificationSkill
     description: "Full R017 verification (5+3 rounds) before commit"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Execute full R017 verification with 5 rounds of manager verification and 3 rounds of deep review"
     keywords: [verification, r017, sync, validation, compliance]
@@ -444,7 +454,7 @@ skills:
   secretary-routing:
     class: RoutingSkill
     description: "Routes agent management tasks to the correct manager agent. Use when user requests agent creation, updates, audits, git operations, sync checks, or verification."
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Routes agent management tasks to appropriate manager agents"
     keywords: [routing, management, agent-creation, git, memory, verification]
@@ -454,7 +464,7 @@ skills:
   snowflake-best-practices:
     class: BestPracticeSkill
     description: "Snowflake best practices for cloud data warehouse design, query optimization, and cost management"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Snowflake best practices for warehouse design, query optimization, and cost management"
     keywords: [snowflake, warehouse, clustering, optimization, cost]
@@ -463,7 +473,7 @@ skills:
   spark-best-practices:
     class: BestPracticeSkill
     description: "Apache Spark best practices for PySpark and Scala distributed data processing"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Apache Spark best practices for performance optimization and resource management"
     keywords: [spark, pyspark, distributed, performance, optimization]
@@ -472,7 +482,7 @@ skills:
   springboot-best-practices:
     class: BestPracticeSkill
     description: "Spring Boot patterns for enterprise Java applications"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Spring Boot patterns for enterprise Java applications with layered architecture"
     keywords: [springboot, java, enterprise, dependency-injection, rest]
@@ -481,7 +491,7 @@ skills:
   status:
     class: SystemSkill
     description: "Show system status and health checks"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Show comprehensive system status including agents, skills, guides, and health checks"
     keywords: [status, health, system, agents, skills]
@@ -490,7 +500,7 @@ skills:
   supabase-postgres-best-practices:
     class: BestPracticeSkill
     description: "PostgreSQL performance optimization guidelines from Supabase. Apply when writing SQL, designing schemas, configuring RLS, or optimizing database performance."
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Supabase PostgreSQL best practices for query performance, RLS, and schema design"
     keywords: [supabase, postgres, postgresql, rls, performance, security]
@@ -499,7 +509,7 @@ skills:
   typescript-best-practices:
     class: BestPracticeSkill
     description: "Type-safe TypeScript patterns from industry standards"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "Type-safe TypeScript patterns and best practices from industry standards"
     keywords: [typescript, type-safety, strict-mode, interfaces, generics]
@@ -508,7 +518,7 @@ skills:
   update-docs:
     class: ManagementSkill
     description: "Sync documentation with project structure"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Ensure documentation accurately reflects current project state and agents work together"
     keywords: [update, documentation, sync, validation, consistency]
@@ -517,7 +527,7 @@ skills:
   update-external:
     class: ManagementSkill
     description: "Update agents from external sources (GitHub, docs, etc.)"
-    user-invocable: true
+    user_invocable: true
     model_invocable: false
     summary: "Update agents, skills, and guides from external sources to latest versions"
     keywords: [update, external, github, sources, versioning]
@@ -526,7 +536,7 @@ skills:
   vercel-deploy:
     class: DeploymentSkill
     description: "Deploy applications to Vercel with auto-detection and preview URLs"
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Deploy applications to Vercel with framework auto-detection and preview URLs"
     keywords: [vercel, deploy, deployment, preview, framework]
@@ -535,7 +545,7 @@ skills:
   web-design-guidelines:
     class: WritingSkill
     description: "UI code review with 100+ rules for accessibility, performance, and UX"
-    user-invocable: false
+    user_invocable: false
     model_invocable: true
     summary: "UI code review guidelines for accessibility, performance, and UX best practices"
     keywords: [ui, accessibility, ux, performance, design]
@@ -544,7 +554,7 @@ skills:
   writing-clearly-and-concisely:
     class: WritingSkill
     description: "Apply Strunk's timeless writing rules to ANY prose humans will read—documentation, commit messages, error messages, explanations, reports, or UI text. Makes your writing clearer, stronger, and more professional."
-    user-invocable: true
+    user_invocable: true
     model_invocable: true
     summary: "Apply Strunk's Elements of Style rules to improve clarity and conciseness in writing"
     keywords: [writing, clarity, conciseness, elements-of-style, strunk]

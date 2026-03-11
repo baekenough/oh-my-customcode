@@ -1,0 +1,44 @@
+# Flutter Guide
+
+metadata:
+  name: flutter
+  description: Flutter cross-platform development reference documentation
+
+source:
+  type: external
+  origin: flutter.dev
+  urls:
+    - https://docs.flutter.dev/
+    - https://docs.flutter.dev/app-architecture
+    - https://riverpod.dev/docs/introduction/getting_started
+    - https://bloclibrary.dev/
+    - https://dart.dev/effective-dart
+  last_fetched: "2026-03-11"
+
+documents:
+  - name: fundamentals
+    path: ./fundamentals.md
+    description: Flutter widget system, BuildContext, rendering pipeline
+
+  - name: state-management
+    path: ./state-management.md
+    description: Riverpod 3.0, BLoC 9.0, Provider patterns and selection guide
+
+  - name: architecture
+    path: ./architecture.md
+    description: MVVM structure, project organization, go_router, freezed
+
+  - name: performance
+    path: ./performance.md
+    description: DevTools, const optimization, RepaintBoundary, Isolate
+
+  - name: testing
+    path: ./testing.md
+    description: Widget tests, golden tests, integration tests, mocking
+
+  - name: security
+    path: ./security.md
+    description: OWASP Mobile Top 10, secure storage, certificate pinning, platform security
+
+used_by:
+  - fe-flutter-agent
