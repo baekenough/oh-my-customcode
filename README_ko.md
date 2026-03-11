@@ -279,6 +279,10 @@ your-project/
 │   │   ├── mgr-creator.md
 │   │   └── ...
 │   ├── skills/            # 스킬 모듈 (68개 디렉토리, 각각 SKILL.md 포함)
+│   │   ├── go-best-practices/
+│   │   ├── react-best-practices/
+│   │   ├── secretary-routing/
+│   │   └── ...
 │   ├── ontology/          # RAG 컨텍스트용 온톨로지 지식 그래프
 │   │   ├── schema.yaml
 │   │   ├── agents.yaml
