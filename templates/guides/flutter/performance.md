@@ -80,7 +80,7 @@ Detect with: DevTools → Rendering → "Highlight repaints"
 
 | Avoid | Use Instead | Reason |
 |-------|-------------|--------|
-| `Opacity` widget | `color.withOpacity()` | Triggers saveLayer |
+| `Opacity` widget | `color.withValues(alpha: 0.5)` | Opacity widget triggers saveLayer |
 | `ClipRRect` in animations | Pre-clip static content | saveLayer per frame |
 | `Container` for sizing | `SizedBox` | Lighter, no decoration |
 
