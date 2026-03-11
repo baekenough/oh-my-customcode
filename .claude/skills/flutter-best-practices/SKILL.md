@@ -233,14 +233,16 @@ coverage_target:
 ```yaml
 secrets:
   never: "Hardcode API keys, tokens, or credentials in source"
-  use: "--dart-define-from-file=.env for compile-time injection"
   best: "Backend proxy for all sensitive API calls"
+  use: "--dart-define-from-file=.env for NON-SECRET build config only (feature flags, environment URLs)"
+  warning: "dart-define values are embedded in compiled binary and extractable via static analysis. Use only for non-secret build configuration (feature flags, environment URLs)."
 
 storage:
   sensitive_data: "flutter_secure_storage v10+ (Keychain/Keystore)"
   never: "SharedPreferences for tokens, PII, or credentials"
   ios: "AppleOptions(useSecureEnclave: true) for high-value"
   android: "AndroidOptions(encryptedSharedPreferences: true)"
+  web_warning: "flutter_secure_storage on Web uses localStorage by default, which is accessible to any JavaScript on the page (XSS vulnerable). For Web targets, use HttpOnly cookies managed by backend or in-memory-only storage for sensitive data."
 
 network:
   tls: "Certificate pinning (SPKI) for financial/health apps"
