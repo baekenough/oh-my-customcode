@@ -83,11 +83,11 @@ Each sub-agent runs on an optimized model for its task type:
 Claude Code selects the appropriate model and parallelizes independent tasks (up to 4 concurrent sub-agents):
 
 ```
-/create-agent
+secretary-routing (routing skill)
   ├── mgr-creator:sonnet       — agent scaffolding
   └── mgr-supplier:haiku       — dependency check
 
-/code-review
+dev-lead-routing (routing skill)
   ├── lang-golang-expert:sonnet — Go implementation
   ├── lang-python-expert:sonnet — Python implementation
   └── qa-engineer:sonnet        — test generation
@@ -203,8 +203,8 @@ Comprehensive reference documentation covering:
 - Agent creation and management
 - Skill development
 - Pipeline workflows
-- Best practices and patterns
 - Sub-agent orchestration
+- Best practices and patterns
 - Data engineering workflows
 - Database optimization
 
