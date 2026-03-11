@@ -241,29 +241,11 @@ The skill's WORKFLOW is followed, but git EXECUTION is delegated to mgr-gitnerd 
 
 ## Agent Teams (MUST when enabled)
 
-When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: Agent Teams is **MANDATORY** for qualifying tasks per R018 (MUST-agent-teams.md).
+When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: Agent Teams is **MANDATORY** for qualifying tasks.
 
-### Architecture (Agent Teams enabled)
+See **R018 (MUST-agent-teams.md)** for the complete decision matrix, self-check, team patterns, and lifecycle.
 
-```
-Main Conversation (orchestrator)
-  ├─ Simple/independent tasks → Agent tool (R009)
-  └─ Collaborative/iterative tasks → Agent Teams (R018)
-      ├─ TeamCreate
-      ├─ TaskCreate (shared tasks)
-      ├─ Agent(spawn members)
-      └─ SendMessage(coordinate)
-```
-
-### When to Use Agent Teams vs Agent Tool
-
-| Criteria | Agent Tool | Agent Teams (MUST) |
-|----------|-----------|-------------------|
-| Agent count | 1-2 | 3+ |
-| Coordination needed | No | Yes |
-| Review/fix cycles | No | Yes |
-| Shared state | No | Yes |
-
+**Quick rule**: 3+ agents OR review cycle OR 2+ issues in same batch → Agent Teams (MUST).
 Using Agent tool when Agent Teams criteria are met is a **VIOLATION** of R018.
 
 ## Announcement Format
