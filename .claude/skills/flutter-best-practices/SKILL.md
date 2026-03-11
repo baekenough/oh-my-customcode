@@ -167,7 +167,7 @@ rebuild_avoidance:
   selector: "Use BlocSelector/Selector for partial state rebuilds"
 
 rendering:
-  avoid_opacity: "Use color.withOpacity() or AnimatedOpacity instead"
+  avoid_opacity: "Use color.withValues(alpha:) (Flutter 3.27+) or AnimatedOpacity instead; color.withOpacity() is deprecated"
   avoid_clip: "Pre-clip static content; avoid ClipRRect in animations"
   minimize_saveLayer: "ShaderMask, ColorFilter, Chip trigger saveLayer"
 
@@ -269,6 +269,15 @@ logging:
 ### 6. Dart Language Patterns
 
 ```yaml
+naming:
+  types: "UpperCamelCase for classes, enums, typedefs, extensions, mixins (e.g., HttpClient, JsonParser)"
+  variables: "lowerCamelCase for variables, parameters, named constants (e.g., itemCount, defaultTimeout)"
+  libraries: "lowercase_with_underscores for libraries, packages, directories, source files (e.g., my_package, slider_menu.dart)"
+  constants: "lowerCamelCase for const (e.g., const defaultTimeout = 30), NOT SCREAMING_CAPS"
+  private: "Prefix with underscore for library-private (e.g., _internalCache, _helper())"
+  boolean: "Prefix with is/has/can/should for booleans (e.g., isEnabled, hasData, canScroll)"
+  avoid: "Hungarian notation, type prefixes (strName, lstItems), abbreviations unless universally known (e.g., ok: http, url, id; avoid: mgr, ctx, btn)"
+
 null_safety:
   default: "Non-nullable types — use ? only when null is meaningful"
   avoid_bang: "Minimize ! operator — use only when null is logically impossible"
