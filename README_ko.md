@@ -278,7 +278,7 @@ your-project/
 │   │   ├── be-fastapi-expert.md
 │   │   ├── mgr-creator.md
 │   │   └── ...
-│   ├── skills/            # 스킬 모듈 (68개 디렉토리)
+│   ├── skills/            # 스킬 모듈 (68개 디렉토리, 각각 SKILL.md 포함)
 │   ├── ontology/          # RAG 컨텍스트용 온톨로지 지식 그래프
 │   │   ├── schema.yaml
 │   │   ├── agents.yaml
