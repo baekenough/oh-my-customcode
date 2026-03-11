@@ -16,6 +16,7 @@
     "fe-vercel-agent": { "type": "Agent", "class": "FrontendExpert" },
     "fe-vuejs-agent": { "type": "Agent", "class": "FrontendExpert" },
     "fe-svelte-agent": { "type": "Agent", "class": "FrontendExpert" },
+    "fe-flutter-agent": { "type": "Agent", "class": "FrontendExpert" },
     "de-airflow-expert": { "type": "Agent", "class": "DataEngineer" },
     "de-dbt-expert": { "type": "Agent", "class": "DataEngineer" },
     "de-spark-expert": { "type": "Agent", "class": "DataEngineer" },
@@ -175,6 +176,8 @@
     { "source": "dev-lead-routing", "target": "fe-vercel-agent", "relation": "routes_to" },
     { "source": "dev-lead-routing", "target": "fe-vuejs-agent", "relation": "routes_to" },
     { "source": "dev-lead-routing", "target": "fe-svelte-agent", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "fe-flutter-agent", "relation": "routes_to" },
+    { "source": "fe-flutter-agent", "target": "flutter-best-practices", "relation": "requires" },
     { "source": "dev-lead-routing", "target": "be-fastapi-expert", "relation": "routes_to" },
     { "source": "dev-lead-routing", "target": "be-springboot-expert", "relation": "routes_to" },
     { "source": "dev-lead-routing", "target": "be-go-backend-expert", "relation": "routes_to" },
@@ -255,6 +258,10 @@
     },
     "fe-svelte-agent": {
       "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "fe-flutter-agent": {
+      "requires": ["flutter-best-practices"],
       "routed_by": ["dev-lead-routing"]
     },
     "de-airflow-expert": {
@@ -518,7 +525,7 @@
       "depends_on": []
     },
     "dev-lead-routing": {
-      "routes_to": ["lang-golang-expert", "lang-python-expert", "lang-rust-expert", "lang-kotlin-expert", "lang-typescript-expert", "lang-java21-expert", "fe-vercel-agent", "fe-vuejs-agent", "fe-svelte-agent", "be-fastapi-expert", "be-springboot-expert", "be-go-backend-expert", "be-nestjs-expert", "be-express-expert", "tool-npm-expert", "tool-optimizer", "tool-bun-expert", "db-supabase-expert", "db-postgres-expert", "db-redis-expert", "arch-documenter", "arch-speckit-agent", "infra-docker-expert", "infra-aws-expert"],
+      "routes_to": ["lang-golang-expert", "lang-python-expert", "lang-rust-expert", "lang-kotlin-expert", "lang-typescript-expert", "lang-java21-expert", "fe-vercel-agent", "fe-vuejs-agent", "fe-svelte-agent", "fe-flutter-agent", "be-fastapi-expert", "be-springboot-expert", "be-go-backend-expert", "be-nestjs-expert", "be-express-expert", "tool-npm-expert", "tool-optimizer", "tool-bun-expert", "db-supabase-expert", "db-postgres-expert", "db-redis-expert", "arch-documenter", "arch-speckit-agent", "infra-docker-expert", "infra-aws-expert"],
       "depends_on": []
     },
     "de-lead-routing": {

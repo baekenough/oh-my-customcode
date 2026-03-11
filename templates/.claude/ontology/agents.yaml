@@ -12,7 +12,7 @@ classes:
     agents: [be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert]
     description: "Backend framework specialists"
   FrontendExpert:
-    agents: [fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent]
+    agents: [fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent]
     description: "Frontend framework specialists"
   DataEngineer:
     agents: [de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert]
@@ -208,6 +208,18 @@ agents:
     summary: "Svelte expert for compiler-based reactivity with SvelteKit SSR and stores"
     keywords: [svelte, sveltekit, reactive, compiler, stores, ssr, file-routing]
     file_patterns: ["*.svelte", "svelte.config.js", "+page.svelte", "+layout.svelte"]
+
+  fe-flutter-agent:
+    class: FrontendExpert
+    description: "Use for Flutter/Dart cross-platform development, widget composition, state management (Riverpod, BLoC), and mobile/desktop app optimization"
+    model: sonnet
+    memory: project
+    effort: medium
+    skills: [flutter-best-practices]
+    tools: [Read, Write, Edit, Grep, Glob, Bash]
+    summary: "Flutter expert for cross-platform mobile/desktop apps with Riverpod and BLoC state management"
+    keywords: [flutter, dart, riverpod, bloc, widget, cross-platform, mobile]
+    file_patterns: ["*.dart", "pubspec.yaml", "pubspec.lock"]
 
   de-airflow-expert:
     class: DataEngineer
@@ -455,7 +467,7 @@ agents:
     model: sonnet
     memory: project
     effort: medium
-    skills: [update-external]
+    skills: [update-external, update-docs]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "External source synchronization for agents, skills, and guides"
     keywords: [update, external, upstream, synchronization, version, metadata]
