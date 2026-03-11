@@ -53,6 +53,7 @@
     "springboot-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
     "go-backend-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
     "react-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "flutter-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
     "airflow-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
     "dbt-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
     "spark-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
@@ -406,6 +407,10 @@
     },
     "react-best-practices": {
       "required_by": ["fe-vercel-agent"],
+      "depends_on": []
+    },
+    "flutter-best-practices": {
+      "required_by": ["fe-flutter-agent"],
       "depends_on": []
     },
     "web-design-guidelines": {
