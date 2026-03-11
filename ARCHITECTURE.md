@@ -199,7 +199,7 @@ flowchart TD
     A[Routing detects no match] --> B{Specialized task?}
     B -- Yes --> C[Delegate to mgr-creator]
     B -- No --> D[Use general-purpose]
-    C --> E[Auto-discover .claude/skills/ + guides/]
+    C --> E[Auto-discover .claude/skills/ + templates/guides/]
     E --> F[Create .claude/agents/name.md]
     F --> G[Orchestrator uses new agent for original task]
     G --> H[Agent persisted for future reuse]

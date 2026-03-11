@@ -199,7 +199,7 @@ flowchart TD
     A[라우팅: 매치 없음] --> B{전문화된 작업?}
     B -- 예 --> C[mgr-creator에 위임]
     B -- 아니오 --> D[general-purpose 사용]
-    C --> E[.claude/skills/ + guides/ 자동 탐색]
+    C --> E[.claude/skills/ + templates/guides/ 자동 탐색]
     E --> F[.claude/agents/name.md 생성]
     F --> G[오케스트레이터가 새 에이전트로 원래 작업 실행]
     G --> H[에이전트 영속 저장 — 이후 재사용 가능]
