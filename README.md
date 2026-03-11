@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 43 agents, 67 skills, 23 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 44 agents, 68 skills, 24 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -160,14 +160,14 @@ All commands are invoked inside the Claude Code conversation.
 
 ## What's Included
 
-### Agents (43)
+### Agents (44)
 
 | Category | Count | Agents |
 |----------|-------|--------|
 | **Managers** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | **System** | 2 | sys-memory-keeper, sys-naggy |
 | **Languages** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| **Frontend** | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| **Frontend** | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
 | **Backend** | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
 | **Tooling** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | **Data Engineering** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
@@ -176,14 +176,14 @@ All commands are invoked inside the Claude Code conversation.
 | **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Security** | 1 | sec-codeql-expert |
-| **Total** | **43** | |
+| **Total** | **44** | |
 
-### Skills (67)
+### Skills (68)
 
 | Category | Count | Skills |
 |----------|-------|--------|
 | **Routing** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
-| **Best Practices** | 18 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices |
+| **Best Practices** | 19 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, flutter-best-practices |
 | **Development** | 6 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines, analysis |
 | **Data Engineering** | 2 | spark-best-practices, pipeline-architecture-patterns |
 | **Optimization** | 3 | optimize-analyze, optimize-bundle, optimize-report |
@@ -197,7 +197,7 @@ All commands are invoked inside the Claude Code conversation.
 | **Deploy** | 2 | vercel-deploy, codex-exec |
 | **External** | 1 | skills-sh-search |
 
-### Guides (23)
+### Guides (24)
 
 Comprehensive reference documentation covering:
 - Agent creation and management
@@ -273,12 +273,12 @@ After `omcustom init`:
 your-project/
 ├── CLAUDE.md              # Entry point for Claude
 ├── .claude/
-│   ├── agents/            # Agent definitions (43 flat .md files)
+│   ├── agents/            # Agent definitions (44 flat .md files)
 │   │   ├── lang-golang-expert.md
 │   │   ├── be-fastapi-expert.md
 │   │   ├── mgr-creator.md
 │   │   └── ...
-│   ├── skills/            # Skill modules (67 directories, each with SKILL.md)
+│   ├── skills/            # Skill modules (68 directories, each with SKILL.md)
 │   │   ├── go-best-practices/
 │   │   ├── react-best-practices/
 │   │   ├── secretary-routing/
@@ -292,7 +292,7 @@ your-project/
 │   ├── rules/             # Behavior rules (18 total)
 │   ├── hooks/             # Event hooks (2 total)
 │   └── contexts/          # Context files (4 total)
-└── guides/                # Reference docs (23 total)
+└── guides/                # Reference docs (24 total)
 ```
 
 ---
