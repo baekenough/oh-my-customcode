@@ -183,7 +183,7 @@ All commands are invoked inside the Claude Code conversation.
 | Category | Count | Skills |
 |----------|-------|--------|
 | **Routing** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
-| **Best Practices** | 19 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, flutter-best-practices |
+| **Best Practices** | 20 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, django-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, flutter-best-practices |
 | **Development** | 6 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines, analysis |
 | **Data Engineering** | 2 | spark-best-practices, pipeline-architecture-patterns |
 | **Optimization** | 3 | optimize-analyze, optimize-bundle, optimize-report |
