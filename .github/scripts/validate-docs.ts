@@ -221,23 +221,49 @@ ${readmeKo}
 
 ---
 
+## 마커 사용 규칙 (엄격히 준수)
+
+| 마커 | 사용 조건 | 예시 |
+|------|----------|------|
+| ✅ | EN과 KO가 동일하거나 정확한 번역일 때 | 숫자, 목록, 구조가 양쪽 일치 |
+| ⚠️ | EN과 KO 사이에 **구체적이고 명확한 사실적 불일치**가 있을 때만 | EN에는 있는 정보가 KO에 없음, 숫자 불일치, 항목 누락 |
+| ❌ | 실제 구현과 문서가 불일치할 때 | 삭제된 기능이 문서에 남아있음 |
+| ℹ️ | 의미적 제안, 분류 의견, 개선 아이디어 (CI에 영향 없음) | "이 분류가 더 적합할 수 있음", "톤 차이" |
+
+**중요**: 다음은 ⚠️가 아닌 ℹ️로 표시하세요:
+- 스킬/에이전트 분류에 대한 의견 (예: "X는 Y 카테고리가 더 적합")
+- 번역 톤이나 스타일의 사소한 차이
+- 슬래시 커맨드 등재 여부에 대한 제안 (실제 EN↔KO 불일치가 아닌 경우)
+- 양쪽 README에서 동일하게 존재하는 잠재적 문제 (이것은 EN↔KO 불일치가 아님)
+
 ## 응답 형식 (Markdown)
 
 > 🔍 **Documentation Validator**
 
 ### 검증 결과
 
-(✅ 일치 / ⚠️ 불일치 / ❌ 오류)
+(✅ 일치 / ⚠️ 불일치 / ❌ 오류 / ℹ️ 참고)
 
 ### 발견된 불일치
 
-| 항목 | 문서 값 | 실제 값 | 파일 |
-|------|--------|--------|------|
-| (불일치 항목 나열) |
+| 항목 | README.md 값 | README_ko.md 값 | 판정 |
+|------|-------------|----------------|------|
+| (⚠️ 또는 ❌ 항목만 나열) |
+
+### 참고사항 (선택)
+
+(ℹ️ 항목 나열 — CI에 영향 없음)
 
 ### 권장 수정사항
 
-(구체적인 수정 제안)
+(⚠️/❌ 항목에 대한 수정 제안만)
+
+### 최종 판정
+
+**PASS** 또는 **FAIL**
+
+- FAIL: ⚠️ 또는 ❌가 1개 이상 존재
+- PASS: ✅와 ℹ️만 존재 (ℹ️는 참고사항이므로 PASS)
 
 ### 요약
 
@@ -248,50 +274,54 @@ _이 검증은 Claude API에 의해 자동 수행되었습니다._
 `;
 }
 
-async function validateDocs(): Promise<string> {
-  // Collect implementation stats
-  const stats = await collectImplementationStats();
-
-  // Read READMEs
-  const readmeEn = await extractReadmeClaims('README.md');
-  const readmeKo = await extractReadmeClaims('README_ko.md');
-
-  if (!readmeEn) {
-    return '⚠️ README.md를 찾을 수 없습니다.';
-  }
-
-  // Programmatic validation before Claude API call
-  const validation = programmaticValidation(stats, readmeEn);
-
-  // Call Claude API
-  const client = new Anthropic();
-
-  const message = await client.messages.create({
-    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    messages: [
-      {
-        role: 'user',
-        content: buildPrompt(stats, readmeEn, readmeKo, validation),
-      },
-    ],
-  });
-
-  // Extract text response
-  const resultParts: string[] = [];
-  for (const block of message.content) {
-    if (block.type === 'text') {
-      resultParts.push(block.text);
-    }
-  }
-
-  return resultParts.join('\n');
-}
-
 async function main() {
   try {
-    const result = await validateDocs();
+    const stats = await collectImplementationStats();
+    const readmeEn = await extractReadmeClaims('README.md');
+    const readmeKo = await extractReadmeClaims('README_ko.md');
+
+    if (!readmeEn) {
+      console.log('⚠️ README.md를 찾을 수 없습니다.');
+      console.log('\n<!-- VALIDATION_STATUS: FAIL -->');
+      return;
+    }
+
+    const validation = programmaticValidation(stats, readmeEn);
+
+    const client = new Anthropic();
+    const message = await client.messages.create({
+      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
+      max_tokens: 2048,
+      messages: [
+        {
+          role: 'user',
+          content: buildPrompt(stats, readmeEn, readmeKo, validation),
+        },
+      ],
+    });
+
+    const resultParts: string[] = [];
+    for (const block of message.content) {
+      if (block.type === 'text') {
+        resultParts.push(block.text);
+      }
+    }
+    const result = resultParts.join('\n');
     console.log(result);
+
+    // Determine pass/fail from programmatic validation and LLM output
+    const hasProgrammaticIssues =
+      validation.missingFromReadme.agents.length > 0 ||
+      validation.missingFromReadme.skills.length > 0 ||
+      validation.extraInReadme.agents.length > 0 ||
+      validation.extraInReadme.skills.length > 0 ||
+      validation.countMismatches.length > 0;
+    // Check for explicit LLM verdict first, fall back to marker detection
+    const hasExplicitFail = /최종 판정[\s\S]*?\*\*FAIL\*\*/i.test(result);
+    const hasExplicitPass = /최종 판정[\s\S]*?\*\*PASS\*\*/i.test(result);
+    const hasLlmIssues = hasExplicitFail || (!hasExplicitPass && result.includes('❌'));
+    const status = hasProgrammaticIssues || hasLlmIssues ? 'FAIL' : 'PASS';
+    console.log(`\n<!-- VALIDATION_STATUS: ${status} -->`);
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
       console.error(`⚠️ Claude API 호출 중 오류가 발생했습니다: ${error.message}`);

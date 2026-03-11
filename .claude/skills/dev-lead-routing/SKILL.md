@@ -12,7 +12,7 @@ context: fork
 | Type | Agents |
 |------|--------|
 | Language | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| Frontend | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| Frontend | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
 | Backend | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-nestjs-expert, be-express-expert, be-django-expert |
 | Tooling | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | Database | db-supabase-expert, db-postgres-expert, db-redis-expert |
@@ -32,6 +32,7 @@ context: fork
 | `.js/.jsx` (React) | fe-vercel-agent |
 | `.vue` | fe-vuejs-agent |
 | `.svelte` | fe-svelte-agent |
+| `.dart`, `pubspec.yaml` | fe-flutter-agent |
 | `.sql` (PG) | db-postgres-expert |
 | `.sql` (Supabase) | db-supabase-expert |
 | `Dockerfile`, `*.dockerfile` | infra-docker-expert |
@@ -51,6 +52,7 @@ context: fork
 | react, next.js, vercel | fe-vercel-agent |
 | vue | fe-vuejs-agent |
 | svelte | fe-svelte-agent |
+| flutter, dart, riverpod, bloc, widget | fe-flutter-agent |
 | fastapi | be-fastapi-expert |
 | django | be-django-expert |
 | spring, springboot | be-springboot-expert |
@@ -116,7 +118,7 @@ When file extension or keyword doesn't match any existing agent:
 ```
 User Input → No matching development agent
   ↓
-Detect: File extension (.rb, .swift, .dart, etc.) or language keyword
+Detect: File extension (.rb, .swift, .php, etc.) or language keyword
   ↓
 Delegate to mgr-creator with context:
   domain: detected language/framework

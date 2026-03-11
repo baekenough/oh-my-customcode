@@ -69,17 +69,16 @@ jobs:
 
       - name: Check for errors
         run: |
-          if grep -q "❌" validation_result.md; then
-            echo "::warning::Documentation validation found errors - review the report"
-            cat validation_result.md
+          if grep -q "VALIDATION_STATUS: FAIL" validation_result.md; then
+            echo "::error::Documentation validation found mismatches - review the report"
+            exit 1
           else
             echo "Documentation validation passed!"
-            cat validation_result.md
           fi
 
       - name: Create or update issue on validation failure
         id: create-issue
-        if: github.event_name == 'push'
+        if: always() && github.event_name == 'push'
         uses: actions/github-script@v8
         with:
           script: |
