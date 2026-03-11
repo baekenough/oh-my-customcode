@@ -172,10 +172,10 @@ dev-lead-routing (라우팅 스킬)
 | **툴링** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | **데이터 엔지니어링** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | **데이터베이스** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
-| **보안** | 1 | sec-codeql-expert |
 | **아키텍처** | 2 | arch-documenter, arch-speckit-agent |
 | **인프라** | 2 | infra-docker-expert, infra-aws-expert |
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
+| **보안** | 1 | sec-codeql-expert |
 | **합계** | **44** | |
 
 ### 스킬 (68개)
@@ -192,9 +192,9 @@ dev-lead-routing (라우팅 스킬)
 | **운영** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
 | **유틸리티** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
 | **품질 & 워크플로우** | 9 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pr-auto-improve, pipeline-guards |
-| **배포** | 2 | vercel-deploy, codex-exec |
 | **보안** | 2 | cve-triage, jinja2-prompts |
 | **리서치** | 1 | research |
+| **배포** | 2 | vercel-deploy, codex-exec |
 | **외부 연동** | 1 | skills-sh-search |
 
 ### 가이드 (24개)
