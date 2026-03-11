@@ -248,50 +248,51 @@ _이 검증은 Claude API에 의해 자동 수행되었습니다._
 `;
 }
 
-async function validateDocs(): Promise<string> {
-  // Collect implementation stats
-  const stats = await collectImplementationStats();
-
-  // Read READMEs
-  const readmeEn = await extractReadmeClaims('README.md');
-  const readmeKo = await extractReadmeClaims('README_ko.md');
-
-  if (!readmeEn) {
-    return '⚠️ README.md를 찾을 수 없습니다.';
-  }
-
-  // Programmatic validation before Claude API call
-  const validation = programmaticValidation(stats, readmeEn);
-
-  // Call Claude API
-  const client = new Anthropic();
-
-  const message = await client.messages.create({
-    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    messages: [
-      {
-        role: 'user',
-        content: buildPrompt(stats, readmeEn, readmeKo, validation),
-      },
-    ],
-  });
-
-  // Extract text response
-  const resultParts: string[] = [];
-  for (const block of message.content) {
-    if (block.type === 'text') {
-      resultParts.push(block.text);
-    }
-  }
-
-  return resultParts.join('\n');
-}
-
 async function main() {
   try {
-    const result = await validateDocs();
+    const stats = await collectImplementationStats();
+    const readmeEn = await extractReadmeClaims('README.md');
+    const readmeKo = await extractReadmeClaims('README_ko.md');
+
+    if (!readmeEn) {
+      console.log('⚠️ README.md를 찾을 수 없습니다.');
+      console.log('\n<!-- VALIDATION_STATUS: FAIL -->');
+      return;
+    }
+
+    const validation = programmaticValidation(stats, readmeEn);
+
+    const client = new Anthropic();
+    const message = await client.messages.create({
+      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
+      max_tokens: 2048,
+      messages: [
+        {
+          role: 'user',
+          content: buildPrompt(stats, readmeEn, readmeKo, validation),
+        },
+      ],
+    });
+
+    const resultParts: string[] = [];
+    for (const block of message.content) {
+      if (block.type === 'text') {
+        resultParts.push(block.text);
+      }
+    }
+    const result = resultParts.join('\n');
     console.log(result);
+
+    // Determine pass/fail from programmatic validation and LLM output
+    const hasProgrammaticIssues =
+      validation.missingFromReadme.agents.length > 0 ||
+      validation.missingFromReadme.skills.length > 0 ||
+      validation.extraInReadme.agents.length > 0 ||
+      validation.extraInReadme.skills.length > 0 ||
+      validation.countMismatches.length > 0;
+    const hasLlmIssues = result.includes('⚠️') || result.includes('❌');
+    const status = hasProgrammaticIssues || hasLlmIssues ? 'FAIL' : 'PASS';
+    console.log(`\n<!-- VALIDATION_STATUS: ${status} -->`);
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
       console.error(`⚠️ Claude API 호출 중 오류가 발생했습니다: ${error.message}`);
