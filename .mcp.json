@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "ontology-rag": {
+      "type": "stdio",
+      "command": ".venv/bin/python",
+      "args": [
+        "-m",
+        "ontology_rag.mcp_server"
+      ],
+      "env": {
+        "ONTOLOGY_DIR": ".claude/ontology"
+      }
+    }
+  }
+}

@@ -299,6 +299,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 | 서버 | 용도 |
 |------|------|
 | claude-mem | 세션 메모리 영속성 (Chroma 기반) |
+| ontology-rag | 에이전트/스킬/규칙 온톨로지 기반 컨텍스트 및 라우팅 |
 
 ### 설치 명령어
 
