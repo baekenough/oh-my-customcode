@@ -107,6 +107,18 @@ For **new file creation**, **boilerplate**, or **test code generation**:
 ### Step 3: Expert Agent Selection
 Route to appropriate language/framework expert based on file extension and keyword mapping.
 
+### Step 4: Ontology-RAG Enrichment (R019)
+
+After agent selection, enrich the spawned agent's prompt with ontology context:
+
+1. Call `get_agent_for_task(original_query)` via MCP
+2. Extract `suggested_skills` from response
+3. If `suggested_skills` non-empty, prepend to spawned agent prompt:
+   `"Ontology context suggests these skills may be relevant: {suggested_skills}"`
+4. On MCP failure: skip silently, proceed with unmodified prompt
+
+**This step is advisory only — it never changes which agent is selected.**
+
 ## Routing Rules
 
 Multi-language: detect all languages, route to parallel experts (max 4). Single-language: route to matching expert. Cross-layer (frontend + backend): multiple experts in parallel.
