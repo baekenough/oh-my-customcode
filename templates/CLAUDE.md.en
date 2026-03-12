@@ -168,6 +168,7 @@ Violation = immediate correction. No exception for "small changes".
 | `/optimize-analyze` | Analyze bundle and performance |
 | `/optimize-bundle` | Optimize bundle size |
 | `/optimize-report` | Generate optimization report |
+| `/research` | 10-team parallel deep analysis and cross-verification |
 | `/sauron-watch` | Full R017 verification |
 | `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/lists` | Show all available commands |
