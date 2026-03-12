@@ -126,7 +126,7 @@ Delegate to mgr-creator with context:
   keywords: extracted from user input
   file_patterns: detected extensions
   skills: auto-discover from .claude/skills/
-  guides: auto-discover from guides/
+  guides: auto-discover from templates/guides/
 ```
 
 **Examples of dynamic creation triggers:**

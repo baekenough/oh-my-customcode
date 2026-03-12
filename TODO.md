@@ -83,7 +83,10 @@ gh project item-add ... (기존 이슈 추가)
 
 ## Session Notes
 
-### 2026-02-10 (current)
+### 2026-03-11
+- #298: docs: update guides/ references to templates/guides/ across CLAUDE.md, README.md, README_ko.md, ARCHITECTURE.md, ARCHITECTURE_ko.md
+
+### 2026-02-10
 - v0.9.0 릴리즈: README 수정
 - v0.9.1 릴리즈: secretary-routing 템플릿 누락 수정 (#57)
 - v0.9.2 릴리즈: release workflow 충돌 수정 (#59)

@@ -34,7 +34,7 @@ Apply the **django-best-practices** skill for Django development patterns.
 
 ## Reference Guides
 
-Consult the **django-best-practices** guide at `guides/django-best-practices/` for Django reference documentation.
+Consult the **django-best-practices** guide at `templates/guides/django-best-practices/` for Django reference documentation.
 
 ## Workflow
 
