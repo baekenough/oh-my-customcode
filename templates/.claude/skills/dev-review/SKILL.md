@@ -32,6 +32,19 @@ Review code for best practices using language-specific expert agents.
 4. Analyze code against best practices
 5. Generate review report
 ```
+6. **Artifact persistence** (optional): Review agent saves findings to:
+   ```
+   .claude/outputs/sessions/{YYYY-MM-DD}/dev-review-{HHmmss}.md
+   ```
+   With metadata header:
+   ```markdown
+   ---
+   skill: dev-review
+   date: {ISO-8601 with timezone}
+   query: "{original user query}"
+   ---
+   ```
+   The review agent creates the directory and writes the artifact before returning results (R010 compliance).
 
 ## Agent Selection
 
