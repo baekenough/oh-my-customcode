@@ -47,8 +47,15 @@ Provider: claude-mem | Collection: claude_memories | Archive: ~/.claude-mem/arch
 When triggered by session-end signal from orchestrator:
 
 1. **Collect** session summary: completed tasks, key decisions, open items
-2. **Update native auto-memory** (MEMORY.md) with session learnings
-3. **Return formatted summary** to orchestrator for MCP persistence (claude-mem, episodic-memory)
+2. **Extract behaviors**: analyze conversation for repeated user preferences
+   - Communication patterns (verbosity, format, language preferences)
+   - Workflow patterns (tool usage, review habits, branching conventions)
+   - Domain priorities (security-first, performance-first, etc.)
+   - New behaviors → `[confidence: low]` in `## Behaviors` section
+   - Existing behaviors observed again → promote confidence level
+   - Contradicted behaviors → flag for review or demote
+3. **Update native auto-memory** (MEMORY.md) with session learnings + behaviors
+4. **Return formatted summary** to orchestrator for MCP persistence (claude-mem, episodic-memory)
 
 > **Note**: MCP tools (claude-mem, episodic-memory) are orchestrator-scoped and cannot be called from subagents. The orchestrator handles MCP saves directly after receiving the formatted summary.
 
