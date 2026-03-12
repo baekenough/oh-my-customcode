@@ -124,3 +124,41 @@ def test_route_with_hybrid_with_searcher(sample_ontology_dir):
     assert result.agent != ""
     assert result.confidence > 0
     assert "Hybrid search" in result.reasoning
+
+
+# ---------------------------------------------------------------------------
+# Korean particle handling in router
+# ---------------------------------------------------------------------------
+
+
+def test_korean_particle_ro_routing(sample_ontology_dir):
+    """'go로 rest api 서버를 만들어줘' should route to lang-golang-expert."""
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    router = SemanticRouter(onto, graph)
+
+    result = router.route_with_keywords("go로 rest api 서버를 만들어줘")
+    assert result.agent == "lang-golang-expert"
+    assert result.confidence > 0
+
+
+def test_korean_particle_stripped_keyword_in_matched(sample_ontology_dir):
+    """Stripped keyword ('go') should appear in matched_keywords."""
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    router = SemanticRouter(onto, graph)
+
+    result = router.route_with_keywords("go로 코드 리뷰")
+    # "go" (stripped from "go로") should be recorded
+    assert "go" in result.matched_keywords or "golang" in result.matched_keywords
+
+
+def test_korean_particle_lower_confidence_than_exact(sample_ontology_dir):
+    """Particle-matched routing confidence should be <= exact match confidence."""
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    router = SemanticRouter(onto, graph)
+
+    result_exact = router.route_with_keywords("golang")
+    result_particle = router.route_with_keywords("golang으로")
+    assert result_particle.confidence <= result_exact.confidence
