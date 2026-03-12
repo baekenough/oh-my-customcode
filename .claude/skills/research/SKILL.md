@@ -71,8 +71,21 @@ Convergence expected by round 3. Hard stop at round 30.
 ### Phase 4: Output
 
 1. Structured markdown report (see Output Format below)
-2. GitHub issue auto-created with findings
-3. Action items with effort estimates
+2. **Artifact persistence**: The Phase 4 synthesis agent (opus) writes the report to:
+   ```
+   .claude/outputs/sessions/{YYYY-MM-DD}/research-{HHmmss}.md
+   ```
+   With metadata header:
+   ```markdown
+   ---
+   skill: research
+   date: {ISO-8601 with timezone}
+   query: "{original user query}"
+   ---
+   ```
+   The agent creates the directory (`mkdir -p`) before writing. This is a subagent operation (R010 compliance).
+3. GitHub issue auto-created with findings
+4. Action items with effort estimates
 
 ## Execution Rules
 

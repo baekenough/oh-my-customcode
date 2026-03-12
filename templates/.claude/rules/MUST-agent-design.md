@@ -30,6 +30,7 @@ escalation:              # Model escalation policy (optional)
   enabled: true          # Enable auto-escalation advisory
   path: haiku → sonnet → opus  # Escalation sequence
   threshold: 2           # Failures before advisory
+soul: true                 # Enable SOUL.md identity injection
 isolation: worktree        # Run in isolated git worktree
 background: true           # Run in background
 maxTurns: 10               # Max conversation turns
@@ -64,6 +65,54 @@ When `escalation.enabled: true`, the model-escalation hooks will track outcomes 
 
 When enabled: first 200 lines of MEMORY.md loaded into system prompt.
 
+## Soul Identity
+
+Optional per-agent identity layer that separates personality/style from capabilities.
+
+| Aspect | Location | Purpose |
+|--------|----------|---------|
+| Capabilities | `.claude/agents/{name}.md` | WHAT the agent does |
+| Identity | `.claude/agents/souls/{name}.soul.md` | HOW the agent communicates |
+
+### Soul File Format
+
+Location: `.claude/agents/souls/{name}.soul.md`
+
+```yaml
+---
+agent: {agent-name}        # Must match agent filename
+version: 1.0.0
+---
+```
+
+Sections: `## Personality`, `## Style`, `## Anti-patterns`
+
+### Activation
+
+1. Agent frontmatter includes `soul: true`
+2. Routing skill reads `souls/{name}.soul.md` at spawn time (Step 5)
+3. Soul content prepended to agent prompt as identity context
+4. Missing soul file → graceful fallback (no error)
+
+### Precedence
+
+Behavioral memory observations (R011) override soul defaults when they conflict. Behaviors are user-specific; souls are template defaults.
+
+## Artifact Output Convention
+
+Skills that produce significant output can persist results to local storage.
+
+**Location**: `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HHmmss}.md`
+
+**Format**: Metadata header with `skill`, `date`, `query` fields, followed by skill output content.
+
+**Rules**:
+- Opt-in per skill — not mandatory
+- The final subagent in the skill's pipeline writes the artifact (R010 compliance)
+- Skills create the directory (`mkdir -p`) before writing
+- `.claude/outputs/` is git-untracked (under `.claude/` gitignore)
+- No indexing required — date-based directory browsing is sufficient
+
 ## Separation of Concerns
 
 | Location | Purpose | Contains |
@@ -73,6 +122,42 @@ When enabled: first 200 lines of MEMORY.md loaded into system prompt.
 | `guides/` | Reference docs | Best practices, tutorials |
 
 Agent body: purpose, capabilities overview, workflow. NOT detailed instructions or reference docs.
+
+## Skill Frontmatter
+
+Location: `.claude/skills/{name}/SKILL.md`
+
+### Required Fields
+
+```yaml
+name: skill-name           # Unique identifier (kebab-case)
+description: Brief desc    # One-line summary
+```
+
+### Optional Fields
+
+```yaml
+context: fork              # Forked context for isolated execution
+version: 1.0.0             # Semantic version
+user-invocable: false      # Whether user can invoke directly
+disable-model-invocation: true  # Prevent model from auto-invoking
+```
+
+### Context Fork Criteria
+
+Use `context: fork` for skills that orchestrate multi-agent workflows. Cap at **10 total** across the project.
+
+| Use `context: fork` | Do NOT use `context: fork` |
+|---------------------|---------------------------|
+| Routing skills (secretary, dev-lead, etc.) | Best-practices skills |
+| Workflow orchestration (DAG, pipelines) | Hook/command skills |
+| Multi-agent coordination patterns | Single-agent reference skills |
+| Task decomposition/planning | External tool integrations |
+
+Current skills with `context: fork` (8/10 cap):
+- secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing
+- dag-orchestration, task-decomposition, worker-reviewer-pipeline
+- pipeline-guards
 
 ## Naming
 

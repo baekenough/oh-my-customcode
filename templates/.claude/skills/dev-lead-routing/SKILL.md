@@ -107,6 +107,29 @@ For **new file creation**, **boilerplate**, or **test code generation**:
 ### Step 3: Expert Agent Selection
 Route to appropriate language/framework expert based on file extension and keyword mapping.
 
+### Step 4: Ontology-RAG Enrichment (R019)
+
+After agent selection, enrich the spawned agent's prompt with ontology context:
+
+1. Call `get_agent_for_task(original_query)` via MCP
+2. Extract `suggested_skills` from response
+3. If `suggested_skills` non-empty, prepend to spawned agent prompt:
+   `"Ontology context suggests these skills may be relevant: {suggested_skills}"`
+4. On MCP failure: skip silently, proceed with unmodified prompt
+
+**This step is advisory only — it never changes which agent is selected.**
+
+### Step 5: Soul Injection
+
+If the selected agent has `soul: true` in its frontmatter:
+
+1. Read `.claude/agents/souls/{agent-name}.soul.md`
+2. If file exists, prepend soul content to the agent's prompt:
+   `"Identity context:\n{soul content}\n\n---\n\n"`
+3. If file doesn't exist → skip silently (no error, no injection)
+
+**This step runs after ontology-RAG enrichment. Soul content is identity context, not capability instructions.**
+
 ## Routing Rules
 
 Multi-language: detect all languages, route to parallel experts (max 4). Single-language: route to matching expert. Cross-layer (frontend + backend): multiple experts in parallel.
@@ -126,7 +149,7 @@ Delegate to mgr-creator with context:
   keywords: extracted from user input
   file_patterns: detected extensions
   skills: auto-discover from .claude/skills/
-  guides: auto-discover from guides/
+  guides: auto-discover from templates/guides/
 ```
 
 **Examples of dynamic creation triggers:**
