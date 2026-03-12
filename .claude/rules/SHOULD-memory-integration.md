@@ -71,6 +71,58 @@ Memory entries in MEMORY.md should include confidence annotations to distinguish
 [any] → contradicted by evidence → demoted or removed
 ```
 
+## Behavioral Memory
+
+MEMORY.md supports an optional `## Behaviors` section for tracking user interaction preferences and workflow patterns.
+
+### Behaviors Section Format
+
+```markdown
+## Behaviors [confidence: medium]
+- User prefers concise responses — 3 sentences max
+- Commit messages always include issue number
+- Security-first review perspective
+
+## Behavior Lifecycle
+- New observation → [confidence: low]
+- Seen in 2+ sessions → [confidence: medium]
+- User-confirmed → [confidence: high]
+- Contradicted → demote or remove
+```
+
+### What Counts as a Behavior
+
+| Category | Examples |
+|----------|---------|
+| Communication | Verbosity preference, language, format |
+| Workflow | Tool preferences, review habits, branching patterns |
+| Domain priority | Security-first, performance-first, simplicity-first |
+
+### What Does NOT Count as a Behavior
+
+- Facts about the codebase (use existing sections)
+- One-time instructions (ephemeral, not persistent)
+- Tool configuration (belongs in CLAUDE.md or settings)
+
+### Extraction Guidelines
+
+sys-memory-keeper extracts behavioral patterns at session end:
+1. Analyze conversation for repeated user preferences
+2. New behaviors start at `[confidence: low]`
+3. Promote on repeated observation across sessions
+4. Demote or remove when contradicted
+
+### Budget Management
+
+Behaviors share the 200-line MEMORY.md budget with facts. When approaching the limit:
+1. Prune `[confidence: low]` behaviors first
+2. Then prune `[confidence: medium]` behaviors
+3. `[confidence: high]` behaviors are never auto-pruned
+
+### Precedence
+
+Behavioral memory observations override soul defaults (R006 Soul Identity) when they conflict. Behaviors are user-specific and session-derived; souls are template defaults.
+
 ### Rules
 
 | Rule | Detail |
