@@ -275,8 +275,10 @@ Respond in JSON format only:
         if self.hybrid_searcher is None:
             return self.route_with_keywords(query)
 
-        # Search for agents only
-        results = self.hybrid_searcher.search(query, entity_type="Agent", top_k=1)
+        # Use keyword-best match as anchor to enable graph scoring
+        kw_result = self.route_with_keywords(query)
+        anchor = kw_result.agent if kw_result.agent else None
+        results = self.hybrid_searcher.search(query, anchor_node=anchor, top_k=1, entity_type="Agent")
 
         if not results:
             return self.route_with_keywords(query)

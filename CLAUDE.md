@@ -138,6 +138,7 @@ oh-my-customcode로 구동됩니다.
 | R011 | 메모리 통합 | claude-mem을 통한 세션 지속성 |
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
+| R019 | Ontology-RAG 라우팅 | 라우팅 스킬의 ontology-RAG enrichment |
 
 ### MAY (선택)
 | ID | 규칙 | 설명 |
