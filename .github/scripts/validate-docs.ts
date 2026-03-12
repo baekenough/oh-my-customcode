@@ -274,19 +274,90 @@ _이 검증은 Claude API에 의해 자동 수행되었습니다._
 `;
 }
 
+function printProgrammaticResults(
+  stats: ImplementationStats,
+  validation: ValidationResult,
+  slashCommandValidation: SlashCommandValidation,
+): boolean {
+  console.log('📋 Programmatic Validation Results');
+
+  const hasProgrammaticIssues =
+    validation.missingFromReadme.agents.length > 0 ||
+    validation.missingFromReadme.skills.length > 0 ||
+    validation.extraInReadme.agents.length > 0 ||
+    validation.extraInReadme.skills.length > 0 ||
+    validation.countMismatches.length > 0 ||
+    slashCommandValidation.phantom.length > 0;
+
+  // Agent count line
+  const agentMismatch = validation.countMismatches.find((m) => m.field === 'agents');
+  if (agentMismatch) {
+    console.log(`❌ Agent count: README=${agentMismatch.readme}, actual=${agentMismatch.actual}`);
+  } else {
+    console.log(`✅ Agent count: ${stats.agent_count} (matched)`);
+  }
+
+  // Skill count line
+  const skillMismatch = validation.countMismatches.find((m) => m.field === 'skills');
+  if (skillMismatch) {
+    console.log(`❌ Skill count: README=${skillMismatch.readme}, actual=${skillMismatch.actual}`);
+  } else {
+    console.log(`✅ Skill count: ${stats.skill_count} (matched)`);
+  }
+
+  // Missing/extra agents
+  if (validation.missingFromReadme.agents.length > 0) {
+    console.log(`❌ Agents missing from README: ${validation.missingFromReadme.agents.join(', ')}`);
+  }
+  if (validation.extraInReadme.agents.length > 0) {
+    console.log(`❌ Phantom agents in README: ${validation.extraInReadme.agents.join(', ')}`);
+  }
+
+  // Missing/extra skills
+  if (validation.missingFromReadme.skills.length > 0) {
+    console.log(`❌ Skills missing from README: ${validation.missingFromReadme.skills.join(', ')}`);
+  }
+  if (validation.extraInReadme.skills.length > 0) {
+    console.log(`❌ Phantom skills in README: ${validation.extraInReadme.skills.join(', ')}`);
+  }
+
+  // Slash commands
+  if (slashCommandValidation.phantom.length > 0) {
+    console.log(`❌ Phantom slash commands: ${slashCommandValidation.phantom.map((c) => `/${c}`).join(', ')}`);
+    console.log(`✅ Slash commands: ${slashCommandValidation.valid.length} valid, ${slashCommandValidation.phantom.length} phantom`);
+  } else {
+    console.log(`✅ Slash commands: ${slashCommandValidation.valid.length} valid, 0 phantom`);
+  }
+
+  return !hasProgrammaticIssues;
+}
+
 async function main() {
+  const programmaticOnly = process.argv.includes('--programmatic-only');
+
   try {
     const stats = await collectImplementationStats();
     const readmeEn = await extractReadmeClaims('README.md');
-    const readmeKo = await extractReadmeClaims('README_ko.md');
 
     if (!readmeEn) {
       console.log('⚠️ README.md를 찾을 수 없습니다.');
       console.log('\n<!-- VALIDATION_STATUS: FAIL -->');
-      return;
+      process.exit(1);
     }
 
     const validation = programmaticValidation(stats, readmeEn);
+
+    if (programmaticOnly) {
+      const passed = printProgrammaticResults(stats, validation, slashCommandValidation);
+      const status = passed ? 'PASS' : 'FAIL';
+      console.log(`\n<!-- VALIDATION_STATUS: ${status} -->`);
+      if (!passed) {
+        process.exit(1);
+      }
+      return;
+    }
+
+    const readmeKo = await extractReadmeClaims('README_ko.md');
 
     const client = new Anthropic();
     const message = await client.messages.create({
