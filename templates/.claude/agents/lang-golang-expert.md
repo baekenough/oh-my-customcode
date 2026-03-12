@@ -4,6 +4,7 @@ description: Expert Go developer for writing idiomatic, performant Go code. Use 
 model: sonnet
 memory: project
 effort: high
+soul: true
 skills:
   - go-best-practices
 tools:
