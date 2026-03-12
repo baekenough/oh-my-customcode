@@ -3,7 +3,7 @@
 import pytest
 from ontology_rag.ontology import Ontology
 from ontology_rag.graph import OntologyGraph
-from ontology_rag.hybrid_search import HybridSearcher, SearchResult
+from ontology_rag.hybrid_search import HybridSearcher, SearchResult, _strip_korean_particles
 
 
 @pytest.fixture
@@ -150,3 +150,77 @@ def test_rebuild_index(searcher, ontology_with_graph):
 
     # Results should be the same
     assert results1[0].node_id == results2[0].node_id
+
+
+# ---------------------------------------------------------------------------
+# Korean particle stripping unit tests
+# ---------------------------------------------------------------------------
+
+
+class TestStripKoreanParticles:
+    """Unit tests for _strip_korean_particles."""
+
+    def test_strips_ro(self):
+        assert _strip_korean_particles("go로") == "go"
+
+    def test_strips_euro_ro(self):
+        assert _strip_korean_particles("서버로") == "서버"
+
+    def test_strips_reul(self):
+        assert _strip_korean_particles("서버를") == "서버"
+
+    def test_strips_eul(self):
+        assert _strip_korean_particles("코드를") == "코드"
+
+    def test_strips_neun(self):
+        assert _strip_korean_particles("파이썬은") == "파이썬"
+
+    def test_strips_eseo(self):
+        assert _strip_korean_particles("팀에서") == "팀"
+
+    def test_no_particle_unchanged(self):
+        assert _strip_korean_particles("golang") == "golang"
+
+    def test_no_particle_korean_unchanged(self):
+        # "파이썬" has no trailing particle
+        assert _strip_korean_particles("파이썬") == "파이썬"
+
+    def test_does_not_strip_entire_word(self):
+        # "로" alone should not strip to empty string
+        assert _strip_korean_particles("로") == "로"
+
+    def test_longest_particle_first(self):
+        # "으로부터" should be stripped before "으로" or "부터"
+        assert _strip_korean_particles("서버으로부터") == "서버"
+
+    def test_euroseo_stripped(self):
+        assert _strip_korean_particles("팀에서부터") == "팀"
+
+
+# ---------------------------------------------------------------------------
+# Korean particle handling in hybrid search
+# ---------------------------------------------------------------------------
+
+
+def test_search_korean_particle_ro(searcher):
+    """'go로' should match lang-golang-expert via particle stripping."""
+    results_with_particle = searcher.search("go로", top_k=5)
+    results_exact = searcher.search("go", top_k=5)
+
+    # Both should find lang-golang-expert
+    particle_ids = [r.node_id for r in results_with_particle]
+    assert "lang-golang-expert" in particle_ids
+
+    # Keyword score with particle should be slightly lower than exact
+    golang_exact = next(r for r in results_exact if r.node_id == "lang-golang-expert")
+    golang_particle = next(
+        r for r in results_with_particle if r.node_id == "lang-golang-expert"
+    )
+    assert golang_particle.keyword_score <= golang_exact.keyword_score
+
+
+def test_search_korean_sentence(searcher):
+    """'go로 rest api 서버를 만들어줘' should still match lang-golang-expert."""
+    results = searcher.search("go로 rest api 서버를 만들어줘", top_k=5)
+    node_ids = [r.node_id for r in results]
+    assert "lang-golang-expert" in node_ids
