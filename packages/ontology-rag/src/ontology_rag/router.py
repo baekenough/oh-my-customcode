@@ -11,6 +11,7 @@ import json
 
 from ontology_rag.ontology import Ontology
 from ontology_rag.graph import OntologyGraph
+from ontology_rag.hybrid_search import _strip_korean_particles
 
 if TYPE_CHECKING:
     from ontology_rag.hybrid_search import HybridSearcher
@@ -200,6 +201,16 @@ Respond in JSON format only:
                     if entity_type == "agent":
                         agent_scores[entity_name] = agent_scores.get(entity_name, 0) + weight
                         matched_keywords.setdefault(entity_name, []).append(word)
+
+            # Korean particle-stripped match (e.g. "go로" -> "go")
+            stripped = _strip_korean_particles(word)
+            if stripped != word and stripped in self.keyword_index:
+                for entity_type, entity_name, weight in self.keyword_index[stripped]:
+                    if entity_type == "agent":
+                        agent_scores[entity_name] = (
+                            agent_scores.get(entity_name, 0) + weight * 0.9
+                        )
+                        matched_keywords.setdefault(entity_name, []).append(stripped)
 
             # Check file patterns (e.g., ".go" matches "*.go")
             for kw, entries in self.keyword_index.items():

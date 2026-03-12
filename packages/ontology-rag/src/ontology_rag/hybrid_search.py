@@ -12,6 +12,54 @@ if TYPE_CHECKING:
     from ontology_rag.community import CommunityEngine
 
 
+# Common Korean particles (조사) to strip from query words.
+# Sorted by length descending so longer particles match first
+# (e.g., "으로" before "로" to avoid partial stripping).
+_KOREAN_PARTICLES = sorted(
+    [
+        "으로부터", "으로서", "으로써",
+        "로부터", "로서", "로써",
+        "에서부터", "에서",
+        "한테서", "한테",
+        "에게서", "에게",
+        "보다", "처럼", "같이", "부터", "까지",
+        "으로", "로",
+        "를", "을", "는", "은", "이", "가",
+        "와", "과", "의", "도", "만",
+        "께",
+    ],
+    key=len,
+    reverse=True,
+)
+
+
+def _strip_korean_particles(word: str) -> str:
+    """Strip Korean particles from a word to improve keyword matching.
+
+    Tries each particle from longest to shortest. Returns the stripped form
+    on the first match, or the original word if no particle is found.
+
+    Args:
+        word: A single lowercase query word.
+
+    Returns:
+        The word with the trailing Korean particle removed, or the original
+        word if no particle suffix was detected.
+
+    Examples:
+        >>> _strip_korean_particles("go로")
+        'go'
+        >>> _strip_korean_particles("서버를")
+        '서버'
+        >>> _strip_korean_particles("golang")
+        'golang'
+    """
+    for particle in _KOREAN_PARTICLES:
+        if word.endswith(particle) and len(word) > len(particle):
+            return word[: -len(particle)]
+    return word
+
+
 @dataclass
 class SearchResult:
     """A single hybrid search result."""
@@ -294,6 +342,13 @@ class HybridSearcher:
         """Compute keyword match score for a node.
 
         Checks if any query word matches the node's keywords in the inverted index.
+        Applies three matching strategies in order:
+
+        1. Exact match (weight 1.0x)
+        2. Korean particle-stripped match (weight 0.9x) — e.g. "go로" -> "go"
+        3. Substring match — keyword contained in query word (weight 0.3x)
+           e.g. query word "golang" contains keyword "go"
+
         Returns normalized score (0.0-1.0).
 
         Args:
@@ -306,10 +361,26 @@ class HybridSearcher:
         total_weight = 0.0
 
         for word in query_words:
+            # 1. Exact match
             if word in self._keyword_index:
                 for entity_type, entity_name, weight in self._keyword_index[word]:
                     if entity_name == node_id:
                         total_weight += weight
+
+            # 2. Korean particle-stripped match
+            stripped = _strip_korean_particles(word)
+            if stripped != word and stripped in self._keyword_index:
+                for entity_type, entity_name, weight in self._keyword_index[stripped]:
+                    if entity_name == node_id:
+                        total_weight += weight * 0.9
+
+            # 3. Substring match: keyword contained in query word
+            #    Only consider keywords longer than 2 chars to avoid noise.
+            for kw, entries in self._keyword_index.items():
+                if len(kw) > 2 and kw in word and kw != word:
+                    for entity_type, entity_name, weight in entries:
+                        if entity_name == node_id:
+                            total_weight += weight * 0.3
 
         # Normalize: 3 keyword matches = 1.0, capped at 1.0
         return min(total_weight / 3.0, 1.0)
