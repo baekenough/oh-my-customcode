@@ -45,7 +45,7 @@ Batch 2: T5, T6, T7, T8    (Integration + Comparative)
 Batch 3: T9, T10            (Innovation)
 ```
 
-### Phase 2: Cross-Verification Loop (min 2, max 5 rounds)
+### Phase 2: Cross-Verification Loop (min 2, max 30 rounds)
 
 ```
 Team findings ──→ opus 4.6 verification ──→ codex-exec xhigh verification
@@ -60,7 +60,7 @@ Each round:
 3. **Contradiction resolution**: Reconcile divergent findings between teams and verifiers
 4. **Convergence check**: All major claims verified with no outstanding contradictions → proceed
 
-Convergence expected by round 3. Hard stop at round 5.
+Convergence expected by round 3. Hard stop at round 30.
 
 ### Phase 3: Synthesis
 
@@ -71,8 +71,21 @@ Convergence expected by round 3. Hard stop at round 5.
 ### Phase 4: Output
 
 1. Structured markdown report (see Output Format below)
-2. GitHub issue auto-created with findings
-3. Action items with effort estimates
+2. **Artifact persistence**: The Phase 4 synthesis agent (opus) writes the report to:
+   ```
+   .claude/outputs/sessions/{YYYY-MM-DD}/research-{HHmmss}.md
+   ```
+   With metadata header:
+   ```markdown
+   ---
+   skill: research
+   date: {ISO-8601 with timezone}
+   query: "{original user query}"
+   ---
+   ```
+   The agent creates the directory (`mkdir -p`) before writing. This is a subagent operation (R010 compliance).
+3. GitHub issue auto-created with findings
+4. Action items with effort estimates
 
 ## Execution Rules
 
