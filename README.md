@@ -292,7 +292,8 @@ your-project/
 │   ├── rules/             # Behavior rules (18 total)
 │   ├── hooks/             # Event hooks (2 total)
 │   └── contexts/          # Context files (4 total)
-└── guides/                # Reference docs (24 total)
+└── templates/
+    └── guides/            # Reference docs (24 total)
 ```
 
 **Note**: In the official Claude Code format, there is no command registry — slash commands and natural language agent references are used.

@@ -186,7 +186,8 @@ project/
 |   +-- rules/                   # 전역 규칙 (R000-R018)
 |   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
-+-- guides/                      # 레퍼런스 문서 (24 토픽)
++-- templates/
+|   +-- guides/                  # 레퍼런스 문서 (24 토픽)
 ```
 
 ## 오케스트레이션
@@ -205,7 +206,7 @@ project/
 
 1. 라우팅 스킬이 매칭 전문가 없음을 감지
 2. 오케스트레이터가 mgr-creator에 컨텍스트와 함께 위임
-3. mgr-creator가 관련 skills/guides를 자동 탐색
+3. mgr-creator가 관련 skills/ 및 templates/guides/를 자동 탐색
 4. 새 에이전트 생성 후 즉시 사용
 
 이것이 oh-my-customcode의 핵심 철학입니다: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."**
