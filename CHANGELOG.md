@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-03-12
+
+### Added
+- **Ontology-RAG routing enrichment (R019)**: All 4 routing skills (secretary, dev-lead, de-lead, qa-lead) now call `get_agent_for_task` to inject `suggested_skills` into spawned agent prompts. MCP failure is silently skipped — routing is never blocked.
+- **ARCHITECTURE.md**: Comprehensive 13-section architecture documentation with Mermaid diagrams (EN + KO)
+- **Docs validator as release gate**: CI now validates documentation consistency before release
+- **Phantom slash command detection**: Validator detects commands listed in README without corresponding skill directories
+- **Flutter development support**: New `fe-flutter-agent`, `flutter-best-practices` skill, and 4 Flutter guides
+
+### Fixed
+- **graph_score=0 bug** in ontology-RAG router: `route_with_hybrid()` now passes keyword-best match as `anchor_node` to `hybrid_searcher.search()`, enabling graph proximity scoring (confidence 0.15→0.30+ range)
+- **Ontology-RAG MCP server configuration** restored (#294)
+- **Korean query routing**: Added particle stripping for mixed Korean-English queries
+- **SHA-pin all GitHub Actions** for supply chain security across 12 workflows
+- **Guides migration**: All agent/skill references migrated to `templates/guides/` (single source of truth)
+- **Flutter `color.withOpacity()` deprecation**: Replaced with `color.withValues()` in performance guide
+- **CLAUDE.md count accuracy**: Skills, rules, and guides counts corrected
+
+### Changed
+- **Guides architecture**: Root `guides/` removed from git tracking; `templates/guides/` is canonical source
+- **java21 guides** moved to `templates/guides/` (#270)
+- **README EN/KO alignment**: Structure and ordering synchronized
+- **Sprint 1-4 code quality**: java21 refs, rule dedup, guides sync, validator improvements
+
 ## [0.23.2] - 2026-03-08
 
 ### Fixed
