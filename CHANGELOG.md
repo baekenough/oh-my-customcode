@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.1] - 2026-03-12
+
+### Fixed
+- **Guide count sync**: Corrected guide count from 24 to 25 across README_ko.md and template CLAUDE.md files (PR #308)
+
 ## [0.31.0] - 2026-03-12
 
 ### Added
