@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 44 agents, 68 skills, 24 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 44 agents, 68 skills, 25 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -197,7 +197,7 @@ All commands are invoked inside the Claude Code conversation.
 | **Deploy** | 2 | vercel-deploy, codex-exec |
 | **External** | 1 | skills-sh-search |
 
-### Guides (24)
+### Guides (25)
 
 Comprehensive reference documentation covering:
 - Agent creation and management
@@ -293,7 +293,7 @@ your-project/
 │   ├── hooks/             # Event hooks (2 total)
 │   └── contexts/          # Context files (4 total)
 └── templates/
-    └── guides/            # Reference docs (24 total)
+    └── guides/            # Reference docs (25 total)
 ```
 
 **Note**: In the official Claude Code format, there is no command registry — slash commands and natural language agent references are used.
