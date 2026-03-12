@@ -186,7 +186,7 @@ project/
 |   +-- rules/                   # Global rules (R000-R018)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
-+-- guides/                      # Reference docs (23 topics)
++-- guides/                      # Reference docs (25 topics)
 ```
 
 ## Orchestration
