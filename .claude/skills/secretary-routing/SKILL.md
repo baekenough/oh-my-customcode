@@ -53,6 +53,18 @@ todo     → sys-naggy
 batch    → multiple (parallel)
 ```
 
+### Ontology-RAG Enrichment (R019)
+
+After agent selection, enrich the spawned agent's prompt with ontology context:
+
+1. Call `get_agent_for_task(original_query)` via MCP
+2. Extract `suggested_skills` from response
+3. If `suggested_skills` non-empty, prepend to spawned agent prompt:
+   `"Ontology context suggests these skills may be relevant: {suggested_skills}"`
+4. On MCP failure: skip silently, proceed with unmodified prompt
+
+**This step is advisory only — it never changes which agent is selected.**
+
 ## Routing Rules
 
 ### 1. Single Task Routing
