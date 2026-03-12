@@ -9,7 +9,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import fs from 'node:fs';
 import path from 'node:path';
 
-interface ImplementationStats {
+export interface ImplementationStats {
   agent_count: number;
   agent_names: string[];
   skill_count: number;
@@ -20,13 +20,18 @@ interface ImplementationStats {
   context_count: number;
 }
 
-interface ValidationResult {
+export interface ValidationResult {
   missingFromReadme: { agents: string[]; skills: string[] };
   extraInReadme: { agents: string[]; skills: string[] };
   countMismatches: { field: string; readme: number; actual: number }[];
 }
 
-async function collectImplementationStats(): Promise<ImplementationStats> {
+export interface SlashCommandValidation {
+  valid: string[];    // Commands that have a matching SKILL.md
+  phantom: string[]; // Commands listed in README but missing SKILL.md
+}
+
+export async function collectImplementationStats(): Promise<ImplementationStats> {
   const stats: ImplementationStats = {
     agent_count: 0,
     agent_names: [],
@@ -97,7 +102,7 @@ async function extractReadmeClaims(path: string): Promise<string> {
   }
 }
 
-function extractNamesFromReadme(readme: string): { agents: string[]; skills: string[] } {
+export function extractNamesFromReadme(readme: string): { agents: string[]; skills: string[] } {
   const agents: string[] = [];
   const skills: string[] = [];
 
@@ -116,7 +121,43 @@ function extractNamesFromReadme(readme: string): { agents: string[]; skills: str
   return { agents, skills };
 }
 
-function programmaticValidation(stats: ImplementationStats, readmeEn: string): ValidationResult {
+/**
+ * Extracts slash command names from the README slash-commands table.
+ * Matches table rows of the form: | `/command-name` | Description |
+ */
+export function extractSlashCommandsFromReadme(readmeContent: string): string[] {
+  const commands: string[] = [];
+  const pattern = /^\|\s*`\/([a-z][a-z0-9-]*)`\s*\|/gm;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(readmeContent)) !== null) {
+    commands.push(match[1]);
+  }
+  return commands;
+}
+
+/**
+ * Validates that every slash command listed in the README has a corresponding
+ * SKILL.md file under templates/.claude/skills/<command-name>/SKILL.md.
+ */
+export function validateSlashCommands(readmeContent: string, skillsDir: string): SlashCommandValidation {
+  const commands = extractSlashCommandsFromReadme(readmeContent);
+
+  const valid: string[] = [];
+  const phantom: string[] = [];
+
+  for (const command of commands) {
+    const skillPath = path.join(skillsDir, command, 'SKILL.md');
+    if (fs.existsSync(skillPath)) {
+      valid.push(command);
+    } else {
+      phantom.push(command);
+    }
+  }
+
+  return { valid, phantom };
+}
+
+export function programmaticValidation(stats: ImplementationStats, readmeEn: string): ValidationResult {
   const readme = extractNamesFromReadme(readmeEn);
 
   // If canonical ID blocks are not found, skip name comparison
@@ -159,7 +200,13 @@ function programmaticValidation(stats: ImplementationStats, readmeEn: string): V
   return { missingFromReadme, extraInReadme, countMismatches };
 }
 
-function buildPrompt(stats: ImplementationStats, readmeEn: string, readmeKo: string, validation: ValidationResult): string {
+export function buildPrompt(
+  stats: ImplementationStats,
+  readmeEn: string,
+  readmeKo: string,
+  validation: ValidationResult,
+  slashCommandValidation: SlashCommandValidation,
+): string {
   const statsJson = JSON.stringify(stats, null, 2);
 
   return `당신은 oh-my-customcode 프로젝트의 문서 검증 전문가입니다.
@@ -187,6 +234,15 @@ ${validation.missingFromReadme.skills.length > 0 ? `- README에 누락된 skills
 ${validation.extraInReadme.agents.length > 0 ? `- README에만 있는 agents (실제 미존재): ${validation.extraInReadme.agents.join(', ')}` : ''}
 ${validation.extraInReadme.skills.length > 0 ? `- README에만 있는 skills (실제 미존재): ${validation.extraInReadme.skills.join(', ')}` : ''}
 ${validation.countMismatches.map((m) => `- ${m.field} 개수: README=${m.readme}, 실제=${m.actual}`).join('\n')}`
+}
+
+### 슬래시 커맨드 검증 (확정 - 변경 금지)
+
+${slashCommandValidation.phantom.length === 0
+  ? `✅ README의 모든 슬래시 커맨드(${slashCommandValidation.valid.length}개)에 대응하는 SKILL.md가 존재합니다.`
+  : `❌ Phantom 슬래시 커맨드 발견 (README에 있으나 SKILL.md 미존재):
+${slashCommandValidation.phantom.map((c) => `- /${c}`).join('\n')}
+유효한 커맨드(${slashCommandValidation.valid.length}개): ${slashCommandValidation.valid.map((c) => `/${c}`).join(', ')}`
 }
 
 ---
@@ -287,6 +343,8 @@ async function main() {
     }
 
     const validation = programmaticValidation(stats, readmeEn);
+    const skillsDir = path.join('templates', '.claude/skills');
+    const slashCommandValidation = validateSlashCommands(readmeEn, skillsDir);
 
     const client = new Anthropic();
     const message = await client.messages.create({
@@ -295,7 +353,7 @@ async function main() {
       messages: [
         {
           role: 'user',
-          content: buildPrompt(stats, readmeEn, readmeKo, validation),
+          content: buildPrompt(stats, readmeEn, readmeKo, validation, slashCommandValidation),
         },
       ],
     });
@@ -315,7 +373,8 @@ async function main() {
       validation.missingFromReadme.skills.length > 0 ||
       validation.extraInReadme.agents.length > 0 ||
       validation.extraInReadme.skills.length > 0 ||
-      validation.countMismatches.length > 0;
+      validation.countMismatches.length > 0 ||
+      slashCommandValidation.phantom.length > 0;
     // Check for explicit LLM verdict first, fall back to marker detection
     const hasExplicitFail = /최종 판정[\s\S]*?\*\*FAIL\*\*/i.test(result);
     const hasExplicitPass = /최종 판정[\s\S]*?\*\*PASS\*\*/i.test(result);
