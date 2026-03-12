@@ -162,3 +162,18 @@ def test_korean_particle_lower_confidence_than_exact(sample_ontology_dir):
     result_exact = router.route_with_keywords("golang")
     result_particle = router.route_with_keywords("golang으로")
     assert result_particle.confidence <= result_exact.confidence
+
+
+def test_route_with_hybrid_has_nonzero_graph_score(sample_ontology_dir):
+    """route_with_hybrid should produce non-zero graph_score when keyword match exists."""
+    onto = Ontology(sample_ontology_dir)
+    graph = OntologyGraph(sample_ontology_dir / "graphs")
+    searcher = HybridSearcher(onto, graph)
+    router = SemanticRouter(onto, graph, hybrid_searcher=searcher)
+    result = router.route_with_hybrid("golang code review")
+    # After fix: graph_score should be non-zero because keyword match provides anchor
+    assert "graph=" in result.reasoning
+    # Extract graph score from reasoning string "Hybrid search: kw=X.XX graph=X.XX community=X.XX"
+    parts = result.reasoning.split("graph=")
+    graph_val = float(parts[1].split(" ")[0])
+    assert graph_val > 0, f"graph_score should be > 0 but was {graph_val}"
