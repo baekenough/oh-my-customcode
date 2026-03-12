@@ -56,6 +56,17 @@ After agent selection, enrich the spawned agent's prompt with ontology context:
 
 **This step is advisory only — it never changes which agent is selected.**
 
+### Step 5: Soul Injection
+
+If the selected agent has `soul: true` in its frontmatter:
+
+1. Read `.claude/agents/souls/{agent-name}.soul.md`
+2. If file exists, prepend soul content to the agent's prompt:
+   `"Identity context:\n{soul content}\n\n---\n\n"`
+3. If file doesn't exist → skip silently (no error, no injection)
+
+**This step runs after ontology-RAG enrichment. Soul content is identity context, not capability instructions.**
+
 ## Routing Rules
 
 ### 1. Test Planning
