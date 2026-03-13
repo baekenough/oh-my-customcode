@@ -1,6 +1,7 @@
 ---
 name: model-escalation
 description: Advisory model escalation based on task outcome tracking
+scope: core
 ---
 
 # Model Escalation Skill
