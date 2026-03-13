@@ -101,6 +101,16 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.lockfile_generated': 'Lockfile generated ({{files}} files tracked)',
     'install.lockfile_failed': 'Failed to generate lockfile: {{error}}',
 
+    // Lockfile internal messages
+    'lockfile.not_found': 'Lockfile not found: {{path}}',
+    'lockfile.invalid_version': 'Invalid lockfile version: {{path}}',
+    'lockfile.invalid_structure': 'Invalid lockfile structure: {{path}}',
+    'lockfile.read_failed': 'Failed to read lockfile: {{path}} — {{error}}',
+    'lockfile.written': 'Lockfile written: {{path}}',
+    'lockfile.component_dir_missing': 'Component directory missing: {{path}}',
+    'lockfile.hash_failed': 'Failed to hash file: {{path}} — {{error}}',
+    'lockfile.entry_added': 'Lockfile entry added: {{path}} ({{component}})',
+
     // Update messages
     'update.start': 'Checking for updates...',
     'update.success': 'Updated from {{from}} to {{to}}',
@@ -143,6 +153,16 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.entry_md_skipped': '{{entry}} 건너뜀 ({{reason}})',
     'install.lockfile_generated': '잠금 파일 생성 완료 ({{files}}개 파일 추적)',
     'install.lockfile_failed': '잠금 파일 생성 실패: {{error}}',
+
+    // Lockfile internal messages
+    'lockfile.not_found': '잠금 파일 없음: {{path}}',
+    'lockfile.invalid_version': '잠금 파일 버전 유효하지 않음: {{path}}',
+    'lockfile.invalid_structure': '잠금 파일 구조 유효하지 않음: {{path}}',
+    'lockfile.read_failed': '잠금 파일 읽기 실패: {{path}} — {{error}}',
+    'lockfile.written': '잠금 파일 기록됨: {{path}}',
+    'lockfile.component_dir_missing': '컴포넌트 디렉토리 없음: {{path}}',
+    'lockfile.hash_failed': '파일 해시 실패: {{path}} — {{error}}',
+    'lockfile.entry_added': '잠금 파일 항목 추가: {{path}} ({{component}})',
 
     // Update messages
     'update.start': '업데이트 확인 중...',

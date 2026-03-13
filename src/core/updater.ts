@@ -7,7 +7,6 @@ import {
   copyDirectory,
   ensureDirectory,
   fileExists,
-  getPackageRoot,
   readJsonFile,
   readTextFile,
   resolveTemplatePath,
@@ -20,7 +19,7 @@ import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
 import { getProviderLayout } from './layout.js';
-import { generateLockfile, writeLockfile } from './lockfile.js';
+import { generateAndWriteLockfileForDir } from './lockfile.js';
 
 /**
  * Options for update operation
@@ -496,27 +495,14 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     await runFullUpdatePostProcessing(options, result, config);
 
     // Regenerate lockfile after successful update (#316)
-    try {
-      const packageRoot = getPackageRoot();
-      const manifest = await readJsonFile<{ version: string }>(
-        join(packageRoot, 'templates', 'manifest.json')
-      );
-      const { version: generatorVersion } = await readJsonFile<{ version: string }>(
-        join(packageRoot, 'package.json')
-      );
-      const lockfile = await generateLockfile(
-        options.targetDir,
-        generatorVersion,
-        manifest.version
-      );
-      await writeLockfile(options.targetDir, lockfile);
+    const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
+    if (lockfileResult.warning) {
+      result.warnings.push(lockfileResult.warning);
+      warn('update.lockfile_failed', { error: lockfileResult.warning });
+    } else {
       debug('update.lockfile_regenerated', {
-        files: String(Object.keys(lockfile.files).length),
+        files: String(lockfileResult.fileCount),
       });
-    } catch (lockfileErr) {
-      const msg = lockfileErr instanceof Error ? lockfileErr.message : String(lockfileErr);
-      result.warnings.push(`Lockfile regeneration failed: ${msg}`);
-      warn('update.lockfile_failed', { error: msg });
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

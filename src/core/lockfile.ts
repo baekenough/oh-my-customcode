@@ -11,8 +11,9 @@ import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { fileExists, readJsonFile, writeJsonFile } from '../utils/fs.js';
+import { fileExists, getPackageRoot, readJsonFile, writeJsonFile } from '../utils/fs.js';
 import { debug, warn } from '../utils/logger.js';
+import { getComponentPath, type InstallComponent } from './layout.js';
 
 export const LOCKFILE_NAME = '.omcustom.lock.json';
 export const LOCKFILE_VERSION = 1 as const;
@@ -60,17 +61,27 @@ export interface LockfileDiff {
 }
 
 /**
- * Component path mapping: directory path prefix -> component name
+ * Components tracked by the lockfile.
+ * Derived from layout.ts to maintain a single source of truth.
+ * Excludes 'entry-md' which is handled separately (project root docs).
  */
-const COMPONENT_PATHS: ReadonlyArray<readonly [string, string]> = [
-  ['.claude/rules', 'rules'],
-  ['.claude/agents', 'agents'],
-  ['.claude/skills', 'skills'],
-  ['.claude/hooks', 'hooks'],
-  ['.claude/contexts', 'contexts'],
-  ['.claude/ontology', 'ontology'],
-  ['guides', 'guides'],
+const LOCKFILE_COMPONENTS: readonly InstallComponent[] = [
+  'rules',
+  'agents',
+  'skills',
+  'hooks',
+  'contexts',
+  'ontology',
+  'guides',
 ] as const;
+
+/**
+ * Component path mapping: directory path prefix -> component name.
+ * Computed from layout.ts getComponentPath().
+ */
+const COMPONENT_PATHS: ReadonlyArray<readonly [string, string]> = LOCKFILE_COMPONENTS.map(
+  (component) => [getComponentPath(component), component] as const
+);
 
 /**
  * Compute SHA-256 hash of a file using a read stream.
@@ -117,6 +128,12 @@ export async function readLockfile(targetDir: string): Promise<Lockfile | null> 
       (data as Record<string, unknown>).lockfileVersion !== LOCKFILE_VERSION
     ) {
       warn('lockfile.invalid_version', { path: lockfilePath });
+      return null;
+    }
+
+    const record = data as Record<string, unknown>;
+    if (typeof record.files !== 'object' || record.files === null) {
+      warn('lockfile.invalid_structure', { path: lockfilePath });
       return null;
     }
 
@@ -259,6 +276,31 @@ export async function generateLockfile(
     templateVersion,
     files,
   };
+}
+
+/**
+ * Generate and write a lockfile for a target directory.
+ * Reads package.json and manifest.json from the package root to determine versions.
+ * Non-throwing: returns warnings array on failure.
+ */
+export async function generateAndWriteLockfileForDir(
+  targetDir: string
+): Promise<{ fileCount: number; warning?: string }> {
+  try {
+    const packageRoot = getPackageRoot();
+    const manifest = await readJsonFile<{ version: string }>(
+      join(packageRoot, 'templates', 'manifest.json')
+    );
+    const { version: generatorVersion } = await readJsonFile<{ version: string }>(
+      join(packageRoot, 'package.json')
+    );
+    const lockfile = await generateLockfile(targetDir, generatorVersion, manifest.version);
+    await writeLockfile(targetDir, lockfile);
+    return { fileCount: Object.keys(lockfile.files).length };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { fileCount: 0, warning: `Lockfile generation failed: ${msg}` };
+  }
 }
 
 /**

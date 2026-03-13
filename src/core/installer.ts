@@ -34,7 +34,7 @@ import {
   getProviderLayout,
   type InstallComponent,
 } from './layout.js';
-import { generateLockfile, writeLockfile } from './lockfile.js';
+import { generateAndWriteLockfileForDir } from './lockfile.js';
 
 /**
  * Options for installation
@@ -392,26 +392,12 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     await updateInstallConfig(options.targetDir, options, result.installedComponents);
 
     // Generate lockfile for three-way merge support (#316)
-    try {
-      const packageRoot = getPackageRoot();
-      const manifestPath = join(packageRoot, 'templates', 'manifest.json');
-      const manifest = await readJsonFile<{ version: string }>(manifestPath);
-      const { version: generatorVersion } = await readJsonFile<{ version: string }>(
-        join(packageRoot, 'package.json')
-      );
-      const lockfile = await generateLockfile(
-        options.targetDir,
-        generatorVersion,
-        manifest.version
-      );
-      await writeLockfile(options.targetDir, lockfile);
-      info('install.lockfile_generated', {
-        files: String(Object.keys(lockfile.files).length),
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      result.warnings.push(`Lockfile generation failed: ${msg}`);
-      warn('install.lockfile_failed', { error: msg });
+    const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
+    if (lockfileResult.warning) {
+      result.warnings.push(lockfileResult.warning);
+      warn('install.lockfile_failed', { error: lockfileResult.warning });
+    } else {
+      info('install.lockfile_generated', { files: String(lockfileResult.fileCount) });
     }
 
     result.success = true;
