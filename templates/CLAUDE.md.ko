@@ -138,6 +138,7 @@ oh-my-customcode로 구동됩니다.
 | R011 | 메모리 통합 | claude-mem을 통한 세션 지속성 |
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
+| R019 | Ontology-RAG 라우팅 | 라우팅 스킬의 ontology-RAG enrichment |
 
 ### MAY (선택)
 | ID | 규칙 | 설명 |
@@ -216,7 +217,7 @@ project/
 |------|------|----------|
 | SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | SW Engineer/Backend | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
-| SW Engineer/Frontend | 3 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent |
+| SW Engineer/Frontend | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
 | SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | DE Engineer | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | SW Engineer/Database | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
@@ -226,7 +227,7 @@ project/
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
-| **총계** | **43** | |
+| **총계** | **44** | |
 
 ## Agent Teams (MUST when enabled)
 

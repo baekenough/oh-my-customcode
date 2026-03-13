@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { getSkillScope, shouldInstallSkill } from '../../../src/core/scope-filter.js';
+
+// Resolve project root relative to this test file (tests/unit/core/ → ../../..)
+const PROJECT_ROOT = join(import.meta.dir, '../../..');
 
 describe('scope-filter', () => {
   test('returns core for missing scope field', () => {
@@ -71,5 +76,71 @@ describe('scope-filter', () => {
     // Regex is case-sensitive; 'Core' (capital C) is not matched → default 'core'
     const content = '---\nname: test\nscope: Core\ndescription: Test\n---\n';
     expect(getSkillScope(content)).toBe('core');
+  });
+
+  test('handles Windows line endings (\\r\\n)', () => {
+    const content = '---\r\nname: test\r\nscope: package\r\n---\r\n';
+    expect(getSkillScope(content)).toBe('package');
+  });
+
+  test('handles UTF-8 BOM prefix', () => {
+    const content = '\uFEFF---\nname: test\nscope: package\n---\n';
+    expect(getSkillScope(content)).toBe('package');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Real SKILL.md files integration (v0.33.0)
+// ---------------------------------------------------------------------------
+
+describe('real SKILL.md files integration', () => {
+  function readSkillContent(skillName: string): string {
+    const skillPath = join(PROJECT_ROOT, '.claude', 'skills', skillName, 'SKILL.md');
+    return readFileSync(skillPath, 'utf-8');
+  }
+
+  test('all package-scoped skills are correctly identified', () => {
+    const packageSkills = ['npm-publish', 'npm-version', 'npm-audit', 'monitoring-setup'];
+
+    for (const skillName of packageSkills) {
+      const content = readSkillContent(skillName);
+      expect(getSkillScope(content)).toBe('package');
+    }
+  });
+
+  test('all harness-scoped skills are correctly identified', () => {
+    const harnessSkills = [
+      'audit-agents',
+      'create-agent',
+      'fix-refs',
+      'sauron-watch',
+      'update-docs',
+      'update-external',
+    ];
+
+    for (const skillName of harnessSkills) {
+      const content = readSkillContent(skillName);
+      expect(getSkillScope(content)).toBe('harness');
+    }
+  });
+
+  test('sample core skills return core scope', () => {
+    const coreSkills = ['go-best-practices', 'research', 'dev-review'];
+
+    for (const skillName of coreSkills) {
+      const content = readSkillContent(skillName);
+      expect(getSkillScope(content)).toBe('core');
+    }
+  });
+
+  test('shouldInstallSkill correctly filters all scope types', () => {
+    // core → installed, harness → installed, package → skipped
+    const coreContent = readSkillContent('go-best-practices');
+    const harnessContent = readSkillContent('audit-agents');
+    const packageContent = readSkillContent('npm-publish');
+
+    expect(shouldInstallSkill(getSkillScope(coreContent))).toBe(true);
+    expect(shouldInstallSkill(getSkillScope(harnessContent))).toBe(true);
+    expect(shouldInstallSkill(getSkillScope(packageContent))).toBe(false);
   });
 });
