@@ -515,6 +515,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       });
     } catch (lockfileErr) {
       const msg = lockfileErr instanceof Error ? lockfileErr.message : String(lockfileErr);
+      result.warnings.push(`Lockfile regeneration failed: ${msg}`);
       warn('update.lockfile_failed', { error: msg });
     }
   } catch (err) {

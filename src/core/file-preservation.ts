@@ -73,7 +73,7 @@ function matchesGlobPattern(filePath: string, pattern: string): boolean {
   // Convert glob pattern to regex
   const regexStr = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape regex special chars
-    .replace(/\*/g, '.*'); // Convert * to .*
+    .replace(/\*/g, '[^/]*'); // Convert * to match within single path segment
   const regex = new RegExp(`(^|/)${regexStr}$`);
   return regex.test(filePath);
 }

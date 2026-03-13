@@ -111,6 +111,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.dry_run': 'Would update {{component}}',
     'update.component_updated': 'Updated {{component}}',
     'update.file_applied': 'Applied update to {{path}}',
+    'update.lockfile_regenerated': 'Lockfile regenerated ({{files}} files tracked)',
+    'update.lockfile_failed': 'Failed to regenerate lockfile: {{error}}',
 
     // Config messages
     'config.load_failed': 'Failed to load config: {{error}}',
@@ -152,6 +154,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.dry_run': '{{component}} 업데이트 예정',
     'update.component_updated': '{{component}} 업데이트 완료',
     'update.file_applied': '{{path}} 업데이트 적용',
+    'update.lockfile_regenerated': '잠금 파일 재생성 완료 ({{files}}개 파일 추적)',
+    'update.lockfile_failed': '잠금 파일 재생성 실패: {{error}}',
 
     // Config messages
     'config.load_failed': '설정 로드 실패: {{error}}',
