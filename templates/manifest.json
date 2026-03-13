@@ -6,7 +6,7 @@
       "name": "rules",
       "path": ".claude/rules",
       "description": "Agent behavior rules and guidelines",
-      "files": 18
+      "files": 19
     },
     {
       "name": "agents",
@@ -18,7 +18,7 @@
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 68
+      "files": 69
     },
     {
       "name": "guides",
