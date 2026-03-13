@@ -17,7 +17,9 @@ import {
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
+import { isProtectedFile } from './file-preservation.js';
 import { getProviderLayout } from './layout.js';
+import { generateAndWriteLockfileForDir } from './lockfile.js';
 
 /**
  * Options for update operation
@@ -491,6 +493,17 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     );
 
     await runFullUpdatePostProcessing(options, result, config);
+
+    // Regenerate lockfile after successful update (#316)
+    const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
+    if (lockfileResult.warning) {
+      result.warnings.push(lockfileResult.warning);
+      warn('update.lockfile_failed', { error: lockfileResult.warning });
+    } else {
+      debug('update.lockfile_regenerated', {
+        files: String(lockfileResult.fileCount),
+      });
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;
@@ -610,6 +623,91 @@ async function componentHasUpdate(
 }
 
 /**
+ * Collect the protected file paths within a component's source directory.
+ * Returns paths normalized relative to destPath for use with skipPaths.
+ */
+async function collectProtectedSkipPaths(
+  srcPath: string,
+  destPath: string,
+  componentPath: string,
+  forceOverwriteAll: boolean
+): Promise<{ skipPaths: string[]; warnedPaths: string[] }> {
+  if (forceOverwriteAll) {
+    // forceOverwriteAll: still warn but do NOT skip
+    const warnedPaths = await findProtectedFilesInDir(srcPath, componentPath);
+    return { skipPaths: [], warnedPaths };
+  }
+
+  const protectedRelative = await findProtectedFilesInDir(srcPath, componentPath);
+  const path = await import('node:path');
+  const skipPaths = protectedRelative.map((p) => path.relative(destPath, join(destPath, p)));
+  return { skipPaths, warnedPaths: protectedRelative };
+}
+
+/**
+ * Check if a directory entry's relative path matches a protected-file rule,
+ * considering both the bare relative path and the component-prefixed path.
+ */
+function isEntryProtected(relPath: string, componentRelativePrefix: string): boolean {
+  if (isProtectedFile(relPath)) {
+    return true;
+  }
+  const componentPrefixed = componentRelativePrefix
+    ? `${componentRelativePrefix}/${relPath}`
+    : relPath;
+  return isProtectedFile(componentPrefixed);
+}
+
+/**
+ * Read directory entries, returning an empty array on error (e.g. directory not found).
+ */
+async function safeReaddir(
+  dir: string,
+  fs: typeof import('node:fs/promises')
+): Promise<import('node:fs').Dirent[]> {
+  try {
+    return await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Walk a component source directory and return paths (relative to the component root)
+ * of any files that match the protected-file rules.
+ */
+async function findProtectedFilesInDir(
+  dirPath: string,
+  componentRelativePrefix: string
+): Promise<string[]> {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+
+  // Iterative BFS walk to avoid recursive async function complexity
+  const protected_: string[] = [];
+  const queue: Array<{ dir: string; relDir: string }> = [{ dir: dirPath, relDir: '' }];
+
+  while (queue.length > 0) {
+    // biome-ignore lint/style/noNonNullAssertion: queue.length > 0 guarantees shift() returns a value
+    const { dir, relDir } = queue.shift()!;
+    const entries = await safeReaddir(dir, fs);
+
+    for (const entry of entries) {
+      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        queue.push({ dir: fullPath, relDir: relPath });
+      } else if (entry.isFile() && isEntryProtected(relPath, componentRelativePrefix)) {
+        protected_.push(relPath);
+      }
+    }
+  }
+
+  return protected_;
+}
+
+/**
  * Update a single component
  */
 async function updateComponent(
@@ -647,19 +745,46 @@ async function updateComponent(
     }
   }
 
+  // Collect protected framework/rule files that must not be silently overwritten
+  const { skipPaths: protectedSkipPaths, warnedPaths: protectedWarnedPaths } =
+    await collectProtectedSkipPaths(srcPath, destPath, componentPath, !!options.forceOverwriteAll);
+
+  for (const protectedPath of protectedWarnedPaths) {
+    if (options.forceOverwriteAll) {
+      warn('update.protected_file_force_overwrite', {
+        file: protectedPath,
+        component,
+        hint: 'File contains AI behavioral constraints. Overwriting because --force-overwrite-all was set.',
+      });
+    } else {
+      warn('update.protected_file_skipped', {
+        file: protectedPath,
+        component,
+        hint: 'File contains AI behavioral constraints and was not updated. Use --force-overwrite-all to override.',
+      });
+    }
+  }
+
+  // Merge protected skip paths with the existing skip paths (dedup)
+  skipPaths.push(...protectedSkipPaths);
+
   // Normalize skipPaths to be relative to destPath
   const path = await import('node:path');
   const normalizedSkipPaths = skipPaths.map((p) => path.relative(destPath, join(targetDir, p)));
 
+  // Deduplicate after normalization
+  const uniqueSkipPaths = [...new Set(normalizedSkipPaths)];
+
   // Update component with skipPaths
   await copyDirectory(srcPath, destPath, {
     overwrite: true,
-    skipPaths: normalizedSkipPaths.length > 0 ? normalizedSkipPaths : undefined,
+    skipPaths: uniqueSkipPaths.length > 0 ? uniqueSkipPaths : undefined,
   });
 
   debug('update.component_updated', {
     component,
-    skippedPaths: String(normalizedSkipPaths.length),
+    skippedPaths: String(uniqueSkipPaths.length),
+    protectedSkipped: String(protectedSkipPaths.length),
   });
   return preservedFiles;
 }

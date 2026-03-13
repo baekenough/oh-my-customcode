@@ -143,6 +143,10 @@
     "doctor": {
       "description": "Check and fix configuration issues",
       "fixOption": "Automatically fix issues that can be fixed",
+      "updatesOption": "Check for oh-my-customcode updates",
+      "updateAvailable": "Update available: v{{current}} → v{{latest}}. Run 'omcustom update' to apply.",
+      "updateUpToDate": "oh-my-customcode is up to date (v{{version}})",
+      "updateCheckFailed": "Update check failed ({{reason}})",
       "checking": "Running diagnostic checks...",
       "applyingFixes": "Applying fixes...",
       "fixing": "Fixing: {{name}}...",

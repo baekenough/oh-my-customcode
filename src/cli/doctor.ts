@@ -3,11 +3,13 @@
  * Checks and fixes configuration issues
  */
 
-import { constants, promises as fs } from 'node:fs';
+import { constants, promises as fs, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 import { loadConfig } from '../core/config.js';
 import { getProviderLayout } from '../core/layout.js';
+import { checkSelfUpdate } from '../core/self-update.js';
 import { i18n } from '../i18n/index.js';
 
 /**
@@ -18,6 +20,8 @@ export interface DoctorOptions {
   fix?: boolean;
   /** Run in quiet mode (only show errors) */
   quiet?: boolean;
+  /** Check for oh-my-customcode updates */
+  updates?: boolean;
 }
 
 /**
@@ -732,6 +736,59 @@ export function printCheck(check: CheckResult): void {
 }
 
 /**
+ * Read the current package version from package.json
+ * @returns Semver string, or '0.0.0' on failure
+ */
+function readCurrentVersion(): string {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const packageJsonPath = path.resolve(path.dirname(__filename), '../../package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version: string };
+    return packageJson.version;
+  } catch {
+    return '0.0.0';
+  }
+}
+
+/**
+ * Check if a newer version of oh-my-customcode is available
+ * @param currentVersion - The currently installed version
+ * @returns Check result indicating update status
+ */
+export function checkUpdateAvailable(currentVersion: string): CheckResult {
+  const result = checkSelfUpdate({ currentVersion });
+
+  if (!result.checked) {
+    return {
+      name: 'Update',
+      status: 'warn',
+      message: i18n.t('cli.doctor.updateCheckFailed', { reason: result.reason ?? 'unknown' }),
+      fixable: false,
+    };
+  }
+
+  if (result.updateAvailable && result.latestVersion !== null) {
+    return {
+      name: 'Update',
+      status: 'warn',
+      message: i18n.t('cli.doctor.updateAvailable', {
+        current: currentVersion,
+        latest: result.latestVersion,
+      }),
+      fixable: false,
+      details: result.usedCache ? ['(checked from cache)'] : ['(checked from npm registry)'],
+    };
+  }
+
+  return {
+    name: 'Update',
+    status: 'pass',
+    message: i18n.t('cli.doctor.updateUpToDate', { version: currentVersion }),
+    fixable: false,
+  };
+}
+
+/**
  * Execute the doctor command
  * @param options - Doctor command options
  * @returns Result of the doctor operation
@@ -745,7 +802,7 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
   const layout = getProviderLayout();
 
   // Run all checks
-  let checks: CheckResult[] = await Promise.all([
+  const baseChecks: CheckResult[] = await Promise.all([
     checkEntryDoc(targetDir, layout.entryFile),
     checkRules(targetDir, layout.rootDir),
     checkAgents(targetDir, layout.rootDir),
@@ -758,14 +815,20 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
     checkCustomComponents(targetDir, layout.rootDir),
   ]);
 
+  // Optionally append update check
+  const checksWithUpdate: CheckResult[] = options.updates
+    ? [...baseChecks, checkUpdateAvailable(readCurrentVersion())]
+    : baseChecks;
+
   // Apply fixes if requested
+  let checks: CheckResult[] = checksWithUpdate;
   if (options.fix) {
-    const hasFixableIssues = checks.some((c) => c.status === 'fail' && c.fixable);
+    const hasFixableIssues = checksWithUpdate.some((c) => c.status === 'fail' && c.fixable);
 
     if (hasFixableIssues) {
       console.log(i18n.t('cli.doctor.applyingFixes'));
       console.log('');
-      checks = await fixIssues(checks, targetDir, layout.rootDir);
+      checks = await fixIssues(checksWithUpdate, targetDir, layout.rootDir);
       console.log('');
     }
   }

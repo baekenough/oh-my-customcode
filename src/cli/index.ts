@@ -77,6 +77,7 @@ export function createProgram(): Command {
     .command('doctor')
     .description(i18n.t('cli.doctor.description'))
     .option('--fix', i18n.t('cli.doctor.fixOption'))
+    .option('--updates', i18n.t('cli.doctor.updatesOption'))
     .action(async (options) => {
       await doctorCommand(options);
     });
