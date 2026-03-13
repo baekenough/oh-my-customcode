@@ -1,6 +1,6 @@
 # [MUST] Agent Teams Rules (Conditional)
 
-> **Priority**: MUST - ENFORCED | **ID**: R018
+> **Priority**: MUST | **ID**: R018
 > **Condition**: Agent Teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
 > **Fallback**: When disabled, R009/R010 apply
 
@@ -22,43 +22,43 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 | Dynamic agent creation + usage | **Agent Teams** | Create → test → iterate cycle |
 | Multi-issue release batch | **Agent Teams** | Shared task tracking, coordinated release |
 
-**When Agent Teams is enabled and criteria are met, usage is MANDATORY.**
+**When Agent Teams is enabled and criteria are met, usage is required.**
 
-## Self-Check (MANDATORY Before Agent Tool)
+## Self-Check (Before Agent Tool)
 
-BEFORE using Agent tool for 2+ agent tasks, this check is **ENFORCED**:
+Before using Agent tool for 2+ agent tasks, complete this check:
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE USING Agent TOOL FOR 2+ AGENTS:                          ║
 ║                                                                   ║
 ║  1. Is Agent Teams available?                                    ║
-║     YES → MUST check criteria #2-#5                              ║
+║     YES → check criteria #2-#4                                  ║
 ║     NO  → Proceed with Agent tool                               ║
 ║                                                                   ║
 ║  2. Will 3+ agents be involved?                                  ║
-║     YES → MUST use Agent Teams                                   ║
+║     YES → use Agent Teams                                        ║
 ║     NO  → Check #3                                               ║
 ║                                                                   ║
 ║  3. Is there a review → fix → re-review cycle?                  ║
-║     YES → MUST use Agent Teams                                   ║
+║     YES → use Agent Teams                                        ║
 ║     NO  → Check #4                                               ║
 ║                                                                   ║
 ║  4. Are 2+ issues being fixed in the same release batch?        ║
-║     YES → SHOULD use Agent Teams (coordination benefit)          ║
+║     YES → prefer Agent Teams (coordination benefit)              ║
 ║     NO  → Proceed with Agent tool                                ║
 ║                                                                   ║
-║  Simple rule: 3+ agents OR review cycle → Agent Teams (MUST)    ║
-║  2+ issues in same batch → Agent Teams (SHOULD)                  ║
+║  Simple rule: 3+ agents OR review cycle → use Agent Teams        ║
+║  2+ issues in same batch → prefer Agent Teams                    ║
 ║  Everything else → Agent tool                                    ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-### Spawn Completeness Check (MANDATORY)
+### Spawn Completeness Check
 
 When spawning Agent Teams members:
 
-**ALL members MUST be spawned in a SINGLE message.** Partial spawning is a VIOLATION of both R018 and R009.
+All members must be spawned in a single message. Partial spawning needs correction per R018 and R009.
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
@@ -67,12 +67,11 @@ When spawning Agent Teams members:
 ║  1. How many members does this team need?  N = ___               ║
 ║  2. Am I spawning ALL N members in THIS message?                 ║
 ║     YES → Good. Continue.                                        ║
-║     NO  → STOP. This is a VIOLATION.                             ║
-║           All N members MUST be in the same message.             ║
+║     NO  → Spawn all N members in this message before proceeding. ║
 ║                                                                   ║
-║  Partial spawn (e.g., 1/3) = VIOLATION                           ║
-║  Sequential spawn (one per message) = VIOLATION                  ║
-║  All at once in single message = CORRECT                         ║
+║  Partial spawn (e.g., 1/3) = needs correction                    ║
+║  Sequential spawn (one per message) = needs correction           ║
+║  All at once in single message = correct                         ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -210,7 +209,7 @@ TeamCreate → TaskCreate → Agent(spawn members) → SendMessage(coordinate)
 ## Fallback
 
 When Agent Teams unavailable: use Agent tool with R009/R010 rules.
-When Agent Teams available: actively prefer it for qualifying tasks. This is not optional.
+When Agent Teams available: actively prefer it for qualifying tasks.
 
 ## Cost Awareness
 

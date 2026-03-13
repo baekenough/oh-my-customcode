@@ -1,10 +1,10 @@
 # [MUST] Parallel Execution Rules
 
-> **Priority**: MUST - ENFORCED | **ID**: R009
+> **Priority**: MUST | **ID**: R009
 
 ## Core Rule
 
-**2+ independent tasks MUST execute in parallel.** Sequential execution of parallelizable tasks is a rule violation.
+**2+ independent tasks should execute in parallel.** Sequential execution of parallelizable tasks does not follow this rule.
 
 ## Detection Criteria
 
@@ -15,20 +15,20 @@ Independent (MUST parallelize):
 
 Examples: creating multiple agents, reviewing multiple files, batch operations on different resources.
 
-## CRITICAL: Agent Teams Gate (R018)
+## Agent Teams Gate (R018)
 
-> **WARNING**: Before spawning 2+ parallel agents, you MUST evaluate Agent Teams eligibility.
-> Skipping this check is a VIOLATION of both R009 and R018.
+> Before spawning 2+ parallel agents, evaluate Agent Teams eligibility.
+> Skipping this check does not follow R009 and R018.
 >
 > **See R018 (MUST-agent-teams.md) for the complete self-check and decision matrix.**
 >
-> Quick rule: **3+ agents OR review cycle OR 2+ issues in same batch → Agent Teams (MUST)**
+> Quick rule: **3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams**
 
 ## Self-Check
 
 Before writing/editing multiple files:
 1. Are files independent? → YES: spawn parallel agents
-2. Using Write/Edit sequentially for 2+ files? → STOP, parallelize
+2. Using Write/Edit sequentially for 2+ files? → parallelize instead
 3. Specialized agent available? → Use it (not general-purpose)
 4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents**
 
@@ -73,7 +73,7 @@ Before writing/editing multiple files:
    Agent(be-springboot-expert → security)          ┘
 ```
 
-> **Agent Teams partial spawn violations** → See R018 (MUST-agent-teams.md) "Spawn Completeness Check".
+> **Agent Teams partial spawn** → See R018 (MUST-agent-teams.md) "Spawn Completeness Check".
 
 ## Execution Rules
 

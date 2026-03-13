@@ -1,6 +1,6 @@
 # [MUST] Agent Identification Rules
 
-> **Priority**: MUST - ENFORCED | **ID**: R007
+> **Priority**: MUST | **ID**: R007
 
 ## Core Rule
 
@@ -50,17 +50,17 @@ When the orchestrator invokes a skill via the Skill tool, the skill name MUST be
 ### Common Violations
 
 ```
-❌ WRONG: Skill as separate display
+Incorrect: Skill as separate display
    ┌─ Agent: claude (default)
    └─ Task: research topic analysis
 
    Skill(research)    ← separate, disconnected
 
-✓ CORRECT: Skill integrated into identification
+Correct: Skill integrated into identification
    ┌─ Agent: claude → research
    └─ Task: research topic analysis
 
-✓ CORRECT: With sub-skill
+Correct: With sub-skill
    ┌─ Agent: claude → research
    ├─ Skill: result-aggregation
    └─ Task: aggregate team findings

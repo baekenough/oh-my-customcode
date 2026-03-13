@@ -1,6 +1,7 @@
 ---
 name: flutter-best-practices
 description: Flutter/Dart development best practices for widget composition, state management, and performance
+scope: core
 user-invocable: false
 ---
 
