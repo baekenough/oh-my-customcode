@@ -5,6 +5,7 @@ scope: core
 version: 1.0.0
 user-invocable: true
 argument-hint: "<topic-or-issue>"
+context: fork
 ---
 
 # Deep Plan Skill
@@ -116,6 +117,8 @@ Phase 3: Plan Verification Research
 | T2 | Conflict & duplication | Does the plan conflict with in-flight work or duplicate existing code? |
 | T3 | Test strategy & risk | Is the plan testable? What are the failure modes? |
 
+**Invocation**: Phase 3 teams are spawned directly as parallel agents (NOT via `Skill(research)`). The orchestrator creates 3 focused agents, each with a specific verification mandate derived from the Phase 2 plan.
+
 **Model selection**: sonnet for teams, opus for synthesis.
 
 **Verdict**:
@@ -194,7 +197,7 @@ After PASS verdict:
 ```
 [Advisory] Verified plan ready for implementation.
 ├── For complex implementations (10+ files): /structured-dev-cycle
-├── For parallel task execution: subagent-driven-development
+├── For parallel task execution: superpowers:subagent-driven-development
 └── For simple tasks (< 3 files): proceed directly
 ```
 
@@ -210,6 +213,18 @@ After PASS verdict:
 | Ecomode | Auto-activate for team result aggregation (R013) |
 | REVISE limit | Max 2 cycles before user escalation |
 
+## Agent Teams (R018)
+
+When Agent Teams is enabled, Phase 1 and Phase 3 parallel teams SHOULD use Agent Teams instead of individual Agent tool calls:
+
+| Phase | Without Agent Teams | With Agent Teams |
+|-------|--------------------|--------------------|
+| Phase 1 | Delegates to `/research` (handles internally) | Delegates to `/research` (handles internally) |
+| Phase 2 | Up to 3 Explore agents via Agent tool | Up to 3 Explore agents via Agent tool (below threshold) |
+| Phase 3 | 3 agents via Agent tool | 3 agents — at threshold, prefer Agent Teams for coordination |
+
+Phase 1 delegation to `/research` means Agent Teams decisions are handled by the research skill itself. Phase 3's 3-team verification is at the Agent Teams threshold (3+ agents) and benefits from peer messaging for cross-verification.
+
 ## Model Selection
 
 | Phase | Component | Model | Rationale |
@@ -220,6 +235,17 @@ After PASS verdict:
 | Phase 2 | Gap analysis | opus | Complex reconciliation reasoning |
 | Phase 3 | Verification teams | sonnet | Balanced analysis |
 | Phase 3 | Synthesis/verdict | opus | Final judgment |
+
+## Cost Estimate
+
+| Phase | Approximate Cost | Driver |
+|-------|-----------------|--------|
+| Phase 1 | High | Full 10-team `/research` invocation |
+| Phase 2 | Low-Medium | Up to 3 Explore agents (haiku) + 1 opus synthesis |
+| Phase 3 | Medium | 3 sonnet verification teams + 1 opus synthesis |
+| **Total** | **High** | Dominated by Phase 1 research cost |
+
+`/deep-plan` is designed for high-stakes decisions where plan quality justifies the cost. For quick planning, use `EnterPlanMode` directly.
 
 ## Integration
 
@@ -233,7 +259,7 @@ After PASS verdict:
 | R013 | Ecomode for team result aggregation |
 | R015 | Phase transition intent display |
 | result-aggregation | Phase 1 and 3 result formatting |
-| subagent-driven-development | Post-PASS implementation advisory |
+| superpowers:subagent-driven-development | Post-PASS implementation advisory (external plugin) |
 
 ## Fallback Behavior
 
