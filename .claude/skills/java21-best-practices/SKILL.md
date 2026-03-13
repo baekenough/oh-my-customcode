@@ -1,6 +1,7 @@
 ---
 name: java21-best-practices
 description: Modern Java 21 patterns from Virtual Threads, Pattern Matching, Records, and Sealed Classes
+scope: core
 user-invocable: false
 ---
 
