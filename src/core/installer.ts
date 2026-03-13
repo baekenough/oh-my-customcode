@@ -2,6 +2,7 @@
  * Installer module - Install/copy templates
  */
 
+import { readdirSync, statSync } from 'node:fs';
 import { readFile as fsReadFile, writeFile as fsWriteFile, rename } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import {
@@ -35,6 +36,7 @@ import {
   type InstallComponent,
 } from './layout.js';
 import { generateAndWriteLockfileForDir } from './lockfile.js';
+import { getSkillScope, shouldInstallSkill } from './scope-filter.js';
 
 /**
  * Options for installation
@@ -475,6 +477,40 @@ function getAllComponents(): InstallComponent[] {
 }
 
 /**
+ * Install skills directory with scope-based filtering.
+ * Skills with scope: package are excluded from installation.
+ */
+async function installSkillsWithScopeFilter(
+  srcPath: string,
+  destPath: string,
+  options: InstallOptions
+): Promise<void> {
+  await ensureDirectory(destPath);
+  const entries = readdirSync(srcPath);
+
+  for (const entry of entries) {
+    const entrySrcPath = join(srcPath, entry);
+    if (!statSync(entrySrcPath).isDirectory()) continue;
+
+    const skillMdPath = join(entrySrcPath, 'SKILL.md');
+    if (await fileExists(skillMdPath)) {
+      const content = await fsReadFile(skillMdPath, 'utf-8');
+      const scope = getSkillScope(content);
+      if (!shouldInstallSkill(scope)) {
+        debug('install.skill_scope_excluded', { skill: entry, scope });
+        continue;
+      }
+    }
+
+    await copyDirectory(entrySrcPath, join(destPath, entry), {
+      overwrite: !!(options.force || options.backup),
+      preserveSymlinks: true,
+      preserveTimestamps: true,
+    });
+  }
+}
+
+/**
  * Install a single component
  */
 async function installComponent(
@@ -502,12 +538,16 @@ async function installComponent(
     return false;
   }
 
-  // Copy with symlink preservation for refs/ directories
-  await copyDirectory(srcPath, destPath, {
-    overwrite: !!(options.force || options.backup),
-    preserveSymlinks: true,
-    preserveTimestamps: true,
-  });
+  if (component === 'skills') {
+    await installSkillsWithScopeFilter(srcPath, destPath, options);
+  } else {
+    // Copy with symlink preservation for refs/ directories
+    await copyDirectory(srcPath, destPath, {
+      overwrite: !!(options.force || options.backup),
+      preserveSymlinks: true,
+      preserveTimestamps: true,
+    });
+  }
   debug('install.component_installed', { component });
   return true;
 }
