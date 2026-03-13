@@ -1,6 +1,7 @@
 ---
 name: help
 description: Show help information for commands and system
+scope: core
 argument-hint: "[command] [--agents] [--rules]"
 ---
 

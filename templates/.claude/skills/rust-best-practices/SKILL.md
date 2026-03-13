@@ -1,6 +1,7 @@
 ---
 name: rust-best-practices
 description: Idiomatic Rust patterns from official guidelines
+scope: core
 user-invocable: false
 ---
 

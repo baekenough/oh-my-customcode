@@ -1,6 +1,7 @@
 ---
 name: claude-code-bible
 description: Fetch Claude Code official documentation. Use when updating local reference docs or checking official spec.
+scope: core
 disable-model-invocation: true
 ---
 

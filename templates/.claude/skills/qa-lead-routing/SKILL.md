@@ -1,6 +1,7 @@
 ---
 name: qa-lead-routing
 description: Coordinates QA workflow across planning, writing, and execution agents. Use when user requests testing, quality assurance, or test documentation.
+scope: core
 user-invocable: false
 context: fork
 ---

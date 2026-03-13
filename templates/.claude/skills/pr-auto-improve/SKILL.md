@@ -1,6 +1,7 @@
 ---
 name: pr-auto-improve
 description: Opt-in post-PR analysis and improvement suggestions for code quality enhancement
+scope: core
 ---
 
 # PR Auto-Improvement Skill

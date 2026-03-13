@@ -1,6 +1,7 @@
 ---
 name: intent-detection
 description: Automatically detect user intent and route to appropriate agent
+scope: core
 user-invocable: false
 ---
 

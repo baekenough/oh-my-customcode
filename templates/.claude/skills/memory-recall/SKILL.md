@@ -1,6 +1,7 @@
 ---
 name: memory-recall
 description: Search and recall memories from claude-mem
+scope: core
 argument-hint: "<query> [--recent] [--limit <n>]"
 ---
 

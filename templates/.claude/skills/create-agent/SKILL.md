@@ -1,6 +1,7 @@
 ---
 name: create-agent
 description: Create a new agent with complete structure
+scope: harness
 argument-hint: "<name> --type <type>"
 disable-model-invocation: true
 ---

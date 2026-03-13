@@ -1,6 +1,7 @@
 ---
 name: fastapi-best-practices
 description: FastAPI patterns for high-performance async APIs
+scope: core
 user-invocable: false
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: stuck-recovery
 description: Detect stuck loops and advise recovery strategies
+scope: core
 ---
 
 # Stuck Recovery Skill

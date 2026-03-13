@@ -1,6 +1,7 @@
 ---
 name: audit-agents
 description: Audit agent dependencies and references
+scope: harness
 argument-hint: "[agent-name] [--all] [--fix]"
 ---
 
@@ -27,7 +28,7 @@ Audit agent dependencies to ensure all skill and guide references are valid and 
    └── Skill path is valid
 
 3. Check guides
-   ├── Guide exists in guides/
+   ├── Guide exists in templates/guides/
    └── Guide path is valid
 
 4. Report results
@@ -48,7 +49,7 @@ Skills:
 
 Guides:
   ✓ golang
-    Path: guides/golang/
+    Path: templates/guides/golang/
     Status: Valid
 
 Summary:
@@ -105,7 +106,7 @@ Declared Skills:
 
 Declared Guides:
   [1] golang
-      Path: guides/golang/
+      Path: templates/guides/golang/
       Exists: ✓
 
 Cross-references:

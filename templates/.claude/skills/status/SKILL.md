@@ -1,6 +1,7 @@
 ---
 name: status
 description: Show system status and health checks
+scope: core
 argument-hint: "[--verbose] [--health]"
 ---
 

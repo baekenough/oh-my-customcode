@@ -1,6 +1,7 @@
 ---
 name: optimize-analyze
 description: Analyze bundle size and performance metrics
+scope: core
 argument-hint: "[target] [--verbose]"
 ---
 
