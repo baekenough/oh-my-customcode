@@ -178,7 +178,7 @@ All commands are invoked inside the Claude Code conversation.
 | **Security** | 1 | sec-codeql-expert |
 | **Total** | **44** | |
 
-### Skills (69)
+### Skills (70)
 
 | Category | Count | Skills |
 |----------|-------|--------|
