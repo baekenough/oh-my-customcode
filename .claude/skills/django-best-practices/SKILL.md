@@ -1,6 +1,7 @@
 ---
 name: django-best-practices
 description: Django patterns for production-ready Python web applications
+scope: core
 user-invocable: false
 ---
 

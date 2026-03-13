@@ -1,6 +1,8 @@
 ---
 name: worker-reviewer-pipeline
 description: Worker-Reviewer iterative pipeline for quality-critical code with review cycles
+scope: core
+context: fork
 ---
 
 # Worker-Reviewer Pipeline Skill

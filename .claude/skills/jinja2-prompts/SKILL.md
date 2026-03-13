@@ -1,6 +1,7 @@
 ---
 name: jinja2-prompts
 description: Parameterized prompt templates using Jinja2 patterns for reusable, dynamic agent prompts
+scope: core
 user-invocable: false
 ---
 

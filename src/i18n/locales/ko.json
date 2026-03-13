@@ -210,6 +210,10 @@
         "index": {
           "pass": "모든 index.yaml 파일 정상",
           "fail": "일부 index.yaml 파일이 잘못됨"
+        },
+        "framework": {
+          "pass": "프레임워크가 최신 상태입니다 (v{{version}})",
+          "warn": "프레임워크가 구버전입니다: 설치됨 v{{installed}}, 최신 v{{latest}} ({{behind}}개 버전 뒤처짐). 'omcustom update'를 실행하여 동기화하세요."
         }
       }
     },

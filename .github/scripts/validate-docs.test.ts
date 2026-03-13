@@ -482,6 +482,144 @@ describe('buildPrompt', () => {
 });
 
 // ---------------------------------------------------------------------------
+// LLM verdict regex — inline tests for emoji-prefixed and plain formats
+// ---------------------------------------------------------------------------
+
+describe('LLM verdict regex parsing', () => {
+  // Mirrors the fixed regex from validate-docs.ts lines 450-451
+  const hasExplicitFail = (result: string) =>
+    /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);
+  const hasExplicitPass = (result: string) =>
+    /최종 판정[\s\S]*?\*\*(✅\s*)?PASS\*\*/i.test(result);
+
+  test('detects PASS with emoji prefix (**✅ PASS**)', () => {
+    const result = '최종 판정\n**✅ PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('detects FAIL with emoji prefix (**❌ FAIL**)', () => {
+    const result = '최종 판정\n**❌ FAIL**';
+    expect(hasExplicitFail(result)).toBe(true);
+    expect(hasExplicitPass(result)).toBe(false);
+  });
+
+  test('detects PASS without emoji (**PASS**)', () => {
+    const result = '최종 판정\n**PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('detects FAIL without emoji (**FAIL**)', () => {
+    const result = '최종 판정\n**FAIL**';
+    expect(hasExplicitFail(result)).toBe(true);
+    expect(hasExplicitPass(result)).toBe(false);
+  });
+
+  test('detects PASS with emoji and no space (**✅PASS**)', () => {
+    const result = '최종 판정: **✅PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('detects FAIL with emoji and no space (**❌FAIL**)', () => {
+    const result = '최종 판정: **❌FAIL**';
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('returns false for PASS when result contains only FAIL', () => {
+    const result = '최종 판정\n**❌ FAIL**\n문서에 불일치가 있습니다.';
+    expect(hasExplicitPass(result)).toBe(false);
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('returns false for FAIL when result contains only PASS', () => {
+    const result = '최종 판정\n**✅ PASS**\n모든 항목이 일치합니다.';
+    expect(hasExplicitFail(result)).toBe(false);
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('returns false when 최종 판정 section is absent', () => {
+    const result = '**✅ PASS**';
+    expect(hasExplicitPass(result)).toBe(false);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Additional edge cases (v0.33.0)
+  // ---------------------------------------------------------------------------
+
+  test('detects PASS with multiple spaces between emoji and verdict (**✅  PASS**)', () => {
+    // \s* in the regex matches zero or more whitespace characters including multiple spaces
+    const result = '최종 판정\n**✅  PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('detects FAIL with multiple spaces between emoji and verdict (**❌  FAIL**)', () => {
+    const result = '최종 판정\n**❌  FAIL**';
+    expect(hasExplicitFail(result)).toBe(true);
+    expect(hasExplicitPass(result)).toBe(false);
+  });
+
+  test('detects PASS when verdict appears inline with surrounding text', () => {
+    // [\s\S]*? in the section regex is lazy and spans lines, so inline text on the same
+    // line as the verdict is allowed
+    const result = '최종 판정: 결과 **✅ PASS** 완료';
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('detects FAIL when verdict appears inline with surrounding text', () => {
+    const result = '최종 판정: 결과 **❌ FAIL** 오류 발생';
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('detects lowercase pass (**✅ pass**) due to case-insensitive flag', () => {
+    // /i flag makes the regex case-insensitive
+    const result = '최종 판정\n**✅ pass**';
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('detects mixed-case Pass (**✅ Pass**) due to case-insensitive flag', () => {
+    const result = '최종 판정\n**✅ Pass**';
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('detects lowercase fail (**❌ fail**) due to case-insensitive flag', () => {
+    const result = '최종 판정\n**❌ fail**';
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('detects mixed-case Fail (**❌ Fail**) due to case-insensitive flag', () => {
+    const result = '최종 판정\n**❌ Fail**';
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('handles verdict split across lines with multiple newlines between', () => {
+    // [\s\S]*? spans across all whitespace including multiple newline characters
+    const result = '최종 판정\n\n\n**PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('does not match PASS in bold text that lacks 최종 판정 prefix', () => {
+    // The regex requires 최종 판정 before the verdict — a bold PASS alone is not matched
+    const result = '다른 섹션\n**PASS**';
+    expect(hasExplicitPass(result)).toBe(false);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('handles both PASS and FAIL in same output — both predicates return true', () => {
+    // When the LLM output contains two 최종 판정 sections (edge case),
+    // hasExplicitPass and hasExplicitFail can both be true simultaneously.
+    // The [\s\S]*? lazy match will find whichever verdict appears first after each section header.
+    const result = '최종 판정\n**PASS**\n\n다른 최종 판정\n**FAIL**';
+    expect(hasExplicitPass(result)).toBe(true);
+    // hasExplicitFail: 최종 판정[\s\S]*?FAIL — the lazy quantifier finds the second section
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // collectImplementationStats — smoke test (uses real templates/ directory)
 // ---------------------------------------------------------------------------
 

@@ -210,6 +210,10 @@
         "index": {
           "pass": "All index.yaml files are valid",
           "fail": "Some index.yaml files are invalid"
+        },
+        "framework": {
+          "pass": "Framework is up to date (v{{version}})",
+          "warn": "Framework is outdated: installed v{{installed}}, latest v{{latest}} ({{behind}} version(s) behind). Run 'omcustom update' to sync."
         }
       }
     },

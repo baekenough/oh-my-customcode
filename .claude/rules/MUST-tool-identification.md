@@ -1,6 +1,6 @@
 # [MUST] Tool Usage Identification Rules
 
-> **Priority**: MUST - ENFORCED | **ID**: R008
+> **Priority**: MUST | **ID**: R008
 
 ## Core Rule
 
@@ -16,26 +16,26 @@ For parallel calls: list ALL identifications BEFORE the tool calls.
 ### Common Violations to Avoid
 
 ```
-❌ WRONG: Calling tools without identification
+Incorrect: Calling tools without identification
    "먼저 JD 내용을 확인하겠습니다."
    <tool_call>WebFetch(...)</tool_call>
 
-❌ WRONG: Missing model in identification
+Incorrect: Missing model in identification
    [secretary] → Tool: WebFetch
    [secretary] → Fetching: https://example.com/jd.md
 
-✓ CORRECT: Always identify with agent AND model
+Correct: Always identify with agent AND model
    "먼저 JD 내용을 확인하겠습니다."
    [secretary][opus] → Tool: WebFetch
    [secretary][opus] → Fetching: https://example.com/jd.md
    <tool_call>WebFetch(...)</tool_call>
 
-❌ WRONG: Parallel calls without listing all identifications
+Incorrect: Parallel calls without listing all identifications
    <tool_call>WebFetch(url1)</tool_call>
    <tool_call>WebFetch(url2)</tool_call>
    <tool_call>Bash(cmd)</tool_call>
 
-✓ CORRECT: List all identifications with models, then call
+Correct: List all identifications with models, then call
    [secretary][opus] → Tool: WebFetch
    [secretary][opus] → Fetching: url1
    [secretary][opus] → Tool: WebFetch

@@ -1,6 +1,7 @@
 ---
 name: analysis
 description: Analyze project and auto-configure agents, skills, rules, and guides
+scope: core
 argument-hint: "[--dry-run] [--verbose]"
 ---
 
