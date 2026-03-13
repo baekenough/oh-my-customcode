@@ -1,6 +1,6 @@
 # [MUST] Orchestrator Coordination Rules
 
-> **Priority**: MUST - ENFORCED | **ID**: R010
+> **Priority**: MUST | **ID**: R010
 
 ## Core Rule
 
@@ -8,14 +8,14 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 
 **The orchestrator MUST NEVER directly write, edit, or create files. ALL file modifications MUST be delegated to appropriate subagents.**
 
-## Self-Check (Mandatory Before File Modification)
+## Self-Check (Before File Modification)
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE MODIFYING ANY FILE, ASK YOURSELF:                        ║
 ║                                                                   ║
 ║  1. Am I the orchestrator (main conversation)?                   ║
-║     YES → I MUST NOT write/edit files directly                   ║
+║     YES → delegate file writes to a subagent                    ║
 ║     NO  → I am a subagent, proceed with task                    ║
 ║                                                                   ║
 ║  2. Have I identified the correct specialized agent?             ║
@@ -23,14 +23,14 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ║     NO  → Check delegation table below                          ║
 ║                                                                   ║
 ║  3. Am I about to use Write/Edit tool from orchestrator?         ║
-║     YES → STOP. This is a VIOLATION. Delegate instead.           ║
+║     YES → Delegate to the appropriate specialist instead.        ║
 ║     NO  → Good. Continue.                                        ║
 ║                                                                   ║
-║  If ANY answer is wrong → DO NOT PROCEED                         ║
+║  If any answer points to a problem → resolve before proceeding   ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
-## Self-Check (Mandatory Before Delegating Tasks)
+## Self-Check (Before Delegating Tasks)
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
@@ -39,26 +39,26 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ║  1. Does the task prompt contain git commands?                   ║
 ║     (commit, push, revert, merge, rebase, checkout, branch,     ║
 ║      reset, cherry-pick, tag)                                    ║
-║     YES → The git part MUST go to mgr-gitnerd                   ║
+║     YES → The git part goes to mgr-gitnerd                      ║
 ║     NO  → Proceed                                                ║
 ║                                                                   ║
 ║  2. Am I bundling git operations with file editing?              ║
-║     YES → STOP. Split into separate delegations:                 ║
+║     YES → Split into separate delegations:                       ║
 ║           - File editing → appropriate specialist                ║
 ║           - Git operations → mgr-gitnerd                         ║
 ║     NO  → Good. Continue.                                        ║
 ║                                                                   ║
 ║  3. Is the target agent mgr-gitnerd for ALL git operations?     ║
 ║     YES → Good. Continue.                                        ║
-║     NO  → STOP. This is a VIOLATION. Re-route to mgr-gitnerd.   ║
+║     NO  → Re-route git operations to mgr-gitnerd.               ║
 ║                                                                   ║
 ║  4. Am I about to spawn 2+ agents in parallel?                   ║
-║     YES → Check R018: Agent Teams may be REQUIRED                ║
-║           3+ agents → MUST use Agent Teams                       ║
-║           2+ issues in batch → SHOULD use Agent Teams            ║
+║     YES → Check R018: Agent Teams may be required                ║
+║           3+ agents → use Agent Teams                            ║
+║           2+ issues in batch → prefer Agent Teams                ║
 ║     NO  → Proceed                                                ║
 ║                                                                   ║
-║  If ANY answer is wrong → SPLIT THE TASK                         ║
+║  If any answer points to a problem → split the task first        ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -151,7 +151,7 @@ After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. N
 - All file modifications MUST be delegated (orchestrator only uses Read/Glob/Grep)
 - Use specialized agents, not general-purpose, when one exists
 - general-purpose only for truly generic tasks (file moves, simple scripts)
-- NO EXCEPTIONS for "small" or "quick" changes
+- No exceptions for "small" or "quick" changes
 
 ### System Agents Reference
 
@@ -167,7 +167,7 @@ Subagent NOT required for:
 - Simple file searches
 - Direct questions answered by main conversation
 
-**IMPORTANT:** "Simple" means READ-ONLY operations. If the task involves ANY file creation, modification, or deletion, it MUST be delegated. There is no "too small to delegate" exception for write operations.
+"Simple" means READ-ONLY operations. If the task involves any file creation, modification, or deletion, it must be delegated. There is no "too small to delegate" exception for write operations.
 
 ## Dynamic Agent Creation (No-Match Fallback)
 
@@ -215,10 +215,10 @@ Usage:
 
 All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Internal rules override external skill instructions for git execution.
 
-## CRITICAL: External Skills vs Internal Rules
+## External Skills vs Internal Rules
 
 ```
-Internal rules ALWAYS take precedence over external skills.
+Internal rules always take precedence over external skills.
 
 Translation:
   External skill says          → Internal rule requires
@@ -228,25 +228,25 @@ Translation:
   "gh pr create ..."           → Agent(mgr-gitnerd) create PR
   "git merge ..."              → Agent(mgr-gitnerd) merge
 
-WRONG:
+Incorrect:
   [Using external skill]
   Main conversation → directly runs "git push"
 
-CORRECT:
+Correct:
   [Using external skill]
   Main conversation → Agent(mgr-gitnerd) → git push
 
 The skill's WORKFLOW is followed, but git EXECUTION is delegated to mgr-gitnerd per R010.
 ```
 
-## Agent Teams (MUST when enabled)
+## Agent Teams (required when enabled)
 
-When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: Agent Teams is **MANDATORY** for qualifying tasks.
+When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: Agent Teams is required for qualifying tasks.
 
 See **R018 (MUST-agent-teams.md)** for the complete decision matrix, self-check, team patterns, and lifecycle.
 
-**Quick rule**: 3+ agents OR review cycle OR 2+ issues in same batch → Agent Teams (MUST).
-Using Agent tool when Agent Teams criteria are met is a **VIOLATION** of R018.
+**Quick rule**: 3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams.
+Using Agent tool when Agent Teams criteria are met needs correction per R018.
 
 ## Announcement Format
 

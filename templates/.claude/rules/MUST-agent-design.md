@@ -137,11 +137,22 @@ description: Brief desc    # One-line summary
 ### Optional Fields
 
 ```yaml
+scope: core                # core | harness | package (default: core)
 context: fork              # Forked context for isolated execution
 version: 1.0.0             # Semantic version
 user-invocable: false      # Whether user can invoke directly
 disable-model-invocation: true  # Prevent model from auto-invoking
 ```
+
+## Skill Scope
+
+| Scope | Purpose | Deployed via init? |
+|-------|---------|-------------------|
+| `core` | Universal development tools | Yes |
+| `harness` | Agent/skill/rule maintenance | Yes |
+| `package` | Package-specific (npm publish, etc.) | No |
+
+Default: `core` (when field is omitted)
 
 ### Context Fork Criteria
 
