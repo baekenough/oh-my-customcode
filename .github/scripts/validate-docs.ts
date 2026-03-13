@@ -81,7 +81,7 @@ export async function collectImplementationStats(): Promise<ImplementationStats>
   // Count hooks (files, not hidden)
   const hooksDir = path.join(templatesDir, '.claude/hooks');
   if (fs.existsSync(hooksDir)) {
-    stats.hook_count = fs.readdirSync(hooksDir).filter((f) => !f.startsWith('.')).length;
+    stats.hook_count = fs.readdirSync(hooksDir).filter((f) => f.endsWith('.json')).length;
   }
 
   // Count contexts
