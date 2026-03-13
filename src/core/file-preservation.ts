@@ -27,6 +27,58 @@ export const DEFAULT_CRITICAL_FILES = ['settings.json', 'settings.local.json'] a
 export const DEFAULT_CRITICAL_DIRECTORIES = ['agent-memory', 'agent-memory-local'] as const;
 
 /**
+ * Framework files that contain AI behavioral constraints.
+ * These MUST NOT be auto-updated without explicit user confirmation.
+ * Overwriting these files could subvert AI safety controls.
+ *
+ * This list is hardcoded (not configurable) to prevent
+ * a compromised config file from removing protection.
+ */
+export const PROTECTED_FRAMEWORK_FILES = ['CLAUDE.md', 'AGENTS.md'] as const;
+
+/**
+ * Glob patterns for protected rule files.
+ * MUST-*.md files define AI behavioral constraints that should
+ * never be silently overwritten during updates.
+ */
+export const PROTECTED_RULE_PATTERNS = ['rules/MUST-*.md'] as const;
+
+/**
+ * Check if a file path matches a protected framework file or pattern.
+ * @param relativePath - Path relative to the .claude/ directory (or project root for entry docs)
+ * @returns true if the file is protected
+ */
+export function isProtectedFile(relativePath: string): boolean {
+  // Check exact matches (entry docs at project root level)
+  const basename = relativePath.split('/').pop() ?? '';
+  if ((PROTECTED_FRAMEWORK_FILES as readonly string[]).includes(basename)) {
+    return true;
+  }
+
+  // Check rule patterns
+  for (const pattern of PROTECTED_RULE_PATTERNS) {
+    if (matchesGlobPattern(relativePath, pattern)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Simple glob pattern matcher for protected file checks.
+ * Supports only the * wildcard (not **).
+ */
+function matchesGlobPattern(filePath: string, pattern: string): boolean {
+  // Convert glob pattern to regex
+  const regexStr = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape regex special chars
+    .replace(/\*/g, '.*'); // Convert * to .*
+  const regex = new RegExp(`(^|/)${regexStr}$`);
+  return regex.test(filePath);
+}
+
+/**
  * Result of file preservation extraction
  */
 export interface PreservationResult {

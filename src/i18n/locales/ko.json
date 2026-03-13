@@ -143,6 +143,10 @@
     "doctor": {
       "description": "설정 문제 확인 및 수정",
       "fixOption": "자동으로 수정 가능한 문제 수정",
+      "updatesOption": "oh-my-customcode 업데이트 확인",
+      "updateAvailable": "업데이트 가능: v{{current}} → v{{latest}}. 'omcustom update'를 실행하여 적용하세요.",
+      "updateUpToDate": "oh-my-customcode가 최신 상태입니다 (v{{version}})",
+      "updateCheckFailed": "업데이트 확인 실패 ({{reason}})",
       "checking": "진단 검사 실행 중...",
       "applyingFixes": "수정 사항 적용 중...",
       "fixing": "수정 중: {{name}}...",

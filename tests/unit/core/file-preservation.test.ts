@@ -6,6 +6,7 @@ import {
   cleanupPreservation,
   deepMerge,
   extractCriticalFiles,
+  isProtectedFile,
   mergeJsonFile,
   restoreCriticalFiles,
 } from '../../../src/core/file-preservation.js';
@@ -324,6 +325,49 @@ describe('file-preservation', () => {
     it('should handle non-existent directory gracefully', async () => {
       // Should not throw
       await cleanupPreservation(join(tempDir, 'non-existent'));
+    });
+  });
+
+  describe('isProtectedFile', () => {
+    it('should protect CLAUDE.md', () => {
+      expect(isProtectedFile('CLAUDE.md')).toBe(true);
+    });
+
+    it('should protect AGENTS.md', () => {
+      expect(isProtectedFile('AGENTS.md')).toBe(true);
+    });
+
+    it('should protect CLAUDE.md when nested under a path', () => {
+      expect(isProtectedFile('some/dir/CLAUDE.md')).toBe(true);
+    });
+
+    it('should protect MUST-*.md rule files', () => {
+      expect(isProtectedFile('rules/MUST-safety.md')).toBe(true);
+      expect(isProtectedFile('rules/MUST-permissions.md')).toBe(true);
+      expect(isProtectedFile('rules/MUST-agent-design.md')).toBe(true);
+      expect(isProtectedFile('.claude/rules/MUST-orchestrator-coordination.md')).toBe(true);
+    });
+
+    it('should NOT protect SHOULD-*.md rule files', () => {
+      expect(isProtectedFile('rules/SHOULD-interaction.md')).toBe(false);
+      expect(isProtectedFile('rules/SHOULD-hud-statusline.md')).toBe(false);
+    });
+
+    it('should NOT protect MAY-*.md rule files', () => {
+      expect(isProtectedFile('rules/MAY-optimization.md')).toBe(false);
+    });
+
+    it('should NOT protect regular agent files', () => {
+      expect(isProtectedFile('agents/lang-golang-expert.md')).toBe(false);
+    });
+
+    it('should NOT protect skill files', () => {
+      expect(isProtectedFile('skills/dev-review/SKILL.md')).toBe(false);
+    });
+
+    it('should NOT protect arbitrary markdown files', () => {
+      expect(isProtectedFile('README.md')).toBe(false);
+      expect(isProtectedFile('docs/guide.md')).toBe(false);
     });
   });
 });
