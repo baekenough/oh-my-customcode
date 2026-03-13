@@ -1,6 +1,7 @@
 ---
 name: npm-version
 description: Manage semantic versions for npm packages
+scope: package
 argument-hint: "<major|minor|patch> [--no-tag] [--no-commit]"
 disable-model-invocation: true
 ---

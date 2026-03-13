@@ -1,6 +1,7 @@
 ---
 name: web-design-guidelines
 description: UI code review with 100+ rules for accessibility, performance, and UX
+scope: core
 user-invocable: false
 ---
 

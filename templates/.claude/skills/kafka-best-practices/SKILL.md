@@ -1,6 +1,7 @@
 ---
 name: kafka-best-practices
 description: Apache Kafka best practices for event streaming, topic design, and producer-consumer patterns
+scope: core
 user-invocable: false
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: monitoring-setup
 description: Enable/disable OpenTelemetry console monitoring for Claude Code usage tracking
+scope: package
 argument-hint: "[enable|disable|status]"
 ---
 

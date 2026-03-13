@@ -1,6 +1,7 @@
 ---
 name: snowflake-best-practices
 description: Snowflake best practices for cloud data warehouse design, query optimization, and cost management
+scope: core
 user-invocable: false
 ---
 

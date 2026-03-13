@@ -1,6 +1,7 @@
 ---
 name: postgres-best-practices
 description: PostgreSQL best practices for database design, query optimization, and performance tuning
+scope: core
 user-invocable: false
 ---
 

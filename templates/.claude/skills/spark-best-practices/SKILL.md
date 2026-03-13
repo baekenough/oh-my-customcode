@@ -1,6 +1,7 @@
 ---
 name: spark-best-practices
 description: Apache Spark best practices for PySpark and Scala distributed data processing
+scope: core
 user-invocable: false
 ---
 

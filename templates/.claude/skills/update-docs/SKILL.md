@@ -1,6 +1,7 @@
 ---
 name: update-docs
 description: Sync documentation with project structure
+scope: harness
 argument-hint: "[--check] [--target <path>]"
 disable-model-invocation: true
 ---
@@ -23,7 +24,7 @@ Ensures all documentation (AGENT.md, SKILL.md, index.yaml, CLAUDE.md) accurately
 1. Scan project structure
    ├── .claude/agents/
    ├── .claude/skills/
-   ├── guides/
+   ├── templates/guides/
    └── commands/
 
 2. Validate consistency
@@ -78,7 +79,7 @@ agent_skill_mapping:
 
 agent_guide_mapping:
   - Each agent declares valid guides
-  - Guides exist in guides/
+  - Guides exist in templates/guides/
   - Paths are relative and correct
 
 command_agent_mapping:
@@ -105,7 +106,7 @@ Skills:
 
 Guides:
   ✓ 12 guides declared
-  ✗ Orphan: guides/old-guide/ (exists but not referenced)
+  ✗ Orphan: templates/guides/old-guide/ (exists but not referenced)
 
 CLAUDE.md:
   ✗ Agent count outdated (shows 14, actual 15)

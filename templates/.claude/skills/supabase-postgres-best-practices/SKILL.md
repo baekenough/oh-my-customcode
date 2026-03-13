@@ -1,6 +1,7 @@
 ---
 name: supabase-postgres-best-practices
 description: PostgreSQL performance optimization guidelines from Supabase. Apply when writing SQL, designing schemas, configuring RLS, or optimizing database performance.
+scope: core
 user-invocable: false
 ---
 
@@ -96,4 +97,4 @@ user-invocable: false
 - PostgreSQL Official Docs: https://www.postgresql.org/docs/
 - Supabase Agent Skills: https://github.com/supabase/agent-skills
 
-For detailed rule files with specific examples, see guides/supabase-postgres/.
+For detailed rule files with specific examples, see templates/guides/supabase-postgres/.

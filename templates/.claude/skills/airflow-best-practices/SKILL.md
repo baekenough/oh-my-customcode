@@ -1,6 +1,7 @@
 ---
 name: airflow-best-practices
 description: Apache Airflow best practices for DAG authoring, testing, and production deployment
+scope: core
 user-invocable: false
 ---
 

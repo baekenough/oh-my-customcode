@@ -1,6 +1,7 @@
 ---
 name: writing-clearly-and-concisely
 description: Apply Strunk's timeless writing rules to ANY prose humans will read—documentation, commit messages, error messages, explanations, reports, or UI text. Makes your writing clearer, stronger, and more professional.
+scope: core
 ---
 
 # Writing Clearly and Concisely
@@ -11,7 +12,7 @@ William Strunk Jr.'s *The Elements of Style* (1918) teaches you to write clearly
 
 **Source**: Internalized from `elements-of-style` plugin (superpowers-marketplace v1.0.0)
 
-**WARNING:** The full reference (`guides/elements-of-style/elements-of-style.html`) consumes ~12,000 tokens. Read it only when writing or editing prose.
+**WARNING:** The full reference (`templates/guides/elements-of-style/elements-of-style.html`) consumes ~12,000 tokens. Read it only when writing or editing prose.
 
 ## When to Use This Skill
 
@@ -57,7 +58,7 @@ When context is tight:
 18. **Place emphatic words at end of sentence**
 
 ### Section V: Words and Expressions Commonly Misused
-Alphabetical reference for usage questions — see `guides/elements-of-style/elements-of-style.html`
+Alphabetical reference for usage questions — see `templates/guides/elements-of-style/elements-of-style.html`
 
 ## Bottom Line
 

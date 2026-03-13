@@ -1,6 +1,7 @@
 ---
 name: react-best-practices
 description: React/Next.js performance optimization with 40+ rules in 8 categories
+scope: core
 user-invocable: false
 ---
 

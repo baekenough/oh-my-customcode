@@ -1,6 +1,7 @@
 ---
 name: redis-best-practices
 description: Redis best practices for caching, data structures, and in-memory data architecture
+scope: core
 user-invocable: false
 ---
 

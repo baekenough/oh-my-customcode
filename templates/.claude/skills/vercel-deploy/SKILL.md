@@ -1,6 +1,7 @@
 ---
 name: vercel-deploy
 description: Deploy applications to Vercel with auto-detection and preview URLs
+scope: core
 ---
 
 ## When to Use

@@ -1,6 +1,7 @@
 ---
 name: dbt-best-practices
 description: dbt best practices for SQL modeling, testing, and analytics engineering workflows
+scope: core
 user-invocable: false
 ---
 

@@ -1,6 +1,7 @@
 ---
 name: skills-sh-search
 description: Search and install skills from skills.sh marketplace when internal skills are insufficient
+scope: core
 argument-hint: "<query> [--install] [--global]"
 ---
 

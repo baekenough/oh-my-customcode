@@ -1,6 +1,7 @@
 ---
 name: go-backend-best-practices
 description: Go backend patterns from Uber style and standard layout
+scope: core
 user-invocable: false
 ---
 

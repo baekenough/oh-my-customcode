@@ -1,6 +1,7 @@
 ---
 name: pipeline-architecture-patterns
 description: Data pipeline architecture patterns for ETL/ELT design, orchestration, and data quality frameworks
+scope: core
 user-invocable: false
 ---
 

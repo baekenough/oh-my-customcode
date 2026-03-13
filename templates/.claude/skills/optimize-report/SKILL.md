@@ -1,6 +1,7 @@
 ---
 name: optimize-report
 description: Generate comprehensive optimization report
+scope: core
 argument-hint: "[--baseline <file>] [--format <format>]"
 ---
 

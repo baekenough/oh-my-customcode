@@ -1,6 +1,7 @@
 ---
 name: dev-refactor
 description: Refactor code for better structure and patterns
+scope: core
 argument-hint: "<file-or-directory> [--lang <language>]"
 ---
 

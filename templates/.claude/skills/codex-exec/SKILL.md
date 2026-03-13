@@ -1,6 +1,7 @@
 ---
 name: codex-exec
 description: Execute OpenAI Codex CLI prompts and return results
+scope: core
 argument-hint: "<prompt> [--json] [--output <path>] [--model <name>] [--timeout <ms>] [--effort <level>]"
 ---
 
@@ -14,7 +15,7 @@ Execute OpenAI Codex CLI prompts in non-interactive mode and return structured r
 <prompt>          Required. The prompt to send to Codex CLI
 --json            Return structured JSON Lines output
 --output <path>   Save final message to file
---model <name>    Model override (o3, o4-mini, etc.)
+--model <name>    Model override (default: Codex CLI default model)
 --timeout <ms>    Execution timeout (default: 120000, max: 600000)
 --full-auto       Enable auto-approval mode (codex -a full-auto)
 --working-dir     Working directory for Codex execution
@@ -56,7 +57,7 @@ Execute OpenAI Codex CLI prompts in non-interactive mode and return structured r
 ```
 [Codex Exec] Completed
 
-Model: o3
+Model: (default)
 Duration: 23.4s
 Working Dir: /path/to/project
 
@@ -68,7 +69,7 @@ Working Dir: /path/to/project
 ```
 [Codex Exec] Completed (JSON)
 
-Model: o3
+Model: (default)
 Duration: 23.4s
 Events: 12
 
@@ -106,7 +107,7 @@ The wrapper provides:
 codex-exec "explain what this project does"
 
 # JSON output with model override
-codex-exec "list all TODO items" --json --model o4-mini
+codex-exec "list all TODO items" --json
 
 # Save output to file
 codex-exec "generate a README" --output ./README.md

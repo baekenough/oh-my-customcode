@@ -1,6 +1,7 @@
 ---
 name: multi-model-verification
 description: Parallel code verification using multiple models with severity classification
+scope: core
 version: 1.0.0
 user-invocable: false
 ---

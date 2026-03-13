@@ -1,6 +1,7 @@
 ---
 name: structured-dev-cycle
 description: 6-stage structured development cycle with stage-based tool restrictions
+scope: core
 version: 1.0.0
 user-invocable: true
 ---

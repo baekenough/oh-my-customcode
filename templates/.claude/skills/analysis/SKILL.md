@@ -1,6 +1,7 @@
 ---
 name: analysis
 description: Analyze project and auto-configure agents, skills, rules, and guides
+scope: core
 argument-hint: "[--dry-run] [--verbose]"
 ---
 
@@ -92,7 +93,7 @@ Rules:
   - Keep all existing rules (they are universal, never remove)
 
 Guides:
-  - Verify guides/ directory has relevant reference docs
+  - Verify templates/guides/ directory has relevant reference docs
   - Log missing guide topics as suggestions only (no auto-copy)
 ```
 

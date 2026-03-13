@@ -1,6 +1,7 @@
 ---
 name: lists
 description: Show all available commands
+scope: core
 argument-hint: "[--category <category>] [--verbose]"
 ---
 
