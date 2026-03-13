@@ -447,8 +447,8 @@ async function main() {
       validation.countMismatches.length > 0 ||
       slashCommandValidation.phantom.length > 0;
     // Check for explicit LLM verdict first, fall back to marker detection
-    const hasExplicitFail = /최종 판정[\s\S]*?\*\*FAIL\*\*/i.test(result);
-    const hasExplicitPass = /최종 판정[\s\S]*?\*\*PASS\*\*/i.test(result);
+    const hasExplicitFail = /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);
+    const hasExplicitPass = /최종 판정[\s\S]*?\*\*(✅\s*)?PASS\*\*/i.test(result);
     const hasLlmIssues = hasExplicitFail || (!hasExplicitPass && result.includes('❌'));
     const status = hasProgrammaticIssues || hasLlmIssues ? 'FAIL' : 'PASS';
     console.log(`\n<!-- VALIDATION_STATUS: ${status} -->`);
