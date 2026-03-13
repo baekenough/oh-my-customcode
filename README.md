@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 44 agents, 69 skills, 25 guides, 19 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 44 agents, 70 skills, 25 guides, 19 rules, 1 hook, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -151,6 +151,7 @@ All commands are invoked inside the Claude Code conversation.
 | `/sauron-watch` | Full R017 sync verification |
 | `/monitoring-setup` | OTel console monitoring enable/disable |
 | `/codex-exec` | Execute Codex CLI prompt |
+| `/deep-plan` | Research-validated planning (research → plan → verify) |
 | `/structured-dev-cycle` | 6-phase structured development cycle |
 | `/lists` | Show all available commands |
 | `/status` | System status and health checks |
@@ -191,7 +192,7 @@ All commands are invoked inside the Claude Code conversation.
 | **Package Management** | 3 | npm-publish, npm-version, npm-audit |
 | **Operations** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
 | **Utilities** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
-| **Quality & Workflow** | 9 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pr-auto-improve, pipeline-guards |
+| **Quality & Workflow** | 10 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pr-auto-improve, pipeline-guards, deep-plan |
 | **Security** | 2 | cve-triage, jinja2-prompts |
 | **Research** | 1 | research |
 | **Deploy** | 2 | vercel-deploy, codex-exec |
@@ -218,7 +219,7 @@ Comprehensive reference documentation covering:
 | **SHOULD** | 6 | Interactions, error handling (recommended) |
 | **MAY** | 1 | Optimization guidelines (optional) |
 
-### Hooks (2)
+### Hooks (1)
 
 Event-driven automation for agent lifecycle events (PreToolUse, PostToolUse, etc.).
 
@@ -280,7 +281,7 @@ your-project/
 │   │   ├── be-fastapi-expert.md
 │   │   ├── mgr-creator.md
 │   │   └── ...
-│   ├── skills/            # Skill modules (69 directories, each with SKILL.md)
+│   ├── skills/            # Skill modules (70 directories, each with SKILL.md)
 │   │   ├── go-best-practices/
 │   │   ├── react-best-practices/
 │   │   ├── secretary-routing/
@@ -292,7 +293,7 @@ your-project/
 │   │   ├── rules.yaml
 │   │   └── graphs/
 │   ├── rules/             # Behavior rules (19 total)
-│   ├── hooks/             # Event hooks (2 total)
+│   ├── hooks/             # Event hooks (1 total)
 │   └── contexts/          # Context files (4 total)
 └── templates/
     └── guides/            # Reference docs (25 total)
