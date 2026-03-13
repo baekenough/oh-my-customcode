@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 44 agents, 68 skills, 25 guides, 18 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 44 agents, 69 skills, 25 guides, 19 rules, 2 hooks, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -178,12 +178,12 @@ All commands are invoked inside the Claude Code conversation.
 | **Security** | 1 | sec-codeql-expert |
 | **Total** | **44** | |
 
-### Skills (68)
+### Skills (69)
 
 | Category | Count | Skills |
 |----------|-------|--------|
 | **Routing** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
-| **Best Practices** | 20 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, django-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, flutter-best-practices |
+| **Best Practices** | 21 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, django-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, flutter-best-practices, java21-best-practices |
 | **Development** | 6 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines, analysis |
 | **Data Engineering** | 2 | spark-best-practices, pipeline-architecture-patterns |
 | **Optimization** | 3 | optimize-analyze, optimize-bundle, optimize-report |
@@ -197,6 +197,8 @@ All commands are invoked inside the Claude Code conversation.
 | **Deploy** | 2 | vercel-deploy, codex-exec |
 | **External** | 1 | skills-sh-search |
 
+Skills use a 3-tier scope system (`core`, `harness`, `package`) to control deployment behavior during `omcustom init`. Core and harness skills are installed by default; package-scoped skills (e.g., npm-publish) are excluded.
+
 ### Guides (25)
 
 Comprehensive reference documentation covering:
@@ -208,12 +210,12 @@ Comprehensive reference documentation covering:
 - Data engineering workflows
 - Database optimization
 
-### Rules (18)
+### Rules (19)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
 | **MUST** | 12 | Safety, permissions, agent design (enforced) |
-| **SHOULD** | 5 | Interactions, error handling (recommended) |
+| **SHOULD** | 6 | Interactions, error handling (recommended) |
 | **MAY** | 1 | Optimization guidelines (optional) |
 
 ### Hooks (2)
@@ -278,7 +280,7 @@ your-project/
 │   │   ├── be-fastapi-expert.md
 │   │   ├── mgr-creator.md
 │   │   └── ...
-│   ├── skills/            # Skill modules (68 directories, each with SKILL.md)
+│   ├── skills/            # Skill modules (69 directories, each with SKILL.md)
 │   │   ├── go-best-practices/
 │   │   ├── react-best-practices/
 │   │   ├── secretary-routing/
@@ -289,7 +291,7 @@ your-project/
 │   │   ├── skills.yaml
 │   │   ├── rules.yaml
 │   │   └── graphs/
-│   ├── rules/             # Behavior rules (18 total)
+│   ├── rules/             # Behavior rules (19 total)
 │   ├── hooks/             # Event hooks (2 total)
 │   └── contexts/          # Context files (4 total)
 └── templates/

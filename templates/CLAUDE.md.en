@@ -181,9 +181,9 @@ Violation = immediate correction. No exception for "small changes".
 project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
-|   +-- agents/                  # Subagent definitions (43 files)
-|   +-- skills/                  # Skills (67 directories)
-|   +-- rules/                   # Global rules (R000-R018)
+|   +-- agents/                  # Subagent definitions (44 files)
+|   +-- skills/                  # Skills (69 directories)
+|   +-- rules/                   # Global rules (R000-R019)
 |   +-- hooks/                   # Hook scripts (memory, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- guides/                      # Reference docs (25 topics)
