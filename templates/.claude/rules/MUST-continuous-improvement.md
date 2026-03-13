@@ -4,9 +4,9 @@
 
 ## Core Rule
 
-When user points out a violation: STOP → UPDATE the relevant rule → COMMIT → THEN continue original task.
+When user points out a violation: update the relevant rule → commit → then continue original task.
 
-Do NOT just apologize. ACTUALLY UPDATE THE RULES.
+Update the relevant rule rather than just acknowledging the violation.
 
 ## Workflow
 
@@ -20,6 +20,6 @@ Do NOT just apologize. ACTUALLY UPDATE THE RULES.
 
 | Situation | Action |
 |-----------|--------|
-| User points out violation | STOP → Update rule → Continue |
+| User points out violation | Update rule → Continue |
 | Self-detected violation | Fix immediately, consider rule update |
 | Ambiguous situation | Ask user, then update if needed |

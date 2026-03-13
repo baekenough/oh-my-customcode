@@ -1,6 +1,6 @@
 # [MUST] Sync Verification Rules
 
-> **Priority**: MUST - ENFORCED | **ID**: R017
+> **Priority**: MUST | **ID**: R017
 
 ## Core Rule
 
@@ -42,23 +42,23 @@ Also run: mgr-claude-code-bible:verify (official spec compliance)
 ║                                                                   ║
 ║  1. Did I complete all 5 rounds of manager verification?         ║
 ║  2. Did I complete all 3 rounds of deep review?                  ║
-║  3. Did I fix ALL discovered issues?                             ║
+║  3. Did I fix all discovered issues?                             ║
 ║  4. Are all counts matching across all sources?                  ║
 ║  5. Am I delegating to mgr-gitnerd for the commit?               ║
 ║                                                                   ║
-║  If NO to ANY → DO NOT COMMIT                                    ║
+║  If NO to any → wait until verification completes                ║
 ╚══════════════════════════════════════════════════════════════════╝
 
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE PUSHING, ASK YOURSELF:                                   ║
 ║                                                                   ║
 ║  1. Did mgr-sauron:watch complete successfully?                  ║
-║  2. Were ALL issues from sauron verification fixed?              ║
+║  2. Were all issues from sauron verification fixed?              ║
 ║  3. Am I delegating to mgr-gitnerd for the push?                 ║
 ║                                                                   ║
-║  If NO to ANY → DO NOT PUSH                                      ║
+║  If NO to any → wait until sauron verification passes            ║
 ║                                                                   ║
-║  SAURON VERIFICATION IS MANDATORY FOR ALL PUSHES.                ║
+║  Sauron verification is required for all pushes.                 ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 

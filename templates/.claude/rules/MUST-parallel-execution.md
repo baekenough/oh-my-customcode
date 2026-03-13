@@ -1,10 +1,10 @@
 # [MUST] Parallel Execution Rules
 
-> **Priority**: MUST - ENFORCED | **ID**: R009
+> **Priority**: MUST | **ID**: R009
 
 ## Core Rule
 
-**2+ independent tasks MUST execute in parallel.** Sequential execution of parallelizable tasks is a rule violation.
+**2+ independent tasks should execute in parallel.** Sequential execution of parallelizable tasks does not follow this rule.
 
 ## Detection Criteria
 
@@ -15,36 +15,22 @@ Independent (MUST parallelize):
 
 Examples: creating multiple agents, reviewing multiple files, batch operations on different resources.
 
-## CRITICAL: Agent Teams Gate (R018)
+## Agent Teams Gate (R018)
 
-> **WARNING**: Before spawning 2+ parallel agents, you MUST evaluate Agent Teams eligibility.
-> Skipping this check is a VIOLATION of both R009 and R018.
+> Before spawning 2+ parallel agents, evaluate Agent Teams eligibility.
+> Skipping this check does not follow R009 and R018.
 >
-> Quick rule: **3+ agents OR review cycle OR 2+ issues in same batch → Agent Teams (MUST)**
-
-Before spawning parallel Agent instances, evaluate Agent Teams eligibility:
-
-```
-2+ independent tasks detected
-  ↓
-Is Agent Teams available? (env or tools check)
-  ├─ NO → Proceed with Agent tool (standard R009)
-  └─ YES → Check eligibility:
-       ├─ 3+ agents needed? → Agent Teams (MUST)
-       ├─ Review → fix cycle? → Agent Teams (MUST)
-       └─ Neither → Agent tool (standard R009)
-```
-
-This gate is MANDATORY when Agent Teams is enabled. Skipping it is a violation of both R009 and R018.
+> **See R018 (MUST-agent-teams.md) for the complete self-check and decision matrix.**
+>
+> Quick rule: **3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams**
 
 ## Self-Check
 
 Before writing/editing multiple files:
 1. Are files independent? → YES: spawn parallel agents
-2. Using Write/Edit sequentially for 2+ files? → STOP, parallelize
+2. Using Write/Edit sequentially for 2+ files? → parallelize instead
 3. Specialized agent available? → Use it (not general-purpose)
-4. Agent Teams available + 3+ agents or review cycle? → YES: use Agent Teams instead of Agent tool
-5. Agent Teams members? → ALL members MUST spawn in a single message (no partial spawning)
+4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents**
 
 ### Common Violations to Avoid
 
@@ -85,19 +71,9 @@ Before writing/editing multiple files:
    Agent(lang-kotlin-expert → usecase queries)     ├─ All spawned together
    Agent(be-springboot-expert → persistence)       │
    Agent(be-springboot-expert → security)          ┘
-
-❌ WRONG: Agent Teams partial spawn (1 of N members)
-   TeamCreate("feature-team")
-   Message 1: Agent(member-1)  ← only 1/3 spawned, VIOLATION
-   Message 2: Agent(member-2)  ← sequential, VIOLATION
-   Message 3: Agent(member-3)  ← sequential, VIOLATION
-
-✓ CORRECT: All Agent Teams members in single message
-   TeamCreate("feature-team")
-   Agent(member-1)  ┐
-   Agent(member-2)  ├─ Single message, all at once
-   Agent(member-3)  ┘
 ```
+
+> **Agent Teams partial spawn** → See R018 (MUST-agent-teams.md) "Spawn Completeness Check".
 
 ## Execution Rules
 
@@ -117,12 +93,14 @@ Before writing/editing multiple files:
 ## Display Format
 
 ```
-[Instance 1] Agent(mgr-creator):sonnet → Create Go agent
-[Instance 2] Agent(lang-python-expert):sonnet → Review Python code
-[Instance 3] Agent(Explore):haiku → Search codebase
+[1] mgr-creator:sonnet → Create Go agent
+[2] lang-python-expert:sonnet → Review Python code
+[3] Explore:haiku → Search codebase
 ```
 
-Must use `Agent({subagent_type}):{model}` format. Custom names not allowed.
+Must use `[N] {subagent_type}:{model}` format. `[N]` is 1-indexed and MUST match the `description` parameter prefix of the Agent tool call for Running display correlation.
+
+Single agent spawns do NOT use the `[N]` prefix.
 
 ## Result Aggregation
 
