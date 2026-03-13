@@ -482,6 +482,70 @@ describe('buildPrompt', () => {
 });
 
 // ---------------------------------------------------------------------------
+// LLM verdict regex — inline tests for emoji-prefixed and plain formats
+// ---------------------------------------------------------------------------
+
+describe('LLM verdict regex parsing', () => {
+  // Mirrors the fixed regex from validate-docs.ts lines 450-451
+  const hasExplicitFail = (result: string) =>
+    /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);
+  const hasExplicitPass = (result: string) =>
+    /최종 판정[\s\S]*?\*\*(✅\s*)?PASS\*\*/i.test(result);
+
+  test('detects PASS with emoji prefix (**✅ PASS**)', () => {
+    const result = '최종 판정\n**✅ PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('detects FAIL with emoji prefix (**❌ FAIL**)', () => {
+    const result = '최종 판정\n**❌ FAIL**';
+    expect(hasExplicitFail(result)).toBe(true);
+    expect(hasExplicitPass(result)).toBe(false);
+  });
+
+  test('detects PASS without emoji (**PASS**)', () => {
+    const result = '최종 판정\n**PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('detects FAIL without emoji (**FAIL**)', () => {
+    const result = '최종 판정\n**FAIL**';
+    expect(hasExplicitFail(result)).toBe(true);
+    expect(hasExplicitPass(result)).toBe(false);
+  });
+
+  test('detects PASS with emoji and no space (**✅PASS**)', () => {
+    const result = '최종 판정: **✅PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('detects FAIL with emoji and no space (**❌FAIL**)', () => {
+    const result = '최종 판정: **❌FAIL**';
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('returns false for PASS when result contains only FAIL', () => {
+    const result = '최종 판정\n**❌ FAIL**\n문서에 불일치가 있습니다.';
+    expect(hasExplicitPass(result)).toBe(false);
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('returns false for FAIL when result contains only PASS', () => {
+    const result = '최종 판정\n**✅ PASS**\n모든 항목이 일치합니다.';
+    expect(hasExplicitFail(result)).toBe(false);
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('returns false when 최종 판정 section is absent', () => {
+    const result = '**✅ PASS**';
+    expect(hasExplicitPass(result)).toBe(false);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // collectImplementationStats — smoke test (uses real templates/ directory)
 // ---------------------------------------------------------------------------
 
