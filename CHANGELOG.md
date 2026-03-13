@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.1] - 2026-03-13
+
+### Added
+- **`/deep-plan` skill**: Research-validated planning with 3-phase cycle (Discovery Research → Reality-Check Planning → Plan Verification). Eliminates gap between research assumptions and actual codebase state (#325)
+
+### Fixed
+- **validate-docs hook counting**: Fixed false positive where `scripts/` directory was counted as a hook file. Now counts only `.json` files as hooks (#325)
+
 ## [0.32.0] - 2026-03-13
 
 ### Added
