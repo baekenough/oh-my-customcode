@@ -34,6 +34,7 @@ import {
   getProviderLayout,
   type InstallComponent,
 } from './layout.js';
+import { generateAndWriteLockfileForDir } from './lockfile.js';
 
 /**
  * Options for installation
@@ -389,6 +390,15 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     }
 
     await updateInstallConfig(options.targetDir, options, result.installedComponents);
+
+    // Generate lockfile for three-way merge support (#316)
+    const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
+    if (lockfileResult.warning) {
+      result.warnings.push(lockfileResult.warning);
+      warn('install.lockfile_failed', { error: lockfileResult.warning });
+    } else {
+      info('install.lockfile_generated', { files: String(lockfileResult.fileCount) });
+    }
 
     result.success = true;
     success('install.success');
