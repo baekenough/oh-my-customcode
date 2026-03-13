@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 import { loadConfig } from '../core/config.js';
+import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getProviderLayout } from '../core/layout.js';
 import { checkSelfUpdate } from '../core/self-update.js';
 import { i18n } from '../i18n/index.js';
@@ -751,6 +752,40 @@ function readCurrentVersion(): string {
 }
 
 /**
+ * Check if the installed framework version (in .omcustomrc.json) is behind the CLI version
+ * @param targetDir - Project directory containing .omcustomrc.json
+ * @param currentVersion - The CLI's own version (latest)
+ * @returns Check result indicating framework drift status, or null if no rc file found
+ */
+export async function checkFrameworkDrift(
+  targetDir: string,
+  currentVersion: string
+): Promise<CheckResult | null> {
+  const result = await checkFrameworkVersion(targetDir, currentVersion);
+  if (!result) return null;
+
+  if (result.isOutdated) {
+    return {
+      name: 'Framework',
+      status: 'warn',
+      message: i18n.t('cli.doctor.checks.framework.warn', {
+        installed: result.installed,
+        latest: result.latest,
+        behind: String(result.versionsBehind),
+      }),
+      fixable: false,
+    };
+  }
+
+  return {
+    name: 'Framework',
+    status: 'pass',
+    message: i18n.t('cli.doctor.checks.framework.pass', { version: result.installed }),
+    fixable: false,
+  };
+}
+
+/**
  * Check if a newer version of oh-my-customcode is available
  * @param currentVersion - The currently installed version
  * @returns Check result indicating update status
@@ -789,19 +824,14 @@ export function checkUpdateAvailable(currentVersion: string): CheckResult {
 }
 
 /**
- * Execute the doctor command
- * @param options - Doctor command options
- * @returns Result of the doctor operation
+ * Run all diagnostic checks and return the combined list
  */
-export async function doctorCommand(options: DoctorOptions = {}): Promise<DoctorResult> {
-  const targetDir = process.cwd();
-
-  console.log(i18n.t('cli.doctor.checking'));
-  console.log('');
-
-  const layout = getProviderLayout();
-
-  // Run all checks
+async function runAllChecks(
+  targetDir: string,
+  layout: { entryFile: string; rootDir: string },
+  packageVersion: string,
+  includeUpdates: boolean
+): Promise<CheckResult[]> {
   const baseChecks: CheckResult[] = await Promise.all([
     checkEntryDoc(targetDir, layout.entryFile),
     checkRules(targetDir, layout.rootDir),
@@ -815,10 +845,37 @@ export async function doctorCommand(options: DoctorOptions = {}): Promise<Doctor
     checkCustomComponents(targetDir, layout.rootDir),
   ]);
 
+  // Framework version drift check (always runs when .omcustomrc.json exists)
+  const frameworkCheck = await checkFrameworkDrift(targetDir, packageVersion);
+  const checksWithFramework = frameworkCheck ? [...baseChecks, frameworkCheck] : baseChecks;
+
   // Optionally append update check
-  const checksWithUpdate: CheckResult[] = options.updates
-    ? [...baseChecks, checkUpdateAvailable(readCurrentVersion())]
-    : baseChecks;
+  return includeUpdates
+    ? [...checksWithFramework, checkUpdateAvailable(packageVersion)]
+    : checksWithFramework;
+}
+
+/**
+ * Execute the doctor command
+ * @param options - Doctor command options
+ * @returns Result of the doctor operation
+ */
+export async function doctorCommand(options: DoctorOptions = {}): Promise<DoctorResult> {
+  const targetDir = process.cwd();
+
+  console.log(i18n.t('cli.doctor.checking'));
+  console.log('');
+
+  const layout = getProviderLayout();
+  const packageVersion = readCurrentVersion();
+
+  // Run all checks
+  const checksWithUpdate = await runAllChecks(
+    targetDir,
+    layout,
+    packageVersion,
+    options.updates ?? false
+  );
 
   // Apply fixes if requested
   let checks: CheckResult[] = checksWithUpdate;
