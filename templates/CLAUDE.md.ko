@@ -170,6 +170,7 @@ oh-my-customcode로 구동됩니다.
 | `/optimize-bundle` | 번들 크기 최적화 |
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
+| `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/lists` | 모든 사용 가능한 커맨드 표시 |
@@ -183,7 +184,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (44 파일)
-|   +-- skills/                  # 스킬 (69 디렉토리)
+|   +-- skills/                  # 스킬 (70 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R019)
 |   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
