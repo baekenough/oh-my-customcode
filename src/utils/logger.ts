@@ -98,6 +98,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.entry_md_installed': '{{entry}} installed ({{language}})',
     'install.entry_md_not_found': '{{entry}} template not found for {{language}}',
     'install.entry_md_skipped': '{{entry}} skipped ({{reason}})',
+    'install.lockfile_generated': 'Lockfile generated ({{files}} files tracked)',
+    'install.lockfile_failed': 'Failed to generate lockfile: {{error}}',
 
     // Update messages
     'update.start': 'Checking for updates...',
@@ -137,6 +139,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.entry_md_installed': '{{entry}} 설치 완료 ({{language}})',
     'install.entry_md_not_found': '{{language}}용 {{entry}} 템플릿 없음',
     'install.entry_md_skipped': '{{entry}} 건너뜀 ({{reason}})',
+    'install.lockfile_generated': '잠금 파일 생성 완료 ({{files}}개 파일 추적)',
+    'install.lockfile_failed': '잠금 파일 생성 실패: {{error}}',
 
     // Update messages
     'update.start': '업데이트 확인 중...',
