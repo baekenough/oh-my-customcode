@@ -10,7 +10,8 @@ export type SkillScope = 'core' | 'harness' | 'package';
  * Returns 'core' as default when scope is absent or file has no frontmatter.
  */
 export function getSkillScope(content: string): SkillScope {
-  const frontmatter = content.match(/^---\n([\s\S]*?)\n---/);
+  const cleaned = content.replace(/^\uFEFF/, '');
+  const frontmatter = cleaned.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!frontmatter) return 'core';
   const match = frontmatter[1].match(/^scope:\s*(core|harness|package)\s*$/m);
   return (match?.[1] as SkillScope) ?? 'core';

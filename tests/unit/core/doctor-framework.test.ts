@@ -32,16 +32,41 @@ describe('doctor-framework', () => {
       expect(calculateVersionsBehind('0.1.0', '1.5.0')).toBe(105);
     });
 
-    it('cross-major: installed ahead of latest by a major — uses minor-only path', () => {
-      // installed=1.0.0, latest=0.32.0 → latestMajor (0) > installedMajor (1) is false
-      // falls through to max(0, latestMinor - installedMinor) = max(0, 32 - 0) = 32
-      // This documents current behaviour: the major-ahead case is not specially handled
-      expect(calculateVersionsBehind('1.0.0', '0.32.0')).toBe(32);
+    it('cross-major: installed ahead of latest by a major — returns 0', () => {
+      // installed=1.0.0, latest=0.32.0 → installedMajor (1) > latestMajor (0) → return 0
+      // Installed is ahead, so there are 0 versions behind
+      expect(calculateVersionsBehind('1.0.0', '0.32.0')).toBe(0);
     });
 
     it('handles patch-only difference — returns 0 because patch is ignored', () => {
       // calculateVersionsBehind only looks at minor; both have minor=32 → returns 0
       expect(calculateVersionsBehind('0.32.1', '0.32.0')).toBe(0);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // calculateVersionsBehind boundary values (v0.33.0)
+  // ---------------------------------------------------------------------------
+
+  describe('calculateVersionsBehind boundary values', () => {
+    it('0.0.0 vs 0.0.0 returns 0', () => {
+      // Both versions are identical with all zeroes — minor diff is 0
+      expect(calculateVersionsBehind('0.0.0', '0.0.0')).toBe(0);
+    });
+
+    it('large minor: 0.99.0 vs 0.100.0 returns 1', () => {
+      // Crossing a 3-digit minor boundary — the diff is exactly 1
+      expect(calculateVersionsBehind('0.99.0', '0.100.0')).toBe(1);
+    });
+
+    it('version with leading zeros: 0.032.0 vs 0.33.0 — Number("032") === 32', () => {
+      // JavaScript's Number('032') === 32 (no octal in Number()), so minor diff = 1
+      expect(calculateVersionsBehind('0.032.0', '0.33.0')).toBe(1);
+    });
+
+    it('large minor: 0.1.0 vs 0.100.0 returns 99', () => {
+      // Boundary: large accumulation without major version jump
+      expect(calculateVersionsBehind('0.1.0', '0.100.0')).toBe(99);
     });
   });
 
@@ -76,6 +101,30 @@ describe('doctor-framework', () => {
 
       const result = await getInstalledVersion(tempDir);
       expect(result).toBeNull();
+    });
+
+    // -------------------------------------------------------------------------
+    // getInstalledVersion boundary values (v0.33.0)
+    // -------------------------------------------------------------------------
+
+    it('returns null for truly empty file (zero bytes)', async () => {
+      // Empty string is not valid JSON — JSON.parse('') throws SyntaxError → catch returns null
+      await writeFile(join(tempDir, '.omcustomrc.json'), '');
+
+      const result = await getInstalledVersion(tempDir);
+      expect(result).toBeNull();
+    });
+
+    it('returns top-level version when nested config object also has a version field', async () => {
+      // Top-level version: "0.31.0" wins over nested config.version: "0.30.0"
+      // content.version accesses the top-level key only
+      await writeFile(
+        join(tempDir, '.omcustomrc.json'),
+        JSON.stringify({ config: { version: '0.30.0' }, version: '0.31.0' })
+      );
+
+      const result = await getInstalledVersion(tempDir);
+      expect(result).toBe('0.31.0');
     });
 
     it('returns null when file contains invalid JSON', async () => {

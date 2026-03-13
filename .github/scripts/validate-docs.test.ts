@@ -593,6 +593,30 @@ describe('LLM verdict regex parsing', () => {
     const result = '최종 판정\n**❌ Fail**';
     expect(hasExplicitFail(result)).toBe(true);
   });
+
+  test('handles verdict split across lines with multiple newlines between', () => {
+    // [\s\S]*? spans across all whitespace including multiple newline characters
+    const result = '최종 판정\n\n\n**PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('does not match PASS in bold text that lacks 최종 판정 prefix', () => {
+    // The regex requires 최종 판정 before the verdict — a bold PASS alone is not matched
+    const result = '다른 섹션\n**PASS**';
+    expect(hasExplicitPass(result)).toBe(false);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('handles both PASS and FAIL in same output — both predicates return true', () => {
+    // When the LLM output contains two 최종 판정 sections (edge case),
+    // hasExplicitPass and hasExplicitFail can both be true simultaneously.
+    // The [\s\S]*? lazy match will find whichever verdict appears first after each section header.
+    const result = '최종 판정\n**PASS**\n\n다른 최종 판정\n**FAIL**';
+    expect(hasExplicitPass(result)).toBe(true);
+    // hasExplicitFail: 최종 판정[\s\S]*?FAIL — the lazy quantifier finds the second section
+    expect(hasExplicitFail(result)).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

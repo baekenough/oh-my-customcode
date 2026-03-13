@@ -35,6 +35,7 @@ export async function getInstalledVersion(targetDir: string): Promise<string | n
 export function calculateVersionsBehind(installed: string, latest: string): number {
   const [installedMajor, installedMinor] = installed.split('.').map(Number);
   const [latestMajor, latestMinor] = latest.split('.').map(Number);
+  if (installedMajor > latestMajor) return 0;
   if (latestMajor > installedMajor) {
     // Cross-major: report major gap as significant drift
     return (latestMajor - installedMajor) * 100 + latestMinor;
