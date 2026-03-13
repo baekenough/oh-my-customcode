@@ -543,6 +543,56 @@ describe('LLM verdict regex parsing', () => {
     expect(hasExplicitPass(result)).toBe(false);
     expect(hasExplicitFail(result)).toBe(false);
   });
+
+  // ---------------------------------------------------------------------------
+  // Additional edge cases (v0.33.0)
+  // ---------------------------------------------------------------------------
+
+  test('detects PASS with multiple spaces between emoji and verdict (**✅  PASS**)', () => {
+    // \s* in the regex matches zero or more whitespace characters including multiple spaces
+    const result = '최종 판정\n**✅  PASS**';
+    expect(hasExplicitPass(result)).toBe(true);
+    expect(hasExplicitFail(result)).toBe(false);
+  });
+
+  test('detects FAIL with multiple spaces between emoji and verdict (**❌  FAIL**)', () => {
+    const result = '최종 판정\n**❌  FAIL**';
+    expect(hasExplicitFail(result)).toBe(true);
+    expect(hasExplicitPass(result)).toBe(false);
+  });
+
+  test('detects PASS when verdict appears inline with surrounding text', () => {
+    // [\s\S]*? in the section regex is lazy and spans lines, so inline text on the same
+    // line as the verdict is allowed
+    const result = '최종 판정: 결과 **✅ PASS** 완료';
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('detects FAIL when verdict appears inline with surrounding text', () => {
+    const result = '최종 판정: 결과 **❌ FAIL** 오류 발생';
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('detects lowercase pass (**✅ pass**) due to case-insensitive flag', () => {
+    // /i flag makes the regex case-insensitive
+    const result = '최종 판정\n**✅ pass**';
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('detects mixed-case Pass (**✅ Pass**) due to case-insensitive flag', () => {
+    const result = '최종 판정\n**✅ Pass**';
+    expect(hasExplicitPass(result)).toBe(true);
+  });
+
+  test('detects lowercase fail (**❌ fail**) due to case-insensitive flag', () => {
+    const result = '최종 판정\n**❌ fail**';
+    expect(hasExplicitFail(result)).toBe(true);
+  });
+
+  test('detects mixed-case Fail (**❌ Fail**) due to case-insensitive flag', () => {
+    const result = '최종 판정\n**❌ Fail**';
+    expect(hasExplicitFail(result)).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------

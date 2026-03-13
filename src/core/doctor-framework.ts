@@ -29,11 +29,16 @@ export async function getInstalledVersion(targetDir: string): Promise<string | n
 }
 
 /**
- * Calculate minor versions behind (simple semver minor diff)
+ * Calculate versions behind (semver minor diff within same major, or flag major drift).
+ * For 0.x.y versioning, compares minor versions. Cross-major returns accumulated minor diff.
  */
 export function calculateVersionsBehind(installed: string, latest: string): number {
-  const [, installedMinor] = installed.split('.').map(Number);
-  const [, latestMinor] = latest.split('.').map(Number);
+  const [installedMajor, installedMinor] = installed.split('.').map(Number);
+  const [latestMajor, latestMinor] = latest.split('.').map(Number);
+  if (latestMajor > installedMajor) {
+    // Cross-major: report major gap as significant drift
+    return (latestMajor - installedMajor) * 100 + latestMinor;
+  }
   return Math.max(0, latestMinor - installedMinor);
 }
 

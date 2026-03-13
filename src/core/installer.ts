@@ -2,8 +2,13 @@
  * Installer module - Install/copy templates
  */
 
-import { readdirSync, statSync } from 'node:fs';
-import { readFile as fsReadFile, writeFile as fsWriteFile, rename } from 'node:fs/promises';
+import {
+  readFile as fsReadFile,
+  writeFile as fsWriteFile,
+  readdir,
+  rename,
+  stat,
+} from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import {
   copyDirectory,
@@ -486,11 +491,11 @@ async function installSkillsWithScopeFilter(
   options: InstallOptions
 ): Promise<void> {
   await ensureDirectory(destPath);
-  const entries = readdirSync(srcPath);
+  const entries = await readdir(srcPath);
 
   for (const entry of entries) {
     const entrySrcPath = join(srcPath, entry);
-    if (!statSync(entrySrcPath).isDirectory()) continue;
+    if (!(await stat(entrySrcPath)).isDirectory()) continue;
 
     const skillMdPath = join(entrySrcPath, 'SKILL.md');
     if (await fileExists(skillMdPath)) {
