@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-03-13
+
+### Added
+- **Update awareness** (`doctor --updates`): detects when installed oh-my-customcode version is behind the latest npm release and reports available updates (#313)
+- **Session advisory**: notifies users at session start when a newer version is available (#314)
+- **Protected files**: lockfile module now tracks protected files to prevent accidental overwrites (#315)
+
+### Changed
+- **Lockfile module refactor**: centralized `COMPONENT_PATHS`, added `readLockfile` validation, extracted common helpers (#317)
+
+### Fixed
+- **i18n key registration**: lockfile debug/warn message keys now properly registered (#317)
+
+### Tests
+- 4 additional lockfile integration tests (29 total) (#317)
+
 ## [0.31.1] - 2026-03-12
 
 ### Fixed
