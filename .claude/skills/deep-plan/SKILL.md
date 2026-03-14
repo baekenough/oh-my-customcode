@@ -5,14 +5,14 @@ scope: core
 version: 1.0.0
 user-invocable: true
 argument-hint: "<topic-or-issue>"
-context: fork
+teams-compatible: true
 ---
 
 # Deep Plan Skill
 
 Research-validated planning that eliminates the gap between research assumptions and actual code. Orchestrates a 3-phase cycle: Discovery Research → Reality-Check Planning → Plan Verification.
 
-**Orchestrator-only** — only the main conversation uses this skill (R010). All phases execute as subagents.
+**Teams-compatible** — works both from the main conversation (R010) and inside Agent Teams members. When used in Teams, the member directly executes the 3-phase workflow without Skill tool invocation.
 
 ## Usage
 
@@ -50,7 +50,11 @@ Phase 1: Discovery Research
 └── Output: research report (artifact)
 ```
 
-**Execution**: Delegates to `/research` skill via `Skill(research, args="<topic>")`. The orchestrator waits for completion before proceeding to Phase 2.
+**Execution**:
+- **Orchestrator mode**: Delegates to `/research` skill via `Skill(research, args="<topic>")`.
+- **Teams mode**: Executes the research workflow inline (see Teams Mode section). The member spawns research teams directly as sub-agents.
+
+The executor waits for completion before proceeding to Phase 2.
 
 **Output**: Full research report with ADOPT/ADAPT/AVOID taxonomy.
 
@@ -251,7 +255,7 @@ Phase 1 delegation to `/research` means Agent Teams decisions are handled by the
 
 | Component | Integration |
 |-----------|-------------|
-| `/research` | Phase 1 full invocation + Phase 3 reduced invocation pattern |
+| `/research` | Phase 1 full invocation (via Skill tool or inline in Teams mode) + Phase 3 reduced invocation pattern |
 | EnterPlanMode/ExitPlanMode | Phase 2 plan creation and user approval |
 | Explore agents | Phase 2 codebase verification (up to 3 parallel) |
 | R009 | Phase 1 (10 teams batched), Phase 2 (3 Explore), Phase 3 (3 teams) |
@@ -270,6 +274,53 @@ Phase 1 delegation to `/research` means Agent Teams decisions are handled by the
 | Phase 3 REVISE ≥ 2 times | Escalate to user for manual judgment |
 | Explore agent failure | Reduce parallel count, retry with remaining |
 | Partial team failure | Synthesize from available results, note gaps |
+
+## Teams Mode
+
+When running inside an Agent Teams member (not via Skill tool), the deep-plan workflow operates identically but with these adaptations:
+
+### How It Works
+
+The orchestrator reads this SKILL.md and includes the deep-plan instructions directly in the Teams member's prompt. The member then:
+
+1. Phase 1: Executes research workflow inline (not via `Skill(research)`) — spawns 10 research teams as sub-agents
+2. Phase 2: Uses EnterPlanMode/ExitPlanMode and Explore agents normally
+3. Phase 3: Spawns 3 verification teams as sub-agents
+4. Delivers final verified plan via `SendMessage` to team lead
+
+### Prompt Embedding Pattern
+
+```
+# When spawning a Teams member for deep-plan:
+Agent(
+  name: "planner-1",
+  team_name: "my-team",
+  prompt: """
+  You are a deep-plan agent. Follow the deep-plan skill workflow below:
+  {contents of deep-plan/SKILL.md}
+
+  Also follow this research workflow for Phase 1:
+  {contents of research/SKILL.md}
+
+  Topic: {user's planning topic}
+  Deliver verified plan via SendMessage to team lead when complete.
+  """
+)
+```
+
+### Differences from Orchestrator Mode
+
+| Aspect | Orchestrator Mode | Teams Mode |
+|--------|------------------|------------|
+| Invocation | `Skill(deep-plan)` | Prompt embedding |
+| Phase 1 research | `Skill(research)` | Inline execution |
+| Result delivery | Return to main conversation | `SendMessage` to team lead |
+| Plan approval | User via ExitPlanMode | Team lead via SendMessage |
+| Context isolation | Previously used `context: fork` | Standard context (no fork) |
+
+### Why No context: fork
+
+`context: fork` was removed to enable Teams compatibility. Fork blocks sub-agent spawning, which is essential for Phase 1 (10 research teams) and Phase 3 (3 verification teams). Without fork, deep-plan operates in the standard context, which is required for both orchestrator and Teams usage.
 
 ## Artifact Persistence
 
