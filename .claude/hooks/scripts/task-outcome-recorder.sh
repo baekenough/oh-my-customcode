@@ -34,9 +34,10 @@ entry=$(jq -n \
   --arg agent "$agent_type" \
   --arg model "$model" \
   --arg outcome "$outcome" \
+  --arg pattern "unknown" \
   --arg desc "$description" \
   --arg err "$error_summary" \
-  '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, description: $desc, error_summary: $err}')
+  '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, pattern_used: $pattern, description: $desc, error_summary: $err}')
 
 echo "$entry" >> "$OUTCOME_FILE"
 

@@ -98,6 +98,16 @@ When Agent Teams is NOT available, falls back to sequential Agent tool calls:
 Agent(worker) → result → Agent(reviewer) → verdict → Agent(worker) → ...
 ```
 
+## Stopping Criteria Display
+
+Before execution, display:
+```
+[Worker-Reviewer Pipeline]
+├── Max iterations: {max_iterations} (default: 3, hard cap: 5)
+├── Quality gate: {pass_threshold}% approval required
+└── Early stop: All reviewers approve → stop immediately
+```
+
 ## Display Format
 
 ```

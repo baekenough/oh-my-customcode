@@ -9,6 +9,17 @@ argument-hint: "<file-or-directory> [--lang <language>]"
 
 Refactor code for better structure, naming, and patterns using language-specific expert agents.
 
+## When NOT to Use
+
+| Scenario | Better Alternative |
+|----------|--------------------|
+| Renaming only (no structural change) | IDE rename refactoring or `sed` |
+| Formatting cleanup | Run formatter (`prettier`, `gofmt`, `black`) |
+| No test coverage for target code | Write tests first (`/structured-dev-cycle`) |
+| Moving files between directories | `git mv` via mgr-gitnerd |
+
+**Pre-execution check**: Verify test coverage exists for the refactoring target. Refactoring without tests risks silent regressions.
+
 ## Parameters
 
 | Name | Type | Required | Description |

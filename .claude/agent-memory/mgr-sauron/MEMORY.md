@@ -1,6 +1,6 @@
 # mgr-sauron Agent Memory
 
-## System Architecture (as of 2026-03-13)
+## System Architecture (as of 2026-03-14)
 
 ### Expected Counts
 - Agents: 44
@@ -58,6 +58,23 @@ The bash script in R017 that checks skill refs (`grep "^skills:" -A 10`) picks u
 - README files had stale counts (69 skills, 2 hooks) — fixed during R017 verification
 - README "2 hooks" was a pre-existing bug (actual: 1) — fixed to "1 hook"
 - Root guides/ still has 23 dirs vs templates/guides/ 25 — pre-existing issue #270, NOT caused by deep-plan
+
+### omcustom: Namespace Prefix (applied 2026-03-14)
+- 14 harness/package skills got `name: omcustom:{skill}` prefix in SKILL.md frontmatter
+- Affected: analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, monitoring-setup, npm-publish, npm-version, npm-audit, sauron-watch, lists, status, help
+- CLAUDE.md command table updated (e.g. `/analysis` → `/omcustom:analysis`)
+- templates/CLAUDE.md.en and .ko updated to match
+- README.md and README_ko.md updated to match
+- templates/.claude/skills/ all synced (same name: fields)
+- Non-prefixed commands (dev-review, dev-refactor, memory-save, memory-recall, codex-exec, optimize-*, research, deep-plan, structured-dev-cycle) remain without prefix — INTENTIONAL
+
+### Ontology Stale State (KNOWN, PRE-EXISTING, NOT blocking)
+- templates/.claude/ontology/ is significantly stale — last updated ~v0.24.x era
+- Missing from agents.yaml + full-graph.json + agent-skill.json: be-django-expert, sec-codeql-expert
+- Missing from skills.yaml: 17 skills (analysis, codex-exec, cve-triage, dag-orchestration, deep-plan, django-best-practices, java21-best-practices, jinja2-prompts, model-escalation, multi-model-verification, pipeline-guards, pr-auto-improve, research, structured-dev-cycle, stuck-recovery, task-decomposition, worker-reviewer-pipeline)
+- Missing from rules.yaml: R019 (SHOULD-ontology-rag-routing)
+- This is a KNOWN pre-existing issue — ontology is advisory/RAG-only, NOT blocking functionality
+- DO NOT treat ontology stale state as a verification failure; treat as issue for future ontology update PR
 
 ### deer-flow P0 Soul System (added 2026-03-12, feature/deer-flow-p0)
 - Soul files: `.claude/agents/souls/{name}.soul.md` with frontmatter `agent:` + `version:`

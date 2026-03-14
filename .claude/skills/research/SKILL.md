@@ -20,6 +20,17 @@ Orchestrates 10 parallel research teams for comprehensive deep analysis of any t
 /research Rust async runtime comparison
 ```
 
+## When NOT to Use
+
+| Scenario | Better Alternative |
+|----------|--------------------|
+| Simple factual question | Direct answer or single WebSearch |
+| Single-file code review | `/dev-review` with specific file |
+| Known solution implementation | `/structured-dev-cycle` |
+| Topic with < 3 comparison dimensions | Single Explore agent |
+
+**Pre-execution check**: If the query can be answered with < 3 sources, skip 10-team research.
+
 ## Architecture — 4 Phases
 
 ### Phase 1: Parallel Research (10 teams, batched per R009)
@@ -258,6 +269,8 @@ Before execution:
 └── Phase 4: Report + GitHub issue
 
 Estimated: {time} | Teams: 10 | Models: sonnet → opus → codex
+Stopping: max 30 verification rounds, convergence at 0 contradictions
+Cost: ~$8-15 (10 teams × sonnet + opus verification)
 Execute? [Y/n]
 ```
 

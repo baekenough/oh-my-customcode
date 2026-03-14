@@ -21,7 +21,7 @@ Like oh-my-zsh transformed shell customization, oh-my-customcode makes personali
 
 | Feature | Description |
 |---------|-------------|
-| **Batteries Included** | 44 agents, 70 skills, 25 guides, 19 rules, 1 hook, 4 contexts, ontology graph - ready to use out of the box |
+| **Batteries Included** | 44 agents, 71 skills, 25 guides, 19 rules, 1 hook, 4 contexts, ontology graph - ready to use out of the box |
 | **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
 | **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
 | **Mix and Match** | Use built-in components, create your own, or combine both |
@@ -179,7 +179,7 @@ All commands are invoked inside the Claude Code conversation.
 | **Security** | 1 | sec-codeql-expert |
 | **Total** | **44** | |
 
-### Skills (70)
+### Skills (71)
 
 | Category | Count | Skills |
 |----------|-------|--------|
@@ -192,7 +192,7 @@ All commands are invoked inside the Claude Code conversation.
 | **Package Management** | 3 | npm-publish, npm-version, npm-audit |
 | **Operations** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
 | **Utilities** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
-| **Quality & Workflow** | 10 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pr-auto-improve, pipeline-guards, deep-plan |
+| **Quality & Workflow** | 11 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pr-auto-improve, pipeline-guards, deep-plan, evaluator-optimizer |
 | **Security** | 2 | cve-triage, jinja2-prompts |
 | **Research** | 1 | research |
 | **Deploy** | 2 | vercel-deploy, codex-exec |
@@ -281,7 +281,7 @@ your-project/
 │   │   ├── be-fastapi-expert.md
 │   │   ├── mgr-creator.md
 │   │   └── ...
-│   ├── skills/            # Skill modules (70 directories, each with SKILL.md)
+│   ├── skills/            # Skill modules (71 directories, each with SKILL.md)
 │   │   ├── go-best-practices/
 │   │   ├── react-best-practices/
 │   │   ├── secretary-routing/
