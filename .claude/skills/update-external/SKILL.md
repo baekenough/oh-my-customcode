@@ -1,5 +1,5 @@
 ---
-name: update-external
+name: omcustom:update-external
 description: Update agents from external sources (GitHub, docs, etc.)
 scope: harness
 argument-hint: "[agent-name] [--check] [--force]"

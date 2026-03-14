@@ -1,5 +1,5 @@
 ---
-name: sauron-watch
+name: omcustom:sauron-watch
 description: Full R017 verification (5+3 rounds) before commit
 scope: harness
 disable-model-invocation: true

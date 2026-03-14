@@ -32,8 +32,8 @@ Implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher).
 
 ```
 ─── [Agent] secretary | [Parallel] 4 ───
-  [1] mgr-creator:sonnet → Create agent
-  [2] lang-golang-expert:haiku → Code review
+  [1] Agent(mgr-creator):sonnet → Create agent
+  [2] Agent(lang-golang-expert):haiku → Code review
 ```
 
 ## Statusline API (Command-based)

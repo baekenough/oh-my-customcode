@@ -1,5 +1,5 @@
 ---
-name: fix-refs
+name: omcustom:fix-refs
 description: Fix broken agent references and symlinks
 scope: harness
 argument-hint: "[agent-name] [--all] [--dry-run]"

@@ -101,7 +101,7 @@ dev-lead-routing (라우팅 스킬)
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/analysis` | 프로젝트 분석 및 에이전트, 스킬, 규칙 자동 구성 |
+| `/omcustom:analysis` | 프로젝트 분석 및 에이전트, 스킬, 규칙 자동 구성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
 
 #### 개발
@@ -115,11 +115,11 @@ dev-lead-routing (라우팅 스킬)
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/create-agent` | 새 에이전트 생성 |
-| `/update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/update-external` | 외부 소스에서 에이전트 업데이트 |
-| `/audit-agents` | 에이전트 의존성 감사 |
-| `/fix-refs` | 깨진 참조 수정 |
+| `/omcustom:create-agent` | 새 에이전트 생성 |
+| `/omcustom:update-docs` | 프로젝트 구조와 문서 동기화 |
+| `/omcustom:update-external` | 외부 소스에서 에이전트 업데이트 |
+| `/omcustom:audit-agents` | 에이전트 의존성 감사 |
+| `/omcustom:fix-refs` | 깨진 참조 수정 |
 
 #### 메모리
 
@@ -132,9 +132,9 @@ dev-lead-routing (라우팅 스킬)
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/npm-publish` | npm 레지스트리에 패키지 배포 |
-| `/npm-version` | 시맨틱 버전 관리 |
-| `/npm-audit` | 의존성 보안 감사 |
+| `/omcustom:npm-publish` | npm 레지스트리에 패키지 배포 |
+| `/omcustom:npm-version` | 시맨틱 버전 관리 |
+| `/omcustom:npm-audit` | 의존성 보안 감사 |
 
 #### 최적화
 
@@ -148,14 +148,14 @@ dev-lead-routing (라우팅 스킬)
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/sauron-watch` | 전체 R017 동기화 검증 |
-| `/monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
+| `/omcustom:sauron-watch` | 전체 R017 동기화 검증 |
+| `/omcustom:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
 | `/codex-exec` | Codex CLI 프롬프트 실행 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 |
-| `/lists` | 모든 사용 가능한 커맨드 표시 |
-| `/status` | 시스템 상태 및 헬스 체크 |
-| `/help` | 도움말 정보 |
+| `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
+| `/omcustom:status` | 시스템 상태 및 헬스 체크 |
+| `/omcustom:help` | 도움말 정보 |
 
 ---
 

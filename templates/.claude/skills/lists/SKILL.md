@@ -1,7 +1,7 @@
 ---
-name: lists
+name: omcustom:lists
 description: Show all available commands
-scope: core
+scope: harness
 argument-hint: "[--category <category>] [--verbose]"
 ---
 
