@@ -31,7 +31,7 @@ if [ "$is_error" = "true" ]; then
   error_hash=$(echo "$output_preview" | head -c 50 | md5sum 2>/dev/null | cut -d' ' -f1 || echo "unknown")
 fi
 
-entry=$(jq -n \
+entry=$(jq -cn \
   --arg ts "$timestamp" \
   --arg tool "$tool_name" \
   --arg path "$file_path" \

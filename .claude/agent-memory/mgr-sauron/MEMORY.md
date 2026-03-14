@@ -1,11 +1,11 @@
 # mgr-sauron Agent Memory
 
-## System Architecture (as of 2026-03-14)
+## System Architecture (as of 2026-03-14, post-#330)
 
 ### Expected Counts
 - Agents: 44
-- Skills: 70 directories (added deep-plan 2026-03-13)
-- Guides: 25 topics (templates/guides/ dirs)
+- Skills: 71 directories (added evaluator-optimizer 2026-03-14 via #330)
+- Guides: 25 topics (templates/guides/ dirs); 12-workflow-patterns.md added inside claude-code/ (not new top-level dir)
 - Rules: 19 files (R000-R019, R014 missing)
 - Hooks: 1 (hooks.json)
 - Contexts: 4 .md + 1 index.yaml
@@ -58,6 +58,31 @@ The bash script in R017 that checks skill refs (`grep "^skills:" -A 10`) picks u
 - README files had stale counts (69 skills, 2 hooks) — fixed during R017 verification
 - README "2 hooks" was a pre-existing bug (actual: 1) — fixed to "1 hook"
 - Root guides/ still has 23 dirs vs templates/guides/ 25 — pre-existing issue #270, NOT caused by deep-plan
+
+### evaluator-optimizer Skill (added 2026-03-14 via #330)
+- Skill 71: parameterized evaluator-optimizer loop for quality-critical output
+- scope: core, user-invocable: false (library skill, not slash command)
+- Does NOT use context:fork — operates within caller's context
+- grep -rl "context: fork" gives false positive for evaluator-optimizer due to body text in Constraints section
+- Always use Python-based frontmatter parser for context:fork count (actual: 9/10 cap)
+- context:fork skills (9): secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan
+- R006 updated: 8/10 -> 9/10 cap, added deep-plan to list (both live + template)
+- README_ko.md had "26개 가이드" (stale) — fixed to "25개 가이드" during R017 verification
+- templates/.claude/hooks/scripts/task-outcome-recorder.sh was missing pattern_used field — fixed during R017 verification
+- task-decomposition SKILL.md: added Step 0 Pattern Selection
+- stuck-detector.sh: added conditional hard-block (exit 1) on 5+ consecutive repetitions
+- guides/claude-code/12-workflow-patterns.md: new file inside existing dir (not new top-level guide)
+
+### v0.34.0 Release Verification (2026-03-14)
+- Full R017 sauron:watch passed CLEAN for release/v0.34.0 pre-merge gate
+- All 44 agents, 71 skills, 25 guides, 19 rules, 1 hook, 4 contexts: counts verified
+- All template files in sync (agents, skills, rules, hooks, guides)
+- evaluator-optimizer confirmed NOT using context:fork (correct)
+- Quality & Workflow skill category: 11 skills (added evaluator-optimizer)
+- analysis/lists/status/help reclassified from core to harness scope: confirmed
+- validate-docs.ts hook counting: uses .endsWith('.json') filter — bug fixed, CI-safe
+- CHANGELOG.md comparison links section is stale (pre-existing, non-blocking) — entries exist but footer links don't extend past v0.17.x
+- mgr-sauron.md is 158 lines (slightly over 150 threshold) — contains output format templates, acceptable for manager agent
 
 ### omcustom: Namespace Prefix (applied 2026-03-14)
 - 14 harness/package skills got `name: omcustom:{skill}` prefix in SKILL.md frontmatter
