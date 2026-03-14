@@ -9,7 +9,7 @@ classes:
     agents: [lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert]
     description: "Programming language specialists"
   BackendExpert:
-    agents: [be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert]
+    agents: [be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert]
     description: "Backend framework specialists"
   FrontendExpert:
     agents: [fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent]
@@ -38,9 +38,6 @@ classes:
   SystemAgent:
     agents: [sys-memory-keeper, sys-naggy]
     description: "System utility agents"
-  SecurityExpert:
-    agents: [sec-codeql-expert]
-    description: "Security analysis specialists"
 
 # Agent instances
 agents:
@@ -53,7 +50,7 @@ agents:
     skills: [go-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "Go expert for idiomatic concurrent systems with goroutines and channels"
-    keywords: [go, golang, goroutine, channel, concurrency, idiomatic, effective-go, interface, struct, module, test, 고, 고랭]
+    keywords: [go, golang, goroutine, channel, concurrency, idiomatic, effective-go]
     file_patterns: ["*.go", "go.mod", "go.sum"]
 
   lang-python-expert:
@@ -65,7 +62,7 @@ agents:
     skills: [python-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "Python expert for Pythonic code following PEP 8 and The Zen of Python"
-    keywords: [python, pythonic, pep8, zen-of-python, api-design, 파이썬]
+    keywords: [python, pythonic, pep8, zen-of-python, api-design]
     file_patterns: ["*.py", "requirements.txt", "pyproject.toml", "setup.py"]
 
   lang-rust-expert:
@@ -101,7 +98,7 @@ agents:
     skills: [typescript-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "TypeScript expert for type-safe scalable applications with advanced type features"
-    keywords: [typescript, type-safety, generics, conditional-types, mapped-types, nodejs, 타입스크립트]
+    keywords: [typescript, type-safety, generics, conditional-types, mapped-types, nodejs]
     file_patterns: ["*.ts", "*.tsx", "tsconfig.json", "package.json"]
 
   lang-java21-expert:
@@ -125,7 +122,7 @@ agents:
     skills: [fastapi-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "FastAPI expert for high-performance async Python APIs with Pydantic validation"
-    keywords: [fastapi, async, await, pydantic, api, performance, dependency-injection, uvicorn, 서버, 백엔드]
+    keywords: [fastapi, async, await, pydantic, api, performance, dependency-injection]
     file_patterns: ["*.py", "main.py", "requirements.txt", "pyproject.toml"]
 
   be-springboot-expert:
@@ -137,7 +134,7 @@ agents:
     skills: [springboot-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "Spring Boot expert for enterprise Java/Kotlin with virtual threads and native images"
-    keywords: [springboot, spring, boot, java, kotlin, microservices, virtual-threads, graalvm, rest-api, jpa, bean, autowired]
+    keywords: [springboot, spring, java, kotlin, microservices, virtual-threads, graalvm, rest-api]
     file_patterns: ["*.java", "*.kt", "application.yml", "application.properties", "pom.xml"]
 
   be-go-backend-expert:
@@ -149,7 +146,7 @@ agents:
     skills: [go-backend-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "Go backend expert for production services with HTTP/gRPC and concurrency patterns"
-    keywords: [go, backend, grpc, http, microservices, uber-style, concurrency, rest, api, server, gin, echo, fiber, chi, 서버, 백엔드]
+    keywords: [go, backend, grpc, http, microservices, uber-style, concurrency]
     file_patterns: ["*.go", "go.mod", "go.sum"]
 
   be-express-expert:
@@ -161,7 +158,7 @@ agents:
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "Express.js expert for secure production Node.js APIs with 12-factor principles"
-    keywords: [express, expressjs, nodejs, middleware, rest-api, security, helmet, cors, api, node]
+    keywords: [express, expressjs, nodejs, middleware, rest-api, security, helmet, cors]
     file_patterns: ["*.js", "*.ts", "package.json", "app.js", "server.js"]
 
   be-nestjs-expert:
@@ -173,7 +170,7 @@ agents:
     skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "NestJS expert for enterprise TypeScript APIs with dependency injection and decorators"
-    keywords: [nestjs, nest, typescript, decorators, dependency-injection, guards, dto, modular, module, pipe, interceptor]
+    keywords: [nestjs, nest, typescript, decorators, dependency-injection, guards, dto, modular]
     file_patterns: ["*.ts", "*.module.ts", "*.controller.ts", "*.service.ts", "nest-cli.json"]
 
   fe-vercel-agent:
@@ -185,7 +182,7 @@ agents:
     skills: [react-best-practices, web-design-guidelines, vercel-deploy]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "React/Next.js expert with Vercel deployment and web accessibility optimization"
-    keywords: [react, nextjs, vercel, accessibility, ux, bundle-size, ssr, deployment, 프론트엔드, 리액트]
+    keywords: [react, nextjs, vercel, accessibility, ux, bundle-size, ssr, deployment]
     file_patterns: ["*.jsx", "*.tsx", "next.config.js", "vercel.json", "package.json"]
 
   fe-vuejs-agent:
@@ -305,7 +302,7 @@ agents:
     skills: [postgres-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "PostgreSQL expert for database design with indexing, partitioning, and replication"
-    keywords: [postgresql, postgres, indexing, partitioning, replication, jsonb, explain, vacuum, 데이터베이스, 디비]
+    keywords: [postgresql, postgres, indexing, partitioning, replication, jsonb, explain, vacuum]
     file_patterns: ["*.sql", "*.psql"]
 
   db-redis-expert:
@@ -401,7 +398,7 @@ agents:
     skills: [docker-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
     summary: "Docker expert for optimized multi-stage builds and container security"
-    keywords: [docker, dockerfile, multi-stage, container, docker-compose, security, optimization, 도커, 컨테이너]
+    keywords: [docker, dockerfile, multi-stage, container, docker-compose, security, optimization]
     file_patterns: ["Dockerfile", "docker-compose.yml", ".dockerignore"]
 
   infra-aws-expert:
@@ -547,27 +544,3 @@ agents:
     summary: "Task tracker with proactive reminders for TODO management"
     keywords: [todo, tasks, reminders, tracking, deadlines, project-momentum]
     file_patterns: ["TODO.md", "*.todo"]
-
-  be-django-expert:
-    class: BackendExpert
-    description: "Expert Django developer for production-ready Python web applications. Use for Django projects, models/views/templates, Django REST Framework, authentication, admin customization, and deployment optimization."
-    model: sonnet
-    memory: project
-    effort: high
-    skills: [django-best-practices]
-    tools: [Read, Write, Edit, Grep, Glob, Bash]
-    summary: "Django expert for production Python web apps with DRF and admin"
-    keywords: [django, python, drf, rest-framework, orm, middleware, wsgi, asgi, celery, 웹앱, 웹어플리케이션, 장고]
-    file_patterns: ["*.py", "manage.py", "settings.py", "urls.py", "models.py", "views.py"]
-
-  sec-codeql-expert:
-    class: SecurityExpert
-    description: "Expert security code analyst using CodeQL for vulnerability detection, call graph analysis, and SARIF output. Use for security audits, CVE triage, code pattern analysis, and vulnerability validation."
-    model: sonnet
-    memory: project
-    effort: high
-    skills: [cve-triage]
-    tools: [Read, Write, Edit, Grep, Glob, Bash]
-    summary: "Security analyst for CodeQL vulnerability detection and CVE triage"
-    keywords: [security, codeql, vulnerability, cve, sarif, audit, xss, injection, owasp, 보안, 취약점, 분석, 감사]
-    file_patterns: ["*.ql", "*.qll", "codeql-config.yml", "*.sarif"]

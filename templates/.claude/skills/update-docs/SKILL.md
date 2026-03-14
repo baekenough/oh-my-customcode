@@ -1,5 +1,5 @@
 ---
-name: update-docs
+name: omcustom:update-docs
 description: Sync documentation with project structure
 scope: harness
 argument-hint: "[--check] [--target <path>]"

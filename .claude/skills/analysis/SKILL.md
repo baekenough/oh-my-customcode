@@ -1,7 +1,7 @@
 ---
-name: analysis
+name: omcustom:analysis
 description: Analyze project and auto-configure agents, skills, rules, and guides
-scope: core
+scope: harness
 argument-hint: "[--dry-run] [--verbose]"
 ---
 

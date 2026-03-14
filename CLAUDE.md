@@ -98,12 +98,12 @@ oh-my-customcode로 구동됩니다.
 ```
 작업에 여러 에이전트가 필요할 때:
 -> 메인 대화 (오케스트레이터)가 반드시 조율
--> Agent 도구 (구 Task 도구)로 적절한 에이전트에 작업 할당
+-> 메인 대화가 적절한 에이전트에 작업 할당
 -> 메인 대화가 결과 집계
 -> 오케스트레이터는 절대 직접 파일을 수정하지 않음
 
 흐름:
-  사용자 -> 메인 대화 -> Agent(agent-1, agent-2, agent-3) -> 메인 대화 -> 사용자
+  사용자 -> 메인 대화 -> [agent-1, agent-2, agent-3] -> 메인 대화 -> 사용자
 
 위반 시 즉시 수정. "작은 변경"도 예외 없음.
 ```
@@ -151,31 +151,31 @@ oh-my-customcode로 구동됩니다.
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/analysis` | 프로젝트 분석 및 자동 커스터마이징 |
-| `/create-agent` | 새 에이전트 생성 |
-| `/update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/update-external` | 외부 소스에서 에이전트 업데이트 |
-| `/audit-agents` | 에이전트 의존성 감사 |
-| `/fix-refs` | 깨진 참조 수정 |
+| `/omcustom:analysis` | 프로젝트 분석 및 자동 커스터마이징 |
+| `/omcustom:create-agent` | 새 에이전트 생성 |
+| `/omcustom:update-docs` | 프로젝트 구조와 문서 동기화 |
+| `/omcustom:update-external` | 외부 소스에서 에이전트 업데이트 |
+| `/omcustom:audit-agents` | 에이전트 의존성 감사 |
+| `/omcustom:fix-refs` | 깨진 참조 수정 |
 | `/dev-review` | 코드 베스트 프랙티스 리뷰 |
 | `/dev-refactor` | 코드 리팩토링 |
 | `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
-| `/monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
-| `/npm-publish` | npm 레지스트리에 패키지 배포 |
-| `/npm-version` | 시맨틱 버전 관리 |
-| `/npm-audit` | 의존성 감사 |
+| `/omcustom:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
+| `/omcustom:npm-publish` | npm 레지스트리에 패키지 배포 |
+| `/omcustom:npm-version` | 시맨틱 버전 관리 |
+| `/omcustom:npm-audit` | 의존성 감사 |
 | `/codex-exec` | Codex CLI 프롬프트 실행 |
 | `/optimize-analyze` | 번들 및 성능 분석 |
 | `/optimize-bundle` | 번들 크기 최적화 |
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
-| `/sauron-watch` | 전체 R017 검증 |
+| `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/lists` | 모든 사용 가능한 커맨드 표시 |
-| `/status` | 시스템 상태 표시 |
-| `/help` | 도움말 표시 |
+| `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
+| `/omcustom:status` | 시스템 상태 표시 |
+| `/omcustom:help` | 도움말 표시 |
 
 ## 프로젝트 구조
 
@@ -188,8 +188,7 @@ project/
 |   +-- rules/                   # 전역 규칙 (R000-R019)
 |   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
-+-- templates/
-|   +-- guides/                  # 레퍼런스 문서 (25 토픽)
++-- guides/                      # 레퍼런스 문서 (25 토픽)
 ```
 
 ## 오케스트레이션
@@ -200,7 +199,7 @@ project/
 - **de-lead-routing**: 데이터 엔지니어링 작업을 DE/파이프라인 전문가에게 라우팅
 - **qa-lead-routing**: QA 워크플로우 조율
 
-메인 대화가 유일한 오케스트레이터 역할을 합니다. Agent 도구 (구 Task 도구)로 서브에이전트를 생성하며, 서브에이전트는 다른 서브에이전트를 생성할 수 없습니다.
+메인 대화가 유일한 오케스트레이터 역할을 합니다. 서브에이전트는 다른 서브에이전트를 생성할 수 없습니다.
 
 ### 동적 에이전트 생성
 
@@ -208,7 +207,7 @@ project/
 
 1. 라우팅 스킬이 매칭 전문가 없음을 감지
 2. 오케스트레이터가 mgr-creator에 컨텍스트와 함께 위임
-3. mgr-creator가 관련 skills/ 및 templates/guides/를 자동 탐색
+3. mgr-creator가 관련 skills/guides를 자동 탐색
 4. 새 에이전트 생성 후 즉시 사용
 
 이것이 oh-my-customcode의 핵심 철학입니다: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."**
@@ -245,31 +244,21 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 **활성화 시, 적격한 협업 작업에 Agent Teams를 반드시 사용해야 합니다 (R018 MUST).**
 결정 매트릭스는 R018 (MUST-agent-teams.md)을 참조하세요.
 하이브리드 패턴 (Claude + Codex, 동적 생성 + Teams)이 지원됩니다.
-단순/비용 민감 작업에는 Agent 도구 (구 Task 도구) + 라우팅 스킬이 폴백으로 유지됩니다.
-
-## Claude Code 호환성
-
-| 항목 | 이전 (< v2.1.63) | 현재 (>= v2.1.63) | oh-my-customcode |
-|------|-------------------|--------------------|--------------------|
-| 서브에이전트 도구 | Task | Agent | 듀얼 지원 (Agent/Task) |
-| subagent_type 필드 | ✓ | ✓ (변경 없음) | ✓ |
-| Hook 매처 | tool == "Task" | tool == "Agent" | tool == "Task" \|\| tool == "Agent" |
-| SubagentStart 이벤트 | ✗ | ✓ | ✓ (v0.23.0+) |
-| SubagentStop 이벤트 | ✗ | ✓ | ✓ (v0.23.0+) |
+단순/비용 민감 작업에는 Task tool + 라우팅 스킬이 폴백으로 유지됩니다.
 
 ## 빠른 참조
 
 ```bash
 # 프로젝트 분석
-/analysis
+/omcustom:analysis
 
 # 모든 커맨드 표시
-/lists
+/omcustom:lists
 
 # 에이전트 관리
-/create-agent my-agent
-/update-docs
-/audit-agents
+/omcustom:create-agent my-agent
+/omcustom:update-docs
+/omcustom:audit-agents
 
 # 코드 리뷰
 /dev-review src/main.go
@@ -279,7 +268,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 /memory-recall authentication
 
 # 검증
-/sauron-watch
+/omcustom:sauron-watch
 ```
 
 ## 외부 의존성
@@ -301,7 +290,6 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 | 서버 | 용도 |
 |------|------|
 | claude-mem | 세션 메모리 영속성 (Chroma 기반) |
-| ontology-rag | 에이전트/스킬/규칙 온톨로지 기반 컨텍스트 및 라우팅 |
 
 ### 설치 명령어
 
@@ -319,14 +307,4 @@ npm install -g claude-mem
 claude-mem setup
 ```
 
-## Git 워크플로우 (반드시 준수)
-
-| 브랜치 | 용도 |
-|--------|------|
-| `develop` | 메인 개발 브랜치 (기본) |
-| `release/*` | 릴리스 준비 -> **npm 배포는 여기서만** |
-
-**핵심 규칙:**
-- `develop`에서 feature 브랜치 생성
-- Conventional commits 사용: `feat:`, `fix:`, `docs:`, `chore:`
-- 커밋 메시지에 "Closes #N" 포함시 이슈 자동 종료
+<!-- omcustom:git-workflow -->

@@ -1,7 +1,7 @@
 ---
-name: help
+name: omcustom:help
 description: Show help information for commands and system
-scope: core
+scope: harness
 argument-hint: "[command] [--agents] [--rules]"
 ---
 

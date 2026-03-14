@@ -101,7 +101,7 @@ All commands are invoked inside the Claude Code conversation.
 
 | Command | Description |
 |---------|-------------|
-| `/analysis` | Analyze project and auto-configure agents, skills, rules |
+| `/omcustom:analysis` | Analyze project and auto-configure agents, skills, rules |
 | `/research` | 10-team parallel deep analysis with cross-verification |
 
 #### Development
@@ -115,11 +115,11 @@ All commands are invoked inside the Claude Code conversation.
 
 | Command | Description |
 |---------|-------------|
-| `/create-agent` | Create new agent |
-| `/update-docs` | Sync project structure and documentation |
-| `/update-external` | Update agents from external sources |
-| `/audit-agents` | Audit agent dependencies |
-| `/fix-refs` | Fix broken references |
+| `/omcustom:create-agent` | Create new agent |
+| `/omcustom:update-docs` | Sync project structure and documentation |
+| `/omcustom:update-external` | Update agents from external sources |
+| `/omcustom:audit-agents` | Audit agent dependencies |
+| `/omcustom:fix-refs` | Fix broken references |
 
 #### Memory
 
@@ -132,9 +132,9 @@ All commands are invoked inside the Claude Code conversation.
 
 | Command | Description |
 |---------|-------------|
-| `/npm-publish` | Publish package to npm registry |
-| `/npm-version` | Semantic version management |
-| `/npm-audit` | Dependency security audit |
+| `/omcustom:npm-publish` | Publish package to npm registry |
+| `/omcustom:npm-version` | Semantic version management |
+| `/omcustom:npm-audit` | Dependency security audit |
 
 #### Optimization
 
@@ -148,14 +148,14 @@ All commands are invoked inside the Claude Code conversation.
 
 | Command | Description |
 |---------|-------------|
-| `/sauron-watch` | Full R017 sync verification |
-| `/monitoring-setup` | OTel console monitoring enable/disable |
+| `/omcustom:sauron-watch` | Full R017 sync verification |
+| `/omcustom:monitoring-setup` | OTel console monitoring enable/disable |
 | `/codex-exec` | Execute Codex CLI prompt |
 | `/deep-plan` | Research-validated planning (research → plan → verify) |
 | `/structured-dev-cycle` | 6-phase structured development cycle |
-| `/lists` | Show all available commands |
-| `/status` | System status and health checks |
-| `/help` | Help information |
+| `/omcustom:lists` | Show all available commands |
+| `/omcustom:status` | System status and health checks |
+| `/omcustom:help` | Help information |
 
 ---
 

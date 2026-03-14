@@ -1,5 +1,5 @@
 ---
-name: create-agent
+name: omcustom:create-agent
 description: Create a new agent with complete structure
 scope: harness
 argument-hint: "<name> --type <type>"

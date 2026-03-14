@@ -151,31 +151,31 @@ oh-my-customcode로 구동됩니다.
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/analysis` | 프로젝트 분석 및 자동 커스터마이징 |
-| `/create-agent` | 새 에이전트 생성 |
-| `/update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/update-external` | 외부 소스에서 에이전트 업데이트 |
-| `/audit-agents` | 에이전트 의존성 감사 |
-| `/fix-refs` | 깨진 참조 수정 |
+| `/omcustom:analysis` | 프로젝트 분석 및 자동 커스터마이징 |
+| `/omcustom:create-agent` | 새 에이전트 생성 |
+| `/omcustom:update-docs` | 프로젝트 구조와 문서 동기화 |
+| `/omcustom:update-external` | 외부 소스에서 에이전트 업데이트 |
+| `/omcustom:audit-agents` | 에이전트 의존성 감사 |
+| `/omcustom:fix-refs` | 깨진 참조 수정 |
 | `/dev-review` | 코드 베스트 프랙티스 리뷰 |
 | `/dev-refactor` | 코드 리팩토링 |
 | `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
-| `/monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
-| `/npm-publish` | npm 레지스트리에 패키지 배포 |
-| `/npm-version` | 시맨틱 버전 관리 |
-| `/npm-audit` | 의존성 감사 |
+| `/omcustom:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
+| `/omcustom:npm-publish` | npm 레지스트리에 패키지 배포 |
+| `/omcustom:npm-version` | 시맨틱 버전 관리 |
+| `/omcustom:npm-audit` | 의존성 감사 |
 | `/codex-exec` | Codex CLI 프롬프트 실행 |
 | `/optimize-analyze` | 번들 및 성능 분석 |
 | `/optimize-bundle` | 번들 크기 최적화 |
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
-| `/sauron-watch` | 전체 R017 검증 |
+| `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/lists` | 모든 사용 가능한 커맨드 표시 |
-| `/status` | 시스템 상태 표시 |
-| `/help` | 도움말 표시 |
+| `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
+| `/omcustom:status` | 시스템 상태 표시 |
+| `/omcustom:help` | 도움말 표시 |
 
 ## 프로젝트 구조
 
@@ -250,15 +250,15 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 
 ```bash
 # 프로젝트 분석
-/analysis
+/omcustom:analysis
 
 # 모든 커맨드 표시
-/lists
+/omcustom:lists
 
 # 에이전트 관리
-/create-agent my-agent
-/update-docs
-/audit-agents
+/omcustom:create-agent my-agent
+/omcustom:update-docs
+/omcustom:audit-agents
 
 # 코드 리뷰
 /dev-review src/main.go
@@ -268,7 +268,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 /memory-recall authentication
 
 # 검증
-/sauron-watch
+/omcustom:sauron-watch
 ```
 
 ## 외부 의존성

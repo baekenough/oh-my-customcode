@@ -151,31 +151,31 @@ Violation = immediate correction. No exception for "small changes".
 
 | Command | Description |
 |---------|-------------|
-| `/analysis` | Analyze project and auto-configure customizations |
-| `/create-agent` | Create a new agent |
-| `/update-docs` | Sync documentation with project structure |
-| `/update-external` | Update agents from external sources |
-| `/audit-agents` | Audit agent dependencies |
-| `/fix-refs` | Fix broken references |
+| `/omcustom:analysis` | Analyze project and auto-configure customizations |
+| `/omcustom:create-agent` | Create a new agent |
+| `/omcustom:update-docs` | Sync documentation with project structure |
+| `/omcustom:update-external` | Update agents from external sources |
+| `/omcustom:audit-agents` | Audit agent dependencies |
+| `/omcustom:fix-refs` | Fix broken references |
 | `/dev-review` | Review code for best practices |
 | `/dev-refactor` | Refactor code |
 | `/memory-save` | Save session context to claude-mem |
 | `/memory-recall` | Search and recall memories |
-| `/monitoring-setup` | Enable/disable OTel console monitoring |
-| `/npm-publish` | Publish package to npm registry |
-| `/npm-version` | Manage semantic versions |
-| `/npm-audit` | Audit dependencies |
+| `/omcustom:monitoring-setup` | Enable/disable OTel console monitoring |
+| `/omcustom:npm-publish` | Publish package to npm registry |
+| `/omcustom:npm-version` | Manage semantic versions |
+| `/omcustom:npm-audit` | Audit dependencies |
 | `/codex-exec` | Execute Codex CLI prompts |
 | `/optimize-analyze` | Analyze bundle and performance |
 | `/optimize-bundle` | Optimize bundle size |
 | `/optimize-report` | Generate optimization report |
 | `/research` | 10-team parallel deep analysis and cross-verification |
 | `/deep-plan` | Research-validated planning (research → plan → verify) |
-| `/sauron-watch` | Full R017 verification |
+| `/omcustom:sauron-watch` | Full R017 verification |
 | `/structured-dev-cycle` | 6-stage structured development cycle (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/lists` | Show all available commands |
-| `/status` | Show system status |
-| `/help` | Show help information |
+| `/omcustom:lists` | Show all available commands |
+| `/omcustom:status` | Show system status |
+| `/omcustom:help` | Show help information |
 
 ## Project Structure
 
@@ -250,15 +250,15 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
 ```bash
 # Project analysis
-/analysis
+/omcustom:analysis
 
 # Show all commands
-/lists
+/omcustom:lists
 
 # Agent management
-/create-agent my-agent
-/update-docs
-/audit-agents
+/omcustom:create-agent my-agent
+/omcustom:update-docs
+/omcustom:audit-agents
 
 # Code review
 /dev-review src/main.go
@@ -268,7 +268,7 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 /memory-recall authentication
 
 # Verification
-/sauron-watch
+/omcustom:sauron-watch
 ```
 
 ## External Dependencies

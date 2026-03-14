@@ -1,7 +1,7 @@
 ---
-name: status
+name: omcustom:status
 description: Show system status and health checks
-scope: core
+scope: harness
 argument-hint: "[--verbose] [--health]"
 ---
 
