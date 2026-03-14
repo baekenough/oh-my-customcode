@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-03-14
+
+### Added
+- **Cost monitoring system**: statusline→hook cost data bridge + cost-cap-advisor hook with 4-level warnings (#339, #340)
+- **Pre-flight guards**: Automated 4-level guard system (PASS/INFO/WARN/GATE) for dev-review, dev-refactor, and research skills (#335, #336, #337)
+- **Stuck-detector unit tests**: 157 tests covering all 3 detection signals + hard-block behavior (#338)
+- **Dynamic pattern tracking**: task-outcome-recorder now infers workflow pattern (sequential/parallel/evaluator-optimizer/worker-reviewer/orchestrator) (#334)
+
+### Fixed
+- **stuck-detector bug**: Fixed `jq -n` → `jq -cn` for compact JSON output — advisory and hard-block detection were silently non-functional (#338)
+- **index.yaml**: Added missing 12-workflow-patterns guide entry (#333)
+
 ## [0.34.0] - 2026-03-14
 
 ### Added
