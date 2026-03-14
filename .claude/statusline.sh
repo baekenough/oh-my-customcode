@@ -70,6 +70,12 @@ IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd <<< "$(
 )"
 
 # ---------------------------------------------------------------------------
+# 4b. Cost & context data bridge — write to temp file for hooks
+# ---------------------------------------------------------------------------
+COST_BRIDGE_FILE="/tmp/.claude-cost-${PPID}"
+printf '%s\t%s\t%s\n' "$cost_usd" "$ctx_pct" "$(date +%s)" > "$COST_BRIDGE_FILE" 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
 # 5. Model display name + color (bash 3.2 compatible case pattern matching)
 #    Model detection (kept for internal reference, not displayed in statusline)
 # ---------------------------------------------------------------------------

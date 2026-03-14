@@ -221,6 +221,16 @@
           }
         ],
         "description": "Detect repetitive failure loops and advise recovery strategies"
+      },
+      {
+        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/cost-cap-advisor.sh"
+          }
+        ],
+        "description": "Advisory cost cap monitoring — warn when session cost approaches configurable limit"
       }
     ],
     "Stop": [
