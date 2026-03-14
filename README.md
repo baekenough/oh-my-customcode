@@ -128,7 +128,7 @@ All commands are invoked inside the Claude Code conversation.
 | `/memory-save` | Save session context to claude-mem |
 | `/memory-recall` | Search and recall memories |
 
-#### DevOps & Publishing
+#### DevOps & Package Management
 
 | Command | Description |
 |---------|-------------|
