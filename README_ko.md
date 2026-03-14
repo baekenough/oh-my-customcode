@@ -128,7 +128,7 @@ dev-lead-routing (라우팅 스킬)
 | `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
 | `/memory-recall` | 메모리 검색 및 리콜 |
 
-#### DevOps & 배포
+#### DevOps & 패키지 관리
 
 | 커맨드 | 설명 |
 |--------|------|

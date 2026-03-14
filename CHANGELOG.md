@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-03-14
+
+### Added
+- `omcustom:` namespace prefix for 14 harness/package skills (Closes #264)
+- "When NOT to Use" guard sections for dev-review, dev-refactor, research skills
+- Stopping criteria display for worker-reviewer-pipeline and research skills
+- Cost estimate display for research skill
+- Pattern Selection guide (workflow-patterns.md)
+- Step 0 Pattern Selection in task-decomposition skill
+- `pattern_used` field in task-outcome-recorder hook
+- New evaluator-optimizer skill (general-purpose EO primitive)
+- Conditional hard-block (exit 1) in stuck-detector for 5+ consecutive repetitions
+
+### Changed
+- Reclassified 4 skills from core to harness scope (analysis, lists, status, help)
+- Skills count: 70 → 71
+- context:fork count documentation updated to 9/10
+
+### Fixed
+- Sauron verification findings (guide count, context:fork count, template sync)
+
+### Closed
+- #264: omcustom: namespace prefix convention
+- #328: CI validate-docs false positive
+- #329: Documentation informational findings
+
 ## [0.33.1] - 2026-03-13
 
 ### Added
