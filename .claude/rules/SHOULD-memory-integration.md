@@ -157,7 +157,7 @@ User signals session end
        3. Return formatted summary to orchestrator
   → Orchestrator performs MCP saves directly:
        1. claude-mem save (if available via ToolSearch)
-       2. episodic-memory verification (if available via ToolSearch)
+       (episodic-memory auto-indexes after session — no action needed)
   → Orchestrator confirms to user
 ```
 
@@ -170,7 +170,7 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 | Session summary collection | sys-memory-keeper | Domain expertise in memory formatting |
 | Native auto-memory (MEMORY.md) | sys-memory-keeper | Has Write access to memory directory |
 | claude-mem MCP save | Orchestrator | MCP tools only available at orchestrator level |
-| episodic-memory MCP verification | Orchestrator | MCP tools only available at orchestrator level |
+| episodic-memory | Automatic | Conversations are auto-indexed after session ends — no manual action needed |
 
 ### Dual-System Save
 
@@ -178,7 +178,7 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 |--------|-------|------|--------|----------|
 | Native auto-memory | sys-memory-keeper | Write | Update MEMORY.md with session learnings | Yes |
 | claude-mem | Orchestrator | `mcp__plugin_claude-mem_mcp-search__save_memory` | Save session summary with project, tasks, decisions | No (best-effort) |
-| episodic-memory | Orchestrator | `mcp__plugin_episodic-memory_episodic-memory__search` | Verify session is indexed for future retrieval | No (best-effort) |
+| episodic-memory | Automatic | (auto-indexed) | No action needed — conversations are indexed automatically after session ends | N/A |
 
 ### Session-End Self-Check (MANDATORY)
 
@@ -194,12 +194,10 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 ║     YES → Continue (even if it failed)                           ║
 ║     NO  → ToolSearch + save now                                  ║
 ║                                                                   ║
-║  3. Did I attempt episodic-memory verification?                  ║
-║     YES → Continue (even if it failed)                           ║
-║     NO  → ToolSearch + verify now  ← THIS IS THE COMMONLY       ║
-║           SKIPPED STEP. DO NOT SKIP IT.                          ║
+║  Note: episodic-memory auto-indexes conversations after session  ║
+║  ends. No manual action needed — do NOT search as "verification" ║
 ║                                                                   ║
-║  ALL THREE must be attempted before confirming to user.          ║
+║  BOTH steps must be completed before confirming to user.         ║
 ║  "Attempted" means called the tool — failure is OK, skipping     ║
 ║  is NOT.                                                          ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -209,5 +207,4 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 
 - MCP saves are **non-blocking**: memory failure MUST NOT prevent session from ending
 - If claude-mem unavailable: skip, log warning
-- If episodic-memory unavailable: skip, log warning
-- If both unavailable: warn user, proceed with session end
+- episodic-memory: no action needed (auto-indexed after session)
