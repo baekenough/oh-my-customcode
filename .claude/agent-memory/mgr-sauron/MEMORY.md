@@ -101,6 +101,18 @@ The bash script in R017 that checks skill refs (`grep "^skills:" -A 10`) picks u
 - This is a KNOWN pre-existing issue — ontology is advisory/RAG-only, NOT blocking functionality
 - DO NOT treat ontology stale state as a verification failure; treat as issue for future ontology update PR
 
+### v0.35.0 Release Verification (2026-03-14)
+- Full R017 sauron:watch passed (1 non-blocking issue) for release/v0.35.0 pre-push gate
+- All 44 agents, 71 skills, 25 guides, 19 rules, 1 hook, 4 contexts: counts verified and match manifest
+- v0.35.0 changes: cost-cap-advisor.sh (new PostToolUse hook), stuck-detector.sh + task-outcome-recorder.sh updates, dev-review/dev-refactor/research SKILL.md updates (pre-flight guards + Anthropic workflow patterns)
+- All template files in sync: hooks.json, statusline.sh, cost-cap-advisor.sh, stuck-detector.sh, task-outcome-recorder.sh, dev-review/dev-refactor/research SKILL.md
+- Hook scripts: 10 referenced in hooks.json (all exist on disk), 1 orphaned (session-compliance-report.sh)
+- session-compliance-report.sh: ORPHANED SCRIPT — exists in .claude/hooks/scripts/ but NOT in hooks.json (removed in commit 5e483f0 as part of omcustom: namespace cleanup) and NOT in templates. Non-blocking, pre-existing since v0.34.0.
+- stage-blocker.sh uses exit 2 (hard block for structured-dev-cycle Write/Edit guard) — INTENTIONAL, same as stuck-detector exit 1
+- context:fork count: 9/10 cap (unchanged)
+- scope distribution: core 57, harness 10, package 4 (71 total)
+- hooks.json has 7 PreToolUse, 1 SessionStart, 1 SubagentStart, 1 SubagentStop, 11 PostToolUse, 2 Stop entries
+
 ### deer-flow P0 Soul System (added 2026-03-12, feature/deer-flow-p0)
 - Soul files: `.claude/agents/souls/{name}.soul.md` with frontmatter `agent:` + `version:`
 - Activation: agent frontmatter `soul: true` + routing skill Step 5 reads soul file

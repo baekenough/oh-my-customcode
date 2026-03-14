@@ -165,10 +165,10 @@ Use `context: fork` for skills that orchestrate multi-agent workflows. Cap at **
 | Multi-agent coordination patterns | Single-agent reference skills |
 | Task decomposition/planning | External tool integrations |
 
-Current skills with `context: fork` (9/10 cap):
+Current skills with `context: fork` (8/10 cap):
 - secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing
 - dag-orchestration, task-decomposition, worker-reviewer-pipeline
-- pipeline-guards, deep-plan
+- pipeline-guards
 
 ## Naming
 

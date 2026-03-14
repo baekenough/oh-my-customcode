@@ -3,13 +3,14 @@ name: research
 description: 10-team parallel deep analysis with cross-verification for any topic, repository, or technology. Use when user invokes /research or asks for comprehensive research.
 scope: core
 user-invocable: true
+teams-compatible: true
 ---
 
 # Research Skill
 
 Orchestrates 10 parallel research teams for comprehensive deep analysis of any topic, GitHub repository, or technology. Produces a structured report with ADOPT/ADAPT/AVOID taxonomy.
 
-**Orchestrator-only** — only the main conversation uses this skill (R010). Teams execute as subagents.
+**Teams-compatible** — works both from the main conversation (R010) and inside Agent Teams members. When used in Teams, the member directly executes the research workflow without Skill tool invocation.
 
 ## Usage
 
@@ -384,6 +385,52 @@ Progress:
 ├── T5-T8: → Running
 └── T9-T10: ○ Pending
 ```
+
+## Teams Mode
+
+When running inside an Agent Teams member (not via Skill tool), the research workflow operates identically but with these adaptations:
+
+### How It Works
+
+The orchestrator reads this SKILL.md and includes the research instructions directly in the Teams member's prompt. The member then:
+
+1. Executes Phase 1-4 autonomously using its own Agent tool access
+2. Spawns research teams as sub-agents (Teams members CAN spawn sub-agents)
+3. Delivers results via `SendMessage` to the team lead instead of returning to orchestrator
+
+### Prompt Embedding Pattern
+
+```
+# When spawning a Teams member for research:
+Agent(
+  name: "researcher-1",
+  team_name: "my-team",
+  prompt: """
+  You are a research agent. Follow the research skill workflow below:
+  {contents of research/SKILL.md}
+
+  Topic: {user's research topic}
+  Deliver results via SendMessage to team lead when complete.
+  """
+)
+```
+
+### Differences from Orchestrator Mode
+
+| Aspect | Orchestrator Mode | Teams Mode |
+|--------|------------------|------------|
+| Invocation | `Skill(research)` | Prompt embedding |
+| Result delivery | Return to main conversation | `SendMessage` to team lead |
+| Artifact persistence | Teams member writes artifact | Same |
+| GitHub issue creation | Orchestrator handles | Teams member handles directly |
+| Phase management | Orchestrator manages phases | Member manages phases autonomously |
+
+### Constraints
+
+- Each Teams member running research still respects R009 (max 4 concurrent sub-agents)
+- Batching order remains: T1-T4 → T5-T8 → T9-T10
+- Cost is identical to orchestrator mode (~$8-15 per research invocation)
+- Multiple Teams members running research simultaneously will multiply costs proportionally
 
 ## Integration
 
