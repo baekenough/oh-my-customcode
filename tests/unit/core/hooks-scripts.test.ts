@@ -794,6 +794,7 @@ describe('Script file validation', () => {
     'stop-console-audit.sh',
     'agent-teams-advisor.sh',
     'session-env-check.sh',
+    'stuck-detector.sh',
   ] as const;
 
   it('all expected scripts should exist in the templates directory', async () => {
