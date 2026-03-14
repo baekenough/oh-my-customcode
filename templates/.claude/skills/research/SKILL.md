@@ -31,9 +31,112 @@ Orchestrates 10 parallel research teams for comprehensive deep analysis of any t
 
 **Pre-execution check**: If the query can be answered with < 3 sources, skip 10-team research.
 
+## Pre-flight Guards
+
+Before executing the 10-team research workflow, the agent MUST run these checks. Research is a high-cost operation (~$8-15) — these guards prevent wasteful execution.
+
+### Guard Levels
+
+| Level | Meaning | Action |
+|-------|---------|--------|
+| PASS | No issues detected | Proceed with research |
+| INFO | Minor suggestion | Log note, proceed |
+| WARN | Potentially wasteful | Show warning with cost estimate, ask confirmation |
+| GATE | Wrong tool — use simpler alternative | Block execution, suggest alternative |
+
+### Guard 1: Query Complexity Assessment
+
+**Level**: GATE or PASS
+
+**Check**: Assess if the query requires multi-team research
+
+```
+# Simple factual questions → GATE
+indicators_simple:
+  - Query is < 10 words
+  - Query asks "what is", "how to", "when was" (factual)
+  - Query has a single definitive answer
+  - Can be answered from a single documentation source
+
+# Complex research questions → PASS
+indicators_complex:
+  - Query involves comparison of 3+ alternatives
+  - Query requires analysis across multiple dimensions
+  - Query mentions "compare", "evaluate", "analyze", "research"
+  - Query references a repository or ecosystem for deep analysis
+```
+
+**Action (GATE)**: `[Pre-flight] GATE: Query appears to be a simple factual question. Use direct answer or single WebSearch instead. 10-team research (~$8-15) would be wasteful. Override with /research --force if intended.`
+
+### Guard 2: Single-File Review Detection
+
+**Level**: GATE
+
+**Check**: If the query references a single file for review
+
+```
+# Detection
+- Query mentions a specific file path (e.g., src/main.go)
+- Query asks to "review" or "analyze" a single file
+- No broader context requested
+```
+
+**Action**: `[Pre-flight] GATE: For single-file review, use /dev-review {file} instead. Research is for multi-source analysis.`
+
+### Guard 3: Known Solution Detection
+
+**Level**: INFO
+
+**Check**: If the query is about implementing a known solution
+
+```
+# Detection
+keywords: implement, build, create, add feature, 구현, 만들어
+# AND the solution approach is well-known (not requiring research)
+```
+
+**Action**: `[Pre-flight] INFO: If the implementation approach is already known, consider /structured-dev-cycle instead of research. Proceeding with research.`
+
+### Guard 4: Context Budget Check
+
+**Level**: WARN
+
+**Check**: Estimate context impact of 10-team research
+
+```bash
+# Check current context usage from statusline data
+CONTEXT_FILE="/tmp/.claude-context-$PPID"
+if [ -f "$CONTEXT_FILE" ]; then
+  context_pct=$(cat "$CONTEXT_FILE")
+  if [ "$context_pct" -gt 40 ]; then
+    # WARN — research will consume significant additional context
+  fi
+fi
+```
+
+**Action**: `[Pre-flight] WARN: Context usage at {pct}%. 10-team research typically adds 30-40% context. Consider /compact before proceeding, or results may be truncated.`
+
+### Display Format
+
+```
+[Pre-flight] research
+├── Query complexity: PASS — multi-dimensional comparison detected
+├── Single-file review: PASS
+├── Known solution: PASS
+└── Context budget: WARN — context at 45%, research adds ~35%
+Result: PROCEED WITH CAUTION (0 GATE, 1 WARN, 0 INFO)
+Cost estimate: ~$8-15 for 10-team parallel research
+```
+
+If any GATE: block and suggest alternative. User can override with `--force`.
+If any WARN: show warning with cost context, ask user to confirm.
+If only PASS/INFO: proceed automatically.
+
 ## Architecture — 4 Phases
 
 ### Phase 1: Parallel Research (10 teams, batched per R009)
+
+**Step 0**: Pre-flight guards pass (see Pre-flight Guards section)
 
 Teams operate in breadth/depth pairs across 5 domains:
 
