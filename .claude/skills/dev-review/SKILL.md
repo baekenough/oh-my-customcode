@@ -9,6 +9,17 @@ argument-hint: "<file-or-directory> [--lang <language>]"
 
 Review code for best practices using language-specific expert agents.
 
+## When NOT to Use
+
+| Scenario | Better Alternative |
+|----------|--------------------|
+| Formatting/style issues only | Run linter or formatter directly (`prettier`, `gofmt`, `black`) |
+| Single syntax error | IDE/LSP diagnostics |
+| Auto-generated code | Skip — generated code follows its own conventions |
+| Pre-commit quick check | Git hooks with linter integration |
+
+**Pre-execution check**: If the issue is purely formatting, run the appropriate formatter first.
+
 ## Parameters
 
 | Name | Type | Required | Description |

@@ -20,6 +20,19 @@ Decomposition is **recommended** when any of these thresholds are met:
 | Domains involved | > 2 domains | Requires multiple specialists |
 | Agent types needed | > 2 types | Cross-specialty coordination |
 
+### Step 0: Pattern Selection
+
+Before decomposing, select the appropriate workflow pattern:
+
+| Pattern | When to Use | Primitive |
+|---------|-------------|-----------|
+| Sequential | Steps must execute in order, each depends on previous | dag-orchestration (linear) |
+| Parallel | Independent subtasks with no shared state | Agent tool (R009) or Agent Teams (R018) |
+| Evaluator-Optimizer | Quality-critical output needing iterative refinement | worker-reviewer-pipeline |
+| Orchestrator | Complex multi-step with dynamic routing | Routing skills (secretary/dev-lead/de-lead/qa-lead) |
+
+**Decision**: If task has independent subtasks → Parallel. If quality-critical → add EO review cycle. If multi-step with dependencies → Sequential/Orchestrator.
+
 ## Decomposition Process
 
 ```
