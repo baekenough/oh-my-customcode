@@ -20,6 +20,70 @@ Refactor code for better structure, naming, and patterns using language-specific
 
 **Pre-execution check**: Verify test coverage exists for the refactoring target. Refactoring without tests risks silent regressions.
 
+## Pre-flight Guards
+
+Before executing the refactoring workflow, the agent MUST run these checks:
+
+### Guard 1: Test Coverage Check
+**Level**: WARN
+**Check**: Verify test files exist for the refactoring target
+```bash
+# For target file src/module/foo.ts, check for:
+# - src/module/foo.test.ts
+# - src/module/foo.spec.ts
+# - tests/module/foo.test.ts
+# - test/module/foo.test.ts
+# - __tests__/module/foo.test.ts
+# For Go: foo_test.go in same package
+# For Python: test_foo.py or foo_test.py
+```
+**Action**: `[Pre-flight] WARN: No test file found for {target}. Refactoring without tests risks silent regressions. Consider writing tests first (/structured-dev-cycle).`
+
+### Guard 2: Rename-Only Detection
+**Level**: INFO
+**Check**: If the user request is purely about renaming (no structural change)
+```
+# Keyword detection in user request
+keywords: rename, 이름 변경, 이름 바꿔, rename variable, rename function
+# AND no structural keywords
+structural_keywords: extract, split, merge, restructure, reorganize, decompose
+```
+**Action**: `[Pre-flight] INFO: For rename-only refactoring, IDE rename (F2) or sed is faster and safer (handles all references). Proceeding with full refactoring.`
+
+### Guard 3: Formatting-Only Request Detection
+**Level**: INFO
+**Check**: If the request is about formatting or style cleanup
+```
+# Keyword detection
+keywords: format, formatting, indent, indentation, 포맷, 스타일, whitespace, spacing
+```
+**Action**: `[Pre-flight] INFO: For formatting cleanup, run the appropriate formatter (prettier, gofmt, black, rustfmt). Proceeding with full refactoring.`
+
+### Guard 4: File Move Detection
+**Level**: INFO
+**Check**: If the request is about moving files between directories
+```
+# Keyword detection
+keywords: move file, move to, 파일 이동, 옮겨, relocate, reorganize files
+# AND no code-level changes mentioned
+```
+**Action**: `[Pre-flight] INFO: For file moves without code changes, use git mv via mgr-gitnerd to preserve git history.`
+
+### Display Format
+
+```
+[Pre-flight] dev-refactor
+├── Test coverage: WARN — no test file for src/utils.ts
+├── Rename-only: PASS
+├── Formatting-only: PASS
+└── File move: PASS
+Result: PROCEED WITH CAUTION (0 GATE, 1 WARN, 0 INFO)
+```
+
+If any GATE: block and suggest prerequisite.
+If any WARN: show warning, ask user to confirm.
+If only PASS/INFO: proceed automatically.
+
 ## Parameters
 
 | Name | Type | Required | Description |
@@ -39,6 +103,7 @@ Refactor code for better structure, naming, and patterns using language-specific
 ## Workflow
 
 ```
+0. Run pre-flight guards (MUST complete before proceeding)
 1. Detect language (or use --lang)
 2. Select appropriate expert agent
 3. Load language-specific skill
