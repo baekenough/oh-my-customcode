@@ -149,3 +149,61 @@ jobs:
           fi
 
           echo "Version sync check passed: $PKG_VERSION"
+
+  template-sync:
+    name: Template Sync
+    runs-on: [self-hosted, nuc13]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Verify .claude/ and templates/.claude/ are in sync
+        run: |
+          errors=0
+
+          # Skill count sync
+          src_skills=$(find .claude/skills -name "SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
+          tpl_skills=$(find templates/.claude/skills -name "SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$src_skills" != "$tpl_skills" ]; then
+            echo "::error::Skill count mismatch: .claude/skills=$src_skills, templates/.claude/skills=$tpl_skills"
+            # List missing skills
+            diff <(find .claude/skills -name "SKILL.md" -exec dirname {} \; | xargs -I{} basename {} | sort) \
+                 <(find templates/.claude/skills -name "SKILL.md" -exec dirname {} \; | xargs -I{} basename {} | sort) \
+                 | grep "^[<>]" | head -10
+            errors=$((errors + 1))
+          fi
+
+          # Hook script count sync
+          src_hooks=$(ls .claude/hooks/scripts/*.sh 2>/dev/null | wc -l | tr -d ' ')
+          tpl_hooks=$(ls templates/.claude/hooks/scripts/*.sh 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$src_hooks" != "$tpl_hooks" ]; then
+            echo "::error::Hook script count mismatch: .claude/hooks/scripts=$src_hooks, templates/.claude/hooks/scripts=$tpl_hooks"
+            errors=$((errors + 1))
+          fi
+
+          # hooks.json sync (compare entry count)
+          src_hook_entries=$(cat .claude/hooks/hooks.json | grep -c '"matcher"' 2>/dev/null || echo 0)
+          tpl_hook_entries=$(cat templates/.claude/hooks/hooks.json | grep -c '"matcher"' 2>/dev/null || echo 0)
+          if [ "$src_hook_entries" != "$tpl_hook_entries" ]; then
+            echo "::error::hooks.json matcher count mismatch: .claude=$src_hook_entries, templates=$tpl_hook_entries"
+            errors=$((errors + 1))
+          fi
+
+          # Schema directory sync
+          if [ -d ".claude/schemas" ]; then
+            src_schemas=$(ls .claude/schemas/*.json 2>/dev/null | wc -l | tr -d ' ')
+            tpl_schemas=$(ls templates/.claude/schemas/*.json 2>/dev/null | wc -l | tr -d ' ')
+            if [ "$src_schemas" != "$tpl_schemas" ]; then
+              echo "::error::Schema count mismatch: .claude/schemas=$src_schemas, templates/.claude/schemas=$tpl_schemas"
+              errors=$((errors + 1))
+            fi
+          fi
+
+          if [ "$errors" -gt 0 ]; then
+            echo ""
+            echo "Fix: copy missing files from .claude/ to templates/.claude/"
+            echo "Example: cp .claude/skills/NEW_SKILL/SKILL.md templates/.claude/skills/NEW_SKILL/SKILL.md"
+            exit 1
+          fi
+
+          echo "Template sync verified: $src_skills skills, $src_hooks hooks, $src_hook_entries hook matchers"
