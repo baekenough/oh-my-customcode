@@ -4,7 +4,7 @@
 
 # oh-my-customcode
 
-> **당신만의 코딩 에이전트 스택, 당신만의 방식으로**
+> **AI 에이전트 스택. 설정이 아닌 컴파일.**
 
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,293 +13,238 @@
 
 **[English Documentation](./README.md)**
 
-**에이전트, 스킬, 규칙으로 Claude Code를 커스터마이징하는 가장 쉬운 방법.**
-
-oh-my-zsh가 쉘 커스터마이징을 혁신했듯이, oh-my-customcode는 코딩 에이전트 워크플로우를 간단하고, 강력하고, 재미있게 개인화합니다.
-
-## 왜 특별한가
-
-| 특징 | 설명 |
-|------|------|
-| **바로 사용 가능** | 44개 에이전트, 71개 스킬, 25개 가이드, 19개 규칙, 1개 훅, 4개 컨텍스트, 온톨로지 그래프 - 즉시 사용 가능 |
-| **서브 에이전트 모델** | 전문화된 역할의 계층적 에이전트 오케스트레이션 지원 |
-| **초간단 커스터마이징** | 폴더 + 마크다운 파일 생성 = 새 에이전트 또는 스킬 완성 |
-| **자유로운 조합** | 기본 제공 컴포넌트와 직접 만든 것을 자유롭게 섞어 사용 |
-| **비파괴적** | 커스터마이징은 기본값과 함께 존재, 절대 덮어쓰지 않음 |
-| **동적 에이전트 생성** | 적합한 전문가가 없으면? 시스템이 관련 스킬과 가이드를 연결하여 즉석에서 생성 |
-
-## 빠른 시작
+44개 에이전트. 74개 스킬. 20개 규칙. 명령어 하나.
 
 ```bash
-# 전역 설치
-npm install -g oh-my-customcode
-
-# 프로젝트에서 초기화
-cd your-project
-omcustom init
+npm install -g oh-my-customcode && cd your-project && omcustom init
 ```
-
-끝. 이제 완벽하게 구성된 에이전트 작업 환경을 갖게 되었습니다.
 
 ---
 
-## 커스터마이징이 핵심
+## 철학
 
-oh-my-customcode의 존재 이유입니다. **코딩 워크플로우를 당신 것으로 만드세요.**
+oh-my-customcode는 두 가지 아이디어 위에 세워졌습니다.
 
-### 자연어로 말하면 됩니다
+**1. 에이전트 시스템은 설정하는 게 아니라 컴파일한다.**
 
-파일을 직접 편집할 필요 없습니다. 원하는 것을 자연어로 말하면 라우팅 스킬과 매니저 에이전트 조합이 적절한 서브 에이전트로 위임합니다:
+| 컴파일 개념 | oh-my-customcode |
+|------------|-----------------|
+| 소스코드 | `.claude/skills/` — 재사용 가능한 지식과 워크플로우 |
+| 빌드 결과물 | `.claude/agents/` — 스킬을 조합한 실행 가능한 전문가 |
+| 컴파일러 | `mgr-sauron` (R017) — 구조 검증과 정합성 보장 |
+| 스펙 | `.claude/rules/` — 제약 조건과 빌드 규칙 |
+| 링커 | Routing skills — 에이전트를 작업에 연결 |
+| 표준 라이브러리 | `guides/` — 공유 레퍼런스 문서 |
+
+스킬이 소스이고, 에이전트가 빌드 결과물이며, Sauron이 빌드를 검증합니다. 이 분리 덕분에 스킬은 에이전트와 독립적으로 진화하고, 에이전트는 갱신된 스킬로 언제든 재컴파일할 수 있습니다.
+
+**2. 안 되면 되게 한다.**
+
+작업에 맞는 전문가가 없을 때, oh-my-customcode는 실패하지 않습니다. 만듭니다.
 
 ```
-"마이그레이션 리뷰 전문 에이전트를 만들어줘"
-"SQL 최적화 스킬을 추가해줘"
-"코드 리뷰를 더 엄격하게 해줘"
-"배포 전 리뷰 파이프라인을 만들어줘"
+사용자: "이 Terraform 모듈을 리뷰해줘"
+  → 라우팅: terraform 전문가 없음
+  → mgr-creator가 탐색: infra-aws-expert 스킬 + docker-best-practices 가이드
+  → 생성: infra-terraform-expert.md
+  → 즉시 리뷰 실행
+  → 에이전트는 이후 재사용을 위해 영속 저장
 ```
 
-**동작 흐름:**
+이것은 폴백이 아닙니다. 설계입니다. 시스템은 부족한 전문성을 빌드 문제로 취급합니다 — 적합한 스킬을 찾고, 새 에이전트를 컴파일하고, 실행합니다.
+
+---
+
+## 동작 방식
+
+### 오케스트레이션
+
+메인 대화가 싱글톤 오케스트레이터입니다 (R010). 파일을 직접 작성하지 않습니다. 모든 작업은 라우팅 스킬을 통해 전문 에이전트에 위임됩니다.
 
 ```
 사용자 (자연어)
-  → secretary-routing (라우팅 스킬)
-    → mgr-creator:sonnet   — 에이전트 생성, 등록, 검증
-    → mgr-updater:sonnet   — 문서 동기화
-    → mgr-supplier:haiku   — 의존성 확인
+  → 라우팅 스킬 (의도 감지, 신뢰도 산출)
+    → 전문 에이전트 (격리 실행)
+      → 오케스트레이터에 결과 반환
+        → 사용자에게 응답
 ```
 
-라우팅 체인이 요청을 분석하고 적절한 스킬/매니저 에이전트로 매핑하면, 선택된 서브 에이전트가 실행을 자동 처리합니다.
+4개의 라우팅 스킬이 전체 도메인을 커버합니다:
 
-### 서브 에이전트 모델
+| 라우팅 스킬 | 라우팅 대상 |
+|------------|-----------|
+| secretary-routing | 매니저 에이전트 (mgr-*), 시스템 에이전트 (sys-*) |
+| dev-lead-routing | 언어, 백엔드, 프론트엔드, 툴링, DB, 인프라, 아키텍처 에이전트 |
+| de-lead-routing | 데이터 엔지니어링 에이전트 (de-*) |
+| qa-lead-routing | QA 팀 (qa-planner, qa-writer, qa-engineer) |
 
-각 서브 에이전트는 작업 유형에 최적화된 모델로 실행됩니다:
+### 모델 선택
 
-| 모델 | 용도 | 예시 |
-|------|------|------|
-| `opus` | 복잡한 추론, 아키텍처 설계 | 코드 리뷰, 설계 분석 |
-| `sonnet` | 일반 작업 (기본값) | 에이전트 생성, 코드 구현 |
-| `haiku` | 빠른 단순 작업 | 파일 검색, 검증 |
+각 에이전트는 작업에 최적화된 모델로 실행됩니다:
 
-Claude Code가 적절한 모델을 선택하고, 독립적인 작업은 병렬 실행합니다 (최대 4개 동시):
+| 모델 | 사용 시점 | 예시 |
+|------|---------|------|
+| `opus` | 복잡한 추론, 아키텍처 | 설계 리뷰, 리서치 종합 |
+| `sonnet` | 구현, 일반 작업 | 코드 생성, 에이전트 생성 |
+| `haiku` | 빠른 검증, 검색 | 파일 검색, 카운트 확인 |
+
+Reasoning sandwich 패턴이 이를 공식화합니다: opus로 사전 분석, sonnet으로 구현, haiku로 사후 검증.
+
+### 병렬 실행
+
+독립 작업은 병렬로 실행됩니다 (R009). 메시지당 최대 4개 동시 에이전트:
 
 ```
-secretary-routing (라우팅 스킬)
-  ├── mgr-creator:sonnet       — 에이전트 스캐폴딩
-  └── mgr-supplier:haiku       — 의존성 확인
-
-dev-lead-routing (라우팅 스킬)
-  ├── lang-golang-expert:sonnet   — Go 구현
-  ├── lang-python-expert:sonnet   — Python 구현
-  └── qa-engineer:sonnet   — 테스트 생성
+Agent(lang-golang-expert):sonnet  ┐
+Agent(lang-python-expert):sonnet  ├─ 하나의 메시지에서 동시 스폰
+Agent(qa-engineer):sonnet         │
+Agent(arch-documenter):haiku      ┘
 ```
 
-### 슬래시 커맨드
+---
+
+## 에이전트 (44개)
+
+| 카테고리 | 수 | 에이전트 |
+|---------|-----|---------|
+| 언어 | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java21 |
+| 백엔드 | 6 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs, be-django |
+| 프론트엔드 | 4 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter |
+| 데이터 엔지니어링 | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
+| 데이터베이스 | 3 | db-supabase, db-postgres, db-redis |
+| 툴링 | 3 | tool-npm, tool-optimizer, tool-bun |
+| 아키텍처 | 2 | arch-documenter, arch-speckit |
+| 인프라 | 2 | infra-docker, infra-aws |
+| QA | 3 | qa-planner, qa-writer, qa-engineer |
+| 보안 | 1 | sec-codeql |
+| 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
+| 시스템 | 2 | sys-memory-keeper, sys-naggy |
+
+각 에이전트는 YAML 프론트매터에 도구, 모델, 메모리 스코프, 한계를 선언합니다. 에이전트 유형별 도구 예산이 정확도를 위해 강제됩니다.
+
+---
+
+## 스킬 (74개)
+
+| 카테고리 | 수 | 포함 |
+|---------|-----|------|
+| 베스트 프랙티스 | 22 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow 외 |
+| 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
+| 워크플로우 | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich 외 |
+| 개발 | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
+| 운영 | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes 외 |
+| 메모리 | 3 | memory-save, memory-recall, memory-management |
+| 패키지 | 3 | npm-publish, npm-version, npm-audit |
+| 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
+| 보안 | 2 | cve-triage, jinja2-prompts |
+| 기타 | 8 | codex-exec, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
+
+스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
+
+---
+
+## 커맨드
 
 모든 커맨드는 Claude Code 대화 내에서 호출합니다.
 
-#### 분석 & 리서치
+### 개발
 
-| 커맨드 | 설명 |
-|--------|------|
-| `/omcustom:analysis` | 프로젝트 분석 및 에이전트, 스킬, 규칙 자동 구성 |
-| `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
-
-#### 개발
-
-| 커맨드 | 설명 |
+| 커맨드 | 기능 |
 |--------|------|
 | `/dev-review` | 베스트 프랙티스 기반 코드 리뷰 |
-| `/dev-refactor` | 구조 개선을 위한 코드 리팩토링 |
+| `/dev-refactor` | 구조와 패턴 개선 리팩토링 |
+| `/structured-dev-cycle` | 6단계 개발: plan → verify → implement → verify → compound → done |
+| `/deep-plan` | 연구 검증 기반 계획 수립 |
+| `/research` | 10-team 병렬 분석 및 교차 검증 |
 
-#### 에이전트 관리
+### 에이전트 관리
 
-| 커맨드 | 설명 |
+| 커맨드 | 기능 |
 |--------|------|
+| `/omcustom:analysis` | 프로젝트 분석, 에이전트·스킬 자동 구성 |
 | `/omcustom:create-agent` | 새 에이전트 생성 |
-| `/omcustom:update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/omcustom:update-external` | 외부 소스에서 에이전트 업데이트 |
+| `/omcustom:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/omcustom:audit-agents` | 에이전트 의존성 감사 |
-| `/omcustom:fix-refs` | 깨진 참조 수정 |
+| `/omcustom:update-docs` | 프로젝트 구조와 문서 동기화 |
+| `/omcustom:sauron-watch` | 전체 구조 검증 (5+3 라운드) |
 
-#### 메모리
+### 패키지 & 릴리즈
 
-| 커맨드 | 설명 |
+| 커맨드 | 기능 |
 |--------|------|
-| `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
-| `/memory-recall` | 메모리 검색 및 리콜 |
-
-#### DevOps & 패키지 관리
-
-| 커맨드 | 설명 |
-|--------|------|
-| `/omcustom:npm-publish` | npm 레지스트리에 패키지 배포 |
+| `/omcustom:npm-publish` | npm 배포 |
 | `/omcustom:npm-version` | 시맨틱 버전 관리 |
 | `/omcustom:npm-audit` | 의존성 보안 감사 |
+| `/omcustom:release-notes` | git 히스토리 기반 릴리즈 노트 생성 |
 
-#### 최적화
+### 메모리 & 시스템
 
-| 커맨드 | 설명 |
+| 커맨드 | 기능 |
 |--------|------|
-| `/optimize-analyze` | 번들 및 성능 분석 |
-| `/optimize-bundle` | 번들 크기 최적화 |
-| `/optimize-report` | 최적화 리포트 생성 |
-
-#### 검증 & 시스템
-
-| 커맨드 | 설명 |
-|--------|------|
-| `/omcustom:sauron-watch` | 전체 R017 동기화 검증 |
-| `/omcustom:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
-| `/codex-exec` | Codex CLI 프롬프트 실행 |
-| `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
-| `/structured-dev-cycle` | 6단계 구조적 개발 사이클 |
-| `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
-| `/omcustom:status` | 시스템 상태 및 헬스 체크 |
-| `/omcustom:help` | 도움말 정보 |
+| `/memory-save` | 세션 컨텍스트 저장 |
+| `/memory-recall` | 메모리 검색 및 리콜 |
+| `/omcustom:monitoring-setup` | OTel 모니터링 토글 |
+| `/omcustom:lists` | 전체 커맨드 표시 |
+| `/omcustom:status` | 시스템 상태 확인 |
 
 ---
 
-## 기본 제공 항목
+## 규칙 (20개)
 
-### 에이전트 (44개)
+| 우선순위 | 수 | 목적 |
+|---------|-----|------|
+| **MUST** | 13 | 안전, 권한, 에이전트 설계, 식별, 오케스트레이션, 검증, 완료 검증 |
+| **SHOULD** | 6 | 상호작용, 오류 처리, 메모리, HUD, ecomode, ontology 라우팅 |
+| **MAY** | 1 | 최적화 |
 
-| 카테고리 | 수 | 에이전트 |
-|----------|-----|----------|
-| **매니저** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| **시스템** | 2 | sys-memory-keeper, sys-naggy |
-| **언어** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| **프론트엔드** | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
-| **백엔드** | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
-| **툴링** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| **데이터 엔지니어링** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
-| **데이터베이스** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
-| **아키텍처** | 2 | arch-documenter, arch-speckit-agent |
-| **인프라** | 2 | infra-docker-expert, infra-aws-expert |
-| **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **보안** | 1 | sec-codeql-expert |
-| **합계** | **44** | |
-
-### 스킬 (71개)
-
-| 카테고리 | 수 | 스킬 |
-|----------|-----|------|
-| **라우팅** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
-| **베스트 프랙티스** | 21 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, django-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, flutter-best-practices, java21-best-practices |
-| **개발** | 6 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines, analysis |
-| **데이터 엔지니어링** | 2 | spark-best-practices, pipeline-architecture-patterns |
-| **최적화** | 3 | optimize-analyze, optimize-bundle, optimize-report |
-| **메모리** | 3 | memory-save, memory-recall, memory-management |
-| **패키지 관리** | 3 | npm-publish, npm-version, npm-audit |
-| **운영** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
-| **유틸리티** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
-| **품질 & 워크플로우** | 11 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pr-auto-improve, pipeline-guards, deep-plan, evaluator-optimizer |
-| **보안** | 2 | cve-triage, jinja2-prompts |
-| **리서치** | 1 | research |
-| **배포** | 2 | vercel-deploy, codex-exec |
-| **외부 연동** | 1 | skills-sh-search |
-
-스킬은 3-tier scope 시스템(`core`, `harness`, `package`)을 사용하여 `omcustom init` 시 배포 동작을 제어합니다. Core와 harness 스킬은 기본 설치되며, package scope 스킬(예: npm-publish)은 제외됩니다.
-
-### 가이드 (25개)
-
-종합 참조 문서:
-- 에이전트 생성 및 관리
-- 스킬 개발
-- 파이프라인 워크플로우
-- 서브 에이전트 오케스트레이션
-- 베스트 프랙티스 및 패턴
-- 데이터 엔지니어링 워크플로우
-- 데이터베이스 최적화
-
-### 규칙 (19개)
-
-| 우선순위 | 개수 | 목적 |
-|----------|------|------|
-| MUST | 12 | 안전, 권한, 에이전트 설계 (강제) |
-| SHOULD | 6 | 상호작용, 에러 처리 (권장) |
-| MAY | 1 | 최적화 가이드라인 (선택) |
-
-### 훅 (1개)
-
-에이전트 라이프사이클 이벤트(PreToolUse, PostToolUse 등)에 대한 이벤트 기반 자동화.
-
-### 컨텍스트 (4개)
-
-에이전트 간 지식 공유 및 모드 설정을 위한 공유 컨텍스트 파일.
-
-### 패키지
-
-#### [ontology-rag](packages/ontology-rag/)
-
-에이전트 컨텍스트를 지능적으로 로딩하는 Ontology+RAG 엔진.
-
-| 기능 | 설명 |
-|------|------|
-| **온톨로지 로딩** | YAML 온톨로지 파싱 (에이전트, 스킬, 규칙) |
-| **그래프 순회** | BFS 및 PageRank 기반 의존성 그래프 탐색 |
-| **시맨틱 라우팅** | LLM 기반 에이전트 선택 (키워드 폴백 포함) |
-| **하이브리드 검색** | 4-시그널 랭킹 (키워드, 그래프, 커뮤니티, 중요도) |
-| **토큰 예산 관리** | 적응형 예산 관리 — 토큰 사용량 75-95% 절감 |
-| **MCP 서버** | MCP 프로토콜을 통한 Claude Code 직접 통합 |
-
-[uv](https://docs.astral.sh/uv/)가 설치되어 있으면 `omcustom init` 시 자동 설정됩니다.
+핵심 규칙: R010 (오케스트레이터 직접 쓰기 금지), R009 (병렬 실행 의무), R017 (푸시 전 sauron 검증), R020 (완료 선언 전 검증 의무).
 
 ---
 
-## CLI 명령어
+## 보안
 
-| 명령어 | 설명 |
-|--------|------|
-| `omcustom init` | 현재 프로젝트에 초기화 |
-| `omcustom init --lang ko` | 한국어로 초기화 |
-| `omcustom update` | 최신 버전으로 업데이트 |
-| `omcustom list` | 설치된 모든 컴포넌트 목록 |
-| `omcustom list agents` | 에이전트만 목록 |
-| `omcustom doctor` | 설치 상태 검사 |
-| `omcustom doctor --fix` | 일반적인 문제 자동 수정 |
-| `omcustom security` | 훅 및 설정의 보안 문제 검사 |
+세 가지 보안 훅이 모든 도구 호출마다 실행됩니다:
 
-**글로벌 옵션:**
-| 옵션 | 설명 |
-|------|------|
-| `--skip-version-check` | CLI 도구 버전 사전 검사 건너뛰기 |
-| `-v, --version` | 버전 번호 표시 |
-| `-h, --help` | 도움말 표시 |
+| 훅 | 트리거 | 동작 |
+|----|--------|------|
+| secret-filter | Bash, Read 출력 | AWS 키, API 토큰, 개인 키, bearer 토큰 감지 |
+| audit-log | Edit, Write, Bash, Agent | `~/.claude/audit.jsonl`에 append-only JSONL 기록 |
+| schema-validator | Write, Edit, Bash 입력 | 도구 입력 검증, 위험 패턴 플래그 |
+
+모든 보안 훅은 어드바이저리입니다 (exit 0). 경고만 하고 차단하지 않습니다.
+
+---
+
+## CLI
+
+```bash
+omcustom init                  # 프로젝트에 초기화
+omcustom init --lang ko        # 한국어로 초기화
+omcustom update                # 최신 버전 업데이트
+omcustom list                  # 컴포넌트 목록
+omcustom doctor                # 설치 상태 검사
+omcustom doctor --fix          # 문제 자동 수정
+omcustom security              # 보안 이슈 스캔
+```
 
 ---
 
 ## 프로젝트 구조
 
-`omcustom init` 후:
-
 ```
 your-project/
-├── CLAUDE.md              # Claude 진입점
+├── CLAUDE.md                   # 진입점
 ├── .claude/
-│   ├── agents/            # 에이전트 정의 (44개 플랫 .md 파일)
-│   │   ├── lang-golang-expert.md
-│   │   ├── be-fastapi-expert.md
-│   │   ├── mgr-creator.md
-│   │   └── ...
-│   ├── skills/            # 스킬 모듈 (71개 디렉토리, 각각 SKILL.md 포함)
-│   │   ├── go-best-practices/
-│   │   ├── react-best-practices/
-│   │   ├── secretary-routing/
-│   │   └── ...
-│   ├── ontology/          # RAG 컨텍스트용 온톨로지 지식 그래프
-│   │   ├── schema.yaml
-│   │   ├── agents.yaml
-│   │   ├── skills.yaml
-│   │   ├── rules.yaml
-│   │   └── graphs/
-│   ├── rules/             # 행동 규칙 (19개)
-│   ├── hooks/             # 이벤트 훅 (1개)
-│   └── contexts/          # 컨텍스트 파일 (4개)
-└── templates/
-    └── guides/            # 참조 문서 (25개)
+│   ├── agents/                 # 44개 에이전트 정의
+│   ├── skills/                 # 74개 스킬 모듈
+│   ├── rules/                  # 20개 거버넌스 규칙 (R000-R020)
+│   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
+│   ├── schemas/                # 도구 입력 검증 스키마
+│   ├── specs/                  # 추출된 canonical spec
+│   ├── contexts/               # 4개 공유 컨텍스트 파일
+│   └── ontology/               # RAG용 지식 그래프
+└── guides/                     # 25개 레퍼런스 문서
 ```
-
-**참고**: 공식 Claude Code 형식에서는 명령어 레지스트리가 없으며, 슬래시 커맨드나 자연어 에이전트 참조를 사용합니다.
 
 ---
 
@@ -312,27 +257,7 @@ bun test             # 테스트 실행
 bun run build        # 프로덕션 빌드
 ```
 
-### 품질 게이트
-
-| 게이트 | 도구 | 기준 |
-|--------|------|------|
-| 린트 | Biome | 에러 0건 (복잡도 강제) |
-| 테스트 커버리지 | Bun test | 95% (pre-commit), 97% (CI) |
-| 보안 감사 | bun pm audit | high/critical 취약점 없음 |
-| Dependabot | GitHub | 주간 스캔, 업데이트 자동 PR |
-
-Pre-commit 훅이 커밋 전에 린트, 테스트, 커버리지 게이트를 자동으로 적용합니다.
-
-### 요구사항
-
-- Node.js >= 18.0.0
-- Claude Code CLI
-
----
-
-## 기여
-
-기여를 환영합니다! [CONTRIBUTING.md](CONTRIBUTING.md)를 참조하세요.
+요구사항: Node.js >= 18.0.0, Claude Code CLI.
 
 ---
 
@@ -343,7 +268,7 @@ Pre-commit 훅이 커밋 전에 린트, 테스트, 커버리지 게이트를 자
 ---
 
 <p align="center">
-  <strong>당신의 코딩 워크플로우. 당신의 규칙. 당신의 방식.</strong>
+  <strong>전문가가 없으면? 만들고, 지식을 연결하고, 실행한다.</strong>
 </p>
 
 <p align="center">
