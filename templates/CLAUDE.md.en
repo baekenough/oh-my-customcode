@@ -5,26 +5,7 @@ Powered by oh-my-customcode.
 ---
 ## STOP AND READ BEFORE EVERY RESPONSE
 
-```
-+==================================================================+
-|  MANDATORY CHECK BEFORE RESPONDING:                               |
-|                                                                   |
-|  1. Does my response start with agent identification?             |
-|     +- Agent: {name} ({type})                                     |
-|     +- Task: {description}                                        |
-|                                                                   |
-|  2. Do my tool calls include identification?                      |
-|     [agent-name] -> Tool: {tool}                                  |
-|     [agent-name] -> Target: {path}                                |
-|                                                                   |
-|                                                                   |
-|  3. Am I about to spawn 2+ agents?                               |
-|     YES -> Check R018: Agent Teams may be REQUIRED                |
-|     3+ agents OR review cycle -> Agent Teams (MUST)               |
-|                                                                   |
-|  If NO to any -> FIX IMMEDIATELY before continuing                |
-+==================================================================+
-```
+1. Response starts with agent identification? (R007) 2. Tool calls include identification? (R008) 3. Spawning 2+ agents? Check R018. → If NO to any, FIX IMMEDIATELY
 
 ---
 
@@ -62,51 +43,12 @@ NO EXCEPTIONS. NO EXCUSES.
 
 > **These rules are NON-NEGOTIABLE. Violation = immediate correction required.**
 
-### 1. Agent Identification (ENFORCED)
-```
-EVERY response MUST start with:
-
-+- Agent: {agent-name} ({agent-type})
-+- Skill: {skill-name} (if applicable)
-+- Task: {brief-task-description}
-
-NO EXCEPTIONS. Even for simple questions.
-```
-
-### 2. Tool Usage Identification (ENFORCED)
-```
-EVERY tool call MUST be prefixed with:
-
-[agent-name] -> Tool: <tool-name>
-[agent-name] -> Target: <file/path/url>
-
-Example:
-[lang-golang-expert] -> Tool: Read
-[lang-golang-expert] -> Target: src/main.go
-```
-
-### 3. Parallel Execution (ENFORCED for 2+ independent tasks)
-```
-When 2 or more tasks are INDEPENDENT:
--> MUST spawn parallel agent instances (max 4)
--> MUST NOT process sequentially
-
-Detection: If tasks don't share state or have dependencies -> PARALLEL
-```
-
-### 4. Orchestrator Coordination (ENFORCED for multi-agent tasks)
-```
-When task requires multiple agents:
--> Main conversation (orchestrator) MUST coordinate
--> Main conversation assigns tasks to appropriate agents
--> Main conversation aggregates results
--> Orchestrator MUST NEVER directly modify files
-
-Flow:
-  User -> Main conversation -> [agent-1, agent-2, agent-3] -> Main conversation -> User
-
-Violation = immediate correction. No exception for "small changes".
-```
+| Rule | Core | On Violation |
+|------|------|-------------|
+| R007 Agent ID | Every response starts with `┌─ Agent:` header | Add header immediately |
+| R008 Tool ID | Every tool call prefixed with `[agent][model] → Tool:` | Add prefix immediately |
+| R009 Parallel | 2+ independent tasks → parallel agents (max 4) | Stop sequential, switch to parallel |
+| R010 Orchestrator | Orchestrator never modifies files → delegate to subagents | Stop direct modification, delegate |
 
 ---
 

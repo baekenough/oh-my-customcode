@@ -44,6 +44,8 @@ records:
   example: record Point(int x, int y) {}
 ```
 
+Reference: guides/java21/java-style-guide.md
+
 ### 2. Virtual Threads (JEP 444)
 
 ```yaml
@@ -52,27 +54,10 @@ principles:
   - Avoid pooling Virtual Threads (they are lightweight)
   - Replace thread pools for blocking I/O with Virtual Thread executors
 
-patterns: |
-  // Preferred: Virtual Thread executor
-  try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-      Future<String> result = executor.submit(() -> fetchFromDB());
-      System.out.println(result.get());
-  }
-
-  // Direct creation
-  Thread vThread = Thread.ofVirtual().start(() -> {
-      // blocking I/O is fine here
-      String data = callExternalApi();
-      process(data);
-  });
-
-  // With structured concurrency (JEP 453, preview)
-  try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
-      Future<String> user = scope.fork(() -> fetchUser(id));
-      Future<List<Order>> orders = scope.fork(() -> fetchOrders(id));
-      scope.join().throwIfFailed();
-      return new UserProfile(user.get(), orders.get());
-  }
+patterns:
+  executor: "Executors.newVirtualThreadPerTaskExecutor()"
+  direct: "Thread.ofVirtual().start(() -> { ... })"
+  structured: "StructuredTaskScope.ShutdownOnFailure() for fork/join"
 
 antipatterns:
   - "Executors.newFixedThreadPool() for I/O tasks — use Virtual Threads instead"
@@ -80,43 +65,22 @@ antipatterns:
   - "synchronized blocks in Virtual Thread code — use ReentrantLock instead"
 ```
 
+Reference: guides/java21/modern-java21.md
+
 ### 3. Pattern Matching
 
 ```yaml
-instanceof_patterns: |
-  // Old style (avoid)
-  if (obj instanceof String) {
-      String s = (String) obj;
-      System.out.println(s.length());
-  }
+instanceof_patterns:
+  rule: "Use pattern variable binding instead of explicit casts"
+  guard: "Combine with && for conditional matching"
 
-  // New style (prefer)
-  if (obj instanceof String s) {
-      System.out.println(s.length());
-  }
-
-  // With guard
-  if (obj instanceof String s && s.length() > 5) {
-      System.out.println("Long string: " + s);
-  }
-
-switch_patterns: |
-  // Pattern matching for switch (JEP 441)
-  String result = switch (obj) {
-      case Integer i -> "int " + i;
-      case String s  -> "str " + s;
-      case null      -> "null";
-      default        -> "other " + obj;
-  };
-
-  // With guards (when clause)
-  String label = switch (shape) {
-      case Circle c when c.radius() > 10 -> "large circle";
-      case Circle c                       -> "small circle";
-      case Rectangle r                    -> "rectangle";
-      default                             -> "unknown";
-  };
+switch_patterns:
+  rule: "Pattern matching for switch (JEP 441) — use case Type var syntax"
+  guards: "Use 'when' clause for conditional cases"
+  null_handling: "case null supported in switch"
 ```
+
+Reference: guides/java21/modern-java21.md
 
 ### 4. Records (JEP 395)
 
@@ -126,58 +90,28 @@ principles:
   - Prefer Records over POJOs with getters/setters for pure data
   - Compact constructors for validation
 
-patterns: |
-  // Basic record
-  record Point(int x, int y) {}
-
-  // With validation (compact constructor)
-  record Range(int min, int max) {
-      Range {
-          if (min > max) throw new IllegalArgumentException(
-              "min %d > max %d".formatted(min, max));
-      }
-  }
-
-  // With custom methods
-  record Circle(double radius) {
-      double area() {
-          return Math.PI * radius * radius;
-      }
-  }
-
-  // Implementing interface
-  interface Shape { double area(); }
-  record Square(double side) implements Shape {
-      public double area() { return side * side; }
-  }
+features:
+  validation: "Compact constructor (no parens) for input validation"
+  methods: "Custom methods allowed alongside auto-generated accessors"
+  interfaces: "Records can implement interfaces"
 
 antipatterns:
   - "Mutable state in records — records are inherently immutable"
   - "Using records for entities with behavior — prefer classes"
 ```
 
+Reference: guides/java21/modern-java21.md
+
 ### 5. Record Patterns (JEP 440)
 
 ```yaml
-patterns: |
-  // Deconstruct record in instanceof
-  if (obj instanceof Point(int x, int y)) {
-      System.out.println("x=" + x + ", y=" + y);
-  }
-
-  // In switch
-  String describe = switch (shape) {
-      case Circle(double r)        -> "circle r=" + r;
-      case Rectangle(double w, double h) -> "rect " + w + "x" + h;
-      default -> "unknown";
-  };
-
-  // Nested record patterns
-  record ColoredPoint(Point point, Color color) {}
-  if (obj instanceof ColoredPoint(Point(int x, int y), Color c)) {
-      System.out.println("colored point at " + x + "," + y);
-  }
+patterns:
+  instanceof: "Deconstruct record components in instanceof check"
+  switch: "Deconstruct in switch case labels"
+  nested: "Nested record patterns for deep destructuring"
 ```
+
+Reference: guides/java21/modern-java21.md
 
 ### 6. Sealed Classes (JEP 409)
 
@@ -187,20 +121,10 @@ principles:
   - Combine with Pattern Matching switch for exhaustive handling
   - Prefer sealed interfaces for behavior-focused hierarchies
 
-patterns: |
-  // Sealed interface with records
-  sealed interface Shape permits Circle, Rectangle, Triangle {}
-  record Circle(double radius) implements Shape {}
-  record Rectangle(double width, double height) implements Shape {}
-  record Triangle(double base, double height) implements Shape {}
-
-  // Exhaustive switch (no default needed)
-  double area = switch (shape) {
-      case Circle(double r)             -> Math.PI * r * r;
-      case Rectangle(double w, double h) -> w * h;
-      case Triangle(double b, double h)  -> 0.5 * b * h;
-  };
+pattern: "sealed interface with record implementations, exhaustive switch (no default needed)"
 ```
+
+Reference: guides/java21/modern-java21.md
 
 ### 7. Sequenced Collections (JEP 431)
 
@@ -209,42 +133,20 @@ principles:
   - Use SequencedCollection for ordered access
   - getFirst()/getLast() replace get(0) and get(size-1)
 
-patterns: |
-  // SequencedCollection methods
-  List<String> list = new ArrayList<>(List.of("a", "b", "c"));
-  String first = list.getFirst(); // "a"
-  String last  = list.getLast();  // "c"
-  list.addFirst("z");             // ["z", "a", "b", "c"]
-  list.addLast("end");            // ["z", "a", "b", "c", "end"]
-
-  // Reversed view
-  List<String> reversed = list.reversed();
-
-  // SequencedMap
-  SequencedMap<String, Integer> map = new LinkedHashMap<>();
-  map.put("one", 1);
-  map.put("two", 2);
-  Map.Entry<String, Integer> firstEntry = map.firstEntry(); // "one"=1
+methods: "getFirst(), getLast(), addFirst(), addLast(), reversed(), firstEntry()"
 ```
+
+Reference: guides/java21/modern-java21.md
 
 ### 8. Text Blocks and String Features
 
 ```yaml
-patterns: |
-  // Text blocks (since Java 15)
-  String json = """
-      {
-          "name": "Alice",
-          "age": 30
-      }
-      """;
-
-  // String.formatted() (since Java 15)
-  String msg = "Hello, %s! You are %d years old.".formatted(name, age);
-
-  // String templates (JEP 430, preview in Java 21)
-  // Prefer String.formatted() or MessageFormat for now
+patterns:
+  text_blocks: "Triple-quote \"\"\" for multi-line strings (since Java 15)"
+  formatted: "String.formatted() for template substitution (since Java 15)"
 ```
+
+Reference: guides/java21/modern-java21.md
 
 ### 9. Error Handling
 
@@ -255,41 +157,24 @@ principles:
   - Never swallow exceptions silently
   - Use specific exception types
 
-patterns: |
-  // Specific exception type
-  public User findUser(long id) {
-      return userRepository.findById(id)
-          .orElseThrow(() -> new UserNotFoundException("User not found: " + id));
-  }
-
-  // Multi-catch
-  try {
-      process();
-  } catch (IOException | SQLException e) {
-      log.error("Data access failed", e);
-      throw new ServiceException("Processing failed", e);
-  }
+patterns:
+  optional: "orElseThrow(() -> new SpecificException(msg)) for missing values"
+  multi_catch: "catch (IOException | SQLException e) for related exceptions"
 ```
+
+Reference: guides/java21/java-style-guide.md
 
 ### 10. Documentation
 
 ```yaml
-format: |
-  /**
-   * Processes the given {@link Order} and returns a {@link Receipt}.
-   *
-   * @param order the order to process (must not be null)
-   * @return the generated receipt
-   * @throws OrderException if the order cannot be fulfilled
-   */
-  public Receipt processOrder(Order order) { }
-
 best_practices:
   - Use @param and @return for public API
   - Link related types with {@link}
   - Document checked exceptions with @throws
   - Keep Javadoc focused on "what", not "how"
 ```
+
+Reference: guides/java21/java-style-guide.md
 
 ## Application
 

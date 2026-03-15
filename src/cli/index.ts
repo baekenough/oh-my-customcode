@@ -31,11 +31,15 @@ export function createProgram(): Command {
     .version(packageJson.version, '-v, --version', i18n.t('cli.versionOption'))
     .option('--skip-version-check', 'Skip CLI version pre-flight check');
 
-  // omcustom init [--lang en|ko]
+  // omcustom init [--lang en|ko] [--domain <domain>]
   program
     .command('init')
     .description(i18n.t('cli.init.description'))
     .option('-l, --lang <language>', i18n.t('cli.init.langOption'), 'en')
+    .option(
+      '--domain <domain>',
+      'Install only agents/skills for specific domain (backend, frontend, data-engineering, devops)'
+    )
     .action(async (options) => {
       await initCommand(options);
     });

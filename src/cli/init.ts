@@ -18,6 +18,12 @@ export interface InitOptions {
   lang: 'en' | 'ko';
   /** Whether to overwrite existing files */
   force?: boolean;
+  /**
+   * Install only agents for the specified domain.
+   * Valid values: backend, frontend, data-engineering, devops.
+   * When omitted, all agents are installed (backward compatible).
+   */
+  domain?: string;
 }
 
 /**
@@ -139,6 +145,7 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
       language: options.lang,
       force: options.force ?? false,
       backup: exists,
+      domain: options.domain,
     });
 
     if (!installResult.success) {

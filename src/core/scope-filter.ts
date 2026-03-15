@@ -5,6 +5,11 @@
 export type SkillScope = 'core' | 'harness' | 'package';
 
 /**
+ * Valid domain values for agent domain gating
+ */
+export type AgentDomain = 'backend' | 'frontend' | 'data-engineering' | 'devops' | 'universal';
+
+/**
  * Parse scope field from SKILL.md frontmatter content.
  * Only matches within YAML frontmatter (between --- delimiters).
  * Returns 'core' as default when scope is absent or file has no frontmatter.
@@ -22,4 +27,30 @@ export function getSkillScope(content: string): SkillScope {
  */
 export function shouldInstallSkill(scope: SkillScope): boolean {
   return scope !== 'package';
+}
+
+/**
+ * Parse domain field from agent frontmatter content.
+ * Only matches within YAML frontmatter (between --- delimiters).
+ * Returns 'universal' as default when domain is absent or file has no frontmatter.
+ */
+export function getAgentDomain(content: string): AgentDomain {
+  const cleaned = content.replace(/^\uFEFF/, '');
+  const frontmatter = cleaned.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!frontmatter) return 'universal';
+  const match = frontmatter[1].match(
+    /^domain:\s*(backend|frontend|data-engineering|devops|universal)\s*$/m
+  );
+  return (match?.[1] as AgentDomain) ?? 'universal';
+}
+
+/**
+ * Determine if an agent should be installed based on its domain and the requested domain filter.
+ * When no domain filter is provided (undefined), all agents are installed (backward compatible).
+ * Universal agents are always installed regardless of the domain filter.
+ */
+export function shouldInstallAgent(agentDomain: AgentDomain, filterDomain?: string): boolean {
+  if (!filterDomain) return true;
+  if (agentDomain === 'universal') return true;
+  return agentDomain === filterDomain;
 }
