@@ -73,6 +73,16 @@
         "description": "Validate file content hash before Edit — advisory staleness warning"
       },
       {
+        "matcher": "tool == \"Write\" || tool == \"Edit\" || tool == \"Bash\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/schema-validator.sh"
+          }
+        ],
+        "description": "Schema-based tool input validation — Phase 1 advisory only"
+      },
+      {
         "matcher": "tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
@@ -223,16 +233,6 @@
         "description": "Context budget advisor — track tool usage patterns and advise ecomode activation"
       },
       {
-        "matcher": "tool == \"Read\"",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
-          }
-        ],
-        "description": "Store content hashes for Read operations — enables Edit staleness detection"
-      },
-      {
         "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
@@ -251,6 +251,36 @@
           }
         ],
         "description": "Advisory cost cap monitoring — warn when session cost approaches configurable limit"
+      },
+      {
+        "matcher": "tool == \"Read\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
+          }
+        ],
+        "description": "Store content hashes for Read operations — enables Edit staleness detection"
+      },
+      {
+        "matcher": "tool == \"Bash\" || tool == \"Read\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/secret-filter.sh"
+          }
+        ],
+        "description": "Detect potential secrets in Bash/Read output — advisory warning only"
+      },
+      {
+        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Agent\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/audit-log.sh"
+          }
+        ],
+        "description": "Append-only audit log for state-changing tool operations"
       }
     ],
     "Stop": [
@@ -269,7 +299,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Session-end memory checkpoint (R011 enforcement). Check conversation history for these 3 steps: 1) sys-memory-keeper was delegated to update MEMORY.md 2) claude-mem save was attempted via ToolSearch + mcp__plugin_claude-mem_mcp-search__save_memory 3) episodic-memory verification was attempted via ToolSearch + mcp__plugin_episodic-memory_episodic-memory__search. Decision rules: If ALL 3 were attempted (success or failure both count): approve. If MCP tools are unavailable after ToolSearch attempt: approve with note. If session had no explicit session-end signal from user (quick question, no memory work): approve. If any step was NOT attempted despite user signaling session end: block with systemMessage listing the missing steps."
+            "prompt": "Session-end memory checkpoint (R011 enforcement). Check conversation history for these 2 steps: 1) sys-memory-keeper was delegated to update MEMORY.md 2) claude-mem save was attempted via ToolSearch + mcp__plugin_claude-mem_mcp-search__save_memory. Note: episodic-memory auto-indexes after session — no manual verification needed. Decision rules: If BOTH were attempted (success or failure both count): approve. If MCP tools are unavailable after ToolSearch attempt: approve with note. If session had no explicit session-end signal from user (quick question, no memory work): approve. If any step was NOT attempted despite user signaling session end: block with systemMessage listing the missing steps."
           }
         ],
         "description": "Enforce R011 session-end memory saves — block stop if claude-mem or episodic-memory saves were skipped"
