@@ -129,6 +129,7 @@ oh-my-customcode로 구동됩니다.
 | R016 | 지속적 개선 | **강제** - 위반 발생 시 규칙 업데이트 |
 | R017 | 동기화 검증 | **강제** - 구조 변경 전 검증 |
 | R018 | Agent Teams | **강제(조건부)** - Agent Teams 활성화 시 적합한 작업에 필수 사용 |
+| R020 | 완료 검증 | **강제** - 작업 완료 선언 전 검증 필수 |
 
 ### SHOULD (강력 권장)
 | ID | 규칙 | 설명 |
@@ -157,6 +158,7 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom:update-external` | 외부 소스에서 에이전트 업데이트 |
 | `/omcustom:audit-agents` | 에이전트 의존성 감사 |
 | `/omcustom:fix-refs` | 깨진 참조 수정 |
+| `/omcustom:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/dev-review` | 코드 베스트 프랙티스 리뷰 |
 | `/dev-refactor` | 코드 리팩토링 |
 | `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
@@ -184,9 +186,9 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (44 파일)
-|   +-- skills/                  # 스킬 (71 디렉토리)
-|   +-- rules/                   # 전역 규칙 (R000-R019)
-|   +-- hooks/                   # 훅 스크립트 (메모리, HUD)
+|   +-- skills/                  # 스킬 (73 디렉토리)
+|   +-- rules/                   # 전역 규칙 (R000-R020)
+|   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
 +-- guides/                      # 레퍼런스 문서 (25 토픽)
 ```
@@ -211,6 +213,21 @@ project/
 4. 새 에이전트 생성 후 즉시 사용
 
 이것이 oh-my-customcode의 핵심 철학입니다: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."**
+
+## 아키텍처 철학: 컴파일레이션 메타포
+
+oh-my-customcode는 소프트웨어 컴파일과 동일한 구조를 따릅니다:
+
+| 컴파일 개념 | oh-my-customcode 매핑 | 역할 |
+|------------|----------------------|------|
+| Source code | `.claude/skills/` | 재사용 가능한 지식과 워크플로우 정의 |
+| Build artifacts | `.claude/agents/` | 스킬을 조합한 실행 가능한 전문가 |
+| Compiler | `mgr-sauron` (R017) | 구조 검증 및 정합성 보장 |
+| Spec | `.claude/rules/` | 빌드 규칙과 제약 조건 |
+| Linker | Routing skills | 에이전트를 작업에 연결 |
+| Standard library | `guides/` | 공유 레퍼런스 문서 |
+
+이 메타포는 관심사 분리(R006)의 핵심입니다: 스킬(소스)을 에이전트(빌드 결과물)와 분리하여 독립적 진화를 가능하게 합니다.
 
 ## 에이전트 요약
 

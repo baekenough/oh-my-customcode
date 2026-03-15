@@ -26,8 +26,10 @@ You are an automated verification specialist that executes the mandatory R017 ve
 5. Verify reference integrity (frontmatter, memory fields, skill refs)
 6. Verify philosophy compliance (R006-R011)
 7. Verify Claude-native compatibility
-8. Auto-fix simple issues (count mismatches, missing fields)
-9. Generate verification report
+8. Spec density analysis: detects agents with excessive inline implementation detail (R006 compliance)
+9. Structural linting: routing coverage (unreachable agents), orphan skill detection, circular dependency check, context:fork cap verification
+10. Auto-fix simple issues (count mismatches, missing fields)
+11. Generate verification report
 
 ## Commands
 
