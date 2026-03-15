@@ -63,6 +63,16 @@
         "description": "Suggest manual compaction at logical intervals"
       },
       {
+        "matcher": "tool == \"Edit\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
+          }
+        ],
+        "description": "Validate file content hash before Edit — advisory staleness warning"
+      },
+      {
         "matcher": "tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
@@ -211,6 +221,16 @@
           }
         ],
         "description": "Context budget advisor — track tool usage patterns and advise ecomode activation"
+      },
+      {
+        "matcher": "tool == \"Read\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
+          }
+        ],
+        "description": "Store content hashes for Read operations — enables Edit staleness detection"
       },
       {
         "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",

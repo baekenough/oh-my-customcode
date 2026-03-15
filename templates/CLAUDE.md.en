@@ -129,6 +129,7 @@ Violation = immediate correction. No exception for "small changes".
 | R016 | Continuous Improvement | **ENFORCED** - Update rules when violations occur |
 | R017 | Sync Verification | **ENFORCED** - Verify sync before structural changes |
 | R018 | Agent Teams | **ENFORCED (Conditional)** - Mandatory for qualifying tasks when Agent Teams enabled |
+| R020 | Completion Verification | **ENFORCED** - Verification required before declaring task complete |
 
 ### SHOULD (Strongly recommended)
 | ID | Rule | Description |
@@ -157,6 +158,7 @@ Violation = immediate correction. No exception for "small changes".
 | `/omcustom:update-external` | Update agents from external sources |
 | `/omcustom:audit-agents` | Audit agent dependencies |
 | `/omcustom:fix-refs` | Fix broken references |
+| `/omcustom:takeover` | Extract canonical spec from existing agent/skill |
 | `/dev-review` | Review code for best practices |
 | `/dev-refactor` | Refactor code |
 | `/memory-save` | Save session context to claude-mem |
@@ -184,9 +186,9 @@ project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (44 files)
-|   +-- skills/                  # Skills (71 directories)
-|   +-- rules/                   # Global rules (R000-R019)
-|   +-- hooks/                   # Hook scripts (memory, HUD)
+|   +-- skills/                  # Skills (73 directories)
+|   +-- rules/                   # Global rules (R000-R020)
+|   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
 +-- guides/                      # Reference docs (25 topics)
 ```
