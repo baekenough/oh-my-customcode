@@ -4,7 +4,7 @@
 
 # oh-my-customcode
 
-> **Your Coding Agent Stack, Your Way**
+> **Your AI Agent Stack. Compiled, Not Configured.**
 
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -13,293 +13,244 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-**The easiest way to customize Claude Code with agents, skills, and rules.**
-
-Like oh-my-zsh transformed shell customization, oh-my-customcode makes personalizing your coding agent workflow simple, powerful, and fun.
-
-## What Makes It Special
-
-| Feature | Description |
-|---------|-------------|
-| **Batteries Included** | 44 agents, 71 skills, 25 guides, 19 rules, 1 hook, 4 contexts, ontology graph - ready to use out of the box |
-| **Sub-Agent Model** | Supports hierarchical agent orchestration with specialized roles |
-| **Dead Simple Customization** | Create a folder + markdown file = new agent or skill |
-| **Mix and Match** | Use built-in components, create your own, or combine both |
-| **Non-Destructive** | Your customizations live alongside defaults, never overwritten |
-| **Dynamic Agent Creation** | No matching expert? The system creates one on-the-fly, connecting relevant skills and guides |
-
-## Quick Start
+44 agents. 74 skills. 20 rules. One command.
 
 ```bash
-# Install globally
-npm install -g oh-my-customcode
-
-# Initialize in your project
-cd your-project
-omcustom init
+npm install -g oh-my-customcode && cd your-project && omcustom init
 ```
-
-That's it. You now have a fully configured agent environment.
 
 ---
 
-## Customization First
+## Philosophy
 
-This is what oh-my-customcode is all about. **Making your coding workflow yours.**
+oh-my-customcode is built on two ideas:
 
-### Just Describe What You Need
+**1. Agent systems are compiled, not configured.**
 
-No manual file editing. Describe what you want in natural language, and routing skills plus manager agents delegate to the right sub-agent:
+| Compile Concept | oh-my-customcode |
+|----------------|-----------------|
+| Source code | `.claude/skills/` — reusable knowledge and workflows |
+| Build artifacts | `.claude/agents/` — executable specialists assembled from skills |
+| Compiler | `mgr-sauron` (R017) — structural verification and integrity |
+| Spec | `.claude/rules/` — constraints and build rules |
+| Linker | Routing skills — connect agents to tasks |
+| Standard library | `guides/` — shared reference documentation |
+
+Skills are source. Agents are compiled output. Sauron verifies the build. This separation means skills evolve independently of agents, and agents can be recompiled from updated skills at any time.
+
+**2. If it can't be done, make it work.**
+
+When no specialist exists for a task, oh-my-customcode does not fail. It creates one.
 
 ```
-"Create a migration review expert agent"
-"Add a SQL optimization skill"
-"Make code reviews stricter"
-"Set up a deploy review pipeline"
+User: "Review this Terraform module"
+  → Routing: no terraform expert found
+  → mgr-creator discovers: infra-aws-expert skills + docker-best-practices guide
+  → Creates: infra-terraform-expert.md
+  → Executes the review immediately
+  → Agent persists for future use
 ```
 
-**How it works:**
+This is not a fallback. It is the design. The system treats missing expertise as a build problem — find the right skills, compile a new agent, execute.
+
+---
+
+## How It Works
+
+### Orchestration
+
+The main conversation acts as a singleton orchestrator (R010). It never writes files directly. Every action is delegated through routing skills to specialized agents.
 
 ```
 User (natural language)
-  → secretary-routing (routing skill)
-    → mgr-creator:sonnet       — scaffolds agent, registers, verifies
-    → mgr-updater:sonnet       — syncs documentation
-    → mgr-supplier:haiku       — checks dependencies
+  → Routing skill (intent detection, confidence scoring)
+    → Specialized agent (isolated execution)
+      → Result returned to orchestrator
+        → Response to user
 ```
 
-The routing chain analyzes your request, maps it to the appropriate skill and manager agent, and the selected sub-agent handles execution automatically.
+Four routing skills cover the full domain:
 
-### Sub-Agent Model
+| Routing Skill | Routes To |
+|--------------|-----------|
+| secretary-routing | Manager agents (mgr-*), system agents (sys-*) |
+| dev-lead-routing | Language, backend, frontend, tooling, DB, infra, arch agents |
+| de-lead-routing | Data engineering agents (de-*) |
+| qa-lead-routing | QA team (qa-planner, qa-writer, qa-engineer) |
 
-Each sub-agent runs on an optimized model for its task type:
+### Model Selection
 
-| Model | Usage | Examples |
-|-------|-------|---------|
-| `opus` | Complex reasoning, architecture | Code review, design analysis |
-| `sonnet` | General tasks (default) | Agent creation, code generation |
-| `haiku` | Fast, simple operations | File search, validation |
+Each agent runs on the model optimized for its task:
 
-Claude Code selects the appropriate model and parallelizes independent tasks (up to 4 concurrent sub-agents):
+| Model | When | Examples |
+|-------|------|---------|
+| `opus` | Complex reasoning, architecture | Design review, research synthesis |
+| `sonnet` | Implementation, general tasks | Code generation, agent creation |
+| `haiku` | Fast validation, search | File search, count verification |
+
+The reasoning-sandwich pattern formalizes this: opus for pre-analysis, sonnet for implementation, haiku for post-verification.
+
+### Parallel Execution
+
+Independent tasks run in parallel (R009). Up to 4 concurrent agents per message:
 
 ```
-secretary-routing (routing skill)
-  ├── mgr-creator:sonnet       — agent scaffolding
-  └── mgr-supplier:haiku       — dependency check
-
-dev-lead-routing (routing skill)
-  ├── lang-golang-expert:sonnet — Go implementation
-  ├── lang-python-expert:sonnet — Python implementation
-  └── qa-engineer:sonnet        — test generation
+Agent(lang-golang-expert):sonnet  ┐
+Agent(lang-python-expert):sonnet  ├─ All spawned in one message
+Agent(qa-engineer):sonnet         │
+Agent(arch-documenter):haiku      ┘
 ```
-
-### Slash Commands
-
-All commands are invoked inside the Claude Code conversation.
-
-#### Analysis & Research
-
-| Command | Description |
-|---------|-------------|
-| `/omcustom:analysis` | Analyze project and auto-configure agents, skills, rules |
-| `/research` | 10-team parallel deep analysis with cross-verification |
-
-#### Development
-
-| Command | Description |
-|---------|-------------|
-| `/dev-review` | Code review against best practices |
-| `/dev-refactor` | Code refactoring for better structure |
-
-#### Agent Management
-
-| Command | Description |
-|---------|-------------|
-| `/omcustom:create-agent` | Create new agent |
-| `/omcustom:update-docs` | Sync project structure and documentation |
-| `/omcustom:update-external` | Update agents from external sources |
-| `/omcustom:audit-agents` | Audit agent dependencies |
-| `/omcustom:fix-refs` | Fix broken references |
-
-#### Memory
-
-| Command | Description |
-|---------|-------------|
-| `/memory-save` | Save session context to claude-mem |
-| `/memory-recall` | Search and recall memories |
-
-#### DevOps & Package Management
-
-| Command | Description |
-|---------|-------------|
-| `/omcustom:npm-publish` | Publish package to npm registry |
-| `/omcustom:npm-version` | Semantic version management |
-| `/omcustom:npm-audit` | Dependency security audit |
-
-#### Optimization
-
-| Command | Description |
-|---------|-------------|
-| `/optimize-analyze` | Bundle and performance analysis |
-| `/optimize-bundle` | Bundle size optimization |
-| `/optimize-report` | Generate optimization report |
-
-#### Verification & System
-
-| Command | Description |
-|---------|-------------|
-| `/omcustom:sauron-watch` | Full R017 sync verification |
-| `/omcustom:monitoring-setup` | OTel console monitoring enable/disable |
-| `/codex-exec` | Execute Codex CLI prompt |
-| `/deep-plan` | Research-validated planning (research → plan → verify) |
-| `/structured-dev-cycle` | 6-phase structured development cycle |
-| `/omcustom:lists` | Show all available commands |
-| `/omcustom:status` | System status and health checks |
-| `/omcustom:help` | Help information |
 
 ---
-
-## What's Included
 
 ### Agents (44)
 
 | Category | Count | Agents |
 |----------|-------|--------|
-| **Managers** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| **System** | 2 | sys-memory-keeper, sys-naggy |
-| **Languages** | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| **Frontend** | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
-| **Backend** | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
-| **Tooling** | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| **Data Engineering** | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
-| **Database** | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
-| **Architecture** | 2 | arch-documenter, arch-speckit-agent |
-| **Infrastructure** | 2 | infra-docker-expert, infra-aws-expert |
-| **QA** | 3 | qa-planner, qa-writer, qa-engineer |
-| **Security** | 1 | sec-codeql-expert |
-| **Total** | **44** | |
+| Languages | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java21 |
+| Backend | 6 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs, be-django |
+| Frontend | 4 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter |
+| Data Engineering | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
+| Database | 3 | db-supabase, db-postgres, db-redis |
+| Tooling | 3 | tool-npm, tool-optimizer, tool-bun |
+| Architecture | 2 | arch-documenter, arch-speckit |
+| Infrastructure | 2 | infra-docker, infra-aws |
+| QA | 3 | qa-planner, qa-writer, qa-engineer |
+| Security | 1 | sec-codeql |
+| Managers | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
+| System | 2 | sys-memory-keeper, sys-naggy |
+
+Each agent declares its tools, model, memory scope, and limitations in YAML frontmatter. Tool budgets are enforced per agent type for accuracy.
+
+---
 
 ### Skills (71)
 
-| Category | Count | Skills |
-|----------|-------|--------|
-| **Routing** | 4 | secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing |
-| **Best Practices** | 21 | go-best-practices, python-best-practices, typescript-best-practices, kotlin-best-practices, rust-best-practices, react-best-practices, fastapi-best-practices, springboot-best-practices, go-backend-best-practices, django-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, airflow-best-practices, dbt-best-practices, kafka-best-practices, snowflake-best-practices, flutter-best-practices, java21-best-practices |
-| **Development** | 6 | dev-review, dev-refactor, create-agent, intent-detection, web-design-guidelines, analysis |
-| **Data Engineering** | 2 | spark-best-practices, pipeline-architecture-patterns |
-| **Optimization** | 3 | optimize-analyze, optimize-bundle, optimize-report |
-| **Memory** | 3 | memory-save, memory-recall, memory-management |
-| **Package Management** | 3 | npm-publish, npm-version, npm-audit |
-| **Operations** | 7 | update-docs, update-external, audit-agents, fix-refs, sauron-watch, monitoring-setup, claude-code-bible |
-| **Utilities** | 5 | lists, help, status, result-aggregation, writing-clearly-and-concisely |
-| **Quality & Workflow** | 11 | multi-model-verification, structured-dev-cycle, model-escalation, stuck-recovery, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pr-auto-improve, pipeline-guards, deep-plan, evaluator-optimizer |
-| **Security** | 2 | cve-triage, jinja2-prompts |
-| **Research** | 1 | research |
-| **Deploy** | 2 | vercel-deploy, codex-exec |
-| **External** | 1 | skills-sh-search |
+| Category | Count | Includes |
+|----------|-------|----------|
+| Best Practices | 22 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, and more |
+| Routing | 4 | secretary, dev-lead, de-lead, qa-lead |
+| Workflow | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, and more |
+| Development | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
+| Operations | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes, and more |
+| Memory | 3 | memory-save, memory-recall, memory-management |
+| Package | 3 | npm-publish, npm-version, npm-audit |
+| Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
+| Security | 2 | cve-triage, jinja2-prompts |
+| Other | 8 | codex-exec, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and more |
 
-Skills use a 3-tier scope system (`core`, `harness`, `package`) to control deployment behavior during `omcustom init`. Core and harness skills are installed by default; package-scoped skills (e.g., npm-publish) are excluded.
+Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill maintenance), `package` (project-specific).
 
-### Guides (25)
+---
 
-Comprehensive reference documentation covering:
-- Agent creation and management
-- Skill development
-- Pipeline workflows
-- Sub-agent orchestration
-- Best practices and patterns
-- Data engineering workflows
-- Database optimization
+## Commands
+
+All commands are invoked inside the Claude Code conversation.
+
+### Development
+
+| Command | What it does |
+|---------|-------------|
+| `/dev-review` | Code review against best practices |
+| `/dev-refactor` | Refactor for structure and patterns |
+| `/structured-dev-cycle` | 6-stage development: plan → verify → implement → verify → compound → done |
+| `/deep-plan` | Research-validated planning |
+| `/research` | 10-team parallel analysis with cross-verification |
+
+### Agent Management
+
+| Command | What it does |
+|---------|-------------|
+| `/omcustom:analysis` | Analyze project, auto-configure agents and skills |
+| `/omcustom:create-agent` | Create a new agent |
+| `/omcustom:takeover` | Extract canonical spec from existing agent or skill |
+| `/omcustom:audit-agents` | Audit agent dependencies |
+| `/omcustom:update-docs` | Sync project structure and documentation |
+| `/omcustom:sauron-watch` | Full structural verification (5+3 rounds) |
+
+### Package & Release
+
+| Command | What it does |
+|---------|-------------|
+| `/omcustom:npm-publish` | Publish to npm |
+| `/omcustom:npm-version` | Semantic versioning |
+| `/omcustom:npm-audit` | Dependency security audit |
+| `/omcustom:release-notes` | Generate release notes from git history |
+
+### Memory & System
+
+| Command | What it does |
+|---------|-------------|
+| `/memory-save` | Save session context |
+| `/memory-recall` | Search and recall memories |
+| `/omcustom:monitoring-setup` | OTel monitoring toggle |
+| `/omcustom:lists` | Show all commands |
+| `/omcustom:status` | System health check |
+
+---
 
 ### Rules (19)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
-| **MUST** | 12 | Safety, permissions, agent design (enforced) |
-| **SHOULD** | 6 | Interactions, error handling (recommended) |
-| **MAY** | 1 | Optimization guidelines (optional) |
+| **MUST** | 13 | Safety, permissions, agent design, identification, orchestration, verification, completion |
+| **SHOULD** | 6 | Interaction, error handling, memory, HUD, ecomode, ontology routing |
+| **MAY** | 1 | Optimization |
 
-### Hooks (1)
-
-Event-driven automation for agent lifecycle events (PreToolUse, PostToolUse, etc.).
-
-### Contexts (4)
-
-Shared context files for cross-agent knowledge and mode configurations.
-
-### Packages
-
-#### [ontology-rag](packages/ontology-rag/)
-
-Ontology+RAG context engine for intelligent agent context loading.
-
-| Feature | Description |
-|---------|-------------|
-| **Ontology Loading** | Parse YAML ontologies (agents, skills, rules) |
-| **Graph Traversal** | Navigate dependency graphs with BFS and PageRank |
-| **Semantic Routing** | LLM-based agent selection with keyword fallback |
-| **Hybrid Search** | 4-signal ranking (keyword, graph, community, importance) |
-| **Token Budget** | Adaptive budget management — reduces token usage by 75-95% |
-| **MCP Server** | Direct integration with Claude Code via MCP protocol |
-
-Automatically configured during `omcustom init` when [uv](https://docs.astral.sh/uv/) is available.
+Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done).
 
 ---
 
-## CLI Commands
+### Guides (25)
 
-| Command | Description |
-|---------|-------------|
-| `omcustom init` | Initialize in current project |
-| `omcustom init --lang ko` | Initialize with Korean language |
-| `omcustom update` | Update to latest version |
-| `omcustom list` | List all installed components |
-| `omcustom list agents` | List agents only |
-| `omcustom doctor` | Verify installation health |
-| `omcustom doctor --fix` | Auto-fix common issues |
-| `omcustom security` | Scan for security issues in hooks and configs |
+Reference documentation covering best practices, architecture decisions, and integration patterns. Located in `guides/` at project root, covering topics from agent design to CI/CD to observability.
 
-**Global Options:**
-| Option | Description |
-|--------|-------------|
-| `--skip-version-check` | Skip CLI tool version pre-flight check |
-| `-v, --version` | Show version number |
-| `-h, --help` | Show help |
+---
+
+## Safety
+
+oh-my-customcode includes three security hooks that run on every tool call:
+
+| Hook | Trigger | Action |
+|------|---------|--------|
+| secret-filter | Bash, Read output | Detects AWS keys, API tokens, private keys, bearer tokens |
+| audit-log | Edit, Write, Bash, Agent | Append-only JSONL at `~/.claude/audit.jsonl` |
+| schema-validator | Write, Edit, Bash input | Validates tool inputs, flags dangerous patterns |
+
+All security hooks are advisory (exit 0). They warn but never block.
+
+---
+
+## CLI
+
+```bash
+omcustom init                  # Initialize in project
+omcustom init --lang ko        # Initialize with Korean
+omcustom update                # Update to latest
+omcustom list                  # List components
+omcustom doctor                # Verify installation
+omcustom doctor --fix          # Auto-fix issues
+omcustom security              # Scan for security issues
+```
 
 ---
 
 ## Project Structure
 
-After `omcustom init`:
-
 ```
 your-project/
-├── CLAUDE.md              # Entry point for Claude
+├── CLAUDE.md                   # Entry point
 ├── .claude/
-│   ├── agents/            # Agent definitions (44 flat .md files)
-│   │   ├── lang-golang-expert.md
-│   │   ├── be-fastapi-expert.md
-│   │   ├── mgr-creator.md
-│   │   └── ...
-│   ├── skills/            # Skill modules (71 directories, each with SKILL.md)
-│   │   ├── go-best-practices/
-│   │   ├── react-best-practices/
-│   │   ├── secretary-routing/
-│   │   └── ...
-│   ├── ontology/          # Ontology knowledge graph for RAG context
-│   │   ├── schema.yaml
-│   │   ├── agents.yaml
-│   │   ├── skills.yaml
-│   │   ├── rules.yaml
-│   │   └── graphs/
-│   ├── rules/             # Behavior rules (19 total)
-│   ├── hooks/             # Event hooks (1 total)
-│   └── contexts/          # Context files (4 total)
-└── templates/
-    └── guides/            # Reference docs (25 total)
+│   ├── agents/                 # 44 agent definitions
+│   ├── skills/                 # 74 skill modules
+│   ├── rules/                  # 20 governance rules (R000-R020)
+│   ├── hooks/                  # 15 lifecycle hook scripts
+│   ├── schemas/                # Tool input validation schemas
+│   ├── specs/                  # Extracted canonical specs
+│   ├── contexts/               # 4 shared context files
+│   └── ontology/               # Knowledge graph for RAG
+└── guides/                     # 25 reference documents
 ```
-
-**Note**: In the official Claude Code format, there is no command registry — slash commands and natural language agent references are used.
 
 ---
 
@@ -309,30 +260,10 @@ your-project/
 bun install          # Install dependencies
 bun run dev          # Development mode
 bun test             # Run tests
-bun run build        # Build for production
+bun run build        # Production build
 ```
 
-### Quality Gates
-
-| Gate | Tool | Threshold |
-|------|------|-----------|
-| Lint | Biome | Zero errors (complexity enforced) |
-| Test Coverage | Bun test | 95% (pre-commit), 97% (CI) |
-| Security Audit | bun pm audit | No high/critical vulnerabilities |
-| Dependabot | GitHub | Weekly scans, auto-PR for updates |
-
-Pre-commit hooks automatically enforce lint, test, and coverage gates before each commit.
-
-### Requirements
-
-- Node.js >= 18.0.0
-- Claude Code CLI
-
----
-
-## Contributing
-
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+Requirements: Node.js >= 18.0.0, Claude Code CLI.
 
 ---
 
@@ -343,7 +274,7 @@ Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 ---
 
 <p align="center">
-  <strong>Your coding workflow. Your rules. Your way.</strong>
+  <strong>No expert? Create one. Connect knowledge. Execute.</strong>
 </p>
 
 <p align="center">

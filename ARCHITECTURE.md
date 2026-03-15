@@ -1,12 +1,14 @@
 # Architecture
 
-> oh-my-customcode v0.30.9
+> oh-my-customcode v0.36.1
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 44 pre-built subagents, 68 skills, 18 governing rules, and a hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 44 pre-built subagents, 74 skills, 20 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
-Current version: **0.30.9** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
+
+Current version: **0.36.1** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
@@ -28,18 +30,37 @@ flowchart TD
 
     Hooks["Hook System\nPreToolUse · PostToolUse\nSessionStart · Stop\nSubagentStart · SubagentStop"] -.->|cross-cutting| Orchestrator
 
-    Memory["Memory Layer\nNative auto-memory\nMCP: claude-mem · episodic-memory"] -.->|persistence| Orchestrator
+    Memory["Memory Layer\nNative auto-memory\nMCP: claude-mem"] -.->|persistence| Orchestrator
+
+    Observability["Observability\naudit-log · secret-filter\ncontent-hash · schema-validator\ncost-cap · stuck-detector"] -.->|entropy mgmt| Hooks
 
     style Orchestrator fill:#2d6a4f,color:#fff
     style Hooks fill:#6d4c41,color:#fff
     style Memory fill:#1a237e,color:#fff
+    style Observability fill:#4a148c,color:#fff
 ```
+
+### 2.1 Compilation Metaphor
+
+oh-my-customcode treats agent harness authoring as a compilation problem. Skills, rules, and guides are "source code" that compiles into agent behavior at runtime. This metaphor drives several design decisions:
+
+| Compilation Concept | Harness Equivalent |
+|--------------------|--------------------|
+| Source code | Skills (SKILL.md), Rules (.claude/rules/), Guides (guides/) |
+| Compiler | Routing skills + mgr-creator (transforms specs into agent prompts) |
+| Linker | Orchestrator (connects agent outputs into coherent workflows) |
+| Runtime | Claude Code session (executes the compiled agent system) |
+| Type checker | mgr-sauron (R017 verification — validates structural integrity) |
+| Linter | Pre/PostToolUse hooks (advisory warnings, format enforcement) |
+| Reverse compiler | omcustom-takeover skill (code to spec reverse compilation) |
+
+The takeover pattern — reverse-compiling an existing codebase into structured specs that can then drive agent creation — is a core capability for onboarding new projects.
 
 ---
 
 ## 3. Component Inventory
 
-### 3.1 Rule System (R000–R018, no R014)
+### 3.1 Rule System (R000–R020, no R014)
 
 | ID | Priority | Name | Description |
 |----|----------|------|-------------|
@@ -49,18 +70,20 @@ flowchart TD
 | R003 | SHOULD | Interaction Rules | Response principles, status format |
 | R004 | SHOULD | Error Handling | Error levels, recovery strategies |
 | R005 | MAY | Optimization | Efficiency, token optimization |
-| R006 | MUST | Agent Design | Agent file format, separation of concerns |
+| R006 | MUST | Agent Design | Agent file format, separation of concerns, soul identity |
 | R007 | MUST | Agent Identification | Every response starts with agent header |
 | R008 | MUST | Tool Identification | Every tool call includes agent+model prefix |
 | R009 | MUST | Parallel Execution | 2+ independent tasks MUST run in parallel |
 | R010 | MUST | Orchestrator Coordination | Orchestrator never writes files directly |
-| R011 | SHOULD | Memory Integration | Native auto-memory + MCP supplementary |
+| R011 | SHOULD | Memory Integration | Native auto-memory + MCP supplementary, temporal decay |
 | R012 | SHOULD | HUD Statusline | Real-time session status display |
 | R013 | SHOULD | Ecomode | Task-type-aware context budget thresholds |
 | R015 | MUST | Intent Transparency | Display routing reasoning before execution |
-| R016 | MUST | Continuous Improvement | Rule violation → update rule → continue |
+| R016 | MUST | Continuous Improvement | Rule violation -> update rule -> continue |
 | R017 | MUST | Sync Verification | 5+3 round verification before push |
 | R018 | MUST (conditional) | Agent Teams | Mandatory when CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 |
+| R019 | SHOULD | Ontology-RAG Routing | Enriches agent selection with contextual skill suggestions |
+| R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
 
 ### 3.2 Agent Taxonomy (44 agents)
 
@@ -80,7 +103,9 @@ flowchart TD
 | System | 2 | sys-memory-keeper, sys-naggy |
 | **Total** | **44** | |
 
-### 3.3 Skill Catalog (68 skills)
+Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
+
+### 3.3 Skill Catalog (74 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -91,28 +116,28 @@ flowchart TD
 | de-lead-routing | de-* agents |
 | qa-lead-routing | qa-* agents |
 
-**Workflow/orchestration skills (5, context: fork)**
+**Workflow/orchestration skills (4, context: fork)**
 
-dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, structured-dev-cycle
+dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards
 
-**Best-practices skills (~25)**
+**Best-practices skills (~26)**
 
-go-best-practices, go-backend-best-practices, python-best-practices, rust-best-practices, kotlin-best-practices, typescript-best-practices, react-best-practices, web-design-guidelines, fastapi-best-practices, springboot-best-practices, django-best-practices, flutter-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, kafka-best-practices, dbt-best-practices, spark-best-practices, snowflake-best-practices, airflow-best-practices, pipeline-architecture-patterns, vercel-deploy, writing-clearly-and-concisely
+go-best-practices, go-backend-best-practices, python-best-practices, rust-best-practices, kotlin-best-practices, typescript-best-practices, java21-best-practices, react-best-practices, web-design-guidelines, fastapi-best-practices, springboot-best-practices, django-best-practices, flutter-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, kafka-best-practices, dbt-best-practices, spark-best-practices, snowflake-best-practices, airflow-best-practices, pipeline-architecture-patterns, vercel-deploy, writing-clearly-and-concisely
 
 **Slash command / user-invocable skills**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, sauron-watch, structured-dev-cycle, lists, status, help
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, lists, status, help
 
 **System / internal skills**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer
 
-### 3.4 Guide Library (24 topics)
+### 3.4 Guide Library (25 topics)
 
 | Category | Guides |
 |----------|--------|
 | Internal | claude-code |
-| Language | golang, python, rust, kotlin, typescript |
+| Language | golang, python, rust, kotlin, typescript, java21 |
 | Frontend | flutter, web-design |
 | Backend | fastapi, springboot, go-backend, django-best-practices |
 | Infrastructure | docker, aws |
@@ -122,21 +147,39 @@ intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-mo
 
 ### 3.5 Hook System
 
+The hook system provides cross-cutting concerns across all agent operations. Hooks are advisory-only by design: PostToolUse hooks record state, PreToolUse hooks advise, but neither blocks execution (except stage-blocker and dev-server tmux enforcement).
+
 | Event | Scripts / Handlers | Purpose |
 |-------|--------------------|---------|
 | SessionStart | session-env-check.sh | Detect codex CLI + Agent Teams availability |
 | PreToolUse (Write/Edit) | stage-blocker.sh | Block writes outside implement stage |
 | PreToolUse (Bash dev server) | inline script | Force dev servers into tmux |
+| PreToolUse (Edit) | content-hash-validator.sh | Advisory staleness warning via content hash |
+| PreToolUse (Write/Edit/Bash) | schema-validator.sh | Schema-based tool input validation (advisory) |
 | PreToolUse (Agent/Task) | HUD display, git-delegation-guard.sh, agent-teams-advisor.sh, model-escalation-advisor.sh | Spawn display, R010 enforcement, R018 advisory, escalation advisory |
 | PostToolUse (Edit TS/JS) | prettier, tsc, console.log detector | Auto-format + type-check JS/TS |
 | PostToolUse (Edit Go) | gofmt | Auto-format Go files |
 | PostToolUse (Edit Py) | ruff, ty | Auto-format + type-check Python |
 | PostToolUse (Bash) | PR URL logger | Log PR URL after `gh pr create` |
 | PostToolUse (Agent/Task) | task-outcome-recorder.sh | Record outcomes for model escalation |
-| PostToolUse (any tool) | context-budget-advisor.sh, stuck-detector.sh | Ecomode advisory, loop detection |
+| PostToolUse (Read) | content-hash-validator.sh | Store content hashes for staleness detection |
+| PostToolUse (Bash/Read) | secret-filter.sh | Detect potential secrets in output (advisory) |
+| PostToolUse (Edit/Write/Bash/Agent) | audit-log.sh | Append-only audit log for state-changing operations |
+| PostToolUse (any tool) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode advisory, loop detection, cost monitoring |
 | SubagentStart | HUD inline display | Log agent type:model when subagent starts |
 | SubagentStop | task-outcome-recorder.sh | Record final outcome |
 | Stop | stop-console-audit.sh, session-compliance-report.sh, R011 prompt | Final audit, compliance report, memory checkpoint |
+
+#### Observability Hooks (Harness Engineering)
+
+Four hooks form the observability backbone, added as part of the Harness Engineering adoption:
+
+| Hook | Type | Description |
+|------|------|-------------|
+| audit-log.sh | PostToolUse | Append-only audit trail of all state-changing tool calls (Edit, Write, Bash, Agent). Writes to `/tmp/.claude-audit-$PPID.jsonl`. |
+| secret-filter.sh | PostToolUse | Pattern-based detection of secrets (API keys, tokens, passwords) in Bash/Read output. Advisory warning only. |
+| schema-validator.sh | PreToolUse | Validates tool input structure against expected schemas. Phase 1 advisory mode. |
+| content-hash-validator.sh | Pre+PostToolUse | Stores MD5 hashes on Read, warns on Edit if file changed since last Read (stale edit detection). |
 
 ---
 
@@ -144,21 +187,25 @@ intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-mo
 
 ### 4.1 Singleton Orchestrator (R010)
 
-The main conversation is the **sole orchestrator**. It coordinates via routing skills and the Agent tool. It NEVER writes or edits files directly — all file mutations are delegated to subagents.
+The main conversation is the **sole orchestrator**. It coordinates via routing skills and the Agent tool. It NEVER writes or edits files directly — all file mutations are delegated to subagents. The only exception: Agent Teams members act as local orchestrators for their own sub-tasks and CAN spawn sub-agents.
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant O as Orchestrator
     participant RS as Routing Skill
+    participant ORAG as Ontology-RAG
     participant SA as Subagent
 
     U->>O: Request
     O->>RS: Detect intent (R015)
     RS-->>O: Selected agent + confidence
-    O->>SA: Spawn via Agent tool (R009)
+    O->>ORAG: get_agent_for_task (R019, best-effort)
+    ORAG-->>O: suggested_skills (enrichment)
+    O->>SA: Spawn via Agent tool (R009) with enriched prompt
     SA->>SA: Execute (Read/Write/Edit/Bash)
     SA-->>O: Result
+    O->>O: Verify completion (R020)
     O-->>U: Response
 ```
 
@@ -190,7 +237,13 @@ flowchart LR
     QA --> qa["qa-planner\nqa-writer\nqa-engineer"]
 ```
 
-### 4.3 Dynamic Agent Creation
+### 4.3 Ontology-RAG Enrichment (R019)
+
+After static routing selects an agent, the orchestrator optionally calls `get_agent_for_task(query)` via MCP to extract `suggested_skills`. These are prepended to the spawned agent's prompt as contextual hints. MCP failure is silently ignored — Ontology-RAG is advisory only and never blocks routing.
+
+Known limitation: `context: fork` skills cannot access MCP tools, so `get_agent_for_task` in routing SKILL.md files is effectively dead letter. The call must be made at the orchestrator level before spawning the agent.
+
+### 4.4 Dynamic Agent Creation
 
 When routing detects no matching specialist:
 
@@ -199,15 +252,15 @@ flowchart TD
     A[Routing detects no match] --> B{Specialized task?}
     B -- Yes --> C[Delegate to mgr-creator]
     B -- No --> D[Use general-purpose]
-    C --> E[Auto-discover .claude/skills/ + templates/guides/]
-    E --> F[Create .claude/agents/name.md]
+    C --> E["Auto-discover .claude/skills/ + guides/"]
+    E --> F["Create .claude/agents/name.md"]
     F --> G[Orchestrator uses new agent for original task]
     G --> H[Agent persisted for future reuse]
 ```
 
-### 4.4 Intent Detection
+### 4.5 Intent Detection (R015)
 
-Intent is scored before routing is executed (R015):
+Intent is scored before routing is executed:
 
 | Factor | Weight |
 |--------|--------|
@@ -219,8 +272,23 @@ Intent is scored before routing is executed (R015):
 | Confidence | Action |
 |------------|--------|
 | >= 90% | Auto-execute, display intent block |
-| 70–89% | Request confirmation, show alternatives |
+| 70-89% | Request confirmation, show alternatives |
 | < 70% | List options for user to choose |
+
+### 4.6 Completion Verification (R020)
+
+Before declaring any task `[Done]`, the orchestrator (or subagent) must verify completion against task-type-specific criteria. This prevents false completion declarations that erode trust and cause downstream failures.
+
+| Task Type | Required Verification |
+|-----------|----------------------|
+| Release | All issues closed, version bumped, PR merged, GitHub Release created |
+| Implementation | Code compiles/passes lint, tests pass, no TODO markers left |
+| Documentation | Links valid, counts accurate, cross-references updated |
+| Git Operations | Operation succeeded (check exit code), working tree clean |
+| Code Review | All findings addressed or explicitly deferred |
+| Agent/Skill Creation | Frontmatter valid, referenced skills exist, routing updated |
+
+Complex tasks declare a **Completion Contract** upfront with specific, verifiable criteria, then report evidence for each criterion at completion.
 
 ---
 
@@ -237,7 +305,7 @@ Agent(task-3):haiku    │
 Agent(task-4):haiku    ┘
 ```
 
-Large tasks exceeding 3 minutes MUST be split into parallel sub-tasks. Before spawning 2+ agents, Agent Teams eligibility must be evaluated (see 5.2).
+Large tasks exceeding 3 minutes MUST be split into parallel sub-tasks. Before spawning 2+ agents, Agent Teams eligibility must be evaluated (see 5.2). Each parallel spawn includes a `[N]` prefix in the Agent `description` parameter for correlation with the Running display (R008).
 
 ### 5.2 Agent Teams (R018, conditional)
 
@@ -245,27 +313,70 @@ Active when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. When enabled and criteria 
 
 | Criteria | Agent Tool | Agent Teams (MUST) |
 |----------|-----------|-------------------|
-| 1–2 agents, independent | Yes | |
+| 1-2 agents, independent | Yes | |
 | 3+ agents | | Yes |
-| Review → fix → re-review cycle | | Yes |
+| Review -> fix -> re-review cycle | | Yes |
 | Shared state / coordination needed | | Yes |
 | Cost-sensitive batch ops | Yes | |
 
-Lifecycle: `TeamCreate → TaskCreate → Agent(spawn all members in one message) → SendMessage → TaskUpdate → TeamDelete`
+Lifecycle: `TeamCreate -> TaskCreate -> Agent(spawn all members in one message) -> SendMessage -> TaskUpdate -> TeamDelete`
 
-### 5.3 Research Pattern (/research)
+Agent Teams members are peers, not hierarchical subagents. Members CAN spawn sub-agents via the Agent tool to execute complex workflows (R010 exception). This enables teams-compatible skills like `/research` and `/deep-plan` to run inside team members.
+
+### 5.3 Evaluator-Optimizer Pattern
+
+The evaluator-optimizer skill implements an iterative refinement loop:
+
+```mermaid
+flowchart LR
+    G[Generator] --> E[Evaluator]
+    E -->|Pass| D[Done]
+    E -->|Fail + feedback| G
+```
+
+The generator produces output, the evaluator scores it against criteria, and failures loop back with specific feedback until quality thresholds are met. This pattern underpins code review cycles, agent creation validation, and research synthesis.
+
+### 5.4 Research Pattern (/research)
 
 10 research teams across 5 domains, executed in 3 batches per R009:
 
 ```
-Batch 1: T1(Arch·breadth), T2(Arch·depth), T3(Sec·breadth), T4(Sec·depth)
-Batch 2: T5(Intg·breadth), T6(Intg·depth), T7(Comp·breadth), T8(Comp·depth)
-Batch 3: T9(Innov·breadth), T10(Innov·depth)
+Batch 1: T1(Arch-breadth), T2(Arch-depth), T3(Sec-breadth), T4(Sec-depth)
+Batch 2: T5(Intg-breadth), T6(Intg-depth), T7(Comp-breadth), T8(Comp-depth)
+Batch 3: T9(Innov-breadth), T10(Innov-depth)
 
-Phase 2: Cross-verification (2–5 rounds, opus + codex-exec)
-Phase 3: Synthesis (opus) → ADOPT / ADAPT / AVOID taxonomy
+Phase 2: Cross-verification (2-5 rounds, opus + codex-exec)
+Phase 3: Synthesis (opus) -> ADOPT / ADAPT / AVOID taxonomy
 Phase 4: Structured report + GitHub issue
 ```
+
+When Agent Teams is enabled, research teams run as team members with peer-to-peer messaging for cross-verification, rather than isolated subagents.
+
+### 5.5 Deep Plan Pattern (/deep-plan)
+
+Three-phase planning with research validation:
+
+```
+Phase 1: /research on the problem domain
+Phase 2: Plan generation informed by research findings
+Phase 3: Plan verification against research constraints
+```
+
+The deep-plan skill is teams-compatible (`teams-compatible: true` in frontmatter) and runs inside Agent Teams members when the feature is enabled.
+
+### 5.6 Structured Development Cycle (/structured-dev-cycle)
+
+Six-stage gated workflow:
+
+```
+Plan -> Verify -> Implement -> Verify -> Compound -> Done
+```
+
+The stage-blocker hook enforces Write/Edit restrictions outside the implement stage. Each stage transition requires explicit verification.
+
+### 5.7 Reasoning Sandwich
+
+The reasoning-sandwich skill structures prompts with context-instruction-context layering to maximize model attention on critical information. It is an internal skill used by routing and orchestration workflows to improve prompt effectiveness.
 
 ---
 
@@ -281,37 +392,88 @@ Enabled by `memory:` field in agent frontmatter. The system creates a memory dir
 | `project` | `.claude/agent-memory/<name>/` | Yes |
 | `local` | `.claude/agent-memory-local/<name>/` | No |
 
-Memory entries carry confidence annotations (`[confidence: low/medium/high]`). New discoveries start at `low`; user confirmation or cross-session verification promotes them.
+### 6.2 Confidence-Tracked Memory
 
-### 6.2 MCP Memory (Supplementary)
+Memory entries carry confidence annotations to distinguish verified facts from hypotheses:
+
+| Level | Tag | Lifecycle |
+|-------|-----|-----------|
+| High | `[confidence: high]` | Verified across sessions or confirmed by user |
+| Medium | `[confidence: medium]` | Observed in 2+ sessions, not fully verified |
+| Low | `[confidence: low]` | Single observation or hypothesis |
+
+Promotion: `low -> medium` (observed again) -> `high` (user-confirmed). Demotion: contradicted by evidence -> demoted or removed.
+
+### 6.3 Temporal Decay
+
+Memory entries have an implicit temporal relevance. The system applies decay heuristics:
+
+| Memory Type | Decay Rate | Rationale |
+|-------------|-----------|-----------|
+| Architecture decisions | Slow | Stable over months |
+| Issue/PR status | Fast | Changes within hours/days |
+| Version numbers | Fast | Updates every release |
+| Behavioral patterns | Medium | Evolves over weeks |
+| Key patterns | Slow | Structural knowledge persists |
+
+Session-end updates by sys-memory-keeper re-evaluate temporal relevance: stale entries (e.g., closed issues still listed as open, outdated version numbers) are pruned or updated. The 200-line MEMORY.md budget enforces natural pruning pressure.
+
+### 6.4 Behavioral Memory
+
+An optional `## Behaviors` section in MEMORY.md tracks user interaction preferences and workflow patterns. Behaviors are user-specific and session-derived, distinct from soul identity defaults (R006). When behaviors conflict with soul defaults, behavioral memory takes precedence.
+
+| Category | Examples |
+|----------|---------|
+| Communication | Verbosity preference, language, format |
+| Workflow | Tool preferences, review habits, branching patterns |
+| Domain priority | Security-first, performance-first, simplicity-first |
+
+### 6.5 MCP Memory (Supplementary)
 
 MCP tools are orchestrator-scoped — subagents cannot access them.
 
 | System | Tool | Use Case |
 |--------|------|----------|
 | claude-mem | `mcp__plugin_claude-mem_mcp-search__save_memory` | Cross-session search, temporal queries |
-| episodic-memory | `mcp__plugin_episodic-memory_episodic-memory__search` | Session indexing for future retrieval |
 
-Use native auto-memory first. Fall back to MCP only for cross-session search or temporal queries.
+Episodic-memory auto-indexes conversations after session end — no manual action is needed. Use native auto-memory first; fall back to MCP only for cross-session search or temporal queries.
 
-### 6.3 Session-End Flow
+### 6.6 Session-End Flow
 
 ```mermaid
 sequenceDiagram
     participant U as User
     participant O as Orchestrator
     participant SMK as sys-memory-keeper
-    participant MCP as MCP (claude-mem / episodic)
+    participant MCP as MCP: claude-mem
 
     U->>O: Session end signal
     O->>SMK: Delegate: update MEMORY.md
+    SMK->>SMK: Collect summary, apply temporal decay
     SMK-->>O: Native memory updated
     O->>MCP: Save session summary (best-effort)
-    O->>MCP: Verify episodic index (best-effort)
+    Note over MCP: episodic-memory auto-indexes<br/>after session — no manual step
     O-->>U: Session saved confirmation
 ```
 
 MCP saves are non-blocking — failure does not prevent session end.
+
+### 6.7 Agent Metrics and Skill Effectiveness Tracking
+
+The task-outcome-recorder hook (PostToolUse + SubagentStop) records success/failure for each agent type and model combination. This data feeds two systems:
+
+**Model Escalation (model-escalation-advisor.sh)**: When an agent type accumulates failures exceeding the configured threshold, the hook advises the orchestrator to escalate to a higher model (e.g., haiku -> sonnet -> opus). This is advisory-only — the orchestrator decides whether to accept.
+
+**Skill Effectiveness**: Routing skills can correlate suggested skills with task outcomes to identify which skill combinations yield the highest success rates. This data accumulates in PPID-scoped temp files (`/tmp/.claude-task-outcomes-$PPID`) during a session and informs memory updates at session end.
+
+```mermaid
+flowchart LR
+    TO[task-outcome-recorder] --> TF["/tmp/.claude-task-outcomes-$PPID"]
+    TF --> ME[model-escalation-advisor]
+    TF --> SMK[sys-memory-keeper]
+    ME -->|advisory| O[Orchestrator]
+    SMK -->|session-end| M[MEMORY.md]
+```
 
 ---
 
@@ -320,7 +482,7 @@ MCP saves are non-blocking — failure does not prevent session end.
 ```mermaid
 flowchart LR
     develop --> PR[Pull Request]
-    PR --> ci["ci.yml\nbuild · test · lint\ntypecheck · coverage"]
+    PR --> ci["ci.yml\nbuild - test - lint\ntypecheck - coverage"]
     ci --> develop
 
     develop --> rel["release/* branch"]
@@ -331,8 +493,6 @@ flowchart LR
         docs-validator
         docs-sync
         security-audit
-        notify-teammates
-        release-notes
     end
 ```
 
@@ -341,11 +501,22 @@ flowchart LR
 | Gate | Tool / Script | Threshold |
 |------|---------------|-----------|
 | Code coverage | bun test --coverage | 97% |
-| Version sync | manifest.json ↔ package.json | Exact match |
+| Version sync | manifest.json <-> package.json | Exact match |
 | Docs validation | validate-docs.ts | README count consistency |
 | Sauron verification | mgr-sauron (R017) | All 5+3 rounds pass |
 | TypeScript | tsc --noEmit | Zero errors |
 | Lint | biome check | Zero errors |
+| Dependency audit | npm audit / security-audit.yml | No critical/high vulnerabilities |
+
+### 7.2 CI Jobs
+
+| Job | Workflow | Purpose |
+|-----|----------|---------|
+| Lint | ci.yml | biome check on source files |
+| Test | ci.yml | bun test with coverage threshold |
+| Rust Tests | ci.yml | cargo test for Rust components |
+| Version Sync | ci.yml | manifest.json matches package.json |
+| Dependency Security Audit | security-audit.yml | Automated vulnerability scanning |
 
 ---
 
@@ -365,11 +536,15 @@ Exports:
 
 Runtime deps: commander, i18next, yaml. Build/runtime: bun. Node >=18 required.
 
-npm publish is triggered only by the CI/CD pipeline on `release/*` branches — never run locally.
+npm publish is triggered only by the CI/CD pipeline on `release/*` branches — never run locally. Release workflow: create `release/*` branch + GitHub Release tag, CI handles the rest.
 
 ### 8.2 Template System
 
-`templates/` mirrors `.claude/` so that `omcustom` can scaffold agent systems into any project. `manifest.json` declares counts of agents, skills, hooks, contexts, and guides; CI enforces these counts match the filesystem.
+`templates/` mirrors `.claude/` so that `omcustom` can scaffold agent systems into any project. `manifest.json` declares counts of agents, skills, hooks, contexts, and guides; CI enforces these counts match the filesystem. The `templates/.claude/hooks/` directory contains `hooks.json` plus a `scripts/` subdirectory — validators must use `.endsWith('.json')` filtering to count hooks correctly.
+
+### 8.3 Takeover Pattern
+
+The omcustom-takeover skill enables reverse compilation: analyzing an existing codebase and generating structured agent/skill specs from observed patterns. This is the primary onboarding mechanism for new projects that already have code but lack agent harness configuration.
 
 ---
 
@@ -383,6 +558,10 @@ npm publish is triggered only by the CI/CD pipeline on `release/*` branches — 
 | SubagentStart event | No | Yes | Yes (v0.23.0+) |
 | SubagentStop event | No | Yes | Yes (v0.23.0+) |
 | Agent Teams | No | Yes (experimental) | Yes, enforced by R018 when enabled |
+| Agent isolation/background | No | Yes | Yes (frontmatter: isolation, background) |
+| Agent maxTurns | No | Yes | Yes (frontmatter: maxTurns) |
+| Agent hooks | No | Yes | Yes (frontmatter: hooks) |
+| Agent permissionMode | No | Yes | Yes (frontmatter: permissionMode) |
 
 ---
 
@@ -391,10 +570,10 @@ npm publish is triggered only by the CI/CD pipeline on `release/*` branches — 
 | Item | Approximate Size |
 |------|-----------------|
 | CLAUDE.md | ~5K tokens |
-| Rules (18 files) | ~25K tokens |
-| Total mandatory load | ~30K tokens / session |
+| Rules (20 files) | ~28K tokens |
+| Total mandatory load | ~33K tokens / session |
 
-Skills and guides are loaded on-demand when invoked — not pre-loaded.
+Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (8 active, 10 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
 
 **Ecomode (R013)** auto-activates based on task type and context usage:
 
@@ -406,7 +585,7 @@ Skills and guides are loaded on-demand when invoked — not pre-loaded.
 | Management (git, deploy, CI) | 70% |
 | General (default) | 80% |
 
-The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits advisory warnings as thresholds are approached.
+The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits advisory warnings as thresholds are approached. The `cost-cap-advisor.sh` hook provides complementary cost monitoring, warning when session cost approaches configurable limits.
 
 ---
 
@@ -422,5 +601,14 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Native auto-memory | The `memory:` frontmatter field that injects MEMORY.md into an agent's context each session. |
 | Dynamic creation | The fallback pattern where mgr-creator auto-builds a new specialist when no existing agent matches. |
 | Ecomode | Compact output mode that activates automatically when context usage exceeds task-type thresholds. |
-| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills. |
+| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (8 active, 10 cap). |
 | R017 (Sauron) | The 5-round manager + 3-round deep-review verification cycle required before any structural push. |
+| Compilation metaphor | The conceptual framework treating skill/rule authoring as source code that compiles into agent behavior. |
+| Takeover | Reverse compilation — analyzing existing code to generate structured agent/skill specs. |
+| Completion contract | An upfront declaration of verifiable criteria that must be satisfied before declaring a task done (R020). |
+| Temporal decay | Memory heuristic where entries lose relevance over time; fast-changing data (issues, versions) decays faster than structural knowledge. |
+| Soul identity | Optional per-agent personality layer (`.claude/agents/souls/{name}.soul.md`) that separates communication style from capabilities. |
+| Harness Engineering | The three-pillar framework (Context Engineering, Architectural Constraints, Entropy Management) underlying the agent harness design. |
+| Advisory hook | A hook that warns or suggests but never blocks execution — the dominant hook pattern in oh-my-customcode. |
+| Skill effectiveness | The correlation of skill combinations with task outcomes to identify high-success-rate patterns. |
+| Model escalation | Advisory mechanism that suggests upgrading an agent's model after repeated failures (haiku -> sonnet -> opus). |
