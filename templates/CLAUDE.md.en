@@ -167,6 +167,7 @@ Violation = immediate correction. No exception for "small changes".
 | `/omcustom:npm-publish` | Publish package to npm registry |
 | `/omcustom:npm-version` | Manage semantic versions |
 | `/omcustom:npm-audit` | Audit dependencies |
+| `/omcustom:release-notes` | Generate release notes from git history |
 | `/codex-exec` | Execute Codex CLI prompts |
 | `/optimize-analyze` | Analyze bundle and performance |
 | `/optimize-bundle` | Optimize bundle size |
@@ -186,7 +187,7 @@ project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (44 files)
-|   +-- skills/                  # Skills (73 directories)
+|   +-- skills/                  # Skills (74 directories)
 |   +-- rules/                   # Global rules (R000-R020)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
