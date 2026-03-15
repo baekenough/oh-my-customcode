@@ -72,6 +72,21 @@ case "$tool_name" in
     if echo "$command" | grep -qE 'mkfs\.'; then
       warnings+=("[Schema] Bash: filesystem format command detected")
     fi
+    # Remote code execution via pipe
+    if echo "$command" | grep -qE 'curl\s+.*\|\s*(ba)?sh'; then
+      warnings+=("[Schema] Bash: remote code execution pattern (curl | bash) detected")
+    fi
+    if echo "$command" | grep -qE 'wget\s+.*\|\s*(ba)?sh'; then
+      warnings+=("[Schema] Bash: remote code execution pattern (wget | sh) detected")
+    fi
+    # Dynamic code execution
+    if echo "$command" | grep -qE 'eval\s+\$\('; then
+      warnings+=("[Schema] Bash: dynamic code execution (eval) detected")
+    fi
+    # Broad permission grant
+    if echo "$command" | grep -qE 'chmod\s+777'; then
+      warnings+=("[Schema] Bash: broad permission grant (chmod 777) detected")
+    fi
     ;;
 esac
 

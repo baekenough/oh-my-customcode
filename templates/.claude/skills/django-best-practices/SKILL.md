@@ -16,26 +16,7 @@ Apply Django patterns for building production-ready, secure, and maintainable Py
 ```yaml
 structure:
   settings_split: true
-  layout: |
-    project/
-    ├── config/
-    │   ├── settings/
-    │   │   ├── base.py
-    │   │   ├── development.py
-    │   │   └── production.py
-    │   ├── urls.py
-    │   └── wsgi.py
-    ├── apps/
-    │   ├── core/           # Shared utilities, base models
-    │   ├── users/          # Custom User model (ALWAYS create)
-    │   └── {feature}/      # Feature-specific apps
-    ├── templates/
-    ├── static/
-    ├── requirements/
-    │   ├── base.txt
-    │   ├── development.txt
-    │   └── production.txt
-    └── manage.py
+  layout: "config/{settings/{base,development,production}.py,urls.py,wsgi.py} + apps/{core/,users/,<feature>/} + templates/ + static/ + requirements/{base,development,production}.txt"
 
 app_module_contents:
   models.py: Database models
@@ -50,6 +31,8 @@ app_module_contents:
   tests/: Test suite (mirror app structure)
 ```
 
+Reference: guides/django-best-practices/README.md
+
 ### 2. Models Best Practices
 
 ```yaml
@@ -57,15 +40,7 @@ custom_user_model:
   rule: ALWAYS create a custom User model, even if identical to default
   location: apps/users/models.py
   reason: Impossible to swap default User model mid-project
-  example: |
-    # apps/users/models.py
-    from django.contrib.auth.models import AbstractUser
-
-    class User(AbstractUser):
-        pass  # Can extend later without migrations
-
-    # config/settings/base.py
-    AUTH_USER_MODEL = 'users.User'
+  pattern: "Extend AbstractUser, set AUTH_USER_MODEL in settings"
 
 primary_key:
   default: BigAutoField
@@ -77,18 +52,6 @@ model_meta:
     - Meta.ordering: consistent default ordering
     - Meta.verbose_name: singular display name
     - Meta.verbose_name_plural: plural display name
-  example: |
-    class Article(models.Model):
-        title = models.CharField(max_length=200)
-        created_at = models.DateTimeField(auto_now_add=True)
-
-        class Meta:
-            ordering = ['-created_at']
-            verbose_name = 'article'
-            verbose_name_plural = 'articles'
-
-        def __str__(self):
-            return self.title
 
 query_optimization:
   foreign_key: select_related()    # Single SQL JOIN
@@ -107,18 +70,7 @@ indexing:
 
 constraints:
   use: Meta.constraints for database-level enforcement
-  example: |
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'article'],
-                name='unique_user_article'
-            ),
-            models.CheckConstraint(
-                check=models.Q(price__gte=0),
-                name='price_non_negative'
-            )
-        ]
+  types: "UniqueConstraint, CheckConstraint"
 
 soft_delete:
   pattern: is_active = models.BooleanField(default=True)
@@ -126,15 +78,9 @@ soft_delete:
 
 custom_managers:
   rule: Use managers for reusable querysets
-  example: |
-    class PublishedManager(models.Manager):
-        def get_queryset(self):
-            return super().get_queryset().filter(status='published')
-
-    class Article(models.Model):
-        objects = models.Manager()     # Keep default
-        published = PublishedManager() # Add custom
 ```
+
+Reference: guides/django-best-practices/README.md
 
 ### 3. Views Best Practices
 
@@ -145,15 +91,6 @@ cbv_vs_fbv:
 
 thin_views:
   rule: Keep views thin — delegate business logic to services/models
-  wrong: |
-    def create_order(request):
-        # 50 lines of business logic in view
-  correct: |
-    def create_order(request):
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            order = order_service.create(request.user, form.cleaned_data)
-            return redirect('order-detail', pk=order.pk)
 
 shortcuts:
   - get_object_or_404(Model, pk=pk): Returns 404 instead of 500
@@ -179,7 +116,7 @@ status_codes:
 ```yaml
 namespacing:
   app_name: Required in every app's urls.py
-  usage: reverse('app_name:url_name') or {% url 'app_name:url_name' %}
+  usage: "reverse('app_name:url_name') or {% url 'app_name:url_name' %}"
 
 syntax:
   prefer: path() over re_path() for clarity
@@ -187,55 +124,28 @@ syntax:
 
 naming:
   rule: Name ALL URL patterns
-  convention: "{resource}-{action}" (e.g., article-list, article-detail)
+  convention: "{resource}-{action} (e.g., article-list, article-detail)"
 
 inclusion:
   root_urls: Use include() for app-level URLs
-  example: |
-    # config/urls.py
-    urlpatterns = [
-        path('admin/', admin.site.urls),
-        path('api/', include('apps.api.urls', namespace='api')),
-        path('articles/', include('apps.articles.urls', namespace='articles')),
-    ]
-
-    # apps/articles/urls.py
-    app_name = 'articles'
-    urlpatterns = [
-        path('', ArticleListView.as_view(), name='list'),
-        path('<int:pk>/', ArticleDetailView.as_view(), name='detail'),
-    ]
 ```
+
+Reference: guides/django-best-practices/README.md
 
 ### 5. Forms & Validation
 
 ```yaml
 model_forms:
   rule: Use ModelForm when form maps to a model
-  fields: Explicitly list fields (never use fields = '__all__')
+  fields: "Explicitly list fields (never use fields = '__all__')"
 
 validation:
   field_level: clean_<field>() method
   cross_field: clean() method
   built_in: Use Django validators (MaxValueValidator, RegexValidator, etc.)
-
-example: |
-  class ArticleForm(forms.ModelForm):
-      class Meta:
-          model = Article
-          fields = ['title', 'body', 'status']
-
-      def clean_title(self):
-          title = self.cleaned_data['title']
-          if len(title) < 5:
-              raise forms.ValidationError('Title too short.')
-          return title
-
-      def clean(self):
-          cleaned = super().clean()
-          # Cross-field validation here
-          return cleaned
 ```
+
+Reference: guides/django-best-practices/README.md
 
 ### 6. Security
 
@@ -287,22 +197,13 @@ test_classes:
 test_data:
   preferred: factory_boy or model_bakery
   avoid: fixtures (hard to maintain, slow)
-  example: |
-    import factory
-    from apps.users.models import User
-
-    class UserFactory(factory.django.DjangoModelFactory):
-        class Meta:
-            model = User
-        username = factory.Sequence(lambda n: f'user{n}')
-        email = factory.LazyAttribute(lambda o: f'{o.username}@example.com')
 
 request_testing:
   Client: Full request/response cycle (preferred for views)
   RequestFactory: Faster, no middleware (for unit testing views)
 
 settings_override:
-  decorator: '@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")'
+  decorator: '@override_settings(...)'
 
 coverage:
   target: 80%+
@@ -311,6 +212,8 @@ coverage:
 structure:
   mirror_app: tests/test_models.py, tests/test_views.py, tests/test_forms.py
 ```
+
+Reference: guides/django-best-practices/README.md
 
 ### 8. Performance
 
@@ -322,15 +225,15 @@ n_plus_1_prevention:
   complex: Prefetch object with custom queryset
 
 partial_loading:
-  only: only('id', 'title', 'created_at')  # Load only these fields
-  defer: defer('body', 'metadata')          # Load all except these
-  values: values('id', 'title')             # Returns dicts (no ORM overhead)
-  values_list: values_list('id', flat=True) # Returns flat list
+  only: "only('id', 'title', 'created_at') — Load only these fields"
+  defer: "defer('body', 'metadata') — Load all except these"
+  values: "values('id', 'title') — Returns dicts (no ORM overhead)"
+  values_list: "values_list('id', flat=True) — Returns flat list"
 
 caching:
   backend: Redis (preferred), Memcached
-  view_cache: '@cache_page(60 * 15)' decorator
-  template_cache: '{% cache 500 sidebar %}' template tag
+  view_cache: "'@cache_page(60 * 15)' decorator"
+  template_cache: "'{% cache 500 sidebar %}' template tag"
   low_level: cache.get/set/delete for fine-grained control
 
 pagination:
@@ -339,8 +242,8 @@ pagination:
   drf: PageNumberPagination or CursorPagination
 
 bulk_operations:
-  create: Article.objects.bulk_create(articles, batch_size=1000)
-  update: Article.objects.bulk_update(articles, ['status'], batch_size=1000)
+  create: "bulk_create(articles, batch_size=1000)"
+  update: "bulk_update(articles, ['status'], batch_size=1000)"
   avoid: Loops calling .save() on many objects
 ```
 
@@ -351,17 +254,6 @@ serializers:
   standard_crud: ModelSerializer
   read_only: Use SerializerMethodField for computed values
   write_validation: validate_<field>() and validate() methods
-  example: |
-    class ArticleSerializer(serializers.ModelSerializer):
-        author_name = serializers.SerializerMethodField()
-
-        class Meta:
-            model = Article
-            fields = ['id', 'title', 'body', 'author_name', 'created_at']
-            read_only_fields = ['id', 'created_at']
-
-        def get_author_name(self, obj):
-            return obj.author.get_full_name()
 
 viewsets:
   standard: ModelViewSet for full CRUD
@@ -380,7 +272,6 @@ permissions:
 
 versioning:
   method: NamespaceVersioning or URLPathVersioning
-  example: "/api/v1/articles/" vs "/api/v2/articles/"
 
 throttling:
   anonymous: AnonRateThrottle
@@ -391,6 +282,8 @@ pagination:
   global: DEFAULT_PAGINATION_CLASS in settings
   types: PageNumberPagination (simple), CursorPagination (large datasets)
 ```
+
+Reference: guides/django-best-practices/README.md
 
 ### 10. Deployment
 

@@ -104,17 +104,6 @@ All members must be spawned in a single message. Partial spawning needs correcti
    implementer → fixes → SendMessage(reviewer, "fixed")
    reviewer → re-reviews → done
 
-❌ WRONG: Multi-expert task without coordination
-   Agent(lang-typescript-expert) → "Implement frontend"
-   Agent(be-express-expert) → "Implement API"
-   (no shared state, results manually combined)
-
-✓ CORRECT: Agent Teams for cross-domain work
-   TeamCreate("fullstack")
-   Agent(frontend-dev) + Agent(backend-dev) → team members
-   Shared TaskList for interface contracts
-   SendMessage for API schema coordination
-
 ❌ WRONG: Spawning team members one at a time
    TeamCreate("research-team")
    Message 1: Agent(researcher-1) → Analysis 1   (only 1/3 spawned)
@@ -127,18 +116,6 @@ All members must be spawned in a single message. Partial spawning needs correcti
      Agent(researcher-1) → Analysis 1  ┐
      Agent(researcher-2) → Analysis 2  ├─ ALL spawned together
      Agent(researcher-3) → Analysis 3  ┘
-
-❌ WRONG: Multi-issue batch as independent agents
-   Agent(general-purpose) → "Fix issue #1"
-   Agent(general-purpose) → "Fix issue #2"
-   Agent(general-purpose) → "Fix issue #3"
-   (no coordination, no shared task tracking)
-
-✓ CORRECT: Agent Teams for multi-issue batches
-   TeamCreate("release-fixes")
-   TaskCreate for each issue
-   Agent(fixer-1) + Agent(fixer-2) + Agent(fixer-3) → team members
-   Shared task list tracks progress across all issues
 ```
 
 ## Cost Guidelines

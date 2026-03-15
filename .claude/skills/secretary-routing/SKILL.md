@@ -56,26 +56,11 @@ batch    → multiple (parallel)
 
 ### Ontology-RAG Enrichment (R019)
 
-After agent selection, enrich the spawned agent's prompt with ontology context:
+If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
-1. Call `get_agent_for_task(original_query)` via MCP
-2. Extract `suggested_skills` from response
-3. If `suggested_skills` non-empty, prepend to spawned agent prompt:
-   `"Ontology context suggests these skills may be relevant: {suggested_skills}"`
-4. On MCP failure: skip silently, proceed with unmodified prompt
+### Step 5: Soul Injection (R006)
 
-**This step is advisory only — it never changes which agent is selected.**
-
-### Step 5: Soul Injection
-
-If the selected agent has `soul: true` in its frontmatter:
-
-1. Read `.claude/agents/souls/{agent-name}.soul.md`
-2. If file exists, prepend soul content to the agent's prompt:
-   `"Identity context:\n{soul content}\n\n---\n\n"`
-3. If file doesn't exist → skip silently (no error, no injection)
-
-**This step runs after ontology-RAG enrichment. Soul content is identity context, not capability instructions.**
+If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
 
 ## Routing Rules
 

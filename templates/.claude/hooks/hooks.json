@@ -263,14 +263,14 @@
         "description": "Store content hashes for Read operations — enables Edit staleness detection"
       },
       {
-        "matcher": "tool == \"Bash\" || tool == \"Read\"",
+        "matcher": "tool == \"Bash\" || tool == \"Read\" || tool == \"Grep\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/secret-filter.sh"
           }
         ],
-        "description": "Detect potential secrets in Bash/Read output — advisory warning only"
+        "description": "Detect potential secrets in Bash/Read/Grep output — advisory warning only"
       },
       {
         "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Agent\"",

@@ -2,6 +2,7 @@
 name: sys-naggy
 description: Use when you need TODO list management and task tracking with proactive reminders, helping maintain project momentum by monitoring stale tasks and deadlines
 model: sonnet
+domain: universal
 memory: local
 effort: low
 tools:
