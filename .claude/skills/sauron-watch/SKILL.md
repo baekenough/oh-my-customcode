@@ -53,6 +53,59 @@ Ensure complete synchronization of agents, skills, documentation, and project st
 □ All routing skills have complete agent mappings
 ```
 
+#### Structural Lint Rules
+
+In addition to workflow alignment checks, verify these structural invariants:
+
+**Lint 1: Routing Coverage**
+```
+For each agent in .claude/agents/*.md:
+  Check if agent name appears in at least one routing skill:
+    - secretary-routing/SKILL.md
+    - dev-lead-routing/SKILL.md
+    - de-lead-routing/SKILL.md
+    - qa-lead-routing/SKILL.md
+
+  If not found in any routing skill:
+    WARN: "{agent} is unreachable — not referenced in any routing skill"
+```
+
+**Lint 2: Orphan Skill Detection**
+```
+For each skill in .claude/skills/*/SKILL.md:
+  Check if skill name appears in:
+    - Any agent's skills: [] frontmatter field
+    - Any routing skill's content
+    - CLAUDE.md command table (for user-invocable skills)
+
+  If not referenced anywhere:
+    WARN: "{skill} is orphaned — not referenced by any agent or routing skill"
+```
+
+**Lint 3: Circular Dependency Check**
+```
+Build dependency graph:
+  For each agent → extract skills: [] references
+  For each skill → extract agent references in body
+
+  Detect cycles: agent-A → skill-X → agent-A
+  If cycle found:
+    ERROR: "Circular dependency: {cycle path}"
+```
+
+**Lint 4: Context Fork Cap Verification**
+```
+Count skills with context: fork in frontmatter:
+  grep "context: fork" .claude/skills/*/SKILL.md
+
+  If count > 10:
+    ERROR: "Context fork cap exceeded: {count}/10"
+  If count >= 8:
+    WARN: "Context fork usage high: {count}/10 — only {10-count} slots remaining"
+```
+
+All structural lints are **advisory** (WARN level) except circular dependencies and fork cap exceeded (ERROR level — should block commit).
+
 #### Deep Round 2: Reference Verification
 ```
 □ All skill references exist
@@ -72,6 +125,34 @@ Ensure complete synchronization of agents, skills, documentation, and project st
 □ R011: Memory integration (native-first architecture)
 □ All MUST rules enforced, SHOULD rules recommended
 ```
+
+#### Spec Density Check (Advisory)
+
+Check each agent's body-to-skill ratio to detect agents with too much inline implementation detail:
+
+```
+For each agent in .claude/agents/*.md:
+  agent_body_LOC = count non-frontmatter, non-blank lines in agent body
+  referenced_skills = extract skills from frontmatter skills: field
+  total_skill_LOC = sum of LOC in each referenced SKILL.md
+
+  if total_skill_LOC > 0:
+    spec_density = agent_body_LOC / total_skill_LOC
+    if spec_density > 0.5:
+      WARN: "{agent} has spec density {spec_density:.2f} — consider extracting inline details to skills"
+  else:
+    if agent_body_LOC > 50:
+      INFO: "{agent} has {agent_body_LOC} LOC with no skill references — consider creating skills"
+```
+
+**Thresholds**:
+| Density | Status | Meaning |
+|---------|--------|---------|
+| ≤ 0.3 | Good | Agent properly delegates to skills |
+| 0.3-0.5 | OK | Acceptable inline detail |
+| > 0.5 | WARNING | Too much implementation in agent body |
+
+This check is **advisory only** — it does not block commits.
 
 ### Phase 2.5: Documentation Accuracy
 ```

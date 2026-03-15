@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "description": "Tool input validation schemas for PreToolUse hook",
+  "definitions": {
+    "Write": {
+      "type": "object",
+      "required": ["file_path", "content"],
+      "properties": {
+        "file_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Absolute file path to write"
+        },
+        "content": {
+          "type": "string",
+          "description": "File content to write"
+        }
+      }
+    },
+    "Edit": {
+      "type": "object",
+      "required": ["file_path", "old_string", "new_string"],
+      "properties": {
+        "file_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Absolute file path to edit"
+        },
+        "old_string": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Text to find and replace"
+        },
+        "new_string": {
+          "type": "string",
+          "description": "Replacement text"
+        }
+      },
+      "additionalValidation": {
+        "rule": "old_string !== new_string",
+        "message": "old_string and new_string must be different"
+      }
+    },
+    "Bash": {
+      "type": "object",
+      "required": ["command"],
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Shell command to execute"
+        }
+      },
+      "dangerousPatterns": [
+        { "pattern": "rm\\s+-rf\\s+/", "message": "Dangerous recursive delete from root" },
+        { "pattern": "sudo\\s+", "message": "Elevated privilege command detected" },
+        { "pattern": "> /dev/sd", "message": "Direct disk write detected" },
+        { "pattern": "mkfs\\.", "message": "Filesystem format command detected" }
+      ]
+    }
+  }
+}
