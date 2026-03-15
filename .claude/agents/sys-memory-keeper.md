@@ -59,6 +59,35 @@ When triggered by session-end signal from orchestrator:
 
 > **Note**: MCP tools (claude-mem, episodic-memory) are orchestrator-scoped and cannot be called from subagents. The orchestrator handles MCP saves directly after receiving the formatted summary.
 
+### Confidence Decay Check
+
+At session start and end, sys-memory-keeper performs temporal decay:
+
+1. Parse MEMORY.md entries for `[confidence: ..., verified: YYYY-MM-DD]` tags
+2. Calculate days since last verification
+3. Apply decay schedule:
+   - 30+ days unverified → demote one confidence level
+   - 60+ days → demote again
+   - 90+ days → flag as `[STALE]` for review
+4. Skip entries marked `[permanent]`
+5. Re-verify entries confirmed during current session
+
+### Metrics Aggregation (Session-End)
+
+After updating memory entries, aggregate agent performance:
+
+1. Read task outcomes: `/tmp/.claude-task-outcomes-${PPID}`
+2. Parse JSONL entries: extract `agent_type`, `outcome`, `model`
+3. Aggregate by agent_type:
+   - Increment task count
+   - Calculate success rate: `successes / total`
+   - Track model distribution (most common = avg model)
+   - Update last used timestamp
+4. Merge with existing `## Metrics` table in MEMORY.md:
+   - Existing agent: cumulative update (add counts, recalculate rates)
+   - New agent: append row
+5. Enforce 20-row budget: prune lowest-usage rows
+
 ### Failure Handling
 
 - MEMORY.md update failure → report error to orchestrator

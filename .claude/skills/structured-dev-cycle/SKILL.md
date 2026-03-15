@@ -25,6 +25,21 @@ Inspired by Pi Coding Agent Workflow Extension's structured development approach
 | 5 | **Compound** | Read, Bash (tests only) | Write, Edit | Integration testing, cross-module validation |
 | 6 | **Done** | Read | Write, Edit, Bash | Summary and documentation |
 
+### Stage Model Recommendations
+
+Following the [reasoning-sandwich](/skills/reasoning-sandwich) pattern:
+
+| Stage | Recommended Model | Rationale |
+|-------|------------------|-----------|
+| 1: Plan | opus | Architectural reasoning, requirement analysis |
+| 2: Verify Plan | opus | Edge case detection, alternative evaluation |
+| 3: Implement | sonnet | Code generation, file creation optimized |
+| 4: Verify Implementation | sonnet | Test execution, structural review |
+| 5: Compound | sonnet | Integration testing, cross-module validation |
+| 6: Done | haiku | Checklist validation, summary generation |
+
+Model selection is advisory — the orchestrator may override based on task complexity.
+
 ## Stage Tracking
 
 Stage state is tracked via a marker file for hook enforcement:

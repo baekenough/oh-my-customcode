@@ -31,9 +31,10 @@ escalation:              # Model escalation policy (optional)
   path: haiku → sonnet → opus  # Escalation sequence
   threshold: 2           # Failures before advisory
 soul: true                 # Enable SOUL.md identity injection
-isolation: worktree        # Run in isolated git worktree
+isolation: worktree | sandbox  # worktree = git worktree, sandbox = restricted bash
 background: true           # Run in background
 maxTurns: 10               # Max conversation turns
+maxTokens: 100000          # Per-turn token ceiling
 mcpServers: [server-1]     # MCP servers available
 hooks:                     # Agent-specific hooks
   PreToolUse:
@@ -41,9 +42,32 @@ hooks:                     # Agent-specific hooks
       command: "echo hook"
 permissionMode: bypassPermissions  # Permission mode
 disallowedTools: [Bash]    # Tools to disallow
+limitations:               # Negative capability declarations
+  - "cannot execute tests"
+  - "cannot modify code"
 ```
 
-> **Note**: `isolation`, `background`, `maxTurns`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools` are supported in Claude Code v2.1.63+.
+> **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+.
+
+### Isolation Modes
+
+| Mode | Behavior | Use Case |
+|------|----------|----------|
+| `worktree` | Isolated git worktree copy | Code changes that need rollback safety |
+| `sandbox` | Restricted Bash environment | Agents running untrusted or scan commands |
+
+When `isolation: sandbox` is set, the agent's Bash calls run with restricted permissions. This is advisory metadata — enforcement depends on the execution environment.
+
+### Token Ceiling
+
+When `maxTokens` is set, it serves as advisory metadata for the orchestrator to manage agent turn budgets. The orchestrator should track output and consider escalation or task splitting when an agent approaches its ceiling.
+
+### Negative Capabilities (Limitations)
+
+The `limitations` field declares what an agent explicitly CANNOT or SHOULD NOT do. This enables:
+1. **Clearer routing**: Orchestrator knows agent boundaries
+2. **Safer delegation**: Prevents accidental capability overreach
+3. **Better documentation**: Makes agent scope explicit
 
 ### Escalation Policy
 
@@ -143,6 +167,19 @@ version: 1.0.0             # Semantic version
 user-invocable: false      # Whether user can invoke directly
 disable-model-invocation: true  # Prevent model from auto-invoking
 ```
+
+### Skill Effectiveness Tracking
+
+Skills can optionally track effectiveness metrics via auto-populated fields:
+
+```yaml
+effectiveness:              # Auto-populated by sys-memory-keeper
+  invocations: 0            # Total invocation count across sessions
+  success_rate: 0.0         # Success rate (0.0-1.0)
+  last_invoked: ""          # ISO-8601 timestamp
+```
+
+These fields are read-only from the skill's perspective — sys-memory-keeper updates them at session end based on task-outcome-recorder data. They inform model selection, routing optimization, and skill maintenance priorities.
 
 ## Skill Scope
 
