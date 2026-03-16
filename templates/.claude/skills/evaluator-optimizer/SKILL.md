@@ -46,6 +46,14 @@ evaluator-optimizer:
 | `quality_gate.threshold` | No | `0.8` | Score threshold (for `score_threshold` type) |
 | `max_iterations` | No | `3` | Max refinement loops (hard cap: 5) |
 
+### Model Selection Guidance
+
+For model selection within the evaluator-optimizer loop, follow the [reasoning-sandwich](/skills/reasoning-sandwich) pattern:
+
+- **Generator**: Use `sonnet` (default) — optimized for content generation
+- **Evaluator**: Use `opus` (default) — benefits from stronger reasoning for quality assessment
+- **Override**: For simpler domains, `sonnet`/`sonnet` is acceptable; for critical domains, consider `opus`/`opus`
+
 ## Quality Gate Types
 
 | Type | Behavior |
@@ -148,6 +156,7 @@ The evaluator MUST return a structured verdict in this format:
 | Documentation | `arch-documenter` | opus reviewer | Completeness, clarity, accuracy |
 | Architecture | Plan agent | opus reviewer | No SPOFs, no circular deps |
 | Test plans | `qa-planner` | `qa-engineer` | Coverage, edge cases, feasibility |
+| Test coverage | `qa-writer` | `qa-engineer` + coverage tool | `coverage >= target%` |
 | Agent creation | `mgr-creator` | opus reviewer | Frontmatter validity, R006 compliance |
 | Security audit | `sec-codeql-expert` | opus reviewer | Vulnerability coverage, false positive rate |
 
@@ -207,6 +216,50 @@ evaluator-optimizer:
     type: all_pass
   max_iterations: 3
 ```
+
+### Domain: Test Coverage Optimization
+
+```yaml
+evaluator-optimizer:
+  generator:
+    agent: qa-writer
+    model: sonnet
+  evaluator:
+    agent: qa-engineer
+    model: sonnet
+  rubric:
+    - criterion: line_coverage
+      weight: 0.4
+      description: "Percentage of code lines exercised by tests"
+    - criterion: branch_coverage
+      weight: 0.3
+      description: "Percentage of conditional branches tested"
+    - criterion: edge_cases
+      weight: 0.2
+      description: "Critical edge cases explicitly tested"
+    - criterion: test_quality
+      weight: 0.1
+      description: "Tests are meaningful, not just hitting lines"
+  quality_gate:
+    type: score_threshold
+    threshold: 0.8
+  max_iterations: 5
+  parameters:
+    target_coverage: 80        # Minimum coverage percentage
+    max_iterations: 5          # Hard cap (matches skill-level cap)
+```
+
+**Workflow**:
+1. qa-writer generates test cases targeting uncovered code
+2. qa-engineer runs tests and measures coverage
+3. If coverage < target: qa-writer generates additional tests for uncovered paths
+4. Repeat until target reached or max_iterations exhausted
+
+**Parameters**:
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `target_coverage` | 80% | Minimum acceptable coverage |
+| `max_iterations` | 5 | Hard cap on refinement loops |
 
 ## Integration
 

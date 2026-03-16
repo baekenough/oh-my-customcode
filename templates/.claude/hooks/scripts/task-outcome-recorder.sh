@@ -13,6 +13,17 @@ agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // .agent_type // 
 model=$(echo "$input" | jq -r '.tool_input.model // .model // "inherit"')
 description=$(echo "$input" | jq -r '.tool_input.description // .description // ""' | head -c 80)
 
+# Extract skill name from description or prompt
+skill_name=""
+if echo "$description" | grep -qiE '(skill:|routing|→.*skill)'; then
+  skill_name=$(echo "$description" | grep -oiE '[a-z]+-[a-z]+(-[a-z]+)*-?(routing|skill|practices|detection|decomposition|orchestration|pipeline|guards|cycle|plan|review|refactor|publish|version|audit|exec|analyze|bundle|report|setup|watch|lists|status|help|save|recall)' | head -1)
+fi
+# Fallback: check prompt field for "Skill: {name}" pattern
+if [ -z "$skill_name" ]; then
+  prompt=$(echo "$input" | jq -r '.tool_input.prompt // ""' | head -c 500)
+  skill_name=$(echo "$prompt" | grep -oiE 'Skill:\s*[a-z]+-[a-z]+(-[a-z]+)*' | sed 's/[Ss]kill:\s*//' | head -1)
+fi
+
 # Determine outcome
 is_error=$(echo "$input" | jq -r '.tool_output.is_error // false')
 
@@ -61,9 +72,10 @@ entry=$(jq -n \
   --arg model "$model" \
   --arg outcome "$outcome" \
   --arg pattern "$pattern" \
+  --arg skill "$skill_name" \
   --arg desc "$description" \
   --arg err "$error_summary" \
-  '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, pattern_used: $pattern, description: $desc, error_summary: $err}')
+  '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, pattern_used: $pattern, skill: $skill, description: $desc, error_summary: $err}')
 
 echo "$entry" >> "$OUTCOME_FILE"
 
