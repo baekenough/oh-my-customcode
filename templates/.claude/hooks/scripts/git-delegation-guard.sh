@@ -3,6 +3,9 @@
 # Warns when git operations are delegated to a non-mgr-gitnerd agent via Agent/Task tool.
 # WARN only - does NOT block (exit 0, passes input through).
 
+# Dependency check: exit silently if jq not available
+command -v jq >/dev/null 2>&1 || exit 0
+
 input=$(cat)
 
 agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // ""')
