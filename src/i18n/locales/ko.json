@@ -76,7 +76,21 @@
       "templateNotFound": "'{{name}}' 템플릿을 찾을 수 없습니다",
       "initializingTemplate": "템플릿으로 초기화 중: {{name}}",
       "promptOverwrite": "설정 파일이 이미 존재합니다. 덮어쓰시겠습니까?",
-      "aborted": "초기화가 취소되었습니다"
+      "aborted": "초기화가 취소되었습니다",
+      "wizard": {
+        "welcome": "oh-my-customcode 설정을 시작합니다!",
+        "langPrompt": "사용할 언어를 선택하세요",
+        "domainPrompt": "팀의 주요 도메인을 선택하세요",
+        "domainAll": "전체 도메인 (전체 설치)",
+        "domainBackend": "백엔드 (Go, Python, Java, Spring, FastAPI 등)",
+        "domainFrontend": "프론트엔드 (TypeScript, Vue, Svelte, Flutter, Vercel)",
+        "domainDataEngineering": "데이터 엔지니어링 (Airflow, dbt, Spark, Kafka 등)",
+        "domainDevops": "DevOps / 인프라 (Docker, AWS, CI/CD)",
+        "teamModePrompt": "팀 모드를 활성화하시겠습니까?",
+        "teamModeHint": "팀 모드는 공유 평가 서버와 인증을 활성화합니다",
+        "confirm": "다음 설정으로 설치를 진행합니다:",
+        "cancelled": "설정이 취소되었습니다."
+      }
     },
     "update": {
       "description": "에이전트 및 설정을 최신 버전으로 업데이트",
