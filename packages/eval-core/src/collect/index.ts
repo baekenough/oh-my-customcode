@@ -26,8 +26,8 @@ export async function collect(options: CollectOptions): Promise<CollectResult> {
   let turnCount = 0;
   let invocationCount = 0;
 
-  sessionCount = await collectSessions(db, options);
-  turnCount = await collectTurns(db, options);
+  sessionCount = collectSessions(db, options);
+  turnCount = collectTurns(db, options);
   if (options.ppid) {
     invocationCount = collectInvocations(db, options.ppid, options.dryRun);
   }
@@ -35,7 +35,7 @@ export async function collect(options: CollectOptions): Promise<CollectResult> {
   return { sessions: sessionCount, turns: turnCount, invocations: invocationCount };
 }
 
-async function collectSessions(db: EvalDb, options: CollectOptions): Promise<number> {
+function collectSessions(db: EvalDb, options: CollectOptions): number {
   const sessionFile = `${options.omxLogsDir}/session-history.jsonl`;
   const rawSessions = parseSessionHistory(sessionFile);
   let count = 0;
@@ -71,7 +71,7 @@ async function collectSessions(db: EvalDb, options: CollectOptions): Promise<num
   return count;
 }
 
-async function collectTurns(db: EvalDb, options: CollectOptions): Promise<number> {
+function collectTurns(db: EvalDb, options: CollectOptions): number {
   const sinceDate = options.since?.split('T')[0];
   const rawTurns = parseTurnFiles(options.omxLogsDir, sinceDate);
   let count = 0;

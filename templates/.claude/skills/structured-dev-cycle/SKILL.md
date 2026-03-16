@@ -25,6 +25,21 @@ Inspired by Pi Coding Agent Workflow Extension's structured development approach
 | 5 | **Compound** | Read, Bash (tests only) | Write, Edit | Integration testing, cross-module validation |
 | 6 | **Done** | Read | Write, Edit, Bash | Summary and documentation |
 
+### Stage Model Recommendations
+
+Following the [reasoning-sandwich](/skills/reasoning-sandwich) pattern:
+
+| Stage | Recommended Model | Rationale |
+|-------|------------------|-----------|
+| 1: Plan | opus | Architectural reasoning, requirement analysis |
+| 2: Verify Plan | opus | Edge case detection, alternative evaluation |
+| 3: Implement | sonnet | Code generation, file creation optimized |
+| 4: Verify Implementation | sonnet | Test execution, structural review |
+| 5: Compound | sonnet | Integration testing, cross-module validation |
+| 6: Done | haiku | Checklist validation, summary generation |
+
+Model selection is advisory — the orchestrator may override based on task complexity.
+
 ## Stage Tracking
 
 Stage state is tracked via a marker file for hook enforcement:
@@ -80,9 +95,11 @@ A PreToolUse hook in `.claude/hooks/hooks.json` checks this marker and blocks Wr
 
 **Codex-Exec Hybrid Option**: When entering Stage 3:
 1. Check `/tmp/.claude-env-status-*` for codex CLI availability
-2. If available AND task involves new file creation:
-   - Suggest: `[Codex Hybrid Available] New file generation can use codex-exec for faster scaffolding. Orchestrator may delegate initial code generation to codex-exec, then have Claude expert review.`
-3. If unavailable → proceed with standard implementation via Claude experts
+2. If available AND task involves new file creation → automatically delegate scaffolding to `/codex-exec`:
+   - Display: `[Codex Hybrid] Delegating scaffolding to codex-exec...`
+   - codex-exec generates initial code (strength: fast generation)
+   - Claude expert reviews and refines codex output (strength: reasoning, quality)
+3. If unavailable → display `[Codex] Unavailable — proceeding with Claude experts directly` and proceed with standard implementation via Claude experts
 
 Suitable for codex hybrid: new files, boilerplate, test stubs, scaffolding
 Not suitable: modifying existing code, architecture-dependent changes
