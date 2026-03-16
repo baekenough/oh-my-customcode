@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Dependency check: exit silently if jq not available
+command -v jq >/dev/null 2>&1 || exit 0
+
 # Agent Teams Advisor Hook
 # Trigger: PreToolUse, tool == "Task" || tool == "Agent"
 # Purpose: Track Agent/Task tool usage count per session and warn when Agent Teams may be more appropriate

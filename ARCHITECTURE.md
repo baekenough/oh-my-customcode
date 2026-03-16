@@ -1,6 +1,6 @@
 # Architecture
 
-> oh-my-customcode v0.38.0
+> oh-my-customcode v0.39.0
 
 ## 1. System Overview
 
@@ -453,7 +453,7 @@ sequenceDiagram
     SMK->>SMK: Collect summary, apply temporal decay
     SMK-->>O: Native memory updated
     O->>MCP: Save session summary (best-effort)
-    Note over MCP: episodic-memory auto-indexes<br/>after session — no manual step
+    Note over MCP: episodic-memory auto-indexes after session, no manual step
     O-->>U: Session saved confirmation
 ```
 
@@ -490,7 +490,7 @@ flowchart LR
     rel --> tag["git tag v*"]
     tag --> release["release.yml\nnpm publish\nGitHub Packages"]
 
-    subgraph Side Workflows
+    subgraph "Side Workflows"
         docs-validator
         docs-sync
         security-audit

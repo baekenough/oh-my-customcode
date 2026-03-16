@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Dependency check: exit silently if jq not available
+command -v jq >/dev/null 2>&1 || exit 0
+
 # Stuck Detector Hook
 # Trigger: PostToolUse, tool matches "Edit|Write|Bash|Task|Agent"
 # Purpose: Detect repetitive failure loops and advise recovery
