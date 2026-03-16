@@ -46,15 +46,7 @@ state_choice:
 
 build_context:
   rule: "Never store BuildContext across async gaps"
-  pattern: |
-    // BAD
-    final ctx = context;
-    await Future.delayed(Duration(seconds: 1));
-    Navigator.of(ctx).push(...); // context may be invalid
-
-    // GOOD
-    if (!mounted) return;
-    Navigator.of(context).push(...);
+  pattern: "Check mounted before using context after await"
 
 keys:
   ValueKey: "When items have unique business identity"
@@ -83,6 +75,8 @@ slivers:
   avoid: "Nested ListView in ListView"
 ```
 
+Reference: guides/flutter/fundamentals.md
+
 ### 2. State Management
 
 ```yaml
@@ -99,50 +93,25 @@ riverpod_patterns:
   async_state: "AsyncNotifier + AsyncValue (loading/data/error)"
   family: "family modifier for parameterized providers"
   keep_alive: "Only when justified (expensive computations)"
-  invalidate_vs_refresh: |
-    ref.invalidate(provider)  // reset to loading, lazy re-fetch
-    ref.refresh(provider)     // immediate re-fetch, return new value
+  invalidate_vs_refresh: "ref.invalidate() resets to loading (lazy); ref.refresh() immediate re-fetch"
 
 bloc_patterns:
   one_event_per_action: "One UI action = one event class"
-  cubit_vs_bloc: |
-    Cubit: direct emit(state) — for simple state changes
-    Bloc: event → state mapping — when audit trail needed
+  cubit_vs_bloc: "Cubit for simple state changes; Bloc when audit trail needed"
   never: "Emit state in constructor body"
-  listener_vs_consumer: |
-    BlocListener: side effects (navigation, snackbar)
-    BlocConsumer: rebuild UI + side effects
-    BlocBuilder: rebuild UI only (most common)
+  listener_vs_consumer: "BlocListener for side effects; BlocConsumer for UI + effects; BlocBuilder for UI only"
   stream_management: "Cancel subscriptions in close()"
 
 state_immutability:
   rule: "All state objects must be immutable"
   tool: "freezed package for copyWith/==/hashCode generation"
-  pattern: |
-    @freezed
-    class UserState with _$UserState {
-      const factory UserState({
-        required String name,
-        required int age,
-        @Default(false) bool isLoading,
-      }) = _UserState;
-    }
 
 result_type:
   rule: "Return Result<T> from repositories, never throw"
-  pattern: |
-    sealed class Result<T> {
-      const Result();
-    }
-    final class Ok<T> extends Result<T> {
-      const Ok(this.value);
-      final T value;
-    }
-    final class Error<T> extends Result<T> {
-      const Error(this.error);
-      final Exception error;
-    }
+  pattern: "sealed class Result<T> with Ok<T> and Error<T> subclasses"
 ```
+
+Reference: guides/flutter/state-management.md
 
 ### 3. Performance
 
@@ -151,16 +120,7 @@ build_optimization:
   const_widgets: "Mark immutable widgets const — zero rebuild"
   localize_setState: "Call setState on smallest possible subtree"
   extract_widgets: "StatelessWidget class > helper method"
-  child_parameter: |
-    // GOOD: static child passed through
-    AnimatedBuilder(
-      animation: controller,
-      builder: (context, child) => Transform.rotate(
-        angle: controller.value,
-        child: child, // not rebuilt
-      ),
-      child: const ExpensiveWidget(), // built once
-    )
+  child_parameter: "Pass static child through AnimatedBuilder to avoid rebuild"
 
 rebuild_avoidance:
   consumer_placement: "Place Consumer/ListenableBuilder as deep as possible"
@@ -183,6 +143,8 @@ frame_budget:
   tool: "DevTools Performance view for jank detection"
 ```
 
+Reference: guides/flutter/performance.md
+
 ### 4. Testing
 
 ```yaml
@@ -192,42 +154,24 @@ test_pyramid:
   integration: "Full app on device — slow, high confidence"
   golden: "Visual regression via matchesGoldenFile()"
 
-widget_test_pattern: |
-  testWidgets('shows loading then content', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [productsProvider.overrideWith((_) => fakeProducts)],
-        child: const MaterialApp(home: ProductListScreen()),
-      ),
-    );
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    await tester.pumpAndSettle();
-    expect(find.byType(ProductCard), findsNWidgets(3));
-  });
+widget_test_pattern:
+  rule: "Use pumpWidget with ProviderScope overrides, then pump/pumpAndSettle for async"
 
 mocking:
   prefer: "mocktail (null-safe, no codegen)"
   avoid: "Legacy mockito with build_runner"
   fakes: "Use Fake implementations for deterministic tests"
-  pattern: |
-    class FakeProductRepository extends Fake implements ProductRepository {
-      @override
-      Future<Result<List<Product>>> getAll() async => Ok(testProducts);
-    }
 
-bloc_testing: |
-  blocTest<AuthBloc, AuthState>(
-    'emits [loading, success] when login succeeds',
-    build: () => AuthBloc(FakeAuthRepository()),
-    act: (bloc) => bloc.add(LoginRequested('user', 'pass')),
-    expect: () => [AuthLoading(), isA<AuthSuccess>()],
-  );
+bloc_testing:
+  rule: "Use blocTest<Bloc, State> with build/act/expect pattern"
 
 coverage_target:
   widget_tests: "80%+ for UI logic"
   unit_tests: "90%+ for business logic"
   integration: "Critical user flows only"
 ```
+
+Reference: guides/flutter/testing.md
 
 ### 5. Security
 
@@ -236,14 +180,14 @@ secrets:
   never: "Hardcode API keys, tokens, or credentials in source"
   best: "Backend proxy for all sensitive API calls"
   use: "--dart-define-from-file=.env for NON-SECRET build config only (feature flags, environment URLs)"
-  warning: "dart-define values are embedded in compiled binary and extractable via static analysis. Use only for non-secret build configuration (feature flags, environment URLs)."
+  warning: "dart-define values are embedded in compiled binary and extractable via static analysis"
 
 storage:
   sensitive_data: "flutter_secure_storage v10+ (Keychain/Keystore)"
   never: "SharedPreferences for tokens, PII, or credentials"
   ios: "AppleOptions(useSecureEnclave: true) for high-value"
   android: "AndroidOptions(encryptedSharedPreferences: true)"
-  web_warning: "flutter_secure_storage on Web uses localStorage by default, which is accessible to any JavaScript on the page (XSS vulnerable). For Web targets, use HttpOnly cookies managed by backend or in-memory-only storage for sensitive data."
+  web_warning: "flutter_secure_storage on Web uses localStorage by default (XSS vulnerable). Use HttpOnly cookies or in-memory-only for sensitive data."
 
 network:
   tls: "Certificate pinning (SPKI) for financial/health apps"
@@ -267,54 +211,35 @@ logging:
   never: "Log PII, tokens, or credentials"
 ```
 
+Reference: guides/flutter/security.md
+
 ### 6. Dart Language Patterns
 
 ```yaml
 naming:
-  types: "UpperCamelCase for classes, enums, typedefs, extensions, mixins (e.g., HttpClient, JsonParser)"
-  variables: "lowerCamelCase for variables, parameters, named constants (e.g., itemCount, defaultTimeout)"
-  libraries: "lowercase_with_underscores for libraries, packages, directories, source files (e.g., my_package, slider_menu.dart)"
-  constants: "lowerCamelCase for const (e.g., const defaultTimeout = 30), NOT SCREAMING_CAPS"
-  private: "Prefix with underscore for library-private (e.g., _internalCache, _helper())"
-  boolean: "Prefix with is/has/can/should for booleans (e.g., isEnabled, hasData, canScroll)"
-  avoid: "Hungarian notation, type prefixes (strName, lstItems), abbreviations unless universally known (e.g., ok: http, url, id; avoid: mgr, ctx, btn)"
+  types: "UpperCamelCase for classes, enums, typedefs, extensions, mixins"
+  variables: "lowerCamelCase for variables, parameters, named constants"
+  libraries: "lowercase_with_underscores for libraries, packages, directories, source files"
+  constants: "lowerCamelCase for const (NOT SCREAMING_CAPS)"
+  private: "Prefix with underscore for library-private"
+  boolean: "Prefix with is/has/can/should"
+  avoid: "Hungarian notation, type prefixes, abbreviations unless universally known"
 
 null_safety:
   default: "Non-nullable types — use ? only when null is meaningful"
   avoid_bang: "Minimize ! operator — use only when null is logically impossible"
   late: "Only when initialization is guaranteed before use"
-  pattern: |
-    // GOOD
-    final name = user?.name ?? 'Anonymous';
-
-    // AVOID
-    final name = user!.name; // crashes if null
 
 sealed_classes:
   use_for: "Exhaustive pattern matching on state/result types"
-  pattern: |
-    sealed class AuthState {}
-    class AuthInitial extends AuthState {}
-    class AuthLoading extends AuthState {}
-    class AuthSuccess extends AuthState { final User user; AuthSuccess(this.user); }
-    class AuthError extends AuthState { final String message; AuthError(this.message); }
-
-    // Exhaustive switch — compiler enforces all cases
-    return switch (state) {
-      AuthInitial() => LoginScreen(),
-      AuthLoading() => CircularProgressIndicator(),
-      AuthSuccess(:final user) => HomeScreen(user: user),
-      AuthError(:final message) => ErrorWidget(message),
-    };
+  pattern: "sealed class with subclass per state, exhaustive switch expression"
 
 records:
   use_for: "Lightweight multi-value returns without class boilerplate"
-  pattern: "(String name, int age) getUserInfo() => ('Alice', 30);"
   avoid: "Records for complex data — use freezed classes instead"
 
 extension_types:
   use_for: "Zero-cost type wrappers for primitive IDs"
-  pattern: "extension type UserId(int id) implements int {}"
 
 immutability:
   prefer: "final variables, const constructors"
@@ -331,48 +256,19 @@ dynamic:
   reason: "No compile-time type checking, reduces IDE support"
 ```
 
+Reference: guides/flutter/fundamentals.md
+
 ### 7. Architecture & Project Structure
 
 ```yaml
 default_structure:
-  small_app: |
-    lib/
-      models/
-      services/
-      screens/
-      widgets/
-  medium_app: |
-    lib/
-      ui/
-        core/themes/, core/widgets/
-        <feature>/<feature>_screen.dart
-        <feature>/<feature>_viewmodel.dart
-      data/
-        repositories/<entity>_repository.dart
-        services/<source>_service.dart
-      domain/ (optional)
-        use_cases/
-  large_app: |
-    lib/
-      core/ (shared)
-      features/<feature>/
-        data/datasources/, data/repositories/
-        domain/entities/, domain/usecases/
-        presentation/bloc/, presentation/pages/
+  small_app: "lib/{models,services,screens,widgets}/"
+  medium_app: "lib/{ui/{core/,<feature>/},data/{repositories/,services/},domain/}"
+  large_app: "lib/{core/,features/<feature>/{data/,domain/,presentation/}}"
 
 navigation:
   default: "go_router (official recommendation)"
-  pattern: |
-    GoRoute(
-      path: '/product/:id',
-      builder: (context, state) {
-        final id = state.pathParameters['id']!;
-        return ProductDetailScreen(id: id);
-      },
-    )
-  go_vs_push: |
-    context.go('/path')   // replaces stack (navigation reset)
-    context.push('/path') // adds to stack (back button works)
+  go_vs_push: "context.go() replaces stack; context.push() adds to stack"
 
 dependency_injection:
   riverpod: "Built-in — providers as DI (default)"
@@ -381,13 +277,12 @@ dependency_injection:
 
 environments:
   pattern: "Flavors + --dart-define for multi-environment builds"
-  command: "flutter run --flavor development --target lib/main/main_development.dart"
   rule: "Separate bundle IDs, API URLs, and Firebase config per flavor"
 ```
 
-## Default Stack
+Reference: guides/flutter/architecture.md
 
-When starting a new Flutter project, recommend this stack:
+## Default Stack
 
 ```yaml
 state_management: Riverpod 3.0
@@ -401,8 +296,6 @@ structure: Official MVVM (lib/{ui,data}/)
 ```
 
 ## Enterprise Stack
-
-For regulated or large-team projects:
 
 ```yaml
 state_management: BLoC 9.0 + Cubit

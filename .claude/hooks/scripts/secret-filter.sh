@@ -1,6 +1,6 @@
 #!/bin/bash
 # Secret Output Filter Hook — Detect potential secrets in tool output
-# Trigger: PostToolUse on Bash, Read
+# Trigger: PostToolUse on Bash, Read, Grep
 # Purpose: Advisory warning when potential secrets detected in output
 # Protocol: stdin JSON -> scan -> stdout pass-through
 # Always exits 0 (advisory only, never blocks)
@@ -55,6 +55,36 @@ fi
 # GitHub OAuth Token
 if echo "$output" | grep -qE 'gho_[a-zA-Z0-9]{36}'; then
   echo "[Security] Potential GitHub OAuth token detected in ${tool_name} output" >&2
+  detected=true
+fi
+
+# GitHub Fine-Grained PAT
+if echo "$output" | grep -qE 'github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}'; then
+  echo "[Security] Potential GitHub Fine-Grained PAT detected in ${tool_name} output" >&2
+  detected=true
+fi
+
+# GitHub Actions Token
+if echo "$output" | grep -qE 'ghs_[a-zA-Z0-9]{36}'; then
+  echo "[Security] Potential GitHub Actions token detected in ${tool_name} output" >&2
+  detected=true
+fi
+
+# npm Token
+if echo "$output" | grep -qE 'npm_[a-zA-Z0-9]{36}'; then
+  echo "[Security] Potential npm token detected in ${tool_name} output" >&2
+  detected=true
+fi
+
+# Slack Token
+if echo "$output" | grep -qE 'xox[bsarp]-[a-zA-Z0-9-]{10,}'; then
+  echo "[Security] Potential Slack token detected in ${tool_name} output" >&2
+  detected=true
+fi
+
+# Docker Hub PAT
+if echo "$output" | grep -qE 'dckr_pat_[a-zA-Z0-9_-]{20,}'; then
+  echo "[Security] Potential Docker Hub PAT detected in ${tool_name} output" >&2
   detected=true
 fi
 

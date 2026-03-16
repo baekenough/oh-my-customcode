@@ -18,10 +18,9 @@ case "$tool_name" in
   "Read")
     # Store content hash for the file that was just read
     file_path=$(echo "$input" | jq -r '.tool_input.file_path // ""')
-    output=$(echo "$input" | jq -r '.tool_output.output // ""')
 
-    if [ -n "$file_path" ] && [ -n "$output" ] && [ "$output" != "null" ]; then
-      content_hash=$(echo "$output" | md5 2>/dev/null || echo "$output" | md5sum 2>/dev/null | cut -d' ' -f1 || echo "unknown")
+    if [ -n "$file_path" ] && [ -f "$file_path" ]; then
+      content_hash=$(md5 -q "$file_path" 2>/dev/null || md5sum "$file_path" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
       timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
       # Store hash entry (overwrite previous for same file)

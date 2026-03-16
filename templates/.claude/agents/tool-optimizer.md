@@ -2,6 +2,7 @@
 name: tool-optimizer
 description: Use for bundle size analysis, tree-shaking verification, performance profiling, dead code detection, and build optimization recommendations
 model: sonnet
+domain: universal
 memory: project
 effort: medium
 skills:
@@ -10,8 +11,6 @@ skills:
   - optimize-report
 tools:
   - Read
-  - Write
-  - Edit
   - Grep
   - Glob
   - Bash

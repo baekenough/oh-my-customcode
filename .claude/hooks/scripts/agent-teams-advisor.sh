@@ -8,6 +8,16 @@ set -euo pipefail
 
 input=$(cat)
 
+# Skip if Agent Teams is not available
+ENV_STATUS="/tmp/.claude-env-status-${PPID}"
+if [ -f "$ENV_STATUS" ]; then
+  teams_status=$(grep "agent_teams=" "$ENV_STATUS" 2>/dev/null | cut -d= -f2 || echo "unknown")
+  if [ "$teams_status" != "enabled" ]; then
+    echo "$input"
+    exit 0
+  fi
+fi
+
 # Extract task info from input
 agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // "unknown"')
 prompt_preview=$(echo "$input" | jq -r '.tool_input.description // ""' | head -c 60)

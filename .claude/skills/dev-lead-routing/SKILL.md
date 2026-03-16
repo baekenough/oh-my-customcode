@@ -18,6 +18,7 @@ context: fork
 | Tooling | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | Database | db-supabase-expert, db-postgres-expert, db-redis-expert |
 | Architect | arch-documenter, arch-speckit-agent |
+| Security | sec-codeql-expert |
 | Infra | infra-docker-expert, infra-aws-expert |
 
 ## File Extension Mapping
@@ -67,6 +68,7 @@ context: fork
 | supabase, rls, edge function | db-supabase-expert |
 | docker, dockerfile, container, compose | infra-docker-expert |
 | aws, cloudformation, vpc, iam, s3, lambda, cdk, terraform | infra-aws-expert |
+| security, codeql, cve, vulnerability, sarif, sast, security audit | sec-codeql-expert |
 | architecture, adr, openapi, swagger, diagram | arch-documenter |
 | spec, specification, tdd, requirements | arch-speckit-agent |
 
@@ -110,26 +112,11 @@ Route to appropriate language/framework expert based on file extension and keywo
 
 ### Step 4: Ontology-RAG Enrichment (R019)
 
-After agent selection, enrich the spawned agent's prompt with ontology context:
+If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
-1. Call `get_agent_for_task(original_query)` via MCP
-2. Extract `suggested_skills` from response
-3. If `suggested_skills` non-empty, prepend to spawned agent prompt:
-   `"Ontology context suggests these skills may be relevant: {suggested_skills}"`
-4. On MCP failure: skip silently, proceed with unmodified prompt
+### Step 5: Soul Injection (R006)
 
-**This step is advisory only — it never changes which agent is selected.**
-
-### Step 5: Soul Injection
-
-If the selected agent has `soul: true` in its frontmatter:
-
-1. Read `.claude/agents/souls/{agent-name}.soul.md`
-2. If file exists, prepend soul content to the agent's prompt:
-   `"Identity context:\n{soul content}\n\n---\n\n"`
-3. If file doesn't exist → skip silently (no error, no injection)
-
-**This step runs after ontology-RAG enrichment. Soul content is identity context, not capability instructions.**
+If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
 
 ## Routing Rules
 

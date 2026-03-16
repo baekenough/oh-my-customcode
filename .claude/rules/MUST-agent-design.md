@@ -45,6 +45,7 @@ disallowedTools: [Bash]    # Tools to disallow
 limitations:               # Negative capability declarations
   - "cannot execute tests"
   - "cannot modify code"
+domain: backend              # backend | frontend | data-engineering | devops | universal
 ```
 
 > **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+.

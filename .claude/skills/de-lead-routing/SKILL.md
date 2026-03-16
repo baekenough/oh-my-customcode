@@ -76,26 +76,11 @@ Route to appropriate DE expert based on tool/framework detection.
 
 ### Step 4: Ontology-RAG Enrichment (R019)
 
-After agent selection, enrich the spawned agent's prompt with ontology context:
+If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
-1. Call `get_agent_for_task(original_query)` via MCP
-2. Extract `suggested_skills` from response
-3. If `suggested_skills` non-empty, prepend to spawned agent prompt:
-   `"Ontology context suggests these skills may be relevant: {suggested_skills}"`
-4. On MCP failure: skip silently, proceed with unmodified prompt
+### Step 5: Soul Injection (R006)
 
-**This step is advisory only — it never changes which agent is selected.**
-
-### Step 5: Soul Injection
-
-If the selected agent has `soul: true` in its frontmatter:
-
-1. Read `.claude/agents/souls/{agent-name}.soul.md`
-2. If file exists, prepend soul content to the agent's prompt:
-   `"Identity context:\n{soul content}\n\n---\n\n"`
-3. If file doesn't exist → skip silently (no error, no injection)
-
-**This step runs after ontology-RAG enrichment. Soul content is identity context, not capability instructions.**
+If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
 
 ## Command Routing
 
@@ -198,78 +183,6 @@ For projects spanning multiple DE tools:
 | de-spark-expert | `sonnet` | `opus` for optimization |
 | de-kafka-expert | `sonnet` | `opus` for topology design |
 | de-snowflake-expert | `sonnet` | `opus` for warehouse design |
-
-### Agent Call Examples
-
-```
-# Complex pipeline architecture
-Agent(
-  subagent_type: "general-purpose",
-  prompt: "Design end-to-end pipeline architecture following de-pipeline-expert guidelines",
-  model: "opus"
-)
-
-# Standard DAG review
-Agent(
-  subagent_type: "general-purpose",
-  prompt: "Review Airflow DAGs in dags/ following de-airflow-expert guidelines",
-  model: "sonnet"
-)
-
-# Quick dbt test validation
-Agent(
-  subagent_type: "Explore",
-  prompt: "Find all dbt models missing schema tests",
-  model: "haiku"
-)
-```
-
-## Parallel Execution
-
-Following R009:
-- Maximum 4 parallel instances
-- Independent tool/module operations
-- Coordinate cross-tool consistency
-
-Example:
-```
-User: "Review all DE configs"
-
-Detection:
-  - dags/ → de-airflow-expert
-  - models/ → de-dbt-expert
-  - kafka/ → de-kafka-expert
-
-Route (parallel):
-  Agent(de-airflow-expert role → review dags/, model: "sonnet")
-  Agent(de-dbt-expert role → review models/, model: "sonnet")
-  Agent(de-kafka-expert role → review kafka/, model: "sonnet")
-```
-
-## Display Format
-
-```
-[Analyzing] Detected: Airflow, dbt, Snowflake
-
-[Delegating] de-airflow-expert:sonnet → DAG design
-[Delegating] de-dbt-expert:sonnet → Model structure
-[Delegating] de-snowflake-expert:sonnet → Warehouse config
-
-[Progress] ███████████░ 2/3 experts completed
-
-[Summary]
-  Airflow: DAG with 5 tasks designed
-  dbt: 12 models across 3 layers
-  Snowflake: Warehouse + schema configured
-
-Pipeline design completed.
-```
-
-## Integration with Other Routing Skills
-
-- **dev-lead-routing**: Hands off to DE lead when data engineering keywords detected
-- **secretary-routing**: DE agents accessible through secretary for management tasks
-- **qa-lead-routing**: Coordinates with QA for data quality testing
 
 ## No Match Fallback
 
