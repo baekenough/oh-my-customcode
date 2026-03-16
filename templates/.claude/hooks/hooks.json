@@ -147,7 +147,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Context was just compacted. MANDATORY post-compaction steps: 1) All enforced rules (R007 Agent ID, R008 Tool ID, R009 Parallel, R010 Orchestrator) remain ACTIVE — compaction does NOT disable rules. 2) Your next response MUST include agent identification per R007. 3) Continue delegating ALL file modifications to subagents per R010. 4) Re-read CLAUDE.md if needed to refresh project-specific context."
+            "prompt": "Context was just compacted. MANDATORY post-compaction steps: 1) All enforced rules (R007 Agent ID, R008 Tool ID, R009 Parallel, R010 Orchestrator, R018 Agent Teams) remain ACTIVE — compaction does NOT disable rules. 2) Your next response MUST include agent identification per R007. 3) Continue delegating ALL file modifications to subagents per R010. 4) Re-read CLAUDE.md if needed to refresh project-specific context."
           }
         ],
         "description": "Reinforce enforced rules after context compaction — prevents rule amnesia (v2.1.76+)"
