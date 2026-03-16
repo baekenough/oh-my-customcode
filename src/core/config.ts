@@ -46,6 +46,13 @@ export interface OmccConfig {
   domain?: string;
   /** Team mode enabled */
   teamMode?: boolean;
+  /** Evaluation system configuration */
+  eval?: {
+    enabled: boolean;
+    dbDriver: 'sqlite';
+    sqlitePath: string;
+    autoCollectOnStop: boolean;
+  };
 }
 
 /**
