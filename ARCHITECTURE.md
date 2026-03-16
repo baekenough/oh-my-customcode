@@ -1,10 +1,10 @@
 # Architecture
 
-> oh-my-customcode v0.39.0
+> oh-my-customcode v0.40.0
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 44 pre-built subagents, 74 skills, 20 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 44 pre-built subagents, 74 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -60,7 +60,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 ## 3. Component Inventory
 
-### 3.1 Rule System (R000–R020, no R014)
+### 3.1 Rule System (R000–R021, no R014)
 
 | ID | Priority | Name | Description |
 |----|----------|------|-------------|
@@ -84,6 +84,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | R018 | MUST (conditional) | Agent Teams | Mandatory when CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 |
 | R019 | SHOULD | Ontology-RAG Routing | Enriches agent selection with contextual skill suggestions |
 | R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
+| R021 | MUST | Enforcement Policy | Advisory-first enforcement model, promotion criteria |
 
 ### 3.2 Agent Taxonomy (44 agents)
 
@@ -589,7 +590,7 @@ Tested and compatible with Claude Code v2.1.72 through v2.1.76.
 | Item | Approximate Size |
 |------|-----------------|
 | CLAUDE.md | ~5K tokens |
-| Rules (20 files) | ~28K tokens |
+| Rules (21 files) | ~28K tokens |
 | Total mandatory load | ~33K tokens / session |
 
 Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (11 active, 12 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
