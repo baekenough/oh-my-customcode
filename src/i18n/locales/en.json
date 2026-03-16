@@ -76,7 +76,21 @@
       "templateNotFound": "Template '{{name}}' not found",
       "initializingTemplate": "Initializing with template: {{name}}",
       "promptOverwrite": "Configuration already exists. Overwrite?",
-      "aborted": "Initialization aborted"
+      "aborted": "Initialization aborted",
+      "wizard": {
+        "welcome": "Welcome to oh-my-customcode setup!",
+        "langPrompt": "Select your preferred language",
+        "domainPrompt": "Select your team's primary domain",
+        "domainAll": "All domains (full install)",
+        "domainBackend": "Backend (Go, Python, Java, Spring, FastAPI, etc.)",
+        "domainFrontend": "Frontend (TypeScript, Vue, Svelte, Flutter, Vercel)",
+        "domainDataEngineering": "Data Engineering (Airflow, dbt, Spark, Kafka, etc.)",
+        "domainDevops": "DevOps / Infrastructure (Docker, AWS, CI/CD)",
+        "teamModePrompt": "Enable team mode?",
+        "teamModeHint": "Team mode enables shared evaluation server and authentication",
+        "confirm": "Ready to install with these settings:",
+        "cancelled": "Setup cancelled."
+      }
     },
     "update": {
       "description": "Update agents and configurations to latest version",
