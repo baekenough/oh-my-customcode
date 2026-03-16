@@ -8,6 +8,9 @@ use pyo3::prelude::*;
 ///
 /// This module provides BFS traversal, PageRank, and hybrid scoring
 /// as Rust-native implementations for maximum CPU throughput.
+///
+/// All public functions validate their inputs and return descriptive
+/// `PyValueError` messages on invalid arguments.
 #[pymodule]
 fn ontology_graph_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(graph::bfs, m)?)?;

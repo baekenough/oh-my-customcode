@@ -1,3 +1,4 @@
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 
@@ -9,12 +10,17 @@ use std::collections::HashMap;
 /// # Arguments
 /// * `node_ids` - all node IDs in the graph
 /// * `edges` - list of (source, target) directed edges
-/// * `damping` - damping factor, default 0.85
+/// * `damping` - damping factor in (0.0, 1.0), default 0.85
 /// * `max_iter` - maximum number of iterations, default 100
 /// * `tolerance` - convergence threshold (L1 norm), default 1e-6
 ///
 /// # Returns
 /// Map of node_id -> PageRank score (scores sum to 1.0)
+///
+/// # Errors
+/// - `PyValueError` if `damping` is not in the range (0.0, 1.0)
+/// - `PyValueError` if `tolerance` is not positive
+/// - `PyValueError` if any node ID in `node_ids` is an empty string
 #[pyfunction]
 pub fn pagerank(
     node_ids: Vec<String>,
@@ -22,15 +28,51 @@ pub fn pagerank(
     damping: Option<f64>,
     max_iter: Option<usize>,
     tolerance: Option<f64>,
+) -> PyResult<HashMap<String, f64>> {
+    let d = damping.unwrap_or(0.85);
+    if !(0.0 < d && d < 1.0) {
+        return Err(PyValueError::new_err(format!(
+            "damping must be in the open interval (0.0, 1.0), got {d}"
+        )));
+    }
+
+    let tol = tolerance.unwrap_or(1e-6);
+    if tol <= 0.0 {
+        return Err(PyValueError::new_err(format!(
+            "tolerance must be positive, got {tol}"
+        )));
+    }
+
+    for id in &node_ids {
+        if id.is_empty() {
+            return Err(PyValueError::new_err(
+                "node_ids must not contain empty strings",
+            ));
+        }
+    }
+
+    let max_iterations = max_iter.unwrap_or(100);
+
+    Ok(pagerank_internal(node_ids, edges, d, max_iterations, tol))
+}
+
+/// Pure-Rust PageRank implementation (no PyO3 overhead).
+///
+/// Called by the `pagerank` pyfunction and by benchmarks.
+/// Preconditions (not re-validated here):
+/// - `damping` ∈ (0.0, 1.0)
+/// - `tolerance` > 0.0
+pub fn pagerank_internal(
+    node_ids: Vec<String>,
+    edges: Vec<(String, String)>,
+    damping: f64,
+    max_iterations: usize,
+    tolerance: f64,
 ) -> HashMap<String, f64> {
     let n = node_ids.len();
     if n == 0 {
         return HashMap::new();
     }
-
-    let d = damping.unwrap_or(0.85);
-    let max_iterations = max_iter.unwrap_or(100);
-    let tol = tolerance.unwrap_or(1e-6);
 
     // Build index for O(1) lookup
     let node_index: HashMap<&str, usize> = node_ids
@@ -63,7 +105,7 @@ pub fn pagerank(
     // Initial uniform distribution
     let init = 1.0 / n as f64;
     let mut rank = vec![init; n];
-    let teleport = (1.0 - d) / n as f64;
+    let teleport = (1.0 - damping) / n as f64;
 
     for _ in 0..max_iterations {
         let mut new_rank = vec![teleport; n];
@@ -76,12 +118,12 @@ pub fn pagerank(
             .map(|(_, r)| r)
             .sum();
 
-        let dangling_contribution = d * dangling_sum / n as f64;
+        let dangling_contribution = damping * dangling_sum / n as f64;
 
         for i in 0..n {
             new_rank[i] += dangling_contribution;
             for &src_idx in &in_links[i] {
-                new_rank[i] += d * rank[src_idx] / out_degree[src_idx] as f64;
+                new_rank[i] += damping * rank[src_idx] / out_degree[src_idx] as f64;
             }
         }
 
@@ -94,7 +136,7 @@ pub fn pagerank(
 
         rank = new_rank;
 
-        if delta < tol {
+        if delta < tolerance {
             break;
         }
     }
@@ -116,18 +158,18 @@ mod tests {
 
     #[test]
     fn test_pagerank_empty() {
-        let result = pagerank(vec![], vec![], None, None, None);
+        let result = pagerank_internal(vec![], vec![], 0.85, 100, 1e-6);
         assert!(result.is_empty());
     }
 
     #[test]
     fn test_pagerank_single_node() {
-        let result = pagerank(
+        let result = pagerank_internal(
             vec!["A".to_string()],
             vec![],
-            None,
-            None,
-            None,
+            0.85,
+            100,
+            1e-6,
         );
         assert!(approx_eq(result["A"], 1.0, 1e-6));
     }
@@ -141,7 +183,7 @@ mod tests {
             ("C".to_string(), "A".to_string()),
             ("D".to_string(), "A".to_string()),
         ];
-        let result = pagerank(nodes, edges, None, None, None);
+        let result = pagerank_internal(nodes, edges, 0.85, 100, 1e-6);
         let total: f64 = result.values().sum();
         assert!(approx_eq(total, 1.0, 1e-6));
     }
@@ -155,7 +197,7 @@ mod tests {
             ("B".to_string(), "C".to_string()),
             ("C".to_string(), "A".to_string()),
         ];
-        let result = pagerank(nodes, edges, Some(0.85), Some(200), Some(1e-9));
+        let result = pagerank_internal(nodes, edges, 0.85, 200, 1e-9);
         let total: f64 = result.values().sum();
         assert!(approx_eq(total, 1.0, 1e-6));
         // All should be ~1/3
@@ -174,7 +216,7 @@ mod tests {
             ("D".to_string(), "B".to_string()),
             ("B".to_string(), "A".to_string()),
         ];
-        let result = pagerank(nodes, edges, None, None, None);
+        let result = pagerank_internal(nodes, edges, 0.85, 100, 1e-6);
         assert!(result["B"] > result["A"]);
         assert!(result["B"] > result["C"]);
         assert!(result["B"] > result["D"]);
@@ -190,7 +232,7 @@ mod tests {
             ("C".to_string(), "A".to_string()),
             // D is dangling
         ];
-        let result = pagerank(nodes, edges, None, None, None);
+        let result = pagerank_internal(nodes, edges, 0.85, 100, 1e-6);
         let total: f64 = result.values().sum();
         assert!(approx_eq(total, 1.0, 1e-6));
         // All scores should be positive
@@ -206,7 +248,7 @@ mod tests {
             ("A".to_string(), "A".to_string()), // self-loop
             ("A".to_string(), "B".to_string()),
         ];
-        let result = pagerank(nodes, edges, None, None, None);
+        let result = pagerank_internal(nodes, edges, 0.85, 100, 1e-6);
         let total: f64 = result.values().sum();
         assert!(approx_eq(total, 1.0, 1e-6));
     }
@@ -222,7 +264,7 @@ mod tests {
             ("A".to_string(), "B".to_string()),
             ("C".to_string(), "D".to_string()),
         ];
-        let result = pagerank(nodes, edges, None, None, None);
+        let result = pagerank_internal(nodes, edges, 0.85, 100, 1e-6);
         let total: f64 = result.values().sum();
         assert!(approx_eq(total, 1.0, 1e-6));
     }
@@ -234,8 +276,40 @@ mod tests {
             ("A".to_string(), "B".to_string()),
             ("B".to_string(), "C".to_string()),
         ];
-        let result = pagerank(nodes, edges, Some(0.5), None, None);
+        let result = pagerank_internal(nodes, edges, 0.5, 100, 1e-6);
         let total: f64 = result.values().sum();
         assert!(approx_eq(total, 1.0, 1e-6));
+    }
+
+    // --- PyErr validation tests ---
+
+    #[test]
+    fn test_pagerank_invalid_damping_zero() {
+        assert!(pagerank(vec!["A".to_string()], vec![], Some(0.0), None, None).is_err());
+    }
+
+    #[test]
+    fn test_pagerank_invalid_damping_one() {
+        assert!(pagerank(vec!["A".to_string()], vec![], Some(1.0), None, None).is_err());
+    }
+
+    #[test]
+    fn test_pagerank_invalid_damping_negative() {
+        assert!(pagerank(vec!["A".to_string()], vec![], Some(-0.1), None, None).is_err());
+    }
+
+    #[test]
+    fn test_pagerank_invalid_tolerance_zero() {
+        assert!(pagerank(vec!["A".to_string()], vec![], None, None, Some(0.0)).is_err());
+    }
+
+    #[test]
+    fn test_pagerank_invalid_tolerance_negative() {
+        assert!(pagerank(vec!["A".to_string()], vec![], None, None, Some(-1e-6)).is_err());
+    }
+
+    #[test]
+    fn test_pagerank_empty_node_id() {
+        assert!(pagerank(vec!["".to_string()], vec![], None, None, None).is_err());
     }
 }
