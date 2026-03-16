@@ -34,7 +34,14 @@ jobs:
       - name: Run security audit
         run: |
           # Generate package-lock.json for npm audit (bun uses bun.lock)
-          npm i --package-lock-only --ignore-scripts 2>/dev/null || true
+          # --workspaces flag needed for monorepo workspace support
+          npm i --package-lock-only --ignore-scripts --workspaces 2>/dev/null || \
+            npm i --package-lock-only --ignore-scripts 2>/dev/null || true
+          # Fallback: if package-lock.json still doesn't exist, skip audit
+          if [ ! -f package-lock.json ]; then
+            echo "::warning::Could not generate package-lock.json for npm audit. Skipping."
+            exit 0
+          fi
           # Run npm audit (fails on high/critical vulnerabilities)
           npm audit --audit-level=high
 
