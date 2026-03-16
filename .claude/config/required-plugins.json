@@ -1,0 +1,30 @@
+{
+  "requiredPlugins": [
+    {
+      "name": "superpowers",
+      "source": "claude-plugins-official",
+      "description": "TDD, debugging, collaboration patterns"
+    },
+    {
+      "name": "superpowers-developing-for-claude-code",
+      "source": "superpowers-marketplace",
+      "description": "Claude Code development documentation"
+    },
+    {
+      "name": "elements-of-style",
+      "source": "superpowers-marketplace",
+      "description": "Writing clarity guidelines"
+    },
+    {
+      "name": "context7",
+      "source": "claude-plugins-official",
+      "description": "Library documentation lookup"
+    }
+  ],
+  "marketplaces": [
+    {
+      "name": "superpowers-marketplace",
+      "url": "obra/superpowers-marketplace"
+    }
+  ]
+}
