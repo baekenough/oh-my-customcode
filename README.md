@@ -21,6 +21,20 @@ npm install -g oh-my-customcode && cd your-project && omcustom init
 
 ---
 
+## What's New in v0.38.0
+
+| Feature | Description |
+|---------|-------------|
+| **Interactive Init Wizard** | `omcustom init` now uses `@clack/prompts` for guided setup — language, framework, team mode |
+| **PostCompact Hook** | Automatic rule reinforcement after context compaction (CC v2.1.76+) — prevents rule amnesia |
+| **@omcustom/eval-core MVP** | LLM evaluation engine: session/turn/outcome collection, SQLite via Drizzle ORM, CLI interface |
+| **Codex-exec Auto-delegation** | Routing skills automatically delegate to Codex when available |
+| **CC v2.1.72~v2.1.76 Compatibility** | SessionEnd timeout config, HTML comment optimization, `autoMemoryDirectory`, full model ID support |
+| **Template Full Sync** | All 200+ template files are byte-identical to source |
+| **Hook System Hardening** | Duplicate recorder removal, context-budget field fix, orphan cleanup |
+
+---
+
 ## Philosophy
 
 oh-my-customcode is built on two ideas:
@@ -209,22 +223,23 @@ Reference documentation covering best practices, architecture decisions, and int
 
 ## Safety
 
-oh-my-customcode includes three security hooks that run on every tool call:
+oh-my-customcode includes security and lifecycle hooks:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
 | secret-filter | Bash, Read output | Detects AWS keys, API tokens, private keys, bearer tokens |
 | audit-log | Edit, Write, Bash, Agent | Append-only JSONL at `~/.claude/audit.jsonl` |
 | schema-validator | Write, Edit, Bash input | Validates tool inputs, flags dangerous patterns |
+| PostCompact | Context compaction | Reinjects enforced rules (R007–R018) — prevents rule amnesia |
 
-All security hooks are advisory (exit 0). They warn but never block.
+Security hooks are advisory (exit 0). They warn but never block.
 
 ---
 
 ## CLI
 
 ```bash
-omcustom init                  # Initialize in project
+omcustom init                  # Interactive setup wizard (language, framework, team mode)
 omcustom init --lang ko        # Initialize with Korean
 omcustom update                # Update to latest
 omcustom list                  # List components
