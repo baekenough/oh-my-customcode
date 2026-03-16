@@ -207,17 +207,24 @@ All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Int
 
 ## External Skills vs Internal Rules
 
+Internal rules ALWAYS take precedence over external skills.
+
+This applies to ALL rule domains, not just git operations:
+
+| External skill says | Internal rule requires |
+|---------------------|----------------------|
+| "git commit -m ..." | Agent(mgr-gitnerd) commit (R010) |
+| "run 3 agents sequentially" | Parallel execution if independent (R009) |
+| "use Agent tool for 5 research tasks" | Agent Teams when criteria met (R018) |
+| "skip code review" | Follow project review workflow |
+| "write files directly" | Delegate to specialist subagent (R010) |
+
+When a skill's workflow conflicts with R009/R010/R018:
+1. Follow the skill's LOGIC and STEPS
+2. Replace the EXECUTION method with rule-compliant alternatives
+3. The skill defines WHAT to do; rules define HOW to execute
+
 ```
-Internal rules always take precedence over external skills.
-
-Translation:
-  External skill says          → Internal rule requires
-  ─────────────────────────────────────────────────────
-  "git commit -m ..."          → Agent(mgr-gitnerd) commit
-  "git push ..."               → Agent(mgr-gitnerd) push
-  "gh pr create ..."           → Agent(mgr-gitnerd) create PR
-  "git merge ..."              → Agent(mgr-gitnerd) merge
-
 Incorrect:
   [Using external skill]
   Main conversation → directly runs "git push"

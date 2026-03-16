@@ -23,3 +23,19 @@ Update the relevant rule rather than just acknowledging the violation.
 | User points out violation | Update rule → Continue |
 | Self-detected violation | Fix immediately, consider rule update |
 | Ambiguous situation | Ask user, then update if needed |
+
+## Anti-Patterns
+
+| Anti-Pattern | Why It's Wrong | Correct Action |
+|-------------|----------------|----------------|
+| "I'll update the rule later" | Deferred fixes are forgotten | Update rule NOW, before continuing |
+| "This is a one-time exception" | Exceptions become patterns | If the rule is wrong, fix it; if it's right, follow it |
+| "The rule doesn't cover this case" | Missing coverage = rule gap | Add the case to the rule immediately |
+| "Let me finish the task first" | Rule violations compound | Fix rule first (5 min), then continue (prevents N future violations) |
+
+## Timing
+
+Rule updates MUST happen:
+- **Before** continuing the original task
+- **In the same session** as the violation
+- **Not** as a separate TODO or follow-up issue
