@@ -99,10 +99,11 @@ Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or T
 For **new file creation**, **boilerplate**, or **test code generation**:
 
 1. Check `/tmp/.claude-env-status-*` for codex availability
-2. If codex available → suggest hybrid workflow:
+2. If codex available AND task involves new file creation → automatically delegate to `/codex-exec` for scaffolding:
+   - Display: `[Codex Hybrid] Delegating to codex-exec...`
    - codex-exec generates initial code (strength: fast generation)
-   - Claude expert reviews and refines (strength: reasoning, quality)
-3. If codex unavailable → use Claude expert directly
+   - Selected Claude expert reviews and refines codex output (strength: reasoning, quality)
+3. If codex unavailable → display `[Codex] Unavailable — proceeding with {expert} directly` and use Claude expert directly
 
 **Suitable**: New file creation, boilerplate, scaffolding, test code
 **Unsuitable**: Existing code modification, architecture decisions, bug fixes

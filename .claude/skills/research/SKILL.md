@@ -163,8 +163,21 @@ Batch 3: T9, T10            (Innovation)
 
 ### Phase 2: Cross-Verification Loop (min 2, max 30 rounds)
 
+#### Codex Availability Check
+
+Before starting verification rounds, check codex availability:
+
+```bash
+# Run this check once before Phase 2 begins
+which codex &>/dev/null && [ -n "$OPENAI_API_KEY" ]
+# Exit 0 → codex available: enable dual-model verification (opus + codex)
+# Exit 1 → codex unavailable: display notice and proceed with opus-only
 ```
-Team findings ──→ opus 4.6 verification ──→ codex-exec xhigh verification
+
+If unavailable, display: `[Phase 2] Codex unavailable — opus-only verification`
+
+```
+Team findings ──→ opus 4.6 verification ──→ codex-exec xhigh verification (if available)
        │                                              │
        └── Contradiction detected? ── YES ──→ Round N+1
                                       NO  ──→ Consensus reached → Phase 3
@@ -172,7 +185,8 @@ Team findings ──→ opus 4.6 verification ──→ codex-exec xhigh verific
 
 Each round:
 1. **opus 4.6**: Deep reasoning verification — checks logical consistency, identifies gaps, challenges assumptions
-2. **codex-exec xhigh** (if available): Independent code-level verification — validates technical claims, tests feasibility
+2. **codex-exec xhigh** (when available): Independent code-level verification — validates technical claims, tests feasibility
+   - If unavailable: display `[Phase 2] Round {N}: Codex unavailable, proceeding with opus verification only`
 3. **Contradiction resolution**: Reconcile divergent findings between teams and verifiers
 4. **Convergence check**: All major claims verified with no outstanding contradictions → proceed
 
@@ -272,10 +286,16 @@ Round N:
           - Internal consistency (breadth ↔ depth alignment)
           - Cross-domain consistency (security ↔ architecture)
           - Evidence quality (claims without backing)
-  Step 2: codex-exec validates technical claims:
-          - Code patterns actually exist
-          - Benchmarks are reproducible
-          - Dependencies resolve correctly
+  Step 2: codex-exec validates technical claims (when available):
+          a. Invoke: /codex-exec with findings from all teams
+          b. Prompt:  "Validate technical claims: {findings}.
+                       Check code patterns, benchmark reproducibility,
+                       dependency resolution."
+          c. Effort:  --effort xhigh
+          d. Parse:   contradictions → merge with opus findings
+          e. On timeout/error: log "[Phase 2] Round {N}: codex-exec error — {reason},
+                                continuing with opus results only"
+     If unavailable: log "[Phase 2] Round {N}: Codex unavailable, proceeding with opus verification only"
   Step 3: Compile contradiction list
           - 0 contradictions → CONVERGED
           - >0 contradictions → feedback to relevant teams → Round N+1
