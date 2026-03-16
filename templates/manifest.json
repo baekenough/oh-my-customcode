@@ -6,7 +6,7 @@
       "name": "rules",
       "path": ".claude/rules",
       "description": "Agent behavior rules and guidelines",
-      "files": 19
+      "files": 20
     },
     {
       "name": "agents",
