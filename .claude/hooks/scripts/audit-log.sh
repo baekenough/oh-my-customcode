@@ -6,6 +6,7 @@
 # Always exits 0 (advisory only)
 
 set -euo pipefail
+HOOK_START=$(date +%s%N 2>/dev/null || echo 0)
 
 # Dependency check: exit silently if jq not available
 command -v jq >/dev/null 2>&1 || exit 0
@@ -55,4 +56,9 @@ fi
 
 # Pass through
 echo "$input"
+HOOK_END=$(date +%s%N 2>/dev/null || echo 0)
+if [ "$HOOK_START" != "0" ] && [ "$HOOK_END" != "0" ]; then
+  HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))
+  echo "[Hook Perf] $(basename "$0"): ${HOOK_MS}ms" >> "/tmp/.claude-hook-perf-${PPID}.log"
+fi
 exit 0
