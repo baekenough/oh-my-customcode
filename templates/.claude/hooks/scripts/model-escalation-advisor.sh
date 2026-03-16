@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Dependency check: exit silently if jq not available
+command -v jq >/dev/null 2>&1 || exit 0
+
 # Model Escalation Advisor Hook
 # Trigger: PreToolUse, tool == "Task" || tool == "Agent"
 # Purpose: Advise model escalation when failure patterns detected
