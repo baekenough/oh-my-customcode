@@ -10,6 +10,7 @@ import { parse as parseYaml } from 'yaml';
 import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getProviderLayout } from '../core/layout.js';
+import { computeFileHash, readLockfile } from '../core/lockfile.js';
 import { checkSelfUpdate } from '../core/self-update.js';
 import { i18n } from '../i18n/index.js';
 
@@ -752,6 +753,62 @@ function readCurrentVersion(): string {
 }
 
 /**
+ * Check for lockfile drift: compare recorded template hashes with current file hashes.
+ * Returns 'skip' if no lockfile exists (not an omcustom project).
+ * Returns 'warn' if any files were modified, added, or removed since install.
+ * Returns 'pass' if all files match the recorded hashes.
+ * @param targetDir - Target directory containing .omcustom.lock.json
+ * @returns Check result indicating lockfile drift status, or null if no lockfile exists
+ */
+export async function checkLockfileDrift(targetDir: string): Promise<CheckResult | null> {
+  const lockfile = await readLockfile(targetDir);
+
+  if (!lockfile) {
+    return null;
+  }
+
+  const modified: string[] = [];
+  const removed: string[] = [];
+
+  for (const [relativePath, entry] of Object.entries(lockfile.files)) {
+    const absolutePath = path.join(targetDir, relativePath);
+    try {
+      const currentHash = await computeFileHash(absolutePath);
+      if (currentHash !== entry.templateHash) {
+        modified.push(relativePath);
+      }
+    } catch {
+      // File no longer exists
+      removed.push(relativePath);
+    }
+  }
+
+  const driftedFiles = [...modified, ...removed];
+
+  if (driftedFiles.length === 0) {
+    return {
+      name: 'Lockfile',
+      status: 'pass',
+      message: `Lockfile OK — no drift detected (${Object.keys(lockfile.files).length} files tracked)`,
+      fixable: false,
+    };
+  }
+
+  const details: string[] = [
+    ...modified.map((f) => `modified: ${f}`),
+    ...removed.map((f) => `removed: ${f}`),
+  ];
+
+  return {
+    name: 'Lockfile',
+    status: 'warn',
+    message: `Lockfile drift detected: ${driftedFiles.length} file(s) changed since install`,
+    fixable: false,
+    details,
+  };
+}
+
+/**
  * Check if the installed framework version (in .omcustomrc.json) is behind the CLI version
  * @param targetDir - Project directory containing .omcustomrc.json
  * @param currentVersion - The CLI's own version (latest)
@@ -849,10 +906,16 @@ async function runAllChecks(
   const frameworkCheck = await checkFrameworkDrift(targetDir, packageVersion);
   const checksWithFramework = frameworkCheck ? [...baseChecks, frameworkCheck] : baseChecks;
 
+  // Lockfile drift check (runs when .omcustom.lock.json exists)
+  const lockfileCheck = await checkLockfileDrift(targetDir);
+  const checksWithLockfile = lockfileCheck
+    ? [...checksWithFramework, lockfileCheck]
+    : checksWithFramework;
+
   // Optionally append update check
   return includeUpdates
-    ? [...checksWithFramework, checkUpdateAvailable(packageVersion)]
-    : checksWithFramework;
+    ? [...checksWithLockfile, checkUpdateAvailable(packageVersion)]
+    : checksWithLockfile;
 }
 
 /**

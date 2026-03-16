@@ -7,6 +7,7 @@ memory: project
 isolation: sandbox
 skills:
   - cve-triage
+  - adversarial-review
 tools:
   - Read
   - Write

@@ -138,7 +138,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (74)
+### Skills (75)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -150,7 +150,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 | Memory | 3 | memory-save, memory-recall, memory-management |
 | Package | 3 | npm-publish, npm-version, npm-audit |
 | Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
-| Security | 2 | cve-triage, jinja2-prompts |
+| Security | 3 | adversarial-review, cve-triage, jinja2-prompts |
 | Other | 8 | codex-exec, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and more |
 
 Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill maintenance), `package` (project-specific).

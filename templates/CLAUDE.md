@@ -102,6 +102,7 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom:audit-agents` | 에이전트 의존성 감사 |
 | `/omcustom:fix-refs` | 깨진 참조 수정 |
 | `/omcustom:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
+| `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
 | `/dev-review` | 코드 베스트 프랙티스 리뷰 |
 | `/dev-refactor` | 코드 리팩토링 |
 | `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |

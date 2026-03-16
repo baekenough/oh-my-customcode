@@ -185,6 +185,10 @@ case "$DRIFT_STATUS" in
     echo "  Skipped (not a git repository)" >&2
     ;;
 esac
+echo "" >&2
+echo "  [Lockfile Drift]" >&2
+echo "  Note: file-level lockfile drift (template hash changes) is checked via 'omcustom doctor'" >&2
+echo "  Run 'omcustom doctor' to detect modified/removed template files since install." >&2
 echo "------------------------------------" >&2
 
 # SessionEnd hooks timeout (v2.1.74+)

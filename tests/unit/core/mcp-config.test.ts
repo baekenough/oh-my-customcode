@@ -118,13 +118,34 @@ describe('mcp-config', () => {
 
       await generateMCPConfig(tempDir);
 
+      expect(execCalls).toContain('uv --version');
       expect(execCalls).toContain('uv venv .venv');
       expect(execCalls).toContain(
         'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"'
       );
     });
 
-    it('should throw error if venv creation fails', async () => {
+    it('should warn and return if uv is not available', async () => {
+      // Create ontology directory
+      const ontologyDir = join(tempDir, '.claude', 'ontology');
+      await mkdir(ontologyDir, { recursive: true });
+
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
+        if (String(cmd).includes('--version')) {
+          throw new Error('uv: command not found');
+        }
+        return Buffer.from('');
+      });
+
+      await generateMCPConfig(tempDir);
+
+      // .mcp.json should not be created
+      const mcpConfigPath = join(tempDir, '.mcp.json');
+      expect(await fileExists(mcpConfigPath)).toBe(false);
+      expect(consoleWarnSpy).toHaveBeenCalled();
+    });
+
+    it('should warn and return if venv creation fails', async () => {
       // Create ontology directory
       const ontologyDir = join(tempDir, '.claude', 'ontology');
       await mkdir(ontologyDir, { recursive: true });
@@ -136,12 +157,15 @@ describe('mcp-config', () => {
         return Buffer.from('');
       });
 
-      await expect(generateMCPConfig(tempDir)).rejects.toThrow(
-        'Failed to setup Python environment'
-      );
+      await generateMCPConfig(tempDir);
+
+      // .mcp.json should not be created
+      const mcpConfigPath = join(tempDir, '.mcp.json');
+      expect(await fileExists(mcpConfigPath)).toBe(false);
+      expect(consoleWarnSpy).toHaveBeenCalled();
     });
 
-    it('should throw error if ontology-rag installation fails', async () => {
+    it('should warn and return if ontology-rag installation fails', async () => {
       // Create ontology directory
       const ontologyDir = join(tempDir, '.claude', 'ontology');
       await mkdir(ontologyDir, { recursive: true });
@@ -153,23 +177,32 @@ describe('mcp-config', () => {
         return Buffer.from('');
       });
 
-      await expect(generateMCPConfig(tempDir)).rejects.toThrow(
-        'Failed to setup Python environment'
-      );
+      await generateMCPConfig(tempDir);
+
+      // .mcp.json should not be created
+      const mcpConfigPath = join(tempDir, '.mcp.json');
+      expect(await fileExists(mcpConfigPath)).toBe(false);
+      expect(consoleWarnSpy).toHaveBeenCalled();
     });
 
-    it('should handle non-Error exceptions during setup', async () => {
+    it('should warn and return on non-Error exceptions during setup', async () => {
       // Create ontology directory
       const ontologyDir = join(tempDir, '.claude', 'ontology');
       await mkdir(ontologyDir, { recursive: true });
 
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
-        throw 'Setup failed';
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
+        if (String(cmd).includes('--version')) {
+          throw 'Setup failed';
+        }
+        return Buffer.from('');
       });
 
-      await expect(generateMCPConfig(tempDir)).rejects.toThrow(
-        'Failed to setup Python environment'
-      );
+      await generateMCPConfig(tempDir);
+
+      // .mcp.json should not be created
+      const mcpConfigPath = join(tempDir, '.mcp.json');
+      expect(await fileExists(mcpConfigPath)).toBe(false);
+      expect(consoleWarnSpy).toHaveBeenCalled();
     });
 
     it('should merge with existing .mcp.json', async () => {
