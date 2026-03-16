@@ -41,7 +41,12 @@ import {
   type InstallComponent,
 } from './layout.js';
 import { generateAndWriteLockfileForDir } from './lockfile.js';
-import { getSkillScope, shouldInstallSkill } from './scope-filter.js';
+import {
+  getAgentDomain,
+  getSkillScope,
+  shouldInstallAgent,
+  shouldInstallSkill,
+} from './scope-filter.js';
 
 /**
  * Options for installation
@@ -59,6 +64,12 @@ export interface InstallOptions {
   components?: InstallComponent[];
   /** Skip confirmation prompts */
   skipConfirm?: boolean;
+  /**
+   * Install only agents whose domain matches this value.
+   * Universal agents are always installed regardless of this filter.
+   * When undefined, all agents are installed (backward compatible).
+   */
+  domain?: string;
 }
 
 /**
@@ -516,6 +527,48 @@ async function installSkillsWithScopeFilter(
 }
 
 /**
+ * Install agents directory with domain-based filtering.
+ * When a domain filter is set, agents whose domain does not match and is not 'universal'
+ * are excluded. When no domain filter is set, all agents are installed (backward compatible).
+ */
+async function installAgentsWithDomainFilter(
+  srcPath: string,
+  destPath: string,
+  options: InstallOptions
+): Promise<void> {
+  await ensureDirectory(destPath);
+  const entries = await readdir(srcPath);
+
+  for (const entry of entries) {
+    const entrySrcPath = join(srcPath, entry);
+    const entryStat = await stat(entrySrcPath);
+
+    // Handle subdirectories (e.g., souls/) by copying them as-is
+    if (entryStat.isDirectory()) {
+      await copyDirectory(entrySrcPath, join(destPath, entry), {
+        overwrite: !!(options.force || options.backup),
+        preserveSymlinks: true,
+        preserveTimestamps: true,
+      });
+      continue;
+    }
+
+    if (!entry.endsWith('.md')) continue;
+
+    if (options.domain) {
+      const content = await fsReadFile(entrySrcPath, 'utf-8');
+      const agentDomain = getAgentDomain(content);
+      if (!shouldInstallAgent(agentDomain, options.domain)) {
+        debug('install.agent_domain_excluded', { agent: entry, domain: agentDomain });
+        continue;
+      }
+    }
+
+    await copyFile(entrySrcPath, join(destPath, entry));
+  }
+}
+
+/**
  * Install a single component
  */
 async function installComponent(
@@ -545,6 +598,8 @@ async function installComponent(
 
   if (component === 'skills') {
     await installSkillsWithScopeFilter(srcPath, destPath, options);
+  } else if (component === 'agents') {
+    await installAgentsWithDomainFilter(srcPath, destPath, options);
   } else {
     // Copy with symlink preservation for refs/ directories
     await copyDirectory(srcPath, destPath, {

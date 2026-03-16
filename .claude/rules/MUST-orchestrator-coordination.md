@@ -95,12 +95,6 @@ Main Conversation (orchestrator)
    Main conversation → Agent(mgr-gitnerd) → git commit
    Main conversation → Agent(mgr-gitnerd) → git push
 
-❌ WRONG: Using general-purpose when specialist exists
-   Main conversation → Agent(general-purpose) → "Write Go code"
-
-✓ CORRECT: Using the right specialist
-   Main conversation → Agent(lang-golang-expert) → "Write Go code"
-
 ❌ WRONG: Orchestrator creates files "just this once"
    "It's just a small config file, I'll write it directly..."
 
@@ -110,15 +104,9 @@ Main Conversation (orchestrator)
 ❌ WRONG: Bundling git operations with file editing in non-gitnerd agent
    Main conversation → Agent(general-purpose) → "git revert + edit file + git commit"
    Main conversation → Agent(lang-typescript-expert) → "fix bug and commit"
-
-✓ CORRECT: Separate file editing from git operations
-   Main conversation → Agent(lang-typescript-expert) → "fix bug" (file edit only)
-   Main conversation → Agent(mgr-gitnerd) → "git commit" (git operation only)
-
-❌ WRONG: Including git commands in non-gitnerd agent prompt for "convenience"
    Agent(general-purpose, prompt="revert the last commit, edit the file, then commit the fix")
 
-✓ CORRECT: Split into separate delegations
+✓ CORRECT: Separate file editing from git operations, split delegations
    Agent(mgr-gitnerd, prompt="revert the last commit")
    Agent(appropriate-expert, prompt="edit the file to fix the issue")
    Agent(mgr-gitnerd, prompt="commit the fix")

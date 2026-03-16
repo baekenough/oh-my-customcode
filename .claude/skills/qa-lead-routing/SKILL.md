@@ -47,261 +47,26 @@ full_qa_cycle      → all agents (sequential)
 
 ### Ontology-RAG Enrichment (R019)
 
-After agent selection, enrich the spawned agent's prompt with ontology context:
+If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
-1. Call `get_agent_for_task(original_query)` via MCP
-2. Extract `suggested_skills` from response
-3. If `suggested_skills` non-empty, prepend to spawned agent prompt:
-   `"Ontology context suggests these skills may be relevant: {suggested_skills}"`
-4. On MCP failure: skip silently, proceed with unmodified prompt
+### Step 5: Soul Injection (R006)
 
-**This step is advisory only — it never changes which agent is selected.**
+If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
 
-### Step 5: Soul Injection
+## Sequential Workflow Ordering
 
-If the selected agent has `soul: true` in its frontmatter:
-
-1. Read `.claude/agents/souls/{agent-name}.soul.md`
-2. If file exists, prepend soul content to the agent's prompt:
-   `"Identity context:\n{soul content}\n\n---\n\n"`
-3. If file doesn't exist → skip silently (no error, no injection)
-
-**This step runs after ontology-RAG enrichment. Soul content is identity context, not capability instructions.**
-
-## Routing Rules
-
-### 1. Test Planning
-
-```
-User: "Create test plan for feature X"
-
-Route:
-  Agent(qa-planner role → create test plan, model: "sonnet")
-
-Output:
-  - Test scenarios
-  - Coverage targets
-  - Acceptance criteria
-  - Risk assessment
-```
-
-### 2. Test Documentation
-
-```
-User: "Document test cases for API"
-
-Route:
-  Agent(qa-writer role → document test cases, model: "sonnet")
-
-Output:
-  - Test case specifications
-  - Test data requirements
-  - Expected results
-  - Test templates
-```
-
-### 3. Test Execution
-
-```
-User: "Execute tests for module Y"
-
-Route:
-  Agent(qa-engineer role → execute tests, model: "sonnet")
-
-Output:
-  - Test execution results
-  - Pass/fail metrics
-  - Defect reports
-  - Coverage reports
-```
-
-### 4. Quality Analysis
-
-When analysis is needed (parallel execution):
-
-```
-User: "Analyze quality metrics"
-
-Route (parallel):
-  Agent(qa-planner role → analyze strategy, model: "sonnet")
-  Agent(qa-engineer role → analyze results, model: "sonnet")
-
-Aggregate:
-  Strategy insights + execution data
-```
-
-### 5. Full QA Cycle (Sequential)
-
-For complete quality assurance workflow:
-
-```
-User: "Run full QA cycle for feature Z"
-
-Route (sequential):
-  1. Agent(qa-planner role → create test plan, model: "sonnet")
-  2. Agent(qa-writer role → document test cases, model: "sonnet")
-  3. Agent(qa-engineer role → execute tests, model: "sonnet")
-  4. Agent(qa-writer role → generate report, model: "sonnet")
-
-Aggregate and present final report
-```
-
-## Full QA Cycle Workflow
-
-```
-1. Planning Phase (qa-planner)
-   - Analyze requirements
-   - Define test scenarios
-   - Set acceptance criteria
-   - Identify risks
-
-2. Documentation Phase (qa-writer)
-   - Write test cases
-   - Define test data
-   - Document expected results
-   - Create templates
-
-3. Execution Phase (qa-engineer)
-   - Execute test cases
-   - Record results
-   - Report defects
-   - Calculate coverage
-
-4. Reporting Phase (qa-writer)
-   - Aggregate results
-   - Generate reports
-   - Document findings
-   - Provide recommendations
-
-5. Aggregation (qa-lead routing)
-   - Combine all phases
-   - Present unified status
-   - Highlight critical issues
-```
-
-## Sequential vs Parallel Execution
-
-### Sequential (typical for QA workflow)
-
-QA workflow is typically sequential because each phase depends on the previous:
-- Planning must complete before documentation
-- Documentation must complete before execution
-- Execution must complete before reporting
+Full QA cycle follows sequential phases (each depends on the previous):
 
 ```
 qa-planner → qa-writer → qa-engineer → qa-writer
    (plan)    (document)    (execute)     (report)
 ```
 
-### Parallel (rare, for independent analyses)
-
-Only when tasks are truly independent:
-- Quality analysis (strategy + results)
-- Multi-module testing (independent modules)
-
-```
-Example:
-  Agent(qa-engineer role → test module A, model: "sonnet")
-  Agent(qa-engineer role → test module B, model: "sonnet")
-  Agent(qa-engineer role → test module C, model: "sonnet")
-```
+Parallel execution only for independent analyses (e.g., multi-module testing). See R009.
 
 ## Sub-agent Model Selection
 
-### Model Mapping
-
-| Agent | Recommended Model | Reason |
-|-------|-------------------|--------|
-| qa-planner | `sonnet` | Strategy requires balanced reasoning |
-| qa-writer | `sonnet` | Documentation quality matters |
-| qa-engineer | `sonnet` | Test execution needs accuracy |
-
-All QA agents typically use `sonnet` for balanced quality output.
-
-### Agent Call Examples
-
-```
-# Test planning
-Agent(
-  subagent_type: "general-purpose",
-  prompt: "Create comprehensive test plan for authentication feature following qa-planner guidelines",
-  model: "sonnet"
-)
-
-# Test documentation
-Agent(
-  subagent_type: "general-purpose",
-  prompt: "Document test cases for API endpoints following qa-writer guidelines",
-  model: "sonnet"
-)
-
-# Test execution
-Agent(
-  subagent_type: "general-purpose",
-  prompt: "Execute integration tests and report results following qa-engineer guidelines",
-  model: "sonnet"
-)
-```
-
-## Display Format
-
-### Full QA Cycle
-
-```
-[Planning] Delegating to qa-planner...
-  → Test plan created (15 scenarios)
-
-[Documentation] Delegating to qa-writer...
-  → 15 test cases documented
-
-[Execution] Delegating to qa-engineer...
-  → 13 passed, 2 failed
-
-[Report] Generating summary...
-  Coverage: 85%
-  Pass Rate: 87%
-  Defects: 2 (1 High, 1 Medium)
-
-[Done] QA cycle completed
-```
-
-### Parallel Quality Analysis
-
-```
-[Analyzing] Spawning parallel analysis...
-
-[Instance 1] strategy-analysis:sonnet → qa-planner
-[Instance 2] results-analysis:sonnet → qa-engineer
-
-[Progress] ████████████ 2/2
-
-[Summary]
-  Strategy: Coverage targets met, add edge cases
-  Results: 85% pass rate, 2 critical defects
-
-Analysis completed.
-```
-
-## Integration with Other Agents
-
-- **Receives requirements from**: arch-speckit-agent (sw-architect)
-- **Reports quality status to**: dev-lead
-- **Coordinates with**: Language experts for automated tests
-- **Provides feedback to**: Development team via dev-lead
-
-## Metrics Tracking
-
-QA lead routing should aggregate these metrics:
-
-```yaml
-metrics:
-  test_coverage: percentage
-  pass_rate: percentage
-  defect_count: number
-  defect_severity: [critical, high, medium, low]
-  execution_time: duration
-  test_case_count: number
-```
+All QA agents use `sonnet` by default for balanced quality output.
 
 ## No Match Fallback
 

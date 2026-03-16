@@ -2,6 +2,7 @@
 name: arch-speckit-agent
 description: Use for spec-driven development, transforming requirements into executable specifications, defining project constitution, creating technical plans, and generating TDD task lists
 model: sonnet
+domain: universal
 memory: project
 effort: high
 tools:

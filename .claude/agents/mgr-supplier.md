@@ -2,6 +2,7 @@
 name: mgr-supplier
 description: Use when you need to validate and manage skills/guides dependencies for agents, detect missing/broken refs, and ensure agents have proper resources
 model: haiku
+domain: universal
 memory: local
 effort: low
 skills:
