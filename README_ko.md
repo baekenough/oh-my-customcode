@@ -128,7 +128,7 @@ Agent(arch-documenter):haiku      ┘
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
-| 베스트 프랙티스 | 22 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow 외 |
+| 베스트 프랙티스 | 23 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
 | 워크플로우 | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich 외 |
 | 개발 | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |

@@ -1,6 +1,6 @@
 # Architecture
 
-> oh-my-customcode v0.36.1
+> oh-my-customcode v0.37.3
 
 ## 1. System Overview
 
@@ -8,7 +8,7 @@ oh-my-customcode is a batteries-included agent harness for Claude Code. It ships
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.36.1** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Current version: **0.37.3** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
@@ -116,9 +116,9 @@ Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specif
 | de-lead-routing | de-* agents |
 | qa-lead-routing | qa-* agents |
 
-**Workflow/orchestration skills (4, context: fork)**
+**Workflow/orchestration skills (7, context: fork)**
 
-dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards
+dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan, evaluator-optimizer, sauron-watch
 
 **Best-practices skills (~26)**
 
@@ -573,7 +573,7 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Rules (20 files) | ~28K tokens |
 | Total mandatory load | ~33K tokens / session |
 
-Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (8 active, 10 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
+Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (11 active, 12 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
 
 **Ecomode (R013)** auto-activates based on task type and context usage:
 
@@ -601,7 +601,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Native auto-memory | The `memory:` frontmatter field that injects MEMORY.md into an agent's context each session. |
 | Dynamic creation | The fallback pattern where mgr-creator auto-builds a new specialist when no existing agent matches. |
 | Ecomode | Compact output mode that activates automatically when context usage exceeds task-type thresholds. |
-| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (8 active, 10 cap). |
+| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (11 active, 12 cap). |
 | R017 (Sauron) | The 5-round manager + 3-round deep-review verification cycle required before any structural push. |
 | Compilation metaphor | The conceptual framework treating skill/rule authoring as source code that compiles into agent behavior. |
 | Takeover | Reverse compilation — analyzing existing code to generate structured agent/skill specs. |

@@ -128,7 +128,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 | Category | Count | Includes |
 |----------|-------|----------|
-| Best Practices | 22 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, and more |
+| Best Practices | 23 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, and more |
 | Routing | 4 | secretary, dev-lead, de-lead, qa-lead |
 | Workflow | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, and more |
 | Development | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |

@@ -284,7 +284,7 @@ describe('stuck-detector.sh', () => {
     });
 
     it('should NOT hard-block when errors have different content (different hash)', async () => {
-      // Alternate between two different errors — neither reaches 5 consecutive identical.
+      // Alternate between two different errors — neither reaches 3 consecutive identical.
       // Use different commands to avoid triggering the tool+target consecutive hard-block.
       for (let i = 0; i < 3; i++) {
         await runStuckDetector(
