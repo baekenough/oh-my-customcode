@@ -75,6 +75,19 @@ All members must be spawned in a single message. Partial spawning needs correcti
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
+### External Skill Conflict Resolution
+
+When an external skill instructs using Agent tool but R018 criteria are met:
+
+| Skill says | R018 requires | Resolution |
+|------------|--------------|------------|
+| "Use Agent tool for N tasks" | 3+ agents → Teams | Use Agent Teams, follow skill logic |
+| "Sequential agent spawning" | Independent tasks → parallel | Parallelize per R009 |
+| "Skip coordination" | Shared state → Teams | Use Teams for coordination |
+
+**Rule**: External skills define the WORKFLOW. R018 defines the EXECUTION METHOD.
+The skill's steps are followed, but agent spawning uses Teams when criteria are met.
+
 ## Common Violations
 
 ```

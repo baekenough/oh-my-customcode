@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-44개 에이전트. 74개 스킬. 20개 규칙. 명령어 하나.
+44개 에이전트. 74개 스킬. 21개 규칙. 명령어 하나.
 
 > **v0.38.0** — 인터랙티브 초기화 마법사, eval-core MVP, PostCompact 훅, Codex-exec 자동 위임
 
@@ -246,7 +246,7 @@ your-project/
 ├── .claude/
 │   ├── agents/                 # 44개 에이전트 정의
 │   ├── skills/                 # 74개 스킬 모듈
-│   ├── rules/                  # 20개 거버넌스 규칙 (R000-R020)
+│   ├── rules/                  # 21개 거버넌스 규칙 (R000-R021)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
 │   ├── specs/                  # 추출된 canonical spec

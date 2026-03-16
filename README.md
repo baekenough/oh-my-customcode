@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-44 agents. 74 skills. 20 rules. One command.
+44 agents. 74 skills. 21 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -203,15 +203,15 @@ All commands are invoked inside the Claude Code conversation.
 
 ---
 
-### Rules (20)
+### Rules (21)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
-| **MUST** | 13 | Safety, permissions, agent design, identification, orchestration, verification, completion |
+| **MUST** | 14 | Safety, permissions, agent design, identification, orchestration, verification, completion, enforcement |
 | **SHOULD** | 6 | Interaction, error handling, memory, HUD, ecomode, ontology routing |
 | **MAY** | 1 | Optimization |
 
-Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done).
+Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done), R021 (advisory-first enforcement model).
 
 ---
 
@@ -258,7 +258,7 @@ your-project/
 ├── .claude/
 │   ├── agents/                 # 44 agent definitions
 │   ├── skills/                 # 74 skill modules
-│   ├── rules/                  # 20 governance rules (R000-R020)
+│   ├── rules/                  # 21 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
