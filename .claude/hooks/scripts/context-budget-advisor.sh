@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Dependency check: exit silently if jq not available
+command -v jq >/dev/null 2>&1 || exit 0
+
 # Context Budget Advisor Hook
 # Trigger: PostToolUse (Edit/Write/Agent/Task/Read/Glob/Grep/Bash)
 # Purpose: Monitor context usage and advise ecomode activation based on task type

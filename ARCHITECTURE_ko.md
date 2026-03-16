@@ -1,6 +1,6 @@
 # 아키텍처
 
-> oh-my-customcode v0.38.0
+> oh-my-customcode v0.39.0
 
 ## 1. 시스템 개요
 
@@ -218,7 +218,7 @@ flowchart TD
     C --> E[.claude/skills/ + templates/guides/ 자동 탐색]
     E --> F[.claude/agents/name.md 생성]
     F --> G[오케스트레이터가 새 에이전트로 원래 작업 실행]
-    G --> H[에이전트 영속 저장 -- 이후 재사용 가능]
+    G --> H["에이전트 영속 저장, 이후 재사용 가능"]
 ```
 
 ### 4.4 의도 감지
@@ -296,7 +296,7 @@ Phase 4: 구조화된 리포트 + GitHub 이슈 생성
 ```mermaid
 flowchart LR
     A[작업 실행 완료] --> B{완료 기준 충족?}
-    B -- 예 --> C["[Done] 선언"]
+    B -- 예 --> C["Done 선언"]
     B -- 아니오 --> D[미충족 기준 식별]
     D --> E[추가 작업 실행]
     E --> B
@@ -365,7 +365,7 @@ sequenceDiagram
     O->>SMK: 위임: MEMORY.md 업데이트
     SMK-->>O: 네이티브 메모리 업데이트 완료
     O->>CM: 세션 요약 저장 (best-effort)
-    Note over O: episodic-memory는 자동 인덱싱<br/>수동 action 불필요
+    Note over O: episodic-memory 자동 인덱싱, 수동 action 불필요
     O-->>U: 세션 저장 완료 확인
 ```
 
@@ -411,7 +411,7 @@ flowchart LR
     rel --> tag["git tag v*"]
     tag --> release["release.yml\nnpm publish\nGitHub Packages"]
 
-    subgraph 사이드 워크플로우
+    subgraph "사이드 워크플로우"
         docs-validator
         docs-sync
         security-audit

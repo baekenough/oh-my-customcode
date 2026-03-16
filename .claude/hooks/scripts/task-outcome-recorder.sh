@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Dependency check: exit silently if jq not available
+command -v jq >/dev/null 2>&1 || exit 0
+
 # Task/Agent Outcome Recorder Hook
 # Trigger: PostToolUse (tool == "Task" || "Agent") and SubagentStop
 # Purpose: Record task outcomes for model escalation decisions

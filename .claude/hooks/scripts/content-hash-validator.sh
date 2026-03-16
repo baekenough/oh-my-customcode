@@ -7,6 +7,9 @@
 
 set -euo pipefail
 
+# Dependency check: exit silently if jq not available
+command -v jq >/dev/null 2>&1 || exit 0
+
 input=$(cat)
 
 # Hash store (PPID-scoped, session-only)
