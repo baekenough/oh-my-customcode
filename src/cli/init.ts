@@ -9,13 +9,14 @@ import { getProviderLayout } from '../core/layout.js';
 import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
+import { getDefaultWizardResult, isInteractiveMode, runInitWizard } from './wizard.js';
 
 /**
  * Options for the init command
  */
 export interface InitOptions {
   /** Language for templates and messages (en|ko) */
-  lang: 'en' | 'ko';
+  lang?: 'en' | 'ko';
   /** Whether to overwrite existing files */
   force?: boolean;
   /**
@@ -24,6 +25,8 @@ export interface InitOptions {
    * When omitted, all agents are installed (backward compatible).
    */
   domain?: string;
+  /** Skip interactive wizard, use defaults */
+  yes?: boolean;
 }
 
 /**
@@ -121,6 +124,51 @@ function logInstallResultInfo(result: InstallerResult): void {
   logItems(result.warnings, (warning) => console.warn(`Warning: ${warning}`));
 }
 
+interface ResolvedOptions {
+  lang: 'en' | 'ko' | undefined;
+  domain: string | undefined;
+}
+
+/**
+ * Resolve lang/domain via wizard or defaults.
+ * Returns null if the wizard was cancelled.
+ */
+async function resolveOptions(options: InitOptions): Promise<ResolvedOptions | null> {
+  if (isInteractiveMode(options.yes)) {
+    const result = await runInitWizard({
+      yes: options.yes,
+      lang: options.lang,
+      domain: options.domain,
+    });
+    if (result.cancelled) return null;
+    return { lang: result.lang, domain: result.domain };
+  }
+  const defaults = getDefaultWizardResult({
+    yes: options.yes,
+    lang: options.lang,
+    domain: options.domain,
+  });
+  return { lang: defaults.lang, domain: defaults.domain };
+}
+
+/**
+ * Setup MCP config if uv is available.
+ */
+async function setupMcpConfig(targetDir: string): Promise<void> {
+  const uvAvailable = await checkUvAvailable();
+  if (uvAvailable) {
+    try {
+      await generateMCPConfig(targetDir);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.warn(`Warning: Failed to setup MCP environment: ${msg}`);
+    }
+  } else {
+    console.warn('Warning: uv not found. Skipping MCP server configuration.');
+    console.warn('Install uv (https://docs.astral.sh/uv/) to enable MCP integration.');
+  }
+}
+
 /**
  * Execute the init command
  * @param options - Init command options
@@ -128,6 +176,12 @@ function logInstallResultInfo(result: InstallerResult): void {
  */
 export async function initCommand(options: InitOptions): Promise<InitResult> {
   const targetDir = process.cwd();
+
+  const resolved = await resolveOptions(options);
+  if (!resolved) {
+    return { success: false, message: i18n.t('cli.init.wizard.cancelled') };
+  }
+
   console.log(i18n.t('cli.init.start'));
 
   try {
@@ -142,10 +196,10 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     console.log(i18n.t('cli.init.copying'));
     const installResult = await install({
       targetDir,
-      language: options.lang,
+      language: resolved.lang,
       force: options.force ?? false,
       backup: exists,
-      domain: options.domain,
+      domain: resolved.domain,
     });
 
     if (!installResult.success) {
@@ -156,19 +210,7 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     logInstallResultInfo(installResult);
     logSuccessDetails(installedPaths, installResult.skippedComponents);
 
-    // Generate MCP config for ontology-rag if uv is available
-    const uvAvailable = await checkUvAvailable();
-    if (uvAvailable) {
-      try {
-        await generateMCPConfig(targetDir);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        console.warn(`Warning: Failed to setup MCP environment: ${msg}`);
-      }
-    } else {
-      console.warn('Warning: uv not found. Skipping MCP server configuration.');
-      console.warn('Install uv (https://docs.astral.sh/uv/) to enable MCP integration.');
-    }
+    await setupMcpConfig(targetDir);
 
     return {
       success: true,

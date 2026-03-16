@@ -361,6 +361,7 @@ async function updateInstallConfig(
 ): Promise<void> {
   const config = await loadConfig(targetDir);
   config.language = options.language ?? DEFAULT_LANGUAGE;
+  config.domain = options.domain;
   config.installedAt = new Date().toISOString();
   config.installedComponents = installedComponents;
   await saveConfig(targetDir, config);

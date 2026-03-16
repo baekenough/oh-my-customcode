@@ -42,6 +42,10 @@ export interface OmccConfig {
   preserveFiles?: string[];
   /** Custom components not managed by omcustom */
   customComponents?: CustomComponentConfig[];
+  /** Domain filter used during installation */
+  domain?: string;
+  /** Team mode enabled */
+  teamMode?: boolean;
 }
 
 /**
@@ -140,6 +144,8 @@ export function getDefaultConfig(): OmccConfig {
       '.claude/agent-memory-local/',
     ],
     customComponents: [],
+    domain: undefined,
+    teamMode: false,
   };
 }
 
