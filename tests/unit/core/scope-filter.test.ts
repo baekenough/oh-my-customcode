@@ -8,9 +8,6 @@ import {
   shouldInstallSkill,
 } from '../../../src/core/scope-filter.js';
 
-// Resolve project root relative to this test file (tests/unit/core/ → ../../..)
-const PROJECT_ROOT = join(import.meta.dir, '../../..');
-
 describe('scope-filter', () => {
   test('returns core for missing scope field', () => {
     const content = '---\nname: test\ndescription: Test\n---\n';
@@ -95,54 +92,36 @@ describe('scope-filter', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Real SKILL.md files integration (v0.33.0)
+// Fixture-based SKILL.md integration (v0.40.0 — replaces real file reads)
 // ---------------------------------------------------------------------------
 
-describe('real SKILL.md files integration', () => {
-  function readSkillContent(skillName: string): string {
-    const skillPath = join(PROJECT_ROOT, '.claude', 'skills', skillName, 'SKILL.md');
+describe('fixture SKILL.md files integration', () => {
+  const FIXTURES_ROOT = join(import.meta.dir, '../../fixtures');
+
+  function readFixtureSkill(skillName: string): string {
+    const skillPath = join(FIXTURES_ROOT, 'skills', skillName, 'SKILL.md');
     return readFileSync(skillPath, 'utf-8');
   }
 
-  test('all package-scoped skills are correctly identified', () => {
-    const packageSkills = ['npm-publish', 'npm-version', 'npm-audit', 'monitoring-setup'];
-
-    for (const skillName of packageSkills) {
-      const content = readSkillContent(skillName);
-      expect(getSkillScope(content)).toBe('package');
-    }
+  test('package-scoped fixture skill is correctly identified', () => {
+    const content = readFixtureSkill('mock-package-skill');
+    expect(getSkillScope(content)).toBe('package');
   });
 
-  test('all harness-scoped skills are correctly identified', () => {
-    const harnessSkills = [
-      'audit-agents',
-      'create-agent',
-      'fix-refs',
-      'sauron-watch',
-      'update-docs',
-      'update-external',
-    ];
-
-    for (const skillName of harnessSkills) {
-      const content = readSkillContent(skillName);
-      expect(getSkillScope(content)).toBe('harness');
-    }
+  test('harness-scoped fixture skill is correctly identified', () => {
+    const content = readFixtureSkill('mock-harness-skill');
+    expect(getSkillScope(content)).toBe('harness');
   });
 
-  test('sample core skills return core scope', () => {
-    const coreSkills = ['go-best-practices', 'research', 'dev-review'];
-
-    for (const skillName of coreSkills) {
-      const content = readSkillContent(skillName);
-      expect(getSkillScope(content)).toBe('core');
-    }
+  test('core-scoped fixture skill is correctly identified', () => {
+    const content = readFixtureSkill('mock-core-skill');
+    expect(getSkillScope(content)).toBe('core');
   });
 
-  test('shouldInstallSkill correctly filters all scope types', () => {
-    // core → installed, harness → installed, package → skipped
-    const coreContent = readSkillContent('go-best-practices');
-    const harnessContent = readSkillContent('audit-agents');
-    const packageContent = readSkillContent('npm-publish');
+  test('shouldInstallSkill correctly filters all scope types from fixtures', () => {
+    const coreContent = readFixtureSkill('mock-core-skill');
+    const harnessContent = readFixtureSkill('mock-harness-skill');
+    const packageContent = readFixtureSkill('mock-package-skill');
 
     expect(shouldInstallSkill(getSkillScope(coreContent))).toBe(true);
     expect(shouldInstallSkill(getSkillScope(harnessContent))).toBe(true);
