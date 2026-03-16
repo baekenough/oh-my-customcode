@@ -32,6 +32,7 @@ class SkillInfo:
     description: str
     user_invocable: bool = True
     model_invocable: bool = True
+    scope: str = "core"  # core | harness | package — keep in sync with src/core/scope-filter.ts SkillScope
     summary: str = ""
     keywords: list[str] = field(default_factory=list)
     rule_references: list[str] = field(default_factory=list)
@@ -138,6 +139,7 @@ class Ontology:
                 description=info.get("description", ""),
                 user_invocable=info.get("user_invocable", True),
                 model_invocable=info.get("model_invocable", True),
+                scope=info.get("scope", "core"),
                 summary=info.get("summary", ""),
                 keywords=info.get("keywords", []),
                 rule_references=info.get("rule_references", []),

@@ -212,6 +212,16 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
 
     await setupMcpConfig(targetDir);
 
+    console.log('');
+    console.log('Required plugins (install manually):');
+    console.log('  /plugin marketplace add obra/superpowers-marketplace');
+    console.log('  /plugin install superpowers');
+    console.log('  /plugin install superpowers-developing-for-claude-code');
+    console.log('  /plugin install elements-of-style');
+    console.log('  /plugin install context7');
+    console.log('');
+    console.log('See CLAUDE.md "외부 의존성" section for details.');
+
     return {
       success: true,
       message: i18n.t('cli.init.success'),
