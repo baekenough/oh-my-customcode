@@ -29,7 +29,7 @@ read_count=${read_count:-0}
 agent_count=${agent_count:-0}
 
 # Determine tool type from input
-TOOL=$(echo "$input" | jq -r '.tool // ""' 2>/dev/null || echo "")
+TOOL=$(echo "$input" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
 tool_count=$((tool_count + 1))
 
 case "$TOOL" in

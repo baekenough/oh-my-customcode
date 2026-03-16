@@ -6,5 +6,13 @@ export function parseOutcomeFile(ppid: string): RawOutcomeRecord[] {
   if (!existsSync(filePath)) return [];
   const content = readFileSync(filePath, 'utf-8').trim();
   if (!content) return [];
-  return content.split('\n').map((line) => JSON.parse(line) as RawOutcomeRecord);
+  const records: RawOutcomeRecord[] = [];
+  for (const line of content.split('\n')) {
+    try {
+      records.push(JSON.parse(line) as RawOutcomeRecord);
+    } catch {
+      // skip malformed lines
+    }
+  }
+  return records;
 }
