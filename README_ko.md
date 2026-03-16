@@ -15,9 +15,13 @@
 
 44개 에이전트. 74개 스킬. 20개 규칙. 명령어 하나.
 
+> **v0.38.0** — 인터랙티브 초기화 마법사, eval-core MVP, PostCompact 훅, Codex-exec 자동 위임
+
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
 ```
+
+`omcustom init`은 언어, 프레임워크, 팀 모드를 묻는 인터랙티브 마법사를 실행합니다 (@clack/prompts 기반).
 
 ---
 
@@ -128,7 +132,7 @@ Agent(arch-documenter):haiku      ┘
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
-| 베스트 프랙티스 | 22 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow 외 |
+| 베스트 프랙티스 | 23 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
 | 워크플로우 | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich 외 |
 | 개발 | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
@@ -140,6 +144,8 @@ Agent(arch-documenter):haiku      ┘
 | 기타 | 8 | codex-exec, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
+
+`context:fork` 상한이 12로 확장되었습니다 (현재 11개 활성). 라우팅 스킬은 Codex가 활성화된 경우 자동으로 codex-exec에 위임합니다.
 
 ---
 
@@ -203,7 +209,7 @@ Agent(arch-documenter):haiku      ┘
 
 ## 보안
 
-세 가지 보안 훅이 모든 도구 호출마다 실행됩니다:
+15개 라이프사이클 훅이 도구 호출마다 실행됩니다. 그 중 세 가지 보안 훅:
 
 | 훅 | 트리거 | 동작 |
 |----|--------|------|
@@ -213,13 +219,16 @@ Agent(arch-documenter):haiku      ┘
 
 모든 보안 훅은 어드바이저리입니다 (exit 0). 경고만 하고 차단하지 않습니다.
 
+v0.38.0에서 추가된 **PostCompact 훅** (Claude Code v2.1.76+)은 컨텍스트 컴팩션 이후 핵심 규칙을 자동으로 재강화합니다.
+
 ---
 
 ## CLI
 
 ```bash
-omcustom init                  # 프로젝트에 초기화
+omcustom init                  # 인터랙티브 마법사로 초기화 (언어, 프레임워크, 팀 모드)
 omcustom init --lang ko        # 한국어로 초기화
+omcustom init --team           # 팀 모드 활성화
 omcustom update                # 최신 버전 업데이트
 omcustom list                  # 컴포넌트 목록
 omcustom doctor                # 설치 상태 검사
@@ -243,6 +252,8 @@ your-project/
 │   ├── specs/                  # 추출된 canonical spec
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
 │   └── ontology/               # RAG용 지식 그래프
+├── packages/
+│   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
 └── guides/                     # 25개 레퍼런스 문서
 ```
 
@@ -258,6 +269,16 @@ bun run build        # 프로덕션 빌드
 ```
 
 요구사항: Node.js >= 18.0.0, Claude Code CLI.
+
+### @omcustom/eval-core
+
+v0.38.0에서 추가된 LLM 평가 엔진입니다. 세션/턴/결과를 수집하고 SQLite(Drizzle ORM)에 저장합니다.
+
+```bash
+cd packages/eval-core
+bun install
+bun run cli -- --help
+```
 
 ---
 

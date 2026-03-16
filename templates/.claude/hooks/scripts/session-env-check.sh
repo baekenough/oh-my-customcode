@@ -82,6 +82,20 @@ if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/n
   fi
 fi
 
+# --- CI Status Check ---
+# Check last CI run status if gh CLI is available
+if command -v gh &>/dev/null; then
+  ci_status=$(gh run list --limit 1 --json conclusion -q '.[0].conclusion' 2>/dev/null || echo "unknown")
+  ci_name=$(gh run list --limit 1 --json name -q '.[0].name' 2>/dev/null || echo "unknown")
+  if [ "$ci_status" = "failure" ]; then
+    echo "[Session] ⚠ WARNING: Last CI run FAILED (${ci_name}) — check before pushing" >&2
+  elif [ "$ci_status" = "success" ]; then
+    echo "[Session] CI: last run passed (${ci_name})" >&2
+  elif [ "$ci_status" != "unknown" ]; then
+    echo "[Session] CI: last run status: ${ci_status} (${ci_name})" >&2
+  fi
+fi
+
 # Update availability check (local cache only — no network calls)
 OMCUSTOM_UPDATE_STATUS="unknown"
 INSTALLED_VERSION=""
@@ -172,6 +186,12 @@ case "$DRIFT_STATUS" in
     ;;
 esac
 echo "------------------------------------" >&2
+
+# SessionEnd hooks timeout (v2.1.74+)
+if [ -z "${CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS:-}" ]; then
+  echo "[SessionEnv] ⚠ CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS not set (default: 1500ms)" >&2
+  echo "[SessionEnv] Recommend: export CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=10000" >&2
+fi
 
 # Update Check report
 echo "" >&2

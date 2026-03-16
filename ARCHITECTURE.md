@@ -1,6 +1,6 @@
 # Architecture
 
-> oh-my-customcode v0.36.1
+> oh-my-customcode v0.38.0
 
 ## 1. System Overview
 
@@ -8,7 +8,7 @@ oh-my-customcode is a batteries-included agent harness for Claude Code. It ships
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.36.1** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Current version: **0.38.0** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
@@ -116,9 +116,9 @@ Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specif
 | de-lead-routing | de-* agents |
 | qa-lead-routing | qa-* agents |
 
-**Workflow/orchestration skills (4, context: fork)**
+**Workflow/orchestration skills (7, context: fork)**
 
-dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards
+dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan, evaluator-optimizer, sauron-watch
 
 **Best-practices skills (~26)**
 
@@ -166,6 +166,7 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 | PostToolUse (Bash/Read) | secret-filter.sh | Detect potential secrets in output (advisory) |
 | PostToolUse (Edit/Write/Bash/Agent) | audit-log.sh | Append-only audit log for state-changing operations |
 | PostToolUse (any tool) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode advisory, loop detection, cost monitoring |
+| PostCompact | compact-rules-reinforcement (inline) | Re-inject R007/R008/R009/R010/R018 identity and delegation rules after context compaction |
 | SubagentStart | HUD inline display | Log agent type:model when subagent starts |
 | SubagentStop | task-outcome-recorder.sh | Record final outcome |
 | Stop | stop-console-audit.sh, session-compliance-report.sh, R011 prompt | Final audit, compliance report, memory checkpoint |
@@ -542,7 +543,22 @@ npm publish is triggered only by the CI/CD pipeline on `release/*` branches — 
 
 `templates/` mirrors `.claude/` so that `omcustom` can scaffold agent systems into any project. `manifest.json` declares counts of agents, skills, hooks, contexts, and guides; CI enforces these counts match the filesystem. The `templates/.claude/hooks/` directory contains `hooks.json` plus a `scripts/` subdirectory — validators must use `.endsWith('.json')` filtering to count hooks correctly.
 
-### 8.3 Takeover Pattern
+### 8.3 Packages
+
+`packages/eval-core/` is a standalone SQLite-backed evaluation package introduced in v0.38.0. It provides session/turn/outcome collection for measuring agent performance outside the main harness runtime.
+
+```
+packages/eval-core/
+  src/db/       — SQLite schema + migrations
+  src/collect/  — session, turn, and outcome collectors
+  src/query/    — aggregation and reporting queries
+```
+
+### 8.4 Init Wizard
+
+The interactive setup flow at `src/cli/wizard.ts` guides first-time users through project initialization: selecting target language/framework, installing relevant agents and skills, and writing `.claude/` configuration. Invoked via `omcustom init`.
+
+### 8.5 Takeover Pattern
 
 The omcustom-takeover skill enables reverse compilation: analyzing an existing codebase and generating structured agent/skill specs from observed patterns. This is the primary onboarding mechanism for new projects that already have code but lack agent harness configuration.
 
@@ -562,6 +578,9 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Agent maxTurns | No | Yes | Yes (frontmatter: maxTurns) |
 | Agent hooks | No | Yes | Yes (frontmatter: hooks) |
 | Agent permissionMode | No | Yes | Yes (frontmatter: permissionMode) |
+| PostCompact hook event | No | Yes (v2.1.72+) | Yes (v0.38.0+) — rules reinforcement after compaction |
+
+Tested and compatible with Claude Code v2.1.72 through v2.1.76.
 
 ---
 
@@ -573,7 +592,7 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Rules (20 files) | ~28K tokens |
 | Total mandatory load | ~33K tokens / session |
 
-Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (8 active, 10 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
+Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (11 active, 12 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
 
 **Ecomode (R013)** auto-activates based on task type and context usage:
 
@@ -601,7 +620,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Native auto-memory | The `memory:` frontmatter field that injects MEMORY.md into an agent's context each session. |
 | Dynamic creation | The fallback pattern where mgr-creator auto-builds a new specialist when no existing agent matches. |
 | Ecomode | Compact output mode that activates automatically when context usage exceeds task-type thresholds. |
-| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (8 active, 10 cap). |
+| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (11 active, 12 cap). |
 | R017 (Sauron) | The 5-round manager + 3-round deep-review verification cycle required before any structural push. |
 | Compilation metaphor | The conceptual framework treating skill/rule authoring as source code that compiles into agent behavior. |
 | Takeover | Reverse compilation — analyzing existing code to generate structured agent/skill specs. |
@@ -612,3 +631,23 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Advisory hook | A hook that warns or suggests but never blocks execution — the dominant hook pattern in oh-my-customcode. |
 | Skill effectiveness | The correlation of skill combinations with task outcomes to identify high-success-rate patterns. |
 | Model escalation | Advisory mechanism that suggests upgrading an agent's model after repeated failures (haiku -> sonnet -> opus). |
+| PostCompact hook | A Claude Code lifecycle event (v2.1.72+) that fires after context compaction; used to re-inject critical rules. |
+| eval-core | Standalone `packages/eval-core/` package providing SQLite-backed session/turn/outcome collection for offline evaluation. |
+| Init wizard | Interactive first-run setup flow (`omcustom init`) that configures `.claude/` for a new project. |
+
+---
+
+## 12. Version History
+
+| Version | Key Changes |
+|---------|-------------|
+| v0.38.0 | PostCompact hook (R007/R008/R009/R010/R018 reinforcement after compaction); eval-core package (`packages/eval-core/` SQLite session/turn/outcome collection); init wizard (`src/cli/wizard.ts`); context:fork cap raised 10→12 (11 active); hook system cleanup (orphan removal, duplicate fix, field name correction); template full sync (200+ files byte-identical); Claude Code v2.1.72–v2.1.76 compatibility |
+| v0.37.3 | Version bump + patch fixes on release/v0.37.3 branch |
+| v0.37.0 | Structure Optimization: rule compression, skill compression, agent-skill wiring, hook optimization, routing compression, domain gating (6 issues, #386–#392) |
+| v0.36.1 | /omcustom:release-notes skill; README/ARCHITECTURE rewrite with "Compiled, Not Configured" philosophy; template skill sync fixes |
+| v0.36.0 | Harness Engineering (26 issues): R020 completion verification, security hooks (audit-log, secret-filter, schema-validator, content-hash-validator), tool reduction (10 agents, 26 tools removed), frontmatter extensions (isolation/sandbox, maxTokens, limitations), reasoning-sandwich, omcustom-takeover, sauron structural linting, memory temporal decay, agent metrics, skill effectiveness |
+| v0.35.x | Cost monitoring, pre-flight guards, Agent Teams compatibility (R010 Teams exception), episodic-memory session-end fix |
+| v0.34.0 | Evaluator-optimizer, workflow-patterns, stuck-detector hard-block, pre-flight guards |
+| v0.32.0–v0.33.x | deep-plan skill, validate-docs hook counting fix |
+| v0.31.0 | SOUL.md per-agent identity, behavioral memory, artifact output |
+| v0.30.0 | Drift detection, context budget, confidence-tracked memory, structured-dev-cycle |

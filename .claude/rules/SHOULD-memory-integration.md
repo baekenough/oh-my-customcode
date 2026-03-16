@@ -14,6 +14,7 @@ Rule: If native auto memory can handle it, do NOT use claude-mem.
 Agent frontmatter `memory: project|user|local` enables persistent memory:
 - System creates memory directory, loads first 200 lines of MEMORY.md into prompt
 - Read/Write/Edit tools auto-enabled for memory directory
+- Custom directory: set `autoMemoryDirectory` in settings to override default paths (v2.1.74+)
 
 | Scope | Location | Git Tracked |
 |-------|----------|-------------|

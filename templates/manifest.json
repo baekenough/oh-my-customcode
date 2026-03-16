@@ -1,12 +1,12 @@
 {
-  "version": "0.37.2",
-  "lastUpdated": "2026-03-14T00:00:00.000Z",
+  "version": "0.38.0",
+  "lastUpdated": "2026-03-16T00:00:00.000Z",
   "components": [
     {
       "name": "rules",
       "path": ".claude/rules",
       "description": "Agent behavior rules and guidelines",
-      "files": 19
+      "files": 20
     },
     {
       "name": "agents",

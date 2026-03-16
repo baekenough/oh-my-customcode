@@ -5,5 +5,13 @@ export function parseSessionHistory(filePath: string): RawSessionRecord[] {
   if (!existsSync(filePath)) return [];
   const content = readFileSync(filePath, 'utf-8').trim();
   if (!content) return [];
-  return content.split('\n').map((line) => JSON.parse(line) as RawSessionRecord);
+  const records: RawSessionRecord[] = [];
+  for (const line of content.split('\n')) {
+    try {
+      records.push(JSON.parse(line) as RawSessionRecord);
+    } catch {
+      // skip malformed lines
+    }
+  }
+  return records;
 }

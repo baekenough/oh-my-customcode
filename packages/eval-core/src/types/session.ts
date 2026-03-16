@@ -1,7 +1,7 @@
 export interface RawSessionRecord {
   session_id: string;
   started_at: string;
-  ended_at: string;
+  ended_at: string | null;
   cwd: string;
   pid: number;
 }

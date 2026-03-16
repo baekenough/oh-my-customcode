@@ -141,6 +141,18 @@
         "description": "Record agent outcomes on subagent completion (complements PostToolUse Agent matcher)"
       }
     ],
+    "PostCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Context was just compacted. MANDATORY post-compaction steps: 1) All enforced rules (R007 Agent ID, R008 Tool ID, R009 Parallel, R010 Orchestrator, R018 Agent Teams) remain ACTIVE — compaction does NOT disable rules. 2) Your next response MUST include agent identification per R007. 3) Continue delegating ALL file modifications to subagents per R010. 4) Re-read CLAUDE.md if needed to refresh project-specific context."
+          }
+        ],
+        "description": "Reinforce enforced rules after context compaction — prevents rule amnesia (v2.1.76+)"
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "tool == \"Bash\"",
@@ -211,16 +223,6 @@
           }
         ],
         "description": "Type check Python files with ty after edits"
-      },
-      {
-        "matcher": "tool == \"Task\" || tool == \"Agent\"",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
-          }
-        ],
-        "description": "Record agent/task outcomes (success/failure) for model escalation decisions"
       },
       {
         "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\" || tool == \"Read\" || tool == \"Glob\" || tool == \"Grep\"",
@@ -298,11 +300,21 @@
         "matcher": "*",
         "hooks": [
           {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/eval-core-batch-save.sh"
+          }
+        ],
+        "description": "Batch-save agent outcomes to eval-core DB on session end (advisory, exit 0)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
             "type": "prompt",
             "prompt": "Session-end memory checkpoint (R011 enforcement). Check conversation history for these 2 steps: 1) sys-memory-keeper was delegated to update MEMORY.md 2) claude-mem save was attempted via ToolSearch + mcp__plugin_claude-mem_mcp-search__save_memory. Note: episodic-memory auto-indexes after session — no manual verification needed. Decision rules: If BOTH were attempted (success or failure both count): approve. If MCP tools are unavailable after ToolSearch attempt: approve with note. If session had no explicit session-end signal from user (quick question, no memory work): approve. If any step was NOT attempted despite user signaling session end: block with systemMessage listing the missing steps."
           }
         ],
-        "description": "Enforce R011 session-end memory saves — block stop if claude-mem or episodic-memory saves were skipped"
+        "description": "Enforce R011 session-end memory saves — block stop if claude-mem save was skipped (episodic-memory auto-indexes)"
       }
     ]
   }

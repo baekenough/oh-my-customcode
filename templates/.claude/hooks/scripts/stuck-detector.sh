@@ -9,7 +9,7 @@ set -euo pipefail
 #   - exit 1: hard block (extreme stuck loops, >= HARD_BLOCK_THRESHOLD repetitions)
 
 # Hard block threshold: consecutive identical operations before blocking
-HARD_BLOCK_THRESHOLD=5
+HARD_BLOCK_THRESHOLD=${CLAUDE_STUCK_THRESHOLD:-3}
 
 input=$(cat)
 
