@@ -189,7 +189,7 @@ All commands are invoked inside the Claude Code conversation.
 
 ---
 
-### Rules (19)
+### Rules (20)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
