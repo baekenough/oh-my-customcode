@@ -187,6 +187,12 @@ case "$DRIFT_STATUS" in
 esac
 echo "------------------------------------" >&2
 
+# SessionEnd hooks timeout (v2.1.74+)
+if [ -z "${CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS:-}" ]; then
+  echo "[SessionEnv] ⚠ CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS not set (default: 1500ms)" >&2
+  echo "[SessionEnv] Recommend: export CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS=10000" >&2
+fi
+
 # Update Check report
 echo "" >&2
 echo "  [Update Check]" >&2

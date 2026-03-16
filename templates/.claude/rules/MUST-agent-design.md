@@ -11,7 +11,7 @@ Location: `.claude/agents/{name}.md` (single file, kebab-case)
 ```yaml
 name: agent-name           # Unique identifier (kebab-case)
 description: Brief desc    # One-line summary
-model: sonnet              # sonnet | opus | haiku
+model: sonnet              # sonnet | opus | haiku (or full ID: claude-sonnet-4-6)
 tools: [Read, Write, ...]  # Allowed tools
 ```
 
