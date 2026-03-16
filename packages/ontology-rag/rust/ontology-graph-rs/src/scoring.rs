@@ -1,3 +1,4 @@
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::collections::HashMap;
 
@@ -17,13 +18,56 @@ use std::collections::HashMap;
 /// * `bfs_depths` - BFS depth from query node (absent => treated as max depth)
 /// * `community_scores` - community membership scores (absent => 0.0)
 /// * `pagerank_scores` - raw PageRank values (absent => 0.0)
-/// * `weights` - (keyword, graph, community, importance)
+/// * `weights` - (keyword, graph, community, importance); each component must be >= 0.0
 ///
 /// # Returns
 /// List of (node_id, final_score, keyword_score, graph_score, community_score, importance_score)
 /// sorted by final_score descending.
+///
+/// # Errors
+/// - `PyValueError` if any weight in `weights` is negative
+/// - `PyValueError` if `node_ids` contains empty strings
 #[pyfunction]
 pub fn batch_hybrid_score(
+    node_ids: Vec<String>,
+    keyword_scores: HashMap<String, f64>,
+    bfs_depths: HashMap<String, usize>,
+    community_scores: HashMap<String, f64>,
+    pagerank_scores: HashMap<String, f64>,
+    weights: (f64, f64, f64, f64),
+) -> PyResult<Vec<(String, f64, f64, f64, f64, f64)>> {
+    let (w_kw, w_graph, w_comm, w_imp) = weights;
+    if w_kw < 0.0 || w_graph < 0.0 || w_comm < 0.0 || w_imp < 0.0 {
+        return Err(PyValueError::new_err(format!(
+            "all weights must be >= 0.0, got ({w_kw}, {w_graph}, {w_comm}, {w_imp})"
+        )));
+    }
+
+    for id in &node_ids {
+        if id.is_empty() {
+            return Err(PyValueError::new_err(
+                "node_ids must not contain empty strings",
+            ));
+        }
+    }
+
+    Ok(batch_hybrid_score_internal(
+        node_ids,
+        keyword_scores,
+        bfs_depths,
+        community_scores,
+        pagerank_scores,
+        weights,
+    ))
+}
+
+/// Pure-Rust hybrid scoring implementation (no PyO3 overhead).
+///
+/// Called by the `batch_hybrid_score` pyfunction and by benchmarks.
+/// Preconditions (not re-validated here):
+/// - All weights >= 0.0
+/// - No empty strings in `node_ids`
+pub fn batch_hybrid_score_internal(
     node_ids: Vec<String>,
     keyword_scores: HashMap<String, f64>,
     bfs_depths: HashMap<String, usize>,
@@ -100,7 +144,7 @@ mod tests {
 
     #[test]
     fn test_batch_hybrid_score_empty() {
-        let result = batch_hybrid_score(
+        let result = batch_hybrid_score_internal(
             vec![],
             HashMap::new(),
             HashMap::new(),
@@ -116,7 +160,7 @@ mod tests {
         let nodes = vec!["A".to_string()];
         let depths: HashMap<String, usize> = [("A".to_string(), 0)].into();
 
-        let result = batch_hybrid_score(
+        let result = batch_hybrid_score_internal(
             nodes,
             HashMap::new(),
             depths,
@@ -134,7 +178,7 @@ mod tests {
         let nodes = vec!["A".to_string()];
         let depths: HashMap<String, usize> = [("A".to_string(), 1)].into();
 
-        let result = batch_hybrid_score(
+        let result = batch_hybrid_score_internal(
             nodes,
             HashMap::new(),
             depths,
@@ -151,7 +195,7 @@ mod tests {
         let nodes = vec!["A".to_string(), "B".to_string()];
         let pr: HashMap<String, f64> = [("A".to_string(), 0.3), ("B".to_string(), 0.6)].into();
 
-        let result = batch_hybrid_score(
+        let result = batch_hybrid_score_internal(
             nodes,
             HashMap::new(),
             HashMap::new(),
@@ -182,7 +226,7 @@ mod tests {
         ]
         .into();
 
-        let result = batch_hybrid_score(
+        let result = batch_hybrid_score_internal(
             nodes,
             kw,
             HashMap::new(),
@@ -199,7 +243,7 @@ mod tests {
     #[test]
     fn test_missing_node_data_defaults() {
         let nodes = vec!["X".to_string()];
-        let result = batch_hybrid_score(
+        let result = batch_hybrid_score_internal(
             nodes,
             HashMap::new(), // no keyword score
             HashMap::new(), // no depth
@@ -220,7 +264,7 @@ mod tests {
         let comm: HashMap<String, f64> = [("A".to_string(), 0.8)].into();
         let pr: HashMap<String, f64> = [("A".to_string(), 1.0)].into();
 
-        let result = batch_hybrid_score(
+        let result = batch_hybrid_score_internal(
             nodes,
             kw,
             depths,
@@ -242,7 +286,7 @@ mod tests {
         let nodes = vec!["A".to_string(), "B".to_string()];
         // All pagerank scores are 0.0
         let pr: HashMap<String, f64> = [("A".to_string(), 0.0), ("B".to_string(), 0.0)].into();
-        let result = batch_hybrid_score(
+        let result = batch_hybrid_score_internal(
             nodes,
             HashMap::new(),
             HashMap::new(),
@@ -254,5 +298,46 @@ mod tests {
         for &(_, _, _, _, _, importance) in &result {
             assert!(approx_eq(importance, 0.0, 1e-9));
         }
+    }
+
+    // --- PyErr validation tests ---
+
+    #[test]
+    fn test_negative_weight_returns_error() {
+        assert!(batch_hybrid_score(
+            vec!["A".to_string()],
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            (-0.1, 0.3, 0.2, 0.1),
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn test_negative_graph_weight_returns_error() {
+        assert!(batch_hybrid_score(
+            vec!["A".to_string()],
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            (0.4, -1.0, 0.2, 0.1),
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn test_empty_node_id_returns_error() {
+        assert!(batch_hybrid_score(
+            vec!["".to_string()],
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
+            (0.4, 0.3, 0.2, 0.1),
+        )
+        .is_err());
     }
 }

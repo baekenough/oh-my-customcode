@@ -1,6 +1,6 @@
 # Architecture
 
-> oh-my-customcode v0.41.0
+> oh-my-customcode v0.42.0
 
 ## 1. System Overview
 
