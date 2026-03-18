@@ -1,0 +1,23 @@
+name: Trigger Issue Analysis
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  trigger-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Airflow DAG
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 49.142.111.166
+          port: 9416
+          username: baekenough
+          key: ${{ secrets.AIRFLOW_SSH_KEY }}
+          script: |
+            source ~/.venvs/airflow/bin/activate
+            airflow dags trigger omc_issue_analyzer \
+              --conf "{\"issue_number\": $ISSUE_NUMBER}"
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
