@@ -6,10 +6,7 @@ const config = {
 		adapter: adapter({
 			out: 'build',
 			envPrefix: 'OMCUSTOM_'
-		}),
-		csrf: {
-			checkOrigin: false
-		}
+		})
 	}
 };
 

@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir, access } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
 import { getProjectRoot, getGuides } from '$lib/server/data';
 import { parseGuideNaturalLanguage, sanitizeGuideName } from '$lib/server/guide-generator';
@@ -33,9 +33,7 @@ export const actions: Actions = {
 			try {
 				const rawOutput = await generateGuideWithClaude(input, root);
 
-				// Extract name from first heading or fallback to keyword parser
-				const headingMatch = rawOutput.match(/^#\s+(.+)$/m);
-				const headingTitle = headingMatch ? headingMatch[1].trim() : '';
+				// Extract name from keyword parser (heading is unused)
 				const keywordGuide = parseGuideNaturalLanguage(input);
 				const name = keywordGuide.name; // always use keyword parser for name
 
@@ -83,14 +81,20 @@ export const actions: Actions = {
 			return fail(400, { error: 'Guide content is required' });
 		}
 
-		// Validate name format
-		if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(name) && name.length > 1) {
+		// Validate name format (single-char names must also pass regex)
+		if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(name) && name.length >= 1) {
 			return fail(400, { error: `Invalid guide name: "${name}". Use kebab-case (e.g., react-hooks)` });
 		}
 
 		const root = await getProjectRoot();
-		const guideDir = join(root, 'guides', name);
+		const allowedDir = resolve(root, 'guides');
+		const guideDir = join(allowedDir, name);
 		const guidePath = join(guideDir, 'README.md');
+
+		// Path containment check — prevent directory traversal
+		if (!resolve(guideDir).startsWith(allowedDir + '/') && resolve(guideDir) !== allowedDir) {
+			return fail(400, { error: 'Invalid path' });
+		}
 
 		// Check for existing directory
 		try {

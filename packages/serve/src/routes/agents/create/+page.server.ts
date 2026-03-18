@@ -1,11 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, access } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
 import { getProjectRoot, getSkills } from '$lib/server/data';
 import { parseNaturalLanguage, buildAgentMarkdown, sanitizeName } from '$lib/server/agent-generator';
 import { parseFrontmatter } from '$lib/server/frontmatter';
-import { isClaudeAvailable, generateAgentWithClaude, validateWithClaude } from '$lib/server/claude-cli';
+import { isClaudeAvailable, generateAgentWithClaude } from '$lib/server/claude-cli';
 
 export const load: PageServerLoad = async () => {
 	const root = await getProjectRoot();
@@ -99,13 +99,19 @@ export const actions: Actions = {
 			return fail(400, { error: 'Agent content is required' });
 		}
 
-		// Validate name format
-		if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(name) && name.length > 1) {
+		// Validate name format (single-char names must also pass regex)
+		if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(name) && name.length >= 1) {
 			return fail(400, { error: `Invalid agent name: "${name}". Use kebab-case (e.g., my-agent-expert)` });
 		}
 
 		const root = await getProjectRoot();
-		const agentPath = join(root, '.claude', 'agents', `${name}.md`);
+		const allowedDir = resolve(root, '.claude', 'agents');
+		const agentPath = join(allowedDir, `${name}.md`);
+
+		// Path containment check — prevent directory traversal
+		if (!resolve(agentPath).startsWith(allowedDir + '/') && resolve(agentPath) !== allowedDir) {
+			return fail(400, { error: 'Invalid path' });
+		}
 
 		// Check for existing file
 		try {
@@ -117,17 +123,6 @@ export const actions: Actions = {
 		}
 
 		await writeFile(agentPath, content + '\n', 'utf-8');
-
-		// Run advisory validation via Claude CLI if available
-		const claudeAvailable = await isClaudeAvailable();
-		if (claudeAvailable) {
-			const validation = await validateWithClaude('agent', name, root);
-			// Only redirect immediately when fully passing (no warnings, no errors)
-			if (validation.passed && validation.warnings.length === 0 && validation.errors.length === 0) {
-				throw redirect(303, `/agents/${name}`);
-			}
-			return { saved: true, name, validation };
-		}
 
 		throw redirect(303, `/agents/${name}`);
 	}

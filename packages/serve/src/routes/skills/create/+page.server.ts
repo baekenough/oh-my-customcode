@@ -1,11 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir, access } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
 import { getProjectRoot, getSkills } from '$lib/server/data';
 import { parseSkillNaturalLanguage, buildSkillMarkdown, sanitizeSkillName } from '$lib/server/skill-generator';
 import { parseFrontmatter } from '$lib/server/frontmatter';
-import { isClaudeAvailable, generateSkillWithClaude, validateWithClaude } from '$lib/server/claude-cli';
+import { isClaudeAvailable, generateSkillWithClaude } from '$lib/server/claude-cli';
 
 export const load: PageServerLoad = async () => {
 	const root = await getProjectRoot();
@@ -93,14 +93,20 @@ export const actions: Actions = {
 			return fail(400, { error: 'Skill content is required' });
 		}
 
-		// Validate name format
-		if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(name) && name.length > 1) {
+		// Validate name format (single-char names must also pass regex)
+		if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(name) && name.length >= 1) {
 			return fail(400, { error: `Invalid skill name: "${name}". Use kebab-case (e.g., react-best-practices)` });
 		}
 
 		const root = await getProjectRoot();
-		const skillDir = join(root, '.claude', 'skills', name);
+		const allowedDir = resolve(root, '.claude', 'skills');
+		const skillDir = join(allowedDir, name);
 		const skillPath = join(skillDir, 'SKILL.md');
+
+		// Path containment check — prevent directory traversal
+		if (!resolve(skillDir).startsWith(allowedDir + '/') && resolve(skillDir) !== allowedDir) {
+			return fail(400, { error: 'Invalid path' });
+		}
 
 		// Check for existing file
 		try {
@@ -114,17 +120,6 @@ export const actions: Actions = {
 		// Create skill directory
 		await mkdir(skillDir, { recursive: true });
 		await writeFile(skillPath, content + '\n', 'utf-8');
-
-		// Run advisory validation via Claude CLI if available
-		const claudeAvailable = await isClaudeAvailable();
-		if (claudeAvailable) {
-			const validation = await validateWithClaude('skill', name, root);
-			// Only redirect immediately when fully passing (no warnings, no errors)
-			if (validation.passed && validation.warnings.length === 0 && validation.errors.length === 0) {
-				throw redirect(303, `/skills/${name}`);
-			}
-			return { saved: true, name, validation };
-		}
 
 		throw redirect(303, `/skills/${name}`);
 	}
