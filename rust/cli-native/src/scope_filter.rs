@@ -4,12 +4,13 @@
 //! All matching is prefix-based and O(1) per domain lookup.
 
 /// Domain categories that agents belong to.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Domain {
     Backend,
     Frontend,
     DataEngineering,
     DevOps,
+    Database,
     Management,
     Security,
     Qa,
@@ -25,6 +26,7 @@ impl Domain {
             Domain::Frontend => "frontend",
             Domain::DataEngineering => "data-engineering",
             Domain::DevOps => "devops",
+            Domain::Database => "database",
             Domain::Management => "management",
             Domain::Security => "security",
             Domain::Qa => "qa",
@@ -32,6 +34,10 @@ impl Domain {
             Domain::Universal => "universal",
         }
     }
+}
+
+impl std::str::FromStr for Domain {
+    type Err = ();
 
     /// Parses a domain from its string representation.
     ///
@@ -39,22 +45,25 @@ impl Domain {
     ///
     /// ```
     /// use cli_native::scope_filter::Domain;
+    /// use std::str::FromStr;
     ///
-    /// assert_eq!(Domain::from_str("backend"), Some(Domain::Backend));
-    /// assert_eq!(Domain::from_str("unknown"), None);
+    /// assert_eq!(Domain::from_str("backend"), Ok(Domain::Backend));
+    /// assert_eq!(Domain::from_str("database"), Ok(Domain::Database));
+    /// assert!(Domain::from_str("unknown").is_err());
     /// ```
-    pub fn from_str(s: &str) -> Option<Domain> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "backend" => Some(Domain::Backend),
-            "frontend" => Some(Domain::Frontend),
-            "data-engineering" => Some(Domain::DataEngineering),
-            "devops" => Some(Domain::DevOps),
-            "management" => Some(Domain::Management),
-            "security" => Some(Domain::Security),
-            "qa" => Some(Domain::Qa),
-            "architecture" => Some(Domain::Architecture),
-            "universal" => Some(Domain::Universal),
-            _ => None,
+            "backend" => Ok(Domain::Backend),
+            "frontend" => Ok(Domain::Frontend),
+            "data-engineering" => Ok(Domain::DataEngineering),
+            "devops" => Ok(Domain::DevOps),
+            "database" => Ok(Domain::Database),
+            "management" => Ok(Domain::Management),
+            "security" => Ok(Domain::Security),
+            "qa" => Ok(Domain::Qa),
+            "architecture" => Ok(Domain::Architecture),
+            "universal" => Ok(Domain::Universal),
+            _ => Err(()),
         }
     }
 }
@@ -67,7 +76,7 @@ const DOMAIN_PREFIXES: &[(&str, Domain)] = &[
     ("fe-", Domain::Frontend),
     ("de-", Domain::DataEngineering),
     ("infra-", Domain::DevOps),
-    ("db-", Domain::DevOps),
+    ("db-", Domain::Database),
     ("mgr-", Domain::Management),
     ("sys-", Domain::Management),
     ("sec-", Domain::Security),
@@ -88,13 +97,14 @@ const DOMAIN_PREFIXES: &[(&str, Domain)] = &[
 /// assert_eq!(resolve_domain("lang-golang-expert"), Some(Domain::Backend));
 /// assert_eq!(resolve_domain("fe-vercel-agent"), Some(Domain::Frontend));
 /// assert_eq!(resolve_domain("de-airflow-expert"), Some(Domain::DataEngineering));
+/// assert_eq!(resolve_domain("db-postgres-expert"), Some(Domain::Database));
 /// assert_eq!(resolve_domain("unknown-agent"), None);
 /// ```
 pub fn resolve_domain(agent_type: &str) -> Option<Domain> {
     DOMAIN_PREFIXES
         .iter()
         .find(|(prefix, _)| agent_type.starts_with(prefix))
-        .map(|(_, domain)| domain.clone())
+        .map(|(_, domain)| *domain)
 }
 
 /// Checks whether an agent's `subagent_type` matches a given domain string.
@@ -108,6 +118,7 @@ pub fn resolve_domain(agent_type: &str) -> Option<Domain> {
 ///
 /// assert!(matches_domain("lang-golang-expert", "backend"));
 /// assert!(matches_domain("be-fastapi-expert", "backend"));
+/// assert!(matches_domain("db-postgres-expert", "database"));
 /// assert!(!matches_domain("fe-vercel-agent", "backend"));
 /// assert!(!matches_domain("unknown-type", "backend"));
 /// ```
@@ -178,9 +189,19 @@ mod tests {
     fn test_resolve_domain_devops() {
         assert_eq!(resolve_domain("infra-docker-expert"), Some(Domain::DevOps));
         assert_eq!(resolve_domain("infra-aws-expert"), Some(Domain::DevOps));
-        assert_eq!(resolve_domain("db-postgres-expert"), Some(Domain::DevOps));
-        assert_eq!(resolve_domain("db-redis-expert"), Some(Domain::DevOps));
-        assert_eq!(resolve_domain("db-supabase-expert"), Some(Domain::DevOps));
+    }
+
+    #[test]
+    fn test_resolve_domain_database() {
+        assert_eq!(
+            resolve_domain("db-postgres-expert"),
+            Some(Domain::Database)
+        );
+        assert_eq!(resolve_domain("db-redis-expert"), Some(Domain::Database));
+        assert_eq!(
+            resolve_domain("db-supabase-expert"),
+            Some(Domain::Database)
+        );
     }
 
     #[test]
@@ -233,6 +254,7 @@ mod tests {
     fn test_matches_domain() {
         assert!(matches_domain("lang-golang-expert", "backend"));
         assert!(matches_domain("be-fastapi-expert", "backend"));
+        assert!(matches_domain("db-postgres-expert", "database"));
         assert!(!matches_domain("fe-vercel-agent", "backend"));
         assert!(!matches_domain("unknown", "backend"));
     }
@@ -263,6 +285,23 @@ mod tests {
     }
 
     #[test]
+    fn test_filter_by_domain_database() {
+        let agents = vec![
+            "db-supabase-expert",
+            "db-postgres-expert",
+            "db-redis-expert",
+            "infra-docker-expert",
+        ];
+        let database = filter_by_domain(&agents, "database");
+        assert_eq!(
+            database,
+            vec!["db-supabase-expert", "db-postgres-expert", "db-redis-expert"]
+        );
+        let devops = filter_by_domain(&agents, "devops");
+        assert_eq!(devops, vec!["infra-docker-expert"]);
+    }
+
+    #[test]
     fn test_filter_by_domain_empty_result() {
         let agents = vec!["lang-golang-expert", "fe-vercel-agent"];
         let result = filter_by_domain(&agents, "qa");
@@ -283,6 +322,7 @@ mod tests {
             Domain::Frontend,
             Domain::DataEngineering,
             Domain::DevOps,
+            Domain::Database,
             Domain::Management,
             Domain::Security,
             Domain::Qa,
@@ -291,8 +331,28 @@ mod tests {
         ];
         for domain in &domains {
             let s = domain.as_str();
-            let parsed = Domain::from_str(s).expect("round-trip should succeed");
+            let parsed = s.parse::<Domain>().expect("round-trip should succeed");
             assert_eq!(*domain, parsed);
         }
+    }
+
+    #[test]
+    fn test_domain_from_str_ok() {
+        assert_eq!("backend".parse::<Domain>(), Ok(Domain::Backend));
+        assert_eq!("database".parse::<Domain>(), Ok(Domain::Database));
+        assert_eq!("devops".parse::<Domain>(), Ok(Domain::DevOps));
+    }
+
+    #[test]
+    fn test_domain_from_str_err() {
+        assert!("unknown".parse::<Domain>().is_err());
+        assert!("".parse::<Domain>().is_err());
+    }
+
+    #[test]
+    fn test_domain_is_copy() {
+        let d = Domain::Backend;
+        let _d2 = d; // moves if not Copy
+        let _d3 = d; // compiles only if Copy is derived
     }
 }
