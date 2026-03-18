@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+/* Prose styles for rendered markdown */
+.prose {
+  color: theme(colors.zinc.200);
+  max-width: none;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  color: theme(colors.zinc.50);
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose h1 { font-size: 1.5rem; border-bottom: 1px solid theme(colors.zinc.700); padding-bottom: 0.5rem; }
+.prose h2 { font-size: 1.25rem; }
+.prose h3 { font-size: 1.1rem; }
+
+.prose p {
+  margin-bottom: 0.75rem;
+  line-height: 1.7;
+}
+
+.prose a {
+  color: theme(colors.emerald.400);
+  text-decoration: underline;
+}
+
+.prose a:hover {
+  color: theme(colors.emerald.300);
+}
+
+.prose code {
+  background: theme(colors.zinc.800);
+  color: theme(colors.emerald.300);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+
+.prose pre {
+  background: theme(colors.zinc.900);
+  border: 1px solid theme(colors.zinc.700);
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.prose pre code {
+  background: none;
+  padding: 0;
+  font-size: 0.85rem;
+  color: theme(colors.zinc.200);
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.prose th {
+  background: theme(colors.zinc.800);
+  color: theme(colors.zinc.200);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border: 1px solid theme(colors.zinc.700);
+}
+
+.prose td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid theme(colors.zinc.800);
+}
+
+.prose tr:nth-child(even) td {
+  background: theme(colors.zinc.900);
+}
+
+.prose ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose li {
+  margin-bottom: 0.25rem;
+}
+
+.prose blockquote {
+  border-left: 3px solid theme(colors.emerald.500);
+  padding-left: 1rem;
+  color: theme(colors.zinc.400);
+  margin-left: 0;
+  font-style: italic;
+}
+
+.prose hr {
+  border-color: theme(colors.zinc.700);
+  margin: 1.5rem 0;
+}
