@@ -47,6 +47,9 @@ CLAUDE.md
 .mcp.json
 test-validator.ts
 
+# Git worktrees
+.worktrees/
+
 # Rust build artifacts
 target/
 *.so

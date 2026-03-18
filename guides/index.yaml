@@ -1,0 +1,199 @@
+# Guides Index
+
+guides:
+  # Internal
+  - name: claude-code
+    description: Claude Code and agent development guide
+    path: ./claude-code/
+    source:
+      type: internal
+
+  # Frontend
+  - name: flutter
+    description: Flutter/Dart development patterns and best practices
+    path: ./flutter/
+    source:
+      type: external
+      origin: flutter.dev
+      url: https://docs.flutter.dev/
+
+  - name: web-design
+    description: Web design best practices and accessibility reference
+    path: ./web-design/
+    source:
+      type: external
+      origin: github
+      url: https://github.com/vercel-labs/agent-skills
+
+  # Languages
+  - name: golang
+    description: Go language reference from Effective Go
+    path: ./golang/
+    source:
+      type: external
+      origin: go.dev
+      url: https://go.dev/doc/effective_go
+
+  - name: python
+    description: Python reference from PEP 8 and PEP 20
+    path: ./python/
+    source:
+      type: external
+      origin: python.org
+      url: https://peps.python.org/pep-0008/
+
+  - name: rust
+    description: Rust reference from The Book and API Guidelines
+    path: ./rust/
+    source:
+      type: external
+      origin: rust-lang.org
+      url: https://doc.rust-lang.org/book/
+
+  - name: kotlin
+    description: Kotlin reference from JetBrains documentation
+    path: ./kotlin/
+    source:
+      type: external
+      origin: kotlinlang.org
+      url: https://kotlinlang.org/docs/coding-conventions.html
+
+  - name: typescript
+    description: TypeScript reference from official handbook
+    path: ./typescript/
+    source:
+      type: external
+      origin: typescriptlang.org
+      url: https://www.typescriptlang.org/docs/handbook/
+
+  # Backend
+  - name: fastapi
+    description: FastAPI framework reference
+    path: ./fastapi/
+    source:
+      type: external
+      origin: fastapi.tiangolo.com
+      url: https://fastapi.tiangolo.com/
+
+  - name: springboot
+    description: Spring Boot framework reference
+    path: ./springboot/
+    source:
+      type: external
+      origin: spring.io
+      url: https://docs.spring.io/spring-boot/docs/current/reference/html/
+
+  - name: go-backend
+    description: Go backend development patterns
+    path: ./go-backend/
+    source:
+      type: external
+      origin: various
+      url: https://github.com/golang-standards/project-layout
+
+  # Infrastructure
+  - name: docker
+    description: Docker containerization reference
+    path: ./docker/
+    source:
+      type: external
+      origin: docker.com
+      url: https://docs.docker.com/
+
+  - name: aws
+    description: AWS cloud architecture reference
+    path: ./aws/
+    source:
+      type: external
+      origin: aws.amazon.com
+      url: https://docs.aws.amazon.com/wellarchitected/
+
+  # Data Engineering
+  - name: airflow
+    description: Apache Airflow DAG development best practices
+    path: ./airflow/
+    source:
+      type: external
+      origin: airflow.apache.org
+      url: https://airflow.apache.org/docs/
+
+  - name: dbt
+    description: dbt SQL modeling and analytics engineering best practices
+    path: ./dbt/
+    source:
+      type: external
+      origin: docs.getdbt.com
+      url: https://docs.getdbt.com/
+
+  - name: kafka
+    description: Apache Kafka event streaming best practices
+    path: ./kafka/
+    source:
+      type: external
+      origin: kafka.apache.org
+      url: https://kafka.apache.org/documentation/
+
+  - name: spark
+    description: Apache Spark distributed data processing best practices
+    path: ./spark/
+    source:
+      type: external
+      origin: spark.apache.org
+      url: https://spark.apache.org/docs/latest/
+
+  - name: snowflake
+    description: Snowflake cloud data warehouse best practices
+    path: ./snowflake/
+    source:
+      type: external
+      origin: docs.snowflake.com
+      url: https://docs.snowflake.com/
+
+  - name: iceberg
+    description: Apache Iceberg open table format best practices
+    path: ./iceberg/
+    source:
+      type: external
+      origin: iceberg.apache.org
+      url: https://iceberg.apache.org/docs/latest/
+
+  # Database
+  - name: supabase-postgres
+    description: Supabase and PostgreSQL best practices reference
+    path: ./supabase-postgres/
+    source:
+      type: external
+      origin: github
+      url: https://github.com/supabase/agent-skills
+
+  - name: postgres
+    description: PostgreSQL database administration and PG-specific SQL patterns
+    path: ./postgres/
+    source:
+      type: external
+      origin: postgresql.org
+      url: https://www.postgresql.org/docs/current/
+
+  - name: redis
+    description: Redis in-memory data store best practices and command patterns
+    path: ./redis/
+    source:
+      type: external
+      origin: redis.io
+      url: https://redis.io/docs/
+
+  # Workflow
+  - name: git-worktree-workflow
+    description: Git worktree parallel branch workflow guide
+    path: ./git-worktree-workflow/
+    source:
+      type: internal
+
+  # Writing
+  - name: elements-of-style
+    description: The Elements of Style writing clarity guidelines
+    path: ./elements-of-style/
+    source:
+      type: external
+      origin: public-domain
+      url: https://www.gutenberg.org/ebooks/37134
