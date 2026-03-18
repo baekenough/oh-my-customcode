@@ -9,6 +9,7 @@ import { getProviderLayout } from '../core/layout.js';
 import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
+import { DEFAULT_PORT, startServeBackground } from './serve.js';
 import { getDefaultWizardResult, isInteractiveMode, runInitWizard } from './wizard.js';
 
 /**
@@ -221,6 +222,11 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     console.log('  /plugin install context7');
     console.log('');
     console.log('See CLAUDE.md "외부 의존성" section for details.');
+
+    // Auto-start web UI in background after successful init.
+    // Fire-and-forget: skip silently if build is missing.
+    await startServeBackground(targetDir).catch(() => {});
+    console.log(`Web UI: http://127.0.0.1:${DEFAULT_PORT}`);
 
     return {
       success: true,
