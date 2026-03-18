@@ -53,3 +53,17 @@ export const agentInvocations = sqliteTable('agent_invocations', {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });
+
+export const evaluations = sqliteTable('evaluations', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  turnId: text('turn_id').references(() => turns.turnId),
+  sessionId: text('session_id').references(() => sessions.sessionId),
+  score: integer('score'),              // 1-5
+  verdict: text('verdict'),             // pass | fail | needs_refinement
+  tags: text('tags'),                   // JSON array string: ["good_prompt", "wrong_routing"]
+  comment: text('comment'),
+  evaluatedAt: text('evaluated_at').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
