@@ -1,5 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { getAgents, getSkills, getGuides, getRules, getProjectRoot } from '$lib/server/data';
+import { getAnalytics } from '$lib/server/analytics';
 
 const AGENT_TYPES: { label: string; pattern: RegExp }[] = [
 	{ label: 'SW Engineer / Language', pattern: /^lang-/ },
@@ -18,11 +19,12 @@ const AGENT_TYPES: { label: string; pattern: RegExp }[] = [
 
 export const load: PageServerLoad = async () => {
 	const root = await getProjectRoot();
-	const [agents, skills, guides, rules] = await Promise.all([
+	const [agents, skills, guides, rules, analytics] = await Promise.all([
 		getAgents(root),
 		getSkills(root),
 		getGuides(root),
-		getRules(root)
+		getRules(root),
+		getAnalytics(root)
 	]);
 
 	// Build type breakdown
@@ -61,6 +63,7 @@ export const load: PageServerLoad = async () => {
 		typeBreakdown,
 		scopeBreakdown,
 		priorityBreakdown,
-		root
+		root,
+		analytics
 	};
 };
