@@ -125,7 +125,7 @@
 								{rule.name}
 							</a>
 						</td>
-						<td class="px-4 py-3 text-zinc-500 max-w-md truncate">{rule.description}</td>
+						<td class="px-4 py-3 text-zinc-500 max-w-md" title={rule.description}><span class="line-clamp-2">{rule.description}</span></td>
 					</tr>
 				{:else}
 					<tr>

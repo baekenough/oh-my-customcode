@@ -170,7 +170,7 @@
 								{skill.name}
 							</a>
 						</td>
-						<td class="px-4 py-3 text-zinc-400 max-w-md truncate">{skill.description}</td>
+						<td class="px-4 py-3 text-zinc-400 max-w-md" title={skill.description}><span class="line-clamp-2">{skill.description}</span></td>
 						<td class="px-4 py-3">
 							<span class="px-2 py-0.5 rounded text-xs font-medium border {scopeColor[skill.scope] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}">
 								{skill.scope}

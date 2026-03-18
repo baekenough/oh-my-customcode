@@ -196,7 +196,7 @@
 								{agent.name}
 							</a>
 						</td>
-						<td class="px-4 py-3 text-zinc-400 max-w-xs truncate">{agent.description}</td>
+						<td class="px-4 py-3 text-zinc-400 max-w-xs" title={agent.description}><span class="line-clamp-2">{agent.description}</span></td>
 						<td class="px-4 py-3">
 							<span class="px-2 py-0.5 rounded text-xs font-medium border {modelColor[agent.model] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}">
 								{agent.model}
