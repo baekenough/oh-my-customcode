@@ -7,7 +7,8 @@
 		{ href: '/agents', label: 'Agents', icon: '◈' },
 		{ href: '/skills', label: 'Skills', icon: '◆' },
 		{ href: '/guides', label: 'Guides', icon: '◉' },
-		{ href: '/rules', label: 'Rules', icon: '◇' }
+		{ href: '/rules', label: 'Rules', icon: '◇' },
+		{ href: '/evaluations', label: 'Evaluations', icon: '★' }
 	];
 
 	function isActive(href: string, pathname: string): boolean {
