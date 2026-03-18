@@ -115,16 +115,6 @@
           }
         ],
         "description": "Check codex CLI and Agent Teams availability at session start"
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/scripts/serve-autostart.sh"
-          }
-        ],
-        "description": "Auto-start Web UI (packages/serve) in background if not already running"
       }
     ],
     "SubagentStart": [

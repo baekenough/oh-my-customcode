@@ -4,9 +4,7 @@
  * Main CLI application using Commander.js
  */
 
-import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
 import { Command } from 'commander';
 import { formatPreflightWarnings, runPreflightCheck } from '../core/preflight.js';
 import { maybeHandleSelfUpdateForInit } from '../core/self-update.js';
@@ -15,7 +13,6 @@ import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
 import { listCommand } from './list.js';
 import { securityCommand } from './security.js';
-import { startServeBackground } from './serve.js';
 import { serveCommand, serveStopCommand } from './serve-commands.js';
 import { updateCommand } from './update.js';
 
@@ -138,17 +135,6 @@ export function createProgram(): Command {
       const warnings = formatPreflightWarnings(result);
       console.warn(warnings);
       console.warn(''); // Empty line for spacing
-    }
-
-    // Auto-start serve in the background for any command that runs inside an
-    // initialized project (has .claude/ directory), except serve-stop itself.
-    const commandName = actionCommand.name();
-    if (commandName !== 'serve-stop' && commandName !== 'serve') {
-      const cwd = process.cwd();
-      if (existsSync(join(cwd, '.claude'))) {
-        // Fire-and-forget: must not block or throw — any failure is silently ignored
-        startServeBackground(cwd).catch(() => {});
-      }
     }
   });
 
