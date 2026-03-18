@@ -13,6 +13,7 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 | Scenario | Preferred | Reason |
 |----------|-----------|--------|
 | Simple independent subtasks | Agent Tool | Lower cost, no coordination overhead |
+| Sequential-dependency init/scaffolding | Agent Tool | Blocked agents waste tokens polling; single agent faster |
 | Multi-step with shared state | **Agent Teams** | Shared task list, peer messaging |
 | Research requiring discussion | **Agent Teams** | Iterative discovery, synthesis |
 | Cost-sensitive batch ops | Agent Tool | Minimal token overhead |
@@ -46,9 +47,14 @@ Before using Agent tool for 2+ agent tasks, complete this check:
 ║                                                                   ║
 ║  4. Are 2+ issues being fixed in the same release batch?        ║
 ║     YES → prefer Agent Teams (coordination benefit)              ║
-║     NO  → Proceed with Agent tool                                ║
+║     NO  → Check #5                                               ║
+║                                                                   ║
+║  5. Are tasks sequentially dependent (init/scaffold)?            ║
+║     YES → prefer Agent Tool (single agent, no coordination)     ║
+║     NO  → Continue with Agent Teams                              ║
 ║                                                                   ║
 ║  Simple rule: 3+ agents OR review cycle → use Agent Teams        ║
+║  Sequential deps / scaffolding → Agent Tool (single agent)       ║
 ║  2+ issues in same batch → prefer Agent Teams                    ║
 ║  Everything else → Agent tool                                    ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -188,6 +194,36 @@ When Agent Teams creates a new agent via mgr-creator:
 3. mgr-creator creates agent with auto-discovered skills
 4. New agent joins team immediately
 5. Team continues with expanded capabilities
+
+## Blocked Agent Behavior
+
+When a team member is blocked by task dependencies:
+
+| Strategy | When | Benefit |
+|----------|------|---------|
+| Deferred spawn | Dependency chain is clear | No wasted tokens; spawn after blocker completes |
+| Silent wait | Agent already spawned, short wait expected | Minimal overhead |
+| Reassign | Agent blocked >2 min with no progress | Reuse agent for unblocked work |
+
+### Prompt Guidelines for Blocked Agents
+
+When spawning agents that may be blocked:
+1. Include explicit instruction: "If your task is blocked, wait silently. Do NOT send periodic status messages."
+2. Set check interval: "Check TaskList once per minute, not continuously."
+3. Prefer deferred spawn when the dependency resolution time is unpredictable.
+
+### Anti-Pattern: Idle Polling
+
+```
+❌ WRONG: Blocked agent sends repeated status messages
+   docker-dev: "Task #1 still pending..."  (×5 messages, wasting tokens)
+
+✓ CORRECT: Deferred spawn after dependency resolves
+   (Task #1 completes) → then spawn docker-dev for Task #3
+
+✓ ALSO CORRECT: Silent wait with infrequent checks
+   docker-dev spawned with: "Wait silently if blocked. Check TaskList once per minute."
+```
 
 ## Lifecycle
 
