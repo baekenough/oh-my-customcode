@@ -59,11 +59,11 @@ pub fn hash_file(path: &Path) -> Result<String, Error> {
     Ok(format!("{digest:x}"))
 }
 
-/// Computes SHA-256 hashes for all files in `dir` whose names match `glob_pattern`.
+/// Computes SHA-256 hashes for all files in `dir` whose names match `extension_filter`.
 ///
 /// The returned map uses paths **relative to `dir`** as keys (with `/` separator).
 ///
-/// `glob_pattern` is a simple suffix/extension filter (e.g. `"*.md"`, `"*.yaml"`).
+/// `extension_filter` is a simple extension filter (e.g. `"*.md"` matches files ending in `.md`).
 /// Pass `"*"` to include all files.
 ///
 /// # Errors
@@ -79,18 +79,18 @@ pub fn hash_file(path: &Path) -> Result<String, Error> {
 /// let hashes = hash_directory(Path::new(".claude/agents"), "*.md").unwrap();
 /// println!("Found {} agent files", hashes.len());
 /// ```
-pub fn hash_directory(dir: &Path, glob_pattern: &str) -> Result<HashMap<String, String>, Error> {
+pub fn hash_directory(dir: &Path, extension_filter: &str) -> Result<HashMap<String, String>, Error> {
     let mut map = HashMap::new();
 
     if !dir.exists() {
         return Ok(map);
     }
 
-    let suffix = glob_pattern
+    let suffix = extension_filter
         .strip_prefix('*')
-        .unwrap_or(glob_pattern)
+        .unwrap_or(extension_filter)
         .to_owned();
-    let match_all = glob_pattern == "*";
+    let match_all = extension_filter == "*";
 
     for entry in walkdir::WalkDir::new(dir)
         .min_depth(1)

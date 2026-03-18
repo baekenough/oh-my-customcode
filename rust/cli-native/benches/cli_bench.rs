@@ -100,6 +100,7 @@ fn bench_scope_filter(c: &mut Criterion) {
         "frontend",
         "data-engineering",
         "devops",
+        "database",
         "management",
         "security",
         "qa",
@@ -168,18 +169,18 @@ fn bench_lockfile_hasher(c: &mut Criterion) {
 
     // diff_hashes: 50 files, 10 modified
     let contents_old = make_file_contents(50);
-    let contents_new = make_file_contents(50);
     let old_map: HashMap<String, String> = contents_old
         .iter()
         .enumerate()
         .map(|(i, d)| (format!("agent-{i}.md"), hash_bytes(d)))
         .collect();
-    // Modify first 10 entries
+    // Modify first 10 entries with genuinely different content
     let mut new_map = old_map.clone();
     for i in 0..10 {
+        let modified_content = format!("MODIFIED_{i}_{}", contents_old[i].len());
         new_map.insert(
             format!("agent-{i}.md"),
-            hash_bytes(&contents_new[i]),
+            hash_bytes(modified_content.as_bytes()),
         );
     }
 
