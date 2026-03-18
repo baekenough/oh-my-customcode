@@ -18,6 +18,4 @@ jobs:
           script: |
             source ~/.venvs/airflow/bin/activate
             airflow dags trigger omc_issue_analyzer \
-              --conf "{\"issue_number\": $ISSUE_NUMBER}"
-        env:
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+              --conf '{"issue_number": ${{ github.event.issue.number }}}'
