@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-44 agents. 75 skills. 21 rules. One command.
+44 agents. 76 skills. 21 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -138,7 +138,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (75)
+### Skills (76)
 
 | Category | Count | Includes |
 |----------|-------|----------|
