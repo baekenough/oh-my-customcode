@@ -2,6 +2,7 @@
 name: deep-plan
 description: Research-validated planning — research → plan → verify cycle for high-confidence implementation plans
 scope: core
+context: fork
 version: 1.0.0
 user-invocable: true
 argument-hint: "<topic-or-issue>"
