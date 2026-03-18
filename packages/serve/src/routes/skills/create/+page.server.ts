@@ -1,11 +1,11 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { writeFile, access } from 'fs/promises';
+import { writeFile, mkdir, access } from 'fs/promises';
 import { join, resolve } from 'path';
 import type { Actions, PageServerLoad } from './$types';
 import { getProjectRoot, getSkills } from '$lib/server/data';
-import { parseNaturalLanguage, buildAgentMarkdown, sanitizeName } from '$lib/server/agent-generator';
+import { parseSkillNaturalLanguage, buildSkillMarkdown, sanitizeSkillName } from '$lib/server/skill-generator';
 import { parseFrontmatter } from '$lib/server/frontmatter';
-import { isClaudeAvailable, generateAgentWithClaude } from '$lib/server/claude-cli';
+import { isClaudeAvailable, generateSkillWithClaude } from '$lib/server/claude-cli';
 
 export const load: PageServerLoad = async () => {
 	const root = await getProjectRoot();
@@ -32,7 +32,7 @@ export const actions: Actions = {
 
 		if (claudeAvailable) {
 			try {
-				const rawOutput = await generateAgentWithClaude(input, root);
+				const rawOutput = await generateSkillWithClaude(input, root);
 				const { frontmatter, body } = parseFrontmatter(rawOutput);
 
 				return {
@@ -40,96 +40,87 @@ export const actions: Actions = {
 					mode: 'claude' as const,
 					name: String(frontmatter.name ?? ''),
 					description: String(frontmatter.description ?? ''),
-					model: String(frontmatter.model ?? 'sonnet'),
-					domain: String(frontmatter.domain ?? 'universal'),
-					tools: arrayField(frontmatter.tools),
-					skills: arrayField(frontmatter.skills),
+					scope: String(frontmatter.scope ?? 'core'),
+					contextFork: frontmatter.context === 'fork',
 					body,
 					raw: rawOutput
 				};
 			} catch (err) {
 				// Claude CLI failed — fall back to keyword parser
 				console.warn('[claude-cli] Claude generation failed, falling back to keyword parser:', err);
-				const generated = parseNaturalLanguage(input);
-				const markdown = buildAgentMarkdown(generated);
+				const generated = parseSkillNaturalLanguage(input);
+				const markdown = buildSkillMarkdown(generated);
 				return {
 					success: true,
 					mode: 'keyword-fallback' as const,
 					name: generated.name,
 					description: generated.description,
-					model: generated.model,
-					domain: generated.domain,
-					tools: generated.tools,
-					skills: generated.skills,
+					scope: generated.scope,
+					contextFork: generated.contextFork,
 					body: generated.body,
 					raw: markdown
 				};
 			}
 		} else {
-			const generated = parseNaturalLanguage(input);
-			const markdown = buildAgentMarkdown(generated);
+			const generated = parseSkillNaturalLanguage(input);
+			const markdown = buildSkillMarkdown(generated);
 			return {
 				success: true,
 				mode: 'keyword' as const,
 				name: generated.name,
 				description: generated.description,
-				model: generated.model,
-				domain: generated.domain,
-				tools: generated.tools,
-				skills: generated.skills,
+				scope: generated.scope,
+				contextFork: generated.contextFork,
 				body: generated.body,
 				raw: markdown
 			};
 		}
 	},
 
-	// Save agent file
+	// Save skill file
 	save: async ({ request }) => {
 		const data = await request.formData();
 		const rawName = String(data.get('name') ?? '').trim();
 		const content = String(data.get('content') ?? '').trim();
 
 		// Sanitize name — kebab-case only
-		const name = sanitizeName(rawName);
+		const name = sanitizeSkillName(rawName);
 
 		if (!name) {
-			return fail(400, { error: 'Agent name is required' });
+			return fail(400, { error: 'Skill name is required' });
 		}
 		if (!content) {
-			return fail(400, { error: 'Agent content is required' });
+			return fail(400, { error: 'Skill content is required' });
 		}
 
 		// Validate name format (single-char names must also pass regex)
 		if (!/^[a-z][a-z0-9-]*[a-z0-9]$/.test(name) && name.length >= 1) {
-			return fail(400, { error: `Invalid agent name: "${name}". Use kebab-case (e.g., my-agent-expert)` });
+			return fail(400, { error: `Invalid skill name: "${name}". Use kebab-case (e.g., react-best-practices)` });
 		}
 
 		const root = await getProjectRoot();
-		const allowedDir = resolve(root, '.claude', 'agents');
-		const agentPath = join(allowedDir, `${name}.md`);
+		const allowedDir = resolve(root, '.claude', 'skills');
+		const skillDir = join(allowedDir, name);
+		const skillPath = join(skillDir, 'SKILL.md');
 
 		// Path containment check — prevent directory traversal
-		if (!resolve(agentPath).startsWith(allowedDir + '/') && resolve(agentPath) !== allowedDir) {
+		if (!resolve(skillDir).startsWith(allowedDir + '/') && resolve(skillDir) !== allowedDir) {
 			return fail(400, { error: 'Invalid path' });
 		}
 
 		// Check for existing file
 		try {
-			await access(agentPath);
+			await access(skillPath);
 			// File exists
-			return fail(409, { error: `Agent "${name}" already exists. Choose a different name.` });
+			return fail(409, { error: `Skill "${name}" already exists. Choose a different name.` });
 		} catch {
 			// File does not exist — safe to write
 		}
 
-		await writeFile(agentPath, content + '\n', 'utf-8');
+		// Create skill directory
+		await mkdir(skillDir, { recursive: true });
+		await writeFile(skillPath, content + '\n', 'utf-8');
 
-		throw redirect(303, `/agents/${name}`);
+		throw redirect(303, `/skills/${name}`);
 	}
 };
-
-function arrayField(val: unknown): string[] {
-	if (Array.isArray(val)) return val.map(String);
-	if (typeof val === 'string') return [val];
-	return [];
-}
