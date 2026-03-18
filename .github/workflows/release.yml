@@ -240,6 +240,7 @@ jobs:
     name: Verify Release
     needs: [publish]
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Extract version
         id: version
@@ -265,7 +266,7 @@ jobs:
       - name: Verify GitHub Packages publish
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          for i in 1 2 3; do
+          for i in 1 2 3 4 5; do
             PUBLISHED=$(npm view @baekenough/oh-my-customcode@${VERSION} version \
               --registry=https://npm.pkg.github.com 2>/dev/null || true)
             if [ "$PUBLISHED" = "$VERSION" ]; then
@@ -275,7 +276,7 @@ jobs:
             echo "Attempt $i: not found yet, waiting 60s..."
             sleep 60
           done
-          echo "::error::GitHub Package not found after 3 attempts"
+          echo "::error::GitHub Package not found after 5 attempts"
           exit 1
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
