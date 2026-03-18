@@ -29,7 +29,7 @@
 	];
 	const MODELS = ['sonnet', 'opus', 'haiku'];
 
-	// Populate fields when server returns analysis
+	// Populate fields when server returns analysis result
 	$: if (form?.success) {
 		agentName = form.name ?? '';
 		agentDescription = form.description ?? '';
@@ -331,7 +331,14 @@
 						disabled={saving || !agentName.trim()}
 						class="px-5 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm rounded font-medium transition-colors"
 					>
-						{saving ? 'Saving...' : 'Save Agent'}
+						{#if saving}
+							<span class="flex items-center gap-2">
+								<span class="inline-block animate-spin">⟳</span>
+								Saving...
+							</span>
+						{:else}
+							Save Agent
+						{/if}
 					</button>
 					<a
 						href="/agents"
@@ -341,6 +348,7 @@
 					</a>
 				</div>
 			</form>
+
 		</div>
 	{/if}
 </div>

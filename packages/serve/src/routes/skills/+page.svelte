@@ -70,15 +70,23 @@
 </script>
 
 <div class="p-8">
-	<div class="mb-6">
-		<h1 class="text-2xl font-bold text-zinc-50">Skills</h1>
-		<p class="text-zinc-500 text-sm mt-1">
-			{#if hasFilters}
-				<span class="text-sky-400 font-medium">{filtered.length}</span> / {data.skills.length} skills
-			{:else}
-				{data.skills.length} skills total
-			{/if}
-		</p>
+	<div class="mb-6 flex items-start justify-between">
+		<div>
+			<h1 class="text-2xl font-bold text-zinc-50">Skills</h1>
+			<p class="text-zinc-500 text-sm mt-1">
+				{#if hasFilters}
+					<span class="text-sky-400 font-medium">{filtered.length}</span> / {data.skills.length} skills
+				{:else}
+					{data.skills.length} skills total
+				{/if}
+			</p>
+		</div>
+		<a
+			href="/skills/create"
+			class="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm rounded font-medium transition-colors"
+		>
+			+ New Skill
+		</a>
 	</div>
 
 	<!-- Search -->
