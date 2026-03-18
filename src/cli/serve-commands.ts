@@ -78,8 +78,9 @@ function runForeground(projectRoot: string, port: number): void {
   spawnSync('node', [join(buildDir, 'index.js')], {
     env: {
       ...process.env,
-      PORT: String(port),
-      HOST: '127.0.0.1',
+      OMCUSTOM_PORT: String(port),
+      OMCUSTOM_HOST: 'localhost',
+      OMCUSTOM_ORIGIN: `http://localhost:${port}`,
       OMCUSTOM_PROJECT_ROOT: projectRoot,
     },
     stdio: 'inherit',

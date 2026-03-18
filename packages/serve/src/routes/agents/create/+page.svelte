@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 
 	export let data: PageData;
 	export let form: ActionData;
@@ -9,6 +10,10 @@
 	let nlInput = '';
 	let analyzing = false;
 	let saving = false;
+
+	// Post-save validation state
+	let validationResult: { passed: boolean; warnings: string[]; errors: string[] } | null = null;
+	let savedName: string | null = null;
 
 	// Editable form fields (populated after analysis)
 	let agentName = '';
@@ -29,7 +34,19 @@
 	];
 	const MODELS = ['sonnet', 'opus', 'haiku'];
 
-	// Populate fields when server returns analysis
+	// Populate fields when server returns analysis or save result
+	$: if (form?.saved) {
+		savedName = (form.name as string) ?? null;
+		const v = form.validation as { passed: boolean; warnings: string[]; errors: string[] } | undefined;
+		if (v) {
+			validationResult = v;
+			// Auto-redirect when passed with no warnings
+			if (v.passed && v.warnings.length === 0 && v.errors.length === 0 && savedName) {
+				goto(`/agents/${savedName}`);
+			}
+		}
+	}
+
 	$: if (form?.success) {
 		agentName = form.name ?? '';
 		agentDescription = form.description ?? '';
@@ -316,6 +333,8 @@
 				action="?/save"
 				use:enhance={() => {
 					saving = true;
+					validationResult = null;
+					savedName = null;
 					return async ({ update }) => {
 						saving = false;
 						await update({ reset: false });
@@ -331,7 +350,14 @@
 						disabled={saving || !agentName.trim()}
 						class="px-5 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm rounded font-medium transition-colors"
 					>
-						{saving ? 'Saving...' : 'Save Agent'}
+						{#if saving}
+							<span class="flex items-center gap-2">
+								<span class="inline-block animate-spin">⟳</span>
+								Saving &amp; Validating...
+							</span>
+						{:else}
+							Save Agent
+						{/if}
 					</button>
 					<a
 						href="/agents"
@@ -341,6 +367,33 @@
 					</a>
 				</div>
 			</form>
+
+			{#if validationResult}
+				<div class="mt-4 rounded-lg border p-4 {validationResult.passed ? 'border-emerald-700 bg-emerald-900/20' : 'border-red-700 bg-red-900/20'}">
+					<h3 class="text-sm font-semibold {validationResult.passed ? 'text-emerald-400' : 'text-red-400'}">
+						{validationResult.passed ? '✓ Validation Passed' : '✗ Validation Issues'}
+					</h3>
+					{#if validationResult.errors.length > 0}
+						<ul class="mt-2 space-y-1">
+							{#each validationResult.errors as err}
+								<li class="text-xs text-red-300">• {err}</li>
+							{/each}
+						</ul>
+					{/if}
+					{#if validationResult.warnings.length > 0}
+						<ul class="mt-2 space-y-1">
+							{#each validationResult.warnings as warn}
+								<li class="text-xs text-amber-300">• {warn}</li>
+							{/each}
+						</ul>
+					{/if}
+					{#if savedName}
+						<a href="/agents/{savedName}" class="inline-block mt-3 text-sm text-emerald-400 hover:text-emerald-300">
+							Go to Agent →
+						</a>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
