@@ -85,6 +85,18 @@ if [ "$tool_count" -gt 0 ] && [ $((tool_count % 25)) -eq 0 ]; then
   fi
 fi
 
+# R010 compliance heartbeat (every 50 tool calls)
+if [ "$tool_count" -gt 0 ] && [ $((tool_count % 50)) -eq 0 ]; then
+  echo "[Compliance] R007: Agent ID required | R008: Tool ID required | R010: Delegate writes" >&2
+  VIOLATION_FILE="/tmp/.claude-r010-violations-${PPID}"
+  if [ -f "$VIOLATION_FILE" ]; then
+    v_count=$(wc -l < "$VIOLATION_FILE" | tr -d ' ')
+    if [ "$v_count" -gt 0 ]; then
+      echo "[Compliance] R010 violations this session: ${v_count}" >&2
+    fi
+  fi
+fi
+
 # Pass through
 echo "$input"
 HOOK_END=$(date +%s%N 2>/dev/null || echo 0)

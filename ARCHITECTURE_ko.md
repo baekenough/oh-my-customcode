@@ -152,7 +152,7 @@ intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-mo
 | PostCompact | compact-rules-reinforcement (인라인) | 컨텍스트 압축 후 R007/R008/R009/R010/R018 규칙 재주입 |
 | SubagentStart | HUD 인라인 표시 | 서브에이전트 시작 시 agent type:model 로그 |
 | SubagentStop | task-outcome-recorder.sh | 최종 결과 기록 |
-| Stop | stop-console-audit.sh, session-compliance-report.sh, R011 프롬프트 | 최종 감사, 컴플라이언스 리포트, 메모리 체크포인트 |
+| Stop | stop-console-audit.sh, eval-core-batch-save.sh, R011 프롬프트 | 최종 감사, 배치 평가 저장, 메모리 체크포인트 |
 
 ---
 
