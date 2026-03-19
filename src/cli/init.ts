@@ -4,11 +4,13 @@
  */
 
 import { join } from 'node:path';
+import packageJson from '../../package.json';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
 import { getProviderLayout } from '../core/layout.js';
 import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
+import { readLockFile, writeLockFile } from './projects.js';
 import { DEFAULT_PORT, startServeBackground } from './serve.js';
 import { getDefaultWizardResult, isInteractiveMode, runInitWizard } from './wizard.js';
 
@@ -212,6 +214,14 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     logSuccessDetails(installedPaths, installResult.skippedComponents);
 
     await setupMcpConfig(targetDir);
+
+    // Update lock file with installed version (non-blocking)
+    try {
+      const existing = await readLockFile(targetDir);
+      await writeLockFile(targetDir, packageJson.version, existing);
+    } catch {
+      // Lock file write is informational only — never block init
+    }
 
     console.log('');
     console.log('Required plugins (install manually):');
