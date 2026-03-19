@@ -1,14 +1,14 @@
 # mgr-sauron Agent Memory
 
-## System Architecture (as of 2026-03-14, post-#330)
+## System Architecture (as of 2026-03-18, post-v0.42.2)
 
 ### Expected Counts
 - Agents: 44
-- Skills: 71 directories (added evaluator-optimizer 2026-03-14 via #330)
-- Guides: 25 topics (templates/guides/ dirs); 12-workflow-patterns.md added inside claude-code/ (not new top-level dir)
-- Rules: 19 files (R000-R019, R014 missing)
+- Skills: 75 directories
+- Guides: 25 topics (templates/guides/ dirs)
+- Rules: 21 files (R000-R021, R014 missing)
 - Hooks: 1 (hooks.json)
-- Contexts: 4 .md + 1 index.yaml
+- Contexts: 4 .md
 
 ### Manager Agents (6)
 mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible
@@ -59,19 +59,26 @@ The bash script in R017 that checks skill refs (`grep "^skills:" -A 10`) picks u
 - README "2 hooks" was a pre-existing bug (actual: 1) — fixed to "1 hook"
 - Root guides/ still has 23 dirs vs templates/guides/ 25 — pre-existing issue #270, NOT caused by deep-plan
 
-### evaluator-optimizer Skill (added 2026-03-14 via #330)
-- Skill 71: parameterized evaluator-optimizer loop for quality-critical output
+### evaluator-optimizer Skill
 - scope: core, user-invocable: false (library skill, not slash command)
 - Does NOT use context:fork — operates within caller's context
 - grep -rl "context: fork" gives false positive for evaluator-optimizer due to body text in Constraints section
-- Always use Python-based frontmatter parser for context:fork count (actual: 9/10 cap)
-- context:fork skills (9): secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan
-- R006 updated: 8/10 -> 9/10 cap, added deep-plan to list (both live + template)
-- README_ko.md had "26개 가이드" (stale) — fixed to "25개 가이드" during R017 verification
-- templates/.claude/hooks/scripts/task-outcome-recorder.sh was missing pattern_used field — fixed during R017 verification
-- task-decomposition SKILL.md: added Step 0 Pattern Selection
-- stuck-detector.sh: added conditional hard-block (exit 1) on 5+ consecutive repetitions
-- guides/claude-code/12-workflow-patterns.md: new file inside existing dir (not new top-level guide)
+- Always use Python-based frontmatter parser for context:fork count
+
+### context:fork Skills (current: 9/12 cap)
+- secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing
+- dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards
+- deep-plan
+- evaluator-optimizer and sauron-watch do NOT use context:fork (intentional)
+- R006 documents 9/12 cap (live + template)
+
+### v0.42.2 Release Verification (2026-03-18)
+- Changes: R018 MUST-agent-teams.md update (sequential-dependency guidance + Blocked Agent Behavior section)
+- Auto-fixed during R017: CLAUDE.md skill count 74→75, templates/CLAUDE.md 74→75
+- Auto-fixed: deep-plan SKILL.md missing context:fork (both live + template)
+- Auto-fixed: R006 context:fork list was 11/12 (documented) but actual was 8; corrected to 9/12 after adding deep-plan
+- Auto-fixed: templates/.claude/rules/MUST-agent-teams.md synced to live (was missing new sections)
+- All counts verified: 44 agents, 75 skills, 21 rules, 25 guides, 1 hook, 4 contexts
 
 ### v0.34.0 Release Verification (2026-03-14)
 - Full R017 sauron:watch passed CLEAN for release/v0.34.0 pre-merge gate
