@@ -18,7 +18,7 @@ on:
 jobs:
   reeval:
     if: >
-      contains(github.event.issue.labels.*.name, 'needs-input') &&
+      contains(github.event.issue.labels.*.name, 'needs-opinion') &&
       github.event.comment.user.type != 'Bot' &&
       github.event.issue.state == 'open'
     runs-on: ubuntu-latest
@@ -30,15 +30,9 @@ jobs:
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          # Get auth token
-          TOKEN=$(curl -s -X POST "${AIRFLOW_API_URL}/auth/token" \
-            -H "Content-Type: application/json" \
-            -d "{\"username\":\"${AIRFLOW_API_USER}\",\"password\":\"${AIRFLOW_API_PASSWORD}\"}" \
-            | jq -r '.access_token')
-
-          # Trigger DAG
-          curl -s -X POST "${AIRFLOW_API_URL}/dags/omc_issue_analyzer/dagRuns" \
-            -H "Authorization: Bearer ${TOKEN}" \
+          # Trigger DAG via Basic Auth
+          curl -f -s -X POST "${AIRFLOW_API_URL}/api/v1/dags/omc_issue_analyzer/dagRuns" \
+            -u "${AIRFLOW_API_USER}:${AIRFLOW_API_PASSWORD}" \
             -H "Content-Type: application/json" \
             -d "{
               \"dag_run_id\": \"reeval_${ISSUE_NUMBER}_$(date +%s)\",
