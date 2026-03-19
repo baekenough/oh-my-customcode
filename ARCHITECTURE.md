@@ -170,7 +170,7 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 | PostCompact | compact-rules-reinforcement (inline) | Re-inject R007/R008/R009/R010/R018 identity and delegation rules after context compaction |
 | SubagentStart | HUD inline display | Log agent type:model when subagent starts |
 | SubagentStop | task-outcome-recorder.sh | Record final outcome |
-| Stop | stop-console-audit.sh, session-compliance-report.sh, R011 prompt | Final audit, compliance report, memory checkpoint |
+| Stop | stop-console-audit.sh, eval-core-batch-save.sh, R011 prompt | Final audit, batch evaluation save, memory checkpoint |
 
 #### Observability Hooks (Harness Engineering)
 

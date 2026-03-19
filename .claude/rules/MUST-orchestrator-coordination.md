@@ -112,6 +112,79 @@ Main Conversation (orchestrator)
    Agent(mgr-gitnerd, prompt="commit the fix")
 ```
 
+## Autonomous Execution Mode
+
+When the user explicitly signals full-delegation intent, the orchestrator operates in a lightweight mode that reduces delegation overhead while preserving safety.
+
+### Activation Signals
+
+| Signal (Korean) | Signal (English) | Confidence |
+|-----------------|------------------|------------|
+| "알아서 해" | "just do it" | High |
+| "다 해" | "do it all" | High |
+| "전부 처리해" | "handle everything" | High |
+| "중간에 묻지 말고" | "don't ask, just do" | High |
+| "자율적으로 진행" | "proceed autonomously" | High |
+
+### Activation Protocol
+
+1. User gives explicit autonomous signal (not inferred from task complexity)
+2. Verify stage-blocker is NOT active (`/tmp/.claude-dev-stage` must not exist)
+3. Create marker: `echo 1 > /tmp/.claude-autonomous-$PPID`
+4. Announce: `[Autonomous Mode] Activated for current task scope`
+
+### Lightweight Delegation Table
+
+| Operation | Normal Mode | Autonomous Mode |
+|-----------|-------------|-----------------|
+| File Write/Edit | MUST delegate to specialist | MUST delegate to specialist |
+| Simple git (add, commit, push) | MUST delegate to mgr-gitnerd | MAY execute directly |
+| Complex git (rebase, merge, cherry-pick) | MUST delegate to mgr-gitnerd | MUST delegate to mgr-gitnerd |
+| Brainstorming/planning gates | Follow skill workflow | Skip confirmation gates |
+| Confirmation prompts (Execute? [Y/n]) | Per skill workflow | Auto-proceed |
+
+### Boundaries (NEVER relaxed in autonomous mode)
+
+- **R001 (Safety)**: All safety rules remain absolute — no exceptions
+- **R007/R008 (Identification)**: Agent/tool identification still required for traceability
+- **File Write/Edit delegation**: Still requires specialist agents — autonomous mode only relaxes git and gate overhead
+- **Hard-block hooks**: stage-blocker, dev-server tmux, .md creation blocker remain active
+- **R009 (Parallel execution)**: Still required for efficiency
+
+### Scope and Lifetime
+
+- **Task-scoped**: Expires when the delegated task completes or user gives a new instruction
+- **Session-local**: Never persisted to MEMORY.md or across sessions
+- **Compaction-aware**: PostCompact hook checks `/tmp/.claude-autonomous-$PPID` and preserves mode
+- **Explicit exit**: User says "stop", "wait", "멈춰", "잠깐" → mode deactivated
+
+### Mutual Exclusion
+
+- Autonomous mode and `/structured-dev-cycle` (stage-blocker) are **mutually exclusive**
+- If `/tmp/.claude-dev-stage` exists → autonomous mode CANNOT be activated
+- If autonomous mode is active → `/structured-dev-cycle` should not be started
+
+### Self-Check
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  BEFORE ACTIVATING AUTONOMOUS MODE:                              ║
+║                                                                   ║
+║  1. Did user give EXPLICIT autonomous signal?                    ║
+║     YES → Continue                                               ║
+║     NO  → Do NOT activate                                        ║
+║                                                                   ║
+║  2. Is stage-blocker inactive?                                   ║
+║     (/tmp/.claude-dev-stage does NOT exist)                      ║
+║     YES → Continue                                               ║
+║     NO  → Cannot activate (mutually exclusive)                   ║
+║                                                                   ║
+║  3. Is task scope clear and bounded?                             ║
+║     YES → Create marker, announce, proceed                       ║
+║     NO  → Clarify scope first                                    ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
 ## Session Continuity
 
 After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. Never write code directly from orchestrator.
