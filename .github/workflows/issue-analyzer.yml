@@ -16,6 +16,6 @@ jobs:
           username: baekenough
           key: ${{ secrets.AIRFLOW_SSH_KEY }}
           script: |
-            source ~/.venvs/airflow/bin/activate
-            airflow dags trigger omc_issue_analyzer \
-              --conf '{"issue_number": ${{ github.event.issue.number }}}'
+            docker exec customclaw-airflow-1 \
+              airflow dags trigger omc_issue_analyzer \
+              -c '{"issue_number": ${{ github.event.issue.number }}}'
