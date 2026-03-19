@@ -1,0 +1,66 @@
+# Triggers re-evaluation of an issue via the Airflow omc_issue_analyzer DAG
+# when a non-bot user comments on an open issue labeled 'needs-input'.
+# Required secrets: AIRFLOW_API_URL, AIRFLOW_API_USER, AIRFLOW_API_PASSWORD
+
+name: Re-evaluate issue on user comment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  reeval:
+    if: >
+      contains(github.event.issue.labels.*.name, 'needs-input') &&
+      github.event.comment.user.type != 'Bot' &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger re-evaluation via Airflow
+        env:
+          AIRFLOW_API_URL: ${{ secrets.AIRFLOW_API_URL }}
+          AIRFLOW_API_USER: ${{ secrets.AIRFLOW_API_USER }}
+          AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+
+          # Get auth token
+          AUTH_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${AIRFLOW_API_URL}/auth/token" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"${AIRFLOW_API_USER}\",\"password\":\"${AIRFLOW_API_PASSWORD}\"}")
+          AUTH_HTTP_CODE=$(echo "${AUTH_RESPONSE}" | tail -n1)
+          AUTH_BODY=$(echo "${AUTH_RESPONSE}" | head -n-1)
+
+          if [ "${AUTH_HTTP_CODE}" != "200" ]; then
+            echo "Error: Airflow auth token request failed with HTTP ${AUTH_HTTP_CODE}"
+            echo "Response: ${AUTH_BODY}"
+            exit 1
+          fi
+
+          TOKEN=$(echo "${AUTH_BODY}" | jq -r '.access_token')
+
+          if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+            echo "Error: Failed to extract access_token from auth response"
+            exit 1
+          fi
+
+          # Trigger DAG
+          TRIGGER_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${AIRFLOW_API_URL}/dags/omc_issue_analyzer/dagRuns" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"dag_run_id\": \"reeval_${ISSUE_NUMBER}_$(date +%s)\",
+              \"conf\": {\"issue_number\": ${ISSUE_NUMBER}},
+              \"note\": \"Re-evaluation triggered by user comment\"
+            }")
+          TRIGGER_HTTP_CODE=$(echo "${TRIGGER_RESPONSE}" | tail -n1)
+          TRIGGER_BODY=$(echo "${TRIGGER_RESPONSE}" | head -n-1)
+
+          if [ "${TRIGGER_HTTP_CODE}" != "200" ]; then
+            echo "Error: DAG trigger failed with HTTP ${TRIGGER_HTTP_CODE}"
+            echo "Response: ${TRIGGER_BODY}"
+            exit 1
+          fi
+
+          echo "Triggered re-evaluation for issue #${ISSUE_NUMBER}"
