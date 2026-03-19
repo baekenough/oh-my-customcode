@@ -128,7 +128,20 @@
       "preservedFiles": "사용자 커스터마이징 파일 {{count}}개 보존됨",
       "backupCreated": "백업 생성됨: {{path}}",
       "summary": "업데이트 완료: {{updated}}개 업데이트, {{skipped}}개 건너뜀",
-      "summaryFailed": "업데이트 실패: {{error}}"
+      "summaryFailed": "업데이트 실패: {{error}}",
+      "allOption": "프로젝트 탐색으로 발견된 모든 outdated 프로젝트 일괄 업데이트",
+      "allScanning": "oh-my-customcode 프로젝트 검색 중...",
+      "allNoneFound": "oh-my-customcode 프로젝트를 찾을 수 없습니다.",
+      "allNoneOutdated": "모든 프로젝트가 최신 버전입니다.",
+      "allOutdatedFound": "{{count}}개의 outdated 프로젝트가 있습니다. 업데이트 중...",
+      "allProjectUpdating": "  [{{current}}/{{total}}] {{name}}",
+      "allProjectUpdated": "  ✓ 업데이트됨 ({{from}} → {{to}})",
+      "allProjectFailed": "  ✗ 실패: {{error}}",
+      "allDone": "일괄 업데이트 완료: {{updated}}개 업데이트됨, {{failed}}개 실패.",
+      "interactiveSelect": "업데이트할 프로젝트 선택:",
+      "interactiveNoneSelected": "선택된 프로젝트가 없습니다. 종료합니다.",
+      "interactiveUpdating": "선택된 프로젝트 업데이트 중...",
+      "projectLatestSuffix": "(최신)"
     },
     "list": {
       "description": "설치된 컴포넌트 목록 표시",
