@@ -4,6 +4,7 @@ description: 10-team parallel deep analysis with cross-verification for any topi
 scope: core
 user-invocable: true
 teams-compatible: true
+argument-hint: "<topic-or-url> [--depth quick|deep]"
 ---
 
 # Research Skill
