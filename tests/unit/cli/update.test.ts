@@ -612,6 +612,549 @@ describe('update command', () => {
     });
   });
 
+  describe('updateCommand --all flag', () => {
+    it('should run batch update for all outdated projects', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.45.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'project-a',
+            path: '/tmp/project-a',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+          {
+            name: 'project-b',
+            path: '/tmp/project-b',
+            version: '0.45.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'latest',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      // Only project-a (outdated) should be updated
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should report no outdated projects when all are latest', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({})),
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'project-a',
+            path: '/tmp/project-a',
+            version: '0.45.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'latest',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should report when no projects found', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({})),
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should handle update failure for individual project in --all mode', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: false,
+        updatedComponents: [],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.44.0',
+        newVersion: '0.44.0',
+        warnings: [],
+        error: 'Permission denied',
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'project-a',
+            path: '/tmp/project-a',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      // allDone message should still be printed
+      expect(consoleLogSpy).toHaveBeenCalled();
+      // Should NOT exit with error (batch mode continues)
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should handle thrown exception for individual project in --all mode', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => {
+          throw new Error('Network error');
+        }),
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'project-a',
+            path: '/tmp/project-a',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(exitCode).toBeUndefined();
+    });
+  });
+
+  describe('updateCommand interactive mode (TTY, no --all)', () => {
+    let originalIsTTY: boolean | undefined;
+
+    beforeEach(() => {
+      originalIsTTY = process.stdout.isTTY;
+    });
+
+    afterEach(() => {
+      // Restore isTTY
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: originalIsTTY,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it('should fall back to single-project update when only 1 project found', async () => {
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.45.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      // Only 1 project → interactive mode skipped, falls back to single-project
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'my-project',
+            path: tempDir,
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({});
+
+      // update called once (single project = cwd)
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should not enter interactive mode when not a TTY', async () => {
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: false,
+        writable: true,
+        configurable: true,
+      });
+
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.45.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({});
+
+      // Single project update in non-TTY mode
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should not enter interactive mode when dry-run is set', async () => {
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: [],
+        skippedComponents: ['rules'],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.45.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ dryRun: true });
+
+      const callArgs = mockUpdate.mock.calls[0]?.[0];
+      expect(callArgs.dryRun).toBe(true);
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should run interactive checkbox and update selected projects', async () => {
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.44.0',
+        newVersion: '0.45.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'project-a',
+            path: '/tmp/project-a',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+          {
+            name: 'project-b',
+            path: '/tmp/project-b',
+            version: '0.45.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'latest',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      // Mock @inquirer/prompts checkbox to return project-a path
+      mock.module('@inquirer/prompts', () => ({
+        checkbox: mock(async () => ['/tmp/project-a']),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({});
+
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should exit gracefully when no projects selected in interactive mode', async () => {
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({})),
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'project-a',
+            path: '/tmp/project-a',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+          {
+            name: 'project-b',
+            path: '/tmp/project-b',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      // Return empty selection
+      mock.module('@inquirer/prompts', () => ({
+        checkbox: mock(async () => []),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({});
+
+      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should handle update failure in interactive mode gracefully', async () => {
+      Object.defineProperty(process.stdout, 'isTTY', {
+        value: true,
+        writable: true,
+        configurable: true,
+      });
+
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => {
+          throw new Error('Disk full');
+        }),
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'project-a',
+            path: '/tmp/project-a',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+          {
+            name: 'project-b',
+            path: '/tmp/project-b',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      mock.module('@inquirer/prompts', () => ({
+        checkbox: mock(async () => ['/tmp/project-a']),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({});
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      expect(exitCode).toBeUndefined();
+    });
+  });
+
   describe('updateCommand error handling', () => {
     it('should exit with code 1 when update fails', async () => {
       mock.module('../../../src/core/provider.js', () => ({
