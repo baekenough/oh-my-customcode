@@ -57,7 +57,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\nCOUNTER_FILE=\"/tmp/claude-tool-count-$$\"\nTHRESHOLD=${COMPACT_THRESHOLD:-50}\nif [ -f \"$COUNTER_FILE\" ]; then COUNT=$(cat \"$COUNTER_FILE\"); COUNT=$((COUNT + 1)); else COUNT=1; fi\necho \"$COUNT\" > \"$COUNTER_FILE\"\nif [ \"$COUNT\" -eq \"$THRESHOLD\" ]; then echo '[StrategicCompact] Reached '$THRESHOLD' tool calls' >&2; echo '[StrategicCompact] Consider /compact if at a logical breakpoint' >&2; fi\nif [ \"$COUNT\" -gt \"$THRESHOLD\" ] && [ $(((COUNT - THRESHOLD) % 25)) -eq 0 ]; then echo \"[StrategicCompact] $COUNT tool calls - /compact reminder\" >&2; fi\ncat"
+            "command": "#!/bin/bash\nCOUNTER_FILE=\"/tmp/claude-tool-count-$PPID\"\nTHRESHOLD=${COMPACT_THRESHOLD:-50}\nif [ -f \"$COUNTER_FILE\" ]; then COUNT=$(cat \"$COUNTER_FILE\"); COUNT=$((COUNT + 1)); else COUNT=1; fi\necho \"$COUNT\" > \"$COUNTER_FILE\"\nif [ \"$COUNT\" -eq \"$THRESHOLD\" ]; then echo '[StrategicCompact] Reached '$THRESHOLD' tool calls' >&2; echo '[StrategicCompact] Consider /compact if at a logical breakpoint' >&2; fi\nif [ \"$COUNT\" -gt \"$THRESHOLD\" ] && [ $(((COUNT - THRESHOLD) % 25)) -eq 0 ]; then echo \"[StrategicCompact] $COUNT tool calls - /compact reminder\" >&2; fi\ncat"
           }
         ],
         "description": "Suggest manual compaction at logical intervals"
@@ -147,7 +147,7 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Context was just compacted. MANDATORY post-compaction steps: 1) All enforced rules (R007 Agent ID, R008 Tool ID, R009 Parallel, R010 Orchestrator, R018 Agent Teams) remain ACTIVE — compaction does NOT disable rules. 2) Your next response MUST include agent identification per R007. 3) Continue delegating ALL file modifications to subagents per R010. 4) Re-read CLAUDE.md if needed to refresh project-specific context."
+            "prompt": "Context compacted. RULES STILL ACTIVE — no exceptions.\n\nR007 FORMAT — Your NEXT response MUST start with:\n┌─ Agent: claude (default)\n└─ Task: {current task}\n\nR008 FORMAT — Before EVERY tool call:\n[claude][opus] → Tool: ToolName\n[claude][opus] → Target: /path/to/file\n\nR010 — ALL file writes MUST be delegated to subagents. Orchestrator uses Read/Glob/Grep ONLY. ALL git operations go through mgr-gitnerd.\n\nR009 — 2+ independent tasks → spawn agents in parallel, same message.\n\nR018 — 3+ agents OR review cycle → use Agent Teams.\n\nIf /tmp/.claude-autonomous-$PPID exists: R010 lightweight mode is active — simple git (add/commit/push) may execute directly, but file Write/Edit still requires delegation.\n\nRe-read CLAUDE.md NOW to restore project context."
           }
         ],
         "description": "Reinforce enforced rules after context compaction — prevents rule amnesia (v2.1.76+)"
