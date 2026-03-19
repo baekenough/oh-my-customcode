@@ -236,6 +236,83 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  verify-release:
+    name: Verify Release
+    needs: [publish]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Verify npm publish
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          for i in 1 2 3; do
+            PUBLISHED=$(npm view oh-my-customcode@${VERSION} version 2>/dev/null || true)
+            if [ "$PUBLISHED" = "$VERSION" ]; then
+              echo "✓ npm: oh-my-customcode@${VERSION} confirmed"
+              exit 0
+            fi
+            echo "Attempt $i: not found yet, waiting 60s..."
+            sleep 60
+          done
+          echo "::error::npm package not found after 3 attempts: oh-my-customcode@${VERSION}"
+          exit 1
+
+      - name: Verify GitHub Packages publish
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          for i in 1 2 3 4 5; do
+            PUBLISHED=$(npm view @baekenough/oh-my-customcode@${VERSION} version \
+              --registry=https://npm.pkg.github.com 2>/dev/null || true)
+            if [ "$PUBLISHED" = "$VERSION" ]; then
+              echo "✓ GitHub Packages: @baekenough/oh-my-customcode@${VERSION} confirmed"
+              exit 0
+            fi
+            echo "Attempt $i: not found yet, waiting 60s..."
+            sleep 60
+          done
+          echo "::warning::GitHub Package not found after 5 attempts (eventual consistency — package will appear later)"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify GitHub Release
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          RELEASE=$(gh api repos/${{ github.repository }}/releases/tags/v${VERSION} \
+            --jq '.tag_name' 2>/dev/null || true)
+          if [ "$RELEASE" = "v${VERSION}" ]; then
+            echo "✓ GitHub Release: v${VERSION} confirmed"
+          else
+            echo "::error::GitHub Release not found for v${VERSION}"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: always()
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          echo "## Release Verification: v${VERSION}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Target | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          NPM=$(npm view oh-my-customcode@${VERSION} version 2>/dev/null || echo "NOT FOUND")
+          GHP=$(npm view @baekenough/oh-my-customcode@${VERSION} version \
+            --registry=https://npm.pkg.github.com 2>/dev/null || echo "NOT FOUND")
+          GHR=$(gh api repos/${{ github.repository }}/releases/tags/v${VERSION} \
+            --jq '.tag_name' 2>/dev/null || echo "NOT FOUND")
+          echo "| npm | ${NPM} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Packages | ${GHP} |" >> $GITHUB_STEP_SUMMARY
+          echo "| GitHub Release | ${GHR} |" >> $GITHUB_STEP_SUMMARY
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   cleanup:
     name: Cleanup Release Branch
     needs: [publish]
