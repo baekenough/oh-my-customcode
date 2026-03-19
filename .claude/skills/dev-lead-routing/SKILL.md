@@ -16,7 +16,7 @@ context: fork
 | Frontend | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
 | Backend | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-nestjs-expert, be-express-expert, be-django-expert |
 | Tooling | tool-npm-expert, tool-optimizer, tool-bun-expert |
-| Database | db-supabase-expert, db-postgres-expert, db-redis-expert |
+| Database | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | Architect | arch-documenter, arch-speckit-agent |
 | Security | sec-codeql-expert |
 | Infra | infra-docker-expert, infra-aws-expert |
@@ -37,6 +37,7 @@ context: fork
 | `.dart`, `pubspec.yaml` | fe-flutter-agent |
 | `.sql` (PG) | db-postgres-expert |
 | `.sql` (Supabase) | db-supabase-expert |
+| `alembic/versions/*.py`, `alembic/env.py`, `alembic.ini`, `migrations/versions/*.py` | db-alembic-expert |
 | `Dockerfile`, `*.dockerfile` | infra-docker-expert |
 | `*.tf`, `*.tfvars` | infra-aws-expert |
 | `*.yaml`, `*.yml` (CloudFormation) | infra-aws-expert |
@@ -66,6 +67,7 @@ context: fork
 | postgres, postgresql, psql, pg_stat | db-postgres-expert |
 | redis, cache, pub/sub, sorted set | db-redis-expert |
 | supabase, rls, edge function | db-supabase-expert |
+| alembic, migration, migrate, schema change, db revision, autogenerate, downgrade, upgrade head, env.py | db-alembic-expert |
 | docker, dockerfile, container, compose | infra-docker-expert |
 | aws, cloudformation, vpc, iam, s3, lambda, cdk, terraform | infra-aws-expert |
 | security, codeql, cve, vulnerability, sarif, sast, security audit | sec-codeql-expert |
