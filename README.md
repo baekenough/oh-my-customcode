@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-44 agents. 76 skills. 21 rules. One command.
+45 agents. 77 skills. 21 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -117,7 +117,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-### Agents (44)
+### Agents (45)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -125,7 +125,7 @@ Agent(arch-documenter):haiku      ┘
 | Backend | 6 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs, be-django |
 | Frontend | 4 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter |
 | Data Engineering | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
-| Database | 3 | db-supabase, db-postgres, db-redis |
+| Database | 4 | db-supabase, db-postgres, db-redis, db-alembic |
 | Tooling | 3 | tool-npm, tool-optimizer, tool-bun |
 | Architecture | 2 | arch-documenter, arch-speckit |
 | Infrastructure | 2 | infra-docker, infra-aws |
@@ -138,11 +138,11 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (76)
+### Skills (77)
 
 | Category | Count | Includes |
 |----------|-------|----------|
-| Best Practices | 23 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, and more |
+| Best Practices | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic, and more |
 | Routing | 4 | secretary, dev-lead, de-lead, qa-lead |
 | Workflow | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, and more |
 | Development | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
@@ -215,7 +215,7 @@ Key rules: R010 (orchestrator never writes files), R009 (parallel execution mand
 
 ---
 
-### Guides (25)
+### Guides (26)
 
 Reference documentation covering best practices, architecture decisions, and integration patterns. Located in `guides/` at project root, covering topics from agent design to CI/CD to observability.
 
@@ -256,15 +256,15 @@ omcustom security              # Scan for security issues
 your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
-│   ├── agents/                 # 44 agent definitions
-│   ├── skills/                 # 75 skill modules
+│   ├── agents/                 # 45 agent definitions
+│   ├── skills/                 # 77 skill modules
 │   ├── rules/                  # 21 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
-└── guides/                     # 25 reference documents
+└── guides/                     # 26 reference documents
 ```
 
 ---

@@ -17,26 +17,23 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Get auth token
-          TOKEN=$(curl -sf -X POST "${AIRFLOW_API_URL}/auth/token" \
-            -H "Content-Type: application/json" \
-            -d "{\"username\":\"${AIRFLOW_API_USER}\",\"password\":\"${AIRFLOW_API_PASSWORD}\"}" \
-            | jq -r '.access_token')
-
-          if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
-            echo "Failed to obtain Airflow auth token"
-            exit 1
-          fi
-
-          # Trigger DAG
-          RESPONSE=$(curl -sf -X POST "${AIRFLOW_API_URL}/dags/omc_issue_analyzer/dagRuns" \
-            -H "Authorization: Bearer ${TOKEN}" \
+          # Trigger DAG with Basic Auth
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -u "${AIRFLOW_API_USER}:${AIRFLOW_API_PASSWORD}" \
+            -X POST "${AIRFLOW_API_URL}/dags/omc_issue_analyzer/dagRuns" \
             -H "Content-Type: application/json" \
             -d "{
               \"dag_run_id\": \"opened_${ISSUE_NUMBER}_$(date +%s)\",
               \"conf\": {\"issue_number\": ${ISSUE_NUMBER}},
               \"note\": \"Triggered by issue #${ISSUE_NUMBER} opened event\"
             }")
+          HTTP_CODE=$(echo "${RESPONSE}" | tail -n1)
+          BODY=$(echo "${RESPONSE}" | head -n-1)
+
+          if [ "${HTTP_CODE}" != "200" ]; then
+            echo "Error: DAG trigger failed with HTTP ${HTTP_CODE}"
+            echo "Response: ${BODY}"
+            exit 1
+          fi
 
           echo "Triggered analysis for issue #${ISSUE_NUMBER}"
-          echo "${RESPONSE}" | jq -r '.dag_run_id // "unknown"' | xargs -I{} echo "DAG run ID: {}"
