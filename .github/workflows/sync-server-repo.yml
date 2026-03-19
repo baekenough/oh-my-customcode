@@ -1,0 +1,23 @@
+name: Sync Server Repository
+
+on:
+  push:
+    branches: [main, develop]
+  release:
+    types: [published]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull latest code on server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 49.142.111.166
+          port: 9416
+          username: baekenough
+          key: ${{ secrets.AIRFLOW_SSH_KEY }}
+          script: |
+            cd /home/baekenough/workspace/oh-my-customcode
+            git pull origin develop
+            echo "Synced to $(git rev-parse --short HEAD)"
