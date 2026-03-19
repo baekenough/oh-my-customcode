@@ -121,6 +121,7 @@ oh-my-customcode로 구동됩니다.
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
+| `/sdd-dev` | Spec-Driven Development 워크플로우 (sdd/ 폴더 기반) |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
 | `/omcustom:status` | 시스템 상태 표시 |
