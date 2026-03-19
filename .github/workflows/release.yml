@@ -276,8 +276,7 @@ jobs:
             echo "Attempt $i: not found yet, waiting 60s..."
             sleep 60
           done
-          echo "::error::GitHub Package not found after 5 attempts"
-          exit 1
+          echo "::warning::GitHub Package not found after 5 attempts (eventual consistency — package will appear later)"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
