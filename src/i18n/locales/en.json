@@ -128,7 +128,20 @@
       "preservedFiles": "Preserved {{count}} user-customized files",
       "backupCreated": "Backup created at {{path}}",
       "summary": "Update complete: {{updated}} updated, {{skipped}} skipped",
-      "summaryFailed": "Update failed: {{error}}"
+      "summaryFailed": "Update failed: {{error}}",
+      "allOption": "Batch update all outdated projects found by project discovery",
+      "allScanning": "Scanning for oh-my-customcode projects...",
+      "allNoneFound": "No oh-my-customcode projects found.",
+      "allNoneOutdated": "All projects are up to date.",
+      "allOutdatedFound": "Found {{count}} outdated project(s). Updating...",
+      "allProjectUpdating": "  [{{current}}/{{total}}] {{name}}",
+      "allProjectUpdated": "  ✓ updated ({{from}} → {{to}})",
+      "allProjectFailed": "  ✗ failed: {{error}}",
+      "allDone": "Batch update complete: {{updated}} updated, {{failed}} failed.",
+      "interactiveSelect": "Select projects to update:",
+      "interactiveNoneSelected": "No projects selected. Exiting.",
+      "interactiveUpdating": "Updating selected projects...",
+      "projectLatestSuffix": "(latest)"
     },
     "list": {
       "description": "List installed components",

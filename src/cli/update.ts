@@ -1,8 +1,14 @@
 /**
  * omcustom update command
  * Updates agents to the latest version
+ *
+ * Supports three modes:
+ * 1. Single-project update (default): updates current directory
+ * 2. --all flag: batch update all outdated projects found by project discovery
+ * 3. Interactive (TTY, no --all): checkbox UI to select which projects to update
  */
 
+import packageJson from '../../package.json';
 import { type UpdateComponent, type UpdateOptions, update } from '../core/updater.js';
 import { i18n } from '../i18n/index.js';
 
@@ -30,6 +36,8 @@ export interface UpdateCommandOptions {
   hooks?: boolean;
   /** Update only contexts */
   contexts?: boolean;
+  /** Batch update all outdated projects found by project discovery */
+  all?: boolean;
 }
 
 /**
@@ -37,41 +45,186 @@ export interface UpdateCommandOptions {
  */
 export async function updateCommand(options: UpdateCommandOptions = {}): Promise<void> {
   try {
-    const targetDir = process.cwd();
-
-    // Build components list from flags
-    const components = buildComponentsList(options);
-
-    // Show dry run header if applicable
-    if (options.dryRun) {
-      console.log(i18n.t('cli.update.dryRunHeader'));
+    if (options.all) {
+      await updateAllProjects(options);
+      return;
     }
 
-    // Execute update
-    const updateOptions: UpdateOptions = {
-      targetDir,
-      components,
-      force: options.force,
-      preserveCustomizations: true,
-      forceOverwriteAll: options.forceOverwriteAll,
-      dryRun: options.dryRun,
-      backup: options.backup,
-    };
-
-    const result = await update(updateOptions);
-
-    // Print results
-    printUpdateResults(result);
-
-    // Exit with appropriate code
-    if (!result.success) {
-      process.exit(1);
+    if (process.stdout.isTTY && !options.dryRun) {
+      const didInteractive = await maybeRunInteractiveUpdate(options);
+      if (didInteractive) return;
     }
+
+    await updateSingleProject(process.cwd(), options);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(i18n.t('cli.update.summaryFailed', { error: errorMessage }));
     process.exit(1);
   }
+}
+
+/**
+ * Update a single project directory
+ */
+async function updateSingleProject(
+  targetDir: string,
+  options: UpdateCommandOptions
+): Promise<boolean> {
+  // Build components list from flags
+  const components = buildComponentsList(options);
+
+  // Show dry run header if applicable
+  if (options.dryRun) {
+    console.log(i18n.t('cli.update.dryRunHeader'));
+  }
+
+  // Execute update
+  const updateOptions: UpdateOptions = {
+    targetDir,
+    components,
+    force: options.force,
+    preserveCustomizations: true,
+    forceOverwriteAll: options.forceOverwriteAll,
+    dryRun: options.dryRun,
+    backup: options.backup,
+  };
+
+  const result = await update(updateOptions);
+
+  // Print results
+  printUpdateResults(result);
+
+  if (!result.success) {
+    process.exit(1);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Batch update all outdated projects found by project discovery.
+ * Runs sequentially so progress output is readable.
+ */
+async function updateAllProjects(options: UpdateCommandOptions): Promise<void> {
+  const { findProjects } = await import('./projects.js');
+  const currentVersion = packageJson.version as string;
+
+  console.log(i18n.t('cli.update.allScanning'));
+  const projects = await findProjects();
+
+  if (projects.length === 0) {
+    console.log(i18n.t('cli.update.allNoneFound'));
+    return;
+  }
+
+  const outdated = projects.filter((p) => p.status === 'outdated');
+
+  if (outdated.length === 0) {
+    console.log(i18n.t('cli.update.allNoneOutdated'));
+    return;
+  }
+
+  console.log(i18n.t('cli.update.allOutdatedFound', { count: String(outdated.length) }));
+
+  let updatedCount = 0;
+  let failedCount = 0;
+
+  for (const [index, project] of outdated.entries()) {
+    const current = String(index + 1);
+    const total = String(outdated.length);
+    process.stdout.write(
+      `${i18n.t('cli.update.allProjectUpdating', { current, total, name: project.name })} `
+    );
+
+    try {
+      const components = buildComponentsList(options);
+      const updateOptions: UpdateOptions = {
+        targetDir: project.path,
+        components,
+        force: options.force,
+        preserveCustomizations: true,
+        forceOverwriteAll: options.forceOverwriteAll,
+        dryRun: options.dryRun,
+        backup: options.backup,
+      };
+
+      const result = await update(updateOptions);
+
+      if (result.success) {
+        const from = project.version ?? 'unknown';
+        const to = currentVersion;
+        console.log(i18n.t('cli.update.allProjectUpdated', { from, to }));
+        updatedCount++;
+      } else {
+        const errorMsg = result.error ?? 'unknown error';
+        console.log(i18n.t('cli.update.allProjectFailed', { error: errorMsg }));
+        failedCount++;
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log(i18n.t('cli.update.allProjectFailed', { error: errorMessage }));
+      failedCount++;
+    }
+  }
+
+  console.log(
+    i18n.t('cli.update.allDone', {
+      updated: String(updatedCount),
+      failed: String(failedCount),
+    })
+  );
+}
+
+/**
+ * Interactive checkbox UI for selecting projects to update.
+ * Returns true if interactive mode was triggered (project list found),
+ * false if there are no discovered projects and we should fall back to
+ * single-project update.
+ */
+async function maybeRunInteractiveUpdate(options: UpdateCommandOptions): Promise<boolean> {
+  const { findProjects } = await import('./projects.js');
+  const currentVersion = packageJson.version as string;
+
+  const projects = await findProjects();
+
+  // Only enter interactive mode when multiple projects are discovered
+  if (projects.length <= 1) {
+    return false;
+  }
+
+  const { checkbox } = await import('@inquirer/prompts');
+
+  const choices = projects.map((p) => {
+    const versionLabel = p.version ?? 'unknown';
+    const isLatest = p.status === 'latest';
+    return {
+      name: `${p.name.padEnd(25)} ${versionLabel.padEnd(10)} → ${currentVersion}  (${p.path})`,
+      value: p.path,
+      checked: p.status === 'outdated',
+      disabled: isLatest ? (i18n.t('cli.update.projectLatestSuffix') as string) : false,
+    };
+  });
+
+  const selected = await checkbox({
+    message: i18n.t('cli.update.interactiveSelect'),
+    choices,
+  });
+
+  if (selected.length === 0) {
+    console.log(i18n.t('cli.update.interactiveNoneSelected'));
+    return true;
+  }
+
+  console.log(i18n.t('cli.update.interactiveUpdating'));
+
+  for (const projectPath of selected) {
+    await updateSingleProject(projectPath, options).catch((error: unknown) => {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(i18n.t('cli.update.allProjectFailed', { error: errorMessage }));
+    });
+  }
+
+  return true;
 }
 
 /**
@@ -119,7 +272,9 @@ function printUpdateResults(result: UpdateResult): void {
 
   // Show preserved files
   if (result.preservedFiles.length > 0) {
-    console.log(i18n.t('cli.update.preservedFiles', { count: result.preservedFiles.length }));
+    console.log(
+      i18n.t('cli.update.preservedFiles', { count: String(result.preservedFiles.length) })
+    );
   }
 
   // Show backup path
@@ -138,8 +293,8 @@ function printUpdateResults(result: UpdateResult): void {
   if (result.success) {
     console.log(
       i18n.t('cli.update.summary', {
-        updated: result.updatedComponents.length,
-        skipped: result.skippedComponents.length,
+        updated: String(result.updatedComponents.length),
+        skipped: String(result.skippedComponents.length),
       })
     );
   } else if (result.error) {

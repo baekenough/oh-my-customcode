@@ -61,6 +61,7 @@ export function createProgram(): Command {
     .option('--guides', i18n.t('cli.update.guidesOption'))
     .option('--hooks', i18n.t('cli.update.hooksOption'))
     .option('--contexts', i18n.t('cli.update.contextsOption'))
+    .option('--all', i18n.t('cli.update.allOption'))
     .action(async (options) => {
       await updateCommand(options);
     });
