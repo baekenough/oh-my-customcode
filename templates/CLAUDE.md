@@ -103,6 +103,7 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom:fix-refs` | 깨진 참조 수정 |
 | `/omcustom:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
+| `/ambiguity-gate` | 요청 모호성 분석 및 명확화 질문 (ouroboros 패턴) |
 | `/dev-review` | 코드 베스트 프랙티스 리뷰 |
 | `/dev-refactor` | 코드 리팩토링 |
 | `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
@@ -131,11 +132,11 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (44 파일)
-|   +-- skills/                  # 스킬 (76 디렉토리)
+|   +-- skills/                  # 스킬 (78 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R021)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
-+-- guides/                      # 레퍼런스 문서 (26 토픽)
++-- guides/                      # 레퍼런스 문서 (27 토픽)
 ```
 
 ## 오케스트레이션
