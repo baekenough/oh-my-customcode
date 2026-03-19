@@ -12,6 +12,7 @@ import { detectLanguage, i18n, initI18n } from '../i18n/index.js';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
 import { listCommand } from './list.js';
+import { projectsCommand } from './projects.js';
 import { securityCommand } from './security.js';
 import { serveCommand, serveStopCommand } from './serve-commands.js';
 import { updateCommand } from './update.js';
@@ -115,6 +116,21 @@ export function createProgram(): Command {
     .description('Stop the web UI server')
     .action(async () => {
       await serveStopCommand();
+    });
+
+  // omcustom projects [--format table|json|simple] [--path <dir>]
+  program
+    .command('projects')
+    .description('List all projects on this machine where oh-my-customcode is installed')
+    .option('-f, --format <format>', 'Output format: table, json, or simple', 'table')
+    .option(
+      '--path <dir>',
+      'Additional search directory (can be specified multiple times)',
+      (val: string, prev: string[]) => [...prev, val],
+      [] as string[]
+    )
+    .action(async (options) => {
+      await projectsCommand({ format: options.format, paths: options.path });
     });
 
   // Pre-flight hook: run before any command
