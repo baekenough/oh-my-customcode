@@ -3,6 +3,17 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+const PROJECT_RULES = `oh-my-customcode project rules:
+- Agent files: .claude/agents/{kebab-case}.md with YAML frontmatter (name, description, model, tools)
+- Skill files: .claude/skills/{kebab-case}/SKILL.md with YAML frontmatter (name, description, scope)
+- Guide files: guides/{name}/README.md (pure markdown, NO frontmatter)
+- R006: Separate concerns — agents define WHAT, skills define HOW, guides are reference docs
+- Naming: lang-* (languages), be-* (backends), fe-* (frontends), de-* (data engineering), db-* (databases), infra-* (infrastructure), mgr-* (managers), sec-* (security), qa-* (QA), arch-* (architecture), tool-* (tooling)
+- Models: sonnet (general), opus (complex reasoning), haiku (fast/simple)
+- Tools: always include Read, Grep, Glob. Add Write, Edit for code modification. Add Bash for execution.
+- Memory scopes: user, project, local
+- Scope values: core (universal), harness (agent/skill management), package (package-specific)`;
+
 export interface ValidationResult {
 	passed: boolean;
 	warnings: string[];
@@ -21,6 +32,8 @@ Check:
 3. File follows naming conventions
 4. Body has required sections
 5. No obvious issues
+
+${PROJECT_RULES}
 
 Output a JSON object with this exact structure:
 {"passed": true/false, "warnings": ["..."], "errors": ["..."]}
@@ -154,6 +167,8 @@ The file must follow this structure:
 ## References
 {Links to official docs, related guides}
 
+${PROJECT_RULES}
+
 Rules:
 - NO frontmatter (no --- blocks)
 - Write in English
@@ -209,6 +224,8 @@ scope: {core | harness | package}
 
 {Verification checklist}
 
+${PROJECT_RULES}
+
 Rules:
 - name must be kebab-case
 - Use existing naming conventions: *-best-practices for tech expertise, *-routing for orchestration
@@ -251,6 +268,8 @@ tools:
 
 ## Workflow
 {Numbered steps}
+
+${PROJECT_RULES}
 
 Rules:
 - name must be kebab-case (e.g., lang-rust-expert, be-fastapi-expert)
