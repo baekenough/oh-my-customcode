@@ -9,16 +9,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Airflow DAG
-        uses: appleboy/ssh-action@v1
         env:
+          AIRFLOW_API_URL: ${{ secrets.AIRFLOW_API_URL }}
+          AIRFLOW_API_USER: ${{ secrets.AIRFLOW_API_USER }}
+          AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-        with:
-          host: 49.142.111.166
-          port: 9416
-          username: baekenough
-          key: ${{ secrets.AIRFLOW_SSH_KEY }}
-          envs: ISSUE_NUMBER
-          script: |
-            docker exec customclaw-airflow-1 \
-              airflow dags trigger omc_issue_analyzer \
-              -c "{\"issue_number\": $ISSUE_NUMBER}"
+        run: |
+          set -euo pipefail
+
+          # Get auth token
+          TOKEN=$(curl -sf -X POST "${AIRFLOW_API_URL}/auth/token" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"${AIRFLOW_API_USER}\",\"password\":\"${AIRFLOW_API_PASSWORD}\"}" \
+            | jq -r '.access_token')
+
+          if [ -z "${TOKEN}" ] || [ "${TOKEN}" = "null" ]; then
+            echo "Failed to obtain Airflow auth token"
+            exit 1
+          fi
+
+          # Trigger DAG
+          RESPONSE=$(curl -sf -X POST "${AIRFLOW_API_URL}/dags/omc_issue_analyzer/dagRuns" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"dag_run_id\": \"opened_${ISSUE_NUMBER}_$(date +%s)\",
+              \"conf\": {\"issue_number\": ${ISSUE_NUMBER}},
+              \"note\": \"Triggered by issue #${ISSUE_NUMBER} opened event\"
+            }")
+
+          echo "Triggered analysis for issue #${ISSUE_NUMBER}"
+          echo "${RESPONSE}" | jq -r '.dag_run_id // "unknown"' | xargs -I{} echo "DAG run ID: {}"
