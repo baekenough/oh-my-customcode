@@ -1,0 +1,49 @@
+# NOTE: This workflow file is maintained in the customclaw repo for version control,
+# but it must be deployed to the oh-my-customcode repository to receive issue_comment
+# events. The issue_comment events fire on the repo where the issues live, which is
+# oh-my-customcode — not customclaw.
+#
+# To deploy: copy this file to oh-my-customcode/.github/workflows/issue-comment-reeval.yml
+# and ensure the following secrets are configured in the oh-my-customcode repo settings:
+#   - AIRFLOW_API_URL
+#   - AIRFLOW_API_USER
+#   - AIRFLOW_API_PASSWORD
+
+name: Re-evaluate issue on user comment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  reeval:
+    if: >
+      contains(github.event.issue.labels.*.name, 'needs-input') &&
+      github.event.comment.user.type != 'Bot' &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger re-evaluation via Airflow
+        env:
+          AIRFLOW_API_URL: ${{ secrets.AIRFLOW_API_URL }}
+          AIRFLOW_API_USER: ${{ secrets.AIRFLOW_API_USER }}
+          AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          # Get auth token
+          TOKEN=$(curl -s -X POST "${AIRFLOW_API_URL}/auth/token" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"${AIRFLOW_API_USER}\",\"password\":\"${AIRFLOW_API_PASSWORD}\"}" \
+            | jq -r '.access_token')
+
+          # Trigger DAG
+          curl -s -X POST "${AIRFLOW_API_URL}/dags/omc_issue_analyzer/dagRuns" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"dag_run_id\": \"reeval_${ISSUE_NUMBER}_$(date +%s)\",
+              \"conf\": {\"issue_number\": ${ISSUE_NUMBER}},
+              \"note\": \"Re-evaluation triggered by user comment\"
+            }"
+
+          echo "Triggered re-evaluation for issue #${ISSUE_NUMBER}"
