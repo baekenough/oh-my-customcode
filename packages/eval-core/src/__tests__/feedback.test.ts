@@ -213,6 +213,25 @@ describe('getAgentFailurePatterns', () => {
     }
   });
 
+  it('handles error_summary containing special characters', async () => {
+    const { db } = makeDb();
+    for (let i = 0; i < 5; i++) {
+      const err = i === 2 ? 'error\x1Fwith\x1Fdelimiter' : `normal-err-${i}`;
+      seedInvocation(db, 'special-agent', 'failure', { errorSummary: err });
+    }
+
+    const result = await getAgentFailurePatterns(db, {
+      minSessions: 5,
+      failureRateThreshold: 0,
+    });
+
+    expect(result).toHaveLength(1);
+    const agent = result[0];
+    // json_group_array preserves entries correctly — exactly 5 entries
+    expect(agent.commonErrors).toHaveLength(5);
+    expect(agent.commonErrors).toContain('error\x1Fwith\x1Fdelimiter');
+  });
+
   it('returns most recent errors in commonErrors', async () => {
     const { db } = makeDb();
     for (let i = 0; i < 10; i++) {
