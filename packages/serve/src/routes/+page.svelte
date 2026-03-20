@@ -3,6 +3,26 @@
 
 	export let data: PageData;
 
+	const summaryCards = [
+		{ label: 'Agents', key: 'agents' as const, href: '/agents', icon: '◈', color: 'emerald' },
+		{ label: 'Skills', key: 'skills' as const, href: '/skills', icon: '◆', color: 'sky' },
+		{ label: 'Guides', key: 'guides' as const, href: '/guides', icon: '◉', color: 'violet' },
+		{ label: 'Rules', key: 'rules' as const, href: '/rules', icon: '◇', color: 'amber' }
+	];
+
+	const colorMap: Record<string, string> = {
+		emerald: 'border-emerald-800 bg-emerald-950/40 hover:bg-emerald-950/70 text-emerald-300',
+		sky: 'border-sky-800 bg-sky-950/40 hover:bg-sky-950/70 text-sky-300',
+		violet: 'border-violet-800 bg-violet-950/40 hover:bg-violet-950/70 text-violet-300',
+		amber: 'border-amber-800 bg-amber-950/40 hover:bg-amber-950/70 text-amber-300'
+	};
+
+	const priorityColor: Record<string, string> = {
+		MUST: 'text-red-400',
+		SHOULD: 'text-yellow-400',
+		MAY: 'text-green-400'
+	};
+
 	const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
 		latest: {
 			label: 'Latest',
@@ -39,69 +59,84 @@
 		</p>
 	</div>
 
-	<!-- Current project stats -->
-	<div class="mb-10">
-		<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-			Current Project
-		</h2>
-		<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+	<!-- Summary cards — agents, skills, guides, rules -->
+	<div class="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
+		{#each summaryCards as card}
 			<a
-				href="/agents{projectParam}"
-				class="rounded-lg border border-emerald-800 bg-emerald-950/40 p-5 transition-colors hover:bg-emerald-950/70"
+				href="{card.href}{projectParam}"
+				class="rounded-lg border p-5 transition-colors {colorMap[card.color]}"
 			>
-				<div class="mb-2 text-2xl text-emerald-300">◈</div>
-				<div class="text-3xl font-bold text-emerald-300">{data.projectStats.agents}</div>
-				<div class="mt-1 text-sm text-emerald-300/80">Agents</div>
+				<div class="mb-2 text-2xl">{card.icon}</div>
+				<div class="text-3xl font-bold">{data.projectStats[card.key]}</div>
+				<div class="mt-1 text-sm opacity-80">{card.label}</div>
 			</a>
-			<a
-				href="/skills{projectParam}"
-				class="rounded-lg border border-sky-800 bg-sky-950/40 p-5 transition-colors hover:bg-sky-950/70"
-			>
-				<div class="mb-2 text-2xl text-sky-300">◆</div>
-				<div class="text-3xl font-bold text-sky-300">{data.projectStats.skills}</div>
-				<div class="mt-1 text-sm text-sky-300/80">Skills</div>
-			</a>
-			{#if data.analytics}
-				<div class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-5">
-					<div class="mb-2 text-2xl text-zinc-400">⊕</div>
-					<div class="text-3xl font-bold text-zinc-100">{data.analytics.sessions.thisWeek}</div>
-					<div class="mt-1 text-sm text-zinc-400">Sessions (7d)</div>
-				</div>
-				<div class="rounded-lg border border-zinc-800 bg-zinc-900/40 p-5">
-					<div class="mb-2 text-2xl text-zinc-400">◎</div>
-					<div
-						class="text-3xl font-bold mt-0
-						{data.analytics.totalInvocations === 0
-							? 'text-zinc-500'
-							: data.analytics.successRate >= 0.9
-								? 'text-emerald-400'
-								: data.analytics.successRate >= 0.7
-									? 'text-amber-400'
-									: 'text-red-400'}"
-					>
-						{data.analytics.totalInvocations === 0
-							? '—'
-							: `${(data.analytics.successRate * 100).toFixed(0)}%`}
-					</div>
-					<div class="mt-1 text-sm text-zinc-400">Success Rate</div>
-				</div>
-			{:else}
-				<div class="col-span-2 rounded-lg border border-zinc-800 bg-zinc-900/20 p-5 flex items-center gap-3">
-					<div class="text-zinc-600 text-sm">
-						Enable eval-core to see session statistics
-					</div>
-				</div>
-			{/if}
+		{/each}
+	</div>
+
+	<!-- Project structure breakdown -->
+	<div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
+		<!-- Agent type breakdown -->
+		<div>
+			<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+				Agent Types
+			</h2>
+			<div class="overflow-hidden rounded-lg border border-zinc-800">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="bg-zinc-900">
+							<th class="px-4 py-2 text-left font-medium text-zinc-400">Type</th>
+							<th class="px-4 py-2 text-right font-medium text-zinc-400">Count</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.typeBreakdown as row, i}
+							<tr class="border-t border-zinc-800 {i % 2 === 1 ? 'bg-zinc-900/50' : ''}">
+								<td class="px-4 py-2 text-zinc-300">{row.label}</td>
+								<td class="px-4 py-2 text-right text-zinc-400">{row.count}</td>
+							</tr>
+						{:else}
+							<tr class="border-t border-zinc-800">
+								<td colspan="2" class="px-4 py-4 text-center text-zinc-600 text-xs">No agents found</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- Rule priority breakdown -->
+		<div>
+			<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+				Rule Priorities
+			</h2>
+			<div class="overflow-hidden rounded-lg border border-zinc-800">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="bg-zinc-900">
+							<th class="px-4 py-2 text-left font-medium text-zinc-400">Priority</th>
+							<th class="px-4 py-2 text-right font-medium text-zinc-400">Count</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.priorityBreakdown as row, i}
+							<tr class="border-t border-zinc-800 {i % 2 === 1 ? 'bg-zinc-900/50' : ''}">
+								<td class="px-4 py-2 font-semibold {priorityColor[row.priority]}">{row.priority}</td>
+								<td class="px-4 py-2 text-right text-zinc-400">{row.count}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	</div>
 
 	<!-- Analytics section -->
-	{#if data.analytics && (data.analytics.sessions.thisMonth > 0 || data.analytics.agentInvocations.length > 0)}
+	{#if data.analytics}
 		<div class="mb-10">
 			<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">Analytics</h2>
 
-			<!-- Session timeline -->
-			<div class="mb-6 grid grid-cols-3 gap-4">
+			<!-- Session + success rate row -->
+			<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
 				<div class="rounded-lg border border-zinc-800 p-4">
 					<div class="text-xs uppercase tracking-wider text-zinc-500">Today</div>
 					<div class="mt-1 text-2xl font-bold text-zinc-100">{data.analytics.sessions.today}</div>
@@ -116,6 +151,20 @@
 					<div class="text-xs uppercase tracking-wider text-zinc-500">This Month</div>
 					<div class="mt-1 text-2xl font-bold text-zinc-100">{data.analytics.sessions.thisMonth}</div>
 					<div class="text-xs text-zinc-600">sessions</div>
+				</div>
+				<div class="rounded-lg border border-zinc-800 p-4">
+					<div class="text-xs uppercase tracking-wider text-zinc-500">Success Rate</div>
+					<div
+						class="mt-1 text-2xl font-bold
+						{data.analytics.successRate >= 0.9
+							? 'text-emerald-400'
+							: data.analytics.successRate >= 0.7
+								? 'text-amber-400'
+								: 'text-red-400'}"
+					>
+						{(data.analytics.successRate * 100).toFixed(1)}%
+					</div>
+					<div class="text-xs text-zinc-600">{data.analytics.totalInvocations} invocations</div>
 				</div>
 			</div>
 
@@ -136,7 +185,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each data.analytics.agentInvocations.slice(0, 8) as row, i}
+									{#each data.analytics.agentInvocations.slice(0, 10) as row, i}
 										<tr class="border-t border-zinc-800 {i % 2 === 1 ? 'bg-zinc-900/50' : ''}">
 											<td class="px-4 py-2 font-mono text-xs text-zinc-300">{row.agentType}</td>
 											<td class="px-4 py-2 text-right text-zinc-400">{row.count}</td>
@@ -175,7 +224,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each data.analytics.skillInvocations.slice(0, 8) as row, i}
+									{#each data.analytics.skillInvocations.slice(0, 10) as row, i}
 										<tr class="border-t border-zinc-800 {i % 2 === 1 ? 'bg-zinc-900/50' : ''}">
 											<td class="px-4 py-2 font-mono text-xs text-zinc-300">{row.skill}</td>
 											<td class="px-4 py-2 text-right text-zinc-400">{row.count}</td>
@@ -190,6 +239,14 @@
 						</div>
 					{/if}
 				</div>
+			</div>
+		</div>
+	{:else}
+		<div class="mb-10">
+			<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">Analytics</h2>
+			<div class="rounded-lg border border-zinc-800 bg-zinc-900/20 px-5 py-6 text-sm text-zinc-600">
+				No session data yet. Analytics appear after Claude Code sessions are recorded via
+				<code class="text-zinc-500">eval-core</code>.
 			</div>
 		</div>
 	{/if}
@@ -218,14 +275,14 @@
 				{#each data.projects as project}
 					{@const config = statusConfig[project.status] ?? statusConfig.unknown}
 					<div class="flex items-center justify-between rounded-lg border border-zinc-800 px-5 py-4 transition-colors hover:border-zinc-700">
-						<div class="flex items-center gap-3 min-w-0">
+						<div class="flex min-w-0 items-center gap-3">
 							<span class="text-xs {config.dot}">●</span>
 							<div class="min-w-0">
 								<span class="font-medium text-zinc-200">{project.name}</span>
 								<p class="mt-0.5 truncate text-xs text-zinc-600" title={project.path}>{project.path}</p>
 							</div>
 						</div>
-						<div class="ml-4 flex items-center gap-3 shrink-0">
+						<div class="ml-4 flex shrink-0 items-center gap-3">
 							{#if project.version}
 								<span class="text-xs text-zinc-600">v{project.version}</span>
 							{/if}
