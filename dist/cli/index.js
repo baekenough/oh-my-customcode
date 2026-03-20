@@ -9305,7 +9305,7 @@ var init_package = __esm(() => {
   package_default = {
     name: "oh-my-customcode",
     workspaces: ["packages/*"],
-    version: "0.46.1",
+    version: "0.47.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
