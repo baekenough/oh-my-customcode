@@ -167,7 +167,10 @@ context: fork              # Forked context for isolated execution
 version: 1.0.0             # Semantic version
 user-invocable: false      # Whether user can invoke directly
 disable-model-invocation: true  # Prevent model from auto-invoking
+effort: medium              # low | medium | high — overrides model effort level when invoked
 ```
+
+When both an agent and its invoked skill specify `effort`, the skill's value takes precedence (more specific invocation-time setting).
 
 ### Skill Effectiveness Tracking
 

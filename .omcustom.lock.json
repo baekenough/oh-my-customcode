@@ -1,0 +1,1333 @@
+{
+  "lockfileVersion": 1,
+  "generatorVersion": "0.46.0",
+  "generatedAt": "2026-03-20T01:45:43.936Z",
+  "templateVersion": "0.46.0",
+  "files": {
+    ".claude/rules/SHOULD-interaction.md": {
+      "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
+      "size": 2394,
+      "component": "rules"
+    },
+    ".claude/rules/SHOULD-hud-statusline.md": {
+      "templateHash": "2d2dc89e0565ad90071e196f517ea1a11e88d34be73a5f29b0a60e55abde0797",
+      "size": 2082,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-orchestrator-coordination.md": {
+      "templateHash": "7af8bb5bb62397793215c35ac0f0146f5323012b34e5c1fe7c40de87e4a14e63",
+      "size": 15550,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-intent-transparency.md": {
+      "templateHash": "1c4b6147b8182dd7f359214d76b11c1f15ebd3ec792bff08b7129c91cb32de24",
+      "size": 1147,
+      "component": "rules"
+    },
+    ".claude/rules/SHOULD-error-handling.md": {
+      "templateHash": "9d200be09d91765b725a1a5de221b71c3c2b7dd40cffba2ab2c2e33aec08bb61",
+      "size": 1022,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-parallel-execution.md": {
+      "templateHash": "63ae3d2499f70d5a084a63fa8a11077484d25106dbdc51bbff2bba92c518a771",
+      "size": 3881,
+      "component": "rules"
+    },
+    ".claude/rules/SHOULD-ecomode.md": {
+      "templateHash": "99f682aa45785a9b691b0a5d34c85c37e418820ffae8de5a3fcfbbebcdb2c509",
+      "size": 2425,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-language-policy.md": {
+      "templateHash": "fa3037d27710c713ac2bb8e6e2988d071eb85b5de5e7bbea4b90f47b97e00ec0",
+      "size": 659,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-agent-design.md": {
+      "templateHash": "24440847e04caeb12c75bd61591e50d9f02e03a6308baa59961b7d81fa5b2bb0",
+      "size": 8420,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-agent-identification.md": {
+      "templateHash": "5316d30c261fe698f896179ce04b3f61fc9556d655e5904262806da0411316fe",
+      "size": 2136,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-sync-verification.md": {
+      "templateHash": "9a95a41e67661c008fa1e5fb226c1040a9db1244012bf413f7401a2217200691",
+      "size": 5403,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-agent-teams.md": {
+      "templateHash": "31f07d2795f9934fce1eaa0eb8236240d7fbf92b030eb721aaedd7f80a3ffcc3",
+      "size": 11249,
+      "component": "rules"
+    },
+    ".claude/rules/MAY-optimization.md": {
+      "templateHash": "f7bf3010afcb23585d7bbb84e21b9baf1940a62923e912cf13978d5e08a505d5",
+      "size": 1443,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-continuous-improvement.md": {
+      "templateHash": "e462929005906abd284a9d21d8c68d2673887c46975b5fa7d9d54bc9905bc906",
+      "size": 1531,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-permissions.md": {
+      "templateHash": "a268b25708765d83f587c3d7af2db242f8d423b2ccab4bf1bf2d8e5b38b1ef30",
+      "size": 964,
+      "component": "rules"
+    },
+    ".claude/rules/SHOULD-ontology-rag-routing.md": {
+      "templateHash": "2857a8f5f9e4af89e7f817f4fbe6d9afe1f9bf126917a72594f419b25010cae2",
+      "size": 1728,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-safety.md": {
+      "templateHash": "863d542ff1088195cf3a504781328385ed13cfc6d1f7da5a84e5a2f938b3e750",
+      "size": 828,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-tool-identification.md": {
+      "templateHash": "7dc4c9fe6a5cb5a1b22db04176097efa6e3797d3d0731138dc57b3e43bde33ee",
+      "size": 3263,
+      "component": "rules"
+    },
+    ".claude/rules/SHOULD-memory-integration.md": {
+      "templateHash": "9813bd0e1f57431423c484c7f765013eae6ad0ad6a16da348a261c70fa5ff894",
+      "size": 11549,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-enforcement-policy.md": {
+      "templateHash": "7348b8a42d0c92ba507dc05d07244cb40d089fb0c70779552f662dfa37ed9c56",
+      "size": 2032,
+      "component": "rules"
+    },
+    ".claude/rules/index.yaml": {
+      "templateHash": "c6eb30e3c9039c35b6af4e2bd4c8ba3a3869f434735ae4869cb875cda68f5c43",
+      "size": 3050,
+      "component": "rules"
+    },
+    ".claude/rules/MUST-completion-verification.md": {
+      "templateHash": "77962e8d746ffd9e47628be7f503289d3699f7eb26d50232d4bad4787363f61b",
+      "size": 3845,
+      "component": "rules"
+    },
+    ".claude/agents/be-springboot-expert.md": {
+      "templateHash": "175761335b1a89948a73fec4af12b5937f64279f17d339cc3695db16b2afbfb3",
+      "size": 1274,
+      "component": "agents"
+    },
+    ".claude/agents/db-postgres-expert.md": {
+      "templateHash": "bf12a6498d1860b66d237e708c41ce21bd10c17bed49a74c54dab8b637cf2038",
+      "size": 1168,
+      "component": "agents"
+    },
+    ".claude/agents/arch-speckit-agent.md": {
+      "templateHash": "d094b694daabcd58981419ba69f349ff7e2ea698cae8b0691cddc05f1cd68634",
+      "size": 2547,
+      "component": "agents"
+    },
+    ".claude/agents/lang-rust-expert.md": {
+      "templateHash": "ef87c7fa61a218f62eb5e34b2cf046808631bf9727da0dd1e880e71035ddb898",
+      "size": 1353,
+      "component": "agents"
+    },
+    ".claude/agents/mgr-updater.md": {
+      "templateHash": "a74ed1cffc5c2427df6d7481f1bba7c81b102fe4d4bd87579e0d16c38dd88f34",
+      "size": 910,
+      "component": "agents"
+    },
+    ".claude/agents/lang-kotlin-expert.md": {
+      "templateHash": "b664795c65c1ce09745faee8d60c2df0928bbf2b9300d2f502e7c02d7ffbe20d",
+      "size": 1336,
+      "component": "agents"
+    },
+    ".claude/agents/be-express-expert.md": {
+      "templateHash": "df8fff915019052c838d8798da54995128658f68b8adda46d8a780187f50e370",
+      "size": 1032,
+      "component": "agents"
+    },
+    ".claude/agents/mgr-sauron.md": {
+      "templateHash": "3088b508679223cc1d664a4947327d93001b04fef88119758913cc71f63f798f",
+      "size": 4308,
+      "component": "agents"
+    },
+    ".claude/agents/fe-svelte-agent.md": {
+      "templateHash": "990fed341f44d8729bd672945d7d398f22f0a5ac5dc86bb35d2095d22b0abf1b",
+      "size": 697,
+      "component": "agents"
+    },
+    ".claude/agents/lang-golang-expert.md": {
+      "templateHash": "953a1e0ada15789b318b280c5ffa48af467cf8b4f5863c5c6a3a972d2907f3ad",
+      "size": 1326,
+      "component": "agents"
+    },
+    ".claude/agents/de-airflow-expert.md": {
+      "templateHash": "fcdbe0814f04d2f0005ea6f4cc750c68b2ea98b9b48875d9f86fe50813ab1556",
+      "size": 962,
+      "component": "agents"
+    },
+    ".claude/agents/sys-naggy.md": {
+      "templateHash": "90d5ed26a6f19d11ed0fcf90289f58c305adf7b44d7fe91d7868f14f088454a1",
+      "size": 2018,
+      "component": "agents"
+    },
+    ".claude/agents/db-redis-expert.md": {
+      "templateHash": "9564149b35375fa6ba151b7e94c150cdfa84461c3420d8596fc088b2e6fbdb20",
+      "size": 1122,
+      "component": "agents"
+    },
+    ".claude/agents/de-pipeline-expert.md": {
+      "templateHash": "6bad7742559ac1c1489bd37f98bf751890dbfe907d7a2c5e1bfcfb010cd8a54f",
+      "size": 1067,
+      "component": "agents"
+    },
+    ".claude/agents/lang-typescript-expert.md": {
+      "templateHash": "6ae83667cde040724450eea7bb21b94247982a58810b8a6a23a7cad7d9f42ec6",
+      "size": 1465,
+      "component": "agents"
+    },
+    ".claude/agents/be-nestjs-expert.md": {
+      "templateHash": "f40dbeed36e3e05b9e926dc9cf7e238236c8f310b29ef1515d6995d353b4db76",
+      "size": 838,
+      "component": "agents"
+    },
+    ".claude/agents/be-django-expert.md": {
+      "templateHash": "d7c24ef3215e52bfe3a6bd1c1e4ed1488763e98a5bcafae5c92bfe33d4bbf636",
+      "size": 1622,
+      "component": "agents"
+    },
+    ".claude/agents/tool-optimizer.md": {
+      "templateHash": "c7a4665c3ad24dcfbfa3a1b657383d6ddb75d87d217eef1a97d78c876d8ca2f1",
+      "size": 998,
+      "component": "agents"
+    },
+    ".claude/agents/qa-engineer.md": {
+      "templateHash": "de945f5f22b4ed14fbb3a240c6af67b3ad0c7fb487b241aa8e379df52b40add7",
+      "size": 900,
+      "component": "agents"
+    },
+    ".claude/agents/fe-vercel-agent.md": {
+      "templateHash": "56a407c279daf7d3e45718af4628c6a2b804b0772f9d461544fcf633d8c6996c",
+      "size": 990,
+      "component": "agents"
+    },
+    ".claude/agents/fe-vuejs-agent.md": {
+      "templateHash": "5acec09fe22001a02258356a40aae072eda2583ad1eb121d075f082517d61538",
+      "size": 696,
+      "component": "agents"
+    },
+    ".claude/agents/tool-npm-expert.md": {
+      "templateHash": "e7e0e27f364b81535e593935a7136b4726a9c75ec4c149ef5fb9446b991c89a6",
+      "size": 838,
+      "component": "agents"
+    },
+    ".claude/agents/de-dbt-expert.md": {
+      "templateHash": "0c0cc64df8edf1d2cf9f9983e927a8f0d3c95a3854ba26fad086ab28ce02cf58",
+      "size": 939,
+      "component": "agents"
+    },
+    ".claude/agents/de-spark-expert.md": {
+      "templateHash": "72ea66001a9487892e0fee193ec01543064159c11bef2094b6f2fb04c686eb23",
+      "size": 998,
+      "component": "agents"
+    },
+    ".claude/agents/souls/lang-golang-expert.soul.md": {
+      "templateHash": "dc6611898a80800c182183ef7df19d83df3bc9af6a4d6dcd79e774761e15976a",
+      "size": 701,
+      "component": "agents"
+    },
+    ".claude/agents/de-kafka-expert.md": {
+      "templateHash": "ed6e7e0bf44d8e71156d182541f8fbc034f1948c9bf758a03f7b3ef63b048ba5",
+      "size": 2577,
+      "component": "agents"
+    },
+    ".claude/agents/be-go-backend-expert.md": {
+      "templateHash": "62fca2dc1b30f79a0a5afe0a20029ef70fa3c6c9c4c4b958b7b401cc08e85bcd",
+      "size": 1233,
+      "component": "agents"
+    },
+    ".claude/agents/mgr-claude-code-bible.md": {
+      "templateHash": "bf0518dda34bad8a11887c2e4e448ded495f01084b927a9a2a23894c85727970",
+      "size": 2208,
+      "component": "agents"
+    },
+    ".claude/agents/fe-flutter-agent.md": {
+      "templateHash": "ffabd5707c7a9984f5cf7884677bff0ec6a5ebe950453f5645be739ffe1e5318",
+      "size": 1316,
+      "component": "agents"
+    },
+    ".claude/agents/infra-docker-expert.md": {
+      "templateHash": "c195f8e486b20b6422b65d2af4382aca328570ea7cee3748cafc7d04ffe92d24",
+      "size": 1163,
+      "component": "agents"
+    },
+    ".claude/agents/sec-codeql-expert.md": {
+      "templateHash": "497d7385e43450155f738054a303aab32a9811668bdd3a90b9d27867f49d53dc",
+      "size": 1947,
+      "component": "agents"
+    },
+    ".claude/agents/mgr-gitnerd.md": {
+      "templateHash": "358c098fdeba39a742eb6e2e09994f93d7b14d3f300fe0c414d66d00a0ba074c",
+      "size": 1135,
+      "component": "agents"
+    },
+    ".claude/agents/mgr-creator.md": {
+      "templateHash": "e9a6a82352724e743d3ccfb8b5954cc9511d2a8bddeaa6cf2796094b03a1529a",
+      "size": 1753,
+      "component": "agents"
+    },
+    ".claude/agents/qa-writer.md": {
+      "templateHash": "6d1325a5bc628273a990429a739a71af73f0a64a6a0773942ac331ac186e6bde",
+      "size": 765,
+      "component": "agents"
+    },
+    ".claude/agents/db-supabase-expert.md": {
+      "templateHash": "36284264aca8813b68d25bf323b6df2be2ab76ee32bce20097ab79de6a4f81f3",
+      "size": 1031,
+      "component": "agents"
+    },
+    ".claude/agents/lang-python-expert.md": {
+      "templateHash": "edd80da5406830d23349e2a944b15d9206e2af4de5a77bb60a6a25712dc2c833",
+      "size": 1313,
+      "component": "agents"
+    },
+    ".claude/agents/tool-bun-expert.md": {
+      "templateHash": "a3073895303b320a5f51d08982da00140eb75eebe0efad9e3c9546d573e1320b",
+      "size": 714,
+      "component": "agents"
+    },
+    ".claude/agents/mgr-supplier.md": {
+      "templateHash": "a2aa275ed65649604b825040fe6309c5e33ca4286003782cd50cb5b6b7e0d85a",
+      "size": 931,
+      "component": "agents"
+    },
+    ".claude/agents/arch-documenter.md": {
+      "templateHash": "0ee5626045fcf456b058ac48eeb6a96692fe38b939e88fb7d1270f149f910f65",
+      "size": 990,
+      "component": "agents"
+    },
+    ".claude/agents/test-delete.txt": {
+      "templateHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "component": "agents"
+    },
+    ".claude/agents/qa-planner.md": {
+      "templateHash": "666cb1c84bc924835ffec9e0d170918b21af9893c2b2c03548864d3934f3c375",
+      "size": 1835,
+      "component": "agents"
+    },
+    ".claude/agents/db-alembic-expert.md": {
+      "templateHash": "fe347b0cb396a3830e8a9f945e6519eddc08a76539846be83c8c5f84a6f7febe",
+      "size": 3825,
+      "component": "agents"
+    },
+    ".claude/agents/lang-java21-expert.md": {
+      "templateHash": "ce302235318eb6a82c55fc6eb8426d347deb2111cf241a73abec5b5cd0230d64",
+      "size": 1219,
+      "component": "agents"
+    },
+    ".claude/agents/sys-memory-keeper.md": {
+      "templateHash": "cc00e6515929ecad415b2cc36b871b08bdf7b3b8b9cf4f4b7cc94bd437a7d49c",
+      "size": 3596,
+      "component": "agents"
+    },
+    ".claude/agents/infra-aws-expert.md": {
+      "templateHash": "0b223a3f556e4d47f29f32369cf23fbbe87aa8c5b38f32045695d3f8b4d128e1",
+      "size": 1311,
+      "component": "agents"
+    },
+    ".claude/agents/be-fastapi-expert.md": {
+      "templateHash": "44331c52693244b2a7eaa29411024cc497301ad749558d2eeeaeab4929dda3b0",
+      "size": 1202,
+      "component": "agents"
+    },
+    ".claude/agents/de-snowflake-expert.md": {
+      "templateHash": "b8f6f5a75adc7c283dcf3e200e755c40c9ca901d1293973c8bf5c5f93a8f9b63",
+      "size": 1083,
+      "component": "agents"
+    },
+    ".claude/skills/pr-auto-improve/SKILL.md": {
+      "templateHash": "5dbc64372c47b9ae295c13537c0ab9d277d9cf3df1ce3b13a6504adeba6e8b5d",
+      "size": 4173,
+      "component": "skills"
+    },
+    ".claude/skills/npm-version/SKILL.md": {
+      "templateHash": "6af5203fc46c54c4e0f439e7b4419a33772ef6b9b98057f52e91b7897151c5c0",
+      "size": 1380,
+      "component": "skills"
+    },
+    ".claude/skills/research/SKILL.md": {
+      "templateHash": "b36a495ae7fda67167d1cb09b9e1e4c0cd6ebc2b314278a5e68bd89f8fd892f9",
+      "size": 16151,
+      "component": "skills"
+    },
+    ".claude/skills/audit-agents/SKILL.md": {
+      "templateHash": "68c1acb5e98007bbb30232a6098229bfd0e52adb4bcf0a7a2206dfb0b67e1f10",
+      "size": 2339,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/repository-example.java": {
+      "templateHash": "2c0fce384d9a9c72c19b11edc10a7e1d2c62be790204544d56921b87ba6ec41b",
+      "size": 584,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/controller-example.java": {
+      "templateHash": "9b9701201e979a223d5d1ba4979059f3e276b5026e161631110dd385ca6ecf25",
+      "size": 881,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/security-config-example.java": {
+      "templateHash": "b1905009ebfae7a77ab2e33796aba0f9431ac2e62422ff227f4aee9272cb4433",
+      "size": 1114,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/service-example.java": {
+      "templateHash": "ded14616646fcb0314ceb3732bc077519102d71eebf1a59b2849449d2adbe212",
+      "size": 1099,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/exception-handler-example.java": {
+      "templateHash": "0d4c5fd9426ae84d04b795922fb29f6551264b86de7de9c0286e21a6cca21810",
+      "size": 1165,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/entity-example.java": {
+      "templateHash": "419fed6ea276c66ff195276dc0dc8056dcbfeb72526f99d5e8afa1a68d787742",
+      "size": 481,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/controller-test-example.java": {
+      "templateHash": "205f87be80f7e0b47f689c0ef324d9ab26b462e1350e8372d201fb97178a827f",
+      "size": 1220,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/repository-test-example.java": {
+      "templateHash": "c8db37d2c62ce020ce67b17c041a57f4fe3679069179d605dc1d5fb5c500d27a",
+      "size": 681,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/examples/config-properties-example.java": {
+      "templateHash": "b8943ae8acc612fc571ed855a07f86796594e3dcddba7fd5baa897d5be2b6a9e",
+      "size": 565,
+      "component": "skills"
+    },
+    ".claude/skills/springboot-best-practices/SKILL.md": {
+      "templateHash": "1b8642c9993b4f89aee7d6769288587274a3afc27a0cff06c9d92861232b171d",
+      "size": 2539,
+      "component": "skills"
+    },
+    ".claude/skills/qa-lead-routing/SKILL.md": {
+      "templateHash": "852a2ead0d9571c0ac86ae7f6f623ed73b215ff5f45d443c4d3f1e39c4ffe295",
+      "size": 3493,
+      "component": "skills"
+    },
+    ".claude/skills/memory-recall/SKILL.md": {
+      "templateHash": "b40223a46b0fa3e75aa3e78d871ad79c5a6c0acf4f837af6cab4e3b4a1a33734",
+      "size": 3370,
+      "component": "skills"
+    },
+    ".claude/skills/cve-triage/SKILL.md": {
+      "templateHash": "2f2206b5eb8c1bffd7443c9c9546857b560a0356c29c7c8d988637030ca96e75",
+      "size": 2450,
+      "component": "skills"
+    },
+    ".claude/skills/npm-publish/SKILL.md": {
+      "templateHash": "8a0852c5dd3cad2838bfc37782da137776a02becefb18bf5912538236ce3463a",
+      "size": 1130,
+      "component": "skills"
+    },
+    ".claude/skills/memory-save/SKILL.md": {
+      "templateHash": "5c4cce467a5b222c14ce5bd6b810192047393f2f68243073a6c16f6ea8e61be4",
+      "size": 2500,
+      "component": "skills"
+    },
+    ".claude/skills/dev-refactor/SKILL.md": {
+      "templateHash": "4f8fdea9147bfe71ea2c5bec132b22f7aca75c57b3692f28f5432401505bea46",
+      "size": 7487,
+      "component": "skills"
+    },
+    ".claude/skills/airflow-best-practices/SKILL.md": {
+      "templateHash": "7b1a1e17440ee713f033d88abebdd27cd80fd131a07fb4d1d2d8d15d07ef1b32",
+      "size": 1425,
+      "component": "skills"
+    },
+    ".claude/skills/redis-best-practices/SKILL.md": {
+      "templateHash": "26b4ad1a23f313341ea83f5328c2fa7c3e4d4b3578894f23087cb784cf9b1ce4",
+      "size": 1853,
+      "component": "skills"
+    },
+    ".claude/skills/secretary-routing/SKILL.md": {
+      "templateHash": "17209f95695197c02f7b648d8e4dc316a510c3c679f9456fb916594227ec1835",
+      "size": 4136,
+      "component": "skills"
+    },
+    ".claude/skills/analysis/SKILL.md": {
+      "templateHash": "c9cbb95b27f242c0017e570246de2d98ec0bdea75052b5a39939d68830c92d6b",
+      "size": 5978,
+      "component": "skills"
+    },
+    ".claude/skills/update-docs/SKILL.md": {
+      "templateHash": "44ca1f473894e3fac5595cd10464d423fe1874f7a6268d09a3e1e579ddf0aea0",
+      "size": 3160,
+      "component": "skills"
+    },
+    ".claude/skills/lists/SKILL.md": {
+      "templateHash": "34361873227241256fd3df5ce80d1e4a82492d988a3bc0282fbb2b240113155c",
+      "size": 3601,
+      "component": "skills"
+    },
+    ".claude/skills/fastapi-best-practices/SKILL.md": {
+      "templateHash": "8db303cb53c431f008c2aa4d42c57bf40b9107554e298ef38024be99ce7b3ee3",
+      "size": 5819,
+      "component": "skills"
+    },
+    ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
+      "templateHash": "d481f57a109f13b836c2e18b50e9f7ae38786951b1d1041e2afa70f1f6cde0c3",
+      "size": 12821,
+      "component": "skills"
+    },
+    ".claude/skills/intent-detection/SKILL.md": {
+      "templateHash": "6d67334da4de55e281cd834bdbbc59752ca2e920fff98ce63cde1102bcc43842",
+      "size": 6494,
+      "component": "skills"
+    },
+    ".claude/skills/python-best-practices/SKILL.md": {
+      "templateHash": "19e2ead2fa5edaf40610ccf4fdd0db912dc39c7621ddbd1baf554f5dca0f62e8",
+      "size": 5030,
+      "component": "skills"
+    },
+    ".claude/skills/alembic-best-practices/SKILL.md": {
+      "templateHash": "bf87eca073142d0f5d3d02ebb2616ba4ff7e28a82f6f1a269dc23fa656890dbe",
+      "size": 10418,
+      "component": "skills"
+    },
+    ".claude/skills/structured-dev-cycle/SKILL.md": {
+      "templateHash": "661be648eff40d525238451141ff912b6dc3b3bdb7ab7ab3bf83f99064948128",
+      "size": 7980,
+      "component": "skills"
+    },
+    ".claude/skills/web-design-guidelines/SKILL.md": {
+      "templateHash": "54a20ee8e140256c14fdc3071f369895107939c87c6b4c36dd3e6b7b98d2cfd9",
+      "size": 1956,
+      "component": "skills"
+    },
+    ".claude/skills/evaluator-optimizer/SKILL.md": {
+      "templateHash": "7ef956a2372435554ebe6e8eb089850a3a5d281f18eca7a36d42091cdb669ac6",
+      "size": 11725,
+      "component": "skills"
+    },
+    ".claude/skills/update-external/SKILL.md": {
+      "templateHash": "5f87a08e559cf0d222559e3ccc50c908d67990bb2fb6dda89492a519b19ae9fb",
+      "size": 3571,
+      "component": "skills"
+    },
+    ".claude/skills/fix-refs/SKILL.md": {
+      "templateHash": "84b79deb18caddca6e329915dbaab3059af5ad535081091b730d65aa8bfcaa00",
+      "size": 2131,
+      "component": "skills"
+    },
+    ".claude/skills/model-escalation/SKILL.md": {
+      "templateHash": "d73874aa62cc29bb04be1fefc82d71bdce2a0b102834a39ec02ecf8c9cd2bd48",
+      "size": 1735,
+      "component": "skills"
+    },
+    ".claude/skills/multi-model-verification/SKILL.md": {
+      "templateHash": "ff69b0ec80e2fe9c8bfdddb61bfa435ebdc0216276ceb2c19cf138106c725067",
+      "size": 4407,
+      "component": "skills"
+    },
+    ".claude/skills/claude-code-bible/scripts/fetch-docs.js": {
+      "templateHash": "39feb5316be8f83c502860133fd67f1510842659476c74787f57916f7123a508",
+      "size": 6621,
+      "component": "skills"
+    },
+    ".claude/skills/claude-code-bible/SKILL.md": {
+      "templateHash": "19ff2586de5dbb84e5d995d6821d5ec7aef069b4bb9ebd61e85fec6f98baff18",
+      "size": 2545,
+      "component": "skills"
+    },
+    ".claude/skills/snowflake-best-practices/SKILL.md": {
+      "templateHash": "f51fcfd268d1159ad0ee78e02cc06958df55019bb621154cc33aab437f65162e",
+      "size": 1778,
+      "component": "skills"
+    },
+    ".claude/skills/rust-best-practices/SKILL.md": {
+      "templateHash": "735a5f16e54ffacd4eb8116b21bde18c7afa397d2288397284a648029104a7f9",
+      "size": 5708,
+      "component": "skills"
+    },
+    ".claude/skills/postgres-best-practices/SKILL.md": {
+      "templateHash": "ffe6f871002b56c4d29871978976fe856b2a9b65d7789ebeece0056a89f8f885",
+      "size": 1867,
+      "component": "skills"
+    },
+    ".claude/skills/go-best-practices/SKILL.md": {
+      "templateHash": "fb712d8cd70d7dbfe82a6581f42a2ecf7786920425f5fb4b52cca4feb335c5f3",
+      "size": 4945,
+      "component": "skills"
+    },
+    ".claude/skills/deep-plan/SKILL.md": {
+      "templateHash": "f4fbf2c3b6f5af18a97c9b0f1743ca0ce558a3b79d09b5df5dca16c2a4c01221",
+      "size": 13430,
+      "component": "skills"
+    },
+    ".claude/skills/omcustom-feedback/SKILL.md": {
+      "templateHash": "d09dc9f55c8556148f1dca7488c0f1376e2acbc8a9f7805316014e3bca0d8023",
+      "size": 3969,
+      "component": "skills"
+    },
+    ".claude/skills/dev-lead-routing/SKILL.md": {
+      "templateHash": "19df4cf26ae41b5b871b113f43862beb7956fe6c7dda6e90970a76ceb76c7243",
+      "size": 5878,
+      "component": "skills"
+    },
+    ".claude/skills/status/SKILL.md": {
+      "templateHash": "c38678e9d3f2da3ab9d6625ed7aa0e19817d099997e0a9e7c67a56a6803945c9",
+      "size": 3061,
+      "component": "skills"
+    },
+    ".claude/skills/pipeline-architecture-patterns/SKILL.md": {
+      "templateHash": "d4fa946d6db65d9052b94d76bd1e1db487c9f34adf6be827b6bb7c8e87958bd1",
+      "size": 2262,
+      "component": "skills"
+    },
+    ".claude/skills/adversarial-review/SKILL.md": {
+      "templateHash": "e98becfc15926600a8aa6accdb7227339eb2f3315c39d367acec75d02349f4f1",
+      "size": 2591,
+      "component": "skills"
+    },
+    ".claude/skills/supabase-postgres-best-practices/SKILL.md": {
+      "templateHash": "54169317d9c71a9c0525e15cd1578ddccd618861945945f2958c44b1acfd1638",
+      "size": 3961,
+      "component": "skills"
+    },
+    ".claude/skills/optimize-bundle/SKILL.md": {
+      "templateHash": "4a7817baf678d28a3cde73ad29086dc5cac67865ce74e4b8b117bb36c9e5495e",
+      "size": 1360,
+      "component": "skills"
+    },
+    ".claude/skills/result-aggregation/SKILL.md": {
+      "templateHash": "94929ff00d6695baa06281222444a5ccfdd33e057251ad35422cf5747965b02f",
+      "size": 3345,
+      "component": "skills"
+    },
+    ".claude/skills/reasoning-sandwich/SKILL.md": {
+      "templateHash": "eaa443fd2884bb179874721031ca0dc927453c7a170d1c68b8c5fb3316d589e4",
+      "size": 2302,
+      "component": "skills"
+    },
+    ".claude/skills/npm-audit/SKILL.md": {
+      "templateHash": "0fa3e6331e1798721beef45974a9210673aeb9199cd3d81ac64117015d23d80d",
+      "size": 1206,
+      "component": "skills"
+    },
+    ".claude/skills/kotlin-best-practices/SKILL.md": {
+      "templateHash": "52a1964e952b611ff8a08bd177663d75882c1be31130eb0f1f5ecfef3b14b131",
+      "size": 5160,
+      "component": "skills"
+    },
+    ".claude/skills/omcustom-release-notes/SKILL.md": {
+      "templateHash": "941930c427b6fdac6426e4f17e7864ed1c42dd1220580aab4119eb1135309089",
+      "size": 3037,
+      "component": "skills"
+    },
+    ".claude/skills/omcustom-takeover/SKILL.md": {
+      "templateHash": "6c40a0dd795475dcb7798a76651c2d5a47e4320ee9dd29df0a17f42b8a4aca0e",
+      "size": 2909,
+      "component": "skills"
+    },
+    ".claude/skills/flutter-best-practices/SKILL.md": {
+      "templateHash": "32adc07af926d79dafe7df7b28c0d06f9d1dccb37375c390a387c1bc386d1e2c",
+      "size": 11379,
+      "component": "skills"
+    },
+    ".claude/skills/skills-sh-search/SKILL.md": {
+      "templateHash": "24faba9e91d7d3a05abee65e22fc36ea9a647cd08e85a428e13f7cf8ace3fa19",
+      "size": 4449,
+      "component": "skills"
+    },
+    ".claude/skills/typescript-best-practices/SKILL.md": {
+      "templateHash": "c1f22ac2a7a80f00454a59a22274b2d7549e438e8be551f8f843809e9a77d795",
+      "size": 6000,
+      "component": "skills"
+    },
+    ".claude/skills/memory-management/SKILL.md": {
+      "templateHash": "24897f8657bad3963812696cab4058473d6ebdeecadd86ada71d564361e699e1",
+      "size": 3847,
+      "component": "skills"
+    },
+    ".claude/skills/kafka-best-practices/SKILL.md": {
+      "templateHash": "5c158819dae9be2c7d201e365fd53dd4fed7a5b5e0254e52e120ba9490bce642",
+      "size": 1629,
+      "component": "skills"
+    },
+    ".claude/skills/react-best-practices/SKILL.md": {
+      "templateHash": "4ac915b6cc71560342a7b8fa72dd66782c89e3c8f13fa8fe4d291b45672bde85",
+      "size": 1800,
+      "component": "skills"
+    },
+    ".claude/skills/dbt-best-practices/SKILL.md": {
+      "templateHash": "58e857fcf3512aae9c5ffd44694bda90c2596218d8eafd751c158e31feba3d00",
+      "size": 1363,
+      "component": "skills"
+    },
+    ".claude/skills/sdd-dev/SKILL.md": {
+      "templateHash": "90ba687c9898588826f4aaf922660d02f5c0cb83aa0314f01c91aa033fb2e42a",
+      "size": 7646,
+      "component": "skills"
+    },
+    ".claude/skills/sdd/SKILL.md": {
+      "templateHash": "6da3bfa1709be74ba17c5308b0dbac97b3c48c6beb03569e948cae07d6c6940c",
+      "size": 471,
+      "component": "skills"
+    },
+    ".claude/skills/sauron-watch/SKILL.md": {
+      "templateHash": "46bfca17ec29513228aed73569fd2a85a7b7531d54a7c7abf2eab14f023ab6ef",
+      "size": 7527,
+      "component": "skills"
+    },
+    ".claude/skills/vercel-deploy/SKILL.md": {
+      "templateHash": "be26d9a14ee70858c601059b239448aa5da2f001c08064eee82648b5289befe8",
+      "size": 1129,
+      "component": "skills"
+    },
+    ".claude/skills/jinja2-prompts/SKILL.md": {
+      "templateHash": "d589a29633d49a503558b0af93ee39223f8eb8e4f538e0fe7b3d53b05467680c",
+      "size": 2125,
+      "component": "skills"
+    },
+    ".claude/skills/java21-best-practices/SKILL.md": {
+      "templateHash": "15b57fe25d54db0ef79d25c7b2c96982b35dc9f1c64669fff13b136d0c7f3321",
+      "size": 5232,
+      "component": "skills"
+    },
+    ".claude/skills/go-backend-best-practices/SKILL.md": {
+      "templateHash": "4dfdbe5407ee855630ab6dc4bf4cbf3e38e90f08e52ca72ae81164121a87b517",
+      "size": 3269,
+      "component": "skills"
+    },
+    ".claude/skills/docker-best-practices/SKILL.md": {
+      "templateHash": "a4967ba518968c4bdc9514bf8fed593ce43d2eea2ce19c93a3024ab92499ff2f",
+      "size": 5352,
+      "component": "skills"
+    },
+    ".claude/skills/writing-clearly-and-concisely/SKILL.md": {
+      "templateHash": "65cddecc1f70ea73f58790129823a8cbb0bf33aee03274738d92f7a47829e12e",
+      "size": 2434,
+      "component": "skills"
+    },
+    ".claude/skills/sdd-development/SKILL.md": {
+      "templateHash": "9a46b7f2a3038d84f5588a4376921cb626382e536d6058630799267e3e780264",
+      "size": 507,
+      "component": "skills"
+    },
+    ".claude/skills/monitoring-setup/SKILL.md": {
+      "templateHash": "8506c0ceb00e78ebfcf386a09fc70389605b68d11a6caa18d46df4a49d2f3ae6",
+      "size": 3746,
+      "component": "skills"
+    },
+    ".claude/skills/aws-best-practices/SKILL.md": {
+      "templateHash": "618f1f6d0dbcb1199b4b916103be548e57ab427113ef06b736aa2cd49ba60bec",
+      "size": 5855,
+      "component": "skills"
+    },
+    ".claude/skills/dev-review/SKILL.md": {
+      "templateHash": "22b365791aa194612fa6391157c9e43e011e8869e540e1ba680fbba9032f46c2",
+      "size": 5421,
+      "component": "skills"
+    },
+    ".claude/skills/omcustom-web/SKILL.md": {
+      "templateHash": "fc82a30d918a88391da69b7810850ba954e37c4438eea10c23c0d5fd3b7a4fe1",
+      "size": 2380,
+      "component": "skills"
+    },
+    ".claude/skills/ambiguity-gate/SKILL.md": {
+      "templateHash": "0030d8bf38b8345f5d9c29a1723d92795c540765c8fb3243600af60a835fa25b",
+      "size": 3721,
+      "component": "skills"
+    },
+    ".claude/skills/django-best-practices/SKILL.md": {
+      "templateHash": "93a249aa6138c2a0fb60b20910f7fc611e5a44b62372a43e7d85b3eea29f814b",
+      "size": 9551,
+      "component": "skills"
+    },
+    ".claude/skills/dag-orchestration/SKILL.md": {
+      "templateHash": "e71cd74c161106aee72dff7ba8f177f3d58560908a30795b24500d9f24a727af",
+      "size": 5441,
+      "component": "skills"
+    },
+    ".claude/skills/codex-exec/scripts/codex-wrapper.cjs": {
+      "templateHash": "253cd3ea8eeade082100193ce8e5f443d8cef85548e0701e922d634ec6999016",
+      "size": 11489,
+      "component": "skills"
+    },
+    ".claude/skills/codex-exec/SKILL.md": {
+      "templateHash": "98eb58460c539c3fc53e4c13d25ddcd461801028b9198b89cd4ee010f10d6a36",
+      "size": 6408,
+      "component": "skills"
+    },
+    ".claude/skills/create-agent/SKILL.md": {
+      "templateHash": "00b35ef0662a9ba74b7318ca56ab22391602531c7357c6b3947a1264bdb58070",
+      "size": 1687,
+      "component": "skills"
+    },
+    ".claude/skills/worker-reviewer-pipeline/SKILL.md": {
+      "templateHash": "6d541a1c3591e62dc46dbfd2ec2fb14228ef26a3d818d930c79c320b78c84c7d",
+      "size": 5224,
+      "component": "skills"
+    },
+    ".claude/skills/spark-best-practices/SKILL.md": {
+      "templateHash": "4ab76b4aaa55a135feb1e0cdf89aa19bdca2fd40162d06914c2eed84a993cf29",
+      "size": 1585,
+      "component": "skills"
+    },
+    ".claude/skills/optimize-report/SKILL.md": {
+      "templateHash": "52d5414238702f7662633480be3f924533c1fed7b68c7ff25ea005e2da58f0f0",
+      "size": 1394,
+      "component": "skills"
+    },
+    ".claude/skills/de-lead-routing/SKILL.md": {
+      "templateHash": "37d5c526d9971896d23863af9b97370620356527cbd9ed9eb3243456c4e5c68a",
+      "size": 7933,
+      "component": "skills"
+    },
+    ".claude/skills/stuck-recovery/SKILL.md": {
+      "templateHash": "552044f6012b4b86586ec8e15722f4efc2774fc1e3984701dcc542658502cd08",
+      "size": 1801,
+      "component": "skills"
+    },
+    ".claude/skills/task-decomposition/SKILL.md": {
+      "templateHash": "ce230383ca77817702ea1a469a3b95c1c33da0924f511f313ced14a35c5f38a7",
+      "size": 6377,
+      "component": "skills"
+    },
+    ".claude/skills/optimize-analyze/SKILL.md": {
+      "templateHash": "45ee1dcefc8855eaa704eea01f52efc562a72179e4e647f99ae67b599a85f7ba",
+      "size": 980,
+      "component": "skills"
+    },
+    ".claude/skills/pipeline-guards/SKILL.md": {
+      "templateHash": "618c9dbe67241a408f012491897f81d26695390197e1ed982e303584db0022ee",
+      "size": 5051,
+      "component": "skills"
+    },
+    ".claude/skills/help/SKILL.md": {
+      "templateHash": "b1f148d035a47ff6a11eae60b3aa6e6f6cb6c01ddf66ed17e9dc9f108dbf1c21",
+      "size": 3085,
+      "component": "skills"
+    },
+    ".claude/hooks/PARALLEL-GROUPS.md": {
+      "templateHash": "5ee39805a53c20f23650efb48cbde332d8e131eb1e781e2b615fc552ca9dcf8e",
+      "size": 9222,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/eval-core-batch-save.sh": {
+      "templateHash": "0689bf76457bfc91a4a66f8d3ae0b17a7fe8042dcdfeb84bb2d9e63d3e37cb18",
+      "size": 803,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/stage-blocker.sh": {
+      "templateHash": "d0b8ef9f04ac7a53c5c811555e77ced3d47ff483742cfd7e8e90ab449ebd63a7",
+      "size": 800,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/secret-filter.sh": {
+      "templateHash": "f9e002664ef091328d059e2dcf703eb30929f47ff59e81fdddd201f24783ab1f",
+      "size": 2904,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/model-escalation-advisor.sh": {
+      "templateHash": "e9714242e7e0e0082dbdbe14d3be6e210ac765cbcbfee9e9a4e61c0246b8ac49",
+      "size": 3055,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/schema-validator.sh": {
+      "templateHash": "7fbe5538a7c2a672adc0567e2989d0fdd9460f4c77a371ce40b4f381506d7f98",
+      "size": 3307,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/git-delegation-guard.sh": {
+      "templateHash": "2b464752e3f64209c8740a2ba7adceef0a6ca1fc1f9e1b4707905e4d9a6658ae",
+      "size": 1970,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/agent-teams-advisor.sh": {
+      "templateHash": "38092e619487387f086de0b85147e8c7fa694c633149b14e8e08da0cd6435a41",
+      "size": 1846,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/stuck-detector.sh": {
+      "templateHash": "11d6e8c7e9ea6799cbe75979f0d86a6a3742fe2bc37fadf7c8ac83867f1b9322",
+      "size": 7463,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/session-env-check.sh": {
+      "templateHash": "48d5d92d9a715f559c412437b9d9638eb4004a7e4e2ca4e542ed3a722c6bf4d7",
+      "size": 7801,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/stop-console-audit.sh": {
+      "templateHash": "68f1273583a0aadd8fd838cba74b7b898cab4d8a236e7ee04439e32c62011e01",
+      "size": 1525,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/task-outcome-recorder.sh": {
+      "templateHash": "5933b4e4ec5c0918cb11e032c3219f82e9550ad148689200f7dc61cd2460978b",
+      "size": 3951,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/content-hash-validator.sh": {
+      "templateHash": "67a486d9212f88d6c51ff477143a53f6a585537ddae3a88a355af91c7ce1e5e3",
+      "size": 2831,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/audit-log.sh": {
+      "templateHash": "773005b0189ef64b708995ac8377bc1e76e64ae962db861ce5bd0546ad95989f",
+      "size": 2081,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/context-budget-advisor.sh": {
+      "templateHash": "f82a40c03b8ed16524fafdbeea32b70a6f214e3865b20bd58bc4970d0ae02714",
+      "size": 3244,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/cost-cap-advisor.sh": {
+      "templateHash": "791f4f0d906b7be5d1dc1f501514a35f90b3a207478ae3d537c8ed8cebf01206",
+      "size": 2431,
+      "component": "hooks"
+    },
+    ".claude/hooks/hooks.json": {
+      "templateHash": "18f410ec00c8cbffe19b5056dfcd0aaddf4719c9fb846cb806f48cd68fb837b0",
+      "size": 17853,
+      "component": "hooks"
+    },
+    ".claude/contexts/ecomode.md": {
+      "templateHash": "6f5e7700ce8282101eb745fde0dbb92997bc05ba751f078e516a17d85230b34e",
+      "size": 2933,
+      "component": "contexts"
+    },
+    ".claude/contexts/dev.md": {
+      "templateHash": "340ea6af2e75f71f38d53975ed51d94f2062bc4aaf3ce8f2157d2e961ed0c4d4",
+      "size": 419,
+      "component": "contexts"
+    },
+    ".claude/contexts/research.md": {
+      "templateHash": "a4a34ffbc9a1efb0307e06a8297e918f622c477a03399b386d106dfeb3d4839f",
+      "size": 604,
+      "component": "contexts"
+    },
+    ".claude/contexts/review.md": {
+      "templateHash": "1af684d75668413580979e560dc5ec3e517239d4b2b8dc04319c2c9326af5eee",
+      "size": 572,
+      "component": "contexts"
+    },
+    ".claude/contexts/index.yaml": {
+      "templateHash": "1a209a8d45dc9329022d6068b5bd4ee0f2739b2c3ddd5722d4213214c47fcad7",
+      "size": 1056,
+      "component": "contexts"
+    },
+    ".claude/ontology/agents.yaml": {
+      "templateHash": "981050da40417b0fd9e85cbf77ce40dd5e71ea1884d2f3fe751ee15dab0ef84b",
+      "size": 28644,
+      "component": "ontology"
+    },
+    ".claude/ontology/rules.yaml": {
+      "templateHash": "4cf6ff8b7a010b00350c6f37244f2e901e4613ee13b97152cf5c9e91362dac94",
+      "size": 9662,
+      "component": "ontology"
+    },
+    ".claude/ontology/schema.yaml": {
+      "templateHash": "65e174158c24f1770b4f7b3b9be47bc471e3de9be9e700d4ba421a4a21d64f53",
+      "size": 4883,
+      "component": "ontology"
+    },
+    ".claude/ontology/skills.yaml": {
+      "templateHash": "f4ac5fad977f3238b5d53c33137fb5f6ae58764a508784d5575c0911fc43b37a",
+      "size": 23515,
+      "component": "ontology"
+    },
+    ".claude/ontology/graphs/skill-rule.json": {
+      "templateHash": "5e9406de80ea6a386bd978feac21a4dd086df6df98d84d2fcaf218271475fac5",
+      "size": 2101,
+      "component": "ontology"
+    },
+    ".claude/ontology/graphs/agent-skill.json": {
+      "templateHash": "81b409aee5a9aebc8c5bcc62feddcf4dddb16c1e7738fac62c38a0a1f4bb030e",
+      "size": 4236,
+      "component": "ontology"
+    },
+    ".claude/ontology/graphs/routing.json": {
+      "templateHash": "c7a4202641dcb0483458cd1f7b581ba6b720ffefe970566798f3617f5f2aea5f",
+      "size": 3718,
+      "component": "ontology"
+    },
+    ".claude/ontology/graphs/full-graph.json": {
+      "templateHash": "996b3427eb0a0c18a5a519856e25321d9c2c70f89388c6215c5154cd23368b61",
+      "size": 27190,
+      "component": "ontology"
+    },
+    ".claude/ontology/.cache/queries.db": {
+      "templateHash": "57d85c5c01ba09837ca5da43cc7544c35517e34e2f163787346ecedccda7e1d6",
+      "size": 36864,
+      "component": "ontology"
+    },
+    ".claude/ontology/.cache/token_usage.jsonl": {
+      "templateHash": "341ba6e3d1a73730b33d61b9fd84c34a667567495b65b752ea477bf15d4dce49",
+      "size": 5851,
+      "component": "ontology"
+    },
+    "guides/java21/java-style-guide.md": {
+      "templateHash": "245af391a7b2524c13066ffa65ba41e8e2fd7cca3ac91476b9d792dbf4b9c251",
+      "size": 4992,
+      "component": "guides"
+    },
+    "guides/java21/modern-java21.md": {
+      "templateHash": "19e5fdda2aa15889fae02443b5d552af1d2549c5881a7b80723a198d8e096e07",
+      "size": 7674,
+      "component": "guides"
+    },
+    "guides/java21/index.yaml": {
+      "templateHash": "473a2da040160f7c4c6a84e9ab776013ffaaee42a586b8929b7ab38bfb6f2f3d",
+      "size": 771,
+      "component": "guides"
+    },
+    "guides/springboot/best-practices.md": {
+      "templateHash": "057c4da123a09ae50ea852f2d71dd6e3a3d52d7dd030e6f2db7c01a8d8b3b70c",
+      "size": 8764,
+      "component": "guides"
+    },
+    "guides/springboot/index.yaml": {
+      "templateHash": "397f31badb15f57e04c097af49593f2e921004348a760caf96d606d1c7142f30",
+      "size": 497,
+      "component": "guides"
+    },
+    "guides/elements-of-style/elements-of-style.html": {
+      "templateHash": "ebd7299eba76b1e0167eaa24517e3fbd01359c5b6c5eead04df78dc2c5ceb6ad",
+      "size": 108584,
+      "component": "guides"
+    },
+    "guides/claude-code/03-tools.md": {
+      "templateHash": "b3b97efc89670a68edce148a9671735b7eaae72081b1d578a8c09f402cbff699",
+      "size": 4134,
+      "component": "guides"
+    },
+    "guides/claude-code/08-testing.md": {
+      "templateHash": "846ef933a0a6a61fa143f42273979087b0bba9768e58aae6f857dea8bdbd0a78",
+      "size": 1325,
+      "component": "guides"
+    },
+    "guides/claude-code/10-monitoring.md": {
+      "templateHash": "758db80beaf99034d1860a842102397e664eb07f5e9b06046ad420f7c614f789",
+      "size": 1842,
+      "component": "guides"
+    },
+    "guides/claude-code/11-sub-agents.md": {
+      "templateHash": "a793f29a29f966175e7b68dc7c0ebb4dcf814a8444a5bab977f9c121c43e12cb",
+      "size": 4200,
+      "component": "guides"
+    },
+    "guides/claude-code/07-prompt-engineering.md": {
+      "templateHash": "6b11313848dc57cab3d5dd747dd170d081c4539fb851e45faab0dc635624cc16",
+      "size": 3130,
+      "component": "guides"
+    },
+    "guides/claude-code/04-agent-skills.md": {
+      "templateHash": "daf1b6ed7da15dbcdfaa39276da5e94a0289203dcf35fa402f87da32f86c08e8",
+      "size": 3571,
+      "component": "guides"
+    },
+    "guides/claude-code/06-mcp.md": {
+      "templateHash": "14ee344e8f586231eadf31a556d587c582aace0195762c3b20fad5b1daef9307",
+      "size": 3892,
+      "component": "guides"
+    },
+    "guides/claude-code/01-overview.md": {
+      "templateHash": "45cf54da0e9325c01435eb3567100c43fe70eaa9c53c96fe81ba8d16063fca39",
+      "size": 3157,
+      "component": "guides"
+    },
+    "guides/claude-code/12-workflow-patterns.md": {
+      "templateHash": "f37063285b43f2737fa09496d380dc41c571dc166f8974f636af3b69280f9774",
+      "size": 6349,
+      "component": "guides"
+    },
+    "guides/claude-code/09-guardrails.md": {
+      "templateHash": "209d36cb3438eb437be14ee3fc5dee34e1a997107aad97f10030fd170e19b45b",
+      "size": 1861,
+      "component": "guides"
+    },
+    "guides/claude-code/index.yaml": {
+      "templateHash": "be6cb6278cc6be32844160b735acbd6ed3558e502db994f7686869bb76ec8798",
+      "size": 1658,
+      "component": "guides"
+    },
+    "guides/claude-code/05-agent-sdk.md": {
+      "templateHash": "a8f6687dfeb04d08155b8a0899f09139d1f8f8014fc8774e4eb4725783724ff1",
+      "size": 3933,
+      "component": "guides"
+    },
+    "guides/docker/compose-best-practices.md": {
+      "templateHash": "484b0a53d2735fecc44e152b2fca783b9cdbff8e7bc7000bd893ed2ef1147757",
+      "size": 4263,
+      "component": "guides"
+    },
+    "guides/docker/dockerfile-best-practices.md": {
+      "templateHash": "84a993511312ad366f32f7b393ee524b8dc07e34604305b2cb0cc331964c34c1",
+      "size": 4089,
+      "component": "guides"
+    },
+    "guides/docker/index.yaml": {
+      "templateHash": "6ef289291ae5b7248991efb690bdc53dc9d5e4ed1182d961831eae717409d381",
+      "size": 651,
+      "component": "guides"
+    },
+    "guides/web-design/accessibility.md": {
+      "templateHash": "92cc51f7d89cef28ce632c4fe07ff8335b14f6007fa4bead31e5cb7a59dfd001",
+      "size": 1181,
+      "component": "guides"
+    },
+    "guides/web-design/performance.md": {
+      "templateHash": "529c2157a4a538f4fb4c42d82328e6102ebccc28809b3e3b7d9bc06f82272538",
+      "size": 1546,
+      "component": "guides"
+    },
+    "guides/web-design/index.yaml": {
+      "templateHash": "8ff869138bcb452ac449210087b00db91f2e1436d08e3e39da19b66d6a82f6a6",
+      "size": 440,
+      "component": "guides"
+    },
+    "guides/python/zen-of-python.md": {
+      "templateHash": "f175f0d62d91dd1c4d054f9d1e6eaa8c539fd493b4129f3066d7720ae3373cfe",
+      "size": 2348,
+      "component": "guides"
+    },
+    "guides/python/index.yaml": {
+      "templateHash": "7be408a23fb0d1b71a14c6b30cf39f30c5dd6b288adeb1b4e1c8c981ba7bd75f",
+      "size": 570,
+      "component": "guides"
+    },
+    "guides/python/pep8-style-guide.md": {
+      "templateHash": "a6efd6d3d9154b495353aa13285f6b0e5815893e3160bea407249bea10d4811d",
+      "size": 3436,
+      "component": "guides"
+    },
+    "guides/redis/README.md": {
+      "templateHash": "76c991b36936311d872f383369222d8eb9e7ab3fe708de43e2b04521731b07b8",
+      "size": 1686,
+      "component": "guides"
+    },
+    "guides/golang/effective-go.md": {
+      "templateHash": "0c1444d1757984ac4e9a480507a3891a9eef4646cf2d3e6052ec864b87748b01",
+      "size": 5851,
+      "component": "guides"
+    },
+    "guides/golang/error-handling.md": {
+      "templateHash": "bf3956b9ed4d2b01075ff6e038ee998d88a5418aae6947408f8368569e98c4cd",
+      "size": 4386,
+      "component": "guides"
+    },
+    "guides/golang/index.yaml": {
+      "templateHash": "72d2bd07059922b4dacd7f681730a4acb79c9ff3102f6a0e1056a83c182437f2",
+      "size": 560,
+      "component": "guides"
+    },
+    "guides/golang/concurrency.md": {
+      "templateHash": "25916e9bedddb722fff7c32ebcb950e89a325b78d044b8c9f4bd304e780857ec",
+      "size": 4534,
+      "component": "guides"
+    },
+    "guides/dbt/README.md": {
+      "templateHash": "33bc15e61282848bda1dd8f5bafc0d9ce38f4894f489a954f7c1e4c639b577f9",
+      "size": 874,
+      "component": "guides"
+    },
+    "guides/skill-bundle-design/README.md": {
+      "templateHash": "af321b57fe975bba45bd92ab1680e402209824be7a3f89992cc2ea5f153b24a1",
+      "size": 4396,
+      "component": "guides"
+    },
+    "guides/typescript/type-system.md": {
+      "templateHash": "02a3450c247f273d517cc19e2f3463d530fa85f90df787faaf628ac71c389749",
+      "size": 3820,
+      "component": "guides"
+    },
+    "guides/typescript/advanced-types.md": {
+      "templateHash": "9203e326cb3642dab37a4e39ac47a71a23337cc8206a28f8c036d53d3ccead8c",
+      "size": 4741,
+      "component": "guides"
+    },
+    "guides/typescript/index.yaml": {
+      "templateHash": "8927fcde03e9a53441310592fa4b7a5254182ecbe7e08aad68c46202bfb86d65",
+      "size": 610,
+      "component": "guides"
+    },
+    "guides/rust/ownership.md": {
+      "templateHash": "5d6d75722815c6854e7040d0d542d39b8b1206cf973b29001a112c681def674d",
+      "size": 3244,
+      "component": "guides"
+    },
+    "guides/rust/error-handling.md": {
+      "templateHash": "3c7c3c35528efd4dda1d2fbb7a7d3a74b24ec059d9d2a6fc993574707a6687ad",
+      "size": 4844,
+      "component": "guides"
+    },
+    "guides/rust/index.yaml": {
+      "templateHash": "9215586cc06955b56a3f566cbab660864baadc7de3bd32f60dd925a096beaa2f",
+      "size": 564,
+      "component": "guides"
+    },
+    "guides/kotlin/idioms.md": {
+      "templateHash": "351c2e94ed3a946de62236dd398d9965eb499808d9281f31d468c59fb82f4426",
+      "size": 3353,
+      "component": "guides"
+    },
+    "guides/kotlin/coding-conventions.md": {
+      "templateHash": "9f8d3d3cd3a03e21780aec767e7f85bb235f4865b7de00fb00a9a7feb9d9bb97",
+      "size": 4259,
+      "component": "guides"
+    },
+    "guides/kotlin/index.yaml": {
+      "templateHash": "5a9273a8ff2c6757857e4ad2fc1b8e64748eb0c7a6685bddc9014194a4ba7a21",
+      "size": 586,
+      "component": "guides"
+    },
+    "guides/snowflake/README.md": {
+      "templateHash": "d44f35a7e3075a039961125d0c34e3e4096f3e3b0dd4582f4258c9bba5abebd9",
+      "size": 927,
+      "component": "guides"
+    },
+    "guides/go-backend/project-layout.md": {
+      "templateHash": "181e621dbfeb42db5f65ca34369b7a1d6592ead71d6d8fb401235041c6f9a9f5",
+      "size": 4666,
+      "component": "guides"
+    },
+    "guides/go-backend/uber-style.md": {
+      "templateHash": "bcc7c9a9af3e45888701f1b9f543aa4c05ec5f3bcc58fb92a650cf3be202808d",
+      "size": 3520,
+      "component": "guides"
+    },
+    "guides/go-backend/index.yaml": {
+      "templateHash": "5bb097d02bcff3e48ef357b19670a0e5baaa6602ed135db2b803060b7c601a46",
+      "size": 578,
+      "component": "guides"
+    },
+    "guides/iceberg/README.md": {
+      "templateHash": "ef4e237c31561eae5d863c9056312aa3b5eac815b7b318fa0d84131d882a0b1d",
+      "size": 1628,
+      "component": "guides"
+    },
+    "guides/airflow/README.md": {
+      "templateHash": "d5bac24dbb1a11605cb7b8ce35fa085a02b297fc2fbc307b9dea91f64da413a5",
+      "size": 1037,
+      "component": "guides"
+    },
+    "guides/flutter/architecture.md": {
+      "templateHash": "aeff2687237bef966164ca25dc2b4d5354cf32f3c67b6f2f85a96952a40ac501",
+      "size": 3624,
+      "component": "guides"
+    },
+    "guides/flutter/state-management.md": {
+      "templateHash": "d0ecb13dcd729284f8d14e96c0543291c1389fc34e9d070cad1c41cfe6341652",
+      "size": 3616,
+      "component": "guides"
+    },
+    "guides/flutter/testing.md": {
+      "templateHash": "ed526fbaeaf7bdad83684c650789beee02e230f7c7bbeaa79dd3b9cb5b4565c2",
+      "size": 3578,
+      "component": "guides"
+    },
+    "guides/flutter/performance.md": {
+      "templateHash": "843971eb342105aeee37c67504a6c54f11483b0ee36a3c755a1795cab7038117",
+      "size": 2910,
+      "component": "guides"
+    },
+    "guides/flutter/fundamentals.md": {
+      "templateHash": "13bb5621250be25508c808220184243f94f4a2aa7ec1c5007b14e6dc1a923aaf",
+      "size": 3689,
+      "component": "guides"
+    },
+    "guides/flutter/index.yaml": {
+      "templateHash": "00a0306e3aded07acad8ee86788fb50ece16bb66cca059fcf7ca731aaf3e04f1",
+      "size": 1217,
+      "component": "guides"
+    },
+    "guides/flutter/security.md": {
+      "templateHash": "db59990b9276d5b7b3a5028070f7fab3849fdd08e31342ecf4e34c1b0a5a8ab6",
+      "size": 5900,
+      "component": "guides"
+    },
+    "guides/postgres/README.md": {
+      "templateHash": "679a0b942439d7559621633b6cd5692554cec2c6a3895a2511733ee6bd3e5f83",
+      "size": 2157,
+      "component": "guides"
+    },
+    "guides/kafka/README.md": {
+      "templateHash": "99623ee61693d23a14f8900ead53204557d5bc9abcc827ea47b7f783c13f5e09",
+      "size": 961,
+      "component": "guides"
+    },
+    "guides/fastapi/best-practices.md": {
+      "templateHash": "e221692996c7bc5b80e6d1974d75b8748461c7149584b6e9418d347ab73eda71",
+      "size": 5075,
+      "component": "guides"
+    },
+    "guides/fastapi/index.yaml": {
+      "templateHash": "bea4a6f15f67ab5d33e91ad4bc49fe23a547b87b101f6269516c500a646c4420",
+      "size": 442,
+      "component": "guides"
+    },
+    "guides/git-worktree-workflow/README.md": {
+      "templateHash": "701bfaf51161dd3c03079fe0ed2e354e756c297ac2e3e985f88d991c03272e6e",
+      "size": 3769,
+      "component": "guides"
+    },
+    "guides/aws/well-architected.md": {
+      "templateHash": "2825f3c5dd1b745817b8db357b5cfb7721d7e9f3f589c7b35bf71f9f4a3bb009",
+      "size": 3130,
+      "component": "guides"
+    },
+    "guides/aws/common-patterns.md": {
+      "templateHash": "bd99ca4dacfbf008b80fc2aaf2ac58231a37bdded743f0e155ef0b1895b4c256",
+      "size": 13900,
+      "component": "guides"
+    },
+    "guides/aws/index.yaml": {
+      "templateHash": "769acce5ab245dbce1e8eb852c9bda81b20801a75d0d54ecbb6839c69fe04db6",
+      "size": 596,
+      "component": "guides"
+    },
+    "guides/alembic/README.md": {
+      "templateHash": "37fc0cbed6e79b01e644c96a0141a52ca2d2419fe264a35207468170df8c2f4b",
+      "size": 14773,
+      "component": "guides"
+    },
+    "guides/django-best-practices/README.md": {
+      "templateHash": "e0e95af79efe55967a0cf79b1e812e0ea9b879bdcb7bc03927525922a78b8b29",
+      "size": 11955,
+      "component": "guides"
+    },
+    "guides/supabase-postgres/README.md": {
+      "templateHash": "b68c8bf42a09c31e5b820559e2c79fbe351fe5dbeb6f2b193b8ee472bf27bc22",
+      "size": 943,
+      "component": "guides"
+    },
+    "guides/supabase-postgres/index.yaml": {
+      "templateHash": "425a48d701a00373329a6aa2cd34f1498d979f45cfccd08e9be27fdf0f8df896",
+      "size": 400,
+      "component": "guides"
+    },
+    "guides/index.yaml": {
+      "templateHash": "6d0932770d35d7eca1a4ed71800139c0417a3bb89c78b310e7bab2dc394c063d",
+      "size": 4973,
+      "component": "guides"
+    },
+    "guides/spark/README.md": {
+      "templateHash": "381ef901b35938932692a90b7a280a11523a856e0bbcfc0ec67bad8b0212190f",
+      "size": 1017,
+      "component": "guides"
+    }
+  }
+}

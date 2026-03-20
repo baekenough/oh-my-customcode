@@ -41,10 +41,10 @@ Implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher).
 ### Format
 
 ```
-{Cost} | {project} | {branch} | CTX:{usage}%
+{Cost} | {project} | {branch} | RL:{rate_limit}% | CTX:{usage}%
 ```
 
-Example: `$0.05 | my-project | develop | CTX:42%`
+Example: `$0.05 | my-project | develop | RL:45% | CTX:42%`
 
 ### Configuration
 
@@ -58,7 +58,7 @@ Example: `$0.05 | my-project | develop | CTX:42%`
 }
 ```
 
-Set in `.claude/settings.local.json`. The command receives JSON via stdin with model, workspace, context window, and cost data.
+Set in `.claude/settings.local.json`. The command receives JSON via stdin with model, workspace, context window, cost, and rate limit data.
 
 ### Color Coding
 
@@ -67,9 +67,14 @@ Set in `.claude/settings.local.json`. The command receives JSON via stdin with m
 | Cost | < $1.00 | Green |
 | Cost | $1.00 - $4.99 | Yellow |
 | Cost | >= $5.00 | Red |
+| Rate Limit | < 50% | Green |
+| Rate Limit | 50-79% | Yellow |
+| Rate Limit | >= 80% | Red |
 | Context | < 60% | Green |
 | Context | 60-79% | Yellow |
 | Context | >= 80% | Red |
+
+The `RL:{rate_limit}%` segment only appears when Claude Code v2.1.80+ provides `rate_limits` data. On older versions, this segment is omitted.
 
 ## Integration
 

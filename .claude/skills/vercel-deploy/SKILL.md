@@ -2,7 +2,6 @@
 name: vercel-deploy
 description: Deploy applications to Vercel with auto-detection and preview URLs
 scope: core
-argument-hint: "[--env <environment>] [--preview] [--prod]"
 ---
 
 ## When to Use

@@ -182,13 +182,6 @@ guides:
       origin: redis.io
       url: https://redis.io/docs/
 
-  # Workflow
-  - name: git-worktree-workflow
-    description: Git worktree parallel branch workflow guide
-    path: ./git-worktree-workflow/
-    source:
-      type: internal
-
   # Writing
   - name: elements-of-style
     description: The Elements of Style writing clarity guidelines

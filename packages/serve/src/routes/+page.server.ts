@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { getAgents, getSkills, getGuides, getRules, getProjectRoot } from '$lib/server/data';
+import { getAgents, getSkills, getGuides, getRules } from '$lib/server/data';
 import { getAnalytics } from '$lib/server/analytics';
 
 const AGENT_TYPES: { label: string; pattern: RegExp }[] = [
@@ -17,8 +17,8 @@ const AGENT_TYPES: { label: string; pattern: RegExp }[] = [
 	{ label: 'System', pattern: /^sys-/ }
 ];
 
-export const load: PageServerLoad = async () => {
-	const root = await getProjectRoot();
+export const load: PageServerLoad = async ({ parent }) => {
+	const { root } = await parent();
 	const [agents, skills, guides, rules, analytics] = await Promise.all([
 		getAgents(root),
 		getSkills(root),
