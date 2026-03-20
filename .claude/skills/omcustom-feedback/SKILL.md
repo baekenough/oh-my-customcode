@@ -67,10 +67,11 @@ command -v curl >/dev/null 2>&1 && CURL_AVAILABLE=true || CURL_AVAILABLE=false
 **Route A**: `gh` available + authenticated + NOT anonymous
 - Use GitHub Issue creation (see Phase 4A)
 
-**Route B**: `gh` available + (anonymous OR not authenticated)
-- Use `gh workflow run` to submit via GitHub Actions (see Phase 4B)
+**Route B**: anonymous OR not authenticated (gh available)
+- Use `curl` to Airflow REST API (see Phase 4C)
+- Phase 4B (workflow_dispatch) reserved for future use
 
-**Route C**: `gh` NOT available
+**Route C**: `gh` NOT available (or Route B curl fallback)
 - Use `curl` to Airflow REST API (see Phase 4C)
 
 **Fallback**: Neither `gh` nor `curl` available
@@ -155,7 +156,9 @@ For anonymous submissions, do NOT include the project name. Offer to include pro
 
 6. Return the issue URL to the user
 
-### Phase 4B: Anonymous via GitHub Actions (Route B — gh available, anonymous or not authenticated)
+### Phase 4B: Anonymous via GitHub Actions (Route B — FUTURE)
+
+> **Note**: This route is reserved for future implementation. The `feedback-submission.yml` workflow does not yet exist. All anonymous/unauthenticated submissions currently fall through to Route C (Airflow REST API).
 
 ```bash
 gh workflow run feedback-submission.yml \
@@ -177,11 +180,11 @@ If `gh workflow run` fails (e.g., permissions), fall through to Route C.
 ### Phase 4C: Anonymous via Airflow REST API (Route C — no gh)
 
 ```bash
-# Build JSON payload (use printf for safe escaping)
-PAYLOAD=$(printf '{"conf":{"title":"%s","body":"%s","feedback_type":"%s","anonymous":true,"submitter":"","project_context":"%s"}}' \
-  "$TITLE" "$BODY" "$TYPE" "$PROJECT_CONTEXT")
+# Build JSON payload safely with jq
+PAYLOAD=$(jq -n --arg title "$TITLE" --arg body "$BODY" --arg type "$TYPE" --arg ctx "$PROJECT_CONTEXT" \
+  '{"conf":{"title":$title,"body":$body,"feedback_type":$type,"anonymous":true,"submitter":"","project_context":$ctx}}')
 
-curl -X POST "https://airflow.baekenough.com/api/v1/dags/omc_feedback_collector/dagRuns" \
+curl -X POST "https://airflow.baekenough.com/api/v2/dags/omc_feedback_collector/dagRuns" \
   -H "Content-Type: application/json" \
   -d "$PAYLOAD" \
   --silent --show-error \
