@@ -1648,8 +1648,98 @@ async function detectProvider(_options = {}) {
   };
 }
 // src/core/updater.ts
-init_fs();
 import { join as join6 } from "node:path";
+// package.json
+var package_default = {
+  name: "oh-my-customcode",
+  workspaces: ["packages/*"],
+  version: "0.47.2",
+  description: "Batteries-included agent harness for Claude Code",
+  type: "module",
+  bin: {
+    omcustom: "./dist/cli/index.js"
+  },
+  main: "./dist/index.js",
+  types: "./dist/index.d.ts",
+  exports: {
+    ".": {
+      import: "./dist/index.js",
+      types: "./dist/index.d.ts"
+    }
+  },
+  files: [
+    "dist",
+    "templates"
+  ],
+  publishConfig: {
+    access: "public",
+    registry: "https://registry.npmjs.org/"
+  },
+  scripts: {
+    dev: "bun run src/cli/index.ts",
+    build: "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && bun run scripts/sync-source-lockfile.ts",
+    test: "bun test",
+    "test:unit": "bun test tests/unit",
+    "test:integration": "bun test tests/integration",
+    "test:e2e": "bun test tests/e2e",
+    "test:coverage": "bun test --coverage",
+    lint: "biome check src/ tests/ scripts/",
+    "lint:fix": "biome check --write src/ tests/ scripts/",
+    format: "biome format --write src/ tests/ scripts/",
+    typecheck: "tsc --noEmit",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    prepare: "sh scripts/setup-hooks.sh || true",
+    "setup:hooks": "sh scripts/setup-hooks.sh",
+    prepublishOnly: "bun run build && bun run test"
+  },
+  dependencies: {
+    "@clack/prompts": "^1.1.0",
+    "@inquirer/prompts": "^8.3.2",
+    commander: "^14.0.2",
+    i18next: "^25.8.0",
+    yaml: "^2.8.2"
+  },
+  devDependencies: {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@biomejs/biome": "^2.3.12",
+    "@types/bun": "^1.3.6",
+    "@types/js-yaml": "^4.0.9",
+    "@types/nodemailer": "^7.0.9",
+    "js-yaml": "^4.1.0",
+    nodemailer: "^8.0.1",
+    typescript: "^5.7.3",
+    vitepress: "^1.6.4"
+  },
+  keywords: [
+    "claude",
+    "claude-code",
+    "openai",
+    "ai",
+    "agent",
+    "cli"
+  ],
+  author: "baekenough",
+  license: "MIT",
+  repository: {
+    type: "git",
+    url: "git+https://github.com/baekenough/oh-my-customcode.git"
+  },
+  bugs: {
+    url: "https://github.com/baekenough/oh-my-customcode/issues"
+  },
+  homepage: "https://github.com/baekenough/oh-my-customcode#readme",
+  engines: {
+    node: ">=18.0.0"
+  },
+  overrides: {
+    rollup: "^4.59.0",
+    esbuild: "^0.25.0"
+  }
+};
+
+// src/core/updater.ts
+init_fs();
 
 // src/core/entry-merger.ts
 var MANAGED_START = "<!-- omcustom:start -->";
@@ -1957,12 +2047,28 @@ async function runFullUpdatePostProcessing(options, result, config) {
     });
   }
 }
+function compareSemver(a, b) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0;i < 3; i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (diff !== 0)
+      return diff;
+  }
+  return 0;
+}
 async function update(options) {
   const result = createUpdateResult();
   try {
     info("update.start", { targetDir: options.targetDir });
     const config = await loadConfig(options.targetDir);
     result.previousVersion = config.version;
+    const cliVersion = package_default.version;
+    if (result.previousVersion !== "0.0.0" && compareSemver(result.previousVersion, cliVersion) > 0) {
+      result.success = false;
+      result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g oh-my-customcode@latest`;
+      return result;
+    }
     const targetPkgPath = join6(options.targetDir, "package.json");
     if (await fileExists(targetPkgPath)) {
       const targetPkg = await readJsonFile(targetPkgPath);
