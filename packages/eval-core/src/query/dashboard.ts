@@ -1,4 +1,4 @@
-import { count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import type { EvalDb } from '../db/client.js';
 import { agentInvocations, projects, sessions, turns } from '../db/schema.js';
 import type { AgentStat, DashboardStats, ProjectStats, SessionStats } from './types.js';
@@ -112,7 +112,10 @@ export function getAgentStats(db: EvalDb): AgentStat[] {
       .select({ total: count(agentInvocations.id) })
       .from(agentInvocations)
       .where(
-        sql`${agentInvocations.agentType} = ${row.agentType} AND ${agentInvocations.outcome} = 'success'`
+        and(
+          eq(agentInvocations.agentType, row.agentType),
+          eq(agentInvocations.outcome, 'success')
+        )
       )
       .get();
 
