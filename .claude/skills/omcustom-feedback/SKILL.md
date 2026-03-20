@@ -19,10 +19,10 @@ Lowers the barrier for submitting feedback by allowing users to create GitHub is
 
 ```
 # Inline feedback
-/omcustom:feedback HUD display is missing during parallel agent spawn
+/omcustom-feedback HUD display is missing during parallel agent spawn
 
 # Interactive (no arguments)
-/omcustom:feedback
+/omcustom-feedback
 ```
 
 ## Workflow
@@ -80,7 +80,7 @@ PROJECT_NAME=$(basename "$(pwd)")
 
 3. Ensure labels exist (defensive):
    ```bash
-   gh label create feedback --description "User feedback via /omcustom:feedback" --color 0E8A16 --repo baekenough/oh-my-customcode 2>/dev/null || true
+   gh label create feedback --description "User feedback via /omcustom-feedback" --color 0E8A16 --repo baekenough/oh-my-customcode 2>/dev/null || true
    ```
 
 4. Create the issue using `--body-file` for safe markdown handling:
@@ -102,7 +102,7 @@ PROJECT_NAME=$(basename "$(pwd)")
    - Project: {project_name}
 
    ---
-   *Submitted via `/omcustom:feedback`*
+   *Submitted via `/omcustom-feedback`*
    FEEDBACK_EOF
 
    # Create issue
