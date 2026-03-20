@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
+import { analyzeCommand } from './analyze.cmd.js';
 import { collectCommand } from './collect.cmd.js';
 import { listCommand } from './list.cmd.js';
 import { migrateCommand } from './migrate.cmd.js';
@@ -14,5 +15,6 @@ program.addCommand(collectCommand);
 program.addCommand(migrateCommand);
 program.addCommand(listCommand);
 program.addCommand(showCommand);
+program.addCommand(analyzeCommand);
 
 program.parse();
