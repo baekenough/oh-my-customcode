@@ -21,17 +21,17 @@ npm install -g oh-my-customcode && cd your-project && omcustom init
 
 ---
 
-## What's New in v0.38.0
+## What's New in v0.46.0
 
 | Feature | Description |
 |---------|-------------|
-| **Interactive Init Wizard** | `omcustom init` now uses `@clack/prompts` for guided setup — language, framework, team mode |
-| **PostCompact Hook** | Automatic rule reinforcement after context compaction (CC v2.1.76+) — prevents rule amnesia |
-| **@omcustom/eval-core MVP** | LLM evaluation engine: session/turn/outcome collection, SQLite via Drizzle ORM, CLI interface |
-| **Codex-exec Auto-delegation** | Routing skills automatically delegate to Codex when available |
-| **CC v2.1.72~v2.1.76 Compatibility** | SessionEnd timeout config, HTML comment optimization, `autoMemoryDirectory`, full model ID support |
-| **Template Full Sync** | All 200+ template files are byte-identical to source |
-| **Hook System Hardening** | Duplicate recorder removal, context-budget field fix, orphan cleanup |
+| **Rate Limit Monitoring** | Statusline now displays 5-hour rate limit usage with color-coded warnings (CC v2.1.80+) |
+| **Skill Effort Override** | Skills can set `effort` frontmatter to override model effort level at invocation time |
+| **Multi-project Web UI** | `omcustom serve` supports multi-project management with sidebar project selector |
+| **Batch Update UI** | Web dashboard supports visual project update status and batch updates |
+| **CC v2.1.72~v2.1.80 Compatibility** | Rate limits statusline, skill effort frontmatter, settings-based plugin source |
+| **SDD Workflow** | Spec-Driven Development with `sdd/` folder hierarchy and planning-first gates |
+| **Ambiguity Gate** | Pre-routing clarity scoring and clarification questions |
 
 ---
 
@@ -170,6 +170,9 @@ All commands are invoked inside the Claude Code conversation.
 | `/structured-dev-cycle` | 6-stage development: plan → verify → implement → verify → compound → done |
 | `/deep-plan` | Research-validated planning |
 | `/research` | 10-team parallel analysis with cross-verification |
+| `/sdd-dev` | Spec-Driven Development workflow |
+| `/ambiguity-gate` | Pre-routing ambiguity analysis |
+| `/adversarial-review` | Attacker-mindset security code review |
 
 ### Agent Management
 
@@ -181,6 +184,13 @@ All commands are invoked inside the Claude Code conversation.
 | `/omcustom:audit-agents` | Audit agent dependencies |
 | `/omcustom:update-docs` | Sync project structure and documentation |
 | `/omcustom:sauron-watch` | Full structural verification (5+3 rounds) |
+| `/omcustom:feedback` | Submit feedback as GitHub issue |
+
+### Web UI
+
+| Command | What it does |
+|---------|-------------|
+| `/omcustom:web` | Control built-in Web UI (start, stop, status, open) |
 
 ### Package & Release
 
@@ -230,7 +240,7 @@ oh-my-customcode includes security and lifecycle hooks:
 | secret-filter | Bash, Read output | Detects AWS keys, API tokens, private keys, bearer tokens |
 | audit-log | Edit, Write, Bash, Agent | Append-only JSONL at `~/.claude/audit.jsonl` |
 | schema-validator | Write, Edit, Bash input | Validates tool inputs, flags dangerous patterns |
-| PostCompact | Context compaction | Reinjects enforced rules (R007–R018) — prevents rule amnesia |
+| PostCompact | Context compaction | Reinjects enforced rules (R007–R018, R021) — prevents rule amnesia |
 
 Security hooks are advisory (exit 0). They warn but never block.
 
@@ -246,6 +256,10 @@ omcustom list                  # List components
 omcustom doctor                # Verify installation
 omcustom doctor --fix          # Auto-fix issues
 omcustom security              # Scan for security issues
+omcustom projects              # List managed projects with version status
+omcustom update --all          # Batch update all outdated projects
+omcustom serve                 # Start built-in Web UI
+omcustom serve-stop            # Stop Web UI
 ```
 
 ---
@@ -257,7 +271,7 @@ your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
 │   ├── agents/                 # 45 agent definitions
-│   ├── skills/                 # 78 skill modules
+│   ├── skills/                 # 82 skill modules
 │   ├── rules/                  # 21 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas

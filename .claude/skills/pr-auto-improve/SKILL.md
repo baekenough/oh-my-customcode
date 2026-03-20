@@ -2,7 +2,6 @@
 name: pr-auto-improve
 description: Opt-in post-PR analysis and improvement suggestions for code quality enhancement
 scope: core
-argument-hint: "[pr-number] [--focus security|perf|style] [--depth quick|thorough]"
 ---
 
 # PR Auto-Improvement Skill

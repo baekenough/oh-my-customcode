@@ -1,10 +1,10 @@
 import type { PageServerLoad } from './$types';
-import { getSkill, getProjectRoot } from '$lib/server/data';
+import { getSkill } from '$lib/server/data';
 import { renderMarkdown } from '$lib/server/markdown';
 import { error } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async ({ params }) => {
-	const root = await getProjectRoot();
+export const load: PageServerLoad = async ({ params, parent }) => {
+	const { root } = await parent();
 	const skill = await getSkill(root, params.name);
 
 	if (!skill) {

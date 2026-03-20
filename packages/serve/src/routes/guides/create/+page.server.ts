@@ -6,8 +6,8 @@ import { getProjectRoot, getGuides } from '$lib/server/data';
 import { parseGuideNaturalLanguage, sanitizeGuideName } from '$lib/server/guide-generator';
 import { isClaudeAvailable, generateGuideWithClaude } from '$lib/server/claude-cli';
 
-export const load: PageServerLoad = async () => {
-	const root = await getProjectRoot();
+export const load: PageServerLoad = async ({ parent }) => {
+	const { root } = await parent();
 	const guides = await getGuides(root);
 	const claudeAvailable = await isClaudeAvailable();
 	return {

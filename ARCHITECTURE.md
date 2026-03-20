@@ -580,8 +580,11 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Agent hooks | No | Yes | Yes (frontmatter: hooks) |
 | Agent permissionMode | No | Yes | Yes (frontmatter: permissionMode) |
 | PostCompact hook event | No | Yes (v2.1.72+) | Yes (v0.38.0+) — rules reinforcement after compaction |
+| Skill effort frontmatter | No | Yes (v2.1.80+) | Yes (R006 documented) |
+| Statusline rate_limits | No | Yes (v2.1.80+) | Yes (statusline.sh, R012) |
+| source: 'settings' plugins | No | Yes (v2.1.80+) | Not adopted |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.76.
+Tested and compatible with Claude Code v2.1.72 through v2.1.80.
 
 ---
 

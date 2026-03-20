@@ -1,8 +1,8 @@
 import type { PageServerLoad } from './$types';
-import { getAgents, getProjectRoot } from '$lib/server/data';
+import { getAgents } from '$lib/server/data';
 
-export const load: PageServerLoad = async () => {
-	const root = await getProjectRoot();
+export const load: PageServerLoad = async ({ parent }) => {
+	const { root } = await parent();
 	const agents = await getAgents(root);
 
 	// Collect unique domains

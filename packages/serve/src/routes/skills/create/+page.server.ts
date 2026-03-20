@@ -7,8 +7,8 @@ import { parseSkillNaturalLanguage, buildSkillMarkdown, sanitizeSkillName } from
 import { parseFrontmatter } from '$lib/server/frontmatter';
 import { isClaudeAvailable, generateSkillWithClaude } from '$lib/server/claude-cli';
 
-export const load: PageServerLoad = async () => {
-	const root = await getProjectRoot();
+export const load: PageServerLoad = async ({ parent }) => {
+	const { root } = await parent();
 	const skills = await getSkills(root);
 	const claudeAvailable = await isClaudeAvailable();
 	return {

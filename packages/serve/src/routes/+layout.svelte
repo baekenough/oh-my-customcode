@@ -1,9 +1,13 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+
+	export let data; // From +layout.server.ts: { projects, selectedProject, root }
 
 	const navItems = [
-		{ href: '/', label: 'Dashboard', icon: '▣' }
+		{ href: '/', label: 'Dashboard', icon: '▣' },
+		{ href: '/projects', label: 'Projects', icon: '▦' }
 	];
 
 	const coreItems = [
@@ -15,11 +19,28 @@
 	];
 
 	let coreOpen = true;
+	let projectsOpen = true;
 
 	function isActive(href: string, pathname: string): boolean {
 		if (href === '/') return pathname === '/';
 		return pathname.startsWith(href);
 	}
+
+	function selectProject(slug: string | null) {
+		const url = new URL($page.url);
+		if (slug) {
+			url.searchParams.set('project', slug);
+		} else {
+			url.searchParams.delete('project');
+		}
+		goto(url.toString(), { replaceState: true, invalidateAll: true });
+	}
+
+	$: currentProjectName = data.selectedProject
+		? data.projects.find((p: any) => p.slug === data.selectedProject)?.name ?? 'Unknown'
+		: data.root?.split('/').pop() ?? 'Default';
+
+	$: projectParam = data.selectedProject ? `?project=${data.selectedProject}` : '';
 
 	$: if (coreItems.some(item => isActive(item.href, $page.url.pathname))) {
 		coreOpen = true;
@@ -39,7 +60,7 @@
 		<nav class="flex-1 px-2 py-4 space-y-0.5">
 			{#each navItems as item}
 				<a
-					href={item.href}
+					href="{item.href}{projectParam}"
 					class="flex items-center gap-2.5 px-3 py-2 rounded text-sm transition-colors {isActive(item.href, $page.url.pathname)
 						? 'bg-zinc-800 text-zinc-50'
 						: 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'}"
@@ -48,6 +69,33 @@
 					{item.label}
 				</a>
 			{/each}
+
+			<!-- Projects section -->
+			{#if data.projects && data.projects.length > 0}
+				<button
+					onclick={() => projectsOpen = !projectsOpen}
+					class="flex items-center gap-2 px-3 py-2 w-full text-left rounded text-xs font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-300 transition-colors mt-3"
+				>
+					<span class="text-[10px]">{projectsOpen ? '▾' : '▸'}</span>
+					Projects
+				</button>
+
+				{#if projectsOpen}
+					<div class="space-y-0.5">
+						{#each data.projects as project}
+							<button
+								onclick={() => selectProject(project.slug === data.selectedProject ? null : project.slug)}
+								class="flex items-center gap-2.5 px-3 py-2 pl-6 rounded text-sm transition-colors w-full text-left {project.slug === data.selectedProject
+									? 'bg-zinc-800 text-zinc-50'
+									: 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'}"
+							>
+								<span class="text-xs {project.status === 'latest' ? 'text-emerald-500' : project.status === 'outdated' ? 'text-amber-500' : 'text-zinc-600'}">●</span>
+								<span class="truncate">{project.name}</span>
+							</button>
+						{/each}
+					</div>
+				{/if}
+			{/if}
 
 			<!-- Core category -->
 			<button
@@ -62,7 +110,7 @@
 				<div class="space-y-0.5">
 					{#each coreItems as item}
 						<a
-							href={item.href}
+							href="{item.href}{projectParam}"
 							class="flex items-center gap-2.5 px-3 py-2 pl-6 rounded text-sm transition-colors {isActive(item.href, $page.url.pathname)
 								? 'bg-zinc-800 text-zinc-50'
 								: 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'}"
@@ -77,7 +125,7 @@
 
 		<!-- Footer -->
 		<div class="px-4 py-3 border-t border-zinc-800 text-zinc-600 text-xs">
-			oh-my-customcode
+			{currentProjectName}
 		</div>
 	</aside>
 
