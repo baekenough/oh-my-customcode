@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
+import { basename } from 'node:path';
 import { createDb, type EvalDb } from '../db/client.js';
-import { agentInvocations, sessions, turns } from '../db/schema.js';
+import { agentInvocations, projects, sessions, turns } from '../db/schema.js';
 import { parseOutcomeFile } from './outcome-parser.js';
 import { parseSessionHistory } from './session-parser.js';
 import { estimateTokens } from './token-estimator.js';
@@ -35,6 +36,24 @@ export async function collect(options: CollectOptions): Promise<CollectResult> {
   return { sessions: sessionCount, turns: turnCount, invocations: invocationCount };
 }
 
+function upsertProject(db: EvalDb, cwd: string, now: string): number {
+  const name = basename(cwd) || cwd;
+  const existing = db.select().from(projects).where(eq(projects.cwd, cwd)).get();
+
+  if (existing) {
+    db.update(projects).set({ lastSeenAt: now }).where(eq(projects.cwd, cwd)).run();
+    return existing.id;
+  }
+
+  const result = db
+    .insert(projects)
+    .values({ name, cwd, lastSeenAt: now })
+    .returning({ id: projects.id })
+    .get();
+
+  return result.id;
+}
+
 function collectSessions(db: EvalDb, options: CollectOptions): number {
   const sessionFile = `${options.omxLogsDir}/session-history.jsonl`;
   const rawSessions = parseSessionHistory(sessionFile);
@@ -52,10 +71,18 @@ function collectSessions(db: EvalDb, options: CollectOptions): number {
         : null;
 
     if (!options.dryRun) {
+      const now = new Date().toISOString();
+      let projectId: number | null = null;
+
+      if (raw.cwd) {
+        projectId = upsertProject(db, raw.cwd, now);
+      }
+
       db
         .insert(sessions)
         .values({
           sessionId: raw.session_id,
+          projectId,
           startedAt: raw.started_at,
           endedAt: raw.ended_at ?? null,
           cwd: raw.cwd,

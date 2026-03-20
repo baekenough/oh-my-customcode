@@ -1,7 +1,9 @@
 #!/usr/bin/env bun
 import { Command } from 'commander';
 import { collectCommand } from './collect.cmd.js';
+import { listCommand } from './list.cmd.js';
 import { migrateCommand } from './migrate.cmd.js';
+import { showCommand } from './show.cmd.js';
 
 const program = new Command()
   .name('eval-core')
@@ -10,5 +12,7 @@ const program = new Command()
 
 program.addCommand(collectCommand);
 program.addCommand(migrateCommand);
+program.addCommand(listCommand);
+program.addCommand(showCommand);
 
 program.parse();
