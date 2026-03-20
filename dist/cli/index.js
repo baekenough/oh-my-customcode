@@ -9305,7 +9305,7 @@ var init_package = __esm(() => {
   package_default = {
     name: "oh-my-customcode",
     workspaces: ["packages/*"],
-    version: "0.46.0",
+    version: "0.46.1",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -27758,7 +27758,7 @@ async function startServeBackground(projectRoot, port = DEFAULT_PORT) {
       OMCUSTOM_PORT: String(port),
       OMCUSTOM_HOST: "localhost",
       OMCUSTOM_ORIGIN: `http://localhost:${port}`,
-      OMCUSTOM_PROJECT_ROOT: projectRoot
+      OMX_PROJECT_ROOT: projectRoot
     },
     stdio: "ignore",
     detached: true
@@ -29684,7 +29684,7 @@ function runForeground(projectRoot, port) {
       OMCUSTOM_PORT: String(port),
       OMCUSTOM_HOST: "localhost",
       OMCUSTOM_ORIGIN: `http://localhost:${port}`,
-      OMCUSTOM_PROJECT_ROOT: projectRoot
+      OMX_PROJECT_ROOT: projectRoot
     },
     stdio: "inherit"
   });

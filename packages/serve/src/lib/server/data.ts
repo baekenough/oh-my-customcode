@@ -8,8 +8,8 @@ import { parseFrontmatter } from './frontmatter.js';
 
 async function findProjectRoot(startDir: string): Promise<string> {
 	// Honor explicit env var first
-	if (process.env.OMCUSTOM_PROJECT_ROOT) {
-		return process.env.OMCUSTOM_PROJECT_ROOT;
+	if (process.env.OMX_PROJECT_ROOT) {
+		return process.env.OMX_PROJECT_ROOT;
 	}
 
 	let dir = startDir;
