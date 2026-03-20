@@ -107,9 +107,7 @@ export function createProgram(): Command {
     });
 
   // omcustom web — subcommand group for Web UI management
-  const web = program
-    .command('web')
-    .description(i18n.t('cli.web.description'));
+  const web = program.command('web').description(i18n.t('cli.web.description'));
 
   // omcustom web start [--port 4321] [--open] [--foreground]
   web

@@ -251,7 +251,7 @@
         "portOption": "포트 번호",
         "openOption": "시작 후 브라우저 자동 열기",
         "foregroundOption": "포그라운드 실행 (백그라운드 분리 안 함)",
-        "started": "Web UI 시작됨: http://127.0.0.1:{{port}}",
+        "started": "Web UI 시작됨: http://localhost:{{port}}",
         "failed": "Web UI 서버 시작 실패"
       },
       "stop": {
@@ -261,7 +261,7 @@
       },
       "status": {
         "description": "Web UI 서버 상태 표시",
-        "running": "Web UI 실행 중: http://127.0.0.1:{{port}}",
+        "running": "Web UI 실행 중: http://localhost:{{port}}",
         "notRunning": "Web UI가 실행 중이 아닙니다",
         "startHint": "  시작하려면: omcustom web start"
       },

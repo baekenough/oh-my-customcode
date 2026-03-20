@@ -251,7 +251,7 @@
         "portOption": "Port number",
         "openOption": "Open browser automatically after start",
         "foregroundOption": "Run in foreground (not detached)",
-        "started": "Web UI started: http://127.0.0.1:{{port}}",
+        "started": "Web UI started: http://localhost:{{port}}",
         "failed": "Failed to start Web UI server"
       },
       "stop": {
@@ -261,7 +261,7 @@
       },
       "status": {
         "description": "Show Web UI server status",
-        "running": "Web UI is running: http://127.0.0.1:{{port}}",
+        "running": "Web UI is running: http://localhost:{{port}}",
         "notRunning": "Web UI is not running",
         "startHint": "  Start with: omcustom web start"
       },

@@ -74,7 +74,7 @@ function runForeground(projectRoot: string, port: number): void {
     process.exit(1);
   }
 
-  console.log(`Web UI: http://127.0.0.1:${port}`);
+  console.log(`Web UI: http://localhost:${port}`);
 
   spawnSync('node', [join(buildDir, 'index.js')], {
     env: {
@@ -93,7 +93,7 @@ function runForeground(projectRoot: string, port: number): void {
  * Uses platform-specific openers. Fires and forgets — failures are silently ignored.
  */
 export function openBrowser(port: number): void {
-  const url = `http://127.0.0.1:${port}`;
+  const url = `http://localhost:${port}`;
   const platform = process.platform;
 
   if (platform === 'darwin') {

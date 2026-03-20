@@ -2,11 +2,17 @@
  * Unit tests for serve.ts — background server lifecycle management
  */
 
-import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdir, mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { DEFAULT_PORT, findServeBuildDir, isServeRunning, startServeBackground, stopServe } from '../../../src/cli/serve.js';
+import {
+  DEFAULT_PORT,
+  findServeBuildDir,
+  isServeRunning,
+  startServeBackground,
+  stopServe,
+} from '../../../src/cli/serve.js';
 
 // The PID file path is computed at module load time using HOME.
 // Tests that require PID file control must write to / clean up the real location.

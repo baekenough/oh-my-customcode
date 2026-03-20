@@ -3,16 +3,16 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { rm, unlink, writeFile } from 'node:fs/promises';
+import { unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { initI18n } from '../../../src/i18n/index.js';
 import {
   webOpenCommand,
   webStartCommand,
   webStatusCommand,
   webStopCommand,
 } from '../../../src/cli/web-commands.js';
+import { initI18n } from '../../../src/i18n/index.js';
 
 // PID file is computed at module load with HOME — use the real path
 const PID_FILE = join(homedir(), '.omcustom-serve.pid');
@@ -72,7 +72,7 @@ describe('web-commands.ts', () => {
 
       const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(logOutput).toContain('running');
-      expect(logOutput).toContain('127.0.0.1');
+      expect(logOutput).toContain('localhost');
     });
 
     it('should use OMCUSTOM_PORT env var in the running URL when set', async () => {
@@ -134,9 +134,7 @@ describe('web-commands.ts', () => {
       });
 
       try {
-        await expect(webOpenCommand({ port: 'not-a-port' })).rejects.toThrow(
-          'process.exit called'
-        );
+        await expect(webOpenCommand({ port: 'not-a-port' })).rejects.toThrow('process.exit called');
 
         const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
         expect(errorOutput).toContain('not-a-port');
