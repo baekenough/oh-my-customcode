@@ -33,12 +33,24 @@
 	<div class="mb-8 flex items-center justify-between">
 		<div>
 			<h1 class="text-2xl font-bold text-zinc-50">Projects</h1>
-			<p class="mt-1 text-sm text-zinc-500">
-				{data.projects.length} projects found —
-				<span class="text-emerald-400">{latestCount} latest</span>,
-				<span class="text-amber-400">{outdatedCount} outdated</span>,
-				<span class="text-zinc-500">{unknownCount} unknown</span>
-			</p>
+			{#if data.selectedProject && !data.selectedProjectData}
+				<p class="mt-1 text-sm text-amber-400">
+					Project "<span class="font-mono">{data.selectedProject}</span>" not found —
+					showing all {data.projects.length} discovered projects
+				</p>
+			{:else if data.selectedProject && data.selectedProjectData}
+				<p class="mt-1 text-sm text-zinc-500">
+					Viewing: <span class="text-zinc-300 font-medium">{data.selectedProjectData.name}</span>
+					<span class="text-zinc-700 ml-1">— {data.projects.length} total projects</span>
+				</p>
+			{:else}
+				<p class="mt-1 text-sm text-zinc-500">
+					{data.projects.length} projects found —
+					<span class="text-emerald-400">{latestCount} latest</span>,
+					<span class="text-amber-400">{outdatedCount} outdated</span>,
+					<span class="text-zinc-500">{unknownCount} unknown</span>
+				</p>
+			{/if}
 		</div>
 
 		{#if outdatedCount > 0}
@@ -79,22 +91,53 @@
 		</div>
 	{/if}
 
+	<!-- Not found state: project slug specified but not found -->
+	{#if data.selectedProject && !data.selectedProjectData}
+		<div class="mb-6 rounded-lg border border-amber-800/50 bg-amber-950/20 p-5">
+			<div class="flex items-start gap-3">
+				<span class="text-amber-400 text-lg mt-0.5">⚠</span>
+				<div>
+					<p class="text-amber-300 font-medium">Project not found</p>
+					<p class="text-amber-600 text-sm mt-1">
+						No project with slug "<span class="font-mono text-amber-400">{data.selectedProject}</span>"
+						was discovered. The project may not exist, may not have been indexed yet,
+						or may be in a directory outside the default search paths.
+					</p>
+					<p class="text-zinc-600 text-xs mt-2">
+						Searched: ~/workspace, ~/projects, ~/dev, ~/src, ~/code, ~/repos, ~/work
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Project cards -->
 	<div class="space-y-3">
 		{#each data.projects as project}
 			{@const config = statusConfig[project.status] ?? statusConfig.unknown}
+			{@const isSelected = project.slug === data.selectedProject}
 			<div
-				class="rounded-lg border border-zinc-800 p-5 transition-colors hover:border-zinc-700"
+				class="rounded-lg border p-5 transition-colors {isSelected
+					? 'border-emerald-700 bg-emerald-950/10 hover:border-emerald-600'
+					: 'border-zinc-800 hover:border-zinc-700'}"
 			>
 				<div class="flex items-center justify-between">
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-3">
-							<h3 class="text-lg font-semibold text-zinc-100">{project.name}</h3>
+							{#if isSelected}
+								<span class="text-emerald-400 text-xs">▶</span>
+							{/if}
+							<h3 class="text-lg font-semibold {isSelected ? 'text-emerald-100' : 'text-zinc-100'}">{project.name}</h3>
 							<span
 								class="rounded border px-2 py-0.5 text-xs font-medium {config.badge}"
 							>
 								{config.label}
 							</span>
+							{#if isSelected}
+								<span class="rounded border border-emerald-800 bg-emerald-950 px-2 py-0.5 text-xs font-medium text-emerald-400">
+									Active
+								</span>
+							{/if}
 						</div>
 						<p class="mt-1 truncate text-sm text-zinc-500" title={project.path}>
 							{project.path}
