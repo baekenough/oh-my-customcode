@@ -10,9 +10,17 @@ export function runMigrations(dbPath: string): void {
 
   // Create tables using bun:sqlite (SQL DDL, not shell)
   const statements = [
+    `CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      cwd TEXT NOT NULL UNIQUE,
+      last_seen_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
     `CREATE TABLE IF NOT EXISTS sessions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       session_id TEXT NOT NULL UNIQUE,
+      project_id INTEGER REFERENCES projects(id),
       started_at TEXT NOT NULL,
       ended_at TEXT,
       cwd TEXT,
@@ -64,16 +72,34 @@ export function runMigrations(dbPath: string): void {
       evaluated_at TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS session_feedback (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL REFERENCES sessions(session_id),
+      rating INTEGER,
+      tags TEXT,
+      comment TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_projects_cwd ON projects(cwd)',
     'CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON sessions(session_id)',
+    'CREATE INDEX IF NOT EXISTS idx_sessions_project_id ON sessions(project_id)',
     'CREATE INDEX IF NOT EXISTS idx_turns_session_id ON turns(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_ppid ON agent_invocations(session_ppid)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_agent_type ON agent_invocations(agent_type)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_session_id ON evaluations(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_turn_id ON evaluations(turn_id)',
+    'CREATE INDEX IF NOT EXISTS idx_feedback_session_id ON session_feedback(session_id)',
   ];
 
   for (const sql of statements) {
     db.run(sql);
+  }
+
+  // Migrations: add project_id column to existing sessions table (idempotent)
+  try {
+    db.run('ALTER TABLE sessions ADD COLUMN project_id INTEGER REFERENCES projects(id)');
+  } catch {
+    // Column already exists — ignore
   }
 
   db.close();

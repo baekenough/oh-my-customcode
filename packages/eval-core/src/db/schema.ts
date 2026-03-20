@@ -1,8 +1,19 @@
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
+export const projects = sqliteTable('projects', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  cwd: text('cwd').notNull().unique(),
+  lastSeenAt: text('last_seen_at').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const sessions = sqliteTable('sessions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   sessionId: text('session_id').notNull().unique(),
+  projectId: integer('project_id').references(() => projects.id),
   startedAt: text('started_at').notNull(),
   endedAt: text('ended_at'),
   cwd: text('cwd'),
@@ -63,6 +74,19 @@ export const evaluations = sqliteTable('evaluations', {
   tags: text('tags'),                   // JSON array string: ["good_prompt", "wrong_routing"]
   comment: text('comment'),
   evaluatedAt: text('evaluated_at').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export const sessionFeedback = sqliteTable('session_feedback', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  sessionId: text('session_id')
+    .notNull()
+    .references(() => sessions.sessionId),
+  rating: integer('rating'),            // 1-5
+  tags: text('tags'),                   // JSON array string
+  comment: text('comment'),
   createdAt: text('created_at')
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
