@@ -4,7 +4,6 @@ description: 6-stage structured development cycle with stage-based tool restrict
 scope: core
 version: 1.0.0
 user-invocable: true
-argument-hint: "[task-description] [--stage <1-6>] [--skip-plan]"
 ---
 
 # Structured Development Cycle

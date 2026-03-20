@@ -132,22 +132,6 @@ rules:
     priority: MUST
     scope: orchestrator
 
-  # Ontology-RAG Routing - SHOULD
-  - id: R019
-    name: ontology-rag-routing
-    title: Ontology-RAG Assisted Routing
-    path: ./SHOULD-ontology-rag-routing.md
-    priority: SHOULD
-    scope: orchestrator
-
-  # Completion Verification - MUST
-  - id: R020
-    name: completion-verification
-    title: Completion Verification Rules
-    path: ./MUST-completion-verification.md
-    priority: MUST
-    scope: all
-
   # MAY - Optional
   - id: R005
     name: optimization
