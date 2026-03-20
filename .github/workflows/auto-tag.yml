@@ -5,6 +5,10 @@ on:
     types: [closed]
     branches: [develop]
 
+concurrency:
+  group: auto-tag
+  cancel-in-progress: false
+
 jobs:
   auto-tag:
     if: >
@@ -17,6 +21,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
@@ -46,7 +51,6 @@ jobs:
       - name: Create and push tag
         if: steps.check.outputs.exists == 'false'
         env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
