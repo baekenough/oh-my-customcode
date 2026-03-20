@@ -31,13 +31,13 @@ if [[ -n "${NO_COLOR}" || "${TERM}" == "dumb" ]]; then
     COLOR_CTX_WARN=""
     COLOR_CTX_CRIT=""
 else
-    COLOR_RESET="\033[0m"
-    COLOR_OPUS="\033[1;35m"    # Magenta bold
-    COLOR_SONNET="\033[0;36m"  # Cyan
-    COLOR_HAIKU="\033[0;32m"   # Green
-    COLOR_CTX_OK="\033[0;32m"  # Green   (< 60%)
-    COLOR_CTX_WARN="\033[0;33m" # Yellow (60-79%)
-    COLOR_CTX_CRIT="\033[0;31m" # Red    (>= 80%)
+    COLOR_RESET=$'\033[0m'
+    COLOR_OPUS=$'\033[1;35m'    # Magenta bold
+    COLOR_SONNET=$'\033[0;36m'  # Cyan
+    COLOR_HAIKU=$'\033[0;32m'   # Green
+    COLOR_CTX_OK=$'\033[0;32m'  # Green   (< 60%)
+    COLOR_CTX_WARN=$'\033[0;33m' # Yellow (60-79%)
+    COLOR_CTX_CRIT=$'\033[0;31m' # Red    (>= 80%)
 fi
 
 # ---------------------------------------------------------------------------
