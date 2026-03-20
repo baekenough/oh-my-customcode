@@ -459,6 +459,17 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     const config = await loadConfig(options.targetDir);
     result.previousVersion = config.version;
 
+    const targetPkgPath = join(options.targetDir, 'package.json');
+    if (await fileExists(targetPkgPath)) {
+      const targetPkg = await readJsonFile<{ name?: string }>(targetPkgPath);
+      if (targetPkg.name === 'oh-my-customcode') {
+        warn('update.self_update_skipped');
+        result.success = true;
+        result.warnings.push('Skipped: source project cannot update itself');
+        return result;
+      }
+    }
+
     const updateCheck = await checkForUpdates(options.targetDir);
     result.newVersion = updateCheck.latestVersion;
 

@@ -7,6 +7,7 @@
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 import packageJson from '../../package.json';
+import { fileExists, readJsonFile, resolveTemplatePath } from '../utils/fs.js';
 
 /**
  * Lock file schema for .omcustom.lock.json
@@ -224,10 +225,23 @@ async function searchDirectory(
 }
 
 /**
+ * Get the version from the bundled templates/manifest.json.
+ * Falls back to the CLI package version if the manifest is unavailable.
+ */
+async function getTemplateVersion(): Promise<string> {
+  const manifestPath = resolveTemplatePath('manifest.json');
+  if (await fileExists(manifestPath)) {
+    const manifest = await readJsonFile<{ version: string }>(manifestPath);
+    return manifest.version;
+  }
+  return packageJson.version as string;
+}
+
+/**
  * Find all projects on the machine where oh-my-customcode is installed
  */
 export async function findProjects(options: ProjectsOptions = {}): Promise<ProjectInfo[]> {
-  const currentVersion = packageJson.version as string;
+  const currentVersion = await getTemplateVersion();
   const home = homedir();
   const seen = new Set<string>();
   const results: ProjectInfo[] = [];
@@ -367,7 +381,7 @@ function formatProjectsSimple(projects: ProjectInfo[], currentVersion: string): 
  * Execute the projects command
  */
 export async function projectsCommand(options: ProjectsOptions = {}): Promise<ProjectsResult> {
-  const currentVersion = packageJson.version as string;
+  const currentVersion = await getTemplateVersion();
   const format = options.format || 'table';
 
   console.log('  oh-my-customcode 적용 프로젝트를 검색 중...');
