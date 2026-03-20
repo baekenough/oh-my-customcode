@@ -3,6 +3,7 @@
  * Delegates to serve-commands.ts for the actual implementation.
  */
 
+import { i18n } from '../i18n/index.js';
 import { DEFAULT_PORT, isServeRunning } from './serve.js';
 import { openBrowser, serveCommand, serveStopCommand } from './serve-commands.js';
 
@@ -36,10 +37,10 @@ export async function webStatusCommand(): Promise<void> {
   const running = await isServeRunning();
   if (running) {
     const port = process.env.OMCUSTOM_PORT ?? String(DEFAULT_PORT);
-    console.log(`Web UI is running: http://127.0.0.1:${port}`);
+    console.log(i18n.t('cli.web.status.running', { port }));
   } else {
-    console.log('Web UI is not running');
-    console.log('  Start with: omcustom web start');
+    console.log(i18n.t('cli.web.status.notRunning'));
+    console.log(i18n.t('cli.web.status.startHint'));
   }
 }
 
@@ -57,7 +58,7 @@ export async function webOpenCommand(options: { port?: string }): Promise<void> 
 
   const running = await isServeRunning();
   if (!running) {
-    console.warn('Web UI does not appear to be running. Start it with: omcustom web start');
+    console.warn(i18n.t('cli.web.open.notRunningWarn'));
   }
 
   openBrowser(port);

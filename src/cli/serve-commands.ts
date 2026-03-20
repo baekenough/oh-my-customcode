@@ -4,6 +4,7 @@
 
 import { execFile, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { i18n } from '../i18n/index.js';
 import {
   DEFAULT_PORT,
   findServeBuildDir,
@@ -40,12 +41,12 @@ export async function serveCommand(options: ServeCommandOptions): Promise<void> 
 
   const running = await isServeRunning();
   if (running) {
-    console.log(`Web UI started: http://127.0.0.1:${port}`);
+    console.log(i18n.t('cli.web.start.started', { port }));
     if (options.open === true) {
       openBrowser(port);
     }
   } else {
-    console.error('Failed to start Web UI server');
+    console.error(i18n.t('cli.web.start.failed'));
     process.exit(1);
   }
 }
@@ -56,9 +57,9 @@ export async function serveCommand(options: ServeCommandOptions): Promise<void> 
 export async function serveStopCommand(): Promise<void> {
   const stopped = await stopServe();
   if (stopped) {
-    console.log('Web UI server stopped');
+    console.log(i18n.t('cli.web.stop.stopped'));
   } else {
-    console.log('Web UI server is not running');
+    console.log(i18n.t('cli.web.stop.notRunning'));
   }
 }
 

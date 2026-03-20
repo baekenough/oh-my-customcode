@@ -109,15 +109,15 @@ export function createProgram(): Command {
   // omcustom web — subcommand group for Web UI management
   const web = program
     .command('web')
-    .description('Manage the Web UI server (start, stop, status, open)');
+    .description(i18n.t('cli.web.description'));
 
   // omcustom web start [--port 4321] [--open] [--foreground]
   web
     .command('start')
-    .description('Start the Web UI server')
-    .option('-p, --port <port>', 'Port number', '4321')
-    .option('--open', 'Open browser automatically after start')
-    .option('--foreground', 'Run in foreground (not detached)')
+    .description(i18n.t('cli.web.start.description'))
+    .option('-p, --port <port>', i18n.t('cli.web.start.portOption'), '4321')
+    .option('--open', i18n.t('cli.web.start.openOption'))
+    .option('--foreground', i18n.t('cli.web.start.foregroundOption'))
     .action(async (options) => {
       await webStartCommand(options);
     });
@@ -125,7 +125,7 @@ export function createProgram(): Command {
   // omcustom web stop
   web
     .command('stop')
-    .description('Stop the Web UI server')
+    .description(i18n.t('cli.web.stop.description'))
     .action(async () => {
       await webStopCommand();
     });
@@ -133,7 +133,7 @@ export function createProgram(): Command {
   // omcustom web status
   web
     .command('status')
-    .description('Show Web UI server status')
+    .description(i18n.t('cli.web.status.description'))
     .action(async () => {
       await webStatusCommand();
     });
@@ -141,8 +141,8 @@ export function createProgram(): Command {
   // omcustom web open [--port 4321]
   web
     .command('open')
-    .description('Open the Web UI in the default browser')
-    .option('-p, --port <port>', 'Port number', '4321')
+    .description(i18n.t('cli.web.open.description'))
+    .option('-p, --port <port>', i18n.t('cli.web.open.portOption'), '4321')
     .action(async (options) => {
       await webOpenCommand(options);
     });
@@ -156,13 +156,11 @@ export function createProgram(): Command {
   program
     .command('serve')
     .description('(Deprecated) Start the Web UI server — use `omcustom web start` instead')
-    .option('-p, --port <port>', 'Port number', '4321')
-    .option('--open', 'Open browser automatically')
-    .option('--foreground', 'Run in foreground (not detached)')
+    .option('-p, --port <port>', i18n.t('cli.web.start.portOption'), '4321')
+    .option('--open', i18n.t('cli.web.start.openOption'))
+    .option('--foreground', i18n.t('cli.web.start.foregroundOption'))
     .action(async (options) => {
-      console.warn(
-        '[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.'
-      );
+      console.warn(i18n.t('cli.web.deprecated.serve'));
       await serveCommand(options);
     });
 
@@ -171,9 +169,7 @@ export function createProgram(): Command {
     .command('serve-stop')
     .description('(Deprecated) Stop the Web UI server — use `omcustom web stop` instead')
     .action(async () => {
-      console.warn(
-        '[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead.'
-      );
+      console.warn(i18n.t('cli.web.deprecated.serveStop'));
       await serveStopCommand();
     });
 
