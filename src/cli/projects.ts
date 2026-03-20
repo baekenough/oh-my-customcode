@@ -5,7 +5,7 @@
  */
 
 import { homedir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import packageJson from '../../package.json';
 import { fileExists, readJsonFile, resolveTemplatePath } from '../utils/fs.js';
 
@@ -254,6 +254,14 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
     searchPaths.push(join(home, dir));
   }
 
+  // Add cwd and its parent so projects outside DEFAULT_SEARCH_DIRS are found
+  if (!options.paths) {
+    const cwd = process.cwd();
+    if (!searchPaths.includes(cwd)) searchPaths.push(cwd);
+    const parent = dirname(cwd);
+    if (parent !== cwd && !searchPaths.includes(parent)) searchPaths.push(parent);
+  }
+
   // User-provided additional paths
   if (options.paths) {
     searchPaths.push(...options.paths);
@@ -307,7 +315,9 @@ export async function writeLockFile(
 function formatProjectsTable(projects: ProjectInfo[], currentVersion: string): void {
   if (projects.length === 0) {
     console.log('\n  oh-my-customcode가 적용된 프로젝트를 찾을 수 없습니다.');
-    console.log('  검색 경로: ~/workspace, ~/projects, ~/dev, ~/src, ~/code\n');
+    console.log(
+      '  검색 경로: ~/workspace, ~/projects, ~/dev, ~/src, ~/code, ~/repos, ~/work, (현재 디렉토리 및 부모)\n'
+    );
     return;
   }
 
