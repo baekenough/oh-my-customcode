@@ -5,7 +5,12 @@
 
 import { i18n } from '../i18n/index.js';
 import { DEFAULT_PORT, isServeRunning } from './serve.js';
-import { openBrowser, serveCommand, serveStopCommand } from './serve-commands.js';
+import {
+  openBrowser,
+  type ServeCommandOptions,
+  serveCommand,
+  serveStopCommand,
+} from './serve-commands.js';
 
 export type { ServeCommandOptions } from './serve-commands.js';
 
@@ -13,11 +18,7 @@ export type { ServeCommandOptions } from './serve-commands.js';
  * Handler for `omcustom web start [--port 4321] [--open] [--foreground]`
  * Delegates to serveCommand.
  */
-export async function webStartCommand(options: {
-  port?: string;
-  open?: boolean;
-  foreground?: boolean;
-}): Promise<void> {
+export async function webStartCommand(options: ServeCommandOptions): Promise<void> {
   await serveCommand(options);
 }
 

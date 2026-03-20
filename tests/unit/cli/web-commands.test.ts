@@ -3,8 +3,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { unlink, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   webOpenCommand,
@@ -29,10 +29,12 @@ describe('web-commands.ts', () => {
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleWarnSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
+  let emptyTempDir: string;
 
   beforeEach(async () => {
     await initI18n('en');
     await removePidFile();
+    emptyTempDir = await mkdtemp(join(tmpdir(), 'omcustom-web-cmd-test-'));
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
@@ -43,6 +45,7 @@ describe('web-commands.ts', () => {
     consoleWarnSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     await removePidFile();
+    await rm(emptyTempDir, { recursive: true, force: true });
   });
 
   // ---------------------------------------------------------------------------
@@ -208,7 +211,9 @@ describe('web-commands.ts', () => {
       });
 
       try {
-        await expect(webStartCommand({ port: '4321' })).rejects.toThrow('process.exit called');
+        await expect(webStartCommand({ port: '4321', _projectRoot: emptyTempDir })).rejects.toThrow(
+          'process.exit called'
+        );
       } finally {
         processExitSpy.mockRestore();
       }
@@ -220,7 +225,7 @@ describe('web-commands.ts', () => {
       });
 
       try {
-        await webStartCommand({ port: '4321' }).catch(() => {});
+        await webStartCommand({ port: '4321', _projectRoot: emptyTempDir }).catch(() => {});
       } finally {
         processExitSpy.mockRestore();
       }
@@ -235,7 +240,7 @@ describe('web-commands.ts', () => {
       });
 
       try {
-        await webStartCommand({ port: '9000' }).catch(() => {});
+        await webStartCommand({ port: '9000', _projectRoot: emptyTempDir }).catch(() => {});
       } finally {
         processExitSpy.mockRestore();
       }

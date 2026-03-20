@@ -1,14 +1,13 @@
-import { and, gte, sql } from 'drizzle-orm';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import type { EvalDb } from '../db/client.js';
 import { agentInvocations, improvementActions } from '../db/schema.js';
 
 export interface FeedbackQueryOptions {
   since?: string; // ISO 8601 date string
-  minSessions?: number; // minimum data threshold, default 5
+  minSessions?: number; // minimum invocation count threshold (not sessions), default 5
   failureRateThreshold?: number; // default 0.3
   skillSuccessRateThreshold?: number; // default 0.5
   skillMinInvocations?: number; // default 10
-  routingMissRateThreshold?: number; // default 0.15
 }
 
 export interface AgentFailurePattern {
@@ -69,9 +68,30 @@ export async function getAgentFailurePatterns(
       failures: sql<number>`sum(case when ${agentInvocations.outcome} = 'failure' then 1 else 0 end)`.as(
         'failures'
       ),
-      errorSummaries: sql<string>`group_concat(${agentInvocations.errorSummary}, '||')`.as(
-        'error_summaries'
-      ),
+      errorSummaries: since
+        ? sql<string>`(
+            SELECT json_group_array(sub_es) FROM (
+              SELECT ai2.error_summary as sub_es
+              FROM ${agentInvocations} AS ai2
+              WHERE ai2.agent_type = ${agentInvocations}.agent_type
+                AND ai2.outcome = 'failure'
+                AND ai2.error_summary IS NOT NULL
+                AND ai2.timestamp >= ${since}
+              ORDER BY ai2.timestamp DESC
+              LIMIT 5
+            )
+          )`.as('error_summaries')
+        : sql<string>`(
+            SELECT json_group_array(sub_es) FROM (
+              SELECT ai2.error_summary as sub_es
+              FROM ${agentInvocations} AS ai2
+              WHERE ai2.agent_type = ${agentInvocations}.agent_type
+                AND ai2.outcome = 'failure'
+                AND ai2.error_summary IS NOT NULL
+              ORDER BY ai2.timestamp DESC
+              LIMIT 5
+            )
+          )`.as('error_summaries'),
       lastFailureAt: sql<string | null>`max(case when ${agentInvocations.outcome} = 'failure' then ${agentInvocations.timestamp} end)`.as(
         'last_failure_at'
       ),
@@ -89,12 +109,15 @@ export async function getAgentFailurePatterns(
     const failureRate = failures / total;
     if (failureRate <= failureRateThreshold) continue;
 
-    const rawErrors = row.errorSummaries ?? '';
-    const commonErrors = rawErrors
-      .split('||')
-      .filter(Boolean)
-      .filter((e) => e !== 'null')
-      .slice(0, 5);
+    const rawErrors = row.errorSummaries ?? '[]';
+    let commonErrors: string[];
+    try {
+      commonErrors = (JSON.parse(rawErrors) as string[]).filter(
+        (e) => e != null && e !== 'null'
+      );
+    } catch {
+      commonErrors = [];
+    }
 
     results.push({
       agentType: row.agentType,
@@ -247,21 +270,38 @@ export async function getImprovementSuggestions(
 
 /**
  * Saves improvement suggestions to the improvement_actions table.
+ * Deduplicates by removing existing proposed actions for the same targets
+ * before inserting, to prevent duplicates on repeated runs.
  */
 export async function saveImprovementActions(
   db: EvalDb,
   suggestions: ImprovementSuggestion[]
 ): Promise<void> {
-  for (const suggestion of suggestions) {
-    await db.insert(improvementActions).values({
-      feedbackSource: 'auto_analysis',
-      targetType: suggestion.targetType,
-      targetName: suggestion.target,
-      actionType: suggestion.actionType,
-      description: suggestion.description,
-      confidence: suggestion.confidence,
-      status: 'proposed',
-      evidence: JSON.stringify(suggestion.evidence),
-    });
+  if (suggestions.length === 0) return;
+
+  // Remove existing proposed actions for targets that will be re-analyzed
+  const targetNames = [...new Set(suggestions.map((s) => s.target))];
+  for (const name of targetNames) {
+    await db
+      .delete(improvementActions)
+      .where(
+        and(
+          eq(improvementActions.targetName, name),
+          eq(improvementActions.status, 'proposed')
+        )
+      );
   }
+
+  await db.insert(improvementActions).values(
+    suggestions.map((s) => ({
+      feedbackSource: 'auto_analysis' as const,
+      targetType: s.targetType,
+      targetName: s.target,
+      actionType: s.actionType,
+      description: s.description,
+      confidence: s.confidence,
+      status: 'proposed' as const,
+      evidence: JSON.stringify(s.evidence),
+    }))
+  );
 }

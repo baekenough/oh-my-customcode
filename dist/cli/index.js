@@ -9335,9 +9335,9 @@ var init_package = __esm(() => {
       "test:integration": "bun test tests/integration",
       "test:e2e": "bun test tests/e2e",
       "test:coverage": "bun test --coverage",
-      lint: "biome check .",
-      "lint:fix": "biome check --write .",
-      format: "biome format --write .",
+      lint: "biome check src/ tests/ scripts/",
+      "lint:fix": "biome check --write src/ tests/ scripts/",
+      format: "biome format --write src/ tests/ scripts/",
       typecheck: "tsc --noEmit",
       "docs:dev": "vitepress dev docs",
       "docs:build": "vitepress build docs",
@@ -9401,7 +9401,7 @@ __export(exports_projects, {
   default: () => projects_default
 });
 import { homedir as homedir2 } from "node:os";
-import { basename as basename3, join as join9 } from "node:path";
+import { basename as basename3, dirname as dirname3, join as join9 } from "node:path";
 async function readLockFile(projectDir) {
   const lockFilePath = join9(projectDir, ".omcustom.lock.json");
   try {
@@ -9500,6 +9500,14 @@ async function findProjects(options = {}) {
   for (const dir2 of DEFAULT_SEARCH_DIRS) {
     searchPaths.push(join9(home, dir2));
   }
+  if (!options.paths) {
+    const cwd = process.cwd();
+    if (!searchPaths.includes(cwd))
+      searchPaths.push(cwd);
+    const parent = dirname3(cwd);
+    if (parent !== cwd && !searchPaths.includes(parent))
+      searchPaths.push(parent);
+  }
   if (options.paths) {
     searchPaths.push(...options.paths);
   }
@@ -9528,7 +9536,7 @@ function formatProjectsTable(projects, currentVersion) {
   if (projects.length === 0) {
     console.log(`
   oh-my-customcode가 적용된 프로젝트를 찾을 수 없습니다.`);
-    console.log(`  검색 경로: ~/workspace, ~/projects, ~/dev, ~/src, ~/code
+    console.log(`  검색 경로: ~/workspace, ~/projects, ~/dev, ~/src, ~/code, ~/repos, ~/work, (현재 디렉토리 및 부모)
 `);
     return;
   }
@@ -24885,7 +24893,7 @@ var en_default = {
         portOption: "Port number",
         openOption: "Open browser automatically after start",
         foregroundOption: "Run in foreground (not detached)",
-        started: "Web UI started: http://127.0.0.1:{{port}}",
+        started: "Web UI started: http://localhost:{{port}}",
         failed: "Failed to start Web UI server"
       },
       stop: {
@@ -24895,7 +24903,7 @@ var en_default = {
       },
       status: {
         description: "Show Web UI server status",
-        running: "Web UI is running: http://127.0.0.1:{{port}}",
+        running: "Web UI is running: http://localhost:{{port}}",
         notRunning: "Web UI is not running",
         startHint: "  Start with: omcustom web start"
       },
@@ -25267,7 +25275,7 @@ var ko_default = {
         portOption: "포트 번호",
         openOption: "시작 후 브라우저 자동 열기",
         foregroundOption: "포그라운드 실행 (백그라운드 분리 안 함)",
-        started: "Web UI 시작됨: http://127.0.0.1:{{port}}",
+        started: "Web UI 시작됨: http://localhost:{{port}}",
         failed: "Web UI 서버 시작 실패"
       },
       stop: {
@@ -25277,7 +25285,7 @@ var ko_default = {
       },
       status: {
         description: "Web UI 서버 상태 표시",
-        running: "Web UI 실행 중: http://127.0.0.1:{{port}}",
+        running: "Web UI 실행 중: http://localhost:{{port}}",
         notRunning: "Web UI가 실행 중이 아닙니다",
         startHint: "  시작하려면: omcustom web start"
       },
@@ -27782,13 +27790,15 @@ import { readFile as readFile2, unlink, writeFile as writeFile2 } from "node:fs/
 import { join as join10 } from "node:path";
 var DEFAULT_PORT = 4321;
 var PID_FILE = join10(process.env.HOME ?? "~", ".omcustom-serve.pid");
-function findServeBuildDir(projectRoot) {
+function findServeBuildDir(projectRoot, options) {
   const localBuild = join10(projectRoot, "packages", "serve", "build");
   if (existsSync2(join10(localBuild, "index.js")))
     return localBuild;
-  const npmBuild = join10(import.meta.dirname, "..", "..", "packages", "serve", "build");
-  if (existsSync2(join10(npmBuild, "index.js")))
-    return npmBuild;
+  if (options?.skipNpmFallback !== true) {
+    const npmBuild = join10(import.meta.dirname, "..", "..", "packages", "serve", "build");
+    if (existsSync2(join10(npmBuild, "index.js")))
+      return npmBuild;
+  }
   return null;
 }
 async function isServeRunning() {
@@ -27806,11 +27816,11 @@ async function isServeRunning() {
     return false;
   }
 }
-async function startServeBackground(projectRoot, port = DEFAULT_PORT) {
+async function startServeBackground(projectRoot, port = DEFAULT_PORT, buildDirOpts) {
   if (await isServeRunning()) {
     return;
   }
-  const buildDir = findServeBuildDir(projectRoot);
+  const buildDir = findServeBuildDir(projectRoot, buildDirOpts);
   if (buildDir === null) {
     return;
   }
@@ -28970,7 +28980,7 @@ async function initCommand(options) {
 }
 
 // src/cli/list.ts
-import { basename as basename4, dirname as dirname3, join as join12, relative as relative3 } from "node:path";
+import { basename as basename4, dirname as dirname4, join as join12, relative as relative3 } from "node:path";
 init_fs();
 var ALLOWED_TOP_LEVEL_KEYS = new Set(["name", "type", "description", "version", "category"]);
 function parseKeyValue(line) {
@@ -29171,7 +29181,7 @@ async function getSkills(targetDir, rootDir = ".claude", config) {
     const customSkillPaths = new Set(customComponents.filter((c) => c.type === "skill").map((c) => c.path));
     const skillMdFiles = await listFiles(skillsDir, { recursive: true, pattern: "SKILL.md" });
     const skills = await Promise.all(skillMdFiles.map(async (skillMdPath) => {
-      const skillDir = dirname3(skillMdPath);
+      const skillDir = dirname4(skillMdPath);
       const indexYamlPath = join12(skillDir, "index.yaml");
       const { description, version } = await tryReadIndexYamlMetadata(indexYamlPath);
       const relativePath = relative3(targetDir, skillDir);
@@ -29708,38 +29718,41 @@ async function serveCommand(options) {
     console.error(`Invalid port: ${options.port}`);
     process.exit(1);
   }
-  const cwd = process.cwd();
+  const cwd = options._projectRoot ?? process.cwd();
+  const buildDirOpts = {
+    skipNpmFallback: options._projectRoot !== undefined
+  };
   if (options.foreground === true) {
-    runForeground(cwd, port);
+    runForeground(cwd, port, buildDirOpts);
     return;
   }
-  await startServeBackground(cwd, port);
+  await startServeBackground(cwd, port, buildDirOpts);
   const running = await isServeRunning();
   if (running) {
-    console.log(`Web UI started: http://127.0.0.1:${port}`);
+    console.log(i18n.t("cli.web.start.started", { port }));
     if (options.open === true) {
       openBrowser(port);
     }
   } else {
-    console.error("Failed to start Web UI server");
+    console.error(i18n.t("cli.web.start.failed"));
     process.exit(1);
   }
 }
 async function serveStopCommand() {
   const stopped = await stopServe();
   if (stopped) {
-    console.log("Web UI server stopped");
+    console.log(i18n.t("cli.web.stop.stopped"));
   } else {
-    console.log("Web UI server is not running");
+    console.log(i18n.t("cli.web.stop.notRunning"));
   }
 }
-function runForeground(projectRoot, port) {
-  const buildDir = findServeBuildDir(projectRoot);
+function runForeground(projectRoot, port, buildDirOpts) {
+  const buildDir = findServeBuildDir(projectRoot, buildDirOpts);
   if (buildDir === null) {
     console.error("Web UI build not found. Run: cd packages/serve && bun run build");
     process.exit(1);
   }
-  console.log(`Web UI: http://127.0.0.1:${port}`);
+  console.log(`Web UI: http://localhost:${port}`);
   spawnSync2("node", [join13(buildDir, "index.js")], {
     env: {
       ...process.env,
@@ -29752,7 +29765,7 @@ function runForeground(projectRoot, port) {
   });
 }
 function openBrowser(port) {
-  const url = `http://127.0.0.1:${port}`;
+  const url = `http://localhost:${port}`;
   const platform = process.platform;
   if (platform === "darwin") {
     execFile("open", [url], () => {});
@@ -30548,10 +30561,10 @@ async function webStatusCommand() {
   const running = await isServeRunning();
   if (running) {
     const port = process.env.OMCUSTOM_PORT ?? String(DEFAULT_PORT);
-    console.log(`Web UI is running: http://127.0.0.1:${port}`);
+    console.log(i18n.t("cli.web.status.running", { port }));
   } else {
-    console.log("Web UI is not running");
-    console.log("  Start with: omcustom web start");
+    console.log(i18n.t("cli.web.status.notRunning"));
+    console.log(i18n.t("cli.web.status.startHint"));
   }
 }
 async function webOpenCommand(options) {
@@ -30562,7 +30575,7 @@ async function webOpenCommand(options) {
   }
   const running = await isServeRunning();
   if (!running) {
-    console.warn("Web UI does not appear to be running. Start it with: omcustom web start");
+    console.warn(i18n.t("cli.web.open.notRunningWarn"));
   }
   openBrowser(port);
 }
@@ -30592,28 +30605,28 @@ function createProgram() {
     const result = await securityCommand(options);
     process.exitCode = result.success ? 0 : 1;
   });
-  const web = program2.command("web").description("Manage the Web UI server (start, stop, status, open)");
-  web.command("start").description("Start the Web UI server").option("-p, --port <port>", "Port number", "4321").option("--open", "Open browser automatically after start").option("--foreground", "Run in foreground (not detached)").action(async (options) => {
+  const web = program2.command("web").description(i18n.t("cli.web.description"));
+  web.command("start").description(i18n.t("cli.web.start.description")).option("-p, --port <port>", i18n.t("cli.web.start.portOption"), "4321").option("--open", i18n.t("cli.web.start.openOption")).option("--foreground", i18n.t("cli.web.start.foregroundOption")).action(async (options) => {
     await webStartCommand(options);
   });
-  web.command("stop").description("Stop the Web UI server").action(async () => {
+  web.command("stop").description(i18n.t("cli.web.stop.description")).action(async () => {
     await webStopCommand();
   });
-  web.command("status").description("Show Web UI server status").action(async () => {
+  web.command("status").description(i18n.t("cli.web.status.description")).action(async () => {
     await webStatusCommand();
   });
-  web.command("open").description("Open the Web UI in the default browser").option("-p, --port <port>", "Port number", "4321").action(async (options) => {
+  web.command("open").description(i18n.t("cli.web.open.description")).option("-p, --port <port>", i18n.t("cli.web.open.portOption"), "4321").action(async (options) => {
     await webOpenCommand(options);
   });
   web.action(async () => {
     await webStatusCommand();
   });
-  program2.command("serve").description("(Deprecated) Start the Web UI server — use `omcustom web start` instead").option("-p, --port <port>", "Port number", "4321").option("--open", "Open browser automatically").option("--foreground", "Run in foreground (not detached)").action(async (options) => {
-    console.warn("[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.");
+  program2.command("serve").description("(Deprecated) Start the Web UI server — use `omcustom web start` instead").option("-p, --port <port>", i18n.t("cli.web.start.portOption"), "4321").option("--open", i18n.t("cli.web.start.openOption")).option("--foreground", i18n.t("cli.web.start.foregroundOption")).action(async (options) => {
+    console.warn(i18n.t("cli.web.deprecated.serve"));
     await serveCommand(options);
   });
   program2.command("serve-stop").description("(Deprecated) Stop the Web UI server — use `omcustom web stop` instead").action(async () => {
-    console.warn("[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead.");
+    console.warn(i18n.t("cli.web.deprecated.serveStop"));
     await serveStopCommand();
   });
   program2.command("projects").description("List all projects on this machine where oh-my-customcode is installed").option("-f, --format <format>", "Output format: table, json, or simple", "table").option("--path <dir>", "Additional search directory (can be specified multiple times)", (val, prev) => [...prev, val], []).action(async (options) => {

@@ -13,8 +13,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { unlink, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openBrowser, serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.js';
 import { initI18n } from '../../../src/i18n/index.js';
@@ -32,10 +32,12 @@ async function removePidFile(): Promise<void> {
 describe('serve-commands.ts', () => {
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
+  let emptyTempDir: string;
 
   beforeEach(async () => {
     await initI18n('en');
     await removePidFile();
+    emptyTempDir = await mkdtemp(join(tmpdir(), 'omcustom-serve-cmd-test-'));
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -44,6 +46,7 @@ describe('serve-commands.ts', () => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     await removePidFile();
+    await rm(emptyTempDir, { recursive: true, force: true });
   });
 
   // ---------------------------------------------------------------------------
@@ -103,9 +106,9 @@ describe('serve-commands.ts', () => {
       });
 
       try {
-        await expect(serveCommand({ port: '4321', foreground: true })).rejects.toThrow(
-          'process.exit called'
-        );
+        await expect(
+          serveCommand({ port: '4321', foreground: true, _projectRoot: emptyTempDir })
+        ).rejects.toThrow('process.exit called');
 
         const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
         expect(errorOutput).toContain('build');
@@ -129,7 +132,9 @@ describe('serve-commands.ts', () => {
 
       try {
         // With no build dir, startServeBackground is a no-op, isServeRunning→false → exit(1)
-        await expect(serveCommand({ port: '4321' })).rejects.toThrow('process.exit called');
+        await expect(serveCommand({ port: '4321', _projectRoot: emptyTempDir })).rejects.toThrow(
+          'process.exit called'
+        );
 
         const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
         expect(errorOutput.length).toBeGreaterThan(0);

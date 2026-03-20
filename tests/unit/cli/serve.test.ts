@@ -48,7 +48,7 @@ describe('serve.ts', () => {
 
   describe('findServeBuildDir', () => {
     it('should return null when build directory does not exist', () => {
-      const result = findServeBuildDir(tempDir);
+      const result = findServeBuildDir(tempDir, { skipNpmFallback: true });
       expect(result).toBeNull();
     });
 
@@ -77,7 +77,7 @@ describe('serve.ts', () => {
       await mkdir(buildDir, { recursive: true });
       // No index.js created
 
-      const result = findServeBuildDir(tempDir);
+      const result = findServeBuildDir(tempDir, { skipNpmFallback: true });
 
       expect(result).toBeNull();
     });
