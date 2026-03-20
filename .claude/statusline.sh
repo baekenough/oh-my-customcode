@@ -59,6 +59,11 @@ if [[ -z "$json" ]]; then
     exit 0
 fi
 
+# Debug logging for CTX investigation
+if [[ -n "${STATUSLINE_DEBUG}" ]]; then
+    printf '%s\n' "$json" >> "/tmp/.claude-statusline-debug-${PPID}.jsonl"
+fi
+
 # ---------------------------------------------------------------------------
 # 4. Single jq call — extract all fields as TSV
 #    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd, rl_5h_pct
@@ -67,7 +72,7 @@ IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct <<<
     printf '%s' "$json" | jq -r '[
         (.model.display_name // "unknown"),
         (.workspace.current_dir // ""),
-        (.context_window.used_percentage // 0),
+        (if .context_window.used != null and .context_window.total != null and .context_window.total > 0 then (.context_window.used / .context_window.total * 100) elif .context_window.used_percentage != null then .context_window.used_percentage else 0 end),
         (.context_window.context_window_size // 0),
         (.cost.total_cost_usd // 0),
         (.rate_limits.five_hour.used_percentage // -1)
@@ -78,7 +83,8 @@ IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct <<<
 # 4b. Cost & context data bridge — write to temp file for hooks
 # ---------------------------------------------------------------------------
 COST_BRIDGE_FILE="/tmp/.claude-cost-${PPID}"
-printf '%s\t%s\t%s\t%s\n' "$cost_usd" "$ctx_pct" "$(date +%s)" "$rl_5h_pct" > "$COST_BRIDGE_FILE" 2>/dev/null || true
+_tmp="${COST_BRIDGE_FILE}.tmp.$$"
+printf '%s\t%s\t%s\t%s\n' "$cost_usd" "$ctx_pct" "$(date +%s)" "$rl_5h_pct" > "$_tmp" 2>/dev/null && mv -f "$_tmp" "$COST_BRIDGE_FILE" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 5. Model display name + color (bash 3.2 compatible case pattern matching)
