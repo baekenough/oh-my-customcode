@@ -156,16 +156,40 @@ describe('serve.ts', () => {
 
   describe('startServeBackground', () => {
     it('should silently skip when build directory is not found', async () => {
-      // No build dir exists — should resolve without throwing
-      await expect(startServeBackground(tempDir)).resolves.toBeUndefined();
+      // No build dir exists — should resolve without throwing.
+      // skipNpmFallback prevents the npm fallback path from finding the real
+      // build and spawning an orphan detached server process.
+      await expect(
+        startServeBackground(tempDir, undefined, { skipNpmFallback: true })
+      ).resolves.toBeUndefined();
     });
 
     it('should silently skip when server is already running (PID file points to this process)', async () => {
       // Fake a running server by writing current process PID
       await writeFile(PID_FILE, String(process.pid), 'utf-8');
 
-      // Should return without spawning a new process
-      await expect(startServeBackground(tempDir)).resolves.toBeUndefined();
+      // Should return without spawning a new process.
+      // skipNpmFallback prevents the npm fallback from finding the real build
+      // in case the isServeRunning check does not short-circuit first.
+      await expect(
+        startServeBackground(tempDir, undefined, { skipNpmFallback: true })
+      ).resolves.toBeUndefined();
+    });
+
+    it('should spawn a server when build directory exists and server is not running', async () => {
+      // Create a fake build dir with a script that exits immediately
+      const fakeBuildDir = join(tempDir, 'packages', 'serve', 'build');
+      await mkdir(fakeBuildDir, { recursive: true });
+      await writeFile(join(fakeBuildDir, 'index.js'), 'process.exit(0);', 'utf-8');
+
+      await startServeBackground(tempDir, 4321, { skipNpmFallback: true });
+
+      // Clean up any PID file that was created by the spawn
+      try {
+        await unlink(PID_FILE);
+      } catch {
+        // may not exist if child.pid was undefined
+      }
     });
   });
 });

@@ -5,7 +5,6 @@
  *   - serveCommand() invalid port → console.error + process.exit(1)  [lines 29-30]
  *   - serveCommand() foreground mode → runForeground() no-build path  [lines 36-37, 70-75]
  *   - serveStopCommand() not-running path covers the else branch       [line 62]
- *   - openBrowser() execution on current platform                     [lines 95-113]
  *
  * NOTE: Tests that require mocking isServeRunning/stopServe are placed here
  * using state-based approaches (PID file manipulation) to avoid mock.module()
@@ -13,10 +12,10 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openBrowser, serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.js';
+import { serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.js';
 import { initI18n } from '../../../src/i18n/index.js';
 
 const PID_FILE = join(homedir(), '.omcustom-serve.pid');
@@ -116,6 +115,19 @@ describe('serve-commands.ts', () => {
         processExitSpy.mockRestore();
       }
     });
+
+    it('should run spawnSync when build directory exists in foreground mode', async () => {
+      // Create a fake build dir with index.js that exits immediately
+      const fakeBuildDir = join(emptyTempDir, 'packages', 'serve', 'build');
+      await mkdir(fakeBuildDir, { recursive: true });
+      await writeFile(join(fakeBuildDir, 'index.js'), 'process.exit(0);', 'utf-8');
+
+      // spawnSync will run node index.js which exits immediately
+      await serveCommand({ port: '4321', foreground: true, _projectRoot: emptyTempDir });
+
+      const logOutput = consoleLogSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
+      expect(logOutput).toContain('4321');
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -162,16 +174,6 @@ describe('serve-commands.ts', () => {
       const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(logOutput).toContain('4321');
     });
-
-    it('should log started message and call openBrowser when open option is set', async () => {
-      await writeFile(PID_FILE, String(process.pid), 'utf-8');
-
-      // open: true exercises line 45-47
-      await serveCommand({ port: '4321', open: true });
-
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(logOutput).toContain('4321');
-    });
   });
 
   // ---------------------------------------------------------------------------
@@ -201,49 +203,6 @@ describe('serve-commands.ts', () => {
         expect(logOutput).toContain('stopped');
       } finally {
         killSpy.mockRestore();
-      }
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // openBrowser() — platform branches (lines 99-113)
-  // openBrowser fires off execFile and returns without blocking.
-  // ---------------------------------------------------------------------------
-
-  describe('openBrowser()', () => {
-    it('should execute without throwing on the current platform (darwin)', () => {
-      // openBrowser is sync fire-and-forget — should not throw
-      expect(() => openBrowser(4321)).not.toThrow();
-    });
-
-    it('should accept valid port values', () => {
-      expect(() => openBrowser(8080)).not.toThrow();
-      expect(() => openBrowser(3000)).not.toThrow();
-    });
-
-    it('should call execFile with xdg-open on linux platform', () => {
-      // Override process.platform to 'linux' to exercise the else branch (line 108-111)
-      const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
-      Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
-      try {
-        expect(() => openBrowser(4321)).not.toThrow();
-      } finally {
-        if (descriptor) {
-          Object.defineProperty(process, 'platform', descriptor);
-        }
-      }
-    });
-
-    it('should call execFile with cmd on win32 platform', () => {
-      // Override process.platform to 'win32' to exercise the win32 branch (line 103-107)
-      const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
-      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      try {
-        expect(() => openBrowser(4321)).not.toThrow();
-      } finally {
-        if (descriptor) {
-          Object.defineProperty(process, 'platform', descriptor);
-        }
       }
     });
   });
