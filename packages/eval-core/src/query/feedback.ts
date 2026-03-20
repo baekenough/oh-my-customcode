@@ -70,7 +70,7 @@ export async function getAgentFailurePatterns(
       ),
       errorSummaries: since
         ? sql<string>`(
-            SELECT group_concat(sub_es, char(31)) FROM (
+            SELECT json_group_array(sub_es) FROM (
               SELECT ai2.error_summary as sub_es
               FROM ${agentInvocations} AS ai2
               WHERE ai2.agent_type = ${agentInvocations}.agent_type
@@ -82,7 +82,7 @@ export async function getAgentFailurePatterns(
             )
           )`.as('error_summaries')
         : sql<string>`(
-            SELECT group_concat(sub_es, char(31)) FROM (
+            SELECT json_group_array(sub_es) FROM (
               SELECT ai2.error_summary as sub_es
               FROM ${agentInvocations} AS ai2
               WHERE ai2.agent_type = ${agentInvocations}.agent_type
@@ -109,11 +109,15 @@ export async function getAgentFailurePatterns(
     const failureRate = failures / total;
     if (failureRate <= failureRateThreshold) continue;
 
-    const rawErrors = row.errorSummaries ?? '';
-    const commonErrors = rawErrors
-      .split('\x1F')
-      .filter(Boolean)
-      .filter((e) => e !== 'null');
+    const rawErrors = row.errorSummaries ?? '[]';
+    let commonErrors: string[];
+    try {
+      commonErrors = (JSON.parse(rawErrors) as string[]).filter(
+        (e) => e != null && e !== 'null'
+      );
+    } catch {
+      commonErrors = [];
+    }
 
     results.push({
       agentType: row.agentType,
