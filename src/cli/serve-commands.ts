@@ -81,7 +81,7 @@ function runForeground(projectRoot: string, port: number): void {
       OMCUSTOM_PORT: String(port),
       OMCUSTOM_HOST: 'localhost',
       OMCUSTOM_ORIGIN: `http://localhost:${port}`,
-      OMCUSTOM_PROJECT_ROOT: projectRoot,
+      OMX_PROJECT_ROOT: projectRoot,
     },
     stdio: 'inherit',
   });
