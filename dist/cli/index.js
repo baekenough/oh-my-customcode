@@ -27758,7 +27758,7 @@ async function startServeBackground(projectRoot, port = DEFAULT_PORT) {
       OMCUSTOM_PORT: String(port),
       OMCUSTOM_HOST: "localhost",
       OMCUSTOM_ORIGIN: `http://localhost:${port}`,
-      OMCUSTOM_PROJECT_ROOT: projectRoot
+      OMX_PROJECT_ROOT: projectRoot
     },
     stdio: "ignore",
     detached: true
@@ -29684,7 +29684,7 @@ function runForeground(projectRoot, port) {
       OMCUSTOM_PORT: String(port),
       OMCUSTOM_HOST: "localhost",
       OMCUSTOM_ORIGIN: `http://localhost:${port}`,
-      OMCUSTOM_PROJECT_ROOT: projectRoot
+      OMX_PROJECT_ROOT: projectRoot
     },
     stdio: "inherit"
   });
