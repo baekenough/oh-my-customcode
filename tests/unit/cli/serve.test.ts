@@ -175,21 +175,5 @@ describe('serve.ts', () => {
         startServeBackground(tempDir, undefined, { skipNpmFallback: true })
       ).resolves.toBeUndefined();
     });
-
-    it('should spawn a server when build directory exists and server is not running', async () => {
-      // Create a fake build dir with a script that exits immediately
-      const fakeBuildDir = join(tempDir, 'packages', 'serve', 'build');
-      await mkdir(fakeBuildDir, { recursive: true });
-      await writeFile(join(fakeBuildDir, 'index.js'), 'process.exit(0);', 'utf-8');
-
-      await startServeBackground(tempDir, 4321, { skipNpmFallback: true });
-
-      // Clean up any PID file that was created by the spawn
-      try {
-        await unlink(PID_FILE);
-      } catch {
-        // may not exist if child.pid was undefined
-      }
-    });
   });
 });

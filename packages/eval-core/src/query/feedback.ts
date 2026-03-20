@@ -2,6 +2,17 @@ import { and, eq, gte, sql } from 'drizzle-orm';
 import type { EvalDb } from '../db/client.js';
 import { agentInvocations, improvementActions } from '../db/schema.js';
 
+/**
+ * Opposing action pairs that conflict when targeting the same entity.
+ * e.g., "escalate" and "augment" are complementary (both valid),
+ * but "escalate" and "de-escalate" would conflict (if we add de-escalate later).
+ * Currently only augment+revise for skills conflicts.
+ */
+const CONFLICT_PAIRS: [string, string][] = [
+  // If a skill needs revision, augmenting it first is wasteful
+  ['revise', 'augment'],
+];
+
 export interface FeedbackQueryOptions {
   since?: string; // ISO 8601 date string
   minSessions?: number; // minimum invocation count threshold (not sessions), default 5
@@ -158,9 +169,13 @@ export async function getSkillEffectiveness(
       successes: sql<number>`sum(case when ${agentInvocations.outcome} = 'success' then 1 else 0 end)`.as(
         'successes'
       ),
-      agentTypes: sql<string>`group_concat(distinct ${agentInvocations.agentType})`.as(
-        'agent_types'
-      ),
+      agentTypes: sql<string>`(
+        SELECT json_group_array(sub_at) FROM (
+          SELECT DISTINCT ai3.agent_type as sub_at
+          FROM ${agentInvocations} AS ai3
+          WHERE ai3.skill_name = ${agentInvocations}.skill_name
+        )
+      )`.as('agent_types'),
       lastUsedAt: sql<string | null>`max(${agentInvocations.timestamp})`.as('last_used_at'),
     })
     .from(agentInvocations)
@@ -182,7 +197,13 @@ export async function getSkillEffectiveness(
       totalInvocations: total,
       successCount: successes,
       successRate,
-      agentTypes: (row.agentTypes ?? '').split(',').filter(Boolean),
+      agentTypes: (() => {
+        try {
+          return (JSON.parse(row.agentTypes ?? '[]') as string[]).filter(Boolean);
+        } catch {
+          return [];
+        }
+      })(),
       lastUsedAt: row.lastUsedAt ?? null,
     });
   }
@@ -261,11 +282,110 @@ export async function getImprovementSuggestions(
     });
   }
 
+  // Apply conflict resolution
+  const resolved = filterConflicts(suggestions);
+
+  // Apply cooldown filtering
+  const filtered = await filterCooldowns(db, resolved);
+
   // Sort: high confidence first, then medium, then low
   const confidenceOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-  return suggestions.sort(
+  return filtered.sort(
     (a, b) => (confidenceOrder[a.confidence] ?? 2) - (confidenceOrder[b.confidence] ?? 2)
   );
+}
+
+/**
+ * Resolves conflicts between suggestions targeting the same entity.
+ * Groups suggestions by target, then checks all pairs for conflicts.
+ * When a conflict is found, keeps the higher-confidence entry; on tie, keeps the earlier one.
+ */
+export function filterConflicts(
+  suggestions: ImprovementSuggestion[]
+): ImprovementSuggestion[] {
+  const confidenceOrder: Record<string, number> = { high: 2, medium: 1, low: 0 };
+  const byTarget = new Map<string, ImprovementSuggestion[]>();
+
+  // Group by target
+  for (const s of suggestions) {
+    const list = byTarget.get(s.target) ?? [];
+    list.push(s);
+    byTarget.set(s.target, list);
+  }
+
+  const result: ImprovementSuggestion[] = [];
+
+  for (const [, group] of byTarget) {
+    if (group.length <= 1) {
+      result.push(...group);
+      continue;
+    }
+
+    // Check all pairs for conflicts, keep the higher-confidence one
+    const removed = new Set<number>();
+    for (let i = 0; i < group.length; i++) {
+      if (removed.has(i)) continue;
+      for (let j = i + 1; j < group.length; j++) {
+        if (removed.has(j)) continue;
+        const isConflict = CONFLICT_PAIRS.some(
+          ([a, b]) =>
+            (group[i].actionType === a && group[j].actionType === b) ||
+            (group[i].actionType === b && group[j].actionType === a)
+        );
+        if (isConflict) {
+          const scoreI = confidenceOrder[group[i].confidence] ?? 0;
+          const scoreJ = confidenceOrder[group[j].confidence] ?? 0;
+          // Remove the lower-confidence one; on tie, remove the later one
+          if (scoreJ > scoreI) {
+            removed.add(i);
+          } else {
+            removed.add(j);
+          }
+        }
+      }
+    }
+
+    for (let i = 0; i < group.length; i++) {
+      if (!removed.has(i)) result.push(group[i]);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Filters out suggestions for targets that have been recently actioned
+ * (applied or rejected within cooldown period).
+ */
+export async function filterCooldowns(
+  db: EvalDb,
+  suggestions: ImprovementSuggestion[],
+  defaultCooldownDays = 7
+): Promise<ImprovementSuggestion[]> {
+  if (suggestions.length === 0) return [];
+
+  const targetNames = [...new Set(suggestions.map((s) => s.target))];
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - defaultCooldownDays);
+  const cutoffStr = cutoff.toISOString();
+
+  // Find recently actioned targets
+  const recentActions = await db
+    .select({ targetName: improvementActions.targetName })
+    .from(improvementActions)
+    .where(
+      and(
+        sql`${improvementActions.targetName} IN (${sql.join(
+          targetNames.map((n) => sql`${n}`),
+          sql`, `
+        )})`,
+        sql`${improvementActions.status} IN ('applied', 'rejected')`,
+        gte(improvementActions.createdAt, cutoffStr)
+      )
+    );
+
+  const cooledDown = new Set(recentActions.map((r) => r.targetName));
+  return suggestions.filter((s) => !cooledDown.has(s.target));
 }
 
 /**
@@ -279,29 +399,31 @@ export async function saveImprovementActions(
 ): Promise<void> {
   if (suggestions.length === 0) return;
 
-  // Remove existing proposed actions for targets that will be re-analyzed
   const targetNames = [...new Set(suggestions.map((s) => s.target))];
-  for (const name of targetNames) {
-    await db
-      .delete(improvementActions)
-      .where(
-        and(
-          eq(improvementActions.targetName, name),
-          eq(improvementActions.status, 'proposed')
-        )
-      );
-  }
+  const values = suggestions.map((s) => ({
+    feedbackSource: 'auto_analysis' as const,
+    targetType: s.targetType,
+    targetName: s.target,
+    actionType: s.actionType,
+    description: s.description,
+    confidence: s.confidence,
+    status: 'proposed' as const,
+    evidence: JSON.stringify(s.evidence),
+  }));
 
-  await db.insert(improvementActions).values(
-    suggestions.map((s) => ({
-      feedbackSource: 'auto_analysis' as const,
-      targetType: s.targetType,
-      targetName: s.target,
-      actionType: s.actionType,
-      description: s.description,
-      confidence: s.confidence,
-      status: 'proposed' as const,
-      evidence: JSON.stringify(s.evidence),
-    }))
-  );
+  // drizzle-orm/bun-sqlite transaction() only supports synchronous callbacks.
+  // Use .run() for synchronous execution inside the transaction.
+  db.transaction((tx) => {
+    for (const name of targetNames) {
+      tx.delete(improvementActions)
+        .where(
+          and(
+            eq(improvementActions.targetName, name),
+            eq(improvementActions.status, 'proposed')
+          )
+        )
+        .run();
+    }
+    tx.insert(improvementActions).values(values).run();
+  });
 }

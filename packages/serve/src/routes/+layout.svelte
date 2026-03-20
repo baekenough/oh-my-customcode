@@ -6,8 +6,7 @@
 	export let data; // From +layout.server.ts: { projects, selectedProject, root }
 
 	const navItems = [
-		{ href: '/', label: 'Dashboard', icon: '▣' },
-		{ href: '/projects', label: 'Projects', icon: '▦' }
+		{ href: '/', label: 'Dashboard', icon: '▣' }
 	];
 
 	const coreItems = [
