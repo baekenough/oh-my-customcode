@@ -9305,7 +9305,7 @@ var init_package = __esm(() => {
   package_default = {
     name: "oh-my-customcode",
     workspaces: ["packages/*"],
-    version: "0.47.1",
+    version: "0.47.2",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -29766,6 +29766,7 @@ function runForeground(projectRoot, port, buildDirOpts) {
 init_package();
 
 // src/core/updater.ts
+init_package();
 init_fs();
 import { join as join14 } from "node:path";
 
@@ -30075,12 +30076,28 @@ async function runFullUpdatePostProcessing(options, result, config) {
     });
   }
 }
+function compareSemver2(a, b) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0;i < 3; i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (diff !== 0)
+      return diff;
+  }
+  return 0;
+}
 async function update(options) {
   const result = createUpdateResult();
   try {
     info("update.start", { targetDir: options.targetDir });
     const config = await loadConfig(options.targetDir);
     result.previousVersion = config.version;
+    const cliVersion = package_default.version;
+    if (result.previousVersion !== "0.0.0" && compareSemver2(result.previousVersion, cliVersion) > 0) {
+      result.success = false;
+      result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g oh-my-customcode@latest`;
+      return result;
+    }
     const targetPkgPath = join14(options.targetDir, "package.json");
     if (await fileExists(targetPkgPath)) {
       const targetPkg = await readJsonFile(targetPkgPath);
@@ -30431,8 +30448,8 @@ async function updateAllProjects(options) {
       };
       const result = await update(updateOptions);
       if (result.success) {
-        const from = project.version ?? "unknown";
-        const to = currentVersion;
+        const from = result.previousVersion || project.version || "unknown";
+        const to = result.newVersion || currentVersion;
         console.log(i18n.t("cli.update.allProjectUpdated", { from, to }));
         updatedCount++;
       } else {
