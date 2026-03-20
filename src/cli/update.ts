@@ -151,8 +151,8 @@ async function updateAllProjects(options: UpdateCommandOptions): Promise<void> {
       const result = await update(updateOptions);
 
       if (result.success) {
-        const from = project.version ?? 'unknown';
-        const to = currentVersion;
+        const from = result.previousVersion || project.version || 'unknown';
+        const to = result.newVersion || currentVersion;
         console.log(i18n.t('cli.update.allProjectUpdated', { from, to }));
         updatedCount++;
       } else {
