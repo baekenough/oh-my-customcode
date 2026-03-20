@@ -3,6 +3,7 @@ import { realpathSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { initI18n } from '../../../src/i18n/index.js';
 
 describe('update command', () => {
   let tempDir: string;
@@ -19,6 +20,9 @@ describe('update command', () => {
     tempDir = realpathSync(await mkdtemp(join(tmpdir(), 'omcustom-update-test-')));
     originalCwd = process.cwd();
     process.chdir(tempDir);
+
+    // Initialize i18n for tests that assert on log content
+    await initI18n('en');
 
     // Spy on process.exit
     originalExit = process.exit;
@@ -86,11 +90,13 @@ describe('update command', () => {
 
       // Verify update was called with correct options
       expect(mockUpdate).toHaveBeenCalledTimes(1);
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
       expect(callArgs).toBeDefined();
-      expect(callArgs.targetDir).toBe(tempDir);
-      expect(callArgs.components).toBeUndefined(); // No specific components = all
-      expect(callArgs.preserveCustomizations).toBe(true);
+      expect(callArgs!.targetDir).toBe(tempDir);
+      expect(callArgs!.components).toBeUndefined(); // No specific components = all
+      expect(callArgs!.preserveCustomizations).toBe(true);
 
       // Verify output
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -131,8 +137,10 @@ describe('update command', () => {
       await updateCommand({ dryRun: true });
 
       // Verify update was called with dryRun
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.dryRun).toBe(true);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.dryRun).toBe(true);
 
       // Verify dry run header was printed
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -169,8 +177,10 @@ describe('update command', () => {
 
       await updateCommand({ force: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.force).toBe(true);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.force).toBe(true);
     });
   });
 
@@ -204,8 +214,10 @@ describe('update command', () => {
 
       await updateCommand({ backup: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.backup).toBe(true);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.backup).toBe(true);
 
       // Verify backup path was printed
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -242,8 +254,10 @@ describe('update command', () => {
 
       await updateCommand({ agents: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.components).toEqual(['agents']);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.components).toEqual(['agents']);
     });
 
     it('should update only skills when skills flag is set', async () => {
@@ -275,8 +289,10 @@ describe('update command', () => {
 
       await updateCommand({ skills: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.components).toEqual(['skills']);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.components).toEqual(['skills']);
     });
 
     it('should update multiple components when multiple flags are set', async () => {
@@ -308,11 +324,13 @@ describe('update command', () => {
 
       await updateCommand({ agents: true, skills: true, rules: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.components).toContain('agents');
-      expect(callArgs.components).toContain('skills');
-      expect(callArgs.components).toContain('rules');
-      expect(callArgs.components?.length).toBe(3);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect((callArgs!.components as string[]).includes('agents')).toBe(true);
+      expect((callArgs!.components as string[]).includes('skills')).toBe(true);
+      expect((callArgs!.components as string[]).includes('rules')).toBe(true);
+      expect((callArgs!.components as string[]).length).toBe(3);
     });
 
     it('should update only guides when guides flag is set', async () => {
@@ -344,8 +362,10 @@ describe('update command', () => {
 
       await updateCommand({ guides: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.components).toEqual(['guides']);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.components).toEqual(['guides']);
     });
 
     it('should update only hooks when hooks flag is set', async () => {
@@ -377,8 +397,10 @@ describe('update command', () => {
 
       await updateCommand({ hooks: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.components).toEqual(['hooks']);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.components).toEqual(['hooks']);
     });
 
     it('should update all components when no flags are set', async () => {
@@ -410,8 +432,10 @@ describe('update command', () => {
 
       await updateCommand({});
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.components).toBeUndefined();
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.components).toBeUndefined();
     });
 
     it('should update only contexts when contexts flag is set', async () => {
@@ -443,8 +467,10 @@ describe('update command', () => {
 
       await updateCommand({ contexts: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.components).toEqual(['contexts']);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.components).toEqual(['contexts']);
     });
   });
 
@@ -668,6 +694,61 @@ describe('update command', () => {
       // Only project-a (outdated) should be updated
       expect(mockUpdate).toHaveBeenCalledTimes(1);
       expect(consoleLogSpy).toHaveBeenCalled();
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should use result.previousVersion and result.newVersion as from/to, not stale project.version', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      // result.previousVersion intentionally differs from project.version to prove we read from result
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.46.1', // what was actually in .omcustomrc.json
+        newVersion: '0.47.0', // what was actually written to .omcustomrc.json
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'project-a',
+            path: '/tmp/project-a',
+            version: '0.44.0', // stale — intentionally differs from result.previousVersion
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+
+      // The logged "updated" line must contain result.previousVersion (0.46.1) and
+      // result.newVersion (0.47.0), not the stale project.version (0.44.0).
+      // i18n template: "  ✓ updated ({{from}} → {{to}})"
+      const allLogs = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(allLogs).toContain('0.46.1');
+      expect(allLogs).toContain('0.47.0');
       expect(exitCode).toBeUndefined();
     });
 
@@ -969,8 +1050,10 @@ describe('update command', () => {
 
       await updateCommand({ dryRun: true });
 
-      const callArgs = mockUpdate.mock.calls[0]?.[0];
-      expect(callArgs.dryRun).toBe(true);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs!.dryRun).toBe(true);
       expect(exitCode).toBeUndefined();
     });
 

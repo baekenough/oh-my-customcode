@@ -3,6 +3,7 @@
  */
 
 import { join } from 'node:path';
+import packageJson from '../../package.json';
 import {
   copyDirectory,
   ensureDirectory,
@@ -448,6 +449,20 @@ async function runFullUpdatePostProcessing(
 }
 
 /**
+ * Compare two semver strings numerically.
+ * Returns a positive number if a > b, negative if a < b, 0 if equal.
+ */
+function compareSemver(a: string, b: string): number {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+/**
  * Update oh-my-customcode installation
  */
 export async function update(options: UpdateOptions): Promise<UpdateResult> {
@@ -458,6 +473,19 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     const config = await loadConfig(options.targetDir);
     result.previousVersion = config.version;
+
+    // Guard against version downgrade (#579).
+    // If the project's installed version is newer than this CLI's own version,
+    // an outdated CLI binary is running. Abort to prevent a downgrade.
+    const cliVersion = packageJson.version as string;
+    if (
+      result.previousVersion !== '0.0.0' &&
+      compareSemver(result.previousVersion, cliVersion) > 0
+    ) {
+      result.success = false;
+      result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g oh-my-customcode@latest`;
+      return result;
+    }
 
     const targetPkgPath = join(options.targetDir, 'package.json');
     if (await fileExists(targetPkgPath)) {
