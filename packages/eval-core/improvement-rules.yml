@@ -1,0 +1,26 @@
+rules:
+  - name: agent-high-failure
+    pattern: "agent failure_rate > 0.3"
+    min_sessions: 5
+    actions:
+      - type: skill_augmentation
+        description: "Add relevant guide references to agent skills"
+      - type: model_escalation
+        description: "Consider upgrading agent default model"
+    confidence: medium
+
+  - name: skill-low-effectiveness
+    pattern: "skill success_rate < 0.5 AND invocations > 10"
+    min_sessions: 10
+    actions:
+      - type: skill_revision
+        description: "Review and rewrite skill workflow"
+    confidence: low
+
+  - name: routing-miss
+    pattern: "routing miss_rate > 0.15"
+    min_sessions: 10
+    actions:
+      - type: routing_update
+        description: "Add keywords/patterns to routing skill"
+    confidence: medium
