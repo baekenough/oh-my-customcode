@@ -17,8 +17,8 @@ When an agent or skill has evolved organically without a formal spec, `takeover`
 ## Usage
 
 ```
-/omcustom:takeover <agent-name>
-/omcustom:takeover <skill-name>
+/omcustom-takeover <agent-name>
+/omcustom-takeover <skill-name>
 ```
 
 ## Workflow
@@ -110,6 +110,6 @@ generated: <ISO-8601 timestamp>
 ## Notes
 
 - Specs are git-untracked (under `.claude/`)
-- Regenerate anytime with `/omcustom:takeover <name>`
+- Regenerate anytime with `/omcustom-takeover <name>`
 - Used by `/dev-refactor --spec` for invariant-preserving refactoring
 - Advisory output — human review recommended before using as contract
