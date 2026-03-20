@@ -9305,7 +9305,7 @@ var init_package = __esm(() => {
   package_default = {
     name: "oh-my-customcode",
     workspaces: ["packages/*"],
-    version: "0.45.1",
+    version: "0.45.3",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -9483,8 +9483,16 @@ async function searchDirectory(dir2, depth, results, currentVersion, seen) {
     await Promise.all(subdirs.map((subdir) => searchDirectory(join9(dir2, subdir.name), depth + 1, results, currentVersion, seen)));
   }
 }
+async function getTemplateVersion() {
+  const manifestPath = resolveTemplatePath("manifest.json");
+  if (await fileExists(manifestPath)) {
+    const manifest = await readJsonFile(manifestPath);
+    return manifest.version;
+  }
+  return package_default.version;
+}
 async function findProjects(options = {}) {
-  const currentVersion = package_default.version;
+  const currentVersion = await getTemplateVersion();
   const home = homedir2();
   const seen = new Set;
   const results = [];
@@ -9571,7 +9579,7 @@ oh-my-customcode 적용 프로젝트 (${projects.length}개):`);
 현재 설치 버전: v${currentVersion}`);
 }
 async function projectsCommand(options = {}) {
-  const currentVersion = package_default.version;
+  const currentVersion = await getTemplateVersion();
   const format = options.format || "table";
   console.log("  oh-my-customcode 적용 프로젝트를 검색 중...");
   try {
@@ -9593,6 +9601,7 @@ async function projectsCommand(options = {}) {
 var DEFAULT_SEARCH_DIRS, MAX_SEARCH_DEPTH = 3, projects_default;
 var init_projects = __esm(() => {
   init_package();
+  init_fs();
   DEFAULT_SEARCH_DIRS = ["workspace", "projects", "dev", "src", "code", "repos", "work"];
   projects_default = projectsCommand;
 });
@@ -30011,6 +30020,16 @@ async function update(options) {
     info("update.start", { targetDir: options.targetDir });
     const config = await loadConfig(options.targetDir);
     result.previousVersion = config.version;
+    const targetPkgPath = join14(options.targetDir, "package.json");
+    if (await fileExists(targetPkgPath)) {
+      const targetPkg = await readJsonFile(targetPkgPath);
+      if (targetPkg.name === "oh-my-customcode") {
+        warn("update.self_update_skipped");
+        result.success = true;
+        result.warnings.push("Skipped: source project cannot update itself");
+        return result;
+      }
+    }
     const updateCheck = await checkForUpdates(options.targetDir);
     result.newVersion = updateCheck.latestVersion;
     if (!updateCheck.hasUpdates && !options.force) {
