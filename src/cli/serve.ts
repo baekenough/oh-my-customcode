@@ -12,20 +12,34 @@ export const DEFAULT_PORT = 4321;
 
 const PID_FILE = join(process.env.HOME ?? '~', '.omcustom-serve.pid');
 
+export interface FindServeBuildDirOptions {
+  /**
+   * When true, skips the npm package fallback path.
+   * This is intended for test isolation to prevent real build artifacts
+   * from interfering with tests that expect a missing build directory.
+   */
+  skipNpmFallback?: boolean;
+}
+
 /**
  * Find the built SvelteKit server directory.
  * Checks two locations: the local monorepo packages/serve/build,
  * and the npm-installed package path relative to this module.
  */
-export function findServeBuildDir(projectRoot: string): string | null {
+export function findServeBuildDir(
+  projectRoot: string,
+  options?: FindServeBuildDirOptions
+): string | null {
   // 1. Monorepo: packages/serve/build (dev / local install)
   const localBuild = join(projectRoot, 'packages', 'serve', 'build');
   if (existsSync(join(localBuild, 'index.js'))) return localBuild;
 
   // 2. npm global: installed next to dist/ inside the omcustom package
   // __dirname is dist/cli/ when compiled, so go up two levels to package root
-  const npmBuild = join(import.meta.dirname, '..', '..', 'packages', 'serve', 'build');
-  if (existsSync(join(npmBuild, 'index.js'))) return npmBuild;
+  if (options?.skipNpmFallback !== true) {
+    const npmBuild = join(import.meta.dirname, '..', '..', 'packages', 'serve', 'build');
+    if (existsSync(join(npmBuild, 'index.js'))) return npmBuild;
+  }
 
   return null;
 }
@@ -57,16 +71,18 @@ export async function isServeRunning(): Promise<boolean> {
  *
  * @param projectRoot - Absolute path to the project root (used to find build dir)
  * @param port - TCP port to bind (default: 4321)
+ * @param buildDirOpts - Options forwarded to findServeBuildDir (e.g. skipNpmFallback for tests)
  */
 export async function startServeBackground(
   projectRoot: string,
-  port: number = DEFAULT_PORT
+  port: number = DEFAULT_PORT,
+  buildDirOpts?: FindServeBuildDirOptions
 ): Promise<void> {
   if (await isServeRunning()) {
     return; // already running — no-op
   }
 
-  const buildDir = findServeBuildDir(projectRoot);
+  const buildDir = findServeBuildDir(projectRoot, buildDirOpts);
   if (buildDir === null) {
     // Build not present (serve package not installed / not yet built) — silently skip
     return;

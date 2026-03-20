@@ -185,6 +185,74 @@ describe('getAgentFailurePatterns', () => {
     expect(result).toHaveLength(1);
     expect(result[0]?.agentType).toBe('mid-agent');
   });
+
+  it('does not cross-contaminate commonErrors between agent types', async () => {
+    const { db } = makeDb();
+    for (let i = 0; i < 5; i++) {
+      seedInvocation(db, 'agent-A', 'failure', { errorSummary: `alpha-${i}` });
+    }
+    for (let i = 0; i < 5; i++) {
+      seedInvocation(db, 'agent-B', 'failure', { errorSummary: `beta-${i}` });
+    }
+
+    const result = await getAgentFailurePatterns(db, {
+      minSessions: 5,
+      failureRateThreshold: 0,
+    });
+
+    expect(result).toHaveLength(2);
+    const agentA = result.find((r) => r.agentType === 'agent-A');
+    const agentB = result.find((r) => r.agentType === 'agent-B');
+    expect(agentA).toBeDefined();
+    expect(agentB).toBeDefined();
+    for (const err of agentA!.commonErrors) {
+      expect(err).toMatch(/^alpha-/);
+    }
+    for (const err of agentB!.commonErrors) {
+      expect(err).toMatch(/^beta-/);
+    }
+  });
+
+  it('handles error_summary containing special characters', async () => {
+    const { db } = makeDb();
+    for (let i = 0; i < 5; i++) {
+      const err = i === 2 ? 'error\x1Fwith\x1Fdelimiter' : `normal-err-${i}`;
+      seedInvocation(db, 'special-agent', 'failure', { errorSummary: err });
+    }
+
+    const result = await getAgentFailurePatterns(db, {
+      minSessions: 5,
+      failureRateThreshold: 0,
+    });
+
+    expect(result).toHaveLength(1);
+    const agent = result[0];
+    // json_group_array preserves entries correctly — exactly 5 entries
+    expect(agent.commonErrors).toHaveLength(5);
+    expect(agent.commonErrors).toContain('error\x1Fwith\x1Fdelimiter');
+  });
+
+  it('returns most recent errors in commonErrors', async () => {
+    const { db } = makeDb();
+    for (let i = 0; i < 10; i++) {
+      seedInvocation(db, 'recency-agent', 'failure', {
+        errorSummary: `error-${i}`,
+        since: `2026-01-01T00:${String(i).padStart(2, '0')}:00.000Z`,
+      });
+    }
+
+    const result = await getAgentFailurePatterns(db, {
+      minSessions: 5,
+      failureRateThreshold: 0,
+    });
+
+    expect(result).toHaveLength(1);
+    const agent = result[0];
+    expect(agent.commonErrors).toHaveLength(5);
+    // Most recent first: error-9, error-8, error-7, error-6, error-5
+    expect(agent.commonErrors[0]).toBe('error-9');
+    expect(agent.commonErrors[4]).toBe('error-5');
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -122,6 +122,7 @@ oh-my-customcode로 구동됩니다.
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
+| `/omcustom:loop` | 백그라운드 에이전트 자동 계속 실행 |
 | `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
 | `/omcustom:status` | 시스템 상태 표시 |
 | `/omcustom:help` | 도움말 표시 |

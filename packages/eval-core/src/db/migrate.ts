@@ -5,8 +5,19 @@ import { dirname } from 'node:path';
 export function runMigrations(dbPath: string): void {
   mkdirSync(dirname(dbPath), { recursive: true });
   const db = new Database(dbPath);
+  try {
+    runMigrationsOnDb(db);
+  } catch (err) {
+    db.close();
+    throw err;
+  }
+  db.close();
+}
+
+function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
   db.run('PRAGMA journal_mode = WAL');
   db.run('PRAGMA foreign_keys = ON');
+  db.run('PRAGMA busy_timeout = 5000');
 
   // Create tables using bun:sqlite (SQL DDL, not shell)
   const statements = [
@@ -95,7 +106,6 @@ export function runMigrations(dbPath: string): void {
     )`,
     'CREATE INDEX IF NOT EXISTS idx_projects_cwd ON projects(cwd)',
     'CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON sessions(session_id)',
-    'CREATE INDEX IF NOT EXISTS idx_sessions_project_id ON sessions(project_id)',
     'CREATE INDEX IF NOT EXISTS idx_turns_session_id ON turns(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_ppid ON agent_invocations(session_ppid)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_agent_type ON agent_invocations(agent_type)',
@@ -113,9 +123,20 @@ export function runMigrations(dbPath: string): void {
   // Migrations: add project_id column to existing sessions table (idempotent)
   try {
     db.run('ALTER TABLE sessions ADD COLUMN project_id INTEGER REFERENCES projects(id)');
-  } catch {
-    // Column already exists — ignore
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : '';
+    if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+      throw err; // Re-throw unexpected errors (e.g., disk I/O)
+    }
   }
 
-  db.close();
+  // Add project_id index after the ALTER TABLE migration (column may not exist on legacy DBs)
+  try {
+    db.run('CREATE INDEX IF NOT EXISTS idx_sessions_project_id ON sessions(project_id)');
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : '';
+    if (!msg.includes('already exists') && !msg.includes('no such column')) {
+      throw err; // Re-throw unexpected errors
+    }
+  }
 }
