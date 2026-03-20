@@ -136,9 +136,13 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
+          },
+          {
+            "type": "prompt",
+            "prompt": "A background subagent just completed. Check if there are pending workflow steps that depend on this result. If yes, proceed to the next step automatically. If no pending steps, report the results to the user and wait for input. Safety: After 3 consecutive auto-continues without user interaction, pause and ask the user before proceeding."
           }
         ],
-        "description": "Record agent outcomes on subagent completion (complements PostToolUse Agent matcher)"
+        "description": "Record agent outcomes + auto-continue workflow on subagent completion"
       }
     ],
     "PostCompact": [
