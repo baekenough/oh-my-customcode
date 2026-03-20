@@ -6,9 +6,20 @@ import { fail } from '@sveltejs/kit';
 
 const execAsync = promisify(exec);
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ parent }) => {
+	const { selectedProject } = await parent();
 	const projects = await findProjectsForServe();
-	return { projects };
+
+	// Find the selected project if a slug is provided
+	const selectedProjectData = selectedProject
+		? (projects.find((p) => p.slug === selectedProject) ?? null)
+		: null;
+
+	return {
+		projects,
+		selectedProject,
+		selectedProjectData
+	};
 };
 
 export const actions: Actions = {
