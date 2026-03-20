@@ -9305,7 +9305,7 @@ var init_package = __esm(() => {
   package_default = {
     name: "oh-my-customcode",
     workspaces: ["packages/*"],
-    version: "0.47.0",
+    version: "0.47.1",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -26926,7 +26926,7 @@ async function doctorCommand(options = {}) {
 
 // src/cli/init.ts
 init_package();
-import { join as join11 } from "node:path";
+import { join as join10 } from "node:path";
 
 // src/core/installer.ts
 init_fs();
@@ -27782,85 +27782,6 @@ async function checkUvAvailable() {
 // src/cli/init.ts
 init_fs();
 init_projects();
-
-// src/cli/serve.ts
-import { spawn } from "node:child_process";
-import { existsSync as existsSync2 } from "node:fs";
-import { readFile as readFile2, unlink, writeFile as writeFile2 } from "node:fs/promises";
-import { join as join10 } from "node:path";
-var DEFAULT_PORT = 4321;
-var PID_FILE = join10(process.env.HOME ?? "~", ".omcustom-serve.pid");
-function findServeBuildDir(projectRoot, options) {
-  const localBuild = join10(projectRoot, "packages", "serve", "build");
-  if (existsSync2(join10(localBuild, "index.js")))
-    return localBuild;
-  if (options?.skipNpmFallback !== true) {
-    const npmBuild = join10(import.meta.dirname, "..", "..", "packages", "serve", "build");
-    if (existsSync2(join10(npmBuild, "index.js")))
-      return npmBuild;
-  }
-  return null;
-}
-async function isServeRunning() {
-  try {
-    const raw = await readFile2(PID_FILE, "utf-8");
-    const pid = Number(raw.trim());
-    if (!Number.isFinite(pid) || pid <= 0) {
-      await cleanupPidFile();
-      return false;
-    }
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    await cleanupPidFile();
-    return false;
-  }
-}
-async function startServeBackground(projectRoot, port = DEFAULT_PORT, buildDirOpts) {
-  if (await isServeRunning()) {
-    return;
-  }
-  const buildDir = findServeBuildDir(projectRoot, buildDirOpts);
-  if (buildDir === null) {
-    return;
-  }
-  const child = spawn("node", [join10(buildDir, "index.js")], {
-    env: {
-      ...process.env,
-      OMCUSTOM_PORT: String(port),
-      OMCUSTOM_HOST: "localhost",
-      OMCUSTOM_ORIGIN: `http://localhost:${port}`,
-      OMX_PROJECT_ROOT: projectRoot
-    },
-    stdio: "ignore",
-    detached: true
-  });
-  child.unref();
-  if (child.pid !== undefined) {
-    await writeFile2(PID_FILE, String(child.pid), "utf-8");
-  }
-}
-async function stopServe() {
-  try {
-    const raw = await readFile2(PID_FILE, "utf-8");
-    const pid = Number(raw.trim());
-    if (!Number.isFinite(pid) || pid <= 0) {
-      await cleanupPidFile();
-      return false;
-    }
-    process.kill(pid, "SIGTERM");
-    await cleanupPidFile();
-    return true;
-  } catch {
-    await cleanupPidFile();
-    return false;
-  }
-}
-async function cleanupPidFile() {
-  try {
-    await unlink(PID_FILE);
-  } catch {}
-}
 
 // node_modules/.bun/@clack+core@1.1.0/node_modules/@clack/core/dist/index.mjs
 import { styleText as D } from "node:util";
@@ -28839,7 +28760,7 @@ async function runInitWizard(options) {
 // src/cli/init.ts
 async function checkExistingInstallation(targetDir) {
   const layout = getProviderLayout();
-  const rootDir = join11(targetDir, layout.rootDir);
+  const rootDir = join10(targetDir, layout.rootDir);
   return fileExists(rootDir);
 }
 var PROVIDER_SUBDIR_COMPONENTS = new Set([
@@ -28853,13 +28774,13 @@ var PROVIDER_SUBDIR_COMPONENTS = new Set([
 function componentToPath(targetDir, component) {
   if (component === "entry-md") {
     const layout = getProviderLayout();
-    return join11(targetDir, layout.entryFile);
+    return join10(targetDir, layout.entryFile);
   }
   if (PROVIDER_SUBDIR_COMPONENTS.has(component)) {
     const layout = getProviderLayout();
-    return join11(targetDir, layout.rootDir, component);
+    return join10(targetDir, layout.rootDir, component);
   }
-  return join11(targetDir, component);
+  return join10(targetDir, component);
 }
 function buildInstalledPaths(targetDir, components) {
   return components.map((component) => componentToPath(targetDir, component));
@@ -28965,8 +28886,6 @@ async function initCommand(options) {
     console.log("  /plugin install context7");
     console.log("");
     console.log('See CLAUDE.md "외부 의존성" section for details.');
-    await startServeBackground(targetDir).catch(() => {});
-    console.log(`Web UI: http://127.0.0.1:${DEFAULT_PORT}`);
     return {
       success: true,
       message: i18n.t("cli.init.success"),
@@ -28980,7 +28899,7 @@ async function initCommand(options) {
 }
 
 // src/cli/list.ts
-import { basename as basename4, dirname as dirname4, join as join12, relative as relative3 } from "node:path";
+import { basename as basename4, dirname as dirname4, join as join11, relative as relative3 } from "node:path";
 init_fs();
 var ALLOWED_TOP_LEVEL_KEYS = new Set(["name", "type", "description", "version", "category"]);
 function parseKeyValue(line) {
@@ -29045,12 +28964,12 @@ function extractAgentTypeFromFilename(filename) {
   return prefixMap[prefix] || "unknown";
 }
 function extractSkillCategoryFromPath(skillPath, baseDir, rootDir) {
-  const relativePath = relative3(join12(baseDir, rootDir, "skills"), skillPath);
+  const relativePath = relative3(join11(baseDir, rootDir, "skills"), skillPath);
   const parts = relativePath.split("/").filter(Boolean);
   return parts[0] || "unknown";
 }
 function extractGuideCategoryFromPath(guidePath, baseDir) {
-  const relativePath = relative3(join12(baseDir, "guides"), guidePath);
+  const relativePath = relative3(join11(baseDir, "guides"), guidePath);
   const parts = relativePath.split("/").filter(Boolean);
   return parts[0] || "unknown";
 }
@@ -29144,7 +29063,7 @@ async function tryExtractMarkdownDescription(mdPath, options = {}) {
   }
 }
 async function getAgents(targetDir, rootDir = ".claude", config) {
-  const agentsDir = join12(targetDir, rootDir, "agents");
+  const agentsDir = join11(targetDir, rootDir, "agents");
   if (!await fileExists(agentsDir))
     return [];
   try {
@@ -29172,7 +29091,7 @@ async function getAgents(targetDir, rootDir = ".claude", config) {
   }
 }
 async function getSkills(targetDir, rootDir = ".claude", config) {
-  const skillsDir = join12(targetDir, rootDir, "skills");
+  const skillsDir = join11(targetDir, rootDir, "skills");
   if (!await fileExists(skillsDir))
     return [];
   try {
@@ -29182,7 +29101,7 @@ async function getSkills(targetDir, rootDir = ".claude", config) {
     const skillMdFiles = await listFiles(skillsDir, { recursive: true, pattern: "SKILL.md" });
     const skills = await Promise.all(skillMdFiles.map(async (skillMdPath) => {
       const skillDir = dirname4(skillMdPath);
-      const indexYamlPath = join12(skillDir, "index.yaml");
+      const indexYamlPath = join11(skillDir, "index.yaml");
       const { description, version } = await tryReadIndexYamlMetadata(indexYamlPath);
       const relativePath = relative3(targetDir, skillDir);
       return {
@@ -29201,7 +29120,7 @@ async function getSkills(targetDir, rootDir = ".claude", config) {
   }
 }
 async function getGuides(targetDir, config) {
-  const guidesDir = join12(targetDir, "guides");
+  const guidesDir = join11(targetDir, "guides");
   if (!await fileExists(guidesDir))
     return [];
   try {
@@ -29228,7 +29147,7 @@ async function getGuides(targetDir, config) {
 }
 var RULE_PRIORITY_ORDER = { MUST: 0, SHOULD: 1, MAY: 2 };
 async function getRules(targetDir, rootDir = ".claude", config) {
-  const rulesDir = join12(targetDir, rootDir, "rules");
+  const rulesDir = join11(targetDir, rootDir, "rules");
   if (!await fileExists(rulesDir))
     return [];
   try {
@@ -29300,7 +29219,7 @@ function formatAsJson(components) {
   console.log(JSON.stringify(components, null, 2));
 }
 async function getHooks(targetDir, rootDir = ".claude") {
-  const hooksDir = join12(targetDir, rootDir, "hooks");
+  const hooksDir = join11(targetDir, rootDir, "hooks");
   if (!await fileExists(hooksDir))
     return [];
   try {
@@ -29318,7 +29237,7 @@ async function getHooks(targetDir, rootDir = ".claude") {
   }
 }
 async function getContexts(targetDir, rootDir = ".claude") {
-  const contextsDir = join12(targetDir, rootDir, "contexts");
+  const contextsDir = join11(targetDir, rootDir, "contexts");
   if (!await fileExists(contextsDir))
     return [];
   try {
@@ -29710,8 +29629,89 @@ async function securityCommand(_options = {}) {
 }
 
 // src/cli/serve-commands.ts
-import { execFile, spawnSync as spawnSync2 } from "node:child_process";
+import { spawnSync as spawnSync2 } from "node:child_process";
 import { join as join13 } from "node:path";
+
+// src/cli/serve.ts
+import { spawn } from "node:child_process";
+import { existsSync as existsSync2 } from "node:fs";
+import { readFile as readFile2, unlink, writeFile as writeFile2 } from "node:fs/promises";
+import { join as join12 } from "node:path";
+var DEFAULT_PORT = 4321;
+var PID_FILE = join12(process.env.HOME ?? "~", ".omcustom-serve.pid");
+function findServeBuildDir(projectRoot, options) {
+  const localBuild = join12(projectRoot, "packages", "serve", "build");
+  if (existsSync2(join12(localBuild, "index.js")))
+    return localBuild;
+  if (options?.skipNpmFallback !== true) {
+    const npmBuild = join12(import.meta.dirname, "..", "..", "packages", "serve", "build");
+    if (existsSync2(join12(npmBuild, "index.js")))
+      return npmBuild;
+  }
+  return null;
+}
+async function isServeRunning() {
+  try {
+    const raw = await readFile2(PID_FILE, "utf-8");
+    const pid = Number(raw.trim());
+    if (!Number.isFinite(pid) || pid <= 0) {
+      await cleanupPidFile();
+      return false;
+    }
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    await cleanupPidFile();
+    return false;
+  }
+}
+async function startServeBackground(projectRoot, port = DEFAULT_PORT, buildDirOpts) {
+  if (await isServeRunning()) {
+    return;
+  }
+  const buildDir = findServeBuildDir(projectRoot, buildDirOpts);
+  if (buildDir === null) {
+    return;
+  }
+  const child = spawn("node", [join12(buildDir, "index.js")], {
+    env: {
+      ...process.env,
+      OMCUSTOM_PORT: String(port),
+      OMCUSTOM_HOST: "localhost",
+      OMCUSTOM_ORIGIN: `http://localhost:${port}`,
+      OMX_PROJECT_ROOT: projectRoot
+    },
+    stdio: "ignore",
+    detached: true
+  });
+  child.unref();
+  if (child.pid !== undefined) {
+    await writeFile2(PID_FILE, String(child.pid), "utf-8");
+  }
+}
+async function stopServe() {
+  try {
+    const raw = await readFile2(PID_FILE, "utf-8");
+    const pid = Number(raw.trim());
+    if (!Number.isFinite(pid) || pid <= 0) {
+      await cleanupPidFile();
+      return false;
+    }
+    process.kill(pid, "SIGTERM");
+    await cleanupPidFile();
+    return true;
+  } catch {
+    await cleanupPidFile();
+    return false;
+  }
+}
+async function cleanupPidFile() {
+  try {
+    await unlink(PID_FILE);
+  } catch {}
+}
+
+// src/cli/serve-commands.ts
 async function serveCommand(options) {
   const port = options.port !== undefined ? Number(options.port) : DEFAULT_PORT;
   if (!Number.isFinite(port) || port < 1 || port > 65535) {
@@ -29730,9 +29730,6 @@ async function serveCommand(options) {
   const running = await isServeRunning();
   if (running) {
     console.log(i18n.t("cli.web.start.started", { port }));
-    if (options.open === true) {
-      openBrowser(port);
-    }
   } else {
     console.error(i18n.t("cli.web.start.failed"));
     process.exit(1);
@@ -29763,17 +29760,6 @@ function runForeground(projectRoot, port, buildDirOpts) {
     },
     stdio: "inherit"
   });
-}
-function openBrowser(port) {
-  const url = `http://localhost:${port}`;
-  const platform = process.platform;
-  if (platform === "darwin") {
-    execFile("open", [url], () => {});
-  } else if (platform === "win32") {
-    execFile("cmd", ["/c", "start", url], () => {});
-  } else {
-    execFile("xdg-open", [url], () => {});
-  }
 }
 
 // src/cli/update.ts
@@ -30577,7 +30563,6 @@ async function webOpenCommand(options) {
   if (!running) {
     console.warn(i18n.t("cli.web.open.notRunningWarn"));
   }
-  openBrowser(port);
 }
 
 // src/cli/index.ts
@@ -30606,7 +30591,7 @@ function createProgram() {
     process.exitCode = result.success ? 0 : 1;
   });
   const web = program2.command("web").description(i18n.t("cli.web.description"));
-  web.command("start").description(i18n.t("cli.web.start.description")).option("-p, --port <port>", i18n.t("cli.web.start.portOption"), "4321").option("--open", i18n.t("cli.web.start.openOption")).option("--foreground", i18n.t("cli.web.start.foregroundOption")).action(async (options) => {
+  web.command("start").description(i18n.t("cli.web.start.description")).option("-p, --port <port>", i18n.t("cli.web.start.portOption"), "4321").option("--foreground", i18n.t("cli.web.start.foregroundOption")).action(async (options) => {
     await webStartCommand(options);
   });
   web.command("stop").description(i18n.t("cli.web.stop.description")).action(async () => {
@@ -30621,7 +30606,7 @@ function createProgram() {
   web.action(async () => {
     await webStatusCommand();
   });
-  program2.command("serve").description("(Deprecated) Start the Web UI server — use `omcustom web start` instead").option("-p, --port <port>", i18n.t("cli.web.start.portOption"), "4321").option("--open", i18n.t("cli.web.start.openOption")).option("--foreground", i18n.t("cli.web.start.foregroundOption")).action(async (options) => {
+  program2.command("serve").description("(Deprecated) Start the Web UI server — use `omcustom web start` instead").option("-p, --port <port>", i18n.t("cli.web.start.portOption"), "4321").option("--foreground", i18n.t("cli.web.start.foregroundOption")).action(async (options) => {
     console.warn(i18n.t("cli.web.deprecated.serve"));
     await serveCommand(options);
   });

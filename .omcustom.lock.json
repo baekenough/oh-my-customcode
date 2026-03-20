@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.47.0",
-  "generatedAt": "2026-03-20T14:11:03.538Z",
-  "templateVersion": "0.47.0",
+  "generatorVersion": "0.47.1",
+  "generatedAt": "2026-03-20T15:43:47.658Z",
+  "templateVersion": "0.47.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -447,6 +447,11 @@
     ".claude/skills/dev-refactor/SKILL.md": {
       "templateHash": "2dc8f1aa6f87695a3f75f1cb965958874b91574bac2ae69a6cecb2ab489de256",
       "size": 7487,
+      "component": "skills"
+    },
+    ".claude/skills/deep-verify/SKILL.md": {
+      "templateHash": "9b372cd1865c2ced307e6a6f68fc71b918045e46b255ac4b83c55891ca9cb57d",
+      "size": 3982,
       "component": "skills"
     },
     ".claude/skills/airflow-best-practices/SKILL.md": {
