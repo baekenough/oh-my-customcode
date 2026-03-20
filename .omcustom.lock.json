@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.46.1",
-  "generatedAt": "2026-03-20T02:37:10.674Z",
+  "generatedAt": "2026-03-20T14:06:26.503Z",
   "templateVersion": "0.46.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -445,7 +445,7 @@
       "component": "skills"
     },
     ".claude/skills/dev-refactor/SKILL.md": {
-      "templateHash": "4f8fdea9147bfe71ea2c5bec132b22f7aca75c57b3692f28f5432401505bea46",
+      "templateHash": "2dc8f1aa6f87695a3f75f1cb965958874b91574bac2ae69a6cecb2ab489de256",
       "size": 7487,
       "component": "skills"
     },
@@ -575,8 +575,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-feedback/SKILL.md": {
-      "templateHash": "d09dc9f55c8556148f1dca7488c0f1376e2acbc8a9f7805316014e3bca0d8023",
-      "size": 3969,
+      "templateHash": "07331b031c9928c726047ee5ba1637f46c4fc22afbecf3f30438a288a8ab63c5",
+      "size": 7862,
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
@@ -630,12 +630,12 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "941930c427b6fdac6426e4f17e7864ed1c42dd1220580aab4119eb1135309089",
+      "templateHash": "0b9a7ff7eb2dd0c82d01facd393ebe73feb902c3ec948029f54ee2990d85b2ce",
       "size": 3037,
       "component": "skills"
     },
     ".claude/skills/omcustom-takeover/SKILL.md": {
-      "templateHash": "6c40a0dd795475dcb7798a76651c2d5a47e4320ee9dd29df0a17f42b8a4aca0e",
+      "templateHash": "8e4005df217634663e6942c7f8435ad00fb992270621fc98ddb43a1344322dfe",
       "size": 2909,
       "component": "skills"
     },
@@ -727,6 +727,11 @@
     ".claude/skills/monitoring-setup/SKILL.md": {
       "templateHash": "8506c0ceb00e78ebfcf386a09fc70389605b68d11a6caa18d46df4a49d2f3ae6",
       "size": 3746,
+      "component": "skills"
+    },
+    ".claude/skills/omcustom-loop/SKILL.md": {
+      "templateHash": "be67513b74ebe3d51fe8a5f5e8cc61474c0b1b9c7b91be2e8039b161ade3dd0b",
+      "size": 1918,
       "component": "skills"
     },
     ".claude/skills/aws-best-practices/SKILL.md": {
@@ -900,8 +905,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "18f410ec00c8cbffe19b5056dfcd0aaddf4719c9fb846cb806f48cd68fb837b0",
-      "size": 17853,
+      "templateHash": "5e482e2c18ec6cf20e1ca16eda3b8d1004e4c797285c392230b62df28411b281",
+      "size": 18969,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
