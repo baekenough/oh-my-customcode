@@ -105,18 +105,34 @@ describe('stop-console-audit.sh', () => {
     tmpGitDir = join(tmpdir(), `omcc-test-git-${Date.now()}`);
     await mkdir(tmpGitDir, { recursive: true });
 
-    execFileSync('git', ['init'], { cwd: tmpGitDir, stdio: 'pipe' });
+    // Strip git env vars so temp repo operations don't inherit GIT_DIR from
+    // a parent hook context (e.g., pre-commit hook running bun test --coverage).
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { GIT_DIR: _gd, GIT_WORK_TREE: _gwt, GIT_INDEX_FILE: _gif, ...cleanEnv } = process.env;
+
+    execFileSync('git', ['init'], { cwd: tmpGitDir, stdio: 'pipe', env: cleanEnv });
     execFileSync('git', ['config', 'user.email', 'test@test.com'], {
       cwd: tmpGitDir,
       stdio: 'pipe',
+      env: cleanEnv,
     });
-    execFileSync('git', ['config', 'user.name', 'Test User'], { cwd: tmpGitDir, stdio: 'pipe' });
+    execFileSync('git', ['config', 'user.name', 'Test User'], {
+      cwd: tmpGitDir,
+      stdio: 'pipe',
+      env: cleanEnv,
+    });
+    // Disable hooks in the temp repo to prevent inheriting the project's core.hooksPath
+    execFileSync('git', ['config', 'core.hooksPath', '/dev/null'], {
+      cwd: tmpGitDir,
+      stdio: 'pipe',
+      env: cleanEnv,
+    });
 
     // Create an initial commit so HEAD is defined.
     const initFile = join(tmpGitDir, 'initial.txt');
     await writeFile(initFile, 'init\n');
-    execFileSync('git', ['add', '.'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['commit', '-m', 'init'], { cwd: tmpGitDir, stdio: 'pipe' });
+    execFileSync('git', ['add', '.'], { cwd: tmpGitDir, stdio: 'pipe', env: cleanEnv });
+    execFileSync('git', ['commit', '-m', 'init'], { cwd: tmpGitDir, stdio: 'pipe', env: cleanEnv });
 
     // Create a non-git directory.
     nonGitDir = join(tmpdir(), `omcc-test-nongit-${Date.now()}`);
@@ -747,6 +763,11 @@ describe('session-env-check.sh', () => {
     const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
       PATH: '/usr/bin:/bin',
       OPENAI_API_KEY: '',
+      // Unset git env vars that may be inherited from a parent hook context,
+      // which can cause the script to exit early via set -euo pipefail.
+      GIT_DIR: '',
+      GIT_WORK_TREE: '',
+      GIT_INDEX_FILE: '',
     });
     expect(result.stderr).toContain('codex CLI: unavailable');
   });
