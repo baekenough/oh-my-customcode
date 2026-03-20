@@ -3,6 +3,7 @@ export { createDb, type EvalDb } from './db/client.js';
 export {
   agentInvocations,
   evaluations,
+  improvementActions,
   projects,
   sessionFeedback,
   sessions,
@@ -11,3 +12,13 @@ export {
 export { collect, type CollectOptions, type CollectResult } from './collect/index.js';
 export { runMigrations } from './db/migrate.js';
 export * from './query/index.js';
+export {
+  getAgentFailurePatterns,
+  getImprovementSuggestions,
+  getSkillEffectiveness,
+  saveImprovementActions,
+  type AgentFailurePattern,
+  type FeedbackQueryOptions,
+  type ImprovementSuggestion,
+  type SkillEffectivenessRecord,
+} from './query/feedback.js';
