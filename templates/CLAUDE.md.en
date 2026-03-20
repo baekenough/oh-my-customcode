@@ -100,7 +100,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/omcustom:update-external` | Update agents from external sources |
 | `/omcustom:audit-agents` | Audit agent dependencies |
 | `/omcustom:fix-refs` | Fix broken references |
-| `/omcustom:takeover` | Extract canonical spec from existing agent/skill |
+| `/omcustom-takeover` | Extract canonical spec from existing agent/skill |
 | `/dev-review` | Review code for best practices |
 | `/dev-refactor` | Refactor code |
 | `/memory-save` | Save session context to claude-mem |
@@ -109,7 +109,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/omcustom:npm-publish` | Publish package to npm registry |
 | `/omcustom:npm-version` | Manage semantic versions |
 | `/omcustom:npm-audit` | Audit dependencies |
-| `/omcustom:release-notes` | Generate release notes from git history |
+| `/omcustom-release-notes` | Generate release notes from git history |
 | `/codex-exec` | Execute Codex CLI prompts |
 | `/optimize-analyze` | Analyze bundle and performance |
 | `/optimize-bundle` | Optimize bundle size |

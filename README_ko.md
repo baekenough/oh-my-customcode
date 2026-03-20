@@ -172,11 +172,11 @@ Agent(arch-documenter):haiku      ┘
 |--------|------|
 | `/omcustom:analysis` | 프로젝트 분석, 에이전트·스킬 자동 구성 |
 | `/omcustom:create-agent` | 새 에이전트 생성 |
-| `/omcustom:takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
+| `/omcustom-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/omcustom:audit-agents` | 에이전트 의존성 감사 |
 | `/omcustom:update-docs` | 프로젝트 구조와 문서 동기화 |
 | `/omcustom:sauron-watch` | 전체 구조 검증 (5+3 라운드) |
-| `/omcustom:feedback` | 피드백을 GitHub 이슈로 등록 |
+| `/omcustom-feedback` | 피드백을 GitHub 이슈로 등록 |
 
 ### Web UI
 
@@ -191,7 +191,7 @@ Agent(arch-documenter):haiku      ┘
 | `/omcustom:npm-publish` | npm 배포 |
 | `/omcustom:npm-version` | 시맨틱 버전 관리 |
 | `/omcustom:npm-audit` | 의존성 보안 감사 |
-| `/omcustom:release-notes` | git 히스토리 기반 릴리즈 노트 생성 |
+| `/omcustom-release-notes` | git 히스토리 기반 릴리즈 노트 생성 |
 
 ### 메모리 & 시스템
 

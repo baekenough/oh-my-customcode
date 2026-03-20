@@ -180,11 +180,11 @@ All commands are invoked inside the Claude Code conversation.
 |---------|-------------|
 | `/omcustom:analysis` | Analyze project, auto-configure agents and skills |
 | `/omcustom:create-agent` | Create a new agent |
-| `/omcustom:takeover` | Extract canonical spec from existing agent or skill |
+| `/omcustom-takeover` | Extract canonical spec from existing agent or skill |
 | `/omcustom:audit-agents` | Audit agent dependencies |
 | `/omcustom:update-docs` | Sync project structure and documentation |
 | `/omcustom:sauron-watch` | Full structural verification (5+3 rounds) |
-| `/omcustom:feedback` | Submit feedback as GitHub issue |
+| `/omcustom-feedback` | Submit feedback as GitHub issue |
 
 ### Web UI
 
@@ -199,7 +199,7 @@ All commands are invoked inside the Claude Code conversation.
 | `/omcustom:npm-publish` | Publish to npm |
 | `/omcustom:npm-version` | Semantic versioning |
 | `/omcustom:npm-audit` | Dependency security audit |
-| `/omcustom:release-notes` | Generate release notes from git history |
+| `/omcustom-release-notes` | Generate release notes from git history |
 
 ### Memory & System
 

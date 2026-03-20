@@ -17,8 +17,8 @@ Replaces the CI-based `release-notes.yml` workflow that previously used Claude A
 ## Usage
 
 ```
-/omcustom:release-notes 0.36.0
-/omcustom:release-notes 0.36.0 --previous-tag v0.35.3
+/omcustom-release-notes 0.36.0
+/omcustom-release-notes 0.36.0 --previous-tag v0.35.3
 ```
 
 ## Workflow
@@ -105,7 +105,7 @@ This skill is designed to be used during the release process:
 
 ```
 /omcustom:npm-version patch|minor|major  ->  version bump
-/omcustom:release-notes {version}         ->  generate notes
+/omcustom-release-notes {version}         ->  generate notes
 mgr-gitnerd: gh release create           ->  create release with notes
 ```
 
