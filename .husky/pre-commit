@@ -3,6 +3,14 @@
 # Pre-commit hook for oh-my-customcode
 # Runs typecheck, lint, and tests before allowing commit
 
+# Worktree detection: .git is a file (not directory) in worktrees
+if [ -f .git ]; then
+    echo "Running pre-commit checks (worktree mode)..."
+    bun run typecheck 2>/dev/null || exit 1
+    echo "Worktree pre-commit passed (typecheck only — full suite runs in CI)."
+    exit 0
+fi
+
 echo "Running pre-commit checks..."
 
 # Run TypeScript type checking
