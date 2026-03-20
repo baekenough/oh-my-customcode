@@ -24878,6 +24878,37 @@ var en_default = {
         }
       }
     },
+    web: {
+      description: "Manage the Web UI server (start, stop, status, open)",
+      start: {
+        description: "Start the Web UI server",
+        portOption: "Port number",
+        openOption: "Open browser automatically after start",
+        foregroundOption: "Run in foreground (not detached)",
+        started: "Web UI started: http://127.0.0.1:{{port}}",
+        failed: "Failed to start Web UI server"
+      },
+      stop: {
+        description: "Stop the Web UI server",
+        stopped: "Web UI server stopped",
+        notRunning: "Web UI server is not running"
+      },
+      status: {
+        description: "Show Web UI server status",
+        running: "Web UI is running: http://127.0.0.1:{{port}}",
+        notRunning: "Web UI is not running",
+        startHint: "  Start with: omcustom web start"
+      },
+      open: {
+        description: "Open the Web UI in the default browser",
+        portOption: "Port number",
+        notRunningWarn: "Web UI does not appear to be running. Start it with: omcustom web start"
+      },
+      deprecated: {
+        serve: "[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.",
+        serveStop: "[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead."
+      }
+    },
     security: {
       description: "Scan for security issues in hooks, configs, and templates",
       verboseOption: "Show detailed scan results",
@@ -25227,6 +25258,37 @@ var ko_default = {
           pass: "프레임워크가 최신 상태입니다 (v{{version}})",
           warn: "프레임워크가 구버전입니다: 설치됨 v{{installed}}, 최신 v{{latest}} ({{behind}}개 버전 뒤처짐). 'omcustom update'를 실행하여 동기화하세요."
         }
+      }
+    },
+    web: {
+      description: "Web UI 서버 관리 (시작, 중지, 상태, 열기)",
+      start: {
+        description: "Web UI 서버 시작",
+        portOption: "포트 번호",
+        openOption: "시작 후 브라우저 자동 열기",
+        foregroundOption: "포그라운드 실행 (백그라운드 분리 안 함)",
+        started: "Web UI 시작됨: http://127.0.0.1:{{port}}",
+        failed: "Web UI 서버 시작 실패"
+      },
+      stop: {
+        description: "Web UI 서버 중지",
+        stopped: "Web UI 서버가 중지되었습니다",
+        notRunning: "Web UI 서버가 실행 중이 아닙니다"
+      },
+      status: {
+        description: "Web UI 서버 상태 표시",
+        running: "Web UI 실행 중: http://127.0.0.1:{{port}}",
+        notRunning: "Web UI가 실행 중이 아닙니다",
+        startHint: "  시작하려면: omcustom web start"
+      },
+      open: {
+        description: "기본 브라우저에서 Web UI 열기",
+        portOption: "포트 번호",
+        notRunningWarn: "Web UI가 실행 중이지 않은 것 같습니다. 먼저 시작하세요: omcustom web start"
+      },
+      deprecated: {
+        serve: "[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.",
+        serveStop: "[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead."
       }
     },
     security: {
@@ -30475,6 +30537,36 @@ function printUpdateResults(result) {
   }
 }
 
+// src/cli/web-commands.ts
+async function webStartCommand(options) {
+  await serveCommand(options);
+}
+async function webStopCommand() {
+  await serveStopCommand();
+}
+async function webStatusCommand() {
+  const running = await isServeRunning();
+  if (running) {
+    const port = process.env.OMCUSTOM_PORT ?? String(DEFAULT_PORT);
+    console.log(`Web UI is running: http://127.0.0.1:${port}`);
+  } else {
+    console.log("Web UI is not running");
+    console.log("  Start with: omcustom web start");
+  }
+}
+async function webOpenCommand(options) {
+  const port = options.port !== undefined ? Number(options.port) : DEFAULT_PORT;
+  if (!Number.isFinite(port) || port < 1 || port > 65535) {
+    console.error(`Invalid port: ${options.port}`);
+    process.exit(1);
+  }
+  const running = await isServeRunning();
+  if (!running) {
+    console.warn("Web UI does not appear to be running. Start it with: omcustom web start");
+  }
+  openBrowser(port);
+}
+
 // src/cli/index.ts
 var require2 = createRequire2(import.meta.url);
 var packageJson = require2("../../package.json");
@@ -30500,10 +30592,28 @@ function createProgram() {
     const result = await securityCommand(options);
     process.exitCode = result.success ? 0 : 1;
   });
-  program2.command("serve").description("Start the web UI server").option("-p, --port <port>", "Port number", "4321").option("--open", "Open browser automatically").option("--foreground", "Run in foreground (not detached)").action(async (options) => {
+  const web = program2.command("web").description("Manage the Web UI server (start, stop, status, open)");
+  web.command("start").description("Start the Web UI server").option("-p, --port <port>", "Port number", "4321").option("--open", "Open browser automatically after start").option("--foreground", "Run in foreground (not detached)").action(async (options) => {
+    await webStartCommand(options);
+  });
+  web.command("stop").description("Stop the Web UI server").action(async () => {
+    await webStopCommand();
+  });
+  web.command("status").description("Show Web UI server status").action(async () => {
+    await webStatusCommand();
+  });
+  web.command("open").description("Open the Web UI in the default browser").option("-p, --port <port>", "Port number", "4321").action(async (options) => {
+    await webOpenCommand(options);
+  });
+  web.action(async () => {
+    await webStatusCommand();
+  });
+  program2.command("serve").description("(Deprecated) Start the Web UI server — use `omcustom web start` instead").option("-p, --port <port>", "Port number", "4321").option("--open", "Open browser automatically").option("--foreground", "Run in foreground (not detached)").action(async (options) => {
+    console.warn("[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.");
     await serveCommand(options);
   });
-  program2.command("serve-stop").description("Stop the web UI server").action(async () => {
+  program2.command("serve-stop").description("(Deprecated) Stop the Web UI server — use `omcustom web stop` instead").action(async () => {
+    console.warn("[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead.");
     await serveStopCommand();
   });
   program2.command("projects").description("List all projects on this machine where oh-my-customcode is installed").option("-f, --format <format>", "Output format: table, json, or simple", "table").option("--path <dir>", "Additional search directory (can be specified multiple times)", (val, prev) => [...prev, val], []).action(async (options) => {
@@ -30512,7 +30622,14 @@ function createProgram() {
   program2.hook("preAction", async (thisCommand, actionCommand) => {
     const opts = thisCommand.optsWithGlobals();
     const skipCheck = opts.skipVersionCheck || false;
-    if (actionCommand.name() === "init") {
+    const cmdName = actionCommand.name();
+    const parentName = actionCommand.parent?.name();
+    const isServeCmd = cmdName === "serve" || cmdName === "serve-stop";
+    const isWebCmd = cmdName === "web" || parentName === "web";
+    if (isServeCmd || isWebCmd) {
+      return;
+    }
+    if (cmdName === "init") {
       await maybeHandleSelfUpdateForInit({
         currentVersion: packageJson.version,
         skip: skipCheck
