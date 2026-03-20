@@ -12,7 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.js';
@@ -114,6 +114,19 @@ describe('serve-commands.ts', () => {
       } finally {
         processExitSpy.mockRestore();
       }
+    });
+
+    it('should run spawnSync when build directory exists in foreground mode', async () => {
+      // Create a fake build dir with index.js that exits immediately
+      const fakeBuildDir = join(emptyTempDir, 'packages', 'serve', 'build');
+      await mkdir(fakeBuildDir, { recursive: true });
+      await writeFile(join(fakeBuildDir, 'index.js'), 'process.exit(0);', 'utf-8');
+
+      // spawnSync will run node index.js which exits immediately
+      await serveCommand({ port: '4321', foreground: true, _projectRoot: emptyTempDir });
+
+      const logOutput = consoleLogSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
+      expect(logOutput).toContain('4321');
     });
   });
 
