@@ -5,6 +5,13 @@ on:
     branches:
       - develop
       - 'release/**'
+  push:
+    branches:
+      - develop
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
