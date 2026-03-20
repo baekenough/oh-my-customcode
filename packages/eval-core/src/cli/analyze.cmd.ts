@@ -215,6 +215,10 @@ export const analyzeCommand = new Command('analyze')
     const config = getDefaultConfig();
     const dbPath = options.dbPath ?? config.sqlitePath;
     const minSessions = parseInt(options.minSessions ?? '5', 10);
+    if (Number.isNaN(minSessions) || minSessions < 1) {
+      console.error('Error: --min-sessions must be a positive integer');
+      process.exit(1);
+    }
     const format = options.format ?? 'table';
 
     // Auto-migrate to ensure improvement_actions table exists
