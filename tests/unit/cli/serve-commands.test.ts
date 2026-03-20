@@ -13,6 +13,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import * as childProcess from 'node:child_process';
 import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -32,6 +33,7 @@ async function removePidFile(): Promise<void> {
 describe('serve-commands.ts', () => {
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
+  let execFileSpy: ReturnType<typeof spyOn>;
   let emptyTempDir: string;
 
   beforeEach(async () => {
@@ -40,11 +42,15 @@ describe('serve-commands.ts', () => {
     emptyTempDir = await mkdtemp(join(tmpdir(), 'omcustom-serve-cmd-test-'));
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
+    execFileSpy = spyOn(childProcess, 'execFile').mockImplementation(
+      (() => {}) as unknown as typeof childProcess.execFile
+    );
   });
 
   afterEach(async () => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
+    execFileSpy.mockRestore();
     await removePidFile();
     await rm(emptyTempDir, { recursive: true, force: true });
   });
@@ -214,6 +220,12 @@ describe('serve-commands.ts', () => {
     it('should execute without throwing on the current platform (darwin)', () => {
       // openBrowser is sync fire-and-forget — should not throw
       expect(() => openBrowser(4321)).not.toThrow();
+      // Verify execFile was called (not actual browser open)
+      expect(execFileSpy).toHaveBeenCalledWith(
+        'open',
+        ['http://localhost:4321'],
+        expect.any(Function)
+      );
     });
 
     it('should accept valid port values', () => {
@@ -227,6 +239,11 @@ describe('serve-commands.ts', () => {
       Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
       try {
         expect(() => openBrowser(4321)).not.toThrow();
+        expect(execFileSpy).toHaveBeenCalledWith(
+          'xdg-open',
+          ['http://localhost:4321'],
+          expect.any(Function)
+        );
       } finally {
         if (descriptor) {
           Object.defineProperty(process, 'platform', descriptor);
@@ -240,6 +257,11 @@ describe('serve-commands.ts', () => {
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
       try {
         expect(() => openBrowser(4321)).not.toThrow();
+        expect(execFileSpy).toHaveBeenCalledWith(
+          'cmd',
+          ['/c', 'start', 'http://localhost:4321'],
+          expect.any(Function)
+        );
       } finally {
         if (descriptor) {
           Object.defineProperty(process, 'platform', descriptor);
