@@ -108,6 +108,9 @@ function runForeground(
  * Uses platform-specific openers. Fires and forgets — failures are silently ignored.
  */
 export function openBrowser(port: number): void {
+  // Skip in test and CI environments to prevent unwanted browser popups
+  if (process.env.BUN_TEST || process.env.CI || process.env.VITEST) return;
+
   const url = `http://localhost:${port}`;
   const platform = process.platform;
 

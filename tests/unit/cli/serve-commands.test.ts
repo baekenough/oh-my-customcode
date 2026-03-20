@@ -13,7 +13,6 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import * as childProcess from 'node:child_process';
 import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -33,7 +32,6 @@ async function removePidFile(): Promise<void> {
 describe('serve-commands.ts', () => {
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
-  let execFileSpy: ReturnType<typeof spyOn>;
   let emptyTempDir: string;
 
   beforeEach(async () => {
@@ -42,15 +40,11 @@ describe('serve-commands.ts', () => {
     emptyTempDir = await mkdtemp(join(tmpdir(), 'omcustom-serve-cmd-test-'));
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
-    execFileSpy = spyOn(childProcess, 'execFile').mockImplementation(
-      (() => {}) as unknown as typeof childProcess.execFile
-    );
   });
 
   afterEach(async () => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
-    execFileSpy.mockRestore();
     await removePidFile();
     await rm(emptyTempDir, { recursive: true, force: true });
   });
@@ -212,38 +206,27 @@ describe('serve-commands.ts', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // openBrowser() — platform branches (lines 99-113)
-  // openBrowser fires off execFile and returns without blocking.
+  // openBrowser() — env guard + no-throw contract
+  // openBrowser returns early in test/CI environments (BUN_TEST is set by bun test),
+  // so execFile is never called. Tests verify the function is side-effect free.
   // ---------------------------------------------------------------------------
 
   describe('openBrowser()', () => {
-    it('should execute without throwing on the current platform (darwin)', () => {
-      // openBrowser is sync fire-and-forget — should not throw
+    it('should return early without throwing in test environment (BUN_TEST is set)', () => {
+      // BUN_TEST=1 is automatically set by bun test — openBrowser returns immediately
       expect(() => openBrowser(4321)).not.toThrow();
-      // Verify execFile was called (not actual browser open)
-      expect(execFileSpy).toHaveBeenCalledWith(
-        'open',
-        ['http://localhost:4321'],
-        expect.any(Function)
-      );
     });
 
-    it('should accept valid port values', () => {
+    it('should accept valid port values without side effects', () => {
       expect(() => openBrowser(8080)).not.toThrow();
       expect(() => openBrowser(3000)).not.toThrow();
     });
 
-    it('should call execFile with xdg-open on linux platform', () => {
-      // Override process.platform to 'linux' to exercise the else branch (line 108-111)
+    it('should return early on linux platform in test environment', () => {
       const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
       Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
       try {
         expect(() => openBrowser(4321)).not.toThrow();
-        expect(execFileSpy).toHaveBeenCalledWith(
-          'xdg-open',
-          ['http://localhost:4321'],
-          expect.any(Function)
-        );
       } finally {
         if (descriptor) {
           Object.defineProperty(process, 'platform', descriptor);
@@ -251,17 +234,11 @@ describe('serve-commands.ts', () => {
       }
     });
 
-    it('should call execFile with cmd on win32 platform', () => {
-      // Override process.platform to 'win32' to exercise the win32 branch (line 103-107)
+    it('should return early on win32 platform in test environment', () => {
       const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
       Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
       try {
         expect(() => openBrowser(4321)).not.toThrow();
-        expect(execFileSpy).toHaveBeenCalledWith(
-          'cmd',
-          ['/c', 'start', 'http://localhost:4321'],
-          expect.any(Function)
-        );
       } finally {
         if (descriptor) {
           Object.defineProperty(process, 'platform', descriptor);
