@@ -105,10 +105,10 @@ We use a simplified Git Flow model optimized for npm package development.
 
 ```
 feature/new-feature ──┐
-                      ├──► develop ──► release/x.y.z ──► tag + npm publish
-feature/another ──────┘                     │
-                                            ▼
-                      hotfix/critical ──► tag + npm publish ──► merge to develop
+                      ├──► develop ──► release/x.y.z ──► PR merge ──► auto-tag ──► npm publish
+feature/another ──────┘                                                    │
+                                                                           └── GitHub Release
+                      hotfix/critical ──► PR merge ──► auto-tag ──► npm publish ──► merge to develop
 ```
 
 #### Feature Development
@@ -147,13 +147,16 @@ feature/another ──────┘                     │
 
 #### Release Process
 
-**Important: All npm publishing MUST happen from a `release/*` branch, never from `develop`.**
+**Important: All npm publishing happens automatically via CI after PR merge. Never push tags or run `npm publish` manually.**
 
 ```
-develop ──► release/x.y.z ──► npm publish ──► merge back to develop
-                  │
-                  └── tag vx.y.z
+develop ──► release/x.y.z ──► PR merge ──► auto-tag ──► release.yml (npm publish + GitHub Release)
 ```
+
+The release pipeline is fully automated:
+1. Merging a `release/*` PR to `develop` triggers the `auto-tag` workflow
+2. `auto-tag` reads `package.json`, creates and pushes the version tag
+3. `release.yml` triggers on the new tag and handles npm publish + GitHub Release
 
 1. **Create release branch from `develop`:**
    ```bash
@@ -170,23 +173,23 @@ develop ──► release/x.y.z ──► npm publish ──► merge back to de
    git commit -m "chore: prepare release x.y.z"
    ```
 
-3. **Push release branch and create tag:**
+3. **Push release branch and open PR to `develop`:**
    ```bash
    git push -u origin release/x.y.z
-   git tag vx.y.z
-   git push origin vx.y.z
+   gh pr create --base develop --title "chore: release x.y.z"
    ```
 
-4. **Publish to npm (from release branch):**
-   ```bash
-   npm publish
-   ```
+4. **Wait for CI to pass, then merge the PR.**
 
-5. **Merge release branch back to `develop`:**
+   After merge, the `auto-tag` workflow automatically:
+   - Extracts the version from `package.json`
+   - Creates and pushes the `vx.y.z` tag
+   - Triggers `release.yml` which publishes to npm and creates a GitHub Release
+
+5. **Merge release branch back to `develop` (if not already via PR):**
    ```bash
    git checkout develop
-   git merge release/x.y.z
-   git push origin develop
+   git pull origin develop
    ```
 
 6. **Delete release branch:**
@@ -199,10 +202,12 @@ develop ──► release/x.y.z ──► npm publish ──► merge back to de
 
 For critical bugs in production:
 
-1. **Create hotfix branch from latest tag:**
+1. **Create hotfix branch from `develop` (or latest tag if develop has moved ahead):**
    ```bash
-   git checkout vx.y.z  # Latest release tag
+   git checkout develop
    git checkout -b hotfix/critical-bug
+   # OR from a specific tag:
+   # git checkout vx.y.z && git checkout -b hotfix/critical-bug
    ```
 
 2. **Fix, test, and bump patch version:**
@@ -210,21 +215,28 @@ For critical bugs in production:
    # Make fix
    bun test
    npm version patch
+   # Update CHANGELOG.md
+   git add .
+   git commit -m "fix: critical bug description"
    ```
 
-3. **Tag and publish:**
+3. **Push and open PR to `develop`:**
    ```bash
-   git tag vx.y.(z+1)
-   git push origin hotfix/critical-bug --tags
-   npm publish
+   git push -u origin hotfix/critical-bug
+   gh pr create --base develop --title "fix: critical bug (hotfix)"
    ```
 
-4. **Merge to develop:**
-   ```bash
-   git checkout develop
-   git merge hotfix/critical-bug
-   git push
-   ```
+4. **Wait for CI to pass, then merge the PR.**
+
+   After merge, `auto-tag` automatically creates the tag and triggers npm publish.
+
+   > **Note**: Hotfix branches are named `hotfix/*`, not `release/*`, so `auto-tag` will NOT
+   > trigger automatically. For hotfixes, manually push the tag after merging:
+   > ```bash
+   > git checkout develop && git pull
+   > git tag vx.y.(z+1)
+   > git push origin vx.y.(z+1)
+   > ```
 
 #### Branch Protection (Recommended)
 
