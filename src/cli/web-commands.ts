@@ -5,17 +5,12 @@
 
 import { i18n } from '../i18n/index.js';
 import { DEFAULT_PORT, isServeRunning } from './serve.js';
-import {
-  openBrowser,
-  type ServeCommandOptions,
-  serveCommand,
-  serveStopCommand,
-} from './serve-commands.js';
+import { type ServeCommandOptions, serveCommand, serveStopCommand } from './serve-commands.js';
 
 export type { ServeCommandOptions } from './serve-commands.js';
 
 /**
- * Handler for `omcustom web start [--port 4321] [--open] [--foreground]`
+ * Handler for `omcustom web start [--port 4321] [--foreground]`
  * Delegates to serveCommand.
  */
 export async function webStartCommand(options: ServeCommandOptions): Promise<void> {
@@ -47,7 +42,7 @@ export async function webStatusCommand(): Promise<void> {
 
 /**
  * Handler for `omcustom web open [--port 4321]`
- * Opens the browser to the Web UI URL.
+ * Checks whether the Web UI server is running and warns if not.
  */
 export async function webOpenCommand(options: { port?: string }): Promise<void> {
   const port = options.port !== undefined ? Number(options.port) : DEFAULT_PORT;
@@ -61,6 +56,4 @@ export async function webOpenCommand(options: { port?: string }): Promise<void> 
   if (!running) {
     console.warn(i18n.t('cli.web.open.notRunningWarn'));
   }
-
-  openBrowser(port);
 }

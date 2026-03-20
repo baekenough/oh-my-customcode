@@ -2,7 +2,7 @@
  * CLI command handlers for `omcustom serve` and `omcustom serve-stop`
  */
 
-import { execFile, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { i18n } from '../i18n/index.js';
 import {
@@ -16,7 +16,6 @@ import {
 
 export interface ServeCommandOptions {
   port?: string;
-  open?: boolean;
   foreground?: boolean;
   /**
    * Override the project root used to find the build directory.
@@ -26,7 +25,7 @@ export interface ServeCommandOptions {
 }
 
 /**
- * Handler for `omcustom serve [--port 4321] [--open] [--foreground]`
+ * Handler for `omcustom serve [--port 4321] [--foreground]`
  */
 export async function serveCommand(options: ServeCommandOptions): Promise<void> {
   const port = options.port !== undefined ? Number(options.port) : DEFAULT_PORT;
@@ -53,9 +52,6 @@ export async function serveCommand(options: ServeCommandOptions): Promise<void> 
   const running = await isServeRunning();
   if (running) {
     console.log(i18n.t('cli.web.start.started', { port }));
-    if (options.open === true) {
-      openBrowser(port);
-    }
   } else {
     console.error(i18n.t('cli.web.start.failed'));
     process.exit(1);
@@ -101,31 +97,4 @@ function runForeground(
     },
     stdio: 'inherit',
   });
-}
-
-/**
- * Open a URL in the default browser using execFile (shell-injection safe).
- * Uses platform-specific openers. Fires and forgets — failures are silently ignored.
- */
-export function openBrowser(port: number): void {
-  // Skip in test and CI environments to prevent unwanted browser popups
-  if (process.env.BUN_TEST || process.env.CI || process.env.VITEST) return;
-
-  const url = `http://localhost:${port}`;
-  const platform = process.platform;
-
-  if (platform === 'darwin') {
-    execFile('open', [url], () => {
-      // intentionally empty — ignore open failures
-    });
-  } else if (platform === 'win32') {
-    // `start` is a cmd.exe built-in; pass via cmd /c
-    execFile('cmd', ['/c', 'start', url], () => {
-      // intentionally empty
-    });
-  } else {
-    execFile('xdg-open', [url], () => {
-      // intentionally empty
-    });
-  }
 }

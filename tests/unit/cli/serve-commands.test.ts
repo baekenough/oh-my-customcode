@@ -5,7 +5,6 @@
  *   - serveCommand() invalid port → console.error + process.exit(1)  [lines 29-30]
  *   - serveCommand() foreground mode → runForeground() no-build path  [lines 36-37, 70-75]
  *   - serveStopCommand() not-running path covers the else branch       [line 62]
- *   - openBrowser() execution on current platform                     [lines 95-113]
  *
  * NOTE: Tests that require mocking isServeRunning/stopServe are placed here
  * using state-based approaches (PID file manipulation) to avoid mock.module()
@@ -16,7 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { openBrowser, serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.js';
+import { serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.js';
 import { initI18n } from '../../../src/i18n/index.js';
 
 const PID_FILE = join(homedir(), '.omcustom-serve.pid');
@@ -162,16 +161,6 @@ describe('serve-commands.ts', () => {
       const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
       expect(logOutput).toContain('4321');
     });
-
-    it('should log started message and call openBrowser when open option is set', async () => {
-      await writeFile(PID_FILE, String(process.pid), 'utf-8');
-
-      // open: true exercises line 45-47
-      await serveCommand({ port: '4321', open: true });
-
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(logOutput).toContain('4321');
-    });
   });
 
   // ---------------------------------------------------------------------------
@@ -201,48 +190,6 @@ describe('serve-commands.ts', () => {
         expect(logOutput).toContain('stopped');
       } finally {
         killSpy.mockRestore();
-      }
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // openBrowser() — env guard + no-throw contract
-  // openBrowser returns early in test/CI environments (BUN_TEST is set by bun test),
-  // so execFile is never called. Tests verify the function is side-effect free.
-  // ---------------------------------------------------------------------------
-
-  describe('openBrowser()', () => {
-    it('should return early without throwing in test environment (BUN_TEST is set)', () => {
-      // BUN_TEST=1 is automatically set by bun test — openBrowser returns immediately
-      expect(() => openBrowser(4321)).not.toThrow();
-    });
-
-    it('should accept valid port values without side effects', () => {
-      expect(() => openBrowser(8080)).not.toThrow();
-      expect(() => openBrowser(3000)).not.toThrow();
-    });
-
-    it('should return early on linux platform in test environment', () => {
-      const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
-      Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
-      try {
-        expect(() => openBrowser(4321)).not.toThrow();
-      } finally {
-        if (descriptor) {
-          Object.defineProperty(process, 'platform', descriptor);
-        }
-      }
-    });
-
-    it('should return early on win32 platform in test environment', () => {
-      const descriptor = Object.getOwnPropertyDescriptor(process, 'platform');
-      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
-      try {
-        expect(() => openBrowser(4321)).not.toThrow();
-      } finally {
-        if (descriptor) {
-          Object.defineProperty(process, 'platform', descriptor);
-        }
       }
     });
   });

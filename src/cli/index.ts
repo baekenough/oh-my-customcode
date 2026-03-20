@@ -109,12 +109,11 @@ export function createProgram(): Command {
   // omcustom web — subcommand group for Web UI management
   const web = program.command('web').description(i18n.t('cli.web.description'));
 
-  // omcustom web start [--port 4321] [--open] [--foreground]
+  // omcustom web start [--port 4321] [--foreground]
   web
     .command('start')
     .description(i18n.t('cli.web.start.description'))
     .option('-p, --port <port>', i18n.t('cli.web.start.portOption'), '4321')
-    .option('--open', i18n.t('cli.web.start.openOption'))
     .option('--foreground', i18n.t('cli.web.start.foregroundOption'))
     .action(async (options) => {
       await webStartCommand(options);
@@ -155,7 +154,6 @@ export function createProgram(): Command {
     .command('serve')
     .description('(Deprecated) Start the Web UI server — use `omcustom web start` instead')
     .option('-p, --port <port>', i18n.t('cli.web.start.portOption'), '4321')
-    .option('--open', i18n.t('cli.web.start.openOption'))
     .option('--foreground', i18n.t('cli.web.start.foregroundOption'))
     .action(async (options) => {
       console.warn(i18n.t('cli.web.deprecated.serve'));
