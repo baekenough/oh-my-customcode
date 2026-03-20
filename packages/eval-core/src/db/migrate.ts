@@ -64,12 +64,27 @@ export function runMigrations(dbPath: string): void {
       evaluated_at TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS improvement_actions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      feedback_source TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_name TEXT NOT NULL,
+      action_type TEXT NOT NULL,
+      description TEXT NOT NULL,
+      confidence TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'proposed',
+      evidence TEXT,
+      applied_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
     'CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON sessions(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_turns_session_id ON turns(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_ppid ON agent_invocations(session_ppid)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_agent_type ON agent_invocations(agent_type)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_session_id ON evaluations(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_turn_id ON evaluations(turn_id)',
+    'CREATE INDEX IF NOT EXISTS idx_improvement_actions_target ON improvement_actions(target_name)',
+    'CREATE INDEX IF NOT EXISTS idx_improvement_actions_status ON improvement_actions(status)',
   ];
 
   for (const sql of statements) {

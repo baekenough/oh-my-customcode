@@ -1,5 +1,21 @@
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
+export const improvementActions = sqliteTable('improvement_actions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  feedbackSource: text('feedback_source').notNull(), // 'auto_analysis' | 'user_feedback'
+  targetType: text('target_type').notNull(), // 'agent' | 'skill' | 'rule' | 'routing'
+  targetName: text('target_name').notNull(),
+  actionType: text('action_type').notNull(), // 'augment' | 'revise' | 'escalate' | 'routing_update'
+  description: text('description').notNull(),
+  confidence: text('confidence').notNull(), // 'low' | 'medium' | 'high'
+  status: text('status').notNull().default('proposed'), // 'proposed' | 'approved' | 'applied' | 'rejected'
+  evidence: text('evidence'), // JSON
+  appliedAt: text('applied_at'),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const sessions = sqliteTable('sessions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   sessionId: text('session_id').notNull().unique(),

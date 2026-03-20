@@ -1,5 +1,15 @@
 export * from './types/index.js';
 export { createDb, type EvalDb } from './db/client.js';
-export { agentInvocations, evaluations, sessions, turns } from './db/schema.js';
+export { agentInvocations, evaluations, improvementActions, sessions, turns } from './db/schema.js';
 export { collect, type CollectOptions, type CollectResult } from './collect/index.js';
 export { runMigrations } from './db/migrate.js';
+export {
+  getAgentFailurePatterns,
+  getImprovementSuggestions,
+  getSkillEffectiveness,
+  saveImprovementActions,
+  type AgentFailurePattern,
+  type FeedbackQueryOptions,
+  type ImprovementSuggestion,
+  type SkillEffectivenessRecord,
+} from './query/feedback.js';

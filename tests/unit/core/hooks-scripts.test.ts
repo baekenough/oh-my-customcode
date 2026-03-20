@@ -20,6 +20,31 @@ const STAGE_FILE = '/tmp/.claude-dev-stage';
 // Helpers
 // -------------------------------------------------------------------
 
+/**
+ * Build a clean environment without git context variables.
+ * This prevents the pre-commit hook context (GIT_DIR, GIT_INDEX_FILE, etc.)
+ * from leaking into git operations that target a specific repository by cwd.
+ */
+function makeCleanGitEnv(overrides?: Record<string, string>): NodeJS.ProcessEnv {
+  const { GIT_DIR: _gd, GIT_INDEX_FILE: _gi, GIT_WORK_TREE: _gwt, ...cleanEnv } = process.env;
+  return {
+    ...cleanEnv,
+    GIT_AUTHOR_NAME: 'Test User',
+    GIT_AUTHOR_EMAIL: 'test@test.com',
+    GIT_COMMITTER_NAME: 'Test User',
+    GIT_COMMITTER_EMAIL: 'test@test.com',
+    ...overrides,
+  };
+}
+
+/**
+ * Run a git command in a specific directory with a clean environment
+ * (no inherited GIT_DIR / GIT_INDEX_FILE from any outer hook context).
+ */
+function gitExec(args: string[], cwd: string): void {
+  execFileSync('git', args, { cwd, stdio: 'pipe', env: makeCleanGitEnv() });
+}
+
 interface ScriptResult {
   stdout: string;
   stderr: string;
@@ -37,7 +62,16 @@ function runHookScript(
   cwd?: string
 ): Promise<ScriptResult> {
   return new Promise((resolve_) => {
-    const childEnv: NodeJS.ProcessEnv = { ...process.env, ...env };
+    // Clear git environment variables to prevent pre-commit hook context from
+    // leaking into the hook scripts under test (causes failures when GIT_DIR
+    // is inherited and PATH is restricted simultaneously).
+    const {
+      GIT_DIR: _gd,
+      GIT_INDEX_FILE: _gi,
+      GIT_WORK_TREE: _gwt,
+      ...processEnvWithoutGit
+    } = process.env;
+    const childEnv: NodeJS.ProcessEnv = { ...processEnvWithoutGit, ...env };
     const child = spawn('bash', [scriptPath], {
       env: childEnv,
       cwd: cwd ?? tmpdir(),
@@ -105,18 +139,15 @@ describe('stop-console-audit.sh', () => {
     tmpGitDir = join(tmpdir(), `omcc-test-git-${Date.now()}`);
     await mkdir(tmpGitDir, { recursive: true });
 
-    execFileSync('git', ['init'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.email', 'test@test.com'], {
-      cwd: tmpGitDir,
-      stdio: 'pipe',
-    });
-    execFileSync('git', ['config', 'user.name', 'Test User'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['init'], tmpGitDir);
+    gitExec(['config', 'user.email', 'test@test.com'], tmpGitDir);
+    gitExec(['config', 'user.name', 'Test User'], tmpGitDir);
 
     // Create an initial commit so HEAD is defined.
     const initFile = join(tmpGitDir, 'initial.txt');
     await writeFile(initFile, 'init\n');
-    execFileSync('git', ['add', '.'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['commit', '-m', 'init'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', '.'], tmpGitDir);
+    gitExec(['commit', '-m', 'init'], tmpGitDir);
 
     // Create a non-git directory.
     nonGitDir = join(tmpdir(), `omcc-test-nongit-${Date.now()}`);
@@ -161,11 +192,11 @@ describe('stop-console-audit.sh', () => {
   it('should warn about console.log in modified .ts files', async () => {
     const tsFile = join(tmpGitDir, 'test-warn.ts');
     await writeFile(tsFile, 'console.log("debug");\nexport const x = 1;\n');
-    execFileSync('git', ['add', 'test-warn.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', 'test-warn.ts'], tmpGitDir);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'test-warn.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['reset', 'HEAD', 'test-warn.ts'], tmpGitDir);
     await unlink(tsFile);
 
     expect(result.stderr).toContain('console.log');
@@ -178,11 +209,11 @@ describe('stop-console-audit.sh', () => {
       tsxFile,
       'console.log("render");\nexport default function C() { return null; }\n'
     );
-    execFileSync('git', ['add', 'component.tsx'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', 'component.tsx'], tmpGitDir);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'component.tsx'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['reset', 'HEAD', 'component.tsx'], tmpGitDir);
     await unlink(tsxFile);
 
     expect(result.stderr).toContain('console.log');
@@ -192,11 +223,11 @@ describe('stop-console-audit.sh', () => {
   it('should warn about console.log in modified .js files', async () => {
     const jsFile = join(tmpGitDir, 'util.js');
     await writeFile(jsFile, 'console.log("js log");\nmodule.exports = {};\n');
-    execFileSync('git', ['add', 'util.js'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', 'util.js'], tmpGitDir);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'util.js'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['reset', 'HEAD', 'util.js'], tmpGitDir);
     await unlink(jsFile);
 
     expect(result.stderr).toContain('console.log');
@@ -206,11 +237,11 @@ describe('stop-console-audit.sh', () => {
   it('should warn about console.log in modified .jsx files', async () => {
     const jsxFile = join(tmpGitDir, 'app.jsx');
     await writeFile(jsxFile, 'console.log("jsx");\nfunction App() { return null; }\n');
-    execFileSync('git', ['add', 'app.jsx'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', 'app.jsx'], tmpGitDir);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'app.jsx'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['reset', 'HEAD', 'app.jsx'], tmpGitDir);
     await unlink(jsxFile);
 
     expect(result.stderr).toContain('console.log');
@@ -220,11 +251,11 @@ describe('stop-console-audit.sh', () => {
   it('should NOT warn when no console.log exists in modified files', async () => {
     const cleanFile = join(tmpGitDir, 'clean.ts');
     await writeFile(cleanFile, 'export const greeting = "hello";\n');
-    execFileSync('git', ['add', 'clean.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', 'clean.ts'], tmpGitDir);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'clean.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['reset', 'HEAD', 'clean.ts'], tmpGitDir);
     await unlink(cleanFile);
 
     expect(result.stderr).not.toContain('WARNING: console.log');
@@ -233,11 +264,11 @@ describe('stop-console-audit.sh', () => {
   it('should NOT warn when only non-JS/TS files are modified', async () => {
     const mdFile = join(tmpGitDir, 'NOTES.md');
     await writeFile(mdFile, '# console.log\nThis is docs.\n');
-    execFileSync('git', ['add', 'NOTES.md'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', 'NOTES.md'], tmpGitDir);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'NOTES.md'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['reset', 'HEAD', 'NOTES.md'], tmpGitDir);
     await unlink(mdFile);
 
     // "console.log" appears in the file but .md is excluded from the grep filter
@@ -277,19 +308,19 @@ describe('stop-console-audit.sh', () => {
     // Create, commit, modify+stage, then physically delete without unstaging.
     const deletedFile = join(tmpGitDir, 'deleted.ts');
     await writeFile(deletedFile, 'console.log("exists");\n');
-    execFileSync('git', ['add', 'deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['commit', '-m', 'add deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', 'deleted.ts'], tmpGitDir);
+    gitExec(['commit', '-m', 'add deleted.ts'], tmpGitDir);
 
     await writeFile(deletedFile, 'console.log("modified");\n');
-    execFileSync('git', ['add', 'deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['add', 'deleted.ts'], tmpGitDir);
     await unlink(deletedFile); // file no longer on disk but staged
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
     // Cleanup
-    execFileSync('git', ['reset', 'HEAD', 'deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['rm', '-f', '--cached', 'deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['commit', '-m', 'remove deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    gitExec(['reset', 'HEAD', 'deleted.ts'], tmpGitDir);
+    gitExec(['rm', '-f', '--cached', 'deleted.ts'], tmpGitDir);
+    gitExec(['commit', '-m', 'remove deleted.ts'], tmpGitDir);
 
     expect(result.exitCode).toBe(0);
   });
