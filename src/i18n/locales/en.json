@@ -244,6 +244,37 @@
         }
       }
     },
+    "web": {
+      "description": "Manage the Web UI server (start, stop, status, open)",
+      "start": {
+        "description": "Start the Web UI server",
+        "portOption": "Port number",
+        "openOption": "Open browser automatically after start",
+        "foregroundOption": "Run in foreground (not detached)",
+        "started": "Web UI started: http://127.0.0.1:{{port}}",
+        "failed": "Failed to start Web UI server"
+      },
+      "stop": {
+        "description": "Stop the Web UI server",
+        "stopped": "Web UI server stopped",
+        "notRunning": "Web UI server is not running"
+      },
+      "status": {
+        "description": "Show Web UI server status",
+        "running": "Web UI is running: http://127.0.0.1:{{port}}",
+        "notRunning": "Web UI is not running",
+        "startHint": "  Start with: omcustom web start"
+      },
+      "open": {
+        "description": "Open the Web UI in the default browser",
+        "portOption": "Port number",
+        "notRunningWarn": "Web UI does not appear to be running. Start it with: omcustom web start"
+      },
+      "deprecated": {
+        "serve": "[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.",
+        "serveStop": "[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead."
+      }
+    },
     "security": {
       "description": "Scan for security issues in hooks, configs, and templates",
       "verboseOption": "Show detailed scan results",

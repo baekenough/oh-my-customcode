@@ -91,7 +91,7 @@ function runForeground(projectRoot: string, port: number): void {
  * Open a URL in the default browser using execFile (shell-injection safe).
  * Uses platform-specific openers. Fires and forgets — failures are silently ignored.
  */
-function openBrowser(port: number): void {
+export function openBrowser(port: number): void {
   const url = `http://127.0.0.1:${port}`;
   const platform = process.platform;
 

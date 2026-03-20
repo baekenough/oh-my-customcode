@@ -244,6 +244,37 @@
         }
       }
     },
+    "web": {
+      "description": "Web UI 서버 관리 (시작, 중지, 상태, 열기)",
+      "start": {
+        "description": "Web UI 서버 시작",
+        "portOption": "포트 번호",
+        "openOption": "시작 후 브라우저 자동 열기",
+        "foregroundOption": "포그라운드 실행 (백그라운드 분리 안 함)",
+        "started": "Web UI 시작됨: http://127.0.0.1:{{port}}",
+        "failed": "Web UI 서버 시작 실패"
+      },
+      "stop": {
+        "description": "Web UI 서버 중지",
+        "stopped": "Web UI 서버가 중지되었습니다",
+        "notRunning": "Web UI 서버가 실행 중이 아닙니다"
+      },
+      "status": {
+        "description": "Web UI 서버 상태 표시",
+        "running": "Web UI 실행 중: http://127.0.0.1:{{port}}",
+        "notRunning": "Web UI가 실행 중이 아닙니다",
+        "startHint": "  시작하려면: omcustom web start"
+      },
+      "open": {
+        "description": "기본 브라우저에서 Web UI 열기",
+        "portOption": "포트 번호",
+        "notRunningWarn": "Web UI가 실행 중이지 않은 것 같습니다. 먼저 시작하세요: omcustom web start"
+      },
+      "deprecated": {
+        "serve": "[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.",
+        "serveStop": "[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead."
+      }
+    },
     "security": {
       "description": "훅, 설정, 템플릿의 보안 문제 검사",
       "verboseOption": "상세 검사 결과 표시",

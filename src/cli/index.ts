@@ -16,6 +16,12 @@ import { projectsCommand } from './projects.js';
 import { securityCommand } from './security.js';
 import { serveCommand, serveStopCommand } from './serve-commands.js';
 import { updateCommand } from './update.js';
+import {
+  webOpenCommand,
+  webStartCommand,
+  webStatusCommand,
+  webStopCommand,
+} from './web-commands.js';
 
 // Read version from package.json
 const require = createRequire(import.meta.url);
@@ -100,22 +106,74 @@ export function createProgram(): Command {
       process.exitCode = result.success ? 0 : 1;
     });
 
-  // omcustom serve [--port 4321] [--open] [--foreground]
+  // omcustom web — subcommand group for Web UI management
+  const web = program
+    .command('web')
+    .description('Manage the Web UI server (start, stop, status, open)');
+
+  // omcustom web start [--port 4321] [--open] [--foreground]
+  web
+    .command('start')
+    .description('Start the Web UI server')
+    .option('-p, --port <port>', 'Port number', '4321')
+    .option('--open', 'Open browser automatically after start')
+    .option('--foreground', 'Run in foreground (not detached)')
+    .action(async (options) => {
+      await webStartCommand(options);
+    });
+
+  // omcustom web stop
+  web
+    .command('stop')
+    .description('Stop the Web UI server')
+    .action(async () => {
+      await webStopCommand();
+    });
+
+  // omcustom web status
+  web
+    .command('status')
+    .description('Show Web UI server status')
+    .action(async () => {
+      await webStatusCommand();
+    });
+
+  // omcustom web open [--port 4321]
+  web
+    .command('open')
+    .description('Open the Web UI in the default browser')
+    .option('-p, --port <port>', 'Port number', '4321')
+    .action(async (options) => {
+      await webOpenCommand(options);
+    });
+
+  // Default action for `omcustom web` (no subcommand): show status
+  web.action(async () => {
+    await webStatusCommand();
+  });
+
+  // omcustom serve — deprecated alias for `omcustom web start`
   program
     .command('serve')
-    .description('Start the web UI server')
+    .description('(Deprecated) Start the Web UI server — use `omcustom web start` instead')
     .option('-p, --port <port>', 'Port number', '4321')
     .option('--open', 'Open browser automatically')
     .option('--foreground', 'Run in foreground (not detached)')
     .action(async (options) => {
+      console.warn(
+        '[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.'
+      );
       await serveCommand(options);
     });
 
-  // omcustom serve-stop
+  // omcustom serve-stop — deprecated alias for `omcustom web stop`
   program
     .command('serve-stop')
-    .description('Stop the web UI server')
+    .description('(Deprecated) Stop the Web UI server — use `omcustom web stop` instead')
     .action(async () => {
+      console.warn(
+        '[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead.'
+      );
       await serveStopCommand();
     });
 
@@ -139,7 +197,17 @@ export function createProgram(): Command {
     const opts = thisCommand.optsWithGlobals() as { skipVersionCheck?: boolean };
     const skipCheck = opts.skipVersionCheck || false;
 
-    if (actionCommand.name() === 'init') {
+    const cmdName = actionCommand.name();
+    const parentName = (actionCommand.parent as Command | undefined)?.name();
+
+    // Skip pre-flight for serve/serve-stop/web subcommands (fast server ops)
+    const isServeCmd = cmdName === 'serve' || cmdName === 'serve-stop';
+    const isWebCmd = cmdName === 'web' || parentName === 'web';
+    if (isServeCmd || isWebCmd) {
+      return;
+    }
+
+    if (cmdName === 'init') {
       await maybeHandleSelfUpdateForInit({
         currentVersion: packageJson.version,
         skip: skipCheck,
