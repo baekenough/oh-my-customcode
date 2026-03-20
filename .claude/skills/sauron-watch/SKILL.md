@@ -3,7 +3,6 @@ name: omcustom:sauron-watch
 description: Full R017 verification (5+3 rounds) before commit
 scope: harness
 disable-model-invocation: true
-argument-hint: "[--skip-phase1] [--skip-phase2] [--quick]"
 ---
 
 # Sauron Watch Skill

@@ -13,9 +13,9 @@
 
 **[English Documentation](./README.md)**
 
-44개 에이전트. 76개 스킬. 21개 규칙. 명령어 하나.
+45개 에이전트. 82개 스킬. 21개 규칙. 명령어 하나.
 
-> **v0.38.0** — 인터랙티브 초기화 마법사, eval-core MVP, PostCompact 훅, Codex-exec 자동 위임
+> **v0.46.0** — Rate Limit 모니터링, Skill Effort Override, 멀티프로젝트 Web UI, 일괄 업데이트, SDD 워크플로우, Ambiguity Gate
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -107,7 +107,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 에이전트 (44개)
+## 에이전트 (45개)
 
 | 카테고리 | 수 | 에이전트 |
 |---------|-----|---------|
@@ -115,7 +115,7 @@ Agent(arch-documenter):haiku      ┘
 | 백엔드 | 6 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs, be-django |
 | 프론트엔드 | 4 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter |
 | 데이터 엔지니어링 | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
-| 데이터베이스 | 3 | db-supabase, db-postgres, db-redis |
+| 데이터베이스 | 4 | db-supabase, db-postgres, db-redis, db-alembic |
 | 툴링 | 3 | tool-npm, tool-optimizer, tool-bun |
 | 아키텍처 | 2 | arch-documenter, arch-speckit |
 | 인프라 | 2 | infra-docker, infra-aws |
@@ -128,11 +128,11 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (74개)
+## 스킬 (82개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
-| 베스트 프랙티스 | 23 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns 외 |
+| 베스트 프랙티스 | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
 | 워크플로우 | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich 외 |
 | 개발 | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
@@ -140,7 +140,7 @@ Agent(arch-documenter):haiku      ┘
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
-| 보안 | 2 | cve-triage, jinja2-prompts |
+| 보안 | 3 | adversarial-review, cve-triage, jinja2-prompts |
 | 기타 | 8 | codex-exec, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
@@ -162,6 +162,9 @@ Agent(arch-documenter):haiku      ┘
 | `/structured-dev-cycle` | 6단계 개발: plan → verify → implement → verify → compound → done |
 | `/deep-plan` | 연구 검증 기반 계획 수립 |
 | `/research` | 10-team 병렬 분석 및 교차 검증 |
+| `/sdd-dev` | Spec-Driven Development 워크플로우 |
+| `/ambiguity-gate` | 사전 라우팅 모호성 분석 |
+| `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
 
 ### 에이전트 관리
 
@@ -173,6 +176,13 @@ Agent(arch-documenter):haiku      ┘
 | `/omcustom:audit-agents` | 에이전트 의존성 감사 |
 | `/omcustom:update-docs` | 프로젝트 구조와 문서 동기화 |
 | `/omcustom:sauron-watch` | 전체 구조 검증 (5+3 라운드) |
+| `/omcustom:feedback` | 피드백을 GitHub 이슈로 등록 |
+
+### Web UI
+
+| 커맨드 | 기능 |
+|--------|------|
+| `/omcustom:web` | 내장 Web UI 제어 (start, stop, status, open) |
 
 ### 패키지 & 릴리즈
 
@@ -195,15 +205,15 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 규칙 (20개)
+## 규칙 (21개)
 
 | 우선순위 | 수 | 목적 |
 |---------|-----|------|
-| **MUST** | 13 | 안전, 권한, 에이전트 설계, 식별, 오케스트레이션, 검증, 완료 검증 |
+| **MUST** | 14 | 안전, 권한, 에이전트 설계, 식별, 오케스트레이션, 검증, 완료 검증, 집행 정책 |
 | **SHOULD** | 6 | 상호작용, 오류 처리, 메모리, HUD, ecomode, ontology 라우팅 |
 | **MAY** | 1 | 최적화 |
 
-핵심 규칙: R010 (오케스트레이터 직접 쓰기 금지), R009 (병렬 실행 의무), R017 (푸시 전 sauron 검증), R020 (완료 선언 전 검증 의무).
+핵심 규칙: R010 (오케스트레이터 직접 쓰기 금지), R009 (병렬 실행 의무), R017 (푸시 전 sauron 검증), R020 (완료 선언 전 검증 의무), R021 (어드바이저리 우선 집행 모델).
 
 ---
 
@@ -219,7 +229,7 @@ Agent(arch-documenter):haiku      ┘
 
 모든 보안 훅은 어드바이저리입니다 (exit 0). 경고만 하고 차단하지 않습니다.
 
-v0.38.0에서 추가된 **PostCompact 훅** (Claude Code v2.1.76+)은 컨텍스트 컴팩션 이후 핵심 규칙을 자동으로 재강화합니다.
+**PostCompact 훅** (Claude Code v2.1.76+)은 컨텍스트 컴팩션 이후 핵심 규칙(R007-R018, R021)을 자동으로 재강화합니다.
 
 ---
 
@@ -234,6 +244,10 @@ omcustom list                  # 컴포넌트 목록
 omcustom doctor                # 설치 상태 검사
 omcustom doctor --fix          # 문제 자동 수정
 omcustom security              # 보안 이슈 스캔
+omcustom projects              # 관리 프로젝트 목록 및 버전 상태
+omcustom update --all          # 모든 구버전 프로젝트 일괄 업데이트
+omcustom serve                 # 내장 Web UI 시작
+omcustom serve-stop            # Web UI 중지
 ```
 
 ---
@@ -244,8 +258,8 @@ omcustom security              # 보안 이슈 스캔
 your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
-│   ├── agents/                 # 44개 에이전트 정의
-│   ├── skills/                 # 76개 스킬 모듈
+│   ├── agents/                 # 45개 에이전트 정의
+│   ├── skills/                 # 82개 스킬 모듈
 │   ├── rules/                  # 21개 거버넌스 규칙 (R000-R021)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
@@ -254,7 +268,7 @@ your-project/
 │   └── ontology/               # RAG용 지식 그래프
 ├── packages/
 │   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
-└── guides/                     # 25개 레퍼런스 문서
+└── guides/                     # 28개 레퍼런스 문서
 ```
 
 ---

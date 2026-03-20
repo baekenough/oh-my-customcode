@@ -9305,7 +9305,7 @@ var init_package = __esm(() => {
   package_default = {
     name: "oh-my-customcode",
     workspaces: ["packages/*"],
-    version: "0.45.3",
+    version: "0.46.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -9329,7 +9329,7 @@ var init_package = __esm(() => {
     },
     scripts: {
       dev: "bun run src/cli/index.ts",
-      build: "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node",
+      build: "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && bun run scripts/sync-source-lockfile.ts",
       test: "bun test",
       "test:unit": "bun test tests/unit",
       "test:integration": "bun test tests/integration",
