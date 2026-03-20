@@ -192,7 +192,7 @@ describe('auto-tag.yml — version extraction', () => {
 
   it('should prefix version with "v" to form the tag', async () => {
     const content = await readWorkflow();
-    expect(content).toContain('TAG="v${VERSION}"');
+    expect(content).toContain('TAG="v' + '${VERSION}"');
   });
 
   it('should output the tag via GITHUB_OUTPUT', async () => {

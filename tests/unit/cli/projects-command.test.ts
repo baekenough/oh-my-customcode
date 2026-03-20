@@ -129,7 +129,7 @@ describe('projectsCommand() — json format', () => {
     // Find the JSON console.log call (should contain '{')
     const jsonCall = consoleLogSpy.mock.calls.find((c) => String(c[0]).startsWith('{'));
     expect(jsonCall).toBeDefined();
-    const parsed = JSON.parse(String(jsonCall![0]));
+    const parsed = JSON.parse(String(jsonCall?.[0]));
     expect(parsed).toHaveProperty('currentVersion');
     expect(parsed).toHaveProperty('projects');
     expect(Array.isArray(parsed.projects)).toBe(true);
@@ -227,16 +227,12 @@ describe('writeLockFile()', () => {
     const projectDir = await mkDir(tempRoot, 'update-lock-project');
 
     await writeLockFile(projectDir, '0.45.0');
-    const first = JSON.parse(
-      await readFile(join(projectDir, '.omcustom.lock.json'), 'utf-8')
-    );
+    const first = JSON.parse(await readFile(join(projectDir, '.omcustom.lock.json'), 'utf-8'));
 
     await new Promise((r) => setTimeout(r, 10));
 
     await writeLockFile(projectDir, '0.46.0', first);
-    const second = JSON.parse(
-      await readFile(join(projectDir, '.omcustom.lock.json'), 'utf-8')
-    );
+    const second = JSON.parse(await readFile(join(projectDir, '.omcustom.lock.json'), 'utf-8'));
 
     expect(second.version).toBe('0.46.0');
     expect(second.installedAt).toBe(first.installedAt); // preserved
