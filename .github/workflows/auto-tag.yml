@@ -5,10 +5,13 @@ on:
     types: [closed]
     branches: [develop]
 
+<<<<<<< HEAD
 concurrency:
   group: auto-tag
   cancel-in-progress: false
 
+=======
+>>>>>>> 38559a1 (fix: add cwd and parent dir to projects search path (#546))
 jobs:
   auto-tag:
     if: >
@@ -21,7 +24,10 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+<<<<<<< HEAD
           token: ${{ secrets.RELEASE_PAT }}
+=======
+>>>>>>> 38559a1 (fix: add cwd and parent dir to projects search path (#546))
 
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
@@ -51,6 +57,10 @@ jobs:
       - name: Create and push tag
         if: steps.check.outputs.exists == 'false'
         env:
+<<<<<<< HEAD
+=======
+          GITHUB_TOKEN: ${{ secrets.RELEASE_PAT }}
+>>>>>>> 38559a1 (fix: add cwd and parent dir to projects search path (#546))
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"

@@ -228,6 +228,8 @@ For critical bugs in production:
 
 4. **Wait for CI to pass, then merge the PR.**
 
+   After merge, `auto-tag` automatically creates the tag and triggers npm publish.
+
    > **Note**: Hotfix branches are named `hotfix/*`, not `release/*`, so `auto-tag` will NOT
    > trigger automatically. For hotfixes, manually push the tag after merging:
    > ```bash
