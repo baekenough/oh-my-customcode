@@ -1,69 +1,38 @@
 import type { PageServerLoad } from './$types';
-import { getAgents, getSkills, getGuides, getRules } from '$lib/server/data';
+import { getAgents, getSkills } from '$lib/server/data';
 import { getAnalytics } from '$lib/server/analytics';
-
-const AGENT_TYPES: { label: string; pattern: RegExp }[] = [
-	{ label: 'SW Engineer / Language', pattern: /^lang-/ },
-	{ label: 'SW Engineer / Backend', pattern: /^be-/ },
-	{ label: 'SW Engineer / Frontend', pattern: /^fe-/ },
-	{ label: 'SW Engineer / Tooling', pattern: /^tool-/ },
-	{ label: 'Data Engineering', pattern: /^de-/ },
-	{ label: 'Database', pattern: /^db-/ },
-	{ label: 'Security', pattern: /^sec-/ },
-	{ label: 'Architecture', pattern: /^arch-/ },
-	{ label: 'Infrastructure', pattern: /^infra-/ },
-	{ label: 'QA', pattern: /^qa-/ },
-	{ label: 'Manager', pattern: /^mgr-/ },
-	{ label: 'System', pattern: /^sys-/ }
-];
+import { findProjectsForServe } from '$lib/server/projects';
 
 export const load: PageServerLoad = async ({ parent }) => {
-	const { root } = await parent();
-	const [agents, skills, guides, rules, analytics] = await Promise.all([
+	const { root, selectedProject } = await parent();
+
+	const [agents, skills, analytics, allProjects] = await Promise.all([
 		getAgents(root),
 		getSkills(root),
-		getGuides(root),
-		getRules(root),
-		getAnalytics(root)
+		getAnalytics(root),
+		findProjectsForServe()
 	]);
 
-	// Build type breakdown
-	const typeBreakdown = AGENT_TYPES.map(({ label, pattern }) => ({
-		label,
-		count: agents.filter((a) => pattern.test(a.name)).length
-	})).filter((t) => t.count > 0);
+	// Project-level counts for currently selected project
+	const projectStats = {
+		agents: agents.length,
+		skills: skills.length
+	};
 
-	const categorized = agents.filter((a) =>
-		AGENT_TYPES.some(({ pattern }) => pattern.test(a.name))
-	).length;
-	const uncategorized = agents.length - categorized;
-	if (uncategorized > 0) {
-		typeBreakdown.push({ label: 'Other', count: uncategorized });
-	}
-
-	// Skill scope breakdown
-	const scopeBreakdown = (['core', 'harness', 'package'] as const).map((scope) => ({
-		scope,
-		count: skills.filter((s) => s.scope === scope).length
-	}));
-
-	// Rule priority breakdown
-	const priorityBreakdown = (['MUST', 'SHOULD', 'MAY'] as const).map((p) => ({
-		priority: p,
-		count: rules.filter((r) => r.priority === p).length
-	}));
+	// Summary across all discovered projects
+	const projectSummary = {
+		total: allProjects.length,
+		latest: allProjects.filter((p) => p.status === 'latest').length,
+		outdated: allProjects.filter((p) => p.status === 'outdated').length,
+		unknown: allProjects.filter((p) => p.status === 'unknown').length
+	};
 
 	return {
-		counts: {
-			agents: agents.length,
-			skills: skills.length,
-			guides: guides.length,
-			rules: rules.length
-		},
-		typeBreakdown,
-		scopeBreakdown,
-		priorityBreakdown,
 		root,
+		selectedProject,
+		projectStats,
+		projectSummary,
+		projects: allProjects.slice(0, 6), // Show up to 6 projects on dashboard
 		analytics
 	};
 };
