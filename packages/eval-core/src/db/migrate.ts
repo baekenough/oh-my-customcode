@@ -120,9 +120,11 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     'CREATE INDEX IF NOT EXISTS idx_improvement_actions_status ON improvement_actions(status)',
   ];
 
-  for (const sql of statements) {
-    db.run(sql);
-  }
+  db.transaction(() => {
+    for (const sql of statements) {
+      db.run(sql);
+    }
+  })();
 
   // Migrations: add project_id column to existing sessions table (idempotent)
   try {
