@@ -510,8 +510,13 @@ packages/eval-core/
 | Agent hooks | 아니오 | 예 | 예 (프론트매터: hooks) |
 | Agent permissionMode | 아니오 | 예 | 예 (프론트매터: permissionMode) |
 | PostCompact 훅 이벤트 | 아니오 | 예 (v2.1.72+) | 예 (v0.38.0+) -- 압축 후 규칙 재주입 |
+| 스킬 effort 프론트매터 | 아니오 | 예 (v2.1.80+) | 예 (R006 문서화) |
+| 상태줄 rate_limits | 아니오 | 예 (v2.1.80+) | 예 (statusline.sh, R012) |
+| source: 'settings' 플러그인 | 아니오 | 예 (v2.1.80+) | 미채택 |
+| --bare 플래그 (훅/스킬/메모리 스킵) | 아니오 | 예 (v2.1.81+) | 문서화됨: bare 모드에서 하네스 완전 비활성화 (opt-in, 일반 사용에 영향 없음) |
+| --channels 권한 릴레이 | 아니오 | 예 (v2.1.81+) | 호환 -- 변경 불필요 (opt-in UX 기능) |
 
-Claude Code v2.1.72 ~ v2.1.76 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.81 테스트 및 호환 확인.
 
 ---
 
