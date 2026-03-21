@@ -1,4 +1,4 @@
-import { and, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import type { EvalDb } from '../db/client.js';
 import { agentInvocations, improvementActions } from '../db/schema.js';
 
@@ -51,6 +51,14 @@ export interface ImprovementSuggestion {
     threshold: number;
     sessionCount: number;
   };
+}
+
+export interface RoutingMissPattern {
+  totalInvocations: number;
+  generalPurposeCount: number;
+  exploreCount: number;
+  missRate: number;
+  recentMisses: Array<{ agentType: string; description: string; createdAt: string }>;
 }
 
 /**
@@ -212,6 +220,77 @@ export async function getSkillEffectiveness(
 }
 
 /**
+ * Returns routing miss analysis: invocations where general-purpose or Explore agent
+ * was used instead of a specialized agent (indicating a routing miss).
+ */
+export async function getRoutingMissPatterns(
+  db: EvalDb,
+  options: FeedbackQueryOptions = {}
+): Promise<RoutingMissPattern> {
+  const { since } = options;
+
+  const baseConditions = since ? [gte(agentInvocations.timestamp, since)] : [];
+  const agentTypeFilter = sql`${agentInvocations.agentType} IN ('general-purpose', 'Explore')`;
+
+  // Total invocations across all agents
+  const totalResult = await db
+    .select({ count: sql<number>`count(*)`.as('count') })
+    .from(agentInvocations)
+    .where(baseConditions.length > 0 ? and(...baseConditions) : undefined);
+
+  const totalInvocations = Number(totalResult[0]?.count ?? 0);
+
+  // Miss invocations grouped by agent type
+  const missWhere =
+    baseConditions.length > 0 ? and(...baseConditions, agentTypeFilter) : agentTypeFilter;
+
+  const missCountResult = await db
+    .select({
+      agentType: agentInvocations.agentType,
+      count: sql<number>`count(*)`.as('count'),
+    })
+    .from(agentInvocations)
+    .where(missWhere)
+    .groupBy(agentInvocations.agentType);
+
+  let generalPurposeCount = 0;
+  let exploreCount = 0;
+  for (const row of missCountResult) {
+    if (row.agentType === 'general-purpose') generalPurposeCount = Number(row.count);
+    if (row.agentType === 'Explore') exploreCount = Number(row.count);
+  }
+
+  const missRate =
+    totalInvocations > 0 ? (generalPurposeCount + exploreCount) / totalInvocations : 0;
+
+  // 5 most recent misses with description
+  const recentMissesResult = await db
+    .select({
+      agentType: agentInvocations.agentType,
+      description: agentInvocations.description,
+      createdAt: agentInvocations.createdAt,
+    })
+    .from(agentInvocations)
+    .where(missWhere)
+    .orderBy(desc(agentInvocations.timestamp))
+    .limit(5);
+
+  const recentMisses = recentMissesResult.map((row) => ({
+    agentType: row.agentType,
+    description: row.description ?? '',
+    createdAt: row.createdAt ?? '',
+  }));
+
+  return {
+    totalInvocations,
+    generalPurposeCount,
+    exploreCount,
+    missRate,
+    recentMisses,
+  };
+}
+
+/**
  * Combines agent failure patterns and skill effectiveness into actionable suggestions.
  * Each suggestion has target, type, confidence, and evidence.
  */
@@ -219,9 +298,10 @@ export async function getImprovementSuggestions(
   db: EvalDb,
   options: FeedbackQueryOptions = {}
 ): Promise<ImprovementSuggestion[]> {
-  const [agentPatterns, skillRecords] = await Promise.all([
+  const [agentPatterns, skillRecords, routingMiss] = await Promise.all([
     getAgentFailurePatterns(db, options),
     getSkillEffectiveness(db, options),
+    getRoutingMissPatterns(db, options),
   ]);
 
   const suggestions: ImprovementSuggestion[] = [];
@@ -278,6 +358,35 @@ export async function getImprovementSuggestions(
         value: skill.successRate,
         threshold,
         sessionCount: skill.totalInvocations,
+      },
+    });
+  }
+
+  // Routing miss suggestion (from improvement-rules.yml: routing-miss threshold 0.15, min 10)
+  const ROUTING_MISS_THRESHOLD = 0.15;
+  const ROUTING_MISS_MIN_SESSIONS = 10;
+  if (
+    routingMiss.totalInvocations >= ROUTING_MISS_MIN_SESSIONS &&
+    routingMiss.missRate > ROUTING_MISS_THRESHOLD
+  ) {
+    const missCount = routingMiss.generalPurposeCount + routingMiss.exploreCount;
+    const recentPatterns = routingMiss.recentMisses
+      .map((m) => m.description)
+      .filter(Boolean)
+      .slice(0, 3)
+      .join(', ');
+
+    suggestions.push({
+      target: 'routing',
+      targetType: 'routing',
+      actionType: 'routing_update',
+      description: `Routing miss rate is ${(routingMiss.missRate * 100).toFixed(1)}% (${missCount}/${routingMiss.totalInvocations} invocations used general-purpose or Explore agent). Add keywords/patterns to routing skill.${recentPatterns ? ` Recent patterns: ${recentPatterns}` : ''}`,
+      confidence: 'medium',
+      evidence: {
+        metric: 'miss_rate',
+        value: routingMiss.missRate,
+        threshold: ROUTING_MISS_THRESHOLD,
+        sessionCount: routingMiss.totalInvocations,
       },
     });
   }
