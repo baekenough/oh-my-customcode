@@ -1,11 +1,16 @@
 # TODO — oh-my-customcode
 
-> Last updated: 2026-03-08
+> Last updated: 2026-03-21
 
 ## Pending
 
-### #213 Phase 3: Pair Pipeline + PR Auto-Improvement
-- [ ] Commit, push, PR → merge to develop
+### #602: sys-naggy SessionStart Hook Improvement
+- [ ] In progress — SessionStart hook behavior refinement
+
+## Completed (2026-03-21)
+
+- [x] #213 Phase 3: Pair Pipeline + PR Auto-Improvement
+  - Commit, push, PR → merged to develop (v0.21.0)
 
 ## Completed (2026-03-08)
 

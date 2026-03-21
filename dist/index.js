@@ -1653,7 +1653,7 @@ import { join as join6 } from "node:path";
 var package_default = {
   name: "oh-my-customcode",
   workspaces: ["packages/*"],
-  version: "0.48.3",
+  version: "0.48.4",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
