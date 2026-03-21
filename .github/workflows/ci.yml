@@ -207,6 +207,31 @@ jobs:
             fi
           fi
 
+          # Skill script files sync
+          SCRIPT_ERRORS=0
+          for script_dir in .claude/skills/*/scripts; do
+            if [ -d "$script_dir" ]; then
+              skill_name=$(basename $(dirname "$script_dir"))
+              template_dir="templates/.claude/skills/$skill_name/scripts"
+              if [ ! -d "$template_dir" ]; then
+                echo "::error::Missing template scripts dir: $template_dir"
+                SCRIPT_ERRORS=$((SCRIPT_ERRORS + 1))
+              else
+                for script in "$script_dir"/*; do
+                  [ -e "$script" ] || continue
+                  script_name=$(basename "$script")
+                  if [ ! -f "$template_dir/$script_name" ]; then
+                    echo "::error::Missing template script: $template_dir/$script_name"
+                    SCRIPT_ERRORS=$((SCRIPT_ERRORS + 1))
+                  fi
+                done
+              fi
+            fi
+          done
+          if [ $SCRIPT_ERRORS -gt 0 ]; then
+            errors=$((errors + SCRIPT_ERRORS))
+          fi
+
           if [ "$errors" -gt 0 ]; then
             echo ""
             echo "Fix: copy missing files from .claude/ to templates/.claude/"
@@ -214,4 +239,4 @@ jobs:
             exit 1
           fi
 
-          echo "Template sync verified: $src_skills skills, $src_hooks hooks, $src_hook_entries hook matchers"
+          echo "Template sync verified: $src_skills skills, $src_hooks hooks, $src_hook_entries hook matchers, skill scripts OK"
