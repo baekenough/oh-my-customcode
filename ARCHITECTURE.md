@@ -14,31 +14,9 @@ Current version: **0.38.0** — distributed as `oh-my-customcode` on npm, CLI: `
 
 ## 2. High-Level Architecture
 
-```mermaid
-flowchart TD
-    User([User]) --> Orchestrator["Main Conversation\n(Orchestrator)"]
-
-    Orchestrator --> SR[secretary-routing]
-    Orchestrator --> DR[dev-lead-routing]
-    Orchestrator --> DE[de-lead-routing]
-    Orchestrator --> QA[qa-lead-routing]
-
-    SR --> MgrAgents["Manager Agents\nmgr-creator · mgr-gitnerd\nmgr-sauron · mgr-updater\nmgr-supplier · mgr-claude-code-bible"]
-    DR --> DevAgents["Language / Backend / Frontend\nTooling / DB / Infra / Arch"]
-    DE --> DEAgents["Data Engineering\nde-airflow · de-dbt · de-spark\nde-kafka · de-snowflake · de-pipeline"]
-    QA --> QAAgents["QA Team\nqa-planner · qa-writer · qa-engineer"]
-
-    Hooks["Hook System\nPreToolUse · PostToolUse\nSessionStart · Stop\nSubagentStart · SubagentStop"] -.->|cross-cutting| Orchestrator
-
-    Memory["Memory Layer\nNative auto-memory\nMCP: claude-mem"] -.->|persistence| Orchestrator
-
-    Observability["Observability\naudit-log · secret-filter\ncontent-hash · schema-validator\ncost-cap · stuck-detector"] -.->|entropy mgmt| Hooks
-
-    style Orchestrator fill:#2d6a4f,color:#fff
-    style Hooks fill:#6d4c41,color:#fff
-    style Memory fill:#1a237e,color:#fff
-    style Observability fill:#4a148c,color:#fff
-```
+<p align="center">
+  <img src="assets/diagrams/01-system-architecture.png" alt="System Architecture" width="800" />
+</p>
 
 ### 2.1 Compilation Metaphor
 
@@ -55,6 +33,10 @@ oh-my-customcode treats agent harness authoring as a compilation problem. Skills
 | Reverse compiler | omcustom-takeover skill (code to spec reverse compilation) |
 
 The takeover pattern — reverse-compiling an existing codebase into structured specs that can then drive agent creation — is a core capability for onboarding new projects.
+
+<p align="center">
+  <img src="assets/diagrams/05-compilation-metaphor.png" alt="Compilation Metaphor" width="800" />
+</p>
 
 ---
 
@@ -191,53 +173,15 @@ Four hooks form the observability backbone, added as part of the Harness Enginee
 
 The main conversation is the **sole orchestrator**. It coordinates via routing skills and the Agent tool. It NEVER writes or edits files directly — all file mutations are delegated to subagents. The only exception: Agent Teams members act as local orchestrators for their own sub-tasks and CAN spawn sub-agents.
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant O as Orchestrator
-    participant RS as Routing Skill
-    participant ORAG as Ontology-RAG
-    participant SA as Subagent
-
-    U->>O: Request
-    O->>RS: Detect intent (R015)
-    RS-->>O: Selected agent + confidence
-    O->>ORAG: get_agent_for_task (R019, best-effort)
-    ORAG-->>O: suggested_skills (enrichment)
-    O->>SA: Spawn via Agent tool (R009) with enriched prompt
-    SA->>SA: Execute (Read/Write/Edit/Bash)
-    SA-->>O: Result
-    O->>O: Verify completion (R020)
-    O-->>U: Response
-```
+<p align="center">
+  <img src="assets/diagrams/02-orchestration-flow.png" alt="Orchestration Flow" width="800" />
+</p>
 
 ### 4.2 Routing Architecture
 
-```mermaid
-flowchart LR
-    O[Orchestrator] --> SR[secretary-routing]
-    O --> DR[dev-lead-routing]
-    O --> DE[de-lead-routing]
-    O --> QA[qa-lead-routing]
-
-    SR --> mgr-creator
-    SR --> mgr-updater
-    SR --> mgr-supplier
-    SR --> mgr-gitnerd
-    SR --> mgr-sauron
-    SR --> mgr-claude-code-bible
-    SR --> sys-memory-keeper
-    SR --> sys-naggy
-
-    DR --> lang["lang-golang-expert\nlang-python-expert\nlang-rust-expert\nlang-kotlin-expert\nlang-typescript-expert\nlang-java21-expert"]
-    DR --> be["be-fastapi-expert\nbe-springboot-expert\nbe-go-backend-expert\nbe-express-expert\nbe-nestjs-expert\nbe-django-expert"]
-    DR --> fe["fe-vercel-agent\nfe-vuejs-agent\nfe-svelte-agent\nfe-flutter-agent"]
-    DR --> infra["infra-docker-expert\ninfra-aws-expert\ndb-supabase-expert\ndb-postgres-expert\ndb-redis-expert"]
-
-    DE --> de["de-airflow-expert\nde-dbt-expert\nde-spark-expert\nde-kafka-expert\nde-snowflake-expert\nde-pipeline-expert"]
-
-    QA --> qa["qa-planner\nqa-writer\nqa-engineer"]
-```
+<p align="center">
+  <img src="assets/diagrams/03-routing-architecture.png" alt="Routing Architecture" width="800" />
+</p>
 
 ### 4.3 Ontology-RAG Enrichment (R019)
 
@@ -249,16 +193,9 @@ Known limitation: `context: fork` skills cannot access MCP tools, so `get_agent_
 
 When routing detects no matching specialist:
 
-```mermaid
-flowchart TD
-    A[Routing detects no match] --> B{Specialized task?}
-    B -- Yes --> C[Delegate to mgr-creator]
-    B -- No --> D[Use general-purpose]
-    C --> E["Auto-discover .claude/skills/ + guides/"]
-    E --> F["Create .claude/agents/name.md"]
-    F --> G[Orchestrator uses new agent for original task]
-    G --> H[Agent persisted for future reuse]
-```
+<p align="center">
+  <img src="assets/diagrams/04-dynamic-agent-creation.png" alt="Dynamic Agent Creation" width="800" />
+</p>
 
 ### 4.5 Intent Detection (R015)
 
@@ -442,21 +379,9 @@ Episodic-memory auto-indexes conversations after session end — no manual actio
 
 ### 6.6 Session-End Flow
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant O as Orchestrator
-    participant SMK as sys-memory-keeper
-    participant MCP as MCP: claude-mem
-
-    U->>O: Session end signal
-    O->>SMK: Delegate: update MEMORY.md
-    SMK->>SMK: Collect summary, apply temporal decay
-    SMK-->>O: Native memory updated
-    O->>MCP: Save session summary (best-effort)
-    Note over MCP: episodic-memory auto-indexes after session, no manual step
-    O-->>U: Session saved confirmation
-```
+<p align="center">
+  <img src="assets/diagrams/07-session-end-memory.png" alt="Session-End Memory Flow" width="800" />
+</p>
 
 MCP saves are non-blocking — failure does not prevent session end.
 
@@ -468,35 +393,17 @@ The task-outcome-recorder hook (PostToolUse + SubagentStop) records success/fail
 
 **Skill Effectiveness**: Routing skills can correlate suggested skills with task outcomes to identify which skill combinations yield the highest success rates. This data accumulates in PPID-scoped temp files (`/tmp/.claude-task-outcomes-$PPID`) during a session and informs memory updates at session end.
 
-```mermaid
-flowchart LR
-    TO[task-outcome-recorder] --> TF["/tmp/.claude-task-outcomes-$PPID"]
-    TF --> ME[model-escalation-advisor]
-    TF --> SMK[sys-memory-keeper]
-    ME -->|advisory| O[Orchestrator]
-    SMK -->|session-end| M[MEMORY.md]
-```
+<p align="center">
+  <img src="assets/diagrams/08-metrics-observability.png" alt="Metrics and Observability" width="800" />
+</p>
 
 ---
 
 ## 7. CI/CD Pipeline
 
-```mermaid
-flowchart LR
-    develop --> PR[Pull Request]
-    PR --> ci["ci.yml\nbuild - test - lint\ntypecheck - coverage"]
-    ci --> develop
-
-    develop --> rel["release/* branch"]
-    rel --> tag["git tag v*"]
-    tag --> release["release.yml\nnpm publish\nGitHub Packages"]
-
-    subgraph "Side Workflows"
-        docs-validator
-        docs-sync
-        security-audit
-    end
-```
+<p align="center">
+  <img src="assets/diagrams/06-cicd-pipeline.png" alt="CI/CD Pipeline" width="800" />
+</p>
 
 ### 7.1 Quality Gates
 
