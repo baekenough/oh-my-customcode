@@ -12,6 +12,7 @@ import type { EvalDb } from '../db/client.js';
 import {
   getAgentFailurePatterns,
   getImprovementSuggestions,
+  getRoutingMissPatterns,
   getSkillEffectiveness,
   saveImprovementActions,
   type ImprovementSuggestion,
@@ -71,7 +72,7 @@ function seedInvocation(
   db: EvalDb,
   agentType: string,
   outcome: 'success' | 'failure',
-  options: { skillName?: string; errorSummary?: string; since?: string } = {}
+  options: { skillName?: string; errorSummary?: string; since?: string; description?: string } = {}
 ) {
   db.insert(schema.agentInvocations)
     .values({
@@ -83,6 +84,7 @@ function seedInvocation(
       timestamp: options.since ?? new Date().toISOString(),
       skillName: options.skillName ?? null,
       errorSummary: options.errorSummary ?? null,
+      description: options.description ?? null,
     })
     .run();
 }
@@ -533,6 +535,142 @@ describe('getImprovementSuggestions', () => {
     expect(s?.evidence.value).toBeCloseTo(0.8);
     expect(s?.evidence.threshold).toBe(0.3);
     expect(s?.evidence.sessionCount).toBe(5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getRoutingMissPatterns
+// ---------------------------------------------------------------------------
+
+describe('getRoutingMissPatterns', () => {
+  it('returns zero counts on empty DB', async () => {
+    const { db } = makeDb();
+    const result = await getRoutingMissPatterns(db);
+    expect(result.totalInvocations).toBe(0);
+    expect(result.generalPurposeCount).toBe(0);
+    expect(result.exploreCount).toBe(0);
+    expect(result.missRate).toBe(0);
+    expect(result.recentMisses).toEqual([]);
+  });
+
+  it('counts general-purpose and Explore invocations correctly', async () => {
+    const { db } = makeDb();
+    // 6 specialist invocations
+    for (let i = 0; i < 6; i++) seedInvocation(db, 'lang-typescript-expert', 'success');
+    // 2 general-purpose (routing miss)
+    seedInvocation(db, 'general-purpose', 'success', { description: 'help me with code' });
+    seedInvocation(db, 'general-purpose', 'success', { description: 'search something' });
+    // 2 Explore (routing miss)
+    seedInvocation(db, 'Explore', 'success', { description: 'explore codebase' });
+    seedInvocation(db, 'Explore', 'success');
+
+    const result = await getRoutingMissPatterns(db);
+    expect(result.totalInvocations).toBe(10);
+    expect(result.generalPurposeCount).toBe(2);
+    expect(result.exploreCount).toBe(2);
+    expect(result.missRate).toBeCloseTo(0.4); // 4/10 = 40%
+    expect(result.recentMisses).toHaveLength(4);
+  });
+
+  it('returns missRate=0 when no routing misses', async () => {
+    const { db } = makeDb();
+    for (let i = 0; i < 10; i++) seedInvocation(db, 'lang-golang-expert', 'success');
+
+    const result = await getRoutingMissPatterns(db);
+    expect(result.totalInvocations).toBe(10);
+    expect(result.generalPurposeCount).toBe(0);
+    expect(result.exploreCount).toBe(0);
+    expect(result.missRate).toBe(0);
+    expect(result.recentMisses).toEqual([]);
+  });
+
+  it('returns at most 5 recent misses', async () => {
+    const { db } = makeDb();
+    for (let i = 0; i < 8; i++) {
+      seedInvocation(db, 'general-purpose', 'success', {
+        description: `task-${i}`,
+        since: `2026-01-01T00:${String(i).padStart(2, '0')}:00.000Z`,
+      });
+    }
+
+    const result = await getRoutingMissPatterns(db);
+    expect(result.recentMisses).toHaveLength(5);
+    // Most recent first (timestamp DESC ordering)
+    expect(result.recentMisses[0]?.description).toBe('task-7');
+  });
+
+  it('includes description in recentMisses entries', async () => {
+    const { db } = makeDb();
+    seedInvocation(db, 'general-purpose', 'success', { description: 'analyze this file' });
+    seedInvocation(db, 'Explore', 'success', { description: 'find all tests' });
+
+    const result = await getRoutingMissPatterns(db);
+    const descriptions = result.recentMisses.map((m) => m.description);
+    expect(descriptions).toContain('analyze this file');
+    expect(descriptions).toContain('find all tests');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getImprovementSuggestions — routing miss integration
+// ---------------------------------------------------------------------------
+
+describe('getImprovementSuggestions routing miss', () => {
+  it('does NOT generate routing_update suggestion below threshold (missRate < 0.15)', async () => {
+    const { db } = makeDb();
+    // 1 miss out of 10 = 10% miss rate — below 0.15 threshold
+    for (let i = 0; i < 9; i++) seedInvocation(db, 'lang-python-expert', 'success');
+    seedInvocation(db, 'general-purpose', 'success');
+
+    const result = await getImprovementSuggestions(db, { minSessions: 1 });
+    const routingUpdate = result.find((s) => s.actionType === 'routing_update');
+    expect(routingUpdate).toBeUndefined();
+  });
+
+  it('does NOT generate routing_update suggestion when below min sessions (< 10)', async () => {
+    const { db } = makeDb();
+    // 3 misses out of 4 total = 75% miss rate, but only 4 total (< 10 min sessions)
+    for (let i = 0; i < 3; i++) seedInvocation(db, 'general-purpose', 'success');
+    seedInvocation(db, 'lang-kotlin-expert', 'success');
+
+    const result = await getImprovementSuggestions(db, { minSessions: 1 });
+    const routingUpdate = result.find((s) => s.actionType === 'routing_update');
+    expect(routingUpdate).toBeUndefined();
+  });
+
+  it('generates routing_update suggestion when missRate > 0.15 and >= 10 invocations', async () => {
+    const { db } = makeDb();
+    // 4 misses out of 20 total = 20% miss rate — above 0.15 threshold
+    for (let i = 0; i < 16; i++) seedInvocation(db, 'lang-typescript-expert', 'success');
+    for (let i = 0; i < 3; i++) seedInvocation(db, 'general-purpose', 'success');
+    seedInvocation(db, 'Explore', 'success');
+
+    const result = await getImprovementSuggestions(db, { minSessions: 1 });
+    const routingUpdate = result.find((s) => s.actionType === 'routing_update');
+    expect(routingUpdate).toBeDefined();
+    expect(routingUpdate?.targetType).toBe('routing');
+    expect(routingUpdate?.target).toBe('routing');
+    expect(routingUpdate?.confidence).toBe('medium');
+    expect(routingUpdate?.evidence.metric).toBe('miss_rate');
+    expect(routingUpdate?.evidence.threshold).toBe(0.15);
+    expect(routingUpdate?.evidence.sessionCount).toBe(20);
+    expect(routingUpdate?.evidence.value).toBeCloseTo(0.2);
+    expect(routingUpdate?.description).toContain('20.0%');
+  });
+
+  it('routing miss suggestion includes miss counts in description', async () => {
+    const { db } = makeDb();
+    for (let i = 0; i < 10; i++) seedInvocation(db, 'lang-golang-expert', 'success');
+    for (let i = 0; i < 3; i++) seedInvocation(db, 'general-purpose', 'success');
+    for (let i = 0; i < 2; i++) seedInvocation(db, 'Explore', 'success');
+
+    const result = await getImprovementSuggestions(db, { minSessions: 1 });
+    const routingUpdate = result.find((s) => s.actionType === 'routing_update');
+    expect(routingUpdate).toBeDefined();
+    // Description should mention general-purpose or Explore
+    expect(routingUpdate?.description).toContain('general-purpose or Explore');
+    // Description should mention 5/15 counts
+    expect(routingUpdate?.description).toContain('5/15');
   });
 });
 
