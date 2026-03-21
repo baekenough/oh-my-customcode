@@ -20,6 +20,8 @@ Read the specified YAML file from `workflows/{name}.yaml`. Validate:
 - Required fields: `name`, `description`, `steps[]`
 - Each step has either `skill:` or `action:` (not both)
 - Referenced skills exist in `.claude/skills/`
+- Skill names must match `^[a-z0-9-]+$` (kebab-case only) — reject path traversal attempts
+- Action values must be one of: `implement`, `create-pr` — reject unknown actions with error
 
 ### 2. Execute Steps
 
