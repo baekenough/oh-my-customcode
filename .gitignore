@@ -40,6 +40,7 @@ docs/.vitepress/dist
 .claude/
 !.claude/agents/
 !.claude/agents/souls/
+!.claude/skills/
 guides/
 ontology/
 CLAUDE.md
