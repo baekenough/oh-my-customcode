@@ -37,7 +37,7 @@ docs/.vitepress/cache
 docs/.vitepress/dist
 
 # omcustom init output (templates/ is the source of truth)
-.claude/
+.claude/*
 !.claude/agents/
 !.claude/agents/souls/
 !.claude/skills/
