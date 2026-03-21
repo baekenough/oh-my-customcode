@@ -2,7 +2,7 @@
 name: deep-verify
 description: Multi-angle release quality verification using parallel expert review teams
 scope: core
-version: 1.0.0
+version: 1.1.0
 user-invocable: true
 effort: high
 ---
@@ -28,13 +28,15 @@ If no argument, verifies current branch against its base (usually `develop`).
 - Run test suite, lint, and type check
 - Collect results as baseline
 
-### Round 2: Parallel Expert Review (4 agents)
-Spawn 4 parallel review agents, each with a different focus:
+### Round 2: Parallel Expert Review (6 agents)
+Spawn 6 parallel review agents, each with a different focus:
 
 1. **Correctness Reviewer** — Logic errors, edge cases, off-by-one, null handling
 2. **Security Reviewer** — Injection, auth bypass, data exposure, OWASP top 10
 3. **Performance Reviewer** — O(n^2) loops, unbounded queries, memory leaks, missing indexes
 4. **Integration Reviewer** — API contract breaks, migration safety, cross-module side effects
+5. **Philosophy Reviewer** — Project concept/metaphor alignment, separation of concerns (R006), orchestrator rules (R010), advisory-first enforcement (R021), compilation metaphor integrity
+6. **Regression & Performance Reviewer** — Feature regression risk, API contract preservation, query performance impact, index effectiveness, algorithm complexity at realistic scale
 
 Each agent receives the full diff and returns findings as structured JSON:
 ```json
@@ -67,6 +69,15 @@ Each agent receives the full diff and returns findings as structured JSON:
 - Re-run lint and type check
 - Generate summary report
 
+### Round 7: Philosophy & Regression Gate
+- Verify all changes align with project's compilation metaphor (Skills=source, Agents=artifacts, Rules=spec)
+- Check separation of concerns: no agents containing skill logic, no skills with agent definitions
+- Verify orchestrator rules: no new file writes from orchestrator context
+- Check advisory-first: no new hard-blocking hooks introduced
+- Confirm no feature regressions: existing APIs preserved, test coverage maintained
+- Performance sanity: no O(n^2) on large datasets, no missing indexes for new queries
+- If any CONCERN or VIOLATION found: report for manual review before release
+
 ## Output Format
 
 ```
@@ -80,11 +91,13 @@ Each agent receives the full diff and returns findings as structured JSON:
 ║  Findings:                                           ║
 ║    HIGH:   {n} ({confirmed} confirmed, {fp} FP)      ║
 ║    MEDIUM: {n} ({confirmed} confirmed, {fp} FP)      ║
-║    LOW:    {n}                                        ║
+║    LOW:    {n}                                       ║
 ╠══════════════════════════════════════════════════════╣
 ║  Fixes Applied: {n}                                  ║
 ║  Tests: {pass}/{total} passing                       ║
 ║  Verdict: READY / NEEDS REVIEW / BLOCKED             ║
+║  Philosophy: ALIGNED / {n} CONCERNS                  ║
+║  Regression: CLEAN / {n} RISKS                       ║
 ╚══════════════════════════════════════════════════════╝
 ```
 
@@ -94,3 +107,5 @@ Each agent receives the full diff and returns findings as structured JSON:
 - Round 3 verification agents use `model: opus` for reasoning depth
 - FALSE POSITIVE filtering is critical — previous releases showed 80%+ FP rate on automated review
 - This skill replaces ad-hoc cross-verification with a repeatable process
+- Round 7 philosophy check references CLAUDE.md architecture section and R006/R010/R021 rules
+- Regression check compares function signatures, export lists, and test counts against develop baseline

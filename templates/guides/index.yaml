@@ -34,6 +34,14 @@ guides:
       origin: go.dev
       url: https://go.dev/doc/effective_go
 
+  - name: java21
+    description: Java 21 language reference and modern feature documentation
+    path: ./java21/
+    source:
+      type: external
+      origin: docs.oracle.com
+      url: https://docs.oracle.com/en/java/javase/21/
+
   - name: python
     description: Python reference from PEP 8 and PEP 20
     path: ./python/
@@ -67,6 +75,14 @@ guides:
       url: https://www.typescriptlang.org/docs/handbook/
 
   # Backend
+  - name: django-best-practices
+    description: Django patterns for production-ready Python web applications
+    path: ./django-best-practices/
+    source:
+      type: external
+      origin: djangoproject.com
+      url: https://docs.djangoproject.com/en/6.0/
+
   - name: fastapi
     description: FastAPI framework reference
     path: ./fastapi/
@@ -158,6 +174,14 @@ guides:
       url: https://iceberg.apache.org/docs/latest/
 
   # Database
+  - name: alembic
+    description: Alembic database migration framework for SQLAlchemy
+    path: ./alembic/
+    source:
+      type: external
+      origin: alembic.sqlalchemy.org
+      url: https://alembic.sqlalchemy.org/en/latest/
+
   - name: supabase-postgres
     description: Supabase and PostgreSQL best practices reference
     path: ./supabase-postgres/
@@ -182,6 +206,20 @@ guides:
       origin: redis.io
       url: https://redis.io/docs/
 
+  # Git
+  - name: git-worktree-workflow
+    description: Git worktree workflow for parallel branch development
+    path: ./git-worktree-workflow/
+    source:
+      type: internal
+
+  # Architecture
+  - name: skill-bundle-design
+    description: Domain skill bundle design patterns for Author/Test/Troubleshoot tri-pattern
+    path: ./skill-bundle-design/
+    source:
+      type: internal
+
   # Writing
   - name: elements-of-style
     description: The Elements of Style writing clarity guidelines
@@ -190,3 +228,10 @@ guides:
       type: external
       origin: public-domain
       url: https://www.gutenberg.org/ebooks/37134
+
+  # Web Scraping
+  - name: web-scraping
+    description: BeautifulSoup and Playwright patterns for reliable web scraping and government site parsing
+    path: ./web-scraping/
+    source:
+      type: internal
