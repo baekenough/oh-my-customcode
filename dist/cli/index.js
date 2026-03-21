@@ -9305,7 +9305,7 @@ var init_package = __esm(() => {
   package_default = {
     name: "oh-my-customcode",
     workspaces: ["packages/*"],
-    version: "0.49.0",
+    version: "0.50.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -25820,6 +25820,7 @@ var MESSAGES = {
     "update.file_applied": "Applied update to {{path}}",
     "update.lockfile_regenerated": "Lockfile regenerated ({{files}} files tracked)",
     "update.lockfile_failed": "Failed to regenerate lockfile: {{error}}",
+    "update.protected_file_updated": "⟳ Protected file {{file}} in {{component}} updated: {{hint}}",
     "config.load_failed": "Failed to load config: {{error}}",
     "config.not_found": "Config not found at {{path}}, using defaults",
     "config.saved": "Config saved to {{path}}",
@@ -25864,6 +25865,7 @@ var MESSAGES = {
     "update.file_applied": "{{path}} 업데이트 적용",
     "update.lockfile_regenerated": "잠금 파일 재생성 완료 ({{files}}개 파일 추적)",
     "update.lockfile_failed": "잠금 파일 재생성 실패: {{error}}",
+    "update.protected_file_updated": "⟳ 보호 파일 {{file}} ({{component}}) 업데이트됨: {{hint}}",
     "config.load_failed": "설정 로드 실패: {{error}}",
     "config.not_found": "{{path}}에 설정 없음, 기본값 사용",
     "config.saved": "설정 저장: {{path}}",
@@ -29915,7 +29917,7 @@ async function handleBackupIfRequested(targetDir, backup, result) {
   result.backedUpPaths.push(backupPath);
   info("update.backup_created", { path: backupPath });
 }
-async function processComponentUpdate(targetDir, component, updateCheck, customizations, options, result, config) {
+async function processComponentUpdate(targetDir, component, updateCheck, customizations, options, result, config, lockfile) {
   const componentUpdate = updateCheck.updatableComponents.find((c) => c.name === component);
   if (!componentUpdate && !options.force) {
     result.skippedComponents.push(component);
@@ -29927,7 +29929,7 @@ async function processComponentUpdate(targetDir, component, updateCheck, customi
     return;
   }
   try {
-    const preserved = await updateComponent(targetDir, component, customizations, options, config);
+    const preserved = await updateComponent(targetDir, component, customizations, options, config, lockfile);
     result.updatedComponents.push(component);
     result.preservedFiles.push(...preserved);
   } catch (err) {
@@ -29936,9 +29938,9 @@ async function processComponentUpdate(targetDir, component, updateCheck, customi
     result.skippedComponents.push(component);
   }
 }
-async function updateAllComponents(targetDir, components, updateCheck, customizations, options, result, config) {
+async function updateAllComponents(targetDir, components, updateCheck, customizations, options, result, config, lockfile) {
   for (const component of components) {
-    await processComponentUpdate(targetDir, component, updateCheck, customizations, options, result, config);
+    await processComponentUpdate(targetDir, component, updateCheck, customizations, options, result, config, lockfile);
   }
 }
 function getEntryTemplateName2(language) {
@@ -30120,8 +30122,9 @@ async function update(options) {
     const manifestCustomizations = await resolveManifestCustomizations(options, options.targetDir);
     const configPreserveFiles = resolveConfigPreserveFiles(options, config);
     const customizations = resolveCustomizations(manifestCustomizations, configPreserveFiles, options.targetDir);
+    const lockfile = await readLockfile(options.targetDir);
     const components = options.components || getAllUpdateComponents();
-    await updateAllComponents(options.targetDir, components, updateCheck, customizations, options, result, config);
+    await updateAllComponents(options.targetDir, components, updateCheck, customizations, options, result, config, lockfile);
     await runFullUpdatePostProcessing(options, result, config);
     const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
     if (lockfileResult.warning) {
@@ -30182,15 +30185,46 @@ async function componentHasUpdate(_targetDir, component, config) {
   const latestVersion = await getLatestVersion();
   return installedVersion !== latestVersion;
 }
-async function collectProtectedSkipPaths(srcPath, destPath, componentPath, forceOverwriteAll) {
+async function shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile) {
+  if (!lockfile) {
+    return true;
+  }
+  const lockfileEntry = lockfile.files[lockfileKey];
+  if (!lockfileEntry) {
+    return false;
+  }
+  if (!await fileExists(targetFilePath)) {
+    return false;
+  }
+  try {
+    const currentHash = await computeFileHash(targetFilePath);
+    return currentHash !== lockfileEntry.templateHash;
+  } catch {
+    return true;
+  }
+}
+async function collectProtectedSkipPaths(srcPath, destPath, componentPath, forceOverwriteAll, lockfile, targetDir) {
   if (forceOverwriteAll) {
-    const warnedPaths = await findProtectedFilesInDir(srcPath, componentPath);
-    return { skipPaths: [], warnedPaths };
+    const warnedPaths2 = await findProtectedFilesInDir(srcPath, componentPath);
+    return { skipPaths: [], warnedPaths: warnedPaths2, updatedPaths: [] };
   }
   const protectedRelative = await findProtectedFilesInDir(srcPath, componentPath);
   const path3 = await import("node:path");
-  const skipPaths = protectedRelative.map((p) => path3.relative(destPath, join14(destPath, p)));
-  return { skipPaths, warnedPaths: protectedRelative };
+  const skipPaths = [];
+  const warnedPaths = [];
+  const updatedPaths = [];
+  for (const p of protectedRelative) {
+    const targetFilePath = join14(targetDir, componentPath, p);
+    const lockfileKey = `${componentPath}/${p}`.replace(/\\/g, "/");
+    const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
+    if (shouldSkip) {
+      skipPaths.push(path3.relative(destPath, join14(destPath, p)));
+      warnedPaths.push(p);
+    } else {
+      updatedPaths.push(p);
+    }
+  }
+  return { skipPaths, warnedPaths, updatedPaths };
 }
 function isEntryProtected(relPath, componentRelativePrefix) {
   if (isProtectedFile(relPath)) {
@@ -30226,7 +30260,7 @@ async function findProtectedFilesInDir(dirPath, componentRelativePrefix) {
   }
   return protected_;
 }
-async function updateComponent(targetDir, component, customizations, options, config) {
+async function updateComponent(targetDir, component, customizations, options, config, lockfile) {
   const preservedFiles = [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
@@ -30243,7 +30277,11 @@ async function updateComponent(targetDir, component, customizations, options, co
       skipPaths.push(cc.path);
     }
   }
-  const { skipPaths: protectedSkipPaths, warnedPaths: protectedWarnedPaths } = await collectProtectedSkipPaths(srcPath, destPath, componentPath, !!options.forceOverwriteAll);
+  const {
+    skipPaths: protectedSkipPaths,
+    warnedPaths: protectedWarnedPaths,
+    updatedPaths: protectedUpdatedPaths
+  } = await collectProtectedSkipPaths(srcPath, destPath, componentPath, !!options.forceOverwriteAll, lockfile, targetDir);
   for (const protectedPath of protectedWarnedPaths) {
     if (options.forceOverwriteAll) {
       warn("update.protected_file_force_overwrite", {
@@ -30255,9 +30293,16 @@ async function updateComponent(targetDir, component, customizations, options, co
       warn("update.protected_file_skipped", {
         file: protectedPath,
         component,
-        hint: "File contains AI behavioral constraints and was not updated. Use --force-overwrite-all to override."
+        hint: "File was modified by user and preserved. Use --force-overwrite-all to override."
       });
     }
+  }
+  for (const updatedPath of protectedUpdatedPaths) {
+    info("update.protected_file_updated", {
+      file: updatedPath,
+      component,
+      hint: "Protected file updated (unmodified by user, matches lockfile hash)."
+    });
   }
   skipPaths.push(...protectedSkipPaths);
   const path3 = await import("node:path");

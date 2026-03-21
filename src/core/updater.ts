@@ -20,7 +20,12 @@ import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
 import { getProviderLayout } from './layout.js';
-import { generateAndWriteLockfileForDir } from './lockfile.js';
+import {
+  computeFileHash,
+  generateAndWriteLockfileForDir,
+  type Lockfile,
+  readLockfile,
+} from './lockfile.js';
 
 /**
  * Options for update operation
@@ -182,7 +187,8 @@ async function processComponentUpdate(
   customizations: CustomizationManifest | null,
   options: UpdateOptions,
   result: UpdateResult,
-  config: OmccConfig
+  config: OmccConfig,
+  lockfile: Lockfile | null
 ): Promise<void> {
   const componentUpdate = updateCheck.updatableComponents.find((c) => c.name === component);
 
@@ -198,7 +204,14 @@ async function processComponentUpdate(
   }
 
   try {
-    const preserved = await updateComponent(targetDir, component, customizations, options, config);
+    const preserved = await updateComponent(
+      targetDir,
+      component,
+      customizations,
+      options,
+      config,
+      lockfile
+    );
     result.updatedComponents.push(component);
     result.preservedFiles.push(...preserved);
   } catch (err) {
@@ -216,7 +229,8 @@ async function updateAllComponents(
   customizations: CustomizationManifest | null,
   options: UpdateOptions,
   result: UpdateResult,
-  config: OmccConfig
+  config: OmccConfig,
+  lockfile: Lockfile | null
 ): Promise<void> {
   for (const component of components) {
     await processComponentUpdate(
@@ -226,7 +240,8 @@ async function updateAllComponents(
       customizations,
       options,
       result,
-      config
+      config,
+      lockfile
     );
   }
 }
@@ -519,6 +534,9 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       options.targetDir
     );
 
+    // Read lockfile for smart protected file handling
+    const lockfile = await readLockfile(options.targetDir);
+
     // Update all components
     const components = options.components || getAllUpdateComponents();
     await updateAllComponents(
@@ -528,7 +546,8 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       customizations,
       options,
       result,
-      config
+      config,
+      lockfile
     );
 
     await runFullUpdatePostProcessing(options, result, config);
@@ -662,25 +681,93 @@ async function componentHasUpdate(
 }
 
 /**
+ * Determine if a protected file should be skipped during update.
+ * Uses lockfile hash comparison to detect user modifications.
+ * Unmodified protected files are safe to update from templates.
+ *
+ * Decision table:
+ *   - No lockfile            → legacy install, can't verify → preserve (safe default)
+ *   - File not in lockfile   → new template file → allow update
+ *   - Target file missing    → allow update
+ *   - Hash matches lockfile  → file unmodified by user → allow update
+ *   - Hash differs           → user modified the file → preserve
+ */
+async function shouldSkipProtectedFile(
+  targetFilePath: string,
+  lockfileKey: string,
+  lockfile: Lockfile | null
+): Promise<boolean> {
+  // No lockfile → legacy install, can't verify → preserve (safe default)
+  if (!lockfile) {
+    return true;
+  }
+
+  const lockfileEntry = lockfile.files[lockfileKey];
+
+  // File not in lockfile → new template file → allow update
+  if (!lockfileEntry) {
+    return false;
+  }
+
+  // Target file doesn't exist → allow update
+  if (!(await fileExists(targetFilePath))) {
+    return false;
+  }
+
+  // Compare target file hash with lockfile hash
+  try {
+    const currentHash = await computeFileHash(targetFilePath);
+    // Hash matches → file is unmodified by user → safe to update
+    // Hash differs → user modified the file → preserve
+    return currentHash !== lockfileEntry.templateHash;
+  } catch {
+    // If hash computation fails, preserve (safe default)
+    return true;
+  }
+}
+
+/**
  * Collect the protected file paths within a component's source directory.
+ * Uses lockfile to distinguish user-modified files (skip) from unmodified ones (update).
  * Returns paths normalized relative to destPath for use with skipPaths.
  */
 async function collectProtectedSkipPaths(
   srcPath: string,
   destPath: string,
   componentPath: string,
-  forceOverwriteAll: boolean
-): Promise<{ skipPaths: string[]; warnedPaths: string[] }> {
+  forceOverwriteAll: boolean,
+  lockfile: Lockfile | null,
+  targetDir: string
+): Promise<{ skipPaths: string[]; warnedPaths: string[]; updatedPaths: string[] }> {
   if (forceOverwriteAll) {
     // forceOverwriteAll: still warn but do NOT skip
     const warnedPaths = await findProtectedFilesInDir(srcPath, componentPath);
-    return { skipPaths: [], warnedPaths };
+    return { skipPaths: [], warnedPaths, updatedPaths: [] };
   }
 
   const protectedRelative = await findProtectedFilesInDir(srcPath, componentPath);
   const path = await import('node:path');
-  const skipPaths = protectedRelative.map((p) => path.relative(destPath, join(destPath, p)));
-  return { skipPaths, warnedPaths: protectedRelative };
+
+  const skipPaths: string[] = [];
+  const warnedPaths: string[] = [];
+  const updatedPaths: string[] = [];
+
+  for (const p of protectedRelative) {
+    const targetFilePath = join(targetDir, componentPath, p);
+    // Lockfile keys use forward-slash paths like ".claude/rules/MUST-safety.md"
+    const lockfileKey = `${componentPath}/${p}`.replace(/\\/g, '/');
+
+    const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
+
+    if (shouldSkip) {
+      skipPaths.push(path.relative(destPath, join(destPath, p)));
+      warnedPaths.push(p);
+    } else {
+      updatedPaths.push(p);
+    }
+  }
+
+  return { skipPaths, warnedPaths, updatedPaths };
 }
 
 /**
@@ -754,7 +841,8 @@ async function updateComponent(
   component: UpdateComponent,
   customizations: CustomizationManifest | null,
   options: UpdateOptions,
-  config: OmccConfig
+  config: OmccConfig,
+  lockfile: Lockfile | null
 ): Promise<string[]> {
   const preservedFiles: string[] = [];
   const componentPath = getComponentPath(component);
@@ -784,9 +872,20 @@ async function updateComponent(
     }
   }
 
-  // Collect protected framework/rule files that must not be silently overwritten
-  const { skipPaths: protectedSkipPaths, warnedPaths: protectedWarnedPaths } =
-    await collectProtectedSkipPaths(srcPath, destPath, componentPath, !!options.forceOverwriteAll);
+  // Collect protected framework/rule files that must not be silently overwritten.
+  // Uses lockfile to distinguish user-modified files (skip) from unmodified ones (update).
+  const {
+    skipPaths: protectedSkipPaths,
+    warnedPaths: protectedWarnedPaths,
+    updatedPaths: protectedUpdatedPaths,
+  } = await collectProtectedSkipPaths(
+    srcPath,
+    destPath,
+    componentPath,
+    !!options.forceOverwriteAll,
+    lockfile,
+    targetDir
+  );
 
   for (const protectedPath of protectedWarnedPaths) {
     if (options.forceOverwriteAll) {
@@ -799,9 +898,18 @@ async function updateComponent(
       warn('update.protected_file_skipped', {
         file: protectedPath,
         component,
-        hint: 'File contains AI behavioral constraints and was not updated. Use --force-overwrite-all to override.',
+        hint: 'File was modified by user and preserved. Use --force-overwrite-all to override.',
       });
     }
+  }
+
+  // Log protected files that WILL be updated (unmodified by user, matches lockfile hash)
+  for (const updatedPath of protectedUpdatedPaths) {
+    info('update.protected_file_updated', {
+      file: updatedPath,
+      component,
+      hint: 'Protected file updated (unmodified by user, matches lockfile hash).',
+    });
   }
 
   // Merge protected skip paths with the existing skip paths (dedup)

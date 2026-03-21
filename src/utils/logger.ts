@@ -123,6 +123,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.file_applied': 'Applied update to {{path}}',
     'update.lockfile_regenerated': 'Lockfile regenerated ({{files}} files tracked)',
     'update.lockfile_failed': 'Failed to regenerate lockfile: {{error}}',
+    'update.protected_file_updated': '⟳ Protected file {{file}} in {{component}} updated: {{hint}}',
 
     // Config messages
     'config.load_failed': 'Failed to load config: {{error}}',
@@ -176,6 +177,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.file_applied': '{{path}} 업데이트 적용',
     'update.lockfile_regenerated': '잠금 파일 재생성 완료 ({{files}}개 파일 추적)',
     'update.lockfile_failed': '잠금 파일 재생성 실패: {{error}}',
+    'update.protected_file_updated': '⟳ 보호 파일 {{file}} ({{component}}) 업데이트됨: {{hint}}',
 
     // Config messages
     'config.load_failed': '설정 로드 실패: {{error}}',
