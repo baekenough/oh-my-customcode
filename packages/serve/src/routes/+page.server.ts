@@ -1,5 +1,4 @@
 import type { PageServerLoad } from './$types';
-import { getAgents, getSkills, getGuides, getRules } from '$lib/server/data';
 import { getAnalytics, type AnalyticsData } from '$lib/server/analytics';
 import { findProjectsForServe } from '$lib/server/projects';
 
@@ -7,13 +6,7 @@ import { findProjectsForServe } from '$lib/server/projects';
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root, selectedProject } = await parent();
 
-	const [agents, skills, guides, rules, allProjects] = await Promise.all([
-		getAgents(root),
-		getSkills(root),
-		getGuides(root),
-		getRules(root),
-		findProjectsForServe()
-	]);
+	const allProjects = await findProjectsForServe();
 
 	// Analytics loaded separately so a failure doesn't break the entire page
 	let analytics: AnalyticsData | null = null;
@@ -28,14 +21,6 @@ export const load: PageServerLoad = async ({ parent }) => {
 		analytics = null;
 	}
 
-	// Project-level counts for currently selected project
-	const projectStats = {
-		agents: agents.length,
-		skills: skills.length,
-		guides: guides.length,
-		rules: rules.length
-	};
-
 	// Summary across all discovered projects
 	const projectSummary = {
 		total: allProjects.length,
@@ -47,7 +32,6 @@ export const load: PageServerLoad = async ({ parent }) => {
 	return {
 		root,
 		selectedProject,
-		projectStats,
 		projectSummary,
 		projects: allProjects.slice(0, 6), // Show up to 6 projects on dashboard
 		analytics
