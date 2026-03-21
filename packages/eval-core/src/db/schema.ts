@@ -10,6 +10,9 @@ export const improvementActions = sqliteTable('improvement_actions', {
   confidence: text('confidence').notNull(), // 'low' | 'medium' | 'high'
   status: text('status').notNull().default('proposed'), // 'proposed' | 'approved' | 'applied' | 'rejected'
   evidence: text('evidence'), // JSON
+  priority: integer('priority').default(0), // higher = more important
+  cooldownDays: integer('cooldown_days').default(7), // days before same target can be re-suggested
+  conflictResolvedBy: text('conflict_resolved_by'), // which action won conflict resolution
   appliedAt: text('applied_at'),
   createdAt: text('created_at')
     .notNull()

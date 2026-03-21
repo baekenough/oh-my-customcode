@@ -101,6 +101,9 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
       confidence TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'proposed',
       evidence TEXT,
+      priority INTEGER DEFAULT 0,
+      cooldown_days INTEGER DEFAULT 7,
+      conflict_resolved_by TEXT,
       applied_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
@@ -109,6 +112,7 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     'CREATE INDEX IF NOT EXISTS idx_turns_session_id ON turns(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_ppid ON agent_invocations(session_ppid)',
     'CREATE INDEX IF NOT EXISTS idx_invocations_agent_type ON agent_invocations(agent_type)',
+    'CREATE INDEX IF NOT EXISTS idx_invocations_type_outcome_ts ON agent_invocations(agent_type, outcome, timestamp)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_session_id ON evaluations(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_evaluations_turn_id ON evaluations(turn_id)',
     'CREATE INDEX IF NOT EXISTS idx_feedback_session_id ON session_feedback(session_id)',
@@ -127,6 +131,22 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     const msg = err instanceof Error ? err.message : '';
     if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
       throw err; // Re-throw unexpected errors (e.g., disk I/O)
+    }
+  }
+
+  // Migration: add conflict resolution columns to improvement_actions (idempotent)
+  for (const col of [
+    'ALTER TABLE improvement_actions ADD COLUMN priority INTEGER DEFAULT 0',
+    'ALTER TABLE improvement_actions ADD COLUMN cooldown_days INTEGER DEFAULT 7',
+    'ALTER TABLE improvement_actions ADD COLUMN conflict_resolved_by TEXT',
+  ]) {
+    try {
+      db.run(col);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (!msg.includes('duplicate column') && !msg.includes('already exists')) {
+        throw err;
+      }
     }
   }
 

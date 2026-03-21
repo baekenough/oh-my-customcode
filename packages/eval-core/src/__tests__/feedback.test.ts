@@ -52,6 +52,9 @@ function makeDb(): { db: EvalDb; sqlite: Database } {
       confidence TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'proposed',
       evidence TEXT,
+      priority INTEGER DEFAULT 0,
+      cooldown_days INTEGER DEFAULT 7,
+      conflict_resolved_by TEXT,
       applied_at TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
@@ -252,6 +255,57 @@ describe('getAgentFailurePatterns', () => {
     // Most recent first: error-9, error-8, error-7, error-6, error-5
     expect(agent.commonErrors[0]).toBe('error-9');
     expect(agent.commonErrors[4]).toBe('error-5');
+  });
+
+  it('applies since filter to errorSummaries subquery', async () => {
+    const { db } = makeDb();
+    const cutoff = '2026-06-01T00:00:00.000Z';
+    const oldDate = '2026-01-01T00:00:00.000Z';
+    const newDate = '2026-07-01T00:00:00.000Z';
+
+    // Seed old failures (before cutoff) — errorSummary must NOT appear in result
+    for (let i = 0; i < 3; i++) {
+      seedInvocation(db, 'filter-agent', 'failure', {
+        errorSummary: `old-err-${i}`,
+        since: oldDate,
+      });
+    }
+
+    // Seed new failures (after cutoff) — errorSummary MUST appear in result
+    for (let i = 0; i < 3; i++) {
+      seedInvocation(db, 'filter-agent', 'failure', {
+        errorSummary: `new-err-${i}`,
+        since: newDate,
+      });
+    }
+
+    // Add successes to ensure the agent meets minSessions threshold after since filter
+    // The outer query filters by since, so we need enough post-cutoff rows
+    for (let i = 0; i < 2; i++) {
+      seedInvocation(db, 'filter-agent', 'success', { since: newDate });
+    }
+
+    const result = await getAgentFailurePatterns(db, {
+      since: cutoff,
+      minSessions: 1,
+      failureRateThreshold: 0,
+    });
+
+    expect(result).toHaveLength(1);
+    const agent = result[0];
+
+    // commonErrors must contain only new-err-* entries
+    for (const err of agent.commonErrors) {
+      expect(err).toMatch(/^new-err-/);
+    }
+
+    // old-err-* entries must not appear at all
+    for (const err of agent.commonErrors) {
+      expect(err).not.toMatch(/^old-err-/);
+    }
+
+    // All 3 new errors should be present
+    expect(agent.commonErrors).toHaveLength(3);
   });
 });
 
@@ -598,5 +652,59 @@ describe('saveImprovementActions', () => {
       )
       .get();
     expect(row?.feedback_source).toBe('auto_analysis');
+  });
+
+  it('replaces existing proposed actions on repeated calls for same target', async () => {
+    const { db, sqlite } = makeDb();
+
+    // First call: save an initial suggestion for "agent-1" with actionType "augment"
+    const initialSuggestion: ImprovementSuggestion = {
+      target: 'agent-1',
+      targetType: 'agent',
+      actionType: 'augment',
+      description: 'Initial augment suggestion',
+      confidence: 'medium',
+      evidence: { metric: 'failure_rate', value: 0.5, threshold: 0.3, sessionCount: 10 },
+    };
+    await saveImprovementActions(db, [initialSuggestion]);
+
+    // Verify the initial row was inserted
+    const afterFirst = sqlite
+      .prepare<{ count: number; action_type: string }, [string]>(
+        'SELECT count(*) as count, action_type FROM improvement_actions WHERE target_name = ?'
+      )
+      .get('agent-1');
+    expect(afterFirst?.count).toBe(1);
+    expect(afterFirst?.action_type).toBe('augment');
+
+    // Second call: save a different suggestion for the same "agent-1" with actionType "escalate"
+    const updatedSuggestion: ImprovementSuggestion = {
+      target: 'agent-1',
+      targetType: 'agent',
+      actionType: 'escalate',
+      description: 'Updated escalate suggestion',
+      confidence: 'high',
+      evidence: { metric: 'failure_rate', value: 0.7, threshold: 0.3, sessionCount: 15 },
+    };
+    await saveImprovementActions(db, [updatedSuggestion]);
+
+    // Verify only the new suggestion exists — old proposed row was replaced
+    const afterSecond = sqlite
+      .prepare<
+        { count: number; action_type: string; confidence: string },
+        [string]
+      >(
+        'SELECT count(*) as count, action_type, confidence FROM improvement_actions WHERE target_name = ?'
+      )
+      .get('agent-1');
+    expect(afterSecond?.count).toBe(1);
+    expect(afterSecond?.action_type).toBe('escalate');
+    expect(afterSecond?.confidence).toBe('high');
+
+    // Verify absolute total: only 1 row in the table (no duplicates)
+    const total = sqlite
+      .prepare<{ count: number }, []>('SELECT count(*) as count FROM improvement_actions')
+      .get();
+    expect(total?.count).toBe(1);
   });
 });

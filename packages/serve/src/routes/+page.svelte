@@ -17,12 +17,6 @@
 		amber: 'border-amber-800 bg-amber-950/40 hover:bg-amber-950/70 text-amber-300'
 	};
 
-	const priorityColor: Record<string, string> = {
-		MUST: 'text-red-400',
-		SHOULD: 'text-yellow-400',
-		MAY: 'text-green-400'
-	};
-
 	const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
 		latest: {
 			label: 'Latest',
@@ -71,63 +65,6 @@
 				<div class="mt-1 text-sm opacity-80">{card.label}</div>
 			</a>
 		{/each}
-	</div>
-
-	<!-- Project structure breakdown -->
-	<div class="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
-		<!-- Agent type breakdown -->
-		<div>
-			<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-				Agent Types
-			</h2>
-			<div class="overflow-hidden rounded-lg border border-zinc-800">
-				<table class="w-full text-sm">
-					<thead>
-						<tr class="bg-zinc-900">
-							<th class="px-4 py-2 text-left font-medium text-zinc-400">Type</th>
-							<th class="px-4 py-2 text-right font-medium text-zinc-400">Count</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each data.typeBreakdown as row, i}
-							<tr class="border-t border-zinc-800 {i % 2 === 1 ? 'bg-zinc-900/50' : ''}">
-								<td class="px-4 py-2 text-zinc-300">{row.label}</td>
-								<td class="px-4 py-2 text-right text-zinc-400">{row.count}</td>
-							</tr>
-						{:else}
-							<tr class="border-t border-zinc-800">
-								<td colspan="2" class="px-4 py-4 text-center text-zinc-600 text-xs">No agents found</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</div>
-
-		<!-- Rule priority breakdown -->
-		<div>
-			<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-				Rule Priorities
-			</h2>
-			<div class="overflow-hidden rounded-lg border border-zinc-800">
-				<table class="w-full text-sm">
-					<thead>
-						<tr class="bg-zinc-900">
-							<th class="px-4 py-2 text-left font-medium text-zinc-400">Priority</th>
-							<th class="px-4 py-2 text-right font-medium text-zinc-400">Count</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each data.priorityBreakdown as row, i}
-							<tr class="border-t border-zinc-800 {i % 2 === 1 ? 'bg-zinc-900/50' : ''}">
-								<td class="px-4 py-2 font-semibold {priorityColor[row.priority]}">{row.priority}</td>
-								<td class="px-4 py-2 text-right text-zinc-400">{row.count}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</div>
 	</div>
 
 	<!-- Analytics section -->
@@ -253,7 +190,7 @@
 
 	<!-- All projects overview -->
 	<div>
-		<div class="mb-3 flex items-center justify-between">
+		<div class="mb-3">
 			<h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">
 				All Projects
 				<span class="ml-2 font-normal normal-case text-zinc-600">
@@ -262,12 +199,6 @@
 					<span class="text-amber-500">{data.projectSummary.outdated} outdated</span>
 				</span>
 			</h2>
-			<a
-				href="/projects"
-				class="text-xs text-zinc-500 transition-colors hover:text-zinc-300"
-			>
-				View all →
-			</a>
 		</div>
 
 		{#if data.projects.length > 0}
@@ -294,12 +225,9 @@
 				{/each}
 
 				{#if data.projectSummary.total > data.projects.length}
-					<a
-						href="/projects"
-						class="block rounded-lg border border-zinc-800/50 px-5 py-3 text-center text-xs text-zinc-600 transition-colors hover:border-zinc-700 hover:text-zinc-400"
-					>
-						+{data.projectSummary.total - data.projects.length} more projects — View all
-					</a>
+					<div class="rounded-lg border border-zinc-800/50 px-5 py-3 text-center text-xs text-zinc-600">
+						+{data.projectSummary.total - data.projects.length} more projects
+					</div>
 				{/if}
 			</div>
 		{:else}
