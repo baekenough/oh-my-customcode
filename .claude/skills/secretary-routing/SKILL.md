@@ -50,9 +50,12 @@ git      → mgr-gitnerd
 verify   → mgr-sauron
 spec     → mgr-claude-code-bible
 memory   → sys-memory-keeper
-todo     → sys-naggy
-batch    → multiple (parallel)
+todo            → sys-naggy
+improve-report  → omcustom-improve-report (skill invocation)
+batch           → multiple (parallel)
 ```
+
+**improve-report keywords**: "improve-report", "improvement", "개선", "개선 리포트", "improve" → invoke `omcustom-improve-report` skill (read-only, no agent delegation needed)
 
 ### Ontology-RAG Enrichment (R019)
 

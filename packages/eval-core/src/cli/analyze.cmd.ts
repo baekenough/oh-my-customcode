@@ -5,8 +5,10 @@ import { createDb } from '../db/client.js';
 import { runMigrations } from '../db/migrate.js';
 import {
   getImprovementSuggestions,
+  getRoutingMissPatterns,
   saveImprovementActions,
   type ImprovementSuggestion,
+  type RoutingMissPattern,
 } from '../query/feedback.js';
 import { getDefaultConfig } from '../types/config.js';
 
@@ -143,62 +145,94 @@ function parseYaml(content: string): ImprovementRulesFile {
   return { rules };
 }
 
-function formatTable(suggestions: ImprovementSuggestion[]): string {
-  if (suggestions.length === 0) {
-    return 'No improvement suggestions found (insufficient data or all metrics within thresholds).';
-  }
-
+function formatTable(suggestions: ImprovementSuggestion[], routingMiss: RoutingMissPattern): string {
   const lines: string[] = ['Improvement Suggestions', '='.repeat(80), ''];
 
-  for (let i = 0; i < suggestions.length; i++) {
-    const s = suggestions[i];
-    lines.push(
-      `[${i + 1}] ${s.target} (${s.targetType}) — ${s.actionType.toUpperCase()}`,
-      `    Confidence: ${s.confidence.toUpperCase()}`,
-      `    ${s.description}`,
-      `    Evidence: ${s.evidence.metric}=${(s.evidence.value * 100).toFixed(1)}% (threshold: ${(s.evidence.threshold * 100).toFixed(0)}%, n=${s.evidence.sessionCount})`,
-      ''
-    );
+  if (suggestions.length === 0) {
+    lines.push('No improvement suggestions found (insufficient data or all metrics within thresholds).');
+  } else {
+    for (let i = 0; i < suggestions.length; i++) {
+      const s = suggestions[i];
+      lines.push(
+        `[${i + 1}] ${s.target} (${s.targetType}) — ${s.actionType.toUpperCase()}`,
+        `    Confidence: ${s.confidence.toUpperCase()}`,
+        `    ${s.description}`,
+        `    Evidence: ${s.evidence.metric}=${(s.evidence.value * 100).toFixed(1)}% (threshold: ${(s.evidence.threshold * 100).toFixed(0)}%, n=${s.evidence.sessionCount})`,
+        ''
+      );
+    }
+    lines.push(`Total: ${suggestions.length} suggestion(s)`);
   }
 
-  lines.push(`Total: ${suggestions.length} suggestion(s)`);
+  lines.push('', 'Routing Miss Analysis', '─'.repeat(40));
+  lines.push(`Total invocations: ${routingMiss.totalInvocations}`);
+  lines.push(`General-purpose fallbacks: ${routingMiss.generalPurposeCount}`);
+  lines.push(`Explore fallbacks: ${routingMiss.exploreCount}`);
+  lines.push(`Miss rate: ${(routingMiss.missRate * 100).toFixed(1)}%`);
+  if (routingMiss.recentMisses.length > 0) {
+    lines.push('Recent misses (latest 5):');
+    for (const miss of routingMiss.recentMisses) {
+      lines.push(`  [${miss.agentType}] ${miss.description || '(no description)'}`);
+    }
+  }
+
   return lines.join('\n');
 }
 
-function formatMarkdown(suggestions: ImprovementSuggestion[]): string {
-  if (suggestions.length === 0) {
-    return '> No improvement suggestions found.';
-  }
-
+function formatMarkdown(suggestions: ImprovementSuggestion[], routingMiss: RoutingMissPattern): string {
   const lines: string[] = [
     '# Improvement Suggestions',
     '',
     `Generated: ${new Date().toISOString()}`,
     '',
-    '| # | Target | Type | Action | Confidence | Evidence |',
-    '|---|--------|------|--------|------------|---------|',
   ];
 
-  for (let i = 0; i < suggestions.length; i++) {
-    const s = suggestions[i];
-    const evidenceStr = `${s.evidence.metric}=${(s.evidence.value * 100).toFixed(1)}% (n=${s.evidence.sessionCount})`;
+  if (suggestions.length === 0) {
+    lines.push('> No improvement suggestions found.', '');
+  } else {
     lines.push(
-      `| ${i + 1} | \`${s.target}\` | ${s.targetType} | ${s.actionType} | **${s.confidence}** | ${evidenceStr} |`
+      '| # | Target | Type | Action | Confidence | Evidence |',
+      '|---|--------|------|--------|------------|---------|'
     );
+
+    for (let i = 0; i < suggestions.length; i++) {
+      const s = suggestions[i];
+      const evidenceStr = `${s.evidence.metric}=${(s.evidence.value * 100).toFixed(1)}% (n=${s.evidence.sessionCount})`;
+      lines.push(
+        `| ${i + 1} | \`${s.target}\` | ${s.targetType} | ${s.actionType} | **${s.confidence}** | ${evidenceStr} |`
+      );
+    }
+
+    lines.push('', '## Details', '');
+    for (let i = 0; i < suggestions.length; i++) {
+      const s = suggestions[i];
+      lines.push(
+        `### ${i + 1}. ${s.target}`,
+        '',
+        `**Action**: ${s.actionType}  `,
+        `**Confidence**: ${s.confidence}  `,
+        '',
+        s.description,
+        ''
+      );
+    }
   }
 
-  lines.push('', '## Details', '');
-  for (let i = 0; i < suggestions.length; i++) {
-    const s = suggestions[i];
-    lines.push(
-      `### ${i + 1}. ${s.target}`,
-      '',
-      `**Action**: ${s.actionType}  `,
-      `**Confidence**: ${s.confidence}  `,
-      '',
-      s.description,
-      ''
-    );
+  lines.push('## Routing Miss Analysis', '');
+  lines.push('| Metric | Value |');
+  lines.push('|--------|-------|');
+  lines.push(`| Total invocations | ${routingMiss.totalInvocations} |`);
+  lines.push(`| General-purpose fallbacks | ${routingMiss.generalPurposeCount} |`);
+  lines.push(`| Explore fallbacks | ${routingMiss.exploreCount} |`);
+  lines.push(`| Miss rate | ${(routingMiss.missRate * 100).toFixed(1)}% |`);
+
+  if (routingMiss.recentMisses.length > 0) {
+    lines.push('', '### Recent Misses', '');
+    lines.push('| Agent Type | Description |');
+    lines.push('|------------|-------------|');
+    for (const miss of routingMiss.recentMisses) {
+      lines.push(`| \`${miss.agentType}\` | ${miss.description || '(no description)'} |`);
+    }
   }
 
   return lines.join('\n');
@@ -234,17 +268,17 @@ export const analyzeCommand = new Command('analyze')
       );
     }
 
-    const suggestions = await getImprovementSuggestions(db, {
-      since: options.since,
-      minSessions,
-    });
+    const [suggestions, routingMiss] = await Promise.all([
+      getImprovementSuggestions(db, { since: options.since, minSessions }),
+      getRoutingMissPatterns(db, { since: options.since }),
+    ]);
 
     if (format === 'json') {
-      console.log(JSON.stringify({ suggestions, rules: rulesFile?.rules ?? [] }, null, 2));
+      console.log(JSON.stringify({ suggestions, routingMiss, rules: rulesFile?.rules ?? [] }, null, 2));
     } else if (format === 'markdown') {
-      console.log(formatMarkdown(suggestions));
+      console.log(formatMarkdown(suggestions, routingMiss));
     } else {
-      console.log(formatTable(suggestions));
+      console.log(formatTable(suggestions, routingMiss));
     }
 
     if (options.save && suggestions.length > 0) {
