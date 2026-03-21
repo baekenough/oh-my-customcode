@@ -116,6 +116,7 @@ oh-my-customcode로 구동됩니다.
 | `/optimize-bundle` | 번들 크기 최적화 |
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
+| `/scout` | 외부 URL 분석 및 프로젝트 적합성 평가 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
 | `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
@@ -136,7 +137,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (45 파일)
-|   +-- skills/                  # 스킬 (90 디렉토리)
+|   +-- skills/                  # 스킬 (91 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R021)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -384,6 +385,7 @@ oh-my-customcode로 구동됩니다.
 | `/optimize-bundle` | 번들 크기 최적화 |
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
+| `/scout` | 외부 URL 분석 및 프로젝트 적합성 평가 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
 | `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
@@ -405,7 +407,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (45 파일)
-|   +-- skills/                  # 스킬 (90 디렉토리)
+|   +-- skills/                  # 스킬 (91 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R021)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
