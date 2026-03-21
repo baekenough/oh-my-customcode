@@ -94,9 +94,9 @@ describe('update command', () => {
         | Record<string, unknown>
         | undefined;
       expect(callArgs).toBeDefined();
-      expect(callArgs!.targetDir).toBe(tempDir);
-      expect(callArgs!.components).toBeUndefined(); // No specific components = all
-      expect(callArgs!.preserveCustomizations).toBe(true);
+      expect(callArgs?.targetDir).toBe(tempDir);
+      expect(callArgs?.components).toBeUndefined(); // No specific components = all
+      expect(callArgs?.preserveCustomizations).toBe(true);
 
       // Verify output
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -140,7 +140,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.dryRun).toBe(true);
+      expect(callArgs?.dryRun).toBe(true);
 
       // Verify dry run header was printed
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -180,7 +180,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.force).toBe(true);
+      expect(callArgs?.force).toBe(true);
     });
   });
 
@@ -217,7 +217,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.backup).toBe(true);
+      expect(callArgs?.backup).toBe(true);
 
       // Verify backup path was printed
       expect(consoleLogSpy).toHaveBeenCalled();
@@ -257,7 +257,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.components).toEqual(['agents']);
+      expect(callArgs?.components).toEqual(['agents']);
     });
 
     it('should update only skills when skills flag is set', async () => {
@@ -292,7 +292,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.components).toEqual(['skills']);
+      expect(callArgs?.components).toEqual(['skills']);
     });
 
     it('should update multiple components when multiple flags are set', async () => {
@@ -327,10 +327,10 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect((callArgs!.components as string[]).includes('agents')).toBe(true);
-      expect((callArgs!.components as string[]).includes('skills')).toBe(true);
-      expect((callArgs!.components as string[]).includes('rules')).toBe(true);
-      expect((callArgs!.components as string[]).length).toBe(3);
+      expect((callArgs?.components as string[]).includes('agents')).toBe(true);
+      expect((callArgs?.components as string[]).includes('skills')).toBe(true);
+      expect((callArgs?.components as string[]).includes('rules')).toBe(true);
+      expect((callArgs?.components as string[]).length).toBe(3);
     });
 
     it('should update only guides when guides flag is set', async () => {
@@ -365,7 +365,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.components).toEqual(['guides']);
+      expect(callArgs?.components).toEqual(['guides']);
     });
 
     it('should update only hooks when hooks flag is set', async () => {
@@ -400,7 +400,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.components).toEqual(['hooks']);
+      expect(callArgs?.components).toEqual(['hooks']);
     });
 
     it('should update all components when no flags are set', async () => {
@@ -435,7 +435,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.components).toBeUndefined();
+      expect(callArgs?.components).toBeUndefined();
     });
 
     it('should update only contexts when contexts flag is set', async () => {
@@ -470,7 +470,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.components).toEqual(['contexts']);
+      expect(callArgs?.components).toEqual(['contexts']);
     });
   });
 
@@ -1053,7 +1053,7 @@ describe('update command', () => {
       const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
         | Record<string, unknown>
         | undefined;
-      expect(callArgs!.dryRun).toBe(true);
+      expect(callArgs?.dryRun).toBe(true);
       expect(exitCode).toBeUndefined();
     });
 
