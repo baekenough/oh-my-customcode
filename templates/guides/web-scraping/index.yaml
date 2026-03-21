@@ -1,0 +1,19 @@
+# Web Scraping Guide
+
+metadata:
+  name: web-scraping
+  description: BeautifulSoup and Playwright patterns for reliable web scraping and government site parsing
+
+source:
+  type: internal
+
+topics:
+  - beautifulsoup-patterns
+  - playwright-navigation
+  - government-site-patterns
+  - smart-parser-design
+  - error-handling
+  - testing
+
+used_by:
+  - lang-python-expert
