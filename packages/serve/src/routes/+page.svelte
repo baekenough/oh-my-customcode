@@ -3,20 +3,6 @@
 
 	export let data: PageData;
 
-	const summaryCards = [
-		{ label: 'Agents', key: 'agents' as const, href: '/agents', icon: '◈', color: 'emerald' },
-		{ label: 'Skills', key: 'skills' as const, href: '/skills', icon: '◆', color: 'sky' },
-		{ label: 'Guides', key: 'guides' as const, href: '/guides', icon: '◉', color: 'violet' },
-		{ label: 'Rules', key: 'rules' as const, href: '/rules', icon: '◇', color: 'amber' }
-	];
-
-	const colorMap: Record<string, string> = {
-		emerald: 'border-emerald-800 bg-emerald-950/40 hover:bg-emerald-950/70 text-emerald-300',
-		sky: 'border-sky-800 bg-sky-950/40 hover:bg-sky-950/70 text-sky-300',
-		violet: 'border-violet-800 bg-violet-950/40 hover:bg-violet-950/70 text-violet-300',
-		amber: 'border-amber-800 bg-amber-950/40 hover:bg-amber-950/70 text-amber-300'
-	};
-
 	const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
 		latest: {
 			label: 'Latest',
@@ -51,20 +37,6 @@
 			<span class="ml-2 text-zinc-600">·</span>
 			<code class="ml-2 text-xs text-zinc-600">{data.root}</code>
 		</p>
-	</div>
-
-	<!-- Summary cards — agents, skills, guides, rules -->
-	<div class="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
-		{#each summaryCards as card}
-			<a
-				href="{card.href}{projectParam}"
-				class="rounded-lg border p-5 transition-colors {colorMap[card.color]}"
-			>
-				<div class="mb-2 text-2xl">{card.icon}</div>
-				<div class="text-3xl font-bold">{data.projectStats[card.key]}</div>
-				<div class="mt-1 text-sm opacity-80">{card.label}</div>
-			</a>
-		{/each}
 	</div>
 
 	<!-- Analytics section -->
