@@ -29,7 +29,7 @@ npm install -g oh-my-customcode && cd your-project && omcustom init
 | **Skill Effort Override** | Skills can set `effort` frontmatter to override model effort level at invocation time |
 | **Multi-project Web UI** | `omcustom serve` supports multi-project management with sidebar project selector |
 | **Batch Update UI** | Web dashboard supports visual project update status and batch updates |
-| **CC v2.1.72~v2.1.80 Compatibility** | Rate limits statusline, skill effort frontmatter, settings-based plugin source |
+| **CC v2.1.72~v2.1.81 Compatibility** | Rate limits statusline, skill effort frontmatter, settings-based plugin source; `--bare` flag (harness disabled in bare mode), `--channels` permission relay (no changes required) |
 | **SDD Workflow** | Spec-Driven Development with `sdd/` folder hierarchy and planning-first gates |
 | **Ambiguity Gate** | Pre-routing clarity scoring and clarification questions |
 

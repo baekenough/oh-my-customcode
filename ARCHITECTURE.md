@@ -583,8 +583,10 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Skill effort frontmatter | No | Yes (v2.1.80+) | Yes (R006 documented) |
 | Statusline rate_limits | No | Yes (v2.1.80+) | Yes (statusline.sh, R012) |
 | source: 'settings' plugins | No | Yes (v2.1.80+) | Not adopted |
+| --bare flag (skip hooks/skills/memory) | No | Yes (v2.1.81+) | Documented: harness fully disabled in bare mode (opt-in, zero impact on normal usage) |
+| --channels permission relay | No | Yes (v2.1.81+) | Compatible — no changes required (opt-in UX feature) |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.80.
+Tested and compatible with Claude Code v2.1.72 through v2.1.81.
 
 ---
 

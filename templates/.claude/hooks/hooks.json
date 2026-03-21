@@ -115,6 +115,16 @@
           }
         ],
         "description": "Check codex CLI and Agent Teams availability at session start"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/stale-todo-scanner.sh"
+          }
+        ],
+        "description": "Scan TODO.md files for stale items at session start"
       }
     ],
     "SubagentStart": [
