@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.47.2",
-  "generatedAt": "2026-03-20T16:12:54.307Z",
-  "templateVersion": "0.47.2",
+  "generatorVersion": "0.48.0",
+  "generatedAt": "2026-03-21T00:42:19.259Z",
+  "templateVersion": "0.48.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -910,8 +910,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "5e482e2c18ec6cf20e1ca16eda3b8d1004e4c797285c392230b62df28411b281",
-      "size": 18969,
+      "templateHash": "d6ba883cfa14d675ac6d3b7d5ea7168c09ec36f3e010b34d194f25683b7a5da5",
+      "size": 19010,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
