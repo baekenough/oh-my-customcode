@@ -52,6 +52,10 @@ oh-my-customcode is built on two ideas:
 
 Skills are source. Agents are compiled output. Sauron verifies the build. This separation means skills evolve independently of agents, and agents can be recompiled from updated skills at any time.
 
+<p align="center">
+  <img src="assets/diagrams/05-compilation-metaphor.png" alt="Compilation Metaphor" width="700" />
+</p>
+
 **2. If it can't be done, make it work.**
 
 When no specialist exists for a task, oh-my-customcode does not fail. It creates one.
@@ -84,6 +88,10 @@ User (natural language)
 ```
 
 Four routing skills cover the full domain:
+
+<p align="center">
+  <img src="assets/diagrams/01-system-architecture.png" alt="System Architecture" width="700" />
+</p>
 
 | Routing Skill | Routes To |
 |--------------|-----------|

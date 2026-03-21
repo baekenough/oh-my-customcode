@@ -42,6 +42,10 @@ oh-my-customcode는 두 가지 아이디어 위에 세워졌습니다.
 
 스킬이 소스이고, 에이전트가 빌드 결과물이며, Sauron이 빌드를 검증합니다. 이 분리 덕분에 스킬은 에이전트와 독립적으로 진화하고, 에이전트는 갱신된 스킬로 언제든 재컴파일할 수 있습니다.
 
+<p align="center">
+  <img src="assets/diagrams/05-compilation-metaphor.png" alt="Compilation Metaphor" width="700" />
+</p>
+
 **2. 안 되면 되게 한다.**
 
 작업에 맞는 전문가가 없을 때, oh-my-customcode는 실패하지 않습니다. 만듭니다.
@@ -74,6 +78,10 @@ oh-my-customcode는 두 가지 아이디어 위에 세워졌습니다.
 ```
 
 4개의 라우팅 스킬이 전체 도메인을 커버합니다:
+
+<p align="center">
+  <img src="assets/diagrams/01-system-architecture.png" alt="System Architecture" width="700" />
+</p>
 
 | 라우팅 스킬 | 라우팅 대상 |
 |------------|-----------|

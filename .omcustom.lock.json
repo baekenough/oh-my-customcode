@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.51.2",
-  "generatedAt": "2026-03-21T07:34:14.288Z",
-  "templateVersion": "0.51.2",
+  "generatorVersion": "0.52.0",
+  "generatedAt": "2026-03-21T09:09:39.524Z",
+  "templateVersion": "0.52.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "31f07d2795f9934fce1eaa0eb8236240d7fbf92b030eb721aaedd7f80a3ffcc3",
-      "size": 11249,
+      "templateHash": "d8894d46ee3014d648d106ff4930edaa99127c9d5af0874ea9c208bfaef4893e",
+      "size": 13701,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
@@ -465,8 +465,8 @@
       "component": "skills"
     },
     ".claude/skills/secretary-routing/SKILL.md": {
-      "templateHash": "17209f95695197c02f7b648d8e4dc316a510c3c679f9456fb916594227ec1835",
-      "size": 4136,
+      "templateHash": "280d695397abbf9b67e2df2fe747610dffed609d49a25a7f29f83500e355f45a",
+      "size": 4399,
       "component": "skills"
     },
     ".claude/skills/systematic-debugging/condition-based-waiting.md": {
@@ -864,6 +864,11 @@
       "size": 1394,
       "component": "skills"
     },
+    ".claude/skills/omcustom-improve-report/SKILL.md": {
+      "templateHash": "61016048ea6fd3cc8b12f31d22f33d49808dc9ce4e16d4d2e00f2cdf21b4ba13",
+      "size": 2190,
+      "component": "skills"
+    },
     ".claude/skills/de-lead-routing/SKILL.md": {
       "templateHash": "37d5c526d9971896d23863af9b97370620356527cbd9ed9eb3243456c4e5c68a",
       "size": 7933,
@@ -954,6 +959,11 @@
       "size": 7801,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/feedback-collector.sh": {
+      "templateHash": "41ed5f40bbfd8decabfe682de8ffdede72fe45200ddb94e70d1423582381096e",
+      "size": 2274,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/stop-console-audit.sh": {
       "templateHash": "68f1273583a0aadd8fd838cba74b7b898cab4d8a236e7ee04439e32c62011e01",
       "size": 1525,
@@ -985,8 +995,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "0cd44743885f271d147d6bfd36666b88949fb74ccb3ddf83a80b0bb59240566f",
-      "size": 19467,
+      "templateHash": "8c6a713c7fcc5c3738e02c46652a292e2a084622d24ebe15b8b57e71af779679",
+      "size": 19763,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
