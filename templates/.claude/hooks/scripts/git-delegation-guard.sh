@@ -23,6 +23,7 @@ VIOLATION_FILE="/tmp/.claude-r010-violations-${PPID}"
 # Only warn when the delegated agent is NOT mgr-gitnerd
 if [ "$agent_type" != "mgr-gitnerd" ]; then
   git_keywords=(
+    "git add"
     "git commit"
     "git push"
     "git revert"
