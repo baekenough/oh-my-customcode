@@ -25,6 +25,14 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
       - name: Setup Node.js for npm
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
@@ -43,6 +51,16 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            dist/
+            packages/*/dist/
+            packages/*/build/
+          retention-days: 1
+
   docs-validate:
     name: Validate Documentation
     runs-on: ubuntu-latest
@@ -54,6 +72,14 @@ jobs:
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: latest
+
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -76,6 +102,14 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Cache Bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+
       - name: Setup Node.js for npm
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
@@ -85,8 +119,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build
-        run: bun run build
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
+      - name: Verify build artifacts
+        run: |
+          test -f dist/index.js || { echo "::error::Missing dist/index.js"; exit 1; }
+          echo "Build artifacts verified"
 
       # Check if version already exists on npm
       - name: Check npm version
@@ -107,7 +148,7 @@ jobs:
       - name: Publish to npm
         if: steps.npm_check.outputs.exists == 'false'
         run: |
-          npm publish --provenance --access public 2>&1 || {
+          npm publish --ignore-scripts --provenance --access public 2>&1 || {
             EXIT_CODE=$?
             # Check if failure is due to version already existing (race condition with local publish)
             if npm view oh-my-customcode@${{ steps.npm_check.outputs.version }} version 2>/dev/null; then
@@ -157,7 +198,7 @@ jobs:
             };
             require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
           "
-          npm publish 2>&1 || {
+          npm publish --ignore-scripts 2>&1 || {
             EXIT_CODE=$?
             # Check if failure is due to version already existing (race condition with local publish)
             VERSION=${GITHUB_REF#refs/tags/v}
@@ -257,8 +298,8 @@ jobs:
               echo "✓ npm: oh-my-customcode@${VERSION} confirmed"
               exit 0
             fi
-            echo "Attempt $i: not found yet, waiting 60s..."
-            sleep 60
+            echo "Attempt $i: not found yet, waiting 30s..."
+            sleep 30
           done
           echo "::error::npm package not found after 3 attempts: oh-my-customcode@${VERSION}"
           exit 1
@@ -266,17 +307,17 @@ jobs:
       - name: Verify GitHub Packages publish
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          for i in 1 2 3 4 5; do
+          for i in 1 2 3; do
             PUBLISHED=$(npm view @baekenough/oh-my-customcode@${VERSION} version \
               --registry=https://npm.pkg.github.com 2>/dev/null || true)
             if [ "$PUBLISHED" = "$VERSION" ]; then
               echo "✓ GitHub Packages: @baekenough/oh-my-customcode@${VERSION} confirmed"
               exit 0
             fi
-            echo "Attempt $i: not found yet, waiting 60s..."
-            sleep 60
+            echo "Attempt $i: not found yet, waiting 30s..."
+            sleep 30
           done
-          echo "::warning::GitHub Package not found after 5 attempts (eventual consistency — package will appear later)"
+          echo "::warning::GitHub Package not found after 3 attempts (eventual consistency — package will appear later)"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
