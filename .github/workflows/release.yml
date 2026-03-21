@@ -90,34 +90,18 @@ jobs:
   publish:
     name: Publish
     needs: [test, docs-validate]
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version: latest
-
-      - name: Cache Bun dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-          restore-keys: |
-            bun-${{ runner.os }}-
-
       - name: Setup Node.js for npm
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
@@ -189,15 +173,7 @@ jobs:
         if: steps.ghp_check.outputs.exists == 'false'
         run: |
           # Update package name for GitHub Packages (scoped)
-          node -e "
-            const pkg = require('./package.json');
-            pkg.name = '@baekenough/oh-my-customcode';
-            pkg.publishConfig = {
-              registry: 'https://npm.pkg.github.com',
-              access: 'public'
-            };
-            require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-          "
+          jq '.name = "@baekenough/oh-my-customcode" | .publishConfig = {"registry": "https://npm.pkg.github.com", "access": "public"}' package.json > package.json.tmp && mv package.json.tmp package.json
           npm publish --ignore-scripts 2>&1 || {
             EXIT_CODE=$?
             # Check if failure is due to version already existing (race condition with local publish)
