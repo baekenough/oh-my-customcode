@@ -1,0 +1,35 @@
+# /workflow:omcustom-dev — Full-auto release pipeline
+# Collects verify-done issues → triage → plan → implement → verify → PR
+
+name: omcustom-dev
+description: "verify-done issues release batch: triage → plan → implement → verify → PR"
+mode: auto
+error: halt-and-report
+
+steps:
+  - name: triage
+    skill: professor-triage
+    description: Cross-analyze verify-done issues with omc_issue_analyzer comments
+
+  - name: plan
+    skill: release-plan
+    description: Group triaged issues into release units by priority and size
+    input: triage-results
+
+  - name: deep-plan
+    skill: deep-plan
+    description: Create detailed implementation plan for each release group
+    foreach: release-group
+
+  - name: implement
+    action: implement
+    description: Execute implementation plan with appropriate agents
+    foreach: planned-issue
+
+  - name: verify
+    skill: deep-verify
+    description: Multi-angle release quality verification
+
+  - name: release
+    action: create-pr
+    description: Create release branch and pull request

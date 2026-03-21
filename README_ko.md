@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-45개 에이전트. 86개 스킬. 21개 규칙. 명령어 하나.
+45개 에이전트. 89개 스킬. 21개 규칙. 명령어 하나.
 
 > **v0.46.0** — Rate Limit 모니터링, Skill Effort Override, 멀티프로젝트 Web UI, 일괄 업데이트, SDD 워크플로우, Ambiguity Gate
 
@@ -128,13 +128,13 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (86개)
+## 스킬 (89개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
 | 베스트 프랙티스 | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
-| 워크플로우 | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich 외 |
+| 워크플로우 | 15 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, workflow, workflow-runner, workflow-resume 외 |
 | 개발 | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
 | 운영 | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes 외 |
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
@@ -165,6 +165,8 @@ Agent(arch-documenter):haiku      ┘
 | `/sdd-dev` | Spec-Driven Development 워크플로우 |
 | `/ambiguity-gate` | 사전 라우팅 모호성 분석 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
+| `/workflow` | YAML 워크플로우 실행 |
+| `/workflow:resume` | 중단된 워크플로우 재개 |
 
 ### 에이전트 관리
 
@@ -259,7 +261,7 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 45개 에이전트 정의
-│   ├── skills/                 # 86개 스킬 모듈
+│   ├── skills/                 # 89개 스킬 모듈
 │   ├── rules/                  # 21개 거버넌스 규칙 (R000-R021)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
