@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-45 agents. 86 skills. 21 rules. One command.
+45 agents. 89 skills. 21 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -138,13 +138,13 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (86)
+### Skills (89)
 
 | Category | Count | Includes |
 |----------|-------|----------|
 | Best Practices | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic, and more |
 | Routing | 4 | secretary, dev-lead, de-lead, qa-lead |
-| Workflow | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, and more |
+| Workflow | 15 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, workflow, workflow-runner, workflow-resume, and more |
 | Development | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
 | Operations | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes, and more |
 | Memory | 3 | memory-save, memory-recall, memory-management |
@@ -173,6 +173,8 @@ All commands are invoked inside the Claude Code conversation.
 | `/sdd-dev` | Spec-Driven Development workflow |
 | `/ambiguity-gate` | Pre-routing ambiguity analysis |
 | `/adversarial-review` | Attacker-mindset security code review |
+| `/workflow` | Execute YAML-defined workflow pipelines |
+| `/workflow:resume` | Resume a halted workflow from last failure point |
 
 ### Agent Management
 
@@ -272,7 +274,7 @@ your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
 │   ├── agents/                 # 45 agent definitions
-│   ├── skills/                 # 86 skill modules
+│   ├── skills/                 # 89 skill modules
 │   ├── rules/                  # 21 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
