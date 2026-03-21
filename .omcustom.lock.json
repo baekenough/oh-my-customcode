@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.48.1",
-  "generatedAt": "2026-03-21T01:11:47.583Z",
-  "templateVersion": "0.48.1",
+  "generatorVersion": "0.49.0",
+  "generatedAt": "2026-03-21T05:29:29.671Z",
+  "templateVersion": "0.49.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -469,6 +469,36 @@
       "size": 4136,
       "component": "skills"
     },
+    ".claude/skills/systematic-debugging/condition-based-waiting.md": {
+      "templateHash": "17721a04cf6b133a38ee4bebcaaffc8c00e87035d34230afaa48bdb81a105fde",
+      "size": 6846,
+      "component": "skills"
+    },
+    ".claude/skills/systematic-debugging/defense-in-depth.md": {
+      "templateHash": "f57045b9ad9b91a7529ee08790e85ed26d0664a6a0b1be917eb2da105167854b",
+      "size": 7461,
+      "component": "skills"
+    },
+    ".claude/skills/systematic-debugging/SKILL.md": {
+      "templateHash": "3bfa7e39f6f450652b2f62dfd34c2dd838bf3d7d87cfc6108f1570f74ff85d2b",
+      "size": 9018,
+      "component": "skills"
+    },
+    ".claude/skills/systematic-debugging/root-cause-tracing.md": {
+      "templateHash": "c58a3e6d78680f28fd97465462fe18abcccdc5eb0399defc08def2dd6f699248",
+      "size": 2621,
+      "component": "skills"
+    },
+    ".claude/skills/systematic-debugging/condition-based-waiting-example.ts": {
+      "templateHash": "88181e4edf39baa797eeb4a7c244c51a1fd1e3761ea6fb1c86a202cfb4d65ede",
+      "size": 7848,
+      "component": "skills"
+    },
+    ".claude/skills/systematic-debugging/find-polluter.sh": {
+      "templateHash": "66af6afbcafbc117ed8165d3f632cadfc6d8c77919e4cdc8188ffcaee9556fba",
+      "size": 4861,
+      "component": "skills"
+    },
     ".claude/skills/analysis/SKILL.md": {
       "templateHash": "c9cbb95b27f242c0017e570246de2d98ec0bdea75052b5a39939d68830c92d6b",
       "size": 5978,
@@ -490,8 +520,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "d481f57a109f13b836c2e18b50e9f7ae38786951b1d1041e2afa70f1f6cde0c3",
-      "size": 12821,
+      "templateHash": "45dfb37443482c59c9557602eb9dca876b6bd485aa443e9136dfb2d4cdb4868f",
+      "size": 13189,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
@@ -507,6 +537,11 @@
     ".claude/skills/alembic-best-practices/SKILL.md": {
       "templateHash": "bf87eca073142d0f5d3d02ebb2616ba4ff7e28a82f6f1a269dc23fa656890dbe",
       "size": 10418,
+      "component": "skills"
+    },
+    ".claude/skills/release-plan/SKILL.md": {
+      "templateHash": "3f7ba79ecd3b482c2b3e6ec24e85a771130b23463f452bada91504ba7e94c685",
+      "size": 6259,
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
@@ -542,6 +577,11 @@
     ".claude/skills/multi-model-verification/SKILL.md": {
       "templateHash": "ff69b0ec80e2fe9c8bfdddb61bfa435ebdc0216276ceb2c19cf138106c725067",
       "size": 4407,
+      "component": "skills"
+    },
+    ".claude/skills/test-verify-ignore.txt": {
+      "templateHash": "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2",
+      "size": 5,
       "component": "skills"
     },
     ".claude/skills/claude-code-bible/scripts/fetch-docs.js": {
@@ -597,6 +637,11 @@
     ".claude/skills/pipeline-architecture-patterns/SKILL.md": {
       "templateHash": "d4fa946d6db65d9052b94d76bd1e1db487c9f34adf6be827b6bb7c8e87958bd1",
       "size": 2262,
+      "component": "skills"
+    },
+    ".claude/skills/professor-triage/SKILL.md": {
+      "templateHash": "854714625668c3a99a110ef9c6faa6e5cb9a5370ef6c247d703d9d7fd99cf18e",
+      "size": 8106,
       "component": "skills"
     },
     ".claude/skills/adversarial-review/SKILL.md": {
@@ -669,6 +714,16 @@
       "size": 1629,
       "component": "skills"
     },
+    ".claude/skills/workflow/SKILL.md": {
+      "templateHash": "d16fd264b03e26c89497bba12aae5ae10bcea39e9cb3433be5b4b5e6ff49d44c",
+      "size": 1396,
+      "component": "skills"
+    },
+    ".claude/skills/workflow-runner/SKILL.md": {
+      "templateHash": "712b2bd6630303d7e956c972349e7101f306829bf5695b4e359cd377c1070865",
+      "size": 2199,
+      "component": "skills"
+    },
     ".claude/skills/react-best-practices/SKILL.md": {
       "templateHash": "4ac915b6cc71560342a7b8fa72dd66782c89e3c8f13fa8fe4d291b45672bde85",
       "size": 1800,
@@ -687,6 +742,11 @@
     ".claude/skills/sdd/SKILL.md": {
       "templateHash": "6da3bfa1709be74ba17c5308b0dbac97b3c48c6beb03569e948cae07d6c6940c",
       "size": 471,
+      "component": "skills"
+    },
+    ".claude/skills/workflow-resume/SKILL.md": {
+      "templateHash": "866bada1ca7d812ec05d72e3dbd047cbef04f71cb876fc6c36b1cfd2c20cb11d",
+      "size": 713,
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {
@@ -814,6 +874,11 @@
       "size": 6377,
       "component": "skills"
     },
+    ".claude/skills/test-new-skill-ci-test.md": {
+      "templateHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "component": "skills"
+    },
     ".claude/skills/optimize-analyze/SKILL.md": {
       "templateHash": "45ee1dcefc8855eaa704eea01f52efc562a72179e4e647f99ae67b599a85f7ba",
       "size": 980,
@@ -844,6 +909,11 @@
       "size": 800,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/stale-todo-scanner.sh": {
+      "templateHash": "d2f47fdfff22243a4d5cbbbb09f176e019235decf603fac17407ea17d114d17d",
+      "size": 2306,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/secret-filter.sh": {
       "templateHash": "f9e002664ef091328d059e2dcf703eb30929f47ff59e81fdddd201f24783ab1f",
       "size": 2904,
@@ -860,8 +930,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/git-delegation-guard.sh": {
-      "templateHash": "2b464752e3f64209c8740a2ba7adceef0a6ca1fc1f9e1b4707905e4d9a6658ae",
-      "size": 1970,
+      "templateHash": "f6f467eff13e38dab6aa8d0db3f20243459c1480a45b6b21d1f5679b4f9dd748",
+      "size": 1984,
       "component": "hooks"
     },
     ".claude/hooks/scripts/agent-teams-advisor.sh": {
@@ -910,8 +980,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "d6ba883cfa14d675ac6d3b7d5ea7168c09ec36f3e010b34d194f25683b7a5da5",
-      "size": 19010,
+      "templateHash": "0cd44743885f271d147d6bfd36666b88949fb74ccb3ddf83a80b0bb59240566f",
+      "size": 19467,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
