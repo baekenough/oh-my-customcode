@@ -134,7 +134,7 @@ Agent(arch-documenter):haiku      ┘
 |---------|-----|------|
 | 베스트 프랙티스 | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
-| 워크플로우 | 12 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich 외 |
+| 워크플로우 | 15 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, workflow, workflow-runner, workflow-resume 외 |
 | 개발 | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
 | 운영 | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes 외 |
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
@@ -165,6 +165,8 @@ Agent(arch-documenter):haiku      ┘
 | `/sdd-dev` | Spec-Driven Development 워크플로우 |
 | `/ambiguity-gate` | 사전 라우팅 모호성 분석 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
+| `/workflow` | YAML 워크플로우 실행 |
+| `/workflow:resume` | 중단된 워크플로우 재개 |
 
 ### 에이전트 관리
 
