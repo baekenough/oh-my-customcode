@@ -135,6 +135,12 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
      Agent(researcher-1) → Analysis 1  ┐
      Agent(researcher-2) → Analysis 2  ├─ ALL spawned together
      Agent(researcher-3) → Analysis 3  ┘
+
+❌ WRONG: Completed member modifies other member's files
+   svelte-projects completes task → browses TaskList → edits agent-teams-advisor.sh (hook-fixer's scope)
+
+✓ CORRECT: Completed member reports and waits
+   svelte-projects completes task → SendMessage("Task complete") → waits silently
 ```
 
 ## Cost Guidelines
@@ -205,12 +211,14 @@ When a team member is blocked by task dependencies:
 | Silent wait | Agent already spawned, short wait expected | Minimal overhead |
 | Reassign | Agent blocked >2 min with no progress | Reuse agent for unblocked work |
 
-### Prompt Guidelines for Blocked Agents
+### Prompt Guidelines for Team Members
 
 When spawning agents that may be blocked:
 1. Include explicit instruction: "If your task is blocked, wait silently. Do NOT send periodic status messages."
 2. Set check interval: "Check TaskList once per minute, not continuously."
 3. Prefer deferred spawn when the dependency resolution time is unpredictable.
+4. Post-completion instruction: "After completing your task, report via SendMessage and wait. Do NOT explore or modify files outside your scope."
+5. Explicit scope boundary: "Your scope is limited to: {file list or directory}. Do NOT modify files outside this scope."
 
 ### Anti-Pattern: Idle Polling
 
@@ -223,6 +231,36 @@ When spawning agents that may be blocked:
 
 ✓ ALSO CORRECT: Silent wait with infrequent checks
    docker-dev spawned with: "Wait silently if blocked. Check TaskList once per minute."
+```
+
+## Post-Completion Scope Constraint
+
+When a team member completes its assigned task:
+
+| Behavior | Correct | Wrong |
+|----------|---------|-------|
+| Task completed | Report completion via SendMessage, wait silently | Browse TaskList for other work |
+| No more tasks | Exit or wait for team shutdown | Explore/modify files outside original scope |
+| See unfinished work | Report to team lead, do NOT self-assign | Edit files that belong to other members |
+
+### Self-Check (After Task Completion)
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  AFTER COMPLETING YOUR ASSIGNED TASK:                            ║
+║                                                                   ║
+║  1. Did I complete ONLY my assigned task?                        ║
+║     YES → Report completion                                      ║
+║     NO  → Revert scope-violation changes                         ║
+║                                                                   ║
+║  2. Are there files modified outside my task scope?              ║
+║     YES → This is a violation — revert                           ║
+║     NO  → Good                                                    ║
+║                                                                   ║
+║  3. Am I about to explore/modify files for "other tasks"?        ║
+║     YES → STOP. Report to team lead instead                      ║
+║     NO  → Good. Wait silently or exit                            ║
+╚══════════════════════════════════════════════════════════════════╝
 ```
 
 ## Lifecycle

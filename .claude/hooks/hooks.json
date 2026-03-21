@@ -328,6 +328,16 @@
         "matcher": "*",
         "hooks": [
           {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/feedback-collector.sh"
+          }
+        ],
+        "description": "Auto-extract failure patterns from session outcomes (advisory, exit 0)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
             "type": "prompt",
             "prompt": "Session-end memory checkpoint (R011 enforcement). Check if the session-end memory save workflow was completed: 1) sys-memory-keeper was delegated to update MEMORY.md 2) claude-mem save was attempted via ToolSearch + mcp__plugin_claude-mem_mcp-search__save_memory. Note: episodic-memory auto-indexes after session — no manual action needed. Decision rules (evaluate in order): 1. If session had no explicit session-end signal (quick question, no memory work): APPROVE immediately. 2. If BOTH steps were already attempted (success or failure both count): APPROVE. 3. If MCP tools unavailable after ToolSearch attempt: APPROVE with note. 4. If steps were NOT yet performed: PERFORM THEM NOW (maximum 1 attempt each): a. Delegate to sys-memory-keeper to update MEMORY.md — call Agent tool with sys-memory-keeper. b. Attempt claude-mem save — ToolSearch for save_memory tool, then call it. c. After completion (success or failure), APPROVE stop. IMPORTANT: Do NOT block indefinitely. After 1 attempt per step, always APPROVE. IMPORTANT: Do NOT loop — if you already performed these steps in this same stop hook evaluation, APPROVE."
           }

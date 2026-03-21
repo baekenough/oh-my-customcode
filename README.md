@@ -138,7 +138,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (91)
+### Skills (92)
 
 | Category | Count | Includes |
 |----------|-------|----------|
