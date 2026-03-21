@@ -3,6 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -80,6 +81,39 @@ describe('serve.ts', () => {
       const result = findServeBuildDir(tempDir, { skipNpmFallback: true });
 
       expect(result).toBeNull();
+    });
+
+    it('should return npm package build path when local build is absent and npm build exists', async () => {
+      // serve.ts is loaded from src/cli/serve.ts in the test environment.
+      // Its import.meta.dirname resolves to {project_root}/src/cli.
+      // The npm fallback path is: src/cli/../../packages/serve/build
+      //                          = {project_root}/packages/serve/build
+      const serveModuleDir = join(import.meta.dirname, '..', '..', '..', 'src', 'cli');
+      const npmBuildPath = join(serveModuleDir, '..', '..', 'packages', 'serve', 'build');
+      const npmIndexJs = join(npmBuildPath, 'index.js');
+
+      const dirExistedBefore = existsSync(npmBuildPath);
+      const indexExistedBefore = existsSync(npmIndexJs);
+
+      if (!dirExistedBefore) {
+        await mkdir(npmBuildPath, { recursive: true });
+      }
+      if (!indexExistedBefore) {
+        await writeFile(npmIndexJs, '// mock npm build for test');
+      }
+
+      try {
+        // tempDir has no local packages/serve/build — npm fallback should trigger
+        const result = findServeBuildDir(tempDir);
+        expect(result).toBe(npmBuildPath);
+      } finally {
+        if (!indexExistedBefore) {
+          await rm(npmIndexJs, { force: true });
+        }
+        if (!dirExistedBefore) {
+          await rm(npmBuildPath, { recursive: true, force: true });
+        }
+      }
     });
   });
 

@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.51.0",
-  "generatedAt": "2026-03-21T06:15:16.143Z",
+  "generatedAt": "2026-03-21T07:00:19.163Z",
   "templateVersion": "0.51.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -1347,6 +1347,11 @@
     "guides/postgres/README.md": {
       "templateHash": "679a0b942439d7559621633b6cd5692554cec2c6a3895a2511733ee6bd3e5f83",
       "size": 2157,
+      "component": "guides"
+    },
+    "guides/drizzle-orm/README.md": {
+      "templateHash": "adbbcb3359902b5093f91e57512476d2e14e239ff7c7d320ed076ba1edcae9d7",
+      "size": 3178,
       "component": "guides"
     },
     "guides/kafka/README.md": {
