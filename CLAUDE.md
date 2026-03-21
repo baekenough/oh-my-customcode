@@ -119,6 +119,7 @@ oh-my-customcode로 구동됩니다.
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
 | `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
+| `/release-plan` | verify-done 이슈 릴리즈 유닛 계획 생성 |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/omcustom:loop` | 백그라운드 에이전트 자동 계속 실행 |
@@ -384,6 +385,7 @@ oh-my-customcode로 구동됩니다.
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
 | `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
+| `/release-plan` | verify-done 이슈 릴리즈 유닛 계획 생성 |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/sdd-dev` | Spec-Driven Development 워크플로우 (sdd/ 폴더 기반) |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
