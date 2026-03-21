@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.48.0",
-  "generatedAt": "2026-03-21T00:42:19.259Z",
-  "templateVersion": "0.48.0",
+  "generatorVersion": "0.48.1",
+  "generatedAt": "2026-03-21T01:11:47.583Z",
+  "templateVersion": "0.48.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -450,8 +450,8 @@
       "component": "skills"
     },
     ".claude/skills/deep-verify/SKILL.md": {
-      "templateHash": "9b372cd1865c2ced307e6a6f68fc71b918045e46b255ac4b83c55891ca9cb57d",
-      "size": 3982,
+      "templateHash": "215ce6bada99ea984208e9fba3bde2da56b2812647cb91a83751526532dc0668",
+      "size": 5310,
       "component": "skills"
     },
     ".claude/skills/airflow-best-practices/SKILL.md": {
@@ -1319,6 +1319,16 @@
       "size": 11955,
       "component": "guides"
     },
+    "guides/web-scraping/README.md": {
+      "templateHash": "71c73622b62788495f456aa1514b106fac63dd2f17fe7b6a9c7ff41d242e8e89",
+      "size": 27884,
+      "component": "guides"
+    },
+    "guides/web-scraping/index.yaml": {
+      "templateHash": "21167f415efe5728b62b882334eb67dfe20f7ae0bfb1d06b5bb03bd4bbb8e000",
+      "size": 365,
+      "component": "guides"
+    },
     "guides/supabase-postgres/README.md": {
       "templateHash": "b68c8bf42a09c31e5b820559e2c79fbe351fe5dbeb6f2b193b8ee472bf27bc22",
       "size": 943,
@@ -1330,8 +1340,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "6d0932770d35d7eca1a4ed71800139c0417a3bb89c78b310e7bab2dc394c063d",
-      "size": 4973,
+      "templateHash": "89891453a06709fca985cc5ee4066de609a7a5bc36d5dace426b30a3fc47a2e3",
+      "size": 6295,
       "component": "guides"
     },
     "guides/spark/README.md": {
