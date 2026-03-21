@@ -411,3 +411,12 @@ agents:
     file_patterns: []
     supported_actions: [manage, create, coordinate]
     base_confidence: 40
+
+  professor-triage:
+    keywords:
+      korean: [트리아지, 이슈분석, 교차분석, 프로페서]
+      english: [triage, cross-analyze, professor, issue-analysis]
+    file_patterns: []
+    actions: [review, analyze]
+    base_confidence: 85
+    routing_rule: "MUST use professor-triage skill for cross-analyzing GitHub issues with omc_issue_analyzer comments"
