@@ -120,6 +120,7 @@ oh-my-customcode로 구동됩니다.
 | `/optimize-report` | 최적화 리포트 생성 |
 | `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
+| `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/omcustom:loop` | 백그라운드 에이전트 자동 계속 실행 |
