@@ -697,6 +697,62 @@ describe('agent-teams-advisor.sh', () => {
       expect(result.exitCode).toBe(0);
     }
   });
+
+  // --- Batch context detection ---
+
+  it('should warn on FIRST call when workflow file has 3+ issues', async () => {
+    const workflowFile = `/tmp/.claude-workflow-test-${process.pid}.json`;
+    await writeFile(workflowFile, JSON.stringify({ issue_count: 5 }));
+    try {
+      const input = makeAdvisorInput('lang-typescript-expert', 'Process issues');
+      const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+      expect(result.stderr).toContain('R018 Advisor');
+      expect(result.stderr).toContain('Batch context detected');
+      expect(result.stderr).toContain('5');
+    } finally {
+      await unlink(workflowFile).catch(() => {});
+    }
+  });
+
+  it('should warn on FIRST call when release-plan file exists', async () => {
+    const releasePlanFile = `/tmp/.claude-release-plan-${process.pid}`;
+    await writeFile(releasePlanFile, 'release plan content');
+    try {
+      const input = makeAdvisorInput('lang-golang-expert', 'Release fixes');
+      const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+      expect(result.stderr).toContain('R018 Advisor');
+      expect(result.stderr).toContain('Batch context detected');
+    } finally {
+      await unlink(releasePlanFile).catch(() => {});
+    }
+  });
+
+  it('should NOT warn on first call when workflow file has fewer than 3 issues', async () => {
+    const workflowFile = `/tmp/.claude-workflow-test-${process.pid}.json`;
+    await writeFile(workflowFile, JSON.stringify({ issue_count: 2 }));
+    try {
+      const input = makeAdvisorInput('lang-typescript-expert', 'Process issues');
+      const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+      expect(result.stderr).not.toContain('R018 Advisor');
+    } finally {
+      await unlink(workflowFile).catch(() => {});
+    }
+  });
+
+  it('should use batch warning format (not sequential) when batch context detected on first call', async () => {
+    const workflowFile = `/tmp/.claude-workflow-test-${process.pid}.json`;
+    await writeFile(workflowFile, JSON.stringify({ issue_count: 4 }));
+    try {
+      const input = makeAdvisorInput('mgr-gitnerd', 'Deploy batch');
+      const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+      expect(result.stderr).toContain('Batch context detected');
+      expect(result.stderr).toContain('RECOMMENDATION');
+      // Batch warning is different from sequential warning
+      expect(result.stderr).not.toContain('Multiple Task calls detected');
+    } finally {
+      await unlink(workflowFile).catch(() => {});
+    }
+  });
 });
 
 // -------------------------------------------------------------------
