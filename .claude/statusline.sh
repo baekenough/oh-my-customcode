@@ -66,16 +66,17 @@ fi
 
 # ---------------------------------------------------------------------------
 # 4. Single jq call — extract all fields as TSV
-#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd, rl_5h_pct
+#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd, rl_5h_pct, rl_7d_pct
 # ---------------------------------------------------------------------------
-IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct <<< "$(
+IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_7d_pct <<< "$(
     printf '%s' "$json" | jq -r '[
         (.model.display_name // "unknown"),
         (.workspace.current_dir // ""),
         (if .context_window.used != null and .context_window.total != null and .context_window.total > 0 then (.context_window.used / .context_window.total * 100) elif .context_window.used_percentage != null then .context_window.used_percentage else 0 end),
         (.context_window.context_window_size // 0),
         (.cost.total_cost_usd // 0),
-        (.rate_limits.five_hour.used_percentage // -1)
+        (.rate_limits.five_hour.used_percentage // -1),
+        (.rate_limits.seven_day.used_percentage // -1)
     ] | @tsv'
 )"
 
@@ -84,7 +85,7 @@ IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct <<<
 # ---------------------------------------------------------------------------
 COST_BRIDGE_FILE="/tmp/.claude-cost-${PPID}"
 _tmp="${COST_BRIDGE_FILE}.tmp.$$"
-printf '%s\t%s\t%s\t%s\n' "$cost_usd" "$ctx_pct" "$(date +%s)" "$rl_5h_pct" > "$_tmp" 2>/dev/null && mv -f "$_tmp" "$COST_BRIDGE_FILE" 2>/dev/null || true
+printf '%s\t%s\t%s\t%s\t%s\n' "$cost_usd" "$ctx_pct" "$(date +%s)" "$rl_5h_pct" "$rl_7d_pct" > "$_tmp" 2>/dev/null && mv -f "$_tmp" "$COST_BRIDGE_FILE" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 5. Model display name + color (bash 3.2 compatible case pattern matching)
@@ -271,6 +272,27 @@ if [[ "$rl_5h_int" -ge 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
+# 9c. Weekly rate limit percentage with color (v2.1.80+, optional)
+# ---------------------------------------------------------------------------
+wl_display=""
+wl_color=""
+wl_7d_int="${rl_7d_pct%%.*}"
+if ! [[ "$wl_7d_int" =~ ^-?[0-9]+$ ]]; then
+    wl_7d_int=-1
+fi
+
+if [[ "$wl_7d_int" -ge 0 ]]; then
+    wl_display="WL:${wl_7d_int}%"
+    if [[ "$wl_7d_int" -ge 80 ]]; then
+        wl_color="${COLOR_CTX_CRIT}"     # Red    (>= 80%)
+    elif [[ "$wl_7d_int" -ge 50 ]]; then
+        wl_color="${COLOR_CTX_WARN}"     # Yellow (50-79%)
+    else
+        wl_color="${COLOR_CTX_OK}"       # Green  (< 50%)
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # 10. Assemble and output the status line
 # ---------------------------------------------------------------------------
 # Format branch with optional OSC 8 hyperlink
@@ -293,19 +315,27 @@ if [[ -n "$rl_display" ]]; then
     rl_segment=" | ${rl_color}${rl_display}${COLOR_RESET}"
 fi
 
+# Build the WL segment (with separator) if present
+wl_segment=""
+if [[ -n "$wl_display" ]]; then
+    wl_segment=" | ${wl_color}${wl_display}${COLOR_RESET}"
+fi
+
 if [[ -n "$git_branch" ]]; then
-    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$branch_display" \
         "$pr_segment" \
         "$rl_segment" \
+        "$wl_segment" \
         "$ctx_display"
 else
-    printf "${cost_color}%s${COLOR_RESET} | %s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$pr_segment" \
         "$rl_segment" \
+        "$wl_segment" \
         "$ctx_display"
 fi
