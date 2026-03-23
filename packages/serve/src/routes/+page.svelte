@@ -3,26 +3,8 @@
 
 	export let data: PageData;
 
-	const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
-		latest: {
-			label: 'Latest',
-			dot: 'text-emerald-500',
-			badge: 'bg-emerald-950 text-emerald-400 border-emerald-800'
-		},
-		outdated: {
-			label: 'Outdated',
-			dot: 'text-amber-500',
-			badge: 'bg-amber-950 text-amber-400 border-amber-800'
-		},
-		unknown: {
-			label: 'Unknown',
-			dot: 'text-zinc-600',
-			badge: 'bg-zinc-900 text-zinc-500 border-zinc-700'
-		}
-	};
-
 	$: currentProjectLabel = data.selectedProject
-		? data.projects.find((p) => p.slug === data.selectedProject)?.name ?? 'Selected Project'
+		? data.selectedProject
 		: data.root?.split('/').pop() ?? 'Default Project';
 
 	$: projectParam = data.selectedProject ? `?project=${data.selectedProject}` : '';
@@ -160,55 +142,28 @@
 		</div>
 	{/if}
 
-	<!-- All projects overview -->
+	<!-- Project overview -->
 	<div>
-		<div class="mb-3">
-			<h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-				All Projects
-				<span class="ml-2 font-normal normal-case text-zinc-600">
-					{data.projectSummary.total} found —
-					<span class="text-emerald-500">{data.projectSummary.latest} latest</span>,
-					<span class="text-amber-500">{data.projectSummary.outdated} outdated</span>
-				</span>
-			</h2>
+		<h2 class="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+			Project Overview
+		</h2>
+		<div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+			<a href="/agents{projectParam}" class="rounded-lg border border-zinc-800 p-4 transition-colors hover:border-zinc-700">
+				<div class="text-2xl font-bold text-zinc-100">{data.projectDetail.agentCount}</div>
+				<div class="mt-1 text-xs text-zinc-500">Agents</div>
+			</a>
+			<a href="/skills{projectParam}" class="rounded-lg border border-zinc-800 p-4 transition-colors hover:border-zinc-700">
+				<div class="text-2xl font-bold text-zinc-100">{data.projectDetail.skillCount}</div>
+				<div class="mt-1 text-xs text-zinc-500">Skills</div>
+			</a>
+			<a href="/guides{projectParam}" class="rounded-lg border border-zinc-800 p-4 transition-colors hover:border-zinc-700">
+				<div class="text-2xl font-bold text-zinc-100">{data.projectDetail.guideCount}</div>
+				<div class="mt-1 text-xs text-zinc-500">Guides</div>
+			</a>
+			<a href="/rules{projectParam}" class="rounded-lg border border-zinc-800 p-4 transition-colors hover:border-zinc-700">
+				<div class="text-2xl font-bold text-zinc-100">{data.projectDetail.ruleCount}</div>
+				<div class="mt-1 text-xs text-zinc-500">Rules</div>
+			</a>
 		</div>
-
-		{#if data.projects.length > 0}
-			<div class="space-y-2">
-				{#each data.projects as project}
-					{@const config = statusConfig[project.status] ?? statusConfig.unknown}
-					<div class="flex items-center justify-between rounded-lg border border-zinc-800 px-5 py-4 transition-colors hover:border-zinc-700">
-						<div class="flex min-w-0 items-center gap-3">
-							<span class="text-xs {config.dot}">●</span>
-							<div class="min-w-0">
-								<span class="font-medium text-zinc-200">{project.name}</span>
-								<p class="mt-0.5 truncate text-xs text-zinc-600" title={project.path}>{project.path}</p>
-							</div>
-						</div>
-						<div class="ml-4 flex shrink-0 items-center gap-3">
-							{#if project.version}
-								<span class="text-xs text-zinc-600">v{project.version}</span>
-							{/if}
-							<span class="rounded border px-2 py-0.5 text-xs font-medium {config.badge}">
-								{config.label}
-							</span>
-						</div>
-					</div>
-				{/each}
-
-				{#if data.projectSummary.total > data.projects.length}
-					<div class="rounded-lg border border-zinc-800/50 px-5 py-3 text-center text-xs text-zinc-600">
-						+{data.projectSummary.total - data.projects.length} more projects
-					</div>
-				{/if}
-			</div>
-		{:else}
-			<div class="rounded-lg border border-zinc-800 p-8 text-center">
-				<p class="text-sm text-zinc-600">No oh-my-customcode projects found.</p>
-				<p class="mt-2 text-xs text-zinc-700">
-					Searched: ~/workspace, ~/projects, ~/dev, ~/src, ~/code, ~/repos, ~/work
-				</p>
-			</div>
-		{/if}
 	</div>
 </div>
