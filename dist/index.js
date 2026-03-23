@@ -388,6 +388,7 @@ var MESSAGES = {
     "update.lockfile_regenerated": "Lockfile regenerated ({{files}} files tracked)",
     "update.lockfile_failed": "Failed to regenerate lockfile: {{error}}",
     "update.protected_file_updated": "⟳ Protected file {{file}} in {{component}} updated: {{hint}}",
+    "update.namespace_synced": "Namespace synced: {{file}} ({{component}})",
     "config.load_failed": "Failed to load config: {{error}}",
     "config.not_found": "Config not found at {{path}}, using defaults",
     "config.saved": "Config saved to {{path}}",
@@ -433,6 +434,7 @@ var MESSAGES = {
     "update.lockfile_regenerated": "잠금 파일 재생성 완료 ({{files}}개 파일 추적)",
     "update.lockfile_failed": "잠금 파일 재생성 실패: {{error}}",
     "update.protected_file_updated": "⟳ 보호 파일 {{file}} ({{component}}) 업데이트됨: {{hint}}",
+    "update.namespace_synced": "네임스페이스 동기화: {{file}} ({{component}})",
     "config.load_failed": "설정 로드 실패: {{error}}",
     "config.not_found": "{{path}}에 설정 없음, 기본값 사용",
     "config.saved": "설정 저장: {{path}}",
@@ -1681,7 +1683,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.56.0",
+  version: "0.57.0",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -1904,7 +1906,8 @@ function createUpdateResult() {
     newVersion: "",
     warnings: [],
     syncedRootFiles: [],
-    removedDeprecatedFiles: []
+    removedDeprecatedFiles: [],
+    namespaceSynced: []
   };
 }
 async function handleBackupIfRequested(targetDir, backup, result) {
@@ -1929,6 +1932,10 @@ async function processComponentUpdate(targetDir, component, updateCheck, customi
     const preserved = await updateComponent(targetDir, component, customizations, options, config, lockfile);
     result.updatedComponents.push(component);
     result.preservedFiles.push(...preserved);
+    if (options.hard) {
+      const synced = await applyNamespaceSync(targetDir, component, lockfile);
+      result.namespaceSynced.push(...synced);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.warnings.push(`Failed to update ${component}: ${message}`);
@@ -2400,6 +2407,75 @@ async function removeDeprecatedFiles(targetDir, options) {
     debug("update.deprecated_files_cleaned", { count: String(removed.length) });
   }
   return removed;
+}
+function extractFrontmatterName(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match)
+    return null;
+  const nameMatch = match[1].match(/^name:\s*(.+)$/m);
+  if (!nameMatch)
+    return null;
+  return nameMatch[1].trim().replace(/^["']|["']$/g, "");
+}
+async function syncNamespaceInFile(targetFilePath, upstreamFilePath) {
+  const targetContent = await readTextFile(targetFilePath);
+  const upstreamContent = await readTextFile(upstreamFilePath);
+  const upstreamName = extractFrontmatterName(upstreamContent);
+  const targetName = extractFrontmatterName(targetContent);
+  if (!upstreamName || !targetName || upstreamName === targetName)
+    return false;
+  const safeUpstreamName = upstreamName.replace(/\$/g, "$$$$");
+  const updated = targetContent.replace(/^(name:\s*).+$/m, `$1${safeUpstreamName}`);
+  if (updated === targetContent)
+    return false;
+  await writeTextFile(targetFilePath, updated);
+  return true;
+}
+async function processNamespaceSyncEntry(entry, relPath, fullSrcPath, destPath, componentPath, lockfile) {
+  if (!entry.isFile() || !entry.name.endsWith(".md"))
+    return null;
+  const targetFilePath = join6(destPath, relPath);
+  const lockfileKey = `${componentPath}/${relPath}`.replace(/\\/g, "/");
+  const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
+  if (shouldSkip)
+    return null;
+  if (!await fileExists(targetFilePath))
+    return null;
+  const didSync = await syncNamespaceInFile(targetFilePath, fullSrcPath);
+  return didSync ? `${componentPath}/${relPath}` : null;
+}
+async function applyNamespaceSync(targetDir, component, lockfile) {
+  if (!lockfile)
+    return [];
+  const componentPath = getComponentPath2(component);
+  const srcPath = resolveTemplatePath(componentPath);
+  const destPath = join6(targetDir, componentPath);
+  const fs = await import("node:fs/promises");
+  const synced = [];
+  const queue = [{ dir: srcPath, relDir: "" }];
+  while (queue.length > 0) {
+    const { dir, relDir } = queue.shift();
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
+      const fullSrcPath = join6(dir, entry.name);
+      if (entry.isDirectory()) {
+        queue.push({ dir: fullSrcPath, relDir: relPath });
+        continue;
+      }
+      const syncedPath = await processNamespaceSyncEntry(entry, relPath, fullSrcPath, destPath, componentPath, lockfile);
+      if (syncedPath) {
+        synced.push(syncedPath);
+        info("update.namespace_synced", { file: relPath, component });
+      }
+    }
+  }
+  return synced;
 }
 function getComponentPath2(component) {
   const layout = getProviderLayout();

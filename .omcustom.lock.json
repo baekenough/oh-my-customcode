@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.55.0",
-  "generatedAt": "2026-03-23T09:02:20.483Z",
-  "templateVersion": "0.55.0",
+  "generatorVersion": "0.57.0",
+  "generatedAt": "2026-03-23T11:56:36.966Z",
+  "templateVersion": "0.57.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "7af8bb5bb62397793215c35ac0f0146f5323012b34e5c1fe7c40de87e4a14e63",
-      "size": 15550,
+      "templateHash": "98d36d8e297e15a0c1a41d4dc49b2efaf469d1888652e6ec308a51a699c1e3ac",
+      "size": 16527,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -465,8 +465,8 @@
       "component": "skills"
     },
     ".claude/skills/secretary-routing/SKILL.md": {
-      "templateHash": "280d695397abbf9b67e2df2fe747610dffed609d49a25a7f29f83500e355f45a",
-      "size": 4399,
+      "templateHash": "9349c3a4d5c1003456600eec0955e6390d262e3bc440dd5306c37c336855fb3d",
+      "size": 4682,
       "component": "skills"
     },
     ".claude/skills/systematic-debugging/condition-based-waiting.md": {
@@ -720,8 +720,8 @@
       "component": "skills"
     },
     ".claude/skills/workflow/SKILL.md": {
-      "templateHash": "6753ccd2bf7abe2629d82a9fa7813a2406e238bf9f6d3749080fd51dcb3c8fc9",
-      "size": 1459,
+      "templateHash": "f4cb2a59c99b229c5bc84155582f5a455e4d25e6ec41adeff52793a9ce02fc7d",
+      "size": 2386,
       "component": "skills"
     },
     ".claude/skills/workflow-runner/SKILL.md": {
@@ -894,9 +894,14 @@
       "size": 980,
       "component": "skills"
     },
+    ".claude/skills/omcustom-auto-improve/SKILL.md": {
+      "templateHash": "2abe1bc98311081b6f52a4ae5c1602332f849b2daf1ac6777c96df133a439a1b",
+      "size": 4579,
+      "component": "skills"
+    },
     ".claude/skills/pipeline-guards/SKILL.md": {
-      "templateHash": "618c9dbe67241a408f012491897f81d26695390197e1ed982e303584db0022ee",
-      "size": 5051,
+      "templateHash": "a891949e54c6bd6b07a69840f3cb0e18afcfb9bcb3d09dfd88cce2770cbaebb1",
+      "size": 5171,
       "component": "skills"
     },
     ".claude/skills/help/SKILL.md": {
@@ -910,8 +915,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/eval-core-batch-save.sh": {
-      "templateHash": "0689bf76457bfc91a4a66f8d3ae0b17a7fe8042dcdfeb84bb2d9e63d3e37cb18",
-      "size": 803,
+      "templateHash": "4f5bcba16122eff79461166e88204a03dddd8a31a1e4bfe927252c8f1526b26f",
+      "size": 1347,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stage-blocker.sh": {
@@ -995,8 +1000,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "8c6a713c7fcc5c3738e02c46652a292e2a084622d24ebe15b8b57e71af779679",
-      "size": 19763,
+      "templateHash": "35a8161bfff988b6f5e4fe3c61d50e93a79b9ddd6f2bf019f53b8822cfd60669",
+      "size": 19901,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {

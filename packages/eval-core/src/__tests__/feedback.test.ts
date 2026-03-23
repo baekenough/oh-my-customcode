@@ -12,9 +12,11 @@ import type { EvalDb } from '../db/client.js';
 import {
   getAgentFailurePatterns,
   getImprovementSuggestions,
+  getPendingImprovementActions,
   getRoutingMissPatterns,
   getSkillEffectiveness,
   saveImprovementActions,
+  updateImprovementActionStatus,
   type ImprovementSuggestion,
 } from '../query/feedback.js';
 
@@ -792,6 +794,37 @@ describe('saveImprovementActions', () => {
     expect(row?.feedback_source).toBe('auto_analysis');
   });
 
+  it('does not delete applied or rejected actions on dedup', async () => {
+    const { db, sqlite } = makeDb();
+
+    // Seed a previously applied row for agent-1
+    sqlite.run(
+      `INSERT INTO improvement_actions
+        (feedback_source, target_type, target_name, action_type, description, confidence, status)
+       VALUES ('auto_analysis', 'agent', 'agent-1', 'augment', 'Old applied', 'low', 'applied')`
+    );
+
+    // Save new proposed suggestion for agent-1 — should NOT delete the applied row
+    const suggestion: ImprovementSuggestion = {
+      target: 'agent-1',
+      targetType: 'agent',
+      actionType: 'escalate',
+      description: 'New escalate',
+      confidence: 'medium',
+      evidence: { metric: 'failure_rate', value: 0.6, threshold: 0.3, sessionCount: 12 },
+    };
+    await saveImprovementActions(db, [suggestion]);
+
+    const rows = sqlite
+      .prepare<{ status: string; action_type: string }, [string]>(
+        'SELECT status, action_type FROM improvement_actions WHERE target_name = ? ORDER BY id'
+      )
+      .all('agent-1');
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.status).toBe('applied');
+    expect(rows[1]?.status).toBe('proposed');
+  });
+
   it('replaces existing proposed actions on repeated calls for same target', async () => {
     const { db, sqlite } = makeDb();
 
@@ -844,5 +877,229 @@ describe('saveImprovementActions', () => {
       .prepare<{ count: number }, []>('SELECT count(*) as count FROM improvement_actions')
       .get();
     expect(total?.count).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateImprovementActionStatus
+// ---------------------------------------------------------------------------
+
+function seedAction(
+  sqlite: Database,
+  status: 'proposed' | 'approved' | 'applied' | 'rejected',
+  overrides: Record<string, string> = {}
+): number {
+  const result = sqlite
+    .prepare<
+      { id: number },
+      [string, string, string, string, string, string, string]
+    >(
+      `INSERT INTO improvement_actions
+        (feedback_source, target_type, target_name, action_type, description, confidence, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       RETURNING id`
+    )
+    .get(
+      overrides['feedback_source'] ?? 'auto_analysis',
+      overrides['target_type'] ?? 'agent',
+      overrides['target_name'] ?? 'test-agent',
+      overrides['action_type'] ?? 'augment',
+      overrides['description'] ?? 'Test',
+      overrides['confidence'] ?? 'medium',
+      status
+    );
+  return result!.id;
+}
+
+describe('updateImprovementActionStatus', () => {
+  it('should transition proposed → approved', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'proposed');
+
+    updateImprovementActionStatus(db, id, 'approved');
+
+    const row = sqlite
+      .prepare<{ status: string }, [number]>(
+        'SELECT status FROM improvement_actions WHERE id = ?'
+      )
+      .get(id);
+    expect(row?.status).toBe('approved');
+  });
+
+  it('should transition approved → applied with appliedAt set', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'approved');
+
+    const before = new Date().toISOString();
+    updateImprovementActionStatus(db, id, 'applied');
+    const after = new Date().toISOString();
+
+    const row = sqlite
+      .prepare<{ status: string; applied_at: string }, [number]>(
+        'SELECT status, applied_at FROM improvement_actions WHERE id = ?'
+      )
+      .get(id);
+    expect(row?.status).toBe('applied');
+    expect(row?.applied_at).toBeDefined();
+    expect(row!.applied_at >= before).toBe(true);
+    expect(row!.applied_at <= after).toBe(true);
+  });
+
+  it('should accept a custom appliedAt timestamp', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'approved');
+    const customTime = '2026-06-15T12:00:00.000Z';
+
+    updateImprovementActionStatus(db, id, 'applied', { appliedAt: customTime });
+
+    const row = sqlite
+      .prepare<{ applied_at: string }, [number]>(
+        'SELECT applied_at FROM improvement_actions WHERE id = ?'
+      )
+      .get(id);
+    expect(row?.applied_at).toBe(customTime);
+  });
+
+  it('should transition approved → rejected', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'approved');
+
+    updateImprovementActionStatus(db, id, 'rejected');
+
+    const row = sqlite
+      .prepare<{ status: string }, [number]>(
+        'SELECT status FROM improvement_actions WHERE id = ?'
+      )
+      .get(id);
+    expect(row?.status).toBe('rejected');
+  });
+
+  it('should throw on proposed → applied (invalid transition)', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'proposed');
+
+    expect(() => updateImprovementActionStatus(db, id, 'applied')).toThrow(
+      'Invalid transition: proposed → applied'
+    );
+  });
+
+  it('should throw on proposed → rejected (invalid transition)', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'proposed');
+
+    expect(() => updateImprovementActionStatus(db, id, 'rejected')).toThrow(
+      'Invalid transition: proposed → rejected'
+    );
+  });
+
+  it('should throw on applied → approved (invalid transition)', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'applied');
+
+    expect(() => updateImprovementActionStatus(db, id, 'approved')).toThrow(
+      'Invalid transition: applied → approved'
+    );
+  });
+
+  it('should throw on rejected → approved (invalid transition)', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'rejected');
+
+    expect(() => updateImprovementActionStatus(db, id, 'approved')).toThrow(
+      'Invalid transition: rejected → approved'
+    );
+  });
+
+  it('should throw when action not found', () => {
+    const { db } = makeDb();
+
+    expect(() => updateImprovementActionStatus(db, 9999, 'approved')).toThrow(
+      'ImprovementAction #9999 not found'
+    );
+  });
+
+  it('should not set appliedAt when transitioning to rejected', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'approved');
+
+    updateImprovementActionStatus(db, id, 'rejected');
+
+    const row = sqlite
+      .prepare<{ applied_at: string | null }, [number]>(
+        'SELECT applied_at FROM improvement_actions WHERE id = ?'
+      )
+      .get(id);
+    expect(row?.applied_at).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getPendingImprovementActions
+// ---------------------------------------------------------------------------
+
+describe('getPendingImprovementActions', () => {
+  it('should return only proposed actions by default', () => {
+    const { db, sqlite } = makeDb();
+    seedAction(sqlite, 'proposed', { target_name: 'agent-a' });
+    seedAction(sqlite, 'proposed', { target_name: 'agent-b' });
+    seedAction(sqlite, 'approved', { target_name: 'agent-c' });
+    seedAction(sqlite, 'applied', { target_name: 'agent-d' });
+
+    const result = getPendingImprovementActions(db);
+    expect(result).toHaveLength(2);
+    expect(result.every((r) => r.status === 'proposed')).toBe(true);
+    const names = result.map((r) => r.targetName);
+    expect(names).toContain('agent-a');
+    expect(names).toContain('agent-b');
+  });
+
+  it('should filter by approved status', () => {
+    const { db, sqlite } = makeDb();
+    seedAction(sqlite, 'proposed', { target_name: 'agent-x' });
+    seedAction(sqlite, 'approved', { target_name: 'agent-y' });
+    seedAction(sqlite, 'approved', { target_name: 'agent-z' });
+    seedAction(sqlite, 'applied', { target_name: 'agent-w' });
+
+    const result = getPendingImprovementActions(db, 'approved');
+    expect(result).toHaveLength(2);
+    expect(result.every((r) => r.status === 'approved')).toBe(true);
+    const names = result.map((r) => r.targetName);
+    expect(names).toContain('agent-y');
+    expect(names).toContain('agent-z');
+  });
+
+  it('should return empty array when no matching actions', () => {
+    const { db, sqlite } = makeDb();
+    seedAction(sqlite, 'applied', { target_name: 'done-agent' });
+
+    const result = getPendingImprovementActions(db);
+    expect(result).toEqual([]);
+  });
+
+  it('should return empty array on empty DB', () => {
+    const { db } = makeDb();
+
+    const result = getPendingImprovementActions(db);
+    expect(result).toEqual([]);
+  });
+
+  it('should return full row data including id and targetType', () => {
+    const { db, sqlite } = makeDb();
+    const id = seedAction(sqlite, 'proposed', {
+      target_name: 'my-skill',
+      target_type: 'skill',
+      action_type: 'revise',
+      confidence: 'high',
+    });
+
+    const result = getPendingImprovementActions(db);
+    expect(result).toHaveLength(1);
+    const row = result[0]!;
+    expect(row.id).toBe(id);
+    expect(row.targetName).toBe('my-skill');
+    expect(row.targetType).toBe('skill');
+    expect(row.actionType).toBe('revise');
+    expect(row.confidence).toBe('high');
+    expect(row.status).toBe('proposed');
   });
 });

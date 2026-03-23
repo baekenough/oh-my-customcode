@@ -9307,7 +9307,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.56.0",
+    version: "0.57.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -24773,6 +24773,8 @@ var en_default = {
       backupCreated: "Backup created at {{path}}",
       summary: "Update complete: {{updated}} updated, {{skipped}} skipped",
       summaryFailed: "Update failed: {{error}}",
+      hardOption: "Sync namespace (name: field) in unmodified files from upstream",
+      namespaceSynced: "↻ Namespace synced: {{count}} file(s)",
       allOption: "Batch update all outdated projects found by project discovery",
       allScanning: "Scanning for oh-my-customcode projects...",
       allNoneFound: "No oh-my-customcode projects found.",
@@ -25155,6 +25157,8 @@ var ko_default = {
       backupCreated: "백업 생성됨: {{path}}",
       summary: "업데이트 완료: {{updated}}개 업데이트, {{skipped}}개 건너뜀",
       summaryFailed: "업데이트 실패: {{error}}",
+      hardOption: "미수정 파일의 네임스페이스(name: 필드)를 upstream에서 동기화",
+      namespaceSynced: "↻ 네임스페이스 동기화: {{count}}개 파일",
       allOption: "프로젝트 탐색으로 발견된 모든 outdated 프로젝트 일괄 업데이트",
       allScanning: "oh-my-customcode 프로젝트 검색 중...",
       allNoneFound: "oh-my-customcode 프로젝트를 찾을 수 없습니다.",
@@ -25823,6 +25827,7 @@ var MESSAGES = {
     "update.lockfile_regenerated": "Lockfile regenerated ({{files}} files tracked)",
     "update.lockfile_failed": "Failed to regenerate lockfile: {{error}}",
     "update.protected_file_updated": "⟳ Protected file {{file}} in {{component}} updated: {{hint}}",
+    "update.namespace_synced": "Namespace synced: {{file}} ({{component}})",
     "config.load_failed": "Failed to load config: {{error}}",
     "config.not_found": "Config not found at {{path}}, using defaults",
     "config.saved": "Config saved to {{path}}",
@@ -25868,6 +25873,7 @@ var MESSAGES = {
     "update.lockfile_regenerated": "잠금 파일 재생성 완료 ({{files}}개 파일 추적)",
     "update.lockfile_failed": "잠금 파일 재생성 실패: {{error}}",
     "update.protected_file_updated": "⟳ 보호 파일 {{file}} ({{component}}) 업데이트됨: {{hint}}",
+    "update.namespace_synced": "네임스페이스 동기화: {{file}} ({{component}})",
     "config.load_failed": "설정 로드 실패: {{error}}",
     "config.not_found": "{{path}}에 설정 없음, 기본값 사용",
     "config.saved": "설정 저장: {{path}}",
@@ -29909,7 +29915,8 @@ function createUpdateResult() {
     newVersion: "",
     warnings: [],
     syncedRootFiles: [],
-    removedDeprecatedFiles: []
+    removedDeprecatedFiles: [],
+    namespaceSynced: []
   };
 }
 async function handleBackupIfRequested(targetDir, backup, result) {
@@ -29934,6 +29941,10 @@ async function processComponentUpdate(targetDir, component, updateCheck, customi
     const preserved = await updateComponent(targetDir, component, customizations, options, config, lockfile);
     result.updatedComponents.push(component);
     result.preservedFiles.push(...preserved);
+    if (options.hard) {
+      const synced = await applyNamespaceSync(targetDir, component, lockfile);
+      result.namespaceSynced.push(...synced);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.warnings.push(`Failed to update ${component}: ${message}`);
@@ -30385,6 +30396,75 @@ async function removeDeprecatedFiles(targetDir, options) {
   }
   return removed;
 }
+function extractFrontmatterName(content) {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match)
+    return null;
+  const nameMatch = match[1].match(/^name:\s*(.+)$/m);
+  if (!nameMatch)
+    return null;
+  return nameMatch[1].trim().replace(/^["']|["']$/g, "");
+}
+async function syncNamespaceInFile(targetFilePath, upstreamFilePath) {
+  const targetContent = await readTextFile(targetFilePath);
+  const upstreamContent = await readTextFile(upstreamFilePath);
+  const upstreamName = extractFrontmatterName(upstreamContent);
+  const targetName = extractFrontmatterName(targetContent);
+  if (!upstreamName || !targetName || upstreamName === targetName)
+    return false;
+  const safeUpstreamName = upstreamName.replace(/\$/g, "$$$$");
+  const updated = targetContent.replace(/^(name:\s*).+$/m, `$1${safeUpstreamName}`);
+  if (updated === targetContent)
+    return false;
+  await writeTextFile(targetFilePath, updated);
+  return true;
+}
+async function processNamespaceSyncEntry(entry, relPath, fullSrcPath, destPath, componentPath, lockfile) {
+  if (!entry.isFile() || !entry.name.endsWith(".md"))
+    return null;
+  const targetFilePath = join14(destPath, relPath);
+  const lockfileKey = `${componentPath}/${relPath}`.replace(/\\/g, "/");
+  const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
+  if (shouldSkip)
+    return null;
+  if (!await fileExists(targetFilePath))
+    return null;
+  const didSync = await syncNamespaceInFile(targetFilePath, fullSrcPath);
+  return didSync ? `${componentPath}/${relPath}` : null;
+}
+async function applyNamespaceSync(targetDir, component, lockfile) {
+  if (!lockfile)
+    return [];
+  const componentPath = getComponentPath2(component);
+  const srcPath = resolveTemplatePath(componentPath);
+  const destPath = join14(targetDir, componentPath);
+  const fs3 = await import("node:fs/promises");
+  const synced = [];
+  const queue = [{ dir: srcPath, relDir: "" }];
+  while (queue.length > 0) {
+    const { dir: dir2, relDir } = queue.shift();
+    let entries;
+    try {
+      entries = await fs3.readdir(dir2, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
+      const fullSrcPath = join14(dir2, entry.name);
+      if (entry.isDirectory()) {
+        queue.push({ dir: fullSrcPath, relDir: relPath });
+        continue;
+      }
+      const syncedPath = await processNamespaceSyncEntry(entry, relPath, fullSrcPath, destPath, componentPath, lockfile);
+      if (syncedPath) {
+        synced.push(syncedPath);
+        info("update.namespace_synced", { file: relPath, component });
+      }
+    }
+  }
+  return synced;
+}
 function getComponentPath2(component) {
   const layout = getProviderLayout();
   if (component === "guides") {
@@ -30451,7 +30531,8 @@ async function updateSingleProject(targetDir, options) {
     preserveCustomizations: true,
     forceOverwriteAll: options.forceOverwriteAll,
     dryRun: options.dryRun,
-    backup: options.backup
+    backup: options.backup,
+    hard: options.hard
   };
   const result = await update(updateOptions);
   printUpdateResults(result);
@@ -30491,7 +30572,8 @@ async function updateAllProjects(options) {
         preserveCustomizations: true,
         forceOverwriteAll: options.forceOverwriteAll,
         dryRun: options.dryRun,
-        backup: options.backup
+        backup: options.backup,
+        hard: options.hard
       };
       const result = await update(updateOptions);
       if (result.success) {
@@ -30582,6 +30664,12 @@ function printUpdateResults(result) {
   if (result.preservedFiles.length > 0) {
     console.log(i18n.t("cli.update.preservedFiles", { count: String(result.preservedFiles.length) }));
   }
+  if ((result.namespaceSynced?.length ?? 0) > 0) {
+    console.log(i18n.t("cli.update.namespaceSynced", { count: String(result.namespaceSynced.length) }));
+    for (const file of result.namespaceSynced) {
+      console.log(`  ↻ ${file}`);
+    }
+  }
   if (result.backedUpPaths.length > 0) {
     for (const path4 of result.backedUpPaths) {
       console.log(i18n.t("cli.update.backupCreated", { path: path4 }));
@@ -30638,7 +30726,7 @@ function createProgram() {
   program2.command("init").description(i18n.t("cli.init.description")).option("-l, --lang <language>", i18n.t("cli.init.langOption")).option("--domain <domain>", "Install only agents/skills for specific domain (backend, frontend, data-engineering, devops)").option("--yes", "Skip interactive wizard, use defaults").action(async (options) => {
     await initCommand(options);
   });
-  program2.command("update").description(i18n.t("cli.update.description")).option("--dry-run", i18n.t("cli.update.dryRunOption")).option("--force", i18n.t("cli.update.forceOption")).option("--force-overwrite-all", i18n.t("cli.update.forceOverwriteAllOption")).option("--backup", i18n.t("cli.update.backupOption")).option("--agents", i18n.t("cli.update.agentsOption")).option("--skills", i18n.t("cli.update.skillsOption")).option("--rules", i18n.t("cli.update.rulesOption")).option("--guides", i18n.t("cli.update.guidesOption")).option("--hooks", i18n.t("cli.update.hooksOption")).option("--contexts", i18n.t("cli.update.contextsOption")).option("--all", i18n.t("cli.update.allOption")).action(async (options) => {
+  program2.command("update").description(i18n.t("cli.update.description")).option("--dry-run", i18n.t("cli.update.dryRunOption")).option("--force", i18n.t("cli.update.forceOption")).option("--force-overwrite-all", i18n.t("cli.update.forceOverwriteAllOption")).option("--hard", i18n.t("cli.update.hardOption")).option("--backup", i18n.t("cli.update.backupOption")).option("--agents", i18n.t("cli.update.agentsOption")).option("--skills", i18n.t("cli.update.skillsOption")).option("--rules", i18n.t("cli.update.rulesOption")).option("--guides", i18n.t("cli.update.guidesOption")).option("--hooks", i18n.t("cli.update.hooksOption")).option("--contexts", i18n.t("cli.update.contextsOption")).option("--all", i18n.t("cli.update.allOption")).action(async (options) => {
     await updateCommand(options);
   });
   program2.command("list").description(i18n.t("cli.list.description")).argument("[type]", i18n.t("cli.list.typeArgument"), "all").option("-f, --format <format>", "Output format: table, json, or simple", "table").option("--verbose", "Show detailed information").action(async (type, options) => {

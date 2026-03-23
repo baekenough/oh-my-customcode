@@ -21,6 +21,12 @@
 		</p>
 	</div>
 
+	{#if data.projectNotFound}
+		<div class="mb-6 rounded-lg border border-amber-800 bg-amber-950/30 px-4 py-3 text-sm text-amber-300">
+			Project "<code class="font-mono">{data.selectedProject}</code>" not found. Showing default project.
+		</div>
+	{/if}
+
 	<!-- Analytics section -->
 	{#if data.analytics}
 		<div class="mb-10">

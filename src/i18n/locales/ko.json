@@ -129,6 +129,8 @@
       "backupCreated": "백업 생성됨: {{path}}",
       "summary": "업데이트 완료: {{updated}}개 업데이트, {{skipped}}개 건너뜀",
       "summaryFailed": "업데이트 실패: {{error}}",
+      "hardOption": "미수정 파일의 네임스페이스(name: 필드)를 upstream에서 동기화",
+      "namespaceSynced": "↻ 네임스페이스 동기화: {{count}}개 파일",
       "allOption": "프로젝트 탐색으로 발견된 모든 outdated 프로젝트 일괄 업데이트",
       "allScanning": "oh-my-customcode 프로젝트 검색 중...",
       "allNoneFound": "oh-my-customcode 프로젝트를 찾을 수 없습니다.",

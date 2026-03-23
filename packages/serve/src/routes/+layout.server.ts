@@ -7,9 +7,15 @@ export const load: LayoutServerLoad = async ({ url }) => {
 	const selectedSlug = url.searchParams.get('project');
 
 	let root: string;
+	let projectNotFound = false;
 	if (selectedSlug) {
 		const match = projects.find((p) => p.slug === selectedSlug);
-		root = match?.path ?? (await getProjectRoot());
+		if (match) {
+			root = match.path;
+		} else {
+			root = await getProjectRoot();
+			projectNotFound = true;
+		}
 	} else {
 		root = await getProjectRoot();
 	}
@@ -17,6 +23,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 	return {
 		projects,
 		selectedProject: selectedSlug,
-		root
+		root,
+		projectNotFound
 	};
 };
