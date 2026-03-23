@@ -9,6 +9,15 @@ guides:
       type: internal
 
   # Frontend
+  - name: impeccable-design
+    description: AI design language reference — typography, color, motion, and UX writing for production-grade UI
+    path: ./impeccable-design/
+    source:
+      type: external
+      origin: github
+      url: https://github.com/pbakaus/impeccable
+      license: Apache-2.0
+
   - name: flutter
     description: Flutter/Dart development patterns and best practices
     path: ./flutter/
