@@ -9,6 +9,7 @@ import { readFileSync, readdirSync } from 'fs';
 
 const HOME = process.env.HOME ?? process.env.USERPROFILE ?? '~';
 const EVAL_DIR = join(HOME, '.omcustom', 'evaluations');
+const EVAL_CORE_DB_PATH = join(HOME, '.config', 'oh-my-customcode', 'eval-core.sqlite');
 
 // ---------------------------------------------------------------------------
 // Types
@@ -144,8 +145,55 @@ function readTaskOutcomesSync(): TaskOutcome[] {
 	return outcomes;
 }
 
+function readEvalCoreSessionsSync(): TaskOutcome[] {
+	try {
+		// eslint-disable-next-line @typescript-eslint/no-require-imports
+		const { Database } = require('bun:sqlite') as { Database: new (path: string, options?: { readonly?: boolean }) => { query: (sql: string) => { all: () => unknown[] }; close: () => void } };
+		const db = new Database(EVAL_CORE_DB_PATH, { readonly: true });
+		const rows = db.query(`
+			SELECT agent_type, outcome, model, timestamp, session_id
+			FROM agent_invocations
+			ORDER BY timestamp DESC
+			LIMIT 1000
+		`).all() as Array<{
+			agent_type: string;
+			outcome: string;
+			model: string;
+			timestamp: string;
+			session_id: string;
+		}>;
+		db.close();
+
+		return rows.map((r) => ({
+			agent_type: r.agent_type,
+			outcome: r.outcome,
+			model: r.model,
+			timestamp: r.timestamp,
+			session_id: r.session_id
+		}));
+	} catch {
+		return [];
+	}
+}
+
 export async function getSessionSummaries(): Promise<SessionSummary[]> {
-	const outcomes = readTaskOutcomesSync();
+	// Primary: eval-core DB (persistent across sessions)
+	const dbOutcomes = readEvalCoreSessionsSync();
+	// Secondary: /tmp JSONL (live session data)
+	const tmpOutcomes = readTaskOutcomesSync();
+
+	// Merge, deduplicating by session_id + timestamp + agent_type
+	const seen = new Set<string>();
+	const outcomes: TaskOutcome[] = [];
+
+	for (const o of [...tmpOutcomes, ...dbOutcomes]) {
+		const key = `${o.session_id ?? ''}:${o.timestamp ?? ''}:${o.agent_type ?? ''}`;
+		if (!seen.has(key)) {
+			seen.add(key);
+			outcomes.push(o);
+		}
+	}
+
 	const evaluations = await getEvaluations();
 
 	// Group outcomes by session_id
