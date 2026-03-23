@@ -13,7 +13,7 @@ context: fork
 | Type | Agents |
 |------|--------|
 | Language | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
-| Frontend | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
+| Frontend | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
 | Backend | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-nestjs-expert, be-express-expert, be-django-expert |
 | Tooling | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | Database | db-supabase-expert, db-postgres-expert, db-redis-expert |
@@ -55,6 +55,7 @@ context: fork
 | vue | fe-vuejs-agent |
 | svelte | fe-svelte-agent |
 | flutter, dart, riverpod, bloc, widget | fe-flutter-agent |
+| design, typography, color, motion, ux writing, ui design, "design system", "design review", impeccable | fe-design-expert |
 | fastapi | be-fastapi-expert |
 | django | be-django-expert |
 | spring, springboot | be-springboot-expert |

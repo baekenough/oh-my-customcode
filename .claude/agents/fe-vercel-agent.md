@@ -9,6 +9,7 @@ skills:
   - react-best-practices
   - web-design-guidelines
   - vercel-deploy
+  - impeccable-design
 tools:
   - Read
   - Write

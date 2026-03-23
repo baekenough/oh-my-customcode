@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-45개 에이전트. 93개 스킬. 21개 규칙. 명령어 하나.
+46개 에이전트. 94개 스킬. 21개 규칙. 명령어 하나.
 
 > **v0.46.0** — Rate Limit 모니터링, Skill Effort Override, 멀티프로젝트 Web UI, 일괄 업데이트, SDD 워크플로우, Ambiguity Gate
 
@@ -115,7 +115,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 에이전트 (45개)
+## 에이전트 (46개)
 
 | 카테고리 | 수 | 에이전트 |
 |---------|-----|---------|
@@ -136,7 +136,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (93개)
+## 스킬 (94개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -268,8 +268,8 @@ omcustom serve-stop            # Web UI 중지
 your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
-│   ├── agents/                 # 45개 에이전트 정의
-│   ├── skills/                 # 93개 스킬 모듈
+│   ├── agents/                 # 46개 에이전트 정의
+│   ├── skills/                 # 94개 스킬 모듈
 │   ├── rules/                  # 21개 거버넌스 규칙 (R000-R021)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
@@ -278,7 +278,7 @@ your-project/
 │   └── ontology/               # RAG용 지식 그래프
 ├── packages/
 │   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
-└── guides/                     # 29개 레퍼런스 문서
+└── guides/                     # 31개 레퍼런스 문서
 ```
 
 ---

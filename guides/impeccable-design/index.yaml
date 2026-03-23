@@ -1,0 +1,12 @@
+name: impeccable-design
+description: AI design language reference — typography, color, motion, and UX writing for production-grade UI
+source:
+  type: external
+  origin: github
+  url: https://github.com/pbakaus/impeccable
+  license: Apache-2.0
+documents:
+  - typography.md
+  - color-and-contrast.md
+  - motion-design.md
+  - ux-writing.md
