@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.53.1",
-  "generatedAt": "2026-03-23T06:26:28.205Z",
-  "templateVersion": "0.53.1",
+  "generatorVersion": "0.54.0",
+  "generatedAt": "2026-03-23T08:44:44.583Z",
+  "templateVersion": "0.54.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -540,8 +540,8 @@
       "component": "skills"
     },
     ".claude/skills/release-plan/SKILL.md": {
-      "templateHash": "3f7ba79ecd3b482c2b3e6ec24e85a771130b23463f452bada91504ba7e94c685",
-      "size": 6259,
+      "templateHash": "e4f440e31eeeae8b377e7a19aee427f3e05a33cc2a58d78b86de34be370ddcae",
+      "size": 7137,
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
