@@ -41,10 +41,10 @@ Implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher).
 ### Format
 
 ```
-{Cost} | {project} | {branch} | RL:{rate_limit}% | CTX:{usage}%
+{Cost} | {project} | {branch} | RL:{rate_limit}% | WL:{weekly_limit}% | CTX:{usage}%
 ```
 
-Example: `$0.05 | my-project | develop | RL:45% | CTX:42%`
+Example: `$0.05 | my-project | develop | RL:45% | WL:72% | CTX:42%`
 
 ### Configuration
 
@@ -70,11 +70,16 @@ Set in `.claude/settings.local.json`. The command receives JSON via stdin with m
 | Rate Limit | < 50% | Green |
 | Rate Limit | 50-79% | Yellow |
 | Rate Limit | >= 80% | Red |
+| Weekly Limit | < 50% | Green |
+| Weekly Limit | 50-79% | Yellow |
+| Weekly Limit | >= 80% | Red |
 | Context | < 60% | Green |
 | Context | 60-79% | Yellow |
 | Context | >= 80% | Red |
 
 The `RL:{rate_limit}%` segment only appears when Claude Code v2.1.80+ provides `rate_limits` data. On older versions, this segment is omitted.
+
+The `WL:{weekly_limit}%` segment shows the 7-day rolling rate limit percentage. Both RL and WL segments are omitted on older versions.
 
 ## Integration
 
