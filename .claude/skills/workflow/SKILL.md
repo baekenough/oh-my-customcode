@@ -19,13 +19,32 @@ argument-hint: "<workflow-name> | (no args to list available)"
 
 ## Behavior
 
-### List Mode (no arguments)
+### List Mode (no arguments or --list flag)
 
-Scan `workflows/*.yaml` and display:
-```
-Available workflows:
-  omcustom-dev — verify-done issues release batch: triage → plan → implement → verify → PR
-```
+Execute these steps to display available workflows:
+
+1. **Scan built-in workflows**: Use `Glob("workflows/*.yaml")` (NOT templates/) to find all workflow definitions
+2. **Extract metadata**: For each YAML file found, use `Bash` to extract name and description:
+   ```bash
+   for f in workflows/*.yaml; do
+     name=$(grep -m1 '^name:' "$f" | sed 's/^name: *//' | tr -d '"')
+     desc=$(grep -m1 '^description:' "$f" | sed 's/^description: *//' | tr -d '"')
+     echo "  $name — $desc"
+   done
+   ```
+3. **Scan template workflows**: Use `Glob("templates/workflows/*.yaml")` for template examples
+4. **Extract template metadata**: Same extraction as step 2 for `templates/workflows/*.yaml`
+5. **Display formatted output**:
+   ```
+   Available workflows:
+     {name} — {description}
+     {name} — {description}
+
+   Template workflows (in templates/workflows/):
+     {name} — {description}
+   ```
+6. If no workflows found, display: "No workflows found in workflows/ directory."
+7. If YAML parsing fails for a file, skip it and show: `  {filename} — (parse error, skipped)`
 
 ### Run Mode (with workflow name)
 
