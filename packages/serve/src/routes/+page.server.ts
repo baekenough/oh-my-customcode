@@ -1,12 +1,51 @@
 import type { PageServerLoad } from './$types';
 import { getAnalytics, type AnalyticsData } from '$lib/server/analytics';
-import { findProjectsForServe } from '$lib/server/projects';
+import { readdir } from 'fs/promises';
+import { join } from 'path';
 
+interface ProjectDetail {
+	agentCount: number;
+	skillCount: number;
+	guideCount: number;
+	ruleCount: number;
+}
+
+async function getProjectDetail(root: string): Promise<ProjectDetail> {
+	const count = async (dir: string, pattern?: string) => {
+		try {
+			const entries = await readdir(dir);
+			return pattern ? entries.filter((e) => e.endsWith(pattern)).length : entries.length;
+		} catch {
+			return 0;
+		}
+	};
+
+	// For skills, count directories containing SKILL.md
+	let skillCount = 0;
+	try {
+		const skillDirs = await readdir(join(root, '.claude', 'skills'));
+		for (const d of skillDirs) {
+			try {
+				await readdir(join(root, '.claude', 'skills', d)); // check it's a dir
+				skillCount++;
+			} catch {
+				/* skip files */
+			}
+		}
+	} catch {
+		/* no skills dir */
+	}
+
+	return {
+		agentCount: await count(join(root, '.claude', 'agents'), '.md'),
+		skillCount,
+		guideCount: await count(join(root, 'guides')),
+		ruleCount: await count(join(root, '.claude', 'rules'), '.md')
+	};
+}
 
 export const load: PageServerLoad = async ({ parent }) => {
 	const { root, selectedProject } = await parent();
-
-	const allProjects = await findProjectsForServe();
 
 	// Analytics loaded separately so a failure doesn't break the entire page
 	let analytics: AnalyticsData | null = null;
@@ -21,19 +60,12 @@ export const load: PageServerLoad = async ({ parent }) => {
 		analytics = null;
 	}
 
-	// Summary across all discovered projects
-	const projectSummary = {
-		total: allProjects.length,
-		latest: allProjects.filter((p) => p.status === 'latest').length,
-		outdated: allProjects.filter((p) => p.status === 'outdated').length,
-		unknown: allProjects.filter((p) => p.status === 'unknown').length
-	};
+	const projectDetail = await getProjectDetail(root);
 
 	return {
 		root,
 		selectedProject,
-		projectSummary,
-		projects: allProjects.slice(0, 6), // Show up to 6 projects on dashboard
-		analytics
+		analytics,
+		projectDetail
 	};
 };

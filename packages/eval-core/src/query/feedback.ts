@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import type { EvalDb } from '../db/client.js';
 import { agentInvocations, improvementActions } from '../db/schema.js';
+import { fetchUserFeedbackIssues, type UserFeedbackEntry } from './user-feedback.js';
 
 /**
  * Opposing action pairs that conflict when targeting the same entity.
@@ -391,6 +392,11 @@ export async function getImprovementSuggestions(
     });
   }
 
+  // Merge user-explicit feedback from GitHub issues
+  const userFeedback = fetchUserFeedbackIssues();
+  const userSuggestions = userFeedbackToSuggestions(userFeedback);
+  suggestions.push(...userSuggestions);
+
   // Apply conflict resolution
   const resolved = filterConflicts(suggestions);
 
@@ -402,6 +408,28 @@ export async function getImprovementSuggestions(
   return filtered.sort(
     (a, b) => (confidenceOrder[a.confidence] ?? 2) - (confidenceOrder[b.confidence] ?? 2)
   );
+}
+
+/**
+ * Converts user-explicit feedback entries into ImprovementSuggestion format.
+ * Only negative-sentiment entries with a specific target (non-general) are included.
+ */
+export function userFeedbackToSuggestions(entries: UserFeedbackEntry[]): ImprovementSuggestion[] {
+  return entries
+    .filter((e) => e.targetType !== 'general' && e.sentiment === 'negative')
+    .map((e) => ({
+      target: e.target,
+      targetType: (e.targetType === 'general' ? 'agent' : e.targetType) as ImprovementSuggestion['targetType'],
+      actionType: 'revise' as const,
+      description: `User feedback (issue #${e.issueNumber}): "${e.title}"`,
+      confidence: 'medium' as const,
+      evidence: {
+        metric: 'user_feedback',
+        value: 1,
+        threshold: 0,
+        sessionCount: 1,
+      },
+    }));
 }
 
 /**

@@ -145,8 +145,16 @@ function parseYaml(content: string): ImprovementRulesFile {
   return { rules };
 }
 
+function countUserFeedbackSuggestions(suggestions: ImprovementSuggestion[]): number {
+  return suggestions.filter((s) => s.evidence.metric === 'user_feedback').length;
+}
+
 function formatTable(suggestions: ImprovementSuggestion[], routingMiss: RoutingMissPattern): string {
   const lines: string[] = ['Improvement Suggestions', '='.repeat(80), ''];
+  const userFeedbackCount = countUserFeedbackSuggestions(suggestions);
+  if (userFeedbackCount > 0) {
+    lines.push(`User feedback issues included: ${userFeedbackCount}`, '');
+  }
 
   if (suggestions.length === 0) {
     lines.push('No improvement suggestions found (insufficient data or all metrics within thresholds).');
@@ -180,11 +188,12 @@ function formatTable(suggestions: ImprovementSuggestion[], routingMiss: RoutingM
 }
 
 function formatMarkdown(suggestions: ImprovementSuggestion[], routingMiss: RoutingMissPattern): string {
+  const userFeedbackCount = countUserFeedbackSuggestions(suggestions);
   const lines: string[] = [
     '# Improvement Suggestions',
     '',
     `Generated: ${new Date().toISOString()}`,
-    '',
+    ...(userFeedbackCount > 0 ? [`User feedback issues included: ${userFeedbackCount}`, ''] : ['']),
   ];
 
   if (suggestions.length === 0) {
@@ -274,7 +283,8 @@ export const analyzeCommand = new Command('analyze')
     ]);
 
     if (format === 'json') {
-      console.log(JSON.stringify({ suggestions, routingMiss, rules: rulesFile?.rules ?? [] }, null, 2));
+      const userFeedbackCount = countUserFeedbackSuggestions(suggestions);
+      console.log(JSON.stringify({ suggestions, routingMiss, rules: rulesFile?.rules ?? [], userFeedbackCount }, null, 2));
     } else if (format === 'markdown') {
       console.log(formatMarkdown(suggestions, routingMiss));
     } else {
