@@ -116,7 +116,7 @@ agents:
       english: [design, typography, color, motion, "ux writing", "design system", "design review", impeccable, "design audit", "ai slop"]
     file_patterns: ["*.css", "*.scss", "*.less", "tailwind.config.*"]
     supported_actions: [review, audit, critique, polish, normalize]
-    base_confidence: 35
+    base_confidence: 40
 
   # SW Engineers - Backend
   be-fastapi-expert:
