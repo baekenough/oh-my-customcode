@@ -22,6 +22,7 @@ Defines mandatory safety constraints for all pipeline, workflow, and iterative e
 | Timeout per pipeline | 900s | 1800s | worker-reviewer-pipeline |
 | Max retry count | 2 | 3 | Failure retry strategies |
 | Max PR improvement items | 20 | 50 | pr-auto-improve |
+| Max auto-improve items | 20 | 50 | omcustom-auto-improve |
 
 ## Enforcement
 
@@ -152,6 +153,7 @@ Guard warnings appear inline:
 | dag-orchestration | Node count and timeout limits |
 | worker-reviewer-pipeline | Iteration and pipeline timeout limits |
 | pr-auto-improve | Improvement item count limits |
+| omcustom-auto-improve | Auto-improve item count limits |
 | stuck-recovery | Guard triggers feed into stuck detection |
 | model-escalation | Repeated failures trigger escalation advisory |
 

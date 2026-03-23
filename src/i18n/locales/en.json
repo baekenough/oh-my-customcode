@@ -129,6 +129,8 @@
       "backupCreated": "Backup created at {{path}}",
       "summary": "Update complete: {{updated}} updated, {{skipped}} skipped",
       "summaryFailed": "Update failed: {{error}}",
+      "hardOption": "Sync namespace (name: field) in unmodified files from upstream",
+      "namespaceSynced": "↻ Namespace synced: {{count}} file(s)",
       "allOption": "Batch update all outdated projects found by project discovery",
       "allScanning": "Scanning for oh-my-customcode projects...",
       "allNoneFound": "No oh-my-customcode projects found.",
