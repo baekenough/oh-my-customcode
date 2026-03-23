@@ -1,14 +1,14 @@
 # Architecture
 
-> oh-my-customcode v0.42.0
+> oh-my-customcode v0.53.1
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 44 pre-built subagents, 74 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 45 pre-built subagents, 92 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.38.0** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Current version: **0.53.1** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
@@ -68,7 +68,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
 | R021 | MUST | Enforcement Policy | Advisory-first enforcement model, promotion criteria |
 
-### 3.2 Agent Taxonomy (44 agents)
+### 3.2 Agent Taxonomy (45 agents)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -77,18 +77,18 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | SW Engineer / Frontend | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
 | SW Engineer / Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | Data Engineering | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
-| Database | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
+| Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | Security | 1 | sec-codeql-expert |
 | Architecture | 2 | arch-documenter, arch-speckit-agent |
 | Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 2 | sys-memory-keeper, sys-naggy |
-| **Total** | **44** | |
+| **Total** | **45** | |
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (74 skills)
+### 3.3 Skill Catalog (92 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -109,24 +109,25 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **Slash command / user-invocable skills**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, lists, status, help
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
 
 **System / internal skills**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices
 
-### 3.4 Guide Library (25 topics)
+### 3.4 Guide Library (30 topics)
 
 | Category | Guides |
 |----------|--------|
-| Internal | claude-code |
+| Internal | claude-code, git-worktree-workflow, skill-bundle-design |
 | Language | golang, python, rust, kotlin, typescript, java21 |
 | Frontend | flutter, web-design |
 | Backend | fastapi, springboot, go-backend, django-best-practices |
 | Infrastructure | docker, aws |
 | Data Engineering | airflow, dbt, kafka, spark, snowflake, iceberg |
-| Database | supabase-postgres, postgres, redis |
+| Database | supabase-postgres, postgres, redis, alembic, drizzle-orm |
 | Writing | elements-of-style |
+| Web Scraping | web-scraping |
 
 ### 3.5 Hook System
 
@@ -134,7 +135,7 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 
 | Event | Scripts / Handlers | Purpose |
 |-------|--------------------|---------|
-| SessionStart | session-env-check.sh | Detect codex CLI + Agent Teams availability |
+| SessionStart | session-env-check.sh, stale-todo-scanner.sh | Detect codex CLI + Agent Teams availability; scan for stale TODOs |
 | PreToolUse (Write/Edit) | stage-blocker.sh | Block writes outside implement stage |
 | PreToolUse (Bash dev server) | inline script | Force dev servers into tmux |
 | PreToolUse (Edit) | content-hash-validator.sh | Advisory staleness warning via content hash |
@@ -152,7 +153,7 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 | PostCompact | compact-rules-reinforcement (inline) | Re-inject R007/R008/R009/R010/R018 identity and delegation rules after context compaction |
 | SubagentStart | HUD inline display | Log agent type:model when subagent starts |
 | SubagentStop | task-outcome-recorder.sh | Record final outcome |
-| Stop | stop-console-audit.sh, eval-core-batch-save.sh, R011 prompt | Final audit, batch evaluation save, memory checkpoint |
+| Stop | stop-console-audit.sh, eval-core-batch-save.sh, feedback-collector.sh, R011 prompt | Final audit, batch evaluation save, session feedback extraction and improvementActions insert, memory checkpoint |
 
 #### Observability Hooks (Harness Engineering)
 
@@ -317,6 +318,37 @@ The stage-blocker hook enforces Write/Edit restrictions outside the implement st
 
 The reasoning-sandwich skill structures prompts with context-instruction-context layering to maximize model attention on critical information. It is an internal skill used by routing and orchestration workflows to improve prompt effectiveness.
 
+### 5.8 Workflow Engine (/omcustom:workflow)
+
+<p align="center">
+  <img src="assets/diagrams/09-workflow-engine.png" alt="Workflow Engine" width="800" />
+</p>
+
+YAML-defined workflow pipelines in `workflows/` directory. Each workflow defines sequential steps that invoke skills or actions.
+
+Available workflows:
+- `omcustom-dev` — Full-auto release pipeline: triage → plan → implement → verify → PR
+
+Custom workflows can be defined by users in `workflows/` with any `^[a-z0-9-]+$` name.
+
+### 5.9 Professor Triage (/professor-triage)
+
+Cross-analyzes GitHub issues with omc_issue_analyzer comments. 6-phase workflow:
+1. Collect `professor` labeled issues
+2. Fetch omc_issue_analyzer comments for each
+3. Independent codebase verification
+4. Cross-analyze: compare analyzer claims vs actual code
+5. Post findings as issue comments
+6. Apply labels (verify-done, priority adjustments)
+
+### 5.10 Release Plan (/release-plan)
+
+Collects verify-done issues, groups by priority and size into release units. Generates structured release plan documents with implementation order and agent suggestions.
+
+### 5.11 Autonomous Mode (R010)
+
+When user signals full-delegation intent ("진행시켜", "알아서 해"), the orchestrator operates in lightweight mode: file write/edit delegation still required, but simple git operations and confirmation gates are relaxed.
+
 ---
 
 ## 6. Memory Architecture
@@ -387,6 +419,10 @@ MCP saves are non-blocking — failure does not prevent session end.
 
 ### 6.7 Agent Metrics and Skill Effectiveness Tracking
 
+<p align="center">
+  <img src="assets/diagrams/10-feedback-loop.png" alt="Feedback Analysis Loop" width="800" />
+</p>
+
 The task-outcome-recorder hook (PostToolUse + SubagentStop) records success/failure for each agent type and model combination. This data feeds two systems:
 
 **Model Escalation (model-escalation-advisor.sh)**: When an agent type accumulates failures exceeding the configured threshold, the hook advises the orchestrator to escalate to a higher model (e.g., haiku -> sonnet -> opus). This is advisory-only — the orchestrator decides whether to accept.
@@ -425,7 +461,12 @@ The task-outcome-recorder hook (PostToolUse + SubagentStop) records success/fail
 | Test | ci.yml | bun test with coverage threshold |
 | Rust Tests | ci.yml | cargo test for Rust components |
 | Version Sync | ci.yml | manifest.json matches package.json |
+| Template Sync | ci.yml | Verify template files match source, skill script file parity |
 | Dependency Security Audit | security-audit.yml | Automated vulnerability scanning |
+| Auto Tag | auto-tag.yml | Create version tag on release PR merge |
+| Issue Analyzer | issue-analyzer.yml | Automated issue analysis comments |
+| PR Analysis | pr-analysis.yml | Pull request automated analysis |
+| Daily Report | reusable-daily-report.yml | Scheduled issue/PR reporting |
 
 ---
 
@@ -446,6 +487,8 @@ Exports:
 Runtime deps: commander, i18next, yaml. Build/runtime: bun. Node >=18 required.
 
 npm publish is triggered only by the CI/CD pipeline on `release/*` branches — never run locally. Release workflow: create `release/*` branch + GitHub Release tag, CI handles the rest.
+
+Version tagging is automated via `auto-tag.yml`: when a `release/*` PR is merged to `develop`, the workflow extracts the version from `package.json` and creates an annotated tag on the merge commit. `.npmrc` contains `git-tag-version=false` to prevent `npm version` from creating conflicting local tags.
 
 ### 8.2 Template System
 
@@ -470,6 +513,14 @@ The interactive setup flow at `src/cli/wizard.ts` guides first-time users throug
 
 The omcustom-takeover skill enables reverse compilation: analyzing an existing codebase and generating structured agent/skill specs from observed patterns. This is the primary onboarding mechanism for new projects that already have code but lack agent harness configuration.
 
+### 8.6 Built-in Web UI (packages/serve/)
+
+`packages/serve/` is a SvelteKit application providing a dashboard for inspecting agents, skills, guides, rules, and evaluations. Features include:
+- Dashboard with analytics (session counts, success rates, top agents/skills)
+- Project overview with resource counts
+- Evaluations page with session summaries from eval-core SQLite
+- Project selection via `?project=X` query parameter
+
 ---
 
 ## 9. Claude Code Compatibility
@@ -493,7 +544,7 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | --bare flag (skip hooks/skills/memory) | No | Yes (v2.1.81+) | Documented: harness fully disabled in bare mode (opt-in, zero impact on normal usage) |
 | --channels permission relay | No | Yes (v2.1.81+) | Compatible — no changes required (opt-in UX feature) |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.81.
+Tested and compatible with Claude Code v2.1.72 through v2.1.81+.
 
 ---
 
@@ -554,13 +605,21 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 | Version | Key Changes |
 |---------|-------------|
-| v0.38.0 | PostCompact hook (R007/R008/R009/R010/R018 reinforcement after compaction); eval-core package (`packages/eval-core/` SQLite session/turn/outcome collection); init wizard (`src/cli/wizard.ts`); context:fork cap raised 10→12 (11 active); hook system cleanup (orphan removal, duplicate fix, field name correction); template full sync (200+ files byte-identical); Claude Code v2.1.72–v2.1.76 compatibility |
-| v0.37.3 | Version bump + patch fixes on release/v0.37.3 branch |
-| v0.37.0 | Structure Optimization: rule compression, skill compression, agent-skill wiring, hook optimization, routing compression, domain gating (6 issues, #386–#392) |
-| v0.36.1 | /omcustom:release-notes skill; README/ARCHITECTURE rewrite with "Compiled, Not Configured" philosophy; template skill sync fixes |
-| v0.36.0 | Harness Engineering (26 issues): R020 completion verification, security hooks (audit-log, secret-filter, schema-validator, content-hash-validator), tool reduction (10 agents, 26 tools removed), frontmatter extensions (isolation/sandbox, maxTokens, limitations), reasoning-sandwich, omcustom-takeover, sauron structural linting, memory temporal decay, agent metrics, skill effectiveness |
+| v0.53.1 | Auto-tagging fix (.npmrc git-tag-version=false); /omcustom:workflow rename; custom workflow templates |
+| v0.53.0 | Dashboard All Projects removal; project detail view; eval-core DB connection for evaluations; user feedback integration (#562) |
+| v0.52.0 | Feedback collector hook; routing miss analysis; /omcustom:improve-report; R018 scope constraint |
+| v0.51.0–v0.51.2 | /scout skill; Agent Teams first usage; R018 advisor batch detection; dashboard cleanup |
+| v0.50.0 | Lockfile-based smart protection for omcustom update; systematic-debugging skill |
+| v0.49.0 | Workflow engine (/omcustom:workflow); workflow-runner; omcustom-dev.yaml |
+| v0.48.0–v0.48.5 | 20-issue deep fix (Drizzle, group_concat, busy_timeout); /professor-triage; /release-plan; stale-todo-scanner; bypassPermissions advisory |
+| v0.47.0–v0.47.2 | Built-in Web UI improvements; orphan server fix; downgrade prevention; version display unification |
+| v0.44.0–v0.46.1 | Sidebar/dashboard/evaluations; Autonomous Mode; feedback skill; SDD; ambiguity-gate; CC v2.1.80 compat; multi-project Web UI |
+| v0.43.0 | Built-in Web UI (packages/serve SvelteKit) |
+| v0.42.0–v0.42.3 | Mermaid fixes; jq guard; Stop hook; Dependabot; R021 enforcement policy |
+| v0.39.0–v0.41.0 | Adversarial review; Rust CLI components |
+| v0.38.0 | PostCompact hook (R007/R008/R009/R010/R018 reinforcement after compaction); eval-core package (`packages/eval-core/` SQLite session/turn/outcome collection); init wizard (`src/cli/wizard.ts`); context:fork cap raised 10→12 (11 active); hook system cleanup; template full sync; Claude Code v2.1.72–v2.1.76 compatibility |
+| v0.37.0–v0.37.3 | Structure Optimization: rule compression, skill compression, agent-skill wiring, hook optimization, routing compression, domain gating |
+| v0.36.0–v0.36.1 | Harness Engineering (26 issues): R020, security hooks, tool reduction, frontmatter extensions, reasoning-sandwich, omcustom-takeover, sauron structural linting, memory temporal decay, agent metrics, skill effectiveness; /omcustom:release-notes |
 | v0.35.x | Cost monitoring, pre-flight guards, Agent Teams compatibility (R010 Teams exception), episodic-memory session-end fix |
 | v0.34.0 | Evaluator-optimizer, workflow-patterns, stuck-detector hard-block, pre-flight guards |
-| v0.32.0–v0.33.x | deep-plan skill, validate-docs hook counting fix |
-| v0.31.0 | SOUL.md per-agent identity, behavioral memory, artifact output |
-| v0.30.0 | Drift detection, context budget, confidence-tracked memory, structured-dev-cycle |
+| v0.30.0–v0.33.x | deep-plan skill, structured-dev-cycle, confidence-tracked memory, context budget, drift detection |
