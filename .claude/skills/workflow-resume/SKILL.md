@@ -1,17 +1,17 @@
 ---
-name: workflow-resume
+name: omcustom:workflow:resume
 description: Resume a halted workflow from its last failure point
 scope: harness
 user-invocable: true
 effort: medium
 ---
 
-# /workflow:resume — Resume Halted Workflow
+# /omcustom:workflow:resume — Resume Halted Workflow
 
 ## Usage
 
 ```
-/workflow:resume            # Find and resume the most recent halted workflow
+/omcustom:workflow:resume            # Find and resume the most recent halted workflow
 ```
 
 ## Behavior
