@@ -74,3 +74,30 @@ npm-version major
 # Update version without creating git tag
 npm-version patch --no-tag
 ```
+
+## Release Branch Integration
+
+When working with `auto-tag.yml` (automatic tag creation on release PR merge):
+
+1. `.npmrc` has `git-tag-version=false` — prevents local tag creation during `npm version`
+2. `auto-tag.yml` creates the tag on the **merge commit** when a `release/*` PR is merged to `develop`
+3. Do NOT manually push tags — let the CI workflow handle tag creation
+
+### Release Workflow
+
+```
+1. Create release branch: release/vX.Y.Z
+2. Run version bump (npm version / manual edit)  ← no local tag created
+3. Build dist, commit, push
+4. Create PR → merge to develop
+5. auto-tag.yml creates vX.Y.Z tag on merge commit  ← correct tag target
+6. release.yml triggers on tag → GitHub Release + npm publish
+```
+
+### Troubleshooting
+
+If a tag already exists on remote (from a previous failed attempt):
+```bash
+git push origin :refs/tags/vX.Y.Z   # delete remote tag
+# Then re-merge or let auto-tag.yml handle it
+```
