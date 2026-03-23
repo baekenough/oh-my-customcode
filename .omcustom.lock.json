@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.54.0",
-  "generatedAt": "2026-03-23T08:44:44.583Z",
-  "templateVersion": "0.54.0",
+  "generatorVersion": "0.55.0",
+  "generatedAt": "2026-03-23T09:02:20.483Z",
+  "templateVersion": "0.55.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -10,8 +10,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "2d2dc89e0565ad90071e196f517ea1a11e88d34be73a5f29b0a60e55abde0797",
-      "size": 2082,
+      "templateHash": "20314179ca96f1589120f5bc5820345a28bac9f97c189920ebcbfc27d3bb0d72",
+      "size": 2348,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
