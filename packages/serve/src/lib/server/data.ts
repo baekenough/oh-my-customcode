@@ -7,11 +7,6 @@ import { parseFrontmatter } from './frontmatter.js';
 // ---------------------------------------------------------------------------
 
 async function findProjectRoot(startDir: string): Promise<string> {
-	// Honor explicit env var first
-	if (process.env.OMX_PROJECT_ROOT) {
-		return process.env.OMX_PROJECT_ROOT;
-	}
-
 	let dir = startDir;
 	for (let i = 0; i < 20; i++) {
 		try {
@@ -28,12 +23,18 @@ async function findProjectRoot(startDir: string): Promise<string> {
 	return startDir;
 }
 
-let _root: string | null = null;
+let _rootPromise: Promise<string> | null = null;
 
 export async function getProjectRoot(): Promise<string> {
-	if (_root) return _root;
-	_root = await findProjectRoot(process.cwd());
-	return _root;
+	// Always honor env var (may change between server restarts via child_process)
+	if (process.env.OMX_PROJECT_ROOT) {
+		return process.env.OMX_PROJECT_ROOT;
+	}
+	// Cache the filesystem traversal result for the process lifetime
+	if (!_rootPromise) {
+		_rootPromise = findProjectRoot(process.cwd());
+	}
+	return _rootPromise;
 }
 
 // ---------------------------------------------------------------------------

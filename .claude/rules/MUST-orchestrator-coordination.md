@@ -28,6 +28,12 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ║     YES → Delegate to the appropriate specialist instead.        ║
 ║     NO  → Good. Continue.                                        ║
 ║                                                                   ║
+║  4. Am I justifying direct modification as "temporary" or        ║
+║     "debugging"?                                                  ║
+║     YES → Still delegate. Temporary/debugging changes are        ║
+║           NOT exempt.                                            ║
+║     NO  → Good. Continue.                                        ║
+║                                                                   ║
 ║  If any answer points to a problem → resolve before proceeding   ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
@@ -110,6 +116,14 @@ Main Conversation (orchestrator)
    Agent(mgr-gitnerd, prompt="revert the last commit")
    Agent(appropriate-expert, prompt="edit the file to fix the issue")
    Agent(mgr-gitnerd, prompt="commit the fix")
+
+❌ WRONG: Orchestrator runs server deployment commands directly
+   Main conversation → Bash("docker compose restart worker")
+   Main conversation → Bash("scp worker.py server:/app/")
+
+✓ CORRECT: Orchestrator delegates to infrastructure specialist
+   Main conversation → Agent(infra-docker-expert) → docker compose restart
+   Main conversation → Agent(infra-docker-expert) → deploy files to server
 ```
 
 ## Autonomous Execution Mode
@@ -206,6 +220,8 @@ After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. N
 | Test strategy | qa-planner |
 | CI/CD, GitHub config | mgr-gitnerd |
 | Docker/Infra | infra-docker-expert |
+| Server deployment (docker, scp) | infra-docker-expert |
+| Server state changes (restart, env) | infra-docker-expert |
 | AWS | infra-aws-expert |
 | Database schema | db-supabase-expert |
 | Unmatched specialized task | mgr-creator → dynamic agent creation |
