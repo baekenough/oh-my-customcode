@@ -36,6 +36,8 @@ export interface UpdateCommandOptions {
   hooks?: boolean;
   /** Update only contexts */
   contexts?: boolean;
+  /** Sync frontmatter name: field from upstream in unmodified files */
+  hard?: boolean;
   /** Batch update all outdated projects found by project discovery */
   all?: boolean;
 }
@@ -87,6 +89,7 @@ async function updateSingleProject(
     forceOverwriteAll: options.forceOverwriteAll,
     dryRun: options.dryRun,
     backup: options.backup,
+    hard: options.hard,
   };
 
   const result = await update(updateOptions);
@@ -146,6 +149,7 @@ async function updateAllProjects(options: UpdateCommandOptions): Promise<void> {
         forceOverwriteAll: options.forceOverwriteAll,
         dryRun: options.dryRun,
         backup: options.backup,
+        hard: options.hard,
       };
 
       const result = await update(updateOptions);
@@ -275,6 +279,16 @@ function printUpdateResults(result: UpdateResult): void {
     console.log(
       i18n.t('cli.update.preservedFiles', { count: String(result.preservedFiles.length) })
     );
+  }
+
+  // Show namespace synced files
+  if ((result.namespaceSynced?.length ?? 0) > 0) {
+    console.log(
+      i18n.t('cli.update.namespaceSynced', { count: String(result.namespaceSynced.length) })
+    );
+    for (const file of result.namespaceSynced) {
+      console.log(`  ↻ ${file}`);
+    }
   }
 
   // Show backup path

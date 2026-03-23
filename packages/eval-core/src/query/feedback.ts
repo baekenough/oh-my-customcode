@@ -526,6 +526,61 @@ export async function filterCooldowns(
 }
 
 /**
+ * Update the status of an improvement action with state machine enforcement.
+ * Valid transitions: proposed→approved, approved→applied, approved→rejected
+ */
+export function updateImprovementActionStatus(
+  db: EvalDb,
+  id: number,
+  newStatus: 'approved' | 'applied' | 'rejected',
+  metadata?: { appliedAt?: string }
+): void {
+  const existing = db
+    .select()
+    .from(improvementActions)
+    .where(eq(improvementActions.id, id))
+    .get();
+  if (!existing) {
+    throw new Error(`ImprovementAction #${id} not found`);
+  }
+
+  // State machine enforcement
+  const validTransitions: Record<string, string[]> = {
+    proposed: ['approved'],
+    approved: ['applied', 'rejected'],
+  };
+
+  const allowed = validTransitions[existing.status] ?? [];
+  if (!allowed.includes(newStatus)) {
+    throw new Error(
+      `Invalid transition: ${existing.status} → ${newStatus}. Allowed: ${allowed.join(', ') || 'none'}`
+    );
+  }
+
+  const updateData: Record<string, unknown> = { status: newStatus };
+  if (newStatus === 'applied') {
+    updateData.appliedAt = metadata?.appliedAt ?? new Date().toISOString();
+  }
+
+  db.update(improvementActions).set(updateData).where(eq(improvementActions.id, id)).run();
+}
+
+/**
+ * Get improvement actions filtered by status.
+ * Defaults to 'proposed' status if no filter specified.
+ */
+export function getPendingImprovementActions(
+  db: EvalDb,
+  statusFilter: 'proposed' | 'approved' = 'proposed'
+): Array<typeof improvementActions.$inferSelect> {
+  return db
+    .select()
+    .from(improvementActions)
+    .where(eq(improvementActions.status, statusFilter))
+    .all();
+}
+
+/**
  * Saves improvement suggestions to the improvement_actions table.
  * Deduplicates by removing existing proposed actions for the same targets
  * before inserting, to prevent duplicates on repeated runs.

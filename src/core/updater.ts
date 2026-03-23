@@ -45,6 +45,8 @@ export interface UpdateOptions {
   dryRun?: boolean;
   /** Whether to backup before updating */
   backup?: boolean;
+  /** Sync frontmatter name: field from upstream in unmodified files */
+  hard?: boolean;
 }
 
 /**
@@ -83,6 +85,8 @@ export interface UpdateResult {
   syncedRootFiles: string[];
   /** Deprecated files that were removed */
   removedDeprecatedFiles: string[];
+  /** Files whose frontmatter name: was synced from upstream */
+  namespaceSynced: string[];
   /** Error message if failed */
   error?: string;
 }
@@ -164,6 +168,7 @@ function createUpdateResult(): UpdateResult {
     warnings: [],
     syncedRootFiles: [],
     removedDeprecatedFiles: [],
+    namespaceSynced: [],
   };
 }
 
@@ -214,6 +219,11 @@ async function processComponentUpdate(
     );
     result.updatedComponents.push(component);
     result.preservedFiles.push(...preserved);
+
+    if (options.hard) {
+      const synced = await applyNamespaceSync(targetDir, component, lockfile);
+      result.namespaceSynced.push(...synced);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.warnings.push(`Failed to update ${component}: ${message}`);
@@ -1052,6 +1062,134 @@ async function removeDeprecatedFiles(targetDir: string, options: UpdateOptions):
   }
 
   return removed;
+}
+
+/**
+ * Extract the `name:` field from YAML frontmatter.
+ * Returns null if no frontmatter or no name field found.
+ */
+export function extractFrontmatterName(content: string): string | null {
+  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return null;
+  const nameMatch = match[1].match(/^name:\s*(.+)$/m);
+  if (!nameMatch) return null;
+  return nameMatch[1].trim().replace(/^["']|["']$/g, '');
+}
+
+/**
+ * Sync the frontmatter name: field from upstream to target file.
+ * Only modifies the name: line, preserving all other content.
+ * Returns true if the file was modified.
+ */
+async function syncNamespaceInFile(
+  targetFilePath: string,
+  upstreamFilePath: string
+): Promise<boolean> {
+  const targetContent = await readTextFile(targetFilePath);
+  const upstreamContent = await readTextFile(upstreamFilePath);
+
+  const upstreamName = extractFrontmatterName(upstreamContent);
+  const targetName = extractFrontmatterName(targetContent);
+
+  if (!upstreamName || !targetName || upstreamName === targetName) return false;
+
+  // Replace only the name: line in frontmatter
+  // Escape $ in upstream name to prevent replace() special patterns ($1, $&, etc.)
+  const safeUpstreamName = upstreamName.replace(/\$/g, '$$$$');
+  const updated = targetContent.replace(/^(name:\s*).+$/m, `$1${safeUpstreamName}`);
+
+  if (updated === targetContent) return false;
+
+  await writeTextFile(targetFilePath, updated);
+  return true;
+}
+
+/**
+ * Process a single file entry during namespace sync walk.
+ * Returns the synced path string if the name was updated, null otherwise.
+ */
+async function processNamespaceSyncEntry(
+  entry: import('node:fs').Dirent,
+  relPath: string,
+  fullSrcPath: string,
+  destPath: string,
+  componentPath: string,
+  lockfile: Lockfile
+): Promise<string | null> {
+  if (!entry.isFile() || !entry.name.endsWith('.md')) return null;
+
+  const targetFilePath = join(destPath, relPath);
+  const lockfileKey = `${componentPath}/${relPath}`.replace(/\\/g, '/');
+
+  // Only sync unmodified files (hash matches lockfile → safe)
+  const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
+  if (shouldSkip) return null;
+
+  if (!(await fileExists(targetFilePath))) return null;
+
+  const didSync = await syncNamespaceInFile(targetFilePath, fullSrcPath);
+  return didSync ? `${componentPath}/${relPath}` : null;
+}
+
+/**
+ * Apply namespace synchronization to all unmodified files in a component.
+ * Uses lockfile hash comparison to identify unmodified files.
+ */
+async function applyNamespaceSync(
+  targetDir: string,
+  component: UpdateComponent,
+  lockfile: Lockfile | null
+): Promise<string[]> {
+  // Without a lockfile we cannot verify which files are unmodified — skip entirely
+  if (!lockfile) return [];
+
+  const componentPath = getComponentPath(component);
+  const srcPath = resolveTemplatePath(componentPath);
+  const destPath = join(targetDir, componentPath);
+
+  const fs = await import('node:fs/promises');
+  const synced: string[] = [];
+
+  // BFS walk of the source directory to find .md files with frontmatter
+  const queue: Array<{ dir: string; relDir: string }> = [{ dir: srcPath, relDir: '' }];
+
+  while (queue.length > 0) {
+    // biome-ignore lint/style/noNonNullAssertion: queue.length > 0 guarantees shift() returns a value
+    const { dir, relDir } = queue.shift()!;
+
+    let entries: import('node:fs').Dirent[];
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
+      const fullSrcPath = join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        queue.push({ dir: fullSrcPath, relDir: relPath });
+        continue;
+      }
+
+      const syncedPath = await processNamespaceSyncEntry(
+        entry,
+        relPath,
+        fullSrcPath,
+        destPath,
+        componentPath,
+        lockfile
+      );
+
+      if (syncedPath) {
+        synced.push(syncedPath);
+        info('update.namespace_synced', { file: relPath, component });
+      }
+    }
+  }
+
+  return synced;
 }
 
 /**
