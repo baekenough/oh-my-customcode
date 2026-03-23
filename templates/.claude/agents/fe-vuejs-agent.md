@@ -5,6 +5,8 @@ model: sonnet
 domain: frontend
 memory: project
 effort: medium
+skills:
+  - impeccable-design
 tools:
   - Read
   - Write
