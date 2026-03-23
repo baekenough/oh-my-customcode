@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.53.0",
-  "generatedAt": "2026-03-23T04:31:05.453Z",
-  "templateVersion": "0.53.0",
+  "generatorVersion": "0.53.1",
+  "generatedAt": "2026-03-23T06:26:28.205Z",
+  "templateVersion": "0.53.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -355,8 +355,8 @@
       "component": "skills"
     },
     ".claude/skills/npm-version/SKILL.md": {
-      "templateHash": "6af5203fc46c54c4e0f439e7b4419a33772ef6b9b98057f52e91b7897151c5c0",
-      "size": 1380,
+      "templateHash": "c10a782e186a508a5ec6bbf211d1050bdc908bbd32f4e1e4d9adf492c994e565",
+      "size": 2312,
       "component": "skills"
     },
     ".claude/skills/research/SKILL.md": {
@@ -720,8 +720,8 @@
       "component": "skills"
     },
     ".claude/skills/workflow/SKILL.md": {
-      "templateHash": "d16fd264b03e26c89497bba12aae5ae10bcea39e9cb3433be5b4b5e6ff49d44c",
-      "size": 1396,
+      "templateHash": "6753ccd2bf7abe2629d82a9fa7813a2406e238bf9f6d3749080fd51dcb3c8fc9",
+      "size": 1459,
       "component": "skills"
     },
     ".claude/skills/workflow-runner/SKILL.md": {
@@ -750,8 +750,8 @@
       "component": "skills"
     },
     ".claude/skills/workflow-resume/SKILL.md": {
-      "templateHash": "866bada1ca7d812ec05d72e3dbd047cbef04f71cb876fc6c36b1cfd2c20cb11d",
-      "size": 713,
+      "templateHash": "3b996d003a9255e56a43f7733001cfdd4faf3adeae52c06dae976bfd91a75556",
+      "size": 740,
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {

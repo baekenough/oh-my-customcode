@@ -1,0 +1,19 @@
+# Example: Documentation update workflow
+
+name: custom-docs
+description: "Documentation scan and update pipeline"
+mode: confirm
+error: halt-and-report
+
+steps:
+  - name: scan
+    skill: omcustom:update-docs
+    description: Scan project structure for documentation gaps
+
+  - name: review
+    skill: dev-review
+    description: Review generated documentation
+
+  - name: release
+    action: create-pr
+    description: Create PR with documentation updates

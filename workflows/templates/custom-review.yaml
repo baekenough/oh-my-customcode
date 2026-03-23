@@ -1,0 +1,37 @@
+# Example: Custom code review workflow
+# Copy to workflows/ directory and customize
+#
+# Available fields:
+#   name:        Workflow identifier (kebab-case: ^[a-z0-9-]+$)
+#   description: Human-readable description
+#   mode:        auto | confirm (auto = no confirmation, confirm = ask before each step)
+#   error:       halt-and-report (stop and save state on failure)
+#
+# Step fields:
+#   name:        Step identifier
+#   skill:       Skill name to invoke (must exist in .claude/skills/)
+#   action:      Built-in action: implement | create-pr
+#   description: Human-readable description
+#   input:       Reference to previous step output
+#   foreach:     Iterate over collection from previous step
+#
+# Note: Each step must have either 'skill' or 'action', not both.
+# Skill names are validated against .claude/skills/ directory.
+
+name: custom-review
+description: "Custom code review and fix pipeline"
+mode: confirm
+error: halt-and-report
+
+steps:
+  - name: review
+    skill: dev-review
+    description: Review code for best practices
+
+  - name: fix
+    action: implement
+    description: Fix review findings
+
+  - name: verify
+    skill: dev-review
+    description: Re-review to confirm fixes
