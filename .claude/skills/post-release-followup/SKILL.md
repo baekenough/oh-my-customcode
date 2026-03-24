@@ -10,7 +10,7 @@ effort: medium
 
 ## Purpose
 
-After PR creation in the omcustom-dev release workflow, collect unaddressed findings and present actionable follow-up recommendations. The user chooses: execute now, register as issues, or skip.
+After PR creation in the auto-dev release workflow, collect unaddressed findings and present actionable follow-up recommendations. The user chooses: execute now, register as issues, or skip.
 
 ## Workflow
 

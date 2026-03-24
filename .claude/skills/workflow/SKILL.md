@@ -1,6 +1,6 @@
 ---
 name: omcustom:workflow
-description: Invoke YAML-defined workflows by name — /omcustom:workflow omcustom-dev runs the full pipeline
+description: Invoke YAML-defined workflows by name — /omcustom:workflow auto-dev runs the full pipeline
 scope: harness
 user-invocable: true
 effort: high
@@ -12,7 +12,7 @@ argument-hint: "<workflow-name> | (no args to list available)"
 ## Usage
 
 ```
-/omcustom:workflow omcustom-dev     # Run the omcustom-dev workflow
+/omcustom:workflow auto-dev     # Run the auto-dev workflow
 /omcustom:workflow                  # List available workflows
 /omcustom:workflow:resume           # Resume a halted workflow
 ```
