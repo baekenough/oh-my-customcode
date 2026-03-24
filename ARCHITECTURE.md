@@ -88,7 +88,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (94 skills)
+### 3.3 Skill Catalog (95 skills)
 
 **Routing skills (4, context: fork)**
 
