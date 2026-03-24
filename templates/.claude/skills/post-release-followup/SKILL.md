@@ -34,14 +34,20 @@ Gather unfinished work from multiple sources:
 - Run: `git diff develop...HEAD --name-only` to get changed files
 - Search changed files for `TODO`, `FIXME`, `HACK` markers added in this release
 
+**Source E — PR review feedback**:
+- Run: `gh api repos/{owner}/{repo}/pulls/{pr_number}/comments` and `gh api repos/{owner}/{repo}/issues/{pr_number}/comments`
+- Parse omc_pr_analyzer bot comments (Senior Architect, Project Colleague, Professor Synthesis)
+- Extract findings categorized as Critical, High, Medium
+- Identify: required fixes, recommended improvements, structural concerns
+
 ### 2. Deduplicate and Categorize
 
 Remove duplicates (same issue referenced from multiple sources). Categorize:
 
 | Category | Criteria | Default Action |
 |----------|----------|----------------|
-| **Immediate** | P1/P2 remaining issues, MEDIUM+ verify findings | Execute now |
-| **Trackable** | P3 issues, LOW verify findings, new TODOs | Register as issue |
+| **Immediate** | P1/P2 remaining issues, MEDIUM+ verify findings, Critical/High PR review findings | Execute now |
+| **Trackable** | P3 issues, LOW verify findings, new TODOs, Medium PR review findings | Register as issue |
 | **Informational** | Already-tracked issues, cosmetic notes | Skip |
 
 ### 3. Present to User
@@ -125,3 +131,4 @@ Add priority label (`P1`, `P2`, `P3`) based on categorization.
 - All file modifications delegated to specialist subagents per R010
 - Issue creation uses `gh` CLI directly (read-only operation pattern)
 - If no follow-up candidates found, report "No follow-up actions needed" and complete
+- PR review feedback is available shortly after PR creation — the omc_pr_analyzer bot comments automatically
