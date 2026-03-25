@@ -1683,7 +1683,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.58.2",
+  version: "0.58.3",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -2409,7 +2409,7 @@ async function removeDeprecatedFiles(targetDir, options) {
   return removed;
 }
 function extractFrontmatterName(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match)
     return null;
   const nameMatch = match[1].match(/^name:\s*(.+)$/m);

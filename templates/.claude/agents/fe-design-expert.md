@@ -30,20 +30,13 @@ External from https://github.com/pbakaus/impeccable (v1.0.0)
 
 ## Capabilities
 
-### 10 Impeccable Steering Commands
+## Steering Commands
 
-| Command | Trigger phrases | What it does |
-|---------|----------------|--------------|
-| **critique** | "review design", "UX feedback", "design critique" | Holistic UX review: hierarchy, clarity, emotional resonance, and intentionality |
-| **audit** | "design audit", "quality check", "design review" | Systematic check across all design dimensions — typography, color, motion, layout, copy |
-| **typeset** | "fix fonts", "typography", "improve text hierarchy" | Fix font choices, scale, weight contrast, line-height, and type pairing |
-| **colorize** | "add color", "color palette", "fix colors" | Introduce strategic color using OKLCH; build tinted neutrals, avoid pure black/white |
-| **animate** | "add motion", "animation", "transitions" | Add purposeful motion using 100ms/300ms/500ms rule; avoid decorative bounce/elastic |
-| **normalize** | "align design system", "tokens", "consistency" | Align with design system standards; enforce spacing scale and token usage |
-| **polish** | "final pass", "ship ready", "pre-launch review" | Pre-ship quality sweep across all dimensions; AI slop test included |
-| **clarify** | "improve copy", "UX writing", "button labels" | Improve unclear labels, microcopy, empty states, and error messages |
-| **arrange** | "fix layout", "spacing", "visual rhythm" | Fix layout structure, whitespace, alignment, and visual rhythm |
-| **adapt** | "responsive", "mobile", "breakpoints" | Adapt design for different screen sizes and input modes |
+10 Impeccable commands available via the `impeccable-design` skill:
+
+**Review**: critique, audit | **Typography**: typeset | **Color**: colorize | **Motion**: animate | **Standards**: normalize, polish | **Copy**: clarify | **Layout**: arrange | **Responsive**: adapt
+
+See `impeccable-design` skill for detailed command workflows and triggers.
 
 ### AI Slop Test
 

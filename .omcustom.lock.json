@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.58.2",
-  "generatedAt": "2026-03-25T05:47:56.981Z",
-  "templateVersion": "0.58.2",
+  "generatorVersion": "0.58.3",
+  "generatedAt": "2026-03-25T08:02:46.959Z",
+  "templateVersion": "0.58.3",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -160,8 +160,8 @@
       "component": "agents"
     },
     ".claude/agents/fe-svelte-agent.md": {
-      "templateHash": "b5c1c7884a992f0ef9bd28f256d495beb76218d959da1196fd892dc89697dc27",
-      "size": 727,
+      "templateHash": "4708ef0bdfb1d12c20ca5a43fe4baca097539b546586f249db2b0e94b6b3d108",
+      "size": 753,
       "component": "agents"
     },
     ".claude/agents/lang-golang-expert.md": {
@@ -220,8 +220,8 @@
       "component": "agents"
     },
     ".claude/agents/fe-vuejs-agent.md": {
-      "templateHash": "1aef47c6b4fed09cd5206c6bd87091f455b966e496498f30f16bd97e407caf9a",
-      "size": 726,
+      "templateHash": "b1910121242d6c72fa7daab35fb65970c8cb1e6afc6c8d37d3c51bd7967c0f12",
+      "size": 752,
       "component": "agents"
     },
     ".claude/agents/tool-npm-expert.md": {
@@ -545,8 +545,8 @@
       "component": "skills"
     },
     ".claude/skills/release-plan/SKILL.md": {
-      "templateHash": "e4f440e31eeeae8b377e7a19aee427f3e05a33cc2a58d78b86de34be370ddcae",
-      "size": 7137,
+      "templateHash": "1570ccf1f4b39cf0a2fbbe7c972b9af9bb8b2a1a2042160cea511dba56b8f805",
+      "size": 7157,
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
@@ -965,8 +965,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/feedback-collector.sh": {
-      "templateHash": "41ed5f40bbfd8decabfe682de8ffdede72fe45200ddb94e70d1423582381096e",
-      "size": 2274,
+      "templateHash": "374f54cf66fde26eea6e54dc71fd3db54991a0c22410ca0b90f892aa24922640",
+      "size": 2842,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stop-console-audit.sh": {
@@ -995,8 +995,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/cost-cap-advisor.sh": {
-      "templateHash": "791f4f0d906b7be5d1dc1f501514a35f90b3a207478ae3d537c8ed8cebf01206",
-      "size": 2431,
+      "templateHash": "6dc04f0291fda7d2bfca05709b7a9a9b633369e90b43092f6248cb94f00e5da5",
+      "size": 2506,
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
