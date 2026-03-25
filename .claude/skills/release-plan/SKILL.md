@@ -81,7 +81,7 @@ Use title keywords as additional hints:
 - Epic references → group constraint
 
 **Epic handling**:
-- Epic issues (title starts with "epic:") with `verify-done` label:
+- Epic issues (title starts with "epic:" or has `epic` label) with `verify-done` label:
   - Do NOT include the epic itself in release bins
   - DO scan epic body for child issue references (#NNN)
   - Include any open child issues that have `verify-done` label

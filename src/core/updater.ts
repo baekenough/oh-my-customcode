@@ -1069,7 +1069,7 @@ async function removeDeprecatedFiles(targetDir: string, options: UpdateOptions):
  * Returns null if no frontmatter or no name field found.
  */
 export function extractFrontmatterName(content: string): string | null {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return null;
   const nameMatch = match[1].match(/^name:\s*(.+)$/m);
   if (!nameMatch) return null;
