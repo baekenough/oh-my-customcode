@@ -7,6 +7,7 @@ memory: project
 effort: medium
 skills:
   - impeccable-design
+  - web-design-guidelines
 tools:
   - Read
   - Write

@@ -19,6 +19,12 @@ OUTCOMES_FILE="/tmp/.claude-task-outcomes-${PPID}"
 DB_PATH="${HOME}/.config/oh-my-customcode/eval-core.sqlite"
 [ -f "$DB_PATH" ] || exit 0
 
+# Log file for error diagnostics
+LOG_FILE="/tmp/.claude-feedback-collector-${PPID}.log"
+
+# SQL injection safety: escape single quotes
+_sql_escape() { printf '%s' "${1//\'/\'\'}"; }
+
 # Count failures per agent type
 declare -A FAILURE_COUNTS
 declare -A TOTAL_COUNTS
@@ -62,7 +68,16 @@ for agent_type in "${!FAILURE_COUNTS[@]}"; do
   failure_rate=$(awk "BEGIN {printf \"%.2f\", $count/$total}")
   description="Agent '${agent_type}' failed ${count}/${total} times (${failure_rate} failure rate) in session"
 
-  sqlite3 "$DB_PATH" "INSERT INTO improvementActions (targetType, targetName, actionType, description, confidence, feedbackSource, status, createdAt) VALUES ('agent', '${agent_type}', '${action_type}', '${description}', '${confidence}', 'outcome_derived', 'proposed', '${TIMESTAMP}');" 2>/dev/null || true
+  escaped_agent_type=$(_sql_escape "$agent_type")
+  escaped_action_type=$(_sql_escape "$action_type")
+  escaped_description=$(_sql_escape "$description")
+  escaped_confidence=$(_sql_escape "$confidence")
+  escaped_timestamp=$(_sql_escape "$TIMESTAMP")
+
+  sqlite3 "$DB_PATH" "INSERT INTO improvement_actions (target_type, target_name, action_type, description, confidence, feedback_source, status, created_at) VALUES ('agent', '${escaped_agent_type}', '${escaped_action_type}', '${escaped_description}', '${escaped_confidence}', 'outcome_derived', 'proposed', '${escaped_timestamp}');" \
+  2>>"$LOG_FILE" || {
+    echo "[feedback-collector] INSERT failed for ${agent_type}" >> "$LOG_FILE"
+  }
 
   INSERTED=$((INSERTED + 1))
 done
