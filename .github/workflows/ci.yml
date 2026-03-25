@@ -240,3 +240,65 @@ jobs:
           fi
 
           echo "Template sync verified: $src_skills skills, $src_hooks hooks, $src_hook_entries hook matchers, skill scripts OK"
+
+      # Agents count sync
+      - name: Verify agents sync
+        run: |
+          SRC_COUNT=$(ls .claude/agents/*.md 2>/dev/null | wc -l | tr -d ' ')
+          TPL_COUNT=$(ls templates/.claude/agents/*.md 2>/dev/null | wc -l | tr -d ' ')
+          echo "Source agents: $SRC_COUNT, Template agents: $TPL_COUNT"
+          if [ "$SRC_COUNT" != "$TPL_COUNT" ]; then
+            echo "::error::Agent count mismatch: source=$SRC_COUNT template=$TPL_COUNT"
+            exit 1
+          fi
+
+      # Rules count sync
+      - name: Verify rules sync
+        run: |
+          SRC_COUNT=$(ls .claude/rules/*.md 2>/dev/null | wc -l | tr -d ' ')
+          TPL_COUNT=$(ls templates/.claude/rules/*.md 2>/dev/null | wc -l | tr -d ' ')
+          echo "Source rules: $SRC_COUNT, Template rules: $TPL_COUNT"
+          if [ "$SRC_COUNT" != "$TPL_COUNT" ]; then
+            echo "::error::Rules count mismatch: source=$SRC_COUNT template=$TPL_COUNT"
+            exit 1
+          fi
+
+      # Guides count sync
+      - name: Verify guides sync
+        run: |
+          SRC_COUNT=$(find guides -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+          TPL_COUNT=$(find templates/guides -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+          echo "Source guides: $SRC_COUNT, Template guides: $TPL_COUNT"
+          if [ "$SRC_COUNT" != "$TPL_COUNT" ]; then
+            echo "::error::Guides count mismatch: source=$SRC_COUNT template=$TPL_COUNT"
+            exit 1
+          fi
+
+      # CLAUDE.md count validation
+      - name: Verify CLAUDE.md counts
+        run: |
+          ACTUAL_AGENTS=$(ls .claude/agents/*.md | wc -l | tr -d ' ')
+          ACTUAL_SKILLS=$(find .claude/skills -name 'SKILL.md' | wc -l | tr -d ' ')
+          ACTUAL_RULES=$(ls .claude/rules/*.md | wc -l | tr -d ' ')
+          ACTUAL_GUIDES=$(find guides -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+
+          # Check CLAUDE.md agent count
+          DOC_AGENTS=$(grep -oP '에이전트 정의 \(\K[0-9]+' CLAUDE.md || grep -oP 'agents.*\((\K[0-9]+)' CLAUDE.md || echo "0")
+          DOC_SKILLS=$(grep -oP '스킬 \(\K[0-9]+' CLAUDE.md || grep -oP 'skills.*\((\K[0-9]+)' CLAUDE.md || echo "0")
+
+          echo "Actual: agents=$ACTUAL_AGENTS skills=$ACTUAL_SKILLS rules=$ACTUAL_RULES guides=$ACTUAL_GUIDES"
+          echo "CLAUDE.md: agents=$DOC_AGENTS skills=$DOC_SKILLS"
+
+          ERRORS=0
+          if [ "$ACTUAL_AGENTS" != "$DOC_AGENTS" ] && [ "$DOC_AGENTS" != "0" ]; then
+            echo "::warning::CLAUDE.md agent count ($DOC_AGENTS) != actual ($ACTUAL_AGENTS)"
+            ERRORS=$((ERRORS + 1))
+          fi
+          if [ "$ACTUAL_SKILLS" != "$DOC_SKILLS" ] && [ "$DOC_SKILLS" != "0" ]; then
+            echo "::warning::CLAUDE.md skill count ($DOC_SKILLS) != actual ($ACTUAL_SKILLS)"
+            ERRORS=$((ERRORS + 1))
+          fi
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "::error::CLAUDE.md count mismatches found"
+            exit 1
+          fi

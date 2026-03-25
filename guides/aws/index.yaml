@@ -1,0 +1,26 @@
+# AWS Guide
+
+metadata:
+  name: aws
+  description: AWS cloud reference documentation
+
+source:
+  type: external
+  origin: aws.amazon.com
+  urls:
+    - https://docs.aws.amazon.com/wellarchitected/latest/framework/welcome.html
+    - https://docs.aws.amazon.com/
+    - https://aws.amazon.com/architecture/
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: well-architected
+    path: ./well-architected.md
+    description: AWS Well-Architected Framework summary
+
+  - name: common-patterns
+    path: ./common-patterns.md
+    description: Common AWS architecture patterns
+
+used_by:
+  - infra-aws-expert

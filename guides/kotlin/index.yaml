@@ -1,0 +1,26 @@
+# Kotlin Guide
+
+metadata:
+  name: kotlin
+  description: Kotlin language reference documentation
+
+source:
+  type: external
+  origin: kotlinlang.org
+  urls:
+    - https://kotlinlang.org/docs/coding-conventions.html
+    - https://kotlinlang.org/docs/idioms.html
+    - https://developer.android.com/kotlin/style-guide
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: coding-conventions
+    path: ./coding-conventions.md
+    description: Official Kotlin coding conventions
+
+  - name: idioms
+    path: ./idioms.md
+    description: Idiomatic Kotlin patterns
+
+used_by:
+  - lang-kotlin-expert

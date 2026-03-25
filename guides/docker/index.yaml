@@ -1,0 +1,26 @@
+# Docker Guide
+
+metadata:
+  name: docker
+  description: Docker containerization reference documentation
+
+source:
+  type: external
+  origin: docker.com
+  urls:
+    - https://docs.docker.com/
+    - https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
+    - https://docs.docker.com/compose/compose-file/best-practices/
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: dockerfile-best-practices
+    path: ./dockerfile-best-practices.md
+    description: Dockerfile best practices
+
+  - name: compose-best-practices
+    path: ./compose-best-practices.md
+    description: Docker Compose best practices
+
+used_by:
+  - infra-docker-expert

@@ -1,0 +1,19 @@
+# Supabase Postgres Guide
+
+metadata:
+  name: supabase-postgres
+  description: Supabase and PostgreSQL best practices reference
+
+source:
+  type: external
+  origin: github
+  url: https://github.com/supabase/agent-skills
+  last_fetched: "2026-02-03"
+
+documents:
+  - name: best-practices
+    path: ./README.md
+    description: Supabase PostgreSQL best practices overview
+
+used_by:
+  - db-supabase-expert
