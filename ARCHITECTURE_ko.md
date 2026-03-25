@@ -1,12 +1,12 @@
 # 아키텍처
 
-> oh-my-customcode v0.53.1
+> oh-my-customcode v0.58.4
 
 ## 1. 시스템 개요
 
-oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 45개의 사전 구축된 서브에이전트, 92개의 스킬, 21개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
+oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 46개의 사전 구축된 서브에이전트, 95개의 스킬, 21개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
 
-현재 버전: **0.53.1** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
+현재 버전: **0.58.4** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
 
 ### 1.1 컴파일레이션 메타포
 
@@ -64,7 +64,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 |----------|------|----------|
 | SW Engineer / 언어 | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | SW Engineer / 백엔드 | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
-| SW Engineer / 프론트엔드 | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
+| SW Engineer / 프론트엔드 | 5 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
 | SW Engineer / 툴링 | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | 데이터 엔지니어링 | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | 데이터베이스 | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
@@ -74,9 +74,9 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | 시스템 | 2 | sys-memory-keeper, sys-naggy |
-| **합계** | **45** | |
+| **합계** | **46** | |
 
-### 3.3 스킬 카탈로그 (92개)
+### 3.3 스킬 카탈로그 (95개)
 
 **라우팅 스킬 (4개, context: fork)**
 
@@ -530,6 +530,15 @@ Claude Code v2.1.72 ~ v2.1.81+ 테스트 및 호환 확인.
 
 | 버전 | 주요 변경 사항 |
 |------|--------------|
+| v0.58.4 | 문서 v0.58.4 동기화 |
+| v0.58.3 | feedback-collector 수정, cost-cap-advisor TSV, updater.ts CRLF |
+| v0.58.2 | RL/WL 리뉴얼 카운트다운 statusline 표시 |
+| v0.58.1 | post-release-followup 스킬, auto-dev 워크플로우 7단계 |
+| v0.58.0 | Impeccable AI 디자인 언어 (fe-design-expert, 가이드 4개) |
+| v0.57.0 | `omcustom update --hard`, `/omcustom:auto-improve`, Epic #535 완결 |
+| v0.56.0 | PostCompact R000 enforcement, workflow --list |
+| v0.55.0 | Statusline WL 세그먼트, eraser 워크플로우 |
+| v0.54.0 | ARCHITECTURE.md 전면 동기화, Eraser 다이어그램 |
 | v0.53.1 | 자동 태깅 수정 (.npmrc git-tag-version=false); /omcustom:workflow 이름 변경; 커스텀 워크플로우 템플릿 |
 | v0.53.0 | 대시보드 All Projects 제거; 프로젝트 상세 페이지; eval-core DB 연결; 사용자 피드백 통합 (#562) |
 | v0.52.0 | feedback-collector 훅; 라우팅 미스 분석; /omcustom:improve-report; R018 스코프 제약 |

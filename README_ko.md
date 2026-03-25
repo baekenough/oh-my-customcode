@@ -15,7 +15,7 @@
 
 46개 에이전트. 95개 스킬. 21개 규칙. 명령어 하나.
 
-> **v0.46.0** — Rate Limit 모니터링, Skill Effort Override, 멀티프로젝트 Web UI, 일괄 업데이트, SDD 워크플로우, Ambiguity Gate
+> **v0.58.4** — Impeccable AI 디자인 언어, post-release-followup 워크플로우, feedback-collector 수정, cost-cap-advisor TSV, 문서 동기화
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
