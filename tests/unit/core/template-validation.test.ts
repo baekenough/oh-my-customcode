@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { readdir, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 const TEMPLATES_DIR = resolve(import.meta.dir, '../../../templates');
@@ -224,7 +224,7 @@ describe('Template Validation', () => {
       const rulesComponent = manifest.components.find((c) => c.name === 'rules');
       expect(rulesComponent).toBeDefined();
 
-      const actualCount = await countActualFiles(rulesComponent?.path, 'rules');
+      const actualCount = await countActualFiles(rulesComponent?.path ?? '', 'rules');
       expect(actualCount).toBe(rulesComponent?.files);
     });
 
@@ -236,7 +236,7 @@ describe('Template Validation', () => {
       const agentsComponent = manifest.components.find((c) => c.name === 'agents');
       expect(agentsComponent).toBeDefined();
 
-      const actualCount = await countActualFiles(agentsComponent?.path, 'agents');
+      const actualCount = await countActualFiles(agentsComponent?.path ?? '', 'agents');
       expect(actualCount).toBe(agentsComponent?.files);
     });
 
@@ -248,7 +248,7 @@ describe('Template Validation', () => {
       const skillsComponent = manifest.components.find((c) => c.name === 'skills');
       expect(skillsComponent).toBeDefined();
 
-      const actualCount = await countActualFiles(skillsComponent?.path, 'skills');
+      const actualCount = await countActualFiles(skillsComponent?.path ?? '', 'skills');
       expect(actualCount).toBe(skillsComponent?.files);
     });
 
@@ -260,7 +260,7 @@ describe('Template Validation', () => {
       const guidesComponent = manifest.components.find((c) => c.name === 'guides');
       expect(guidesComponent).toBeDefined();
 
-      const actualCount = await countActualFiles(guidesComponent?.path, 'guides');
+      const actualCount = await countActualFiles(guidesComponent?.path ?? '', 'guides');
       expect(actualCount).toBe(guidesComponent?.files);
     });
 
@@ -272,7 +272,7 @@ describe('Template Validation', () => {
       const hooksComponent = manifest.components.find((c) => c.name === 'hooks');
       expect(hooksComponent).toBeDefined();
 
-      const actualCount = await countActualFiles(hooksComponent?.path, 'hooks');
+      const actualCount = await countActualFiles(hooksComponent?.path ?? '', 'hooks');
       expect(actualCount).toBe(hooksComponent?.files);
     });
 
@@ -284,7 +284,7 @@ describe('Template Validation', () => {
       const contextsComponent = manifest.components.find((c) => c.name === 'contexts');
       expect(contextsComponent).toBeDefined();
 
-      const actualCount = await countActualFiles(contextsComponent?.path, 'contexts');
+      const actualCount = await countActualFiles(contextsComponent?.path ?? '', 'contexts');
       expect(actualCount).toBe(contextsComponent?.files);
     });
 
@@ -451,7 +451,7 @@ describe('Template Validation', () => {
       const agentsHeaderMatch = readmeContent.match(/###\s+Agents\s+\((\d+)\)/);
       expect(agentsHeaderMatch).not.toBeNull();
 
-      const readmeAgentCount = parseInt(agentsHeaderMatch?.[1], 10);
+      const readmeAgentCount = parseInt(agentsHeaderMatch?.[1] ?? '0', 10);
 
       const agentsDir = join(TEMPLATES_DIR, '.claude/agents');
       const agentFiles = (await readdir(agentsDir, { withFileTypes: true })).filter(
@@ -469,7 +469,7 @@ describe('Template Validation', () => {
       const skillsHeaderMatch = readmeContent.match(/###\s+Skills\s+\((\d+)\)/);
       expect(skillsHeaderMatch).not.toBeNull();
 
-      const readmeSkillCount = parseInt(skillsHeaderMatch?.[1], 10);
+      const readmeSkillCount = parseInt(skillsHeaderMatch?.[1] ?? '0', 10);
 
       const skillsDir = join(TEMPLATES_DIR, '.claude/skills');
       const skillDirs = (await readdir(skillsDir, { withFileTypes: true })).filter((e) =>
@@ -487,7 +487,7 @@ describe('Template Validation', () => {
       const rulesHeaderMatch = readmeContent.match(/###\s+Rules\s+\((\d+)\)/);
       expect(rulesHeaderMatch).not.toBeNull();
 
-      const readmeRulesCount = parseInt(rulesHeaderMatch?.[1], 10);
+      const readmeRulesCount = parseInt(rulesHeaderMatch?.[1] ?? '0', 10);
 
       const rulesDir = join(TEMPLATES_DIR, '.claude/rules');
       const rulesFiles = (await readdir(rulesDir, { withFileTypes: true })).filter(
@@ -505,7 +505,7 @@ describe('Template Validation', () => {
       const guidesHeaderMatch = readmeContent.match(/###\s+Guides\s+\((\d+)\)/);
       expect(guidesHeaderMatch).not.toBeNull();
 
-      const readmeGuidesCount = parseInt(guidesHeaderMatch?.[1], 10);
+      const readmeGuidesCount = parseInt(guidesHeaderMatch?.[1] ?? '0', 10);
 
       const guidesDir = join(TEMPLATES_DIR, 'guides');
       const guidesDirs = (await readdir(guidesDir, { withFileTypes: true })).filter((e) =>
@@ -513,6 +513,166 @@ describe('Template Validation', () => {
       );
 
       expect(guidesDirs.length).toBe(readmeGuidesCount);
+    });
+  });
+
+  describe('CLAUDE.md count validation', () => {
+    const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
+
+    it('agent count in CLAUDE.md matches actual files', async () => {
+      const claudeMd = await readFile(join(PROJECT_ROOT, 'CLAUDE.md'), 'utf-8');
+      const agentFiles = (
+        await readdir(join(PROJECT_ROOT, '.claude', 'agents'), { withFileTypes: true })
+      )
+        .filter((e) => e.isFile() && e.name.endsWith('.md'))
+        .map((e) => e.name);
+
+      // CLAUDE.md contains "에이전트 정의 (N 파일)" pattern
+      const match = claudeMd.match(/에이전트 정의 \((\d+) 파일\)/);
+      if (match) {
+        expect(parseInt(match[1], 10)).toBe(agentFiles.length);
+      }
+    });
+
+    it('skill count in CLAUDE.md matches actual directories', async () => {
+      const claudeMd = await readFile(join(PROJECT_ROOT, 'CLAUDE.md'), 'utf-8');
+
+      // Count SKILL.md files recursively under .claude/skills
+      async function countSkillMdFiles(dir: string): Promise<number> {
+        const entries = await readdir(dir, { withFileTypes: true });
+        let count = 0;
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            count += await countSkillMdFiles(join(dir, entry.name));
+          } else if (entry.isFile() && entry.name === 'SKILL.md') {
+            count++;
+          }
+        }
+        return count;
+      }
+
+      const skillCount = await countSkillMdFiles(join(PROJECT_ROOT, '.claude', 'skills'));
+
+      const match = claudeMd.match(/스킬 \((\d+) 디렉토리\)/);
+      if (match) {
+        expect(parseInt(match[1], 10)).toBe(skillCount);
+      }
+    });
+
+    it('rule count in CLAUDE.md reflects actual rule files', async () => {
+      const ruleFiles = (
+        await readdir(join(PROJECT_ROOT, '.claude', 'rules'), { withFileTypes: true })
+      ).filter((e) => e.isFile() && e.name.endsWith('.md'));
+
+      expect(ruleFiles.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('routing-agent existence validation', () => {
+    const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
+
+    async function fileExists(filePath: string): Promise<boolean> {
+      try {
+        await access(filePath);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    it('all agents referenced in dev-lead-routing exist', async () => {
+      const routingPath = join(PROJECT_ROOT, '.claude', 'skills', 'dev-lead-routing', 'SKILL.md');
+      if (!(await fileExists(routingPath))) return;
+
+      const routing = await readFile(routingPath, 'utf-8');
+      const agentRefs = routing.match(/(?:lang|be|fe|tool)-[\w-]+/g) ?? [];
+      const uniqueAgents = [...new Set(agentRefs)];
+
+      const errors: string[] = [];
+      for (const agent of uniqueAgents) {
+        const agentPath = join(PROJECT_ROOT, '.claude', 'agents', `${agent}.md`);
+        if (!(await fileExists(agentPath))) {
+          errors.push(`${agent}.md not found`);
+        }
+      }
+
+      expect(errors).toEqual([]);
+    });
+
+    it('all agents referenced in secretary-routing exist', async () => {
+      const routingPath = join(PROJECT_ROOT, '.claude', 'skills', 'secretary-routing', 'SKILL.md');
+      if (!(await fileExists(routingPath))) return;
+
+      const routing = await readFile(routingPath, 'utf-8');
+      const agentRefs = routing.match(/(?:mgr|sys)-[\w-]+/g) ?? [];
+      const uniqueAgents = [...new Set(agentRefs)];
+
+      const errors: string[] = [];
+      for (const agent of uniqueAgents) {
+        const agentPath = join(PROJECT_ROOT, '.claude', 'agents', `${agent}.md`);
+        if (!(await fileExists(agentPath))) {
+          errors.push(`${agent}.md not found`);
+        }
+      }
+
+      expect(errors).toEqual([]);
+    });
+  });
+
+  describe('agent frontmatter skills validation', () => {
+    const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
+
+    async function fileExists(filePath: string): Promise<boolean> {
+      try {
+        await access(filePath);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    async function extractSkillsFromAgent(content: string): Promise<string[]> {
+      const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+      if (!frontmatterMatch) return [];
+
+      const skillsMatch = frontmatterMatch[1].match(/^skills:\s*\n((?:[ \t]+-[ \t]+.+\n?)*)/m);
+      if (!skillsMatch) return [];
+
+      const skillLines = skillsMatch[1].match(/- (.+)/g) ?? [];
+      return skillLines.map((s: string) => s.replace(/^-\s+/, '').trim());
+    }
+
+    async function checkAgentSkillRefs(
+      file: string,
+      agentsDir: string,
+      skillsBaseDir: string,
+      errors: string[]
+    ): Promise<void> {
+      const content = await readFile(join(agentsDir, file), 'utf-8');
+      const skills = await extractSkillsFromAgent(content);
+
+      for (const skill of skills) {
+        const skillPath = join(skillsBaseDir, skill, 'SKILL.md');
+        if (!(await fileExists(skillPath))) {
+          errors.push(`${file}: skill reference '${skill}' not found`);
+        }
+      }
+    }
+
+    it('all skill references in agent frontmatter exist', async () => {
+      const agentsDir = join(PROJECT_ROOT, '.claude', 'agents');
+      const skillsBaseDir = join(PROJECT_ROOT, '.claude', 'skills');
+      const agentFiles = (await readdir(agentsDir, { withFileTypes: true }))
+        .filter((e) => e.isFile() && e.name.endsWith('.md'))
+        .map((e) => e.name);
+
+      const errors: string[] = [];
+
+      for (const file of agentFiles) {
+        await checkAgentSkillRefs(file, agentsDir, skillsBaseDir, errors);
+      }
+
+      expect(errors).toEqual([]);
     });
   });
 });
