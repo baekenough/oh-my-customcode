@@ -19,8 +19,8 @@ if [ ! -f "$COST_FILE" ]; then
   exit 0
 fi
 
-# Read cost data (TSV: cost_usd, ctx_pct, timestamp)
-IFS=$'\t' read -r cost_usd ctx_pct timestamp < "$COST_FILE" 2>/dev/null || {
+# TSV: cost_usd, ctx_pct, timestamp, rl_5h_pct, rl_7d_pct, rl_5h_resets, rl_7d_resets
+IFS=$'\t' read -r cost_usd ctx_pct timestamp _rl_5h _rl_7d _rl_5h_resets _rl_7d_resets < "$COST_FILE" 2>/dev/null || {
   echo "$input"
   exit 0
 }

@@ -80,6 +80,13 @@ Use title keywords as additional hints:
 - `Part of #NNN` or `Depends on #NNN` → sequential constraint
 - Epic references → group constraint
 
+**Epic handling**:
+- Epic issues (title starts with "epic:" or has `epic` label) with `verify-done` label:
+  - Do NOT include the epic itself in release bins
+  - DO scan epic body for child issue references (#NNN)
+  - Include any open child issues that have `verify-done` label
+  - If all child issues are closed, recommend closing the epic
+
 ### Phase 4: Group into Release Units
 
 Apply these grouping rules:
@@ -91,7 +98,7 @@ Apply these grouping rules:
 3. **Sequential dependencies stay ordered** — if #A depends on #B, they go in the same release or #B's release precedes #A's
 4. **Independent issues may be batched** — up to the size cap
 5. **Minimum 1 issue per release** — never create empty releases
-6. **L-sized issues occupy their own release bin** — an L-sized issue that exceeds the M cap is not split; document as a large release with a scope note
+6. **L-sized issues occupy their own release bin** — an L-sized issue that exceeds the M cap is not split; document as a large release with a scope note. **L-sized issues MUST NOT be deferred to "next session" or "future release" — they are planned in the current run as a standalone release unit.**
 
 Grouping algorithm:
 1. Sort all issues: P1 → P2 → P3, then by size (L first, then M, S, XS)
@@ -140,6 +147,16 @@ For each release group, produce:
 ### Notes
 - {any dependency constraints, breaking changes, or risks}
 ```
+
+### Completeness Check
+
+Before generating the plan document, verify:
+- Every verify-done issue is assigned to a release bin (none dropped)
+- Epic child issues with verify-done are included
+- Issue count in plan == issue count from Phase 1 collection (minus epics themselves)
+- No issue is deferred without explicit user approval
+
+If any issue is missing from release bins, halt and report the discrepancy.
 
 **Agent suggestion heuristic**:
 | Issue domain | Suggested agent |
