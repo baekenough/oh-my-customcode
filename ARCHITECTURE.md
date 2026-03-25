@@ -1,14 +1,14 @@
 # Architecture
 
-> oh-my-customcode v0.53.1
+> oh-my-customcode v0.58.4
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 46 pre-built subagents, 94 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 46 pre-built subagents, 95 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.53.1** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Current version: **0.58.4** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
@@ -74,7 +74,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 |----------|-------|--------|
 | SW Engineer / Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | SW Engineer / Backend | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
-| SW Engineer / Frontend | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
+| SW Engineer / Frontend | 5 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
 | SW Engineer / Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
 | Data Engineering | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
@@ -605,6 +605,15 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 | Version | Key Changes |
 |---------|-------------|
+| v0.58.4 | Documentation sync to v0.58.4 |
+| v0.58.3 | feedback-collector fix, cost-cap-advisor TSV, updater.ts CRLF |
+| v0.58.2 | RL/WL renewal countdown in statusline |
+| v0.58.1 | post-release-followup skill, auto-dev workflow 7th step |
+| v0.58.0 | Impeccable AI design language (fe-design-expert, 4 guides) |
+| v0.57.0 | `omcustom update --hard`, `/omcustom:auto-improve`, Epic #535 completion |
+| v0.56.0 | PostCompact R000 enforcement, workflow --list |
+| v0.55.0 | Statusline WL segment, eraser workflow |
+| v0.54.0 | ARCHITECTURE.md full synchronization, Eraser diagrams |
 | v0.53.1 | Auto-tagging fix (.npmrc git-tag-version=false); /omcustom:workflow rename; custom workflow templates |
 | v0.53.0 | Dashboard All Projects removal; project detail view; eval-core DB connection for evaluations; user feedback integration (#562) |
 | v0.52.0 | Feedback collector hook; routing miss analysis; /omcustom:improve-report; R018 scope constraint |
