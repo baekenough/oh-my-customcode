@@ -1,0 +1,21 @@
+# FastAPI Guide
+
+metadata:
+  name: fastapi
+  description: FastAPI framework reference documentation
+
+source:
+  type: external
+  origin: fastapi.tiangolo.com
+  urls:
+    - https://fastapi.tiangolo.com/
+    - https://github.com/zhanymkanov/fastapi-best-practices
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: best-practices
+    path: ./best-practices.md
+    description: FastAPI best practices and patterns
+
+used_by:
+  - be-fastapi-expert

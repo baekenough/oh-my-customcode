@@ -1,0 +1,27 @@
+# Golang Guide
+
+metadata:
+  name: golang
+  description: Go language reference documentation
+
+source:
+  type: external
+  origin: go.dev
+  url: https://go.dev/doc/effective_go
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: effective-go
+    path: ./effective-go.md
+    description: Effective Go - official best practices guide
+
+  - name: concurrency
+    path: ./concurrency.md
+    description: Concurrency patterns and practices
+
+  - name: error-handling
+    path: ./error-handling.md
+    description: Error handling patterns
+
+used_by:
+  - lang-golang-expert

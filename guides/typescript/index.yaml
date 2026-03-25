@@ -1,0 +1,26 @@
+# TypeScript Guide
+
+metadata:
+  name: typescript
+  description: TypeScript language reference documentation
+
+source:
+  type: external
+  origin: typescriptlang.org
+  urls:
+    - https://www.typescriptlang.org/docs/handbook/
+    - https://google.github.io/styleguide/tsguide.html
+    - https://basarat.gitbook.io/typescript/
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: type-system
+    path: ./type-system.md
+    description: TypeScript type system fundamentals
+
+  - name: advanced-types
+    path: ./advanced-types.md
+    description: Advanced TypeScript type patterns
+
+used_by:
+  - lang-typescript-expert

@@ -1,0 +1,26 @@
+# Python Guide
+
+metadata:
+  name: python
+  description: Python language reference documentation
+
+source:
+  type: external
+  origin: python.org
+  urls:
+    - https://peps.python.org/pep-0008/
+    - https://peps.python.org/pep-0020/
+    - https://google.github.io/styleguide/pyguide.html
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: pep8-style-guide
+    path: ./pep8-style-guide.md
+    description: PEP 8 - Official Python Style Guide
+
+  - name: zen-of-python
+    path: ./zen-of-python.md
+    description: PEP 20 - The Zen of Python
+
+used_by:
+  - lang-python-expert
