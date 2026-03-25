@@ -1,0 +1,26 @@
+# Rust Guide
+
+metadata:
+  name: rust
+  description: Rust language reference documentation
+
+source:
+  type: external
+  origin: rust-lang.org
+  urls:
+    - https://doc.rust-lang.org/book/
+    - https://rust-lang.github.io/api-guidelines/
+    - https://doc.rust-lang.org/nightly/style-guide/
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: ownership
+    path: ./ownership.md
+    description: Ownership, borrowing, and lifetimes
+
+  - name: error-handling
+    path: ./error-handling.md
+    description: Error handling patterns in Rust
+
+used_by:
+  - lang-rust-expert

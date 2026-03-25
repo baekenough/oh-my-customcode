@@ -1,0 +1,22 @@
+# Spring Boot Guide
+
+metadata:
+  name: springboot
+  description: Spring Boot framework reference documentation
+
+source:
+  type: external
+  origin: spring.io
+  urls:
+    - https://docs.spring.io/spring-boot/docs/current/reference/html/
+    - https://spring.io/guides
+    - https://www.baeldung.com/spring-boot
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: best-practices
+    path: ./best-practices.md
+    description: Spring Boot best practices and patterns
+
+used_by:
+  - be-springboot-expert
