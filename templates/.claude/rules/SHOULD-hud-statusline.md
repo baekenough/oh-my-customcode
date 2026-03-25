@@ -41,10 +41,10 @@ Implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher).
 ### Format
 
 ```
-{Cost} | {project} | {branch} | RL:{rate_limit}% | WL:{weekly_limit}% | CTX:{usage}%
+{Cost} | {project} | {branch} | RL:{rate_limit}% {countdown} | WL:{weekly_limit}% {countdown} | CTX:{usage}%
 ```
 
-Example: `$0.05 | my-project | develop | RL:45% | WL:72% | CTX:42%`
+Example: `$0.05 | my-project | develop | RL:45% 3h20m | WL:72% 2d3h | CTX:42%`
 
 ### Configuration
 
@@ -80,6 +80,17 @@ Set in `.claude/settings.local.json`. The command receives JSON via stdin with m
 The `RL:{rate_limit}%` segment only appears when Claude Code v2.1.80+ provides `rate_limits` data. On older versions, this segment is omitted.
 
 The `WL:{weekly_limit}%` segment shows the 7-day rolling rate limit percentage. Both RL and WL segments are omitted on older versions.
+
+### Countdown Format
+
+The `{countdown}` shows time until RL/WL resets. Omitted when data is unavailable.
+
+| Remaining | Display | Example |
+|-----------|---------|---------|
+| >= 1 day | `{d}d{h}h` | `2d3h` |
+| >= 1 hour | `{h}h{m}m` | `5h30m` |
+| < 1 hour | `{m}m` | `45m` |
+| expired/unavailable | (omitted) | `WL:72%` |
 
 ## Integration
 
