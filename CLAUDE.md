@@ -123,7 +123,7 @@ oh-my-customcode로 구동됩니다.
 | `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
 | `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
 | `/release-plan` | verify-done 이슈 릴리즈 유닛 계획 생성 |
-| `/omcustom:workflow` | YAML 워크플로우 실행 (예: /omcustom:workflow omcustom-dev) |
+| `/omcustom:workflow` | YAML 워크플로우 실행 (예: /omcustom:workflow auto-dev) |
 | `/omcustom:workflow:resume` | 중단된 워크플로우 재개 |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
@@ -393,7 +393,7 @@ oh-my-customcode로 구동됩니다.
 | `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
 | `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
 | `/release-plan` | verify-done 이슈 릴리즈 유닛 계획 생성 |
-| `/omcustom:workflow` | YAML 워크플로우 실행 (예: /omcustom:workflow omcustom-dev) |
+| `/omcustom:workflow` | YAML 워크플로우 실행 (예: /omcustom:workflow auto-dev) |
 | `/omcustom:workflow:resume` | 중단된 워크플로우 재개 |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/sdd-dev` | Spec-Driven Development 워크플로우 (sdd/ 폴더 기반) |
