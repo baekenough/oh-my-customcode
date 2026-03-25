@@ -66,9 +66,9 @@ fi
 
 # ---------------------------------------------------------------------------
 # 4. Single jq call — extract all fields as TSV
-#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd, rl_5h_pct, rl_7d_pct
+#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd, rl_5h_pct, rl_7d_pct, rl_5h_resets, rl_7d_resets
 # ---------------------------------------------------------------------------
-IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_7d_pct <<< "$(
+IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_7d_pct rl_5h_resets rl_7d_resets <<< "$(
     printf '%s' "$json" | jq -r '[
         (.model.display_name // "unknown"),
         (.workspace.current_dir // ""),
@@ -76,7 +76,9 @@ IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_
         (.context_window.context_window_size // 0),
         (.cost.total_cost_usd // 0),
         (.rate_limits.five_hour.used_percentage // -1),
-        (.rate_limits.seven_day.used_percentage // -1)
+        (.rate_limits.seven_day.used_percentage // -1),
+        (.rate_limits.five_hour.resets_at // -1),
+        (.rate_limits.seven_day.resets_at // -1)
     ] | @tsv'
 )"
 
@@ -85,7 +87,32 @@ IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_
 # ---------------------------------------------------------------------------
 COST_BRIDGE_FILE="/tmp/.claude-cost-${PPID}"
 _tmp="${COST_BRIDGE_FILE}.tmp.$$"
-printf '%s\t%s\t%s\t%s\t%s\n' "$cost_usd" "$ctx_pct" "$(date +%s)" "$rl_5h_pct" "$rl_7d_pct" > "$_tmp" 2>/dev/null && mv -f "$_tmp" "$COST_BRIDGE_FILE" 2>/dev/null || true
+printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$cost_usd" "$ctx_pct" "$(date +%s)" "$rl_5h_pct" "$rl_7d_pct" "$rl_5h_resets" "$rl_7d_resets" > "$_tmp" 2>/dev/null && mv -f "$_tmp" "$COST_BRIDGE_FILE" 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# 4c. Countdown helper — converts resets_at epoch to human-readable duration
+# ---------------------------------------------------------------------------
+_countdown() {
+    local resets_at="$1"
+    if [[ "$resets_at" =~ ^[0-9]+$ ]] && [[ "$resets_at" -gt 0 ]]; then
+        local now
+        now=$(date +%s)
+        local remaining=$((resets_at - now))
+        if [[ "$remaining" -gt 0 ]]; then
+            local days=$((remaining / 86400))
+            local hours=$(( (remaining % 86400) / 3600 ))
+            if [[ "$days" -gt 0 ]]; then
+                printf '%dd%dh' "$days" "$hours"
+            elif [[ "$hours" -gt 0 ]]; then
+                local mins=$(( (remaining % 3600) / 60 ))
+                printf '%dh%dm' "$hours" "$mins"
+            else
+                local mins=$((remaining / 60))
+                printf '%dm' "$mins"
+            fi
+        fi
+    fi
+}
 
 # ---------------------------------------------------------------------------
 # 5. Model display name + color (bash 3.2 compatible case pattern matching)
@@ -271,6 +298,12 @@ if [[ "$rl_5h_int" -ge 0 ]]; then
     fi
 fi
 
+# Append countdown to RL display if available
+rl_countdown="$(_countdown "$rl_5h_resets")"
+if [[ -n "$rl_countdown" && -n "$rl_display" ]]; then
+    rl_display="${rl_display} ${rl_countdown}"
+fi
+
 # ---------------------------------------------------------------------------
 # 9c. Weekly rate limit percentage with color (v2.1.80+, optional)
 # ---------------------------------------------------------------------------
@@ -290,6 +323,12 @@ if [[ "$wl_7d_int" -ge 0 ]]; then
     else
         wl_color="${COLOR_CTX_OK}"       # Green  (< 50%)
     fi
+fi
+
+# Append countdown to WL display if available
+wl_countdown="$(_countdown "$rl_7d_resets")"
+if [[ -n "$wl_countdown" && -n "$wl_display" ]]; then
+    wl_display="${wl_display} ${wl_countdown}"
 fi
 
 # ---------------------------------------------------------------------------
