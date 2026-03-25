@@ -1,0 +1,26 @@
+# Go Backend Guide
+
+metadata:
+  name: go-backend
+  description: Go backend development reference documentation
+
+source:
+  type: external
+  origin: various
+  urls:
+    - https://go.dev/doc/effective_go
+    - https://github.com/golang-standards/project-layout
+    - https://github.com/uber-go/guide/blob/master/style.md
+  last_fetched: "2026-01-22"
+
+documents:
+  - name: uber-style
+    path: ./uber-style.md
+    description: Uber Go style guide
+
+  - name: project-layout
+    path: ./project-layout.md
+    description: Standard Go project layout
+
+used_by:
+  - be-go-backend-expert

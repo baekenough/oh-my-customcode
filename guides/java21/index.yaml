@@ -1,0 +1,29 @@
+# Java 21 Guide
+
+metadata:
+  name: java21
+  description: Java 21 language reference and modern feature documentation
+
+source:
+  type: external
+  origin: docs.oracle.com
+  urls:
+    - https://docs.oracle.com/en/java/javase/21/
+    - https://openjdk.org/projects/loom/
+    - https://openjdk.org/jeps/440
+    - https://openjdk.org/jeps/441
+    - https://openjdk.org/jeps/444
+    - https://google.github.io/styleguide/javaguide.html
+  last_fetched: "2026-03-11"
+
+documents:
+  - name: modern-java21
+    path: ./modern-java21.md
+    description: Java 21 modern features (Virtual Threads, Pattern Matching, Records, Sealed Classes)
+
+  - name: java-style-guide
+    path: ./java-style-guide.md
+    description: Google Java Style Guide conventions
+
+used_by:
+  - lang-java21-expert
