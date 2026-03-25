@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.57.0",
-  "generatedAt": "2026-03-23T11:56:36.966Z",
-  "templateVersion": "0.57.0",
+  "generatorVersion": "0.58.2",
+  "generatedAt": "2026-03-25T05:47:56.981Z",
+  "templateVersion": "0.58.2",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -10,8 +10,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "20314179ca96f1589120f5bc5820345a28bac9f97c189920ebcbfc27d3bb0d72",
-      "size": 2348,
+      "templateHash": "5f49b707bf34eaefa05899c8660574d59199c821176bd2b4afc3c19d97a64393",
+      "size": 2707,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
@@ -144,6 +144,11 @@
       "size": 1336,
       "component": "agents"
     },
+    ".claude/agents/fe-design-expert.md": {
+      "templateHash": "1680be9b340d6c45a9629b718c4573a378d6cd194fa69744bb7709a68432e590",
+      "size": 4847,
+      "component": "agents"
+    },
     ".claude/agents/be-express-expert.md": {
       "templateHash": "df8fff915019052c838d8798da54995128658f68b8adda46d8a780187f50e370",
       "size": 1032,
@@ -155,8 +160,8 @@
       "component": "agents"
     },
     ".claude/agents/fe-svelte-agent.md": {
-      "templateHash": "990fed341f44d8729bd672945d7d398f22f0a5ac5dc86bb35d2095d22b0abf1b",
-      "size": 697,
+      "templateHash": "b5c1c7884a992f0ef9bd28f256d495beb76218d959da1196fd892dc89697dc27",
+      "size": 727,
       "component": "agents"
     },
     ".claude/agents/lang-golang-expert.md": {
@@ -210,13 +215,13 @@
       "component": "agents"
     },
     ".claude/agents/fe-vercel-agent.md": {
-      "templateHash": "56a407c279daf7d3e45718af4628c6a2b804b0772f9d461544fcf633d8c6996c",
-      "size": 990,
+      "templateHash": "4d81c2a1e1b33f7f0af3c105d285526337b5f83ab14c35898f6816ecc647316f",
+      "size": 1012,
       "component": "agents"
     },
     ".claude/agents/fe-vuejs-agent.md": {
-      "templateHash": "5acec09fe22001a02258356a40aae072eda2583ad1eb121d075f082517d61538",
-      "size": 696,
+      "templateHash": "1aef47c6b4fed09cd5206c6bd87091f455b966e496498f30f16bd97e407caf9a",
+      "size": 726,
       "component": "agents"
     },
     ".claude/agents/tool-npm-expert.md": {
@@ -307,11 +312,6 @@
     ".claude/agents/arch-documenter.md": {
       "templateHash": "0ee5626045fcf456b058ac48eeb6a96692fe38b939e88fb7d1270f149f910f65",
       "size": 990,
-      "component": "agents"
-    },
-    ".claude/agents/test-delete.txt": {
-      "templateHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size": 0,
       "component": "agents"
     },
     ".claude/agents/qa-planner.md": {
@@ -499,6 +499,11 @@
       "size": 4861,
       "component": "skills"
     },
+    ".claude/skills/post-release-followup/SKILL.md": {
+      "templateHash": "6aea0df858ce472a73a31bba5377bc0bb476638f4f2e72dd1c436000344e2357",
+      "size": 4790,
+      "component": "skills"
+    },
     ".claude/skills/analysis/SKILL.md": {
       "templateHash": "c9cbb95b27f242c0017e570246de2d98ec0bdea75052b5a39939d68830c92d6b",
       "size": 5978,
@@ -520,8 +525,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "45dfb37443482c59c9557602eb9dca876b6bd485aa443e9136dfb2d4cdb4868f",
-      "size": 13189,
+      "templateHash": "de4813600e4159b0d9c767a3a3ff5d09b1b3319db7c51b311dea36e0cd61b34e",
+      "size": 13636,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
@@ -579,11 +584,6 @@
       "size": 4407,
       "component": "skills"
     },
-    ".claude/skills/test-verify-ignore.txt": {
-      "templateHash": "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2",
-      "size": 5,
-      "component": "skills"
-    },
     ".claude/skills/claude-code-bible/scripts/fetch-docs.js": {
       "templateHash": "39feb5316be8f83c502860133fd67f1510842659476c74787f57916f7123a508",
       "size": 6621,
@@ -625,8 +625,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "19df4cf26ae41b5b871b113f43862beb7956fe6c7dda6e90970a76ceb76c7243",
-      "size": 5878,
+      "templateHash": "a684fa235aa0bdb702d20bf499e7fc35d01dc99f467f3890c4f4aa6786481453",
+      "size": 6022,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
@@ -869,6 +869,11 @@
       "size": 2190,
       "component": "skills"
     },
+    ".claude/skills/impeccable-design/SKILL.md": {
+      "templateHash": "7220165da588e52f1f5778207d523da49e4e25cfff7efcae7958b3aeea9d5b5c",
+      "size": 8931,
+      "component": "skills"
+    },
     ".claude/skills/de-lead-routing/SKILL.md": {
       "templateHash": "37d5c526d9971896d23863af9b97370620356527cbd9ed9eb3243456c4e5c68a",
       "size": 7933,
@@ -882,11 +887,6 @@
     ".claude/skills/task-decomposition/SKILL.md": {
       "templateHash": "ce230383ca77817702ea1a469a3b95c1c33da0924f511f313ced14a35c5f38a7",
       "size": 6377,
-      "component": "skills"
-    },
-    ".claude/skills/test-new-skill-ci-test.md": {
-      "templateHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size": 0,
       "component": "skills"
     },
     ".claude/skills/optimize-analyze/SKILL.md": {
@@ -1434,9 +1434,34 @@
       "size": 400,
       "component": "guides"
     },
+    "guides/impeccable-design/ux-writing.md": {
+      "templateHash": "1304b763526160a5cead1cf5fc52fa531d7d00d523c7a194ee8300287b778fe1",
+      "size": 12700,
+      "component": "guides"
+    },
+    "guides/impeccable-design/motion-design.md": {
+      "templateHash": "1bb91230e2d9e4512e7bee690e020cabb55bde374f36f78266b532b9d4339baa",
+      "size": 11864,
+      "component": "guides"
+    },
+    "guides/impeccable-design/typography.md": {
+      "templateHash": "18d204c2189d2aa448ea52821151446f3e9a3695a36c27ed6d6ce90a1cd6f214",
+      "size": 10922,
+      "component": "guides"
+    },
+    "guides/impeccable-design/color-and-contrast.md": {
+      "templateHash": "09a2058e45a5c22362703b4cad1bc8f0cd18208812c7fb5c2e3cc21e7fe1e0ac",
+      "size": 9207,
+      "component": "guides"
+    },
+    "guides/impeccable-design/index.yaml": {
+      "templateHash": "47f922d80af6c1e4a046960156c31306cf9dd88546f1510172ecfd3c3ed36734",
+      "size": 339,
+      "component": "guides"
+    },
     "guides/index.yaml": {
-      "templateHash": "89891453a06709fca985cc5ee4066de609a7a5bc36d5dace426b30a3fc47a2e3",
-      "size": 6295,
+      "templateHash": "9e7e0d950792e4b99f7db468489064e2cff68e8bab4d43184785edf2c14b8cae",
+      "size": 6600,
       "component": "guides"
     },
     "guides/spark/README.md": {
