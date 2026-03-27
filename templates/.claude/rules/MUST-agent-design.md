@@ -32,6 +32,7 @@ escalation:              # Model escalation policy (optional)
   threshold: 2           # Failures before advisory
 soul: true                 # Enable SOUL.md identity injection
 isolation: worktree | sandbox  # worktree = git worktree, sandbox = restricted bash
+sandboxFailIfUnavailable: true  # Exit if sandbox unavailable (v2.1.83+)
 background: true           # Run in background
 maxTurns: 10               # Max conversation turns
 maxTokens: 100000          # Per-turn token ceiling
@@ -39,6 +40,7 @@ mcpServers: [server-1]     # MCP servers available
 hooks:                     # Agent-specific hooks
   PreToolUse:
     - matcher: "Edit"
+      if: "Edit(*.md)"      # Conditional filter (permission rule syntax, v2.1.85+)
       command: "echo hook"
 permissionMode: bypassPermissions  # Permission mode
 disallowedTools: [Bash]    # Tools to disallow
@@ -48,7 +50,7 @@ limitations:               # Negative capability declarations
 domain: backend              # backend | frontend | data-engineering | devops | universal
 ```
 
-> **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+.
+> **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+. `CwdChanged`, `FileChanged` hook events and `managed-settings.d/` drop-in directory require v2.1.83+. Conditional `if` field for hooks requires v2.1.85+.
 
 <!-- DETAIL: Isolation/Token/Limitations/Escalation details
 ### Isolation Modes
