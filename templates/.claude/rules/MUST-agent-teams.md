@@ -25,6 +25,15 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 
 **When Agent Teams is enabled and criteria are met, usage is required.**
 
+### Scope: Intra-Session vs Cross-Session
+
+| Scope | Tool | Protocol | Use Case |
+|-------|------|----------|----------|
+| Intra-session | `SendMessage` (Agent Teams) | Peer-to-peer within team | Multi-agent collaboration in one session |
+| Cross-session | `send_message` (claude-peers-mcp) | Broker-mediated | Multi-terminal/project coordination |
+
+These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` and operates within a single Claude Code session. claude-peers-mcp `send_message` operates across separate Claude Code processes via a localhost broker.
+
 ## Self-Check (Before Agent Tool)
 
 Before using Agent tool for 2+ agent tasks, complete this check:

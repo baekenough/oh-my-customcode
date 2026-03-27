@@ -114,3 +114,32 @@ OTEL_LOGS_EXPORTER=otlp
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 ```
+
+## HTTP-Level Inspection (Optional)
+
+For deeper payload-level debugging beyond aggregated metrics, [Claude Inspector](https://github.com/kangraemin/claude-inspector) provides MITM proxy inspection of Claude Code HTTP traffic.
+
+| Aspect | OTel Monitoring (this skill) | Claude Inspector |
+|--------|------------------------------|-----------------|
+| Layer | Application (hooks, stdout) | HTTP (MITM proxy) |
+| Metrics | Aggregated (cost, tokens, duration) | Per-request payload breakdown |
+| Cache visibility | Not available | Prompt Cache hit/miss rates |
+| Sub-agent view | Summary via hooks | Full parent vs sub-agent context comparison |
+| Setup | Built-in (hooks + statusline) | External tool (Homebrew on macOS) |
+
+### When to Use
+
+- **OTel monitoring**: Daily operations, cost tracking, performance trends
+- **Claude Inspector**: Debugging specific payload issues, measuring CLAUDE.md token impact, verifying ecomode (R013) effectiveness, profiling sub-agent context inheritance
+
+### Setup
+
+```bash
+# macOS
+brew install kangraemin/tap/claude-inspector
+
+# Run proxy
+claude-inspector
+```
+
+Claude Inspector is external to oh-my-customcode and does not require any project configuration changes.
