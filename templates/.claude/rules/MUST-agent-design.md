@@ -50,6 +50,7 @@ domain: backend              # backend | frontend | data-engineering | devops | 
 
 > **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+.
 
+<!-- DETAIL: Isolation/Token/Limitations/Escalation details
 ### Isolation Modes
 
 | Mode | Behavior | Use Case |
@@ -79,6 +80,7 @@ When `escalation.enabled: true`, the model-escalation hooks will track outcomes 
 | `enabled` | false | Enable escalation tracking for this agent |
 | `path` | haiku → sonnet → opus | Model upgrade sequence |
 | `threshold` | 2 | Failure count before escalation advisory |
+-->
 
 ## Memory Scopes
 
@@ -92,51 +94,26 @@ When enabled: first 200 lines of MEMORY.md loaded into system prompt.
 
 ## Soul Identity
 
-Optional per-agent identity layer that separates personality/style from capabilities.
+Optional per-agent identity layer. `soul: true` in frontmatter enables personality/style via `.claude/agents/souls/{name}.soul.md`. Behavioral memory (R011) overrides soul defaults.
 
+<!-- DETAIL: Soul Identity full spec
 | Aspect | Location | Purpose |
 |--------|----------|---------|
 | Capabilities | `.claude/agents/{name}.md` | WHAT the agent does |
 | Identity | `.claude/agents/souls/{name}.soul.md` | HOW the agent communicates |
 
-### Soul File Format
-
-Location: `.claude/agents/souls/{name}.soul.md`
-
-```yaml
----
-agent: {agent-name}        # Must match agent filename
-version: 1.0.0
----
-```
-
-Sections: `## Personality`, `## Style`, `## Anti-patterns`
-
-### Activation
-
-1. Agent frontmatter includes `soul: true`
-2. Routing skill reads `souls/{name}.soul.md` at spawn time (Step 5)
-3. Soul content prepended to agent prompt as identity context
-4. Missing soul file → graceful fallback (no error)
-
-### Precedence
-
-Behavioral memory observations (R011) override soul defaults when they conflict. Behaviors are user-specific; souls are template defaults.
+### Soul File Format: agent: {name}, version: 1.0.0 — Sections: Personality, Style, Anti-patterns
+### Activation: frontmatter soul:true → routing skill reads souls/{name}.soul.md at spawn (Step 5) → prepend to prompt → missing file = graceful fallback
+-->
 
 ## Artifact Output Convention
 
-Skills that produce significant output can persist results to local storage.
+Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HHmmss}.md`. Opt-in, git-untracked. Final subagent writes (R010).
 
-**Location**: `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HHmmss}.md`
-
+<!-- DETAIL: Artifact Output full spec
 **Format**: Metadata header with `skill`, `date`, `query` fields, followed by skill output content.
-
-**Rules**:
-- Opt-in per skill — not mandatory
-- The final subagent in the skill's pipeline writes the artifact (R010 compliance)
-- Skills create the directory (`mkdir -p`) before writing
-- `.claude/outputs/` is git-untracked (under `.claude/` gitignore)
-- No indexing required — date-based directory browsing is sufficient
+**Rules**: Opt-in per skill, final subagent writes (R010 compliance), Skills create directory (mkdir -p), .claude/outputs/ is git-untracked, no indexing required.
+-->
 
 ## Separation of Concerns
 
@@ -172,18 +149,11 @@ effort: medium              # low | medium | high — overrides model effort lev
 
 When both an agent and its invoked skill specify `effort`, the skill's value takes precedence (more specific invocation-time setting).
 
-### Skill Effectiveness Tracking
-
+<!-- DETAIL: Skill Effectiveness Tracking
 Skills can optionally track effectiveness metrics via auto-populated fields:
-
-```yaml
-effectiveness:              # Auto-populated by sys-memory-keeper
-  invocations: 0            # Total invocation count across sessions
-  success_rate: 0.0         # Success rate (0.0-1.0)
-  last_invoked: ""          # ISO-8601 timestamp
-```
-
-These fields are read-only from the skill's perspective — sys-memory-keeper updates them at session end based on task-outcome-recorder data. They inform model selection, routing optimization, and skill maintenance priorities.
+  effectiveness.invocations, effectiveness.success_rate (0.0-1.0), effectiveness.last_invoked (ISO-8601)
+Read-only from skill perspective — sys-memory-keeper updates at session end via task-outcome-recorder data.
+-->
 
 ## Skill Scope
 
@@ -197,19 +167,12 @@ Default: `core` (when field is omitted)
 
 ### Context Fork Criteria
 
-Use `context: fork` for skills that orchestrate multi-agent workflows. Cap at **12 total** across the project.
+Use `context: fork` for multi-agent orchestration skills only. Cap: **12 total**. Current: 9/12 (secretary/dev-lead/de-lead/qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan).
 
-| Use `context: fork` | Do NOT use `context: fork` |
-|---------------------|---------------------------|
-| Routing skills (secretary, dev-lead, etc.) | Best-practices skills |
-| Workflow orchestration (DAG, pipelines) | Hook/command skills |
-| Multi-agent coordination patterns | Single-agent reference skills |
-| Task decomposition/planning | External tool integrations |
-
-Current skills with `context: fork` (9/12 cap):
-- secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing
-- dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards
-- deep-plan
+<!-- DETAIL: Context Fork decision table
+| Use context:fork | Do NOT use context:fork |
+| Routing skills, Workflow orchestration (DAG), Multi-agent coordination, Task decomposition | Best-practices skills, Hook/command skills, Single-agent reference, External tool integrations |
+-->
 
 ## Naming
 

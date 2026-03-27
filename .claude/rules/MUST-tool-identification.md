@@ -16,36 +16,20 @@ For parallel calls: list ALL identifications BEFORE the tool calls.
 ### Common Violations to Avoid
 
 ```
-Incorrect: Calling tools without identification
-   "먼저 JD 내용을 확인하겠습니다."
-   <tool_call>WebFetch(...)</tool_call>
-
-Incorrect: Missing model in identification
-   [secretary] → Tool: WebFetch
-   [secretary] → Fetching: https://example.com/jd.md
-
-Correct: Always identify with agent AND model
-   "먼저 JD 내용을 확인하겠습니다."
-   [secretary][opus] → Tool: WebFetch
-   [secretary][opus] → Fetching: https://example.com/jd.md
-   <tool_call>WebFetch(...)</tool_call>
-
-Incorrect: Parallel calls without listing all identifications
-   <tool_call>WebFetch(url1)</tool_call>
-   <tool_call>WebFetch(url2)</tool_call>
-   <tool_call>Bash(cmd)</tool_call>
-
-Correct: List all identifications with models, then call
-   [secretary][opus] → Tool: WebFetch
-   [secretary][opus] → Fetching: url1
-   [secretary][opus] → Tool: WebFetch
-   [secretary][opus] → Fetching: url2
-   [secretary][opus] → Tool: Bash
-   [secretary][opus] → Running: cmd
-   <tool_call>WebFetch(url1)</tool_call>
-   <tool_call>WebFetch(url2)</tool_call>
-   <tool_call>Bash(cmd)</tool_call>
+❌ Missing: tool call with no identification prefix
+✓ Correct: [agent-name][model] → Tool: WebFetch
+           [agent-name][model] → Fetching: url
+           <tool_call>...</tool_call>
 ```
+
+<!-- DETAIL: Full violation examples
+Incorrect: Calling tools without identification — no [agent][model] prefix before tool_call
+Incorrect: Missing model — [secretary] → Tool: WebFetch (missing [model])
+Correct: [secretary][opus] → Tool: WebFetch / [secretary][opus] → Fetching: url / then tool_call
+
+Incorrect parallel: tool_call(url1), tool_call(url2), tool_call(cmd) — no identification
+Correct parallel: list ALL [agent][model] → Tool/Fetching/Running lines FIRST, then all tool_calls
+-->
 
 ## Models
 
