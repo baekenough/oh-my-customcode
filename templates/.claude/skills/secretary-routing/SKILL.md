@@ -80,6 +80,8 @@ If the selected agent has `soul: true` in frontmatter, read and prepend `.claude
 5. Report result to user
 ```
 
+> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+
 ### 2. Batch/Parallel Task Routing
 
 When command requires multiple independent operations:
