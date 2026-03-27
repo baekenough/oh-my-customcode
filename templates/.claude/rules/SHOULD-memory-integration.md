@@ -39,7 +39,7 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 - Do not store sensitive data or duplicate CLAUDE.md content
 - Memory write failures should not block main task
 
-## Confidence-Tracked Memory
+<!-- DETAIL: Confidence-Tracked Memory (sys-memory-keeper reference)
 
 Memory entries in MEMORY.md should include confidence annotations to distinguish verified facts from hypotheses.
 
@@ -53,82 +53,72 @@ Memory entries in MEMORY.md should include confidence annotations to distinguish
 
 ### Format in MEMORY.md
 
-```
-### Key Patterns [confidence: high]
-- `.claude/` files are gitignored → always use `git add -f`
-- pre-commit hooks auto-detect README/manifest count mismatches
+    ### Key Patterns [confidence: high]
+    - `.claude/` files are gitignored — always use `git add -f`
+    - pre-commit hooks auto-detect README/manifest count mismatches
 
-### Hypotheses [confidence: medium]
-- Template sync might need CI enforcement (seen in 2 PRs)
+    ### Hypotheses [confidence: medium]
+    - Template sync might need CI enforcement (seen in 2 PRs)
 
-### Unverified [confidence: low]
-- Possible race condition in parallel hook execution (observed once)
-```
+    ### Unverified [confidence: low]
+    - Possible race condition in parallel hook execution (observed once)
 
 ### Confidence Lifecycle
 
-```
-[low] → observed again → [medium] → confirmed by user/testing → [high]
-[any] → contradicted by evidence → demoted or removed
-```
+    [low] — observed again — [medium] — confirmed by user/testing — [high]
+    [any] — contradicted by evidence — demoted or removed
 
 ### Temporal Decay
 
-Memory entries include an optional verification timestamp for decay tracking:
+Memory entries include an optional verification timestamp for decay tracking.
 
-**Format**: `[confidence: high, verified: 2026-03-15]`
+Format: `[confidence: high, verified: 2026-03-15]`
 
 | Age (unverified) | Action |
 |-------------------|--------|
 | 0-30 days | No change — entry is fresh |
-| 30-60 days | Demote one level (high→medium, medium→low) |
+| 30-60 days | Demote one level (high->medium, medium->low) |
 | 60-90 days | Demote again if not re-verified |
 | 90+ days | Removal candidate — flag for review |
 
-**Decay Schedule**:
-```
-Day 0:   [confidence: high, verified: 2026-03-15]
-Day 30:  [confidence: high, verified: 2026-03-15]  ← still within window
-Day 31:  [confidence: medium, verified: 2026-03-15] ← auto-demoted
-Day 61:  [confidence: low, verified: 2026-03-15]    ← demoted again
-Day 91:  [REVIEW NEEDED, verified: 2026-03-15]      ← flagged
-```
+Decay Schedule:
+    Day 0:   [confidence: high, verified: 2026-03-15]
+    Day 30:  [confidence: high, verified: 2026-03-15]  <- still within window
+    Day 31:  [confidence: medium, verified: 2026-03-15] <- auto-demoted
+    Day 61:  [confidence: low, verified: 2026-03-15]    <- demoted again
+    Day 91:  [REVIEW NEEDED, verified: 2026-03-15]      <- flagged
 
-**Re-verification**: Any session that confirms a memory entry resets the verified date:
-```
-Before: [confidence: medium, verified: 2026-01-15]
-Action: Pattern confirmed in session
-After:  [confidence: high, verified: 2026-03-15]
-```
+Re-verification: Any session that confirms a memory entry resets the verified date:
+    Before: [confidence: medium, verified: 2026-01-15]
+    Action: Pattern confirmed in session
+    After:  [confidence: high, verified: 2026-03-15]
 
-**Enforcement**: sys-memory-keeper checks decay at session start and end:
+Enforcement: sys-memory-keeper checks decay at session start and end:
 1. Session start: scan MEMORY.md for entries past decay threshold
 2. Flag stale entries with `[STALE]` prefix
 3. Session end: remove or demote unconfirmed stale entries
 
-**Exceptions**: Entries marked `[permanent]` are exempt from decay:
-```
-### Architecture Decisions [confidence: high, permanent]
-```
+Exceptions: Entries marked `[permanent]` are exempt from decay:
+    ### Architecture Decisions [confidence: high, permanent]
 
-## Behavioral Memory
+-->
+
+<!-- DETAIL: Behavioral Memory (sys-memory-keeper reference)
 
 MEMORY.md supports an optional `## Behaviors` section for tracking user interaction preferences and workflow patterns.
 
 ### Behaviors Section Format
 
-```markdown
-## Behaviors [confidence: medium]
-- User prefers concise responses — 3 sentences max
-- Commit messages always include issue number
-- Security-first review perspective
+    ## Behaviors [confidence: medium]
+    - User prefers concise responses — 3 sentences max
+    - Commit messages always include issue number
+    - Security-first review perspective
 
-## Behavior Lifecycle
-- New observation → [confidence: low]
-- Seen in 2+ sessions → [confidence: medium]
-- User-confirmed → [confidence: high]
-- Contradicted → demote or remove
-```
+    ## Behavior Lifecycle
+    - New observation — [confidence: low]
+    - Seen in 2+ sessions — [confidence: medium]
+    - User-confirmed — [confidence: high]
+    - Contradicted — demote or remove
 
 ### What Counts as a Behavior
 
@@ -176,24 +166,24 @@ Behavioral memory observations override soul defaults (R006 Soul Identity) when 
 ### Integration with Session-End
 
 When sys-memory-keeper updates MEMORY.md at session end:
-1. New findings from this session → `[confidence: low]`
-2. Findings that match existing entries → promote confidence
-3. Findings that contradict existing entries → flag for review
+1. New findings from this session — `[confidence: low]`
+2. Findings that match existing entries — promote confidence
+3. Findings that contradict existing entries — flag for review
 
-## Agent Metrics
+-->
+
+<!-- DETAIL: Agent Metrics (sys-memory-keeper reference)
 
 MEMORY.md supports an optional `## Metrics` section for tracking per-agent-type performance data.
 
 ### Metrics Section Format
 
-```markdown
-## Metrics [auto-updated by sys-memory-keeper]
+    ## Metrics [auto-updated by sys-memory-keeper]
 
-| Agent Type | Tasks | Success Rate | Avg Model | Last Used |
-|------------|-------|-------------|-----------|-----------|
-| lang-golang-expert | 12 | 92% | sonnet | 2026-03-15 |
-| mgr-gitnerd | 8 | 100% | sonnet | 2026-03-15 |
-```
+    | Agent Type | Tasks | Success Rate | Avg Model | Last Used |
+    |------------|-------|-------------|-----------|-----------|
+    | lang-golang-expert | 12 | 92% | sonnet | 2026-03-15 |
+    | mgr-gitnerd | 8 | 100% | sonnet | 2026-03-15 |
 
 ### Metrics Collection
 
@@ -220,6 +210,8 @@ The Metrics section shares the 200-line MEMORY.md budget:
 1. Max 20 agent rows in Metrics table
 2. When adding new agent, prune agent with lowest task count
 3. Merge identical agent types across sessions (cumulative)
+
+-->
 
 ## Session-End Auto-Save
 

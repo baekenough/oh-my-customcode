@@ -68,6 +68,9 @@ Any change to: agents, agent frontmatter, skills, guides, routing patterns, rule
 
 ## Quick Verification Commands
 
+Key checks: agent count (`ls .claude/agents/*.md | wc -l`), skill count (`find .claude/skills -name "SKILL.md" | wc -l`), guide count (`find guides -mindepth 1 -maxdepth 1 -type d | wc -l`).
+
+<!-- DETAIL: Full verification bash scripts
 ```bash
 # Agent count check
 ls .claude/agents/*.md | wc -l
@@ -108,7 +111,6 @@ ls .claude/contexts/*.md 2>/dev/null | wc -l
 find guides -mindepth 1 -maxdepth 1 -type d | wc -l
 
 # Agent name accuracy (compare CLAUDE.md table with actual files)
-# Extract agent names from files
 ls .claude/agents/*.md | xargs -I{} basename {} .md | sort > /tmp/actual-agents.txt
 
 # Slash command skill existence
@@ -123,3 +125,4 @@ ls -d .claude/skills/*-routing 2>/dev/null | xargs -I{} basename {} | sort
 # Verify routing skill names in CLAUDE.md
 grep -oP '(secretary|dev-lead|de-lead|qa-lead)-routing' CLAUDE.md | sort -u
 ```
+-->

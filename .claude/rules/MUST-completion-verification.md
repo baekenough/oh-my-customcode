@@ -19,28 +19,14 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 
 ## Self-Check (Before Declaring Done)
 
-```
-╔══════════════════════════════════════════════════════════════════╗
-║  BEFORE DECLARING [Done], ASK YOURSELF:                          ║
-║                                                                   ║
-║  1. Did I verify the ACTUAL outcome (not just attempt)?          ║
-║     "I ran the command" ≠ "the command succeeded"                ║
-║     YES → Continue                                               ║
-║     NO  → Verify outcome first                                   ║
-║                                                                   ║
-║  2. Does the task type have specific criteria above?             ║
-║     YES → Check each criterion                                   ║
-║     NO  → Apply general verification                             ║
-║                                                                   ║
-║  3. Are there any unchecked items in the task's checklist?       ║
-║     YES → Complete them or explicitly defer with reason           ║
-║     NO  → Good. Proceed to [Done]                                ║
-║                                                                   ║
-║  4. Would I bet $100 this task is truly complete?                ║
-║     YES → Declare [Done]                                          ║
-║     NO  → Identify what's uncertain and verify                   ║
-╚══════════════════════════════════════════════════════════════════╝
-```
+Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ "succeeded". (2) Check task-type criteria above. (3) No unchecked items. (4) Would bet $100 it's complete.
+
+<!-- DETAIL: Self-Check box
+1. Did I verify ACTUAL outcome? "I ran the command" ≠ "the command succeeded" → YES: Continue / NO: Verify first
+2. Does task type have specific criteria? YES: Check each / NO: Apply general verification
+3. Any unchecked items? YES: Complete or defer with reason / NO: Proceed to [Done]
+4. Would I bet $100 this is truly complete? YES: Declare [Done] / NO: Identify uncertain and verify
+-->
 
 ## Common False Completion Patterns
 
