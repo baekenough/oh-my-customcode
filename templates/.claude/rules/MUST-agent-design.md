@@ -52,6 +52,23 @@ domain: backend              # backend | frontend | data-engineering | devops | 
 
 > **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+. `CwdChanged`, `FileChanged` hook events and `managed-settings.d/` drop-in directory require v2.1.83+. Conditional `if` field for hooks requires v2.1.85+.
 
+## Permission Mode Guidance
+
+When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:
+
+1. **Agent frontmatter `permissionMode`**: Declares the agent's intended permission level. CC respects this when the agent is spawned via Agent tool.
+2. **Agent tool `mode` parameter**: Overrides frontmatter at spawn time. Routing skills should pass this explicitly.
+3. **Recommendation**: For agents that modify files, set `permissionMode: bypassPermissions` in frontmatter if the project uses `bypassPermissions` mode.
+
+| Mode | Behavior |
+|------|----------|
+| `default` | CC decides per-tool prompting |
+| `acceptEdits` | Auto-accept file edits, prompt for others |
+| `bypassPermissions` | Skip all permission prompts |
+| `plan` | Require plan approval |
+| `dontAsk` | Non-interactive, deny unapproved |
+| `auto` | AI decides safety |
+
 <!-- DETAIL: Isolation/Token/Limitations/Escalation details
 ### Isolation Modes
 

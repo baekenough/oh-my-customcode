@@ -1238,6 +1238,144 @@ describe('update command', () => {
     });
   });
 
+  describe('updateCommand CLI self-update notification', () => {
+    it('should print info message when a newer CLI version is available', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: [],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.60.1',
+        newVersion: '0.60.1',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      const { checkSelfUpdate: realCheckSelfUpdate } = await import(
+        '../../../src/core/self-update.js'
+      );
+
+      // Stub: newer version available
+      const stubbedCheck: typeof realCheckSelfUpdate = () => ({
+        checked: true,
+        updateAvailable: true,
+        latestVersion: '0.99.0',
+        usedCache: false,
+      });
+
+      await updateCommand({}, stubbedCheck);
+
+      const allLogs = consoleLogSpy.mock.calls.flat().join('\n');
+      expect(allLogs).toContain('0.99.0');
+    });
+
+    it('should not print info message when already on latest version', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: [],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.60.1',
+        newVersion: '0.60.1',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      const { checkSelfUpdate: realCheckSelfUpdate } = await import(
+        '../../../src/core/self-update.js'
+      );
+
+      const logsBeforeUpdate: string[] = [];
+      consoleLogSpy.mockImplementation((msg: string) => {
+        logsBeforeUpdate.push(msg as string);
+      });
+
+      // Stub: already on latest
+      const stubbedCheck: typeof realCheckSelfUpdate = () => ({
+        checked: true,
+        updateAvailable: false,
+        latestVersion: '0.60.1',
+        usedCache: false,
+      });
+
+      await updateCommand({}, stubbedCheck);
+
+      const allLogs = logsBeforeUpdate.join('\n');
+      expect(allLogs).not.toContain('npm i -g oh-my-customcode');
+    });
+
+    it('should continue update normally when version check throws an error', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.60.0',
+        newVersion: '0.60.1',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      const { checkSelfUpdate: realCheckSelfUpdate } = await import(
+        '../../../src/core/self-update.js'
+      );
+
+      // Stub: throws (e.g., offline, npm timeout)
+      const failingCheck: typeof realCheckSelfUpdate = () => {
+        throw new Error('ENOTFOUND registry.npmjs.org');
+      };
+
+      // Should not throw — update continues
+      await updateCommand({}, failingCheck);
+
+      // The underlying project update still ran
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+    });
+  });
+
   describe('updateCommand error handling', () => {
     it('should exit with code 1 when update fails', async () => {
       mock.module('../../../src/core/provider.js', () => ({

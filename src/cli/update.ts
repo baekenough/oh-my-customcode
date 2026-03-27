@@ -9,6 +9,7 @@
  */
 
 import packageJson from '../../package.json';
+import { checkSelfUpdate } from '../core/self-update.js';
 import { type UpdateComponent, type UpdateOptions, update } from '../core/updater.js';
 import { i18n } from '../i18n/index.js';
 
@@ -43,9 +44,36 @@ export interface UpdateCommandOptions {
 }
 
 /**
+ * Non-blocking check for a newer CLI version.
+ * Prints an informational message if a newer version is available.
+ * Silently swallows any error (offline, npm timeout, malformed response).
+ */
+async function checkCliVersion(checkFn: typeof checkSelfUpdate): Promise<void> {
+  try {
+    const result = checkFn({ currentVersion: packageJson.version as string });
+    if (result.updateAvailable && result.latestVersion) {
+      console.log(
+        i18n.t('cli.update.newVersionAvailable', {
+          latest: result.latestVersion,
+          current: packageJson.version as string,
+        })
+      );
+    }
+  } catch {
+    // Non-blocking: silently ignore any version check failures
+  }
+}
+
+/**
  * Execute the update command
  */
-export async function updateCommand(options: UpdateCommandOptions = {}): Promise<void> {
+export async function updateCommand(
+  options: UpdateCommandOptions = {},
+  cliVersionCheck: typeof checkSelfUpdate = checkSelfUpdate
+): Promise<void> {
+  // Non-blocking CLI self-update notification (inform but never block)
+  await checkCliVersion(cliVersionCheck);
+
   try {
     if (options.all) {
       await updateAllProjects(options);
@@ -99,7 +127,6 @@ async function updateSingleProject(
 
   if (!result.success) {
     process.exit(1);
-    return false;
   }
   return true;
 }
