@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.60.1",
-  "generatedAt": "2026-03-27T06:28:19.555Z",
-  "templateVersion": "0.60.1",
+  "generatorVersion": "0.61.0",
+  "generatedAt": "2026-03-27T14:00:07.907Z",
+  "templateVersion": "0.61.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -45,8 +45,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "e2065e3c94c05d5ba44fd2fe9678a39d7c20f3df56e82574a9c005f0b1a9773d",
-      "size": 8002,
+      "templateHash": "154d3b23b42fb645c7121cb1bdee8a4da5b5faa6668fa38a18020cd8d7c32e83",
+      "size": 8931,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -425,8 +425,8 @@
       "component": "skills"
     },
     ".claude/skills/qa-lead-routing/SKILL.md": {
-      "templateHash": "852a2ead0d9571c0ac86ae7f6f623ed73b215ff5f45d443c4d3f1e39c4ffe295",
-      "size": 3493,
+      "templateHash": "c047ea64c37ba8b3aadce357e4ffb17ae003f5cc5d6952480b04e8a6a8739c75",
+      "size": 3687,
       "component": "skills"
     },
     ".claude/skills/memory-recall/SKILL.md": {
@@ -470,8 +470,8 @@
       "component": "skills"
     },
     ".claude/skills/secretary-routing/SKILL.md": {
-      "templateHash": "9349c3a4d5c1003456600eec0955e6390d262e3bc440dd5306c37c336855fb3d",
-      "size": 4682,
+      "templateHash": "f70434282d118f95cb95478420c0d0fd5a211ff69f5a2d6828dc5ffc980433dc",
+      "size": 4876,
       "component": "skills"
     },
     ".claude/skills/systematic-debugging/condition-based-waiting.md": {
@@ -635,8 +635,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "a684fa235aa0bdb702d20bf499e7fc35d01dc99f467f3890c4f4aa6786481453",
-      "size": 6022,
+      "templateHash": "6ea42f82b21b25ed6ba6bbdc3d0b44123cffcf1591e719d35be2a0960edf8384",
+      "size": 6216,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
@@ -895,8 +895,8 @@
       "component": "skills"
     },
     ".claude/skills/de-lead-routing/SKILL.md": {
-      "templateHash": "37d5c526d9971896d23863af9b97370620356527cbd9ed9eb3243456c4e5c68a",
-      "size": 7933,
+      "templateHash": "0918d2b25f137907ee64ad0eae5a554aca9efd3df5754f0834939041f94984cb",
+      "size": 8127,
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {

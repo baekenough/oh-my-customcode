@@ -112,6 +112,8 @@ For **new file creation**, **boilerplate**, or **test code generation**:
 ### Step 3: Expert Agent Selection
 Route to appropriate language/framework expert based on file extension and keyword mapping.
 
+> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+
 ### Step 4: Ontology-RAG Enrichment (R019)
 
 If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
