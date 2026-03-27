@@ -1,8 +1,8 @@
-# /workflow:omcustom-dev — Full-auto release pipeline
-# Collects verify-done issues → triage → plan → implement → verify → PR
+# /omcustom:workflow auto-dev — Full-auto release pipeline
+# Collects verify-done issues → triage → plan → implement → verify → PR → followup
 
-name: omcustom-dev
-description: "verify-done issues release batch: triage → plan → implement → verify → PR"
+name: auto-dev
+description: "verify-done issues release batch: triage → plan → implement → verify → PR → followup"
 mode: auto
 error: halt-and-report
 
@@ -33,3 +33,7 @@ steps:
   - name: release
     action: create-pr
     description: Create release branch and pull request
+
+  - name: followup
+    skill: post-release-followup
+    description: Recommend follow-up actions — user chooses to execute now or register as issues
