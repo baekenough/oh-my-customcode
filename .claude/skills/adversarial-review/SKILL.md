@@ -70,3 +70,11 @@ Fix: Recommended remediation
 - Complements `dev-review` (best practices) with attacker perspective
 - Works with `sec-codeql-expert` for pattern-based + logic-based coverage
 - Can be chained: `dev-review` → `adversarial-review` for complete coverage
+- Works with `action-validator` for action-space legality checking
+
+### Action-Space Legality (AutoHarness Pattern)
+
+- [ ] Do agents only call tools within their declared `tools` frontmatter?
+- [ ] Do file operations stay within R002-declared access scope?
+- [ ] Are domain boundaries respected (backend agent not editing frontend files)?
+- [ ] Could an agent's task contract be tightened without losing functionality?
