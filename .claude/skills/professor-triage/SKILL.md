@@ -156,7 +156,7 @@ Template:
 ## Pending Actions (Confirmation Required)
 ```
 
-**5B: Issue comments** — Delegate to mgr-gitnerd to post on each analyzed issue:
+**5B: Issue comments (MANDATORY)** — Every analyzed issue MUST receive a triage comment. This is not optional — even for issues created in the same session or with existing analysis. Skipping comments breaks the triage audit trail. Delegate to mgr-gitnerd to post on each analyzed issue:
 
 ```
 ## 🔬 Professor Triage — Cross-Analysis Result
@@ -168,6 +168,15 @@ Template:
 
 ---
 _Cross-analyzed by `/professor-triage` with {N} related issues_
+```
+
+### Phase 5C: Comment Verification Gate
+
+Before proceeding to Phase 6, verify ALL analyzed issues received comments:
+```bash
+# For each issue NNN in the batch:
+gh issue view NNN --json comments --jq '.comments | map(select(.body | contains("Professor Triage"))) | length'
+# Must be >= 1 for every issue. If any is 0, Phase 5B was skipped — go back and post.
 ```
 
 ### Phase 6: Act
