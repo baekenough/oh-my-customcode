@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.59.0",
-  "generatedAt": "2026-03-27T05:27:29.164Z",
-  "templateVersion": "0.59.0",
+  "generatorVersion": "0.60.0",
+  "generatedAt": "2026-03-27T06:10:35.409Z",
+  "templateVersion": "0.60.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -45,8 +45,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "7718e7bdf4a0ec6e6d41c5897a46f25efea6c2ec8102bc715b1f4644331cba61",
-      "size": 7691,
+      "templateHash": "e2065e3c94c05d5ba44fd2fe9678a39d7c20f3df56e82574a9c005f0b1a9773d",
+      "size": 8002,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -505,8 +505,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "6aea0df858ce472a73a31bba5377bc0bb476638f4f2e72dd1c436000344e2357",
-      "size": 4790,
+      "templateHash": "965cf1e0ac3c4fd6e1a9cdfe1e45169e168a86b5be71f4d36f6daf87295d44fb",
+      "size": 4786,
       "component": "skills"
     },
     ".claude/skills/analysis/SKILL.md": {
@@ -565,8 +565,8 @@
       "component": "skills"
     },
     ".claude/skills/evaluator-optimizer/SKILL.md": {
-      "templateHash": "7ef956a2372435554ebe6e8eb089850a3a5d281f18eca7a36d42091cdb669ac6",
-      "size": 11725,
+      "templateHash": "7dd04b6583e32fd908877928f7af6ffaabf592a36f88aed9ca6ebedec6ca0ed0",
+      "size": 13703,
       "component": "skills"
     },
     ".claude/skills/update-external/SKILL.md": {
@@ -655,8 +655,8 @@
       "component": "skills"
     },
     ".claude/skills/professor-triage/SKILL.md": {
-      "templateHash": "854714625668c3a99a110ef9c6faa6e5cb9a5370ef6c247d703d9d7fd99cf18e",
-      "size": 8106,
+      "templateHash": "6392f52b1e1961e238011775260556eb320b486679b24a6927653f5856db7863",
+      "size": 8680,
       "component": "skills"
     },
     ".claude/skills/adversarial-review/SKILL.md": {
@@ -730,8 +730,8 @@
       "component": "skills"
     },
     ".claude/skills/workflow/SKILL.md": {
-      "templateHash": "f4cb2a59c99b229c5bc84155582f5a455e4d25e6ec41adeff52793a9ce02fc7d",
-      "size": 2386,
+      "templateHash": "ad6f2dfea47bcfe65aacbcbbe6612ebc73223049723db856975ab649f9b207d0",
+      "size": 2374,
       "component": "skills"
     },
     ".claude/skills/workflow-runner/SKILL.md": {
@@ -890,8 +890,8 @@
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {
-      "templateHash": "552044f6012b4b86586ec8e15722f4efc2774fc1e3984701dcc542658502cd08",
-      "size": 1801,
+      "templateHash": "7b45501f51fa65ee3da32340df0675b3b830b15d677c498c39e1641dfebf8809",
+      "size": 2958,
       "component": "skills"
     },
     ".claude/skills/task-decomposition/SKILL.md": {
