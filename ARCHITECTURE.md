@@ -327,7 +327,7 @@ The reasoning-sandwich skill structures prompts with context-instruction-context
 YAML-defined workflow pipelines in `workflows/` directory. Each workflow defines sequential steps that invoke skills or actions.
 
 Available workflows:
-- `omcustom-dev` — Full-auto release pipeline: triage → plan → implement → verify → PR
+- `auto-dev` — Full-auto release pipeline: triage → plan → implement → verify → PR
 
 Custom workflows can be defined by users in `workflows/` with any `^[a-z0-9-]+$` name.
 
@@ -619,7 +619,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.52.0 | Feedback collector hook; routing miss analysis; /omcustom:improve-report; R018 scope constraint |
 | v0.51.0–v0.51.2 | /scout skill; Agent Teams first usage; R018 advisor batch detection; dashboard cleanup |
 | v0.50.0 | Lockfile-based smart protection for omcustom update; systematic-debugging skill |
-| v0.49.0 | Workflow engine (/omcustom:workflow); workflow-runner; omcustom-dev.yaml |
+| v0.49.0 | Workflow engine (/omcustom:workflow); workflow-runner; auto-dev.yaml |
 | v0.48.0–v0.48.5 | 20-issue deep fix (Drizzle, group_concat, busy_timeout); /professor-triage; /release-plan; stale-todo-scanner; bypassPermissions advisory |
 | v0.47.0–v0.47.2 | Built-in Web UI improvements; orphan server fix; downgrade prevention; version display unification |
 | v0.44.0–v0.46.1 | Sidebar/dashboard/evaluations; Autonomous Mode; feedback skill; SDD; ambiguity-gate; CC v2.1.80 compat; multi-project Web UI |

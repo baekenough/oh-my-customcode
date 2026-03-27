@@ -13,84 +13,30 @@
 
 ## HUD Events (Hook-based)
 
-### Format
+Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` — implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher). Display for multi-step/parallel/long-running ops only.
 
-```
-─── [Spawn] {subagent_type}:{model} | {description} ───
-─── [Resume] {subagent_type}:{model} | {description} ───
-```
-
-### When to Display
-
-Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
-
-### Implementation
-
-Implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher).
-
-### Parallel Display
-
-```
+<!-- DETAIL: HUD Events full spec
+### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
+### Parallel Display:
 ─── [Agent] secretary | [Parallel] 4 ───
   [1] Agent(mgr-creator):sonnet → Create agent
   [2] Agent(lang-golang-expert):haiku → Code review
-```
+-->
 
 ## Statusline API (Command-based)
 
-### Format
+Format: `{Cost} | {project} | {branch} | RL:{rate_limit}% {countdown} | WL:{weekly_limit}% {countdown} | CTX:{usage}%`
 
-```
-{Cost} | {project} | {branch} | RL:{rate_limit}% {countdown} | WL:{weekly_limit}% {countdown} | CTX:{usage}%
-```
+Config in `.claude/settings.local.json`: `statusLine.type: "command"`, `statusLine.command: ".claude/statusline.sh"`. Requires CC v2.1.80+ for RL/WL segments.
 
-Example: `$0.05 | my-project | develop | RL:45% 3h20m | WL:72% 2d3h | CTX:42%`
-
-### Configuration
-
+<!-- DETAIL: Statusline configuration JSON and color coding
 ```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": ".claude/statusline.sh",
-    "padding": 0
-  }
-}
+{ "statusLine": { "type": "command", "command": ".claude/statusline.sh", "padding": 0 } }
 ```
-
-Set in `.claude/settings.local.json`. The command receives JSON via stdin with model, workspace, context window, cost, and rate limit data.
-
-### Color Coding
-
-| Element | Condition | Color |
-|---------|-----------|-------|
-| Cost | < $1.00 | Green |
-| Cost | $1.00 - $4.99 | Yellow |
-| Cost | >= $5.00 | Red |
-| Rate Limit | < 50% | Green |
-| Rate Limit | 50-79% | Yellow |
-| Rate Limit | >= 80% | Red |
-| Weekly Limit | < 50% | Green |
-| Weekly Limit | 50-79% | Yellow |
-| Weekly Limit | >= 80% | Red |
-| Context | < 60% | Green |
-| Context | 60-79% | Yellow |
-| Context | >= 80% | Red |
-
-The `RL:{rate_limit}%` segment only appears when Claude Code v2.1.80+ provides `rate_limits` data. On older versions, this segment is omitted.
-
-The `WL:{weekly_limit}%` segment shows the 7-day rolling rate limit percentage. Both RL and WL segments are omitted on older versions.
-
-### Countdown Format
-
-The `{countdown}` shows time until RL/WL resets. Omitted when data is unavailable.
-
-| Remaining | Display | Example |
-|-----------|---------|---------|
-| >= 1 day | `{d}d{h}h` | `2d3h` |
-| >= 1 hour | `{h}h{m}m` | `5h30m` |
-| < 1 hour | `{m}m` | `45m` |
-| expired/unavailable | (omitted) | `WL:72%` |
+Color coding: Cost (<$1 green, $1-4.99 yellow, >=5 red), RL/WL (<50% green, 50-79% yellow, >=80% red), CTX (<60% green, 60-79% yellow, >=80% red).
+Countdown format: >=1d → "{d}d{h}h", >=1h → "{h}h{m}m", <1h → "{m}m", unavailable → omitted.
+RL/WL segments omitted on CC older than v2.1.80.
+-->
 
 ## Integration
 

@@ -257,7 +257,7 @@ flowchart LR
 `workflows/` 디렉토리에 정의된 YAML 기반 워크플로우 파이프라인입니다. 각 워크플로우는 스킬 또는 액션을 호출하는 순차 단계를 정의합니다.
 
 사용 가능한 워크플로우:
-- `omcustom-dev` — 완전 자동 릴리즈 파이프라인: triage → plan → implement → verify → PR
+- `auto-dev` — 완전 자동 릴리즈 파이프라인: triage → plan → implement → verify → PR
 
 사용자는 `workflows/` 디렉토리에 `^[a-z0-9-]+$` 이름 규칙으로 커스텀 워크플로우를 정의할 수 있습니다.
 
@@ -544,7 +544,7 @@ Claude Code v2.1.72 ~ v2.1.81+ 테스트 및 호환 확인.
 | v0.52.0 | feedback-collector 훅; 라우팅 미스 분석; /omcustom:improve-report; R018 스코프 제약 |
 | v0.51.0–v0.51.2 | /scout 스킬; Agent Teams 최초 사용; R018 어드바이저 배치 감지; 대시보드 정리 |
 | v0.50.0 | lockfile 기반 스마트 보호; systematic-debugging 스킬 |
-| v0.49.0 | 워크플로우 엔진 (/omcustom:workflow); workflow-runner; omcustom-dev.yaml |
+| v0.49.0 | 워크플로우 엔진 (/omcustom:workflow); workflow-runner; auto-dev.yaml |
 | v0.48.0–v0.48.5 | 20개 이슈 심층 수정 (Drizzle, group_concat, busy_timeout); /professor-triage; /release-plan; stale-todo-scanner; bypassPermissions 어드바이저리 |
 | v0.47.0–v0.47.2 | 내장 Web UI 개선; 고아 서버 수정; 다운그레이드 방지; 버전 표시 통일 |
 | v0.44.0–v0.46.1 | 사이드바/대시보드/평가; 자율 모드; 피드백 스킬; SDD; ambiguity-gate; CC v2.1.80 호환; 멀티 프로젝트 Web UI |
