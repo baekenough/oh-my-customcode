@@ -33,6 +33,27 @@ evaluator-optimizer:
   max_iterations: 3               # Default, hard cap: 5
 ```
 
+### Pre-Negotiation (Sprint Contract Pattern)
+
+Optional phase where generator and evaluator agree on rubric interpretation before the first iteration. Inspired by Anthropic's harness design for long-running applications.
+
+```yaml
+evaluator-optimizer:
+  pre_negotiation:
+    enabled: true              # Default: false
+    rounds: 1                  # Negotiation rounds (1-2)
+  generator:
+    agent: fe-design-expert
+    ...
+```
+
+When enabled:
+1. Generator receives the rubric and proposes its interpretation + planned approach
+2. Evaluator reviews and may adjust rubric weights or add clarifications
+3. Both proceed with aligned expectations, reducing wasted iterations
+
+Use when: tasks requiring 3+ iterations consistently, or when generator-evaluator score disagreements exceed 0.3.
+
 ### Parameter Details
 
 | Parameter | Required | Default | Description |
@@ -307,3 +328,38 @@ When ecomode is active (R013), compress output:
 - The evaluator prompt MUST include the full rubric to ensure consistent scoring
 - Iteration state (best score, best output) is tracked by the orchestrator
 - The hard cap of 5 iterations prevents runaway refinement loops
+
+## Domain Examples
+
+### UI Generation (Anti-AI-Slop)
+
+For UI/design generation tasks, use weighted rubrics that penalize generic AI patterns:
+
+```yaml
+evaluator-optimizer:
+  generator:
+    agent: fe-design-expert
+    model: sonnet
+  evaluator:
+    agent: fe-design-expert
+    model: opus
+  rubric:
+    - criterion: originality
+      weight: 0.40
+      description: "No stock patterns (centered hero + 3-card grid). Unique layout, typography choices, color relationships."
+    - criterion: craft
+      weight: 0.35
+      description: "Intentional spacing, consistent type scale, purposeful color usage. Details that show care."
+    - criterion: functionality
+      weight: 0.25
+      description: "Accessibility (WCAG 2.1 AA), responsive behavior, interaction states."
+  quality_gate:
+    type: score_threshold
+    threshold: 0.85
+  pre_negotiation:
+    enabled: true
+```
+
+Weight ordering (originality > craft > functionality) follows Anthropic's anti-slop principle: functionality is table stakes, but originality and craft distinguish quality output from generic AI generation.
+
+Integration: Works with [impeccable-design](/skills/impeccable-design) skill for design language enforcement.
