@@ -9307,7 +9307,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.60.1",
+    version: "0.61.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -24787,7 +24787,8 @@ var en_default = {
       interactiveSelect: "Select projects to update:",
       interactiveNoneSelected: "No projects selected. Exiting.",
       interactiveUpdating: "Updating selected projects...",
-      projectLatestSuffix: "(latest)"
+      projectLatestSuffix: "(latest)",
+      newVersionAvailable: "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade."
     },
     list: {
       description: "List installed components",
@@ -25171,7 +25172,8 @@ var ko_default = {
       interactiveSelect: "업데이트할 프로젝트 선택:",
       interactiveNoneSelected: "선택된 프로젝트가 없습니다. 종료합니다.",
       interactiveUpdating: "선택된 프로젝트 업데이트 중...",
-      projectLatestSuffix: "(최신)"
+      projectLatestSuffix: "(최신)",
+      newVersionAvailable: "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요."
     },
     list: {
       description: "설치된 컴포넌트 목록 표시",
@@ -30501,7 +30503,19 @@ async function loadCustomizationManifest(targetDir) {
 }
 
 // src/cli/update.ts
-async function updateCommand(options = {}) {
+async function checkCliVersion(checkFn) {
+  try {
+    const result = checkFn({ currentVersion: package_default.version });
+    if (result.updateAvailable && result.latestVersion) {
+      console.log(i18n.t("cli.update.newVersionAvailable", {
+        latest: result.latestVersion,
+        current: package_default.version
+      }));
+    }
+  } catch {}
+}
+async function updateCommand(options = {}, cliVersionCheck = checkSelfUpdate) {
+  await checkCliVersion(cliVersionCheck);
   try {
     if (options.all) {
       await updateAllProjects(options);
@@ -30538,7 +30552,6 @@ async function updateSingleProject(targetDir, options) {
   printUpdateResults(result);
   if (!result.success) {
     process.exit(1);
-    return false;
   }
   return true;
 }
