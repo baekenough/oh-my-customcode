@@ -35,43 +35,25 @@ Before writing/editing multiple files:
 ### Common Violations to Avoid
 
 ```
+❌ WRONG: Write(file1.kt) → Write(file2.kt) → ... (sequential)
+✓ CORRECT: Agent(agent1→file1.kt) + Agent(agent2→file2.kt) + ... (same message, parallel)
+```
+
+<!-- DETAIL: Full violation examples (4 pairs)
 ❌ WRONG: Writing files one by one
    Write(file1.kt) → Write(file2.kt) → Write(file3.kt) → Write(file4.kt)
-
-✓ CORRECT: Spawn parallel agents
-   Agent(agent1 → file1.kt)  ┐
-   Agent(agent2 → file2.kt)  ├─ All in single message
-   Agent(agent3 → file3.kt)  │
-   Agent(agent4 → file4.kt)  ┘
+✓ CORRECT: Spawn parallel agents — all in single message
 
 ❌ WRONG: Project scaffolding sequentially
    Write(package.json) → Write(tsconfig.json) → Write(src/index.ts) → ...
+✓ CORRECT: Agent(agent1→"Create package.json, tsconfig.json") + Agent(agent2→"Create src/cli.ts, src/index.ts") parallel
 
-✓ CORRECT: Parallel scaffolding
-   Agent(agent1 → "Create package.json, tsconfig.json")  ┐
-   Agent(agent2 → "Create src/cli.ts, src/index.ts")     ├─ Parallel
-   Agent(agent3 → "Create src/analyzer/*.ts")            │
-   Agent(agent4 → "Create src/converter/*.ts")           ┘
+❌ WRONG: Secretary writes domain/, usecase/, infrastructure/ sequentially
+✓ CORRECT: Agent(lang-kotlin-expert→domain) + Agent(be-springboot-expert→infrastructure) + Agent(lang-kotlin-expert→usecase)
 
-❌ WRONG: Secretary doing all the work
-   Secretary writes domain/, usecase/, infrastructure/ sequentially
-
-✓ CORRECT: Delegate to specialists
-   Agent(lang-kotlin-expert → domain layer)
-   Agent(be-springboot-expert → infrastructure layer)
-   Agent(lang-kotlin-expert → usecase layer)
-
-❌ WRONG: Single Agent delegating to multiple agents
-   Agent(dev-lead → "coordinate lang-kotlin-expert and be-springboot-expert")
-
-   This creates a SEQUENTIAL bottleneck inside the Agent!
-
-✓ CORRECT: Multiple Agents in parallel, one per agent
-   Agent(lang-kotlin-expert → usecase commands)    ┐
-   Agent(lang-kotlin-expert → usecase queries)     ├─ All spawned together
-   Agent(be-springboot-expert → persistence)       │
-   Agent(be-springboot-expert → security)          ┘
-```
+❌ WRONG: Agent(dev-lead → "coordinate lang-kotlin-expert and be-springboot-expert") — creates SEQUENTIAL bottleneck
+✓ CORRECT: Agent(lang-kotlin-expert→usecase commands) + Agent(lang-kotlin-expert→usecase queries) + Agent(be-springboot-expert→persistence) + Agent(be-springboot-expert→security) — all spawned together
+-->
 
 > **Agent Teams partial spawn** → See R018 (MUST-agent-teams.md) "Spawn Completeness Check".
 

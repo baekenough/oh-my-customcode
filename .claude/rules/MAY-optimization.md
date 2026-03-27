@@ -28,14 +28,15 @@
 
 Readability > Optimization. No optimization without measurement.
 
-## CLAUDE.md Context Optimization (v2.1.72+)
+## Context Optimization via HTML Comments (v2.1.72+)
 
-HTML comments in CLAUDE.md are hidden from the model during auto-injection but visible via Read tool.
+HTML comments in all auto-injected .md files (CLAUDE.md and rules/*.md) are hidden from the model during auto-injection but visible via Read tool.
 
 | Use Case | Example |
 |----------|---------|
-| Metadata tags | `<!-- agents: 44, skills: 74 -->` |
-| Validation checksums | `<!-- validate-docs: hash=abc123 -->` |
-| Conditional context | `<!-- detailed-architecture: see guides/architecture/ -->` |
+| Metadata tags | `<!-- agents: 44, skills: 74 -->` in CLAUDE.md |
+| Validation checksums | `<!-- validate-docs: hash=abc123 -->` in CLAUDE.md |
+| Conditional context | `<!-- detailed-architecture: see guides/architecture/ -->` in CLAUDE.md |
+| Rule detail hiding | `<!-- DETAIL: Self-Check ... -->` in rules/*.md |
 
 **Rule**: Move model-unnecessary metadata into HTML comments to reduce context token usage. Keep actionable instructions as visible text.

@@ -10,8 +10,7 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 
 **The orchestrator MUST NEVER directly write, edit, or create files. ALL file modifications MUST be delegated to appropriate subagents.**
 
-## Self-Check (Before File Modification)
-
+<!-- DETAIL: Self-Check (Before File Modification)
 ```
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE MODIFYING ANY FILE, ASK YOURSELF:                        ║
@@ -37,9 +36,9 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ║  If any answer points to a problem → resolve before proceeding   ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
+-->
 
-## Self-Check (Before Delegating Tasks)
-
+<!-- DETAIL: Self-Check (Before Delegating Tasks)
 ```
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE DELEGATING A TASK TO ANY AGENT, ASK YOURSELF:            ║
@@ -69,9 +68,9 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ║  If any answer points to a problem → split the task first        ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
+-->
 
-## Architecture
-
+<!-- DETAIL: Architecture Diagram
 ```
 Main Conversation (orchestrator)
   ├─ secretary-routing → mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, sys-memory-keeper
@@ -81,18 +80,22 @@ Main Conversation (orchestrator)
       ↓
   Agent tool spawns subagents (flat, no hierarchy)
 ```
+-->
 
 ## Common Violations
+
+Key violations to avoid (file writes, git commands, bundled operations — all must be delegated):
 
 ```
 ❌ WRONG: Orchestrator writes files directly
    Main conversation → Write("src/main.go", content)
-   Main conversation → Edit("package.json", old, new)
 
 ✓ CORRECT: Orchestrator delegates to specialist
    Main conversation → Agent(lang-golang-expert) → Write("src/main.go", content)
-   Main conversation → Agent(tool-npm-expert) → Edit("package.json", old, new)
+```
 
+<!-- DETAIL: Common Violations (extended)
+```
 ❌ WRONG: Orchestrator runs git commands directly
    Main conversation → Bash("git commit -m 'fix'")
    Main conversation → Bash("git push origin main")
@@ -125,6 +128,9 @@ Main Conversation (orchestrator)
    Main conversation → Agent(infra-docker-expert) → docker compose restart
    Main conversation → Agent(infra-docker-expert) → deploy files to server
 ```
+-->
+
+<!-- DETAIL: Autonomous Execution Mode
 
 ## Autonomous Execution Mode
 
@@ -199,6 +205,11 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 
+### Mutual Exclusion with Structured Dev Cycle
+
+Autonomous mode and `/structured-dev-cycle` (stage-blocker) are mutually exclusive.
+-->
+
 ## Session Continuity
 
 After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. Never write code directly from orchestrator.
@@ -232,12 +243,12 @@ After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. N
 - general-purpose only for truly generic tasks (file moves, simple scripts)
 - No exceptions for "small" or "quick" changes
 
-### System Agents Reference
-
+<!-- DETAIL: System Agents Reference
 | Agent | File | Purpose |
 |-------|------|---------|
 | sys-memory-keeper | .claude/agents/sys-memory-keeper.md | Memory operations |
 | sys-naggy | .claude/agents/sys-naggy.md | TODO management |
+-->
 
 ## Exception: Simple Tasks
 
@@ -265,8 +276,7 @@ When routing detects no matching agent for a specialized task:
 This is the core oh-my-customcode philosophy:
 > "No expert? CREATE one, connect knowledge, and USE it."
 
-## Model Selection
-
+<!-- DETAIL: Model Selection
 ```
 Available models:
   - opus   : Complex reasoning, architecture design
@@ -289,6 +299,7 @@ Usage:
 | Code implementation | `sonnet` |
 | Manager agents | `sonnet` |
 | File search/validation | `haiku` |
+-->
 
 ## Git Operations
 
@@ -297,8 +308,6 @@ All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Int
 ## External Skills vs Internal Rules
 
 Internal rules ALWAYS take precedence over external skills.
-
-This applies to ALL rule domains, not just git operations:
 
 | External skill says | Internal rule requires |
 |---------------------|----------------------|
@@ -313,6 +322,7 @@ When a skill's workflow conflicts with R009/R010/R018:
 2. Replace the EXECUTION method with rule-compliant alternatives
 3. The skill defines WHAT to do; rules define HOW to execute
 
+<!-- DETAIL: External Skills Example
 ```
 Incorrect:
   [Using external skill]
@@ -324,6 +334,7 @@ Correct:
 
 The skill's WORKFLOW is followed, but git EXECUTION is delegated to mgr-gitnerd per R010.
 ```
+-->
 
 ## Agent Teams (required when enabled)
 
@@ -334,10 +345,10 @@ See **R018 (MUST-agent-teams.md)** for the complete decision matrix, self-check,
 **Quick rule**: 3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams.
 Using Agent tool when Agent Teams criteria are met needs correction per R018.
 
-## Announcement Format
-
+<!-- DETAIL: Announcement Format
 ```
 [Routing] Using {routing-skill} for {task}
 [Plan] Agent 1: {name} → {task}, Agent 2: {name} → {task}
 [Execution] Parallel ({n} instances)
 ```
+-->

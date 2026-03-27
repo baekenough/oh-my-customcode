@@ -28,8 +28,9 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 ## Self-Check (Before Agent Tool)
 
 Before using Agent tool for 2+ agent tasks, complete this check:
+Quick rule: 3+ agents OR review cycle → use Agent Teams. Sequential deps / scaffolding → Agent Tool. 2+ issues in same batch → prefer Agent Teams.
 
-```
+<!-- DETAIL: Self-Check (Before Agent Tool)
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE USING Agent TOOL FOR 2+ AGENTS:                          ║
 ║                                                                   ║
@@ -58,15 +59,13 @@ Before using Agent tool for 2+ agent tasks, complete this check:
 ║  2+ issues in same batch → prefer Agent Teams                    ║
 ║  Everything else → Agent tool                                    ║
 ╚══════════════════════════════════════════════════════════════════╝
-```
+-->
 
 ### Spawn Completeness Check
 
-When spawning Agent Teams members:
-
 All members must be spawned in a single message. Partial spawning needs correction per R018 and R009.
 
-```
+<!-- DETAIL: Self-Check (Spawn Completeness)
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE SPAWNING TEAM MEMBERS:                                   ║
 ║                                                                   ║
@@ -79,10 +78,9 @@ All members must be spawned in a single message. Partial spawning needs correcti
 ║  Sequential spawn (one per message) = needs correction           ║
 ║  All at once in single message = correct                         ║
 ╚══════════════════════════════════════════════════════════════════╝
-```
+-->
 
-### External Skill Conflict Resolution
-
+<!-- DETAIL: External Skill Conflict Resolution
 When an external skill instructs using Agent tool but R018 criteria are met:
 
 | Skill says | R018 requires | Resolution |
@@ -91,12 +89,23 @@ When an external skill instructs using Agent tool but R018 criteria are met:
 | "Sequential agent spawning" | Independent tasks → parallel | Parallelize per R009 |
 | "Skip coordination" | Shared state → Teams | Use Teams for coordination |
 
-**Rule**: External skills define the WORKFLOW. R018 defines the EXECUTION METHOD.
+Rule: External skills define the WORKFLOW. R018 defines the EXECUTION METHOD.
 The skill's steps are followed, but agent spawning uses Teams when criteria are met.
+-->
 
 ## Common Violations
 
 ```
+❌ WRONG: 3+ tasks using Agent tool instead of Agent Teams
+   Agent(Explore):haiku → Analysis 1
+   Agent(Explore):haiku → Analysis 2
+   Agent(Explore):haiku → Analysis 3
+
+✓ CORRECT: TeamCreate → spawn researchers → coordinate via shared task list
+   TeamCreate("research-team") + Agent(researcher-1/2/3) + SendMessage(coordinate)
+```
+
+<!-- DETAIL: Common Violations (full examples)
 ❌ WRONG: Agent Teams enabled, 3+ research tasks using Agent tool
    Agent(Explore):haiku → Analysis 1
    Agent(Explore):haiku → Analysis 2
@@ -141,7 +150,7 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
 
 ✓ CORRECT: Completed member reports and waits
    svelte-projects completes task → SendMessage("Task complete") → waits silently
-```
+-->
 
 ## Cost Guidelines
 
@@ -155,34 +164,30 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
 
 ## Team Patterns
 
-### Standard Patterns
+Standard: Research (researcher-1 + researcher-2 + synthesizer), Development (implementer + reviewer + tester), Debug (investigator-1 + investigator-2 + fixer).
+Hybrid: Review+Fix, Create+Validate, Multi-Expert, Dynamic Creation, Codex Hybrid.
 
-- **Research**: researcher-1 + researcher-2 + synthesizer
-- **Development**: implementer + reviewer + tester
-- **Debug**: investigator-1 + investigator-2 + fixer
+<!-- DETAIL: Team Patterns
+### Standard Patterns
+- Research: researcher-1 + researcher-2 + synthesizer
+- Development: implementer + reviewer + tester
+- Debug: investigator-1 + investigator-2 + fixer
 
 ### Hybrid Patterns
-
-- **Review+Fix**: reviewer + implementer (reviewer finds issues → implementer fixes → reviewer re-checks)
-- **Create+Validate**: mgr-creator + qa-engineer (create agent → validate → iterate)
-- **Multi-Expert**: expert-1 + expert-2 + coordinator (cross-domain tasks requiring multiple specialties)
+- Review+Fix: reviewer + implementer (reviewer finds issues → implementer fixes → reviewer re-checks)
+- Create+Validate: mgr-creator + qa-engineer (create agent → validate → iterate)
+- Multi-Expert: expert-1 + expert-2 + coordinator (cross-domain tasks requiring multiple specialties)
 
 ### Dynamic Patterns
+- Dynamic Creation: mgr-creator + domain-expert (create new agent → immediately use for pending task)
+- Codex Hybrid: codex-exec-agent + claude-reviewer (Codex generates → Claude reviews/refines)
 
-- **Dynamic Creation**: mgr-creator + domain-expert (create new agent → immediately use for pending task)
-- **Codex Hybrid**: codex-exec-agent + claude-reviewer (Codex generates → Claude reviews/refines)
-
-## Codex-Exec Integration
-
+### Codex-Exec Integration
 When both Agent Teams and codex-exec are available:
-
-```
-Hybrid Workflow:
   1. Claude agent analyzes requirements
   2. codex-exec generates implementation (Codex strength: code generation)
   3. Claude agent reviews and refines (Claude strength: reasoning, quality)
   4. Iterate via team messaging until quality meets standards
-```
 
 | Step | Agent | Model |
 |------|-------|-------|
@@ -191,20 +196,21 @@ Hybrid Workflow:
 | Review | Claude team member | sonnet |
 | Refinement | Appropriate expert | sonnet |
 
-## Dynamic Agent Creation in Teams
-
+### Dynamic Agent Creation in Teams
 When Agent Teams creates a new agent via mgr-creator:
-
 1. Team lead identifies missing expertise
 2. Spawns mgr-creator as team member
 3. mgr-creator creates agent with auto-discovered skills
 4. New agent joins team immediately
 5. Team continues with expanded capabilities
+-->
 
 ## Blocked Agent Behavior
 
-When a team member is blocked by task dependencies:
+When a team member is blocked: prefer Deferred spawn (no wasted tokens) > Silent wait (short waits) > Reassign (blocked >2 min).
+Post-completion: report via SendMessage, wait silently. Do NOT browse TaskList or modify files outside scope.
 
+<!-- DETAIL: Blocked Agent Behavior
 | Strategy | When | Benefit |
 |----------|------|---------|
 | Deferred spawn | Dependency chain is clear | No wasted tokens; spawn after blocker completes |
@@ -212,7 +218,6 @@ When a team member is blocked by task dependencies:
 | Reassign | Agent blocked >2 min with no progress | Reuse agent for unblocked work |
 
 ### Prompt Guidelines for Team Members
-
 When spawning agents that may be blocked:
 1. Include explicit instruction: "If your task is blocked, wait silently. Do NOT send periodic status messages."
 2. Set check interval: "Check TaskList once per minute, not continuously."
@@ -221,8 +226,6 @@ When spawning agents that may be blocked:
 5. Explicit scope boundary: "Your scope is limited to: {file list or directory}. Do NOT modify files outside this scope."
 
 ### Anti-Pattern: Idle Polling
-
-```
 ❌ WRONG: Blocked agent sends repeated status messages
    docker-dev: "Task #1 still pending..."  (×5 messages, wasting tokens)
 
@@ -231,12 +234,8 @@ When spawning agents that may be blocked:
 
 ✓ ALSO CORRECT: Silent wait with infrequent checks
    docker-dev spawned with: "Wait silently if blocked. Check TaskList once per minute."
-```
 
-## Post-Completion Scope Constraint
-
-When a team member completes its assigned task:
-
+### Post-Completion Scope Constraint
 | Behavior | Correct | Wrong |
 |----------|---------|-------|
 | Task completed | Report completion via SendMessage, wait silently | Browse TaskList for other work |
@@ -244,8 +243,6 @@ When a team member completes its assigned task:
 | See unfinished work | Report to team lead, do NOT self-assign | Edit files that belong to other members |
 
 ### Self-Check (After Task Completion)
-
-```
 ╔══════════════════════════════════════════════════════════════════╗
 ║  AFTER COMPLETING YOUR ASSIGNED TASK:                            ║
 ║                                                                   ║
@@ -261,7 +258,7 @@ When a team member completes its assigned task:
 ║     YES → STOP. Report to team lead instead                      ║
 ║     NO  → Good. Wait silently or exit                            ║
 ╚══════════════════════════════════════════════════════════════════╝
-```
+-->
 
 ## Lifecycle
 
