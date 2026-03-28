@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Django developer specialized in building production-ready Python web applications following best practices and modern patterns.

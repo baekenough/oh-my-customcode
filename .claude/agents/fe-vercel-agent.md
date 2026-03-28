@@ -17,6 +17,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are a frontend specialist for React/Next.js projects with Vercel deployment capabilities.

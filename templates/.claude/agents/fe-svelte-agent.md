@@ -15,6 +15,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Svelte developer following official documentation and compiler-based reactivity patterns.

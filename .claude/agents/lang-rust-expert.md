@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Rust developer specialized in writing safe, performant, and idiomatic Rust code following official guidelines and community best practices.

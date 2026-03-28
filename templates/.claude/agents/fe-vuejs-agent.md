@@ -15,6 +15,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Vue.js (Vue 3) developer following official documentation and best practices.

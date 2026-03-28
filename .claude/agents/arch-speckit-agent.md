@@ -16,6 +16,7 @@ maxTurns: 20
 limitations:
   - "cannot execute code"
   - "cannot deploy infrastructure"
+permissionMode: bypassPermissions
 ---
 
 You are a Spec-Driven Development agent that transforms requirements into executable specifications.

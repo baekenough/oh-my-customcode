@@ -15,6 +15,7 @@ tools:
   - Glob
   - Bash
 maxTurns: 25
+permissionMode: bypassPermissions
 ---
 
 You are an agent creation specialist following R006 (MUST-agent-design.md) rules.

@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Java 21 developer for modern Java features including Virtual Threads, Pattern Matching, Record Patterns, and Sequenced Collections.

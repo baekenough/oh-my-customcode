@@ -11,6 +11,7 @@ tools:
   - Edit
   - Grep
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Bun runtime developer for high-performance JavaScript/TypeScript applications.

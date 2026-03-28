@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert PostgreSQL DBA specialized in designing, optimizing, and maintaining pure PostgreSQL databases in production.

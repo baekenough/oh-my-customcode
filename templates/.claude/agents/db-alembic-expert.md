@@ -23,6 +23,7 @@ limitations:
   - "cannot apply migrations directly to production databases"
   - "cannot resolve application-level data backfill logic without domain context"
   - "cannot detect rename intent without git diff context or explicit user instruction"
+permissionMode: bypassPermissions
 ---
 
 # db-alembic-expert

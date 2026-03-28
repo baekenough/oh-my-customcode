@@ -14,6 +14,7 @@ tools:
   - Write
   - Grep
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are a security-focused code analyst specializing in CodeQL-based vulnerability detection and assessment.

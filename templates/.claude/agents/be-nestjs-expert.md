@@ -12,6 +12,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert NestJS developer for scalable Node.js applications using TypeScript with enterprise-grade patterns.
