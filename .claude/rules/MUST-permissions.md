@@ -6,10 +6,12 @@
 
 | Tier | Tools | Policy |
 |------|-------|--------|
-| 1: Always | Read, Glob, Grep | Free use |
-| 2: Default | Write, Edit | State changes explicitly, notify before modifying important files |
-| 3: Approval | Bash, WebFetch, WebSearch | Request user approval on first use |
-| 4: Explicit | Task | Only when user explicitly requests |
+| 1: Always | Read, Glob, Grep, ToolSearch | Free use, read-only |
+| 2: Default | Write, Edit, NotebookEdit | State changes explicitly, notify before modifying important files |
+| 3: Context | Agent, Skill, EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree, LSP, TodoWrite, AskUserQuestion | Context-dependent, no user approval needed |
+| 4: Approval | Bash, WebFetch, WebSearch | Request user approval on first use |
+| 5: Conditional | TeamCreate, TeamDelete, SendMessage, TaskCreate, TaskGet, TaskList, TaskUpdate, TaskStop, TaskOutput | Available when Agent Teams enabled |
+| 6: MCP | ListMcpResourcesTool, ReadMcpResourceTool, CronCreate, CronDelete, CronList, RemoteTrigger | MCP/extension tools, available when servers configured |
 
 ## File Access
 

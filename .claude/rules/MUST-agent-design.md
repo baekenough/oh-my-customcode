@@ -11,15 +11,26 @@ Location: `.claude/agents/{name}.md` (single file, kebab-case)
 ```yaml
 name: agent-name           # Unique identifier (kebab-case)
 description: Brief desc    # One-line summary
-model: sonnet              # sonnet | opus | haiku (or full ID: claude-sonnet-4-6)
+model: sonnet              # sonnet | opus | haiku | opusplan (or full ID: claude-sonnet-4-6, claude-opus-4-6[1m])
 tools: [Read, Write, ...]  # Allowed tools
 ```
+
+### Model Aliases
+
+| Alias | Full ID | Use Case |
+|-------|---------|----------|
+| `haiku` | claude-haiku-4-5 | Fast, cheap tasks (search, simple edits) |
+| `sonnet` | claude-sonnet-4-6 | General tasks, code generation (default) |
+| `opus` | claude-opus-4-6 | Complex reasoning, architecture |
+| `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
+
+Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
 
 ### Optional Frontmatter
 
 ```yaml
 memory: project            # user | project | local
-effort: high               # low | medium | high
+effort: high               # low | medium | high | default | max
 skills: [skill-1, ...]     # Skill name references
 source:                    # For external agents
   type: external
@@ -144,6 +155,26 @@ Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HH
 
 Agent body: purpose, capabilities overview, workflow. NOT detailed instructions or reference docs.
 
+## Fast Mode
+
+Fast Mode uses the same model with faster output. Activated via `/fast` toggle or `fastMode` setting. Does NOT switch to a different model.
+
+| Aspect | Normal | Fast Mode |
+|--------|--------|-----------|
+| Model | As configured | Same model |
+| Output speed | Standard | ~2.5x faster |
+| Reasoning depth | Full | Reduced |
+
+### Activation
+
+- `/fast` — toggle in current session
+- `fastMode: true` in settings.json
+- `CLAUDE_CODE_DISABLE_FAST_MODE=1` — env var to disable
+
+### Interaction with Effort
+
+When Fast Mode is active, it reduces effective reasoning depth but does NOT override the `effort` frontmatter field. The effort field controls task complexity allocation; Fast Mode controls output generation speed.
+
 ## Skill Frontmatter
 
 Location: `.claude/skills/{name}/SKILL.md`
@@ -163,7 +194,17 @@ context: fork              # Forked context for isolated execution
 version: 1.0.0             # Semantic version
 user-invocable: false      # Whether user can invoke directly
 disable-model-invocation: true  # Prevent model from auto-invoking
-effort: medium              # low | medium | high — overrides model effort level when invoked
+effort: medium              # low | medium | high | default | max — overrides model effort level when invoked
+argument-hint: "<arg> [--flag]"  # CLI-style usage hint displayed in /help and command listings
+model: sonnet                      # Override spawned model when skill is invoked via Agent
+agent: mgr-creator                 # Preferred agent to execute this skill
+hooks:                             # Skill-specific hooks (same syntax as agent hooks)
+  PreToolUse:
+    - matcher: "Bash"
+      command: "echo hook"
+paths: ["src/**/*.ts"]             # Conditional loading — skill auto-injected when matching files are open
+shell: "bash"                      # Shell for embedded script execution
+allowed-tools: [Read, Write, Bash] # Restrict tools available during skill execution
 ```
 
 When both an agent and its invoked skill specify `effort`, the skill's value takes precedence (more specific invocation-time setting).
