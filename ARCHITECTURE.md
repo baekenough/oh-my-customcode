@@ -8,7 +8,7 @@ oh-my-customcode is a batteries-included agent harness for Claude Code. It ships
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.62.3** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Current version: **0.62.5** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
