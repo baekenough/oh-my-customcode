@@ -13,6 +13,7 @@
 	let svgEl = $state<SVGSVGElement | null>(null);
 	let searchQuery = $state('');
 	let activeFilter = $state<'all' | 'agent' | 'skill' | 'guide'>('all');
+	let currentZoomScale = $state(1);
 	let tooltip = $state<{ visible: boolean; x: number; y: number; node: GraphNode | null }>({
 		visible: false,
 		x: 0,
@@ -81,6 +82,13 @@
 			.scaleExtent([0.1, 4])
 			.on('zoom', (event) => {
 				g.attr('transform', event.transform);
+				const k = event.transform.k;
+				const wasHidden = currentZoomScale < 0.5;
+				const shouldHide = k < 0.5;
+				currentZoomScale = k;
+				if (wasHidden !== shouldHide) {
+					g.selectAll('.node text').attr('display', shouldHide ? 'none' : null);
+				}
 			});
 
 		svg.call(zoom);
@@ -127,6 +135,12 @@
 
 		simulationRef = simulation;
 
+		// Reduced-motion: skip animation, position nodes immediately
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			simulation.alpha(0).stop();
+			simulation.tick(300);
+		}
+
 		// Arrow markers
 		const defs = svg.append('defs');
 		for (const [rel, color] of [
@@ -170,6 +184,9 @@
 			.join('g')
 			.attr('class', 'node')
 			.attr('cursor', 'pointer')
+			.attr('tabindex', '0')
+			.attr('role', 'button')
+			.attr('aria-label', (d: any) => d.label)
 			.call(
 				d3
 					.drag<SVGGElement, any>()
@@ -238,24 +255,28 @@
 				.text(d.label);
 		});
 
+		// Clamp tooltip position within SVG container
+		function clampTooltip(clientX: number, clientY: number): { x: number; y: number } {
+			const containerRect = svgEl!.getBoundingClientRect();
+			const tooltipWidth = 192; // max-w-48 = 12rem
+			const tooltipHeight = 80;
+			let tx = clientX - containerRect.left + 12;
+			let ty = clientY - containerRect.top - 8;
+			if (tx + tooltipWidth > containerRect.width) tx = tx - tooltipWidth - 24;
+			if (ty + tooltipHeight > containerRect.height) ty = containerRect.height - tooltipHeight - 8;
+			if (ty < 0) ty = 8;
+			return { x: tx, y: ty };
+		}
+
 		// Node interactions
 		nodeSel
 			.on('mouseover', (event, d: any) => {
-				const rect = svgEl!.getBoundingClientRect();
-				tooltip = {
-					visible: true,
-					x: event.clientX - rect.left + 12,
-					y: event.clientY - rect.top - 8,
-					node: d
-				};
+				const { x, y } = clampTooltip(event.clientX, event.clientY);
+				tooltip = { visible: true, x, y, node: d };
 			})
 			.on('mousemove', (event) => {
-				const rect = svgEl!.getBoundingClientRect();
-				tooltip = {
-					...tooltip,
-					x: event.clientX - rect.left + 12,
-					y: event.clientY - rect.top - 8
-				};
+				const { x, y } = clampTooltip(event.clientX, event.clientY);
+				tooltip = { ...tooltip, x, y };
 			})
 			.on('mouseout', () => {
 				tooltip = { ...tooltip, visible: false };
@@ -268,6 +289,26 @@
 				} else {
 					selectedNode = d.id;
 					updateHighlight(d.id, linkSel, nodeSel);
+				}
+			})
+			.on('keydown', (event, d: any) => {
+				if (event.key === 'Enter' || event.key === ' ') {
+					event.preventDefault();
+					if (selectedNode === d.id) {
+						selectedNode = null;
+						updateHighlight(null, linkSel, nodeSel);
+					} else {
+						selectedNode = d.id;
+						updateHighlight(d.id, linkSel, nodeSel);
+					}
+				} else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+					event.preventDefault();
+					const adjacent = getAdjacentNodes(d.id, simEdges);
+					if (adjacent.length > 0) focusNode(adjacent[0], nodeSel);
+				} else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+					event.preventDefault();
+					const adjacent = getAdjacentNodes(d.id, simEdges);
+					if (adjacent.length > 0) focusNode(adjacent[adjacent.length - 1], nodeSel);
 				}
 			});
 
@@ -283,6 +324,25 @@
 		});
 
 		return { linkSel, nodeSel, simNodes, simEdges };
+	}
+
+	function getAdjacentNodes(nodeId: string, edges: any[]): string[] {
+		const adjacent: string[] = [];
+		for (const e of edges) {
+			const src = typeof e.source === 'object' ? e.source.id : e.source;
+			const tgt = typeof e.target === 'object' ? e.target.id : e.target;
+			if (src === nodeId && !adjacent.includes(tgt)) adjacent.push(tgt);
+			if (tgt === nodeId && !adjacent.includes(src)) adjacent.push(src);
+		}
+		return adjacent;
+	}
+
+	function focusNode(nodeId: string, nodeSel: d3.Selection<any, any, any, any>) {
+		nodeSel
+			.filter((d: any) => d.id === nodeId)
+			.each(function () {
+				(this as SVGGElement).focus();
+			});
 	}
 
 	function updateHighlight(
@@ -423,8 +483,8 @@
 		<svg
 			bind:this={svgEl}
 			class="w-full h-full"
-			role="img"
-			aria-label="Dependency graph visualization"
+			role="application"
+			aria-label="Dependency graph visualization. Use Tab to navigate nodes, Enter or Space to select, Arrow keys to move between connected nodes."
 		></svg>
 
 		<!-- Tooltip -->
