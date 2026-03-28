@@ -1,6 +1,6 @@
 # Architecture
 
-> oh-my-customcode v0.62.3
+> oh-my-customcode v0.62.4
 
 ## 1. System Overview
 
@@ -605,6 +605,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 | Version | Key Changes |
 |---------|-------------|
+| v0.62.4 | Graph circular keyboard nav, aria-live announcements, skip link, focus-visible styling |
 | v0.62.3 | Graph keyboard accessibility, zoom-responsive labels, tooltip clamping |
 | v0.62.0–v0.62.2 | D3 force-directed dependency graph; CI lockfile-sync gate; R016 defect response matrix; installer config.version fix |
 | v0.61.0 | Permission Mode Guidance R006; CLI self-update check |
