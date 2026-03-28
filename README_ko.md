@@ -15,7 +15,7 @@
 
 46개 에이전트. 97개 스킬. 21개 규칙. 명령어 하나.
 
-> **v0.62.3** — D3 의존성 그래프, 키보드 접근성, CI lockfile-sync 게이트, Permission Mode 가이드, HTML 주석 토큰 최적화
+> **v0.62.4** — D3 의존성 그래프, 키보드 접근성, aria-live/skip link/focus-visible, CI lockfile-sync 게이트
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
