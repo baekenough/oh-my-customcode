@@ -2,6 +2,7 @@
 name: sec-codeql-expert
 description: Expert security code analyst using CodeQL for vulnerability detection, call graph analysis, and SARIF output. Use for security audits, CVE triage, code pattern analysis, and vulnerability validation.
 model: sonnet
+effort: high
 domain: devops
 memory: project
 isolation: sandbox

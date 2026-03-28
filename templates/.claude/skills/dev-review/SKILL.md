@@ -3,6 +3,7 @@ name: dev-review
 description: Review code against language-specific best practices
 scope: core
 argument-hint: "<file-or-directory> [--lang <language>]"
+user-invocable: true
 ---
 
 # Code Review Skill

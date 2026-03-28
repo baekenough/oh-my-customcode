@@ -3,6 +3,7 @@ name: dag-orchestration
 description: YAML-based DAG workflow engine with topological execution and failure strategies
 scope: core
 context: fork
+user-invocable: false
 ---
 
 # DAG Orchestration Skill

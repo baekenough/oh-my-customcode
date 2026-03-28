@@ -3,6 +3,7 @@ name: codex-exec
 description: Execute OpenAI Codex CLI prompts and return results
 scope: core
 argument-hint: "<prompt> [--json] [--output <path>] [--model <name>] [--timeout <ms>] [--effort <level>]"
+user-invocable: true
 ---
 
 # Codex Exec Skill

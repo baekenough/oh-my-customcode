@@ -135,6 +135,9 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom:loop` | 백그라운드 에이전트 자동 계속 실행 |
 | `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
 | `/omcustom:status` | 시스템 상태 표시 |
+| `/omcustom-web` | 내장 Web UI 제어 및 검사 |
+| `/skills-sh-search` | skills.sh 마켓플레이스 스킬 검색 및 설치 |
+| `/vercel-deploy` | Vercel 배포 자동화 |
 | `/omcustom:help` | 도움말 표시 |
 
 ## 프로젝트 구조

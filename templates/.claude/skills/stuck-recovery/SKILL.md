@@ -2,6 +2,7 @@
 name: stuck-recovery
 description: Detect stuck loops and advise recovery strategies
 scope: core
+user-invocable: false
 ---
 
 # Stuck Recovery Skill

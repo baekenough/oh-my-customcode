@@ -3,6 +3,7 @@ name: omcustom:status
 description: Show system status and health checks
 scope: harness
 argument-hint: "[--verbose] [--health]"
+user-invocable: true
 ---
 
 # System Status Skill
