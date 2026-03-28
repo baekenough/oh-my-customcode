@@ -17,8 +17,27 @@ permissions:
   contents: read
 
 jobs:
+  lockfile-sync:
+    name: Lockfile Sync
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+      - name: Verify lockfile consistency
+        run: |
+          if ! bun install --frozen-lockfile 2>/dev/null; then
+            echo "::error::bun.lockb is out of sync with package.json files"
+            echo ""
+            echo "A workspace package.json was modified without updating bun.lockb."
+            echo "Fix: run 'bun install' locally and commit the updated bun.lockb"
+            exit 1
+          fi
+
   lint:
     name: Lint
+    needs: [lockfile-sync]
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -45,6 +64,7 @@ jobs:
 
   test:
     name: Test
+    needs: [lockfile-sync]
     runs-on: macos-latest
     steps:
       - name: Checkout
