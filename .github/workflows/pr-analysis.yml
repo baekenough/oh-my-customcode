@@ -19,6 +19,11 @@ jobs:
           AIRFLOW_API_PASSWORD: ${{ secrets.AIRFLOW_API_PASSWORD }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_ACTION: ${{ github.event.action }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO_FULL_NAME: ${{ github.repository }}
         run: |
           set -euo pipefail
 
@@ -49,7 +54,7 @@ jobs:
             -d "{
               \"dag_run_id\": \"pr_${PR_ACTION}_${PR_NUMBER}_$(date +%s)\",
               \"logical_date\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-              \"conf\": {\"pr_number\": ${PR_NUMBER}, \"action\": \"${PR_ACTION}\"},
+              \"conf\": {\"pr_number\": ${PR_NUMBER}, \"action\": \"${PR_ACTION}\", \"base_ref\": \"${BASE_REF}\", \"head_ref\": \"${HEAD_REF}\", \"base_sha\": \"${BASE_SHA}\", \"head_sha\": \"${HEAD_SHA}\", \"repo\": \"${REPO_FULL_NAME}\"},
               \"note\": \"PR #${PR_NUMBER} ${PR_ACTION} event\"
             }")
           HTTP_CODE=$(echo "${RESPONSE}" | tail -n1)
