@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.62.0",
-  "generatedAt": "2026-03-28T01:34:24.580Z",
-  "templateVersion": "0.62.0",
+  "generatorVersion": "0.62.3",
+  "generatedAt": "2026-03-28T03:24:31.434Z",
+  "templateVersion": "0.62.3",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -70,8 +70,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "e462929005906abd284a9d21d8c68d2673887c46975b5fa7d9d54bc9905bc906",
-      "size": 1531,
+      "templateHash": "4e152a62f0c6f749a4fef1f268bdc9da1bf211ea886ff68bb0d354b91b246470",
+      "size": 2090,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {

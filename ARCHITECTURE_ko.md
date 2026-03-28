@@ -1,12 +1,12 @@
 # 아키텍처
 
-> oh-my-customcode v0.58.4
+> oh-my-customcode v0.62.3
 
 ## 1. 시스템 개요
 
-oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 46개의 사전 구축된 서브에이전트, 95개의 스킬, 21개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
+oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 46개의 사전 구축된 서브에이전트, 97개의 스킬, 21개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
 
-현재 버전: **0.58.4** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
+현재 버전: **0.62.3** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
 
 ### 1.1 컴파일레이션 메타포
 
@@ -58,7 +58,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | R020 | MUST | 완료 검증 | 작업 완료 선언 전 task-type-specific 검증 |
 | R021 | MUST | Enforcement Policy | Advisory-first 시행 모델, 강화 승격 기준 |
 
-### 3.2 에이전트 분류 (45개)
+### 3.2 에이전트 분류 (46개)
 
 | 카테고리 | 수량 | 에이전트 |
 |----------|------|----------|
@@ -76,7 +76,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | 시스템 | 2 | sys-memory-keeper, sys-naggy |
 | **합계** | **46** | |
 
-### 3.3 스킬 카탈로그 (95개)
+### 3.3 스킬 카탈로그 (97개)
 
 **라우팅 스킬 (4개, context: fork)**
 
@@ -101,9 +101,9 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 **시스템 / 내부 스킬**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 가이드 라이브러리 (30개 토픽)
+### 3.4 가이드 라이브러리 (31개 토픽)
 
 | 카테고리 | 가이드 |
 |----------|--------|
@@ -530,6 +530,12 @@ Claude Code v2.1.72 ~ v2.1.81+ 테스트 및 호환 확인.
 
 | 버전 | 주요 변경 사항 |
 |------|--------------|
+| v0.62.3 | Graph 키보드 접근성, 줌 반응형 레이블, 툴팁 경계 보정 |
+| v0.62.0–v0.62.2 | D3 force-directed 의존성 그래프; CI lockfile-sync 게이트; R016 결함 대응 매트릭스; installer config.version 수정 |
+| v0.61.0 | Permission Mode Guidance R006; CLI 자체 업데이트 체크 |
+| v0.60.0–v0.60.1 | CC v2.1.83-85 호환; action-validator + peer-messaging 스킬; monitoring-setup Inspector |
+| v0.59.0–v0.59.1 | HTML 주석 토큰 최적화 (CLAUDE.md 550→286줄, 10 rules); professor-triage Phase 5B 필수화 |
+| v0.58.5–v0.58.6 | CI template-sync 검증; 테스트 스위트 확장; CLAUDE.md 중복 제거 48% 감소 |
 | v0.58.4 | 문서 v0.58.4 동기화 |
 | v0.58.3 | feedback-collector 수정, cost-cap-advisor TSV, updater.ts CRLF |
 | v0.58.2 | RL/WL 리뉴얼 카운트다운 statusline 표시 |
