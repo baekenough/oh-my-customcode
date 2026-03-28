@@ -520,6 +520,9 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 - Project overview with resource counts
 - Evaluations page with session summaries from eval-core SQLite
 - Project selection via `?project=X` query parameter
+- **Dependency graph** (`/graph`): D3.js force-directed interactive visualization of agent→skill→guide relationships with zoom, pan, drag, search, and type filters
+- **Graph accessibility**: WCAG-compliant keyboard navigation (circular arrows, Enter/Space activation), aria-live announcements, skip link, focus-visible styling, prefers-reduced-motion support
+- **Playwright E2E tests**: 11 accessibility tests with axe-core audit, `.pw.ts` extension for bun test isolation
 
 ---
 
@@ -543,6 +546,9 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | source: 'settings' plugins | No | Yes (v2.1.80+) | Not adopted |
 | --bare flag (skip hooks/skills/memory) | No | Yes (v2.1.81+) | Documented: harness fully disabled in bare mode (opt-in, zero impact on normal usage) |
 | --channels permission relay | No | Yes (v2.1.81+) | Compatible — no changes required (opt-in UX feature) |
+| CwdChanged/FileChanged hook events | No | Yes (v2.1.83+) | Yes (R006 documented) |
+| managed-settings.d/ drop-in directory | No | Yes (v2.1.83+) | Yes (R006 documented) |
+| Conditional hook `if` field | No | Yes (v2.1.85+) | Yes (R006 documented, permission rule syntax) |
 
 Tested and compatible with Claude Code v2.1.72 through v2.1.81+.
 

@@ -449,6 +449,9 @@ packages/eval-core/
 - 리소스 카운트 포함 프로젝트 개요
 - eval-core SQLite 기반 세션 요약 평가 페이지
 - `?project=X` 쿼리 파라미터를 통한 프로젝트 선택
+- **의존성 그래프** (`/graph`): D3.js force-directed 인터랙티브 시각화 — 에이전트→스킬→가이드 관계를 줌, 팬, 드래그, 검색, 타입 필터로 탐색
+- **그래프 접근성**: WCAG 키보드 탐색 (순환 화살표, Enter/Space 활성화), aria-live 알림, 스킵 링크, focus-visible 스타일링, prefers-reduced-motion 지원
+- **Playwright E2E 테스트**: axe-core 감사 포함 11개 접근성 테스트, bun test 격리를 위한 `.pw.ts` 확장자
 
 ---
 
@@ -496,8 +499,11 @@ packages/eval-core/
 | source: 'settings' 플러그인 | 아니오 | 예 (v2.1.80+) | 미채택 |
 | --bare 플래그 (훅/스킬/메모리 스킵) | 아니오 | 예 (v2.1.81+) | 문서화됨: bare 모드에서 하네스 완전 비활성화 (opt-in, 일반 사용에 영향 없음) |
 | --channels 권한 릴레이 | 아니오 | 예 (v2.1.81+) | 호환 -- 변경 불필요 (opt-in UX 기능) |
+| CwdChanged/FileChanged 훅 이벤트 | 아니오 | 예 (v2.1.83+) | 예 (R006 문서화) |
+| managed-settings.d/ 드롭인 디렉토리 | 아니오 | 예 (v2.1.83+) | 예 (R006 문서화) |
+| 조건부 훅 `if` 필드 | 아니오 | 예 (v2.1.85+) | 예 (R006 문서화, 권한 규칙 구문) |
 
-Claude Code v2.1.72 ~ v2.1.81+ 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.85+ 테스트 및 호환 확인.
 
 ---
 
