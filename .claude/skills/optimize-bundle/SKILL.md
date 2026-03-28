@@ -4,6 +4,7 @@ description: Apply bundle size optimizations
 scope: core
 argument-hint: "[--dry-run] [--safe]"
 disable-model-invocation: true
+user-invocable: true
 ---
 
 # Bundle Optimization Skill

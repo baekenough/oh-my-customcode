@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.63.0",
-  "generatedAt": "2026-03-28T11:48:25.166Z",
-  "templateVersion": "0.63.0",
+  "generatorVersion": "0.63.1",
+  "generatedAt": "2026-03-28T13:13:55.340Z",
+  "templateVersion": "0.63.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -270,8 +270,8 @@
       "component": "agents"
     },
     ".claude/agents/sec-codeql-expert.md": {
-      "templateHash": "497d7385e43450155f738054a303aab32a9811668bdd3a90b9d27867f49d53dc",
-      "size": 1947,
+      "templateHash": "400016761fe344db2d26a81d835b8163eed695c741fb7a314e5a73f03fd7853e",
+      "size": 1960,
       "component": "agents"
     },
     ".claude/agents/mgr-gitnerd.md": {
@@ -355,13 +355,13 @@
       "component": "agents"
     },
     ".claude/skills/pr-auto-improve/SKILL.md": {
-      "templateHash": "5dbc64372c47b9ae295c13537c0ab9d277d9cf3df1ce3b13a6504adeba6e8b5d",
-      "size": 4173,
+      "templateHash": "b0deecc6284254b250b3651b2b60707980ed7981727dba0ea6975ae7c76e4758",
+      "size": 4195,
       "component": "skills"
     },
     ".claude/skills/npm-version/SKILL.md": {
-      "templateHash": "c10a782e186a508a5ec6bbf211d1050bdc908bbd32f4e1e4d9adf492c994e565",
-      "size": 2312,
+      "templateHash": "4909b43b9c9c57603367ab6f7360dc13d626b7ef7e6707d1ea0ef3e2462ebca3",
+      "size": 2333,
       "component": "skills"
     },
     ".claude/skills/research/SKILL.md": {
@@ -370,8 +370,8 @@
       "component": "skills"
     },
     ".claude/skills/audit-agents/SKILL.md": {
-      "templateHash": "68c1acb5e98007bbb30232a6098229bfd0e52adb4bcf0a7a2206dfb0b67e1f10",
-      "size": 2339,
+      "templateHash": "6acc8dc2142e180e1c2689b2c47a96f58c11c43f0ecf44ef19fe75667e2ce13f",
+      "size": 2360,
       "component": "skills"
     },
     ".claude/skills/springboot-best-practices/examples/repository-example.java": {
@@ -430,8 +430,8 @@
       "component": "skills"
     },
     ".claude/skills/memory-recall/SKILL.md": {
-      "templateHash": "22b2d518426b8d6baa0fa61a063491221ad25608b2e5ec67efcd71ea8d0fa08b",
-      "size": 4323,
+      "templateHash": "14e17119e6fc510af9335d941b791b4068f9dee4ef024dc84a1b8724142fa73e",
+      "size": 4344,
       "component": "skills"
     },
     ".claude/skills/cve-triage/SKILL.md": {
@@ -440,18 +440,18 @@
       "component": "skills"
     },
     ".claude/skills/npm-publish/SKILL.md": {
-      "templateHash": "8a0852c5dd3cad2838bfc37782da137776a02becefb18bf5912538236ce3463a",
-      "size": 1130,
+      "templateHash": "30873ae59e8c11045ea1832828a0dde94e4da61820577b4e6cc17c4c0b0cc38b",
+      "size": 1151,
       "component": "skills"
     },
     ".claude/skills/memory-save/SKILL.md": {
-      "templateHash": "5c4cce467a5b222c14ce5bd6b810192047393f2f68243073a6c16f6ea8e61be4",
-      "size": 2500,
+      "templateHash": "05c29a3e9d51acb938917723f7b099c83926f91fe12402a292b4b7820b92ca76",
+      "size": 2521,
       "component": "skills"
     },
     ".claude/skills/dev-refactor/SKILL.md": {
-      "templateHash": "2dc8f1aa6f87695a3f75f1cb965958874b91574bac2ae69a6cecb2ab489de256",
-      "size": 7487,
+      "templateHash": "663a10e8982ecda84d784edd9654b7c9b67465b0ede3333378568318025f5b25",
+      "size": 7508,
       "component": "skills"
     },
     ".claude/skills/deep-verify/SKILL.md": {
@@ -510,18 +510,18 @@
       "component": "skills"
     },
     ".claude/skills/analysis/SKILL.md": {
-      "templateHash": "c9cbb95b27f242c0017e570246de2d98ec0bdea75052b5a39939d68830c92d6b",
-      "size": 5978,
+      "templateHash": "f4e5273a5facbef38304c92c603f1e5ee272f6c560711e972ca58cec54de8918",
+      "size": 5999,
       "component": "skills"
     },
     ".claude/skills/update-docs/SKILL.md": {
-      "templateHash": "44ca1f473894e3fac5595cd10464d423fe1874f7a6268d09a3e1e579ddf0aea0",
-      "size": 3160,
+      "templateHash": "e72aa18a1547b80fe846bf345fac8705d60521692241312a9f947cb69fcb540e",
+      "size": 3181,
       "component": "skills"
     },
     ".claude/skills/lists/SKILL.md": {
-      "templateHash": "34361873227241256fd3df5ce80d1e4a82492d988a3bc0282fbb2b240113155c",
-      "size": 3601,
+      "templateHash": "b6d2b298a04eca3aacd402839db3bf625177aafcae575ab4be0ad5506826ff80",
+      "size": 3622,
       "component": "skills"
     },
     ".claude/skills/fastapi-best-practices/SKILL.md": {
@@ -545,8 +545,8 @@
       "component": "skills"
     },
     ".claude/skills/alembic-best-practices/SKILL.md": {
-      "templateHash": "bf87eca073142d0f5d3d02ebb2616ba4ff7e28a82f6f1a269dc23fa656890dbe",
-      "size": 10418,
+      "templateHash": "156913739b84160ff7406dd7c254f877b8b19be5e78bc8d93fe026e3cdbbe2f7",
+      "size": 10440,
       "component": "skills"
     },
     ".claude/skills/release-plan/SKILL.md": {
@@ -570,18 +570,18 @@
       "component": "skills"
     },
     ".claude/skills/update-external/SKILL.md": {
-      "templateHash": "5f87a08e559cf0d222559e3ccc50c908d67990bb2fb6dda89492a519b19ae9fb",
-      "size": 3571,
+      "templateHash": "6bb7626373c84780865396947aaafc0d061feadc84015cad469023ed0c53582d",
+      "size": 3592,
       "component": "skills"
     },
     ".claude/skills/fix-refs/SKILL.md": {
-      "templateHash": "84b79deb18caddca6e329915dbaab3059af5ad535081091b730d65aa8bfcaa00",
-      "size": 2131,
+      "templateHash": "30a277e82fb55dbbe78ec2d4eccbed333db0b9ea7ea2f1d3c1e604ef034556f6",
+      "size": 2152,
       "component": "skills"
     },
     ".claude/skills/model-escalation/SKILL.md": {
-      "templateHash": "d73874aa62cc29bb04be1fefc82d71bdce2a0b102834a39ec02ecf8c9cd2bd48",
-      "size": 1735,
+      "templateHash": "452951a02456915b8e37d267cc4cb071801e432356c21d9563b926f24c09248e",
+      "size": 1757,
       "component": "skills"
     },
     ".claude/skills/multi-model-verification/SKILL.md": {
@@ -600,8 +600,8 @@
       "component": "skills"
     },
     ".claude/skills/claude-code-bible/SKILL.md": {
-      "templateHash": "19ff2586de5dbb84e5d995d6821d5ec7aef069b4bb9ebd61e85fec6f98baff18",
-      "size": 2545,
+      "templateHash": "a8f60ff5193a429e0fe2ff76f263c6733b382bba14692e9219188c6b3d85122f",
+      "size": 2567,
       "component": "skills"
     },
     ".claude/skills/snowflake-best-practices/SKILL.md": {
@@ -645,8 +645,8 @@
       "component": "skills"
     },
     ".claude/skills/status/SKILL.md": {
-      "templateHash": "c38678e9d3f2da3ab9d6625ed7aa0e19817d099997e0a9e7c67a56a6803945c9",
-      "size": 3061,
+      "templateHash": "8ff65a71f7aed19c7ea7c18608bd03be162eff2e48c80805b74a81021b7ae462",
+      "size": 3082,
       "component": "skills"
     },
     ".claude/skills/pipeline-architecture-patterns/SKILL.md": {
@@ -670,8 +670,8 @@
       "component": "skills"
     },
     ".claude/skills/optimize-bundle/SKILL.md": {
-      "templateHash": "4a7817baf678d28a3cde73ad29086dc5cac67865ce74e4b8b117bb36c9e5495e",
-      "size": 1360,
+      "templateHash": "003fe257b90abfde0416df7651204418634275155c020abbae2880c5b97dc02f",
+      "size": 1381,
       "component": "skills"
     },
     ".claude/skills/result-aggregation/SKILL.md": {
@@ -685,8 +685,8 @@
       "component": "skills"
     },
     ".claude/skills/npm-audit/SKILL.md": {
-      "templateHash": "0fa3e6331e1798721beef45974a9210673aeb9199cd3d81ac64117015d23d80d",
-      "size": 1206,
+      "templateHash": "79f27ddd12c987be69cec4523bc9dda46f3dab527a44983929d7c5aa48d958e2",
+      "size": 1227,
       "component": "skills"
     },
     ".claude/skills/peer-messaging/SKILL.md": {
@@ -715,8 +715,8 @@
       "component": "skills"
     },
     ".claude/skills/skills-sh-search/SKILL.md": {
-      "templateHash": "24faba9e91d7d3a05abee65e22fc36ea9a647cd08e85a428e13f7cf8ace3fa19",
-      "size": 4449,
+      "templateHash": "321ebdab84616ea74a01cbd6c0f3c642fc093153e91278c451b2035c556c59c5",
+      "size": 4470,
       "component": "skills"
     },
     ".claude/skills/typescript-best-practices/SKILL.md": {
@@ -775,13 +775,13 @@
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {
-      "templateHash": "46bfca17ec29513228aed73569fd2a85a7b7531d54a7c7abf2eab14f023ab6ef",
-      "size": 7527,
+      "templateHash": "09c3d34c449d00ff47ae9abffac4b500aebde7489e9282276b6f9f5cc324ffd9",
+      "size": 7548,
       "component": "skills"
     },
     ".claude/skills/vercel-deploy/SKILL.md": {
-      "templateHash": "be26d9a14ee70858c601059b239448aa5da2f001c08064eee82648b5289befe8",
-      "size": 1129,
+      "templateHash": "2ec7ab1bd074a9b047acc123ea9ae121edab2b39acf16a4ce036eaccece53513",
+      "size": 1150,
       "component": "skills"
     },
     ".claude/skills/jinja2-prompts/SKILL.md": {
@@ -805,8 +805,8 @@
       "component": "skills"
     },
     ".claude/skills/writing-clearly-and-concisely/SKILL.md": {
-      "templateHash": "65cddecc1f70ea73f58790129823a8cbb0bf33aee03274738d92f7a47829e12e",
-      "size": 2434,
+      "templateHash": "1fc6ee4371f75d4fe8759d3d14d481765b31bdc7fd48bb18848f479dffaa3c2d",
+      "size": 2456,
       "component": "skills"
     },
     ".claude/skills/sdd-development/SKILL.md": {
@@ -815,8 +815,8 @@
       "component": "skills"
     },
     ".claude/skills/monitoring-setup/SKILL.md": {
-      "templateHash": "c80356bf67ae659a216c0c0f1df060ca0f1bfbde9f01496ae5a9ebbc68a3dcf9",
-      "size": 4946,
+      "templateHash": "c57f728191be734e63e9e826607fd1ba830d3af89761843ec36c8a35c99e25ab",
+      "size": 4967,
       "component": "skills"
     },
     ".claude/skills/omcustom-loop/SKILL.md": {
@@ -830,8 +830,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-review/SKILL.md": {
-      "templateHash": "22b365791aa194612fa6391157c9e43e011e8869e540e1ba680fbba9032f46c2",
-      "size": 5421,
+      "templateHash": "1464ff8b2f56cf518092c0031cd3734f1f108ddc349702f624dbd03976837b51",
+      "size": 5442,
       "component": "skills"
     },
     ".claude/skills/omcustom-web/SKILL.md": {
@@ -850,8 +850,8 @@
       "component": "skills"
     },
     ".claude/skills/dag-orchestration/SKILL.md": {
-      "templateHash": "e71cd74c161106aee72dff7ba8f177f3d58560908a30795b24500d9f24a727af",
-      "size": 5441,
+      "templateHash": "bc7647948754f3f7ca6fcf27f90969e2568c29b5f66d542abd05c0dbe32739ec",
+      "size": 5463,
       "component": "skills"
     },
     ".claude/skills/codex-exec/scripts/codex-wrapper.cjs": {
@@ -860,18 +860,18 @@
       "component": "skills"
     },
     ".claude/skills/codex-exec/SKILL.md": {
-      "templateHash": "98eb58460c539c3fc53e4c13d25ddcd461801028b9198b89cd4ee010f10d6a36",
-      "size": 6408,
+      "templateHash": "d93e1940e11fa531ed32ce8eda443921ee81a6ad24c54564e309ae880ff91739",
+      "size": 6429,
       "component": "skills"
     },
     ".claude/skills/create-agent/SKILL.md": {
-      "templateHash": "00b35ef0662a9ba74b7318ca56ab22391602531c7357c6b3947a1264bdb58070",
-      "size": 1687,
+      "templateHash": "dadd806dc18f41516120f0cbaca4484b7314f7770359a8da68a2bca45f9356c2",
+      "size": 1708,
       "component": "skills"
     },
     ".claude/skills/worker-reviewer-pipeline/SKILL.md": {
-      "templateHash": "6d541a1c3591e62dc46dbfd2ec2fb14228ef26a3d818d930c79c320b78c84c7d",
-      "size": 5224,
+      "templateHash": "8c263148396937cff3c4cf3c6d0babf2447e2df2e674a0a4373c4833e9a36625",
+      "size": 5246,
       "component": "skills"
     },
     ".claude/skills/spark-best-practices/SKILL.md": {
@@ -880,8 +880,8 @@
       "component": "skills"
     },
     ".claude/skills/optimize-report/SKILL.md": {
-      "templateHash": "52d5414238702f7662633480be3f924533c1fed7b68c7ff25ea005e2da58f0f0",
-      "size": 1394,
+      "templateHash": "4db1730249300b0d7d31f5a6d2fb179291b625cdbb9b595091c79ab6d1e1e732",
+      "size": 1415,
       "component": "skills"
     },
     ".claude/skills/omcustom-improve-report/SKILL.md": {
@@ -900,13 +900,13 @@
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {
-      "templateHash": "7b45501f51fa65ee3da32340df0675b3b830b15d677c498c39e1641dfebf8809",
-      "size": 2958,
+      "templateHash": "9986123da05d4114c0bbab4443be878b1404a112e50badb42732ac713c5b94e1",
+      "size": 2980,
       "component": "skills"
     },
     ".claude/skills/task-decomposition/SKILL.md": {
-      "templateHash": "ce230383ca77817702ea1a469a3b95c1c33da0924f511f313ced14a35c5f38a7",
-      "size": 6377,
+      "templateHash": "1ea81db093867e25ebbdb096f6abf857d151dc09811c6be73f3440328cef35d2",
+      "size": 6399,
       "component": "skills"
     },
     ".claude/skills/test-new-skill-ci-test.md": {
@@ -915,8 +915,8 @@
       "component": "skills"
     },
     ".claude/skills/optimize-analyze/SKILL.md": {
-      "templateHash": "45ee1dcefc8855eaa704eea01f52efc562a72179e4e647f99ae67b599a85f7ba",
-      "size": 980,
+      "templateHash": "d94f157c50ab53530ce98967397dd8de849d4229de8e9e679285f1f0dff10b77",
+      "size": 1001,
       "component": "skills"
     },
     ".claude/skills/omcustom-auto-improve/SKILL.md": {
@@ -925,13 +925,13 @@
       "component": "skills"
     },
     ".claude/skills/pipeline-guards/SKILL.md": {
-      "templateHash": "a891949e54c6bd6b07a69840f3cb0e18afcfb9bcb3d09dfd88cce2770cbaebb1",
-      "size": 5171,
+      "templateHash": "5a5b15a07135b30901e25efa1c49dda523a4a1168d2210a98f68288a393db1b9",
+      "size": 5193,
       "component": "skills"
     },
     ".claude/skills/help/SKILL.md": {
-      "templateHash": "b1f148d035a47ff6a11eae60b3aa6e6f6cb6c01ddf66ed17e9dc9f108dbf1c21",
-      "size": 3085,
+      "templateHash": "4ef9e09008c4433a3db5d5a75a671551a56f03a4c4757a23772e6a975a2fdbeb",
+      "size": 3106,
       "component": "skills"
     },
     ".claude/hooks/PARALLEL-GROUPS.md": {

@@ -4,6 +4,7 @@ description: Update agents from external sources (GitHub, docs, etc.)
 scope: harness
 argument-hint: "[agent-name] [--check] [--force]"
 disable-model-invocation: true
+user-invocable: true
 ---
 
 # Update External Sources Skill

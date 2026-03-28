@@ -3,6 +3,7 @@ name: omcustom:help
 description: Show help information for commands and system
 scope: harness
 argument-hint: "[command] [--agents] [--rules]"
+user-invocable: true
 ---
 
 # Help Skill
