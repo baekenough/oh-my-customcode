@@ -58,6 +58,24 @@ avoid:
   - Special characters or complex syntax
 ```
 
+## Retrieval Strategy
+
+### Recall-Precision Tradeoff
+
+Default bias: **recall > precision** — it is easier to filter out irrelevant results (false positives) than to recover missed information (false negatives).
+
+| Task Type | Bias | Recommended --limit | Rationale |
+|-----------|------|--------------------:|-----------|
+| Debugging / Investigation | High recall (16:1) | 10-15 | Cast wide net, prune later |
+| Decision reference | Balanced | 5 (default) | Moderate breadth with manageable noise |
+| Specific fact lookup | High precision | 3 | Narrow, targeted retrieval |
+
+### Guidelines
+
+- **Over-retrieve, then filter**: When uncertain, request more results and discard irrelevant ones in post-processing
+- **Narrow progressively**: Start broad, refine query only if results are noisy — avoid starting too narrow
+- **Combine temporal + semantic**: Add date filters (`--date`) to semantic queries for better precision without sacrificing recall
+
 ## Output Format
 
 ### Basic Search
