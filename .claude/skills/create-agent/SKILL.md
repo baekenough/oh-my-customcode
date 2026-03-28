@@ -4,6 +4,7 @@ description: Create a new agent with complete structure
 scope: harness
 argument-hint: "<name> --type <type>"
 disable-model-invocation: true
+user-invocable: true
 ---
 
 # Create Agent Skill

@@ -4,6 +4,7 @@ description: Save current session context to claude-mem
 scope: core
 argument-hint: "[--tags <tags>] [--include-code]"
 disable-model-invocation: true
+user-invocable: true
 ---
 
 # Memory Save Skill
