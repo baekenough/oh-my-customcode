@@ -9307,7 +9307,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.62.1",
+    version: "0.62.2",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -27514,6 +27514,8 @@ async function installEntryDocWithTracking(targetDir, options, result) {
 }
 async function updateInstallConfig(targetDir, options, installedComponents) {
   const config = await loadConfig(targetDir);
+  const manifest = await getTemplateManifest();
+  config.version = manifest.version;
   config.language = options.language ?? DEFAULT_LANGUAGE2;
   config.domain = options.domain;
   config.installedAt = new Date().toISOString();
@@ -27565,6 +27567,25 @@ async function install(options) {
     error("install.failed", { error: message });
   }
   return result;
+}
+async function getTemplateManifest() {
+  const packageRoot = getPackageRoot();
+  const layout = getProviderLayout();
+  const manifestPath = join7(packageRoot, "templates", layout.manifestFile);
+  if (await fileExists(manifestPath)) {
+    return readJsonFile(manifestPath);
+  }
+  return {
+    version: "0.0.0",
+    lastUpdated: new Date().toISOString(),
+    components: getAllComponents().map((name) => ({
+      name,
+      path: getComponentPath(name),
+      description: `${name} component`,
+      files: 0
+    })),
+    source: "https://github.com/baekenough/oh-my-customcode"
+  };
 }
 function getAllComponents() {
   return ["rules", "agents", "skills", "guides", "hooks", "contexts", "ontology"];
