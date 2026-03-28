@@ -21,6 +21,7 @@
 		node: null
 	});
 	let selectedNode = $state<string | null>(null);
+	let liveMessage = $state('');
 
 	const graphData = $derived(data.graphData);
 
@@ -304,11 +305,35 @@
 				} else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
 					event.preventDefault();
 					const adjacent = getAdjacentNodes(d.id, simEdges);
-					if (adjacent.length > 0) focusNode(adjacent[0], nodeSel);
+					if (adjacent.length > 0) {
+						const currentFocused = document.activeElement;
+						let currentIdx = -1;
+						if (currentFocused) {
+							nodeSel.each(function (nd: any, i: number) {
+								if (this === currentFocused) {
+									currentIdx = adjacent.indexOf(nd.id);
+								}
+							});
+						}
+						const nextIdx = currentIdx >= 0 ? (currentIdx + 1) % adjacent.length : 0;
+						focusNode(adjacent[nextIdx], nodeSel);
+					}
 				} else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
 					event.preventDefault();
 					const adjacent = getAdjacentNodes(d.id, simEdges);
-					if (adjacent.length > 0) focusNode(adjacent[adjacent.length - 1], nodeSel);
+					if (adjacent.length > 0) {
+						const currentFocused = document.activeElement;
+						let currentIdx = -1;
+						if (currentFocused) {
+							nodeSel.each(function (nd: any, i: number) {
+								if (this === currentFocused) {
+									currentIdx = adjacent.indexOf(nd.id);
+								}
+							});
+						}
+						const nextIdx = currentIdx >= 0 ? (currentIdx - 1 + adjacent.length) % adjacent.length : adjacent.length - 1;
+						focusNode(adjacent[nextIdx], nodeSel);
+					}
 				}
 			});
 
@@ -432,6 +457,21 @@
 		graphRefs = buildGraph(nodes, edges);
 		selectedNode = null;
 	});
+
+	$effect(() => {
+		const nodeId = selectedNode;
+		if (!nodeId) {
+			liveMessage = '';
+			return;
+		}
+		const node = graphData.nodes.find((n) => n.id === nodeId);
+		if (node) {
+			const connections = graphData.edges.filter(
+				(e) => e.source === nodeId || e.target === nodeId
+			).length;
+			liveMessage = `${node.label}, ${node.type}, ${connections} connections`;
+		}
+	});
 </script>
 
 <!-- ============================================================ -->
@@ -480,12 +520,17 @@
 
 	<!-- Graph canvas -->
 	<div class="relative flex-1 overflow-hidden">
+		<a
+			href="#after-graph"
+			class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-zinc-800 focus:text-zinc-100 focus:px-4 focus:py-2 focus:rounded focus:top-2 focus:left-2"
+		>Skip graph</a>
 		<svg
 			bind:this={svgEl}
 			class="w-full h-full"
 			role="application"
 			aria-label="Dependency graph visualization. Use Tab to navigate nodes, Enter or Space to select, Arrow keys to move between connected nodes."
 		></svg>
+		<div id="after-graph" tabindex="-1"></div>
 
 		<!-- Tooltip -->
 		{#if tooltip.visible && tooltip.node}
@@ -507,6 +552,8 @@
 				{/if}
 			</div>
 		{/if}
+
+		<div aria-live="polite" class="sr-only">{liveMessage}</div>
 
 		<!-- Legend -->
 		<div
@@ -580,3 +627,15 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+  :global(.node:focus-visible) {
+    outline: none;
+  }
+  :global(.node:focus-visible circle),
+  :global(.node:focus-visible rect) {
+    stroke: #60a5fa;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.5));
+  }
+</style>
