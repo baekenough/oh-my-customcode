@@ -15,6 +15,7 @@ tools:
   - Edit
   - Grep
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You manage npm package publishing, versioning, and registry operations.

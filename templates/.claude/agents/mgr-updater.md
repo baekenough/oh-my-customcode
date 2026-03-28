@@ -19,6 +19,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an external source synchronization specialist keeping external components up-to-date.

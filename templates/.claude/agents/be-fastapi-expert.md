@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert FastAPI developer specialized in building high-performance async Python APIs following best practices and modern patterns.

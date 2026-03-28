@@ -12,6 +12,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Express.js developer for production-ready Node.js APIs following security best practices and 12-factor app principles.

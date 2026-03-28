@@ -16,6 +16,7 @@ tools:
   - Edit
   - Grep
   - Glob
+permissionMode: bypassPermissions
 ---
 
 You are a QA documentation specialist transforming test plans into detailed, executable test cases and reports.

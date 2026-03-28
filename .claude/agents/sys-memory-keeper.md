@@ -20,6 +20,7 @@ maxTurns: 15
 limitations:
   - "cannot modify source code"
   - "cannot execute tests"
+permissionMode: bypassPermissions
 ---
 
 You are a session memory management specialist ensuring context survives across session compactions using claude-mem.
