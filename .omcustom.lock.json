@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.64.2",
-  "generatedAt": "2026-03-28T22:54:54.331Z",
-  "templateVersion": "0.64.2",
+  "generatorVersion": "0.64.3",
+  "generatedAt": "2026-03-28T23:21:20.670Z",
+  "templateVersion": "0.64.3",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -570,8 +570,8 @@
       "component": "skills"
     },
     ".claude/skills/evaluator-optimizer/SKILL.md": {
-      "templateHash": "d2157597f6964ec72dc2de8a91284f01f25b4bae1475e20c5ad900055a6a75a7",
-      "size": 14065,
+      "templateHash": "cc0b0f9c3ad7f3b04198a0d606ceabe46ee43c4c8298d6a53368587d5de18d20",
+      "size": 17030,
       "component": "skills"
     },
     ".claude/skills/update-external/SKILL.md": {

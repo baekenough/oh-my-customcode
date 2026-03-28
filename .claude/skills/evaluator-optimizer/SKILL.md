@@ -54,6 +54,56 @@ When enabled:
 
 Use when: tasks requiring 3+ iterations consistently, or when generator-evaluator score disagreements exceed 0.3.
 
+### Evaluator Calibration
+
+Anthropic's harness design research identifies evaluator leniency as a key failure mode: LLMs default to generous scoring, especially when evaluating output from the same model family. Counter-measures:
+
+**Skepticism Prompting**: Include explicit instructions in the evaluator prompt:
+- "Default to skepticism. A 'pass' should require clear evidence, not absence of issues."
+- "Score as if you are reviewing code that will run in production with real users."
+- "When uncertain between pass and fail, choose fail and explain what evidence would change your mind."
+
+**Anti-Self-Praise Bias**: When generator and evaluator share the same model family (e.g., both Claude), add:
+- "You are reviewing another agent's work, not your own. Do not give credit for intent — only for execution."
+- "Identify at least one concrete improvement, even for high-quality output."
+
+**Calibration via Rubric Examples**: Each rubric criterion SHOULD include a `fail_example` alongside the description:
+
+```yaml
+rubric:
+  - criterion: error_handling
+    weight: 0.25
+    description: "All error paths handled with meaningful messages"
+    fail_example: "Generic try/catch with console.log(error) — no recovery, no user-facing message"
+```
+
+Adding `fail_example` anchors the evaluator's scale, reducing score inflation by ~20% (based on Anthropic's internal testing).
+
+### Conditional Evaluator (Cost Optimization)
+
+Not every task justifies evaluator overhead. Skip the evaluator loop for tasks within the model's reliable capability range. From Anthropic's research: "Worth cost when tasks sit beyond baseline model capability; unnecessary overhead for problems within model's reliable range."
+
+```yaml
+evaluator-optimizer:
+  conditional:
+    enabled: true
+    skip_when:
+      - task_complexity: low        # Simple, well-defined tasks
+      - generator_confidence: high  # Generator self-reports high confidence
+      - historical_pass_rate: 0.9   # Same task type historically passes first try
+```
+
+When `conditional.enabled: true` and ANY `skip_when` condition is met, the evaluator is skipped and the generator's first output is returned directly. This reduces token cost by ~40% for straightforward tasks.
+
+**Decision matrix**:
+
+| Task Type | Complexity | Evaluator? |
+|-----------|-----------|------------|
+| Simple file rename, config change | Low | Skip |
+| Standard CRUD implementation | Medium | Run |
+| Complex architecture, security-critical | High | Run with pre-negotiation |
+| Previously failed task retry | Any | Always run |
+
 ### Parameter Details
 
 | Parameter | Required | Default | Description |
@@ -224,6 +274,7 @@ evaluator-optimizer:
     - criterion: correctness
       weight: 0.35
       description: Code compiles, logic is correct, edge cases handled
+      fail_example: "Missing null check on user input causes runtime crash"
     - criterion: style
       weight: 0.2
       description: Follows project conventions, clean and readable
@@ -328,6 +379,7 @@ When ecomode is active (R013), compress output:
 - The evaluator prompt MUST include the full rubric to ensure consistent scoring
 - Iteration state (best score, best output) is tracked by the orchestrator
 - The hard cap of 5 iterations prevents runaway refinement loops
+- For multi-sprint runs (5+ iterations), consider context reset: spawn a fresh evaluator agent rather than continuing with degraded context. The workflow-runner supports this via `context: fork` on individual steps. Anthropic's research confirms "context resets provide clean slates superior to compaction" for long-running evaluation.
 
 ## Domain Examples
 
