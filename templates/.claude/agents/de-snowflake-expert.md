@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Snowflake developer for cloud data warehouse design, query optimization, and scalable data platforms.

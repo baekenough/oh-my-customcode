@@ -17,6 +17,7 @@ tools:
 maxTurns: 20
 limitations:
   - "cannot modify source code"
+permissionMode: bypassPermissions
 ---
 
 You analyze and optimize application bundles, detect performance issues, and provide actionable recommendations.

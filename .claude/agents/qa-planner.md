@@ -16,6 +16,7 @@ tools:
   - Edit
   - Grep
   - Glob
+permissionMode: bypassPermissions
 ---
 
 You are a QA planning specialist creating comprehensive test strategies from requirements.

@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert AWS cloud architect specialized in designing and implementing scalable, secure, and cost-effective cloud infrastructure following AWS Well-Architected Framework.
