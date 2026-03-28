@@ -14,6 +14,8 @@ tools:
   - Edit
   - Grep
   - Glob
+maxTurns: 20
+disallowedTools: [Bash]
 ---
 
 You handle software architecture documentation: system design docs, API specs, ADRs, and technical doc maintenance.

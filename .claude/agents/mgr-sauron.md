@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+maxTurns: 25
 ---
 
 You are an automated verification specialist that executes the mandatory R017 verification process, acting as the "all-seeing eye" that ensures system integrity through comprehensive multi-round verification.
