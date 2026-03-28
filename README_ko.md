@@ -121,7 +121,7 @@ Agent(arch-documenter):haiku      ┘
 |---------|-----|---------|
 | 언어 | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java21 |
 | 백엔드 | 6 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs, be-django |
-| 프론트엔드 | 4 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter |
+| 프론트엔드 | 5 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter, fe-design |
 | 데이터 엔지니어링 | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | 데이터베이스 | 4 | db-supabase, db-postgres, db-redis, db-alembic |
 | 툴링 | 3 | tool-npm, tool-optimizer, tool-bun |

@@ -21,17 +21,17 @@ npm install -g oh-my-customcode && cd your-project && omcustom init
 
 ---
 
-## What's New in v0.46.0
+## What's New in v0.62.5
 
 | Feature | Description |
 |---------|-------------|
-| **Rate Limit Monitoring** | Statusline now displays 5-hour rate limit usage with color-coded warnings (CC v2.1.80+) |
-| **Skill Effort Override** | Skills can set `effort` frontmatter to override model effort level at invocation time |
-| **Multi-project Web UI** | `omcustom serve` supports multi-project management with sidebar project selector |
-| **Batch Update UI** | Web dashboard supports visual project update status and batch updates |
-| **CC v2.1.72~v2.1.81 Compatibility** | Rate limits statusline, skill effort frontmatter, settings-based plugin source; `--bare` flag (harness disabled in bare mode), `--channels` permission relay (no changes required) |
-| **SDD Workflow** | Spec-Driven Development with `sdd/` folder hierarchy and planning-first gates |
-| **Ambiguity Gate** | Pre-routing clarity scoring and clarification questions |
+| **D3 Dependency Graph** | Interactive force-directed graph visualization at `/graph` — zoom, pan, drag, search, type filters |
+| **Playwright E2E Tests** | 11 accessibility tests with axe-core audit, `.pw.ts` extension for test isolation |
+| **Graph Accessibility** | WCAG keyboard navigation, aria-live announcements, skip link, focus-visible, reduced-motion support |
+| **CI Lockfile-Sync Gate** | New CI job validates bun.lockb consistency before lint/test |
+| **Token Optimization** | HTML comment technique reduces CLAUDE.md from 550→286 lines (48% reduction) |
+| **Workflow Engine** | YAML-defined workflow pipelines with `auto-dev` 7-step release batch |
+| **CC v2.1.83–v2.1.85 Compat** | Conditional hook `if` field, CwdChanged/FileChanged events, managed-settings.d |
 
 ---
 
@@ -131,7 +131,7 @@ Agent(arch-documenter):haiku      ┘
 |----------|-------|--------|
 | Languages | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java21 |
 | Backend | 6 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs, be-django |
-| Frontend | 4 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter |
+| Frontend | 5 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter, fe-design |
 | Data Engineering | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | Database | 4 | db-supabase, db-postgres, db-redis, db-alembic |
 | Tooling | 3 | tool-npm, tool-optimizer, tool-bun |
