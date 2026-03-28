@@ -360,6 +360,8 @@ async function updateInstallConfig(
   installedComponents: InstallComponent[]
 ): Promise<void> {
   const config = await loadConfig(targetDir);
+  const manifest = await getTemplateManifest();
+  config.version = manifest.version;
   config.language = options.language ?? DEFAULT_LANGUAGE;
   config.domain = options.domain;
   config.installedAt = new Date().toISOString();
