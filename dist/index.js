@@ -1685,7 +1685,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.62.4",
+  version: "0.62.5",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -1710,7 +1710,7 @@ var package_default = {
   scripts: {
     dev: "bun run src/cli/index.ts",
     build: "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && bun run scripts/sync-source-lockfile.ts",
-    test: "bun test",
+    test: "bun test tests/ packages/eval-core/",
     "test:unit": "bun test tests/unit",
     "test:integration": "bun test tests/integration",
     "test:e2e": "bun test tests/e2e",
