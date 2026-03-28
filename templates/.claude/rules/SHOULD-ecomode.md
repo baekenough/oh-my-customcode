@@ -36,6 +36,35 @@ Ecomode: `[lang-golang-expert] ✓ src/main.go reviewed: 1 naming issue (handle_
 
 Disable with: "ecomode off", "verbose mode", or "show full details".
 
+## Input Context Pruning
+
+Active removal of irrelevant retrieved content from agent context. Complements output compression by managing the input side of token budget.
+
+> **Terminology**: "Input Context Pruning" (R013) manages retrieved chunks during a task. "Memory Pruning" (R011) manages behavioral memory across sessions. These are distinct concepts.
+
+### Pruning Triggers
+
+| Trigger | Condition | Action |
+|---------|-----------|--------|
+| Search overflow | Retrieved chunks > 10 | Retain top-K by relevance, prune rest |
+| Context pressure | Context usage > 50% | Summarize oldest/lowest-relevance chunks |
+| Multi-hop intermediate | Between retrieval hops | Replace previous hop raw results with summary |
+
+### Pruning Strategy
+
+| Strategy | When | Behavior |
+|----------|------|----------|
+| **Retain** | Directly relevant code/docs | Keep as-is |
+| **Summarize** | Background context, prior hop results | Replace with 1-2 line summary |
+| **Drop** | Search noise, duplicates, already-reflected info | Remove entirely |
+
+### Rules
+
+- Pruning is irreversible — generate summary BEFORE dropping original
+- Prune at document/chunk level, not mid-sentence
+- When in doubt, Summarize rather than Drop
+- Track pruning decisions: `[Pruned] {N} chunks → {M} retained, {K} summarized, {J} dropped`
+
 ## Context Budget Management
 
 Task-type-aware context thresholds that trigger ecomode earlier for context-heavy operations.

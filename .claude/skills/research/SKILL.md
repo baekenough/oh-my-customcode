@@ -228,6 +228,33 @@ Convergence expected by round 3. Hard stop at round 30.
 | Ecomode | Auto-activate for team result aggregation (R013) |
 | Intent display | Show research plan before execution (R015) |
 
+## Retrieval-Reasoning Separation
+
+Retrieval and reasoning are distinct cognitive operations that benefit from explicit role separation. Mixing them in a single agent degrades both: retrieval becomes biased by premature conclusions, and reasoning gets polluted by search noise.
+
+### Principle
+
+| Role | Phase | Model | Responsibility |
+|------|-------|-------|----------------|
+| Retriever | Phase 1 | sonnet (fast, broad) | Gather, catalog, enumerate — no judgment |
+| Reasoner | Phase 2-3 | opus (deep, precise) | Verify, synthesize, judge — no new retrieval |
+
+### Why Separate
+
+- **Retrieval bias**: A reasoning agent searching for evidence tends to confirm existing hypotheses (confirmation bias)
+- **Context pollution**: Raw search results mixed with analysis obscure both
+- **Cost efficiency**: Retrieval needs speed and breadth (cheaper model); reasoning needs depth (capable model)
+- **Debuggability**: When results are wrong, separated roles make it clear whether the problem was bad retrieval or bad reasoning
+
+### Application in Research Workflow
+
+| Phase | Role | Separation Rule |
+|-------|------|-----------------|
+| Phase 1 (10 teams) | Retriever | Teams gather and catalog only. No ADOPT/AVOID judgments. |
+| Phase 2 (Verification) | Reasoner | Verifiers challenge claims using Phase 1 data. No new searches. |
+| Phase 3 (Synthesis) | Reasoner | Synthesizer produces taxonomy from verified findings only. |
+| Phase 4 (Output) | Reporter | Formats and persists. No new analysis. |
+
 ## Model Selection
 
 | Phase | Model | Rationale |
