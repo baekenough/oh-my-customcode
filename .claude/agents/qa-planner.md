@@ -5,6 +5,8 @@ model: sonnet
 domain: universal
 memory: project
 effort: high
+maxTurns: 20
+disallowedTools: [Bash]
 limitations:
   - "cannot execute tests"
   - "cannot modify code"
