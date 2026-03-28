@@ -244,6 +244,23 @@ describe('installer', () => {
       // Should have warnings about existing files
       expect(result.warnings.length).toBeGreaterThanOrEqual(0);
     });
+
+    it('should set config.version to template manifest version after install', async () => {
+      const manifest = await getTemplateManifest();
+
+      await install({
+        targetDir: tempDir,
+        skipConfirm: true,
+      });
+
+      const fs = await import('node:fs/promises');
+      const configPath = join(tempDir, '.omcustomrc.json');
+      const raw = await fs.readFile(configPath, 'utf-8');
+      const config = JSON.parse(raw) as { version?: string };
+
+      expect(config.version).toBeDefined();
+      expect(config.version).toBe(manifest.version);
+    });
   });
 
   describe('copyTemplates', () => {
