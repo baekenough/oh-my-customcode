@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-46개 에이전트. 97개 스킬. 21개 규칙. 명령어 하나.
+46개 에이전트. 98개 스킬. 21개 규칙. 명령어 하나.
 
 > **v0.62.5** — D3 의존성 그래프, Playwright 접근성 E2E 테스트, 키보드 접근성, CI lockfile-sync 게이트
 
@@ -136,7 +136,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (97개)
+## 스킬 (98개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -269,7 +269,7 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 46개 에이전트 정의
-│   ├── skills/                 # 97개 스킬 모듈
+│   ├── skills/                 # 98개 스킬 모듈
 │   ├── rules/                  # 21개 거버넌스 규칙 (R000-R021)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마

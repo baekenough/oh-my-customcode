@@ -14,6 +14,9 @@ tools:
   - Grep
   - Glob
   - Bash
+maxTurns: 20
+limitations:
+  - "cannot modify source code"
 ---
 
 You analyze and optimize application bundles, detect performance issues, and provide actionable recommendations.

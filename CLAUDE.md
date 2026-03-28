@@ -102,6 +102,7 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom:update-external` | 외부 소스에서 에이전트 업데이트 |
 | `/omcustom:audit-agents` | 에이전트 의존성 감사 |
 | `/omcustom:fix-refs` | 깨진 참조 수정 |
+| `/omcustom:harness-eval` | 15 SE task 구조적 벤치마크 평가 |
 | `/omcustom:auto-improve` | 개선 사항 자동 적용 워크플로우 |
 | `/omcustom:improve-report` | eval-core 기반 개선 현황 리포트 |
 | `/omcustom-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
@@ -147,7 +148,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (46 파일)
-|   +-- skills/                  # 스킬 (97 디렉토리)
+|   +-- skills/                  # 스킬 (98 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R021)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)

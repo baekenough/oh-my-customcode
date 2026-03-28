@@ -5,6 +5,7 @@ model: sonnet
 domain: universal
 memory: project
 effort: medium
+maxTurns: 20
 skills:
   - claude-code-bible
 tools:

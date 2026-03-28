@@ -5,6 +5,11 @@ model: sonnet
 domain: universal
 memory: local
 effort: low
+maxTurns: 10
+limitations:
+  - "cannot modify project files"
+  - "cannot execute external commands"
+disallowedTools: [Bash]
 tools:
   - Read
   - Write
