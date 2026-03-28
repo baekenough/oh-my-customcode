@@ -24,6 +24,20 @@ Update the relevant rule rather than just acknowledging the violation.
 | Self-detected violation | Fix immediately, consider rule update |
 | Ambiguous situation | Ask user, then update if needed |
 
+## Defect Response Matrix
+
+| Defect Type | Rule Update | Memory | Issue |
+|-------------|:-----------:|:------:|:-----:|
+| Rule violation (agent behavior) | ✅ | — | — |
+| CI/infra defect | — | ✅ | ✅ |
+| Process gap (workflow hole) | ✅ | ✅ | ✅ |
+| Repeatable system bug | — | ✅ | ✅ |
+
+When CI failure, process gap, or repeatable system defect is found:
+1. Record feedback memory (defend current session)
+2. Register GitHub issue (trackable improvement item)
+3. Both required — memory alone is NOT sufficient for system-level defects
+
 ## Anti-Patterns
 
 | Anti-Pattern | Why It's Wrong | Correct Action |
