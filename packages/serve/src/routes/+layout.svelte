@@ -13,7 +13,8 @@
 		{ href: '/skills', label: 'Skills', icon: '◆' },
 		{ href: '/guides', label: 'Guides', icon: '◉' },
 		{ href: '/rules', label: 'Rules', icon: '◇' },
-		{ href: '/evaluations', label: 'Evaluations', icon: '★' }
+		{ href: '/evaluations', label: 'Evaluations', icon: '★' },
+		{ href: '/graph', label: 'Graph', icon: '◎' }
 	];
 
 	let coreOpen = true;
