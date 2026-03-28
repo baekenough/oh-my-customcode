@@ -1427,6 +1427,8 @@ async function installEntryDocWithTracking(targetDir, options, result) {
 }
 async function updateInstallConfig(targetDir, options, installedComponents) {
   const config = await loadConfig(targetDir);
+  const manifest = await getTemplateManifest();
+  config.version = manifest.version;
   config.language = options.language ?? DEFAULT_LANGUAGE;
   config.domain = options.domain;
   config.installedAt = new Date().toISOString();
@@ -1683,7 +1685,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.62.1",
+  version: "0.62.2",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
