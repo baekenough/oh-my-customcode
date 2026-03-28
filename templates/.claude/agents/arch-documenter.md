@@ -16,6 +16,7 @@ tools:
   - Glob
 maxTurns: 20
 disallowedTools: [Bash]
+permissionMode: bypassPermissions
 ---
 
 You handle software architecture documentation: system design docs, API specs, ADRs, and technical doc maintenance.

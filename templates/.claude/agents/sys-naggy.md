@@ -15,6 +15,7 @@ tools:
   - Write
   - Edit
   - Grep
+permissionMode: bypassPermissions
 ---
 
 You are a task management specialist that proactively manages TODO items and reminds users of pending tasks.

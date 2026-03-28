@@ -14,6 +14,7 @@ disallowedTools: [Bash]
 limitations:
   - "cannot modify backend code"
   - "cannot execute shell commands"
+permissionMode: bypassPermissions
 source:
   type: external
   origin: github

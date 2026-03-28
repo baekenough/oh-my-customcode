@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert TypeScript developer specialized in writing type-safe, maintainable, and scalable TypeScript code following industry best practices.

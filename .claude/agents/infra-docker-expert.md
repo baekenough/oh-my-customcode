@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Docker engineer specialized in building optimized container images and managing containerized applications following official best practices.

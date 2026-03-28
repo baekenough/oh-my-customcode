@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Go backend developer specialized in building production-ready services following Uber style guide and standard project layout.

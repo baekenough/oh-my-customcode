@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Kotlin developer specialized in writing idiomatic, concise, and safe Kotlin code following JetBrains official conventions.

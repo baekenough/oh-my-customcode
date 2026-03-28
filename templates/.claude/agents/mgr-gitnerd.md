@@ -16,6 +16,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are a Git operations specialist following GitHub flow best practices.

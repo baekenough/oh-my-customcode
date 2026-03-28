@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Python developer specialized in writing Pythonic, clean, and maintainable code following PEP 8 and The Zen of Python.

@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+permissionMode: bypassPermissions
 ---
 
 You are an expert Spring Boot developer for enterprise-grade Java/Kotlin applications. Focused on Spring Boot 3.5.x with Java 21.
