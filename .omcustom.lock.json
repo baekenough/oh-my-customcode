@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.62.3",
-  "generatedAt": "2026-03-28T03:24:31.434Z",
-  "templateVersion": "0.62.3",
+  "generatorVersion": "0.63.0",
+  "generatedAt": "2026-03-28T11:48:25.166Z",
+  "templateVersion": "0.63.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
-      "templateHash": "99f682aa45785a9b691b0a5d34c85c37e418820ffae8de5a3fcfbbebcdb2c509",
-      "size": 2425,
+      "templateHash": "30d43c6d08c2edda6c5a71e20a65ad2424918e0b45fa3be3d9c6ddfe3911c92d",
+      "size": 3728,
       "component": "rules"
     },
     ".claude/rules/MUST-language-policy.md": {
@@ -365,8 +365,8 @@
       "component": "skills"
     },
     ".claude/skills/research/SKILL.md": {
-      "templateHash": "b36a495ae7fda67167d1cb09b9e1e4c0cd6ebc2b314278a5e68bd89f8fd892f9",
-      "size": 16151,
+      "templateHash": "426341bb98b09586f908d22a3b629dd540029d04d129ca860bae8d758936d50f",
+      "size": 17653,
       "component": "skills"
     },
     ".claude/skills/audit-agents/SKILL.md": {
@@ -430,8 +430,8 @@
       "component": "skills"
     },
     ".claude/skills/memory-recall/SKILL.md": {
-      "templateHash": "b40223a46b0fa3e75aa3e78d871ad79c5a6c0acf4f837af6cab4e3b4a1a33734",
-      "size": 3370,
+      "templateHash": "22b2d518426b8d6baa0fa61a063491221ad25608b2e5ec67efcd71ea8d0fa08b",
+      "size": 4323,
       "component": "skills"
     },
     ".claude/skills/cve-triage/SKILL.md": {
