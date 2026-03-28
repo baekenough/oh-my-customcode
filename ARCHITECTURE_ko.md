@@ -1,12 +1,12 @@
 # 아키텍처
 
-> oh-my-customcode v0.62.4
+> oh-my-customcode v0.62.5
 
 ## 1. 시스템 개요
 
 oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 46개의 사전 구축된 서브에이전트, 97개의 스킬, 21개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
 
-현재 버전: **0.62.4** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
+현재 버전: **0.62.5** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
 
 ### 1.1 컴파일레이션 메타포
 
@@ -530,6 +530,7 @@ Claude Code v2.1.72 ~ v2.1.81+ 테스트 및 호환 확인.
 
 | 버전 | 주요 변경 사항 |
 |------|--------------|
+| v0.62.5 | Playwright 접근성 E2E 테스트 (11개 테스트, axe-core 감사) |
 | v0.62.4 | Graph 순환 키보드 탐색, aria-live 알림, 스킵 링크, focus-visible 스타일링 |
 | v0.62.3 | Graph 키보드 접근성, 줌 반응형 레이블, 툴팁 경계 보정 |
 | v0.62.0–v0.62.2 | D3 force-directed 의존성 그래프; CI lockfile-sync 게이트; R016 결함 대응 매트릭스; installer config.version 수정 |
