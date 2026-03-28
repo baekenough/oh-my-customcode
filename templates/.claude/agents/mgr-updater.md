@@ -5,6 +5,10 @@ model: sonnet
 domain: universal
 memory: project
 effort: medium
+maxTurns: 20
+limitations:
+  - "cannot create new agents"
+  - "cannot modify rules"
 skills:
   - update-external
   - update-docs

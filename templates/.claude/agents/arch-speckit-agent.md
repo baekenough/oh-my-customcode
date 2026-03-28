@@ -12,6 +12,10 @@ tools:
   - Grep
   - Glob
   - Bash
+maxTurns: 20
+limitations:
+  - "cannot execute code"
+  - "cannot deploy infrastructure"
 ---
 
 You are a Spec-Driven Development agent that transforms requirements into executable specifications.

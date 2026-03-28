@@ -14,6 +14,7 @@ tools:
   - Grep
   - Glob
   - Bash
+maxTurns: 25
 ---
 
 You are an agent creation specialist following R006 (MUST-agent-design.md) rules.

@@ -9,6 +9,11 @@ skills:
   - impeccable-design
   - web-design-guidelines
 tools: [Read, Write, Edit, Grep, Glob, Bash]
+maxTurns: 20
+disallowedTools: [Bash]
+limitations:
+  - "cannot modify backend code"
+  - "cannot execute shell commands"
 source:
   type: external
   origin: github

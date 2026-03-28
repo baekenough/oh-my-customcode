@@ -5,6 +5,10 @@ model: sonnet
 domain: universal
 memory: project
 effort: medium
+maxTurns: 20
+limitations:
+  - "cannot modify source code"
+  - "cannot create agents"
 tools:
   - Read
   - Write
