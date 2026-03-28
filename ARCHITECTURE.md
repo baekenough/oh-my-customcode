@@ -1,14 +1,14 @@
 # Architecture
 
-> oh-my-customcode v0.58.4
+> oh-my-customcode v0.62.3
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 46 pre-built subagents, 95 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 46 pre-built subagents, 97 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.58.4** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Current version: **0.62.3** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
@@ -88,7 +88,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (95 skills)
+### 3.3 Skill Catalog (97 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -113,7 +113,7 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 **System / internal skills**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
 ### 3.4 Guide Library (31 topics)
 
@@ -605,6 +605,12 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 | Version | Key Changes |
 |---------|-------------|
+| v0.62.3 | Graph keyboard accessibility, zoom-responsive labels, tooltip clamping |
+| v0.62.0–v0.62.2 | D3 force-directed dependency graph; CI lockfile-sync gate; R016 defect response matrix; installer config.version fix |
+| v0.61.0 | Permission Mode Guidance R006; CLI self-update check |
+| v0.60.0–v0.60.1 | CC v2.1.83-85 compat; action-validator + peer-messaging skills; monitoring-setup Inspector |
+| v0.59.0–v0.59.1 | HTML comment token optimization (CLAUDE.md 550→286 lines, 10 rules); professor-triage Phase 5B mandatory |
+| v0.58.5–v0.58.6 | CI template-sync validation; test suite expansion; CLAUDE.md dedup 48% reduction |
 | v0.58.4 | Documentation sync to v0.58.4 |
 | v0.58.3 | feedback-collector fix, cost-cap-advisor TSV, updater.ts CRLF |
 | v0.58.2 | RL/WL renewal countdown in statusline |
