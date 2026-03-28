@@ -3,6 +3,7 @@ name: task-decomposition
 description: Auto-decompose large tasks into DAG-compatible parallel subtasks
 scope: core
 context: fork
+user-invocable: false
 ---
 
 # Task Decomposition Skill

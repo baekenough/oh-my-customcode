@@ -3,6 +3,7 @@ name: memory-recall
 description: Search and recall memories from claude-mem
 scope: core
 argument-hint: "<query> [--recent] [--limit <n>]"
+user-invocable: true
 ---
 
 # Memory Recall Skill

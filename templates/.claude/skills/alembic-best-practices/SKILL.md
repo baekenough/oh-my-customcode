@@ -3,6 +3,7 @@ name: alembic-best-practices
 description: Alembic migration patterns for naming conventions, safety checks, expand-contract, env.py configuration, and CI integration
 scope: core
 version: 1.0.0
+user-invocable: false
 ---
 
 # Alembic Best Practices

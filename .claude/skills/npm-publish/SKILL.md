@@ -4,6 +4,7 @@ description: Publish package to npm registry with pre-checks
 scope: package
 argument-hint: "[--tag <tag>] [--dry-run]"
 disable-model-invocation: true
+user-invocable: true
 ---
 
 # NPM Publish Skill

@@ -4,6 +4,7 @@ description: Sync documentation with project structure
 scope: harness
 argument-hint: "[--check] [--target <path>]"
 disable-model-invocation: true
+user-invocable: true
 ---
 
 # Update Documentation Skill

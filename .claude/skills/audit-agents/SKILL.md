@@ -3,6 +3,7 @@ name: omcustom:audit-agents
 description: Audit agent dependencies and references
 scope: harness
 argument-hint: "[agent-name] [--all] [--fix]"
+user-invocable: true
 ---
 
 # Audit Agents Skill

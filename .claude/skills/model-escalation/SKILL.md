@@ -2,6 +2,7 @@
 name: model-escalation
 description: Advisory model escalation based on task outcome tracking
 scope: core
+user-invocable: false
 ---
 
 # Model Escalation Skill

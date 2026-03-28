@@ -3,6 +3,7 @@ name: omcustom:lists
 description: Show all available commands
 scope: harness
 argument-hint: "[--category <category>] [--verbose]"
+user-invocable: true
 ---
 
 # List Commands Skill

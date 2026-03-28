@@ -4,6 +4,7 @@ description: Fix broken agent references and symlinks
 scope: harness
 argument-hint: "[agent-name] [--all] [--dry-run]"
 disable-model-invocation: true
+user-invocable: true
 ---
 
 # Fix References Skill
