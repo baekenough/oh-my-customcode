@@ -127,6 +127,18 @@
         "description": "Scan TODO.md files for stale items at session start"
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/user-prompt-preprocessor.sh"
+          }
+        ],
+        "description": "Advisory pre-processing of user input — skill matching hints and intent analysis"
+      }
+    ],
     "SubagentStart": [
       {
         "matcher": "*",
@@ -159,13 +171,85 @@
         "description": "Record agent outcomes + auto-continue workflow on subagent completion"
       }
     ],
+    "CwdChanged": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/cwd-change-detector.sh"
+          }
+        ],
+        "description": "Auto-detect project type on working directory change (v2.1.83+)"
+      }
+    ],
+    "FileChanged": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/file-change-validator.sh"
+          }
+        ],
+        "description": "Validate externally modified files — advisory staleness warning (v2.1.83+)"
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\ninput=$(cat)\nmsg=$(echo \"$input\" | jq -r '.message // \"\"' 2>/dev/null)\nif [ -n \"$msg\" ]; then\n  echo \"[Hook] Notification: $msg\" >&2\nfi\necho \"$input\""
+          }
+        ],
+        "description": "Display notifications for long-running operation completions"
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\ninput=$(cat)\nteammate=$(echo \"$input\" | jq -r '.teammate_id // \"unknown\"' 2>/dev/null)\necho \"[Hook] TeammateIdle: $teammate — available for reassignment\" >&2\necho \"$input\""
+          }
+        ],
+        "description": "Track idle Agent Teams members for work reassignment"
+      }
+    ],
+    "TaskCreated": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCreated: $task_id — $desc\" >&2\necho \"$input\""
+          }
+        ],
+        "description": "Log task creation events for Agent Teams coordination"
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\nresult=$(echo \"$input\" | jq -r '.result // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCompleted: $task_id — $result\" >&2\necho \"$input\""
+          }
+        ],
+        "description": "Log task completion events for Agent Teams coordination"
+      }
+    ],
     "PostCompact": [
       {
         "matcher": "*",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with ┌─ Agent: claude (default) / └─ Task: {task}\nR008: before EVERY tool call → [claude][model] → Tool: Name / Target: path\nR010: write→delegate to subagent; orchestrator read-only (Read/Glob/Grep); git→mgr-gitnerd\nR009: 2+ independent tasks → parallel agents, same message\nR018: 3+ agents OR review cycle → Agent Teams\n\nAutonomous mode: if /tmp/.claude-autonomous-$PPID exists → simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction — re-enable if tasks seem blocked.\n\nRe-read CLAUDE.md NOW."
+            "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with ┌─ Agent: claude (default) / └─ Task: {task}\nR008: before EVERY tool call → [claude][model] → Tool: Name / Target: path\nR010: write→delegate to subagent; orchestrator read-only (Read/Glob/Grep); git→mgr-gitnerd\nR009: 2+ independent tasks → parallel agents, same message\nR018: 3+ agents OR review cycle → Agent Teams\nR000: user communication in Korean (한국어); code/files in English — NON-NEGOTIABLE\n\nAutonomous mode: if /tmp/.claude-autonomous-$PPID exists → simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction — re-enable if tasks seem blocked.\n\nRe-read CLAUDE.md NOW."
           }
         ],
         "description": "Reinforce enforced rules after context compaction — prevents rule amnesia (v2.1.76+)"

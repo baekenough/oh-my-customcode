@@ -116,6 +116,75 @@ OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 ```
 
+## Advanced OTel Configuration
+
+### Additional Metrics
+
+| Metric | Description | Unit |
+|--------|-------------|------|
+| `code_edit_tool.decision` | Edit tool accept/reject decisions | count |
+
+### Exporter Configuration
+
+```json
+{
+  "env": {
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "OTEL_EXPORTER_OTLP_PROTOCOL": "grpc",
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317",
+    "OTEL_RESOURCE_ATTRIBUTES": "service.name=claude-code,service.version=2.1.85"
+  }
+}
+```
+
+### Cardinality Controls
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OTEL_LOG_TOOL_DETAILS` | Include tool input/output in logs | `false` |
+| `OTEL_METRICS_INCLUDE_TOOL_NAME` | Include tool name dimension | `true` |
+| `OTEL_METRICS_INCLUDE_MODEL` | Include model dimension | `true` |
+
+### Multi-Exporter Syntax
+
+```bash
+# Send metrics to both console and OTLP
+OTEL_METRICS_EXPORTER=console,otlp
+OTEL_LOGS_EXPORTER=console,otlp
+```
+
+### Prometheus Exporter
+
+```bash
+OTEL_METRICS_EXPORTER=prometheus
+OTEL_EXPORTER_PROMETHEUS_PORT=9464
+```
+
+## Data Privacy
+
+Environment variables to control data collection and telemetry:
+
+| Variable | Description |
+|----------|-------------|
+| `DISABLE_TELEMETRY` | Disable all telemetry collection |
+| `DISABLE_ERROR_REPORTING` | Disable error reporting to Anthropic |
+| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | Disable non-essential network traffic |
+| `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY` | Disable feedback survey prompts |
+| `DO_NOT_TRACK` | Standard DNT signal |
+
+### Enterprise Configuration
+
+```json
+{
+  "env": {
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  }
+}
+```
+
 ## HTTP-Level Inspection (Optional)
 
 For deeper payload-level debugging beyond aggregated metrics, [Claude Inspector](https://github.com/kangraemin/claude-inspector) provides MITM proxy inspection of Claude Code HTTP traffic.
