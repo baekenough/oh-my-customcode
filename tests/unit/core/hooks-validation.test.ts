@@ -26,6 +26,17 @@ interface HooksStructure {
   $schema?: string;
   hooks: {
     PreToolUse?: HookEntry[];
+    SessionStart?: HookEntry[];
+    UserPromptSubmit?: HookEntry[];
+    SubagentStart?: HookEntry[];
+    SubagentStop?: HookEntry[];
+    CwdChanged?: HookEntry[];
+    FileChanged?: HookEntry[];
+    Notification?: HookEntry[];
+    TeammateIdle?: HookEntry[];
+    TaskCreated?: HookEntry[];
+    TaskCompleted?: HookEntry[];
+    PostCompact?: HookEntry[];
     PostToolUse?: HookEntry[];
     Stop?: HookEntry[];
   };
@@ -35,6 +46,27 @@ async function loadHooksJson(): Promise<{ raw: string; parsed: unknown }> {
   const raw = await readFile(HOOKS_FILE, 'utf-8');
   const parsed = JSON.parse(raw) as unknown;
   return { raw, parsed };
+}
+
+function getAllEntries(data: HooksStructure): HookEntry[] {
+  const h = data.hooks;
+  const eventTypes: (keyof HooksStructure['hooks'])[] = [
+    'PreToolUse',
+    'SessionStart',
+    'UserPromptSubmit',
+    'SubagentStart',
+    'SubagentStop',
+    'CwdChanged',
+    'FileChanged',
+    'Notification',
+    'TeammateIdle',
+    'TaskCreated',
+    'TaskCompleted',
+    'PostCompact',
+    'PostToolUse',
+    'Stop',
+  ];
+  return eventTypes.flatMap((key) => h[key] ?? []);
 }
 
 describe('Hooks Validation', () => {
@@ -116,6 +148,70 @@ describe('Hooks Validation', () => {
       expect(data.hooks.Stop).toBeDefined();
       expect((data.hooks.Stop ?? []).length).toBeGreaterThan(0);
     });
+
+    it('should have non-empty SessionStart category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.SessionStart).toBeDefined();
+      expect((data.hooks.SessionStart ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should have non-empty UserPromptSubmit category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.UserPromptSubmit).toBeDefined();
+      expect((data.hooks.UserPromptSubmit ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should have non-empty SubagentStart category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.SubagentStart).toBeDefined();
+      expect((data.hooks.SubagentStart ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should have non-empty SubagentStop category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.SubagentStop).toBeDefined();
+      expect((data.hooks.SubagentStop ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should have non-empty PostCompact category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.PostCompact).toBeDefined();
+      expect((data.hooks.PostCompact ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should have non-empty CwdChanged category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.CwdChanged).toBeDefined();
+      expect((data.hooks.CwdChanged ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should have non-empty FileChanged category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.FileChanged).toBeDefined();
+      expect((data.hooks.FileChanged ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should have non-empty Notification category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.Notification).toBeDefined();
+      expect((data.hooks.Notification ?? []).length).toBeGreaterThan(0);
+    });
   });
 
   describe('Hook entry format', () => {
@@ -166,14 +262,7 @@ describe('Hooks Validation', () => {
 
     it('should have non-empty description on all entries', async () => {
       const { parsed } = await loadHooksJson();
-      const data = parsed as HooksStructure;
-
-      const allEntries: HookEntry[] = [
-        ...(data.hooks.PreToolUse ?? []),
-        ...(data.hooks.PostToolUse ?? []),
-        ...(data.hooks.Stop ?? []),
-      ];
-
+      const allEntries = getAllEntries(parsed as HooksStructure);
       for (const entry of allEntries) {
         expect(entry.description.trim().length).toBeGreaterThan(0);
       }
@@ -181,14 +270,7 @@ describe('Hooks Validation', () => {
 
     it('should have non-empty matcher on all entries', async () => {
       const { parsed } = await loadHooksJson();
-      const data = parsed as HooksStructure;
-
-      const allEntries: HookEntry[] = [
-        ...(data.hooks.PreToolUse ?? []),
-        ...(data.hooks.PostToolUse ?? []),
-        ...(data.hooks.Stop ?? []),
-      ];
-
+      const allEntries = getAllEntries(parsed as HooksStructure);
       for (const entry of allEntries) {
         expect(entry.matcher.trim().length).toBeGreaterThan(0);
       }
@@ -199,6 +281,17 @@ describe('Hooks Validation', () => {
     function getAllHookCmds(data: HooksStructure): HookCommand[] {
       const allEntries: HookEntry[] = [
         ...(data.hooks.PreToolUse ?? []),
+        ...(data.hooks.SessionStart ?? []),
+        ...(data.hooks.UserPromptSubmit ?? []),
+        ...(data.hooks.SubagentStart ?? []),
+        ...(data.hooks.SubagentStop ?? []),
+        ...(data.hooks.CwdChanged ?? []),
+        ...(data.hooks.FileChanged ?? []),
+        ...(data.hooks.Notification ?? []),
+        ...(data.hooks.TeammateIdle ?? []),
+        ...(data.hooks.TaskCreated ?? []),
+        ...(data.hooks.TaskCompleted ?? []),
+        ...(data.hooks.PostCompact ?? []),
         ...(data.hooks.PostToolUse ?? []),
         ...(data.hooks.Stop ?? []),
       ];

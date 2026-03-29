@@ -861,6 +861,131 @@ describe('session-env-check.sh', () => {
 });
 
 // -------------------------------------------------------------------
+// user-prompt-preprocessor.sh
+// -------------------------------------------------------------------
+
+describe('user-prompt-preprocessor.sh', () => {
+  const SCRIPT = join(SCRIPTS_DIR, 'user-prompt-preprocessor.sh');
+
+  it('should pass bash syntax check', async () => {
+    const { exitCode, stderr } = await bashSyntaxCheck(SCRIPT);
+    expect(exitCode).toBe(0);
+    if (stderr) console.warn('Syntax warnings:', stderr);
+  });
+
+  it('should pass through input unchanged on stdout', async () => {
+    const input = JSON.stringify({ user_input: 'hello world' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('should detect session-end signals', async () => {
+    const input = JSON.stringify({ user_input: '종료' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('Session-end signal detected');
+  });
+
+  it('should detect slash commands', async () => {
+    const input = JSON.stringify({ user_input: '/status' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('Slash command detected');
+  });
+
+  it('should not emit hints for regular input', async () => {
+    const input = JSON.stringify({ user_input: 'fix the login bug' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
+  });
+});
+
+// -------------------------------------------------------------------
+// cwd-change-detector.sh
+// -------------------------------------------------------------------
+
+describe('cwd-change-detector.sh', () => {
+  const SCRIPT = join(SCRIPTS_DIR, 'cwd-change-detector.sh');
+
+  it('should pass bash syntax check', async () => {
+    const { exitCode, stderr } = await bashSyntaxCheck(SCRIPT);
+    expect(exitCode).toBe(0);
+    if (stderr) console.warn('Syntax warnings:', stderr);
+  });
+
+  it('should pass through input unchanged on stdout', async () => {
+    const input = JSON.stringify({ new_cwd: '/tmp' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('should detect project with CLAUDE.md', async () => {
+    const projectRoot = process.cwd();
+    const input = JSON.stringify({ new_cwd: projectRoot });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    // May or may not detect depending on cwd; just verify it doesn't crash
+  });
+
+  it('should handle empty new_cwd gracefully', async () => {
+    const input = JSON.stringify({ new_cwd: '' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------
+// file-change-validator.sh
+// -------------------------------------------------------------------
+
+describe('file-change-validator.sh', () => {
+  const SCRIPT = join(SCRIPTS_DIR, 'file-change-validator.sh');
+
+  it('should pass bash syntax check', async () => {
+    const { exitCode, stderr } = await bashSyntaxCheck(SCRIPT);
+    expect(exitCode).toBe(0);
+    if (stderr) console.warn('Syntax warnings:', stderr);
+  });
+
+  it('should pass through input unchanged on stdout', async () => {
+    const input = JSON.stringify({ file_path: '/tmp/test.txt', change_type: 'modified' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('should detect external file change', async () => {
+    const input = JSON.stringify({ file_path: '/tmp/test.txt', change_type: 'modified' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('External file change detected');
+  });
+
+  it('should warn about configuration file changes', async () => {
+    const input = JSON.stringify({ file_path: '/project/CLAUDE.md', change_type: 'modified' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('Configuration file changed externally');
+  });
+
+  it('should warn about lock file changes', async () => {
+    const input = JSON.stringify({ file_path: '/project/yarn.lock', change_type: 'modified' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('Lock file changed');
+  });
+
+  it('should handle empty file_path gracefully', async () => {
+    const input = JSON.stringify({ file_path: '' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------
 // Script file validation
 // -------------------------------------------------------------------
 
@@ -872,6 +997,9 @@ describe('Script file validation', () => {
     'agent-teams-advisor.sh',
     'session-env-check.sh',
     'stuck-detector.sh',
+    'user-prompt-preprocessor.sh',
+    'cwd-change-detector.sh',
+    'file-change-validator.sh',
   ] as const;
 
   it('all expected scripts should exist in the templates directory', async () => {

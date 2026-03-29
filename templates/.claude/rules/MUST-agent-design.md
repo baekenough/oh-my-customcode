@@ -63,6 +63,53 @@ domain: backend              # backend | frontend | data-engineering | devops | 
 
 > **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+. `CwdChanged`, `FileChanged` hook events and `managed-settings.d/` drop-in directory require v2.1.83+. Conditional `if` field for hooks requires v2.1.85+.
 
+## Hook Event Types
+
+All supported hook event types in Claude Code. Agents and skills can reference these in `hooks:` frontmatter.
+
+| Event | Trigger | Data Available | Handler Types | CC Version |
+|-------|---------|---------------|---------------|------------|
+| `PreToolUse` | Before tool execution | tool, tool_input | command, prompt | v2.1.63+ |
+| `PostToolUse` | After tool execution | tool, tool_input, tool_output | command, prompt | v2.1.63+ |
+| `PreCompact` | Before context compaction | — | command, prompt | v2.1.76+ |
+| `PostCompact` | After context compaction | — | command, prompt | v2.1.76+ |
+| `Stop` | Session ending | — | command, prompt | v2.1.63+ |
+| `SessionStart` | Session begins | — | command | v2.1.63+ |
+| `SessionEnd` | Session fully closes | — | command | v2.1.76+ |
+| `SubagentStart` | Subagent spawned | agent_type, model, description | command | v2.1.63+ |
+| `SubagentStop` | Subagent completed | agent_type, model, result | command, prompt | v2.1.63+ |
+| `UserPromptSubmit` | User submits prompt | user_input | command, prompt | v2.1.76+ |
+| `Notification` | Long-running op completes | message | command | v2.1.76+ |
+| `CwdChanged` | Working directory changes | old_cwd, new_cwd | command | v2.1.83+ |
+| `FileChanged` | External file modification | file_path, change_type | command | v2.1.83+ |
+| `Elicitation` | Agent requests user input | question | command, prompt | v2.1.76+ |
+| `ElicitationResult` | User responds to elicitation | answer | command, prompt | v2.1.76+ |
+| `PostMessage` | After message sent | message_type | command | v2.1.76+ |
+| `TeammateIdle` | Agent Teams member idle | teammate_id | command | v2.1.83+ |
+| `TaskCreated` | Task created | task_id, description | command | v2.1.83+ |
+| `TaskCompleted` | Task completed | task_id, result | command | v2.1.83+ |
+
+### Hook Handler Types
+
+| Type | Behavior | Use Case |
+|------|----------|----------|
+| `command` | Execute shell command, stdin receives JSON context | Scripts, validation, logging |
+| `prompt` | Inject text into model context | Rule reinforcement, advisory guidance |
+| `http` | POST to HTTP endpoint | External integrations, webhooks |
+| `agent` | Spawn agent to handle event | Complex event-driven workflows |
+
+### Hook Matcher Syntax
+
+```yaml
+hooks:
+  PreToolUse:
+    - matcher: "tool == \"Edit\""       # Match specific tool
+      if: "Edit(*.md)"                  # Conditional filter (v2.1.85+)
+      command: "echo hook"
+    - matcher: "*"                       # Match all
+      command: "echo hook"
+```
+
 ## Permission Mode Guidance
 
 When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:
