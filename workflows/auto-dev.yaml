@@ -1,12 +1,17 @@
 # /omcustom:workflow auto-dev — Full-auto release pipeline
-# Collects verify-done issues → triage → plan → implement → verify → PR → followup
+# Pre-triages professor-labeled issues → triage verify-done → plan → implement → verify → PR → followup
 
 name: auto-dev
-description: "verify-done issues release batch: triage → plan → implement → verify → PR → followup"
+description: "Full-auto release pipeline: pre-triage → triage → plan → implement → verify → PR → followup"
 mode: auto
 error: halt-and-report
 
 steps:
+  - name: pre-triage
+    skill: professor-triage
+    description: Run professor-triage on professor-labeled issues that lack verify-done label
+    condition: "issues with label:professor but NOT label:verify-done exist"
+
   - name: triage
     skill: professor-triage
     description: Cross-analyze verify-done issues with omc_issue_analyzer comments
