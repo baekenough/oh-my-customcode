@@ -119,6 +119,7 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom-release-notes` | 릴리즈 노트 생성 (git 히스토리 기반) |
 | `/omcustom-feedback` | 사용자 피드백을 GitHub Issue로 등록 |
 | `/codex-exec` | Codex CLI 프롬프트 실행 |
+| `/gemini-exec` | Gemini CLI 프롬프트 실행 |
 | `/optimize-analyze` | 번들 및 성능 분석 |
 | `/optimize-bundle` | 번들 크기 최적화 |
 | `/optimize-report` | 최적화 리포트 생성 |
@@ -148,7 +149,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (46 파일)
-|   +-- skills/                  # 스킬 (98 디렉토리)
+|   +-- skills/                  # 스킬 (99 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R021)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
