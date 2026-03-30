@@ -9307,7 +9307,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.64.3",
+    version: "0.65.1",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -9362,7 +9362,7 @@ var init_package = __esm(() => {
       "@types/nodemailer": "^7.0.9",
       "js-yaml": "^4.1.0",
       nodemailer: "^8.0.1",
-      typescript: "^5.7.3",
+      typescript: "^6.0.2",
       vitepress: "^1.6.4"
     },
     keywords: [
@@ -22248,7 +22248,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 
-// node_modules/.bun/i18next@25.8.0+1fb4c65d43e298b9/node_modules/i18next/dist/esm/i18next.js
+// node_modules/.bun/i18next@25.8.0+8e24a2f921b8d7be/node_modules/i18next/dist/esm/i18next.js
 var isString = (obj) => typeof obj === "string";
 var defer = () => {
   let res;
