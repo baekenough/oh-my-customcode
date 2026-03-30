@@ -21,6 +21,16 @@ if command -v codex >/dev/null 2>&1; then
   fi
 fi
 
+# Check Gemini CLI availability
+GEMINI_STATUS="unavailable"
+if command -v gemini >/dev/null 2>&1; then
+  if [ -n "${GOOGLE_API_KEY:-}" ] || [ -n "${GEMINI_API_KEY:-}" ]; then
+    GEMINI_STATUS="available (authenticated)"
+  else
+    GEMINI_STATUS="installed (gcloud auth may be available)"
+  fi
+fi
+
 # Check Agent Teams availability
 AGENT_TEAMS_STATUS="disabled"
 if [ "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-0}" = "1" ]; then
@@ -134,6 +144,7 @@ fi
 STATUS_FILE="/tmp/.claude-env-status-${PPID}"
 cat > "$STATUS_FILE" << ENVEOF
 codex=${CODEX_STATUS}
+gemini=${GEMINI_STATUS}
 agent_teams=${AGENT_TEAMS_STATUS}
 git_branch=${CURRENT_BRANCH}
 claude_version=${CLAUDE_VERSION}
@@ -144,6 +155,7 @@ ENVEOF
 
 # Report to stderr (visible in conversation)
 echo "  codex CLI: ${CODEX_STATUS}" >&2
+echo "  gemini CLI: ${GEMINI_STATUS}" >&2
 echo "  Agent Teams: ${AGENT_TEAMS_STATUS}" >&2
 echo "  Claude Code: v${CLAUDE_VERSION} (${COMPAT_STATUS})" >&2
 if [ "$COMPAT_STATUS" = "outdated" ]; then
