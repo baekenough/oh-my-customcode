@@ -1685,7 +1685,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.65.1",
+  version: "0.65.2",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -1729,7 +1729,7 @@ var package_default = {
     "@clack/prompts": "^1.1.0",
     "@inquirer/prompts": "^8.3.2",
     commander: "^14.0.2",
-    i18next: "^25.8.0",
+    i18next: "^26.0.2",
     yaml: "^2.8.2"
   },
   devDependencies: {
