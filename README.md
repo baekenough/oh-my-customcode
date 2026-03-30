@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-46 agents. 98 skills. 21 rules. One command.
+46 agents. 99 skills. 21 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -146,7 +146,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (98)
+### Skills (99)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -282,7 +282,7 @@ your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
 │   ├── agents/                 # 46 agent definitions
-│   ├── skills/                 # 98 skill modules
+│   ├── skills/                 # 99 skill modules
 │   ├── rules/                  # 21 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas

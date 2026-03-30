@@ -110,6 +110,14 @@ agents:
     supported_actions: [review, create, fix, refactor, test]
     base_confidence: 40
 
+  fe-design-expert:
+    keywords:
+      korean: [디자인, 타이포그래피, 색상, 모션, UX라이팅, 디자인시스템, 디자인리뷰]
+      english: [design, typography, color, motion, "ux writing", "design system", "design review", impeccable, "design audit", "ai slop"]
+    file_patterns: ["*.css", "*.scss", "*.less", "tailwind.config.*"]
+    supported_actions: [review, audit, critique, polish, normalize]
+    base_confidence: 40
+
   # SW Engineers - Backend
   be-fastapi-expert:
     keywords:
@@ -330,7 +338,7 @@ agents:
       - gather
     base_confidence: 50
     action_weight: 30
-    routing_rule: "MUST use codex-exec --effort xhigh when codex available, fallback to WebFetch/WebSearch"
+    routing_rule: "MUST use codex-exec --effort xhigh when codex available, or gemini-exec when gemini available, fallback to WebFetch/WebSearch"
 
   # ---------------------------------------------------------------------------
   # Code Generation (hybrid workflow, skill-based)
@@ -359,7 +367,7 @@ agents:
       - scaffold
     base_confidence: 30
     action_weight: 25
-    routing_rule: "Suggest codex-exec hybrid when codex available and task is new file creation"
+    routing_rule: "Suggest codex-exec hybrid when codex available, or gemini-exec hybrid when gemini available, for new file creation tasks"
 
   # Managers (continued)
   mgr-gitnerd:
@@ -411,3 +419,12 @@ agents:
     file_patterns: []
     supported_actions: [manage, create, coordinate]
     base_confidence: 40
+
+  professor-triage:
+    keywords:
+      korean: [트리아지, 이슈분석, 교차분석, 프로페서]
+      english: [triage, cross-analyze, professor, issue-analysis]
+    file_patterns: []
+    actions: [review, analyze]
+    base_confidence: 85
+    routing_rule: "MUST use professor-triage skill for cross-analyzing GitHub issues with omc_issue_analyzer comments"

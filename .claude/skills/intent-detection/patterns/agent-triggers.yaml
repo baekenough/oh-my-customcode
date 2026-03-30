@@ -338,7 +338,7 @@ agents:
       - gather
     base_confidence: 50
     action_weight: 30
-    routing_rule: "MUST use codex-exec --effort xhigh when codex available, fallback to WebFetch/WebSearch"
+    routing_rule: "MUST use codex-exec --effort xhigh when codex available, or gemini-exec when gemini available, fallback to WebFetch/WebSearch"
 
   # ---------------------------------------------------------------------------
   # Code Generation (hybrid workflow, skill-based)
@@ -367,7 +367,7 @@ agents:
       - scaffold
     base_confidence: 30
     action_weight: 25
-    routing_rule: "Suggest codex-exec hybrid when codex available and task is new file creation"
+    routing_rule: "Suggest codex-exec hybrid when codex available, or gemini-exec hybrid when gemini available, for new file creation tasks"
 
   # Managers (continued)
   mgr-gitnerd:

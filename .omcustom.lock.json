@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.65.2",
-  "generatedAt": "2026-03-30T10:54:04.185Z",
-  "templateVersion": "0.65.2",
+  "generatorVersion": "0.66.0",
+  "generatedAt": "2026-03-30T12:08:06.700Z",
+  "templateVersion": "0.66.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -535,8 +535,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "de4813600e4159b0d9c767a3a3ff5d09b1b3319db7c51b311dea36e0cd61b34e",
-      "size": 13636,
+      "templateHash": "1dd7e03b7e46d6473379f90eec4dadb58de9565ab09db26f9b7848d596077de8",
+      "size": 13718,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
@@ -640,8 +640,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "6ea42f82b21b25ed6ba6bbdc3d0b44123cffcf1591e719d35be2a0960edf8384",
-      "size": 6216,
+      "templateHash": "425289dc7dd031c9185b3fde3e85a2087d13fc3144ba304a873d33dd8149c822",
+      "size": 6483,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
@@ -712,6 +712,16 @@
     ".claude/skills/omcustom-takeover/SKILL.md": {
       "templateHash": "8e4005df217634663e6942c7f8435ad00fb992270621fc98ddb43a1344322dfe",
       "size": 2909,
+      "component": "skills"
+    },
+    ".claude/skills/gemini-exec/scripts/gemini-wrapper.cjs": {
+      "templateHash": "15eb89f1d7a360e7d53f92796b75c10115eccf76ff70e7ec950d7629235f05b0",
+      "size": 12751,
+      "component": "skills"
+    },
+    ".claude/skills/gemini-exec/SKILL.md": {
+      "templateHash": "f66595a61e69442c1738ff83c4ed5020eb98ccd4c68f0b7792bd0a36dfbd135c",
+      "size": 6372,
       "component": "skills"
     },
     ".claude/skills/flutter-best-practices/SKILL.md": {
@@ -900,8 +910,8 @@
       "component": "skills"
     },
     ".claude/skills/de-lead-routing/SKILL.md": {
-      "templateHash": "0918d2b25f137907ee64ad0eae5a554aca9efd3df5754f0834939041f94984cb",
-      "size": 8127,
+      "templateHash": "7dba8a70f56a17c82bd9fde7baae59ef248b62711a01c74feae94b06a97adf02",
+      "size": 8390,
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {
@@ -1000,8 +1010,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-env-check.sh": {
-      "templateHash": "48d5d92d9a715f559c412437b9d9638eb4004a7e4e2ca4e542ed3a722c6bf4d7",
-      "size": 7801,
+      "templateHash": "8a63b9d04a14d777f24d8d72d34ce0b545683cdeab76b00fb6690b9f0254b997",
+      "size": 8165,
       "component": "hooks"
     },
     ".claude/hooks/scripts/feedback-collector.sh": {
