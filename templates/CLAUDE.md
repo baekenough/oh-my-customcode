@@ -1,3 +1,4 @@
+<!-- omcustom:start -->
 # AI 에이전트 시스템
 
 oh-my-customcode로 구동됩니다.
@@ -118,6 +119,7 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom-release-notes` | 릴리즈 노트 생성 (git 히스토리 기반) |
 | `/omcustom-feedback` | 사용자 피드백을 GitHub Issue로 등록 |
 | `/codex-exec` | Codex CLI 프롬프트 실행 |
+| `/gemini-exec` | Gemini CLI 프롬프트 실행 |
 | `/optimize-analyze` | 번들 및 성능 분석 |
 | `/optimize-bundle` | 번들 크기 최적화 |
 | `/optimize-report` | 최적화 리포트 생성 |
@@ -125,11 +127,19 @@ oh-my-customcode로 구동됩니다.
 | `/scout` | 외부 URL 분석 및 프로젝트 적합성 평가 |
 | `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
 | `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
+| `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
+| `/release-plan` | verify-done 이슈 릴리즈 유닛 계획 생성 |
+| `/omcustom:workflow` | YAML 워크플로우 실행 (예: /omcustom:workflow auto-dev) |
+| `/omcustom:workflow:resume` | 중단된 워크플로우 재개 |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
+| `/sdd-dev` | Spec-Driven Development 워크플로우 (sdd/ 폴더 기반) |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
 | `/omcustom:loop` | 백그라운드 에이전트 자동 계속 실행 |
 | `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
 | `/omcustom:status` | 시스템 상태 표시 |
+| `/omcustom-web` | 내장 Web UI 제어 및 검사 |
+| `/skills-sh-search` | skills.sh 마켓플레이스 스킬 검색 및 설치 |
+| `/vercel-deploy` | Vercel 배포 자동화 |
 | `/omcustom:help` | 도움말 표시 |
 
 ## 프로젝트 구조
@@ -139,7 +149,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (46 파일)
-|   +-- skills/                  # 스킬 (98 디렉토리)
+|   +-- skills/                  # 스킬 (99 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R021)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -278,3 +288,5 @@ claude-mem setup
 ```
 
 <!-- omcustom:git-workflow -->
+
+<!-- omcustom:end -->
