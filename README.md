@@ -30,8 +30,8 @@ npm install -g oh-my-customcode && cd your-project && omcustom init
 | **Graph Accessibility** | WCAG keyboard navigation, aria-live announcements, skip link, focus-visible, reduced-motion support |
 | **CI Lockfile-Sync Gate** | New CI job validates bun.lockb consistency before lint/test |
 | **Token Optimization** | HTML comment technique reduces CLAUDE.md from 550→286 lines (48% reduction) |
-| **Workflow Engine** | YAML-defined workflow pipelines with `auto-dev` 7-step release batch |
-| **CC v2.1.83–v2.1.85 Compat** | Conditional hook `if` field, CwdChanged/FileChanged events, managed-settings.d |
+| **Workflow Engine** | YAML-defined workflow pipelines with `auto-dev` 8-step release batch |
+| **CC v2.1.83–v2.1.87 Compat** | Conditional hook `if` field, CwdChanged/FileChanged events, managed-settings.d |
 
 ---
 

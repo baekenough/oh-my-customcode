@@ -550,7 +550,7 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | managed-settings.d/ drop-in directory | No | Yes (v2.1.83+) | Yes (R006 documented) |
 | Conditional hook `if` field | No | Yes (v2.1.85+) | Yes (R006 documented, permission rule syntax) |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.81+.
+Tested and compatible with Claude Code v2.1.72 through v2.1.87+.
 
 ---
 
