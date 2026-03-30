@@ -1685,7 +1685,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.64.3",
+  version: "0.65.1",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -1740,7 +1740,7 @@ var package_default = {
     "@types/nodemailer": "^7.0.9",
     "js-yaml": "^4.1.0",
     nodemailer: "^8.0.1",
-    typescript: "^5.7.3",
+    typescript: "^6.0.2",
     vitepress: "^1.6.4"
   },
   keywords: [

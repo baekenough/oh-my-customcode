@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.64.3",
-  "generatedAt": "2026-03-28T23:21:20.670Z",
-  "templateVersion": "0.64.3",
+  "generatorVersion": "0.65.1",
+  "generatedAt": "2026-03-30T10:49:06.961Z",
+  "templateVersion": "0.65.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -45,8 +45,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "1edc78a28b79d8c0b85b9a3ec79270df8dfee947af68148cc2f7dc38d9b5897d",
-      "size": 10896,
+      "templateHash": "7008395c2f4651b4254d9c86ca575df820f26d7db6013565cf7fcf619bda5b34",
+      "size": 13439,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -820,8 +820,8 @@
       "component": "skills"
     },
     ".claude/skills/monitoring-setup/SKILL.md": {
-      "templateHash": "c57f728191be734e63e9e826607fd1ba830d3af89761843ec36c8a35c99e25ab",
-      "size": 4967,
+      "templateHash": "1e929addb68c4183724198295dbdfb8d674b32ba1c580fac9ab394c24ba66ccd",
+      "size": 6699,
       "component": "skills"
     },
     ".claude/skills/omcustom-loop/SKILL.md": {
@@ -954,6 +954,11 @@
       "size": 800,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/user-prompt-preprocessor.sh": {
+      "templateHash": "71a4e7fec6f830c7c12fbb00f8d1469a8dd92805f06495d31afa1a2ef88532cf",
+      "size": 843,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/stale-todo-scanner.sh": {
       "templateHash": "d2f47fdfff22243a4d5cbbbb09f176e019235decf603fac17407ea17d114d17d",
       "size": 2306,
@@ -989,6 +994,11 @@
       "size": 7463,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/file-change-validator.sh": {
+      "templateHash": "85c4f67dcef49c60534fcc4c3b4f698c9f8e8830c9a8af28483abf19b785524c",
+      "size": 749,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/session-env-check.sh": {
       "templateHash": "48d5d92d9a715f559c412437b9d9638eb4004a7e4e2ca4e542ed3a722c6bf4d7",
       "size": 7801,
@@ -1007,6 +1017,11 @@
     ".claude/hooks/scripts/task-outcome-recorder.sh": {
       "templateHash": "5933b4e4ec5c0918cb11e032c3219f82e9550ad148689200f7dc61cd2460978b",
       "size": 3951,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/cwd-change-detector.sh": {
+      "templateHash": "bebc0ecb4a90437b39077af310bf04064cc4402b0cb569fcb1575d90108894bf",
+      "size": 908,
       "component": "hooks"
     },
     ".claude/hooks/scripts/content-hash-validator.sh": {
@@ -1030,8 +1045,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "1d845d4e847437c13b8cac41bb67c0722070a4ed355c44f66e6d63a41cdc56a4",
-      "size": 19539,
+      "templateHash": "5ae70b2c53fe8a4496fd57bdeda6bd1096b2ecb801938b8b6b42045e4fe187a6",
+      "size": 22438,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1179,6 +1194,11 @@
       "size": 3157,
       "component": "guides"
     },
+    "guides/claude-code/13-cli-flags.md": {
+      "templateHash": "da13ae95b0e5c58e5315390f9a1b1017e260187ed798826b256963b430d4d4dc",
+      "size": 4782,
+      "component": "guides"
+    },
     "guides/claude-code/12-workflow-patterns.md": {
       "templateHash": "f37063285b43f2737fa09496d380dc41c571dc166f8974f636af3b69280f9774",
       "size": 6349,
@@ -1190,8 +1210,8 @@
       "component": "guides"
     },
     "guides/claude-code/index.yaml": {
-      "templateHash": "be6cb6278cc6be32844160b735acbd6ed3558e502db994f7686869bb76ec8798",
-      "size": 1658,
+      "templateHash": "746e403f0b003b3e58512d290bc8786318633ef4174eaab88462ccec22334836",
+      "size": 1836,
       "component": "guides"
     },
     "guides/claude-code/05-agent-sdk.md": {
