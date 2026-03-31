@@ -21,11 +21,44 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run linter
-echo "Running linter..."
+# Auto-fix lint issues on staged files
+echo "Running lint auto-fix..."
+
+# Collect staged files by type
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' || true)
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.py$' || true)
+STAGED_GO=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.go$' || true)
+
+# TypeScript/JavaScript: Biome
+if [ -n "$STAGED_TS" ]; then
+    echo "  [Biome] Formatting $(echo "$STAGED_TS" | wc -l | tr -d ' ') files..."
+    echo "$STAGED_TS" | xargs npx biome check --write --no-errors-on-unmatched 2>/dev/null
+    echo "$STAGED_TS" | xargs git add
+fi
+
+# Python: Ruff
+if [ -n "$STAGED_PY" ]; then
+    if command -v ruff >/dev/null 2>&1; then
+        echo "  [Ruff] Formatting $(echo "$STAGED_PY" | wc -l | tr -d ' ') files..."
+        echo "$STAGED_PY" | xargs ruff check --fix --quiet 2>/dev/null
+        echo "$STAGED_PY" | xargs ruff format --quiet 2>/dev/null
+        echo "$STAGED_PY" | xargs git add
+    fi
+fi
+
+# Go: gofmt
+if [ -n "$STAGED_GO" ]; then
+    if command -v gofmt >/dev/null 2>&1; then
+        echo "  [gofmt] Formatting $(echo "$STAGED_GO" | wc -l | tr -d ' ') files..."
+        echo "$STAGED_GO" | xargs gofmt -w 2>/dev/null
+        echo "$STAGED_GO" | xargs git add
+    fi
+fi
+
+# Final lint check (should pass after auto-fix)
 bun run lint
 if [ $? -ne 0 ]; then
-    echo "Lint check failed. Run 'bun run lint:fix' to auto-fix issues."
+    echo "Lint errors remain after auto-fix. Please fix manually."
     exit 1
 fi
 
