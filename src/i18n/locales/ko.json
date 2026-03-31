@@ -144,7 +144,9 @@
       "interactiveNoneSelected": "선택된 프로젝트가 없습니다. 종료합니다.",
       "interactiveUpdating": "선택된 프로젝트 업데이트 중...",
       "projectLatestSuffix": "(최신)",
-      "newVersionAvailable": "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요."
+      "newVersionAvailable": "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요.",
+      "rtkMissing": "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
+      "rtkInstalled": "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화"
     },
     "list": {
       "description": "설치된 컴포넌트 목록 표시",
@@ -244,6 +246,10 @@
         "framework": {
           "pass": "프레임워크가 최신 상태입니다 (v{{version}})",
           "warn": "프레임워크가 구버전입니다: 설치됨 v{{installed}}, 최신 v{{latest}} ({{behind}}개 버전 뒤처짐). 'omcustom update'를 실행하여 동기화하세요."
+        },
+        "rtk": {
+          "pass": "RTK 설치됨",
+          "warn": "RTK 미설치 — 토큰 절감 불가"
         }
       }
     },
@@ -302,6 +308,12 @@
         }
       }
     }
+  },
+  "install": {
+    "rtk_installing": "RTK 설치 중...",
+    "rtk_success": "RTK 설치 완료",
+    "rtk_already": "RTK 이미 설치됨",
+    "rtk_install_failed": "RTK 설치 실패"
   },
   "init": {
     "description": "현재 디렉토리에 oh-my-customcode 초기화",

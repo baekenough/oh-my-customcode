@@ -11,6 +11,7 @@ import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getProviderLayout } from '../core/layout.js';
 import { computeFileHash, readLockfile } from '../core/lockfile.js';
+import { getRtkVersion, installRtk, isRtkInstalled } from '../core/rtk-installer.js';
 import { checkSelfUpdate } from '../core/self-update.js';
 import { i18n } from '../i18n/index.js';
 
@@ -516,6 +517,28 @@ export async function checkHooks(
 }
 
 /**
+ * Check if RTK is installed for token optimization
+ */
+export async function checkRtk(): Promise<CheckResult> {
+  if (!isRtkInstalled()) {
+    return {
+      name: 'RTK',
+      status: 'warn',
+      message: 'RTK not installed — token savings unavailable (brew install rtk-ai/tap/rtk)',
+      fixable: true,
+    };
+  }
+
+  const version = getRtkVersion();
+  return {
+    name: 'RTK',
+    status: 'pass',
+    message: `RTK OK (${version ?? 'unknown version'})`,
+    fixable: false,
+  };
+}
+
+/**
  * Check if contexts directory exists
  * @param targetDir - Target directory
  * @returns Check result
@@ -672,6 +695,7 @@ async function fixSingleIssue(
       const fixedCount = await fixBrokenSymlinks(targetDir, fullPaths);
       return fixedCount > 0;
     },
+    RTK: async () => Promise.resolve(installRtk()),
   };
 
   const fixer = fixMap[check.name];
@@ -900,6 +924,7 @@ async function runAllChecks(
     checkHooks(targetDir, layout.rootDir),
     checkContexts(targetDir, layout.rootDir),
     checkCustomComponents(targetDir, layout.rootDir),
+    checkRtk(),
   ]);
 
   // Framework version drift check (always runs when .omcustomrc.json exists)

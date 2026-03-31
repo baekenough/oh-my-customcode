@@ -294,15 +294,15 @@ your-project/
 
 ---
 
-## Optional External Tools
+## External Tool Integrations
 
-oh-my-customcode works fully without any external tools. These optional integrations provide additional capabilities when installed:
+RTK is automatically installed during `omcustom init` for 60-90% token savings. Other tools are optional:
 
-| Tool | Purpose | Install | Skill |
-|------|---------|---------|-------|
-| [RTK](https://github.com/rtk-ai/rtk) | 60-90% token savings on CLI output | `brew install rtk` | `/rtk-exec` |
-| [Codex CLI](https://github.com/openai/codex) | OpenAI Codex hybrid workflows | `npm i -g @openai/codex` | `/codex-exec` |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google Gemini hybrid workflows | `npm i -g @anthropic-ai/gemini-cli` | `/gemini-exec` |
+| Tool | Purpose | Install | Status |
+|------|---------|---------|--------|
+| [RTK](https://github.com/rtk-ai/rtk) | 60-90% token savings on CLI output | Auto-installed via `omcustom init` | **Recommended** |
+| [Codex CLI](https://github.com/openai/codex) | OpenAI Codex hybrid workflows | `npm i -g @openai/codex` | Optional |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google Gemini hybrid workflows | `npm i -g @google/gemini-cli` | Optional |
 
 When installed, each tool is **auto-detected** at session start and its features become available. When not installed, all commands gracefully fall back to Claude-native alternatives.
 

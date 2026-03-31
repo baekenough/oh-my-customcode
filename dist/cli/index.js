@@ -9307,7 +9307,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.68.1",
+    version: "0.68.2",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -24788,7 +24788,9 @@ var en_default = {
       interactiveNoneSelected: "No projects selected. Exiting.",
       interactiveUpdating: "Updating selected projects...",
       projectLatestSuffix: "(latest)",
-      newVersionAvailable: "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade."
+      newVersionAvailable: "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade.",
+      rtkMissing: "[RTK] RTK is not installed. Attempting installation...",
+      rtkInstalled: "[RTK] ✓ RTK installed — 60-90% token savings activated"
     },
     list: {
       description: "List installed components",
@@ -24888,6 +24890,10 @@ var en_default = {
         framework: {
           pass: "Framework is up to date (v{{version}})",
           warn: "Framework is outdated: installed v{{installed}}, latest v{{latest}} ({{behind}} version(s) behind). Run 'omcustom update' to sync."
+        },
+        rtk: {
+          pass: "RTK installed",
+          warn: "RTK not installed — token savings unavailable"
         }
       }
     },
@@ -24946,6 +24952,12 @@ var en_default = {
         }
       }
     }
+  },
+  install: {
+    rtk_installing: "Installing RTK...",
+    rtk_success: "RTK installed successfully",
+    rtk_already: "RTK already installed",
+    rtk_install_failed: "RTK installation failed"
   },
   init: {
     description: "Initialize oh-my-customcode in the current directory",
@@ -25173,7 +25185,9 @@ var ko_default = {
       interactiveNoneSelected: "선택된 프로젝트가 없습니다. 종료합니다.",
       interactiveUpdating: "선택된 프로젝트 업데이트 중...",
       projectLatestSuffix: "(최신)",
-      newVersionAvailable: "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요."
+      newVersionAvailable: "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요.",
+      rtkMissing: "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
+      rtkInstalled: "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화"
     },
     list: {
       description: "설치된 컴포넌트 목록 표시",
@@ -25273,6 +25287,10 @@ var ko_default = {
         framework: {
           pass: "프레임워크가 최신 상태입니다 (v{{version}})",
           warn: "프레임워크가 구버전입니다: 설치됨 v{{installed}}, 최신 v{{latest}} ({{behind}}개 버전 뒤처짐). 'omcustom update'를 실행하여 동기화하세요."
+        },
+        rtk: {
+          pass: "RTK 설치됨",
+          warn: "RTK 미설치 — 토큰 절감 불가"
         }
       }
     },
@@ -25331,6 +25349,12 @@ var ko_default = {
         }
       }
     }
+  },
+  install: {
+    rtk_installing: "RTK 설치 중...",
+    rtk_success: "RTK 설치 완료",
+    rtk_already: "RTK 이미 설치됨",
+    rtk_install_failed: "RTK 설치 실패"
   },
   init: {
     description: "현재 디렉토리에 oh-my-customcode 초기화",
@@ -26342,6 +26366,68 @@ async function generateAndWriteLockfileForDir(targetDir) {
   }
 }
 
+// src/core/rtk-installer.ts
+import { execSync as execSync3 } from "node:child_process";
+import { platform } from "node:os";
+function isRtkInstalled() {
+  try {
+    execSync3("which rtk", { stdio: "pipe", timeout: 3000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+function getRtkVersion() {
+  try {
+    return execSync3("rtk --version", { encoding: "utf-8", stdio: "pipe", timeout: 3000 }).trim();
+  } catch {
+    return null;
+  }
+}
+function installRtk() {
+  if (process.env.CI || false || false) {
+    return false;
+  }
+  if (isRtkInstalled()) {
+    info("rtk.already_installed");
+    return true;
+  }
+  const os = platform();
+  try {
+    if (os === "darwin") {
+      try {
+        info("rtk.installing_brew");
+        execSync3("brew install rtk-ai/tap/rtk", {
+          stdio: "inherit",
+          timeout: 120000
+        });
+        return true;
+      } catch {
+        info("rtk.installing_curl");
+        execSync3("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
+          stdio: "inherit",
+          timeout: 120000
+        });
+        return isRtkInstalled();
+      }
+    } else if (os === "linux") {
+      info("rtk.installing_curl");
+      execSync3("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
+        stdio: "inherit",
+        timeout: 120000
+      });
+      return isRtkInstalled();
+    } else {
+      warn("rtk.unsupported_os", { os });
+      return false;
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    warn("rtk.install_failed", { error: message });
+    return false;
+  }
+}
+
 // src/cli/doctor.ts
 async function pathExists(targetPath) {
   try {
@@ -26641,6 +26727,23 @@ async function checkHooks(targetDir, rootDir = ".claude") {
     fixable: false
   };
 }
+async function checkRtk() {
+  if (!isRtkInstalled()) {
+    return {
+      name: "RTK",
+      status: "warn",
+      message: "RTK not installed — token savings unavailable (brew install rtk-ai/tap/rtk)",
+      fixable: true
+    };
+  }
+  const version = getRtkVersion();
+  return {
+    name: "RTK",
+    status: "pass",
+    message: `RTK OK (${version ?? "unknown version"})`,
+    fixable: false
+  };
+}
 async function checkContexts(targetDir, rootDir = ".claude") {
   const contextsDir = path.join(targetDir, rootDir, "contexts");
   const exists2 = await isDirectory(contextsDir);
@@ -26743,7 +26846,8 @@ async function fixSingleIssue(check, targetDir, rootDir = ".claude") {
       const fullPaths = check.details.map((d) => path.join(targetDir, d));
       const fixedCount = await fixBrokenSymlinks(targetDir, fullPaths);
       return fixedCount > 0;
-    }
+    },
+    RTK: async () => Promise.resolve(installRtk())
   };
   const fixer = fixMap[check.name];
   return fixer ? fixer() : false;
@@ -26891,7 +26995,8 @@ async function runAllChecks(targetDir, layout, packageVersion, includeUpdates) {
     checkGuides(targetDir),
     checkHooks(targetDir, layout.rootDir),
     checkContexts(targetDir, layout.rootDir),
-    checkCustomComponents(targetDir, layout.rootDir)
+    checkCustomComponents(targetDir, layout.rootDir),
+    checkRtk()
   ]);
   const frameworkCheck = await checkFrameworkDrift(targetDir, packageVersion);
   const checksWithFramework = frameworkCheck ? [...baseChecks, frameworkCheck] : baseChecks;
@@ -27539,6 +27644,19 @@ async function updateInstallConfig(targetDir, options, installedComponents) {
   config.installedComponents = installedComponents;
   await saveConfig(targetDir, config);
 }
+function installRtkIfNeeded(result) {
+  if (!isRtkInstalled()) {
+    info("install.rtk_installing");
+    const rtkInstalled = installRtk();
+    if (rtkInstalled) {
+      info("install.rtk_success");
+    } else {
+      result.warnings.push("RTK installation failed — install manually: brew install rtk-ai/tap/rtk");
+    }
+  } else {
+    info("install.rtk_already");
+  }
+}
 async function install(options) {
   const result = createInstallResult(options.targetDir);
   try {
@@ -27576,6 +27694,7 @@ async function install(options) {
     } else {
       info("install.lockfile_generated", { files: String(lockfileResult.fileCount) });
     }
+    installRtkIfNeeded(result);
     result.success = true;
     success("install.success");
   } catch (err) {
@@ -27759,7 +27878,7 @@ async function backupExistingInstallation(targetDir) {
 
 // src/core/mcp-config.ts
 init_fs();
-import { execSync as execSync3 } from "node:child_process";
+import { execSync as execSync4 } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { join as join8 } from "node:path";
 async function generateMCPConfig(targetDir) {
@@ -27771,15 +27890,15 @@ async function generateMCPConfig(targetDir) {
     return;
   }
   try {
-    execSync3("uv --version", { stdio: "pipe" });
+    execSync4("uv --version", { stdio: "pipe" });
   } catch {
     warn("uv (Python package manager) not found. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh");
     warn("Skipping ontology-rag MCP configuration. You can set it up manually later.");
     return;
   }
   try {
-    execSync3("uv venv .venv", { cwd: targetDir, stdio: "pipe" });
-    execSync3('uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"', { cwd: targetDir, stdio: "pipe" });
+    execSync4("uv venv .venv", { cwd: targetDir, stdio: "pipe" });
+    execSync4('uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"', { cwd: targetDir, stdio: "pipe" });
   } catch (error2) {
     const msg = error2 instanceof Error ? error2.message : String(error2);
     warn(`Failed to setup ontology-rag: ${msg}`);
@@ -27822,7 +27941,7 @@ async function generateMCPConfig(targetDir) {
 }
 async function checkUvAvailable() {
   try {
-    execSync3("uv --version", { stdio: "pipe" });
+    execSync4("uv --version", { stdio: "pipe" });
     return true;
   } catch {
     return false;
@@ -29817,8 +29936,8 @@ init_package();
 
 // src/core/updater.ts
 init_package();
-init_fs();
 import { join as join14 } from "node:path";
+init_fs();
 
 // src/core/entry-merger.ts
 var MANAGED_START = "<!-- omcustom:start -->";
@@ -30141,6 +30260,16 @@ function compareSemver2(a, b) {
   }
   return 0;
 }
+function checkAndInstallRtkAfterUpdate() {
+  if (!isRtkInstalled()) {
+    warn("update.rtk_missing");
+    console.log(i18n.t("cli.update.rtkMissing"));
+    const rtkInstalled = installRtk();
+    if (rtkInstalled) {
+      console.log(i18n.t("cli.update.rtkInstalled"));
+    }
+  }
+}
 async function update(options) {
   const result = createUpdateResult();
   try {
@@ -30188,6 +30317,7 @@ async function update(options) {
         files: String(lockfileResult.fileCount)
       });
     }
+    checkAndInstallRtkAfterUpdate();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;
