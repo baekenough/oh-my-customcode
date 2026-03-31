@@ -144,7 +144,9 @@
       "interactiveNoneSelected": "No projects selected. Exiting.",
       "interactiveUpdating": "Updating selected projects...",
       "projectLatestSuffix": "(latest)",
-      "newVersionAvailable": "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade."
+      "newVersionAvailable": "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade.",
+      "rtkMissing": "[RTK] RTK is not installed. Attempting installation...",
+      "rtkInstalled": "[RTK] ✓ RTK installed — 60-90% token savings activated"
     },
     "list": {
       "description": "List installed components",
@@ -244,6 +246,10 @@
         "framework": {
           "pass": "Framework is up to date (v{{version}})",
           "warn": "Framework is outdated: installed v{{installed}}, latest v{{latest}} ({{behind}} version(s) behind). Run 'omcustom update' to sync."
+        },
+        "rtk": {
+          "pass": "RTK installed",
+          "warn": "RTK not installed — token savings unavailable"
         }
       }
     },
@@ -302,6 +308,12 @@
         }
       }
     }
+  },
+  "install": {
+    "rtk_installing": "Installing RTK...",
+    "rtk_success": "RTK installed successfully",
+    "rtk_already": "RTK already installed",
+    "rtk_install_failed": "RTK installation failed"
   },
   "init": {
     "description": "Initialize oh-my-customcode in the current directory",
