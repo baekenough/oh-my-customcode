@@ -4,6 +4,7 @@
 
 import { join } from 'node:path';
 import packageJson from '../../package.json';
+import { i18n } from '../i18n/index.js';
 import {
   copyDirectory,
   ensureDirectory,
@@ -26,6 +27,7 @@ import {
   type Lockfile,
   readLockfile,
 } from './lockfile.js';
+import { installRtk, isRtkInstalled } from './rtk-installer.js';
 
 /**
  * Options for update operation
@@ -488,6 +490,20 @@ function compareSemver(a: string, b: string): number {
 }
 
 /**
+ * Check if RTK is installed after an update and install it if missing
+ */
+function checkAndInstallRtkAfterUpdate(): void {
+  if (!isRtkInstalled()) {
+    warn('update.rtk_missing');
+    console.log(i18n.t('cli.update.rtkMissing'));
+    const rtkInstalled = installRtk();
+    if (rtkInstalled) {
+      console.log(i18n.t('cli.update.rtkInstalled'));
+    }
+  }
+}
+
+/**
  * Update oh-my-customcode installation
  */
 export async function update(options: UpdateOptions): Promise<UpdateResult> {
@@ -572,6 +588,9 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
         files: String(lockfileResult.fileCount),
       });
     }
+
+    // Check RTK after update
+    checkAndInstallRtkAfterUpdate();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;
