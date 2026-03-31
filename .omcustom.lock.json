@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.66.0",
-  "generatedAt": "2026-03-30T12:08:06.700Z",
-  "templateVersion": "0.66.0",
+  "generatorVersion": "0.67.0",
+  "generatedAt": "2026-03-31T01:20:11.046Z",
+  "templateVersion": "0.67.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -464,6 +464,16 @@
       "size": 1425,
       "component": "skills"
     },
+    ".claude/skills/rtk-exec/scripts/rtk-wrapper.cjs": {
+      "templateHash": "19d0647e53d54d322cc5a90d0c2e87f694042d563ca4c7814764bbfaee5b76f1",
+      "size": 9964,
+      "component": "skills"
+    },
+    ".claude/skills/rtk-exec/SKILL.md": {
+      "templateHash": "b9b39ca65327cb17357ad13f493c187836b4d76fa83984b21fd861fc077f4b29",
+      "size": 5981,
+      "component": "skills"
+    },
     ".claude/skills/redis-best-practices/SKILL.md": {
       "templateHash": "26b4ad1a23f313341ea83f5328c2fa7c3e4d4b3578894f23087cb784cf9b1ce4",
       "size": 1853,
@@ -535,8 +545,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "1dd7e03b7e46d6473379f90eec4dadb58de9565ab09db26f9b7848d596077de8",
-      "size": 13718,
+      "templateHash": "bdf6d9bdf9144781914db63720cce393b2d7f566d1b8484123f1dfb6e680b8fd",
+      "size": 13986,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
@@ -640,8 +650,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "425289dc7dd031c9185b3fde3e85a2087d13fc3144ba304a873d33dd8149c822",
-      "size": 6483,
+      "templateHash": "568ef38de3c9e7a9288210a23ddaa9a8563b2048e445cc7bb771420f582ca2b0",
+      "size": 6768,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
@@ -910,8 +920,8 @@
       "component": "skills"
     },
     ".claude/skills/de-lead-routing/SKILL.md": {
-      "templateHash": "7dba8a70f56a17c82bd9fde7baae59ef248b62711a01c74feae94b06a97adf02",
-      "size": 8390,
+      "templateHash": "618e635b702db9e03aea6ad9d0ded127a79c1fe5648b925578e5e7098dd2961c",
+      "size": 8671,
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {
@@ -1010,8 +1020,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-env-check.sh": {
-      "templateHash": "8a63b9d04a14d777f24d8d72d34ce0b545683cdeab76b00fb6690b9f0254b997",
-      "size": 8165,
+      "templateHash": "9c72a5229b422cd4fc59c206ea10b2ef9f1c0a5458f0a67c42d3a83757332711",
+      "size": 8347,
       "component": "hooks"
     },
     ".claude/hooks/scripts/feedback-collector.sh": {
