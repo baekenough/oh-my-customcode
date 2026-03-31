@@ -9307,7 +9307,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.68.0",
+    version: "0.68.1",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -25477,6 +25477,19 @@ function compareSemver(a, b) {
   }
   return 0;
 }
+function isVersionPlausible(currentVersion, candidateVersion) {
+  const current = normalizeVersion(currentVersion).split(".").map((n) => parseInt(n, 10) || 0);
+  const candidate = normalizeVersion(candidateVersion).split(".").map((n) => parseInt(n, 10) || 0);
+  const majorDiff = (candidate[0] ?? 0) - (current[0] ?? 0);
+  const minorDiff = (candidate[1] ?? 0) - (current[1] ?? 0);
+  if (majorDiff >= 1) {
+    return false;
+  }
+  if (majorDiff === 0 && minorDiff >= 10) {
+    return false;
+  }
+  return true;
+}
 function isInteractiveSession(stdin = process.stdin, stdout = process.stdout) {
   return Boolean(stdin.isTTY && stdout.isTTY);
 }
@@ -25603,12 +25616,16 @@ function checkSelfUpdate(options) {
   let usedCache = false;
   const cache = readCache(cachePath);
   if (cache && isCacheFresh(cache, now, cacheTtlMs)) {
-    latestVersion = normalizeVersion(cache.latestVersion);
-    usedCache = true;
+    const cachedVersion = normalizeVersion(cache.latestVersion);
+    if (isVersionPlausible(currentVersion, cachedVersion)) {
+      latestVersion = cachedVersion;
+      usedCache = true;
+    }
   }
   if (!latestVersion) {
-    latestVersion = fetchLatestVersion(packageName);
-    if (latestVersion) {
+    const fetched = fetchLatestVersion(packageName);
+    if (fetched && isVersionPlausible(currentVersion, fetched)) {
+      latestVersion = fetched;
       writeCache(cachePath, latestVersion, now);
     }
   }

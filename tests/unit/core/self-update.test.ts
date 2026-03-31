@@ -12,6 +12,7 @@ import {
   compareSemver,
   isInteractiveSession,
   isNpxInvocation,
+  isVersionPlausible,
   maybeHandleSelfUpdateForInit,
   normalizeVersion,
 } from '../../../src/core/self-update.js';
@@ -396,13 +397,13 @@ describe('self-update module', () => {
       const options: SelfUpdateOptions = {
         currentVersion: '1.0.0',
         cachePath,
-        fetchLatestVersion: () => '2.0.0',
+        fetchLatestVersion: () => '1.1.0',
       };
 
       const result = checkSelfUpdate(options);
 
       expect(result.checked).toBe(true);
-      expect(result.latestVersion).toBe('2.0.0');
+      expect(result.latestVersion).toBe('1.1.0');
       expect(result.usedCache).toBe(false);
     });
 
@@ -414,13 +415,13 @@ describe('self-update module', () => {
       const options: SelfUpdateOptions = {
         currentVersion: '1.0.0',
         cachePath,
-        fetchLatestVersion: () => '2.1.0',
+        fetchLatestVersion: () => '1.2.0',
       };
 
       const result = checkSelfUpdate(options);
 
       expect(result.checked).toBe(true);
-      expect(result.latestVersion).toBe('2.1.0');
+      expect(result.latestVersion).toBe('1.2.0');
       expect(result.usedCache).toBe(false);
     });
 
@@ -439,13 +440,13 @@ describe('self-update module', () => {
         currentVersion: '1.0.0',
         cachePath,
         cacheTtlMs: 1000,
-        fetchLatestVersion: () => '2.2.0',
+        fetchLatestVersion: () => '1.3.0',
         now: Date.now(),
       };
 
       const result = checkSelfUpdate(options);
 
-      expect(result.latestVersion).toBe('2.2.0');
+      expect(result.latestVersion).toBe('1.3.0');
       expect(result.usedCache).toBe(false);
     });
 
@@ -495,6 +496,24 @@ describe('self-update module', () => {
       checkSelfUpdate(options);
 
       expect(capturedPackageName).toBe('custom-package');
+    });
+  });
+
+  describe('isVersionPlausible', () => {
+    it('should accept same major with small minor bump', () => {
+      expect(isVersionPlausible('0.68.0', '0.69.0')).toBe(true);
+      expect(isVersionPlausible('0.68.0', '0.77.0')).toBe(true);
+      expect(isVersionPlausible('1.0.0', '1.5.0')).toBe(true);
+    });
+
+    it('should reject major version jump', () => {
+      expect(isVersionPlausible('0.68.0', '1.5.0')).toBe(false);
+      expect(isVersionPlausible('1.0.0', '2.0.0')).toBe(false);
+    });
+
+    it('should reject large minor jump within same major', () => {
+      expect(isVersionPlausible('0.68.0', '0.78.0')).toBe(false);
+      expect(isVersionPlausible('0.68.0', '0.80.0')).toBe(false);
     });
   });
 
