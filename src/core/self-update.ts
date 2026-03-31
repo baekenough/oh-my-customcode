@@ -69,6 +69,33 @@ export function compareSemver(a: string, b: string): number {
 }
 
 /**
+ * Sanity check: reject cached versions that are implausibly far from current.
+ * A major version change or a minor jump of 10+ is almost certainly cache corruption.
+ */
+export function isVersionPlausible(currentVersion: string, candidateVersion: string): boolean {
+  const current = normalizeVersion(currentVersion)
+    .split('.')
+    .map((n) => parseInt(n, 10) || 0);
+  const candidate = normalizeVersion(candidateVersion)
+    .split('.')
+    .map((n) => parseInt(n, 10) || 0);
+  const majorDiff = (candidate[0] ?? 0) - (current[0] ?? 0);
+  const minorDiff = (candidate[1] ?? 0) - (current[1] ?? 0);
+
+  // Reject if major version changes at all (0.x → 1.x is suspicious without live confirmation)
+  if (majorDiff >= 1) {
+    return false;
+  }
+
+  // Reject if minor jumps by 10+ within same major (0.68 → 0.78+ is implausible in one cache TTL)
+  if (majorDiff === 0 && minorDiff >= 10) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Interactive session check (prompt-safe).
  */
 export function isInteractiveSession(
@@ -244,13 +271,18 @@ export function checkSelfUpdate(options: SelfUpdateOptions): SelfUpdateCheckResu
   const cache = readCache(cachePath);
 
   if (cache && isCacheFresh(cache, now, cacheTtlMs)) {
-    latestVersion = normalizeVersion(cache.latestVersion);
-    usedCache = true;
+    const cachedVersion = normalizeVersion(cache.latestVersion);
+    if (isVersionPlausible(currentVersion, cachedVersion)) {
+      latestVersion = cachedVersion;
+      usedCache = true;
+    }
+    // Implausible cached version silently ignored — will re-fetch below
   }
 
   if (!latestVersion) {
-    latestVersion = fetchLatestVersion(packageName);
-    if (latestVersion) {
+    const fetched = fetchLatestVersion(packageName);
+    if (fetched && isVersionPlausible(currentVersion, fetched)) {
+      latestVersion = fetched;
       writeCache(cachePath, latestVersion, now);
     }
   }
