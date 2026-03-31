@@ -428,3 +428,11 @@ agents:
     actions: [review, analyze]
     base_confidence: 85
     routing_rule: "MUST use professor-triage skill for cross-analyzing GitHub issues with omc_issue_analyzer comments"
+
+  rtk-exec:
+    keywords:
+      korean: [rtk, 토큰절감, 출력압축, 토큰최적화]
+      english: [rtk, "token savings", "compress output", "token optimization"]
+    file_patterns: []
+    supported_actions: [optimize, compress, proxy]
+    base_confidence: 85

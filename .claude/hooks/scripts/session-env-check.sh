@@ -31,6 +31,12 @@ if command -v gemini >/dev/null 2>&1; then
   fi
 fi
 
+# Check RTK CLI availability
+RTK_STATUS="unavailable"
+if command -v rtk >/dev/null 2>&1; then
+  RTK_STATUS="available"
+fi
+
 # Check Agent Teams availability
 AGENT_TEAMS_STATUS="disabled"
 if [ "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-0}" = "1" ]; then
@@ -145,6 +151,7 @@ STATUS_FILE="/tmp/.claude-env-status-${PPID}"
 cat > "$STATUS_FILE" << ENVEOF
 codex=${CODEX_STATUS}
 gemini=${GEMINI_STATUS}
+rtk=${RTK_STATUS}
 agent_teams=${AGENT_TEAMS_STATUS}
 git_branch=${CURRENT_BRANCH}
 claude_version=${CLAUDE_VERSION}
@@ -156,6 +163,7 @@ ENVEOF
 # Report to stderr (visible in conversation)
 echo "  codex CLI: ${CODEX_STATUS}" >&2
 echo "  gemini CLI: ${GEMINI_STATUS}" >&2
+echo "  RTK CLI:      ${RTK_STATUS}" >&2
 echo "  Agent Teams: ${AGENT_TEAMS_STATUS}" >&2
 echo "  Claude Code: v${CLAUDE_VERSION} (${COMPAT_STATUS})" >&2
 if [ "$COMPAT_STATUS" = "outdated" ]; then

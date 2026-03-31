@@ -64,7 +64,7 @@ Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or T
 ### Step 2: Codex-Exec Hybrid (Code Generation)
 For **new pipeline code**, **DAG scaffolding**, or **SQL model generation**:
 
-1. Check `/tmp/.claude-env-status-*` for codex and gemini availability
+1. Check `/tmp/.claude-env-status-*` for codex, gemini, and rtk availability
 2. If codex available AND task involves new file creation → automatically delegate to `/codex-exec` for scaffolding:
    - Display: `[Codex Hybrid] Delegating to codex-exec...`
    - codex-exec generates initial code (strength: fast generation)
@@ -73,7 +73,10 @@ For **new pipeline code**, **DAG scaffolding**, or **SQL model generation**:
    - Display: `[Gemini Hybrid] Delegating to gemini-exec...`
    - gemini-exec generates initial code
    - Selected DE expert reviews and refines output
-4. If neither available → display `[External CLI] Unavailable — proceeding with {expert} directly` and use DE expert directly
+4. If RTK available (`RTK=available` in env status) → optionally wrap DE expert output through RTK to reduce token consumption by 60-90%:
+   - Display: `[RTK Proxy] Token optimization active via rtk-exec`
+   - RTK acts as a transparent proxy — no change to expert selection
+5. If none available → display `[External CLI] Unavailable — proceeding with {expert} directly` and use DE expert directly
 
 **Suitable**: New DAG files, dbt model scaffolding, SQL template generation
 **Unsuitable**: Existing pipeline modification, architecture decisions, data quality analysis
