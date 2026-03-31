@@ -333,13 +333,12 @@ Custom workflows can be defined by users in `workflows/` with any `^[a-z0-9-]+$`
 
 ### 5.9 Professor Triage (/professor-triage)
 
-Cross-analyzes GitHub issues with omc_issue_analyzer comments. 6-phase workflow:
+Analyzes GitHub issues directly against the current codebase. 5-phase workflow:
 1. Collect `professor` labeled issues
-2. Fetch omc_issue_analyzer comments for each
-3. Independent codebase verification
-4. Cross-analyze: compare analyzer claims vs actual code
-5. Post findings as issue comments
-6. Apply labels (verify-done, priority adjustments)
+2. Codebase analysis: search relevant code, assess impact, check if already resolved
+3. Cross-analyze: common patterns, duplicates, priority matrix
+4. Output: artifact report + mandatory issue comments
+5. Act: auto-close resolved/duplicates, add priority labels
 
 ### 5.10 Release Plan (/release-plan)
 

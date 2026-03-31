@@ -427,7 +427,7 @@ agents:
     file_patterns: []
     actions: [review, analyze]
     base_confidence: 85
-    routing_rule: "MUST use professor-triage skill for cross-analyzing GitHub issues with omc_issue_analyzer comments"
+    routing_rule: "MUST use professor-triage skill for codebase-driven issue analysis and automated triage"
 
   rtk-exec:
     keywords:

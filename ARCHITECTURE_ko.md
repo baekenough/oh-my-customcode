@@ -263,13 +263,12 @@ flowchart LR
 
 ### 5.7 Professor Triage (/professor-triage)
 
-GitHub 이슈를 omc_issue_analyzer 댓글과 교차 분석합니다. 6단계 워크플로우:
+GitHub 이슈를 현재 코드베이스 기반으로 직접 분석합니다. 5단계 워크플로우:
 1. `professor` 라벨이 붙은 이슈 수집
-2. 각 이슈의 omc_issue_analyzer 댓글 조회
-3. 독립적인 코드베이스 검증
-4. 교차 분석: 분석기 주장 vs 실제 코드 비교
-5. 이슈 댓글로 분석 결과 게시
-6. 라벨 적용 (verify-done, 우선순위 조정)
+2. 코드베이스 분석: 관련 코드 검색, 영향도 평가, 이미 해결 여부 확인
+3. 교차 분석: 공통 패턴, 중복 감지, 우선순위 매트릭스
+4. 출력: 아티팩트 리포트 + 필수 이슈 댓글
+5. 실행: 해결됨/중복 자동 종료, 우선순위 라벨 부여
 
 ### 5.8 Release Plan (/release-plan)
 
