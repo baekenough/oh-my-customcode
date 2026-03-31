@@ -99,7 +99,7 @@ Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or T
 ### Step 2: Codex-Exec Hybrid (Implementation Tasks)
 For **new file creation**, **boilerplate**, or **test code generation**:
 
-1. Check `/tmp/.claude-env-status-*` for codex and gemini availability
+1. Check `/tmp/.claude-env-status-*` for codex, gemini, and rtk availability
 2. If codex available AND task involves new file creation → automatically delegate to `/codex-exec` for scaffolding:
    - Display: `[Codex Hybrid] Delegating to codex-exec...`
    - codex-exec generates initial code (strength: fast generation)
@@ -108,7 +108,10 @@ For **new file creation**, **boilerplate**, or **test code generation**:
    - Display: `[Gemini Hybrid] Delegating to gemini-exec...`
    - gemini-exec generates initial code
    - Selected Claude expert reviews and refines output
-4. If neither available → display `[External CLI] Unavailable — proceeding with {expert} directly` and use Claude expert directly
+4. If RTK available (`RTK=available` in env status) → optionally wrap Claude expert output through RTK to reduce token consumption by 60-90%:
+   - Display: `[RTK Proxy] Token optimization active via rtk-exec`
+   - RTK acts as a transparent proxy — no change to expert selection
+5. If none available → display `[External CLI] Unavailable — proceeding with {expert} directly` and use Claude expert directly
 
 **Suitable**: New file creation, boilerplate, scaffolding, test code
 **Unsuitable**: Existing code modification, architecture decisions, bug fixes
