@@ -14,7 +14,7 @@ steps:
 
   - name: triage
     skill: professor-triage
-    description: Cross-analyze verify-done issues with omc_issue_analyzer comments
+    description: Analyze verify-done issues against current codebase and perform automated triage
 
   - name: plan
     skill: release-plan
