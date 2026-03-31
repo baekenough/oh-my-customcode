@@ -60,6 +60,15 @@ if [ "$CLAUDE_VERSION" != "unknown" ]; then
   fi
 fi
 
+# v2.1.88+ features notice
+if [ "$CLAUDE_VERSION" != "unknown" ]; then
+  if printf '%s\n' "2.1.88" "$CLAUDE_VERSION" | sort -V | head -1 | grep -q "^2\.1\.88$"; then
+    if [ -z "${CLAUDE_CODE_NO_FLICKER:-}" ]; then
+      echo "  [v2.1.88] Tip: CLAUDE_CODE_NO_FLICKER=1 for flicker-free rendering" >&2
+    fi
+  fi
+fi
+
 # Git workflow reminder
 CURRENT_BRANCH="unknown"
 if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then

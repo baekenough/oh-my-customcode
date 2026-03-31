@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.67.0",
-  "generatedAt": "2026-03-31T01:20:11.046Z",
+  "generatorVersion": "0.68.0",
+  "generatedAt": "2026-03-31T01:57:26.572Z",
   "templateVersion": "0.67.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -45,8 +45,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "7008395c2f4651b4254d9c86ca575df820f26d7db6013565cf7fcf619bda5b34",
-      "size": 13439,
+      "templateHash": "e0c41dbb9426364d054ff52423d895ca855679091f0deff53ac9b70d8d324f83",
+      "size": 13787,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -979,6 +979,11 @@
       "size": 843,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/rtk-intercept.sh": {
+      "templateHash": "5e936074a2dcc6e17ce05992778c72ed2fac5edc3cfd8ce63a480ea5a6a95947",
+      "size": 1926,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/stale-todo-scanner.sh": {
       "templateHash": "d2f47fdfff22243a4d5cbbbb09f176e019235decf603fac17407ea17d114d17d",
       "size": 2306,
@@ -1020,8 +1025,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-env-check.sh": {
-      "templateHash": "9c72a5229b422cd4fc59c206ea10b2ef9f1c0a5458f0a67c42d3a83757332711",
-      "size": 8347,
+      "templateHash": "c309410499ca66d6a4a7ebe588b8faf4fa6f2a1e5e5190d8f3ccd3feab749e31",
+      "size": 8665,
       "component": "hooks"
     },
     ".claude/hooks/scripts/feedback-collector.sh": {
@@ -1065,8 +1070,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "5ae70b2c53fe8a4496fd57bdeda6bd1096b2ecb801938b8b6b42045e4fe187a6",
-      "size": 22438,
+      "templateHash": "523511050e94b18bcec66d40d1ef1cad42b3c1a3bd00a88e0d5afba51f77f438",
+      "size": 22781,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
