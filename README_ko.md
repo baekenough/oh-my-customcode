@@ -283,6 +283,20 @@ your-project/
 
 ---
 
+## 선택적 외부 도구
+
+oh-my-customcode는 외부 도구 없이도 완전하게 동작합니다. 설치 시 추가 기능을 제공하는 선택적 통합입니다:
+
+| 도구 | 용도 | 설치 | 스킬 |
+|------|------|------|------|
+| [RTK](https://github.com/rtk-ai/rtk) | CLI 출력 토큰 60-90% 절감 | `brew install rtk` | `/rtk-exec` |
+| [Codex CLI](https://github.com/openai/codex) | OpenAI Codex 하이브리드 워크플로우 | `npm i -g @openai/codex` | `/codex-exec` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google Gemini 하이브리드 워크플로우 | `npm i -g @anthropic-ai/gemini-cli` | `/gemini-exec` |
+
+설치된 도구는 세션 시작 시 **자동 감지**되며 관련 기능이 활성화됩니다. 미설치 시 모든 명령어는 Claude 네이티브 대안으로 자연스럽게 폴백됩니다.
+
+---
+
 ## 개발
 
 ```bash

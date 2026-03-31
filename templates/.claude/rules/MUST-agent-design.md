@@ -85,6 +85,7 @@ All supported hook event types in Claude Code. Agents and skills can reference t
 | `Elicitation` | Agent requests user input | question | command, prompt | v2.1.76+ |
 | `ElicitationResult` | User responds to elicitation | answer | command, prompt | v2.1.76+ |
 | `PostMessage` | After message sent | message_type | command | v2.1.76+ |
+| `PermissionDenied` | Auto mode classifier denial | tool, tool_input, denial_reason | command, prompt | v2.1.88+ |
 | `TeammateIdle` | Agent Teams member idle | teammate_id | command | v2.1.83+ |
 | `TaskCreated` | Task created | task_id, description | command | v2.1.83+ |
 | `TaskCompleted` | Task completed | task_id, result | command | v2.1.83+ |
@@ -109,6 +110,8 @@ hooks:
     - matcher: "*"                       # Match all
       command: "echo hook"
 ```
+
+> **v2.1.85+**: `if` field supports permission rule syntax for conditional hook execution. **v2.1.88** extended `if` matching to support compound commands (`ls && git push`) and commands with env-var prefixes (`FOO=bar git push`).
 
 ## Permission Mode Guidance
 

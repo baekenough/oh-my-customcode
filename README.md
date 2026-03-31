@@ -294,6 +294,20 @@ your-project/
 
 ---
 
+## Optional External Tools
+
+oh-my-customcode works fully without any external tools. These optional integrations provide additional capabilities when installed:
+
+| Tool | Purpose | Install | Skill |
+|------|---------|---------|-------|
+| [RTK](https://github.com/rtk-ai/rtk) | 60-90% token savings on CLI output | `brew install rtk` | `/rtk-exec` |
+| [Codex CLI](https://github.com/openai/codex) | OpenAI Codex hybrid workflows | `npm i -g @openai/codex` | `/codex-exec` |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google Gemini hybrid workflows | `npm i -g @anthropic-ai/gemini-cli` | `/gemini-exec` |
+
+When installed, each tool is **auto-detected** at session start and its features become available. When not installed, all commands gracefully fall back to Claude-native alternatives.
+
+---
+
 ## Development
 
 ```bash
