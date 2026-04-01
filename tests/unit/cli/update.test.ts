@@ -540,6 +540,48 @@ describe('update command', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
+    it('should print namespace synced files when namespaceSynced is non-empty', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['agents'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.2.0',
+        warnings: [],
+        namespaceSynced: ['agents/lang-foo.md', 'agents/lang-bar.md'],
+        syncedRootFiles: [],
+        removedDeprecatedFiles: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({});
+
+      // Verify namespace synced output was printed (lines 313-318)
+      expect(consoleLogSpy).toHaveBeenCalled();
+      const allCalls = (consoleLogSpy.mock.calls as unknown[][]).map((c) => String(c[0]));
+      expect(
+        allCalls.some(
+          (msg) => msg.includes('lang-foo') || msg.includes('lang-bar') || msg.includes('↻')
+        )
+      ).toBe(true);
+    });
+
     it('should print preserved files count', async () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({

@@ -33,7 +33,7 @@ STAGED_GO=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.go$' ||
 if [ -n "$STAGED_TS" ]; then
     echo "  [Biome] Formatting $(echo "$STAGED_TS" | wc -l | tr -d ' ') files..."
     echo "$STAGED_TS" | xargs npx biome check --write --no-errors-on-unmatched 2>/dev/null
-    echo "$STAGED_TS" | xargs git add
+    echo "$STAGED_TS" | xargs git add -f
 fi
 
 # Python: Ruff
@@ -42,7 +42,7 @@ if [ -n "$STAGED_PY" ]; then
         echo "  [Ruff] Formatting $(echo "$STAGED_PY" | wc -l | tr -d ' ') files..."
         echo "$STAGED_PY" | xargs ruff check --fix --quiet 2>/dev/null
         echo "$STAGED_PY" | xargs ruff format --quiet 2>/dev/null
-        echo "$STAGED_PY" | xargs git add
+        echo "$STAGED_PY" | xargs git add -f
     fi
 fi
 
@@ -51,7 +51,7 @@ if [ -n "$STAGED_GO" ]; then
     if command -v gofmt >/dev/null 2>&1; then
         echo "  [gofmt] Formatting $(echo "$STAGED_GO" | wc -l | tr -d ' ') files..."
         echo "$STAGED_GO" | xargs gofmt -w 2>/dev/null
-        echo "$STAGED_GO" | xargs git add
+        echo "$STAGED_GO" | xargs git add -f
     fi
 fi
 
@@ -88,8 +88,8 @@ if [ -n "$COVERAGE_LINE" ]; then
     echo "Function coverage: $FUNC_COV%"
     echo "Line coverage: $LINE_COV%"
 
-    # Pre-commit threshold: 95% (CI uses stricter 97%)
-    THRESHOLD=95
+    # Pre-commit threshold: 98% (DI refactoring covers installer platform branches)
+    THRESHOLD=98
 
     FUNC_OK=$(echo "$FUNC_COV $THRESHOLD" | awk '{print ($1 >= $2) ? "1" : "0"}')
     LINE_OK=$(echo "$LINE_COV $THRESHOLD" | awk '{print ($1 >= $2) ? "1" : "0"}')

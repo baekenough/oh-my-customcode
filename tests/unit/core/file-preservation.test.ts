@@ -10,6 +10,7 @@ import {
   mergeJsonFile,
   restoreCriticalFiles,
 } from '../../../src/core/file-preservation.js';
+import * as fsUtils from '../../../src/utils/fs.js';
 import { fileExists, readJsonFile } from '../../../src/utils/fs.js';
 
 describe('file-preservation', () => {
@@ -108,6 +109,41 @@ describe('file-preservation', () => {
 
       expect(result.extractedFiles).toContain('custom-config.json');
     });
+
+    it('should record failure when copyFile throws during file extraction (lines 125-127)', async () => {
+      // Create source file so fileExists returns true
+      await writeFile(join(rootDir, 'settings.json'), '{"key": "value"}');
+
+      // Make copyFile throw
+      const copyFileSpy = spyOn(fsUtils, 'copyFile').mockRejectedValue(
+        new Error('Permission denied')
+      );
+
+      const result = await extractCriticalFiles(rootDir, preserveDir);
+
+      expect(result.failures.length).toBeGreaterThan(0);
+      expect(result.failures.some((f) => f.path === 'settings.json')).toBe(true);
+
+      copyFileSpy.mockRestore();
+    });
+
+    it('should record failure when copyDirectory throws during dir extraction (lines 150-152)', async () => {
+      // Create source directory so fileExists returns true
+      const memDir = join(rootDir, 'agent-memory');
+      await mkdir(memDir, { recursive: true });
+
+      // Make copyDirectory throw
+      const copyDirSpy = spyOn(fsUtils, 'copyDirectory').mockRejectedValue(
+        new Error('Copy failed')
+      );
+
+      const result = await extractCriticalFiles(rootDir, preserveDir);
+
+      expect(result.failures.length).toBeGreaterThan(0);
+      expect(result.failures.some((f) => f.path === 'agent-memory')).toBe(true);
+
+      copyDirSpy.mockRestore();
+    });
   });
 
   describe('restoreCriticalFiles', () => {
@@ -204,6 +240,71 @@ describe('file-preservation', () => {
       expect(result.restoredFiles).toContain('settings.json');
       const restored = await readJsonFile<Record<string, unknown>>(join(rootDir, 'settings.json'));
       expect(restored.preserved).toBe(true);
+    });
+
+    it('should restore non-JSON files using copyFile (line 220 else branch)', async () => {
+      // Create a non-JSON preserved file
+      await writeFile(join(preserveDir, 'custom.txt'), 'custom content');
+
+      const preservation = {
+        tempDir: preserveDir,
+        extractedFiles: ['custom.txt'],
+        extractedDirs: [],
+        failures: [],
+      };
+
+      const result = await restoreCriticalFiles(rootDir, preservation);
+
+      expect(result.restoredFiles).toContain('custom.txt');
+      expect(await fileExists(join(rootDir, 'custom.txt'))).toBe(true);
+    });
+
+    it('should record failure when file restoration throws (lines 225-227)', async () => {
+      // Create preserved file
+      await writeFile(join(preserveDir, 'custom.txt'), 'content');
+
+      const preservation = {
+        tempDir: preserveDir,
+        extractedFiles: ['custom.txt'],
+        extractedDirs: [],
+        failures: [],
+      };
+
+      // Make copyFile throw during restoration
+      const copyFileSpy = spyOn(fsUtils, 'copyFile').mockRejectedValue(new Error('Write failed'));
+
+      const result = await restoreCriticalFiles(rootDir, preservation);
+
+      expect(result.failures.length).toBeGreaterThan(0);
+      expect(result.failures.some((f) => f.path === 'custom.txt')).toBe(true);
+      expect(result.restoredFiles).not.toContain('custom.txt');
+
+      copyFileSpy.mockRestore();
+    });
+
+    it('should record failure when directory restoration throws (lines 244-246)', async () => {
+      const memDir = join(preserveDir, 'agent-memory');
+      await mkdir(memDir, { recursive: true });
+
+      const preservation = {
+        tempDir: preserveDir,
+        extractedFiles: [],
+        extractedDirs: ['agent-memory'],
+        failures: [],
+      };
+
+      // Make copyDirectory throw during restoration
+      const copyDirSpy = spyOn(fsUtils, 'copyDirectory').mockRejectedValue(
+        new Error('Dir copy failed')
+      );
+
+      const result = await restoreCriticalFiles(rootDir, preservation);
+
+      expect(result.failures.length).toBeGreaterThan(0);
+      expect(result.failures.some((f) => f.path === 'agent-memory')).toBe(true);
+      expect(result.restoredDirs).not.toContain('agent-memory');
+
+      copyDirSpy.mockRestore();
     });
   });
 

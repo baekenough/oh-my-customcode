@@ -21,6 +21,7 @@ import {
   writeJsonFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
+import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, saveConfig } from './config.js';
 import {
   cleanupPreservation,
@@ -390,6 +391,25 @@ function installRtkIfNeeded(result: InstallResult): void {
 }
 
 /**
+ * Install Codex CLI if not already installed, adding warnings to result on failure
+ */
+function installCodexIfNeeded(result: InstallResult): void {
+  if (!isCodexInstalled()) {
+    info('install.codex_installing');
+    const codexInstalled = installCodex();
+    if (codexInstalled) {
+      info('install.codex_success');
+    } else {
+      result.warnings.push(
+        'Codex CLI installation failed — install manually: npm install -g @openai/codex'
+      );
+    }
+  } else {
+    info('install.codex_already');
+  }
+}
+
+/**
  * Install oh-my-customcode templates to target directory
  */
 export async function install(options: InstallOptions): Promise<InstallResult> {
@@ -443,6 +463,9 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 
     // Install RTK for token optimization
     installRtkIfNeeded(result);
+
+    // Install Codex CLI for AI-assisted development
+    installCodexIfNeeded(result);
 
     result.success = true;
     success('install.success');
