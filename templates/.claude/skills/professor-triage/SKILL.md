@@ -2,7 +2,7 @@
 name: professor-triage
 description: Analyze GitHub issues against current codebase and perform automated triage with priority assessment
 scope: harness
-version: 2.0.0
+version: 2.1.0
 user-invocable: true
 effort: high
 context: fork
@@ -18,7 +18,7 @@ Analyzes GitHub issues directly against the current codebase. For each issue, se
 ## Usage
 
 ```
-/professor-triage                          # Default: --label professor --state open
+/professor-triage                          # Default: --state open (excludes verify-done)
 /professor-triage 587 589 590 591 592      # Direct issue numbers
 /professor-triage --label codex-release    # Custom label filter
 /professor-triage --since 2026-03-20       # Date filter
@@ -31,7 +31,7 @@ Analyzes GitHub issues directly against the current codebase. For each issue, se
 1. Parse arguments to determine target issues:
    - If issue numbers provided: use those directly
    - If `--label` provided: `gh issue list --label <label> --state <state> --json number`
-   - Default: `gh issue list --label professor --state open --json number`
+   - Default: `gh issue list --state open --json number` + exclude issues with `verify-done` label
    - If `--since` provided: add `--search "created:>YYYY-MM-DD"` filter
 
 2. For each issue, fetch full details:
@@ -41,7 +41,7 @@ gh issue view NNN --json number,title,body,comments,labels,createdAt
 
 3. For batches >20 issues, prefer `gh api graphql` for batch fetching to respect GitHub API rate limits (5000/hour authenticated).
 
-4. If `--label` returns 0 results, check label existence via `gh label list`. Report if label missing.
+4. If filter returns 0 results: if `--label` was used, check label existence via `gh label list`. Report if label missing. If default filter, report "No open issues without verify-done label found."
 
 ### Phase 2: Codebase Analysis
 
@@ -111,9 +111,121 @@ Perform deep cross-analysis with full context from all issues:
    - `Open — monitoring`: Waiting for external trigger (e.g., stable release)
    - `New issue needed`: Cross-analysis discovered issue not yet tracked
 
-### Phase 4: Output
+### Phase 4: Multi-Perspective Analysis & Output
 
-**4A: Artifact report** — Delegate to arch-documenter to write:
+For each analyzed issue, generate multi-perspective analysis comments and artifacts.
+
+**Parallelization (R009):**
+- Phase 4A + 4B: parallel (independent perspectives)
+- Phase 4C: after 4A + 4B complete (synthesis requires both inputs)
+- Phase 4D + 4E: parallel (independent outputs, both depend on 4C)
+- Phase 4F: after all above (verification gate)
+
+**4A: 🏛️ Senior Architect Analysis** — Delegate to arch-documenter (model: sonnet) to post GitHub comment:
+
+```
+## 🏛️ Senior Architect Analysis
+
+### Architecture Impact
+| Component | Impact | Risk |
+|-----------|--------|------|
+| {component} | {description} | {High/Medium/Low} |
+
+### Code-Level Analysis
+{Specific file:line references from Phase 2 codebase analysis}
+
+### Strategic Assessment
+- **Feasibility**: {assessment with evidence}
+- **Priority recommendation**: {P1/P2/P3 with rationale}
+
+### Risk & Considerations
+| Risk | Likelihood | Mitigation |
+|------|-----------|------------|
+| {risk} | {High/Medium/Low} | {mitigation} |
+
+**Estimated effort**: {XS/S/M/L/XL}
+
+---
+_🏛️ Senior Architect perspective — `/professor-triage` v2.1.0_
+```
+
+**4B: 🤝 Project Colleague Review** — Delegate to arch-documenter (model: sonnet) to post GitHub comment:
+
+```
+## 🤝 Project Colleague Review
+
+### Implementation Ideas
+{Concrete code locations and change suggestions with file:line references}
+
+### Easy-to-Miss Details
+- {Name collisions, validation bypasses, race conditions, edge cases}
+
+### Suggested Next Steps
+1. {Actionable step with specific file/function reference}
+2. {Actionable step}
+3. {Actionable step}
+
+---
+_🤝 Project Colleague perspective — `/professor-triage` v2.1.0_
+```
+
+Note: Do NOT include a "First Impressions" (첫인상) section in the Colleague Review — this was explicitly excluded per user feedback.
+
+**4C: 🎓 Professor Synthesis** — Delegate to arch-documenter (model: opus) to post GitHub comment. This phase requires 4A and 4B results as input:
+
+```
+## 🎓 Professor Synthesis
+
+### Codebase Verification
+| Claim (from Architect/Colleague) | Verified | Evidence |
+|----------------------------------|----------|----------|
+| {claim} | ✅/⚠️/❌ | {file:line or git evidence} |
+
+### Consensus & Divergence
+| Topic | Architect | Colleague | Verdict |
+|-------|-----------|-----------|---------|
+| {topic} | {position} | {position} | {synthesized judgment} |
+
+### Priority Matrix
+| Dimension | Assessment |
+|-----------|-----------|
+| Urgency | {High/Medium/Low} |
+| Importance | {High/Medium/Low} |
+| Size | {XS/S/M/L/XL} |
+| Recommended order | {N of M in batch} |
+
+### Missed Perspectives
+{Considerations neither Architect nor Colleague raised}
+
+### Execution Roadmap
+| Phase | Task | Files | Depends on |
+|-------|------|-------|-----------|
+| 1 | {task} | {files} | — |
+| 2 | {task} | {files} | Phase 1 |
+
+### Final Conclusion
+{2-3 sentence synthesis with definitive recommendation}
+
+---
+_🎓 Professor Synthesis — `/professor-triage` v2.1.0_
+```
+
+**4D: Issue Triage Comment (MANDATORY)** — Every analyzed issue MUST receive a triage comment. This is not optional — even for issues created in the same session or with existing analysis. Skipping comments breaks the triage audit trail. Delegate to mgr-gitnerd to post on each analyzed issue:
+
+```
+## 🔬 Professor Triage — Codebase Analysis Result
+
+**Decision**: {Close (Already Resolved) | Close (Not Applicable) | Close (Duplicate of #NNN) | Open — action required | Open — monitoring}
+**Rationale**: {1-2 line summary based on codebase findings}
+**Affected files**: {N} analyzed — {N}✅ {N}⚠️ {N}❌
+**Risk**: {P1/P2/P3} | **Size**: {XS/S/M/L/XL}
+**Full report**: {artifact path}
+
+---
+_Analyzed by `/professor-triage` v2.1.0 against current codebase with {N} related issues_
+```
+
+**4E: Artifact Report** — Delegate to arch-documenter to write:
 
 Path: `.claude/outputs/sessions/YYYY-MM-DD/professor-triage-HHmmss.md`
 
@@ -143,34 +255,30 @@ Template:
 ### Conflicting Findings Resolution
 ### Priority Matrix
 
+## Multi-Perspective Summary
+### Architect Highlights
+### Colleague Highlights
+### Professor Synthesis Key Points
+
 ## Executed Actions
 | Issue | Action | Status |
 
 ## Pending Actions (Confirmation Required)
 ```
 
-**4B: Issue comments (MANDATORY)** — Every analyzed issue MUST receive a triage comment. This is not optional — even for issues created in the same session or with existing analysis. Skipping comments breaks the triage audit trail. Delegate to mgr-gitnerd to post on each analyzed issue:
+### Phase 4F: Comment Verification Gate
 
-```
-## 🔬 Professor Triage — Codebase Analysis Result
-
-**Decision**: {Close (Already Resolved) | Close (Not Applicable) | Close (Duplicate of #NNN) | Open — action required | Open — monitoring}
-**Rationale**: {1-2 line summary based on codebase findings}
-**Affected files**: {N} analyzed — {N}✅ {N}⚠️ {N}❌
-**Risk**: {P1/P2/P3} | **Size**: {XS/S/M/L/XL}
-**Full report**: {artifact path}
-
----
-_Analyzed by `/professor-triage` v2.0 against current codebase with {N} related issues_
-```
-
-### Phase 4C: Comment Verification Gate
-
-Before proceeding to Phase 5, verify ALL analyzed issues received comments:
+Before proceeding to Phase 5, verify ALL analyzed issues received the full set of comments (Architect + Colleague + Professor Synthesis + Triage):
 ```bash
 # For each issue NNN in the batch:
 gh issue view NNN --json comments --jq '.comments | map(select(.body | contains("Professor Triage"))) | length'
-# Must be >= 1 for every issue. If any is 0, Phase 4B was skipped — go back and post.
+# Must be >= 1 for every issue. If any is 0, go back and post.
+
+# Also verify multi-perspective comments:
+gh issue view NNN --json comments --jq '.comments | map(select(.body | contains("Senior Architect"))) | length'
+gh issue view NNN --json comments --jq '.comments | map(select(.body | contains("Project Colleague"))) | length'
+gh issue view NNN --json comments --jq '.comments | map(select(.body | contains("Professor Synthesis"))) | length'
+# All must be >= 1. If any is 0, the corresponding Phase 4A/4B/4C was skipped — go back and post.
 ```
 
 ### Phase 5: Act
@@ -205,6 +313,9 @@ Present to user and wait for approval before executing:
 - Phase 1: Orchestrator fetches issues directly (no agent needed)
 - Phase 2: Explore agents with `model: haiku` for codebase search; orchestrator synthesizes findings
 - Phase 3: Orchestrator directly (read-only, R010 exception); opus agent for >15 issues
-- Phase 4: `arch-documenter` for artifact report, `mgr-gitnerd` for issue comments
+- Phase 4A/4B: `arch-documenter` (sonnet) for Architect/Colleague analysis comments (parallel)
+- Phase 4C: `arch-documenter` (opus) for Professor Synthesis comment (requires 4A+4B)
+- Phase 4D: `mgr-gitnerd` for triage comment; Phase 4E: `arch-documenter` for artifact report (parallel)
+- Phase 4F: Verification gate for all 4 comment types
 - Phase 5: `mgr-gitnerd` for all GitHub operations
-- No external dependencies (omc_issue_analyzer removed in v2.0.0)
+- No external dependencies (omc_issue_analyzer removed in v2.0.0, multi-perspective analysis restored in v2.1.0)
