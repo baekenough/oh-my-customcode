@@ -9,11 +9,11 @@ argument-hint: "[description or leave empty for interactive] [--anonymous]"
 
 # Feedback Submitter
 
-Submit feedback about oh-my-customcode (bugs, features, improvements, questions) directly from the CLI session. Supports anonymous submission via Airflow DAG when gh CLI is unavailable or when anonymity is requested.
+Submit feedback about oh-my-customcode (bugs, features, improvements, questions) directly from the CLI session. Supports anonymous submission with `[Anonymous Feedback]` title prefix when `--anonymous` flag is used.
 
 ## Purpose
 
-Lowers the barrier for submitting feedback by allowing users to create GitHub issues or submit anonymously — without leaving their terminal session. All feedback is filed to the `baekenough/oh-my-customcode` repository.
+Lowers the barrier for submitting feedback by allowing users to create GitHub issues — without leaving their terminal session. All feedback is filed to the `baekenough/oh-my-customcode` repository.
 
 ## Usage
 
@@ -59,22 +59,13 @@ if [ "$GH_AVAILABLE" = "true" ]; then
 else
   GH_AUTHED=false
 fi
-
-# Check curl availability
-command -v curl >/dev/null 2>&1 && CURL_AVAILABLE=true || CURL_AVAILABLE=false
 ```
 
-**Route A**: `gh` available + authenticated + NOT anonymous
+**Route A**: `gh` available + authenticated
 - Use GitHub Issue creation (see Phase 4A)
+- If `--anonymous`: adds `[Anonymous Feedback]` prefix and `anonymous` label
 
-**Route B**: anonymous OR not authenticated (gh available)
-- Use `curl` to Airflow REST API (see Phase 4C)
-- Phase 4B (workflow_dispatch) reserved for future use
-
-**Route C**: `gh` NOT available (or Route B curl fallback)
-- Use `curl` to Airflow REST API (see Phase 4C)
-
-**Fallback**: Neither `gh` nor `curl` available
+**Fallback**: `gh` NOT available or not authenticated
 - Save feedback locally and inform the user (see Phase 4D)
 
 ### Phase 3: Environment Collection
@@ -102,24 +93,30 @@ For anonymous submissions, do NOT include the project name. Offer to include pro
 - Ask: "Include environment info (version, OS) in the anonymous report? [Y/n]"
 - If declined, set `PROJECT_CONTEXT=""`
 
-### Phase 4A: GitHub Issue Creation (Route A — gh + authenticated + not anonymous)
+### Phase 4A: GitHub Issue Creation (Route A — gh + authenticated)
 
-1. Show the user a preview of the issue to be created:
+1. If `ANONYMOUS=true`, prepend `[Anonymous Feedback] ` to the title and add `anonymous` to the label list.
+
+2. Show the user a preview of the issue to be created:
    ```
    [Preview]
    ├── Title: {title}
    ├── Category: {category}
-   ├── Labels: feedback, {category-label}
+   ├── Labels: feedback, {category-label}[, anonymous]
    └── Repo: baekenough/oh-my-customcode
    ```
-2. Ask for confirmation before creating
+3. Ask for confirmation before creating
 
-3. Ensure labels exist (defensive):
+4. Ensure labels exist (defensive):
    ```bash
    gh label create feedback --description "User feedback via /omcustom-feedback" --color 0E8A16 --repo baekenough/oh-my-customcode 2>/dev/null || true
+   # If anonymous, ensure the anonymous label exists
+   if [ "$ANONYMOUS" = "true" ]; then
+     gh label create anonymous --description "Anonymous feedback submission" --color C5DEF5 --repo baekenough/oh-my-customcode 2>/dev/null || true
+   fi
    ```
 
-4. Create the issue using `--body-file` for safe markdown handling:
+5. Create the issue using `--body-file` for safe markdown handling:
    ```bash
    # Write body to temp file to avoid shell escaping issues
    cat > /tmp/omcustom-feedback-body.md << 'FEEDBACK_EOF'
@@ -141,64 +138,28 @@ For anonymous submissions, do NOT include the project name. Offer to include pro
    *Submitted via `/omcustom-feedback`*
    FEEDBACK_EOF
 
+   # Build label string
+   LABELS="feedback,${CATEGORY_LABEL}"
+   if [ "$ANONYMOUS" = "true" ]; then
+     LABELS="${LABELS},anonymous"
+   fi
+
    # Create issue
    gh issue create \
      --repo baekenough/oh-my-customcode \
      --title "{title}" \
-     --label "feedback,{category_label}" \
+     --label "$LABELS" \
      --body-file /tmp/omcustom-feedback-body.md
 
    # Clean up
    rm -f /tmp/omcustom-feedback-body.md
    ```
 
-5. If label creation fails AND issue creation fails due to labels, retry without labels as fallback
+6. If label creation fails AND issue creation fails due to labels, retry without labels as fallback
 
-6. Return the issue URL to the user
+7. Return the issue URL to the user
 
-### Phase 4B: Anonymous via GitHub Actions (Route B — FUTURE)
-
-> **Note**: This route is reserved for future implementation. The `feedback-submission.yml` workflow does not yet exist. All anonymous/unauthenticated submissions currently fall through to Route C (Airflow REST API).
-
-```bash
-gh workflow run feedback-submission.yml \
-  --repo baekenough/oh-my-customcode \
-  -f title="$TITLE" \
-  -f body="$BODY" \
-  -f feedback_type="$TYPE" \
-  -f anonymous=true \
-  -f project_context="$PROJECT_CONTEXT"
-```
-
-On success, inform the user:
-```
-[Done] Anonymous feedback submitted via GitHub Actions workflow.
-```
-
-If `gh workflow run` fails (e.g., permissions), fall through to Route C.
-
-### Phase 4C: Anonymous via Airflow REST API (Route C — no gh)
-
-```bash
-# Build JSON payload safely with jq
-PAYLOAD=$(jq -n --arg title "$TITLE" --arg body "$BODY" --arg type "$TYPE" --arg ctx "$PROJECT_CONTEXT" \
-  '{"conf":{"title":$title,"body":$body,"feedback_type":$type,"anonymous":true,"submitter":"","project_context":$ctx}}')
-
-curl -X POST "https://airflow.baekenough.com/api/v2/dags/omc_feedback_collector/dagRuns" \
-  -H "Content-Type: application/json" \
-  -d "$PAYLOAD" \
-  --silent --show-error \
-  --max-time 15
-```
-
-On HTTP 200/201, inform the user:
-```
-[Done] Anonymous feedback submitted via Airflow.
-```
-
-On failure (non-2xx or network error), fall through to Fallback.
-
-### Phase 4D: Local Fallback (no gh, no curl, or all routes failed)
+### Phase 4D: Local Fallback (gh not available, not authenticated, or issue creation failed)
 
 ```bash
 mkdir -p ~/.omcustom/feedback
@@ -222,25 +183,23 @@ Inform the user:
 [Saved] Feedback saved locally to ~/.omcustom/feedback/{timestamp}.json
 Submit manually when connectivity is available:
   - GitHub Issues: https://github.com/baekenough/oh-my-customcode/issues/new
-  - Or run /omcustom:feedback again when gh or curl is available
+  - Or run /omcustom:feedback again when gh is available
 ```
 
 ### Category-to-Label Mapping
 
-| Category | GitHub Label | Airflow feedback_type |
-|----------|--------------|-----------------------|
-| bug | bug | bug |
-| feature | enhancement | feature |
-| improvement | enhancement | improvement |
-| question | question | question |
-| (auto-detect fails) | (none) | general |
+| Category | GitHub Label |
+|----------|--------------|
+| bug | bug |
+| feature | enhancement |
+| improvement | enhancement |
+| question | question |
+| (auto-detect fails) | (none) |
 
 ## Notes
 
 - Route A creates a visible GitHub issue attributed to the user's gh account
-- Routes B and C submit anonymously — submitter identity is not recorded
-- Route B requires `gh` but NOT authentication to the repo (public workflow)
-- Route C requires `curl` (available on macOS/Linux by default)
+- When `--anonymous` is used, the title is prefixed with `[Anonymous Feedback]` and the `anonymous` label is added
 - Fallback ensures no feedback is silently lost even in offline environments
 - `disable-model-invocation: true` ensures this skill only runs when explicitly invoked by the user
 - Target repo is hardcoded to `baekenough/oh-my-customcode` — feedback is always about omcustom itself

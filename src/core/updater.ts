@@ -17,6 +17,7 @@ import {
   writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
+import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
@@ -504,6 +505,20 @@ function checkAndInstallRtkAfterUpdate(): void {
 }
 
 /**
+ * Check if Codex CLI is installed after an update and install it if missing
+ */
+function checkAndInstallCodexAfterUpdate(): void {
+  if (!isCodexInstalled()) {
+    warn('update.codex_missing');
+    console.log(i18n.t('cli.update.codexMissing'));
+    const codexInstalled = installCodex();
+    if (codexInstalled) {
+      console.log(i18n.t('cli.update.codexInstalled'));
+    }
+  }
+}
+
+/**
  * Update oh-my-customcode installation
  */
 export async function update(options: UpdateOptions): Promise<UpdateResult> {
@@ -591,6 +606,9 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     // Check RTK after update
     checkAndInstallRtkAfterUpdate();
+
+    // Check Codex CLI after update
+    checkAndInstallCodexAfterUpdate();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;

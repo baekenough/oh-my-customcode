@@ -7,6 +7,7 @@ import { constants, promises as fs, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import { getCodexVersion, installCodex, isCodexInstalled } from '../core/codex-installer.js';
 import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getProviderLayout } from '../core/layout.js';
@@ -539,6 +540,28 @@ export async function checkRtk(): Promise<CheckResult> {
 }
 
 /**
+ * Check if Codex CLI is installed for AI-assisted development
+ */
+export async function checkCodex(): Promise<CheckResult> {
+  if (!isCodexInstalled()) {
+    return {
+      name: 'Codex',
+      status: 'warn',
+      message: 'Codex CLI not installed — install manually: npm install -g @openai/codex',
+      fixable: true,
+    };
+  }
+
+  const version = getCodexVersion();
+  return {
+    name: 'Codex',
+    status: 'pass',
+    message: `Codex CLI OK (${version ?? 'unknown version'})`,
+    fixable: false,
+  };
+}
+
+/**
  * Check if contexts directory exists
  * @param targetDir - Target directory
  * @returns Check result
@@ -696,6 +719,7 @@ async function fixSingleIssue(
       return fixedCount > 0;
     },
     RTK: async () => Promise.resolve(installRtk()),
+    Codex: async () => Promise.resolve(installCodex()),
   };
 
   const fixer = fixMap[check.name];
@@ -925,6 +949,7 @@ async function runAllChecks(
     checkContexts(targetDir, layout.rootDir),
     checkCustomComponents(targetDir, layout.rootDir),
     checkRtk(),
+    checkCodex(),
   ]);
 
   // Framework version drift check (always runs when .omcustomrc.json exists)
