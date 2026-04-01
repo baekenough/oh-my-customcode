@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.68.2",
-  "generatedAt": "2026-03-31T03:04:43.072Z",
+  "generatedAt": "2026-04-01T04:59:26.796Z",
   "templateVersion": "0.68.2",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -545,8 +545,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "bdf6d9bdf9144781914db63720cce393b2d7f566d1b8484123f1dfb6e680b8fd",
-      "size": 13986,
+      "templateHash": "1594af52152993f610ee269d37334160403fe1bb58eb010fe4d3bb04c30bfbb8",
+      "size": 13975,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
@@ -670,8 +670,8 @@
       "component": "skills"
     },
     ".claude/skills/professor-triage/SKILL.md": {
-      "templateHash": "6392f52b1e1961e238011775260556eb320b486679b24a6927653f5856db7863",
-      "size": 8680,
+      "templateHash": "104d9f1471ee7600dba9c684a44a63b9c4cacb536d9222bbac5226f3f4353546",
+      "size": 13245,
       "component": "skills"
     },
     ".claude/skills/adversarial-review/SKILL.md": {
