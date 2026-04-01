@@ -9307,7 +9307,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.68.2",
+    version: "0.70.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -24790,7 +24790,9 @@ var en_default = {
       projectLatestSuffix: "(latest)",
       newVersionAvailable: "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade.",
       rtkMissing: "[RTK] RTK is not installed. Attempting installation...",
-      rtkInstalled: "[RTK] ✓ RTK installed — 60-90% token savings activated"
+      rtkInstalled: "[RTK] ✓ RTK installed — 60-90% token savings activated",
+      codexMissing: "[Codex] Codex CLI is not installed. Attempting installation...",
+      codexInstalled: "[Codex] ✓ Codex CLI installed"
     },
     list: {
       description: "List installed components",
@@ -24894,6 +24896,10 @@ var en_default = {
         rtk: {
           pass: "RTK installed",
           warn: "RTK not installed — token savings unavailable"
+        },
+        codex: {
+          pass: "Codex CLI installed",
+          warn: "Codex CLI not installed — AI-assisted development unavailable"
         }
       }
     },
@@ -24957,7 +24963,11 @@ var en_default = {
     rtk_installing: "Installing RTK...",
     rtk_success: "RTK installed successfully",
     rtk_already: "RTK already installed",
-    rtk_install_failed: "RTK installation failed"
+    rtk_install_failed: "RTK installation failed",
+    codex_installing: "Installing Codex CLI...",
+    codex_success: "Codex CLI installed successfully",
+    codex_already: "Codex CLI already installed",
+    codex_install_failed: "Codex CLI installation failed"
   },
   init: {
     description: "Initialize oh-my-customcode in the current directory",
@@ -25187,7 +25197,9 @@ var ko_default = {
       projectLatestSuffix: "(최신)",
       newVersionAvailable: "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요.",
       rtkMissing: "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
-      rtkInstalled: "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화"
+      rtkInstalled: "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화",
+      codexMissing: "[Codex] Codex CLI가 설치되지 않았습니다. 설치를 시도합니다...",
+      codexInstalled: "[Codex] ✓ Codex CLI 설치 완료"
     },
     list: {
       description: "설치된 컴포넌트 목록 표시",
@@ -25291,6 +25303,10 @@ var ko_default = {
         rtk: {
           pass: "RTK 설치됨",
           warn: "RTK 미설치 — 토큰 절감 불가"
+        },
+        codex: {
+          pass: "Codex CLI 설치됨",
+          warn: "Codex CLI 미설치 — AI 개발 지원 불가"
         }
       }
     },
@@ -25354,7 +25370,11 @@ var ko_default = {
     rtk_installing: "RTK 설치 중...",
     rtk_success: "RTK 설치 완료",
     rtk_already: "RTK 이미 설치됨",
-    rtk_install_failed: "RTK 설치 실패"
+    rtk_install_failed: "RTK 설치 실패",
+    codex_installing: "Codex CLI 설치 중...",
+    codex_success: "Codex CLI 설치 완료",
+    codex_already: "Codex CLI 이미 설치됨",
+    codex_install_failed: "Codex CLI 설치 실패"
   },
   init: {
     description: "현재 디렉토리에 oh-my-customcode 초기화",
@@ -25784,9 +25804,9 @@ var $stringify = publicApi.stringify;
 var $visit = visit.visit;
 var $visitAsync = visit.visitAsync;
 
-// src/core/config.ts
-init_fs();
-import { join as join3 } from "node:path";
+// src/core/codex-installer.ts
+import { execSync as execSync3 } from "node:child_process";
+import { platform } from "node:os";
 
 // src/utils/logger.ts
 var currentOptions = {
@@ -26007,7 +26027,77 @@ function success(messageKey, params) {
   }
 }
 
+// src/core/codex-installer.ts
+var defaultDeps = {
+  exec: execSync3,
+  getPlatform: platform
+};
+function isCodexInstalled(deps = defaultDeps) {
+  try {
+    deps.exec("which codex", { stdio: "pipe", timeout: 3000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+function getCodexVersion(deps = defaultDeps) {
+  try {
+    return deps.exec("codex --version", {
+      encoding: "utf-8",
+      stdio: "pipe",
+      timeout: 3000
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+function installCodex(deps = defaultDeps) {
+  if (process.env.CI || false || false) {
+    return false;
+  }
+  if (isCodexInstalled(deps)) {
+    info("codex.already_installed");
+    return true;
+  }
+  const os = deps.getPlatform();
+  try {
+    if (os === "darwin") {
+      try {
+        info("codex.installing_brew");
+        deps.exec("brew install openai-codex", {
+          stdio: "inherit",
+          timeout: 120000
+        });
+        return isCodexInstalled(deps);
+      } catch {
+        info("codex.installing_npm");
+        deps.exec("npm install -g @openai/codex", {
+          stdio: "inherit",
+          timeout: 120000
+        });
+        return isCodexInstalled(deps);
+      }
+    } else if (os === "linux") {
+      info("codex.installing_npm");
+      deps.exec("npm install -g @openai/codex", {
+        stdio: "inherit",
+        timeout: 120000
+      });
+      return isCodexInstalled(deps);
+    } else {
+      warn("codex.unsupported_os", { os });
+      return false;
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    warn("codex.install_failed", { error: message });
+    return false;
+  }
+}
+
 // src/core/config.ts
+init_fs();
+import { join as join3 } from "node:path";
 var CONFIG_FILE = ".omcustomrc.json";
 var CURRENT_CONFIG_VERSION = 1;
 function getDefaultConfig() {
@@ -26367,56 +26457,60 @@ async function generateAndWriteLockfileForDir(targetDir) {
 }
 
 // src/core/rtk-installer.ts
-import { execSync as execSync3 } from "node:child_process";
-import { platform } from "node:os";
-function isRtkInstalled() {
+import { execSync as execSync4 } from "node:child_process";
+import { platform as platform2 } from "node:os";
+var defaultDeps2 = {
+  exec: execSync4,
+  getPlatform: platform2
+};
+function isRtkInstalled(deps = defaultDeps2) {
   try {
-    execSync3("which rtk", { stdio: "pipe", timeout: 3000 });
+    deps.exec("which rtk", { stdio: "pipe", timeout: 3000 });
     return true;
   } catch {
     return false;
   }
 }
-function getRtkVersion() {
+function getRtkVersion(deps = defaultDeps2) {
   try {
-    return execSync3("rtk --version", { encoding: "utf-8", stdio: "pipe", timeout: 3000 }).trim();
+    return deps.exec("rtk --version", { encoding: "utf-8", stdio: "pipe", timeout: 3000 }).trim();
   } catch {
     return null;
   }
 }
-function installRtk() {
+function installRtk(deps = defaultDeps2) {
   if (process.env.CI || false || false) {
     return false;
   }
-  if (isRtkInstalled()) {
+  if (isRtkInstalled(deps)) {
     info("rtk.already_installed");
     return true;
   }
-  const os = platform();
+  const os = deps.getPlatform();
   try {
     if (os === "darwin") {
       try {
         info("rtk.installing_brew");
-        execSync3("brew install rtk-ai/tap/rtk", {
+        deps.exec("brew install rtk-ai/tap/rtk", {
           stdio: "inherit",
           timeout: 120000
         });
         return true;
       } catch {
         info("rtk.installing_curl");
-        execSync3("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
+        deps.exec("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
           stdio: "inherit",
           timeout: 120000
         });
-        return isRtkInstalled();
+        return isRtkInstalled(deps);
       }
     } else if (os === "linux") {
       info("rtk.installing_curl");
-      execSync3("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
+      deps.exec("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
         stdio: "inherit",
         timeout: 120000
       });
-      return isRtkInstalled();
+      return isRtkInstalled(deps);
     } else {
       warn("rtk.unsupported_os", { os });
       return false;
@@ -26744,6 +26838,23 @@ async function checkRtk() {
     fixable: false
   };
 }
+async function checkCodex() {
+  if (!isCodexInstalled()) {
+    return {
+      name: "Codex",
+      status: "warn",
+      message: "Codex CLI not installed — install manually: npm install -g @openai/codex",
+      fixable: true
+    };
+  }
+  const version = getCodexVersion();
+  return {
+    name: "Codex",
+    status: "pass",
+    message: `Codex CLI OK (${version ?? "unknown version"})`,
+    fixable: false
+  };
+}
 async function checkContexts(targetDir, rootDir = ".claude") {
   const contextsDir = path.join(targetDir, rootDir, "contexts");
   const exists2 = await isDirectory(contextsDir);
@@ -26847,7 +26958,8 @@ async function fixSingleIssue(check, targetDir, rootDir = ".claude") {
       const fixedCount = await fixBrokenSymlinks(targetDir, fullPaths);
       return fixedCount > 0;
     },
-    RTK: async () => Promise.resolve(installRtk())
+    RTK: async () => Promise.resolve(installRtk()),
+    Codex: async () => Promise.resolve(installCodex())
   };
   const fixer = fixMap[check.name];
   return fixer ? fixer() : false;
@@ -26996,7 +27108,8 @@ async function runAllChecks(targetDir, layout, packageVersion, includeUpdates) {
     checkHooks(targetDir, layout.rootDir),
     checkContexts(targetDir, layout.rootDir),
     checkCustomComponents(targetDir, layout.rootDir),
-    checkRtk()
+    checkRtk(),
+    checkCodex()
   ]);
   const frameworkCheck = await checkFrameworkDrift(targetDir, packageVersion);
   const checksWithFramework = frameworkCheck ? [...baseChecks, frameworkCheck] : baseChecks;
@@ -27657,6 +27770,19 @@ function installRtkIfNeeded(result) {
     info("install.rtk_already");
   }
 }
+function installCodexIfNeeded(result) {
+  if (!isCodexInstalled()) {
+    info("install.codex_installing");
+    const codexInstalled = installCodex();
+    if (codexInstalled) {
+      info("install.codex_success");
+    } else {
+      result.warnings.push("Codex CLI installation failed — install manually: npm install -g @openai/codex");
+    }
+  } else {
+    info("install.codex_already");
+  }
+}
 async function install(options) {
   const result = createInstallResult(options.targetDir);
   try {
@@ -27695,6 +27821,7 @@ async function install(options) {
       info("install.lockfile_generated", { files: String(lockfileResult.fileCount) });
     }
     installRtkIfNeeded(result);
+    installCodexIfNeeded(result);
     result.success = true;
     success("install.success");
   } catch (err) {
@@ -27878,7 +28005,7 @@ async function backupExistingInstallation(targetDir) {
 
 // src/core/mcp-config.ts
 init_fs();
-import { execSync as execSync4 } from "node:child_process";
+import { execSync as execSync5 } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { join as join8 } from "node:path";
 async function generateMCPConfig(targetDir) {
@@ -27890,15 +28017,15 @@ async function generateMCPConfig(targetDir) {
     return;
   }
   try {
-    execSync4("uv --version", { stdio: "pipe" });
+    execSync5("uv --version", { stdio: "pipe" });
   } catch {
     warn("uv (Python package manager) not found. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh");
     warn("Skipping ontology-rag MCP configuration. You can set it up manually later.");
     return;
   }
   try {
-    execSync4("uv venv .venv", { cwd: targetDir, stdio: "pipe" });
-    execSync4('uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"', { cwd: targetDir, stdio: "pipe" });
+    execSync5("uv venv .venv", { cwd: targetDir, stdio: "pipe" });
+    execSync5('uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"', { cwd: targetDir, stdio: "pipe" });
   } catch (error2) {
     const msg = error2 instanceof Error ? error2.message : String(error2);
     warn(`Failed to setup ontology-rag: ${msg}`);
@@ -27941,7 +28068,7 @@ async function generateMCPConfig(targetDir) {
 }
 async function checkUvAvailable() {
   try {
-    execSync4("uv --version", { stdio: "pipe" });
+    execSync5("uv --version", { stdio: "pipe" });
     return true;
   } catch {
     return false;
@@ -30270,6 +30397,16 @@ function checkAndInstallRtkAfterUpdate() {
     }
   }
 }
+function checkAndInstallCodexAfterUpdate() {
+  if (!isCodexInstalled()) {
+    warn("update.codex_missing");
+    console.log(i18n.t("cli.update.codexMissing"));
+    const codexInstalled = installCodex();
+    if (codexInstalled) {
+      console.log(i18n.t("cli.update.codexInstalled"));
+    }
+  }
+}
 async function update(options) {
   const result = createUpdateResult();
   try {
@@ -30318,6 +30455,7 @@ async function update(options) {
       });
     }
     checkAndInstallRtkAfterUpdate();
+    checkAndInstallCodexAfterUpdate();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;

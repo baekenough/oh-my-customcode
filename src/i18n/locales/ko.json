@@ -146,7 +146,9 @@
       "projectLatestSuffix": "(최신)",
       "newVersionAvailable": "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요.",
       "rtkMissing": "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
-      "rtkInstalled": "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화"
+      "rtkInstalled": "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화",
+      "codexMissing": "[Codex] Codex CLI가 설치되지 않았습니다. 설치를 시도합니다...",
+      "codexInstalled": "[Codex] ✓ Codex CLI 설치 완료"
     },
     "list": {
       "description": "설치된 컴포넌트 목록 표시",
@@ -250,6 +252,10 @@
         "rtk": {
           "pass": "RTK 설치됨",
           "warn": "RTK 미설치 — 토큰 절감 불가"
+        },
+        "codex": {
+          "pass": "Codex CLI 설치됨",
+          "warn": "Codex CLI 미설치 — AI 개발 지원 불가"
         }
       }
     },
@@ -313,7 +319,11 @@
     "rtk_installing": "RTK 설치 중...",
     "rtk_success": "RTK 설치 완료",
     "rtk_already": "RTK 이미 설치됨",
-    "rtk_install_failed": "RTK 설치 실패"
+    "rtk_install_failed": "RTK 설치 실패",
+    "codex_installing": "Codex CLI 설치 중...",
+    "codex_success": "Codex CLI 설치 완료",
+    "codex_already": "Codex CLI 이미 설치됨",
+    "codex_install_failed": "Codex CLI 설치 실패"
   },
   "init": {
     "description": "현재 디렉토리에 oh-my-customcode 초기화",

@@ -925,6 +925,65 @@ import {
 } from "node:fs/promises";
 import { basename as basename2, join as join5 } from "node:path";
 
+// src/core/codex-installer.ts
+import { execSync } from "node:child_process";
+import { platform } from "node:os";
+var defaultDeps = {
+  exec: execSync,
+  getPlatform: platform
+};
+function isCodexInstalled(deps = defaultDeps) {
+  try {
+    deps.exec("which codex", { stdio: "pipe", timeout: 3000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+function installCodex(deps = defaultDeps) {
+  if (process.env.CI || false || false) {
+    return false;
+  }
+  if (isCodexInstalled(deps)) {
+    info("codex.already_installed");
+    return true;
+  }
+  const os = deps.getPlatform();
+  try {
+    if (os === "darwin") {
+      try {
+        info("codex.installing_brew");
+        deps.exec("brew install openai-codex", {
+          stdio: "inherit",
+          timeout: 120000
+        });
+        return isCodexInstalled(deps);
+      } catch {
+        info("codex.installing_npm");
+        deps.exec("npm install -g @openai/codex", {
+          stdio: "inherit",
+          timeout: 120000
+        });
+        return isCodexInstalled(deps);
+      }
+    } else if (os === "linux") {
+      info("codex.installing_npm");
+      deps.exec("npm install -g @openai/codex", {
+        stdio: "inherit",
+        timeout: 120000
+      });
+      return isCodexInstalled(deps);
+    } else {
+      warn("codex.unsupported_os", { os });
+      return false;
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    warn("codex.install_failed", { error: message });
+    return false;
+  }
+}
+
 // src/core/file-preservation.ts
 init_fs();
 import { basename, join as join3 } from "node:path";
@@ -1260,49 +1319,53 @@ async function generateAndWriteLockfileForDir(targetDir) {
 }
 
 // src/core/rtk-installer.ts
-import { execSync } from "node:child_process";
-import { platform } from "node:os";
-function isRtkInstalled() {
+import { execSync as execSync2 } from "node:child_process";
+import { platform as platform2 } from "node:os";
+var defaultDeps2 = {
+  exec: execSync2,
+  getPlatform: platform2
+};
+function isRtkInstalled(deps = defaultDeps2) {
   try {
-    execSync("which rtk", { stdio: "pipe", timeout: 3000 });
+    deps.exec("which rtk", { stdio: "pipe", timeout: 3000 });
     return true;
   } catch {
     return false;
   }
 }
-function installRtk() {
+function installRtk(deps = defaultDeps2) {
   if (process.env.CI || false || false) {
     return false;
   }
-  if (isRtkInstalled()) {
+  if (isRtkInstalled(deps)) {
     info("rtk.already_installed");
     return true;
   }
-  const os = platform();
+  const os = deps.getPlatform();
   try {
     if (os === "darwin") {
       try {
         info("rtk.installing_brew");
-        execSync("brew install rtk-ai/tap/rtk", {
+        deps.exec("brew install rtk-ai/tap/rtk", {
           stdio: "inherit",
           timeout: 120000
         });
         return true;
       } catch {
         info("rtk.installing_curl");
-        execSync("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
+        deps.exec("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
           stdio: "inherit",
           timeout: 120000
         });
-        return isRtkInstalled();
+        return isRtkInstalled(deps);
       }
     } else if (os === "linux") {
       info("rtk.installing_curl");
-      execSync("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
+      deps.exec("curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh", {
         stdio: "inherit",
         timeout: 120000
       });
-      return isRtkInstalled();
+      return isRtkInstalled(deps);
     } else {
       warn("rtk.unsupported_os", { os });
       return false;
@@ -1503,6 +1566,19 @@ function installRtkIfNeeded(result) {
     info("install.rtk_already");
   }
 }
+function installCodexIfNeeded(result) {
+  if (!isCodexInstalled()) {
+    info("install.codex_installing");
+    const codexInstalled = installCodex();
+    if (codexInstalled) {
+      info("install.codex_success");
+    } else {
+      result.warnings.push("Codex CLI installation failed — install manually: npm install -g @openai/codex");
+    }
+  } else {
+    info("install.codex_already");
+  }
+}
 async function install(options) {
   const result = createInstallResult(options.targetDir);
   try {
@@ -1541,6 +1617,7 @@ async function install(options) {
       info("install.lockfile_generated", { files: String(lockfileResult.fileCount) });
     }
     installRtkIfNeeded(result);
+    installCodexIfNeeded(result);
     result.success = true;
     success("install.success");
   } catch (err) {
@@ -1754,7 +1831,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.68.2",
+  version: "0.70.0",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -4581,6 +4658,16 @@ function checkAndInstallRtkAfterUpdate() {
     }
   }
 }
+function checkAndInstallCodexAfterUpdate() {
+  if (!isCodexInstalled()) {
+    warn("update.codex_missing");
+    console.log(i18n.t("cli.update.codexMissing"));
+    const codexInstalled = installCodex();
+    if (codexInstalled) {
+      console.log(i18n.t("cli.update.codexInstalled"));
+    }
+  }
+}
 async function update(options) {
   const result = createUpdateResult();
   try {
@@ -4629,6 +4716,7 @@ async function update(options) {
       });
     }
     checkAndInstallRtkAfterUpdate();
+    checkAndInstallCodexAfterUpdate();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;

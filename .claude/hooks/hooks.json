@@ -121,6 +121,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": ".claude/hooks/scripts/omcustom-auto-update.sh"
+          }
+        ],
+        "description": "Interactive oh-my-customcode update check at session start (#752)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
             "command": "bash .claude/hooks/scripts/session-env-check.sh"
           }
         ],
