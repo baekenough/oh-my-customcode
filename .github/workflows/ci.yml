@@ -123,10 +123,9 @@ jobs:
           echo "Function coverage: $FUNC_COV%"
           echo "Line coverage: $LINE_COV%"
 
-          # Check if coverage is >= 95%
-          # Note: rtk-installer.ts has platform-specific install branches
-          # that cannot be exercised in CI (requires real brew/curl)
-          THRESHOLD=95
+          # Check if coverage is >= 98%
+          # DI refactoring in rtk-installer.ts and codex-installer.ts enables full branch testing
+          THRESHOLD=98
 
           FUNC_OK=$(echo "$FUNC_COV $THRESHOLD" | awk '{print ($1 >= $2) ? "1" : "0"}')
           LINE_OK=$(echo "$LINE_COV $THRESHOLD" | awk '{print ($1 >= $2) ? "1" : "0"}')

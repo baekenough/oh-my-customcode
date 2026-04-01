@@ -146,7 +146,9 @@
       "projectLatestSuffix": "(latest)",
       "newVersionAvailable": "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade.",
       "rtkMissing": "[RTK] RTK is not installed. Attempting installation...",
-      "rtkInstalled": "[RTK] ✓ RTK installed — 60-90% token savings activated"
+      "rtkInstalled": "[RTK] ✓ RTK installed — 60-90% token savings activated",
+      "codexMissing": "[Codex] Codex CLI is not installed. Attempting installation...",
+      "codexInstalled": "[Codex] ✓ Codex CLI installed"
     },
     "list": {
       "description": "List installed components",
@@ -250,6 +252,10 @@
         "rtk": {
           "pass": "RTK installed",
           "warn": "RTK not installed — token savings unavailable"
+        },
+        "codex": {
+          "pass": "Codex CLI installed",
+          "warn": "Codex CLI not installed — AI-assisted development unavailable"
         }
       }
     },
@@ -313,7 +319,11 @@
     "rtk_installing": "Installing RTK...",
     "rtk_success": "RTK installed successfully",
     "rtk_already": "RTK already installed",
-    "rtk_install_failed": "RTK installation failed"
+    "rtk_install_failed": "RTK installation failed",
+    "codex_installing": "Installing Codex CLI...",
+    "codex_success": "Codex CLI installed successfully",
+    "codex_already": "Codex CLI already installed",
+    "codex_install_failed": "Codex CLI installation failed"
   },
   "init": {
     "description": "Initialize oh-my-customcode in the current directory",
