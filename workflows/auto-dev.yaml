@@ -27,7 +27,7 @@ steps:
     foreach: release-group
 
   - name: implement
-    action: implement
+    prompt: "Execute implementation plan with appropriate agents"
     description: Execute implementation plan with appropriate agents
     foreach: planned-issue
 
@@ -36,7 +36,7 @@ steps:
     description: Multi-angle release quality verification
 
   - name: release
-    action: create-pr
+    prompt: "Create release branch and pull request"
     description: Create release branch and pull request
 
   - name: followup

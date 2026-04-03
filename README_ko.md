@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-46개 에이전트. 100개 스킬. 21개 규칙. 명령어 하나.
+46개 에이전트. 99개 스킬. 21개 규칙. 명령어 하나.
 
 > **v0.62.5** — D3 의존성 그래프, Playwright 접근성 E2E 테스트, 키보드 접근성, CI lockfile-sync 게이트
 
@@ -136,20 +136,20 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (100개)
+## 스킬 (99개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
 | 베스트 프랙티스 | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
-| 워크플로우 | 15 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, workflow, workflow-runner, workflow-resume 외 |
+| 워크플로우 | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline 외 |
 | 개발 | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
 | 운영 | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes 외 |
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | 보안 | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| 기타 | 8 | codex-exec, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
+| 기타 | 9 | codex-exec, claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
 
@@ -173,8 +173,8 @@ Agent(arch-documenter):haiku      ┘
 | `/sdd-dev` | Spec-Driven Development 워크플로우 |
 | `/ambiguity-gate` | 사전 라우팅 모호성 분석 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
-| `/workflow` | YAML 워크플로우 실행 |
-| `/workflow:resume` | 중단된 워크플로우 재개 |
+| `/pipeline` | YAML 파이프라인 실행 |
+| `/pipeline resume` | 중단된 파이프라인 재개 |
 
 ### 에이전트 관리
 
@@ -269,7 +269,7 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 46개 에이전트 정의
-│   ├── skills/                 # 100개 스킬 모듈
+│   ├── skills/                 # 99개 스킬 모듈
 │   ├── rules/                  # 21개 거버넌스 규칙 (R000-R021)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마

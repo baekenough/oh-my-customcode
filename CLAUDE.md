@@ -104,6 +104,7 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom:fix-refs` | 깨진 참조 수정 |
 | `/omcustom:harness-eval` | 15 SE task 구조적 벤치마크 평가 |
 | `/omcustom:auto-improve` | 개선 사항 자동 적용 워크플로우 |
+| `/omcustom:claude-native` | Claude Code 릴리즈 모니터링 및 이슈 자동 생성 |
 | `/omcustom:improve-report` | eval-core 기반 개선 현황 리포트 |
 | `/omcustom-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
@@ -130,8 +131,8 @@ oh-my-customcode로 구동됩니다.
 | `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
 | `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
 | `/release-plan` | verify-done 이슈 릴리즈 유닛 계획 생성 |
-| `/omcustom:workflow` | YAML 워크플로우 실행 (예: /omcustom:workflow auto-dev) |
-| `/omcustom:workflow:resume` | 중단된 워크플로우 재개 |
+| `/pipeline` | YAML 파이프라인 실행 (예: /pipeline auto-dev) |
+| `/pipeline resume` | 중단된 파이프라인 재개 |
 | `/omcustom:sauron-watch` | 전체 R017 검증 |
 | `/sdd-dev` | Spec-Driven Development 워크플로우 (sdd/ 폴더 기반) |
 | `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
@@ -150,7 +151,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (46 파일)
-|   +-- skills/                  # 스킬 (100 디렉토리)
+|   +-- skills/                  # 스킬 (99 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R021)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
