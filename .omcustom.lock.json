@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.70.0",
-  "generatedAt": "2026-04-01T23:25:05.155Z",
-  "templateVersion": "0.70.0",
+  "generatorVersion": "0.71.0",
+  "generatedAt": "2026-04-03T00:06:11.959Z",
+  "templateVersion": "0.71.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -444,6 +444,11 @@
       "size": 1151,
       "component": "skills"
     },
+    ".claude/skills/pipeline/SKILL.md": {
+      "templateHash": "45e4ee42e23bad72a7ff9fc2e6234eb290e3609c524cacb076d0c9c055aac191",
+      "size": 3520,
+      "component": "skills"
+    },
     ".claude/skills/memory-save/SKILL.md": {
       "templateHash": "05c29a3e9d51acb938917723f7b099c83926f91fe12402a292b4b7820b92ca76",
       "size": 2521,
@@ -580,8 +585,8 @@
       "component": "skills"
     },
     ".claude/skills/evaluator-optimizer/SKILL.md": {
-      "templateHash": "cc0b0f9c3ad7f3b04198a0d606ceabe46ee43c4c8298d6a53368587d5de18d20",
-      "size": 17030,
+      "templateHash": "3f6316e5cc0d4dd1af2d021ff3ebb4f2cda13f79cbf9c4fde09d037f18472626",
+      "size": 17029,
       "component": "skills"
     },
     ".claude/skills/update-external/SKILL.md": {
@@ -592,6 +597,11 @@
     ".claude/skills/fix-refs/SKILL.md": {
       "templateHash": "30a277e82fb55dbbe78ec2d4eccbed333db0b9ea7ea2f1d3c1e604ef034556f6",
       "size": 2152,
+      "component": "skills"
+    },
+    ".claude/skills/claude-native/SKILL.md": {
+      "templateHash": "10841ef1b84b12cf5240a887febda366b5e92827d81f3ebe3f1e496cd4bb7cb3",
+      "size": 5798,
       "component": "skills"
     },
     ".claude/skills/model-escalation/SKILL.md": {
@@ -764,16 +774,6 @@
       "size": 2520,
       "component": "skills"
     },
-    ".claude/skills/workflow/SKILL.md": {
-      "templateHash": "ad6f2dfea47bcfe65aacbcbbe6612ebc73223049723db856975ab649f9b207d0",
-      "size": 2374,
-      "component": "skills"
-    },
-    ".claude/skills/workflow-runner/SKILL.md": {
-      "templateHash": "712b2bd6630303d7e956c972349e7101f306829bf5695b4e359cd377c1070865",
-      "size": 2199,
-      "component": "skills"
-    },
     ".claude/skills/react-best-practices/SKILL.md": {
       "templateHash": "4ac915b6cc71560342a7b8fa72dd66782c89e3c8f13fa8fe4d291b45672bde85",
       "size": 1800,
@@ -792,11 +792,6 @@
     ".claude/skills/sdd/SKILL.md": {
       "templateHash": "6da3bfa1709be74ba17c5308b0dbac97b3c48c6beb03569e948cae07d6c6940c",
       "size": 471,
-      "component": "skills"
-    },
-    ".claude/skills/workflow-resume/SKILL.md": {
-      "templateHash": "3b996d003a9255e56a43f7733001cfdd4faf3adeae52c06dae976bfd91a75556",
-      "size": 740,
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {
