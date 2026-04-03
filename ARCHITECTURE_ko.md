@@ -97,11 +97,11 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **슬래시 커맨드 / 사용자 직접 호출 스킬**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-takeover, omcustom-release-notes, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-takeover, omcustom-release-notes, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
 
 **시스템 / 내부 스킬**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, alembic-best-practices, action-validator, peer-messaging
 
 ### 3.4 가이드 라이브러리 (31개 토픽)
 
@@ -248,18 +248,18 @@ flowchart LR
 
 반복적 품질 개선이 필요한 작업에 evaluator-optimizer 패턴을 적용합니다. 구현 에이전트가 초안을 생성하고, 평가 에이전트가 품질을 측정한 뒤, 기준 미달 시 구현 에이전트에 피드백을 반환하는 루프입니다.
 
-### 5.6 워크플로우 엔진 (/omcustom:workflow)
+### 5.6 파이프라인 엔진 (/pipeline)
 
 <p align="center">
-  <img src="assets/diagrams/09-workflow-engine.png" alt="Workflow Engine" width="800" />
+  <img src="assets/diagrams/09-workflow-engine.png" alt="Pipeline Engine" width="800" />
 </p>
 
-`workflows/` 디렉토리에 정의된 YAML 기반 워크플로우 파이프라인입니다. 각 워크플로우는 스킬 또는 액션을 호출하는 순차 단계를 정의합니다.
+`workflows/` 디렉토리에 정의된 YAML 기반 파이프라인입니다. 각 파이프라인은 스킬 또는 프롬프트를 호출하는 순차 단계를 정의합니다.
 
-사용 가능한 워크플로우:
+사용 가능한 파이프라인:
 - `auto-dev` — 완전 자동 릴리즈 파이프라인: triage → plan → implement → verify → PR
 
-사용자는 `workflows/` 디렉토리에 `^[a-z0-9-]+$` 이름 규칙으로 커스텀 워크플로우를 정의할 수 있습니다.
+사용자는 `workflows/` 디렉토리에 `^[a-z0-9-]+$` 이름 규칙으로 커스텀 파이프라인을 정의할 수 있습니다.
 
 ### 5.7 Professor Triage (/professor-triage)
 

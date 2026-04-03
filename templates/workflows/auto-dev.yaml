@@ -1,5 +1,5 @@
 # /omcustom:workflow auto-dev — Full-auto release pipeline
-# Pre-triages professor-labeled issues → triage verify-done → plan → implement → verify → PR → followup
+# Pre-triages open issues → triage verify-done → plan → implement → verify → PR → followup
 
 name: auto-dev
 description: "Full-auto release pipeline: pre-triage → triage → plan → implement → verify → PR → followup"
@@ -9,8 +9,8 @@ error: halt-and-report
 steps:
   - name: pre-triage
     skill: professor-triage
-    description: Run professor-triage on professor-labeled issues that lack verify-done label
-    condition: "issues with label:professor but NOT label:verify-done exist"
+    description: Run professor-triage on open issues that lack verify-done label
+    condition: "open issues without label:verify-done exist"
 
   - name: triage
     skill: professor-triage
@@ -27,7 +27,7 @@ steps:
     foreach: release-group
 
   - name: implement
-    action: implement
+    prompt: "Execute implementation plan with appropriate agents"
     description: Execute implementation plan with appropriate agents
     foreach: planned-issue
 
@@ -36,7 +36,7 @@ steps:
     description: Multi-angle release quality verification
 
   - name: release
-    action: create-pr
+    prompt: "Create release branch and pull request"
     description: Create release branch and pull request
 
   - name: followup

@@ -379,7 +379,7 @@ When ecomode is active (R013), compress output:
 - The evaluator prompt MUST include the full rubric to ensure consistent scoring
 - Iteration state (best score, best output) is tracked by the orchestrator
 - The hard cap of 5 iterations prevents runaway refinement loops
-- For multi-sprint runs (5+ iterations), consider context reset: spawn a fresh evaluator agent rather than continuing with degraded context. The workflow-runner supports this via `context: fork` on individual steps. Anthropic's research confirms "context resets provide clean slates superior to compaction" for long-running evaluation.
+- For multi-sprint runs (5+ iterations), consider context reset: spawn a fresh evaluator agent rather than continuing with degraded context. The pipeline skill supports this via `context: fork` on individual steps. Anthropic's research confirms "context resets provide clean slates superior to compaction" for long-running evaluation.
 
 ## Domain Examples
 
