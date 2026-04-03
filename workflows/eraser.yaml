@@ -8,7 +8,12 @@ error: halt-and-report
 
 steps:
   - name: analyze
-    action: implement
+    prompt: >
+      Compare ARCHITECTURE.md counts/versions against actual codebase.
+      Run: agent count (ls .claude/agents/*.md | wc -l),
+      skill count (find .claude/skills -name SKILL.md | wc -l),
+      guide count (find guides -mindepth 1 -maxdepth 1 -type d | wc -l).
+      Compare with documented values. List outdated sections.
     description: >
       Compare ARCHITECTURE.md counts/versions against actual codebase.
       Run: agent count (ls .claude/agents/*.md | wc -l),
@@ -17,7 +22,11 @@ steps:
       Compare with documented values. List outdated sections.
 
   - name: update-text
-    action: implement
+    prompt: >
+      Update ARCHITECTURE.md and ARCHITECTURE_ko.md text content:
+      version numbers, agent/skill/guide counts, feature descriptions,
+      new sections for recently added features, version history.
+      Delegate to arch-documenter agent.
     description: >
       Update ARCHITECTURE.md and ARCHITECTURE_ko.md text content:
       version numbers, agent/skill/guide counts, feature descriptions,
@@ -25,7 +34,13 @@ steps:
       Delegate to arch-documenter agent.
 
   - name: generate-diagrams
-    action: implement
+    prompt: >
+      Use Eraser MCP to generate/replace diagrams in assets/diagrams/.
+      Diagram types: renderCloudArchitectureDiagram (system overview),
+      renderSequenceDiagram (API flows), renderFlowchart (decision flows).
+      Settings: imageQuality 2, format png, background true, theme light,
+      typeface clean, colorMode bold.
+      Download generated images and save to assets/diagrams/.
     description: >
       Use Eraser MCP to generate/replace diagrams in assets/diagrams/.
       Diagram types: renderCloudArchitectureDiagram (system overview),
@@ -41,5 +56,5 @@ steps:
       no broken links, English and Korean docs are synchronized.
 
   - name: release
-    action: create-pr
+    prompt: "Create PR with documentation updates"
     description: Create PR with documentation updates
