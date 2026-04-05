@@ -8,38 +8,13 @@ import packageJson from '../../package.json';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
 import { getProviderLayout } from '../core/layout.js';
 import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
+import { type InitOptions, type InitResult, installFromSnapshot } from '../core/snapshot.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
 import { readLockFile, writeLockFile } from './projects.js';
 import { getDefaultWizardResult, isInteractiveMode, runInitWizard } from './wizard.js';
 
-/**
- * Options for the init command
- */
-export interface InitOptions {
-  /** Language for templates and messages (en|ko) */
-  lang?: 'en' | 'ko';
-  /** Whether to overwrite existing files */
-  force?: boolean;
-  /**
-   * Install only agents for the specified domain.
-   * Valid values: backend, frontend, data-engineering, devops.
-   * When omitted, all agents are installed (backward compatible).
-   */
-  domain?: string;
-  /** Skip interactive wizard, use defaults */
-  yes?: boolean;
-}
-
-/**
- * Result of the init command
- */
-export interface InitResult {
-  success: boolean;
-  message: string;
-  installedPaths?: string[];
-  errors?: string[];
-}
+export type { InitOptions, InitResult };
 
 /**
  * Check if provider root directory already exists
@@ -172,12 +147,29 @@ async function setupMcpConfig(targetDir: string): Promise<void> {
 }
 
 /**
+ * Install from a pre-configured team snapshot
+ * @deprecated Use installFromSnapshot from '../core/snapshot.js' directly
+ */
+export async function initFromSnapshot(
+  targetDir: string,
+  snapshotPath: string,
+  options: InitOptions
+): Promise<InitResult> {
+  return installFromSnapshot(targetDir, snapshotPath, options);
+}
+
+/**
  * Execute the init command
  * @param options - Init command options
  * @returns Result of the init operation
  */
 export async function initCommand(options: InitOptions): Promise<InitResult> {
   const targetDir = process.cwd();
+
+  // Snapshot mode: skip wizard and install from pre-configured snapshot
+  if (options.fromSnapshot) {
+    return installFromSnapshot(targetDir, options.fromSnapshot, options);
+  }
 
   const resolved = await resolveOptions(options);
   if (!resolved) {

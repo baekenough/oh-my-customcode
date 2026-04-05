@@ -77,6 +77,9 @@
       "initializingTemplate": "Initializing with template: {{name}}",
       "promptOverwrite": "Configuration already exists. Overwrite?",
       "aborted": "Initialization aborted",
+      "snapshot": {
+        "installing": "Installing from team snapshot..."
+      },
       "wizard": {
         "welcome": "Welcome to oh-my-customcode setup!",
         "langPrompt": "Select your preferred language",
@@ -289,6 +292,9 @@
         "serve": "[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.",
         "serveStop": "[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead."
       }
+    },
+    "sync": {
+      "description": "Check .claude/ configuration drift or export snapshot"
     },
     "security": {
       "description": "Scan for security issues in hooks, configs, and templates",

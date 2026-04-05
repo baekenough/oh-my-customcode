@@ -77,6 +77,9 @@
       "initializingTemplate": "템플릿으로 초기화 중: {{name}}",
       "promptOverwrite": "설정 파일이 이미 존재합니다. 덮어쓰시겠습니까?",
       "aborted": "초기화가 취소되었습니다",
+      "snapshot": {
+        "installing": "팀 스냅샷에서 설치 중..."
+      },
       "wizard": {
         "welcome": "oh-my-customcode 설정을 시작합니다!",
         "langPrompt": "사용할 언어를 선택하세요",
@@ -289,6 +292,9 @@
         "serve": "[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.",
         "serveStop": "[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead."
       }
+    },
+    "sync": {
+      "description": ".claude/ 설정 드리프트 확인 또는 스냅샷 내보내기"
     },
     "security": {
       "description": "훅, 설정, 템플릿의 보안 문제 검사",
