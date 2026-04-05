@@ -18,7 +18,7 @@ Defines mandatory safety constraints for all pipeline, workflow, and iterative e
 |-------|---------|----------|------------|
 | Max iterations | 3 | 5 | worker-reviewer-pipeline |
 | Max DAG nodes | 20 | 30 | dag-orchestration |
-| Max parallel agents | 4 | 4 | R009 (all pipelines) |
+| Max parallel agents | 4 | 5 | R009 (all pipelines) |
 | Max parallel steps   | 4        | 4        | pipeline parallel blocks |
 | Timeout per node | 300s | 600s | dag-orchestration nodes |
 | Timeout per pipeline | 900s | 1800s | worker-reviewer-pipeline |
@@ -149,7 +149,7 @@ Guard warnings appear inline:
 
 | Rule/Skill | Integration |
 |------------|-------------|
-| R009 | Max parallel agents enforced (hard cap: 4) |
+| R009 | Max parallel agents enforced (hard cap: 5, soft default: 4) |
 | R010 | Guards run in orchestrator only |
 | R015 | Guard warnings displayed transparently |
 | dag-orchestration | Node count and timeout limits |

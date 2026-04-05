@@ -61,10 +61,22 @@ Before writing/editing multiple files:
 
 | Rule | Detail |
 |------|--------|
-| Max instances | 4 concurrent |
+| Max instances | 5 concurrent (soft default: 4) |
 | Not parallelizable | Orchestrator (must stay singleton) |
 | Instance independence | Isolated context, no shared state |
 | Large tasks (>3 min) | MUST split into parallel sub-tasks |
+
+## Stability Testing Protocol
+
+When testing 5 concurrent agents (above the soft default of 4):
+
+| Observation | Threshold | Action |
+|-------------|-----------|--------|
+| Response latency | > 2x normal | Reduce to 4 |
+| Agent failure rate | > 10% | Reduce to 4 |
+| Context errors | Any | Reduce to 4 |
+
+5-agent concurrency is supported but should be monitored during initial adoption. Fall back to 4 if instability is observed.
 
 ## Agent Tool Requirements
 
