@@ -213,6 +213,70 @@ The Metrics section shares the 200-line MEMORY.md budget:
 
 -->
 
+<!-- DETAIL: User Model (sys-memory-keeper reference)
+
+MEMORY.md supports an optional `## User Model` section (DISTINCT from `## Behaviors`) for tracking structured user interaction patterns.
+
+### User Model vs Behaviors
+
+| Aspect | Behaviors | User Model |
+|--------|-----------|------------|
+| Focus | Communication/workflow preferences | Correction patterns, expertise, skill usage |
+| Source | Conversation style observations | R016 violations, tool invocations, override decisions |
+| Update | Session-end extraction | Session-end aggregation from task outcomes |
+
+### User Model Section Format
+
+    ## User Model [auto-updated by sys-memory-keeper]
+
+    ### Correction Patterns [confidence: medium]
+    - R010 direct-write attempts: 3 times → now delegates consistently
+    - Prefers explicit agent selection over auto-routing
+
+    ### Skill Preferences [confidence: high]
+    | Skill | Invocations | Last Used |
+    |-------|------------|-----------|
+    | /research | 12 | 2026-04-03 |
+    | /pipeline auto-dev | 8 | 2026-04-03 |
+
+    ### Expertise Profile [confidence: medium]
+    - Primary domains: TypeScript, Python, Go
+    - Focus: AI agent orchestration, CLI tooling
+
+    ### Override Decisions [confidence: low]
+    - Overrode /scout SKIP verdict → INTEGRATE for RTK (#756)
+
+### Categories
+
+| Category | Source | Description |
+|----------|--------|-------------|
+| Correction Patterns | R016 violation history | Rules the user corrected most |
+| Skill Preferences | Skill tool invocation count | Most-invoked skills ranked |
+| Expertise Profile | File patterns + routing history | User's domain expertise areas |
+| Override Decisions | Explicit user overrides | When user disagreed with agent recommendation |
+
+### Budget Management
+
+User Model shares the 200-line MEMORY.md budget:
+- Max 30 lines for User Model section
+- Prune low-confidence entries first
+- Skill Preferences table: max 10 rows (top by invocation count)
+- Override Decisions: max 5 entries (most recent)
+
+### Extraction Guidelines
+
+sys-memory-keeper extracts user model data at session end:
+1. Parse task outcomes for Skill invocations → update Skill Preferences
+2. Scan conversation for R016 violations → update Correction Patterns
+3. Analyze file patterns and routing decisions → update Expertise Profile
+4. Detect explicit user overrides (verdict changes, agent redirects) → update Override Decisions
+
+### Precedence
+
+User Model data feeds into intent-detection (R015) and routing skill confidence scoring. Higher expertise in a domain → higher confidence for auto-routing to that domain's agent.
+
+-->
+
 ## Session-End Auto-Save
 
 ### Trigger

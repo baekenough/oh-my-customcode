@@ -94,6 +94,29 @@ After updating memory entries, aggregate agent performance:
    - New agent: append row
 5. Enforce 20-row budget: prune lowest-usage rows
 
+### User Model Extraction (Session-End)
+
+After metrics aggregation, extract user model data:
+
+1. **Skill Preferences**: Parse conversation for Skill tool invocations
+   - Count each skill's invocations in this session
+   - Merge with existing `## User Model > ### Skill Preferences` table
+   - Keep top 10 by cumulative invocation count
+2. **Correction Patterns**: Scan for R016 violation corrections
+   - User says "no", "don't", "stop doing X" → potential correction
+   - Match to rule ID if possible (R007, R010, etc.)
+   - Update or create entry in Correction Patterns
+3. **Expertise Profile**: Analyze file access patterns
+   - Count file extensions accessed (*.ts, *.py, *.go, etc.)
+   - Map to domain: .ts→TypeScript, .py→Python, .go→Go, etc.
+   - Update primary domains list (top 3 by file access count)
+4. **Override Decisions**: Detect explicit user overrides
+   - User changes agent routing, overrides verdict, rejects suggestion
+   - Record with date and context (max 5 most recent)
+5. Write `## User Model` section to MEMORY.md (max 30 lines)
+   - New entries start at `[confidence: low]`
+   - Existing entries seen again → promote confidence
+
 ### Failure Handling
 
 - MEMORY.md update failure → report error to orchestrator

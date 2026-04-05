@@ -23,6 +23,7 @@ Search the [skills.sh](https://skills.sh/) marketplace for reusable AI agent ski
 --global, -g     Install to ~/.claude/skills/ instead of project .claude/skills/
 --list, -l       List currently installed skills.sh skills
 --check, -c      Check for updates on installed skills.sh skills
+--source, -s     Search source: "skills-sh" (default) | "agentskills" | "all"
 ```
 
 ## Workflow
@@ -123,6 +124,44 @@ Suggestions:
   - Consider creating a custom skill with /create-agent
 ```
 
+## Alternative Sources
+
+### agentskills.io (opt-in)
+
+Search the [agentskills.io](https://agentskills.io/) community skill registry as an alternative source.
+
+**Search workflow:**
+```
+1. Try: npx --yes @agentskill.sh/cli search "<query>"
+2. If CLI unavailable: WebSearch "site:agentskills.io <query>"
+3. Present results with source attribution
+```
+
+**Install workflow:**
+```
+1. Run: npx --yes @agentskill.sh/cli install <slug>
+2. Verify installation in .claude/skills/
+3. Add source metadata:
+   ├── source-type: agentskills-io
+   └── source-origin: <slug>
+```
+
+**Usage:**
+```bash
+# Search agentskills.io only
+/skills-sh-search "memory management" --source agentskills
+
+# Search both sources
+/skills-sh-search "testing patterns" --source all
+```
+
+**Fallback chain:**
+| Step | Tool | Condition |
+|------|------|-----------|
+| 1 | `@agentskill.sh/cli search` | Primary — if CLI available |
+| 2 | `WebSearch site:agentskills.io` | CLI unavailable or no results |
+| 3 | Report no results | Both failed |
+
 ## Examples
 
 ```bash
@@ -140,6 +179,12 @@ Suggestions:
 
 # Check for updates
 /skills-sh-search --check
+
+# Search agentskills.io
+/skills-sh-search "agent memory" --source agentskills
+
+# Search all sources
+/skills-sh-search "code review" --source all --install
 ```
 
 ## Integration
@@ -152,6 +197,9 @@ Installed skills.sh skills are tracked with `source-type: skills-sh` metadata, e
 
 ### With create-agent
 If a skills.sh skill provides domain knowledge, `create-agent` can reference it when building a new agent for that domain.
+
+### With agentskills.io
+Installed agentskills.io skills are tracked with `source-type: agentskills-io` metadata, enabling `update-external` to check for updates. Default source remains skills.sh; agentskills.io is opt-in via `--source` flag.
 
 ## Safety
 
