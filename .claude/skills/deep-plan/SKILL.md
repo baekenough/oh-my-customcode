@@ -82,22 +82,39 @@ Phase 2: Reality-Check Planning
    - Each ADOPT item: Does it already exist? Partially implemented?
    - Each ADAPT item: What is the current state to adapt from?
    - Each AVOID item: Are the alternatives already available?
-3. **Gap Analysis**: Build a reconciliation table:
+3. **Deliverable Dependency Verification**: After exploration, verify inter-deliverable dependencies:
+   - For each deliverable pair, check: do they share files, functions, or modules?
+   - Classify each pair: `independent` (parallel-safe), `sequential` (order required), `shared-state` (synchronization needed)
+   - **Default bias**: Assume `independent` unless exploration finds concrete shared state
+   - Build dependency matrix:
 
    ```
-   | Research Finding | Actual Code State | Gap Type | Action |
-   |-----------------|-------------------|----------|--------|
-   | "No caching"    | Redis client exists | Overestimate | Remove from plan |
-   | "Need auth middleware" | No auth layer | Real gap | Keep in plan |
-   | "Migrate to v3" | Already on v3.1 | Overestimate | Remove from plan |
-   | "Add rate limiting" | Basic limiter exists | Partial gap | Adapt existing |
+   | Deliverable A | Deliverable B | Classification | Evidence |
+   |---------------|---------------|----------------|----------|
+   | D1: Auth      | D2: API       | independent    | No shared files |
+   | D1: Auth      | D3: Tests     | sequential     | D3 tests D1 output |
    ```
 
-4. **Refined Plan**: Write implementation plan containing ONLY real gaps:
+   - **Orchestrator override**: The dependency classification is advisory. The orchestrator or user can reclassify pairs when the automated analysis is overly conservative.
+
+4. **Gap Analysis**: Build a reconciliation table:
+
+   ```
+   | Research Finding | Actual Code State | Gap Type | Action | Dependencies |
+   |-----------------|-------------------|----------|--------|-------------|
+   | "No caching"    | Redis client exists | Overestimate | Remove from plan | — |
+   | "Need auth middleware" | No auth layer | Real gap | Keep in plan | D3 (sequential) |
+   | "Migrate to v3" | Already on v3.1 | Overestimate | Remove from plan | — |
+   | "Add rate limiting" | Basic limiter exists | Partial gap | Adapt existing | independent |
+   ```
+
+5. **Refined Plan**: Write implementation plan containing ONLY real gaps:
    - Remove overestimates (already implemented)
    - Adjust partial gaps (adapt, don't rebuild)
    - Prioritize real gaps by impact
-5. **User Approval**: `ExitPlanMode` presents the refined plan for user review
+6. **User Approval**: `ExitPlanMode` presents the refined plan for user review
+   - Include dependency matrix in plan output
+   - Display override option: "Dependency classifications are advisory. Reply with reclassifications if needed."
 
 ### Phase 3: Plan Verification Research
 
