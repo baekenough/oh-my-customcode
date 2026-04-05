@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-46개 에이전트. 99개 스킬. 21개 규칙. 명령어 하나.
+46개 에이전트. 100개 스킬. 21개 규칙. 명령어 하나.
 
 > **v0.62.5** — D3 의존성 그래프, Playwright 접근성 E2E 테스트, 키보드 접근성, CI lockfile-sync 게이트
 
