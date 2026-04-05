@@ -329,28 +329,3 @@ jobs:
           echo "| GitHub Release | ${GHR} |" >> $GITHUB_STEP_SUMMARY
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  cleanup:
-    name: Cleanup Release Branch
-    needs: [publish]
-    if: success()
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Delete release branch
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-
-          # Try both naming patterns
-          for BRANCH in "release/v${VERSION}" "release/${VERSION}"; do
-            echo "Checking branch: $BRANCH"
-            if gh api "repos/${{ github.repository }}/git/refs/heads/${BRANCH}" --silent 2>/dev/null; then
-              gh api -X DELETE "repos/${{ github.repository }}/git/refs/heads/${BRANCH}" && \
-                echo "✓ Deleted branch: $BRANCH" || \
-                echo "⚠ Failed to delete branch: $BRANCH"
-            else
-              echo "Branch $BRANCH not found, skipping"
-            fi
-          done
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
