@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.76.0",
-  "generatedAt": "2026-04-05T07:47:38.833Z",
+  "generatedAt": "2026-04-05T08:01:30.303Z",
   "templateVersion": "0.76.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -450,8 +450,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
-      "templateHash": "45e4ee42e23bad72a7ff9fc2e6234eb290e3609c524cacb076d0c9c055aac191",
-      "size": 3520,
+      "templateHash": "e17f9173050f5035bec9285b24f6a1afa90b8e0712988d47383ea1263f7e9ca5",
+      "size": 4919,
       "component": "skills"
     },
     ".claude/skills/memory-save/SKILL.md": {
@@ -950,8 +950,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline-guards/SKILL.md": {
-      "templateHash": "0dab58bd3e3d9f8699bf4c56dfcd6a12e7911a68489bd46d098b233872941cc1",
-      "size": 5210,
+      "templateHash": "6da89cef52a157ca0458cb12ed9b8d5795802d85d6fb42ca9a19bafe930e2432",
+      "size": 5284,
       "component": "skills"
     },
     ".claude/skills/help/SKILL.md": {
