@@ -21,17 +21,16 @@ npm install -g oh-my-customcode && cd your-project && omcustom init
 
 ---
 
-## What's New in v0.62.5
+## What's New in v0.74.0
 
 | Feature | Description |
 |---------|-------------|
-| **D3 Dependency Graph** | Interactive force-directed graph visualization at `/graph` — zoom, pan, drag, search, type filters |
-| **Playwright E2E Tests** | 11 accessibility tests with axe-core audit, `.pw.ts` extension for test isolation |
-| **Graph Accessibility** | WCAG keyboard navigation, aria-live announcements, skip link, focus-visible, reduced-motion support |
-| **CI Lockfile-Sync Gate** | New CI job validates bun.lockb consistency before lint/test |
-| **Token Optimization** | HTML comment technique reduces CLAUDE.md from 550→286 lines (48% reduction) |
-| **Workflow Engine** | YAML-defined workflow pipelines with `auto-dev` 8-step release batch |
-| **CC v2.1.83–v2.1.87 Compat** | Conditional hook `if` field, CwdChanged/FileChanged events, managed-settings.d |
+| **`omcustom sync`** | Drift detection for `.claude/` configuration — compare against lockfile, export team snapshots |
+| **`omcustom init --from-snapshot`** | Team reproducibility — install from pre-configured snapshot directory |
+| **`analysis --interview`** | Interactive AI architecture interview before file-based project detection |
+| **skill-extractor** | 100th skill — analyze task trajectories to propose reusable SKILL.md candidates |
+| **User Model** | Structured tracking of correction patterns, skill preferences, expertise profile |
+| **Release Cleanup** | Auto-close linked issues and delete release branches on PR merge |
 
 ---
 
@@ -153,13 +152,13 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 | Best Practices | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic, and more |
 | Routing | 4 | secretary, dev-lead, de-lead, qa-lead |
 | Workflow | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline, and more |
-| Development | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
+| Development | 8 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover, skill-extractor |
 | Operations | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes, and more |
 | Memory | 3 | memory-save, memory-recall, memory-management |
 | Package | 3 | npm-publish, npm-version, npm-audit |
 | Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | Security | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| Other | 9 | codex-exec, claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and more |
+| Other | 10 | codex-exec, claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and more |
 
 Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill maintenance), `package` (project-specific).
 
@@ -262,6 +261,10 @@ Security hooks are advisory (exit 0). They warn but never block.
 ```bash
 omcustom init                  # Interactive setup wizard (language, framework, team mode)
 omcustom init --lang ko        # Initialize with Korean
+omcustom init --from-snapshot  # Install from pre-configured team snapshot
+omcustom sync                  # Detect drift between .claude/ state and lockfile
+omcustom sync --check          # Check for drift without applying changes
+omcustom sync --export         # Export current state as team snapshot
 omcustom update                # Update to latest
 omcustom list                  # List components
 omcustom doctor                # Verify installation

@@ -1,14 +1,14 @@
 # Architecture
 
-> oh-my-customcode v0.62.5
+> oh-my-customcode v0.74.0
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 46 pre-built subagents, 97 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 46 pre-built subagents, 100 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.62.5** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Current version: **0.74.0** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
@@ -88,7 +88,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (97 skills)
+### 3.3 Skill Catalog (100 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -109,7 +109,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **Slash command / user-invocable skills**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
 
 **System / internal skills**
 
@@ -398,7 +398,19 @@ An optional `## Behaviors` section in MEMORY.md tracks user interaction preferen
 | Workflow | Tool preferences, review habits, branching patterns |
 | Domain priority | Security-first, performance-first, simplicity-first |
 
-### 6.5 MCP Memory (Supplementary)
+### 6.5 User Model
+
+Introduced in v0.73.0. sys-memory-keeper maintains a structured `## User Model` section in MEMORY.md that tracks:
+
+| Dimension | Tracked Data |
+|-----------|-------------|
+| Correction patterns | Recurring corrections the user makes to agent behavior |
+| Skill preferences | Skills the user frequently invokes or explicitly prefers |
+| Expertise profile | Domains where the user has demonstrated deep knowledge |
+
+This structured model enables agents to anticipate user preferences rather than requiring repeated corrections across sessions. sys-memory-keeper updates the User Model at session end alongside the standard behavioral memory update.
+
+### 6.6 MCP Memory (Supplementary)
 
 MCP tools are orchestrator-scoped — subagents cannot access them.
 
@@ -408,7 +420,7 @@ MCP tools are orchestrator-scoped — subagents cannot access them.
 
 Episodic-memory auto-indexes conversations after session end — no manual action is needed. Use native auto-memory first; fall back to MCP only for cross-session search or temporal queries.
 
-### 6.6 Session-End Flow
+### 6.7 Session-End Flow
 
 <p align="center">
   <img src="assets/diagrams/07-session-end-memory.png" alt="Session-End Memory Flow" width="800" />
@@ -416,7 +428,7 @@ Episodic-memory auto-indexes conversations after session end — no manual actio
 
 MCP saves are non-blocking — failure does not prevent session end.
 
-### 6.7 Agent Metrics and Skill Effectiveness Tracking
+### 6.8 Agent Metrics and Skill Effectiveness Tracking
 
 <p align="center">
   <img src="assets/diagrams/10-feedback-loop.png" alt="Feedback Analysis Loop" width="800" />
@@ -444,7 +456,7 @@ The task-outcome-recorder hook (PostToolUse + SubagentStop) records success/fail
 
 | Gate | Tool / Script | Threshold |
 |------|---------------|-----------|
-| Code coverage | bun test --coverage | 97% |
+| Code coverage | bun test --coverage | 98% |
 | Version sync | manifest.json <-> package.json | Exact match |
 | Docs validation | validate-docs.ts | README count consistency |
 | Sauron verification | mgr-sauron (R017) | All 5+3 rounds pass |
@@ -463,8 +475,7 @@ The task-outcome-recorder hook (PostToolUse + SubagentStop) records success/fail
 | Template Sync | ci.yml | Verify template files match source, skill script file parity |
 | Dependency Security Audit | security-audit.yml | Automated vulnerability scanning |
 | Auto Tag | auto-tag.yml | Create version tag on release PR merge |
-| Issue Analyzer | issue-analyzer.yml | Automated issue analysis comments |
-| PR Analysis | pr-analysis.yml | Pull request automated analysis |
+| Release Cleanup | release-cleanup.yml | Auto-close linked issues + delete release branches on merge |
 | Daily Report | reusable-daily-report.yml | Scheduled issue/PR reporting |
 
 ---
@@ -603,6 +614,9 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | PostCompact hook | A Claude Code lifecycle event (v2.1.72+) that fires after context compaction; used to re-inject critical rules. |
 | eval-core | Standalone `packages/eval-core/` package providing SQLite-backed session/turn/outcome collection for offline evaluation. |
 | Init wizard | Interactive first-run setup flow (`omcustom init`) that configures `.claude/` for a new project. |
+| User Model | Structured section in MEMORY.md maintained by sys-memory-keeper; tracks correction patterns, skill preferences, and expertise profile across sessions (v0.73.0+). |
+| skill-extractor | The 100th skill; analyzes recorded task trajectories to propose reusable SKILL.md candidates from successful patterns. |
+| omcustom sync | CLI command that compares current `.claude/` state against a lockfile to detect configuration drift; can export team snapshots via `--export`. |
 
 ---
 
@@ -610,6 +624,19 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 | Version | Key Changes |
 |---------|-------------|
+| v0.74.0 | `omcustom sync` (drift detection + team snapshot export); `omcustom init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |
+| v0.73.0 | skill-extractor (100th skill — task trajectory analysis for SKILL.md candidates); User Model in R011 + sys-memory-keeper (correction patterns, skill preferences, expertise profile); agentskills.io source in skills-sh-search |
+| v0.72.1 | sync-server-repo.yml dead workflow removal (customclaw server decommissioned 2026-03-18) |
+| v0.72.0 | Korean template unification for 4 analysis skills (scout, professor-triage, release-plan, post-release-followup); professor-triage v2.2.0 |
+| v0.71.0 | workflow→pipeline migration (3 skills deleted + 1 pipeline installed); /omcustom:claude-native skill; pr-analysis.yml deleted (last Airflow workflow removed); Skills 100→99→100 |
+| v0.70.0 | codex-installer.ts; SessionStart auto-update hook; omcustom-feedback Airflow dead code removal; DI pattern refactor; coverage 98% |
+| v0.69.0 | professor-triage v2.1 multi-perspective analysis (Phase 4A-4F); Codex CLI v0.117.0; /scout skill integration |
+| v0.68.0–v0.68.2 | CC v2.1.88 compat; RTK PreToolUse auto-intercept; PermissionDenied hook event (20th); phantom version guard; RTK auto-install in init/update/doctor |
+| v0.67.0 | rtk-exec skill; RTK CLI proxy integration; 100 skills milestone |
+| v0.66.0 | gemini-exec skill for native Gemini CLI execution |
+| v0.65.0–v0.65.2 | Hook Registry Expansion (7→14 events); CC Feature Integration (CLI flags, OTel monitoring); CC v2.1.87 compat; auto-dev pre-triage step; TypeScript 6.0 upgrade |
+| v0.64.0–v0.64.3 | R002 Tool Modernization (9→30 tools, 4→6 tiers); R006 Frontmatter Sync (7 new skill fields); agent guardrails (maxTurns, limitations, disallowedTools); permissionMode tier-based adoption; Anthropic harness design internalization |
+| v0.63.0–v0.63.1 | Chroma Context-1 internalize; R013 Input Context Pruning; skill metadata consistency (34 skills user-invocable); R002 Tool Modernization prep |
 | v0.62.5 | Playwright accessibility E2E tests for graph page (11 tests, axe-core audit) |
 | v0.62.4 | Graph circular keyboard nav, aria-live announcements, skip link, focus-visible styling |
 | v0.62.3 | Graph keyboard accessibility, zoom-responsive labels, tooltip clamping |
