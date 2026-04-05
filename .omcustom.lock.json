@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.72.1",
-  "generatedAt": "2026-04-03T13:02:08.065Z",
-  "templateVersion": "0.72.1",
+  "generatorVersion": "0.73.0",
+  "generatedAt": "2026-04-05T01:38:40.773Z",
+  "templateVersion": "0.73.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -95,8 +95,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "e107fd0760833a1e1a550fac075f943561fd35a30443e85a6c4d80b08e86199d",
-      "size": 11714,
+      "templateHash": "ada6e7a86a71e3c350b8827f1a4c7fbaaefb7422dfe3f66fdb0ebaf73b29cf50",
+      "size": 14318,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
@@ -335,8 +335,8 @@
       "component": "agents"
     },
     ".claude/agents/sys-memory-keeper.md": {
-      "templateHash": "88ba9171c66b38c5cf7f65baa07ad6400152fd23c6272b5e79bb50270d56e164",
-      "size": 3715,
+      "templateHash": "1fb3bb932cf7f451f3250e0b3aff79963dfe30aa66d0723d9401b330396beaef",
+      "size": 4882,
       "component": "agents"
     },
     ".claude/agents/infra-aws-expert.md": {
@@ -432,6 +432,11 @@
     ".claude/skills/memory-recall/SKILL.md": {
       "templateHash": "14e17119e6fc510af9335d941b791b4068f9dee4ef024dc84a1b8724142fa73e",
       "size": 4344,
+      "component": "skills"
+    },
+    ".claude/skills/skill-extractor/SKILL.md": {
+      "templateHash": "bfe9d3a3bf4a05830c98cca5db8bc56d8c07b805de766210fb11c49076c5373d",
+      "size": 4892,
       "component": "skills"
     },
     ".claude/skills/cve-triage/SKILL.md": {
@@ -530,8 +535,8 @@
       "component": "skills"
     },
     ".claude/skills/analysis/SKILL.md": {
-      "templateHash": "f4e5273a5facbef38304c92c603f1e5ee272f6c560711e972ca58cec54de8918",
-      "size": 5999,
+      "templateHash": "bfb8a3bfb965f226b748dbec53bba2166db0ab3e4aacf8ef4b34b6d7b75c2f28",
+      "size": 7791,
       "component": "skills"
     },
     ".claude/skills/update-docs/SKILL.md": {
@@ -750,8 +755,8 @@
       "component": "skills"
     },
     ".claude/skills/skills-sh-search/SKILL.md": {
-      "templateHash": "321ebdab84616ea74a01cbd6c0f3c642fc093153e91278c451b2035c556c59c5",
-      "size": 4470,
+      "templateHash": "48d9ddfa1337012bbd6fba57c9b53ef0c35a50ff499a50579d1a3131402143d5",
+      "size": 5961,
       "component": "skills"
     },
     ".claude/skills/typescript-best-practices/SKILL.md": {
@@ -969,6 +974,11 @@
       "size": 800,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/skill-extractor-analyzer.sh": {
+      "templateHash": "753febd061e7b3dda7d02f4848d01c063353a1d838fa380a1b03192ac2978557",
+      "size": 1388,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/user-prompt-preprocessor.sh": {
       "templateHash": "71a4e7fec6f830c7c12fbb00f8d1469a8dd92805f06495d31afa1a2ef88532cf",
       "size": 843,
@@ -1070,8 +1080,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "fd5578afe25fa9dadee41adcf36556565ac669ad2b530b82e30727196ea380ac",
-      "size": 23069,
+      "templateHash": "809d059941cb0c9231cd517fe3c9792fab8c0dff8f30bac9589426c2a47f4ea7",
+      "size": 23379,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {

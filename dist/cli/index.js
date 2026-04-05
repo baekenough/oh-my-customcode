@@ -11167,13 +11167,13 @@ var PromisePolyfill;
 var init_promise_polyfill = __esm(() => {
   PromisePolyfill = class PromisePolyfill extends Promise {
     static withResolver() {
-      let resolve2;
+      let resolve3;
       let reject;
       const promise = new Promise((res, rej) => {
-        resolve2 = res;
+        resolve3 = res;
         reject = rej;
       });
-      return { promise, resolve: resolve2, reject };
+      return { promise, resolve: resolve3, reject };
     }
   };
 });
@@ -11211,7 +11211,7 @@ function createPrompt(view) {
       output
     });
     const screen = new ScreenManager(rl);
-    const { promise, resolve: resolve2, reject } = PromisePolyfill.withResolver();
+    const { promise, resolve: resolve3, reject } = PromisePolyfill.withResolver();
     const cancel = () => reject(new CancelPromptError);
     if (signal) {
       const abort = () => reject(new AbortPromptError({ cause: signal.reason }));
@@ -11239,7 +11239,7 @@ function createPrompt(view) {
         cycle(() => {
           try {
             const nextView = view(config, (value) => {
-              setImmediate(() => resolve2(value));
+              setImmediate(() => resolve3(value));
             });
             if (nextView === undefined) {
               const callerFilename = callSites[1]?.getFileName();
@@ -17104,7 +17104,7 @@ var require_lib2 = __commonJS((exports) => {
     return matches;
   };
   exports.analyse = analyse;
-  var detectFile = (filepath, opts = {}) => new Promise((resolve2, reject) => {
+  var detectFile = (filepath, opts = {}) => new Promise((resolve3, reject) => {
     let fd;
     const fs3 = (0, node_1.default)();
     const handler = (err, buffer) => {
@@ -17114,7 +17114,7 @@ var require_lib2 = __commonJS((exports) => {
       if (err) {
         reject(err);
       } else if (buffer) {
-        resolve2((0, exports.detect)(buffer));
+        resolve3((0, exports.detect)(buffer));
       } else {
         reject(new Error("No error and no buffer received"));
       }
@@ -24721,6 +24721,9 @@ var en_default = {
       initializingTemplate: "Initializing with template: {{name}}",
       promptOverwrite: "Configuration already exists. Overwrite?",
       aborted: "Initialization aborted",
+      snapshot: {
+        installing: "Installing from team snapshot..."
+      },
       wizard: {
         welcome: "Welcome to oh-my-customcode setup!",
         langPrompt: "Select your preferred language",
@@ -24934,6 +24937,9 @@ var en_default = {
         serveStop: "[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead."
       }
     },
+    sync: {
+      description: "Check .claude/ configuration drift or export snapshot"
+    },
     security: {
       description: "Scan for security issues in hooks, configs, and templates",
       verboseOption: "Show detailed scan results",
@@ -25128,6 +25134,9 @@ var ko_default = {
       initializingTemplate: "템플릿으로 초기화 중: {{name}}",
       promptOverwrite: "설정 파일이 이미 존재합니다. 덮어쓰시겠습니까?",
       aborted: "초기화가 취소되었습니다",
+      snapshot: {
+        installing: "팀 스냅샷에서 설치 중..."
+      },
       wizard: {
         welcome: "oh-my-customcode 설정을 시작합니다!",
         langPrompt: "사용할 언어를 선택하세요",
@@ -25340,6 +25349,9 @@ var ko_default = {
         serve: "[Deprecated] `omcustom serve` is deprecated. Use `omcustom web start` instead.",
         serveStop: "[Deprecated] `omcustom serve-stop` is deprecated. Use `omcustom web stop` instead."
       }
+    },
+    sync: {
+      description: ".claude/ 설정 드리프트 확인 또는 스냅샷 내보내기"
     },
     security: {
       description: "훅, 설정, 템플릿의 보안 문제 검사",
@@ -26454,6 +26466,29 @@ async function generateAndWriteLockfileForDir(targetDir) {
     const msg = err instanceof Error ? err.message : String(err);
     return { fileCount: 0, warning: `Lockfile generation failed: ${msg}` };
   }
+}
+function diffLockfiles(base, current) {
+  const baseKeys = new Set(Object.keys(base.files));
+  const currentKeys = new Set(Object.keys(current.files));
+  const added = [];
+  const removed = [];
+  const modified = [];
+  const unchanged = [];
+  for (const key of currentKeys) {
+    if (!baseKeys.has(key)) {
+      added.push(key);
+    } else if (base.files[key].templateHash !== current.files[key].templateHash) {
+      modified.push(key);
+    } else {
+      unchanged.push(key);
+    }
+  }
+  for (const key of baseKeys) {
+    if (!currentKeys.has(key)) {
+      removed.push(key);
+    }
+  }
+  return { added, removed, modified, unchanged };
 }
 
 // src/core/rtk-installer.ts
@@ -29140,8 +29175,64 @@ async function setupMcpConfig(targetDir) {
     console.warn("Install uv (https://docs.astral.sh/uv/) to enable MCP integration.");
   }
 }
+async function initFromSnapshot(targetDir, snapshotPath, options) {
+  const { existsSync: existsSync2 } = await import("node:fs");
+  const { cp, copyFile: copyFile2 } = await import("node:fs/promises");
+  if (!existsSync2(snapshotPath)) {
+    return createFailureResult(`Snapshot path not found: ${snapshotPath}`);
+  }
+  const layout = getProviderLayout();
+  const snapshotClaude = join10(snapshotPath, layout.rootDir);
+  if (!existsSync2(snapshotClaude)) {
+    return createFailureResult(`Invalid snapshot: missing ${layout.rootDir}/ directory in ${snapshotPath}`);
+  }
+  console.log(`Installing from snapshot: ${snapshotPath}`);
+  try {
+    const exists2 = await checkExistingInstallation(targetDir);
+    if (exists2 && !options.force) {
+      console.log(i18n.t("cli.init.exists", { rootDir: layout.rootDir }));
+      console.log(i18n.t("cli.init.backing_up"));
+      const backupDir = join10(targetDir, `.claude-backup-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, -1)}`);
+      await cp(join10(targetDir, layout.rootDir), backupDir, { recursive: true });
+      console.log(`  Backed up to: ${backupDir}`);
+    }
+    await cp(snapshotClaude, join10(targetDir, layout.rootDir), {
+      recursive: true,
+      force: true
+    });
+    const snapshotGuides = join10(snapshotPath, "guides");
+    if (existsSync2(snapshotGuides)) {
+      await cp(snapshotGuides, join10(targetDir, "guides"), {
+        recursive: true,
+        force: true
+      });
+    }
+    const snapshotEntry = join10(snapshotPath, layout.entryFile);
+    if (existsSync2(snapshotEntry)) {
+      await copyFile2(snapshotEntry, join10(targetDir, layout.entryFile));
+    }
+    try {
+      const existing = await readLockFile(targetDir);
+      await writeLockFile(targetDir, package_default.version, existing);
+    } catch {}
+    console.log(i18n.t("cli.init.success"));
+    console.log(`
+Installed from snapshot: ${snapshotPath}`);
+    return {
+      success: true,
+      message: `Installed from snapshot: ${snapshotPath}`
+    };
+  } catch (error2) {
+    const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+    console.error(i18n.t("cli.init.failed"), errorMessage);
+    return createFailureResult(errorMessage);
+  }
+}
 async function initCommand(options) {
   const targetDir = process.cwd();
+  if (options.fromSnapshot) {
+    return initFromSnapshot(targetDir, options.fromSnapshot, options);
+  }
   const resolved = await resolveOptions(options);
   if (!resolved) {
     return { success: false, message: i18n.t("cli.init.wizard.cancelled") };
@@ -30058,12 +30149,199 @@ function runForeground(projectRoot, port, buildDirOpts) {
   });
 }
 
+// src/cli/sync.ts
+import { resolve as resolve2 } from "node:path";
+
+// src/core/sync.ts
+init_fs();
+import { existsSync as existsSync3 } from "node:fs";
+import { cp, mkdir } from "node:fs/promises";
+import { join as join14 } from "node:path";
+async function loadVersions() {
+  try {
+    const packageRoot = getPackageRoot();
+    const manifest = await readJsonFile(join14(packageRoot, "templates", "manifest.json"));
+    const pkg = await readJsonFile(join14(packageRoot, "package.json"));
+    return { generatorVersion: pkg.version, templateVersion: manifest.version };
+  } catch {
+    return { generatorVersion: "0.0.0", templateVersion: "0.0.0" };
+  }
+}
+async function generateCurrentLockfile(targetDir) {
+  try {
+    const { generatorVersion, templateVersion } = await loadVersions();
+    return await generateLockfile(targetDir, generatorVersion, templateVersion);
+  } catch {
+    return null;
+  }
+}
+async function syncCheck(targetDir, options) {
+  const empty = {
+    inSync: false,
+    added: [],
+    removed: [],
+    modified: [],
+    unchanged: 0,
+    referenceVersion: null,
+    currentVersion: null,
+    totalTracked: 0
+  };
+  const referenceDir = options?.reference ?? targetDir;
+  const reference = await readLockfile(referenceDir);
+  if (!reference) {
+    return empty;
+  }
+  const current = await generateCurrentLockfile(targetDir);
+  if (!current) {
+    return {
+      ...empty,
+      referenceVersion: reference.generatorVersion
+    };
+  }
+  const diff = diffLockfiles(reference, current);
+  return {
+    inSync: diff.added.length === 0 && diff.removed.length === 0 && diff.modified.length === 0,
+    added: diff.added,
+    removed: diff.removed,
+    modified: diff.modified,
+    unchanged: diff.unchanged.length,
+    referenceVersion: reference.generatorVersion,
+    currentVersion: current.generatorVersion,
+    totalTracked: Object.keys(current.files).length
+  };
+}
+function isExportable(src) {
+  const normalized = src.replace(/\\/g, "/");
+  const excluded = ["/agent-memory", "/agent-memory-local", "/outputs", "settings.local"];
+  return !excluded.some((segment) => {
+    if (segment.startsWith("/")) {
+      return normalized.includes(`${segment}/`) || normalized.endsWith(segment);
+    }
+    return normalized.includes(segment);
+  });
+}
+async function countFiles(dir2) {
+  const { readdir: readdir3, stat: stat3 } = await import("node:fs/promises");
+  async function walk(current) {
+    let total = 0;
+    let entries;
+    try {
+      entries = await readdir3(current);
+    } catch {
+      return 0;
+    }
+    for (const entry of entries) {
+      const full = join14(current, entry);
+      try {
+        const s = await stat3(full);
+        if (s.isDirectory()) {
+          total += await walk(full);
+        } else if (s.isFile()) {
+          total += 1;
+        }
+      } catch {}
+    }
+    return total;
+  }
+  return walk(dir2);
+}
+async function exportSnapshot(targetDir, outputPath) {
+  const claudeDir = join14(targetDir, ".claude");
+  const guidesDir = join14(targetDir, "guides");
+  if (!existsSync3(claudeDir)) {
+    return { success: false, exportPath: outputPath, fileCount: 0 };
+  }
+  await mkdir(outputPath, { recursive: true });
+  const destClaude = join14(outputPath, ".claude");
+  await cp(claudeDir, destClaude, {
+    recursive: true,
+    filter: isExportable
+  });
+  if (existsSync3(guidesDir)) {
+    await cp(guidesDir, join14(outputPath, "guides"), { recursive: true });
+  }
+  const lockfile = await generateCurrentLockfile(targetDir);
+  if (lockfile) {
+    await writeLockfile(outputPath, lockfile);
+  }
+  const fileCount = await countFiles(outputPath);
+  return { success: true, exportPath: outputPath, fileCount };
+}
+
+// src/cli/sync.ts
+async function runExport(targetDir, outputPath) {
+  const result = await exportSnapshot(targetDir, resolve2(outputPath));
+  if (!result.success) {
+    console.error(`
+Export failed — no .claude/ directory found in current project.`);
+    process.exit(1);
+  }
+  console.log(`
+Snapshot exported: ${result.exportPath} (${result.fileCount} files)`);
+  console.log(`Team members can install with: omcustom init --from-snapshot ${result.exportPath}`);
+}
+function printDriftDetails(result) {
+  if (result.unchanged > 0) {
+    console.log(`  ✓ ${result.unchanged} files in sync`);
+  }
+  if (result.modified.length > 0) {
+    console.log(`  ⚠ ${result.modified.length} files modified since install:`);
+    for (const f of result.modified) {
+      console.log(`    modified: ${f}`);
+    }
+  }
+  if (result.removed.length > 0) {
+    console.log(`  ✗ ${result.removed.length} files removed:`);
+    for (const f of result.removed) {
+      console.log(`    removed: ${f}`);
+    }
+  }
+  if (result.added.length > 0) {
+    console.log(`  + ${result.added.length} files added (not in lockfile):`);
+    for (const f of result.added) {
+      console.log(`    added: ${f}`);
+    }
+  }
+}
+async function runCheck(targetDir, options) {
+  const result = await syncCheck(targetDir, { reference: options.reference });
+  if (!result.referenceVersion) {
+    console.error(`
+No lockfile found. Run omcustom init first.`);
+    process.exit(1);
+  }
+  const label = options.reference ? `external snapshot at ${options.reference}` : `lockfile (v${result.referenceVersion})`;
+  console.log(`
+Sync check — comparing against ${label}
+`);
+  if (result.inSync) {
+    console.log(`  ✓ ${result.unchanged} files in sync`);
+  } else {
+    printDriftDetails(result);
+  }
+  console.log(`
+Summary: ${result.unchanged} unchanged, ${result.modified.length} modified, ${result.removed.length} removed, ${result.added.length} added`);
+  if (!result.inSync) {
+    process.exit(1);
+  }
+}
+function syncCommand(program2) {
+  program2.command("sync").description(i18n.t("cli.sync.description")).option("--check", "Compare current state against lockfile (default behavior)").option("--reference <path>", "Compare against an external snapshot instead of the lockfile").option("--export <path>", "Export current .claude/ state as a reusable snapshot").action(async (options) => {
+    const targetDir = resolve2(".");
+    if (options.export) {
+      await runExport(targetDir, options.export);
+      return;
+    }
+    await runCheck(targetDir, options);
+  });
+}
+
 // src/cli/update.ts
 init_package();
 
 // src/core/updater.ts
 init_package();
-import { join as join14 } from "node:path";
+import { join as join15 } from "node:path";
 init_fs();
 
 // src/core/entry-merger.ts
@@ -30318,7 +30596,7 @@ function resolveCustomizations(customizations, configPreserveFiles, targetDir) {
 }
 async function updateEntryDoc(targetDir, config, options) {
   const layout = getProviderLayout();
-  const entryPath = join14(targetDir, layout.entryFile);
+  const entryPath = join15(targetDir, layout.entryFile);
   const templateName = getEntryTemplateName2(config.language);
   const templatePath = resolveTemplatePath(templateName);
   if (!await fileExists(templatePath)) {
@@ -30419,7 +30697,7 @@ async function update(options) {
       result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g oh-my-customcode@latest`;
       return result;
     }
-    const targetPkgPath = join14(options.targetDir, "package.json");
+    const targetPkgPath = join15(options.targetDir, "package.json");
     if (await fileExists(targetPkgPath)) {
       const targetPkg = await readJsonFile(targetPkgPath);
       if (targetPkg.name === "oh-my-customcode") {
@@ -30535,11 +30813,11 @@ async function collectProtectedSkipPaths(srcPath, destPath, componentPath, force
   const warnedPaths = [];
   const updatedPaths = [];
   for (const p of protectedRelative) {
-    const targetFilePath = join14(targetDir, componentPath, p);
+    const targetFilePath = join15(targetDir, componentPath, p);
     const lockfileKey = `${componentPath}/${p}`.replace(/\\/g, "/");
     const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
     if (shouldSkip) {
-      skipPaths.push(path3.relative(destPath, join14(destPath, p)));
+      skipPaths.push(path3.relative(destPath, join15(destPath, p)));
       warnedPaths.push(p);
     } else {
       updatedPaths.push(p);
@@ -30585,7 +30863,7 @@ async function updateComponent(targetDir, component, customizations, options, co
   const preservedFiles = [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
-  const destPath = join14(targetDir, componentPath);
+  const destPath = join15(targetDir, componentPath);
   const customComponents = config.customComponents || [];
   const skipPaths = [];
   if (customizations && !options.forceOverwriteAll) {
@@ -30627,7 +30905,7 @@ async function updateComponent(targetDir, component, customizations, options, co
   }
   skipPaths.push(...protectedSkipPaths);
   const path3 = await import("node:path");
-  const normalizedSkipPaths = skipPaths.map((p) => path3.relative(destPath, join14(targetDir, p)));
+  const normalizedSkipPaths = skipPaths.map((p) => path3.relative(destPath, join15(targetDir, p)));
   const uniqueSkipPaths = [...new Set(normalizedSkipPaths)];
   await copyDirectory(srcPath, destPath, {
     overwrite: true,
@@ -30649,12 +30927,12 @@ async function syncRootLevelFiles(targetDir, options) {
   const layout = getProviderLayout();
   const synced = [];
   for (const fileName of ROOT_LEVEL_FILES) {
-    const srcPath = resolveTemplatePath(join14(layout.rootDir, fileName));
+    const srcPath = resolveTemplatePath(join15(layout.rootDir, fileName));
     if (!await fileExists(srcPath)) {
       continue;
     }
-    const destPath = join14(targetDir, layout.rootDir, fileName);
-    await ensureDirectory(join14(destPath, ".."));
+    const destPath = join15(targetDir, layout.rootDir, fileName);
+    await ensureDirectory(join15(destPath, ".."));
     await fs3.copyFile(srcPath, destPath);
     if (fileName.endsWith(".sh")) {
       await fs3.chmod(destPath, 493);
@@ -30689,7 +30967,7 @@ async function removeDeprecatedFiles(targetDir, options) {
       });
       continue;
     }
-    const fullPath = join14(targetDir, entry.path);
+    const fullPath = join15(targetDir, entry.path);
     if (await fileExists(fullPath)) {
       await fs3.unlink(fullPath);
       removed.push(entry.path);
@@ -30730,7 +31008,7 @@ async function syncNamespaceInFile(targetFilePath, upstreamFilePath) {
 async function processNamespaceSyncEntry(entry, relPath, fullSrcPath, destPath, componentPath, lockfile) {
   if (!entry.isFile() || !entry.name.endsWith(".md"))
     return null;
-  const targetFilePath = join14(destPath, relPath);
+  const targetFilePath = join15(destPath, relPath);
   const lockfileKey = `${componentPath}/${relPath}`.replace(/\\/g, "/");
   const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
   if (shouldSkip)
@@ -30745,7 +31023,7 @@ async function applyNamespaceSync(targetDir, component, lockfile) {
     return [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
-  const destPath = join14(targetDir, componentPath);
+  const destPath = join15(targetDir, componentPath);
   const fs3 = await import("node:fs/promises");
   const synced = [];
   const queue = [{ dir: srcPath, relDir: "" }];
@@ -30759,7 +31037,7 @@ async function applyNamespaceSync(targetDir, component, lockfile) {
     }
     for (const entry of entries) {
       const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
-      const fullSrcPath = join14(dir2, entry.name);
+      const fullSrcPath = join15(dir2, entry.name);
       if (entry.isDirectory()) {
         queue.push({ dir: fullSrcPath, relDir: relPath });
         continue;
@@ -30782,26 +31060,26 @@ function getComponentPath2(component) {
 }
 async function backupInstallation(targetDir) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupDir = join14(targetDir, `.omcustom-backup-${timestamp}`);
+  const backupDir = join15(targetDir, `.omcustom-backup-${timestamp}`);
   const fs3 = await import("node:fs/promises");
   await ensureDirectory(backupDir);
   const layout = getProviderLayout();
   const dirsToBackup = [layout.rootDir, "guides"];
   for (const dir2 of dirsToBackup) {
-    const srcPath = join14(targetDir, dir2);
+    const srcPath = join15(targetDir, dir2);
     if (await fileExists(srcPath)) {
-      const destPath = join14(backupDir, dir2);
+      const destPath = join15(backupDir, dir2);
       await copyDirectory(srcPath, destPath, { overwrite: true });
     }
   }
-  const entryPath = join14(targetDir, layout.entryFile);
+  const entryPath = join15(targetDir, layout.entryFile);
   if (await fileExists(entryPath)) {
-    await fs3.copyFile(entryPath, join14(backupDir, layout.entryFile));
+    await fs3.copyFile(entryPath, join15(backupDir, layout.entryFile));
   }
   return backupDir;
 }
 async function loadCustomizationManifest(targetDir) {
-  const manifestPath = join14(targetDir, CUSTOMIZATION_MANIFEST_FILE);
+  const manifestPath = join15(targetDir, CUSTOMIZATION_MANIFEST_FILE);
   if (await fileExists(manifestPath)) {
     return readJsonFile(manifestPath);
   }
@@ -31042,7 +31320,7 @@ var packageJson = require2("../../package.json");
 function createProgram() {
   const program2 = new Command;
   program2.name("omcustom").description(i18n.t("cli.description")).version(packageJson.version, "-v, --version", i18n.t("cli.versionOption")).option("--skip-version-check", "Skip CLI version pre-flight check");
-  program2.command("init").description(i18n.t("cli.init.description")).option("-l, --lang <language>", i18n.t("cli.init.langOption")).option("--domain <domain>", "Install only agents/skills for specific domain (backend, frontend, data-engineering, devops)").option("--yes", "Skip interactive wizard, use defaults").action(async (options) => {
+  program2.command("init").description(i18n.t("cli.init.description")).option("-l, --lang <language>", i18n.t("cli.init.langOption")).option("--domain <domain>", "Install only agents/skills for specific domain (backend, frontend, data-engineering, devops)").option("--yes", "Skip interactive wizard, use defaults").option("--from-snapshot <path>", "Install from a pre-configured team snapshot directory").action(async (options) => {
     await initCommand(options);
   });
   program2.command("update").description(i18n.t("cli.update.description")).option("--dry-run", i18n.t("cli.update.dryRunOption")).option("--force", i18n.t("cli.update.forceOption")).option("--force-overwrite-all", i18n.t("cli.update.forceOverwriteAllOption")).option("--hard", i18n.t("cli.update.hardOption")).option("--backup", i18n.t("cli.update.backupOption")).option("--agents", i18n.t("cli.update.agentsOption")).option("--skills", i18n.t("cli.update.skillsOption")).option("--rules", i18n.t("cli.update.rulesOption")).option("--guides", i18n.t("cli.update.guidesOption")).option("--hooks", i18n.t("cli.update.hooksOption")).option("--contexts", i18n.t("cli.update.contextsOption")).option("--all", i18n.t("cli.update.allOption")).action(async (options) => {
@@ -31054,6 +31332,7 @@ function createProgram() {
       verbose: options.verbose
     });
   });
+  syncCommand(program2);
   program2.command("doctor").description(i18n.t("cli.doctor.description")).option("--fix", i18n.t("cli.doctor.fixOption")).option("--updates", i18n.t("cli.doctor.updatesOption")).action(async (options) => {
     await doctorCommand(options);
   });

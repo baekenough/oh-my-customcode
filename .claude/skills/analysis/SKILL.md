@@ -2,7 +2,7 @@
 name: omcustom:analysis
 description: Analyze project and auto-configure agents, skills, rules, and guides
 scope: harness
-argument-hint: "[--dry-run] [--verbose]"
+argument-hint: "[target-dir] [--interview]"
 user-invocable: true
 ---
 
@@ -13,11 +13,51 @@ Scan a project's tech stack, compare against installed agents/skills, and auto-c
 ## Options
 
 ```
---dry-run    Show what would be added without making changes
---verbose    Show detailed detection reasoning
+--dry-run      Show what would be added without making changes
+--verbose      Show detailed detection reasoning
+--interview, -i   Run interactive architecture interview before file-based detection
 ```
 
 ## Workflow
+
+### Step 0: Architecture Interview (--interview only)
+
+When `--interview` flag is provided, conduct an interactive AI interview before file-based detection. This captures human context that file scanning cannot determine.
+
+**Interview flow** (sequential, AI-guided):
+
+1. **프로젝트 유형**: "이 프로젝트는 어떤 종류입니까?"
+   → 옵션: web app, REST API, CLI tool, library, monorepo, data pipeline, mobile app
+
+2. **아키텍처 패턴**: "어떤 아키텍처를 따르고 있습니까?"
+   → 옵션: microservices, monolith, serverless, event-driven, layered, hexagonal
+
+3. **주요 언어**: "주로 사용하는 프로그래밍 언어는?"
+   → 자유 입력, 알려진 에이전트와 매칭
+
+4. **배포 대상**: "어디에 배포합니까?"
+   → 옵션: AWS, GCP, Azure, Vercel, on-premises, Docker/K8s, edge
+
+5. **팀 우선순위**: "팀의 주요 관심사는?"
+   → 옵션: performance, security, developer experience, cost, scalability
+
+**Interview results feed into Step 1 as weighted detection hints:**
+- File evidence + interview agreement = `confidence: high`
+- File evidence only = `confidence: medium` (unchanged from current)
+- Interview only (no file evidence) = `confidence: suggested`
+
+**Integration with report:**
+```
+Interview Insights (--interview):
+  Project type: REST API (user-specified, confirmed by file scan)
+  Architecture: microservices (user-specified)
+  Deployment: AWS + Docker (confirmed by file scan)
+  Team focus: security → sec-codeql-expert [suggested]
+
+Suggested (from interview, no file evidence):
+  ~ sec-codeql-expert  [suggested — no CodeQL config found]
+  ~ de-kafka-expert     [suggested — no kafka deps found]
+```
 
 ### Step 1: Project Scan
 

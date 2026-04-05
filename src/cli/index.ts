@@ -15,6 +15,7 @@ import { listCommand } from './list.js';
 import { projectsCommand } from './projects.js';
 import { securityCommand } from './security.js';
 import { serveCommand, serveStopCommand } from './serve-commands.js';
+import { syncCommand } from './sync.js';
 import { updateCommand } from './update.js';
 import {
   webOpenCommand,
@@ -49,6 +50,7 @@ export function createProgram(): Command {
       'Install only agents/skills for specific domain (backend, frontend, data-engineering, devops)'
     )
     .option('--yes', 'Skip interactive wizard, use defaults')
+    .option('--from-snapshot <path>', 'Install from a pre-configured team snapshot directory')
     .action(async (options) => {
       await initCommand(options);
     });
@@ -86,6 +88,9 @@ export function createProgram(): Command {
         verbose: options.verbose,
       });
     });
+
+  // omcustom sync [--check] [--reference <path>] [--export <path>]
+  syncCommand(program);
 
   // omcustom doctor
   program
