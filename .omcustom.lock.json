@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.75.0",
-  "generatedAt": "2026-04-05T05:53:28.868Z",
-  "templateVersion": "0.75.0",
+  "generatorVersion": "0.76.0",
+  "generatedAt": "2026-04-05T08:01:30.303Z",
+  "templateVersion": "0.76.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -30,8 +30,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "a80f63d514e8478bb8ff8e6c3b862aef665ca3e5aad1f5c247617f312584159d",
-      "size": 3533,
+      "templateHash": "0c233fbb202d8018356d919ee341ef381a03dd49a6e35580565029072f0a8808",
+      "size": 3981,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -655,8 +655,8 @@
       "component": "skills"
     },
     ".claude/skills/deep-plan/SKILL.md": {
-      "templateHash": "f4fbf2c3b6f5af18a97c9b0f1743ca0ce558a3b79d09b5df5dca16c2a4c01221",
-      "size": 13430,
+      "templateHash": "de2c52bde24d600e719012ac27498636d1c742650f87b0da0c5cc877aba0e351",
+      "size": 14562,
       "component": "skills"
     },
     ".claude/skills/omcustom-feedback/SKILL.md": {
@@ -875,8 +875,8 @@
       "component": "skills"
     },
     ".claude/skills/dag-orchestration/SKILL.md": {
-      "templateHash": "bc7647948754f3f7ca6fcf27f90969e2568c29b5f66d542abd05c0dbe32739ec",
-      "size": 5463,
+      "templateHash": "477fe1b67f4743cb1de8aa356e3c396781d11ca73de59f09720f8998285412da",
+      "size": 5499,
       "component": "skills"
     },
     ".claude/skills/codex-exec/scripts/codex-wrapper.cjs": {
@@ -950,8 +950,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline-guards/SKILL.md": {
-      "templateHash": "e4cbdef7fcd03d64b46821ff255fb6ad477e02f1d03fe1235f8ca9b64ce86879",
-      "size": 5267,
+      "templateHash": "6da89cef52a157ca0458cb12ed9b8d5795802d85d6fb42ca9a19bafe930e2432",
+      "size": 5284,
       "component": "skills"
     },
     ".claude/skills/help/SKILL.md": {

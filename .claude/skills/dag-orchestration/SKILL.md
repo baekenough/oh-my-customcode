@@ -57,7 +57,7 @@ nodes:
     depends_on: [test, review, docs]
 
 config:
-  max_parallel: 4          # R009 limit
+  max_parallel: 4          # R009 soft default (hard cap: 5)
   failure_strategy: stop   # stop | skip | retry
   retry_count: 2           # Max retries per node (if strategy=retry)
   timeout_per_node: 300    # Seconds per node (0 = no limit)
@@ -84,7 +84,7 @@ config:
 
 | Rule | Detail |
 |------|--------|
-| Max parallel | 4 concurrent nodes (R009) |
+| Max parallel | 5 concurrent nodes max, 4 default (R009) |
 | Agent Teams gate | 3+ parallel nodes → check R018 eligibility |
 | Orchestrator only | DAG scheduling runs in main conversation (R010) |
 | Node execution | Each node = one Task tool call to specified agent |
