@@ -15,13 +15,26 @@
 
 46개 에이전트. 100개 스킬. 21개 규칙. 명령어 하나.
 
-> **v0.62.5** — D3 의존성 그래프, Playwright 접근성 E2E 테스트, 키보드 접근성, CI lockfile-sync 게이트
+> **v0.74.0** — omcustom sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
 ```
 
 `omcustom init`은 언어, 프레임워크, 팀 모드를 묻는 인터랙티브 마법사를 실행합니다 (@clack/prompts 기반).
+
+---
+
+## v0.74.0의 새로운 기능
+
+| 기능 | 설명 |
+|------|------|
+| **`omcustom sync`** | `.claude/` 설정 드리프트 감지 — lockfile 비교, 팀 스냅샷 내보내기 |
+| **`omcustom init --from-snapshot`** | 팀 재현성 — 사전 구성된 스냅샷에서 설치 |
+| **`analysis --interview`** | 파일 기반 탐지 전 대화형 AI 아키텍처 인터뷰 |
+| **skill-extractor** | 100번째 스킬 — 성공한 작업 궤적에서 재사용 가능한 SKILL.md 후보 제안 |
+| **User Model** | 교정 패턴, 스킬 선호도, 전문 분야 구조적 추적 |
+| **릴리즈 정리 자동화** | PR 머지 시 연관 이슈 자동 close + 릴리즈 브랜치 자동 삭제 |
 
 ---
 
@@ -136,20 +149,20 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (99개)
+## 스킬 (100개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
 | 베스트 프랙티스 | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
 | 워크플로우 | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline 외 |
-| 개발 | 7 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover |
+| 개발 | 8 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover, skill-extractor |
 | 운영 | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes 외 |
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | 보안 | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| 기타 | 9 | codex-exec, claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
+| 기타 | 10 | codex-exec, claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
 
@@ -249,6 +262,10 @@ Agent(arch-documenter):haiku      ┘
 omcustom init                  # 인터랙티브 마법사로 초기화 (언어, 프레임워크, 팀 모드)
 omcustom init --lang ko        # 한국어로 초기화
 omcustom init --team           # 팀 모드 활성화
+omcustom init --from-snapshot  # 사전 구성된 팀 스냅샷에서 설치
+omcustom sync                  # .claude/ 상태와 lockfile 간 드리프트 감지
+omcustom sync --check          # 변경 없이 드리프트 확인
+omcustom sync --export         # 현재 상태를 팀 스냅샷으로 내보내기
 omcustom update                # 최신 버전 업데이트
 omcustom list                  # 컴포넌트 목록
 omcustom doctor                # 설치 상태 검사
@@ -269,7 +286,7 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 46개 에이전트 정의
-│   ├── skills/                 # 99개 스킬 모듈
+│   ├── skills/                 # 100개 스킬 모듈
 │   ├── rules/                  # 21개 거버넌스 규칙 (R000-R021)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마

@@ -1,6 +1,6 @@
 # 아키텍처
 
-> oh-my-customcode v0.62.5
+> oh-my-customcode v0.74.0
 
 ## 1. 시스템 개요
 
