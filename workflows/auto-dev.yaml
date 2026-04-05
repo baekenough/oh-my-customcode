@@ -7,16 +7,18 @@ mode: auto
 error: halt-and-report
 
 steps:
-  - name: pre-triage
-    skill: professor-triage
-    description: Run professor-triage on open issues that lack verify-done label
-    condition: "open issues without label:verify-done exist"
-
-  - name: triage
-    skill: professor-triage
-    description: Analyze verify-done issues against current codebase and perform automated triage
+  - name: issue-analysis
+    parallel:
+      - name: pre-triage
+        skill: professor-triage
+        description: Run professor-triage on open issues that lack verify-done label
+        condition: "open issues without label:verify-done exist"
+      - name: triage
+        skill: professor-triage
+        description: Analyze verify-done issues against current codebase and perform automated triage
 
   - name: plan
+    depends_on: issue-analysis
     skill: release-plan
     description: Group triaged issues into release units by priority and size
     input: triage-results
