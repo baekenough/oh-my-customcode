@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.78.0",
-  "generatedAt": "2026-04-06T08:47:50.554Z",
-  "templateVersion": "0.78.0",
+  "generatorVersion": "0.78.1",
+  "generatedAt": "2026-04-06T09:18:37.908Z",
+  "templateVersion": "0.78.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -1089,14 +1089,19 @@
       "size": 4673,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/auto-continue-guard.sh": {
+      "templateHash": "e696f1577a793bb6e9676dd5f9a41f17a667c3dd4d3d5ca02272802390b0f15a",
+      "size": 864,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/cost-cap-advisor.sh": {
       "templateHash": "6dc04f0291fda7d2bfca05709b7a9a9b633369e90b43092f6248cb94f00e5da5",
       "size": 2506,
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "66abf6ec4f8131e14014890733b3ba30409656be7ac979599b98775f247f854e",
-      "size": 23640,
+      "templateHash": "ebd4e5f60cc8ef01de00f01ede8e3b4c0df2c8e72ac6b17e78235f2290c2265b",
+      "size": 23195,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1557,6 +1562,11 @@
     "guides/impeccable-design/index.yaml": {
       "templateHash": "47f922d80af6c1e4a046960156c31306cf9dd88546f1510172ecfd3c3ed36734",
       "size": 339,
+      "component": "guides"
+    },
+    "guides/hook-data-flow/README.md": {
+      "templateHash": "17dd482fc76adad7b527e9c560795126cbbff01699ec721c3e591b14b942b1e6",
+      "size": 6715,
       "component": "guides"
     },
     "guides/index.yaml": {
