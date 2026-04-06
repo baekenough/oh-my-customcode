@@ -20,6 +20,7 @@ context: fork
 | Architect | arch-documenter, arch-speckit-agent |
 | Security | sec-codeql-expert |
 | Infra | infra-docker-expert, infra-aws-expert |
+| Slack | slack-cli-expert |
 
 ## File Extension Mapping
 
@@ -72,6 +73,7 @@ context: fork
 | security, codeql, cve, vulnerability, sarif, sast, security audit | sec-codeql-expert |
 | architecture, adr, openapi, swagger, diagram | arch-documenter |
 | spec, specification, tdd, requirements | arch-speckit-agent |
+| slack, slack-cli, slack app, slack deploy, slack trigger, slack datastore | slack-cli-expert |
 
 ## Model Selection
 

@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-46개 에이전트. 101개 스킬. 21개 규칙. 명령어 하나.
+47개 에이전트. 101개 스킬. 21개 규칙. 명령어 하나.
 
 > **v0.74.0** — omcustom sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
 
@@ -128,7 +128,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 에이전트 (46개)
+## 에이전트 (47개)
 
 | 카테고리 | 수 | 에이전트 |
 |---------|-----|---------|
@@ -137,7 +137,7 @@ Agent(arch-documenter):haiku      ┘
 | 프론트엔드 | 5 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter, fe-design |
 | 데이터 엔지니어링 | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | 데이터베이스 | 4 | db-supabase, db-postgres, db-redis, db-alembic |
-| 툴링 | 3 | tool-npm, tool-optimizer, tool-bun |
+| 툴링 | 4 | tool-npm, tool-optimizer, tool-bun, slack-cli |
 | 아키텍처 | 2 | arch-documenter, arch-speckit |
 | 인프라 | 2 | infra-docker, infra-aws |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
@@ -285,7 +285,7 @@ omcustom serve-stop            # Web UI 중지
 your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
-│   ├── agents/                 # 46개 에이전트 정의
+│   ├── agents/                 # 47개 에이전트 정의
 │   ├── skills/                 # 101개 스킬 모듈
 │   ├── rules/                  # 21개 거버넌스 규칙 (R000-R021)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
@@ -295,7 +295,7 @@ your-project/
 │   └── ontology/               # RAG용 지식 그래프
 ├── packages/
 │   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
-└── guides/                     # 32개 레퍼런스 문서
+└── guides/                     # 33개 레퍼런스 문서
 ```
 
 ---

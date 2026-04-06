@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-46 agents. 101 skills. 21 rules. One command.
+47 agents. 101 skills. 21 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -124,7 +124,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-### Agents (46)
+### Agents (47)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -133,7 +133,7 @@ Agent(arch-documenter):haiku      ┘
 | Frontend | 5 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter, fe-design |
 | Data Engineering | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | Database | 4 | db-supabase, db-postgres, db-redis, db-alembic |
-| Tooling | 3 | tool-npm, tool-optimizer, tool-bun |
+| Tooling | 4 | tool-npm, tool-optimizer, tool-bun, slack-cli |
 | Architecture | 2 | arch-documenter, arch-speckit |
 | Infrastructure | 2 | infra-docker, infra-aws |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
@@ -235,7 +235,7 @@ Key rules: R010 (orchestrator never writes files), R009 (parallel execution mand
 
 ---
 
-### Guides (32)
+### Guides (33)
 
 Reference documentation covering best practices, architecture decisions, and integration patterns. Located in `guides/` at project root, covering topics from agent design to CI/CD to observability.
 
@@ -284,7 +284,7 @@ omcustom serve-stop            # Stop Web UI
 your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
-│   ├── agents/                 # 46 agent definitions
+│   ├── agents/                 # 47 agent definitions
 │   ├── skills/                 # 101 skill modules
 │   ├── rules/                  # 21 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
@@ -292,7 +292,7 @@ your-project/
 │   ├── specs/                  # Extracted canonical specs
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
-└── guides/                     # 32 reference documents
+└── guides/                     # 33 reference documents
 ```
 
 ---
