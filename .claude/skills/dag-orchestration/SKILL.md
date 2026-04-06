@@ -76,7 +76,11 @@ config:
    c. On completion:
       - Success → decrement in-degree of dependents
       - Failure → apply failure_strategy
-   d. Enqueue newly-ready nodes (in-degree = 0)
+   d. Stall check:
+      - If running node duration > 2x average completed duration
+      - AND pending nodes exist with in-degree = 0 (ignoring stalled node's edges)
+      - THEN enqueue those independent nodes immediately (adaptive split)
+   e. Enqueue newly-ready nodes (in-degree = 0)
 6. Verify all nodes executed (detect unreachable nodes)
 ```
 
@@ -89,6 +93,7 @@ config:
 | Orchestrator only | DAG scheduling runs in main conversation (R010) |
 | Node execution | Each node = one Task tool call to specified agent |
 | State tracking | `/tmp/.claude-dag-$PPID.json` |
+| Stall detection | Running node > 2x avg completed duration → enqueue independent pending nodes early |
 
 ## Failure Strategies
 
