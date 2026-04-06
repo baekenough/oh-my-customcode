@@ -108,6 +108,7 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom:improve-report` | eval-core 기반 개선 현황 리포트 |
 | `/omcustom-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
+| `/omcustom:agora` | Multi-LLM 적대적 합의 루프 (설계/스펙 교차 검증) |
 | `/ambiguity-gate` | 요청 모호성 분석 및 명확화 질문 (ouroboros 패턴) |
 | `/dev-review` | 코드 베스트 프랙티스 리뷰 |
 | `/dev-refactor` | 코드 리팩토링 |
@@ -152,7 +153,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (46 파일)
-|   +-- skills/                  # 스킬 (100 디렉토리)
+|   +-- skills/                  # 스킬 (101 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R021)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
