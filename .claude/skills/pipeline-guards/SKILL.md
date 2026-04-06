@@ -176,6 +176,7 @@ Guard warnings appear inline:
 | omcustom-auto-improve | Auto-improve item count limits |
 | stuck-recovery | Guard triggers feed into stuck detection |
 | model-escalation | Repeated failures trigger escalation advisory |
+| task-decomposition | Subtask file counts validated against granularity guard thresholds |
 
 ## Override Policy
 

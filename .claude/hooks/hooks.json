@@ -166,9 +166,13 @@
           {
             "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.agent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' | head -c 40)\necho \"─── [SubagentStart] ${agent_type}:${model} | ${desc} ───\" >&2\necho \"$input\""
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/agent-start-recorder.sh"
           }
         ],
-        "description": "HUD display when a subagent starts (complements PreToolUse Agent matcher)"
+        "description": "HUD display + agent start time recording for stall detection (R009)"
       }
     ],
     "SubagentStop": [
@@ -178,6 +182,10 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/stall-detection-advisor.sh"
           },
           {
             "type": "command",

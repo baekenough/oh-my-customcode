@@ -48,6 +48,12 @@ Before decomposing, select the appropriate workflow pattern:
    ├── Map subtasks to agents (use routing skills)
    └── Generate DAG workflow spec
 
+2.5. Validate granularity against pipeline-guards limits:
+     ├── For each subtask, estimate file count
+     ├── If files > 10 → emit advisory: [Guard] ⚠ Subtask "{id}" assigned {n} files (> 10) — splitting by layer
+     ├── If files > 15 → emit hard warning: [Guard] 🛑 Subtask "{id}" assigned {n} files (> 15) — must split
+     └── Auto-split oversized subtasks by layer/domain until all ≤ 10
+
 3. Present plan to user (R015 transparency)
    ├── Show decomposed subtasks with agents
    ├── Show dependency graph
@@ -172,9 +178,42 @@ A subtask is **atomic** when it meets ALL of:
 - Single concern (one logical change)
 - Independently testable outcome
 - < 15 minutes estimated duration
-- < 3 files affected
+- < 3 files affected (ideal atomic size)
+- MUST NOT exceed 10 files (pipeline-guards advisory threshold)
+- If > 10 files unavoidable → emit [Guard] warning and split by layer/domain
+- > 15 files is a hard violation — always split further (pipeline-guards hard cap)
 
 If a subtask is not atomic → decompose further (max 2 levels deep).
+
+## Granularity Validation
+
+After decomposition, validate each subtask against pipeline-guards file limits:
+
+| Subtask Files | Action |
+|---------------|--------|
+| ≤ 3 | Ideal atomic size — no action |
+| 4-10 | Acceptable — proceed without warning |
+| 11-15 | Advisory warning, attempt further split |
+| > 15 | Hard warning, MUST split before execution |
+
+### Validation Process
+
+For each decomposed subtask:
+1. Count estimated files
+2. If > 10:
+   a. Emit: `[Guard] ⚠ Subtask "{id}" assigned {n} files (> 10) — splitting by layer`
+   b. Attempt split by: layer (domain → adapter → handler) or domain separation
+   c. Re-validate split results
+3. If > 15 after split attempt:
+   a. Emit: `[Guard] 🛑 Subtask "{id}" still has {n} files (> 15) — requires user override`
+   b. Pause for user confirmation before proceeding
+
+### Generated DAG Adjustment
+
+When granularity validation triggers a split, update the DAG spec:
+- Original node is replaced by 2+ child nodes
+- Dependencies are preserved (children inherit parent's deps)
+- `max_parallel` in config respects R009 limits (soft: 4, hard: 5)
 
 ## Skip Decomposition When
 
@@ -195,3 +234,4 @@ If a subtask is not atomic → decompose further (max 2 levels deep).
 | R010 | Decomposition happens in orchestrator only |
 | R015 | Plan displayed before execution for user approval |
 | R018 | 3+ agents in plan → check Agent Teams eligibility |
+| pipeline-guards | Validates subtask file count against 10/15 granularity limits |
