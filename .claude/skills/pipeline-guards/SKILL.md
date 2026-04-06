@@ -25,6 +25,7 @@ Defines mandatory safety constraints for all pipeline, workflow, and iterative e
 | Max retry count | 2 | 3 | Failure retry strategies |
 | Max PR improvement items | 20 | 50 | pr-auto-improve |
 | Max auto-improve items | 20 | 50 | omcustom-auto-improve |
+| Max files per agent | 10 | 15 | All agent spawns (advisory) |
 
 ## Enforcement
 
@@ -82,6 +83,23 @@ When guards are triggered, they integrate with existing advisory systems:
 | Repeated failures | → model-escalation advisory |
 | Timeout approaching (80%) | → warn user, suggest early termination |
 | Hard cap hit | → force stop, report to user |
+
+## Task Granularity Guard
+
+Advisory guard for agent task scope. When a single agent is assigned too many files, it becomes a bottleneck in parallel execution.
+
+| Signal | Default | Action |
+|--------|---------|--------|
+| Files per agent > 10 | Advisory warning | Suggest splitting by layer/domain |
+| Files per agent > 15 | Hard warning | Require explicit user override |
+
+Display:
+```
+[Guard] ⚠ Agent assigned {n} files (> 10) — consider splitting by layer
+[Guard] 🛑 Agent assigned {n} files (> 15) — requires explicit override
+```
+
+This integrates with R009 Adaptive Parallel Splitting: if a stalled agent is detected AND it was assigned > 10 files, the splitting recommendation is stronger.
 
 ## Guard Configuration
 
