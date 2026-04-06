@@ -67,6 +67,19 @@ else
   fi
 fi
 
+# Duration calculation from start recorder
+# ORDERING: This script MUST run BEFORE stall-detection-advisor.sh in hooks.json SubagentStop array.
+# Reason: stall-detection-advisor removes consumed entries from AGENT_START_FILE after reading.
+AGENT_START_FILE="/tmp/.claude-agent-starts-${PPID}"
+duration_seconds=0
+if [ -f "$AGENT_START_FILE" ]; then
+  start_epoch=$(grep -F "\"agent_type\":\"${agent_type}\"" "$AGENT_START_FILE" 2>/dev/null | tail -1 | jq -r '.start_epoch // "0"' 2>/dev/null || echo "0")
+  if [ "$start_epoch" != "0" ] && [ "$start_epoch" != "null" ]; then
+    now_epoch=$(date +%s)
+    duration_seconds=$((now_epoch - start_epoch))
+  fi
+fi
+
 # Append JSON line entry
 timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 entry=$(jq -n \
@@ -78,7 +91,8 @@ entry=$(jq -n \
   --arg skill "$skill_name" \
   --arg desc "$description" \
   --arg err "$error_summary" \
-  '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, pattern_used: $pattern, skill: $skill, description: $desc, error_summary: $err}')
+  --arg dur "$duration_seconds" \
+  '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, pattern_used: $pattern, skill: $skill, description: $desc, error_summary: $err, duration_seconds: ($dur | tonumber)}')
 
 echo "$entry" >> "$OUTCOME_FILE"
 
