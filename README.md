@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-46 agents. 100 skills. 21 rules. One command.
+46 agents. 101 skills. 21 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -285,7 +285,7 @@ your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
 │   ├── agents/                 # 46 agent definitions
-│   ├── skills/                 # 100 skill modules
+│   ├── skills/                 # 101 skill modules
 │   ├── rules/                  # 21 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
