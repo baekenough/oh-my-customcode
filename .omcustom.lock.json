@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.78.1",
-  "generatedAt": "2026-04-06T09:18:37.908Z",
-  "templateVersion": "0.78.1",
+  "generatorVersion": "0.78.2",
+  "generatedAt": "2026-04-06T09:35:11.083Z",
+  "templateVersion": "0.78.2",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -344,6 +344,11 @@
       "size": 1345,
       "component": "agents"
     },
+    ".claude/agents/slack-cli-expert.md": {
+      "templateHash": "a4db1acb59200efc275133643891e031525343399749ae78cf5d58a524af509b",
+      "size": 3143,
+      "component": "agents"
+    },
     ".claude/agents/be-fastapi-expert.md": {
       "templateHash": "2faba3a56cc00ffdf36580ba2ada6c1ded92e22f4c5798af61d839062bbb15fe",
       "size": 1236,
@@ -670,8 +675,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "568ef38de3c9e7a9288210a23ddaa9a8563b2048e445cc7bb771420f582ca2b0",
-      "size": 6768,
+      "templateHash": "58d06e3aa885a8e5f74d4a77c3894dcaab2be241b518cde16e4fdc9b3aa650c7",
+      "size": 6894,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
@@ -1347,6 +1352,11 @@
     "guides/dbt/README.md": {
       "templateHash": "33bc15e61282848bda1dd8f5bafc0d9ce38f4894f489a954f7c1e4c639b577f9",
       "size": 874,
+      "component": "guides"
+    },
+    "guides/slack-cli/README.md": {
+      "templateHash": "8e31d827e7e57020106618a6d56cbda68be9b7a72986015870408f8b150f9957",
+      "size": 3968,
       "component": "guides"
     },
     "guides/skill-bundle-design/README.md": {
