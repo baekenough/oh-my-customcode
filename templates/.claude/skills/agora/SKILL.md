@@ -1,5 +1,5 @@
 ---
-name: agora
+name: omcustom:agora
 description: "Multi-LLM adversarial consensus loop — 3+ LLMs compete to find flaws in designs/specs until unanimous agreement is reached"
 user-invocable: true
 argument-hint: "<document-path> [--rounds N] [--severity-threshold HIGH]"
