@@ -59,7 +59,10 @@ limitations:               # Negative capability declarations
   - "cannot execute tests"
   - "cannot modify code"
 domain: backend              # backend | frontend | data-engineering | devops | universal
+disableSkillShellExecution: true  # Disable inline shell execution in skills (v2.1.91+)
 ```
+
+> **Note**: When `disableSkillShellExecution` is enabled (v2.1.91+), skills that rely on inline shell execution (e.g., `codex-exec`, `gemini-exec`, `rtk-exec`) will have their shell blocks disabled. This is a security hardening option.
 
 > **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+. `CwdChanged`, `FileChanged` hook events and `managed-settings.d/` drop-in directory require v2.1.83+. Conditional `if` field for hooks requires v2.1.85+.
 
@@ -98,6 +101,17 @@ All supported hook event types in Claude Code. Agents and skills can reference t
 | `prompt` | Inject text into model context | Rule reinforcement, advisory guidance |
 | `http` | POST to HTTP endpoint | External integrations, webhooks |
 | `agent` | Spawn agent to handle event | Complex event-driven workflows |
+
+### PreToolUse Hook Return Values
+
+| Return | Behavior | CC Version |
+|--------|----------|------------|
+| `exit 0` | Allow tool execution | All |
+| `exit 1` | Block silently | All |
+| `exit 2` + stderr | Block with message | All |
+| `{"decision": "defer"}` | Pause execution; resume with `-p --resume` | v2.1.89+ |
+
+The `defer` decision allows headless sessions to pause at a tool call for human review.
 
 ### Hook Matcher Syntax
 
@@ -225,6 +239,12 @@ Fast Mode uses the same model with faster output. Activated via `/fast` toggle o
 
 When Fast Mode is active, it reduces effective reasoning depth but does NOT override the `effort` frontmatter field. The effort field controls task complexity allocation; Fast Mode controls output generation speed.
 
+### Default Effort Change (CC v2.1.94+)
+
+Starting with Claude Code v2.1.94, the default effort level changed from `medium` to `high` for API-key, Bedrock/Vertex/Foundry, Team, and Enterprise users. Console (free-tier) users retain `medium` as the default.
+
+This means agents WITHOUT an explicit `effort` field now run at `high` effort by default on paid tiers. To maintain previous behavior, set `effort: medium` explicitly in agent frontmatter.
+
 ## Skill Frontmatter
 
 Location: `.claude/skills/{name}/SKILL.md`
@@ -255,6 +275,7 @@ hooks:                             # Skill-specific hooks (same syntax as agent 
 paths: ["src/**/*.ts"]             # Conditional loading — skill auto-injected when matching files are open
 shell: "bash"                      # Shell for embedded script execution
 allowed-tools: [Read, Write, Bash] # Restrict tools available during skill execution
+keep-coding-instructions: true     # Preserve coding instructions in plugin output styles (v2.1.94+)
 ```
 
 When both an agent and its invoked skill specify `effort`, the skill's value takes precedence (more specific invocation-time setting).
