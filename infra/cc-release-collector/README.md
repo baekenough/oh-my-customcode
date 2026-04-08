@@ -1,107 +1,66 @@
 # cc-release-collector
 
-Kubernetes CronJob that watches for new Claude Code releases and creates GitHub issues in `baekenough/oh-my-customcode`.
+Kubernetes CronJob that watches for new Claude Code releases and creates GitHub issues.
 
-Runs daily at **09:00 UTC (18:00 KST)**. Creates one issue per new release >= `MIN_VERSION`, idempotent on repeated runs.
+## Quick Start
+
+```bash
+# 1. Configure
+cp .env.example .env
+# Edit .env with your settings (server, token, repo)
+
+# 2. Deploy
+./deploy.sh deploy
+
+# 3. Test
+./deploy.sh test
+
+# 4. Check status
+./deploy.sh status
+```
+
+## Configuration
+
+All settings are in `.env` (copied from `.env.example`):
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `K3S_SERVER` | Yes | — | SSH target for k3s server |
+| `GH_TOKEN` | Yes | — | GitHub PAT (repo + issues:write) |
+| `TARGET_REPO` | Yes | — | Repo for issue creation |
+| `K8S_NAMESPACE` | No | `omcustom` | Kubernetes namespace |
+| `IMAGE_NAME` | No | `cc-release-collector` | Docker image name |
+| `IMAGE_TAG` | No | `latest` | Docker image tag |
+| `MIN_VERSION` | No | `2.1.86` | Min CC version to track |
+| `CRON_SCHEDULE` | No | `0 9 * * *` | Cron schedule (UTC) |
+| `SOURCE_REPO` | No | `anthropics/claude-code` | Source repo to watch |
+
+## Commands
+
+```bash
+./deploy.sh deploy    # Build + deploy everything
+./deploy.sh build     # Build and import image only
+./deploy.sh test      # Run a one-off test job
+./deploy.sh status    # Show CronJob and job status
+./deploy.sh teardown  # Remove CronJob and secret
+```
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `check-releases.sh` | Main script — fetch releases, diff against existing issues, create new ones |
-| `Dockerfile` | Alpine-based image with `gh`, `jq`, `bash`, `curl` |
-| `cronjob.yaml` | k8s CronJob manifest (namespace: `omcustom`) |
-| `secret.yaml` | Secret template — **edit before applying, do not commit with real token** |
+| `check-releases.sh` | Release checker script |
+| `Dockerfile` | Alpine + gh CLI image |
+| `cronjob.template.yaml` | CronJob template (envsubst) |
+| `deploy.sh` | Deployment automation |
+| `.env.example` | Configuration template |
 
-## Deployment
+## Prerequisites
 
-### 1. Build and import image
-
-```bash
-# Build locally
-docker build -t cc-release-collector:latest .
-
-# Export and import into k3s containerd runtime
-docker save cc-release-collector:latest -o cc-release-collector.tar
-sudo k3s ctr images import cc-release-collector.tar
-
-# Verify import
-sudo k3s ctr images ls | grep cc-release-collector
-```
-
-### 2. Create namespace
-
-```bash
-kubectl create namespace omcustom --dry-run=client -o yaml | kubectl apply -f -
-```
-
-### 3. Create GitHub token secret
-
-**Option A — Edit secret.yaml (replace token, then delete the file after applying):**
-```bash
-# Edit secret.yaml, replace REPLACE_WITH_GITHUB_TOKEN
-kubectl apply -f secret.yaml -n omcustom
-```
-
-**Option B — Imperative creation (recommended, token never touches disk):**
-```bash
-kubectl create secret generic github-token \
-  --from-literal=token=YOUR_TOKEN_HERE \
-  --namespace omcustom
-```
-
-### 4. Deploy CronJob
-
-```bash
-kubectl apply -f cronjob.yaml
-```
-
-### 5. Verify
-
-```bash
-kubectl get cronjob -n omcustom
-```
-
-## Manual Test Run
-
-```bash
-# Trigger a one-off job from the CronJob spec
-kubectl create job --from=cronjob/cc-release-collector test-run -n omcustom
-
-# Stream logs
-kubectl logs -n omcustom job/test-run -f
-
-# Delete test job when done
-kubectl delete job test-run -n omcustom
-```
-
-## Configuration
-
-Override defaults via environment variables in `cronjob.yaml`:
-
-| Variable | Default | Description |
-|---|---|---|
-| `GH_TOKEN` | _(from secret)_ | GitHub PAT — requires `repo` + `issues:write` scopes |
-| `REPO` | `baekenough/oh-my-customcode` | Target repo for issue creation |
-| `MIN_VERSION` | `2.1.86` | Minimum Claude Code version to track (inclusive) |
-
-## Troubleshooting
-
-```bash
-# Check CronJob status and last schedule
-kubectl describe cronjob cc-release-collector -n omcustom
-
-# List all jobs (success + failed history)
-kubectl get jobs -n omcustom
-
-# View logs for most recent job
-kubectl logs -n omcustom \
-  $(kubectl get pods -n omcustom -l app=cc-release-collector \
-    --sort-by=.metadata.creationTimestamp -o name | tail -1)
-
-# Check secret exists
-kubectl get secret github-token -n omcustom
-```
+- SSH access to the k3s server
+- `docker` on the remote server
+- `envsubst` locally (part of `gettext`)
+- GitHub PAT with `repo` + `issues:write` scopes
 
 ## Issue Format
 
