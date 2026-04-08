@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cc-release-collector
+  namespace: omcustom
+  labels:
+    app: cc-release-collector
+    component: release-watcher
+spec:
+  schedule: "0 9 * * *"  # Daily at 09:00 UTC (18:00 KST)
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300  # Kill job if it runs longer than 5 minutes
+      template:
+        metadata:
+          labels:
+            app: cc-release-collector
+            component: release-watcher
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: collector
+              image: cc-release-collector:latest
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              env:
+                - name: GH_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: github-token
+                      key: token
+                - name: REPO
+                  value: "baekenough/oh-my-customcode"
+                - name: MIN_VERSION
+                  value: "2.1.86"
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"
+              # gh CLI needs a writable tmp dir even with readOnlyRootFilesystem
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+                - name: gh-config
+                  mountPath: /home/collector
+          volumes:
+            - name: tmp
+              emptyDir: {}
+            - name: gh-config
+              emptyDir: {}
