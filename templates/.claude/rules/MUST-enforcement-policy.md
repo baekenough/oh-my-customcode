@@ -10,7 +10,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 | Tier | Mechanism | Rules | Behavior |
 |------|-----------|-------|----------|
-| Hard Block | PreToolUse hook, exit 1 | stage-blocker, dev-server tmux | Prevents tool execution |
+| Hard Block | PreToolUse hook, exit 2 | stage-blocker, dev-server tmux, rule-deletion-guard | Prevents tool execution |
 | Soft Block | Stop hook prompt | R011 session-end saves | Auto-performs then approves |
 | Advisory | PostToolUse hooks | R007, R008, R009, R010, R018 | Warns via stderr, never blocks |
 | Prompt-based | CLAUDE.md + rules/ + PostCompact | All MUST rules | Behavioral guidance in context |
@@ -32,6 +32,12 @@ If advisory enforcement proves insufficient for specific rules, these are candid
 | R007/R008 | (new hook) | If identification omission rate exceeds 20% |
 
 Promotion requires: (1) measured violation rate data, (2) user approval, (3) rollback plan.
+
+### Promoted to Hard Block
+
+| Hook | Date | Justification |
+|------|------|---------------|
+| `rule-deletion-guard.sh` | 2026-04-08 | User-requested: rule files must require individual confirmation before deletion. Prevents accidental bulk deletion of project rules. |
 
 ## Integration
 

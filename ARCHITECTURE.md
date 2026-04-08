@@ -559,8 +559,17 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | CwdChanged/FileChanged hook events | No | Yes (v2.1.83+) | Yes (R006 documented) |
 | managed-settings.d/ drop-in directory | No | Yes (v2.1.83+) | Yes (R006 documented) |
 | Conditional hook `if` field | No | Yes (v2.1.85+) | Yes (R006 documented, permission rule syntax) |
+| `defer` PreToolUse return | No | Yes (v2.1.89+) | Yes (R006 documented) — human-in-the-loop hook approval |
+| `PermissionDenied` hook retry | No | Yes (v2.1.89+) | Yes (R006 documented) — `{retry: true}` response |
+| `/powerup` interactive lessons | No | Yes (v2.1.90+) | Compatible — no changes required (opt-in UX feature) |
+| `disableSkillShellExecution` | No | Yes (v2.1.91+) | Yes (R006 documented) — shell hardening option |
+| MCP result size override 500K | No | Yes (v2.1.91+) | Compatible — MCP tools benefit from larger payloads |
+| `forceRemoteSettingsRefresh` | No | Yes (v2.1.92+) | Compatible — enterprise policy setting |
+| Effort default medium→high | No | Yes (v2.1.94+) | Yes (R006 documented) — agents use explicit effort field |
+| `keep-coding-instructions` | No | Yes (v2.1.94+) | Yes (R006 documented) — plugin output style field |
+| Plugin skill name from frontmatter | No | Yes (v2.1.94+) | Already compatible — omcustom uses `name:` frontmatter |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.87+.
+Tested and compatible with Claude Code v2.1.72 through v2.1.96+.
 
 ---
 
@@ -624,6 +633,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 | Version | Key Changes |
 |---------|-------------|
+| v0.79.0 | CC v2.1.89-v2.1.96 compat; effort default change docs; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard hook |
 | v0.74.0 | `omcustom sync` (drift detection + team snapshot export); `omcustom init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |
 | v0.73.0 | skill-extractor (100th skill — task trajectory analysis for SKILL.md candidates); User Model in R011 + sys-memory-keeper (correction patterns, skill preferences, expertise profile); agentskills.io source in skills-sh-search |
 | v0.72.1 | sync-server-repo.yml dead workflow removal (customclaw server decommissioned 2026-03-18) |
