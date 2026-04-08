@@ -22,8 +22,16 @@ if [ "$tool" != "Bash" ]; then
   exit 0
 fi
 
-# Check if command targets .claude/rules/ for deletion
-if echo "$cmd" | grep -qE '(^|\s)(rm|git\s+rm)\s' && echo "$cmd" | grep -qF '.claude/rules/'; then
+# Check if command would delete parent directories containing rules
+if echo "$cmd" | grep -qE '(^|\s)(rm|git\s+rm|mv|unlink)\s' && echo "$cmd" | grep -qE '\.claude/?(\s|$)'; then
+  echo "[Hook] ⛔ RULE DELETION BLOCKED — Parent directory deletion detected" >&2
+  echo "[Hook] This command would delete the entire .claude/ directory including all rules." >&2
+  echo "[Hook] Delete rules individually with user confirmation." >&2
+  exit 2
+fi
+
+# Check if command targets .claude/rules/ for deletion (including mv, unlink)
+if echo "$cmd" | grep -qE '(^|\s)(rm|git\s+rm|mv|unlink)\s' && echo "$cmd" | grep -qE '\.claude/rules(/|\s|$)'; then
   # Extract target files
   targets=$(echo "$cmd" | grep -oE '\.claude/rules/[^ ]+' | tr '\n' ', ' | sed 's/,$//')
   target_count=$(echo "$cmd" | grep -oE '\.claude/rules/[^ ]+' | wc -l | tr -d ' ')

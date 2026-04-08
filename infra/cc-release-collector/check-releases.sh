@@ -101,7 +101,7 @@ fetch_tracked_versions() {
     local versions=""
 
     while true; do
-        local batch
+        local batch exit_code=0
         batch=$(gh api \
             --method GET \
             --field "per_page=${per_page}" \
@@ -109,10 +109,10 @@ fetch_tracked_versions() {
             --field "state=all" \
             --field "labels=${ISSUE_LABEL_RELEASE}" \
             "repos/${REPO}/issues" \
-            --jq '.[].title' 2>/dev/null || echo "")
+            --jq '.[].title' 2>/dev/null) || exit_code=$?
 
         # Handle GitHub API rate limit (gh exits non-zero and prints to stderr)
-        if [ $? -ne 0 ]; then
+        if [ "$exit_code" -ne 0 ]; then
             warn "GitHub API error while listing issues — skipping tracked-version check"
             echo ""
             return
@@ -238,7 +238,7 @@ main() {
             --field "per_page=100" \
             "repos/${SOURCE_REPO}/releases" 2>&1); then
         # Detect rate limit
-        if echo "$releases_json" | grep -qi "rate limit"; then
+        if echo "$releases_json" | grep -qiF "rate limit"; then
             warn "GitHub API rate limit hit — exiting gracefully (exit 0)"
             exit 0
         fi
