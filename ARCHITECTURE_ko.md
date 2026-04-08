@@ -501,8 +501,17 @@ packages/eval-core/
 | CwdChanged/FileChanged 훅 이벤트 | 아니오 | 예 (v2.1.83+) | 예 (R006 문서화) |
 | managed-settings.d/ 드롭인 디렉토리 | 아니오 | 예 (v2.1.83+) | 예 (R006 문서화) |
 | 조건부 훅 `if` 필드 | 아니오 | 예 (v2.1.85+) | 예 (R006 문서화, 권한 규칙 구문) |
+| `defer` PreToolUse 반환값 | 아니오 | 예 (v2.1.89+) | 예 (R006 문서화) — 휴먼 인 더 루프 훅 승인 |
+| `PermissionDenied` 훅 재시도 | 아니오 | 예 (v2.1.89+) | 예 (R006 문서화) — `{retry: true}` 응답 |
+| `/powerup` 인터랙티브 레슨 | 아니오 | 예 (v2.1.90+) | 호환 -- 변경 불필요 (opt-in UX 기능) |
+| `disableSkillShellExecution` | 아니오 | 예 (v2.1.91+) | 예 (R006 문서화) — 쉘 보안 강화 옵션 |
+| MCP 결과 크기 오버라이드 500K | 아니오 | 예 (v2.1.91+) | 호환 -- MCP 도구 대용량 페이로드 지원 |
+| `forceRemoteSettingsRefresh` | 아니오 | 예 (v2.1.92+) | 호환 -- 엔터프라이즈 정책 설정 |
+| Effort 기본값 medium→high | 아니오 | 예 (v2.1.94+) | 예 (R006 문서화) -- 에이전트에 명시적 effort 필드 사용 |
+| `keep-coding-instructions` | 아니오 | 예 (v2.1.94+) | 예 (R006 문서화) -- 플러그인 출력 스타일 필드 |
+| 프론트매터 기반 플러그인 스킬 이름 | 아니오 | 예 (v2.1.94+) | 이미 호환 -- omcustom은 `name:` 프론트매터 사용 |
 
-Claude Code v2.1.72 ~ v2.1.87+ 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.96+ 테스트 및 호환 확인.
 
 ---
 
@@ -535,6 +544,7 @@ Claude Code v2.1.72 ~ v2.1.87+ 테스트 및 호환 확인.
 
 | 버전 | 주요 변경 사항 |
 |------|--------------|
+| v0.79.0 | CC v2.1.89-v2.1.96 호환성; effort 기본값 변경 문서화; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard 훅 |
 | v0.62.5 | Playwright 접근성 E2E 테스트 (11개 테스트, axe-core 감사) |
 | v0.62.4 | Graph 순환 키보드 탐색, aria-live 알림, 스킵 링크, focus-visible 스타일링 |
 | v0.62.3 | Graph 키보드 접근성, 줌 반응형 레이블, 툴팁 경계 보정 |
