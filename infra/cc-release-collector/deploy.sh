@@ -35,9 +35,9 @@ cmd_build() {
     ssh "$K3S_SERVER" "mkdir -p ~/cc-release-collector"
     scp "$SCRIPT_DIR/Dockerfile" "$SCRIPT_DIR/check-releases.sh" "${K3S_SERVER}:~/cc-release-collector/"
     echo "[build] Building on remote server..."
-    ssh "$K3S_SERVER" "cd ~/cc-release-collector && docker build -t ${IMAGE_FULL} ."
+    ssh "$K3S_SERVER" "cd ~/cc-release-collector && docker build -t '${IMAGE_FULL}' ."
     echo "[build] Importing to k3s..."
-    ssh "$K3S_SERVER" "docker save ${IMAGE_FULL} | sudo k3s ctr images import -"
+    ssh "$K3S_SERVER" "docker save '${IMAGE_FULL}' | sudo k3s ctr images import -"
     echo "[build] Done."
 }
 
@@ -45,47 +45,49 @@ cmd_deploy() {
     cmd_build
 
     echo "[deploy] Creating namespace ${K8S_NAMESPACE}..."
-    ssh "$K3S_SERVER" "sudo kubectl create namespace ${K8S_NAMESPACE} --dry-run=client -o yaml | sudo kubectl apply -f -"
+    ssh "$K3S_SERVER" "sudo kubectl create namespace '${K8S_NAMESPACE}' --dry-run=client -o yaml | sudo kubectl apply -f -"
 
     echo "[deploy] Creating secret..."
-    ssh "$K3S_SERVER" "sudo kubectl create secret generic github-token \
-        --from-literal=token=${GH_TOKEN} \
-        --namespace ${K8S_NAMESPACE} \
+    printf '%s' "${GH_TOKEN}" | ssh "$K3S_SERVER" "sudo kubectl create secret generic github-token \
+        --from-file=token=/dev/stdin \
+        --namespace '${K8S_NAMESPACE}' \
         --dry-run=client -o yaml | sudo kubectl apply -f -"
 
     echo "[deploy] Generating and applying CronJob manifest..."
     export K8S_NAMESPACE IMAGE_FULL TARGET_REPO MIN_VERSION CRON_SCHEDULE
-    envsubst < "$SCRIPT_DIR/cronjob.template.yaml" > "/tmp/cc-release-collector-cronjob.yaml"
-    scp "/tmp/cc-release-collector-cronjob.yaml" "${K3S_SERVER}:~/cronjob.yaml"
+    tmpfile=$(mktemp)
+    trap 'rm -f "$tmpfile"' EXIT
+    envsubst < "$SCRIPT_DIR/cronjob.template.yaml" > "$tmpfile"
+    scp "$tmpfile" "${K3S_SERVER}:~/cronjob.yaml"
     ssh "$K3S_SERVER" "sudo kubectl apply -f ~/cronjob.yaml"
-    rm -f "/tmp/cc-release-collector-cronjob.yaml"
 
     echo "[deploy] Done. Verify with: $0 status"
 }
 
 cmd_test() {
-    echo "[test] Creating test job..."
-    ssh "$K3S_SERVER" "sudo kubectl create job --from=cronjob/cc-release-collector test-run -n ${K8S_NAMESPACE} 2>/dev/null || true"
+    local job_name="test-run-$(date +%s)"
+    echo "[test] Creating test job ${job_name}..."
+    ssh "$K3S_SERVER" "sudo kubectl create job --from=cronjob/cc-release-collector '${job_name}' -n '${K8S_NAMESPACE}' 2>/dev/null || true"
     echo "[test] Waiting for completion (timeout 120s)..."
-    ssh "$K3S_SERVER" "sudo kubectl wait --for=condition=complete job/test-run -n ${K8S_NAMESPACE} --timeout=120s"
+    ssh "$K3S_SERVER" "sudo kubectl wait --for=condition=complete 'job/${job_name}' -n '${K8S_NAMESPACE}' --timeout=120s"
     echo "[test] Logs:"
-    ssh "$K3S_SERVER" "sudo kubectl logs -n ${K8S_NAMESPACE} job/test-run"
-    ssh "$K3S_SERVER" "sudo kubectl delete job test-run -n ${K8S_NAMESPACE}"
+    ssh "$K3S_SERVER" "sudo kubectl logs -n '${K8S_NAMESPACE}' 'job/${job_name}'"
+    ssh "$K3S_SERVER" "sudo kubectl delete job '${job_name}' -n '${K8S_NAMESPACE}'"
     echo "[test] Done."
 }
 
 cmd_status() {
     echo "[status] CronJob:"
-    ssh "$K3S_SERVER" "sudo kubectl get cronjob -n ${K8S_NAMESPACE}"
+    ssh "$K3S_SERVER" "sudo kubectl get cronjob -n '${K8S_NAMESPACE}'"
     echo ""
     echo "[status] Recent jobs:"
-    ssh "$K3S_SERVER" "sudo kubectl get jobs -n ${K8S_NAMESPACE} --sort-by=.metadata.creationTimestamp"
+    ssh "$K3S_SERVER" "sudo kubectl get jobs -n '${K8S_NAMESPACE}' --sort-by=.metadata.creationTimestamp"
 }
 
 cmd_teardown() {
     echo "[teardown] Removing CronJob and secret..."
-    ssh "$K3S_SERVER" "sudo kubectl delete cronjob cc-release-collector -n ${K8S_NAMESPACE} --ignore-not-found"
-    ssh "$K3S_SERVER" "sudo kubectl delete secret github-token -n ${K8S_NAMESPACE} --ignore-not-found"
+    ssh "$K3S_SERVER" "sudo kubectl delete cronjob cc-release-collector -n '${K8S_NAMESPACE}' --ignore-not-found"
+    ssh "$K3S_SERVER" "sudo kubectl delete secret github-token -n '${K8S_NAMESPACE}' --ignore-not-found"
     echo "[teardown] Done. Namespace ${K8S_NAMESPACE} left intact."
 }
 

@@ -93,7 +93,7 @@
         "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R015 advisory)"
       },
       {
-        "matcher": "tool == \"Bash\"",
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(rm|git rm|mv|unlink|claude/rules)\"",
         "hooks": [
           {
             "type": "command",
