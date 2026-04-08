@@ -93,6 +93,16 @@
         "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R015 advisory)"
       },
       {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(rm|git rm|mv|unlink|claude/rules)\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/rule-deletion-guard.sh"
+          }
+        ],
+        "description": "Block rule file deletion — requires individual user confirmation per rule (R001 safety)"
+      },
+      {
         "matcher": "tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
