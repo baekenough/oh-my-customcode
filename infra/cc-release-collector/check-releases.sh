@@ -86,6 +86,7 @@ ensure_label() {
             --repo "$REPO" \
             --color "$color" \
             --description "$description" \
+            --force \
             || warn "Could not create label '$label' — continuing"
     fi
 }
@@ -120,8 +121,10 @@ fetch_tracked_versions() {
         [ -z "$batch" ] && break
 
         # Extract version from title "Claude Code vX.Y.Z"
+        # Use -oE (POSIX extended) instead of -oP (Perl) for Alpine BusyBox grep compatibility
         local found
-        found=$(echo "$batch" | grep -oP '(?<=Claude Code v)\d+\.\d+\.\d+' || true)
+        found=$(echo "$batch" | grep -oE 'Claude Code v[0-9]+\.[0-9]+\.[0-9]+' \
+            | sed 's/Claude Code v//' || true)
         versions="${versions}${found}
 "
 
@@ -244,16 +247,17 @@ main() {
     fi
 
     # Parse releases: filter by MIN_VERSION, extract fields
+    # Use grep -E (POSIX extended) for Alpine BusyBox grep compatibility (no -P Perl support)
     local candidate_versions
     candidate_versions=$(echo "$releases_json" | jq -r \
         '.[] | select(.draft == false and .prerelease == false) | .tag_name' \
-        | grep -oP '^\d+\.\d+\.\d+$' || true)
+        | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
 
     # Also check versions with leading 'v'
     local candidate_versions_v
     candidate_versions_v=$(echo "$releases_json" | jq -r \
         '.[] | select(.draft == false and .prerelease == false) | .tag_name' \
-        | sed 's/^v//' | grep -oP '^\d+\.\d+\.\d+$' || true)
+        | sed 's/^v//' | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+$' || true)
 
     # Merge and deduplicate
     local all_candidates
