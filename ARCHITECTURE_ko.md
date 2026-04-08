@@ -4,9 +4,9 @@
 
 ## 1. 시스템 개요
 
-oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 46개의 사전 구축된 서브에이전트, 97개의 스킬, 21개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
+oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 47개의 사전 구축된 서브에이전트, 101개의 스킬, 21개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
 
-현재 버전: **0.62.5** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
+현재 버전: **0.74.0** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
 
 ### 1.1 컴파일레이션 메타포
 
@@ -58,14 +58,14 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | R020 | MUST | 완료 검증 | 작업 완료 선언 전 task-type-specific 검증 |
 | R021 | MUST | Enforcement Policy | Advisory-first 시행 모델, 강화 승격 기준 |
 
-### 3.2 에이전트 분류 (46개)
+### 3.2 에이전트 분류 (47개)
 
 | 카테고리 | 수량 | 에이전트 |
 |----------|------|----------|
 | SW Engineer / 언어 | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | SW Engineer / 백엔드 | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
 | SW Engineer / 프론트엔드 | 5 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
-| SW Engineer / 툴링 | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| SW Engineer / 툴링 | 4 | tool-npm-expert, tool-optimizer, tool-bun-expert, slack-cli-expert |
 | 데이터 엔지니어링 | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | 데이터베이스 | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | 보안 | 1 | sec-codeql-expert |
@@ -74,9 +74,9 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | 시스템 | 2 | sys-memory-keeper, sys-naggy |
-| **합계** | **46** | |
+| **합계** | **47** | |
 
-### 3.3 스킬 카탈로그 (97개)
+### 3.3 스킬 카탈로그 (101개)
 
 **라우팅 스킬 (4개, context: fork)**
 
@@ -89,7 +89,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 
 **워크플로우/오케스트레이션 스킬 (7개, context: fork)**
 
-dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, sauron-watch, deep-plan, evaluator-optimizer
+dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan, evaluator-optimizer, sauron-watch
 
 **베스트 프랙티스 스킬 (~26개)**
 
@@ -97,11 +97,11 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **슬래시 커맨드 / 사용자 직접 호출 스킬**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-takeover, omcustom-release-notes, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, pipeline, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
 
 **시스템 / 내부 스킬**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, alembic-best-practices, action-validator, peer-messaging
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
 ### 3.4 가이드 라이브러리 (31개 토픽)
 
@@ -119,23 +119,40 @@ intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-mo
 
 ### 3.5 훅 시스템
 
+훅 시스템은 모든 에이전트 작업에 횡단 관심사(cross-cutting concerns)를 제공합니다. 훅은 설계상 어드바이저리 전용입니다: PostToolUse 훅은 상태를 기록하고 PreToolUse 훅은 어드바이저리를 제공하지만, 실행을 차단하지 않습니다 (stage-blocker 및 dev 서버 tmux 강제 제외).
+
 | 이벤트 | 스크립트 / 핸들러 | 목적 |
 |--------|------------------|------|
 | SessionStart | session-env-check.sh, stale-todo-scanner.sh | codex CLI + Agent Teams 가용성 감지; 오래된 TODO 스캔 |
-| PreToolUse (Write/Edit) | stage-blocker.sh, secret-filter.sh | implement 단계 외 쓰기 차단, 시크릿 유출 방지 |
+| PreToolUse (Write/Edit) | stage-blocker.sh | implement 단계 외 쓰기 차단 |
 | PreToolUse (Bash dev server) | 인라인 스크립트 | dev 서버를 tmux로 강제 |
+| PreToolUse (Edit) | content-hash-validator.sh | 콘텐츠 해시 기반 스탈 편집 경고 (어드바이저리) |
+| PreToolUse (Write/Edit/Bash) | schema-validator.sh | 도구 입력 구조 스키마 검증 (어드바이저리) |
 | PreToolUse (Agent/Task) | HUD 표시, git-delegation-guard.sh, agent-teams-advisor.sh, model-escalation-advisor.sh | 스폰 표시, R010 강제, R018 어드바이저리, 에스컬레이션 어드바이저리 |
 | PostToolUse (Edit TS/JS) | prettier, tsc, console.log 탐지 | JS/TS 자동 포맷 + 타입 체크 |
 | PostToolUse (Edit Go) | gofmt | Go 파일 자동 포맷 |
 | PostToolUse (Edit Py) | ruff, ty | Python 자동 포맷 + 타입 체크 |
 | PostToolUse (Bash) | PR URL 로거 | `gh pr create` 후 PR URL 기록 |
 | PostToolUse (Agent/Task) | task-outcome-recorder.sh | 모델 에스컬레이션 결과 기록 |
-| PostToolUse (모든 도구) | context-budget-advisor.sh, stuck-detector.sh, audit-log.sh | Ecomode 어드바이저리, 반복 루프 감지, 감사 로그 기록 |
-| PostToolUse (Write/Edit) | schema-validator.sh, content-hash-validator.sh | 구조 검증, 콘텐츠 해시 검증 |
+| PostToolUse (Read) | content-hash-validator.sh | 스탈 감지를 위한 콘텐츠 해시 저장 |
+| PostToolUse (Bash/Read) | secret-filter.sh | 출력에서 잠재적 시크릿 탐지 (어드바이저리) |
+| PostToolUse (Edit/Write/Bash/Agent) | audit-log.sh | 상태 변경 작업의 추가 전용 감사 로그 |
+| PostToolUse (모든 도구) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode 어드바이저리, 반복 루프 감지, 비용 모니터링 |
 | PostCompact | compact-rules-reinforcement (인라인) | 컨텍스트 압축 후 R007/R008/R009/R010/R018 규칙 재주입 |
 | SubagentStart | HUD 인라인 표시 | 서브에이전트 시작 시 agent type:model 로그 |
 | SubagentStop | task-outcome-recorder.sh | 최종 결과 기록 |
 | Stop | stop-console-audit.sh, eval-core-batch-save.sh, feedback-collector.sh, R011 프롬프트 | 최종 감사, 배치 평가 저장, 세션 피드백 추출 및 improvementActions 삽입, 메모리 체크포인트 |
+
+#### 관측성 훅 (Harness Engineering)
+
+네 가지 훅이 관측성 백본을 구성합니다:
+
+| 훅 | 타입 | 설명 |
+|----|------|------|
+| audit-log.sh | PostToolUse | 모든 상태 변경 도구 호출(Edit, Write, Bash, Agent)의 추가 전용 감사 추적. `/tmp/.claude-audit-$PPID.jsonl`에 기록. |
+| secret-filter.sh | PostToolUse | Bash/Read 출력에서 시크릿(API 키, 토큰, 패스워드) 패턴 기반 탐지. 어드바이저리 경고만 출력. |
+| schema-validator.sh | PreToolUse | 도구 입력 구조를 예상 스키마와 대조 검증. Phase 1 어드바이저리 모드. |
+| content-hash-validator.sh | Pre+PostToolUse | Read 시 MD5 해시 저장, 마지막 Read 이후 파일이 변경된 경우 Edit 시 경고 (스탈 편집 감지). |
 
 ---
 
@@ -378,7 +395,7 @@ haiku -> sonnet -> opus (에스컬레이션 경로)
 
 | 게이트 | 도구 / 스크립트 | 임계값 |
 |--------|----------------|--------|
-| 코드 커버리지 | bun test --coverage | 97% |
+| 코드 커버리지 | bun test --coverage | 98% |
 | 버전 동기화 | manifest.json <-> package.json | 정확히 일치 |
 | 문서 검증 | validate-docs.ts | README 카운트 일관성 |
 | Sauron 검증 | mgr-sauron (R017) | 5+3 라운드 모두 통과 |
