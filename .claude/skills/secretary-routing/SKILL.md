@@ -16,7 +16,7 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 
 | Agent | Purpose | Triggers |
 |-------|---------|----------|
-| mgr-creator | Create new agents | "create agent", "new agent" |
+| mgr-creator | Create new agents, skills, guides | "create agent", "new agent", "create skill", "new skill", "create guide", "new guide" |
 | mgr-updater | Update external agents | "update agent", "sync" |
 | mgr-supplier | Validate dependencies | "audit", "check deps" |
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
@@ -44,6 +44,8 @@ Before routing via Task tool, evaluate Agent Teams eligibility first:
 User Input → Routing → Manager Agent
 
 create   → mgr-creator
+create skill → mgr-creator
+create guide → mgr-creator
 update   → mgr-updater
 audit    → mgr-supplier
 git      → mgr-gitnerd
