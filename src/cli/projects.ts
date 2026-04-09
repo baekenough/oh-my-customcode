@@ -367,6 +367,29 @@ function formatProjectsSimple(projects: ProjectInfo[], currentVersion: string): 
 }
 
 /**
+ * Run the registry migration from lock files.
+ * Returns an error message if migration failed, or null on success.
+ */
+async function runMigration(options: ProjectsOptions): Promise<string | null> {
+  const { migrateFromLockfiles } = await import('../core/registry.js');
+  const { homedir: _homedir } = await import('node:os');
+  const DEFAULT_SEARCH_DIRS = ['workspace', 'projects', 'dev', 'src', 'code', 'repos', 'work'];
+  const home = _homedir();
+  const searchDirs = [...DEFAULT_SEARCH_DIRS.map((d) => join(home, d)), ...(options.paths ?? [])];
+  const cwd = process.cwd();
+  if (!searchDirs.includes(cwd)) searchDirs.push(cwd);
+
+  console.log('  레지스트리 마이그레이션 시작...');
+  try {
+    const imported = await migrateFromLockfiles(searchDirs);
+    console.log(`  마이그레이션 완료: ${imported}개 프로젝트가 레지스트리에 추가되었습니다.`);
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+}
+
+/**
  * Execute the projects command
  */
 export async function projectsCommand(options: ProjectsOptions = {}): Promise<ProjectsResult> {
@@ -375,33 +398,10 @@ export async function projectsCommand(options: ProjectsOptions = {}): Promise<Pr
 
   // Migration mode: scan for lock files and import them into the registry
   if (options.migrate) {
-    const { migrateFromLockfiles } = await import('../core/registry.js');
-    const { homedir: _homedir } = await import('node:os');
-    const DEFAULT_SEARCH_DIRS = [
-      'workspace',
-      'projects',
-      'dev',
-      'src',
-      'code',
-      'repos',
-      'work',
-    ];
-    const home = _homedir();
-    const searchDirs = [
-      ...DEFAULT_SEARCH_DIRS.map((d) => join(home, d)),
-      ...(options.paths ?? []),
-    ];
-    const cwd = process.cwd();
-    if (!searchDirs.includes(cwd)) searchDirs.push(cwd);
-
-    console.log('  레지스트리 마이그레이션 시작...');
-    try {
-      const imported = await migrateFromLockfiles(searchDirs);
-      console.log(`  마이그레이션 완료: ${imported}개 프로젝트가 레지스트리에 추가되었습니다.`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('  마이그레이션 실패:', errorMessage);
-      return { success: false, projects: [], currentVersion, errors: [errorMessage] };
+    const migrationError = await runMigration(options);
+    if (migrationError) {
+      console.error('  마이그레이션 실패:', migrationError);
+      return { success: false, projects: [], currentVersion, errors: [migrationError] };
     }
   }
 

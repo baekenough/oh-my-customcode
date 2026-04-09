@@ -9,9 +9,29 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 
+/**
+ * Override for the registry directory path, used in tests only.
+ * Set this to a temp directory to isolate tests from the real registry.
+ */
+let _registryDirOverride: string | undefined;
+
+/**
+ * Override the registry directory for testing.
+ * Call with `undefined` to restore the default behavior.
+ *
+ * @internal — exported for unit tests only.
+ */
+export function _setRegistryDirForTesting(dir: string | undefined): void {
+  _registryDirOverride = dir;
+}
+
 /** Compute the registry directory path at call-time (respects HOME env changes in tests). */
 function registryDir(): string {
-  return join(homedir(), '.oh-my-customcode');
+  if (_registryDirOverride !== undefined) return _registryDirOverride;
+  // Use process.env.HOME when available so tests can redirect to a temp directory
+  // (Bun's os.homedir() caches the value and ignores runtime HOME changes).
+  const home = process.env.HOME ?? homedir();
+  return join(home, '.oh-my-customcode');
 }
 
 /** Compute the registry file path at call-time. */
@@ -124,6 +144,35 @@ export async function unregisterProject(projectPath: string): Promise<void> {
   await writeRegistry(registry);
 }
 
+/** Names of directories to skip when scanning for lock files. */
+const SCAN_SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git']);
+
+/**
+ * Parse a lock file at the given path into a RegistryEntry.
+ * Returns null if the file does not exist or is not valid JSON.
+ */
+async function parseLockFile(lockPath: string): Promise<RegistryEntry | null> {
+  try {
+    const content = await readFile(lockPath, 'utf-8');
+    const lock = JSON.parse(content) as Record<string, unknown>;
+    const version =
+      typeof lock.version === 'string'
+        ? lock.version
+        : typeof lock.templateVersion === 'string'
+          ? lock.templateVersion
+          : '0.0.0';
+
+    const now = new Date().toISOString();
+    return {
+      version,
+      installedAt: typeof lock.installedAt === 'string' ? lock.installedAt : now,
+      updatedAt: typeof lock.updatedAt === 'string' ? lock.updatedAt : now,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Scan one or more directories for existing `.omcustom.lock.json` files and
  * register all discovered projects into the registry.
@@ -153,38 +202,16 @@ export async function migrateFromLockfiles(searchDirs: string[]): Promise<number
     }
 
     // Check if this directory has a lock file
-    const lockPath = join(dir, '.omcustom.lock.json');
-    try {
-      const content = await readFile(lockPath, 'utf-8');
-      const lock = JSON.parse(content) as Record<string, unknown>;
-      const version =
-        typeof lock['version'] === 'string'
-          ? lock['version']
-          : typeof lock['templateVersion'] === 'string'
-            ? lock['templateVersion']
-            : '0.0.0';
-
-      const now = new Date().toISOString();
-      discovered.set(resolve(dir), {
-        version,
-        installedAt: typeof lock['installedAt'] === 'string' ? lock['installedAt'] : now,
-        updatedAt: typeof lock['updatedAt'] === 'string' ? lock['updatedAt'] : now,
-      });
+    const entry = await parseLockFile(join(dir, '.omcustom.lock.json'));
+    if (entry !== null) {
+      discovered.set(resolve(dir), entry);
       // Do not recurse into a project
       return;
-    } catch {
-      // No lock file — continue scanning subdirectories
     }
 
     if (depth < MAX_DEPTH) {
       const subdirs = entries.filter(
-        (e) =>
-          e.isDirectory() &&
-          !e.name.startsWith('.') &&
-          e.name !== 'node_modules' &&
-          e.name !== 'dist' &&
-          e.name !== 'build' &&
-          e.name !== '.git'
+        (e) => e.isDirectory() && !e.name.startsWith('.') && !SCAN_SKIP_DIRS.has(e.name)
       );
 
       await Promise.all(subdirs.map((sub) => scan(join(dir, sub.name), depth + 1)));
