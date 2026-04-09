@@ -1003,6 +1003,3 @@ describe('findProjects() — sort tie-breaking (same status, alphabetical)', () 
   });
 });
 
-// NOTE: getTemplateVersion() packageJson fallback test is in a separate file:
-// tests/unit/cli/projects-template-version.test.ts
-// It uses mock.module() which leaks globally in Bun, so it is isolated there.
