@@ -144,6 +144,34 @@ export async function unregisterProject(projectPath: string): Promise<void> {
   await writeRegistry(registry);
 }
 
+/**
+ * Remove registry entries whose project paths no longer exist on disk.
+ *
+ * @returns Number of stale entries removed
+ */
+export async function cleanRegistry(): Promise<number> {
+  const { access: fsAccess } = await import('node:fs/promises');
+  const registry = await readRegistryRaw();
+  const paths = Object.keys(registry.projects);
+  let removed = 0;
+
+  for (const projectPath of paths) {
+    try {
+      await fsAccess(projectPath);
+    } catch {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete registry.projects[projectPath];
+      removed++;
+    }
+  }
+
+  if (removed > 0) {
+    await writeRegistry(registry);
+  }
+
+  return removed;
+}
+
 /** Names of directories to skip when scanning for lock files. */
 const SCAN_SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git']);
 

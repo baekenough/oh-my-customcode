@@ -68,6 +68,8 @@ export interface ProjectsOptions {
   format?: 'table' | 'json' | 'simple';
   /** Run migration from lock files to registry */
   migrate?: boolean;
+  /** Remove registry entries whose paths no longer exist */
+  clean?: boolean;
 }
 
 /**
@@ -402,6 +404,19 @@ export async function projectsCommand(options: ProjectsOptions = {}): Promise<Pr
     if (migrationError) {
       console.error('  마이그레이션 실패:', migrationError);
       return { success: false, projects: [], currentVersion, errors: [migrationError] };
+    }
+  }
+
+  // Clean mode: remove stale entries whose paths no longer exist
+  if (options.clean) {
+    const { cleanRegistry } = await import('../core/registry.js');
+    const removed = await cleanRegistry();
+    if (removed > 0) {
+      console.log(
+        `  정리 완료: ${removed}개 존재하지 않는 프로젝트가 레지스트리에서 제거되었습니다.`
+      );
+    } else {
+      console.log('  정리할 항목이 없습니다.');
     }
   }
 
