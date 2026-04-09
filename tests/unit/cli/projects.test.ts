@@ -418,9 +418,8 @@ describe('findProjects() — registry-based detection', () => {
 
   it('sorts registry results with latest-status entries first', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (
-      currentPkg as unknown as { default: { version: string } }
-    ).default.version;
+    const currentVersion: string = (currentPkg as unknown as { default: { version: string } })
+      .default.version;
 
     const latestDir = await mkDir(tempRoot, 'aaa-latest-project');
     const outdatedDir = await mkDir(tempRoot, 'bbb-outdated-project');
@@ -456,9 +455,8 @@ describe('findProjects() — registry-based detection', () => {
 
   it('puts non-latest entries after latest entries regardless of registry insertion order', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (
-      currentPkg as unknown as { default: { version: string } }
-    ).default.version;
+    const currentVersion: string = (currentPkg as unknown as { default: { version: string } })
+      .default.version;
 
     // Register latest FIRST in object order (insertion order preserved in JS objects)
     // so the sort comparator's second branch (return 1: !a.latest && b.latest) fires
@@ -547,9 +545,8 @@ describe('findProjects() — computeStatus via registry entries', () => {
 
   it('assigns status "latest" when project version matches current CLI version', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (
-      currentPkg as unknown as { default: { version: string } }
-    ).default.version;
+    const currentVersion: string = (currentPkg as unknown as { default: { version: string } })
+      .default.version;
     await makeRegistryWithVersion(currentVersion);
 
     const results = await findProjects();
@@ -728,9 +725,8 @@ describe('projectsCommand() — error handling', () => {
 describe('projectsCommand() — table formatting with non-empty projects', () => {
   it('renders table output for a registry project with format "table"', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (
-      currentPkg as unknown as { default: { version: string } }
-    ).default.version;
+    const currentVersion: string = (currentPkg as unknown as { default: { version: string } })
+      .default.version;
 
     const projectDir = await mkDir(tempRoot, 'table-latest-project');
     const registryDir = join(tempRoot, '.oh-my-customcode');
@@ -775,9 +771,8 @@ describe('projectsCommand() — table formatting with non-empty projects', () =>
 
   it('renders table rows for outdated and unknown status projects', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (
-      currentPkg as unknown as { default: { version: string } }
-    ).default.version;
+    const currentVersion: string = (currentPkg as unknown as { default: { version: string } })
+      .default.version;
 
     const latestDir = await mkDir(tempRoot, 'row-latest');
     const outdatedDir = await mkDir(tempRoot, 'row-outdated');
@@ -841,9 +836,8 @@ describe('projectsCommand() — table formatting with non-empty projects', () =>
 describe('projectsCommand() — simple formatting', () => {
   it('renders simple output listing each project with version and status', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (
-      currentPkg as unknown as { default: { version: string } }
-    ).default.version;
+    const currentVersion: string = (currentPkg as unknown as { default: { version: string } })
+      .default.version;
 
     const projectDir = await mkDir(tempRoot, 'simple-project');
     const registryDir = join(tempRoot, '.oh-my-customcode');
@@ -1002,4 +996,3 @@ describe('findProjects() — sort tie-breaking (same status, alphabetical)', () 
     expect(alphaIdx).toBeLessThan(betaIdx);
   });
 });
-
