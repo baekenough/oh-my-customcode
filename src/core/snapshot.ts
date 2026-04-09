@@ -10,6 +10,7 @@ import packageJson from '../../package.json';
 import { readLockFile, writeLockFile } from '../cli/projects.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
+import { registerProject } from './registry.js';
 import { getProviderLayout } from './layout.js';
 
 /**
@@ -122,6 +123,13 @@ export async function installFromSnapshot(
       await writeLockFile(targetDir, packageJson.version, existing);
     } catch {
       // Non-blocking
+    }
+
+    // Register project in the local registry (non-blocking)
+    try {
+      await registerProject(targetDir, packageJson.version);
+    } catch {
+      // Registry write is informational only — never block snapshot install
     }
 
     console.log(i18n.t('cli.init.success'));

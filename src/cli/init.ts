@@ -5,6 +5,7 @@
 
 import { join } from 'node:path';
 import packageJson from '../../package.json';
+import { registerProject } from '../core/registry.js';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
 import { getProviderLayout } from '../core/layout.js';
 import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
@@ -212,6 +213,13 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
       await writeLockFile(targetDir, packageJson.version, existing);
     } catch {
       // Lock file write is informational only — never block init
+    }
+
+    // Register project in the local registry (non-blocking)
+    try {
+      await registerProject(targetDir, packageJson.version);
+    } catch {
+      // Registry write is informational only — never block init
     }
 
     console.log('');

@@ -9,6 +9,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { i18n } from '../i18n/index.js';
+import packageJson from '../../package.json';
 
 const DEFAULT_PACKAGE_NAME = 'oh-my-customcode';
 const DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -242,6 +243,111 @@ function runGlobalUpdate(packageName: string, latestVersion: string): void {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.warn(i18n.t('cli.selfUpdate.failed', { error: errorMessage }));
     printContinueCurrentVersion();
+  }
+}
+
+export interface ExecuteSelfUpdateOptions {
+  /** Current package version. Defaults to the version in package.json. */
+  currentVersion?: string;
+  silent?: boolean;
+  packageName?: string;
+  cachePath?: string;
+  cacheTtlMs?: number;
+  fetchLatestVersion?: (packageName: string) => string | null;
+  now?: number;
+  argv?: string[];
+  env?: NodeJS.ProcessEnv;
+}
+
+export interface ExecuteSelfUpdateResult {
+  updated: boolean;
+  fromVersion: string;
+  toVersion: string;
+}
+
+/**
+ * Execute self-update for `omcustom update` command.
+ *
+ * Unlike `maybeHandleSelfUpdateForInit`, this function:
+ * - Does NOT prompt the user (always updates if outdated)
+ * - Does NOT call process.exit()
+ * - Returns a result object so the caller can continue
+ * - Skips silently for npx invocations (npx always fetches latest)
+ */
+export function executeSelfUpdate(
+  options: ExecuteSelfUpdateOptions = {}
+): ExecuteSelfUpdateResult {
+  const packageName = options.packageName || DEFAULT_PACKAGE_NAME;
+  const argv = options.argv || process.argv;
+  const env = options.env || process.env;
+  const currentVersion = normalizeVersion(options.currentVersion || (packageJson.version as string) || '');
+
+  const noUpdate: ExecuteSelfUpdateResult = {
+    updated: false,
+    fromVersion: currentVersion,
+    toVersion: currentVersion,
+  };
+
+  // npx users always get the latest — skip self-update
+  if (isNpxInvocation(argv, env)) {
+    return noUpdate;
+  }
+
+  // Skip in CI environments
+  if (env.CI === 'true' || env.GITHUB_ACTIONS === 'true') {
+    return noUpdate;
+  }
+
+  // Skip if explicitly requested
+  if (env.OMCUSTOM_SKIP_SELF_UPDATE === 'true') {
+    return noUpdate;
+  }
+
+  const checkOptions: SelfUpdateOptions = {
+    currentVersion,
+    packageName,
+    cachePath: options.cachePath,
+    cacheTtlMs: options.cacheTtlMs,
+    fetchLatestVersion: options.fetchLatestVersion,
+    now: options.now,
+    argv,
+    env,
+  };
+
+  const result = checkSelfUpdate(checkOptions);
+
+  if (!result.checked || !result.updateAvailable || !result.latestVersion) {
+    return noUpdate;
+  }
+
+  const latestVersion = result.latestVersion;
+
+  if (!options.silent) {
+    console.log(i18n.t('cli.selfUpdate.updatingGlobal', { version: latestVersion }));
+  }
+
+  try {
+    execSync(`npm install -g ${packageName}@${latestVersion}`, {
+      stdio: options.silent ? 'pipe' : 'inherit',
+      timeout: 60000,
+    });
+
+    if (!options.silent) {
+      console.log(i18n.t('cli.selfUpdate.updated', { version: latestVersion }));
+      printContinuationSpacing();
+    }
+
+    return {
+      updated: true,
+      fromVersion: currentVersion,
+      toVersion: latestVersion,
+    };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (!options.silent) {
+      console.warn(i18n.t('cli.selfUpdate.failed', { error: errorMessage }));
+    }
+    return noUpdate;
   }
 }
 

@@ -609,6 +609,16 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     // Check Codex CLI after update
     checkAndInstallCodexAfterUpdate();
+
+    // Update project registry with new version (non-blocking)
+    if (result.success && !options.dryRun) {
+      try {
+        const { registerProject } = await import('./registry.js');
+        await registerProject(options.targetDir, result.newVersion);
+      } catch {
+        // Registry update is informational only — never block the update result
+      }
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;
