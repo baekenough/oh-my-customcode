@@ -412,7 +412,9 @@ export async function projectsCommand(options: ProjectsOptions = {}): Promise<Pr
     const { cleanRegistry } = await import('../core/registry.js');
     const removed = await cleanRegistry();
     if (removed > 0) {
-      console.log(`  정리 완료: ${removed}개 존재하지 않는 프로젝트가 레지스트리에서 제거되었습니다.`);
+      console.log(
+        `  정리 완료: ${removed}개 존재하지 않는 프로젝트가 레지스트리에서 제거되었습니다.`
+      );
     } else {
       console.log('  정리할 항목이 없습니다.');
     }
