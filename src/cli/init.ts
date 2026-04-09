@@ -5,10 +5,10 @@
 
 import { join } from 'node:path';
 import packageJson from '../../package.json';
-import { registerProject } from '../core/registry.js';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
 import { getProviderLayout } from '../core/layout.js';
 import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
+import { registerProject } from '../core/registry.js';
 import { type InitOptions, type InitResult, installFromSnapshot } from '../core/snapshot.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';

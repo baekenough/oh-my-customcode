@@ -10,8 +10,8 @@ import packageJson from '../../package.json';
 import { readLockFile, writeLockFile } from '../cli/projects.js';
 import { i18n } from '../i18n/index.js';
 import { fileExists } from '../utils/fs.js';
-import { registerProject } from './registry.js';
 import { getProviderLayout } from './layout.js';
+import { registerProject } from './registry.js';
 
 /**
  * Options for the init command

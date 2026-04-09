@@ -53,3 +53,21 @@ steps:
       All git operations delegated to mgr-gitnerd.
     description: "Version bump + release notes + PR creation"
     depends_on: deep-verify
+
+  - name: ci-fix-and-publish
+    prompt: |
+      Post-release CI/CD verification and fix cycle:
+      1. Check CI status on the release PR (gh pr checks)
+      2. If failures found:
+         a. Fetch failure logs (gh run view --log-failed)
+         b. Diagnose root causes
+         c. Fix issues (delegate to specialist agents)
+         d. Commit fixes and push
+         e. Re-check CI until all green
+      3. Once CI passes:
+         a. Merge the PR
+         b. Verify npm publish succeeded (npm view oh-my-customcode version)
+         c. Verify GitHub Release created
+      4. Report final status
+    description: "CI/CD fix cycle + npm publish verification"
+    depends_on: release

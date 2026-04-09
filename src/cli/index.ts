@@ -7,9 +7,9 @@
 import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { formatPreflightWarnings, runPreflightCheck } from '../core/preflight.js';
+import { unregisterProject } from '../core/registry.js';
 import { maybeHandleSelfUpdateForInit } from '../core/self-update.js';
 import { detectLanguage, i18n, initI18n } from '../i18n/index.js';
-import { unregisterProject } from '../core/registry.js';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
 import { listCommand } from './list.js';
@@ -188,9 +188,16 @@ export function createProgram(): Command {
       (val: string, prev: string[]) => [...prev, val],
       [] as string[]
     )
-    .option('--migrate', 'Scan for existing projects with lock files and import them into the registry')
+    .option(
+      '--migrate',
+      'Scan for existing projects with lock files and import them into the registry'
+    )
     .action(async (options) => {
-      await projectsCommand({ format: options.format, paths: options.path, migrate: options.migrate });
+      await projectsCommand({
+        format: options.format,
+        paths: options.path,
+        migrate: options.migrate,
+      });
     });
 
   // omcustom unregister [path]

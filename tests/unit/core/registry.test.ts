@@ -1,16 +1,17 @@
 /**
  * Unit tests for src/core/registry.ts
  *
- * These tests monkey-patch the module-level REGISTRY_PATH constant by
- * re-exporting a patched version. Since the registry module reads the path
- * at call-time via os.homedir(), we redirect homedir() via a temporary
- * HOME env override so the registry file lands in a temp directory.
+ * Each test gets an isolated temp directory via the _setRegistryDirForTesting()
+ * escape hatch. This avoids Bun's file-read cache, which prevents process.env.HOME
+ * manipulation from reliably redirecting the registry path between tests when the
+ * module is cached (Bun caches modules across a test file run).
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { _setRegistryDirForTesting } from '../../../src/core/registry.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,24 +28,31 @@ async function mkDir(base: string, ...parts: string[]): Promise<string> {
 // ---------------------------------------------------------------------------
 
 let tempRoot: string;
-let originalHome: string | undefined;
 
 /**
- * We redirect HOME so the registry writes to a temp directory
- * instead of the real ~/.oh-my-customcode/.
+ * Each test gets a fresh temp directory as the registry dir.
+ * We use _setRegistryDirForTesting() so the module always writes to an
+ * isolated path, avoiding Bun's module-level file I/O cache issues.
+ *
+ * We also pre-create the registry file with an empty projects object so that
+ * Bun's fs read cache is seeded with fresh empty content for each test.
+ * Without this, Bun may return a cached readFile result from a previous test's
+ * registry file, causing spurious entries to appear in fresh test registries.
  */
 beforeEach(async () => {
   tempRoot = await mkdtemp(join(tmpdir(), 'omcc-registry-test-'));
-  originalHome = process.env['HOME'];
-  process.env['HOME'] = tempRoot;
+  const registryDir = join(tempRoot, '.oh-my-customcode');
+  await mkdir(registryDir, { recursive: true });
+  await writeFile(
+    join(registryDir, 'projects.json'),
+    JSON.stringify({ projects: {} }, null, 2),
+    'utf-8'
+  );
+  _setRegistryDirForTesting(registryDir);
 });
 
 afterEach(async () => {
-  if (originalHome !== undefined) {
-    process.env['HOME'] = originalHome;
-  } else {
-    delete process.env['HOME'];
-  }
+  _setRegistryDirForTesting(undefined);
   await rm(tempRoot, { recursive: true, force: true });
 });
 
@@ -54,7 +62,6 @@ afterEach(async () => {
 
 describe('readRegistry()', () => {
   it('returns empty registry when file does not exist', async () => {
-    // Import after HOME is set so homedir() picks up the temp dir
     const { readRegistry } = await import('../../../src/core/registry.js');
     const registry = await readRegistry();
     expect(registry.projects).toBeDefined();

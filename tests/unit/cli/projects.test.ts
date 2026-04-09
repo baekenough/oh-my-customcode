@@ -20,6 +20,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { findProjects } from '../../../src/cli/projects.js';
+import { _setRegistryDirForTesting } from '../../../src/core/registry.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,9 +59,23 @@ beforeEach(async () => {
   const raw = await mkdtemp(join(tmpdir(), 'omcc-projects-test-'));
   tempRoot = realpathSync(raw);
   originalCwd = process.cwd();
+
+  // Isolate the registry so findProjects() falls back to lock-file scanning.
+  // An empty registry causes findProjects() to use _findProjectsFromLockfiles(),
+  // which scans cwd/parent/options.paths for .omcustom.lock.json files.
+  // We pre-create the file to seed Bun's fs read cache with empty content.
+  const registryDir = join(tempRoot, '.oh-my-customcode');
+  await mkdir(registryDir, { recursive: true });
+  await writeFile(
+    join(registryDir, 'projects.json'),
+    JSON.stringify({ projects: {} }, null, 2),
+    'utf-8'
+  );
+  _setRegistryDirForTesting(registryDir);
 });
 
 afterEach(async () => {
+  _setRegistryDirForTesting(undefined);
   process.chdir(originalCwd);
   await rm(tempRoot, { recursive: true, force: true });
 });
