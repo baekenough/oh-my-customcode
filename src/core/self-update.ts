@@ -8,6 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
+import packageJson from '../../package.json';
 import { i18n } from '../i18n/index.js';
 
 const DEFAULT_PACKAGE_NAME = 'oh-my-customcode';
@@ -243,6 +244,117 @@ function runGlobalUpdate(packageName: string, latestVersion: string): void {
     console.warn(i18n.t('cli.selfUpdate.failed', { error: errorMessage }));
     printContinueCurrentVersion();
   }
+}
+
+export interface ExecuteSelfUpdateOptions {
+  /** Current package version. Defaults to the version in package.json. */
+  currentVersion?: string;
+  silent?: boolean;
+  packageName?: string;
+  cachePath?: string;
+  cacheTtlMs?: number;
+  fetchLatestVersion?: (packageName: string) => string | null;
+  now?: number;
+  argv?: string[];
+  env?: NodeJS.ProcessEnv;
+}
+
+export interface ExecuteSelfUpdateResult {
+  updated: boolean;
+  fromVersion: string;
+  toVersion: string;
+}
+
+/**
+ * Returns true when the environment indicates self-update should be skipped.
+ */
+function shouldSkipEnvironmentUpdate(argv: string[], env: NodeJS.ProcessEnv): boolean {
+  if (isNpxInvocation(argv, env)) return true;
+  if (env.CI === 'true' || env.GITHUB_ACTIONS === 'true') return true;
+  if (env.OMCUSTOM_SKIP_SELF_UPDATE === 'true') return true;
+  return false;
+}
+
+/**
+ * Run `npm install -g` to install the given package version.
+ * Returns true if the installation succeeded.
+ */
+function installGlobalPackage(packageName: string, version: string, silent: boolean): boolean {
+  try {
+    execSync(`npm install -g ${packageName}@${version}`, {
+      stdio: silent ? 'pipe' : 'inherit',
+      timeout: 60000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Execute self-update for `omcustom update` command.
+ *
+ * Unlike `maybeHandleSelfUpdateForInit`, this function:
+ * - Does NOT prompt the user (always updates if outdated)
+ * - Does NOT call process.exit()
+ * - Returns a result object so the caller can continue
+ * - Skips silently for npx invocations (npx always fetches latest)
+ */
+export function executeSelfUpdate(options: ExecuteSelfUpdateOptions = {}): ExecuteSelfUpdateResult {
+  const packageName = options.packageName || DEFAULT_PACKAGE_NAME;
+  const argv = options.argv || process.argv;
+  const env = options.env || process.env;
+  const currentVersion = normalizeVersion(
+    options.currentVersion || (packageJson.version as string) || ''
+  );
+
+  const noUpdate: ExecuteSelfUpdateResult = {
+    updated: false,
+    fromVersion: currentVersion,
+    toVersion: currentVersion,
+  };
+
+  if (shouldSkipEnvironmentUpdate(argv, env)) {
+    return noUpdate;
+  }
+
+  const checkOptions: SelfUpdateOptions = {
+    currentVersion,
+    packageName,
+    cachePath: options.cachePath,
+    cacheTtlMs: options.cacheTtlMs,
+    fetchLatestVersion: options.fetchLatestVersion,
+    now: options.now,
+    argv,
+    env,
+  };
+
+  const result = checkSelfUpdate(checkOptions);
+
+  if (!result.checked || !result.updateAvailable || !result.latestVersion) {
+    return noUpdate;
+  }
+
+  const latestVersion = result.latestVersion;
+
+  if (!options.silent) {
+    console.log(i18n.t('cli.selfUpdate.updatingGlobal', { version: latestVersion }));
+  }
+
+  const installed = installGlobalPackage(packageName, latestVersion, options.silent ?? false);
+
+  if (installed) {
+    if (!options.silent) {
+      console.log(i18n.t('cli.selfUpdate.updated', { version: latestVersion }));
+      printContinuationSpacing();
+    }
+    return { updated: true, fromVersion: currentVersion, toVersion: latestVersion };
+  }
+
+  if (!options.silent) {
+    console.warn(i18n.t('cli.selfUpdate.failed', { error: 'npm install failed' }));
+  }
+  return noUpdate;
 }
 
 /**
