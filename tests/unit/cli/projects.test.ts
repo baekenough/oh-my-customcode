@@ -596,8 +596,9 @@ describe('projectsCommand() — empty projects table', () => {
 
       // Verify the empty-state migration hint was printed
       const allCalls = consoleSpy.mock.calls.map((args) => args.join(' '));
-      const hasMigrationHint = allCalls.some((msg) =>
-        msg.includes('--migrate') || msg.includes('마이그레이션') || msg.includes('레지스트리')
+      const hasMigrationHint = allCalls.some(
+        (msg) =>
+          msg.includes('--migrate') || msg.includes('마이그레이션') || msg.includes('레지스트리')
       );
       expect(hasMigrationHint).toBe(true);
     } finally {
@@ -633,7 +634,8 @@ describe('projectsCommand() — migration mode', () => {
       // Verify migration log message was emitted
       const allCalls = consoleSpy.mock.calls.map((args) => args.join(' '));
       const hasMigrationLog = allCalls.some(
-        (msg) => msg.includes('마이그레이션') || msg.includes('migration') || msg.includes('레지스트리')
+        (msg) =>
+          msg.includes('마이그레이션') || msg.includes('migration') || msg.includes('레지스트리')
       );
       expect(hasMigrationLog).toBe(true);
     } finally {
