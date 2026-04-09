@@ -305,3 +305,46 @@ describe('registryToList()', () => {
     expect(list).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// cleanRegistry
+// ---------------------------------------------------------------------------
+
+describe('cleanRegistry()', () => {
+  it('removes entries whose paths do not exist on disk', async () => {
+    const { registerProject, cleanRegistry, readRegistry } = await import(
+      '../../../src/core/registry.js'
+    );
+
+    // Register two projects: one real, one non-existent
+    const realDir = await mkDir(tempRoot, 'real-project');
+    const ghostDir = join(tempRoot, 'ghost-project');
+
+    await registerProject(realDir, '0.79.0');
+    await registerProject(ghostDir, '0.79.0');
+
+    const removed = await cleanRegistry();
+
+    expect(removed).toBe(1);
+    const registry = await readRegistry();
+    expect(registry.projects[realDir]).toBeDefined();
+    expect(registry.projects[ghostDir]).toBeUndefined();
+  });
+
+  it('returns 0 when all entries are valid', async () => {
+    const { registerProject, cleanRegistry } = await import('../../../src/core/registry.js');
+
+    const realDir = await mkDir(tempRoot, 'valid-project');
+    await registerProject(realDir, '0.79.0');
+
+    const removed = await cleanRegistry();
+    expect(removed).toBe(0);
+  });
+
+  it('returns 0 on empty registry', async () => {
+    const { cleanRegistry } = await import('../../../src/core/registry.js');
+
+    const removed = await cleanRegistry();
+    expect(removed).toBe(0);
+  });
+});
