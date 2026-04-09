@@ -1280,7 +1280,7 @@ describe('update command', () => {
     });
   });
 
-  describe('updateCommand CLI self-update notification', () => {
+  describe('updateCommand CLI self-update notification (--skip-self mode)', () => {
     it('should print info message when a newer CLI version is available', async () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({
@@ -1319,7 +1319,8 @@ describe('update command', () => {
         usedCache: false,
       });
 
-      await updateCommand({}, stubbedCheck);
+      // skipSelf=true so the fallback checkCliVersion path is used
+      await updateCommand({ skipSelf: true }, stubbedCheck);
 
       const allLogs = consoleLogSpy.mock.calls.flat().join('\n');
       expect(allLogs).toContain('0.99.0');
@@ -1368,7 +1369,7 @@ describe('update command', () => {
         usedCache: false,
       });
 
-      await updateCommand({}, stubbedCheck);
+      await updateCommand({ skipSelf: true }, stubbedCheck);
 
       const allLogs = logsBeforeUpdate.join('\n');
       expect(allLogs).not.toContain('npm i -g oh-my-customcode');
@@ -1409,12 +1410,158 @@ describe('update command', () => {
         throw new Error('ENOTFOUND registry.npmjs.org');
       };
 
-      // Should not throw — update continues
-      await updateCommand({}, failingCheck);
+      // Should not throw — update continues (skipSelf=true uses the checkCliVersion path)
+      await updateCommand({ skipSelf: true }, failingCheck);
 
       // The underlying project update still ran
       expect(mockUpdate).toHaveBeenCalledTimes(1);
       expect(exitCode).toBeUndefined();
+    });
+  });
+
+  describe('updateCommand self-update integration', () => {
+    it('should run self-update step before external updates by default', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.2.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      // Mock executeSelfUpdate to return no-update (avoids actual npm install)
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: () => ({ updated: false, fromVersion: '0.1.0', toVersion: '0.1.0' }),
+        checkSelfUpdate: () => ({
+          checked: false,
+          updateAvailable: false,
+          latestVersion: null,
+          usedCache: false,
+        }),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({});
+
+      // External update should still run
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should skip self-update step when --skip-self is set', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.2.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      let selfUpdateCalled = false;
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: () => {
+          selfUpdateCalled = true;
+          return { updated: false, fromVersion: '0.1.0', toVersion: '0.1.0' };
+        },
+        checkSelfUpdate: () => ({
+          checked: false,
+          updateAvailable: false,
+          latestVersion: null,
+          usedCache: false,
+        }),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ skipSelf: true });
+
+      // executeSelfUpdate must NOT be called when --skip-self is set
+      expect(selfUpdateCalled).toBe(false);
+      // External update should still run
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should not block external update when self-update throws', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.1.0',
+        newVersion: '0.2.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: () => {
+          throw new Error('npm registry unavailable');
+        },
+        checkSelfUpdate: () => ({
+          checked: false,
+          updateAvailable: false,
+          latestVersion: null,
+          usedCache: false,
+        }),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      // Should NOT throw — self-update failure is non-blocking
+      await updateCommand({});
+
+      // External update still ran despite self-update failure
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+      // Warning should be logged
+      expect(consoleWarnSpy).toHaveBeenCalled();
     });
   });
 

@@ -148,6 +148,8 @@
       "interactiveUpdating": "Updating selected projects...",
       "projectLatestSuffix": "(latest)",
       "newVersionAvailable": "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade.",
+      "selfUpdateDone": "✓ oh-my-customcode updated ({{from}} → {{to}})",
+      "selfUpdateFailed": "⚠ Self-update check failed — continuing with external updates",
       "rtkMissing": "[RTK] RTK is not installed. Attempting installation...",
       "rtkInstalled": "[RTK] ✓ RTK installed — 60-90% token savings activated",
       "codexMissing": "[Codex] Codex CLI is not installed. Attempting installation...",

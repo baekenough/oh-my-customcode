@@ -39,7 +39,7 @@ async function writeLockFile(dir: string, version = '0.46.0'): Promise<void> {
   );
 }
 
-async function writeClaudeMarkers(dir: string): Promise<void> {
+async function _writeClaudeMarkers(dir: string): Promise<void> {
   await mkdir(join(dir, '.claude', 'agents'), { recursive: true });
   await mkdir(join(dir, '.claude', 'skills'), { recursive: true });
 }
@@ -83,17 +83,18 @@ describe('findProjects() — cwd inclusion (fix #546)', () => {
     expect(found?.version).toBe('0.46.0');
   });
 
-  it('finds a project via .claude markers in cwd (no lock file)', async () => {
+  it('does not find a project via .claude markers alone (no lock file, no registry entry)', async () => {
+    // With registry-based detection, .claude markers without a lock file or
+    // registry entry are NOT detected (no false positives for native Claude Code).
     const projectDir = await mkDir(tempRoot, 'markers-project');
-    await writeClaudeMarkers(projectDir);
+    await _writeClaudeMarkers(projectDir);
     process.chdir(projectDir);
 
     const results = await findProjects();
 
     const found = results.find((p) => p.path === projectDir);
-    expect(found).toBeDefined();
-    expect(found?.detectionMethod).toBe('directory');
-    expect(found?.version).toBeNull();
+    // Directory-only detection is removed — projects must have a lock file or registry entry.
+    expect(found).toBeUndefined();
   });
 
   it('does not affect status when cwd is not an omcustom project', async () => {

@@ -1,0 +1,55 @@
+name: auto-dev
+description: "Automated development pipeline — from issue triage to release"
+version: "1.0.0"
+
+steps:
+  - name: pre-triage
+    prompt: |
+      Scan open GitHub issues for the target release version.
+      Identify release candidates by analyzing labels, milestones, and issue content.
+      Output a structured list: issue number, title, labels, initial priority (P0-P3).
+    description: "Open issues scan and initial release candidate list"
+
+  - name: triage
+    skill: professor-triage
+    description: "Cross-analysis triage with priority assessment"
+    depends_on: pre-triage
+
+  - name: plan
+    skill: release-plan
+    description: "Release unit plan from triaged issues"
+    depends_on: triage
+
+  - name: deep-plan
+    skill: deep-plan
+    description: "Research-validated implementation plan (research → plan → verify)"
+    depends_on: plan
+
+  - name: implement
+    prompt: |
+      Execute the implementation plan from deep-plan phase.
+      Dispatch appropriate specialist agents for each task.
+      Use parallel execution (R009) for independent tasks.
+      Each implementation unit should be a separate agent spawn.
+    description: "Parallel implementation via specialist agents"
+    depends_on: deep-plan
+
+  - name: verify
+    skill: sauron-watch
+    description: "Structural sync verification (R017 full verification)"
+    depends_on: implement
+
+  - name: deep-verify
+    skill: deep-verify
+    description: "Multi-angle release quality verification"
+    depends_on: verify
+
+  - name: release
+    prompt: |
+      Finalize the release:
+      1. Bump version in package.json
+      2. Generate release notes via omcustom-release-notes
+      3. Create release branch and PR
+      All git operations delegated to mgr-gitnerd.
+    description: "Version bump + release notes + PR creation"
+    depends_on: deep-verify

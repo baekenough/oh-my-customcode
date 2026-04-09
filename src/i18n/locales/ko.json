@@ -148,6 +148,8 @@
       "interactiveUpdating": "선택된 프로젝트 업데이트 중...",
       "projectLatestSuffix": "(최신)",
       "newVersionAvailable": "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요.",
+      "selfUpdateDone": "✓ oh-my-customcode 업데이트 완료 ({{from}} → {{to}})",
+      "selfUpdateFailed": "⚠ 자체 업데이트 확인 실패 — 외부 업데이트를 계속 진행합니다",
       "rtkMissing": "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
       "rtkInstalled": "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화",
       "codexMissing": "[Codex] Codex CLI가 설치되지 않았습니다. 설치를 시도합니다...",

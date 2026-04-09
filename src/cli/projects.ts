@@ -5,8 +5,9 @@
  */
 
 import { homedir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { basename, join, sep } from 'node:path';
 import packageJson from '../../package.json';
+import { readRegistry } from '../core/registry.js';
 import { fileExists, readJsonFile, resolveTemplatePath } from '../utils/fs.js';
 
 /**
@@ -46,7 +47,7 @@ export interface ProjectInfo {
   installedAt: string | null;
   updatedAt: string | null;
   status: 'latest' | 'outdated' | 'unknown';
-  detectionMethod: 'lockfile' | 'directory';
+  detectionMethod: 'registry' | 'lockfile';
 }
 
 /**
@@ -65,17 +66,9 @@ export interface ProjectsResult {
 export interface ProjectsOptions {
   paths?: string[];
   format?: 'table' | 'json' | 'simple';
+  /** Run migration from lock files to registry */
+  migrate?: boolean;
 }
-
-/**
- * Default search directories (relative to home directory)
- */
-const DEFAULT_SEARCH_DIRS = ['workspace', 'projects', 'dev', 'src', 'code', 'repos', 'work'];
-
-/**
- * Maximum depth to search for projects
- */
-const MAX_SEARCH_DEPTH = 3;
 
 /**
  * Read the lock file from a project directory
@@ -88,33 +81,6 @@ export async function readLockFile(projectDir: string): Promise<OmcustomLockFile
     return JSON.parse(content) as OmcustomLockFile;
   } catch {
     return null;
-  }
-}
-
-/**
- * Check if a directory has .claude/ with oh-my-customcode markers
- */
-async function hasOmcustomMarkers(dir: string): Promise<boolean> {
-  const fs = await import('node:fs/promises');
-
-  // Check for .claude/agents/ and .claude/skills/ which are oh-my-customcode specific
-  const agentsDir = join(dir, '.claude', 'agents');
-  const skillsDir = join(dir, '.claude', 'skills');
-
-  try {
-    const [agentsStat, skillsStat] = await Promise.allSettled([
-      fs.stat(agentsDir),
-      fs.stat(skillsDir),
-    ]);
-
-    return (
-      agentsStat.status === 'fulfilled' &&
-      agentsStat.value.isDirectory() &&
-      skillsStat.status === 'fulfilled' &&
-      skillsStat.value.isDirectory()
-    );
-  } catch {
-    return false;
   }
 }
 
@@ -150,81 +116,6 @@ function computeStatus(
 }
 
 /**
- * Search a single directory for oh-my-customcode projects (recursive up to depth)
- */
-async function searchDirectory(
-  dir: string,
-  depth: number,
-  results: ProjectInfo[],
-  currentVersion: string,
-  seen: Set<string>
-): Promise<void> {
-  if (depth > MAX_SEARCH_DEPTH || seen.has(dir)) return;
-  seen.add(dir);
-
-  const fs = await import('node:fs/promises');
-
-  let entries: import('node:fs').Dirent[];
-  try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
-  } catch {
-    return;
-  }
-
-  // Check if this directory itself is an omcustom project
-  const lockFile = await readLockFile(dir);
-  if (lockFile) {
-    // Prefer explicit version field; fall back to templateVersion from installer lock
-    const version = lockFile.version || lockFile.templateVersion || null;
-    results.push({
-      name: basename(dir),
-      path: dir,
-      version,
-      installedAt: (lockFile.installedAt as string | undefined) || null,
-      updatedAt: (lockFile.updatedAt as string | undefined) || null,
-      status: computeStatus(version, currentVersion),
-      detectionMethod: 'lockfile',
-    });
-    // Don't recurse into a found project
-    return;
-  }
-
-  // Check for directory pattern (no lock file but has .claude markers)
-  if (await hasOmcustomMarkers(dir)) {
-    results.push({
-      name: basename(dir),
-      path: dir,
-      version: null,
-      installedAt: null,
-      updatedAt: null,
-      status: 'unknown',
-      detectionMethod: 'directory',
-    });
-    // Don't recurse into a found project
-    return;
-  }
-
-  // Recurse into subdirectories
-  if (depth < MAX_SEARCH_DEPTH) {
-    const subdirs = entries.filter(
-      (e) =>
-        e.isDirectory() &&
-        !e.name.startsWith('.') &&
-        e.name !== 'node_modules' &&
-        e.name !== 'dist' &&
-        e.name !== 'build' &&
-        e.name !== '.git'
-    );
-
-    await Promise.all(
-      subdirs.map((subdir) =>
-        searchDirectory(join(dir, subdir.name), depth + 1, results, currentVersion, seen)
-      )
-    );
-  }
-}
-
-/**
  * Get the version from the bundled templates/manifest.json.
  * Falls back to the CLI package version if the manifest is unavailable.
  */
@@ -238,23 +129,124 @@ async function getTemplateVersion(): Promise<string> {
 }
 
 /**
- * Find all projects on the machine where oh-my-customcode is installed
+ * Find all projects registered in the local registry.
+ *
+ * When `options.paths` is provided the registry is searched but only entries
+ * whose path starts with one of the provided directories are returned.
+ * This preserves backward-compatible filtering used by tests and the CLI
+ * `--path` flag.
+ *
+ * If the registry is empty a migration hint is printed to stderr.
  */
 export async function findProjects(options: ProjectsOptions = {}): Promise<ProjectInfo[]> {
   const currentVersion = await getTemplateVersion();
-  const home = homedir();
+
+  const registry = await readRegistry();
+
+  // If registry is empty, fall back to lock-file scan of provided paths (or cwd/parent)
+  // so the command still works before migration is run.
+  if (Object.keys(registry.projects).length === 0) {
+    const fallbackResults = await _findProjectsFromLockfiles(options, currentVersion);
+    if (fallbackResults.length === 0 && !options.paths) {
+      // Print migration hint to stderr so it doesn't pollute json output
+      process.stderr.write(
+        '  No projects in registry. Run `omcustom projects --migrate` to import existing projects.\n'
+      );
+    }
+    return fallbackResults;
+  }
+
+  const results: ProjectInfo[] = [];
+
+  for (const [projectPath, entry] of Object.entries(registry.projects)) {
+    // Filter by provided paths when options.paths is set
+    if (options.paths && options.paths.length > 0) {
+      const matchesPath = options.paths.some(
+        (searchPath) => projectPath === searchPath || projectPath.startsWith(searchPath + sep)
+      );
+      if (!matchesPath) continue;
+    }
+
+    results.push({
+      name: basename(projectPath),
+      path: projectPath,
+      version: entry.version || null,
+      installedAt: entry.installedAt || null,
+      updatedAt: entry.updatedAt || null,
+      status: computeStatus(entry.version || null, currentVersion),
+      detectionMethod: 'registry',
+    });
+  }
+
+  // Sort: latest first, then by name
+  return results.sort((a, b) => {
+    if (a.status === 'latest' && b.status !== 'latest') return -1;
+    if (a.status !== 'latest' && b.status === 'latest') return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Fallback project discovery using lock-file scanning.
+ * Used when the registry is empty (pre-migration state).
+ * Only scans paths from `options.paths`, cwd, and parent of cwd.
+ *
+ * @internal
+ */
+async function _findProjectsFromLockfiles(
+  options: ProjectsOptions,
+  currentVersion: string
+): Promise<ProjectInfo[]> {
+  const { dirname } = await import('node:path');
+  const fs = await import('node:fs/promises');
+
   const seen = new Set<string>();
   const results: ProjectInfo[] = [];
 
-  // Build search paths
-  const searchPaths: string[] = [];
+  async function scanDir(dir: string, depth: number): Promise<void> {
+    if (depth > 3 || seen.has(dir)) return;
+    seen.add(dir);
 
-  // Default search directories
-  for (const dir of DEFAULT_SEARCH_DIRS) {
-    searchPaths.push(join(home, dir));
+    let entries: import('node:fs').Dirent[];
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    const lockFile = await readLockFile(dir);
+    if (lockFile) {
+      const version = lockFile.version || lockFile.templateVersion || null;
+      results.push({
+        name: basename(dir),
+        path: dir,
+        version,
+        installedAt: (lockFile.installedAt as string | undefined) || null,
+        updatedAt: (lockFile.updatedAt as string | undefined) || null,
+        status: computeStatus(version, currentVersion),
+        detectionMethod: 'lockfile',
+      });
+      return;
+    }
+
+    if (depth < 3) {
+      const subdirs = entries.filter(
+        (e) =>
+          e.isDirectory() &&
+          !e.name.startsWith('.') &&
+          e.name !== 'node_modules' &&
+          e.name !== 'dist' &&
+          e.name !== 'build' &&
+          e.name !== '.git'
+      );
+      await Promise.all(
+        subdirs.map((sub) => scanDir(join(dir, sub.name), depth + 1).catch(() => {}))
+      );
+    }
   }
 
-  // Add cwd and its parent so projects outside DEFAULT_SEARCH_DIRS are found
+  const searchPaths: string[] = options.paths ? [...options.paths] : [];
+
   if (!options.paths) {
     const cwd = process.cwd();
     if (!searchPaths.includes(cwd)) searchPaths.push(cwd);
@@ -262,21 +254,8 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
     if (parent !== cwd && !searchPaths.includes(parent)) searchPaths.push(parent);
   }
 
-  // User-provided additional paths
-  if (options.paths) {
-    searchPaths.push(...options.paths);
-  }
+  await Promise.all(searchPaths.map((p) => scanDir(p, 0).catch(() => {})));
 
-  // Search all paths in parallel
-  await Promise.all(
-    searchPaths.map((searchPath) =>
-      searchDirectory(searchPath, 0, results, currentVersion, seen).catch(() => {
-        // Silently ignore directories that don't exist or can't be read
-      })
-    )
-  );
-
-  // Sort: latest first, then by name
   return results.sort((a, b) => {
     if (a.status === 'latest' && b.status !== 'latest') return -1;
     if (a.status !== 'latest' && b.status === 'latest') return 1;
@@ -316,7 +295,7 @@ function formatProjectsTable(projects: ProjectInfo[], currentVersion: string): v
   if (projects.length === 0) {
     console.log('\n  oh-my-customcode가 적용된 프로젝트를 찾을 수 없습니다.');
     console.log(
-      '  검색 경로: ~/workspace, ~/projects, ~/dev, ~/src, ~/code, ~/repos, ~/work, (현재 디렉토리 및 부모)\n'
+      '  레지스트리가 비어 있습니다. `omcustom projects --migrate`를 실행하여 기존 프로젝트를 가져오세요.\n'
     );
     return;
   }
@@ -393,6 +372,38 @@ function formatProjectsSimple(projects: ProjectInfo[], currentVersion: string): 
 export async function projectsCommand(options: ProjectsOptions = {}): Promise<ProjectsResult> {
   const currentVersion = await getTemplateVersion();
   const format = options.format || 'table';
+
+  // Migration mode: scan for lock files and import them into the registry
+  if (options.migrate) {
+    const { migrateFromLockfiles } = await import('../core/registry.js');
+    const { homedir: _homedir } = await import('node:os');
+    const DEFAULT_SEARCH_DIRS = [
+      'workspace',
+      'projects',
+      'dev',
+      'src',
+      'code',
+      'repos',
+      'work',
+    ];
+    const home = _homedir();
+    const searchDirs = [
+      ...DEFAULT_SEARCH_DIRS.map((d) => join(home, d)),
+      ...(options.paths ?? []),
+    ];
+    const cwd = process.cwd();
+    if (!searchDirs.includes(cwd)) searchDirs.push(cwd);
+
+    console.log('  레지스트리 마이그레이션 시작...');
+    try {
+      const imported = await migrateFromLockfiles(searchDirs);
+      console.log(`  마이그레이션 완료: ${imported}개 프로젝트가 레지스트리에 추가되었습니다.`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('  마이그레이션 실패:', errorMessage);
+      return { success: false, projects: [], currentVersion, errors: [errorMessage] };
+    }
+  }
 
   console.log('  oh-my-customcode 적용 프로젝트를 검색 중...');
 
