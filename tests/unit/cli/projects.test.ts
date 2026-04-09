@@ -14,7 +14,7 @@
  * returns the realpath (/private/var/...). Tests use realpathSync to normalize.
  */
 
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -418,7 +418,9 @@ describe('findProjects() — registry-based detection', () => {
 
   it('sorts registry results with latest-status entries first', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (currentPkg as unknown as { default: { version: string } }).default.version;
+    const currentVersion: string = (
+      currentPkg as unknown as { default: { version: string } }
+    ).default.version;
 
     const latestDir = await mkDir(tempRoot, 'aaa-latest-project');
     const outdatedDir = await mkDir(tempRoot, 'bbb-outdated-project');
@@ -454,7 +456,9 @@ describe('findProjects() — registry-based detection', () => {
 
   it('puts non-latest entries after latest entries regardless of registry insertion order', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (currentPkg as unknown as { default: { version: string } }).default.version;
+    const currentVersion: string = (
+      currentPkg as unknown as { default: { version: string } }
+    ).default.version;
 
     // Register latest FIRST in object order (insertion order preserved in JS objects)
     // so the sort comparator's second branch (return 1: !a.latest && b.latest) fires
@@ -543,7 +547,9 @@ describe('findProjects() — computeStatus via registry entries', () => {
 
   it('assigns status "latest" when project version matches current CLI version', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (currentPkg as unknown as { default: { version: string } }).default.version;
+    const currentVersion: string = (
+      currentPkg as unknown as { default: { version: string } }
+    ).default.version;
     await makeRegistryWithVersion(currentVersion);
 
     const results = await findProjects();
@@ -722,7 +728,9 @@ describe('projectsCommand() — error handling', () => {
 describe('projectsCommand() — table formatting with non-empty projects', () => {
   it('renders table output for a registry project with format "table"', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (currentPkg as unknown as { default: { version: string } }).default.version;
+    const currentVersion: string = (
+      currentPkg as unknown as { default: { version: string } }
+    ).default.version;
 
     const projectDir = await mkDir(tempRoot, 'table-latest-project');
     const registryDir = join(tempRoot, '.oh-my-customcode');
@@ -767,7 +775,9 @@ describe('projectsCommand() — table formatting with non-empty projects', () =>
 
   it('renders table rows for outdated and unknown status projects', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (currentPkg as unknown as { default: { version: string } }).default.version;
+    const currentVersion: string = (
+      currentPkg as unknown as { default: { version: string } }
+    ).default.version;
 
     const latestDir = await mkDir(tempRoot, 'row-latest');
     const outdatedDir = await mkDir(tempRoot, 'row-outdated');
@@ -831,7 +841,9 @@ describe('projectsCommand() — table formatting with non-empty projects', () =>
 describe('projectsCommand() — simple formatting', () => {
   it('renders simple output listing each project with version and status', async () => {
     const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const currentVersion: string = (currentPkg as unknown as { default: { version: string } }).default.version;
+    const currentVersion: string = (
+      currentPkg as unknown as { default: { version: string } }
+    ).default.version;
 
     const projectDir = await mkDir(tempRoot, 'simple-project');
     const registryDir = join(tempRoot, '.oh-my-customcode');
@@ -991,45 +1003,6 @@ describe('findProjects() — sort tie-breaking (same status, alphabetical)', () 
   });
 });
 
-// ---------------------------------------------------------------------------
-// getTemplateVersion fallback — Line 127
-// When manifest.json does not exist, falls back to packageJson.version
-// ---------------------------------------------------------------------------
-
-describe('getTemplateVersion() — packageJson fallback (Line 127)', () => {
-  it('uses packageJson.version as fallback when manifest is unavailable', async () => {
-    // Mock fileExists to return false for all paths, forcing the packageJson fallback.
-    const currentPkg = await import('../../../package.json', { with: { type: 'json' } });
-    const packageVersion: string = (currentPkg as unknown as { default: { version: string } }).default.version;
-
-    mock.module('../../../src/utils/fs.js', () => ({
-      fileExists: async (_path: string) => false,
-      readJsonFile: async (_path: string) => ({}),
-      resolveTemplatePath: (_rel: string) => '/nonexistent/manifest.json',
-    }));
-
-    try {
-      // projectsCommand calls getTemplateVersion internally; when fileExists returns false,
-      // line 127 (return packageJson.version) executes.
-      const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
-      const registryDir = join(tempRoot, '.oh-my-customcode');
-      await mkdir(registryDir, { recursive: true });
-      await writeFile(
-        join(registryDir, 'projects.json'),
-        JSON.stringify({ projects: {} }, null, 2),
-        'utf-8'
-      );
-      _setRegistryDirForTesting(registryDir);
-
-      try {
-        const result = await projectsCommand({ paths: [tempRoot], format: 'json' });
-        // When the fallback fires, currentVersion equals the packageJson version
-        expect(result.currentVersion).toBe(packageVersion);
-      } finally {
-        consoleSpy.mockRestore();
-      }
-    } finally {
-      mock.restore();
-    }
-  });
-});
+// NOTE: getTemplateVersion() packageJson fallback test is in a separate file:
+// tests/unit/cli/projects-template-version.test.ts
+// It uses mock.module() which leaks globally in Bun, so it is isolated there.
