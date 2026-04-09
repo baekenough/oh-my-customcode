@@ -7,6 +7,7 @@
 import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { formatPreflightWarnings, runPreflightCheck } from '../core/preflight.js';
+import { unregisterProject } from '../core/registry.js';
 import { maybeHandleSelfUpdateForInit } from '../core/self-update.js';
 import { detectLanguage, i18n, initI18n } from '../i18n/index.js';
 import { doctorCommand } from './doctor.js';
@@ -71,6 +72,7 @@ export function createProgram(): Command {
     .option('--hooks', i18n.t('cli.update.hooksOption'))
     .option('--contexts', i18n.t('cli.update.contextsOption'))
     .option('--all', i18n.t('cli.update.allOption'))
+    .option('--skip-self', 'Skip self-update of oh-my-customcode package')
     .action(async (options) => {
       await updateCommand(options);
     });
@@ -175,7 +177,7 @@ export function createProgram(): Command {
       await serveStopCommand();
     });
 
-  // omcustom projects [--format table|json|simple] [--path <dir>]
+  // omcustom projects [--format table|json|simple] [--path <dir>] [--migrate]
   program
     .command('projects')
     .description('List all projects on this machine where oh-my-customcode is installed')
@@ -186,8 +188,32 @@ export function createProgram(): Command {
       (val: string, prev: string[]) => [...prev, val],
       [] as string[]
     )
+    .option(
+      '--migrate',
+      'Scan for existing projects with lock files and import them into the registry'
+    )
     .action(async (options) => {
-      await projectsCommand({ format: options.format, paths: options.path });
+      await projectsCommand({
+        format: options.format,
+        paths: options.path,
+        migrate: options.migrate,
+      });
+    });
+
+  // omcustom unregister [path]
+  program
+    .command('unregister [path]')
+    .description('Remove a project from the local registry')
+    .action(async (projectPath?: string) => {
+      const targetPath = projectPath ?? process.cwd();
+      try {
+        await unregisterProject(targetPath);
+        console.log(`  프로젝트가 레지스트리에서 제거되었습니다: ${targetPath}`);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error(`  레지스트리 제거 실패: ${msg}`);
+        process.exitCode = 1;
+      }
     });
 
   // Pre-flight hook: run before any command

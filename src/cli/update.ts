@@ -9,7 +9,7 @@
  */
 
 import packageJson from '../../package.json';
-import { checkSelfUpdate } from '../core/self-update.js';
+import { checkSelfUpdate, executeSelfUpdate } from '../core/self-update.js';
 import { type UpdateComponent, type UpdateOptions, update } from '../core/updater.js';
 import { i18n } from '../i18n/index.js';
 
@@ -41,6 +41,8 @@ export interface UpdateCommandOptions {
   hard?: boolean;
   /** Batch update all outdated projects found by project discovery */
   all?: boolean;
+  /** Skip self-update of oh-my-customcode package */
+  skipSelf?: boolean;
 }
 
 /**
@@ -71,8 +73,26 @@ export async function updateCommand(
   options: UpdateCommandOptions = {},
   cliVersionCheck: typeof checkSelfUpdate = checkSelfUpdate
 ): Promise<void> {
-  // Non-blocking CLI self-update notification (inform but never block)
-  await checkCliVersion(cliVersionCheck);
+  // Step 0: Self-update oh-my-customcode package before external updates
+  if (!options.skipSelf) {
+    try {
+      const selfUpdateResult = executeSelfUpdate();
+      if (selfUpdateResult.updated) {
+        console.log(
+          i18n.t('cli.update.selfUpdateDone', {
+            from: selfUpdateResult.fromVersion,
+            to: selfUpdateResult.toVersion,
+          })
+        );
+      }
+    } catch {
+      // Non-blocking: self-update failure must not stop the external update workflow
+      console.warn(i18n.t('cli.update.selfUpdateFailed'));
+    }
+  } else {
+    // Fallback: notification-only version check when self-update is skipped
+    await checkCliVersion(cliVersionCheck);
+  }
 
   try {
     if (options.all) {

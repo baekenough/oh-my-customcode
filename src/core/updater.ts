@@ -505,6 +505,53 @@ function checkAndInstallRtkAfterUpdate(): void {
 }
 
 /**
+ * Update the project registry with the new version after a successful update.
+ * Non-blocking — registry update is informational only.
+ */
+async function updateProjectRegistry(targetDir: string, newVersion: string): Promise<void> {
+  try {
+    const { registerProject } = await import('./registry.js');
+    await registerProject(targetDir, newVersion);
+  } catch {
+    // Registry update is informational only — never block the update result
+  }
+}
+
+/**
+ * Regenerate and log the lockfile result after a successful update.
+ * Extracted to reduce cognitive complexity of update().
+ */
+async function regenerateLockfile(targetDir: string, result: UpdateResult): Promise<void> {
+  const lockfileResult = await generateAndWriteLockfileForDir(targetDir);
+  if (lockfileResult.warning) {
+    result.warnings.push(lockfileResult.warning);
+    warn('update.lockfile_failed', { error: lockfileResult.warning });
+  } else {
+    debug('update.lockfile_regenerated', {
+      files: String(lockfileResult.fileCount),
+    });
+  }
+}
+
+/**
+ * Guard against updating the oh-my-customcode source project itself.
+ * Returns true if the update should be skipped.
+ */
+async function shouldSkipSelfUpdate(targetDir: string, result: UpdateResult): Promise<boolean> {
+  const targetPkgPath = join(targetDir, 'package.json');
+  if (await fileExists(targetPkgPath)) {
+    const targetPkg = await readJsonFile<{ name?: string }>(targetPkgPath);
+    if (targetPkg.name === 'oh-my-customcode') {
+      warn('update.self_update_skipped');
+      result.success = true;
+      result.warnings.push('Skipped: source project cannot update itself');
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Check if Codex CLI is installed after an update and install it if missing
  */
 function checkAndInstallCodexAfterUpdate(): void {
@@ -543,15 +590,8 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       return result;
     }
 
-    const targetPkgPath = join(options.targetDir, 'package.json');
-    if (await fileExists(targetPkgPath)) {
-      const targetPkg = await readJsonFile<{ name?: string }>(targetPkgPath);
-      if (targetPkg.name === 'oh-my-customcode') {
-        warn('update.self_update_skipped');
-        result.success = true;
-        result.warnings.push('Skipped: source project cannot update itself');
-        return result;
-      }
+    if (await shouldSkipSelfUpdate(options.targetDir, result)) {
+      return result;
     }
 
     const updateCheck = await checkForUpdates(options.targetDir);
@@ -594,21 +634,18 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     await runFullUpdatePostProcessing(options, result, config);
 
     // Regenerate lockfile after successful update (#316)
-    const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
-    if (lockfileResult.warning) {
-      result.warnings.push(lockfileResult.warning);
-      warn('update.lockfile_failed', { error: lockfileResult.warning });
-    } else {
-      debug('update.lockfile_regenerated', {
-        files: String(lockfileResult.fileCount),
-      });
-    }
+    await regenerateLockfile(options.targetDir, result);
 
     // Check RTK after update
     checkAndInstallRtkAfterUpdate();
 
     // Check Codex CLI after update
     checkAndInstallCodexAfterUpdate();
+
+    // Update project registry with new version (non-blocking)
+    if (result.success && !options.dryRun) {
+      await updateProjectRegistry(options.targetDir, result.newVersion);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;

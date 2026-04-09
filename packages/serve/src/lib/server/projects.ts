@@ -1,4 +1,4 @@
-import { readdir, readFile, stat } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { homedir } from 'os';
 import { basename, join } from 'path';
 
@@ -10,16 +10,18 @@ export interface ServeProjectInfo {
 	status: 'latest' | 'outdated' | 'unknown';
 }
 
-interface OmcustomLockFile {
-	version?: string;
-	templateVersion?: string;
-	installedAt?: string;
-	updatedAt?: string;
-	[key: string]: unknown;
+/** Registry entry shape (mirrors src/core/registry.ts) */
+interface RegistryEntry {
+	version: string;
+	installedAt: string;
+	updatedAt: string;
 }
 
-const DEFAULT_SEARCH_DIRS = ['workspace', 'projects', 'dev', 'src', 'code', 'repos', 'work'];
-const MAX_SEARCH_DEPTH = 3;
+/** Registry file shape */
+interface Registry {
+	projects: Record<string, RegistryEntry>;
+}
+
 const CACHE_TTL_MS = 30_000;
 
 // Module-level cache
@@ -68,124 +70,61 @@ function computeStatus(
 	return 'latest';
 }
 
-async function readLockFile(dir: string): Promise<OmcustomLockFile | null> {
+/**
+ * Read the local registry file directly.
+ * Avoids cross-package imports by reading the JSON file via fs.
+ */
+async function readLocalRegistry(): Promise<Registry> {
+	const registryPath = join(homedir(), '.oh-my-customcode', 'projects.json');
 	try {
-		const content = await readFile(join(dir, '.omcustom.lock.json'), 'utf-8');
-		return JSON.parse(content) as OmcustomLockFile;
-	} catch {
-		return null;
-	}
-}
-
-async function hasOmcustomMarkers(dir: string): Promise<boolean> {
-	try {
-		const [agentsStat, skillsStat] = await Promise.allSettled([
-			stat(join(dir, '.claude', 'agents')),
-			stat(join(dir, '.claude', 'skills'))
-		]);
-		return (
-			agentsStat.status === 'fulfilled' &&
-			agentsStat.value.isDirectory() &&
-			skillsStat.status === 'fulfilled' &&
-			skillsStat.value.isDirectory()
-		);
-	} catch {
-		return false;
-	}
-}
-
-async function searchDirectory(
-	dir: string,
-	depth: number,
-	results: ServeProjectInfo[],
-	currentVersion: string,
-	seen: Set<string>
-): Promise<void> {
-	if (depth > MAX_SEARCH_DEPTH || seen.has(dir)) return;
-	seen.add(dir);
-
-	// Check if this directory is an omcustom project via lock file
-	const lockFile = await readLockFile(dir);
-	if (lockFile) {
-		const version = lockFile.version || lockFile.templateVersion || null;
-		const name = basename(dir);
-		results.push({
-			name,
-			slug: slugify(name),
-			path: dir,
-			version,
-			status: computeStatus(version, currentVersion)
-		});
-		// Do not recurse into a found project
-		return;
-	}
-
-	// Check via directory markers
-	if (await hasOmcustomMarkers(dir)) {
-		const name = basename(dir);
-		results.push({
-			name,
-			slug: slugify(name),
-			path: dir,
-			version: null,
-			status: 'unknown'
-		});
-		// Do not recurse into a found project
-		return;
-	}
-
-	// Recurse into subdirectories if within depth limit
-	if (depth < MAX_SEARCH_DEPTH) {
-		let entries: import('fs').Dirent[];
-		try {
-			entries = await readdir(dir, { withFileTypes: true });
-		} catch {
-			return;
+		const content = await readFile(registryPath, 'utf-8');
+		const parsed = JSON.parse(content) as unknown;
+		if (
+			typeof parsed === 'object' &&
+			parsed !== null &&
+			'projects' in parsed &&
+			typeof (parsed as Registry).projects === 'object'
+		) {
+			return parsed as Registry;
 		}
-
-		const subdirs = entries.filter(
-			(e) =>
-				e.isDirectory() &&
-				!e.name.startsWith('.') &&
-				e.name !== 'node_modules' &&
-				e.name !== 'dist' &&
-				e.name !== 'build' &&
-				e.name !== '.git'
-		);
-
-		await Promise.all(
-			subdirs.map((subdir) =>
-				searchDirectory(join(dir, subdir.name), depth + 1, results, currentVersion, seen)
-			)
-		);
+		return { projects: {} };
+	} catch {
+		return { projects: {} };
 	}
 }
 
 /**
- * Find all omcustom projects on the machine.
- * Results are cached for 30 seconds to avoid repeated FS scans.
+ * Find all omcustom projects on the machine via the local registry.
+ * Falls back gracefully to an empty list if the registry cannot be read.
+ * Results are cached for 30 seconds.
+ *
+ * @param _extraPaths - Ignored (kept for backward-compatible call sites); registry is the source of truth.
  */
-export async function findProjectsForServe(extraPaths: string[] = []): Promise<ServeProjectInfo[]> {
+export async function findProjectsForServe(_extraPaths: string[] = []): Promise<ServeProjectInfo[]> {
 	const now = Date.now();
 	if (_cachedProjects && now - _cacheTimestamp < CACHE_TTL_MS) {
 		return _cachedProjects;
 	}
 
 	const currentVersion = await getTemplateVersion();
-	const home = homedir();
-	const seen = new Set<string>();
 	const results: ServeProjectInfo[] = [];
 
-	const searchPaths: string[] = DEFAULT_SEARCH_DIRS.map((d) => join(home, d));
-	searchPaths.push(...extraPaths);
+	try {
+		const registry = await readLocalRegistry();
 
-	await Promise.all(
-		searchPaths.map((searchPath) =>
-			searchDirectory(searchPath, 0, results, currentVersion, seen).catch(() => {
-				// Silently skip directories that don't exist or can't be read
-			})
-		)
-	);
+		for (const [projectPath, entry] of Object.entries(registry.projects)) {
+			const name = basename(projectPath);
+			results.push({
+				name,
+				slug: slugify(name),
+				path: projectPath,
+				version: entry.version || null,
+				status: computeStatus(entry.version || null, currentVersion),
+			});
+		}
+	} catch {
+		// Registry unavailable — return empty list rather than crashing
+	}
 
 	// Sort: latest first, then alphabetically by name
 	results.sort((a, b) => {
