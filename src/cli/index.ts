@@ -177,7 +177,7 @@ export function createProgram(): Command {
       await serveStopCommand();
     });
 
-  // omcustom projects [--format table|json|simple] [--path <dir>] [--migrate]
+  // omcustom projects [--format table|json|simple] [--path <dir>] [--migrate] [--clean]
   program
     .command('projects')
     .description('List all projects on this machine where oh-my-customcode is installed')
@@ -192,11 +192,13 @@ export function createProgram(): Command {
       '--migrate',
       'Scan for existing projects with lock files and import them into the registry'
     )
+    .option('--clean', 'Remove registry entries whose project paths no longer exist on disk')
     .action(async (options) => {
       await projectsCommand({
         format: options.format,
         paths: options.path,
         migrate: options.migrate,
+        clean: options.clean,
       });
     });
 
