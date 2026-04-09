@@ -66,8 +66,8 @@ Map each approved item to the appropriate subagent by `targetType`:
 | targetType | Agent | Action |
 |------------|-------|--------|
 | agent | mgr-creator | Modify agent frontmatter/body |
-| skill | Matching domain expert | Revise skill SKILL.md |
-| routing | general-purpose | Update routing patterns |
+| skill | mgr-creator | Revise skill SKILL.md (R010 Protected Paths) |
+| routing | mgr-creator | Update routing patterns (R010 Protected Paths) |
 | model-escalation | general-purpose | Update model field in agent frontmatter |
 
 Spawn agents in parallel (max 4 per R009). Each agent receives:
