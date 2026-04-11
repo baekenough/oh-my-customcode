@@ -4,11 +4,15 @@
 
 set -euo pipefail
 
+# Pass through stdin (Stop hook protocol)
+input=$(cat)
+
 OUTCOMES_FILE="/tmp/.claude-task-outcomes-${PPID}"
 PROPOSALS_FILE="/tmp/.claude-skill-proposals-${PPID}"
 
 # Early exit if no outcomes
 if [ ! -f "$OUTCOMES_FILE" ] || [ ! -s "$OUTCOMES_FILE" ]; then
+  echo "$input"
   exit 0
 fi
 
@@ -36,7 +40,10 @@ if [ "$CANDIDATES" -gt 0 ] 2>/dev/null; then
   echo "[skill-extractor] Run /skill-extractor to review and create" >&2
 
   # Save proposal count for Stop prompt hook to pick up
-  echo "{\"candidates\": $CANDIDATES, \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > "$PROPOSALS_FILE"
+  echo "{\"candidates\": $CANDIDATES, \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > "$PROPOSALS_FILE" || true
 fi
 
+# CRITICAL: Always pass through input and exit 0
+# This hook MUST NEVER block session termination
+echo "$input"
 exit 0
