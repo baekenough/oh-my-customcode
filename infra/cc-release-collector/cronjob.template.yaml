@@ -15,7 +15,7 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 2
-      activeDeadlineSeconds: 300
+      activeDeadlineSeconds: 600
       template:
         metadata:
           labels:
@@ -49,6 +49,8 @@ spec:
                   value: "${TARGET_REPO}"
                 - name: MIN_VERSION
                   value: "${MIN_VERSION}"
+                - name: GH_CONFIG_DIR
+                  value: "/home/collector"
               resources:
                 requests:
                   memory: "64Mi"
