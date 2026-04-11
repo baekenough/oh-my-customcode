@@ -27,7 +27,7 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 Format: `{Cost} | {project} | {branch} | RL:{rate_limit}% {countdown} | WL:{weekly_limit}% {countdown} | CTX:{usage}%`
 
-Config in `.claude/settings.local.json`: `statusLine.type: "command"`, `statusLine.command: ".claude/statusline.sh"`. Requires CC v2.1.80+ for RL/WL segments.
+Config in `.claude/settings.local.json`: `statusLine.type: "command"`, `statusLine.command: ".claude/statusline.sh"`. Requires CC v2.1.80+ for RL/WL segments. `refreshInterval` setting (v2.1.97+): Auto-refresh interval in seconds for the status line command. Set in `statusLine.refreshInterval` in settings.json.
 
 <!-- DETAIL: Statusline configuration JSON and color coding
 ```json

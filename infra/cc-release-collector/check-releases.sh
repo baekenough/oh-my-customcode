@@ -307,10 +307,10 @@ main() {
         fi
 
         # Fetch release details for this version (try both with and without 'v' prefix)
+        # Use jq first() to avoid SIGPIPE from piping to head -1
         local release_detail
         release_detail=$(echo "$releases_json" | jq --arg ver "$ver" \
-            '.[] | select((.tag_name == $ver) or (.tag_name == ("v" + $ver)))' \
-            | head -1)
+            'first(.[] | select((.tag_name == $ver) or (.tag_name == ("v" + $ver))))')
 
         if [ -z "$release_detail" ]; then
             warn "Could not find release details for v${ver} — skipping"

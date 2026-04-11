@@ -9,6 +9,7 @@
 | User communication | Korean |
 | Code, file contents, commits | English |
 | Error messages to user | Korean |
+| PR title/body, GitHub issues | Korean (default, overridable in project CLAUDE.md) |
 
 ## Delegation Model
 
