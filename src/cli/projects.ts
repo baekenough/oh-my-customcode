@@ -131,6 +131,34 @@ async function getTemplateVersion(): Promise<string> {
 }
 
 /**
+ * Check whether a project path matches the optional search paths filter.
+ */
+function matchesSearchPaths(projectPath: string, searchPaths: string[] | undefined): boolean {
+  if (!searchPaths || searchPaths.length === 0) return true;
+  return searchPaths.some(
+    (searchPath) => projectPath === searchPath || projectPath.startsWith(searchPath + sep)
+  );
+}
+
+/**
+ * Check whether a project path is under the user's home directory.
+ */
+function isUnderHome(projectPath: string, home: string): boolean {
+  return projectPath.startsWith(home + sep) || projectPath === home;
+}
+
+/**
+ * Sort projects: latest first, then alphabetically by name.
+ */
+function sortProjects(projects: ProjectInfo[]): ProjectInfo[] {
+  return projects.sort((a, b) => {
+    if (a.status === 'latest' && b.status !== 'latest') return -1;
+    if (a.status !== 'latest' && b.status === 'latest') return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/**
  * Find all projects registered in the local registry.
  *
  * When `options.paths` is provided the registry is searched but only entries
@@ -142,7 +170,6 @@ async function getTemplateVersion(): Promise<string> {
  */
 export async function findProjects(options: ProjectsOptions = {}): Promise<ProjectInfo[]> {
   const currentVersion = await getTemplateVersion();
-
   const registry = await readRegistry();
 
   // If registry is empty, fall back to lock-file scan of provided paths (or cwd/parent)
@@ -159,15 +186,11 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
   }
 
   const results: ProjectInfo[] = [];
+  const home = process.env.HOME ?? homedir();
 
   for (const [projectPath, entry] of Object.entries(registry.projects)) {
-    // Filter by provided paths when options.paths is set
-    if (options.paths && options.paths.length > 0) {
-      const matchesPath = options.paths.some(
-        (searchPath) => projectPath === searchPath || projectPath.startsWith(searchPath + sep)
-      );
-      if (!matchesPath) continue;
-    }
+    if (!matchesSearchPaths(projectPath, options.paths)) continue;
+    if (!isUnderHome(projectPath, home)) continue;
 
     results.push({
       name: basename(projectPath),
@@ -180,12 +203,70 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
     });
   }
 
-  // Sort: latest first, then by name
-  return results.sort((a, b) => {
-    if (a.status === 'latest' && b.status !== 'latest') return -1;
-    if (a.status !== 'latest' && b.status === 'latest') return 1;
-    return a.name.localeCompare(b.name);
-  });
+  return sortProjects(results);
+}
+
+/** Subdirectory names that should be skipped during lock-file scanning. */
+const SCAN_SKIP_DIRS = new Set(['node_modules', 'dist', 'build', '.git']);
+
+/**
+ * Recursively scan a directory for lock files, collecting matching ProjectInfo entries.
+ * @internal
+ */
+async function _scanDirForLockfiles(
+  dir: string,
+  depth: number,
+  seen: Set<string>,
+  results: ProjectInfo[],
+  home: string,
+  currentVersion: string,
+  fs: typeof import('node:fs/promises')
+): Promise<void> {
+  if (depth > 3 || seen.has(dir)) return;
+  seen.add(dir);
+
+  let entries: import('node:fs').Dirent[];
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+
+  const lockFile = await readLockFile(dir);
+  if (lockFile) {
+    if (isUnderHome(dir, home)) {
+      const version = lockFile.version || lockFile.templateVersion || null;
+      results.push({
+        name: basename(dir),
+        path: dir,
+        version,
+        installedAt: (lockFile.installedAt as string | undefined) || null,
+        updatedAt: (lockFile.updatedAt as string | undefined) || null,
+        status: computeStatus(version, currentVersion),
+        detectionMethod: 'lockfile',
+      });
+    }
+    return;
+  }
+
+  if (depth < 3) {
+    const subdirs = entries.filter(
+      (e) => e.isDirectory() && !e.name.startsWith('.') && !SCAN_SKIP_DIRS.has(e.name)
+    );
+    await Promise.all(
+      subdirs.map((sub) =>
+        _scanDirForLockfiles(
+          join(dir, sub.name),
+          depth + 1,
+          seen,
+          results,
+          home,
+          currentVersion,
+          fs
+        ).catch(() => {})
+      )
+    );
+  }
 }
 
 /**
@@ -204,48 +285,7 @@ async function _findProjectsFromLockfiles(
 
   const seen = new Set<string>();
   const results: ProjectInfo[] = [];
-
-  async function scanDir(dir: string, depth: number): Promise<void> {
-    if (depth > 3 || seen.has(dir)) return;
-    seen.add(dir);
-
-    let entries: import('node:fs').Dirent[];
-    try {
-      entries = await fs.readdir(dir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-
-    const lockFile = await readLockFile(dir);
-    if (lockFile) {
-      const version = lockFile.version || lockFile.templateVersion || null;
-      results.push({
-        name: basename(dir),
-        path: dir,
-        version,
-        installedAt: (lockFile.installedAt as string | undefined) || null,
-        updatedAt: (lockFile.updatedAt as string | undefined) || null,
-        status: computeStatus(version, currentVersion),
-        detectionMethod: 'lockfile',
-      });
-      return;
-    }
-
-    if (depth < 3) {
-      const subdirs = entries.filter(
-        (e) =>
-          e.isDirectory() &&
-          !e.name.startsWith('.') &&
-          e.name !== 'node_modules' &&
-          e.name !== 'dist' &&
-          e.name !== 'build' &&
-          e.name !== '.git'
-      );
-      await Promise.all(
-        subdirs.map((sub) => scanDir(join(dir, sub.name), depth + 1).catch(() => {}))
-      );
-    }
-  }
+  const home = process.env.HOME ?? homedir();
 
   const searchPaths: string[] = options.paths ? [...options.paths] : [];
 
@@ -256,13 +296,13 @@ async function _findProjectsFromLockfiles(
     if (parent !== cwd && !searchPaths.includes(parent)) searchPaths.push(parent);
   }
 
-  await Promise.all(searchPaths.map((p) => scanDir(p, 0).catch(() => {})));
+  await Promise.all(
+    searchPaths.map((p) =>
+      _scanDirForLockfiles(p, 0, seen, results, home, currentVersion, fs).catch(() => {})
+    )
+  );
 
-  return results.sort((a, b) => {
-    if (a.status === 'latest' && b.status !== 'latest') return -1;
-    if (a.status !== 'latest' && b.status === 'latest') return 1;
-    return a.name.localeCompare(b.name);
-  });
+  return sortProjects(results);
 }
 
 /**
