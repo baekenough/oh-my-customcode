@@ -3,8 +3,8 @@
 
 meta:
   updated: "2026-04-12"
-  total_pages: 235
-  total_sources: 207
+  total_pages: 238
+  total_sources: 210
 
 pages:
   architecture:
@@ -652,6 +652,15 @@ pages:
     - file: guides/web-scraping.md
       title: "Web Scraping Guide"
       summary: "Reference documentation for reliable web scraping patterns with BeautifulSoup and more"
+    - file: guides/worktree-lifecycle.md
+      title: "Worktree Lifecycle Automation Guide"
+      summary: "Three shell aliases (agent-spin, agent-merge, agent-clean) automating the full git worktree lifecycle for AI agent workflows"
+    - file: guides/multi-model-routing.md
+      title: "Multi-Model Routing Guide"
+      summary: "Role-based model selection strategy mapping task types to haiku/sonnet/opus tiers with escalation and project override patterns"
+    - file: guides/agents-md-quality.md
+      title: "Agent Definition Quality Standards Guide"
+      summary: "Quality criteria for .claude/agents/*.md files — four-section structure, frontmatter checklist, anti-patterns, and verification workflow"
 
   workflows:
     - file: workflows/development-workflow.md

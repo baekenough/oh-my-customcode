@@ -244,3 +244,22 @@ guides:
     path: ./web-scraping/
     source:
       type: internal
+
+  # Agent Operations
+  - name: worktree-lifecycle
+    description: Worktree lifecycle automation aliases (agent-spin/merge/clean) for AI agent workflows
+    path: ./worktree-lifecycle/
+    source:
+      type: internal
+
+  - name: multi-model-routing
+    description: Role-based model selection strategy for AI agent workflows
+    path: ./multi-model-routing/
+    source:
+      type: internal
+
+  - name: agents-md-quality
+    description: Agent definition quality standards adapted from ETH Zurich research
+    path: ./agents-md-quality/
+    source:
+      type: internal

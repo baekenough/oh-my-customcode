@@ -309,6 +309,7 @@ async function installSettingsLocal(targetDir: string, result: InstallResult): P
       type: 'command' as const,
       command: '.claude/statusline.sh',
       padding: 0,
+      refreshInterval: 10,
     },
   };
 
