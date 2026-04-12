@@ -77,7 +77,7 @@ jobs:
           # Check rules
           for src in .claude/rules/*.md; do
             # Extract rule ID (R000, R007, etc.) from content
-            rule_id=$(grep -oP 'ID\*\*: R\K[0-9]+' "$src" | head -1)
+            rule_id=$(grep -oE 'ID\*\*: R[0-9]+' "$src" | grep -oE '[0-9]+' | head -1)
             if [ -n "$rule_id" ]; then
               wiki_page="wiki/rules/r$(printf '%03d' $rule_id).md"
               if [ ! -f "$wiki_page" ]; then

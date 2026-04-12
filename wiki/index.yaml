@@ -3,8 +3,8 @@
 
 meta:
   updated: "2026-04-12"
-  total_pages: 231
-  total_sources: 203
+  total_pages: 235
+  total_sources: 207
 
 pages:
   architecture:
@@ -166,11 +166,17 @@ pages:
     - file: agents/tool-optimizer.md
       title: "tool-optimizer"
       summary: "Bundle size and performance analysis specialist for detecting dead code, verifying"
+    - file: agents/wiki-curator.md
+      title: "wiki-curator"
+      summary: "Dedicated wiki page CRUD agent — creates, updates, and maintains wiki/ markdown pages"
 
   skills:
     - file: skills/action-validator.md
       title: "Action Validator"
       summary: "Pre-action boundary checking — validates agent tool calls against declared capabilities"
+    - file: skills/adaptive-harness.md
+      title: "Adaptive Harness"
+      summary: "Auto-detect project context and optimize the oh-my-customcode harness — deactivate unused agents/skills, suggest missing experts"
     - file: skills/adversarial-review.md
       title: "Adversarial Review"
       summary: "Adversarial code review using attacker mindset — trust boundary, attack surface"
@@ -468,6 +474,9 @@ pages:
     - file: skills/wiki.md
       title: "Wiki"
       summary: "Generate and maintain a persistent wiki from agents, skills, rules, and guides."
+    - file: skills/wiki-rag.md
+      title: "Wiki RAG"
+      summary: "Use the project wiki as a RAG knowledge source — search wiki pages to answer codebase questions before exploring raw files."
     - file: skills/worker-reviewer-pipeline.md
       title: "Worker Reviewer Pipeline"
       summary: "Worker-Reviewer iterative pipeline for quality-gated code generation."
@@ -539,6 +548,9 @@ pages:
     - file: rules/r021.md
       title: "R021: Enforcement Policy"
       summary: "oh-my-customcode uses an advisory-first enforcement model. Most rules are enforced"
+    - file: rules/r022.md
+      title: "R022: Wiki Sync Rules"
+      summary: "When agents, skills, rules, or guides change, corresponding wiki pages should be updated"
 
   guides:
     - file: guides/airflow.md
