@@ -194,3 +194,47 @@ recall_errors:
   - Connection failure: Return empty with warning
   - Invalid query: Help user reformulate
 ```
+
+## MemKraft Bridge (Optional)
+
+> External integration: [MemKraft](https://github.com/seojoonkim/memkraft) — zero-dependency compound memory for AI agents.
+> Install: `pipx install memkraft`
+
+### When to Use
+
+| Capability | claude-mem | MemKraft |
+|-----------|-----------|----------|
+| Session persistence | ✅ (Chroma) | ✅ (Markdown) |
+| Entity tracking | ❌ | ✅ (person/org/concept) |
+| Source attribution | ❌ | ✅ (`[Source: who, when, how]`) |
+| Auto-maintenance | ❌ | ✅ (Dream Cycle) |
+| CJK entity extraction | ❌ | ✅ (Korean/Chinese/Japanese) |
+| Offline search | ❌ | ✅ (stdlib difflib) |
+
+Use MemKraft when entity tracking or source attribution is needed. Use claude-mem for simple session persistence.
+
+### Commands
+
+```bash
+# Extract entities from a document
+memkraft extract <file>
+
+# Get a brief on a topic
+memkraft brief <topic>
+
+# Run maintenance cycle (dedup, prune orphans)
+memkraft dream
+```
+
+### Integration with sys-memory-keeper
+
+At session end, sys-memory-keeper can optionally run MemKraft operations:
+
+1. `memkraft extract` on session summary → builds entity graph
+2. `memkraft dream` → prunes stale entries (run weekly, not every session)
+
+### Prerequisites
+
+- Python 3.9+
+- `pipx install memkraft`
+- No API keys required (offline-only)
