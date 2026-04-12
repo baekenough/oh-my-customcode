@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.82.0",
-  "generatedAt": "2026-04-12T14:01:40.829Z",
-  "templateVersion": "0.82.0",
+  "generatorVersion": "0.83.0",
+  "generatedAt": "2026-04-12T14:26:16.397Z",
+  "templateVersion": "0.83.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -1049,6 +1049,11 @@
       "size": 1984,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/session-autofix-prompt.sh": {
+      "templateHash": "6f65a9a59722c0538dcc2a6f65a2284a452063bf393b42f4c0d503dfb97ef62f",
+      "size": 1049,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/agent-teams-advisor.sh": {
       "templateHash": "e9ed54a62710e149ab2ecf8437e5f81585cc63f5e79919db9a66046402859d56",
       "size": 2857,
@@ -1129,9 +1134,14 @@
       "size": 2506,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/session-autofix.sh": {
+      "templateHash": "aef45df8bd40efe7548b3720ad7a35a7d04a24bf63fc6d40bcace5fb91497a95",
+      "size": 5353,
+      "component": "hooks"
+    },
     ".claude/hooks/hooks.json": {
-      "templateHash": "6858bb674df30f19cd84fe99e8289724f155210a2604932e6beb90e9af5aafeb",
-      "size": 23895,
+      "templateHash": "165c66e0d751dbdb6764be28362696594577a1eb385bf68014b936c38e6d1938",
+      "size": 24468,
       "component": "hooks"
     },
     ".claude/ontology/agents.yaml": {
