@@ -51,6 +51,7 @@ async function _writeClaudeMarkers(dir: string): Promise<void> {
 
 let tempRoot: string;
 let originalCwd: string;
+let originalHome: string | undefined;
 
 beforeEach(async () => {
   // Create a temp dir that is OUTSIDE DEFAULT_SEARCH_DIRS so default search
@@ -59,6 +60,13 @@ beforeEach(async () => {
   const raw = await mkdtemp(join(tmpdir(), 'omcc-projects-test-'));
   tempRoot = realpathSync(raw);
   originalCwd = process.cwd();
+
+  // Set HOME to tempRoot so the homedir filter in findProjects() treats
+  // tempRoot as the home directory. This is required because tmpdir() resolves
+  // to /private/var/folders/... on macOS, which is outside the real HOME.
+  // The same HOME-override pattern is used in src/core/registry.ts:33.
+  originalHome = process.env.HOME;
+  process.env.HOME = tempRoot;
 
   // Isolate the registry so findProjects() falls back to lock-file scanning.
   // An empty registry causes findProjects() to use _findProjectsFromLockfiles(),
@@ -77,6 +85,7 @@ beforeEach(async () => {
 afterEach(async () => {
   _setRegistryDirForTesting(undefined);
   process.chdir(originalCwd);
+  process.env.HOME = originalHome;
   await rm(tempRoot, { recursive: true, force: true });
 });
 
@@ -922,11 +931,14 @@ describe('projectsCommand() — simple formatting', () => {
 describe('projectsCommand() — shortenPath coverage', () => {
   it('shortens home directory paths to ~ in table output', async () => {
     const { homedir } = await import('node:os');
-    const home = homedir();
+    // Use the real homedir (not tempRoot) so the project path is under ~
+    // and the homedir filter in findProjects() allows it through.
+    const realHome = homedir();
+    process.env.HOME = realHome;
 
     // Create a project path under home dir to trigger the ~ shortening branch
     // We don't actually create the directory — we fake the registry entry instead
-    const projectUnderHome = join(home, '.oh-my-customcode-test-project-coverage');
+    const projectUnderHome = join(realHome, '.oh-my-customcode-test-project-coverage');
     const registryDir = join(tempRoot, '.oh-my-customcode');
     await mkdir(registryDir, { recursive: true });
     await writeFile(
@@ -956,6 +968,8 @@ describe('projectsCommand() — shortenPath coverage', () => {
       expect(output).toContain('~');
     } finally {
       consoleSpy.mockRestore();
+      // Restore HOME to tempRoot for the afterEach cleanup to work correctly
+      process.env.HOME = tempRoot;
     }
   });
 });

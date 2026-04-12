@@ -298,7 +298,7 @@ Default: `core` (when field is omitted)
 
 ### Context Fork Criteria
 
-Use `context: fork` for multi-agent orchestration skills only. Cap: **12 total**. Current: 9/12 (secretary/dev-lead/de-lead/qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan).
+Use `context: fork` for multi-agent orchestration skills only. Cap: **12 total**. Current: 12/12 (secretary/dev-lead/de-lead/qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan, professor-triage, evaluator-optimizer, sauron-watch).
 
 <!-- DETAIL: Context Fork decision table
 | Use context:fork | Do NOT use context:fork |

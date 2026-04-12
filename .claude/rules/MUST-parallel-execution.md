@@ -130,6 +130,26 @@ Must use `[N] {subagent_type}:{model}` format. `[N]` is 1-indexed and MUST match
 
 Single agent spawns do NOT use the `[N]` prefix.
 
+## Narrative Announcement Format (Before Spawn)
+
+When announcing a parallel dispatch in prose text (not the Agent tool call itself), use a markdown list rather than inline comma-separated description:
+
+### Correct
+
+```
+병렬 실행:
+- [1] {agent-a}: {task-a}
+- [2] {agent-b}: {task-b}
+```
+
+### Incorrect
+
+```
+병렬 실행: [1] {agent-a}가 {task-a}, [2] {agent-b}가 {task-b}.
+```
+
+The list form mirrors the tool-call `[N]` prefix pattern and scales better to 3+ concurrent agents.
+
 ## Result Aggregation
 
 ```
