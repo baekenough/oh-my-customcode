@@ -64,6 +64,38 @@ user-invocable: false
 
 반드시 아래 순서로 진행한다.
 
+### Phase 0. Blocker Triage (Pre-Debug Gate)
+
+**Trigger**: When any external dependency, tool, or resource appears unavailable.
+
+Before declaring a task blocked or unsolvable, exhaust this checklist:
+
+| # | Workaround Path | Check |
+|---|----------------|-------|
+| 1 | Environment bypass | Can the dependency be bypassed in the current environment? |
+| 2 | Alternative tool | Is there an alternative tool, library, or approach? |
+| 3 | Partial solution | Can the task be partially completed without the dependency? |
+| 4 | Install/configure | Can the dependency be installed or configured now? |
+| 5 | Existing credentials | Are related tokens, auth files, or configs already present? |
+
+**Rules**:
+- Minimum 3 workaround paths MUST be explored before declaring "blocked"
+- Each explored path must be documented with outcome
+- "Session unsolvable" declarations MUST include the list of attempted workaround paths
+- If a workaround is found, proceed with debugging using that workaround
+
+**Output format**:
+```
+[Blocker Triage]
+├── Dependency: {what is unavailable}
+├── Path 1: {attempted} → {outcome}
+├── Path 2: {attempted} → {outcome}
+├── Path 3: {attempted} → {outcome}
+└── Verdict: {proceed with workaround N | genuinely blocked — reason}
+```
+
+If verdict is "genuinely blocked", escalate to user with full triage report. Do NOT silently abandon the task.
+
 ### Phase 1. Define The Problem
 
 먼저 문제를 축약한다.

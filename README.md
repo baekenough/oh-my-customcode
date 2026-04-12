@@ -21,19 +21,6 @@ npm install -g oh-my-customcode && cd your-project && omcustom init
 
 ---
 
-## What's New in v0.74.0
-
-| Feature | Description |
-|---------|-------------|
-| **`omcustom sync`** | Drift detection for `.claude/` configuration — compare against lockfile, export team snapshots |
-| **`omcustom init --from-snapshot`** | Team reproducibility — install from pre-configured snapshot directory |
-| **`analysis --interview`** | Interactive AI architecture interview before file-based project detection |
-| **skill-extractor** | 100th skill — analyze task trajectories to propose reusable SKILL.md candidates |
-| **User Model** | Structured tracking of correction patterns, skill preferences, expertise profile |
-| **Release Cleanup** | Auto-close linked issues and delete release branches on PR merge |
-
----
-
 ## Philosophy
 
 oh-my-customcode is built on two ideas:
