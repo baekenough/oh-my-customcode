@@ -305,25 +305,31 @@ describe('Hooks Validation', () => {
       for (const hookCmd of getAllHookCmds(data)) {
         expect(hookCmd).toHaveProperty('type');
         expect(typeof hookCmd.type).toBe('string');
-        // 'command' type requires command field; 'prompt' type requires prompt field
+        // 'command' type requires command field
+        // 'prompt' type requires either prompt field (inline) or command field (shell-based)
         if (hookCmd.type === 'command') {
           expect(hookCmd).toHaveProperty('command');
           expect(typeof hookCmd.command).toBe('string');
         }
         if (hookCmd.type === 'prompt') {
-          expect(hookCmd).toHaveProperty('prompt');
-          expect(typeof hookCmd.prompt).toBe('string');
+          const hasPrompt = 'prompt' in hookCmd && typeof hookCmd.prompt === 'string';
+          const hasCommand = 'command' in hookCmd && typeof hookCmd.command === 'string';
+          expect(hasPrompt || hasCommand).toBe(true);
         }
       }
     });
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: test helper getAllHookCmds spans many hook types
     it('should have non-empty payload strings on all hook commands', async () => {
       const { parsed } = await loadHooksJson();
       const data = parsed as HooksStructure;
 
       for (const hookCmd of getAllHookCmds(data)) {
         if (hookCmd.type === 'command') expect(hookCmd.command.trim().length).toBeGreaterThan(0);
-        if (hookCmd.type === 'prompt') expect(hookCmd.prompt.trim().length).toBeGreaterThan(0);
+        if (hookCmd.type === 'prompt') {
+          if ('prompt' in hookCmd) expect(hookCmd.prompt.trim().length).toBeGreaterThan(0);
+          if ('command' in hookCmd) expect(hookCmd.command.trim().length).toBeGreaterThan(0);
+        }
       }
     });
 

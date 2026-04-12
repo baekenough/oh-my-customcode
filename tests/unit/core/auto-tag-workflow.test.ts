@@ -192,6 +192,7 @@ describe('auto-tag.yml — version extraction', () => {
 
   it('should prefix version with "v" to form the tag', async () => {
     const content = await readWorkflow();
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional string concat to avoid template literal evaluation
     expect(content).toContain('TAG="v' + '${VERSION}"');
   });
 
