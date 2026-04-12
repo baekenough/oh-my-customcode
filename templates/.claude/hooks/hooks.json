@@ -165,6 +165,16 @@
           }
         ],
         "description": "Lightweight project profile staleness check for adaptive harness (#831)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/session-autofix.sh"
+          }
+        ],
+        "description": "Auto-detect and fix previous session issues at start (#838)"
       }
     ],
     "UserPromptSubmit": [
@@ -177,6 +187,16 @@
           }
         ],
         "description": "Advisory pre-processing of user input — skill matching hints and intent analysis"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "prompt",
+            "command": "bash .claude/hooks/scripts/session-autofix-prompt.sh"
+          }
+        ],
+        "description": "Inject session auto-fix findings into first user prompt (#838)"
       }
     ],
     "SubagentStart": [
