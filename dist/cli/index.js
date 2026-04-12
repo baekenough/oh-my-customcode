@@ -5,25 +5,43 @@ var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+function __accessProp(key) {
+  return this[key];
+}
+var __toESMCache_node;
+var __toESMCache_esm;
 var __toESM = (mod, isNodeMode, target) => {
+  var canCache = mod != null && typeof mod === "object";
+  if (canCache) {
+    var cache = isNodeMode ? __toESMCache_node ??= new WeakMap : __toESMCache_esm ??= new WeakMap;
+    var cached = cache.get(mod);
+    if (cached)
+      return cached;
+  }
   target = mod != null ? __create(__getProtoOf(mod)) : {};
   const to = isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target;
   for (let key of __getOwnPropNames(mod))
     if (!__hasOwnProp.call(to, key))
       __defProp(to, key, {
-        get: () => mod[key],
+        get: __accessProp.bind(mod, key),
         enumerable: true
       });
+  if (canCache)
+    cache.set(mod, to);
   return to;
 };
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+var __returnValue = (v) => v;
+function __exportSetter(name, newValue) {
+  this[name] = __returnValue.bind(null, newValue);
+}
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, {
       get: all[name],
       enumerable: true,
       configurable: true,
-      set: (newValue) => all[name] = () => newValue
+      set: __exportSetter.bind(all, name)
     });
 };
 var __esm = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
@@ -2120,6 +2138,253 @@ var require_commander = __commonJS((exports) => {
   exports.CommanderError = CommanderError;
   exports.InvalidArgumentError = InvalidArgumentError;
   exports.InvalidOptionArgumentError = InvalidArgumentError;
+});
+
+// src/core/registry.ts
+var exports_registry = {};
+__export(exports_registry, {
+  unregisterProject: () => unregisterProject,
+  registryToList: () => registryToList,
+  registerProject: () => registerProject,
+  readRegistry: () => readRegistry,
+  migrateFromLockfiles: () => migrateFromLockfiles,
+  cleanRegistry: () => cleanRegistry,
+  _setRegistryDirForTesting: () => _setRegistryDirForTesting
+});
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { basename, join, resolve } from "node:path";
+function _setRegistryDirForTesting(dir) {
+  _registryDirOverride = dir;
+}
+function registryDir() {
+  if (_registryDirOverride !== undefined)
+    return _registryDirOverride;
+  const home = process.env.HOME ?? homedir();
+  return join(home, ".oh-my-customcode");
+}
+function registryPath() {
+  return join(registryDir(), "projects.json");
+}
+async function readRegistryRaw() {
+  try {
+    const content = await readFile(registryPath(), "utf-8");
+    const parsed = JSON.parse(content);
+    if (typeof parsed === "object" && parsed !== null && "projects" in parsed && typeof parsed.projects === "object" && parsed.projects !== null) {
+      return parsed;
+    }
+    return { ...EMPTY_REGISTRY };
+  } catch {
+    return { ...EMPTY_REGISTRY };
+  }
+}
+async function writeRegistry(registry) {
+  const dir = registryDir();
+  await mkdir(dir, { recursive: true });
+  await writeFile(registryPath(), JSON.stringify(registry, null, 2), "utf-8");
+}
+async function readRegistry() {
+  return readRegistryRaw();
+}
+async function registerProject(projectPath, version) {
+  const normalizedPath = resolve(projectPath);
+  const registry = await readRegistryRaw();
+  const existing = registry.projects[normalizedPath];
+  const now = new Date().toISOString();
+  registry.projects[normalizedPath] = {
+    version,
+    installedAt: existing?.installedAt ?? now,
+    updatedAt: now
+  };
+  await writeRegistry(registry);
+}
+async function unregisterProject(projectPath) {
+  const normalizedPath = resolve(projectPath);
+  const registry = await readRegistryRaw();
+  if (!(normalizedPath in registry.projects))
+    return;
+  delete registry.projects[normalizedPath];
+  await writeRegistry(registry);
+}
+async function cleanRegistry() {
+  const { access: fsAccess } = await import("node:fs/promises");
+  const registry = await readRegistryRaw();
+  const paths = Object.keys(registry.projects);
+  let removed = 0;
+  for (const projectPath of paths) {
+    try {
+      await fsAccess(projectPath);
+    } catch {
+      delete registry.projects[projectPath];
+      removed++;
+    }
+  }
+  if (removed > 0) {
+    await writeRegistry(registry);
+  }
+  return removed;
+}
+async function parseLockFile(lockPath) {
+  try {
+    const content = await readFile(lockPath, "utf-8");
+    const lock = JSON.parse(content);
+    const version = typeof lock.version === "string" ? lock.version : typeof lock.templateVersion === "string" ? lock.templateVersion : "0.0.0";
+    const now = new Date().toISOString();
+    return {
+      version,
+      installedAt: typeof lock.installedAt === "string" ? lock.installedAt : now,
+      updatedAt: typeof lock.updatedAt === "string" ? lock.updatedAt : now
+    };
+  } catch {
+    return null;
+  }
+}
+async function migrateFromLockfiles(searchDirs) {
+  const { readdir } = await import("node:fs/promises");
+  const MAX_DEPTH = 3;
+  const discovered = new Map;
+  async function scan(dir, depth) {
+    if (depth > MAX_DEPTH || discovered.has(dir))
+      return;
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    const entry = await parseLockFile(join(dir, ".omcustom.lock.json"));
+    if (entry !== null) {
+      discovered.set(resolve(dir), entry);
+      return;
+    }
+    if (depth < MAX_DEPTH) {
+      const subdirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && !SCAN_SKIP_DIRS.has(e.name));
+      await Promise.all(subdirs.map((sub) => scan(join(dir, sub.name), depth + 1)));
+    }
+  }
+  await Promise.all(searchDirs.map((dir) => scan(dir, 0).catch(() => {})));
+  if (discovered.size === 0)
+    return 0;
+  const registry = await readRegistryRaw();
+  let imported = 0;
+  for (const [projectPath, entry] of discovered) {
+    if (!(projectPath in registry.projects)) {
+      registry.projects[projectPath] = entry;
+      imported++;
+    }
+  }
+  if (imported > 0) {
+    await writeRegistry(registry);
+  }
+  return imported;
+}
+function registryToList(registry) {
+  return Object.entries(registry.projects).map(([path, entry]) => ({
+    name: basename(path),
+    path,
+    version: entry.version,
+    installedAt: entry.installedAt,
+    updatedAt: entry.updatedAt
+  }));
+}
+var _registryDirOverride, EMPTY_REGISTRY, SCAN_SKIP_DIRS;
+var init_registry = __esm(() => {
+  EMPTY_REGISTRY = { projects: {} };
+  SCAN_SKIP_DIRS = new Set(["node_modules", "dist", "build", ".git"]);
+});
+
+// package.json
+var package_default;
+var init_package = __esm(() => {
+  package_default = {
+    name: "oh-my-customcode",
+    workspaces: [
+      "packages/*"
+    ],
+    version: "0.82.0",
+    description: "Batteries-included agent harness for Claude Code",
+    type: "module",
+    bin: {
+      omcustom: "./dist/cli/index.js"
+    },
+    main: "./dist/index.js",
+    types: "./dist/index.d.ts",
+    exports: {
+      ".": {
+        import: "./dist/index.js",
+        types: "./dist/index.d.ts"
+      }
+    },
+    files: [
+      "dist",
+      "templates"
+    ],
+    publishConfig: {
+      access: "public",
+      registry: "https://registry.npmjs.org/"
+    },
+    scripts: {
+      dev: "bun run src/cli/index.ts",
+      build: "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && bun run scripts/sync-source-lockfile.ts",
+      test: "bun test tests/ packages/eval-core/",
+      "test:unit": "bun test tests/unit",
+      "test:integration": "bun test tests/integration",
+      "test:e2e": "bun test tests/e2e",
+      "test:coverage": "bun test --coverage",
+      lint: "biome check src/ tests/ scripts/",
+      "lint:fix": "biome check --write src/ tests/ scripts/",
+      format: "biome format --write src/ tests/ scripts/",
+      typecheck: "tsc --noEmit",
+      "docs:dev": "vitepress dev docs",
+      "docs:build": "vitepress build docs",
+      prepare: "sh scripts/setup-hooks.sh || true",
+      "setup:hooks": "sh scripts/setup-hooks.sh",
+      prepublishOnly: "bun run build && bun run test"
+    },
+    dependencies: {
+      "@clack/prompts": "^1.1.0",
+      "@inquirer/prompts": "^8.3.2",
+      commander: "^14.0.2",
+      i18next: "^26.0.2",
+      yaml: "^2.8.2"
+    },
+    devDependencies: {
+      "@anthropic-ai/sdk": "^0.82.0",
+      "@biomejs/biome": "^2.3.12",
+      "@types/bun": "^1.3.6",
+      "@types/js-yaml": "^4.0.9",
+      "@types/nodemailer": "^8.0.0",
+      "js-yaml": "^4.1.0",
+      nodemailer: "^8.0.1",
+      typescript: "^6.0.2",
+      vitepress: "^1.6.4"
+    },
+    keywords: [
+      "claude",
+      "claude-code",
+      "openai",
+      "ai",
+      "agent",
+      "cli"
+    ],
+    author: "baekenough",
+    license: "MIT",
+    repository: {
+      type: "git",
+      url: "git+https://github.com/baekenough/oh-my-customcode.git"
+    },
+    bugs: {
+      url: "https://github.com/baekenough/oh-my-customcode/issues"
+    },
+    homepage: "https://github.com/baekenough/oh-my-customcode#readme",
+    engines: {
+      node: ">=18.0.0"
+    },
+    overrides: {
+      rollup: "^4.59.0",
+      esbuild: "^0.25.0"
+    }
+  };
 });
 
 // node_modules/.bun/yaml@2.8.2/node_modules/yaml/dist/nodes/identity.js
@@ -9050,7 +9315,7 @@ __export(exports_fs, {
   copyDirectory: () => copyDirectory,
   calculateChecksum: () => calculateChecksum
 });
-import { dirname as dirname2, isAbsolute, join as join2, relative, resolve, sep } from "node:path";
+import { dirname as dirname2, isAbsolute, join as join3, relative, resolve as resolve2, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 function validatePreserveFilePath(filePath, projectRoot) {
   if (!filePath || filePath.trim() === "") {
@@ -9065,7 +9330,7 @@ function validatePreserveFilePath(filePath, projectRoot) {
       reason: "Absolute paths are not allowed"
     };
   }
-  const resolvedPath = resolve(projectRoot, filePath);
+  const resolvedPath = resolve2(projectRoot, filePath);
   const relativePath = relative(projectRoot, resolvedPath);
   if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
     return {
@@ -9211,11 +9476,11 @@ async function remove(path) {
 function getPackageRoot() {
   const currentFile = fileURLToPath(import.meta.url);
   const currentDir = dirname2(currentFile);
-  return resolve(currentDir, "..", "..");
+  return resolve2(currentDir, "..", "..");
 }
 function resolveTemplatePath(relativePath) {
   const packageRoot = getPackageRoot();
-  return join2(packageRoot, "templates", relativePath);
+  return join3(packageRoot, "templates", relativePath);
 }
 async function listFiles(dir2, options = {}) {
   const fs = await import("node:fs/promises");
@@ -9295,103 +9560,9 @@ function isAbsolutePath(inputPath) {
   return isAbsolute(inputPath);
 }
 function resolvePath(...paths) {
-  return resolve(...paths);
+  return resolve2(...paths);
 }
 var init_fs = () => {};
-
-// package.json
-var package_default;
-var init_package = __esm(() => {
-  package_default = {
-    name: "oh-my-customcode",
-    workspaces: [
-      "packages/*"
-    ],
-    version: "0.78.3",
-    description: "Batteries-included agent harness for Claude Code",
-    type: "module",
-    bin: {
-      omcustom: "./dist/cli/index.js"
-    },
-    main: "./dist/index.js",
-    types: "./dist/index.d.ts",
-    exports: {
-      ".": {
-        import: "./dist/index.js",
-        types: "./dist/index.d.ts"
-      }
-    },
-    files: [
-      "dist",
-      "templates"
-    ],
-    publishConfig: {
-      access: "public",
-      registry: "https://registry.npmjs.org/"
-    },
-    scripts: {
-      dev: "bun run src/cli/index.ts",
-      build: "bun build src/cli/index.ts --outdir dist/cli --target node && bun build src/index.ts --outdir dist --target node && bun run scripts/sync-source-lockfile.ts",
-      test: "bun test tests/ packages/eval-core/",
-      "test:unit": "bun test tests/unit",
-      "test:integration": "bun test tests/integration",
-      "test:e2e": "bun test tests/e2e",
-      "test:coverage": "bun test --coverage",
-      lint: "biome check src/ tests/ scripts/",
-      "lint:fix": "biome check --write src/ tests/ scripts/",
-      format: "biome format --write src/ tests/ scripts/",
-      typecheck: "tsc --noEmit",
-      "docs:dev": "vitepress dev docs",
-      "docs:build": "vitepress build docs",
-      prepare: "sh scripts/setup-hooks.sh || true",
-      "setup:hooks": "sh scripts/setup-hooks.sh",
-      prepublishOnly: "bun run build && bun run test"
-    },
-    dependencies: {
-      "@clack/prompts": "^1.1.0",
-      "@inquirer/prompts": "^8.3.2",
-      commander: "^14.0.2",
-      i18next: "^26.0.2",
-      yaml: "^2.8.2"
-    },
-    devDependencies: {
-      "@anthropic-ai/sdk": "^0.82.0",
-      "@biomejs/biome": "^2.3.12",
-      "@types/bun": "^1.3.6",
-      "@types/js-yaml": "^4.0.9",
-      "@types/nodemailer": "^8.0.0",
-      "js-yaml": "^4.1.0",
-      nodemailer: "^8.0.1",
-      typescript: "^6.0.2",
-      vitepress: "^1.6.4"
-    },
-    keywords: [
-      "claude",
-      "claude-code",
-      "openai",
-      "ai",
-      "agent",
-      "cli"
-    ],
-    author: "baekenough",
-    license: "MIT",
-    repository: {
-      type: "git",
-      url: "git+https://github.com/baekenough/oh-my-customcode.git"
-    },
-    bugs: {
-      url: "https://github.com/baekenough/oh-my-customcode/issues"
-    },
-    homepage: "https://github.com/baekenough/oh-my-customcode#readme",
-    engines: {
-      node: ">=18.0.0"
-    },
-    overrides: {
-      rollup: "^4.59.0",
-      esbuild: "^0.25.0"
-    }
-  };
-});
 
 // src/cli/projects.ts
 var exports_projects = {};
@@ -9402,30 +9573,16 @@ __export(exports_projects, {
   findProjects: () => findProjects,
   default: () => projects_default
 });
-import { homedir as homedir2 } from "node:os";
-import { basename as basename3, dirname as dirname3, join as join9 } from "node:path";
+import { homedir as homedir3 } from "node:os";
+import { basename as basename4, join as join10, sep as sep2 } from "node:path";
 async function readLockFile(projectDir) {
-  const lockFilePath = join9(projectDir, ".omcustom.lock.json");
+  const lockFilePath = join10(projectDir, ".omcustom.lock.json");
   try {
     const fs2 = await import("node:fs/promises");
     const content = await fs2.readFile(lockFilePath, "utf-8");
     return JSON.parse(content);
   } catch {
     return null;
-  }
-}
-async function hasOmcustomMarkers(dir2) {
-  const fs2 = await import("node:fs/promises");
-  const agentsDir = join9(dir2, ".claude", "agents");
-  const skillsDir = join9(dir2, ".claude", "skills");
-  try {
-    const [agentsStat, skillsStat] = await Promise.allSettled([
-      fs2.stat(agentsDir),
-      fs2.stat(skillsDir)
-    ]);
-    return agentsStat.status === "fulfilled" && agentsStat.value.isDirectory() && skillsStat.status === "fulfilled" && skillsStat.value.isDirectory();
-  } catch {
-    return false;
   }
 }
 function computeStatus(version, currentVersion) {
@@ -9443,48 +9600,6 @@ function computeStatus(version, currentVersion) {
   }
   return "latest";
 }
-async function searchDirectory(dir2, depth, results, currentVersion, seen) {
-  if (depth > MAX_SEARCH_DEPTH || seen.has(dir2))
-    return;
-  seen.add(dir2);
-  const fs2 = await import("node:fs/promises");
-  let entries;
-  try {
-    entries = await fs2.readdir(dir2, { withFileTypes: true });
-  } catch {
-    return;
-  }
-  const lockFile = await readLockFile(dir2);
-  if (lockFile) {
-    const version = lockFile.version || lockFile.templateVersion || null;
-    results.push({
-      name: basename3(dir2),
-      path: dir2,
-      version,
-      installedAt: lockFile.installedAt || null,
-      updatedAt: lockFile.updatedAt || null,
-      status: computeStatus(version, currentVersion),
-      detectionMethod: "lockfile"
-    });
-    return;
-  }
-  if (await hasOmcustomMarkers(dir2)) {
-    results.push({
-      name: basename3(dir2),
-      path: dir2,
-      version: null,
-      installedAt: null,
-      updatedAt: null,
-      status: "unknown",
-      detectionMethod: "directory"
-    });
-    return;
-  }
-  if (depth < MAX_SEARCH_DEPTH) {
-    const subdirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && e.name !== "node_modules" && e.name !== "dist" && e.name !== "build" && e.name !== ".git");
-    await Promise.all(subdirs.map((subdir) => searchDirectory(join9(dir2, subdir.name), depth + 1, results, currentVersion, seen)));
-  }
-}
 async function getTemplateVersion() {
   const manifestPath = resolveTemplatePath("manifest.json");
   if (await fileExists(manifestPath)) {
@@ -9495,13 +9610,74 @@ async function getTemplateVersion() {
 }
 async function findProjects(options = {}) {
   const currentVersion = await getTemplateVersion();
-  const home = homedir2();
+  const registry = await readRegistry();
+  if (Object.keys(registry.projects).length === 0) {
+    const fallbackResults = await _findProjectsFromLockfiles(options, currentVersion);
+    if (fallbackResults.length === 0 && !options.paths) {
+      process.stderr.write("  No projects in registry. Run `omcustom projects --migrate` to import existing projects.\n");
+    }
+    return fallbackResults;
+  }
+  const results = [];
+  for (const [projectPath, entry] of Object.entries(registry.projects)) {
+    if (options.paths && options.paths.length > 0) {
+      const matchesPath = options.paths.some((searchPath) => projectPath === searchPath || projectPath.startsWith(searchPath + sep2));
+      if (!matchesPath)
+        continue;
+    }
+    results.push({
+      name: basename4(projectPath),
+      path: projectPath,
+      version: entry.version || null,
+      installedAt: entry.installedAt || null,
+      updatedAt: entry.updatedAt || null,
+      status: computeStatus(entry.version || null, currentVersion),
+      detectionMethod: "registry"
+    });
+  }
+  return results.sort((a, b) => {
+    if (a.status === "latest" && b.status !== "latest")
+      return -1;
+    if (a.status !== "latest" && b.status === "latest")
+      return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+async function _findProjectsFromLockfiles(options, currentVersion) {
+  const { dirname: dirname3 } = await import("node:path");
+  const fs2 = await import("node:fs/promises");
   const seen = new Set;
   const results = [];
-  const searchPaths = [];
-  for (const dir2 of DEFAULT_SEARCH_DIRS) {
-    searchPaths.push(join9(home, dir2));
+  async function scanDir(dir2, depth) {
+    if (depth > 3 || seen.has(dir2))
+      return;
+    seen.add(dir2);
+    let entries;
+    try {
+      entries = await fs2.readdir(dir2, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    const lockFile = await readLockFile(dir2);
+    if (lockFile) {
+      const version = lockFile.version || lockFile.templateVersion || null;
+      results.push({
+        name: basename4(dir2),
+        path: dir2,
+        version,
+        installedAt: lockFile.installedAt || null,
+        updatedAt: lockFile.updatedAt || null,
+        status: computeStatus(version, currentVersion),
+        detectionMethod: "lockfile"
+      });
+      return;
+    }
+    if (depth < 3) {
+      const subdirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && e.name !== "node_modules" && e.name !== "dist" && e.name !== "build" && e.name !== ".git");
+      await Promise.all(subdirs.map((sub) => scanDir(join10(dir2, sub.name), depth + 1).catch(() => {})));
+    }
   }
+  const searchPaths = options.paths ? [...options.paths] : [];
   if (!options.paths) {
     const cwd = process.cwd();
     if (!searchPaths.includes(cwd))
@@ -9510,10 +9686,7 @@ async function findProjects(options = {}) {
     if (parent !== cwd && !searchPaths.includes(parent))
       searchPaths.push(parent);
   }
-  if (options.paths) {
-    searchPaths.push(...options.paths);
-  }
-  await Promise.all(searchPaths.map((searchPath) => searchDirectory(searchPath, 0, results, currentVersion, seen).catch(() => {})));
+  await Promise.all(searchPaths.map((p) => scanDir(p, 0).catch(() => {})));
   return results.sort((a, b) => {
     if (a.status === "latest" && b.status !== "latest")
       return -1;
@@ -9524,7 +9697,7 @@ async function findProjects(options = {}) {
 }
 async function writeLockFile(projectDir, version, existing) {
   const fs2 = await import("node:fs/promises");
-  const lockFilePath = join9(projectDir, ".omcustom.lock.json");
+  const lockFilePath = join10(projectDir, ".omcustom.lock.json");
   const now = new Date().toISOString();
   const merged = {
     ...existing || {},
@@ -9538,8 +9711,7 @@ function formatProjectsTable(projects, currentVersion) {
   if (projects.length === 0) {
     console.log(`
   oh-my-customcode가 적용된 프로젝트를 찾을 수 없습니다.`);
-    console.log(`  검색 경로: ~/workspace, ~/projects, ~/dev, ~/src, ~/code, ~/repos, ~/work, (현재 디렉토리 및 부모)
-`);
+    console.log("  레지스트리가 비어 있습니다. `omcustom projects --migrate`를 실행하여 기존 프로젝트를 가져오세요.\n");
     return;
   }
   const nameWidth = Math.max(20, ...projects.map((p) => p.name.length));
@@ -9571,7 +9743,7 @@ function formatProjectsTable(projects, currentVersion) {
 `);
 }
 function shortenPath(path2) {
-  const home = homedir2();
+  const home = homedir3();
   if (path2.startsWith(home)) {
     return `~${path2.slice(home.length)}`;
   }
@@ -9588,9 +9760,43 @@ oh-my-customcode 적용 프로젝트 (${projects.length}개):`);
   console.log(`
 현재 설치 버전: v${currentVersion}`);
 }
+async function runMigration(options) {
+  const { migrateFromLockfiles: migrateFromLockfiles2 } = await Promise.resolve().then(() => (init_registry(), exports_registry));
+  const { homedir: _homedir } = await import("node:os");
+  const DEFAULT_SEARCH_DIRS = ["workspace", "projects", "dev", "src", "code", "repos", "work"];
+  const home = _homedir();
+  const searchDirs = [...DEFAULT_SEARCH_DIRS.map((d) => join10(home, d)), ...options.paths ?? []];
+  const cwd = process.cwd();
+  if (!searchDirs.includes(cwd))
+    searchDirs.push(cwd);
+  console.log("  레지스트리 마이그레이션 시작...");
+  try {
+    const imported = await migrateFromLockfiles2(searchDirs);
+    console.log(`  마이그레이션 완료: ${imported}개 프로젝트가 레지스트리에 추가되었습니다.`);
+    return null;
+  } catch (error2) {
+    return error2 instanceof Error ? error2.message : String(error2);
+  }
+}
 async function projectsCommand(options = {}) {
   const currentVersion = await getTemplateVersion();
   const format = options.format || "table";
+  if (options.migrate) {
+    const migrationError = await runMigration(options);
+    if (migrationError) {
+      console.error("  마이그레이션 실패:", migrationError);
+      return { success: false, projects: [], currentVersion, errors: [migrationError] };
+    }
+  }
+  if (options.clean) {
+    const { cleanRegistry: cleanRegistry2 } = await Promise.resolve().then(() => (init_registry(), exports_registry));
+    const removed = await cleanRegistry2();
+    if (removed > 0) {
+      console.log(`  정리 완료: ${removed}개 존재하지 않는 프로젝트가 레지스트리에서 제거되었습니다.`);
+    } else {
+      console.log("  정리할 항목이 없습니다.");
+    }
+  }
   console.log("  oh-my-customcode 적용 프로젝트를 검색 중...");
   try {
     const projects = await findProjects(options);
@@ -9608,11 +9814,11 @@ async function projectsCommand(options = {}) {
     return { success: false, projects: [], currentVersion, errors: [errorMessage] };
   }
 }
-var DEFAULT_SEARCH_DIRS, MAX_SEARCH_DEPTH = 3, projects_default;
+var projects_default;
 var init_projects = __esm(() => {
   init_package();
+  init_registry();
   init_fs();
-  DEFAULT_SEARCH_DIRS = ["workspace", "projects", "dev", "src", "code", "repos", "work"];
   projects_default = projectsCommand;
 });
 
@@ -9816,7 +10022,7 @@ var init_hook_engine = __esm(() => {
 import { AsyncResource as AsyncResource2 } from "node:async_hooks";
 function useState(defaultValue) {
   return withPointer((pointer) => {
-    const setState = AsyncResource2.bind(function setState(newValue) {
+    const setState = AsyncResource2.bind(function setState2(newValue) {
       if (pointer.get() !== newValue) {
         pointer.set(newValue);
         handleChange();
@@ -11167,13 +11373,13 @@ var PromisePolyfill;
 var init_promise_polyfill = __esm(() => {
   PromisePolyfill = class PromisePolyfill extends Promise {
     static withResolver() {
-      let resolve3;
+      let resolve4;
       let reject;
       const promise = new Promise((res, rej) => {
-        resolve3 = res;
+        resolve4 = res;
         reject = rej;
       });
-      return { promise, resolve: resolve3, reject };
+      return { promise, resolve: resolve4, reject };
     }
   };
 });
@@ -11211,7 +11417,7 @@ function createPrompt(view) {
       output
     });
     const screen = new ScreenManager(rl);
-    const { promise, resolve: resolve3, reject } = PromisePolyfill.withResolver();
+    const { promise, resolve: resolve4, reject } = PromisePolyfill.withResolver();
     const cancel = () => reject(new CancelPromptError);
     if (signal) {
       const abort = () => reject(new AbortPromptError({ cause: signal.reason }));
@@ -11239,7 +11445,7 @@ function createPrompt(view) {
         cycle(() => {
           try {
             const nextView = view(config, (value) => {
-              setImmediate(() => resolve3(value));
+              setImmediate(() => resolve4(value));
             });
             if (nextView === undefined) {
               const callerFilename = callSites[1]?.getFileName();
@@ -17104,7 +17310,7 @@ var require_lib2 = __commonJS((exports) => {
     return matches;
   };
   exports.analyse = analyse;
-  var detectFile = (filepath, opts = {}) => new Promise((resolve3, reject) => {
+  var detectFile = (filepath, opts = {}) => new Promise((resolve4, reject) => {
     let fd;
     const fs3 = (0, node_1.default)();
     const handler = (err, buffer) => {
@@ -17114,7 +17320,7 @@ var require_lib2 = __commonJS((exports) => {
       if (err) {
         reject(err);
       } else if (buffer) {
-        resolve3((0, exports.detect)(buffer));
+        resolve4((0, exports.detect)(buffer));
       } else {
         reject(new Error("No error and no buffer received"));
       }
@@ -22241,11 +22447,15 @@ function formatPreflightWarnings(result) {
 `);
 }
 
+// src/cli/index.ts
+init_registry();
+
 // src/core/self-update.ts
+init_package();
 import { execSync as execSync2, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { homedir as homedir2 } from "node:os";
+import { dirname, join as join2 } from "node:path";
 import { createInterface } from "node:readline/promises";
 
 // node_modules/.bun/i18next@26.0.2+8e24a2f921b8d7be/node_modules/i18next/dist/esm/i18next.js
@@ -22253,8 +22463,8 @@ var isString = (obj) => typeof obj === "string";
 var defer = () => {
   let res;
   let rej;
-  const promise = new Promise((resolve, reject) => {
-    res = resolve;
+  const promise = new Promise((resolve2, reject) => {
+    res = resolve2;
     rej = reject;
   });
   promise.resolve = res;
@@ -24810,6 +25020,8 @@ var en_default = {
       interactiveUpdating: "Updating selected projects...",
       projectLatestSuffix: "(latest)",
       newVersionAvailable: "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade.",
+      selfUpdateDone: "✓ oh-my-customcode updated ({{from}} → {{to}})",
+      selfUpdateFailed: "⚠ Self-update check failed — continuing with external updates",
       rtkMissing: "[RTK] RTK is not installed. Attempting installation...",
       rtkInstalled: "[RTK] ✓ RTK installed — 60-90% token savings activated",
       codexMissing: "[Codex] Codex CLI is not installed. Attempting installation...",
@@ -25223,6 +25435,8 @@ var ko_default = {
       interactiveUpdating: "선택된 프로젝트 업데이트 중...",
       projectLatestSuffix: "(최신)",
       newVersionAvailable: "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요.",
+      selfUpdateDone: "✓ oh-my-customcode 업데이트 완료 ({{from}} → {{to}})",
+      selfUpdateFailed: "⚠ 자체 업데이트 확인 실패 — 외부 업데이트를 계속 진행합니다",
       rtkMissing: "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
       rtkInstalled: "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화",
       codexMissing: "[Codex] Codex CLI가 설치되지 않았습니다. 설치를 시도합니다...",
@@ -25533,7 +25747,7 @@ var i18n = {
 // src/core/self-update.ts
 var DEFAULT_PACKAGE_NAME = "oh-my-customcode";
 var DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-var DEFAULT_CACHE_PATH = join(homedir(), ".oh-my-customcode", "self-update-cache.json");
+var DEFAULT_CACHE_PATH = join2(homedir2(), ".oh-my-customcode", "self-update-cache.json");
 function normalizeVersion(version) {
   return version.trim().replace(/^v/i, "").split("-")[0] || "";
 }
@@ -25669,6 +25883,70 @@ function runGlobalUpdate(packageName, latestVersion) {
     console.warn(i18n.t("cli.selfUpdate.failed", { error: errorMessage }));
     printContinueCurrentVersion();
   }
+}
+function shouldSkipEnvironmentUpdate(argv, env) {
+  if (isNpxInvocation(argv, env))
+    return true;
+  if (env.CI === "true" || env.GITHUB_ACTIONS === "true")
+    return true;
+  if (env.OMCUSTOM_SKIP_SELF_UPDATE === "true")
+    return true;
+  return false;
+}
+function installGlobalPackage(packageName, version, silent) {
+  try {
+    execSync2(`npm install -g ${packageName}@${version}`, {
+      stdio: silent ? "pipe" : "inherit",
+      timeout: 60000
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+function executeSelfUpdate(options = {}) {
+  const packageName = options.packageName || DEFAULT_PACKAGE_NAME;
+  const argv = options.argv || process.argv;
+  const env = options.env || process.env;
+  const currentVersion = normalizeVersion(options.currentVersion || package_default.version || "");
+  const noUpdate = {
+    updated: false,
+    fromVersion: currentVersion,
+    toVersion: currentVersion
+  };
+  if (shouldSkipEnvironmentUpdate(argv, env)) {
+    return noUpdate;
+  }
+  const checkOptions = {
+    currentVersion,
+    packageName,
+    cachePath: options.cachePath,
+    cacheTtlMs: options.cacheTtlMs,
+    fetchLatestVersion: options.fetchLatestVersion,
+    now: options.now,
+    argv,
+    env
+  };
+  const result = checkSelfUpdate(checkOptions);
+  if (!result.checked || !result.updateAvailable || !result.latestVersion) {
+    return noUpdate;
+  }
+  const latestVersion = result.latestVersion;
+  if (!options.silent) {
+    console.log(i18n.t("cli.selfUpdate.updatingGlobal", { version: latestVersion }));
+  }
+  const installed = installGlobalPackage(packageName, latestVersion, options.silent ?? false);
+  if (installed) {
+    if (!options.silent) {
+      console.log(i18n.t("cli.selfUpdate.updated", { version: latestVersion }));
+      printContinuationSpacing();
+    }
+    return { updated: true, fromVersion: currentVersion, toVersion: latestVersion };
+  }
+  if (!options.silent) {
+    console.warn(i18n.t("cli.selfUpdate.failed", { error: "npm install failed" }));
+  }
+  return noUpdate;
 }
 function checkSelfUpdate(options) {
   const packageName = options.packageName || DEFAULT_PACKAGE_NAME;
@@ -26127,7 +26405,7 @@ function installCodex(deps = defaultDeps) {
 
 // src/core/config.ts
 init_fs();
-import { join as join3 } from "node:path";
+import { join as join4 } from "node:path";
 var CONFIG_FILE = ".omcustomrc.json";
 var CURRENT_CONFIG_VERSION = 1;
 function getDefaultConfig() {
@@ -26167,7 +26445,7 @@ function getDefaultPreferences() {
   };
 }
 function getConfigPath(targetDir) {
-  return join3(targetDir, CONFIG_FILE);
+  return join4(targetDir, CONFIG_FILE);
 }
 async function loadConfig(targetDir) {
   const configPath = getConfigPath(targetDir);
@@ -26264,14 +26542,14 @@ function migrateConfig(config) {
 
 // src/core/doctor-framework.ts
 init_fs();
-import { readFile } from "node:fs/promises";
-import { join as join4 } from "node:path";
+import { readFile as readFile2 } from "node:fs/promises";
+import { join as join5 } from "node:path";
 async function getInstalledVersion(targetDir) {
-  const rcPath = join4(targetDir, ".omcustomrc.json");
+  const rcPath = join5(targetDir, ".omcustomrc.json");
   if (!await fileExists(rcPath))
     return null;
   try {
-    const content = JSON.parse(await readFile(rcPath, "utf-8"));
+    const content = JSON.parse(await readFile2(rcPath, "utf-8"));
     return content.version ?? null;
   } catch {
     return null;
@@ -26339,7 +26617,7 @@ init_fs();
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
-import { join as join5, relative as relative2 } from "node:path";
+import { join as join6, relative as relative2 } from "node:path";
 var LOCKFILE_NAME = ".omcustom.lock.json";
 var LOCKFILE_VERSION = 1;
 var LOCKFILE_COMPONENTS = [
@@ -26353,7 +26631,7 @@ var LOCKFILE_COMPONENTS = [
 ];
 var COMPONENT_PATHS = LOCKFILE_COMPONENTS.map((component) => [getComponentPath(component), component]);
 function computeFileHash(filePath) {
-  return new Promise((resolve2, reject) => {
+  return new Promise((resolve3, reject) => {
     const hash = createHash("sha256");
     const stream = createReadStream(filePath);
     stream.on("error", (err) => {
@@ -26363,12 +26641,12 @@ function computeFileHash(filePath) {
       hash.update(chunk);
     });
     stream.on("end", () => {
-      resolve2(hash.digest("hex"));
+      resolve3(hash.digest("hex"));
     });
   });
 }
 async function readLockfile(targetDir) {
-  const lockfilePath = join5(targetDir, LOCKFILE_NAME);
+  const lockfilePath = join6(targetDir, LOCKFILE_NAME);
   const exists2 = await fileExists(lockfilePath);
   if (!exists2) {
     debug("lockfile.not_found", { path: lockfilePath });
@@ -26392,7 +26670,7 @@ async function readLockfile(targetDir) {
   }
 }
 async function writeLockfile(targetDir, lockfile) {
-  const lockfilePath = join5(targetDir, LOCKFILE_NAME);
+  const lockfilePath = join6(targetDir, LOCKFILE_NAME);
   await writeJsonFile(lockfilePath, lockfile);
   debug("lockfile.written", { path: lockfilePath });
 }
@@ -26417,7 +26695,7 @@ async function collectFiles(dir2, projectRoot, isTopLevel) {
     if (isTopLevel && entry.startsWith(".") && entry !== ".claude") {
       continue;
     }
-    const fullPath = join5(dir2, entry);
+    const fullPath = join6(dir2, entry);
     let fileStat;
     try {
       fileStat = await stat(fullPath);
@@ -26435,7 +26713,7 @@ async function collectFiles(dir2, projectRoot, isTopLevel) {
 }
 async function generateLockfile(targetDir, generatorVersion, templateVersion) {
   const files = {};
-  const componentRoots = COMPONENT_PATHS.map(([prefix]) => join5(targetDir, prefix));
+  const componentRoots = COMPONENT_PATHS.map(([prefix]) => join6(targetDir, prefix));
   for (const componentRoot of componentRoots) {
     const exists2 = await fileExists(componentRoot);
     if (!exists2) {
@@ -26475,8 +26753,8 @@ async function generateLockfile(targetDir, generatorVersion, templateVersion) {
 async function generateAndWriteLockfileForDir(targetDir) {
   try {
     const packageRoot = getPackageRoot();
-    const manifest = await readJsonFile(join5(packageRoot, "templates", "manifest.json"));
-    const { version: generatorVersion } = await readJsonFile(join5(packageRoot, "package.json"));
+    const manifest = await readJsonFile(join6(packageRoot, "templates", "manifest.json"));
+    const { version: generatorVersion } = await readJsonFile(join6(packageRoot, "package.json"));
     const lockfile = await generateLockfile(targetDir, generatorVersion, manifest.version);
     await writeLockfile(targetDir, lockfile);
     return { fileCount: Object.keys(lockfile.files).length };
@@ -27226,7 +27504,7 @@ async function doctorCommand(options = {}) {
 
 // src/cli/init.ts
 init_package();
-import { join as join11 } from "node:path";
+import { join as join12 } from "node:path";
 
 // src/core/installer.ts
 init_fs();
@@ -27237,18 +27515,18 @@ import {
   rename,
   stat as stat2
 } from "node:fs/promises";
-import { basename as basename2, join as join7 } from "node:path";
+import { basename as basename3, join as join8 } from "node:path";
 
 // src/core/file-preservation.ts
 init_fs();
-import { basename, join as join6 } from "node:path";
+import { basename as basename2, join as join7 } from "node:path";
 var DEFAULT_CRITICAL_FILES = ["settings.json", "settings.local.json"];
 var DEFAULT_CRITICAL_DIRECTORIES = ["agent-memory", "agent-memory-local"];
 var PROTECTED_FRAMEWORK_FILES = ["CLAUDE.md", "AGENTS.md"];
 var PROTECTED_RULE_PATTERNS = ["rules/MUST-*.md"];
 function isProtectedFile(relativePath) {
-  const basename2 = relativePath.split("/").pop() ?? "";
-  if (PROTECTED_FRAMEWORK_FILES.includes(basename2)) {
+  const basename3 = relativePath.split("/").pop() ?? "";
+  if (PROTECTED_FRAMEWORK_FILES.includes(basename3)) {
     return true;
   }
   for (const pattern of PROTECTED_RULE_PATTERNS) {
@@ -27264,8 +27542,8 @@ function matchesGlobPattern(filePath, pattern) {
   return regex.test(filePath);
 }
 async function extractSingleFile(fileName, rootDir, tempDir, result) {
-  const srcPath = join6(rootDir, fileName);
-  const destPath = join6(tempDir, fileName);
+  const srcPath = join7(rootDir, fileName);
+  const destPath = join7(tempDir, fileName);
   try {
     if (await fileExists(srcPath)) {
       await copyFile(srcPath, destPath);
@@ -27279,8 +27557,8 @@ async function extractSingleFile(fileName, rootDir, tempDir, result) {
   }
 }
 async function extractSingleDir(dirName, rootDir, tempDir, result) {
-  const srcPath = join6(rootDir, dirName);
-  const destPath = join6(tempDir, dirName);
+  const srcPath = join7(rootDir, dirName);
+  const destPath = join7(tempDir, dirName);
   try {
     if (await fileExists(srcPath)) {
       await copyDirectory(srcPath, destPath, { overwrite: true, preserveTimestamps: true });
@@ -27317,8 +27595,8 @@ async function restoreCriticalFiles(rootDir, preservation) {
     failures: []
   };
   for (const fileName of preservation.extractedFiles) {
-    const preservedPath = join6(preservation.tempDir, fileName);
-    const targetPath = join6(rootDir, fileName);
+    const preservedPath = join7(preservation.tempDir, fileName);
+    const targetPath = join7(rootDir, fileName);
     try {
       if (fileName.endsWith(".json")) {
         await mergeJsonFile(preservedPath, targetPath);
@@ -27334,8 +27612,8 @@ async function restoreCriticalFiles(rootDir, preservation) {
     }
   }
   for (const dirName of preservation.extractedDirs) {
-    const preservedPath = join6(preservation.tempDir, dirName);
-    const targetPath = join6(rootDir, dirName);
+    const preservedPath = join7(preservation.tempDir, dirName);
+    const targetPath = join7(rootDir, dirName);
     try {
       await copyDirectory(preservedPath, targetPath, {
         overwrite: false,
@@ -27357,10 +27635,10 @@ async function mergeJsonFile(preservedPath, targetPath) {
     const targetData = await readJsonFile(targetPath);
     const merged = deepMerge(targetData, preservedData);
     await writeJsonFile(targetPath, merged);
-    debug("preserve.merged_json", { file: basename(targetPath) });
+    debug("preserve.merged_json", { file: basename2(targetPath) });
   } else {
     await copyFile(preservedPath, targetPath);
-    debug("preserve.copied_json", { file: basename(targetPath) });
+    debug("preserve.copied_json", { file: basename2(targetPath) });
   }
 }
 function deepMerge(target, source) {
@@ -27666,7 +27944,7 @@ function shouldInstallAgent(agentDomain, filterDomain) {
 var DEFAULT_LANGUAGE2 = "en";
 function getTemplateDir() {
   const packageRoot = getPackageRoot();
-  return join7(packageRoot, "templates");
+  return join8(packageRoot, "templates");
 }
 function createInstallResult(targetDir) {
   return {
@@ -27688,7 +27966,7 @@ async function handleBackup(targetDir, shouldBackup, result) {
   if (!shouldBackup)
     return null;
   const layout = getProviderLayout();
-  const rootDir = join7(targetDir, layout.rootDir);
+  const rootDir = join8(targetDir, layout.rootDir);
   let preservation = null;
   if (await fileExists(rootDir)) {
     const { createTempDir: createTempDir2 } = await Promise.resolve().then(() => (init_fs(), exports_fs));
@@ -27745,8 +28023,8 @@ async function installSingleComponent(targetDir, component, options, result) {
 }
 async function installStatusline(targetDir, options, _result) {
   const layout = getProviderLayout();
-  const srcPath = resolveTemplatePath(join7(layout.rootDir, "statusline.sh"));
-  const destPath = join7(targetDir, layout.rootDir, "statusline.sh");
+  const srcPath = resolveTemplatePath(join8(layout.rootDir, "statusline.sh"));
+  const destPath = join8(targetDir, layout.rootDir, "statusline.sh");
   if (!await fileExists(srcPath)) {
     debug("install.statusline_not_found", { path: srcPath });
     return;
@@ -27764,12 +28042,13 @@ async function installStatusline(targetDir, options, _result) {
 }
 async function installSettingsLocal(targetDir, result) {
   const layout = getProviderLayout();
-  const settingsPath = join7(targetDir, layout.rootDir, "settings.local.json");
+  const settingsPath = join8(targetDir, layout.rootDir, "settings.local.json");
   const statusLineConfig = {
     statusLine: {
       type: "command",
       command: ".claude/statusline.sh",
-      padding: 0
+      padding: 0,
+      refreshInterval: 10
     }
   };
   if (await fileExists(settingsPath)) {
@@ -27850,7 +28129,7 @@ async function install(options) {
     await installEntryDocWithTracking(options.targetDir, options, result);
     if (preservation) {
       const layout = getProviderLayout();
-      const rootDir = join7(options.targetDir, layout.rootDir);
+      const rootDir = join8(options.targetDir, layout.rootDir);
       const restoration = await restoreCriticalFiles(rootDir, preservation);
       if (restoration.restoredFiles.length > 0 || restoration.restoredDirs.length > 0) {
         info("install.restored", {
@@ -27887,7 +28166,7 @@ async function install(options) {
 async function getTemplateManifest() {
   const packageRoot = getPackageRoot();
   const layout = getProviderLayout();
-  const manifestPath = join7(packageRoot, "templates", layout.manifestFile);
+  const manifestPath = join8(packageRoot, "templates", layout.manifestFile);
   if (await fileExists(manifestPath)) {
     return readJsonFile(manifestPath);
   }
@@ -27910,10 +28189,10 @@ async function installSkillsWithScopeFilter(srcPath, destPath, options) {
   await ensureDirectory(destPath);
   const entries = await readdir2(srcPath);
   for (const entry of entries) {
-    const entrySrcPath = join7(srcPath, entry);
+    const entrySrcPath = join8(srcPath, entry);
     if (!(await stat2(entrySrcPath)).isDirectory())
       continue;
-    const skillMdPath = join7(entrySrcPath, "SKILL.md");
+    const skillMdPath = join8(entrySrcPath, "SKILL.md");
     if (await fileExists(skillMdPath)) {
       const content = await fsReadFile(skillMdPath, "utf-8");
       const scope = getSkillScope(content);
@@ -27922,7 +28201,7 @@ async function installSkillsWithScopeFilter(srcPath, destPath, options) {
         continue;
       }
     }
-    await copyDirectory(entrySrcPath, join7(destPath, entry), {
+    await copyDirectory(entrySrcPath, join8(destPath, entry), {
       overwrite: !!(options.force || options.backup),
       preserveSymlinks: true,
       preserveTimestamps: true
@@ -27933,10 +28212,10 @@ async function installAgentsWithDomainFilter(srcPath, destPath, options) {
   await ensureDirectory(destPath);
   const entries = await readdir2(srcPath);
   for (const entry of entries) {
-    const entrySrcPath = join7(srcPath, entry);
+    const entrySrcPath = join8(srcPath, entry);
     const entryStat = await stat2(entrySrcPath);
     if (entryStat.isDirectory()) {
-      await copyDirectory(entrySrcPath, join7(destPath, entry), {
+      await copyDirectory(entrySrcPath, join8(destPath, entry), {
         overwrite: !!(options.force || options.backup),
         preserveSymlinks: true,
         preserveTimestamps: true
@@ -27953,7 +28232,7 @@ async function installAgentsWithDomainFilter(srcPath, destPath, options) {
         continue;
       }
     }
-    await copyFile(entrySrcPath, join7(destPath, entry));
+    await copyFile(entrySrcPath, join8(destPath, entry));
   }
 }
 async function installComponent(targetDir, component, options) {
@@ -27961,7 +28240,7 @@ async function installComponent(targetDir, component, options) {
     return false;
   }
   const templatePath = getComponentPath(component);
-  const destPath = join7(targetDir, templatePath);
+  const destPath = join8(targetDir, templatePath);
   const destExists = await fileExists(destPath);
   if (destExists && !options.force && !options.backup) {
     debug("install.component_skipped", { component });
@@ -27995,7 +28274,7 @@ async function installEntryDoc(targetDir, language, overwrite = false) {
   const layout = getProviderLayout();
   const templateFile = getEntryTemplateName(language);
   const srcPath = resolveTemplatePath(templateFile);
-  const destPath = join7(targetDir, layout.entryFile);
+  const destPath = join8(targetDir, layout.entryFile);
   if (!await fileExists(srcPath)) {
     warn("install.entry_md_not_found", { language, path: srcPath, entry: layout.entryFile });
     return false;
@@ -28015,8 +28294,8 @@ async function installEntryDoc(targetDir, language, overwrite = false) {
   return true;
 }
 async function backupExisting(sourcePath, backupDir) {
-  const name = basename2(sourcePath);
-  const backupPath = join7(backupDir, name);
+  const name = basename3(sourcePath);
+  const backupPath = join8(backupDir, name);
   await rename(sourcePath, backupPath);
   return backupPath;
 }
@@ -28025,7 +28304,7 @@ async function checkExistingPaths(targetDir) {
   const pathsToCheck = [layout.entryFile, layout.rootDir, "guides"];
   const existingPaths = [];
   for (const relativePath of pathsToCheck) {
-    const fullPath = join7(targetDir, relativePath);
+    const fullPath = join8(targetDir, relativePath);
     if (await fileExists(fullPath)) {
       existingPaths.push(relativePath);
     }
@@ -28039,11 +28318,11 @@ async function backupExistingInstallation(targetDir) {
     return [];
   }
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupDir = join7(targetDir, `${layout.backupDirPrefix}${timestamp}`);
+  const backupDir = join8(targetDir, `${layout.backupDirPrefix}${timestamp}`);
   await ensureDirectory(backupDir);
   const backedUpPaths = [];
   for (const relativePath of existingPaths) {
-    const fullPath = join7(targetDir, relativePath);
+    const fullPath = join8(targetDir, relativePath);
     try {
       const backupPath = await backupExisting(fullPath, backupDir);
       backedUpPaths.push(backupPath);
@@ -28059,13 +28338,13 @@ async function backupExistingInstallation(targetDir) {
 // src/core/mcp-config.ts
 init_fs();
 import { execSync as execSync5 } from "node:child_process";
-import { writeFile } from "node:fs/promises";
-import { join as join8 } from "node:path";
+import { writeFile as writeFile2 } from "node:fs/promises";
+import { join as join9 } from "node:path";
 async function generateMCPConfig(targetDir) {
   const layout = getProviderLayout();
-  const mcpConfigPath = join8(targetDir, ".mcp.json");
-  const ontologyDir = join8(layout.rootDir, "ontology");
-  const ontologyExists = await fileExists(join8(targetDir, ontologyDir));
+  const mcpConfigPath = join9(targetDir, ".mcp.json");
+  const ontologyDir = join9(layout.rootDir, "ontology");
+  const ontologyExists = await fileExists(join9(targetDir, ontologyDir));
   if (!ontologyExists) {
     return;
   }
@@ -28100,21 +28379,21 @@ async function generateMCPConfig(targetDir) {
   const existingConfigPath = mcpConfigPath;
   if (await fileExists(existingConfigPath)) {
     try {
-      const { readFile: readFile2 } = await import("node:fs/promises");
-      const existingContent = await readFile2(existingConfigPath, "utf-8");
+      const { readFile: readFile3 } = await import("node:fs/promises");
+      const existingContent = await readFile3(existingConfigPath, "utf-8");
       const existing = JSON.parse(existingContent);
       if (!existing.mcpServers?.["ontology-rag"]) {
         existing.mcpServers = existing.mcpServers || {};
         existing.mcpServers["ontology-rag"] = config.mcpServers["ontology-rag"];
-        await writeFile(mcpConfigPath, `${JSON.stringify(existing, null, 2)}
+        await writeFile2(mcpConfigPath, `${JSON.stringify(existing, null, 2)}
 `);
       }
     } catch {
-      await writeFile(mcpConfigPath, `${JSON.stringify(config, null, 2)}
+      await writeFile2(mcpConfigPath, `${JSON.stringify(config, null, 2)}
 `);
     }
   } else {
-    await writeFile(mcpConfigPath, `${JSON.stringify(config, null, 2)}
+    await writeFile2(mcpConfigPath, `${JSON.stringify(config, null, 2)}
 `);
   }
   info("ontology-rag MCP server configured successfully");
@@ -28128,16 +28407,20 @@ async function checkUvAvailable() {
   }
 }
 
+// src/cli/init.ts
+init_registry();
+
 // src/core/snapshot.ts
 init_package();
 init_projects();
 import { existsSync as existsSync2 } from "node:fs";
 import { copyFile as copyFile2, cp } from "node:fs/promises";
-import { join as join10 } from "node:path";
+import { join as join11 } from "node:path";
 init_fs();
+init_registry();
 async function checkExistingInstallation(targetDir) {
   const layout = getProviderLayout();
-  const rootDir = join10(targetDir, layout.rootDir);
+  const rootDir = join11(targetDir, layout.rootDir);
   return fileExists(rootDir);
 }
 async function installFromSnapshot(targetDir, snapshotPath, options) {
@@ -28149,7 +28432,7 @@ async function installFromSnapshot(targetDir, snapshotPath, options) {
     };
   }
   const layout = getProviderLayout();
-  const snapshotClaude = join10(snapshotPath, layout.rootDir);
+  const snapshotClaude = join11(snapshotPath, layout.rootDir);
   if (!existsSync2(snapshotClaude)) {
     return {
       success: false,
@@ -28163,28 +28446,31 @@ async function installFromSnapshot(targetDir, snapshotPath, options) {
     if (exists2 && !options.force) {
       console.log(i18n.t("cli.init.exists", { rootDir: layout.rootDir }));
       console.log(i18n.t("cli.init.backing_up"));
-      const backupDir = join10(targetDir, `.claude-backup-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, -1)}`);
-      await cp(join10(targetDir, layout.rootDir), backupDir, { recursive: true });
+      const backupDir = join11(targetDir, `.claude-backup-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, -1)}`);
+      await cp(join11(targetDir, layout.rootDir), backupDir, { recursive: true });
       console.log(`  Backed up to: ${backupDir}`);
     }
-    await cp(snapshotClaude, join10(targetDir, layout.rootDir), {
+    await cp(snapshotClaude, join11(targetDir, layout.rootDir), {
       recursive: true,
       force: true
     });
-    const snapshotGuides = join10(snapshotPath, "guides");
+    const snapshotGuides = join11(snapshotPath, "guides");
     if (existsSync2(snapshotGuides)) {
-      await cp(snapshotGuides, join10(targetDir, "guides"), {
+      await cp(snapshotGuides, join11(targetDir, "guides"), {
         recursive: true,
         force: true
       });
     }
-    const snapshotEntry = join10(snapshotPath, layout.entryFile);
+    const snapshotEntry = join11(snapshotPath, layout.entryFile);
     if (existsSync2(snapshotEntry)) {
-      await copyFile2(snapshotEntry, join10(targetDir, layout.entryFile));
+      await copyFile2(snapshotEntry, join11(targetDir, layout.entryFile));
     }
     try {
       const existing = await readLockFile(targetDir);
       await writeLockFile(targetDir, package_default.version, existing);
+    } catch {}
+    try {
+      await registerProject(targetDir, package_default.version);
     } catch {}
     console.log(i18n.t("cli.init.success"));
     console.log(`
@@ -29185,7 +29471,7 @@ async function runInitWizard(options) {
 // src/cli/init.ts
 async function checkExistingInstallation2(targetDir) {
   const layout = getProviderLayout();
-  const rootDir = join11(targetDir, layout.rootDir);
+  const rootDir = join12(targetDir, layout.rootDir);
   return fileExists(rootDir);
 }
 var PROVIDER_SUBDIR_COMPONENTS = new Set([
@@ -29199,13 +29485,13 @@ var PROVIDER_SUBDIR_COMPONENTS = new Set([
 function componentToPath(targetDir, component) {
   if (component === "entry-md") {
     const layout = getProviderLayout();
-    return join11(targetDir, layout.entryFile);
+    return join12(targetDir, layout.entryFile);
   }
   if (PROVIDER_SUBDIR_COMPONENTS.has(component)) {
     const layout = getProviderLayout();
-    return join11(targetDir, layout.rootDir, component);
+    return join12(targetDir, layout.rootDir, component);
   }
-  return join11(targetDir, component);
+  return join12(targetDir, component);
 }
 function buildInstalledPaths(targetDir, components) {
   return components.map((component) => componentToPath(targetDir, component));
@@ -29305,6 +29591,9 @@ async function initCommand(options) {
       const existing = await readLockFile(targetDir);
       await writeLockFile(targetDir, package_default.version, existing);
     } catch {}
+    try {
+      await registerProject(targetDir, package_default.version);
+    } catch {}
     console.log("");
     console.log("Required plugins (install manually):");
     console.log("  /plugin marketplace add obra/superpowers-marketplace");
@@ -29327,7 +29616,7 @@ async function initCommand(options) {
 }
 
 // src/cli/list.ts
-import { basename as basename4, dirname as dirname4, join as join12, relative as relative3 } from "node:path";
+import { basename as basename5, dirname as dirname3, join as join13, relative as relative3 } from "node:path";
 init_fs();
 var ALLOWED_TOP_LEVEL_KEYS = new Set(["name", "type", "description", "version", "category"]);
 function parseKeyValue(line) {
@@ -29374,7 +29663,7 @@ function parseYamlMetadata(content) {
   return result;
 }
 function extractAgentTypeFromFilename(filename) {
-  const name = basename4(filename, ".md");
+  const name = basename5(filename, ".md");
   const prefixMap = {
     lang: "language",
     be: "backend",
@@ -29392,17 +29681,17 @@ function extractAgentTypeFromFilename(filename) {
   return prefixMap[prefix] || "unknown";
 }
 function extractSkillCategoryFromPath(skillPath, baseDir, rootDir) {
-  const relativePath = relative3(join12(baseDir, rootDir, "skills"), skillPath);
+  const relativePath = relative3(join13(baseDir, rootDir, "skills"), skillPath);
   const parts = relativePath.split("/").filter(Boolean);
   return parts[0] || "unknown";
 }
 function extractGuideCategoryFromPath(guidePath, baseDir) {
-  const relativePath = relative3(join12(baseDir, "guides"), guidePath);
+  const relativePath = relative3(join13(baseDir, "guides"), guidePath);
   const parts = relativePath.split("/").filter(Boolean);
   return parts[0] || "unknown";
 }
 function extractRulePriorityFromFilename(filename) {
-  const name = basename4(filename, ".md");
+  const name = basename5(filename, ".md");
   const parts = name.split("-");
   return parts[0] || "unknown";
 }
@@ -29491,7 +29780,7 @@ async function tryExtractMarkdownDescription(mdPath, options = {}) {
   }
 }
 async function getAgents(targetDir, rootDir = ".claude", config) {
-  const agentsDir = join12(targetDir, rootDir, "agents");
+  const agentsDir = join13(targetDir, rootDir, "agents");
   if (!await fileExists(agentsDir))
     return [];
   try {
@@ -29500,8 +29789,8 @@ async function getAgents(targetDir, rootDir = ".claude", config) {
     const customAgentPaths = new Set(customComponents.filter((c) => c.type === "agent").map((c) => c.path));
     const agentMdFiles = await listFiles(agentsDir, { recursive: false, pattern: "*.md" });
     const agents = await Promise.all(agentMdFiles.map(async (agentMdPath) => {
-      const filename = basename4(agentMdPath);
-      const name = basename4(filename, ".md");
+      const filename = basename5(agentMdPath);
+      const name = basename5(filename, ".md");
       const description = await tryExtractMarkdownDescription(agentMdPath);
       const relativePath = relative3(targetDir, agentMdPath);
       return {
@@ -29519,7 +29808,7 @@ async function getAgents(targetDir, rootDir = ".claude", config) {
   }
 }
 async function getSkills(targetDir, rootDir = ".claude", config) {
-  const skillsDir = join12(targetDir, rootDir, "skills");
+  const skillsDir = join13(targetDir, rootDir, "skills");
   if (!await fileExists(skillsDir))
     return [];
   try {
@@ -29528,12 +29817,12 @@ async function getSkills(targetDir, rootDir = ".claude", config) {
     const customSkillPaths = new Set(customComponents.filter((c) => c.type === "skill").map((c) => c.path));
     const skillMdFiles = await listFiles(skillsDir, { recursive: true, pattern: "SKILL.md" });
     const skills = await Promise.all(skillMdFiles.map(async (skillMdPath) => {
-      const skillDir = dirname4(skillMdPath);
-      const indexYamlPath = join12(skillDir, "index.yaml");
+      const skillDir = dirname3(skillMdPath);
+      const indexYamlPath = join13(skillDir, "index.yaml");
       const { description, version } = await tryReadIndexYamlMetadata(indexYamlPath);
       const relativePath = relative3(targetDir, skillDir);
       return {
-        name: basename4(skillDir),
+        name: basename5(skillDir),
         type: "skill",
         category: extractSkillCategoryFromPath(skillDir, targetDir, rootDir),
         path: relativePath,
@@ -29548,7 +29837,7 @@ async function getSkills(targetDir, rootDir = ".claude", config) {
   }
 }
 async function getGuides(targetDir, config) {
-  const guidesDir = join12(targetDir, "guides");
+  const guidesDir = join13(targetDir, "guides");
   if (!await fileExists(guidesDir))
     return [];
   try {
@@ -29560,7 +29849,7 @@ async function getGuides(targetDir, config) {
       const description = await tryExtractMarkdownDescription(guideMdPath, { maxLength: 100 });
       const relativePath = relative3(targetDir, guideMdPath);
       return {
-        name: basename4(guideMdPath, ".md"),
+        name: basename5(guideMdPath, ".md"),
         type: "guide",
         category: extractGuideCategoryFromPath(guideMdPath, targetDir),
         path: relativePath,
@@ -29575,7 +29864,7 @@ async function getGuides(targetDir, config) {
 }
 var RULE_PRIORITY_ORDER = { MUST: 0, SHOULD: 1, MAY: 2 };
 async function getRules(targetDir, rootDir = ".claude", config) {
-  const rulesDir = join12(targetDir, rootDir, "rules");
+  const rulesDir = join13(targetDir, rootDir, "rules");
   if (!await fileExists(rulesDir))
     return [];
   try {
@@ -29584,13 +29873,13 @@ async function getRules(targetDir, rootDir = ".claude", config) {
     const customRulePaths = new Set(customComponents.filter((c) => c.type === "rule").map((c) => c.path));
     const ruleMdFiles = await listFiles(rulesDir, { recursive: false, pattern: "*.md" });
     const rules = await Promise.all(ruleMdFiles.map(async (ruleMdPath) => {
-      const filename = basename4(ruleMdPath);
+      const filename = basename5(ruleMdPath);
       const description = await tryExtractMarkdownDescription(ruleMdPath, {
         cleanFormatting: true
       });
       const relativePath = relative3(targetDir, ruleMdPath);
       return {
-        name: basename4(ruleMdPath, ".md"),
+        name: basename5(ruleMdPath, ".md"),
         type: extractRulePriorityFromFilename(filename),
         path: relativePath,
         description,
@@ -29647,7 +29936,7 @@ function formatAsJson(components) {
   console.log(JSON.stringify(components, null, 2));
 }
 async function getHooks(targetDir, rootDir = ".claude") {
-  const hooksDir = join12(targetDir, rootDir, "hooks");
+  const hooksDir = join13(targetDir, rootDir, "hooks");
   if (!await fileExists(hooksDir))
     return [];
   try {
@@ -29656,7 +29945,7 @@ async function getHooks(targetDir, rootDir = ".claude") {
     const hookYamls = await listFiles(hooksDir, { recursive: true, pattern: "*.yaml" });
     const allFiles = [...hookFiles, ...hookConfigs, ...hookYamls];
     return allFiles.map((hookPath) => ({
-      name: basename4(hookPath),
+      name: basename5(hookPath),
       type: "hook",
       path: relative3(targetDir, hookPath)
     })).sort((a, b) => a.name.localeCompare(b.name));
@@ -29665,7 +29954,7 @@ async function getHooks(targetDir, rootDir = ".claude") {
   }
 }
 async function getContexts(targetDir, rootDir = ".claude") {
-  const contextsDir = join12(targetDir, rootDir, "contexts");
+  const contextsDir = join13(targetDir, rootDir, "contexts");
   if (!await fileExists(contextsDir))
     return [];
   try {
@@ -29676,7 +29965,7 @@ async function getContexts(targetDir, rootDir = ".claude") {
       const ext = ctxPath.endsWith(".md") ? ".md" : ".yaml";
       const description = ext === ".md" ? await tryExtractMarkdownDescription(ctxPath, { maxLength: 100 }) : undefined;
       return {
-        name: basename4(ctxPath, ext),
+        name: basename5(ctxPath, ext),
         type: "context",
         path: relative3(targetDir, ctxPath),
         description
@@ -30058,29 +30347,29 @@ async function securityCommand(_options = {}) {
 
 // src/cli/serve-commands.ts
 import { spawnSync as spawnSync2 } from "node:child_process";
-import { join as join14 } from "node:path";
+import { join as join15 } from "node:path";
 
 // src/cli/serve.ts
 import { spawn } from "node:child_process";
 import { existsSync as existsSync3 } from "node:fs";
-import { readFile as readFile2, unlink, writeFile as writeFile2 } from "node:fs/promises";
-import { join as join13 } from "node:path";
+import { readFile as readFile3, unlink, writeFile as writeFile3 } from "node:fs/promises";
+import { join as join14 } from "node:path";
 var DEFAULT_PORT = 4321;
-var PID_FILE = join13(process.env.HOME ?? "~", ".omcustom-serve.pid");
+var PID_FILE = join14(process.env.HOME ?? "~", ".omcustom-serve.pid");
 function findServeBuildDir(projectRoot, options) {
-  const localBuild = join13(projectRoot, "packages", "serve", "build");
-  if (existsSync3(join13(localBuild, "index.js")))
+  const localBuild = join14(projectRoot, "packages", "serve", "build");
+  if (existsSync3(join14(localBuild, "index.js")))
     return localBuild;
   if (options?.skipNpmFallback !== true) {
-    const npmBuild = join13(import.meta.dirname, "..", "..", "packages", "serve", "build");
-    if (existsSync3(join13(npmBuild, "index.js")))
+    const npmBuild = join14(import.meta.dirname, "..", "..", "packages", "serve", "build");
+    if (existsSync3(join14(npmBuild, "index.js")))
       return npmBuild;
   }
   return null;
 }
 async function isServeRunning() {
   try {
-    const raw = await readFile2(PID_FILE, "utf-8");
+    const raw = await readFile3(PID_FILE, "utf-8");
     const pid = Number(raw.trim());
     if (!Number.isFinite(pid) || pid <= 0) {
       await cleanupPidFile();
@@ -30101,7 +30390,7 @@ async function startServeBackground(projectRoot, port = DEFAULT_PORT, buildDirOp
   if (buildDir === null) {
     return;
   }
-  const child = spawn("node", [join13(buildDir, "index.js")], {
+  const child = spawn("node", [join14(buildDir, "index.js")], {
     env: {
       ...process.env,
       OMCUSTOM_PORT: String(port),
@@ -30114,12 +30403,12 @@ async function startServeBackground(projectRoot, port = DEFAULT_PORT, buildDirOp
   });
   child.unref();
   if (child.pid !== undefined) {
-    await writeFile2(PID_FILE, String(child.pid), "utf-8");
+    await writeFile3(PID_FILE, String(child.pid), "utf-8");
   }
 }
 async function stopServe() {
   try {
-    const raw = await readFile2(PID_FILE, "utf-8");
+    const raw = await readFile3(PID_FILE, "utf-8");
     const pid = Number(raw.trim());
     if (!Number.isFinite(pid) || pid <= 0) {
       await cleanupPidFile();
@@ -30178,7 +30467,7 @@ function runForeground(projectRoot, port, buildDirOpts) {
     process.exit(1);
   }
   console.log(`Web UI: http://localhost:${port}`);
-  spawnSync2("node", [join14(buildDir, "index.js")], {
+  spawnSync2("node", [join15(buildDir, "index.js")], {
     env: {
       ...process.env,
       OMCUSTOM_PORT: String(port),
@@ -30191,18 +30480,18 @@ function runForeground(projectRoot, port, buildDirOpts) {
 }
 
 // src/cli/sync.ts
-import { resolve as resolve2 } from "node:path";
+import { resolve as resolve3 } from "node:path";
 
 // src/core/sync.ts
 init_fs();
 import { existsSync as existsSync4 } from "node:fs";
-import { cp as cp2, mkdir } from "node:fs/promises";
-import { join as join15 } from "node:path";
+import { cp as cp2, mkdir as mkdir2 } from "node:fs/promises";
+import { join as join16 } from "node:path";
 async function loadVersions() {
   try {
     const packageRoot = getPackageRoot();
-    const manifest = await readJsonFile(join15(packageRoot, "templates", "manifest.json"));
-    const pkg = await readJsonFile(join15(packageRoot, "package.json"));
+    const manifest = await readJsonFile(join16(packageRoot, "templates", "manifest.json"));
+    const pkg = await readJsonFile(join16(packageRoot, "package.json"));
     return { generatorVersion: pkg.version, templateVersion: manifest.version };
   } catch {
     return { generatorVersion: "0.0.0", templateVersion: "0.0.0" };
@@ -30272,7 +30561,7 @@ async function countFiles(dir2) {
       return 0;
     }
     for (const entry of entries) {
-      const full = join15(current, entry);
+      const full = join16(current, entry);
       try {
         const s = await stat3(full);
         if (s.isDirectory()) {
@@ -30287,19 +30576,19 @@ async function countFiles(dir2) {
   return walk(dir2);
 }
 async function exportSnapshot(targetDir, outputPath) {
-  const claudeDir = join15(targetDir, ".claude");
-  const guidesDir = join15(targetDir, "guides");
+  const claudeDir = join16(targetDir, ".claude");
+  const guidesDir = join16(targetDir, "guides");
   if (!existsSync4(claudeDir)) {
     return { success: false, exportPath: outputPath, fileCount: 0 };
   }
-  await mkdir(outputPath, { recursive: true });
-  const destClaude = join15(outputPath, ".claude");
+  await mkdir2(outputPath, { recursive: true });
+  const destClaude = join16(outputPath, ".claude");
   await cp2(claudeDir, destClaude, {
     recursive: true,
     filter: isExportable
   });
   if (existsSync4(guidesDir)) {
-    await cp2(guidesDir, join15(outputPath, "guides"), { recursive: true });
+    await cp2(guidesDir, join16(outputPath, "guides"), { recursive: true });
   }
   const lockfile = await generateCurrentLockfile(targetDir);
   if (lockfile) {
@@ -30311,7 +30600,7 @@ async function exportSnapshot(targetDir, outputPath) {
 
 // src/cli/sync.ts
 async function runExport(targetDir, outputPath) {
-  const result = await exportSnapshot(targetDir, resolve2(outputPath));
+  const result = await exportSnapshot(targetDir, resolve3(outputPath));
   if (!result.success) {
     console.error(`
 Export failed — no .claude/ directory found in current project.`);
@@ -30368,7 +30657,7 @@ Summary: ${result.unchanged} unchanged, ${result.modified.length} modified, ${re
 }
 function syncCommand(program2) {
   program2.command("sync").description(i18n.t("cli.sync.description")).option("--check", "Compare current state against lockfile (default behavior)").option("--reference <path>", "Compare against an external snapshot instead of the lockfile").option("--export <path>", "Export current .claude/ state as a reusable snapshot").action(async (options) => {
-    const targetDir = resolve2(".");
+    const targetDir = resolve3(".");
     if (options.export) {
       await runExport(targetDir, options.export);
       return;
@@ -30382,7 +30671,7 @@ init_package();
 
 // src/core/updater.ts
 init_package();
-import { join as join16 } from "node:path";
+import { join as join17 } from "node:path";
 init_fs();
 
 // src/core/entry-merger.ts
@@ -30637,7 +30926,7 @@ function resolveCustomizations(customizations, configPreserveFiles, targetDir) {
 }
 async function updateEntryDoc(targetDir, config, options) {
   const layout = getProviderLayout();
-  const entryPath = join16(targetDir, layout.entryFile);
+  const entryPath = join17(targetDir, layout.entryFile);
   const templateName = getEntryTemplateName2(config.language);
   const templatePath = resolveTemplatePath(templateName);
   if (!await fileExists(templatePath)) {
@@ -30716,6 +31005,36 @@ function checkAndInstallRtkAfterUpdate() {
     }
   }
 }
+async function updateProjectRegistry(targetDir, newVersion) {
+  try {
+    const { registerProject: registerProject2 } = await Promise.resolve().then(() => (init_registry(), exports_registry));
+    await registerProject2(targetDir, newVersion);
+  } catch {}
+}
+async function regenerateLockfile(targetDir, result) {
+  const lockfileResult = await generateAndWriteLockfileForDir(targetDir);
+  if (lockfileResult.warning) {
+    result.warnings.push(lockfileResult.warning);
+    warn("update.lockfile_failed", { error: lockfileResult.warning });
+  } else {
+    debug("update.lockfile_regenerated", {
+      files: String(lockfileResult.fileCount)
+    });
+  }
+}
+async function shouldSkipSelfUpdate2(targetDir, result) {
+  const targetPkgPath = join17(targetDir, "package.json");
+  if (await fileExists(targetPkgPath)) {
+    const targetPkg = await readJsonFile(targetPkgPath);
+    if (targetPkg.name === "oh-my-customcode") {
+      warn("update.self_update_skipped");
+      result.success = true;
+      result.warnings.push("Skipped: source project cannot update itself");
+      return true;
+    }
+  }
+  return false;
+}
 function checkAndInstallCodexAfterUpdate() {
   if (!isCodexInstalled()) {
     warn("update.codex_missing");
@@ -30738,15 +31057,8 @@ async function update(options) {
       result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g oh-my-customcode@latest`;
       return result;
     }
-    const targetPkgPath = join16(options.targetDir, "package.json");
-    if (await fileExists(targetPkgPath)) {
-      const targetPkg = await readJsonFile(targetPkgPath);
-      if (targetPkg.name === "oh-my-customcode") {
-        warn("update.self_update_skipped");
-        result.success = true;
-        result.warnings.push("Skipped: source project cannot update itself");
-        return result;
-      }
+    if (await shouldSkipSelfUpdate2(options.targetDir, result)) {
+      return result;
     }
     const updateCheck = await checkForUpdates(options.targetDir);
     result.newVersion = updateCheck.latestVersion;
@@ -30764,17 +31076,12 @@ async function update(options) {
     const components = options.components || getAllUpdateComponents();
     await updateAllComponents(options.targetDir, components, updateCheck, customizations, options, result, config, lockfile);
     await runFullUpdatePostProcessing(options, result, config);
-    const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
-    if (lockfileResult.warning) {
-      result.warnings.push(lockfileResult.warning);
-      warn("update.lockfile_failed", { error: lockfileResult.warning });
-    } else {
-      debug("update.lockfile_regenerated", {
-        files: String(lockfileResult.fileCount)
-      });
-    }
+    await regenerateLockfile(options.targetDir, result);
     checkAndInstallRtkAfterUpdate();
     checkAndInstallCodexAfterUpdate();
+    if (result.success && !options.dryRun) {
+      await updateProjectRegistry(options.targetDir, result.newVersion);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;
@@ -30854,11 +31161,11 @@ async function collectProtectedSkipPaths(srcPath, destPath, componentPath, force
   const warnedPaths = [];
   const updatedPaths = [];
   for (const p of protectedRelative) {
-    const targetFilePath = join16(targetDir, componentPath, p);
+    const targetFilePath = join17(targetDir, componentPath, p);
     const lockfileKey = `${componentPath}/${p}`.replace(/\\/g, "/");
     const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
     if (shouldSkip) {
-      skipPaths.push(path3.relative(destPath, join16(destPath, p)));
+      skipPaths.push(path3.relative(destPath, join17(destPath, p)));
       warnedPaths.push(p);
     } else {
       updatedPaths.push(p);
@@ -30904,7 +31211,7 @@ async function updateComponent(targetDir, component, customizations, options, co
   const preservedFiles = [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
-  const destPath = join16(targetDir, componentPath);
+  const destPath = join17(targetDir, componentPath);
   const customComponents = config.customComponents || [];
   const skipPaths = [];
   if (customizations && !options.forceOverwriteAll) {
@@ -30946,7 +31253,7 @@ async function updateComponent(targetDir, component, customizations, options, co
   }
   skipPaths.push(...protectedSkipPaths);
   const path3 = await import("node:path");
-  const normalizedSkipPaths = skipPaths.map((p) => path3.relative(destPath, join16(targetDir, p)));
+  const normalizedSkipPaths = skipPaths.map((p) => path3.relative(destPath, join17(targetDir, p)));
   const uniqueSkipPaths = [...new Set(normalizedSkipPaths)];
   await copyDirectory(srcPath, destPath, {
     overwrite: true,
@@ -30968,12 +31275,12 @@ async function syncRootLevelFiles(targetDir, options) {
   const layout = getProviderLayout();
   const synced = [];
   for (const fileName of ROOT_LEVEL_FILES) {
-    const srcPath = resolveTemplatePath(join16(layout.rootDir, fileName));
+    const srcPath = resolveTemplatePath(join17(layout.rootDir, fileName));
     if (!await fileExists(srcPath)) {
       continue;
     }
-    const destPath = join16(targetDir, layout.rootDir, fileName);
-    await ensureDirectory(join16(destPath, ".."));
+    const destPath = join17(targetDir, layout.rootDir, fileName);
+    await ensureDirectory(join17(destPath, ".."));
     await fs3.copyFile(srcPath, destPath);
     if (fileName.endsWith(".sh")) {
       await fs3.chmod(destPath, 493);
@@ -31008,7 +31315,7 @@ async function removeDeprecatedFiles(targetDir, options) {
       });
       continue;
     }
-    const fullPath = join16(targetDir, entry.path);
+    const fullPath = join17(targetDir, entry.path);
     if (await fileExists(fullPath)) {
       await fs3.unlink(fullPath);
       removed.push(entry.path);
@@ -31049,7 +31356,7 @@ async function syncNamespaceInFile(targetFilePath, upstreamFilePath) {
 async function processNamespaceSyncEntry(entry, relPath, fullSrcPath, destPath, componentPath, lockfile) {
   if (!entry.isFile() || !entry.name.endsWith(".md"))
     return null;
-  const targetFilePath = join16(destPath, relPath);
+  const targetFilePath = join17(destPath, relPath);
   const lockfileKey = `${componentPath}/${relPath}`.replace(/\\/g, "/");
   const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
   if (shouldSkip)
@@ -31064,7 +31371,7 @@ async function applyNamespaceSync(targetDir, component, lockfile) {
     return [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
-  const destPath = join16(targetDir, componentPath);
+  const destPath = join17(targetDir, componentPath);
   const fs3 = await import("node:fs/promises");
   const synced = [];
   const queue = [{ dir: srcPath, relDir: "" }];
@@ -31078,7 +31385,7 @@ async function applyNamespaceSync(targetDir, component, lockfile) {
     }
     for (const entry of entries) {
       const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
-      const fullSrcPath = join16(dir2, entry.name);
+      const fullSrcPath = join17(dir2, entry.name);
       if (entry.isDirectory()) {
         queue.push({ dir: fullSrcPath, relDir: relPath });
         continue;
@@ -31101,26 +31408,26 @@ function getComponentPath2(component) {
 }
 async function backupInstallation(targetDir) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupDir = join16(targetDir, `.omcustom-backup-${timestamp}`);
+  const backupDir = join17(targetDir, `.omcustom-backup-${timestamp}`);
   const fs3 = await import("node:fs/promises");
   await ensureDirectory(backupDir);
   const layout = getProviderLayout();
   const dirsToBackup = [layout.rootDir, "guides"];
   for (const dir2 of dirsToBackup) {
-    const srcPath = join16(targetDir, dir2);
+    const srcPath = join17(targetDir, dir2);
     if (await fileExists(srcPath)) {
-      const destPath = join16(backupDir, dir2);
+      const destPath = join17(backupDir, dir2);
       await copyDirectory(srcPath, destPath, { overwrite: true });
     }
   }
-  const entryPath = join16(targetDir, layout.entryFile);
+  const entryPath = join17(targetDir, layout.entryFile);
   if (await fileExists(entryPath)) {
-    await fs3.copyFile(entryPath, join16(backupDir, layout.entryFile));
+    await fs3.copyFile(entryPath, join17(backupDir, layout.entryFile));
   }
   return backupDir;
 }
 async function loadCustomizationManifest(targetDir) {
-  const manifestPath = join16(targetDir, CUSTOMIZATION_MANIFEST_FILE);
+  const manifestPath = join17(targetDir, CUSTOMIZATION_MANIFEST_FILE);
   if (await fileExists(manifestPath)) {
     return readJsonFile(manifestPath);
   }
@@ -31140,7 +31447,21 @@ async function checkCliVersion(checkFn) {
   } catch {}
 }
 async function updateCommand(options = {}, cliVersionCheck = checkSelfUpdate) {
-  await checkCliVersion(cliVersionCheck);
+  if (!options.skipSelf) {
+    try {
+      const selfUpdateResult = executeSelfUpdate();
+      if (selfUpdateResult.updated) {
+        console.log(i18n.t("cli.update.selfUpdateDone", {
+          from: selfUpdateResult.fromVersion,
+          to: selfUpdateResult.toVersion
+        }));
+      }
+    } catch {
+      console.warn(i18n.t("cli.update.selfUpdateFailed"));
+    }
+  } else {
+    await checkCliVersion(cliVersionCheck);
+  }
   try {
     if (options.all) {
       await updateAllProjects(options);
@@ -31364,7 +31685,7 @@ function createProgram() {
   program2.command("init").description(i18n.t("cli.init.description")).option("-l, --lang <language>", i18n.t("cli.init.langOption")).option("--domain <domain>", "Install only agents/skills for specific domain (backend, frontend, data-engineering, devops)").option("--yes", "Skip interactive wizard, use defaults").option("--from-snapshot <path>", "Install from a pre-configured team snapshot directory").action(async (options) => {
     await initCommand(options);
   });
-  program2.command("update").description(i18n.t("cli.update.description")).option("--dry-run", i18n.t("cli.update.dryRunOption")).option("--force", i18n.t("cli.update.forceOption")).option("--force-overwrite-all", i18n.t("cli.update.forceOverwriteAllOption")).option("--hard", i18n.t("cli.update.hardOption")).option("--backup", i18n.t("cli.update.backupOption")).option("--agents", i18n.t("cli.update.agentsOption")).option("--skills", i18n.t("cli.update.skillsOption")).option("--rules", i18n.t("cli.update.rulesOption")).option("--guides", i18n.t("cli.update.guidesOption")).option("--hooks", i18n.t("cli.update.hooksOption")).option("--contexts", i18n.t("cli.update.contextsOption")).option("--all", i18n.t("cli.update.allOption")).action(async (options) => {
+  program2.command("update").description(i18n.t("cli.update.description")).option("--dry-run", i18n.t("cli.update.dryRunOption")).option("--force", i18n.t("cli.update.forceOption")).option("--force-overwrite-all", i18n.t("cli.update.forceOverwriteAllOption")).option("--hard", i18n.t("cli.update.hardOption")).option("--backup", i18n.t("cli.update.backupOption")).option("--agents", i18n.t("cli.update.agentsOption")).option("--skills", i18n.t("cli.update.skillsOption")).option("--rules", i18n.t("cli.update.rulesOption")).option("--guides", i18n.t("cli.update.guidesOption")).option("--hooks", i18n.t("cli.update.hooksOption")).option("--contexts", i18n.t("cli.update.contextsOption")).option("--all", i18n.t("cli.update.allOption")).option("--skip-self", "Skip self-update of oh-my-customcode package").action(async (options) => {
     await updateCommand(options);
   });
   program2.command("list").description(i18n.t("cli.list.description")).argument("[type]", i18n.t("cli.list.typeArgument"), "all").option("-f, --format <format>", "Output format: table, json, or simple", "table").option("--verbose", "Show detailed information").action(async (type, options) => {
@@ -31405,8 +31726,24 @@ function createProgram() {
     console.warn(i18n.t("cli.web.deprecated.serveStop"));
     await serveStopCommand();
   });
-  program2.command("projects").description("List all projects on this machine where oh-my-customcode is installed").option("-f, --format <format>", "Output format: table, json, or simple", "table").option("--path <dir>", "Additional search directory (can be specified multiple times)", (val, prev) => [...prev, val], []).action(async (options) => {
-    await projectsCommand({ format: options.format, paths: options.path });
+  program2.command("projects").description("List all projects on this machine where oh-my-customcode is installed").option("-f, --format <format>", "Output format: table, json, or simple", "table").option("--path <dir>", "Additional search directory (can be specified multiple times)", (val, prev) => [...prev, val], []).option("--migrate", "Scan for existing projects with lock files and import them into the registry").option("--clean", "Remove registry entries whose project paths no longer exist on disk").action(async (options) => {
+    await projectsCommand({
+      format: options.format,
+      paths: options.path,
+      migrate: options.migrate,
+      clean: options.clean
+    });
+  });
+  program2.command("unregister [path]").description("Remove a project from the local registry").action(async (projectPath) => {
+    const targetPath = projectPath ?? process.cwd();
+    try {
+      await unregisterProject(targetPath);
+      console.log(`  프로젝트가 레지스트리에서 제거되었습니다: ${targetPath}`);
+    } catch (error2) {
+      const msg = error2 instanceof Error ? error2.message : String(error2);
+      console.error(`  레지스트리 제거 실패: ${msg}`);
+      process.exitCode = 1;
+    }
   });
   program2.hook("preAction", async (thisCommand, actionCommand) => {
     const opts = thisCommand.optsWithGlobals();

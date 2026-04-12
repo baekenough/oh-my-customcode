@@ -20,7 +20,7 @@ oh-my-customcode is a meta-layer for Claude Code that structures AI agent behavi
 
 ## Overview
 
-The system contains **47 agents**, **103 skills**, **21 rules**, and **33 guides** organized across four directories under `.claude/` and `guides/`. Every component has a single clear responsibility, and interactions between them are governed by explicit delegation rules.
+The system contains **47 agents**, **103 skills**, **21 rules**, and **36 guides** organized across four directories under `.claude/` and `guides/`. Every component has a single clear responsibility, and interactions between them are governed by explicit delegation rules.
 
 The core philosophy is the **compilation metaphor**: skills are source code, agents are build artifacts, rules are the compiler spec, routing skills are the linker, and guides are the standard library. This isn't merely decorative — it drives every architectural decision about where knowledge lives and how components evolve.
 
@@ -32,7 +32,7 @@ The core philosophy is the **compilation metaphor**: skills are source code, age
 | **Skills** (`.claude/skills/`) | 103 workflow definitions | Reusable, composable instructions |
 | **Agents** (`.claude/agents/`) | 47 specialist definitions | Skills composed into executable experts |
 
-Supporting this structure are `guides/` (33 reference documents) and `.claude/hooks/` (enforcement scripts).
+Supporting this structure are `guides/` (36 reference documents) and `.claude/hooks/` (enforcement scripts).
 
 ## Component Roles
 

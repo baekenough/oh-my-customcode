@@ -453,6 +453,7 @@ describe('installer', () => {
       expect(content.statusLine.type).toBe('command');
       expect(content.statusLine.command).toBe('.claude/statusline.sh');
       expect(content.statusLine.padding).toBe(0);
+      expect(content.statusLine.refreshInterval).toBe(10);
     });
 
     it('should merge statusLine into existing settings.local.json', async () => {
