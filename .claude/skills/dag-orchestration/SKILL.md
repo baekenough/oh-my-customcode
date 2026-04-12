@@ -204,3 +204,22 @@ The orchestrator builds the DAG from this inline format and executes using the s
 - Max 20 nodes per workflow (complexity guard)
 - Nested DAGs not supported (flatten instead)
 - Cross-workflow dependencies not supported
+
+## External References
+
+### Multica — Managed Agent Platform
+
+> Reference: [Multica](https://github.com/multica-ai/multica) — managed agent platform for Claude Code/Codex.
+> Verdict: INTEGRATE (external reference, not internalize)
+
+Multica's task lifecycle pattern (enqueue → claim → start → complete/fail) is a useful reference for DAG node state management:
+
+| Multica State | DAG Equivalent | Notes |
+|---------------|---------------|-------|
+| enqueue | pending | Node waiting for dependencies |
+| claim | ready | Dependencies resolved, ready to execute |
+| start | running | Agent spawned and executing |
+| complete | completed | Node finished successfully |
+| fail | failed | Node execution failed |
+
+Consider this pattern when extending DAG node state tracking or implementing retry logic.

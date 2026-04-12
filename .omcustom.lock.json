@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.83.0",
-  "generatedAt": "2026-04-12T14:26:16.397Z",
-  "templateVersion": "0.83.0",
+  "generatorVersion": "0.84.0",
+  "generatedAt": "2026-04-12T14:35:12.786Z",
+  "templateVersion": "0.84.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -790,8 +790,8 @@
       "component": "skills"
     },
     ".claude/skills/memory-management/SKILL.md": {
-      "templateHash": "24897f8657bad3963812696cab4058473d6ebdeecadd86ada71d564361e699e1",
-      "size": 3847,
+      "templateHash": "3fc9e09475523831caa74ddcbaeaa5cc3e3bcb58cbe680834e68179d653e0d7d",
+      "size": 5135,
       "component": "skills"
     },
     ".claude/skills/kafka-best-practices/SKILL.md": {
@@ -900,8 +900,8 @@
       "component": "skills"
     },
     ".claude/skills/dag-orchestration/SKILL.md": {
-      "templateHash": "1b3a9a2865a9756944da4a8d7a7e80a510657100d234f41ed310b6490384b9eb",
-      "size": 5847,
+      "templateHash": "e3dbefa46a4b997c9956ce35a3ae377f46f58955f4a778236a474ea72c5621f2",
+      "size": 6655,
       "component": "skills"
     },
     ".claude/skills/wiki-rag/SKILL.md": {
