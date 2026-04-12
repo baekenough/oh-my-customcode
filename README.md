@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-47 agents. 101 skills. 21 rules. One command.
+48 agents. 104 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -124,7 +124,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-### Agents (47)
+### Agents (48)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -145,7 +145,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (101)
+### Skills (104)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -223,7 +223,7 @@ All commands are invoked inside the Claude Code conversation.
 
 ---
 
-### Rules (21)
+### Rules (22)
 
 | Priority | Count | Purpose |
 |----------|-------|---------|
@@ -284,9 +284,9 @@ omcustom serve-stop            # Stop Web UI
 your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
-│   ├── agents/                 # 47 agent definitions
-│   ├── skills/                 # 101 skill modules
-│   ├── rules/                  # 21 governance rules (R000-R021)
+│   ├── agents/                 # 48 agent definitions
+│   ├── skills/                 # 104 skill modules
+│   ├── rules/                  # 22 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs

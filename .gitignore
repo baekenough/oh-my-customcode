@@ -42,6 +42,7 @@ docs/.vitepress/dist
 !.claude/agents/souls/
 !.claude/skills/
 !.claude/hooks/
+!.claude/rules/
 ontology/
 CLAUDE.md
 .omcustomrc.json
