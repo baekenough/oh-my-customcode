@@ -1,0 +1,36 @@
+---
+title: Release Plan
+type: skill
+updated: 2026-04-12
+sources:
+  - .claude/skills/release-plan/SKILL.md
+related:
+  - [[professor-triage]]
+  - [[deep-verify]]
+  - [[omcustom-release-notes]]
+---
+
+# Release Plan
+
+Generate release-unit development plan from verify-done issues.
+
+## Overview
+
+Reads GitHub issues labeled `verify-done`, groups them into cohesive release units, generates an ordered implementation plan, and assigns agents per issue type. Output is a structured release plan with issue list, agent assignments, verification steps, and estimated complexity. Input to the auto-dev pipeline. Run after `professor-triage` has labeled and prioritized issues.
+
+## Key Details
+
+- **Scope**: harness
+- **User-invocable**: yes
+- **Command**: `/release-plan`
+- **Effort**: not specified
+
+## Relationships
+
+- **Used by agents**: orchestrator
+- **Related skills**: [[professor-triage]], [[deep-verify]], [[post-release-followup]], [[omcustom-release-notes]]
+- **See also**: [[R020]]
+
+## Sources
+
+- `.claude/skills/release-plan/SKILL.md` — skill definition

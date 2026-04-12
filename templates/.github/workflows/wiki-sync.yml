@@ -1,0 +1,132 @@
+name: Wiki Sync
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - '.claude/agents/**'
+      - '.claude/skills/**'
+      - '.claude/rules/**'
+      - 'guides/**'
+      - 'wiki/**'
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - '.claude/agents/**'
+      - '.claude/skills/**'
+      - '.claude/rules/**'
+      - 'guides/**'
+      - 'wiki/**'
+
+concurrency:
+  group: wiki-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  wiki-staleness-check:
+    name: Wiki Staleness Check
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Check wiki directory exists
+        run: |
+          if [ ! -d "wiki" ]; then
+            echo "::error::wiki/ directory does not exist"
+            echo ""
+            echo "The wiki/ directory is required for this project."
+            echo "Fix: run '/omcustom:wiki' to generate the initial wiki"
+            exit 1
+          fi
+
+      - name: Check for missing wiki pages
+        run: |
+          #!/bin/bash
+          ERRORS=0
+          STALE=0
+          MISSING=0
+
+          # Check agents
+          for src in .claude/agents/*.md; do
+            name=$(basename "$src" .md)
+            wiki_page="wiki/agents/${name}.md"
+            if [ ! -f "$wiki_page" ]; then
+              echo "::error::Missing wiki page: $wiki_page (source: $src)"
+              MISSING=$((MISSING + 1))
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          # Check skills
+          for src in $(find .claude/skills -name "SKILL.md"); do
+            name=$(basename $(dirname "$src"))
+            wiki_page="wiki/skills/${name}.md"
+            if [ ! -f "$wiki_page" ]; then
+              echo "::error::Missing wiki page: $wiki_page (source: $src)"
+              MISSING=$((MISSING + 1))
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          # Check rules
+          for src in .claude/rules/*.md; do
+            # Extract rule ID (R000, R007, etc.) from content
+            rule_id=$(grep -oP 'ID\*\*: R\K[0-9]+' "$src" | head -1)
+            if [ -n "$rule_id" ]; then
+              wiki_page="wiki/rules/r$(printf '%03d' $rule_id).md"
+              if [ ! -f "$wiki_page" ]; then
+                echo "::error::Missing wiki page: $wiki_page (source: $src)"
+                MISSING=$((MISSING + 1))
+                ERRORS=$((ERRORS + 1))
+              fi
+            fi
+          done
+
+          # Check guides
+          for src in $(find guides -mindepth 1 -maxdepth 1 -type d); do
+            name=$(basename "$src")
+            wiki_page="wiki/guides/${name}.md"
+            if [ ! -f "$wiki_page" ]; then
+              echo "::error::Missing wiki page: $wiki_page (source: $src)"
+              MISSING=$((MISSING + 1))
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          # Check index.md exists
+          if [ ! -f "wiki/index.md" ]; then
+            echo "::error::Missing wiki/index.md"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          # Summary
+          TOTAL_WIKI=$(find wiki -name "*.md" ! -name "index.md" ! -name "log.md" 2>/dev/null | wc -l | tr -d ' ')
+          echo "Wiki pages: $TOTAL_WIKI"
+          echo "Missing pages: $MISSING"
+
+          if [ "$ERRORS" -gt 0 ]; then
+            echo ""
+            echo "Fix: run '/omcustom:wiki' to regenerate wiki pages"
+            exit 1
+          fi
+
+          echo "Wiki sync check passed"
+
+      - name: Report results
+        if: success()
+        run: |
+          TOTAL_AGENTS=$(ls .claude/agents/*.md 2>/dev/null | wc -l | tr -d ' ')
+          TOTAL_SKILLS=$(find .claude/skills -name "SKILL.md" 2>/dev/null | wc -l | tr -d ' ')
+          TOTAL_RULES=$(ls .claude/rules/*.md 2>/dev/null | wc -l | tr -d ' ')
+          TOTAL_GUIDES=$(find guides -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+          TOTAL_WIKI=$(find wiki -name "*.md" ! -name "index.md" ! -name "log.md" 2>/dev/null | wc -l | tr -d ' ')
+
+          echo "Source entities: agents=$TOTAL_AGENTS skills=$TOTAL_SKILLS rules=$TOTAL_RULES guides=$TOTAL_GUIDES"
+          echo "Wiki pages: $TOTAL_WIKI"
+          echo "All wiki pages present — sync OK"

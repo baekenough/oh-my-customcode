@@ -28,11 +28,22 @@ Also run: mgr-claude-code-bible:verify (official spec compliance)
 | 2 | References: no orphans, no circular refs, valid skill/memory refs |
 | 3 | Philosophy: R006 separation, R009 parallel, R010 delegation, R007/R008 identification |
 
-### Phase 3: Fix all discovered issues
+### Phase 3: Wiki Sync Verification
 
-### Phase 4: Commit via mgr-gitnerd
+| Check | Action |
+|-------|--------|
+| Missing pages | Source entities without wiki pages → run `/omcustom:wiki` |
+| Stale pages | Source modification date newer than wiki `updated` field → run `/omcustom:wiki ingest <path>` |
+| Broken cross-refs | Wiki links pointing to non-existent pages → run `/omcustom:wiki lint` |
+| index.md accuracy | Wiki index page count matches actual page count |
 
-### Phase 5: Push via mgr-gitnerd (only after sauron passes)
+Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
+
+### Phase 4: Fix all discovered issues
+
+### Phase 5: Commit via mgr-gitnerd
+
+### Phase 6: Push via mgr-gitnerd (only after sauron passes)
 
 ## Self-Check Before Commit and Push
 
@@ -45,6 +56,7 @@ Also run: mgr-claude-code-bible:verify (official spec compliance)
 ║  3. Did I fix all discovered issues?                             ║
 ║  4. Are all counts matching across all sources?                  ║
 ║  5. Am I delegating to mgr-gitnerd for the commit?               ║
+║  6. Are wiki pages in sync with source changes?                  ║
 ║                                                                   ║
 ║  If NO to any → wait until verification completes                ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -64,11 +76,11 @@ Also run: mgr-claude-code-bible:verify (official spec compliance)
 
 ## When Required
 
-Any change to: agents, agent frontmatter, skills, guides, routing patterns, rules.
+Any change to: agents, agent frontmatter, skills, guides, routing patterns, rules, wiki pages.
 
 ## Quick Verification Commands
 
-Key checks: agent count (`ls .claude/agents/*.md | wc -l`), skill count (`find .claude/skills -name "SKILL.md" | wc -l`), guide count (`find guides -mindepth 1 -maxdepth 1 -type d | wc -l`).
+Key checks: agent count (`ls .claude/agents/*.md | wc -l`), skill count (`find .claude/skills -name "SKILL.md" | wc -l`), guide count (`find guides -mindepth 1 -maxdepth 1 -type d | wc -l`), wiki page count (`find wiki -name "*.md" ! -name "index.md" ! -name "log.md" | wc -l`).
 
 <!-- DETAIL: Full verification bash scripts
 ```bash
