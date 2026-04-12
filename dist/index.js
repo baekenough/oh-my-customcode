@@ -1,27 +1,16 @@
 import { createRequire } from "node:module";
-var __create = Object.create;
-var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __toESM = (mod, isNodeMode, target) => {
-  target = mod != null ? __create(__getProtoOf(mod)) : {};
-  const to = isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target;
-  for (let key of __getOwnPropNames(mod))
-    if (!__hasOwnProp.call(to, key))
-      __defProp(to, key, {
-        get: () => mod[key],
-        enumerable: true
-      });
-  return to;
-};
+var __returnValue = (v) => v;
+function __exportSetter(name, newValue) {
+  this[name] = __returnValue.bind(null, newValue);
+}
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, {
       get: all[name],
       enumerable: true,
       configurable: true,
-      set: (newValue) => all[name] = () => newValue
+      set: __exportSetter.bind(all, name)
     });
 };
 var __esm = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
@@ -301,6 +290,159 @@ function resolvePath(...paths) {
   return resolve(...paths);
 }
 var init_fs = () => {};
+
+// src/core/registry.ts
+var exports_registry = {};
+__export(exports_registry, {
+  unregisterProject: () => unregisterProject,
+  registryToList: () => registryToList,
+  registerProject: () => registerProject,
+  readRegistry: () => readRegistry,
+  migrateFromLockfiles: () => migrateFromLockfiles,
+  cleanRegistry: () => cleanRegistry,
+  _setRegistryDirForTesting: () => _setRegistryDirForTesting
+});
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { basename as basename3, join as join6, resolve as resolve2 } from "node:path";
+function _setRegistryDirForTesting(dir2) {
+  _registryDirOverride = dir2;
+}
+function registryDir() {
+  if (_registryDirOverride !== undefined)
+    return _registryDirOverride;
+  const home = process.env.HOME ?? homedir();
+  return join6(home, ".oh-my-customcode");
+}
+function registryPath() {
+  return join6(registryDir(), "projects.json");
+}
+async function readRegistryRaw() {
+  try {
+    const content = await readFile(registryPath(), "utf-8");
+    const parsed = JSON.parse(content);
+    if (typeof parsed === "object" && parsed !== null && "projects" in parsed && typeof parsed.projects === "object" && parsed.projects !== null) {
+      return parsed;
+    }
+    return { ...EMPTY_REGISTRY };
+  } catch {
+    return { ...EMPTY_REGISTRY };
+  }
+}
+async function writeRegistry(registry) {
+  const dir2 = registryDir();
+  await mkdir(dir2, { recursive: true });
+  await writeFile(registryPath(), JSON.stringify(registry, null, 2), "utf-8");
+}
+async function readRegistry() {
+  return readRegistryRaw();
+}
+async function registerProject(projectPath, version) {
+  const normalizedPath = resolve2(projectPath);
+  const registry = await readRegistryRaw();
+  const existing = registry.projects[normalizedPath];
+  const now = new Date().toISOString();
+  registry.projects[normalizedPath] = {
+    version,
+    installedAt: existing?.installedAt ?? now,
+    updatedAt: now
+  };
+  await writeRegistry(registry);
+}
+async function unregisterProject(projectPath) {
+  const normalizedPath = resolve2(projectPath);
+  const registry = await readRegistryRaw();
+  if (!(normalizedPath in registry.projects))
+    return;
+  delete registry.projects[normalizedPath];
+  await writeRegistry(registry);
+}
+async function cleanRegistry() {
+  const { access: fsAccess } = await import("node:fs/promises");
+  const registry = await readRegistryRaw();
+  const paths = Object.keys(registry.projects);
+  let removed = 0;
+  for (const projectPath of paths) {
+    try {
+      await fsAccess(projectPath);
+    } catch {
+      delete registry.projects[projectPath];
+      removed++;
+    }
+  }
+  if (removed > 0) {
+    await writeRegistry(registry);
+  }
+  return removed;
+}
+async function parseLockFile(lockPath) {
+  try {
+    const content = await readFile(lockPath, "utf-8");
+    const lock = JSON.parse(content);
+    const version = typeof lock.version === "string" ? lock.version : typeof lock.templateVersion === "string" ? lock.templateVersion : "0.0.0";
+    const now = new Date().toISOString();
+    return {
+      version,
+      installedAt: typeof lock.installedAt === "string" ? lock.installedAt : now,
+      updatedAt: typeof lock.updatedAt === "string" ? lock.updatedAt : now
+    };
+  } catch {
+    return null;
+  }
+}
+async function migrateFromLockfiles(searchDirs) {
+  const { readdir: readdir3 } = await import("node:fs/promises");
+  const MAX_DEPTH = 3;
+  const discovered = new Map;
+  async function scan(dir2, depth) {
+    if (depth > MAX_DEPTH || discovered.has(dir2))
+      return;
+    let entries;
+    try {
+      entries = await readdir3(dir2, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    const entry = await parseLockFile(join6(dir2, ".omcustom.lock.json"));
+    if (entry !== null) {
+      discovered.set(resolve2(dir2), entry);
+      return;
+    }
+    if (depth < MAX_DEPTH) {
+      const subdirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && !SCAN_SKIP_DIRS.has(e.name));
+      await Promise.all(subdirs.map((sub) => scan(join6(dir2, sub.name), depth + 1)));
+    }
+  }
+  await Promise.all(searchDirs.map((dir2) => scan(dir2, 0).catch(() => {})));
+  if (discovered.size === 0)
+    return 0;
+  const registry = await readRegistryRaw();
+  let imported = 0;
+  for (const [projectPath, entry] of discovered) {
+    if (!(projectPath in registry.projects)) {
+      registry.projects[projectPath] = entry;
+      imported++;
+    }
+  }
+  if (imported > 0) {
+    await writeRegistry(registry);
+  }
+  return imported;
+}
+function registryToList(registry) {
+  return Object.entries(registry.projects).map(([path, entry]) => ({
+    name: basename3(path),
+    path,
+    version: entry.version,
+    installedAt: entry.installedAt,
+    updatedAt: entry.updatedAt
+  }));
+}
+var _registryDirOverride, EMPTY_REGISTRY, SCAN_SKIP_DIRS;
+var init_registry = __esm(() => {
+  EMPTY_REGISTRY = { projects: {} };
+  SCAN_SKIP_DIRS = new Set(["node_modules", "dist", "build", ".git"]);
+});
 
 // src/core/config.ts
 init_fs();
@@ -1512,7 +1654,8 @@ async function installSettingsLocal(targetDir, result) {
     statusLine: {
       type: "command",
       command: ".claude/statusline.sh",
-      padding: 0
+      padding: 0,
+      refreshInterval: 10
     }
   };
   if (await fileExists(settingsPath)) {
@@ -1824,14 +1967,14 @@ async function detectProvider(_options = {}) {
   };
 }
 // src/core/updater.ts
-import { join as join6 } from "node:path";
+import { join as join7 } from "node:path";
 // package.json
 var package_default = {
   name: "oh-my-customcode",
   workspaces: [
     "packages/*"
   ],
-  version: "0.78.3",
+  version: "0.82.0",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -4597,7 +4740,7 @@ function resolveCustomizations(customizations, configPreserveFiles, targetDir) {
 }
 async function updateEntryDoc(targetDir, config, options) {
   const layout = getProviderLayout();
-  const entryPath = join6(targetDir, layout.entryFile);
+  const entryPath = join7(targetDir, layout.entryFile);
   const templateName = getEntryTemplateName2(config.language);
   const templatePath = resolveTemplatePath(templateName);
   if (!await fileExists(templatePath)) {
@@ -4676,6 +4819,36 @@ function checkAndInstallRtkAfterUpdate() {
     }
   }
 }
+async function updateProjectRegistry(targetDir, newVersion) {
+  try {
+    const { registerProject: registerProject2 } = await Promise.resolve().then(() => (init_registry(), exports_registry));
+    await registerProject2(targetDir, newVersion);
+  } catch {}
+}
+async function regenerateLockfile(targetDir, result) {
+  const lockfileResult = await generateAndWriteLockfileForDir(targetDir);
+  if (lockfileResult.warning) {
+    result.warnings.push(lockfileResult.warning);
+    warn("update.lockfile_failed", { error: lockfileResult.warning });
+  } else {
+    debug("update.lockfile_regenerated", {
+      files: String(lockfileResult.fileCount)
+    });
+  }
+}
+async function shouldSkipSelfUpdate(targetDir, result) {
+  const targetPkgPath = join7(targetDir, "package.json");
+  if (await fileExists(targetPkgPath)) {
+    const targetPkg = await readJsonFile(targetPkgPath);
+    if (targetPkg.name === "oh-my-customcode") {
+      warn("update.self_update_skipped");
+      result.success = true;
+      result.warnings.push("Skipped: source project cannot update itself");
+      return true;
+    }
+  }
+  return false;
+}
 function checkAndInstallCodexAfterUpdate() {
   if (!isCodexInstalled()) {
     warn("update.codex_missing");
@@ -4698,15 +4871,8 @@ async function update(options) {
       result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g oh-my-customcode@latest`;
       return result;
     }
-    const targetPkgPath = join6(options.targetDir, "package.json");
-    if (await fileExists(targetPkgPath)) {
-      const targetPkg = await readJsonFile(targetPkgPath);
-      if (targetPkg.name === "oh-my-customcode") {
-        warn("update.self_update_skipped");
-        result.success = true;
-        result.warnings.push("Skipped: source project cannot update itself");
-        return result;
-      }
+    if (await shouldSkipSelfUpdate(options.targetDir, result)) {
+      return result;
     }
     const updateCheck = await checkForUpdates(options.targetDir);
     result.newVersion = updateCheck.latestVersion;
@@ -4724,17 +4890,12 @@ async function update(options) {
     const components = options.components || getAllUpdateComponents();
     await updateAllComponents(options.targetDir, components, updateCheck, customizations, options, result, config, lockfile);
     await runFullUpdatePostProcessing(options, result, config);
-    const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir);
-    if (lockfileResult.warning) {
-      result.warnings.push(lockfileResult.warning);
-      warn("update.lockfile_failed", { error: lockfileResult.warning });
-    } else {
-      debug("update.lockfile_regenerated", {
-        files: String(lockfileResult.fileCount)
-      });
-    }
+    await regenerateLockfile(options.targetDir, result);
     checkAndInstallRtkAfterUpdate();
     checkAndInstallCodexAfterUpdate();
+    if (result.success && !options.dryRun) {
+      await updateProjectRegistry(options.targetDir, result.newVersion);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     result.error = message;
@@ -4768,8 +4929,8 @@ async function checkForUpdates(targetDir) {
 async function applyUpdates(targetDir, updates) {
   const fs = await import("node:fs/promises");
   for (const update2 of updates) {
-    const fullPath = join6(targetDir, update2.path);
-    await ensureDirectory(join6(fullPath, ".."));
+    const fullPath = join7(targetDir, update2.path);
+    await ensureDirectory(join7(fullPath, ".."));
     await fs.writeFile(fullPath, update2.content, "utf-8");
     debug("update.file_applied", { path: update2.path });
   }
@@ -4778,7 +4939,7 @@ async function preserveCustomizations(targetDir, customizations) {
   const preserved = new Map;
   const fs = await import("node:fs/promises");
   for (const filePath of customizations) {
-    const fullPath = join6(targetDir, filePath);
+    const fullPath = join7(targetDir, filePath);
     if (await fileExists(fullPath)) {
       const content = await fs.readFile(fullPath, "utf-8");
       preserved.set(filePath, content);
@@ -4835,11 +4996,11 @@ async function collectProtectedSkipPaths(srcPath, destPath, componentPath, force
   const warnedPaths = [];
   const updatedPaths = [];
   for (const p of protectedRelative) {
-    const targetFilePath = join6(targetDir, componentPath, p);
+    const targetFilePath = join7(targetDir, componentPath, p);
     const lockfileKey = `${componentPath}/${p}`.replace(/\\/g, "/");
     const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
     if (shouldSkip) {
-      skipPaths.push(path.relative(destPath, join6(destPath, p)));
+      skipPaths.push(path.relative(destPath, join7(destPath, p)));
       warnedPaths.push(p);
     } else {
       updatedPaths.push(p);
@@ -4885,7 +5046,7 @@ async function updateComponent(targetDir, component, customizations, options, co
   const preservedFiles = [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
-  const destPath = join6(targetDir, componentPath);
+  const destPath = join7(targetDir, componentPath);
   const customComponents = config.customComponents || [];
   const skipPaths = [];
   if (customizations && !options.forceOverwriteAll) {
@@ -4927,7 +5088,7 @@ async function updateComponent(targetDir, component, customizations, options, co
   }
   skipPaths.push(...protectedSkipPaths);
   const path = await import("node:path");
-  const normalizedSkipPaths = skipPaths.map((p) => path.relative(destPath, join6(targetDir, p)));
+  const normalizedSkipPaths = skipPaths.map((p) => path.relative(destPath, join7(targetDir, p)));
   const uniqueSkipPaths = [...new Set(normalizedSkipPaths)];
   await copyDirectory(srcPath, destPath, {
     overwrite: true,
@@ -4949,12 +5110,12 @@ async function syncRootLevelFiles(targetDir, options) {
   const layout = getProviderLayout();
   const synced = [];
   for (const fileName of ROOT_LEVEL_FILES) {
-    const srcPath = resolveTemplatePath(join6(layout.rootDir, fileName));
+    const srcPath = resolveTemplatePath(join7(layout.rootDir, fileName));
     if (!await fileExists(srcPath)) {
       continue;
     }
-    const destPath = join6(targetDir, layout.rootDir, fileName);
-    await ensureDirectory(join6(destPath, ".."));
+    const destPath = join7(targetDir, layout.rootDir, fileName);
+    await ensureDirectory(join7(destPath, ".."));
     await fs.copyFile(srcPath, destPath);
     if (fileName.endsWith(".sh")) {
       await fs.chmod(destPath, 493);
@@ -4989,7 +5150,7 @@ async function removeDeprecatedFiles(targetDir, options) {
       });
       continue;
     }
-    const fullPath = join6(targetDir, entry.path);
+    const fullPath = join7(targetDir, entry.path);
     if (await fileExists(fullPath)) {
       await fs.unlink(fullPath);
       removed.push(entry.path);
@@ -5030,7 +5191,7 @@ async function syncNamespaceInFile(targetFilePath, upstreamFilePath) {
 async function processNamespaceSyncEntry(entry, relPath, fullSrcPath, destPath, componentPath, lockfile) {
   if (!entry.isFile() || !entry.name.endsWith(".md"))
     return null;
-  const targetFilePath = join6(destPath, relPath);
+  const targetFilePath = join7(destPath, relPath);
   const lockfileKey = `${componentPath}/${relPath}`.replace(/\\/g, "/");
   const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
   if (shouldSkip)
@@ -5045,7 +5206,7 @@ async function applyNamespaceSync(targetDir, component, lockfile) {
     return [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
-  const destPath = join6(targetDir, componentPath);
+  const destPath = join7(targetDir, componentPath);
   const fs = await import("node:fs/promises");
   const synced = [];
   const queue = [{ dir: srcPath, relDir: "" }];
@@ -5059,7 +5220,7 @@ async function applyNamespaceSync(targetDir, component, lockfile) {
     }
     for (const entry of entries) {
       const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
-      const fullSrcPath = join6(dir2, entry.name);
+      const fullSrcPath = join7(dir2, entry.name);
       if (entry.isDirectory()) {
         queue.push({ dir: fullSrcPath, relDir: relPath });
         continue;
@@ -5082,26 +5243,26 @@ function getComponentPath2(component) {
 }
 async function backupInstallation(targetDir) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupDir = join6(targetDir, `.omcustom-backup-${timestamp}`);
+  const backupDir = join7(targetDir, `.omcustom-backup-${timestamp}`);
   const fs = await import("node:fs/promises");
   await ensureDirectory(backupDir);
   const layout = getProviderLayout();
   const dirsToBackup = [layout.rootDir, "guides"];
   for (const dir2 of dirsToBackup) {
-    const srcPath = join6(targetDir, dir2);
+    const srcPath = join7(targetDir, dir2);
     if (await fileExists(srcPath)) {
-      const destPath = join6(backupDir, dir2);
+      const destPath = join7(backupDir, dir2);
       await copyDirectory(srcPath, destPath, { overwrite: true });
     }
   }
-  const entryPath = join6(targetDir, layout.entryFile);
+  const entryPath = join7(targetDir, layout.entryFile);
   if (await fileExists(entryPath)) {
-    await fs.copyFile(entryPath, join6(backupDir, layout.entryFile));
+    await fs.copyFile(entryPath, join7(backupDir, layout.entryFile));
   }
   return backupDir;
 }
 async function loadCustomizationManifest(targetDir) {
-  const manifestPath = join6(targetDir, CUSTOMIZATION_MANIFEST_FILE);
+  const manifestPath = join7(targetDir, CUSTOMIZATION_MANIFEST_FILE);
   if (await fileExists(manifestPath)) {
     return readJsonFile(manifestPath);
   }
