@@ -32,11 +32,21 @@ Update the relevant rule rather than just acknowledging the violation.
 | CI/infra defect | — | ✅ | ✅ |
 | Process gap (workflow hole) | ✅ | ✅ | ✅ |
 | Repeatable system bug | — | ✅ | ✅ |
+| Agent selection failure (wrong agent routed) | — | ✅ | — |
 
 When CI failure, process gap, or repeatable system defect is found:
 1. Record feedback memory (defend current session)
 2. Register GitHub issue (trackable improvement item)
 3. Both required — memory alone is NOT sufficient for system-level defects
+
+### Adaptive Harness Integration
+
+When repeating agent failures or suboptimal routing is detected:
+1. Record as feedback memory (immediate session defense)
+2. Run `/omcustom:adaptive-harness --learn` to update project profile with failure patterns
+3. Profile updates improve future agent selection and harness optimization
+
+This connects R016's continuous improvement loop with the adaptive-harness skill's learning capability.
 
 ## Anti-Patterns
 

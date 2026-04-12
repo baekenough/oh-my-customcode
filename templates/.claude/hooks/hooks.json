@@ -155,6 +155,16 @@
           }
         ],
         "description": "Scan TODO.md files for stale items at session start"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/adaptive-harness-scan.sh"
+          }
+        ],
+        "description": "Lightweight project profile staleness check for adaptive harness (#831)"
       }
     ],
     "UserPromptSubmit": [

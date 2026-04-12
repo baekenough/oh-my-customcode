@@ -1,0 +1,25 @@
+name: CC Release Monitor
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily 9AM UTC (6PM KST)
+  workflow_dispatch:        # Manual trigger
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check-releases:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run release collector
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          MIN_VERSION: '2.1.86'
+        run: |
+          chmod +x infra/cc-release-collector/check-releases.sh
+          bash infra/cc-release-collector/check-releases.sh
