@@ -1,24 +1,24 @@
 {
   "version": "0.81.0",
-  "lastUpdated": "2026-03-24T00:00:00.000Z",
+  "lastUpdated": "2026-04-12T00:00:00.000Z",
   "components": [
     {
       "name": "rules",
       "path": ".claude/rules",
       "description": "Agent behavior rules and guidelines",
-      "files": 21
+      "files": 22
     },
     {
       "name": "agents",
       "path": ".claude/agents",
       "description": "AI agent definitions (flat .md files with prefixes)",
-      "files": 47
+      "files": 48
     },
     {
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 101
+      "files": 104
     },
     {
       "name": "guides",
