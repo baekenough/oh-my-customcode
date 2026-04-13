@@ -453,6 +453,16 @@
           }
         ],
         "description": "Append-only audit log for state-changing tool operations"
+      },
+      {
+        "matcher": "tool == \"Write\" || tool == \"Edit\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/skill-count-reminder.sh"
+          }
+        ],
+        "description": "Advisory reminder to sync skill counts in 6 locations when a SKILL.md is created/modified (R021)"
       }
     ],
     "Stop": [
