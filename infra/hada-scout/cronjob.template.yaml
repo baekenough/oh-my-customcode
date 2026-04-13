@@ -1,0 +1,149 @@
+# Layer 1: RSS feed check + issue creation
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hada-scout-feed
+  namespace: ${K8S_NAMESPACE}
+  labels:
+    app: hada-scout
+    component: feed-watcher
+spec:
+  schedule: "${CRON_SCHEDULE_FEED}"
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      template:
+        metadata:
+          labels:
+            app: hada-scout
+            component: feed-watcher
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: feed-checker
+              image: ${IMAGE_FULL}
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              env:
+                - name: GH_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: github-token
+                      key: token
+                - name: REPO
+                  value: "${TARGET_REPO}"
+                - name: FEED_URL
+                  value: "${FEED_URL}"
+                - name: KEYWORDS
+                  value: "${KEYWORDS}"
+                - name: MAX_SCOUT_ENTRIES
+                  value: "${MAX_SCOUT_ENTRIES}"
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+                - name: home
+                  mountPath: /home/scout
+          volumes:
+            - name: tmp
+              emptyDir: {}
+            - name: home
+              emptyDir: {}
+---
+# Layer 2: /scout analysis execution
+# NOTE: This CronJob runs scout-runner.sh which requires `claude` CLI.
+# For K8s deployment, claude CLI must be available in the image or as a sidecar.
+# Alternative: run scout-runner.sh directly on the host via cron.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hada-scout-runner
+  namespace: ${K8S_NAMESPACE}
+  labels:
+    app: hada-scout
+    component: scout-runner
+spec:
+  schedule: "${CRON_SCHEDULE_SCOUT}"
+  timeZone: "UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 900
+      template:
+        metadata:
+          labels:
+            app: hada-scout
+            component: scout-runner
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: scout-runner
+              image: ${IMAGE_FULL}
+              command: ["/app/scout-runner.sh"]
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              env:
+                - name: GH_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: github-token
+                      key: token
+                - name: REPO
+                  value: "${TARGET_REPO}"
+                - name: MAX_SCOUT_PER_RUN
+                  value: "${MAX_SCOUT_PER_RUN}"
+                - name: CLAUDE_PROJECT_DIR
+                  value: "${CLAUDE_PROJECT_DIR}"
+              resources:
+                requests:
+                  memory: "128Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "256Mi"
+                  cpu: "500m"
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+                - name: home
+                  mountPath: /home/scout
+          volumes:
+            - name: tmp
+              emptyDir: {}
+            - name: home
+              emptyDir: {}
