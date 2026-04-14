@@ -299,18 +299,41 @@ __export(exports_registry, {
   registerProject: () => registerProject,
   readRegistry: () => readRegistry,
   migrateFromLockfiles: () => migrateFromLockfiles,
+  isTempPath: () => isTempPath,
   cleanRegistry: () => cleanRegistry,
   _setRegistryDirForTesting: () => _setRegistryDirForTesting
 });
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
-import { basename as basename3, join as join6, resolve as resolve2 } from "node:path";
+import { homedir, tmpdir } from "node:os";
+import { basename as basename3, join as join6, resolve as resolve2, sep as sep2 } from "node:path";
 function _setRegistryDirForTesting(dir2) {
   _registryDirOverride = dir2;
+}
+function isTempPath(projectPath) {
+  const normalized = resolve2(projectPath);
+  const candidates = new Set;
+  candidates.add(resolve2(tmpdir()));
+  for (const envKey of ["TMPDIR", "TMP", "TEMP"]) {
+    const value = process.env[envKey];
+    if (value)
+      candidates.add(resolve2(value));
+  }
+  candidates.add("/tmp");
+  candidates.add("/var/tmp");
+  candidates.add("/var/folders");
+  for (const candidate of candidates) {
+    if (normalized === candidate || normalized.startsWith(candidate + sep2)) {
+      return true;
+    }
+  }
+  return false;
 }
 function registryDir() {
   if (_registryDirOverride !== undefined)
     return _registryDirOverride;
+  const envOverride = process.env.OMCUSTOM_REGISTRY_DIR;
+  if (envOverride)
+    return envOverride;
   const home = process.env.HOME ?? homedir();
   return join6(home, ".oh-my-customcode");
 }
@@ -339,6 +362,10 @@ async function readRegistry() {
 }
 async function registerProject(projectPath, version) {
   const normalizedPath = resolve2(projectPath);
+  if (!process.env.OMCUSTOM_REGISTRY_DIR && _registryDirOverride === undefined) {
+    if (isTempPath(normalizedPath))
+      return;
+  }
   const registry = await readRegistryRaw();
   const existing = registry.projects[normalizedPath];
   const now = new Date().toISOString();
@@ -362,7 +389,13 @@ async function cleanRegistry() {
   const registry = await readRegistryRaw();
   const paths = Object.keys(registry.projects);
   let removed = 0;
+  const purgeTempPaths = !process.env.OMCUSTOM_REGISTRY_DIR && _registryDirOverride === undefined;
   for (const projectPath of paths) {
+    if (purgeTempPaths && isTempPath(projectPath)) {
+      delete registry.projects[projectPath];
+      removed++;
+      continue;
+    }
     try {
       await fsAccess(projectPath);
     } catch {
@@ -1974,7 +2007,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.87.3",
+  version: "0.88.0",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {

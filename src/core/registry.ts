@@ -6,8 +6,8 @@
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { homedir, tmpdir } from 'node:os';
+import { basename, join, resolve, sep } from 'node:path';
 
 /**
  * Override for the registry directory path, used in tests only.
@@ -25,9 +25,39 @@ export function _setRegistryDirForTesting(dir: string | undefined): void {
   _registryDirOverride = dir;
 }
 
+/**
+ * Check whether a path is inside a well-known temporary directory.
+ *
+ * Prevents E2E test runs from polluting the real registry with /tmp or
+ * /var/folders paths (#859).
+ */
+export function isTempPath(projectPath: string): boolean {
+  const normalized = resolve(projectPath);
+  const candidates = new Set<string>();
+
+  candidates.add(resolve(tmpdir()));
+  for (const envKey of ['TMPDIR', 'TMP', 'TEMP'] as const) {
+    const value = process.env[envKey];
+    if (value) candidates.add(resolve(value));
+  }
+  candidates.add('/tmp');
+  candidates.add('/var/tmp');
+  candidates.add('/var/folders');
+
+  for (const candidate of candidates) {
+    if (normalized === candidate || normalized.startsWith(candidate + sep)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Compute the registry directory path at call-time (respects HOME env changes in tests). */
 function registryDir(): string {
   if (_registryDirOverride !== undefined) return _registryDirOverride;
+  // #859: subprocess test isolation via env var
+  const envOverride = process.env.OMCUSTOM_REGISTRY_DIR;
+  if (envOverride) return envOverride;
   // Use process.env.HOME when available so tests can redirect to a temp directory
   // (Bun's os.homedir() caches the value and ignores runtime HOME changes).
   const home = process.env.HOME ?? homedir();
@@ -115,6 +145,12 @@ export async function readRegistry(): Promise<Registry> {
  */
 export async function registerProject(projectPath: string, version: string): Promise<void> {
   const normalizedPath = resolve(projectPath);
+
+  // #859: reject temp paths unless test isolation is active
+  if (!process.env.OMCUSTOM_REGISTRY_DIR && _registryDirOverride === undefined) {
+    if (isTempPath(normalizedPath)) return;
+  }
+
   const registry = await readRegistryRaw();
   const existing = registry.projects[normalizedPath];
   const now = new Date().toISOString();
@@ -155,7 +191,17 @@ export async function cleanRegistry(): Promise<number> {
   const paths = Object.keys(registry.projects);
   let removed = 0;
 
+  // Only purge temp paths when running in production (not test isolation mode)
+  const purgeTempPaths = !process.env.OMCUSTOM_REGISTRY_DIR && _registryDirOverride === undefined;
+
   for (const projectPath of paths) {
+    // #859: drop temp paths that slipped in via pre-0.88.0 writes
+    if (purgeTempPaths && isTempPath(projectPath)) {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete registry.projects[projectPath];
+      removed++;
+      continue;
+    }
     try {
       await fsAccess(projectPath);
     } catch {
