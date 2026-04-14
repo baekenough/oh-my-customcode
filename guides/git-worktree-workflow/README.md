@@ -75,6 +75,10 @@ EnterWorktree(name: "feature-x")
 # Creates .claude/worktrees/feature-x with a new branch based on HEAD
 # Session working directory switches to the worktree
 
+EnterWorktree(path: "/absolute/path/to/existing-worktree")
+# Switches into an existing worktree of the current repository (v2.1.105+)
+# No new branch is created — uses the worktree as-is
+
 ExitWorktree()
 # Returns to the main repository
 # Prompts to keep or remove the worktree
