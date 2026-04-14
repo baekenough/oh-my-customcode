@@ -67,6 +67,46 @@ async function checkCliVersion(checkFn: typeof checkSelfUpdate): Promise<void> {
 }
 
 /**
+ * Re-exec the current process with OMCUSTOM_SKIP_SELF_UPDATE=true so the child
+ * process loads the newly-installed package version. Without this, the running
+ * process retains stale top-level imports and downstream project updates fail
+ * with "Downgrade prevented" (#860).
+ */
+async function reexecUpdatedCli(toVersion: string): Promise<void> {
+  console.log(i18n.t('cli.update.selfUpdateReexec', { version: toVersion }));
+  const { spawnSync } = await import('node:child_process');
+  const child = spawnSync(process.execPath, [process.argv[1] ?? '', ...process.argv.slice(2)], {
+    stdio: 'inherit',
+    env: { ...process.env, OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
+  });
+  process.exit(child.status ?? 1);
+}
+
+/**
+ * Handle self-update of the oh-my-customcode package.
+ * Performs re-exec if an update was installed and the guard env var is not set.
+ */
+async function handleSelfUpdate(): Promise<void> {
+  try {
+    const selfUpdateResult = executeSelfUpdate();
+    if (selfUpdateResult.updated) {
+      console.log(
+        i18n.t('cli.update.selfUpdateDone', {
+          from: selfUpdateResult.fromVersion,
+          to: selfUpdateResult.toVersion,
+        })
+      );
+      if (process.env.OMCUSTOM_SKIP_SELF_UPDATE !== 'true') {
+        await reexecUpdatedCli(selfUpdateResult.toVersion);
+      }
+    }
+  } catch {
+    // Non-blocking: self-update failure must not stop the external update workflow
+    console.warn(i18n.t('cli.update.selfUpdateFailed'));
+  }
+}
+
+/**
  * Execute the update command
  */
 export async function updateCommand(
@@ -75,20 +115,7 @@ export async function updateCommand(
 ): Promise<void> {
   // Step 0: Self-update oh-my-customcode package before external updates
   if (!options.skipSelf) {
-    try {
-      const selfUpdateResult = executeSelfUpdate();
-      if (selfUpdateResult.updated) {
-        console.log(
-          i18n.t('cli.update.selfUpdateDone', {
-            from: selfUpdateResult.fromVersion,
-            to: selfUpdateResult.toVersion,
-          })
-        );
-      }
-    } catch {
-      // Non-blocking: self-update failure must not stop the external update workflow
-      console.warn(i18n.t('cli.update.selfUpdateFailed'));
-    }
+    await handleSelfUpdate();
   } else {
     // Fallback: notification-only version check when self-update is skipped
     await checkCliVersion(cliVersionCheck);
@@ -151,6 +178,32 @@ async function updateSingleProject(
   return true;
 }
 
+type ProjectUpdateOutcome = 'updated' | 'failed' | 'skipped';
+
+/**
+ * Log the result of a single project update and return the outcome.
+ * Extracted to keep updateAllProjects below the complexity limit.
+ */
+function reportProjectUpdateResult(
+  project: { name: string; version: string | null },
+  result: UpdateResult,
+  currentVersion: string
+): ProjectUpdateOutcome {
+  if (result.success) {
+    if (result.skippedSource) {
+      console.log(i18n.t('cli.update.allProjectSkippedSource', { name: project.name }));
+      return 'skipped';
+    }
+    const from = result.previousVersion || project.version || 'unknown';
+    const to = result.newVersion || currentVersion;
+    console.log(i18n.t('cli.update.allProjectUpdated', { from, to }));
+    return 'updated';
+  }
+  const errorMsg = result.error ?? 'unknown error';
+  console.log(i18n.t('cli.update.allProjectFailed', { error: errorMsg }));
+  return 'failed';
+}
+
 /**
  * Batch update all outdated projects found by project discovery.
  * Runs sequentially so progress output is readable.
@@ -200,15 +253,10 @@ async function updateAllProjects(options: UpdateCommandOptions): Promise<void> {
       };
 
       const result = await update(updateOptions);
-
-      if (result.success) {
-        const from = result.previousVersion || project.version || 'unknown';
-        const to = result.newVersion || currentVersion;
-        console.log(i18n.t('cli.update.allProjectUpdated', { from, to }));
+      const outcome = reportProjectUpdateResult(project, result, currentVersion);
+      if (outcome === 'updated') {
         updatedCount++;
-      } else {
-        const errorMsg = result.error ?? 'unknown error';
-        console.log(i18n.t('cli.update.allProjectFailed', { error: errorMsg }));
+      } else if (outcome === 'failed') {
         failedCount++;
       }
     } catch (error: unknown) {

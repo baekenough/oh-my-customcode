@@ -90,6 +90,8 @@ export interface UpdateResult {
   removedDeprecatedFiles: string[];
   /** Files whose frontmatter name: was synced from upstream */
   namespaceSynced: string[];
+  /** True when the target was skipped because it is the source project itself */
+  skippedSource?: boolean;
   /** Error message if failed */
   error?: string;
 }
@@ -544,6 +546,7 @@ async function shouldSkipSelfUpdate(targetDir: string, result: UpdateResult): Pr
     if (targetPkg.name === 'oh-my-customcode') {
       warn('update.self_update_skipped');
       result.success = true;
+      result.skippedSource = true;
       result.warnings.push('Skipped: source project cannot update itself');
       return true;
     }

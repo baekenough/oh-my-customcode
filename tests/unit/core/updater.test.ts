@@ -1190,4 +1190,43 @@ describe('updater', () => {
       expect(Array.isArray(result.namespaceSynced)).toBe(true);
     });
   });
+
+  describe('shouldSkipSelfUpdate (via update())', () => {
+    it('should set skippedSource=true when target is the oh-my-customcode source project', async () => {
+      // Write a package.json with name "oh-my-customcode" to tempDir
+      await writeFile(
+        join(tempDir, 'package.json'),
+        JSON.stringify({ name: 'oh-my-customcode', version: '0.1.0' }, null, 2)
+      );
+      await createConfig('0.1.0');
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.skippedSource).toBe(true);
+    });
+
+    it('should NOT set skippedSource for normal (non-source) projects', async () => {
+      // Write a package.json with a different name
+      await writeFile(
+        join(tempDir, 'package.json'),
+        JSON.stringify({ name: 'my-other-project', version: '0.1.0' }, null, 2)
+      );
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.skippedSource).toBeUndefined();
+    });
+  });
 });
