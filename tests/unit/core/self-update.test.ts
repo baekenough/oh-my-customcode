@@ -636,6 +636,66 @@ describe('self-update module', () => {
 
       expect(result.updated).toBe(false);
     });
+
+    it('should bypass cache when forceRefresh=true (#867)', () => {
+      const cachePath = createCachePath('exec-cache-force-refresh.json');
+      const now = Date.now();
+
+      writeFileSync(
+        cachePath,
+        JSON.stringify({
+          checkedAt: new Date(now - 1000).toISOString(),
+          latestVersion: '1.0.0',
+        }),
+        'utf-8'
+      );
+
+      let fetchCalls = 0;
+      const result = executeSelfUpdate({
+        currentVersion: '1.0.0',
+        cachePath,
+        fetchLatestVersion: () => {
+          fetchCalls++;
+          return '1.0.0';
+        },
+        forceRefresh: true,
+        now,
+        argv: ['node', '/usr/local/bin/omcustom'],
+        env: {},
+      });
+
+      expect(fetchCalls).toBe(1);
+      expect(result.updated).toBe(false);
+    });
+
+    it('should use cached version when forceRefresh is not set (#867)', () => {
+      const cachePath = createCachePath('exec-cache-no-force.json');
+      const now = Date.now();
+
+      writeFileSync(
+        cachePath,
+        JSON.stringify({
+          checkedAt: new Date(now - 1000).toISOString(),
+          latestVersion: '1.0.0',
+        }),
+        'utf-8'
+      );
+
+      let fetchCalls = 0;
+      executeSelfUpdate({
+        currentVersion: '1.0.0',
+        cachePath,
+        fetchLatestVersion: () => {
+          fetchCalls++;
+          return '1.0.0';
+        },
+        now,
+        argv: ['node', '/usr/local/bin/omcustom'],
+        env: {},
+      });
+
+      expect(fetchCalls).toBe(0);
+    });
   });
 
   describe('maybeHandleSelfUpdateForInit', () => {

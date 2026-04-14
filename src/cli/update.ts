@@ -77,8 +77,11 @@ function exitWithChildStatus(child: {
   signal: NodeJS.Signals | null;
 }): never {
   if (child.signal) {
-    const signalNumber = osConstants.signals[child.signal] ?? 0;
-    process.exit(128 + signalNumber);
+    const signalNumber = osConstants.signals[child.signal];
+    if (signalNumber !== undefined) {
+      process.exit(128 + signalNumber);
+    }
+    // Unknown signal name — fall through to status-based exit
   }
   process.exit(child.status ?? 1);
 }

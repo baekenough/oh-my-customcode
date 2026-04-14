@@ -1860,6 +1860,99 @@ describe('update command', () => {
     });
   });
 
+  describe('exitWithChildStatus signal handling (#867)', () => {
+    it('should exit 128+15 (143) when child terminated by SIGTERM (#867)', async () => {
+      const spawnSyncMock = mock(() => ({
+        status: null,
+        signal: 'SIGTERM' as NodeJS.Signals,
+        pid: 999,
+      }));
+
+      // Capture only the FIRST process.exit call. After exitWithChildStatus calls
+      // process.exit(143), the mock returns (doesn't actually exit), and the
+      // fallthrough path calls process.exit(null ?? 1). We record only the first.
+      let firstExitCode: number | undefined;
+      process.exit = ((code?: number) => {
+        if (firstExitCode === undefined) firstExitCode = code ?? 0;
+        exitCode = code ?? 0;
+      }) as typeof process.exit;
+
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: mock(() => ({
+          updated: true,
+          fromVersion: '0.87.3',
+          toVersion: '0.88.0',
+        })),
+        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({
+          success: true,
+          updatedComponents: [],
+          skippedComponents: [],
+          preservedFiles: [],
+          backedUpPaths: [],
+          previousVersion: '0.87.3',
+          newVersion: '0.88.0',
+          warnings: [],
+        })),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
+
+      expect(spawnSyncMock).toHaveBeenCalledTimes(1);
+      expect(firstExitCode).toBe(143);
+    });
+  });
+
+  describe('reexecUpdatedCli argv guard (#867)', () => {
+    let originalArgv: string[];
+
+    beforeEach(() => {
+      originalArgv = process.argv;
+    });
+
+    afterEach(() => {
+      process.argv = originalArgv;
+    });
+
+    it('should warn and skip re-exec when process.argv[1] is empty (#867)', async () => {
+      process.argv = ['node'];
+
+      const spawnSyncMock = mock(() => ({ status: 0, pid: 999, signal: null }));
+
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: mock(() => ({
+          updated: true,
+          fromVersion: '0.87.3',
+          toVersion: '0.88.0',
+        })),
+        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({
+          success: true,
+          updatedComponents: [],
+          skippedComponents: [],
+          preservedFiles: [],
+          backedUpPaths: [],
+          previousVersion: '0.87.3',
+          newVersion: '0.88.0',
+          warnings: [],
+        })),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
+
+      expect(spawnSyncMock).not.toHaveBeenCalled();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // D2: exit-code propagation and error swallowing (#863)
   //
