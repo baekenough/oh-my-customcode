@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.84.0",
-  "generatedAt": "2026-04-12T14:35:12.786Z",
-  "templateVersion": "0.84.0",
+  "generatorVersion": "0.87.2",
+  "generatedAt": "2026-04-14T12:39:09.315Z",
+  "templateVersion": "0.87.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "0789f7463b10384a2d63a9d35bccd9c88f7b0253cdd4bfaed86173335fa27f03",
-      "size": 5703,
+      "templateHash": "67ebdd6a63ad693d5cda51e3e3a5e542b3e87aba69c5095ff83d50abc7f4a089",
+      "size": 6188,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "2d6ed28b487f57820327a66349e96d367e89989bd69986104e304816664ead81",
-      "size": 15356,
+      "templateHash": "21c7c849165fa0eabb9e549c246703a9515db49f326c4a1fbe45c82b147ca6b2",
+      "size": 16056,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -379,6 +379,11 @@
       "size": 17653,
       "component": "skills"
     },
+    ".claude/skills/hada-scout/SKILL.md": {
+      "templateHash": "f488805805ace9a0c9b06023d0d04a3730ed5c89030fe75cde84619c5c5fa160",
+      "size": 3261,
+      "component": "skills"
+    },
     ".claude/skills/audit-agents/SKILL.md": {
       "templateHash": "6acc8dc2142e180e1c2689b2c47a96f58c11c43f0ecf44ef19fe75667e2ce13f",
       "size": 2360,
@@ -530,8 +535,8 @@
       "component": "skills"
     },
     ".claude/skills/systematic-debugging/SKILL.md": {
-      "templateHash": "3bfa7e39f6f450652b2f62dfd34c2dd838bf3d7d87cfc6108f1570f74ff85d2b",
-      "size": 9018,
+      "templateHash": "d8e9bbf677a9559a55de476e3b4458193313de239b8b9f0fa85f2e7cbfeab49a",
+      "size": 10417,
       "component": "skills"
     },
     ".claude/skills/systematic-debugging/root-cause-tracing.md": {
@@ -989,6 +994,11 @@
       "size": 9222,
       "component": "hooks"
     },
+    ".claude/hooks/skill-count-reminder.sh": {
+      "templateHash": "3d2f3908c497d26cb1c0bf408f17a8302fa2b724cdc455797f16016e44f95c03",
+      "size": 1461,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/eval-core-batch-save.sh": {
       "templateHash": "4f5bcba16122eff79461166e88204a03dddd8a31a1e4bfe927252c8f1526b26f",
       "size": 1347,
@@ -1140,8 +1150,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "165c66e0d751dbdb6764be28362696594577a1eb385bf68014b936c38e6d1938",
-      "size": 24468,
+      "templateHash": "5c1e0519b019b40c1f729e5924d888a6ea1efdcfeb3b3c2c86ab203b56dd6881",
+      "size": 24820,
       "component": "hooks"
     },
     ".claude/ontology/agents.yaml": {
@@ -1480,8 +1490,8 @@
       "component": "guides"
     },
     "guides/git-worktree-workflow/README.md": {
-      "templateHash": "701bfaf51161dd3c03079fe0ed2e354e756c297ac2e3e985f88d991c03272e6e",
-      "size": 3769,
+      "templateHash": "6445c5e39696f40063180b08b51953602ebb58c30377f4c7a88404fc9912f2e5",
+      "size": 3959,
       "component": "guides"
     },
     "guides/aws/well-architected.md": {

@@ -1974,7 +1974,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.84.0",
+  version: "0.87.2",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -2022,7 +2022,7 @@ var package_default = {
     yaml: "^2.8.2"
   },
   devDependencies: {
-    "@anthropic-ai/sdk": "^0.82.0",
+    "@anthropic-ai/sdk": "^0.88.0",
     "@biomejs/biome": "^2.3.12",
     "@types/bun": "^1.3.6",
     "@types/js-yaml": "^4.0.9",
@@ -4843,6 +4843,7 @@ async function shouldSkipSelfUpdate(targetDir, result) {
     if (targetPkg.name === "oh-my-customcode") {
       warn("update.self_update_skipped");
       result.success = true;
+      result.skippedSource = true;
       result.warnings.push("Skipped: source project cannot update itself");
       return true;
     }

@@ -2301,7 +2301,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.84.0",
+    version: "0.87.2",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -2349,7 +2349,7 @@ var init_package = __esm(() => {
       yaml: "^2.8.2"
     },
     devDependencies: {
-      "@anthropic-ai/sdk": "^0.82.0",
+      "@anthropic-ai/sdk": "^0.88.0",
       "@biomejs/biome": "^2.3.12",
       "@types/bun": "^1.3.6",
       "@types/js-yaml": "^4.0.9",
@@ -9608,6 +9608,23 @@ async function getTemplateVersion() {
   }
   return package_default.version;
 }
+function matchesSearchPaths(projectPath, searchPaths) {
+  if (!searchPaths || searchPaths.length === 0)
+    return true;
+  return searchPaths.some((searchPath) => projectPath === searchPath || projectPath.startsWith(searchPath + sep2));
+}
+function isUnderHome(projectPath, home) {
+  return projectPath.startsWith(home + sep2) || projectPath === home;
+}
+function sortProjects(projects) {
+  return projects.sort((a, b) => {
+    if (a.status === "latest" && b.status !== "latest")
+      return -1;
+    if (a.status !== "latest" && b.status === "latest")
+      return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
 async function findProjects(options = {}) {
   const currentVersion = await getTemplateVersion();
   const registry = await readRegistry();
@@ -9619,12 +9636,12 @@ async function findProjects(options = {}) {
     return fallbackResults;
   }
   const results = [];
+  const home = process.env.HOME ?? homedir3();
   for (const [projectPath, entry] of Object.entries(registry.projects)) {
-    if (options.paths && options.paths.length > 0) {
-      const matchesPath = options.paths.some((searchPath) => projectPath === searchPath || projectPath.startsWith(searchPath + sep2));
-      if (!matchesPath)
-        continue;
-    }
+    if (!matchesSearchPaths(projectPath, options.paths))
+      continue;
+    if (!isUnderHome(projectPath, home))
+      continue;
     results.push({
       name: basename4(projectPath),
       path: projectPath,
@@ -9635,31 +9652,21 @@ async function findProjects(options = {}) {
       detectionMethod: "registry"
     });
   }
-  return results.sort((a, b) => {
-    if (a.status === "latest" && b.status !== "latest")
-      return -1;
-    if (a.status !== "latest" && b.status === "latest")
-      return 1;
-    return a.name.localeCompare(b.name);
-  });
+  return sortProjects(results);
 }
-async function _findProjectsFromLockfiles(options, currentVersion) {
-  const { dirname: dirname3 } = await import("node:path");
-  const fs2 = await import("node:fs/promises");
-  const seen = new Set;
-  const results = [];
-  async function scanDir(dir2, depth) {
-    if (depth > 3 || seen.has(dir2))
-      return;
-    seen.add(dir2);
-    let entries;
-    try {
-      entries = await fs2.readdir(dir2, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    const lockFile = await readLockFile(dir2);
-    if (lockFile) {
+async function _scanDirForLockfiles(dir2, depth, seen, results, home, currentVersion, fs2) {
+  if (depth > 3 || seen.has(dir2))
+    return;
+  seen.add(dir2);
+  let entries;
+  try {
+    entries = await fs2.readdir(dir2, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  const lockFile = await readLockFile(dir2);
+  if (lockFile) {
+    if (isUnderHome(dir2, home)) {
       const version = lockFile.version || lockFile.templateVersion || null;
       results.push({
         name: basename4(dir2),
@@ -9670,13 +9677,20 @@ async function _findProjectsFromLockfiles(options, currentVersion) {
         status: computeStatus(version, currentVersion),
         detectionMethod: "lockfile"
       });
-      return;
     }
-    if (depth < 3) {
-      const subdirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && e.name !== "node_modules" && e.name !== "dist" && e.name !== "build" && e.name !== ".git");
-      await Promise.all(subdirs.map((sub) => scanDir(join10(dir2, sub.name), depth + 1).catch(() => {})));
-    }
+    return;
   }
+  if (depth < 3) {
+    const subdirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && !SCAN_SKIP_DIRS2.has(e.name));
+    await Promise.all(subdirs.map((sub) => _scanDirForLockfiles(join10(dir2, sub.name), depth + 1, seen, results, home, currentVersion, fs2).catch(() => {})));
+  }
+}
+async function _findProjectsFromLockfiles(options, currentVersion) {
+  const { dirname: dirname3 } = await import("node:path");
+  const fs2 = await import("node:fs/promises");
+  const seen = new Set;
+  const results = [];
+  const home = process.env.HOME ?? homedir3();
   const searchPaths = options.paths ? [...options.paths] : [];
   if (!options.paths) {
     const cwd = process.cwd();
@@ -9686,14 +9700,8 @@ async function _findProjectsFromLockfiles(options, currentVersion) {
     if (parent !== cwd && !searchPaths.includes(parent))
       searchPaths.push(parent);
   }
-  await Promise.all(searchPaths.map((p) => scanDir(p, 0).catch(() => {})));
-  return results.sort((a, b) => {
-    if (a.status === "latest" && b.status !== "latest")
-      return -1;
-    if (a.status !== "latest" && b.status === "latest")
-      return 1;
-    return a.name.localeCompare(b.name);
-  });
+  await Promise.all(searchPaths.map((p) => _scanDirForLockfiles(p, 0, seen, results, home, currentVersion, fs2).catch(() => {})));
+  return sortProjects(results);
 }
 async function writeLockFile(projectDir, version, existing) {
   const fs2 = await import("node:fs/promises");
@@ -9814,11 +9822,12 @@ async function projectsCommand(options = {}) {
     return { success: false, projects: [], currentVersion, errors: [errorMessage] };
   }
 }
-var projects_default;
+var SCAN_SKIP_DIRS2, projects_default;
 var init_projects = __esm(() => {
   init_package();
   init_registry();
   init_fs();
+  SCAN_SKIP_DIRS2 = new Set(["node_modules", "dist", "build", ".git"]);
   projects_default = projectsCommand;
 });
 
@@ -25022,6 +25031,8 @@ var en_default = {
       newVersionAvailable: "[Info] oh-my-customcode v{{latest}} available (current: v{{current}}). Run 'npm i -g oh-my-customcode' to upgrade.",
       selfUpdateDone: "✓ oh-my-customcode updated ({{from}} → {{to}})",
       selfUpdateFailed: "⚠ Self-update check failed — continuing with external updates",
+      selfUpdateReexec: "↻ Re-executing with updated CLI (v{{version}})...",
+      allProjectSkippedSource: "  ℹ Skipped: {{name}} (source project cannot self-update)",
       rtkMissing: "[RTK] RTK is not installed. Attempting installation...",
       rtkInstalled: "[RTK] ✓ RTK installed — 60-90% token savings activated",
       codexMissing: "[Codex] Codex CLI is not installed. Attempting installation...",
@@ -25437,6 +25448,8 @@ var ko_default = {
       newVersionAvailable: "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요.",
       selfUpdateDone: "✓ oh-my-customcode 업데이트 완료 ({{from}} → {{to}})",
       selfUpdateFailed: "⚠ 자체 업데이트 확인 실패 — 외부 업데이트를 계속 진행합니다",
+      selfUpdateReexec: "↻ 새 CLI(v{{version}})로 재실행 중...",
+      allProjectSkippedSource: "  ℹ 스킵: {{name}} (소스 프로젝트는 자체 업데이트할 수 없음)",
       rtkMissing: "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
       rtkInstalled: "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화",
       codexMissing: "[Codex] Codex CLI가 설치되지 않았습니다. 설치를 시도합니다...",
@@ -31029,6 +31042,7 @@ async function shouldSkipSelfUpdate2(targetDir, result) {
     if (targetPkg.name === "oh-my-customcode") {
       warn("update.self_update_skipped");
       result.success = true;
+      result.skippedSource = true;
       result.warnings.push("Skipped: source project cannot update itself");
       return true;
     }
@@ -31446,19 +31460,34 @@ async function checkCliVersion(checkFn) {
     }
   } catch {}
 }
+async function reexecUpdatedCli(toVersion) {
+  console.log(i18n.t("cli.update.selfUpdateReexec", { version: toVersion }));
+  const { spawnSync: spawnSync4 } = await import("node:child_process");
+  const child = spawnSync4(process.execPath, [process.argv[1] ?? "", ...process.argv.slice(2)], {
+    stdio: "inherit",
+    env: { ...process.env, OMCUSTOM_SKIP_SELF_UPDATE: "true" }
+  });
+  process.exit(child.status ?? 1);
+}
+async function handleSelfUpdate() {
+  try {
+    const selfUpdateResult = executeSelfUpdate();
+    if (selfUpdateResult.updated) {
+      console.log(i18n.t("cli.update.selfUpdateDone", {
+        from: selfUpdateResult.fromVersion,
+        to: selfUpdateResult.toVersion
+      }));
+      if (process.env.OMCUSTOM_SKIP_SELF_UPDATE !== "true") {
+        await reexecUpdatedCli(selfUpdateResult.toVersion);
+      }
+    }
+  } catch {
+    console.warn(i18n.t("cli.update.selfUpdateFailed"));
+  }
+}
 async function updateCommand(options = {}, cliVersionCheck = checkSelfUpdate) {
   if (!options.skipSelf) {
-    try {
-      const selfUpdateResult = executeSelfUpdate();
-      if (selfUpdateResult.updated) {
-        console.log(i18n.t("cli.update.selfUpdateDone", {
-          from: selfUpdateResult.fromVersion,
-          to: selfUpdateResult.toVersion
-        }));
-      }
-    } catch {
-      console.warn(i18n.t("cli.update.selfUpdateFailed"));
-    }
+    await handleSelfUpdate();
   } else {
     await checkCliVersion(cliVersionCheck);
   }
@@ -31501,6 +31530,21 @@ async function updateSingleProject(targetDir, options) {
   }
   return true;
 }
+function reportProjectUpdateResult(project, result, currentVersion) {
+  if (result.success) {
+    if (result.skippedSource) {
+      console.log(i18n.t("cli.update.allProjectSkippedSource", { name: project.name }));
+      return "skipped";
+    }
+    const from = result.previousVersion || project.version || "unknown";
+    const to = result.newVersion || currentVersion;
+    console.log(i18n.t("cli.update.allProjectUpdated", { from, to }));
+    return "updated";
+  }
+  const errorMsg = result.error ?? "unknown error";
+  console.log(i18n.t("cli.update.allProjectFailed", { error: errorMsg }));
+  return "failed";
+}
 async function updateAllProjects(options) {
   const { findProjects: findProjects2 } = await Promise.resolve().then(() => (init_projects(), exports_projects));
   const currentVersion = package_default.version;
@@ -31535,14 +31579,10 @@ async function updateAllProjects(options) {
         hard: options.hard
       };
       const result = await update(updateOptions);
-      if (result.success) {
-        const from = result.previousVersion || project.version || "unknown";
-        const to = result.newVersion || currentVersion;
-        console.log(i18n.t("cli.update.allProjectUpdated", { from, to }));
+      const outcome = reportProjectUpdateResult(project, result, currentVersion);
+      if (outcome === "updated") {
         updatedCount++;
-      } else {
-        const errorMsg = result.error ?? "unknown error";
-        console.log(i18n.t("cli.update.allProjectFailed", { error: errorMsg }));
+      } else if (outcome === "failed") {
         failedCount++;
       }
     } catch (error2) {
