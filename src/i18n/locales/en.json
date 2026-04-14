@@ -151,6 +151,7 @@
       "selfUpdateDone": "✓ oh-my-customcode updated ({{from}} → {{to}})",
       "selfUpdateFailed": "⚠ Self-update check failed — continuing with external updates",
       "selfUpdateReexec": "↻ Re-executing with updated CLI (v{{version}})...",
+      "reexecArgvMissing": "⚠ Cannot re-exec: process.argv[1] is empty — continuing without re-exec",
       "allProjectSkippedSource": "  ℹ Skipped: {{name}} (source project cannot self-update)",
       "rtkMissing": "[RTK] RTK is not installed. Attempting installation...",
       "rtkInstalled": "[RTK] ✓ RTK installed — 60-90% token savings activated",

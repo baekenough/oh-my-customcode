@@ -1859,4 +1859,114 @@ describe('update command', () => {
       expect(exitCode).toBeUndefined();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // D2: exit-code propagation and error swallowing (#863)
+  //
+  // These tests use injectable spawnFn to avoid mock.module('node:child_process')
+  // leakage. They are placed LAST in the file so that any mock.module leakage
+  // from this describe block does not affect the earlier tests.
+  // Bun 1.3.x mock.restore() does not reliably undo module mocks for modules
+  // that have already been cached via dynamic import.
+  // ---------------------------------------------------------------------------
+  // ⚠ DO NOT ADD TESTS BELOW THIS BLOCK ⚠
+  // This describe block uses mock.module() patterns that leak across files
+  // in Bun 1.3.x. Placing it as the LAST block in this file ensures no
+  // downstream tests are affected. New tests in this file MUST be added
+  // ABOVE this block, not below.
+  // ---------------------------------------------------------------------------
+  describe('reexecUpdatedCli exit-code and error swallowing (#863)', () => {
+    let originalEnv: NodeJS.ProcessEnv;
+    let spawnSyncMock: ReturnType<typeof mock>;
+
+    beforeEach(() => {
+      originalEnv = { ...process.env };
+      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+    });
+
+    afterEach(() => {
+      for (const key of Object.keys(process.env)) {
+        if (!(key in originalEnv)) {
+          delete process.env[key];
+        }
+      }
+      Object.assign(process.env, originalEnv);
+    });
+
+    it('should propagate non-zero child exit code via process.exit (#863)', async () => {
+      // Use injectable spawnFn instead of mock.module('node:child_process') to
+      // avoid leaking the replacement into other test files. Bun 1.3.x does not
+      // reliably restore node: built-in module mocks via mock.restore().
+      spawnSyncMock = mock(() => ({ status: 42, pid: 999, signal: null }));
+
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: mock(() => ({
+          updated: true,
+          fromVersion: '0.87.2',
+          toVersion: '0.87.3',
+        })),
+        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({
+          success: true,
+          updatedComponents: [],
+          skippedComponents: [],
+          preservedFiles: [],
+          backedUpPaths: [],
+          previousVersion: '0.87.2',
+          newVersion: '0.87.3',
+          warnings: [],
+        })),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
+
+      expect(spawnSyncMock).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBe(42);
+    });
+
+    it('should catch spawnSync thrown errors in outer try/catch and warn (#863)', async () => {
+      // Use injectable spawnFn instead of mock.module('node:child_process') to
+      // avoid leaking the replacement into other test files. Bun 1.3.x does not
+      // reliably restore node: built-in module mocks via mock.restore().
+      spawnSyncMock = mock(() => {
+        throw new Error('spawn EACCES');
+      });
+
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: mock(() => ({
+          updated: true,
+          fromVersion: '0.87.2',
+          toVersion: '0.87.3',
+        })),
+        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({
+          success: true,
+          updatedComponents: [],
+          skippedComponents: [],
+          preservedFiles: [],
+          backedUpPaths: [],
+          previousVersion: '0.87.2',
+          newVersion: '0.87.3',
+          warnings: [],
+        })),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      // Must NOT throw — outer try/catch in handleSelfUpdate must swallow
+      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
+
+      expect(spawnSyncMock).toHaveBeenCalledTimes(1);
+      expect(consoleWarnSpy).toHaveBeenCalled();
+    });
+  });
 });
+// END OF FILE — see warning above. Do not add tests below this point.
