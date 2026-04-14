@@ -1,7 +1,7 @@
 ---
 title: "Git Worktree Workflow Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-04-14
 sources:
   - guides/git-worktree-workflow/README.md
 related:
@@ -21,7 +21,7 @@ Git worktrees allow checking out multiple branches in separate sibling directori
 - Creating worktrees for existing and new branches
 - Recommended directory structure as siblings to the main repo
 - Listing and removing worktrees, pruning stale references
-- Claude Code `EnterWorktree`/`ExitWorktree` tool integration
+- Claude Code `EnterWorktree`/`ExitWorktree` tool integration (v2.1.105+: `path` parameter for entering existing worktrees)
 - Worktree isolation and its agent isolation use case (R006)
 
 ## Relationships
