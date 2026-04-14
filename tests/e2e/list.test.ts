@@ -45,6 +45,7 @@ describe('E2E: omcustom list', () => {
       cwd: tempDir,
       stdout: 'pipe',
       stderr: 'pipe',
+      env: { ...process.env, OMCUSTOM_REGISTRY_DIR: join(tempDir, '.omcustom-registry') },
     });
 
     // Add timeout to prevent hanging in CI
