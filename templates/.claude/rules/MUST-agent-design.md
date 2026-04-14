@@ -64,7 +64,7 @@ disableSkillShellExecution: true  # Disable inline shell execution in skills (v2
 
 > **Note**: When `disableSkillShellExecution` is enabled (v2.1.91+), skills that rely on inline shell execution (e.g., `codex-exec`, `gemini-exec`, `rtk-exec`) will have their shell blocks disabled. This is a security hardening option.
 
-> **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+. `CwdChanged`, `FileChanged` hook events and `managed-settings.d/` drop-in directory require v2.1.83+. Conditional `if` field for hooks requires v2.1.85+. `PermissionDenied` hook event requires v2.1.88+. Monitor tool and subprocess sandboxing (`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`, `CLAUDE_CODE_SCRIPT_CAPS`) added in v2.1.98+. Settings resilience (unrecognized hook event names no longer cause settings.json to be ignored) improved in v2.1.101+.
+> **Note**: `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+. `CwdChanged`, `FileChanged` hook events and `managed-settings.d/` drop-in directory require v2.1.83+. Conditional `if` field for hooks requires v2.1.85+. `PermissionDenied` hook event requires v2.1.88+. Monitor tool and subprocess sandboxing (`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`, `CLAUDE_CODE_SCRIPT_CAPS`) added in v2.1.98+. Settings resilience (unrecognized hook event names no longer cause settings.json to be ignored) improved in v2.1.101+. PreCompact hook block support (exit 2 / `{"decision":"block"}`) added in v2.1.105+. Skill description listing cap raised from 250 to 1,536 characters in v2.1.105+. Plugin `monitors` manifest key for background monitors added in v2.1.105+.
 
 ## Hook Event Types
 
@@ -112,6 +112,16 @@ All supported hook event types in Claude Code. Agents and skills can reference t
 | `{"decision": "defer"}` | Pause execution; resume with `-p --resume` | v2.1.89+ |
 
 The `defer` decision allows headless sessions to pause at a tool call for human review.
+
+### PreCompact Hook Return Values
+
+| Return | Behavior | CC Version |
+|--------|----------|------------|
+| `exit 0` | Allow compaction | All |
+| `exit 2` + stderr | Block compaction with message | v2.1.105+ |
+| `{"decision": "block"}` | Block compaction (JSON response) | v2.1.105+ |
+
+PreCompact hooks can now prevent context compaction, useful for preserving critical context during multi-step workflows.
 
 ### Hook Matcher Syntax
 
@@ -298,7 +308,7 @@ Default: `core` (when field is omitted)
 
 ### Context Fork Criteria
 
-Use `context: fork` for multi-agent orchestration skills only. Cap: **12 total**. Current: 9/12 (secretary/dev-lead/de-lead/qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan).
+Use `context: fork` for multi-agent orchestration skills only. Cap: **12 total**. Current: 12/12 (secretary/dev-lead/de-lead/qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan, professor-triage, evaluator-optimizer, sauron-watch).
 
 <!-- DETAIL: Context Fork decision table
 | Use context:fork | Do NOT use context:fork |
