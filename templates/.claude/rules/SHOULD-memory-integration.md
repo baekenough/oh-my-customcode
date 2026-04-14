@@ -277,6 +277,30 @@ User Model data feeds into intent-detection (R015) and routing skill confidence 
 
 -->
 
+## Mid-Session Immediate Save
+
+Save memory IMMEDIATELY upon surprising discovery — do not defer to session end.
+
+| Trigger | Action | Rationale |
+|---------|--------|-----------|
+| Repeated pattern observed (2nd time) | Save `feedback_*.md` now | Pattern will recur within session |
+| Unexpected tool behavior / workaround | Save `feedback_*.md` now | Session state defense |
+| Subagent false-positive detected | Save `feedback_*.md` now | Prevent repeat in same session |
+| User correction / feedback | Save `feedback_*.md` now | Honor correction immediately |
+
+### Why Immediate?
+
+Session-end saves lose context: by the time the session ends, multiple discoveries have compounded and nuance is lost. Immediate saves preserve the exact trigger context that makes the memory actionable.
+
+**Anti-pattern**: "I'll batch all learnings at session end" — by then you'll have forgotten WHY each one mattered, and further violations may have occurred using the un-saved pattern.
+
+### Cross-reference
+
+Related records from session v0.87.2~v0.88.0 (issue #869):
+- `feedback_subagent_pre_existing_claims.md`
+- `feedback_github_workflows_inventory.md`
+- `feedback_bun_mock_module.md`
+
 ## Session-End Auto-Save
 
 ### Trigger
