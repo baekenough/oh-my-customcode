@@ -2301,7 +2301,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.87.2",
+    version: "0.87.3",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -25032,6 +25032,7 @@ var en_default = {
       selfUpdateDone: "✓ oh-my-customcode updated ({{from}} → {{to}})",
       selfUpdateFailed: "⚠ Self-update check failed — continuing with external updates",
       selfUpdateReexec: "↻ Re-executing with updated CLI (v{{version}})...",
+      reexecArgvMissing: "⚠ Cannot re-exec: process.argv[1] is empty — continuing without re-exec",
       allProjectSkippedSource: "  ℹ Skipped: {{name}} (source project cannot self-update)",
       rtkMissing: "[RTK] RTK is not installed. Attempting installation...",
       rtkInstalled: "[RTK] ✓ RTK installed — 60-90% token savings activated",
@@ -25449,6 +25450,7 @@ var ko_default = {
       selfUpdateDone: "✓ oh-my-customcode 업데이트 완료 ({{from}} → {{to}})",
       selfUpdateFailed: "⚠ 자체 업데이트 확인 실패 — 외부 업데이트를 계속 진행합니다",
       selfUpdateReexec: "↻ 새 CLI(v{{version}})로 재실행 중...",
+      reexecArgvMissing: "⚠ 재실행 불가: process.argv[1]이 비어있습니다 — 재실행 없이 계속합니다",
       allProjectSkippedSource: "  ℹ 스킵: {{name}} (소스 프로젝트는 자체 업데이트할 수 없음)",
       rtkMissing: "[RTK] RTK가 설치되지 않았습니다. 설치를 시도합니다...",
       rtkInstalled: "[RTK] ✓ RTK 설치 완료 — 토큰 60-90% 절감 활성화",
@@ -25934,7 +25936,7 @@ function executeSelfUpdate(options = {}) {
     currentVersion,
     packageName,
     cachePath: options.cachePath,
-    cacheTtlMs: options.cacheTtlMs,
+    cacheTtlMs: options.forceRefresh ? 0 : options.cacheTtlMs,
     fetchLatestVersion: options.fetchLatestVersion,
     now: options.now,
     argv,
@@ -30681,6 +30683,7 @@ function syncCommand(program2) {
 
 // src/cli/update.ts
 init_package();
+import { constants as osConstants } from "node:os";
 
 // src/core/updater.ts
 init_package();
@@ -31460,34 +31463,46 @@ async function checkCliVersion(checkFn) {
     }
   } catch {}
 }
-async function reexecUpdatedCli(toVersion) {
+function exitWithChildStatus(child) {
+  if (child.signal) {
+    const signalNumber = osConstants.signals[child.signal] ?? 0;
+    process.exit(128 + signalNumber);
+  }
+  process.exit(child.status ?? 1);
+}
+async function reexecUpdatedCli(toVersion, spawnFn) {
+  const cliEntry = process.argv[1];
+  if (!cliEntry) {
+    console.warn(i18n.t("cli.update.reexecArgvMissing"));
+    return;
+  }
   console.log(i18n.t("cli.update.selfUpdateReexec", { version: toVersion }));
   const { spawnSync: spawnSync4 } = await import("node:child_process");
-  const child = spawnSync4(process.execPath, [process.argv[1] ?? "", ...process.argv.slice(2)], {
+  const child = (spawnFn ?? spawnSync4)(process.execPath, [cliEntry, ...process.argv.slice(2)], {
     stdio: "inherit",
     env: { ...process.env, OMCUSTOM_SKIP_SELF_UPDATE: "true" }
   });
-  process.exit(child.status ?? 1);
+  exitWithChildStatus(child);
 }
-async function handleSelfUpdate() {
+async function handleSelfUpdate(spawnFn) {
   try {
-    const selfUpdateResult = executeSelfUpdate();
+    const selfUpdateResult = executeSelfUpdate({ forceRefresh: true });
     if (selfUpdateResult.updated) {
       console.log(i18n.t("cli.update.selfUpdateDone", {
         from: selfUpdateResult.fromVersion,
         to: selfUpdateResult.toVersion
       }));
       if (process.env.OMCUSTOM_SKIP_SELF_UPDATE !== "true") {
-        await reexecUpdatedCli(selfUpdateResult.toVersion);
+        await reexecUpdatedCli(selfUpdateResult.toVersion, spawnFn);
       }
     }
   } catch {
     console.warn(i18n.t("cli.update.selfUpdateFailed"));
   }
 }
-async function updateCommand(options = {}, cliVersionCheck = checkSelfUpdate) {
+async function updateCommand(options = {}, cliVersionCheck = checkSelfUpdate, spawnFn) {
   if (!options.skipSelf) {
-    await handleSelfUpdate();
+    await handleSelfUpdate(spawnFn);
   } else {
     await checkCliVersion(cliVersionCheck);
   }

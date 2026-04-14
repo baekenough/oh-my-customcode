@@ -8,6 +8,8 @@
  * 3. Interactive (TTY, no --all): checkbox UI to select which projects to update
  */
 
+import { constants as osConstants } from 'node:os';
+
 import packageJson from '../../package.json';
 import { checkSelfUpdate, executeSelfUpdate } from '../core/self-update.js';
 import { type UpdateComponent, type UpdateOptions, update } from '../core/updater.js';
@@ -67,28 +69,60 @@ async function checkCliVersion(checkFn: typeof checkSelfUpdate): Promise<void> {
 }
 
 /**
+ * Exit with a status that reflects the child process result, mapping signal
+ * termination to the conventional 128 + signal-number exit code.
+ */
+function exitWithChildStatus(child: {
+  status: number | null;
+  signal: NodeJS.Signals | null;
+}): never {
+  if (child.signal) {
+    const signalNumber = osConstants.signals[child.signal] ?? 0;
+    process.exit(128 + signalNumber);
+  }
+  process.exit(child.status ?? 1);
+}
+
+/** Minimal spawnSync signature used by reexecUpdatedCli — injectable for tests. */
+type SpawnSyncFn = (
+  command: string,
+  args: string[],
+  options: { stdio: 'inherit'; env: NodeJS.ProcessEnv }
+) => { status: number | null; signal: NodeJS.Signals | null };
+
+/**
  * Re-exec the current process with OMCUSTOM_SKIP_SELF_UPDATE=true so the child
  * process loads the newly-installed package version. Without this, the running
  * process retains stale top-level imports and downstream project updates fail
  * with "Downgrade prevented" (#860).
  */
-async function reexecUpdatedCli(toVersion: string): Promise<void> {
+async function reexecUpdatedCli(toVersion: string, spawnFn?: SpawnSyncFn): Promise<void> {
+  const cliEntry = process.argv[1];
+  if (!cliEntry) {
+    console.warn(i18n.t('cli.update.reexecArgvMissing'));
+    return;
+  }
   console.log(i18n.t('cli.update.selfUpdateReexec', { version: toVersion }));
+  // Dynamic import used intentionally: avoids static binding to node:child_process,
+  // which allows mock.module('node:child_process') in tests to work correctly.
   const { spawnSync } = await import('node:child_process');
-  const child = spawnSync(process.execPath, [process.argv[1] ?? '', ...process.argv.slice(2)], {
+  const child = (spawnFn ?? spawnSync)(process.execPath, [cliEntry, ...process.argv.slice(2)], {
     stdio: 'inherit',
     env: { ...process.env, OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
   });
-  process.exit(child.status ?? 1);
+  exitWithChildStatus(child); // helper added in D3
 }
 
 /**
  * Handle self-update of the oh-my-customcode package.
  * Performs re-exec if an update was installed and the guard env var is not set.
  */
-async function handleSelfUpdate(): Promise<void> {
+async function handleSelfUpdate(spawnFn?: SpawnSyncFn): Promise<void> {
   try {
-    const selfUpdateResult = executeSelfUpdate();
+    // forceRefresh: always query npm view fresh to avoid installing a stale
+    // cached latest version (#862). Cache is intended for the init prompt path,
+    // not for explicit `omcustom update`.
+    const selfUpdateResult = executeSelfUpdate({ forceRefresh: true });
     if (selfUpdateResult.updated) {
       console.log(
         i18n.t('cli.update.selfUpdateDone', {
@@ -97,7 +131,7 @@ async function handleSelfUpdate(): Promise<void> {
         })
       );
       if (process.env.OMCUSTOM_SKIP_SELF_UPDATE !== 'true') {
-        await reexecUpdatedCli(selfUpdateResult.toVersion);
+        await reexecUpdatedCli(selfUpdateResult.toVersion, spawnFn);
       }
     }
   } catch {
@@ -111,11 +145,12 @@ async function handleSelfUpdate(): Promise<void> {
  */
 export async function updateCommand(
   options: UpdateCommandOptions = {},
-  cliVersionCheck: typeof checkSelfUpdate = checkSelfUpdate
+  cliVersionCheck: typeof checkSelfUpdate = checkSelfUpdate,
+  spawnFn?: SpawnSyncFn
 ): Promise<void> {
   // Step 0: Self-update oh-my-customcode package before external updates
   if (!options.skipSelf) {
-    await handleSelfUpdate();
+    await handleSelfUpdate(spawnFn);
   } else {
     // Fallback: notification-only version check when self-update is skipped
     await checkCliVersion(cliVersionCheck);

@@ -253,6 +253,8 @@ export interface ExecuteSelfUpdateOptions {
   packageName?: string;
   cachePath?: string;
   cacheTtlMs?: number;
+  /** Bypass self-update-cache.json TTL and always query npm view fresh. */
+  forceRefresh?: boolean;
   fetchLatestVersion?: (packageName: string) => string | null;
   now?: number;
   argv?: string[];
@@ -322,7 +324,7 @@ export function executeSelfUpdate(options: ExecuteSelfUpdateOptions = {}): Execu
     currentVersion,
     packageName,
     cachePath: options.cachePath,
-    cacheTtlMs: options.cacheTtlMs,
+    cacheTtlMs: options.forceRefresh ? 0 : options.cacheTtlMs,
     fetchLatestVersion: options.fetchLatestVersion,
     now: options.now,
     argv,
