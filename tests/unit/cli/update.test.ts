@@ -1652,4 +1652,211 @@ describe('update command', () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
     });
   });
+
+  describe('updateCommand self-update re-exec (#860)', () => {
+    let originalEnv: NodeJS.ProcessEnv;
+    let spawnSyncMock: ReturnType<typeof mock>;
+
+    beforeEach(() => {
+      originalEnv = { ...process.env };
+      // Ensure re-exec guard is NOT set by default
+      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+    });
+
+    afterEach(() => {
+      // Restore env
+      for (const key of Object.keys(process.env)) {
+        if (!(key in originalEnv)) {
+          delete process.env[key];
+        }
+      }
+      Object.assign(process.env, originalEnv);
+    });
+
+    it('should call spawnSync and exit when executeSelfUpdate returns updated=true and guard is not set', async () => {
+      spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
+
+      mock.module('node:child_process', () => ({
+        spawnSync: spawnSyncMock,
+      }));
+
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: mock(() => ({
+          updated: true,
+          fromVersion: '0.87.1',
+          toVersion: '0.87.2',
+        })),
+        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({
+          success: true,
+          updatedComponents: [],
+          skippedComponents: [],
+          preservedFiles: [],
+          backedUpPaths: [],
+          previousVersion: '0.87.1',
+          newVersion: '0.87.2',
+          warnings: [],
+        })),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ skipSelf: false });
+
+      // spawnSync must have been called with process.execPath and argv re-exec args
+      expect(spawnSyncMock).toHaveBeenCalledTimes(1);
+      const callArgs = (spawnSyncMock.mock.calls as unknown[][])[0] as unknown[];
+      expect(callArgs[0]).toBe(process.execPath);
+      // Third argument is options — env should include the guard
+      const spawnOptions = callArgs[2] as { env?: Record<string, string> };
+      expect(spawnOptions.env?.OMCUSTOM_SKIP_SELF_UPDATE).toBe('true');
+
+      // process.exit must have been called with child.status (0)
+      expect(exitCode).toBe(0);
+    });
+
+    it('should NOT call spawnSync when OMCUSTOM_SKIP_SELF_UPDATE=true is set', async () => {
+      process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
+
+      spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
+
+      mock.module('node:child_process', () => ({
+        spawnSync: spawnSyncMock,
+      }));
+
+      // executeSelfUpdate itself short-circuits internally when the env guard is set,
+      // so it returns updated=false — spawnSync must not be called
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: mock(() => ({
+          updated: false,
+          fromVersion: '0.87.2',
+          toVersion: '0.87.2',
+        })),
+        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({
+          success: true,
+          updatedComponents: [],
+          skippedComponents: [],
+          preservedFiles: [],
+          backedUpPaths: [],
+          previousVersion: '0.87.2',
+          newVersion: '0.87.2',
+          warnings: [],
+        })),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ skipSelf: false });
+
+      expect(spawnSyncMock).not.toHaveBeenCalled();
+      // Should not call process.exit (no re-exec)
+      expect(exitCode).toBeUndefined();
+    });
+
+    it('should NOT call spawnSync when executeSelfUpdate returns updated=false', async () => {
+      spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
+
+      mock.module('node:child_process', () => ({
+        spawnSync: spawnSyncMock,
+      }));
+
+      mock.module('../../../src/core/self-update.js', () => ({
+        executeSelfUpdate: mock(() => ({
+          updated: false,
+          fromVersion: '0.87.2',
+          toVersion: '0.87.2',
+        })),
+        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({
+          success: true,
+          updatedComponents: [],
+          skippedComponents: [],
+          preservedFiles: [],
+          backedUpPaths: [],
+          previousVersion: '0.87.2',
+          newVersion: '0.87.2',
+          warnings: [],
+        })),
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ skipSelf: false });
+
+      expect(spawnSyncMock).not.toHaveBeenCalled();
+      expect(exitCode).toBeUndefined();
+    });
+  });
+
+  describe('updateCommand --all with skippedSource (#860)', () => {
+    it('should print skip message and not increment updatedCount when result.skippedSource is true', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      // One project returns skippedSource=true (the source project itself)
+      const mockUpdate = mock(async () => ({
+        success: true,
+        skippedSource: true,
+        updatedComponents: [],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.87.1',
+        newVersion: '0.87.1',
+        warnings: ['Skipped: source project cannot update itself'],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'oh-my-customcode',
+            path: '/tmp/oh-my-customcode',
+            version: '0.87.1',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'lockfile',
+          },
+        ],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      // update should have been called once
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+
+      // The final summary must show 0 updated and 0 failed (skipped source doesn't count)
+      const allLogs = (consoleLogSpy.mock.calls as unknown[][]).flat().join('\n');
+      // "0 updated, 0 failed" in the allDone message
+      expect(allLogs).toContain('0 updated');
+      expect(allLogs).toContain('0 failed');
+
+      // The skip message should have been printed
+      expect(allLogs).toContain('oh-my-customcode');
+
+      expect(exitCode).toBeUndefined();
+    });
+  });
 });
