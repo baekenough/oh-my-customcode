@@ -10,7 +10,7 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 
 | Task Type | REQUIRED Verification Before [Done] |
 |-----------|-------------------------------------|
-| Release | All issues closed, version bumped, PR merged, GitHub Release created |
+| Release | All issues closed, version bumped, PR merged, GitHub Release created; **External automation verified**: `.github/workflows/` listed AND `gh run list --limit 10` checked for auto-publish workflows |
 | Implementation | Code compiles/passes lint, tests pass (if exist), no TODO markers left |
 | Documentation | Links valid, counts accurate, cross-references updated |
 | Git Operations | Operation succeeded (check exit code), working tree clean |
@@ -28,6 +28,19 @@ Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ 
 4. Would I bet $100 this is truly complete? YES: Declare [Done] / NO: Identify uncertain and verify
 -->
 
+## Subagent Self-Report Verification
+
+Subagents often report failures as "pre-existing", "baseline", or "unchanged". These claims MUST be verified against the base branch before acceptance.
+
+| Subagent Claim | Required Verification |
+|----------------|----------------------|
+| "X test already failing on base" | `git stash && git checkout {base} && run test X && compare` |
+| "This warning is pre-existing" | `git log -S "warning-text" {base}` or run on clean checkout |
+| "File was unchanged" | `git diff {base}..HEAD -- {file}` |
+| "Dependency issue not from this PR" | `git show {base}:package.json` compare |
+
+Never accept "pre-existing" without direct base-branch evidence. A false "pre-existing" claim can mask a regression introduced by the current change.
+
 ## Common False Completion Patterns
 
 | Pattern | Reality | Fix |
@@ -37,6 +50,8 @@ Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ 
 | "PR created" | CI not checked | Wait for CI, verify green |
 | "Issue closed" | Related issues not updated | Check parent epic, cross-refs |
 | "Tests pass" | Only ran subset | Run full test suite |
+| "Waiting for manual publish" | External CI/CD auto-publishes on merge | Check `.github/workflows/` BEFORE assuming manual step |
+| "Subagent said pre-existing" | Claim not verified against base branch | Run test on base branch, compare directly |
 
 ## Completion Contract Format
 
@@ -57,6 +72,24 @@ Then at completion:
 ├── ✓ Criterion 2: {evidence}
 └── ✓ Criterion N: {evidence}
 ```
+
+## Autonomous Mode Entry Checklist
+
+When entering autonomous mode (user grants extended execution without per-step confirmation), perform this inventory BEFORE first action:
+
+1. **Workflow inventory**: `ls .github/workflows/` — identify auto-publish, auto-tag, release, docs-sync, CI workflows
+2. **Recent runs**: `gh run list --limit 10` — check success/failure patterns of automated workflows
+3. **External publish targets**: Check if npm/PyPI/Docker Hub/GitHub Releases are auto-triggered on merge
+4. **Manual intervention points**: Identify which steps require human approval vs. fully automated
+5. **Cross-reference with task**: Which workflows will the planned work trigger?
+
+Record findings in session context. Failure to inventory automation is a R020 violation (unknown external state = unverifiable completion).
+
+### Cross-reference
+
+Related memory records:
+- `feedback_github_workflows_inventory.md` — original incident (v0.87.2~v0.88.0 session)
+- `feedback_subagent_pre_existing_claims.md` — subagent false-positive pattern
 
 ## Integration
 
