@@ -1,7 +1,7 @@
 ---
 title: "Worktree Lifecycle Automation Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-04-14
 sources:
   - guides/worktree-lifecycle/README.md
 related:
@@ -40,7 +40,8 @@ agent-spin feature/x develop
 
 | Method | Use Case |
 |--------|----------|
-| `EnterWorktree` tool | Agent-managed isolation (automatic) |
+| `EnterWorktree(name:)` tool | Agent-managed isolation — create new worktree (automatic) |
+| `EnterWorktree(path:)` tool | Enter existing worktree without creating a new branch (v2.1.105+) |
 | `agent-spin` alias | Manual or hook-triggered creation |
 | `isolation: worktree` frontmatter | Declarative per-agent isolation (R006) |
 
