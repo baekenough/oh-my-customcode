@@ -527,8 +527,22 @@ packages/eval-core/
 | Effort 기본값 medium→high | 아니오 | 예 (v2.1.94+) | 예 (R006 문서화) -- 에이전트에 명시적 effort 필드 사용 |
 | `keep-coding-instructions` | 아니오 | 예 (v2.1.94+) | 예 (R006 문서화) -- 플러그인 출력 스타일 필드 |
 | 프론트매터 기반 플러그인 스킬 이름 | 아니오 | 예 (v2.1.94+) | 이미 호환 -- omcustom은 `name:` 프론트매터 사용 |
+| `refreshInterval` 상태줄 설정 | 아니오 | 예 (v2.1.97+) | 예 (R012 문서화) — 상태줄 커맨드 자동 새로고침 간격 |
+| Bash 도구 권한 강화 | 아니오 | 예 (v2.1.97+) | 호환 — 보안 개선, 조치 불필요 |
+| Monitor 도구 (백그라운드 스크립트) | 아니오 | 예 (v2.1.98+) | 예 (R006 문서화) — 백그라운드 프로세스 이벤트 스트리밍 |
+| 서브프로세스 샌드박싱 (PID 네임스페이스) | 아니오 | 예 (v2.1.98+) | 예 (R006 문서화) — `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`, `CLAUDE_CODE_SCRIPT_CAPS` |
+| 설정 복원력 (알 수 없는 훅 이벤트) | 아니오 | 예 (v2.1.101+) | 예 (R006 문서화) — 인식되지 않는 훅 이벤트 이름이 settings.json을 무시하지 않음 |
+| `/team-onboarding` 커맨드 | 아니오 | 예 (v2.1.101+) | 호환 — opt-in UX 기능, 변경 불필요 |
+| EnterWorktree `path` 파라미터 | 아니오 | 예 (v2.1.105+) | 호환 — 기존 워크트리로 전환 |
+| PreCompact 훅 차단 지원 | 아니오 | 예 (v2.1.105+) | 예 (R006 문서화) — exit 2 / `{"decision":"block"}` |
+| 플러그인 `monitors` 매니페스트 키 | 아니오 | 예 (v2.1.105+) | 예 (R006 문서화) — 세션 시작 시 백그라운드 모니터 |
+| 스킬 설명 캡 250→1,536자 | 아니오 | 예 (v2.1.105+) | 예 (R006 문서화) — 더 긴 스킬 설명 지원 |
+| `ENABLE_PROMPT_CACHING_1H` 환경 변수 | 아니오 | 예 (v2.1.108+) | 호환 — opt-in 프롬프트 캐시 TTL 제어 |
+| Skill 도구 내장 커맨드 검색 | 아니오 | 예 (v2.1.108+) | 호환 — 모델이 `/init`, `/review`, `/security-review`를 Skill 도구로 호출 가능 |
+| `/recap` 세션 컨텍스트 기능 | 아니오 | 예 (v2.1.108+) | 호환 — opt-in 세션 리캡 |
+| `/undo` 별칭 (`/rewind`) | 아니오 | 예 (v2.1.108+) | 호환 — 커맨드 별칭, 변경 불필요 |
 
-Claude Code v2.1.72 ~ v2.1.96+ 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.108+ 테스트 및 호환 확인.
 
 ---
 
@@ -562,6 +576,8 @@ Claude Code v2.1.72 ~ v2.1.96+ 테스트 및 호환 확인.
 | 버전 | 주요 변경 사항 |
 |------|--------------|
 | v0.79.0 | CC v2.1.89-v2.1.96 호환성; effort 기본값 변경 문서화; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard 훅 |
+| v0.80.0–v0.88.1 | 레지스트리 격리; omcustom update 자체 업데이트 + re-exec; 규칙 안전성 확장 (R020/R015/R011) |
+| v0.89.0 | CC v2.1.97-v2.1.108 호환성; 프롬프트 캐싱 1h TTL 환경 변수; Skill 도구 내장 커맨드 검색; /recap 세션 컨텍스트; 호환성 테이블 확장 (v2.1.97-v2.1.108 14행) |
 | v0.62.5 | Playwright 접근성 E2E 테스트 (11개 테스트, axe-core 감사) |
 | v0.62.4 | Graph 순환 키보드 탐색, aria-live 알림, 스킵 링크, focus-visible 스타일링 |
 | v0.62.3 | Graph 키보드 접근성, 줌 반응형 레이블, 툴팁 경계 보정 |
