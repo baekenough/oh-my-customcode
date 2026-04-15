@@ -568,8 +568,22 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Effort default medium→high | No | Yes (v2.1.94+) | Yes (R006 documented) — agents use explicit effort field |
 | `keep-coding-instructions` | No | Yes (v2.1.94+) | Yes (R006 documented) — plugin output style field |
 | Plugin skill name from frontmatter | No | Yes (v2.1.94+) | Already compatible — omcustom uses `name:` frontmatter |
+| `refreshInterval` statusline setting | No | Yes (v2.1.97+) | Yes (R012 documented) — auto-refresh interval for status line command |
+| Bash tool permission hardening | No | Yes (v2.1.97+) | Compatible — security improvements, no action required |
+| Monitor tool for background scripts | No | Yes (v2.1.98+) | Yes (R006 documented) — streaming events from background processes |
+| Subprocess sandboxing (PID namespace) | No | Yes (v2.1.98+) | Yes (R006 documented) — `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`, `CLAUDE_CODE_SCRIPT_CAPS` |
+| Settings resilience (unknown hook events) | No | Yes (v2.1.101+) | Yes (R006 documented) — unrecognized hook event names no longer break settings.json |
+| `/team-onboarding` command | No | Yes (v2.1.101+) | Compatible — opt-in UX feature, no changes required |
+| EnterWorktree `path` parameter | No | Yes (v2.1.105+) | Compatible — switch into existing worktree |
+| PreCompact hook block support | No | Yes (v2.1.105+) | Yes (R006 documented) — exit 2 / `{"decision":"block"}` |
+| Plugin `monitors` manifest key | No | Yes (v2.1.105+) | Yes (R006 documented) — background monitors at session start |
+| Skill description cap 250→1,536 chars | No | Yes (v2.1.105+) | Yes (R006 documented) — longer skill descriptions supported |
+| `ENABLE_PROMPT_CACHING_1H` env var | No | Yes (v2.1.108+) | Compatible — opt-in prompt cache TTL control |
+| Skill tool built-in command discovery | No | Yes (v2.1.108+) | Compatible — model can invoke `/init`, `/review`, `/security-review` via Skill tool |
+| `/recap` session context feature | No | Yes (v2.1.108+) | Compatible — opt-in session recap |
+| `/undo` alias for `/rewind` | No | Yes (v2.1.108+) | Compatible — command alias, no changes required |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.96+.
+Tested and compatible with Claude Code v2.1.72 through v2.1.108+.
 
 ---
 
@@ -634,6 +648,8 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Version | Key Changes |
 |---------|-------------|
 | v0.79.0 | CC v2.1.89-v2.1.96 compat; effort default change docs; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard hook |
+| v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
+| v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
 | v0.74.0 | `omcustom sync` (drift detection + team snapshot export); `omcustom init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |
 | v0.73.0 | skill-extractor (100th skill — task trajectory analysis for SKILL.md candidates); User Model in R011 + sys-memory-keeper (correction patterns, skill preferences, expertise profile); agentskills.io source in skills-sh-search |
 | v0.72.1 | sync-server-repo.yml dead workflow removal (customclaw server decommissioned 2026-03-18) |
