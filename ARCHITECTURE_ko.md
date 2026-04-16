@@ -541,8 +541,16 @@ packages/eval-core/
 | Skill 도구 내장 커맨드 검색 | 아니오 | 예 (v2.1.108+) | 호환 — 모델이 `/init`, `/review`, `/security-review`를 Skill 도구로 호출 가능 |
 | `/recap` 세션 컨텍스트 기능 | 아니오 | 예 (v2.1.108+) | 호환 — opt-in 세션 리캡 |
 | `/undo` 별칭 (`/rewind`) | 아니오 | 예 (v2.1.108+) | 호환 — 커맨드 별칭, 변경 불필요 |
+| `/tui` 커맨드 + `tui` 설정 | 아니오 | 예 (v2.1.110+) | 호환 — opt-in 풀스크린 렌더링 |
+| PushNotification 도구 | 아니오 | 예 (v2.1.110+) | 예 (R002 문서화) — Remote Control을 통한 모바일 푸시 |
+| `autoScrollEnabled` 설정 | 아니오 | 예 (v2.1.110+) | 호환 — opt-in 풀스크린 스크롤 설정 |
+| `TRACEPARENT`/`TRACESTATE` 환경 변수 | 아니오 | 예 (v2.1.110+) | 호환 — opt-in 분산 추적 연결 |
+| Bash 도구 최대 타임아웃 강제 | 아니오 | 예 (v2.1.110+) | 호환 — 문서화된 최대 타임아웃 강제 |
+| Write 도구 IDE diff 피드백 | 아니오 | 예 (v2.1.110+) | 호환 — 사용자가 제안된 콘텐츠를 편집할 때 모델에 알림 |
+| `--resume`/`--continue` 스케줄 작업 부활 | 아니오 | 예 (v2.1.110+) | 호환 — 만료되지 않은 스케줄 작업 재개 |
+| `/focus` 커맨드 | 아니오 | 예 (v2.1.110+) | 호환 — 포커스 뷰가 Ctrl+O에서 분리 |
 
-Claude Code v2.1.72 ~ v2.1.108+ 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.110+ 테스트 및 호환 확인.
 
 ---
 
@@ -578,6 +586,7 @@ Claude Code v2.1.72 ~ v2.1.108+ 테스트 및 호환 확인.
 | v0.79.0 | CC v2.1.89-v2.1.96 호환성; effort 기본값 변경 문서화; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard 훅 |
 | v0.80.0–v0.88.1 | 레지스트리 격리; omcustom update 자체 업데이트 + re-exec; 규칙 안전성 확장 (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 호환성; 프롬프트 캐싱 1h TTL 환경 변수; Skill 도구 내장 커맨드 검색; /recap 세션 컨텍스트; 호환성 테이블 확장 (v2.1.97-v2.1.108 14행) |
+| v0.90.0 | CC v2.1.110 호환성; PushNotification 도구 (R002); /tui 풀스크린; /focus 커맨드; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash 최대 타임아웃 강제; Write 도구 IDE diff 피드백; --resume 스케줄 작업 부활; 호환성 테이블 확장 (v2.1.110 8행) |
 | v0.62.5 | Playwright 접근성 E2E 테스트 (11개 테스트, axe-core 감사) |
 | v0.62.4 | Graph 순환 키보드 탐색, aria-live 알림, 스킵 링크, focus-visible 스타일링 |
 | v0.62.3 | Graph 키보드 접근성, 줌 반응형 레이블, 툴팁 경계 보정 |
