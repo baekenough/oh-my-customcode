@@ -582,8 +582,16 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Skill tool built-in command discovery | No | Yes (v2.1.108+) | Compatible — model can invoke `/init`, `/review`, `/security-review` via Skill tool |
 | `/recap` session context feature | No | Yes (v2.1.108+) | Compatible — opt-in session recap |
 | `/undo` alias for `/rewind` | No | Yes (v2.1.108+) | Compatible — command alias, no changes required |
+| `/tui` command + `tui` setting | No | Yes (v2.1.110+) | Compatible — opt-in fullscreen rendering |
+| PushNotification tool | No | Yes (v2.1.110+) | Yes (R002 documented) — mobile push via Remote Control |
+| `autoScrollEnabled` config | No | Yes (v2.1.110+) | Compatible — opt-in fullscreen scroll setting |
+| `TRACEPARENT`/`TRACESTATE` env vars | No | Yes (v2.1.110+) | Compatible — opt-in distributed trace linking |
+| Bash tool max timeout enforcement | No | Yes (v2.1.110+) | Compatible — enforces documented max timeout |
+| Write tool IDE diff feedback | No | Yes (v2.1.110+) | Compatible — informs model when user edits proposed content |
+| `--resume`/`--continue` scheduled task resurrection | No | Yes (v2.1.110+) | Compatible — resurrects unexpired scheduled tasks |
+| `/focus` command | No | Yes (v2.1.110+) | Compatible — focus view separated from Ctrl+O |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.108+.
+Tested and compatible with Claude Code v2.1.72 through v2.1.110+.
 
 ---
 
@@ -650,6 +658,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.79.0 | CC v2.1.89-v2.1.96 compat; effort default change docs; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard hook |
 | v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
+| v0.90.0 | CC v2.1.110 compat; PushNotification tool (R002); /tui fullscreen; /focus command; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash max timeout enforcement; Write tool IDE diff feedback; --resume scheduled task resurrection; compat table expansion (v2.1.110 8 rows) |
 | v0.74.0 | `omcustom sync` (drift detection + team snapshot export); `omcustom init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |
 | v0.73.0 | skill-extractor (100th skill — task trajectory analysis for SKILL.md candidates); User Model in R011 + sys-memory-keeper (correction patterns, skill preferences, expertise profile); agentskills.io source in skills-sh-search |
 | v0.72.1 | sync-server-repo.yml dead workflow removal (customclaw server decommissioned 2026-03-18) |
