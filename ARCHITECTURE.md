@@ -590,8 +590,20 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Write tool IDE diff feedback | No | Yes (v2.1.110+) | Compatible — informs model when user edits proposed content |
 | `--resume`/`--continue` scheduled task resurrection | No | Yes (v2.1.110+) | Compatible — resurrects unexpired scheduled tasks |
 | `/focus` command | No | Yes (v2.1.110+) | Compatible — focus view separated from Ctrl+O |
+| `xhigh` effort level | No | Yes (v2.1.111+) | Yes (R006 documented) — Opus 4.7 exclusive, other models fall back to `high` |
+| `/effort` interactive slider | No | Yes (v2.1.111+) | Compatible — arrow-key navigation when called without arguments |
+| Auto mode without `--enable-auto-mode` | No | Yes (v2.1.111+) | Compatible — auto mode available by default for Max subscribers |
+| PowerShell tool | No | Yes (v2.1.111+) | Yes (R002 documented) — progressive rollout, `CLAUDE_CODE_USE_POWERSHELL_TOOL` env var |
+| Read-only bash glob no permission prompt | No | Yes (v2.1.111+) | Compatible — `ls *.ts` and `cd <dir> &&` prefixed commands skip permission prompt |
+| `/less-permission-prompts` built-in skill | No | Yes (v2.1.111+) | Compatible — scans transcripts for common read-only tool calls |
+| `/ultrareview` parallel code review | No | Yes (v2.1.111+) | Compatible — cloud-based multi-agent analysis and critique |
+| `/skills` token count sorting | No | Yes (v2.1.111+) | Compatible — press `t` to sort skills by estimated token count |
+| `OTEL_LOG_RAW_API_BODIES` env var | No | Yes (v2.1.111+) | Compatible — full API request/response body logging |
+| Plan files named after prompt | No | Yes (v2.1.111+) | Compatible — plan files use prompt-derived names instead of random words |
+| Plugin error handling improvements | No | Yes (v2.1.111+) | Compatible — dependency conflict errors, stale version recovery, install recovery |
+| Opus 4.7 auto mode fix | No | Yes (v2.1.112+) | Compatible — hotfix for "claude-opus-4-7 is temporarily unavailable" |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.110+.
+Tested and compatible with Claude Code v2.1.72 through v2.1.112+.
 
 ---
 
@@ -659,6 +671,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
 | v0.90.0 | CC v2.1.110 compat; PushNotification tool (R002); /tui fullscreen; /focus command; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash max timeout enforcement; Write tool IDE diff feedback; --resume scheduled task resurrection; compat table expansion (v2.1.110 8 rows) |
+| v0.91.0 | CC v2.1.111-v2.1.112 compat; xhigh effort level + Opus 4.7 model alias (R006); PowerShell tool (R002); /ultrareview built-in; /less-permission-prompts built-in; read-only bash glob permission skip; compat table expansion (v2.1.111-v2.1.112 12 rows) |
 | v0.74.0 | `omcustom sync` (drift detection + team snapshot export); `omcustom init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |
 | v0.73.0 | skill-extractor (100th skill — task trajectory analysis for SKILL.md candidates); User Model in R011 + sys-memory-keeper (correction patterns, skill preferences, expertise profile); agentskills.io source in skills-sh-search |
 | v0.72.1 | sync-server-repo.yml dead workflow removal (customclaw server decommissioned 2026-03-18) |
