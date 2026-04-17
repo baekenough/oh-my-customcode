@@ -549,8 +549,20 @@ packages/eval-core/
 | Write 도구 IDE diff 피드백 | 아니오 | 예 (v2.1.110+) | 호환 — 사용자가 제안된 콘텐츠를 편집할 때 모델에 알림 |
 | `--resume`/`--continue` 스케줄 작업 부활 | 아니오 | 예 (v2.1.110+) | 호환 — 만료되지 않은 스케줄 작업 재개 |
 | `/focus` 커맨드 | 아니오 | 예 (v2.1.110+) | 호환 — 포커스 뷰가 Ctrl+O에서 분리 |
+| `xhigh` effort 레벨 | 아니오 | 예 (v2.1.111+) | 예 (R006 문서화) — Opus 4.7 전용, 다른 모델은 `high`로 폴백 |
+| `/effort` 인터랙티브 슬라이더 | 아니오 | 예 (v2.1.111+) | 호환 — 인자 없이 호출 시 화살표 키 탐색 |
+| Auto mode `--enable-auto-mode` 불필요 | 아니오 | 예 (v2.1.111+) | 호환 — Max 구독자에게 기본 제공 |
+| PowerShell 도구 | 아니오 | 예 (v2.1.111+) | 예 (R002 문서화) — 점진적 롤아웃, `CLAUDE_CODE_USE_POWERSHELL_TOOL` 환경 변수 |
+| 읽기 전용 bash glob 권한 프롬프트 제거 | 아니오 | 예 (v2.1.111+) | 호환 — `ls *.ts` 및 `cd <dir> &&` 접두 커맨드 권한 프롬프트 생략 |
+| `/less-permission-prompts` 내장 스킬 | 아니오 | 예 (v2.1.111+) | 호환 — 일반 읽기 전용 도구 호출 스캔 |
+| `/ultrareview` 병렬 코드 리뷰 | 아니오 | 예 (v2.1.111+) | 호환 — 클라우드 기반 다중 에이전트 분석 및 비평 |
+| `/skills` 토큰 수 정렬 | 아니오 | 예 (v2.1.111+) | 호환 — `t` 키로 예상 토큰 수 기준 정렬 |
+| `OTEL_LOG_RAW_API_BODIES` 환경 변수 | 아니오 | 예 (v2.1.111+) | 호환 — 전체 API 요청/응답 본문 로깅 |
+| 플랜 파일 프롬프트 기반 이름 | 아니오 | 예 (v2.1.111+) | 호환 — 플랜 파일이 무작위 단어 대신 프롬프트에서 파생된 이름 사용 |
+| 플러그인 오류 처리 개선 | 아니오 | 예 (v2.1.111+) | 호환 — 의존성 충돌 오류, 오래된 버전 복구, 설치 복구 |
+| Opus 4.7 auto mode 수정 | 아니오 | 예 (v2.1.112+) | 호환 — "claude-opus-4-7 is temporarily unavailable" 핫픽스 |
 
-Claude Code v2.1.72 ~ v2.1.110+ 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.112+ 테스트 및 호환 확인.
 
 ---
 
@@ -587,6 +599,7 @@ Claude Code v2.1.72 ~ v2.1.110+ 테스트 및 호환 확인.
 | v0.80.0–v0.88.1 | 레지스트리 격리; omcustom update 자체 업데이트 + re-exec; 규칙 안전성 확장 (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 호환성; 프롬프트 캐싱 1h TTL 환경 변수; Skill 도구 내장 커맨드 검색; /recap 세션 컨텍스트; 호환성 테이블 확장 (v2.1.97-v2.1.108 14행) |
 | v0.90.0 | CC v2.1.110 호환성; PushNotification 도구 (R002); /tui 풀스크린; /focus 커맨드; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash 최대 타임아웃 강제; Write 도구 IDE diff 피드백; --resume 스케줄 작업 부활; 호환성 테이블 확장 (v2.1.110 8행) |
+| v0.91.0 | CC v2.1.111-v2.1.112 호환성; xhigh effort 레벨 + Opus 4.7 모델 alias (R006); PowerShell 도구 (R002); /ultrareview 내장; /less-permission-prompts 내장; 읽기 전용 bash glob 권한 프롬프트 생략; 호환성 테이블 확장 (v2.1.111-v2.1.112 12행) |
 | v0.62.5 | Playwright 접근성 E2E 테스트 (11개 테스트, axe-core 감사) |
 | v0.62.4 | Graph 순환 키보드 탐색, aria-live 알림, 스킵 링크, focus-visible 스타일링 |
 | v0.62.3 | Graph 키보드 접근성, 줌 반응형 레이블, 툴팁 경계 보정 |
