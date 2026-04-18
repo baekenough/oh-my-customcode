@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.99.1",
-  "generatedAt": "2026-04-18T11:38:11.277Z",
-  "templateVersion": "0.99.1",
+  "generatorVersion": "0.99.2",
+  "generatedAt": "2026-04-18T14:14:05.106Z",
+  "templateVersion": "0.99.2",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -155,8 +155,8 @@
       "component": "agents"
     },
     ".claude/agents/fe-design-expert.md": {
-      "templateHash": "640239d359453552f95276e4d6585cc334e93c042aa7af880c67e34abf91ea54",
-      "size": 5000,
+      "templateHash": "a5e9496834ecafdd2c367f2489503134676b2d499363716740414dfb8a4856a2",
+      "size": 5991,
       "component": "agents"
     },
     ".claude/agents/be-express-expert.md": {
@@ -1479,6 +1479,16 @@
       "size": 564,
       "component": "guides"
     },
+    "guides/claude-design/index.md": {
+      "templateHash": "efc4f40d6092ed43e8d3de14ec6bee3ca0d4a7a4d88390555ca117aeca35d4e7",
+      "size": 6796,
+      "component": "guides"
+    },
+    "guides/claude-design/index.yaml": {
+      "templateHash": "d1335f7bb620721c15bd07d8c446f1dd478b42ef0674c369993a84eab3b5de59",
+      "size": 385,
+      "component": "guides"
+    },
     "guides/kotlin/idioms.md": {
       "templateHash": "351c2e94ed3a946de62236dd398d9965eb499808d9281f31d468c59fb82f4426",
       "size": 3353,
@@ -1675,8 +1685,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "351be3ebeeceed60554c0509b5a95fd7cca0c7599ae6d69d7318027082617e86",
-      "size": 7170,
+      "templateHash": "01e1f1425f2d84bd6711b15857ced899be91d741d337142cf65d223f5882fc11",
+      "size": 7432,
       "component": "guides"
     },
     "guides/spark/README.md": {

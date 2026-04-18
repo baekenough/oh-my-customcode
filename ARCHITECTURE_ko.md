@@ -4,7 +4,7 @@
 
 ## 1. 시스템 개요
 
-oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 47개의 사전 구축된 서브에이전트, 101개의 스킬, 21개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
+oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 48개의 사전 구축된 서브에이전트, 107개의 스킬, 22개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
 
 현재 버전: **0.74.0** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
 
@@ -58,7 +58,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | R020 | MUST | 완료 검증 | 작업 완료 선언 전 task-type-specific 검증 |
 | R021 | MUST | Enforcement Policy | Advisory-first 시행 모델, 강화 승격 기준 |
 
-### 3.2 에이전트 분류 (47개)
+### 3.2 에이전트 분류 (48개)
 
 | 카테고리 | 수량 | 에이전트 |
 |----------|------|----------|
@@ -73,10 +73,10 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | 인프라 | 2 | infra-docker-expert, infra-aws-expert |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| 시스템 | 2 | sys-memory-keeper, sys-naggy |
-| **합계** | **47** | |
+| 시스템 | 3 | sys-memory-keeper, sys-naggy, wiki-curator |
+| **합계** | **48** | |
 
-### 3.3 스킬 카탈로그 (101개)
+### 3.3 스킬 카탈로그 (107개)
 
 **라우팅 스킬 (4개, context: fork)**
 
@@ -103,7 +103,7 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 가이드 라이브러리 (37개 토픽)
+### 3.4 가이드 라이브러리 (39개 토픽)
 
 | 카테고리 | 가이드 |
 |----------|--------|
@@ -608,6 +608,13 @@ Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인.
 | v0.80.0–v0.88.1 | 레지스트리 격리; omcustom update 자체 업데이트 + re-exec; 규칙 안전성 확장 (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 호환성; 프롬프트 캐싱 1h TTL 환경 변수; Skill 도구 내장 커맨드 검색; /recap 세션 컨텍스트; 호환성 테이블 확장 (v2.1.97-v2.1.108 14행) |
 | v0.90.0 | CC v2.1.110 호환성; PushNotification 도구 (R002); /tui 풀스크린; /focus 커맨드; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash 최대 타임아웃 강제; Write 도구 IDE diff 피드백; --resume 스케줄 작업 부활; 호환성 테이블 확장 (v2.1.110 8행) |
+| v0.99.1 | bypassPermissions enforcement + /idea 스킬 (#926, #930) |
+| v0.99.0 | auto-dev 파이프라인 CI-mimic 로컬 검증 (#927) |
+| v0.98.0 | OpenHarness 패턴 내재화 (#922); PreCompact 훅 (컴팩션 전 태스크 상태 직렬화); PostCompact 태스크 상태 복원; multi-provider-exec 가이드 (38번째 가이드); 가이드 카운트 38→39 |
+| v0.97.1 | hada-scout v2.0 LLM pre-scout 필터링 (#912); 키워드 regex→haiku LLM pre-scoring; false positive 30-40%→5-10%; user-invocable; scope package→core |
+| v0.97.0 | ouroboros PR #353 capability graph 패턴 통합; action-validator capability hints (safety/parallel/approval); reasoning-sandwich Opus 4.7 고려사항; R005 capability-aware tool scheduling; auto-dev 파이프라인 v2.0.0 |
+| v0.96.0 | CC v2.1.113-v2.1.114 호환성; sandbox.network.deniedDomains; 서브에이전트 stall timeout; find -exec deny; R006 Note 6항목; 호환성 테이블 확장 (v2.1.113-v2.1.114 6행) |
+| v0.95.0 | 규칙 컨텍스트 토큰 최적화 (#889); PostCompact R001/R002 보안 갭 수정; R006 Hook Event Types HTML 주석; 8개 규칙 HTML 주석 적용; CLAUDE.md 커맨드 테이블 간소화 |
 | v0.94.0 | cc-release-monitor 워크플로우 및 infra/cc-release-collector 제거 (Airflow DAG 이관); geeknews-scout README 교차 참조 수정 |
 | v0.93.0 | Airflow 3.1.8 에이전트/스킬/가이드 업데이트 (airflow.sdk 임포트, TaskFlow API, AIP-72/AIP-44, Asset이 Dataset 대체, dag.test()) |
 | v0.92.0 | cc-token-saver 플러그인 통합 가이드 (37번째 가이드); harness-synthesizer 스킬 (106번째 스킬, AutoHarness 기반 verifier/filter/policy 생성); R012 외부 플러그인 상태줄 충돌 섹션; R013 Token Guardian 공존 섹션; action-validator Code Harness Integration 섹션 |
