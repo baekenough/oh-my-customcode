@@ -439,6 +439,45 @@ async function updateEntryDoc(
 }
 
 /**
+ * Backfill refreshInterval into an existing statusLine config that lacks it.
+ * This fixes installations created before refreshInterval was introduced.
+ */
+async function backfillStatusLineRefreshInterval(
+  targetDir: string,
+  options: UpdateOptions
+): Promise<void> {
+  if (options.dryRun) {
+    return;
+  }
+
+  const layout = getProviderLayout();
+  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
+
+  if (!(await fileExists(settingsPath))) {
+    return;
+  }
+
+  try {
+    const existing = await readJsonFile<Record<string, unknown>>(settingsPath);
+    if (!existing.statusLine) {
+      return;
+    }
+
+    const sl = existing.statusLine as Record<string, unknown>;
+    if (sl.refreshInterval === undefined) {
+      sl.refreshInterval = 10;
+      await writeJsonFile(settingsPath, existing);
+      debug('update.settings_local_refreshInterval_backfilled', {});
+    }
+  } catch {
+    // Non-blocking: parse failure should not abort the update
+    warn('update.settings_local_backfill_failed', {
+      path: settingsPath,
+    });
+  }
+}
+
+/**
  * Handle full-update-only post-processing steps and log success
  */
 async function runFullUpdatePostProcessing(
@@ -457,6 +496,7 @@ async function runFullUpdatePostProcessing(
 
     if (!options.dryRun) {
       await updateEntryDoc(options.targetDir, config, options);
+      await backfillStatusLineRefreshInterval(options.targetDir, options);
     }
   }
 

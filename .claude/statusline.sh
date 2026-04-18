@@ -246,7 +246,13 @@ if [[ -n "$git_branch" ]] && command -v gh >/dev/null 2>&1; then
         pr_number="$cached_pr"
     else
         # Cache miss — query gh and update cache
-        pr_number="$(gh pr view --json number -q .number 2>/dev/null || echo "")"
+        # Timeout-guarded gh pr view (2 second limit)
+        if command -v timeout >/dev/null 2>&1; then
+            pr_number="$(timeout 2 gh pr view --json number -q .number 2>/dev/null || echo "")"
+        else
+            pr_number="$( (gh pr view --json number -q .number 2>/dev/null &
+                _pid=$!; (sleep 2; kill $_pid 2>/dev/null) &; wait $_pid 2>/dev/null) || echo "" )"
+        fi
         printf '%s\t%s\n' "$git_branch" "$pr_number" > "$cache_file"
     fi
 

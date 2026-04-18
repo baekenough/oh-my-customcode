@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun run:*)",
+      "Bash(python3 -m json.tool)",
+      "Bash(bun test:*)",
+      "Bash(ls .claude/agents/*.md)",
+      "Bash(gh pr:*)",
+      "Bash(gh auth:*)",
+      "Bash(mkdir -p /Users/sangyi/workspace/projects/oh-my-customcode/.claude/skills/harness-synthesizer)",
+      "Bash(mkdir -p /Users/sangyi/workspace/projects/oh-my-customcode/templates/.claude/skills/harness-synthesizer)",
+      "Bash(cp .claude/outputs/sessions/2026-04-18/context-optimization-research-briefing.md ~/workspace/temp/context-optimization-research-briefing.md)",
+      "Read(//Users/sangyi/workspace/temp/**)",
+      "Bash(cp .claude/rules/*.md templates/.claude/rules/)",
+      "Bash(cp CLAUDE.md templates/CLAUDE.md)",
+      "Bash(cp .claude/hooks/hooks.json templates/.claude/hooks/hooks.json)",
+      "Bash(mkdir -p /Users/sangyi/workspace/projects/oh-my-customcode/templates/hooks/scripts)",
+      "Bash(cp /Users/sangyi/workspace/projects/oh-my-customcode/.claude/hooks/hooks.json /Users/sangyi/workspace/projects/oh-my-customcode/templates/hooks/hooks.json)",
+      "Bash(cp /Users/sangyi/workspace/projects/oh-my-customcode/.claude/hooks/scripts/task-state-precompact.sh /Users/sangyi/workspace/projects/oh-my-customcode/templates/hooks/scripts/task-state-precompact.sh)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "ontology-rag"
+  ],
+  "statusLine": {
+    "type": "command",
+    "command": ".claude/statusline.sh",
+    "padding": 0,
+    "refreshInterval": 10
+  }
+}

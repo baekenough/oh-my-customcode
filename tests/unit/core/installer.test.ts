@@ -498,6 +498,52 @@ describe('installer', () => {
       expect(content.statusLine.command).toBe('.claude/custom-statusline.sh');
       expect(content.statusLine.padding).toBe(2);
     });
+
+    it('should backfill refreshInterval into existing statusLine without it', async () => {
+      // Create existing settings with statusLine but no refreshInterval
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      const fs = await import('node:fs/promises');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      const legacySettings = {
+        statusLine: {
+          type: 'command',
+          command: '.claude/statusline.sh',
+          padding: 0,
+        },
+      };
+      await fs.writeFile(settingsPath, JSON.stringify(legacySettings), 'utf-8');
+
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      // Command and padding should be preserved (not overwritten)
+      expect(content.statusLine.command).toBe('.claude/statusline.sh');
+      expect(content.statusLine.padding).toBe(0);
+      // refreshInterval should be backfilled
+      expect(content.statusLine.refreshInterval).toBe(10);
+    });
+
+    it('should not modify statusLine when refreshInterval already set', async () => {
+      // Create existing settings with statusLine including refreshInterval
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      const fs = await import('node:fs/promises');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      const existingSettings = {
+        statusLine: {
+          type: 'command',
+          command: '.claude/statusline.sh',
+          padding: 0,
+          refreshInterval: 30,
+        },
+      };
+      await fs.writeFile(settingsPath, JSON.stringify(existingSettings), 'utf-8');
+
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      // Custom refreshInterval should be preserved
+      expect(content.statusLine.refreshInterval).toBe(30);
+    });
   });
 
   describe('error handling', () => {
