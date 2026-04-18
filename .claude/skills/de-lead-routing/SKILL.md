@@ -84,7 +84,7 @@ For **new pipeline code**, **DAG scaffolding**, or **SQL model generation**:
 ### Step 3: Expert Selection
 Route to appropriate DE expert based on tool/framework detection.
 
-> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+> **Permission Mode**: When spawning agents via Agent tool, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
 
 ### Step 4: Ontology-RAG Enrichment (R019)
 

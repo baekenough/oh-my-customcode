@@ -64,6 +64,7 @@ Execute these steps to display available pipelines:
    - **Prompt steps** (`prompt: text`): Execute the described action using appropriate agents/tools
    - **Foreach steps** (`foreach: collection`): Iterate over collection from previous step output
    - **Parallel steps** (`parallel: [step1, step2]`): Execute contained steps concurrently using Agent tool. Each parallel step runs as an independent Agent. Max 4 concurrent per R009. Steps within a parallel block MUST be independent (no shared state, no sequential dependencies). Dependencies between parallel and non-parallel steps use `depends_on:` field.
+   - **Agent mode**: When spawning agents via Agent tool, always pass `mode: "bypassPermissions"` to match agent frontmatter. The Agent tool default (`acceptEdits`) overrides frontmatter `permissionMode`, causing permission prompts during unattended execution.
 5. Report completion or failure
 
 ### Resume Mode (/pipeline resume)
