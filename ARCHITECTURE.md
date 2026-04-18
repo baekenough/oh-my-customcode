@@ -605,8 +605,14 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Plan files named after prompt | No | Yes (v2.1.111+) | Compatible — plan files use prompt-derived names instead of random words |
 | Plugin error handling improvements | No | Yes (v2.1.111+) | Compatible — dependency conflict errors, stale version recovery, install recovery |
 | Opus 4.7 auto mode fix | No | Yes (v2.1.112+) | Compatible — hotfix for "claude-opus-4-7 is temporarily unavailable" |
+| sandbox.network.deniedDomains | No | Yes (v2.1.113+) | Compatible — domain blocking within allowedDomains wildcards |
+| Subagent 10-min stall timeout | No | Yes (v2.1.113+) | Compatible — mid-stream stall detection with auto-fail |
+| Bash `find -exec`/`-delete` deny | No | Yes (v2.1.113+) | Compatible — no longer auto-approved under `Bash(find:*)` allow rules |
+| Bash deny exec wrapper matching | No | Yes (v2.1.113+) | Compatible — deny rules match `env`/`sudo`/`watch`/`ionice`/`setsid` wrappers |
+| Native binary spawning | No | Yes (v2.1.113+) | Compatible — per-platform optional dependency replaces bundled JavaScript |
+| `/loop` Esc cancel | No | Yes (v2.1.113+) | Compatible — Esc now cancels pending wakeups |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.112+.
+Tested and compatible with Claude Code v2.1.72 through v2.1.114+.
 
 ---
 
