@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.98.0",
-  "generatedAt": "2026-04-18T09:51:54.072Z",
-  "templateVersion": "0.98.0",
+  "generatorVersion": "0.99.1",
+  "generatedAt": "2026-04-18T11:38:11.277Z",
+  "templateVersion": "0.99.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -445,8 +445,8 @@
       "component": "skills"
     },
     ".claude/skills/qa-lead-routing/SKILL.md": {
-      "templateHash": "c047ea64c37ba8b3aadce357e4ffb17ae003f5cc5d6952480b04e8a6a8739c75",
-      "size": 3687,
+      "templateHash": "6282676f10eb8bc58be0e7a453280c100b32df35f9f31182c2e5589c20991569",
+      "size": 3736,
       "component": "skills"
     },
     ".claude/skills/memory-recall/SKILL.md": {
@@ -470,13 +470,13 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "12ae7adf6d40558112c2ab1bf7e9df57f37e7278303e4b6bc5c833296da54fa9",
-      "size": 6134,
+      "templateHash": "2ae868b503022cedf24ac87d33ecfbbd371a60b8666a47d4047bc71d004d7320",
+      "size": 6857,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
-      "templateHash": "e17f9173050f5035bec9285b24f6a1afa90b8e0712988d47383ea1263f7e9ca5",
-      "size": 4919,
+      "templateHash": "bfb4092237e9c3ad6eab86975d4d0a35a24ac67f71feab1a40f1ddd547a05a08",
+      "size": 5180,
       "component": "skills"
     },
     ".claude/skills/memory-save/SKILL.md": {
@@ -520,8 +520,8 @@
       "component": "skills"
     },
     ".claude/skills/secretary-routing/SKILL.md": {
-      "templateHash": "30a6e36ba4b816b54e9f04f6b471c447657af1509c49811326dcf6a58f55b432",
-      "size": 5008,
+      "templateHash": "d6f07912c2ac18b47b3b2755cc949a2e6e212ff9cabec16660ab85047e280c7d",
+      "size": 5057,
       "component": "skills"
     },
     ".claude/skills/adaptive-harness/SKILL.md": {
@@ -705,13 +705,13 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "0a87b8387ba9ca23708d351e64c877c58254c0d72f90f9a7eb4d72cc2c532160",
-      "size": 7058,
+      "templateHash": "c2a9f33a363226eb76d2f7def13a17c4006d0c8fcd2171ca80c22d8e5940d442",
+      "size": 7107,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
-      "templateHash": "25769dc5e31983a4fe1a287f0daf90a953b8182948c2f67905ba40ae299bb5cb",
-      "size": 7550,
+      "templateHash": "c58b2d82da29c7acef2b5f11d188942212ffff175191ac22eb8428f55a80eb36",
+      "size": 7582,
       "component": "skills"
     },
     ".claude/skills/status/SKILL.md": {
@@ -777,6 +777,11 @@
     ".claude/skills/omcustom-takeover/SKILL.md": {
       "templateHash": "8e4005df217634663e6942c7f8435ad00fb992270621fc98ddb43a1344322dfe",
       "size": 2909,
+      "component": "skills"
+    },
+    ".claude/skills/idea/SKILL.md": {
+      "templateHash": "80110806cf1af053c55132c19150ac6adfa13a0958ddc5dce7b3903583ba7c2b",
+      "size": 2167,
       "component": "skills"
     },
     ".claude/skills/gemini-exec/scripts/gemini-wrapper.cjs": {
@@ -965,8 +970,8 @@
       "component": "skills"
     },
     ".claude/skills/de-lead-routing/SKILL.md": {
-      "templateHash": "618e635b702db9e03aea6ad9d0ded127a79c1fe5648b925578e5e7098dd2961c",
-      "size": 8671,
+      "templateHash": "657f396c7036dd720de599cc9d5b0a76c2257bf46ee6cf905693872efce102f8",
+      "size": 8720,
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {
