@@ -85,7 +85,21 @@ steps:
       - Parallel execution per R009 (max 4 concurrent, respect dependencies)
       - Issues whose prerequisites failed in-run MUST be skipped (log reason)
       - No direct orchestrator writes (R010)
-    description: "Per-issue implementation with lifecycle and specialist routing"
+
+      ## Local CI-mimic verification (MUST run before marking implement done)
+
+      After all implementation tasks complete, run these scripts in sequence and halt on failure:
+
+      1. bash .github/scripts/verify-template-sync.sh
+      2. bash .github/scripts/verify-wiki-sync.sh
+
+      If either fails:
+      - For wiki-sync failures: delegate to wiki-curator to generate missing pages (`/omcustom:wiki ingest <path>`)
+      - For template-sync failures: delegate to mgr-updater to sync `.claude/` -> `templates/.claude/`
+      - After fixes, re-run the scripts until both pass
+
+      This mirrors CI and prevents the known 1-2 wasted push cycles per release (ref: issue #927, v0.98.0 PR #925).
+    description: "Per-issue implementation with lifecycle, specialist routing, and CI-mimic verification"
     depends_on: deep-plan
 
   - name: verify-build
