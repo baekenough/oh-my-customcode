@@ -248,7 +248,12 @@ function reportProjectUpdateResult(
  */
 async function updateAllProjects(options: UpdateCommandOptions): Promise<void> {
   const { findProjects } = await import('./projects.js');
+  const { cleanRegistry } = await import('../core/registry.js');
   const currentVersion = packageJson.version as string;
+
+  // Remove stale registry entries whose paths no longer exist on disk.
+  // This prevents update --all from trying to recreate deleted project folders.
+  await cleanRegistry();
 
   console.log(i18n.t('cli.update.allScanning'));
   const projects = await findProjects();

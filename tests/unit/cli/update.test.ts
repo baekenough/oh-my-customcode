@@ -1798,6 +1798,104 @@ describe('update command', () => {
     });
   });
 
+  describe('updateCommand --all calls cleanRegistry before findProjects (#928)', () => {
+    it('should call cleanRegistry before scanning for projects', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mock(async () => ({})),
+      }));
+
+      let cleanRegistryCalled = false;
+      const callOrder: string[] = [];
+
+      mock.module('../../../src/core/registry.js', () => ({
+        cleanRegistry: async () => {
+          cleanRegistryCalled = true;
+          callOrder.push('cleanRegistry');
+          return 0;
+        },
+      }));
+
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => {
+          callOrder.push('findProjects');
+          return [];
+        },
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      expect(cleanRegistryCalled).toBe(true);
+      // cleanRegistry must be called before findProjects so stale entries are
+      // removed before project discovery builds the update list.
+      expect(callOrder.indexOf('cleanRegistry')).toBeLessThan(callOrder.indexOf('findProjects'));
+    });
+
+    it('should not process deleted projects after cleanRegistry removes them', async () => {
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.44.0',
+        newVersion: '0.45.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      // Simulate cleanRegistry removing 1 stale entry
+      mock.module('../../../src/core/registry.js', () => ({
+        cleanRegistry: async () => 1,
+      }));
+
+      // findProjects returns only the surviving (non-deleted) project
+      mock.module('../../../src/cli/projects.js', () => ({
+        findProjects: async () => [
+          {
+            name: 'surviving-project',
+            path: '/home/user/surviving-project',
+            version: '0.44.0',
+            installedAt: null,
+            updatedAt: null,
+            status: 'outdated',
+            detectionMethod: 'registry',
+          },
+        ],
+      }));
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      // Only the surviving project should be updated, not the deleted one
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+    });
+  });
+
   describe('updateCommand --all with skippedSource (#860)', () => {
     it('should print skip message and not increment updatedCount when result.skippedSource is true', async () => {
       mock.module('../../../src/core/provider.js', () => ({
