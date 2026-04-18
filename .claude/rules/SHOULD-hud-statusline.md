@@ -41,3 +41,11 @@ RL/WL segments omitted on CC older than v2.1.80.
 ## Integration
 
 Integrates with R007 (Agent ID), R008 (Tool ID), R009 (Parallel).
+
+## External Plugin Statusline Conflict
+
+| Plugin | Component | Resolution |
+|--------|-----------|------------|
+| cc-token-saver | Live Status Line | R012 `.claude/statusline.sh` has priority. Disable cc-token-saver statusline to avoid duplicate status bars. |
+
+Internal statusline (`.claude/statusline.sh`) is the primary status display. External plugin status lines are supplementary or disabled.
