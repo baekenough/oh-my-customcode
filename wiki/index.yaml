@@ -3,7 +3,7 @@
 
 meta:
   updated: "2026-04-18"
-  total_pages: 242
+  total_pages: 243
   total_sources: 212
 
 pages:
@@ -577,6 +577,9 @@ pages:
     - file: guides/claude-code.md
       title: "Claude Code Guide"
       summary: "Reference documentation for Claude Code capabilities, features, and API integration"
+    - file: guides/claude-design.md
+      title: "Claude Design Handoff Guide"
+      summary: "Reference documentation for connecting Claude Design outputs to fe-design-expert — token validation, CSS custom properties conversion, component spec implementation"
     - file: guides/dbt.md
       title: "dbt Guide"
       summary: "Reference documentation for dbt (data build tool) SQL modeling and analytics engineering"
