@@ -97,24 +97,27 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **슬래시 커맨드 / 사용자 직접 호출 스킬**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
 
 **시스템 / 내부 스킬**
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 가이드 라이브러리 (31개 토픽)
+### 3.4 가이드 라이브러리 (37개 토픽)
 
 | 카테고리 | 가이드 |
 |----------|--------|
-| 내부 | claude-code, git-worktree-workflow, skill-bundle-design |
+| 내부 | claude-code, git-worktree-workflow, worktree-lifecycle, skill-bundle-design, agents-md-quality, hook-data-flow, multi-model-routing |
 | 언어 | golang, python, rust, kotlin, typescript, java21 |
 | 프론트엔드 | flutter, web-design |
 | 백엔드 | fastapi, springboot, go-backend, django-best-practices |
 | 인프라 | docker, aws |
 | 데이터 엔지니어링 | airflow, dbt, kafka, spark, snowflake, iceberg |
 | 데이터베이스 | supabase-postgres, postgres, redis, alembic, drizzle-orm |
+| 디자인 | impeccable-design |
 | 글쓰기 | elements-of-style |
+| 커뮤니케이션 | slack-cli |
+| 토큰 최적화 | cc-token-saver |
 | 웹 스크래핑 | web-scraping |
 
 ### 3.5 훅 시스템
@@ -599,6 +602,7 @@ Claude Code v2.1.72 ~ v2.1.112+ 테스트 및 호환 확인.
 | v0.80.0–v0.88.1 | 레지스트리 격리; omcustom update 자체 업데이트 + re-exec; 규칙 안전성 확장 (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 호환성; 프롬프트 캐싱 1h TTL 환경 변수; Skill 도구 내장 커맨드 검색; /recap 세션 컨텍스트; 호환성 테이블 확장 (v2.1.97-v2.1.108 14행) |
 | v0.90.0 | CC v2.1.110 호환성; PushNotification 도구 (R002); /tui 풀스크린; /focus 커맨드; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash 최대 타임아웃 강제; Write 도구 IDE diff 피드백; --resume 스케줄 작업 부활; 호환성 테이블 확장 (v2.1.110 8행) |
+| v0.92.0 | cc-token-saver 플러그인 통합 가이드 (37번째 가이드); harness-synthesizer 스킬 (106번째 스킬, AutoHarness 기반 verifier/filter/policy 생성); R012 외부 플러그인 상태줄 충돌 섹션; R013 Token Guardian 공존 섹션; action-validator Code Harness Integration 섹션 |
 | v0.91.0 | CC v2.1.111-v2.1.112 호환성; xhigh effort 레벨 + Opus 4.7 모델 alias (R006); PowerShell 도구 (R002); /ultrareview 내장; /less-permission-prompts 내장; 읽기 전용 bash glob 권한 프롬프트 생략; 호환성 테이블 확장 (v2.1.111-v2.1.112 12행) |
 | v0.62.5 | Playwright 접근성 E2E 테스트 (11개 테스트, axe-core 감사) |
 | v0.62.4 | Graph 순환 키보드 탐색, aria-live 알림, 스킵 링크, focus-visible 스타일링 |

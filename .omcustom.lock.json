@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.91.0",
-  "generatedAt": "2026-04-17T11:25:27.022Z",
-  "templateVersion": "0.91.0",
+  "generatorVersion": "0.92.0",
+  "generatedAt": "2026-04-18T02:54:40.168Z",
+  "templateVersion": "0.92.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -10,8 +10,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "ca6e85afd41ae87f321b6a74e9625ae6eebefd269b9a5c5c19000f14b42a1c21",
-      "size": 2051,
+      "templateHash": "f8704c45719a78e8b9a355f44b00b8ce9eab58755b46136b132dbccaf805f117",
+      "size": 2451,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
@@ -40,8 +40,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
-      "templateHash": "30d43c6d08c2edda6c5a71e20a65ad2424918e0b45fa3be3d9c6ddfe3911c92d",
-      "size": 3728,
+      "templateHash": "ec4a51cbd70334e163780d92c2677663c611e9a674059633f2e4885cf5cc0f22",
+      "size": 4212,
       "component": "rules"
     },
     ".claude/rules/MUST-language-policy.md": {
@@ -815,8 +815,8 @@
       "component": "skills"
     },
     ".claude/skills/action-validator/SKILL.md": {
-      "templateHash": "27d69c8b83e35728d25730e1319e9895728e8e5f2509fb28bf43c789097fa905",
-      "size": 2520,
+      "templateHash": "e2031d526f9b96ddb2635e55b77827cfb4076ff37967b555f31f343af8713677",
+      "size": 3253,
       "component": "skills"
     },
     ".claude/skills/react-best-practices/SKILL.md": {
@@ -977,6 +977,11 @@
     ".claude/skills/task-decomposition/SKILL.md": {
       "templateHash": "da598dd5f57c4d20cdd1a1849e7c8a473805570931978216a2ffab3e7325f829",
       "size": 8278,
+      "component": "skills"
+    },
+    ".claude/skills/harness-synthesizer/SKILL.md": {
+      "templateHash": "bbb248e9fea71fc7e3846a214baf2733ab368585130ac39a735828e9a2c16ae7",
+      "size": 4992,
       "component": "skills"
     },
     ".claude/skills/test-new-skill-ci-test.md": {
@@ -1412,6 +1417,11 @@
     "guides/golang/concurrency.md": {
       "templateHash": "25916e9bedddb722fff7c32ebcb950e89a325b78d044b8c9f4bd304e780857ec",
       "size": 4534,
+      "component": "guides"
+    },
+    "guides/cc-token-saver/README.md": {
+      "templateHash": "90aa2e533a39626d2172079846db46bd2d4d7ce2a459ace8c29499f997cf6887",
+      "size": 3631,
       "component": "guides"
     },
     "guides/dbt/README.md": {

@@ -103,3 +103,12 @@ The `context-budget-advisor.sh` hook monitors context usage and emits warnings w
 - Does NOT override explicit user settings
 - Advisory only — never blocks operations
 - Context percentage from statusline data when available
+
+## Token Guardian Coexistence (cc-token-saver)
+
+| Component | Trigger | Scope |
+|-----------|---------|-------|
+| `context-budget-advisor.sh` (R013) | Context usage % approaching threshold | In-session budget |
+| Token Guardian (cc-token-saver) | 1h cache TTL idle detection | Cross-session cost |
+
+Both can run simultaneously — different triggers, complementary coverage. R013's context budget is usage-based (approaching limit), Token Guardian is time-based (idle cache expiry).
