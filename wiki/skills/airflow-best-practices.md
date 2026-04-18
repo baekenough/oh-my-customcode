@@ -1,7 +1,7 @@
 ---
 title: Airflow Best Practices
 type: skill
-updated: 2026-04-12
+updated: 2026-04-18
 sources:
   - .claude/skills/airflow-best-practices/SKILL.md
 related:
