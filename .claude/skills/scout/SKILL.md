@@ -90,7 +90,7 @@ Before execution, show the plan:
 
 ### Phase 3: Fit Analysis
 
-Spawn 1 sonnet agent with the following analysis prompt.
+Spawn 1 sonnet agent with `mode: "bypassPermissions"` and the following analysis prompt.
 
 **Inputs**:
 - Fetched content summary (Phase 1)
