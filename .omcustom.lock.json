@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.97.1",
-  "generatedAt": "2026-04-18T08:36:15.008Z",
-  "templateVersion": "0.97.1",
+  "generatorVersion": "0.98.0",
+  "generatedAt": "2026-04-18T09:51:54.072Z",
+  "templateVersion": "0.98.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -1034,6 +1034,11 @@
       "size": 800,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/task-state-precompact.sh": {
+      "templateHash": "0ab90dd9907c481822963c8eb45a59862158acd84fa8b5a9ada49914f1fc9d1b",
+      "size": 1916,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/skill-extractor-analyzer.sh": {
       "templateHash": "98ecaa30000ae031a356291ebefadcd8ad92b1bc1e270bfc060a620f2a687231",
       "size": 1580,
@@ -1170,8 +1175,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "4fb96d1bdaca8bf40c057d2d7fbe76f028cd3a7c61eda07cb11cd9867a9ca03c",
-      "size": 25062,
+      "templateHash": "86d27cf03df3f6494a94b29c3d7da839c733c9a8db790b64153105ce001db9bb",
+      "size": 25582,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1582,6 +1587,11 @@
     "guides/git-worktree-workflow/README.md": {
       "templateHash": "6445c5e39696f40063180b08b51953602ebb58c30377f4c7a88404fc9912f2e5",
       "size": 3959,
+      "component": "guides"
+    },
+    "guides/multi-provider-exec/README.md": {
+      "templateHash": "31e09c9b8ba020e377228af8d3c3fd6057ff097a49540a05d27b9f3a62a74af0",
+      "size": 3435,
       "component": "guides"
     },
     "guides/aws/well-architected.md": {
