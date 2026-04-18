@@ -680,6 +680,9 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
 | v0.90.0 | CC v2.1.110 compat; PushNotification tool (R002); /tui fullscreen; /focus command; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash max timeout enforcement; Write tool IDE diff feedback; --resume scheduled task resurrection; compat table expansion (v2.1.110 8 rows) |
+| v0.97.0 | ouroboros PR #353 capability graph pattern integration; action-validator capability hints (safety/parallel/approval); reasoning-sandwich Opus 4.7 considerations; R005 capability-aware tool scheduling; auto-dev pipeline v2.0.0 |
+| v0.96.0 | CC v2.1.113-v2.1.114 compat; sandbox.network.deniedDomains; subagent stall timeout; find -exec deny; R006 Note 6 items; compat table expansion (v2.1.113-v2.1.114 6 rows) |
+| v0.95.0 | Rules context token optimization (#889); PostCompact R001/R002 security gap fix; R006 Hook Event Types HTML comment; 8 rules HTML comment application; CLAUDE.md command table simplification |
 | v0.94.0 | cc-release-monitor workflow and infra/cc-release-collector removal (Airflow DAG migration); geeknews-scout README cross-reference fix |
 | v0.93.0 | Airflow 3.1.8 agent/skill/guide update (airflow.sdk imports, TaskFlow API, AIP-72/AIP-44, Asset replaces Dataset, dag.test()) |
 | v0.92.0 | cc-token-saver plugin integration guide (37th guide); harness-synthesizer skill (106th skill, AutoHarness-inspired verifier/filter/policy generation); R012 external plugin statusline conflict section; R013 Token Guardian coexistence section; action-validator Code Harness Integration section |

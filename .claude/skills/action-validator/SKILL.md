@@ -57,15 +57,51 @@ policy_cache:
     - tool: Bash
       pattern: "git add *"
       verdict: allow
+      hints: { safety: normal, parallel: false, approval: auto }
     - tool: Bash
       pattern: "git commit *"
       verdict: allow
+      hints: { safety: normal, parallel: false, approval: auto }
     - tool: Bash
       pattern: "git push *"
       verdict: warn_confirm
+      hints: { safety: low, parallel: false, approval: needs_approval }
 ```
 
 Policy caching reduces redundant LLM calls for well-understood workflows. Policies are advisory — the orchestrator may override.
+
+## Capability Hints (Opus 4.7+)
+
+When agents target Opus 4.7 (`opus47` model alias), tool capability hints improve batched tool-call planning. Declare per-tool metadata in policy cache entries:
+
+| Field | Values | Effect |
+|-------|--------|--------|
+| `safety` | `normal`, `low` | `low` triggers confirmation advisory |
+| `parallel` | `true`, `false` | `true` allows concurrent scheduling |
+| `approval` | `auto`, `needs_approval` | Maps to R002 permission tier |
+
+### Example: Enhanced Policy Cache with Capability Hints
+
+```yaml
+policy_cache:
+  agent: mgr-gitnerd
+  action: git-commit
+  validated_steps:
+    - tool: Bash
+      pattern: "git add *"
+      verdict: allow
+      hints: { safety: normal, parallel: false, approval: auto }
+    - tool: Bash
+      pattern: "git push *"
+      verdict: warn_confirm
+      hints: { safety: low, parallel: false, approval: needs_approval }
+    - tool: Read
+      pattern: "*"
+      verdict: allow
+      hints: { safety: normal, parallel: true, approval: auto }
+```
+
+Hints are advisory — they inform model scheduling but do not enforce. Inspired by [ouroboros PR #353](https://github.com/Q00/ouroboros/pull/353) capability graph pattern.
 
 ## Code Harness Integration (AutoHarness)
 
