@@ -109,24 +109,27 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **Slash command / user-invocable skills**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, memory-save, memory-recall, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
 
 **System / internal skills**
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 Guide Library (31 topics)
+### 3.4 Guide Library (37 topics)
 
 | Category | Guides |
 |----------|--------|
-| Internal | claude-code, git-worktree-workflow, skill-bundle-design |
+| Internal | claude-code, git-worktree-workflow, worktree-lifecycle, skill-bundle-design, agents-md-quality, hook-data-flow, multi-model-routing |
 | Language | golang, python, rust, kotlin, typescript, java21 |
 | Frontend | flutter, web-design |
 | Backend | fastapi, springboot, go-backend, django-best-practices |
 | Infrastructure | docker, aws |
 | Data Engineering | airflow, dbt, kafka, spark, snowflake, iceberg |
 | Database | supabase-postgres, postgres, redis, alembic, drizzle-orm |
+| Design | impeccable-design |
 | Writing | elements-of-style |
+| Communication | slack-cli |
+| Token Optimization | cc-token-saver |
 | Web Scraping | web-scraping |
 
 ### 3.5 Hook System
@@ -671,6 +674,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
 | v0.90.0 | CC v2.1.110 compat; PushNotification tool (R002); /tui fullscreen; /focus command; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash max timeout enforcement; Write tool IDE diff feedback; --resume scheduled task resurrection; compat table expansion (v2.1.110 8 rows) |
+| v0.92.0 | cc-token-saver plugin integration guide (37th guide); harness-synthesizer skill (106th skill, AutoHarness-inspired verifier/filter/policy generation); R012 external plugin statusline conflict section; R013 Token Guardian coexistence section; action-validator Code Harness Integration section |
 | v0.91.0 | CC v2.1.111-v2.1.112 compat; xhigh effort level + Opus 4.7 model alias (R006); PowerShell tool (R002); /ultrareview built-in; /less-permission-prompts built-in; read-only bash glob permission skip; compat table expansion (v2.1.111-v2.1.112 12 rows) |
 | v0.74.0 | `omcustom sync` (drift detection + team snapshot export); `omcustom init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |
 | v0.73.0 | skill-extractor (100th skill — task trajectory analysis for SKILL.md candidates); User Model in R011 + sys-memory-keeper (correction patterns, skill preferences, expertise profile); agentskills.io source in skills-sh-search |
