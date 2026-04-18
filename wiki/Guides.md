@@ -10,4 +10,10 @@ Comprehensive reference documentation covering **13 topics**:
 
 ---
 
+## Cross-Provider Execution
+
+- [[multi-provider-exec]] — Execute prompts through external LLM providers (Codex, Gemini, RTK); complements [[multi-model-routing]]
+
+---
+
 **See also:** [[Rules]] | [[Development]]
