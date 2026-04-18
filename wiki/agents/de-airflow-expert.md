@@ -1,7 +1,7 @@
 ---
 title: de-airflow-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-04-18
 sources:
   - .claude/agents/de-airflow-expert.md
 related:

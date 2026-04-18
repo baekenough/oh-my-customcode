@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.92.0",
-  "generatedAt": "2026-04-18T02:54:40.168Z",
-  "templateVersion": "0.92.0",
+  "generatorVersion": "0.93.0",
+  "generatedAt": "2026-04-18T03:22:26.939Z",
+  "templateVersion": "0.93.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "c492110d244673e256299fafd5d62086fc60125533b584e12efdf4eef3ced588",
@@ -180,8 +180,8 @@
       "component": "agents"
     },
     ".claude/agents/de-airflow-expert.md": {
-      "templateHash": "ab7ea2b9976a140902c000a40e17b4a4035b402edfba8353b20f6c1a38d8a075",
-      "size": 996,
+      "templateHash": "d483a56a018814947cb019aabe1cab527f66a684f199dcd36d3f9a6fe280322a",
+      "size": 1643,
       "component": "agents"
     },
     ".claude/agents/sys-naggy.md": {
@@ -495,8 +495,8 @@
       "component": "skills"
     },
     ".claude/skills/airflow-best-practices/SKILL.md": {
-      "templateHash": "7b1a1e17440ee713f033d88abebdd27cd80fd131a07fb4d1d2d8d15d07ef1b32",
-      "size": 1425,
+      "templateHash": "78e80abef84b24bf52122d0477fa6b4018208ff1da1117b513f2f2711ba907a6",
+      "size": 3394,
       "component": "skills"
     },
     ".claude/skills/rtk-exec/scripts/rtk-wrapper.cjs": {
@@ -1510,8 +1510,8 @@
       "component": "guides"
     },
     "guides/airflow/README.md": {
-      "templateHash": "d5bac24dbb1a11605cb7b8ce35fa085a02b297fc2fbc307b9dea91f64da413a5",
-      "size": 1037,
+      "templateHash": "99f5b3e42059688785aacc7ac17bb0acdd7cbf05d94d0387bd008512bd93c10f",
+      "size": 1936,
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {

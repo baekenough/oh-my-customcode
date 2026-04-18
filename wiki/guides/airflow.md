@@ -1,7 +1,7 @@
 ---
 title: "Airflow Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-04-18
 sources:
   - guides/airflow/README.md
 related:
