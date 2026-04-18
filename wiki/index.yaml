@@ -3,7 +3,7 @@
 
 meta:
   updated: "2026-04-18"
-  total_pages: 241
+  total_pages: 242
   total_sources: 212
 
 pages:
@@ -279,6 +279,9 @@ pages:
     - file: skills/help.md
       title: "Help"
       summary: "Show help information for commands, agents, and skills."
+    - file: skills/idea.md
+      title: "Idea"
+      summary: "Analyze a natural language idea against the project codebase and return structured issue specs for downstream issue creation."
     - file: skills/impeccable-design.md
       title: "Impeccable Design"
       summary: "AI design language for production-ready UI systems."
