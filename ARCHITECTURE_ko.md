@@ -602,6 +602,8 @@ Claude Code v2.1.72 ~ v2.1.112+ 테스트 및 호환 확인.
 | v0.80.0–v0.88.1 | 레지스트리 격리; omcustom update 자체 업데이트 + re-exec; 규칙 안전성 확장 (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 호환성; 프롬프트 캐싱 1h TTL 환경 변수; Skill 도구 내장 커맨드 검색; /recap 세션 컨텍스트; 호환성 테이블 확장 (v2.1.97-v2.1.108 14행) |
 | v0.90.0 | CC v2.1.110 호환성; PushNotification 도구 (R002); /tui 풀스크린; /focus 커맨드; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash 최대 타임아웃 강제; Write 도구 IDE diff 피드백; --resume 스케줄 작업 부활; 호환성 테이블 확장 (v2.1.110 8행) |
+| v0.94.0 | cc-release-monitor 워크플로우 및 infra/cc-release-collector 제거 (Airflow DAG 이관); geeknews-scout README 교차 참조 수정 |
+| v0.93.0 | Airflow 3.1.8 에이전트/스킬/가이드 업데이트 (airflow.sdk 임포트, TaskFlow API, AIP-72/AIP-44, Asset이 Dataset 대체, dag.test()) |
 | v0.92.0 | cc-token-saver 플러그인 통합 가이드 (37번째 가이드); harness-synthesizer 스킬 (106번째 스킬, AutoHarness 기반 verifier/filter/policy 생성); R012 외부 플러그인 상태줄 충돌 섹션; R013 Token Guardian 공존 섹션; action-validator Code Harness Integration 섹션 |
 | v0.91.0 | CC v2.1.111-v2.1.112 호환성; xhigh effort 레벨 + Opus 4.7 모델 alias (R006); PowerShell 도구 (R002); /ultrareview 내장; /less-permission-prompts 내장; 읽기 전용 bash glob 권한 프롬프트 생략; 호환성 테이블 확장 (v2.1.111-v2.1.112 12행) |
 | v0.62.5 | Playwright 접근성 E2E 테스트 (11개 테스트, axe-core 감사) |
