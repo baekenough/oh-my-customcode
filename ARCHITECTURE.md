@@ -674,6 +674,8 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
 | v0.90.0 | CC v2.1.110 compat; PushNotification tool (R002); /tui fullscreen; /focus command; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash max timeout enforcement; Write tool IDE diff feedback; --resume scheduled task resurrection; compat table expansion (v2.1.110 8 rows) |
+| v0.94.0 | cc-release-monitor workflow and infra/cc-release-collector removal (Airflow DAG migration); geeknews-scout README cross-reference fix |
+| v0.93.0 | Airflow 3.1.8 agent/skill/guide update (airflow.sdk imports, TaskFlow API, AIP-72/AIP-44, Asset replaces Dataset, dag.test()) |
 | v0.92.0 | cc-token-saver plugin integration guide (37th guide); harness-synthesizer skill (106th skill, AutoHarness-inspired verifier/filter/policy generation); R012 external plugin statusline conflict section; R013 Token Guardian coexistence section; action-validator Code Harness Integration section |
 | v0.91.0 | CC v2.1.111-v2.1.112 compat; xhigh effort level + Opus 4.7 model alias (R006); PowerShell tool (R002); /ultrareview built-in; /less-permission-prompts built-in; read-only bash glob permission skip; compat table expansion (v2.1.111-v2.1.112 12 rows) |
 | v0.74.0 | `omcustom sync` (drift detection + team snapshot export); `omcustom init --from-snapshot` (team reproducibility); `analysis --interview` mode; Release cleanup automation (auto-close issues + delete branches on merge) |

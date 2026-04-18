@@ -53,7 +53,7 @@ cp .env.example .env
 - `docker` on the remote server
 - `envsubst` locally (part of `gettext`)
 - GitHub PAT with `repo` + `issues:write` scopes
-- Shared `github-token` secret (same namespace as cc-release-collector)
+- Shared `github-token` secret in the `omcustom` namespace
 
 ## Issue Format
 
