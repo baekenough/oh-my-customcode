@@ -2316,7 +2316,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.97.1",
+    version: "0.98.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {

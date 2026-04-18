@@ -311,13 +311,25 @@
         "description": "Log task completion events for Agent Teams coordination"
       }
     ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/task-state-precompact.sh"
+          }
+        ],
+        "description": "Serialize active task state before compaction — pairs with PostCompact restore (#922)"
+      }
+    ],
     "PostCompact": [
       {
         "matcher": "*",
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with ┌─ Agent: claude (default) / └─ Task: {task}\nR008: before EVERY tool call → [claude][model] → Tool: Name / Target: path\nR010: write→delegate to subagent; orchestrator read-only (Read/Glob/Grep); git→mgr-gitnerd\nR009: 2+ independent tasks → parallel agents, same message\nR018: 3+ agents OR review cycle → Agent Teams\nR000: user communication in Korean (한국어); code/files in English — NON-NEGOTIABLE\nR001: prohibited actions (no secrets, no system files, no rm -rf); stop on violation → preserve state → report → wait\nR002: tool tiers (Read/Grep=free, Write/Edit=notify, Bash=approval); no writes outside project; no .env/.git/config\n\nAutonomous mode: if /tmp/.claude-autonomous-$PPID exists → simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction — re-enable if tasks seem blocked.\n\nRe-read CLAUDE.md NOW."
+            "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with ┌─ Agent: claude (default) / └─ Task: {task}\nR008: before EVERY tool call → [claude][model] → Tool: Name / Target: path\nR010: write→delegate to subagent; orchestrator read-only (Read/Glob/Grep); git→mgr-gitnerd\nR009: 2+ independent tasks → parallel agents, same message\nR018: 3+ agents OR review cycle → Agent Teams\nR000: user communication in Korean (한국어); code/files in English — NON-NEGOTIABLE\nR001: prohibited actions (no secrets, no system files, no rm -rf); stop on violation → preserve state → report → wait\nR002: tool tiers (Read/Grep=free, Write/Edit=notify, Bash=approval); no writes outside project; no .env/.git/config\n\nAutonomous mode: if /tmp/.claude-autonomous-$PPID exists → simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction — re-enable if tasks seem blocked.\n\nTask state restore: if /tmp/.claude-task-state-$PPID.json exists, read it to recover active pipeline, dev stage, and autonomous mode state. This was saved by PreCompact hook.\n\nRe-read CLAUDE.md NOW."
           }
         ],
         "description": "Reinforce enforced rules after context compaction — prevents rule amnesia (v2.1.76+)"
