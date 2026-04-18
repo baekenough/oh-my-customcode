@@ -67,6 +67,20 @@ policy_cache:
 
 Policy caching reduces redundant LLM calls for well-understood workflows. Policies are advisory — the orchestrator may override.
 
+## Code Harness Integration (AutoHarness)
+
+When a synthesized harness exists for an agent (`.claude/outputs/harnesses/{agent-name}-*.yaml`), action-validator can use it for enhanced validation:
+
+| Mode | Source | Behavior |
+|------|--------|----------|
+| Advisory (default) | Prompt-based checks | Emit warnings only |
+| Code-verified | harness-synthesizer output | Run harness validation code, emit advisory results |
+| Hard-enforce (opt-in) | harness-synthesizer `--hard-enforce` | Block invalid actions (requires explicit opt-in, see R021) |
+
+To generate a harness for an agent: `/harness-synthesizer --agent {name} --mode verifier`
+
+Code harness validation is additive — it supplements prompt-based checks, not replaces them.
+
 ## Scope
 
 This skill is an advisory layer, not a hard enforcement mechanism:
