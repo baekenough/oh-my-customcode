@@ -1,19 +1,60 @@
 name: auto-dev
 description: "Automated development pipeline — from issue triage to release"
-version: "1.0.0"
+version: "2.0.0"
+
+# Design rule: each pipeline run produces ONE bounded release unit (3-7 issues), not all open issues.
+# This pipeline is a project-agnostic template. Project-specific overrides belong in
+# the project's own workflows/auto-dev.yaml (e.g., AgentNav, second-brain).
 
 steps:
   - name: pre-triage
     prompt: |
-      Scan open GitHub issues for the target release version.
-      Identify release candidates by analyzing labels, milestones, and issue content.
-      Output a structured list: issue number, title, labels, initial priority (P0-P3).
-    description: "Open issues scan and initial release candidate list"
+      Phase 1 — Ensure required labels exist, then scan issues.
+
+      1. Create labels if missing (idempotent):
+         gh label create in-progress --color "FBCA04" --description "Work in progress" --force 2>/dev/null
+         gh label create verify-ready --color "0E8A16" --description "Ready for verification" --force 2>/dev/null
+         gh label create needs-review --color "D93F0B" --description "Needs manual review" --force 2>/dev/null
+
+      2. Scan open GitHub issues:
+         gh issue list --state open --limit 100 --json number,title,labels,body,milestone
+
+      3. Group by label and compute for each issue:
+         - dependencies: parse "see #N", "depends on #N", "#N 참조" from body
+         - blocked_by_decision: true if body references any decision-needed issue
+         - effort: XS/S/M/L from scope
+         - order: topological sort over dependencies
+
+      4. Output: dependency-sorted issue table with blocked_by_decision flag.
+    description: "Ensure labels exist, scan issues, dependency-analyze"
+
+  - name: scope-selection
+    prompt: |
+      Select a single bounded release scope (3-7 issues) for THIS pipeline run.
+
+      Selection rules:
+      1. Determine release tier:
+         - No tags yet → v0.1.0
+         - Otherwise: highest-priority open tier (bug → chore → feature)
+      2. Exclude:
+         - blocked_by_decision == true
+         - Issues requiring manual/human action
+      3. Sort by dependency: prerequisites before dependents
+      4. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)
+      5. Minimum 1 issue; if 0 eligible, halt with "no eligible issues for auto-dev run"
+
+      Create release milestone and assign scoped issues.
+      Output markdown release manifest:
+        | order | # | title | prerequisite | effort |
+
+      Persist manifest as pipeline state for subsequent steps.
+    description: "Pick 3-7 issues as v{X.Y.Z} scope, create milestone"
+    depends_on: pre-triage
 
   - name: triage
     skill: professor-triage
-    description: "Cross-analysis triage with priority assessment"
-    depends_on: pre-triage
+    description: "Cross-analysis triage with priority assessment (scoped to release manifest)"
+    depends_on: scope-selection
 
   - name: plan
     skill: release-plan
@@ -27,47 +68,84 @@ steps:
 
   - name: implement
     prompt: |
-      Execute the implementation plan from deep-plan phase.
-      Dispatch appropriate specialist agents for each task.
-      Use parallel execution (R009) for independent tasks.
-      Each implementation unit should be a separate agent spawn.
-    description: "Parallel implementation via specialist agents"
+      Execute the deep-plan output for the scoped release manifest.
+
+      Per-issue lifecycle:
+      1. Start: gh issue edit <N> --add-label in-progress --assignee @me
+      2. Comment: gh issue comment <N> --body "Implementation started via auto-dev pipeline"
+      3. Dispatch specialist agents per file domain:
+         - Detect file types in scope and route to matching agent
+         - Use specialized agents (lang-*, be-*, fe-*, infra-*) over general-purpose
+      4. TDD via superpowers:test-driven-development when tests apply
+      5. Commit via mgr-gitnerd with `Fixes #<N>` trailer in body
+      6. On success: remove in-progress, add verify-ready
+      7. On failure: remove in-progress, add needs-review, comment error summary
+
+      Rules:
+      - Parallel execution per R009 (max 4 concurrent, respect dependencies)
+      - Issues whose prerequisites failed in-run MUST be skipped (log reason)
+      - No direct orchestrator writes (R010)
+    description: "Per-issue implementation with lifecycle and specialist routing"
     depends_on: deep-plan
 
-  - name: verify
-    skill: sauron-watch
-    description: "Structural sync verification (R017 full verification)"
+  - name: verify-build
+    prompt: |
+      Project-specific build and test verification.
+
+      Auto-detect project type and run appropriate checks:
+      - Node/Bun: package.json → install + lint + type-check + test
+      - Python: py_compile + pytest
+      - Go: go build + go vet + go test
+      - Docker: docker build (if Dockerfile exists)
+      - Static site: file existence + format validation
+
+      Halt on first failure. Report exact command + stderr.
+      Do NOT proceed to release if any check fails.
+    description: "Auto-detected build + test verification"
     depends_on: implement
 
   - name: deep-verify
     skill: deep-verify
     description: "Multi-angle release quality verification"
-    depends_on: verify
+    depends_on: verify-build
 
   - name: release
     prompt: |
-      Finalize the release:
-      1. Bump version in package.json
-      2. Generate release notes via omcustom-release-notes
-      3. Create release branch and PR
-      All git operations delegated to mgr-gitnerd.
-    description: "Version bump + release notes + PR creation"
+      Create a GitHub Release.
+
+      1. Version:
+         - No existing tags → v0.1.0
+         - Otherwise: semver bump (patch for bugfix, minor for features)
+      2. Release notes via omcustom-release-notes skill
+      3. Delegate to mgr-gitnerd:
+         - git tag + push
+         - gh release create
+      4. Close milestone
+      5. Close verify-ready issues with "Fixed in v{version}"
+         Label needs-review issues as "Deferred from v{version}"
+
+      Adapt release mechanism to project:
+      - npm project: PR + merge + npm publish verification
+      - Non-npm: direct tag on main (trunk-based)
+    description: "Git tag + GitHub Release + close milestone/issues"
     depends_on: deep-verify
 
-  - name: ci-fix-and-publish
+  - name: ci-check
     prompt: |
-      Post-release CI/CD verification and fix cycle:
-      1. Check CI status on the release PR (gh pr checks)
-      2. If failures found:
-         a. Fetch failure logs (gh run view --log-failed)
-         b. Diagnose root causes
-         c. Fix issues (delegate to specialist agents)
-         d. Commit fixes and push
-         e. Re-check CI until all green
-      3. Once CI passes:
-         a. Merge the PR
-         b. Verify npm publish succeeded (npm view oh-my-customcode version)
-         c. Verify GitHub Release created
-      4. Report final status
-    description: "CI/CD fix cycle + npm publish verification"
+      Post-release CI verification.
+
+      1. Check if .github/workflows/ has CI workflows
+         If NOT: skip with "No CI configured. Skipping." and continue.
+      2. If CI exists:
+         - gh run list --limit 5
+         - Wait for runs triggered by the new tag/push
+         - If failures: diagnose, fix, re-verify
+      3. For npm projects: verify npm publish succeeded (npm view <pkg> version)
+      4. Report final CI status.
+    description: "Post-release CI verification and fix loop"
     depends_on: release
+
+  - name: post-release-followup
+    skill: post-release-followup
+    description: "Register follow-ups from this release as new issues"
+    depends_on: ci-check
