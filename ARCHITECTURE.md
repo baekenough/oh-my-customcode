@@ -680,6 +680,8 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
 | v0.90.0 | CC v2.1.110 compat; PushNotification tool (R002); /tui fullscreen; /focus command; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash max timeout enforcement; Write tool IDE diff feedback; --resume scheduled task resurrection; compat table expansion (v2.1.110 8 rows) |
+| v0.98.0 | OpenHarness patterns internalization (#922); PreCompact hook for task state serialization before compaction; PostCompact task state restoration; multi-provider-exec guide (38th guide); guides count 37→38 |
+| v0.97.1 | hada-scout v2.0 LLM pre-scout filtering (#912); keyword regex→haiku LLM pre-scoring; false positive 30-40%→5-10%; user-invocable; scope package→core |
 | v0.97.0 | ouroboros PR #353 capability graph pattern integration; action-validator capability hints (safety/parallel/approval); reasoning-sandwich Opus 4.7 considerations; R005 capability-aware tool scheduling; auto-dev pipeline v2.0.0 |
 | v0.96.0 | CC v2.1.113-v2.1.114 compat; sandbox.network.deniedDomains; subagent stall timeout; find -exec deny; R006 Note 6 items; compat table expansion (v2.1.113-v2.1.114 6 rows) |
 | v0.95.0 | Rules context token optimization (#889); PostCompact R001/R002 security gap fix; R006 Hook Event Types HTML comment; 8 rules HTML comment application; CLAUDE.md command table simplification |
