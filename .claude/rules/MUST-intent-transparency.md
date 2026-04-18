@@ -24,21 +24,24 @@ Display reasoning when routing to agents. Users must always know which agent was
 | 70-89% | Request confirmation, show alternatives |
 | < 70% | List options for user to choose |
 
-## Detection Factors
+## Detection Factors — Weights: Keywords 40%, File patterns 30%, Action verbs 20%, Context 10%. See table via Read tool.
 
+<!-- DETAIL: Detection Factors
 | Factor | Weight | Examples |
 |--------|--------|---------|
 | Keywords | 40% | "Go", "Python", "리뷰" |
 | File patterns | 30% | "*.go", "main.py" |
 | Action verbs | 20% | "review", "create", "fix" |
 | Context | 10% | Previous agent, working directory |
+-->
 
 ## Override
 
 Users can specify agent directly with `@{agent-name} {command}`. Override bypasses detection.
 
-## User Directive Persistence
+## User Directive Persistence — Named tool/skill/workflow preferences persist entire session. Anti-pattern: treating autonomous mode as clean slate. See full spec via Read tool.
 
+<!-- DETAIL: User Directive Persistence
 When a user explicitly names a tool, skill, or workflow (e.g., "use /pipeline auto-dev", "always run tests with bun test"), this preference persists for the entire session — including after autonomous mode transitions.
 
 ### Persistence Triggers
@@ -64,6 +67,7 @@ At the start of every work cycle (issue, task, release, or autonomous sub-loop):
 ### Cross-reference
 
 - Related memory: session v0.87.2~v0.88.0 (issue #869) — `/pipeline auto-dev` preference was lost after autonomous mode transition
+-->
 
 ## Agent Triggers
 

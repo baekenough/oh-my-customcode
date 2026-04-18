@@ -48,8 +48,9 @@
 3. Agent effort level → Map to corresponding style
 4. Default → `balanced`
 
-### Style Examples
+### Style Examples — See concise/balanced/explanatory examples via Read tool.
 
+<!-- DETAIL: Style Examples
 **Concise** (effort: low):
 ```
 ✓ 3 files updated, 0 errors
@@ -73,3 +74,4 @@ Changes:
 
 Trade-offs: RS256 is ~10x slower than HS256 but enables asymmetric key management.
 ```
+-->

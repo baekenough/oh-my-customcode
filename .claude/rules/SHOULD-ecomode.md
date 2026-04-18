@@ -36,7 +36,9 @@ Ecomode: `[lang-golang-expert] ✓ src/main.go reviewed: 1 naming issue (handle_
 
 Disable with: "ecomode off", "verbose mode", or "show full details".
 
-## Input Context Pruning
+## Input Context Pruning — Active removal of irrelevant content. See full spec via Read tool.
+
+<!-- DETAIL: Input Context Pruning
 
 Active removal of irrelevant retrieved content from agent context. Complements output compression by managing the input side of token budget.
 
@@ -64,8 +66,11 @@ Active removal of irrelevant retrieved content from agent context. Complements o
 - Prune at document/chunk level, not mid-sentence
 - When in doubt, Summarize rather than Drop
 - Track pruning decisions: `[Pruned] {N} chunks → {M} retained, {K} summarized, {J} dropped`
+-->
 
-## Context Budget Management
+## Context Budget Management — Task-type-aware thresholds (research 40%, implementation 50%, review 60%, management 70%, general 80%). See full spec via Read tool.
+
+<!-- DETAIL: Context Budget Management
 
 Task-type-aware context thresholds that trigger ecomode earlier for context-heavy operations.
 
@@ -103,8 +108,11 @@ The `context-budget-advisor.sh` hook monitors context usage and emits warnings w
 - Does NOT override explicit user settings
 - Advisory only — never blocks operations
 - Context percentage from statusline data when available
+-->
 
-## Token Guardian Coexistence (cc-token-saver)
+## Token Guardian Coexistence — R013 context budget (usage-based) + cc-token-saver Token Guardian (time-based) can run simultaneously.
+
+<!-- DETAIL: Token Guardian Coexistence (cc-token-saver)
 
 | Component | Trigger | Scope |
 |-----------|---------|-------|
@@ -112,3 +120,4 @@ The `context-budget-advisor.sh` hook monitors context usage and emits warnings w
 | Token Guardian (cc-token-saver) | 1h cache TTL idle detection | Cross-session cost |
 
 Both can run simultaneously — different triggers, complementary coverage. R013's context budget is usage-based (approaching limit), Token Guardian is time-based (idle cache expiry).
+-->

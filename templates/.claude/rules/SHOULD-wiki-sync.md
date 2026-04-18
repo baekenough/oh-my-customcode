@@ -28,8 +28,9 @@ When agents, skills, rules, or guides are created or modified, corresponding wik
 | `/omcustom:wiki lint` | After major structural changes |
 | Automatic (CI) | `.github/workflows/wiki-sync.yml` checks on PR |
 
-## Delegation
+## Delegation — All wiki writes via wiki-curator agent (R010). See workflow via Read tool.
 
+<!-- DETAIL: Delegation
 All wiki writes MUST go through the `wiki-curator` agent (R010). The orchestrator reads wiki pages freely but never writes them directly.
 
 ```
@@ -42,9 +43,11 @@ Orchestrator
 │   └── Updates index.md
 └── Verifies via wiki lint
 ```
+-->
 
-## Integration
+## Integration — Interacts with R010, R017, R020, R006, R021. See table via Read tool.
 
+<!-- DETAIL: Integration
 | Rule | Interaction |
 |------|-------------|
 | R010 | Wiki writes delegated to wiki-curator agent |
@@ -52,16 +55,19 @@ Orchestrator
 | R020 | Wiki-dependent tasks verify wiki is current before [Done] |
 | R006 | Wiki pages follow same separation of concerns as source |
 | R021 | SHOULD priority — advisory enforcement, CI check |
+-->
 
 ## CI Enforcement
 
 `.github/workflows/wiki-sync.yml` checks for missing wiki pages on every PR. Missing pages cause CI failure with guidance to run `/omcustom:wiki`.
 
-## Self-Check
+## Self-Check — 3 checks: wiki pages updated, index refreshed, lint passed. See details via Read tool.
 
+<!-- DETAIL: Self-Check
 Before completing a session that modified agents/skills/rules/guides:
 1. Were wiki pages updated for all changes?
 2. Was index.md refreshed?
 3. Did wiki lint pass?
 
 If any NO → run `/omcustom:wiki ingest` for affected paths.
+-->
