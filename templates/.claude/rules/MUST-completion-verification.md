@@ -28,7 +28,9 @@ Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ 
 4. Would I bet $100 this is truly complete? YES: Declare [Done] / NO: Identify uncertain and verify
 -->
 
-## Subagent Self-Report Verification
+## Subagent Self-Report Verification — Verify "pre-existing" claims against base branch before acceptance. See details via Read tool.
+
+<!-- DETAIL: Subagent Self-Report Verification
 
 Subagents often report failures as "pre-existing", "baseline", or "unchanged". These claims MUST be verified against the base branch before acceptance.
 
@@ -40,8 +42,11 @@ Subagents often report failures as "pre-existing", "baseline", or "unchanged". T
 | "Dependency issue not from this PR" | `git show {base}:package.json` compare |
 
 Never accept "pre-existing" without direct base-branch evidence. A false "pre-existing" claim can mask a regression introduced by the current change.
+-->
 
-## Common False Completion Patterns
+## Common False Completion Patterns — 7 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes. See full table via Read tool.
+
+<!-- DETAIL: Common False Completion Patterns
 
 | Pattern | Reality | Fix |
 |---------|---------|-----|
@@ -52,8 +57,11 @@ Never accept "pre-existing" without direct base-branch evidence. A false "pre-ex
 | "Tests pass" | Only ran subset | Run full test suite |
 | "Waiting for manual publish" | External CI/CD auto-publishes on merge | Check `.github/workflows/` BEFORE assuming manual step |
 | "Subagent said pre-existing" | Claim not verified against base branch | Run test on base branch, compare directly |
+-->
 
-## Completion Contract Format
+## Completion Contract Format — [Contract] + [Done] with criterion/evidence pairs. See template via Read tool.
+
+<!-- DETAIL: Completion Contract Format
 
 For complex tasks, declare completion contract upfront:
 
@@ -72,8 +80,11 @@ Then at completion:
 ├── ✓ Criterion 2: {evidence}
 └── ✓ Criterion N: {evidence}
 ```
+-->
 
-## Autonomous Mode Entry Checklist
+## Autonomous Mode Entry Checklist — 5-step inventory (workflows, runs, publish targets, manual points, cross-reference). See full checklist via Read tool.
+
+<!-- DETAIL: Autonomous Mode Entry Checklist
 
 When entering autonomous mode (user grants extended execution without per-step confirmation), perform this inventory BEFORE first action:
 
@@ -90,6 +101,7 @@ Record findings in session context. Failure to inventory automation is a R020 vi
 Related memory records:
 - `feedback_github_workflows_inventory.md` — original incident (v0.87.2~v0.88.0 session)
 - `feedback_subagent_pre_existing_claims.md` — subagent false-positive pattern
+-->
 
 ## Integration
 

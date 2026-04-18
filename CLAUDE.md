@@ -95,61 +95,17 @@ oh-my-customcode로 구동됩니다.
 
 ### 슬래시 커맨드 (스킬 기반)
 
-| 커맨드 | 설명 |
-|--------|------|
-| `/omcustom:analysis` | 프로젝트 분석 및 자동 커스터마이징 |
-| `/omcustom:create-agent` | 새 에이전트 생성 |
-| `/omcustom:update-docs` | 프로젝트 구조와 문서 동기화 |
-| `/omcustom:update-external` | 외부 소스에서 에이전트 업데이트 |
-| `/omcustom:audit-agents` | 에이전트 의존성 감사 |
-| `/omcustom:fix-refs` | 깨진 참조 수정 |
-| `/omcustom:harness-eval` | 15 SE task 구조적 벤치마크 평가 |
-| `/omcustom:auto-improve` | 개선 사항 자동 적용 워크플로우 |
-| `/omcustom:adaptive-harness` | 프로젝트 컨텍스트 기반 하네스 자동 최적화 |
-| `/omcustom:claude-native` | Claude Code 릴리즈 모니터링 및 이슈 자동 생성 |
-| `/omcustom:wiki` | 코드베이스 위키 생성/유지 (Karpathy LLM Wiki 패턴) |
-| `/omcustom:wiki-rag` | 위키 기반 코드베이스 질의응답 (RAG) |
-| `/omcustom:improve-report` | eval-core 기반 개선 현황 리포트 |
-| `/omcustom-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
-| `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
-| `/omcustom:agora` | Multi-LLM 적대적 합의 루프 (설계/스펙 교차 검증) |
-| `/ambiguity-gate` | 요청 모호성 분석 및 명확화 질문 (ouroboros 패턴) |
-| `/dev-review` | 코드 베스트 프랙티스 리뷰 |
-| `/dev-refactor` | 코드 리팩토링 |
-| `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
-| `/memory-recall` | 메모리 검색 및 리콜 |
-| `/omcustom:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
-| `/omcustom:npm-publish` | npm 레지스트리에 패키지 배포 |
-| `/omcustom:npm-version` | 시맨틱 버전 관리 |
-| `/omcustom:npm-audit` | 의존성 감사 |
-| `/omcustom-release-notes` | 릴리즈 노트 생성 (git 히스토리 기반) |
-| `/omcustom-feedback` | 사용자 피드백을 GitHub Issue로 등록 |
-| `/codex-exec` | Codex CLI 프롬프트 실행 |
-| `/gemini-exec` | Gemini CLI 프롬프트 실행 |
-| `/rtk-exec` | RTK CLI 프록시 실행 (토큰 압축) |
-| `/optimize-analyze` | 번들 및 성능 분석 |
-| `/optimize-bundle` | 번들 크기 최적화 |
-| `/optimize-report` | 최적화 리포트 생성 |
-| `/research` | 10-team 병렬 딥 분석 및 교차 검증 |
-| `/scout` | 외부 URL 분석 및 프로젝트 적합성 평가 |
-| `/skill-extractor` | 세션 성공 패턴에서 스킬 후보 추출 |
-| `/deep-plan` | 연구 검증 기반 계획 수립 (research → plan → verify) |
-| `/deep-verify` | 다중 관점 릴리즈 품질 검증 |
-| `/harness-synthesizer` | 에이전트 액션 검증용 코드 하네스 합성 (AutoHarness 기반) |
-| `/professor-triage` | 이슈 교차 분석 트리아지 (omc_issue_analyzer 댓글 기반) |
-| `/release-plan` | verify-done 이슈 릴리즈 유닛 계획 생성 |
-| `/pipeline` | YAML 파이프라인 실행 (예: /pipeline auto-dev) |
-| `/pipeline resume` | 중단된 파이프라인 재개 |
-| `/omcustom:sauron-watch` | 전체 R017 검증 |
-| `/sdd-dev` | Spec-Driven Development 워크플로우 (sdd/ 폴더 기반) |
-| `/structured-dev-cycle` | 6단계 구조적 개발 사이클 (Plan → Verify → Implement → Verify → Compound → Done) |
-| `/omcustom:loop` | 백그라운드 에이전트 자동 계속 실행 |
-| `/omcustom:lists` | 모든 사용 가능한 커맨드 표시 |
-| `/omcustom:status` | 시스템 상태 표시 |
-| `/omcustom-web` | 내장 Web UI 제어 및 검사 |
-| `/skills-sh-search` | skills.sh 마켓플레이스 스킬 검색 및 설치 |
-| `/vercel-deploy` | Vercel 배포 자동화 |
-| `/omcustom:help` | 도움말 표시 |
+| 카테고리 | 대표 커맨드 | 설명 |
+|----------|------------|------|
+| 프로젝트 관리 | `/omcustom:analysis`, `/omcustom:create-agent`, `/omcustom:audit-agents` | 분석, 에이전트/스킬 생성, 감사 |
+| 개발 | `/dev-review`, `/dev-refactor`, `/sdd-dev`, `/structured-dev-cycle` | 코드 리뷰, 리팩토링, SDD |
+| 검증 | `/omcustom:sauron-watch`, `/deep-verify`, `/adversarial-review` | R017 검증, 릴리즈 품질, 보안 리뷰 |
+| 릴리즈 | `/pipeline auto-dev`, `/omcustom-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
+| 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustom:agora` | 병렬 분석, URL 평가, 연구 계획 |
+| 메모리 | `/memory-save`, `/memory-recall` | 세션 메모리 관리 |
+| 시스템 | `/omcustom:lists`, `/omcustom:status`, `/omcustom:help` | 전체 목록, 상태, 도움말 |
+
+> 전체 커맨드 목록 (60+ 커맨드): `/omcustom:lists` 실행
 
 ## 프로젝트 구조
 
