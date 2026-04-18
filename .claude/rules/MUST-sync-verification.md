@@ -45,7 +45,9 @@ Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
 
 ### Phase 6: Push via mgr-gitnerd (only after sauron passes)
 
-## Self-Check Before Commit and Push
+## Self-Check — 6-point commit check + 3-point push check. See full checklist via Read tool.
+
+<!-- DETAIL: Self-Check Before Commit and Push
 
 ```
 ╔══════════════════════════════════════════════════════════════════╗
@@ -73,16 +75,19 @@ Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
 ║  Sauron verification is required for all pushes.                 ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
+-->
 
 ## When Required
 
 Any change to: agents, agent frontmatter, skills, guides, routing patterns, rules, wiki pages.
 
-## Quick Verification Commands
+## Quick Verification Commands — agent/skill/guide/wiki counts via ls/find/wc. See commands via Read tool.
+
+<!-- DETAIL: Quick Verification Commands
 
 Key checks: agent count (`ls .claude/agents/*.md | wc -l`), skill count (`find .claude/skills -name "SKILL.md" | wc -l`), guide count (`find guides -mindepth 1 -maxdepth 1 -type d | wc -l`), wiki page count (`find wiki -name "*.md" ! -name "index.md" ! -name "log.md" | wc -l`).
 
-<!-- DETAIL: Full verification bash scripts
+Full verification bash scripts:
 ```bash
 # Agent count check
 ls .claude/agents/*.md | wc -l

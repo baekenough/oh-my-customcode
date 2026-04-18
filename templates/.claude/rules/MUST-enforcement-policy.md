@@ -22,8 +22,9 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 3. **Composability**: External skills and internal rules can coexist without deadlocks
 4. **PostCompact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction
 
-## Hard Enforcement Candidates (Future)
+## Hard Enforcement Candidates — R010 git-delegation-guard (conditional), R007/R008 (conditional). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
 
+<!-- DETAIL: Hard Enforcement Candidates (Future)
 If advisory enforcement proves insufficient for specific rules, these are candidates for promotion to hard-block:
 
 | Rule | Candidate Hook | Condition for Promotion |
@@ -38,6 +39,7 @@ Promotion requires: (1) measured violation rate data, (2) user approval, (3) rol
 | Hook | Date | Justification |
 |------|------|---------------|
 | `rule-deletion-guard.sh` | 2026-04-08 | User-requested: rule files must require individual confirmation before deletion. Prevents accidental bulk deletion of project rules. |
+-->
 
 ## Integration
 

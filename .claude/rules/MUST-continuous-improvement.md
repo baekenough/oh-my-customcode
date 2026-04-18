@@ -48,18 +48,22 @@ When repeating agent failures or suboptimal routing is detected:
 
 This connects R016's continuous improvement loop with the adaptive-harness skill's learning capability.
 
-## Anti-Patterns
+## Anti-Patterns — 4 patterns: "I'll update later", "one-time exception", "doesn't cover this", "finish task first". See table via Read tool.
 
+<!-- DETAIL: Anti-Patterns
 | Anti-Pattern | Why It's Wrong | Correct Action |
 |-------------|----------------|----------------|
 | "I'll update the rule later" | Deferred fixes are forgotten | Update rule NOW, before continuing |
 | "This is a one-time exception" | Exceptions become patterns | If the rule is wrong, fix it; if it's right, follow it |
 | "The rule doesn't cover this case" | Missing coverage = rule gap | Add the case to the rule immediately |
 | "Let me finish the task first" | Rule violations compound | Fix rule first (5 min), then continue (prevents N future violations) |
+-->
 
-## Timing
+## Timing — Rule updates MUST happen before continuing original task, in the same session.
 
+<!-- DETAIL: Timing
 Rule updates MUST happen:
 - **Before** continuing the original task
 - **In the same session** as the violation
 - **Not** as a separate TODO or follow-up issue
+-->
