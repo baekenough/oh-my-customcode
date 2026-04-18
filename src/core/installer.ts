@@ -321,7 +321,14 @@ async function installSettingsLocal(targetDir: string, result: InstallResult): P
         await writeJsonFile(settingsPath, existing);
         debug('install.settings_local_merged', {});
       } else {
-        debug('install.settings_local_skipped', { reason: 'statusLine exists' });
+        const sl = existing.statusLine as Record<string, unknown>;
+        if (sl.refreshInterval === undefined) {
+          sl.refreshInterval = statusLineConfig.statusLine.refreshInterval;
+          await writeJsonFile(settingsPath, existing);
+          debug('install.settings_local_refreshInterval_added', {});
+        } else {
+          debug('install.settings_local_skipped', { reason: 'statusLine exists' });
+        }
       }
     } catch {
       result.warnings.push(

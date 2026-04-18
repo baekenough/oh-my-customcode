@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 46 pre-built subagents, 100 skills, 21 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 48 pre-built subagents, 107 skills, 22 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -68,14 +68,14 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
 | R021 | MUST | Enforcement Policy | Advisory-first enforcement model, promotion criteria |
 
-### 3.2 Agent Taxonomy (46 agents)
+### 3.2 Agent Taxonomy (48 agents)
 
 | Category | Count | Agents |
 |----------|-------|--------|
 | SW Engineer / Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
 | SW Engineer / Backend | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
 | SW Engineer / Frontend | 5 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
-| SW Engineer / Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| SW Engineer / Tooling | 4 | tool-npm-expert, tool-optimizer, tool-bun-expert, slack-cli-expert |
 | Data Engineering | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | Security | 1 | sec-codeql-expert |
@@ -83,12 +83,12 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| System | 2 | sys-memory-keeper, sys-naggy |
-| **Total** | **46** | |
+| System | 3 | sys-memory-keeper, sys-naggy, wiki-curator |
+| **Total** | **48** | |
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (100 skills)
+### 3.3 Skill Catalog (107 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -115,7 +115,7 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 Guide Library (37 topics)
+### 3.4 Guide Library (39 topics)
 
 | Category | Guides |
 |----------|--------|
@@ -680,7 +680,9 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
 | v0.90.0 | CC v2.1.110 compat; PushNotification tool (R002); /tui fullscreen; /focus command; autoScrollEnabled; TRACEPARENT/TRACESTATE; Bash max timeout enforcement; Write tool IDE diff feedback; --resume scheduled task resurrection; compat table expansion (v2.1.110 8 rows) |
-| v0.98.0 | OpenHarness patterns internalization (#922); PreCompact hook for task state serialization before compaction; PostCompact task state restoration; multi-provider-exec guide (38th guide); guides count 37→38 |
+| v0.99.1 | bypassPermissions enforcement + /idea skill (#926, #930) | 0 | 1 | 0 | 0 |
+| v0.99.0 | auto-dev pipeline CI-mimic local verification (#927) | 0 | 0 | 0 | 0 |
+| v0.98.0 | OpenHarness patterns internalization (#922); PreCompact hook for task state serialization before compaction; PostCompact task state restoration; multi-provider-exec guide (38th guide); guides count 38→39 |
 | v0.97.1 | hada-scout v2.0 LLM pre-scout filtering (#912); keyword regex→haiku LLM pre-scoring; false positive 30-40%→5-10%; user-invocable; scope package→core |
 | v0.97.0 | ouroboros PR #353 capability graph pattern integration; action-validator capability hints (safety/parallel/approval); reasoning-sandwich Opus 4.7 considerations; R005 capability-aware tool scheduling; auto-dev pipeline v2.0.0 |
 | v0.96.0 | CC v2.1.113-v2.1.114 compat; sandbox.network.deniedDomains; subagent stall timeout; find -exec deny; R006 Note 6 items; compat table expansion (v2.1.113-v2.1.114 6 rows) |

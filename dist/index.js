@@ -1710,7 +1710,14 @@ async function installSettingsLocal(targetDir, result) {
         await writeJsonFile(settingsPath, existing);
         debug("install.settings_local_merged", {});
       } else {
-        debug("install.settings_local_skipped", { reason: "statusLine exists" });
+        const sl = existing.statusLine;
+        if (sl.refreshInterval === undefined) {
+          sl.refreshInterval = statusLineConfig.statusLine.refreshInterval;
+          await writeJsonFile(settingsPath, existing);
+          debug("install.settings_local_refreshInterval_added", {});
+        } else {
+          debug("install.settings_local_skipped", { reason: "statusLine exists" });
+        }
       }
     } catch {
       result.warnings.push("Failed to parse existing settings.local.json, skipping statusLine config");
@@ -2018,7 +2025,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.99.1",
+  version: "0.99.2",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -4817,6 +4824,32 @@ async function updateEntryDoc(targetDir, config, options) {
     info("update.entry_doc_created", { path: layout.entryFile });
   }
 }
+async function backfillStatusLineRefreshInterval(targetDir, options) {
+  if (options.dryRun) {
+    return;
+  }
+  const layout = getProviderLayout();
+  const settingsPath = join7(targetDir, layout.rootDir, "settings.local.json");
+  if (!await fileExists(settingsPath)) {
+    return;
+  }
+  try {
+    const existing = await readJsonFile(settingsPath);
+    if (!existing.statusLine) {
+      return;
+    }
+    const sl = existing.statusLine;
+    if (sl.refreshInterval === undefined) {
+      sl.refreshInterval = 10;
+      await writeJsonFile(settingsPath, existing);
+      debug("update.settings_local_refreshInterval_backfilled", {});
+    }
+  } catch {
+    warn("update.settings_local_backfill_failed", {
+      path: settingsPath
+    });
+  }
+}
 async function runFullUpdatePostProcessing(options, result, config) {
   const isFullUpdate = !options.components || options.components.length === 0;
   if (isFullUpdate) {
@@ -4826,6 +4859,7 @@ async function runFullUpdatePostProcessing(options, result, config) {
     result.removedDeprecatedFiles = removed;
     if (!options.dryRun) {
       await updateEntryDoc(options.targetDir, config, options);
+      await backfillStatusLineRefreshInterval(options.targetDir, options);
     }
   }
   if (!options.dryRun) {

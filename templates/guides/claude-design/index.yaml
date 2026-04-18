@@ -1,0 +1,15 @@
+name: claude-design
+description: Claude Design artifact handoff workflow — connecting Anthropic's conversational design tool outputs to Claude Code's fe-design-expert implementation pipeline
+
+source:
+  type: internal
+
+topics:
+  - design-token-export
+  - component-spec-handoff
+  - css-custom-properties
+  - slop-test-validation
+  - motion-verification
+
+used_by:
+  - fe-design-expert

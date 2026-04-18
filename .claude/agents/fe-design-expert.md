@@ -112,8 +112,27 @@ Flag these patterns as AI slop:
 - Backend or API code → use appropriate language/framework agent
 - Bundle size analysis → use `tool-npm-expert`
 
+## Claude Design Handoff
+
+When receiving artifacts from Claude Design (Anthropic's conversational design tool):
+
+```
+Receive handoff (tokens JSON + component specs)
+  ↓
+1. Validate token integrity (OKLCH colors, consistent spacing scale, type hierarchy)
+2. Convert tokens → CSS custom properties
+3. Implement component specs → framework components (all variant states)
+4. Verify motion specs have functional purpose + prefers-reduced-motion guard
+5. Run AI Slop Test before declaring implementation done
+```
+
+**Handoff validation checklist** — see `guides/claude-design/index.md` for the full token integrity, component fidelity, motion verification, and slop check criteria.
+
+**Agent boundary**: Claude Design handoff stops at aesthetics and visual implementation. For accessibility compliance (WCAG, semantic HTML), pass to `fe-vercel-agent` or invoke `web-design-guidelines`.
+
 ## Reference Guides
 
+- `guides/claude-design/index.md` — Claude Design artifact handoff workflow and validation checklist
 - `guides/impeccable-design/typography.md` — type scale, font pairing, hierarchy
 - `guides/impeccable-design/color-and-contrast.md` — OKLCH, palette strategy, tinted neutrals
 - `guides/impeccable-design/motion-design.md` — timing rules, easing, purposeful animation
