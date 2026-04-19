@@ -475,6 +475,16 @@
           }
         ],
         "description": "Advisory reminder to sync skill counts in 6 locations when a SKILL.md is created/modified (R021)"
+      },
+      {
+        "matcher": "mcp_tool_name matches \"mcp__playwright__.*\" || mcp_tool_name matches \"mcp__claude-in-chrome__.*\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/playwright-compress.sh"
+          }
+        ],
+        "description": "Layer 4: Compress Playwright/Chrome MCP output via Haiku summarization"
       }
     ],
     "Stop": [
