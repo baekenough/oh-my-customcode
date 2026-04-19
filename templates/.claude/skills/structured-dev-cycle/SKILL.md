@@ -190,6 +190,10 @@ rm -f /tmp/.claude-dev-stage                    # Clear (disable blocking)
 - **Single session**: The fixed path `/tmp/.claude-dev-stage` does not support concurrent Claude Code sessions. Running multiple sessions simultaneously may cause stage state conflicts.
 - **World-writable path**: The `/tmp/` directory is accessible to all users. For multi-user environments, consider using a user-scoped path like `/tmp/.claude-dev-stage-$(id -u)`.
 
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+
 ## Display Format
 
 ```

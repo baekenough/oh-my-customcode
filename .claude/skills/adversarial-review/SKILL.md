@@ -78,3 +78,7 @@ Fix: Recommended remediation
 - [ ] Do file operations stay within R002-declared access scope?
 - [ ] Are domain boundaries respected (backend agent not editing frontend files)?
 - [ ] Could an agent's task contract be tightened without losing functionality?
+
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

@@ -132,3 +132,7 @@ Add priority label (`P1`, `P2`, `P3`) based on categorization.
 - Issue creation uses `gh` CLI directly (read-only operation pattern)
 - If no follow-up candidates found, report "No follow-up actions needed" and complete
 - PR review feedback is available shortly after PR creation — the omc_pr_analyzer bot comments automatically
+
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
