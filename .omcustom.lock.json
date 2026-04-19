@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.101.0",
-  "generatedAt": "2026-04-19T09:26:34.883Z",
-  "templateVersion": "0.101.0",
+  "generatorVersion": "0.102.0",
+  "generatedAt": "2026-04-19T10:21:07.609Z",
+  "templateVersion": "0.102.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -464,6 +464,11 @@
       "size": 4892,
       "component": "skills"
     },
+    ".claude/skills/design-shotgun/SKILL.md": {
+      "templateHash": "0308ef1a1781dd8e55010810f4e9409a024e16e447999a5bde36ddf9d37a9425",
+      "size": 3053,
+      "component": "skills"
+    },
     ".claude/skills/cve-triage/SKILL.md": {
       "templateHash": "2f2206b5eb8c1bffd7443c9c9546857b560a0356c29c7c8d988637030ca96e75",
       "size": 2450,
@@ -497,6 +502,11 @@
     ".claude/skills/deep-verify/SKILL.md": {
       "templateHash": "2bba1f1b086dc9c2b46918cac12dff0f263a86c44d9098eeaff7e68e15a7fe6e",
       "size": 5584,
+      "component": "skills"
+    },
+    ".claude/skills/playwright-compress/SKILL.md": {
+      "templateHash": "4cc5007c21ad6dfcd89b5e94bc1dcc30b9c0953677221423320e96fc18d3cde4",
+      "size": 2274,
       "component": "skills"
     },
     ".claude/skills/airflow-best-practices/SKILL.md": {
@@ -889,6 +899,11 @@
       "size": 2456,
       "component": "skills"
     },
+    ".claude/skills/product-strategy/SKILL.md": {
+      "templateHash": "2a4aaeba7afce1355ccb27808ccd34c6177d730a8155686160cdae146a5ff717",
+      "size": 2518,
+      "component": "skills"
+    },
     ".claude/skills/sdd-development/SKILL.md": {
       "templateHash": "9a46b7f2a3038d84f5588a4376921cb626382e536d6058630799267e3e780264",
       "size": 507,
@@ -1079,6 +1094,11 @@
       "size": 2306,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/playwright-compress.sh": {
+      "templateHash": "748a0f09dba2b78de3fb87ee5904ce9b397fc6bbfa14766c9fcac3dc5511e76c",
+      "size": 1650,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/secret-filter.sh": {
       "templateHash": "f9e002664ef091328d059e2dcf703eb30929f47ff59e81fdddd201f24783ab1f",
       "size": 2904,
@@ -1190,8 +1210,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "86d27cf03df3f6494a94b29c3d7da839c733c9a8db790b64153105ce001db9bb",
-      "size": 25582,
+      "templateHash": "ef563fd639ddf6b13eabcef3233e05de79daf7448a6dc0e12d3be40c3bc9445c",
+      "size": 25978,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1350,8 +1370,8 @@
       "component": "guides"
     },
     "guides/claude-code/14-token-efficiency.md": {
-      "templateHash": "73bd80afcfb95f09bdd8e6be406f97dd0659aeb12ed7870067ea1b3dd8f905c2",
-      "size": 9237,
+      "templateHash": "ac6348da76c5af1fa74ddd29ab904852fcdf8f7c7b9f6acc8fdbb13b0c75b52d",
+      "size": 10534,
       "component": "guides"
     },
     "guides/claude-code/09-guardrails.md": {
@@ -1697,6 +1717,11 @@
     "guides/hook-data-flow/README.md": {
       "templateHash": "17dd482fc76adad7b527e9c560795126cbbff01699ec721c3e591b14b942b1e6",
       "size": 6715,
+      "component": "guides"
+    },
+    "guides/browser-automation/01-browser-automation-patterns.md": {
+      "templateHash": "51abd57331bd591de77b087f9e40f9e52c7f0f2b3c7dfbe9d23da3599edcc0ee",
+      "size": 2410,
       "component": "guides"
     },
     "guides/index.yaml": {

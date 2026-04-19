@@ -3,8 +3,8 @@
 
 meta:
   updated: "2026-04-19"
-  total_pages: 246
-  total_sources: 212
+  total_pages: 250
+  total_sources: 216
 
 pages:
   architecture:
@@ -228,6 +228,9 @@ pages:
     - file: skills/deep-plan.md
       title: "Deep Plan"
       summary: "Research-validated planning — research then plan then verify workflow for complex tasks"
+    - file: skills/design-shotgun.md
+      title: "Design Shotgun"
+      summary: "Generate 4-6 parallel design mockups for rapid visual comparison — prevents premature convergence on a single design direction"
     - file: skills/deep-verify.md
       title: "Deep Verify"
       summary: "Multi-angle release quality verification before merge or deployment."
@@ -363,6 +366,9 @@ pages:
     - file: skills/peer-messaging.md
       title: "Peer Messaging"
       summary: "Cross-session Claude Code instance communication via claude-peers-mcp broker."
+    - file: skills/playwright-compress.md
+      title: "Playwright Compress"
+      summary: "PostToolUse hook that compresses Playwright MCP tool output via Haiku summarization — Layer 4 of the token defense stack (94-96% reduction)"
     - file: skills/pipeline-architecture-patterns.md
       title: "Pipeline Architecture Patterns"
       summary: "Data pipeline architecture patterns for ETL/ELT design, orchestration, and data quality"
@@ -375,6 +381,9 @@ pages:
     - file: skills/pre-generation-arch-check.md
       title: "Pre-Generation Architecture Check"
       summary: "AASM-inspired pre-generation guard — detects R006 and R010 violations before code generation begins"
+    - file: skills/product-strategy.md
+      title: "Product Strategy"
+      summary: "YC-style product strategy assessment with forced questions and CEO scope modes — prevents build-first-think-later anti-pattern"
     - file: skills/post-release-followup.md
       title: "Post-Release Followup"
       summary: "Analyze release workflow findings and recommend follow-up actions"
@@ -577,6 +586,9 @@ pages:
     - file: guides/aws.md
       title: "AWS Guide"
       summary: "Reference documentation for AWS architecture patterns and Well-Architected best practices"
+    - file: guides/browser-automation.md
+      title: "Browser Automation Guide"
+      summary: "Reference documentation for AI-controlled browser automation patterns — MCP-based control, cookie auth, stealth patterns, and cross-AI orchestration"
     - file: guides/cc-token-saver.md
       title: "cc-token-saver Integration Guide"
       summary: "External plugin for token cost optimization and session continuity — conflict resolution with R012/R013/R009/R010"
