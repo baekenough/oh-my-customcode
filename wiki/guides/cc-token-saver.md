@@ -56,6 +56,11 @@ Token Guardian (idle cache TTL) and `context-budget-advisor.sh` (R013, context %
 
 `/continue`, `/usage-view`, and `/report-limit` have no conflicts with internal rules — use freely.
 
+## Three-Layer Context
+
+cc-token-saver is Layer 1 in the three-layer token defense stack. See [[token-efficiency]] for the full stack: Layer 2 (R013 Ecomode) and Layer 3 (settings-based gates) complement Token Guardian without overlap.
+
 ## Sources
 
 - `guides/cc-token-saver/README.md` — integration guide with conflict resolution details
+- `guides/claude-code/14-token-efficiency.md` — three-layer defense stack overview
