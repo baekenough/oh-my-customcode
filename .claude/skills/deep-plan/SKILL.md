@@ -359,3 +359,7 @@ phases_completed: 3
 verdict: PASS|REVISE
 ---
 ```
+
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

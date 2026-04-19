@@ -115,3 +115,7 @@ mgr-gitnerd: gh release create           ->  create release with notes
 - Uses git history and gh CLI for data gathering
 - Claude Code analyzes and generates notes in-context
 - Resource count changes auto-detected from CLAUDE.md history
+
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
