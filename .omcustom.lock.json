@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.99.3",
-  "generatedAt": "2026-04-19T03:28:21.147Z",
-  "templateVersion": "0.99.3",
+  "generatorVersion": "0.100.0",
+  "generatedAt": "2026-04-19T06:38:39.998Z",
+  "templateVersion": "0.100.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -40,8 +40,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
-      "templateHash": "eea1abea618f0081f310bd0fc57044e6462c3925ede35552f57d8cece2d95b61",
-      "size": 4656,
+      "templateHash": "9ab3a1f3afb1077da0dc484b02dcb197040e6a391e33d1e99dc4bbf09204d1c9",
+      "size": 5238,
       "component": "rules"
     },
     ".claude/rules/MUST-language-policy.md": {
@@ -444,6 +444,11 @@
       "size": 2539,
       "component": "skills"
     },
+    ".claude/skills/token-efficiency-audit/SKILL.md": {
+      "templateHash": "1f3cef1bd3b3c63fd361823af6d897da5752be6d33a4aa36ddea52fd97874dbc",
+      "size": 9351,
+      "component": "skills"
+    },
     ".claude/skills/qa-lead-routing/SKILL.md": {
       "templateHash": "6282676f10eb8bc58be0e7a453280c100b32df35f9f31182c2e5589c20991569",
       "size": 3736,
@@ -802,6 +807,11 @@
     ".claude/skills/skills-sh-search/SKILL.md": {
       "templateHash": "d9171fb571d04de22255787e354959fc980febd33fc9e21289208640b12c4d46",
       "size": 6136,
+      "component": "skills"
+    },
+    ".claude/skills/pre-generation-arch-check/SKILL.md": {
+      "templateHash": "03c64a53c95ed60d7079773abb8015a0b345888e67cbfea3b4f0cc194a96e670",
+      "size": 5395,
       "component": "skills"
     },
     ".claude/skills/typescript-best-practices/SKILL.md": {
@@ -1330,13 +1340,18 @@
       "component": "guides"
     },
     "guides/claude-code/13-cli-flags.md": {
-      "templateHash": "da13ae95b0e5c58e5315390f9a1b1017e260187ed798826b256963b430d4d4dc",
-      "size": 4782,
+      "templateHash": "10944bd8ad507ffda0c0439c248b0950e7ef27111fe362f655eb8c554dd6f2b8",
+      "size": 4932,
       "component": "guides"
     },
     "guides/claude-code/12-workflow-patterns.md": {
       "templateHash": "f37063285b43f2737fa09496d380dc41c571dc166f8974f636af3b69280f9774",
       "size": 6349,
+      "component": "guides"
+    },
+    "guides/claude-code/14-token-efficiency.md": {
+      "templateHash": "73bd80afcfb95f09bdd8e6be406f97dd0659aeb12ed7870067ea1b3dd8f905c2",
+      "size": 9237,
       "component": "guides"
     },
     "guides/claude-code/09-guardrails.md": {
@@ -1345,8 +1360,8 @@
       "component": "guides"
     },
     "guides/claude-code/index.yaml": {
-      "templateHash": "746e403f0b003b3e58512d290bc8786318633ef4174eaab88462ccec22334836",
-      "size": 1836,
+      "templateHash": "56a02f73e013462f540bb3b6721dc1ac63d61b6aca61e00263168848db110c1e",
+      "size": 2031,
       "component": "guides"
     },
     "guides/claude-code/05-agent-sdk.md": {
@@ -1430,8 +1445,8 @@
       "component": "guides"
     },
     "guides/cc-token-saver/README.md": {
-      "templateHash": "90aa2e533a39626d2172079846db46bd2d4d7ce2a459ace8c29499f997cf6887",
-      "size": 3631,
+      "templateHash": "de52a953f71b4c4fca9cf7cdea733b6724b5d7166c7d8eead14523222c8187af",
+      "size": 4212,
       "component": "guides"
     },
     "guides/dbt/README.md": {
