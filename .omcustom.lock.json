@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.100.1",
-  "generatedAt": "2026-04-19T08:59:05.210Z",
-  "templateVersion": "0.100.1",
+  "generatorVersion": "0.101.0",
+  "generatedAt": "2026-04-19T09:26:34.883Z",
+  "templateVersion": "0.101.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -85,8 +85,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
-      "templateHash": "2857a8f5f9e4af89e7f817f4fbe6d9afe1f9bf126917a72594f419b25010cae2",
-      "size": 1728,
+      "templateHash": "209bee296e9ab4d99865958934cf7fdf7c75b8379c5b8ab2422ca61de530aa74",
+      "size": 2157,
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
@@ -450,8 +450,8 @@
       "component": "skills"
     },
     ".claude/skills/qa-lead-routing/SKILL.md": {
-      "templateHash": "6282676f10eb8bc58be0e7a453280c100b32df35f9f31182c2e5589c20991569",
-      "size": 3736,
+      "templateHash": "05d114e1ff9c8d0c4df7d27834212bd754b7302ca2874dc43eeace6882f7d931",
+      "size": 4032,
       "component": "skills"
     },
     ".claude/skills/memory-recall/SKILL.md": {
@@ -525,8 +525,8 @@
       "component": "skills"
     },
     ".claude/skills/secretary-routing/SKILL.md": {
-      "templateHash": "d6f07912c2ac18b47b3b2755cc949a2e6e212ff9cabec16660ab85047e280c7d",
-      "size": 5057,
+      "templateHash": "53fde5c0279544f6ae565a165f762ea90e09919fa939bbfcee5628e4ec97e2e9",
+      "size": 5642,
       "component": "skills"
     },
     ".claude/skills/adaptive-harness/SKILL.md": {
@@ -595,13 +595,13 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "1594af52152993f610ee269d37334160403fe1bb58eb010fe4d3bb04c30bfbb8",
-      "size": 13975,
+      "templateHash": "01175f600611d996c22f896bcb30ad411361bfbf692b20b42871fa0f5c90d908",
+      "size": 25275,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
-      "templateHash": "6d67334da4de55e281cd834bdbbc59752ca2e920fff98ce63cde1102bcc43842",
-      "size": 6494,
+      "templateHash": "d3d1fade6d3f1ef62a92356b500eab6f470c8339ad25183fc4010da751a8ed9e",
+      "size": 7017,
       "component": "skills"
     },
     ".claude/skills/python-best-practices/SKILL.md": {
@@ -710,8 +710,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "c2a9f33a363226eb76d2f7def13a17c4006d0c8fcd2171ca80c22d8e5940d442",
-      "size": 7107,
+      "templateHash": "a3eba1c30a8457b29fb15d32defa043bf1c4c6aa8ab999d99123b81ae3aa13f2",
+      "size": 7624,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
@@ -980,8 +980,8 @@
       "component": "skills"
     },
     ".claude/skills/de-lead-routing/SKILL.md": {
-      "templateHash": "657f396c7036dd720de599cc9d5b0a76c2257bf46ee6cf905693872efce102f8",
-      "size": 8720,
+      "templateHash": "c9f51885585b2c5ff63e034483f4f402c196abbca9c4fb6823118a6ea9e23c34",
+      "size": 9096,
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {

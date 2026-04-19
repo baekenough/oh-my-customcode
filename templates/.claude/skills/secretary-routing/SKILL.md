@@ -16,7 +16,7 @@ Routes agent management tasks to the appropriate manager agent. This skill conta
 
 | Agent | Purpose | Triggers |
 |-------|---------|----------|
-| mgr-creator | Create new agents | "create agent", "new agent" |
+| mgr-creator | Create new agents, skills, guides | "create agent", "new agent", "create skill", "new skill", "create guide", "new guide" |
 | mgr-updater | Update external agents | "update agent", "sync" |
 | mgr-supplier | Validate dependencies | "audit", "check deps" |
 | mgr-gitnerd | Git operations | "commit", "push", "pr" |
@@ -44,6 +44,8 @@ Before routing via Task tool, evaluate Agent Teams eligibility first:
 User Input → Routing → Manager Agent
 
 create   → mgr-creator
+create skill → mgr-creator
+create guide → mgr-creator
 update   → mgr-updater
 audit    → mgr-supplier
 git      → mgr-gitnerd
@@ -64,6 +66,20 @@ batch           → multiple (parallel)
 
 If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
+### Step 4b: Wiki-RAG Enrichment
+
+If the user's request is ambiguous or confidence is below 90%, query the wiki for additional context:
+
+1. Search `wiki/index.yaml` for pages matching the detected domain keywords
+2. Extract relevant agent/skill/guide recommendations from wiki pages
+3. Inject findings into the routing decision as supplementary signals
+
+```
+wiki-rag query: "{user_request}" → wiki pages → agent/skill/guide suggestions
+```
+
+Wiki-RAG enrichment is advisory — it supplements but does not override keyword matching. Skip silently if wiki/index.yaml doesn't exist.
+
 ### Step 5: Soul Injection (R006)
 
 If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
@@ -80,7 +96,7 @@ If the selected agent has `soul: true` in frontmatter, read and prepend `.claude
 5. Report result to user
 ```
 
-> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+> **Permission Mode**: When spawning agents via Agent tool, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
 
 ### 2. Batch/Parallel Task Routing
 
