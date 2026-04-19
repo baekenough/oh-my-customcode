@@ -2,7 +2,7 @@
 name: professor-triage
 description: Analyze GitHub issues against current codebase and perform automated triage with priority assessment
 scope: harness
-version: 2.1.0
+version: 2.2.0
 user-invocable: true
 effort: high
 context: fork
@@ -126,27 +126,27 @@ For each analyzed issue, generate multi-perspective analysis comments and artifa
 ```
 ## 🏛️ Senior Architect Analysis
 
-### Architecture Impact
-| Component | Impact | Risk |
-|-----------|--------|------|
-| {component} | {description} | {High/Medium/Low} |
+### 아키텍처 영향
+| 컴포넌트 | 영향 | 위험도 |
+|----------|------|--------|
+| {컴포넌트} | {설명} | {High/Medium/Low} |
 
-### Code-Level Analysis
-{Specific file:line references from Phase 2 codebase analysis}
+### 코드 수준 분석
+{Phase 2 코드베이스 분석의 구체적 file:line 참조}
 
-### Strategic Assessment
-- **Feasibility**: {assessment with evidence}
-- **Priority recommendation**: {P1/P2/P3 with rationale}
+### 전략적 평가
+- **실현 가능성**: {근거가 포함된 평가}
+- **우선순위 권장**: {P1/P2/P3 및 근거}
 
-### Risk & Considerations
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| {risk} | {High/Medium/Low} | {mitigation} |
+### 리스크 및 고려사항
+| 리스크 | 가능성 | 완화 방안 |
+|--------|--------|----------|
+| {리스크} | {High/Medium/Low} | {완화 방안} |
 
-**Estimated effort**: {XS/S/M/L/XL}
+**예상 작업량**: {XS/S/M/L/XL}
 
 ---
-_🏛️ Senior Architect perspective — `/professor-triage` v2.1.0_
+_🏛️ Senior Architect perspective — `/professor-triage` v2.2.0_
 ```
 
 **4B: 🤝 Project Colleague Review** — Delegate to arch-documenter (model: sonnet) to post GitHub comment:
@@ -154,19 +154,19 @@ _🏛️ Senior Architect perspective — `/professor-triage` v2.1.0_
 ```
 ## 🤝 Project Colleague Review
 
-### Implementation Ideas
-{Concrete code locations and change suggestions with file:line references}
+### 구현 아이디어
+{구체적 코드 위치 및 file:line 참조가 포함된 변경 제안}
 
-### Easy-to-Miss Details
-- {Name collisions, validation bypasses, race conditions, edge cases}
+### 놓치기 쉬운 세부사항
+- {이름 충돌, 유효성 검사 우회, 경쟁 조건, 엣지 케이스}
 
-### Suggested Next Steps
-1. {Actionable step with specific file/function reference}
-2. {Actionable step}
-3. {Actionable step}
+### 권장 다음 단계
+1. {구체적 file/function 참조가 포함된 실행 가능한 단계}
+2. {실행 가능한 단계}
+3. {실행 가능한 단계}
 
 ---
-_🤝 Project Colleague perspective — `/professor-triage` v2.1.0_
+_🤝 Project Colleague perspective — `/professor-triage` v2.2.0_
 ```
 
 Note: Do NOT include a "First Impressions" (첫인상) section in the Colleague Review — this was explicitly excluded per user feedback.
@@ -176,38 +176,38 @@ Note: Do NOT include a "First Impressions" (첫인상) section in the Colleague 
 ```
 ## 🎓 Professor Synthesis
 
-### Codebase Verification
-| Claim (from Architect/Colleague) | Verified | Evidence |
-|----------------------------------|----------|----------|
-| {claim} | ✅/⚠️/❌ | {file:line or git evidence} |
+### 코드베이스 검증
+| 주장 (Architect/Colleague) | 검증 | 근거 |
+|---------------------------|------|------|
+| {주장} | ✅/⚠️/❌ | {file:line 또는 git 근거} |
 
-### Consensus & Divergence
-| Topic | Architect | Colleague | Verdict |
-|-------|-----------|-----------|---------|
-| {topic} | {position} | {position} | {synthesized judgment} |
+### 합의 및 이견
+| 주제 | Architect | Colleague | 판정 |
+|------|-----------|-----------|------|
+| {주제} | {입장} | {입장} | {종합 판단} |
 
-### Priority Matrix
-| Dimension | Assessment |
-|-----------|-----------|
-| Urgency | {High/Medium/Low} |
-| Importance | {High/Medium/Low} |
-| Size | {XS/S/M/L/XL} |
-| Recommended order | {N of M in batch} |
+### 우선순위 매트릭스
+| 차원 | 평가 |
+|------|------|
+| 긴급성 | {High/Medium/Low} |
+| 중요성 | {High/Medium/Low} |
+| 규모 | {XS/S/M/L/XL} |
+| 권장 순서 | {배치 내 N/M} |
 
-### Missed Perspectives
-{Considerations neither Architect nor Colleague raised}
+### 누락된 관점
+{Architect나 Colleague 모두 제기하지 않은 고려사항}
 
-### Execution Roadmap
-| Phase | Task | Files | Depends on |
-|-------|------|-------|-----------|
-| 1 | {task} | {files} | — |
-| 2 | {task} | {files} | Phase 1 |
+### 실행 로드맵
+| 단계 | 작업 | 파일 | 의존성 |
+|------|------|------|--------|
+| 1 | {작업} | {파일} | — |
+| 2 | {작업} | {파일} | 단계 1 |
 
-### Final Conclusion
-{2-3 sentence synthesis with definitive recommendation}
+### 최종 결론
+{확정적 권장 사항이 포함된 2-3문장 종합}
 
 ---
-_🎓 Professor Synthesis — `/professor-triage` v2.1.0_
+_🎓 Professor Synthesis — `/professor-triage` v2.2.0_
 ```
 
 **4D: Issue Triage Comment (MANDATORY)** — Every analyzed issue MUST receive a triage comment. This is not optional — even for issues created in the same session or with existing analysis. Skipping comments breaks the triage audit trail. Delegate to mgr-gitnerd to post on each analyzed issue:
@@ -215,14 +215,14 @@ _🎓 Professor Synthesis — `/professor-triage` v2.1.0_
 ```
 ## 🔬 Professor Triage — Codebase Analysis Result
 
-**Decision**: {Close (Already Resolved) | Close (Not Applicable) | Close (Duplicate of #NNN) | Open — action required | Open — monitoring}
-**Rationale**: {1-2 line summary based on codebase findings}
-**Affected files**: {N} analyzed — {N}✅ {N}⚠️ {N}❌
-**Risk**: {P1/P2/P3} | **Size**: {XS/S/M/L/XL}
-**Full report**: {artifact path}
+**결정**: {Close (Already Resolved) | Close (Not Applicable) | Close (Duplicate of #NNN) | Open — action required | Open — monitoring}
+**근거**: {코드베이스 분석 기반 1-2줄 요약}
+**영향 파일**: {N}개 분석 — {N}✅ {N}⚠️ {N}❌
+**리스크**: {P1/P2/P3} | **규모**: {XS/S/M/L/XL}
+**전체 리포트**: {artifact path}
 
 ---
-_Analyzed by `/professor-triage` v2.1.0 against current codebase with {N} related issues_
+_`/professor-triage` v2.2.0에 의해 현재 코드베이스 대비 분석됨 — 관련 이슈 {N}개_
 ```
 
 **4E: Artifact Report** — Delegate to arch-documenter to write:
@@ -233,37 +233,37 @@ Timestamps use local machine time (consistent with other artifact skills).
 
 Template:
 ```
-# Professor Triage Report — YYYY-MM-DD
+# Professor Triage 리포트 — YYYY-MM-DD
 
-## Analysis Target
-| # | Title | Labels | Created |
-|---|-------|--------|---------|
+## 분석 대상
+| # | 제목 | 라벨 | 생성일 |
+|---|------|------|--------|
 
-## Per-Issue Analysis
+## 이슈별 분석
 ### #NNN — title
-- **Affected files**: N analyzed — N✅ N⚠️ N❌
-- **Architecture impact**: ...
-- **Implementation path**: ...
-- **Risk/Priority**: P1/P2/P3
-- **Size**: XS/S/M/L/XL
-- **Already resolved?**: Yes/No/Partial — evidence
-- **Recommended action**: ...
+- **영향 파일**: N개 분석 — N✅ N⚠️ N❌
+- **아키텍처 영향**: ...
+- **구현 경로**: ...
+- **리스크/우선순위**: P1/P2/P3
+- **규모**: XS/S/M/L/XL
+- **이미 해결됨?**: Yes/No/Partial — 근거
+- **권장 조치**: ...
 
-## Cross-Analysis
-### Common Patterns
-### Duplicate/Merge Candidates
-### Conflicting Findings Resolution
-### Priority Matrix
+## 교차 분석
+### 공통 패턴
+### 중복/병합 후보
+### 상충 발견사항 해결
+### 우선순위 매트릭스
 
-## Multi-Perspective Summary
-### Architect Highlights
-### Colleague Highlights
-### Professor Synthesis Key Points
+## 다관점 요약
+### Architect 주요 사항
+### Colleague 주요 사항
+### Professor Synthesis 핵심 포인트
 
-## Executed Actions
-| Issue | Action | Status |
+## 실행된 조치
+| 이슈 | 조치 | 상태 |
 
-## Pending Actions (Confirmation Required)
+## 보류 중인 조치 (확인 필요)
 ```
 
 ### Phase 4F: Comment Verification Gate
@@ -319,3 +319,7 @@ Present to user and wait for approval before executing:
 - Phase 4F: Verification gate for all 4 comment types
 - Phase 5: `mgr-gitnerd` for all GitHub operations
 - No external dependencies (omc_issue_analyzer removed in v2.0.0, multi-perspective analysis restored in v2.1.0)
+
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

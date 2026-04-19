@@ -30,3 +30,15 @@ Approve?
 ```
 
 On insufficient permission: do not attempt, notify user, suggest alternative.
+
+## Agent Tool Permission Mode
+
+When spawning subagents via the Agent tool, always pass `mode: "bypassPermissions"` explicitly. The Agent tool's default mode is `acceptEdits`, which **overrides** the agent frontmatter `permissionMode` field.
+
+| Setting | Effect |
+|---------|--------|
+| Agent frontmatter `permissionMode: bypassPermissions` | Ignored if Agent tool `mode` not set |
+| Agent tool `mode: "bypassPermissions"` | **Required** — actually controls subagent permissions |
+| Agent tool `mode` omitted | Defaults to `acceptEdits` → prompts for Bash, WebFetch |
+
+Skills that spawn agents MUST include `mode: "bypassPermissions"` in their Agent tool call instructions. This applies to all routing skills, pipeline skills, and any skill that delegates work to subagents.

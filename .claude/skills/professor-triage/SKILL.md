@@ -319,3 +319,7 @@ Present to user and wait for approval before executing:
 - Phase 4F: Verification gate for all 4 comment types
 - Phase 5: `mgr-gitnerd` for all GitHub operations
 - No external dependencies (omc_issue_analyzer removed in v2.0.0, multi-perspective analysis restored in v2.1.0)
+
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

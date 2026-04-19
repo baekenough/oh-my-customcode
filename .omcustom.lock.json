@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.100.0",
-  "generatedAt": "2026-04-19T06:38:39.998Z",
-  "templateVersion": "0.100.0",
+  "generatorVersion": "0.100.1",
+  "generatedAt": "2026-04-19T08:59:05.210Z",
+  "templateVersion": "0.100.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
-      "templateHash": "814153e387f2214458b2907c02ceece69d7b766673ef240a41afe1f9aea39e73",
-      "size": 1466,
+      "templateHash": "d0a16e5df414eec45c3a323d14f742e4d663bea4783b2e89c297d9e6031ce841",
+      "size": 2245,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -315,8 +315,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-supplier.md": {
-      "templateHash": "83e7e6f28182830cb21a96c63083bfc9ad96ceb40f8119e706069c5036802837",
-      "size": 1081,
+      "templateHash": "925673bf2d86ca72a10b35d4f28784f107fcf8626f9769535a027112ddbb47f8",
+      "size": 1091,
       "component": "agents"
     },
     ".claude/agents/arch-documenter.md": {
@@ -475,8 +475,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "2ae868b503022cedf24ac87d33ecfbbd371a60b8666a47d4047bc71d004d7320",
-      "size": 6857,
+      "templateHash": "28e2aa79c733e0665dfd9d772b4ad3d14ec704948e3d07b4bd33d4bc65a59aa7",
+      "size": 6980,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -495,8 +495,8 @@
       "component": "skills"
     },
     ".claude/skills/deep-verify/SKILL.md": {
-      "templateHash": "215ce6bada99ea984208e9fba3bde2da56b2812647cb91a83751526532dc0668",
-      "size": 5310,
+      "templateHash": "2bba1f1b086dc9c2b46918cac12dff0f263a86c44d9098eeaff7e68e15a7fe6e",
+      "size": 5584,
       "component": "skills"
     },
     ".claude/skills/airflow-best-practices/SKILL.md": {
@@ -565,8 +565,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "6ec2fb65c09857fff8c055c912d0fde72cf998e16adbd65959b9b8f0c1b19f39",
-      "size": 4828,
+      "templateHash": "6507b90bf590028c943d39af3d060dd41b56b7f7e230de5c664e39e5be263935",
+      "size": 5102,
       "component": "skills"
     },
     ".claude/skills/analysis/SKILL.md": {
@@ -615,13 +615,13 @@
       "component": "skills"
     },
     ".claude/skills/release-plan/SKILL.md": {
-      "templateHash": "e9e56e37ced3a95b875e7805c7441ec3c40024dcf7b3e7d496b043498eca9b20",
-      "size": 7186,
+      "templateHash": "925bafbbaf06d9cfa563c4fad83d1f517b03df66ab7fb9114c33bc16bdd44775",
+      "size": 7460,
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
-      "templateHash": "661be648eff40d525238451141ff912b6dc3b3bdb7ab7ab3bf83f99064948128",
-      "size": 7980,
+      "templateHash": "90015f76c61bd8f13fe9c3a5d77518ee8c2efa2006c68e160b74152148877f33",
+      "size": 8254,
       "component": "skills"
     },
     ".claude/skills/web-design-guidelines/SKILL.md": {
@@ -695,8 +695,8 @@
       "component": "skills"
     },
     ".claude/skills/deep-plan/SKILL.md": {
-      "templateHash": "de2c52bde24d600e719012ac27498636d1c742650f87b0da0c5cc877aba0e351",
-      "size": 14562,
+      "templateHash": "1d496187e0fc5c4b557745e96c82d33c311587850c5911caf93eca8bcc7011b7",
+      "size": 14836,
       "component": "skills"
     },
     ".claude/skills/omcustom-feedback/SKILL.md": {
@@ -730,13 +730,13 @@
       "component": "skills"
     },
     ".claude/skills/professor-triage/SKILL.md": {
-      "templateHash": "7204b2bd96840a81c189dc41d5a6db990ecd8a462b0272a076b7d30f45030fce",
-      "size": 13280,
+      "templateHash": "668c02b104d428ed5b9596510725336bf3bd600bf2f406dea1ffe245aa76d1fc",
+      "size": 13554,
       "component": "skills"
     },
     ".claude/skills/adversarial-review/SKILL.md": {
-      "templateHash": "039dcfac33a806c1ef859b7c6ef3f91c4ff16cac87da2f18b57d4ab68116ed56",
-      "size": 3010,
+      "templateHash": "81b44811327fbb127db45dd763c7e3bf6a6a8a26d71ce183d06bc1b5bf720ff5",
+      "size": 3284,
       "component": "skills"
     },
     ".claude/skills/supabase-postgres-best-practices/SKILL.md": {
@@ -775,8 +775,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "0b9a7ff7eb2dd0c82d01facd393ebe73feb902c3ec948029f54ee2990d85b2ce",
-      "size": 3037,
+      "templateHash": "fe6aa62a2bb5c82a3e66ed7c0cf7be6a8d10f61dc1e329ba228a66112111f109",
+      "size": 3311,
       "component": "skills"
     },
     ".claude/skills/omcustom-takeover/SKILL.md": {
