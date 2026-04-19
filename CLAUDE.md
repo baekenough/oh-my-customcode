@@ -103,6 +103,7 @@ oh-my-customcode로 구동됩니다.
 | 릴리즈 | `/pipeline auto-dev`, `/omcustom-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
 | 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustom:agora` | 병렬 분석, URL 평가, 연구 계획 |
 | 메모리 | `/memory-save`, `/memory-recall` | 세션 메모리 관리 |
+| 최적화 | `/token-efficiency-audit` | 토큰 효율 감사 (3계층 방어 스택) |
 | 시스템 | `/omcustom:lists`, `/omcustom:status`, `/omcustom:help` | 전체 목록, 상태, 도움말 |
 
 > 전체 커맨드 목록 (60+ 커맨드): `/omcustom:lists` 실행

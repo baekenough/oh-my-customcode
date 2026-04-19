@@ -59,3 +59,8 @@ documents:
     title: CLI 플래그 및 모드
     description: CLI 플래그, 헤드리스 모드, 스케줄링, 환경변수 레퍼런스
     path: ./13-cli-flags.md
+
+  - name: token-efficiency
+    title: 토큰 효율성 — 3계층 방어 스택
+    description: cc-token-saver, Ecomode, settings 기반 게이트의 조합
+    path: ./14-token-efficiency.md
