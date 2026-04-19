@@ -20,6 +20,7 @@ context: fork
 | Architect | arch-documenter, arch-speckit-agent |
 | Security | sec-codeql-expert |
 | Infra | infra-docker-expert, infra-aws-expert |
+| Slack | slack-cli-expert |
 
 ## File Extension Mapping
 
@@ -74,6 +75,7 @@ context: fork
 | security, codeql, cve, vulnerability, sarif, sast, security audit | sec-codeql-expert |
 | architecture, adr, openapi, swagger, diagram | arch-documenter |
 | spec, specification, tdd, requirements | arch-speckit-agent |
+| slack, slack-cli, slack app, slack deploy, slack trigger, slack datastore | slack-cli-expert |
 
 ## Model Selection
 
@@ -121,11 +123,25 @@ For **new file creation**, **boilerplate**, or **test code generation**:
 ### Step 3: Expert Agent Selection
 Route to appropriate language/framework expert based on file extension and keyword mapping.
 
-> **Permission Mode**: When spawning agents, pass `mode: "bypassPermissions"` in the Agent tool call if the session uses bypassPermissions. Without explicit mode, CC defaults to `acceptEdits`.
+> **Permission Mode**: When spawning agents via Agent tool, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
 
 ### Step 4: Ontology-RAG Enrichment (R019)
 
 If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
+
+### Step 4b: Wiki-RAG Enrichment
+
+For ambiguous routing (confidence < 90%), query the wiki for context:
+
+1. Search `wiki/index.yaml` for agent/skill pages matching detected keywords
+2. If wiki suggests a specific skill or guide for the task, inject as `suggested_context` in the agent prompt
+3. This helps agents receive relevant guide references automatically
+
+```
+wiki-rag query: "{user_request}" → wiki agent/skill pages → suggested_context injection
+```
+
+Advisory only — skip silently if wiki unavailable.
 
 ### Step 5: Soul Injection (R006)
 

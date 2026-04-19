@@ -51,6 +51,15 @@ full_qa_cycle      → all agents (sequential)
 
 If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
+### Wiki-RAG Enrichment
+
+For ambiguous routing (confidence < 90%), query the wiki for context:
+
+1. Search `wiki/index.yaml` for QA-related pages matching the request
+2. Inject relevant skill/guide suggestions into the spawned agent's prompt
+
+Advisory only — skip silently if wiki unavailable.
+
 ### Step 5: Soul Injection (R006)
 
 If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
