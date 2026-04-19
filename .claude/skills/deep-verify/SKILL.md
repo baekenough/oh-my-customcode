@@ -109,3 +109,7 @@ Each agent receives the full diff and returns findings as structured JSON:
 - This skill replaces ad-hoc cross-verification with a repeatable process
 - Round 7 philosophy check references CLAUDE.md architecture section and R006/R010/R021 rules
 - Regression check compares function signatures, export lists, and test counts against develop baseline
+
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

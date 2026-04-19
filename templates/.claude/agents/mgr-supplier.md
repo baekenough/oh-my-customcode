@@ -16,7 +16,7 @@ tools:
   - Read
   - Grep
   - Glob
-permissionMode: default
+permissionMode: bypassPermissions
 ---
 
 You are a dependency validation specialist ensuring agents have all required skills and guides properly linked.

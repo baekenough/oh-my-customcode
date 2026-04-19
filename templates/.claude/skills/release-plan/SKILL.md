@@ -131,21 +131,21 @@ Apply semantic versioning to each release group in sequence:
 For each release group, produce:
 
 ```markdown
-## vX.Y.Z Release Plan
+## vX.Y.Z 릴리즈 계획
 
-**Estimated scope**: {XS|S|M|L total} | **Issues**: N | **Parallelizable**: N
+**예상 범위**: {XS|S|M|L 합계} | **이슈**: N | **병렬 가능**: N
 
-| # | Priority | Size | Title | Dependencies |
-|---|----------|------|-------|-------------|
-| #NNN | P2 | S | issue title | none |
-| #NNN | P1 | XS | issue title | none |
+| # | 우선순위 | 규모 | 제목 | 의존성 |
+|---|----------|------|------|--------|
+| #NNN | P2 | S | 이슈 제목 | 없음 |
+| #NNN | P1 | XS | 이슈 제목 | 없음 |
 
-### Implementation Order
-1. #NNN — {one-line description} (suggested agent: {agent-type})
-2. #NNN — {one-line description} (suggested agent: {agent-type})
+### 구현 순서
+1. #NNN — {한줄 설명} (권장 에이전트: {agent-type})
+2. #NNN — {한줄 설명} (권장 에이전트: {agent-type})
 
-### Notes
-- {any dependency constraints, breaking changes, or risks}
+### 참고 사항
+- {의존성 제약, 호환성 이슈, 리스크 등}
 ```
 
 ### Completeness Check
@@ -159,18 +159,18 @@ Before generating the plan document, verify:
 If any issue is missing from release bins, halt and report the discrepancy.
 
 **Agent suggestion heuristic**:
-| Issue domain | Suggested agent |
-|--------------|----------------|
-| Docs, CLAUDE.md, README | arch-documenter |
-| Rules (R00x) | mgr-claude-code-bible |
-| Agents (.claude/agents/) | mgr-creator / mgr-updater |
-| Skills (.claude/skills/) | mgr-creator / mgr-updater |
+| 이슈 도메인 | 권장 에이전트 |
+|-------------|--------------|
+| 문서, CLAUDE.md, README | arch-documenter |
+| 규칙 (R00x) | mgr-claude-code-bible |
+| 에이전트 (.claude/agents/) | mgr-creator / mgr-updater |
+| 스킬 (.claude/skills/) | mgr-creator / mgr-updater |
 | CI, GitHub Actions | mgr-gitnerd |
 | TypeScript/Node | lang-typescript-expert |
 | Python | lang-python-expert |
 | Go | lang-golang-expert |
-| Testing | qa-engineer |
-| General fix | general-purpose |
+| 테스트 | qa-engineer |
+| 일반 수정 | general-purpose |
 
 ### Phase 7: Output
 
@@ -184,16 +184,16 @@ Use today's date and the first planned release version in the filename.
 
 File header format:
 ```markdown
-# Release Plan — Generated YYYY-MM-DD
+# 릴리즈 계획 — YYYY-MM-DD 생성
 
-> Source: open issues labeled `verify-done` as of YYYY-MM-DD
-> Issues excluded (already in open PRs): #NNN, #NNN
+> 출처: YYYY-MM-DD 기준 `verify-done` 라벨 오픈 이슈
+> 제외된 이슈 (이미 오픈 PR에 포함): #NNN, #NNN
 
-{release groups follow}
+{릴리즈 그룹}
 
-## Summary
-| Release | Issues | Size | P1 | P2 | P3 |
-|---------|--------|------|----|----|-----|
+## 요약
+| 릴리즈 | 이슈 수 | 규모 | P1 | P2 | P3 |
+|--------|---------|------|----|----|-----|
 | vX.Y.Z | N | S | 0 | 3 | 1 |
 ```
 
@@ -205,3 +205,7 @@ File header format:
 - User confirms before any downstream action (implementation, commits)
 - Zero network calls except `gh` CLI (local API)
 - If no eligible issues found, report and stop — do not generate empty plan
+
+## Permission Mode
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
