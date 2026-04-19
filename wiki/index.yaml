@@ -3,7 +3,7 @@
 
 meta:
   updated: "2026-04-19"
-  total_pages: 244
+  total_pages: 246
   total_sources: 212
 
 pages:
@@ -372,6 +372,9 @@ pages:
     - file: skills/pipeline.md
       title: "Pipeline"
       summary: "Invoke and resume YAML-defined pipelines — /pipeline auto-dev runs the full release"
+    - file: skills/pre-generation-arch-check.md
+      title: "Pre-Generation Architecture Check"
+      summary: "AASM-inspired pre-generation guard — detects R006 and R010 violations before code generation begins"
     - file: skills/post-release-followup.md
       title: "Post-Release Followup"
       summary: "Analyze release workflow findings and recommend follow-up actions"
@@ -465,6 +468,9 @@ pages:
     - file: skills/task-decomposition.md
       title: "Task Decomposition"
       summary: "Auto-decompose large tasks into DAG of parallel subtasks for execution."
+    - file: skills/token-efficiency-audit.md
+      title: "Token Efficiency Audit"
+      summary: "Three-layer token defense stack — audit settings, apply safe/CI levers, and monitor status"
     - file: skills/typescript-best-practices.md
       title: "TypeScript Best Practices"
       summary: "Type-safe TypeScript patterns from the TypeScript Handbook and community standards"
