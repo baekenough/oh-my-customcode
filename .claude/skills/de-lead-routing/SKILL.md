@@ -90,6 +90,16 @@ Route to appropriate DE expert based on tool/framework detection.
 
 If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
+### Step 4b: Wiki-RAG Enrichment
+
+For ambiguous routing (confidence < 90%), query the wiki for context:
+
+1. Search `wiki/index.yaml` for DE-related pages matching the request
+2. Inject relevant skill/guide suggestions into the spawned agent's prompt
+3. Particularly useful for cross-domain DE tasks (e.g., Kafka + Spark)
+
+Advisory only — skip silently if wiki unavailable.
+
 ### Step 5: Soul Injection (R006)
 
 If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.

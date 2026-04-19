@@ -175,6 +175,21 @@ Each agent defines:
 - weights (scoring factors)
 ```
 
+### With Skill Triggers
+
+```
+Skill triggers are defined in agent-triggers.yaml alongside agent triggers.
+Each skill trigger has a `routing_rule` field that specifies which skill to invoke.
+
+When a skill trigger matches with confidence >= 70%:
+1. Display the intent detection output with skill name
+2. Invoke the skill via Skill tool instead of spawning an agent
+3. If confidence < 70%, list skill options for user selection
+
+Skill triggers use the `skill-` prefix in their YAML key to distinguish
+from agent triggers.
+```
+
 ## Error Handling
 
 ### No Match (< 30% confidence)

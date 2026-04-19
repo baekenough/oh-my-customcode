@@ -129,6 +129,20 @@ Route to appropriate language/framework expert based on file extension and keywo
 
 If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
+### Step 4b: Wiki-RAG Enrichment
+
+For ambiguous routing (confidence < 90%), query the wiki for context:
+
+1. Search `wiki/index.yaml` for agent/skill pages matching detected keywords
+2. If wiki suggests a specific skill or guide for the task, inject as `suggested_context` in the agent prompt
+3. This helps agents receive relevant guide references automatically
+
+```
+wiki-rag query: "{user_request}" → wiki agent/skill pages → suggested_context injection
+```
+
+Advisory only — skip silently if wiki unavailable.
+
 ### Step 5: Soul Injection (R006)
 
 If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
