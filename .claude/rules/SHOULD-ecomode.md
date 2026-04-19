@@ -36,6 +36,22 @@ Ecomode: `[lang-golang-expert] ✓ src/main.go reviewed: 1 naming issue (handle_
 
 Disable with: "ecomode off", "verbose mode", or "show full details".
 
+## Pruning Transparency
+
+When ecomode is active, report what was compressed so users can audit context decisions:
+
+```
+[Pruned] {n} chunks, ~{tokens} tokens saved | Retained: {m} | Summarized: {k} | Dropped: {j}
+```
+
+| When | Report |
+|------|--------|
+| After input context pruning | `[Pruned]` line in agent output |
+| After output compression | `[Compressed]` line in batch summary |
+| On request ("what was pruned?") | Full pruning ledger with chunk names |
+
+Pruning transparency is advisory — it adds ~1 line per pruning event. Disable with "ecomode off" or "hide pruning".
+
 ## Input Context Pruning — Active removal of irrelevant content. See full spec via Read tool.
 
 <!-- DETAIL: Input Context Pruning
