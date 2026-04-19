@@ -436,3 +436,323 @@ agents:
     file_patterns: []
     supported_actions: [optimize, compress, proxy]
     base_confidence: 85
+
+  # ---------------------------------------------------------------------------
+  # Skill Triggers — route user intent to skill invocation
+  # ---------------------------------------------------------------------------
+
+  # Development workflow skills
+  skill-tdd:
+    keywords:
+      korean: [TDD, 테스트 주도, 테스트 먼저]
+      english: [tdd, "test driven", "test first", "write tests first"]
+    file_patterns: []
+    supported_actions: [implement, test, develop]
+    base_confidence: 80
+    routing_rule: "Invoke superpowers:test-driven-development skill"
+
+  skill-sdd:
+    keywords:
+      korean: [SDD, 스펙 주도, 스펙 기반]
+      english: [sdd, "spec driven", specification, "spec first"]
+    file_patterns: ["sdd/**"]
+    supported_actions: [plan, spec, design]
+    base_confidence: 80
+    routing_rule: "Invoke sdd-dev skill"
+
+  skill-structured-dev:
+    keywords:
+      korean: [구조화 개발, 6단계, 단계별]
+      english: ["structured dev", "6 stage", "stage-based"]
+    file_patterns: []
+    supported_actions: [implement, develop]
+    base_confidence: 75
+    routing_rule: "Invoke structured-dev-cycle skill"
+
+  # Review and verification skills
+  skill-deep-verify:
+    keywords:
+      korean: [딥검증, 릴리즈 검증, 다각도 검증]
+      english: ["deep verify", "release verify", "multi-angle"]
+    file_patterns: []
+    supported_actions: [verify, review, check]
+    base_confidence: 80
+    routing_rule: "Invoke deep-verify skill"
+
+  skill-adversarial-review:
+    keywords:
+      korean: [보안 리뷰, 적대적 리뷰, 공격자 관점]
+      english: ["security review", adversarial, "attacker mindset", "trust boundary"]
+    file_patterns: []
+    supported_actions: [review, audit, security]
+    base_confidence: 80
+    routing_rule: "Invoke adversarial-review skill"
+
+  skill-code-review:
+    keywords:
+      korean: [코드 리뷰, 베스트 프랙티스 리뷰]
+      english: ["code review", "best practice review", "dev review"]
+    file_patterns: []
+    supported_actions: [review, check]
+    base_confidence: 70
+    routing_rule: "Invoke dev-review skill"
+
+  # Planning skills
+  skill-deep-plan:
+    keywords:
+      korean: [딥플랜, 연구 계획, 검증 계획]
+      english: ["deep plan", "research plan", "validated plan"]
+    file_patterns: []
+    supported_actions: [plan, research, design]
+    base_confidence: 80
+    routing_rule: "Invoke deep-plan skill"
+
+  skill-release-plan:
+    keywords:
+      korean: [릴리즈 계획, 배포 계획]
+      english: ["release plan", "deployment plan"]
+    file_patterns: []
+    supported_actions: [plan, release]
+    base_confidence: 85
+    routing_rule: "Invoke release-plan skill"
+
+  # Pipeline and automation skills
+  skill-pipeline:
+    keywords:
+      korean: [파이프라인, 자동 개발, 자동화]
+      english: [pipeline, "auto dev", automation]
+    file_patterns: ["workflows/*.yaml"]
+    supported_actions: [run, execute, automate]
+    base_confidence: 85
+    routing_rule: "Invoke pipeline skill"
+
+  skill-evaluator-optimizer:
+    keywords:
+      korean: [평가, 최적화 루프, 루브릭, 반복 개선]
+      english: [evaluator, optimizer, rubric, "iterative improvement", "ralph loop", "ralph wiggum"]
+    file_patterns: []
+    supported_actions: [evaluate, optimize, iterate]
+    base_confidence: 80
+    routing_rule: "Invoke evaluator-optimizer skill"
+
+  # Analysis and triage skills
+  skill-professor-triage:
+    keywords:
+      korean: [트리아지, 이슈 분석, 프로페서]
+      english: [triage, "issue analysis", professor, "cross analysis"]
+    file_patterns: []
+    supported_actions: [analyze, triage, assess]
+    base_confidence: 85
+    routing_rule: "Invoke professor-triage skill"
+
+  skill-scout:
+    keywords:
+      korean: [스카우트, URL 평가, 외부 분석]
+      english: [scout, "url analysis", "external evaluation"]
+    file_patterns: []
+    supported_actions: [scout, analyze, evaluate]
+    base_confidence: 85
+    routing_rule: "Invoke scout skill"
+
+  skill-idea:
+    keywords:
+      korean: [아이디어, 이슈 제안]
+      english: [idea, "issue proposal", "feature idea"]
+    file_patterns: []
+    supported_actions: [propose, ideate, suggest]
+    base_confidence: 80
+    routing_rule: "Invoke idea skill"
+
+  # Wiki and knowledge skills
+  skill-wiki:
+    keywords:
+      korean: [위키, 지식 베이스, 위키 생성]
+      english: [wiki, "knowledge base", "wiki generate", "wiki ingest"]
+    file_patterns: ["wiki/**"]
+    supported_actions: [generate, ingest, lint, update]
+    base_confidence: 85
+    routing_rule: "Invoke wiki skill"
+
+  skill-wiki-rag:
+    keywords:
+      korean: [위키 검색, 프로젝트 질문, 아키텍처 질문, 어떻게 작동]
+      english: ["wiki search", "how does", "which agent", "what rule", architecture, workflow]
+    file_patterns: []
+    supported_actions: [search, query, ask]
+    base_confidence: 75
+    routing_rule: "Invoke wiki-rag skill"
+
+  # Token and optimization skills
+  skill-token-efficiency:
+    keywords:
+      korean: [토큰 효율, 토큰 감사, 토큰 절감]
+      english: ["token efficiency", "token audit", "token saving", "token defense"]
+    file_patterns: []
+    supported_actions: [audit, optimize, monitor]
+    base_confidence: 85
+    routing_rule: "Invoke token-efficiency-audit skill"
+
+  skill-simplify:
+    keywords:
+      korean: [단순화, 코드 정리, 중복 제거]
+      english: [simplify, cleanup, deduplicate, "reduce complexity"]
+    file_patterns: []
+    supported_actions: [simplify, clean, reduce]
+    base_confidence: 75
+    routing_rule: "Invoke simplify skill"
+
+  # Memory skills
+  skill-memory-save:
+    keywords:
+      korean: [메모리 저장, 기억해, 저장해]
+      english: ["save memory", "remember this", "store this"]
+    file_patterns: []
+    supported_actions: [save, store, remember]
+    base_confidence: 85
+    routing_rule: "Invoke memory-management skill"
+
+  skill-memory-recall:
+    keywords:
+      korean: [메모리 검색, 기억 찾기, 회상]
+      english: ["recall memory", "search memory", "find memory", "what did we"]
+    file_patterns: []
+    supported_actions: [recall, search, find]
+    base_confidence: 85
+    routing_rule: "Invoke memory-recall skill"
+
+  # Harness management skills
+  skill-analysis:
+    keywords:
+      korean: [프로젝트 분석, 하네스 분석, 에이전트 분석]
+      english: ["project analysis", "harness analysis", "agent analysis", "analyze project"]
+    file_patterns: []
+    supported_actions: [analyze, configure, optimize]
+    base_confidence: 80
+    routing_rule: "Invoke analysis skill"
+
+  skill-adaptive-harness:
+    keywords:
+      korean: [하네스 최적화, 에이전트 비활성화, 프로젝트 프로필]
+      english: ["harness optimize", "deactivate agents", "project profile", "adaptive harness"]
+    file_patterns: []
+    supported_actions: [optimize, profile, adapt]
+    base_confidence: 80
+    routing_rule: "Invoke adaptive-harness skill"
+
+  # Worker-reviewer skills
+  skill-worker-reviewer:
+    keywords:
+      korean: [워커 리뷰어, 반복 리뷰, 리뷰 사이클]
+      english: ["worker reviewer", "review cycle", "iterative review"]
+    file_patterns: []
+    supported_actions: [review, iterate, cycle]
+    base_confidence: 75
+    routing_rule: "Invoke worker-reviewer-pipeline skill"
+
+  skill-agora:
+    keywords:
+      korean: [아고라, 합의, 적대적 합의, 다중 LLM]
+      english: [agora, consensus, "adversarial consensus", "multi llm"]
+    file_patterns: []
+    supported_actions: [debate, consensus, verify]
+    base_confidence: 85
+    routing_rule: "Invoke agora skill"
+
+  # Debugging skill
+  skill-debugging:
+    keywords:
+      korean: [디버깅, 버그 찾기, 재현]
+      english: [debug, "find bug", reproduce, "root cause"]
+    file_patterns: []
+    supported_actions: [debug, reproduce, diagnose]
+    base_confidence: 80
+    routing_rule: "Invoke systematic-debugging skill"
+
+  skill-stuck-recovery:
+    keywords:
+      korean: [멈춤, 루프, 무한 반복, 복구]
+      english: [stuck, loop, "infinite loop", recovery, "not progressing"]
+    file_patterns: []
+    supported_actions: [recover, unstick, diagnose]
+    base_confidence: 85
+    routing_rule: "Invoke stuck-recovery skill"
+
+  # CVE and security skills
+  skill-cve-triage:
+    keywords:
+      korean: [CVE, 취약점, 보안 취약점]
+      english: [cve, vulnerability, "security vulnerability", "cve triage"]
+    file_patterns: []
+    supported_actions: [triage, analyze, patch]
+    base_confidence: 85
+    routing_rule: "Invoke cve-triage skill"
+
+  skill-npm-audit:
+    keywords:
+      korean: [npm 감사, 의존성 보안, 패키지 취약점]
+      english: ["npm audit", "dependency security", "package vulnerability"]
+    file_patterns: ["package.json", "package-lock.json"]
+    supported_actions: [audit, scan, fix]
+    base_confidence: 85
+    routing_rule: "Invoke npm-audit skill"
+
+  # Best practices skills (framework-specific)
+  skill-best-practices:
+    keywords:
+      korean: [베스트 프랙티스, 모범 사례, 패턴]
+      english: ["best practices", "best practice", pattern, convention]
+    file_patterns: []
+    supported_actions: [review, apply, check]
+    base_confidence: 60
+    routing_rule: "Route to language/framework specific best-practices skill based on file context"
+
+  # Monitoring skill
+  skill-monitoring:
+    keywords:
+      korean: [모니터링, 텔레메트리, 사용량 추적]
+      english: [monitoring, telemetry, "usage tracking", opentelemetry]
+    file_patterns: []
+    supported_actions: [setup, enable, disable, configure]
+    base_confidence: 80
+    routing_rule: "Invoke monitoring-setup skill"
+
+  # Deployment skill
+  skill-vercel-deploy:
+    keywords:
+      korean: [버셀 배포, 프리뷰, 프로덕션 배포]
+      english: ["vercel deploy", preview, "production deploy"]
+    file_patterns: ["vercel.json"]
+    supported_actions: [deploy, preview, promote]
+    base_confidence: 85
+    routing_rule: "Invoke vercel-deploy skill"
+
+  # ---------------------------------------------------------------------------
+  # Guide Reference Triggers — route user questions to relevant guides
+  # ---------------------------------------------------------------------------
+
+  guide-claude-code:
+    keywords:
+      korean: [클로드 코드, CC 가이드, 에이전트 가이드, 스킬 가이드, 훅 가이드]
+      english: ["claude code", "cc guide", "agent guide", "skill guide", "hook guide"]
+    file_patterns: []
+    supported_actions: [explain, reference, lookup]
+    base_confidence: 70
+    routing_rule: "Reference guides/claude-code/ directory"
+
+  guide-development:
+    keywords:
+      korean: [개발 가이드, 코딩 가이드, 개발 패턴]
+      english: ["dev guide", "coding guide", "development pattern"]
+    file_patterns: []
+    supported_actions: [reference, lookup]
+    base_confidence: 65
+    routing_rule: "Reference guides/development/ directory"
+
+  guide-best-practices:
+    keywords:
+      korean: [참조 가이드, 레퍼런스]
+      english: ["reference guide", "best practice guide"]
+    file_patterns: []
+    supported_actions: [reference, lookup]
+    base_confidence: 60
+    routing_rule: "Reference appropriate guides/ subdirectory"

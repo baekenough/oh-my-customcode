@@ -66,6 +66,20 @@ batch           → multiple (parallel)
 
 If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
 
+### Step 4b: Wiki-RAG Enrichment
+
+If the user's request is ambiguous or confidence is below 90%, query the wiki for additional context:
+
+1. Search `wiki/index.yaml` for pages matching the detected domain keywords
+2. Extract relevant agent/skill/guide recommendations from wiki pages
+3. Inject findings into the routing decision as supplementary signals
+
+```
+wiki-rag query: "{user_request}" → wiki pages → agent/skill/guide suggestions
+```
+
+Wiki-RAG enrichment is advisory — it supplements but does not override keyword matching. Skip silently if wiki/index.yaml doesn't exist.
+
 ### Step 5: Soul Injection (R006)
 
 If the selected agent has `soul: true` in frontmatter, read and prepend `.claude/agents/souls/{agent-name}.soul.md` content to the prompt. Skip silently if file doesn't exist.
