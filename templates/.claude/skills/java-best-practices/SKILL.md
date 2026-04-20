@@ -1,13 +1,13 @@
 ---
-name: java21-best-practices
-description: Modern Java 21 patterns from Virtual Threads, Pattern Matching, Records, and Sealed Classes
+name: java-best-practices
+description: Modern Java 25 LTS patterns from Virtual Threads, Pattern Matching, Records, and Sealed Classes
 scope: core
 user-invocable: false
 ---
 
 ## Purpose
 
-Apply modern Java 21 patterns and best practices leveraging the latest language features for clean, performant, and maintainable Java code.
+Apply modern Java 25 LTS patterns and best practices leveraging the latest language features for clean, performant, and maintainable Java code.
 
 ## Core Principles
 
@@ -44,7 +44,7 @@ records:
   example: record Point(int x, int y) {}
 ```
 
-Reference: guides/java21/java-style-guide.md
+Reference: guides/java/java-style-guide.md
 
 ### 2. Virtual Threads (JEP 444)
 
@@ -65,7 +65,7 @@ antipatterns:
   - "synchronized blocks in Virtual Thread code — use ReentrantLock instead"
 ```
 
-Reference: guides/java21/modern-java21.md
+Reference: guides/java/modern-java.md
 
 ### 3. Pattern Matching
 
@@ -80,7 +80,7 @@ switch_patterns:
   null_handling: "case null supported in switch"
 ```
 
-Reference: guides/java21/modern-java21.md
+Reference: guides/java/modern-java.md
 
 ### 4. Records (JEP 395)
 
@@ -100,7 +100,7 @@ antipatterns:
   - "Using records for entities with behavior — prefer classes"
 ```
 
-Reference: guides/java21/modern-java21.md
+Reference: guides/java/modern-java.md
 
 ### 5. Record Patterns (JEP 440)
 
@@ -111,7 +111,7 @@ patterns:
   nested: "Nested record patterns for deep destructuring"
 ```
 
-Reference: guides/java21/modern-java21.md
+Reference: guides/java/modern-java.md
 
 ### 6. Sealed Classes (JEP 409)
 
@@ -124,7 +124,7 @@ principles:
 pattern: "sealed interface with record implementations, exhaustive switch (no default needed)"
 ```
 
-Reference: guides/java21/modern-java21.md
+Reference: guides/java/modern-java.md
 
 ### 7. Sequenced Collections (JEP 431)
 
@@ -136,7 +136,7 @@ principles:
 methods: "getFirst(), getLast(), addFirst(), addLast(), reversed(), firstEntry()"
 ```
 
-Reference: guides/java21/modern-java21.md
+Reference: guides/java/modern-java.md
 
 ### 8. Text Blocks and String Features
 
@@ -146,7 +146,7 @@ patterns:
   formatted: "String.formatted() for template substitution (since Java 15)"
 ```
 
-Reference: guides/java21/modern-java21.md
+Reference: guides/java/modern-java.md
 
 ### 9. Error Handling
 
@@ -162,7 +162,7 @@ patterns:
   multi_catch: "catch (IOException | SQLException e) for related exceptions"
 ```
 
-Reference: guides/java21/java-style-guide.md
+Reference: guides/java/java-style-guide.md
 
 ### 10. Documentation
 
@@ -174,11 +174,11 @@ best_practices:
   - Keep Javadoc focused on "what", not "how"
 ```
 
-Reference: guides/java21/java-style-guide.md
+Reference: guides/java/java-style-guide.md
 
 ## Application
 
-When writing or reviewing Java 21 code:
+When writing or reviewing Java 25 LTS code:
 
 1. **Use** Records for pure data classes over verbose POJOs
 2. **Use** Sealed Classes + Pattern Matching for type hierarchies

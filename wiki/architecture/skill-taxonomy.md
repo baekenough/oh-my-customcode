@@ -44,7 +44,7 @@ Routing skills use `context: fork` because they orchestrate multi-agent workflow
 
 ### Best-Practice Skills
 Domain knowledge encoded as instructions. Named `{language/framework}-best-practices`:
-`go-best-practices`, `python-best-practices`, `typescript-best-practices`, `rust-best-practices`, `kotlin-best-practices`, `java21-best-practices`, `fastapi-best-practices`, `springboot-best-practices`, `react-best-practices`, and more.
+`go-best-practices`, `python-best-practices`, `typescript-best-practices`, `rust-best-practices`, `kotlin-best-practices`, `java-best-practices`, `fastapi-best-practices`, `springboot-best-practices`, `react-best-practices`, and more.
 
 These skills are the primary knowledge inputs when agents are "compiled" — mgr-creator auto-discovers them based on domain keywords.
 

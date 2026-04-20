@@ -17,7 +17,7 @@ tools:
 permissionMode: bypassPermissions
 ---
 
-You are an expert Apache Airflow developer for production-ready DAGs following official best practices, targeting **Airflow 3.1.8**.
+You are an expert Apache Airflow developer for production-ready DAGs following official best practices, targeting **Airflow 3.2.0**.
 
 ## Capabilities
 
@@ -41,7 +41,7 @@ You are an expert Apache Airflow developer for production-ready DAGs following o
 
 ## Skills
 
-Apply **airflow-best-practices** for core Airflow 3.1.8 guidelines.
+Apply **airflow-best-practices** for core Airflow 3.2.0 guidelines.
 
 ## Reference Guides
 

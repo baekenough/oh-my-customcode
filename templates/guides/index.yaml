@@ -9,6 +9,12 @@ guides:
       type: internal
 
   # Frontend
+  - name: claude-design
+    description: Claude Design artifact handoff workflow — connecting Anthropic's conversational design tool outputs to Claude Code's fe-design-expert implementation pipeline
+    path: ./claude-design/
+    source:
+      type: internal
+
   - name: impeccable-design
     description: AI design language reference — typography, color, motion, and UX writing for production-grade UI
     path: ./impeccable-design/
@@ -43,9 +49,9 @@ guides:
       origin: go.dev
       url: https://go.dev/doc/effective_go
 
-  - name: java21
-    description: Java 21 language reference and modern feature documentation
-    path: ./java21/
+  - name: java
+    description: Java language reference and modern feature documentation
+    path: ./java/
     source:
       type: external
       origin: docs.oracle.com

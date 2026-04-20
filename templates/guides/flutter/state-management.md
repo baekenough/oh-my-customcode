@@ -6,13 +6,13 @@
 
 | Approach | Complexity | Scalability | Best For |
 |----------|-----------|-------------|----------|
-| **Riverpod 3.0** | Medium | Excellent | New projects (default) |
-| **BLoC 9.0** | High | Excellent | Enterprise, regulated industries |
+| **Riverpod 3.3** | Medium | Excellent | New projects (default) |
+| **BLoC 9.1** | High | Excellent | Enterprise, regulated industries |
 | **Provider** | Low | Moderate | Simple apps, learning |
 | **setState** | Low | Poor | Ephemeral local UI state |
 | **GetX** | Low | Poor | **AVOID** for new projects |
 
-## Riverpod 3.0 (Default)
+## Riverpod 3.3 (Default)
 
 ### Provider Types
 
@@ -81,7 +81,7 @@ class ProductListScreen extends ConsumerWidget {
 - Use `family` for parameterized providers
 - Use `keepAlive` sparingly (expensive computations only)
 
-## BLoC 9.0 (Enterprise)
+## BLoC 9.1 (Enterprise)
 
 ### Cubit (Simple)
 

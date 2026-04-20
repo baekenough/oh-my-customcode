@@ -419,3 +419,5 @@ Integration: Works with [impeccable-design](/skills/impeccable-design) skill for
 ### Harness Eval Preset
 
 The `harness-eval` skill provides a structured 15-task SE benchmark rubric that can be used as a preset for the evaluator-optimizer pipeline. When invoked via `/omcustom:harness-eval`, the harness rubric dimensions (Test Coverage 30%, Architecture 25%, Error Handling 25%, Extensibility 20%) are loaded as the sprint contract criteria.
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

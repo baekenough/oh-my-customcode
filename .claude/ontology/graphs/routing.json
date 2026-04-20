@@ -1,0 +1,112 @@
+{
+  "description": "Routing skill to Agent mapping",
+  "version": "1.0.0",
+  "routes": {
+    "secretary-routing": {
+      "agents": [
+        "mgr-creator",
+        "mgr-updater",
+        "mgr-supplier",
+        "mgr-gitnerd",
+        "mgr-sauron",
+        "mgr-claude-code-bible",
+        "sys-memory-keeper",
+        "sys-naggy"
+      ],
+      "description": "Routes agent management tasks to appropriate manager agents"
+    },
+    "dev-lead-routing": {
+      "agents": [
+        "lang-golang-expert",
+        "lang-python-expert",
+        "lang-rust-expert",
+        "lang-kotlin-expert",
+        "lang-typescript-expert",
+        "lang-java21-expert",
+        "fe-vercel-agent",
+        "fe-vuejs-agent",
+        "fe-svelte-agent",
+        "fe-flutter-agent",
+        "be-fastapi-expert",
+        "be-springboot-expert",
+        "be-go-backend-expert",
+        "be-nestjs-expert",
+        "be-express-expert",
+        "tool-npm-expert",
+        "tool-optimizer",
+        "tool-bun-expert",
+        "db-supabase-expert",
+        "db-postgres-expert",
+        "db-redis-expert",
+        "arch-documenter",
+        "arch-speckit-agent",
+        "infra-docker-expert",
+        "infra-aws-expert"
+      ],
+      "description": "Routes development tasks to appropriate language or framework expert agents"
+    },
+    "de-lead-routing": {
+      "agents": [
+        "de-airflow-expert",
+        "de-dbt-expert",
+        "de-spark-expert",
+        "de-kafka-expert",
+        "de-snowflake-expert",
+        "de-pipeline-expert"
+      ],
+      "description": "Routes data engineering tasks to the correct DE expert agent"
+    },
+    "qa-lead-routing": {
+      "agents": [
+        "qa-planner",
+        "qa-writer",
+        "qa-engineer"
+      ],
+      "description": "Coordinates QA team activities by routing tasks to qa-planner, qa-writer, and qa-engineer"
+    }
+  },
+  "agent_to_router": {
+    "mgr-creator": "secretary-routing",
+    "mgr-updater": "secretary-routing",
+    "mgr-supplier": "secretary-routing",
+    "mgr-gitnerd": "secretary-routing",
+    "mgr-sauron": "secretary-routing",
+    "mgr-claude-code-bible": "secretary-routing",
+    "sys-memory-keeper": "secretary-routing",
+    "sys-naggy": "secretary-routing",
+    "lang-golang-expert": "dev-lead-routing",
+    "lang-python-expert": "dev-lead-routing",
+    "lang-rust-expert": "dev-lead-routing",
+    "lang-kotlin-expert": "dev-lead-routing",
+    "lang-typescript-expert": "dev-lead-routing",
+    "lang-java21-expert": "dev-lead-routing",
+    "fe-vercel-agent": "dev-lead-routing",
+    "fe-vuejs-agent": "dev-lead-routing",
+    "fe-svelte-agent": "dev-lead-routing",
+    "fe-flutter-agent": "dev-lead-routing",
+    "be-fastapi-expert": "dev-lead-routing",
+    "be-springboot-expert": "dev-lead-routing",
+    "be-go-backend-expert": "dev-lead-routing",
+    "be-nestjs-expert": "dev-lead-routing",
+    "be-express-expert": "dev-lead-routing",
+    "tool-npm-expert": "dev-lead-routing",
+    "tool-optimizer": "dev-lead-routing",
+    "tool-bun-expert": "dev-lead-routing",
+    "db-supabase-expert": "dev-lead-routing",
+    "db-postgres-expert": "dev-lead-routing",
+    "db-redis-expert": "dev-lead-routing",
+    "arch-documenter": "dev-lead-routing",
+    "arch-speckit-agent": "dev-lead-routing",
+    "infra-docker-expert": "dev-lead-routing",
+    "infra-aws-expert": "dev-lead-routing",
+    "de-airflow-expert": "de-lead-routing",
+    "de-dbt-expert": "de-lead-routing",
+    "de-spark-expert": "de-lead-routing",
+    "de-kafka-expert": "de-lead-routing",
+    "de-snowflake-expert": "de-lead-routing",
+    "de-pipeline-expert": "de-lead-routing",
+    "qa-planner": "qa-lead-routing",
+    "qa-writer": "qa-lead-routing",
+    "qa-engineer": "qa-lead-routing"
+  }
+}

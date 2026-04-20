@@ -1,0 +1,251 @@
+# Auto-generated from templates/.claude/rules/
+# Do not edit manually — regenerate with: omcustom ontology build
+version: "1.0.0"
+generated_at: "2026-02-12T00:00:00Z"
+
+# Rule priority classes
+classes:
+  MustRule:
+    rules: [R000, R001, R002, R006, R007, R008, R009, R010, R015, R016, R017, R018]
+    description: "Mandatory rules - violation requires immediate correction"
+  ShouldRule:
+    rules: [R003, R004, R011, R012, R013]
+    description: "Recommended rules - strong guidance"
+  MayRule:
+    rules: [R005]
+    description: "Optional rules - use when beneficial"
+
+# Rule categories (semantic grouping)
+categories:
+  safety:
+    rules: [R001, R002]
+    summary: "Security, permissions, and prohibited actions"
+    keywords: [safety, security, permissions, prohibited, dangerous]
+  agent-design:
+    rules: [R006, R007, R008]
+    summary: "Agent structure, identification, and tool usage"
+    keywords: [agent, identification, tool, frontmatter, design]
+  execution:
+    rules: [R009, R010]
+    summary: "Parallel execution and orchestrator coordination"
+    keywords: [parallel, orchestrator, delegation, task, spawn]
+  quality:
+    rules: [R016, R017]
+    summary: "Continuous improvement and sync verification"
+    keywords: [verification, sync, improvement, sauron, commit]
+  interaction:
+    rules: [R000, R003, R015]
+    summary: "Language policy, response format, intent transparency"
+    keywords: [language, korean, response, intent, transparency]
+  memory:
+    rules: [R011]
+    summary: "Memory integration and persistence"
+    keywords: [memory, persistence, claude-mem, session]
+  display:
+    rules: [R012]
+    summary: "HUD and status display"
+    keywords: [hud, statusline, display, progress]
+  efficiency:
+    rules: [R005, R013]
+    summary: "Optimization and token efficiency"
+    keywords: [optimization, token, ecomode, batch, efficiency]
+  error-handling:
+    rules: [R004]
+    summary: "Error classification and recovery"
+    keywords: [error, warning, critical, retry, recovery]
+  teams:
+    rules: [R018]
+    summary: "Agent teams coordination"
+    keywords: [team, agent-teams, coordination, broadcast, message]
+
+# Rule instances
+rules:
+  R000:
+    class: MustRule
+    categories: [interaction]
+    title: "Language & Delegation Policy"
+    filename: "MUST-language-policy.md"
+    summary: "Korean I/O for users, English for code/files. User delegates all file ops to agent."
+    keywords: [language, korean, english, delegation, file-operations]
+    token_estimate: 138
+    applies_to: [all]
+
+  R001:
+    class: MustRule
+    categories: [safety]
+    title: "Safety Rules"
+    filename: "MUST-safety.md"
+    summary: "Prohibited actions: expose secrets, modify system files, destructive commands. Verify before destructive ops."
+    keywords: [safety, prohibited, secrets, system-files, destructive, api-keys, pii, rm-rf, sudo]
+    token_estimate: 160
+    applies_to: [all]
+
+  R002:
+    class: MustRule
+    categories: [safety]
+    title: "Permission Rules"
+    filename: "MUST-permissions.md"
+    summary: "Tool permission tiers: Always (Read/Glob/Grep), Default (Write/Edit), Approval (Bash/Web), Explicit (Task)."
+    keywords: [permissions, tools, tiers, approval, file-access, read, write, bash]
+    token_estimate: 207
+    applies_to: [all]
+
+  R003:
+    class: ShouldRule
+    categories: [interaction]
+    title: "Interaction Rules"
+    filename: "SHOULD-interaction.md"
+    summary: "Response principles: brevity, clarity, transparency. Status format for task progress reporting."
+    keywords: [response, brevity, clarity, transparency, status, task-progress]
+    token_estimate: 203
+    applies_to: [all]
+
+  R004:
+    class: ShouldRule
+    categories: [error-handling]
+    title: "Error Handling Rules"
+    filename: "SHOULD-error-handling.md"
+    summary: "Error classification (Warning/Error/Critical), retry strategies, validation checks before/after actions."
+    keywords: [error, warning, critical, retry, backoff, validation, recovery, rollback]
+    token_estimate: 213
+    applies_to: [all]
+
+  R005:
+    class: MayRule
+    categories: [efficiency]
+    title: "Optimization Guide"
+    filename: "MAY-optimization.md"
+    summary: "Optional optimization strategies: parallel I/O, caching, lazy loading, token optimization, batching."
+    keywords: [optimization, parallel, caching, lazy-loading, token, batch, incremental]
+    token_estimate: 178
+    applies_to: [all]
+
+  R006:
+    class: MustRule
+    categories: [agent-design]
+    title: "Agent Design Rules"
+    filename: "MUST-agent-design.md"
+    summary: "Agent file format with required frontmatter (name/description/model/tools), memory scopes, separation of concerns."
+    keywords: [agent, frontmatter, memory, scope, user, project, local, separation, skills]
+    token_estimate: 300
+    applies_to: [agent-creation, agent-modification]
+
+  R007:
+    class: MustRule
+    categories: [agent-design, interaction]
+    title: "Agent Identification Rules"
+    filename: "MUST-agent-identification.md"
+    summary: "Every response MUST start with agent identification header showing agent name, type, skill, and task."
+    keywords: [identification, agent-header, agent-name, skill-name, task-description]
+    token_estimate: 134
+    applies_to: [all]
+
+  R008:
+    class: MustRule
+    categories: [agent-design]
+    title: "Tool Usage Identification Rules"
+    filename: "MUST-tool-identification.md"
+    summary: "Every tool call MUST be prefixed with [agent-name][model] → Tool/Target identification."
+    keywords: [tool, identification, agent-name, model, opus, sonnet, haiku, prefix]
+    token_estimate: 363
+    applies_to: [all]
+
+  R009:
+    class: MustRule
+    categories: [execution]
+    title: "Parallel Execution Rules"
+    filename: "MUST-parallel-execution.md"
+    summary: "2+ independent tasks MUST execute in parallel. Max 4 concurrent instances. Sequential execution is violation."
+    keywords: [parallel, concurrent, independent, task, spawn, bottleneck, batch]
+    token_estimate: 527
+    applies_to: [all]
+
+  R010:
+    class: MustRule
+    categories: [execution]
+    title: "Orchestrator Coordination Rules"
+    filename: "MUST-orchestrator-coordination.md"
+    summary: "Main conversation is sole orchestrator. Uses routing skills to delegate to subagents. Flat architecture, no hierarchy."
+    keywords: [orchestrator, routing, delegation, task-tool, subagent, git, mgr-gitnerd, model-selection]
+    token_estimate: 696
+    applies_to: [all]
+
+  R011:
+    class: ShouldRule
+    categories: [memory]
+    title: "Memory Integration Rules"
+    filename: "SHOULD-memory-integration.md"
+    summary: "Primary: Native auto memory (frontmatter). Supplementary: claude-mem MCP for cross-session search."
+    keywords: [memory, native, claude-mem, persistence, session, temporal, cross-agent]
+    token_estimate: 248
+    applies_to: [agents-with-memory, memory-operations]
+
+  R012:
+    class: ShouldRule
+    categories: [display]
+    title: "HUD Statusline Rules"
+    filename: "SHOULD-hud-statusline.md"
+    summary: "Display statusline for multi-step tasks, parallel execution. Format: Agent | Progress | Parallel count."
+    keywords: [hud, statusline, progress, parallel, display, hooks]
+    token_estimate: 126
+    applies_to: [multi-step-tasks, parallel-execution]
+
+  R013:
+    class: ShouldRule
+    categories: [efficiency]
+    title: "Ecomode Rules"
+    filename: "SHOULD-ecomode.md"
+    summary: "Auto-activates for 4+ parallel tasks or 80%+ context. Compact output, aggregation format, compression."
+    keywords: [ecomode, compact, token-efficiency, batch, aggregation, compression]
+    token_estimate: 165
+    applies_to: [batch-operations, high-token-usage]
+
+  R015:
+    class: MustRule
+    categories: [interaction]
+    title: "Intent Transparency Rules"
+    filename: "MUST-intent-transparency.md"
+    summary: "Display reasoning when routing to agents. Show confidence score, agent selection, and override options."
+    keywords: [intent, transparency, routing, confidence, detection, agent-selection, override]
+    token_estimate: 217
+    applies_to: [orchestrator, routing-decisions]
+
+  R016:
+    class: MustRule
+    categories: [quality]
+    title: "Continuous Improvement Rules"
+    filename: "MUST-continuous-improvement.md"
+    summary: "When user points out violation: STOP → UPDATE rule → COMMIT → continue task. Don't just apologize."
+    keywords: [improvement, violation, update, commit, feedback, iteration]
+    token_estimate: 159
+    applies_to: [all]
+
+  R017:
+    class: MustRule
+    categories: [quality]
+    title: "Sync Verification Rules"
+    filename: "MUST-sync-verification.md"
+    summary: "Full verification before commit/push: mgr-sauron:watch mandatory. 5 rounds manager verification + 3 rounds deep review."
+    keywords: [verification, sync, sauron, commit, push, validation, frontmatter, routing]
+    token_estimate: 817
+    applies_to: [agent-modification, skill-modification, guide-modification, rules-modification]
+
+  R018:
+    class: MustRule
+    categories: [teams]
+    title: "Agent Teams Rules (Conditional)"
+    filename: "MUST-agent-teams.md"
+    summary: "When Agent Teams enabled, MANDATORY for 3+ agent coordinated tasks with shared state or review cycles. Task tool fallback when disabled."
+    keywords: [agent-teams, coordination, shared-state, task-tool, broadcast, message, cost, mandatory]
+    token_estimate: 850
+    applies_to: [multi-agent-coordination, complex-research]
+
+# Metadata
+metadata:
+  total_rules: 18
+  must_rules: 12
+  should_rules: 5
+  may_rules: 1
+  total_tokens_estimate: 5901
+  source_directory: "templates/.claude/rules/"
+  generated_by: "claude (default)"

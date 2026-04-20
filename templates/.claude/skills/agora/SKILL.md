@@ -192,3 +192,5 @@ agora:
 | Accepting first BUILD | May miss edge cases | Loop until ALL agree |
 | Ignoring split decisions | Unresolved disagreements fester | Resolve every split with evidence |
 | Push for consensus too fast | Premature agreement | Let reviewers challenge freely |
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

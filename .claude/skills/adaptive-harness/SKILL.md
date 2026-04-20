@@ -102,7 +102,7 @@ Check for language manifest files and framework indicators:
 | `svelte.config.*`, `*.svelte` | Svelte | fe-svelte-agent |
 | `pubspec.yaml`, `*.dart` | Flutter | fe-flutter-agent |
 | `*.kt`, `build.gradle.kts` | Kotlin | lang-kotlin-expert |
-| `*.java`, `pom.xml` | Java | lang-java21-expert |
+| `*.java`, `pom.xml` | Java | lang-java-expert |
 | `spring-boot` in deps | Spring Boot | be-springboot-expert |
 | `express` in package.json deps | Express | be-express-expert |
 | `@nestjs` in package.json deps | NestJS | be-nestjs-expert |

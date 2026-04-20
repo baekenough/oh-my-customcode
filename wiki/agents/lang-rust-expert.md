@@ -9,7 +9,7 @@ related:
   - [[lang-typescript-expert]]
   - [[lang-python-expert]]
   - [[lang-kotlin-expert]]
-  - [[lang-java21-expert]]
+  - [[lang-java-expert]]
 ---
 
 # lang-rust-expert
@@ -35,7 +35,7 @@ Uses `rust-best-practices` skill and `guides/rust/` for reference documentation.
 
 - **Depends on**: `rust-best-practices` skill, `guides/rust/`
 - **Used by**: `dev-lead-routing` skill (Rust task routing)
-- **See also**: [[lang-golang-expert]] (Go systems programming alternative), [[lang-typescript-expert]], [[lang-python-expert]], [[lang-kotlin-expert]], [[lang-java21-expert]]
+- **See also**: [[lang-golang-expert]] (Go systems programming alternative), [[lang-typescript-expert]], [[lang-python-expert]], [[lang-kotlin-expert]], [[lang-java-expert]]
 
 ## Sources
 

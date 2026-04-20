@@ -96,7 +96,7 @@ User: "improve PR #215"
 | *.py | lang-python-expert |
 | *.go | lang-golang-expert |
 | *.kt | lang-kotlin-expert |
-| *.java | lang-java21-expert |
+| *.java | lang-java-expert |
 | *.rs | lang-rust-expert |
 | Test files | qa-engineer |
 | Docs, README | arch-documenter |
