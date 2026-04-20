@@ -22,7 +22,7 @@ documents:
 
   - name: state-management
     path: ./state-management.md
-    description: Riverpod 3.0, BLoC 9.0, Provider patterns and selection guide
+    description: Riverpod 3.3, BLoC 9.1, Provider patterns and selection guide
 
   - name: architecture
     path: ./architecture.md

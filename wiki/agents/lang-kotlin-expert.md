@@ -6,7 +6,7 @@ sources:
   - .claude/agents/lang-kotlin-expert.md
 related:
   - [[be-springboot-expert]]
-  - [[lang-java21-expert]]
+  - [[lang-java-expert]]
   - [[fe-flutter-agent]]
   - [[lang-golang-expert]]
   - [[lang-python-expert]]
@@ -37,7 +37,7 @@ Uses `kotlin-best-practices` skill and `guides/kotlin/`.
 
 - **Depends on**: `kotlin-best-practices` skill, `guides/kotlin/`
 - **Used by**: `dev-lead-routing` skill (Kotlin task routing), R010 delegation table ("Kotlin/Spring")
-- **See also**: [[be-springboot-expert]] (Kotlin + Spring Boot), [[lang-java21-expert]] (Java alternative), [[fe-flutter-agent]] (Dart/Flutter for mobile), [[lang-golang-expert]], [[lang-python-expert]], [[lang-rust-expert]], [[lang-typescript-expert]]
+- **See also**: [[be-springboot-expert]] (Kotlin + Spring Boot), [[lang-java-expert]] (Java alternative), [[fe-flutter-agent]] (Dart/Flutter for mobile), [[lang-golang-expert]], [[lang-python-expert]], [[lang-rust-expert]], [[lang-typescript-expert]]
 
 ## Sources
 

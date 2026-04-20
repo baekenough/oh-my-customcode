@@ -51,5 +51,10 @@ user-invocable: false
 - Use `doc` blocks for reusable text
 - Generate and host dbt docs
 
+## Version
+
+- **dbt-core**: 1.11+ (includes Fusion engine for faster parallel model execution)
+- Fusion engine is enabled by default in dbt-core 1.11 — no configuration required
+
 ## References
 - [dbt Best Practices](https://docs.getdbt.com/guides/best-practices)

@@ -163,3 +163,5 @@ config: {max_iterations: 1, quality_gate: majority_pass}
 - Worker and Reviewer must be different agent instances (same type allowed)
 - Nested pipelines not supported (use dag-orchestration for complex flows)
 - Pipeline does not auto-commit; orchestrator decides post-pipeline actions
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

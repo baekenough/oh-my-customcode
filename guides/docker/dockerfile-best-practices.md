@@ -25,13 +25,13 @@ node_modules
 
 ```dockerfile
 # Build stage
-FROM golang:1.21 AS builder
+FROM golang:1.26 AS builder
 WORKDIR /app
 COPY . .
 RUN go build -o myapp
 
 # Runtime stage
-FROM alpine:3.19
+FROM alpine:3.23
 COPY --from=builder /app/myapp /usr/local/bin/
 CMD ["myapp"]
 ```
@@ -42,13 +42,13 @@ CMD ["myapp"]
 
 ```dockerfile
 # Pin versions
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 # Use digest for reproducibility
 FROM node:20@sha256:abc123...
 
 # Use official images
-FROM python:3.12-slim
+FROM python:3.14-slim
 ```
 
 ### RUN
@@ -197,12 +197,12 @@ ENV API_KEY=secret123
 
 ```dockerfile
 # Official and verified
-FROM nginx:1.25
+FROM nginx:1.28
 FROM postgres:16
 
 # Minimal images
 FROM gcr.io/distroless/static
-FROM alpine:3.19
+FROM alpine:3.23
 ```
 
 ## Example Dockerfiles
@@ -229,13 +229,13 @@ CMD ["node", "dist/server.js"]
 ### Python
 
 ```dockerfile
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 WORKDIR /app
 RUN pip install --user pipenv
 COPY Pipfile Pipfile.lock ./
 RUN pipenv install --system --deploy
 
-FROM python:3.12-slim
+FROM python:3.14-slim
 WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 COPY . .
@@ -248,7 +248,7 @@ CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]
 ### Go
 
 ```dockerfile
-FROM golang:1.21-alpine AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download

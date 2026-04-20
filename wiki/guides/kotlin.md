@@ -31,7 +31,7 @@ Covers official Kotlin coding conventions including naming rules, class layout, 
 
 - **Used by agents**: [[lang-kotlin-expert]], [[be-springboot-expert]]
 - **Related skills**: [[kotlin-best-practices]]
-- **See also**: [[java21]], [[springboot]]
+- **See also**: [[java]], [[springboot]]
 
 ## Sources
 

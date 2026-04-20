@@ -21,6 +21,7 @@ You are an expert dbt developer for analytics engineering, SQL modeling, and dat
 
 ## Capabilities
 
+- dbt-core 1.11+ with Fusion engine (faster parallel execution)
 - Project structure: staging (stg_), intermediate (int_), marts (fct_, dim_)
 - Materializations (view, ephemeral, table, incremental)
 - Schema tests (unique, not_null, relationships, accepted_values)

@@ -103,9 +103,9 @@ pages:
     - file: agents/lang-golang-expert.md
       title: "lang-golang-expert"
       summary: "Expert Go developer for writing idiomatic, performant Go code following Effective Go"
-    - file: agents/lang-java21-expert.md
-      title: "lang-java21-expert"
-      summary: "Expert Java 21 developer for modern Java with Virtual Threads (JEP 444), Pattern Matching"
+    - file: agents/lang-java-expert.md
+      title: "lang-java-expert"
+      summary: "Expert Java 25 LTS developer for modern Java with Virtual Threads, Pattern Matching, Record Patterns, and Sequenced Collections"
     - file: agents/lang-kotlin-expert.md
       title: "lang-kotlin-expert"
       summary: "Expert Kotlin developer for writing idiomatic, concise, null-safe Kotlin code"
@@ -291,9 +291,9 @@ pages:
     - file: skills/intent-detection.md
       title: "Intent Detection"
       summary: "Automatically detect user intent and route to the appropriate agent or skill."
-    - file: skills/java21-best-practices.md
-      title: "Java 21 Best Practices"
-      summary: "Modern Java 21 patterns from Virtual Threads, Records, and Sealed Classes."
+    - file: skills/java-best-practices.md
+      title: "Java Best Practices"
+      summary: "Modern Java 25 LTS patterns from Virtual Threads, Pattern Matching, Records, and Sealed Classes."
     - file: skills/jinja2-prompts.md
       title: "Jinja2 Prompts"
       summary: "Parameterized prompt templates using Jinja2 syntax for reusable agent instructions"
@@ -637,9 +637,9 @@ pages:
     - file: guides/impeccable-design.md
       title: "Impeccable Design Guide"
       summary: "Reference documentation for the Impeccable Design Language — a production-quality UI"
-    - file: guides/java21.md
-      title: "Java 21 Guide"
-      summary: "Reference documentation for modern Java 21 language features, coding conventions"
+    - file: guides/java.md
+      title: "Java Guide"
+      summary: "Reference documentation for modern Java 25 LTS language features, coding conventions, and production patterns"
     - file: guides/kafka.md
       title: "Apache Kafka Guide"
       summary: "Reference documentation for Apache Kafka event streaming platform best practices"

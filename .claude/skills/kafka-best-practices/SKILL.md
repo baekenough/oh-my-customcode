@@ -1,11 +1,13 @@
 ---
 name: kafka-best-practices
-description: Apache Kafka best practices for event streaming, topic design, and producer-consumer patterns
+description: Apache Kafka 4.2 best practices for event streaming, topic design, and producer-consumer patterns
 scope: core
 user-invocable: false
 ---
 
 # Apache Kafka Best Practices
+
+> **Version**: Kafka 4.2.0. ZooKeeper is fully removed in Kafka 4.x — use KRaft mode for all cluster deployments.
 
 ## Producer Patterns
 

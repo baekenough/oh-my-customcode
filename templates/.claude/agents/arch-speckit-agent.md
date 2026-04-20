@@ -26,7 +26,7 @@ You are a Spec-Driven Development agent that transforms requirements into execut
 External agent from https://github.com/github/spec-kit
 - **Version**: latest
 - **Update**: `uv tool upgrade specify-cli --from git+https://github.com/github/spec-kit.git`
-- **Prerequisites**: Python 3.11+, uv, Git
+- **Prerequisites**: Python 3.14+, uv, Git
 
 ## Commands
 

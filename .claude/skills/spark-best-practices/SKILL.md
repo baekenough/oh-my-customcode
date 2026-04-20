@@ -1,11 +1,13 @@
 ---
 name: spark-best-practices
-description: Apache Spark best practices for PySpark and Scala distributed data processing
+description: Apache Spark 4.0.2 best practices for PySpark and Scala distributed data processing
 scope: core
 user-invocable: false
 ---
 
 # Apache Spark Best Practices
+
+> **Version**: Spark 4.0.2. Key changes from Spark 3.x: ANSI mode is now **default** (stricter SQL type coercion and overflow checks), and Spark Connect provides a decoupled client-server protocol for remote Spark access.
 
 ## Performance Optimization
 

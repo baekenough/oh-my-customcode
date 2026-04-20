@@ -5,7 +5,7 @@ scope: core
 user-invocable: false
 ---
 
-# Apache Airflow Best Practices (3.1.8)
+# Apache Airflow Best Practices (3.2.0)
 
 ## DAG Authoring
 
@@ -89,6 +89,6 @@ user-invocable: false
 - **New UI**: React-based web interface (replaces Flask-based UI)
 
 ## References
-- [Airflow 3.1.8 Best Practices](https://airflow.apache.org/docs/apache-airflow/3.1.8/best-practices.html)
-- [Airflow SDK (Task SDK)](https://airflow.apache.org/docs/apache-airflow/3.1.8/authoring-and-scheduling/index.html)
-- [Migration Guide 2.x → 3.x](https://airflow.apache.org/docs/apache-airflow/3.1.8/migration-guide.html)
+- [Airflow 3.2.0 Best Practices](https://airflow.apache.org/docs/apache-airflow/3.2.0/best-practices.html)
+- [Airflow SDK (Task SDK)](https://airflow.apache.org/docs/apache-airflow/3.2.0/authoring-and-scheduling/index.html)
+- [Migration Guide 2.x → 3.x](https://airflow.apache.org/docs/apache-airflow/3.2.0/migration-guide.html)

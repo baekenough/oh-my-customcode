@@ -1,0 +1,629 @@
+{
+  "description": "Complete ontology graph for traversal",
+  "version": "1.0.0",
+  "nodes": {
+    "lang-golang-expert": { "type": "Agent", "class": "LanguageExpert" },
+    "lang-python-expert": { "type": "Agent", "class": "LanguageExpert" },
+    "lang-rust-expert": { "type": "Agent", "class": "LanguageExpert" },
+    "lang-kotlin-expert": { "type": "Agent", "class": "LanguageExpert" },
+    "lang-typescript-expert": { "type": "Agent", "class": "LanguageExpert" },
+    "lang-java21-expert": { "type": "Agent", "class": "LanguageExpert" },
+    "be-fastapi-expert": { "type": "Agent", "class": "BackendExpert" },
+    "be-springboot-expert": { "type": "Agent", "class": "BackendExpert" },
+    "be-go-backend-expert": { "type": "Agent", "class": "BackendExpert" },
+    "be-express-expert": { "type": "Agent", "class": "BackendExpert" },
+    "be-nestjs-expert": { "type": "Agent", "class": "BackendExpert" },
+    "fe-vercel-agent": { "type": "Agent", "class": "FrontendExpert" },
+    "fe-vuejs-agent": { "type": "Agent", "class": "FrontendExpert" },
+    "fe-svelte-agent": { "type": "Agent", "class": "FrontendExpert" },
+    "fe-flutter-agent": { "type": "Agent", "class": "FrontendExpert" },
+    "de-airflow-expert": { "type": "Agent", "class": "DataEngineer" },
+    "de-dbt-expert": { "type": "Agent", "class": "DataEngineer" },
+    "de-spark-expert": { "type": "Agent", "class": "DataEngineer" },
+    "de-kafka-expert": { "type": "Agent", "class": "DataEngineer" },
+    "de-snowflake-expert": { "type": "Agent", "class": "DataEngineer" },
+    "de-pipeline-expert": { "type": "Agent", "class": "DataEngineer" },
+    "db-postgres-expert": { "type": "Agent", "class": "DatabaseExpert" },
+    "db-redis-expert": { "type": "Agent", "class": "DatabaseExpert" },
+    "db-supabase-expert": { "type": "Agent", "class": "DatabaseExpert" },
+    "tool-npm-expert": { "type": "Agent", "class": "ToolingExpert" },
+    "tool-optimizer": { "type": "Agent", "class": "ToolingExpert" },
+    "tool-bun-expert": { "type": "Agent", "class": "ToolingExpert" },
+    "arch-documenter": { "type": "Agent", "class": "Architect" },
+    "arch-speckit-agent": { "type": "Agent", "class": "Architect" },
+    "infra-docker-expert": { "type": "Agent", "class": "InfraEngineer" },
+    "infra-aws-expert": { "type": "Agent", "class": "InfraEngineer" },
+    "qa-planner": { "type": "Agent", "class": "QAAgent" },
+    "qa-writer": { "type": "Agent", "class": "QAAgent" },
+    "qa-engineer": { "type": "Agent", "class": "QAAgent" },
+    "mgr-creator": { "type": "Agent", "class": "ManagerAgent" },
+    "mgr-updater": { "type": "Agent", "class": "ManagerAgent" },
+    "mgr-supplier": { "type": "Agent", "class": "ManagerAgent" },
+    "mgr-gitnerd": { "type": "Agent", "class": "ManagerAgent" },
+    "mgr-sauron": { "type": "Agent", "class": "ManagerAgent" },
+    "mgr-claude-code-bible": { "type": "Agent", "class": "ManagerAgent" },
+    "sys-memory-keeper": { "type": "Agent", "class": "SystemAgent" },
+    "sys-naggy": { "type": "Agent", "class": "SystemAgent" },
+    "go-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "python-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "rust-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "kotlin-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "typescript-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "fastapi-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "springboot-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "go-backend-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "react-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "flutter-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "airflow-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "dbt-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "spark-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "kafka-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "snowflake-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "pipeline-architecture-patterns": { "type": "Skill", "class": "BestPracticeSkill" },
+    "postgres-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "redis-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "supabase-postgres-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "docker-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "aws-best-practices": { "type": "Skill", "class": "BestPracticeSkill" },
+    "secretary-routing": { "type": "Skill", "class": "RoutingSkill" },
+    "dev-lead-routing": { "type": "Skill", "class": "RoutingSkill" },
+    "de-lead-routing": { "type": "Skill", "class": "RoutingSkill" },
+    "qa-lead-routing": { "type": "Skill", "class": "RoutingSkill" },
+    "create-agent": { "type": "Skill", "class": "ManagementSkill" },
+    "update-docs": { "type": "Skill", "class": "ManagementSkill" },
+    "update-external": { "type": "Skill", "class": "ManagementSkill" },
+    "audit-agents": { "type": "Skill", "class": "ManagementSkill" },
+    "fix-refs": { "type": "Skill", "class": "ManagementSkill" },
+    "claude-code-bible": { "type": "Skill", "class": "ManagementSkill" },
+    "dev-review": { "type": "Skill", "class": "DevelopmentSkill" },
+    "dev-refactor": { "type": "Skill", "class": "DevelopmentSkill" },
+    "optimize-analyze": { "type": "Skill", "class": "OptimizationSkill" },
+    "optimize-bundle": { "type": "Skill", "class": "OptimizationSkill" },
+    "optimize-report": { "type": "Skill", "class": "OptimizationSkill" },
+    "memory-save": { "type": "Skill", "class": "MemorySkill" },
+    "memory-recall": { "type": "Skill", "class": "MemorySkill" },
+    "memory-management": { "type": "Skill", "class": "MemorySkill" },
+    "npm-publish": { "type": "Skill", "class": "PackageSkill" },
+    "npm-version": { "type": "Skill", "class": "PackageSkill" },
+    "npm-audit": { "type": "Skill", "class": "PackageSkill" },
+    "status": { "type": "Skill", "class": "SystemSkill" },
+    "help": { "type": "Skill", "class": "SystemSkill" },
+    "lists": { "type": "Skill", "class": "SystemSkill" },
+    "sauron-watch": { "type": "Skill", "class": "VerificationSkill" },
+    "intent-detection": { "type": "Skill", "class": "IntentSkill" },
+    "result-aggregation": { "type": "Skill", "class": "IntentSkill" },
+    "vercel-deploy": { "type": "Skill", "class": "DeploymentSkill" },
+    "writing-clearly-and-concisely": { "type": "Skill", "class": "WritingSkill" },
+    "web-design-guidelines": { "type": "Skill", "class": "WritingSkill" },
+    "monitoring-setup": { "type": "Skill", "class": "MonitoringSkill" },
+    "R000": { "type": "Rule", "class": "MustRule" },
+    "R001": { "type": "Rule", "class": "MustRule" },
+    "R002": { "type": "Rule", "class": "MustRule" },
+    "R006": { "type": "Rule", "class": "MustRule" },
+    "R007": { "type": "Rule", "class": "MustRule" },
+    "R008": { "type": "Rule", "class": "MustRule" },
+    "R009": { "type": "Rule", "class": "MustRule" },
+    "R010": { "type": "Rule", "class": "MustRule" },
+    "R015": { "type": "Rule", "class": "MustRule" },
+    "R016": { "type": "Rule", "class": "MustRule" },
+    "R017": { "type": "Rule", "class": "MustRule" },
+    "R003": { "type": "Rule", "class": "ShouldRule" },
+    "R004": { "type": "Rule", "class": "ShouldRule" },
+    "R011": { "type": "Rule", "class": "ShouldRule" },
+    "R012": { "type": "Rule", "class": "ShouldRule" },
+    "R013": { "type": "Rule", "class": "ShouldRule" },
+    "R018": { "type": "Rule", "class": "MustRule" },
+    "R005": { "type": "Rule", "class": "MayRule" }
+  },
+  "edges": [
+    { "source": "lang-golang-expert", "target": "go-best-practices", "relation": "requires" },
+    { "source": "lang-python-expert", "target": "python-best-practices", "relation": "requires" },
+    { "source": "lang-rust-expert", "target": "rust-best-practices", "relation": "requires" },
+    { "source": "lang-kotlin-expert", "target": "kotlin-best-practices", "relation": "requires" },
+    { "source": "lang-typescript-expert", "target": "typescript-best-practices", "relation": "requires" },
+    { "source": "be-fastapi-expert", "target": "fastapi-best-practices", "relation": "requires" },
+    { "source": "be-springboot-expert", "target": "springboot-best-practices", "relation": "requires" },
+    { "source": "be-go-backend-expert", "target": "go-backend-best-practices", "relation": "requires" },
+    { "source": "fe-vercel-agent", "target": "react-best-practices", "relation": "requires" },
+    { "source": "fe-vercel-agent", "target": "web-design-guidelines", "relation": "requires" },
+    { "source": "fe-vercel-agent", "target": "vercel-deploy", "relation": "requires" },
+    { "source": "de-airflow-expert", "target": "airflow-best-practices", "relation": "requires" },
+    { "source": "de-dbt-expert", "target": "dbt-best-practices", "relation": "requires" },
+    { "source": "de-spark-expert", "target": "spark-best-practices", "relation": "requires" },
+    { "source": "de-kafka-expert", "target": "kafka-best-practices", "relation": "requires" },
+    { "source": "de-snowflake-expert", "target": "snowflake-best-practices", "relation": "requires" },
+    { "source": "de-pipeline-expert", "target": "pipeline-architecture-patterns", "relation": "requires" },
+    { "source": "db-postgres-expert", "target": "postgres-best-practices", "relation": "requires" },
+    { "source": "db-redis-expert", "target": "redis-best-practices", "relation": "requires" },
+    { "source": "db-supabase-expert", "target": "supabase-postgres-best-practices", "relation": "requires" },
+    { "source": "tool-npm-expert", "target": "npm-audit", "relation": "requires" },
+    { "source": "tool-npm-expert", "target": "npm-publish", "relation": "requires" },
+    { "source": "tool-npm-expert", "target": "npm-version", "relation": "requires" },
+    { "source": "tool-optimizer", "target": "optimize-analyze", "relation": "requires" },
+    { "source": "tool-optimizer", "target": "optimize-bundle", "relation": "requires" },
+    { "source": "tool-optimizer", "target": "optimize-report", "relation": "requires" },
+    { "source": "infra-docker-expert", "target": "docker-best-practices", "relation": "requires" },
+    { "source": "infra-aws-expert", "target": "aws-best-practices", "relation": "requires" },
+    { "source": "mgr-creator", "target": "create-agent", "relation": "requires" },
+    { "source": "mgr-updater", "target": "update-external", "relation": "requires" },
+    { "source": "mgr-supplier", "target": "audit-agents", "relation": "requires" },
+    { "source": "mgr-sauron", "target": "sauron-watch", "relation": "requires" },
+    { "source": "mgr-claude-code-bible", "target": "claude-code-bible", "relation": "requires" },
+    { "source": "sys-memory-keeper", "target": "memory-management", "relation": "requires" },
+    { "source": "sys-memory-keeper", "target": "memory-save", "relation": "requires" },
+    { "source": "sys-memory-keeper", "target": "memory-recall", "relation": "requires" },
+    { "source": "de-lead-routing", "target": "R009", "relation": "depends_on" },
+    { "source": "intent-detection", "target": "R015", "relation": "depends_on" },
+    { "source": "memory-management", "target": "R011", "relation": "depends_on" },
+    { "source": "memory-recall", "target": "R011", "relation": "depends_on" },
+    { "source": "memory-save", "target": "R011", "relation": "depends_on" },
+    { "source": "result-aggregation", "target": "R009", "relation": "depends_on" },
+    { "source": "result-aggregation", "target": "R013", "relation": "depends_on" },
+    { "source": "sauron-watch", "target": "R017", "relation": "depends_on" },
+    { "source": "secretary-routing", "target": "mgr-creator", "relation": "routes_to" },
+    { "source": "secretary-routing", "target": "mgr-updater", "relation": "routes_to" },
+    { "source": "secretary-routing", "target": "mgr-supplier", "relation": "routes_to" },
+    { "source": "secretary-routing", "target": "mgr-gitnerd", "relation": "routes_to" },
+    { "source": "secretary-routing", "target": "mgr-sauron", "relation": "routes_to" },
+    { "source": "secretary-routing", "target": "mgr-claude-code-bible", "relation": "routes_to" },
+    { "source": "secretary-routing", "target": "sys-memory-keeper", "relation": "routes_to" },
+    { "source": "secretary-routing", "target": "sys-naggy", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "lang-golang-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "lang-python-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "lang-rust-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "lang-kotlin-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "lang-typescript-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "lang-java21-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "fe-vercel-agent", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "fe-vuejs-agent", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "fe-svelte-agent", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "fe-flutter-agent", "relation": "routes_to" },
+    { "source": "fe-flutter-agent", "target": "flutter-best-practices", "relation": "requires" },
+    { "source": "dev-lead-routing", "target": "be-fastapi-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "be-springboot-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "be-go-backend-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "be-nestjs-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "be-express-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "tool-npm-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "tool-optimizer", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "tool-bun-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "db-supabase-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "db-postgres-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "db-redis-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "arch-documenter", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "arch-speckit-agent", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "infra-docker-expert", "relation": "routes_to" },
+    { "source": "dev-lead-routing", "target": "infra-aws-expert", "relation": "routes_to" },
+    { "source": "de-lead-routing", "target": "de-airflow-expert", "relation": "routes_to" },
+    { "source": "de-lead-routing", "target": "de-dbt-expert", "relation": "routes_to" },
+    { "source": "de-lead-routing", "target": "de-spark-expert", "relation": "routes_to" },
+    { "source": "de-lead-routing", "target": "de-kafka-expert", "relation": "routes_to" },
+    { "source": "de-lead-routing", "target": "de-snowflake-expert", "relation": "routes_to" },
+    { "source": "de-lead-routing", "target": "de-pipeline-expert", "relation": "routes_to" },
+    { "source": "qa-lead-routing", "target": "qa-planner", "relation": "routes_to" },
+    { "source": "qa-lead-routing", "target": "qa-writer", "relation": "routes_to" },
+    { "source": "qa-lead-routing", "target": "qa-engineer", "relation": "routes_to" }
+  ],
+  "adjacency": {
+    "lang-golang-expert": {
+      "requires": ["go-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "lang-python-expert": {
+      "requires": ["python-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "lang-rust-expert": {
+      "requires": ["rust-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "lang-kotlin-expert": {
+      "requires": ["kotlin-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "lang-typescript-expert": {
+      "requires": ["typescript-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "lang-java21-expert": {
+      "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "be-fastapi-expert": {
+      "requires": ["fastapi-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "be-springboot-expert": {
+      "requires": ["springboot-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "be-go-backend-expert": {
+      "requires": ["go-backend-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "be-express-expert": {
+      "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "be-nestjs-expert": {
+      "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "fe-vercel-agent": {
+      "requires": ["react-best-practices", "web-design-guidelines", "vercel-deploy"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "fe-vuejs-agent": {
+      "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "fe-svelte-agent": {
+      "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "fe-flutter-agent": {
+      "requires": ["flutter-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "de-airflow-expert": {
+      "requires": ["airflow-best-practices"],
+      "routed_by": ["de-lead-routing"]
+    },
+    "de-dbt-expert": {
+      "requires": ["dbt-best-practices"],
+      "routed_by": ["de-lead-routing"]
+    },
+    "de-spark-expert": {
+      "requires": ["spark-best-practices"],
+      "routed_by": ["de-lead-routing"]
+    },
+    "de-kafka-expert": {
+      "requires": ["kafka-best-practices"],
+      "routed_by": ["de-lead-routing"]
+    },
+    "de-snowflake-expert": {
+      "requires": ["snowflake-best-practices"],
+      "routed_by": ["de-lead-routing"]
+    },
+    "de-pipeline-expert": {
+      "requires": ["pipeline-architecture-patterns"],
+      "routed_by": ["de-lead-routing"]
+    },
+    "db-postgres-expert": {
+      "requires": ["postgres-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "db-redis-expert": {
+      "requires": ["redis-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "db-supabase-expert": {
+      "requires": ["supabase-postgres-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "tool-npm-expert": {
+      "requires": ["npm-audit", "npm-publish", "npm-version"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "tool-optimizer": {
+      "requires": ["optimize-analyze", "optimize-bundle", "optimize-report"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "tool-bun-expert": {
+      "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "arch-documenter": {
+      "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "arch-speckit-agent": {
+      "requires": [],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "infra-docker-expert": {
+      "requires": ["docker-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "infra-aws-expert": {
+      "requires": ["aws-best-practices"],
+      "routed_by": ["dev-lead-routing"]
+    },
+    "qa-planner": {
+      "requires": [],
+      "routed_by": ["qa-lead-routing"]
+    },
+    "qa-writer": {
+      "requires": [],
+      "routed_by": ["qa-lead-routing"]
+    },
+    "qa-engineer": {
+      "requires": [],
+      "routed_by": ["qa-lead-routing"]
+    },
+    "mgr-creator": {
+      "requires": ["create-agent"],
+      "routed_by": ["secretary-routing"]
+    },
+    "mgr-updater": {
+      "requires": ["update-external"],
+      "routed_by": ["secretary-routing"]
+    },
+    "mgr-supplier": {
+      "requires": ["audit-agents"],
+      "routed_by": ["secretary-routing"]
+    },
+    "mgr-gitnerd": {
+      "requires": [],
+      "routed_by": ["secretary-routing"]
+    },
+    "mgr-sauron": {
+      "requires": ["sauron-watch"],
+      "routed_by": ["secretary-routing"]
+    },
+    "mgr-claude-code-bible": {
+      "requires": ["claude-code-bible"],
+      "routed_by": ["secretary-routing"]
+    },
+    "sys-memory-keeper": {
+      "requires": ["memory-management", "memory-save", "memory-recall"],
+      "routed_by": ["secretary-routing"]
+    },
+    "sys-naggy": {
+      "requires": [],
+      "routed_by": ["secretary-routing"]
+    },
+    "go-best-practices": {
+      "required_by": ["lang-golang-expert"],
+      "depends_on": []
+    },
+    "python-best-practices": {
+      "required_by": ["lang-python-expert"],
+      "depends_on": []
+    },
+    "rust-best-practices": {
+      "required_by": ["lang-rust-expert"],
+      "depends_on": []
+    },
+    "kotlin-best-practices": {
+      "required_by": ["lang-kotlin-expert"],
+      "depends_on": []
+    },
+    "typescript-best-practices": {
+      "required_by": ["lang-typescript-expert"],
+      "depends_on": []
+    },
+    "fastapi-best-practices": {
+      "required_by": ["be-fastapi-expert"],
+      "depends_on": []
+    },
+    "springboot-best-practices": {
+      "required_by": ["be-springboot-expert"],
+      "depends_on": []
+    },
+    "go-backend-best-practices": {
+      "required_by": ["be-go-backend-expert"],
+      "depends_on": []
+    },
+    "react-best-practices": {
+      "required_by": ["fe-vercel-agent"],
+      "depends_on": []
+    },
+    "flutter-best-practices": {
+      "required_by": ["fe-flutter-agent"],
+      "depends_on": []
+    },
+    "web-design-guidelines": {
+      "required_by": ["fe-vercel-agent"],
+      "depends_on": []
+    },
+    "vercel-deploy": {
+      "required_by": ["fe-vercel-agent"],
+      "depends_on": []
+    },
+    "airflow-best-practices": {
+      "required_by": ["de-airflow-expert"],
+      "depends_on": []
+    },
+    "dbt-best-practices": {
+      "required_by": ["de-dbt-expert"],
+      "depends_on": []
+    },
+    "spark-best-practices": {
+      "required_by": ["de-spark-expert"],
+      "depends_on": []
+    },
+    "kafka-best-practices": {
+      "required_by": ["de-kafka-expert"],
+      "depends_on": []
+    },
+    "snowflake-best-practices": {
+      "required_by": ["de-snowflake-expert"],
+      "depends_on": []
+    },
+    "pipeline-architecture-patterns": {
+      "required_by": ["de-pipeline-expert"],
+      "depends_on": []
+    },
+    "postgres-best-practices": {
+      "required_by": ["db-postgres-expert"],
+      "depends_on": []
+    },
+    "redis-best-practices": {
+      "required_by": ["db-redis-expert"],
+      "depends_on": []
+    },
+    "supabase-postgres-best-practices": {
+      "required_by": ["db-supabase-expert"],
+      "depends_on": []
+    },
+    "docker-best-practices": {
+      "required_by": ["infra-docker-expert"],
+      "depends_on": []
+    },
+    "aws-best-practices": {
+      "required_by": ["infra-aws-expert"],
+      "depends_on": []
+    },
+    "npm-audit": {
+      "required_by": ["tool-npm-expert"],
+      "depends_on": []
+    },
+    "npm-publish": {
+      "required_by": ["tool-npm-expert"],
+      "depends_on": []
+    },
+    "npm-version": {
+      "required_by": ["tool-npm-expert"],
+      "depends_on": []
+    },
+    "optimize-analyze": {
+      "required_by": ["tool-optimizer"],
+      "depends_on": []
+    },
+    "optimize-bundle": {
+      "required_by": ["tool-optimizer"],
+      "depends_on": []
+    },
+    "optimize-report": {
+      "required_by": ["tool-optimizer"],
+      "depends_on": []
+    },
+    "create-agent": {
+      "required_by": ["mgr-creator"],
+      "depends_on": []
+    },
+    "update-external": {
+      "required_by": ["mgr-updater"],
+      "depends_on": []
+    },
+    "audit-agents": {
+      "required_by": ["mgr-supplier"],
+      "depends_on": []
+    },
+    "update-docs": {
+      "required_by": ["mgr-updater"],
+      "depends_on": []
+    },
+    "sauron-watch": {
+      "required_by": ["mgr-sauron"],
+      "depends_on": ["R017"]
+    },
+    "claude-code-bible": {
+      "required_by": ["mgr-claude-code-bible"],
+      "depends_on": []
+    },
+    "memory-management": {
+      "required_by": ["sys-memory-keeper"],
+      "depends_on": ["R011"]
+    },
+    "memory-save": {
+      "required_by": ["sys-memory-keeper"],
+      "depends_on": ["R011"]
+    },
+    "memory-recall": {
+      "required_by": ["sys-memory-keeper"],
+      "depends_on": ["R011"]
+    },
+    "secretary-routing": {
+      "routes_to": ["mgr-creator", "mgr-updater", "mgr-supplier", "mgr-gitnerd", "mgr-sauron", "mgr-claude-code-bible", "sys-memory-keeper", "sys-naggy"],
+      "depends_on": []
+    },
+    "dev-lead-routing": {
+      "routes_to": ["lang-golang-expert", "lang-python-expert", "lang-rust-expert", "lang-kotlin-expert", "lang-typescript-expert", "lang-java21-expert", "fe-vercel-agent", "fe-vuejs-agent", "fe-svelte-agent", "fe-flutter-agent", "be-fastapi-expert", "be-springboot-expert", "be-go-backend-expert", "be-nestjs-expert", "be-express-expert", "tool-npm-expert", "tool-optimizer", "tool-bun-expert", "db-supabase-expert", "db-postgres-expert", "db-redis-expert", "arch-documenter", "arch-speckit-agent", "infra-docker-expert", "infra-aws-expert"],
+      "depends_on": []
+    },
+    "de-lead-routing": {
+      "routes_to": ["de-airflow-expert", "de-dbt-expert", "de-spark-expert", "de-kafka-expert", "de-snowflake-expert", "de-pipeline-expert"],
+      "depends_on": ["R009"]
+    },
+    "qa-lead-routing": {
+      "routes_to": ["qa-planner", "qa-writer", "qa-engineer"],
+      "depends_on": []
+    },
+    "intent-detection": {
+      "depends_on": ["R015"]
+    },
+    "result-aggregation": {
+      "depends_on": ["R009", "R013"]
+    },
+    "dev-review": {
+      "depends_on": []
+    },
+    "dev-refactor": {
+      "depends_on": []
+    },
+    "fix-refs": {
+      "depends_on": []
+    },
+    "help": {
+      "depends_on": []
+    },
+    "lists": {
+      "depends_on": []
+    },
+    "monitoring-setup": {
+      "depends_on": []
+    },
+    "status": {
+      "depends_on": []
+    },
+    "writing-clearly-and-concisely": {
+      "depends_on": []
+    },
+    "R000": {
+      "referenced_by": []
+    },
+    "R001": {
+      "referenced_by": []
+    },
+    "R002": {
+      "referenced_by": []
+    },
+    "R003": {
+      "referenced_by": []
+    },
+    "R004": {
+      "referenced_by": []
+    },
+    "R005": {
+      "referenced_by": []
+    },
+    "R006": {
+      "referenced_by": []
+    },
+    "R007": {
+      "referenced_by": []
+    },
+    "R008": {
+      "referenced_by": []
+    },
+    "R009": {
+      "referenced_by": ["de-lead-routing", "result-aggregation"]
+    },
+    "R010": {
+      "referenced_by": []
+    },
+    "R011": {
+      "referenced_by": ["memory-management", "memory-recall", "memory-save"]
+    },
+    "R012": {
+      "referenced_by": []
+    },
+    "R013": {
+      "referenced_by": ["result-aggregation"]
+    },
+    "R015": {
+      "referenced_by": ["intent-detection"]
+    },
+    "R016": {
+      "referenced_by": []
+    },
+    "R017": {
+      "referenced_by": ["sauron-watch"]
+    },
+    "R018": {
+      "referenced_by": []
+    }
+  }
+}

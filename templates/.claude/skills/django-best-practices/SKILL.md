@@ -7,7 +7,7 @@ user-invocable: false
 
 ## Purpose
 
-Apply Django patterns for building production-ready, secure, and maintainable Python web applications.
+Apply Django 6.0.4 patterns for building production-ready, secure, and maintainable Python web applications.
 
 ## Rules
 

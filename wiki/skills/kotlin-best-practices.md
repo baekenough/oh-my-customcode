@@ -26,7 +26,7 @@ Reference patterns for idiomatic Kotlin: null safety (safe calls, elvis operator
 ## Relationships
 
 - **Used by agents**: [[lang-kotlin-expert]]
-- **Related skills**: [[springboot-best-practices]], [[java21-best-practices]]
+- **Related skills**: [[springboot-best-practices]], [[java-best-practices]]
 - **See also**: guides/kotlin/
 
 ## Sources

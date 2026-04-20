@@ -32,7 +32,7 @@ Core language specialists covering the full implementation layer.
 | [[wiki/agents/lang-rust-expert]] | Rust | rust-best-practices |
 | [[wiki/agents/lang-kotlin-expert]] | Kotlin | kotlin-best-practices |
 | [[wiki/agents/lang-typescript-expert]] | TypeScript | typescript-best-practices |
-| [[wiki/agents/lang-java21-expert]] | Java 21 | java21-best-practices |
+| [[wiki/agents/lang-java-expert]] | Java 25 LTS | java-best-practices |
 
 ### Backend Experts (6)
 Framework specialists that compose language skills with framework-specific patterns.
