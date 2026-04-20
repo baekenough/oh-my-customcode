@@ -69,10 +69,10 @@ agents:
     supported_actions: [review, fix, refactor, explain]
     base_confidence: 40
 
-  lang-java21-expert:
+  lang-java-expert:
     keywords:
-      korean: [자바, 자바21]
-      english: [java, java21, jdk21, jdk]
+      korean: [자바, 자바25]
+      english: [java, java25, jdk25, jdk]
     file_patterns: ["*.java", "pom.xml", "build.gradle"]
     supported_actions: [review, create, fix, refactor]
     base_confidence: 35

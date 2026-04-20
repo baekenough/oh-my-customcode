@@ -31,7 +31,7 @@ Covers layered architecture (controller/service/repository/model/dto/config), co
 
 - **Used by agents**: [[be-springboot-expert]]
 - **Related skills**: [[springboot-best-practices]]
-- **See also**: [[kotlin]], [[java21]], [[postgres]], [[docker]]
+- **See also**: [[kotlin]], [[java]], [[postgres]], [[docker]]
 
 ## Sources
 

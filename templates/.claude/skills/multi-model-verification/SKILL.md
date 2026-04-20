@@ -128,3 +128,5 @@ Multi-model verification uses 3x the tokens of a single review. Reserve for:
 - Security-sensitive modifications
 - Architecture decisions
 - Pre-release verification
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

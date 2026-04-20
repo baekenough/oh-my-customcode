@@ -12,7 +12,7 @@ context: fork
 
 | Type | Agents |
 |------|--------|
-| Language | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| Language | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert |
 | Frontend | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
 | Backend | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-nestjs-expert, be-express-expert, be-django-expert |
 | Tooling | tool-npm-expert, tool-optimizer, tool-bun-expert |
@@ -31,7 +31,7 @@ context: fork
 | `.rs` | lang-rust-expert |
 | `.kt`, `.kts` | lang-kotlin-expert |
 | `.ts`, `.tsx` | lang-typescript-expert |
-| `.java` | lang-java21-expert |
+| `.java` | lang-java-expert |
 | `.js/.jsx` (React) | fe-vercel-agent |
 | `.vue` | fe-vuejs-agent |
 | `.svelte` | fe-svelte-agent |
@@ -52,7 +52,7 @@ context: fork
 | rust | lang-rust-expert |
 | kotlin | lang-kotlin-expert |
 | typescript, ts | lang-typescript-expert |
-| java | lang-java21-expert |
+| java | lang-java-expert |
 | react, next.js, vercel | fe-vercel-agent |
 | vue | fe-vuejs-agent |
 | svelte | fe-svelte-agent |

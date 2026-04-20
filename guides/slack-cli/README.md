@@ -1,6 +1,6 @@
 # Slack CLI Reference Guide
 
-> Source: https://docs.slack.dev/tools/slack-cli/ | Version: v3.15.0
+> Source: https://docs.slack.dev/tools/slack-cli/ | Version: v4.0
 
 ## Overview
 

@@ -4,9 +4,9 @@
 
 ## File Structure
 
-```yaml
-version: "3.8"
+> **Note**: The `version` field is obsolete as of Compose Spec v5 and should be omitted from modern compose files. Docker Compose now uses the Compose Specification directly.
 
+```yaml
 services:
   # Application services
   app:
@@ -201,8 +201,6 @@ services:
 ## Complete Example
 
 ```yaml
-version: "3.8"
-
 services:
   app:
     build:
@@ -260,7 +258,7 @@ services:
       - backend
 
   nginx:
-    image: nginx:1.25-alpine
+    image: nginx:1.28-alpine
     restart: unless-stopped
     ports:
       - "80:80"

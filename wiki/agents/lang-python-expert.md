@@ -10,7 +10,7 @@ related:
   - [[lang-golang-expert]]
   - [[lang-typescript-expert]]
   - [[lang-kotlin-expert]]
-  - [[lang-java21-expert]]
+  - [[lang-java-expert]]
   - [[lang-rust-expert]]
 ---
 
@@ -37,7 +37,7 @@ Uses `python-best-practices` skill and `guides/python/`.
 
 - **Depends on**: `python-best-practices` skill, `guides/python/`
 - **Used by**: `dev-lead-routing` skill (Python language task routing), R010 delegation table ("Python/FastAPI")
-- **See also**: [[be-fastapi-expert]] (FastAPI framework), [[be-django-expert]] (Django framework), [[lang-golang-expert]], [[lang-typescript-expert]], [[lang-kotlin-expert]], [[lang-java21-expert]], [[lang-rust-expert]]
+- **See also**: [[be-fastapi-expert]] (FastAPI framework), [[be-django-expert]] (Django framework), [[lang-golang-expert]], [[lang-typescript-expert]], [[lang-kotlin-expert]], [[lang-java-expert]], [[lang-rust-expert]]
 
 ## Sources
 

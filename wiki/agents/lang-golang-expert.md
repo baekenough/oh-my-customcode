@@ -10,7 +10,7 @@ related:
   - [[lang-rust-expert]]
   - [[lang-typescript-expert]]
   - [[lang-kotlin-expert]]
-  - [[lang-java21-expert]]
+  - [[lang-java-expert]]
 ---
 
 # lang-golang-expert
@@ -37,7 +37,7 @@ Pairs naturally with [[be-go-backend-expert]] for backend service concerns beyon
 
 - **Depends on**: `go-best-practices` skill, `guides/golang/`
 - **Used by**: `dev-lead-routing` skill (Go language task routing), R010 delegation table ("Go code")
-- **See also**: [[be-go-backend-expert]] (Go backend services), [[lang-rust-expert]] (systems programming alternative), [[lang-python-expert]], [[lang-typescript-expert]], [[lang-kotlin-expert]], [[lang-java21-expert]]
+- **See also**: [[be-go-backend-expert]] (Go backend services), [[lang-rust-expert]] (systems programming alternative), [[lang-python-expert]], [[lang-typescript-expert]], [[lang-kotlin-expert]], [[lang-java-expert]]
 
 ## Sources
 

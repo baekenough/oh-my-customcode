@@ -99,7 +99,7 @@ Scanning project structure...
 
 Agents:
   ✓ 15 agents found in .claude/agents/
-  ✗ Missing: lang-java21-expert.md (referenced but not found)
+  ✗ Missing: lang-java-expert.md (referenced but not found)
 
 Skills:
   ✓ 13 skills found in .claude/skills/
@@ -123,7 +123,7 @@ Run "/update-docs" to fix.
 Syncing documentation with project structure...
 
 [1/3] Verifying agents
-  - Removed reference: lang-java21-expert (not found)
+  - Removed reference: lang-java-expert (not found)
   ✓ 15 → 14 agents
 
 [2/3] Verifying skills

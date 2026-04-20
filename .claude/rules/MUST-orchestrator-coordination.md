@@ -227,6 +227,35 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 Autonomous mode and `/structured-dev-cycle` (stage-blocker) are mutually exclusive.
 -->
 
+## Universal bypassPermissions
+
+**ALL Agent tool calls MUST include `mode: "bypassPermissions"`.**
+
+The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmatter `permissionMode` and causes permission prompts during unattended execution. This is a CC platform behavior, not a configuration error.
+
+| Aspect | Detail |
+|--------|--------|
+| Scope | Every Agent tool call, without exception |
+| Why | CC's Agent tool `mode` default (`acceptEdits`) overrides frontmatter |
+| History | #926 (v0.99.1), #947 (v0.100.1), #955 (v0.103.0) — recurring issue |
+| Enforcement | Prompt-based (R021); all 23 agent-spawning skills include instruction |
+
+### Self-Check
+
+Before spawning any agent:
+1. Does the Agent tool call include `mode: "bypassPermissions"`? → YES: proceed → NO: add it
+2. Is this a new skill that spawns agents? → Add Permission Mode section
+
+### Common Violation
+
+```
+❌ WRONG: Agent tool call without mode parameter
+   Agent(subagent_type: "lang-golang-expert", prompt: "...")
+
+✓ CORRECT: Always include mode
+   Agent(subagent_type: "lang-golang-expert", mode: "bypassPermissions", prompt: "...")
+```
+
 ## Session Continuity
 
 After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. Never write code directly from orchestrator.

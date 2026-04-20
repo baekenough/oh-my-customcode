@@ -6,7 +6,7 @@ sources:
   - .claude/agents/be-springboot-expert.md
 related:
   - [[lang-kotlin-expert]]
-  - [[lang-java21-expert]]
+  - [[lang-java-expert]]
   - [[db-postgres-expert]]
 ---
 
@@ -33,7 +33,7 @@ Uses the `springboot-best-practices` skill and consults `guides/springboot/` for
 
 - **Depends on**: `springboot-best-practices` skill, `guides/springboot/`
 - **Used by**: `dev-lead-routing` skill (Java/Kotlin backend task routing)
-- **See also**: [[lang-java21-expert]] (Java 21 features), [[lang-kotlin-expert]] (Kotlin patterns), [[db-postgres-expert]] (database layer)
+- **See also**: [[lang-java-expert]] (Java 21 features), [[lang-kotlin-expert]] (Kotlin patterns), [[db-postgres-expert]] (database layer)
 
 ## Sources
 

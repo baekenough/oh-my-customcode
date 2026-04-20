@@ -81,8 +81,8 @@ Reference: guides/flutter/fundamentals.md
 
 ```yaml
 default_choice:
-  new_projects: "Riverpod 3.0"
-  enterprise: "BLoC 9.0"
+  new_projects: "Riverpod 3.3"
+  enterprise: "BLoC 9.1"
   simple_prototypes: "setState or Provider"
   avoid: "GetX (maintenance crisis, runtime crashes)"
 
@@ -285,7 +285,7 @@ Reference: guides/flutter/architecture.md
 ## Default Stack
 
 ```yaml
-state_management: Riverpod 3.0
+state_management: Riverpod 3.3
 navigation: go_router
 models: freezed + json_serializable
 di: Riverpod (built-in)
@@ -298,7 +298,7 @@ structure: Official MVVM (lib/{ui,data}/)
 ## Enterprise Stack
 
 ```yaml
-state_management: BLoC 9.0 + Cubit
+state_management: BLoC 9.1 + Cubit
 navigation: go_router or auto_route
 models: freezed + json_serializable
 di: GetIt + injectable (or Riverpod)
@@ -314,7 +314,7 @@ When writing or reviewing Flutter/Dart code:
 1. **Always** use const constructors for static widgets
 2. **Always** return Result<T> from repositories, never throw
 3. **Always** use flutter_secure_storage for sensitive data
-4. **Prefer** Riverpod 3.0 for new projects, BLoC for enterprise
+4. **Prefer** Riverpod 3.3 for new projects, BLoC for enterprise
 5. **Prefer** StatelessWidget classes over helper functions
 6. **Prefer** sealed classes for state/result types (exhaustive matching)
 7. **Use** freezed for all data model classes
