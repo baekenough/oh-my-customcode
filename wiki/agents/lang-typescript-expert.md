@@ -12,7 +12,7 @@ related:
   - [[lang-golang-expert]]
   - [[lang-python-expert]]
   - [[lang-kotlin-expert]]
-  - [[lang-java21-expert]]
+  - [[lang-java-expert]]
   - [[lang-rust-expert]]
 ---
 
@@ -39,7 +39,7 @@ Uses `typescript-best-practices` skill and `guides/typescript/`.
 
 - **Depends on**: `typescript-best-practices` skill, `guides/typescript/`
 - **Used by**: `dev-lead-routing` skill (TypeScript task routing), R010 delegation table ("TypeScript/Next.js"), [[tool-npm-expert]] (TS builds)
-- **See also**: [[fe-vercel-agent]] (React/Next.js), [[be-nestjs-expert]] (NestJS), [[be-express-expert]] (Express), [[tool-npm-expert]] (publishing), [[lang-golang-expert]], [[lang-python-expert]], [[lang-kotlin-expert]], [[lang-java21-expert]], [[lang-rust-expert]]
+- **See also**: [[fe-vercel-agent]] (React/Next.js), [[be-nestjs-expert]] (NestJS), [[be-express-expert]] (Express), [[tool-npm-expert]] (publishing), [[lang-golang-expert]], [[lang-python-expert]], [[lang-kotlin-expert]], [[lang-java-expert]], [[lang-rust-expert]]
 
 ## Sources
 

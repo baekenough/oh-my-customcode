@@ -491,3 +491,5 @@ Agent(
 | dag-orchestration | Phase sequencing follows DAG pattern |
 | result-aggregation | Team results formatted per aggregation skill |
 | multi-model-verification | Phase 2 uses multi-model verification pattern |
+
+When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

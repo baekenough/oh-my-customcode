@@ -49,9 +49,9 @@ guides:
       origin: go.dev
       url: https://go.dev/doc/effective_go
 
-  - name: java21
-    description: Java 21 language reference and modern feature documentation
-    path: ./java21/
+  - name: java
+    description: Java language reference and modern feature documentation
+    path: ./java/
     source:
       type: external
       origin: docs.oracle.com

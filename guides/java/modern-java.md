@@ -1,4 +1,4 @@
-# Modern Java 21 Features
+# Modern Java Features
 
 > Sources: https://openjdk.org/jeps/ (JEP 431, 440, 441, 444)
 
@@ -77,7 +77,7 @@ if (obj instanceof String) {
     return s.length();
 }
 
-// Java 21
+// Java 21+
 if (obj instanceof String s) {
     return s.length();
 }

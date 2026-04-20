@@ -1,6 +1,6 @@
 ---
 name: springboot-best-practices
-description: Spring Boot patterns for enterprise Java applications
+description: Spring Boot 4.0 patterns for enterprise Java 25 applications
 scope: core
 user-invocable: false
 ---

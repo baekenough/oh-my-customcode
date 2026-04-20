@@ -6,7 +6,7 @@ generated_at: "2026-02-12T00:00:00Z"
 # Agent class hierarchy
 classes:
   LanguageExpert:
-    agents: [lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert]
+    agents: [lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert]
     description: "Programming language specialists"
   BackendExpert:
     agents: [be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert]
@@ -101,7 +101,7 @@ agents:
     keywords: [typescript, type-safety, generics, conditional-types, mapped-types, nodejs]
     file_patterns: ["*.ts", "*.tsx", "tsconfig.json", "package.json"]
 
-  lang-java21-expert:
+  lang-java-expert:
     class: LanguageExpert
     description: "Expert Java 21 developer for modern Java with Virtual Threads, Pattern Matching, Record Patterns, and Sequenced Collections. Use for Java files (*.java, pom.xml, build.gradle), Java-related keywords, high-concurrency systems, data-centric APIs with Records, and migrating from older Java versions."
     model: sonnet

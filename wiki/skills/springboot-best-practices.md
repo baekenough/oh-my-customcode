@@ -7,7 +7,7 @@ sources:
 related:
   - [[be-springboot-expert]]
   - [[kotlin-best-practices]]
-  - [[java21-best-practices]]
+  - [[java-best-practices]]
 ---
 
 # Spring Boot Best Practices
@@ -27,7 +27,7 @@ Reference patterns for Spring Boot: layered architecture (controller/service/rep
 ## Relationships
 
 - **Used by agents**: [[be-springboot-expert]]
-- **Related skills**: [[kotlin-best-practices]], [[java21-best-practices]], [[postgres-best-practices]]
+- **Related skills**: [[kotlin-best-practices]], [[java-best-practices]], [[postgres-best-practices]]
 - **See also**: guides/springboot-best-practices/
 
 ## Sources

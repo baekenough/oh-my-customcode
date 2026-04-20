@@ -147,7 +147,7 @@ skills:
     keywords: [routing, development, code-review, implementation, refactoring]
     routes_to: [
       lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert,
-      lang-typescript-expert, lang-java21-expert, fe-vercel-agent, fe-vuejs-agent,
+      lang-typescript-expert, lang-java-expert, fe-vercel-agent, fe-vuejs-agent,
       fe-svelte-agent, fe-flutter-agent, be-fastapi-expert, be-springboot-expert,
       be-go-backend-expert, be-nestjs-expert, be-express-expert, tool-npm-expert,
       tool-optimizer, tool-bun-expert, db-supabase-expert, db-postgres-expert,

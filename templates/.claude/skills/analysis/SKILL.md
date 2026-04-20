@@ -76,7 +76,7 @@ Detect tech stack by checking indicator files and dependency manifests.
 | Go Backend | go.mod + cmd/ or internal/ dirs | be-go-backend-expert | go-backend-best-practices |
 | Rust | Cargo.toml, *.rs | lang-rust-expert | rust-best-practices |
 | Kotlin | *.kt, build.gradle.kts | lang-kotlin-expert | kotlin-best-practices |
-| Java | *.java, pom.xml | lang-java21-expert | - |
+| Java | *.java, pom.xml | lang-java-expert | - |
 | Spring Boot | spring-boot in deps | be-springboot-expert | springboot-best-practices |
 | Express.js | "express" in deps | be-express-expert | - |
 | NestJS | "@nestjs" in deps | be-nestjs-expert | - |

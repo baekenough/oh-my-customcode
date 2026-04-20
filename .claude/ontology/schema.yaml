@@ -1,0 +1,144 @@
+# Ontology Schema for oh-my-customcode
+# Defines class hierarchies and relations between entities
+version: "1.0.0"
+
+# Entity types
+entity_types:
+  Agent:
+    description: "AI agent that performs specialized tasks"
+    subclasses:
+      LanguageExpert:
+        description: "Programming language specialists"
+        prefix: "lang-"
+      BackendExpert:
+        description: "Backend framework specialists"
+        prefix: "be-"
+      FrontendExpert:
+        description: "Frontend framework specialists"
+        prefix: "fe-"
+      DataEngineer:
+        description: "Data engineering specialists"
+        prefix: "de-"
+      DatabaseExpert:
+        description: "Database specialists"
+        prefix: "db-"
+      ToolingExpert:
+        description: "Tooling specialists"
+        prefix: "tool-"
+      Architect:
+        description: "Architecture and documentation"
+        prefix: "arch-"
+      InfraEngineer:
+        description: "Infrastructure specialists"
+        prefix: "infra-"
+      QAAgent:
+        description: "QA and testing"
+        prefix: "qa-"
+      ManagerAgent:
+        description: "System management agents"
+        prefix: "mgr-"
+      SystemAgent:
+        description: "System utility agents"
+        prefix: "sys-"
+    properties:
+      name: { type: string, required: true }
+      description: { type: string, required: true }
+      model: { type: enum, values: [opus, sonnet, haiku], required: true }
+      memory: { type: enum, values: [project, user, local], required: false }
+      effort: { type: enum, values: [low, medium, high], required: false }
+      tools: { type: "list[string]", required: true }
+
+  Skill:
+    description: "Reusable capability or knowledge module"
+    subclasses:
+      RoutingSkill: { description: "Route tasks to agents" }
+      BestPracticeSkill: { description: "Language/framework patterns" }
+      ManagementSkill: { description: "Agent/project management" }
+      DevelopmentSkill: { description: "Code review and refactoring" }
+      OptimizationSkill: { description: "Performance optimization" }
+      MemorySkill: { description: "Memory persistence" }
+      PackageSkill: { description: "Package management" }
+      SystemSkill: { description: "System utilities" }
+      VerificationSkill: { description: "Compliance verification" }
+      IntentSkill: { description: "Intent analysis" }
+      DeploymentSkill: { description: "Deployment automation" }
+      WritingSkill: { description: "Writing quality" }
+      MonitoringSkill: { description: "Monitoring" }
+    properties:
+      name: { type: string, required: true }
+      description: { type: string, required: true }
+      user-invocable: { type: boolean, default: true }
+      model_invocable: { type: boolean, default: true }
+
+  Rule:
+    description: "Governance rule for agent behavior"
+    subclasses:
+      MustRule: { description: "Mandatory - violation requires correction", enforced: true }
+      ShouldRule: { description: "Recommended - strong guidance", enforced: false }
+      MayRule: { description: "Optional - beneficial when applied", enforced: false }
+    properties:
+      id: { type: string, pattern: "R\\d{3}", required: true }
+      title: { type: string, required: true }
+      priority: { type: enum, values: [MUST, SHOULD, MAY], required: true }
+      token_estimate: { type: integer, required: true }
+
+# Relations between entities
+relations:
+  requires:
+    description: "Agent requires a skill to perform its work"
+    source: Agent
+    target: Skill
+    cardinality: "many-to-many"
+
+  must_follow:
+    description: "Agent must follow this rule"
+    source: Agent
+    target: MustRule
+    cardinality: "many-to-many"
+
+  should_follow:
+    description: "Agent should follow this rule"
+    source: Agent
+    target: ShouldRule
+    cardinality: "many-to-many"
+
+  depends_on:
+    description: "Skill depends on a rule for its operation"
+    source: Skill
+    target: Rule
+    cardinality: "many-to-many"
+
+  routes_to:
+    description: "Routing skill routes to an agent"
+    source: RoutingSkill
+    target: Agent
+    cardinality: "one-to-many"
+
+  references:
+    description: "Skill references a guide for documentation"
+    source: Skill
+    target: Guide
+    cardinality: "many-to-many"
+
+# Context loading levels
+loading_levels:
+  level_0:
+    description: "Category summaries only"
+    target_tokens: 500
+    content: "Rule categories + agent class list"
+  level_1:
+    description: "Relevant entity summaries"
+    target_tokens: 800
+    content: "Matched rules/skills/agents summaries"
+  level_2:
+    description: "Selected entity full content"
+    target_tokens: 1500
+    content: "Top-3 rules full text"
+  level_3:
+    description: "Skill details"
+    target_tokens: 600
+    content: "Matched skill summaries"
+  level_4:
+    description: "Full skill content (on-demand)"
+    target_tokens: 2000
+    content: "Full skill instructions"

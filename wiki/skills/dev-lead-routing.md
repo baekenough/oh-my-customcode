@@ -10,7 +10,7 @@ related:
   - [[lang-typescript-expert]]
   - [[lang-rust-expert]]
   - [[lang-kotlin-expert]]
-  - [[lang-java21-expert]]
+  - [[lang-java-expert]]
   - [[fe-vercel-agent]]
 ---
 
@@ -20,7 +20,7 @@ Routes development tasks to the correct language/framework expert agent.
 
 ## Overview
 
-Routing skill for software development tasks. Detects the appropriate language or framework expert based on file extensions, keywords, and project context, then delegates via the Agent tool. Targets all language experts (Go, Python, TypeScript, Rust, Kotlin, Java21) and backend/frontend specialists. Supports R019 ontology-RAG enrichment for skill suggestions. Falls back to dynamic agent creation via `mgr-creator` when no specialist matches.
+Routing skill for software development tasks. Detects the appropriate language or framework expert based on file extensions, keywords, and project context, then delegates via the Agent tool. Targets all language experts (Go, Python, TypeScript, Rust, Kotlin, Java) and backend/frontend specialists. Supports R019 ontology-RAG enrichment for skill suggestions. Falls back to dynamic agent creation via `mgr-creator` when no specialist matches.
 
 ## Key Details
 
