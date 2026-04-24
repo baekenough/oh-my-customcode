@@ -232,7 +232,35 @@ Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HH
 
 ### Sensitive Path Handling
 
-CC treats `.claude/` as a sensitive directory. The sensitive-path check runs **above** `bypassPermissions` and `Bash(*)` allow rules, so Bash-based file operations (`cp`, `mkdir`) on `.claude/` paths trigger permission prompts regardless of settings. Subagents and skills that modify `.claude/` files SHOULD prefer `Write`/`Edit` tools over `Bash(cp)`/`Bash(mkdir)`, and projects SHOULD add `Write(.claude/**)` and `Edit(.claude/**)` to `.claude/settings.local.json` allow list.
+CC treats `.claude/` as a sensitive directory, enforced across **all tool categories** — Bash, Write, and Edit. The sensitive-path check runs **above** `bypassPermissions` and explicit allow rules (e.g., `Write(.claude/**)`), so operations on sensitive paths may trigger permission prompts regardless of settings.
+
+#### Scope
+
+| Path pattern | Sensitive? | Applies to |
+|--------------|-----------|-----------|
+| `.claude/**` | Yes | Bash (`cp`, `mkdir`, `rm`), Write, Edit |
+| `templates/.claude/**` | Yes | Bash, Write, Edit (confirmed v2.1.116+, 3x repeat v0.105.0 session) |
+| `.claude/outputs/**` | No (artifact convention) | — |
+
+#### Behavior
+
+| Tool | Allow rule | Result |
+|------|-----------|--------|
+| `Bash(cp ...)` on `.claude/` | `Bash(*)` allowed | Prompt (sensitive-path overrides) |
+| `Write(.claude/**)` | `Write(.claude/**)` allowed | Prompt (sensitive-path overrides) |
+| `Edit(templates/.claude/**)` | `Edit(templates/.claude/**)` allowed | Prompt (sensitive-path overrides) |
+
+#### Recommended practice
+
+1. **Prefer `Write`/`Edit` over `Bash(cp)`/`Bash(mkdir)`** — even though both trigger prompts, `Write`/`Edit` provide better auditability and avoid shell injection risk
+2. **Add allow rules defensively** — `Write(.claude/**)`, `Edit(.claude/**)`, `Write(templates/.claude/**)`, `Edit(templates/.claude/**)` in `.claude/settings.local.json`. Rules may not bypass sensitive-path check but document intent and aid future CC behavior changes
+3. **Accept interactive prompts as a release-pipeline constraint** — `templates/.claude/` sync during release automation requires human approval; plan release windows accordingly
+4. **This is CC design behavior, not a bug** — sensitive-path check is a defense-in-depth layer. File upstream as a documentation request (not bug report) if behavior is unclear
+
+#### Cross-references
+
+- `feedback_sensitive_path.md` — session memory with Bash + Write scope (#960, #961, #981)
+- `feedback_templates_claude_glob.md` — `.claude/**` glob does not cover `templates/.claude/**`, separate allow rules required
 
 ### Artifact Channel Protocol
 
