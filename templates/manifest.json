@@ -1,5 +1,5 @@
 {
-  "version": "0.107.0",
+  "version": "0.108.0",
   "lastUpdated": "2026-04-24T07:30:00.000Z",
   "components": [
     {
@@ -24,7 +24,7 @@
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
-      "files": 43
+      "files": 44
     },
     {
       "name": "hooks",

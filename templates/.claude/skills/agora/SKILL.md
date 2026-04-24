@@ -194,3 +194,49 @@ agora:
 | Push for consensus too fast | Premature agreement | Let reviewers challenge freely |
 
 When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+
+## Ontology Convergence (PoC)
+
+> Source: #993 (from ouroboros #966 re-evaluation, Option C deferred → PoC 섹션으로 내재화)
+> Status: Experimental — default disabled
+
+agora는 기본적으로 만장일치 기반으로 종료하지만, 의미적 유사도 기반 조기 종료를 **PoC로 지원**합니다.
+
+### Rationale
+
+여러 라운드 후 모든 에이전트의 마지막 응답이 의미상 거의 동일하면(semantic similarity ≥ threshold), 만장일치를 기다리지 않고 조기 수렴으로 판단하여 토큰 비용을 절감합니다.
+
+### Configuration
+
+```yaml
+ontology_convergence:
+  enabled: false              # 기본 비활성 (PoC)
+  threshold: 0.95             # cosine similarity 최소값
+  min_rounds: 2               # 최소 라운드 (너무 이른 종료 방지)
+  embedding_model: voyage-3.5 # 또는 openai-text-embedding-3
+```
+
+### Algorithm
+
+1. 각 라운드 종료 시 participant 응답의 embedding 계산
+2. Pairwise cosine similarity 매트릭스 생성
+3. 최소 유사도(min pairwise similarity) 계산
+4. `min_sim ≥ threshold` AND `rounds ≥ min_rounds` → 조기 종료
+
+### Trade-offs
+
+| 장점 | 단점 |
+|------|------|
+| 토큰 절감 (수렴 시 2-3 라운드 단축) | embedding 계산 오버헤드 |
+| 만장일치 편향 완화 (의미 일치만으로 충분) | threshold 튜닝 필요 (프로젝트마다 다름) |
+| 정량적 수렴 지표 | 오분류 시 조기 종료 리스크 |
+
+### Activation
+
+현재 PoC 단계. 활성화 시 `agora` 스킬 호출 파라미터에 `--ontology-convergence=true` 추가. 프로덕션 승격 결정은 3개월 후 데이터 기반 재평가 (연계: #992 PAL Router Defer+observe 전략과 동일 원칙).
+
+### Cross-references
+
+- #993 (source)
+- #966 ouroboros 재평가
+- guides/agent-design/pal-cost-routing-analysis.md (유사한 Defer+observe 전략)
