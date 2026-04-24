@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-48개 에이전트. 112개 스킬. 22개 규칙. 명령어 하나.
+48개 에이전트. 113개 스킬. 22개 규칙. 명령어 하나.
 
 > **v0.74.0** — omcustom sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
 
@@ -149,7 +149,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (112개)
+## 스킬 (113개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -286,7 +286,7 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 48개 에이전트 정의
-│   ├── skills/                 # 112개 스킬 모듈
+│   ├── skills/                 # 113개 스킬 모듈
 │   ├── rules/                  # 22개 거버넌스 규칙 (R000-R022)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
@@ -295,7 +295,7 @@ your-project/
 │   └── ontology/               # RAG용 지식 그래프
 ├── packages/
 │   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
-└── guides/                     # 40개 레퍼런스 문서
+└── guides/                     # 42개 레퍼런스 문서
 ```
 
 ---

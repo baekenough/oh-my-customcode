@@ -143,3 +143,7 @@ harness:
   enforcement: advisory | hard  # hard only with --hard-enforce
   rules: [...]
 ```
+
+## Related Guide
+
+- `guides/harness-engineering/` — 하네스 엔지니어링 통합 가이드 (3-Layer Hierarchy + Context Engineering + Behavior/Isolation 원칙)
