@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.106.1",
-  "generatedAt": "2026-04-24T09:00:42.878Z",
-  "templateVersion": "0.106.1",
+  "generatorVersion": "0.107.0",
+  "generatedAt": "2026-04-24T09:33:55.060Z",
+  "templateVersion": "0.107.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "0f6bcc7f491e2748ec999454d0cad24778ddb8e2244a00f10675168d971d4c37",
-      "size": 23500,
+      "templateHash": "f71ae0171a07946da0feae97dc1ba838100e39f0099744708d2f9a5c58944f8f",
+      "size": 23300,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -1334,6 +1334,11 @@
       "size": 1842,
       "component": "guides"
     },
+    "guides/claude-code/15-version-compatibility.md": {
+      "templateHash": "b363120737bfacaa3c750873dfa967d255589e37e90602bede4de02be81bb8a7",
+      "size": 3068,
+      "component": "guides"
+    },
     "guides/claude-code/11-sub-agents.md": {
       "templateHash": "a793f29a29f966175e7b68dc7c0ebb4dcf814a8444a5bab977f9c121c43e12cb",
       "size": 4200,
@@ -1637,6 +1642,11 @@
     "guides/agent-design/ralph-loop-pattern.md": {
       "templateHash": "6be38a8cc7f6b666f4a40f44f69c771b50ee04a8f8a59e743fd964ba405d6778",
       "size": 1403,
+      "component": "guides"
+    },
+    "guides/agent-design/pal-cost-routing-analysis.md": {
+      "templateHash": "de5b31d3554c3d200c28deacdb48b880058c394cf31fba28ea6c5cc1970ffd53",
+      "size": 4074,
       "component": "guides"
     },
     "guides/drizzle-orm/README.md": {
