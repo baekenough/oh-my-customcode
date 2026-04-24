@@ -19,11 +19,13 @@ Defines mandatory safety constraints for all pipeline, workflow, and iterative e
 | Max iterations | 3 | 5 | worker-reviewer-pipeline |
 | Max DAG nodes | 20 | 30 | dag-orchestration |
 | Max parallel agents | 4 | 5 | R009 (all pipelines) |
+| Max parallel steps   | 4        | 4        | pipeline parallel blocks |
 | Timeout per node | 300s | 600s | dag-orchestration nodes |
 | Timeout per pipeline | 900s | 1800s | worker-reviewer-pipeline |
 | Max retry count | 2 | 3 | Failure retry strategies |
 | Max PR improvement items | 20 | 50 | pr-auto-improve |
 | Max auto-improve items | 20 | 50 | omcustom-auto-improve |
+| Max files per agent | 10 | 15 | All agent spawns (advisory) |
 
 ## Enforcement
 
@@ -81,6 +83,23 @@ When guards are triggered, they integrate with existing advisory systems:
 | Repeated failures | → model-escalation advisory |
 | Timeout approaching (80%) | → warn user, suggest early termination |
 | Hard cap hit | → force stop, report to user |
+
+## Task Granularity Guard
+
+Advisory guard for agent task scope. When a single agent is assigned too many files, it becomes a bottleneck in parallel execution.
+
+| Signal | Default | Action |
+|--------|---------|--------|
+| Files per agent > 10 | Advisory warning | Suggest splitting by layer/domain |
+| Files per agent > 15 | Hard warning | Require explicit user override |
+
+Display:
+```
+[Guard] ⚠ Agent assigned {n} files (> 10) — consider splitting by layer
+[Guard] 🛑 Agent assigned {n} files (> 15) — requires explicit override
+```
+
+This integrates with R009 Adaptive Parallel Splitting: if a stalled agent is detected AND it was assigned > 10 files, the splitting recommendation is stronger.
 
 ## Guard Configuration
 
@@ -157,6 +176,26 @@ Guard warnings appear inline:
 | omcustom-auto-improve | Auto-improve item count limits |
 | stuck-recovery | Guard triggers feed into stuck detection |
 | model-escalation | Repeated failures trigger escalation advisory |
+| task-decomposition | Subtask file counts validated against granularity guard thresholds |
+
+## Checkpoint Gate Integration
+
+각 guard 통과/실패 시 `tracker-checkpoint` 에이전트로 gate state 기록.
+
+### Flow
+
+1. Guard 진입 → tracker-checkpoint에 gate state: running 기록
+2. Guard 통과 → tracker-checkpoint에 gate state: passed + metrics 기록
+3. Guard 실패 → tracker-checkpoint에 gate state: failed + failure reason freeze
+4. 다음 단계는 checkpoint state 참조하여 재개/중단 판단
+
+### Benefits
+
+- 긴 파이프라인에서 guard 지점마다 복원점 확보
+- 부분 실패 시 직전 guard 지점부터 재시도 가능 (비용 절감)
+- guard metrics 축적으로 품질 추이 관찰 가능
+
+See `.claude/agents/tracker-checkpoint.md` for the tracker spec.
 
 ## Override Policy
 

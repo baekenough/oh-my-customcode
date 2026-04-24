@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.106.0",
-  "generatedAt": "2026-04-24T07:18:36.071Z",
-  "templateVersion": "0.106.0",
+  "generatorVersion": "0.106.1",
+  "generatedAt": "2026-04-24T09:00:42.878Z",
+  "templateVersion": "0.106.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -237,6 +237,11 @@
     ".claude/agents/tool-npm-expert.md": {
       "templateHash": "57490681e8c6faef90c1d501c5e9bdf065890e5ac022090991e7be0324c244e4",
       "size": 872,
+      "component": "agents"
+    },
+    ".claude/agents/tracker-checkpoint.md": {
+      "templateHash": "55c1860b94205974f088ddf1a49ab03721dcd9edb8b4f1a84e8caaaa1cfe8504",
+      "size": 2599,
       "component": "agents"
     },
     ".claude/agents/de-dbt-expert.md": {
@@ -860,8 +865,13 @@
       "component": "skills"
     },
     ".claude/skills/sdd-dev/SKILL.md": {
-      "templateHash": "90ba687c9898588826f4aaf922660d02f5c0cb83aa0314f01c91aa033fb2e42a",
-      "size": 7646,
+      "templateHash": "3ecbd091187f10329a2801324d3c47e96a9c11890f311db4034ef82494d2ac80",
+      "size": 8366,
+      "component": "skills"
+    },
+    ".claude/skills/sdd-dev/templates/decision-record.md": {
+      "templateHash": "f95270144b575409601be0617f6be6778f386cd70b30a868bd3bc0a62c4366ed",
+      "size": 1196,
       "component": "skills"
     },
     ".claude/skills/sdd/SKILL.md": {
@@ -945,8 +955,8 @@
       "component": "skills"
     },
     ".claude/skills/dag-orchestration/SKILL.md": {
-      "templateHash": "e3dbefa46a4b997c9956ce35a3ae377f46f58955f4a778236a474ea72c5621f2",
-      "size": 6655,
+      "templateHash": "2fb1b222d2e3a37a83e81db443a8dffffa51c7533986bc1336752056953def45",
+      "size": 7450,
       "component": "skills"
     },
     ".claude/skills/wiki-rag/SKILL.md": {
@@ -1035,8 +1045,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline-guards/SKILL.md": {
-      "templateHash": "c959d41cd627eb63bd8145eb757614134823aaf47d3fbd5eca8f20bb7d40790f",
-      "size": 6145,
+      "templateHash": "366d54b4dea9687455b3482e0350ab18a936cb264e33ed1061579d92261c29f2",
+      "size": 6857,
       "component": "skills"
     },
     ".claude/skills/help/SKILL.md": {
@@ -1575,8 +1585,8 @@
       "component": "guides"
     },
     "guides/harness-engineering/README.md": {
-      "templateHash": "aa2aee92cdeb9560ec429dc77ca0cdb647288cb97b117df9701c9960f50bf2e6",
-      "size": 12329,
+      "templateHash": "9993dc12174f300774c8415d2ae25e155856f7351b75b8cecc4017a32fd78f67",
+      "size": 12445,
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {
