@@ -2,7 +2,7 @@
 name: sdd-dev
 description: Spec-Driven Development workflow — enforces sdd/ folder hierarchy with planning-first gates, current-state artifacts, and completion verification
 scope: core
-version: 1.0.0
+version: 1.1.0
 user-invocable: true
 argument-hint: "[task description or leave empty for guided workflow]"
 ---
@@ -27,7 +27,8 @@ sdd/
 ├── 03_build/        # Current build state, implementation notes
 ├── 04_verify/       # Verification evidence, test results, residual risks
 ├── 05_operate/      # Deployment notes, runbooks (conditional)
-└── 99_toolchain/    # Tool configs, scripts, environment setup
+├── 99_toolchain/    # Tool configs, scripts, environment setup
+└── decisions/       # Decision records for major design choices
 ```
 
 **Key Principle**: These folders are **current-state artifacts**, not history archives. Each file reflects the current state of the work — update in place rather than appending new versions.
@@ -44,7 +45,7 @@ ls sdd/ 2>/dev/null || echo "sdd/ folder not found"
 
 If `sdd/` does not exist:
 1. Inform the user that SDD workflow requires a `sdd/` folder
-2. Offer to create the folder structure: `mkdir -p sdd/{01_planning,02_plan,03_build,04_verify,05_operate,99_toolchain}`
+2. Offer to create the folder structure: `mkdir -p sdd/{01_planning,02_plan,03_build,04_verify,05_operate,99_toolchain,decisions}`
 3. Ask user to confirm before proceeding
 
 If `sdd/` exists, continue to Step 1.
@@ -121,6 +122,7 @@ Artifact to produce or update: `sdd/03_build/current.md`
 
 ## Decisions Made
 - {decision}: {rationale}
+- Write DR for major decisions: sdd/decisions/{YYYY-MM-DD}-{topic}.md (template: templates/decision-record.md)
 
 ## Known Issues
 - {issue}: {planned resolution}
@@ -234,6 +236,18 @@ Final display:
 2. **One file per folder**: `current.md` is the canonical artifact. Supplementary files are allowed but the main doc is always `current.md`.
 3. **Checkboxes reflect reality**: Do NOT pre-check criteria. Update checkboxes as work is verified.
 4. **Residual risks are honest**: List known risks even after passing. Hiding risks defeats the purpose.
+
+## Decision Record Template
+
+Major design decisions during Step 3 are recorded in `sdd/decisions/{YYYY-MM-DD}-{topic}.md` using the template at `templates/decision-record.md` (relative to this skill directory).
+
+When to create a Decision Record:
+- Architectural choice between 2+ viable options
+- Trade-off accepted (e.g., complexity for performance)
+- Deferred decision (waiting for data/approval)
+- Superseding a previous decision
+
+See `guides/harness-engineering/` for harness-level decision context that DRs may reference.
 
 ## Integration with Other Skills
 

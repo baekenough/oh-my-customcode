@@ -57,7 +57,7 @@ nodes:
     depends_on: [test, review, docs]
 
 config:
-  max_parallel: 4          # R009 limit
+  max_parallel: 4          # R009 soft default (hard cap: 5)
   failure_strategy: stop   # stop | skip | retry
   retry_count: 2           # Max retries per node (if strategy=retry)
   timeout_per_node: 300    # Seconds per node (0 = no limit)
@@ -76,7 +76,11 @@ config:
    c. On completion:
       - Success → decrement in-degree of dependents
       - Failure → apply failure_strategy
-   d. Enqueue newly-ready nodes (in-degree = 0)
+   d. Stall check:
+      - If running node duration > 2x average completed duration
+      - AND pending nodes exist with in-degree = 0 (ignoring stalled node's edges)
+      - THEN enqueue those independent nodes immediately (adaptive split)
+   e. Enqueue newly-ready nodes (in-degree = 0)
 6. Verify all nodes executed (detect unreachable nodes)
 ```
 
@@ -84,11 +88,12 @@ config:
 
 | Rule | Detail |
 |------|--------|
-| Max parallel | 4 concurrent nodes (R009) |
+| Max parallel | 5 concurrent nodes max, 4 default (R009) |
 | Agent Teams gate | 3+ parallel nodes → check R018 eligibility |
 | Orchestrator only | DAG scheduling runs in main conversation (R010) |
 | Node execution | Each node = one Task tool call to specified agent |
 | State tracking | `/tmp/.claude-dag-$PPID.json` |
+| Stall detection | Running node > 2x avg completed duration → enqueue independent pending nodes early |
 
 ## Failure Strategies
 
@@ -193,9 +198,47 @@ Execute? [Y/n]
 
 The orchestrator builds the DAG from this inline format and executes using the same algorithm.
 
+## State Management via tracker-checkpoint
+
+Pipeline 상태는 `tracker-checkpoint` 에이전트로 위임됩니다.
+
+### Flow
+
+1. Pipeline 시작 → orchestrator가 tracker-checkpoint 호출 → 초기 state 파일 생성 (`/tmp/.claude-pipeline-{name}-{PPID}.json`)
+2. 각 step 후 → tracker-checkpoint가 state 업데이트 (atomic write)
+3. step 실패 → tracker-checkpoint가 halted 상태로 freeze
+4. `/pipeline resume` → tracker-checkpoint가 state 로드 → orchestrator에 복원 옵션 제공
+
+### Integration
+
+- PPID-scoped state file 경로: `/tmp/.claude-pipeline-{name}-{PPID}.json`
+- step 실행 전후로 tracker-checkpoint delegation
+- resume 시 checkpoint → dag 재빌드 → 미완료 step부터 재개
+
+See `.claude/agents/tracker-checkpoint.md` for agent spec.
+
 ## Limitations
 
 - No cycles allowed (DAG = acyclic)
 - Max 20 nodes per workflow (complexity guard)
 - Nested DAGs not supported (flatten instead)
 - Cross-workflow dependencies not supported
+
+## External References
+
+### Multica — Managed Agent Platform
+
+> Reference: [Multica](https://github.com/multica-ai/multica) — managed agent platform for Claude Code/Codex.
+> Verdict: INTEGRATE (external reference, not internalize)
+
+Multica's task lifecycle pattern (enqueue → claim → start → complete/fail) is a useful reference for DAG node state management:
+
+| Multica State | DAG Equivalent | Notes |
+|---------------|---------------|-------|
+| enqueue | pending | Node waiting for dependencies |
+| claim | ready | Dependencies resolved, ready to execute |
+| start | running | Agent spawned and executing |
+| complete | completed | Node finished successfully |
+| fail | failed | Node execution failed |
+
+Consider this pattern when extending DAG node state tracking or implementing retry logic.
