@@ -123,3 +123,7 @@ This skill is an advisory layer, not a hard enforcement mechanism:
 - **Does**: Emit warnings, log scope violations, suggest corrections
 - **Does NOT**: Block tool execution, modify agent behavior, override R021
 - **Future**: May integrate with PreToolUse hooks for automated checking (see R021 promotion criteria)
+
+## Related Guide
+
+- `guides/harness-engineering/` — 하네스 엔지니어링 통합 가이드 (Behavior Control Layer 관점에서 action-validator 위치)

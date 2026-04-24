@@ -93,3 +93,7 @@ Results saved to `.claude/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md
 ## Attribution
 
 Evaluation framework based on research by [revfactory/claude-code-harness](https://github.com/revfactory/claude-code-harness). Adapted for oh-my-customcode's evaluator-optimizer pipeline with permission.
+
+## Related Guide
+
+- `guides/harness-engineering/` — 하네스 엔지니어링 통합 가이드 (Benchmark Evaluation Layer 관점에서 harness-eval 위치)

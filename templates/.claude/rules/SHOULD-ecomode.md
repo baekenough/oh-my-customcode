@@ -36,6 +36,22 @@ Ecomode: `[lang-golang-expert] ✓ src/main.go reviewed: 1 naming issue (handle_
 
 Disable with: "ecomode off", "verbose mode", or "show full details".
 
+## Pruning Transparency
+
+When ecomode is active, report what was compressed so users can audit context decisions:
+
+```
+[Pruned] {n} chunks, ~{tokens} tokens saved | Retained: {m} | Summarized: {k} | Dropped: {j}
+```
+
+| When | Report |
+|------|--------|
+| After input context pruning | `[Pruned]` line in agent output |
+| After output compression | `[Compressed]` line in batch summary |
+| On request ("what was pruned?") | Full pruning ledger with chunk names |
+
+Pruning transparency is advisory — it adds ~1 line per pruning event. Disable with "ecomode off" or "hide pruning".
+
 ## Input Context Pruning — Active removal of irrelevant content. See full spec via Read tool.
 
 <!-- DETAIL: Input Context Pruning
@@ -108,6 +124,35 @@ The `context-budget-advisor.sh` hook monitors context usage and emits warnings w
 - Does NOT override explicit user settings
 - Advisory only — never blocks operations
 - Context percentage from statusline data when available
+-->
+
+## Deep Insight Context Handoff Pattern — 에이전트 간 핸드오프 시 context window 한계를 극복하는 패턴. per-agent budget 할당 + artifact channel 전달. See full spec via Read tool.
+
+<!-- DETAIL: Deep Insight Context Handoff Pattern
+
+에이전트 간 핸드오프 시 context window 한계를 극복하기 위한 패턴. 기존 task-type threshold에 **per-agent budget** 차원을 추가합니다.
+
+### Per-Agent Budget
+
+| 상황 | 권장 할당 |
+|------|----------|
+| 오케스트레이터 (메인 대화) | 총 컨텍스트 40-50% |
+| 전문가 서브에이전트 | 총 컨텍스트 20-30% per instance |
+| 리서치 에이전트 (Explore) | 총 컨텍스트 10-20% per instance |
+
+task-type threshold와 곱연산 — 예: research 40% × 전문가 30% = 실질 12% 할당.
+
+### Handoff Protocol
+
+1. **Inline transfer 금지** — 에이전트 간 결과 전달 시 본문을 직접 다음 에이전트 프롬프트에 포함하지 않음
+2. **Artifact channel 사용** — 결과를 `.claude/outputs/sessions/{date}/{skill}-{HH}.md`에 저장, 다음 에이전트에는 경로만 전달 (R006 Artifact Channel Protocol)
+3. **result-aggregation 스킬** — N개 에이전트 결과를 단일 요약으로 압축 후 후속 에이전트에 전달
+
+### 참조
+
+- R006 `MUST-agent-design.md` Artifact Channel Protocol (R013과 쌍으로 작동)
+- `result-aggregation` 스킬 — channel 읽기 패턴
+- `ecomode` + `cc-token-saver` Token Guardian 공존 (기존 섹션)
 -->
 
 ## Token Guardian Coexistence — R013 context budget (usage-based) + cc-token-saver Token Guardian (time-based) can run simultaneously.

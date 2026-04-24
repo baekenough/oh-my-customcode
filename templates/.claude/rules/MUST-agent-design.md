@@ -234,6 +234,31 @@ Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HH
 
 CC treats `.claude/` as a sensitive directory. The sensitive-path check runs **above** `bypassPermissions` and `Bash(*)` allow rules, so Bash-based file operations (`cp`, `mkdir`) on `.claude/` paths trigger permission prompts regardless of settings. Subagents and skills that modify `.claude/` files SHOULD prefer `Write`/`Edit` tools over `Bash(cp)`/`Bash(mkdir)`, and projects SHOULD add `Write(.claude/**)` and `Edit(.claude/**)` to `.claude/settings.local.json` allow list.
 
+### Artifact Channel Protocol
+
+에이전트 간 결과 핸드오프 시 **아티팩트 파일을 채널로 사용**하는 프로토콜. 기존 Artifact Output Convention의 경로 규약을 에이전트 통신 계약으로 승격합니다.
+
+#### 원칙
+
+| 원칙 | 내용 |
+|------|------|
+| Path-only transfer | 다음 에이전트에 전달할 때 **파일 경로만 전달**, 본문 inline 전달 금지 |
+| Read-write 분리 | 생산 에이전트는 Write, 소비 에이전트는 Read (파일 경쟁 방지) |
+| Session-scoped | 아티팩트는 세션 범위 — `{YYYY-MM-DD}` 디렉토리로 격리 |
+| Single-writer | 한 아티팩트는 하나의 에이전트만 작성. 후속 에이전트는 새 아티팩트 생성 |
+
+#### 사용 맥락
+
+1. **Parallel agents → Aggregator**: N 병렬 에이전트가 각자 `skill-HHmmss.md` 작성 → aggregator가 N개 경로를 받아 단일 요약 생성
+2. **Research → Planner**: research 에이전트가 findings를 아티팩트로 저장 → planner가 경로 참조로 계획 수립
+3. **Pipeline steps**: 단계별 state를 파일 기반으로 체크포인트 (Tracker 패턴의 전단계)
+
+#### 관련 규약
+
+- R013 SHOULD-ecomode.md Deep Insight Context Handoff Pattern (per-agent budget + handoff protocol)
+- `result-aggregation` 스킬 (channel read pattern 구현)
+- R011 SHOULD-memory-integration.md (장기 persistence는 memory, 세션 handoff는 channel)
+
 <!-- DETAIL: Artifact Output full spec
 **Format**: Metadata header with `skill`, `date`, `query` fields, followed by skill output content.
 **Rules**: Opt-in per skill, final subagent writes (R010 compliance), Write tool auto-creates parent directory (no Bash `mkdir` required — avoids `.claude/` sensitive-path prompt per #960/#961/#978), .claude/outputs/ is git-untracked, no indexing required.

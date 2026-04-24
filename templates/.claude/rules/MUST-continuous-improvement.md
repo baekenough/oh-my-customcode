@@ -26,13 +26,15 @@ Update the relevant rule rather than just acknowledging the violation.
 
 ## Defect Response Matrix
 
-| Defect Type | Rule Update | Memory | Issue |
-|-------------|:-----------:|:------:|:-----:|
-| Rule violation (agent behavior) | ✅ | — | — |
-| CI/infra defect | — | ✅ | ✅ |
-| Process gap (workflow hole) | ✅ | ✅ | ✅ |
-| Repeatable system bug | — | ✅ | ✅ |
-| Agent selection failure (wrong agent routed) | — | ✅ | — |
+| Defect Type | Rule Update | Memory | Issue | Skill Promotion |
+|-------------|:-----------:|:------:|:-----:|:---------------:|
+| Rule violation (agent behavior) | ✅ | — | — | — |
+| CI/infra defect | — | ✅ | ✅ | — |
+| Process gap (workflow hole) | ✅ | ✅ | ✅ | ⚠️ (패턴 3회 이상 반복 시) |
+| Repeatable system bug | — | ✅ | ✅ | ⚠️ (수정이 구조적일 경우, 일회성 아닐 때) |
+| Agent selection failure (wrong agent routed) | — | ✅ | — | ✅ (라우팅 스킬 업데이트 후보) |
+
+**Skill Promotion**: feedback memory가 동일 패턴으로 3회 이상 반복되면 "failure pattern"으로 승격. skill-extractor의 `--mode failure` 플래그로 스킬 후보 분석 가능 (Skillify 내재화, #972).
 
 When CI failure, process gap, or repeatable system defect is found:
 1. Record feedback memory (defend current session)
