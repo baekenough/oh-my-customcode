@@ -99,9 +99,9 @@ Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specif
 | de-lead-routing | de-* agents |
 | qa-lead-routing | qa-* agents |
 
-**Workflow/orchestration skills (7, context: fork)**
+**Workflow/orchestration skills (5, context: fork)**
 
-dag-orchestration, task-decomposition, worker-reviewer-pipeline, pipeline-guards, deep-plan, evaluator-optimizer, sauron-watch
+dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage
 
 **Best-practices skills (~26)**
 
@@ -624,7 +624,7 @@ Tested and compatible with Claude Code v2.1.72 through v2.1.114+.
 | Rules (21 files) | ~28K tokens |
 | Total mandatory load | ~33K tokens / session |
 
-Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (11 active, 12 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
+Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (9 active, 12 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
 
 **Ecomode (R013)** auto-activates based on task type and context usage:
 
@@ -652,7 +652,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Native auto-memory | The `memory:` frontmatter field that injects MEMORY.md into an agent's context each session. |
 | Dynamic creation | The fallback pattern where mgr-creator auto-builds a new specialist when no existing agent matches. |
 | Ecomode | Compact output mode that activates automatically when context usage exceeds task-type thresholds. |
-| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (11 active, 12 cap). |
+| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (9 active, 12 cap). |
 | R017 (Sauron) | The 5-round manager + 3-round deep-review verification cycle required before any structural push. |
 | Compilation metaphor | The conceptual framework treating skill/rule authoring as source code that compiles into agent behavior. |
 | Takeover | Reverse compilation — analyzing existing code to generate structured agent/skill specs. |
