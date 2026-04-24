@@ -144,6 +144,76 @@ harness:
   rules: [...]
 ```
 
+## 2-Stage Isolation Example (v0.108.0 via #986)
+
+> Source: #986 (Deep Insight Part 3 후속, guides/harness-engineering/ Section 3 확장)
+
+harness 생성 시 격리 수준을 단계적으로 적용하는 2-Stage Isolation 패턴 구체 예시.
+
+### Stage 1 — Base64 Encoding (input isolation)
+
+에이전트 작업 입력 (특히 외부 소스에서 온 데이터)을 직접 shell/Python 컨텍스트에 주입하지 않고 Base64 인코딩한 후 runtime에서 디코드:
+
+```python
+import base64
+
+# Before (unsafe): 직접 삽입
+# subprocess_run(["python", "-c", f"process('{user_input}')"])
+
+# After (Stage 1): Base64 격리
+encoded = base64.b64encode(user_input.encode()).decode()
+subprocess_run([
+    "python", "-c",
+    f"import base64; process(base64.b64decode('{encoded}').decode())"
+])
+```
+
+**방어 대상**: shell metacharacter 주입, quote escape 우회, 다중라인 페이로드.
+
+### Stage 2 — Subprocess Isolation (execution isolation)
+
+Stage 1 인코딩 후에도, 실제 실행은 **격리된 subprocess**에서 수행. 메인 에이전트 context에서 직접 eval/exec 금지:
+
+```python
+# Before (unsafe): 메인 프로세스에서 직접 실행
+# exec(decoded_code)  # 에이전트 메모리 오염 가능
+
+# After (Stage 2): subprocess + 리소스 제한
+result = subprocess_run(
+    ["python", "-c", safe_runner_script, encoded],
+    timeout=30,
+    capture_output=True,
+    env={"PATH": "/usr/bin"},  # PATH 제한
+)
+```
+
+**방어 대상**: 무한 루프(timeout), 파일 시스템 접근(env 제한), 부모 에이전트 상태 오염.
+
+### Verifier/Filter/Policy Generation Before/After
+
+harness-synthesizer가 생성하는 verifier/filter/policy에 2-Stage Isolation을 **기본 활성화**:
+
+**Before (v0.107.0 이전)**:
+- verifier는 문자열 매칭만 수행
+- filter는 정규식 기반 단순 차단
+- policy는 허용/거부 리스트
+
+**After (v0.108.0, 2-Stage 기본 적용)**:
+- verifier: Base64 인코딩 후 subprocess AST 파싱 → 구조 검증
+- filter: Stage 1 디코드 후 AST 레벨 필터 (semantic, not lexical)
+- policy: subprocess env 제한 + capability token (capability-based security)
+
+### Action Items
+
+- harness-synthesizer 호출자는 기본으로 2-Stage 활성화 가정
+- verifier/filter/policy 커스텀 시 Stage 1/2 모두 유지 (한 단계 건너뛰지 말 것)
+
+### Cross-references
+
+- #986 (source)
+- `guides/harness-engineering/README.md` Section 3
+- #976 (Deep Insight Part 3 내재화 — 이 섹션의 기반)
+
 ## Related Guide
 
 - `guides/harness-engineering/` — 하네스 엔지니어링 통합 가이드 (3-Layer Hierarchy + Context Engineering + Behavior/Isolation 원칙)
