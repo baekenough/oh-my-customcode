@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.105.1",
-  "generatedAt": "2026-04-24T06:48:37.612Z",
-  "templateVersion": "0.105.1",
+  "generatorVersion": "0.106.0",
+  "generatedAt": "2026-04-24T07:18:36.071Z",
+  "templateVersion": "0.106.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -1360,8 +1360,8 @@
       "component": "guides"
     },
     "guides/claude-code/14-token-efficiency.md": {
-      "templateHash": "ac6348da76c5af1fa74ddd29ab904852fcdf8f7c7b9f6acc8fdbb13b0c75b52d",
-      "size": 10534,
+      "templateHash": "3cb5586f1993c7bd5754d5dd52439ece0c71d355471477df7429db689bd48551",
+      "size": 13044,
       "component": "guides"
     },
     "guides/claude-code/09-guardrails.md": {
@@ -1622,6 +1622,11 @@
     "guides/postgres/README.md": {
       "templateHash": "679a0b942439d7559621633b6cd5692554cec2c6a3895a2511733ee6bd3e5f83",
       "size": 2157,
+      "component": "guides"
+    },
+    "guides/agent-design/ralph-loop-pattern.md": {
+      "templateHash": "6be38a8cc7f6b666f4a40f44f69c771b50ee04a8f8a59e743fd964ba405d6778",
+      "size": 1403,
       "component": "guides"
     },
     "guides/drizzle-orm/README.md": {

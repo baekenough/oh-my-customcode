@@ -3,7 +3,7 @@
 
 meta:
   updated: "2026-04-19"
-  total_pages: 253
+  total_pages: 254
   total_sources: 216
 
 pages:
@@ -580,6 +580,9 @@ pages:
       summary: "When agents, skills, rules, or guides change, corresponding wiki pages should be updated"
 
   guides:
+    - file: guides/agent-design.md
+      title: "Agent Design Patterns Guide"
+      summary: "Agent design patterns for session persistence and tacit knowledge retention — Ralph Loop Pattern (Q00/ouroboros) for cross-session sticky pattern injection via sys-memory-keeper and claude-mem MCP"
     - file: guides/airflow.md
       title: "Airflow Guide"
       summary: "Reference documentation for Apache Airflow DAG development and workflow orchestration"

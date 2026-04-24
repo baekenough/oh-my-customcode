@@ -103,7 +103,7 @@ oh-my-customcode로 구동됩니다.
 | 릴리즈 | `/pipeline auto-dev`, `/omcustom-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
 | 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustom:agora` | 병렬 분석, URL 평가, 연구 계획 |
 | 메모리 | `/memory-save`, `/memory-recall` | 세션 메모리 관리 |
-| 최적화 | `/token-efficiency-audit` | 토큰 효율 감사 (3계층 방어 스택) |
+| 최적화 | `/token-efficiency-audit` | 토큰 효율 감사 (5계층 방어 스택) |
 | 시스템 | `/omcustom:lists`, `/omcustom:status`, `/omcustom:help` | 전체 목록, 상태, 도움말 |
 
 > 전체 커맨드 목록 (60+ 커맨드): `/omcustom:lists` 실행
@@ -119,7 +119,7 @@ project/
 |   +-- rules/                   # 전역 규칙 (R000-R022)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
-+-- guides/                      # 레퍼런스 문서 (42 토픽)
++-- guides/                      # 레퍼런스 문서 (43 토픽)
 ```
 
 ## 오케스트레이션
@@ -236,6 +236,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 | 플러그인 | 소스 | 용도 |
 |----------|------|------|
 | cc-token-saver | ww-w-ai/cc-token-saver | 토큰/비용 최적화 (Token Guardian, /continue, /usage-view) |
+| caveman | JuliusBrussee/caveman | 영어 출력 토큰 압축 (코드 리뷰·커밋 메시지). R013 ecomode 미적용 구간 보완. 한국어 컨텍스트(R000)에는 ecomode 우선. `lite`/`full` 권장, `ultra`/`文言文` 가독성 저하 주의 |
 
 ### 권장 MCP 서버
 
