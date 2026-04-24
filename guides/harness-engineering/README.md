@@ -46,9 +46,9 @@ Deep Insight가 제안하는 4계층 구조는 oh-my-customcode에 이미 구현
 메인 대화 → Agent(mgr-creator, mode: "bypassPermissions") → Write(".claude/agents/new.md", content)
 ```
 
-### Tracker 체크포인트 패턴 (v0.106.0+ 이관)
+### Tracker 체크포인트 패턴
 
-현재 파이프라인 상태 추적은 `/tmp/.claude-pipeline-{PID}.json` 파일과 `.claude/outputs/sessions/{YYYY-MM-DD}/` 아티팩트 규약으로 구현되어 있습니다. 전용 Tracker 에이전트(dag-orchestration / pipeline-guards 통합형)는 `context: fork` cap 확장 이후 후속 릴리즈로 이관합니다.
+현재 파이프라인 상태 추적은 `/tmp/.claude-pipeline-{PID}.json` 파일과 `.claude/outputs/sessions/{YYYY-MM-DD}/` 아티팩트 규약으로 구현되어 있습니다. ✅ 구현 완료 (v0.106.1 via #983 — `.claude/agents/tracker-checkpoint.md`): 전용 Tracker 에이전트(dag-orchestration / pipeline-guards 통합형)가 배포되어 checkpoint persistence, resume-after-failure, gate state 기록을 담당합니다.
 
 ---
 
@@ -185,7 +185,7 @@ opt-in: hard-enforce (filter 모드, --hard-enforce 플래그) — 명시적 사
 
 | 항목 | 이관 이유 | 예상 릴리즈 |
 |------|----------|-----------|
-| **Tracker 체크포인트 에이전트** — dag-orchestration / pipeline-guards 통합형 전용 Tracker | `context: fork` cap(현재 12/12) 확장 필요 | v0.106.0+ |
+| **Tracker 체크포인트 에이전트** — dag-orchestration / pipeline-guards 통합형 전용 Tracker | ✅ 구현 완료 (v0.106.1 via #983 — `.claude/agents/tracker-checkpoint.md`) | — |
 | **hierarchical-agent-topology 스킬** — 4계층 구조를 자동 검증하는 전용 스킬 | fork 스킬 cap 해소 후 추가 | v0.106.0+ |
 | **sdd-dev Harness Decision Record 템플릿** — 하네스 설계 결정을 ADR 형식으로 기록 | sdd-dev 스킬 업데이트와 병행 | v0.107.0+ |
 | **harness-synthesizer 2단계 격리 구현 예시** — Base64 인코딩 + subprocess 격리의 실제 YAML 예시 | 보안 리뷰 후 추가 | v0.107.0+ |

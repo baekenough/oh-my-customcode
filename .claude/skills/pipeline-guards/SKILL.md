@@ -178,6 +178,25 @@ Guard warnings appear inline:
 | model-escalation | Repeated failures trigger escalation advisory |
 | task-decomposition | Subtask file counts validated against granularity guard thresholds |
 
+## Checkpoint Gate Integration
+
+각 guard 통과/실패 시 `tracker-checkpoint` 에이전트로 gate state 기록.
+
+### Flow
+
+1. Guard 진입 → tracker-checkpoint에 gate state: running 기록
+2. Guard 통과 → tracker-checkpoint에 gate state: passed + metrics 기록
+3. Guard 실패 → tracker-checkpoint에 gate state: failed + failure reason freeze
+4. 다음 단계는 checkpoint state 참조하여 재개/중단 판단
+
+### Benefits
+
+- 긴 파이프라인에서 guard 지점마다 복원점 확보
+- 부분 실패 시 직전 guard 지점부터 재시도 가능 (비용 절감)
+- guard metrics 축적으로 품질 추이 관찰 가능
+
+See `.claude/agents/tracker-checkpoint.md` for the tracker spec.
+
 ## Override Policy
 
 - Defaults can be overridden in pipeline spec (within hard caps)
