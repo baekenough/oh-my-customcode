@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.107.0",
-  "generatedAt": "2026-04-24T09:33:55.060Z",
-  "templateVersion": "0.107.0",
+  "generatorVersion": "0.108.0",
+  "generatedAt": "2026-04-24T10:45:26.225Z",
+  "templateVersion": "0.108.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cd2a131d50bc33a228b4b8303662bbc547450e772f19e337e36d56e95d812db2",
@@ -605,8 +605,8 @@
       "component": "skills"
     },
     ".claude/skills/agora/SKILL.md": {
-      "templateHash": "4f8d10f9eb6d040caeb35171267692d68f2c12b3e68f678dbf179eef25d8cbc1",
-      "size": 6386,
+      "templateHash": "e6c037bc5a848469e1781ea62479360f32836ec6e03cf93c1a59dfcf3d80e76d",
+      "size": 8254,
       "component": "skills"
     },
     ".claude/skills/fastapi-best-practices/SKILL.md": {
@@ -1025,8 +1025,8 @@
       "component": "skills"
     },
     ".claude/skills/harness-synthesizer/SKILL.md": {
-      "templateHash": "d0718ff1cf9f3b489ed890afa354f36c9c969c79323931a1b79f6dc76950907d",
-      "size": 5160,
+      "templateHash": "2c43dd67e0ac34313f5907713d6a06eb3147916b6b67e5fa334811f85480b67e",
+      "size": 7654,
       "component": "skills"
     },
     ".claude/skills/test-new-skill-ci-test.md": {
@@ -1639,9 +1639,24 @@
       "size": 2157,
       "component": "guides"
     },
+    "guides/architecture/sample-deep-insight-patterns.md": {
+      "templateHash": "9f434cd30a411220824a562d43924422fb1d1df414f5a42d6b1cfc191e48b764",
+      "size": 2539,
+      "component": "guides"
+    },
     "guides/agent-design/ralph-loop-pattern.md": {
       "templateHash": "6be38a8cc7f6b666f4a40f44f69c771b50ee04a8f8a59e743fd964ba405d6778",
       "size": 1403,
+      "component": "guides"
+    },
+    "guides/agent-design/ouroboros-socratic-interview-templates.md": {
+      "templateHash": "128682b6f72799a52e366240a10e9fa32744113a101c833fa0dd98c977cc44ad",
+      "size": 4028,
+      "component": "guides"
+    },
+    "guides/agent-design/google-agents-cli-patterns.md": {
+      "templateHash": "27390357d1378cd9efa7ea4ce13731730503d6fdb3d7c4a081c7be3169ff032c",
+      "size": 2823,
       "component": "guides"
     },
     "guides/agent-design/pal-cost-routing-analysis.md": {
