@@ -198,6 +198,25 @@ Execute? [Y/n]
 
 The orchestrator builds the DAG from this inline format and executes using the same algorithm.
 
+## State Management via tracker-checkpoint
+
+Pipeline 상태는 `tracker-checkpoint` 에이전트로 위임됩니다.
+
+### Flow
+
+1. Pipeline 시작 → orchestrator가 tracker-checkpoint 호출 → 초기 state 파일 생성 (`/tmp/.claude-pipeline-{name}-{PPID}.json`)
+2. 각 step 후 → tracker-checkpoint가 state 업데이트 (atomic write)
+3. step 실패 → tracker-checkpoint가 halted 상태로 freeze
+4. `/pipeline resume` → tracker-checkpoint가 state 로드 → orchestrator에 복원 옵션 제공
+
+### Integration
+
+- PPID-scoped state file 경로: `/tmp/.claude-pipeline-{name}-{PPID}.json`
+- step 실행 전후로 tracker-checkpoint delegation
+- resume 시 checkpoint → dag 재빌드 → 미완료 step부터 재개
+
+See `.claude/agents/tracker-checkpoint.md` for agent spec.
+
 ## Limitations
 
 - No cycles allowed (DAG = acyclic)

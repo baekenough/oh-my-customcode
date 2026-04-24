@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-48 agents. 113 skills. 22 rules. One command.
+49 agents. 113 skills. 22 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -111,7 +111,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-### Agents (48)
+### Agents (49)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -126,7 +126,7 @@ Agent(arch-documenter):haiku      ┘
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Security | 1 | sec-codeql |
 | Managers | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| System | 2 | sys-memory-keeper, sys-naggy |
+| System | 3 | sys-memory-keeper, sys-naggy, tracker-checkpoint |
 
 Each agent declares its tools, model, memory scope, and limitations in YAML frontmatter. Tool budgets are enforced per agent type for accuracy.
 
@@ -271,7 +271,7 @@ omcustom serve-stop            # Stop Web UI
 your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
-│   ├── agents/                 # 48 agent definitions
+│   ├── agents/                 # 49 agent definitions
 │   ├── skills/                 # 113 skill modules
 │   ├── rules/                  # 22 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
