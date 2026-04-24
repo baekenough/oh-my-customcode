@@ -42,6 +42,8 @@ Ensure complete synchronization of agents, skills, documentation, and project st
 □ All skill refs exist
 □ All memory scopes valid (project|user|local)
 □ Routing patterns updated
+□ R006 Context Fork Criteria list matches actual SKILL.md frontmatter
+  (run `bash .github/scripts/verify-fork-list.sh`)
 ```
 
 ### Phase 2: Deep Review (3 rounds)
