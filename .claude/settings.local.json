@@ -16,7 +16,9 @@
       "Bash(sed:*)",
       "Bash(chmod:*)",
       "Write(.claude/**)",
-      "Edit(.claude/**)"
+      "Edit(.claude/**)",
+      "Write(templates/.claude/**)",
+      "Edit(templates/.claude/**)"
     ],
     "defaultMode": "bypassPermissions"
   },
