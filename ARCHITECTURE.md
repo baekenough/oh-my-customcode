@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 113 skills, 22 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 113 skills, 22 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 43 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
