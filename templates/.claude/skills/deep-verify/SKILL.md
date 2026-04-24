@@ -78,6 +78,16 @@ Each agent receives the full diff and returns findings as structured JSON:
 - Performance sanity: no O(n^2) on large datasets, no missing indexes for new queries
 - If any CONCERN or VIOLATION found: report for manual review before release
 
+## Regression Guards
+
+Run these checks before declaring release READY. Any match is a release blocker.
+
+| Guard | Detection Command | Severity | Remediation |
+|-------|-------------------|----------|-------------|
+| Skill Bash sensitive-path | `grep -rnE 'mkdir\s+-p[^` + "`" + `\n]*\.claude/(outputs\|agent-memory\|agent-memory-local)' .claude/skills/ templates/.claude/skills/ .claude/rules/ templates/.claude/rules/ 2>/dev/null` | **BLOCK** | Remove `mkdir` directive; rely on Write tool auto-dir-create. See R006 "Sensitive Path Handling" + `feedback_sensitive_path.md` |
+
+> **Why**: CC sensitive-path check runs above `bypassPermissions` and Bash allow rules (#960/#961/#978). Skills instructing directory creation via Bash on artifact paths trigger permission prompts during unattended auto-dev execution. Use Write tool instead (auto-creates parents).
+
 ## Output Format
 
 ```

@@ -236,7 +236,7 @@ CC treats `.claude/` as a sensitive directory. The sensitive-path check runs **a
 
 <!-- DETAIL: Artifact Output full spec
 **Format**: Metadata header with `skill`, `date`, `query` fields, followed by skill output content.
-**Rules**: Opt-in per skill, final subagent writes (R010 compliance), Skills create directory (mkdir -p), .claude/outputs/ is git-untracked, no indexing required.
+**Rules**: Opt-in per skill, final subagent writes (R010 compliance), Write tool auto-creates parent directory (no Bash `mkdir` required — avoids `.claude/` sensitive-path prompt per #960/#961/#978), .claude/outputs/ is git-untracked, no indexing required.
 -->
 
 ## Separation of Concerns
