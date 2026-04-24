@@ -3,7 +3,7 @@
 
 meta:
   updated: "2026-04-19"
-  total_pages: 250
+  total_pages: 253
   total_sources: 216
 
 pages:
@@ -234,6 +234,9 @@ pages:
     - file: skills/deep-verify.md
       title: "Deep Verify"
       summary: "Multi-angle release quality verification before merge or deployment."
+    - file: skills/diagram-design.md
+      title: "Diagram Design"
+      summary: "Brand-consistent editorial SVG diagrams — 13 diagram types in 3 variants for release notes, architecture docs, and marketing materials"
     - file: skills/dev-lead-routing.md
       title: "Dev Lead Routing"
       summary: "Routes development tasks to the correct language/framework expert agent."
@@ -613,6 +616,9 @@ pages:
     - file: guides/elements-of-style.md
       title: "Elements of Style Guide"
       summary: "Reference documentation for clear, concise writing based on Strunk's classic style guide"
+    - file: guides/external-tools.md
+      title: "External Tools Guide"
+      summary: "Reference for external tools that integrate with oh-my-customcode — currently covers graphify as a Layer-3 RAG enrichment candidate"
     - file: guides/fastapi.md
       title: "FastAPI Guide"
       summary: "Reference documentation for FastAPI high-performance Python web API patterns"
@@ -628,6 +634,9 @@ pages:
     - file: guides/golang.md
       title: "Golang Guide"
       summary: "Reference documentation for idiomatic Go language patterns, concurrency, error handling"
+    - file: guides/harness-engineering.md
+      title: "Harness Engineering Guide"
+      summary: "Agent behavior control and infrastructure isolation — 3-layer hierarchy (Coordinator/Planner/Supervisor/Executor), context engineering, and harness skill stack"
     - file: guides/hook-data-flow.md
       title: "Hook Data Flow Guide"
       summary: "Reference documentation for the stall detection pipeline that detects stalled parallel"

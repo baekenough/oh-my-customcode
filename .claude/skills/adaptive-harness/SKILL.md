@@ -333,3 +333,7 @@ Reads the bundle and applies the `active_agents` list to the current project by 
 - The `.inactive/` directory is git-tracked so deactivation decisions are visible in history
 - Manager and system agents are unconditionally protected from deactivation
 - Target directory defaults to the project root where Claude Code is running, not the omcustom harness directory
+
+## Related Guide
+
+- `guides/harness-engineering/` — 하네스 엔지니어링 통합 가이드 (Project Profile Learning 관점에서 adaptive-harness 위치)

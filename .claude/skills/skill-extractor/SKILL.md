@@ -153,3 +153,31 @@ The `skill-extractor-analyzer.sh` Stop hook provides a lightweight pre-analysis:
 - **Dry-run mode**: Preview without side effects
 - **Advisory hook**: Stop hook is advisory-only (exit 0)
 - **Confidence transparency**: All proposals show confidence scores
+
+## --mode failure (Skillify Pattern)
+
+feedback memory에 누적된 실패 패턴을 분석하여 영구 구조(스킬 또는 규칙 확장)로 전환하는 모드.
+
+### 입력
+
+- `.claude/agent-memory*/feedback_*.md` (누적된 실패 메모리)
+- MEMORY.md의 Feedback Memories 섹션
+
+### 처리
+
+1. 각 feedback memory의 **Why/How to apply** 필드에서 공통 패턴 추출
+2. 3회 이상 반복되는 패턴을 "failure candidate"로 격상
+3. 후보 각각에 대해:
+   - 기존 스킬 확장으로 해결 가능? → 스킬 업데이트 제안
+   - 규칙 명문화가 더 적합? → R016 Matrix "Skill Promotion" 열에 등록
+   - 신규 스킬이 필요? → context fork cap (12/12) 여부 확인 후 제안
+
+### 출력
+
+`.claude/outputs/sessions/{date}/skill-extractor-failure-{HH}.md` 아티팩트 (R006 Artifact Channel Protocol)
+
+### 참조
+
+- R016 `MUST-continuous-improvement.md` Defect Response Matrix — Skill Promotion 열
+- Skillify 내재화 배경: issue #972
+- context fork cap: `.claude/rules/MUST-agent-design.md` Skill Frontmatter "Context Fork Criteria"

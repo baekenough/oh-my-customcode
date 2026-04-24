@@ -163,3 +163,28 @@ Agents Audited:
 
 Summary: 5 agents checked, 1 warning
 ```
+
+## Artifact Channel Read Pattern
+
+R006 Artifact Channel Protocol을 소비하는 표준 패턴. 병렬 에이전트가 각자 `.claude/outputs/sessions/{date}/{skill}-{HHmmss}.md`에 결과를 작성하면, result-aggregation이 경로 N개를 받아 단일 요약을 생성합니다.
+
+### 입력 형식
+
+```
+paths = [
+  ".claude/outputs/sessions/2026-04-24/agent1-100200.md",
+  ".claude/outputs/sessions/2026-04-24/agent2-100300.md",
+  ...
+]
+```
+
+### 집계 규칙
+
+1. 각 경로를 Read 도구로 읽음 (본문 inline 전달 금지 — R006 원칙 준수)
+2. 파일별 요약 추출 (status + key findings)
+3. 단일 요약으로 압축 — R013 ecomode Aggregation Format 재사용
+
+### 참조
+
+- R006 `MUST-agent-design.md` Artifact Channel Protocol (source contract)
+- R013 `SHOULD-ecomode.md` Deep Insight Context Handoff Pattern (budget 맥락)
