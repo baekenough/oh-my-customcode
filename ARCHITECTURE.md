@@ -115,7 +115,7 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 Guide Library (42 topics)
+### 3.4 Guide Library (43 topics)
 
 | Category | Guides |
 |----------|--------|
