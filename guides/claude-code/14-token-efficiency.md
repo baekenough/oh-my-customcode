@@ -1,4 +1,4 @@
-# Token Efficiency — Three-Layer Defense Stack
+# Token Efficiency — Five-Layer Defense Stack
 
 > **Source**: [Claude Code & Codex token efficiency by settings adjustment](https://www.stdy.blog/increasing-token-efficiency-by-setting-adjustment-in-claude-and-codex/)
 > **Reference baseline**: Claude Code v2.1.114+ / Codex v0.121.0+
@@ -7,7 +7,7 @@
 
 Token spend in Claude Code is not purely a function of task complexity. A significant portion of token consumption occurs through structural overhead: auto-injected git instructions, IDE file listings, tool output that exceeds what the model actually needs, and session state reloaded unnecessarily across turns.
 
-The three-layer defense stack addresses this overhead at three distinct points in the session lifecycle:
+The five-layer defense stack addresses this overhead at distinct points in the session lifecycle:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -22,6 +22,10 @@ The three-layer defense stack addresses this overhead at three distinct points i
 ├─────────────────────────────────────────────────────────────────┤
 │  Layer 4: playwright-compress (MCP OUTPUT INTELLIGENCE)         │
 │  PostToolUse hook — Haiku summarization of browser MCP output   │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 5: caveman (OUTPUT STYLE COMPRESSION)                    │
+│  SessionStart hook — primitive-speech output reduces token spend│
+│  English scenarios only — R000 Korean-first contexts use Layer 2│
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -153,6 +157,7 @@ Disabling `includeGitInstructions` removes git workflow guidance from the contex
 | R001 Safety | `apply-ci` mode is Risk Level High — requires user confirmation before applying. |
 | R012 HUD Statusline | Statusline shows CTX% — effective measure of Layer 2+3 combined impact. |
 | playwright-compress | Layer 4 hook — complements Layer 3 MAX_MCP_OUTPUT_TOKENS with intelligent lossless compression. |
+| caveman | Layer 5 style compression — orthogonal to Layer 2 (volume) and Layer 4 (MCP). R000 Korean-first: use Layer 2 as primary. |
 
 ---
 
@@ -175,6 +180,43 @@ Hook trigger: `mcp__playwright__.*` and `mcp__claude-in-chrome__.*`
 
 ---
 
+## Layer 5: caveman (Output Style Compression)
+
+External plugin (JuliusBrussee/caveman, 41.6k stars, MIT) that rewrites Claude responses into compressed "primitive speech" via a SessionStart hook.
+
+**Measured savings:**
+- ~75% output token reduction
+- ~46% input token reduction (context accumulation effect)
+
+**Intensity levels:**
+
+| Level | Description | Recommendation |
+|-------|-------------|----------------|
+| `lite` | Light compression, high readability | Recommended |
+| `full` | Moderate compression | Recommended |
+| `ultra` | Heavy compression, reduced readability | Caution |
+| `文言文` | Classical Chinese style | Avoid for shared sessions |
+
+**Installation:** `/plugin install caveman` (requires marketplace access)
+
+**When to use:**
+
+| Scenario | Layer to apply |
+|----------|---------------|
+| English-only output sessions (code review, commit messages) | Layer 5 (caveman) |
+| Korean-first sessions (R000 contexts) | Layer 2 (R013 ecomode) — caveman articles/prepositions not present in Korean |
+| Mixed sessions | Layer 2 primary, Layer 5 optional |
+
+**Coexistence with other layers:**
+
+- Layer 5 compresses output style; Layer 2 (ecomode) compresses output volume. These are orthogonal — both can be active simultaneously.
+- Layer 5 applies globally to all responses; Layer 2 activates conditionally (4+ tasks threshold).
+- For Korean-first projects following R000, Layer 2 provides the primary compression benefit. Layer 5's article-removal compression is largely ineffective against Korean (article-free language).
+
+**R000 compatibility note:** caveman's compression relies on English grammatical structure (removing articles, prepositions). Korean lacks these structures, so compression rates are significantly lower in Korean-dominant sessions. Use `lite` or `full` mode only; avoid `ultra`/`文言文` in shared or multilingual sessions.
+
+---
+
 ## Cross-References
 
 - `guides/claude-code/13-cli-flags.md` — CLI flags for non-interactive/CI invocation
@@ -185,3 +227,4 @@ Hook trigger: `mcp__playwright__.*` and `mcp__claude-in-chrome__.*`
 - `.claude/skills/update-config/` — Generic settings.json manipulation (broader scope)
 - `.claude/skills/playwright-compress/SKILL.md` — Layer 4 MCP output compression hook
 - `.claude/hooks/scripts/playwright-compress.sh` — Layer 4 hook script
+- `https://github.com/JuliusBrussee/caveman` — Layer 5 caveman plugin (external)
