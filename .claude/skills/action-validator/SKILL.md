@@ -107,6 +107,9 @@ Hints are advisory — they inform model scheduling but do not enforce. Inspired
 
 When a synthesized harness exists for an agent (`.claude/outputs/harnesses/{agent-name}-*.yaml`), action-validator can use it for enhanced validation:
 
+> **Tool**: Use the **Write tool** to create artifact files — Write auto-creates parent directories. **Never use `Bash(mkdir -p .claude/outputs/...)`** — the path triggers CC sensitive-path guard and prompts for permission, breaking unattended pipeline execution.
+
+
 | Mode | Source | Behavior |
 |------|--------|----------|
 | Advisory (default) | Prompt-based checks | Emit warnings only |

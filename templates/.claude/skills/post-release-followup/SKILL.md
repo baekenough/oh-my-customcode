@@ -24,6 +24,9 @@ Gather unfinished work from multiple sources:
 
 **Source B — Deep-verify findings**:
 - Read the latest deep-verify output from `.claude/outputs/sessions/{today}/`
+
+> **Tool**: Use the **Write tool** to create artifact files — Write auto-creates parent directories. **Never use `Bash(mkdir -p .claude/outputs/...)`** — the path triggers CC sensitive-path guard and prompts for permission, breaking unattended pipeline execution.
+
 - Extract any MEDIUM or LOW severity findings that were flagged but not fixed
 
 **Source C — Triage deferred items**:
