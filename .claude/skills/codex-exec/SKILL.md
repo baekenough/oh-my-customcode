@@ -204,3 +204,52 @@ When routing skills detect a code generation task and codex is available:
 ```
 /codex-exec "Generate {description} following {framework} best practices" --effort high --full-auto
 ```
+
+## Browser Verify Workflow (Codex + claude-in-chrome 협업 루프)
+
+Codex가 생성/수정한 프론트엔드 결과를 시각적으로 검증하는 루프 패턴. 신규 스킬 불요 — 기존 도구 조합.
+
+### Pattern
+
+```
+codex-exec "build/fix frontend"
+    → bun dev / npm run dev (로컬 서버 기동)
+    → claude-in-chrome:navigate(localhost:port)
+    → claude-in-chrome:gif_creator(action capture)
+    → claude-in-chrome:read_console_messages (오류 감지)
+    → claude-in-chrome:read_network_requests (실패 호출 감지)
+    → 오류 있으면: codex-exec "fix: {error context}" → 루프 재진입
+    → 오류 없으면: 종료 + 결과 보고
+```
+
+### When to Use
+
+| 상황 | 권장 |
+|------|------|
+| 단순 코드 생성 | `codex-exec` 단독 |
+| 프론트엔드 시각 검증 필요 | **이 루프** |
+| API/백엔드 검증 | `deep-verify` skill |
+| 복잡한 디자인 시스템 | `design-shotgun` 병행 |
+
+### Loop Termination Rules
+
+- 최대 반복 3회 (degeneration 방지, R013/agora 패턴 차용)
+- console error 0개 + network failure 0개 → 종료
+- 동일 오류 반복 시 즉시 종료 + 사용자 보고
+
+### Tool Composition
+
+| 단계 | 도구 |
+|------|------|
+| Build/Fix | `codex-exec` |
+| Server | `Bash(bun dev)` (background) |
+| Visual | `mcp__claude-in-chrome__navigate` + `gif_creator` |
+| Diagnose | `read_console_messages` + `read_network_requests` |
+
+자세한 구현 패턴: `guides/browser-automation/01-browser-automation-patterns.md` 참조.
+
+> **Tool**: Use the **Write tool** for any artifact files this loop produces — never Bash mkdir on `.claude/outputs/`.
+
+### Attribution
+
+Pattern source: Codex Browser Use (https://x.com/jameszmsun/status/2047522852854026378), scout #1009.
