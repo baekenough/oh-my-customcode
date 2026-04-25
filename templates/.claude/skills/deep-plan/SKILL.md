@@ -347,6 +347,9 @@ Phase 1 research artifact is persisted by the `/research` skill.
 Phase 3 verification report is persisted by the final synthesis agent:
 ```
 .claude/outputs/sessions/{YYYY-MM-DD}/deep-plan-{HHmmss}.md
+
+> **Tool**: Use the **Write tool** to create artifact files — Write auto-creates parent directories. **Never use `Bash(mkdir -p .claude/outputs/...)`** — the path triggers CC sensitive-path guard and prompts for permission, breaking unattended pipeline execution.
+
 ```
 
 With metadata header:

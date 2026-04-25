@@ -93,6 +93,9 @@ harness:
 
 1. **Read target agent frontmatter** — extract `tools`, `domain`, `limitations` fields
 2. **Analyze recent tool call patterns** — check `.claude/outputs/` for prior session logs (if available)
+
+> **Tool**: Use the **Write tool** to create artifact files — Write auto-creates parent directories. **Never use `Bash(mkdir -p .claude/outputs/...)`** — the path triggers CC sensitive-path guard and prompts for permission, breaking unattended pipeline execution.
+
 3. **Synthesize validation harness** — generate YAML harness matching agent's declared capabilities
 4. **Refine via evaluator-optimizer loop** — iterate harness against edge cases (3 rounds max)
 5. **Save output** — write to `.claude/outputs/harnesses/{agent-name}-{mode}.yaml`
