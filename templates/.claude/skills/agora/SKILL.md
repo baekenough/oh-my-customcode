@@ -240,3 +240,44 @@ ontology_convergence:
 - #993 (source)
 - #966 ouroboros 재평가
 - guides/agent-design/pal-cost-routing-analysis.md (유사한 Defer+observe 전략)
+
+## Anti-Groupthink Mode (Optional)
+
+`agora`의 기본 워크플로우는 만장일치 수렴(convergence)이 목표지만, 토론 과정에서 집단사고(Groupthink) 위험이 있을 때 anti-groupthink mode를 활성화할 수 있습니다.
+
+### Activation
+
+스킬 호출 시 인자로 활성화:
+```
+/agora docs/design.md --mode anti-groupthink
+```
+
+### Mechanisms
+
+| 메커니즘 | 동작 |
+|---------|------|
+| Devil's Advocate slot | 리뷰어 1명이 전담 반대자 역할 — 합의 형성 시도에 항상 반대 입장 견지 |
+| Minority opinion protection | 1명만 주장하는 의견도 보존, 기각 시 명시적 정당화(3개 근거) 필수 |
+| Round soft cap | 라운드 3회 도달 시 합의 미도달 영역은 "합의 없음 — 분기 결정 필요"로 종결 (기본 워크플로우는 무한 루프 가능) |
+
+### Reviewer Role Adjustment
+
+기본 모드(3 reviewers)에 anti-groupthink mode 적용 시:
+- `claude-critic` → Devil's Advocate 전담 (모든 합의 시도에 반대 입장)
+- `codex-critic`, `gemini-critic` → 일반 리뷰 (변경 없음)
+
+Round soft cap이 작동하면 최종 보고서에 "UNRESOLVED — BRANCHING DECISION NEEDED" 섹션이 추가됩니다.
+
+### When to Use Anti-Groupthink Mode vs roundtable-debate
+
+| 상황 | 권장 스킬 |
+|------|---------|
+| 합의가 *필요*하지만 위험 발굴도 필요 | `agora --mode anti-groupthink` |
+| 합의 자체가 *불필요*, 다양한 시각이 산출물 | `roundtable-debate` |
+| 단순 검증 (통과/실패) | `agora` (기본 모드) |
+
+자세한 비교는 `guides/multi-agent-debate-patterns/` 가이드 참조 (별도 wave에서 생성 예정).
+
+### Attribution
+
+Devil's Advocate + minority protection 메커니즘은 cc-roundtable 패턴에서 차용되었습니다. (`roundtable-debate` 스킬과 공유 메커니즘)

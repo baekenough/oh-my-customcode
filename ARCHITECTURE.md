@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 113 skills, 22 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 44 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 114 skills, 22 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 45 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -88,7 +88,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (113 skills)
+### 3.3 Skill Catalog (114 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -99,9 +99,9 @@ Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specif
 | de-lead-routing | de-* agents |
 | qa-lead-routing | qa-* agents |
 
-**Workflow/orchestration skills (5, context: fork)**
+**Workflow/orchestration skills (6, context: fork)**
 
-dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage
+dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage, roundtable-debate
 
 **Best-practices skills (~26)**
 
@@ -115,7 +115,7 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 Guide Library (44 topics)
+### 3.4 Guide Library (45 topics)
 
 | Category | Guides |
 |----------|--------|
@@ -624,7 +624,7 @@ Tested and compatible with Claude Code v2.1.72 through v2.1.114+.
 | Rules (21 files) | ~28K tokens |
 | Total mandatory load | ~33K tokens / session |
 
-Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (9 active, 12 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
+Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (10 active, 12 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.
 
 **Ecomode (R013)** auto-activates based on task type and context usage:
 
@@ -652,7 +652,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Native auto-memory | The `memory:` frontmatter field that injects MEMORY.md into an agent's context each session. |
 | Dynamic creation | The fallback pattern where mgr-creator auto-builds a new specialist when no existing agent matches. |
 | Ecomode | Compact output mode that activates automatically when context usage exceeds task-type thresholds. |
-| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (9 active, 12 cap). |
+| context: fork | A SKILL.md frontmatter flag that runs the skill in an isolated context — used for routing and orchestration skills (10 active, 12 cap). |
 | R017 (Sauron) | The 5-round manager + 3-round deep-review verification cycle required before any structural push. |
 | Compilation metaphor | The conceptual framework treating skill/rule authoring as source code that compiles into agent behavior. |
 | Takeover | Reverse compilation — analyzing existing code to generate structured agent/skill specs. |
