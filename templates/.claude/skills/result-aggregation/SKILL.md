@@ -168,6 +168,9 @@ Summary: 5 agents checked, 1 warning
 
 R006 Artifact Channel Protocol을 소비하는 표준 패턴. 병렬 에이전트가 각자 `.claude/outputs/sessions/{date}/{skill}-{HHmmss}.md`에 결과를 작성하면, result-aggregation이 경로 N개를 받아 단일 요약을 생성합니다.
 
+> **Tool**: Use the **Write tool** to create artifact files — Write auto-creates parent directories. **Never use `Bash(mkdir -p .claude/outputs/...)`** — the path triggers CC sensitive-path guard and prompts for permission, breaking unattended pipeline execution.
+
+
 ### 입력 형식
 
 ```

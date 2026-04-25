@@ -204,6 +204,9 @@ Convergence expected by round 3. Hard stop at round 30.
 2. **Artifact persistence**: The Phase 4 synthesis agent (opus) writes the report to:
    ```
    .claude/outputs/sessions/{YYYY-MM-DD}/research-{HHmmss}.md
+
+> **Tool**: Use the **Write tool** to create artifact files — Write auto-creates parent directories. **Never use `Bash(mkdir -p .claude/outputs/...)`** — the path triggers CC sensitive-path guard and prompts for permission, breaking unattended pipeline execution.
+
    ```
    With metadata header:
    ```markdown
