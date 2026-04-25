@@ -115,11 +115,11 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (49 파일)
-|   +-- skills/                  # 스킬 (113 디렉토리)
+|   +-- skills/                  # 스킬 (114 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R022)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
-+-- guides/                      # 레퍼런스 문서 (44 토픽)
++-- guides/                      # 레퍼런스 문서 (45 토픽)
 ```
 
 ## 오케스트레이션
@@ -237,6 +237,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 |----------|------|------|
 | cc-token-saver | ww-w-ai/cc-token-saver | 토큰/비용 최적화 (Token Guardian, /continue, /usage-view) |
 | caveman | JuliusBrussee/caveman | 영어 출력 토큰 압축 (코드 리뷰·커밋 메시지). R013 ecomode 미적용 구간 보완. 한국어 컨텍스트(R000)에는 ecomode 우선. `lite`/`full` 권장, `ultra`/`文言文` 가독성 저하 주의 |
+| cc-roundtable | gaebalai/cc-roundtable | Devil's Advocate + 소수의견 보호 + 2라운드 하드캡 다중 에이전트 토론. `roundtable-debate` 스킬에 패턴 내재화됨; 외부 플러그인 직접 사용 시 대안 경로 |
 
 ### 권장 MCP 서버
 
