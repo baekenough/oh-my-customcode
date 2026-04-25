@@ -75,3 +75,15 @@ Changes:
 Trade-offs: RS256 is ~10x slower than HS256 but enables asymmetric key management.
 ```
 -->
+
+## Session-Level Style Enforcement
+
+세션 레벨 강제 스타일 적용은 Claude Code 네이티브 [Output Styles](../output-styles/) 메커니즘으로 위임됩니다.
+
+| 레이어 | 담당 | 트리거 |
+|--------|------|--------|
+| R003 (this rule) | 스타일 선택 기준 정의 | prompt-based, advisory |
+| R013 (Ecomode) | 컨텍스트 압박 시 concise 강제 | dynamic, context-triggered |
+| **Output Styles** | 세션 전체 기본 어조/포맷 | static, session-level |
+
+기본 활성화 스타일: `korean-engineer` (`.claude/output-styles/korean-engineer.md`).
