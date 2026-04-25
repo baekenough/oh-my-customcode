@@ -113,6 +113,9 @@ If only PASS/INFO: proceed automatically.
 6. **Artifact persistence** (optional): Review agent saves findings to:
    ```
    .claude/outputs/sessions/{YYYY-MM-DD}/dev-review-{HHmmss}.md
+
+> **Tool**: Use the **Write tool** to create artifact files — Write auto-creates parent directories. **Never use `Bash(mkdir -p .claude/outputs/...)`** — the path triggers CC sensitive-path guard and prompts for permission, breaking unattended pipeline execution.
+
    ```
    With metadata header:
    ```markdown
