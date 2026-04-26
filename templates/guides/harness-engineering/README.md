@@ -192,6 +192,197 @@ opt-in: hard-enforce (filter 모드, --hard-enforce 플래그) — 명시적 사
 
 ---
 
+## 7. Doom Loop 탐지 / Pre-completion Checklist (#1021 내재화)
+
+> 출처: LangChain "Improving Deep Agents with Harness Engineering" — deepagents-cli가 Terminal Bench 2.0에서 52.8% → 66.5%를 달성한 핵심 패턴.
+
+### Build-Verify 루프
+
+"단계마다 자체 검증"은 단순한 QA 게이트가 아닙니다. 에이전트가 다음 단계로 진행하기 전 현재 상태가 기대값과 일치하는지 **구조적으로 확인**하는 루틴입니다.
+
+oh-my-customcode 매핑:
+
+| 패턴 | 구현체 |
+|------|--------|
+| 단계별 자체 검증 | `pipeline-guards` 스킬의 품질 게이트 + R020 완료 검증 매트릭스 |
+| 검증 실패 시 중단 | `deep-verify` 스킬의 다각도 검증 → 회귀 차단 |
+| 결과 기록 | tracker-checkpoint 에이전트의 `/tmp/.claude-pipeline-{PPID}.json` checkpoint |
+
+### Doom Loop 탐지
+
+**동일 실패를 3회 이상 반복하는 "Doom Loop"**는 에이전트 자율 실행 품질의 최대 위협 중 하나입니다. LangChain은 동일 동작 감지 → break-out 메커니즘을 핵심 하네스 컴포넌트로 지정했습니다.
+
+oh-my-customcode에서의 현황:
+
+- `stuck-recovery` 스킬이 부분 내재화 — 단발성 행착 상황에서 대안 경로 제시
+- **갭**: same-action 3회 감지 + 자동 에스컬레이션 로직 부재
+
+권장 보강 방향 (`stuck-recovery` 스킬):
+
+```
+# 감지 조건 (pseudo-pattern)
+이전 3 액션이 동일한 도구·파라미터 패턴 → doom-loop 판정
+
+# Break-out 시퀀스
+1. 현재 상태를 tracker-checkpoint에 기록
+2. [Warning] Doom loop detected — {action} × {n}회 반복
+3. 에스컬레이션: haiku → sonnet → opus 순서로 모델 전환
+4. 메모리 저장: feedback_doom_loop_{날짜}.md → 세션 간 패턴 누적
+```
+
+크로스-세션 패턴 감지에는 `adaptive-harness --learn` + claude-mem MCP를 연동해 동일 실패 패턴이 반복 보고되는 에이전트를 자동 플래그합니다.
+
+### Pre-completion Checklist
+
+LangChain deepagents-cli는 [Done] 선언 전 명시적 체크리스트 실행을 필수화합니다. oh-my-customcode의 R020 완료 검증 매트릭스와 정합하지만, **표준화된 체크리스트 형식**은 아직 별도 문서화되어 있지 않습니다.
+
+권장 형식 (R020 `Completion Contract Format` 확장안):
+
+```
+[Pre-completion Checklist]
+□ 실제 결과 확인 (명령 실행 ≠ 성공)
+□ 태스크 유형별 기준 충족 (R020 매트릭스)
+□ 사이드 이펙트 없음 (타 에이전트 범위 미침범)
+□ Doom loop 미발생 (동일 액션 3회 미만)
+□ 아티팩트 핸드오프 완료 (필요 시)
+→ 전항 체크 완료 후 [Done] 선언
+```
+
+> R020에 pre-completion checklist 표준 형식 추가는 별도 followup 이슈(#1036+)로 관리를 권장합니다.
+
+### Local Context Auto-discovery
+
+deepagents-cli는 README / CONTRIBUTING.md / .cursorrules를 자동 로드합니다. 이는 oh-my-customcode의 **CLAUDE.md auto-injection 패턴**과 구조적으로 동형입니다.
+
+| LangChain | oh-my-customcode |
+|-----------|-----------------|
+| README / CONTRIBUTING 자동 로드 | CLAUDE.md 자동 주입 (시스템 프롬프트 선두) |
+| .cursorrules 프로젝트 지시어 | `.claude/rules/*.md` 전역 규칙 |
+| Per-run 컨텍스트 디스커버리 | `paths:` 필드로 조건부 스킬 자동 주입 |
+
+---
+
+## 8. Eval Hill-Climbing 6단계 워크플로우 (#1024 내재화)
+
+> 출처: LangChain "Better Harness — A Recipe for Harness Hill-climbing with Evals"
+
+"Eval을 ML 훈련 데이터처럼 취급하라"는 핵심 통찰에서 출발하는 6단계 레시피입니다.
+
+### 6단계 레시피와 oh-my-customcode 매핑
+
+| # | LangChain 단계 | 설명 | oh-my-customcode 대응 |
+|---|--------------|------|----------------------|
+| 1 | **Source/tag evals** | eval 데이터를 수집·레이블링. 태그로 분류 | `harness-eval` — 15개 SE 벤치마크 + `agent-eval-framework` 4-metric ideal trajectory |
+| 2 | **Optimization/Holdout split** | 보통 80/20으로 분할 — holdout은 일반화 프록시 | **(갭)** 현재 분할 메커니즘 미구현 |
+| 3 | **Baseline** | 현재 하네스의 측정값 기록 | `omcustom-improve-report` 정량 데이터 수집 |
+| 4 | **Optimize** | 진단 → 가설 → 실험 → 검증 반복 | `adaptive-harness --learn` 패턴 |
+| 5 | **Validate** | holdout 통과 필수 — 회귀 차단 | `deep-verify` 다각도 검증 |
+| 6 | **Human review** | 최종 sanity check | `mgr-sauron` R017 검증 |
+
+### 핵심 통찰
+
+**"Quality > Quantity"**: eval 케이스 수보다 케이스의 명확성·대표성이 중요합니다. `harness-eval`의 15개 벤치마크는 이 원칙의 반영입니다 — 수백 개 케이스보다 정밀하게 선별된 소수가 유의미한 개선 신호를 제공합니다.
+
+**"통과한 evals = 회귀 테스트"**: 한번 통과한 eval 케이스는 변경 불가 지식으로 보존해야 합니다. 새 하네스 버전이 기존 통과 케이스를 실패시키면 퇴행으로 판정합니다.
+
+**"Spring cleaning"**: 포화(saturated)되거나 폐기된(obsolete) 케이스는 정기적으로 제거합니다. 오래된 케이스 누적은 eval 집합을 노이즈화하고 개선 신호를 희석합니다.
+
+**"Holdout = 일반화 프록시"**: Optimization split으로 개선하더라도 holdout pass 없이는 배포 금지. `deep-verify`의 다각도 검증이 이 역할을 부분 수행합니다.
+
+### 식별된 갭
+
+**Eval data governance** — 태깅·분할·spring-cleaning을 담당하는 메커니즘이 현재 부재합니다.
+
+| 갭 | 현황 | 권장 방향 |
+|----|------|----------|
+| Optimization/Holdout split | 미구현 | `eval-core` schema에 `split: optimization|holdout` metadata column 추가 |
+| Pass-as-regression-test | 미구현 | 통과 eval을 자동으로 `.claude/outputs/eval-regressions/`에 보존하는 로직 |
+| Spring cleaning | 미구현 | `harness-eval --spring-clean` 플래그로 saturated/obsolete 케이스 감지 |
+
+> 이 갭들은 #1036 별도 이슈로 추적을 권장합니다 (eval-core schema 확장).
+
+### Optimize 단계 세부 패턴
+
+LangChain이 권장하는 반복 주기: **진단 → 가설 → 실험 → 검증**
+
+oh-my-customcode 내에서 이 주기는 다음으로 구현됩니다:
+
+```
+1. 진단: harness-eval → 점수 하락 벤치마크 식별
+2. 가설: adaptive-harness --learn → 실패 패턴 → 원인 후보 제시
+3. 실험: harness-synthesizer → 새 verifier YAML 합성 → 적용
+4. 검증: deep-verify → holdout 역할로 회귀 차단
+```
+
+---
+
+## 9. Agent Harness 6 컴포넌트 해부학 (#1026 내재화)
+
+> 출처: LangChain "The Anatomy of an Agent Harness"
+> 핵심 명제: **Agent = Model + Harness**
+
+모델이 "무엇을 할 수 있는가"를 결정한다면, 하네스는 "어떻게, 어디서, 얼마나 실행하는가"를 결정합니다. 하네스 없이 모델 단독으로는 프로덕션 수준의 신뢰성을 달성할 수 없습니다.
+
+### 6 컴포넌트와 oh-my-customcode 매핑
+
+| # | 컴포넌트 | LangChain 정의 | oh-my-customcode 구현 | 상태 |
+|---|---------|--------------|----------------------|------|
+| 1 | **Filesystems** | 파일 읽기/쓰기/탐색 도구 | Read / Write / Edit / Glob / Grep | ✅ 완비 |
+| 2 | **Bash/Code Execution** | 코드 실행 + 에이전트 격리 | Bash 도구 + agent isolation (`isolation: worktree\|sandbox`) | ✅ 완비 |
+| 3 | **Sandboxes** | 실행 환경 격리 | R006 `isolation: worktree \| sandbox` + `sandboxFailIfUnavailable: true` | ✅ 완비 |
+| 4 | **Memory & Search** | 세션 간 지식 유지 + 검색 | claude-mem MCP + episodic-memory + `.claude/agent-memory/` (R011) | ✅ 완비 |
+| 5 | **Context Management** | 컨텍스트 예산 관리 + 압축 | R013 ecomode + auto-injection + Deep Insight Context Handoff Pattern | ✅ 완비 |
+| 6 | **Long-Horizon Execution** | 장기 실행 + 복수 에이전트 조율 | Agent Teams + `worker-reviewer-pipeline` + `omcustom-loop` SubagentStop hook | ✅ 완비 |
+
+5개 컴포넌트는 완전히 매핑되며, 1개의 갭이 식별됩니다.
+
+### 핵심 설계 원칙
+
+**Working Backward Method**: 원하는 에이전트 행동에서 거꾸로 하네스를 설계합니다. "에이전트가 이 단계에서 X를 해야 한다"라는 요구사항에서 시작해, 그 행동을 가능하게 하는 하네스 컴포넌트를 역방향으로 도출합니다.
+
+이는 oh-my-customcode의 **mgr-creator dynamic agent creation 철학**과 구조적으로 동형입니다: 작업이 먼저 정의되고, 필요한 전문가 에이전트(하네스 포함)가 그 다음에 생성됩니다.
+
+**Context as Scarce Resource**: 하네스의 역할은 모델에게 필요한 정보를 정확한 시점에, 최소한의 토큰으로 전달하는 것입니다. 모든 스킬 메타데이터를 매 세션에 주입하는 방식은 이 원칙에 반합니다.
+
+- R013 ecomode: 컨텍스트 예산 임계값으로 과잉 주입 억제
+- `paths:` 필드: 관련 파일이 열릴 때만 스킬 자동 주입 (조건부 lazy-load 부분 구현)
+- Deep Insight Context Handoff Pattern: 에이전트 간 대용량 결과를 아티팩트 파일로 전달, 인라인 전달 금지
+
+**Model-Harness 공진화**: 모델이 업그레이드되면 하네스도 재최적화가 필요합니다. 새 모델이 이전 하네스의 제약을 우회하거나, 반대로 새 능력을 활용하지 못할 수 있습니다.
+
+```
+모델 업그레이드 시 권장 워크플로우:
+1. adaptive-harness --learn → 기존 실패 패턴 재분석
+2. harness-eval → 새 모델의 벤치마크 재측정
+3. harness-synthesizer → 새 모델 특성에 맞게 하네스 재합성
+4. deep-verify → 회귀 차단 검증
+```
+
+### 식별된 갭: Progressive Disclosure of Skills
+
+현재 oh-my-customcode는 모든 스킬 메타데이터를 매 세션 컨텍스트에 주입합니다. LangChain의 권고는 **필요 시점까지 스킬 로딩을 지연(lazy-load)**하는 것입니다.
+
+| 접근 방식 | 현황 | 토큰 영향 |
+|----------|------|----------|
+| 전체 주입 | CLAUDE.md + 모든 rules/ 자동 로드 | 고정 비용 (세션당 수천 토큰) |
+| 조건부 주입 | `paths:` 필드로 부분 구현 | 파일 오픈 시점에만 주입 |
+| 완전 lazy-load | 미구현 | 온-디맨드 → 최소 컨텍스트 |
+
+권장 방향: 빈번히 사용되지 않는 스킬(package scope 등)을 `paths:` 조건부 로딩으로 전환합니다. `scope: package` 스킬은 이미 init 자동 배포 대상에서 제외되어 있어 부분적으로 이 원칙을 반영합니다.
+
+### Long-Horizon Execution 심화
+
+컴포넌트 6은 oh-my-customcode에서 가장 풍부하게 구현된 영역입니다.
+
+```
+단기 실행 (< 3분):      Agent Tool + R009 병렬 실행
+중기 실행 (3-10분):     Agent Teams + shared task list (R018)
+장기 실행 (> 10분):     omcustom-loop + SubagentStop hook + tracker-checkpoint
+장기 + 재시작 필요:     /tmp/.claude-pipeline-{PPID}.json checkpoint → resume
+```
+
+---
+
 ## 참고
 
 이 가이드는 Deep Insight 시리즈 (#973/#974/#976) 내재화 결과입니다. 원본 외부 자료 링크는 각 이슈 본문을 참조하세요.

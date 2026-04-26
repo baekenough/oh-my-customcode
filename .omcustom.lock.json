@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.114.0",
-  "generatedAt": "2026-04-26T17:27:34.639Z",
-  "templateVersion": "0.114.0",
+  "generatorVersion": "0.115.0",
+  "generatedAt": "2026-04-26T22:52:25.438Z",
+  "templateVersion": "0.115.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -1605,8 +1605,8 @@
       "component": "guides"
     },
     "guides/harness-engineering/README.md": {
-      "templateHash": "9993dc12174f300774c8415d2ae25e155856f7351b75b8cecc4017a32fd78f67",
-      "size": 12445,
+      "templateHash": "40090363e9604a57f34ffae08fb6891675eb591f853b3aa141784e61d11a2792",
+      "size": 23508,
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {
@@ -1812,6 +1812,11 @@
     "guides/spark/README.md": {
       "templateHash": "381ef901b35938932692a90b7a280a11523a856e0bbcfc0ec67bad8b0212190f",
       "size": 1017,
+      "component": "guides"
+    },
+    "guides/middleware-patterns/README.md": {
+      "templateHash": "b86c8bf85d15c9232e381aefaea61c7c2a0a3e52ebf543ef3d79be8b3899bc15",
+      "size": 21697,
       "component": "guides"
     },
     "guides/agents-md-quality/README.md": {
