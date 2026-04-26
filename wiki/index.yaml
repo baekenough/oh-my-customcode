@@ -7,7 +7,7 @@ meta:
   total_sources: 222
   counts:
     skills: 115
-    guides: 48
+    guides: 49
     agents: 49
 
 pages:
@@ -719,6 +719,9 @@ pages:
     - file: guides/worktree-lifecycle.md
       title: "Worktree Lifecycle Automation Guide"
       summary: "Three shell aliases (agent-spin, agent-merge, agent-clean) automating the full git worktree lifecycle for AI agent workflows"
+    - file: guides/middleware-patterns.md
+      title: "Middleware Patterns Guide"
+      summary: "LangChain 6-stage lifecycle middleware model mapped to oh-my-customcode assets — before_agent/before_model/wrap_model_call/wrap_tool_call/after_model/after_agent with Hook vs Skill decision matrix"
     - file: guides/multi-model-routing.md
       title: "Multi-Model Routing Guide"
       summary: "Role-based model selection strategy mapping task types to haiku/sonnet/opus tiers with escalation and project override patterns"

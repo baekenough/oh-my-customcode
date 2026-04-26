@@ -1,7 +1,7 @@
 ---
 title: Harness Engineering Guide
 type: guide
-updated: 2026-04-24
+updated: 2026-04-27
 sources:
   - guides/harness-engineering/README.md
 related:
@@ -13,6 +13,7 @@ related:
   - [[R021]]
   - [[guides/skill-bundle-design]]
   - [[guides/worktree-lifecycle]]
+  - [[guides/middleware-patterns]]
 ---
 
 # Harness Engineering Guide
@@ -46,6 +47,14 @@ related:
 | `action-validator` | 도구 호출 전 선언 범위 확인 (advisory, R021) |
 | `adaptive-harness` | 실패 패턴 학습 → R016 규칙 업데이트 연동 |
 | `harness-eval` | 15개 SE 벤치마크 기반 에이전트 품질 점수화 |
+
+## v0.115.0 Extensions
+
+Three new sections added in v0.115.0:
+
+- **Doom Loop** — 에이전트가 동일 실패를 반복하는 루프 패턴과 탈출 전략 (adaptive-harness 학습 루프 연동)
+- **Eval Hill-Climbing** — 벤치마크 점수 최적화 함정 회피: 실제 task 다양성 유지, 과적합 탐지
+- **Anatomy of a Harness (6 components)** — policy layer / context budget / tool gate / handoff channel / eval loop / shutdown hook 6요소 명세
 
 ## Infrastructure Isolation
 
