@@ -93,6 +93,36 @@ Results saved to `.claude/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md
 > **Tool**: To write artifacts under `.claude/outputs/`, use a `/tmp/*.sh` script invoked via Bash. Direct `Write`/`Edit` and `Bash(mkdir -p)` on `.claude/` all trigger CC sensitive-path guard regardless of bypassPermissions. The `/tmp/*.sh` pattern (write script to `/tmp`, then `bash /tmp/x.sh`) lets the script internally write to `.claude/` — sensitive-path guard inspects only direct tool target paths, not script-internal file ops. See R006 "Sensitive Path Handling" + `feedback_sensitive_path_tmp_bypass.md`.
 
 
+## 4-Metric Quantitative Layer (added v0.113.0, #1025)
+
+The 15 benchmark tasks defined here measure **task correctness** (pass/fail). For agent efficiency comparison and trajectory analysis, layer the 4-metric framework on top:
+
+- **correctness** — existing benchmark pass/fail (unchanged)
+- **step_ratio** — observed_steps / ideal_steps (efficiency)
+- **tool_call_ratio** — observed_tool_calls / ideal_tool_calls (efficiency)
+- **latency_ratio** — observed_latency / ideal_latency (efficiency)
+
+### Workflow
+1. Run benchmark task → collect correctness result + trajectory (steps, tool_calls, latency)
+2. Compare against ideal trajectory annotation (see `agent-eval-framework` skill)
+3. Phase 1 gate: correctness MUST pass; Phase 2 gate: efficiency comparison among passing variants
+
+### Ideal Trajectory per Benchmark
+For each of the 15 benchmark tasks, an ideal trajectory should be authored. Annotation schema:
+```yaml
+task_id: <benchmark-id>
+capability: <category>
+ideal:
+  steps: <int>
+  tool_calls: <int>
+  latency_seconds: <float>
+```
+
+### Cross-references
+- Skill: `agent-eval-framework` (4-metric framework definition)
+- Guide: `guides/agent-eval/README.md` (measurement methodology)
+- Issue: #1025
+
 ## Attribution
 
 Evaluation framework based on research by [revfactory/claude-code-harness](https://github.com/revfactory/claude-code-harness). Adapted for oh-my-customcode's evaluator-optimizer pipeline with permission.

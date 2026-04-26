@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 114 skills, 22 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 45 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 115 skills, 22 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 46 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -88,7 +88,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (114 skills)
+### 3.3 Skill Catalog (115 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -115,7 +115,7 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 Guide Library (45 topics)
+### 3.4 Guide Library (46 topics)
 
 | Category | Guides |
 |----------|--------|

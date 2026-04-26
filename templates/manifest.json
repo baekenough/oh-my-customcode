@@ -1,5 +1,5 @@
 {
-  "version": "0.112.0",
+  "version": "0.113.0",
   "lastUpdated": "2026-04-24T07:30:00.000Z",
   "components": [
     {
@@ -18,13 +18,13 @@
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 114
+      "files": 115
     },
     {
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
-      "files": 45
+      "files": 46
     },
     {
       "name": "hooks",
