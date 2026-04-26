@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.113.0",
-  "generatedAt": "2026-04-26T14:28:59.675Z",
-  "templateVersion": "0.113.0",
+  "generatorVersion": "0.114.0",
+  "generatedAt": "2026-04-26T17:27:34.639Z",
+  "templateVersion": "0.114.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -115,8 +115,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "71711d39a564088c713103019f1e2b4e1e3bd373b2ab922290666a5c5436a201",
-      "size": 5547,
+      "templateHash": "d9a24ffc1c8f8a81640dd26dcac359210cf955babd35e4aa2f215dff7641172c",
+      "size": 6677,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -975,8 +975,8 @@
       "component": "skills"
     },
     ".claude/skills/codex-exec/SKILL.md": {
-      "templateHash": "7383e3f6645623a9b5cc174f0a344fd131af9583e8d94f80af7e0954276dcc32",
-      "size": 8190,
+      "templateHash": "61d7c4eb432f258bcfe958d70f106d8db08f4f64863541c0d2eb992543736395",
+      "size": 8963,
       "component": "skills"
     },
     ".claude/skills/create-agent/SKILL.md": {
@@ -1025,8 +1025,8 @@
       "component": "skills"
     },
     ".claude/skills/agent-eval-framework/SKILL.md": {
-      "templateHash": "8eb800ebb7dc62645da31705f25d8609bc6363c14addc3981831ebba99f050e6",
-      "size": 7075,
+      "templateHash": "5dcbe3eb3bf9dc0dd3a6313e2185b5c84018a0dabe1bf61dd082f54141e7be0e",
+      "size": 8070,
       "component": "skills"
     },
     ".claude/skills/task-decomposition/SKILL.md": {
@@ -1420,8 +1420,8 @@
       "component": "guides"
     },
     "guides/agent-eval/README.md": {
-      "templateHash": "c68db10477c1ac50df8bf7588ca1438b4a1893d00333a3ee52020d254674cc39",
-      "size": 27141,
+      "templateHash": "2dee4b525872afc98d064b5d2ba71959d68eaa22919405b19475231818e8f55a",
+      "size": 27146,
       "component": "guides"
     },
     "guides/web-design/accessibility.md": {
