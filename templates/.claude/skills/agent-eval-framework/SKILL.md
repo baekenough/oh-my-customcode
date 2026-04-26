@@ -85,7 +85,7 @@ To write eval trajectories or result reports under `.claude/outputs/evals/`:
 
 Reference: `feedback_sensitive_path_tmp_bypass.md`, R006 sensitive-path handling.
 
-## Phased Gate Workflow
+## Phased Opt-in Gate Workflow
 
 **Phase 1: Correctness Gate** (MUST pass before Phase 2)
 
@@ -170,3 +170,5 @@ Quantitative metrics provide **[Done] gate evidence** beyond binary completion c
 | Code Review | tool_call_ratio as efficiency signal for review thoroughness |
 
 When declaring `[Done]` for agent creation or major workflow changes, include eval gate results as completion evidence.
+
+See R020 "Optional: Quantitative Evidence" section for the consumer-side advisory pattern.

@@ -32,10 +32,12 @@ Fills the measurement gap in the existing evaluation stack: harness-eval covers 
 
 Default thresholds: step_ratio ≤ 1.5, tool_call_ratio ≤ 1.3, latency_ratio ≤ 2.0.
 
-## Phased Gate
+## Phased Opt-in Gate
 
 1. **Phase 1 — Correctness**: correctness ≥ 0.80 required before efficiency measurement. Failures are diagnosed and re-evaluated.
 2. **Phase 2 — Efficiency**: step/tool_call/latency ratios computed, aggregated by capability category, compared to baseline. Regressions > 20% flagged.
+
+> Note: renamed from "Phased Gate" to "Phased Opt-in Gate" in v0.114.0 (#1037) to clarify opt-in nature for new agents.
 
 ## Capability Taxonomy
 

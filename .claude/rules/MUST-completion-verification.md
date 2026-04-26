@@ -17,6 +17,32 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 | Code Review | All findings addressed or explicitly deferred with justification |
 | Agent/Skill Creation | Frontmatter valid, referenced skills exist, routing updated |
 
+## Optional: Quantitative Evidence (advisory, added v0.114.0, #1034)
+
+For complex agent invocations or multi-step workflows, attach 4-metric evidence to [Done] declarations as supplementary evidence (NOT a binary gate):
+
+| Metric | Source | Format |
+|--------|--------|--------|
+| correctness | task-type matrix above | pass/fail |
+| step_ratio | observed/ideal step count | ratio (lower better) |
+| tool_call_ratio | observed/ideal tool calls | ratio (lower better) |
+| latency_ratio | observed/ideal latency | ratio (lower better) |
+
+### When to Apply
+- Dynamic agent variants comparison (e.g., mgr-creator output validation)
+- Long-running workflows where efficiency regression matters
+- A/B testing of agent prompts or configurations
+
+### Workflow
+1. Run task → collect trajectory (steps, tool_calls, latency)
+2. Compare to ideal trajectory annotation (see `agent-eval-framework` skill)
+3. Attach metric values to [Done] contract as evidence
+
+### Cross-references
+- Skill: `agent-eval-framework` (4-metric framework + ideal trajectory schema)
+- Guide: `guides/agent-eval/README.md` (measurement methodology)
+- Issue: #1034
+
 ## Self-Check (Before Declaring Done)
 
 Before [Done]: (1) Verify ACTUAL outcome not just attempt — "ran command" ≠ "succeeded". (2) Check task-type criteria above. (3) No unchecked items. (4) Would bet $100 it's complete.
