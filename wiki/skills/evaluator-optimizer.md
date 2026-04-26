@@ -1,13 +1,14 @@
 ---
 title: Evaluator Optimizer
 type: skill
-updated: 2026-04-12
+updated: 2026-04-26
 sources:
   - .claude/skills/evaluator-optimizer/SKILL.md
 related:
   - [[worker-reviewer-pipeline]]
   - [[pipeline-guards]]
   - [[reasoning-sandwich]]
+  - [[agent-eval-framework]]
 ---
 
 # Evaluator Optimizer
@@ -24,11 +25,21 @@ Implements the evaluator-optimizer pattern: a worker agent generates output, an 
 - **User-invocable**: no
 - **Effort**: not specified
 
+## Efficiency Gate (added v0.113.0)
+
+When multiple optimizer iterations produce passing variants (all meeting the rubric quality threshold), the [[agent-eval-framework]] 4-metric efficiency gate selects the winner:
+
+1. **Quality phase** — existing rubric loop (unchanged)
+2. **Efficiency phase** — among passing variants, prefer lower step_ratio + tool_call_ratio + latency_ratio
+
+Apply when: multiple candidates pass the rubric, an objective tiebreaker is needed, or a cost/latency budget is active. Winner = variant with lowest weighted ratio sum.
+
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[worker-reviewer-pipeline]], [[pipeline-guards]], [[reasoning-sandwich]]
+- **Related skills**: [[worker-reviewer-pipeline]], [[pipeline-guards]], [[reasoning-sandwich]], [[agent-eval-framework]]
 - **See also**: [[R009]], [[R010]]
+- **Guide**: [Agent Eval guide](../guides/agent-eval.md)
 
 ## Sources
 

@@ -421,3 +421,30 @@ Integration: Works with [impeccable-design](/skills/impeccable-design) skill for
 The `harness-eval` skill provides a structured 15-task SE benchmark rubric that can be used as a preset for the evaluator-optimizer pipeline. When invoked via `/omcustom:harness-eval`, the harness rubric dimensions (Test Coverage 30%, Architecture 25%, Error Handling 25%, Extensibility 20%) are loaded as the sprint contract criteria.
 
 When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+
+## Efficiency Gate (added v0.113.0, #1025)
+
+The qualitative rubric loop defined here evaluates output quality. For agent variant selection (when multiple optimization candidates pass the rubric), add an efficiency gate using the 4-metric framework:
+
+### Two-Phase Selection
+1. **Quality phase** — existing rubric loop (unchanged)
+2. **Efficiency phase** — among passing variants, prefer lower step_ratio + tool_call_ratio + latency_ratio
+
+### When to Apply
+- Multiple optimizer iterations produce passing variants
+- Need objective tiebreaker beyond rubric score
+- Long-running optimization with cost/latency budget
+
+### Workflow
+```
+evaluator → rubric pass → multiple candidates
+              ↓
+         efficiency gate (4-metric)
+              ↓
+         select winner (lowest weighted sum of ratios)
+```
+
+### Cross-references
+- Skill: `agent-eval-framework` (4-metric framework definition)
+- Guide: `guides/agent-eval/README.md` (measurement methodology)
+- Issue: #1025
