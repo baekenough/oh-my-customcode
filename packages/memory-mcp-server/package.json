@@ -1,0 +1,30 @@
+{
+  "name": "@oh-my-customcode/memory-mcp-server",
+  "version": "0.1.0",
+  "description": "Standalone MCP server exposing MemoryService over MCP protocol",
+  "type": "module",
+  "bin": {
+    "memory-mcp-server": "./dist/index.js"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "test": "bun test",
+    "lint": "biome check src/"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@omcustom/eval-core": "workspace:*",
+    "drizzle-orm": "^0.45.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.12",
+    "@types/bun": "^1.3.6",
+    "typescript": "^6.0.2"
+  },
+  "peerDependencies": {
+    "bun": ">=1.0.0"
+  }
+}
