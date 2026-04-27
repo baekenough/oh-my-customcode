@@ -118,6 +118,27 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     'CREATE INDEX IF NOT EXISTS idx_feedback_session_id ON session_feedback(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_improvement_actions_target ON improvement_actions(target_name)',
     'CREATE INDEX IF NOT EXISTS idx_improvement_actions_status ON improvement_actions(status)',
+    // v0.118.3, #1047 — unified memory records
+    `CREATE TABLE IF NOT EXISTS memory_records (
+      id TEXT PRIMARY KEY NOT NULL,
+      source TEXT NOT NULL,
+      device_id TEXT NOT NULL,
+      project TEXT NOT NULL,
+      agent TEXT,
+      timestamp TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      content TEXT NOT NULL,
+      tags TEXT NOT NULL,
+      sensitivity TEXT NOT NULL,
+      hash TEXT NOT NULL UNIQUE,
+      embedding_ref TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_source ON memory_records(source)',
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_device_project ON memory_records(device_id, project)',
+    'CREATE INDEX IF NOT EXISTS idx_memory_records_timestamp ON memory_records(timestamp DESC)',
+    // idx_memory_records_hash is covered by the UNIQUE constraint on hash column
     // v0.116.0, #1036 — eval baselines and trajectories
     `CREATE TABLE IF NOT EXISTS eval_baselines (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
