@@ -1,7 +1,7 @@
 ---
 title: Post-Release Followup
 type: skill
-updated: 2026-04-12
+updated: 2026-04-27
 sources:
   - .claude/skills/post-release-followup/SKILL.md
 related:
@@ -30,6 +30,10 @@ After PR creation in a release workflow, collects unaddressed findings from mult
 - **Related skills**: [[release-plan]], [[deep-verify]], [[professor-triage]], [[omcustom-release-notes]]
 - **See also**: [[R020]]
 
+## Artifact Output
+
+Results written to `.claude/outputs/sessions/{date}/` via `/tmp/*.sh` Bash bypass — direct Write/Edit on `.claude/outputs/` triggers CC sensitive-path guard.
+
 ## Sources
 
-- `.claude/skills/post-release-followup/SKILL.md` — skill definition
+- `.claude/skills/post-release-followup/SKILL.md` — skill definition (sensitive-path bypass documented #1045)

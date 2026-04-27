@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.116.0",
-  "generatedAt": "2026-04-26T23:49:48.669Z",
-  "templateVersion": "0.116.0",
+  "generatorVersion": "0.117.0",
+  "generatedAt": "2026-04-27T04:04:31.384Z",
+  "templateVersion": "0.117.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "a7cff0e9403c3efc0788af6e2bfb082b3cf77717553e0154b6b9938001222573",
-      "size": 20594,
+      "templateHash": "5a2aa4c264693f426e85cd19688d9a1f4ec174801b372e09b7fd4aba250f9072",
+      "size": 22378,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "67ebdd6a63ad693d5cda51e3e3a5e542b3e87aba69c5095ff83d50abc7f4a089",
-      "size": 6188,
+      "templateHash": "a70981abbe50fa6608f46554f9b8e2f2d6d96bbb65f66799479543c3b01f7c23",
+      "size": 6733,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "295ab02b72b0d3300fe7faf01b9b2492efeff76d15761f4ab41389fb9a4fb085",
-      "size": 23267,
+      "templateHash": "5e720c0f07eea8874a6ccfdf0a4a0dfaa1403e81054604a4ef71f181150c6862",
+      "size": 24830,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "9386917793a9803ba58079dc283a2df9d06e137cf5107916ab2c8a2ca841cda9",
-      "size": 15257,
+      "templateHash": "f467053c0d2f3da5be551ef1ca2bcda128ea55e9fcdf58e343178e6224584f9b",
+      "size": 15435,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "99a70631db8efc75c797640508322ae5613537607571402d2ad475d8fd61e8d2",
-      "size": 15496,
+      "templateHash": "7187f189fd74807c1dd145001e6bad4bdc54e0c528ddb5f2d0b6c3bd40f9804c",
+      "size": 15957,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
@@ -385,8 +385,8 @@
       "component": "skills"
     },
     ".claude/skills/research/SKILL.md": {
-      "templateHash": "3b8fb2fcb70c40fc283c19cc72e1d505f39804acced330b858bb876436e286c1",
-      "size": 18427,
+      "templateHash": "50f2bfc740ee7b39600fea8a0c825ef69eeb7d2fd1162aa1fcb8e65396bb7eda",
+      "size": 18711,
       "component": "skills"
     },
     ".claude/skills/hada-scout/SKILL.md": {
@@ -455,8 +455,8 @@
       "component": "skills"
     },
     ".claude/skills/qa-lead-routing/SKILL.md": {
-      "templateHash": "05d114e1ff9c8d0c4df7d27834212bd754b7302ca2874dc43eeace6882f7d931",
-      "size": 4032,
+      "templateHash": "ebe831b7b7a037570061ac48998d165602272f45958494afb5163e2fe31b472b",
+      "size": 4694,
       "component": "skills"
     },
     ".claude/skills/memory-recall/SKILL.md": {
@@ -465,8 +465,8 @@
       "component": "skills"
     },
     ".claude/skills/skill-extractor/SKILL.md": {
-      "templateHash": "b45cf26902a33dea24f94d200ec3d2aad52726a50740e713dafef1f1c792abe1",
-      "size": 6500,
+      "templateHash": "e99051809256e80aeaed969a7cbed3c5f02430056d24a07866fb956a058b5de8",
+      "size": 6798,
       "component": "skills"
     },
     ".claude/skills/design-shotgun/SKILL.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "5599efc1f8f004a9597ce7abdc629fdd151fd56b341765e763f3fea13bd994f3",
-      "size": 8097,
+      "templateHash": "3836396af41f074219f9a78b9ccf5eaabde8be71ad059af21ae490d991a55278",
+      "size": 8458,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -535,18 +535,18 @@
       "component": "skills"
     },
     ".claude/skills/harness-eval/SKILL.md": {
-      "templateHash": "a36c8e4fb7feac3068a173b085b21775416e464b1733edc806dc4583e130721d",
-      "size": 5954,
+      "templateHash": "8697010330fee43469528808502031dfa3fe77130471daa5e6b6602ea7eaf9d5",
+      "size": 6246,
       "component": "skills"
     },
     ".claude/skills/secretary-routing/SKILL.md": {
-      "templateHash": "53fde5c0279544f6ae565a165f762ea90e09919fa939bbfcee5628e4ec97e2e9",
-      "size": 5642,
+      "templateHash": "c15de2540754df87121dcd7ca118f817a1a836a9afd5f6bae4422eae89153363",
+      "size": 6304,
       "component": "skills"
     },
     ".claude/skills/adaptive-harness/SKILL.md": {
-      "templateHash": "c3a00ff946df0c4077f7e3b944eda788500609516c0403839277dd8f0252b52d",
-      "size": 13002,
+      "templateHash": "ff96ed9629db8e2bae643ac4ff59748bc38ce4b77b27b9db3c5d7a02c6fc2b22",
+      "size": 13302,
       "component": "skills"
     },
     ".claude/skills/java-best-practices/SKILL.md": {
@@ -585,8 +585,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "ffe86fe91342a6410e4f6d02d6df5f1271e6beb84f40077811841b28963f6a49",
-      "size": 5622,
+      "templateHash": "ec46e72b18de4a589465ad7fa0369e659bfa15955ae2c3ed1d78ec98cb30e0a9",
+      "size": 5932,
       "component": "skills"
     },
     ".claude/skills/analysis/SKILL.md": {
@@ -605,8 +605,8 @@
       "component": "skills"
     },
     ".claude/skills/agora/SKILL.md": {
-      "templateHash": "2cc48326002edf8e4e8e23726899c33ad6d9f59371c7f6e36393826f00b2ad47",
-      "size": 10611,
+      "templateHash": "719a40c7996cd03dd772377636e3c2b351d967984c572eb57e524bb618a84bcb",
+      "size": 10889,
       "component": "skills"
     },
     ".claude/skills/fastapi-best-practices/SKILL.md": {
@@ -710,8 +710,8 @@
       "component": "skills"
     },
     ".claude/skills/roundtable-debate/SKILL.md": {
-      "templateHash": "ffd973d67fbefa046b36c6dc8e16df9d3e4e427ffcb3ad6cfcbfa5227558a743",
-      "size": 4171,
+      "templateHash": "108b18f6fd755c838ae970d75e29a999c867ebdb28d73d637d5aa611cc912afe",
+      "size": 4856,
       "component": "skills"
     },
     ".claude/skills/go-best-practices/SKILL.md": {
@@ -720,8 +720,8 @@
       "component": "skills"
     },
     ".claude/skills/deep-plan/SKILL.md": {
-      "templateHash": "ad4d9271c57591a4d0bac24c0949fb74ea0eca36949de1bc2a4b34b9a235e853",
-      "size": 15356,
+      "templateHash": "d5033b591f9babc4597eb5374080426efdc46717eb81d0019fe22ef00f58724c",
+      "size": 4911,
       "component": "skills"
     },
     ".claude/skills/omcustom-feedback/SKILL.md": {
@@ -735,8 +735,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "5912952d1d879501f119656b79c69ff6c26676ba95f10612ccabee5509f51d44",
-      "size": 7618,
+      "templateHash": "167069abd2963b3c09a271d05225c7df68df61aabffc8ce5841c43544309f375",
+      "size": 8280,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
@@ -755,8 +755,8 @@
       "component": "skills"
     },
     ".claude/skills/professor-triage/SKILL.md": {
-      "templateHash": "c08bd9548492cc6cef58a0491013438d440d6426d90f8ac53b3b4020269ae529",
-      "size": 14074,
+      "templateHash": "54a700e69c3e48f94a720b1bc4c53101a25a28f5fea9b2c85ce87d902847c103",
+      "size": 4535,
       "component": "skills"
     },
     ".claude/skills/adversarial-review/SKILL.md": {
@@ -775,8 +775,8 @@
       "component": "skills"
     },
     ".claude/skills/result-aggregation/SKILL.md": {
-      "templateHash": "ab3b5a76b8315850073a0683d957fb433dea59d2fe70590f302a37aceb33e953",
-      "size": 4719,
+      "templateHash": "2cb7f80dda53eeefa8c0fcf9e24c070b5c90dfecc34a9e741607492d239364b7",
+      "size": 5023,
       "component": "skills"
     },
     ".claude/skills/reasoning-sandwich/SKILL.md": {
@@ -855,8 +855,8 @@
       "component": "skills"
     },
     ".claude/skills/action-validator/SKILL.md": {
-      "templateHash": "09ac52b965dfb85b52f01e633d5e6481835ef9ea3696cb5c42729f940dd66cba",
-      "size": 5317,
+      "templateHash": "bb6d8f500ab532b72ced38c7c7ad48854e7ccdfd2dfaede4fbc7e9f91dbfaf09",
+      "size": 5617,
       "component": "skills"
     },
     ".claude/skills/react-best-practices/SKILL.md": {
@@ -940,8 +940,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-review/SKILL.md": {
-      "templateHash": "948dcee6986f7e92d5a9f86ced7b2f5151e567ca0b8b3f4ed3690b97933d9b9a",
-      "size": 5962,
+      "templateHash": "46894fea90bc14156ca28a394464e30801241788cba5304971dd7bc54fe57a2e",
+      "size": 6250,
       "component": "skills"
     },
     ".claude/skills/omcustom-web/SKILL.md": {
@@ -1015,8 +1015,8 @@
       "component": "skills"
     },
     ".claude/skills/de-lead-routing/SKILL.md": {
-      "templateHash": "c9f51885585b2c5ff63e034483f4f402c196abbca9c4fb6823118a6ea9e23c34",
-      "size": 9096,
+      "templateHash": "8a733cb018d99deb9f4ba8bbf629f4779f2667ddc0f4beb120f670d78ffb30d1",
+      "size": 9758,
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {
@@ -1035,8 +1035,8 @@
       "component": "skills"
     },
     ".claude/skills/harness-synthesizer/SKILL.md": {
-      "templateHash": "3cef1b65194a00edfb08623766e3f32f64918a61767edfecd39ae917bcd78eef",
-      "size": 8174,
+      "templateHash": "0e8382be17b1bf6c073ed24a39cff889f3033308f7a3863c8d49c99b17e98922",
+      "size": 8480,
       "component": "skills"
     },
     ".claude/skills/test-new-skill-ci-test.md": {
@@ -1109,6 +1109,11 @@
       "size": 1926,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/auto-dev-token-summary.sh": {
+      "templateHash": "f4e9792391dc6f8c0bd541eb4187f407ac1d5e79ed3b97cea84f9ddcfc87e752",
+      "size": 2299,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/omcustom-auto-update.sh": {
       "templateHash": "6769660d7989c12bbce413ac4ef85fc5a4f18e0bbd29a57eeb657deca611fdd9",
       "size": 5154,
@@ -1132,6 +1137,11 @@
     ".claude/hooks/scripts/model-escalation-advisor.sh": {
       "templateHash": "e9714242e7e0e0082dbdbe14d3be6e210ac765cbcbfee9e9a4e61c0246b8ac49",
       "size": 3055,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/auto-dev-token-tracker.sh": {
+      "templateHash": "8bd988ce08336da78d6fb1be5e6c70d80c86fc43a206da7243b4b054147bad59",
+      "size": 2235,
       "component": "hooks"
     },
     ".claude/hooks/scripts/schema-validator.sh": {
@@ -1235,8 +1245,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "ef563fd639ddf6b13eabcef3233e05de79daf7448a6dc0e12d3be40c3bc9445c",
-      "size": 25978,
+      "templateHash": "fba63ddcc5a1c923cf770b5bd8aef0b236b6a1b12edf865107aa621877394021",
+      "size": 26843,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1534,6 +1544,16 @@
       "size": 564,
       "component": "guides"
     },
+    "guides/deep-plan/phases.md": {
+      "templateHash": "22b254ea2898a160eb08b6d47cd76bff8681991472ec863d9b83ed17890d52d7",
+      "size": 10724,
+      "component": "guides"
+    },
+    "guides/deep-plan/README.md": {
+      "templateHash": "c06e19e5bc272104e48cc825e70b154452337f5a5d3b1d478ddc965c43003f5d",
+      "size": 2787,
+      "component": "guides"
+    },
     "guides/java/java-style-guide.md": {
       "templateHash": "245af391a7b2524c13066ffa65ba41e8e2fd7cca3ac91476b9d792dbf4b9c251",
       "size": 4992,
@@ -1592,6 +1612,16 @@
     "guides/go-backend/index.yaml": {
       "templateHash": "5bb097d02bcff3e48ef357b19670a0e5baaa6602ed135db2b803060b7c601a46",
       "size": 578,
+      "component": "guides"
+    },
+    "guides/professor-triage/phases.md": {
+      "templateHash": "87d823b6e5513b489b12d3a34b7c359030e9f8d9fb869593134a9ba2a9fa6dac",
+      "size": 12590,
+      "component": "guides"
+    },
+    "guides/professor-triage/README.md": {
+      "templateHash": "0858ad5e2653e55fbddcb351c4f3665239c1c633e6c850cff8d5bcf1d75832d5",
+      "size": 2070,
       "component": "guides"
     },
     "guides/iceberg/README.md": {
