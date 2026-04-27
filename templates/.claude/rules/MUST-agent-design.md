@@ -31,6 +31,12 @@ Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M tok
 
 Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`. Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
 
+### Note on `skills:` field
+
+The `skills:` frontmatter field is **advisory metadata** consumed by oh-my-customcode tooling (graph-builder, mgr-sauron) for documentation and validation. It is **NOT a runtime allowlist** — Claude Code does not filter the available skills based on this field, and subagents can invoke any registered skill regardless of what `skills:` declares. Use it to document a subagent's intended skill dependencies; do not rely on it for access control.
+
+Reference: research findings on issue #1055 (closed not-planned).
+
 <!-- DETAIL: Optional Frontmatter (full yaml block)
 ```yaml
 memory: project            # user | project | local
