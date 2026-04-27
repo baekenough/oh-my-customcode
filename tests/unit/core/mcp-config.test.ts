@@ -83,9 +83,7 @@ describe('mcp-config', () => {
       const ontologyDir = join(tempDir, '.claude', 'ontology');
       await mkdir(ontologyDir, { recursive: true });
 
-      // Mock execSync to avoid actual system calls
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
-
+      // generateMCPConfig no longer calls execSync — venv/install moved to ontology-rag-setup.ts
       await generateMCPConfig(tempDir);
 
       // Verify .mcp.json was created
@@ -105,7 +103,7 @@ describe('mcp-config', () => {
       expect(config.mcpServers['ontology-rag'].env?.ONTOLOGY_DIR).toBe('.claude/ontology');
     });
 
-    it('should call execSync to create venv and install ontology-rag', async () => {
+    it('should NOT call execSync for venv/install (responsibility moved to ontology-rag-setup.ts)', async () => {
       // Create ontology directory
       const ontologyDir = join(tempDir, '.claude', 'ontology');
       await mkdir(ontologyDir, { recursive: true });
@@ -118,91 +116,8 @@ describe('mcp-config', () => {
 
       await generateMCPConfig(tempDir);
 
-      expect(execCalls).toContain('uv --version');
-      expect(execCalls).toContain('uv venv .venv');
-      expect(execCalls).toContain(
-        'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"'
-      );
-    });
-
-    it('should warn and return if uv is not available', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.claude', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        if (String(cmd).includes('--version')) {
-          throw new Error('uv: command not found');
-        }
-        return Buffer.from('');
-      });
-
-      await generateMCPConfig(tempDir);
-
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should warn and return if venv creation fails', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.claude', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        if (String(cmd).includes('venv')) {
-          throw new Error('Failed to create venv');
-        }
-        return Buffer.from('');
-      });
-
-      await generateMCPConfig(tempDir);
-
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should warn and return if ontology-rag installation fails', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.claude', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        if (String(cmd).includes('pip install')) {
-          throw new Error('Failed to install package');
-        }
-        return Buffer.from('');
-      });
-
-      await generateMCPConfig(tempDir);
-
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should warn and return on non-Error exceptions during setup', async () => {
-      // Create ontology directory
-      const ontologyDir = join(tempDir, '.claude', 'ontology');
-      await mkdir(ontologyDir, { recursive: true });
-
-      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd) => {
-        if (String(cmd).includes('--version')) {
-          throw 'Setup failed';
-        }
-        return Buffer.from('');
-      });
-
-      await generateMCPConfig(tempDir);
-
-      // .mcp.json should not be created
-      const mcpConfigPath = join(tempDir, '.mcp.json');
-      expect(await fileExists(mcpConfigPath)).toBe(false);
-      expect(consoleWarnSpy).toHaveBeenCalled();
+      // generateMCPConfig must not invoke any shell commands
+      expect(execCalls).toHaveLength(0);
     });
 
     it('should merge with existing .mcp.json', async () => {

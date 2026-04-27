@@ -10,7 +10,7 @@
             "command": "bash .claude/hooks/scripts/stage-blocker.sh"
           }
         ],
-        "description": "Block Write/Edit tools during plan/verify/compound stages — only allow in implement stage"
+        "description": "Block Write/Edit tools during plan/verify/compound stages \u2014 only allow in implement stage"
       },
       {
         "matcher": "tool == \"Bash\" && tool_input.command matches \"(npm run dev|pnpm( run)? dev|yarn dev|bun run dev)\"",
@@ -70,7 +70,7 @@
             "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
           }
         ],
-        "description": "Validate file content hash before Edit — advisory staleness warning"
+        "description": "Validate file content hash before Edit \u2014 advisory staleness warning"
       },
       {
         "matcher": "tool == \"Write\" || tool == \"Edit\" || tool == \"Bash\"",
@@ -80,7 +80,7 @@
             "command": "bash .claude/hooks/scripts/schema-validator.sh"
           }
         ],
-        "description": "Schema-based tool input validation — Phase 1 advisory only"
+        "description": "Schema-based tool input validation \u2014 Phase 1 advisory only"
       },
       {
         "matcher": "tool == \"Bash\"",
@@ -90,7 +90,7 @@
             "command": "bash .claude/hooks/scripts/rtk-intercept.sh"
           }
         ],
-        "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R015 advisory)"
+        "description": "RTK auto-intercept \u2014 transparently rewrites CLI commands through RTK proxy when available (R015 advisory)"
       },
       {
         "matcher": "tool == \"Bash\" && tool_input.command matches \"(rm|git rm|mv|unlink|claude/rules)\"",
@@ -100,14 +100,14 @@
             "command": "bash .claude/hooks/scripts/rule-deletion-guard.sh"
           }
         ],
-        "description": "Block rule file deletion — requires individual user confirmation per rule (R001 safety)"
+        "description": "Block rule file deletion \u2014 requires individual user confirmation per rule (R001 safety)"
       },
       {
         "matcher": "tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.tool_input.subagent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.tool_input.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.tool_input.description // \"\"' | head -c 40)\nresume=$(echo \"$input\" | jq -r '.tool_input.resume // empty')\nif [ -n \"$resume\" ]; then\n  echo \"─── [Resume] ${agent_type}:${model} | ${desc} ───\" >&2\nelse\n  echo \"─── [Spawn] ${agent_type}:${model} | ${desc} ───\" >&2\nfi\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.tool_input.subagent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.tool_input.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.tool_input.description // \"\"' | head -c 40)\nresume=$(echo \"$input\" | jq -r '.tool_input.resume // empty')\nif [ -n \"$resume\" ]; then\n  echo \"\u2500\u2500\u2500 [Resume] ${agent_type}:${model} | ${desc} \u2500\u2500\u2500\" >&2\nelse\n  echo \"\u2500\u2500\u2500 [Spawn] ${agent_type}:${model} | ${desc} \u2500\u2500\u2500\" >&2\nfi\necho \"$input\""
           },
           {
             "type": "command",
@@ -186,7 +186,7 @@
             "command": "bash .claude/hooks/scripts/user-prompt-preprocessor.sh"
           }
         ],
-        "description": "Advisory pre-processing of user input — skill matching hints and intent analysis"
+        "description": "Advisory pre-processing of user input \u2014 skill matching hints and intent analysis"
       },
       {
         "matcher": "*",
@@ -205,7 +205,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.agent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' | head -c 40)\necho \"─── [SubagentStart] ${agent_type}:${model} | ${desc} ───\" >&2\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.agent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' | head -c 40)\necho \"\u2500\u2500\u2500 [SubagentStart] ${agent_type}:${model} | ${desc} \u2500\u2500\u2500\" >&2\necho \"$input\""
           },
           {
             "type": "command",
@@ -233,7 +233,7 @@
           },
           {
             "type": "prompt",
-            "prompt": "A background subagent just completed. Check if there are pending workflow steps that depend on this result. If the previous subagent FAILED, do NOT auto-continue — report the failure and wait for user input. If the previous step succeeded and there are pending steps, proceed automatically. If no pending steps, report results and wait. Safety: The file /tmp/.claude-loop-count-$PPID tracks auto-continue count. After 3 consecutive auto-continues without user interaction, pause and ask the user before proceeding."
+            "prompt": "A background subagent just completed. Check if there are pending workflow steps that depend on this result. If the previous subagent FAILED, do NOT auto-continue \u2014 report the failure and wait for user input. If the previous step succeeded and there are pending steps, proceed automatically. If no pending steps, report results and wait. Safety: The file /tmp/.claude-loop-count-$PPID tracks auto-continue count. After 3 consecutive auto-continues without user interaction, pause and ask the user before proceeding."
           }
         ],
         "description": "Record agent outcomes + auto-continue workflow on subagent completion"
@@ -260,7 +260,7 @@
             "command": "bash .claude/hooks/scripts/file-change-validator.sh"
           }
         ],
-        "description": "Validate externally modified files — advisory staleness warning (v2.1.83+)"
+        "description": "Validate externally modified files \u2014 advisory staleness warning (v2.1.83+)"
       }
     ],
     "Notification": [
@@ -281,7 +281,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nteammate=$(echo \"$input\" | jq -r '.teammate_id // \"unknown\"' 2>/dev/null)\necho \"[Hook] TeammateIdle: $teammate — available for reassignment\" >&2\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nteammate=$(echo \"$input\" | jq -r '.teammate_id // \"unknown\"' 2>/dev/null)\necho \"[Hook] TeammateIdle: $teammate \u2014 available for reassignment\" >&2\necho \"$input\""
           }
         ],
         "description": "Track idle Agent Teams members for work reassignment"
@@ -293,7 +293,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCreated: $task_id — $desc\" >&2\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCreated: $task_id \u2014 $desc\" >&2\necho \"$input\""
           }
         ],
         "description": "Log task creation events for Agent Teams coordination"
@@ -305,7 +305,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\nresult=$(echo \"$input\" | jq -r '.result // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCompleted: $task_id — $result\" >&2\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\nresult=$(echo \"$input\" | jq -r '.result // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCompleted: $task_id \u2014 $result\" >&2\necho \"$input\""
           }
         ],
         "description": "Log task completion events for Agent Teams coordination"
@@ -320,7 +320,7 @@
             "command": "bash .claude/hooks/scripts/task-state-precompact.sh"
           }
         ],
-        "description": "Serialize active task state before compaction — pairs with PostCompact restore (#922)"
+        "description": "Serialize active task state before compaction \u2014 pairs with PostCompact restore (#922)"
       }
     ],
     "PostCompact": [
@@ -329,10 +329,10 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with ┌─ Agent: claude (default) / └─ Task: {task}\nR008: before EVERY tool call → [claude][model] → Tool: Name / Target: path\nR010: write→delegate to subagent; orchestrator read-only (Read/Glob/Grep); git→mgr-gitnerd\nR009: 2+ independent tasks → parallel agents, same message\nR018: 3+ agents OR review cycle → Agent Teams\nR000: user communication in Korean (한국어); code/files in English — NON-NEGOTIABLE\nR001: prohibited actions (no secrets, no system files, no rm -rf); stop on violation → preserve state → report → wait\nR002: tool tiers (Read/Grep=free, Write/Edit=notify, Bash=approval); no writes outside project; no .env/.git/config\n\nAutonomous mode: if /tmp/.claude-autonomous-$PPID exists → simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction — re-enable if tasks seem blocked.\n\nTask state restore: if /tmp/.claude-task-state-$PPID.json exists, read it to recover active pipeline, dev stage, and autonomous mode state. This was saved by PreCompact hook.\n\nRe-read CLAUDE.md NOW."
+            "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with \u250c\u2500 Agent: claude (default) / \u2514\u2500 Task: {task}\nR008: before EVERY tool call \u2192 [claude][model] \u2192 Tool: Name / Target: path\nR010: write\u2192delegate to subagent; orchestrator read-only (Read/Glob/Grep); git\u2192mgr-gitnerd\nR009: 2+ independent tasks \u2192 parallel agents, same message\nR018: 3+ agents OR review cycle \u2192 Agent Teams\nR000: user communication in Korean (\ud55c\uad6d\uc5b4); code/files in English \u2014 NON-NEGOTIABLE\nR001: prohibited actions (no secrets, no system files, no rm -rf); stop on violation \u2192 preserve state \u2192 report \u2192 wait\nR002: tool tiers (Read/Grep=free, Write/Edit=notify, Bash=approval); no writes outside project; no .env/.git/config\n\nAutonomous mode: if /tmp/.claude-autonomous-$PPID exists \u2192 simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction \u2014 re-enable if tasks seem blocked.\n\nTask state restore: if /tmp/.claude-task-state-$PPID.json exists, read it to recover active pipeline, dev stage, and autonomous mode state. This was saved by PreCompact hook.\n\nRe-read CLAUDE.md NOW."
           }
         ],
-        "description": "Reinforce enforced rules after context compaction — prevents rule amnesia (v2.1.76+)"
+        "description": "Reinforce enforced rules after context compaction \u2014 prevents rule amnesia (v2.1.76+)"
       }
     ],
     "PostToolUse": [
@@ -414,7 +414,7 @@
             "command": "bash .claude/hooks/scripts/context-budget-advisor.sh"
           }
         ],
-        "description": "Context budget advisor — track tool usage patterns and advise ecomode activation"
+        "description": "Context budget advisor \u2014 track tool usage patterns and advise ecomode activation"
       },
       {
         "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",
@@ -434,7 +434,7 @@
             "command": "bash .claude/hooks/scripts/cost-cap-advisor.sh"
           }
         ],
-        "description": "Advisory cost cap monitoring — warn when session cost approaches configurable limit"
+        "description": "Advisory cost cap monitoring \u2014 warn when session cost approaches configurable limit"
       },
       {
         "matcher": "tool == \"Read\"",
@@ -444,7 +444,7 @@
             "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
           }
         ],
-        "description": "Store content hashes for Read operations — enables Edit staleness detection"
+        "description": "Store content hashes for Read operations \u2014 enables Edit staleness detection"
       },
       {
         "matcher": "tool == \"Bash\" || tool == \"Read\" || tool == \"Grep\"",
@@ -454,7 +454,7 @@
             "command": "bash .claude/hooks/scripts/secret-filter.sh"
           }
         ],
-        "description": "Detect potential secrets in Bash/Read/Grep output — advisory warning only"
+        "description": "Detect potential secrets in Bash/Read/Grep output \u2014 advisory warning only"
       },
       {
         "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Agent\"",
@@ -485,6 +485,16 @@
           }
         ],
         "description": "Layer 4: Compress Playwright/Chrome MCP output via Haiku summarization"
+      },
+      {
+        "matcher": "tool == \"Task\" || tool == \"Agent\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/auto-dev-token-tracker.sh"
+          }
+        ],
+        "description": "auto-dev token spend tracker \u2014 records per-phase token estimates during /pipeline auto-dev (Issue #1057, advisory)"
       }
     ],
     "Stop": [
@@ -533,10 +543,20 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Session-end memory checkpoint (R011 enforcement). Check if the session-end memory save workflow was completed: 1) sys-memory-keeper was delegated to update MEMORY.md 2) claude-mem save was attempted via ToolSearch + mcp__plugin_claude-mem_mcp-search__save_memory. Note: episodic-memory auto-indexes after session — no manual action needed. Decision rules (evaluate in order): 1. If session had no explicit session-end signal (quick question, no memory work): APPROVE immediately. 2. If BOTH steps were already attempted (success or failure both count): APPROVE. 3. If MCP tools unavailable after ToolSearch attempt: APPROVE with note. 4. If steps were NOT yet performed: PERFORM THEM NOW (maximum 1 attempt each): a. Delegate to sys-memory-keeper to update MEMORY.md — call Agent tool with sys-memory-keeper. b. Attempt claude-mem save — ToolSearch for save_memory tool, then call it. c. After completion (success or failure), APPROVE stop. IMPORTANT: Do NOT block indefinitely. After 1 attempt per step, always APPROVE. IMPORTANT: Do NOT loop — if you already performed these steps in this same stop hook evaluation, APPROVE."
+            "prompt": "Session-end memory checkpoint (R011 enforcement). Check if the session-end memory save workflow was completed: 1) sys-memory-keeper was delegated to update MEMORY.md 2) claude-mem save was attempted via ToolSearch + mcp__plugin_claude-mem_mcp-search__save_memory. Note: episodic-memory auto-indexes after session \u2014 no manual action needed. Decision rules (evaluate in order): 1. If session had no explicit session-end signal (quick question, no memory work): APPROVE immediately. 2. If BOTH steps were already attempted (success or failure both count): APPROVE. 3. If MCP tools unavailable after ToolSearch attempt: APPROVE with note. 4. If steps were NOT yet performed: PERFORM THEM NOW (maximum 1 attempt each): a. Delegate to sys-memory-keeper to update MEMORY.md \u2014 call Agent tool with sys-memory-keeper. b. Attempt claude-mem save \u2014 ToolSearch for save_memory tool, then call it. c. After completion (success or failure), APPROVE stop. IMPORTANT: Do NOT block indefinitely. After 1 attempt per step, always APPROVE. IMPORTANT: Do NOT loop \u2014 if you already performed these steps in this same stop hook evaluation, APPROVE."
           }
         ],
-        "description": "Enforce R011 session-end memory saves — auto-perform if not yet done (episodic-memory auto-indexes)"
+        "description": "Enforce R011 session-end memory saves \u2014 auto-perform if not yet done (episodic-memory auto-indexes)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/auto-dev-token-summary.sh"
+          }
+        ],
+        "description": "Print auto-dev token spend summary on session end (Issue #1057, advisory)"
       }
     ]
   }

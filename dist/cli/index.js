@@ -5,25 +5,43 @@ var __getProtoOf = Object.getPrototypeOf;
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
+function __accessProp(key) {
+  return this[key];
+}
+var __toESMCache_node;
+var __toESMCache_esm;
 var __toESM = (mod, isNodeMode, target) => {
+  var canCache = mod != null && typeof mod === "object";
+  if (canCache) {
+    var cache = isNodeMode ? __toESMCache_node ??= new WeakMap : __toESMCache_esm ??= new WeakMap;
+    var cached = cache.get(mod);
+    if (cached)
+      return cached;
+  }
   target = mod != null ? __create(__getProtoOf(mod)) : {};
   const to = isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target;
   for (let key of __getOwnPropNames(mod))
     if (!__hasOwnProp.call(to, key))
       __defProp(to, key, {
-        get: () => mod[key],
+        get: __accessProp.bind(mod, key),
         enumerable: true
       });
+  if (canCache)
+    cache.set(mod, to);
   return to;
 };
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+var __returnValue = (v) => v;
+function __exportSetter(name, newValue) {
+  this[name] = __returnValue.bind(null, newValue);
+}
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, {
       get: all[name],
       enumerable: true,
       configurable: true,
-      set: (newValue) => all[name] = () => newValue
+      set: __exportSetter.bind(all, name)
     });
 };
 var __esm = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
@@ -2316,7 +2334,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.116.0",
+    version: "0.117.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -9589,9 +9607,9 @@ __export(exports_projects, {
   default: () => projects_default
 });
 import { homedir as homedir3 } from "node:os";
-import { basename as basename4, join as join10, sep as sep3 } from "node:path";
+import { basename as basename4, join as join11, sep as sep3 } from "node:path";
 async function readLockFile(projectDir) {
-  const lockFilePath = join10(projectDir, ".omcustom.lock.json");
+  const lockFilePath = join11(projectDir, ".omcustom.lock.json");
   try {
     const fs2 = await import("node:fs/promises");
     const content = await fs2.readFile(lockFilePath, "utf-8");
@@ -9697,7 +9715,7 @@ async function _scanDirForLockfiles(dir2, depth, seen, results, home, currentVer
   }
   if (depth < 3) {
     const subdirs = entries.filter((e) => e.isDirectory() && !e.name.startsWith(".") && !SCAN_SKIP_DIRS2.has(e.name));
-    await Promise.all(subdirs.map((sub) => _scanDirForLockfiles(join10(dir2, sub.name), depth + 1, seen, results, home, currentVersion, fs2).catch(() => {})));
+    await Promise.all(subdirs.map((sub) => _scanDirForLockfiles(join11(dir2, sub.name), depth + 1, seen, results, home, currentVersion, fs2).catch(() => {})));
   }
 }
 async function _findProjectsFromLockfiles(options, currentVersion) {
@@ -9720,7 +9738,7 @@ async function _findProjectsFromLockfiles(options, currentVersion) {
 }
 async function writeLockFile(projectDir, version, existing) {
   const fs2 = await import("node:fs/promises");
-  const lockFilePath = join10(projectDir, ".omcustom.lock.json");
+  const lockFilePath = join11(projectDir, ".omcustom.lock.json");
   const now = new Date().toISOString();
   const merged = {
     ...existing || {},
@@ -9788,7 +9806,7 @@ async function runMigration(options) {
   const { homedir: _homedir } = await import("node:os");
   const DEFAULT_SEARCH_DIRS = ["workspace", "projects", "dev", "src", "code", "repos", "work"];
   const home = _homedir();
-  const searchDirs = [...DEFAULT_SEARCH_DIRS.map((d) => join10(home, d)), ...options.paths ?? []];
+  const searchDirs = [...DEFAULT_SEARCH_DIRS.map((d) => join11(home, d)), ...options.paths ?? []];
   const cwd = process.cwd();
   if (!searchDirs.includes(cwd))
     searchDirs.push(cwd);
@@ -10046,7 +10064,7 @@ var init_hook_engine = __esm(() => {
 import { AsyncResource as AsyncResource2 } from "node:async_hooks";
 function useState(defaultValue) {
   return withPointer((pointer) => {
-    const setState = AsyncResource2.bind(function setState(newValue) {
+    const setState = AsyncResource2.bind(function setState2(newValue) {
       if (pointer.get() !== newValue) {
         pointer.set(newValue);
         handleChange();
@@ -27534,7 +27552,7 @@ async function doctorCommand(options = {}) {
 
 // src/cli/init.ts
 init_package();
-import { join as join12 } from "node:path";
+import { join as join13 } from "node:path";
 
 // src/core/installer.ts
 init_fs();
@@ -28374,7 +28392,6 @@ async function backupExistingInstallation(targetDir) {
 
 // src/core/mcp-config.ts
 init_fs();
-import { execSync as execSync5 } from "node:child_process";
 import { writeFile as writeFile2 } from "node:fs/promises";
 import { join as join9 } from "node:path";
 async function generateMCPConfig(targetDir) {
@@ -28383,22 +28400,6 @@ async function generateMCPConfig(targetDir) {
   const ontologyDir = join9(layout.rootDir, "ontology");
   const ontologyExists = await fileExists(join9(targetDir, ontologyDir));
   if (!ontologyExists) {
-    return;
-  }
-  try {
-    execSync5("uv --version", { stdio: "pipe" });
-  } catch {
-    warn("uv (Python package manager) not found. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh");
-    warn("Skipping ontology-rag MCP configuration. You can set it up manually later.");
-    return;
-  }
-  try {
-    execSync5("uv venv .venv", { cwd: targetDir, stdio: "pipe" });
-    execSync5('uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"', { cwd: targetDir, stdio: "pipe" });
-  } catch (error2) {
-    const msg = error2 instanceof Error ? error2.message : String(error2);
-    warn(`Failed to setup ontology-rag: ${msg}`);
-    warn("You can configure the MCP server manually. See: https://github.com/baekenough/oh-my-customcode/tree/develop/packages/ontology-rag");
     return;
   }
   const config = {
@@ -28435,13 +28436,130 @@ async function generateMCPConfig(targetDir) {
   }
   info("ontology-rag MCP server configured successfully");
 }
-async function checkUvAvailable() {
+
+// src/core/ontology-rag-setup.ts
+init_fs();
+import { execSync as execSync5 } from "node:child_process";
+import { join as join10 } from "node:path";
+var MIN_PYTHON_MINOR = 10;
+function parsePythonVersion(output) {
+  const match = /Python\s+(\d+)\.(\d+)/i.exec(output);
+  if (!match)
+    return null;
+  return [Number(match[1]), Number(match[2])];
+}
+function checkPython3() {
+  try {
+    const output = execSync5("python3 --version 2>&1", { stdio: "pipe" }).toString().trim();
+    const parsed = parsePythonVersion(output);
+    if (!parsed) {
+      return { available: true, versionOk: false, version: output };
+    }
+    const [major, minor] = parsed;
+    const versionOk = major === 3 && minor >= MIN_PYTHON_MINOR;
+    return { available: true, versionOk, version: `${major}.${minor}` };
+  } catch {
+    return { available: false, versionOk: false, version: "" };
+  }
+}
+function checkUvAvailableForSetup() {
   try {
     execSync5("uv --version", { stdio: "pipe" });
     return true;
   } catch {
     return false;
   }
+}
+function createVenvWithUv(targetDir) {
+  execSync5("uv venv --python 3.12 .venv", { cwd: targetDir, stdio: "pipe" });
+}
+function createVenvWithPython3(targetDir) {
+  execSync5("python3 -m venv .venv", { cwd: targetDir, stdio: "pipe" });
+}
+function installOntologyRagEditable(targetDir, useUv) {
+  const packageRoot = getPackageRoot();
+  const ontologyPkgPath = join10(packageRoot, "packages", "ontology-rag");
+  if (useUv) {
+    execSync5(`uv pip install --python .venv/bin/python -e "${ontologyPkgPath}"`, {
+      cwd: targetDir,
+      stdio: "pipe"
+    });
+  } else {
+    execSync5(`.venv/bin/pip install -e "${ontologyPkgPath}"`, {
+      cwd: targetDir,
+      stdio: "pipe"
+    });
+  }
+}
+async function setupOntologyRag(targetDir) {
+  const python = checkPython3();
+  if (!python.available) {
+    const reason = `python3 not found. Install Python >= 3.${MIN_PYTHON_MINOR} (https://python.org) to enable ontology-rag.`;
+    console.warn(`Warning: ${reason}`);
+    return {
+      success: false,
+      statusLine: "ontology-rag MCP: skipped (python3 not found)",
+      reason
+    };
+  }
+  if (!python.versionOk) {
+    const reason = `python3 ${python.version} is below the required 3.${MIN_PYTHON_MINOR}. ` + `Upgrade Python to enable ontology-rag.`;
+    console.warn(`Warning: ${reason}`);
+    return {
+      success: false,
+      statusLine: `ontology-rag MCP: skipped (python3 ${python.version} < 3.${MIN_PYTHON_MINOR})`,
+      reason
+    };
+  }
+  const uvAvailable = checkUvAvailableForSetup();
+  if (!uvAvailable) {
+    console.warn("Warning: uv not found. Falling back to `python3 -m venv` for ontology-rag setup.");
+    console.warn("Install uv (https://docs.astral.sh/uv/) for faster Python environment setup.");
+  }
+  try {
+    if (uvAvailable) {
+      createVenvWithUv(targetDir);
+    } else {
+      createVenvWithPython3(targetDir);
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const reason = `Failed to create .venv: ${msg}`;
+    console.warn(`Warning: ${reason}`);
+    return {
+      success: false,
+      statusLine: "ontology-rag MCP: skipped (venv creation failed)",
+      reason
+    };
+  }
+  try {
+    installOntologyRagEditable(targetDir, uvAvailable);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const reason = `Failed to install ontology-rag: ${msg}`;
+    console.warn(`Warning: ${reason}`);
+    return {
+      success: false,
+      statusLine: "ontology-rag MCP: skipped (install failed)",
+      reason
+    };
+  }
+  const venvPython = join10(targetDir, ".venv", "bin", "python");
+  const venvReady = await fileExists(venvPython);
+  if (!venvReady) {
+    const reason = ".venv/bin/python missing after install — environment may be incomplete. " + "Run `uv pip install -e packages/ontology-rag` manually to complete setup.";
+    console.warn(`Warning: ${reason}`);
+    return {
+      success: false,
+      statusLine: "ontology-rag MCP: skipped (venv incomplete)",
+      reason
+    };
+  }
+  console.log("ontology-rag MCP: ready");
+  return {
+    success: true,
+    statusLine: "ontology-rag MCP: ready"
+  };
 }
 
 // src/cli/init.ts
@@ -28452,12 +28570,12 @@ init_package();
 init_projects();
 import { existsSync as existsSync2 } from "node:fs";
 import { copyFile as copyFile2, cp } from "node:fs/promises";
-import { join as join11 } from "node:path";
+import { join as join12 } from "node:path";
 init_fs();
 init_registry();
 async function checkExistingInstallation(targetDir) {
   const layout = getProviderLayout();
-  const rootDir = join11(targetDir, layout.rootDir);
+  const rootDir = join12(targetDir, layout.rootDir);
   return fileExists(rootDir);
 }
 async function installFromSnapshot(targetDir, snapshotPath, options) {
@@ -28469,7 +28587,7 @@ async function installFromSnapshot(targetDir, snapshotPath, options) {
     };
   }
   const layout = getProviderLayout();
-  const snapshotClaude = join11(snapshotPath, layout.rootDir);
+  const snapshotClaude = join12(snapshotPath, layout.rootDir);
   if (!existsSync2(snapshotClaude)) {
     return {
       success: false,
@@ -28483,24 +28601,24 @@ async function installFromSnapshot(targetDir, snapshotPath, options) {
     if (exists2 && !options.force) {
       console.log(i18n.t("cli.init.exists", { rootDir: layout.rootDir }));
       console.log(i18n.t("cli.init.backing_up"));
-      const backupDir = join11(targetDir, `.claude-backup-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, -1)}`);
-      await cp(join11(targetDir, layout.rootDir), backupDir, { recursive: true });
+      const backupDir = join12(targetDir, `.claude-backup-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, -1)}`);
+      await cp(join12(targetDir, layout.rootDir), backupDir, { recursive: true });
       console.log(`  Backed up to: ${backupDir}`);
     }
-    await cp(snapshotClaude, join11(targetDir, layout.rootDir), {
+    await cp(snapshotClaude, join12(targetDir, layout.rootDir), {
       recursive: true,
       force: true
     });
-    const snapshotGuides = join11(snapshotPath, "guides");
+    const snapshotGuides = join12(snapshotPath, "guides");
     if (existsSync2(snapshotGuides)) {
-      await cp(snapshotGuides, join11(targetDir, "guides"), {
+      await cp(snapshotGuides, join12(targetDir, "guides"), {
         recursive: true,
         force: true
       });
     }
-    const snapshotEntry = join11(snapshotPath, layout.entryFile);
+    const snapshotEntry = join12(snapshotPath, layout.entryFile);
     if (existsSync2(snapshotEntry)) {
-      await copyFile2(snapshotEntry, join11(targetDir, layout.entryFile));
+      await copyFile2(snapshotEntry, join12(targetDir, layout.entryFile));
     }
     try {
       const existing = await readLockFile(targetDir);
@@ -29508,7 +29626,7 @@ async function runInitWizard(options) {
 // src/cli/init.ts
 async function checkExistingInstallation2(targetDir) {
   const layout = getProviderLayout();
-  const rootDir = join12(targetDir, layout.rootDir);
+  const rootDir = join13(targetDir, layout.rootDir);
   return fileExists(rootDir);
 }
 var PROVIDER_SUBDIR_COMPONENTS = new Set([
@@ -29522,13 +29640,13 @@ var PROVIDER_SUBDIR_COMPONENTS = new Set([
 function componentToPath(targetDir, component) {
   if (component === "entry-md") {
     const layout = getProviderLayout();
-    return join12(targetDir, layout.entryFile);
+    return join13(targetDir, layout.entryFile);
   }
   if (PROVIDER_SUBDIR_COMPONENTS.has(component)) {
     const layout = getProviderLayout();
-    return join12(targetDir, layout.rootDir, component);
+    return join13(targetDir, layout.rootDir, component);
   }
-  return join12(targetDir, component);
+  return join13(targetDir, component);
 }
 function buildInstalledPaths(targetDir, components) {
   return components.map((component) => componentToPath(targetDir, component));
@@ -29579,17 +29697,15 @@ async function resolveOptions(options) {
   return { lang: defaults.lang, domain: defaults.domain };
 }
 async function setupMcpConfig(targetDir) {
-  const uvAvailable = await checkUvAvailable();
-  if (uvAvailable) {
+  const setupResult = await setupOntologyRag(targetDir);
+  console.log(`  ${setupResult.statusLine}`);
+  if (setupResult.success) {
     try {
       await generateMCPConfig(targetDir);
     } catch (error2) {
       const msg = error2 instanceof Error ? error2.message : String(error2);
-      console.warn(`Warning: Failed to setup MCP environment: ${msg}`);
+      console.warn(`Warning: Failed to write .mcp.json: ${msg}`);
     }
-  } else {
-    console.warn("Warning: uv not found. Skipping MCP server configuration.");
-    console.warn("Install uv (https://docs.astral.sh/uv/) to enable MCP integration.");
   }
 }
 async function initCommand(options) {
@@ -29653,7 +29769,7 @@ async function initCommand(options) {
 }
 
 // src/cli/list.ts
-import { basename as basename5, dirname as dirname3, join as join13, relative as relative3 } from "node:path";
+import { basename as basename5, dirname as dirname3, join as join14, relative as relative3 } from "node:path";
 init_fs();
 var ALLOWED_TOP_LEVEL_KEYS = new Set(["name", "type", "description", "version", "category"]);
 function parseKeyValue(line) {
@@ -29718,12 +29834,12 @@ function extractAgentTypeFromFilename(filename) {
   return prefixMap[prefix] || "unknown";
 }
 function extractSkillCategoryFromPath(skillPath, baseDir, rootDir) {
-  const relativePath = relative3(join13(baseDir, rootDir, "skills"), skillPath);
+  const relativePath = relative3(join14(baseDir, rootDir, "skills"), skillPath);
   const parts = relativePath.split("/").filter(Boolean);
   return parts[0] || "unknown";
 }
 function extractGuideCategoryFromPath(guidePath, baseDir) {
-  const relativePath = relative3(join13(baseDir, "guides"), guidePath);
+  const relativePath = relative3(join14(baseDir, "guides"), guidePath);
   const parts = relativePath.split("/").filter(Boolean);
   return parts[0] || "unknown";
 }
@@ -29817,7 +29933,7 @@ async function tryExtractMarkdownDescription(mdPath, options = {}) {
   }
 }
 async function getAgents(targetDir, rootDir = ".claude", config) {
-  const agentsDir = join13(targetDir, rootDir, "agents");
+  const agentsDir = join14(targetDir, rootDir, "agents");
   if (!await fileExists(agentsDir))
     return [];
   try {
@@ -29845,7 +29961,7 @@ async function getAgents(targetDir, rootDir = ".claude", config) {
   }
 }
 async function getSkills(targetDir, rootDir = ".claude", config) {
-  const skillsDir = join13(targetDir, rootDir, "skills");
+  const skillsDir = join14(targetDir, rootDir, "skills");
   if (!await fileExists(skillsDir))
     return [];
   try {
@@ -29855,7 +29971,7 @@ async function getSkills(targetDir, rootDir = ".claude", config) {
     const skillMdFiles = await listFiles(skillsDir, { recursive: true, pattern: "SKILL.md" });
     const skills = await Promise.all(skillMdFiles.map(async (skillMdPath) => {
       const skillDir = dirname3(skillMdPath);
-      const indexYamlPath = join13(skillDir, "index.yaml");
+      const indexYamlPath = join14(skillDir, "index.yaml");
       const { description, version } = await tryReadIndexYamlMetadata(indexYamlPath);
       const relativePath = relative3(targetDir, skillDir);
       return {
@@ -29874,7 +29990,7 @@ async function getSkills(targetDir, rootDir = ".claude", config) {
   }
 }
 async function getGuides(targetDir, config) {
-  const guidesDir = join13(targetDir, "guides");
+  const guidesDir = join14(targetDir, "guides");
   if (!await fileExists(guidesDir))
     return [];
   try {
@@ -29901,7 +30017,7 @@ async function getGuides(targetDir, config) {
 }
 var RULE_PRIORITY_ORDER = { MUST: 0, SHOULD: 1, MAY: 2 };
 async function getRules(targetDir, rootDir = ".claude", config) {
-  const rulesDir = join13(targetDir, rootDir, "rules");
+  const rulesDir = join14(targetDir, rootDir, "rules");
   if (!await fileExists(rulesDir))
     return [];
   try {
@@ -29973,7 +30089,7 @@ function formatAsJson(components) {
   console.log(JSON.stringify(components, null, 2));
 }
 async function getHooks(targetDir, rootDir = ".claude") {
-  const hooksDir = join13(targetDir, rootDir, "hooks");
+  const hooksDir = join14(targetDir, rootDir, "hooks");
   if (!await fileExists(hooksDir))
     return [];
   try {
@@ -29991,7 +30107,7 @@ async function getHooks(targetDir, rootDir = ".claude") {
   }
 }
 async function getContexts(targetDir, rootDir = ".claude") {
-  const contextsDir = join13(targetDir, rootDir, "contexts");
+  const contextsDir = join14(targetDir, rootDir, "contexts");
   if (!await fileExists(contextsDir))
     return [];
   try {
@@ -30384,22 +30500,22 @@ async function securityCommand(_options = {}) {
 
 // src/cli/serve-commands.ts
 import { spawnSync as spawnSync2 } from "node:child_process";
-import { join as join15 } from "node:path";
+import { join as join16 } from "node:path";
 
 // src/cli/serve.ts
 import { spawn } from "node:child_process";
 import { existsSync as existsSync3 } from "node:fs";
 import { readFile as readFile3, unlink, writeFile as writeFile3 } from "node:fs/promises";
-import { join as join14 } from "node:path";
+import { join as join15 } from "node:path";
 var DEFAULT_PORT = 4321;
-var PID_FILE = join14(process.env.HOME ?? "~", ".omcustom-serve.pid");
+var PID_FILE = join15(process.env.HOME ?? "~", ".omcustom-serve.pid");
 function findServeBuildDir(projectRoot, options) {
-  const localBuild = join14(projectRoot, "packages", "serve", "build");
-  if (existsSync3(join14(localBuild, "index.js")))
+  const localBuild = join15(projectRoot, "packages", "serve", "build");
+  if (existsSync3(join15(localBuild, "index.js")))
     return localBuild;
   if (options?.skipNpmFallback !== true) {
-    const npmBuild = join14(import.meta.dirname, "..", "..", "packages", "serve", "build");
-    if (existsSync3(join14(npmBuild, "index.js")))
+    const npmBuild = join15(import.meta.dirname, "..", "..", "packages", "serve", "build");
+    if (existsSync3(join15(npmBuild, "index.js")))
       return npmBuild;
   }
   return null;
@@ -30427,7 +30543,7 @@ async function startServeBackground(projectRoot, port = DEFAULT_PORT, buildDirOp
   if (buildDir === null) {
     return;
   }
-  const child = spawn("node", [join14(buildDir, "index.js")], {
+  const child = spawn("node", [join15(buildDir, "index.js")], {
     env: {
       ...process.env,
       OMCUSTOM_PORT: String(port),
@@ -30504,7 +30620,7 @@ function runForeground(projectRoot, port, buildDirOpts) {
     process.exit(1);
   }
   console.log(`Web UI: http://localhost:${port}`);
-  spawnSync2("node", [join15(buildDir, "index.js")], {
+  spawnSync2("node", [join16(buildDir, "index.js")], {
     env: {
       ...process.env,
       OMCUSTOM_PORT: String(port),
@@ -30523,12 +30639,12 @@ import { resolve as resolve3 } from "node:path";
 init_fs();
 import { existsSync as existsSync4 } from "node:fs";
 import { cp as cp2, mkdir as mkdir2 } from "node:fs/promises";
-import { join as join16 } from "node:path";
+import { join as join17 } from "node:path";
 async function loadVersions() {
   try {
     const packageRoot = getPackageRoot();
-    const manifest = await readJsonFile(join16(packageRoot, "templates", "manifest.json"));
-    const pkg = await readJsonFile(join16(packageRoot, "package.json"));
+    const manifest = await readJsonFile(join17(packageRoot, "templates", "manifest.json"));
+    const pkg = await readJsonFile(join17(packageRoot, "package.json"));
     return { generatorVersion: pkg.version, templateVersion: manifest.version };
   } catch {
     return { generatorVersion: "0.0.0", templateVersion: "0.0.0" };
@@ -30598,7 +30714,7 @@ async function countFiles(dir2) {
       return 0;
     }
     for (const entry of entries) {
-      const full = join16(current, entry);
+      const full = join17(current, entry);
       try {
         const s = await stat3(full);
         if (s.isDirectory()) {
@@ -30613,19 +30729,19 @@ async function countFiles(dir2) {
   return walk(dir2);
 }
 async function exportSnapshot(targetDir, outputPath) {
-  const claudeDir = join16(targetDir, ".claude");
-  const guidesDir = join16(targetDir, "guides");
+  const claudeDir = join17(targetDir, ".claude");
+  const guidesDir = join17(targetDir, "guides");
   if (!existsSync4(claudeDir)) {
     return { success: false, exportPath: outputPath, fileCount: 0 };
   }
   await mkdir2(outputPath, { recursive: true });
-  const destClaude = join16(outputPath, ".claude");
+  const destClaude = join17(outputPath, ".claude");
   await cp2(claudeDir, destClaude, {
     recursive: true,
     filter: isExportable
   });
   if (existsSync4(guidesDir)) {
-    await cp2(guidesDir, join16(outputPath, "guides"), { recursive: true });
+    await cp2(guidesDir, join17(outputPath, "guides"), { recursive: true });
   }
   const lockfile = await generateCurrentLockfile(targetDir);
   if (lockfile) {
@@ -30709,7 +30825,7 @@ import { constants as osConstants } from "node:os";
 
 // src/core/updater.ts
 init_package();
-import { join as join17 } from "node:path";
+import { join as join18 } from "node:path";
 init_fs();
 
 // src/core/entry-merger.ts
@@ -30964,7 +31080,7 @@ function resolveCustomizations(customizations, configPreserveFiles, targetDir) {
 }
 async function updateEntryDoc(targetDir, config, options) {
   const layout = getProviderLayout();
-  const entryPath = join17(targetDir, layout.entryFile);
+  const entryPath = join18(targetDir, layout.entryFile);
   const templateName = getEntryTemplateName2(config.language);
   const templatePath = resolveTemplatePath(templateName);
   if (!await fileExists(templatePath)) {
@@ -31002,7 +31118,7 @@ async function backfillStatusLineRefreshInterval(targetDir, options) {
     return;
   }
   const layout = getProviderLayout();
-  const settingsPath = join17(targetDir, layout.rootDir, "settings.local.json");
+  const settingsPath = join18(targetDir, layout.rootDir, "settings.local.json");
   if (!await fileExists(settingsPath)) {
     return;
   }
@@ -31088,7 +31204,7 @@ async function regenerateLockfile(targetDir, result) {
   }
 }
 async function shouldSkipSelfUpdate2(targetDir, result) {
-  const targetPkgPath = join17(targetDir, "package.json");
+  const targetPkgPath = join18(targetDir, "package.json");
   if (await fileExists(targetPkgPath)) {
     const targetPkg = await readJsonFile(targetPkgPath);
     if (targetPkg.name === "oh-my-customcode") {
@@ -31227,11 +31343,11 @@ async function collectProtectedSkipPaths(srcPath, destPath, componentPath, force
   const warnedPaths = [];
   const updatedPaths = [];
   for (const p of protectedRelative) {
-    const targetFilePath = join17(targetDir, componentPath, p);
+    const targetFilePath = join18(targetDir, componentPath, p);
     const lockfileKey = `${componentPath}/${p}`.replace(/\\/g, "/");
     const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
     if (shouldSkip) {
-      skipPaths.push(path3.relative(destPath, join17(destPath, p)));
+      skipPaths.push(path3.relative(destPath, join18(destPath, p)));
       warnedPaths.push(p);
     } else {
       updatedPaths.push(p);
@@ -31277,7 +31393,7 @@ async function updateComponent(targetDir, component, customizations, options, co
   const preservedFiles = [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
-  const destPath = join17(targetDir, componentPath);
+  const destPath = join18(targetDir, componentPath);
   const customComponents = config.customComponents || [];
   const skipPaths = [];
   if (customizations && !options.forceOverwriteAll) {
@@ -31319,7 +31435,7 @@ async function updateComponent(targetDir, component, customizations, options, co
   }
   skipPaths.push(...protectedSkipPaths);
   const path3 = await import("node:path");
-  const normalizedSkipPaths = skipPaths.map((p) => path3.relative(destPath, join17(targetDir, p)));
+  const normalizedSkipPaths = skipPaths.map((p) => path3.relative(destPath, join18(targetDir, p)));
   const uniqueSkipPaths = [...new Set(normalizedSkipPaths)];
   await copyDirectory(srcPath, destPath, {
     overwrite: true,
@@ -31341,12 +31457,12 @@ async function syncRootLevelFiles(targetDir, options) {
   const layout = getProviderLayout();
   const synced = [];
   for (const fileName of ROOT_LEVEL_FILES) {
-    const srcPath = resolveTemplatePath(join17(layout.rootDir, fileName));
+    const srcPath = resolveTemplatePath(join18(layout.rootDir, fileName));
     if (!await fileExists(srcPath)) {
       continue;
     }
-    const destPath = join17(targetDir, layout.rootDir, fileName);
-    await ensureDirectory(join17(destPath, ".."));
+    const destPath = join18(targetDir, layout.rootDir, fileName);
+    await ensureDirectory(join18(destPath, ".."));
     await fs3.copyFile(srcPath, destPath);
     if (fileName.endsWith(".sh")) {
       await fs3.chmod(destPath, 493);
@@ -31381,7 +31497,7 @@ async function removeDeprecatedFiles(targetDir, options) {
       });
       continue;
     }
-    const fullPath = join17(targetDir, entry.path);
+    const fullPath = join18(targetDir, entry.path);
     if (await fileExists(fullPath)) {
       await fs3.unlink(fullPath);
       removed.push(entry.path);
@@ -31422,7 +31538,7 @@ async function syncNamespaceInFile(targetFilePath, upstreamFilePath) {
 async function processNamespaceSyncEntry(entry, relPath, fullSrcPath, destPath, componentPath, lockfile) {
   if (!entry.isFile() || !entry.name.endsWith(".md"))
     return null;
-  const targetFilePath = join17(destPath, relPath);
+  const targetFilePath = join18(destPath, relPath);
   const lockfileKey = `${componentPath}/${relPath}`.replace(/\\/g, "/");
   const shouldSkip = await shouldSkipProtectedFile(targetFilePath, lockfileKey, lockfile);
   if (shouldSkip)
@@ -31437,7 +31553,7 @@ async function applyNamespaceSync(targetDir, component, lockfile) {
     return [];
   const componentPath = getComponentPath2(component);
   const srcPath = resolveTemplatePath(componentPath);
-  const destPath = join17(targetDir, componentPath);
+  const destPath = join18(targetDir, componentPath);
   const fs3 = await import("node:fs/promises");
   const synced = [];
   const queue = [{ dir: srcPath, relDir: "" }];
@@ -31451,7 +31567,7 @@ async function applyNamespaceSync(targetDir, component, lockfile) {
     }
     for (const entry of entries) {
       const relPath = relDir ? `${relDir}/${entry.name}` : entry.name;
-      const fullSrcPath = join17(dir2, entry.name);
+      const fullSrcPath = join18(dir2, entry.name);
       if (entry.isDirectory()) {
         queue.push({ dir: fullSrcPath, relDir: relPath });
         continue;
@@ -31474,26 +31590,26 @@ function getComponentPath2(component) {
 }
 async function backupInstallation(targetDir) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupDir = join17(targetDir, `.omcustom-backup-${timestamp}`);
+  const backupDir = join18(targetDir, `.omcustom-backup-${timestamp}`);
   const fs3 = await import("node:fs/promises");
   await ensureDirectory(backupDir);
   const layout = getProviderLayout();
   const dirsToBackup = [layout.rootDir, "guides"];
   for (const dir2 of dirsToBackup) {
-    const srcPath = join17(targetDir, dir2);
+    const srcPath = join18(targetDir, dir2);
     if (await fileExists(srcPath)) {
-      const destPath = join17(backupDir, dir2);
+      const destPath = join18(backupDir, dir2);
       await copyDirectory(srcPath, destPath, { overwrite: true });
     }
   }
-  const entryPath = join17(targetDir, layout.entryFile);
+  const entryPath = join18(targetDir, layout.entryFile);
   if (await fileExists(entryPath)) {
-    await fs3.copyFile(entryPath, join17(backupDir, layout.entryFile));
+    await fs3.copyFile(entryPath, join18(backupDir, layout.entryFile));
   }
   return backupDir;
 }
 async function loadCustomizationManifest(targetDir) {
-  const manifestPath = join17(targetDir, CUSTOMIZATION_MANIFEST_FILE);
+  const manifestPath = join18(targetDir, CUSTOMIZATION_MANIFEST_FILE);
   if (await fileExists(manifestPath)) {
     return readJsonFile(manifestPath);
   }
