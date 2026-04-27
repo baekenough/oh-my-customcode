@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.115.0",
-  "generatedAt": "2026-04-26T22:52:25.438Z",
-  "templateVersion": "0.115.0",
+  "generatorVersion": "0.116.0",
+  "generatedAt": "2026-04-26T23:49:48.669Z",
+  "templateVersion": "0.116.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -1025,8 +1025,8 @@
       "component": "skills"
     },
     ".claude/skills/agent-eval-framework/SKILL.md": {
-      "templateHash": "5dcbe3eb3bf9dc0dd3a6313e2185b5c84018a0dabe1bf61dd082f54141e7be0e",
-      "size": 8070,
+      "templateHash": "5215ca34c72c3969807f2ad4395727e2dc50870d3bc3a340aa6e8063e6bcd196",
+      "size": 8400,
       "component": "skills"
     },
     ".claude/skills/task-decomposition/SKILL.md": {
