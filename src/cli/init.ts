@@ -7,7 +7,8 @@ import { join } from 'node:path';
 import packageJson from '../../package.json';
 import { type InstallResult as InstallerResult, install } from '../core/installer.js';
 import { getProviderLayout } from '../core/layout.js';
-import { checkUvAvailable, generateMCPConfig } from '../core/mcp-config.js';
+import { generateMCPConfig } from '../core/mcp-config.js';
+import { setupOntologyRag } from '../core/ontology-rag-setup.js';
 import { registerProject } from '../core/registry.js';
 import { type InitOptions, type InitResult, installFromSnapshot } from '../core/snapshot.js';
 import { i18n } from '../i18n/index.js';
@@ -130,20 +131,28 @@ async function resolveOptions(options: InitOptions): Promise<ResolvedOptions | n
 }
 
 /**
- * Setup MCP config if uv is available.
+ * Setup the ontology-rag Python environment then write .mcp.json.
+ *
+ * Order matters:
+ *  1. setupOntologyRag — creates .venv and installs the package (non-fatal)
+ *  2. generateMCPConfig — writes .mcp.json referencing .venv/bin/python
+ *     only when the ontology directory is present
+ *
+ * A failure in either step is non-fatal; a summary line is always printed.
  */
 async function setupMcpConfig(targetDir: string): Promise<void> {
-  const uvAvailable = await checkUvAvailable();
-  if (uvAvailable) {
+  // Step 1: Python venv + package install
+  const setupResult = await setupOntologyRag(targetDir);
+  console.log(`  ${setupResult.statusLine}`);
+
+  // Step 2: Write .mcp.json (only when venv is ready)
+  if (setupResult.success) {
     try {
       await generateMCPConfig(targetDir);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      console.warn(`Warning: Failed to setup MCP environment: ${msg}`);
+      console.warn(`Warning: Failed to write .mcp.json: ${msg}`);
     }
-  } else {
-    console.warn('Warning: uv not found. Skipping MCP server configuration.');
-    console.warn('Install uv (https://docs.astral.sh/uv/) to enable MCP integration.');
   }
 }
 

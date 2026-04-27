@@ -1,12 +1,15 @@
 /**
- * MCP configuration generator for ontology-rag server
+ * MCP configuration generator for ontology-rag server.
+ *
+ * Responsibility: write/update .mcp.json only.
+ * Python environment setup is handled by ontology-rag-setup.ts.
  */
 
 import { execSync } from 'node:child_process';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileExists } from '../utils/fs.js';
-import { info, warn } from '../utils/logger.js';
+import { info } from '../utils/logger.js';
 import { getProviderLayout } from './layout.js';
 
 interface MCPServerConfig {
@@ -21,7 +24,12 @@ interface MCPConfig {
 }
 
 /**
- * Generate .mcp.json with ontology-rag server configuration
+ * Generate .mcp.json with ontology-rag server configuration.
+ *
+ * This function only writes the JSON config file. Python environment
+ * setup (venv creation + package install) is handled separately by
+ * setupOntologyRag() in ontology-rag-setup.ts before this is called.
+ *
  * @param targetDir - Project root directory
  */
 export async function generateMCPConfig(targetDir: string): Promise<void> {
@@ -32,35 +40,6 @@ export async function generateMCPConfig(targetDir: string): Promise<void> {
   // Only generate if ontology directory was installed
   const ontologyExists = await fileExists(join(targetDir, ontologyDir));
   if (!ontologyExists) {
-    return;
-  }
-
-  // Check if uv is available
-  // Note: No user input in command - safe to use execSync with fixed string
-  try {
-    execSync('uv --version', { stdio: 'pipe' });
-  } catch {
-    warn(
-      'uv (Python package manager) not found. Install it with: curl -LsSf https://astral.sh/uv/install.sh | sh'
-    );
-    warn('Skipping ontology-rag MCP configuration. You can set it up manually later.');
-    return;
-  }
-
-  // Create venv and install ontology-rag
-  // Note: No user input in commands - safe to use execSync with fixed strings
-  try {
-    execSync('uv venv .venv', { cwd: targetDir, stdio: 'pipe' });
-    execSync(
-      'uv pip install "ontology-rag @ git+https://github.com/baekenough/oh-my-customcode.git#subdirectory=packages/ontology-rag"',
-      { cwd: targetDir, stdio: 'pipe' }
-    );
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    warn(`Failed to setup ontology-rag: ${msg}`);
-    warn(
-      'You can configure the MCP server manually. See: https://github.com/baekenough/oh-my-customcode/tree/develop/packages/ontology-rag'
-    );
     return;
   }
 
