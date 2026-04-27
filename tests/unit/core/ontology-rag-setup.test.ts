@@ -128,7 +128,7 @@ describe('ontology-rag-setup', () => {
     it('returns true when uv is installed', () => {
       execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
       expect(checkUvAvailableForSetup()).toBe(true);
-      expect(execSyncSpy).toHaveBeenCalledWith('uv --version', { stdio: 'pipe' });
+      expect(execSyncSpy).toHaveBeenCalledWith('uv --version', { stdio: 'pipe', timeout: 3000 });
     });
 
     it('returns false when uv is not installed', () => {
@@ -149,6 +149,7 @@ describe('ontology-rag-setup', () => {
       expect(execSyncSpy).toHaveBeenCalledWith('uv venv --python 3.12 .venv', {
         cwd: tempDir,
         stdio: 'pipe',
+        timeout: 90000,
       });
     });
 
@@ -170,6 +171,7 @@ describe('ontology-rag-setup', () => {
       expect(execSyncSpy).toHaveBeenCalledWith('python3 -m venv .venv', {
         cwd: tempDir,
         stdio: 'pipe',
+        timeout: 90000,
       });
     });
 
@@ -376,6 +378,59 @@ describe('ontology-rag-setup', () => {
       expect(result.statusLine).toContain('skipped');
 
       fileExistsSpy.mockRestore();
+    });
+
+    // -----------------------------------------------------------------------
+    // OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP env-var fast-skip
+    // -----------------------------------------------------------------------
+    describe('OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP env var', () => {
+      afterEach(() => {
+        delete process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP;
+      });
+
+      it('returns success=false and skips all subprocess calls when env var is set', async () => {
+        process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP = '1';
+        // execSync should never be called
+        execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
+          throw new Error('execSync must not be called when skip env var is set');
+        });
+
+        const result = await setupOntologyRag(tempDir);
+
+        expect(result.success).toBe(false);
+        expect(result.statusLine).toContain('OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP');
+        expect(result.reason).toBe('skipped via env var');
+        expect(execSyncSpy).not.toHaveBeenCalled();
+      });
+
+      it('does not skip when env var is not set', async () => {
+        delete process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP;
+        // Just confirm execution proceeds normally (python3 not found path)
+        execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd: unknown) => {
+          if (String(cmd).includes('python3 --version')) throw new Error('python3: not found');
+          return Buffer.from('');
+        });
+
+        const result = await setupOntologyRag(tempDir);
+
+        // Should have attempted python detection (not skipped)
+        expect(execSyncSpy).toHaveBeenCalled();
+        expect(result.statusLine).toContain('python3 not found');
+      });
+
+      it('does not skip when env var is set to non-"1" value', async () => {
+        process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP = 'true';
+        execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd: unknown) => {
+          if (String(cmd).includes('python3 --version')) throw new Error('python3: not found');
+          return Buffer.from('');
+        });
+
+        const result = await setupOntologyRag(tempDir);
+
+        // env var='true' does NOT trigger the skip (only '1' does)
+        expect(execSyncSpy).toHaveBeenCalled();
+        expect(result.statusLine).not.toContain('OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP');
+      });
     });
   });
 });

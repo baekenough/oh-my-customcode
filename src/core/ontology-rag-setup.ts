@@ -10,6 +10,9 @@
  *  6. Print a clear summary line
  *
  * All failures are non-fatal — a warning is printed and init continues.
+ *
+ * Set OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP=1 to bypass all subprocess calls
+ * (useful in CI or test environments that do not have Python/uv available).
  */
 
 import { execSync } from 'node:child_process';
@@ -18,6 +21,18 @@ import { fileExists, getPackageRoot } from '../utils/fs.js';
 
 /** Minimum required Python minor version (3.x, where x >= MIN_PYTHON_MINOR) */
 const MIN_PYTHON_MINOR = 10;
+
+/**
+ * Timeout in milliseconds for quick tool-detection commands (python3/uv --version).
+ * Keeps init responsive when PATH resolution stalls.
+ */
+const DETECTION_TIMEOUT_MS = 3000;
+
+/**
+ * Timeout in milliseconds for venv creation and package installation.
+ * Generous enough for a first-time `uv pip install` over a slow network.
+ */
+const INSTALL_TIMEOUT_MS = 90000;
 
 /** Result returned from the ontology-rag setup step */
 export interface OntologyRagSetupResult {
@@ -46,7 +61,12 @@ export function checkPython3(): { available: boolean; versionOk: boolean; versio
   try {
     // Note: No user input in command — safe to use execSync with fixed string.
     // 2>&1 captures Python 3.4 which prints to stderr.
-    const output = execSync('python3 --version 2>&1', { stdio: 'pipe' }).toString().trim();
+    const output = execSync('python3 --version 2>&1', {
+      stdio: 'pipe',
+      timeout: DETECTION_TIMEOUT_MS,
+    })
+      .toString()
+      .trim();
     const parsed = parsePythonVersion(output);
     if (!parsed) {
       return { available: true, versionOk: false, version: output };
@@ -65,7 +85,7 @@ export function checkPython3(): { available: boolean; versionOk: boolean; versio
 export function checkUvAvailableForSetup(): boolean {
   try {
     // Note: No user input — safe to use execSync with fixed string.
-    execSync('uv --version', { stdio: 'pipe' });
+    execSync('uv --version', { stdio: 'pipe', timeout: DETECTION_TIMEOUT_MS });
     return true;
   } catch {
     return false;
@@ -79,7 +99,11 @@ export function checkUvAvailableForSetup(): boolean {
  */
 export function createVenvWithUv(targetDir: string): void {
   // Note: No user input — safe to use execSync with fixed string.
-  execSync('uv venv --python 3.12 .venv', { cwd: targetDir, stdio: 'pipe' });
+  execSync('uv venv --python 3.12 .venv', {
+    cwd: targetDir,
+    stdio: 'pipe',
+    timeout: INSTALL_TIMEOUT_MS,
+  });
 }
 
 /**
@@ -87,7 +111,11 @@ export function createVenvWithUv(targetDir: string): void {
  */
 export function createVenvWithPython3(targetDir: string): void {
   // Note: No user input — safe to use execSync with fixed string.
-  execSync('python3 -m venv .venv', { cwd: targetDir, stdio: 'pipe' });
+  execSync('python3 -m venv .venv', {
+    cwd: targetDir,
+    stdio: 'pipe',
+    timeout: INSTALL_TIMEOUT_MS,
+  });
 }
 
 /**
@@ -105,11 +133,13 @@ export function installOntologyRagEditable(targetDir: string, useUv: boolean): v
     execSync(`uv pip install --python .venv/bin/python -e "${ontologyPkgPath}"`, {
       cwd: targetDir,
       stdio: 'pipe',
+      timeout: INSTALL_TIMEOUT_MS,
     });
   } else {
     execSync(`.venv/bin/pip install -e "${ontologyPkgPath}"`, {
       cwd: targetDir,
       stdio: 'pipe',
+      timeout: INSTALL_TIMEOUT_MS,
     });
   }
 }
@@ -127,6 +157,13 @@ export function installOntologyRagEditable(targetDir: string, useUv: boolean): v
  * Never throws. Returns a structured result so the caller can print a summary.
  */
 export async function setupOntologyRag(targetDir: string): Promise<OntologyRagSetupResult> {
+  // Fast-skip: honour opt-out env var (useful in CI and test environments).
+  if (process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP === '1') {
+    const statusLine = 'ontology-rag MCP: ⚠ skipped (OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP=1)';
+    console.warn(`Warning: ${statusLine}`);
+    return { success: false, statusLine, reason: 'skipped via env var' };
+  }
+
   // Step 1: Python availability and version check
   const python = checkPython3();
 
