@@ -2334,7 +2334,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.117.0",
+    version: "0.120.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -28442,6 +28442,8 @@ init_fs();
 import { execSync as execSync5 } from "node:child_process";
 import { join as join10 } from "node:path";
 var MIN_PYTHON_MINOR = 10;
+var DETECTION_TIMEOUT_MS = 3000;
+var INSTALL_TIMEOUT_MS = 90000;
 function parsePythonVersion(output) {
   const match = /Python\s+(\d+)\.(\d+)/i.exec(output);
   if (!match)
@@ -28450,7 +28452,10 @@ function parsePythonVersion(output) {
 }
 function checkPython3() {
   try {
-    const output = execSync5("python3 --version 2>&1", { stdio: "pipe" }).toString().trim();
+    const output = execSync5("python3 --version 2>&1", {
+      stdio: "pipe",
+      timeout: DETECTION_TIMEOUT_MS
+    }).toString().trim();
     const parsed = parsePythonVersion(output);
     if (!parsed) {
       return { available: true, versionOk: false, version: output };
@@ -28464,17 +28469,25 @@ function checkPython3() {
 }
 function checkUvAvailableForSetup() {
   try {
-    execSync5("uv --version", { stdio: "pipe" });
+    execSync5("uv --version", { stdio: "pipe", timeout: DETECTION_TIMEOUT_MS });
     return true;
   } catch {
     return false;
   }
 }
 function createVenvWithUv(targetDir) {
-  execSync5("uv venv --python 3.12 .venv", { cwd: targetDir, stdio: "pipe" });
+  execSync5("uv venv --python 3.12 .venv", {
+    cwd: targetDir,
+    stdio: "pipe",
+    timeout: INSTALL_TIMEOUT_MS
+  });
 }
 function createVenvWithPython3(targetDir) {
-  execSync5("python3 -m venv .venv", { cwd: targetDir, stdio: "pipe" });
+  execSync5("python3 -m venv .venv", {
+    cwd: targetDir,
+    stdio: "pipe",
+    timeout: INSTALL_TIMEOUT_MS
+  });
 }
 function installOntologyRagEditable(targetDir, useUv) {
   const packageRoot = getPackageRoot();
@@ -28482,16 +28495,23 @@ function installOntologyRagEditable(targetDir, useUv) {
   if (useUv) {
     execSync5(`uv pip install --python .venv/bin/python -e "${ontologyPkgPath}"`, {
       cwd: targetDir,
-      stdio: "pipe"
+      stdio: "pipe",
+      timeout: INSTALL_TIMEOUT_MS
     });
   } else {
     execSync5(`.venv/bin/pip install -e "${ontologyPkgPath}"`, {
       cwd: targetDir,
-      stdio: "pipe"
+      stdio: "pipe",
+      timeout: INSTALL_TIMEOUT_MS
     });
   }
 }
 async function setupOntologyRag(targetDir) {
+  if (process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP === "1") {
+    const statusLine = "ontology-rag MCP: ⚠ skipped (OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP=1)";
+    console.warn(`Warning: ${statusLine}`);
+    return { success: false, statusLine, reason: "skipped via env var" };
+  }
   const python = checkPython3();
   if (!python.available) {
     const reason = `python3 not found. Install Python >= 3.${MIN_PYTHON_MINOR} (https://python.org) to enable ontology-rag.`;
