@@ -110,3 +110,36 @@ export const sessionFeedback = sqliteTable('session_feedback', {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });
+
+// added v0.116.0, #1036 — ideal trajectory annotations (baseline)
+export const evalBaselines = sqliteTable('eval_baselines', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  taskId: text('task_id').notNull(),
+  capability: text('capability').notNull(), // file_operations | retrieval | tool_use | memory | conversation | summarization
+  idealSteps: integer('ideal_steps').notNull(),
+  idealToolCalls: integer('ideal_tool_calls').notNull(),
+  idealLatencyMs: integer('ideal_latency_ms').notNull(),
+  description: text('description'),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+// added v0.116.0, #1036 — observed agent execution trajectories
+// Note: name is `agentTrajectories` (NOT agentInvocations — that table exists for a different purpose)
+export const agentTrajectories = sqliteTable('agent_trajectories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  baselineId: integer('baseline_id').references(() => evalBaselines.id),
+  agentName: text('agent_name').notNull(),
+  model: text('model'),
+  observedSteps: integer('observed_steps').notNull(),
+  observedToolCalls: integer('observed_tool_calls').notNull(),
+  observedLatencyMs: integer('observed_latency_ms').notNull(),
+  correctness: integer('correctness', { mode: 'boolean' }).notNull(),
+  stepRatio: real('step_ratio'),       // observed / ideal
+  toolCallRatio: real('tool_call_ratio'),
+  latencyRatio: real('latency_ratio'),
+  sessionId: text('session_id'),
+  startedAt: integer('started_at', { mode: 'timestamp' }).notNull(),
+  completedAt: integer('completed_at', { mode: 'timestamp' }).notNull(),
+});

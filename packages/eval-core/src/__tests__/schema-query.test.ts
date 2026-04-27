@@ -24,12 +24,6 @@ import { tmpdir } from 'node:os';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function createInMemoryDb(): EvalDb {
-  const sqlite = new Database(':memory:');
-  sqlite.run('PRAGMA foreign_keys = ON');
-  return drizzle(sqlite, { schema });
-}
-
 function seedProjects(db: EvalDb) {
   const now = new Date().toISOString();
   db.insert(schema.projects)
@@ -97,7 +91,7 @@ function seedInvocation(
 // Schema DDL — apply CREATE TABLE to in-memory DB
 // ---------------------------------------------------------------------------
 
-function applyDdl(db: EvalDb, sqlite: Database) {
+function applyDdl(_db: EvalDb, sqlite: Database) {
   const statements = [
     `CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,6 +163,49 @@ function applyDdl(db: EvalDb, sqlite: Database) {
       comment TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`,
+    `CREATE TABLE IF NOT EXISTS improvement_actions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      feedback_source TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_name TEXT NOT NULL,
+      action_type TEXT NOT NULL,
+      description TEXT NOT NULL,
+      confidence TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'proposed',
+      evidence TEXT,
+      priority INTEGER DEFAULT 0,
+      cooldown_days INTEGER DEFAULT 7,
+      conflict_resolved_by TEXT,
+      applied_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )`,
+    // v0.116.0, #1036 — eval baselines and trajectories
+    `CREATE TABLE IF NOT EXISTS eval_baselines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id TEXT NOT NULL,
+      capability TEXT NOT NULL,
+      ideal_steps INTEGER NOT NULL,
+      ideal_tool_calls INTEGER NOT NULL,
+      ideal_latency_ms INTEGER NOT NULL,
+      description TEXT,
+      created_at INTEGER NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS agent_trajectories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      baseline_id INTEGER REFERENCES eval_baselines(id),
+      agent_name TEXT NOT NULL,
+      model TEXT,
+      observed_steps INTEGER NOT NULL,
+      observed_tool_calls INTEGER NOT NULL,
+      observed_latency_ms INTEGER NOT NULL,
+      correctness INTEGER NOT NULL,
+      step_ratio REAL,
+      tool_call_ratio REAL,
+      latency_ratio REAL,
+      session_id TEXT,
+      started_at INTEGER NOT NULL,
+      completed_at INTEGER NOT NULL
+    )`,
   ];
   for (const sql of statements) {
     sqlite.run(sql);
@@ -216,6 +253,8 @@ describe('runMigrations', () => {
     expect(names).toContain('agent_invocations');
     expect(names).toContain('evaluations');
     expect(names).toContain('session_feedback');
+    expect(names).toContain('eval_baselines');
+    expect(names).toContain('agent_trajectories');
     db.close();
   });
 
@@ -243,6 +282,10 @@ describe('runMigrations', () => {
     expect(indexNames).toContain('idx_turns_session_id');
     expect(indexNames).toContain('idx_invocations_ppid');
     expect(indexNames).toContain('idx_feedback_session_id');
+    expect(indexNames).toContain('idx_eval_baselines_task_id');
+    expect(indexNames).toContain('idx_eval_baselines_capability');
+    expect(indexNames).toContain('idx_agent_trajectories_baseline_id');
+    expect(indexNames).toContain('idx_agent_trajectories_agent_name');
     db.close();
   });
 
@@ -887,5 +930,289 @@ describe('upsertProject (via collect logic)', () => {
       .where(eq(schema.projects.cwd, '/new/path'))
       .get();
     expect(row?.name).toBe('new');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evalBaselines schema (v0.116.0, #1036)
+// ---------------------------------------------------------------------------
+
+describe('evalBaselines schema', () => {
+  it('inserts and retrieves a baseline', () => {
+    const { db } = makeDb();
+    const now = new Date();
+    db.insert(schema.evalBaselines)
+      .values({
+        taskId: 'task-001',
+        capability: 'file_operations',
+        idealSteps: 4,
+        idealToolCalls: 4,
+        idealLatencyMs: 8000,
+        description: 'Refactor user.py — read, parse, edit, verify',
+        createdAt: now,
+      })
+      .run();
+    const row = db
+      .select()
+      .from(schema.evalBaselines)
+      .where(eq(schema.evalBaselines.taskId, 'task-001'))
+      .get();
+    expect(row).toBeDefined();
+    expect(row?.taskId).toBe('task-001');
+    expect(row?.capability).toBe('file_operations');
+    expect(row?.idealSteps).toBe(4);
+    expect(row?.idealToolCalls).toBe(4);
+    expect(row?.idealLatencyMs).toBe(8000);
+    expect(row?.description).toBe('Refactor user.py — read, parse, edit, verify');
+  });
+
+  it('allows multiple baselines for the same task_id (variants)', () => {
+    const { db } = makeDb();
+    const now = new Date();
+    db.insert(schema.evalBaselines)
+      .values([
+        { taskId: 'task-002', capability: 'retrieval', idealSteps: 2, idealToolCalls: 3, idealLatencyMs: 3000, createdAt: now },
+        { taskId: 'task-002', capability: 'retrieval', idealSteps: 3, idealToolCalls: 4, idealLatencyMs: 5000, createdAt: now },
+      ])
+      .run();
+    const rows = db
+      .select()
+      .from(schema.evalBaselines)
+      .where(eq(schema.evalBaselines.taskId, 'task-002'))
+      .all();
+    expect(rows).toHaveLength(2);
+  });
+
+  it('allows null description (optional field)', () => {
+    const { db } = makeDb();
+    const now = new Date();
+    db.insert(schema.evalBaselines)
+      .values({ taskId: 'task-003', capability: 'tool_use', idealSteps: 5, idealToolCalls: 6, idealLatencyMs: 10000, createdAt: now })
+      .run();
+    const row = db
+      .select()
+      .from(schema.evalBaselines)
+      .where(eq(schema.evalBaselines.taskId, 'task-003'))
+      .get();
+    expect(row?.description).toBeNull();
+  });
+
+  it('uses $defaultFn for createdAt when not explicitly provided', () => {
+    const { db } = makeDb();
+    const before = new Date();
+    db.insert(schema.evalBaselines)
+      .values({
+        taskId: 'task-defaultfn',
+        capability: 'tool_use',
+        idealSteps: 1,
+        idealToolCalls: 1,
+        idealLatencyMs: 1000,
+        // createdAt intentionally omitted to trigger $defaultFn
+      })
+      .run();
+    const row = db
+      .select()
+      .from(schema.evalBaselines)
+      .where(eq(schema.evalBaselines.taskId, 'task-defaultfn'))
+      .get();
+    expect(row?.createdAt).toBeInstanceOf(Date);
+    expect(row!.createdAt.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1000);
+  });
+
+  it('autoIncrement generates distinct IDs across baselines', () => {
+    const { db } = makeDb();
+    const now = new Date();
+    db.insert(schema.evalBaselines)
+      .values([
+        { taskId: 't-a', capability: 'memory', idealSteps: 1, idealToolCalls: 1, idealLatencyMs: 1000, createdAt: now },
+        { taskId: 't-b', capability: 'conversation', idealSteps: 2, idealToolCalls: 2, idealLatencyMs: 2000, createdAt: now },
+      ])
+      .run();
+    const rows = db.select().from(schema.evalBaselines).all();
+    const ids = rows.map((r) => r.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// agentTrajectories schema (v0.116.0, #1036)
+// ---------------------------------------------------------------------------
+
+describe('agentTrajectories schema', () => {
+  it('inserts and retrieves a trajectory linked to a baseline', () => {
+    const { db, sqlite: _sqlite } = makeDb();
+    const now = new Date();
+    // Insert baseline first
+    db.insert(schema.evalBaselines)
+      .values({ taskId: 'task-traj-001', capability: 'file_operations', idealSteps: 4, idealToolCalls: 4, idealLatencyMs: 8000, createdAt: now })
+      .run();
+    const baseline = db.select().from(schema.evalBaselines).where(eq(schema.evalBaselines.taskId, 'task-traj-001')).get()!;
+
+    const start = new Date('2026-04-26T10:00:00Z');
+    const end = new Date('2026-04-26T10:00:12Z');
+    db.insert(schema.agentTrajectories)
+      .values({
+        baselineId: baseline.id,
+        agentName: 'lang-typescript-expert',
+        model: 'claude-sonnet-4-6',
+        observedSteps: 5,
+        observedToolCalls: 5,
+        observedLatencyMs: 12000,
+        correctness: true,
+        stepRatio: 5 / 4,
+        toolCallRatio: 5 / 4,
+        latencyRatio: 12000 / 8000,
+        sessionId: 'sess-eval-001',
+        startedAt: start,
+        completedAt: end,
+      })
+      .run();
+
+    const traj = db
+      .select()
+      .from(schema.agentTrajectories)
+      .where(eq(schema.agentTrajectories.baselineId, baseline.id))
+      .get();
+    expect(traj).toBeDefined();
+    expect(traj?.agentName).toBe('lang-typescript-expert');
+    expect(traj?.observedSteps).toBe(5);
+    expect(traj?.correctness).toBe(true);
+    expect(traj?.stepRatio).toBeCloseTo(1.25);
+    expect(traj?.latencyRatio).toBeCloseTo(1.5);
+  });
+
+  it('allows trajectory with null baselineId (no baseline required)', () => {
+    const { db } = makeDb();
+    const start = new Date('2026-04-26T10:00:00Z');
+    const end = new Date('2026-04-26T10:00:05Z');
+    db.insert(schema.agentTrajectories)
+      .values({
+        baselineId: null,
+        agentName: 'mgr-gitnerd',
+        observedSteps: 3,
+        observedToolCalls: 2,
+        observedLatencyMs: 5000,
+        correctness: false,
+        startedAt: start,
+        completedAt: end,
+      })
+      .run();
+    const row = db
+      .select()
+      .from(schema.agentTrajectories)
+      .where(eq(schema.agentTrajectories.agentName, 'mgr-gitnerd'))
+      .get();
+    expect(row?.baselineId).toBeNull();
+    expect(row?.correctness).toBe(false);
+  });
+
+  it('allows null optional ratio and model fields', () => {
+    const { db } = makeDb();
+    const start = new Date('2026-04-26T10:00:00Z');
+    const end = new Date('2026-04-26T10:00:03Z');
+    db.insert(schema.agentTrajectories)
+      .values({
+        agentName: 'qa-engineer',
+        observedSteps: 2,
+        observedToolCalls: 2,
+        observedLatencyMs: 3000,
+        correctness: true,
+        startedAt: start,
+        completedAt: end,
+      })
+      .run();
+    const row = db
+      .select()
+      .from(schema.agentTrajectories)
+      .where(eq(schema.agentTrajectories.agentName, 'qa-engineer'))
+      .get();
+    expect(row?.stepRatio).toBeNull();
+    expect(row?.toolCallRatio).toBeNull();
+    expect(row?.latencyRatio).toBeNull();
+    expect(row?.model).toBeNull();
+    expect(row?.sessionId).toBeNull();
+  });
+
+  it('rejects trajectory referencing non-existent baseline_id', () => {
+    const { sqlite } = makeDb();
+    const start = Math.floor(new Date('2026-04-26T10:00:00Z').getTime() / 1000);
+    const end = Math.floor(new Date('2026-04-26T10:00:05Z').getTime() / 1000);
+    expect(() => {
+      sqlite.run(
+        `INSERT INTO agent_trajectories
+          (baseline_id, agent_name, observed_steps, observed_tool_calls, observed_latency_ms, correctness, started_at, completed_at)
+         VALUES (9999, 'some-agent', 3, 3, 3000, 1, ${start}, ${end})`
+      );
+    }).toThrow();
+  });
+
+  it('stores multiple trajectories per baseline (comparison)', () => {
+    const { db } = makeDb();
+    const now = new Date();
+    db.insert(schema.evalBaselines)
+      .values({ taskId: 'task-multi', capability: 'tool_use', idealSteps: 3, idealToolCalls: 3, idealLatencyMs: 6000, createdAt: now })
+      .run();
+    const baseline = db.select().from(schema.evalBaselines).where(eq(schema.evalBaselines.taskId, 'task-multi')).get()!;
+
+    const start = new Date('2026-04-26T10:00:00Z');
+    const end = new Date('2026-04-26T10:00:10Z');
+    db.insert(schema.agentTrajectories)
+      .values([
+        { baselineId: baseline.id, agentName: 'agent-v1', observedSteps: 3, observedToolCalls: 3, observedLatencyMs: 6000, correctness: true, startedAt: start, completedAt: end },
+        { baselineId: baseline.id, agentName: 'agent-v2', observedSteps: 4, observedToolCalls: 4, observedLatencyMs: 8000, correctness: true, startedAt: start, completedAt: end },
+      ])
+      .run();
+
+    const rows = db
+      .select()
+      .from(schema.agentTrajectories)
+      .where(eq(schema.agentTrajectories.baselineId, baseline.id))
+      .all();
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.agentName).sort()).toEqual(['agent-v1', 'agent-v2']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// $defaultFn coverage — improvementActions and evaluations
+// ---------------------------------------------------------------------------
+
+describe('improvementActions $defaultFn', () => {
+  it('uses $defaultFn for createdAt when not explicitly provided', () => {
+    const { db } = makeDb();
+    db.insert(schema.improvementActions)
+      .values({
+        feedbackSource: 'auto_analysis',
+        targetType: 'agent',
+        targetName: 'lang-typescript-expert',
+        actionType: 'augment',
+        description: 'Add more TypeScript patterns',
+        confidence: 'high',
+      })
+      .run();
+    const row = db.select().from(schema.improvementActions).get();
+    expect(row).toBeDefined();
+    expect(typeof row?.createdAt).toBe('string');
+    expect(row!.createdAt.length).toBeGreaterThan(0);
+  });
+});
+
+describe('evaluations $defaultFn', () => {
+  it('uses $defaultFn for createdAt when not explicitly provided', () => {
+    const { db } = makeDb();
+    seedSession(db, 'sess-eval-fn', null);
+    db.insert(schema.evaluations)
+      .values({
+        sessionId: 'sess-eval-fn',
+        score: 4,
+        verdict: 'pass',
+        evaluatedAt: new Date().toISOString(),
+        // createdAt intentionally omitted to trigger $defaultFn
+      })
+      .run();
+    const row = db.select().from(schema.evaluations).get();
+    expect(row).toBeDefined();
+    expect(typeof row?.createdAt).toBe('string');
+    expect(row!.createdAt.length).toBeGreaterThan(0);
   });
 });
