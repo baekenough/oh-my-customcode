@@ -111,6 +111,28 @@ export const sessionFeedback = sqliteTable('session_feedback', {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+// added v0.118.3, #1047 — unified memory records across all four sources
+export const memoryRecords = sqliteTable('memory_records', {
+  id: text('id').primaryKey(), // UUID
+  source: text('source').notNull(), // 'native' | 'claude-mem' | 'episodic-memory' | 'llm-memory'
+  deviceId: text('device_id').notNull(), // hostname
+  project: text('project').notNull(), // workspace path
+  agent: text('agent'), // nullable
+  timestamp: text('timestamp').notNull(), // ISO8601
+  summary: text('summary').notNull(), // 1-2 sentence
+  content: text('content').notNull(), // full body
+  tags: text('tags').notNull(), // JSON array stringified
+  sensitivity: text('sensitivity').notNull(), // 'public' | 'project' | 'sensitive' | 'secret'
+  hash: text('hash').notNull().unique(), // SHA-256
+  embeddingRef: text('embedding_ref'), // nullable
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // added v0.116.0, #1036 — ideal trajectory annotations (baseline)
 export const evalBaselines = sqliteTable('eval_baselines', {
   id: integer('id').primaryKey({ autoIncrement: true }),

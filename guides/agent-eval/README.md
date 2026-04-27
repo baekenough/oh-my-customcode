@@ -652,7 +652,47 @@ find .claude/outputs/eval -name "result.yaml" | \
 
 **한계**: 집계가 수동이며, LangSmith Insights의 시계열 추이나 분포 시각화는 제공하지 않는다.
 
-**향후 보강**: monitoring-setup 가이드의 OTEL 통합이 완성되면 step trace를 OTEL span으로 내보내고 Grafana에서 시각화하는 경로가 열린다. 별도 followup 이슈로 추적 권장.
+**향후 보강**: monitoring-setup의 `trajectory-otel` 모드(#1035)로 step trace를 OTEL span으로 내보내고 Grafana에서 시각화하는 경로가 열린다.
+
+### 5.5 OpenTelemetry Trajectory Export (#1035)
+
+`monitoring-setup` 스킬의 `trajectory-otel` 모드를 활성화하면 agent-eval-framework가 측정한 4-metric 데이터를 OTEL span/event로 내보낸다.
+
+**활성화**: `/monitoring-setup trajectory-otel on`
+**비활성화**: `/monitoring-setup trajectory-otel off`
+
+#### Span 구조
+
+```
+operation: agent.invocation
+attributes:
+  agent.type, agent.model, task.id, task.capability
+  metric.correctness, metric.step_ratio, metric.tool_call_ratio, metric.latency_ratio
+events:
+  tool_call (tool_name, duration_ms, exit_code)
+```
+
+#### 내보내기 옵션
+
+| 옵션 | 조건 | 대상 |
+|------|------|------|
+| Console exporter | 기본 (항상) | stdout — 로컬 디버깅 |
+| OTLP exporter | `OTEL_EXPORTER_OTLP_ENDPOINT` 환경변수 설정 시 | Grafana / Datadog / Honeycomb 등 |
+
+#### 장점
+
+- **표준 OTEL 생태계**: LangSmith 의존 없음. 모든 OTLP 호환 collector에 연결 가능.
+- **다른 LLM 시스템과 비교**: 동일 OTEL 인프라를 사용하는 시스템(예: LangChain) 메트릭과 직접 비교 가능.
+- **기존 모니터링과 독립**: `enable`/`disable` 콘솔 모니터링과 별도 토글. 동시 활성화 가능.
+
+#### 대안 매핑 테이블 업데이트
+
+| LangChain 컴포넌트 | 역할 | oh-my-customcode 대안 |
+|--------------------|------|----------------------|
+| LangSmith trace | step별 실행 기록 수집 | claude-mem `save_memory` per step (5.2) |
+| Polly (record/replay) | 결정론적 재현 | episodic-memory 검색 (5.3) |
+| Insights dashboard | 집계 메트릭 시각화 | statusline.sh + omcustom-improve-report (5.4) |
+| **LangSmith OTEL export** | **표준 OTEL span 수집** | **trajectory-otel mode (5.5, #1035)** |
 
 ---
 
