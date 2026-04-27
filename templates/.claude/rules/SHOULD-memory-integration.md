@@ -288,6 +288,9 @@ Save memory IMMEDIATELY upon surprising discovery — do not defer to session en
 | Subagent false-positive detected | Save `feedback_*.md` now | Prevent repeat in same session |
 | User correction / feedback | Save `feedback_*.md` now | Honor correction immediately |
 
+See rationale and cross-references via Read tool.
+
+<!-- DETAIL: Why Immediate? and Cross-reference
 ### Why Immediate?
 
 Session-end saves lose context: by the time the session ends, multiple discoveries have compounded and nuance is lost. Immediate saves preserve the exact trigger context that makes the memory actionable.
@@ -300,6 +303,7 @@ Related records from session v0.87.2~v0.88.0 (issue #869):
 - `feedback_subagent_pre_existing_claims.md`
 - `feedback_github_workflows_inventory.md`
 - `feedback_bun_mock_module.md`
+-->
 
 ## Session-End Auto-Save
 
@@ -307,6 +311,9 @@ Related records from session v0.87.2~v0.88.0 (issue #869):
 
 Session-end detected when user says: "끝", "종료", "마무리", "done", "wrap up", "end session", or explicitly requests session save.
 
+See flow diagram, responsibility split, and dual-system save table via Read tool.
+
+<!-- DETAIL: Session-End Flow, Responsibility Split, Dual-System Save
 ### Flow
 
 ```
@@ -340,9 +347,13 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 | Native auto-memory | sys-memory-keeper | Write | Update MEMORY.md with session learnings | Yes |
 | claude-mem | Orchestrator | `mcp__plugin_claude-mem_mcp-search__save_memory` | Save session summary with project, tasks, decisions | No (best-effort) |
 | episodic-memory | Automatic | (auto-indexed) | No action needed — conversations are indexed automatically after session ends | N/A |
+-->
 
 ### Session-End Self-Check (MANDATORY)
 
+(1) sys-memory-keeper updated MEMORY.md? (2) claude-mem save attempted? Both required before confirming to user. See full self-check via Read tool.
+
+<!-- DETAIL: Session-End Self-Check (MANDATORY)
 ```
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE CONFIRMING SESSION-END TO USER:                          ║
@@ -363,6 +374,7 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 ║  is NOT.                                                          ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
+-->
 
 ### Failure Policy
 
