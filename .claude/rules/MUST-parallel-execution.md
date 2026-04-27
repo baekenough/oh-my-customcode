@@ -71,6 +71,9 @@ Before writing/editing multiple files:
 
 Runtime detection and splitting of stalled parallel agents. Complements pre-execution parallelization.
 
+See detection signals, splitting rules, and example via Read tool.
+
+<!-- DETAIL: Adaptive Parallel Splitting — Detection, Splitting Rules, Example
 ### Detection
 
 | Signal | Threshold | Action |
@@ -99,9 +102,13 @@ After (adaptive split):
   P4 ████████████████████████████████  (spawned immediately)
   P5 ████████████████████████████████  (spawned immediately)
 ```
+-->
 
 ## Stability Testing Protocol
 
+Soft default: 4 concurrent agents; hard cap: 5. Reduce to 4 if latency >2x, failure rate >10%, or context errors. See full protocol via Read tool.
+
+<!-- DETAIL: Stability Testing Protocol
 When testing 5 concurrent agents (above the soft default of 4):
 
 | Observation | Threshold | Action |
@@ -111,6 +118,7 @@ When testing 5 concurrent agents (above the soft default of 4):
 | Context errors | Any | Reduce to 4 |
 
 5-agent concurrency is supported but should be monitored during initial adoption. Fall back to 4 if instability is observed.
+-->
 
 ## Agent Tool Requirements
 
@@ -132,6 +140,9 @@ Single agent spawns do NOT use the `[N]` prefix.
 
 ## Narrative Announcement Format (Before Spawn)
 
+Use markdown list format (not inline comma-separated) for parallel dispatch announcements. See correct/incorrect examples via Read tool.
+
+<!-- DETAIL: Narrative Announcement Format (Before Spawn)
 When announcing a parallel dispatch in prose text (not the Agent tool call itself), use a markdown list rather than inline comma-separated description:
 
 ### Correct
@@ -149,6 +160,7 @@ When announcing a parallel dispatch in prose text (not the Agent tool call itsel
 ```
 
 The list form mirrors the tool-call `[N]` prefix pattern and scales better to 3+ concurrent agents.
+-->
 
 ## Result Aggregation
 
