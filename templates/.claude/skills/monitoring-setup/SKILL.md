@@ -213,3 +213,102 @@ claude-inspector
 ```
 
 Claude Inspector is external to oh-my-customcode and does not require any project configuration changes.
+
+## Agent Trajectory Export Mode
+
+Toggle: `/monitoring-setup trajectory-otel on|off`
+
+When enabled, agent-eval-framework 4-metric data is emitted as OpenTelemetry spans for external analysis.
+
+### trajectory-otel on
+
+1. Read `.claude/settings.local.json` (create if not exists)
+2. Add or update `env` field with trajectory export configuration:
+   ```json
+   {
+     "env": {
+       "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+       "OTEL_METRICS_EXPORTER": "console",
+       "OTEL_LOGS_EXPORTER": "console",
+       "CLAUDE_TRAJECTORY_OTEL": "1"
+     }
+   }
+   ```
+3. If `OTEL_EXPORTER_OTLP_ENDPOINT` is set in the environment, also add:
+   ```json
+   {
+     "env": {
+       "OTEL_TRACES_EXPORTER": "otlp"
+     }
+   }
+   ```
+   Otherwise default to `"OTEL_TRACES_EXPORTER": "console"`.
+4. Preserve all existing settings
+5. Report:
+   ```
+   [Done] Agent Trajectory Export enabled
+
+   Configured in: .claude/settings.local.json
+   Span exporter: console (default) | otlp (if OTEL_EXPORTER_OTLP_ENDPOINT set)
+   Metrics: correctness, step_ratio, tool_call_ratio, latency_ratio
+   Events: tool_call (tool_name, duration_ms, exit_code)
+
+   Note: Takes effect on next `claude` session restart.
+   To disable: /monitoring-setup trajectory-otel off
+   ```
+
+### trajectory-otel off
+
+1. Read `.claude/settings.local.json`
+2. Remove trajectory-related keys from `env`:
+   - `CLAUDE_TRAJECTORY_OTEL`
+   - `OTEL_TRACES_EXPORTER`
+3. Report:
+   ```
+   [Done] Agent Trajectory Export disabled
+
+   Removed from: .claude/settings.local.json
+   Takes effect on next session restart.
+   ```
+
+### Span Schema
+
+```
+operation: agent.invocation
+attributes:
+  agent.type: string          // e.g. "lang-golang-expert"
+  agent.model: string         // e.g. "claude-sonnet-4-6"
+  task.id: string             // eval task identifier
+  task.capability: string     // research | implement | review | debug | manage
+  metric.correctness: bool
+  metric.step_ratio: float
+  metric.tool_call_ratio: float
+  metric.latency_ratio: float
+events:
+  - tool_call
+      attrs: tool_name (string), duration_ms (int), exit_code (int)
+duration: total wall clock time of agent invocation
+```
+
+### Activation Notes
+
+- Independent from the existing console monitoring mode (`enable`/`disable`). Both can be active simultaneously.
+- `trajectory-otel on` does NOT implicitly call `enable` — console metrics monitoring remains a separate toggle.
+- Console exporter (default): prints span JSON to stdout for local dev / debugging.
+- OTLP exporter (optional): activated when `OTEL_EXPORTER_OTLP_ENDPOINT` env var is set. Compatible with Grafana, Datadog, Honeycomb, and any OTLP-compliant collector. No LangSmith dependency.
+- Actual OTEL SDK emission is handled by the Claude Code telemetry layer. This skill configures the env vars that activate the trajectory span pipeline.
+
+### status (extended)
+
+When `trajectory-otel` is active, `status` command output includes:
+
+```
+[Monitoring Status]
+├── Enabled: Yes/No
+├── Metrics exporter: console / otlp / none
+├── Logs exporter: console / otlp / none
+├── Trajectory export: Yes/No
+├── Traces exporter: console / otlp / none
+└── Config: .claude/settings.local.json
+```
+

@@ -255,6 +255,7 @@ describe('runMigrations', () => {
     expect(names).toContain('session_feedback');
     expect(names).toContain('eval_baselines');
     expect(names).toContain('agent_trajectories');
+    expect(names).toContain('memory_records');
     db.close();
   });
 
@@ -286,6 +287,9 @@ describe('runMigrations', () => {
     expect(indexNames).toContain('idx_eval_baselines_capability');
     expect(indexNames).toContain('idx_agent_trajectories_baseline_id');
     expect(indexNames).toContain('idx_agent_trajectories_agent_name');
+    expect(indexNames).toContain('idx_memory_records_source');
+    expect(indexNames).toContain('idx_memory_records_device_project');
+    expect(indexNames).toContain('idx_memory_records_timestamp');
     db.close();
   });
 
