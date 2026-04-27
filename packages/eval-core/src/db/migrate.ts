@@ -118,6 +118,37 @@ function runMigrationsOnDb(db: InstanceType<typeof Database>): void {
     'CREATE INDEX IF NOT EXISTS idx_feedback_session_id ON session_feedback(session_id)',
     'CREATE INDEX IF NOT EXISTS idx_improvement_actions_target ON improvement_actions(target_name)',
     'CREATE INDEX IF NOT EXISTS idx_improvement_actions_status ON improvement_actions(status)',
+    // v0.116.0, #1036 — eval baselines and trajectories
+    `CREATE TABLE IF NOT EXISTS eval_baselines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id TEXT NOT NULL,
+      capability TEXT NOT NULL,
+      ideal_steps INTEGER NOT NULL,
+      ideal_tool_calls INTEGER NOT NULL,
+      ideal_latency_ms INTEGER NOT NULL,
+      description TEXT,
+      created_at INTEGER NOT NULL
+    )`,
+    `CREATE TABLE IF NOT EXISTS agent_trajectories (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      baseline_id INTEGER REFERENCES eval_baselines(id),
+      agent_name TEXT NOT NULL,
+      model TEXT,
+      observed_steps INTEGER NOT NULL,
+      observed_tool_calls INTEGER NOT NULL,
+      observed_latency_ms INTEGER NOT NULL,
+      correctness INTEGER NOT NULL,
+      step_ratio REAL,
+      tool_call_ratio REAL,
+      latency_ratio REAL,
+      session_id TEXT,
+      started_at INTEGER NOT NULL,
+      completed_at INTEGER NOT NULL
+    )`,
+    'CREATE INDEX IF NOT EXISTS idx_eval_baselines_task_id ON eval_baselines(task_id)',
+    'CREATE INDEX IF NOT EXISTS idx_eval_baselines_capability ON eval_baselines(capability)',
+    'CREATE INDEX IF NOT EXISTS idx_agent_trajectories_baseline_id ON agent_trajectories(baseline_id)',
+    'CREATE INDEX IF NOT EXISTS idx_agent_trajectories_agent_name ON agent_trajectories(agent_name)',
   ];
 
   db.transaction(() => {

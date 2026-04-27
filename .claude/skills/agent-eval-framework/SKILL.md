@@ -124,6 +124,10 @@ task start → record tool_calls[] + timestamps → task end
 → save to claude-mem: {task_id, capability, correctness, step_ratio, tool_call_ratio, latency_ratio}
 ```
 
+### Persistent Storage (added v0.116.0, #1036)
+
+Baseline annotations and observed trajectories can be persisted to eval-core's SQLite database (`evalBaselines` + `agentTrajectories` tables). This complements the YAML file approach for cross-session analysis. Use eval-core query module (TBD — separate followup) for analytics.
+
 ## Integration with Existing Skills
 
 | Skill | Integration Mode | How |
