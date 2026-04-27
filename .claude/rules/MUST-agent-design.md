@@ -29,6 +29,9 @@ Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M tok
 
 ### Optional Frontmatter
 
+Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`. Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
+
+<!-- DETAIL: Optional Frontmatter (full yaml block)
 ```yaml
 memory: project            # user | project | local
 effort: high               # low | medium | high | xhigh | default | max
@@ -64,8 +67,7 @@ disableSkillShellExecution: true  # Disable inline shell execution in skills (v2
 ```
 
 > **Note**: When `disableSkillShellExecution` is enabled (v2.1.91+), skills that rely on inline shell execution (e.g., `codex-exec`, `gemini-exec`, `rtk-exec`) will have their shell blocks disabled. This is a security hardening option.
-
-> **Note**: Optional frontmatter fields supported since CC v2.1.63+. Version-specific features listed in HTML comment below — access via Read tool.
+-->
 
 <!-- DETAIL: CC Version Compatibility History
 `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+. `CwdChanged`, `FileChanged` hook events and `managed-settings.d/` drop-in directory require v2.1.83+. Conditional `if` field for hooks requires v2.1.85+. `PermissionDenied` hook event requires v2.1.88+. `refreshInterval` setting for status line auto-refresh interval added in v2.1.97+. Monitor tool and subprocess sandboxing (`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`, `CLAUDE_CODE_SCRIPT_CAPS`) added in v2.1.98+. Settings resilience (unrecognized hook event names no longer cause settings.json to be ignored) improved in v2.1.101+. PreCompact hook block support (exit 2 / `{"decision":"block"}`) added in v2.1.105+. Skill description listing cap raised from 250 to 1,536 characters in v2.1.105+. Plugin `monitors` manifest key for background monitors added in v2.1.105+. `ENABLE_PROMPT_CACHING_1H` and `FORCE_PROMPT_CACHING_5M` env vars for prompt cache TTL control added in v2.1.108+. Skill tool can now discover and invoke built-in slash commands (`/init`, `/review`, `/security-review`) in v2.1.108+. `/recap` session context feature and `/undo` alias for `/rewind` added in v2.1.108+. `/tui` command and `tui` setting for fullscreen rendering added in v2.1.110+. PushNotification tool for mobile push notifications (Remote Control + config required) added in v2.1.110+. `autoScrollEnabled` config for fullscreen mode added in v2.1.110+. SDK/headless `TRACEPARENT`/`TRACESTATE` distributed trace linking added in v2.1.110+. Bash tool maximum timeout enforcement added in v2.1.110+. Write tool IDE diff feedback (informs model when user edits proposed content) added in v2.1.110+. `--resume`/`--continue` now resurrects unexpired scheduled tasks in v2.1.110+. `/focus` command (separated from Ctrl+O) added in v2.1.110+. `xhigh` effort level for Opus 4.7 (between `high` and `max`; other models fall back to `high`) added in v2.1.111+. `/effort` interactive slider with arrow-key navigation (when called without arguments) added in v2.1.111+. Auto mode no longer requires `--enable-auto-mode` in v2.1.111+. PowerShell tool progressive rollout (`CLAUDE_CODE_USE_POWERSHELL_TOOL` env var) added in v2.1.111+. Read-only bash commands with glob patterns (`ls *.ts`) and `cd <project-dir> &&` prefix no longer trigger permission prompt in v2.1.111+. `/less-permission-prompts` built-in skill for permission allowlist scanning added in v2.1.111+. `/ultrareview` parallel multi-agent cloud code review added in v2.1.111+. `/skills` menu sorting by estimated token count (press `t`) added in v2.1.111+. `OTEL_LOG_RAW_API_BODIES` env var for full API request/response body logging added in v2.1.111+. Plan files named after prompt content (not random words) in v2.1.111+. Plugin error handling improvements (dependency conflict errors, stale version recovery, install recovery) in v2.1.111+.
@@ -155,11 +157,7 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 
 ## Permission Mode Guidance
 
-When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:
-
-1. **Agent frontmatter `permissionMode`**: Declares the agent's intended permission level. CC respects this when the agent is spawned via Agent tool.
-2. **Agent tool `mode` parameter**: Overrides frontmatter at spawn time. Routing skills should pass this explicitly.
-3. **Recommendation**: For agents that modify files, set `permissionMode: bypassPermissions` in frontmatter if the project uses `bypassPermissions` mode.
+CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls (see R010). See guidance details via Read tool.
 
 | Mode | Behavior |
 |------|----------|
@@ -169,6 +167,14 @@ When spawning agents via the Agent tool, CC applies a default `mode` of `acceptE
 | `plan` | Require plan approval |
 | `dontAsk` | Non-interactive, deny unapproved |
 | `auto` | AI decides safety |
+
+<!-- DETAIL: Permission Mode Guidance (reasoning)
+When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:
+
+1. **Agent frontmatter `permissionMode`**: Declares the agent's intended permission level. CC respects this when the agent is spawned via Agent tool.
+2. **Agent tool `mode` parameter**: Overrides frontmatter at spawn time. Routing skills should pass this explicitly.
+3. **Recommendation**: For agents that modify files, set `permissionMode: bypassPermissions` in frontmatter if the project uses `bypassPermissions` mode.
+-->
 
 <!-- DETAIL: Isolation/Token/Limitations/Escalation details
 ### Isolation Modes
@@ -234,6 +240,9 @@ Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HH
 
 CC treats `.claude/` as a sensitive directory, enforced across **all tool categories** — Bash, Write, and Edit. The sensitive-path check runs **above** `bypassPermissions` and explicit allow rules (e.g., `Write(.claude/**)`), so operations on sensitive paths may trigger permission prompts regardless of settings.
 
+**Key rule**: `.claude/` Bash/Write/Edit triggers sensitive-path prompt regardless of allow rules. Only bypass: use `/tmp/*.sh` scripts via Bash. See full behavior table and recommended practice via Read tool.
+
+<!-- DETAIL: Sensitive Path Behavior table and Recommended practice
 #### Sensitive Path Behavior
 
 | Path | Tool | Allow rule | Result |
@@ -249,6 +258,7 @@ CC treats `.claude/` as a sensitive directory, enforced across **all tool catego
 1. **Prefer `Write`/`Edit` over `Bash(cp)`/`Bash(mkdir)`** — `Write`/`Edit` provide better auditability and avoid shell injection risk
 2. **Add allow rules defensively** — `Write(.claude/**)`, `Edit(.claude/**)`, `Write(templates/.claude/**)`, `Edit(templates/.claude/**)` in `.claude/settings.local.json`. Rules may not bypass sensitive-path check but document intent and aid future CC behavior changes
 3. **For `.claude/outputs/**` specifically**: Use `Bash via /tmp/*.sh` bypass — Write/Edit on this path triggers sensitive-path prompt despite being the artifact convention path (confirmed v0.111.1+, #1043, #1046)
+-->
 
 <!--
 3. **Accept interactive prompts as a release-pipeline constraint** — `templates/.claude/` sync during release automation requires human approval; plan release windows accordingly
@@ -310,6 +320,9 @@ Fast Mode uses the same model with faster output. Activated via `/fast` toggle o
 | Output speed | Standard | ~2.5x faster |
 | Reasoning depth | Full | Reduced |
 
+See activation, effort interaction, and default effort change details via Read tool.
+
+<!-- DETAIL: Fast Mode Activation, Effort Interaction, Default Effort Change
 ### Activation
 
 - `/fast` — toggle in current session
@@ -325,6 +338,7 @@ When Fast Mode is active, it reduces effective reasoning depth but does NOT over
 Starting with Claude Code v2.1.94, the default effort level changed from `medium` to `high` for API-key, Bedrock/Vertex/Foundry, Team, and Enterprise users. Console (free-tier) users retain `medium` as the default.
 
 This means agents WITHOUT an explicit `effort` field now run at `high` effort by default on paid tiers. To maintain previous behavior, set `effort: medium` explicitly in agent frontmatter.
+-->
 
 ## Skill Frontmatter
 
@@ -339,6 +353,9 @@ description: Brief desc    # One-line summary
 
 ### Optional Fields
 
+Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, `hooks`, `paths`, `shell`, `allowed-tools`, `keep-coding-instructions`. Skill `effort` takes precedence over agent `effort` when both specified. See full optional fields via Read tool.
+
+<!-- DETAIL: Skill Optional Fields (full yaml block)
 ```yaml
 scope: core                # core | harness | package (default: core)
 context: fork              # Forked context for isolated execution
@@ -360,6 +377,7 @@ keep-coding-instructions: true     # Preserve coding instructions in plugin outp
 ```
 
 When both an agent and its invoked skill specify `effort`, the skill's value takes precedence (more specific invocation-time setting).
+-->
 
 <!-- DETAIL: Skill Effectiveness Tracking
 Skills can optionally track effectiveness metrics via auto-populated fields:
