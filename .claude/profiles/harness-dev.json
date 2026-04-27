@@ -1,0 +1,24 @@
+{
+  "name": "harness-dev",
+  "description": "oh-my-customcode harness development (agent/skill/rule authoring)",
+  "plugins": {
+    "enabled": [
+      "superpowers@claude-plugins-official",
+      "agent-sdk-dev@claude-plugins-official",
+      "claude-md-management@claude-plugins-official",
+      "skill-creator@claude-plugins-official",
+      "superpowers-developing-for-claude-code@superpowers-marketplace",
+      "context7@claude-plugins-official",
+      "episodic-memory@superpowers-marketplace",
+      "claude-mem@thedotmack",
+      "elements-of-style@superpowers-marketplace"
+    ],
+    "disabled": [
+      "vercel@claude-plugins-official",
+      "ui-design@designer-skills",
+      "codex@openai-codex",
+      "ralph-wiggum@claude-code-plugins"
+    ]
+  },
+  "version": "1.0.0"
+}
