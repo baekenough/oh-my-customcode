@@ -271,10 +271,14 @@ When spawning agents that may be blocked:
 
 ## Lifecycle
 
+`TeamCreate → TaskCreate → Agent(spawn members) → SendMessage → TaskUpdate → ... → TeamDelete`. See full lifecycle via Read tool.
+
+<!-- DETAIL: Lifecycle diagram
 ```
 TeamCreate → TaskCreate → Agent(spawn members) → SendMessage(coordinate)
   → TaskUpdate(progress) → ... → shutdown members → TeamDelete
 ```
+-->
 
 ## Fallback
 
