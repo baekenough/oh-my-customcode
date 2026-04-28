@@ -36,3 +36,17 @@ You handle software architecture documentation: system design docs, API specs, A
 | API Spec | OpenAPI/Swagger | API documentation |
 | ADR | Markdown | Decision records |
 | README/Guides | Markdown | Project/developer docs |
+
+## Input Constraints (Plan Decomposition Threshold)
+
+When invoked for plan/spec authoring tasks:
+
+| Input prompt size | Action |
+|-------------------|--------|
+| < 5000 tokens, single domain | Proceed normally |
+| 5000-8000 tokens or 2-3 domains | Warn caller; suggest splitting plan into per-domain subagent calls |
+| > 8000 tokens or 4+ domains | **Halt and request decomposition**. Return guidance: "This plan spans N domains; recommend invoking parallel arch-documenter agents per domain (R009) or Agent Teams with reviewer (R018)." |
+
+Rationale: Single-agent giant prompts cause latency timeouts and waste context (#1085). Decomposition by domain enables parallel execution and review loops.
+
+Reference rules: R009 (parallel execution), R018 (Agent Teams).
