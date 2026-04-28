@@ -38,7 +38,13 @@ Before writing/editing multiple files:
 ```
 ❌ WRONG: Write(file1.kt) → Write(file2.kt) → ... (sequential)
 ✓ CORRECT: Agent(agent1→file1.kt) + Agent(agent2→file2.kt) + ... (same message, parallel)
+
+❌ WRONG: Single agent receives massive multi-domain prompt (>5000 tokens, e.g., M2 plan with 12 tasks across 7 areas)
+   → Latency timeout, user cancellation, context waste, no review loop
+✓ CORRECT: Pre-decompose by domain, spawn parallel agents per area (R009) or use Agent Teams (R018)
 ```
+
+> **Token threshold heuristic**: When a delegated agent prompt exceeds ~5000 tokens or spans 3+ unrelated domains, decompose by domain and spawn parallel agents. See R018 for Agent Teams criteria when review cycles are needed. Reference: #1085.
 
 <!-- DETAIL: Full violation examples (4 pairs)
 ❌ WRONG: Writing files one by one

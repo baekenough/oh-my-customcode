@@ -1,13 +1,15 @@
 ---
 title: arch-documenter
 type: agent
-updated: 2026-04-12
+updated: 2026-04-28
 sources:
   - .claude/agents/arch-documenter.md
 related:
   - [[arch-speckit-agent]]
   - [[mgr-creator]]
   - [[mgr-sauron]]
+  - [[r009]]
+  - [[r018]]
 ---
 
 # arch-documenter
@@ -38,12 +40,25 @@ The agent operates with `project`-scoped memory, meaning it retains knowledge ab
 | Architecture Decision Records | Markdown (ADR format) |
 | README / developer guides | Markdown |
 
+## Input Constraints (Plan Decomposition Threshold)
+
+`arch-documenter`는 plan/spec 작성 작업에 대해 입력 크기를 검사하고 자동으로 halt 또는 경고를 반환한다 (#1085).
+
+| 입력 크기 | 동작 |
+|-----------|------|
+| < 5000 tokens, single domain | 정상 진행 |
+| 5000–8000 tokens 또는 2–3 domains | 경고 반환 — 도메인별 서브에이전트 호출 권장 |
+| > 8000 tokens 또는 4+ domains | **Halt** — "This plan spans N domains; recommend invoking parallel arch-documenter agents per domain ([[r009]]) or Agent Teams with reviewer ([[r018]])" |
+
+이 임계치는 단일 에이전트 거대 프롬프트가 유발하는 latency timeout과 context 낭비를 방지하기 위해 도입되었다. 8000+ 토큰 입력이 예상되면 호출 전에 도메인별로 분할해야 한다.
+
 ## Relationships
 
 - **Depends on**: project source files (read-only), existing docs
 - **Used by**: [[mgr-sauron]] (documentation accuracy verification), [[qa-writer]] (archive destination for QA docs)
 - **See also**: [[arch-speckit-agent]] (spec-driven requirements), [[mgr-creator]] (new guides creation)
+- **Governed by**: [[r009]] (parallel execution threshold), [[r018]] (Agent Teams for large multi-domain plans)
 
 ## Sources
 
-- `.claude/agents/arch-documenter.md` — agent definition
+- `.claude/agents/arch-documenter.md` — agent definition (Input Constraints section #1085)

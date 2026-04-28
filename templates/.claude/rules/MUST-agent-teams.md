@@ -22,6 +22,7 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 | Single file operations | Agent Tool | Overkill for simple tasks |
 | Dynamic agent creation + usage | **Agent Teams** | Create → test → iterate cycle |
 | Multi-issue release batch | **Agent Teams** | Shared task tracking, coordinated release |
+| Large plan / multi-domain prompt (>5000 tokens, 3+ areas) | **Agent Teams** | Domain-split parallel writing + review loop avoids single-agent timeout |
 
 **When Agent Teams is enabled and criteria are met, usage is required.**
 
@@ -112,6 +113,15 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
 
 ✓ CORRECT: TeamCreate → spawn researchers → coordinate via shared task list
    TeamCreate("research-team") + Agent(researcher-1/2/3) + SendMessage(coordinate)
+```
+
+```
+❌ WRONG: Single agent receives 9000-token M2 plan covering metrics + DSL + risk gate + UI
+   Agent(arch-documenter, prompt: <huge multi-domain plan>)
+   → Timeout, cancellation, no decomposition opportunity
+
+✓ CORRECT: TeamCreate("plan-team") + parallel domain leads + reviewer
+   TeamCreate("plan-team") + Agent(metrics-lead) + Agent(dsl-lead) + Agent(risk-lead) + Agent(reviewer) + SendMessage(coordinate)
 ```
 
 <!-- DETAIL: Common Violations (full examples)
