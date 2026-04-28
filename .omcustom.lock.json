@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.122.0",
-  "generatedAt": "2026-04-27T06:23:26.042Z",
-  "templateVersion": "0.122.0",
+  "generatorVersion": "0.124.0",
+  "generatedAt": "2026-04-28T00:43:51.351Z",
+  "templateVersion": "0.124.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "a70981abbe50fa6608f46554f9b8e2f2d6d96bbb65f66799479543c3b01f7c23",
-      "size": 6733,
+      "templateHash": "6c3edcbc4694a0a2c1095d697237f3ff4746470bd3d4f4c73c90adc4d96a9d2b",
+      "size": 7275,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "f467053c0d2f3da5be551ef1ca2bcda128ea55e9fcdf58e343178e6224584f9b",
-      "size": 15435,
+      "templateHash": "acc42525c7b5dec8b1884741d2d233b9f800f43c6735265e6071513c26f611e0",
+      "size": 16012,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
@@ -330,8 +330,8 @@
       "component": "agents"
     },
     ".claude/agents/arch-documenter.md": {
-      "templateHash": "2812a9f73fc6551ab27a9a8e3cdb6e0447e2eadebe3f8057a21dfc0f4eb824ad",
-      "size": 1061,
+      "templateHash": "3e25e6816323b565745415d14d5319ab7c78cab643b0306c1d7926a9d4931c5c",
+      "size": 1824,
       "component": "agents"
     },
     ".claude/agents/test-delete.txt": {
@@ -837,6 +837,11 @@
     ".claude/skills/skills-sh-search/SKILL.md": {
       "templateHash": "d9171fb571d04de22255787e354959fc980febd33fc9e21289208640b12c4d46",
       "size": 6136,
+      "component": "skills"
+    },
+    ".claude/skills/profile/SKILL.md": {
+      "templateHash": "17b45720ff6260a749b66130120c5bd9c8d644f967991c781653de68063a7bde",
+      "size": 4846,
       "component": "skills"
     },
     ".claude/skills/pre-generation-arch-check/SKILL.md": {
