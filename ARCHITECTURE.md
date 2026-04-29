@@ -1,6 +1,6 @@
 # Architecture
 
-> oh-my-customcode v0.74.0
+> oh-my-customcode v0.124.0
 
 ## 1. System Overview
 
@@ -8,7 +8,7 @@ oh-my-customcode is a batteries-included agent harness for Claude Code. It ships
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.74.0** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Current version: **0.124.0** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
 
 ---
 
@@ -42,7 +42,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 ## 3. Component Inventory
 
-### 3.1 Rule System (R000–R021, no R014)
+### 3.1 Rule System (R000–R022, no R014)
 
 | ID | Priority | Name | Description |
 |----|----------|------|-------------|
@@ -67,12 +67,13 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | R019 | SHOULD | Ontology-RAG Routing | Enriches agent selection with contextual skill suggestions |
 | R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
 | R021 | MUST | Enforcement Policy | Advisory-first enforcement model, promotion criteria |
+| R022 | SHOULD | Wiki Sync | Wiki pages auto-update on agent/skill/rule/guide changes |
 
 ### 3.2 Agent Taxonomy (49 agents)
 
 | Category | Count | Agents |
 |----------|-------|--------|
-| SW Engineer / Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| SW Engineer / Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert |
 | SW Engineer / Backend | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
 | SW Engineer / Frontend | 5 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
 | SW Engineer / Tooling | 4 | tool-npm-expert, tool-optimizer, tool-bun-expert, slack-cli-expert |
@@ -83,8 +84,8 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| System | 3 | sys-memory-keeper, sys-naggy, wiki-curator |
-| **Total** | **48** | |
+| System | 4 | sys-memory-keeper, sys-naggy, wiki-curator, tracker-checkpoint |
+| **Total** | **49** | |
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
@@ -99,9 +100,9 @@ Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specif
 | de-lead-routing | de-* agents |
 | qa-lead-routing | qa-* agents |
 
-**Workflow/orchestration skills (6, context: fork)**
+**Orchestration skills (6, context: fork)**
 
-dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage, roundtable-debate
+secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage, roundtable-debate
 
 **Best-practices skills (~26)**
 
@@ -321,18 +322,18 @@ The stage-blocker hook enforces Write/Edit restrictions outside the implement st
 
 The reasoning-sandwich skill structures prompts with context-instruction-context layering to maximize model attention on critical information. It is an internal skill used by routing and orchestration workflows to improve prompt effectiveness.
 
-### 5.8 Workflow Engine (/omcustom:workflow)
+### 5.8 Pipeline Engine (/omcustom:pipeline)
 
 <p align="center">
-  <img src="assets/diagrams/09-workflow-engine.png" alt="Workflow Engine" width="800" />
+  <img src="assets/diagrams/09-workflow-engine.png" alt="Pipeline Engine" width="800" />
 </p>
 
-YAML-defined workflow pipelines in `workflows/` directory. Each workflow defines sequential steps that invoke skills or actions.
+YAML-defined pipeline definitions in the `workflows/` directory. Each pipeline defines sequential steps that invoke skills or actions.
 
-Available workflows:
+Available pipelines:
 - `auto-dev` — Full-auto release pipeline: triage → plan → implement → verify → PR
 
-Custom workflows can be defined by users in `workflows/` with any `^[a-z0-9-]+$` name.
+Custom pipelines can be defined by users in `workflows/` with any `^[a-z0-9-]+$` name.
 
 ### 5.9 Professor Triage (/professor-triage)
 
@@ -420,6 +421,9 @@ MCP tools are orchestrator-scoped — subagents cannot access them.
 | System | Tool | Use Case |
 |--------|------|----------|
 | claude-mem | `mcp__plugin_claude-mem_mcp-search__save_memory` | Cross-session search, temporal queries |
+| memory-mcp-server | `memory_get`, `memory_search`, `memory_stats`, `memory_list` (4 tools) | Unified memory access across adapters (v0.123.0+) |
+
+`packages/memory-mcp-server/` provides a unified MCP interface over the memory unification layer (native/claude-mem/episodic-memory/llm-memory adapters). Exposes 4 MCP tools for retrieval, search, statistics, and listing. Register via `.mcp.json` for access from the orchestrator.
 
 Episodic-memory auto-indexes conversations after session end — no manual action is needed. Use native auto-memory first; fall back to MCP only for cross-session search or temporal queries.
 
@@ -517,6 +521,28 @@ packages/eval-core/
   src/collect/  — session, turn, and outcome collectors
   src/query/    — aggregation and reporting queries
 ```
+
+`packages/memory-mcp-server/` (v0.123.0) is a standalone MCP server providing unified memory access across all memory adapters (native/claude-mem/episodic-memory/llm-memory). Exposes 4 MCP tools: `memory_get`, `memory_search`, `memory_stats`, `memory_list`.
+
+```
+packages/memory-mcp-server/
+  src/server.ts   — MCP server entry point (4 tool handlers)
+  src/adapters/   — adapter implementations (native, claude-mem, episodic, llm-memory)
+  src/aggregator/ — dedup + merge layer across adapters
+```
+
+### 8.7 Skill Profiles
+
+`omcustom profile` loads a pre-defined skill subset to reduce context token overhead at session start. Four default profiles ship with the harness (v0.123.0):
+
+| Profile | Purpose |
+|---------|---------|
+| `core` | Universal dev tools — language experts + best practices |
+| `data` | Data engineering focus — DE agents + pipeline skills |
+| `web` | Frontend/backend web — FE/BE agents + framework skills |
+| `minimal` | Minimal footprint — routing only, no best-practice skills |
+
+Invoke via `/profile <name>` or set `defaultProfile` in `.claude/settings.local.json`. Profiles are advisory — they pre-scope the skill enumeration block and do not restrict agent spawning.
 
 ### 8.4 Init Wizard
 
@@ -676,6 +702,14 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 | Version | Key Changes |
 |---------|-------------|
+| v0.124.0 | R009/R018 giant-prompt anti-pattern documented; arch-documenter Input Constraints (3-tier token threshold, >8000 halt + decomposition) |
+| v0.123.0 | memory MCP server (packages/memory-mcp-server, 4 MCP tools) + skill profile loader (4 default profiles, /profile command) |
+| v0.122.0 | Memory persistence service (unified adapter write-back + TTL eviction) |
+| v0.121.0 | Memory aggregation + dedup layer across all adapters |
+| v0.120.0 | Memory unification adapters (native/claude-mem/episodic-memory/llm-memory) |
+| v0.118.0 | Init auto-setup improvements; fork skill split pattern (large SKILL.md → core + guides/phases.md); token observability |
+| v0.116.2 | R010 Universal /tmp Script Bypass for sensitive paths (.claude/ Bash/Write/Edit all routed via /tmp/*.sh) |
+| v0.115.0 | LangChain harness/middleware integration guide; adapter pattern for external LLM tool chains |
 | v0.79.0 | CC v2.1.89-v2.1.96 compat; effort default change docs; defer PreToolUse; disableSkillShellExecution; cc-release-collector CronJob; rule-deletion-guard hook |
 | v0.80.0–v0.88.1 | Registry isolation; omcustom update self-update + re-exec; Rule safety expansion (R020/R015/R011) |
 | v0.89.0 | CC v2.1.97-v2.1.108 compat; prompt caching 1h TTL env vars; Skill tool built-in command discovery; /recap session context; compat table expansion (v2.1.97-v2.1.108 14 rows) |
