@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun run:*)",
+      "Bash(bun test:*)",
+      "Bash(bun add:*)",
+      "Bash(gh:*)",
+      "Bash(git:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(rm:*)",
+      "Bash(python3:*)",
+      "Bash(cat:*)",
+      "Bash(sed:*)",
+      "Bash(chmod:*)",
+      "Write(.claude/**)",
+      "Edit(.claude/**)",
+      "Write(templates/.claude/**)",
+      "Edit(templates/.claude/**)",
+      "Write(.claude/outputs/**)",
+      "Edit(.claude/outputs/**)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "ontology-rag"
+  ],
+  "statusLine": {
+    "type": "command",
+    "command": ".claude/statusline.sh",
+    "padding": 0,
+    "refreshInterval": 10
+  },
+  "outputStyle": "korean-engineer"
+}
