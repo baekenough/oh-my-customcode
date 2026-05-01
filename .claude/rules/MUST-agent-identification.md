@@ -75,3 +75,24 @@ Correct: With sub-skill
 | General conversation | "claude (default)" |
 | Long tasks | Show progress with agent context |
 | Skill invocation | Integrated `claude → {skill-name}` format |
+
+## Multi-Turn Self-Check (MANDATORY)
+
+매 응답 시작 전, 이전 응답이 자동 체크리스트를 통과했는지 의존하지 말고 다시 자가 점검:
+
+1. 이번 응답이 `┌─ Agent: ...` 또는 `[agent-name]` 단축 헤더로 시작하는가?
+2. 이번 응답에서 호출하는 모든 도구에 `[agent-name][model] → Tool: ...` prefix 가 있는가?
+
+체크 실패 시 즉시 헤더/prefix 추가 후 도구 호출. PostCompact hook 만으로 보장되지 않으며 압축 없이도 멀티턴 누락이 발생하므로 매 턴 자가 점검 강제.
+
+### Common Multi-Turn Violation
+
+```
+턴 1: ┌─ Agent: claude (default) ✓
+턴 2: (헤더 없음, 짧은 답변이라 생략) ✗
+턴 3: 도구 호출 prefix 누락 ✗
+```
+
+응답 길이/턴 위치 무관. 짧은 답변에도 헤더는 필수.
+
+Reference issue: #1096.
