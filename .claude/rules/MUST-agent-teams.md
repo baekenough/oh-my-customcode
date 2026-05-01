@@ -305,3 +305,22 @@ Agent Teams actively preferred for qualifying collaborative tasks. Use Agent too
 Do NOT avoid Agent Teams solely for cost reasons when criteria are met.
 
 **Active preference rule**: When Agent Teams is available, default to using it for any multi-step or multi-issue work. Only fall back to Agent tool for truly simple, single-issue tasks with no verification needs.
+
+## Member TaskUpdate Discipline
+
+Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 명시적으로 알려야 한다. 침묵은 코디네이터가 죽었거나 멤버가 막혔다고 오인하게 만든다.
+
+| 시점 | 호출 |
+|------|------|
+| 작업 시작 | TaskUpdate(taskId, status: "in_progress") |
+| 의미 있는 진행 (≥30s 분기/체크포인트) | TaskUpdate(taskId, description 업데이트 또는 메타데이터) |
+| 완료 | TaskUpdate(taskId, status: "completed") |
+| 차단 시 | TaskUpdate(taskId, description: 차단 사유) — 그 후 SendMessage |
+
+### Common Violations
+
+- 30초 이상 작업하면서 in_progress 미설정 → 다른 멤버가 task 를 claim 시도해 충돌
+- 완료 후 status 미갱신 → 후속 작업이 영원히 blocked
+- 차단 사유를 SendMessage 로만 보내고 task description 업데이트 누락 → TaskList 만 보는 멤버는 사유를 모름
+
+Reference issue: #1087.
