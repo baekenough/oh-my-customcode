@@ -257,44 +257,17 @@ Before spawning any agent:
 ```
 
 
-## Universal /tmp Script Bypass for Sensitive Paths
+## Sensitive Path Handling (Historical: pre-CC v2.1.121)
 
-**ALL tool calls targeting `.claude/` MUST be routed through `/tmp/*.sh` script via Bash.**
+> **Status**: Deprecated as of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01). Direct Write/Edit/Bash on `.claude/`, `.git/`, `.vscode/` works without prompts under `bypassPermissions` mode in CC v2.1.121+ (issue #1101).
 
-| Tool | `.claude/` target | Required pattern |
-|------|------------------|------------------|
-| Read | `.claude/*` | OK — Read tool is sensitive-path exempt |
-| Bash (read-only: sed, cat, wc, ls, grep, head, tail, find, file) | `.claude/*` | **/tmp/*.sh bypass required** — direct invocation triggers prompt |
-| Bash (write: mkdir, cp, mv, rm, redirect) | `.claude/*` | **/tmp/*.sh bypass required** |
-| Write | `.claude/*` | **/tmp/*.sh + Bash heredoc required** — Write tool itself triggers prompt |
-| Edit | `.claude/*` | **/tmp/*.sh + Bash sed -i required** — Edit tool itself triggers prompt |
+Current CC versions (>=2.1.121): direct Write/Edit/Bash on `.claude/**` paths are permitted under `mode: "bypassPermissions"`. The `/tmp/*.sh` script wrapping pattern previously required is no longer necessary. Catastrophic operations (e.g., `rm -rf /`) remain blocked by independent safety guards.
 
-### Pattern (mandatory)
+`mode: "bypassPermissions"` on every Agent tool call is still required (see "Universal bypassPermissions" above).
 
-```bash
-cat > /tmp/fix-topic.sh << 'OUTER'
-sed -i 's/old/new/' .claude/path/file       # Edit equivalent
-cat > .claude/path/file << 'INNER'           # Write equivalent
-... content ...
-INNER
-sed '/<!--/,/-->/d' .claude/path/file | wc -c  # measurement
-OUTER
-bash /tmp/fix-topic.sh
-```
+**For CC < v2.1.121 only**: see git history of this rule for the legacy `/tmp/*.sh` bypass pattern (commit before v0.126.0).
 
-### Why
-
-CC sensitive-path check inspects tool-call **target paths** but does NOT audit script-internal file operations. Bypass works because Bash target = `/tmp/`, while internal commands access `.claude/`.
-
-### Scope
-
-Universal — applies to ALL subagents (not just fork skills). Applies to ALL `.claude/` paths regardless of subdirectory (`.claude/agents/`, `.claude/skills/`, `.claude/rules/`, `.claude/output-styles/`, `.claude/agent-memory/`, etc.).
-
-### Failure mode
-
-Direct Write/Edit/Bash on `.claude/` triggers user approval prompt → blocks unattended automation → defeats `/pipeline auto-dev` and `/loop` workflows.
-
-> **Reference**: #1052, #1016 (origin), #1046 (directive loss in delegation chain)
+> **References**: #1052 (origin v0.116.2), #1016 (v0.111.1), #1046 (delegation directive loss v0.116.1), #1099 (CC v2.1.126 tracking), #1101 (v0.126.0 deprecation).
 
 ## Session Continuity
 

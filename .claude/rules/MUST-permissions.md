@@ -18,8 +18,10 @@
 | Operation | Allowed | Prohibited |
 |-----------|---------|-----------|
 | Read | All source, configs, docs | - |
-| Write | Source code, new files in project | .env, .git/config, paths outside project |
+| Write | Source code, new files in project, `.claude/**` (CC v2.1.121+ under `bypassPermissions`) | .env, .git/config, paths outside project |
 | Delete | Temp files created by agent | Existing files (without request), entire directories |
+
+> **Sensitive paths note**: As of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01), `.claude/`, `.git/`, `.vscode/` are no longer prompted for Write/Edit/Bash under `mode: "bypassPermissions"`. The legacy `/tmp/*.sh` script bypass (R010 historical section) is deprecated for CC >= v2.1.121. Catastrophic operations (`rm -rf /`) remain blocked. See #1101.
 
 ## Permission Request Format
 

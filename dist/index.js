@@ -2014,7 +2014,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.124.0",
+  version: "0.126.0",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -2062,7 +2062,7 @@ var package_default = {
     yaml: "^2.8.2"
   },
   devDependencies: {
-    "@anthropic-ai/sdk": "^0.90.0",
+    "@anthropic-ai/sdk": "^0.92.0",
     "@biomejs/biome": "^2.3.12",
     "@types/bun": "^1.3.6",
     "@types/js-yaml": "^4.0.9",
@@ -2093,6 +2093,8 @@ var package_default = {
   engines: {
     node: ">=18.0.0"
   },
+  omcustomMinClaudeCode: "2.1.121",
+  omcustomMinClaudeCodeReason: "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
   overrides: {
     rollup: "^4.59.0",
     esbuild: "^0.25.0"
