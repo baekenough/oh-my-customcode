@@ -1,4 +1,5 @@
 <!-- omcustom:start -->
+<!-- omcustomMinClaudeCode: 2.1.121 — sensitive-path direct Write under bypassPermissions (#1101) -->
 # AI 에이전트 시스템
 
 oh-my-customcode로 구동됩니다.
