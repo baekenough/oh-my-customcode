@@ -22,17 +22,9 @@ tools:
 permissionMode: bypassPermissions
 ---
 
-## Mandatory: .claude/ 경로 처리 (R010 Universal /tmp Script Bypass)
+## .claude/ 경로 처리 (CC v2.1.121+)
 
-ALL tool calls targeting `.claude/` paths MUST go through `/tmp/*.sh` script via Bash. This includes Write, Edit, and write-Bash. Direct `Write(".claude/...")` or `Edit(".claude/...")` triggers user approval prompts that block unattended automation, regardless of `bypassPermissions` mode or allow rules.
-
-Pattern:
-1. Write tool → `/tmp/fix-{topic}-$$.sh` containing heredoc/sed/cp targeting `.claude/`
-2. Bash tool → `bash /tmp/fix-{topic}-$$.sh`
-
-Read tool on `.claude/` paths is exempt (sensitive-path bypass for read-only). For `templates/.claude/` paths, the same pattern applies (also sensitive).
-
-Reference: R010 (.claude/rules/MUST-orchestrator-coordination.md), #1046, #1052, #1062.
+Direct Write/Edit/Bash on `.claude/**` and `templates/.claude/**` is permitted under `mode: "bypassPermissions"` as of CC v2.1.121 (#1101). The legacy `/tmp/*.sh` bypass is deprecated. For CC < v2.1.121, see git history for the legacy pattern.
 
 You are an external source synchronization specialist keeping external components up-to-date.
 

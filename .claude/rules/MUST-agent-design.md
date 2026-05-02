@@ -244,36 +244,28 @@ Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HH
 
 ### Sensitive Path Handling
 
-CC treats `.claude/` as a sensitive directory, enforced across **all tool categories** — Bash, Write, and Edit. The sensitive-path check runs **above** `bypassPermissions` and explicit allow rules (e.g., `Write(.claude/**)`), so operations on sensitive paths may trigger permission prompts regardless of settings.
+> **Status (CC v2.1.121+)**: `.claude/`, `.git/`, `.vscode/` direct Write/Edit/Bash works without prompts under `mode: "bypassPermissions"`. The historical `/tmp/*.sh` bypass pattern is deprecated. See #1101.
 
-**Key rule**: `.claude/` Bash/Write/Edit triggers sensitive-path prompt regardless of allow rules. Only bypass: use `/tmp/*.sh` scripts via Bash. See full behavior table and recommended practice via Read tool.
+Current CC behavior: under `bypassPermissions`, all `.claude/**` paths (including `.claude/outputs/**`, `.claude/agents/**`, `.claude/skills/**`, `.claude/rules/**`, `templates/.claude/**`) accept Write/Edit/Bash directly. Catastrophic shell operations remain blocked by independent safety guards.
 
-<!-- DETAIL: Sensitive Path Behavior table and Recommended practice
-#### Sensitive Path Behavior
+**Recommended practice**:
+1. Pass `mode: "bypassPermissions"` on every Agent tool call (R010 Universal bypassPermissions)
+2. Use Write/Edit directly for `.claude/**` paths — no `/tmp/*.sh` wrapping needed
+3. For CC < v2.1.121: see git history of this section (pre-v0.126.0) for the legacy bypass pattern
 
-| Path | Tool | Allow rule | Result |
+<!-- DETAIL: Pre-v2.1.121 sensitive path behavior (historical)
+| Path | Tool | Allow rule | Result (CC < v2.1.121) |
 |------|------|-----------|--------|
-| `.claude/**` | Bash (`cp`, `mkdir`, `rm`) | `Bash(*)` allowed | Prompt (sensitive-path overrides) |
-| `.claude/**` | Write, Edit | `Write(.claude/**)` allowed | Prompt (sensitive-path overrides) |
-| `templates/.claude/**` | Write, Edit | `Write(templates/.claude/**)` allowed | Prompt (confirmed CC v2.1.116+; see #960, #961, #981) |
-| `.claude/outputs/**` | Write, Edit | `Write(.claude/outputs/**)` | Prompt (sensitive-path overrides — confirmed #1043) |
-| `.claude/outputs/**` | Bash via `/tmp/*.sh` | — | Allowed (bypass pattern) |
-
-#### Recommended practice
-
-1. **Prefer `Write`/`Edit` over `Bash(cp)`/`Bash(mkdir)`** — `Write`/`Edit` provide better auditability and avoid shell injection risk
-2. **Add allow rules defensively** — `Write(.claude/**)`, `Edit(.claude/**)`, `Write(templates/.claude/**)`, `Edit(templates/.claude/**)` in `.claude/settings.local.json`. Rules may not bypass sensitive-path check but document intent and aid future CC behavior changes
-3. **For `.claude/outputs/**` specifically**: Use `Bash via /tmp/*.sh` bypass — Write/Edit on this path triggers sensitive-path prompt despite being the artifact convention path (confirmed v0.111.1+, #1043, #1046)
+| `.claude/**` | Bash (`cp`, `mkdir`, `rm`) | `Bash(*)` allowed | Prompt (sensitive-path overrode) |
+| `.claude/**` | Write, Edit | `Write(.claude/**)` allowed | Prompt (sensitive-path overrode) |
+| `templates/.claude/**` | Write, Edit | `Write(templates/.claude/**)` allowed | Prompt (#960, #961, #981) |
+| `.claude/outputs/**` | Write, Edit | `Write(.claude/outputs/**)` | Prompt (#1043) |
+| `.claude/outputs/**` | Bash via `/tmp/*.sh` | — | Allowed (legacy bypass) |
 -->
 
-<!--
-3. **Accept interactive prompts as a release-pipeline constraint** — `templates/.claude/` sync during release automation requires human approval; plan release windows accordingly
-4. **This is CC design behavior, not a bug** — sensitive-path check is a defense-in-depth layer. File upstream as a documentation request (not bug report) if behavior is unclear
-
-#### Cross-references
-
-- `feedback_sensitive_path.md` — session memory with Bash + Write scope (#960, #961, #981)
-- `feedback_templates_claude_glob.md` — `.claude/**` glob does not cover `templates/.claude/**`, separate allow rules required
+<!-- DETAIL: Cross-references
+- `feedback_sensitive_path*.md` — historical (pre-v2.1.121) memories, marked with status: historical (#1101)
+- `feedback_templates_claude_glob.md` — `.claude/**` glob does not cover `templates/.claude/**`, separate allow rules required (still applies for non-bypassPermissions modes)
 -->
 
 ### Artifact Channel Protocol

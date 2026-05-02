@@ -82,6 +82,8 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "omcustomMinClaudeCode": "2.1.121",
+  "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
   "overrides": {
     "rollup": "^4.59.0",
     "esbuild": "^0.25.0"

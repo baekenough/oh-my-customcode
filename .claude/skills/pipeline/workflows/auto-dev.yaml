@@ -88,25 +88,11 @@ steps:
       - All Agent tool calls MUST pass mode: "bypassPermissions" to prevent permission prompts during unattended execution
 
 
-      ## Universal /tmp Script Bypass for .claude/ paths (R010 Universal /tmp Script Bypass)
+      ## Sensitive Path Handling (CC v2.1.121+)
 
-      ALL tool calls targeting `.claude/` MUST go through `/tmp/*.sh` script via Bash. This applies to read-only measurement (sed/cat/wc/ls), Write, Edit, and write-Bash. Read tool is exempt.
+      Direct Write/Edit/Bash on `.claude/**` is permitted under `mode: "bypassPermissions"` as of CC v2.1.121 (#1101). The legacy `/tmp/*.sh` bypass is no longer required. Structural changes (new agents/skills) still go through mgr-creator with R017 verification.
 
-      Pattern:
-      1. Write(/tmp/fix-{topic}.sh) — script contents may use heredoc/sed/cp targeting .claude/
-      2. Bash(bash /tmp/fix-{topic}.sh) — Bash target is /tmp/, not .claude/
-      3. Read or Bash(head/grep) on .claude/ paths is fine (Read tool sensitive-path exempt; Bash on .claude/ is also exempt for some commands but to stay safe always use /tmp script for any sed/cat/wc on .claude/).
-
-      Rationale: CC sensitive-path check inspects tool-call target paths but does NOT audit script-internal file operations. Direct Write/Edit/Bash on .claude/ triggers user approval prompts even with bypassPermissions, breaking unattended automation.
-
-      Use this pattern for:
-      - Any documentation fix in .claude/
-      - Any frontmatter change
-      - Any read-only measurement / inspection / counting
-      - Count synchronization between source and templates
-      - Structural changes (new agents/skills) MUST still go through mgr-creator with R017 verification, AND mgr-creator itself uses /tmp bypass for the file writes
-
-      References: #1052, #1016 (v0.111.1 origin), #1046 (v0.116.1 delegation directive loss fix), feedback_sensitive_path_tmp_bypass.md memory
+      For CC < v2.1.121 see git history for the legacy bypass pattern.
 
       ## Local CI-mimic verification (MUST run before marking implement done)
 
