@@ -7,6 +7,1176 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.127.0] - 2026-05-08
+
+### Changed
+- add /goal thin wrapper skill (#1109, #1110)
+
+## [0.126.1] - 2026-05-07
+
+### Changed
+- CC tracking issues consolidation (#1104, #1105, #1106, #1107)
+
+## [0.126.0] - 2026-05-02
+
+### Changed
+- R010 /tmp deprecation + manifest sync gate (#1098, #1101, #1099, #1102)
+- deps(dev)(deps-dev): bump @anthropic-ai/sdk from 0.90.0 to 0.92.0 in the development-dependencies group across 1 directory (#1083) (#1083)
+
+## [0.125.1] - 2026-05-01
+
+### Changed
+- sync templates/manifest.json
+
+## [0.125.0] - 2026-05-01
+
+### Changed
+- bump version to 0.125.0
+- v0.125.0 plan + permissions.defaultMode
+- regenerate architecture diagrams via Eraser MCP for v0.124.0 (#1092)
+
+### Fixed
+- R007/R008 multi-turn self-check + enforcement candidate
+- arch-documenter Output Constraints + R018 TaskUpdate discipline
+
+## [0.124.0] - 2026-04-28
+
+### Changed
+- single-agent giant prompt anti-pattern (R009/R018) + arch-documenter token threshold (#1086)
+
+## [0.123.0] - 2026-04-27
+
+### Changed
+- memory MCP server + skill profile loader (#1079, #1080)
+
+## [0.122.0] - 2026-04-27
+
+### Changed
+- memory persistence service (#1077)
+
+## [0.121.0] - 2026-04-27
+
+### Changed
+- memory aggregation + dedup layer (#1073)
+
+## [0.120.0] - 2026-04-27
+
+### Changed
+- memory unification adapters (#1070, #1071, #1072)
+
+## [0.119.0] - 2026-04-27
+
+### Changed
+- OTEL trajectory mode + memory_records table (#1035, #1069)
+
+## [0.118.3] - 2026-04-27
+
+### Changed
+- memory unification docs (#1065, #1066, #1067)
+
+## [0.118.2] - 2026-04-27
+
+### Changed
+- manager/system agent inline /tmp directive (#1062)
+
+## [0.118.1] - 2026-04-27
+
+### Changed
+- wiki sync + R006 skills advisory note ( follow-up) (#1055, #1063)
+
+## [0.118.0] - 2026-04-27
+
+### Changed
+- init auto-setup + fork skill split + token observability (#1048, #1054, #1057, #1060)
+
+## [0.117.0] - 2026-04-27
+
+### Changed
+- context optimization batch (#1045, #1053, #1056)
+
+## [0.116.2] - 2026-04-27
+
+### Changed
+- universal /tmp script bypass directive (#1052, #1058)
+
+## [0.116.1] - 2026-04-27
+
+### Added
+- trigger Airflow issue_triage DAG on issue open (#1049)
+
+### Changed
+- fix delegation chain sensitive-path directive loss (#1043, #1046)
+
+## [0.116.0] - 2026-04-27
+
+### Changed
+- eval-core schema 확장 (drizzle migration, ) (#1036)
+
+## [0.115.0] - 2026-04-26
+
+### Changed
+- LangChain harness/middleware 통합 가이드 (#1021, #1022, #1024, #1026)
+
+## [0.114.0] - 2026-04-26
+
+### Changed
+- R020 정량 evidence advisory + Phased Opt-in Gate 일관화 + 클러스터 정리
+
+## [0.113.0] - 2026-04-26
+
+### Changed
+- agent-eval-framework 4-metric internalization (#1025)
+
+## [0.112.0] - 2026-04-25
+
+### Changed
+- Codex Browser Verify 루프 패턴 (#1009)
+
+## [0.111.1] - 2026-04-25
+
+### Changed
+- v0.111.1 hotfix — Write→/tmp NOTE 정정 (#1016)
+
+## [0.111.0] - 2026-04-25
+
+### Changed
+- sensitive-path Write-tool directive 강제 (#1014)
+
+## [0.110.0] - 2026-04-25
+
+### Changed
+- Output Styles + roundtable-debate anti-groupthink 패턴 (#1003, #1007)
+
+## [0.109.0] - 2026-04-24
+
+### Changed
+- auto-dev /tmp bypass pattern + R006 fork cross-validation (#1000, #1001)
+
+### Fixed
+- resolve context fork cap documentation drift (#984)
+
+## [0.108.0] - 2026-04-24
+
+### Changed
+- 5 P3 bundle: ontology/harness/socratic/sample/google (#993, #994, #986, #975, #971)
+
+## [0.107.0] - 2026-04-24
+
+### Changed
+- R006 refactor + PAL analysis + CI/docs batch (#982, #989, #990, #991, #992, #967, #968, #969)
+
+## [0.106.1] - 2026-04-24
+
+### Changed
+- sdd-dev DR template +  tracker-checkpoint agent (#985, #983)
+
+## [0.106.0] - 2026-04-24
+
+### Changed
+- caveman plugin docs +  ouroboros Ralph Loop guide (#964, #966)
+
+## [0.105.1] - 2026-04-24
+
+### Changed
+- R006 sensitive-path scope extension to Write/Edit tools (#981)
+
+### Fixed
+- correct r006 broken cross-ref and ambiguous wording
+
+## [0.105.0] - 2026-04-24
+
+### Changed
+- Deep Insight 내재화 + 경량 외부 통합 묶음 (#963, #970, #972, #973, #974, #976, #977, #980)
+
+## [0.104.1] - 2026-04-24
+
+### Changed
+- skill mkdir sensitive-path rule fix + regression guard (#978)
+
+## [0.104.0] - 2026-04-21
+
+### Changed
+- CC v2.1.116 compatibility + .claude/ sensitive path fix (#959, #960, #961)
+- sync bun lockfile for @anthropic-ai/sdk 0.90.0
+- deps(dev)(deps-dev): bump @anthropic-ai/sdk
+
+## [0.103.0] - 2026-04-20
+
+### Changed
+- tech stack version updates + bypassPermissions universal mandate (#954, #955)
+
+## [0.102.0] - 2026-04-19
+
+### Changed
+- playwright-compress skill + product-strategy skill + design-shotgun skill + browser-automation guide (#949, #948)
+
+## [0.101.0] - 2026-04-19
+
+### Changed
+- routing accuracy improvement with skill/guide triggers and wiki-rag enrichment (#946)
+
+## [0.100.1] - 2026-04-19
+
+### Changed
+- bypassPermissions propagation fix (#947)
+
+## [0.100.0] - 2026-04-19
+
+### Changed
+- token-efficiency-audit skill + pre-generation-arch-check skill + DCP pruning transparency (#938, #935)
+
+## [0.99.3] - 2026-04-19
+
+### Changed
+- claude-design wiki page fix
+
+### Fixed
+- add claude-design guide wiki page
+
+## [0.99.2] - 2026-04-18
+
+### Changed
+- statusline fix + cleanRegistry + Claude Design guide (#931, #928, #924)
+
+## [0.99.1] - 2026-04-18
+
+### Changed
+- bypassPermissions enforcement + /idea skill (#926, #930)
+
+### Fixed
+- update skill count 106→107 in README and README_ko
+- enforce bypassPermissions on all agent spawns, add /idea skill
+
+## [0.99.0] - 2026-04-18
+
+### Changed
+- auto-dev pipeline CI-mimic local verification (#927)
+
+## [0.98.0] - 2026-04-18
+
+### Changed
+- OpenHarness patterns internalization (#922)
+
+### Fixed
+- correct template sync paths for hooks
+
+## [0.97.1] - 2026-04-18
+
+### Added
+- add hada-scout v2.0 with LLM pre-scout filtering
+
+### Changed
+- hada-scout v2.0 LLM pre-scout filtering (#912)
+
+## [0.97.0] - 2026-04-18
+
+### Changed
+- ouroboros capability graph pattern integration (#909, #910)
+
+## [0.96.0] - 2026-04-18
+
+### Changed
+- CC v2.1.113-v2.1.114 호환성 문서화 (#905)
+
+## [0.95.0] - 2026-04-18
+
+### Changed
+- rules context token optimization (#889)
+
+## [0.94.0] - 2026-04-18
+
+### Changed
+- cc-release-monitor workflow removal (Airflow DAG migration) (#894)
+
+## [0.93.0] - 2026-04-18
+
+### Changed
+- Airflow 3.1.8 에이전트/스킬/가이드 업데이트 (#890)
+
+## [0.92.0] - 2026-04-18
+
+### Changed
+- cc-token-saver integration + harness-synthesizer skill (#886, #888)
+
+## [0.91.0] - 2026-04-17
+
+### Changed
+- CC v2.1.111-v2.1.112 compat (#881)
+
+## [0.90.0] - 2026-04-16
+
+### Changed
+- CC v2.1.110 compat (#877)
+
+## [0.89.0] - 2026-04-15
+
+### Changed
+- CC v2.1.97-v2.1.108 compat (#871)
+
+## [0.88.1] - 2026-04-14
+
+### Changed
+- Rule safety expansion  (R020/R015/R011) (#869, #867)
+
+## [0.88.0] - 2026-04-14
+
+### Changed
+- registry 격리  + re-exec 후속 번들 (#859, #867, #868)
+
+## [0.87.3] - 2026-04-14
+
+### Fixed
+- omcustom update self-update + re-exec 클러스터 v0.87.3 (#862, #863, #864, #865, #866)
+
+## [0.87.2] - 2026-04-14
+
+### Fixed
+- omcustom update --all --hard 핫픽스 v0.87.2 (#860, #861)
+
+## [0.87.1] - 2026-04-14
+
+_No user-visible changes (internal only)._
+
+## [0.87.0] - 2026-04-14
+
+### Changed
+- Claude Code v2.1.105 feature docs (#856)
+
+## [0.86.1] - 2026-04-13
+
+### Added
+- add skill-count-sync advisory hook (#853)
+
+### Changed
+- deps update + skill-count-sync hook
+- regenerate bun.lock for marked 18.0.0
+- regenerate bun.lock for @anthropic-ai/sdk 0.88.0
+- deps(dev)(deps-dev): bump @anthropic-ai/sdk
+- bump marked from 17.0.6 to 18.0.0
+
+### Fixed
+- sync skill-count-reminder hook to templates/.claude/hooks/
+
+## [0.86.0] - 2026-04-13
+
+### Changed
+- hada-scout automation (#841)
+
+### Fixed
+- sync all README.md skill counts to 105
+- sync README.md skill count to 105
+- sync templates/CLAUDE.md skill count to 105
+- sync manifest.json version to 0.86.0
+
+## [0.85.0] - 2026-04-12
+
+### Changed
+- homedir project filter + parallel narrative format + blocker triage
+
+### Fixed
+- sync manifest.json version to 0.85.0
+
+## [0.84.0] - 2026-04-12
+
+### Changed
+- MemKraft bridge + Multica reference integration
+
+## [0.83.0] - 2026-04-12
+
+### Changed
+- Session Auto-Fix hook for previous session issue detection
+
+## [0.82.0] - 2026-04-12
+
+### Changed
+- statusLine refreshInterval fix + multi-agent coding guides
+
+### Fixed
+- add missing wiki pages for 3 new guides
+
+## [0.81.0] - 2026-04-12
+
+### Added
+- v0.81.0 — Wiki system, Adaptive Harness, wiki-rag, R022
+
+### Fixed
+- update README.md counts — agents 48, skills 104, rules 22
+- update manifest.json and CLAUDE.md counts for v0.81.0
+- printf octal interpretation bug in wiki-sync.yml
+- add .claude/rules/ to gitignore exceptions, include SHOULD-wiki-sync.md
+- CI failures — missing rule, grep macOS compat, wiki pages
+
+## [0.80.0] - 2026-04-11
+
+### Added
+- add rule updates and release plan for v0.80.0
+- v0.80.0 release — Stop hook fix, R000/R002/R006/R012 updates, CC v2.1.97-101 compatibility
+
+### Changed
+- sync manifest.json version to 0.80.0
+- bump version to 0.80.0
+
+## [0.79.5] - 2026-04-09
+
+### Changed
+- bump version to 0.79.5
+
+### Fixed
+- align skills with R010 Protected Paths routing
+
+## [0.79.4] - 2026-04-09
+
+### Changed
+- bump version to 0.79.4
+
+### Fixed
+- strengthen R010 with Protected Paths for agent/skill/guide creation
+
+## [0.79.3] - 2026-04-09
+
+### Changed
+- bump version to 0.79.3
+
+### Fixed
+- resolve CI failures for v0.79.3 release
+- clean up stale E2E test registry entries
+
+## [0.79.2] - 2026-04-09
+
+### Added
+- v0.79.2 — registry-based project detection  + update self-update (#812, #811)
+
+### Fixed
+- remove mock.module usage to prevent cross-file test pollution
+- isolate mock.module test to prevent cross-file pollution
+- v0.79.2 CI failures — lint, version sync, test isolation
+
+## [0.79.1] - 2026-04-08
+
+### Fixed
+- v0.79.1 — ARCHITECTURE_ko.md sync (counts, hook table, translations)
+
+## [0.79.0] - 2026-04-08
+
+### Added
+- add geeknews-scout CronJob for GeekNews RSS monitoring
+- add CC release collector CronJob and rule deletion protection hook
+
+### Changed
+- bump version to 0.79.0
+- env-based deploy abstraction for cc-release-collector
+
+### Fixed
+- sync rule-deletion-guard.sh and hooks.json to templates
+- deep-verify findings — SSH injection, hook bypasses, dead code
+
+## [0.78.3] - 2026-04-06
+
+### Changed
+- deps(dev)(deps-dev): bump @anthropic-ai/sdk
+- deps(dev)(deps-dev): bump @types/nodemailer from 7.0.11 to 8.0.0
+
+### Fixed
+- v0.78.3 — dependency updates (@anthropic-ai/sdk 0.82.0, @types/nodemailer 8.0.0)
+
+## [0.78.2] - 2026-04-06
+
+### Added
+- v0.78.2 — slack-cli-expert agent for Slack workspace automation (#794)
+
+## [0.78.1] - 2026-04-06
+
+### Fixed
+- sync hook-data-flow guide to templates and update guide counts 31 → 32
+- v0.78.1 — hook data flow docs + inline hook extraction (#791, #792)
+
+## [0.78.0] - 2026-04-06
+
+### Added
+- v0.78.0 — stall detection hook + task-decomposition granularity integration (#788, #789)
+
+### Fixed
+- sync new hook scripts to templates for CI template-sync check
+
+## [0.77.0] - 2026-04-06
+
+### Added
+- v0.77.0 — adaptive parallel splitting pattern (#786)
+
+## [0.76.2] - 2026-04-06
+
+### Fixed
+- v0.76.2 — rename agora skill to omcustom:agora namespace
+
+## [0.76.1] - 2026-04-06
+
+### Added
+- v0.76.1 — agora multi-LLM adversarial consensus skill
+
+### Fixed
+- update README skill counts 100 → 101 for v0.76.1
+
+## [0.76.0] - 2026-04-05
+
+### Added
+- v0.76.0 — deep-plan dependency gate and R009 hard cap expansion (#782, #783)
+
+## [0.75.0] - 2026-04-05
+
+### Added
+- v0.75.0 — pre-commit DX and pipeline parallel execution (#778, #779)
+
+## [0.74.0] - 2026-04-05
+
+### Added
+- v0.74.0 — ROBOCO CLI feature gaps internalization (#773)
+
+## [0.73.0] - 2026-04-05
+
+### Added
+- v0.73.0 — Hermes Agent internalization (skill-extractor, User Model, agentskills.io) (#762)
+
+### Fixed
+- auto-close linked issues and delete release branch on merge (#776)
+
+## [0.72.1] - 2026-04-03
+
+### Fixed
+- remove deprecated sync-server-repo.yml — server decommissioned since 2026-03-18
+
+## [0.72.0] - 2026-04-03
+
+### Added
+- v0.72.0 — Korean localization for analysis skill templates (#767)
+
+## [0.71.0] - 2026-04-03
+
+### Added
+- v0.71.0 — pipeline skill migration, claude-native release monitor (#758, #759)
+
+### Fixed
+- delete deprecated pr-analysis.yml — Airflow endpoint dead since 2026-03-18
+
+## [0.70.0] - 2026-04-01
+
+### Added
+- v0.70.0 — Codex auto-install, SessionStart auto-update, Airflow dead code removal (#752, #754, #756)
+
+### Fixed
+- sync omcustom-auto-update hook to templates — fix Template Sync CI
+
+## [0.69.0] - 2026-04-01
+
+### Added
+- professor-triage v2.1 multi-perspective analysis + default filter fix (#753, #755)
+
+### Changed
+- professor-triage v2.0 — internalize codebase analysis, remove omc_issue_analyzer dependency
+
+## [0.68.2] - 2026-03-31
+
+### Added
+- RTK auto-install in init/update/doctor (#742)
+
+## [0.68.1] - 2026-03-31
+
+### Fixed
+- self-update cache phantom version guard (#741)
+
+## [0.68.0] - 2026-03-31
+
+### Added
+- CC v2.1.88 compat + RTK PreToolUse auto-intercept (#741, #746)
+
+## [0.67.0] - 2026-03-31
+
+### Added
+- add rtk-exec skill for RTK CLI proxy integration (#742)
+
+## [0.66.0] - 2026-03-30
+
+### Added
+- add gemini-exec skill for native Gemini CLI execution (#739)
+
+## [0.65.2] - 2026-03-30
+
+### Added
+- TypeScript 6.0 upgrade release v0.65.2
+
+### Changed
+- update bun.lock for typescript v6
+- deps(dev)(deps-dev): bump typescript from 5.9.3 to 6.0.2
+- update bun.lockb for i18next v26
+- bump i18next from 25.10.10 to 26.0.2
+
+## [0.65.1] - 2026-03-30
+
+### Added
+- CC v2.1.87 compatibility + auto-dev pre-triage step (#733)
+
+## [0.65.0] - 2026-03-29
+
+### Added
+- hook registry expansion + CC feature integration (#725)
+
+## [0.64.3] - 2026-03-28
+
+### Added
+- internalize Anthropic harness design insights — evaluator calibration, conditional evaluator, context reset (#728)
+
+## [0.64.2] - 2026-03-28
+
+### Added
+- permissionMode tier-based adoption for all 46 agents (#719)
+
+## [0.64.1] - 2026-03-28
+
+### Added
+- agent guardrails (maxTurns/limitations/disallowedTools) + harness-eval template sync (#720, #722)
+
+## [0.64.0] - 2026-03-28
+
+### Added
+- R002 tool modernization (9→30) + R006 frontmatter sync + Fast Mode (#724, #727)
+
+## [0.63.1] - 2026-03-28
+
+### Fixed
+- skill metadata consistency — user-invocable audit, CLAUDE.md sync, effort fix (#718)
+
+## [0.63.0] - 2026-03-28
+
+### Added
+- internalize Chroma Context-1 insights — context pruning, retrieval-reasoning separation, recall bias (#714)
+
+## [0.62.5] - 2026-03-28
+
+_No user-visible changes (internal only)._
+
+## [0.62.4] - 2026-03-28
+
+### Added
+- graph accessibility — circular nav, aria-live, skip link, focus-visible (#706, #707, #708, #709)
+
+### Fixed
+- pass complete PR context to Airflow DAG for accurate analysis
+
+## [0.62.3] - 2026-03-28
+
+### Added
+- graph keyboard accessibility & zoom UX improvements (#699, #700)
+
+## [0.62.2] - 2026-03-28
+
+### Fixed
+- set config.version in updateInstallConfig after init (#696)
+
+## [0.62.1] - 2026-03-28
+
+### Added
+- CI lockfile-sync gate + R016 defect response matrix (#701, #702)
+
+## [0.62.0] - 2026-03-28
+
+### Added
+- Web UI dependency graph visualization (#670)
+
+### Changed
+- update bun.lockb for d3 dependency
+
+## [0.61.0] - 2026-03-27
+
+### Added
+- Permission Mode Guidance + CLI self-update check (#690, #681)
+
+## [0.60.1] - 2026-03-27
+
+### Added
+- action-validator + peer-messaging skills, monitoring-setup inspector docs (#684, #685, #686)
+
+## [0.60.0] - 2026-03-27
+
+### Added
+- CC v2.1.83-85 compatibility + harness design internalization (#683, #682, #676, #687)
+
+### Fixed
+- unify workflow command namespace to /omcustom:workflow
+
+## [0.59.1] - 2026-03-27
+
+### Fixed
+- enforce mandatory triage comment posting (#689)
+
+## [0.59.0] - 2026-03-27
+
+### Added
+- token optimization via HTML comments in rules/ (#688)
+
+## [0.58.6] - 2026-03-25
+
+### Fixed
+- add validation tests, deduplicate CLAUDE.md (#661, #662)
+
+## [0.58.5] - 2026-03-25
+
+### Fixed
+- track guides/ directory in git (#665)
+- track 7 untracked rule files in git (#665)
+
+## [0.58.4] - 2026-03-25
+
+_No user-visible changes (internal only)._
+
+## [0.58.3] - 2026-03-25
+
+### Fixed
+- repair feedback-collector, cost-cap-advisor TSV, updater.ts CRLF (#664, #666, #667)
+
+## [0.58.2] - 2026-03-25
+
+### Added
+- show RL/WL renewal countdown in statusline (#674)
+
+### Changed
+- include build artifact for v0.58.2
+
+## [0.58.1] - 2026-03-24
+
+### Added
+- add post-release-followup step to omcustom-dev workflow
+
+### Changed
+- bump version to v0.58.1
+
+### Fixed
+- add PR feedback source to followup skill, remove package-lock.json
+
+## [0.58.0] - 2026-03-23
+
+### Added
+- v0.58.0 — Impeccable design language integration (#663)
+
+## [0.57.0] - 2026-03-23
+
+### Added
+- v0.57.0 — update --hard namespace sync, Web UI fixes, auto-improve skill, eval pipeline
+
+## [0.56.0] - 2026-03-23
+
+### Added
+- v0.56.0 — PostCompact R000 enforcement, workflow --list, statusline WL sync, dependency updates
+
+## [0.55.0] - 2026-03-23
+
+### Added
+- v0.55.0 — eraser workflow, weekly rate limit statusline
+
+## [0.54.0] - 2026-03-23
+
+### Added
+- v0.54.0 — ARCHITECTURE.md v0.53.1 sync, release-plan fix, Eraser diagrams
+
+## [0.53.1] - 2026-03-23
+
+### Fixed
+- v0.53.1 — auto-tagging fix, workflow rename, custom workflow templates
+
+## [0.53.0] - 2026-03-23
+
+### Added
+- v0.53.0 — dashboard cleanup, project detail, eval-core DB, user feedback
+
+## [0.52.0] - 2026-03-21
+
+### Fixed
+- correct README skill counts for v0.52.0 release validation
+- v0.52.0 — feedback collector hook, routing miss analysis, improve-report skill, R018 scope constraint
+
+## [0.51.2] - 2026-03-21
+
+### Changed
+- bump version to 0.51.2
+
+### Fixed
+- v0.51.2 — R018 advisor batch detection, dashboard cleanup, Projects removal
+
+## [0.51.1] - 2026-03-21
+
+### Changed
+- bump version to 0.51.1
+
+### Fixed
+- v0.51.1 — migration transaction, npm fallback test, CI optimization, Drizzle lesson
+
+## [0.51.0] - 2026-03-21
+
+### Added
+- add /scout skill for external URL analysis and project fit evaluation (#616)
+
+### Changed
+- bump version to 0.51.0
+
+## [0.50.0] - 2026-03-21
+
+### Added
+- lockfile-based smart protection for update + systematic-debugging skill
+
+### Changed
+- bump version to 0.50.0
+
+### Fixed
+- apply deep-verify findings — template CLAUDE.md skill count (84→90)
+
+## [0.49.0] - 2026-03-21
+
+### Added
+- add workflow engine with /workflow:omcustom-dev (#605, #606, #607, #608, #609)
+
+### Changed
+- bump version to 0.49.0
+- update skill count to 89 and register workflow commands
+
+### Fixed
+- apply deep-verify findings — README commands, category count, path validation
+
+## [0.48.5] - 2026-03-21
+
+### Added
+- add /release-plan skill for release-unit planning (#603)
+
+### Changed
+- bump version to 0.48.5
+- bump version to 0.48.5
+- update skill count to 86 after release-plan addition
+
+### Fixed
+- apply deep-verify findings — scope, security, commands table (#603, #611)
+- add bypassPermissions advisory to PostCompact hook (#611)
+
+## [0.48.4] - 2026-03-21
+
+### Added
+- add stale-todo-scanner SessionStart hook (#602)
+
+### Changed
+- bump version to 0.48.4
+
+### Fixed
+- add git add keyword to git-delegation-guard.sh (#600)
+- whitelist .claude/hooks/ in .gitignore and track hook scripts (#602)
+
+## [0.48.3] - 2026-03-21
+
+### Changed
+- bump version to 0.48.3
+
+### Fixed
+- use .claude/* glob pattern for proper gitignore negation (#596)
+- whitelist .claude/skills/ in .gitignore and track script files (#596)
+
+## [0.48.2] - 2026-03-21
+
+### Added
+- add professor-triage intent-detection trigger (#598)
+
+### Changed
+- bump version to 0.48.2 with professor-triage template sync
+
+## [0.48.1] - 2026-03-21
+
+### Added
+- expand /deep-verify with philosophy gate and add web-scraping guide (#593)
+
+### Changed
+- bump version to 0.48.1
+
+## [0.48.0] - 2026-03-21
+
+### Added
+- v0.48.0 — conflict resolution, dashboard cleanup, CI optimization (#586)
+
+### Changed
+- bump version to 0.48.0
+
+## [0.47.2] - 2026-03-20
+
+### Changed
+- bump version to 0.47.2
+
+### Fixed
+- prevent version downgrade and unify version display sources (#584)
+
+## [0.47.1] - 2026-03-20
+
+### Changed
+- bump version to 0.47.1
+
+### Fixed
+- remove auto-start serve from init to prevent orphan servers (#580)
+
+## [0.47.0] - 2026-03-20
+
+### Added
+- add feedback analysis engine and improvement tracking (#545)
+- add omcustom-loop skill with SubagentStop prompt hook (#556)
+- add omcustom web CLI command with start/stop/status/open (#538, #540)
+- add anonymous feedback option and remove gh hard dependency (#547, #555)
+- automate release tag creation after PR merge (#533, #551)
+- redesign main dashboard to project statistics view (#536, #539)
+- session auto-collection with projects and feedback schema (#534, #542)
+
+### Changed
+- bump version to 0.47.0
+- rebuild dist after json_group_array fix
+
+### Fixed
+- replace group_concat with json_group_array for delimiter safety
+- address all deep review findings and resolve test failures
+- add cwd and parent dir to projects search path (#546, #553)
+- align slash command names with actual skill names (#550, #554)
+- resolve empty project page when accessing /projects?project=slug (#537, #541)
+- improve statusline CTX accuracy with fallback calculation and atomic write (#543, #549)
+- add worktree detection to pre-commit hook for lightweight checks (#544, #548)
+
+## [0.46.1] - 2026-03-20
+
+### Fixed
+- statusline RL segment ANSI escape codes rendered as raw text
+- rename OMCUSTOM_PROJECT_ROOT to OMX_PROJECT_ROOT (#530)
+- commit missing sync-source-lockfile.ts and bump to v0.46.1 (#529)
+
+## [0.46.0] - 2026-03-20
+
+### Added
+- v0.46.0 — CC v2.1.80 compat, multi-project Web UI, batch update UI, docs refresh
+
+## [0.45.3] - 2026-03-20
+
+### Fixed
+- version comparison inconsistency between projects and updater (#525)
+
+## [0.45.2] - 2026-03-20
+
+### Changed
+- bump version to 0.45.2
+
+## [0.45.1] - 2026-03-19
+
+### Added
+- add omcustom update --all and interactive multi-project update (#518)
+
+### Changed
+- bump version to 0.45.1
+
+## [0.45.0] - 2026-03-19
+
+### Added
+- add PR analysis workflow with Airflow JWT auth (#515)
+- add ambiguity-gate skill — ouroboros-inspired pre-routing analysis (#507)
+- add /omcustom:feedback skill for GitHub issue submission (#498)
+- add omcustom projects command with lock file infrastructure (#495)
+- add SDD (Spec-Driven Development) skill (#506)
+- add argument-hint to 5 user-invocable skills (#494)
+
+### Changed
+- bump version to 0.45.0
+
+### Fixed
+- sync guides count in manifest and README (#507)
+- sync skill count to 77 in manifest and README (#494)
+
+## [0.44.6] - 2026-03-19
+
+### Changed
+- bump version to 0.44.6
+
+### Fixed
+- migrate Airflow CI workflows to JWT token auth for Airflow 3.x
+
+## [0.44.5] - 2026-03-19
+
+### Added
+- add Alembic migration expert agent, skill, and guide
+
+## [0.44.4] - 2026-03-19
+
+### Changed
+- bump version to 0.44.4
+
+### Fixed
+- update issue-analyzer workflow for Docker-based Airflow
+
+## [0.44.3] - 2026-03-19
+
+### Changed
+- bump version to 0.44.3
+
+### Fixed
+- make GitHub Packages verification non-blocking in verify-release
+
+## [0.44.2] - 2026-03-19
+
+### Added
+- autonomous execution mode and long-session compliance improvements (#485, #483)
+
+### Changed
+- bump version to 0.44.2
+
+## [0.44.1] - 2026-03-18
+
+### Changed
+- bump version to 0.44.1
+
+### Fixed
+- make verify-release non-blocking and increase GHP retry count
+
+## [0.44.0] - 2026-03-18
+
+### Added
+- add evaluations table and Web UI evaluation pages (#467, #481)
+- add sidebar Core category and dashboard analytics (#470, #480)
+- add /omcustom:web interactive toggle, remove SessionStart auto-serve (#476, #479)
+- add verify-release job to release workflow (#474, #477)
+
+### Changed
+- bump version to 0.44.0
+
+### Fixed
+- replace truncate with line-clamp-2 for description readability (#475, #478)
+- update docs-sync.yml to macos-latest — nuc13 runner removed (#474)
+
+## [0.43.1] - 2026-03-18
+
+### Added
+- add skill/guide creation pages and SessionStart auto-serve (#469)
+
+### Changed
+- bump version to 0.43.1
+- move lightweight jobs to GitHub-hosted runners (#471, #472)
+
+### Fixed
+- inline issue number in SSH script to fix JSON parse error
+
+## [0.43.0] - 2026-03-18
+
+### Added
+- add omcustom serve/serve-stop commands with auto-start (#466)
+- add built-in Web UI — SvelteKit agent/skill/guide/rule explorer (#466)
+- add issue analyzer webhook trigger
+
+### Changed
+- bump version to 0.43.0
+
+## [0.42.3] - 2026-03-18
+
+### Added
+- add git worktree workflow guide + .gitignore update (#463)
+- add CLI native modules — scope-filter, lockfile-hasher, file-tree-scanner (#421)
+
+### Changed
+- bump version to 0.42.3
+
+### Fixed
+- code review fixes — Domain Copy/FromStr/Database, extension_filter rename, bench bug (#421)
+
+## [0.42.2] - 2026-03-18
+
+### Changed
+- sauron auto-fix — skill count, context:fork list, template sync
+- bump version to 0.42.2
+
+### Fixed
+- add sequential-dependency guidance and blocked agent behavior (#457, #461)
+
+## [0.42.1] - 2026-03-16
+
+### Fixed
+- v0.42.1 — fix README skill count for release validation
+- update skill count 74→75 in README files
+
+## [0.42.0] - 2026-03-16
+
+### Added
+- v0.42.0 — Performance
+
+## [0.41.0] - 2026-03-16
+
+### Added
+- v0.41.0 — Skills & DX
+
+## [0.40.0] - 2026-03-16
+
+### Added
+- v0.40.0 — Rule Clarity & Testing
+
+## [0.39.0] - 2026-03-16
+
+### Added
+- v0.39.0 — Quick Fixes & Dependencies
+
+### Changed
+- bump drizzle-orm in the production-dependencies group
+- deps(dev)(deps-dev): bump drizzle-kit
+
+### Fixed
+- sync templates with source hooks for v0.39.0
+- sync bun.lock for drizzle-orm update
+- sync bun.lock for drizzle-kit update
+
+## [0.38.0] - 2026-03-16
+
+### Added
+- upgrade to v0.38.0 — README/ARCHITECTURE rewrite + version bump
+- CC v2.1.72~v2.1.74 compatibility updates
+- Claude Code v2.1.76 compatibility — PostCompact hook + R006 sync
+- add @omcustom/eval-core MVP with bun workspace
+- add interactive init wizard with @clack/prompts
+
+### Fixed
+- final audit — guide sync, version, context:fork cap, skill categories, code cleanup
+- force-add untracked template rule file (MUST-completion-verification.md)
+- audit follow-up — template sync + code cleanup + test alignment
+- deep audit findings — hooks integrity + eval-core parser safety
+- sync templates with source — R011 memory sections + session-env-check CI block
+- security audit CI compatibility with bun workspaces
+
+## [0.37.2] - 2026-03-16
+
+### Added
+- remove Claude Native Check CI workflow
+
+## [0.37.1] - 2026-03-16
+
+### Added
+- activate codex-exec auto-delegation in research and routing skills
+
+### Changed
+- bump version to 0.37.1
+
+## [0.37.0] - 2026-03-16
+
+### Added
+- v0.37.0 structure optimization — 6 issues across token efficiency and workflow
+
+## [0.36.2] - 2026-03-15
+
+### Fixed
+- sync missing hook scripts and hooks.json to templates
+- add template-sync CI job to catch .claude/ <-> templates/ desync (#382)
+
+## [0.36.1] - 2026-03-15
+
+### Added
+- replace Claude API release-notes CI with in-session skill
+
+### Fixed
+- add missing skills to templates for validate-docs CI
+
+## [0.36.0] - 2026-03-15
+
+### Added
+- release v0.36.0 — 26 issues across Harness Engineering + codespeak patterns
+
 ## [0.35.0] - 2026-03-14
 
 ### Added

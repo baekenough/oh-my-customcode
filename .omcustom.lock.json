@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.128.0",
-  "generatedAt": "2026-05-08T03:51:42.475Z",
-  "templateVersion": "0.128.0",
+  "generatorVersion": "0.129.0",
+  "generatedAt": "2026-05-08T04:15:55.057Z",
+  "templateVersion": "0.129.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -800,8 +800,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "55e7e08b9f57dd22f17649e4a319efe52b4a258e01d2900b3cb00511af3b6086",
-      "size": 5218,
+      "templateHash": "3f597c2d4ce1d99e6855a03b76816e3300e11da8e218eadbb1fe427ca8a62d2d",
+      "size": 7637,
       "component": "skills"
     },
     ".claude/skills/omcustom-takeover/SKILL.md": {
