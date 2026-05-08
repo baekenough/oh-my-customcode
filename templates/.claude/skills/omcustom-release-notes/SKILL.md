@@ -3,7 +3,7 @@ name: omcustom-release-notes
 description: Generate structured release notes from git history and closed issues within Claude Code session
 scope: harness
 user-invocable: true
-argument-hint: "<version> [--previous-tag <tag>]"
+argument-hint: "<version> [--previous-tag <tag>] | --backfill <range>"
 ---
 
 # Release Notes Generator
@@ -19,6 +19,7 @@ Replaces the CI-based `release-notes.yml` workflow that previously used Claude A
 ```
 /omcustom-release-notes 0.36.0
 /omcustom-release-notes 0.36.0 --previous-tag v0.35.3
+/omcustom-release-notes --backfill v0.36.0..v0.127.0
 ```
 
 ## Workflow
@@ -137,6 +138,56 @@ Behavior:
 
 This is **optional** — the skill's release-notes generation (Phases 1-4) works independently. Phase 5 only ensures CHANGELOG consistency for projects that maintain Keep a Changelog format.
 
+## Backfill Mode
+
+For projects with historical CHANGELOG.md gaps (releases shipped without `[Unreleased]` promotion), the skill provides a deterministic batch backfill.
+
+### Usage
+
+```bash
+python3 scripts/backfill_changelog.py <START_TAG>..<END_TAG> [--output FILE]
+```
+
+Or invoked via skill: `/omcustom-release-notes --backfill v0.36.0..v0.127.0`
+
+### Behavior
+
+For each tag in range (in reverse semver order), the script:
+
+1. Determines previous tag (semver-immediately-before)
+2. Reads `git log <prev>..<tag> --pretty=%s --no-merges` to extract commit subjects
+3. Maps Conventional Commits prefix to Keep a Changelog category:
+   - `feat` → Added
+   - `fix` → Fixed
+   - `security` → Security
+   - `perf`, `refactor`, `chore`, `build`, `deps`, `revert` → Changed
+   - `docs`, `test`, `ci`, `style` → SKIPPED (internal-only, unless `!` breaking marker)
+   - Non-conventional → Changed (full subject as message)
+4. Special handling for `release:` / `chore(release):` commits — extracts description after version (e.g., `release: v0.127.0 — DESC` → DESC under Changed)
+5. Extracts issue refs (`#NNN`) and appends as `(#1, #2)` suffix
+6. Renders per-version section with categories sorted: Added, Changed, Fixed, Security, Removed, Deprecated
+7. Empty sections (zero qualifying commits) render as `_No user-visible changes (internal only)._`
+
+### Output
+
+Markdown text suitable for prepending to CHANGELOG.md between `## [Unreleased]` and the first existing version section.
+
+### When to Use
+
+- Adopting Keep a Changelog format on an existing project with N historical releases
+- Recovering after a CHANGELOG drift period
+- One-time bulk operation — afterward, use Phase 5 promotion (forward-looking) for ongoing maintenance
+
+### Limitations
+
+- Only as good as commit message quality. Squash-merge release commits typically contain only the PR title — backfill produces 1-2 lines per version, not exhaustive change lists
+- Non-conventional or pre-Conventional Commits adoption commits land in Changed
+- Manual curation may improve specific entries; the script provides the baseline
+
+### Tests
+
+`tests/scripts/test_backfill_changelog.py` covers parser correctness, semver sorting, category mapping, edge cases (40 tests).
+
 ## Integration
 
 This skill is designed to be used during the release process:
@@ -155,6 +206,7 @@ mgr-gitnerd: gh release create           ->  create release with notes
 - Resource count changes auto-detected from CLAUDE.md history
 - Phase 5 promotion is idempotent — safe to re-run; skips if `## [VERSION]` exists
 - See `CONTRIBUTING.md` for [Unreleased] entry guidance during PR authoring
+- For one-time historical backfill, see Backfill Mode above (script: `scripts/backfill_changelog.py`)
 
 ## Permission Mode
 
