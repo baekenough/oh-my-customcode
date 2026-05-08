@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.127.0",
-  "generatedAt": "2026-05-08T01:55:20.300Z",
-  "templateVersion": "0.127.0",
+  "generatorVersion": "0.128.0",
+  "generatedAt": "2026-05-08T03:51:42.475Z",
+  "templateVersion": "0.128.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -800,8 +800,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "fe6aa62a2bb5c82a3e66ed7c0cf7be6a8d10f61dc1e329ba228a66112111f109",
-      "size": 3311,
+      "templateHash": "55e7e08b9f57dd22f17649e4a319efe52b4a258e01d2900b3cb00511af3b6086",
+      "size": 5218,
       "component": "skills"
     },
     ".claude/skills/omcustom-takeover/SKILL.md": {
@@ -1070,8 +1070,8 @@
       "component": "skills"
     },
     ".claude/skills/goal/SKILL.md": {
-      "templateHash": "4b2debf2b7ee0c2775ca22d09c605b972b8287e7ef6ba2797a13d6215b914517",
-      "size": 3979,
+      "templateHash": "ab1826c0aa396d37b6c2dc805fe2db6fffdf27070811322a2a7a0183a688a90c",
+      "size": 3994,
       "component": "skills"
     },
     ".claude/hooks/PARALLEL-GROUPS.md": {
