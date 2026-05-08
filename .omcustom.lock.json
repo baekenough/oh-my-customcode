@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.126.1",
-  "generatedAt": "2026-05-02T02:39:16.625Z",
-  "templateVersion": "0.126.1",
+  "generatorVersion": "0.127.0",
+  "generatedAt": "2026-05-08T01:55:20.300Z",
+  "templateVersion": "0.127.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -1067,6 +1067,11 @@
     ".claude/skills/help/SKILL.md": {
       "templateHash": "4ef9e09008c4433a3db5d5a75a671551a56f03a4c4757a23772e6a975a2fdbeb",
       "size": 3106,
+      "component": "skills"
+    },
+    ".claude/skills/goal/SKILL.md": {
+      "templateHash": "4b2debf2b7ee0c2775ca22d09c605b972b8287e7ef6ba2797a13d6215b914517",
+      "size": 3979,
       "component": "skills"
     },
     ".claude/hooks/PARALLEL-GROUPS.md": {
