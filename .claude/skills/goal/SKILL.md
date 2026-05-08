@@ -1,6 +1,7 @@
 ---
 name: goal
 description: Disciplined goal-to-execution workflow for any user task. Parses objective, asks only for materially missing requirements via ambiguity-gate, inspects repo via idea, plans via sdd-dev or deep-plan, executes safely under project conventions, verifies completion per R020, and reports changed files with evidence. Use when user invokes /goal <task>.
+version: 1.0.0
 scope: core
 ---
 
