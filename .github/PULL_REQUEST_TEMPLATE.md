@@ -31,3 +31,4 @@
 - [ ] I have added tests that prove my fix/feature works
 - [ ] All tests pass with 100% coverage
 - [ ] My changes generate no new warnings
+- [ ] I have added a `## [Unreleased]` entry to `CHANGELOG.md` for user-visible changes (skip for internal/refactor-only PRs)

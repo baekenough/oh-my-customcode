@@ -145,6 +145,21 @@ feature/another ──────┘                                           
    git branch -d feature/my-feature
    ```
 
+#### Update CHANGELOG.md
+
+When your PR introduces user-visible behavior changes, add a one-line entry under `## [Unreleased]` in `CHANGELOG.md`. Use [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) categories:
+
+- **Added** — new features
+- **Fixed** — bug fixes
+- **Changed** — non-breaking changes
+- **Removed** — removed features
+- **Deprecated** — soon-to-be-removed
+- **Security** — vulnerability fixes
+
+Skip this for internal-only changes (refactors, test-only commits, build tweaks).
+
+The release process automatically promotes `## [Unreleased]` to `## [vX.Y.Z]` via the `omcustom-release-notes` skill (Phase 5). See `.claude/skills/omcustom-release-notes/SKILL.md`.
+
 #### Release Process
 
 **Important: All npm publishing happens automatically via CI after PR merge. Never push tags or run `npm publish` manually.**
@@ -165,10 +180,12 @@ The release pipeline is fully automated:
    git checkout -b release/x.y.z
    ```
 
-2. **Bump version and update CHANGELOG:**
+2. **Bump version and promote CHANGELOG [Unreleased] section:**
    ```bash
    npm version [major|minor|patch]
-   # Update CHANGELOG.md
+   # Recommended: invoke /omcustom-release-notes <version> to auto-promote [Unreleased]
+   # Or manually: replace `## [Unreleased]` header with empty `## [Unreleased]`
+   # plus a new `## [vX.Y.Z] - YYYY-MM-DD` section containing the moved entries.
    git add .
    git commit -m "chore: prepare release x.y.z"
    ```
