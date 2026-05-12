@@ -54,6 +54,8 @@ if [ "$cost_pct" -ge 100 ] && [ "$last_level" != "100" ]; then
   echo "[Cost Cap] Session cost \$${cost_usd} has reached cap \$${COST_CAP} (${cost_pct}%)" >&2
   echo "[Cost Cap] Consider wrapping up or increasing CLAUDE_COST_CAP" >&2
   echo "100" > "$ADVISORY_FILE"
+  echo "$input"
+  exit 2
 elif [ "$cost_pct" -ge 90 ] && [ "$last_level" != "90" ] && [ "$last_level" != "100" ]; then
   echo "[Cost Cap] Session cost \$${cost_usd} at 90% of cap \$${COST_CAP}" >&2
   echo "[Cost Cap] Ecomode recommended — consider /compact" >&2
