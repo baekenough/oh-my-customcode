@@ -78,6 +78,16 @@ _MERGE_PATTERNS: tuple[str, ...] = (
     "Merge branch",
 )
 
+#: Release-prep noise patterns to skip (both as start-of-line anchored regex).
+#: These are version-bump and plan commits that leak into changelogs.
+_RELEASE_PREP_RE = re.compile(
+    r"^(?:"
+    r"bump version to \d+\.\d+\.\d+"      # "bump version to X.Y.Z"
+    r"|v\d+\.\d+\.\d+ plan\b"             # "vX.Y.Z plan ..."
+    r")",
+    re.IGNORECASE,
+)
+
 
 # ---------------------------------------------------------------------------
 # Public helpers (importable by tests)
@@ -85,20 +95,28 @@ _MERGE_PATTERNS: tuple[str, ...] = (
 
 
 def extract_issue_refs(text: str) -> list[str]:
-    """Return all issue numbers (as strings) found in *text*.
+    """Return deduplicated issue numbers (as strings) found in *text*.
 
     Args:
         text: Arbitrary string, e.g. a commit subject.
 
     Returns:
-        Ordered list of issue number strings (no ``#`` prefix).
+        Ordered, deduplicated list of issue number strings (no ``#`` prefix).
 
     Example::
 
         >>> extract_issue_refs("fix crash (#42, #99)")
         ['42', '99']
+        >>> extract_issue_refs("thing (#42) (#42)")
+        ['42']
     """
-    return _ISSUE_REF_RE.findall(text)
+    seen: set[str] = set()
+    result: list[str] = []
+    for num in _ISSUE_REF_RE.findall(text):
+        if num not in seen:
+            seen.add(num)
+            result.append(num)
+    return result
 
 
 def parse_commit(subject: str) -> tuple[Optional[str], str, list[str]]:
@@ -114,14 +132,18 @@ def parse_commit(subject: str) -> tuple[Optional[str], str, list[str]]:
           ``None`` if the commit should be skipped entirely.
         * ``message`` — cleaned human-readable description.  Breaking
           changes are prefixed with ``**BREAKING**: ``.
-        * ``refs`` — list of issue numbers extracted from the subject.
+        * ``refs`` — deduplicated list of issue numbers extracted from the
+          subject.
 
     The caller is responsible for assembling the final formatted line.
     """
     # Skip merge commits unconditionally.
-    for pattern in _MERGE_PATTERNS:
-        if subject.startswith(pattern):
-            return None, subject, []
+    if subject.startswith(_MERGE_PATTERNS):
+        return None, subject, []
+
+    # Skip release-prep noise commits (version bumps, plan commits).
+    if _RELEASE_PREP_RE.match(subject):
+        return None, subject, []
 
     refs = extract_issue_refs(subject)
 
@@ -131,7 +153,7 @@ def parse_commit(subject: str) -> tuple[Optional[str], str, list[str]]:
         is_breaking = breaking == "!"
 
         # Handle release commits: extract human description after version stamp.
-        if commit_type in ("release",) or (
+        if commit_type == "release" or (
             commit_type == "chore" and _scope in ("(release)",)
         ):
             desc = _RELEASE_VERSION_RE.sub("", raw_desc, count=1)
@@ -148,6 +170,10 @@ def parse_commit(subject: str) -> tuple[Optional[str], str, list[str]]:
         if category is None:
             # Unknown conventional prefix → treat as Changed.
             category = "Changed"
+
+        # Classify "add"/"introduce" keywords as "Added" when not already mapped.
+        if category == "Changed" and _looks_like_addition(raw_desc):
+            category = "Added"
 
         # Strip issue refs from raw_desc; they are returned separately.
         desc = _strip_issue_refs(raw_desc)
@@ -226,7 +252,7 @@ def sort_tags_semver(tags: list[str]) -> list[str]:
         try:
             return tuple(int(p) for p in parts)
         except ValueError:
-            # Non-semver sorts last (treated as version 0.0.0).
+            # Non-semver sorts last (sentinel matches _tags_in_range).
             return (-1, -1, -1)
 
     return sorted(tags, key=_key, reverse=True)
@@ -235,6 +261,16 @@ def sort_tags_semver(tags: list[str]) -> list[str]:
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
+
+def _looks_like_addition(desc: str) -> bool:
+    """Return True if *desc* reads like a new feature/skill introduction.
+
+    Heuristic: subjects starting with "add " or "introduce " should map to
+    "Added" rather than the default "Changed" category.
+    """
+    lower = desc.strip().lower()
+    return lower.startswith(("add ", "introduce ", "adds ", "introduces "))
 
 
 def _strip_issue_refs(text: str) -> str:
@@ -272,6 +308,9 @@ def _get_release_date(tag: str) -> str:
 
     Falls back to ``git log`` author date if ``gh`` is unavailable or the
     release does not exist on GitHub.
+
+    If the git fallback also fails (e.g., invalid tag, detached HEAD, empty
+    repo), prints a warning and returns ``"UNKNOWN-DATE"``.
     """
     try:
         raw = subprocess.check_output(
@@ -283,16 +322,34 @@ def _get_release_date(tag: str) -> str:
             stderr=subprocess.DEVNULL,
             text=True,
         ).strip()
-        if raw:
+        # jq outputs the literal string "null" when the field is absent.
+        if raw and raw != "null":
             return raw[:10]
     except (subprocess.CalledProcessError, FileNotFoundError):
         pass
 
-    raw = subprocess.check_output(
-        ["git", "log", "-1", "--format=%aI", tag],
-        text=True,
-    ).strip()
-    return raw[:10]
+    # Git fallback — guard against invalid tags / detached HEAD / empty repo.
+    try:
+        raw = subprocess.check_output(
+            ["git", "log", "-1", "--format=%aI", tag],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+        if raw:
+            return raw[:10]
+        print(
+            f"Warning: git log returned empty output for tag {tag!r}. "
+            "Using UNKNOWN-DATE.",
+            file=sys.stderr,
+        )
+        return "UNKNOWN-DATE"
+    except subprocess.CalledProcessError as exc:
+        print(
+            f"Warning: could not determine date for tag {tag!r}: {exc}. "
+            "Using UNKNOWN-DATE.",
+            file=sys.stderr,
+        )
+        return "UNKNOWN-DATE"
 
 
 def _get_commits_in_range(prev_tag: str, tag: str) -> list[str]:
@@ -321,13 +378,15 @@ def _tags_in_range(all_tags: list[str], start: str, end: str) -> list[str]:
     sorted_all = sort_tags_semver(all_tags)
 
     # Build a semver-comparable key for boundary comparison.
+    # Sentinel (-1,-1,-1) matches sort_tags_semver's non-semver fallback,
+    # ensuring consistent treatment across both functions.
     def _semver(tag: str) -> tuple[int, ...]:
         cleaned = tag.lstrip("v")
         parts = cleaned.split(".")
         try:
             return tuple(int(p) for p in parts[:3])
         except ValueError:
-            return (0, 0, 0)
+            return (-1, -1, -1)
 
     start_key = _semver(start)
     end_key = _semver(end)
@@ -412,6 +471,13 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     start_tag, end_tag = args.range.split("..", 1)
 
+    # Validate that neither side of the range is empty.
+    if not start_tag or not end_tag:
+        sys.exit(
+            f"Error: both START and END must be non-empty in range, "
+            f"got: {args.range!r}"
+        )
+
     all_tags = _list_all_tags()
     sorted_all = sort_tags_semver(all_tags)
 
@@ -435,7 +501,6 @@ def main(argv: Optional[list[str]] = None) -> None:
         date = _get_release_date(tag)
         version = tag.lstrip("v")
 
-        subjects: list[str]
         if prev_ref:
             subjects = _get_commits_in_range(prev_ref, tag)
         else:
