@@ -12,6 +12,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 |------|-----------|-------|----------|
 | Hard Block | PreToolUse hook, exit 2 | stage-blocker, dev-server tmux, rule-deletion-guard | Prevents tool execution |
 | Soft Block | Stop hook prompt | R011 session-end saves | Auto-performs then approves |
+| Conversation Block | PostToolUse hook + `continueOnBlock` (CC v2.1.139+), exit 2 | stuck-detector, context-budget-advisor, cost-cap-advisor | Feeds rejection reason into conversation; Claude continues with awareness |
 | Advisory | PostToolUse hooks | R007, R008, R009, R010, R018 | Warns via stderr, never blocks |
 | Prompt-based | CLAUDE.md + rules/ + PostCompact | All MUST rules | Behavioral guidance in context |
 
@@ -22,7 +23,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 3. **Composability**: External skills and internal rules can coexist without deadlocks
 4. **PostCompact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction
 
-## Hard Enforcement Candidates — R010 git-delegation-guard (conditional), R007/R008 (conditional). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
+## Hard Enforcement Candidates — R010 git-delegation-guard (conditional), R007/R008 UserPromptSubmit/PreToolUse hook (multi-turn gap candidate, #1096). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
 
 <!-- DETAIL: Hard Enforcement Candidates (Future)
 If advisory enforcement proves insufficient for specific rules, these are candidates for promotion to hard-block:

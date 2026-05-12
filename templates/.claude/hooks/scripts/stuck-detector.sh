@@ -186,7 +186,7 @@ if [ "$hard_block" = true ]; then
     HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))
     echo "[Hook Perf] $(basename "$0"): ${HOOK_MS}ms" >> "/tmp/.claude-hook-perf-${PPID}.log"
   fi
-  exit 1
+  exit 2
 fi
 
 # Pass through

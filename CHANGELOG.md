@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.133.0] - 2026-05-13
+
+### Added
+- R021 Enforcement Tiers에 `Conversation Block` tier 추가 — PostToolUse hook + `continueOnBlock` (CC v2.1.139+) 패턴 문서화 (#1125)
+- `continueOnBlock: true` 적용 to 3 PostToolUse advisory hooks:
+  - `stuck-detector.sh` — HARD_BLOCK_THRESHOLD 도달 시 stderr-only → conversation feedback (exit 2)
+  - `context-budget-advisor.sh` — task-type threshold 도달 시 ecomode 활성화 신호 (R013 통합)
+  - `cost-cap-advisor.sh` — cost cap 100% 도달 시 wrap-up 신호
+
+### Changed
+- `stuck-detector.sh` hard block exit code: `exit 1` → `exit 2` (CC hook rejection 규약 정렬, continueOnBlock 페어링)
+
+### Investigated
+- Hook `args: string[]` exec form 마이그레이션 검토 (#1124): 현재 hooks.json은 jq 추출 패턴으로 path-safety 모범 사례 준수 — 마이그레이션 실효 후보 ZERO. 신규 hook 작성 가이드라인만 향후 추가 권고.
+
 ## [0.132.0] - 2026-05-12
 
 ### Added
