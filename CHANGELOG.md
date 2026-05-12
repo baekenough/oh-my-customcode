@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.130.0] - 2026-05-12
+
+### Changed
+- `goal` 스킬을 `omcustom:goal` namespace로 rename — CC v2.1.139 네이티브 `/goal` 명령과의 슬래시 라우팅 shadowing 해소 (#1123)
+
+### Added
+- CC v2.1.139 신규 명령 (`claude agents`, `/scroll-speed`, `claude plugin details`, `/mcp` reconnect 개선, transcript navigation, `/context all` 정확도 개선) 온보딩 가이드 추가 to `guides/claude-code/15-version-compatibility.md` (#1126)
+
+### Dependencies
+- @anthropic-ai/sdk: 0.92.0 → 0.95.2 (dev dependency, dependabot #1121)
+
+## [0.129.0] - 2026-05-08
+
+### Changed
+- CHANGELOG.md historical backfill v0.36.0..v0.127.0 (#1111, #1115)
+
+## [0.128.0] - 2026-05-08
+
+### Changed
+- forward-looking CHANGELOG [Unreleased] policy (#1113, #1114)
+
 ## [0.127.0] - 2026-05-08
 
 ### Changed
