@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.130.0] - 2026-05-12
+
+### Fixed
+
+- **scripts/backfill_changelog.py robustness** (#1116)
+  - `_get_release_date` git fallback wrapped in try/except CalledProcessError — no more uncaught traceback on bad tags / detached HEAD / empty repo
+  - Unified non-semver tag sentinel to `(-1,-1,-1)` across `sort_tags_semver` and `_tags_in_range._semver` — pre-release tags like `v1.0.0-rc1` no longer leak into ranges unexpectedly
+  - gh jq null-string guard before recording `publishedAt`
+  - Empty `start_tag` validation in `main()` (no more silent `(0,0,0)` fallback)
+  - Python idioms: tuple-direct `startswith`, single-element tuple removal, bare annotation cleanup
+- **CHANGELOG.md backfill cosmetic polish** (#1117)
+  - `_RELEASE_PREP_RE` filters noise commits like "bump version to X.Y.Z" and "vX.Y.Z plan"
+  - `extract_issue_refs` deduplicates PR refs (`(#1083) (#1083)` → `#1083`)
+  - `_looks_like_addition` heuristic classifies "add"/"introduce" prefixed commits as `### Added` instead of `### Changed`
+
+### Maintenance
+
+- Claude Code v2.1.136 release reviewed (#1118) — no oh-my-customcode changes required
+- Claude Code v2.1.137 release reviewed (#1119) — no oh-my-customcode changes required
+- Claude Code v2.1.138 release reviewed (#1120) — no oh-my-customcode changes required
+
+### Tests
+
+- 57 unittest cases all pass (`tests/scripts/test_backfill_changelog.py`)
+- New test classes: `TestGetReleaseDate`, `TestMainRangeValidation`
+- Expanded coverage: `TestExtractIssueRefs`, `TestParseCommit`, `TestSortTagsSemver`
+
 ## [0.127.0] - 2026-05-08
 
 ### Changed
