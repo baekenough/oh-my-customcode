@@ -229,8 +229,8 @@ describe('stuck-detector.sh', () => {
       const input = makeErrorInput();
       const results = await runNTimesAll(input, 3);
       const third = results[2];
-      // At threshold=3, hard-block fires (exit 1). Advisory fires first (in stderr), then hard-block.
-      expect(third.exitCode).toBe(1);
+      // At threshold=3, hard-block fires (exit 2). Advisory fires first (in stderr), then hard-block.
+      expect(third.exitCode).toBe(2);
       expect(third.stderr).toContain('[Stuck Detection] HARD BLOCK');
     });
 
@@ -255,13 +255,13 @@ describe('stuck-detector.sh', () => {
     it('should hard-block at 4 consecutive identical errors (threshold=3)', async () => {
       const input = makeErrorInput();
       const result = await runNTimes(input, 4);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
-    it('should hard-block (exit 1) when same error hash appears 3 consecutive times', async () => {
+    it('should hard-block (exit 2) when same error hash appears 3 consecutive times', async () => {
       const input = makeErrorInput();
       const result = await runNTimes(input, 3);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should emit HARD BLOCK message to stderr on 3rd consecutive same-error', async () => {
@@ -279,7 +279,7 @@ describe('stuck-detector.sh', () => {
     it('should still pass stdin to stdout even when hard-blocking', async () => {
       const input = makeErrorInput();
       const result = await runNTimes(input, 3);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stdout.trim()).toBe(input);
     });
 
@@ -342,8 +342,8 @@ describe('stuck-detector.sh', () => {
       const input = makeEditInput();
       const results = await runNTimesAll(input, 3);
       const third = results[2];
-      // At threshold=3, hard-block fires (exit 1).
-      expect(third.exitCode).toBe(1);
+      // At threshold=3, hard-block fires (exit 2).
+      expect(third.exitCode).toBe(2);
       expect(third.stderr).toContain('[Stuck Detection] HARD BLOCK');
     });
 
@@ -367,10 +367,10 @@ describe('stuck-detector.sh', () => {
       expect(result.stderr).toContain('3');
     });
 
-    it('should hard-block (exit 1) when same file edited 3 consecutive times', async () => {
+    it('should hard-block (exit 2) when same file edited 3 consecutive times', async () => {
       const input = makeEditInput();
       const result = await runNTimes(input, 3);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should emit HARD BLOCK message when same file edited 3 consecutive times', async () => {
@@ -389,7 +389,7 @@ describe('stuck-detector.sh', () => {
       const input = makeEditInput();
       const result = await runNTimes(input, 4);
       // 4 >= HARD_BLOCK_THRESHOLD=3, so hard block
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should also trigger advisory for Write tool on same file', async () => {
@@ -422,13 +422,13 @@ describe('stuck-detector.sh', () => {
     it('should hard-block on 4 consecutive same tool+target calls (threshold=3)', async () => {
       const input = makeBashInput();
       const result = await runNTimes(input, 4);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
-    it('should hard-block (exit 1) on 3 consecutive same tool+target calls', async () => {
+    it('should hard-block (exit 2) on 3 consecutive same tool+target calls', async () => {
       const input = makeBashInput();
       const result = await runNTimes(input, 3);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should emit HARD BLOCK message on 3rd consecutive same tool+target', async () => {
@@ -592,30 +592,30 @@ describe('stuck-detector.sh', () => {
       expect(result.exitCode).toBe(0);
     });
 
-    it('should hard-block (exit 1) at count=3 (same file) — at threshold', async () => {
+    it('should hard-block (exit 2) at count=3 (same file) — at threshold', async () => {
       const input = makeInput({ tool_name: 'Edit', file_path: '/src/app.ts' });
       const result = await runNTimes(input, 3);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
-    it('should hard-block (exit 1) at count=4 (same file) — above threshold', async () => {
+    it('should hard-block (exit 2) at count=4 (same file) — above threshold', async () => {
       const input = makeInput({ tool_name: 'Edit', file_path: '/src/app.ts' });
       const result = await runNTimes(input, 4);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should emit HARD BLOCK (not just advisory) at count=3', async () => {
       const input = makeInput({ tool_name: 'Edit', file_path: '/src/app.ts' });
       const results = await runNTimesAll(input, 3);
       const third = results[2];
-      expect(third.exitCode).toBe(1);
+      expect(third.exitCode).toBe(2);
       expect(third.stderr).toContain('[Stuck Detection] HARD BLOCK');
     });
 
     it('should emit HARD BLOCK at count=4', async () => {
       const input = makeInput({ tool_name: 'Edit', file_path: '/src/app.ts' });
       const result = await runNTimes(input, 4);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain('[Stuck Detection] HARD BLOCK');
     });
 
@@ -637,10 +637,10 @@ describe('stuck-detector.sh', () => {
   // -----------------------------------------------------------------
 
   describe('at threshold behavior (count = 3)', () => {
-    it('should hard-block (exit 1) at count=3 for same file consecutive edits', async () => {
+    it('should hard-block (exit 2) at count=3 for same file consecutive edits', async () => {
       const input = makeInput({ tool_name: 'Edit', file_path: '/src/stuck.ts' });
       const result = await runNTimes(input, 3);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should emit HARD BLOCK header to stderr at count=3', async () => {
@@ -682,14 +682,14 @@ describe('stuck-detector.sh', () => {
         output: 'ReferenceError: x is not defined',
       });
       const result = await runNTimes(input, 3);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should hard-block at count=3 for same tool+target', async () => {
       // Bash with a command (resolves as file_path fallback for tool_input.command)
       const input = makeInput({ tool_name: 'Bash', file_path: '/scripts/deploy.sh' });
       const result = await runNTimes(input, 3);
-      expect(result.exitCode).toBe(1);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should transition from no-block to hard-block between count=2 and count=3', async () => {
@@ -700,8 +700,8 @@ describe('stuck-detector.sh', () => {
       expect(results[1].exitCode).toBe(0);
       expect(results[1].stderr).not.toContain('HARD BLOCK');
 
-      // count=3: hard-block (exit 1)
-      expect(results[2].exitCode).toBe(1);
+      // count=3: hard-block (exit 2)
+      expect(results[2].exitCode).toBe(2);
       expect(results[2].stderr).toContain('[Stuck Detection] HARD BLOCK');
     });
   });

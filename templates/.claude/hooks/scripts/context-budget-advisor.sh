@@ -85,6 +85,20 @@ if [ "$tool_count" -gt 0 ] && [ $((tool_count % 25)) -eq 0 ]; then
   fi
 fi
 
+# continueOnBlock: emit conversation feedback when task-type threshold is reached (once per session)
+BLOCK_FILE="/tmp/.claude-budget-blocked-${PPID}"
+if [ "$tool_count" -ge "$THRESHOLD" ] && [ ! -f "$BLOCK_FILE" ]; then
+  touch "$BLOCK_FILE"
+  echo "[Context Budget] Threshold ${THRESHOLD}% reached for ${task_type} task — activate ecomode (R013)" >&2
+  HOOK_END=$(date +%s%N 2>/dev/null || echo 0)
+  if [ "$HOOK_START" != "0" ] && [ "$HOOK_END" != "0" ]; then
+    HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))
+    echo "[Hook Perf] $(basename "$0"): ${HOOK_MS}ms" >> "/tmp/.claude-hook-perf-${PPID}.log"
+  fi
+  echo "$input"
+  exit 2
+fi
+
 # R010 compliance heartbeat (every 50 tool calls)
 if [ "$tool_count" -gt 0 ] && [ $((tool_count % 50)) -eq 0 ]; then
   echo "[Compliance] R007: Agent ID required | R008: Tool ID required | R010: Delegate writes" >&2

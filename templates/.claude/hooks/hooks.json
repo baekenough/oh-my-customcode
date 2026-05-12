@@ -411,7 +411,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/context-budget-advisor.sh"
+            "command": "bash .claude/hooks/scripts/context-budget-advisor.sh",
+            "continueOnBlock": true
           }
         ],
         "description": "Context budget advisor \u2014 track tool usage patterns and advise ecomode activation"
@@ -421,7 +422,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stuck-detector.sh"
+            "command": "bash .claude/hooks/scripts/stuck-detector.sh",
+            "continueOnBlock": true
           }
         ],
         "description": "Detect repetitive failure loops and advise recovery strategies"
@@ -431,7 +433,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/cost-cap-advisor.sh"
+            "command": "bash .claude/hooks/scripts/cost-cap-advisor.sh",
+            "continueOnBlock": true
           }
         ],
         "description": "Advisory cost cap monitoring \u2014 warn when session cost approaches configurable limit"
