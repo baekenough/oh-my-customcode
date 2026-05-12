@@ -49,6 +49,36 @@ CLAUDE.md
 .mcp.json
 test-validator.ts
 
+# Stray agent-memory directories from subproject execution
+**/agent-memory/
+!.claude/agent-memory/
+!.claude/agent-memory-local/
+
+# Agent memory subdirs (per-agent session artifacts) — except tracked ones
+.claude/agent-memory/arch-documenter/
+.claude/agent-memory/de-pipeline-expert/
+.claude/agent-memory/fe-svelte-agent/
+.claude/agent-memory/lang-rust-expert/
+.claude/agent-memory/lang-typescript-expert/
+.claude/agent-memory/mgr-creator/
+.claude/agent-memory/mgr-gitnerd/
+.claude/agent-memory/sys-memory-keeper/
+
+# Python caches
+__pycache__/
+**/__pycache__/
+
+# Test output artifacts
+test-results/
+packages/*/test-results/
+
+# Superpowers plugin session artifacts
+docs/superpowers/plans/
+docs/superpowers/specs/
+
+# claude-mem MCP context injection file
+AGENTS.md
+
 # Git worktrees
 .worktrees/
 
@@ -57,3 +87,4 @@ target/
 *.so
 *.pyd
 *.dylib
+.omx/
