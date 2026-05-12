@@ -6,7 +6,7 @@ Run with:
 """
 
 import sys
-import types
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -29,6 +29,9 @@ from scripts.backfill_changelog import (  # noqa: E402
     extract_issue_refs,
     sort_tags_semver,
     CATEGORY_ORDER,
+    _get_release_date,
+    _tags_in_range,
+    main,
 )
 
 
@@ -145,6 +148,40 @@ class TestParseCommit(unittest.TestCase):
         self.assertIn("add pagination endpoint", msg)
         self.assertEqual(refs, ["55"])
 
+    # --- New addition-heuristic tests (#1117-L2) ---
+
+    def test_chore_with_add_keyword_maps_to_added(self):
+        """chore: commits whose description starts with 'add' should map to Added."""
+        cat, msg, refs = parse_commit("chore(skill): add version frontmatter (#42)")
+        self.assertEqual(cat, "Added")
+
+    def test_chore_with_introduce_keyword_maps_to_added(self):
+        """chore: commits whose description starts with 'introduce' → Added."""
+        cat, msg, refs = parse_commit("chore: introduce new logging framework")
+        self.assertEqual(cat, "Added")
+
+    def test_chore_without_add_keyword_stays_changed(self):
+        """Regular chore commits without addition keywords stay Changed."""
+        cat, msg, refs = parse_commit("chore: update CI config")
+        self.assertEqual(cat, "Changed")
+
+    # --- Release-prep noise skip tests (#1117-M1) ---
+
+    def test_release_prep_bump_version_skipped(self):
+        """'bump version to X.Y.Z' should be silently skipped."""
+        cat, msg, refs = parse_commit("bump version to 0.125.0")
+        self.assertIsNone(cat)
+
+    def test_release_prep_plan_skipped(self):
+        """'vX.Y.Z plan ...' should be silently skipped."""
+        cat, msg, refs = parse_commit("v0.125.0 plan + permissions.defaultMode")
+        self.assertIsNone(cat)
+
+    def test_release_prep_plan_case_insensitive(self):
+        """Release-prep pattern match is case-insensitive."""
+        cat, msg, refs = parse_commit("Bump version to 0.130.0")
+        self.assertIsNone(cat)
+
 
 # ---------------------------------------------------------------------------
 # extract_issue_refs tests
@@ -175,6 +212,19 @@ class TestExtractIssueRefs(unittest.TestCase):
         refs = extract_issue_refs("do something (#1) (#2)")
         self.assertIn("1", refs)
         self.assertIn("2", refs)
+
+    # --- Deduplication test (#1117-L1) ---
+
+    def test_duplicate_refs_deduplicated(self):
+        """Duplicate PR refs like (#1083) (#1083) must be deduplicated."""
+        refs = extract_issue_refs("some change (#1083) (#1083)")
+        self.assertEqual(refs, ["1083"])
+        self.assertEqual(len(refs), 1)
+
+    def test_duplicate_refs_in_single_parens(self):
+        """Duplicates within a single paren group are also collapsed."""
+        refs = extract_issue_refs("thing (#42, #42)")
+        self.assertEqual(refs, ["42"])
 
 
 # ---------------------------------------------------------------------------
@@ -276,12 +326,122 @@ class TestSortTagsSemver(unittest.TestCase):
         # Valid semver tags appear first in descending order
         self.assertEqual(result[0], "v2.0.0")
         self.assertEqual(result[1], "v1.0.0")
+        # Non-semver tag lands at the end
+        self.assertEqual(result[2], "not-a-version")
+
+    def test_non_semver_excluded_from_range(self):
+        """Non-semver tags with sentinel (-1,-1,-1) must NOT be included in ranges."""
+        all_tags = ["v1.0.0", "v2.0.0", "not-a-version"]
+        result = _tags_in_range(all_tags, "v1.0.0", "v2.0.0")
+        self.assertIn("v2.0.0", result)
+        self.assertNotIn("not-a-version", result)
+
+    def test_prerelease_tag_tolerated(self):
+        """Tags like v1.0.0-rc1 (non-pure-semver) are tolerated without crashing."""
+        tags = ["v1.0.0", "v1.0.0-rc1", "v2.0.0"]
+        result = sort_tags_semver(tags)
+        self.assertEqual(result[0], "v2.0.0")
+        self.assertEqual(result[1], "v1.0.0")
+        # Pre-release tag sorts last (non-semver sentinel)
+        self.assertEqual(result[2], "v1.0.0-rc1")
 
     def test_empty_list(self):
         self.assertEqual(sort_tags_semver([]), [])
 
     def test_single_tag(self):
         self.assertEqual(sort_tags_semver(["v1.2.3"]), ["v1.2.3"])
+
+
+# ---------------------------------------------------------------------------
+# _get_release_date safety tests (#1116-H1, #1116-M2)
+# ---------------------------------------------------------------------------
+
+
+class TestGetReleaseDate(unittest.TestCase):
+    """Tests for _get_release_date error handling."""
+
+    def test_gh_null_publishedAt_falls_back_to_git(self):
+        """When gh returns 'null', should fall back to git log."""
+        def fake_check_output(cmd, **kwargs):
+            if cmd[0] == "gh":
+                return "null\n"
+            # git log fallback
+            return "2026-01-15T10:00:00+00:00\n"
+
+        with patch("subprocess.check_output", side_effect=fake_check_output):
+            date = _get_release_date("v1.0.0")
+        self.assertEqual(date, "2026-01-15")
+
+    def test_gh_empty_publishedAt_falls_back_to_git(self):
+        """When gh returns empty string, should fall back to git log."""
+        def fake_check_output(cmd, **kwargs):
+            if cmd[0] == "gh":
+                return "\n"
+            return "2026-02-20T00:00:00+00:00\n"
+
+        with patch("subprocess.check_output", side_effect=fake_check_output):
+            date = _get_release_date("v1.0.0")
+        self.assertEqual(date, "2026-02-20")
+
+    def test_git_log_failure_returns_unknown_date(self):
+        """CalledProcessError from git log should return UNKNOWN-DATE, not crash."""
+        def fake_check_output(cmd, **kwargs):
+            if cmd[0] == "gh":
+                raise subprocess.CalledProcessError(1, cmd)
+            # git also fails
+            raise subprocess.CalledProcessError(128, cmd)
+
+        with patch("subprocess.check_output", side_effect=fake_check_output):
+            date = _get_release_date("v-invalid-tag")
+        self.assertEqual(date, "UNKNOWN-DATE")
+
+    def test_git_log_empty_output_returns_unknown_date(self):
+        """Empty git log output should return UNKNOWN-DATE safely."""
+        def fake_check_output(cmd, **kwargs):
+            if cmd[0] == "gh":
+                raise FileNotFoundError
+            # git returns empty string (e.g., detached HEAD, wrong tag)
+            return "\n"
+
+        with patch("subprocess.check_output", side_effect=fake_check_output):
+            date = _get_release_date("v0.0.0")
+        self.assertEqual(date, "UNKNOWN-DATE")
+
+    def test_gh_valid_date_used_directly(self):
+        """Valid gh publishedAt date is used without falling back to git."""
+        call_count = {"git": 0}
+
+        def fake_check_output(cmd, **kwargs):
+            if cmd[0] == "gh":
+                return "2026-03-10T08:30:00Z\n"
+            call_count["git"] += 1
+            return "2020-01-01T00:00:00Z\n"
+
+        with patch("subprocess.check_output", side_effect=fake_check_output):
+            date = _get_release_date("v1.2.3")
+        self.assertEqual(date, "2026-03-10")
+        self.assertEqual(call_count["git"], 0)
+
+
+# ---------------------------------------------------------------------------
+# main() empty-range validation test (#1116-M3)
+# ---------------------------------------------------------------------------
+
+
+class TestMainRangeValidation(unittest.TestCase):
+    """Tests for main() argument validation."""
+
+    def test_empty_start_tag_exits(self):
+        """'..v1.0.0' (empty start) should exit with an error, not silently include all tags."""
+        with self.assertRaises(SystemExit) as ctx:
+            main(["..v1.0.0"])
+        self.assertNotEqual(ctx.exception.code, 0)
+
+    def test_empty_end_tag_exits(self):
+        """'v1.0.0..' (empty end) should exit with an error."""
+        with self.assertRaises(SystemExit) as ctx:
+            main(["v1.0.0.."])
+        self.assertNotEqual(ctx.exception.code, 0)
 
 
 # ---------------------------------------------------------------------------
