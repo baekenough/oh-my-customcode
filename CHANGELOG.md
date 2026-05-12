@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.132.0] - 2026-05-12
+
+### Added
+- Web UI guides browser routes — `/guides` 목록(검색·정렬) + `/guides/[name]` 상세 페이지. 기존 skill/guide creation 페이지(#469) 패턴과 일관 (`packages/serve/src/routes/guides/`)
+
 ## [0.131.0] - 2026-05-12
 
 > Note: v0.130.0 was published to npm from a stale `release` branch (containing the backfill_changelog work below). v0.131.0 unifies that lost work with the planned /goal rename + CC v2.1.139 docs work that was only on develop.
