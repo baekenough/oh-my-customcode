@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.134.0] - 2026-05-13
+
+### Added
+- CC v2.1.140 호환성 가이드 추가 to `guides/claude-code/15-version-compatibility.md` (#1134)
+  - Agent tool `subagent_type` 매칭 완화 (case-/separator-insensitive) — strict kebab-case 유지 정책으로 영향 없음
+  - `/goal` hanging fix — `omcustom:goal` namespace 별개, 영향 없음
+  - Settings/BG/Read tool/Plugin/`/loop` 안정성 fix 인벤토리
+  - Managed `extraKnownMarketplaces` 영속화 + Plugins default component folder 무시 경고 — P3 audit 권고 (별도 release)
+
+### Maintenance
+- Claude Code v2.1.140 release reviewed (#1134)
+
 ## [0.133.0] - 2026-05-13
 
 ### Added

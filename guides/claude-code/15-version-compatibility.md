@@ -101,6 +101,44 @@ transcript view에서 다음 단축키를 사용할 수 있습니다:
 
 **Action items**: None — 모두 additive. `/context all`로 fork skill 비용 정기 점검 권장.
 
+## v2.1.140 (2026-05-12) — 호환성 점검
+
+> Issue: #1134 — cc-release-monitor auto-create
+
+### Agent tool 개선
+
+- **`subagent_type` 매칭 완화**: case-insensitive + separator-insensitive — `"Code Reviewer"`가 `code-reviewer`로 정상 해석. oh-my-customcode는 이미 strict kebab-case 사용 → 영향 없음 (단, 외부 스킬이 비표준 표기로 호출해도 동작하게 됨).
+
+### Slash command 안정성
+
+- **`/goal` hanging fix**: `disableAllHooks` 또는 `allowManagedHooksOnly` 설정 환경에서 무한 대기 → 명확한 메시지 출력으로 변경. oh-my-customcode의 `omcustom:goal` 스킬은 네이티브 `/goal`과 별개 namespace이므로 직접 영향 없음.
+
+### Settings / Background service / Plugins
+
+- Settings 심볼릭 링크 hot-reload fix — `ConfigChange` hook 오발화 차단
+- `claude --bg` idle-exit 직전 connection drop fix
+- Background service 엔드포인트 보안 환경 startup timing 완화
+- Remote managed settings 401 → 토큰 force-refresh 후 1회 재시도
+- Managed `extraKnownMarketplaces` 자동 업데이트가 `known_marketplaces.json`에 영속화 — **관리형 환경에서 marketplace 자동 등록 정책 검토 필요**
+- `/loop` 중복 wakeup 제거 — 백그라운드 작업 완료 자동 알림 활용 시 효율 개선 (자동 적용)
+- Windows event-loop stall fix (`where.exe` 재호출 폭주) — macOS dev에는 영향 없음
+- `Read` tool offset이 공백/`+` 접두 문자열일 때 검증 통과 — 호출 안전성 개선
+- 네이티브 터미널 cursor focus 동작 개선 (UX)
+- **Plugins default component folder 무시 경고**: `plugin.json`이 동일 키를 명시할 때 default 폴더(`commands/` 등)가 무시되면 `/doctor`, `claude plugin list`, `/plugin`에서 경고. **oh-my-customcode plugin 패키지가 영향 가능 — `templates/marketplace.json` + plugin.json 구조 audit 권고**.
+
+### oh-my-customcode 연관 평가
+
+| 변경 | 영향 | Action |
+|------|------|--------|
+| `subagent_type` 매칭 완화 | 영향 없음 (strict kebab-case 유지) | None |
+| `/goal` hanging fix | omcustom:goal namespace 별개 | None |
+| Settings/BG/Read tool fixes | 사용자 환경 안정성 향상 | None (수동적 효익) |
+| `/loop` 효율 개선 | `loop` 스킬 사용 시 자동 적용 | None |
+| Managed `extraKnownMarketplaces` 영속화 | 관리형 정책 환경 영향 가능 | P3 audit |
+| Plugins default component folder 경고 | `plugin.json` 구조 audit 필요 | P3 audit |
+
+**Action items**: P3 audit 2건 (관리형 marketplace 정책 + plugin.json default folder 검증). 모두 후속 release 별도 처리.
+
 ---
 
 ## Action Items Summary
@@ -111,6 +149,7 @@ transcript view에서 다음 단축키를 사용할 수 있습니다:
 | v2.1.118 | Evaluate hooks `type: mcp_tool` for R022/R011 | P3 follow-up |
 | v2.1.119 | Audit `--print` CI with disallowedTools agents | P3 follow-up |
 | v2.1.139 | None (additive). `/context all` fork skill 비용 모니터링 권장 | P3 follow-up |
+| v2.1.140 | P3 audit: managed `extraKnownMarketplaces` 영속화 + plugin.json default folder 무시 경고 | P3 follow-up |
 
 ## References
 
@@ -118,6 +157,7 @@ transcript view에서 다음 단축키를 사용할 수 있습니다:
 - #968 — Claude Code v2.1.118 release note
 - #969 — Claude Code v2.1.119 release note
 - #1126 — Claude Code v2.1.139 신규 명령 문서화
+- #1134 — Claude Code v2.1.140 release note
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec
