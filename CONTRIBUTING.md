@@ -68,6 +68,39 @@ These defensive code paths exist for production safety, not for behavior specifi
 
 ---
 
+## Prerequisites
+
+The following tools are required (or strongly recommended) before you begin development.
+
+### jq (required for hook scripts)
+
+This project uses `jq` in hook scripts and verification utilities (e.g., `.claude/hooks/scripts/git-delegation-guard.sh`, `scripts/verify-version-sync.sh`). Hooks gracefully skip if `jq` is unavailable, but installing it enables full pre-commit validation.
+
+**Install:**
+
+| Platform | Command |
+|----------|---------|
+| macOS (Homebrew) | `brew install jq` |
+| Linux (apt) | `sudo apt-get install -y jq` |
+| Linux (yum/dnf) | `sudo yum install -y jq` |
+| Static binary | [stedolan.github.io/jq/download](https://stedolan.github.io/jq/download/) |
+
+**Verify:**
+
+```bash
+jq --version  # expect: jq-1.6 or later
+```
+
+### Other recommended tools
+
+| Tool | Purpose | Install |
+|------|---------|---------|
+| **gh** (GitHub CLI) | Issue/PR operations | [cli.github.com](https://cli.github.com/) |
+| **bun** | Runtime + test runner | [bun.sh](https://bun.sh/) |
+| **yq** (optional) | YAML inspection tool. Not required by current verification scripts (verify-wiki-sync.sh uses grep/awk fallback), but useful for manual yaml debugging. | `brew install yq` |
+
+---
+
 ## Development Setup
 
 1. **Clone the repository**

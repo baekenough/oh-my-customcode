@@ -89,3 +89,65 @@ if [ "$ERRORS" -gt 0 ]; then
 fi
 
 echo "Wiki sync check passed"
+
+# ── Count Consistency Check ──────────────────────────────────────────────────
+echo ""
+echo "=== Wiki Index Count Consistency ==="
+
+INDEX_YAML="wiki/index.yaml"
+
+if [ ! -f "$INDEX_YAML" ]; then
+  echo "SKIP: wiki/index.yaml not found — count consistency check skipped"
+else
+  # Parse index.yaml using grep/awk (no yq dependency)
+  INDEX_TOTAL=$( { grep -E '^  total_pages:' "$INDEX_YAML" || true; } | sed 's/.*total_pages: *//' | tr -d ' ')
+  INDEX_SKILLS=$( { awk '/^  counts:/,/^[a-z]/' "$INDEX_YAML" || true; } | { grep -E '^ +skills:' || true; } | sed 's/.*skills: *//' | tr -d ' ')
+  INDEX_AGENTS=$( { awk '/^  counts:/,/^[a-z]/' "$INDEX_YAML" || true; } | { grep -E '^ +agents:' || true; } | sed 's/.*agents: *//' | tr -d ' ')
+  INDEX_RULES=$( { awk '/^  counts:/,/^[a-z]/' "$INDEX_YAML" || true; } | { grep -E '^ +rules:' || true; } | sed 's/.*rules: *//' | tr -d ' ')
+  INDEX_GUIDES=$( { awk '/^  counts:/,/^[a-z]/' "$INDEX_YAML" || true; } | { grep -E '^ +guides:' || true; } | sed 's/.*guides: *//' | tr -d ' ')
+
+  # Actual counts (all .md files in wiki/)
+  ACTUAL_TOTAL=$(find wiki -name '*.md' -type f | wc -l | tr -d ' ')
+  ACTUAL_SKILLS=$(find wiki/skills -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
+  ACTUAL_AGENTS=$(find wiki/agents -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
+  ACTUAL_RULES=$(find wiki/rules -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
+  ACTUAL_GUIDES=$(find wiki/guides -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
+
+  COUNT_ERRORS=0
+
+  # total_pages check
+  if [ -n "$INDEX_TOTAL" ] && [ "$INDEX_TOTAL" != "$ACTUAL_TOTAL" ]; then
+    echo "::error::wiki/index.yaml total_pages drift:"
+    echo "  index.yaml: $INDEX_TOTAL"
+    echo "  actual:     $ACTUAL_TOTAL"
+    COUNT_ERRORS=$((COUNT_ERRORS + 1))
+  else
+    echo "[OK] total_pages: $ACTUAL_TOTAL"
+  fi
+
+  # Per-category checks
+  check_count() {
+    local cat="$1" index_val="$2" actual_val="$3"
+    if [ -n "$index_val" ] && [ "$index_val" != "$actual_val" ]; then
+      echo "::error::wiki/index.yaml counts.$cat drift:"
+      echo "  index.yaml: $index_val"
+      echo "  actual:     $actual_val"
+      COUNT_ERRORS=$((COUNT_ERRORS + 1))
+    elif [ -n "$index_val" ]; then
+      echo "[OK] counts.$cat: $actual_val"
+    else
+      echo "[SKIP] counts.$cat: key not present in index.yaml"
+    fi
+  }
+
+  check_count "skills" "$INDEX_SKILLS" "$ACTUAL_SKILLS"
+  check_count "agents" "$INDEX_AGENTS" "$ACTUAL_AGENTS"
+  check_count "rules"  "$INDEX_RULES"  "$ACTUAL_RULES"
+  check_count "guides" "$INDEX_GUIDES" "$ACTUAL_GUIDES"
+
+  if [ "$COUNT_ERRORS" -gt 0 ]; then
+    echo ""
+    echo "Fix: run wiki-curator or '/omcustom:wiki' to regenerate index.yaml"
+    exit 1
+  fi
+fi

@@ -3,12 +3,13 @@
 
 meta:
   updated: "2026-05-15"
-  total_pages: 265
+  total_pages: 268
   total_sources: 226
   counts:
-    skills: 116
+    skills: 117
     guides: 52
     agents: 49
+    rules: 22
 
 pages:
   architecture:
