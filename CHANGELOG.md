@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.135.0] - 2026-05-14
+
+### Added
+- CC v2.1.141 호환성 가이드 추가 to `guides/claude-code/15-version-compatibility.md` (#1137)
+  - `terminalSequence` 훅 필드 — R012 HUD 보완, P3 창 제목 hook 검토 권고
+  - `CLAUDE_CODE_PLUGIN_PREFER_HTTPS` 환경 변수 — CI/기업 방화벽 환경 플러그인 설치
+  - `ANTHROPIC_WORKSPACE_ID` 환경 변수 — 워크로드 아이덴티티 federation workspace 스코핑
+  - `claude agents --cwd <path>` — 디렉토리 스코프 세션 목록, P3 cli-flags 가이드 업데이트 권고
+  - `/bg` 백그라운드 에이전트 권한 모드 유지 — R010 규칙 문서에 노트 추가
+  - 기타 additive 변경 (Rewind summarize, `/feedback` 세션 범위, auto mode 다이얼로그, IDE diff 복원, `claude agents` 상태 수정)
+- R010 `MUST-orchestrator-coordination.md` — `/bg` 권한 모드 유지 노트 추가 (CC v2.1.141+)
+- R006 `MUST-agent-design.md` — v2.1.141 버전 호환성 히스토리 항목 추가
+- R012 `SHOULD-hud-statusline.md` — `terminalSequence` 필드 참조 추가
+
+### Maintenance
+- Claude Code v2.1.141 release reviewed (#1137)
+
 ## [0.134.0] - 2026-05-13
 
 ### Added
