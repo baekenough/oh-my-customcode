@@ -15,6 +15,8 @@
 
 Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` — implemented in `.claude/hooks/hooks.json` (PreToolUse → Agent/Task matcher). Display for multi-step/parallel/long-running ops only.
 
+> **v2.1.141+**: Hook JSON output can include `terminalSequence` field to emit window title changes or terminal bells without terminal control. Complementary to HUD stderr channel — e.g., update window title on task completion or ring bell after long parallel run. Modifying `.claude/hooks/` requires explicit user approval (R001).
+
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:
