@@ -1,13 +1,15 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-04-12
+updated: 2026-05-15
 sources:
   - .claude/agents/mgr-gitnerd.md
 related:
   - [[mgr-sauron]]
   - [[tool-npm-expert]]
   - [[mgr-creator]]
+  - [[r001]]
+  - [[git-safety]]
 ---
 
 # mgr-gitnerd
@@ -40,18 +42,31 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 Types: feat, fix, docs, style, refactor, test, chore
 
-## Safety Rules
+## Safety Rules (expanded v0.136.1, #1146)
 
-- NEVER force push to main/master
-- NEVER reset --hard without confirmation
+Nine-bullet safety rules enforcing [[r001]] Destructive Git Commands section:
+
+- NEVER force push to main/master (use `--force-with-lease` only on feature branches with explicit user approval)
+- NEVER `git reset --hard` without confirmation — verify `git status` shows clean tree OR user explicitly accepts loss
+- NEVER `git checkout -- <path>` / `git restore <path>` without confirmation — uncommitted changes are unrecoverable
+- NEVER `git clean -fd` without prior `git clean -nd` dry-run + user approval
+- NEVER `git branch -D <branch>` without showing `git log <branch>` first if branch has unmerged commits
 - NEVER skip pre-commit hooks without reason
-- REFUSE push if mgr-sauron:watch was not run
+- ALWAYS create new commits (avoid --amend unless requested)
+- ALWAYS check `git reflog` before declaring work lost — most destructive ops are recoverable for 30 days
+- Reference: [[r001]] Destructive Git Commands section, #1146 (v0.136.0 working tree loss incident)
+
+For full pre-flight checks and recovery procedures, see [[git-safety]].
+
+## Push Rules
+
+All pushes require prior `mgr-sauron:watch` verification. If sauron was not run, REFUSE the push.
 
 ## Relationships
 
 - **Depends on**: mgr-sauron verification (prerequisite for push)
 - **Used by**: R010 delegation table ("Git operations"), R017 (commit/push gate), all agents needing git operations
-- **See also**: [[mgr-sauron]] (verification prerequisite), [[tool-npm-expert]] (version commits/tags)
+- **See also**: [[mgr-sauron]] (verification prerequisite), [[tool-npm-expert]] (version commits/tags), [[git-safety]] (destructive op guide), [[r001]] (safety rules)
 
 ## Learned Patterns
 
@@ -66,3 +81,4 @@ The local `release` branch (file ref) conflicts with `release/v*` directory ref 
 ## Sources
 
 - `.claude/agents/mgr-gitnerd.md` — agent definition
+- Issue #1146 — v0.136.0 working tree loss incident (origin of expanded Safety Rules)
