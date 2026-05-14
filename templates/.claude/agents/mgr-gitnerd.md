@@ -52,10 +52,15 @@ Types: feat, fix, docs, style, refactor, test, chore
 
 ## Safety Rules
 
-- NEVER force push to main/master
-- NEVER reset --hard without confirmation
+- NEVER force push to main/master (use `--force-with-lease` only on feature branches with explicit user approval)
+- NEVER `git reset --hard` without confirmation — verify `git status` shows clean tree OR user explicitly accepts loss
+- NEVER `git checkout -- <path>` / `git restore <path>` without confirmation — uncommitted changes are unrecoverable
+- NEVER `git clean -fd` without prior `git clean -nd` dry-run + user approval
+- NEVER `git branch -D <branch>` without showing `git log <branch>` first if branch has unmerged commits
 - NEVER skip pre-commit hooks without reason
 - ALWAYS create new commits (avoid --amend unless requested)
+- ALWAYS check `git reflog` before declaring work lost — most destructive ops are recoverable for 30 days
+- Reference: R001 Destructive Git Commands section, #1146 (v0.136.0 working tree loss incident)
 
 ## Push Rules (R016)
 

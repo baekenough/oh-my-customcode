@@ -133,3 +133,11 @@ The bash script in R017 that checks skill refs (`grep "^skills:" -A 10`) picks u
 - dev-review SKILL.md: step 6 artifact persistence (optional)
 - .gitignore: `!.claude/agents/` and `!.claude/agents/souls/` negation patterns present
 - Template path diff (expected/intentional): `.claude/agents/*.md` uses `templates/guides/` path; `templates/.claude/agents/*.md` uses `guides/` — NOT a sync error
+
+### v0.136.1 Release Verification (2026-05-15)
+- Single-issue release: #1146 (destructive git command guards)
+- Changes: R001 MUST-safety.md (Destructive Git Commands section), mgr-gitnerd.md (Safety Rules expansion), mgr-gitnerd + mgr-sauron MEMORY.md (incident lessons)
+- T2 (PreToolUse hook for destructive-git-guard.sh) DEFERRED to follow-up issue — `.claude/hooks/` modification requires explicit user approval per R001
+- T4 docs guide: optional, low priority; deferred if time-constrained
+- Verification scope: rules + agent + memory files only; no template sync needed (rules and memories are not templated)
+- mgr-sauron should verify: R001 has new "Destructive Git Commands" section; mgr-gitnerd Safety Rules has 9 bullets (was 4); both MEMORY.md files have new sections appended (not overwritten)

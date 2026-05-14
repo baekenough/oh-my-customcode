@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.136.1] - 2026-05-15
+
+### Fixed
+- 파괴적 git 명령 가드 강화 (#1146): R001 MUST-safety.md에 "Destructive Git Commands" 섹션 신규 추가 — `git reset --hard`, `git checkout -- <path>`, `git clean -fd`, `git branch -D`, `git push --force` 5종 명령에 대해 위험도와 필수 조치를 명시
+- mgr-gitnerd 에이전트 Safety Rules 4개 → 9개 불릿으로 확장, git reflog 복구 패턴 추가
+
+### Added
+- 신규 가이드 — Git Safety (`guides/git-safety/README.md`): 위험 명령 빠른 참조표, pre-flight 체크 패턴, 복구 절차, AI 에이전트 자율 흐름용 안전 규칙 포함
+
+### Maintenance
+- `agent-memory/mgr-gitnerd/MEMORY.md` 및 `agent-memory/mgr-sauron/MEMORY.md` 학습 데이터 추가
+- Templates / Wiki sync: rules, agent, guide 변경분 동기화, wiki/index.yaml에 git-safety 등록
+- #1150 (destructive-git-guard.sh PreToolUse hook) 다음 릴리즈로 이월
+
 ## [0.135.0] - 2026-05-14
 
 ### Added
