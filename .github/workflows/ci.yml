@@ -154,20 +154,18 @@ jobs:
           workspaces: packages/ontology-rag
           save-if: ${{ github.ref == 'refs/heads/develop' }}
 
-      - name: Verify cargo binary resolution
+      - name: Verify cargo toolchain
         run: |
           set -e
           which cargo
           cargo --version
-          # Fail early if rustup-init is shadowing cargo (cache poisoning detection)
-          cargo_path=$(which cargo)
-          if readlink -f "$cargo_path" | grep -q "rustup-init"; then
-            echo "::error::cargo binary resolves to rustup-init (cache poisoning detected)"
-            exit 1
-          fi
-          # Verify cargo can actually execute test subcommand
+          # Sanity check: cargo must support `test` subcommand.
+          # The v0.135.0 develop CI failure presented as `error: unexpected argument 'test' found`,
+          # which means cargo was effectively non-functional. This guard catches that case early
+          # without false-positiving on the standard rustup symlink-multiplexer install layout.
           if ! cargo --list 2>&1 | grep -qE "^\s+test\b"; then
-            echo "::error::cargo binary does not support 'test' subcommand — toolchain incomplete"
+            echo "::error::cargo binary does not support 'test' subcommand — toolchain incomplete (possible cache poisoning)"
+            cargo --list 2>&1 | head -20
             exit 1
           fi
 
