@@ -150,8 +150,26 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2
         with:
+          prefix-key: "rust-test-v2-${{ runner.os }}"
           workspaces: packages/ontology-rag
           save-if: ${{ github.ref == 'refs/heads/develop' }}
+
+      - name: Verify cargo binary resolution
+        run: |
+          set -e
+          which cargo
+          cargo --version
+          # Fail early if rustup-init is shadowing cargo (cache poisoning detection)
+          cargo_path=$(which cargo)
+          if readlink -f "$cargo_path" | grep -q "rustup-init"; then
+            echo "::error::cargo binary resolves to rustup-init (cache poisoning detected)"
+            exit 1
+          fi
+          # Verify cargo can actually execute test subcommand
+          if ! cargo --list 2>&1 | grep -qE "^\s+test\b"; then
+            echo "::error::cargo binary does not support 'test' subcommand — toolchain incomplete"
+            exit 1
+          fi
 
       - name: Run Rust tests
         working-directory: packages/ontology-rag

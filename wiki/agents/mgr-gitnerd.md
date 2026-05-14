@@ -53,6 +53,16 @@ Types: feat, fix, docs, style, refactor, test, chore
 - **Used by**: R010 delegation table ("Git operations"), R017 (commit/push gate), all agents needing git operations
 - **See also**: [[mgr-sauron]] (verification prerequisite), [[tool-npm-expert]] (version commits/tags)
 
+## Learned Patterns
+
+### Release branch namespace conflict (#1141, v0.136.0)
+
+The local `release` branch (file ref) conflicts with `release/v*` directory ref namespace creation.
+
+- **Detection**: `fatal: cannot lock ref 'refs/heads/release/vX.Y.Z': 'refs/heads/release' exists`
+- **Mitigation**: auto-dev.yaml release step prepends item 0 to force-delete the stale local branch before tag/branch operations. Unpushed commits are warned but force-delete proceeds.
+- **Memory**: see `.claude/agent-memory/mgr-gitnerd/MEMORY.md` (locally untracked per project policy).
+
 ## Sources
 
 - `.claude/agents/mgr-gitnerd.md` — agent definition
