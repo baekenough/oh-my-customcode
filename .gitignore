@@ -73,7 +73,8 @@ test-results/
 packages/*/test-results/
 
 # Superpowers plugin session artifacts
-docs/superpowers/plans/
+docs/superpowers/plans/*
+!docs/superpowers/plans/*.md
 docs/superpowers/specs/
 
 # claude-mem MCP context injection file
