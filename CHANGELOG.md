@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.136.2] - 2026-05-15
+
+### Fixed
+- **#1154** /pipeline auto-dev release 단계가 `package.json` 및 `templates/manifest.json` version bump를 명시하지 않아 npm publish E403이 발생하던 회귀를 차단 — auto-dev.yaml release prompt에 atomic bump 절차 + `scripts/verify-version-sync.sh` 의무 호출 추가 (mgr-updater 위임 경계 명시)
+- **#1155** `verify-template-sync.sh`에 `manifest.json` components[name=guides].files vs 실제 `guides/*/` 디렉토리 카운트 일치 검사 추가 (jq graceful skip)
+- **#1144** `templates/.claude/skills/pipeline/workflows/auto-dev.yaml`의 Sensitive Path Handling 섹션이 deprecated `/tmp/*.sh` 패턴이던 것을 source와 1:1 sync (CC v2.1.121+ `bypassPermissions` 패턴)
+- **#1145** `wiki/index.yaml` 카운트 드리프트 정정 — `total_pages` 265→268, `counts.skills` 116→117, `counts.rules` 22 추가 + `verify-wiki-sync.sh`에 카운트 일치 검사 추가 (grep/awk fallback, yq 비의존성)
+- **#1152** `CONTRIBUTING.md` Prerequisites 섹션 추가 — jq/gh/bun/yq 설치 안내. hook 본체 (`git-delegation-guard.sh:13`)는 이미 graceful skip 적용됨
+
+### Added
+- `scripts/verify-version-sync.sh` — `package.json` ↔ `templates/manifest.json` 버전 일치 검증 (jq 미설치 시 warning + skip, mismatch 시 exit 1)
+- `CONTRIBUTING.md`에 Prerequisites 섹션 — jq/gh/bun/yq 권장 도구 설치 가이드
+
+### Changed
+- `.claude/skills/pipeline/workflows/auto-dev.yaml` release step — mgr-updater 위임 경계 명시, atomic same-dir tmp 패턴, `verify-version-sync.sh` existence guard 적용
+- `.github/scripts/verify-template-sync.sh` — Manifest Guides Count Consistency 섹션 +22 lines
+- `.github/scripts/verify-wiki-sync.sh` — Wiki Index Count Consistency 섹션 +54 lines (yq 의존성 없는 grep/awk 구현)
+- `wiki/index.yaml` — total_pages 268, counts.skills 117, counts.rules 22 추가, updated 2026-05-15
+
+### Maintenance
+- deep-verify Round 5: 4 MEDIUM + 2 LOW findings 일괄 fix (cross-device mv → same-dir tmp, delegation boundary 명시, yq 불필요 안내 정정, grep robustness)
+
 ## [0.136.1] - 2026-05-15
 
 ### Fixed
