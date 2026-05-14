@@ -257,6 +257,17 @@ Before spawning any agent:
 ```
 
 
+### Background Agent Permission Mode (`/bg` flow)
+
+> **v2.1.141+**: Background agents launched via `/bg` or `←←` now preserve the current session's permission mode instead of reverting to default. Previously, detaching a session could cause `bypassPermissions` to be lost, triggering unexpected permission prompts in unattended flows.
+
+| CC Version | `/bg` permission behavior |
+|------------|--------------------------|
+| < v2.1.141 | Reverts to default — `bypassPermissions` may be lost on detach |
+| >= v2.1.141 | Preserves current permission mode — `/bg` flows no longer need extra workaround |
+
+`mode: "bypassPermissions"` on every Agent tool call is still required (applies to Agent tool, not `/bg` shell command).
+
 ## Sensitive Path Handling (Historical: pre-CC v2.1.121)
 
 > **Status**: Deprecated as of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01). Direct Write/Edit/Bash on `.claude/`, `.git/`, `.vscode/` works without prompts under `bypassPermissions` mode in CC v2.1.121+ (issue #1101).

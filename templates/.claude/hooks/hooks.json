@@ -361,7 +361,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  dir=$(dirname \"$file_path\")\n  project_root=\"$dir\"\n  while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/package.json\" ]; do\n    project_root=$(dirname \"$project_root\")\n  done\n  \n  if [ -f \"$project_root/tsconfig.json\" ]; then\n    cd \"$project_root\" && npx tsc --noEmit --pretty false 2>&1 | grep \"$file_path\" | head -10 >&2 || true\n  fi\nfi\n\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  dir=$(dirname \"$file_path\")\n  project_root=\"$dir\"\n  while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/package.json\" ]; do\n    project_root=$(dirname \"$project_root\")\n  done\n  \n  if [ -f \"$project_root/tsconfig.json\" ]; then\n    cd \"$project_root\" && npx tsc --noEmit --pretty false 2>&1 | grep \"$file_path\" | head -10 >&2 || true\n  fi\nfi\n\necho \"$input\"",
+            "continueOnBlock": true
           }
         ],
         "description": "TypeScript check after editing .ts/.tsx files"
@@ -371,7 +372,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  console_logs=$(grep -n \"console\\\\.log\" \"$file_path\" 2>/dev/null || true)\n  \n  if [ -n \"$console_logs\" ]; then\n    echo \"[Hook] WARNING: console.log found in $file_path\" >&2\n    echo \"$console_logs\" | head -5 >&2\n    echo \"[Hook] Remove console.log before committing\" >&2\n  fi\nfi\n\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  console_logs=$(grep -n \"console\\\\.log\" \"$file_path\" 2>/dev/null || true)\n  \n  if [ -n \"$console_logs\" ]; then\n    echo \"[Hook] WARNING: console.log found in $file_path\" >&2\n    echo \"$console_logs\" | head -5 >&2\n    echo \"[Hook] Remove console.log before committing\" >&2\n  fi\nfi\n\necho \"$input\"",
+            "continueOnBlock": true
           }
         ],
         "description": "Warn about console.log statements after edits"
@@ -391,7 +393,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Format with ruff\n  if command -v ruff >/dev/null 2>&1; then\n    ruff format --quiet \"$file_path\" 2>&1 >&2\n    ruff check --fix --quiet \"$file_path\" 2>&1 >&2 || true\n    echo \"[Hook] Python formatted with ruff\" >&2\n  fi\nfi\n\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Format with ruff\n  if command -v ruff >/dev/null 2>&1; then\n    ruff format --quiet \"$file_path\" 2>&1 >&2\n    ruff check --fix --quiet \"$file_path\" 2>&1 >&2 || true\n    echo \"[Hook] Python formatted with ruff\" >&2\n  fi\nfi\n\necho \"$input\"",
+            "continueOnBlock": true
           }
         ],
         "description": "Auto-format and lint Python files with ruff after edits"
@@ -401,7 +404,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Type check with ty\n  if command -v ty >/dev/null 2>&1; then\n    dir=$(dirname \"$file_path\")\n    project_root=\"$dir\"\n    while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/pyproject.toml\" ]; do\n      project_root=$(dirname \"$project_root\")\n    done\n    \n    if [ -f \"$project_root/pyproject.toml\" ]; then\n      cd \"$project_root\" && ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    else\n      ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    fi\n  fi\nfi\n\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Type check with ty\n  if command -v ty >/dev/null 2>&1; then\n    dir=$(dirname \"$file_path\")\n    project_root=\"$dir\"\n    while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/pyproject.toml\" ]; do\n      project_root=$(dirname \"$project_root\")\n    done\n    \n    if [ -f \"$project_root/pyproject.toml\" ]; then\n      cd \"$project_root\" && ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    else\n      ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    fi\n  fi\nfi\n\necho \"$input\"",
+            "continueOnBlock": true
           }
         ],
         "description": "Type check Python files with ty after edits"
@@ -474,7 +478,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/skill-count-reminder.sh"
+            "command": "bash .claude/hooks/skill-count-reminder.sh",
+            "continueOnBlock": true
           }
         ],
         "description": "Advisory reminder to sync skill counts in 6 locations when a SKILL.md is created/modified (R021)"
