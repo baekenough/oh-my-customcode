@@ -122,6 +122,31 @@ if [ "$src_guides_count" != "$tpl_guides_count" ]; then
   errors=$((errors + 1))
 fi
 
+# ── Manifest guides count consistency ────────────────────────────────────────
+echo ""
+echo "=== Manifest Guides Count Consistency ==="
+if ! command -v jq >/dev/null 2>&1; then
+  echo "::warning::jq not installed — manifest count verification skipped"
+  echo "Install: apt-get install jq | brew install jq"
+else
+  MANIFEST_GUIDES=$(jq '.components[] | select(.name == "guides") | .files' templates/manifest.json 2>/dev/null)
+  if [ -z "$MANIFEST_GUIDES" ] || [ "$MANIFEST_GUIDES" = "null" ]; then
+    echo "::warning::templates/manifest.json has no components[name=guides].files entry"
+  else
+    ACTUAL_GUIDES=$(find guides -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$MANIFEST_GUIDES" != "$ACTUAL_GUIDES" ]; then
+      echo "::error::templates/manifest.json guides count drift:"
+      echo "  manifest.json: $MANIFEST_GUIDES"
+      echo "  actual guides/*/: $ACTUAL_GUIDES"
+      echo ""
+      echo "Run: jq '(.components[] | select(.name == \"guides\") | .files) = $ACTUAL_GUIDES' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json"
+      errors=$((errors + 1))
+    else
+      echo "[OK] manifest.json guides count: $ACTUAL_GUIDES"
+    fi
+  fi
+fi
+
 # ── CLAUDE.md agent and skill counts ─────────────────────────────────────────
 actual_agents=$(ls .claude/agents/*.md 2>/dev/null | wc -l | tr -d ' ')
 actual_skills=$(find .claude/skills -name 'SKILL.md' 2>/dev/null | wc -l | tr -d ' ')

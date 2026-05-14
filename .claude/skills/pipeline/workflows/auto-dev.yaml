@@ -146,9 +146,24 @@ steps:
              git branch -D release
            fi
          Reference: issue #1141 (v0.135.0 follow-up), mgr-gitnerd MEMORY.md.
-      1. Version:
+
+      1. Version bump (mandatory):
+         Orchestrator delegates to mgr-updater (R010). mgr-updater executes the following atomic edits:
+         Determine NEW version per semver rules below.
+         npm project (package.json exists):
+           a. package.json: jq '.version = "<NEW>"' package.json > package.json.tmp && mv package.json.tmp package.json
+           b. templates/manifest.json: jq '.version = "<NEW>"' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json
+           c. mgr-gitnerd commit: "chore(release): bump to v<NEW>"
+           d. mgr-gitnerd push develop
+           e. mandatory verification (with existence guard for partial-update safety):
+              [ -f scripts/verify-version-sync.sh ] && bash scripts/verify-version-sync.sh || echo "::warning::verify-version-sync.sh not found, version sync verification skipped"
+              (verify-version-sync.sh 가 exit 1 시 release 단계 halt)
+
+         Version decision (semver):
          - No existing tags → v0.1.0
-         - Otherwise: semver bump (patch for bugfix, minor for features)
+         - Previous tag exists → patch (bugfix) / minor (features) / major (breaking)
+         - Previous tag is ahead of source version (e.g., tag v0.136.1, package.json 0.136.0): use next available skip-version (0.136.2)
+
       2. Release notes via omcustom-release-notes skill
       3. Delegate to mgr-gitnerd:
          - git tag + push
@@ -159,7 +174,7 @@ steps:
       6. Adapt release mechanism to project:
          - npm project: PR + merge + npm publish verification
          - Non-npm: direct tag on main (trunk-based)
-    description: "Git tag + GitHub Release + close milestone/issues"
+    description: "Git tag + GitHub Release + close milestone/issues (with mandatory version sync verification)"
     depends_on: deep-verify
 
   - name: ci-check
