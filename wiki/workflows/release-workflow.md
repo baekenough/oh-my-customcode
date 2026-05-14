@@ -68,6 +68,8 @@ Phase 5: Push via mgr-gitnerd (only after sauron passes)
 
 ## Phase 6: Release Execution
 
+> **v0.136.0+**: auto-dev.yaml release step now begins with a mandatory pre-check (item 0) that detects and force-deletes any stale local `release` branch. This prevents the `release` vs `release/v*` namespace conflict (#1141). The pre-check is delegated to mgr-gitnerd per R010.
+
 All git operations are delegated to [[wiki/agents/mgr-gitnerd]]:
 1. Version bump in `manifest.json` and `package.json`
 2. Commit: `chore: bump version to X.Y.Z`

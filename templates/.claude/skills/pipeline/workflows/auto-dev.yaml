@@ -149,6 +149,17 @@ steps:
     prompt: |
       Create a GitHub Release.
 
+      0. Pre-check (mandatory, delegate to mgr-gitnerd per R010): Detect and remove stale local `release` branch if present.
+         The local `release` branch (file ref) conflicts with `release/v*` directory ref namespace.
+         mgr-gitnerd executes (force-delete acceptable in automation context; warns if branch has unpushed commits):
+           if git show-ref --verify --quiet refs/heads/release; then
+             # Check for unpushed commits before force-delete
+             if [ -n "$(git log refs/heads/release ^origin/develop --oneline 2>/dev/null)" ]; then
+               echo "::warning::Local 'release' branch has unpushed commits — force-deleting anyway"
+             fi
+             git branch -D release
+           fi
+         Reference: issue #1141 (v0.135.0 follow-up), mgr-gitnerd MEMORY.md.
       1. Version:
          - No existing tags → v0.1.0
          - Otherwise: semver bump (patch for bugfix, minor for features)
@@ -159,10 +170,9 @@ steps:
       4. Close milestone
       5. Close verify-ready issues with "Fixed in v{version}"
          Label needs-review issues as "Deferred from v{version}"
-
-      Adapt release mechanism to project:
-      - npm project: PR + merge + npm publish verification
-      - Non-npm: direct tag on main (trunk-based)
+      6. Adapt release mechanism to project:
+         - npm project: PR + merge + npm publish verification
+         - Non-npm: direct tag on main (trunk-based)
     description: "Git tag + GitHub Release + close milestone/issues"
     depends_on: deep-verify
 

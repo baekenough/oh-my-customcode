@@ -150,6 +150,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2
         with:
+          prefix-key: "rust-test-v2-${{ runner.os }}"
           workspaces: packages/ontology-rag
           save-if: ${{ github.ref == 'refs/heads/develop' }}
 
