@@ -76,6 +76,35 @@ jobs:
               --repo "$REPO" || echo "⚠ Failed to close #$ISSUE"
           done
 
+      - name: Close milestone if all issues closed
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.version.outputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Ensure milestone title starts with "v"
+          [[ "$TAG" =~ ^v ]] && milestone_title="$TAG" || milestone_title="v$TAG"
+
+          # Find open milestone with matching title
+          milestone_number=$(gh api "repos/$REPO/milestones?state=open&per_page=100" \
+            --jq ".[] | select(.title == \"$milestone_title\") | .number")
+
+          if [ -z "$milestone_number" ]; then
+            echo "Milestone $milestone_title not found (open) — skip"
+            exit 0
+          fi
+
+          # Check open issues count
+          open_issues=$(gh api "repos/$REPO/milestones/$milestone_number" --jq '.open_issues')
+
+          if [ "$open_issues" -eq 0 ]; then
+            gh api -X PATCH "repos/$REPO/milestones/$milestone_number" -f state=closed
+            echo "Milestone $milestone_title closed (0 open issues)"
+          else
+            echo "Milestone $milestone_title has $open_issues open issues — skip close (will require manual close)"
+          fi
+
       - name: Delete merged release branch
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PAT }}

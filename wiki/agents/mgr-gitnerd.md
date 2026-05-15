@@ -78,7 +78,17 @@ The local `release` branch (file ref) conflicts with `release/v*` directory ref 
 - **Mitigation**: auto-dev.yaml release step prepends item 0 to force-delete the stale local branch before tag/branch operations. Unpushed commits are warned but force-delete proceeds.
 - **Memory**: see `.claude/agent-memory/mgr-gitnerd/MEMORY.md` (locally untracked per project policy).
 
+### rustup symlink multiplexer is not cache poisoning (#1148, v0.137.0)
+
+`readlink -f $(which cargo) | grep -q "rustup-init"` returning true is **normal** rustup behavior — NOT an indicator of cache poisoning or misconfiguration.
+
+- **Why**: rustup uses a single binary (`rustup-init`) with argv[0]-based multiplexing. All tool symlinks (`cargo`, `rustc`, etc.) resolve to `rustup-init` by design.
+- **Anti-pattern**: Binary identity checks (`readlink`) for cargo verification — these produce false positives and caused PR #1143 CI failure (v0.136.0).
+- **Correct approach**: Functional verification — `cargo --list | grep test` (subcommand existence). The actual #1140 regression symptom was `cargo test` returning `error: unexpected argument 'test' found`, not symlink mismatch.
+- **Rule**: Use functional output verification, never binary identity path checks, for tool environment guards.
+
 ## Sources
 
 - `.claude/agents/mgr-gitnerd.md` — agent definition
 - Issue #1146 — v0.136.0 working tree loss incident (origin of expanded Safety Rules)
+- Issue #1148 — rustup symlink false-positive CI failure (v0.137.0)

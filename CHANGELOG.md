@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.138.0] - 2026-05-15
+
+### Added
+- 신규 `.claude/skills/pipeline/labels.md` — 파이프라인 라벨 의미 표준 정의 (`verify-ready`, `verify-done`, `in-progress`, `needs-review`, `decision-needed`, `automated`, `claude-code-release`, `documentation` semantics) (#1161 G4)
+- 신규 `templates/README.md` — `omcustom init` distribution 구조 + 컴포넌트 카운트 heading (Agents 49, Skills 117, Rules 22, Guides 50, Hooks 34) (#1157)
+- `.github/workflows/auto-tag.yml`에 milestone auto-close step 추가 — release PR merge 후 마일스톤 open_issues == 0이면 자동 close (#1163)
+
+### Changed
+- `/pipeline auto-dev` 강화 (#1161 G3~G7):
+  - **G3**: scope-selection에 closed milestone re-use pre-check 추가 — `gh api .../milestones?state=all`로 state별 분기 처리 (closed → halt + bump 권고, open → 그대로 사용)
+  - **G4**: labels.md 표준 참조 + 필터 로직 명시 (`verify-ready` preferred, `verify-done`/`needs-review`/`decision-needed` exclude)
+  - **G5**: pre-triage Phase 0에 본문 vX.Y.Z 참조 vs git tag 일치 검증 추가 (warning only, do not halt)
+  - **G6**: compression_mode 분기 명문화 — scope size ≤ 3 + docs/automated/claude-code-release labels → triage/plan/deep-plan/deep-verify 압축 모드
+  - **G7**: pre-triage Phase 0에 메모리 vs git latest tag 일치 비교 추가 (advisory only; hook 자동 감지는 future scope)
+- 위키 동기화 (#1164):
+  - `wiki/skills/pipeline.md` — auto-dev Phase 0 Sync + verify-build bun test 변경 반영
+  - `wiki/guides/claude-code.md` — v2.1.142 섹션 + Known Limitations 반영
+  - `wiki/agents/mgr-gitnerd.md` — rustup symlink 교훈 학습 반영
+
+### Maintenance
+- Templates 동기화: `templates/.claude/skills/pipeline/workflows/auto-dev.yaml`, `templates/.claude/skills/pipeline/labels.md`
+- Agent Teams (`v0138-release`) 사용 — 4 멤버 병렬 (workflow-engineer, wiki-engineer, skill-engineer, readme-writer)
+- /pipeline auto-dev G1 (#1159) 자기-개량 검증 — release/v0.137.0 stale ref 자동 cleanup 확인됨
+
 ## [0.137.0] - 2026-05-15
 
 ### Added
