@@ -1,6 +1,6 @@
 name: auto-dev
 description: "Automated development pipeline — from issue triage to release"
-version: "2.0.0"
+version: "2.1.0"
 
 # Design rule: each pipeline run produces ONE bounded release unit (3-7 issues), not all open issues.
 # This pipeline is a project-agnostic template. Project-specific overrides belong in
@@ -31,7 +31,20 @@ steps:
          - Local HEAD: git rev-parse --short HEAD
          - Behind state: synced or 0
 
-      5. Cross-reference: compare latest tag with any "vX.Y.Z" version references in pipeline memory/context. Flag mismatches for awareness.
+      5. Cross-reference checks (advisory, do NOT halt):
+         a. Memory vs git consistency (G7):
+            - latest_tag=$(git tag --sort=-v:refname | head -1)
+            - Compare with "Last release" or equivalent line in pipeline memory/context
+            - If mismatch: stderr warning "[pre-triage] WARNING: memory says vX.Y.Z but git latest tag is vA.B.C — update memory after pipeline completion"
+            - Do NOT halt (advisory only — memory updates are session-end responsibility)
+
+         b. Issue body stale version references (G5):
+            - Retrieve open issues: gh issue list --state open --limit 100 --json number,body
+            - For each issue body, extract all vX.Y.Z patterns (regex: v\d+\.\d+\.\d+)
+            - Retrieve git tag list: git tag --list
+            - Flag any issue referencing a version not present in git tags:
+              "[pre-triage] WARNING: Issue #N references vX.Y.Z (not in git tags) — body may be stale"
+            - Output all warnings as advisory log; do NOT halt
 
       Phase 1 — Ensure required labels exist, then scan issues.
 
@@ -50,44 +63,95 @@ steps:
          - order: topological sort over dependencies
 
       4. Output: dependency-sorted issue table with blocked_by_decision flag.
-    description: "Ensure labels exist, scan issues, dependency-analyze"
+    description: "Sync remote, stale-version check, memory consistency check, scan issues"
 
   - name: scope-selection
     prompt: |
       Select a single bounded release scope (3-7 issues) for THIS pipeline run.
 
-      Selection rules:
+      ## Step 0 — Milestone state pre-check (G3)
+
+      Before creating a milestone for version vX.Y.Z:
+      1. Query all milestones (open and closed):
+         existing=$(gh api 'repos/{owner}/{repo}/milestones?state=all&per_page=100' --jq '.[] | select(.title == "vX.Y.Z") | "\(.number)|\(.state)"')
+      2. Evaluate:
+         - If existing && state=closed:
+           HALT with "[scope-selection] BLOCKED: milestone vX.Y.Z already exists and is closed. Bump version or reopen milestone manually."
+         - If existing && state=open:
+           Use existing milestone as-is (do not create new)
+         - If not existing:
+           Create new milestone: gh api repos/{owner}/{repo}/milestones --method POST --field title="vX.Y.Z"
+
+      ## Step 1 — Label-based filtering (G4)
+
+      Reference label semantics: .claude/skills/pipeline/labels.md
+
+      Apply filter rules:
+      - EXCLUDE: blocked_by_decision == true OR labels ∩ {decision-needed, needs-review, verify-done, manual-action, in-progress} ≠ ∅
+      - INCLUDE (preferred): labels ∩ {verify-ready, claude-code-release, documentation} ≠ ∅
+      - INCLUDE (standard): P1/P2/P3 issues not in excluded set
+      - Tie-break: P1 > P2 > P3 > unclassified
+
+      ## Step 2 — Selection rules
+
       1. Determine release tier:
          - No tags yet → v0.1.0
          - Otherwise: highest-priority open tier (bug → chore → feature)
-      2. Exclude:
-         - blocked_by_decision == true
-         - Issues requiring manual/human action
+      2. Apply Step 1 filter (label-based exclusion and preference)
       3. Sort by dependency: prerequisites before dependents
       4. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)
       5. Minimum 1 issue; if 0 eligible, halt with "no eligible issues for auto-dev run"
 
-      Create release milestone and assign scoped issues.
+      Assign scoped issues to milestone.
       Output markdown release manifest:
-        | order | # | title | prerequisite | effort |
+        | order | # | title | prerequisite | effort | labels |
 
       Persist manifest as pipeline state for subsequent steps.
-    description: "Pick 3-7 issues as v{X.Y.Z} scope, create milestone"
+    description: "Milestone state pre-check, label filter, pick 3-7 issues as v{X.Y.Z} scope"
     depends_on: pre-triage
+
+  - name: compression-mode-eval
+    prompt: |
+      Evaluate whether this pipeline run qualifies for docs-only compression mode (G6).
+
+      ## Compression Eligibility Check
+
+      Reference: .claude/skills/pipeline/labels.md — "Compression Eligibility" section
+
+      Conditions for compression_mode=docs-only:
+      1. scope size ≤ 3 (number of issues in release manifest)
+      2. ALL scoped issues have labels ∩ {documentation, automated, claude-code-release, enhancement-yaml-only} ≠ ∅
+
+      ## Decision
+
+      If BOTH conditions met → set compression_mode=docs-only
+        - triage step: skip professor-triage skill; perform direct manifest summary instead
+        - plan step: skip release-plan skill; single-response plan instead
+        - deep-plan step: skip deep-plan skill; single-response implementation notes instead
+        - deep-verify step: skip deep-verify skill; perform self-review checklist instead
+        - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)"
+
+      Otherwise → set compression_mode=standard
+        - All pipeline steps execute normally with full skill spawns
+        - Log: "[compression-mode] standard mode (scope={n}, mixed labels or large scope)"
+
+      Output: compression_mode value as pipeline state for downstream steps.
+    description: "Evaluate docs-only compression eligibility; set compression_mode state"
+    depends_on: scope-selection
 
   - name: triage
     skill: professor-triage
-    description: "Cross-analysis triage with priority assessment (scoped to release manifest)"
-    depends_on: scope-selection
+    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — skipped if compression_mode=docs-only"
+    depends_on: compression-mode-eval
 
   - name: plan
     skill: release-plan
-    description: "Release unit plan from triaged issues"
+    description: "Release unit plan from triaged issues — skipped if compression_mode=docs-only"
     depends_on: triage
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify)"
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if compression_mode=docs-only"
     depends_on: plan
 
   - name: implement
@@ -165,7 +229,7 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification"
+    description: "Multi-angle release quality verification — self-review checklist only if compression_mode=docs-only"
     depends_on: verify-build
 
   - name: release
