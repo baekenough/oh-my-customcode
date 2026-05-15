@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.137.0] - 2026-05-15
+
+### Added
+- CC v2.1.142 호환성 가이드 추가 to `guides/claude-code/15-version-compatibility.md` (#1158)
+  - 신규 `claude agents` 플래그 8종 인벤토리 (`--add-dir`, `--settings`, `--mcp-config`, `--plugin-dir`, `--permission-mode`, `--model`, `--effort`, `--dangerously-skip-permissions`)
+  - Fast mode 기본 모델 Opus 4.7 변경 (`CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1`로 4.6 고정 가능)
+  - Plugin root-level SKILL.md 지원 — omcustom의 `.claude/skills/<name>/SKILL.md` 패턴 영향 없음
+  - `MCP_TOOL_TIMEOUT` fix, BG sessions/macOS sleep 회복, daemon 업그레이드 fix 등 인벤토리
+- Known Limitations 섹션 추가 to `guides/claude-code/15-version-compatibility.md` (#1147)
+  - `.gitignore` `docs/superpowers/plans/*` + `!*.md` 패턴이 nested 디렉토리 미지원 — 현재 영향 없음 (release-plan은 flat path 사용), future-proof reference
+- `mgr-gitnerd` agent-memory에 rustup symlink-multiplexer 교훈 학습 데이터 추가 (#1148)
+  - `cargo` → `rustup-init` symlink는 정상 (argv[0]-based multiplexer), cache poisoning 아님
+  - 올바른 검출 방법: 기능 검증 (`cargo --list | grep test`), 바이너리 식별이 아님
+  - 참조: v0.136.0 PR #1143 첫 CI 실패 (commit 7709cab) → fix 7046b95
+
+### Changed
+- `/pipeline auto-dev` 강화 (#1159):
+  - `pre-triage` step prompt에 Phase 0 Sync 추가 — `git fetch --all --tags --prune` + `behind` 검출 + clean → `git pull --ff-only`, dirty → halt + tag/HEAD 보고
+  - 메모리/이슈 본문 stale version 참조 즉시 감지 가능
+- `/pipeline auto-dev` 강화 (#1160):
+  - `verify-build` step prompt 재작성 — `bun test` MANDATORY (silent skip 차단)
+  - Baseline delta 가드: `current FAIL > baseline → halt`, 동적 baseline 채택 (hardcoded 숫자 회피)
+
+### Fixed
+- #1156 test-debt 86 pre-existing failures가 v0.136.2 fixes 과정에서 사실상 해소 — 현재 `bun test` 결과 1945 pass / 0 fail. Baseline은 dynamic 채택으로 전환됨 (#1160 정책).
+
+### Maintenance
+- Templates 동기화: `templates/guides/claude-code/15-version-compatibility.md` + `templates/.claude/skills/pipeline/workflows/auto-dev.yaml`
+- Agent Teams (`v0137-release`) 사용 — 3 멤버 병렬 (docs-writer, memory-writer, skill-enhancer)
+
 ## [0.136.2] - 2026-05-15
 
 ### Fixed

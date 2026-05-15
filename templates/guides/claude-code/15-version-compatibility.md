@@ -1,7 +1,7 @@
 # Claude Code Version Compatibility
 
-> Updated: 2026-05-14
-> Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137)
+> Updated: 2026-05-15
+> Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158)
 
 ## Compatibility Baseline
 
@@ -139,6 +139,133 @@ transcript view에서 다음 단축키를 사용할 수 있습니다:
 
 **Action items**: P3 audit 2건 (관리형 marketplace 정책 + plugin.json default folder 검증). 모두 후속 release 별도 처리.
 
+## v2.1.142 (2026-05-14) — 호환성 점검
+
+> Issue: #1158 — CC v2.1.142 compatibility documentation
+
+### `claude agents` 신규 플래그 — 백그라운드 세션 설정
+
+`claude agents` 명령에 백그라운드 세션을 직접 구성하는 플래그가 추가되었습니다.
+
+```bash
+claude agents --add-dir <path>          # 추가 디렉토리 접근 권한
+claude agents --settings <path>         # 커스텀 settings 파일 경로
+claude agents --mcp-config <path>       # MCP 설정 파일 경로
+claude agents --plugin-dir <path>       # 플러그인 디렉토리 경로
+claude agents --permission-mode <mode>  # 권한 모드 지정
+claude agents --model <model>           # 사용할 모델 지정
+claude agents --effort <level>          # effort 레벨 지정
+claude agents --dangerously-skip-permissions  # 권한 프롬프트 생략
+```
+
+**oh-my-customcode 연관**: R009 병렬 에이전트, R018 Agent Teams 고급 운영 시 활용 가능. 특히 `--permission-mode`, `--model`, `--effort` 플래그는 R006 에이전트 프론트매터의 값을 CLI 레벨에서 오버라이드하는 경로를 제공합니다. `--dangerously-skip-permissions`는 CI/unattended 환경에서 `bypassPermissions`(R010)와 동등한 효과. **Action required: None** — 기존 harness 운영에 영향 없음.
+
+### Fast Mode 기본 모델 변경: Opus 4.7
+
+Fast Mode 활성화 시 기본 모델이 Opus 4.6에서 **Opus 4.7**로 변경되었습니다.
+
+```bash
+# Opus 4.6으로 고정하려면 (이전 동작 유지)
+export CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1
+```
+
+**oh-my-customcode 연관**: R006 에이전트 프론트매터에서 `model: opus`를 사용하는 에이전트(arch-documenter, arch-speckit-agent 등)와 Fast Mode 상호작용에 주의. Fast Mode 토글(`/fast`)이 활성화된 세션에서는 Opus 4.7이 자동으로 선택됩니다. R012 statusline의 모델 표기도 4.7로 반영됩니다. 모델 변경에 따른 동작 차이가 있을 경우 위 환경 변수로 고정 가능.
+
+### Plugin root-level SKILL.md 지원
+
+플러그인 루트에 `SKILL.md`가 존재하면 `skills/` 서브디렉토리 없이도 스킬로 노출됩니다.
+
+**oh-my-customcode 연관**: oh-my-customcode는 `.claude/skills/<name>/SKILL.md` 패턴을 사용하므로 직접 영향 없음. 외부 플러그인이 루트 `SKILL.md`를 통해 스킬을 노출할 경우, 라우팅 스킬(R019 enrichment)이 이를 자동 감지합니다.
+
+### `/plugin details` — LSP 서버 표시
+
+`claude plugin details <name>` 명령의 상세 정보 패널에 플러그인이 제공하는 **LSP 서버** 목록이 추가됩니다.
+
+**oh-my-customcode 연관**: 플러그인 인벤토리 가시성 향상. LSP 통합 플러그인(ex: context7) 사용 시 서버 상태 확인에 활용 가능. 직접적인 harness 변경 불필요.
+
+### `/web-setup` — 기존 GitHub App 연결 교체 경고
+
+`/web-setup` 실행 시 기존 GitHub App 연결을 대체하기 전에 경고를 표시합니다.
+
+**oh-my-customcode 연관**: 영향 없음 (UX 안전장치, mgr-gitnerd GitHub 연동과 무관).
+
+### `MCP_TOOL_TIMEOUT` 수정 — 원격 MCP 서버 타임아웃
+
+`MCP_TOOL_TIMEOUT` 환경 변수가 원격 HTTP/SSE MCP 서버의 요청별 fetch 타임아웃을 실제로 높이도록 수정되었습니다 (기존 60초 상한선 해제).
+
+```bash
+export MCP_TOOL_TIMEOUT=120000  # 120초 (밀리초 단위)
+```
+
+**oh-my-customcode 연관**: `claude-mem`, `ontology-rag` 등 원격 MCP 서버를 사용하는 R011/R019 연동에서 타임아웃 문제가 있었다면 이 변수로 해결 가능. 네트워크 지연이 큰 환경에서 MCP 도구 호출 실패율 감소 기대.
+
+### BG 세션 / Git Worktree Edit 차단 수정
+
+백그라운드 세션에서 기존 git worktree 내 파일 편집이 차단되던 문제가 수정되었습니다.
+
+**oh-my-customcode 연관**: `mgr-gitnerd`가 worktree를 사용하는 브랜치 병렬 작업 시나리오에서 R009 병렬 에이전트 운영이 안정화됩니다.
+
+### BG 세션 macOS sleep/wake 소멸 수정
+
+macOS 절전/복귀 후 백그라운드 세션이 사라지던 문제가 수정되었습니다. 데몬이 클럭 점프를 감지하여 세션을 유지합니다.
+
+**oh-my-customcode 연관**: R018 Agent Teams 장시간 실행 세션의 안정성 개선. 긴 병렬 작업 중 macOS 절전 시 세션 유실 방지.
+
+### 데몬 바이너리 업그레이드 후 충돌 루프 수정
+
+`brew upgrade` 등 바이너리 업그레이드 후 데몬이 crash-loop에 빠지던 문제가 수정되었습니다.
+
+**oh-my-customcode 연관**: 영향 없음 (플랫폼 안정성 개선).
+
+### Claude-in-Chrome 확장 공유 탭 없을 때 BG 에이전트 충돌 수정
+
+**oh-my-customcode 연관**: 영향 없음 (브라우저 자동화 사용 시 환경 안정성 개선).
+
+### `claude agents` 연결 시 링크 클릭 수정
+
+연결된 `claude agents` 세션에서 링크 클릭 시 headless browser shim이 적용되지 않도록 수정되었습니다.
+
+**oh-my-customcode 연관**: 영향 없음 (UX 수정).
+
+### `claude agents` "v to open in editor" 수정
+
+`$EDITOR`/`$VISUAL` 환경 변수를 존중하도록 수정되었습니다 (기존: 데몬 기본값 사용).
+
+**oh-my-customcode 연관**: 영향 없음 (UX 수정).
+
+### `claude agents` Windows 네트워크 드라이브 데드락 수정
+
+**oh-my-customcode 연관**: macOS 개발 환경에는 영향 없음.
+
+### Apple Terminal 256색 배경색 번짐 수정
+
+`claude agents` 세션 연결 시 256색 터미널에서 배경색이 번지던 문제가 수정되었습니다.
+
+**oh-my-customcode 연관**: 영향 없음 (터미널 렌더링 수정).
+
+### `claude --bg --dangerously-skip-permissions` 유지 수정
+
+retire/wake 사이클 후에도 `--dangerously-skip-permissions` 플래그가 유지되도록 수정되었습니다.
+
+**oh-my-customcode 연관**: R010 unattended 실행 안정성 개선. 장시간 백그라운드 에이전트 실행 시 권한 모드 드롭 방지.
+
+### oh-my-customcode 연관 평가
+
+| 변경 | 영향 | Action |
+|------|------|--------|
+| `claude agents` 신규 플래그 | 고급 세션 구성 가능 | None (opt-in) |
+| Fast Mode 기본 모델 → Opus 4.7 | `model: opus` 에이전트 + Fast Mode 상호작용 | 필요 시 `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1` |
+| Plugin root SKILL.md | omcustom 패턴 미해당 | None |
+| `/plugin details` LSP 표시 | 인벤토리 가시성 향상 | None |
+| `/web-setup` 교체 경고 | UX 안전장치 | None |
+| `MCP_TOOL_TIMEOUT` 수정 | R011/R019 MCP 타임아웃 해결 | 필요 시 환경 변수 설정 |
+| BG + git worktree Edit 차단 수정 | R009 worktree 병렬 작업 안정화 | None |
+| BG macOS sleep/wake 소멸 수정 | R018 장시간 세션 안정성 | None |
+| 데몬 crash-loop 수정 | 플랫폼 안정성 | None |
+| 기타 버그 수정 (Chrome ext, links, editor, Windows, 256색, BG permissions) | 환경별 안정성 개선 | None |
+
+**Action items**: Fast Mode를 사용하는 경우 Opus 4.7 전환 영향을 확인하고, 필요 시 `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1`로 고정. `MCP_TOOL_TIMEOUT` 설정이 필요한 환경에서는 선택적으로 적용.
+
 ## v2.1.141 (2026-05-13) — 호환성 점검
 
 > Issue: #1137 — CC v2.1.141 compatibility documentation
@@ -153,7 +280,7 @@ transcript view에서 다음 단축키를 사용할 수 있습니다:
 }
 ```
 
-**oh-my-customcode 연관**: R012 HUD 이벤트 채널(stderr hooks)의 보완 수단. `terminalSequence`를 통해 창 제목(window title)을 태스크 상태로 업데이트하거나 긴 병렬 작업 완료 시 벨 신호를 보내는 활용이 가능합니다. **훅 수정은 별도 보안 승인이 필요** — `.claude/hooks/` 변경 시 사용자 명시 승인 필요 (R001).
+**oh-my-customcode 연관**: R012 HUD 이벤트 채널(stderr hooks)의 보완 수단. 현재 HUD는 stderr를 통해 에이전트 스폰 이벤트를 알리는데, `terminalSequence`를 통해 창 제목(window title)을 태스크 상태로 업데이트하거나 긴 병렬 작업 완료 시 벨 신호를 보내는 활용이 가능합니다. **훅 수정은 별도 보안 승인이 필요** — `.claude/hooks/` 변경 시 사용자 명시 승인 필요 (R001).
 
 ### 플러그인 설치: `CLAUDE_CODE_PLUGIN_PREFER_HTTPS`
 
@@ -164,36 +291,70 @@ export CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1
 claude plugin install superpowers
 ```
 
-**oh-my-customcode 연관**: GitHub SSH 키가 없는 CI 환경이나 기업 방화벽 환경에서 플러그인 설치 시 활용. 기존 설치 명령어에는 변경 불필요 (HTTPS는 opt-in).
+**oh-my-customcode 연관**: GitHub SSH 키가 없는 CI 환경이나 기업 방화벽 환경에서 oh-my-customcode 플러그인 설치 시 활용. CLAUDE.md 외부 의존성 섹션의 설치 명령어에는 변경 불필요 (HTTPS는 opt-in).
 
 ### 워크로드 아이덴티티: `ANTHROPIC_WORKSPACE_ID`
 
 Federation 규칙이 둘 이상의 workspace를 커버하는 경우, 발급 토큰을 특정 workspace로 스코핑하는 환경 변수입니다.
 
-**oh-my-customcode 연관**: 멀티 workspace 엔터프라이즈 환경에서 workspace 격리 강화. 현재 단일 workspace 사용자에게는 영향 없음.
+```bash
+export ANTHROPIC_WORKSPACE_ID=ws_xxxxxxxxxxxx
+```
+
+**oh-my-customcode 연관**: 멀티 workspace 엔터프라이즈 환경에서 R001(안전 규칙) 준수 측면의 워크스페이스 격리 강화. 현재 단일 workspace 사용자에게는 영향 없음.
 
 ### `claude agents --cwd <path>` — 디렉토리 스코프 세션 목록
 
+`claude agents` 명령이 `--cwd` 플래그를 지원합니다. 특정 디렉토리로 세션 목록을 필터링합니다.
+
 ```bash
 claude agents --cwd /workspace/repos/oh-my-customcode
+claude agents --cwd ~/projects/my-service
 ```
 
-**oh-my-customcode 연관**: R009 병렬 에이전트 모니터링 시 노이즈 감소. 모노레포/멀티 프로젝트 환경에서 현재 프로젝트 에이전트만 추적 가능.
+**oh-my-customcode 연관**: R009 병렬 에이전트 모니터링 시 노이즈 감소. 모노레포 또는 멀티 프로젝트 환경에서 현재 프로젝트 에이전트만 추적 가능. `guides/claude-code/13-cli-flags.md`에 `--cwd` 플래그 추가 권장 (별도 P3).
+
+### `/feedback` 최근 세션 포함 지원
+
+`/feedback` 명령이 최근 24시간 또는 7일 세션을 포함할 수 있게 되었습니다. 현재 세션을 넘나드는 이슈 제보 시 유용합니다.
+
+**oh-my-customcode 연관**: 멀티 세션에 걸친 에이전트 동작 이슈(R016 위반 패턴 등)를 Anthropic에 제보할 때 재현 컨텍스트를 자동 포함. 직접적인 harness 변경 불필요.
+
+### Rewind 메뉴: "Summarize up to here"
+
+Rewind 메뉴에 이전 턴까지의 컨텍스트를 압축하되 최근 대화를 보존하는 옵션이 추가되었습니다.
+
+**oh-my-customcode 연관**: R013 ecomode context budget 관리와 상호 보완. 수동 context 압축 도구로 활용 가능 (PreCompact/PostCompact 훅 — R006 Hook Event Types). `sys-memory-keeper`가 세션 종료 시 메모리를 저장하는 R011 패턴과 함께 사용하면 중요 컨텍스트 유실 없이 압축 가능.
+
+### Auto mode 권한 다이얼로그 개선
+
+`permissions.ask` 규칙이 권한 프롬프트를 트리거한 경우, 다이얼로그가 그 이유를 명시적으로 표시합니다.
+
+**oh-my-customcode 연관**: R002 권한 규칙 디버깅 개선. `bypassPermissions` 모드에서 예상치 못한 권한 프롬프트 발생 시 원인 파악이 쉬워짐. 개발자가 `.claude/hooks/hooks.json` 또는 settings의 `permissions` 설정을 진단하는 데 직접 도움.
+
+### IDE 연결 시 "view diff in your IDE" 복원
+
+파일 편집 권한 프롬프트에서 IDE 연결 상태일 때 "view diff in your IDE" 옵션이 복원되었습니다.
+
+**oh-my-customcode 연관**: 영향 없음 (UX 복원, harness 연동 없음).
 
 ### `/bg` 백그라운드 에이전트 권한 모드 유지
 
 `/bg` 또는 `←←`로 실행된 백그라운드 에이전트가 기본값으로 되돌아가지 않고 현재 세션의 권한 모드를 유지합니다.
 
-**oh-my-customcode 연관**: R010 `bypassPermissions` 맥락의 중요 개선. **v2.1.141+에서는 `/bg` 플로우에서 권한 모드 드롭이 발생하지 않음** — Agent tool 호출 시 `mode: "bypassPermissions"` 명시는 여전히 필요.
+**oh-my-customcode 연관**: R010 `bypassPermissions` 맥락에서 중요한 개선. 이전에는 `/bg`로 에이전트를 분리하면 `bypassPermissions` 설정이 유실되어 unattended 실행 중 권한 프롬프트가 발생할 수 있었습니다. **v2.1.141+에서는 `/bg` 플로우에서 권한 모드 드롭이 더 이상 발생하지 않음** — R010 Universal bypassPermissions 규칙은 Agent tool 호출에 여전히 필요하지만, `/bg` 전환 시 추가 workaround 불필요.
 
-### 기타 변경
+### `claude agents`: 백그라운드 셸 잔류 에이전트 상태 수정
 
-- `/feedback` — 최근 24h/7d 세션 포함 지원 (멀티 세션 이슈 제보 개선)
-- Rewind "Summarize up to here" — 최근 턴 보존하며 이전 컨텍스트 압축 (R013 ecomode 보완)
-- Auto mode 권한 다이얼로그 — `permissions.ask` 규칙 트리거 시 이유 표시 (R002 디버깅 개선)
-- "view diff in your IDE" — IDE 연결 시 파일 편집 권한 프롬프트에서 복원
-- `claude agents` Completed 상태 수정 — 백그라운드 셸 잔류 에이전트 올바른 상태 표시 (R009 가시성 개선)
-- thinking 스피너 개선 — opus/opusplan 사용 에이전트에서 체감
+작업을 완료했으나 백그라운드 셸이 계속 실행 중인 에이전트가 Working 대신 Completed 상태로 올바르게 표시됩니다.
+
+**oh-my-customcode 연관**: R009 병렬 에이전트 상태 가시성 개선. `claude agents`로 병렬 작업 모니터링 시 허위 Working 상태로 인한 혼란 감소.
+
+### 장시간 thinking 중 스피너 피드백 개선
+
+긴 reasoning 구간에서 스피너 표시가 개선되었습니다.
+
+**oh-my-customcode 연관**: 영향 없음 (UX 개선, opus/opusplan 모델 사용 에이전트에서 체감 가능).
 
 ### oh-my-customcode 연관 평가
 
@@ -203,10 +364,40 @@ claude agents --cwd /workspace/repos/oh-my-customcode
 | `CLAUDE_CODE_PLUGIN_PREFER_HTTPS` | CI/기업 환경 플러그인 설치 | None (opt-in) |
 | `ANTHROPIC_WORKSPACE_ID` | 멀티 workspace 환경 | None (단일 workspace) |
 | `claude agents --cwd` | 프로젝트별 세션 필터링 | P3: cli-flags 가이드 업데이트 |
-| `/bg` 권한 모드 유지 | R010 `/bg` 플로우 안전성 향상 | R010 규칙 노트 추가 (완료) |
-| 기타 additive 변경 | 사용자 환경 안정성 향상 | None |
+| `/feedback` 세션 범위 확장 | 이슈 제보 개선 | None |
+| Rewind "Summarize up to here" | R013 수동 context 압축 | None |
+| Auto mode 권한 다이얼로그 | R002 디버깅 개선 | None (수동적 효익) |
+| IDE diff 옵션 복원 | UX 복원 | None |
+| `/bg` 권한 모드 유지 | R010 `/bg` 플로우 안전성 향상 | **R010 규칙 노트 업데이트** |
+| `claude agents` Completed 상태 수정 | R009 상태 가시성 개선 | None |
+| thinking 스피너 개선 | UX | None |
 
-**Action items**: P3 2건 (`terminalSequence` hook 검토, cli-flags `--cwd` 추가). R010 규칙 `/bg` 노트 추가 (이번 release 처리).
+**Action items**: P3 2건 (`terminalSequence` hook 검토, cli-flags 가이드 `--cwd` 추가). R010 규칙 문서에 `/bg` 권한 모드 유지 노트 추가 (이번 release에서 처리).
+
+---
+
+## Known Limitations
+
+### `.gitignore` 중첩 `.md` 파일 패턴 제한
+
+현재 `.gitignore`에는 다음 패턴이 설정되어 있습니다:
+
+```gitignore
+docs/superpowers/plans/*
+!docs/superpowers/plans/*.md
+```
+
+이 패턴은 `docs/superpowers/plans/` **직접 자식** `.md` 파일만 추적합니다. git 시맨틱상 부모 디렉토리가 이미 제외(`*`)되면, 자식 디렉토리 내 파일의 `!` 부정 패턴이 효력을 발휘하지 않습니다. 예를 들어 `docs/superpowers/plans/subdir/plan.md`는 추적되지 않습니다.
+
+**현재 영향**: 없음. `release-plan` 스킬은 `docs/superpowers/plans/YYYY-MM-DD-<name>.md` 플랫 경로만 생성합니다. 중첩 `.md` 파일 추적이 필요해질 경우의 수정 방안:
+
+```gitignore
+docs/superpowers/plans/**
+!docs/superpowers/plans/*.md
+!docs/superpowers/plans/<subdir>/*.md  # 추적이 필요한 서브디렉토리 명시
+```
+
+> Issue: #1147 — 문서화 전용, 코드 변경 없음.
 
 ---
 
@@ -220,6 +411,7 @@ claude agents --cwd /workspace/repos/oh-my-customcode
 | v2.1.139 | None (additive). `/context all` fork skill 비용 모니터링 권장 | P3 follow-up |
 | v2.1.140 | P3 audit: managed `extraKnownMarketplaces` 영속화 + plugin.json default folder 무시 경고 | P3 follow-up |
 | v2.1.141 | P3: `terminalSequence` hook 검토 + cli-flags `--cwd` 추가. R010 `/bg` 권한 모드 유지 노트 추가 (완료) | P3 follow-up |
+| v2.1.142 | Fast Mode Opus 4.7 전환 확인 (필요 시 `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1`). `MCP_TOOL_TIMEOUT` 선택적 설정. | P3 follow-up |
 
 ## References
 
@@ -229,6 +421,8 @@ claude agents --cwd /workspace/repos/oh-my-customcode
 - #1126 — Claude Code v2.1.139 신규 명령 문서화
 - #1134 — Claude Code v2.1.140 release note
 - #1137 — Claude Code v2.1.141 compatibility documentation
+- #1158 — Claude Code v2.1.142 compatibility documentation
+- #1147 — .gitignore nested .md pattern limitation note
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec
