@@ -9,6 +9,30 @@ version: "2.0.0"
 steps:
   - name: pre-triage
     prompt: |
+      Phase 0 — Sync local with remote.
+
+      1. Fetch all remote state:
+         git fetch --all --tags --prune
+
+      2. Detect behind count vs origin/HEAD branch:
+         current_branch=$(git rev-parse --abbrev-ref HEAD)
+         behind=$(git rev-list --count HEAD..origin/$current_branch)
+
+      3. If behind > 0:
+         - Working tree clean (git status --short empty):
+           git pull --ff-only
+           report: "[pre-triage] synced $behind commits"
+         - Working tree dirty:
+           HALT with "[pre-triage] $behind commits behind, working tree dirty — manual reconcile required"
+           exit 1
+
+      4. Report current state:
+         - Latest tag: git tag --sort=-v:refname | head -1
+         - Local HEAD: git rev-parse --short HEAD
+         - Behind state: synced or 0
+
+      5. Cross-reference: compare latest tag with any "vX.Y.Z" version references in pipeline memory/context. Flag mismatches for awareness.
+
       Phase 1 — Ensure required labels exist, then scan issues.
 
       1. Create labels if missing (idempotent):
@@ -112,18 +136,31 @@ steps:
 
   - name: verify-build
     prompt: |
-      Project-specific build and test verification.
+      Project-specific build + test verification.
 
-      Auto-detect project type and run appropriate checks:
-      - Node/Bun: package.json → install + lint + type-check + test
-      - Python: py_compile + pytest
-      - Go: go build + go vet + go test
-      - Docker: docker build (if Dockerfile exists)
-      - Static site: file existence + format validation
+      For Node/Bun projects (this repo):
+      1. bun install — verify lockfile sync (halt on lockfile drift)
+      2. bun run lint (if package.json has lint script)
+      3. bun run typecheck (if available)
+      4. bun test — MANDATORY, no silent skip
+         - Baseline reference: #1156 historically documented 86 failures; v0.136.2 fixes resolved them → current baseline = 0
+         - Each release: adopt prior version's test result as baseline (dynamic, not hardcoded)
+         - Compute current pass/fail counts
+         - If current FAIL count > baseline → NEW regression detected → halt + report failure list
+         - If current FAIL count <= baseline → continue with advisory log "X failures (baseline {n}, delta {d})"
+      5. Build verification (if package has build script)
 
-      Halt on first failure. Report exact command + stderr.
-      Do NOT proceed to release if any check fails.
-    description: "Auto-detected build + test verification"
+      For Python/Go/Docker/static-site projects: auto-detect and run equivalent (py_compile + pytest / go build + go vet + go test / docker build / file validation).
+
+      Halt conditions:
+      - Lint errors (exit != 0)
+      - Typecheck errors
+      - NEW test failures (regression from baseline)
+      - Build failure
+      - Lockfile drift
+
+      Halt → report exact command + stderr + delta details. Do NOT proceed to release on any halt.
+    description: "Auto-detected build + test verification (bun test with baseline delta guard)"
     depends_on: implement
 
   - name: deep-verify
