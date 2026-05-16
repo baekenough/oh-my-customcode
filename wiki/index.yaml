@@ -3,11 +3,11 @@
 
 meta:
   updated: "2026-05-15"
-  total_pages: 268
+  total_pages: 269
   total_sources: 226
   counts:
     skills: 117
-    guides: 52
+    guides: 53
     agents: 49
     rules: 22
 
@@ -597,6 +597,9 @@ pages:
       summary: "When agents, skills, rules, or guides change, corresponding wiki pages should be updated"
 
   guides:
+    - file: guides/agent-workflow/autonomous-challenge-lessons.md
+      title: "Autonomous Challenge Lessons"
+      summary: "Ground-truth checks, tool-denial fallback, repeated failure discipline, and QA evidence rules for long autonomous runs"
     - file: guides/agent-eval.md
       title: "Agent Eval Guide"
       summary: "Measurement methodology for 4-metric quantitative agent evaluation (correctness, step_ratio, tool_call_ratio, latency_ratio) — ideal trajectory annotation, phased gate workflow, and tracing infrastructure alternatives."

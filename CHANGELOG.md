@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- CC v2.1.143 compatibility guide update in `guides/claude-code/15-version-compatibility.md` and templates (#1166).
+- New `destructive-git-guard.sh` Bash PreToolUse hook in source/templates: advisory warnings for `git reset --hard`, `git clean -fd/-fdx`, broad `git restore`, `git checkout -- .`, and `git branch -D`, with reflog recovery guidance (#1150).
+- New autonomous challenge lessons guide for ground-truth artifact checks, repeated tool-denial avoidance, launcher error discipline, and QA evidence quoting (#1149).
+
+### Changed
+- `qa-engineer` now requires code-grep/read evidence before citing selectors, identifiers, mappings, or CLI flags in QA reports (#1149).
+- Template manifest/README guide and hook counts updated for the new autonomous challenge guide and destructive git guard hook.
+
 ## [0.138.0] - 2026-05-15
 
 ### Added
