@@ -10,6 +10,7 @@ const HOOKS_JSON_PATH = resolve(import.meta.dir, '../../../templates/.claude/hoo
 
 const STAGE_BLOCKER_SCRIPT = join(SCRIPTS_DIR, 'stage-blocker.sh');
 const GIT_DELEGATION_GUARD_SCRIPT = join(SCRIPTS_DIR, 'git-delegation-guard.sh');
+const DESTRUCTIVE_GIT_GUARD_SCRIPT = join(SCRIPTS_DIR, 'destructive-git-guard.sh');
 const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
 const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
 const SESSION_ENV_CHECK_SCRIPT = join(SCRIPTS_DIR, 'session-env-check.sh');
@@ -551,6 +552,71 @@ describe('git-delegation-guard.sh', () => {
 });
 
 // -------------------------------------------------------------------
+// destructive-git-guard.sh
+// -------------------------------------------------------------------
+
+describe('destructive-git-guard.sh', () => {
+  function makeBashInput(command: string): string {
+    return JSON.stringify({
+      tool: 'Bash',
+      tool_input: { command },
+    });
+  }
+
+  it('should pass bash syntax check', async () => {
+    const { exitCode, stderr } = await bashSyntaxCheck(DESTRUCTIVE_GIT_GUARD_SCRIPT);
+    expect(exitCode).toBe(0);
+    if (stderr) console.warn('Syntax warnings:', stderr);
+  });
+
+  it('should pass through normal git commands without warnings', async () => {
+    const input = makeBashInput('git status && git log --oneline -1');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).not.toContain('DESTRUCTIVE GIT WARNING');
+  });
+
+  it('should warn but not block git reset --hard', async () => {
+    const input = makeBashInput('git reset --hard HEAD~1');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).toContain('DESTRUCTIVE GIT WARNING');
+    expect(result.stderr).toContain('git reset --hard');
+    expect(result.stderr).toContain('git reflog');
+  });
+
+  it('should warn but not block git clean -fdx', async () => {
+    const input = makeBashInput('git clean -fdx');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('DESTRUCTIVE GIT WARNING');
+    expect(result.stderr).toContain('git clean');
+  });
+
+  it('should warn but not block git checkout -- .', async () => {
+    const input = makeBashInput('git checkout -- .');
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('DESTRUCTIVE GIT WARNING');
+    expect(result.stderr).toContain('git checkout -- .');
+  });
+
+  it('should be registered in hooks.json for destructive Git Bash PreToolUse', async () => {
+    const raw = await readFile(HOOKS_JSON_PATH, 'utf-8');
+    const hooksConfig = JSON.parse(raw);
+    const entry = hooksConfig.hooks.PreToolUse.find(
+      (hook: { matcher?: string; hooks?: { command?: string }[] }) =>
+        hook.matcher?.includes('tool == "Bash"') &&
+        hook.matcher?.includes('git (reset|clean|checkout|restore|switch|rebase|merge)') &&
+        hook.hooks?.some((h) => h.command?.includes('destructive-git-guard.sh'))
+    );
+    expect(entry).toBeTruthy();
+  });
+});
+
+// -------------------------------------------------------------------
 // agent-teams-advisor.sh
 // -------------------------------------------------------------------
 
@@ -993,6 +1059,7 @@ describe('Script file validation', () => {
   const EXPECTED_SCRIPTS = [
     'stage-blocker.sh',
     'git-delegation-guard.sh',
+    'destructive-git-guard.sh',
     'stop-console-audit.sh',
     'agent-teams-advisor.sh',
     'session-env-check.sh',

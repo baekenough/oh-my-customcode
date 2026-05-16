@@ -90,7 +90,17 @@
             "command": "bash .claude/hooks/scripts/rtk-intercept.sh"
           }
         ],
-        "description": "RTK auto-intercept \u2014 transparently rewrites CLI commands through RTK proxy when available (R015 advisory)"
+        "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R015 advisory)"
+      },
+      {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"git (reset|clean|checkout|restore|switch|rebase|merge)\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/destructive-git-guard.sh"
+          }
+        ],
+        "description": "Warn before destructive git commands — advisory recovery guidance (R001/R021)"
       },
       {
         "matcher": "tool == \"Bash\" && tool_input.command matches \"(rm|git rm|mv|unlink|claude/rules)\"",
