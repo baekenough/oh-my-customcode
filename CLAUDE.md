@@ -245,7 +245,8 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 
 | 서버 | 용도 |
 |------|------|
-| claude-mem | 세션 메모리 영속성 (Chroma 기반) — Phase β 이후 AgentMemory로 교체 예정 (#1169) |
+| claude-mem | 세션 메모리 영속성 (Chroma 기반) — Phase β (#1169) COEXIST 진행 중 |
+| **agentmemory** | claude-mem 대체 후보 (SQLite 기반, 4-tier consolidation) — Phase 1 COEXIST (#1169) |
 | code-review-graph | Token-efficient AST 기반 context retrieval (8.2× 토큰 절감) — wrapper: `crg-integration` 스킬 (#1171) |
 | semble | Semantic code search via embeddings (98% 토큰 절감, NDCG@10=0.854) — wrapper: `semble-integration` 스킬 (#1173) |
 
@@ -263,6 +264,12 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 # MCP 설정 (claude-mem)
 npm install -g claude-mem
 claude-mem setup
+
+# AgentMemory MCP 설치 (claude-mem 대체 후보, COEXIST)
+pip install agentmemory
+claude mcp add agentmemory -- agentmemory mcp
+# 또는 .mcp.json 수동 편집 (R001 auto-install 금지)
+# Phase 1 COEXIST 가이드: guides/agentmemory-migration/phase-1-coexist.md
 
 # CRG MCP 설치 (token efficiency)
 pipx install code-review-graph
