@@ -3,11 +3,11 @@
 
 meta:
   updated: "2026-05-18"
-  total_pages: 273
-  total_sources: 230
+  total_pages: 274
+  total_sources: 231
   counts:
     skills: 118
-    guides: 55
+    guides: 56
     agents: 49
     rules: 23
 
@@ -765,6 +765,9 @@ pages:
     - file: guides/deep-plan.md
       title: "Deep Plan Guide"
       summary: "Research-validated 3-phase planning (Discovery Research → Reality-Check Planning → Plan Verification) that eliminates assumption-reality gaps before implementation begins"
+    - file: guides/agentmemory-migration.md
+      title: "AgentMemory Migration — Step 0: MEASURE"
+      summary: "claude-mem → native AgentMemory 마이그레이션 Phase 1 진입 전 실사용 빈도 측정 가이드. 1주 3-포인트 수집 계획, 해석 기준(0/1-3/4+), GO/NO-GO 결정 매트릭스. #1169"
 
   workflows:
     - file: workflows/development-workflow.md

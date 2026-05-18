@@ -1,5 +1,5 @@
 {
-  "version": "0.139.0",
+  "version": "0.140.0",
   "lastUpdated": "2026-05-18T00:00:00.000Z",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
@@ -26,7 +26,7 @@
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
-      "files": 53
+      "files": 54
     },
     {
       "name": "hooks",
