@@ -1,6 +1,6 @@
 {
-  "version": "0.138.0",
-  "lastUpdated": "2026-05-14T00:00:00.000Z",
+  "version": "0.139.0",
+  "lastUpdated": "2026-05-18T00:00:00.000Z",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
   "components": [
@@ -8,7 +8,7 @@
       "name": "rules",
       "path": ".claude/rules",
       "description": "Agent behavior rules and guidelines",
-      "files": 22
+      "files": 23
     },
     {
       "name": "agents",
@@ -20,13 +20,13 @@
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 117
+      "files": 118
     },
     {
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
-      "files": 51
+      "files": 53
     },
     {
       "name": "hooks",

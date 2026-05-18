@@ -86,6 +86,7 @@ oh-my-customcode로 구동됩니다.
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
 | R019 | Ontology-RAG 라우팅 | 라우팅 스킬의 ontology-RAG enrichment |
 | R022 | Wiki 동기화 | 에이전트/스킬/룰/가이드 변경 시 위키 자동 동기화 |
+| R023 | Verification Ladder | 검증 비용 ladder: Tier 1(결정론적) → Tier 4(human) shift-left |
 
 ### MAY (선택)
 | ID | 규칙 | 설명 |
@@ -116,11 +117,11 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (49 파일)
-|   +-- skills/                  # 스킬 (117 디렉토리)
-|   +-- rules/                   # 전역 규칙 (R000-R022)
+|   +-- skills/                  # 스킬 (118 디렉토리)
+|   +-- rules/                   # 전역 규칙 (R000-R023)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
-+-- guides/                      # 레퍼런스 문서 (49 토픽)
++-- guides/                      # 레퍼런스 문서 (53 토픽)
 ```
 
 ## 오케스트레이션
@@ -244,7 +245,8 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 
 | 서버 | 용도 |
 |------|------|
-| claude-mem | 세션 메모리 영속성 (Chroma 기반) |
+| claude-mem | 세션 메모리 영속성 (Chroma 기반) — Phase β 이후 AgentMemory로 교체 예정 (#1169) |
+| code-review-graph | Token-efficient AST 기반 context retrieval (8.2× 토큰 절감) — wrapper: `crg-integration` 스킬 (#1171) |
 
 ### 설치 명령어
 
@@ -260,6 +262,10 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 # MCP 설정 (claude-mem)
 npm install -g claude-mem
 claude-mem setup
+
+# CRG MCP 설치 (token efficiency)
+pipx install code-review-graph
+# .mcp.json 에 code-review-graph 서버 수동 추가 (R001 auto-install 금지)
 ```
 
 <!-- omcustom:git-workflow -->
