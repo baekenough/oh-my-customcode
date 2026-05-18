@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-49 agents. 119 skills. 23 rules. One command.
+49 agents. 121 skills. 23 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -132,7 +132,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (119)
+### Skills (121)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -222,7 +222,7 @@ Key rules: R010 (orchestrator never writes files), R009 (parallel execution mand
 
 ---
 
-### Guides (54)
+### Guides (57)
 
 Reference documentation covering best practices, architecture decisions, and integration patterns. Located in `guides/` at project root, covering topics from agent design to CI/CD to observability.
 
@@ -272,14 +272,14 @@ your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
 │   ├── agents/                 # 49 agent definitions
-│   ├── skills/                 # 119 skill modules
+│   ├── skills/                 # 121 skill modules
 │   ├── rules/                  # 22 governance rules (R000-R021)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
 │   ├── contexts/               # 4 shared context files
 │   └── ontology/               # Knowledge graph for RAG
-└── guides/                     # 54 reference documents
+└── guides/                     # 57 reference documents
 ```
 
 ---

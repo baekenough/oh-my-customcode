@@ -128,3 +128,60 @@ IMPORTANT: Restart this Claude Code session for plugin changes to take effect.
 - Profiles define a subset: plugins not listed in `enabled` or `disabled` keep their current state
 - Profile JSON `enabled`/`disabled` lists use full plugin keys: `<name>@<marketplace>` format
 - All `.claude/` writes use the /tmp bypass pattern (see Implementation rules above)
+
+## Manifest Profile Integration
+
+`templates/manifest.json` 의 `profiles` 키는 **자산 필터링** (에이전트·스킬·가이드 범위)을 정의합니다. 기존 `.claude/profiles/*.json` 의 **플러그인 전환** 역할과 분리된 개념입니다.
+
+### 두 프로필 시스템 비교
+
+| 시스템 | 경로 | 역할 | 적용 시점 |
+|--------|------|------|-----------|
+| Plugin profiles | `.claude/profiles/*.json` | `~/.claude/settings.json` plugin on/off | 세션 재시작 후 |
+| Manifest profiles | `templates/manifest.json#profiles` | 설치 시 에이전트·스킬·가이드 범위 지정 | `omcustom install --profile <name>` |
+
+### Manifest Profile 사용 시나리오
+
+```bash
+# 최소 자산으로 설치 (학습·실험 환경)
+omcustom install --profile minimal
+
+# Web 앱 개발 전용 자산 설치
+omcustom install --profile web-app
+
+# 데이터 엔지니어링 전용 자산 설치
+omcustom install --profile data-eng
+
+# 전체 자산 설치 (기본값)
+omcustom install --profile full
+# 또는 (profile 생략 시 full과 동일)
+omcustom install
+```
+
+### include 패턴 해석 규칙
+
+| 패턴 | 의미 | 예시 |
+|------|------|------|
+| `"*"` | 해당 카테고리 전체 포함 | `"include": "*"` |
+| `"mgr-*"` | glob 패턴, 접두사 매칭 | mgr-creator, mgr-gitnerd 등 |
+| `{"scope": "core"}` | SKILL.md의 scope 필드 기준 | scope: core인 스킬 전체 |
+| `"react-best-practices"` | 특정 스킬/가이드 이름 | 해당 항목만 포함 |
+
+### Plugin + Manifest 프로필 연동 가이드
+
+동일 이름(예: `web-app`)으로 두 시스템을 함께 사용할 수 있습니다:
+
+```bash
+# 1. Manifest profile로 자산 설치
+omcustom install --profile web-app
+
+# 2. Plugin profile로 플러그인 전환
+/profile load web-app
+```
+
+두 시스템은 독립적이므로 어느 하나만 사용해도 무방합니다.
+
+### 관련 문서
+
+- `guides/profiles/manifest-install.md` — 전체 사용 가이드 및 프로필별 자산 표
+- `templates/manifest.json#profiles` — 프로필 정의 소스

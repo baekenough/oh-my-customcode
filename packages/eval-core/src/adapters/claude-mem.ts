@@ -17,9 +17,22 @@ import { detectSensitivity, type SensitivityTier } from './sensitivity.js';
 // MemoryRecord — unified schema (docs/memory-unification/schema.md)
 // ---------------------------------------------------------------------------
 
+/**
+ * All recognised memory sources in the unified pipeline.
+ *
+ * 'agentmemory' was added as the 5th source in #1178.
+ * It is a STUB — the adapter returns empty results until #1169 Phase 1 activates it.
+ */
+export type MemorySource =
+  | 'native'
+  | 'claude-mem'
+  | 'episodic-memory'
+  | 'llm-memory'
+  | 'agentmemory'; // STUB: full activation in #1169 Phase 1 (COEXIST)
+
 export interface MemoryRecord {
   id: string;
-  source: 'native' | 'claude-mem' | 'episodic-memory' | 'llm-memory';
+  source: MemorySource;
   device_id: string;
   project: string;
   agent?: string;

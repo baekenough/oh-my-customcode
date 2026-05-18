@@ -3,11 +3,11 @@
 
 meta:
   updated: "2026-05-18"
-  total_pages: 276
-  total_sources: 233
+  total_pages: 282
+  total_sources: 239
   counts:
-    skills: 119
-    guides: 57
+    skills: 121
+    guides: 60
     agents: 49
     rules: 23
 
@@ -449,6 +449,9 @@ pages:
     - file: skills/rust-best-practices.md
       title: "Rust Best Practices"
       summary: "Idiomatic Rust patterns from official Rust API Guidelines and The Rust Book."
+    - file: skills/sec-agentshield-wrapper.md
+      title: "sec-agentshield-wrapper"
+      summary: "Pre-flight security analysis before code changes — identifies trust boundary risks, dangerous patterns, and provides proceed/caution/block advisory before implementation starts"
     - file: skills/sauron-watch.md
       title: "Sauron Watch"
       summary: "Full R017 structural verification — the all-seeing eye for system integrity."
@@ -470,6 +473,9 @@ pages:
     - file: skills/secretary-routing.md
       title: "Secretary Routing"
       summary: "Routes agent management tasks to the correct manager agent."
+    - file: skills/instinct-extractor.md
+      title: "Instinct Extractor"
+      summary: "Multi-session transcript mining for recurring failure patterns (instinct) — auto-generates skill candidates via cross-session (domain, action_verb, error_class) clustering. R016 Skill Promotion automation."
     - file: skills/skill-extractor.md
       title: "Skill Extractor"
       summary: "Analyze task trajectories to propose reusable SKILL.md candidates from successful"
@@ -774,6 +780,15 @@ pages:
     - file: guides/agentmemory-migration.md
       title: "AgentMemory Migration — Step 0: MEASURE"
       summary: "claude-mem → native AgentMemory 마이그레이션 Phase 1 진입 전 실사용 빈도 측정 가이드. 1주 3-포인트 수집 계획, 해석 기준(0/1-3/4+), GO/NO-GO 결정 매트릭스. #1169"
+    - file: guides/security-agentshield-pre-flight.md
+      title: "Security — AgentShield Pre-flight Guide"
+      summary: "Pre-write security analysis pattern guide — full security asset timeline (pre/post-write), standard pipeline, scenario-based advisory examples, and CRG integration for trust boundary analysis"
+    - file: guides/skill-promotion-instinct-extraction.md
+      title: "Skill Promotion — Instinct Extraction Guide"
+      summary: "Comparison guide for skill-extractor vs instinct-extractor — R016 Skill Promotion workflow, confidence cross-validation matrix, and recommended invocation frequency"
+    - file: guides/profiles-manifest-install.md
+      title: "Profiles — Manifest Install Guide"
+      summary: "omcustom install --profile flag guide — manifest profiles vs plugin profiles distinction, 5 built-in profiles (minimal/full/web-app/data-eng/harness-dev), include pattern reference"
 
   workflows:
     - file: workflows/development-workflow.md
