@@ -117,7 +117,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (49 파일)
-|   +-- skills/                  # 스킬 (118 디렉토리)
+|   +-- skills/                  # 스킬 (119 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R023)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -247,6 +247,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 |------|------|
 | claude-mem | 세션 메모리 영속성 (Chroma 기반) — Phase β 이후 AgentMemory로 교체 예정 (#1169) |
 | code-review-graph | Token-efficient AST 기반 context retrieval (8.2× 토큰 절감) — wrapper: `crg-integration` 스킬 (#1171) |
+| semble | Semantic code search via embeddings (98% 토큰 절감, NDCG@10=0.854) — wrapper: `semble-integration` 스킬 (#1173) |
 
 ### 설치 명령어
 
@@ -266,6 +267,11 @@ claude-mem setup
 # CRG MCP 설치 (token efficiency)
 pipx install code-review-graph
 # .mcp.json 에 code-review-graph 서버 수동 추가 (R001 auto-install 금지)
+
+# Semble MCP 설치 (semantic code search)
+uv tool install semble
+claude mcp add semble -- semble mcp
+# 또는 .mcp.json 수동 편집 (R001 auto-install 금지)
 ```
 
 <!-- omcustom:git-workflow -->
