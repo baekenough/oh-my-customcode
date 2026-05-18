@@ -11,11 +11,11 @@
  * NOTE: This module is pure (no I/O, no DB). Persistence is a separate concern.
  */
 
-import type { MemoryRecord } from './adapters/claude-mem.js';
+import type { MemoryRecord, MemorySource } from './adapters/claude-mem.js';
 import { type SensitivityTier } from './adapters/sensitivity.js';
 
-// Re-export MemoryRecord so callers can import from one place.
-export type { MemoryRecord };
+// Re-export MemoryRecord and MemorySource so callers can import from one place.
+export type { MemoryRecord, MemorySource };
 
 // ---------------------------------------------------------------------------
 // Sensitivity tier ordering (lowest → strictest)
@@ -62,9 +62,12 @@ export interface AggregateOptions {
   conflictPolicy?: 'newest' | 'oldest' | 'priority';
   /**
    * Source preference order for the 'priority' conflict policy.
-   * Default: ['native', 'claude-mem', 'episodic-memory', 'llm-memory']
+   * Default: ['native', 'claude-mem', 'episodic-memory', 'llm-memory', 'agentmemory']
+   *
+   * 'agentmemory' is listed last — it is a STUB (see #1178) and contributes
+   * 0 records until #1169 Phase 1 activates the full adapter.
    */
-  sourcePriority?: ('native' | 'claude-mem' | 'episodic-memory' | 'llm-memory')[];
+  sourcePriority?: MemorySource[];
 }
 
 export interface AggregateResult {
@@ -98,7 +101,8 @@ export function aggregateMemoryRecords(opts: AggregateOptions): AggregateResult 
   const {
     records: adapterResults,
     conflictPolicy = 'newest',
-    sourcePriority = ['native', 'claude-mem', 'episodic-memory', 'llm-memory'],
+    // 'agentmemory' appended last — STUB, contributes 0 records until #1169 Phase 1
+    sourcePriority = ['native', 'claude-mem', 'episodic-memory', 'llm-memory', 'agentmemory'],
   } = opts;
 
   // 1. Flatten
