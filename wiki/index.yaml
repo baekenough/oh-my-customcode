@@ -3,11 +3,11 @@
 
 meta:
   updated: "2026-05-18"
-  total_pages: 274
-  total_sources: 231
+  total_pages: 276
+  total_sources: 233
   counts:
-    skills: 118
-    guides: 56
+    skills: 119
+    guides: 57
     agents: 49
     rules: 23
 
@@ -455,6 +455,9 @@ pages:
     - file: skills/scout.md
       title: "Scout"
       summary: "Analyze external URL to evaluate project fit and integration potential."
+    - file: skills/semble-integration.md
+      title: "Semble Integration"
+      summary: "Semble (MinishLab) MCP wrapper — semantic code search via embeddings (98% token reduction vs grep+read, NDCG@10=0.854)"
     - file: skills/sdd-dev.md
       title: "SDD Dev"
       summary: "Spec-Driven Development workflow using sdd/ folder as the single source of truth"
@@ -750,6 +753,9 @@ pages:
     - file: guides/token-efficiency-crg.md
       title: "Token Efficiency — CRG Integration Guide"
       summary: "code-review-graph(CRG) MCP server integration for AST-based token-efficient context retrieval. 8.2x token reduction benchmark (AST-suited tasks). Ecomode complement, 4-tool wrapper, recall-first caution."
+    - file: guides/token-efficiency-semble.md
+      title: "Token Efficiency — Semble Integration Guide"
+      summary: "MinishLab/semble MCP server integration for semantic code search. ~98% token reduction vs grep+Read, NDCG@10=0.854. R013 ecomode complement, CRG comparison, R001-compliant install guide."
     - file: guides/compound-ai-workflow.md
       title: "Compound AI Workflow"
       summary: "Eugene Yan's 5-principle compound AI workflow internalized into oh-my-customcode: Context Infrastructure, Taste as Configuration, Verification Ladders, Scaled Delegation, Loop Closure — with asset mappings."
