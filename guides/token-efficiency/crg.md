@@ -159,7 +159,7 @@ AST 노드 그래프에 자연어 쿼리를 실행한다.
 2. /adversarial-review {minimal_context} → 보안/논리 취약점 검토
 ```
 
-<!-- TODO: 향후 cross-ref 추가 — adversarial-review 스킬 업데이트 시 -->
+> **Cross-ref**: `dev-review` 및 `adversarial-review` 스킬에 CRG 호출 패턴 통합됨 (v0.140.0, #1180).
 
 ### R013 Ecomode 활성 시
 
