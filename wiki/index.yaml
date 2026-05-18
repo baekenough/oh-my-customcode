@@ -3,11 +3,11 @@
 
 meta:
   updated: "2026-05-18"
-  total_pages: 282
+  total_pages: 285
   total_sources: 239
   counts:
     skills: 121
-    guides: 60
+    guides: 63
     agents: 49
     rules: 23
 
@@ -789,6 +789,15 @@ pages:
     - file: guides/profiles-manifest-install.md
       title: "Profiles — Manifest Install Guide"
       summary: "omcustom install --profile flag guide — manifest profiles vs plugin profiles distinction, 5 built-in profiles (minimal/full/web-app/data-eng/harness-dev), include pattern reference"
+    - file: guides/security.md
+      title: "Security Guide"
+      summary: "Index for guides/security/ — pre-write AgentShield pre-flight pattern, post-write adversarial review, CodeQL static analysis, and CVE triage across the full security asset timeline"
+    - file: guides/skill-promotion.md
+      title: "Skill Promotion Guide"
+      summary: "Index for guides/skill-promotion/ — skill-extractor vs instinct-extractor comparison, R016 promotion workflow, context fork cap, and mgr-creator delegation for new SKILL.md creation"
+    - file: guides/profiles.md
+      title: "Profiles Guide"
+      summary: "Index for guides/profiles/ — profile-based installation with 5 built-in profiles (minimal/full/web-app/data-eng/harness-dev) for reducing onboarding cost and per-session token overhead"
 
   workflows:
     - file: workflows/development-workflow.md
