@@ -137,6 +137,30 @@ Reference: `feedback_sensitive_path_tmp_bypass.md`, R006 sensitive-path handling
    ```
    The review agent creates the directory and writes the artifact before returning results (R010 compliance).
 
+## CRG Integration (Optional Token-Efficiency)
+
+`crg-integration` 스킬이 사용 가능한 경우 (MCP `code-review-graph` 연결 시), 리뷰 시작 전 먼저 호출하여 토큰 비용을 절감한다:
+
+| Phase | CRG Tool | Purpose |
+|-------|----------|---------|
+| Pre-review | `get_impact_radius` | 변경 영향 범위 사전 파악 (recall-우선) |
+| Search | `query_graph` | AST 기반 호출자/피호출자 추적 |
+| Diff analysis | `get_minimal_context` | 변경 코드의 최소 컨텍스트 |
+| Semantic check | `detect_changes` | 두 시점 의미적 차이 |
+
+### Fallback (CRG 미설치 시)
+
+CRG MCP 미연결 시 자동 fallback:
+1. grep/Grep 도구로 영향 범위 추적
+2. `claude-mem:smart-explore` (Phase β 이후 deprecated)
+3. 전체 디렉토리 읽기 (R013 ecomode 트리거 가능성)
+
+### R013 Ecomode 정합
+
+context >= 60% 시 CRG 호출 적극 권장. 8.2× 토큰 절감 (`guides/token-efficiency/crg.md` 벤치마크).
+
+Refs: #1171 (CRG 통합), #1180 (본 cross-ref 추가)
+
 ## Agent Selection
 
 | File Extension | Agent | Skill |
