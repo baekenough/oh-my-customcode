@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# scripts/measure-claude-mem-usage.sh
+# Measure claude-mem:* skill invocation frequency before AgentMemory migration (#1169 step 0 MEASURE)
+# Refs: feedback_claude_mem_maintenance, #1169 body action 5
+#
+# Usage:
+#   bash scripts/measure-claude-mem-usage.sh
+#   bash scripts/measure-claude-mem-usage.sh --days 14
+#   bash scripts/measure-claude-mem-usage.sh --output ~/Documents/claude-mem-usage.md
+#   bash scripts/measure-claude-mem-usage.sh --quiet
+set -euo pipefail
+
+DAYS=7
+OUTPUT=""
+QUIET=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --days)   DAYS="$2";   shift 2 ;;
+    --output) OUTPUT="$2"; shift 2 ;;
+    --quiet)  QUIET=1;     shift   ;;
+    *)
+      echo "Unknown arg: $1" >&2
+      echo "Usage: $0 [--days N] [--output PATH] [--quiet]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+OUTPUT="${OUTPUT:-${HOME}/.claude/measure-claude-mem-usage-$(date +%Y-%m-%d).md}"
+
+ARCHIVES="${HOME}/.claude-mem/archives"
+SESSIONS_GLOB="${HOME}/.claude/projects/*/session-*.jsonl"
+
+# 12 known claude-mem skills
+TRACKED=(
+  "claude-mem:do"
+  "claude-mem:make-plan"
+  "claude-mem:babysit"
+  "claude-mem:wowerpoint"
+  "claude-mem:knowledge-agent"
+  "claude-mem:pathfinder"
+  "claude-mem:smart-explore"
+  "claude-mem:smart-search"
+  "claude-mem:smart-unfold"
+  "claude-mem:mem-search"
+  "claude-mem:learn-codebase"
+  "claude-mem:how-it-works"
+)
+
+[ "$QUIET" -eq 0 ] && echo "Measuring claude-mem usage (last ${DAYS} days)..."
+
+# Compute cutoff epoch (macOS stat -f %m / GNU stat -c %Y)
+if date -v-"${DAYS}"d +%s >/dev/null 2>&1; then
+  CUTOFF_EPOCH=$(date -v-"${DAYS}"d +%s)   # macOS / BSD
+else
+  CUTOFF_EPOCH=$(date -d "${DAYS} days ago" +%s)  # Linux / GNU
+fi
+
+# Portable file mtime helper
+file_mtime() {
+  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0
+}
+
+# Collect per-skill counts into an associative array
+declare -A COUNTS
+for skill in "${TRACKED[@]}"; do
+  COUNTS["$skill"]=0
+done
+
+# --- Scan archives ---
+if [ -d "$ARCHIVES" ]; then
+  while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    mtime=$(file_mtime "$f")
+    [ "$mtime" -ge "$CUTOFF_EPOCH" ] || continue
+    for skill in "${TRACKED[@]}"; do
+      n=$(grep -c "$skill" "$f" 2>/dev/null || true)
+      COUNTS["$skill"]=$(( COUNTS["$skill"] + n ))
+    done
+  done < <(find "$ARCHIVES" -type f \( -name '*.jsonl' -o -name '*.json' \) 2>/dev/null)
+else
+  [ "$QUIET" -eq 0 ] && echo "  (archives dir not found: ${ARCHIVES} — skipping)" >&2
+fi
+
+# --- Scan Claude Code session logs ---
+SESSION_FILES_FOUND=0
+for f in $SESSIONS_GLOB 2>/dev/null; do
+  [ -f "$f" ] || continue
+  SESSION_FILES_FOUND=$(( SESSION_FILES_FOUND + 1 ))
+  mtime=$(file_mtime "$f")
+  [ "$mtime" -ge "$CUTOFF_EPOCH" ] || continue
+  for skill in "${TRACKED[@]}"; do
+    n=$(grep -c "$skill" "$f" 2>/dev/null || true)
+    COUNTS["$skill"]=$(( COUNTS["$skill"] + n ))
+  done
+done
+
+[ "$QUIET" -eq 0 ] && echo "  session files scanned: ${SESSION_FILES_FOUND}"
+
+# --- Write markdown report ---
+TMP=$(mktemp)
+{
+  echo "# claude-mem Usage Report"
+  echo ""
+  echo "**Generated**: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "**Scope**: last ${DAYS} days"
+  echo "**Cutoff**: $(date -u -r "$CUTOFF_EPOCH" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "(cutoff epoch: ${CUTOFF_EPOCH})")"
+  echo "**Sources**:"
+  echo "  - \`${ARCHIVES}\`"
+  echo "  - \`${HOME}/.claude/projects/*/session-*.jsonl\`"
+  echo ""
+  echo "## Skill Invocation Counts"
+  echo ""
+  echo "| Skill | Count | Category |"
+  echo "|-------|-------|----------|"
+
+  DEPRECATED=("claude-mem:do" "claude-mem:make-plan" "claude-mem:babysit" "claude-mem:wowerpoint" "claude-mem:knowledge-agent" "claude-mem:pathfinder")
+
+  for skill in "${TRACKED[@]}"; do
+    count="${COUNTS[$skill]}"
+    # Mark deprecated skills
+    cat="active"
+    for dep in "${DEPRECATED[@]}"; do
+      if [ "$dep" = "$skill" ]; then
+        cat="deprecated (candidate)"
+        break
+      fi
+    done
+    echo "| \`${skill}\` | ${count} | ${cat} |"
+  done
+
+  TOTAL=0
+  for skill in "${TRACKED[@]}"; do
+    TOTAL=$(( TOTAL + COUNTS["$skill"] ))
+  done
+  echo ""
+  echo "**Total invocations**: ${TOTAL}"
+  echo ""
+  echo "## Interpretation Guide"
+  echo ""
+  echo "| Count | Signal | Recommended Action |"
+  echo "|-------|--------|--------------------|"
+  echo "| 0     | Unused | Safe to deprecate (confirm after 1 week) |"
+  echo "| 1-3   | Rare   | Wrapper or alternative tool mapping required |"
+  echo "| 4+    | Regular use | Clarify replacement tool before deprecating |"
+  echo ""
+  echo "## Next Steps"
+  echo ""
+  echo "1. Attach this report to #1169:"
+  echo "   \`\`\`bash"
+  echo "   gh issue comment 1169 --body-file \"${OUTPUT}\""
+  echo "   \`\`\`"
+  echo "2. Review asset disposition table:"
+  echo "   \`.claude/agent-memory/sys-memory-keeper/feedback_claude_mem_maintenance.md\`"
+  echo "3. Make Phase 1 (COEXIST) GO/NO-GO decision based on counts."
+  echo ""
+  echo "---"
+  echo "_Generated by \`scripts/measure-claude-mem-usage.sh\` — #1169 step 0 MEASURE_"
+} > "$TMP"
+
+mv "$TMP" "$OUTPUT"
+
+[ "$QUIET" -eq 0 ] && echo "Report written: $OUTPUT"
