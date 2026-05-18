@@ -381,3 +381,45 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 - MCP saves are **non-blocking**: memory failure MUST NOT prevent session from ending
 - If claude-mem unavailable: skip, log warning
 - episodic-memory: no action needed (auto-indexed after session)
+
+## Dual-Backend Advisory (AgentMemory + claude-mem)
+
+#1169 Phase 1 (COEXIST) 단계에서 두 memory backend 동시 활성 가능:
+
+| 상황 | 권장 |
+|------|------|
+| claude-mem 단독 | 기본값 — 현 운영 유지 |
+| AgentMemory 단독 | Phase 2 (SWITCH) 이후 진행 |
+| 둘 다 활성 (COEXIST) | Phase 1 한정 — `memory-aggregator`가 결과 병합 |
+
+### 충돌 감지
+
+`.mcp.json`에 두 서버(`claude-mem`, `agentmemory`) 동시 등록 시 첫 호출 시점에 advisory 출력 권장:
+
+```
+[Advisory] Dual memory backend detected (Phase 1 COEXIST)
+  - claude-mem: active (Chroma)
+  - agentmemory: active (SQLite)
+  Phase 2 SWITCH 진입 전까지 두 backend 유지
+  가이드: guides/agentmemory-migration/phase-1-coexist.md
+```
+
+이 advisory는 경고가 아닙니다. Phase 1 COEXIST에서는 정상 상태입니다.
+
+### Session-End Self-Check (COEXIST 확장)
+
+Phase 1 COEXIST 기간 중 세션 종료 시:
+
+1. sys-memory-keeper가 MEMORY.md 갱신? → YES: 계속
+2. claude-mem 저장 시도? → YES (기존 항목)
+3. AgentMemory 저장 시도? → YES (COEXIST 추가)
+세 단계 모두 완료 후 사용자에게 확인. 둘 중 하나 실패해도 비차단.
+
+### Phase 2 진입 전 필수 조건
+
+- 1주 measure 결과 (`scripts/measure-claude-mem-usage.sh`) GO 판정
+- 자산 처리표 사용자 검토 완료 (12 plugin skill 처리 방향 결정)
+- 30분 롤백 절차 검증 (Chroma 백업 + 복원 테스트)
+
+Refs: #1169 본문 조치 3 (택1 강제), 조치 4 (롤백 절차),
+      `guides/agentmemory-migration/phase-1-coexist.md`.
