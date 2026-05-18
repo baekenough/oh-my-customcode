@@ -26,9 +26,11 @@ export interface MemoryServiceOptions {
   conflictPolicy?: 'newest' | 'oldest' | 'priority';
   /**
    * Source preference order for the 'priority' conflict policy.
-   * Default: ['native', 'claude-mem', 'episodic-memory', 'llm-memory']
+   * Default: ['native', 'claude-mem', 'episodic-memory', 'llm-memory', 'agentmemory']
+   *
+   * 'agentmemory' is listed last — STUB until #1169 Phase 1.
    */
-  sourcePriority?: ('native' | 'claude-mem' | 'episodic-memory' | 'llm-memory')[];
+  sourcePriority?: ('native' | 'claude-mem' | 'episodic-memory' | 'llm-memory' | 'agentmemory')[];
 }
 
 export interface SyncResult {
@@ -43,7 +45,8 @@ export interface SyncResult {
 }
 
 export interface MemoryQueryFilter {
-  source?: 'native' | 'claude-mem' | 'episodic-memory' | 'llm-memory';
+  /** 'agentmemory' is a STUB (#1178) — queries will return 0 rows until #1169 Phase 1. */
+  source?: 'native' | 'claude-mem' | 'episodic-memory' | 'llm-memory' | 'agentmemory';
   sensitivity?: SensitivityTier;
   agent?: string;
   project?: string;
@@ -138,6 +141,7 @@ export class MemoryService {
         'claude-mem',
         'episodic-memory',
         'llm-memory',
+        'agentmemory', // STUB: contributes 0 records until #1169 Phase 1
       ],
     };
   }

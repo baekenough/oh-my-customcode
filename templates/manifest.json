@@ -1,5 +1,5 @@
 {
-  "version": "0.141.0",
+  "version": "0.142.0",
   "lastUpdated": "2026-05-18T00:00:00.000Z",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
@@ -20,13 +20,13 @@
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 119
+      "files": 121
     },
     {
       "name": "guides",
       "path": "guides",
       "description": "Reference documentation",
-      "files": 54
+      "files": 57
     },
     {
       "name": "hooks",
@@ -47,5 +47,110 @@
       "files": 8
     }
   ],
-  "source": "https://github.com/baekenough/oh-my-customcode"
+  "source": "https://github.com/baekenough/oh-my-customcode",
+  "profiles": {
+    "minimal": {
+      "description": "Essential assets only — core SW Engineers + Managers. Reduces deactivation cost on first use.",
+      "include": {
+        "agents": ["mgr-*", "lang-*-expert", "sys-memory-keeper"],
+        "skills": [
+          {"scope": "core"},
+          {"scope": "harness"}
+        ],
+        "guides": ["agent-design", "git-safety", "claude-code"]
+      }
+    },
+    "full": {
+      "description": "All assets (default). Equivalent to installing without --profile flag.",
+      "include": "*"
+    },
+    "web-app": {
+      "description": "Full-stack web application development profile.",
+      "include": {
+        "agents": [
+          "lang-typescript-expert",
+          "lang-python-expert",
+          "fe-vercel-agent",
+          "fe-design-expert",
+          "be-fastapi-expert",
+          "be-express-expert",
+          "be-nestjs-expert",
+          "db-postgres-expert",
+          "db-supabase-expert",
+          "db-redis-expert",
+          "infra-docker-expert",
+          "mgr-*"
+        ],
+        "skills": [
+          {"scope": "core"},
+          "react-best-practices",
+          "typescript-best-practices",
+          "fastapi-best-practices",
+          "nextjs-best-practices"
+        ],
+        "guides": [
+          "agent-design",
+          "git-safety",
+          "claude-code",
+          "drizzle-orm",
+          "docker",
+          "fastapi",
+          "nextjs",
+          "react"
+        ]
+      }
+    },
+    "data-eng": {
+      "description": "Data engineering sessions — Airflow, Spark, Kafka, Snowflake, dbt.",
+      "include": {
+        "agents": [
+          "de-airflow-expert",
+          "de-dbt-expert",
+          "de-spark-expert",
+          "de-kafka-expert",
+          "de-snowflake-expert",
+          "de-pipeline-expert",
+          "db-postgres-expert",
+          "db-redis-expert",
+          "db-alembic-expert",
+          "lang-python-expert",
+          "mgr-*"
+        ],
+        "skills": [
+          {"scope": "core"},
+          "airflow-best-practices",
+          "dbt-best-practices"
+        ],
+        "guides": [
+          "agent-design",
+          "git-safety",
+          "airflow",
+          "dbt",
+          "snowflake"
+        ]
+      }
+    },
+    "harness-dev": {
+      "description": "oh-my-customcode harness development — agent, skill, rule authoring.",
+      "include": {
+        "agents": [
+          "mgr-*",
+          "arch-*",
+          "sys-*",
+          "wiki-curator",
+          "tracker-checkpoint"
+        ],
+        "skills": [
+          {"scope": "harness"}
+        ],
+        "guides": [
+          "agent-design",
+          "git-safety",
+          "claude-code",
+          "skill-authoring",
+          "agent-workflow"
+        ]
+      }
+    }
+  }
 }

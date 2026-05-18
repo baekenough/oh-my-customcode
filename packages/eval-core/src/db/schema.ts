@@ -112,9 +112,10 @@ export const sessionFeedback = sqliteTable('session_feedback', {
 });
 
 // added v0.118.3, #1047 — unified memory records across all four sources
+// updated #1178 — added 5th source 'agentmemory' (STUB, activates in #1169 Phase 1)
 export const memoryRecords = sqliteTable('memory_records', {
   id: text('id').primaryKey(), // UUID
-  source: text('source').notNull(), // 'native' | 'claude-mem' | 'episodic-memory' | 'llm-memory'
+  source: text('source').notNull(), // 'native' | 'claude-mem' | 'episodic-memory' | 'llm-memory' | 'agentmemory'
   deviceId: text('device_id').notNull(), // hostname
   project: text('project').notNull(), // workspace path
   agent: text('agent'), // nullable
