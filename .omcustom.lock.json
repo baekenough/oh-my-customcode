@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.145.0",
-  "generatedAt": "2026-05-20T00:29:57.055Z",
-  "templateVersion": "0.145.0",
+  "generatorVersion": "0.146.0",
+  "generatedAt": "2026-05-20T02:06:52.156Z",
+  "templateVersion": "0.146.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -1164,6 +1164,11 @@
       "size": 2816,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/session-reflection.sh": {
+      "templateHash": "3f995ec64bad24212f60bffcad6a7a522be883df08b0c426025dace062a5988b",
+      "size": 6084,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/user-prompt-preprocessor.sh": {
       "templateHash": "71a4e7fec6f830c7c12fbb00f8d1469a8dd92805f06495d31afa1a2ef88532cf",
       "size": 843,
@@ -1310,8 +1315,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "33f947d4ac0e3a1a3ca76ee54f7356e3965b3890d3ce3b3bbd21e49720514db1",
-      "size": 27548,
+      "templateHash": "0c542afa181064ff2989a6a5e48b12c68ab4ae1cbb4912c83c30950ba42791bd",
+      "size": 27907,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {

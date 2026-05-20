@@ -551,6 +551,16 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash .claude/hooks/scripts/session-reflection.sh"
+          }
+        ],
+        "description": "Transcript-based self-reflection: detect R007/R008 violations and log to .claude/outputs/reflections/ (Phase 1 MVP, advisory, exit 0)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
             "command": "bash .claude/hooks/scripts/skill-extractor-analyzer.sh"
           }
         ],
