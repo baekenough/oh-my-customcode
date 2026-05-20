@@ -96,3 +96,17 @@ Correct: With sub-skill
 응답 길이/턴 위치 무관. 짧은 답변에도 헤더는 필수.
 
 Reference issue: #1096.
+
+### Short Response Discipline
+
+응답 길이와 무관하게 R007 헤더 필수. 다음과 같은 짧은 응답에서도 누락 금지:
+
+| 응답 유형 | 헤더 필수? |
+|-----------|------------|
+| 한 줄 진단 ("확인했습니다") | YES |
+| 회고/사과 응답 | YES |
+| 사용자 질문 재확인 | YES |
+| 도구 호출 없는 텍스트 응답 | YES |
+| 1단어 응답 ("네"/"OK") | YES |
+
+Reference issues: #1188 item #2, #1198 item #2.
