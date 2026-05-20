@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- CC v2.1.143 compatibility guide update in `guides/claude-code/15-version-compatibility.md` and templates (#1166).
+## [0.148.0] - 2026-05-20
+
+### Added — CC v2.1.145 follow-up
+- statusline.sh: native `gh.repo` / `gh.pr_number` / `gh.pr_state` segment (#1197)
+- statusline.sh: `claude agents --json` 활용 active agents count segment `A:N` (#1195)
+- session-reflection.sh: Stop hook input `background_tasks` / `session_crons` 활용 Phase 2 (#1196)
+
+### Changed
+- CHANGELOG #1166 entry: `[Unreleased]` → v0.145.0 Added 섹션으로 이동 (#1194)
+
+### Sync — Wiki (R022)
+- wiki/skills/systematic-debugging.md: Phase 0-7 구조 + Hard Gates 반영
+- wiki/guides/claude-code.md: v2.1.143 / v2.1.144 / v2.1.145 Action Items + 신규 섹션 추가
 
 ## [0.147.0] - 2026-05-20
 
@@ -56,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `systematic-debugging` 스킬 확장: `phases/` 디렉토리에 4개 신규 파일 추가 — `timeline-correlation.md`, `retry-cache-timeout-audit.md`, `amplification-detection.md`, `fault-injection.md`. dev.to "10 Debugging Habits as Prompts" 글에서 신규 가치 항목 4개 (timeline / retry·cache·timeout audit / amplification / fault injection)을 internalize (#1189)
 - `systematic-debugging` Hard Gate #7 신설: retry/cache/timeout 변경 시 false-fix 가능성 점검 의무화 (#1189)
+- `guides/claude-code/15-version-compatibility.md`에 Claude Code v2.1.143 compatibility guide update 및 templates 동기화 (#1166)
 - `guides/claude-code/15-version-compatibility.md`에 Claude Code v2.1.144 / v2.1.145 호환성 노트 + 평가 테이블 + follow-up 후보 3건 (#1187, #1191)
 - Action Items Summary 테이블에 v2.1.143 / v2.1.144 / v2.1.145 행 추가
 
