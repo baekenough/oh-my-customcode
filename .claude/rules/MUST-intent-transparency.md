@@ -39,7 +39,7 @@ Display reasoning when routing to agents. Users must always know which agent was
 
 Users can specify agent directly with `@{agent-name} {command}`. Override bypasses detection.
 
-## User Directive Persistence — Named tool/skill/workflow preferences persist entire session. Anti-pattern: treating autonomous mode as clean slate. See full spec via Read tool.
+## User Directive Persistence — Named tool/skill/workflow preferences persist entire session. Anti-pattern: treating autonomous mode as clean slate or re-asking already-rejected questions. See full spec via Read tool.
 
 <!-- DETAIL: User Directive Persistence
 When a user explicitly names a tool, skill, or workflow (e.g., "use /pipeline auto-dev", "always run tests with bun test"), this preference persists for the entire session — including after autonomous mode transitions.
@@ -53,20 +53,30 @@ When a user explicitly names a tool, skill, or workflow (e.g., "use /pipeline au
 | "from now on" | Entire session + memory save candidate |
 | "for this task" | Current task only |
 | Named slash command | Subsequent similar invocations |
+| AskUserQuestion rejected / directive overridden | That question/approach must NOT recur this session |
 
-### Cycle Start Self-Check
+### Cycle Start Self-Check (MANDATORY)
 
-At the start of every work cycle (issue, task, release, or autonomous sub-loop):
-1. Review recent user messages in the conversation
-2. Identify any named tool/skill/workflow directives
-3. Apply those directives unless explicitly rescinded
-4. If unsure whether a directive applies, default to the stated preference
+At the start of every new task, issue, or autonomous sub-loop, answer these three questions before proceeding:
 
-**Anti-pattern**: Treating autonomous mode as a clean slate that discards earlier user preferences. Autonomous mode means "continue without per-step confirmation" — NOT "reset user directives".
+1. **Preferred tool/skill/workflow?** — Did the user explicitly name a tool or workflow earlier in this session? If YES, use it. Do NOT fall back to the default without re-confirmation.
+2. **Rejected interaction patterns?** — Did the user reject a question format (e.g., AskUserQuestion) or specific approach? If YES, that pattern must NOT recur in this session.
+3. **Override rescinded?** — Has the user explicitly cancelled a prior directive since stating it? If NO, the directive is still active.
+
+| Check | Fail Condition | Required Action |
+|-------|---------------|----------------|
+| Preferred tool/skill | About to use a different tool/skill | Switch to user-specified one |
+| Rejected AskUserQuestion | About to AskUserQuestion again on same topic | Answer with best judgment or inline question (free text) |
+| Rejected approach | About to repeat the same approach | Choose alternative approach |
+
+**Anti-pattern 1**: Treating autonomous mode as a clean slate that discards earlier user preferences. Autonomous mode means "continue without per-step confirmation" — NOT "reset user directives".
+
+**Anti-pattern 2**: User rejects an AskUserQuestion (or the interaction style) → agent falls back to free-text phrasing of the same question in the next turn. If the user has indicated they do not want a specific interaction pattern, do NOT re-ask via different formatting — make a judgment call and proceed.
 
 ### Cross-reference
 
 - Related memory: session v0.87.2~v0.88.0 (issue #869) — `/pipeline auto-dev` preference was lost after autonomous mode transition
+- Related issue: #1188 item #4 — AskUserQuestion rejected, agent re-asked via free text in next turn (2026-05-19)
 -->
 
 ## Agent Triggers
