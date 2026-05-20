@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CC v2.1.143 compatibility guide update in `guides/claude-code/15-version-compatibility.md` and templates (#1166).
 
+## [0.146.0] - 2026-05-20
+
+### Added
+- 신규 hook `session-reflection.sh` (Stop hook, Phase 1 MVP) — transcript JSONL을 백그라운드 분석하여 R007 (헤더 누락) / R008 (도구 prefix 누락) 위반을 탐지하고 `.claude/outputs/reflections/{date}.md` 에 로컬 로그 작성 (#1190 Phase 1)
+- `OMCUSTOM_SESSION_REFLECTION=off` opt-out 환경변수
+- `OMCUSTOM_TRANSCRIPT_BASE` / `OMCUSTOM_PROJECT_ROOT` 테스트 격리용 override 환경변수
+- 신규 hook 테스트 14건 (`tests/unit/core/session-reflection.test.ts`) — clean / R007 / R008 / opt-out / sample cap / 백그라운드 안정성 fixture 커버
+- Hooks 등록: `.claude/hooks/hooks.json` Stop matcher에 session-reflection.sh 추가 (+ templates/ 동기화)
+
+### Changed
+- Total hooks count 35 → 36, hook matchers 51 → 52 (template-sync manifest 자동 갱신)
+
+### Investigated
+- nohup + glob expansion shell escape 충돌 발견 — worker script를 /tmp 에 분리 생성하는 패턴으로 우회 (mgr-creator 디버깅 노트)
+
 ## [0.145.0] - 2026-05-20
 
 ### Added
