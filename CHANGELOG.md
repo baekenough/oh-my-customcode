@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - CC v2.1.143 compatibility guide update in `guides/claude-code/15-version-compatibility.md` and templates (#1166).
+
+## [0.145.0] - 2026-05-20
+
+### Added
+- `systematic-debugging` 스킬 확장: `phases/` 디렉토리에 4개 신규 파일 추가 — `timeline-correlation.md`, `retry-cache-timeout-audit.md`, `amplification-detection.md`, `fault-injection.md`. dev.to "10 Debugging Habits as Prompts" 글에서 신규 가치 항목 4개 (timeline / retry·cache·timeout audit / amplification / fault injection)을 internalize (#1189)
+- `systematic-debugging` Hard Gate #7 신설: retry/cache/timeout 변경 시 false-fix 가능성 점검 의무화 (#1189)
+- `guides/claude-code/15-version-compatibility.md`에 Claude Code v2.1.144 / v2.1.145 호환성 노트 + 평가 테이블 + follow-up 후보 3건 (#1187, #1191)
+- Action Items Summary 테이블에 v2.1.143 / v2.1.144 / v2.1.145 행 추가
+
+### Changed
+- R015 (`MUST-intent-transparency.md`): User Directive Persistence 강화 — Cycle Start Self-Check 3-question mandatory 격상, AskUserQuestion 거절 → free-text 재질문 금지 anti-pattern 추가 (#1188 item #4)
+- R020 (`MUST-completion-verification.md`): Task-Type Completion Matrix에 `UI/Frontend` row 추가 — browser render verified + visual diff 필수, type-check 단독 불충분 명시; Common False Completion Patterns에 "UI changes done" / "CSS updated" anti-pattern 추가 (#1188 item #6)
+- Wiki sync 부분 갱신: `wiki/rules/r015.md`, `wiki/rules/r020.md` 본 사이클 변경 반영; `wiki/index.yaml` `counts.guides` 드리프트 수정 (63 → 64)
+
+### Investigated
+- #1188 (8건 세션 회고) 중 2건만 본 릴리스에서 rule update로 internalize. 나머지 6건은 R016 corpus로 #1188 issue open 유지 (#1190 session-reflection hook의 테스트 corpus 역할)
 - New `destructive-git-guard.sh` Bash PreToolUse hook in source/templates: advisory warnings for `git reset --hard`, `git clean -fd/-fdx`, broad `git restore`, `git checkout -- .`, and `git branch -D`, with reflog recovery guidance (#1150).
 - New autonomous challenge lessons guide for ground-truth artifact checks, repeated tool-denial avoidance, launcher error discipline, and QA evidence quoting (#1149).
 
