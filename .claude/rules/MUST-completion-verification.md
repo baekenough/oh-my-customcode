@@ -131,6 +131,18 @@ Related memory records:
 - `feedback_subagent_pre_existing_claims.md` — subagent false-positive pattern
 -->
 
+## Interrupt Priority Re-Ordering
+
+사용자 인터럽트 / 새 요청 / 룰 위반 지적 동시 수신 시, 사과 한 줄 후 즉시 작업 통합 plan 재정렬. "사과만 짧게 + 기존 흐름 유지" 패턴 금지.
+
+| 시나리오 | Required 행동 |
+|---------|--------------|
+| 새 작업 + 룰 위반 지적 동시 | (1) 룰 위반 즉시 수정 (2) 새 작업 통합 plan 제시 (3) 사용자 확인 후 진행 |
+| 인터럽트 후 기존 작업 진행 | 인터럽트 내용 통합 또는 명시적 deferral 후 진행 |
+| "사과만 짧게" | 부족 — plan 재정렬 후속 필수 |
+
+Reference issues: #1188 item #8.
+
 ## Integration
 
 | Rule | Interaction |

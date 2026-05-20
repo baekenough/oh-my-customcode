@@ -116,3 +116,19 @@ Agent(description: "[2] Python code review", subagent_type: "lang-python-expert"
 같은 턴 내 추가 호출, 새 턴 첫 호출 모두 prefix 필수.
 
 Reference issue: #1096.
+
+### Short Response Discipline
+
+도구 호출 prefix 도 응답 길이와 무관하게 필수. 같은 턴 내 여러 도구를 호출할 때 각 호출 직전에 개별 prefix 표시:
+
+```
+[agent][model] → Tool: Read
+[agent][model] → Target: file1.md
+<Read call>
+
+[agent][model] → Tool: Bash
+[agent][model] → Target: gh issue list
+<Bash call>
+```
+
+Reference issues: #1188 item #3, #1198 item #3.

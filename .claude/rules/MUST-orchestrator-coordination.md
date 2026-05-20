@@ -268,6 +268,37 @@ Before spawning any agent:
 
 `mode: "bypassPermissions"` on every Agent tool call is still required (applies to Agent tool, not `/bg` shell command).
 
+## Agent Capability Pre-Check
+
+Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).
+
+### Required Checks
+
+| Task involves | Verify in target agent frontmatter |
+|--------------|-----------------------------------|
+| `gh` / shell commands | `tools:` includes Bash AND `disallowedTools:` excludes Bash |
+| `Read` external files | `tools:` includes Read |
+| `Write` files | `tools:` includes Write (and target path not in `disallowedTools` scope) |
+| MCP server calls | `mcpServers:` includes the required server |
+
+### Known Limitations (Active Cache)
+
+| Agent | Limitation | Workaround |
+|-------|-----------|-----------|
+| `arch-documenter` | `disallowedTools: [Bash]` — cannot run `gh`, shell scripts | Pre-collect data via orchestrator, pass as content; OR use `general-purpose` for the Bash-needing portion |
+| `qa-engineer` | (verify each invocation) | — |
+
+### Common Violation
+
+```
+❌ WRONG: Delegate `gh issue view` to arch-documenter without pre-check
+   → Agent fails ("Bash not allowed") → 2-3min round-trip waste
+
+✓ CORRECT: Pre-check arch-documenter.disallowedTools → collect data first → pass as content
+```
+
+Reference issues: #1202 item #2, `feedback_arch_documenter_bash_precheck.md`.
+
 ## Sensitive Path Handling (Historical: pre-CC v2.1.121)
 
 > **Status**: Deprecated as of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01). Direct Write/Edit/Bash on `.claude/`, `.git/`, `.vscode/` works without prompts under `bypassPermissions` mode in CC v2.1.121+ (issue #1101).
