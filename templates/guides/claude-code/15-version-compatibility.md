@@ -483,6 +483,162 @@ docs/superpowers/plans/**
 | v2.1.140 | P3 audit: managed `extraKnownMarketplaces` 영속화 + plugin.json default folder 무시 경고 | P3 follow-up |
 | v2.1.141 | P3: `terminalSequence` hook 검토 + cli-flags `--cwd` 추가. R010 `/bg` 권한 모드 유지 노트 추가 (완료) | P3 follow-up |
 | v2.1.142 | Fast Mode Opus 4.7 전환 확인 (필요 시 `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1`). `MCP_TOOL_TIMEOUT` 선택적 설정. | P3 follow-up |
+| v2.1.143 | 직접 변경 불필요. `worktree.bgIsolation: "none"` opt-in 시 파일 소유권 규율 필수. Stop hook 8회 block cap 인지. | P3 follow-up |
+| v2.1.144 | 호환 가능. CLAUDE.md `omcustomMinClaudeCode` v2.1.121 유지. macOS bg session FDA crash fix 확인. | None |
+| v2.1.145 | docs-only. `claude agents --json` HUD 강화, Stop/SubagentStop hook `background_tasks`/`session_crons` 활용, status line GitHub PR 통합 — 별도 follow-up 권장. | P3 follow-up |
+
+## v2.1.144 (2026-05-19) — 호환성 점검
+
+> Issue: #1187 — CC v2.1.144 compatibility documentation
+
+### `/resume` 백그라운드 세션 지원
+
+`claude --bg` 또는 agent view로 시작된 세션이 `/resume` 목록에 표시됩니다 (`bg` 배지로 구분).
+
+**oh-my-customcode 연관**: R018 Agent Teams 장시간 세션 및 `/bg` 플로우 복귀가 편리해집니다. 직접 변경 불필요.
+
+### 백그라운드 subagent 완료 알림에 경과 시간 추가
+
+백그라운드 subagent 완료 알림에 "Agent completed · 3h 2m 5s" 형태로 경과 시간이 표시됩니다.
+
+**oh-my-customcode 연관**: R009 병렬 에이전트 성능 추적에 유용. `claude agents` 뷰에서 장시간 실행 감지(2x+ 지속 시 split 권장 — R009 Adaptive Parallel Splitting)에 활용 가능.
+
+### `/plugin` Browse/Discover pane 마지막 업데이트 시각 표시
+
+플러그인 마지막 업데이트 시각이 표시됩니다.
+
+**oh-my-customcode 연관**: 필수/권장 플러그인(superpowers, context7 등) 버전 신선도 모니터링에 유용. 직접 변경 불필요.
+
+### `/model` 현재 세션만 변경 (`d` 키로 새 세션 기본값 설정)
+
+`/model`이 현재 세션만 변경하며, `d` 키로 새 세션 기본값을 별도 설정합니다.
+
+**oh-my-customcode 연관**: R006 agent frontmatter `model:` 설정이 세션 기본값과 독립적으로 동작하는 동작과 정합. 직접 변경 불필요.
+
+### "extra usage" → "usage credits" 명명 변경
+
+`/extra-usage` → `/usage-credits` (구 명령 호환 유지).
+
+**oh-my-customcode 연관**: CLAUDE.md 슬래시 커맨드 표 및 가이드 문서에서 `/extra-usage` 언급이 있다면 `/usage-credits`로 업데이트 권장. 현재 oh-my-customcode 문서에는 해당 커맨드 직접 노출 없음 — 영향 없음.
+
+### 시작 시 `api.anthropic.com` 도달 불가 시 타임아웃 개선
+
+75초 멈춤 → 15초 timeout으로 수정. captive portal/firewall/VPN 환경에서 시작 지연 대폭 감소.
+
+**oh-my-customcode 연관**: R001 안전 규칙 및 네트워크 제한 환경에서의 CI 실행 안정성 개선. 직접 변경 불필요.
+
+### 터미널 렌더링 수정
+
+- 윈도 리사이즈 누락 후 터미널 출력 깨짐 → 다음 프레임에 self-heal (Ctrl+L 불필요)
+- 긴 세션의 점진적 터미널 디스플레이 손상 수정
+- VS Code 스피너 애니메이션 색상 수 감소로 렌더링 글리치 완화
+
+**oh-my-customcode 연관**: R012 HUD statusline 및 장시간 병렬 에이전트 세션 가독성 개선. 직접 변경 불필요.
+
+### macOS 배경 세션 "exit 1 before init" crash 수정 (Full Disk Access 영역)
+
+macOS Full Disk Access 권한 영역에서 배경 세션이 초기화 전에 exit 1로 종료되던 v2.1.143 regression이 수정되었습니다.
+
+**oh-my-customcode 연관**: R011 메모리 동작 영향 없음. macOS 환경에서 `/bg` 기반 자동화 실행 안정성 복원.
+
+### oh-my-customcode 연관 평가
+
+| 변경 | 영향 영역 | Action |
+|------|----------|--------|
+| `/resume` bg 세션 표시 | R018 세션 복귀 편의성 | None |
+| 백그라운드 subagent 경과 시간 | R009 성능 추적 | None (수동 활용 가능) |
+| `/plugin` 업데이트 시각 | 플러그인 신선도 확인 | None |
+| `/model` 세션 vs 기본값 분리 | R006 model 설정과 정합 | None |
+| `/usage-credits` 명명 변경 | 문서 참조 | None (현재 노출 없음) |
+| 15초 startup timeout | CI/네트워크 환경 안정성 | None |
+| 터미널 렌더링 수정 | R012 HUD 가독성 | None |
+| macOS bg session crash fix | R011 메모리, `/bg` 플로우 | None |
+
+**Action items**: 호환 가능. CLAUDE.md `omcustomMinClaudeCode` 헤더는 v2.1.121 유지 (신규 기능 의존 없음).
+
+---
+
+## v2.1.145 (2026-05-19) — 호환성 점검
+
+> Issue: #1191 — CC v2.1.145 compatibility documentation
+
+### `claude agents --json` — 라이브 세션 JSON 출력
+
+`claude agents --json` 플래그로 라이브 Claude 세션 목록을 JSON으로 출력합니다. tmux-resurrect, status bar, session picker 등 외부 스크립팅 통합에 활용할 수 있습니다.
+
+**oh-my-customcode 연관**: R012 HUD/statusline 강화 후보. `.claude/statusline.sh`가 `claude agents --json`을 파싱하여 활성 에이전트 수를 status bar에 표시하는 통합이 가능합니다. 별도 follow-up 권장 (P3).
+
+### OTEL `agent_id` / `parent_agent_id` 속성 + 배경 subagent span nesting 수정
+
+`claude_code.tool` OTEL span에 `agent_id`와 `parent_agent_id` 속성이 추가되었습니다. 배경 subagent span nesting도 수정되었습니다.
+
+**oh-my-customcode 연관**: `monitoring-setup` 스킬 및 R018 Agent Teams 트레이싱에서 에이전트 계층 구조 추적이 개선됩니다. 호환 가능 — 기존 OTEL 설정 변경 불필요.
+
+### Status line JSON에 GitHub repo/PR 정보 자동 포함
+
+`.claude/statusline.sh`가 JSON 입력을 받는 경우 GitHub repo 및 PR 정보가 자동 포함됩니다.
+
+**oh-my-customcode 연관**: R012 statusline 강화 가능. 현재 `.claude/statusline.sh`가 branch 정보를 표시하는데, GitHub PR 번호/상태를 추가로 표시하는 통합이 가능합니다. 별도 follow-up 권장 (P3).
+
+### `/plugin` Discover/Browse 화면에 설치 전 상세 정보 표시
+
+설치 전 commands/agents/skills/hooks/MCP/LSP 서버 목록을 확인할 수 있습니다.
+
+**oh-my-customcode 연관**: R013 ecomode 및 토큰 효율 측면에서 플러그인 도입 전 비용/기능 점검 개선. 직접 변경 불필요.
+
+### `claude agents` 탭 제목에 awaiting-input 카운트 표시
+
+**oh-my-customcode 연관**: R009 병렬 에이전트 모니터링 개선. 사용자 입력 대기 에이전트를 탭 제목에서 즉시 확인 가능.
+
+### Stop / SubagentStop hook 입력에 `background_tasks`, `session_crons` 필드 추가
+
+Stop 및 SubagentStop hook의 입력 JSON에 `background_tasks`와 `session_crons` 필드가 추가되었습니다.
+
+**oh-my-customcode 연관**: `.claude/hooks/` 내 `feedback-collector.sh` 및 Stop hook 스크립트와 호환됩니다 (옵션 필드이므로 기존 스크립트 영향 없음). hook input schema를 활용하는 고급 패턴(background task 완료 확인 등)에서 활용 가능 — 별도 follow-up 권장.
+
+### Bash 명령 bare variable assignment 자동 승인 우회 취약점 수정
+
+non-allowlisted env var의 bare variable assignment가 자동 승인을 우회하던 취약점이 수정되었습니다.
+
+**oh-my-customcode 연관**: R002 권한 규칙 강화. `bypassPermissions` 모드 하 Bash 도구 사용 시 의도치 않은 환경 변수 주입 경로가 차단됩니다. 직접 harness 변경 불필요.
+
+### Agent Teams non-ASCII teammate name 수정
+
+Agent Teams 멤버 이름에 non-ASCII 문자(한국어 포함)가 포함된 경우의 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: R018 Agent Teams에서 한국어 멤버 이름을 사용하는 경우 영향. v2.1.145로 업그레이드 후 검증 권장.
+
+### 기타 수정
+
+- 슬래시 커맨드/`@`-mention 제안 목록에 마우스 hover/click 지원 (fullscreen)
+- 터미널 리사이즈/리포커스 후 스피너/경과시간 freeze 수정
+- Task list random order 수정
+- MCP prompt slash command missing argument 에러 메시지 개선
+
+**oh-my-customcode 연관**: 영향 없음 (UX/안정성 개선).
+
+### oh-my-customcode 연관 평가
+
+| 변경 | 영향 영역 | 상태 |
+|------|----------|------|
+| `claude agents --json` | R012 HUD/statusline 통합 가능 | P3 follow-up 권장 |
+| OTEL `agent_id`/`parent_agent_id` + bg subagent nesting | `monitoring-setup` 스킬 / R018 Agent Teams 트레이싱 | 호환, 후속 검토 |
+| Stop/SubagentStop hook의 `background_tasks`, `session_crons` 필드 | `feedback-collector.sh` 호환 OK (옵션 필드) | hook input schema 갱신 후보 |
+| Status line JSON에 GitHub repo + PR 정보 | `.claude/statusline.sh` 강화 가능 (R012) | P3 follow-up 권장 |
+| Bare variable assignment auto-approve bypass fix | R002 permissions 강화 | 호환 |
+| Agent Teams non-ASCII teammate name fix | R018 한국어 멤버 사용 시 영향 | v2.1.145 업그레이드 후 검증 권장 |
+| `/plugin` 상세 정보 사전 표시 | R013 플러그인 비용 점검 | None |
+| `claude agents` awaiting-input 카운트 | R009 병렬 모니터링 개선 | None |
+| 기타 UX/안정성 수정 | 일반 개선 | None |
+
+**Action items**:
+- 본 릴리스에서 코드 변경 없음 (docs-only)
+- 후속 follow-up 후보 (별도 이슈로 등록 권장):
+  1. `claude agents --json`을 활용한 HUD 강화 (R012)
+  2. Hook input schema에 `background_tasks` / `session_crons` 활용
+  3. Status line JSON GitHub PR 정보 통합 (R012)
+
+---
 
 ## References
 
@@ -494,6 +650,8 @@ docs/superpowers/plans/**
 - #1137 — Claude Code v2.1.141 compatibility documentation
 - #1158 — Claude Code v2.1.142 compatibility documentation
 - #1147 — .gitignore nested .md pattern limitation note
+- #1187 — Claude Code v2.1.144 compatibility documentation
+- #1191 — Claude Code v2.1.145 compatibility documentation
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec

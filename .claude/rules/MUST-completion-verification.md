@@ -16,6 +16,7 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 | Git Operations | Operation succeeded (check exit code), working tree clean |
 | Code Review | All findings addressed or explicitly deferred with justification |
 | Agent/Skill Creation | Frontmatter valid, referenced skills exist, routing updated |
+| UI/Frontend | Browser render verified (dev server running + page loaded), no console errors, visual output matches intent; **CSS/style changes**: capture before/after visual diff or screenshot; type-check passing alone is NOT sufficient |
 
 ## Optional: Quantitative Evidence (advisory, added v0.114.0, #1034)
 
@@ -70,7 +71,7 @@ Subagents often report failures as "pre-existing", "baseline", or "unchanged". T
 Never accept "pre-existing" without direct base-branch evidence. A false "pre-existing" claim can mask a regression introduced by the current change.
 -->
 
-## Common False Completion Patterns — 7 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes. See full table via Read tool.
+## Common False Completion Patterns — 8 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes, "UI changes done" without browser render. See full table via Read tool.
 
 <!-- DETAIL: Common False Completion Patterns
 
@@ -83,6 +84,7 @@ Never accept "pre-existing" without direct base-branch evidence. A false "pre-ex
 | "Tests pass" | Only ran subset | Run full test suite |
 | "Waiting for manual publish" | External CI/CD auto-publishes on merge | Check `.github/workflows/` BEFORE assuming manual step |
 | "Subagent said pre-existing" | Claim not verified against base branch | Run test on base branch, compare directly |
+| "UI changes done" / "CSS updated" | type-check passes but browser render not verified; visual output unknown | Start dev server, open browser, confirm visual output; capture screenshot or describe what was seen |
 -->
 
 ## Completion Contract Format — [Contract] + [Done] with criterion/evidence pairs. See template via Read tool.

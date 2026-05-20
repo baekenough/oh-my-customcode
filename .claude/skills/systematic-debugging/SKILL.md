@@ -27,6 +27,7 @@ user-invocable: false
 4. **한 번에 하나의 가설만 검증한다.**
 5. **수정 시 "while I'm here" 리팩터링을 금지한다.**
 6. **수정 시도가 3번 실패하면 추가 패치 전에 구조적 문제를 의심한다.**
+7. **retry/cache/timeout을 변경하기 전에 false-fix 가능성을 점검한다.** 에러율 감소가 원인 해소인지 증상 억제인지 구분하지 않은 수정은 유효하지 않다.
 
 이 과정을 어기는 것은 디버깅 실패로 본다.
 
@@ -318,3 +319,21 @@ This skill includes reference documents for specific debugging techniques:
 - `condition-based-waiting.md` — Replacing arbitrary delays with condition-based polling
 - `find-polluter.sh` — Bisection script for finding test pollution sources
 - `condition-based-waiting-example.ts` — Complete implementation of condition-based waiting utilities
+
+## Extended Phases
+
+장애 분석 및 운영 디버깅을 위한 확장 절차. 기본 Phase 1-7과 함께 사용한다.
+
+- `phases/timeline-correlation.md` — 배포/설정 변경 타임라인과 장애 시점 상관관계 추적
+- `phases/retry-cache-timeout-audit.md` — retry/cache/timeout false-fix 안티패턴 체크리스트 (Hard Gate #7 구현)
+- `phases/amplification-detection.md` — retry storm 및 error cascading 시그널 탐지
+- `phases/fault-injection.md` — 가설 검증을 위한 의도적 장애 주입 절차
+
+### 사용 가이드
+
+| 상황 | 참조 |
+|------|------|
+| "언제부터 깨졌는가?" | `phases/timeline-correlation.md` |
+| "retry/timeout 늘리면 되지 않나?" | `phases/retry-cache-timeout-audit.md` |
+| 에러가 여러 서비스로 퍼졌다 | `phases/amplification-detection.md` |
+| 가설은 있지만 재현이 안 된다 | `phases/fault-injection.md` |
