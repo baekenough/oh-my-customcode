@@ -10,6 +10,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CC v2.1.143 compatibility guide update in `guides/claude-code/15-version-compatibility.md` and templates (#1166).
 
+## [0.147.0] - 2026-05-20
+
+### Added — 룰 강화 (#1188 / #1198 / #1202)
+- R000 (`MUST-language-policy`): Honorific Level 섹션 — 합쇼체 강제, 비격식 회귀 anti-pattern 표
+- R007 (`MUST-agent-identification`): Short Response Discipline — 짧은 응답에서도 헤더 강제
+- R008 (`MUST-tool-identification`): Short Response Discipline — 짧은 응답에서도 도구 prefix 강제
+- R010 (`MUST-orchestrator-coordination`): Agent Capability Pre-Check — disallowedTools 사전 점검 + arch-documenter Bash 정책 캐시
+- R015 (`MUST-intent-transparency`): Failed Tool Re-Try Discipline — directive persistence 강화
+- R016 (`MUST-continuous-improvement`): External Repo Contribution Pre-Check — CONTRIBUTING/AGENTS 사전 점검 의무화 + Defect Matrix row 추가
+- R020 (`MUST-completion-verification`): Interrupt Priority Re-Ordering — 인터럽트 시 plan 재정렬 의무화
+- `output-styles/korean-engineer.md`: 격식 수준 섹션 (합쇼체 기본)
+
+### Added — Memory (6건 신규)
+- `feedback_korean_honorific_regression.md` — 한국어 경어 회귀 방지
+- `feedback_short_response_identification_skip.md` — 짧은 응답 식별 헤더 누락 방지
+- `feedback_external_repo_convention_lateread.md` — 외부 저장소 컨벤션 사전 확인
+- `feedback_arch_documenter_bash_precheck.md` — arch-documenter Bash 권한 사전 점검
+- `feedback_interrupt_priority_reorder_skip.md` — 인터럽트 시 plan 재정렬
+- `feedback_directive_persistence_break.md` — directive persistence 강화
+
+### Sync — Wiki (R022)
+- `wiki/rules/{r000,r007,r008,r010,r015,r016,r020}.md` updated to match source rules
+
+### Fixed
+- R010 (`MUST-orchestrator-coordination`): feedback memory 파일명 오타 1건 수정
+
 ## [0.146.0] - 2026-05-20
 
 ### Added

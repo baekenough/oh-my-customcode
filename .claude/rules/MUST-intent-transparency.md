@@ -79,6 +79,18 @@ At the start of every new task, issue, or autonomous sub-loop, answer these thre
 - Related issue: #1188 item #4 — AskUserQuestion rejected, agent re-asked via free text in next turn (2026-05-19)
 -->
 
+### Failed Tool Re-Try Discipline
+
+User-specified tools/formats persist across failures. After a tool rejection or failure, retry with the SAME tool — do NOT silently switch to a different mechanism.
+
+| 시나리오 | Required |
+|---------|----------|
+| `AskUserQuestion` 거절됨 | 사용자가 다른 도구 명시할 때까지 `AskUserQuestion` 재시도 |
+| 자유 텍스트로 재질문 | 금지 — directive 위반 |
+| 다른 도구로 silent switch | 금지 — 명시적 사용자 확인 필요 |
+
+Reference issues: #1188 item #4.
+
 ## Agent Triggers
 
 Defined in `.claude/skills/intent-detection/patterns/agent-triggers.yaml`. Each agent has keywords, file patterns, actions, and base confidence.
