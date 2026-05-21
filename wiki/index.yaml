@@ -3,11 +3,11 @@
 
 meta:
   updated: "2026-05-18"
-  total_pages: 285
+  total_pages: 286
   total_sources: 239
   counts:
     skills: 121
-    guides: 64
+    guides: 65
     agents: 49
     rules: 23
 
@@ -798,6 +798,9 @@ pages:
     - file: guides/profiles.md
       title: "Profiles Guide"
       summary: "Index for guides/profiles/ — profile-based installation with 5 built-in profiles (minimal/full/web-app/data-eng/harness-dev) for reducing onboarding cost and per-session token overhead"
+    - file: guides/agent-teams.md
+      title: "Agent Teams Troubleshooting Guide"
+      summary: "Operational troubleshooting for Agent Teams graceful shutdown failures, member silence (TaskUpdate gap), and residual resource cleanup — 5-stage escalation procedure and R018 compliance reference. v0.150.0 #1210"
 
   workflows:
     - file: workflows/development-workflow.md

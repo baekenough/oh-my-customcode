@@ -79,6 +79,30 @@ At the start of every new task, issue, or autonomous sub-loop, answer these thre
 - Related issue: #1188 item #4 — AskUserQuestion rejected, agent re-asked via free text in next turn (2026-05-19)
 -->
 
+### Failed Tool Re-Try Discipline
+
+User-specified tools/formats persist across failures. After a tool rejection or failure, retry with the SAME tool — do NOT silently switch to a different mechanism.
+
+| 시나리오 | Required |
+|---------|----------|
+| `AskUserQuestion` 거절됨 | 사용자가 다른 도구 명시할 때까지 `AskUserQuestion` 재시도 |
+| 자유 텍스트로 재질문 | 금지 — directive 위반 |
+| 다른 도구로 silent switch | 금지 — 명시적 사용자 확인 필요 |
+
+Reference issues: #1188 item #4.
+
+### User Directive Persistence — Git Push Continuation
+
+사용자가 같은 세션 내에서 명시적으로 커밋/푸시를 한 번 허용했다면, 동일 카테고리/동일 브랜치의 후속 작업은 추가 확인 없이 진행 가능. push security policy classifier가 first-time strict, follow-up relaxed로 동작해야 함.
+
+| 시나리오 | 동작 |
+|----------|------|
+| 1차 명시 "커밋, 푸시" + 동일 브랜치 | mgr-gitnerd push 진행 (advisory warning은 출력) |
+| 2차 연속 작업 (동일 카테고리, 동일 브랜치) | 1차 directive persistence — 재확인 요청 금지 |
+| 다른 브랜치 / 다른 카테고리 | 새 confirmation 필요 |
+
+**Why**: 사용자 directive 일관성 — #1208 보고. 같은 세션 내 동일 의도를 반복 차단하면 R015 user directive persistence 위반.
+
 ## Agent Triggers
 
 Defined in `.claude/skills/intent-detection/patterns/agent-triggers.yaml`. Each agent has keywords, file patterns, actions, and base confidence.

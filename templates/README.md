@@ -55,7 +55,7 @@ templates/
 │   │   └── scripts/                 # 훅 셸 스크립트 (34개)
 │   ├── contexts/                    # 컨텍스트 설정 파일 (ecomode 등)
 │   └── ontology/                    # Ontology-RAG 지식 그래프
-└── guides/                          # 레퍼런스 문서 디렉토리 (54개)
+└── guides/                          # 레퍼런스 문서 디렉토리 (58개)
 ```
 
 ---

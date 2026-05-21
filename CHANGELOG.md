@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.150.0] - 2026-05-21
+
+### Added — R010/R015 강화 + tsconfig template + investigation memos (#1208 #1210 #1211 #1212)
+- R010 (`MUST-orchestrator-coordination`): Root Meta-File Delegation table — #1208
+- R015 (`MUST-intent-transparency`): Git Push Continuation section — #1208
+- `templates/tests/tsconfig.json` — #1211
+- `guides/agent-teams/troubleshooting.md` — #1210
+- `guides/claude-code-tracking.md` — #1212
+- Memory: feedback_agent_teams_force_shutdown, feedback_background_agent_progress_tracking
+
+### Changed
+- Counts: guides 57 → 58
+- Templates synced (templates/guides/agent-teams + templates/guides/claude-code-tracking)
+- Wiki synced (wiki/guides/agent-teams.md + index.yaml 286 pages)
+
 ## [0.149.0] - 2026-05-21
 
 ### Added — 룰 강화 + CC v2.1.146 + claude-mem hook (#1205 #1206 #1207)
