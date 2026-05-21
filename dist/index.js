@@ -1680,6 +1680,22 @@ async function installStatusline(targetDir, options, _result) {
   await fs.chmod(destPath, 493);
   debug("install.statusline_installed", {});
 }
+async function installTestsConfig(targetDir, options, _result) {
+  const srcPath = resolveTemplatePath(join5("tests", "tsconfig.json"));
+  const destPath = join5(targetDir, "tests", "tsconfig.json");
+  if (!await fileExists(srcPath)) {
+    debug("install.tests_config_not_found", { path: srcPath });
+    return;
+  }
+  if (await fileExists(destPath)) {
+    if (!options.force && !options.backup) {
+      debug("install.tests_config_skipped", { reason: "exists" });
+      return;
+    }
+  }
+  await copyFile(srcPath, destPath);
+  debug("install.tests_config_installed", {});
+}
 async function installSettingsLocal(targetDir, result) {
   const layout = getProviderLayout();
   const settingsPath = join5(targetDir, layout.rootDir, "settings.local.json");
@@ -1772,6 +1788,7 @@ async function install(options) {
     await verifyTemplateDirectory();
     await installAllComponents(options.targetDir, options, result);
     await installStatusline(options.targetDir, options, result);
+    await installTestsConfig(options.targetDir, options, result);
     await installSettingsLocal(options.targetDir, result);
     await installEntryDocWithTracking(options.targetDir, options, result);
     if (preservation) {
@@ -2014,7 +2031,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.149.0",
+  version: "0.150.1",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {

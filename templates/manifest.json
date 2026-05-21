@@ -1,5 +1,5 @@
 {
-  "version": "0.150.0",
+  "version": "0.150.1",
   "lastUpdated": "2026-05-20T00:00:00.000Z",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
@@ -52,12 +52,24 @@
     "minimal": {
       "description": "Essential assets only — core SW Engineers + Managers. Reduces deactivation cost on first use.",
       "include": {
-        "agents": ["mgr-*", "lang-*-expert", "sys-memory-keeper"],
-        "skills": [
-          {"scope": "core"},
-          {"scope": "harness"}
+        "agents": [
+          "mgr-*",
+          "lang-*-expert",
+          "sys-memory-keeper"
         ],
-        "guides": ["agent-design", "git-safety", "claude-code"]
+        "skills": [
+          {
+            "scope": "core"
+          },
+          {
+            "scope": "harness"
+          }
+        ],
+        "guides": [
+          "agent-design",
+          "git-safety",
+          "claude-code"
+        ]
       }
     },
     "full": {
@@ -82,7 +94,9 @@
           "mgr-*"
         ],
         "skills": [
-          {"scope": "core"},
+          {
+            "scope": "core"
+          },
           "react-best-practices",
           "typescript-best-practices",
           "fastapi-best-practices",
@@ -117,7 +131,9 @@
           "mgr-*"
         ],
         "skills": [
-          {"scope": "core"},
+          {
+            "scope": "core"
+          },
           "airflow-best-practices",
           "dbt-best-practices"
         ],
@@ -141,7 +157,9 @@
           "tracker-checkpoint"
         ],
         "skills": [
-          {"scope": "harness"}
+          {
+            "scope": "harness"
+          }
         ],
         "guides": [
           "agent-design",
