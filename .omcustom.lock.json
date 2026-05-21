@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.146.0",
-  "generatedAt": "2026-05-20T02:06:52.156Z",
-  "templateVersion": "0.146.0",
+  "generatorVersion": "0.148.0",
+  "generatedAt": "2026-05-21T12:07:25.759Z",
+  "templateVersion": "0.148.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -15,13 +15,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "7bf5ad55d2fc6494e00ef04f9f53e7faab3e9f188156ddd25832e830b99d5970",
-      "size": 22335,
+      "templateHash": "09f69bab659d2b40d93f93df9cb0f24b4ff590947085599758c0719225011d09",
+      "size": 23707,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
-      "templateHash": "339f659795c8c88d6a2752c7972bcd2b988adee3e0180b15d9311fe513aab8c8",
-      "size": 4090,
+      "templateHash": "64b1fd69a87d211d374b9368c35b5c9e70e72c5ecd6fd7d0f2124bffc9dddf03",
+      "size": 4634,
       "component": "rules"
     },
     ".claude/rules/SHOULD-error-handling.md": {
@@ -45,8 +45,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-language-policy.md": {
-      "templateHash": "e48bfda6d2c7d8414999fba0c87f46ddfed3748c4c264ad7fd35ddbc22746ada",
-      "size": 745,
+      "templateHash": "afb21d6e1b068a45e356191edf452c50b1018403dd4168664ffc8daee1316def",
+      "size": 1612,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
@@ -55,8 +55,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
-      "templateHash": "98b1bd947038a6065029994d8ae6c6a1a4d547fea6b23f69486517cfbac7300a",
-      "size": 2981,
+      "templateHash": "24f5d22a536d7fc201a497d3dec3755360552acf6dc02e088ced5bb311b2f0e0",
+      "size": 3432,
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "79d179c9b17f6c175a39cad8848bb5a67b1311a2cc5b2edb91f58b3b8b4f89e9",
-      "size": 16974,
+      "templateHash": "81dd35b6b43c2052cbedece0a9c60204a61d37bc38e1458da8c03739337a75d9",
+      "size": 17391,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "fa057ee2468b06ba71973f52982d00a5ae60b39eed778889b66c134ceea09183",
-      "size": 3271,
+      "templateHash": "b9c4d96418cec2f9d73697d3835b8203890648ff6cdfe9c64be15d55881da96b",
+      "size": 4854,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
@@ -95,8 +95,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
-      "templateHash": "920fb33b8c73de68943bd706fbb84c63f8b79938f19b20dcbbec8489be240873",
-      "size": 3531,
+      "templateHash": "ada0c458d27a593c85c3187db8145311d1eb30caaec385f7dbe64741e625ed08",
+      "size": 3935,
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
@@ -105,8 +105,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "7f8109124ad32392de93d8b843b3df101f099f3497ff2518dc1f8420c5643099",
-      "size": 17534,
+      "templateHash": "e52ce7e12ef888e30d0b24c9d9ff94af053c580c31732888e2d7cc6ab74edcd1",
+      "size": 18074,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "dc28039aafff2011a6fcccf3c93dcd25db47e981bc373248f7bee16ff4583e33",
-      "size": 7175,
+      "templateHash": "6cf25e28123cd6158e10012c5814895fff0ac80afb5abbfb8b566a88e0c10202",
+      "size": 7808,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -1139,6 +1139,11 @@
       "size": 1347,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/plugin-cache-check.sh": {
+      "templateHash": "606ecfd7fa5e4435bb34f4904d67e474999ea4b68820991457d7b1d8172a4f6b",
+      "size": 916,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
       "templateHash": "a06097f9d245bd39194498452f1dac3c2df46f14939d52fe20fc31c634b61ca9",
       "size": 2374,
@@ -1165,8 +1170,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-reflection.sh": {
-      "templateHash": "3f995ec64bad24212f60bffcad6a7a522be883df08b0c426025dace062a5988b",
-      "size": 6084,
+      "templateHash": "0c9c224368c7a1fb13818c1981b7c7da10bde6f8c7e4c8ca83decdc077207162",
+      "size": 8409,
       "component": "hooks"
     },
     ".claude/hooks/scripts/user-prompt-preprocessor.sh": {
@@ -1315,8 +1320,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "0c542afa181064ff2989a6a5e48b12c68ab4ae1cbb4912c83c30950ba42791bd",
-      "size": 27907,
+      "templateHash": "0aab01683cd30a6776041558fb6a8ea0ae0133d226bd58b9a1965e060d888c70",
+      "size": 28205,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1425,8 +1430,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "5cd6b8359241dc3217ceaa3a5d4420c99262183ed4ee03bb083dc3032f9d7fe2",
-      "size": 37472,
+      "templateHash": "dcd4e37fd6c83c1e2b02dc0f473a273693748c87db98cbad484c3e72ca302b78",
+      "size": 42387,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {

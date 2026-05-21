@@ -80,7 +80,7 @@ Before first implementation commit on external contribution:
 
 Reference issues: #1188 item #5, #1188 item #7, #1198 item #5.
 
-## Anti-Patterns — 4 patterns: "I'll update later", "one-time exception", "doesn't cover this", "finish task first". See table via Read tool.
+## Anti-Patterns — 5 patterns: "I'll update later", "one-time exception", "doesn't cover this", "finish task first", "calibration during action-oriented tone". See table via Read tool.
 
 <!-- DETAIL: Anti-Patterns
 | Anti-Pattern | Why It's Wrong | Correct Action |
@@ -89,6 +89,7 @@ Reference issues: #1188 item #5, #1188 item #7, #1198 item #5.
 | "This is a one-time exception" | Exceptions become patterns | If the rule is wrong, fix it; if it's right, follow it |
 | "The rule doesn't cover this case" | Missing coverage = rule gap | Add the case to the rule immediately |
 | "Let me finish the task first" | Rule violations compound | Fix rule first (5 min), then continue (prevents N future violations) |
+| "Calibration/humility during action-oriented tone (auto mode, ㄱㄱ, 계속해)" | Self-questioning wastes time when user signals action; action-mode preempts meta-reflection | Defer calibration to post-task feedback memory; respond with short action confirmation |
 -->
 
 ## Timing — Rule updates MUST happen before continuing original task, in the same session.

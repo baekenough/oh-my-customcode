@@ -38,14 +38,18 @@ These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` a
 ## Self-Check (Before Agent Tool)
 
 Before using Agent tool for 2+ agent tasks, complete this check:
-Quick rule: 3+ agents OR review cycle → use Agent Teams. Sequential deps / scaffolding → Agent Tool. 2+ issues in same batch → prefer Agent Teams.
+Quick rule: User explicitly preferred plain subagents this session? → use Agent Tool (R000 user instructions > R018). Otherwise: 3+ agents OR review cycle → use Agent Teams. Sequential deps / scaffolding → Agent Tool. 2+ issues in same batch → prefer Agent Teams.
 
 <!-- DETAIL: Self-Check (Before Agent Tool)
 ╔══════════════════════════════════════════════════════════════════╗
 ║  BEFORE USING Agent TOOL FOR 2+ AGENTS:                          ║
 ║                                                                   ║
+║  0. Has user explicitly preferred plain subagents this session?  ║
+║     YES → Use Agent tool (R000 user instructions > R018)         ║
+║     NO  → Continue to #1                                          ║
+║                                                                   ║
 ║  1. Is Agent Teams available?                                    ║
-║     YES → check criteria #2-#4                                  ║
+║     YES → check criteria #2-#5                                  ║
 ║     NO  → Proceed with Agent tool                               ║
 ║                                                                   ║
 ║  2. Will 3+ agents be involved?                                  ║

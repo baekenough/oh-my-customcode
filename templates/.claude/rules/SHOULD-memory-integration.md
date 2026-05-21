@@ -351,7 +351,7 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 
 ### Session-End Self-Check (MANDATORY)
 
-(1) sys-memory-keeper updated MEMORY.md? (2) claude-mem save attempted? Both required before confirming to user. See full self-check via Read tool.
+(1) sys-memory-keeper updated MEMORY.md? (2) claude-mem save attempted? (3) If `omcustom-feedback` skill is active, prompt user to trigger it? All three required before confirming to user. See full self-check via Read tool.
 
 <!-- DETAIL: Session-End Self-Check (MANDATORY)
 ```
@@ -366,10 +366,15 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 ║     YES → Continue (even if it failed)                           ║
 ║     NO  → ToolSearch + save now                                  ║
 ║                                                                   ║
+║  3. Is omcustom-feedback skill available in this project?        ║
+║     YES → Ask user: "이번 세션 피드백을 omcustom-feedback로     ║
+║          기록하시겠습니까?" — accept skip                        ║
+║     NO  → Skip                                                    ║
+║                                                                   ║
 ║  Note: episodic-memory auto-indexes conversations after session  ║
 ║  ends. No manual action needed — do NOT search as "verification" ║
 ║                                                                   ║
-║  BOTH steps must be completed before confirming to user.         ║
+║  ALL steps must be completed before confirming to user.          ║
 ║  "Attempted" means called the tool — failure is OK, skipping     ║
 ║  is NOT.                                                          ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -413,7 +418,8 @@ Phase 1 COEXIST 기간 중 세션 종료 시:
 1. sys-memory-keeper가 MEMORY.md 갱신? → YES: 계속
 2. claude-mem 저장 시도? → YES (기존 항목)
 3. AgentMemory 저장 시도? → YES (COEXIST 추가)
-세 단계 모두 완료 후 사용자에게 확인. 둘 중 하나 실패해도 비차단.
+4. omcustom-feedback 권유? → YES (활성 시) / 스킵 (비활성 시)
+네 단계 모두 완료 후 사용자에게 확인. 둘 중 하나 실패해도 비차단.
 
 ### Phase 2 진입 전 필수 조건
 

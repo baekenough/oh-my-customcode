@@ -1,43 +1,36 @@
-# Release v0.110.0
+# Release v0.149.0
 
 ## Highlights
-
-- **Output Styles 레이어 도입** — Claude Code 네이티브 시스템 프롬프트 레이어로 R007/R008/R000 강제력 격상 (#1003)
-- **roundtable-debate 스킬 신설** — Devil's Advocate + 소수의견 보호 + 2라운드 하드캡으로 다중 에이전트 토론의 anti-groupthink 메커니즘 내재화 (#1007)
-- **agora 보강** — Anti-Groupthink Mode 옵션 추가, 수렴 vs 발산 보존 패턴 구분 명확화
-
-## :rocket: Features
-
-- **Output Styles 도입** (#1003): `.claude/output-styles/korean-engineer.md` 신규 작성 — Korean-first 출력 + R007/R008 에이전트 식별 + R003 balanced 스타일을 시스템 프롬프트로 격상. R003 SHOULD-interaction.md에 Session-Level Style Enforcement 위임 섹션 추가, settings.local.json `outputStyle` 활성화.
-- **roundtable-debate 스킬** (#1007): 발산 보존(divergence preservation)을 목표로 하는 다중 에이전트 구조화 토론 스킬. context: fork (10/12), 핵심 메커니즘 4종(Independent-first parallel analysis, Devil's Advocate 강제 주입, 소수의견 보호 프로토콜, 2라운드 하드캡). cc-roundtable 패턴 attribution.
-- **agora Anti-Groupthink Mode** (#1007): 기존 만장일치 수렴 워크플로우에 옵션 모드 추가 — Devil's Advocate slot + minority opinion protection + round soft cap. `--mode anti-groupthink` 플래그로 활성화.
+- **세션 피드백 내재화** (#1206): R018/R011/R016 룰 강화 — 사용자 명시적 subagent 선호 우선, omcustom-feedback 세션 종료 권유, calibration 억제 anti-pattern 추가
+- **claude-mem plugin cache advisory hook** (#1207): SessionStart에서 `~/.claude/shared-plugins/cache/**` `node_modules` 누락 자동 감지, stderr advisory 출력 (비차단)
+- **Claude Code v2.1.146 호환성** (#1205): `/code-review` 리네임, AskUserQuestion auto-mode normalization, `CLAUDE_CODE_SUBAGENT_MODEL` 전파 fix 등 문서화
 
 ## :books: Documentation
+- **CC v2.1.146 호환성 문서** (#1205): `guides/claude-code/15-version-compatibility.md` — 16개 변경 사항 분석 및 oh-my-customcode 영향 평가, 후속 follow-up 후보 명시
 
-- **multi-agent-debate-patterns 가이드 신설** (#1007): 3대 고질병(Anchoring/Groupthink/Degeneration of Thought) 정의 + agora vs roundtable-debate 선택 매트릭스 + 연구 근거.
-- **CLAUDE.md 권장 플러그인** (#1007): cc-roundtable 외부 플러그인 항목 추가 — 패턴 내재화 후에도 원본 직접 사용 경로 보존.
-- **wiki R022 동기화**: 신규 페이지 3종(roundtable-debate, multi-agent-debate-patterns, output-styles) + 업데이트 3종(agora, R003, R006), wiki/index.yaml 갱신.
+## :wrench: Rules
+- **R018 (MUST-agent-teams)** (#1206 item 1): Self-Check `#0 — 사용자가 명시적으로 일반 subagent 선호?` prepend, R000 user instructions > R018 명시
+- **R011 (SHOULD-memory-integration)** (#1206 item 3): Session-End Self-Check에 `omcustom-feedback` skill 활성 시 사용자 권유 단계 추가 (visible + HTML detail + COEXIST 확장 3곳)
+- **R016 (MUST-continuous-improvement)** (#1206 item 4): Anti-Patterns에 "Calibration/humility during action-oriented tone" 5번째 row 추가
 
-## :wrench: Other Changes
+## :bug: Bug Fixes
+- **plugin-cache-check.sh advisory hook** (#1207): SessionStart에서 plugin cache `node_modules` 미설치 감지. v0.132.0 zod/v3 동일 재발 패턴 방지. 비차단(exit 0), stderr advisory only
 
-- ARCHITECTURE.md fork count drift 보정 (9 → 10), Workflow/orchestration skills 카운트 5 → 6.
-- 7곳 카운트 동기화: skills 113→114, guides 44→45, version 0.109.0→0.110.0.
-- templates/ 3중 동기화 검증: verify-template-sync.sh / verify-wiki-sync.sh / verify-fork-list.sh 모두 통과.
+## :recycle: Other Changes
+- **Memory: R010 root metafile exception rejected** (#1206 item 6): R010 약화 제안 거부 근거 기록. orchestrator 직접 작성 금지 일관 유지
 
 ## Resource Changes
+| Resource | Before (v0.148.0) | After (v0.149.0) | Delta |
+|----------|-------------------|-------------------|-------|
+| Agents | 49 | 50 | +1 |
+| Skills | 121 | 121 | 0 |
+| Rules | 23 | 23 | 0 |
+| Guides | 57 | 57 | 0 |
 
-| Resource | Before | After | Delta |
-|----------|--------|-------|-------|
-| Rules | 22 | 22 | 0 (R003/R006 본문 갱신) |
-| Skills | 113 | 114 | +1 (roundtable-debate) |
-| Agents | 49 | 49 | 0 |
-| Guides | 44 | 45 | +1 (multi-agent-debate-patterns) |
-| Wiki pages | 257 | 260 | +3 |
-| Fork context (cap 12) | 9 | 10 | +1 |
-
-## Breaking Changes
-
-없음. Output Styles는 비파괴 신규 레이어, roundtable-debate는 신규 스킬, agora는 옵션 모드 추가(기본 동작 변동 없음).
+## Closed Issues
+- #1205 — Claude Code v2.1.146
+- #1206 — 세션 찐빠 보고 (items 1/3/4/6 internalized; items 2/5/7 별도 issue로 분리 예정)
+- #1207 — claude-mem v13.3.0 plugin node_modules 미설치
 
 ---
-_Release notes generated with Claude Code_
+_Release notes generated with Claude Code (oh-my-customcode auto-dev pipeline v2.1.0)_
