@@ -2014,7 +2014,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.146.0",
+  version: "0.148.0",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -2062,7 +2062,7 @@ var package_default = {
     yaml: "^2.8.2"
   },
   devDependencies: {
-    "@anthropic-ai/sdk": "^0.95.1",
+    "@anthropic-ai/sdk": "^0.97.1",
     "@biomejs/biome": "^2.3.12",
     "@types/bun": "^1.3.6",
     "@types/js-yaml": "^4.0.9",

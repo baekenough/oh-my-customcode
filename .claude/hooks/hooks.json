@@ -185,6 +185,16 @@
           }
         ],
         "description": "Auto-detect and fix previous session issues at start (#838)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/plugin-cache-check.sh"
+          }
+        ],
+        "description": "Advisory check for plugin cache directories missing node_modules (#1207)"
       }
     ],
     "UserPromptSubmit": [
