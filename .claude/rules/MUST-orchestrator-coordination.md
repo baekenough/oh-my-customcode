@@ -33,6 +33,11 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 ║           NOT exempt.                                            ║
 ║     NO  → Good. Continue.                                        ║
 ║                                                                   ║
+║  5. Am I about to edit a root meta-file (.gitignore,             ║
+║     .editorconfig, README.md, CHANGELOG.md, CLAUDE.md, etc.)?   ║
+║     YES → Delegate to specialist per Root Meta-File table.       ║
+║     NO  → Good. Continue.                                        ║
+║                                                                   ║
 ║  If any answer points to a problem → resolve before proceeding   ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
@@ -98,6 +103,12 @@ Key violations to avoid (file writes, git commands, bundled operations — all m
 
 ✓ CORRECT: Agent/skill/guide creation routed through mgr-creator
    Skill(brainstorming) → Agent(mgr-creator) → Write(".claude/agents/new.md")
+
+❌ WRONG: Orchestrator edits ".gitignore" because "it's only 1 line"
+   Main conversation → Edit(".gitignore", "!/README.ko.md")
+
+✓ CORRECT: Even single-line edits delegate to specialist
+   Main conversation → Agent(mgr-gitnerd) → Edit(".gitignore", "!/README.ko.md")
 ```
 
 <!-- DETAIL: Common Violations (extended)
@@ -370,6 +381,22 @@ The following paths MUST be created or structurally modified ONLY through `mgr-c
 - R017 verification failures
 
 > **Enforcement**: Advisory (R021) — no hard-block hook. Candidate for promotion if violation rate exceeds threshold. See R021 Hard Enforcement Candidates.
+
+### Root Meta-File Delegation
+
+루트 메타 파일은 변경 규모와 무관하게 orchestrator 직접 편집 금지. 적절한 specialist에 위임:
+
+| Path | Delegated to |
+|------|--------------|
+| `.gitignore`, `.gitattributes` | mgr-gitnerd |
+| `.editorconfig`, `.prettierrc*`, `.eslintrc*` | mgr-updater |
+| `.npmrc`, `.nvmrc`, `package.json` (non-version fields), `package-lock.json` | mgr-updater |
+| `CODEOWNERS`, `.github/CODEOWNERS` | mgr-gitnerd |
+| `README.md`, `README*.md`, `CHANGELOG.md` | arch-documenter |
+| `LICENSE`, `NOTICE` | arch-documenter |
+| `CLAUDE.md` (project root) | arch-documenter (content) / mgr-updater (count sync) |
+
+**Why**: "1 line edit" 논리는 R010 약화 — orchestrator 직접 편집 진입로 차단. #1208 보고.
 
 <!-- DETAIL: System Agents Reference
 | Agent | File | Purpose |

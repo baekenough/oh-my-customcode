@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.148.0",
-  "generatedAt": "2026-05-21T12:07:25.759Z",
-  "templateVersion": "0.148.0",
+  "generatorVersion": "0.149.0",
+  "generatedAt": "2026-05-21T12:52:08.223Z",
+  "templateVersion": "0.149.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -15,13 +15,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "09f69bab659d2b40d93f93df9cb0f24b4ff590947085599758c0719225011d09",
-      "size": 23707,
+      "templateHash": "a73575657e46d2b65b735fd2f11407370aa4b1a938742f45af0af2749ea88574",
+      "size": 25118,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
-      "templateHash": "64b1fd69a87d211d374b9368c35b5c9e70e72c5ecd6fd7d0f2124bffc9dddf03",
-      "size": 4634,
+      "templateHash": "5e044249201bbf7c34c5567f958788ea4fec1eededb405a7d0574f8f78edf1da",
+      "size": 5470,
       "component": "rules"
     },
     ".claude/rules/SHOULD-error-handling.md": {
@@ -1604,6 +1604,11 @@
       "size": 4396,
       "component": "guides"
     },
+    "guides/claude-code-tracking.md": {
+      "templateHash": "a64e9479accd1c7c520e84ba77c4e343019d055072b7d3dc64cab6a0ba44597b",
+      "size": 2681,
+      "component": "guides"
+    },
     "guides/typescript/type-system.md": {
       "templateHash": "02a3450c247f273d517cc19e2f3463d530fa85f90df787faaf628ac71c389749",
       "size": 3820,
@@ -1737,6 +1742,11 @@
     "guides/multi-model-routing/README.md": {
       "templateHash": "0b67510ec99ae94ff1d09225a0ac310eed304d28429196fa094a993aa734dd5b",
       "size": 3594,
+      "component": "guides"
+    },
+    "guides/agent-teams/troubleshooting.md": {
+      "templateHash": "f5d71da3294dd16dfcae3e6f5e385557ea07190ed81ac481b6adcc6a79d4cbdb",
+      "size": 4280,
       "component": "guides"
     },
     "guides/git-safety/README.md": {
