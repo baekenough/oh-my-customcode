@@ -298,6 +298,33 @@ async function installStatusline(
 }
 
 /**
+ * Install tests/tsconfig.json to the target directory
+ */
+async function installTestsConfig(
+  targetDir: string,
+  options: InstallOptions,
+  _result: InstallResult
+): Promise<void> {
+  const srcPath = resolveTemplatePath(join('tests', 'tsconfig.json'));
+  const destPath = join(targetDir, 'tests', 'tsconfig.json');
+
+  if (!(await fileExists(srcPath))) {
+    debug('install.tests_config_not_found', { path: srcPath });
+    return;
+  }
+
+  if (await fileExists(destPath)) {
+    if (!options.force && !options.backup) {
+      debug('install.tests_config_skipped', { reason: 'exists' });
+      return;
+    }
+  }
+
+  await copyFile(srcPath, destPath);
+  debug('install.tests_config_installed', {});
+}
+
+/**
  * Create or merge settings.local.json with statusLine configuration
  */
 async function installSettingsLocal(targetDir: string, result: InstallResult): Promise<void> {
@@ -433,6 +460,7 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 
     await installAllComponents(options.targetDir, options, result);
     await installStatusline(options.targetDir, options, result);
+    await installTestsConfig(options.targetDir, options, result);
     await installSettingsLocal(options.targetDir, result);
     await installEntryDocWithTracking(options.targetDir, options, result);
 

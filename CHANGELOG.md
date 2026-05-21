@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.150.1] - 2026-05-21
+
+### Added
+- `src/core/installer.ts` `installTestsConfig` function — auto-copy `templates/tests/tsconfig.json` to new projects (#1213)
+- 4 new test cases in `tests/unit/core/installer.test.ts`
+
 ## [0.150.0] - 2026-05-21
 
 ### Added — R010/R015 강화 + tsconfig template + investigation memos (#1208 #1210 #1211 #1212)
