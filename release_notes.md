@@ -1,36 +1,41 @@
-# Release v0.149.0
+# Release v0.150.0
 
 ## Highlights
-- **세션 피드백 내재화** (#1206): R018/R011/R016 룰 강화 — 사용자 명시적 subagent 선호 우선, omcustom-feedback 세션 종료 권유, calibration 억제 anti-pattern 추가
-- **claude-mem plugin cache advisory hook** (#1207): SessionStart에서 `~/.claude/shared-plugins/cache/**` `node_modules` 누락 자동 감지, stderr advisory 출력 (비차단)
-- **Claude Code v2.1.146 호환성** (#1205): `/code-review` 리네임, AskUserQuestion auto-mode normalization, `CLAUDE_CODE_SUBAGENT_MODEL` 전파 fix 등 문서화
-
-## :books: Documentation
-- **CC v2.1.146 호환성 문서** (#1205): `guides/claude-code/15-version-compatibility.md` — 16개 변경 사항 분석 및 oh-my-customcode 영향 평가, 후속 follow-up 후보 명시
+- **R010 enforcement 강화** (#1208): 루트 메타 파일 위임 표준화 (`.gitignore`, `.editorconfig`, `README.md` 등) + Self-Check #5 + R015 push directive persistence 정책
+- **omcustom-init tests/tsconfig.json template** (#1211): 신규 프로젝트 부트스트랩 시 `tests/` 디렉토리 타입 추론 지원
+- **Investigation memos** (#1210 #1212): Agent Teams force shutdown + Background agent progress tracking 가이드 + CC upstream 추적 정착
 
 ## :wrench: Rules
-- **R018 (MUST-agent-teams)** (#1206 item 1): Self-Check `#0 — 사용자가 명시적으로 일반 subagent 선호?` prepend, R000 user instructions > R018 명시
-- **R011 (SHOULD-memory-integration)** (#1206 item 3): Session-End Self-Check에 `omcustom-feedback` skill 활성 시 사용자 권유 단계 추가 (visible + HTML detail + COEXIST 확장 3곳)
-- **R016 (MUST-continuous-improvement)** (#1206 item 4): Anti-Patterns에 "Calibration/humility during action-oriented tone" 5번째 row 추가
+- **R010 (MUST-orchestrator-coordination)**: Root Meta-File Delegation 표 추가 (`.gitignore`/`.npmrc`/`README.md` 등 specialist 매핑) + Common Violations에 "1-line edit" 핑계 anti-pattern + Self-Check #5
+- **R015 (MUST-intent-transparency)**: Git Push Continuation 섹션 추가 — first-time strict, follow-up relaxed; 동일 세션 내 동일 브랜치 push directive persistence
 
-## :bug: Bug Fixes
-- **plugin-cache-check.sh advisory hook** (#1207): SessionStart에서 plugin cache `node_modules` 미설치 감지. v0.132.0 zod/v3 동일 재발 패턴 방지. 비차단(exit 0), stderr advisory only
+## :books: Documentation
+- `guides/agent-teams/troubleshooting.md` (NEW): graceful shutdown 5단계 절차 + tmux kill-pane fallback + isActive flag 수동 해제
+- `guides/claude-code-tracking.md` (NEW): CC upstream API 추적 — Background Agent Progress API + Agent Teams Force Shutdown 후보 변경 키워드
 
-## :recycle: Other Changes
-- **Memory: R010 root metafile exception rejected** (#1206 item 6): R010 약화 제안 거부 근거 기록. orchestrator 직접 작성 금지 일관 유지
+## :file_folder: Templates
+- `templates/tests/tsconfig.json` (NEW): bun-types 타입 + 상위 tsconfig.json 상속
+
+## :brain: Memory
+- `feedback_agent_teams_force_shutdown.md` (NEW): tmux kill-pane fallback 절차 — #1210
+- `feedback_background_agent_progress_tracking.md` (NEW): CC upstream API 부재, workarounds + monitoring — #1212
 
 ## Resource Changes
-| Resource | Before (v0.148.0) | After (v0.149.0) | Delta |
+| Resource | Before (v0.149.0) | After (v0.150.0) | Delta |
 |----------|-------------------|-------------------|-------|
-| Agents | 49 | 50 | +1 |
+| Agents | 50 | 49 | -1 (count correction) |
 | Skills | 121 | 121 | 0 |
 | Rules | 23 | 23 | 0 |
-| Guides | 57 | 57 | 0 |
+| Guides | 57 | 58 | +1 (agent-teams 디렉토리 — claude-code-tracking은 기존 claude-code/와 별개 단일 파일) |
 
 ## Closed Issues
-- #1205 — Claude Code v2.1.146
-- #1206 — 세션 찐빠 보고 (items 1/3/4/6 internalized; items 2/5/7 별도 issue로 분리 예정)
-- #1207 — claude-mem v13.3.0 plugin node_modules 미설치
+- #1208 — R010 violation: orchestrator direct .gitignore edit + main push policy inconsistency
+- #1210 — Agent Teams graceful shutdown + tmux kill fallback 표준화 (#1206 item 2)
+- #1211 — omcustom-init 템플릿에 tests/tsconfig.json 추가 (#1206 item 5)
+- #1212 — Background agent 진행 추적 (CC upstream tracking) (#1206 item 7)
+
+## Follow-up
+- #1213 — installer 로직 (tests/tsconfig.json 자동 설치) — #1211 follow-up
 
 ---
 _Release notes generated with Claude Code (oh-my-customcode auto-dev pipeline v2.1.0)_
