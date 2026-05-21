@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.149.0] - 2026-05-21
+
+### Added — 룰 강화 + CC v2.1.146 + claude-mem hook (#1205 #1206 #1207)
+- R018 (`MUST-agent-teams`): Self-Check #0 user explicit subagent preference (R000 > R018) — #1206 item #1
+- R011 (`SHOULD-memory-integration`): Session-End Self-Check에 omcustom-feedback 권유 (3 places) — #1206 item #3
+- R016 (`MUST-continuous-improvement`): Anti-Pattern 5번째 row — calibration during action-oriented tone — #1206 item #4
+- `.claude/hooks/scripts/plugin-cache-check.sh`: plugin cache `node_modules` 누락 SessionStart advisory hook (비차단, exit 0) — #1207
+- `guides/claude-code/15-version-compatibility.md`: CC v2.1.146 호환성 섹션 — #1205
+
+### Changed
+- 룰 3건 + 1 hook 신규 등록 + templates/ 동기화
+
+### Memory
+- feedback_r010_root_metafile_exception_rejected (신규): R010 약화 제안 거부 — #1206 item #6
+- feedback_plugin_node_modules_missing: v0.149.0/#1207 자동 감지 hook note append
+
 ## [0.148.0] - 2026-05-20
 
 ### Added — CC v2.1.145 follow-up

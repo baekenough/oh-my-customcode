@@ -486,6 +486,7 @@ docs/superpowers/plans/**
 | v2.1.143 | 직접 변경 불필요. `worktree.bgIsolation: "none"` opt-in 시 파일 소유권 규율 필수. Stop hook 8회 block cap 인지. | P3 follow-up |
 | v2.1.144 | 호환 가능. CLAUDE.md `omcustomMinClaudeCode` v2.1.121 유지. macOS bg session FDA crash fix 확인. | None |
 | v2.1.145 | docs-only. `claude agents --json` HUD 강화, Stop/SubagentStop hook `background_tasks`/`session_crons` 활용, status line GitHub PR 통합 — 별도 follow-up 권장. | P3 follow-up |
+| v2.1.146 | docs-only. `/simplify`→`/code-review` 리네임 + effort level, AskUserQuestion auto-mode normalization, MCP pagination 안정성, `CLAUDE_CODE_SUBAGENT_MODEL` 자식 프로세스 전파 fix. | None |
 
 ## v2.1.144 (2026-05-19) — 호환성 점검
 
@@ -640,6 +641,76 @@ Agent Teams 멤버 이름에 non-ASCII 문자(한국어 포함)가 포함된 경
 
 ---
 
+## v2.1.146 (2026-05-21) — 호환성 점검
+
+> Issue: #1205 — Claude Code v2.1.146 compatibility documentation
+
+### `/simplify` → `/code-review` 리네임 (+ effort level)
+
+기존 `/simplify` 슬래시 커맨드가 `/code-review`로 리네임되었습니다. effort level을 인수로 지정할 수 있습니다 (예: `/code-review high`).
+
+**oh-my-customcode 연관**: 내부 `dev-review` 스킬과 명칭이 다르며 충돌 없음. 사용자가 네이티브 `/code-review`와 omcustom `dev-review` 스킬을 혼동하지 않도록 구분 안내가 필요할 수 있습니다 (별도 follow-up 후보). 직접 harness 변경 불필요.
+
+### Auto mode `AskUserQuestion` 억제 해제
+
+Auto mode에서 user 또는 skill이 명시적으로 요청한 경우 `AskUserQuestion` 호출이 더 이상 억제되지 않습니다.
+
+**oh-my-customcode 연관**: R015 intent transparency의 ambiguity-gate 패턴이 정상 작동합니다. 신뢰도 < 70% 구간에서 `AskUserQuestion`을 통한 명시적 확인 요청이 auto mode에서도 동작하므로 R015 오탐(ambiguous routing 무음 처리)이 감소합니다. 호환, 개선.
+
+### MCP `resources/list`, `resources/templates/list`, `prompts/list` 페이지네이션 수정
+
+1페이지 이후의 항목이 누락되던 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: `ListMcpResourcesTool` 페이지네이션 안정성이 개선됩니다. `claude-mem`, `ontology-rag` 등 R011/R019 MCP 서버에서 리소스 목록이 많은 경우 전체 항목이 정상 조회됩니다. 호환, 개선.
+
+### `CLAUDE_CODE_SUBAGENT_MODEL` 자식 프로세스 전파 수정
+
+`CLAUDE_CODE_SUBAGENT_MODEL` 환경 변수가 다중 에이전트 세션의 자식 프로세스에 전파되지 않던 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: R010 + R018 Agent Teams 멤버 모델 일관성에 직접 영향. `CLAUDE_CODE_SUBAGENT_MODEL`을 설정한 환경에서 Agent Teams 멤버가 지정 모델을 올바르게 사용하는지 v2.1.146 업그레이드 후 검증 권장. 호환, 검증 권장.
+
+### Windows 관련 수정 (macOS 영향 없음)
+
+- Windows PowerShell `pwsh` winget/Store 설치 실패 fix (v2.1.124 regression)
+- Windows Terminal background session strobing fix
+- Windows NTFS junction background-job worktree 안전성 개선
+- GNOME Terminal right/middle-click paste fix
+
+**oh-my-customcode 연관**: macOS 개발 환경에는 직접 영향 없음.
+
+### 기타 수정
+
+- `/background` skill-or-custom-slash-only 입력 수용 fix → `/bg` 플로우(R010 Universal bypassPermissions) 개선
+- Backgrounded sessions tool permission "don't ask again" 재요청 fix → R010 bypassPermissions 안정성 개선
+- Auto-updater 상태줄 fail 시 현재 버전 표시 fix → R012 statusline 영향 없음 (별도)
+- Agent SDK 스트리밍 세션 종료 시 uncaught exception fix → agent-sdk-* 플러그인 영향 가능, 모니터 권장
+- `forceLoginOrgUUID`/`forceLoginMethod` managed-settings enforcement fix → R002 직접 영향 없음
+- Auto-updater 일시적 네트워크 실패 retry 개선
+- 대용량 파일 편집 diff 렌더링 성능 개선
+- `/theme` color editor + "New custom theme" Esc 미응답 fix
+
+### oh-my-customcode 연관 평가
+
+| 변경 | oh-my-customcode 영향 | 조치 |
+|------|----------------------|------|
+| `/simplify` → `/code-review` 리네임 + effort level | 내부 `dev-review` skill과 명칭 다름, 충돌 없음 | 호환, 별도 조치 없음 |
+| Auto mode `AskUserQuestion` 억제 해제 | R015 intent transparency, ambiguity-gate 정상 작동 | 호환, 개선 |
+| MCP 페이지네이션 수정 | `ListMcpResourcesTool` 페이지네이션 안정성 | 호환, 개선 |
+| `CLAUDE_CODE_SUBAGENT_MODEL` 자식 프로세스 전파 fix | R010 + R018 Agent Teams 멤버 모델 일관성 개선 | 호환, 검증 권장 |
+| `/background` 입력 수용 fix | `/bg` 플로우 개선 | 호환, 개선 |
+| Backgrounded sessions permission "don't ask again" fix | R010 bypassPermissions 안정성 | 호환, 개선 |
+| Agent SDK 스트리밍 uncaught exception fix | agent-sdk-* 플러그인 영향 가능 | 호환, 모니터 |
+| Windows/터미널 관련 수정 | macOS 환경 직접 영향 없음 | 호환 |
+
+**Action items**:
+- 본 릴리스에서 코드 변경 없음 (docs-only)
+- 후속 follow-up 후보:
+  - `CLAUDE_CODE_SUBAGENT_MODEL` 전파 동작 검증 (R018 Agent Teams 멤버 모델 일관성)
+  - 외부 `/code-review`와 내부 `dev-review` skill 구분 안내 (CLAUDE.md 또는 dev-review skill 본문)
+  - Agent SDK 스트리밍 fix가 agent-sdk-dev 플러그인에 미치는 영향 모니터
+
+---
+
 ## References
 
 - #967 — Claude Code v2.1.117 release note
@@ -652,6 +723,7 @@ Agent Teams 멤버 이름에 non-ASCII 문자(한국어 포함)가 포함된 경
 - #1147 — .gitignore nested .md pattern limitation note
 - #1187 — Claude Code v2.1.144 compatibility documentation
 - #1191 — Claude Code v2.1.145 compatibility documentation
+- #1205 — Claude Code v2.1.146 compatibility documentation
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec
