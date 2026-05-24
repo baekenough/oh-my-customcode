@@ -3,7 +3,6 @@ name: omcustom-feedback
 description: Submit feedback about oh-my-customcode (supports anonymous submission)
 scope: harness
 user-invocable: true
-disable-model-invocation: true
 argument-hint: "[description or leave empty for interactive] [--anonymous]"
 ---
 
@@ -201,5 +200,6 @@ Submit manually when connectivity is available:
 - Route A creates a visible GitHub issue attributed to the user's gh account
 - When `--anonymous` is used, the title is prefixed with `[Anonymous Feedback]` and the `anonymous` label is added
 - Fallback ensures no feedback is silently lost even in offline environments
-- `disable-model-invocation: true` ensures this skill only runs when explicitly invoked by the user
+- This skill is invocable by BOTH the user (`/omcustom-feedback`) and the model (Skill tool). Model invocation enables session-end retrospective feedback drafting (#1226 item 3, #1227).
+- The Phase 4A "Preview + confirmation" gate (steps 2-3) is the safety boundary: the model can DRAFT a feedback issue but CANNOT create a public GitHub issue without explicit user confirmation. This mitigates the abuse concern of model-invocation.
 - Target repo is hardcoded to `baekenough/oh-my-customcode` — feedback is always about omcustom itself
