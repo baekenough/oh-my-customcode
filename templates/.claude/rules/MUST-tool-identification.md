@@ -95,3 +95,40 @@ Parallel spawn description parameter:
 Agent(description: "[1] Go code review", subagent_type: "lang-golang-expert", ...)
 Agent(description: "[2] Python code review", subagent_type: "lang-python-expert", ...)
 ```
+
+## Multi-Turn Self-Check (MANDATORY)
+
+매 도구 호출 직전, 이전 호출이 prefix 를 가졌는지에 의존하지 말고 다시 자가 점검:
+
+1. 이 호출 위에 `[agent-name][model] → Tool: <tool-name>` 라인이 있는가?
+2. agent-name 과 model 이 현재 컨텍스트와 일치하는가?
+
+체크 실패 시 즉시 prefix 추가 후 호출.
+
+### Common Multi-Turn Violation
+
+```
+호출 1 (턴 1): [claude][sonnet] → Tool: Read ✓
+호출 2 (턴 1, 같은 턴 추가 호출): (prefix 없음) ✗
+호출 3 (턴 2 첫 호출): (prefix 없음) ✗
+```
+
+같은 턴 내 추가 호출, 새 턴 첫 호출 모두 prefix 필수.
+
+Reference issue: #1096.
+
+### Short Response Discipline
+
+도구 호출 prefix 도 응답 길이와 무관하게 필수. 같은 턴 내 여러 도구를 호출할 때 각 호출 직전에 개별 prefix 표시:
+
+```
+[agent][model] → Tool: Read
+[agent][model] → Target: file1.md
+<Read call>
+
+[agent][model] → Tool: Bash
+[agent][model] → Target: gh issue list
+<Bash call>
+```
+
+Reference issues: #1188 item #3, #1198 item #3.
