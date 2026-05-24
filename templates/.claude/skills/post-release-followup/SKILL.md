@@ -10,7 +10,7 @@ effort: medium
 
 ## Purpose
 
-After PR creation in the auto-dev release workflow, collect unaddressed findings and present actionable follow-up recommendations. The user chooses: execute now, register as issues, or skip.
+After PR creation in the auto-dev release workflow, collect unaddressed findings and present actionable follow-up recommendations. Genuine defects and process gaps are registered as GitHub issues automatically (no user confirmation needed). Only code-changing "immediate action" items require user confirmation.
 
 ## Workflow
 
@@ -63,55 +63,73 @@ Remove duplicates (same issue referenced from multiple sources). Categorize:
 | **이슈 등록** | P3 이슈, LOW 검증 발견사항, 새 TODO, Medium PR 리뷰 발견사항 | 이슈로 등록 |
 | **참고** | 이미 추적 중인 이슈, 외관 관련 메모 | 건너뛰기 |
 
+### Auto-Register Genuine Defects (no-ask)
+
+**Before presenting the summary to the user**, auto-register all "이슈 등록" category items that are genuine defects or process gaps. No user confirmation is required for these.
+
+**Definition — auto-register if ANY of:**
+- Genuine defect: a bug, regression, broken behavior, or incorrect output observed during verification
+- Process gap: a workflow hole, missing guard, or coverage gap surfaced by deep-verify / triage
+- Coverage gap: a missing test, missing documentation, or missing automation for a known scenario
+
+**Definition — do NOT auto-register (keep for user choice):**
+- Pure cosmetic / style preference notes
+- Items that are purely subjective or opinion-based
+
+**When ambiguous, lean toward registering.** Registering a borderline item costs nothing; missing a genuine defect costs a future session.
+
+**How to auto-register:**
+```bash
+gh issue create \
+  --title "{간결한 설명}" \
+  --body "## 출처\n\nv{version} 릴리즈 워크플로우에서 자동 등록.\n\n## 컨텍스트\n\n{상세 컨텍스트}\n\n## 권장 조치\n\n{권장 사항}" \
+  --label "professor"
+```
+Add priority label (`P3` default for defects surfaced here; escalate to `P2` if MEDIUM+ severity).
+
+**Authority**: user directive (session 102) — genuine defects found during release workflows should be registered without prompting. See also R016 Defect Response Matrix: CI/infra defect and Process gap both require Issue registration.
+
+After auto-registering, include the created issue numbers in the summary display.
+
 ### 3. Present to User
 
-Display follow-up summary:
+Auto-register all genuine defects first (see above). Then display follow-up summary showing what was already registered and what remains for user decision:
 
 ```
 [Follow-up] {n}개 후속 작업 발견
+
+━━━ 자동 등록 완료 ({count}개) ━━━
+  ✓ #{issue_number} — {description} (이미 등록됨)
+  ✓ #{issue_number} — {description} (이미 등록됨)
 
 ━━━ 즉시 실행 추천 ({count}개) ━━━
   1. {description} — 출처: {source}
   2. {description} — 출처: {source}
 
-━━━ 이슈 등록 추천 ({count}개) ━━━
-  3. {description} — 출처: {source}
-  4. {description} — 출처: {source}
-
 ━━━ 참고 사항 ({count}개) ━━━
-  5. {description} — 이미 #{issue_number}로 추적 중
+  3. {description} — 이미 #{issue_number}로 추적 중
 
-선택:
-  [A] 추천대로 실행 (즉시 실행 + 이슈 등록)
-  [B] 모두 즉시 실행
-  [C] 모두 이슈 등록
-  [D] 개별 선택 (항목별로 질문)
-  [E] 건너뛰기
+즉시 실행 항목 선택:
+  [A] 추천대로 실행 (즉시 실행 항목 모두 실행)
+  [B] 개별 선택 (항목별로 질문)
+  [C] 건너뛰기
 ```
 
-Use AskUserQuestion (or equivalent user prompt) to get the choice.
+Use AskUserQuestion (or equivalent user prompt) to get the choice **only if there are "즉시 실행" items**. If there are none, skip the prompt and complete automatically.
 
 ### 4. Process User Choice
 
 **Option A (추천대로)**:
 - "Immediate" items → delegate to appropriate specialist agents for execution
-- "Trackable" items → create GitHub issues via `gh issue create`
+- (Trackable items were already auto-registered in step above)
 - "Informational" items → skip
 
-**Option B (모두 즉시 실행)**:
-- All Immediate + Trackable items → delegate to specialist agents
-- Follow implementation patterns from the release workflow
-
-**Option C (모두 이슈 등록)**:
-- All Immediate + Trackable items → `gh issue create` with appropriate labels
-- Label: `professor` for auto-triage in next workflow run
-
-**Option D (개별 선택)**:
-- For each item, ask: `[{n}] {description} — 실행(E) / 이슈(I) / 건너뛰기(S)?`
+**Option B (개별 선택)**:
+- For each "즉시 실행" item, ask: `[{n}] {description} — 실행(E) / 건너뛰기(S)?`
 - Process each per user choice
 
-**Option E (건너뛰기)**:
-- Skip all follow-up actions
+**Option C (건너뛰기)**:
+- Skip remaining immediate actions
 - Complete workflow
 
 ### 5. Report
@@ -126,7 +144,16 @@ Use AskUserQuestion (or equivalent user prompt) to get the choice.
 
 ## Issue Creation Template
 
-When creating follow-up issues:
+For auto-registered genuine defects / process gaps:
+
+```bash
+gh issue create \
+  --title "{간결한 설명}" \
+  --body "## 출처\n\nv{version} 릴리즈 워크플로우에서 자동 등록.\n\n## 컨텍스트\n\n{triage/verify에서의 상세 컨텍스트}\n\n## 권장 조치\n\n{권장 사항}" \
+  --label "professor"
+```
+
+For user-requested issue creation (Option C fallback, if ever used):
 
 ```bash
 gh issue create \
@@ -135,12 +162,13 @@ gh issue create \
   --label "professor"
 ```
 
-Add priority label (`P1`, `P2`, `P3`) based on categorization.
+Add priority label (`P1`, `P2`, `P3`) based on categorization. Default for auto-registered items: `P3` (escalate to `P2` for MEDIUM+ severity).
 
 ## Notes
 
 - This skill runs in the main conversation context (via workflow skill step)
-- User interaction is expected — this is NOT a fully automated step
+- Genuine defect/process gap items are auto-registered as issues WITHOUT user confirmation (session 102 directive)
+- Only "즉시 실행" (code-changing immediate action) items require user confirmation
 - All file modifications delegated to specialist subagents per R010
 - Issue creation uses `gh` CLI directly (read-only operation pattern)
 - If no follow-up candidates found, report "No follow-up actions needed" and complete
