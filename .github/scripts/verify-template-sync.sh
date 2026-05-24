@@ -167,6 +167,42 @@ if [ "$doc_skills" != "0" ] && [ "$actual_skills" != "$doc_skills" ]; then
   errors=$((errors + 1))
 fi
 
+# ── Content Drift Check (#1234) ──────────────────────────────────────────────
+# Count parity alone misses content drift: a rule/agent/hook edited in .claude/
+# without syncing templates/.claude/ passes the count check but ships stale.
+content_drift=0
+
+check_content_dir() {
+  # $1 = subpath under .claude/ and templates/.claude/ ; $2 = find glob
+  local sub="$1" glob="$2"
+  local src_dir=".claude/$sub" tpl_dir="templates/.claude/$sub"
+  [ -d "$src_dir" ] || return 0
+  while IFS= read -r f; do
+    local base="${f#"$src_dir"/}"
+    local tpl="$tpl_dir/$base"
+    if [ ! -f "$tpl" ]; then
+      echo "::error::Template missing for $sub: $base (source exists, template absent)"
+      content_drift=$((content_drift + 1))
+    elif ! diff -q "$f" "$tpl" >/dev/null 2>&1; then
+      echo "::error::Content drift in $sub: $base (source != template)"
+      content_drift=$((content_drift + 1))
+    fi
+  done < <(find "$src_dir" -maxdepth 1 -type f -name "$glob")
+}
+
+echo ""
+echo "=== Content Drift Check (#1234) ==="
+check_content_dir "rules" "*.md"
+check_content_dir "agents" "*.md"
+check_content_dir "hooks/scripts" "*.sh"
+
+if [ "$content_drift" -gt 0 ]; then
+  echo "::error::$content_drift content drift(s) detected between .claude/ and templates/.claude/"
+  echo "Fix: sync the source file(s) to templates/.claude/ (cp source template)"
+  exit 1
+fi
+echo "[OK] Content drift check: rules, agents, hooks/scripts all in sync"
+
 # ── Final result ─────────────────────────────────────────────────────────────
 if [ "$errors" -gt 0 ]; then
   echo ""

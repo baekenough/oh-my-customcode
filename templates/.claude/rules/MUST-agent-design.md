@@ -79,6 +79,7 @@ disableSkillShellExecution: true  # Disable inline shell execution in skills (v2
 `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations` are supported in Claude Code v2.1.63+. Hook types `PostCompact`, `Elicitation`, `ElicitationResult` require v2.1.76+. `CwdChanged`, `FileChanged` hook events and `managed-settings.d/` drop-in directory require v2.1.83+. Conditional `if` field for hooks requires v2.1.85+. `PermissionDenied` hook event requires v2.1.88+. `refreshInterval` setting for status line auto-refresh interval added in v2.1.97+. Monitor tool and subprocess sandboxing (`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`, `CLAUDE_CODE_SCRIPT_CAPS`) added in v2.1.98+. Settings resilience (unrecognized hook event names no longer cause settings.json to be ignored) improved in v2.1.101+. PreCompact hook block support (exit 2 / `{"decision":"block"}`) added in v2.1.105+. Skill description listing cap raised from 250 to 1,536 characters in v2.1.105+. Plugin `monitors` manifest key for background monitors added in v2.1.105+. `ENABLE_PROMPT_CACHING_1H` and `FORCE_PROMPT_CACHING_5M` env vars for prompt cache TTL control added in v2.1.108+. Skill tool can now discover and invoke built-in slash commands (`/init`, `/review`, `/security-review`) in v2.1.108+. `/recap` session context feature and `/undo` alias for `/rewind` added in v2.1.108+. `/tui` command and `tui` setting for fullscreen rendering added in v2.1.110+. PushNotification tool for mobile push notifications (Remote Control + config required) added in v2.1.110+. `autoScrollEnabled` config for fullscreen mode added in v2.1.110+. SDK/headless `TRACEPARENT`/`TRACESTATE` distributed trace linking added in v2.1.110+. Bash tool maximum timeout enforcement added in v2.1.110+. Write tool IDE diff feedback (informs model when user edits proposed content) added in v2.1.110+. `--resume`/`--continue` now resurrects unexpired scheduled tasks in v2.1.110+. `/focus` command (separated from Ctrl+O) added in v2.1.110+. `xhigh` effort level for Opus 4.7 (between `high` and `max`; other models fall back to `high`) added in v2.1.111+. `/effort` interactive slider with arrow-key navigation (when called without arguments) added in v2.1.111+. Auto mode no longer requires `--enable-auto-mode` in v2.1.111+. PowerShell tool progressive rollout (`CLAUDE_CODE_USE_POWERSHELL_TOOL` env var) added in v2.1.111+. Read-only bash commands with glob patterns (`ls *.ts`) and `cd <project-dir> &&` prefix no longer trigger permission prompt in v2.1.111+. `/less-permission-prompts` built-in skill for permission allowlist scanning added in v2.1.111+. `/ultrareview` parallel multi-agent cloud code review added in v2.1.111+. `/skills` menu sorting by estimated token count (press `t`) added in v2.1.111+. `OTEL_LOG_RAW_API_BODIES` env var for full API request/response body logging added in v2.1.111+. Plan files named after prompt content (not random words) in v2.1.111+. Plugin error handling improvements (dependency conflict errors, stale version recovery, install recovery) in v2.1.111+.
 `sandbox.network.deniedDomains` setting for domain blocking within `allowedDomains` wildcards added in v2.1.113+. Subagent mid-stream stall detection with auto-fail after 10 minutes added in v2.1.113+. Bash `find -exec`/`-delete` no longer auto-approved under `Bash(find:*)` allow rules in v2.1.113+. Bash deny rules now match exec wrappers (`env`/`sudo`/`watch`/`ionice`/`setsid`) in v2.1.113+. Native binary spawning (per-platform optional dependency) replaces bundled JavaScript in v2.1.113+. `/loop` Esc now cancels pending wakeups in v2.1.113+.
 Agent frontmatter `hooks:` fire when agent runs as main-thread agent via `--agent` flag (previously subagent-only) in v2.1.116+. `/reload-plugins` auto-installs missing plugin dependencies from added marketplaces in v2.1.116+.
+Hook JSON output `terminalSequence` field for desktop notifications, window title changes, and terminal bells without controlling terminal added in v2.1.141+. `claude agents --cwd <path>` flag to scope session list to a directory added in v2.1.141+. Background agents launched via `/bg` now preserve current permission mode (no longer revert to default) in v2.1.141+. `CLAUDE_CODE_PLUGIN_PREFER_HTTPS` env var to clone GitHub plugin sources over HTTPS instead of SSH added in v2.1.141+. `ANTHROPIC_WORKSPACE_ID` env var for workload identity federation workspace scoping added in v2.1.141+.
 -->
 
 ## Hook Event Types
@@ -253,32 +254,19 @@ Current CC behavior: under `bypassPermissions`, all `.claude/**` paths (includin
 2. Use Write/Edit directly for `.claude/**` paths — no `/tmp/*.sh` wrapping needed
 3. For CC < v2.1.121: see git history of this section (pre-v0.126.0) for the legacy bypass pattern
 
-<!-- DETAIL: Sensitive Path Behavior table and Recommended practice
-#### Sensitive Path Behavior
-
-| Path | Tool | Allow rule | Result |
+<!-- DETAIL: Pre-v2.1.121 sensitive path behavior (historical)
+| Path | Tool | Allow rule | Result (CC < v2.1.121) |
 |------|------|-----------|--------|
-| `.claude/**` | Bash (`cp`, `mkdir`, `rm`) | `Bash(*)` allowed | Prompt (sensitive-path overrides) |
-| `.claude/**` | Write, Edit | `Write(.claude/**)` allowed | Prompt (sensitive-path overrides) |
-| `templates/.claude/**` | Write, Edit | `Write(templates/.claude/**)` allowed | Prompt (confirmed CC v2.1.116+; see #960, #961, #981) |
-| `.claude/outputs/**` | Write, Edit | `Write(.claude/outputs/**)` | Prompt (sensitive-path overrides — confirmed #1043) |
-| `.claude/outputs/**` | Bash via `/tmp/*.sh` | — | Allowed (bypass pattern) |
-
-#### Recommended practice
-
-1. **Prefer `Write`/`Edit` over `Bash(cp)`/`Bash(mkdir)`** — `Write`/`Edit` provide better auditability and avoid shell injection risk
-2. **Add allow rules defensively** — `Write(.claude/**)`, `Edit(.claude/**)`, `Write(templates/.claude/**)`, `Edit(templates/.claude/**)` in `.claude/settings.local.json`. Rules may not bypass sensitive-path check but document intent and aid future CC behavior changes
-3. **For `.claude/outputs/**` specifically**: Use `Bash via /tmp/*.sh` bypass — Write/Edit on this path triggers sensitive-path prompt despite being the artifact convention path (confirmed v0.111.1+, #1043, #1046)
+| `.claude/**` | Bash (`cp`, `mkdir`, `rm`) | `Bash(*)` allowed | Prompt (sensitive-path overrode) |
+| `.claude/**` | Write, Edit | `Write(.claude/**)` allowed | Prompt (sensitive-path overrode) |
+| `templates/.claude/**` | Write, Edit | `Write(templates/.claude/**)` allowed | Prompt (#960, #961, #981) |
+| `.claude/outputs/**` | Write, Edit | `Write(.claude/outputs/**)` | Prompt (#1043) |
+| `.claude/outputs/**` | Bash via `/tmp/*.sh` | — | Allowed (legacy bypass) |
 -->
 
-<!--
-3. **Accept interactive prompts as a release-pipeline constraint** — `templates/.claude/` sync during release automation requires human approval; plan release windows accordingly
-4. **This is CC design behavior, not a bug** — sensitive-path check is a defense-in-depth layer. File upstream as a documentation request (not bug report) if behavior is unclear
-
-#### Cross-references
-
-- `feedback_sensitive_path.md` — session memory with Bash + Write scope (#960, #961, #981)
-- `feedback_templates_claude_glob.md` — `.claude/**` glob does not cover `templates/.claude/**`, separate allow rules required
+<!-- DETAIL: Cross-references
+- `feedback_sensitive_path*.md` — historical (pre-v2.1.121) memories, marked with status: historical (#1101)
+- `feedback_templates_claude_glob.md` — `.claude/**` glob does not cover `templates/.claude/**`, separate allow rules required (still applies for non-bypassPermissions modes)
 -->
 
 ### Artifact Channel Protocol
