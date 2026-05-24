@@ -10,6 +10,21 @@
 | Caching | Same data accessed repeatedly | Cache file contents, reuse search results |
 | Lazy Loading | Large datasets, partial use | Read only needed files, stream results |
 
+### Capability-Aware Tool Scheduling
+
+When dispatching parallel tool calls, consider per-tool capabilities to optimize scheduling:
+
+| Capability | Parallelizable? | Example |
+|-----------|----------------|---------|
+| Read-only, no side effects | Yes | Read, Glob, Grep |
+| Write with independent targets | Yes | Write(file-A) + Write(file-B) |
+| Write with shared target | No | Sequential edits to same file |
+| External with rate limits | Throttle | WebFetch, API calls |
+
+This aligns with R009 (parallel execution) detection criteria and extends it with tool-level scheduling awareness.
+
+Inspired by [ouroboros PR #353](https://github.com/Q00/ouroboros/pull/353) capability graph pattern.
+
 ## Token Optimization
 
 - Include only necessary info, remove duplicates, use summaries

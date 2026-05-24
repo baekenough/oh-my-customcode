@@ -32,6 +32,16 @@ if [ -z "$session_id" ]; then
   exit 0
 fi
 
+# ── Phase 2 (#1196): background_tasks / session_crons 추출 (CC v2.1.145+) ──
+# 신규 필드 미존재 시 빈 배열로 처리 (graceful degrade).
+bg_tasks_json=$(echo "$input" | jq -c '.background_tasks // []' 2>/dev/null || echo '[]')
+session_crons_json=$(echo "$input" | jq -c '.session_crons // []' 2>/dev/null || echo '[]')
+bg_tasks_count=$(echo "$bg_tasks_json" | jq 'length' 2>/dev/null || echo 0)
+session_crons_count=$(echo "$session_crons_json" | jq 'length' 2>/dev/null || echo 0)
+
+# 미완료 백그라운드 태스크: running/pending/in_progress 상태 카운트
+bg_dangling_count=$(echo "$bg_tasks_json" | jq '[.[] | select(.status == "running" or .status == "pending" or .status == "in_progress")] | length' 2>/dev/null || echo 0)
+
 # ── 경로 결정 (환경변수 override 지원) ──
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -62,6 +72,9 @@ TRANSCRIPT_PATH="$1"
 PROJECT_ROOT="$2"
 SESSION_ID="$3"
 SCRIPT_DIR="$4"
+BG_TASKS_JSON="${5:-[]}"
+SESSION_CRONS_JSON="${6:-[]}"
+BG_DANGLING_COUNT="${7:-0}"
 
 # 출력 디렉토리 준비
 OUTPUT_DIR="${PROJECT_ROOT}/.claude/outputs/reflections"
@@ -142,6 +155,30 @@ while IFS= read -r line; do
 
 done < "$TRANSCRIPT_PATH"
 
+# ── Phase 2 (#1196): background_tasks / session_crons 분석 ──
+bg_total=$(echo "$BG_TASKS_JSON" | jq 'length' 2>/dev/null || echo 0)
+cron_total=$(echo "$SESSION_CRONS_JSON" | jq 'length' 2>/dev/null || echo 0)
+bg_dangling_lines=""
+cron_lines=""
+
+if [ "$bg_total" -gt 0 ]; then
+  # dangling 태스크 목록 (최대 5개): id + status + description (60자 truncate)
+  bg_dangling_lines=$(echo "$BG_TASKS_JSON" | jq -r '
+    [.[] | select(.status == "running" or .status == "pending" or .status == "in_progress")]
+    | .[0:5]
+    | map("  - id=\(.id // "?") status=\(.status // "?") desc=\((.description // "") | .[0:60])")
+    | join("\n")
+  ' 2>/dev/null || echo "")
+fi
+
+if [ "$cron_total" -gt 0 ]; then
+  cron_lines=$(echo "$SESSION_CRONS_JSON" | jq -r '
+    .[0:5]
+    | map("  - id=\(.id // "?") schedule=\(.schedule // "?") prompt=\((.prompt // "") | .[0:60])")
+    | join("\n")
+  ' 2>/dev/null || echo "")
+fi
+
 # ── 로그 작성 ──
 {
   echo ""
@@ -150,14 +187,26 @@ done < "$TRANSCRIPT_PATH"
   echo "- **R007 violations**: ${r007_violations}"
   echo "- **R008 violations**: ${r008_violations}"
   echo "- Total assistant turns analyzed: ${total_turns}"
+  echo "- **Background tasks (#1196)**: total=${bg_total}, dangling=${BG_DANGLING_COUNT}"
+  echo "- **Session crons (#1196)**: total=${cron_total}"
   if [ $sample_count -gt 0 ]; then
     echo ""
     echo "### Sample violations (최대 3개)"
     printf '%s\n' "${sample_lines}"
   fi
+  if [ -n "$bg_dangling_lines" ]; then
+    echo ""
+    echo "### Dangling background tasks (최대 5개)"
+    printf '%s\n' "${bg_dangling_lines}"
+  fi
+  if [ -n "$cron_lines" ]; then
+    echo ""
+    echo "### Session crons (최대 5개)"
+    printf '%s\n' "${cron_lines}"
+  fi
 } >> "${LOG_FILE}"
 
-echo "[session-reflection] Analysis complete: R007=${r007_violations} R008=${r008_violations} turns=${total_turns}" >&2
+echo "[session-reflection] Analysis complete: R007=${r007_violations} R008=${r008_violations} turns=${total_turns} bg_dangling=${BG_DANGLING_COUNT} crons=${cron_total}" >&2
 WORKER_EOF
 
 chmod +x "$WORKER_SCRIPT"
@@ -172,6 +221,9 @@ WORKER_ERR_LOG="/tmp/.claude-reflection-err-${PPID}.log"
     "$PROJECT_ROOT" \
     "$session_id" \
     "$SCRIPT_DIR" \
+    "$bg_tasks_json" \
+    "$session_crons_json" \
+    "$bg_dangling_count" \
     2>>"$WORKER_ERR_LOG"
   rm -f "$WORKER_SCRIPT"
 ) &
