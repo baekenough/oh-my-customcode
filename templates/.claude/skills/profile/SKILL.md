@@ -22,17 +22,8 @@ Switch the active plugin set to match a workflow profile, reducing per-spawn ski
 
 ## Implementation rules
 
-> **MANDATORY — .claude/ path bypass (R010)**
-> ALL writes to `.claude/` paths MUST go through a `/tmp/*.sh` script via Bash.
-> Direct `Write(".claude/...")` or `Edit(".claude/...")` triggers user approval prompts
-> that block automation regardless of `bypassPermissions` mode.
->
-> Pattern:
-> 1. Write tool → `/tmp/profile-{op}-$$.sh` with heredoc targeting `.claude/`
-> 2. Bash tool → `bash /tmp/profile-{op}-$$.sh`
->
-> This applies to `.claude/profiles/.active` and `~/.claude/settings.json` writes.
-> Reference: R010 (MUST-orchestrator-coordination.md), #1046, #1052, #1062.
+> **.claude/ path handling (CC v2.1.121+)**
+> Direct Write/Edit on `.claude/profiles/.active` and `~/.claude/settings.json` is permitted under `mode: "bypassPermissions"` (CC v2.1.121+, #1101). The legacy `/tmp/*.sh` bypass is deprecated. For CC < v2.1.121, see git history for the legacy pattern.
 
 ## Profiles directory
 

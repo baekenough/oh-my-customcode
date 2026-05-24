@@ -196,12 +196,26 @@ check_content_dir "rules" "*.md"
 check_content_dir "agents" "*.md"
 check_content_dir "hooks/scripts" "*.sh"
 
+# Skills use {name}/SKILL.md structure (not flat) — directory-based check.
+# Only flag CONTENT DRIFT for skills present in BOTH source and template; skip the
+# "missing in template" error since package/harness-scope skills legitimately do not
+# deploy to templates/ (core skills deploy via init, package/harness skills do not).
+while IFS= read -r src_skill; do
+  skill_name=$(basename "$(dirname "$src_skill")")
+  tpl_skill="templates/.claude/skills/$skill_name/SKILL.md"
+  if [ -f "$tpl_skill" ] && ! diff -q "$src_skill" "$tpl_skill" >/dev/null 2>&1; then
+    echo "::error::Content drift in skill: $skill_name/SKILL.md (source != template)"
+    content_drift=$((content_drift + 1))
+  fi
+  # (no error if template absent — package/harness-scope skills may not deploy to templates)
+done < <(find .claude/skills -name SKILL.md -type f)
+
 if [ "$content_drift" -gt 0 ]; then
   echo "::error::$content_drift content drift(s) detected between .claude/ and templates/.claude/"
   echo "Fix: sync the source file(s) to templates/.claude/ (cp source template)"
   exit 1
 fi
-echo "[OK] Content drift check: rules, agents, hooks/scripts all in sync"
+echo "[OK] Content drift check: rules, agents, hooks/scripts, skills all in sync"
 
 # ── Final result ─────────────────────────────────────────────────────────────
 if [ "$errors" -gt 0 ]; then

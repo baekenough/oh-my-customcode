@@ -43,15 +43,16 @@ Search the [skills.sh](https://skills.sh/) marketplace for reusable AI agent ski
    ├── Verify installation in .claude/skills/
    └── Check installed SKILL.md frontmatter
 
-4. Post-install adaptation
-   ├── Review installed SKILL.md frontmatter
-   ├── Add oh-my-customcode fields if missing:
-   │   ├── user-invocable: true|false
-   │   ├── model-invocable (if not present)
-   │   └── argument-hint (if applicable)
-   └── Add source metadata:
-       ├── source-type: skills-sh
-       └── source-origin: <owner/repo>
+4. Post-install adaptation (delegate to mgr-creator per R010 Protected Paths)
+   ├── Delegate SKILL.md frontmatter adaptation to mgr-creator:
+   │   ├── Add oh-my-customcode fields if missing:
+   │   │   ├── user-invocable: true|false
+   │   │   ├── model-invocable (if not present)
+   │   │   └── argument-hint (if applicable)
+   │   └── Add source metadata:
+   │       ├── source-type: skills-sh
+   │       └── source-origin: <owner/repo>
+   └── mgr-creator validates R006 frontmatter compliance
 
 5. Ontology sync
    ├── Notify: run "omcustom ontology build" to register new skill

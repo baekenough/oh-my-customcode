@@ -114,15 +114,7 @@ When ALL reviewers agree BUILD or BUILD WITH CHANGES:
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-CC sensitive-path check inspects tool target paths and triggers permission prompts on `.claude/` regardless of `bypassPermissions` and allow rules (refs: #960, #961, #978, #981, #1016).
-
-To write agora results under `.claude/outputs/sessions/`:
-
-1. Write the artifact body to `/tmp/agora-$(date +%H%M%S).md` first (Write tool target = `/tmp`, no sensitive-path trigger)
-2. Use a `/tmp/*.sh` Bash script to move/copy the file under `.claude/outputs/sessions/$(date +%Y-%m-%d)/` (Bash target = `/tmp`, script-internal `cp` to `.claude/` is not audited)
-3. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification
-
-Reference: `feedback_sensitive_path_tmp_bypass.md`, R006 sensitive-path handling, #1016, #1045.
+Direct Write to `.claude/outputs/sessions/{date}/agora-{topic}-{time}.md` is permitted under `mode: "bypassPermissions"` (CC v2.1.121+, #1101). Write tool auto-creates parent directory. For CC < v2.1.121, see git history for the legacy /tmp bypass pattern.
 
 3. Shut down team: `SendMessage(to: "*", message: {type: "shutdown_request"})`
 
