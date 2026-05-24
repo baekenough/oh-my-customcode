@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.151.0",
-  "generatedAt": "2026-05-24T03:09:54.617Z",
-  "templateVersion": "0.151.0",
+  "generatorVersion": "0.151.1",
+  "generatedAt": "2026-05-24T03:30:25.847Z",
+  "templateVersion": "0.151.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -650,8 +650,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "442aca445b15b3b328a683870000d7cf6900dd339b12699040541391f282c3e1",
-      "size": 25273,
+      "templateHash": "3a14f77d395ba573e93a1d38e1dec053f84cda00301a812029c79b5def6b5b71",
+      "size": 25281,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {

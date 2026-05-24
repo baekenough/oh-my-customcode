@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.151.1] - 2026-05-24
+
+### Fixed — Maintenance 패치 (#1222 #1223)
+- `.claude/skills/intent-detection/patterns/agent-triggers.yaml`: dead `skill-simplify` 라우팅 엔트리를 `skill-dev-refactor`로 교체 — CC v2.1.147에서 `/simplify`→`/code-review` 개명에 따라 존재하지 않는 `simplify` 스킬 라우팅을 실존하는 `dev-refactor` 스킬로 redirect (#1222)
+- `wiki/index.yaml`: 미인덱싱 콘텐츠 페이지 3개 추가 (`guides/agent-workflow`, `guides/multi-provider-exec`, `skills/profile`), `meta.total_pages` 271로 정합, GitHub Wiki 네비게이션 페이지 제외 기준 주석 명시 (#1223)
+
+### Maintenance
+- Leftover worktree 정리 (#1224) — 로컬 정리, 릴리즈 산출물 없음
+
 ## [0.151.0] - 2026-05-24
 
 ### Added — CC v2.1.147–v2.1.150 호환성 문서화 (#1216 #1218 #1219 #1220)

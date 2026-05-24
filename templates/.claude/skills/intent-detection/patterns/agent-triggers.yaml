@@ -592,14 +592,14 @@ agents:
     base_confidence: 85
     routing_rule: "Invoke token-efficiency-audit skill"
 
-  skill-simplify:
+  skill-dev-refactor:
     keywords:
       korean: [단순화, 코드 정리, 중복 제거]
       english: [simplify, cleanup, deduplicate, "reduce complexity"]
     file_patterns: []
     supported_actions: [simplify, clean, reduce]
     base_confidence: 75
-    routing_rule: "Invoke simplify skill"
+    routing_rule: "Invoke dev-refactor skill"
 
   # Memory skills
   skill-memory-save:
