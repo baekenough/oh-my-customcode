@@ -106,8 +106,9 @@ else
   INDEX_RULES=$( { awk '/^  counts:/,/^[a-z]/' "$INDEX_YAML" || true; } | { grep -E '^ +rules:' || true; } | sed 's/.*rules: *//' | tr -d ' ')
   INDEX_GUIDES=$( { awk '/^  counts:/,/^[a-z]/' "$INDEX_YAML" || true; } | { grep -E '^ +guides:' || true; } | sed 's/.*guides: *//' | tr -d ' ')
 
-  # Actual counts (all .md files in wiki/)
-  ACTUAL_TOTAL=$(find wiki -name '*.md' -type f | wc -l | tr -d ' ')
+  # Actual counts
+  # total_pages counts indexed content pages only (navigation/landing pages at wiki/ root excluded, per #1223)
+  ACTUAL_TOTAL=$(find wiki -mindepth 2 -name '*.md' -type f | wc -l | tr -d ' ')
   ACTUAL_SKILLS=$(find wiki/skills -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
   ACTUAL_AGENTS=$(find wiki/agents -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
   ACTUAL_RULES=$(find wiki/rules -name '*.md' -type f 2>/dev/null | wc -l | tr -d ' ')
