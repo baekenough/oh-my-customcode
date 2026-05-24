@@ -73,6 +73,15 @@ Never accept "pre-existing" without direct base-branch evidence. A false "pre-ex
 
 ## Common False Completion Patterns — 8 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes, "UI changes done" without browser render. See full table via Read tool.
 
+### Test-Skip Is Not Completion (#1217 item #5)
+
+테스트 실패를 `describe.skip`/`xfail`/`it.skip` + coverage threshold 하향으로 회피하는 것은 완료가 아니다. 근본 원인 분석 없이 그린 빌드를 만드는 회피는 기술 부채를 다음 마이너로 이월시킨다.
+
+| 금지 | 필수 |
+|------|------|
+| 실패 테스트 skip + threshold 하향으로 그린 빌드 | 근본 원인 분석 후 수정, 불가 시 명시적 deferral + 이슈 등록 |
+| "다음 버전 TODO" 주석만 남기고 머지 | skip 사유·복구 조건·추적 이슈를 함께 기록 |
+
 <!-- DETAIL: Common False Completion Patterns
 
 | Pattern | Reality | Fix |
@@ -142,6 +151,25 @@ Related memory records:
 | "사과만 짧게" | 부족 — plan 재정렬 후속 필수 |
 
 Reference issues: #1188 item #8.
+
+## Diagnostic Hypothesis Verification
+
+진단 단계에서 채택한 가설로 워크플로우/인프라/설정을 **영구 변경하기 전**, 가설을 실제 증거로 검증해야 한다. "그럴듯한 가설"을 검증 없이 영구 변경에 적용하면 잘못된 추정이 영구 부채로 남는다.
+
+| 상황 | 금지 | 필수 |
+|------|------|------|
+| 에러 원인 추정 | 첫 가설로 워크플로우/설정 영구 수정 | 가설을 좁은 범위에서 검증 후 변경 |
+| CI/publish 실패 | 추정 기반 우회 커밋 머지 | 에러 메시지/로그로 실제 원인 확정 |
+| 권한/토큰 오류 | 플래그/옵션 변경으로 우회 시도 | 권한 범위·토큰 종류 직접 확인 |
+
+### Common Violation (#1217 item #4)
+npm publish E403을 `--provenance` attestation 충돌로 오진단 → release workflow에서 `--provenance` 제거 커밋 머지 → 2차 시도 동일 실패 → 실제 원인은 NPM_TOKEN 권한(Automation token 필요). 잘못된 추정으로 릴리즈 워크플로우를 영구 변경.
+
+### Self-Check (영구 변경 전)
+1. 가설을 뒷받침하는 직접 증거(로그/에러 코드/문서)가 있는가?
+2. 비파괴적 방법으로 가설을 검증할 수 있는가?
+3. 변경이 되돌리기 쉬운가? (영구 워크플로우 변경 vs 일회성 시도)
+하나라도 NO면 검증을 먼저 수행한다. 근본 원인 진단은 `superpowers:systematic-debugging` 참조.
 
 ## Integration
 

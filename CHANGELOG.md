@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.151.0] - 2026-05-24
+
+### Added — CC v2.1.147–v2.1.150 호환성 문서화 (#1216 #1218 #1219 #1220)
+- `guides/claude-code/15-version-compatibility.md`: CC v2.1.147–v2.1.150 호환성 섹션
+  - v2.1.147: `Workflow` 도구(`CLAUDE_CODE_WORKFLOWS=1`) 도입, `/simplify`→`/code-review` 슬래시 커맨드 개명, plugin agent 복수 `Agent()` 타입 fix (#1216)
+  - v2.1.148: Bash 도구 exit 127 regression 수정 (#1218)
+  - v2.1.149: `/usage` per-category breakdown, GFM 체크박스 지원, worktree sandbox fix, `find` macOS crash fix (#1219)
+  - v2.1.150: 내부 인프라 개선만, 별도 조치 불필요 (#1220)
+
+### Changed — 룰 강화 (#1217)
+- R020 (`MUST-completion-verification`): `Diagnostic Hypothesis Verification` 섹션 추가 — 진단 가설을 영구 변경 전 검증 (npm publish E403 오진단 재발 방지)
+- R020 (`MUST-completion-verification`): `Test-Skip Is Not Completion` 섹션 추가 — 테스트 skip + threshold 하향 회피 금지
+- R017 (`MUST-sync-verification`): `Structural Migration Verification` 섹션 추가 — 디렉토리 재구조화·템플릿 평탄화·브랜치 전략 변경 시 경로/존재성 회귀 사전 검사
+
 ## [0.150.1] - 2026-05-21
 
 ### Added
