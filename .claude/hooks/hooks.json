@@ -212,6 +212,16 @@
         "matcher": "*",
         "hooks": [
           {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh"
+          }
+        ],
+        "description": "Proactive R007/R008 drift advisory \u2014 checks last assistant turn for identification omission (#1229)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
             "type": "prompt",
             "command": "bash .claude/hooks/scripts/session-autofix-prompt.sh"
           }
