@@ -103,6 +103,25 @@ Reference issues: #1188 item #4.
 
 **Why**: 사용자 directive 일관성 — #1208 보고. 같은 세션 내 동일 의도를 반복 차단하면 R015 user directive persistence 위반.
 
+### Destructive Operation Approval Persistence (Generalized)
+
+The Git Push Continuation pattern (first-time strict / follow-up relaxed, scoped to session + category + target) generalizes to ALL repeated destructive operations within the same session. Examples: `supabase db push`, `terraform apply`, `kubectl delete`, bulk file deletes, database migrations.
+
+**Scope**: once the user explicitly approves a destructive operation of category C against target T in a session, follow-up operations of the SAME C + SAME T do NOT require re-confirmation. An advisory warning is still emitted. A different category or different target always requires fresh confirmation.
+
+| Scenario | Behavior |
+|----------|----------|
+| 1st explicit approval (category C, target T) | Proceed; advisory warning emitted |
+| Follow-up same session (same C + same T) | No re-confirmation (directive persistence) |
+| Different category or target | Fresh confirmation required |
+| Platform classifier still prompts | Advise user: add `settings.json` permission rule for the specific command |
+
+**R001 exclusion (MUST)**: R001-listed catastrophic git operations (`git reset --hard`, `git clean -fd`, `git push --force` to shared branches, `git branch -D` with unmerged commits) are EXCLUDED from this persistence rule — they always require explicit per-invocation approval regardless of prior session approvals.
+
+**Boundary / honesty note**: This rule is ADVISORY and governs model behavior only. It CANNOT suppress Claude Code's platform-level auto-mode classifier prompts. For genuine prompt suppression on a repeated destructive command, the user must add a `settings.json` permission allow rule scoped to the specific command (e.g., a specific `supabase db push` invocation). The model SHOULD surface this workaround when the user expresses friction about repeated prompts.
+
+Cross-references: R001 (safety — destructive operation pre-checks still apply), R002 (permission tiers). Reference issues: #1230, #1226 (item 2).
+
 ## Agent Triggers
 
 Defined in `.claude/skills/intent-detection/patterns/agent-triggers.yaml`. Each agent has keywords, file patterns, actions, and base confidence.
