@@ -5,19 +5,19 @@
 set -euo pipefail
 
 # Pass through stdin (Stop hook protocol)
-cat > /dev/null
+input=$(cat)
 
 # Dependencies check
-command -v jq >/dev/null 2>&1 || exit 0
-command -v sqlite3 >/dev/null 2>&1 || exit 0
+command -v jq >/dev/null 2>&1 || { echo "$input"; exit 0; }
+command -v sqlite3 >/dev/null 2>&1 || { echo "$input"; exit 0; }
 
 # PID scoping
 OUTCOMES_FILE="/tmp/.claude-task-outcomes-${PPID}"
-[ -f "$OUTCOMES_FILE" ] || exit 0
+[ -f "$OUTCOMES_FILE" ] || { echo "$input"; exit 0; }
 
 # DB path
 DB_PATH="${HOME}/.config/oh-my-customcode/eval-core.sqlite"
-[ -f "$DB_PATH" ] || exit 0
+[ -f "$DB_PATH" ] || { echo "$input"; exit 0; }
 
 # Log file for error diagnostics
 LOG_FILE="/tmp/.claude-feedback-collector-${PPID}.log"
@@ -65,7 +65,7 @@ for agent_type in "${!FAILURE_COUNTS[@]}"; do
     action_type="augment"
   fi
 
-  failure_rate=$(awk "BEGIN {printf \"%.2f\", $count/$total}")
+  failure_rate=$(awk "BEGIN {printf \"%.2f\", $count/$total}" 2>/dev/null || echo "0.00")
   description="Agent '${agent_type}' failed ${count}/${total} times (${failure_rate} failure rate) in session"
 
   escaped_agent_type=$(_sql_escape "$agent_type")
@@ -86,4 +86,7 @@ if [ "$INSERTED" -gt 0 ]; then
   echo "[feedback-collector] Extracted ${INSERTED} failure pattern(s) from session outcomes" >&2
 fi
 
+# CRITICAL: Always pass through input and exit 0
+# This hook MUST NEVER block session termination
+echo "$input"
 exit 0
