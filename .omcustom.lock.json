@@ -1094,11 +1094,6 @@
       "size": 8480,
       "component": "skills"
     },
-    ".claude/skills/test-new-skill-ci-test.md": {
-      "templateHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size": 0,
-      "component": "skills"
-    },
     ".claude/skills/optimize-analyze/SKILL.md": {
       "templateHash": "d94f157c50ab53530ce98967397dd8de849d4229de8e9e679285f1f0dff10b77",
       "size": 1001,

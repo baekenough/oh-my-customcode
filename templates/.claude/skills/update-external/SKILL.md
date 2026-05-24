@@ -62,6 +62,13 @@ python:
 ## Workflow
 
 ```
+0. Self-update oh-my-customcode package
+   ├── Check npm registry for latest version
+   ├── Compare with current installed version
+   ├── Run "npm install -g oh-my-customcode@<latest>" if outdated
+   ├── Skip automatically for npx invocations (npx always fetches latest)
+   └── Failure is non-blocking — continue to Step 1 regardless
+
 1. Identify external resources
    ├── Scan index.yaml files
    ├── Find source.type = "external"
