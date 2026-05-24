@@ -351,7 +351,7 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 
 ### Session-End Self-Check (MANDATORY)
 
-(1) sys-memory-keeper updated MEMORY.md? (2) claude-mem save attempted? (3) If `omcustom-feedback` skill is active, prompt user to trigger it? All three required before confirming to user. See full self-check via Read tool.
+(1) sys-memory-keeper updated MEMORY.md? (2) claude-mem save attempted? (3) If `omcustom-feedback` skill is active, model MAY draft a retrospective feedback issue for user approval — or prompt user to trigger it manually. All three required before confirming to user. See full self-check via Read tool.
 
 <!-- DETAIL: Session-End Self-Check (MANDATORY)
 ```
@@ -367,8 +367,10 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 ║     NO  → ToolSearch + save now                                  ║
 ║                                                                   ║
 ║  3. Is omcustom-feedback skill available in this project?        ║
-║     YES → Ask user: "이번 세션 피드백을 omcustom-feedback로     ║
-║          기록하시겠습니까?" — accept skip                        ║
+║     YES → If notable friction/learning observed: MODEL DRAFTS    ║
+║          retrospective issue → presents via Phase 4A preview     ║
+║          gate for user approval. Otherwise: prompt user to       ║
+║          trigger manually. Accept skip either way.               ║
 ║     NO  → Skip                                                    ║
 ║                                                                   ║
 ║  Note: episodic-memory auto-indexes conversations after session  ║
@@ -380,6 +382,33 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 -->
+
+### Session-End Retrospective Feedback (Model-Drafted)
+
+Since `omcustom-feedback` is now model-invocable (#1227), the model MAY draft a retrospective feedback issue at session end — instead of only prompting the user to compose one manually.
+
+**Workflow**
+
+1. Model detects notable friction, workarounds, or harness gaps observed during the session.
+2. Model drafts a feedback issue (title + body) using the `omcustom-feedback` skill.
+3. Draft is presented through the skill's **Phase 4A preview + confirmation gate**. The user reviews and approves before any GitHub issue is created.
+4. The model NEVER auto-submits. User approval is always required.
+
+**Trigger conditions** (all must be true):
+- Session-end detected
+- Notable friction or learning observed during the session
+- `omcustom-feedback` skill active in this project
+
+**Distinction from manual path**
+
+| Path | Who drafts | Who approves | When |
+|------|-----------|--------------|------|
+| Manual (existing) | User | User | User chooses to file feedback |
+| Model-drafted (new, #1226 item 3) | Model | User (Phase 4A gate) | Session-end with notable friction |
+
+The model-drafted path is an enhancement: it proposes a concrete draft rather than asking the user to compose from scratch. Both paths remain valid; neither replaces the other.
+
+References: #1226 (item 3), #1227.
 
 ### Failure Policy
 
@@ -418,7 +447,7 @@ Phase 1 COEXIST 기간 중 세션 종료 시:
 1. sys-memory-keeper가 MEMORY.md 갱신? → YES: 계속
 2. claude-mem 저장 시도? → YES (기존 항목)
 3. AgentMemory 저장 시도? → YES (COEXIST 추가)
-4. omcustom-feedback 권유? → YES (활성 시) / 스킵 (비활성 시)
+4. omcustom-feedback 처리? → YES (활성 시, notable friction 있으면 model draft → Phase 4A gate; 없으면 사용자 권유) / 스킵 (비활성 시)
 네 단계 모두 완료 후 사용자에게 확인. 둘 중 하나 실패해도 비차단.
 
 ### Phase 2 진입 전 필수 조건
