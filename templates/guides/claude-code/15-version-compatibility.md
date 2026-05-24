@@ -486,6 +486,11 @@ docs/superpowers/plans/**
 | v2.1.143 | 직접 변경 불필요. `worktree.bgIsolation: "none"` opt-in 시 파일 소유권 규율 필수. Stop hook 8회 block cap 인지. | P3 follow-up |
 | v2.1.144 | 호환 가능. CLAUDE.md `omcustomMinClaudeCode` v2.1.121 유지. macOS bg session FDA crash fix 확인. | None |
 | v2.1.145 | docs-only. `claude agents --json` HUD 강화, Stop/SubagentStop hook `background_tasks`/`session_crons` 활용, status line GitHub PR 통합 — 별도 follow-up 권장. | P3 follow-up |
+| v2.1.146 | docs-only. `/simplify`→`/code-review` 리네임 + effort level, AskUserQuestion auto-mode normalization, MCP pagination 안정성, `CLAUDE_CODE_SUBAGENT_MODEL` 자식 프로세스 전파 fix. | None |
+| v2.1.147 | `Workflow` 도구(`CLAUDE_CODE_WORKFLOWS=1`) 추가 — /pipeline과 개념 중첩, 통합 검토 후보. `/simplify`→`/code-review` 개명. plugin agent 복수 `Agent()` 타입 fix. | P3 follow-up |
+| v2.1.148 | Bash 도구 exit 127 regression(v2.1.147 도입) 수정 — v2.1.147 사용 시 즉시 업그레이드 권장. | None |
+| v2.1.149 | `/usage` per-category(skills/subagents/plugins/MCP) breakdown, GFM 체크박스 렌더링, worktree sandbox allowlist fix, `find` macOS vnode crash fix. | P3 follow-up |
+| v2.1.150 | 내부 인프라 개선만, 사용자 대면 변경 없음. 조치 불필요. | None |
 
 ## v2.1.144 (2026-05-19) — 호환성 점검
 
@@ -640,6 +645,250 @@ Agent Teams 멤버 이름에 non-ASCII 문자(한국어 포함)가 포함된 경
 
 ---
 
+## v2.1.146 (2026-05-21) — 호환성 점검
+
+> Issue: #1205 — Claude Code v2.1.146 compatibility documentation
+
+### `/simplify` → `/code-review` 리네임 (+ effort level)
+
+기존 `/simplify` 슬래시 커맨드가 `/code-review`로 리네임되었습니다. effort level을 인수로 지정할 수 있습니다 (예: `/code-review high`).
+
+**oh-my-customcode 연관**: 내부 `dev-review` 스킬과 명칭이 다르며 충돌 없음. 사용자가 네이티브 `/code-review`와 omcustom `dev-review` 스킬을 혼동하지 않도록 구분 안내가 필요할 수 있습니다 (별도 follow-up 후보). 직접 harness 변경 불필요.
+
+### Auto mode `AskUserQuestion` 억제 해제
+
+Auto mode에서 user 또는 skill이 명시적으로 요청한 경우 `AskUserQuestion` 호출이 더 이상 억제되지 않습니다.
+
+**oh-my-customcode 연관**: R015 intent transparency의 ambiguity-gate 패턴이 정상 작동합니다. 신뢰도 < 70% 구간에서 `AskUserQuestion`을 통한 명시적 확인 요청이 auto mode에서도 동작하므로 R015 오탐(ambiguous routing 무음 처리)이 감소합니다. 호환, 개선.
+
+### MCP `resources/list`, `resources/templates/list`, `prompts/list` 페이지네이션 수정
+
+1페이지 이후의 항목이 누락되던 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: `ListMcpResourcesTool` 페이지네이션 안정성이 개선됩니다. `claude-mem`, `ontology-rag` 등 R011/R019 MCP 서버에서 리소스 목록이 많은 경우 전체 항목이 정상 조회됩니다. 호환, 개선.
+
+### `CLAUDE_CODE_SUBAGENT_MODEL` 자식 프로세스 전파 수정
+
+`CLAUDE_CODE_SUBAGENT_MODEL` 환경 변수가 다중 에이전트 세션의 자식 프로세스에 전파되지 않던 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: R010 + R018 Agent Teams 멤버 모델 일관성에 직접 영향. `CLAUDE_CODE_SUBAGENT_MODEL`을 설정한 환경에서 Agent Teams 멤버가 지정 모델을 올바르게 사용하는지 v2.1.146 업그레이드 후 검증 권장. 호환, 검증 권장.
+
+### Windows 관련 수정 (macOS 영향 없음)
+
+- Windows PowerShell `pwsh` winget/Store 설치 실패 fix (v2.1.124 regression)
+- Windows Terminal background session strobing fix
+- Windows NTFS junction background-job worktree 안전성 개선
+- GNOME Terminal right/middle-click paste fix
+
+**oh-my-customcode 연관**: macOS 개발 환경에는 직접 영향 없음.
+
+### 기타 수정
+
+- `/background` skill-or-custom-slash-only 입력 수용 fix → `/bg` 플로우(R010 Universal bypassPermissions) 개선
+- Backgrounded sessions tool permission "don't ask again" 재요청 fix → R010 bypassPermissions 안정성 개선
+- Auto-updater 상태줄 fail 시 현재 버전 표시 fix → R012 statusline 영향 없음 (별도)
+- Agent SDK 스트리밍 세션 종료 시 uncaught exception fix → agent-sdk-* 플러그인 영향 가능, 모니터 권장
+- `forceLoginOrgUUID`/`forceLoginMethod` managed-settings enforcement fix → R002 직접 영향 없음
+- Auto-updater 일시적 네트워크 실패 retry 개선
+- 대용량 파일 편집 diff 렌더링 성능 개선
+- `/theme` color editor + "New custom theme" Esc 미응답 fix
+
+### oh-my-customcode 연관 평가
+
+| 변경 | oh-my-customcode 영향 | 조치 |
+|------|----------------------|------|
+| `/simplify` → `/code-review` 리네임 + effort level | 내부 `dev-review` skill과 명칭 다름, 충돌 없음 | 호환, 별도 조치 없음 |
+| Auto mode `AskUserQuestion` 억제 해제 | R015 intent transparency, ambiguity-gate 정상 작동 | 호환, 개선 |
+| MCP 페이지네이션 수정 | `ListMcpResourcesTool` 페이지네이션 안정성 | 호환, 개선 |
+| `CLAUDE_CODE_SUBAGENT_MODEL` 자식 프로세스 전파 fix | R010 + R018 Agent Teams 멤버 모델 일관성 개선 | 호환, 검증 권장 |
+| `/background` 입력 수용 fix | `/bg` 플로우 개선 | 호환, 개선 |
+| Backgrounded sessions permission "don't ask again" fix | R010 bypassPermissions 안정성 | 호환, 개선 |
+| Agent SDK 스트리밍 uncaught exception fix | agent-sdk-* 플러그인 영향 가능 | 호환, 모니터 |
+| Windows/터미널 관련 수정 | macOS 환경 직접 영향 없음 | 호환 |
+
+**Action items**:
+- 본 릴리스에서 코드 변경 없음 (docs-only)
+- 후속 follow-up 후보:
+  - `CLAUDE_CODE_SUBAGENT_MODEL` 전파 동작 검증 (R018 Agent Teams 멤버 모델 일관성)
+  - 외부 `/code-review`와 내부 `dev-review` skill 구분 안내 (CLAUDE.md 또는 dev-review skill 본문)
+  - Agent SDK 스트리밍 fix가 agent-sdk-dev 플러그인에 미치는 영향 모니터
+
+---
+
+## v2.1.147 (2026-05-21) — 호환성 점검
+
+> Issue: #1216 — Claude Code v2.1.147 compatibility documentation
+
+### `Workflow` 도구 추가 (기본 off)
+
+deterministic multi-agent orchestration을 위한 새 `Workflow` 도구가 추가되었습니다. `CLAUDE_CODE_WORKFLOWS=1` 환경 변수로 활성화할 수 있으며, 기본값은 비활성입니다.
+
+**oh-my-customcode 연관**: oh-my-customcode `/pipeline` 스킬(workflows/*.yaml 기반)과 개념적으로 중첩됩니다. 향후 네이티브 `Workflow` 도구 통합 검토 후보이나, 현재 기본 off이므로 영향 없음. 호환.
+
+### `/simplify` → `/code-review` 개명 (+ effort level, `--comment`)
+
+기존 `/simplify` 슬래시 커맨드가 `/code-review`로 개명되었습니다. 선택한 effort 수준으로 correctness 버그를 보고하며(`/code-review high`), `--comment` 플래그로 inline PR 코멘트를 게시할 수 있습니다. 기존 cleanup-and-fix 동작은 제거되었습니다.
+
+**oh-my-customcode 연관**: CC 빌트인 `/code-review`와 내부 `dev-review`/`code-review` 스킬의 명칭 혼동 방지 안내가 필요합니다. v2.1.146에서 최초 리네임된 내용의 연속입니다. `.claude/skills/intent-detection/patterns/agent-triggers.yaml`의 `skill-simplify` 라우팅 엔트리는 내부 스킬 라우팅이므로 CC 빌트인 제거와 무관하나, 명명 혼동 방지를 위해 점검이 권장됩니다.
+
+### REPL 및 Workflow 도구 샌드박스 강화
+
+prototype-pollution 및 thenable 기반 escape에 대한 샌드박스 보안이 강화되었습니다.
+
+**oh-my-customcode 연관**: R001 안전 규칙과 정합. 보안 강화이므로 호환, 개선.
+
+### plugin agent 복수 `Agent(...)` 타입 fix
+
+plugin agents가 `tools:` frontmatter에 복수 `Agent(...)` 타입을 선언 시 마지막 항목만 남기고 나머지를 드롭하던 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: oh-my-customcode 에이전트 frontmatter에서 `tools:`에 복수 Agent() 타입을 선언하는 경우 이전에는 마지막만 인식되었습니다. 영향 점검이 권장됩니다.
+
+### hook `if` 조건 매칭 버그 수정
+
+hook `if` 조건(예: `PowerShell(git push*)`)이 매칭되지 않던 버그가 수정되었습니다 (`PowerShell(*)`만 동작했음).
+
+**oh-my-customcode 연관**: `.claude/hooks/` 내 조건부 hook(`if` 필드 사용)의 정확한 매칭이 보장됩니다. R001 안전 규칙의 stage-blocker hook 신뢰성이 향상됩니다. 호환, 개선.
+
+### 기타 수정
+
+- auto-updater 개선: transient 네트워크 실패 재시도, OS 에러 코드 보고
+- diff 렌더링 성능 개선
+- prompt history 연속 중복 제거
+- enterprise login 제한 강제 수정
+
+**oh-my-customcode 연관**: 일반 안정성 개선. 직접 영향 없음.
+
+### oh-my-customcode 연관 평가
+
+| 변경 | oh-my-customcode 영향 | 조치 |
+|------|----------------------|------|
+| `Workflow` 도구 추가 (기본 off) | `/pipeline` 스킬과 개념 중첩, 향후 통합 후보 | 호환, follow-up 후보 |
+| `/simplify` → `/code-review` 개명 | 내부 `dev-review` 스킬과 명칭 혼동 주의 | 호환, agent-triggers.yaml 점검 권장 |
+| REPL/Workflow 샌드박스 강화 | R001 보안 강화 | 호환, 개선 |
+| plugin agent 복수 Agent() 타입 fix | frontmatter `tools:` 복수 Agent() 선언 영향 점검 | 호환, 영향 점검 권장 |
+| hook `if` 조건 매칭 fix | stage-blocker hook 신뢰성 향상 | 호환, 개선 |
+| auto-updater / diff / history 개선 | 일반 안정성 | 호환 |
+
+**Action items**:
+- 본 릴리스에서 코드 변경 없음 (docs-only)
+- 후속 follow-up 후보:
+  1. CC 빌트인 `/code-review`와 내부 `dev-review` skill 구분 안내 보강
+  2. `agent-triggers.yaml`의 `skill-simplify` 엔트리 명명 혼동 방지 점검
+  3. plugin agent frontmatter `tools:` 복수 Agent() 선언 영향 점검
+  4. `Workflow` 도구와 `/pipeline` 스킬 통합 가능성 연구 (중장기)
+
+---
+
+## v2.1.148 (2026-05-22) — 호환성 점검
+
+> Issue: #1218 — Claude Code v2.1.148 compatibility documentation
+
+### Bash 도구 exit code 127 regression 수정 (긴급)
+
+v2.1.147에서 도입된 regression으로, 일부 사용자에게서 Bash 도구가 모든 명령에 대해 exit code 127을 반환하던 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: Bash 도구를 사용하는 gh, git, 빌드/테스트 명령 등 oh-my-customcode 워크플로우 전반에 영향을 줍니다. v2.1.147을 사용 중이라면 v2.1.148로 즉시 업그레이드가 권장됩니다.
+
+### oh-my-customcode 연관 평가
+
+| 변경 | oh-my-customcode 영향 | 조치 |
+|------|----------------------|------|
+| Bash exit code 127 regression fix | 모든 Bash 도구 사용 워크플로우 복구 | 즉시 업그레이드 권장 |
+
+**Action items**:
+- v2.1.147 사용 중이면 v2.1.148로 즉시 업그레이드
+- 본 릴리스에서 코드 변경 없음 (docs-only)
+
+---
+
+## v2.1.149 (2026-05-22) — 호환성 점검
+
+> Issue: #1219 — Claude Code v2.1.149 compatibility documentation
+
+### `/usage` per-category 사용량 분석
+
+`/usage`가 limits 사용량 분석을 카테고리별로 표시합니다: skills, subagents, plugins, per-MCP-server 비용 세분화.
+
+**oh-my-customcode 연관**: R013 ecomode 토큰 추적, R012 statusline, `token-efficiency-audit` 스킬과 연관됩니다. per-MCP 비용 가시성 덕분에 `claude-mem`, `ontology-rag` 등 R011/R019 MCP 서버의 비용을 모니터링할 수 있습니다. 호환, 개선.
+
+### `/diff` 키보드 스크롤 지원
+
+`/diff` 상세 뷰에서 키보드 스크롤이 지원됩니다 (arrows, j/k, PgUp/PgDn, Space, Home/End).
+
+**oh-my-customcode 연관**: 코드 리뷰 워크플로우의 UX 향상. 직접 harness 변경 불필요.
+
+### GFM 체크박스 렌더링
+
+Markdown 출력이 GFM task list 체크박스(`- [ ]`/`- [x]`)를 일반 bullet 대신 체크박스로 렌더링합니다.
+
+**oh-my-customcode 연관**: 에이전트 작업 목록(`- [ ]`/`- [x]`) 출력 가독성이 향상됩니다. 호환, 개선.
+
+### git worktree 샌드박스 write allowlist 수정
+
+git worktree에서 sandbox write allowlist가 main repo root 전체 대신 공유 `.git` 디렉토리만 커버하도록 수정되었습니다 (hooks/, config는 deny).
+
+**oh-my-customcode 연관**: `EnterWorktree` 사용 시 보안이 강화됩니다. R001 안전 규칙과 정합. 호환, 보안 개선.
+
+### Bash `find` macOS 크래시 버그 수정
+
+Bash 도구의 `find` 명령이 macOS system file/vnode table을 소진하여 호스트를 크래시시키던 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: Bash 도구로 대형 디렉토리를 탐색하는 oh-my-customcode 워크플로우의 호스트 안정성이 향상됩니다. 중요한 수정이므로 업그레이드가 권장됩니다.
+
+### `/ultraplan` 및 remote session 생성 수정
+
+작업 트리에 실제 변경이 없을 때 "Could not capture uncommitted changes"로 실패하던 버그가 수정되었습니다.
+
+**oh-my-customcode 연관**: `/ultraplan` 및 remote session 기반 워크플로우 안정성이 향상됩니다. 호환, 개선.
+
+### 기타 수정
+
+- enterprise `allowAllClaudeAiMcps` managed setting 추가
+- PowerShell 권한 우회 수정 (built-in `cd` 함수): macOS 환경 직접 영향 없음
+
+**oh-my-customcode 연관**: macOS 개발 환경에는 직접 영향 없음.
+
+### oh-my-customcode 연관 평가
+
+| 변경 | oh-my-customcode 영향 | 조치 |
+|------|----------------------|------|
+| `/usage` per-category breakdown | R013 ecomode / R012 statusline / MCP 비용 가시성 | 호환, 개선 |
+| `/diff` 키보드 스크롤 | 코드 리뷰 UX 향상 | 호환, 개선 |
+| GFM 체크박스 렌더링 | 에이전트 작업 목록 가독성 향상 | 호환, 개선 |
+| worktree sandbox write allowlist fix | EnterWorktree 보안 강화 | 호환, 보안 개선 |
+| Bash `find` macOS 크래시 fix | 대형 디렉토리 탐색 호스트 안정성 향상 | 업그레이드 권장 |
+| `/ultraplan` 생성 fix | remote session 워크플로우 안정성 | 호환, 개선 |
+| PowerShell `cd` 권한 fix | macOS 영향 없음 | 호환 |
+
+**Action items**:
+- 본 릴리스에서 코드 변경 없음 (docs-only)
+- 후속 follow-up 후보:
+  1. `/usage` per-MCP-server 비용 데이터를 `token-efficiency-audit` 스킬에 통합 검토
+  2. R012 statusline에 per-category usage 표시 강화 검토
+
+---
+
+## v2.1.150 (2026-05-23) — 호환성 점검
+
+> Issue: #1220 — Claude Code v2.1.150 compatibility documentation
+
+### 내부 인프라 개선
+
+내부 인프라 개선으로, 사용자 대면 변경 사항은 없습니다.
+
+**oh-my-customcode 연관**: 코드 및 문서 변경 불필요. 추적 기록용 docs-only 항목입니다.
+
+### oh-my-customcode 연관 평가
+
+| 변경 | oh-my-customcode 영향 | 조치 |
+|------|----------------------|------|
+| 내부 인프라 개선 | 사용자 대면 변경 없음 | 조치 불필요 |
+
+**Action items**:
+- 코드 및 문서 변경 불필요 (추적 기록용 docs-only)
+
+---
+
 ## References
 
 - #967 — Claude Code v2.1.117 release note
@@ -652,6 +901,11 @@ Agent Teams 멤버 이름에 non-ASCII 문자(한국어 포함)가 포함된 경
 - #1147 — .gitignore nested .md pattern limitation note
 - #1187 — Claude Code v2.1.144 compatibility documentation
 - #1191 — Claude Code v2.1.145 compatibility documentation
+- #1205 — Claude Code v2.1.146 compatibility documentation
+- #1216 — Claude Code v2.1.147 compatibility documentation
+- #1218 — Claude Code v2.1.148 compatibility documentation
+- #1219 — Claude Code v2.1.149 compatibility documentation
+- #1220 — Claude Code v2.1.150 compatibility documentation
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec
