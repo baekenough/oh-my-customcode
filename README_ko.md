@@ -220,8 +220,6 @@ Agent(arch-documenter):haiku      ┘
 
 | 커맨드 | 기능 |
 |--------|------|
-| `/memory-save` | 세션 컨텍스트 저장 |
-| `/memory-recall` | 메모리 검색 및 리콜 |
 | `/omcustom:monitoring-setup` | OTel 모니터링 토글 |
 | `/omcustom:lists` | 전체 커맨드 표시 |
 | `/omcustom:status` | 시스템 상태 확인 |
