@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 121 skills, 23 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 58 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 118 skills, 23 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 57 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -89,7 +89,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (121 skills)
+### 3.3 Skill Catalog (118 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -116,7 +116,7 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, memory-management, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 Guide Library (49 topics)
+### 3.4 Guide Library (57 topics)
 
 | Category | Guides |
 |----------|--------|
@@ -420,10 +420,9 @@ MCP tools are orchestrator-scoped — subagents cannot access them.
 
 | System | Tool | Use Case |
 |--------|------|----------|
-| claude-mem | `mcp__plugin_claude-mem_mcp-search__save_memory` | Cross-session search, temporal queries |
 | memory-mcp-server | `memory_get`, `memory_search`, `memory_stats`, `memory_list` (4 tools) | Unified memory access across adapters (v0.123.0+) |
 
-`packages/memory-mcp-server/` provides a unified MCP interface over the memory unification layer (native/claude-mem/episodic-memory/llm-memory adapters). Exposes 4 MCP tools for retrieval, search, statistics, and listing. Register via `.mcp.json` for access from the orchestrator.
+`packages/memory-mcp-server/` provides a unified MCP interface over the memory unification layer (native/episodic-memory/llm-memory adapters). Exposes 4 MCP tools for retrieval, search, statistics, and listing. Register via `.mcp.json` for access from the orchestrator.
 
 Episodic-memory auto-indexes conversations after session end — no manual action is needed. Use native auto-memory first; fall back to MCP only for cross-session search or temporal queries.
 
@@ -522,12 +521,12 @@ packages/eval-core/
   src/query/    — aggregation and reporting queries
 ```
 
-`packages/memory-mcp-server/` (v0.123.0) is a standalone MCP server providing unified memory access across all memory adapters (native/claude-mem/episodic-memory/llm-memory). Exposes 4 MCP tools: `memory_get`, `memory_search`, `memory_stats`, `memory_list`.
+`packages/memory-mcp-server/` (v0.123.0) is a standalone MCP server providing unified memory access across all memory adapters (native/episodic-memory/llm-memory). Exposes 4 MCP tools: `memory_get`, `memory_search`, `memory_stats`, `memory_list`.
 
 ```
 packages/memory-mcp-server/
   src/server.ts   — MCP server entry point (4 tool handlers)
-  src/adapters/   — adapter implementations (native, claude-mem, episodic, llm-memory)
+  src/adapters/   — adapter implementations (native memory)
   src/aggregator/ — dedup + merge layer across adapters
 ```
 
@@ -706,7 +705,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | v0.123.0 | memory MCP server (packages/memory-mcp-server, 4 MCP tools) + skill profile loader (4 default profiles, /profile command) |
 | v0.122.0 | Memory persistence service (unified adapter write-back + TTL eviction) |
 | v0.121.0 | Memory aggregation + dedup layer across all adapters |
-| v0.120.0 | Memory unification adapters (native/claude-mem/episodic-memory/llm-memory) |
+| v0.120.0 | Memory unification adapters (native memory adapter layer) |
 | v0.118.0 | Init auto-setup improvements; fork skill split pattern (large SKILL.md → core + guides/phases.md); token observability |
 | v0.116.2 | R010 Universal /tmp Script Bypass for sensitive paths (.claude/ Bash/Write/Edit all routed via /tmp/*.sh) |
 | v0.115.0 | LangChain harness/middleware integration guide; adapter pattern for external LLM tool chains |

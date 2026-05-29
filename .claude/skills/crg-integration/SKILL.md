@@ -125,15 +125,7 @@ CRG는 recall 최적화 도구다. 다음 사항을 반드시 숙지한다:
 |------|----------|
 | `dev-review` | CRG로 영향 범위 파악 → dev-review로 상세 리뷰 |
 | `adversarial-review` | CRG `get_minimal_context` → adversarial-review 입력 최적화 |
-| `claude-mem:smart-explore` | CRG `query_graph`로 대체 가능 (Phase β 시퀀싱 — #1169 참조) |
-| `claude-mem:pathfinder` | CRG `get_impact_radius`로 대체 가능 (Phase β 시퀀싱 — #1169 참조) |
-
-### 마이그레이션 예정 (Phase β)
-
-- `claude-mem:smart-explore` → CRG `query_graph` (#1169)
-- `claude-mem:pathfinder` → CRG `get_impact_radius` (#1169)
-
-Phase β 완료 전까지는 두 자산을 병행 사용한다.
+| `semble-integration` | Semble (의미) + CRG (구조) 결합으로 완전한 코드 이해 |
 
 ## R013 Ecomode와의 관계
 
@@ -159,5 +151,4 @@ R013 ecomode가 자동 활성화되는 시점 (context 사용량 ≥ 60%)에서 
 
 - 상세 설치/설정: `guides/token-efficiency/crg.md`
 - 관련 이슈: #1171 (scout:integrate CRG)
-- Phase β 시퀀싱: #1169 (AgentMemory 전환 계획)
 - 기술 출처: [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph)

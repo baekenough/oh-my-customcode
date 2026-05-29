@@ -112,8 +112,7 @@ oh-my-customcode uses existing infrastructure for trajectory capture:
 
 | Component | Role | How |
 |-----------|------|-----|
-| claude-mem | Capture step/tool sequences | `mcp__plugin_claude-mem_mcp-search__save_memory` with task_id + observed metrics |
-| episodic-memory | Cross-session trajectory comparison | Auto-indexed after session; query for historical baselines |
+| native MEMORY.md (R011) | Persist eval metrics across sessions | Write `## Metrics` section with task_id + observed metrics to agent-memory MEMORY.md |
 | statusline.sh (R012) | Real-time step counter during eval runs | Extend statusline with `STEPS=n` segment |
 | `.claude/outputs/evals/` | Artifact storage for eval results | Per-session eval reports in `sessions/{YYYY-MM-DD}/` |
 
@@ -121,7 +120,7 @@ oh-my-customcode uses existing infrastructure for trajectory capture:
 ```
 task start → record tool_calls[] + timestamps → task end
 → compute ratios against ideal trajectory
-→ save to claude-mem: {task_id, capability, correctness, step_ratio, tool_call_ratio, latency_ratio}
+→ write to native MEMORY.md ## Metrics: {task_id, capability, correctness, step_ratio, tool_call_ratio, latency_ratio}
 ```
 
 ### Persistent Storage (added v0.116.0, #1036)

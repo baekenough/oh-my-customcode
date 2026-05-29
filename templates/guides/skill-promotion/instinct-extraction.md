@@ -111,4 +111,4 @@ R016 Defect Response Matrix에서 **Skill Promotion** 조건:
 - `.claude/rules/MUST-agent-design.md` — context fork cap (12/12)
 - `guides/skill-bundle-design/README.md` — skill 설계 패턴
 - Issue #1175 — instinct-extractor 흡수 결정 맥락
-- Issue #1169 — AgentMemory 마이그레이션 (transcript format 안정화 전제)
+- (Issue #1169 AgentMemory 마이그레이션 항목은 #1253에 의해 제거됨)

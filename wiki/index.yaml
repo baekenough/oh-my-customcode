@@ -7,11 +7,11 @@ meta:
   # excluded: _Footer.md, _Sidebar.md, Home.md, Agents.md, Built-in-Commands.md,
   #   CLI-Reference.md, Contributing.md, Customization.md, Development.md, Guides.md,
   #   Project-Structure.md, Quick-Start.md, Rules.md, Skills.md, Sub-Agent-Model.md (15 pages)
-  total_pages: 271
-  total_sources: 239
+  total_pages: 267
+  total_sources: 236
   counts:
-    skills: 121
-    guides: 65
+    skills: 118
+    guides: 64
     agents: 49
     rules: 23
 
@@ -330,15 +330,6 @@ pages:
     - file: skills/lists.md
       title: "Lists"
       summary: "Show all available commands and slash commands in the system."
-    - file: skills/memory-management.md
-      title: "Memory Management"
-      summary: "Memory persistence operations using claude-mem for session context survival."
-    - file: skills/memory-recall.md
-      title: "Memory Recall"
-      summary: "Search and recall memories from claude-mem using semantic search."
-    - file: skills/memory-save.md
-      title: "Memory Save"
-      summary: "Save current session context to claude-mem for persistence across context compaction"
     - file: skills/model-escalation.md
       title: "Model Escalation"
       summary: "Advisory model escalation based on task outcome tracking."
@@ -630,7 +621,7 @@ pages:
       summary: "Measurement methodology for 4-metric quantitative agent evaluation (correctness, step_ratio, tool_call_ratio, latency_ratio) — ideal trajectory annotation, phased gate workflow, and tracing infrastructure alternatives."
     - file: guides/agent-design.md
       title: "Agent Design Patterns Guide"
-      summary: "Agent design patterns for session persistence and tacit knowledge retention — Ralph Loop Pattern (Q00/ouroboros) for cross-session sticky pattern injection via sys-memory-keeper and claude-mem MCP"
+      summary: "Agent design patterns for session persistence and tacit knowledge retention — Ralph Loop Pattern (Q00/ouroboros) for cross-session sticky pattern injection via sys-memory-keeper and native auto-memory (MEMORY.md)"
     - file: guides/architecture.md
       title: "Architecture Patterns"
       summary: "Coordinator/Planner/Supervisor/Tool 계층형 multi-agent 아키텍처 패턴 레퍼런스 — aws-samples/sample-deep-insight 분석 기반 (#975)"
@@ -790,9 +781,6 @@ pages:
     - file: guides/deep-plan.md
       title: "Deep Plan Guide"
       summary: "Research-validated 3-phase planning (Discovery Research → Reality-Check Planning → Plan Verification) that eliminates assumption-reality gaps before implementation begins"
-    - file: guides/agentmemory-migration.md
-      title: "AgentMemory Migration Guide"
-      summary: "claude-mem → native AgentMemory 마이그레이션 단계별 가이드. Phase 1 COEXIST 활성 중 (2026-05-18~): 두 backend 병렬 운영, Dual-Backend Advisory, GO/NO-GO 기준(2026-05-25). #1169"
     - file: guides/security-agentshield-pre-flight.md
       title: "Security — AgentShield Pre-flight Guide"
       summary: "Pre-write security analysis pattern guide — full security asset timeline (pre/post-write), standard pipeline, scenario-based advisory examples, and CRG integration for trust boundary analysis"
@@ -821,7 +809,7 @@ pages:
       summary: "Code gets written through a five-stage pipeline: intent detection to routing to agent"
     - file: workflows/memory-workflow.md
       title: "Memory Workflow"
-      summary: "Memory in oh-my-customcode operates on two levels: native auto-memory (MEMORY.md)"
+      summary: "Memory in oh-my-customcode is built entirely on native auto-memory (per-agent MEMORY.md); claude-mem and agentmemory MCP removed (#1253)"
     - file: workflows/quality-workflow.md
       title: "Quality Workflow"
       summary: "Quality in oh-my-customcode is enforced at three levels: structural integrity (R017)"

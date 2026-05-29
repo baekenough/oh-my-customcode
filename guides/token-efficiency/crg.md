@@ -1,7 +1,7 @@
 # CRG (code-review-graph) 통합 가이드
 
 > **출처**: [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph)
-> **관련 이슈**: #1171 (scout:integrate), #1169 (Phase β AgentMemory 전환)
+> **관련 이슈**: #1171 (scout:integrate)
 > **wrapper 스킬**: `.claude/skills/crg-integration/SKILL.md`
 
 ## CRG 개요
@@ -186,14 +186,14 @@ context ≥ 60%에서 파일 직접 읽기 대신 CRG를 우선 사용한다:
 
 ## 기존 자산 마이그레이션 매핑
 
-Phase β에서 claude-mem 일부 기능을 CRG로 전환할 예정이다 (#1169).
+CRG는 코드베이스 탐색 패턴의 일부를 대체할 수 있다.
 
-| 기존 자산 | CRG 대체 도구 | 전환 시점 |
-|----------|--------------|---------|
-| `claude-mem:smart-explore` | `query_graph` | Phase β |
-| `claude-mem:pathfinder` | `get_impact_radius` | Phase β |
+| 기존 패턴 | CRG 대체 도구 |
+|----------|--------------|
+| 전체 파일 Read 후 함수 탐색 | `query_graph` |
+| 변경 영향 범위 수동 파악 | `get_impact_radius` |
 
-**Phase β 완료 전까지**: 두 자산을 병행 사용. CRG를 우선 시도하고, 결과가 불충분하면 기존 자산 사용.
+CRG를 우선 시도하고, 결과가 불충분하면 Grep/Glob 등 기존 도구를 사용한다.
 
 ## 트러블슈팅
 
@@ -212,7 +212,6 @@ Phase β에서 claude-mem 일부 기능을 CRG로 전환할 예정이다 (#1169)
 - **wrapper 스킬**: `.claude/skills/crg-integration/SKILL.md`
 - **관련 이슈**:
   - #1171: scout:integrate CRG (이 가이드의 origin)
-  - #1169: Phase β AgentMemory 전환 시퀀싱
 - **관련 규칙**:
   - R001 (MUST-safety.md): auto-install 금지 정책
   - R013 (SHOULD-ecomode.md): context budget 관리, ecomode 통합

@@ -17,7 +17,6 @@ Enables cross-session coordination between multiple Claude Code instances throug
 |-------|-----------|-------|----------|
 | Intra-session agents | Agent Teams (R018) | TeamCreate, SendMessage | Single session multi-agent collaboration |
 | Cross-session instances | claude-peers-mcp | list_peers, send_message | Multi-terminal/project real-time coordination |
-| Cross-session memory | claude-mem | save_memory, search | Async memory persistence |
 
 > **Important**: R018's `SendMessage` and claude-peers-mcp's `send_message` are different tools with different scopes. Do not confuse them.
 
@@ -54,6 +53,5 @@ claude mcp add claude-peers-mcp -- npx claude-peers-mcp
 ## Integration
 
 - Works with R018 Agent Teams (different scope, complementary)
-- Works with claude-mem (async vs sync messaging)
 - Works with `omcustom:status` (peer discovery)
 - Broker runs on localhost:7899 (SQLite-backed)

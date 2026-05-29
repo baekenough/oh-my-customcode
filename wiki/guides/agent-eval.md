@@ -49,7 +49,7 @@ Key anti-patterns: fixing step ordering when order doesn't matter, using subject
 
 ## Tracing (LangSmith Alternative)
 
-Step traces stored via `claude-mem` per task; cross-session replay via `episodic-memory` search. Eval artifacts at `.claude/outputs/evals/` (JSONL + YAML). `statusline.sh` (R012) can surface live step counts.
+Step traces and eval artifacts are stored at `.claude/outputs/evals/` (JSONL + YAML) per task; cross-session replay via `episodic-memory` search. `statusline.sh` (R012) can surface live step counts.
 
 ## Related
 

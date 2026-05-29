@@ -78,7 +78,7 @@ oh-my-customcode로 구동됩니다.
 |----|------|------|
 | R003 | 상호작용 규칙 | 응답 원칙, 상태 형식 |
 | R004 | 오류 처리 | 오류 수준, 복구 전략 |
-| R011 | 메모리 통합 | claude-mem을 통한 세션 지속성 |
+| R011 | 메모리 통합 | 세션 메모리 지속성 |
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
 | R019 | Ontology-RAG 라우팅 | 라우팅 스킬의 ontology-RAG enrichment |
@@ -103,8 +103,6 @@ oh-my-customcode로 구동됩니다.
 | `/omcustom-takeover` | 기존 에이전트/스킬에서 canonical spec 추출 |
 | `/dev-review` | 코드 베스트 프랙티스 리뷰 |
 | `/dev-refactor` | 코드 리팩토링 |
-| `/memory-save` | 세션 컨텍스트를 claude-mem에 저장 |
-| `/memory-recall` | 메모리 검색 및 리콜 |
 | `/omcustom:monitoring-setup` | OTel 콘솔 모니터링 활성화/비활성화 |
 | `/omcustom:npm-publish` | npm 레지스트리에 패키지 배포 |
 | `/omcustom:npm-version` | 시맨틱 버전 관리 |
@@ -129,7 +127,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (44 파일)
-|   +-- skills/                  # 스킬 (74 디렉토리)
+|   +-- skills/                  # 스킬 (118 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R020)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -208,10 +206,6 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 # 코드 리뷰
 /dev-review src/main.go
 
-# 메모리 관리
-/memory-save
-/memory-recall authentication
-
 # 검증
 /omcustom:sauron-watch
 ```
@@ -230,12 +224,6 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 | obsidian-skills | - | 옵시디언 마크다운 지원 |
 | context7 | claude-plugins-official | 라이브러리 문서 조회 |
 
-### 권장 MCP 서버
-
-| 서버 | 용도 |
-|------|------|
-| claude-mem | 세션 메모리 영속성 (Chroma 기반) |
-
 ### 설치 명령어
 
 ```bash
@@ -246,10 +234,6 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 /plugin install superpowers
 /plugin install superpowers-developing-for-claude-code
 /plugin install elements-of-style
-
-# MCP 설정 (claude-mem)
-npm install -g claude-mem
-claude-mem setup
 ```
 
 <!-- omcustom:git-workflow -->

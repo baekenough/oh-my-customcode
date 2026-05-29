@@ -152,8 +152,7 @@ Reference: `feedback_sensitive_path_tmp_bypass.md`, R006 sensitive-path handling
 
 CRG MCP 미연결 시 자동 fallback:
 1. grep/Grep 도구로 영향 범위 추적
-2. `claude-mem:smart-explore` (Phase β 이후 deprecated)
-3. 전체 디렉토리 읽기 (R013 ecomode 트리거 가능성)
+2. 전체 디렉토리 읽기 (R013 ecomode 트리거 가능성)
 
 ### R013 Ecomode 정합
 
