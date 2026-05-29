@@ -171,6 +171,20 @@ npm publish E403을 `--provenance` attestation 충돌로 오진단 → release w
 3. 변경이 되돌리기 쉬운가? (영구 워크플로우 변경 vs 일회성 시도)
 하나라도 NO면 검증을 먼저 수행한다. 근본 원인 진단은 `superpowers:systematic-debugging` 참조.
 
+### Variant: Parallel Read + Permanent-Change Dispatch (#1250)
+
+진단 자료 수집(로그 조사, 파일 Read)과 그 진단에 의존하는 영구 변경(이슈 등록, 수정 에이전트 위임)을 **같은 메시지에서 병렬 실행**하면, Read 결과를 받기 전에 가설이 확정된다. 병렬 배치는 결과를 동시에 받으므로 "Read 후 판단"이 불가능하다.
+
+| 금지 | 필수 |
+|------|------|
+| 파일 Read + 그 내용 기반 이슈/수정 지시를 한 병렬 배치에 묶기 | 진단 Read는 먼저, 결과 수령 후 *다음 턴*에 변경 지시 |
+| 로그 조사와 동시에 "원인은 X" 이슈 생성 | 로그 결과 확인 후 원인 확정 |
+
+#### Common Violation (#1250)
+triage-dispatch.yml 실패 원인을 파일 Read 전에 "triaged 라벨 부재 + omcustom CLI 부재"로 추정 → 같은 메시지에서 이슈 등록 + mgr-gitnerd 수정 지시를 병렬 실행. 직후 도착한 Read 결과가 실제 원인(외부 Airflow issue_triage DAG의 HTTP 530)을 드러냄. 코드 수정 방향은 우연히 맞았으나 이슈/PR/커밋 서술이 틀려 정정 부채 발생. 머지 전 발각되어 이슈/PR 본문 정정으로 회복.
+
+> 진단에 의존하는 쓰기/위임은 진단 결과를 본 다음 턴에 수행한다. R009 병렬 실행은 독립 작업에만 적용 — 진단→변경은 순차 의존이다.
+
 ## Integration
 
 | Rule | Interaction |
