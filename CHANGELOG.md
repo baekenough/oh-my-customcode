@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.158.0] - 2026-05-30
+
+### Added
+- `validate-docs` job in CI (ci.yml) — runs validate-docs.ts --programmatic-only as a blocking PR check, catching phantom slash-commands and count drift before merge instead of after tag creation. Fixes the gap that caused v0.157.0 to fail npm publish (#1258).
+
 ## [0.157.1] - 2026-05-29
 
 ### Fixed
