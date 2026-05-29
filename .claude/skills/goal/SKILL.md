@@ -49,7 +49,7 @@ Example: `/goal Add a /weekly-summary command that aggregates last 7 days of git
 
 | Scenario | Use Instead |
 |----------|-------------|
-| Pure research/analysis | `research`, `idea`, `memory-recall` |
+| Pure research/analysis | `research`, `idea` |
 | Specialist domain task | Routing skills (`dev-lead-routing`, `de-lead-routing`, `qa-lead-routing`) |
 | Trivial single-file edit | Delegate directly to specialist agent |
 | Bug debugging | `superpowers:systematic-debugging` |

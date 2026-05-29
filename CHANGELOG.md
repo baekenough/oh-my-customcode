@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.157.1] - 2026-05-29
+
+### Fixed
+- Clean publish after the v0.157.0 tag failed `release.yml` at `validate-docs` (phantom `/memory-save` / `/memory-recall` command rows in README + CLAUDE.md guides count `58`→`57`). v0.157.0 never reached npm; v0.157.1 is the published artifact carrying the full #1253 cleanup.
+
 ## [0.157.0] - 2026-05-29
 
 ### Removed
