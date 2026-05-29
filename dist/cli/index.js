@@ -2334,7 +2334,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.151.1",
+    version: "0.156.0",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -2382,7 +2382,7 @@ var init_package = __esm(() => {
       yaml: "^2.8.2"
     },
     devDependencies: {
-      "@anthropic-ai/sdk": "^0.97.1",
+      "@anthropic-ai/sdk": "^0.98.0",
       "@biomejs/biome": "^2.3.12",
       "@types/bun": "^1.3.6",
       "@types/js-yaml": "^4.0.9",

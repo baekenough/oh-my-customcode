@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.156.0] - 2026-05-29
+
+### Added
+- Repo-internal `cc-release-monitor` GitHub Actions workflow that auto-creates Claude Code release tracking issues — replaces the deprecated external Airflow DAG that stopped after v2.1.150 (#1246)
+- Claude Code v2.1.152–v2.1.156 version-compatibility documentation (#1242 #1243 #1244 #1245)
+- "Known Platform Issues & Workarounds" section documenting the Agent tool malformed-parsing workaround for long/special-character delegation prompts (#1241)
+
+### Changed
+- claude-native skill: fixed issue title convention to `Claude Code v{version}` and dedup search pattern so it no longer creates duplicates; added non-contiguous patch-number note (#1246)
+- Bumped @anthropic-ai/sdk dev dependency 0.97.1 → 0.98.0 (#1240)
+
 ## [0.151.1] - 2026-05-24
 
 ### Fixed — Maintenance 패치 (#1222 #1223)
