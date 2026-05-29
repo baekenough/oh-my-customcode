@@ -2,12 +2,11 @@
 
 > **Priority**: SHOULD | **ID**: R011
 
+> **Note**: This project uses **native auto memory ONLY** (memory/MEMORY.md + agent frontmatter `memory:`). claude-mem and agentmemory MCP are NOT used in this project. Decision: issue #1253.
+
 ## Architecture
 
-**Primary**: Native auto memory (`memory` field in agent frontmatter). No external dependencies.
-**Supplementary**: claude-mem MCP (optional, for cross-session search and temporal queries).
-
-Rule: If native auto memory can handle it, do NOT use claude-mem.
+**Sole backend**: Native auto memory (`memory` field in agent frontmatter). No external MCP dependencies.
 
 ## Native Auto Memory
 
@@ -21,15 +20,6 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 | `user` | `~/.claude/agent-memory/<name>/` | No |
 | `project` | `.claude/agent-memory/<name>/` | Yes |
 | `local` | `.claude/agent-memory-local/<name>/` | No |
-
-## When to Use claude-mem
-
-| Scenario | Native | claude-mem |
-|----------|--------|------------|
-| Agent learns project patterns | Yes | |
-| Search across sessions | | Yes |
-| Temporal queries | | Yes |
-| Cross-agent sharing | | Yes |
 
 ## Best Practices
 
@@ -311,9 +301,9 @@ Related records from session v0.87.2~v0.88.0 (issue #869):
 
 Session-end detected when user says: "끝", "종료", "마무리", "done", "wrap up", "end session", or explicitly requests session save.
 
-See flow diagram, responsibility split, and dual-system save table via Read tool.
+See flow diagram and responsibility split via Read tool.
 
-<!-- DETAIL: Session-End Flow, Responsibility Split, Dual-System Save
+<!-- DETAIL: Session-End Flow, Responsibility Split
 ### Flow
 
 ```
@@ -323,35 +313,20 @@ User signals session end
        1. Collect session summary (tasks, decisions, open items)
        2. Update native auto-memory (MEMORY.md)
        3. Return formatted summary to orchestrator
-  → Orchestrator performs MCP saves directly:
-       1. claude-mem save (if available via ToolSearch)
-       (episodic-memory auto-indexes after session — no action needed)
   → Orchestrator confirms to user
 ```
 
 ### Responsibility Split
 
-MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inherited by subagents. Therefore:
-
 | Responsibility | Owner | Reason |
 |----------------|-------|--------|
 | Session summary collection | sys-memory-keeper | Domain expertise in memory formatting |
 | Native auto-memory (MEMORY.md) | sys-memory-keeper | Has Write access to memory directory |
-| claude-mem MCP save | Orchestrator | MCP tools only available at orchestrator level |
-| episodic-memory | Automatic | Conversations are auto-indexed after session ends — no manual action needed |
-
-### Dual-System Save
-
-| System | Owner | Tool | Action | Required |
-|--------|-------|------|--------|----------|
-| Native auto-memory | sys-memory-keeper | Write | Update MEMORY.md with session learnings | Yes |
-| claude-mem | Orchestrator | `mcp__plugin_claude-mem_mcp-search__save_memory` | Save session summary with project, tasks, decisions | No (best-effort) |
-| episodic-memory | Automatic | (auto-indexed) | No action needed — conversations are indexed automatically after session ends | N/A |
 -->
 
 ### Session-End Self-Check (MANDATORY)
 
-(1) sys-memory-keeper updated MEMORY.md? (2) claude-mem save attempted? (3) If `omcustom-feedback` skill is active, model MAY draft a retrospective feedback issue for user approval — or prompt user to trigger it manually. All three required before confirming to user. See full self-check via Read tool.
+(1) sys-memory-keeper updated MEMORY.md? (2) If `omcustom-feedback` skill is active, model MAY draft a retrospective feedback issue for user approval — or prompt user to trigger it manually. Both required before confirming to user. See full self-check via Read tool.
 
 <!-- DETAIL: Session-End Self-Check (MANDATORY)
 ```
@@ -362,23 +337,14 @@ MCP tools (claude-mem, episodic-memory) are **orchestrator-scoped** and not inhe
 ║     YES → Continue                                               ║
 ║     NO  → Delegate to sys-memory-keeper first                    ║
 ║                                                                   ║
-║  2. Did I attempt claude-mem save?                               ║
-║     YES → Continue (even if it failed)                           ║
-║     NO  → ToolSearch + save now                                  ║
-║                                                                   ║
-║  3. Is omcustom-feedback skill available in this project?        ║
+║  2. Is omcustom-feedback skill available in this project?        ║
 ║     YES → If notable friction/learning observed: MODEL DRAFTS    ║
 ║          retrospective issue → presents via Phase 4A preview     ║
 ║          gate for user approval. Otherwise: prompt user to       ║
 ║          trigger manually. Accept skip either way.               ║
 ║     NO  → Skip                                                    ║
 ║                                                                   ║
-║  Note: episodic-memory auto-indexes conversations after session  ║
-║  ends. No manual action needed — do NOT search as "verification" ║
-║                                                                   ║
 ║  ALL steps must be completed before confirming to user.          ║
-║  "Attempted" means called the tool — failure is OK, skipping     ║
-║  is NOT.                                                          ║
 ╚══════════════════════════════════════════════════════════════════╝
 ```
 -->
@@ -412,49 +378,5 @@ References: #1226 (item 3), #1227.
 
 ### Failure Policy
 
-- MCP saves are **non-blocking**: memory failure MUST NOT prevent session from ending
-- If claude-mem unavailable: skip, log warning
-- episodic-memory: no action needed (auto-indexed after session)
-
-## Dual-Backend Advisory (AgentMemory + claude-mem)
-
-#1169 Phase 1 (COEXIST) 단계에서 두 memory backend 동시 활성 가능:
-
-| 상황 | 권장 |
-|------|------|
-| claude-mem 단독 | 기본값 — 현 운영 유지 |
-| AgentMemory 단독 | Phase 2 (SWITCH) 이후 진행 |
-| 둘 다 활성 (COEXIST) | Phase 1 한정 — `memory-aggregator`가 결과 병합 |
-
-### 충돌 감지
-
-`.mcp.json`에 두 서버(`claude-mem`, `agentmemory`) 동시 등록 시 첫 호출 시점에 advisory 출력 권장:
-
-```
-[Advisory] Dual memory backend detected (Phase 1 COEXIST)
-  - claude-mem: active (Chroma)
-  - agentmemory: active (SQLite)
-  Phase 2 SWITCH 진입 전까지 두 backend 유지
-  가이드: guides/agentmemory-migration/phase-1-coexist.md
-```
-
-이 advisory는 경고가 아닙니다. Phase 1 COEXIST에서는 정상 상태입니다.
-
-### Session-End Self-Check (COEXIST 확장)
-
-Phase 1 COEXIST 기간 중 세션 종료 시:
-
-1. sys-memory-keeper가 MEMORY.md 갱신? → YES: 계속
-2. claude-mem 저장 시도? → YES (기존 항목)
-3. AgentMemory 저장 시도? → YES (COEXIST 추가)
-4. omcustom-feedback 처리? → YES (활성 시, notable friction 있으면 model draft → Phase 4A gate; 없으면 사용자 권유) / 스킵 (비활성 시)
-네 단계 모두 완료 후 사용자에게 확인. 둘 중 하나 실패해도 비차단.
-
-### Phase 2 진입 전 필수 조건
-
-- 1주 measure 결과 (`scripts/measure-claude-mem-usage.sh`) GO 판정
-- 자산 처리표 사용자 검토 완료 (12 plugin skill 처리 방향 결정)
-- 30분 롤백 절차 검증 (Chroma 백업 + 복원 테스트)
-
-Refs: #1169 본문 조치 3 (택1 강제), 조치 4 (롤백 절차),
-      `guides/agentmemory-migration/phase-1-coexist.md`.
+- Memory write failure is **non-blocking**: MUST NOT prevent session from ending
+- If sys-memory-keeper fails to write MEMORY.md: log warning, confirm to user anyway

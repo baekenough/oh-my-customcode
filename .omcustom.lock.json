@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.156.3",
-  "generatedAt": "2026-05-29T09:19:08.094Z",
-  "templateVersion": "0.156.3",
+  "generatorVersion": "0.157.0",
+  "generatedAt": "2026-05-29T13:12:43.074Z",
+  "templateVersion": "0.157.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -105,8 +105,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "a9c038c1dd69a8be92fb476774e3c03a1f47bbcd995dc83985915bb0dfc6afce",
-      "size": 19712,
+      "templateHash": "1ece6827c92118e51a0dbad51d01f416f55e019977aa8aa0ec759ace29c94755",
+      "size": 16007,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
@@ -140,8 +140,8 @@
       "component": "agents"
     },
     ".claude/agents/arch-speckit-agent.md": {
-      "templateHash": "e893cd03573e3f73ce06fd466a0fd4c3cc1c500d86610898ebd7593987b055c6",
-      "size": 2668,
+      "templateHash": "6eb5d90112edb4f5e503f9e901d96d1717473eebc4a996a31e04f25a5906cf8b",
+      "size": 2690,
       "component": "agents"
     },
     ".claude/agents/mgr-creator.md.tmp": {
@@ -355,8 +355,8 @@
       "component": "agents"
     },
     ".claude/agents/sys-memory-keeper.md": {
-      "templateHash": "700b42287beee8d61191be4768137460782019f36d207ce5d5b0c7d81d8428d7",
-      "size": 5653,
+      "templateHash": "2fc3465533d2743edf6217bd0b675af040d3eca01a4da46719db5af5171f847b",
+      "size": 3922,
       "component": "agents"
     },
     ".claude/agents/infra-aws-expert.md": {
@@ -464,11 +464,6 @@
       "size": 4694,
       "component": "skills"
     },
-    ".claude/skills/memory-recall/SKILL.md": {
-      "templateHash": "14e17119e6fc510af9335d941b791b4068f9dee4ef024dc84a1b8724142fa73e",
-      "size": 4344,
-      "component": "skills"
-    },
     ".claude/skills/skill-extractor/SKILL.md": {
       "templateHash": "e99051809256e80aeaed969a7cbed3c5f02430056d24a07866fb956a058b5de8",
       "size": 6798,
@@ -502,11 +497,6 @@
     ".claude/skills/pipeline/labels.md": {
       "templateHash": "7224f1613cce291407fe4948fc3a1d97ace275686885da453eef3ecd5c1fc1a9",
       "size": 2323,
-      "component": "skills"
-    },
-    ".claude/skills/memory-save/SKILL.md": {
-      "templateHash": "05c29a3e9d51acb938917723f7b099c83926f91fe12402a292b4b7820b92ca76",
-      "size": 2521,
       "component": "skills"
     },
     ".claude/skills/dev-refactor/SKILL.md": {
@@ -560,8 +550,8 @@
       "component": "skills"
     },
     ".claude/skills/semble-integration/SKILL.md": {
-      "templateHash": "5b525c2dbdb8fef27f3d0045207af0caed69bde3e04d8a3318cd656b09f8b74b",
-      "size": 6095,
+      "templateHash": "efd16d291194ecd63d72612f1bdb3707461d1f4571c5327408fe89223f1d3895",
+      "size": 5988,
       "component": "skills"
     },
     ".claude/skills/java-best-practices/SKILL.md": {
@@ -650,8 +640,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "3a14f77d395ba573e93a1d38e1dec053f84cda00301a812029c79b5def6b5b71",
-      "size": 25281,
+      "templateHash": "1bb50cb89f3ae21a070142660b1876992ba659187bde85e5b27abdbbf31a35c4",
+      "size": 24653,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
@@ -830,8 +820,8 @@
       "component": "skills"
     },
     ".claude/skills/peer-messaging/SKILL.md": {
-      "templateHash": "42eeb1b5ef13ad0a684eb8c58ba7a3a8fce2586c5d28bdc197be6ccbf4f46bd5",
-      "size": 2223,
+      "templateHash": "bba53afcf5345fefa4e7a4e4dae9cd4e62fb36b3ec87f9e9ba1b6d6fc6000ee4",
+      "size": 2086,
       "component": "skills"
     },
     ".claude/skills/kotlin-best-practices/SKILL.md": {
@@ -850,8 +840,8 @@
       "component": "skills"
     },
     ".claude/skills/crg-integration/SKILL.md": {
-      "templateHash": "ae0a3d5448af13b725a549816d5c5a0d609c40ae1b1417c079dc4e8d613d2f11",
-      "size": 5900,
+      "templateHash": "437b36e156a37c11769bef2045e26aa745ec4adbdc15a23b5c8ce4fa3303657c",
+      "size": 5495,
       "component": "skills"
     },
     ".claude/skills/idea/SKILL.md": {
@@ -894,19 +884,14 @@
       "size": 6000,
       "component": "skills"
     },
-    ".claude/skills/memory-management/SKILL.md": {
-      "templateHash": "3fc9e09475523831caa74ddcbaeaa5cc3e3bcb58cbe680834e68179d653e0d7d",
-      "size": 5135,
-      "component": "skills"
-    },
     ".claude/skills/kafka-best-practices/SKILL.md": {
       "templateHash": "2254e6fee04b478d082ac4676e258ef5332e84d73e133e360a7b00a753b225ce",
       "size": 1750,
       "component": "skills"
     },
     ".claude/skills/instinct-extractor/SKILL.md": {
-      "templateHash": "3cc5844ba24df4485ed891a4419ebd9e581091d1b8bffe25255cb16202dc0964",
-      "size": 7221,
+      "templateHash": "7869e897ba4ea4d17b736ebc53ca492a0d24b5dc5dc02a0c8ed8e92a8e5ee2b5",
+      "size": 6995,
       "component": "skills"
     },
     ".claude/skills/action-validator/SKILL.md": {
@@ -995,8 +980,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-review/SKILL.md": {
-      "templateHash": "5431169ed7f484bc57fc0ec973023f695d78b3e4b74cff643c860e0a82c12570",
-      "size": 7268,
+      "templateHash": "f2dcff9f8f28c9be4e67140ec52c1995d972ee4ca75cd28b14c5d772777bade4",
+      "size": 7209,
       "component": "skills"
     },
     ".claude/skills/omcustom-web/SKILL.md": {
@@ -1080,8 +1065,8 @@
       "component": "skills"
     },
     ".claude/skills/agent-eval-framework/SKILL.md": {
-      "templateHash": "5215ca34c72c3969807f2ad4395727e2dc50870d3bc3a340aa6e8063e6bcd196",
-      "size": 8400,
+      "templateHash": "5ab0c64c2772335efec1cde8066f4f7b0728f996fd7785ef76bc1801a2321a4d",
+      "size": 8325,
       "component": "skills"
     },
     ".claude/skills/task-decomposition/SKILL.md": {
@@ -1135,8 +1120,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/plugin-cache-check.sh": {
-      "templateHash": "606ecfd7fa5e4435bb34f4904d67e474999ea4b68820991457d7b1d8172a4f6b",
-      "size": 916,
+      "templateHash": "357cdc494290a7628dd557ce7fff96f97d2048497c1f03ddfde5d77deaa3f813",
+      "size": 908,
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
@@ -1320,8 +1305,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "144474f7c5c521ef97c58881472255de5b7cc26e619de978bf54b20b9bd57cec",
-      "size": 28540,
+      "templateHash": "174e0a6e5fa90ad4183bf5bf842812f348c1d9c6d6105e16ba4f2bdd114a35d7",
+      "size": 28270,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1350,13 +1335,13 @@
       "component": "contexts"
     },
     ".claude/ontology/agents.yaml": {
-      "templateHash": "451fc483869b72f49432bff861828993a5e277d6fe2088e14619d4b299d5b077",
-      "size": 28640,
+      "templateHash": "b79c0210121740a998957638332c144cd94441d19f0e882cba7d29efe9f1c517",
+      "size": 28596,
       "component": "ontology"
     },
     ".claude/ontology/rules.yaml": {
-      "templateHash": "4cf6ff8b7a010b00350c6f37244f2e901e4613ee13b97152cf5c9e91362dac94",
-      "size": 9662,
+      "templateHash": "6f933684b26640e3aa803316147ab4d0cd51bb182dbcd7f556c4ba1c89e8672c",
+      "size": 9652,
       "component": "ontology"
     },
     ".claude/ontology/schema.yaml": {
@@ -1365,18 +1350,18 @@
       "component": "ontology"
     },
     ".claude/ontology/skills.yaml": {
-      "templateHash": "b50d36e8a1b158def52c91115e62015821d9ae7f02a1d21a39103adabda283a4",
-      "size": 23513,
+      "templateHash": "bf3d72038d045637878cef487fe550c04bead908628d8bc9b13b6439242e5421",
+      "size": 22377,
       "component": "ontology"
     },
     ".claude/ontology/graphs/skill-rule.json": {
-      "templateHash": "5e9406de80ea6a386bd978feac21a4dd086df6df98d84d2fcaf218271475fac5",
-      "size": 2101,
+      "templateHash": "4aa3cb34a7b5fb2ae1fb8d022176dad88786dde1ffeb8dbf9c72fa66428705e9",
+      "size": 2093,
       "component": "ontology"
     },
     ".claude/ontology/graphs/agent-skill.json": {
-      "templateHash": "81b409aee5a9aebc8c5bcc62feddcf4dddb16c1e7738fac62c38a0a1f4bb030e",
-      "size": 4236,
+      "templateHash": "ac2c507a0c3b33211aadbece4aab8795819c0e83226a01b1f59bb4de7d390051",
+      "size": 4873,
       "component": "ontology"
     },
     ".claude/ontology/graphs/routing.json": {
@@ -1385,8 +1370,8 @@
       "component": "ontology"
     },
     ".claude/ontology/graphs/full-graph.json": {
-      "templateHash": "996b3427eb0a0c18a5a519856e25321d9c2c70f89388c6215c5154cd23368b61",
-      "size": 27190,
+      "templateHash": "fe92f66105a52d685d4feff33a6e7526cda904b1fb8101aae094879a68fca7dd",
+      "size": 31832,
       "component": "ontology"
     },
     ".claude/ontology/.cache/queries.db": {
@@ -1430,8 +1415,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "836701c001bc5f00f6dbf77330e2dd2ef0fda21f19caa6e8a5d067002405a59a",
-      "size": 68201,
+      "templateHash": "0ee52cb82b53a089173ee279e4fc5a78d826f5dd7ba039a7503f8feb881aed2b",
+      "size": 68120,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
@@ -1505,8 +1490,8 @@
       "component": "guides"
     },
     "guides/agent-eval/README.md": {
-      "templateHash": "4e0754fb87b97ad629598c1f0737fa854cf7ea940df4008eadb723ba8096701a",
-      "size": 28848,
+      "templateHash": "0bd5711cbbf96e724cdee0584a40b1b4e728e60a387fd18ecf15e0b144910716",
+      "size": 28210,
       "component": "guides"
     },
     "guides/web-design/accessibility.md": {
@@ -1589,16 +1574,6 @@
       "size": 3965,
       "component": "guides"
     },
-    "guides/agentmemory-migration/phase-1-coexist.md": {
-      "templateHash": "05cd4d505999f64043c8dd6ae986f495c912b559fe0683c7bf3b3617919c95d6",
-      "size": 8099,
-      "component": "guides"
-    },
-    "guides/agentmemory-migration/measure-step-zero.md": {
-      "templateHash": "cc69bd307cf538a583a66d8a160a5908a8cbfddf7b169d55db774bb2ec46ef52",
-      "size": 4838,
-      "component": "guides"
-    },
     "guides/skill-bundle-design/README.md": {
       "templateHash": "af321b57fe975bba45bd92ab1680e402209824be7a3f89992cc2ea5f153b24a1",
       "size": 4396,
@@ -1640,8 +1615,8 @@
       "component": "guides"
     },
     "guides/skill-promotion/instinct-extraction.md": {
-      "templateHash": "59835105a21a936e3e201439b1140657a8651f0689b3a93bca3252adbda5c1da",
-      "size": 4894,
+      "templateHash": "8eb358d76f4c499d9ed7ebd8d7f6e1ccf5cbe0304bf0cf0361152c63902058f2",
+      "size": 4891,
       "component": "guides"
     },
     "guides/deep-plan/phases.md": {
@@ -1735,8 +1710,8 @@
       "component": "guides"
     },
     "guides/harness-engineering/README.md": {
-      "templateHash": "40090363e9604a57f34ffae08fb6891675eb591f853b3aa141784e61d11a2792",
-      "size": 23508,
+      "templateHash": "1ba5d9596cd4256e8807d8308894c3d6d2992439de679e0631144dad97e6f8d3",
+      "size": 23504,
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {
@@ -1800,8 +1775,8 @@
       "component": "guides"
     },
     "guides/agent-design/ralph-loop-pattern.md": {
-      "templateHash": "6be38a8cc7f6b666f4a40f44f69c771b50ee04a8f8a59e743fd964ba405d6778",
-      "size": 1403,
+      "templateHash": "c8f9d5c5cc62cb7d97e581ba884fe22749ccd70b5a29d14dabfd5d57cc97d82c",
+      "size": 1436,
       "component": "guides"
     },
     "guides/agent-design/ouroboros-socratic-interview-templates.md": {
@@ -1840,8 +1815,8 @@
       "component": "guides"
     },
     "guides/external-tools/ecc-absorption-decisions.md": {
-      "templateHash": "a4e5b55f2d65b8f194a50b95b7ef0ee61223c5a5e1481057f566fa002107938e",
-      "size": 8554,
+      "templateHash": "4df3089c52e1757c30fd1be55e559d9973e2bd9b3280fe13b33a1521d2442290",
+      "size": 8635,
       "component": "guides"
     },
     "guides/external-tools/graphify-integration.md": {
@@ -1975,8 +1950,8 @@
       "component": "guides"
     },
     "guides/token-efficiency/crg.md": {
-      "templateHash": "5937ff3857b58120f300e223086e722fde26d1b87b3d28150fda1eb29cf8d095",
-      "size": 7587,
+      "templateHash": "5d4a0dfa1be5ad3ed93f540ceccbe19b4d957fbc25de6c01e394dcd0155e6ac6",
+      "size": 7427,
       "component": "guides"
     },
     "guides/spark/README.md": {
@@ -1985,8 +1960,8 @@
       "component": "guides"
     },
     "guides/middleware-patterns/README.md": {
-      "templateHash": "b86c8bf85d15c9232e381aefaea61c7c2a0a3e52ebf543ef3d79be8b3899bc15",
-      "size": 21697,
+      "templateHash": "e761f3597b911367605acb91555f4e0d7c4c9114bc44a8792999b1d912ade16b",
+      "size": 21508,
       "component": "guides"
     },
     "guides/agents-md-quality/README.md": {

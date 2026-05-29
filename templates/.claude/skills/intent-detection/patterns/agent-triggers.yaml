@@ -601,25 +601,6 @@ agents:
     base_confidence: 75
     routing_rule: "Invoke dev-refactor skill"
 
-  # Memory skills
-  skill-memory-save:
-    keywords:
-      korean: [메모리 저장, 기억해, 저장해]
-      english: ["save memory", "remember this", "store this"]
-    file_patterns: []
-    supported_actions: [save, store, remember]
-    base_confidence: 85
-    routing_rule: "Invoke memory-management skill"
-
-  skill-memory-recall:
-    keywords:
-      korean: [메모리 검색, 기억 찾기, 회상]
-      english: ["recall memory", "search memory", "find memory", "what did we"]
-    file_patterns: []
-    supported_actions: [recall, search, find]
-    base_confidence: 85
-    routing_rule: "Invoke memory-recall skill"
-
   # Harness management skills
   skill-analysis:
     keywords:

@@ -40,7 +40,7 @@ categories:
   memory:
     rules: [R011]
     summary: "Memory integration and persistence"
-    keywords: [memory, persistence, claude-mem, session]
+    keywords: [memory, persistence, native-auto-memory, session]
   display:
     rules: [R012]
     summary: "HUD and status display"
@@ -175,8 +175,8 @@ rules:
     categories: [memory]
     title: "Memory Integration Rules"
     filename: "SHOULD-memory-integration.md"
-    summary: "Primary: Native auto memory (frontmatter). Supplementary: claude-mem MCP for cross-session search."
-    keywords: [memory, native, claude-mem, persistence, session, temporal, cross-agent]
+    summary: "Primary: Native auto memory (frontmatter). Session persistence via agent memory directories."
+    keywords: [memory, native, persistence, session, temporal, cross-agent]
     token_estimate: 248
     applies_to: [agents-with-memory, memory-operations]
 

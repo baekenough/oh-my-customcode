@@ -29,10 +29,6 @@ classes:
     skills: [optimize-analyze, optimize-bundle, optimize-report]
     description: "Performance optimization"
 
-  MemorySkill:
-    skills: [memory-save, memory-recall, memory-management]
-    description: "Memory persistence operations"
-
   PackageSkill:
     skills: [npm-publish, npm-version, npm-audit]
     description: "Package management"
@@ -275,33 +271,6 @@ skills:
     summary: "Show all available commands with optional filtering and detailed information"
     keywords: [lists, commands, categories, system]
     rule_references: []
-
-  memory-management:
-    class: MemorySkill
-    description: "Memory persistence operations using claude-mem"
-    user_invocable: false
-    model_invocable: true
-    summary: "Provide memory persistence operations using claude-mem for session context"
-    keywords: [memory, claude-mem, persistence, session, context]
-    rule_references: [R011]
-
-  memory-recall:
-    class: MemorySkill
-    description: "Search and recall memories from claude-mem"
-    user_invocable: true
-    model_invocable: true
-    summary: "Search and recall relevant memories from claude-mem using semantic search"
-    keywords: [memory, recall, search, semantic, claude-mem]
-    rule_references: [R011]
-
-  memory-save:
-    class: MemorySkill
-    description: "Save current session context to claude-mem"
-    user_invocable: true
-    model_invocable: false
-    summary: "Save current session context to claude-mem for persistence across compaction"
-    keywords: [memory, save, session, context, claude-mem]
-    rule_references: [R011]
 
   monitoring-setup:
     class: MonitoringSkill

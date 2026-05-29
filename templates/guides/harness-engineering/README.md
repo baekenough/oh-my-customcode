@@ -230,7 +230,7 @@ oh-my-customcode에서의 현황:
 4. 메모리 저장: feedback_doom_loop_{날짜}.md → 세션 간 패턴 누적
 ```
 
-크로스-세션 패턴 감지에는 `adaptive-harness --learn` + claude-mem MCP를 연동해 동일 실패 패턴이 반복 보고되는 에이전트를 자동 플래그합니다.
+크로스-세션 패턴 감지에는 `adaptive-harness --learn` + native auto-memory(R011)를 연동해 동일 실패 패턴이 반복 보고되는 에이전트를 자동 플래그합니다.
 
 ### Pre-completion Checklist
 
@@ -330,7 +330,7 @@ oh-my-customcode 내에서 이 주기는 다음으로 구현됩니다:
 | 1 | **Filesystems** | 파일 읽기/쓰기/탐색 도구 | Read / Write / Edit / Glob / Grep | ✅ 완비 |
 | 2 | **Bash/Code Execution** | 코드 실행 + 에이전트 격리 | Bash 도구 + agent isolation (`isolation: worktree\|sandbox`) | ✅ 완비 |
 | 3 | **Sandboxes** | 실행 환경 격리 | R006 `isolation: worktree \| sandbox` + `sandboxFailIfUnavailable: true` | ✅ 완비 |
-| 4 | **Memory & Search** | 세션 간 지식 유지 + 검색 | claude-mem MCP + episodic-memory + `.claude/agent-memory/` (R011) | ✅ 완비 |
+| 4 | **Memory & Search** | 세션 간 지식 유지 + 검색 | native auto-memory + `.claude/agent-memory/` (R011) | ✅ 완비 |
 | 5 | **Context Management** | 컨텍스트 예산 관리 + 압축 | R013 ecomode + auto-injection + Deep Insight Context Handoff Pattern | ✅ 완비 |
 | 6 | **Long-Horizon Execution** | 장기 실행 + 복수 에이전트 조율 | Agent Teams + `worker-reviewer-pipeline` + `omcustom-loop` SubagentStop hook | ✅ 완비 |
 

@@ -81,7 +81,7 @@ oh-my-customcode로 구동됩니다.
 |----|------|------|
 | R003 | 상호작용 규칙 | 응답 원칙, 상태 형식 |
 | R004 | 오류 처리 | 오류 수준, 복구 전략 |
-| R011 | 메모리 통합 | claude-mem을 통한 세션 지속성 |
+| R011 | 메모리 통합 | 세션 메모리 지속성 |
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
 | R019 | Ontology-RAG 라우팅 | 라우팅 스킬의 ontology-RAG enrichment |
@@ -104,7 +104,6 @@ oh-my-customcode로 구동됩니다.
 | 검증 | `/omcustom:sauron-watch`, `/deep-verify`, `/adversarial-review` | R017 검증, 릴리즈 품질, 보안 리뷰 |
 | 릴리즈 | `/pipeline auto-dev`, `/omcustom-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
 | 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustom:agora` | 병렬 분석, URL 평가, 연구 계획 |
-| 메모리 | `/memory-save`, `/memory-recall` | 세션 메모리 관리 |
 | 최적화 | `/token-efficiency-audit` | 토큰 효율 감사 (5계층 방어 스택) |
 | 시스템 | `/omcustom:lists`, `/omcustom:status`, `/omcustom:help` | 전체 목록, 상태, 도움말 |
 
@@ -117,7 +116,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (49 파일)
-|   +-- skills/                  # 스킬 (121 디렉토리)
+|   +-- skills/                  # 스킬 (118 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R023)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -211,10 +210,6 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 # 코드 리뷰
 /dev-review src/main.go
 
-# 메모리 관리
-/memory-save
-/memory-recall authentication
-
 # 검증
 /omcustom:sauron-watch
 ```
@@ -245,8 +240,6 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 
 | 서버 | 용도 |
 |------|------|
-| claude-mem | 세션 메모리 영속성 (Chroma 기반) — Phase β (#1169) COEXIST 진행 중 |
-| **agentmemory** | claude-mem 대체 후보 (SQLite 기반, 4-tier consolidation) — Phase 1 COEXIST (#1169) |
 | code-review-graph | Token-efficient AST 기반 context retrieval (8.2× 토큰 절감) — wrapper: `crg-integration` 스킬 (#1171) |
 | semble | Semantic code search via embeddings (98% 토큰 절감, NDCG@10=0.854) — wrapper: `semble-integration` 스킬 (#1173) |
 
@@ -260,16 +253,6 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 /plugin install superpowers
 /plugin install superpowers-developing-for-claude-code
 /plugin install elements-of-style
-
-# MCP 설정 (claude-mem)
-npm install -g claude-mem
-claude-mem setup
-
-# AgentMemory MCP 설치 (claude-mem 대체 후보, COEXIST)
-pip install agentmemory
-claude mcp add agentmemory -- agentmemory mcp
-# 또는 .mcp.json 수동 편집 (R001 auto-install 금지)
-# Phase 1 COEXIST 가이드: guides/agentmemory-migration/phase-1-coexist.md
 
 # CRG MCP 설치 (token efficiency)
 pipx install code-review-graph

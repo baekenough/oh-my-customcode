@@ -9,7 +9,7 @@ LLM 에이전트는 세션 종료 시 누적된 맥락(tacit knowledge, 실패 �
 
 ## Claude Code 통합
 
-- **claude-mem MCP**: feedback memories + session archives를 영속 저장소로
+- **native auto-memory**: feedback memories + session archives를 영속 저장소로 (R011)
 - **sys-memory-keeper 에이전트**: 세션 종료 시 Ralph Loop 요약 수행
 - **R011 Memory Integration**: native auto-memory를 Ralph Loop의 primary writer로
 
@@ -18,7 +18,7 @@ LLM 에이전트는 세션 종료 시 누적된 맥락(tacit knowledge, 실패 �
 1. **Bootstrap**: 세션 시작 시 MEMORY.md에서 이전 Ralph Loop 요약 로드
 2. **Evolve**: 세션 진행 중 발견한 새 패턴/실패를 feedback memory에 기록
 3. **Compact**: 세션 종료 시 sys-memory-keeper가 Ralph Loop 요약을 MEMORY.md 업데이트
-4. **Persist**: claude-mem MCP에 long-term save (cross-session search)
+4. **Persist**: native auto-memory에 long-term save (cross-session 지속성은 R011 참조)
 
 ## Anti-patterns
 

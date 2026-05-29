@@ -51,7 +51,6 @@ R016 연속 개선 루프의 cross-session 자동화 단계. 단일 세션 feedb
 ## 한계
 
 - transcript 형식(`session-*.jsonl`) 변경 시 파싱 재구현 필요
-- AgentMemory 마이그레이션(#1169 Phase 3) 전까지 `--dry-run` 권장
 - 키워드 기반 클러스터링으로 의미적 동의어 처리 제한
 
 ## Sources

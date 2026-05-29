@@ -4,8 +4,7 @@
   "plugins": {
     "enabled": [
       "superpowers@claude-plugins-official",
-      "episodic-memory@superpowers-marketplace",
-      "claude-mem@thedotmack"
+      "episodic-memory@superpowers-marketplace"
     ],
     "disabled": [
       "vercel@claude-plugins-official",
