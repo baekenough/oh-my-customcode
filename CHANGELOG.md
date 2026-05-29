@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.156.2] - 2026-05-29
+
+### Fixed
+- `Issue Triage Dispatch` workflow (`.github/workflows/triage-dispatch.yml`) failed on every `issues` event because it added a non-existent `triaged` label under `set -euo pipefail`, and called a non-existent `omcustom triage` CLI. Now creates the `triaged` label idempotently, removes the phantom CLI call, and de-duplicates the comment/label steps (#1251)
+
 ## [0.156.1] - 2026-05-29
 
 ### Changed

@@ -2,54 +2,56 @@ name: Issue Triage Dispatch
 
 on:
   issues:
-    types: [opened]
+    types: [opened, labeled]
 
 permissions:
-  issues: read
+  issues: write
 
 jobs:
-  trigger-airflow:
+  triage:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title }}
     steps:
-      - name: Get Airflow JWT token
-        id: token
+      - name: Ensure triaged label exists
         run: |
           set -euo pipefail
-          TOKEN=$(curl -fsS -X POST "${AIRFLOW_URL}/auth/token" \
-            -H "Content-Type: application/json" \
-            -d "{\"username\":\"${AIRFLOW_USER}\",\"password\":\"${AIRFLOW_PASSWORD}\"}" \
-            | jq -r '.access_token')
-          if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
-            echo "Failed to obtain Airflow JWT token" >&2
-            exit 1
-          fi
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-        env:
-          AIRFLOW_URL: ${{ secrets.AIRFLOW_URL }}
-          AIRFLOW_USER: ${{ secrets.AIRFLOW_USER }}
-          AIRFLOW_PASSWORD: ${{ secrets.AIRFLOW_PASSWORD }}
+          gh label create triaged \
+            --color "C5DEF5" \
+            --description "Issue acknowledged by triage dispatch" \
+            --repo "${{ github.repository }}" \
+            2>/dev/null || true
 
-      - name: Trigger issue_triage DAG
-        env:
-          AIRFLOW_URL: ${{ secrets.AIRFLOW_URL }}
-          AIRFLOW_TOKEN: ${{ steps.token.outputs.token }}
-          REPO: ${{ github.repository }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_URL: ${{ github.event.issue.html_url }}
+      - name: Record issue type
         run: |
           set -euo pipefail
-          LOGICAL_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          DAG_RUN_ID="github-${REPO//\//-}-${ISSUE_NUMBER}-$(date -u +%s)"
-          PAYLOAD=$(jq -n \
-            --arg dag_run_id "$DAG_RUN_ID" \
-            --arg logical_date "$LOGICAL_DATE" \
-            --arg repo "$REPO" \
-            --argjson issue_number "$ISSUE_NUMBER" \
-            --arg issue_url "$ISSUE_URL" \
-            '{dag_run_id: $dag_run_id, logical_date: $logical_date, conf: {repo: $repo, issue_number: $issue_number, issue_url: $issue_url}}')
-          echo "Triggering DAG with payload: $PAYLOAD"
-          curl -fsS -X POST "${AIRFLOW_URL}/api/v2/dags/issue_triage/dagRuns" \
-            -H "Authorization: Bearer ${AIRFLOW_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "$PAYLOAD"
+          # Real triage is performed by the in-session professor-triage skill.
+          # This step records metadata for audit purposes — no external CLI needed.
+          echo "Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
+          echo "Triage acknowledgment will be posted in the next step."
+
+      - name: Post triage acknowledgment
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+
+          # Check whether the issue is already triaged to avoid duplicate
+          # comments on repeated 'labeled' events.
+          if gh issue view "$ISSUE_NUMBER" \
+               --repo "$REPO" \
+               --json labels \
+               --jq '.labels[].name' \
+             | grep -qx "triaged"; then
+            echo "Issue #${ISSUE_NUMBER} already triaged — skipping comment and label."
+            exit 0
+          fi
+
+          gh issue comment "$ISSUE_NUMBER" \
+            --repo "$REPO" \
+            --body "Thanks for filing this issue! It has been acknowledged by our triage dispatch and will be reviewed shortly. Detailed triage is performed by the professor-triage skill during active development sessions."
+
+          gh issue edit "$ISSUE_NUMBER" \
+            --repo "$REPO" \
+            --add-label "triaged"
