@@ -1,0 +1,182 @@
+name: cc-release-monitor
+
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  MIN_PATCH: "151"
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch Claude Code releases and create issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          MIN_PATCH: ${{ env.MIN_PATCH }}
+        run: |
+          python3 << 'PYEOF'
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+          import textwrap
+
+          GH_TOKEN = os.environ["GH_TOKEN"]
+          REPO = os.environ["GITHUB_REPOSITORY"]
+          MIN_PATCH = int(os.environ.get("MIN_PATCH", "151"))
+
+          print(f"=== cc-release-monitor: fetching Claude Code releases ===")
+          print(f"MIN_PATCH={MIN_PATCH}")
+
+          # ── Step 1: fetch all releases from anthropics/claude-code ──────────
+          result = subprocess.run(
+              ["gh", "api", "repos/anthropics/claude-code/releases", "--paginate"],
+              capture_output=True,
+              text=True,
+              env=os.environ,
+          )
+          if result.returncode != 0:
+              print(f"ERROR: gh api failed: {result.stderr.strip()}", file=sys.stderr)
+              sys.exit(1)
+
+          try:
+              releases = json.loads(result.stdout)
+          except json.JSONDecodeError as e:
+              print(f"ERROR: Failed to parse releases JSON: {e}", file=sys.stderr)
+              sys.exit(1)
+
+          # ── Step 2: filter — v2.1.NNN, no nightly, patch >= MIN_PATCH ───────
+          pattern = re.compile(r"^v2\.1\.(\d+)$")
+          candidates = []
+          for r in releases:
+              tag = r.get("tag_name", "")
+              if "nightly" in tag.lower():
+                  continue
+              m = pattern.match(tag)
+              if not m:
+                  continue
+              if int(m.group(1)) < MIN_PATCH:
+                  continue
+              candidates.append({
+                  "tag": tag,
+                  "published_at": r.get("published_at", ""),
+                  "html_url": r.get("html_url", ""),
+                  "body": (r.get("body") or "").strip(),
+              })
+
+          print(f"Found {len(candidates)} candidate release(s) matching filter.")
+
+          if not candidates:
+              print("Nothing to do.")
+              sys.exit(0)
+
+          # ── Step 3: dedup and create ─────────────────────────────────────────
+          created = 0
+          skipped = 0
+
+          for release in candidates:
+              version = release["tag"]          # e.g. "v2.1.151"
+              published_at = release["published_at"]
+              html_url = release["html_url"]
+              body_raw = release["body"]
+
+              issue_title = f"Claude Code {version}"
+
+              # Dedup: exact title match among all issues (open + closed)
+              check = subprocess.run(
+                  [
+                      "gh", "issue", "list",
+                      "--repo", REPO,
+                      "--state", "all",
+                      "--search", issue_title,
+                      "--json", "title",
+                  ],
+                  capture_output=True,
+                  text=True,
+                  env=os.environ,
+              )
+              if check.returncode != 0:
+                  print(
+                      f"WARNING: issue list failed for {version}: {check.stderr.strip()}",
+                      file=sys.stderr,
+                  )
+                  skipped += 1
+                  continue
+
+              existing = json.loads(check.stdout or "[]")
+              if any(i["title"] == issue_title for i in existing):
+                  print(f"SKIP  {version} — issue already exists")
+                  skipped += 1
+                  continue
+
+              # Truncate release body
+              MAX_BODY = 2000
+              if not body_raw:
+                  release_summary = "_No release notes provided._"
+              elif len(body_raw) > MAX_BODY:
+                  release_summary = body_raw[:MAX_BODY] + "... (truncated)"
+              else:
+                  release_summary = body_raw
+
+              issue_body = textwrap.dedent(f"""\
+                  # Claude Code {version}
+
+                  **Release:** {version}
+                  **Published:** {published_at}
+                  **Link:** {html_url}
+
+                  ## Release Summary
+
+                  {release_summary}
+
+                  ---
+
+                  ## Action Items
+
+                  - [ ] Review release notes for impact on oh-my-customcode
+                  - [ ] Update agent definitions if new Claude Code features affect agents
+                  - [ ] Test compatibility with current oh-my-customcode version
+                  - [ ] Update CLAUDE.md if new capabilities are relevant
+
+                  ---
+
+                  _This issue was auto-created by the cc-release-monitor GitHub Actions workflow._\
+              """)
+
+              create = subprocess.run(
+                  [
+                      "gh", "issue", "create",
+                      "--repo", REPO,
+                      "--title", issue_title,
+                      "--body", issue_body,
+                      "--label", "automated,claude-code-release",
+                  ],
+                  capture_output=True,
+                  text=True,
+                  env=os.environ,
+              )
+              if create.returncode != 0:
+                  print(
+                      f"ERROR  {version} — create failed: {create.stderr.strip()}",
+                      file=sys.stderr,
+                  )
+                  skipped += 1
+                  continue
+
+              issue_url = create.stdout.strip()
+              print(f"CREATE {version} — {issue_url}")
+              created += 1
+
+          print()
+          print(f"=== Summary: {created} created, {skipped} skipped ===")
+          PYEOF
