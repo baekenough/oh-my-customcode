@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.156.3] - 2026-05-29
+
+### Changed
+- R020 (`MUST-completion-verification`): added "Variant: Parallel Read + Permanent-Change Dispatch" subsection to the Diagnostic Hypothesis Verification section — prohibits running a diagnostic file Read and a permanent change (issue registration, fix dispatch) that depends on it in the same parallel batch, since results arrive together and the hypothesis gets locked in before the Read is seen (observed in #1250 triage-dispatch misdiagnosis)
+
 ## [0.156.2] - 2026-05-29
 
 ### Fixed
