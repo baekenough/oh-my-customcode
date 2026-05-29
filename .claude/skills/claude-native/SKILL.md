@@ -42,18 +42,18 @@ Search for existing tracking issues to avoid duplicates:
 ```bash
 gh issue list \
   --state all \
-  --search "[Claude Code v" \
+  --search "Claude Code v" \
   --json number,title \
   --limit 100
 ```
 
-Build a set of already-tracked versions by extracting version strings from issue titles matching the pattern `[Claude Code v{version}]`.
+Build a set of already-tracked versions by extracting version strings from issue titles matching the pattern `Claude Code v(\d+\.\d+\.\d+)` (no brackets).
 
 ### Phase 3: Dedup
 
 For each fetched release version:
 - Parse the version string from `tag_name` (e.g., `v2.1.86`)
-- If a matching issue title already exists → skip (already tracked)
+- If an issue title matching `Claude Code v{version}` already exists → skip (already tracked)
 - If no matching issue → add to "needs issue" list
 
 ### Phase 4: Create Issues (or Dry-Run Report)
@@ -76,7 +76,7 @@ For each version in the "needs issue" list, create a GitHub issue:
 
 ```bash
 gh issue create \
-  --title "[Claude Code v{version}] New release detected" \
+  --title "Claude Code v{version}" \
   --label "automated,claude-code-release" \
   --body "{body}"
 ```
@@ -105,7 +105,7 @@ Issue body format (matching the pattern established by issue #683):
 
 ---
 
-_This issue was created by the `/omcustom:claude-native` skill._
+_This issue was auto-created by the cc-release-monitor workflow (claude-native skill)._
 ```
 
 **Notes:**
@@ -128,8 +128,8 @@ Versions checked: {N}
 New issues created: {M}
 
 Created:
-  - #1234 [Claude Code v2.1.86] New release detected
-  - #1235 [Claude Code v2.1.87] New release detected
+  - #1234 Claude Code v2.1.86
+  - #1235 Claude Code v2.1.87
 
 Already tracked (skipped):
   - v2.1.85 → #683
@@ -156,6 +156,8 @@ For each release:
 ```
 
 Semver comparison: major → minor → patch (all numeric). Pre-release suffixes (e.g., `-beta`) are included and compared lexicographically after numeric parts.
+
+**Note on non-contiguous patch numbers**: Claude Code skips some patch numbers (e.g., v2.1.151 and v2.1.155 were never released publicly). The skill MUST act only on versions that actually appear in the GitHub releases API response — never assume contiguous numbering or attempt to fill gaps.
 
 ## Error Handling
 
