@@ -6,7 +6,6 @@
       "superpowers@claude-plugins-official",
       "context7@claude-plugins-official",
       "episodic-memory@superpowers-marketplace",
-      "claude-mem@thedotmack",
       "gopls-lsp@claude-plugins-official"
     ],
     "disabled": [

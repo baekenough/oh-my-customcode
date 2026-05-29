@@ -2,7 +2,7 @@
 # plugin-cache-check.sh — SessionStart advisory hook
 # Detects shared plugin caches with package.json but missing node_modules.
 # Always exit 0 (non-blocking). Output advisory to stderr only.
-# Issue: #1207 — claude-mem v13.3.0 plugin node_modules missing (zod/v3 module error)
+# Issue: #1207 — plugin cache missing node_modules (e.g. zod/v3 module error)
 
 set -euo pipefail
 

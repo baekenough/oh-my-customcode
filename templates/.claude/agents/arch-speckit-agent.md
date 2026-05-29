@@ -60,7 +60,7 @@ When writing acceptance criteria, use the EARS (Easy Approach to Requirements Sy
 | Ubiquitous | The `<system>` shall `<action>` | The validator shall reject invalid frontmatter |
 | Event-driven | When `<event>`, the `<system>` shall `<action>` | When a new agent is created, the routing skill shall update its pattern table |
 | State-driven | While `<state>`, the `<system>` shall `<action>` | While ecomode is active, agents shall use concise output format |
-| Optional | Where `<condition>`, the `<system>` shall `<action>` | Where the user has MCP configured, the orchestrator shall attempt claude-mem save |
+| Optional | Where `<condition>`, the `<system>` shall `<action>` | Where the agent has memory enabled, the orchestrator shall persist session findings to native MEMORY.md |
 | Complex | When `<event>` while `<state>` where `<condition>`, the `<system>` shall `<action>`, resulting in `<result>` | When session ends while Agent Teams is active where tasks remain incomplete, the orchestrator shall log incomplete tasks, resulting in a task summary |
 
 **Usage**: Apply EARS format in spec output's `invariants` and `acceptance_criteria` sections. This ensures testable, unambiguous requirements.

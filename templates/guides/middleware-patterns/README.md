@@ -22,7 +22,7 @@ LangChain이 정의한 6개의 lifecycle hook은 다음과 같습니다. 각 단
 
 | LangChain Hook | 설명 | oh-my-customcode 대응 | 스킬/훅 예시 |
 |---|---|---|---|
-| `before_agent` | 에이전트 전체 실행 시작 전 | `SessionStart`, `UserPromptSubmit` hook | claude-mem session-start, omcustom-loop 초기화 |
+| `before_agent` | 에이전트 전체 실행 시작 전 | `SessionStart`, `UserPromptSubmit` hook | MEMORY.md 자동 주입, omcustom-loop 초기화 |
 | `before_model` | 모델 호출 직전 (매 추론 루프마다) | `PreToolUse(Agent)`, pre-generation-arch-check | pre-generation-arch-check 스킬 |
 | `wrap_model_call` | 모델 호출 자체를 래핑 (실제 호출 제어) | Tier 4 permission approval (Bash/WebFetch) | permission hooks, bypassPermissions 게이트 |
 | `wrap_tool_call` | 도구 호출을 래핑 (전후 모두 제어) | `PreToolUse(*) + PostToolUse(*)` | action-validator, task-outcome-recorder |
@@ -33,7 +33,7 @@ LangChain이 정의한 6개의 lifecycle hook은 다음과 같습니다. 각 단
 
 **`before_agent` → SessionStart / UserPromptSubmit**
 
-에이전트가 실행을 시작하기 전에 필요한 컨텍스트를 주입하거나 상태를 초기화합니다. oh-my-customcode에서는 `SessionStart` 훅이 이 역할을 담당합니다. claude-mem의 세션 시작 시 메모리 로드, MEMORY.md의 자동 주입이 전형적인 `before_agent` 패턴입니다. R007의 에이전트 식별 헤더 출력도 이 단계의 산물입니다.
+에이전트가 실행을 시작하기 전에 필요한 컨텍스트를 주입하거나 상태를 초기화합니다. oh-my-customcode에서는 `SessionStart` 훅이 이 역할을 담당합니다. native auto-memory의 MEMORY.md 자동 주입이 전형적인 `before_agent` 패턴입니다. R007의 에이전트 식별 헤더 출력도 이 단계의 산물입니다.
 
 **`before_model` → PreToolUse(Agent) + pre-generation-arch-check**
 
@@ -69,7 +69,6 @@ oh-my-customcode에서는 이 패턴이 다음 방식으로 구현됩니다:
 
 - **입력 마스킹**: `UserPromptSubmit` 훅에서 정규식 기반 PII 패턴 제거 (현재는 rule-level 권고)
 - **메모리 위생**: `sys-memory-keeper`가 MEMORY.md에 민감 데이터를 저장하지 않도록 R011에서 명시
-- **episodic-memory 분리**: 대화 인덱싱 전 민감 세션은 제외 처리
 - **audit trail**: `PostToolUse` 훅이 도구 호출 기록을 남기되, 시크릿/토큰은 stdout/stderr에 노출하지 않음
 
 신규 PII 마스킹 미들웨어를 작성한다면 `before_agent`(세션 전체 PII 정책 초기화)와 `wrap_tool_call`(개별 도구 호출의 인자 검사) 두 단계의 조합으로 설계하는 것을 권장합니다.
@@ -131,7 +130,6 @@ oh-my-customcode에서 이 패턴은 R004의 재시도 정책으로 명문화되
 |---|---|---|
 | `SessionStart` hook | 훅 이벤트 | 세션 초기화, 메모리 로드 |
 | `UserPromptSubmit` hook | 훅 이벤트 | 사용자 입력 전처리, PII 검사 |
-| claude-mem session-start | MCP 패턴 | 이전 세션 컨텍스트 복원 |
 | R007 에이전트 식별 헤더 | 규칙 | 에이전트 신원 선언 |
 | MEMORY.md 자동 주입 | 네이티브 기능 | 200줄 메모리 컨텍스트 주입 |
 
@@ -194,7 +192,7 @@ oh-my-customcode에서 이 패턴은 R004의 재시도 정책으로 명문화되
 
 ```
 [before_agent]
-  SessionStart → MEMORY.md 로드 → claude-mem 컨텍스트 복원
+  SessionStart → MEMORY.md 로드 → 이전 세션 컨텍스트 복원
        ↓
 [before_model]
   pre-generation-arch-check → 아키텍처 경계 검증

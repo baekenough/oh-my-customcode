@@ -28,11 +28,11 @@ related:
 **4-step cycle**:
 1. **Bootstrap** — 세션 시작 시 MEMORY.md에서 이전 요약 로드
 2. **Evolve** — 세션 중 발견한 패턴/실패를 feedback memory에 즉시 기록 (mid-session save)
-3. **Compact** — 세션 종료 시 sys-memory-keeper가 Ralph Loop 요약 수행
-4. **Persist** — claude-mem MCP에 long-term save (cross-session search)
+3. **Compact** — 세션 종료 시 sys-memory-keeper가 Ralph Loop 요약을 MEMORY.md에 반영
+4. **Persist** — native auto-memory(MEMORY.md)에 long-term save (cross-session 지속성은 R011 참조)
 
 **Claude Code 통합**:
-- `claude-mem MCP` — feedback memories + session archives 영속 저장소
+- `native auto-memory (MEMORY.md)` — feedback memories + session archives 영속 저장소 (R011, 단일 backend)
 - `sys-memory-keeper` — 세션 종료 요약 에이전트 (R011 위임)
 - `R011 native auto-memory` — primary writer (MEMORY.md)
 
