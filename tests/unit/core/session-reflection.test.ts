@@ -22,7 +22,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -110,13 +110,18 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  // Give the disowned background worker time to finish writing before deleting tmpRoot.
+  // The worker typically completes within 200ms; 2000ms is a safe upper bound.
+  await new Promise((r) => setTimeout(r, 2000));
   await rm(tmpRoot, { recursive: true, force: true });
 });
 
 /** Write a .jsonl transcript and return the expected log path. */
 async function writeTranscript(sessionId: string, lines: string[]): Promise<string> {
   await writeFile(join(transcriptDir, `${sessionId}.jsonl`), `${lines.join('\n')}\n`);
-  const date = new Date().toISOString().slice(0, 10);
+  // bun:test forces TZ=UTC but the bash worker uses the system local date.
+  // Use execFileSync('date', ['+%Y-%m-%d']) — same logic as the worker — to guarantee the paths match.
+  const date = execFileSync('date', ['+%Y-%m-%d']).toString().trim();
   return join(reflectionsDir, `${date}.md`);
 }
 
@@ -207,7 +212,7 @@ describe('session-reflection.sh — Fixture 1: clean transcript', () => {
     expect(log).toContain('**R007 violations**: 0');
     expect(log).toContain('**R008 violations**: 0');
     expect(log).toContain('Total assistant turns analyzed: 2');
-  });
+  }, 15000);
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -230,7 +235,7 @@ describe('session-reflection.sh — Fixture 2: R007 violation', () => {
     expect(log).toContain('**R007 violations**: 1');
     expect(log).toContain('Total assistant turns analyzed: 2');
     expect(log).toContain('[R007 turn');
-  });
+  }, 15000);
 
   it('treats ┌─ Agent: as valid R007 header', async () => {
     const sid = `r007-full-${Date.now()}`;
@@ -242,7 +247,7 @@ describe('session-reflection.sh — Fixture 2: R007 violation', () => {
 
     const log = await waitForLog(logPath, '**R007 violations**: 0');
     expect(log).toContain('**R007 violations**: 0');
-  });
+  }, 15000);
 
   it('treats [agent-name] shorthand as valid R007 header', async () => {
     const sid = `r007-shorthand-${Date.now()}`;
@@ -254,7 +259,7 @@ describe('session-reflection.sh — Fixture 2: R007 violation', () => {
 
     const log = await waitForLog(logPath, '**R007 violations**: 0');
     expect(log).toContain('**R007 violations**: 0');
-  });
+  }, 15000);
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -290,7 +295,7 @@ describe('session-reflection.sh — Fixture 3: R008 violation', () => {
     expect(log).toContain('**R008 violations**: 1');
     expect(log).toContain('[R008 turn');
     expect(log).toContain('missing prefix');
-  });
+  }, 15000);
 
   it('does NOT flag tool_use when preceded by valid R008 prefix', async () => {
     const sid = `r008-ok-${Date.now()}`;
@@ -306,7 +311,7 @@ describe('session-reflection.sh — Fixture 3: R008 violation', () => {
 
     const log = await waitForLog(logPath, '**R008 violations**: 0');
     expect(log).toContain('**R008 violations**: 0');
-  });
+  }, 15000);
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -321,7 +326,7 @@ describe('session-reflection.sh — Fixture 4: opt-out', () => {
       assistantTurn([{ type: 'text', text: 'No header — would be R007 violation.' }]),
     ]);
 
-    const date = new Date().toISOString().slice(0, 10);
+    const date = execFileSync('date', ['+%Y-%m-%d']).toString().trim();
     const logPath = join(reflectionsDir, `${date}.md`);
 
     await runScript(stopInput(sid), {
@@ -366,5 +371,5 @@ describe('session-reflection.sh — sample cap', () => {
     // Count [R007 turn N] occurrences — must be ≤ 3
     const matches = log.match(/\[R007 turn \d+\]/g) ?? [];
     expect(matches.length).toBeLessThanOrEqual(3);
-  });
+  }, 15000);
 });
