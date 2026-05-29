@@ -78,7 +78,7 @@ NO EXCEPTIONS. NO EXCUSES.
 |----|------|-------------|
 | R003 | Interaction Rules | Response principles, status format |
 | R004 | Error Handling | Error levels, recovery strategy |
-| R011 | Memory Integration | Session persistence with claude-mem |
+| R011 | Memory Integration | Session memory persistence |
 | R012 | HUD Statusline | Real-time status display |
 | R013 | Ecomode | Token efficiency for batch ops |
 | R019 | Ontology-RAG Routing | Ontology-RAG enrichment for routing skills |
@@ -103,8 +103,6 @@ NO EXCEPTIONS. NO EXCUSES.
 | `/omcustom-takeover` | Extract canonical spec from existing agent/skill |
 | `/dev-review` | Review code for best practices |
 | `/dev-refactor` | Refactor code |
-| `/memory-save` | Save session context to claude-mem |
-| `/memory-recall` | Search and recall memories |
 | `/omcustom:monitoring-setup` | Enable/disable OTel console monitoring |
 | `/omcustom:npm-publish` | Publish package to npm registry |
 | `/omcustom:npm-version` | Manage semantic versions |
@@ -129,7 +127,7 @@ project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (44 files)
-|   +-- skills/                  # Skills (74 directories)
+|   +-- skills/                  # Skills (118 directories)
 |   +-- rules/                   # Global rules (R000-R020)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
@@ -208,10 +206,6 @@ Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 # Code review
 /dev-review src/main.go
 
-# Memory management
-/memory-save
-/memory-recall authentication
-
 # Verification
 /omcustom:sauron-watch
 ```
@@ -230,12 +224,6 @@ Install via `/plugin install <name>`:
 | obsidian-skills | - | Obsidian markdown support |
 | context7 | claude-plugins-official | Library documentation lookup |
 
-### Recommended MCP Servers
-
-| Server | Purpose |
-|--------|---------|
-| claude-mem | Session memory persistence (Chroma-based) |
-
 ### Setup Commands
 
 ```bash
@@ -246,10 +234,6 @@ Install via `/plugin install <name>`:
 /plugin install superpowers
 /plugin install superpowers-developing-for-claude-code
 /plugin install elements-of-style
-
-# MCP setup (claude-mem)
-npm install -g claude-mem
-claude-mem setup
 ```
 
 <!-- omcustom:git-workflow -->

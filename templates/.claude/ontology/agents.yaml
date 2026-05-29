@@ -523,14 +523,14 @@ agents:
 
   sys-memory-keeper:
     class: SystemAgent
-    description: "Use when you need to manage session memory persistence using claude-mem, save context before compaction, restore context on session start, or query past memories"
+    description: "Use when you need to manage session memory persistence using native auto memory, save context before compaction, restore context on session start, or query past memories"
     model: sonnet
     memory: project
     effort: medium
-    skills: [memory-management, memory-save, memory-recall]
+    skills: []
     tools: [Read, Write, Edit, Grep, Glob, Bash]
-    summary: "Session memory manager for context persistence with claude-mem"
-    keywords: [memory, persistence, claude-mem, context, session, recall, chroma, semantic-search]
+    summary: "Session memory manager for context persistence using native agent memory"
+    keywords: [memory, persistence, context, session, recall, native-auto-memory]
     file_patterns: []
 
   sys-naggy:

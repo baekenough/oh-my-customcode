@@ -14,7 +14,7 @@ related:
 
 # Skill Taxonomy
 
-103 skills are the "source code" of the system — reusable, composable instruction sets that agents reference. Skills are organized by scope (core/harness/package) and functional type (routing, best-practice, workflow, utility).
+118 skills are the "source code" of the system — reusable, composable instruction sets that agents reference. Skills are organized by scope (core/harness/package) and functional type (routing, best-practice, workflow, utility).
 
 ## Overview
 
@@ -67,9 +67,7 @@ Multi-step process orchestration:
 - `action-validator` — pre-action boundary checking
 
 ### Memory and Session Skills
-- `memory-management` — MEMORY.md operations
-- `memory-save` — claude-mem persistence
-- `memory-recall` — memory search and retrieval
+Memory persistence uses native auto-memory (per-agent MEMORY.md files) handled by the `sys-memory-keeper` agent. There are no dedicated memory skills — the claude-mem and agentmemory MCP backends were permanently removed (#1253).
 
 ### Utility Skills
 - `result-aggregation` — parallel agent result synthesis

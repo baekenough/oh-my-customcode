@@ -60,7 +60,6 @@ pip install code-review-graph  # 또는 pipx / uvx
 
 - **Complements**: [[dev-review]], [[adversarial-review]]
 - **Ecomode integration**: [[r013]]
-- **Phase β migration target**: `claude-mem:smart-explore` → `query_graph`, `claude-mem:pathfinder` → `get_impact_radius` (#1169)
 - **See also**: [[token-efficiency]], [[r001]]
 
 ## Sources

@@ -12,7 +12,7 @@ oh-my-customcode v0.107.0 targets Claude Code **v2.1.156+** (updated 2026-05-29)
 **Key changes relevant to oh-my-customcode:**
 
 - `CLAUDE_CODE_FORK_SUBAGENT=1` enables forked subagents on external builds — relevant for R018 Agent Teams expansion
-- Main-thread agent `mcpServers` frontmatter loading via `--agent` — broadens MCP integration scope (affects sys-memory-keeper, claude-mem users)
+- Main-thread agent `mcpServers` frontmatter loading via `--agent` — broadens MCP integration scope (affects agents that declare `mcpServers`, e.g. ontology-rag users)
 - `/model` persistence across restarts — reduces repeated model selection in long sessions
 - `/resume` summarization of stale sessions — aligns with R013 ecomode context budget
 - Concurrent MCP server startup — shorter session bootstrap
@@ -80,7 +80,7 @@ claude plugin details superpowers
 
 `.mcp.json` 편집 후 CC 재시작 없이 `reconnect` 명령으로 변경사항을 반영합니다. 연결 실패 시 HTTP 상태 코드와 URL이 표시됩니다.
 
-**oh-my-customcode 연관**: `claude-mem`, `ontology-rag` 등 MCP 서버 설정 변경 시 재시작 없이 적용 — 긴 세션 중단 없이 R011 메모리 통합을 재설정할 수 있습니다.
+**oh-my-customcode 연관**: `ontology-rag` 등 MCP 서버 설정 변경 시 재시작 없이 적용 — 긴 세션 중단 없이 라우팅 enrichment 연동을 재설정할 수 있습니다.
 
 ### Transcript View 네비게이션 단축키
 
@@ -197,7 +197,7 @@ export CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE=1
 export MCP_TOOL_TIMEOUT=120000  # 120초 (밀리초 단위)
 ```
 
-**oh-my-customcode 연관**: `claude-mem`, `ontology-rag` 등 원격 MCP 서버를 사용하는 R011/R019 연동에서 타임아웃 문제가 있었다면 이 변수로 해결 가능. 네트워크 지연이 큰 환경에서 MCP 도구 호출 실패율 감소 기대.
+**oh-my-customcode 연관**: `ontology-rag` 등 원격 MCP 서버를 사용하는 R019 연동에서 타임아웃 문제가 있었다면 이 변수로 해결 가능. 네트워크 지연이 큰 환경에서 MCP 도구 호출 실패율 감소 기대.
 
 ### BG 세션 / Git Worktree Edit 차단 수정
 

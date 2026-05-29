@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.157.0] - 2026-05-29
+
+### Removed
+- **claude-mem and agentmemory MCP backends permanently removed** (#1253). This project now uses native auto memory ONLY (`memory/MEMORY.md` + agent frontmatter `memory:`). Deleted the `memory-recall`, `memory-save`, and `memory-management` skills (121 → 118 skills), the `agentmemory-migration` guide, and all claude-mem/agentmemory references across rules (R011), agents (sys-memory-keeper), ontology, profiles, hooks, guides, and wiki. The `.mcp.json` no longer registers either server.
+
+### Changed
+- R011 (SHOULD-memory-integration) rewritten to native-auto-memory-only
+- sys-memory-keeper agent rewritten to native MEMORY.md maintenance only
+- Removed `claude-mem@thedotmack` plugin from all 4 skill profiles
+- Fixed pre-existing guides count drift (58 → 57) and stale ARCHITECTURE_ko/template counts
+
 ## [0.156.3] - 2026-05-29
 
 ### Changed

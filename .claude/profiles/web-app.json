@@ -9,8 +9,7 @@
       "typescript-lsp@claude-plugins-official",
       "context7@claude-plugins-official",
       "superpowers-developing-for-claude-code@superpowers-marketplace",
-      "episodic-memory@superpowers-marketplace",
-      "claude-mem@thedotmack"
+      "episodic-memory@superpowers-marketplace"
     ],
     "disabled": [
       "codex@openai-codex",
