@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.156.1] - 2026-05-29
+
+### Changed
+- Synced wiki page `wiki/guides/claude-code.md` with the v2.1.152–v2.1.156 compatibility entries and the Known Platform Issues & Workarounds section added in v0.156.0 (#1248)
+
 ## [0.156.0] - 2026-05-29
 
 ### Added
