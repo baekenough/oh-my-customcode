@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.151.1",
-  "generatedAt": "2026-05-24T03:30:25.847Z",
-  "templateVersion": "0.151.1",
+  "generatorVersion": "0.156.1",
+  "generatedAt": "2026-05-29T08:42:13.520Z",
+  "templateVersion": "0.156.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
@@ -20,8 +20,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
-      "templateHash": "5e044249201bbf7c34c5567f958788ea4fec1eededb405a7d0574f8f78edf1da",
-      "size": 5470,
+      "templateHash": "9dfcdb5f9468bb721e9c793c0d3e61ce655e93dca65ffaf92be86d628ee8bca0",
+      "size": 7471,
       "component": "rules"
     },
     ".claude/rules/SHOULD-error-handling.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "b9c4d96418cec2f9d73697d3835b8203890648ff6cdfe9c64be15d55881da96b",
-      "size": 4854,
+      "templateHash": "10751334ef1abe6a59f48f28631ad15284360b7f5e0721e7b6817daafc08c8b6",
+      "size": 5246,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
@@ -105,13 +105,13 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "e52ce7e12ef888e30d0b24c9d9ff94af053c580c31732888e2d7cc6ab74edcd1",
-      "size": 18074,
+      "templateHash": "a9c038c1dd69a8be92fb476774e3c03a1f47bbcd995dc83985915bb0dfc6afce",
+      "size": 19712,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "50b8d5ab7c5776592a98641f602f4e86066291932d1608824755b48d278f11c9",
-      "size": 2785,
+      "templateHash": "35d7ee3d9d9710de28949323ad672c8877f0da82e236f8b79b43bf11d9e56696",
+      "size": 3418,
       "component": "rules"
     },
     ".claude/rules/index.yaml": {
@@ -620,8 +620,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "ec46e72b18de4a589465ad7fa0369e659bfa15955ae2c3ed1d78ec98cb30e0a9",
-      "size": 5932,
+      "templateHash": "4ea82e60757d92f250fc356c6c2d8e726174c13a61d69e17fb780b10445bbc4a",
+      "size": 8111,
       "component": "skills"
     },
     ".claude/skills/analysis/SKILL.md": {
@@ -700,8 +700,8 @@
       "component": "skills"
     },
     ".claude/skills/claude-native/SKILL.md": {
-      "templateHash": "10841ef1b84b12cf5240a887febda366b5e92827d81f3ebe3f1e496cd4bb7cb3",
-      "size": 5798,
+      "templateHash": "531a911a7f7b1330a2c8cfaa266a41c5e58e6a3c63ca7758c0de54c262c4580d",
+      "size": 6091,
       "component": "skills"
     },
     ".claude/skills/model-escalation/SKILL.md": {
@@ -760,8 +760,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-feedback/SKILL.md": {
-      "templateHash": "2cee5b4f8bbac5225ecb3d2e9c8379ffb045e416b8810b6cbe3301414b84cb4f",
-      "size": 6441,
+      "templateHash": "81f9e1c5ef03aab083a206642dbc1fd086bd7d09a7b09dc6d68020f614334b60",
+      "size": 6744,
       "component": "skills"
     },
     ".claude/skills/wiki/SKILL.md": {
@@ -1224,6 +1224,11 @@
       "size": 1984,
       "component": "hooks"
     },
+    ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
+      "templateHash": "368e2f1d7689f075c85cf57a8d7cead6ceab3028d9350a11ac85b772860d9ef5",
+      "size": 4386,
+      "component": "hooks"
+    },
     ".claude/hooks/scripts/session-autofix-prompt.sh": {
       "templateHash": "6f65a9a59722c0538dcc2a6f65a2284a452063bf393b42f4c0d503dfb97ef62f",
       "size": 1049,
@@ -1315,8 +1320,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "0aab01683cd30a6776041558fb6a8ea0ae0133d226bd58b9a1965e060d888c70",
-      "size": 28205,
+      "templateHash": "144474f7c5c521ef97c58881472255de5b7cc26e619de978bf54b20b9bd57cec",
+      "size": 28540,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1425,8 +1430,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "be3e1e7e0cd6146bd8a1e1c4b515620448f233a5cd1e5a3beaf7e357edb58157",
-      "size": 52342,
+      "templateHash": "836701c001bc5f00f6dbf77330e2dd2ef0fda21f19caa6e8a5d067002405a59a",
+      "size": 68201,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
