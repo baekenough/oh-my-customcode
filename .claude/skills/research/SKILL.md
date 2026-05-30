@@ -163,32 +163,17 @@ Batch 3: T9, T10            (Innovation)
 
 ### Phase 2: Cross-Verification Loop (min 2, max 30 rounds)
 
-#### Codex Availability Check
-
-Before starting verification rounds, check codex availability:
-
-```bash
-# Run this check once before Phase 2 begins
-which codex &>/dev/null && [ -n "$OPENAI_API_KEY" ]
-# Exit 0 → codex available: enable dual-model verification (opus + codex)
-# Exit 1 → codex unavailable: display notice and proceed with opus-only
 ```
-
-If unavailable, display: `[Phase 2] Codex unavailable — opus-only verification`
-
-```
-Team findings ──→ opus 4.6 verification ──→ codex-exec xhigh verification (if available)
-       │                                              │
+Team findings ──→ opus 4.6 verification
+       │                  │
        └── Contradiction detected? ── YES ──→ Round N+1
                                       NO  ──→ Consensus reached → Phase 3
 ```
 
 Each round:
 1. **opus 4.6**: Deep reasoning verification — checks logical consistency, identifies gaps, challenges assumptions
-2. **codex-exec xhigh** (when available): Independent code-level verification — validates technical claims, tests feasibility
-   - If unavailable: display `[Phase 2] Round {N}: Codex unavailable, proceeding with opus verification only`
-3. **Contradiction resolution**: Reconcile divergent findings between teams and verifiers
-4. **Convergence check**: All major claims verified with no outstanding contradictions → proceed
+2. **Contradiction resolution**: Reconcile divergent findings between teams and verifiers
+3. **Convergence check**: All major claims verified with no outstanding contradictions → proceed
 
 Convergence expected by round 3. Hard stop at round 30.
 
@@ -273,8 +258,7 @@ Retrieval and reasoning are distinct cognitive operations that benefit from expl
 | Phase | Model | Rationale |
 |-------|-------|-----------|
 | Phase 1 (Research teams) | sonnet | Balanced speed/quality for parallel research |
-| Phase 2 (opus verification) | opus | Deep reasoning for cross-verification |
-| Phase 2 (codex verification) | codex xhigh | Code-level validation of technical claims |
+| Phase 2 (Verification) | opus | Deep reasoning for cross-verification |
 | Phase 3 (Synthesis) | opus | Complex multi-source reasoning and taxonomy |
 
 ## Team Prompt Templates
@@ -326,17 +310,7 @@ Round N:
           - Internal consistency (breadth ↔ depth alignment)
           - Cross-domain consistency (security ↔ architecture)
           - Evidence quality (claims without backing)
-  Step 2: codex-exec validates technical claims (when available):
-          a. Invoke: /codex-exec with findings from all teams
-          b. Prompt:  "Validate technical claims: {findings}.
-                       Check code patterns, benchmark reproducibility,
-                       dependency resolution."
-          c. Effort:  --effort xhigh
-          d. Parse:   contradictions → merge with opus findings
-          e. On timeout/error: log "[Phase 2] Round {N}: codex-exec error — {reason},
-                                continuing with opus results only"
-     If unavailable: log "[Phase 2] Round {N}: Codex unavailable, proceeding with opus verification only"
-  Step 3: Compile contradiction list
+  Step 2: Compile contradiction list
           - 0 contradictions → CONVERGED
           - >0 contradictions → feedback to relevant teams → Round N+1
 ```
@@ -417,7 +391,6 @@ This advisory is informational only and does not block execution.
 
 | Scenario | Fallback |
 |----------|----------|
-| codex-exec unavailable | opus-only verification (still min 2 rounds) |
 | Agent Teams unavailable | Standard Agent tool with R009 batching |
 | Partial team failure | Synthesize from available results, note gaps in report |
 | GitHub issue creation fails | Output report to conversation only |
@@ -428,11 +401,11 @@ Before execution:
 ```
 [Research Plan] {topic}
 ├── Phase 1: 10 teams (3 batches × 4/4/2)
-├── Phase 2: Cross-verification (2-5 rounds, opus + codex)
+├── Phase 2: Cross-verification (2-5 rounds, opus)
 ├── Phase 3: Synthesis (opus)
 └── Phase 4: Report + GitHub issue
 
-Estimated: {time} | Teams: 10 | Models: sonnet → opus → codex
+Estimated: {time} | Teams: 10 | Models: sonnet → opus
 Stopping: max 30 verification rounds, convergence at 0 contradictions
 Cost: ~$8-15 (10 teams × sonnet + opus verification)
 Execute? [Y/n]

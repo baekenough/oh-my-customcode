@@ -338,10 +338,10 @@ agents:
       - gather
     base_confidence: 50
     action_weight: 30
-    routing_rule: "MUST use codex-exec --effort xhigh when codex available, or gemini-exec when gemini available, fallback to WebFetch/WebSearch"
+    routing_rule: "Use WebFetch/WebSearch for research; orchestrator handles directly or via general-purpose agent"
 
   # ---------------------------------------------------------------------------
-  # Code Generation (hybrid workflow, skill-based)
+  # Code Generation (skill-based)
   # ---------------------------------------------------------------------------
   code-generation-workflow:
     keywords:
@@ -367,7 +367,7 @@ agents:
       - scaffold
     base_confidence: 30
     action_weight: 25
-    routing_rule: "Suggest codex-exec hybrid when codex available, or gemini-exec hybrid when gemini available, for new file creation tasks"
+    routing_rule: "Use Claude expert agents for new file creation tasks"
 
   # Managers (continued)
   mgr-gitnerd:
@@ -629,15 +629,6 @@ agents:
     supported_actions: [review, iterate, cycle]
     base_confidence: 75
     routing_rule: "Invoke worker-reviewer-pipeline skill"
-
-  skill-agora:
-    keywords:
-      korean: [아고라, 합의, 적대적 합의, 다중 LLM]
-      english: [agora, consensus, "adversarial consensus", "multi llm"]
-    file_patterns: []
-    supported_actions: [debate, consensus, verify]
-    base_confidence: 85
-    routing_rule: "Invoke agora skill"
 
   # Debugging skill
   skill-debugging:

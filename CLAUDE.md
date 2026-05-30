@@ -103,7 +103,7 @@ oh-my-customcode로 구동됩니다.
 | 개발 | `/dev-review`, `/dev-refactor`, `/sdd-dev`, `/structured-dev-cycle` | 코드 리뷰, 리팩토링, SDD |
 | 검증 | `/omcustom:sauron-watch`, `/deep-verify`, `/adversarial-review` | R017 검증, 릴리즈 품질, 보안 리뷰 |
 | 릴리즈 | `/pipeline auto-dev`, `/omcustom-release-notes`, `/release-plan` | 자동 개발, 릴리즈 노트 |
-| 리서치 | `/research`, `/scout`, `/deep-plan`, `/omcustom:agora` | 병렬 분석, URL 평가, 연구 계획 |
+| 리서치 | `/research`, `/scout`, `/deep-plan` | 병렬 분석, URL 평가, 연구 계획 |
 | 최적화 | `/token-efficiency-audit` | 토큰 효율 감사 (5계층 방어 스택) |
 | 시스템 | `/omcustom:lists`, `/omcustom:status`, `/omcustom:help` | 전체 목록, 상태, 도움말 |
 
@@ -116,7 +116,7 @@ project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
 |   +-- agents/                  # 서브에이전트 정의 (49 파일)
-|   +-- skills/                  # 스킬 (118 디렉토리)
+|   +-- skills/                  # 스킬 (115 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R023)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
@@ -235,6 +235,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 | cc-token-saver | ww-w-ai/cc-token-saver | 토큰/비용 최적화 (Token Guardian, /continue, /usage-view) |
 | caveman | JuliusBrussee/caveman | 영어 출력 토큰 압축 (코드 리뷰·커밋 메시지). R013 ecomode 미적용 구간 보완. 한국어 컨텍스트(R000)에는 ecomode 우선. `lite`/`full` 권장, `ultra`/`文言文` 가독성 저하 주의 |
 | cc-roundtable | gaebalai/cc-roundtable | Devil's Advocate + 소수의견 보호 + 2라운드 하드캡 다중 에이전트 토론. `roundtable-debate` 스킬에 패턴 내재화됨; 외부 플러그인 직접 사용 시 대안 경로 |
+| codex-plugin-cc | openai/codex-plugin-cc | OpenAI Codex 하이브리드 실행 — codex-exec 스킬을 대체하는 네이티브 플러그인 경로 |
 
 ### 권장 MCP 서버
 

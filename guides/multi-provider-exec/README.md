@@ -10,8 +10,6 @@ Inspired by OpenHarness's provider profile switching pattern, adapted for oh-my-
 
 | Provider | Skill | CLI Dependency | Model | Strengths |
 |----------|-------|---------------|-------|-----------|
-| OpenAI (Codex) | `codex-exec` | `codex` CLI | GPT-5.4 | Code generation, broad knowledge |
-| Google (Gemini) | `gemini-exec` | `gemini` CLI | Gemini 2.5 Pro | Long context, multimodal |
 | RTK (proxy) | `rtk-exec` | `rtk` CLI | Configurable | Token-optimized output, cost reduction |
 
 ## Availability Detection
@@ -20,8 +18,6 @@ The `session-env-check.sh` hook (SessionStart) auto-detects available providers:
 
 ```
 [SessionStart] Checking external CLI availability...
-  codex: ✓ available
-  gemini: ✗ not found
   rtk: ✓ available
 ```
 
@@ -32,8 +28,6 @@ Providers are opt-in — missing CLIs are silently skipped.
 ### Direct Invocation
 
 ```
-/codex-exec "Review this function for security issues"
-/gemini-exec "Analyze this architecture diagram"
 /rtk-exec "List files matching pattern X"
 ```
 
@@ -41,17 +35,12 @@ Providers are opt-in — missing CLIs are silently skipped.
 
 | Task | Recommended Provider | Rationale |
 |------|---------------------|-----------|
-| Second opinion on code review | codex-exec | Independent model reduces confirmation bias |
-| Long document analysis | gemini-exec | 1M+ context window |
 | Token-heavy batch operations | rtk-exec | Compressed output reduces context cost |
-| Security audit cross-check | codex-exec | Different training data catches different patterns |
-| Multi-model verification | All three | `/multi-model-verification` skill orchestrates this |
 
 ### Integration with Existing Skills
 
 | Skill | Uses Provider | How |
 |-------|--------------|-----|
-| `multi-model-verification` | codex-exec + gemini-exec | Parallel verification with severity classification |
 | `reasoning-sandwich` | Any exec skill | Pre/post reasoning with different models |
 | `model-escalation` | Claude models only | Internal escalation (haiku→sonnet→opus), not cross-provider |
 
@@ -60,9 +49,9 @@ Providers are opt-in — missing CLIs are silently skipped.
 | Aspect | Multi-Model Routing | Multi-Provider Exec |
 |--------|--------------------|--------------------|
 | Scope | Claude model selection | Cross-provider execution |
-| Models | haiku / sonnet / opus | GPT-5.4 / Gemini 2.5 / RTK proxy |
+| Models | haiku / sonnet / opus | RTK proxy |
 | Mechanism | `model` frontmatter field | Exec skill invocation |
-| Use case | Cost/quality optimization within Claude | Independent verification, specialized tasks |
+| Use case | Cost/quality optimization within Claude | Token-optimized output via RTK proxy |
 | Guide | `guides/multi-model-routing/` | `guides/multi-provider-exec/` |
 
 ## Configuration
@@ -71,8 +60,6 @@ No global configuration required. Each exec skill reads its own CLI configuratio
 
 | Skill | Config Source |
 |-------|-------------|
-| codex-exec | `~/.codex/config` or CODEX_API_KEY env |
-| gemini-exec | `~/.gemini/config` or GEMINI_API_KEY env |
 | rtk-exec | RTK proxy running on localhost |
 
 ## Limitations

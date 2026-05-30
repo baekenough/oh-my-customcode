@@ -6,7 +6,6 @@ sources:
   - .claude/skills/multi-model-verification/SKILL.md
 related:
   - [[structured-dev-cycle]]
-  - [[agora]]
   - [[deep-plan]]
   - [[deep-verify]]
 ---
@@ -17,7 +16,7 @@ Parallel code verification using multiple Claude models for higher confidence.
 
 ## Overview
 
-Spawns multiple Claude instances with different models (haiku, sonnet, opus) to verify the same code or plan in parallel, then aggregates findings. Each model brings different reasoning depth and blind spots. Disagreements are flagged for human review. Used in structured-dev-cycle stages 2 and 4 for plan and implementation verification. Lower cost than full agora (single LLM provider, multiple model tiers).
+Spawns multiple Claude instances with different models (haiku, sonnet, opus) to verify the same code or plan in parallel, then aggregates findings. Each model brings different reasoning depth and blind spots. Disagreements are flagged for human review. Used in structured-dev-cycle stages 2 and 4 for plan and implementation verification. Uses a single LLM provider (Claude) across multiple model tiers (haiku/sonnet/opus).
 
 ## Key Details
 
@@ -28,7 +27,7 @@ Spawns multiple Claude instances with different models (haiku, sonnet, opus) to 
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[structured-dev-cycle]], [[agora]], [[deep-plan]], [[deep-verify]], [[reasoning-sandwich]]
+- **Related skills**: [[structured-dev-cycle]], [[deep-plan]], [[deep-verify]], [[reasoning-sandwich]]
 - **See also**: [[R009]], [[R018]]
 
 ## Sources

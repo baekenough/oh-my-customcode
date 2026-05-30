@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 118 skills, 23 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 57 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 49 pre-built subagents, 115 skills, 23 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 57 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -89,7 +89,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (118 skills)
+### 3.3 Skill Catalog (115 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -110,7 +110,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **Slash command / user-invocable skills**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
 
 **System / internal skills**
 
@@ -289,7 +289,7 @@ Batch 1: T1(Arch-breadth), T2(Arch-depth), T3(Sec-breadth), T4(Sec-depth)
 Batch 2: T5(Intg-breadth), T6(Intg-depth), T7(Comp-breadth), T8(Comp-depth)
 Batch 3: T9(Innov-breadth), T10(Innov-depth)
 
-Phase 2: Cross-verification (2-5 rounds, opus + codex-exec)
+Phase 2: Cross-verification (2-5 rounds, opus)
 Phase 3: Synthesis (opus) -> ADOPT / ADAPT / AVOID taxonomy
 Phase 4: Structured report + GitHub issue
 ```
