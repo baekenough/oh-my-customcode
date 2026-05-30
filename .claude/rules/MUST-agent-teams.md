@@ -23,6 +23,7 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 | Dynamic agent creation + usage | **Agent Teams** | Create → test → iterate cycle |
 | Multi-issue release batch | **Agent Teams** | Shared task tracking, coordinated release |
 | Large plan / multi-domain prompt (>5000 tokens, 3+ areas) | **Agent Teams** | Domain-split parallel writing + review loop avoids single-agent timeout |
+| Mechanical disjoint-file refactoring (bulk delete + reference cleanup) | Agent Tool | Pure parallel edits with no peer coordination or review loop; Teams member-stall risk outweighs benefit — use standalone parallel Agents (R009) |
 
 **When Agent Teams is enabled and criteria are met, usage is required.**
 
@@ -313,3 +314,27 @@ Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 �
 - 차단 사유를 SendMessage 로만 보내고 task description 업데이트 누락 → TaskList 만 보는 멤버는 사유를 모름
 
 Reference issue: #1087.
+
+## Member Completion Verification (deterministic ground-truth)
+
+Agent Teams member completion MUST be verified by deterministic ground-truth — NOT by SendMessage reports or TaskList status alone. Members may edit files without updating task status (task stays `pending`) or go idle without executing at all.
+
+**Verification sources (in order of reliability):**
+
+| Source | Reliability | Examples |
+|--------|-------------|---------|
+| `git status` / `git diff` | High — ground truth | Check that expected files changed |
+| `grep` / file existence | High — deterministic | Verify expected content written |
+| Validation scripts | High — deterministic | `validate-docs`, linters, test runs |
+| TaskList status | Low — member may not update | Use as a signal only |
+| SendMessage report | Low — member may stall before sending | Use as a signal only |
+
+Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command ran is not the same as verifying it succeeded).
+
+**Stall handling**: When a member shows no task progress within ~2 minutes despite spawn + owner assignment + SendMessage coordination, reassign the work to a standalone Agent (R009) rather than continuing to nudge the stalled member. Stalled Teams members waste tokens on idle polling and delay the overall workflow.
+
+Observed instance: v0.159.0 release (session 105) — members assigned to disjoint-file cleanup tasks went idle without executing; deterministic git-diff check exposed the gap; work was reassigned to standalone parallel Agents. References: #1261, #1262.
+
+## Member Prompt Size Cap
+
+Keep per-member delegation prompts under ~5000 tokens and within a single domain. Oversized or multi-domain prompts risk malformed-parsing truncation in the CC platform (see R009 giant-prompt heuristic and `feedback_agent_malformed_parsing.md`). Large multi-file delegations should be decomposed and split across multiple members or standalone Agents.
