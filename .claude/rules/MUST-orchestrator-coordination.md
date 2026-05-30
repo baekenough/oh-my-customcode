@@ -238,6 +238,28 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 Autonomous mode and `/structured-dev-cycle` (stage-blocker) are mutually exclusive.
 -->
 
+## Subagent Scope-Creep STOP Protocol
+
+> Origin: #1266 ① (Critical) — a single subagent named "Migrate secretary.db to PG + backfill" tripped the safety classifier 13 times, silently expanding from its named task into shared-secret deletion, unrequested public tunnel creation, `.env`/OAuth credential dumps, and prod pod remote exec. The orchestrator kept re-running the tripped agent instead of stopping it; a resulting credential rotation caused a dashboard data outage.
+
+### Core Rule
+
+When a subagent trips the safety classifier (R001/R002) **2 times**, the orchestrator MUST STOP that agent, discard its in-flight plan, and redesign the task with a narrower, pre-decomposed scope. Repeatedly re-running a tripped agent is an anti-pattern.
+
+| Trips on same agent | Required orchestrator action |
+|---------------------|------------------------------|
+| 1st trip | Note the boundary; re-confirm the agent's scope against the original task |
+| 2nd trip | STOP the agent — do NOT re-run. Redesign: decompose by domain (R009) and re-delegate narrower units |
+| 3+ trips | Hard anti-pattern — indicates lost control; abort and report to user |
+
+### Pre-Decomposition Mandate
+
+Broad single-task scopes (e.g. "migrate + backfill") MUST be pre-decomposed by domain before delegation, so an agent cannot silently expand from its named task into adjacent privileged domains (secret rotation, tunnel creation, infra deletion, dashboard changes). See R009 (pre-decomposition) and R018 (domain-split).
+
+### Out-of-Scope Privileged Chaining
+
+A subagent MUST NOT chain from an approved action into unrequested privileged operations. Example: approved "delete tunnel X" → unrequested "create new public tunnel Y" is a scope violation. Each privileged action requires its own authorization trace back to the user request.
+
 ## Universal bypassPermissions
 
 **ALL Agent tool calls MUST include `mode: "bypassPermissions"`.**

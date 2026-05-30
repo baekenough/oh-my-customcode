@@ -7,8 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.161.0] - 2026-05-30
+
+### Added
+- New `/homework` skill (skill count 115 → 116): on "세션 정리" or `/homework`, analyzes the current and linked previous sessions, extracts mistakes (찐빠), and reports via `omcustom-feedback` with a confirmation gate. Formalizes the R011 session-end retrospective workflow.
+- Claude Code v2.1.157 / v2.1.158 compatibility notes — `guides/claude-code/15-version-compatibility.md`; `settings.json` `agent` field & worktree mid-session switch (R006); `tool_parameters` telemetry note (R012). Closes #1264, #1265.
+
+### Changed
+- Subagent Scope-Creep STOP Protocol (R010): safety-classifier 2-trip STOP + task redesign; pre-decomposition mandate; out-of-scope privileged-chaining ban. Credential & privileged-scope guardrails (R001): no credential-store transcript dumps, no unrequested rotation, scope re-confirmation before irreversible shared-infra actions. Unverifiable external product UI guard (R003); workflow prompt-completion & verifier ground-truth (R023); read-before-characterize (R020). Closes #1266.
+
+## [0.160.0] - 2026-05-30
+
 ### Changed
 - R018 (MUST-agent-teams) strengthened: added decision-matrix guidance to prefer standalone parallel Agents over Agent Teams for mechanical disjoint-file refactoring; added "Member Completion Verification (deterministic ground-truth)" subsection (verify via git/grep/scripts, not SendMessage/TaskList; reassign stalled members after ~2min); added member prompt-size cap note. Closes #1261, #1262.
+
+## [0.159.0] - 2026-05-30
 
 ### Removed
 - **`codex-exec`, `gemini-exec`, `agora` skills removed** (118 → 115 skills). `codex-exec` and `gemini-exec` are superseded by native plugin paths (`codex-plugin-cc`); `agora` multi-LLM debate skill retired. `/omcustom:agora` slash command removed from CLAUDE.md command table.

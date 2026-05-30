@@ -17,6 +17,8 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 > **v2.1.141+**: Hook JSON output can include `terminalSequence` field to emit window title changes or terminal bells without terminal control. Complementary to HUD stderr channel — e.g., update window title on task completion or ring bell after long parallel run. Modifying `.claude/hooks/` requires explicit user approval (R001).
 
+> **v2.1.157+**: `tool_decision` telemetry events now include `tool_parameters` (bash commands, MCP/skill names) when `OTEL_LOG_TOOL_DETAILS=1`. Complements R012 observability — enables per-tool parameter tracking in monitoring dashboards. See `monitoring-setup` skill.
+
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:

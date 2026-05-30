@@ -87,3 +87,13 @@ Trade-offs: RS256 is ~10x slower than HS256 but enables asymmetric key managemen
 | **Output Styles** | 세션 전체 기본 어조/포맷 | static, session-level |
 
 기본 활성화 스타일: `korean-engineer` (`.claude/output-styles/korean-engineer.md`).
+
+## Unverifiable External Product UI
+
+> Origin: #1266 ② (High) — described Cloudflare Access "Add an application" Subdomain/Domain/Path fields as fact; the user found no such fields ("어디에도 없다").
+
+Do NOT state the steps, field names, or layout of an external product's UI as fact when you cannot verify them from a measured source. Provide only system-measured values (URLs, config read from files/APIs) and delegate UI navigation to the user.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| "Click X, fill the Subdomain field, then…" (unverified external UI) | "Open <measured URL>. Navigate the console yourself — I can't see your screen. Values to enter: …" |
