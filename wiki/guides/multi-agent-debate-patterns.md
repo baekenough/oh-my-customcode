@@ -5,7 +5,6 @@ updated: 2026-04-25
 sources:
   - guides/multi-agent-debate-patterns/README.md
 related:
-  - [[agora]]
   - [[roundtable-debate]]
   - [[adversarial-review]]
   - [[evaluator-optimizer]]
@@ -35,19 +34,18 @@ Multi-agent debate improves decision quality but introduces systematic failure m
 
 | Situation | Recommended | Reason |
 |-----------|-------------|--------|
-| Spec finalization (single answer needed) | [[agora]] | Unanimous convergence |
 | Architecture tradeoff evaluation | [[roundtable-debate]] | Divergence preservation |
 | Security audit (attacker viewpoint) | [[adversarial-review]] | Single-perspective adversary |
 | Code quality improvement loop | [[evaluator-optimizer]] | Evaluate → improve cycle |
 | Risk discovery (blind spots) | [[roundtable-debate]] | Multiple personas |
-| Output validation (pass/fail) | [[agora]] | Single verdict |
-| Consensus needed, groupthink risk | `agora --mode anti-groupthink` | Devil's Advocate + minority protection within convergence loop |
+| Output validation (pass/fail) | [[multi-model-verification]] | Multiple Claude model tiers, single verdict |
+| Spec finalization (single answer needed) | [[multi-model-verification]] | Parallel model convergence |
 
 ## Termination Conditions
 
 | Skill | Termination | Output |
 |-------|-------------|--------|
-| [[agora]] | All LLMs agree | Single consensus report |
+| [[multi-model-verification]] | All model tiers agree | Single consensus report |
 | [[roundtable-debate]] | 2 rounds reached | Consensus + minority opinions + Devil's Advocate dissent |
 | [[adversarial-review]] | Single round complete | Vulnerability list |
 | [[evaluator-optimizer]] | Evaluation passes | Improved artifact |
@@ -68,4 +66,3 @@ Anchoring/Groupthink/Degeneration of Thought taxonomy and Devil's Advocate + min
 
 - `guides/multi-agent-debate-patterns/README.md` — primary guide
 - `.claude/skills/roundtable-debate/SKILL.md` — implementation
-- `.claude/skills/agora/SKILL.md` — anti-groupthink mode

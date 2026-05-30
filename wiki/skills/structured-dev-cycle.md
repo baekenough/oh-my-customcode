@@ -29,7 +29,7 @@ Enforces a disciplined 6-stage cycle: Plan (Read-only) → Verify Plan → Imple
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[deep-plan]], [[multi-model-verification]], [[reasoning-sandwich]], [[codex-exec]]
+- **Related skills**: [[deep-plan]], [[multi-model-verification]], [[reasoning-sandwich]]
 - **See also**: [[R018]], [[R009]], [[R010]]
 
 ## Sources

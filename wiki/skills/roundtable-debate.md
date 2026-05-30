@@ -5,7 +5,6 @@ updated: 2026-04-25
 sources:
   - .claude/skills/roundtable-debate/SKILL.md
 related:
-  - [[agora]]
   - [[adversarial-review]]
   - [[evaluator-optimizer]]
   - [[R009]]
@@ -14,7 +13,7 @@ related:
 
 # roundtable-debate
 
-Multi-agent structured debate with anti-groupthink mechanisms — divergence preservation over consensus. Complements [[agora]] (convergence-focused).
+Multi-agent structured debate with anti-groupthink mechanisms — divergence preservation over consensus.
 
 ## Overview
 
@@ -56,14 +55,13 @@ Designed for situations where diverse perspectives matter more than a single ans
 
 | Situation | Recommended skill |
 |-----------|------------------|
-| Need unanimous consensus | [[agora]] |
 | Need diverse risk discovery | `roundtable-debate` |
-| Single-verdict validation | [[agora]] |
 | Intentional divergence + minority protection | `roundtable-debate` |
+| Single-verdict validation | `multi-model-verification` |
 
 ## Relationships
 
-- **Complements**: [[agora]], [[adversarial-review]], [[evaluator-optimizer]]
+- **Complements**: [[adversarial-review]], [[evaluator-optimizer]]
 - **Requires**: R018 (Agent Teams when enabled), R009 (parallel Phase 0), R006 (artifact channel)
 - **See also**: [multi-agent-debate-patterns](../guides/multi-agent-debate-patterns.md)
 

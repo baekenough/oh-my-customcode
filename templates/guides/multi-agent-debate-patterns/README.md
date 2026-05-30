@@ -25,22 +25,19 @@
 - 1명만 주장하는 의견도 별도 트랙으로 보존
 - 기각 시 명시적 정당화(3개 근거 이상) 필수
 
-## agora vs roundtable-debate 선택 매트릭스
+## 스킬 선택 매트릭스
 
 | 상황 | 권장 | 이유 |
 |------|------|------|
-| 스펙 최종 확정 (단일 답변 필요) | `agora` | 만장일치 수렴 |
 | 아키텍처 결정 (트레이드오프 평가) | `roundtable-debate` | 발산 보존 |
 | 보안 감사 (공격자 시각) | `adversarial-review` | 공격자 1인 시각 |
 | 코드 품질 개선 루프 | `evaluator-optimizer` | 평가-개선 |
 | 리스크 발굴 (블라인드 스폿) | `roundtable-debate` | 다양한 페르소나 |
-| 산출물 검증 (통과/실패) | `agora` | 단일 결정 |
 
 ## 종료 조건 비교
 
 | 스킬 | 종료 조건 | 산출물 |
 |------|----------|--------|
-| `agora` | 모든 LLM 동의 | 단일 합의안 |
 | `roundtable-debate` | 2라운드 도달 | 합의 + 소수의견 + Devil's Advocate 반대 |
 | `adversarial-review` | 단일 라운드 완료 | 취약점 목록 |
 | `evaluator-optimizer` | 평가 통과 | 개선된 산출물 |
@@ -54,11 +51,6 @@
 | Independent-first | Asch conformity studies — 독립 의견 형성 후 노출이 conformity 감소 |
 
 ## 구현 예시
-
-`agora`(수렴):
-```
-사용자: "이 API 스펙이 안전한가?" → agora → "안전함 (3 LLM 만장일치)"
-```
 
 `roundtable-debate`(발산):
 ```
@@ -75,5 +67,4 @@ cc-roundtable (https://github.com/gaebalai/cc-roundtable) 패턴에서 차용. R
 ## 관련 자료
 
 - 스킬: `.claude/skills/roundtable-debate/SKILL.md`
-- 스킬: `.claude/skills/agora/SKILL.md`
 - 룰: R009 (병렬 실행), R018 (Agent Teams)

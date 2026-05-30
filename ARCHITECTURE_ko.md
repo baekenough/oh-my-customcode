@@ -4,7 +4,7 @@
 
 ## 1. 시스템 개요
 
-oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 49개의 사전 구축된 서브에이전트, 118개의 스킬, 23개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 레퍼런스 라이브러리에는 에이전트 설계, 베스트 프랙티스, 통합 패턴을 다루는 57개의 가이드 문서가 포함됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
+oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 49개의 사전 구축된 서브에이전트, 115개의 스킬, 23개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 레퍼런스 라이브러리에는 에이전트 설계, 베스트 프랙티스, 통합 패턴을 다루는 57개의 가이드 문서가 포함됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
 
 현재 버전: **0.124.0** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
 
@@ -77,7 +77,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | 시스템 | 4 | sys-memory-keeper, sys-naggy, wiki-curator, tracker-checkpoint |
 | **합계** | **49** | |
 
-### 3.3 스킬 카탈로그 (118개)
+### 3.3 스킬 카탈로그 (115개)
 
 **라우팅 스킬 (4개, context: fork, 캡 12)**
 
@@ -98,7 +98,7 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 **슬래시 커맨드 / 사용자 직접 호출 스킬**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, codex-exec, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
 
 **시스템 / 내부 스킬**
 
@@ -247,7 +247,7 @@ Agent Teams 멤버는 서브에이전트를 스폰할 수 있습니다 (R010 예
 배치 2: T5(통합 광역), T6(통합 심층), T7(비교 광역), T8(비교 심층)
 배치 3: T9(혁신 광역), T10(혁신 심층)
 
-Phase 2: 교차 검증 (2--5 라운드, opus + codex-exec)
+Phase 2: 교차 검증 (2--5 라운드, opus)
 Phase 3: 종합 (opus) -> ADOPT / ADAPT / AVOID 분류
 Phase 4: 구조화된 리포트 + GitHub 이슈 생성
 ```

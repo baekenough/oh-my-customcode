@@ -70,27 +70,7 @@ Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or T
 | Cross-tool data quality analysis | Agent Teams |
 | Quick DAG/model validation | Agent Tool |
 
-### Step 2: Codex-Exec Hybrid (Code Generation)
-For **new pipeline code**, **DAG scaffolding**, or **SQL model generation**:
-
-1. Check `/tmp/.claude-env-status-*` for codex, gemini, and rtk availability
-2. If codex available AND task involves new file creation → automatically delegate to `/codex-exec` for scaffolding:
-   - Display: `[Codex Hybrid] Delegating to codex-exec...`
-   - codex-exec generates initial code (strength: fast generation)
-   - Selected DE expert reviews and refines codex output (strength: reasoning, quality)
-3. If codex unavailable but gemini available → delegate to `/gemini-exec` for scaffolding:
-   - Display: `[Gemini Hybrid] Delegating to gemini-exec...`
-   - gemini-exec generates initial code
-   - Selected DE expert reviews and refines output
-4. If RTK available (`RTK=available` in env status) → optionally wrap DE expert output through RTK to reduce token consumption by 60-90%:
-   - Display: `[RTK Proxy] Token optimization active via rtk-exec`
-   - RTK acts as a transparent proxy — no change to expert selection
-5. If none available → display `[External CLI] Unavailable — proceeding with {expert} directly` and use DE expert directly
-
-**Suitable**: New DAG files, dbt model scaffolding, SQL template generation
-**Unsuitable**: Existing pipeline modification, architecture decisions, data quality analysis
-
-### Step 3: Expert Selection
+### Step 2: Expert Selection
 Route to appropriate DE expert based on tool/framework detection.
 
 > **Permission Mode**: When spawning agents via Agent tool, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

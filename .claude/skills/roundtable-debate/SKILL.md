@@ -8,16 +8,16 @@ version: 1.0.0
 
 # roundtable-debate
 
-발산 보존(divergence preservation)을 목표로 하는 다중 에이전트 구조화 토론 스킬. 기존 `agora`(수렴 목표)와 보완 관계.
+발산 보존(divergence preservation)을 목표로 하는 다중 에이전트 구조화 토론 스킬.
 
 ## When to Use
 
-| 상황 | 권장 스킬 |
+| 상황 | 적합 여부 |
 |------|-----------|
-| 만장일치 합의 필요 (스펙 확정) | `agora` |
-| 다각적 평가 필요 (리스크 발굴) | `roundtable-debate` |
-| 단일 결정 + 단일 답변 | `agora` |
-| 의도적 발산 + 소수의견 보존 | `roundtable-debate` |
+| 다각적 평가 필요 (리스크 발굴) | 적합 |
+| 의도적 발산 + 소수의견 보존 | 적합 |
+| 단일 결정 + 단일 답변 | 부적합 (단일 에이전트 사용) |
+| 만장일치 합의 필요 (스펙 확정) | 부적합 (adversarial-review 참고) |
 
 ## Anti-Groupthink Mechanisms
 
@@ -97,7 +97,6 @@ DO NOT use Write/Edit directly on `.claude/outputs/` — CC sensitive-path guard
 
 | 스킬 | 목표 | 종료 조건 |
 |------|------|----------|
-| `agora` | 만장일치 수렴 | 모든 LLM 동의 |
 | `roundtable-debate` | 발산 보존 | 2라운드 도달 |
 | `adversarial-review` | 공격자 1인 시각 | 단일 라운드 |
 | `evaluator-optimizer` | 평가-개선 루프 | 평가 통과 |

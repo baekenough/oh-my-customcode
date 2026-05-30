@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **`codex-exec`, `gemini-exec`, `agora` skills removed** (118 → 115 skills). `codex-exec` and `gemini-exec` are superseded by native plugin paths (`codex-plugin-cc`); `agora` multi-LLM debate skill retired. `/omcustom:agora` slash command removed from CLAUDE.md command table.
+
+### Added
+- `codex-plugin-cc` added to recommended plugins table in CLAUDE.md — native plugin replacement for the retired `codex-exec` skill.
+
 ## [0.158.0] - 2026-05-30
 
 ### Added

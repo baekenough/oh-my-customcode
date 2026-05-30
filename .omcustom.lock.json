@@ -629,11 +629,6 @@
       "size": 3622,
       "component": "skills"
     },
-    ".claude/skills/agora/SKILL.md": {
-      "templateHash": "6900276bc356445a8a72769c64853e7e224789d184cdd1513f6c109b3fe7c5b1",
-      "size": 10402,
-      "component": "skills"
-    },
     ".claude/skills/fastapi-best-practices/SKILL.md": {
       "templateHash": "8db303cb53c431f008c2aa4d42c57bf40b9107554e298ef38024be99ce7b3ee3",
       "size": 5819,
@@ -849,16 +844,6 @@
       "size": 2167,
       "component": "skills"
     },
-    ".claude/skills/gemini-exec/scripts/gemini-wrapper.cjs": {
-      "templateHash": "15eb89f1d7a360e7d53f92796b75c10115eccf76ff70e7ec950d7629235f05b0",
-      "size": 12751,
-      "component": "skills"
-    },
-    ".claude/skills/gemini-exec/SKILL.md": {
-      "templateHash": "f66595a61e69442c1738ff83c4ed5020eb98ccd4c68f0b7792bd0a36dfbd135c",
-      "size": 6372,
-      "component": "skills"
-    },
     ".claude/skills/flutter-best-practices/SKILL.md": {
       "templateHash": "1b9f52ef3d92f0df12d16f4aa845b47062f566a72fad8f846723c5bd21b1c80d",
       "size": 11379,
@@ -1007,16 +992,6 @@
     ".claude/skills/wiki-rag/SKILL.md": {
       "templateHash": "6ea7fc237b9c3c63646ac14fbda06b1c25724cccf7eb170c82834f4f38b5cbd2",
       "size": 6106,
-      "component": "skills"
-    },
-    ".claude/skills/codex-exec/scripts/codex-wrapper.cjs": {
-      "templateHash": "253cd3ea8eeade082100193ce8e5f443d8cef85548e0701e922d634ec6999016",
-      "size": 11489,
-      "component": "skills"
-    },
-    ".claude/skills/codex-exec/SKILL.md": {
-      "templateHash": "7c815c5c449a7961e7f1d0a92093e63d6469beb9286d3c88050f68a284fea1f8",
-      "size": 8503,
       "component": "skills"
     },
     ".claude/skills/create-agent/SKILL.md": {

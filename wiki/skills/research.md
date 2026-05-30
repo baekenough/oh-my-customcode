@@ -6,7 +6,6 @@ sources:
   - .claude/skills/research/SKILL.md
 related:
   - [[deep-plan]]
-  - [[agora]]
   - [[result-aggregation]]
   - [[R018]]
 ---
@@ -30,7 +29,7 @@ Spawns 10 parallel research agents (Agent Teams when available, R018) to analyze
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[deep-plan]], [[agora]], [[result-aggregation]], [[task-decomposition]]
+- **Related skills**: [[deep-plan]], [[result-aggregation]], [[task-decomposition]]
 - **See also**: [[R018]], [[R009]]
 
 ## Sources
