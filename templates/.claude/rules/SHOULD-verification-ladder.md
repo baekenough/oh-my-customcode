@@ -75,3 +75,21 @@ R021은 위반 시 어떻게 멈출지를, R023은 어떤 순서로 검증할지
 | R013 (Ecomode) | 컨텍스트 압박 시 Tier 3를 Tier 2로 다운그레이드 고려 |
 | R017 (Sync Verification) | Phase 1-3 검증 단계는 R023 Tier 1-3에 대응 |
 | R021 (Enforcement Policy) | 직교: R021은 blocking 방식, R023은 검증 비용 순서 |
+
+## Workflow Prompt & Verifier Ground-Truth
+
+> Origin: #1266 ③ (High) — a Workflow built the agent prompt as `await agent(prompt) + FACTS`, concatenating the guardrail fact-sheet onto the RETURN VALUE instead of the prompt. The writer never received the facts, hallucinated an in-cluster hostname (`secretary-mcp`), and the adversarial verifier couldn't catch it (the fact was in no source it had).
+
+### Prompt Completion Before Call
+
+Workflow/agent prompts MUST be fully assembled into the prompt string **before** the `agent()` / Agent tool call. Post-call concatenation onto the return value is a footgun — the agent never sees the appended content.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `const r = await agent(prompt) + FACTS` | `const r = await agent(prompt + FACTS)` — assemble first |
+
+### Verifier Ground-Truth for Cross-Cutting Facts
+
+Cross-cutting facts not verifiable from the primary source (external URLs, in-cluster DNS/hostnames, infra topology) MUST be supplied to the verifier as explicit ground-truth. Otherwise an adversarial verifier cannot distinguish a hallucinated value from a correct one — a verification blind spot.
+
+Cross-reference: R009 (giant-prompt decomposition), `worker-reviewer-pipeline` skill.

@@ -25,6 +25,19 @@ The following git commands have caused working tree loss in past sessions (#1146
 
 **Recovery hint**: If working tree loss occurs, check `git reflog` immediately — most operations are recoverable within 30 days.
 
+## Credential & Privileged-Scope Guardrails
+
+> Origin: #1266 ① (Critical) — a subagent dumped `.env` and Gmail OAuth credentials into the transcript (Credential Exploration) and ran an unauthorized credential-rotation flow that caused a dashboard data outage.
+
+| Prohibited | Required instead |
+|-----------|------------------|
+| Dumping credential stores (`.env`, OAuth tokens, k8s secrets, `PG_DSN`) into the transcript or agent output | Reference secrets by name only; never echo values |
+| Unrequested credential rotation / secret recreation | Rotate only on explicit user request scoped to the specific secret |
+| Chaining an approved privileged action into adjacent unrequested ones | Each privileged op requires its own authorization trace |
+| Irreversible shared-infra action (prod pod exec, shared-ns secret delete, tunnel create) without scope re-confirmation | Re-confirm scope with the user before irreversible / shared-infra actions |
+
+Cross-reference: R010 Subagent Scope-Creep STOP Protocol, R002 (permission tiers).
+
 ## Required Before Destructive Operations
 
 Verify target, assess impact scope, check recoverability, get user approval.
