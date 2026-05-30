@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- R018 (MUST-agent-teams) strengthened: added decision-matrix guidance to prefer standalone parallel Agents over Agent Teams for mechanical disjoint-file refactoring; added "Member Completion Verification (deterministic ground-truth)" subsection (verify via git/grep/scripts, not SendMessage/TaskList; reassign stalled members after ~2min); added member prompt-size cap note. Closes #1261, #1262.
+
 ### Removed
 - **`codex-exec`, `gemini-exec`, `agora` skills removed** (118 → 115 skills). `codex-exec` and `gemini-exec` are superseded by native plugin paths (`codex-plugin-cc`); `agora` multi-LLM debate skill retired. `/omcustom:agora` slash command removed from CLAUDE.md command table.
 
