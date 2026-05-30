@@ -185,6 +185,17 @@ triage-dispatch.yml 실패 원인을 파일 Read 전에 "triaged 라벨 부재 +
 
 > 진단에 의존하는 쓰기/위임은 진단 결과를 본 다음 턴에 수행한다. R009 병렬 실행은 독립 작업에만 적용 — 진단→변경은 순차 의존이다.
 
+### Read-Before-Characterize
+
+진단 대상(로그, 출력, 데이터)을 **충분히 읽기 전에** 에러 클래스나 원인을 단정하지 않는다. 24MB INFO 로그를 읽기 전 "error loop"로 단정하는 것은 위반이다.
+
+| 금지 | 필수 |
+|------|------|
+| 로그/출력을 읽기 전 "error loop"·"무한 루프"로 특성화 | 대표 샘플을 먼저 읽고 INFO/WARN/ERROR 분포 확인 후 특성화 |
+| 첫 namespace/scope만 보고 전체 단정 | 관련 scope 확인 후 결론 |
+
+Origin: #1266 ④.
+
 ## Integration
 
 | Rule | Interaction |
