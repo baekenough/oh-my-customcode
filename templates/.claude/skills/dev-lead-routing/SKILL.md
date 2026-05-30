@@ -109,27 +109,7 @@ Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or T
 | Cross-layer debugging (FE + BE + DB) | Agent Teams |
 | Simple file search/validation | Task Tool |
 
-### Step 2: Codex-Exec Hybrid (Implementation Tasks)
-For **new file creation**, **boilerplate**, or **test code generation**:
-
-1. Check `/tmp/.claude-env-status-*` for codex, gemini, and rtk availability
-2. If codex available AND task involves new file creation → automatically delegate to `/codex-exec` for scaffolding:
-   - Display: `[Codex Hybrid] Delegating to codex-exec...`
-   - codex-exec generates initial code (strength: fast generation)
-   - Selected Claude expert reviews and refines codex output (strength: reasoning, quality)
-3. If codex unavailable but gemini available → delegate to `/gemini-exec` for scaffolding:
-   - Display: `[Gemini Hybrid] Delegating to gemini-exec...`
-   - gemini-exec generates initial code
-   - Selected Claude expert reviews and refines output
-4. If RTK available (`RTK=available` in env status) → optionally wrap Claude expert output through RTK to reduce token consumption by 60-90%:
-   - Display: `[RTK Proxy] Token optimization active via rtk-exec`
-   - RTK acts as a transparent proxy — no change to expert selection
-5. If none available → display `[External CLI] Unavailable — proceeding with {expert} directly` and use Claude expert directly
-
-**Suitable**: New file creation, boilerplate, scaffolding, test code
-**Unsuitable**: Existing code modification, architecture decisions, bug fixes
-
-### Step 3: Expert Agent Selection
+### Step 2: Expert Agent Selection
 Route to appropriate language/framework expert based on file extension and keyword mapping.
 
 > **Permission Mode**: When spawning agents via Agent tool, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.

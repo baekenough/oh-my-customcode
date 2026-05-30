@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-49개 에이전트. 118개 스킬. 23개 규칙. 명령어 하나.
+49개 에이전트. 115개 스킬. 23개 규칙. 명령어 하나.
 
 > **v0.74.0** — omcustom sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
 
@@ -149,7 +149,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (118개)
+## 스킬 (115개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -162,11 +162,11 @@ Agent(arch-documenter):haiku      ┘
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | 보안 | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| 기타 | 10 | codex-exec, claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
+| 기타 | 7 | claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
 
-`context:fork` 상한이 12로 확장되었습니다 (현재 11개 활성). 라우팅 스킬은 Codex가 활성화된 경우 자동으로 codex-exec에 위임합니다.
+`context:fork` 상한이 12로 확장되었습니다 (현재 10개 활성).
 
 ---
 
@@ -284,7 +284,7 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 49개 에이전트 정의
-│   ├── skills/                 # 118개 스킬 모듈
+│   ├── skills/                 # 115개 스킬 모듈
 │   ├── rules/                  # 23개 거버넌스 규칙 (R000-R023)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마

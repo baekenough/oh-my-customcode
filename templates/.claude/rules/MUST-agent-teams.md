@@ -188,7 +188,7 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
 ## Team Patterns
 
 Standard: Research (researcher-1 + researcher-2 + synthesizer), Development (implementer + reviewer + tester), Debug (investigator-1 + investigator-2 + fixer).
-Hybrid: Review+Fix, Create+Validate, Multi-Expert, Dynamic Creation, Codex Hybrid.
+Hybrid: Review+Fix, Create+Validate, Multi-Expert, Dynamic Creation.
 
 <!-- DETAIL: Team Patterns
 ### Standard Patterns
@@ -203,21 +203,6 @@ Hybrid: Review+Fix, Create+Validate, Multi-Expert, Dynamic Creation, Codex Hybri
 
 ### Dynamic Patterns
 - Dynamic Creation: mgr-creator + domain-expert (create new agent → immediately use for pending task)
-- Codex Hybrid: codex-exec-agent + claude-reviewer (Codex generates → Claude reviews/refines)
-
-### Codex-Exec Integration
-When both Agent Teams and codex-exec are available:
-  1. Claude agent analyzes requirements
-  2. codex-exec generates implementation (Codex strength: code generation)
-  3. Claude agent reviews and refines (Claude strength: reasoning, quality)
-  4. Iterate via team messaging until quality meets standards
-
-| Step | Agent | Model |
-|------|-------|-------|
-| Analysis | Claude team member | sonnet/opus |
-| Generation | codex-exec | (Codex default) |
-| Review | Claude team member | sonnet |
-| Refinement | Appropriate expert | sonnet |
 
 ### Dynamic Agent Creation in Teams
 When Agent Teams creates a new agent via mgr-creator:

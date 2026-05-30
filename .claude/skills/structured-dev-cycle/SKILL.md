@@ -93,17 +93,6 @@ A PreToolUse hook in `.claude/hooks/hooks.json` checks this marker and blocks Wr
 └── Output: Implementation complete
 ```
 
-**Codex-Exec Hybrid Option**: When entering Stage 3:
-1. Check `/tmp/.claude-env-status-*` for codex CLI availability
-2. If available AND task involves new file creation → automatically delegate scaffolding to `/codex-exec`:
-   - Display: `[Codex Hybrid] Delegating scaffolding to codex-exec...`
-   - codex-exec generates initial code (strength: fast generation)
-   - Claude expert reviews and refines codex output (strength: reasoning, quality)
-3. If unavailable → display `[Codex] Unavailable — proceeding with Claude experts directly` and proceed with standard implementation via Claude experts
-
-Suitable for codex hybrid: new files, boilerplate, test stubs, scaffolding
-Not suitable: modifying existing code, architecture-dependent changes
-
 **Exit criteria**: All planned files created/modified, tests written.
 
 ### Stage 4: Verify Implementation
@@ -157,7 +146,7 @@ The stage marker file (`/tmp/.claude-dev-stage`) is read by a PreToolUse hook th
 For complex tasks, Agent Teams is **preferred** when available (R018):
 - Plan: architect agent
 - Verify: reviewer agent(s) — multi-model-verification via Agent Teams
-- Implement: domain expert agent (+ codex-exec hybrid if available)
+- Implement: domain expert agent
 - Compound: QA agent
 
 When Agent Teams is enabled AND task involves 3+ agents or review→fix cycles, using Agent Teams is MANDATORY per R018.

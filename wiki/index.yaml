@@ -7,10 +7,10 @@ meta:
   # excluded: _Footer.md, _Sidebar.md, Home.md, Agents.md, Built-in-Commands.md,
   #   CLI-Reference.md, Contributing.md, Customization.md, Development.md, Guides.md,
   #   Project-Structure.md, Quick-Start.md, Rules.md, Skills.md, Sub-Agent-Model.md (15 pages)
-  total_pages: 267
+  total_pages: 264
   total_sources: 236
   counts:
-    skills: 118
+    skills: 115
     guides: 64
     agents: 49
     rules: 23
@@ -195,9 +195,6 @@ pages:
     - file: skills/agent-eval-framework.md
       title: "Agent Eval Framework"
       summary: "Quantitative trajectory-based agent evaluation using 4-metric framework (correctness/step_ratio/tool_call_ratio/latency_ratio) with ideal trajectory annotation and phased gate workflow."
-    - file: skills/agora.md
-      title: "Agora"
-      summary: "Multi-LLM adversarial consensus loop — 3+ LLMs compete to find flaws in designs; anti-groupthink mode and ontology convergence PoC added v0.110.0"
     - file: skills/airflow-best-practices.md
       title: "Airflow Best Practices"
       summary: "Apache Airflow best practices for DAG authoring, testing, and production deployment"
@@ -222,9 +219,6 @@ pages:
     - file: skills/claude-native.md
       title: "Claude Native"
       summary: "Monitor Claude Code releases and automatically create issues for relevant changes"
-    - file: skills/codex-exec.md
-      title: "Codex Exec"
-      summary: "Execute OpenAI Codex CLI prompts and return results for multi-model workflows."
     - file: skills/create-agent.md
       title: "Create Agent"
       summary: "Create a new agent definition with proper frontmatter and skill wiring."
@@ -282,9 +276,6 @@ pages:
     - file: skills/flutter-best-practices.md
       title: "Flutter Best Practices"
       summary: "Flutter/Dart development best practices for mobile and cross-platform apps."
-    - file: skills/gemini-exec.md
-      title: "Gemini Exec"
-      summary: "Execute Gemini CLI prompts and return results for multi-model workflows."
     - file: skills/goal.md
       title: "Goal"
       summary: "Disciplined goal-to-execution workflow: parse, ambiguity-gate, inspect, plan, execute, verify (R020), report."
@@ -753,7 +744,7 @@ pages:
       summary: "Role-based model selection strategy mapping task types to haiku/sonnet/opus tiers with escalation and project override patterns"
     - file: guides/multi-provider-exec.md
       title: "Multi-Provider Exec Guide"
-      summary: "Unified reference for executing prompts through external LLM providers (codex-exec/gemini-exec/rtk-exec) — provider matrix, selection guidance, and multi-model verification integration"
+      summary: "Unified reference for executing prompts through external LLM providers (rtk-exec) — provider matrix, selection guidance, and multi-model verification integration"
     - file: guides/agents-md-quality.md
       title: "Agent Definition Quality Standards Guide"
       summary: "Quality criteria for .claude/agents/*.md files — four-section structure, frontmatter checklist, anti-patterns, and verification workflow"

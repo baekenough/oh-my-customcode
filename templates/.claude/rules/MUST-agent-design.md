@@ -72,7 +72,7 @@ domain: backend              # backend | frontend | data-engineering | devops | 
 disableSkillShellExecution: true  # Disable inline shell execution in skills (v2.1.91+)
 ```
 
-> **Note**: When `disableSkillShellExecution` is enabled (v2.1.91+), skills that rely on inline shell execution (e.g., `codex-exec`, `gemini-exec`, `rtk-exec`) will have their shell blocks disabled. This is a security hardening option.
+> **Note**: When `disableSkillShellExecution` is enabled (v2.1.91+), skills that rely on inline shell execution (e.g., `rtk-exec`) will have their shell blocks disabled. This is a security hardening option.
 -->
 
 <!-- DETAIL: CC Version Compatibility History
