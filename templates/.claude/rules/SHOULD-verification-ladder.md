@@ -88,6 +88,21 @@ Workflow/agent prompts MUST be fully assembled into the prompt string **before**
 |--------------|----------|
 | `const r = await agent(prompt) + FACTS` | `const r = await agent(prompt + FACTS)` — assemble first |
 
+### Workflow Script Sanity Check
+
+Before invoking a Workflow script, deterministically verify:
+
+| Check | Why |
+|-------|-----|
+| No unresolved placeholders (`{phase1_summary}`, `TODO`, `<...>`, `{{ }}`) remain in any agent prompt string | An unfilled placeholder reaches the agent verbatim → garbled task |
+| Template-literal / string concatenation produces the intended prompt (assemble-before-call, see above) | Post-call concatenation (`agent(prompt) + FACTS`) silently drops content |
+| Script parses — balanced braces/quotes, valid JS | A syntax error aborts the entire run after partial work |
+
+#### Common Violation (#1271)
+Session 106 follow-up to #1266 ③: a Workflow authoring error recurred — the guardrail fact-sheet was concatenated onto the agent's RETURN VALUE instead of the prompt string, and a placeholder/assembly slip went uncaught because no pre-run sanity check existed. This check is the deterministic Tier-1 guard that catches such slips before the expensive run.
+
+Origin: #1271 (Workflow authoring error recurrence, session 106).
+
 ### Verifier Ground-Truth for Cross-Cutting Facts
 
 Cross-cutting facts not verifiable from the primary source (external URLs, in-cluster DNS/hostnames, infra topology) MUST be supplied to the verifier as explicit ground-truth. Otherwise an adversarial verifier cannot distinguish a hallucinated value from a correct one — a verification blind spot.

@@ -128,6 +128,36 @@ Delegate to mgr-creator with the proposal context:
 
 mgr-creator handles: SKILL.md creation, template sync, ontology registration.
 
+## Selection Discipline (evidence-gated)
+
+Before proposing a SKILL candidate, apply this gate. Default to NOT creating a new skill — prefer strengthening an existing skill/rule.
+
+### Evidence Hierarchy
+
+Rank supporting evidence; only direct, repeated success qualifies:
+
+| Tier | Evidence | Action |
+|------|----------|--------|
+| 1 Direct | Pattern executed successfully ≥2 times in observed trajectories | Eligible to propose |
+| 2 Inferred | Pattern plausible but observed once | Hold — do not propose yet |
+| 3 Speculative | Pattern imagined from a single description | Reject |
+
+### 4-Criteria Selection Gate
+
+A pattern becomes a candidate only if ALL four hold:
+
+1. Reusable across ≥2 distinct contexts (not one-off)
+2. Non-trivial — encodes real workflow knowledge, not a single command
+3. Not already covered by an existing skill (run an overlap check first)
+4. Demonstrated success ≥2 times (Evidence Hierarchy tier 1)
+
+### Two-Phase Restraint
+
+- **Phase 1 (broad)**: collect all repeated patterns as raw candidates.
+- **Phase 2 (restrain)**: filter through the 4-criteria gate. Default to NOT creating a skill; prefer strengthening an existing skill/rule over spawning a new one.
+
+> Borrowed from /scout #1268 (evidence-hierarchy + selection gate + two-phase restraint). Reference: issue #1268.
+
 ## Integration
 
 | System | How |

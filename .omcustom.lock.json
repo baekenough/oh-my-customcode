@@ -1,22 +1,22 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.158.0",
-  "generatedAt": "2026-05-29T17:30:31.513Z",
-  "templateVersion": "0.158.0",
+  "generatorVersion": "0.162.0",
+  "generatedAt": "2026-06-01T00:58:06.772Z",
+  "templateVersion": "0.162.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
-      "templateHash": "dc6ce94ab01e1c6abb76e0a1a33b472a47f21706921e63f61ce2fb43bab9a9cf",
-      "size": 3068,
+      "templateHash": "e5f4b31759741b09d2c3c9d27861ec0441d24d8772bbfd8dbf2d774d661b2e10",
+      "size": 3763,
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "790691e4c6d47b5b5f6392e8f9cebd7352afbba2e182d3b745f6f234d7c737a0",
-      "size": 2786,
+      "templateHash": "669b2d03cbafebacdf9a8990babcafcf658a64220fa593e24c7ae3a086f0573d",
+      "size": 3059,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "a73575657e46d2b65b735fd2f11407370aa4b1a938742f45af0af2749ea88574",
-      "size": 25118,
+      "templateHash": "bc6e2d79d10708424412c62ca28e96b59cf4832ae8cd4c10e0bf04ee0f6edce2",
+      "size": 27437,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "28f6a8e188cdaff3ba6cdd738a15d40fb1aa18dcb44d1035f7f94aecce0740bf",
-      "size": 25219,
+      "templateHash": "ad619343009067aaca8c04dacadcdf39f77cea31c085216b04f649a48e5a7662",
+      "size": 25490,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "81dd35b6b43c2052cbedece0a9c60204a61d37bc38e1458da8c03739337a75d9",
-      "size": 17391,
+      "templateHash": "e37b06c148f05a1c32b2d496850ff709d02928d005725f81c5eeef83b5df9048",
+      "size": 18899,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "10751334ef1abe6a59f48f28631ad15284360b7f5e0721e7b6817daafc08c8b6",
-      "size": 5246,
+      "templateHash": "3651952744257761819232644f2ed9bb7ca92ec31423ab3f53bb90c0cb95773d",
+      "size": 5620,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
@@ -90,8 +90,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
-      "templateHash": "5b1773b2335f33d99e7b0dc526c1cdd49df6d0012ce51c7e8325186288b776a5",
-      "size": 2116,
+      "templateHash": "97d354f08c72368b522e1e5bfcd98aa14f6aca799d410e18b039b409ddbe926b",
+      "size": 3153,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "9c3ced4ec6300d56bfadef08ea7d5274fe02d4253983858670f274131c576509",
-      "size": 4033,
+      "templateHash": "74d667485482a846f05fe1a34927b4df9fff2b762930906c814e54db58abd2c2",
+      "size": 6357,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "422019dc90febd79f2e7b4c556061d92752be88254c103ba834f2a2b3f4137b9",
-      "size": 11215,
+      "templateHash": "35dc50674865b033f48b52376ee11654e2ba7d939161bbf1772f78536a268628",
+      "size": 13007,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -390,8 +390,8 @@
       "component": "skills"
     },
     ".claude/skills/research/SKILL.md": {
-      "templateHash": "50f2bfc740ee7b39600fea8a0c825ef69eeb7d2fd1162aa1fcb8e65396bb7eda",
-      "size": 18711,
+      "templateHash": "ccfbce752f34c1eaa76972179f8e65f143576251b07866207965bbfb6277b4e4",
+      "size": 17094,
       "component": "skills"
     },
     ".claude/skills/hada-scout/SKILL.md": {
@@ -465,8 +465,8 @@
       "component": "skills"
     },
     ".claude/skills/skill-extractor/SKILL.md": {
-      "templateHash": "e99051809256e80aeaed969a7cbed3c5f02430056d24a07866fb956a058b5de8",
-      "size": 6798,
+      "templateHash": "2d89c074377796030e48b9be1994c56fec532c8eba64cfd2ad54d9533c9c3e27",
+      "size": 8116,
       "component": "skills"
     },
     ".claude/skills/design-shotgun/SKILL.md": {
@@ -635,13 +635,13 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "1bb50cb89f3ae21a070142660b1876992ba659187bde85e5b27abdbbf31a35c4",
-      "size": 24653,
+      "templateHash": "b75e1b4d610091acfd7a4001094fd8f3091768fe9feafc69dbca22380b9a12e3",
+      "size": 24236,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
-      "templateHash": "4f298d58313f426c47eb9a4803ccb118f532b028433f63bd00c943fa1954a7ae",
-      "size": 7271,
+      "templateHash": "d94f81d6c855f5d11be17dc7be9f22bbaddaedb2bdc0eecf9849765169f64be9",
+      "size": 6941,
       "component": "skills"
     },
     ".claude/skills/python-best-practices/SKILL.md": {
@@ -660,8 +660,8 @@
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
-      "templateHash": "90015f76c61bd8f13fe9c3a5d77518ee8c2efa2006c68e160b74152148877f33",
-      "size": 8254,
+      "templateHash": "86dd650e53910b91d42725bb8514a9330e310e2e3197d3fd8059886fc96cbab9",
+      "size": 7469,
       "component": "skills"
     },
     ".claude/skills/web-design-guidelines/SKILL.md": {
@@ -730,8 +730,8 @@
       "component": "skills"
     },
     ".claude/skills/roundtable-debate/SKILL.md": {
-      "templateHash": "108b18f6fd755c838ae970d75e29a999c867ebdb28d73d637d5aa611cc912afe",
-      "size": 4856,
+      "templateHash": "534649e992727c7c99c07614dc151ed9db58afdc92cf9b85286057498e164445",
+      "size": 4789,
       "component": "skills"
     },
     ".claude/skills/go-best-practices/SKILL.md": {
@@ -755,8 +755,8 @@
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
-      "templateHash": "167069abd2963b3c09a271d05225c7df68df61aabffc8ce5841c43544309f375",
-      "size": 8280,
+      "templateHash": "d985747ef4f6633895bc9f9e17213ee0a13a8c7c307e1454813728cc2edd0c15",
+      "size": 6928,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
@@ -862,6 +862,11 @@
     ".claude/skills/pre-generation-arch-check/SKILL.md": {
       "templateHash": "03c64a53c95ed60d7079773abb8015a0b345888e67cbfea3b4f0cc194a96e670",
       "size": 5395,
+      "component": "skills"
+    },
+    ".claude/skills/homework/SKILL.md": {
+      "templateHash": "67b1f6fee65056e5157e397ec4a7336bb56dfb8b10b4c329a7a68d04184f00fe",
+      "size": 10801,
       "component": "skills"
     },
     ".claude/skills/typescript-best-practices/SKILL.md": {
@@ -1030,8 +1035,8 @@
       "component": "skills"
     },
     ".claude/skills/de-lead-routing/SKILL.md": {
-      "templateHash": "8a733cb018d99deb9f4ba8bbf629f4779f2667ddc0f4beb120f670d78ffb30d1",
-      "size": 9758,
+      "templateHash": "c25f9c1fce8a5efc6332450ce5f101f768003f403965bb04f585802c08123341",
+      "size": 8400,
       "component": "skills"
     },
     ".claude/skills/stuck-recovery/SKILL.md": {
@@ -1390,8 +1395,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "0ee52cb82b53a089173ee279e4fc5a78d826f5dd7ba039a7503f8feb881aed2b",
-      "size": 68120,
+      "templateHash": "2c4d67bb431c90c5de88f560eb19b97beefd0cc0625d3b560908b72dbdc6d8d8",
+      "size": 69623,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
@@ -1760,8 +1765,8 @@
       "component": "guides"
     },
     "guides/agent-design/google-agents-cli-patterns.md": {
-      "templateHash": "27390357d1378cd9efa7ea4ce13731730503d6fdb3d7c4a081c7be3169ff032c",
-      "size": 2823,
+      "templateHash": "38e678b269968c12be1497553d255ecb6242e14e8745590a5f671c49d6637e57",
+      "size": 2794,
       "component": "guides"
     },
     "guides/agent-design/pal-cost-routing-analysis.md": {
@@ -1815,8 +1820,8 @@
       "component": "guides"
     },
     "guides/multi-provider-exec/README.md": {
-      "templateHash": "31e09c9b8ba020e377228af8d3c3fd6057ff097a49540a05d27b9f3a62a74af0",
-      "size": 3435,
+      "templateHash": "ef4603666c5b0c5f97e487a313a62a64123a06242ecc18668dec18bf27fcd699",
+      "size": 2493,
       "component": "guides"
     },
     "guides/aws/well-architected.md": {
@@ -1905,13 +1910,13 @@
       "component": "guides"
     },
     "guides/browser-automation/01-browser-automation-patterns.md": {
-      "templateHash": "d3a24896b7e88570752e742e4eefd0d934c8c8923178a8ab7d1d6bcce87dffdb",
-      "size": 4461,
+      "templateHash": "51abd57331bd591de77b087f9e40f9e52c7f0f2b3c7dfbe9d23da3599edcc0ee",
+      "size": 2410,
       "component": "guides"
     },
     "guides/multi-agent-debate-patterns/README.md": {
-      "templateHash": "307061d563adc5b31bf723b1496d5195038c290b7acbf016ffff054d7c229b1c",
-      "size": 3312,
+      "templateHash": "f185287f185ba9edd951caf6e1e4b2e444408b7545c5dc62d82d5a2056108c7b",
+      "size": 2938,
       "component": "guides"
     },
     "guides/index.yaml": {

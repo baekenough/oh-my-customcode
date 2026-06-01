@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.162.0] - 2026-06-01
+
+### Changed
+- `skill-extractor` skill: added evidence-gated **Selection Discipline** — evidence hierarchy (only ≥2 direct successes qualify), 4-criteria selection gate, two-phase restraint defaulting to NOT creating a new skill. R016 (MUST-continuous-improvement): clarified quantitative skill-promotion threshold (≥2 occurrences = candidacy feeding skill-extractor Phase 1; ≥3 = confirmed promotion). Closes #1268.
+- R020 (MUST-completion-verification): added **Degraded-Output Re-Verification Gate (529/buffering)** — mandatory deterministic re-verification before any destructive/permanent action when tool output shows 529 errors, duplication, or truncation; do not characterize state from a single degraded read. R010 (MUST-orchestrator-coordination): Agent Capability Pre-Check now requires verifying file-path existence (Glob/ls), not just tool capability. Closes #1269.
+- R023 (SHOULD-verification-ladder): added **Workflow Script Sanity Check** — deterministic Tier-1 guard for unresolved placeholders, assemble-before-call, and script parse before invoking a Workflow. Closes #1271.
+
 ## [0.161.0] - 2026-05-30
 
 ### Added
