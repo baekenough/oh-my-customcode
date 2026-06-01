@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.162.1] - 2026-06-01
+
+### Fixed
+- `auto-tag.yml`: comma-separated multi-issue auto-close. The issue-extraction regex `(Closes|Fixes|Resolves)(\s+#[0-9]+)+` only captured the first `#N` in a `Closes #A, #B, #C` list (the comma breaks the `\s+` repetition), so multi-issue release PRs auto-closed only the first issue (e.g., v0.162.0 closed #1268 but left #1269/#1271 open). Separator widened to `[[:space:],]+`. Closes #1273.
+
 ## [0.162.0] - 2026-06-01
 
 ### Changed
