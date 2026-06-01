@@ -313,6 +313,9 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 | `Read` external files | `tools:` includes Read |
 | `Write` files | `tools:` includes Write (and target path not in `disallowedTools` scope) |
 | MCP server calls | `mcpServers:` includes the required server |
+| Task targets a specific file path | The path EXISTS (`Glob`/`ls`) — capability check alone does not catch a missing/renamed file |
+
+> **Path existence ≠ tool capability (#1269 ③)**: the pre-check above verifies the agent HAS Read/Write/Bash, but not that the target path actually exists. Delegating a read/write to a missing or renamed path causes the same round-trip waste the capability pre-check is meant to prevent. Verify path existence (Glob/ls) before delegating path-specific work.
 
 ### Known Limitations (Active Cache)
 

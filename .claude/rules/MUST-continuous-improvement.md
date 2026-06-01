@@ -37,6 +37,8 @@ Update the relevant rule rather than just acknowledging the violation.
 
 **Skill Promotion**: feedback memory가 동일 패턴으로 3회 이상 반복되면 "failure pattern"으로 승격. skill-extractor의 `--mode failure` 플래그로 스킬 후보 분석 가능 (Skillify 내재화, #972).
 
+> **Quantitative threshold (clarified, #1268)**: candidacy begins at **≥2 occurrences** (propose a candidate via skill-extractor's 4-criteria gate); confirmed promotion to a tracked failure pattern requires **≥3 occurrences**. The ≥2 candidacy tier feeds skill-extractor Phase 1; the ≥3 tier gates actual skill creation. See `skill-extractor` Selection Discipline.
+
 When CI failure, process gap, or repeatable system defect is found:
 1. Record feedback memory (defend current session)
 2. Register GitHub issue (trackable improvement item)
