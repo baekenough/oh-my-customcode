@@ -196,6 +196,20 @@ triage-dispatch.yml 실패 원인을 파일 Read 전에 "triaged 라벨 부재 +
 
 Origin: #1266 ④.
 
+### Degraded-Output Re-Verification Gate (529 / buffering)
+
+When tool outputs show degradation signs — 529 errors, duplicated or truncated output, or a Read returning empty on a file that is known non-empty — you MUST re-verify any fact via a deterministic second source BEFORE any destructive or permanent action (recovery-agent dispatch, issue edit, commit, file restore). Do NOT characterize state ("corruption", "오염", "loop") from a single degraded read.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Dispatch a recovery agent off a single 529-buffered read | Re-run a minimal deterministic check (`wc -c`, single-field `gh ... view`, `head`) and confirm before acting |
+| Declare a file "corrupted/오염" from one empty Read | Confirm byte count / content via an independent command first |
+
+#### Common Violation (#1269 ①)
+Session 106: during 529 buffering, a CHANGELOG was misdiagnosed as "61x 중복 오염" from buffered output and a recovery agent was dispatched — a self-violation of the same-session Read-Before-Characterize rule (#1266 ④). Deterministic count re-verification showed the file was clean. The 529 gate makes the re-verification mandatory, not advisory.
+
+Origin: #1269 ① (R020 self-violation, session 106).
+
 ## Integration
 
 | Rule | Interaction |
