@@ -112,46 +112,73 @@ steps:
 
   - name: compression-mode-eval
     prompt: |
-      Evaluate whether this pipeline run qualifies for docs-only compression mode (G6).
+      Evaluate the pipeline compression mode (G6). Three tiers exist:
+      docs-only (heaviest compression) → lite (intermediate) → standard (no compression).
 
-      ## Compression Eligibility Check
+      ## Reference
 
-      Reference: .claude/skills/pipeline/labels.md — "Compression Eligibility" section
+      .claude/skills/pipeline/labels.md — "Compression Eligibility" section
 
-      Conditions for compression_mode=docs-only:
+      ## Tier 1 — docs-only
+
+      Conditions (BOTH must hold):
       1. scope size ≤ 3 (number of issues in release manifest)
       2. ALL scoped issues have labels ∩ {documentation, automated, claude-code-release, enhancement-yaml-only} ≠ ∅
 
-      ## Decision
-
-      If BOTH conditions met → set compression_mode=docs-only
+      If met → set compression_mode=docs-only
         - triage step: skip professor-triage skill; perform direct manifest summary instead
         - plan step: skip release-plan skill; single-response plan instead
         - deep-plan step: skip deep-plan skill; single-response implementation notes instead
         - deep-verify step: skip deep-verify skill; perform self-review checklist instead
         - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)"
 
-      Otherwise → set compression_mode=standard
-        - All pipeline steps execute normally with full skill spawns
-        - Log: "[compression-mode] standard mode (scope={n}, mixed labels or large scope)"
+      ## Tier 2 — lite (intermediate)
 
-      Output: compression_mode value as pipeline state for downstream steps.
-    description: "Evaluate docs-only compression eligibility; set compression_mode state"
+      Evaluate ONLY if docs-only NOT met. Conditions (ALL must hold):
+      1. scope size ≤ 7
+      2. ALL scoped issues are low-risk: for EVERY issue,
+         labels ∩ {documentation, automated, claude-code-release, feedback, professor, enhancement} ≠ ∅
+      3. NO scoped issue carries a breaking-change or decision-needed label
+      4. No code logic change is expected — work is docs/rule/skill/config/script-centric
+         (verify against each issue body; if any issue implies application code logic change, FAIL the lite check)
+
+      If met → set compression_mode=lite
+        - triage step: MAY replace professor-triage skill spawn with orchestrator integrated analysis
+        - plan step: MAY replace release-plan skill spawn with orchestrator integrated analysis
+        - deep-plan step: MAY replace deep-plan skill spawn with orchestrator integrated analysis
+        - deep-verify step: perform via mgr-sauron R017 structural verification + core self-check
+          (instead of full deep-verify skill spawn)
+        - implement / verify-build / release / ci-check / post-release-followup: execute normally (no compression)
+        - MANDATORY justification log (REQUIRED whenever a skill stage is replaced by integrated analysis):
+          "[compression-mode] lite — skill 단계 통합 분석 대체. 정당화: scope={n}, 모든 이슈 저위험(라벨 {labels}), 구현 대상 이슈 본문 명시 {issue_refs}"
+        - If the justification cannot be stated concretely (e.g., a stage cannot be safely integrated),
+          do NOT compress that stage — fall back to full skill spawn for it.
+
+      ## Tier 3 — standard (fallback)
+
+      If neither docs-only nor lite met → set compression_mode=standard
+        - All pipeline steps execute normally with full skill spawns
+        - Log: "[compression-mode] standard mode (scope={n}, mixed/high-risk labels, large scope, or code logic change)"
+
+      ## Output
+
+      compression_mode ∈ {docs-only, lite, standard} as pipeline state for downstream steps.
+    description: "Evaluate compression tier (docs-only/lite/standard); set compression_mode state"
     depends_on: scope-selection
 
   - name: triage
     skill: professor-triage
-    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — skipped if compression_mode=docs-only"
+    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — skipped if docs-only, integrated-analysis allowed if lite"
     depends_on: compression-mode-eval
 
   - name: plan
     skill: release-plan
-    description: "Release unit plan from triaged issues — skipped if compression_mode=docs-only"
+    description: "Release unit plan from triaged issues — skipped if docs-only, integrated-analysis allowed if lite"
     depends_on: triage
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify) — skipped if compression_mode=docs-only"
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite"
     depends_on: plan
 
   - name: implement
@@ -229,7 +256,7 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification — self-review checklist only if compression_mode=docs-only"
+    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite"
     depends_on: verify-build
 
   - name: release
