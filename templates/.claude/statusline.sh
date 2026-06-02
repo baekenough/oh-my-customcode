@@ -15,7 +15,17 @@
 #     "rate_limits": {                          (v2.1.80+, optional)
 #       "five_hour": { "used_percentage": 10, "resets_at": 1773979200 },
 #       "seven_day": { "used_percentage": 90, "resets_at": 1773979200 }
-#     }
+#     },
+#     "output_style": "korean-engineer",        (v2.1.145+, optional)
+#     "gh": {                                   (v2.1.145+, optional, #1197)
+#       "repo": "owner/repo",
+#       "pr_number": 1234,
+#       "pr_state": "OPEN"
+#     },
+#     "agents": [                               (v2.1.145+, optional, #1195)
+#       { "name": "researcher-1", "status": "running" },
+#       { "name": "researcher-2", "status": "running" }
+#     ]
 #   }
 #
 # External status line providers (#1275):
@@ -77,21 +87,34 @@ fi
 
 # ---------------------------------------------------------------------------
 # 4. Single jq call — extract all fields as TSV
-#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd, rl_5h_pct, rl_7d_pct, rl_5h_resets, rl_7d_resets
+#    Fields: model_name, project_dir, ctx_pct, ctx_size, cost_usd,
+#            rl_5h_pct, rl_7d_pct, rl_5h_resets, rl_7d_resets,
+#            gh_repo, gh_pr_number, gh_pr_state, agent_count (v2.1.145+)
 # ---------------------------------------------------------------------------
-IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_7d_pct rl_5h_resets rl_7d_resets <<< "$(
+#    Note: empty string fields are emitted as sentinel "_" to prevent
+#          bash `read` from collapsing leading empty TSV fields (bash 3.2 IFS quirk).
+IFS=$'\t' read -r model_name project_dir ctx_pct ctx_size cost_usd rl_5h_pct rl_7d_pct rl_5h_resets rl_7d_resets gh_repo gh_pr_number gh_pr_state agent_count <<< "$(
     printf '%s' "$json" | jq -r '[
         (.model.display_name // "unknown"),
-        (.workspace.current_dir // ""),
+        ((.workspace.current_dir // "") | if . == "" then "_" else . end),
         (if .context_window.used != null and .context_window.total != null and .context_window.total > 0 then (.context_window.used / .context_window.total * 100) elif .context_window.used_percentage != null then .context_window.used_percentage else 0 end),
         (.context_window.context_window_size // 0),
         (.cost.total_cost_usd // 0),
         (.rate_limits.five_hour.used_percentage // -1),
         (.rate_limits.seven_day.used_percentage // -1),
         (.rate_limits.five_hour.resets_at // -1),
-        (.rate_limits.seven_day.resets_at // -1)
+        (.rate_limits.seven_day.resets_at // -1),
+        ((.gh.repo // "") | if . == "" then "_" else . end),
+        (.gh.pr_number // -1),
+        ((.gh.pr_state // "") | if . == "" then "_" else . end),
+        (if (.agents | type) == "array" then (.agents | length) else -1 end)
     ] | @tsv'
 )"
+
+# Convert sentinel "_" back to empty string for downstream code
+[[ "$project_dir" == "_" ]] && project_dir=""
+[[ "$gh_repo" == "_" ]] && gh_repo=""
+[[ "$gh_pr_state" == "_" ]] && gh_pr_state=""
 
 # ---------------------------------------------------------------------------
 # 4b. Cost & context data bridge — write to temp file for hooks
@@ -240,10 +263,30 @@ if [[ -n "$git_branch" && -n "$project_dir" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 8. PR number — cached by branch to avoid gh call on every refresh
+# 8. PR number — prefer v2.1.145 native gh.* JSON fields; fall back to gh CLI cache
 # ---------------------------------------------------------------------------
 pr_display=""
-if [[ -n "$git_branch" ]] && command -v gh >/dev/null 2>&1; then
+
+# 8a. Native gh.* fields (CC v2.1.145+, #1197) — zero-cost, no subprocess
+if [[ "$gh_pr_number" =~ ^[0-9]+$ ]] && [[ "$gh_pr_number" -gt 0 ]]; then
+    case "$gh_pr_state" in
+        OPEN)   pr_state_label="open" ;;
+        CLOSED) pr_state_label="closed" ;;
+        MERGED) pr_state_label="merged" ;;
+        DRAFT)  pr_state_label="draft" ;;
+        "")     pr_state_label="" ;;
+        *)      # bash 3.2 compatible lowercase via tr
+                pr_state_label="$(printf '%s' "$gh_pr_state" | tr '[:upper:]' '[:lower:]')" ;;
+    esac
+    if [[ -n "$pr_state_label" ]]; then
+        pr_display="PR #${gh_pr_number} (${pr_state_label})"
+    else
+        pr_display="PR #${gh_pr_number}"
+    fi
+fi
+
+# 8b. Fallback — gh CLI with per-branch cache (pre-v2.1.145 or repos without native gh.*)
+if [[ -z "$pr_display" ]] && [[ -n "$git_branch" ]] && command -v gh >/dev/null 2>&1; then
     cache_file="/tmp/statusline-pr-${project_name}"
     cached_branch=""
     cached_pr=""
@@ -349,6 +392,15 @@ if [[ -n "$wl_countdown" && -n "$wl_display" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
+# 9d. Active agents count (CC v2.1.145+, #1195)
+#     Only displayed when 1+ agents are active. agent_count=-1 means field absent.
+# ---------------------------------------------------------------------------
+agent_display=""
+if [[ "$agent_count" =~ ^[0-9]+$ ]] && [[ "$agent_count" -ge 1 ]]; then
+    agent_display="A:${agent_count}"
+fi
+
+# ---------------------------------------------------------------------------
 # 10. Assemble and output the status line
 # ---------------------------------------------------------------------------
 # Format branch with optional OSC 8 hyperlink
@@ -377,22 +429,30 @@ if [[ -n "$wl_display" ]]; then
     wl_segment=" | ${wl_color}${wl_display}${COLOR_RESET}"
 fi
 
+# Build the agents segment (with separator) if present
+agent_segment=""
+if [[ -n "$agent_display" ]]; then
+    agent_segment=" | ${agent_display}"
+fi
+
 if [[ -n "$git_branch" ]]; then
-    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s | %s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$branch_display" \
         "$pr_segment" \
         "$rl_segment" \
         "$wl_segment" \
+        "$agent_segment" \
         "$ctx_display"
 else
-    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
+    printf "${cost_color}%s${COLOR_RESET} | %s%s%s%s%s | ${ctx_color}%s${COLOR_RESET}\n" \
         "$cost_display" \
         "$project_name" \
         "$pr_segment" \
         "$rl_segment" \
         "$wl_segment" \
+        "$agent_segment" \
         "$ctx_display"
 fi
 

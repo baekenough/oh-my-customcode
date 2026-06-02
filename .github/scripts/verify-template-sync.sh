@@ -210,6 +210,19 @@ while IFS= read -r src_skill; do
   # (no error if template absent — package/harness-scope skills may not deploy to templates)
 done < <(find .claude/skills -name SKILL.md -type f)
 
+# .claude/ root-level scripts (statusline.sh etc.) — single-file, not under a checked dir
+for rootfile in statusline.sh; do
+  if [ -f ".claude/$rootfile" ]; then
+    if [ ! -f "templates/.claude/$rootfile" ]; then
+      echo "::error::Template missing for root script: $rootfile (source exists, template absent)"
+      content_drift=$((content_drift + 1))
+    elif ! diff -q ".claude/$rootfile" "templates/.claude/$rootfile" >/dev/null 2>&1; then
+      echo "::error::Content drift in root script: $rootfile (source != template)"
+      content_drift=$((content_drift + 1))
+    fi
+  fi
+done
+
 if [ "$content_drift" -gt 0 ]; then
   echo "::error::$content_drift content drift(s) detected between .claude/ and templates/.claude/"
   echo "Fix: sync the source file(s) to templates/.claude/ (cp source template)"
