@@ -17,6 +17,17 @@
 #       "seven_day": { "used_percentage": 90, "resets_at": 1773979200 }
 #     }
 #   }
+#
+# External status line providers (#1275):
+#   Set STATUSLINE_EXTRA_PROVIDERS to a colon-separated list of provider
+#   script paths. Each is executed after the main status line and its output
+#   is appended on its own line. Providers run fail-safe (errors never affect
+#   the main line) with stdin redirected from /dev/null. Interpreter is chosen
+#   by extension: .mjs/.js -> node, .sh -> bash, otherwise executed directly
+#   if the file is executable. Unset by default (no behavior change).
+#
+#   Example:
+#     export STATUSLINE_EXTRA_PROVIDERS="$HOME/.claude/hud/claudenews-hud.mjs:/opt/hud/extra.sh"
 
 # ---------------------------------------------------------------------------
 # 1. Color detection
@@ -383,4 +394,56 @@ else
         "$rl_segment" \
         "$wl_segment" \
         "$ctx_display"
+fi
+
+# ---------------------------------------------------------------------------
+# 11. External status line providers (#1275)
+#     Merge output from external HUD/status providers (e.g. claudenews) so they
+#     coexist with the internal status line instead of being shadowed by the
+#     project's statusLine.command. Opt-in via STATUSLINE_EXTRA_PROVIDERS
+#     (colon-separated paths). Unset = no behavior change (backward compatible).
+#
+#     Each provider runs fail-safe:
+#       - existence (-f) + interpreter availability checked before running
+#       - stdin redirected from /dev/null (statusline stdin already consumed)
+#       - stderr suppressed; failures never affect the main status line
+#       - output appended only when non-empty, on its own line
+#     Interpreter by extension: .mjs/.js -> node, .sh -> bash,
+#     otherwise executed directly if the file is executable.
+# ---------------------------------------------------------------------------
+if [[ -n "${STATUSLINE_EXTRA_PROVIDERS}" ]]; then
+    # bash 3.2 compatible split on ':' without arrays/mapfile
+    _saved_ifs="$IFS"
+    IFS=':'
+    set -f  # disable globbing while iterating raw paths
+    for _provider in ${STATUSLINE_EXTRA_PROVIDERS}; do
+        [[ -z "$_provider" ]] && continue
+        [[ -f "$_provider" ]] || continue
+
+        _provider_out=""
+        case "$_provider" in
+            *.mjs|*.js)
+                if command -v node >/dev/null 2>&1; then
+                    _provider_out="$(node "$_provider" </dev/null 2>/dev/null)"
+                fi
+                ;;
+            *.sh)
+                if command -v bash >/dev/null 2>&1; then
+                    _provider_out="$(bash "$_provider" </dev/null 2>/dev/null)"
+                fi
+                ;;
+            *)
+                # No known interpreter — run directly only if executable
+                if [[ -x "$_provider" ]]; then
+                    _provider_out="$("$_provider" </dev/null 2>/dev/null)"
+                fi
+                ;;
+        esac
+
+        if [[ -n "$_provider_out" ]]; then
+            printf '%s\n' "$_provider_out"
+        fi
+    done
+    set +f
+    IFS="$_saved_ifs"
 fi
