@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.164.0] - 2026-06-02
+
+### Added
+- pipeline auto-dev compression-mode-eval lite tier — docs/rule 저위험 scope(≤7)가 binary(docs-only/standard) 사이 falling-through하는 갭 해소, skill 단계 생략 시 명시적 정당화 로그 강제 (#1284)
+
+### Fixed
+- templates/.claude/statusline.sh 재동기화 — 라이브 v2.1.145 features(native gh.* fields, agent_count, output_style) 반영 (#1283)
+- verify-template-sync.sh content drift check에 .claude/ 루트 스크립트(statusline.sh) 커버리지 추가 — 향후 statusline drift를 Tier 1에서 결정론적 차단 (#1283)
+
 ## [0.163.0] - 2026-06-02
 
 ### Added
