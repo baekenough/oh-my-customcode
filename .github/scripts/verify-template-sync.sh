@@ -223,6 +223,28 @@ for rootfile in statusline.sh; do
   fi
 done
 
+# Workflows yaml mirror consistency (#1286)
+# Two mirror pairs: pipeline skill internal <-> template, and repo-root legacy <-> template.
+# Only compare files present in BOTH dirs — some legacy yamls (eraser.yaml) intentionally
+# have no template mirror, so a "missing mirror" error would be a false positive.
+check_workflow_mirror() {
+  # $1 = source dir, $2 = mirror dir
+  local src="$1" mir="$2"
+  [ -d "$src" ] || return 0
+  for wf in "$src"/*.yaml; do
+    [ -e "$wf" ] || continue
+    local base; base=$(basename "$wf")
+    local m="$mir/$base"
+    [ -f "$m" ] || continue
+    if ! diff -q "$wf" "$m" >/dev/null 2>&1; then
+      echo "::error::Workflow drift: $base ($src != $mir)"
+      content_drift=$((content_drift + 1))
+    fi
+  done
+}
+check_workflow_mirror ".claude/skills/pipeline/workflows" "templates/.claude/skills/pipeline/workflows"
+check_workflow_mirror "workflows" "templates/workflows"
+
 if [ "$content_drift" -gt 0 ]; then
   echo "::error::$content_drift content drift(s) detected between .claude/ and templates/.claude/"
   echo "Fix: sync the source file(s) to templates/.claude/ (cp source template)"

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.165.0] - 2026-06-03
+
+### Added
+- verify-template-sync.sh workflow yaml 미러 drift 검사 (check_workflow_mirror) — pipeline skill 내부/레거시 미러 쌍의 auto-dev.yaml drift를 Tier 1에서 차단 (#1286)
+- pipeline SKILL.md "Workflow File Locations" 섹션 — 4곳 사본 역할/실행본 경로 문서화 (#1286)
+- R010 Agent Capability Pre-Check "Multi-copy content consistency" — 다중 사본 파일 위임 전 md5/diff 일관성 확인 규범 (#1287)
+- mgr-gitnerd "Milestone Query Robustness" — 번호 기반 직접 조회 우선 + 미존재 판정 전 재시도 (#1287)
+
 ## [0.164.0] - 2026-06-02
 
 ### Added
