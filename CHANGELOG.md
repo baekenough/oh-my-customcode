@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.163.0] - 2026-06-02
+
+### Added
+- R011 Attention-Weight Memory Tiering (Hot/Warm/Cold/Archived) — Dual-Brain scout:internalize 부분 내재화 (#1279)
+- scout SKILL.md: Phase 3/4 bypassPermissions 강조 + Pre-flight Execution Checklist 승격 + 암묵 승인 시 plan 게이트 (#1281)
+- statusline.sh: STATUSLINE_EXTRA_PROVIDERS 외부 status line provider 병합 지원 (#1275)
+
+### Changed
+- CC v2.1.159/160 compatibility documentation (#1276, #1280) — acceptEdits build-config prompt(R002/R006), grep read-before-edit
+
+### Dependencies
+- bump @anthropic-ai/sdk 0.98.1 → 0.100.1 (#1277)
+- bump commander 14.0.3 → 15.0.0 (#1278)
+
 ## [0.162.1] - 2026-06-01
 
 ### Fixed
