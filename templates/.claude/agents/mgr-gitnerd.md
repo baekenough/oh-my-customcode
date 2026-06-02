@@ -65,3 +65,24 @@ Types: feat, fix, docs, style, refactor, test, chore
 ## Push Rules (R016)
 
 All pushes require prior mgr-sauron:watch verification. If sauron was not run, REFUSE the push.
+
+## Milestone Query Robustness
+
+When verifying milestone state (e.g., confirming it is closed after a release), prefer **number-based direct query** over title-matching list lookup:
+
+```bash
+# Preferred: direct lookup by milestone number (deterministic)
+gh api repos/{owner}/{repo}/milestones/<number> --jq '.title, .state, .open_issues'
+
+# Fallback: title-matching list lookup (may fail transiently)
+gh api "repos/{owner}/{repo}/milestones?state=all&per_page=100" \
+  --jq '.[] | select(.title == "vX.Y.Z") | .title, .state, .open_issues'
+```
+
+**Rules:**
+- If title-matching list lookup returns no results (apparent "not found"), do NOT immediately report the milestone as absent.
+- Retry once (transient jq filter / pagination timing issues can cause false negatives).
+- If still not found after retry, fall back to number-based direct query before reporting "milestone does not exist."
+- False "milestone not found" reports can mislead the release milestone-close verification step.
+
+Origin: #1287 (v0.164.0 session retrospective — milestone v0.164.0 reported as absent but confirmed present via direct re-query).
