@@ -7,10 +7,10 @@ meta:
   # excluded: _Footer.md, _Sidebar.md, Home.md, Agents.md, Built-in-Commands.md,
   #   CLI-Reference.md, Contributing.md, Customization.md, Development.md, Guides.md,
   #   Project-Structure.md, Quick-Start.md, Rules.md, Skills.md, Sub-Agent-Model.md (15 pages)
-  total_pages: 264
+  total_pages: 265
   total_sources: 236
   counts:
-    skills: 115
+    skills: 116
     guides: 64
     agents: 49
     rules: 23

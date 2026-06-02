@@ -267,6 +267,75 @@ User Model data feeds into intent-detection (R015) and routing skill confidence 
 
 -->
 
+## Attention-Weight Memory Tiering
+
+> Origin: #1279 (Dual-Brain scout:internalize 부분 내재화 — attention-weight tiering만)
+
+메모리 항목은 신뢰도(confidence)와 접근성(attention weight)의 **두 축**으로 관리한다. 이 두 축은 직교한다.
+
+| 축 | 태그 예시 | 의미 | 관리 주체 |
+|----|-----------|------|-----------|
+| 신뢰도 | `[confidence: high/medium/low]` | 검증 수준 — 얼마나 믿을 수 있는가 | Confidence Lifecycle (위 DETAIL) |
+| Attention Weight | `[tier: hot/warm/cold/archived]` | 접근성 — 얼마나 자주/최근 참조했는가 | Tiering (이 섹션) |
+
+### 4-Tier 정의
+
+| Tier | 의미 | 기준 (attention weight) | 위치/처리 |
+|------|------|------------------------|----------|
+| **Hot** | 현재 세션 활성 컨텍스트 | 최근 접근 + 고빈도 (이번 세션 내 2회 이상 참조) | `MEMORY.md` 상단 200줄 내 최우선 배치 |
+| **Warm** | 최근 관련 패턴 | 중간 빈도/최근성 (최근 3세션 내 1회 이상 참조) | `MEMORY.md` 본문 (Hot 이후 배치) |
+| **Cold** | 드물게 참조 | 저빈도 (3세션 이상 미참조, 아직 가치 있음) | archive 파일 (`sessions_archive_*.md`) — MEMORY.md 인덱스만 유지 |
+| **Archived** | 비활성 | 장기 미접근 (Temporal Decay 90일+ 기준 충족) | 별도 archive, 인덱스 참조만 |
+
+### Attention Weight 산정 신호
+
+| 신호 | 가중치 |
+|------|--------|
+| 이번 세션 내 직접 참조 횟수 | 높음 |
+| 최근성 (마지막 접근 세션과의 거리) | 중간 |
+| 세션 간 재확인 횟수 (confidence re-verification 횟수와 동일) | 중간 |
+| 사용자 명시 중요도 (`[permanent]` 태그) | 높음 — 강등 면제 |
+
+### Tier 승강 규칙
+
+```
+접근 시 승격: Cold → Warm → Hot (해당 세션에서 참조 발생 시)
+미접근 시 강등:
+  Hot → Warm (1세션 미접근)
+  Warm → Cold (3세션 미접근)
+  Cold → Archived (Temporal Decay 90일+ 기준 충족 시 — 두 조건 모두 충족 시 강등)
+```
+
+강등은 세션 종료 시 sys-memory-keeper가 수행한다. 승격은 참조 발생 시 즉시 적용한다.
+
+### 200줄 MEMORY.md 예산과의 연계
+
+| Tier | MEMORY.md 상주 여부 | 처리 |
+|------|---------------------|------|
+| Hot | 상주 (상단 배치 우선) | 직접 본문 |
+| Warm | 상주 (Hot 이후 배치) | 직접 본문 |
+| Cold | 미상주 | archive 파일에 이동, MEMORY.md에 `[archive: sessions_archive_*.md]` 인덱스만 유지 |
+| Archived | 미상주 | 별도 archive, 인덱스 참조만 |
+
+예산 초과 시 처리 우선순위: Cold 항목 → archive 이동, Warm 하위 항목 → Cold 강등, Hot은 마지막에 처리.
+
+### Temporal Decay와의 상호작용
+
+Temporal Decay(시간 경과 기반)와 Attention-Weight Tiering(접근 빈도 기반)은 **독립적으로 동작하되 함께 적용**한다.
+
+| 상황 | 결과 |
+|------|------|
+| 고빈도 접근 + 오래된 timestamp | Tier=Hot이지만 confidence 강등 가능 — re-verify 필요 |
+| 저빈도 접근 + 최신 timestamp | Tier=Cold지만 confidence는 high 유지 가능 |
+| 저빈도 접근 + 오래된 timestamp (90일+) | Tier=Archived + `[REVIEW NEEDED]` — 두 메커니즘 모두 강등 신호 |
+| `[permanent]` 태그 | Temporal Decay 면제, Tiering 강등도 면제 |
+
+### sys-memory-keeper 책임
+
+- 세션 시작: MEMORY.md 스캔 → Cold 항목 archive 이동 여부 평가
+- 세션 종료: 이번 세션 참조 여부 기반 tier 재평가 → archive 이동 실행
+- archive 이동 시: `sessions_archive_*.md`에 append, MEMORY.md에 인덱스 라인 유지
+
 ## Mid-Session Immediate Save
 
 Save memory IMMEDIATELY upon surprising discovery — do not defer to session end.

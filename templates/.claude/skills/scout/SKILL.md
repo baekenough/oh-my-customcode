@@ -2,7 +2,7 @@
 name: scout
 description: Analyze external URL to evaluate fit with oh-my-customcode project and auto-create GitHub issue with verdict
 scope: core
-version: 1.0.0
+version: 1.0.1
 user-invocable: true
 argument-hint: "<url>"
 ---
@@ -29,6 +29,15 @@ Analyze an external URL (tech blog, tool, library, methodology) to evaluate its 
 
 ## Pre-flight Guards
 
+### Pre-flight Execution Checklist (MANDATORY before Phase 1)
+
+**Both guards MUST be executed before entering Phase 1.** Skipping either guard is a workflow violation.
+
+- [ ] Guard 1: URL Validity check passed (abort if invalid)
+- [ ] Guard 2: Duplicate Scout check passed (warn and confirm if duplicate found)
+
+Proceed to Phase 1 only after both checkboxes are satisfied.
+
 ### Guard 1: URL Validity (GATE)
 
 Before any work, validate the URL:
@@ -52,6 +61,8 @@ gh issue list --state all --label "scout:internalize,scout:integrate,scout:skip"
 
 If found: `[Pre-flight] WARN: Similar URL already scouted in issue #N. Proceed anyway? [Y/n]`
 
+> **Why mandatory?** Guard 2 생략으로 인해 동일 도메인 중복 scout 이슈가 생성된 사례 발생 (세션 회고 #1281). 중복 triage 낭비를 방지하기 위해 Pre-flight 체크리스트로 승격.
+
 ## Display Format
 
 Before execution, show the plan:
@@ -66,6 +77,8 @@ Before execution, show the plan:
 예상: ~1분 | 비용: ~$0.5-1.5
 실행하시겠습니까? [Y/n]
 ```
+
+> **암묵 승인 시 필수**: "되면 /scout으로 보고", "실행해줘" 등 묵시적 승인인 경우에도 위 plan 요약을 **반드시 1줄 이상 표시한 뒤 진행**한다 (R015 intent transparency). plan 표시 없이 바로 Phase 1으로 진입하는 것은 위반.
 
 ## Workflow
 
@@ -89,6 +102,13 @@ Before execution, show the plan:
 3. `Glob(.claude/skills/*/SKILL.md)` — list existing skills for overlap detection
 
 ### Phase 3: Fit Analysis
+
+> **MUST**: Agent tool 호출 시 반드시 `mode: "bypassPermissions"` 파라미터를 포함해야 한다 (R010 Universal bypassPermissions). CC Agent tool의 기본값은 `acceptEdits`이며, 이는 agent frontmatter의 `permissionMode`를 덮어쓴다. `mode` 누락 시 Bash/WebFetch 권한 프롬프트가 발생하여 비대화형 실행이 중단된다.
+>
+> ```
+> ❌ Agent(subagent_type: "general-purpose", prompt: "...")
+> ✓  Agent(subagent_type: "general-purpose", mode: "bypassPermissions", prompt: "...")
+> ```
 
 Spawn 1 sonnet agent with `mode: "bypassPermissions"` and the following analysis prompt.
 
@@ -140,6 +160,8 @@ Return a structured verdict:
 **Output**: Structured verdict with rationale.
 
 ### Phase 4: Issue Creation
+
+> **NOTE**: Phase 4는 orchestrator가 직접 `gh issue create` (Bash)로 처리한다. 만약 이슈 생성을 Agent(mgr-gitnerd 등)에 위임할 경우, 해당 Agent tool 호출에도 반드시 `mode: "bypassPermissions"`를 포함해야 한다 (R010).
 
 1. Ensure scout labels exist (defensive, idempotent):
 ```bash
