@@ -21,7 +21,7 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
-    "commander": "^14.0.2",
+    "commander": "^15.0.0",
     "drizzle-orm": "^0.45.1"
   },
   "devDependencies": {
