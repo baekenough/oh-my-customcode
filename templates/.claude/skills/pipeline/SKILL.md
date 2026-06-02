@@ -138,6 +138,22 @@ steps:
 }
 ```
 
+## Workflow File Locations
+
+The `auto-dev.yaml` (and other workflow YAML files) exist in **4 locations**. Only one is the runtime source — the others are mirrors for deployment and examples.
+
+| Path | Role | Used by |
+|------|------|---------|
+| `.claude/skills/pipeline/workflows/auto-dev.yaml` | **Runtime source (실행본)** — `/pipeline` reads from here via `Glob("workflows/*.yaml")` relative to the skill base dir | `/pipeline` skill at runtime |
+| `templates/.claude/skills/pipeline/workflows/auto-dev.yaml` | Init deployment mirror — copied to the runtime location when `omcustom init` runs | `omcustom init` |
+| `workflows/auto-dev.yaml` (repo root) | Legacy `/omcustom:workflow` directory remnant — NOT referenced by `/pipeline`. Also contains `eraser.yaml` and template examples. | Unused after `/pipeline` migration |
+| `templates/workflows/auto-dev.yaml` | Template example mirror — Glob'd by List Mode as "template examples" (`Glob("templates/workflows/*.yaml")`) | `/pipeline` List Mode display only |
+
+**Key rules:**
+- The runtime source is `.claude/skills/pipeline/workflows/` (skill base dir). Do NOT confuse with repo-root `workflows/`.
+- When modifying any workflow YAML, update **all applicable mirrors** to prevent drift. `verify-template-sync.sh` (#1286) detects drift automatically on CI.
+- Repo-root `workflows/` is a legacy `/omcustom:workflow` remnant — it also contains `eraser.yaml`. Do not delete without checking for other references.
+
 ## Error Handling
 
 - Pipeline not found → list available pipelines with suggestion

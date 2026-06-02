@@ -317,6 +317,14 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 
 > **Path existence ≠ tool capability (#1269 ③)**: the pre-check above verifies the agent HAS Read/Write/Bash, but not that the target path actually exists. Delegating a read/write to a missing or renamed path causes the same round-trip waste the capability pre-check is meant to prevent. Verify path existence (Glob/ls) before delegating path-specific work.
 
+> **Multi-copy content consistency (#1287)**: 동일 파일이 다중 사본으로 존재하는 경우(예: auto-dev.yaml이 실행본 + templates 미러 + 레거시 사본 등 N곳), 위임 전 경로 존재뿐 아니라 **사본 간 내용 일관성(md5/diff)도 확인**해야 한다. 사본이 drift된 상태에서 "N곳 동일 변경 적용"으로 위임하면 에이전트가 작업 중에야 drift를 발견(round-trip)하거나, 일부 사본만 갱신되어 불일치가 심화된다.
+>
+> | Anti-pattern | Required |
+> |--------------|----------|
+> | `find`로 N곳 존재 확인 후 "N곳 동일 변경" 위임 | 위임 전 `md5`/`diff -q`로 N곳 내용 일치 확인; drift 시 canonical 기준 정렬을 위임 prompt에 명시 |
+>
+> Origin: #1287 (v0.164.0 세션 회고 찐빠 #1).
+
 ### Known Limitations (Active Cache)
 
 | Agent | Limitation | Workaround |
