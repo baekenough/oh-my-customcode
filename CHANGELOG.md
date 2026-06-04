@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.167.0] - 2026-06-04
+
+### Added
+- R018 "Gate Transparency" — 3+ 에이전트를 Agent Tool로 폴백할 때 스폰 전 게이트 평가 결과를 한 줄로 announce하는 의무 + anti-pattern 표. Silent Agent-Tool 선택이 게이트 평가 audit trail을 잃는 문제 해소 (#1293)
+- R009 Self-Check #4에 게이트 announce cross-ref 추가 — R018 Gate Transparency 참조 (#1293)
+- R018 Member Completion Verification에 CC v2.1.162+ `claude agents --json waitingFor` 노트 — blocked(입력 대기) vs silently stalled(reassign) 두 실패 모드를 deterministic ground-truth로 구분 (#1294)
+
+### Deprecated
+- eraser workflow (`workflows/eraser.yaml`) deprecation — 레거시 /omcustom:workflow remnant. 두 기능이 대체됨: ARCHITECTURE.md count/version sync → 릴리즈 워크플로우 + validate-docs, Eraser MCP 다이어그램 생성 → eraser-diagrams 플러그인 스킬. 파일은 retained-but-unmaintained로 유지, pipeline SKILL.md "Workflow File Locations"에 명문화 (#1289)
+
 ## [0.166.0] - 2026-06-04
 
 ### Added
