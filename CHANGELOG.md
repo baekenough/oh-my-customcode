@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.166.0] - 2026-06-04
+
+### Added
+- R009 Self-Check #6 — announce-실행 일치: 병렬 dispatch를 prose로 announce하면 announce한 모든 도구 호출을 같은 메시지에 동봉해야 함. Common Violations에 milestone announce-execution mismatch 예시 추가 (#1290)
+- R020 "Directory-Context Before Multi-Copy Unification/Deletion" — Read-Before-Characterize를 파일 단위에서 디렉토리 단위로 확장: 다중 사본 통일/삭제 전 사본이 속한 디렉토리 전체(ls)를 확인해 형제 파일 역할·맥락 파악 (#1290)
+- R009/R012 CC v2.1.161 호환 노트 — parallel tool calls 독립 결과(실패 Bash가 같은 배치 형제 호출을 더 이상 취소하지 않음), OTEL_RESOURCE_ATTRIBUTES metric datapoint label slicing(team/repo 차원), `claude agents` done/total 진행 표시 (#1291)
+
 ## [0.165.0] - 2026-06-03
 
 ### Added

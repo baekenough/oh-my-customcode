@@ -2031,7 +2031,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "0.162.1",
+  version: "0.166.0",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -2074,12 +2074,12 @@ var package_default = {
   dependencies: {
     "@clack/prompts": "^1.1.0",
     "@inquirer/prompts": "^8.3.2",
-    commander: "^14.0.2",
+    commander: "^15.0.0",
     i18next: "^26.0.2",
     yaml: "^2.8.2"
   },
   devDependencies: {
-    "@anthropic-ai/sdk": "^0.98.0",
+    "@anthropic-ai/sdk": "^0.100.1",
     "@biomejs/biome": "^2.3.12",
     "@types/bun": "^1.3.6",
     "@types/js-yaml": "^4.0.9",

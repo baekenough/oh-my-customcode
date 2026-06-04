@@ -32,6 +32,7 @@ Before writing/editing multiple files:
 3. Specialized agent available? → Use it (not general-purpose)
 4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents**
 5. Running agent stalled (2x+ duration)? → Spawn independent follow-up tasks immediately
+6. Announced a parallel dispatch in prose? → ALL announced tool calls MUST be in the SAME message as the announcement (announce-execution consistency)
 
 ### Common Violations to Avoid
 
@@ -42,6 +43,9 @@ Before writing/editing multiple files:
 ❌ WRONG: Single agent receives massive multi-domain prompt (>5000 tokens, e.g., M2 plan with 12 tasks across 7 areas)
    → Latency timeout, user cancellation, context waste, no review loop
 ✓ CORRECT: Pre-decompose by domain, spawn parallel agents per area (R009) or use Agent Teams (R018)
+
+❌ WRONG: Announce "milestone 생성 + 구조 확인 병렬" but only dispatch one tool; the other runs next turn (announce-execution mismatch)
+✓ CORRECT: When announcing N parallel tools, include ALL N tool calls in the SAME message as the announcement
 ```
 
 > **Token threshold heuristic**: When a delegated agent prompt exceeds ~5000 tokens or spans 3+ unrelated domains, decompose by domain and spawn parallel agents. See R018 for Agent Teams criteria when review cycles are needed. Reference: #1085.
@@ -63,6 +67,8 @@ Before writing/editing multiple files:
 -->
 
 > **Agent Teams partial spawn** → See R018 (MUST-agent-teams.md) "Spawn Completeness Check".
+
+> **v2.1.161+**: Parallel tool calls in a single batch are now independent — a failed Bash command no longer cancels the other calls in the same batch; each tool returns its own result. This strengthens R009 batching: one failing call in a parallel dispatch no longer aborts its siblings, so independent work bundled in the same message completes regardless of a single failure. Lowers the safety cost of the announce-execution consistency self-check (#6).
 
 ## Execution Rules
 

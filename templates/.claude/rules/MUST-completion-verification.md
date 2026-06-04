@@ -196,6 +196,19 @@ triage-dispatch.yml 실패 원인을 파일 Read 전에 "triaged 라벨 부재 +
 
 Origin: #1266 ④.
 
+### Directory-Context Before Multi-Copy Unification/Deletion
+
+다중 사본(동일 파일이 N곳에 존재)을 통일하거나 삭제하기 전, 각 사본이 위치한 **디렉토리 전체 맥락**을 확인한다(`ls`로 형제 파일 파악). 사본 파일 하나만 보고 "orphan"·"stub"으로 특성화하면, 같은 디렉토리의 형제 파일(다른 역할을 가진)이 함께 덮이거나 맥락이 누락된다. Read-Before-Characterize를 파일 단위에서 디렉토리 단위로 확장한 규칙이다.
+
+| 금지 | 필수 |
+|------|------|
+| 사본 파일만 보고 "orphan/stub"으로 단정 후 통일/삭제 | 사본이 속한 디렉토리 전체(`ls`)를 확인 — 형제 파일 역할·연계 파악 후 처리 |
+
+#### Common Violation (#1290 찐빠 #2, cross-session)
+Session 108에서 `auto-dev.yaml` 4곳을 canonical 통일할 때, repo-root `./workflows/`에 `eraser.yaml`이 공존하는 디렉토리 맥락을 미확인하고 덮었다. Session 109에서 디렉토리 단위 Read-Before-Characterize로 보정(`eraser.yaml` 발견 → #1289 등록, destructive 삭제 회피). 결과는 무해했으나 맥락이 불완전했다.
+
+Origin: #1290 (session 109 retrospective).
+
 ### Degraded-Output Re-Verification Gate (529 / buffering)
 
 When tool outputs show degradation signs — 529 errors, duplicated or truncated output, or a Read returning empty on a file that is known non-empty — you MUST re-verify any fact via a deterministic second source BEFORE any destructive or permanent action (recovery-agent dispatch, issue edit, commit, file restore). Do NOT characterize state ("corruption", "오염", "loop") from a single degraded read.
