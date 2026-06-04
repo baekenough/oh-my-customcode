@@ -76,6 +76,16 @@ Quick rule: User explicitly preferred plain subagents this session? → use Agen
 ╚══════════════════════════════════════════════════════════════════╝
 -->
 
+### Gate Transparency
+
+When the gate resolves to **Agent Tool** for a 3+ agent dispatch (e.g. mechanical disjoint-file editing with no review loop), announce the gate result in one line BEFORE spawning — e.g. `R018 게이트: 3개 disjoint-file 도메인, 리뷰 사이클 없음 → Agent Tool 폴백`. Silently selecting Agent Tool on a 3+ agent batch loses the gate-evaluation audit trail and reads as if the R018/R009 Self-Check #4 gate was skipped.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 3+ 에이전트 병렬 스폰 announce에 게이트 평가 결과 누락 | 스폰 전 한 줄로 게이트 결과 명시 (Agent Tool 폴백 사유 또는 Agent Teams 선택 사유) |
+
+Origin: #1293 (Session 110 retrospective, Low).
+
 ### Spawn Completeness Check
 
 All members must be spawned in a single message. Partial spawning needs correction per R018 and R009.
@@ -330,6 +340,8 @@ Agent Teams member completion MUST be verified by deterministic ground-truth —
 | SendMessage report | Low — member may stall before sending | Use as a signal only |
 
 Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command ran is not the same as verifying it succeeded).
+
+> **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.
 
 **Stall handling**: When a member shows no task progress within ~2 minutes despite spawn + owner assignment + SendMessage coordination, reassign the work to a standalone Agent (R009) rather than continuing to nudge the stalled member. Stalled Teams members waste tokens on idle polling and delay the overall workflow.
 

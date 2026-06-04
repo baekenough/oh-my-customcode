@@ -30,7 +30,7 @@ Before writing/editing multiple files:
 1. Are files independent? → YES: spawn parallel agents
 2. Using Write/Edit sequentially for 2+ files? → parallelize instead
 3. Specialized agent available? → Use it (not general-purpose)
-4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents**
+4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents; for a 3+ agent batch, announce the gate result (Agent Tool fallback reason or Agent Teams choice) — see R018 Self-Check "Gate Transparency"**
 5. Running agent stalled (2x+ duration)? → Spawn independent follow-up tasks immediately
 6. Announced a parallel dispatch in prose? → ALL announced tool calls MUST be in the SAME message as the announcement (announce-execution consistency)
 
