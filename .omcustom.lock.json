@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.162.1",
-  "generatedAt": "2026-06-01T02:19:06.874Z",
-  "templateVersion": "0.162.1",
+  "generatorVersion": "0.166.0",
+  "generatedAt": "2026-06-04T02:16:26.100Z",
+  "templateVersion": "0.166.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "e5f4b31759741b09d2c3c9d27861ec0441d24d8772bbfd8dbf2d774d661b2e10",
@@ -10,13 +10,13 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "669b2d03cbafebacdf9a8990babcafcf658a64220fa593e24c7ae3a086f0573d",
-      "size": 3059,
+      "templateHash": "4ec917c940224471bcaa7a060c9bb948e6156357ad0b716ace4ade9bb48eadff",
+      "size": 3629,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "bc6e2d79d10708424412c62ca28e96b59cf4832ae8cd4c10e0bf04ee0f6edce2",
-      "size": 27437,
+      "templateHash": "1fdc8fff3b6584056ac36abab07c7910192d6b255666c119030303e43404c893",
+      "size": 28236,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "6c3edcbc4694a0a2c1095d697237f3ff4746470bd3d4f4c73c90adc4d96a9d2b",
-      "size": 7275,
+      "templateHash": "4f77083601911b6e9faae4d704b22551da5affda0e336f36a4238109ceb4d2f9",
+      "size": 8146,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -105,8 +105,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "1ece6827c92118e51a0dbad51d01f416f55e019977aa8aa0ec759ace29c94755",
-      "size": 16007,
+      "templateHash": "70b984fbef72dfc22d614a428a3ca45a20f8c446dc4e9b771c991622aca7fd28",
+      "size": 19627,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "35dc50674865b033f48b52376ee11654e2ba7d939161bbf1772f78536a268628",
-      "size": 13007,
+      "templateHash": "1d11e0d3a240c0567c095f7f92d388fb898125fff0486522577f99156de28462",
+      "size": 14215,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -300,8 +300,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-gitnerd.md": {
-      "templateHash": "7436524c5df0d26a37c473118d9fa3d2c6864e6776e4b30b113853e46d66324b",
-      "size": 2690,
+      "templateHash": "f8ee1b1c7579812311ddeb3fb9fffb5a2dde1fc560a37ae946abd7a2c2627f92",
+      "size": 3809,
       "component": "agents"
     },
     ".claude/agents/mgr-creator.md": {
@@ -485,13 +485,13 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "60d78a7d1ac5050ef709cd602df696d101e179687ebfd9580fc49f5e1a7afc48",
-      "size": 14974,
+      "templateHash": "c6e2486c6f8a0944f826f792eb169d8ac1b4d1cfd584811d428bf71cd997f30d",
+      "size": 16893,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
-      "templateHash": "bfb4092237e9c3ad6eab86975d4d0a35a24ac67f71feab1a40f1ddd547a05a08",
-      "size": 5180,
+      "templateHash": "0ac9436b8a46016b3e4d29c584d1704bd6b2732a7aeb97268889d056a2a56331",
+      "size": 6660,
       "component": "skills"
     },
     ".claude/skills/pipeline/labels.md": {
@@ -760,8 +760,8 @@
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
-      "templateHash": "c58b2d82da29c7acef2b5f11d188942212ffff175191ac22eb8428f55a80eb36",
-      "size": 7582,
+      "templateHash": "5006f1dec6755cbe949d9f72372a398e0d419e5dca63744438e653f08de607bd",
+      "size": 9242,
       "component": "skills"
     },
     ".claude/skills/status/SKILL.md": {
@@ -1395,8 +1395,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "2c4d67bb431c90c5de88f560eb19b97beefd0cc0625d3b560908b72dbdc6d8d8",
-      "size": 69623,
+      "templateHash": "6b31fc447d10eafbe590e07c2625169e9e3e517632a883c0f8a4ba282ec6e21a",
+      "size": 75124,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
