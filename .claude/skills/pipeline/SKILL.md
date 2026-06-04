@@ -152,7 +152,7 @@ The `auto-dev.yaml` (and other workflow YAML files) exist in **4 locations**. On
 **Key rules:**
 - The runtime source is `.claude/skills/pipeline/workflows/` (skill base dir). Do NOT confuse with repo-root `workflows/`.
 - When modifying any workflow YAML, update **all applicable mirrors** to prevent drift. `verify-template-sync.sh` (#1286) detects drift automatically on CI.
-- Repo-root `workflows/` is a legacy `/omcustom:workflow` remnant — it also contains `eraser.yaml`. Do not delete without checking for other references.
+- Repo-root `workflows/` is a legacy `/omcustom:workflow` remnant. It contains `eraser.yaml`, **deprecated as of v0.167.0 (#1289)** — retained but unmaintained: its ARCHITECTURE.md-sync function moved to the release workflow + validate-docs, and its diagram generation to the `eraser-diagrams` plugin skill. Not reachable via `/pipeline`. Do not delete without checking for other references.
 
 ## Error Handling
 

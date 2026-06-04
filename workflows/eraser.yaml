@@ -1,3 +1,9 @@
+# ⚠️ DEPRECATED (v0.167.0, #1289) — legacy /omcustom:workflow, retained but unmaintained.
+# Its two functions are now covered by other assets:
+#   - ARCHITECTURE.md count/version sync → release workflow + validate-docs (runs every release)
+#   - Eraser MCP diagram generation → eraser-diagrams plugin skill (general-purpose)
+# NOT reachable via /pipeline (runtime source: .claude/skills/pipeline/workflows/). Do not extend.
+#
 # /omcustom:workflow eraser — Architecture documentation sync via Eraser MCP
 # Analyzes ARCHITECTURE.md, updates text, generates/replaces diagrams
 

@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.166.0",
-  "generatedAt": "2026-06-04T02:16:26.100Z",
-  "templateVersion": "0.166.0",
+  "generatorVersion": "0.167.0",
+  "generatedAt": "2026-06-04T12:06:22.117Z",
+  "templateVersion": "0.167.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "e5f4b31759741b09d2c3c9d27861ec0441d24d8772bbfd8dbf2d774d661b2e10",
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "4f77083601911b6e9faae4d704b22551da5affda0e336f36a4238109ceb4d2f9",
-      "size": 8146,
+      "templateHash": "40cef9feeb307f5117c139e0e82b03394aa9cb3e68a118bce32fad4ab87a1b26",
+      "size": 8289,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "e37b06c148f05a1c32b2d496850ff709d02928d005725f81c5eeef83b5df9048",
-      "size": 18899,
+      "templateHash": "36ecef70f952488ad4f2c3505b68bf3b25326d8c4d48c384d9e6d1f786013ca2",
+      "size": 20077,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
@@ -490,8 +490,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
-      "templateHash": "0ac9436b8a46016b3e4d29c584d1704bd6b2732a7aeb97268889d056a2a56331",
-      "size": 6660,
+      "templateHash": "1fc48a852dd5f02df9c3ba88108d2aa6b45cf136a12b9dbeddf52f2d324fb8a1",
+      "size": 6899,
       "component": "skills"
     },
     ".claude/skills/pipeline/labels.md": {
