@@ -91,6 +91,8 @@ Before execution, show the plan:
    - Approach and principles
 3. If fetch fails — report error, abort
 
+> **External quantitative-fact source tagging** (#1298): WebFetch가 산출한 구체적 정량 주장(benchmark 수치, table 값, metric)은 이슈 본문에 `WebFetch-derived (unverified)`로 태깅한다 — 검증된 사실로 제시하지 않는다. WebFetch는 small fast model + 15분 URL 캐시를 사용하므로, 동일 URL을 여러 번 fetch해도 독립 교차검증이 아니다. load-bearing 수치는 primary PDF/원문으로 1회 검증하거나 명시적으로 unverified로 표기한다. (R020 Read-Before-Characterize, R023 Verifier Ground-Truth for cross-cutting facts)
+
 ### Phase 2: Load Project Philosophy
 
 1. `Read(CLAUDE.md)` — extract architecture philosophy:
