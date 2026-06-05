@@ -137,7 +137,7 @@ steps:
       Evaluate ONLY if docs-only NOT met. Conditions (ALL must hold):
       1. scope size ≤ 7
       2. ALL scoped issues are low-risk: for EVERY issue,
-         labels ∩ {documentation, automated, claude-code-release, feedback, professor, enhancement} ≠ ∅
+         labels ∩ {documentation, automated, claude-code-release, feedback, professor, enhancement, improvement} ≠ ∅
       3. NO scoped issue carries a breaking-change or decision-needed label
       4. No code logic change is expected — work is docs/rule/skill/config/script-centric
          (verify against each issue body; if any issue implies application code logic change, FAIL the lite check)
@@ -201,6 +201,7 @@ steps:
       - Issues whose prerequisites failed in-run MUST be skipped (log reason)
       - No direct orchestrator writes (R010)
       - All Agent tool calls MUST pass mode: "bypassPermissions" to prevent permission prompts during unattended execution
+      - Mid-run scope additions (a new issue added via user interrupt AFTER implement began) MUST re-enter the verify-build gate before release — do NOT let a late-added scope item ride to release on a prior verify-build pass. Critical for code changes; benign for docs-only (#1301).
 
 
       ## Sensitive Path Handling (CC v2.1.121+)
