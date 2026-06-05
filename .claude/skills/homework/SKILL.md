@@ -1,6 +1,6 @@
 ---
 name: homework
-description: On session cleanup ("세션 정리") or /homework invocation, analyze the current and linked previous sessions, extract mistakes (찐빠), and report them via omcustom-feedback with a confirmation gate. Use when wrapping up a session or auditing recent work for harness gaps.
+description: On explicit /homework invocation, analyze the current and linked previous sessions, extract mistakes (찐빠), and report them via omcustom-feedback with a confirmation gate. Auto-activation on session cleanup/session-end signals is OPT-IN (default OFF) — requires an explicit project/user directive. Use when explicitly auditing recent work for harness gaps.
 scope: harness
 user-invocable: true
 argument-hint: "[--dry-run] [--days <n>] [--severity <critical|high|medium|low>]"
@@ -25,13 +25,15 @@ This skill is the dedicated entry point for R011's "Session-End Retrospective Fe
 
 ## Trigger Detection
 
-Activate when the user says any of:
-- "세션 정리" / "숙제" / "회고"
-- "homework" / "session cleanup" / "wrap up"
-- Explicit `/homework` invocation
-- Session-end signals: "끝", "종료", "마무리", "done", "end session"
+**Default: OFF for auto-activation.** This skill does NOT auto-run on session cleanup or session-end signals unless explicitly enabled. The default is `false` — silence is a non-trigger.
 
-When activated as a session-end signal, this skill runs BEFORE sys-memory-keeper's MEMORY.md update (R011 session-end self-check order: homework → memory save).
+Activate ONLY when:
+- **Explicit `/homework` invocation** (always runs)
+- **Explicit opt-in**: the user/project has explicitly directed homework to run on session cleanup — e.g., a CLAUDE.md directive such as "run homework on every session cleanup", or a settings flag. A one-off explicit request ("회고 돌려줘", "homework 실행") also counts.
+
+If no explicit opt-in exists, treat session-cleanup / session-end phrases ("세션 정리", "숙제", "회고", "끝", "종료", "마무리", "done", "wrap up", "session cleanup", "end session") as **NON-triggers** — do NOT auto-run. You MAY briefly remind the user that `/homework` is available, then proceed with normal session-end handling.
+
+When auto-activation IS explicitly enabled and fires as a session-end signal, this skill runs BEFORE sys-memory-keeper's MEMORY.md update (R011 session-end self-check order: homework → memory save).
 
 ## Workflow
 
