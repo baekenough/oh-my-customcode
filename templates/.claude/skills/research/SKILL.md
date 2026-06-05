@@ -117,6 +117,8 @@ fi
 
 **Action**: `[Pre-flight] WARN: Context usage at {pct}%. 10-team research typically adds 30-40% context. Consider /compact before proceeding, or results may be truncated.`
 
+> **File-absent branch (#1298)**: `$CONTEXT_FILE`가 존재하지 않으면 입력이 측정 불가하다 — `PASS (context budget unmeasured — file absent)`로 보고하고 WARN을 내지 않는다. 파일을 읽지 않고 WARN 상태를 특성화하지 않는다(R020 Read-Before-Characterize). WARN은 파일이 존재하고 context_pct > 40 일 때만 emit한다.
+
 ### Display Format
 
 ```
@@ -225,6 +227,10 @@ Reference: `feedback_sensitive_path_tmp_bypass.md`, R006 sensitive-path handling
 | Orchestrator only | Main conversation manages all phases (R010) |
 | Ecomode | Auto-activate for team result aggregation (R013) |
 | Intent display | Show research plan before execution (R015) |
+
+## External Quantitative-Fact Source Tagging
+
+research 팀이 WebFetch로 구체적 정량 주장(benchmark 수치, table 값)을 수집하면, synthesis/report는 출처별로 태깅해야 한다: `WebFetch-derived (unverified)` vs `PDF/primary-verified`. WebFetch는 small fast model + URL당 15분 캐시를 사용하므로, N개 팀이 동일 URL을 fetch하는 것은 독립 교차검증이 아니다(팀 간 합의가 공유 캐시 artifact일 수 있음). primary source에서 검증 불가한 cross-cutting fact는 verifier에게 명시적 ground-truth로 제공해야 한다(R023). 영구 이슈/아티팩트에 정확한 수치를 primary-source 검증 또는 명시적 unverified 태그 없이 사실로 기재하지 않는다.
 
 ## Retrieval-Reasoning Separation
 
