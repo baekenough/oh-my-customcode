@@ -41,6 +41,13 @@ An issue is eligible for `docs-only` compression mode if its labels include at l
 If ALL scoped issues are compression-eligible AND scope size ≤ 3, the pipeline MAY use
 `compression_mode=docs-only` (skip professor-triage / release-plan / deep-plan / deep-verify skill spawns).
 
+An issue is eligible for `lite` (Tier 2) compression mode if its labels include at least one of:
+`documentation`, `automated`, `claude-code-release`, `feedback`, `professor`, `enhancement`, `improvement`
+
+If ALL scoped issues carry at least one lite-eligible label AND scope size ≤ 7 AND no issue carries
+`breaking-change` or `decision-needed`, the pipeline MAY use `compression_mode=lite`
+(integrated analysis replaces heavy skill spawns for triage/plan/deep-plan/deep-verify; implement and verify-build execute normally).
+
 ## Lifecycle Labels (set by `implement` step)
 
 | Transition | Action |
