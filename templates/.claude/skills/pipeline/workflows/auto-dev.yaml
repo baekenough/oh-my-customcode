@@ -147,7 +147,12 @@ steps:
         - plan step: MAY replace release-plan skill spawn with orchestrator integrated analysis
         - deep-plan step: MAY replace deep-plan skill spawn with orchestrator integrated analysis
         - deep-verify step: perform via mgr-sauron R017 structural verification + core self-check
-          (instead of full deep-verify skill spawn)
+          (instead of full deep-verify skill spawn). If the change set has NO structural surface
+          (no agent/skill/guide/rule frontmatter changed — e.g. a workflow-yaml-only or docs-only change),
+          the mgr-sauron R017 spawn MAY be skipped and replaced by deterministic self-check
+          (template-sync + md5 multi-copy + counts + bun test), under a MANDATORY justification log:
+          "[compression-mode] lite deep-verify — R017 spawn skipped (no structural surface); deterministic self-check only".
+          (#1311, extends #1309 substitution principle.)
         - implement / verify-build / release / ci-check / post-release-followup: execute normally (no compression)
         - MANDATORY justification log (REQUIRED whenever a skill stage is replaced by integrated analysis):
           "[compression-mode] lite — skill 단계 통합 분석 대체. 정당화: scope={n}, 모든 이슈 저위험(라벨 {labels}), 구현 대상 이슈 본문 명시 {issue_refs}"
