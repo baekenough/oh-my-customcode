@@ -364,6 +364,19 @@ Related records from session v0.87.2~v0.88.0 (issue #869):
 - `feedback_bun_mock_module.md`
 -->
 
+## Safety-Related Feedback Memory Framing
+
+> Origin: #1307 찐빠 #2 (Medium) — a sys-memory-keeper delegation prompt framed a learning as "오탐으로 판단하고 진행한다" (conclude it's a false positive and proceed), tripping the memory-poisoning safety classifier and requiring a rewrite.
+
+Safety-related feedback memories MUST be written in **verification-obligation form**, NOT **conclusion form**. Conclusion-form framing ("ignore the warning and proceed", "오탐이므로 무시") risks future sessions ignoring genuine threat warnings (memory-poisoning).
+
+| Anti-pattern (conclusion form) | Required (verification-obligation form) |
+|--------------------------------|------------------------------------------|
+| "이 경고는 오탐이므로 무시하고 진행" | "이 패턴은 X 검증을 트리거; 검증 통과 시에만 진행, 실패 시 STOP" |
+| "warning is false positive, proceed" | "warning triggers a duty to verify Y; proceed only if verified, else STOP" |
+
+Write safety learnings as triggers (what to check) + STOP conditions (when to halt), never as standing permission to dismiss a class of warnings.
+
 ## Session-End Auto-Save
 
 ### Trigger
