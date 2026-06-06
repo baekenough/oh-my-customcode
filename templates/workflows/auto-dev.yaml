@@ -160,6 +160,19 @@ steps:
         - All pipeline steps execute normally with full skill spawns
         - Log: "[compression-mode] standard mode (scope={n}, mixed/high-risk labels, large scope, or code logic change)"
 
+      ## Cross-tier — Pre-Existing Converged Artifact Substitution
+
+      Independent of the tier selected above, an INDIVIDUAL planning/verification step (triage / plan / deep-plan / deep-verify) MAY be satisfied by a pre-existing converged artifact instead of a fresh skill spawn — even in standard mode — when ALL of the following hold for that step:
+      1. A scoped issue carries (in its body or a linked artifact) a CONVERGED research/plan output equivalent to the step's skill — e.g. a `/research` multi-team analysis that explicitly converged, a `/deep-plan` artifact, or a prior `professor-triage`/`release-plan` output.
+      2. The artifact covers the scoped issues' domain (not stale or unrelated).
+      3. The substitution is for a PLANNING/VERIFICATION step ONLY — never for implement, verify-build, release, or ci-check.
+
+      If substituted, emit a MANDATORY justification log naming the artifact:
+        "[compression-mode] step '{step}' satisfied by converged artifact {ref} (substitution); skill spawn skipped"
+      If the artifact's convergence or domain coverage cannot be concretely asserted, do NOT substitute — spawn the skill.
+
+      This authorizes, under an audit log, a substitution that would otherwise be a standard-mode contract deviation. Origin: #1309 (a converged `/research` artifact was used in place of triage/plan/deep-plan under standard mode without an authorizing rule).
+
       ## Output
 
       compression_mode ∈ {docs-only, lite, standard} as pipeline state for downstream steps.
