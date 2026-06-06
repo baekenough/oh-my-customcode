@@ -19,8 +19,11 @@ const STATS_ALL_MATCH: ImplementationStats = {
   agent_names: ['lang-go-expert', 'lang-python-expert', 'lang-typescript-expert'],
   skill_count: 2,
   skill_names: ['typescript-best-practices', 'react-best-practices'],
-  rule_count: 18,
-  guide_count: 24,
+  rule_count: 23,
+  rule_must_count: 14,
+  rule_should_count: 8,
+  rule_may_count: 1,
+  guide_count: 57,
   hook_count: 5,
   context_count: 2,
 };
@@ -31,6 +34,18 @@ const README_WITH_CANONICAL_BLOCKS = `
 We have Agents (3) in the system.
 
 There are 2 skills available.
+
+### Rules (23)
+
+| Priority | Count | Description |
+|----------|-------|-------------|
+| **MUST** | 14 | Safety, permissions |
+| **SHOULD** | 8 | Interaction, error handling |
+| **MAY** | 1 | Optimization |
+
+### Guides (57)
+
+Reference documentation covering best practices.
 
 ## Canonical agent IDs
 
@@ -98,6 +113,82 @@ const README_COUNT_MISMATCH = `
 We have Agents (99) in the system.
 
 There are 99 skills available.
+`;
+
+// README with SHOULD mismatch: claims 6 SHOULD but actual is 8
+const README_SHOULD_MISMATCH = `
+# oh-my-customcode
+
+We have Agents (3) in the system.
+
+There are 2 skills available.
+
+### Rules (23)
+
+| Priority | Count | Description |
+|----------|-------|-------------|
+| **MUST** | 14 | Safety, permissions |
+| **SHOULD** | 6 | Interaction, error handling |
+| **MAY** | 1 | Optimization |
+
+### Guides (57)
+
+Reference documentation.
+`;
+
+// README with internal breakdown sum mismatch: MUST(14)+SHOULD(6)+MAY(1)=21 ≠ header total 23
+const README_BREAKDOWN_SUM_MISMATCH = `
+# oh-my-customcode
+
+### Rules (23)
+
+| Priority | Count | Description |
+|----------|-------|-------------|
+| **MUST** | 14 | Safety, permissions |
+| **SHOULD** | 6 | Interaction, error handling |
+| **MAY** | 1 | Optimization |
+`;
+
+// README with guide count mismatch: claims 42 guides but actual is 57
+const README_GUIDE_COUNT_MISMATCH = `
+# oh-my-customcode
+
+We have Agents (3) in the system.
+
+There are 2 skills available.
+
+### Rules (23)
+
+| Priority | Count | Description |
+|----------|-------|-------------|
+| **MUST** | 14 | Safety, permissions |
+| **SHOULD** | 8 | Interaction, error handling |
+| **MAY** | 1 | Optimization |
+
+### Guides (42)
+
+Reference documentation.
+`;
+
+// README with all rules/guides correctly stated (no breakdown, no mismatches)
+const README_RULES_ALL_MATCH = `
+# oh-my-customcode
+
+We have Agents (3) in the system.
+
+There are 2 skills available.
+
+### Rules (23)
+
+| Priority | Count | Description |
+|----------|-------|-------------|
+| **MUST** | 14 | Safety, permissions |
+| **SHOULD** | 8 | Interaction, error handling |
+| **MAY** | 1 | Optimization |
+
+### Guides (57)
+
+Reference documentation.
 `;
 
 const README_NO_CANONICAL_BLOCKS = `
@@ -363,6 +454,69 @@ phantom-skill
 
     expect(result.extraInReadme.skills).toContain('phantom-skill');
   });
+
+  // ---------------------------------------------------------------------------
+  // Rule priority breakdown validation
+  // ---------------------------------------------------------------------------
+
+  test('detects SHOULD classification mismatch (README 6 vs actual 8)', () => {
+    const result = programmaticValidation(STATS_ALL_MATCH, README_SHOULD_MISMATCH);
+
+    const shouldMismatch = result.countMismatches.find((m) => m.field === 'rules-should');
+    expect(shouldMismatch).toBeDefined();
+    expect(shouldMismatch?.readme).toBe(6);
+    expect(shouldMismatch?.actual).toBe(8);
+  });
+
+  test('does not report MUST or MAY mismatch when only SHOULD is wrong', () => {
+    const result = programmaticValidation(STATS_ALL_MATCH, README_SHOULD_MISMATCH);
+
+    expect(result.countMismatches.find((m) => m.field === 'rules-must')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-may')).toBeUndefined();
+  });
+
+  test('detects internal breakdown sum mismatch (14+6+1=21 ≠ header 23)', () => {
+    const result = programmaticValidation(STATS_ALL_MATCH, README_BREAKDOWN_SUM_MISMATCH);
+
+    const sumMismatch = result.countMismatches.find((m) => m.field === 'rules-breakdown-sum');
+    expect(sumMismatch).toBeDefined();
+    // readme field holds the README header total (23), actual holds the sum (21)
+    expect(sumMismatch?.readme).toBe(23);
+    expect(sumMismatch?.actual).toBe(21);
+  });
+
+  test('detects guide count mismatch (README 42 vs actual 57)', () => {
+    const result = programmaticValidation(STATS_ALL_MATCH, README_GUIDE_COUNT_MISMATCH);
+
+    const guideMismatch = result.countMismatches.find((m) => m.field === 'guides');
+    expect(guideMismatch).toBeDefined();
+    expect(guideMismatch?.readme).toBe(42);
+    expect(guideMismatch?.actual).toBe(57);
+  });
+
+  test('returns no rule/guide mismatches when all match', () => {
+    const result = programmaticValidation(STATS_ALL_MATCH, README_RULES_ALL_MATCH);
+
+    expect(result.countMismatches.find((m) => m.field === 'rules')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-must')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-should')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-may')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-breakdown-sum')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'guides')).toBeUndefined();
+    expect(result.countMismatches).toEqual([]);
+  });
+
+  test('skips rules/guides checks when patterns are absent from README', () => {
+    // README_NO_CANONICAL_BLOCKS has no rules/guides count lines → no false positives
+    const result = programmaticValidation(STATS_ALL_MATCH, README_NO_CANONICAL_BLOCKS);
+
+    expect(result.countMismatches.find((m) => m.field === 'rules')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-must')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-should')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-may')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'guides')).toBeUndefined();
+    expect(result.countMismatches.find((m) => m.field === 'rules-breakdown-sum')).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -383,7 +537,7 @@ describe('buildPrompt', () => {
 
     expect(prompt).toContain('"agent_count": 3');
     expect(prompt).toContain('"skill_count": 2');
-    expect(prompt).toContain('"rule_count": 18');
+    expect(prompt).toContain('"rule_count": 23');
   });
 
   test('includes success message when validation has no issues', () => {
@@ -630,9 +784,29 @@ describe('collectImplementationStats', () => {
     expect(typeof stats.agent_count).toBe('number');
     expect(typeof stats.skill_count).toBe('number');
     expect(typeof stats.rule_count).toBe('number');
+    expect(typeof stats.rule_must_count).toBe('number');
+    expect(typeof stats.rule_should_count).toBe('number');
+    expect(typeof stats.rule_may_count).toBe('number');
     expect(typeof stats.guide_count).toBe('number');
     expect(typeof stats.hook_count).toBe('number');
     expect(typeof stats.context_count).toBe('number');
+  });
+
+  test('rule breakdown sum equals rule_count', async () => {
+    const stats = await collectImplementationStats();
+
+    expect(stats.rule_must_count + stats.rule_should_count + stats.rule_may_count).toBe(stats.rule_count);
+  });
+
+  test('rule breakdown counts are non-negative integers', async () => {
+    const stats = await collectImplementationStats();
+
+    expect(stats.rule_must_count).toBeGreaterThanOrEqual(0);
+    expect(stats.rule_should_count).toBeGreaterThanOrEqual(0);
+    expect(stats.rule_may_count).toBeGreaterThanOrEqual(0);
+    expect(Number.isInteger(stats.rule_must_count)).toBe(true);
+    expect(Number.isInteger(stats.rule_should_count)).toBe(true);
+    expect(Number.isInteger(stats.rule_may_count)).toBe(true);
   });
 
   test('returns agent_names array consistent with agent_count', async () => {

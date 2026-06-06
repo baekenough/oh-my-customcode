@@ -356,6 +356,8 @@ description: Brief desc    # One-line summary
 
 Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, `hooks`, `paths`, `shell`, `allowed-tools`, `keep-coding-instructions`. Skill `effort` takes precedence over agent `effort` when both specified. See full optional fields via Read tool.
 
+> **v2.1.163+**: In skill `command` bodies, use `\$` to emit a literal `$` before a number (e.g., `\$1`) — previously ambiguous with shell variable expansion. Relevant when authoring skills with `shell:` or inline command steps that include dollar signs not intended as variables.
+
 <!-- DETAIL: Skill Optional Fields (full yaml block)
 ```yaml
 scope: core                # core | harness | package (default: core)

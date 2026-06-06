@@ -213,7 +213,7 @@ All commands are invoked inside the Claude Code conversation.
 | Priority | Count | Purpose |
 |----------|-------|---------|
 | **MUST** | 14 | Safety, permissions, agent design, identification, orchestration, verification, completion, enforcement |
-| **SHOULD** | 6 | Interaction, error handling, memory, HUD, ecomode, ontology routing |
+| **SHOULD** | 8 | Interaction, error handling, memory, HUD, ecomode, ontology routing, wiki sync, verification ladder |
 | **MAY** | 1 | Optimization |
 
 Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done), R021 (advisory-first enforcement model).
@@ -271,7 +271,7 @@ your-project/
 ├── .claude/
 │   ├── agents/                 # 49 agent definitions
 │   ├── skills/                 # 116 skill modules
-│   ├── rules/                  # 22 governance rules (R000-R021)
+│   ├── rules/                  # 23 governance rules (R000-R023)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
