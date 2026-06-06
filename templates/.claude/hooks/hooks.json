@@ -90,7 +90,7 @@
             "command": "bash .claude/hooks/scripts/rtk-intercept.sh"
           }
         ],
-        "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R015 advisory)"
+        "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R013 advisory)"
       },
       {
         "matcher": "tool == \"Bash\" && tool_input.command matches \"git (reset|clean|checkout|restore|switch|rebase|merge)\"",
