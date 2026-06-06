@@ -10,6 +10,8 @@
 | Caching | Same data accessed repeatedly | Cache file contents, reuse search results |
 | Lazy Loading | Large datasets, partial use | Read only needed files, stream results |
 
+> **Tool-availability assumption (#1307 찐빠 #3)**: On first exploration, do NOT assume a tool (e.g., `Glob`) is available without confirming. Prefer `Bash` (`find`/`grep`) for initial search when the available-tool set is unconfirmed, to avoid "No such tool available" round-trips.
+
 ### Capability-Aware Tool Scheduling
 
 When dispatching parallel tool calls, consider per-tool capabilities to optimize scheduling:
