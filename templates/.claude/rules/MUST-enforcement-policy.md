@@ -17,6 +17,8 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 | Advisory (proactive) | UserPromptSubmit hook | R007, R008 (`r007-r008-drift-advisor.sh`, #1229) | Reads last assistant turn; emits stderr advisory before next response if header/prefix absent. Complements retroactive Stop-hook (`session-reflection.sh`, #1190). |
 | Prompt-based | CLAUDE.md + rules/ + PostCompact | All MUST rules | Behavioral guidance in context |
 
+> **v2.1.163+**: Stop and SubagentStop hooks can return `hookSpecificOutput.additionalContext` (JSON) to feed structured feedback back into Claude's context without triggering a hook error label. This enables advisory-style enforcement via Stop/SubagentStop hooks (e.g., `session-reflection.sh`, omcustom-loop SubagentStop) to pass richer context — replacing plain stderr text — without disrupting the turn continuation behavior that advisory-first enforcement relies on.
+
 ## Why Advisory-First
 
 1. **Agent flexibility**: Hard blocks can trap agents in unrecoverable states
