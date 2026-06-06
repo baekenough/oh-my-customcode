@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.170.0] - 2026-06-06
+
+### Added
+- CI validate-docs.ts: rule breakdown(MUST/SHOULD/MAY) count verification, inner-sum cross-check, guide count, and context count gates — closes drift categories that the previous gate missed
+- R021/R006 CC v2.1.163 compatibility notes — Stop/SubagentStop hook `hookSpecificOutput.additionalContext` field (R021); skill command body `\$` escape syntax (R006). Closes #1304.
+
+### Fixed
+- README/README_ko: SHOULD rule count 6 → 8 (R022 wiki-sync, R023 verification-ladder were missing from the breakdown)
+- hooks.json (live + templates copy): RTK auto-intercept hook description corrected — wrong rule reference R015 (Intent Transparency) → R013 (Ecomode). Closes #1305.
+
+### Chore
+- Claude Code v2.1.165 compatibility confirmed — bug fixes/reliability only, no rule changes required. Closes #1303.
+
 ## [0.167.0] - 2026-06-04
 
 ### Added
