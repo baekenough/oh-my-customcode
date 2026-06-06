@@ -15,6 +15,9 @@ export interface ImplementationStats {
   skill_count: number;
   skill_names: string[];
   rule_count: number;
+  rule_must_count: number;
+  rule_should_count: number;
+  rule_may_count: number;
   guide_count: number;
   hook_count: number;
   context_count: number;
@@ -38,6 +41,9 @@ export async function collectImplementationStats(): Promise<ImplementationStats>
     skill_count: 0,
     skill_names: [],
     rule_count: 0,
+    rule_must_count: 0,
+    rule_should_count: 0,
+    rule_may_count: 0,
     guide_count: 0,
     hook_count: 0,
     context_count: 0,
@@ -64,10 +70,14 @@ export async function collectImplementationStats(): Promise<ImplementationStats>
     stats.skill_names = dirs.map((d) => d.name);
   }
 
-  // Count rules
+  // Count rules (total and per-priority breakdown by filename prefix)
   const rulesDir = path.join(templatesDir, '.claude/rules');
   if (fs.existsSync(rulesDir)) {
-    stats.rule_count = fs.readdirSync(rulesDir).filter((f) => f.endsWith('.md')).length;
+    const ruleFiles = fs.readdirSync(rulesDir).filter((f) => f.endsWith('.md'));
+    stats.rule_count = ruleFiles.length;
+    stats.rule_must_count = ruleFiles.filter((f) => f.startsWith('MUST-')).length;
+    stats.rule_should_count = ruleFiles.filter((f) => f.startsWith('SHOULD-')).length;
+    stats.rule_may_count = ruleFiles.filter((f) => f.startsWith('MAY-')).length;
   }
 
   // Count guides (subdirectories)
@@ -194,6 +204,61 @@ export function programmaticValidation(stats: ImplementationStats, readmeEn: str
     const readmeCount = parseInt(skillCountMatch[1] || skillCountMatch[2]);
     if (readmeCount !== stats.skill_count) {
       countMismatches.push({ field: 'skills', readme: readmeCount, actual: stats.skill_count });
+    }
+  }
+
+  // Check rules total count: matches "Rules (N)" or "N governance rules"
+  const ruleCountMatch = readmeEn.match(/(?:Rules\s*\((\d+)\)|(\d+)\s*governance rules)/i);
+  if (ruleCountMatch) {
+    const readmeCount = parseInt(ruleCountMatch[1] || ruleCountMatch[2]);
+    if (readmeCount !== stats.rule_count) {
+      countMismatches.push({ field: 'rules', readme: readmeCount, actual: stats.rule_count });
+    }
+  }
+
+  // Check guides count: matches "Guides (N)" or "N reference documents"
+  const guideCountMatch = readmeEn.match(/(?:Guides\s*\((\d+)\)|(\d+)\s*reference documents)/i);
+  if (guideCountMatch) {
+    const readmeCount = parseInt(guideCountMatch[1] || guideCountMatch[2]);
+    if (readmeCount !== stats.guide_count) {
+      countMismatches.push({ field: 'guides', readme: readmeCount, actual: stats.guide_count });
+    }
+  }
+
+  // Check rule priority breakdown: matches table rows like "| **MUST** | N |"
+  const mustMatch = readmeEn.match(/\|\s*\*\*MUST\*\*\s*\|\s*(\d+)\s*\|/);
+  if (mustMatch) {
+    const readmeCount = parseInt(mustMatch[1]);
+    if (readmeCount !== stats.rule_must_count) {
+      countMismatches.push({ field: 'rules-must', readme: readmeCount, actual: stats.rule_must_count });
+    }
+  }
+
+  const shouldMatch = readmeEn.match(/\|\s*\*\*SHOULD\*\*\s*\|\s*(\d+)\s*\|/);
+  if (shouldMatch) {
+    const readmeCount = parseInt(shouldMatch[1]);
+    if (readmeCount !== stats.rule_should_count) {
+      countMismatches.push({ field: 'rules-should', readme: readmeCount, actual: stats.rule_should_count });
+    }
+  }
+
+  const mayMatch = readmeEn.match(/\|\s*\*\*MAY\*\*\s*\|\s*(\d+)\s*\|/);
+  if (mayMatch) {
+    const readmeCount = parseInt(mayMatch[1]);
+    if (readmeCount !== stats.rule_may_count) {
+      countMismatches.push({ field: 'rules-may', readme: readmeCount, actual: stats.rule_may_count });
+    }
+  }
+
+  // Check internal sum consistency: README breakdown MUST+SHOULD+MAY should equal README rules total
+  if (ruleCountMatch && mustMatch && shouldMatch && mayMatch) {
+    const readmeTotal = parseInt(ruleCountMatch[1] || ruleCountMatch[2]);
+    const readmeMust = parseInt(mustMatch[1]);
+    const readmeShould = parseInt(shouldMatch[1]);
+    const readmeMay = parseInt(mayMatch[1]);
+    const readmeBreakdownSum = readmeMust + readmeShould + readmeMay;
+    if (readmeBreakdownSum !== readmeTotal) {
+      countMismatches.push({ field: 'rules-breakdown-sum', readme: readmeTotal, actual: readmeBreakdownSum });
     }
   }
 
@@ -375,6 +440,50 @@ function printProgrammaticResults(
   }
   if (validation.extraInReadme.skills.length > 0) {
     console.log(`❌ Phantom skills in README: ${validation.extraInReadme.skills.join(', ')}`);
+  }
+
+  // Rule total count line
+  const ruleMismatch = validation.countMismatches.find((m) => m.field === 'rules');
+  if (ruleMismatch) {
+    console.log(`❌ Rule count: README=${ruleMismatch.readme}, actual=${ruleMismatch.actual}`);
+  } else {
+    console.log(`✅ Rule count: ${stats.rule_count} (matched)`);
+  }
+
+  // Rule breakdown lines
+  const mustMismatch = validation.countMismatches.find((m) => m.field === 'rules-must');
+  if (mustMismatch) {
+    console.log(`❌ MUST rule count: README=${mustMismatch.readme}, actual=${mustMismatch.actual}`);
+  } else {
+    console.log(`✅ MUST rule count: ${stats.rule_must_count} (matched)`);
+  }
+
+  const shouldMismatch = validation.countMismatches.find((m) => m.field === 'rules-should');
+  if (shouldMismatch) {
+    console.log(`❌ SHOULD rule count: README=${shouldMismatch.readme}, actual=${shouldMismatch.actual}`);
+  } else {
+    console.log(`✅ SHOULD rule count: ${stats.rule_should_count} (matched)`);
+  }
+
+  const mayMismatch = validation.countMismatches.find((m) => m.field === 'rules-may');
+  if (mayMismatch) {
+    console.log(`❌ MAY rule count: README=${mayMismatch.readme}, actual=${mayMismatch.actual}`);
+  } else {
+    console.log(`✅ MAY rule count: ${stats.rule_may_count} (matched)`);
+  }
+
+  // Rules breakdown internal sum consistency
+  const breakdownSumMismatch = validation.countMismatches.find((m) => m.field === 'rules-breakdown-sum');
+  if (breakdownSumMismatch) {
+    console.log(`❌ Rules breakdown sum (${breakdownSumMismatch.actual}) ≠ README rules total (${breakdownSumMismatch.readme})`);
+  }
+
+  // Guide count line
+  const guideMismatch = validation.countMismatches.find((m) => m.field === 'guides');
+  if (guideMismatch) {
+    console.log(`❌ Guide count: README=${guideMismatch.readme}, actual=${guideMismatch.actual}`);
+  } else {
+    console.log(`✅ Guide count: ${stats.guide_count} (matched)`);
   }
 
   // Slash commands
