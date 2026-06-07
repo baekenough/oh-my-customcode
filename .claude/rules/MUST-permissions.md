@@ -33,6 +33,18 @@ Approve?
 
 On insufficient permission: do not attempt, notify user, suggest alternative.
 
+## Deny Rule Glob Patterns (CC v2.1.166+)
+
+> **v2.1.166+**: Deny rules support glob patterns in the tool-name position — `"*"` in a deny rule denies all tools. Allow rules reject non-MCP globs (only MCP tool-name globs are accepted in the allow position). Unknown tool names in deny rules emit a startup warning.
+
+| Position | Glob support |
+|----------|-------------|
+| Deny rule tool-name | Yes — `"*"` denies all tools |
+| Allow rule tool-name | MCP globs only; non-MCP globs rejected |
+| Unknown tool in deny rule | Startup warning |
+
+Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, then add specific allow rules. Complements the Tier-based policy above — settings.json deny rules are evaluated by the CC platform, independent of the advisory tier table.
+
 ## Agent Tool Permission Mode
 
 When spawning subagents via the Agent tool, always pass `mode: "bypassPermissions"` explicitly. The Agent tool's default mode is `acceptEdits`, which **overrides** the agent frontmatter `permissionMode` field.

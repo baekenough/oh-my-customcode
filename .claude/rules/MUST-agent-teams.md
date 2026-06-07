@@ -36,6 +36,18 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 
 These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` and operates within a single Claude Code session. claude-peers-mcp `send_message` operates across separate Claude Code processes via a localhost broker.
 
+### Cross-Session Relay Authority Hardening (CC v2.1.166+)
+
+> **v2.1.166+**: Messages relayed via `SendMessage` from other Claude sessions no longer carry user authority — receivers refuse relayed permission requests, and auto mode blocks them. A relayed message cannot escalate privilege on the receiving session.
+
+| Aspect | Behavior (v2.1.166+) |
+|--------|---------------------|
+| Relayed permission request | Refused by receiver |
+| Auto mode + relayed request | Blocked |
+| User authority across relay | Not propagated |
+
+This hardens cross-session coordination (claude-peers-mcp `send_message`, see Scope table above) against privilege escalation — a relayed message from session A cannot grant session B permissions the user did not authorize on B. Aligns with R001 (credential/privileged-scope guardrails) and R010 (out-of-scope privileged chaining). Intra-session Agent Teams `SendMessage` between peers in the same session is unaffected.
+
 ## Self-Check (Before Agent Tool)
 
 Before using Agent tool for 2+ agent tasks, complete this check:
