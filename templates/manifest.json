@@ -20,7 +20,7 @@
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 116
+      "files": 117
     },
     {
       "name": "guides",
