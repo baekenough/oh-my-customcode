@@ -16,6 +16,7 @@
  * - SCOUT_MAX_ISSUES: hard cap on issues created per run (default: 5)
  * - SCOUT_SOURCES: comma-separated source names to restrict (default: all)
  * - SCOUT_LIMIT_PER_SOURCE: max items to fetch per source (default: 50)
+ * - SCOUT_SCORE_CHUNK_SIZE: items per Haiku scoring batch (default: 40)
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -61,6 +62,7 @@ const CONFIG = {
   maxIssues: parseIntSafe(process.env.SCOUT_MAX_ISSUES, 5),
   limitPerSource: parseIntSafe(process.env.SCOUT_LIMIT_PER_SOURCE, 50),
   enabledSources: parseSourceFilter(process.env.SCOUT_SOURCES),
+  scoreChunkSize: parseIntSafe(process.env.SCOUT_SCORE_CHUNK_SIZE, 40),
 };
 
 const ALL_SOURCES: SourceConfig[] = [
@@ -343,32 +345,39 @@ NOT relevant (score 0-39):
 For each numbered item, evaluate its title and return a JSON array.`;
 
 /**
- * Score all items in a single Haiku batch call.
- * Returns the items with scores assigned.
+ * Score a single chunk of items with one Haiku call.
+ * Items are numbered locally 1..N within the chunk; the caller provides
+ * a globalOffset so returned indices can be remapped to global positions.
+ *
+ * Returns parsed ScoreResult array with index values already remapped to
+ * global 1-based indices (globalOffset + localIndex).
+ * Returns null if the response could not be parsed (caller decides how to handle).
  */
-async function scoreItemsWithHaiku(items: FeedItem[]): Promise<ScoreResult[]> {
-  const client = new Anthropic({ apiKey: CONFIG.anthropicApiKey });
-
-  const numberedList = items
+async function scoreChunk(
+  client: Anthropic,
+  chunk: FeedItem[],
+  chunkIndex: number,
+  totalChunks: number,
+  globalOffset: number,
+): Promise<ScoreResult[] | null> {
+  const numberedList = chunk
     .map((item, i) => `${i + 1}. [${item.source}] ${item.title}`)
     .join('\n');
 
-  const userPrompt = `Score each item for oh-my-customcode relevance (0-100).
+  const userPrompt = `Score each item for oh-my-customcode relevance (0-100). Keep each reason to 10 words or fewer.
 
 Items:
 ${numberedList}
 
-Return a JSON array (no markdown, raw JSON only) with exactly ${items.length} objects:
+Return a JSON array (no markdown, raw JSON only) with exactly ${chunk.length} objects:
 [
-  { "index": 1, "score": <0-100>, "reason": "<one line>" },
+  { "index": 1, "score": <0-100>, "reason": "<10 words max>" },
   ...
 ]`;
 
-  console.log(`🤖 Scoring ${items.length} items with Haiku (single batch)...`);
-
   const message = await client.messages.create({
     model: 'claude-haiku-4-5',
-    max_tokens: 4000,
+    max_tokens: 4096,
     system: SYSTEM_PROMPT,
     messages: [{ role: 'user', content: userPrompt }],
   });
@@ -379,7 +388,7 @@ Return a JSON array (no markdown, raw JSON only) with exactly ${items.length} ob
     .map((block) => block.text)
     .join('\n');
 
-  // Parse JSON — handle markdown code-block wrapping like analyze-issue.ts
+  // Strip markdown code-block wrapping (same pattern as original)
   let jsonStr = textContent.trim();
   const jsonMatch = jsonStr.match(/```json?\s*\n([\s\S]*?)\n```/);
   if (jsonMatch) {
@@ -391,19 +400,22 @@ Return a JSON array (no markdown, raw JSON only) with exactly ${items.length} ob
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonStr);
-  } catch (err) {
-    console.error('❌ Failed to parse LLM scoring response as JSON:');
-    console.error(textContent.slice(0, 500));
-    process.exit(1);
+  } catch {
+    console.warn(
+      `⚠️  chunk ${chunkIndex + 1}/${totalChunks}: failed to parse JSON — skipping ${chunk.length} items`,
+    );
+    console.warn(`   raw response (first 500 chars): ${textContent.slice(0, 500)}`);
+    return null;
   }
 
   if (!Array.isArray(parsed)) {
-    console.error('❌ LLM scoring response is not an array');
-    console.error(textContent.slice(0, 500));
-    process.exit(1);
+    console.warn(
+      `⚠️  chunk ${chunkIndex + 1}/${totalChunks}: response is not an array — skipping ${chunk.length} items`,
+    );
+    return null;
   }
 
-  // Validate and normalise each element
+  // Validate elements and remap local index → global index
   const results: ScoreResult[] = [];
   for (const element of parsed) {
     if (
@@ -414,20 +426,62 @@ Return a JSON array (no markdown, raw JSON only) with exactly ${items.length} ob
       typeof (element as Record<string, unknown>).reason === 'string'
     ) {
       const el = element as Record<string, unknown>;
+      const localIndex = el.index as number; // 1-based within chunk
       results.push({
-        index: el.index as number,
+        index: globalOffset + localIndex, // remap to global 1-based index
         score: Math.max(0, Math.min(100, el.score as number)),
         reason: el.reason as string,
       });
     }
   }
 
-  if (results.length === 0) {
-    console.error('❌ LLM returned no valid score objects');
+  console.log(`   chunk ${chunkIndex + 1}/${totalChunks}: scored ${results.length} items`);
+  return results;
+}
+
+/**
+ * Score all items using chunked Haiku calls (sequential, one chunk at a time).
+ * Chunks are processed sequentially to avoid rate-limit bursts.
+ * If a chunk fails to parse, its items are skipped (score defaults to 0 in caller).
+ * Exits with code 1 only if ALL chunks failed and there were items to score.
+ */
+async function scoreItemsWithHaiku(items: FeedItem[]): Promise<ScoreResult[]> {
+  const client = new Anthropic({ apiKey: CONFIG.anthropicApiKey });
+  const chunkSize = CONFIG.scoreChunkSize;
+  const chunks: FeedItem[][] = [];
+
+  for (let i = 0; i < items.length; i += chunkSize) {
+    chunks.push(items.slice(i, i + chunkSize));
+  }
+
+  console.log(
+    `🤖 Scoring ${items.length} items in ${chunks.length} chunk(s) of ${chunkSize}...`,
+  );
+
+  const allResults: ScoreResult[] = [];
+  let failedChunks = 0;
+
+  for (let i = 0; i < chunks.length; i++) {
+    const chunk = chunks[i];
+    const globalOffset = i * chunkSize; // offset so local index 1 → global (offset+1)
+    const chunkResults = await scoreChunk(client, chunk, i, chunks.length, globalOffset);
+    if (chunkResults === null) {
+      failedChunks++;
+    } else {
+      allResults.push(...chunkResults);
+    }
+  }
+
+  if (failedChunks === chunks.length) {
+    console.error('❌ All scoring chunks failed — no scored items');
     process.exit(1);
   }
 
-  return results;
+  if (failedChunks > 0) {
+    console.warn(`⚠️  ${failedChunks}/${chunks.length} chunk(s) failed — affected items will score 0`);
+  }
+
+  return allResults;
 }
 
 // ============================================================================
