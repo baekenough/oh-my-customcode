@@ -152,3 +152,86 @@ else
     exit 1
   fi
 fi
+
+# ── Content-Drift Check (Phase A — ADVISORY, NON-BLOCKING) ───────────────────
+# #1325 Phase A: detect SOURCE body changes that leave a wiki page stale even when
+# no page is added/removed and counts are unchanged. Compares current source hashes
+# against the wiki/.source-hashes.json manifest (recorded at last wiki sync).
+#
+# Phase A is advisory-first (R021): warnings only. This phase MUST NEVER fail the build.
+# Any helper error degrades to a warning. (Promotion to blocking is Phase B.)
+echo ""
+echo "=== Wiki Content-Drift Check (Phase A — advisory) ==="
+
+MANIFEST="wiki/.source-hashes.json"
+HELPER_LIB=""
+for cand in \
+  "$(dirname "$0")/lib/source-hash.sh" \
+  ".github/scripts/lib/source-hash.sh"; do
+  if [ -f "$cand" ]; then HELPER_LIB="$cand"; break; fi
+done
+
+# Run the whole phase in a guarded subshell so set -e inside the helper can't abort
+# the parent script. We deliberately do NOT propagate a non-zero status here.
+{
+  if [ -z "$HELPER_LIB" ]; then
+    echo "::warning::source-hash helper not found — content-drift check skipped (Phase A advisory)"
+  elif [ ! -f "$MANIFEST" ]; then
+    echo "::warning::$MANIFEST absent — content-drift check skipped (Phase A advisory). Run '/omcustom:wiki' to seed the manifest."
+  elif ! command -v jq >/dev/null 2>&1; then
+    echo "::warning::jq not available — content-drift check skipped (Phase A advisory)"
+  elif ! jq empty "$MANIFEST" 2>/dev/null; then
+    # Malformed/corrupt manifest: ONE advisory, skip the drift comparison.
+    # Without this guard a corrupt manifest degrades to ~245 false "NEW source" warnings.
+    echo "::warning::$MANIFEST unreadable (malformed JSON) — content-drift check skipped (Phase A advisory). Run '/omcustom:wiki' to re-seed the manifest."
+  else
+    # Source the shared helper so producer/checker hashing stays in parity.
+    # shellcheck source=/dev/null
+    if ! . "$HELPER_LIB" 2>/dev/null; then
+      echo "::warning::failed to source $HELPER_LIB — content-drift check skipped (Phase A advisory)"
+    else
+      # Generate a fresh manifest to a temp file, then diff against the committed one.
+      CUR_MANIFEST="$(mktemp 2>/dev/null || echo "/tmp/wiki-cur-hashes.$$.json")"
+      if generate_manifest "$CUR_MANIFEST" 2>/dev/null && [ -s "$CUR_MANIFEST" ]; then
+        DRIFT=0
+
+        # Mismatch (stale body) + absent-in-manifest (new source):
+        # iterate current keys; compare to manifest value.
+        while IFS= read -r line; do
+          [ -n "$line" ] || continue
+          src="${line%%$'\t'*}"
+          cur_hash="${line#*$'\t'}"
+          old_hash="$(jq -r --arg k "$src" '.[$k] // empty' "$MANIFEST" 2>/dev/null || true)"
+          if [ -z "$old_hash" ]; then
+            echo "::warning::content-drift: NEW source not in manifest: $src — remedy: /omcustom:wiki ingest $src"
+            DRIFT=$((DRIFT + 1))
+          elif [ "$old_hash" != "$cur_hash" ]; then
+            echo "::warning::content-drift: STALE wiki page for changed source: $src — remedy: /omcustom:wiki ingest $src"
+            DRIFT=$((DRIFT + 1))
+          fi
+        done < <(jq -r 'to_entries[] | "\(.key)\t\(.value)"' "$CUR_MANIFEST" 2>/dev/null || true)
+
+        # Orphan-in-manifest (deleted source): manifest key absent from current set.
+        while IFS= read -r src; do
+          [ -n "$src" ] || continue
+          cur_val="$(jq -r --arg k "$src" '.[$k] // empty' "$CUR_MANIFEST" 2>/dev/null || true)"
+          if [ -z "$cur_val" ]; then
+            echo "::warning::content-drift: ORPHAN in manifest (source deleted?): $src — remedy: run '/omcustom:wiki' to refresh the manifest"
+            DRIFT=$((DRIFT + 1))
+          fi
+        done < <(jq -r 'keys[]' "$MANIFEST" 2>/dev/null || true)
+
+        if [ "$DRIFT" -eq 0 ]; then
+          echo "[OK] no content drift detected (all source hashes match manifest)"
+        else
+          echo "[ADVISORY] $DRIFT content-drift item(s) detected — Phase A is advisory, build not failed."
+        fi
+      else
+        echo "::warning::failed to generate current source hashes — content-drift check skipped (Phase A advisory)"
+      fi
+      rm -f "$CUR_MANIFEST" 2>/dev/null || true
+    fi
+  fi
+} || echo "::warning::content-drift check encountered an error — skipped (Phase A advisory, non-blocking)"
+
+# Phase A intentionally exits 0 regardless of drift findings.
