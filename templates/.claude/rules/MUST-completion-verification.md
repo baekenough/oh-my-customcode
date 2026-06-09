@@ -241,6 +241,21 @@ Session 106: during 529 buffering, a CHANGELOG was misdiagnosed as "61x 중복 �
 
 Origin: #1269 ① (R020 self-violation, session 106).
 
+### CI Publish-Step Error vs Published-Artifact Ground Truth
+
+> Origin: #1332 — `npm publish --provenance` emitted a Sigstore `TLOG_CREATE_ENTRY_ERROR` 409, but the publish step's `|| npm view <pkg>@<ver>` fallback recovered (the package WAS published) and release.yml succeeded on all jobs. A subagent read the tlog error in the logs and prematurely declared the run "failed", recommending a re-run; deterministic ground-truth (`npm view`, `gh release view`) showed the release had fully succeeded.
+
+A CI publish/deploy step that LOGS an error has NOT necessarily failed — the step may recover via a fallback (`|| npm view ...`), or the error may be in a non-fatal sub-step (provenance attestation, eventual-consistency probe). Before declaring a publish/release run failed — and ESPECIALLY before re-running, rolling back, or permanently changing the workflow — verify the PUBLISHED ARTIFACT directly:
+
+| Publish target | Ground-truth check |
+|----------------|--------------------|
+| npm | `npm view <pkg> version` == expected |
+| GitHub Release | `gh release view <tag>` exists, not draft |
+| Docker registry | image tag/manifest exists |
+| Run outcome | `gh run view <id> --json jobs` job conclusions — NOT a single step's log line |
+
+This is the publish-domain extension of Read-Before-Characterize ("actual outcome ≠ attempt"). Re-running a publish that actually succeeded risks duplicate-publish errors; permanently changing a workflow on a misdiagnosis is worse (cf. #1217 — npm E403 misdiagnosed as a `--provenance` conflict → wrong workflow change → repeated failure; real cause was token scope).
+
 ## Integration
 
 | Rule | Interaction |
