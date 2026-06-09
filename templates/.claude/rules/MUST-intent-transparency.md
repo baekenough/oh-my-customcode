@@ -122,6 +122,21 @@ The Git Push Continuation pattern (first-time strict / follow-up relaxed, scoped
 
 Cross-references: R001 (safety — destructive operation pre-checks still apply), R002 (permission tiers). Reference issues: #1230, #1226 (item 2).
 
+## User-Provided Input Precedence
+
+> Origin: #1327 찐빠 #1 — the user created a NEW GitHub OAuth App and provided fresh credentials, but a script's "reuse existing github IdP if present" logic kept the OLD IdP/client_id, so login flowed through the stale credential. The freshly-provided input was silently ignored.
+
+When the user EXPLICITLY provides new input (credentials, config values, IdP, API keys, endpoints), applying that new input takes precedence over idempotent "reuse existing" logic. After applying, VERIFY the change took effect — but compare ONLY non-secret identifiers (client_id, endpoint URL, key fingerprint/last-4), NEVER echo secret values into the transcript (R001). For secret material, verify via a side-effect probe (e.g., a test auth call succeeds) rather than value comparison.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| "An existing X is present → reuse it" when the user just supplied a new X | Apply the user-supplied X; treat reuse-logic as a fallback only when the user supplied nothing |
+| User-supplied X EQUALS the existing X | Reuse is correct (idempotent no-op) — do NOT re-provision |
+| User supplies only a SUBSET of fields | Apply the supplied fields; reuse existing values only for the unsupplied fields |
+| Apply new credential, assume it took effect | Verify post-apply via non-secret identifier match or a side-effect probe — never echo secret values (R001) |
+
+Cross-reference: R001 (credential guardrails — never echo secret values), R020 (verify actual outcome).
+
 ## Agent Triggers
 
 Defined in `.claude/skills/intent-detection/patterns/agent-triggers.yaml`. Each agent has keywords, file patterns, actions, and base confidence.

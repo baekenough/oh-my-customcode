@@ -1,5 +1,7 @@
 # geeknews-scout
 
+> **⚠️ DEPRECATED (v0.177.0, #1323)** — daily-scout(`.github/workflows/daily-scout.yml`, GitHub Actions + LLM pre-score, multi-source)로 기능 대체됨. 이 컴포넌트(k8s CronJob, keyword-regex, hada.io 단일)는 k8s에 배포된 적 없음(pending-deploy). **삭제는 daily-scout cron 첫 non-dry 실행 안정화 증명 후로 보류.** 삭제 전 README/ARCHITECTURE/deploy 스크립트의 참조 확인 필수 (R020 directory-context). 관련: #1289(eraser.yaml deprecation 선례).
+
 Kubernetes CronJob that monitors [GeekNews (news.hada.io)](https://news.hada.io) for articles relevant to oh-my-customcode and creates GitHub issues for keyword matches.
 
 Runs every **6 hours**. Filters articles by configurable keywords, deduplicates against existing issues, and creates new ones for matches.

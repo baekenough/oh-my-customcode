@@ -213,6 +213,20 @@ Session 108에서 `auto-dev.yaml` 4곳을 canonical 통일할 때, repo-root `./
 
 Origin: #1290 (session 109 retrospective).
 
+### Config-Schema-Before-Edit
+
+> Origin: #1327 찐빠 #2 — a provider switch (to DeepSeek) planned a 3-command edit (auth + provider + default) but omitted `base_url`, which stayed pointed at the previous provider (openrouter.ai) — traffic would have mis-routed. The config's base_url override-precedence was never read before planning the edits.
+
+Before planning edits to a configuration (provider switch, endpoint/base_url override, credential injection, multi-key precedence), READ the full config schema and its override-precedence chain first. Do NOT plan partial edits before understanding which fields override which.
+
+This applies when a change touches a field that participates in an override/precedence/inheritance chain (e.g. provider + base_url, multi-key fallback, layered defaults). A single independent field edit (flip a flag, bump a timeout) does NOT require a full-schema read.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Plan a provider/endpoint switch as N commands without reading the config's override chain | Read the full config schema (which field wins, defaults, inheritance) → enumerate EVERY field the switch touches (incl. base_url) → then plan |
+
+Sibling discipline to Read-Before-Characterize (that rule governs diagnosis — don't label before reading; this one governs edit-planning completeness — enumerate every interdependent field before editing). Cross-ref: R023 (verification ladder — config completeness is a Tier-1 deterministic pre-check).
+
 ### Degraded-Output Re-Verification Gate (529 / buffering)
 
 When tool outputs show degradation signs — 529 errors, duplicated or truncated output, or a Read returning empty on a file that is known non-empty — you MUST re-verify any fact via a deterministic second source BEFORE any destructive or permanent action (recovery-agent dispatch, issue edit, commit, file restore). Do NOT characterize state ("corruption", "오염", "loop") from a single degraded read.
