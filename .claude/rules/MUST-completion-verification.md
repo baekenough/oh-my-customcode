@@ -96,6 +96,10 @@ Never accept "pre-existing" without direct base-branch evidence. A false "pre-ex
 | "UI changes done" / "CSS updated" | type-check passes but browser render not verified; visual output unknown | Start dev server, open browser, confirm visual output; capture screenshot or describe what was seen |
 -->
 
+### Tool-Call Payload Completeness
+
+도구 호출의 required 파라미터는 invoke 전에 확인한다(완료 선언 후가 아니라 호출 시점의 전제조건). announce(prefix)만 출력하고 payload 의 required 필드를 누락하는 패턴은 R008 "Required-Parameter Completeness Check"가 canonical owner다. Reference: #1324.
+
 ## Completion Contract Format — [Contract] + [Done] with criterion/evidence pairs. See template via Read tool.
 
 <!-- DETAIL: Completion Contract Format

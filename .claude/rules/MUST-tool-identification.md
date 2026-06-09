@@ -31,6 +31,17 @@ Incorrect parallel: tool_call(url1), tool_call(url2), tool_call(cmd) — no iden
 Correct parallel: list ALL [agent][model] → Tool/Fetching/Running lines FIRST, then all tool_calls
 -->
 
+### Required-Parameter Completeness Check
+
+R008 prefix(announce)와 실제 도구 호출은 분리된 단계다. prefix 를 출력한 뒤 호출 payload 에서 도구 스키마상 required 파라미터를 누락하면 호출이 실패하거나 빈 동작이 된다. 호출 직전, prefix 존재뿐 아니라 required 파라미터가 모두 채워졌는지 확인한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `[agent][model] → Tool: AskUserQuestion` prefix 만 출력하고 `questions` 파라미터 없이/빈 배열로 호출 | prefix + `questions` 배열(최소 1개) 모두 채워 호출 |
+| announce 후 payload 의 required 필드 누락 (announce-payload separation gap) | announce 와 동일 메시지에서 required 필드 완비 호출 |
+
+Cross-reference: R020 (action-completeness precondition — invoke 전에 required 파라미터 확인). Reference issue: #1324 (찐빠: AskUserQuestion `questions`-missing recurrence).
+
 ## Models
 
 | Model | Use |
@@ -117,8 +128,9 @@ Agent(description: "[2] Python code review", subagent_type: "lang-python-expert"
 
 1. 이 호출 위에 `[agent-name][model] → Tool: <tool-name>` 라인이 있는가?
 2. agent-name 과 model 이 현재 컨텍스트와 일치하는가?
+3. 이 호출에 도구 스키마상 required 파라미터가 모두 채워져 있는가? (예: AskUserQuestion 는 `questions` 배열이 비어 있지 않아야 함) prefix(announce)만 출력하고 실제 호출 payload 의 required 필드를 누락하면 안 된다.
 
-체크 실패 시 즉시 prefix 추가 후 호출.
+체크 실패 시 즉시 prefix/필수 파라미터를 보완한 후 호출.
 
 ### Common Multi-Turn Violation
 
