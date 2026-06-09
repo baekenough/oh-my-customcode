@@ -40,6 +40,23 @@ Before delegating ANY destructive git command (the table above), the orchestrato
 
 Enumerate ALL affected work — intended uncommitted edits (rule changes, new skills/guides) count too, not just the symptom the user named. Prefer a non-destructive alternative (`git stash`) when the user's goal (e.g., "reach remote state") can be met without permanent loss.
 
+### Infra/Resource Deletion Blast-Radius (generalized)
+
+> Origin: #1327 찐빠 #3 — a Cloudflare tunnel was deleted after confirming only the user-named hostname (hermes.baekenough.com) + active-connection=0; the full set of DNS records / endpoints the tunnel served was never enumerated.
+
+The git blast-radius enumeration above generalizes to ALL infra/resource deletion (tunnels, DNS records, k8s resources, load balancers, security groups). Before deleting a shared infra resource, enumerate EVERY endpoint/hostname/route the resource serves — not just the one the user named.
+
+| Resource | Enumerate before delete |
+|----------|-------------------------|
+| Tunnel (cloudflared, etc.) | All hostnames/DNS records routed through the tunnel (`cloudflared tunnel info` + full DNS record scan), not just the named hostname |
+| DNS record / zone | All services resolving via the record |
+| k8s resource (Service, Ingress, etc.) | All selectors/endpoints/routes it backs |
+| Load balancer / Security group | All targets/rules attached |
+
+Present the full served-endpoint list for explicit approval before deletion. Active-connection=0 on one hostname does NOT prove the resource is unused by others.
+
+Prefer a reversible action (disable/detach/stop) over delete when the goal can be met without permanent teardown — infra deletions (tunnel/DNS/k8s) are frequently NOT recoverable. Note whether the deletion is recoverable before proceeding.
+
 ## Credential & Privileged-Scope Guardrails
 
 > Origin: #1266 ① (Critical) — a subagent dumped `.env` and Gmail OAuth credentials into the transcript (Credential Exploration) and ran an unauthorized credential-rotation flow that caused a dashboard data outage.
@@ -50,6 +67,8 @@ Enumerate ALL affected work — intended uncommitted edits (rule changes, new sk
 | Unrequested credential rotation / secret recreation | Rotate only on explicit user request scoped to the specific secret |
 | Chaining an approved privileged action into adjacent unrequested ones | Each privileged op requires its own authorization trace |
 | Irreversible shared-infra action (prod pod exec, shared-ns secret delete, tunnel create) without scope re-confirmation | Re-confirm scope with the user before irreversible / shared-infra actions |
+
+> **Ask-before-scan (#1327 찐빠 #4)**: When a credential/token is needed, request it from the user BEFORE running BLIND/DISCOVERY credential scans (`env | grep`, repo-wide token greps), which trip the Credential Exploration classifier. Reading a SPECIFIC file the user named to obtain a value is not a discovery scan and is fine. If a scan trips the classifier, do not retry it (R010 Subagent Scope-Creep STOP Protocol).
 
 Cross-reference: R010 Subagent Scope-Creep STOP Protocol, R002 (permission tiers).
 
