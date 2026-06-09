@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.179.0] - 2026-06-10
+
+### Added
+- `omcustom:fsd` (Full Self Driving) skill — thin-alias orchestrator codifying the autonomous release loop as a first-class command. `/omcustom:fsd` expands to `/goal "모든 이슈가 처리될 때까지" /loop "/pipeline auto-dev -> /homework"`, repeating `/pipeline auto-dev` → `/homework` until all auto-dev-eligible issues are exhausted. Optional release cap via `/omcustom:fsd <N>`. Delegates loop/release/retrospective logic to existing `goal`/`pipeline`/`homework`/`omcustom-loop` skills (R006). Skill count 116 → 117.
+
 ## [0.170.0] - 2026-06-06
 
 ### Added

@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.178.0",
-  "generatedAt": "2026-06-09T11:01:41.128Z",
-  "templateVersion": "0.178.0",
+  "generatorVersion": "0.179.0",
+  "generatedAt": "2026-06-09T23:37:49.984Z",
+  "templateVersion": "0.179.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "e5f4b31759741b09d2c3c9d27861ec0441d24d8772bbfd8dbf2d774d661b2e10",
@@ -752,6 +752,11 @@
     ".claude/skills/wiki/SKILL.md": {
       "templateHash": "a309c221216891b82c7a6f873e2a78f51f7e86caa1d9b05233901408385e5136",
       "size": 14611,
+      "component": "skills"
+    },
+    ".claude/skills/fsd/SKILL.md": {
+      "templateHash": "56cfd6e36baab020a4a3fe6c06a91035d85d74fb7dcc3398b475185df001829e",
+      "size": 6874,
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
