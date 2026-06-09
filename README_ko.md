@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-49개 에이전트. 116개 스킬. 23개 규칙. 명령어 하나.
+49개 에이전트. 117개 스킬. 23개 규칙. 명령어 하나.
 
 > **v0.74.0** — omcustom sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
 
@@ -149,13 +149,13 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (116개)
+## 스킬 (117개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
 | 베스트 프랙티스 | 24 | Go, Python, TypeScript, Kotlin, Rust, React, FastAPI, Spring Boot, Django, Flutter, Docker, AWS, Postgres, Redis, Kafka, dbt, Spark, Snowflake, Airflow, pipeline-architecture-patterns, alembic 외 |
 | 라우팅 | 4 | secretary, dev-lead, de-lead, qa-lead |
-| 워크플로우 | 13 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline 외 |
+| 워크플로우 | 14 | structured-dev-cycle, deep-plan, research, evaluator-optimizer, dag-orchestration, worker-reviewer-pipeline, reasoning-sandwich, pipeline, fsd 외 |
 | 개발 | 8 | dev-review, dev-refactor, analysis, create-agent, intent-detection, web-design-guidelines, omcustom-takeover, skill-extractor |
 | 운영 | 9 | update-docs, audit-agents, sauron-watch, monitoring-setup, fix-refs, release-notes 외 |
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
@@ -284,7 +284,7 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 49개 에이전트 정의
-│   ├── skills/                 # 116개 스킬 모듈
+│   ├── skills/                 # 117개 스킬 모듈
 │   ├── rules/                  # 23개 거버넌스 규칙 (R000-R023)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마
