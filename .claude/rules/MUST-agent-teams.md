@@ -355,6 +355,8 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 
 > **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.
 
+> **CC v2.1.169+**: `claude agents --json` now includes blocked and just-dispatched background sessions (previously omitted), adds `--all` to include completed sessions, and adds `id` and `state` fields. This strengthens the deterministic ground-truth for member completion verification — `state` distinguishes blocked/running/completed directly, and `--all` confirms a member actually completed (rather than just disappearing from the active list). Use `--all` + `state` as the ground-truth signal instead of inferring completion from a member's absence.
+
 **Stall handling**: When a member shows no task progress within ~2 minutes despite spawn + owner assignment + SendMessage coordination, reassign the work to a standalone Agent (R009) rather than continuing to nudge the stalled member. Stalled Teams members waste tokens on idle polling and delay the overall workflow.
 
 Observed instance: v0.159.0 release (session 105) — members assigned to disjoint-file cleanup tasks went idle without executing; deterministic git-diff check exposed the gap; work was reassigned to standalone parallel Agents. References: #1261, #1262.
