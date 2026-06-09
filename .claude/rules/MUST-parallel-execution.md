@@ -50,6 +50,17 @@ Before writing/editing multiple files:
 
 > **Token threshold heuristic**: When a delegated agent prompt exceeds ~5000 tokens or spans 3+ unrelated domains, decompose by domain and spawn parallel agents. See R018 for Agent Teams criteria when review cycles are needed. Reference: #1085.
 
+### LLM Batch Output Token Budget
+
+The giant-prompt heuristic above governs INPUT tokens. The symmetric OUTPUT-side rule: when a single LLM call processes N items (scoring/classifying/extracting) and must emit structured output (e.g. JSON) per item, pre-compute the output budget = N × per-item output tokens BEFORE the call. Exceeding `max_tokens` truncates the response mid-structure → silent parse failure (the call "succeeds" but JSON.parse throws).
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Single batch call over a variable-size list with a fixed small max_tokens | Chunk into ≤40-item batches; constrain per-item output length (e.g. reason ≤10 words); raise max_tokens to fit one chunk |
+| Raising max_tokens alone | Insufficient — defers the failure as the list grows. Chunking is the invariant fix. |
+
+Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_llm_batch_truncation.md`.
+
 <!-- DETAIL: Full violation examples (4 pairs)
 ❌ WRONG: Writing files one by one
    Write(file1.kt) → Write(file2.kt) → Write(file3.kt) → Write(file4.kt)
