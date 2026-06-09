@@ -81,6 +81,21 @@ matches the spawn announcement:
   [2] lang-python-expert:sonnet → Python code review
 ```
 
+## Tier-3 Interaction Tool Prefix (MANDATORY)
+
+R008 "every tool call" applies to Tier-3 interaction tools too — NOT only file/exec tools. Applying the `[agent][model] → Tool:` prefix to Agent/Bash/Read while omitting it on `AskUserQuestion`, `TodoWrite`, `EnterPlanMode`, etc. is a violation.
+
+| Tool | R008 prefix required? |
+|------|----------------------|
+| AskUserQuestion | YES — `[agent][model] → Tool: AskUserQuestion` before the call |
+| TodoWrite | YES |
+| EnterPlanMode / ExitPlanMode | YES |
+| Skill | NO separate R008 prefix — identified via R007 `claude → {skill-name}` integrated header instead |
+
+Skill invocation is the one exception: it is identified through the R007 integrated identification block (`┌─ Agent: claude → {skill-name}`), not a standalone R008 tool prefix.
+
+Reference issue: #1321 (session 113 retrospective, 찐빠 #2 — AskUserQuestion prefix omitted twice).
+
 ## Example
 
 ```
