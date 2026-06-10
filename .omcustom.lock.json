@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "0.179.0",
-  "generatedAt": "2026-06-09T23:37:49.984Z",
-  "templateVersion": "0.179.0",
+  "generatorVersion": "0.180.0",
+  "generatedAt": "2026-06-10T00:06:03.865Z",
+  "templateVersion": "0.180.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "e5f4b31759741b09d2c3c9d27861ec0441d24d8772bbfd8dbf2d774d661b2e10",
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "ddfbfe83483626fb6931ef5f3d8e1e6e042a17562abfefb596cca806630fea8c",
-      "size": 9232,
+      "templateHash": "767ccd36055d8b01ca7b67b0f0972fff777dcf0bc40e37e5e25b8ab35a109296",
+      "size": 10272,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -90,8 +90,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
-      "templateHash": "26a6f78a30baed793edf40476550ec5c3b6740e3a6b8bccfdf6484aaf6c3a7bf",
-      "size": 6435,
+      "templateHash": "d1a38e5a6e0d6679163685d96c8bfc5c58dc16fca1dcc6d6dea153644cd16125",
+      "size": 8543,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
@@ -105,8 +105,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "81246b77b73cbec186b7010d6fbd6de9b6d50b5ef8c0b0c1f1985c54f703f5f9",
-      "size": 20767,
+      "templateHash": "3233423eb6bf591143e6f410668f31e7d13da58b5124379aa5e06b1551d825ec",
+      "size": 21767,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "1a010d7ce590360258af48bfe38aaf080a351d4758a17bbe0873c5df0a4ab393",
-      "size": 17694,
+      "templateHash": "ab3969570f54123489138c49db0be73ece9952a43f1065dedd2dc89c22bfc1bc",
+      "size": 20190,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -870,8 +870,8 @@
       "component": "skills"
     },
     ".claude/skills/homework/SKILL.md": {
-      "templateHash": "d6ca8d692d8f6aca5b760ca0f0902ae7bbe96d5debe10758196913030cf65762",
-      "size": 11584,
+      "templateHash": "67409a2e7903832b36b10f5cd3f3526f0d2d703699933ef44fb85b9c714dec91",
+      "size": 12592,
       "component": "skills"
     },
     ".claude/skills/typescript-best-practices/SKILL.md": {
