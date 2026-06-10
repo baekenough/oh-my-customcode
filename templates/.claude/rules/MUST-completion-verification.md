@@ -156,6 +156,28 @@ Related memory records:
 
 Reference issues: #1188 item #8.
 
+### Interrupt ≠ Prior-Request Cancellation (#1341 ①)
+
+> Origin: #1341 찐빠 #1 — 사용자가 멀티라인 요청("스킬 FSD를 만들자 … 내용은 아래와 같다")을 두 줄에 나눠 보내려다 중간에 인터럽트했는데, 모델이 이를 "직전 요청 취소" 신호로 단정하고 즉시 다른 작업(/goal 자율 루프)으로 전환했다. 사용자가 "취소가 아니야, 두 줄이 한 번에 안 가서 인터럽트했던 것"으로 정정.
+
+**적용 범위 (비파괴 한정)**: 이 규칙은 **비파괴적** 직전/진행 중 요청에만 적용된다 (스킬/문서 생성, 분석, 비파괴 편집 등). 인터럽트된 작업이 **파괴적·비가역 작업**(R001 — `git reset --hard`, `git clean -fd`, `rm`, 터널/DNS/k8s/인프라 삭제 등)이면 이 규칙은 적용되지 않으며, 아래 Safety Carve-Out을 따른다.
+
+비파괴 작업에 한해: 사용자 인터럽트 직후 첫 메시지가 모호하면, 직전 요청을 "취소"로 단정하지 않는다. 인터럽트는 입력 교정·추가 입력·멀티라인 연속 입력 중단 등 다양한 의도일 수 있으며, 취소는 그중 하나일 뿐이다. 직전 요청 맥락이 살아있는 상태에서 인터럽트 의도를 단정해 다른 작업으로 전환하지 말고, 모호하면 한 번 확인한 뒤 (비파괴적 후속 처리를) 진행한다.
+
+**Safety Carve-Out — 파괴적 작업 (fail-closed, stop-first ask-after)**: 진행 중이던 작업이 파괴적·비가역 작업이면, 인터럽트 수신 시 의도가 모호하더라도 그 작업을 **먼저 즉시 중단(halt/abort)**한 뒤 의도를 확인한다. 재개는 명시적 재승인을 요구한다. 인터럽트의 핵심 가치는 emergency-stop이므로 파괴적 작업에서는 의도 명료화보다 정지가 우선한다(R001 우선). 여기서 "진행"은 파괴적 작업의 계속을 의미하지 않는다.
+
+**모호성 판정 신호** (둘 중 하나면 confirm; 둘 다 아니고 명확한 새 지시면 R003 Clear 경로로 즉시 처리해 과잉 확인 방지):
+- (a) 직전 요청이 미완(코드/내용 본문 미수신) 상태에서 인터럽트됨
+- (b) 인터럽트 후 첫 메시지가 직전 요청과 무관해 보이나 새 명령으로도 단정 불가
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 인터럽트 직후 직전 요청을 "취소"로 단정하고 새 작업 실행 (비파괴 맥락) | 인터럽트 의도가 모호하면 직전 요청 맥락 유지 + 의도 1회 확인 후 비파괴적 후속 진행 |
+| 멀티라인/연속 입력 중간의 인터럽트를 "전체 취소"로 해석 | 추가 입력·교정 가능성 고려; 사용자 다음 메시지를 기다리거나 의도 확인 |
+| 파괴적 작업 진행 중 인터럽트를 "맥락 유지 후 계속"으로 처리 | 즉시 halt(fail-closed) 후 의도 확인; 재개는 명시적 재승인 (stop-first ask-after, R001 우선) |
+
+This is the interrupt-intent extension of Read-Before-Characterize ("actual intent ≠ assumed intent"), scoped to non-destructive context. **Applicability vs "Interrupt Priority Re-Ordering" (above)**: Priority Re-Ordering는 인터럽트가 **명확한 새 작업/룰 위반을 동반**할 때; 인터럽트 첫 메시지가 **모호**하면 본 섹션이 우선(확인 먼저). Cross-reference: R003 (Request Handling — Interrupt row; precedence Risky > Interrupt), R001 (파괴적 작업 halt 우선).
+
 ## Diagnostic Hypothesis Verification
 
 진단 단계에서 채택한 가설로 워크플로우/인프라/설정을 **영구 변경하기 전**, 가설을 실제 증거로 검증해야 한다. "그럴듯한 가설"을 검증 없이 영구 변경에 적용하면 잘못된 추정이 영구 부채로 남는다.
