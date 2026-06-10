@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.181.0] - 2026-06-10
+
+### Added
+- R020 (completion): "Interrupt ≠ Prior-Request Cancellation" — after a user interrupt, do not assume the prior request was cancelled when the first follow-up message is ambiguous (it may be input correction, additional input, or a paused multi-line entry); confirm intent once. Scoped to NON-destructive context, with an explicit **Safety Carve-Out**: an interrupt during a destructive/irreversible operation (R001 — `git reset --hard`, `git clean -fd`, `rm`, tunnel/DNS/k8s deletion) halts immediately (fail-closed, stop-first ask-after) and resumption requires explicit re-approval. Ambiguity signals defined; disjoint from "Interrupt Priority Re-Ordering". Closes part of #1341.
+- R003 (interaction): Request Handling — new "Interrupt (ambiguous first message)" row plus **Precedence: Risky > Interrupt > Ambiguous > Clear**, so a destructive-context interrupt yields an immediate stop rather than intent-confirmation. Closes part of #1341.
+- R018 (agent teams): "Gate Transparency Scope — Agent Teams Enabled Only" — R018 (including gate transparency) is conditional on Agent Teams being enabled; in a non-Teams environment the gate-transparency announce is not required and a 3+ parallel Agent Tool spawn must not be self-flagged as a missing-gate violation. Closes #1341.
+
+### Changed
+- Wiki pages r003/r018/r020 synced to the rule changes; `wiki/.source-hashes.json` regenerated (0 content drift).
+
 ## [0.180.0] - 2026-06-10
 
 ### Added
