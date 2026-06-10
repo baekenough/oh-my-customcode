@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.182.0] - 2026-06-10
+
+### Added
+- R006 (agent design): Claude Fable 5 model alias — `fable` → `claude-fable-5`, a Mythos-class model positioned as a tier above Opus, GA on the Claude API with access added in CC v2.1.170. Reserve for the most complex reasoning; `sonnet` stays the default and `opus` for architecture (R005 cost/latency awareness). Closes #1352.
+- R023 (verification ladder): "Safety-Signal Rule Authoring — Carve-Out Pre-Check (shift-left)" — when authoring interrupt/cancel/halt/emergency-stop rules, pre-check the R001 destructive-op carve-out at Tier 1 (authoring time) instead of relying on the Tier 3 adversarial review. Encodes the #1341 lesson surfaced in the #1353 retrospective. Closes #1353.
+
+### Changed
+- CC v2.1.170 compatibility: the VS Code integrated-terminal transcript-saving fix (also `--resume` visibility) is noted in R006 — relevant to transcript-dependent skills (homework, episodic-memory).
+- Wiki pages r006/r023 synced; `wiki/.source-hashes.json` regenerated (0 content drift).
+
 ## [0.181.0] - 2026-06-10
 
 ### Added
