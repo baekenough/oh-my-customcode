@@ -192,3 +192,15 @@ The list form mirrors the tool-call `[N]` prefix pattern and scales better to 3+
   ✓ agent-1: success
   ✗ agent-2: failed (reason)
 ```
+
+## Parallel Feature Integration Gate
+
+> Origin: #1335 ③ — parallel lang-kotlin-expert rounds each reported "build green", but the COMBINED runtime had a DataStore singleton crash, a Settings→Dashboard nav crash, a recording 400, and cursor pre-advance bugs — caught only by on-device testing.
+
+Per-subagent "build green" does NOT guarantee integrated runtime correctness. When parallel feature subagents edit interdependent code, the orchestrator MUST run an INTEGRATION verification gate after the parallel work merges — a combined build PLUS a runtime/smoke check (or device test for apps) — before declaring the feature done. Independent green builds can still combine into runtime crashes (shared singletons, navigation, API contracts).
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Trust each parallel subagent's "build green" and declare done | Orchestrator runs a combined build + runtime/smoke gate on the merged result first |
+
+Cross-reference: R020 (actual outcome ≠ attempt; completion verification).

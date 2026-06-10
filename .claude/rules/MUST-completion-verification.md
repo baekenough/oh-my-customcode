@@ -200,6 +200,19 @@ triage-dispatch.yml 실패 원인을 파일 Read 전에 "triaged 라벨 부재 +
 
 Origin: #1266 ④.
 
+### Proxy Signal vs Canonical Ground-Truth (#1336 ①②)
+
+> Origin: #1336 ①② — transcription was alarmed as "stopped" because `.txt` files looked stale, but the canonical DB had transcripts current to 06-09 21:30 (.txt is not the whisper collector's output — it emits only to the DB). Separately, SMS was over-diagnosed as "fully blocked" from one empty OneDrive XML path + a single 401, while the DB held 17 SMS rows ingested via the app path.
+
+When diagnosing pipeline/data state, verify the CANONICAL store (the authoritative datastore — DB, the system of record) BEFORE characterizing state from a secondary proxy (a `.txt`/file artifact) or a single ingestion path. Two failure modes share this meta-pattern:
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Characterize pipeline health from a filesystem proxy (`.txt` presence/mtime) | Query the canonical store (DB transcript count/recency) first |
+| Generalize one ingestion path's failure (one empty XML / one 401) to "whole pipeline blocked" | Check the final landing store's count across ALL paths before concluding blockage |
+
+A single path's failure does NOT prove the whole multi-path pipeline is down. Confirm the system-of-record before alarming or dispatching reprocessing.
+
 ### Directory-Context Before Multi-Copy Unification/Deletion
 
 다중 사본(동일 파일이 N곳에 존재)을 통일하거나 삭제하기 전, 각 사본이 위치한 **디렉토리 전체 맥락**을 확인한다(`ls`로 형제 파일 파악). 사본 파일 하나만 보고 "orphan"·"stub"으로 특성화하면, 같은 디렉토리의 형제 파일(다른 역할을 가진)이 함께 덮이거나 맥락이 누락된다. Read-Before-Characterize를 파일 단위에서 디렉토리 단위로 확장한 규칙이다.
@@ -255,6 +268,21 @@ A CI publish/deploy step that LOGS an error has NOT necessarily failed — the s
 | Run outcome | `gh run view <id> --json jobs` job conclusions — NOT a single step's log line |
 
 This is the publish-domain extension of Read-Before-Characterize ("actual outcome ≠ attempt"). Re-running a publish that actually succeeded risks duplicate-publish errors; permanently changing a workflow on a misdiagnosis is worse (cf. #1217 — npm E403 misdiagnosed as a `--provenance` conflict → wrong workflow change → repeated failure; real cause was token scope).
+
+### State-Change Claim → Live System Verification (#1335 ①)
+
+> Origin: #1335 ① — issue #101 (secretary teardown) was closed as "대체 완료·teardown 보류", but the secretary LaunchAgents (onedrive-bridge / calendar-worker / minikube-mount) were STILL running on the host. The user caught it ("secretary 리소스 다 내려가있는거 맞지?") — they were not.
+
+Before closing or marking-done an issue/task that CLAIMS an infrastructure or resource STATE change (a service stopped, a resource torn down, a deployment removed, a process killed), verify the ACTUAL live system state — not just that the change command was issued. "Issued the teardown" ≠ "the resource is down".
+
+| Claimed state change | Live ground-truth check |
+|----------------------|-------------------------|
+| LaunchAgent/service stopped | `launchctl list` / `systemctl status` shows it absent/inactive |
+| k8s resource torn down | `kubectl get <resource>` returns NotFound |
+| Container removed | `docker ps -a` does not list it |
+| Process killed | process check (`pgrep`/`ps`) returns empty |
+
+This is the infra/state extension of "actual outcome ≠ attempt". Closing on the command-issued assumption leaves orphaned running resources.
 
 ## Integration
 
