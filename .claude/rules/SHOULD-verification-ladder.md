@@ -67,6 +67,19 @@ R021은 위반 시 어떻게 멈출지를, R023은 어떤 순서로 검증할지
 - [ ] Tier 1에서 잡을 수 있는 문제를 다루는가? (상위 tier 대신 시프트 권고)
 - [ ] Ladder 순서를 문서화했는가? (어떤 검사를 먼저 실행하는지)
 
+## Safety-Signal Rule Authoring — Carve-Out Pre-Check (shift-left)
+
+> Origin: #1353 (인터럽트 룰 #1341의 후속 회고에서 발견된 R001 carve-out 누락) — 인터럽트 룰(R003/R020)을 작성할 때 R001 파괴적-작업 carve-out을 1차 작성에서 빠뜨렸고, Tier 3 적대적 검증이 release-blocking으로 포착해 보정했다. Tier 3가 잡았으나, 같은 결함을 Tier 1(작성 시점 결정론적 점검)로 시프트하면 비용이 낮다.
+
+런타임 안전-신호 동작을 정의하는 룰(인터럽트·취소·halt·중단·emergency-stop 등)을 추가/수정할 때, 작성 단계(Tier 1)에서 다음을 사전 점검한다 — Tier 3 적대적 검증에 의존하기 전에 (이 checklist 같은 메타-룰은 대상 아님):
+
+- [ ] 이 룰이 R001 파괴적·비가역 작업(`git reset --hard`, `clean -fd`, `rm`, 터널/DNS/k8s/인프라 삭제) 컨텍스트에서도 안전한가? (fail-closed carve-out 필요 여부)
+- [ ] "진행/계속(proceed)" 류 지시의 대상이 파괴적 작업의 계속으로 오독될 여지가 없는가?
+- [ ] 안전-신호의 fail-safe 의미(emergency-halt)를 약화시키지 않는가? (stop-first ask-after 우선)
+- [ ] 기존 안전 규칙(R001/R002)과의 우선순위가 명시되어 있는가?
+
+하나라도 불확실하면 **먼저 carve-out을 명시(Tier 1 우선 해결)**하고, 그래도 불확실하면 Tier 3 적대적 검증(`adversarial-review`, `multi-model-verification`)을 통과시킨 뒤 release한다 (ladder 순서 유지). 이는 R023 shift-left 원칙(저렴한 tier 우선)을 룰 작성 자체에 적용한 것이며, R016 룰 작성 워크플로우의 Tier-1 품질 게이트로 동작한다 (R016은 위반 후 룰 업데이트 소유, R023 carve-out은 안전-신호 룰 작성 시 사전 점검 — 직교). Closes #1353.
+
 ## Integration
 
 | 규칙 | 상호작용 |
