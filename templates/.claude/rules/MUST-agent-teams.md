@@ -98,6 +98,21 @@ When the gate resolves to **Agent Tool** for a 3+ agent dispatch (e.g. mechanica
 
 Origin: #1293 (Session 110 retrospective, Low).
 
+#### Gate Transparency Scope — Agent Teams Enabled Only (#1341 ②)
+
+> Origin: #1341 찐빠 #2 (low-confidence) — 4+ 병렬 Agent Tool 스폰 시 `[N]` prefix는 표기했으나 "R018 게이트: … → Agent Tool 폴백" announce를 생략한 것을 자가 위반으로 의심. 그러나 R018은 조건부 규칙이라 Agent Teams 비활성 환경에서는 게이트 투명성 자체가 미적용이다.
+
+R018 전체(게이트 투명성 포함)는 Agent Teams 활성 시에만 적용되는 조건부 규칙이다 (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 또는 TeamCreate/SendMessage 도구 존재). Agent Teams **비활성** 환경에서는:
+
+- 게이트 투명성 announce 의무가 없다 — R009 `[N]` prefix 만으로 충분하다.
+- 3+ 병렬 Agent Tool 스폰을 "게이트 announce 누락"으로 자가 플래그하지 않는다 (false-positive 방지).
+
+게이트 투명성 announce는 Agent Teams가 활성이고 게이트가 Agent Tool로 해소될 때만 의무다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Agent Teams 비활성 환경에서 게이트 announce 누락을 자가 위반으로 플래그 | 비활성 시 R009 `[N]` prefix 만으로 충분; 게이트 announce는 활성 환경 전용 |
+
 ### Spawn Completeness Check
 
 All members must be spawned in a single message. Partial spawning needs correction per R018 and R009.
