@@ -1,7 +1,7 @@
 ---
 title: Homework
 type: skill
-updated: 2026-05-30
+updated: 2026-06-10
 sources:
   - .claude/skills/homework/SKILL.md
 related:
@@ -64,10 +64,21 @@ Runs **before** `sys-memory-keeper`'s MEMORY.md update at session end (R011 orde
 | Medium | Process gap, missed convention, advisory rule ignored |
 | Low | Minor style drift, non-impactful oversight |
 
+## Cross-Project Import Compatibility
+
+When `homework` is imported into a project where `omcustom-feedback` has model invocation **disabled** (`disable-model-invocation`), Phase 5's automatic filing fails. Fall back to **manual submission**: present the drafted findings to the user and ask them to file or run `omcustom-feedback` manually.
+
+| Condition | Behavior |
+|-----------|----------|
+| `omcustom-feedback` model-invocable (default in oh-my-customcode) | Auto-invoke files the retrospective normally |
+| `omcustom-feedback` model invocation DISABLED in importing project | Fall back to manual: present draft, ask user to file |
+
+Origin: #1336 — second-brain project had model invocation disabled; retrospective was filed manually. Ensures cross-project imports degrade gracefully rather than silently failing Phase 5.
+
 ## Relationships
 
 - **Used by**: orchestrator (session-end retrospective)
-- **Related skills**: [[omcustom-feedback]] (reporting channel), instinct-extractor (multi-session pattern mining), sys-memory-keeper (runs after homework at session end)
+- **Related skills**: [[omcustom-feedback]] (reporting channel, Phase 5 — requires model-invocable), instinct-extractor (multi-session pattern mining), sys-memory-keeper (runs after homework at session end)
 - **Rules**: [[R011]] (dedicated entry point), [[R020]] (read-before-characterize), [[R016]] (continuous improvement loop), R010 (orchestrator coordination), R001 (no credential dumps)
 
 ## Sources

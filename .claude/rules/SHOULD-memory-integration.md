@@ -21,6 +21,18 @@ Agent frontmatter `memory: project|user|local` enables persistent memory:
 | `project` | `.claude/agent-memory/<name>/` | Yes |
 | `local` | `.claude/agent-memory-local/<name>/` | No |
 
+## Subagent memory:project Source-Tree Pollution Guard
+
+> Origin: #1335 ② — lang-kotlin-expert with `memory: project`, working in a Kotlin source subdirectory, wrote memory to `mobile/.../com/baekenough/secondbrain/.claude/agent-memory/` — INSIDE the source package. Caught and removed just before commit.
+
+A subagent with `memory: project` working in a SUBDIRECTORY can create `.claude/agent-memory/` relative to its current working directory, polluting the source tree (e.g., inside a source package). Memory MUST resolve to the PROJECT ROOT `.claude/`, never a nested working dir.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Accept a subagent's `.claude/agent-memory/` written under a source package | Verify memory writes land at project-root `.claude/`; remove any nested `.claude/agent-memory/` from source dirs before commit |
+
+Check for nested `.claude/agent-memory/` (e.g., `find . -path '*/src/*/.claude' -o -path '*/main/*/.claude'`) before committing subagent work.
+
 ## Best Practices
 
 - Consult memory before starting work
