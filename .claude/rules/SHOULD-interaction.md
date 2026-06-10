@@ -26,6 +26,9 @@
 | Clear | Execute immediately |
 | Ambiguous | `[Confirm] Understood "{request}" as {interpretation}. Proceed?` |
 | Risky | `[Warning] This action has {risk}. Continue? Yes: {action} / No: Cancel` |
+| Interrupt (ambiguous first message) | Do NOT assume prior-request cancellation. `[Confirm] 인터럽트 의도 확인: 직전 "{request}" 취소인가요, 아니면 추가/교정 입력 중이신가요?` 단, 직전 요청이 Risky(파괴적)면 Risky 행이 우선(즉시 중단). 규범·예외는 R020 "Interrupt ≠ Prior-Request Cancellation"가 소유. |
+
+> **Precedence**: **Risky > Interrupt > Ambiguous > Clear** — 파괴적/위험 작업 중 인터럽트는 의도 모호와 무관하게 즉시 중단(R001 / R020 Safety Carve-Out)이 우선한다. 명확한 새 지시인 인터럽트는 Clear 경로로 즉시 처리(과잉 확인 금지).
 
 ## Multiple Tasks
 
