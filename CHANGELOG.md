@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.180.0] - 2026-06-10
+
+### Added
+- R001 (safety): "Infra-Diagnostic File Checks — Metadata, Not Contents" — infra/health diagnostics use `ls -la` (existence/size/perms) only, never `cat .env`/credential-content inspect. Closes part of #1334.
+- R001 (safety): "Standing User-Deny + Classifier Block → Immediate user-runs Switch" — a standing user "don't touch X" + one classifier trip switches to `!` user-runs immediately, no retry. Closes part of #1335.
+- R020 (completion): "State-Change Claim → Live System Verification" — before closing an issue claiming an infra/resource state change, verify actual live state (launchctl/kubectl/docker ps/process check), not just that the command was issued. Closes part of #1335.
+- R020 (completion): "Proxy Signal vs Canonical Ground-Truth" — verify the canonical store (DB/system-of-record) before characterizing pipeline state from a filesystem proxy or single ingestion path. Closes part of #1336.
+- R009 (parallel): "Parallel Feature Integration Gate" — per-subagent "build green" does not guarantee integrated runtime correctness; orchestrator runs a combined build + runtime/smoke gate after parallel feature work merges. Closes part of #1335.
+- R011 (memory): "Subagent memory:project Source-Tree Pollution Guard" — a subagent with `memory: project` in a subdirectory can pollute the source tree; memory must resolve to project-root `.claude/`. Closes part of #1335.
+- `homework` skill: "Cross-Project Import Compatibility" — documents the `omcustom-feedback` model-invocation dependency and manual fallback when imported into a project with model invocation disabled. Closes part of #1336.
+
+### Changed
+- Wiki pages r001/r009/r011/r020 and skills/homework synced to the rule/skill changes; `wiki/.source-hashes.json` regenerated (0 content drift).
+
 ## [0.179.0] - 2026-06-10
 
 ### Added
