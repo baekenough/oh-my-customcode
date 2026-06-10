@@ -168,6 +168,17 @@ If `--dry-run` is active, skip this phase and output the draft directly to the c
 └── 다음 액션: {harness 제안 있으면 표시, 없으면 "없음"}
 ```
 
+## Cross-Project Import Compatibility
+
+When `homework` is imported into a project OTHER than oh-my-customcode, its automatic `omcustom-feedback` invocation (the retrospective-filing phase) depends on `omcustom-feedback` being model-invocable in that project.
+
+| Condition | Behavior |
+|-----------|----------|
+| `omcustom-feedback` model-invocable (default in oh-my-customcode) | Auto-invoke files the retrospective normally |
+| `omcustom-feedback` has model invocation DISABLED (`disable-model-invocation`) in the importing project | Auto-invoke FAILS — fall back to MANUAL submission: present the drafted findings to the user and ask them to file the feedback (or run `omcustom-feedback` manually) |
+
+> Origin: #1336 — in the second-brain project, `omcustom-feedback` was model-invocation-disabled, so homework Phase 5's automatic invoke failed; the retrospective was filed manually. Document this dependency so cross-project imports degrade gracefully instead of silently failing the auto-file step.
+
 ## Options Reference
 
 | Option | Default | Description |

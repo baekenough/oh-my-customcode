@@ -70,6 +70,30 @@ Prefer a reversible action (disable/detach/stop) over delete when the goal can b
 
 > **Ask-before-scan (#1327 찐빠 #4)**: When a credential/token is needed, request it from the user BEFORE running BLIND/DISCOVERY credential scans (`env | grep`, repo-wide token greps), which trip the Credential Exploration classifier. Reading a SPECIFIC file the user named to obtain a value is not a discovery scan and is fine. If a scan trips the classifier, do not retry it (R010 Subagent Scope-Creep STOP Protocol).
 
+### Infra-Diagnostic File Checks — Metadata, Not Contents (#1334 ①)
+
+> Origin: #1334 ① — during a hermes 502 diagnosis, a `cat .env` + `credentials.json` key inspect was reflexively bundled into a diagnostic batch and tripped the Credential Exploration classifier. The secret values were never needed for the 502 diagnosis.
+
+When diagnosing infrastructure/health issues (502s, container state, env presence), file checks MUST use metadata-only commands — `ls -la` (existence, size, perms, mtime) — NEVER `cat .env`, `cat credentials.json`, or any command that reads secret CONTENTS or keys into the transcript. Confirming a file EXISTS is a metadata check; reading its values is a credential scan.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `cat .env` / inspect OAuth/credential keys to "confirm config present" during a health diagnosis | `ls -la .env` — existence/size/perms only; request a specific value from the user if genuinely needed |
+
+Cross-reference: the Ask-before-scan note above (discovery scans), R010 Subagent Scope-Creep STOP.
+
+### Standing User-Deny + Classifier Block → Immediate user-runs Switch (#1335 ④)
+
+> Origin: #1335 ④ — with a standing user constraint "절대 시크릿 건드리지 마" plus a classifier block, an `.env.local` edit (DATABASE_URL, LLM_MAX_TOKENS) was retried and blocked repeatedly instead of handing the edit to the user.
+
+When the user has a STANDING "don't touch X" constraint AND the safety classifier blocks an action on X even once, immediately switch to the `!` user-runs pattern — surface the exact command for the user to run themselves — and do NOT retry the blocked edit. A standing deny + one classifier trip is a hard signal to delegate to the user, not to find another path in.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Retry a blocked edit on a user-deny-listed path via a different mechanism | Stop after the first block; emit the command for the user to run via `!` and wait |
+
+Cross-reference: R010 Subagent Scope-Creep STOP Protocol (2-trip stop), R015 Failed Tool Re-Try Discipline.
+
 Cross-reference: R010 Subagent Scope-Creep STOP Protocol, R002 (permission tiers).
 
 ## Required Before Destructive Operations
