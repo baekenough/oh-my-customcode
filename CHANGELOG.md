@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-06-11
+
+### Fixed
+- self-update: cross-major self-updates (0.x → 1.x, 1.x → 2.x) were blocked because `isVersionPlausible`'s cache-corruption guards (major-bump and large-minor-jump rejection) were also applied to the live npm-fetch path. A live fetch is authoritative confirmation, so the live path now bypasses those guards while the cache path stays strict. Downgrades remain gated by the independent `compareSemver` check (updates only when current < latest). Closes #1358.
+
 ## [1.0.0] - 2026-06-11
 
 ### 🎉 First stable release
