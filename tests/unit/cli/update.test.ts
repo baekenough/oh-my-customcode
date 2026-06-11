@@ -16,6 +16,14 @@ describe('update command', () => {
   let consoleErrorSpy: ReturnType<typeof spyOn>;
   let consoleWarnSpy: ReturnType<typeof spyOn>;
 
+  // Saved value for OMCUSTOM_SKIP_SELF_UPDATE so we can restore it in afterEach.
+  // Set to 'true' in beforeEach so that tests which call updateCommand({}) without
+  // skipSelf do not trigger an actual self-update (which depends on ambient
+  // process.env.CI and causes 13-test failures when rtk-installer.test.ts deletes
+  // CI from the environment, letting handleSelfUpdate → executeSelfUpdate run and
+  // call process.exit on a 1.0.0 major-bump version).
+  let savedSkipSelfUpdate: string | undefined;
+
   beforeEach(async () => {
     tempDir = realpathSync(await mkdtemp(join(tmpdir(), 'omcustom-update-test-')));
     originalCwd = process.cwd();
@@ -36,6 +44,13 @@ describe('update command', () => {
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
     consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Ensure self-update is deterministically skipped for tests that call
+    // updateCommand({}) without a skipSelf flag or a self-update.js mock.
+    // Tests that exercise the self-update path manage this env var themselves
+    // via their own beforeEach (which runs after this one and overrides it).
+    savedSkipSelfUpdate = process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+    process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
   });
 
   afterEach(async () => {
@@ -49,6 +64,13 @@ describe('update command', () => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     consoleWarnSpy.mockRestore();
+
+    // Restore OMCUSTOM_SKIP_SELF_UPDATE to whatever it was before this test suite
+    if (savedSkipSelfUpdate !== undefined) {
+      process.env.OMCUSTOM_SKIP_SELF_UPDATE = savedSkipSelfUpdate;
+    } else {
+      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+    }
 
     // Clear all mocks
     mock.restore();
@@ -1959,6 +1981,20 @@ describe('update command', () => {
   });
 
   describe('exitWithChildStatus signal handling (#867)', () => {
+    // This describe block tests the re-exec path (executeSelfUpdate → updated:true →
+    // reexecUpdatedCli → spawnSync). The outer beforeEach sets OMCUSTOM_SKIP_SELF_UPDATE='true'
+    // to isolate unrelated tests, but the re-exec gate (src/cli/update.ts line 136) checks
+    // that same env var. We must clear it here so reexecUpdatedCli is actually called.
+    beforeEach(() => {
+      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+    });
+
+    afterEach(() => {
+      // Outer afterEach restores savedSkipSelfUpdate; nothing extra needed here,
+      // but restore explicitly for clarity and safety.
+      process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
+    });
+
     it('should exit 128+15 (143) when child terminated by SIGTERM (#867)', async () => {
       const spawnSyncMock = mock(() => ({
         status: null,
@@ -2010,10 +2046,15 @@ describe('update command', () => {
 
     beforeEach(() => {
       originalArgv = process.argv;
+      // Clear the skip guard so that handleSelfUpdate proceeds to call
+      // reexecUpdatedCli (which then hits the argv guard under test).
+      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
     });
 
     afterEach(() => {
       process.argv = originalArgv;
+      // Outer afterEach restores savedSkipSelfUpdate; pre-restore here for safety.
+      process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
     });
 
     it('should warn and skip re-exec when process.argv[1] is empty (#867)', async () => {
