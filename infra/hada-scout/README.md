@@ -86,16 +86,16 @@ Labels are auto-created by `check-feed.sh` and `scout-runner.sh` on first run.
 | `deploy.sh` | Build, deploy, test, status, teardown automation |
 | `.env.example` | Configuration template |
 
-## Difference from geeknews-scout
+## Background (formerly geeknews-scout)
 
-| | geeknews-scout | hada-scout |
-|---|---|---|
-| **Keyword focus** | Broad AI agent keywords (Claude, MCP, agent, etc.) | Harness/eval focused (harness, benchmark, eval framework, etc.) |
-| **Layers** | Single CronJob (issue creation only) | Two CronJobs (issue creation + automated `/scout` analysis) |
-| **Schedule** | Every 6 hours | Daily (Layer 1: 09:00, Layer 2: 10:00 UTC) |
-| **Verdict labels** | None | `scout:internalize`, `scout:integrate`, `scout:skip` |
+hada-scout's predecessor was `geeknews-scout`, which has since been removed. hada-scout
+keeps a **harness/eval-focused keyword scope** (harness, benchmark, eval framework, etc.),
+in contrast to the broad AI-agent keyword scope (Claude, MCP, agent, etc.) of the removed
+predecessor. hada-scout also runs two CronJobs — issue creation plus automated `/scout`
+analysis — and applies verdict labels (`scout:internalize`, `scout:integrate`, `scout:skip`),
+which the predecessor did not.
 
-Both scouts use the same hada.io feedburner RSS URL and the same `omcustom` namespace.
+It uses the hada.io feedburner RSS URL and the `omcustom` namespace.
 
 ## Prerequisites
 
@@ -103,7 +103,7 @@ Both scouts use the same hada.io feedburner RSS URL and the same `omcustom` name
 - `docker` on the remote server
 - `envsubst` locally (part of `gettext`)
 - GitHub PAT with `repo` + `issues:write` scopes
-- Shared `github-token` secret in the `omcustom` namespace (same as geeknews-scout)
+- Shared `github-token` secret in the `omcustom` namespace
 - `claude` CLI installed on the host at `CLAUDE_PROJECT_DIR` (Layer 2 only)
 
 ## Issue Format
