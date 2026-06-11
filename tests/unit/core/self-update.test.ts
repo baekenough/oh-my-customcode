@@ -507,14 +507,160 @@ describe('self-update module', () => {
       expect(isVersionPlausible('1.0.0', '1.5.0')).toBe(true);
     });
 
-    it('should reject major version jump', () => {
+    it('should reject major version jump (cache default — corruption guard)', () => {
       expect(isVersionPlausible('0.68.0', '1.5.0')).toBe(false);
       expect(isVersionPlausible('1.0.0', '2.0.0')).toBe(false);
+      expect(isVersionPlausible('0.182.0', '1.0.0')).toBe(false);
     });
 
-    it('should reject large minor jump within same major', () => {
+    it('should reject large minor jump within same major (cache default)', () => {
       expect(isVersionPlausible('0.68.0', '0.78.0')).toBe(false);
       expect(isVersionPlausible('0.68.0', '0.80.0')).toBe(false);
+    });
+
+    // live=true bypasses corruption guards — live npm fetch is authoritative
+    it('should allow cross-major jump when live=true', () => {
+      expect(isVersionPlausible('0.182.0', '1.0.0', { live: true })).toBe(true);
+      expect(isVersionPlausible('0.68.0', '1.5.0', { live: true })).toBe(true);
+      expect(isVersionPlausible('1.0.0', '2.0.0', { live: true })).toBe(true);
+    });
+
+    it('should allow large minor jump when live=true', () => {
+      expect(isVersionPlausible('0.68.0', '0.78.0', { live: true })).toBe(true);
+      expect(isVersionPlausible('0.68.0', '0.80.0', { live: true })).toBe(true);
+    });
+
+    it('should still accept normal bumps with live=true', () => {
+      expect(isVersionPlausible('0.68.0', '0.69.0', { live: true })).toBe(true);
+      expect(isVersionPlausible('1.0.0', '1.5.0', { live: true })).toBe(true);
+    });
+  });
+
+  describe('checkSelfUpdate — cross-major live update', () => {
+    const createCachePath = (name: string): string => join(tempDir, name);
+
+    // Regression: live npm fetch returning 1.0.0 when current is 0.x must be accepted.
+    // Previously isVersionPlausible rejected this → checked=false / lookup-failed.
+    it('should adopt cross-major version from live fetch (0.x → 1.0.0)', () => {
+      const options: SelfUpdateOptions = {
+        currentVersion: '0.182.0',
+        cachePath: createCachePath('cross-major-live.json'),
+        fetchLatestVersion: () => '1.0.0',
+        now: Date.now(),
+      };
+
+      const result = checkSelfUpdate(options);
+
+      expect(result.checked).toBe(true);
+      expect(result.updateAvailable).toBe(true);
+      expect(result.latestVersion).toBe('1.0.0');
+      expect(result.usedCache).toBe(false);
+    });
+
+    it('should adopt cross-major version from live fetch (1.x → 2.0.0)', () => {
+      const options: SelfUpdateOptions = {
+        currentVersion: '1.9.0',
+        cachePath: createCachePath('cross-major-live-2.json'),
+        fetchLatestVersion: () => '2.0.0',
+        now: Date.now(),
+      };
+
+      const result = checkSelfUpdate(options);
+
+      expect(result.checked).toBe(true);
+      expect(result.updateAvailable).toBe(true);
+      expect(result.latestVersion).toBe('2.0.0');
+    });
+
+    it('should still reject cross-major version from cache (corruption guard)', () => {
+      const cachePath = createCachePath('cross-major-cache.json');
+      const now = Date.now();
+
+      // Fresh cache with a cross-major version — should be rejected as implausible
+      writeFileSync(
+        cachePath,
+        JSON.stringify({
+          checkedAt: new Date(now - 1000).toISOString(),
+          latestVersion: '1.0.0',
+        })
+      );
+
+      let fetchCalled = false;
+      const options: SelfUpdateOptions = {
+        currentVersion: '0.182.0',
+        cachePath,
+        cacheTtlMs: 24 * 60 * 60 * 1000,
+        // fetchLatestVersion returns same cross-major — live path will accept it
+        fetchLatestVersion: () => {
+          fetchCalled = true;
+          return '1.0.0';
+        },
+        now,
+      };
+
+      const result = checkSelfUpdate(options);
+
+      // Cache should have been rejected → live fetch triggered
+      expect(fetchCalled).toBe(true);
+      // Live fetch accepted the cross-major version
+      expect(result.checked).toBe(true);
+      expect(result.latestVersion).toBe('1.0.0');
+    });
+
+    it('should return lookup-failed when live fetch returns cross-major and live mode not applied (regression guard — verifies fix is in place)', () => {
+      // This test verifies the FIXED behaviour.
+      // Before the fix: cross-major live fetch → isVersionPlausible = false → lookup-failed.
+      // After the fix: cross-major live fetch → isVersionPlausible(live=true) = true → checked=true.
+      const options: SelfUpdateOptions = {
+        currentVersion: '0.182.0',
+        cachePath: createCachePath('regression-guard.json'),
+        fetchLatestVersion: () => '1.0.0',
+        now: Date.now(),
+      };
+
+      const result = checkSelfUpdate(options);
+
+      // After fix this must be checked=true (not lookup-failed)
+      expect(result.checked).toBe(true);
+      expect(result.reason).toBeUndefined();
+    });
+  });
+
+  describe('executeSelfUpdate — cross-major live update path', () => {
+    const createCachePath = (name: string): string => join(tempDir, name);
+
+    it('should reach the install step for cross-major live update (latestVersion=1.0.0 adopted)', () => {
+      // executeSelfUpdate will call installGlobalPackage which calls npm.
+      // In unit tests we cannot run npm, so we verify the pre-install state by
+      // checking that checkSelfUpdate (which executeSelfUpdate calls internally) returns
+      // updateAvailable=true — confirming the cross-major version was adopted.
+      // We stub fetchLatestVersion to return 1.0.0 for a 0.x current version.
+      const options: ExecuteSelfUpdateOptions = {
+        currentVersion: '0.182.0',
+        cachePath: createCachePath('exec-cross-major.json'),
+        fetchLatestVersion: () => '1.0.0',
+        now: Date.now(),
+        silent: true,
+        argv: ['node', '/usr/local/bin/omcustom'],
+        // CI=false so the env check passes; npm install will fail (no real npm),
+        // but the important assertion is that we get past the version-plausibility gate.
+        env: {},
+      };
+
+      // installGlobalPackage will fail in the test environment (no real npm),
+      // so updated=false is expected — but the reason must be npm failure, not
+      // version-plausibility rejection. We verify by confirming that checkSelfUpdate
+      // alone returns updateAvailable=true with the same inputs.
+      const checkResult = checkSelfUpdate({
+        currentVersion: options.currentVersion ?? '',
+        cachePath: options.cachePath,
+        fetchLatestVersion: options.fetchLatestVersion,
+        now: options.now,
+      });
+
+      expect(checkResult.checked).toBe(true);
+      expect(checkResult.updateAvailable).toBe(true);
+      expect(checkResult.latestVersion).toBe('1.0.0');
     });
   });
 

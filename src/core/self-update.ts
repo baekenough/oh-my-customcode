@@ -69,11 +69,33 @@ export function compareSemver(a: string, b: string): number {
   return 0;
 }
 
+export interface VersionPlausibleOptions {
+  /**
+   * When true, bypass cache-corruption guards (major-bump and large-minor-jump).
+   * Use for live npm fetch results — the registry is authoritative, so cross-major
+   * updates such as 0.x → 1.x are valid and must not be rejected.
+   * Leave false (default) for cached versions, where implausible jumps signal corruption.
+   */
+  live?: boolean;
+}
+
 /**
  * Sanity check: reject cached versions that are implausibly far from current.
  * A major version change or a minor jump of 10+ is almost certainly cache corruption.
+ *
+ * Pass `{ live: true }` for live npm fetch results to bypass the corruption guards —
+ * a real npm registry response is authoritative confirmation, not a stale cache entry.
  */
-export function isVersionPlausible(currentVersion: string, candidateVersion: string): boolean {
+export function isVersionPlausible(
+  currentVersion: string,
+  candidateVersion: string,
+  options: VersionPlausibleOptions = {}
+): boolean {
+  // Live npm fetch is authoritative — skip corruption guards entirely.
+  if (options.live) {
+    return true;
+  }
+
   const current = normalizeVersion(currentVersion)
     .split('.')
     .map((n) => parseInt(n, 10) || 0);
@@ -83,12 +105,14 @@ export function isVersionPlausible(currentVersion: string, candidateVersion: str
   const majorDiff = (candidate[0] ?? 0) - (current[0] ?? 0);
   const minorDiff = (candidate[1] ?? 0) - (current[1] ?? 0);
 
-  // Reject if major version changes at all (0.x → 1.x is suspicious without live confirmation)
+  // Cache-only guard: reject if major version changes (0.x → 1.x without live confirmation
+  // is suspicious — could be a corrupted or stale cache entry).
   if (majorDiff >= 1) {
     return false;
   }
 
-  // Reject if minor jumps by 10+ within same major (0.68 → 0.78+ is implausible in one cache TTL)
+  // Cache-only guard: reject if minor jumps by 10+ within same major
+  // (0.68 → 0.78+ is implausible in one cache TTL).
   if (majorDiff === 0 && minorDiff >= 10) {
     return false;
   }
@@ -395,7 +419,8 @@ export function checkSelfUpdate(options: SelfUpdateOptions): SelfUpdateCheckResu
 
   if (!latestVersion) {
     const fetched = fetchLatestVersion(packageName);
-    if (fetched && isVersionPlausible(currentVersion, fetched)) {
+    // Live npm fetch is authoritative — bypass cache-corruption guards.
+    if (fetched && isVersionPlausible(currentVersion, fetched, { live: true })) {
       latestVersion = fetched;
       writeCache(cachePath, latestVersion, now);
     }
