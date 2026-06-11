@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-06-11
+
+### 🎉 First stable release
+
+oh-my-customcode reaches 1.0.0 — a stability milestone after 180+ iterative releases. No breaking changes from 0.182.0; this release declares the agent harness (49 agents, 117 skills, 23 rules) stable and establishes the go-forward versioning policy.
+
+### Changed
+- Versioning policy (pipeline `auto-dev.yaml`, all 4 copies): **patch-preferred** from 1.0.0 onward — rule/doc/skill/config/wiki/workflow changes, bugfixes, and hardening default to **patch**; **minor** is reserved for genuinely new user-facing capabilities (a new skill/agent/command); **major** for breaking changes to user-facing contracts or a deliberate milestone declaration. When in doubt, patch.
+
 ## [0.182.0] - 2026-06-10
 
 ### Added
