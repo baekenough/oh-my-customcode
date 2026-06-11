@@ -306,9 +306,12 @@ steps:
               [ -f scripts/verify-version-sync.sh ] && bash scripts/verify-version-sync.sh || echo "::warning::verify-version-sync.sh not found, version sync verification skipped"
               (verify-version-sync.sh 가 exit 1 시 release 단계 halt)
 
-         Version decision (semver):
+         Version decision (semver) — PATCH-PREFERRED policy (post-1.0.0):
          - No existing tags → v0.1.0
-         - Previous tag exists → patch (bugfix) / minor (features) / major (breaking)
+         - Previous tag exists → DEFAULT to patch. When in doubt, patch — do NOT reflexively bump minor for rule/doc/skill edits.
+           - patch (DEFAULT): rule/doc/skill/config/wiki/workflow changes, bugfixes, hardening, CC-compat notes — the vast majority of this project's changes
+           - minor: ONLY a genuinely NEW user-facing capability (a new skill/agent/command adding user-visible surface), not a refinement of an existing one
+           - major: breaking changes to user-facing contracts (CLI flags, public skill/command names, public API), or a deliberate milestone declaration (e.g., v1.0.0)
          - Previous tag is ahead of source version (e.g., tag v0.136.1, package.json 0.136.0): use next available skip-version (0.136.2)
 
       2. Release notes via omcustom-release-notes skill
