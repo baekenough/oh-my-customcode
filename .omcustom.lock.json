@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.2",
-  "generatedAt": "2026-06-11T13:11:52.836Z",
-  "templateVersion": "1.0.2",
+  "generatorVersion": "1.0.3",
+  "generatedAt": "2026-06-11T13:42:38.709Z",
+  "templateVersion": "1.0.3",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -10,13 +10,13 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "4ec917c940224471bcaa7a060c9bb948e6156357ad0b716ace4ade9bb48eadff",
-      "size": 3629,
+      "templateHash": "becbb63369f745cdb86612ba9a6c6d05a9a29487ac7ea19fd411ad32efabda82",
+      "size": 3867,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "1fdc8fff3b6584056ac36abab07c7910192d6b255666c119030303e43404c893",
-      "size": 28236,
+      "templateHash": "547c79cdd524e5d2bdc7ea2a1d9b75e7764c0066b321a2083691f5c71c230cbb",
+      "size": 28978,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "fedf66f88c6ae3085eb1e9a09c7bb309a920534a8c4063ac258e1beb578cc53d",
-      "size": 28476,
+      "templateHash": "2a097db541f60a0a7f3108c4667f85b69c190e736d5f1bc1f4d9ad8f3856d155",
+      "size": 29280,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
