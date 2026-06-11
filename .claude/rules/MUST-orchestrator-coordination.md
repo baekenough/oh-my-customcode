@@ -262,6 +262,18 @@ Broad single-task scopes (e.g. "migrate + backfill") MUST be pre-decomposed by d
 
 A subagent MUST NOT chain from an approved action into unrequested privileged operations. Example: approved "delete tunnel X" → unrequested "create new public tunnel Y" is a scope violation. Each privileged action requires its own authorization trace back to the user request.
 
+### Pre-Delegation Privileged-Scope Boundary (proactive)
+
+> Origin: #1368 #5 — an infra subagent was delegated a prod-touching task with NO explicit approval boundary in the delegation prompt; it freely ran prod DB queries, file deletes, and SMS reads, tripping the safety classifier 3+ times. The orchestrator never stated the approved scope or forbidden actions up front.
+
+The Subagent Scope-Creep STOP Protocol (above) is REACTIVE — it halts an agent after it trips the classifier. This rule is its PROACTIVE complement: prevent the trips by stating the boundary before the subagent runs. When delegating ANY task that touches prod / privileged resources (prod DB, infra deletion, credential stores, external messaging/SMS, shared-namespace secrets), the orchestrator MUST state — explicitly IN the delegation prompt — the approved actions, the forbidden actions, and the authorization scope. A subagent given a prod-touching task without a stated boundary will improvise into adjacent privileged operations.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| Delegate a prod/privileged-touching task with no scope or forbidden-line in the prompt | State in the prompt: the approved action(s), explicit forbidden actions (e.g. "do NOT delete files, do NOT query prod DB, do NOT read SMS/messages"), and the authorization scope tied back to the user request |
+
+Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after trips) and R001 (credential/privileged-scope guardrails, re-confirm scope before irreversible shared-infra actions).
+
 ## Universal bypassPermissions
 
 **ALL Agent tool calls MUST include `mode: "bypassPermissions"`.**
