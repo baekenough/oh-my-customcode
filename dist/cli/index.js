@@ -241,7 +241,7 @@ var init_package = __esm(() => {
     workspaces: [
       "packages/*"
     ],
-    version: "0.181.0",
+    version: "1.0.2",
     description: "Batteries-included agent harness for Claude Code",
     type: "module",
     bin: {
@@ -25750,7 +25750,10 @@ function compareSemver(a, b) {
   }
   return 0;
 }
-function isVersionPlausible(currentVersion, candidateVersion) {
+function isVersionPlausible(currentVersion, candidateVersion, options = {}) {
+  if (options.live) {
+    return true;
+  }
   const current = normalizeVersion(currentVersion).split(".").map((n) => parseInt(n, 10) || 0);
   const candidate = normalizeVersion(candidateVersion).split(".").map((n) => parseInt(n, 10) || 0);
   const majorDiff = (candidate[0] ?? 0) - (current[0] ?? 0);
@@ -25961,7 +25964,7 @@ function checkSelfUpdate(options) {
   }
   if (!latestVersion) {
     const fetched = fetchLatestVersion(packageName);
-    if (fetched && isVersionPlausible(currentVersion, fetched)) {
+    if (fetched && isVersionPlausible(currentVersion, fetched, { live: true })) {
       latestVersion = fetched;
       writeCache(cachePath, latestVersion, now);
     }
