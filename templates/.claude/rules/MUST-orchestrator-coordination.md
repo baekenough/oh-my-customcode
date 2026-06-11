@@ -8,6 +8,8 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 
 **Agent Teams Exception**: Agent Teams members are peers, not hierarchical subagents. Teams members CAN spawn sub-agents via the Agent tool to execute complex workflows (e.g., research teams, verification teams). This enables Teams-compatible skills like `/research` and `/deep-plan` to run inside Team members. The Teams member acts as a local orchestrator for its own sub-tasks.
 
+> **v2.1.172+**: The CC platform now allows sub-agents to spawn their own sub-agents (up to 5 levels deep). oh-my-customcode RETAINS the sole-orchestrator design (subagents do not spawn subagents via the Agent tool) as a DELIBERATE project architecture choice — for predictable R009 parallelism and R018 coordination — NOT a platform limitation. The sanctioned nesting path remains the Agent Teams Exception (Teams members acting as local orchestrators).
+
 **The orchestrator MUST NEVER directly write, edit, or create files. ALL file modifications MUST be delegated to appropriate subagents.**
 
 <!-- DETAIL: Self-Check (Before File Modification)
@@ -300,6 +302,8 @@ Before spawning any agent:
 | >= v2.1.141 | Preserves current permission mode — `/bg` flows no longer need extra workaround |
 
 `mode: "bypassPermissions"` on every Agent tool call is still required (applies to Agent tool, not `/bg` shell command).
+
+> **v2.1.172+**: Fixed background agents potentially reading another directory's project settings (`.mcp.json` approvals, trust) when dispatched onto a pre-warmed worker. Strengthens background-agent isolation — a `/bg`-dispatched agent now reads the correct project's settings.
 
 ## Agent Capability Pre-Check
 
