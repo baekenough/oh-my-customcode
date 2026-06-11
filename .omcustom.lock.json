@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "0.182.0",
-  "generatedAt": "2026-06-10T12:08:25.283Z",
+  "generatedAt": "2026-06-11T00:27:06.128Z",
   "templateVersion": "0.182.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "382a910df72a5d8e46b30d8496e7c85a67bde913ea7fecec3b9760437f4c22dc",
-      "size": 19153,
+      "templateHash": "8719c1c83c1cbe16b1e0cde1427dd1eee4f18e1acf35675a9bb6368cfd7c8d15",
+      "size": 19724,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
