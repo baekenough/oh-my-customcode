@@ -153,15 +153,19 @@ else
   fi
 fi
 
-# ── Content-Drift Check (Phase A — ADVISORY, NON-BLOCKING) ───────────────────
-# #1325 Phase A: detect SOURCE body changes that leave a wiki page stale even when
-# no page is added/removed and counts are unchanged. Compares current source hashes
-# against the wiki/.source-hashes.json manifest (recorded at last wiki sync).
+# ── Content-Drift Check (Phase B — BLOCKING on genuine drift) ────────────────
+# #1325 Phase A → #1330 Phase B: detect SOURCE body changes that leave a wiki page
+# stale even when no page is added/removed and counts are unchanged. Compares current
+# source hashes against the wiki/.source-hashes.json manifest (recorded at last sync).
 #
-# Phase A is advisory-first (R021): warnings only. This phase MUST NEVER fail the build.
-# Any helper error degrades to a warning. (Promotion to blocking is Phase B.)
+# Phase B (R021 hard-block promotion, #1330): GENUINE content drift
+# (STALE wiki page / NEW source not in manifest / ORPHAN deleted source) now FAILS
+# the build (exit 1). INFRASTRUCTURE-MISSING cases (helper not found, manifest absent,
+# jq unavailable, corrupt manifest, hash-generation failure, helper-source failure)
+# remain advisory ::warning:: + non-failing — those mean the check is UNAVAILABLE
+# (graceful degradation), not that drift was found. Only real drift blocks.
 echo ""
-echo "=== Wiki Content-Drift Check (Phase A — advisory) ==="
+echo "=== Wiki Content-Drift Check (Phase B — blocking) ==="
 
 MANIFEST="wiki/.source-hashes.json"
 HELPER_LIB=""
@@ -171,24 +175,34 @@ for cand in \
   if [ -f "$cand" ]; then HELPER_LIB="$cand"; break; fi
 done
 
-# Run the whole phase in a guarded subshell so set -e inside the helper can't abort
-# the parent script. We deliberately do NOT propagate a non-zero status here.
+# DRIFT_MARKER: a sentinel file the guarded subshell touches ONLY when GENUINE
+# content drift is found. The subshell swallows non-zero status (set -e inside the
+# helper must not abort the parent), so we cannot exit 1 from within it directly.
+# After the subshell, if the marker exists, the parent fails the build (Phase B).
+# Infra-missing branches never touch the marker → they stay advisory (graceful skip).
+DRIFT_MARKER="$(mktemp 2>/dev/null || echo "/tmp/wiki-drift-marker.$$")"
+rm -f "$DRIFT_MARKER" 2>/dev/null || true
+
+# Run the drift detection in a guarded subshell so set -e inside the helper can't
+# abort the parent script. Genuine drift is signalled out via $DRIFT_MARKER, not
+# via the subshell's exit status (which is deliberately swallowed below).
 {
   if [ -z "$HELPER_LIB" ]; then
-    echo "::warning::source-hash helper not found — content-drift check skipped (Phase A advisory)"
+    echo "::warning::source-hash helper not found — content-drift check skipped (infra unavailable, graceful skip)"
   elif [ ! -f "$MANIFEST" ]; then
-    echo "::warning::$MANIFEST absent — content-drift check skipped (Phase A advisory). Run '/omcustom:wiki' to seed the manifest."
+    echo "::warning::$MANIFEST absent — content-drift check skipped (infra unavailable, graceful skip). Run '/omcustom:wiki' to seed the manifest."
   elif ! command -v jq >/dev/null 2>&1; then
-    echo "::warning::jq not available — content-drift check skipped (Phase A advisory)"
+    echo "::warning::jq not available — content-drift check skipped (infra unavailable, graceful skip)"
   elif ! jq empty "$MANIFEST" 2>/dev/null; then
     # Malformed/corrupt manifest: ONE advisory, skip the drift comparison.
     # Without this guard a corrupt manifest degrades to ~245 false "NEW source" warnings.
-    echo "::warning::$MANIFEST unreadable (malformed JSON) — content-drift check skipped (Phase A advisory). Run '/omcustom:wiki' to re-seed the manifest."
+    # This is an infra/environment issue (manifest unreadable), NOT genuine drift → advisory.
+    echo "::warning::$MANIFEST unreadable (malformed JSON) — content-drift check skipped (infra unavailable, graceful skip). Run '/omcustom:wiki' to re-seed the manifest."
   else
     # Source the shared helper so producer/checker hashing stays in parity.
     # shellcheck source=/dev/null
     if ! . "$HELPER_LIB" 2>/dev/null; then
-      echo "::warning::failed to source $HELPER_LIB — content-drift check skipped (Phase A advisory)"
+      echo "::warning::failed to source $HELPER_LIB — content-drift check skipped (infra unavailable, graceful skip)"
     else
       # Generate a fresh manifest to a temp file, then diff against the committed one.
       CUR_MANIFEST="$(mktemp 2>/dev/null || echo "/tmp/wiki-cur-hashes.$$.json")"
@@ -224,14 +238,26 @@ done
         if [ "$DRIFT" -eq 0 ]; then
           echo "[OK] no content drift detected (all source hashes match manifest)"
         else
-          echo "[ADVISORY] $DRIFT content-drift item(s) detected — Phase A is advisory, build not failed."
+          # GENUINE drift: signal the parent to fail the build (Phase B blocking, #1330).
+          echo "::error::$DRIFT content-drift item(s) detected — wiki out of sync. Remedy: /omcustom:wiki ingest <path> (Phase B blocking)"
+          : > "$DRIFT_MARKER" 2>/dev/null || true
         fi
       else
-        echo "::warning::failed to generate current source hashes — content-drift check skipped (Phase A advisory)"
+        echo "::warning::failed to generate current source hashes — content-drift check skipped (infra unavailable, graceful skip)"
       fi
       rm -f "$CUR_MANIFEST" 2>/dev/null || true
     fi
   fi
-} || echo "::warning::content-drift check encountered an error — skipped (Phase A advisory, non-blocking)"
+} || echo "::warning::content-drift check encountered an error — skipped (infra error, graceful skip, non-blocking)"
 
-# Phase A intentionally exits 0 regardless of drift findings.
+# Phase B (#1330): fail the build ONLY on genuine content drift (marker present).
+# Infra-missing / graceful-skip branches never create the marker, so the check
+# remains advisory when it is merely unavailable (R021 hard-block promotion scoped
+# to real drift only).
+if [ -f "$DRIFT_MARKER" ]; then
+  rm -f "$DRIFT_MARKER" 2>/dev/null || true
+  echo ""
+  echo "Fix: run '/omcustom:wiki ingest <path>' to re-sync stale wiki pages, then re-run."
+  exit 1
+fi
+rm -f "$DRIFT_MARKER" 2>/dev/null || true
