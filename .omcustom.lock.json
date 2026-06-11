@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.4",
-  "generatedAt": "2026-06-11T20:47:49.716Z",
-  "templateVersion": "1.0.4",
+  "generatorVersion": "1.0.5",
+  "generatedAt": "2026-06-11T22:54:47.183Z",
+  "templateVersion": "1.0.5",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "547c79cdd524e5d2bdc7ea2a1d9b75e7764c0066b321a2083691f5c71c230cbb",
-      "size": 28978,
+      "templateHash": "33fa01695ca88ced0b3f72e10c82a0fc79fafee5c381ce34df4e8b5e6f9f3582",
+      "size": 30552,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
