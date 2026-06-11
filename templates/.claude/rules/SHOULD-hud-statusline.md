@@ -21,6 +21,8 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 > **v2.1.161+**: `OTEL_RESOURCE_ATTRIBUTES` values are now emitted as labels on metric datapoints — usage metrics can be sliced by custom dimensions (e.g., team, repo). Extends R012 observability from per-tool parameters (v2.1.157) to per-dimension metric slicing; configure via the `monitoring-setup` skill's `OTEL_RESOURCE_ATTRIBUTES` env. Separately, `claude agents` rows now show `done/total` progress before the detail when work is fanned out, and peek surfaces the longest-running item — complements the HUD parallel-spawn display and R009 `[N]` correlation.
 
+> **v2.1.172+**: Added a `model` attribute to the `claude_code.lines_of_code.count` OTEL metric — lines-of-code telemetry can now be sliced by model. Extends the per-dimension metric slicing (v2.1.161) in the `monitoring-setup` skill.
+
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:
