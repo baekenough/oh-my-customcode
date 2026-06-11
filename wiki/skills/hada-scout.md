@@ -6,7 +6,6 @@ sources:
   - .claude/skills/hada-scout/SKILL.md
 related:
   - [[scout]]
-  - [[geeknews-scout]]
   - [[infra-docker-expert]]
   - [[R009]]
   - [[R010]]
@@ -18,7 +17,7 @@ Automated pipeline that monitors hada.io (via feedburner RSS) for AI agent, harn
 
 ## Overview
 
-hada-scout complements [[geeknews-scout]] with harness/eval-focused coverage from hada.io. While geeknews-scout casts a broad net over AI agent news, hada-scout narrows to benchmark and evaluation framework content — the domain most relevant to oh-my-customcode's harness and agent-eval subsystems. Tracked in GitHub Issue #841.
+hada-scout provides harness/eval-focused coverage from hada.io, narrowing to benchmark and evaluation framework content — the domain most relevant to oh-my-customcode's harness and agent-eval subsystems. It replaced the removed geeknews-scout predecessor as the active RSS-based scout. Tracked in GitHub Issue #841.
 
 ## Key Details
 
@@ -39,13 +38,11 @@ Finds open issues with `pending-scout` label, extracts source URL from issue bod
 
 ## Keyword Strategy
 
-hada-scout uses harness/benchmark/eval focused keywords, distinct from geeknews-scout's broader AI agent coverage:
+hada-scout uses harness/benchmark/eval focused keywords to capture content relevant to the project's evaluation and harness subsystems:
 
 ```
 harness|benchmark|eval|evaluation framework|agent framework|코드 리뷰 자동화|하네스|벤치마크|평가
 ```
-
-geeknews-scout handles: `Claude|Anthropic|MCP|AI agent|에이전트|agentic|multi-agent|...`
 
 ## Label Scheme
 
@@ -63,7 +60,7 @@ Layer 2 runs at most **5 /scout executions per cron invocation**. Each /scout ca
 
 ## Deployment
 
-Same K8s CronJob structure as `infra/geeknews-scout/`, hosted on the `ubuntu-ext` cluster. Infrastructure files in `infra/hada-scout/`: `check-feed.sh`, `scout-runner.sh`, `Dockerfile`, `cronjob.template.yaml`, `deploy.sh`, `.env.example`.
+K8s CronJob hosted on the `ubuntu-ext` cluster. Infrastructure files in `infra/hada-scout/`: `check-feed.sh`, `scout-runner.sh`, `Dockerfile`, `cronjob.template.yaml`, `deploy.sh`, `.env.example`.
 
 ## Sources
 
