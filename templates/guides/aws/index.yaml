@@ -12,15 +12,49 @@ source:
     - https://docs.aws.amazon.com/
     - https://aws.amazon.com/architecture/
   last_fetched: "2026-01-22"
+  note: >
+    Static documents below were last fetched 2026-01-22 and may be stale.
+    For current AWS documentation, use the AWS MCP Server (mcp_server section below)
+    which provides real-time lookup with no knowledge-cutoff limitation.
+
+mcp_server:
+  name: aws-mcp
+  type: remote
+  managed_by: AWS
+  endpoint: https://aws-mcp.us-east-1.api.aws/mcp
+  availability:
+    - us-east-1  # US East (N. Virginia)
+    - eu-central-1  # Europe (Frankfurt)
+  note: >
+    Live source — takes precedence over static documents below for current API syntax,
+    service limits, and best practices. Requires user-manual installation (R001 auto-install
+    prohibited). AWS API calls via call_aws are possible in all regions regardless of
+    MCP endpoint region.
+  tools:
+    - name: search_documentation
+      description: Full-text search across latest AWS docs and best practices (read-only, safe)
+    - name: read_documentation
+      description: Fetch a specific AWS documentation page (read-only, safe)
+    - name: call_aws
+      description: >
+        Execute 15,000+ AWS API operations using existing IAM credentials.
+        HIGH PRIVILEGE — can create/modify/delete resources. Delegate to infra-aws-expert
+        only; orchestrator must NOT call directly (R010). Requires explicit user approval
+        for write/delete operations. IAM credentials must not be echoed to transcript (R001).
+    - name: run_script
+      description: Run sandboxed Python with IAM permissions (no network/filesystem access)
+  install_command: >
+    claude mcp add-json aws-mcp --scope user
+    '{"command":"uvx","args":["mcp-proxy-for-aws@latest","https://aws-mcp.us-east-1.api.aws/mcp","--metadata","AWS_REGION=us-west-2"]}'
 
 documents:
   - name: well-architected
     path: ./well-architected.md
-    description: AWS Well-Architected Framework summary
+    description: AWS Well-Architected Framework summary (static, last_fetched 2026-01-22)
 
   - name: common-patterns
     path: ./common-patterns.md
-    description: Common AWS architecture patterns
+    description: Common AWS architecture patterns (static, last_fetched 2026-01-22)
 
 used_by:
   - infra-aws-expert
