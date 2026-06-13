@@ -243,6 +243,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 |------|------|
 | code-review-graph | Token-efficient AST 기반 context retrieval (8.2× 토큰 절감) — wrapper: `crg-integration` 스킬 (#1171) |
 | semble | Semantic code search via embeddings (98% 토큰 절감, NDCG@10=0.854) — wrapper: `semble-integration` 스킬 (#1173) |
+| aws-mcp | AWS 서비스 인증 접근 — call_aws(15,000+ API 실행), search_documentation/read_documentation(실시간 AWS 문서), run_script(샌드박스). 고특권 실행은 infra-aws-expert 위임 + R010/R001 특권경계 |
 
 ### 설치 명령어
 
@@ -263,6 +264,10 @@ pipx install code-review-graph
 uv tool install semble
 claude mcp add semble -- semble mcp
 # 또는 .mcp.json 수동 편집 (R001 auto-install 금지)
+
+# AWS MCP 서버 (IAM 인증 필요, 수동 설치 — R001 auto-install 금지)
+claude mcp add-json aws-mcp --scope user '{"command":"uvx","args":["mcp-proxy-for-aws@latest","https://aws-mcp.us-east-1.api.aws/mcp","--metadata","AWS_REGION=us-west-2"]}'
+# 사전요건: AWS IAM 자격증명 구성. 가용 리전: us-east-1, eu-central-1 (API 호출은 전 리전)
 ```
 
 <!-- omcustom:git-workflow -->

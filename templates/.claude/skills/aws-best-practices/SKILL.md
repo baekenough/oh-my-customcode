@@ -9,6 +9,8 @@ user-invocable: false
 
 Apply AWS patterns for building scalable, secure, and cost-effective cloud infrastructure.
 
+> **Offline core vs. live documentation**: This skill provides static Well-Architected patterns that work without credentials or network access — the always-available baseline. For real-time AWS documentation, current API syntax, and up-to-date best practices (resolving knowledge-cutoff gaps), use the AWS MCP Server's `search_documentation` / `read_documentation` tools when installed. The two sources are complementary: static patterns for structural guidance; live docs for current specifics. Installation is user-manual (R001 auto-install prohibited) — see `infra-aws-expert` agent for setup instructions.
+
 ## Well-Architected Framework Pillars
 
 ### 1. Operational Excellence
