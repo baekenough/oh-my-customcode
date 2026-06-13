@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.5",
-  "generatedAt": "2026-06-11T22:54:47.183Z",
-  "templateVersion": "1.0.5",
+  "generatorVersion": "1.0.6",
+  "generatedAt": "2026-06-13T07:09:01.652Z",
+  "templateVersion": "1.0.6",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -360,8 +360,8 @@
       "component": "agents"
     },
     ".claude/agents/infra-aws-expert.md": {
-      "templateHash": "8f03583bb5c5fb8ac3b80af3748f3e4365cbc1c5015882c590424ef1bcb50b01",
-      "size": 1345,
+      "templateHash": "17645637a4ac83bb486c75223e62de91a3c91c14f8cbb0cbe54db1fc781baf48",
+      "size": 5099,
       "component": "agents"
     },
     ".claude/agents/slack-cli-expert.md": {
@@ -970,8 +970,8 @@
       "component": "skills"
     },
     ".claude/skills/aws-best-practices/SKILL.md": {
-      "templateHash": "618f1f6d0dbcb1199b4b916103be548e57ab427113ef06b736aa2cd49ba60bec",
-      "size": 5855,
+      "templateHash": "592f6fd80982044c6b6a242fad121c566b79d7d33428afc99c61cafe9ac1e978",
+      "size": 6471,
       "component": "skills"
     },
     ".claude/skills/dev-review/SKILL.md": {
@@ -1840,8 +1840,8 @@
       "component": "guides"
     },
     "guides/aws/index.yaml": {
-      "templateHash": "769acce5ab245dbce1e8eb852c9bda81b20801a75d0d54ecbb6839c69fe04db6",
-      "size": 596,
+      "templateHash": "e30d65b0560ae27e27c64fc537e8b5435f5413e23a119aa163fc36b6a3e08f50",
+      "size": 2375,
       "component": "guides"
     },
     "guides/alembic/README.md": {
