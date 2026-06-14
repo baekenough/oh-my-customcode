@@ -317,6 +317,8 @@ Before spawning any agent:
 
 > **v2.1.172+**: Fixed background agents potentially reading another directory's project settings (`.mcp.json` approvals, trust) when dispatched onto a pre-warmed worker. Strengthens background-agent isolation — a `/bg`-dispatched agent now reads the correct project's settings.
 
+> **v2.1.174+**: Fixed background sessions inheriting another session's `ANTHROPIC_*` provider env (gateway URL, custom headers, `/model` aliases) from the shell that started the background daemon. Further strengthens background-agent isolation (cf. v2.1.172 project-settings isolation): a `/bg`-dispatched agent no longer picks up a foreign session's provider configuration. Also fixed pre-warmed background workers failing with "Could not resolve authentication method" when claimed after sitting idle. `mode: "bypassPermissions"` on every Agent tool call remains required regardless.
+
 ## Agent Capability Pre-Check
 
 Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).

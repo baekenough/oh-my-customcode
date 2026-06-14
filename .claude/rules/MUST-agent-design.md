@@ -48,6 +48,8 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 
 > **v2.1.172+**: `availableModels` restrictions now apply to subagent `model:` overrides, the agent dispatch model picker, and the advisor model. `availableModels` allowlists using version-specific IDs (e.g. `claude-opus-4-8`) no longer hide the Opus/Sonnet 1M picker rows, and model IDs no longer receive a doubled 1M suffix (`[1M][1m]`) when `ANTHROPIC_DEFAULT_OPUS_MODEL` already includes one. Relevant when restricting per-agent model overrides via `availableModels`.
 
+> **v2.1.175+**: The `enforceAvailableModels` managed setting — when enabled, the `availableModels` allowlist also constrains the **Default** model: a Default that would resolve to a disallowed model now falls back to the first allowed model, and user or project settings can no longer widen a managed `availableModels` list. Extends the v2.1.172 `availableModels` scope (subagent `model:` overrides, dispatch picker, advisor model) to the Default model itself. Relevant when an enterprise/managed config pins the allowed model set — per-agent `model:` overrides AND the resolved Default both honor it.
+
 ### Optional Frontmatter
 
 Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`. Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
