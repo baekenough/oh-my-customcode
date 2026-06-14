@@ -306,6 +306,19 @@ Before closing or marking-done an issue/task that CLAIMS an infrastructure or re
 
 This is the infra/state extension of "actual outcome ≠ attempt". Closing on the command-issued assumption leaves orphaned running resources.
 
+### Binary/Rendered-Artifact Completeness (text-grep ≠ complete)
+
+> Origin: #1384 (second-brain 공개 저장소 redaction 세션 회고 찐빠 #1) — 텍스트 + git 히스토리 force-push 후 "원격 완전 정리됨"이라 선언했으나, 직후 렌더된 다이어그램 PNG 3종에 redaction 대상 식별자가 시각적으로 잔존 + 텍스트 잔여 호스트 토큰 1건 발견 → 추가 force-push 2회 필요. redaction 범위를 grep 가능한 텍스트로만 잡고, 렌더된 이미지/바이너리를 완결 선언 전에 점검하지 않음.
+
+완료/완결성을 주장하는 작업(redaction, 식별자 제거, 콘텐츠 정리, 시크릿 스크럽, 데이터 마이그레이션)에서 텍스트 grep 통과는 완결을 보장하지 않는다. 렌더된 이미지/바이너리 산출물(PNG/PDF/렌더 다이어그램/임베디드 메타데이터/EXIF)에 동일 대상이 시각적·바이너리적으로 잔존할 수 있다. "완전 제거됨/완료" 선언 전, 텍스트뿐 아니라 바이너리/이미지/렌더 산출물 완결성까지 검증해야 한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 텍스트 grep 통과 후 "완전 제거됨/정리됨" 선언 | 렌더 이미지/바이너리/임베디드 메타데이터 시각·내용 스캔까지 통과한 뒤 선언 |
+| redaction 범위를 grep 가능 텍스트로만 한정 → 잔여를 순차 발견하며 force-push 반복 | 사전 전수 점검(대소문자 무시 텍스트 + 부분문자열 변형 + 바이너리/이미지 + 참조/고아 분석) 후 단일 패스 rewrite (R005 효율) |
+
+This is the redaction/binary extension of the UI/Frontend "browser render verified" row in the Task-Type Completion Matrix — text-layer verification alone is insufficient when rendered/binary artifacts carry the same content. Cross-reference: R001 (보안 완결성 — 시크릿/식별자 잔존 차단), R005 (단일 패스 효율 — 사전 전수 점검이 반복 force-push를 방지).
+
 ## Integration
 
 | Rule | Interaction |
