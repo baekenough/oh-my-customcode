@@ -21,6 +21,10 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 > **v2.1.161+**: `OTEL_RESOURCE_ATTRIBUTES` values are now emitted as labels on metric datapoints — usage metrics can be sliced by custom dimensions (e.g., team, repo). Extends R012 observability from per-tool parameters (v2.1.157) to per-dimension metric slicing; configure via the `monitoring-setup` skill's `OTEL_RESOURCE_ATTRIBUTES` env. Separately, `claude agents` rows now show `done/total` progress before the detail when work is fanned out, and peek surfaces the longest-running item — complements the HUD parallel-spawn display and R009 `[N]` correlation.
 
+> **v2.1.174+**: The `/usage` (Account & usage) dialog now shows usage attribution — cache misses, long context, subagents, and per-skill/agent/plugin/MCP breakdowns over the last 24h or 7d (surfaced in the VSCode integration). Extends R012 observability from OTEL metric slicing (v2.1.161) to an interactive in-client attribution view — complements the `monitoring-setup` skill by giving per-skill/agent/plugin/MCP cost visibility without standing up an OTEL backend.
+
+> **v2.1.176+**: Added the `footerLinksRegexes` setting — regex-matched link badges rendered in the footer row, configurable via user or managed settings. Relevant to R012 statusline composition: the footer can now surface contextual link badges alongside the `.claude/statusline.sh` segments. Also in v2.1.176, session titles are generated in the conversation's language (pin via the `language` setting).
+
 > **v2.1.172+**: Added a `model` attribute to the `claude_code.lines_of_code.count` OTEL metric — lines-of-code telemetry can now be sliced by model. Extends the per-dimension metric slicing (v2.1.161) in the `monitoring-setup` skill.
 
 <!-- DETAIL: HUD Events full spec
