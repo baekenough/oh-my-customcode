@@ -38,6 +38,8 @@ Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M tok
 
 This is a settings-level resilience mechanism, distinct from the per-agent `model:` frontmatter. It complements the `model-escalation` skill (outcome-based escalation) by handling availability/overload failover at the platform level.
 
+> **v2.1.178+**: Compaction now honors the `fallbackModel` chain — on overload or model-availability errors during context compaction, CC falls back to the configured fallback model instead of failing the compaction. Extends the v2.1.166 `fallbackModel` resilience to the compaction path.
+
 ### Thinking Toggle (CC v2.1.166+)
 
 > **v2.1.166+**: `MAX_THINKING_TOKENS=0`, `--thinking disabled`, and the per-model thinking toggle disable thinking on models that think by default via the Claude API (3rd-party providers unchanged). Relevant when an agent's `effort` is low and thinking overhead is undesirable.
@@ -380,6 +382,10 @@ description: Brief desc    # One-line summary
 Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, `hooks`, `paths`, `shell`, `allowed-tools`, `keep-coding-instructions`. Skill `effort` takes precedence over agent `effort` when both specified. See full optional fields via Read tool.
 
 > **v2.1.163+**: In skill `command` bodies, use `\$` to emit a literal `$` before a number (e.g., `\$1`) — previously ambiguous with shell variable expansion. Relevant when authoring skills with `shell:` or inline command steps that include dollar signs not intended as variables.
+
+> **v2.1.178+**: Skills in nested `.claude/skills` directories now load when working on files in that subtree; on a name clash with a higher-scope skill, the nested skill is surfaced as `<dir>:<name>` so both remain invokable. Directory-qualified nested skills also no longer trigger permission prompts in non-interactive runs. Additionally, MCP-spec entries (`mcp__server`, `mcp__server__*`, `mcp__*`) in a subagent's `disallowedTools` are now honored (previously silently ignored) — relevant to the Optional Frontmatter `disallowedTools` field. oh-my-customcode keeps a flat `.claude/skills/` layout, but the `<dir>:<name>` disambiguation matters if a nested project subtree introduces a same-named skill.
+
+> **v2.1.178+**: When names collide across nested `.claude/` directories, the agent, workflow, and output-style CLOSEST to the working directory now wins; project-scope workflow saves target the closest existing `.claude/workflows/`. Relevant to multi-`.claude/` layouts — project-root `.claude/` definitions are overridden by a nested `.claude/` when working inside that subtree.
 
 <!-- DETAIL: Skill Optional Fields (full yaml block)
 ```yaml
