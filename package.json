@@ -3,7 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Batteries-included agent harness for Claude Code",
   "type": "module",
   "bin": {
