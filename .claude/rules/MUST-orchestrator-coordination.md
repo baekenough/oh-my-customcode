@@ -274,6 +274,8 @@ The Subagent Scope-Creep STOP Protocol (above) is REACTIVE — it halts an agent
 
 Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after trips) and R001 (credential/privileged-scope guardrails, re-confirm scope before irreversible shared-infra actions).
 
+> **v2.1.178+**: Auto mode now evaluates subagent spawns with the safety classifier BEFORE launch, closing a gap where a spawned subagent could request a blocked action without prior review. This is the PLATFORM-level complement to the (advisory) Pre-Delegation Privileged-Scope Boundary above: the orchestrator still states the approved/forbidden scope in the delegation prompt (proactive, model-level), and CC now also gates the spawn itself (platform-level). The two are defense-in-depth — the prompt-stated boundary remains required because the classifier gates ACTIONS, not task SCOPE.
+
 ## Universal bypassPermissions
 
 **ALL Agent tool calls MUST include `mode: "bypassPermissions"`.**
@@ -318,6 +320,8 @@ Before spawning any agent:
 > **v2.1.172+**: Fixed background agents potentially reading another directory's project settings (`.mcp.json` approvals, trust) when dispatched onto a pre-warmed worker. Strengthens background-agent isolation — a `/bg`-dispatched agent now reads the correct project's settings.
 
 > **v2.1.174+**: Fixed background sessions inheriting another session's `ANTHROPIC_*` provider env (gateway URL, custom headers, `/model` aliases) from the shell that started the background daemon. Further strengthens background-agent isolation (cf. v2.1.172 project-settings isolation): a `/bg`-dispatched agent no longer picks up a foreign session's provider configuration. Also fixed pre-warmed background workers failing with "Could not resolve authentication method" when claimed after sitting idle. `mode: "bypassPermissions"` on every Agent tool call remains required regardless.
+
+> **v2.1.178+**: Fixed `claude agents` workers failing with `401 Invalid bearer token` when the daemon was started from a shell with a custom API gateway (`ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`). Further hardens background-agent provider isolation (cf. v2.1.174 ANTHROPIC_* env isolation). Also fixed `/bg`-created background sessions showing "Working" forever after a turn finished. `mode: "bypassPermissions"` on every Agent tool call remains required regardless.
 
 ## Agent Capability Pre-Check
 
