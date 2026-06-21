@@ -44,6 +44,8 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 
 > **v2.1.166+**: `MAX_THINKING_TOKENS=0`, `--thinking disabled`, and the per-model thinking toggle disable thinking on models that think by default via the Claude API (3rd-party providers unchanged). Relevant when an agent's `effort` is low and thinking overhead is undesirable.
 
+> **v2.1.183+**: CC now warns (stderr, in `-p` print mode) when the requested model is deprecated or auto-updated to a newer model — and this warning now ALSO covers models set in agent frontmatter (`model:`). Relevant to the Model Aliases table above: a stale/deprecated `model:` value in agent frontmatter now surfaces a deprecation warning instead of silently resolving. Separately, v2.1.183 fixes `thinking.disabled.display: Extra inputs are not permitted` 400 errors on subagent spawns and session-title generation — extends the v2.1.166 toggle above; subagent spawns with thinking disabled no longer 400.
+
 ### Safe Mode & Bundled Skill Control (CC v2.1.169+)
 
 > **v2.1.169+**: `--safe-mode` (and `CLAUDE_CODE_SAFE_MODE`) starts Claude Code with ALL customizations disabled (CLAUDE.md, plugins, skills, hooks, MCP servers) — use it to isolate whether a project customization (agent/skill/hook) causes a regression. The `disableBundledSkills` setting (and `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` env) hides bundled skills, workflows, and built-in slash commands from the model — useful when bundled skills conflict with or duplicate project skills (R006 skill-surface management). Note: `disableBundledSkills` hides skills from the model but is a CC platform setting, distinct from the advisory `skills:` frontmatter field (which is documentation metadata, not a runtime allowlist).
