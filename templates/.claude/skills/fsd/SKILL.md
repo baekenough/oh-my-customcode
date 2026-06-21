@@ -37,15 +37,37 @@ FSD expands into:
 2. **`/loop` recurrence** — self-paced loop (model decides cadence), each iteration runs:
    1. `/pipeline auto-dev` — full release pipeline for the next eligible issue
    2. `/homework` — retrospective 찐빠 audit gate
+   3. **Open PR processing** — merge or defer all open PRs before checking convergence
 
 ### Loop Convergence
 
-The loop converges naturally when the auto-dev-eligible issue set reaches 0. Issue eligibility follows `/pipeline auto-dev` label selection exactly:
+The loop converges naturally when **both** conditions are met:
+
+1. The auto-dev-eligible issue set reaches 0
+2. All open PRs have been either merged or explicitly deferred
+
+FSD processes **open PRs as part of each iteration**, not only issues. This includes dependabot PRs and any automatically created PRs. Issue eligibility follows `/pipeline auto-dev` label selection exactly:
 
 - **Included**: `verify-ready` (preferred), unlabeled auto-dev candidates
 - **Excluded**: `verify-done`, `needs-review`, `decision-needed` labels
 
 Do NOT invent new label logic here — defer to the `pipeline` skill's auto-dev issue selection.
+
+### PR Processing Rules
+
+When open PRs are found during an iteration:
+
+| PR state | Action |
+|----------|--------|
+| CI passing, auto-mergeable | Merge via mgr-gitnerd (R010) |
+| CI failing with known pattern (e.g., dependabot frozen-lockfile cascade → `bun install` lockfile regeneration) | Fix CI, then merge |
+| CI failing with unknown cause | Diagnose; if fixable within iteration, fix and merge; otherwise defer |
+| Breaking change / design judgment required | Defer and surface to user |
+| Explicitly excluded by user this session | Skip (honor directive persistence, R015) |
+
+All PR merge operations are delegated to **mgr-gitnerd** (R010). After merging, verify ground-truth via `gh pr view` or `git log` before declaring done (R020).
+
+Do NOT merge PRs that require user approval for architectural decisions. Surface them with a short summary and wait.
 
 ### Iteration Flow (per iteration)
 
@@ -53,9 +75,12 @@ Do NOT invent new label logic here — defer to the `pipeline` skill's auto-dev 
 [FSD Iteration N]
 ├── /pipeline auto-dev        → one release (PR create → merge → npm publish → milestone close)
 ├── /homework                 → extract 찐빠, confirm gate (or --dry-run if requested)
-└── Check: any eligible issues remain?
-    ├── YES → next iteration
-    └── NO  → [FSD Done] converged naturally
+├── Open PR processing        → for each open PR: merge (if CI-green + auto-mergeable)
+│                                                  fix-then-merge (known CI failure pattern)
+│                                                  defer+surface (design decision needed)
+└── Check convergence: eligible issues = 0 AND open PRs = 0 (merged or deferred)?
+    ├── YES → [FSD Done] converged naturally
+    └── NO  → next iteration
 ```
 
 ## Safety and Discipline
@@ -64,11 +89,12 @@ Each iteration operates under full project rules — no relaxation because FSD i
 
 | Rule | Applies |
 |------|---------|
-| R001 (safety) | Destructive ops still require explicit approval. Credential guardrails always active. |
+| R001 (safety) | Destructive ops still require explicit approval. Credential guardrails always active. PR merges that risk data loss require explicit approval. |
 | R009 (parallel) | Independent subtasks within each pipeline iteration run in parallel. |
-| R010 (orchestration) | All file modifications delegated to specialist subagents. mgr-gitnerd for git ops. |
+| R010 (orchestration) | All file modifications delegated to specialist subagents. mgr-gitnerd for git ops including PR merges. |
+| R015 (intent persistence) | If user explicitly defers a specific PR this session, honor that deferral — do not retry it. |
 | R017 (sync verification) | mgr-sauron passes required before any commit. |
-| R020 (completion verification) | Each release verified via `npm view`, `gh release view`, closed issues before `[Done]`. |
+| R020 (completion verification) | Each release verified via `npm view`, `gh release view`, closed issues before `[Done]`. PR merges verified via `gh pr view` ground-truth before declaring iteration complete. |
 
 `/homework` runs as a **retrospective gate** between iterations — findings go through `omcustom-feedback`'s Phase 4A confirmation gate. The loop does NOT skip homework on the grounds that it is "automated". If homework requires user confirmation (e.g., to file a feedback issue), the loop pauses and waits.
 
@@ -119,11 +145,13 @@ That session ran 2 iterations (v0.177.0 and v0.178.0) before converging with 0 e
 | `omcustom-loop` | Session auto-continuation via SubagentStop hook — keeps the loop alive during background agent work |
 | `pipeline` | `/pipeline auto-dev` — the core release pipeline per iteration |
 | `homework` | Retrospective 찐빠 audit gate per iteration |
-| R001 (safety) | Destructive ops require approval; credential guardrails |
+| `mgr-gitnerd` | PR merge operations — all open PR merges delegated here (R010) |
+| R001 (safety) | Destructive ops require approval; credential guardrails; risky PR merges require explicit approval |
 | R009 (parallel execution) | Parallel subtasks within each pipeline iteration |
-| R010 (orchestrator coordination) | All file writes delegated; mgr-gitnerd for git |
+| R010 (orchestrator coordination) | All file writes delegated; mgr-gitnerd for git including PR merges |
+| R015 (intent persistence) | User PR deferral decisions honored for the session |
 | R017 (sync verification) | mgr-sauron required before commit/push |
-| R020 (completion verification) | Actual outcome verified before declaring each release done |
+| R020 (completion verification) | Actual outcome verified before declaring each release or PR merge done |
 
 ## Design Notes
 
@@ -132,6 +160,7 @@ This skill is intentionally a **thin alias**. It does NOT duplicate:
 - Loop cadence / auto-continuation (owned by `omcustom-loop` + SubagentStop hook)
 - Release pipeline steps (owned by `pipeline auto-dev`)
 - Retrospective analysis (owned by `homework`)
+- PR merge execution (owned by `mgr-gitnerd`)
 - Completion verification (owned by R020 + `goal`)
 
 If any of those underlying skills evolve, FSD automatically benefits — its only responsibility is declaring the intent and forwarding to the right components.
