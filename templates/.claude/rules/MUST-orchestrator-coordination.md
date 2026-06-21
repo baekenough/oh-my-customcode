@@ -323,6 +323,8 @@ Before spawning any agent:
 
 > **v2.1.178+**: Fixed `claude agents` workers failing with `401 Invalid bearer token` when the daemon was started from a shell with a custom API gateway (`ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN`). Further hardens background-agent provider isolation (cf. v2.1.174 ANTHROPIC_* env isolation). Also fixed `/bg`-created background sessions showing "Working" forever after a turn finished. `mode: "bypassPermissions"` on every Agent tool call remains required regardless.
 
+> **v2.1.181+**: Fixed prompt caching not reading on a custom `ANTHROPIC_BASE_URL` (and on Foundry) due to a per-request attestation token changing every turn. Further strengthens background-agent provider isolation (cf. v2.1.174 ANTHROPIC_* env isolation, v2.1.178 401 bearer-token fix): a `/bg`-dispatched or custom-gateway session now benefits from prompt caching instead of paying a cache miss every turn. Separately, v2.1.179 fixed remote-session background tasks appearing stuck as "still running" between turns. `mode: "bypassPermissions"` on every Agent tool call remains required regardless.
+
 ## Agent Capability Pre-Check
 
 Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).

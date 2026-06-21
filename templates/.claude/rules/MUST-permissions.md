@@ -47,6 +47,8 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.178+**: Permission rules now support `Tool(param:value)` syntax to match a tool's input parameters, with `*` wildcard — e.g. `Agent(model:opus)` denies Opus subagents, or a parameter glob to constrain a tool's arguments. This extends the v2.1.166 tool-name glob support down to per-parameter granularity. Relevant to the Agent Tool Permission Mode below: a deny rule can now block specific subagent models/parameters at the platform level, complementing `availableModels` (R006) and the universal `mode: "bypassPermissions"` requirement (R010). A `Agent(model:...)` parameter deny is evaluated by the CC platform independent of the advisory tier table.
 
+> **v2.1.183+**: Fixed MCP servers requiring authentication exposing auth-stub tools to the model in headless/SDK mode — unauthenticated MCP auth-stub tools are no longer surfaced to the model in `-p` / SDK runs (they would fail on call). Relevant to the Tier-6 MCP tier: a headless run no longer offers auth-stub MCP tools. Separately, v2.1.181 added the `sandbox.allowAppleEvents` opt-in setting, letting sandboxed commands send Apple Events on macOS (default off) — a deliberate sandbox-scope widening, complementing the Tier-based policy above.
+
 ## Agent Tool Permission Mode
 
 When spawning subagents via the Agent tool, always pass `mode: "bypassPermissions"` explicitly. The Agent tool's default mode is `acceptEdits`, which **overrides** the agent frontmatter `permissionMode` field.
