@@ -110,3 +110,17 @@ Reference issue: #1096.
 | 1단어 응답 ("네"/"OK") | YES |
 
 Reference issues: #1188 item #2, #1198 item #2.
+
+### External-Project / Debugging Session Vigilance
+
+R007 헤더 누락은 외부 프로젝트 디버깅, SSH 진단, 배포 작업 등 기술적 몰입 세션에서 가장 자주 발생한다. 이 규칙은 프로젝트 종류와 무관하게 모든 상황에 적용된다.
+
+| 세션 유형 | R007 헤더 |
+|-----------|-----------|
+| oh-my-customcode 작업 | 필수 |
+| 외부 프로젝트 디버깅 | **동일하게 필수** |
+| SSH / 배포 / 인프라 작업 | **동일하게 필수** |
+
+기술적 몰입 중 헤더 누락이 반복될 경우 즉시 re-anchor: 다음 응답에 `┌─ Agent:` 풀 헤더를 붙이고 이후 계속 유지한다.
+
+Reference issue: #1401.
