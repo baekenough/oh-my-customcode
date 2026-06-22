@@ -315,15 +315,30 @@ steps:
          - Previous tag is ahead of source version (e.g., tag v0.136.1, package.json 0.136.0): use next available skip-version (0.136.2)
 
       2. Release notes via omcustom-release-notes skill
-      3. Delegate to mgr-gitnerd:
-         - git tag + push
-         - gh release create
-      4. Close milestone
-      5. Close verify-ready issues with "Fixed in v{version}"
+      3. Adapt release mechanism to project (determines how steps 3-5 execute):
+         - npm project with auto-tag.yml (this repo — release/v* PR pattern):
+           a. mgr-gitnerd creates release/v{NEW} branch from develop with the version-bump commit
+           b. mgr-gitnerd creates PR: gh pr create --base develop --head release/v{NEW} --title "chore(release): bump to v{NEW}"
+           c. mgr-gitnerd merges PR (admin merge required due to branch protection)
+           d. DO NOT manually git tag or gh release create.
+              auto-tag.yml fires on release/v* PR merge → creates tag → closes linked issues → closes milestone → deletes release branch.
+              release.yml fires on the tag → npm publish + GitHub Release creation.
+           Milestone close and issue close are handled downstream by auto-tag.yml — do NOT close them manually.
+         - Non-npm / no auto-tag.yml:
+           mgr-gitnerd: git tag v{NEW} && git push origin v{NEW}
+           mgr-gitnerd: gh release create v{NEW} (with release notes)
+           Then proceed with items 4-5 below.
+
+      4. Close milestone (non-auto-tag projects only — auto-tag.yml handles this for npm+PR projects):
+         gh api repos/{owner}/{repo}/milestones/{n} --method PATCH --field state=closed
+
+      5. Close verify-ready issues (non-auto-tag projects only — auto-tag.yml handles this for npm+PR projects):
+         gh issue close {n} --comment "Fixed in v{version}"
          Label needs-review issues as "Deferred from v{version}"
-      6. Adapt release mechanism to project:
-         - npm project: PR + merge + npm publish verification
-         - Non-npm: direct tag on main (trunk-based)
+
+      6. npm publish verification (npm projects only):
+         After auto-tag.yml + release.yml complete (verified in ci-check step):
+         npm view <pkg> version → must equal v{NEW}
     description: "Git tag + GitHub Release + close milestone/issues (with mandatory version sync verification)"
     depends_on: deep-verify
 
@@ -334,11 +349,19 @@ steps:
       1. Check if .github/workflows/ has CI workflows
          If NOT: skip with "No CI configured. Skipping." and continue.
       2. If CI exists:
-         - gh run list --limit 5
+         - gh run list --limit 10
          - Wait for runs triggered by the new tag/push
          - If failures: diagnose, fix, re-verify
-      3. For npm projects: verify npm publish succeeded (npm view <pkg> version)
-      4. Report final CI status.
+      3. For npm projects with auto-tag.yml: MANDATORY additional check:
+         gh run list --workflow auto-tag.yml --limit 1 --json conclusion,displayTitle
+         → conclusion MUST be "success" before declaring release complete.
+         If auto-tag.yml concluded "failure": diagnose root cause. Do NOT retry with manual git tag.
+         Common causes:
+           - Tag already exists (manual tag pushed before PR merge — fix: remove manual tag from release delegation)
+           - Branch naming mismatch (branch not matching release/v* pattern — fix: verify branch name)
+         Report: "[ci-check] auto-tag.yml: {conclusion}" as mandatory line in CI status report.
+      4. For npm projects: verify npm publish succeeded (npm view <pkg> version)
+      5. Report final CI status.
     description: "Post-release CI verification and fix loop"
     depends_on: release
 
