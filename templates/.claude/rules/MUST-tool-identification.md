@@ -161,3 +161,15 @@ Reference issue: #1096.
 ```
 
 Reference issues: #1188 item #3, #1198 item #3.
+
+### External-Project / Debugging Session Vigilance
+
+R007 헤더와 마찬가지로, R008 prefix 누락도 외부 프로젝트 디버깅·배포 세션에서 가장 자주 발생한다. R007/R008은 세트로 함께 자가 점검한다.
+
+| 세션 유형 | R008 prefix |
+|-----------|-------------|
+| oh-my-customcode 작업 | 필수 |
+| 외부 프로젝트 디버깅 | **동일하게 필수** |
+| SSH / 배포 / 인프라 작업 | **동일하게 필수** |
+
+Reference issue: #1401.
