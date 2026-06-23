@@ -108,8 +108,17 @@ Reference issue: #1096.
 | 사용자 질문 재확인 | YES |
 | 도구 호출 없는 텍스트 응답 | YES |
 | 1단어 응답 ("네"/"OK") | YES |
+| **빈 응답 (0단어 turn 종료)** | **금지** — 헤더 누락 이전에 응답 자체가 없음 |
 
-Reference issues: #1188 item #2, #1198 item #2.
+#### 빈 응답 금지 (Empty-Response Prohibition)
+
+도구 결과를 수신한 후 응답 텍스트 없이 turn 을 종료하는 것(빈 응답, "(no content)")은 R007 위반의 극단 케이스다. 1단어 응답에도 헤더가 필수이므로 0단어 응답은 당연히 금지된다. 도구 호출 결과를 받은 직후에는 항상 최소 1줄의 진행 상태(R003 status format)와 R007 헤더를 출력한 뒤 다음 단계로 진행하거나 turn 을 마친다. 작업이 끝났으면 완료 요약을, 계속할 작업이 있으면 다음 단계 announce 를 출력한다 — 어느 경우에도 빈 turn 종료는 허용되지 않는다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 도구 결과 수신 후 응답 텍스트 없이 turn 종료 ("(no content)") | 최소 1줄 진행 상태 + R007 헤더 출력 후 종료/계속 |
+
+Reference issues: #1188 item #2, #1198 item #2, #1409.
 
 ### External-Project / Debugging Session Vigilance
 
