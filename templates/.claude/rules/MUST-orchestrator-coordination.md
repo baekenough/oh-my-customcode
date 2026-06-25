@@ -325,6 +325,10 @@ Before spawning any agent:
 
 > **v2.1.181+**: Fixed prompt caching not reading on a custom `ANTHROPIC_BASE_URL` (and on Foundry) due to a per-request attestation token changing every turn. Further strengthens background-agent provider isolation (cf. v2.1.174 ANTHROPIC_* env isolation, v2.1.178 401 bearer-token fix): a `/bg`-dispatched or custom-gateway session now benefits from prompt caching instead of paying a cache miss every turn. Separately, v2.1.179 fixed remote-session background tasks appearing stuck as "still running" between turns. `mode: "bypassPermissions"` on every Agent tool call remains required regardless.
 
+> **v2.1.186+**: `!` bash commands now trigger Claude to respond to the output automatically (set `"respondToBashCommands": false` to keep the prior context-only behavior). Also fixed Esc/Ctrl+C not responding while background agents run after the main turn ends. `mode: "bypassPermissions"` on every Agent tool call remains required.
+
+> **v2.1.187+**: Fixed subagent depth tracking — resumed subagents restore their original spawn depth, and forked subagents count toward the depth cap. Also fixed background jobs stuck in "working" indefinitely when an agent ended a turn without structured output, and leaked agent worktree registrations are now auto-cleaned. Reinforces the sole-orchestrator design's depth accounting (cf. v2.1.172 5-level nesting note). `mode: "bypassPermissions"` remains required.
+
 ## Agent Capability Pre-Check
 
 Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).
