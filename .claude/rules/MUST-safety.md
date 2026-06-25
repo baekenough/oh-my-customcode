@@ -98,6 +98,8 @@ Cross-reference: R010 Subagent Scope-Creep STOP Protocol (2-trip stop), R015 Fai
 
 Cross-reference: R010 Subagent Scope-Creep STOP Protocol, R002 (permission tiers).
 
+> **v2.1.187+**: Added the `sandbox.credentials` setting — blocks sandboxed commands from reading credential files and secret environment variables. Platform-level complement to this section's credential guardrails (the model still never echoes secret values; CC now also blocks sandboxed reads of credential files/secret env at the platform level) — defense-in-depth.
+
 ## Required Before Destructive Operations
 
 Verify target, assess impact scope, check recoverability, get user approval.
