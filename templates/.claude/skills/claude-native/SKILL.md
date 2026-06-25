@@ -90,26 +90,26 @@ Issue body format (matching the pattern established by issue #683):
 **Published:** {published_at}
 **Link:** {html_url}
 
-## Release Summary
+## 릴리즈 요약
 
 {release_notes_body — truncated to first 2000 chars if too long}
 
 ---
 
-## Action Items
+## 액션 아이템
 
-- [ ] Review release notes for impact on oh-my-customcode
-- [ ] Update agent definitions if new Claude Code features affect agents
-- [ ] Test compatibility with current oh-my-customcode version
-- [ ] Update CLAUDE.md if new capabilities are relevant
+- [ ] oh-my-customcode 영향도 관점에서 릴리즈 노트 검토
+- [ ] 새 Claude Code 기능이 에이전트에 영향을 주면 에이전트 정의 갱신
+- [ ] 현재 oh-my-customcode 버전과의 호환성 테스트
+- [ ] 새 기능이 관련되면 CLAUDE.md 갱신
 
 ---
 
-_This issue was auto-created by the cc-release-monitor workflow (claude-native skill)._
+_이 이슈는 cc-release-monitor 워크플로우(claude-native 스킬)가 자동 생성했습니다._
 ```
 
 **Notes:**
-- If `body` from the release is empty, use `_No release notes provided._`
+- If `body` from the release is empty, use `_릴리즈 노트가 제공되지 않았습니다._`
 - Truncate release body at 2000 characters and append `... (truncated)` if needed
 - The `automated` and `claude-code-release` labels must exist in the repository; create them if missing:
   ```bash

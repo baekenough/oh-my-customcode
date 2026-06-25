@@ -378,6 +378,8 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 
 Observed instance: v0.159.0 release (session 105) — members assigned to disjoint-file cleanup tasks went idle without executing; deterministic git-diff check exposed the gap; work was reassigned to standalone parallel Agents. References: #1261, #1262.
 
+> **v2.1.186+**: Added the `teammateMode: "iterm2"` setting (warns when auto mode cannot find the `it2` CLI), and added status filtering (press `f`) to the `/workflows` agent detail view. Relevant to Agent Teams teammate launch configuration (cf. v2.1.183 tmux teammate-pane fix).
+
 ## Member Prompt Size Cap
 
 Keep per-member delegation prompts under ~5000 tokens and within a single domain. Oversized or multi-domain prompts risk malformed-parsing truncation in the CC platform (see R009 giant-prompt heuristic and `feedback_agent_malformed_parsing.md`). Large multi-file delegations should be decomposed and split across multiple members or standalone Agents.

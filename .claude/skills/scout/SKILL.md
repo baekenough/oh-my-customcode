@@ -54,7 +54,7 @@ If invalid: `[Pre-flight] GATE: Invalid or unreachable URL. Please check and ret
 Search existing GitHub issues for prior scout reports on the same URL domain:
 
 ```bash
-DOMAIN=$(echo "$URL" | sed 's|https\?://||' | cut -d'/' -f1)
+DOMAIN=$(echo "$URL" | cut -d'/' -f3)
 gh issue list --state all --label "scout:internalize,scout:integrate,scout:skip" \
   --json number,title,body --jq ".[] | select(.body | contains(\"$DOMAIN\"))" 2>/dev/null
 ```
