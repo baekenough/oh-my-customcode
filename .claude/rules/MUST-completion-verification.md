@@ -219,6 +219,7 @@ triage-dispatch.yml 실패 원인을 파일 Read 전에 "triaged 라벨 부재 +
 |------|------|
 | 로그/출력을 읽기 전 "error loop"·"무한 루프"로 특성화 | 대표 샘플을 먼저 읽고 INFO/WARN/ERROR 분포 확인 후 특성화 |
 | 첫 namespace/scope만 보고 전체 단정 | 관련 scope 확인 후 결론 |
+| 정렬 기준 미검증 시계열 단정 (`ls\|tail`로 "최신") | 시계열 판단은 mtime/timestamp 정렬(`ls -t`/`find -newermt`) 명시 후 결론 — 파일명순 ≠ 시간순 (#1417) |
 
 Origin: #1266 ④.
 
