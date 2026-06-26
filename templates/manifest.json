@@ -1,6 +1,6 @@
 {
-  "version": "1.0.17",
-  "lastUpdated": "2026-05-20T00:00:00.000Z",
+  "version": "1.0.18",
+  "lastUpdated": "2026-06-26T00:00:00.000Z",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
   "components": [
