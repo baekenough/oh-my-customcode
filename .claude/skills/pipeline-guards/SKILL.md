@@ -72,6 +72,31 @@ PostToolUse → check:
 └── Gate: PASS | PARTIAL | FAIL
 ```
 
+## Manifest Integrity Gate
+
+Guards `templates/manifest.json` against structure loss — e.g. a `source-hash.sh` path→hash map overwriting the versioned manifest (#1423 incident). The correct source-hash target is `wiki/.source-hashes.json`, never `templates/manifest.json`.
+
+```
+[Manifest Integrity Gate]
+- File: templates/manifest.json (staged)
+- Structure: {version, lastUpdated, omcustomMinClaudeCode, components[]} present?
+- .version field: present?
+- Gate: PASS | FAIL
+```
+
+| Signal | Action | Enforcement |
+|--------|--------|-------------|
+| `.version` missing in staged templates/manifest.json | Block stage, surface recovery hint | Advisory (skill-level, run jq check before commit) |
+| Staged content is a path→hash map (no `{version,…}` keys) | Block stage, surface recovery hint | Advisory (skill-level) |
+| `.version` present + structure intact | Pass gate, proceed | Commit allowed |
+
+Deterministic check before staging: `jq -e '.version and .components' templates/manifest.json` must succeed.
+
+```
+[Guard] OK templates/manifest.json — structure validated (.version present)
+[Guard] BLOCK templates/manifest.json — structure lost (path→hash map) — recover: git show HEAD:templates/manifest.json | jq '.version="<NEW>"'
+```
+
 ## Escalation Integration
 
 When guards are triggered, they integrate with existing advisory systems:

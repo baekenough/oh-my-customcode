@@ -1,7 +1,7 @@
 ---
 title: Pipeline Guards
 type: skill
-updated: 2026-04-12
+updated: 2026-06-26
 sources:
   - .claude/skills/pipeline-guards/SKILL.md
 related:
@@ -30,6 +30,17 @@ Defines system-wide safety limits for all pipeline execution: max iterations (3,
 - **Used by agents**: orchestrator
 - **Related skills**: [[pipeline]], [[dag-orchestration]], [[worker-reviewer-pipeline]], [[stuck-recovery]], [[model-escalation]]
 - **See also**: [[R009]], [[R010]]
+
+## Manifest Integrity Gate
+
+`templates/manifest.json`의 구조 손실을 방지하는 advisory 가드. `source-hash.sh`의 path→hash 맵이 versioned manifest를 덮어쓰는 사고(#1423)를 막는다. source-hash의 올바른 타깃은 `wiki/.source-hashes.json`이며 `templates/manifest.json`이 아니다.
+
+- staged `templates/manifest.json`에 `.version` 누락 → stage 차단 + 복구 힌트 (advisory)
+- staged 내용이 path→hash 맵(`{version,…}` 구조 아님) → stage 차단 (advisory)
+- `.version` + 구조 정상 → 통과
+
+commit 전 결정론적 확인: `jq -e '.version and .components' templates/manifest.json` 성공해야 함.
+복구: `git show HEAD:templates/manifest.json | jq '.version="<NEW>"' > templates/manifest.json`
 
 ## Sources
 

@@ -10,7 +10,10 @@
 # skills (.claude/skills/*/SKILL.md), rules (.claude/rules/*.md), guides (guides/*/ dirs, concat-hashed).
 #
 # Source-able (functions) AND runnable:
-#   bash .github/scripts/lib/source-hash.sh generate <output_path>   → writes manifest JSON
+#   bash .github/scripts/lib/source-hash.sh generate wiki/.source-hashes.json   → writes the wiki source-hash manifest
+#   ⚠ Target MUST be wiki/.source-hashes.json — NEVER templates/manifest.json. That file is a versioned
+#     {version,lastUpdated,omcustomMinClaudeCode,components[]} manifest; overwriting it with this path→hash
+#     map corrupts version-sync (verify-version-sync.sh checks .version). See issue #1423 incident.
 #
 # This file is intentionally side-effect-free when sourced (no top-level execution).
 
