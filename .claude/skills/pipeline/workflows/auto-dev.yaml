@@ -237,6 +237,7 @@ steps:
 
       If either fails:
       - For wiki-sync failures: delegate to wiki-curator to generate missing pages (`/omcustom:wiki ingest <path>`)
+        (Regenerating the wiki source-hash manifest targets `wiki/.source-hashes.json` ALWAYS — NEVER `templates/manifest.json`. Command: `bash .github/scripts/lib/source-hash.sh generate wiki/.source-hashes.json`. Ref #1423.)
       - For template-sync failures: delegate to mgr-updater to sync `.claude/` -> `templates/.claude/`
       - After fixes, re-run the scripts until both pass
 
@@ -299,6 +300,9 @@ steps:
          Determine NEW version per semver rules below.
          npm project (package.json exists):
            a. package.json: jq '.version = "<NEW>"' package.json > package.json.tmp && mv package.json.tmp package.json
+           # ⚠ jq '.version=...' PRESERVES the manifest structure {version, lastUpdated, omcustomMinClaudeCode, components[]}.
+           #   Edit ONLY the .version field — do NOT overwrite templates/manifest.json wholesale (e.g. a source-hash path→hash map).
+           #   Recover a corrupted manifest: git show HEAD:templates/manifest.json | jq '.version="<NEW>"' > templates/manifest.json (#1423/#1154).
            b. templates/manifest.json: jq '.version = "<NEW>"' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json
            c. mgr-gitnerd commit: "chore(release): bump to v<NEW>"
            d. mgr-gitnerd push develop

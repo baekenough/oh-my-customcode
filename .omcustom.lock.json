@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.18",
-  "generatedAt": "2026-06-26T05:12:24.991Z",
-  "templateVersion": "1.0.18",
+  "generatorVersion": "1.0.19",
+  "generatedAt": "2026-06-26T06:06:34.724Z",
+  "templateVersion": "1.0.19",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "6c8f1e6774bb515d3ac38e64fb4822cb5afa1e81738b53c1aaa8e766458b87d6",
-      "size": 21726,
+      "templateHash": "51a59f2a3289f5c047036746e7ed58f4f39859ac51288d011e497e12081a9095",
+      "size": 22369,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -1075,8 +1075,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline-guards/SKILL.md": {
-      "templateHash": "7c782fbc6258055412c42d8371778870c765f9e1b4f36db404953b27d694ccd8",
-      "size": 6843,
+      "templateHash": "20159d827d809240457b3aa8a3016ecb6f375dda9c3ce83ffafd318cc084ea32",
+      "size": 8096,
       "component": "skills"
     },
     ".claude/skills/help/SKILL.md": {
