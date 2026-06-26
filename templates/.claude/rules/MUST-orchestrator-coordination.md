@@ -329,6 +329,8 @@ Before spawning any agent:
 
 > **v2.1.187+**: Fixed subagent depth tracking — resumed subagents restore their original spawn depth, and forked subagents count toward the depth cap. Also fixed background jobs stuck in "working" indefinitely when an agent ended a turn without structured output, and leaked agent worktree registrations are now auto-cleaned. Reinforces the sole-orchestrator design's depth accounting (cf. v2.1.172 5-level nesting note). `mode: "bypassPermissions"` remains required.
 
+> **v2.1.191+**: Stopping a background agent from the tasks panel is now PERMANENT — a stopped agent no longer resurrects after being stopped. Strengthens background-agent lifecycle control. `mode: "bypassPermissions"` on every Agent tool call remains required.
+
 ## Agent Capability Pre-Check
 
 Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).

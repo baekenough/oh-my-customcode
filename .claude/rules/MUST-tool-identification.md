@@ -172,4 +172,6 @@ R007 헤더와 마찬가지로, R008 prefix 누락도 외부 프로젝트 디버
 | 외부 프로젝트 디버깅 | **동일하게 필수** |
 | SSH / 배포 / 인프라 작업 | **동일하게 필수** |
 
-Reference issue: #1401.
+외부 프로젝트 진단 세션(#1417)에서 Bash/Edit/Read/Agent 모든 호출에 `[agent][model] → Tool:` prefix가 세션 전체 누락된 재발이 관측되었다 — 도구 호출 직전 prefix 부착을 워크플로에 내재화한다.
+
+Reference issues: #1401, #1417.

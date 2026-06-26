@@ -53,6 +53,8 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.187+**: Org-configured model restrictions now apply to the model picker, `--model`, `/model`, and `ANTHROPIC_MODEL`, surfacing a "restricted by your organization's settings" message for a restricted model. Extends the v2.1.175 `enforceAvailableModels` managed-setting scope to the model picker/env entry points. Also added the `sandbox.credentials` setting (blocks sandboxed reads of credential files/secret env) — cross-ref R001.
 
+> **v2.1.191+**: Sandbox network permission dialog now REMEMBERS hosts allowed with "Yes" for the rest of the session (no per-connection re-prompt). Also: `/permissions` Recently-denied tab now PERSISTS an approved denial on close (previously discarded); managed `forceRemoteSettingsRefresh` now takes effect via MDM/file policy with `Cache-Control: no-cache`; MCP capability discovery (`tools/list`/`prompts/list`/`resources/list`) and OAuth token requests now retry transient network errors with backoff (headless skips the browser popup). Relevant to Tier-4/Tier-6 (sandbox network + MCP) permission flows.
+
 ## Agent Tool Permission Mode
 
 When spawning subagents via the Agent tool, always pass `mode: "bypassPermissions"` explicitly. The Agent tool's default mode is `acceptEdits`, which **overrides** the agent frontmatter `permissionMode` field.

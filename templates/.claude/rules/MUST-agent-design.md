@@ -193,6 +193,8 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 
 > **v2.1.157+**: `settings.json` `agent` field is now honored for dispatched sessions (with `--agent <name>` override). `EnterWorktree` can switch between Claude-managed worktrees mid-session, and worktrees are left unlocked when the agent finishes (enabling `git worktree remove`/`prune` cleanup).
 
+> **v2.1.191+**: Hooks with comma-separated matchers (e.g. `"Bash,PowerShell"`) now fire correctly — previously such matchers silently never fired. Relevant when authoring `.claude/hooks/` entries that target multiple tools in one matcher.
+
 ## Permission Mode Guidance
 
 CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls (see R010). See guidance details via Read tool.
