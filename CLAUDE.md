@@ -242,7 +242,7 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 | 서버 | 용도 |
 |------|------|
 | code-review-graph | Token-efficient AST 기반 context retrieval (8.2× 토큰 절감) — wrapper: `crg-integration` 스킬 (#1171) |
-| semble | Semantic code search via embeddings (98% 토큰 절감, NDCG@10=0.854) — wrapper: `semble-integration` 스킬 (#1173) |
+| semble | Semantic code search via embeddings (98% 토큰 절감, NDCG@10=0.854 — 수치는 벤더 벤치마크; grep 대비 우위는 토큰비용 축, 정확 lookup은 grep 우위 #1349) — wrapper: `semble-integration` 스킬 (#1173) |
 | aws-mcp | AWS 서비스 인증 접근 — call_aws(15,000+ API 실행), search_documentation/read_documentation(실시간 AWS 문서), run_script(샌드박스). 고특권 실행은 infra-aws-expert 위임 + R010/R001 특권경계 |
 
 ### 설치 명령어

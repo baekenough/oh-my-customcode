@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.17",
-  "generatedAt": "2026-06-26T03:44:44.896Z",
-  "templateVersion": "1.0.17",
+  "generatorVersion": "1.0.18",
+  "generatedAt": "2026-06-26T05:12:24.991Z",
+  "templateVersion": "1.0.18",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -550,8 +550,8 @@
       "component": "skills"
     },
     ".claude/skills/semble-integration/SKILL.md": {
-      "templateHash": "efd16d291194ecd63d72612f1bdb3707461d1f4571c5327408fe89223f1d3895",
-      "size": 5988,
+      "templateHash": "be17657ef7d4adc6b70b46109b511c763ce73b141eb3a02962b32280ed17fcb7",
+      "size": 6709,
       "component": "skills"
     },
     ".claude/skills/java-best-practices/SKILL.md": {
