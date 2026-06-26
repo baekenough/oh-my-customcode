@@ -2031,7 +2031,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "1.0.6",
+  version: "1.0.16",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
@@ -2079,13 +2079,13 @@ var package_default = {
     yaml: "^2.8.2"
   },
   devDependencies: {
-    "@anthropic-ai/sdk": "^0.102.0",
+    "@anthropic-ai/sdk": "^0.105.0",
     "@biomejs/biome": "^2.3.12",
     "@types/bun": "^1.3.6",
     "@types/js-yaml": "^4.0.9",
     "@types/nodemailer": "^8.0.0",
-    "js-yaml": "^4.1.0",
-    nodemailer: "^8.0.1",
+    "js-yaml": "^5.0.0",
+    nodemailer: "^9.0.1",
     typescript: "^6.0.2",
     vitepress: "^1.6.4"
   },
@@ -2098,7 +2098,11 @@ var package_default = {
     "cli"
   ],
   author: "baekenough",
-  license: "MIT",
+  funding: {
+    type: "github",
+    url: "https://github.com/sponsors/baekenough"
+  },
+  license: "PolyForm-Noncommercial-1.0.0",
   repository: {
     type: "git",
     url: "git+https://github.com/baekenough/oh-my-customcode.git"

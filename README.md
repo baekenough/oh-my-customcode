@@ -7,7 +7,7 @@
 > **Your AI Agent Stack. Compiled, Not Configured.**
 
 [![npm version](https://img.shields.io/npm/v/oh-my-customcode.svg)](https://www.npmjs.com/package/oh-my-customcode)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm NC 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0/)
 [![CI](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/ci.yml)
 [![Security Audit](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml/badge.svg)](https://github.com/baekenough/oh-my-customcode/actions/workflows/security-audit.yml)
 
@@ -309,9 +309,23 @@ Requirements: Node.js >= 18.0.0, Claude Code CLI.
 
 ---
 
+## Support
+
+If oh-my-customcode saves you time or you like where it's heading, consider supporting development:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/baekenough)
+
+Every contribution keeps the compiler running. ☕
+
+---
+
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)**.
+
+You are free to **use, modify, and distribute** oh-my-customcode for any **noncommercial** purpose — personal projects, research, education, and nonprofit/government use. **Commercial use is not permitted** under this license.
+
+Need a commercial license? Open an issue or reach out to the author.
 
 ---
 
