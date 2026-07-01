@@ -160,6 +160,14 @@ agents:
     supported_actions: [review, create, fix, refactor]
     base_confidence: 35
 
+  be-django-expert:
+    keywords:
+      korean: [장고, 디장고]
+      english: [django, "django rest", drf]
+    file_patterns: ["manage.py", "settings.py", "urls.py", "models.py", "wsgi.py", "asgi.py"]
+    supported_actions: [review, create, fix, refactor]
+    base_confidence: 75
+
   # SW Engineers - Tooling
   tool-bun-expert:
     keywords:
@@ -185,6 +193,14 @@ agents:
     supported_actions: [analyze, optimize, report, bundle]
     base_confidence: 40
 
+  slack-cli-expert:
+    keywords:
+      korean: [슬랙, 슬랙봇, 슬랙 알림, 슬랙 메시지]
+      english: [slack, "slack cli", "slack bot", "slack notification", webhook]
+    file_patterns: []
+    supported_actions: [send, notify, configure, post]
+    base_confidence: 75
+
   # SW Engineers - Database
   db-supabase-expert:
     keywords:
@@ -193,6 +209,79 @@ agents:
     file_patterns: ["*.sql", "supabase/*"]
     supported_actions: [review, create, fix, migrate]
     base_confidence: 40
+
+  db-postgres-expert:
+    keywords:
+      korean: [포스트그레스, 포스트그레스큐엘, 피지]
+      english: [postgres, postgresql, psql, pgsql]
+    file_patterns: ["*.sql", "postgresql.conf", "pg_hba.conf"]
+    supported_actions: [review, create, fix, optimize]
+    base_confidence: 75
+
+  db-redis-expert:
+    keywords:
+      korean: [레디스, 캐시, 인메모리]
+      english: [redis, cache, "redis cluster", "in-memory"]
+    file_patterns: ["redis.conf", "*.rdb"]
+    supported_actions: [review, create, fix, optimize]
+    base_confidence: 75
+
+  db-alembic-expert:
+    keywords:
+      korean: [알렘빅, 마이그레이션, 스키마 마이그레이션]
+      english: [alembic, migration, "schema migration"]
+    file_patterns: ["alembic.ini", "alembic/versions/*.py", "migrations/*.py", "env.py"]
+    supported_actions: [migrate, review, create, fix]
+    base_confidence: 75
+
+  # DE Engineers
+  de-airflow-expert:
+    keywords:
+      korean: [에어플로우, DAG, 워크플로우 스케줄]
+      english: [airflow, dag, "apache airflow", scheduler]
+    file_patterns: ["dags/*.py", "airflow.cfg"]
+    supported_actions: [review, create, fix, refactor]
+    base_confidence: 75
+
+  de-dbt-expert:
+    keywords:
+      korean: [디비티, 데이터 모델링]
+      english: [dbt, "data build tool", "sql model"]
+    file_patterns: ["models/*.sql", "dbt_project.yml", "schema.yml"]
+    supported_actions: [review, create, fix, test]
+    base_confidence: 75
+
+  de-spark-expert:
+    keywords:
+      korean: [스파크, 분산 처리]
+      english: [spark, pyspark, "apache spark", "distributed processing"]
+    file_patterns: ["*.py", "*.scala"]
+    supported_actions: [review, create, fix, optimize]
+    base_confidence: 75
+
+  de-kafka-expert:
+    keywords:
+      korean: [카프카, 스트리밍, 이벤트 스트림]
+      english: [kafka, streaming, "event stream", "apache kafka", producer, consumer]
+    file_patterns: ["*.properties", "server.properties"]
+    supported_actions: [review, create, fix, configure]
+    base_confidence: 75
+
+  de-snowflake-expert:
+    keywords:
+      korean: [스노우플레이크, 데이터 웨어하우스]
+      english: [snowflake, "data warehouse", warehouse, snowsql]
+    file_patterns: ["*.sql"]
+    supported_actions: [review, create, fix, optimize]
+    base_confidence: 75
+
+  de-pipeline-expert:
+    keywords:
+      korean: [데이터 파이프라인, ETL, ELT, 데이터 적재]
+      english: [pipeline, etl, elt, "data pipeline", ingestion]
+    file_patterns: ["pipelines/*.py", "*.yaml"]
+    supported_actions: [review, create, fix, design]
+    base_confidence: 70
 
   # SW Architects
   arch-documenter:
@@ -227,6 +316,15 @@ agents:
     file_patterns: ["*.tf", "serverless.yml", "template.yaml", "cloudformation.*"]
     supported_actions: [review, create, fix, explain]
     base_confidence: 40
+
+  # Security
+  sec-codeql-expert:
+    keywords:
+      korean: [코드큐엘, 보안 스캔, 취약점 스캔, 정적 분석]
+      english: [codeql, sarif, vulnerability, "static analysis", "security scan", sast]
+    file_patterns: ["*.ql", "*.qll", "codeql/*"]
+    supported_actions: [scan, analyze, review]
+    base_confidence: 75
 
   # Managers
   mgr-creator:
@@ -303,6 +401,22 @@ agents:
     file_patterns: []
     supported_actions: [save, recall, remember]
     base_confidence: 40
+
+  tracker-checkpoint:
+    keywords:
+      korean: [체크포인트, 진행 상태, 파이프라인 상태, 추적]
+      english: ["pipeline state", checkpoint, "track progress", "state tracking", resume]
+    file_patterns: []
+    supported_actions: [track, checkpoint, resume]
+    base_confidence: 70
+
+  wiki-curator:
+    keywords:
+      korean: [위키 페이지, 위키 큐레이션, 지식 정리]
+      english: ["wiki page", "wiki curation", "knowledge base page", "wiki write"]
+    file_patterns: ["wiki/**"]
+    supported_actions: [create, update, curate]
+    base_confidence: 70
 
   # ---------------------------------------------------------------------------
   # Research / Information Gathering (skill-based, not agent)
@@ -411,6 +525,15 @@ agents:
     file_patterns: []
     supported_actions: [coordinate, review, lead]
     base_confidence: 40
+
+  de-lead:
+    keywords:
+      korean: [데이터 엔지니어링, DE 리드, 파이프라인 조율, 데이터 파이프라인]
+      english: [airflow, dbt, spark, kafka, snowflake, pipeline, ETL, DAG, "de lead", "data engineering"]
+    file_patterns: ["dags/*.py", "*.sql", "models/"]
+    supported_actions: [coordinate, review, lead]
+    base_confidence: 40
+    routing_rule: "Invoke de-lead-routing skill to route DE tasks to the correct data engineering expert"
 
   secretary:
     keywords:
@@ -718,7 +841,7 @@ agents:
     file_patterns: []
     supported_actions: [reference, lookup]
     base_confidence: 65
-    routing_rule: "Reference guides/development/ directory"
+    routing_rule: "Reference appropriate guides/ subdirectory"
 
   guide-best-practices:
     keywords:

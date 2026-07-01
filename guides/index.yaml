@@ -221,6 +221,12 @@ guides:
       origin: redis.io
       url: https://redis.io/docs/
 
+  - name: drizzle-orm
+    description: Drizzle ORM sql template literal pitfalls and table-qualifier safety patterns
+    path: ./drizzle-orm/
+    source:
+      type: internal
+
   # Git
   - name: git-worktree-workflow
     description: Git worktree workflow for parallel branch development
@@ -228,10 +234,28 @@ guides:
     source:
       type: internal
 
+  - name: git-safety
+    description: Safe git operation patterns for autonomous agents — working tree loss prevention
+    path: ./git-safety/
+    source:
+      type: internal
+
   # Architecture
   - name: skill-bundle-design
     description: Domain skill bundle design patterns for Author/Test/Troubleshoot tri-pattern
     path: ./skill-bundle-design/
+    source:
+      type: internal
+
+  - name: architecture
+    description: Reference patterns from AWS sample-deep-insight hierarchical multi-agent system
+    path: ./architecture/
+    source:
+      type: internal
+
+  - name: harness-engineering
+    description: Harness engineering guide — agent behavior control and infrastructure isolation as first-class design
+    path: ./harness-engineering/
     source:
       type: internal
 
@@ -269,3 +293,126 @@ guides:
     path: ./agents-md-quality/
     source:
       type: internal
+
+  - name: agent-design
+    description: Agent design pattern references — Ralph loop persistence, Socratic interview templates, PAL cost routing, and CLI agent patterns
+    path: ./agent-design/
+    source:
+      type: internal
+
+  - name: agent-eval
+    description: Agent evaluation framework reference — 4-metric methodology and ideal trajectory annotation
+    path: ./agent-eval/
+    source:
+      type: internal
+
+  - name: agent-teams
+    description: Agent Teams troubleshooting guide for common operational issues and shutdown handling
+    path: ./agent-teams/
+    source:
+      type: internal
+
+  - name: agent-workflow
+    description: Autonomous challenge session lessons and guardrails for long-running agent runs
+    path: ./agent-workflow/
+    source:
+      type: internal
+
+  - name: browser-automation
+    description: Browser automation patterns for AI agents via MCP-based browser tools and lightweight CDP alternatives
+    path: ./browser-automation/
+    source:
+      type: internal
+
+  - name: compound-ai-workflow
+    description: Compound AI workflow principles — accumulating artifacts as context across sessions
+    path: ./compound-ai-workflow/
+    source:
+      type: internal
+
+  - name: deep-plan
+    description: Companion guide for the deep-plan skill — research, plan, and verify phases
+    path: ./deep-plan/
+    source:
+      type: internal
+
+  - name: external-tools
+    description: External tool integration references — graphify knowledge graph and ECC absorption decisions
+    path: ./external-tools/
+    source:
+      type: internal
+
+  - name: hook-data-flow
+    description: Hook data flow reference — stall detection pipeline for parallel agents (R009)
+    path: ./hook-data-flow/
+    source:
+      type: internal
+
+  - name: middleware-patterns
+    description: Lifecycle middleware patterns for customizing the agent harness
+    path: ./middleware-patterns/
+    source:
+      type: internal
+
+  - name: multi-agent-debate-patterns
+    description: Multi-agent debate anti-patterns and structural mechanisms to prevent them
+    path: ./multi-agent-debate-patterns/
+    source:
+      type: internal
+
+  - name: multi-provider-exec
+    description: Cross-provider LLM execution reference for external exec skills
+    path: ./multi-provider-exec/
+    source:
+      type: internal
+
+  - name: professor-triage
+    description: Companion guide for the professor-triage skill — issue triage phases
+    path: ./professor-triage/
+    source:
+      type: internal
+
+  - name: profiles
+    description: Manifest install profile guide — minimal/full profile selection patterns
+    path: ./profiles/
+    source:
+      type: internal
+
+  # Security
+  - name: security
+    description: Security pre-flight analysis pattern (AgentShield) for pre-write risk identification
+    path: ./security/
+    source:
+      type: internal
+
+  # Skill Development
+  - name: skill-promotion
+    description: Skill promotion guide — instinct extraction and failure-pattern mining
+    path: ./skill-promotion/
+    source:
+      type: internal
+
+  # Token Efficiency
+  - name: cc-token-saver
+    description: cc-token-saver plugin integration guide for token and cost optimization
+    path: ./cc-token-saver/
+    source:
+      type: external
+      origin: github
+      url: https://github.com/ww-w-ai/cc-token-saver
+      license: Apache-2.0
+
+  - name: token-efficiency
+    description: Token-efficient context retrieval integration — CRG and Semble MCP wrappers
+    path: ./token-efficiency/
+    source:
+      type: internal
+
+  # Tooling
+  - name: slack-cli
+    description: Slack CLI reference for creating and managing Slack apps from the command line
+    path: ./slack-cli/
+    source:
+      type: external
+      origin: slack.dev
+      url: https://docs.slack.dev/tools/slack-cli/

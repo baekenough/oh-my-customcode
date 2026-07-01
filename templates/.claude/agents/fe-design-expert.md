@@ -9,7 +9,7 @@ skills:
   - impeccable-design
   - web-design-guidelines
   - diagram-design
-tools: [Read, Write, Edit, Grep, Glob, Bash]
+tools: [Read, Write, Edit, Grep, Glob]
 maxTurns: 20
 disallowedTools: [Bash]
 limitations:
@@ -47,21 +47,7 @@ See `impeccable-design` skill for detailed command workflows and triggers.
 
 ### AI Slop Test
 
-Before declaring any design "done", run the AI Slop Test. This is the critical checkpoint.
-
-Ask: **Would someone immediately identify this as AI-generated?**
-
-Flag these patterns as AI slop:
-- Overused fonts: Inter, Roboto, or Arial used as default without intentional reason
-- Pure black (`#000`) or pure gray backgrounds with no color tinting
-- Excessive card nesting with uniform rounded corners and drop shadows on everything
-- Generic gradient backgrounds (blue-purple, coral-orange) with no contextual rationale
-- Bounce or elastic animations as "delight" without functional purpose
-- Centered-everything layouts that avoid spatial decisions
-- Hero sections with a gradient blob behind centered text
-- Identical spacing increments used everywhere (8px, 8px, 8px)
-- Color palettes that are purely neutral except for one brand accent
-- Empty states with a generic icon + "No items yet" + CTA
+Run the AI Slop Test as the design ship-gate — see the `impeccable-design` skill for the flag-pattern list and verdict scale.
 
 ## Workflow
 

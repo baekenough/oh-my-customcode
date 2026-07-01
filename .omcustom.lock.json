@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.0.20",
-  "generatedAt": "2026-07-01T00:38:39.303Z",
-  "templateVersion": "1.0.20",
+  "generatorVersion": "1.1.0",
+  "generatedAt": "2026-07-01T10:13:38.322Z",
+  "templateVersion": "1.1.0",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "09477331dc657587e981a9808161041679e6abeccd2060cb9d47ab22a69d78f2",
-      "size": 34049,
+      "templateHash": "1dcf4bdeed0f789d19604625e5183a1c4d3a3040be4dc7f7c28dffc47ffeb809",
+      "size": 34120,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -135,18 +135,13 @@
       "component": "agents"
     },
     ".claude/agents/wiki-curator.md": {
-      "templateHash": "d7957ec0b6ed6731a9121e49fa6a726acdbcce77d492cd859721a1955c9e66cd",
-      "size": 3067,
+      "templateHash": "eb5f20a3d5450bf05afcfc8ac4a51936e9fa7a8a1fdd442e05416ca811415dde",
+      "size": 2296,
       "component": "agents"
     },
     ".claude/agents/arch-speckit-agent.md": {
       "templateHash": "6eb5d90112edb4f5e503f9e901d96d1717473eebc4a996a31e04f25a5906cf8b",
       "size": 2690,
-      "component": "agents"
-    },
-    ".claude/agents/mgr-creator.md.tmp": {
-      "templateHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "size": 0,
       "component": "agents"
     },
     ".claude/agents/lang-rust-expert.md": {
@@ -155,8 +150,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-updater.md": {
-      "templateHash": "540c04f62dd9037fbace5a6d1434f178b9cb81cf9b5e9d0e2732533f70c42034",
-      "size": 1314,
+      "templateHash": "cbbc447f8e2ab697b13ed6b60b87009aecc74b3a4e9858ddb6dff37ee77b6612",
+      "size": 1027,
       "component": "agents"
     },
     ".claude/agents/lang-kotlin-expert.md": {
@@ -165,8 +160,8 @@
       "component": "agents"
     },
     ".claude/agents/fe-design-expert.md": {
-      "templateHash": "74b01594d4ffda29d6f86d3d7c3c9d93d7cdabe71981994cf8fc8ddd822ce148",
-      "size": 6010,
+      "templateHash": "90ac592b36e713545b043e30acfa72b19bc2f3eb486e2ac93aa69bb72e926460",
+      "size": 5236,
       "component": "agents"
     },
     ".claude/agents/be-express-expert.md": {
@@ -175,8 +170,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-sauron.md": {
-      "templateHash": "53bee02cf68bfccce974897d3300ed8931ce78b3e8d9a35fba9862fea6089a88",
-      "size": 5126,
+      "templateHash": "72b5be5683c70d736ca1a899290b673aa7345f76c04bb3895db67c46e38d1be7",
+      "size": 1882,
       "component": "agents"
     },
     ".claude/agents/fe-svelte-agent.md": {
@@ -195,8 +190,8 @@
       "component": "agents"
     },
     ".claude/agents/sys-naggy.md": {
-      "templateHash": "c5dab8636389bc2e8ec68529a20f332da773a6c6688964bf5a69d41eb0b8c0fe",
-      "size": 2946,
+      "templateHash": "447c84830dc7ce6739f3f2db6c425942dd1af37bc63d5b95018c86fb0d2af9fc",
+      "size": 2175,
       "component": "agents"
     },
     ".claude/agents/db-redis-expert.md": {
@@ -250,8 +245,8 @@
       "component": "agents"
     },
     ".claude/agents/tracker-checkpoint.md": {
-      "templateHash": "abd636f324ff78d97827b8f7d5240f80cdc021ee168778176e4ecc7ef15b9fc7",
-      "size": 3370,
+      "templateHash": "55c1860b94205974f088ddf1a49ab03721dcd9edb8b4f1a84e8caaaa1cfe8504",
+      "size": 2599,
       "component": "agents"
     },
     ".claude/agents/de-dbt-expert.md": {
@@ -280,8 +275,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-claude-code-bible.md": {
-      "templateHash": "f6bf16f2c578c90a3c9567222c9ebf1562f2dee4feb3cfcaae4da245ffbcd785",
-      "size": 3026,
+      "templateHash": "0793e01748f854bebc1e0e11112b7f43b7667e7aceb15e28acdfef8331cd8774",
+      "size": 2255,
       "component": "agents"
     },
     ".claude/agents/fe-flutter-agent.md": {
@@ -300,13 +295,13 @@
       "component": "agents"
     },
     ".claude/agents/mgr-gitnerd.md": {
-      "templateHash": "f8ee1b1c7579812311ddeb3fb9fffb5a2dde1fc560a37ae946abd7a2c2627f92",
-      "size": 3809,
+      "templateHash": "25c99b2a24019527ee55a29a7c002325f8061dcdab1b52f5d1d24eae8b0d7d6f",
+      "size": 3038,
       "component": "agents"
     },
     ".claude/agents/mgr-creator.md": {
-      "templateHash": "5bee5bfd0fe9a19f201b7716358b6a58caae352ff773a711673338ed35907eac",
-      "size": 2087,
+      "templateHash": "83a8f31defc229bd86ed4ec4f0e7c7a92abefdb789cadf3f779f2fe06335a346",
+      "size": 1800,
       "component": "agents"
     },
     ".claude/agents/qa-writer.md": {
@@ -330,8 +325,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-supplier.md": {
-      "templateHash": "4a17a208f2852e5b4737253f2481c838d4c434b6a9b595219c38dac70f86bb59",
-      "size": 1862,
+      "templateHash": "925673bf2d86ca72a10b35d4f28784f107fcf8626f9769535a027112ddbb47f8",
+      "size": 1091,
       "component": "agents"
     },
     ".claude/agents/arch-documenter.md": {
@@ -365,8 +360,8 @@
       "component": "agents"
     },
     ".claude/agents/slack-cli-expert.md": {
-      "templateHash": "35e04ed7751e2dd661a87c6c03677c4f349fc968018eb85bffccf2cd3fe852aa",
-      "size": 3213,
+      "templateHash": "57a8f4a4d300c9e83e587e7c924f473822d12cdcecc383183e1a20edadac9a85",
+      "size": 1463,
       "component": "agents"
     },
     ".claude/agents/be-fastapi-expert.md": {
@@ -635,8 +630,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "b75e1b4d610091acfd7a4001094fd8f3091768fe9feafc69dbca22380b9a12e3",
-      "size": 24236,
+      "templateHash": "b6ee3cd2a8cef5f51d4533f464d8ccaa18fdff19226418f8806a61ffffafd812",
+      "size": 28834,
       "component": "skills"
     },
     ".claude/skills/intent-detection/SKILL.md": {
@@ -697,11 +692,6 @@
     ".claude/skills/multi-model-verification/SKILL.md": {
       "templateHash": "01126cc826eb5afa80d40541c5d3a87ab5cd0f727e780d280013d13ff16c6eb2",
       "size": 4661,
-      "component": "skills"
-    },
-    ".claude/skills/test-verify-ignore.txt": {
-      "templateHash": "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2",
-      "size": 5,
       "component": "skills"
     },
     ".claude/skills/claude-code-bible/scripts/fetch-docs.js": {
@@ -894,6 +884,26 @@
       "size": 5617,
       "component": "skills"
     },
+    ".claude/skills/grill-with-docs/README.md": {
+      "templateHash": "f7754c0da9c5834e56d64b423691f27d4de7d603a54fdfed6bdee3c6a13e452a",
+      "size": 874,
+      "component": "skills"
+    },
+    ".claude/skills/grill-with-docs/SKILL.md": {
+      "templateHash": "8b06f2bdfe4fe361f59bc2ba738fc108eb610db6465d249c7f1cb2395b01fe15",
+      "size": 4425,
+      "component": "skills"
+    },
+    ".claude/skills/grill-with-docs/CONTEXT-FORMAT.md": {
+      "templateHash": "b8cc318f2a4285b530e908b6bc43901c3c5cd11100362636bbc4216639bef597",
+      "size": 2299,
+      "component": "skills"
+    },
+    ".claude/skills/grill-with-docs/ADR-FORMAT.md": {
+      "templateHash": "f1f36cd3f8d3b6474ddd5855da4e233bfc4ae1a1c5024909ccf11871819a41b2",
+      "size": 2766,
+      "component": "skills"
+    },
     ".claude/skills/react-best-practices/SKILL.md": {
       "templateHash": "4ac915b6cc71560342a7b8fa72dd66782c89e3c8f13fa8fe4d291b45672bde85",
       "size": 1800,
@@ -1050,8 +1060,8 @@
       "component": "skills"
     },
     ".claude/skills/agent-eval-framework/SKILL.md": {
-      "templateHash": "5ab0c64c2772335efec1cde8066f4f7b0728f996fd7785ef76bc1801a2321a4d",
-      "size": 8325,
+      "templateHash": "ad5a4d3599fba0feb73edc6e6d528125aa3c648f8d645d6a72994bf784665476",
+      "size": 8401,
       "component": "skills"
     },
     ".claude/skills/task-decomposition/SKILL.md": {
@@ -1925,8 +1935,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "a9b5c8007a0fc5486b0ad71e32e81e6b1209b6e4dee6b2eee93ecadb693d0ef8",
-      "size": 7425,
+      "templateHash": "bd1b8460ba1a35773fe9ceb2cd47a5f76c51ee5ce62e1ff0be11d690bdc04acf",
+      "size": 11981,
       "component": "guides"
     },
     "guides/token-efficiency/semble.md": {

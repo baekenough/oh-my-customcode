@@ -1,7 +1,7 @@
 ---
 title: Agent Taxonomy
 type: architecture
-updated: 2026-04-12
+updated: 2026-07-01
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md
@@ -14,7 +14,7 @@ related:
 
 # Agent Taxonomy
 
-47 agents are organized into 12 functional categories. Each agent is a specialist "build artifact" that composes skills into a focused domain expert with a specific model, toolset, and memory scope.
+49 agents are organized into 12 functional categories. Each agent is a specialist "build artifact" that composes skills into a focused domain expert with a specific model, toolset, and memory scope.
 
 ## Overview
 

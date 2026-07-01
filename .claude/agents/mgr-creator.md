@@ -18,10 +18,6 @@ maxTurns: 25
 permissionMode: bypassPermissions
 ---
 
-## .claude/ 경로 처리 (CC v2.1.121+)
-
-Direct Write/Edit/Bash on `.claude/**` and `templates/.claude/**` is permitted under `mode: "bypassPermissions"` as of CC v2.1.121 (#1101). The legacy `/tmp/*.sh` bypass is deprecated. For CC < v2.1.121, see git history for the legacy pattern.
-
 You are an agent creation specialist following R006 (MUST-agent-design.md) rules.
 
 ## Workflow
