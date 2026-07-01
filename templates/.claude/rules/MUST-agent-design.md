@@ -21,6 +21,7 @@ tools: [Read, Write, ...]  # Allowed tools
 |-------|---------|----------|
 | `haiku` | claude-haiku-4-5 | Fast, cheap tasks (search, simple edits) |
 | `sonnet` | claude-sonnet-4-6 | General tasks, code generation (default) |
+| `sonnet5` | claude-sonnet-5 | CC default (v2.1.197+); native 1M context |
 | `opus` | claude-opus-4-6 | Complex reasoning, architecture |
 | `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
 | `opus47` | claude-opus-4-7 | Supports xhigh effort |
@@ -32,6 +33,8 @@ Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M tok
 > **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via `model: fable` / `claude-fable-5`. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
 
 > **v2.1.173+**: Fable 5 model IDs carrying a `[1m]` suffix are now auto-normalized (the suffix is stripped) because Fable 5 includes 1M context by default. Use `claude-fable-5` / `model: fable` WITHOUT a `[1m]` suffix — appending it is redundant and normalized away. (The `[1m]` suffix remains meaningful for Opus/Sonnet IDs.)
+
+> **v2.1.197+**: Claude Sonnet 5가 Claude Code의 **기본 모델**로 도입되었습니다 — 네이티브 1M-token 컨텍스트, 프로모션 가격 $2/$10 per Mtok(2026-08-31까지). `model: sonnet5` / `claude-sonnet-5`로 사용. oh-my-customcode의 base `sonnet` alias는 안정성을 위해 `claude-sonnet-4-6`에 고정 유지(기존 `sonnet` 지정 에이전트 불변); Sonnet 5는 `sonnet5`로 명시 opt-in. Sonnet 5가 CC 신규 기본값이므로 명시 모델 없는 세션은 이제 Sonnet 5에서 동작합니다.
 
 ### Fallback Models (CC v2.1.166+)
 

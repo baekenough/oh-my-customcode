@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.0",
-  "generatedAt": "2026-07-01T10:22:15.646Z",
-  "templateVersion": "1.1.0",
+  "generatorVersion": "1.1.1",
+  "generatedAt": "2026-07-01T12:21:14.675Z",
+  "templateVersion": "1.1.1",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "1dcf4bdeed0f789d19604625e5183a1c4d3a3040be4dc7f7c28dffc47ffeb809",
-      "size": 34120,
+      "templateHash": "a88c99d1bdb3687d811655145e3a0de44462fb566be86b3fcc87bd331535ec5e",
+      "size": 34730,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "1c740e3a4a4b402bf674727db961cb6df46c4c64ccc6a9dc0dba1653db5c3fd6",
-      "size": 8073,
+      "templateHash": "77e66d332ffa748d5f960d40a8babc2fd6ad2892ef72ef0d6704aee14892d0a5",
+      "size": 9397,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "12a5c570d55f58f11806cb80d574a0010bc285b105f1aa7fb38cbc78ba4ba5be",
-      "size": 8198,
+      "templateHash": "fbc509140c1d596a61f3704cf0f9731897c7994bce64d97e369615468787ed98",
+      "size": 9100,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {

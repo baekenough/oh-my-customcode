@@ -80,6 +80,14 @@ R021은 위반 시 어떻게 멈출지를, R023은 어떤 순서로 검증할지
 
 하나라도 불확실하면 **먼저 carve-out을 명시(Tier 1 우선 해결)**하고, 그래도 불확실하면 Tier 3 적대적 검증(`adversarial-review`, `multi-model-verification`)을 통과시킨 뒤 release한다 (ladder 순서 유지). 이는 R023 shift-left 원칙(저렴한 tier 우선)을 룰 작성 자체에 적용한 것이며, R016 룰 작성 워크플로우의 Tier-1 품질 게이트로 동작한다 (R016은 위반 후 룰 업데이트 소유, R023 carve-out은 안전-신호 룰 작성 시 사전 점검 — 직교). Closes #1353.
 
+## Deprecated-Platform-Feature Staleness Check (Origin: #1433 #3)
+
+staleness/audit 검증은 model ID·placeholder·TBD뿐 아니라 **폐기된 플랫폼 기능·설정·절차 참조**도 스캔해야 한다. 실례: CC v2.1.121에서 폐기된 `/tmp/*.sh` script bypass 절차가 9개 에이전트 본문에 잔존했으나(v1.1.0에서 제거) 감사 staleness dimension이 model-ID/placeholder에만 한정해 이를 놓쳤다. 감사·staleness 체크리스트에 "CC 특정 버전에서 폐기된 기능/설정/절차를 현행처럼 참조하는가"를 항목으로 추가한다. 이는 R023 shift-left(저렴한 결정론적 grep으로 폐기 참조 조기 탐지)와 정합한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| staleness 스캔을 model ID/placeholder/TBD로만 한정 | 폐기된 플랫폼 기능/절차 참조(deprecated CC feature/procedure)도 grep 스캔 |
+
 ## Integration
 
 | 규칙 | 상호작용 |
