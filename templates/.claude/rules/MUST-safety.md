@@ -102,6 +102,10 @@ Cross-reference: R010 Subagent Scope-Creep STOP Protocol, R002 (permission tiers
 
 > **v2.1.191+**: Sandbox network permission "Yes" approvals are remembered per-session (cf. R002). Reduces re-prompts but means an allowed host stays allowed for the session — scope network allows deliberately.
 
+> **v2.1.193+**: `autoMode.classifyAllShell` 설정은 arbitrary-code-execution 패턴만이 아니라 **모든** Bash/PowerShell 명령을 auto-mode classifier로 라우팅합니다. 이 섹션의 파괴적/자격증명 가드에 대한 플랫폼-레벨 보완입니다(모델은 여전히 명령 전 파괴적 작업을 열거하고 승인을 요청 — model-level; CC가 모든 shell을 classifier로 게이팅 — platform-level, 방어심층). auto-mode 거부 사유가 transcript, 거부 토스트, `/permissions` recent denials에 표시됩니다.
+
+> **v2.1.196+**: 보안 — `claude mcp list`/`get`이 커밋된 `.claude/settings.json`으로 self-approved된 `.mcp.json` 서버를 더 이상 spawn하지 않으며, 신뢰되지 않은 워크스페이스는 `⏸ Pending approval`을 표시합니다. 이는 CLAUDE.md의 ".mcp.json auto-install 금지"(R001) 정책에 대한 플랫폼-레벨 보완입니다 — 플랫폼이 신뢰되지 않은 워크스페이스에서 self-approved MCP 서버 spawn을 차단합니다.
+
 ## Required Before Destructive Operations
 
 Verify target, assess impact scope, check recoverability, get user approval.
