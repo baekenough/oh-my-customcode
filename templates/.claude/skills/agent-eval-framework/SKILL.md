@@ -125,7 +125,7 @@ task start → record tool_calls[] + timestamps → task end
 
 ### Persistent Storage (added v0.116.0, #1036)
 
-Baseline annotations and observed trajectories can be persisted to eval-core's SQLite database (`evalBaselines` + `agentTrajectories` tables). This complements the YAML file approach for cross-session analysis. Use eval-core query module (TBD — separate followup) for analytics.
+Baseline annotations and observed trajectories can be persisted to eval-core's SQLite database (`evalBaselines` + `agentTrajectories` tables). This complements the YAML file approach for cross-session analysis. The eval-core query API for the `evalBaselines`/`agentTrajectories` tables is not yet implemented — use the YAML annotation approach meanwhile.
 
 ## Integration with Existing Skills
 

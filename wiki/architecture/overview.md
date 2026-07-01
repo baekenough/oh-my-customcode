@@ -1,7 +1,7 @@
 ---
 title: System Architecture Overview
 type: architecture
-updated: 2026-04-12
+updated: 2026-07-01
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md
@@ -20,7 +20,7 @@ oh-my-customcode is a meta-layer for Claude Code that structures AI agent behavi
 
 ## Overview
 
-The system contains **47 agents**, **103 skills**, **21 rules**, and **36 guides** organized across four directories under `.claude/` and `guides/`. Every component has a single clear responsibility, and interactions between them are governed by explicit delegation rules.
+The system contains **49 agents**, **118 skills**, **23 rules**, and **57 guides** organized across four directories under `.claude/` and `guides/`. Every component has a single clear responsibility, and interactions between them are governed by explicit delegation rules.
 
 The core philosophy is the **compilation metaphor**: skills are source code, agents are build artifacts, rules are the compiler spec, routing skills are the linker, and guides are the standard library. This isn't merely decorative — it drives every architectural decision about where knowledge lives and how components evolve.
 

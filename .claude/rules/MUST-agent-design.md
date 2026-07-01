@@ -23,7 +23,8 @@ tools: [Read, Write, ...]  # Allowed tools
 | `sonnet` | claude-sonnet-4-6 | General tasks, code generation (default) |
 | `opus` | claude-opus-4-6 | Complex reasoning, architecture |
 | `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
-| `opus47` | claude-opus-4-7 | Latest Opus model, supports xhigh effort |
+| `opus47` | claude-opus-4-7 | Supports xhigh effort |
+| `opus48` | claude-opus-4-8 | Latest Opus model (GA); highest capability below Fable 5 |
 | `fable` | claude-fable-5 | Mythos-class; tier above Opus, highest GA capability (access added in CC v2.1.170) |
 
 Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.

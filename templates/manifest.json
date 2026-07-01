@@ -1,5 +1,5 @@
 {
-  "version": "1.0.20",
+  "version": "1.1.0",
   "lastUpdated": "2026-06-26T00:00:00.000Z",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
@@ -20,7 +20,7 @@
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 117
+      "files": 118
     },
     {
       "name": "guides",
