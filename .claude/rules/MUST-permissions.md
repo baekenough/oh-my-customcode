@@ -55,6 +55,12 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.191+**: Sandbox network permission dialog now REMEMBERS hosts allowed with "Yes" for the rest of the session (no per-connection re-prompt). Also: `/permissions` Recently-denied tab now PERSISTS an approved denial on close (previously discarded); managed `forceRemoteSettingsRefresh` now takes effect via MDM/file policy with `Cache-Control: no-cache`; MCP capability discovery (`tools/list`/`prompts/list`/`resources/list`) and OAuth token requests now retry transient network errors with backoff (headless skips the browser popup). Relevant to Tier-4/Tier-6 (sandbox network + MCP) permission flows.
 
+> **v2.1.193+**: `autoMode.classifyAllShell` 설정은 모든 Bash/PowerShell 명령(Tier-4)을 arbitrary-code-execution 패턴만이 아니라 전부 auto-mode classifier로 보냅니다. auto-mode 거부 사유가 transcript / 거부 토스트 / `/permissions` recent denials에 노출됩니다. MCP 서버가 인증이 필요하면 시작 시 `/mcp`를 가리키는 알림을 표시하고, MCP `headersHelper` 인증은 tool 호출이 401/403을 반환하면 자동 재실행·재연결합니다(Tier-6). 이 섹션의 tier 기반 정책과 병존하는 플랫폼-레벨 동작입니다.
+
+> **v2.1.195+**: 프로젝트 `.claude/settings.json`으로만 활성화된 외부 플러그인이 이제 모든 loader 경로에서 명시적 설치 동의를 요구합니다(이전에는 일부 경로에서 우회됨). Tier-6 MCP/플러그인 신뢰 경계 강화.
+
+> **v2.1.196+**: 조직 기본 모델(org default models)이 추가되어 관리자가 org 콘솔에서 설정하며, 사용자가 직접 고르지 않으면 `/model`에 "Org default"(또는 "Role default")로 표시됩니다 — v2.1.187 org model restriction 범위를 기본 모델 해석까지 확장(cross-ref R006). 보안: `claude mcp list`/`get`이 self-approved `.mcp.json` 서버를 spawn하지 않고 신뢰되지 않은 워크스페이스는 `⏸ Pending approval` 표시(Tier-6, cross-ref R001). 또한 `claude agents --dangerously-skip-permissions`가 조용히 auto mode로 폴백하던 문제를 수정 — 이제 bypass 고지를 표시하고 spawned agent에도 bypass 모드를 적용합니다(R010 Universal bypassPermissions와 정합).
+
 ## Agent Tool Permission Mode
 
 When spawning subagents via the Agent tool, always pass `mode: "bypassPermissions"` explicitly. The Agent tool's default mode is `acceptEdits`, which **overrides** the agent frontmatter `permissionMode` field.

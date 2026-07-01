@@ -48,6 +48,8 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 
 > **v2.1.187+**: Org-configured model restrictions now apply to the model picker, `--model`, `/model`, and `ANTHROPIC_MODEL` (a restricted model shows "restricted by your organization's settings"). Extends the v2.1.175 `enforceAvailableModels` scope to per-agent `model:` override entry points — a managed model allowlist now also constrains the picker/env paths. Also fixed `--json-schema` / workflow `agent({schema})` structured output: the model can no longer re-call `StructuredOutput` indefinitely after a successful call, and follow-up turns reliably return structured output — relevant to schema-constrained subagent spawns.
 
+> **v2.1.196+**: 조직 기본 모델(org default models)이 추가되어 관리자가 org 콘솔에서 조직 전체 기본 모델을 설정하며, 사용자가 직접 선택하지 않으면 `/model`에 "Org default"(또는 "Role default")로 표시됩니다. v2.1.175 `enforceAvailableModels`/v2.1.187 org model restriction의 연장선 — 조직 관리 설정이 기본 모델 해석까지 관여합니다. 또한 백그라운드 세션 turn 이후 중복 recap 라인 문제를 수정 — schema-rejected된 StructuredOutput 시도가 재시도와 나란히 렌더되지 않습니다(schema-constrained subagent spawn / Workflow `agent({schema})`에 관련).
+
 ### Safe Mode & Bundled Skill Control (CC v2.1.169+)
 
 > **v2.1.169+**: `--safe-mode` (and `CLAUDE_CODE_SAFE_MODE`) starts Claude Code with ALL customizations disabled (CLAUDE.md, plugins, skills, hooks, MCP servers) — use it to isolate whether a project customization (agent/skill/hook) causes a regression. The `disableBundledSkills` setting (and `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` env) hides bundled skills, workflows, and built-in slash commands from the model — useful when bundled skills conflict with or duplicate project skills (R006 skill-surface management). Note: `disableBundledSkills` hides skills from the model but is a CC platform setting, distinct from the advisory `skills:` frontmatter field (which is documentation metadata, not a runtime allowlist).
@@ -194,6 +196,8 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 > **v2.1.157+**: `settings.json` `agent` field is now honored for dispatched sessions (with `--agent <name>` override). `EnterWorktree` can switch between Claude-managed worktrees mid-session, and worktrees are left unlocked when the agent finishes (enabling `git worktree remove`/`prune` cleanup).
 
 > **v2.1.191+**: Hooks with comma-separated matchers (e.g. `"Bash,PowerShell"`) now fire correctly — previously such matchers silently never fired. Relevant when authoring `.claude/hooks/` entries that target multiple tools in one matcher.
+
+> **v2.1.195+**: 하이픈이 포함된 hook matcher 식별자(예: `code-reviewer`, `mcp__brave-search`)가 이제 substring이 아니라 exact-match됩니다(이전에는 부분 문자열로 우연히 매칭). 하이픈 포함 MCP 서버의 모든 tool을 매칭하려면 `mcp__brave-search__.*` 형식을 사용하세요. 참고: oh-my-customcode의 `hooks.json`은 `*` / `mcp_tool_name matches "..."` / `tool == "..."` 형식을 사용하므로 이 변경의 영향을 받지 않습니다 — 다만 하이픈 포함 tool-name matcher를 새로 추가할 때 exact-match 시맨틱을 고려해야 합니다.
 
 ## Permission Mode Guidance
 
