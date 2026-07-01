@@ -102,6 +102,18 @@ Any change to: agents, agent frontmatter, skills, guides, routing patterns, rule
 2. 테스트가 읽는 파일의 git tracked 상태를 확인했는가? (`git ls-files` 대조)
 3. 임시 skip된 검증 스크립트/테스트가 남아있지 않은가?
 
+## Pre-Branch Freshness Gate (Origin: #1433 #1, ≥3회 재발)
+
+세션 중 원격 머지(`gh pr merge` 등)가 발생한 뒤 새 릴리즈/작업 브랜치를 분기하기 전, 반드시 `git checkout develop && git pull origin develop`로 로컬 develop을 최신화한다. stale 로컬 develop에서 분기하면 새 브랜치가 이미 머지된 변경(직전 릴리즈)을 누락해 PR이 CONFLICTING 상태가 되고, merge+충돌해결+재CI 사이클이 강제된다. advisory 메모리(`feedback_session_memory_git_stale`)만으로는 ≥3회 재발을 막지 못해 R017 필수 게이트로 승격한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 원격 머지 후 stale 로컬 develop에서 릴리즈 브랜치 분기 | 분기 전 `git pull origin develop`; PR 생성 후 mergeStateStatus 확인 — CONFLICTING이면 `git merge origin/develop`+both-유지 해결 후 재CI |
+
+## Post-Gate Scope-Expansion Re-Run (Origin: #1433 #2)
+
+R017 게이트(mgr-sauron) 통과 선언 후 신규 결함 발견 등으로 스코프가 확장되면(추가 파일 편집), 커밋 전 게이트를 **최종 상태에서 재실행**한다. 게이트 통과 시점 이후의 변경은 형식적으로 미검증이므로, 확장분 미검증 커밋은 R017이 최종 산출물을 커버하지 못하게 만든다.
+
 ## Quick Verification Commands — agent/skill/guide/wiki counts via ls/find/wc. See commands via Read tool.
 
 <!-- DETAIL: Quick Verification Commands

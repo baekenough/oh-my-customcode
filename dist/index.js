@@ -2031,7 +2031,7 @@ var package_default = {
   workspaces: [
     "packages/*"
   ],
-  version: "1.1.0",
+  version: "1.1.1",
   description: "Batteries-included agent harness for Claude Code",
   type: "module",
   bin: {
