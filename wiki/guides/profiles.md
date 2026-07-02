@@ -19,7 +19,7 @@ Reference documentation for profile-based installation of oh-my-customcode asset
 
 | File | Description |
 |------|-------------|
-| [manifest-install.md](../profiles/manifest-install.md) | `--profile` flag guide — 5 built-in profiles, manifest vs plugin profile distinction, include pattern reference |
+| [manifest-install.md](profiles-manifest-install.md) | `--profile` flag guide — 5 built-in profiles, manifest vs plugin profile distinction, include pattern reference |
 
 ## Built-in Profiles
 

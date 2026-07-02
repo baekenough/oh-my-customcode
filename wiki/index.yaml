@@ -11,7 +11,7 @@ meta:
   total_sources: 238
   counts:
     skills: 118
-    guides: 57
+    guides: 64
     agents: 49
     rules: 23
 
@@ -57,7 +57,7 @@ pages:
       summary: "Expert NestJS developer for opinionated, scalable Node.js applications with TypeScript"
     - file: agents/be-springboot-expert.md
       title: "be-springboot-expert"
-      summary: "Expert Spring Boot 3.5.x developer for enterprise-grade Java 21 and Kotlin applications"
+      summary: "Expert Spring Boot 4.0 developer for enterprise-grade Java 25 LTS and Kotlin applications"
     - file: agents/db-alembic-expert.md
       title: "db-alembic-expert"
       summary: "Alembic migration lifecycle specialist for generating, reviewing, fixing, and advancing"
@@ -303,6 +303,9 @@ pages:
     - file: skills/help.md
       title: "Help"
       summary: "Show help information for commands, agents, and skills."
+    - file: skills/homework.md
+      title: "Homework"
+      summary: "Session retrospective — analyze current and linked previous sessions, extract mistakes (찐빠), and report them via omcustom-feedback with a confirmation gate."
     - file: skills/idea.md
       title: "Idea"
       summary: "Analyze a natural language idea against the project codebase and return structured issue specs for downstream issue creation."

@@ -20,7 +20,7 @@ Reference documentation for promoting recurring failure patterns and successful 
 
 | File | Description |
 |------|-------------|
-| [instinct-extraction.md](../skill-promotion/instinct-extraction.md) | Comparison guide for `skill-extractor` vs `instinct-extractor` — when to use each and how they work together |
+| [instinct-extraction.md](skill-promotion-instinct-extraction.md) | Comparison guide for `skill-extractor` vs `instinct-extractor` — when to use each and how they work together |
 
 ## Two Mining Tools
 

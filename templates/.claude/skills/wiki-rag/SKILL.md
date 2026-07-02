@@ -1,5 +1,5 @@
 ---
-name: wiki-rag
+name: omcustom:wiki-rag
 description: Use the project wiki as RAG knowledge source — search wiki pages to answer codebase questions before exploring raw files
 scope: core
 version: 1.0.0

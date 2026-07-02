@@ -69,26 +69,21 @@ Research-only analysis produces findings based on assumptions about the codebase
 | `/structured-dev-cycle` | Full implementation | Yes — stage-by-stage | 6 |
 | **`/deep-plan`** | **Analysis + Planning + Verification** | **3-pass cross-verification** | **3** |
 
-## Sensitive-Path Artifact Protocol (MANDATORY)
-
-**R010 Universal /tmp Script Bypass (#1052)**: ALL `.claude/` modifications MUST use `/tmp/*.sh` script via Bash. Direct Write/Edit/Bash on `.claude/` triggers CC sensitive-path guard regardless of bypassPermissions.
+## Artifact Output (R006/R010)
 
 Phase 3 verification report path: `.claude/outputs/sessions/{YYYY-MM-DD}/deep-plan-{HHmmss}.md`
 
-When spawning the final synthesis agent to write this artifact, include verbatim in the agent prompt:
+Under `mode: "bypassPermissions"`, subagents write directly to `.claude/outputs/` with Write/Edit — no temp-script wrapping is needed (CC v2.1.121+, #1101). When spawning the final synthesis agent to write this artifact, include verbatim in the agent prompt:
 
 ```
-**Sensitive-path artifact protocol (mandatory for this task)**
+**Artifact output (for this task)**
 
-Write the artifact under `.claude/outputs/` using the /tmp/*.sh bypass:
-1. Build script in /tmp: cat > /tmp/deep-plan-<timestamp>.sh <<'EOF' ... EOF
-2. Script content: mkdir -p .claude/outputs/sessions/<date>/ && cat > .claude/outputs/sessions/<date>/deep-plan-<HHmmss>.md <<'ARTIFACT' ... ARTIFACT
-3. Execute: bash /tmp/deep-plan-<timestamp>.sh
-4. Cleanup: rm /tmp/deep-plan-<timestamp>.sh
-DO NOT use Write/Edit directly on `.claude/outputs/` — CC sensitive-path guard triggers regardless of bypassPermissions/allow rules.
+Write the verification report to `.claude/outputs/sessions/<date>/deep-plan-<HHmmss>.md`
+using the Write tool directly (create the directory if needed). Your Agent tool call
+runs under `mode: "bypassPermissions"`, so direct Write/Edit on `.claude/` is permitted.
 ```
 
-See R006 "Sensitive Path Handling" + `feedback_sensitive_path_tmp_bypass.md`.
+See R006 "Sensitive Path Handling" (CC v2.1.121+ direct-write convention).
 
 ## Agent Teams (R018)
 

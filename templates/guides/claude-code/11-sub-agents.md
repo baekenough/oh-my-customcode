@@ -12,14 +12,14 @@ Claude Code에서 특화된 서브에이전트를 생성하고 사용하는 방�
 - **제약 적용**: 서브에이전트가 사용할 수 있는 도구 제한
 - **비용 제어**: 작업에 맞는 모델로 라우팅
 
-## Task Tool
+## Agent Tool (구 Task Tool)
 
-서브에이전트는 `Task` 도구를 통해 생성됩니다.
+서브에이전트는 `Agent` 도구(구 `Task` 도구)를 통해 생성됩니다.
 
 ### 기본 문법
 
 ```
-Task(
+Agent(
   subagent_type: "general-purpose",
   prompt: "수행할 작업 설명",
   model: "sonnet"
@@ -148,7 +148,7 @@ Task(prompt: "Task C", model: "haiku")
 
 ## 주의사항
 
-- 서브에이전트는 다른 서브에이전트를 생성할 수 없음
+- oh-my-customcode는 sole-orchestrator 설계 선택으로 서브에이전트가 서브에이전트를 스폰하지 않음 (CC v2.1.172+ 플랫폼은 5단계 중첩을 허용하나, oh-my-customcode는 예측 가능한 R009 병렬성/R018 조율을 위해 sole-orchestrator를 유지 — R010 참조)
 - 백그라운드 서브에이전트는 권한 프롬프트 자동 거부
 - 모델 미지정 시 기본값은 sonnet
 

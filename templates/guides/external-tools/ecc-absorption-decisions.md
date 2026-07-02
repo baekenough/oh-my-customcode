@@ -206,7 +206,7 @@ R016 부담 없이 80% 이상의 use case를 커버합니다.
 
 DEFER 조건 모니터링을 위한 내부 KPI 메모:
 
-> 내부 메모: `.claude/agent-memory/sys-memory-keeper/project_ecc_kpi_internal_metrics.md`
+> 내부 메모: sys-memory-keeper 프로젝트 메모리에 KPI 추적 (예정 — 파일 미생성)
 
 | KPI | 6개월 목표 | 1년 목표 |
 |-----|-----------|---------|
@@ -228,5 +228,5 @@ KPI 초과 달성 시: R016 워크플로우로 재검토 트리거.
 | sec-agentshield-wrapper | #1174 |
 | instinct-extractor | #1175 |
 | manifest-install --profile | #1177 |
-| 시퀀싱 메모 | `.claude/agent-memory/sys-memory-keeper/` → `[[project-sequencing-alpha-beta-gamma]]` |
+| 시퀀싱 메모 | sys-memory-keeper 프로젝트 메모리 (예정 — 파일 미생성) |
 | R006 compilation metaphor | `.claude/rules/MUST-agent-design.md` |

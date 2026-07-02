@@ -50,7 +50,7 @@ The haiku agent receives the following system prompt:
 
 ```
 You are a relevance filter for the oh-my-customcode project — an AI agent harness/orchestration
-system built on Claude Code CLI with 44 agents, 74 skills.
+system built on Claude Code CLI with 49 agents, 118 skills.
 
 Project domains (HIGH relevance):
 - AI agent orchestration, multi-agent systems, agent design patterns

@@ -170,15 +170,9 @@ R006 Artifact Channel Protocol을 소비하는 표준 패턴. 병렬 에이전�
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-CC sensitive-path check inspects tool target paths and triggers permission prompts on `.claude/` regardless of `bypassPermissions` and allow rules (refs: #960, #961, #978, #981, #1016).
+Under `mode: "bypassPermissions"`, subagents write directly to `.claude/outputs/sessions/` with the Write tool — direct `.claude/**` writes are permitted (CC v2.1.121+, #1101). No `/tmp` staging or script wrapping is needed. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification.
 
-To write result-aggregation results under `.claude/outputs/sessions/`:
-
-1. Write the artifact body to `/tmp/result-aggregation-$(date +%H%M%S).md` first (Write tool target = `/tmp`, no sensitive-path trigger)
-2. Use a `/tmp/*.sh` Bash script to move/copy the file under `.claude/outputs/sessions/$(date +%Y-%m-%d)/` (Bash target = `/tmp`, script-internal `cp` to `.claude/` is not audited)
-3. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification
-
-Reference: `feedback_sensitive_path_tmp_bypass.md`, R006 sensitive-path handling, #1016, #1045.
+Reference: R006/R010 sensitive-path handling (direct `.claude/**` write under bypassPermissions), #1101.
 
 
 ### 입력 형식

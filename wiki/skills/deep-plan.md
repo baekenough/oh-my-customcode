@@ -47,9 +47,9 @@ Max 2 REVISE cycles before user escalation.
 | `/deep-plan` | 3-pass cross-verification | 3 |
 | `/structured-dev-cycle` | Stage-by-stage | 6 |
 
-## Sensitive-Path Artifact Protocol
+## Artifact Output (R006/R010)
 
-Phase 3 verification reports written to `.claude/outputs/sessions/{date}/deep-plan-{HHmmss}.md` MUST use `/tmp/*.sh` Bash bypass. Direct Write/Edit on `.claude/` triggers CC sensitive-path guard regardless of `bypassPermissions`. Directive must be included inline in synthesis agent prompts.
+Phase 3 verification reports written to `.claude/outputs/sessions/{date}/deep-plan-{HHmmss}.md` are written with the Write tool directly under `mode: "bypassPermissions"` — no `/tmp/*.sh` temp-script wrapping is needed (CC v2.1.121+, #1101). The directive must be included inline in synthesis agent prompts.
 
 ## Relationships
 

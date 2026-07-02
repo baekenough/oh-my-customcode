@@ -5,11 +5,11 @@ scope: core
 user-invocable: false
 context: fork
 ---
-## Mandatory delegation directive (R010 Universal /tmp Script Bypass)
+## Mandatory delegation directive (R010 bypassPermissions)
 
 When this skill spawns a subagent via the Agent tool, the spawned prompt MUST include this directive verbatim (or equivalent):
 
-> ALL tool calls targeting `.claude/` paths MUST go through `/tmp/*.sh` script via Bash. This includes read-only measurement (sed/cat/wc/ls/grep), Write, Edit. Read tool is exempt. Direct Write/Edit/Bash on .claude/ triggers user approval prompts that block unattended automation. See R010 for the full pattern.
+> 이 스킬이 Agent tool로 서브에이전트를 스폰할 때 mode: "bypassPermissions"를 반드시 포함한다. 서브에이전트는 .claude/ 경로에 직접 Write/Edit/Bash를 사용한다(/tmp 우회 불필요, CC v2.1.121+). See R010.
 
 This directive is preserved inline because Agent-tool prompt synthesis can drop SKILL.md notes; inline mandatory directives survive (#1046 lesson).
 

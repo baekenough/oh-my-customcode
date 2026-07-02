@@ -89,6 +89,20 @@ Shows per-session and cumulative cost. Useful for budget tracking across long se
 
 Reports your current rate limit hit to the community pool and shows aggregate rate limit data from other users. Helps gauge when limits reset.
 
+## Five-Layer Token Defense Stack
+
+cc-token-saver is **Layer 1 (Cache Defense)** of the token efficiency stack:
+
+- **Layer 1 — cc-token-saver** (this guide): Prompt cache TTL guard
+- **Layer 2 — R013 Ecomode**: Runtime behavior compression (see `.claude/rules/SHOULD-ecomode.md`)
+- **Layer 3 — Settings-based gates**: Pre-session config prevention via `/token-efficiency-audit` skill
+- **Layer 4 — playwright-compress**: Browser/tool output compression before it enters context
+- **Layer 5 — caveman**: English output token compression for code review and commit messages
+
+**Full stack overview**: `guides/claude-code/14-token-efficiency.md`
+
+The five layers are non-overlapping and independently deployable. Install cc-token-saver regardless of other layers.
+
 ## Integration Notes
 
 - R013 ecomode and Token Guardian are complementary, not competing

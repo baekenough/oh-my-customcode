@@ -1,10 +1,10 @@
-# Apache Airflow Guide (3.2.0)
+# Apache Airflow Guide (3.2.x)
 
-Reference documentation for Apache Airflow 3.2.0 DAG development best practices.
+Reference documentation for Apache Airflow 3.2.x DAG development best practices.
 
 ## Source
 
-Based on [Apache Airflow 3.2.0 official documentation](https://airflow.apache.org/docs/apache-airflow/3.2.0/) and [Astronomer best practices](https://docs.astronomer.io/).
+Based on [Apache Airflow 3.2.x official documentation](https://airflow.apache.org/docs/apache-airflow/stable/) and [Astronomer best practices](https://docs.astronomer.io/).
 
 ## Airflow 3.x Key Changes
 
@@ -39,9 +39,9 @@ This guide is referenced by:
 
 ## External Resources
 
-- [Airflow 3.2.0 Official Docs](https://airflow.apache.org/docs/apache-airflow/3.2.0/)
-- [Airflow 3.2.0 Best Practices](https://airflow.apache.org/docs/apache-airflow/3.2.0/best-practices.html)
-- [Airflow Task SDK](https://airflow.apache.org/docs/apache-airflow/3.2.0/authoring-and-scheduling/index.html)
-- [Airflow TaskFlow API](https://airflow.apache.org/docs/apache-airflow/3.2.0/core-concepts/taskflow.html)
-- [Migration Guide 2.x → 3.x](https://airflow.apache.org/docs/apache-airflow/3.2.0/migration-guide.html)
+- [Airflow 3.2.x Official Docs](https://airflow.apache.org/docs/apache-airflow/stable/)
+- [Airflow 3.2.x Best Practices](https://airflow.apache.org/docs/apache-airflow/stable/best-practices.html)
+- [Airflow Task SDK](https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/index.html)
+- [Airflow TaskFlow API](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/taskflow.html)
+- [Migration Guide 2.x → 3.x](https://airflow.apache.org/docs/apache-airflow/stable/migration-guide.html)
 - [Astronomer Docs](https://docs.astronomer.io/)

@@ -111,7 +111,7 @@ Generate multi-perspective analysis comments and artifacts for each analyzed iss
 
 Phases 4A, 4B, 4C, 4E use `general-purpose` (NOT `arch-documenter`).
 
-`arch-documenter` has `disallowedTools: [Bash]` → cannot execute `/tmp/*.sh` bypass pattern → falls back to Write tool → triggers CC sensitive-path guard on `.claude/outputs/`. `general-purpose` has Bash access and can use the `/tmp/*.sh` bypass. See #1043.
+`arch-documenter` has `disallowedTools: [Bash]` → cannot run `gh` (GitHub comment posting) or shell scripts that these phases require. `general-purpose` has Bash access and can execute the `gh` calls and artifact writes. See #1043 and R010 "Agent Capability Pre-Check → Known Limitations".
 
 ### 4A: Senior Architect Analysis
 
@@ -229,23 +229,12 @@ _`/professor-triage` v2.3.0에 의해 현재 코드베이스 대비 분석됨 �
 
 Delegate to general-purpose. Path: `.claude/outputs/sessions/YYYY-MM-DD/professor-triage-HHmmss.md`
 
-**Sensitive-path protocol**: Use `/tmp/*.sh` bypass — direct Write/Edit/Bash on `.claude/outputs/` triggers CC sensitive-path guard.
-
-```bash
-cat > /tmp/professor-triage-$(date +%H%M%S).sh << 'ARTIFACT_SCRIPT'
-mkdir -p .claude/outputs/sessions/YYYY-MM-DD
-cat > .claude/outputs/sessions/YYYY-MM-DD/professor-triage-HHmmss.md << 'ARTIFACT_CONTENT'
-{artifact content here}
-ARTIFACT_CONTENT
-ARTIFACT_SCRIPT
-bash /tmp/professor-triage-HHmmss.sh
-rm /tmp/professor-triage-HHmmss.sh
-```
+**Artifact write**: Under `mode: "bypassPermissions"`, write the artifact directly with the Write tool (create the dated directory first if needed). Direct Write/Edit/Bash on `.claude/outputs/` is permitted since CC v2.1.121 — no `/tmp/*.sh` wrapping is needed (R006/R010). Only catastrophic shell operations (`rm -rf /`) remain blocked by independent safety guards.
 
 Artifact template:
 
 ```
-# Professor Triage リポート — YYYY-MM-DD
+# Professor Triage 리포트 — YYYY-MM-DD
 
 ## 분석 대상
 | # | 제목 | 라벨 | 생성일 |

@@ -7,7 +7,7 @@ user-invocable: false
 
 # Apache Spark Best Practices
 
-> **Version**: Spark 4.0.2. Key changes from Spark 3.x: ANSI mode is now **default** (stricter SQL type coercion and overflow checks), and Spark Connect provides a decoupled client-server protocol for remote Spark access.
+> **Version**: Spark 4.x. Key changes from Spark 3.x: ANSI mode is now **default** (stricter SQL type coercion and overflow checks), and Spark Connect provides a decoupled client-server protocol for remote Spark access.
 
 ## Performance Optimization
 

@@ -1,5 +1,5 @@
 ---
-name: wiki
+name: omcustom:wiki
 description: Generate and maintain a persistent codebase wiki — LLM-built interlinked markdown knowledge base (Karpathy LLM Wiki pattern)
 scope: core
 version: 1.0.0

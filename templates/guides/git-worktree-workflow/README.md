@@ -72,7 +72,7 @@ Claude Code provides `EnterWorktree` and `ExitWorktree` tools for session-scoped
 
 ```
 EnterWorktree(name: "feature-x")
-# Creates .claude/worktrees/feature-x with a new branch based on HEAD
+# Creates .claude/worktrees/feature-x with a new branch; base ref governed by the worktree.baseRef setting (fresh = origin/<default-branch>, the default; head = branch from current HEAD, opt-in)
 # Session working directory switches to the worktree
 
 EnterWorktree(path: "/absolute/path/to/existing-worktree")

@@ -21,7 +21,7 @@ Generates and maintains the `wiki/` directory by reading agent definitions, skil
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/wiki` (via skill invocation)
+- **Command**: `/omcustom:wiki`
 - **Effort**: not specified
 
 ## Relationships

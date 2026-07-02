@@ -287,7 +287,7 @@ The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmat
 | Scope | Every Agent tool call, without exception |
 | Why | CC's Agent tool `mode` default (`acceptEdits`) overrides frontmatter |
 | History | #926 (v0.99.1), #947 (v0.100.1), #955 (v0.103.0) — recurring issue |
-| Enforcement | Prompt-based (R021); all 23 agent-spawning skills include instruction |
+| Enforcement | Prompt-based (R021); all agent-spawning skills include instruction |
 
 ### Self-Check
 

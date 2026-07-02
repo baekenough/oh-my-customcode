@@ -9,7 +9,7 @@ related:
   - [[fe-vercel-agent]]
   - [[impeccable-design]]
   - [[web-design-guidelines]]
-  - [[impeccable-design-guide]]
+  - [[guides/impeccable-design]]
 ---
 
 # Claude Design Handoff Guide
@@ -35,7 +35,7 @@ Claude Design is Anthropic's conversational design tool that produces structured
 - **Primary consumer**: [[fe-design-expert]] — receives handoff, validates, implements
 - **Downstream agent**: [[fe-vercel-agent]] — accessibility and semantic HTML pass
 - **Related skills**: [[impeccable-design]], [[web-design-guidelines]]
-- **See also**: [[impeccable-design-guide]], [[web-design]]
+- **See also**: [[guides/impeccable-design]], [[web-design]]
 
 ## Sources
 

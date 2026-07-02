@@ -9,11 +9,16 @@ Role-based model selection strategy for AI agent workflows. Consolidates model r
 | Alias | Full ID | Cost | Speed | Use Case |
 |-------|---------|------|-------|----------|
 | `haiku` | claude-haiku-4-5 | $ | Fast | Search, simple edits, file discovery |
-| `sonnet` | claude-sonnet-4-6 | $$ | Moderate | Code generation, general tasks (default) |
+| `sonnet` | claude-sonnet-4-6 | $$ | Moderate | Code generation, general tasks (project base alias — pinned to 4-6 for stability) |
+| `sonnet5` | claude-sonnet-5 | $$ | Moderate | CC platform default (v2.1.197+); native 1M context |
 | `opus` | claude-opus-4-6 | $$$ | Slower | Complex reasoning, architecture, planning |
+| `opus48` | claude-opus-4-8 | $$$ | Slower | Latest Opus (GA); highest capability below Fable 5 |
+| `fable` | claude-fable-5 | $$$$ | Slower | Mythos-class; tier above Opus, highest GA capability |
 | `opusplan` | claude-opus-4-6 + plan mode | $$$ | Slower | Architecture with approval gates |
 
-Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`).
+Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`). Fable 5 and Sonnet 5 include 1M context by default — no `[1m]` suffix needed.
+
+> **Base alias pin (design intent)**: The base `sonnet` alias stays pinned to `claude-sonnet-4-6` for stability — existing agents specifying `model: sonnet` remain unchanged. Claude Sonnet 5 (`claude-sonnet-5`) is the CC platform default as of v2.1.197 and is opt-in via the explicit `sonnet5` alias.
 
 ## Role-Based Routing Table
 

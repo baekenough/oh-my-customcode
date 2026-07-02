@@ -22,7 +22,7 @@ Dedicated agent for wiki file operations. All wiki/ directory writes go through 
 
 - Create new wiki pages from source file analysis
 - Update existing wiki pages when sources change
-- Maintain index.md and log.md
+- Maintain index.yaml and log.jsonl
 - Execute wiki lint fixes (orphan removal, cross-ref repair)
 - Generate synthesis pages (architecture, workflows, concepts)
 
@@ -51,18 +51,18 @@ Every page must:
 3. Determine what changed
 4. Write updated page with current date in `updated` field
 5. Update cross-references in related pages
-6. Update index.md if page is new
+6. Update index.yaml if page is new
 
 ### Batch Update (Category)
 1. Glob source files in category
 2. Compare modification dates against wiki pages
 3. Write only changed/new pages
-4. Batch-update index.md once at end
+4. Batch-update index.yaml once at end
 
 ### Lint Fix
 1. Receive lint findings from orchestrator
 2. Fix each category: remove orphans, repair broken refs, update stale pages
-3. Append fix results to log.md
+3. Append fix results to log.jsonl
 
 ## Limitations
 

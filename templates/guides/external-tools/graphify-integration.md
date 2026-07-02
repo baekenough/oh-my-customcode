@@ -83,6 +83,6 @@ source:
 
 - `.claude/skills/wiki/SKILL.md` — 위키 생성/유지 스킬 (Karpathy LLM Wiki 패턴)
 - `.claude/skills/wiki-rag/SKILL.md` — wiki/index.yaml 기반 RAG 조회 스킬
-- `.claude/skills/ontology-rag/SKILL.md` — ontology-rag MCP 기반 라우팅 enrichment
+- ontology-rag MCP 서버 (R019 참조) — 라우팅 enrichment Layer-1 (`.claude/rules/SHOULD-ontology-rag-routing.md`)
 - `.claude/rules/SHOULD-ontology-rag-routing.md` — R019 dual-layer enrichment 규칙
 - 내재화 배경: issue #977
