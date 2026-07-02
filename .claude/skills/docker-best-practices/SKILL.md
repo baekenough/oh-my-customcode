@@ -179,8 +179,6 @@ best_practices:
   - Set resource limits
 
 pattern: |
-  version: "3.8"
-
   services:
     app:
       build:

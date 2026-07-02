@@ -1,6 +1,6 @@
 # Guides
 
-Comprehensive reference documentation covering **13 topics**:
+Comprehensive reference documentation covering **57 topics**:
 
 - Agent creation and management
 - Skill development

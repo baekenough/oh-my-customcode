@@ -103,6 +103,9 @@ This skill activates when the user mentions any of:
 | `claude_code.api_error` | API error details |
 | `claude_code.tool_decision` | Tool accept/reject decisions |
 | `claude_code.user_prompt` | User prompt metadata (content redacted by default) |
+| `claude_code.assistant_response` | Assistant response text (v2.1.193+; redacted unless opted in) |
+
+> **v2.1.193+ security note (R012)**: The `claude_code.assistant_response` log event carries the model's response text. It is redacted unless `OTEL_LOG_ASSISTANT_RESPONSES=1`; when that variable is unset it FOLLOWS `OTEL_LOG_USER_PROMPTS`. A deployment already logging prompt content therefore begins receiving response content immediately on upgrade. To keep prompts-only logging, set `OTEL_LOG_ASSISTANT_RESPONSES=0` explicitly.
 
 ## Upgrade Path
 
@@ -133,7 +136,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
     "OTEL_LOGS_EXPORTER": "otlp",
     "OTEL_EXPORTER_OTLP_PROTOCOL": "grpc",
     "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317",
-    "OTEL_RESOURCE_ATTRIBUTES": "service.name=claude-code,service.version=2.1.85"
+    "OTEL_RESOURCE_ATTRIBUTES": "service.name=claude-code,service.version=2.1.197"
   }
 }
 ```

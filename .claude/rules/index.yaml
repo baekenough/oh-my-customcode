@@ -132,6 +132,46 @@ rules:
     priority: MUST
     scope: orchestrator
 
+  # Completion Verification - MUST
+  - id: R020
+    name: completion-verification
+    title: Completion Verification Rules
+    path: ./MUST-completion-verification.md
+    priority: MUST
+    scope: all
+
+  # Enforcement Policy - MUST
+  - id: R021
+    name: enforcement-policy
+    title: Enforcement Policy
+    path: ./MUST-enforcement-policy.md
+    priority: MUST
+    scope: all
+
+  # Ontology-RAG Routing - SHOULD
+  - id: R019
+    name: ontology-rag-routing
+    title: Routing Enrichment Rules
+    path: ./SHOULD-ontology-rag-routing.md
+    priority: SHOULD
+    scope: orchestrator
+
+  # Wiki Sync - SHOULD
+  - id: R022
+    name: wiki-sync
+    title: Wiki Sync Rules
+    path: ./SHOULD-wiki-sync.md
+    priority: SHOULD
+    scope: all
+
+  # Verification Ladder - SHOULD
+  - id: R023
+    name: verification-ladder
+    title: Verification Ladder Rules
+    path: ./SHOULD-verification-ladder.md
+    priority: SHOULD
+    scope: all
+
   # MAY - Optional
   - id: R005
     name: optimization

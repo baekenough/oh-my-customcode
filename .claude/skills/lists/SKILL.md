@@ -24,22 +24,23 @@ Show all available commands with optional filtering and detailed information.
 AI Agent System - Available Commands
 
 System:
-  lists              Show all available commands
-  status             Show system status
-  help               Show help information
+  /omcustom:lists    Show all available commands
+  /omcustom:status   Show system status
+  /omcustom:help     Show help information
 
 Manager:
-  /create-agent          Create a new agent
-  /update-docs           Sync documentation with project structure
-  /update-external       Update agents from external sources
-  /audit-agents          Audit agent dependencies
-  /fix-refs              Fix broken references
+  /omcustom:create-agent     Create a new agent
+  /omcustom:update-docs      Sync documentation with project structure
+  /omcustom:update-external  Update agents from external sources
+  /omcustom:audit-agents     Audit agent dependencies
+  /omcustom:fix-refs         Fix broken references
 
 Dev:
   /dev-review        Review code for best practices
   /dev-refactor      Refactor code
 
 Use "<command> --help" for detailed information.
+Run "/omcustom:lists" to see the full command set (60+).
 ```
 
 ### Verbose Output
@@ -49,24 +50,24 @@ lists --verbose
 AI Agent System - Available Commands (Detailed)
 
 System Commands:
-┌─────────┬──────────────────────────────────────────────┐
-│ Command │ Description                                  │
-├─────────┼──────────────────────────────────────────────┤
-│ lists   │ Show all available commands                  │
-│ status  │ Show system status and health checks         │
-│ help    │ Show help for commands and agents            │
-└─────────┴──────────────────────────────────────────────┘
+┌───────────────────┬──────────────────────────────────────┐
+│ Command           │ Description                          │
+├───────────────────┼──────────────────────────────────────┤
+│ /omcustom:lists   │ Show all available commands          │
+│ /omcustom:status  │ Show system status and health checks │
+│ /omcustom:help    │ Show help for commands and agents    │
+└───────────────────┴──────────────────────────────────────┘
 
 Manager Commands:
-┌──────────────────┬──────────────────────────────────────┐
-│ Command          │ Description                          │
-├──────────────────┼──────────────────────────────────────┤
-│ /create-agent    │ Create a new agent with structure    │
-│ /update-docs     │ Sync all docs with project state     │
-│ /update-external │ Update from external sources         │
-│ /audit-agents    │ Check dependencies and refs          │
-│ /fix-refs        │ Auto-fix broken references           │
-└──────────────────┴──────────────────────────────────────┘
+┌─────────────────────────────┬──────────────────────────────────────┐
+│ Command                     │ Description                          │
+├─────────────────────────────┼──────────────────────────────────────┤
+│ /omcustom:create-agent      │ Create a new agent with structure    │
+│ /omcustom:update-docs       │ Sync all docs with project state     │
+│ /omcustom:update-external   │ Update from external sources         │
+│ /omcustom:audit-agents      │ Check dependencies and refs          │
+│ /omcustom:fix-refs          │ Auto-fix broken references           │
+└─────────────────────────────┴──────────────────────────────────────┘
 
 Dev Commands:
 ┌──────────────┬────────────────────────────────────────┐
@@ -76,5 +77,5 @@ Dev Commands:
 │ /dev-refactor│ Suggest and apply refactoring          │
 └──────────────┴────────────────────────────────────────┘
 
-Total: 10 commands available
+Total: 60+ commands available
 ```

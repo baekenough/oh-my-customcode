@@ -24,24 +24,22 @@ Show comprehensive system status including agents, skills, guides, and health ch
 AI Agent System - Status
 
 System:
-  Rules: 10 loaded (R000-R009)
+  Rules: 23 loaded (R000-R023)
 
 Agents:
-  Orchestrator:     1 (secretary)
-  Manager:          3 (mgr-creator, mgr-updater, mgr-supplier)
-  SW Engineer:      6
-  Backend Engineer: 3
+  Manager:          6 (mgr-creator, mgr-updater, mgr-supplier, ...)
+  SW Engineer:     21
+  DE Engineer:      6
+  Database:         4
   Infra Engineer:   2
-  Total:           15 agents
+  Other:           10 (security, architect, QA, system)
+  Total:           49 agents
 
 Skills:
-  Development:     8
-  Backend:         3
-  Infrastructure:  2
-  Total:          13 skills
+  Total:          118 skills
 
-Guides:            12 loaded
-Commands:          10 available
+Guides:            57 loaded
+Commands:          60+ available
 
 Health: ✓ OK
 ```
@@ -70,9 +68,6 @@ Rules:
     ✓ R009 parallel-execution
 
 Agents:
-  orchestrator/
-    ✓ secretary (internal)
-
   manager/
     ✓ mgr-creator (internal)
     ✓ mgr-updater (internal)
@@ -136,7 +131,7 @@ status --health
 Health Checks:
 
 Agents:
-  ✓ 15/15 agents valid
+  ✓ 49/49 agents valid
   ✓ All agent files exist in .claude/agents/
 
 Dependencies:

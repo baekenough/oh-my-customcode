@@ -50,6 +50,11 @@ documents:
     path: ./10-monitoring.md
     status: placeholder  # 공식 문서 미공개
 
+  - name: sub-agents
+    title: Sub-agent 가이드
+    description: Claude Code에서 특화된 서브에이전트를 생성하고 사용하는 방법
+    path: ./11-sub-agents.md
+
   - name: workflow-patterns
     title: 워크플로우 패턴
     description: AI 에이전트 작업에 적합한 워크플로우 패턴 선택 가이드
@@ -61,6 +66,11 @@ documents:
     path: ./13-cli-flags.md
 
   - name: token-efficiency
-    title: 토큰 효율성 — 3계층 방어 스택
-    description: cc-token-saver, Ecomode, settings 기반 게이트의 조합
+    title: 토큰 효율성 — 5계층 방어 스택
+    description: cc-token-saver, Ecomode, settings 기반 게이트, playwright-compress, caveman의 조합
     path: ./14-token-efficiency.md
+
+  - name: version-compatibility
+    title: Claude Code Version Compatibility
+    description: Claude Code 릴리즈 버전별 호환성 및 기능 변경 추적
+    path: ./15-version-compatibility.md

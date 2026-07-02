@@ -1,6 +1,6 @@
 # Alembic Guide
 
-Database migration framework for SQLAlchemy. Current stable: **1.18.x** (2025).
+Database migration framework for SQLAlchemy. Current stable: **1.18.x**.
 
 ## Overview
 

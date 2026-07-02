@@ -50,7 +50,7 @@ Analyzes GitHub issues directly against the current codebase. For each issue, se
 | Phase 4E artifact report | general-purpose | bypassPermissions |
 | Phase 5 GitHub actions | mgr-gitnerd | bypassPermissions |
 
-**Agent selection constraint**: Phases 4A, 4B, 4C, 4E MUST use `general-purpose` (NOT `arch-documenter`). `arch-documenter` has `disallowedTools: [Bash]` — cannot execute `/tmp/*.sh` bypass → falls back to Write → triggers CC sensitive-path guard on `.claude/outputs/`. See #1043.
+**Agent selection constraint**: Phases 4A, 4B, 4C, 4E MUST use `general-purpose` (NOT `arch-documenter`). `arch-documenter` has `disallowedTools: [Bash]` — cannot run the `gh`/shell commands these phases require. See #1043.
 
 ## Parallelization (R009/R018)
 
@@ -59,24 +59,20 @@ Analyzes GitHub issues directly against the current codebase. For each issue, se
 - 10+ issues: Agent Teams per R018
 - Phase 4A + 4B: parallel; Phase 4C: after both; Phase 4D + 4E: parallel; Phase 4F: gate
 
-## Sensitive-Path Artifact Protocol (MANDATORY)
+## Artifact Output (R006/R010)
 
-**R010 Universal /tmp Script Bypass (#1052)**: ALL `.claude/` modifications MUST use `/tmp/*.sh` script via Bash. Direct Write/Edit/Bash on `.claude/` triggers CC sensitive-path guard regardless of bypassPermissions.
-
-When spawning Phase 4A/4B/4C/4E agents, include verbatim in each agent prompt:
+Under `mode: "bypassPermissions"`, agents write directly to `.claude/outputs/` with Write/Edit — no temp-script wrapping is needed (CC v2.1.121+, #1101). When spawning Phase 4A/4B/4C/4E agents, include verbatim in each agent prompt:
 
 ```
-**Sensitive-path artifact protocol (mandatory for this task)**
+**Artifact output (for this task)**
 
-If your task involves writing artifacts under `.claude/outputs/`:
-1. Build artifact body in /tmp first: `cat > /tmp/professor-triage-<timestamp>.sh <<'EOF' ... EOF`
-2. Script content: `mkdir -p .claude/outputs/sessions/<date>/ && cat > .claude/outputs/sessions/<date>/<artifact>.md <<'ARTIFACT' ... ARTIFACT`
-3. Execute: `bash /tmp/professor-triage-<timestamp>.sh`
-4. Cleanup: `rm /tmp/professor-triage-<timestamp>.sh`
-DO NOT use Write/Edit directly on `.claude/outputs/` — CC sensitive-path guard triggers regardless of bypassPermissions/allow rules.
+If your task involves writing artifacts under `.claude/outputs/`, write the file to
+`.claude/outputs/sessions/<date>/<artifact>.md` using the Write tool directly (create the
+directory if needed). Your Agent tool call runs under `mode: "bypassPermissions"`, so direct
+Write/Edit on `.claude/` is permitted.
 ```
 
-See R006 "Sensitive Path Handling" + `feedback_sensitive_path_tmp_bypass.md`.
+See R006 "Sensitive Path Handling" (CC v2.1.121+ direct-write convention).
 
 ## Phase 5 Action Policy
 

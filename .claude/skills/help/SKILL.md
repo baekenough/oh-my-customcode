@@ -73,9 +73,6 @@ help --agents
 
 Available Agents:
 
-Orchestrator:
-  secretary        Manages manager agents
-
 Manager:
   mgr-creator          Creates new agents
   mgr-updater          Updates external sources and docs
@@ -98,7 +95,7 @@ Infra Engineer:
   infra-docker-expert       Docker containerization
   infra-aws-expert          AWS architecture
 
-Total: 15 agents
+Total: 49 agents
 ```
 
 ### Rules List
@@ -112,16 +109,16 @@ MUST (Never violate):
   R001  Safety Rules         Prohibited actions
   R002  Permission Rules     Tool tiers, file access
   R006  Agent Design         Structure, separation
+  R007  Agent Identification Display agent in responses
+  R008  Tool Identification  Display agent when using tools
+  R009  Parallel Execution   Max 4 parallel instances
 
 SHOULD (Strongly recommended):
   R003  Interaction Rules    Response format
   R004  Error Handling       Error levels, recovery
-  R007  Agent Identification Display agent in responses
-  R008  Tool Identification  Display agent when using tools
 
 MAY (Optional):
   R005  Optimization         Efficiency guidelines
-  R009  Parallel Execution   Max 4 parallel instances
 
-Total: 10 rules
+Total: 23 rules
 ```

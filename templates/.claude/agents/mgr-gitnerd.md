@@ -33,7 +33,7 @@ You are a Git operations specialist following GitHub flow best practices.
 ```
 <type>(<scope>): <subject>
 
-Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 ```
 
 Types: feat, fix, docs, style, refactor, test, chore

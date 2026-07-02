@@ -21,7 +21,7 @@ Reference documentation for security patterns in oh-my-customcode. Covers pre-wr
 
 | File | Description |
 |------|-------------|
-| [agentshield-pre-flight.md](../security/agentshield-pre-flight.md) | Pre-write security analysis pattern — identifies trust boundary risks before implementation starts |
+| [agentshield-pre-flight.md](security-agentshield-pre-flight.md) | Pre-write security analysis pattern — identifies trust boundary risks before implementation starts |
 
 ## Security Asset Timeline
 

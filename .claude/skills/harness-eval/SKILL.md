@@ -92,15 +92,11 @@ Results saved to `.claude/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-CC sensitive-path check inspects tool target paths and triggers permission prompts on `.claude/` regardless of `bypassPermissions` and allow rules (refs: #960, #961, #978, #981, #1016).
+Under `mode: "bypassPermissions"`, direct Write/Edit/Bash on `.claude/**` paths (including `.claude/outputs/sessions/`) is permitted (CC v2.1.121+, #1101) — no `/tmp` wrapping is needed.
 
-To write harness-eval results under `.claude/outputs/sessions/`:
+Write harness-eval results directly to `.claude/outputs/sessions/$(date +%Y-%m-%d)/harness-eval-$(date +%H%M%S).md`. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification. Catastrophic shell operations (e.g., `rm -rf /`) remain blocked by independent safety guards. For CC < v2.1.121, see git history for the legacy `/tmp/*.sh` bypass pattern.
 
-1. Write the artifact body to `/tmp/harness-eval-$(date +%H%M%S).md` first (Write tool target = `/tmp`, no sensitive-path trigger)
-2. Use a `/tmp/*.sh` Bash script to move/copy the file under `.claude/outputs/sessions/$(date +%Y-%m-%d)/` (Bash target = `/tmp`, script-internal `cp` to `.claude/` is not audited)
-3. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification
-
-Reference: `feedback_sensitive_path_tmp_bypass.md`, R006 sensitive-path handling, #1016, #1045.
+Reference: R006 Sensitive Path Handling, R010 Universal bypassPermissions, #1101.
 
 
 ## 4-Metric Quantitative Layer (added v0.113.0, #1025)

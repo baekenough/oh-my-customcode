@@ -70,9 +70,9 @@ policy_cache:
 
 Policy caching reduces redundant LLM calls for well-understood workflows. Policies are advisory — the orchestrator may override.
 
-## Capability Hints (Opus 4.7+)
+## Capability Hints (Opus 4.8+)
 
-When agents target Opus 4.7 (`opus47` model alias), tool capability hints improve batched tool-call planning. Declare per-tool metadata in policy cache entries:
+When agents target Opus 4.8 (`opus48` model alias), tool capability hints improve batched tool-call planning. Declare per-tool metadata in policy cache entries:
 
 | Field | Values | Effect |
 |-------|--------|--------|
@@ -109,15 +109,14 @@ When a synthesized harness exists for an agent (`.claude/outputs/harnesses/{agen
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-CC sensitive-path check inspects tool target paths and triggers permission prompts on `.claude/` regardless of `bypassPermissions` and allow rules (refs: #960, #961, #978, #981, #1016).
+Under `mode: "bypassPermissions"`, direct Write/Edit/Bash on `.claude/**` paths is permitted (CC v2.1.121+, #1101) — no `/tmp/*.sh` wrapping is needed.
 
 To write action-validator results under `.claude/outputs/sessions/`:
 
-1. Write the artifact body to `/tmp/action-validator-$(date +%H%M%S).md` first (Write tool target = `/tmp`, no sensitive-path trigger)
-2. Use a `/tmp/*.sh` Bash script to move/copy the file under `.claude/outputs/sessions/$(date +%Y-%m-%d)/` (Bash target = `/tmp`, script-internal `cp` to `.claude/` is not audited)
-3. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification
+1. Write the artifact body directly to `.claude/outputs/sessions/$(date +%Y-%m-%d)/action-validator-$(date +%H%M%S).md` with the Write tool (every Agent tool call includes `mode: "bypassPermissions"`, R010)
+2. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification
 
-Reference: `feedback_sensitive_path_tmp_bypass.md`, R006 sensitive-path handling, #1016, #1045.
+Reference: R006/R010 sensitive-path handling (CC v2.1.121+), #1101.
 
 
 | Mode | Source | Behavior |

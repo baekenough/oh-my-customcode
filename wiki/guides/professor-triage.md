@@ -24,7 +24,7 @@ GitHub 이슈를 현재 코드베이스에 직접 대조 분석하는 5-phase �
 - Phase-by-phase implementation detail for the `/professor-triage` skill
 - Agent selection rationale (why `general-purpose` not `arch-documenter` for Phase 4)
 - Parallelization strategy per R009/R018 for each phase
-- Sensitive-path artifact protocol (`.claude/outputs/` via `/tmp/*.sh` bypass)
+- Artifact write protocol (`.claude/outputs/` via direct Write under `mode: "bypassPermissions"` — CC v2.1.121+, no `/tmp/*.sh` wrapping)
 - Comment verification gate (Phase 4F) before GitHub actions
 
 ## 5-Phase Architecture
@@ -39,7 +39,7 @@ GitHub 이슈를 현재 코드베이스에 직접 대조 분석하는 5-phase �
 
 ## Key Design Decision: Phase 4 Agent
 
-Phase 4 uses `general-purpose` (NOT `arch-documenter`). `arch-documenter` has `disallowedTools: [Bash]` — it cannot execute the `/tmp/*.sh` sensitive-path bypass, falls back to `Write` directly on `.claude/outputs/`, and triggers the CC sensitive-path guard. `general-purpose` has Bash access and executes the bypass correctly. See #1043.
+Phase 4 uses `general-purpose` (NOT `arch-documenter`). `arch-documenter` has `disallowedTools: [Bash]` — it cannot run `gh` (comment posting) or the shell commands these phases require. `general-purpose` has Bash access and executes the `gh` calls and artifact writes. See #1043 and R010 Known Limitations.
 
 ## Phase 4 Parallelization
 

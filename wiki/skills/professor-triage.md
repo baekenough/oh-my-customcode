@@ -42,7 +42,7 @@ Analyzes GitHub issues directly against the current codebase. For each issue, se
 | 4 | Multi-Perspective Output | general-purpose agents | sonnet/opus |
 | 5 | Act | mgr-gitnerd | — |
 
-Phase 4 uses `general-purpose` (NOT `arch-documenter`) — `arch-documenter` has `disallowedTools: [Bash]` and cannot execute `/tmp/*.sh` bypass required for `.claude/outputs/` writes. See #1043.
+Phase 4 uses `general-purpose` (NOT `arch-documenter`) — `arch-documenter` has `disallowedTools: [Bash]` and cannot run the `gh`/shell commands these phases require. See #1043.
 
 ## Parallelization
 
@@ -56,9 +56,9 @@ Phase 4 uses `general-purpose` (NOT `arch-documenter`) — `arch-documenter` has
 
 **Requires confirmation**: reopen, new issue creation, epic linking, body modification.
 
-## Sensitive-Path Artifact Protocol
+## Artifact Output (R006/R010)
 
-ALL `.claude/outputs/` writes MUST use `/tmp/*.sh` Bash bypass (R010 #1052). Direct Write/Edit on `.claude/` triggers CC sensitive-path guard regardless of `bypassPermissions`. This directive MUST be included inline in agent prompts when spawning Phase 4 agents — NOT in SKILL.md body alone.
+Under `mode: "bypassPermissions"`, Phase 4 agents write directly to `.claude/outputs/` with the Write/Edit tools — no `/tmp/*.sh` temp-script wrapping is needed (CC v2.1.121+, #1101). Every Agent tool call MUST pass `mode: "bypassPermissions"` (the Agent tool default `acceptEdits` overrides agent frontmatter `permissionMode`); include this directive inline in agent prompts when spawning Phase 4 agents — NOT in SKILL.md body alone.
 
 ## Relationships
 

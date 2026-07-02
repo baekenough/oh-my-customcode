@@ -50,14 +50,12 @@ TeamCreate("roundtable-{topic}")
 각 에이전트에게 위임 시 다음 directive를 prompt에 포함:
 
 ```
-**Sensitive-path artifact protocol (mandatory for this task)**
+**Artifact output (for this task)**
 
-If your task involves writing artifacts under `.claude/outputs/`:
-1. Build script in /tmp: cat > /tmp/roundtable-<persona>-<timestamp>.sh << 'EOF' ... EOF
-2. Script: mkdir -p .claude/outputs/sessions/<date>/ && cat > .claude/outputs/sessions/<date>/<artifact>.md << 'ARTIFACT' ... ARTIFACT
-3. Execute: bash /tmp/roundtable-<persona>-<timestamp>.sh
-4. Cleanup: rm /tmp/roundtable-<persona>-<timestamp>.sh
-DO NOT use Write/Edit directly on `.claude/outputs/` — CC sensitive-path guard triggers regardless of bypassPermissions/allow rules.
+If your task involves writing artifacts under `.claude/outputs/`, write the file to
+`.claude/outputs/sessions/<date>/<artifact>.md` using the Write tool directly (create the
+directory if needed). Your Agent tool call runs under `mode: "bypassPermissions"`, so direct
+Write/Edit on `.claude/` is permitted (CC v2.1.121+).
 ```
 
 ### Phase 1: Round 1 — Discussion
