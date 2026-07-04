@@ -365,6 +365,14 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 >
 > Origin: #1287 (v0.164.0 세션 회고 찐빠 #1).
 
+> **New-File Count-Impact Pre-Check (#1443)**: 신규 파일 추가를 서브에이전트에 위임하기 전, 그 파일이 **새 최상위 토픽/엔티티 디렉토리**(카운트 증가)인지 **기존 디렉토리 내부 문서**(카운트 불변)인지 사전 판별해야 한다. 사전 판별 없이 "카운트 N→N+1 동기화"로 위임하면 잘못된 전제가 서브에이전트에 전파된다. `find <dir> -mindepth 1 -maxdepth 1 -type d | wc -l` 등으로 토픽 디렉토리 실측하고, 카운트 위임 프롬프트에는 항상 "실측값 기준으로 동기화하라, 추측으로 숫자를 바꾸지 말라"를 명시해 잘못된 전제를 서브에이전트가 정정할 여지를 확보한다.
+>
+> | Anti-pattern | Required |
+> |--------------|----------|
+> | 신규 파일이 기존 디렉토리 내 문서인데 "카운트 N→N+1"로 위임 | 위임 전 토픽 디렉토리 vs 문서 판별; 문서면 카운트 불변 전달 + "실측값 기준" 방어선 명시 |
+>
+> Origin: #1443 (Session 126 회고 찐빠 #2) — `guides/claude-code/16-fable5-prompting.md`(기존 토픽 내부 문서)를 "guides 57→58"로 위임했으나 57 유지가 정답; "실측값 기준" 방어선이 mgr-updater 정정을 유도(R020 Diagnostic Hypothesis Verification). Cross-reference: R020 (Diagnostic Hypothesis Verification), Multi-copy content consistency(#1287).
+
 ### Known Limitations (Active Cache)
 
 | Agent | Limitation | Workaround |
