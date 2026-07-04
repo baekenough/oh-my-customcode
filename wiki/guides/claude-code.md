@@ -1,3 +1,33 @@
+---
+title: "Claude Code Guide"
+type: guide
+updated: 2026-07-04
+sources:
+  - guides/claude-code/01-overview.md
+  - guides/claude-code/03-tools.md
+  - guides/claude-code/04-agent-skills.md
+  - guides/claude-code/05-agent-sdk.md
+  - guides/claude-code/06-mcp.md
+  - guides/claude-code/07-prompt-engineering.md
+  - guides/claude-code/08-testing.md
+  - guides/claude-code/09-guardrails.md
+  - guides/claude-code/10-monitoring.md
+  - guides/claude-code/11-sub-agents.md
+  - guides/claude-code/12-workflow-patterns.md
+  - guides/claude-code/13-cli-flags.md
+  - guides/claude-code/14-token-efficiency.md
+  - guides/claude-code/15-version-compatibility.md
+  - guides/claude-code/16-fable5-prompting.md
+related:
+  - [[r006]]
+  - [[r009]]
+  - [[r010]]
+  - [[r011]]
+  - [[r013]]
+  - [[r020]]
+  - [[r023]]
+---
+
 # Claude Code Version Compatibility
 
 > Updated: 2026-05-29
@@ -741,6 +771,22 @@ docs/superpowers/plans/*
 
 ---
 
+## Claude Fable 5 프롬프팅 (guides/claude-code/16-fable5-prompting.md)
+
+> Origin: #1435 — Fable 5 공식 프롬프팅 가이드 내재화 (scout INTERNALIZE)
+
+Fable 5(`claude-fable-5`)는 Mythos-class 모델로 Opus 4.8보다 상위 티어의 GA 역량을 갖습니다. Instruction following이 강해, 기존 Opus/Sonnet용으로 튜닝된 하네스(규칙·스킬)를 그대로 재사용하면 과잉 처방(over-prescription)으로 오히려 품질이 저하될 수 있습니다 — 원문 "핵심 경고" 섹션 참조.
+
+**패턴 요약**: (a) longer turns 허용, (b) effort 전략(high 기본, xhigh는 capability-sensitive 작업 한정), (c) 간결 지시 우선, (d) 진행 주장 ground-truth 강제(R020 선점), (e) boundary 명시(R010 Pre-Delegation Privileged-Scope Boundary 선점), (f) 병렬 서브에이전트 신뢰성 향상(R009), (g) 파일 기반 메모리(R011 네이티브 auto memory 선점), (h) early-stopping/context-budget 방지 문구(R013 ecomode 관련), (i) intent 컨텍스트 제공, (j) 가독성 addendum, (k) send-to-user 도구(oh-my-customcode 대응 도구 없음, 향후 검토).
+
+**R006 매핑**: `fable` alias 추가 — Fable 5는 high effort 기본값, xhigh는 최고난도 작업 한정. Mythos 5(`claude-mythos-5`)는 Project Glasswing 한정 공급으로 GA 아님 — Fable 5와 혼동 금지.
+
+**R023 매핑**: 과잉 처방 경고는 검증 비용 축(R023 shift-left)과는 직교하는 "지시 간결성" 축이지만 상호 참조 가치가 있습니다.
+
+상세 내용은 `guides/claude-code/16-fable5-prompting.md` 참조.
+
+---
+
 ## References
 
 - #967 — Claude Code v2.1.117 release note
@@ -763,6 +809,7 @@ docs/superpowers/plans/*
 - #1243 — Claude Code v2.1.153 compatibility documentation
 - #1244 — Claude Code v2.1.154 compatibility documentation
 - #1245 — Claude Code v2.1.156 compatibility documentation
+- #1435 — Claude Fable 5 프롬프팅 가이드 내재화 (`guides/claude-code/16-fable5-prompting.md`)
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec

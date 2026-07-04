@@ -58,6 +58,10 @@ R021 (MUST-enforcement-policy)과 R023은 **직교**한다. 두 규칙은 서로
 
 R021은 위반 시 어떻게 멈출지를, R023은 어떤 순서로 검증할지를 정의한다.
 
+## Fable 5 Over-Prescription Advisory (Origin: #1435)
+
+Fable 5 실행 에이전트/스킬은 지시(instruction) 장문화가 오히려 품질을 저하시킬 수 있다(too prescriptive). 신규 규칙/스킬 추가 시 간결성을 우선하고, Fable 5 실행 대상 문서의 과잉처방을 경계한다. 상세는 `guides/claude-code/16-fable5-prompting.md` 참조.
+
 ## Self-Check
 
 새 검증 도구 추가 시:
