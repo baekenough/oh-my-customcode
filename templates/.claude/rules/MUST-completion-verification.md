@@ -71,6 +71,20 @@ Subagents often report failures as "pre-existing", "baseline", or "unchanged". T
 Never accept "pre-existing" without direct base-branch evidence. A false "pre-existing" claim can mask a regression introduced by the current change.
 -->
 
+### Verification-Delegation Non-Termination (검증 위임 판정 종료 보장)
+
+구조 검증(mgr-sauron R017)·판정·품질 게이트를 서브에이전트에 위임할 때, 위임 프롬프트에 **"최종 PASS/FAIL 판정 없이 turn을 종료하지 말라"**를 명시해야 한다. 이를 누락하면 검증 에이전트가 판정 직전(예: source-hash 대조 중)에서 turn을 종료해, 오케스트레이터가 판정 없는 불완전 보고를 받는다.
+
+mid-step 종료가 발생하면 판정을 그대로 신뢰하지 말고(R020 Core Rule) SendMessage로 해당 에이전트를 resume하여 최종 판정을 받는다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 검증/판정 위임 프롬프트에 종료 조건 미명시 → 판정 없이 mid-step 종료 | 위임 프롬프트에 "판정 없이 turn 종료 금지" 명시 + mid-step 종료 시 SendMessage resume |
+
+Origin: #1443 (Session 126 회고 찐빠 #1) — v1.1.3 R017 검증에서 mgr-sauron이 source-hash 대조 중 판정 없이 종료 → resume 후 PASS. v1.1.4에서 "판정 반드시 출력" 명시로 1회 완료(대조 실증).
+
+Cross-reference: R018 (Member Completion Verification), `feedback_release_delegation_phasing` (release delegation phasing을 verification 위임에도 확장).
+
 > **v2.1.199+**: subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류가 parent agent에 정확히 보고됩니다. 플랫폼 수정으로 false-success 자가보고 빈도는 줄지만, "actual outcome ≠ attempt" ground-truth 검증 원칙(R020 Core Rule)은 여전히 유지된다 — subagent 보고를 그대로 신뢰하지 말고 `git status`/`grep`/validation script로 재확인한다.
 
 ## Common False Completion Patterns — 8 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes, "UI changes done" without browser render. See full table via Read tool.
