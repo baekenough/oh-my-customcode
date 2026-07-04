@@ -374,6 +374,10 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 
 > **CC v2.1.169+**: `claude agents --json` now includes blocked and just-dispatched background sessions (previously omitted), adds `--all` to include completed sessions, and adds `id` and `state` fields. This strengthens the deterministic ground-truth for member completion verification — `state` distinguishes blocked/running/completed directly, and `--all` confirms a member actually completed (rather than just disappearing from the active list). Use `--all` + `state` as the ground-truth signal instead of inferring completion from a member's absence.
 
+> **v2.1.198+**: Agent Teams에서 teammate가 API 오류로 죽으면 이제 lead에 "failed"를 보고하고, stuck teammate에게 메시지를 보내면 즉시 wake시켜 retry하게 합니다. 이는 v2.1.169 `state` 필드 기반 deterministic ground-truth를 보강하지만, SendMessage report 자체는 여전히 low-reliability 신호로 취급한다(위 표의 원칙 불변).
+
+> **v2.1.199+**: subagent가 rate limit/server error로 잘리면 partial work를 parent에 반환하며, subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류를 parent agent에 정확히 보고합니다. 플랫폼이 false-success 자가보고를 줄였으나, deterministic ground-truth(`git status`/`grep`/validation scripts) 검증 원칙은 여전히 유효하다.
+
 **Stall handling**: When a member shows no task progress within ~2 minutes despite spawn + owner assignment + SendMessage coordination, reassign the work to a standalone Agent (R009) rather than continuing to nudge the stalled member. Stalled Teams members waste tokens on idle polling and delay the overall workflow.
 
 Observed instance: v0.159.0 release (session 105) — members assigned to disjoint-file cleanup tasks went idle without executing; deterministic git-diff check exposed the gap; work was reassigned to standalone parallel Agents. References: #1261, #1262.

@@ -53,6 +53,8 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 
 > **v2.1.196+**: 조직 기본 모델(org default models)이 추가되어 관리자가 org 콘솔에서 조직 전체 기본 모델을 설정하며, 사용자가 직접 선택하지 않으면 `/model`에 "Org default"(또는 "Role default")로 표시됩니다. v2.1.175 `enforceAvailableModels`/v2.1.187 org model restriction의 연장선 — 조직 관리 설정이 기본 모델 해석까지 관여합니다. 또한 백그라운드 세션 turn 이후 중복 recap 라인 문제를 수정 — schema-rejected된 StructuredOutput 시도가 재시도와 나란히 렌더되지 않습니다(schema-constrained subagent spawn / Workflow `agent({schema})`에 관련).
 
+> **v2.1.198+**: 내장 Explore 에이전트가 이제 main session의 모델을 상속합니다(opus로 cap; 이전에는 haiku 고정) — Explore 기반 검색 subagent의 추론 품질이 향상됩니다. 또한 subagent와 context compaction이 session의 extended thinking 설정을 상속하여, 위임된 작업의 출력 품질이 세션 설정과 정합됩니다. R009/R018 병렬 subagent 위임 품질에 관련.
+
 ### Safe Mode & Bundled Skill Control (CC v2.1.169+)
 
 > **v2.1.169+**: `--safe-mode` (and `CLAUDE_CODE_SAFE_MODE`) starts Claude Code with ALL customizations disabled (CLAUDE.md, plugins, skills, hooks, MCP servers) — use it to isolate whether a project customization (agent/skill/hook) causes a regression. The `disableBundledSkills` setting (and `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` env) hides bundled skills, workflows, and built-in slash commands from the model — useful when bundled skills conflict with or duplicate project skills (R006 skill-surface management). Note: `disableBundledSkills` hides skills from the model but is a CC platform setting, distinct from the advisory `skills:` frontmatter field (which is documentation metadata, not a runtime allowlist).
@@ -201,6 +203,8 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 > **v2.1.191+**: Hooks with comma-separated matchers (e.g. `"Bash,PowerShell"`) now fire correctly — previously such matchers silently never fired. Relevant when authoring `.claude/hooks/` entries that target multiple tools in one matcher.
 
 > **v2.1.195+**: 하이픈이 포함된 hook matcher 식별자(예: `code-reviewer`, `mcp__brave-search`)가 이제 substring이 아니라 exact-match됩니다(이전에는 부분 문자열로 우연히 매칭). 하이픈 포함 MCP 서버의 모든 tool을 매칭하려면 `mcp__brave-search__.*` 형식을 사용하세요. 참고: oh-my-customcode의 `hooks.json`은 `*` / `mcp_tool_name matches "..."` / `tool == "..."` 형식을 사용하므로 이 변경의 영향을 받지 않습니다 — 다만 하이픈 포함 tool-name matcher를 새로 추가할 때 exact-match 시맨틱을 고려해야 합니다.
+
+> **v2.1.199+**: SessionStart/Setup/SubagentStart hook이 exit code 2로 종료할 때 stderr를 조용히 숨기던 문제가 수정되어 이제 오류가 표시됩니다. `.claude/hooks.json`의 hard-block/advisory hook 디버깅 가시성이 향상됩니다(R021 Enforcement Tiers 관측성과 정합).
 
 ## Permission Mode Guidance
 
@@ -399,6 +403,8 @@ Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, 
 > **v2.1.178+**: Skills in nested `.claude/skills` directories now load when working on files in that subtree; on a name clash with a higher-scope skill, the nested skill is surfaced as `<dir>:<name>` so both remain invokable. Directory-qualified nested skills also no longer trigger permission prompts in non-interactive runs. Additionally, MCP-spec entries (`mcp__server`, `mcp__server__*`, `mcp__*`) in a subagent's `disallowedTools` are now honored (previously silently ignored) — relevant to the Optional Frontmatter `disallowedTools` field. oh-my-customcode keeps a flat `.claude/skills/` layout, but the `<dir>:<name>` disambiguation matters if a nested project subtree introduces a same-named skill.
 
 > **v2.1.178+**: When names collide across nested `.claude/` directories, the agent, workflow, and output-style CLOSEST to the working directory now wins; project-scope workflow saves target the closest existing `.claude/workflows/`. Relevant to multi-`.claude/` layouts — project-root `.claude/` definitions are overridden by a nested `.claude/` when working inside that subtree.
+
+> **v2.1.199+**: 스택된 slash-skill 호출(`/skill-a /skill-b do XYZ`)이 이제 leading skill을 최대 5개까지 모두 로드합니다(이전에는 첫 번째만 로드). oh-my-customcode의 라우팅 스킬 체이닝(예: `/omcustom:fsd`가 여러 스킬을 연쇄 호출하는 패턴)에서 다중 스킬 스택 호출 시 컨텍스트 손실이 줄어듭니다. 또한 subagent 조회 중 `/model`·`/fast`를 입력하면 lead의 model picker가 열리며 notice가 표시됩니다.
 
 <!-- DETAIL: Skill Optional Fields (full yaml block)
 ```yaml

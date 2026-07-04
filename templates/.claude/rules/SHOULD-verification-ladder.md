@@ -88,6 +88,16 @@ staleness/audit 검증은 model ID·placeholder·TBD뿐 아니라 **폐기된 �
 |--------------|----------|
 | staleness 스캔을 model ID/placeholder/TBD로만 한정 | 폐기된 플랫폼 기능/절차 참조(deprecated CC feature/procedure)도 grep 스캔 |
 
+## Detection Guard Delegation Standard (Origin: #1438 #3)
+
+Tier-1 shift-left 검출 가드(예: deprecated-pattern grep 가드)의 설계·수정을 서브에이전트에 위임할 때, 위임 프롬프트는 **positive-match(genuine defect mandate — `MUST`/`MANDATORY` 인접 문맥)와 negative-context(deprecation note — "no longer"/"deprecated"/"불필요"/"폐기됨" 설명 문구)를 구분**하도록 명시해야 한다. 이를 누락하면 올바르게 수정된 파일의 폐기-설명 문구까지 과잉매칭하여 자기모순 BLOCK을 유발한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| bare 패턴(`/tmp/*.sh` 등)만 grep하도록 위임 → 올바르게 수정된 파일의 "폐기됨/불필요" 설명 문구까지 오탐 | 위임 프롬프트에 positive-match(MUST/MANDATORY 인접) vs negative-context(deprecated/no longer/불필요 설명) 구분 기준을 명시 |
+
+Origin: #1438 (Session 125 회고 찐빠 #3) — deep-verify 가드 반전 위임 시 bare `/tmp/*.sh` 패턴이 올바르게 수정된 9개 파일의 "폐기됨/불필요" 설명 문구까지 오탐; mgr-sauron이 sha256 재계산으로 적발, 3-패턴(mandate/false-claim) 협소화로 정정.
+
 ## Integration
 
 | 규칙 | 상호작용 |
@@ -118,11 +128,15 @@ Before invoking a Workflow script, deterministically verify:
 | No unresolved placeholders (`{phase1_summary}`, `TODO`, `<...>`, `{{ }}`) remain in any agent prompt string | An unfilled placeholder reaches the agent verbatim → garbled task |
 | Template-literal / string concatenation produces the intended prompt (assemble-before-call, see above) | Post-call concatenation (`agent(prompt) + FACTS`) silently drops content |
 | Script parses — balanced braces/quotes, valid JS | A syntax error aborts the entire run after partial work |
+| 프롬프트 문자열 내 셸 변수 `${...}`(`$?`, `${PIPESTATUS[0]}`, `$(...)` 등)가 `\${...}`로 이스케이프되어 있는지 사전 grep 확인 | JS 템플릿 리터럴 안의 이스케이프 안 된 셸 `${...}`를 JS가 JS 표현식으로 평가 → 런타임 `ReferenceError`(예: `PIPESTATUS is not defined`). `node --check`는 문법만 검사하여 이 런타임 오류를 못 잡으므로 별도 결정론 grep 검사가 필요함 |
 
 #### Common Violation (#1271)
 Session 106 follow-up to #1266 ③: a Workflow authoring error recurred — the guardrail fact-sheet was concatenated onto the agent's RETURN VALUE instead of the prompt string, and a placeholder/assembly slip went uncaught because no pre-run sanity check existed. This check is the deterministic Tier-1 guard that catches such slips before the expensive run.
 
 Origin: #1271 (Workflow authoring error recurrence, session 106).
+
+#### Common Violation (#1438)
+Origin: #1438 (Session 125 회고 찐빠 #2) — fix Workflow의 verify 프롬프트에 `${PIPESTATUS[0]}`를 이스케이프 없이 사용 → `PIPESTATUS is not defined` ReferenceError로 verify 단계 실패. `node --check`는 통과했으나 런타임에서 실패.
 
 ### Verifier Ground-Truth for Cross-Cutting Facts
 
