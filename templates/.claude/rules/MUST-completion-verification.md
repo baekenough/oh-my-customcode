@@ -71,6 +71,8 @@ Subagents often report failures as "pre-existing", "baseline", or "unchanged". T
 Never accept "pre-existing" without direct base-branch evidence. A false "pre-existing" claim can mask a regression introduced by the current change.
 -->
 
+> **v2.1.199+**: subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류가 parent agent에 정확히 보고됩니다. 플랫폼 수정으로 false-success 자가보고 빈도는 줄지만, "actual outcome ≠ attempt" ground-truth 검증 원칙(R020 Core Rule)은 여전히 유지된다 — subagent 보고를 그대로 신뢰하지 말고 `git status`/`grep`/validation script로 재확인한다.
+
 ## Common False Completion Patterns — 8 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes, "UI changes done" without browser render. See full table via Read tool.
 
 ### Test-Skip Is Not Completion (#1217 item #5)
