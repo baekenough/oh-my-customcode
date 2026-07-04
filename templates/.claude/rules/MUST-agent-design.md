@@ -35,6 +35,12 @@ Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M tok
 
 > **v2.1.197+**: Claude Sonnet 5가 Claude Code의 **기본 모델**로 도입되었습니다 — 네이티브 1M-token 컨텍스트, 프로모션 가격 $2/$10 per Mtok(2026-08-31까지). `model: sonnet5` / `claude-sonnet-5`로 사용. oh-my-customcode의 base `sonnet` alias는 안정성을 위해 `claude-sonnet-4-6`에 고정 유지(기존 `sonnet` 지정 에이전트 불변); Sonnet 5는 `sonnet5`로 명시 opt-in. Sonnet 5가 CC 신규 기본값이므로 명시 모델 없는 세션은 이제 Sonnet 5에서 동작합니다.
 
+> **Fable 5 Effort 전략**: Fable 5는 **high effort가 기본값**이며, `xhigh`는 capability-sensitive 작업(최고난도 아키텍처/추론)에 한정해야 합니다. Fable 5의 `low`/`medium` effort조차 이전 세대 모델의 `xhigh`를 상회하는 품질을 보이므로, Fable 5를 사용하는 실행 에이전트는 `effort` 필드를 신중히 명시하고 불필요한 `xhigh` 남용을 지양합니다(R005 비용/지연 인식과 정합).
+
+> **Mythos 5 (`claude-mythos-5`)**: Project Glasswing 한정 공급 모델로, **GA가 아닙니다** — Fable 5(GA, 위 Model Aliases 표의 `fable`)와 구분해야 합니다. 특성: adaptive-thinking 전용 아키텍처 + 안전 분류기가 개입 시 `stop_reason: "refusal"`로 fallback하는 체계를 가집니다. oh-my-customcode 에이전트 frontmatter에는 아직 alias를 등록하지 않습니다(비-GA, 공급 제한).
+
+> **프롬프팅 패턴 상호참조**: Fable 5/Mythos 5 대상 프롬프팅 패턴(effort 조합, adaptive-thinking 활용, refusal fallback 대응)의 상세 가이드는 `guides/claude-code/16-fable5-prompting.md`를 참조하세요.
+
 ### Fallback Models (CC v2.1.166+)
 
 > **v2.1.166+**: The `fallbackModel` setting configures up to three fallback models tried in order when the primary model is overloaded or unavailable. `--fallback-model` now also applies to interactive sessions. CC additionally retries a turn once on the fallback model when the API rejects an unexpected non-retryable error (auth, rate-limit, request-size, and transport errors still surface immediately).

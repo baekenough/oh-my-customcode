@@ -74,3 +74,8 @@ documents:
     title: Claude Code Version Compatibility
     description: Claude Code 릴리즈 버전별 호환성 및 기능 변경 추적
     path: ./15-version-compatibility.md
+
+  - name: fable5-prompting
+    title: Claude Fable 5 프롬프팅 가이드
+    description: Fable 5 전용 프롬프팅·하네스 튜닝 패턴 — Opus 4.8 대비 행동 차이와 R006/R009/R020/R023 매핑
+    path: ./16-fable5-prompting.md
