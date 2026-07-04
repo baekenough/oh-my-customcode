@@ -64,7 +64,8 @@ fi
 
 # Run tests with coverage
 echo "Running tests with coverage..."
-COVERAGE_OUTPUT=$(bun test --coverage 2>&1)
+# FORCE_COLOR 환경에서 ANSI 이스케이프가 coverage 숫자 파싱을 오염시키는 것 방지 (#1437)
+COVERAGE_OUTPUT=$(env -u FORCE_COLOR NO_COLOR=1 bun test --coverage 2>&1)
 TEST_EXIT_CODE=$?
 echo "$COVERAGE_OUTPUT"
 
@@ -82,8 +83,10 @@ fi
 COVERAGE_LINE=$(echo "$COVERAGE_OUTPUT" | grep -E "All files.*\|")
 
 if [ -n "$COVERAGE_LINE" ]; then
-    FUNC_COV=$(echo "$COVERAGE_LINE" | awk -F'|' '{print $2}' | tr -d ' ')
-    LINE_COV=$(echo "$COVERAGE_LINE" | awk -F'|' '{print $3}' | tr -d ' ')
+    # ANSI 이스케이프 잔존 대비 이중 방어 strip (#1437) — printf ESC로 BSD/GNU sed 양쪽 호환
+    ESC=$(printf '\033')
+    FUNC_COV=$(echo "$COVERAGE_LINE" | awk -F'|' '{print $2}' | sed "s/${ESC}\[[0-9;]*m//g" | tr -d ' ')
+    LINE_COV=$(echo "$COVERAGE_LINE" | awk -F'|' '{print $3}' | sed "s/${ESC}\[[0-9;]*m//g" | tr -d ' ')
 
     echo "Function coverage: $FUNC_COV%"
     echo "Line coverage: $LINE_COV%"
