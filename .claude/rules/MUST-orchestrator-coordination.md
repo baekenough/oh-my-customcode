@@ -341,6 +341,8 @@ Before spawning any agent:
 
 > **v2.1.199+**: subagent가 rate limit이나 server error로 잘리면 이제 조용히 실패하는 대신 partial work를 parent에 반환합니다. background-agent daemon(Linux)이 unclean shutdown 후 corrupted worker record로 ~50초마다 자신과 모든 agent를 죽이던 문제, macOS SSH cold-start "Could not switch to audit session" 문제, `claude stop`이 background-agent respawn과 race하면 조용히 무효화되던 문제(이제 respawn이 stop을 존중), background job progress indicator가 긴 명령 중 멈춰있던 문제가 수정되었습니다. background-agent lifecycle 견고성이 추가로 강화되었으며, `mode: "bypassPermissions"`는 여전히 필수입니다.
 
+> **v2.1.200+**: 백그라운드 세션/에이전트 견고성이 추가로 강화되었습니다 — sleep/wake 후 또는 stalled 세션 재개 시 mid-turn으로 조용히 멈추던 문제, stall respawn 후 Esc로 취소한 turn을 재실행하던 문제, 크래시가 남긴 stale `daemon.lock`(OS가 PID를 재사용)으로 백그라운드 에이전트가 다시 시작되지 않던 문제, 재설치된 구버전 빌드가 daemon을 탈취하던 문제(빌드 최신성은 이제 버전의 embedded build timestamp로 판정), 그리고 roster 일시 corruption이 orphan cleanup을 영구 비활성화하던 문제·구버전 바이너리가 신버전이 기록한 필드를 보존하지 못하던 문제·daemon 재시작 중 socket auth token이 제거되던 문제를 수정했습니다. v2.1.195~199 백그라운드-에이전트 lifecycle 견고성 체인의 연장입니다. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.
+
 ## Agent Capability Pre-Check
 
 Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).

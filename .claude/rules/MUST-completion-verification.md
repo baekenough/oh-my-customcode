@@ -87,6 +87,8 @@ Cross-reference: R018 (Member Completion Verification), `feedback_release_delega
 
 > **v2.1.199+**: subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류가 parent agent에 정확히 보고됩니다. 플랫폼 수정으로 false-success 자가보고 빈도는 줄지만, "actual outcome ≠ attempt" ground-truth 검증 원칙(R020 Core Rule)은 여전히 유지된다 — subagent 보고를 그대로 신뢰하지 말고 `git status`/`grep`/validation script로 재확인한다.
 
+> **v2.1.200+**: rate limit으로 어떤 텍스트 출력도 내기 전에 잘린 subagent가 이전에는 빈 결과(empty result)를 반환하던 것을 clean failure로 반환하도록 수정되었습니다 — v2.1.199 partial-work 반환에 이어, 출력 이전 rate-limit 차단 시 조용한 빈 결과 대신 명시적 실패를 parent에 보고합니다. 플랫폼이 false-success/silent-empty 자가보고를 추가로 줄였으나, "actual outcome ≠ attempt" ground-truth 검증 원칙(R020 Core Rule)은 여전히 유지됩니다 — subagent 보고를 그대로 신뢰하지 말고 git status/grep/validation script로 재확인합니다.
+
 ## Common False Completion Patterns — 8 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes, "UI changes done" without browser render. See full table via Read tool.
 
 ### Test-Skip Is Not Completion (#1217 item #5)

@@ -35,6 +35,8 @@ Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M tok
 
 > **v2.1.197+**: Claude Sonnet 5가 Claude Code의 **기본 모델**로 도입되었습니다 — 네이티브 1M-token 컨텍스트, 프로모션 가격 $2/$10 per Mtok(2026-08-31까지). `model: sonnet5` / `claude-sonnet-5`로 사용. oh-my-customcode의 base `sonnet` alias는 안정성을 위해 `claude-sonnet-4-6`에 고정 유지(기존 `sonnet` 지정 에이전트 불변); Sonnet 5는 `sonnet5`로 명시 opt-in. Sonnet 5가 CC 신규 기본값이므로 명시 모델 없는 세션은 이제 Sonnet 5에서 동작합니다.
 
+> **v2.1.201+**: Claude Sonnet 5 세션이 harness reminder를 mid-conversation system role로 주입하지 않도록 변경되었습니다 — Sonnet 5 실행 시 하니스 리마인더(규칙 재주입 등) 전달 방식이 조정되었으며, PostCompact 규칙 재주입(R021)·세션 연속성 동작 자체에는 영향이 없습니다. Sonnet 5가 CC 기본 모델(v2.1.197+)이므로 명시 모델 없는 세션에 적용됩니다.
+
 > **Fable 5 Effort 전략**: Fable 5는 **high effort가 기본값**이며, `xhigh`는 capability-sensitive 작업(최고난도 아키텍처/추론)에 한정해야 합니다. Fable 5의 `low`/`medium` effort조차 이전 세대 모델의 `xhigh`를 상회하는 품질을 보이므로, Fable 5를 사용하는 실행 에이전트는 `effort` 필드를 신중히 명시하고 불필요한 `xhigh` 남용을 지양합니다(R005 비용/지연 인식과 정합).
 
 > **Mythos 5 (`claude-mythos-5`)**: Project Glasswing 한정 공급 모델로, **GA가 아닙니다** — Fable 5(GA, 위 Model Aliases 표의 `fable`)와 구분해야 합니다. 특성: adaptive-thinking 전용 아키텍처 + 안전 분류기가 개입 시 `stop_reason: "refusal"`로 fallback하는 체계를 가집니다. oh-my-customcode 에이전트 frontmatter에는 아직 alias를 등록하지 않습니다(비-GA, 공급 제한).
@@ -224,6 +226,8 @@ CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "byp
 | `plan` | Require plan approval |
 | `dontAsk` | Non-interactive, deny unapproved |
 | `auto` | AI decides safety |
+
+> **v2.1.200+**: `default` 모드가 CLI·`--help`·VS Code·JetBrains에서 "Manual"로 표기됩니다 — `--permission-mode manual` / `"defaultMode": "manual"`이 `default`와 병행 허용(동일 동작). 위 표의 `default` row는 그대로 유효하며 UI 라벨만 "Manual"로 노출됩니다. cross-ref R002.
 
 <!-- DETAIL: Permission Mode Guidance (reasoning)
 When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:

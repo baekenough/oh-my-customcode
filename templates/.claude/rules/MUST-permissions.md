@@ -61,6 +61,8 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.196+**: 조직 기본 모델(org default models)이 추가되어 관리자가 org 콘솔에서 설정하며, 사용자가 직접 고르지 않으면 `/model`에 "Org default"(또는 "Role default")로 표시됩니다 — v2.1.187 org model restriction 범위를 기본 모델 해석까지 확장(cross-ref R006). 보안: `claude mcp list`/`get`이 self-approved `.mcp.json` 서버를 spawn하지 않고 신뢰되지 않은 워크스페이스는 `⏸ Pending approval` 표시(Tier-6, cross-ref R001). 또한 `claude agents --dangerously-skip-permissions`가 조용히 auto mode로 폴백하던 문제를 수정 — 이제 bypass 고지를 표시하고 spawned agent에도 bypass 모드를 적용합니다(R010 Universal bypassPermissions와 정합).
 
+> **v2.1.200+**: `default` permission mode가 CLI·`--help`·VS Code·JetBrains 전반에서 "Manual"로 표기되도록 변경되었습니다 — `--permission-mode manual`과 `"defaultMode": "manual"`이 기존 `default`와 병행 허용됩니다(동일 동작, 라벨만 변경). 위 tier 표의 `default` 모드는 그대로 유효하며 UI 표기만 "Manual"로 노출됩니다(cross-ref R006 Permission Mode Guidance). 또한 `AskUserQuestion` 다이얼로그가 기본적으로 auto-continue하지 않도록 변경되어(이전에는 idle 시 자동 진행), idle timeout은 `/config`로 opt-in해야 합니다 — **자율/비대화 흐름(FSD 등)에서 AskUserQuestion 호출은 이제 사용자 응답까지 블록되므로, 무인 실행 중 질문 도구 사용을 지양하고 best-judgment로 진행하는 R015 directive persistence와 정합**. 그리고 `.claude.json`의 `disabledMcpServers`/`enabledMcpServers`가 non-array 값일 때 발생하던 시작 크래시가 수정되었습니다(Tier-6 MCP).
+
 ## Agent Tool Permission Mode
 
 When spawning subagents via the Agent tool, always pass `mode: "bypassPermissions"` explicitly. The Agent tool's default mode is `acceptEdits`, which **overrides** the agent frontmatter `permissionMode` field.
