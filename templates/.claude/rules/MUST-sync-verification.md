@@ -110,6 +110,17 @@ Any change to: agents, agent frontmatter, skills, guides, routing patterns, rule
 |--------------|----------|
 | 원격 머지 후 stale 로컬 develop에서 릴리즈 브랜치 분기 | 분기 전 `git pull origin develop`; PR 생성 후 mergeStateStatus 확인 — CONFLICTING이면 `git merge origin/develop`+both-유지 해결 후 재CI |
 
+## Pre-Release Target Version Ground-Truth Gate (Origin: #1457)
+
+새 릴리즈의 target 버전을 선정하거나 구현/구현-위임 프롬프트에 target 버전을 전달하기 전, 반드시 원격 실측으로 다음 버전을 확정한다: `git tag --sort=-v:refname | head -1`(최신 태그) + `npm view <pkg> version`(배포된 최신)의 **max에 patch를 더한 값**을 target으로 삼는다. 세션 메모리의 버전 스냅샷(예: "npm latest 1.1.6")은 **참고용이며 ground-truth가 아니다** — 직전 세션에서 릴리즈가 진행돼 stale일 수 있다. stale 버전으로 위임하면 이미 배포된 버전을 target으로 잡아 milestone-closed STOP에 걸리고 재타겟팅 왕복이 강제된다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 세션 메모리 버전 스냅샷으로 target 버전을 추정해 구현/릴리즈 위임 | 위임 전 `git tag`+`npm view` 실측 → max+patch를 target으로 확정 |
+| milestone-closed STOP에 걸린 뒤에야 stale을 인지 | 사전 실측으로 STOP+재위임 왕복을 원천 차단 (가드레일은 fail-safe이지 1차 방어선이 아님) |
+
+Origin: #1457 (Session 128 회고 찐빠 #1) — 오케스트레이터가 stale 메모리(npm 1.1.6→target v1.1.7 추정)로 implement를 위임 → v1.1.7이 이미 배포된 closed milestone임을 에이전트가 STOP으로 감지 → v1.1.8 재위임 왕복 1회. 기존 `feedback_session_memory_git_stale`(브랜치 분기 전 pull)의 릴리즈-버전-선정 각도 확장. Cross-ref: R020 (Diagnostic Hypothesis Verification — 영구 변경/위임 전 전제 실측 확정).
+
 ## Post-Gate Scope-Expansion Re-Run (Origin: #1433 #2)
 
 R017 게이트(mgr-sauron) 통과 선언 후 신규 결함 발견 등으로 스코프가 확장되면(추가 파일 편집), 커밋 전 게이트를 **최종 상태에서 재실행**한다. 게이트 통과 시점 이후의 변경은 형식적으로 미검증이므로, 확장분 미검증 커밋은 R017이 최종 산출물을 커버하지 못하게 만든다.
