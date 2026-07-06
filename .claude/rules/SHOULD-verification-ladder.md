@@ -92,6 +92,17 @@ staleness/audit 검증은 model ID·placeholder·TBD뿐 아니라 **폐기된 �
 |--------------|----------|
 | staleness 스캔을 model ID/placeholder/TBD로만 한정 | 폐기된 플랫폼 기능/절차 참조(deprecated CC feature/procedure)도 grep 스캔 |
 
+## Sample-Value Assembly Local Verification (Origin: #1455 #1)
+
+워크플로우/스크립트 내 문자열 조립·템플릿 로직(heredoc, f-string, 다중라인 변수 삽입, 이슈 본문 조립 등)의 수정을 위임할 때, 위임 프롬프트는 **API/네트워크가 불필요한 순수 조립부를 Tier-1 로컬 결정론 검증으로 분리**하도록 명시해야 한다. 문법 검증(py_compile/YAML lint/`node --check`)은 통과해도 조립된 출력의 선행 들여쓰기·형식 결함은 드러나지 않는다 — 샘플 값(멀티라인 변수 포함)으로 출력을 실제 조립한 뒤 선행 들여쓰기·형식을 grep으로 검증해야 잡힌다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| "스모크 테스트 = API 호출"로 협소 인식 → 키 불필요한 순수 문자열 조립 검증을 실서버 dispatch Tier로 미룸 | 위임 첫 프롬프트부터 "샘플 멀티라인 값으로 출력 실제 조립 후 선행 들여쓰기·형식 grep 검증"을 필수 항목으로 명시 |
+| `textwrap.dedent(f"""...{multiline_var}...""")` 를 신뢰 | 삽입 변수가 0-indent 멀티라인이면 dedent 공통 최소 들여쓰기가 0으로 계산되어 무력화 → 리터럴 들여쓰기 잔존. dedent 제거 후 명시적 문자열 concatenation 사용 |
+
+Origin: #1455 #1 (Session 127 회고 찐빠 #1) — cc-release-monitor PR #1449 머지 후 workflow_dispatch 실검증에서 issue_body의 `<details>`·릴리즈 요약에 12칸 리터럴 들여쓰기 발견 → PR #1451 재작업. 첫 위임이 문법 검증만 지시하고 샘플 값 출력 조립 검증을 누락. `textwrap.dedent` + 멀티라인 변수 함정이 문법 검증만으로는 미노출. R020(문법 통과 ≠ 출력 정상)과 정합.
+
 ## Detection Guard Delegation Standard (Origin: #1438 #3)
 
 Tier-1 shift-left 검출 가드(예: deprecated-pattern grep 가드)의 설계·수정을 서브에이전트에 위임할 때, 위임 프롬프트는 **positive-match(genuine defect mandate — `MUST`/`MANDATORY` 인접 문맥)와 negative-context(deprecation note — "no longer"/"deprecated"/"불필요"/"폐기됨" 설명 문구)를 구분**하도록 명시해야 한다. 이를 누락하면 올바르게 수정된 파일의 폐기-설명 문구까지 과잉매칭하여 자기모순 BLOCK을 유발한다.
