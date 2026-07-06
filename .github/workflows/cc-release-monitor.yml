@@ -30,7 +30,6 @@ jobs:
           import re
           import subprocess
           import sys
-          import textwrap
           import urllib.error
           import urllib.request
 
@@ -196,43 +195,32 @@ jobs:
                   )
 
               if body_raw:
-                  original_block = textwrap.dedent(f"""\
-
-                      <details>
-                      <summary>🔤 원문 (What's Changed)</summary>
-
-                      {body_truncated}
-
-                      </details>
-                      """)
+                  original_block = (
+                      "\n<details>\n"
+                      "<summary>🔤 원문 (What's Changed)</summary>\n\n"
+                      + body_truncated + "\n\n"
+                      "</details>\n"
+                  )
               else:
                   original_block = ""
 
-              issue_body = textwrap.dedent(f"""\
-                  # Claude Code {version}
-
-                  **Release:** {version}
-                  **Published:** {published_at}
-                  **Link:** {html_url}
-
-                  ## 릴리즈 요약 (한국어)
-
-                  {summary_text}
-                  """) + original_block + textwrap.dedent("""\
-
-                  ---
-
-                  ## 액션 아이템
-
-                  - [ ] oh-my-customcode 영향도 관점에서 릴리즈 노트 검토
-                  - [ ] 새 Claude Code 기능이 에이전트에 영향을 주면 에이전트 정의 갱신
-                  - [ ] 현재 oh-my-customcode 버전과의 호환성 테스트
-                  - [ ] 새 기능이 관련되면 CLAUDE.md 갱신
-
-                  ---
-
-                  _이 이슈는 cc-release-monitor GitHub Actions 워크플로우가 자동 생성했습니다._\
-              """)
+              issue_body = (
+                  f"# Claude Code {version}\n\n"
+                  f"**Release:** {version}\n"
+                  f"**Published:** {published_at}\n"
+                  f"**Link:** {html_url}\n\n"
+                  "## 릴리즈 요약 (한국어)\n\n"
+                  f"{summary_text}\n"
+                  + original_block +
+                  "\n---\n\n"
+                  "## 액션 아이템\n\n"
+                  "- [ ] oh-my-customcode 영향도 관점에서 릴리즈 노트 검토\n"
+                  "- [ ] 새 Claude Code 기능이 에이전트에 영향을 주면 에이전트 정의 갱신\n"
+                  "- [ ] 현재 oh-my-customcode 버전과의 호환성 테스트\n"
+                  "- [ ] 새 기능이 관련되면 CLAUDE.md 갱신\n\n"
+                  "---\n\n"
+                  "_이 이슈는 cc-release-monitor GitHub Actions 워크플로우가 자동 생성했습니다._\n"
+              )
 
               create = subprocess.run(
                   [
