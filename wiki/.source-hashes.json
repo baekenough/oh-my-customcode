@@ -61,7 +61,7 @@
   ".claude/rules/MUST-parallel-execution.md": "f14a5659885f8080c6055f5a4947df5c6742b4f55288e1a1086ab998f26b6e5e",
   ".claude/rules/MUST-permissions.md": "6cd4dbf5bd8afabb0cb5884ddcd454056a18c45af687399e070f99d15c826e6b",
   ".claude/rules/MUST-safety.md": "b01d76c733fd840fd5e6479236c48e30beb7183e50d4a3842d83aa9f0a9dca0e",
-  ".claude/rules/MUST-sync-verification.md": "77e66d332ffa748d5f960d40a8babc2fd6ad2892ef72ef0d6704aee14892d0a5",
+  ".claude/rules/MUST-sync-verification.md": "50edf8f25fd8a67dcdc10b81f7be33a5a61911be3e7af5ca30cb9a03c7777c12",
   ".claude/rules/MUST-tool-identification.md": "4da6a3e23285deebc88c7f78fbe11755b8987aaccb7c58e77650d9607fc9d03b",
   ".claude/rules/SHOULD-ecomode.md": "91604776396a5b1beb27666704998f8fc6ec8a639ef2e4c47d8cfc57f5bb628b",
   ".claude/rules/SHOULD-error-handling.md": "9d200be09d91765b725a1a5de221b71c3c2b7dd40cffba2ab2c2e33aec08bb61",
