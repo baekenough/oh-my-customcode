@@ -2,7 +2,7 @@ name: cc-release-monitor
 
 on:
   schedule:
-    - cron: "17 7 * * *"
+    - cron: "0 */2 * * *"
   workflow_dispatch:
 
 permissions:
@@ -22,6 +22,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           MIN_PATCH: ${{ env.MIN_PATCH }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           python3 << 'PYEOF'
           import json
@@ -30,13 +31,70 @@ jobs:
           import subprocess
           import sys
           import textwrap
+          import urllib.error
+          import urllib.request
 
           GH_TOKEN = os.environ["GH_TOKEN"]
           REPO = os.environ["GITHUB_REPOSITORY"]
           MIN_PATCH = int(os.environ.get("MIN_PATCH", "151"))
+          ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
           print(f"=== cc-release-monitor: fetching Claude Code releases ===")
           print(f"MIN_PATCH={MIN_PATCH}")
+
+
+          def translate_to_korean(body_raw):
+              """Translate a Claude Code release body to Korean via the Anthropic
+              Messages API. Returns None (graceful degradation, R004) on any
+              failure — missing key, network error, bad status, or malformed
+              response."""
+              if not ANTHROPIC_API_KEY:
+                  print("WARNING: translation failed: ANTHROPIC_API_KEY not set", file=sys.stderr)
+                  return None
+
+              prompt = (
+                  "다음은 Claude Code 릴리즈 노트(What's Changed)입니다. "
+                  "한국어로 100% 번역하세요. 단, 코드 식별자·CLI 플래그·설정 키·모델 ID·파일 경로 등 "
+                  "기술 용어는 원문 그대로 유지하고, 마크다운 구조(불릿, 헤더)를 보존하세요. "
+                  "번역문만 출력하고 다른 설명은 붙이지 마세요.\n\n---\n\n" + body_raw
+              )
+
+              payload = json.dumps({
+                  "model": "claude-haiku-4-5",
+                  "max_tokens": 2000,
+                  "messages": [{"role": "user", "content": prompt}],
+              }).encode("utf-8")
+
+              req = urllib.request.Request(
+                  "https://api.anthropic.com/v1/messages",
+                  data=payload,
+                  headers={
+                      "x-api-key": ANTHROPIC_API_KEY,
+                      "anthropic-version": "2023-06-01",
+                      "content-type": "application/json",
+                  },
+                  method="POST",
+              )
+
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      resp_body = resp.read().decode("utf-8")
+              except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
+                  print(f"WARNING: translation failed: {e}", file=sys.stderr)
+                  return None
+
+              try:
+                  data = json.loads(resp_body)
+                  text = data["content"][0]["text"]
+              except (json.JSONDecodeError, KeyError, IndexError, TypeError) as e:
+                  print(f"WARNING: translation failed: {e}", file=sys.stderr)
+                  return None
+
+              if not text:
+                  print("WARNING: translation failed: empty response", file=sys.stderr)
+                  return None
+
+              return text
 
           # ── Step 1: fetch all releases from anthropics/claude-code ──────────
           result = subprocess.run(
@@ -119,14 +177,36 @@ jobs:
                   skipped += 1
                   continue
 
-              # Truncate release body
-              MAX_BODY = 2000
+              # Truncate release body, then translate the truncated original to Korean
+              MAX_BODY = 4000
               if not body_raw:
-                  release_summary = "_릴리즈 노트가 제공되지 않았습니다._"
-              elif len(body_raw) > MAX_BODY:
-                  release_summary = body_raw[:MAX_BODY] + "... (truncated)"
+                  body_truncated = ""
+                  translated = None
+                  summary_text = "_릴리즈 노트가 제공되지 않았습니다._"
               else:
-                  release_summary = body_raw
+                  if len(body_raw) > MAX_BODY:
+                      body_truncated = body_raw[:MAX_BODY] + "... (truncated)"
+                  else:
+                      body_truncated = body_raw
+                  translated = translate_to_korean(body_truncated)
+                  summary_text = (
+                      translated
+                      if translated is not None
+                      else "_자동 번역에 실패했습니다. 아래 원문을 참고하세요._"
+                  )
+
+              if body_raw:
+                  original_block = textwrap.dedent(f"""\
+
+                      <details>
+                      <summary>🔤 원문 (What's Changed)</summary>
+
+                      {body_truncated}
+
+                      </details>
+                      """)
+              else:
+                  original_block = ""
 
               issue_body = textwrap.dedent(f"""\
                   # Claude Code {version}
@@ -135,9 +215,10 @@ jobs:
                   **Published:** {published_at}
                   **Link:** {html_url}
 
-                  ## 릴리즈 요약
+                  ## 릴리즈 요약 (한국어)
 
-                  {release_summary}
+                  {summary_text}
+                  """) + original_block + textwrap.dedent("""\
 
                   ---
 
