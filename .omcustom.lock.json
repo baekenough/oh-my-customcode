@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.19",
-  "generatedAt": "2026-07-14T10:09:56.683Z",
-  "templateVersion": "1.1.19",
+  "generatorVersion": "1.1.20",
+  "generatedAt": "2026-07-14T10:37:14.925Z",
+  "templateVersion": "1.1.20",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "50edf8f25fd8a67dcdc10b81f7be33a5a61911be3e7af5ca30cb9a03c7777c12",
-      "size": 11033,
+      "templateHash": "09a1c8d87732965ff9602cd46d7975ba0c5debe1953f658370d787d98607126a",
+      "size": 12199,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
@@ -70,8 +70,8 @@
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "d79b455932477b453bdcfa702e325fd6b24d775ab08105cda026463205624b1c",
-      "size": 6177,
+      "templateHash": "0a63a54479d20f2d36399d04cabc20db4bf69c6e208cc9f97e74407fd7e3d2b8",
+      "size": 7003,
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "4c2d96ed6b6448ad100f65e5177b9ced33907793159773984c205c05155ece7d",
-      "size": 28227,
+      "templateHash": "dffae9f80a019a490c04180a547bda219bd790511561466629a18fafdbf43d19",
+      "size": 29570,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {

@@ -102,6 +102,18 @@ Any change to: agents, agent frontmatter, skills, guides, routing patterns, rule
 2. 테스트가 읽는 파일의 git tracked 상태를 확인했는가? (`git ls-files` 대조)
 3. 임시 skip된 검증 스크립트/테스트가 남아있지 않은가?
 
+### Restore-From-Deletion Regression Check (Origin: #1492)
+
+삭제된 파일/워크플로우/자산을 복원(restore)할 때, 삭제 이전에 그 파일에 적용된 **머지된 수정이 유실되지 않는지** 확인한다. 복원은 "되살리기"가 아니라 **최신 상태로의 재구성**이어야 한다.
+
+| 확인 항목 | 명령 |
+|-----------|------|
+| 삭제 이전 수정 이력 | `git log --oneline -- <path>` (삭제 커밋 이전 커밋들 확인) |
+| 복원 소스 시점 | 복원 대상이 **삭제 직전 커밋**인지 확인 — 더 오래된 버전/외부 사본이면 회귀 |
+| 관련 PR 반영 여부 | 과거 수정 PR의 핵심 변경을 `grep`으로 재확인 |
+
+Origin: #1492 (Session 132) — cc-release-monitor 워크플로우 삭제(#1454, 세션127) 후 복원(세션129)이 삭제 직전 이전 버전을 되살려 머지된 수정(#1451, `textwrap.dedent` 제거)이 소실. 약 8일간 결함 상태로 이슈 자동생성(#1489/#1490에 8칸 선행 들여쓰기+절단). Cross-ref: R020 (Read-Before-Characterize), R023 (Sample-Value Assembly — 문법 검증으로는 미노출, 샘플 조립 검증으로만 드러남).
+
 ## Pre-Branch Freshness Gate (Origin: #1433 #1, ≥3회 재발)
 
 세션 중 원격 머지(`gh pr merge` 등)가 발생한 뒤 새 릴리즈/작업 브랜치를 분기하기 전, 반드시 `git checkout develop && git pull origin develop`로 로컬 develop을 최신화한다. stale 로컬 develop에서 분기하면 새 브랜치가 이미 머지된 변경(직전 릴리즈)을 누락해 PR이 CONFLICTING 상태가 되고, merge+충돌해결+재CI 사이클이 강제된다. advisory 메모리(`feedback_session_memory_git_stale`)만으로는 ≥3회 재발을 막지 못해 R017 필수 게이트로 승격한다.
