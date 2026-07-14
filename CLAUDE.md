@@ -97,6 +97,7 @@ oh-my-customcode로 구동됩니다.
 
 ### 슬래시 커맨드 (스킬 기반)
 
+<!-- METADATA (command catalog, advisory only — use /omcustom:lists for the live full list):
 | 카테고리 | 대표 커맨드 | 설명 |
 |----------|------------|------|
 | 프로젝트 관리 | `/omcustom:analysis`, `/omcustom:create-agent`, `/omcustom:audit-agents` | 분석, 에이전트/스킬 생성, 감사 |
@@ -106,6 +107,7 @@ oh-my-customcode로 구동됩니다.
 | 리서치 | `/research`, `/scout`, `/deep-plan` | 병렬 분석, URL 평가, 연구 계획 |
 | 최적화 | `/token-efficiency-audit` | 토큰 효율 감사 (5계층 방어 스택) |
 | 시스템 | `/omcustom:lists`, `/omcustom:status`, `/omcustom:help` | 전체 목록, 상태, 도움말 |
+-->
 
 > 전체 커맨드 목록 (60+ 커맨드): `/omcustom:lists` 실행
 
@@ -161,6 +163,7 @@ oh-my-customcode는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 
 ## 에이전트 요약
 
+<!-- METADATA (agent roster by type, advisory only — use /omcustom:lists or wiki/agents/ for the live full catalog):
 | 타입 | 수량 | 에이전트 |
 |------|------|----------|
 | SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert |
@@ -175,7 +178,9 @@ oh-my-customcode는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
-| **총계** | **49** | |
+-->
+
+총 **49개** 에이전트 (타입별 상세는 `/omcustom:lists` 또는 wiki/agents/ 참조)
 
 ## Agent Teams (MUST when enabled)
 
@@ -215,6 +220,10 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 ```
 
 ## 외부 의존성
+
+필수/권장 플러그인·MCP 서버 카탈로그 및 설치 명령어는 1회성 설정 정보로 아래 HTML 주석에 보존됨(Read 도구로 확인 가능). 요약: 필수 5종(superpowers, superpowers-developing-for-claude-code, elements-of-style, obsidian-skills, context7), 권장 플러그인 4종, 권장 MCP 서버 3종(code-review-graph, semble, aws-mcp).
+
+<!-- METADATA (plugin/MCP catalog + install commands, advisory only — one-time setup, not needed every session):
 
 ### 필수 플러그인
 
@@ -269,6 +278,7 @@ claude mcp add semble -- semble mcp
 claude mcp add-json aws-mcp --scope user '{"command":"uvx","args":["mcp-proxy-for-aws@latest","https://aws-mcp.us-east-1.api.aws/mcp","--metadata","AWS_REGION=us-west-2"]}'
 # 사전요건: AWS IAM 자격증명 구성. 가용 리전: us-east-1, eu-central-1 (API 호출은 전 리전)
 ```
+-->
 
 <!-- omcustom:git-workflow -->
 
