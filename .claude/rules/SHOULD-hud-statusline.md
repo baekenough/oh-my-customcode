@@ -27,13 +27,15 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 <!-- ARCHIVED CC version note (historical): v2.1.172+ — Added a `model` attribute to the `claude_code.lines_of_code.count` OTEL metric — lines-of-code telemetry can now be sliced by model. Extends the per-dimension metric slicing (v2.1.161) in the `monitoring-setup` skill. -->
 
-> **v2.1.193+**: `claude_code.assistant_response` OpenTelemetry 로그 이벤트가 추가되어 모델의 응답 텍스트를 포함합니다. `OTEL_LOG_ASSISTANT_RESPONSES=1`이 아니면 redacted 되지만, 이 변수가 unset이면 `OTEL_LOG_USER_PROMPTS`를 따릅니다 — **보안 주의: 이미 프롬프트 내용을 로깅하는 배포는 업그레이드 즉시 응답 내용도 수신하기 시작합니다. 프롬프트만 유지하려면 `OTEL_LOG_ASSISTANT_RESPONSES=0`으로 설정하세요.** v2.1.157 tool_parameters / v2.1.161 metric slicing에 이은 `monitoring-setup` 스킬 OTEL 관측성 확장이며, 응답 텍스트 로깅은 명시적 opt-out이 필요한 민감 항목입니다.
+<!-- ARCHIVED CC version note (historical): v2.1.193+: `claude_code.assistant_response` OpenTelemetry 로그 이벤트가 추가되어 모델의 응답 텍스트를 포함합니다. `OTEL_LOG_ASSISTANT_RESPONSES=1`이 아니면 redacted 되지만, 이 변수가 unset이면 `OTEL_LOG_USER_PROMPTS`를 따릅니다 — 보안 주의: 이미 프롬프트 내용을 로깅하는 배포는 업그레이드 즉시 응답 내용도 수신하기 시작합니다. 프롬프트만 유지하려면 `OTEL_LOG_ASSISTANT_RESPONSES=0`으로 설정하세요. v2.1.157 tool_parameters / v2.1.161 metric slicing에 이은 `monitoring-setup` 스킬 OTEL 관측성 확장이며, 응답 텍스트 로깅은 명시적 opt-out이 필요한 민감 항목입니다. -->
 
-> **v2.1.196+**: 여러 병렬 요청이 사용량 한도에 도달하는 순간 rate-limit 경고가 깜빡이며 꺼지고 rate-limit telemetry가 과다 집계되던 문제를 수정. R012 관측성의 rate-limit 계측 정확도 개선입니다.
+<!-- ARCHIVED CC version note (historical): v2.1.196+: 여러 병렬 요청이 사용량 한도에 도달하는 순간 rate-limit 경고가 깜빡이며 꺼지고 rate-limit telemetry가 과다 집계되던 문제를 수정. R012 관측성의 rate-limit 계측 정확도 개선입니다. -->
 
 > **v2.1.198+**: `claude agents`에 background agent notifications가 추가되어, 입력이 필요하거나 완료된 세션이 `Notification` hook을 발화합니다(`agent_needs_input` / `agent_completed`). R012 관측성을 백그라운드 subagent 상태 알림까지 확장 — HUD 이벤트 채널과 결합해 백그라운드 위임 작업의 대기/완료 상태를 놓치지 않게 합니다.
 
 > **v2.1.202+**: workflow-spawned agent 텔레메트리에 `workflow.run_id`/`workflow.name` OTel 속성이 추가되어 workflow run 활동을 OTel 데이터로 재구성할 수 있습니다. R012 관측성 확장(monitoring-setup 스킬).
+
+> **v2.1.208+**: Fixed `/release-notes` "Show all" injecting the entire changelog into the model's context (cross-ref R013 context budget). Fixed the context window (and auto-compact indicator) briefly resetting to 200k after CLI auto-update, causing a false "100% context used" on resumed long-context sessions — relevant to the CTX% statusline segment below. Completed background agents now stay listed in `/tasks` until cleanup instead of vanishing on completion — extends the v2.1.198 background-notification observability above.
 
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.

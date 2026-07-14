@@ -26,6 +26,8 @@
 
 > **v2.1.206+**: `/doctor`에 checked-in CLAUDE.md에서 코드베이스로부터 파생 가능한 내용을 잘라내도록 제안하는 체크가 추가되었습니다 — R005 "Context Optimization via HTML Comments"의 컨텍스트 절감 원칙과 정합(모델 불필요 메타데이터 축소).
 
+> **v2.1.208+**: Fixed several tool-reliability bugs: env vars like `CLAUDE_CODE_MAX_OUTPUT_TOKENS` silently used only the mantissa of scientific-notation values (`1e6` became `1`); Edit now succeeds on a file modified after being read, as long as the target text still matches uniquely; Read no longer misreports empty files as "shorter than offset"; Grep no longer silently returns "No files found" for invalid regex, no longer under-reports paginated count-mode totals; and Glob no longer crashes on a null byte in pattern/path/cwd.
+
 ### Capability-Aware Tool Scheduling
 
 When dispatching parallel tool calls, consider per-tool capabilities to optimize scheduling:

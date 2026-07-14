@@ -27,6 +27,8 @@ The following git commands have caused working tree loss in past sessions (#1146
 
 > **v2.1.183+**: Auto mode now BLOCKS destructive git commands at the platform level — `git reset --hard`, `git checkout -- .`, `git clean -fd`, and `git stash drop` are blocked when you did not ask to discard local work; `git commit --amend` is blocked when the commit was not made by the agent this session; and `terraform destroy` / `pulumi destroy` / `cdk destroy` are blocked unless you asked for the specific stack. This is the PLATFORM-level complement to this section's (advisory) per-invocation approval requirement and the Pre-Delegation Blast-Radius Enumeration below: the model still enumerates discard targets and requests approval (model-level), and CC now also hard-blocks the destructive command itself in auto mode (platform-level) — defense-in-depth. The advisory approval requirement remains because the platform block gates the COMMAND, not the blast-radius enumeration the user needs for an informed decision.
 
+> **v2.1.208+**: Catastrophic removals (e.g. `rm -rf ~`) wrapped in `$(…)`/backticks/`<(…)` now trigger the same prompt as the plain form in `--dangerously-skip-permissions` and auto mode — closes a subshell-obfuscation gap in the v2.1.183 platform-level destructive-command block above.
+
 ### Pre-Delegation Blast-Radius Enumeration
 
 > Origin: #1307 찐빠 #1 (High) — user chose "discard local changes and pull", and `git reset --hard origin/develop` was delegated immediately → user rejected (interrupt). The blast radius — that "discard local changes" included 18 files of *intended* uncommitted work (rule edits, new skills, new guides), not just a version downgrade — was never enumerated for the user.
