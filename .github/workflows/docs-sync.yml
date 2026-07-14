@@ -14,7 +14,7 @@ jobs:
   sync-wiki:
     name: Sync Wiki Pages
     runs-on: macos-latest
-    # Only run if WIKI_PAT secret is configured
+    # Only run if OMCUSTOM_MASTER secret is configured
     if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/develop' }}
 
     steps:

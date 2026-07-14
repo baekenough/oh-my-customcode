@@ -222,7 +222,7 @@
         "matcher": "*",
         "hooks": [
           {
-            "type": "prompt",
+            "type": "command",
             "command": "bash .claude/hooks/scripts/session-autofix-prompt.sh"
           }
         ],
