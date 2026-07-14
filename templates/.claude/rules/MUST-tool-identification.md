@@ -107,22 +107,20 @@ R008 "every tool call" applies to Tier-3 interaction tools too — NOT only file
 
 Skill invocation is the one exception: it is identified through the R007 integrated identification block (`┌─ Agent: claude → {skill-name}`), not a standalone R008 tool prefix.
 
-Reference issue: #1321 (session 113 retrospective, 찐빠 #2 — AskUserQuestion prefix omitted twice).
+<!-- Reference issue: #1321 (session 113 retrospective, 찐빠 #2 — AskUserQuestion prefix omitted twice). -->
 
+<!-- DETAIL: Consolidated Example (redundant with Parallel Spawn Prefix Rule example above)
 ## Example
 
-```
 [mgr-creator][sonnet] → Write: .claude/agents/new-agent.md
 [secretary][opus] → Spawning:
   [1] lang-golang-expert:sonnet → Go code review
   [2] lang-python-expert:sonnet → Python code review
-```
 
 Parallel spawn description parameter:
-```
 Agent(description: "[1] Go code review", subagent_type: "lang-golang-expert", ...)
 Agent(description: "[2] Python code review", subagent_type: "lang-python-expert", ...)
-```
+-->
 
 ## Multi-Turn Self-Check (MANDATORY)
 
@@ -134,17 +132,17 @@ Agent(description: "[2] Python code review", subagent_type: "lang-python-expert"
 
 체크 실패 시 즉시 prefix/필수 파라미터를 보완한 후 호출.
 
+<!-- DETAIL: Common Multi-Turn Violation example (redundant with Self-Check steps above)
 ### Common Multi-Turn Violation
 
-```
 호출 1 (턴 1): [claude][sonnet] → Tool: Read ✓
 호출 2 (턴 1, 같은 턴 추가 호출): (prefix 없음) ✗
 호출 3 (턴 2 첫 호출): (prefix 없음) ✗
-```
 
 같은 턴 내 추가 호출, 새 턴 첫 호출 모두 prefix 필수.
 
 Reference issue: #1096.
+-->
 
 ### Short Response Discipline
 
@@ -160,7 +158,7 @@ Reference issue: #1096.
 <Bash call>
 ```
 
-Reference issues: #1188 item #3, #1198 item #3.
+<!-- Reference issues: #1188 item #3, #1198 item #3. -->
 
 ### External-Project / Debugging Session Vigilance
 
@@ -172,6 +170,6 @@ R007 헤더와 마찬가지로, R008 prefix 누락도 외부 프로젝트 디버
 | 외부 프로젝트 디버깅 | **동일하게 필수** |
 | SSH / 배포 / 인프라 작업 | **동일하게 필수** |
 
-외부 프로젝트 진단 세션(#1417)에서 Bash/Edit/Read/Agent 모든 호출에 `[agent][model] → Tool:` prefix가 세션 전체 누락된 재발이 관측되었다 — 도구 호출 직전 prefix 부착을 워크플로에 내재화한다.
-
+<!-- DETAIL: Case history — 외부 프로젝트 진단 세션(#1417)에서 Bash/Edit/Read/Agent 모든 호출에 `[agent][model] → Tool:` prefix가 세션 전체 누락된 재발이 관측되었다 — 도구 호출 직전 prefix 부착을 워크플로에 내재화한다.
 Reference issues: #1401, #1417.
+-->

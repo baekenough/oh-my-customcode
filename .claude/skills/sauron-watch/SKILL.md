@@ -26,6 +26,9 @@ Ensure complete synchronization of agents, skills, documentation, and project st
 ```
 
 #### Round 3-4: Re-verify + Update
+
+**Conditional skip (R023 shift-left, no loss)**: If Round 1-2 returned **0 issues** (both `mgr-supplier:audit` and `mgr-updater:docs` clean), SKIP Round 3-4 entirely — there is nothing to re-verify. If Round 1-2 found ANY issue (including auto-fixed ones), Round 3-4 MUST run in full to confirm the fix.
+
 ```
 □ mgr-supplier:audit - Re-verify after fixes
 □ mgr-updater:docs - Re-run and apply any detected changes
@@ -33,17 +36,22 @@ Ensure complete synchronization of agents, skills, documentation, and project st
 ```
 
 #### Round 5: Final Count Verification
+
+**Deterministic-script substitution (R023 shift-left, no loss)**: The items below marked `[script]` are already covered by existing deterministic scripts (`verify-template-sync.sh`, `verify-wiki-sync.sh`, `verify-version-sync.sh`, `validate-docs.ts`, pre-commit count-coverage hook). For those items, RUN the script and consume its PASS/FAIL result instead of re-deriving the same check via an LLM re-spawn. Items without `[script]` have no deterministic equivalent (semantic/philosophy checks) and MUST still be verified directly.
+
 ```
-□ Agent count matches: CLAUDE.md vs actual .md files
-□ Skill count matches: CLAUDE.md vs actual SKILL.md files
+□ [script] Agent count matches: CLAUDE.md vs actual .md files (pre-commit coverage / validate-docs.ts)
+□ [script] Skill count matches: CLAUDE.md vs actual SKILL.md files (pre-commit coverage / validate-docs.ts)
 □ Memory field distribution correct
-□ Hook/context/guide/rule counts match
+□ [script] Hook/context/guide/rule counts match (validate-docs.ts / verify-version-sync.sh)
 □ All frontmatter valid
 □ All skill refs exist
 □ All memory scopes valid (project|user|local)
 □ Routing patterns updated
-□ R006 Context Fork Criteria list matches actual SKILL.md frontmatter
+□ [script] R006 Context Fork Criteria list matches actual SKILL.md frontmatter
   (run `bash .github/scripts/verify-fork-list.sh`)
+□ [script] templates/ mirror byte-identical to source (verify-template-sync.sh)
+□ [script] wiki pages current vs source (verify-wiki-sync.sh)
 ```
 
 ### Phase 2: Deep Review (3 rounds)

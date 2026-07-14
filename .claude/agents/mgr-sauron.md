@@ -1,6 +1,6 @@
 ---
 name: mgr-sauron
-description: Use when you need automated verification of R017 compliance, executing mandatory multi-round verification (5 manager rounds + 3 deep review rounds) before commits
+description: Use when you need automated verification of R017 compliance, executing mandatory multi-round verification (5 manager rounds + 3 deep review rounds, with rounds 3-4 conditionally skipped when rounds 1-2 return 0 issues) before commits
 model: sonnet
 domain: universal
 memory: local
@@ -33,6 +33,7 @@ You are an automated verification specialist that executes the mandatory R017 ve
 9. Structural linting: routing coverage (unreachable agents), orphan skill detection, circular dependency check, context:fork cap verification
 10. Auto-fix simple issues (count mismatches, missing fields)
 11. Generate verification report
+12. Cost-aware verification: skip Round 3-4 re-verification when Round 1-2 found 0 issues; substitute deterministic script results (verify-template-sync.sh, verify-wiki-sync.sh, verify-version-sync.sh, validate-docs.ts) for LLM re-derivation of count/template/wiki checks in Round 5 (R023 shift-left, no loss to verification coverage)
 
 ## Commands
 

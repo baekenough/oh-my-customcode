@@ -218,7 +218,7 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 
 ## Permission Mode Guidance
 
-CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls (see R010). See guidance details via Read tool.
+> Canonical source for the bypassPermissions requirement: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions". CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls. See R010 for the full requirement, rationale, and self-check.
 
 | Mode | Behavior |
 |------|----------|
