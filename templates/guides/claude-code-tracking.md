@@ -8,7 +8,7 @@ oh-my-customcode가 의존하는 CC upstream API/기능 추적 목록. 각 항�
 
 ### Status
 
-- **v2.1.197 기준**: 정식 progress API 미제공
+- **v2.1.207 기준**: 정식 progress API 미제공
 - `/bg` 흐름으로 시작한 background agent의 진행 상황을 메인 세션에서 직접 추적 불가
 
 ### Workarounds
@@ -38,7 +38,7 @@ oh-my-customcode가 의존하는 CC upstream API/기능 추적 목록. 각 항�
 
 ### Status
 
-- **v2.1.197 기준**: `TeamDelete`에 `force` 옵션 미제공
+- **v2.1.207 기준**: `TeamDelete`에 `force` 옵션 미제공
 - Graceful shutdown 실패 시 tmux kill-pane workaround 필요
 
 ### Workaround

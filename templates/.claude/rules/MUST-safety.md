@@ -106,6 +106,8 @@ Cross-reference: R010 Subagent Scope-Creep STOP Protocol, R002 (permission tiers
 
 > **v2.1.196+**: 보안 — `claude mcp list`/`get`이 커밋된 `.claude/settings.json`으로 self-approved된 `.mcp.json` 서버를 더 이상 spawn하지 않으며, 신뢰되지 않은 워크스페이스는 `⏸ Pending approval`을 표시합니다. 이는 CLAUDE.md의 ".mcp.json auto-install 금지"(R001) 정책에 대한 플랫폼-레벨 보완입니다 — 플랫폼이 신뢰되지 않은 워크스페이스에서 self-approved MCP 서버 spawn을 차단합니다.
 
+> **v2.1.205+**: auto mode가 session transcript 파일 변조(tampering)를 차단하는 규칙이 추가되었습니다 — transcript 의존 스킬(homework/episodic-memory) 무결성 보호. 또한 Windows worktree 제거가 NTFS junction/symlink 존재 시 worktree 밖 파일을 삭제하던 문제가 수정되었습니다.
+
 ## Required Before Destructive Operations
 
 Verify target, assess impact scope, check recoverability, get user approval.

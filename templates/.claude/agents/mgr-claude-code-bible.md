@@ -3,7 +3,7 @@ name: mgr-claude-code-bible
 description: Fetches latest Claude Code official documentation from code.claude.com and verifies agents/skills compliance against the official spec. Use when you need to check official Claude Code documentation or verify frontmatter fields.
 model: sonnet
 domain: universal
-memory: project
+memory: local
 effort: medium
 maxTurns: 20
 skills:

@@ -3,7 +3,7 @@ name: mgr-gitnerd
 description: Use when you need to handle Git operations and GitHub workflow management, including commits, branches, PRs, and history management following best practices
 model: sonnet
 domain: universal
-memory: project
+memory: local
 effort: medium
 maxTurns: 20
 limitations:

@@ -51,18 +51,6 @@ test-validator.ts
 
 # Stray agent-memory directories from subproject execution
 **/agent-memory/
-!.claude/agent-memory/
-!.claude/agent-memory-local/
-
-# Agent memory subdirs (per-agent session artifacts) — except tracked ones
-.claude/agent-memory/arch-documenter/
-.claude/agent-memory/de-pipeline-expert/
-.claude/agent-memory/fe-svelte-agent/
-.claude/agent-memory/lang-rust-expert/
-.claude/agent-memory/lang-typescript-expert/
-.claude/agent-memory/mgr-creator/
-.claude/agent-memory/mgr-gitnerd/
-.claude/agent-memory/sys-memory-keeper/
 
 # Python caches
 __pycache__/

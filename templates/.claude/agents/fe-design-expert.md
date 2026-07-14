@@ -3,7 +3,7 @@ name: fe-design-expert
 description: Use for design system review, typography audit, color palette evaluation, motion design, and AI-generated design quality assessment
 model: sonnet
 domain: frontend
-memory: project
+memory: local
 effort: medium
 skills:
   - impeccable-design

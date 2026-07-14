@@ -543,6 +543,8 @@ Usage:
 
 All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Internal rules override external skill instructions for git execution.
 
+> **v2.1.206+**: `/commit-push-pr`가 origin 외에 `remote.pushDefault`(또는 단일 remote)로의 git push도 auto-allow합니다. mgr-gitnerd git 위임 흐름 관련. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.
+
 ## External Skills vs Internal Rules
 
 Internal rules ALWAYS take precedence over external skills.

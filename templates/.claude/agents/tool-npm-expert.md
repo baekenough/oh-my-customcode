@@ -3,7 +3,7 @@ name: tool-npm-expert
 description: Use for npm package publishing workflows, semantic versioning (major/minor/patch), package.json optimization, and dependency audits
 model: sonnet
 domain: universal
-memory: project
+memory: local
 effort: medium
 skills:
   - npm-audit
