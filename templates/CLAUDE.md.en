@@ -72,6 +72,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | R017 | Sync Verification | **ENFORCED** - Verify sync before structural changes |
 | R018 | Agent Teams | **ENFORCED (Conditional)** - Mandatory for qualifying tasks when Agent Teams enabled |
 | R020 | Completion Verification | **ENFORCED** - Verification required before declaring task complete |
+| R021 | Enforcement Policy | **ENFORCED** - Advisory-first enforcement model |
 
 ### SHOULD (Strongly recommended)
 | ID | Rule | Description |
@@ -82,6 +83,8 @@ NO EXCEPTIONS. NO EXCUSES.
 | R012 | HUD Statusline | Real-time status display |
 | R013 | Ecomode | Token efficiency for batch ops |
 | R019 | Ontology-RAG Routing | Ontology-RAG enrichment for routing skills |
+| R022 | Wiki Sync | Auto-sync wiki when agents/skills/rules/guides change |
+| R023 | Verification Ladder | Verification cost ladder: Tier 1 (deterministic) → Tier 4 (human), shift-left |
 
 ### MAY (Optional)
 | ID | Rule | Description |
@@ -126,12 +129,12 @@ NO EXCEPTIONS. NO EXCUSES.
 project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
-|   +-- agents/                  # Subagent definitions (44 files)
+|   +-- agents/                  # Subagent definitions (49 files)
 |   +-- skills/                  # Skills (118 directories)
-|   +-- rules/                   # Global rules (R000-R020)
+|   +-- rules/                   # Global rules (R000-R023)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
-+-- guides/                      # Reference docs (26 topics)
++-- guides/                      # Reference docs (57 topics)
 ```
 
 ## Orchestration
@@ -159,19 +162,19 @@ This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect 
 
 | Type | Count | Agents |
 |------|-------|--------|
-| SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert |
 | SW Engineer/Backend | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
-| SW Engineer/Frontend | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
-| SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| SW Engineer/Frontend | 5 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
+| SW Engineer/Tooling | 4 | tool-npm-expert, tool-optimizer, tool-bun-expert, slack-cli-expert |
 | DE Engineer | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
-| SW Engineer/Database | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
+| SW Engineer/Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | Security | 1 | sec-codeql-expert |
 | SW Architect | 2 | arch-documenter, arch-speckit-agent |
 | Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| System | 2 | sys-memory-keeper, sys-naggy |
-| **Total** | **44** | |
+| System | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
+| **Total** | **49** | |
 
 ## Agent Teams (MUST when enabled)
 

@@ -20,7 +20,7 @@ Reads improvement suggestions from eval-core analysis, lets the user select whic
 
 ## Prerequisites
 
-- eval-core analysis data exists (run `/omcustom:improve-report` first if empty)
+- eval-core analysis data exists (run `/omcustom-improve-report` first if empty)
 - Pending improvement suggestions in `proposed` status
 
 ## Workflow

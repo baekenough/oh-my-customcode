@@ -34,6 +34,145 @@ export interface SlashCommandValidation {
   phantom: string[]; // Commands listed in README but missing SKILL.md
 }
 
+/** Count-bearing fields checked across secondary doc files (README_ko, templates/*). */
+export type DocCountField = 'agents' | 'skills' | 'rules' | 'guides';
+
+/** A count mismatch discovered in a secondary doc file (not the primary README.md). */
+export interface DocCountMismatch {
+  file: string;
+  field: DocCountField;
+  documented: number;
+  actual: number;
+}
+
+/**
+ * Regex patterns tried in priority order per field. The first pattern that matches
+ * the file content wins (mirrors the single-match style of `programmaticValidation`
+ * for the primary README.md). A field with no matching pattern is skipped entirely —
+ * this avoids false positives on files that never mention that count.
+ *
+ * Patterns cover both English and Korean phrasing observed across README_ko.md,
+ * templates/CLAUDE.md.en, templates/CLAUDE.md.ko, and templates/README.md:
+ *   - Headings:        "### Agents (49)", "## 에이전트 (49개)"
+ *   - Table totals:     "| **Total** | **49** |", "| **총계** | **49** |"
+ *   - Tree comments:    "agents/  # Subagent definitions (49 files)",
+ *                       "agents/  # 서브에이전트 정의 (49 파일)",
+ *                       "skills/  # Skills (118 directories)"
+ *   - Inline prose:     "49개 에이전트", "57개 레퍼런스 문서", "23 governance rules"
+ */
+const DOC_COUNT_PATTERNS: Record<DocCountField, RegExp[]> = {
+  agents: [
+    /#{1,3}\s*Agents?\s*\((\d+)\)/i,
+    /#{1,3}\s*에이전트\s*\((\d+)\s*개?\)/,
+    /\*\*(?:Total|총계)\*\*\s*\|\s*\*\*(\d+)\*\*/i,
+    /agents\/[^\n]*?(\d+)\s*(?:files?|파일|개)\)/i,
+    /(\d+)\s*개\s*에이전트/,
+    /(\d+)\s*agents?\b/i,
+  ],
+  skills: [
+    /#{1,3}\s*Skills?\s*\((\d+)\)/i,
+    /#{1,3}\s*스킬\s*\((\d+)\s*개?\)/,
+    /skills\/[^\n]*?(\d+)\s*(?:directories|파일|디렉토리|개)\)/i,
+    /(\d+)\s*개\s*스킬/,
+    /(\d+)\s*skills?\b/i,
+  ],
+  rules: [
+    /#{1,3}\s*Rules?\s*\((\d+)\)/i,
+    /#{1,3}\s*규칙\s*\((\d+)\s*개?\)/,
+    /(\d+)\s*개\s*(?:거버넌스\s*)?규칙/,
+    /(\d+)\s*governance rules/i,
+    /(\d+)\s*rules?\b/i,
+  ],
+  guides: [
+    /#{1,3}\s*Guides?\s*\((\d+)\)/i,
+    /#{1,3}\s*가이드\s*\((\d+)\s*개?\)/,
+    /guides\/[^\n]*?(\d+)\s*(?:topics|토픽|개)\)/i,
+    /(\d+)\s*개\s*레퍼런스\s*문서/,
+    /(\d+)\s*reference documents/i,
+    /(\d+)\s*개\s*가이드/,
+    /(\d+)\s*guides?\b/i,
+  ],
+};
+
+const DOC_COUNT_FIELD_TO_STATS_KEY: Record<DocCountField, keyof ImplementationStats> = {
+  agents: 'agent_count',
+  skills: 'skill_count',
+  rules: 'rule_count',
+  guides: 'guide_count',
+};
+
+/**
+ * Checks a single doc file's content for stale agents/skills/rules/guides counts
+ * against the actual implementation stats. Returns one mismatch entry per field
+ * where a count is documented AND differs from the actual count. Fields whose
+ * count is not mentioned in the file (no pattern match) are silently skipped —
+ * this is intentional to avoid false positives (see DOC_COUNT_PATTERNS doc comment).
+ */
+export function validateDocFileCounts(
+  file: string,
+  content: string,
+  stats: ImplementationStats,
+): DocCountMismatch[] {
+  const mismatches: DocCountMismatch[] = [];
+
+  if (!content) {
+    return mismatches;
+  }
+
+  for (const field of Object.keys(DOC_COUNT_PATTERNS) as DocCountField[]) {
+    const patterns = DOC_COUNT_PATTERNS[field];
+    let documented: number | undefined;
+
+    for (const pattern of patterns) {
+      const match = content.match(pattern);
+      if (match?.[1] !== undefined) {
+        documented = parseInt(match[1], 10);
+        break;
+      }
+    }
+
+    if (documented === undefined) {
+      continue;
+    }
+
+    const actual = stats[DOC_COUNT_FIELD_TO_STATS_KEY[field]] as number;
+    if (documented !== actual) {
+      mismatches.push({ file, field, documented, actual });
+    }
+  }
+
+  return mismatches;
+}
+
+/**
+ * Reads and validates the secondary doc files that `programmaticValidation` does
+ * NOT cover (it only checks the primary README.md). Extends coverage to
+ * README_ko.md and the templates/ mirrors, closing the CI blind spot where a
+ * count regression in these files could pass validation silently.
+ * Missing files are skipped (not an error) — see step 2 requirement.
+ */
+export async function validateAdditionalDocFiles(
+  stats: ImplementationStats,
+): Promise<DocCountMismatch[]> {
+  const files = [
+    'README_ko.md',
+    path.join('templates', 'CLAUDE.md.en'),
+    path.join('templates', 'CLAUDE.md.ko'),
+    path.join('templates', 'README.md'),
+  ];
+
+  const mismatches: DocCountMismatch[] = [];
+  for (const file of files) {
+    if (!fs.existsSync(file)) {
+      continue;
+    }
+    const content = await extractReadmeClaims(file);
+    mismatches.push(...validateDocFileCounts(file, content, stats));
+  }
+
+  return mismatches;
+}
+
 export async function collectImplementationStats(): Promise<ImplementationStats> {
   const stats: ImplementationStats = {
     agent_count: 0,
@@ -399,6 +538,7 @@ function printProgrammaticResults(
   stats: ImplementationStats,
   validation: ValidationResult,
   slashCommandValidation: SlashCommandValidation,
+  additionalDocMismatches: DocCountMismatch[] = [],
 ): boolean {
   console.log('📋 Programmatic Validation Results');
 
@@ -408,7 +548,8 @@ function printProgrammaticResults(
     validation.extraInReadme.agents.length > 0 ||
     validation.extraInReadme.skills.length > 0 ||
     validation.countMismatches.length > 0 ||
-    slashCommandValidation.phantom.length > 0;
+    slashCommandValidation.phantom.length > 0 ||
+    additionalDocMismatches.length > 0;
 
   // Agent count line
   const agentMismatch = validation.countMismatches.find((m) => m.field === 'agents');
@@ -494,6 +635,15 @@ function printProgrammaticResults(
     console.log(`✅ Slash commands: ${slashCommandValidation.valid.length} valid, 0 phantom`);
   }
 
+  // Secondary doc files (README_ko.md, templates/CLAUDE.md.en/.ko, templates/README.md)
+  if (additionalDocMismatches.length > 0) {
+    for (const m of additionalDocMismatches) {
+      console.log(`❌ ${m.file}: ${m.field} count=${m.documented}, actual=${m.actual}`);
+    }
+  } else {
+    console.log('✅ Secondary docs (README_ko.md, templates/CLAUDE.md.*, templates/README.md): counts matched');
+  }
+
   return !hasProgrammaticIssues;
 }
 
@@ -513,9 +663,10 @@ async function main() {
     const validation = programmaticValidation(stats, readmeEn);
     const skillsDir = path.join('templates', '.claude/skills');
     const slashCommandValidation = validateSlashCommands(readmeEn, skillsDir);
+    const additionalDocMismatches = await validateAdditionalDocFiles(stats);
 
     if (programmaticOnly) {
-      const passed = printProgrammaticResults(stats, validation, slashCommandValidation);
+      const passed = printProgrammaticResults(stats, validation, slashCommandValidation, additionalDocMismatches);
       const status = passed ? 'PASS' : 'FAIL';
       console.log(`\n<!-- VALIDATION_STATUS: ${status} -->`);
       if (!passed) {
@@ -547,6 +698,13 @@ async function main() {
     const result = resultParts.join('\n');
     console.log(result);
 
+    if (additionalDocMismatches.length > 0) {
+      console.log('📋 Secondary Doc File Validation');
+      for (const m of additionalDocMismatches) {
+        console.log(`❌ ${m.file}: ${m.field} count=${m.documented}, actual=${m.actual}`);
+      }
+    }
+
     // Determine pass/fail from programmatic validation and LLM output
     const hasProgrammaticIssues =
       validation.missingFromReadme.agents.length > 0 ||
@@ -554,7 +712,8 @@ async function main() {
       validation.extraInReadme.agents.length > 0 ||
       validation.extraInReadme.skills.length > 0 ||
       validation.countMismatches.length > 0 ||
-      slashCommandValidation.phantom.length > 0;
+      slashCommandValidation.phantom.length > 0 ||
+      additionalDocMismatches.length > 0;
     // Check for explicit LLM verdict first, fall back to marker detection
     const hasExplicitFail = /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);
     const hasExplicitPass = /최종 판정[\s\S]*?\*\*(✅\s*)?PASS\*\*/i.test(result);

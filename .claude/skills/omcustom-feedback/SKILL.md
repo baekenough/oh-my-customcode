@@ -21,7 +21,7 @@ Lowers the barrier for submitting feedback by allowing users to create GitHub is
 /omcustom-feedback HUD display is missing during parallel agent spawn
 
 # Anonymous submission
-/omcustom:feedback --anonymous Something feels off with the routing
+/omcustom-feedback --anonymous Something feels off with the routing
 
 # Interactive (no arguments)
 /omcustom-feedback
@@ -182,7 +182,7 @@ Inform the user:
 [Saved] Feedback saved locally to ~/.omcustom/feedback/{timestamp}.json
 Submit manually when connectivity is available:
   - GitHub Issues: https://github.com/baekenough/oh-my-customcode/issues/new
-  - Or run /omcustom:feedback again when gh is available
+  - Or run /omcustom-feedback again when gh is available
 ```
 
 ### Category-to-Label Mapping

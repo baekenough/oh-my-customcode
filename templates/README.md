@@ -48,14 +48,14 @@ templates/
 ├── manifest.json                    # 배포 컴포넌트 카운트 및 메타데이터
 ├── .claude/
 │   ├── agents/                      # 에이전트 정의 파일 (*.md, 49개)
-│   ├── skills/                      # 스킬 모듈 (각 디렉토리에 SKILL.md, 119개)
+│   ├── skills/                      # 스킬 모듈 (각 디렉토리에 SKILL.md, 118개)
 │   ├── rules/                       # 전역 규칙 (R000–R023, 23개)
 │   ├── hooks/
 │   │   ├── hooks.json               # 훅 이벤트 설정 (PreToolUse/PostToolUse 등)
 │   │   └── scripts/                 # 훅 셸 스크립트 (34개)
 │   ├── contexts/                    # 컨텍스트 설정 파일 (ecomode 등)
 │   └── ontology/                    # Ontology-RAG 지식 그래프
-└── guides/                          # 레퍼런스 문서 디렉토리 (58개)
+└── guides/                          # 레퍼런스 문서 디렉토리 (57개)
 ```
 
 ---
@@ -86,7 +86,7 @@ CI의 `verify-template-sync.sh`가 소스와 templates/ 간 일치를 검증합�
 | Manager | 6 |
 | System | 4 |
 
-### Skills (121)
+### Skills (118)
 
 `.claude/skills/*/SKILL.md` — 재사용 가능한 스킬 모듈.
 
@@ -109,7 +109,7 @@ CI의 `verify-template-sync.sh`가 소스와 templates/ 간 일치를 검증합�
 | `SHOULD` | 강력 권장 | R003 상호작용, R013 Ecomode |
 | `MAY` | 선택 | R005 최적화 |
 
-### Guides (54)
+### Guides (57)
 
 `guides/*/` — 레퍼런스 문서 디렉토리.
 

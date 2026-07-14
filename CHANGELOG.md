@@ -7,6 +7,159 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.10] - 2026-07-14 — Fable 5 하네스 감사 수정 배치
+
+### Fixed
+- #1467: 배포 엔트리 템플릿 `templates/CLAUDE.md.en`·`.ko` stale 카운트/로스터/규칙범위 정정 (init/update 오배포 해소)
+- #1469: 스킬 name과 문서화된 호출 커맨드 네임스페이스 불일치 정정 (5 스킬 + 깨진 교차참조 4곳)
+- #1470: 문서 카운트 stale 정정(README_ko/guides/templates) + R009 문구 정합 + CHANGELOG v1.0.2~v1.1.9 백필
+- #1471: CI 결정론 검증 — ci.yml BSD grep 무력화(-oP→-oE), bun.lockb→bun.lock, validate-docs 검증범위 확대 (deploy-test.yml 완전 활성화는 후속 이슈로 분리 — prepublish 재실행 설계 수정 필요)
+
+## [1.1.9] - 2026-07-06
+
+### Changed
+- R017 (`MUST-sync-verification`): "Pre-Release Target Version Ground-Truth Gate" — before selecting a release target version, confirm via `git tag` + `npm view` ground-truth (max + patch) rather than relying on stale session-memory version snapshots. Closes #1457.
+
+## [1.1.8] - 2026-07-06
+
+### Changed
+- R023 (`SHOULD-verification-ladder`): "Sample-Value Assembly Local Verification" — string-assembly/template logic changes must be verified locally with sample multiline values before relying on live-server dispatch checks. R005 (`MAY-optimization`): pre-check local resource availability (env keys, CLI tools, auth) before presenting local-execution options to the user. Closes #1455.
+
+## [1.1.7] - 2026-07-05
+
+### Changed
+- Claude Code v2.1.200/201 compatibility notes — permission mode "Manual" labeling, `AskUserQuestion` no-longer-auto-continue behavior, background session/subagent rate-limit reporting fixes.
+
+## [1.1.6] - 2026-07-04
+
+### Changed
+- R020 (`MUST-completion-verification`): "Verification-Delegation Non-Termination" — verification/judgment delegation prompts must require a final PASS/FAIL verdict before ending the turn. R010 (`MUST-orchestrator-coordination`): "New-File Count-Impact Pre-Check" — determine whether a new file is a new top-level topic directory (count changes) or a document inside an existing directory (count unchanged) before delegating count-sync work. Closes #1445.
+
+## [1.1.5] - 2026-07-04
+
+### Fixed
+- pre-commit hook FORCE_COLOR ANSI escape-code false positive in coverage counting — root-caused and fixed via in-hook color suppression + ANSI stripping. Closes #1444.
+
+## [1.1.4] - 2026-07-04
+
+### Added
+- `guides/claude-code/16-fable5-prompting.md` — Fable 5 / Mythos 5 prompting patterns guide (effort strategy, adaptive-thinking, refusal fallback). R006/R009/R023 extended with Fable 5 cross-references. Closes #1442.
+
+## [1.1.3] - 2026-07-04
+
+### Changed
+- Claude Code v2.1.198/199 compatibility notes. R023 (`SHOULD-verification-ladder`): Workflow Script Sanity Check extended. Closes #1441.
+
+## [1.1.2] - 2026-07-02
+
+### Removed
+- Freshness-audit cleanup: complete removal of the deprecated `/tmp/*.sh` script-bypass pattern from all remaining agent bodies, stale model references, count drift, and namespace inconsistencies.
+
+## [1.1.1] - 2026-07-01
+
+### Changed
+- Sonnet 5 model-alias compatibility (R006). R017 (`MUST-sync-verification`): "Pre-Branch Freshness Gate" — pull `develop` before branching a new release/work branch. R023 (`SHOULD-verification-ladder`): staleness-check dimension added. Closes #1434.
+
+## [1.1.0] - 2026-07-01
+
+### Added
+- `grill-with-docs` skill. Full-project audit cleanup pass. Closes #1431.
+
+## [1.0.20] - 2026-07-01
+
+### Changed
+- Claude Code v2.1.193/195/196 compatibility notes. Closes #1430.
+
+## [1.0.19] - 2026-06-26
+
+### Changed
+- R010 (`MUST-orchestrator-coordination`): source-hash target clarification + manifest structural guard. Closes #1424.
+
+## [1.0.18] - 2026-06-26
+
+### Added
+- `semble-integration` skill: accuracy-axis caveat for semantic-search token-savings claims. Closes #1422.
+
+## [1.0.17] - 2026-06-26
+
+### Maintenance
+- Maintenance release. Closes #1421.
+
+## [1.0.16] - 2026-06-26
+
+### Maintenance
+- Maintenance release. Closes #1420.
+
+## [1.0.15] - 2026-06-25
+
+### Maintenance
+- Maintenance release. Closes #1416.
+
+## [1.0.14] - 2026-06-23
+
+### Added
+- R007 (`MUST-agent-identification`): Empty-Response Prohibition — ending a turn with zero response text after receiving a tool result is prohibited.
+
+## [1.0.13] - 2026-06-22
+
+### Changed
+- `auto-tag.yml` workflow given full ownership of release tagging.
+
+## [1.0.12] - 2026-06-22
+
+### Maintenance
+- Maintenance release. Closes #1403.
+
+## [1.0.11] - 2026-06-21
+
+### Added
+- FSD loop: open-PR handling added to the autonomous release loop. Closes #1399.
+
+## [1.0.10] - 2026-06-21
+
+### Maintenance
+- Maintenance release. Closes #1398.
+
+## [1.0.9] - 2026-06-17
+
+### Maintenance
+- Maintenance release. Closes #1393.
+
+## [1.0.8] - 2026-06-14
+
+### Added
+- R020 (`MUST-completion-verification`): "Binary/Rendered-Artifact Completeness" gate — text-grep completeness claims do not guarantee binary/image artifact completeness. Closes #1384.
+
+## [1.0.7] - 2026-06-14
+
+### Changed
+- Claude Code v2.1.174–177 compatibility notes. Closes #1386.
+
+## [1.0.6] - 2026-06-13
+
+### Added
+- AWS MCP Server integration (`aws-mcp`). Closes #1379.
+
+## [1.0.5] - 2026-06-12
+
+### Added
+- R010 (`MUST-orchestrator-coordination`): "Pre-Delegation Privileged-Scope Boundary" — state approved/forbidden actions in the delegation prompt before delegating prod/privileged-touching tasks. Closes #1376.
+
+## [1.0.4] - 2026-06-12
+
+### Changed
+- Wiki-drift check promoted to a blocking gate. `geeknews-scout` skill removed. Closes #1374.
+
+## [1.0.3] - 2026-06-11
+
+### Changed
+- Claude Code v2.1.172/173 compatibility notes. Closes #1372.
+
+## [1.0.2] - 2026-06-11
+
+### Removed
+- `daily-scout` workflow removed. Closes #1370.
+
 ## [1.0.1] - 2026-06-11
 
 ### Fixed

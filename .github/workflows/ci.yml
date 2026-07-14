@@ -28,10 +28,10 @@ jobs:
       - name: Verify lockfile consistency
         run: |
           if ! bun install --frozen-lockfile 2>/dev/null; then
-            echo "::error::bun.lockb is out of sync with package.json files"
+            echo "::error::bun.lock is out of sync with package.json files"
             echo ""
-            echo "A workspace package.json was modified without updating bun.lockb."
-            echo "Fix: run 'bun install' locally and commit the updated bun.lockb"
+            echo "A workspace package.json was modified without updating bun.lock."
+            echo "Fix: run 'bun install' locally and commit the updated bun.lock"
             exit 1
           fi
 
@@ -327,9 +327,9 @@ jobs:
           ACTUAL_RULES=$(ls .claude/rules/*.md | wc -l | tr -d ' ')
           ACTUAL_GUIDES=$(find guides -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
 
-          # Check CLAUDE.md agent count
-          DOC_AGENTS=$(grep -oP '에이전트 정의 \(\K[0-9]+' CLAUDE.md || grep -oP 'agents.*\((\K[0-9]+)' CLAUDE.md || echo "0")
-          DOC_SKILLS=$(grep -oP '스킬 \(\K[0-9]+' CLAUDE.md || grep -oP 'skills.*\((\K[0-9]+)' CLAUDE.md || echo "0")
+          # Check CLAUDE.md agent count (BSD grep compatible — no -P/\K lookbehind)
+          DOC_AGENTS=$(grep -oE '에이전트 정의 \([0-9]+' CLAUDE.md | grep -oE '[0-9]+' || echo "0")
+          DOC_SKILLS=$(grep -oE '스킬 \([0-9]+' CLAUDE.md | grep -oE '[0-9]+' || echo "0")
 
           echo "Actual: agents=$ACTUAL_AGENTS skills=$ACTUAL_SKILLS rules=$ACTUAL_RULES guides=$ACTUAL_GUIDES"
           echo "CLAUDE.md: agents=$DOC_AGENTS skills=$DOC_SKILLS"
