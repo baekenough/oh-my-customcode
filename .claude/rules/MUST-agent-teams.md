@@ -50,7 +50,10 @@ These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` a
 
 This hardens cross-session coordination (claude-peers-mcp `send_message`, see Scope table above) against privilege escalation — a relayed message from session A cannot grant session B permissions the user did not authorize on B. Aligns with R001 (credential/privileged-scope guardrails) and R010 (out-of-scope privileged chaining). Intra-session Agent Teams `SendMessage` between peers in the same session is unaffected.
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.183+**: Fixed tmux teammate panes failing to launch when the shell has slow rc-file initialization — a slow `.zshrc`/`.bashrc` no longer prevents Agent Teams teammate panes from launching in tmux. Also fixed WebSearch returning empty results in subagents: a subagent (including a Teams member) using WebSearch now returns results instead of silently empty.
+-->
+
 
 ## Self-Check (Before Agent Tool)
 
@@ -384,7 +387,10 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 
 Observed instance: v0.159.0 release (session 105) — members assigned to disjoint-file cleanup tasks went idle without executing; deterministic git-diff check exposed the gap; work was reassigned to standalone parallel Agents. References: #1261, #1262.
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.186+**: Added the `teammateMode: "iterm2"` setting (warns when auto mode cannot find the `it2` CLI), and added status filtering (press `f`) to the `/workflows` agent detail view. Relevant to Agent Teams teammate launch configuration (cf. v2.1.183 tmux teammate-pane fix).
+-->
+
 
 ## Member Prompt Size Cap
 

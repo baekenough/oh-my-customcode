@@ -310,7 +310,10 @@ Before spawning any agent:
 
 ### Background Agent Permission Mode (`/bg` flow)
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.141+**: Background agents launched via `/bg` or `←←` now preserve the current session's permission mode instead of reverting to default. Previously, detaching a session could cause `bypassPermissions` to be lost, triggering unexpected permission prompts in unattended flows.
+-->
+
 
 | CC Version | `/bg` permission behavior |
 |------------|--------------------------|
@@ -319,6 +322,7 @@ Before spawning any agent:
 
 `mode: "bypassPermissions"` on every Agent tool call is still required (applies to Agent tool, not `/bg` shell command).
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.172+**: Fixed background agents potentially reading another directory's project settings (`.mcp.json` approvals, trust) when dispatched onto a pre-warmed worker. Strengthens background-agent isolation — a `/bg`-dispatched agent now reads the correct project's settings.
 
 > **v2.1.174+**: Fixed background sessions inheriting another session's `ANTHROPIC_*` provider env (gateway URL, custom headers, `/model` aliases) from the shell that started the background daemon. Further strengthens background-agent isolation (cf. v2.1.172 project-settings isolation): a `/bg`-dispatched agent no longer picks up a foreign session's provider configuration. Also fixed pre-warmed background workers failing with "Could not resolve authentication method" when claimed after sitting idle. `mode: "bypassPermissions"` on every Agent tool call remains required regardless.
@@ -340,6 +344,7 @@ Before spawning any agent:
 > **v2.1.196+**: 백그라운드 작업을 wake할 때 transcript probe가 실제 transcript를 오독하여 대화를 영구 삭제하고 원 프롬프트를 재실행하던 문제를 수정 — 이제 파일을 삭제하지 않고 따로 보관합니다(transcript 의존 스킬 `homework`/`episodic-memory`에 관련). `claude agents --dangerously-skip-permissions`가 조용히 auto mode로 폴백하던 문제를 수정하여 bypass 고지를 표시하고 spawned agent에도 bypass 모드를 적용합니다(R010 Universal bypassPermissions와 정합). 또한 `claude agents` 사이드 패널 문제들(에이전트 열 때 키보드 포커스 고착, 열 때마다 백그라운드 작업의 subagent type 유실, 활성 실행 중 잘못된 상태 표시)을 수정. `mode: "bypassPermissions"`는 여전히 필수입니다.
 
 > **v2.1.198+**: `claude agents`에서 launch된 background agent가 worktree에서 code 작업을 완료하면 이제 멈춰서 묻지 않고 commit·push·draft PR open을 자동 수행합니다. 또한 응답 중 일시적 network 오류(ECONNRESET 등)로 turn이 abort되던 문제가 backoff retry로 수정되었고, web/desktop/VS Code task panel에서 background task가 완료 후에도 "Running"으로 멈춰있던 문제가 수정되었습니다. background agent의 자동 commit/PR 자동화가 강화되었으므로, `mode: "bypassPermissions"`는 여전히 필수입니다.
+-->
 
 > **v2.1.199+**: subagent가 rate limit이나 server error로 잘리면 이제 조용히 실패하는 대신 partial work를 parent에 반환합니다. background-agent daemon(Linux)이 unclean shutdown 후 corrupted worker record로 ~50초마다 자신과 모든 agent를 죽이던 문제, macOS SSH cold-start "Could not switch to audit session" 문제, `claude stop`이 background-agent respawn과 race하면 조용히 무효화되던 문제(이제 respawn이 stop을 존중), background job progress indicator가 긴 명령 중 멈춰있던 문제가 수정되었습니다. background-agent lifecycle 견고성이 추가로 강화되었으며, `mode: "bypassPermissions"`는 여전히 필수입니다.
 
