@@ -6,7 +6,7 @@ version: 1.0.0
 user-invocable: true
 ---
 
-# /omcustom:loop — Session Auto-Continuation
+# /omcustom-loop — Session Auto-Continuation
 
 ## Overview
 
@@ -38,8 +38,8 @@ The hook is configured in `.claude/hooks/hooks.json` under `SubagentStop`. It wo
 ## Usage
 
 ```bash
-/omcustom:loop          # Show current auto-continuation status
-/omcustom:loop status   # Same as above
+/omcustom-loop          # Show current auto-continuation status
+/omcustom-loop status   # Same as above
 ```
 
 The feature is active by default via hooks.json. No explicit activation needed.

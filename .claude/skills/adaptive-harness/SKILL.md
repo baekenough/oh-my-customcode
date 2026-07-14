@@ -246,7 +246,7 @@ Analyzes session history and eval-core data to populate `usage_stats` and `failu
 
 - `.claude/outputs/` — session artifacts and eval results
 - `.claude/agent-memory/` — agent memory files with usage patterns
-- Any harness eval output from `/omcustom:harness-eval`
+- Any harness eval output from `/harness-eval`
 
 ### Step 2: Extract Patterns
 

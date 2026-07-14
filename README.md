@@ -202,7 +202,7 @@ All commands are invoked inside the Claude Code conversation.
 | Command | What it does |
 |---------|-------------|
 | `/omcustom:monitoring-setup` | OTel monitoring toggle |
-| `/omcustom:loop` | Auto-continue background agent workflows (3-continue safety limit) |
+| `/omcustom-loop` | Auto-continue background agent workflows (3-continue safety limit) |
 | `/omcustom:lists` | Show all commands |
 | `/omcustom:status` | System health check |
 

@@ -3,12 +3,16 @@ name: Deploy Test
 on:
   pull_request:
     branches:
-      - 'release/**'
+      - develop
 
 jobs:
   deploy-test:
     name: Deploy Test with Verdaccio
     runs-on: ubuntu-latest
+    # pull_request.branches filters on the PR's BASE branch. Release PRs target
+    # develop, so this job must gate on the HEAD branch (release/*) instead —
+    # otherwise it would run (and waste CI) on every develop-targeting PR.
+    if: startsWith(github.head_ref, 'release/')
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

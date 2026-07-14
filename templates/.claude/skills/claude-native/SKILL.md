@@ -173,9 +173,9 @@ Semver comparison: major → minor → patch (all numeric). Pre-release suffixes
 ### Manual
 
 ```
-/omcustom:claude-native
-/omcustom:claude-native --backfill
-/omcustom:claude-native --dry-run
+/claude-native
+/claude-native --backfill
+/claude-native --dry-run
 ```
 
 ### Automatic (SessionStart Hook)
@@ -199,7 +199,7 @@ A lightweight wrapper script can run a `--dry-run` check and notify if new relea
 Can be set up as a scheduled remote agent using `/schedule`:
 
 ```
-/schedule "daily at 9am: /omcustom:claude-native"
+/schedule "daily at 9am: /claude-native"
 ```
 
 Or via CronCreate MCP tool for programmatic scheduling.

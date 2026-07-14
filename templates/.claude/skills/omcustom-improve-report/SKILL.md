@@ -16,7 +16,7 @@ Surface actionable improvement suggestions gathered by the eval-core analysis en
 ## Usage
 
 ```
-/omcustom:improve-report
+/omcustom-improve-report
 ```
 
 ## Workflow
@@ -52,7 +52,7 @@ If output contains data → display as structured markdown with confidence annot
 If command not found OR output is empty:
 
 ```
-[omcustom:improve-report] 데이터 없음
+[omcustom-improve-report] 데이터 없음
 eval-core가 설치되어 있지 않거나 아직 충분한 세션 데이터가 수집되지 않았습니다.
 eval-core를 설치하거나 더 많은 세션을 진행한 후 다시 실행하세요.
 ```

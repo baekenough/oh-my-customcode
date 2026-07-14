@@ -72,6 +72,7 @@ oh-my-customcode로 구동됩니다.
 | R017 | 동기화 검증 | **강제** - 구조 변경 전 검증 |
 | R018 | Agent Teams | **강제(조건부)** - Agent Teams 활성화 시 적합한 작업에 필수 사용 |
 | R020 | 완료 검증 | **강제** - 작업 완료 선언 전 검증 필수 |
+| R021 | Enforcement Policy | **강제** - Advisory-first enforcement model |
 
 ### SHOULD (강력 권장)
 | ID | 규칙 | 설명 |
@@ -82,6 +83,8 @@ oh-my-customcode로 구동됩니다.
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
 | R019 | Ontology-RAG 라우팅 | 라우팅 스킬의 ontology-RAG enrichment |
+| R022 | Wiki 동기화 | 에이전트/스킬/룰/가이드 변경 시 위키 자동 동기화 |
+| R023 | Verification Ladder | 검증 비용 ladder: Tier 1(결정론적) → Tier 4(human) shift-left |
 
 ### MAY (선택)
 | ID | 규칙 | 설명 |
@@ -126,12 +129,12 @@ oh-my-customcode로 구동됩니다.
 project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
-|   +-- agents/                  # 서브에이전트 정의 (44 파일)
+|   +-- agents/                  # 서브에이전트 정의 (49 파일)
 |   +-- skills/                  # 스킬 (118 디렉토리)
-|   +-- rules/                   # 전역 규칙 (R000-R020)
+|   +-- rules/                   # 전역 규칙 (R000-R023)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
 |   +-- contexts/                # 컨텍스트 파일 (ecomode)
-+-- guides/                      # 레퍼런스 문서 (26 토픽)
++-- guides/                      # 레퍼런스 문서 (57 토픽)
 ```
 
 ## 오케스트레이션
@@ -159,19 +162,19 @@ project/
 
 | 타입 | 수량 | 에이전트 |
 |------|------|----------|
-| SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java21-expert |
+| SW Engineer/Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert |
 | SW Engineer/Backend | 6 | be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert |
-| SW Engineer/Frontend | 4 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent |
-| SW Engineer/Tooling | 3 | tool-npm-expert, tool-optimizer, tool-bun-expert |
+| SW Engineer/Frontend | 5 | fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert |
+| SW Engineer/Tooling | 4 | tool-npm-expert, tool-optimizer, tool-bun-expert, slack-cli-expert |
 | DE Engineer | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
-| SW Engineer/Database | 3 | db-supabase-expert, db-postgres-expert, db-redis-expert |
+| SW Engineer/Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | Security | 1 | sec-codeql-expert |
 | SW Architect | 2 | arch-documenter, arch-speckit-agent |
 | Infra Engineer | 2 | infra-docker-expert, infra-aws-expert |
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| System | 2 | sys-memory-keeper, sys-naggy |
-| **총계** | **44** | |
+| System | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
+| **총계** | **49** | |
 
 ## Agent Teams (MUST when enabled)
 
