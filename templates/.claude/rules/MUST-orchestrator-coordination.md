@@ -344,11 +344,15 @@ Before spawning any agent:
 > **v2.1.196+**: 백그라운드 작업을 wake할 때 transcript probe가 실제 transcript를 오독하여 대화를 영구 삭제하고 원 프롬프트를 재실행하던 문제를 수정 — 이제 파일을 삭제하지 않고 따로 보관합니다(transcript 의존 스킬 `homework`/`episodic-memory`에 관련). `claude agents --dangerously-skip-permissions`가 조용히 auto mode로 폴백하던 문제를 수정하여 bypass 고지를 표시하고 spawned agent에도 bypass 모드를 적용합니다(R010 Universal bypassPermissions와 정합). 또한 `claude agents` 사이드 패널 문제들(에이전트 열 때 키보드 포커스 고착, 열 때마다 백그라운드 작업의 subagent type 유실, 활성 실행 중 잘못된 상태 표시)을 수정. `mode: "bypassPermissions"`는 여전히 필수입니다.
 
 > **v2.1.198+**: `claude agents`에서 launch된 background agent가 worktree에서 code 작업을 완료하면 이제 멈춰서 묻지 않고 commit·push·draft PR open을 자동 수행합니다. 또한 응답 중 일시적 network 오류(ECONNRESET 등)로 turn이 abort되던 문제가 backoff retry로 수정되었고, web/desktop/VS Code task panel에서 background task가 완료 후에도 "Running"으로 멈춰있던 문제가 수정되었습니다. background agent의 자동 commit/PR 자동화가 강화되었으므로, `mode: "bypassPermissions"`는 여전히 필수입니다.
--->
 
 > **v2.1.199+**: subagent가 rate limit이나 server error로 잘리면 이제 조용히 실패하는 대신 partial work를 parent에 반환합니다. background-agent daemon(Linux)이 unclean shutdown 후 corrupted worker record로 ~50초마다 자신과 모든 agent를 죽이던 문제, macOS SSH cold-start "Could not switch to audit session" 문제, `claude stop`이 background-agent respawn과 race하면 조용히 무효화되던 문제(이제 respawn이 stop을 존중), background job progress indicator가 긴 명령 중 멈춰있던 문제가 수정되었습니다. background-agent lifecycle 견고성이 추가로 강화되었으며, `mode: "bypassPermissions"`는 여전히 필수입니다.
+-->
 
 > **v2.1.200+**: 백그라운드 세션/에이전트 견고성이 추가로 강화되었습니다 — sleep/wake 후 또는 stalled 세션 재개 시 mid-turn으로 조용히 멈추던 문제, stall respawn 후 Esc로 취소한 turn을 재실행하던 문제, 크래시가 남긴 stale `daemon.lock`(OS가 PID를 재사용)으로 백그라운드 에이전트가 다시 시작되지 않던 문제, 재설치된 구버전 빌드가 daemon을 탈취하던 문제(빌드 최신성은 이제 버전의 embedded build timestamp로 판정), 그리고 roster 일시 corruption이 orphan cleanup을 영구 비활성화하던 문제·구버전 바이너리가 신버전이 기록한 필드를 보존하지 못하던 문제·daemon 재시작 중 socket auth token이 제거되던 문제를 수정했습니다. v2.1.195~199 백그라운드-에이전트 lifecycle 견고성 체인의 연장입니다. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.
+
+> **v2.1.208+**: Added `CLAUDE_CODE_PROCESS_WRAPPER` — the background service and agent view now honor a corporate launcher by routing every Claude Code self-spawn through a required wrapper executable. Also fixed: replies typed to a background agent being lost when delivery fails (now saved and delivered on session restart), background-session attach failing permanently ("Couldn't start the background daemon") after an update replaced the binary a running session was launched from, and an older daemon no longer silently restarting workers spawned by a newer version onto the older binary. Extends the v2.1.195~200 background-agent lifecycle robustness chain. `mode: "bypassPermissions"` remains required on every Agent tool call.
+
+> **v2.1.209+**: Fixed `/model` and other dialogs being blocked in `claude agents` background sessions (reverts an overly broad guard). Continuation of the background-agent lifecycle chain above (cf. v2.1.208). `mode: "bypassPermissions"` remains required.
 
 ## Agent Capability Pre-Check
 

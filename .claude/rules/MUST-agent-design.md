@@ -15,6 +15,8 @@ model: sonnet              # sonnet | opus | haiku | opusplan (or full ID: claud
 tools: [Read, Write, ...]  # Allowed tools
 ```
 
+> **v2.1.208+**: The Agent tool no longer launches with no tools when a subagent's `tools:` list resolves to nothing — it now returns a clear error naming the unrecognized entries, catching frontmatter `tools:` typos that previously failed silently.
+
 ### Model Aliases
 
 | Alias | Full ID | Use Case |

@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.17",
-  "generatedAt": "2026-07-14T09:07:24.704Z",
-  "templateVersion": "1.1.17",
+  "generatorVersion": "1.1.18",
+  "generatedAt": "2026-07-14T09:48:24.845Z",
+  "templateVersion": "1.1.18",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -10,13 +10,13 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "f4b7fdb4d5bc274055a0222711646d479a4feb03701eb347be3d9e85be94ddaf",
-      "size": 6627,
+      "templateHash": "fc9cecd3cbabbeda5c5c82b568332b0255a4b3b88ad13f52c080ddd87d871580",
+      "size": 7246,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "20789ea5905aeaffc34dc812eb06e7d48694f177b1b21cb0e8d3ff5432a8debf",
-      "size": 40602,
+      "templateHash": "afbcb2c46041be401183b23612ae224aa080597afb76d9f956a98cc1c267738d",
+      "size": 41600,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "a08885f48e4cd45eb5bb48784178aa2b4059ff4ae2a4040299203c58e6241589",
-      "size": 38436,
+      "templateHash": "5f5e019abc76ee839b140e0142d31ea92214b4825a5f8d27e4f272f9b7aecb2c",
+      "size": 38689,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -70,8 +70,8 @@
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "a723f32524fb368e56774d26c2f51d76d5c7fafd3c8664f7351318fa10355a4a",
-      "size": 5640,
+      "templateHash": "d79b455932477b453bdcfa702e325fd6b24d775ab08105cda026463205624b1c",
+      "size": 6177,
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
-      "templateHash": "cad1a91c4efb29106e6ac07cb54bd756d499a074e5a0ebe04a2a3a2ba46b1d93",
-      "size": 9468,
+      "templateHash": "99c7425f59267408e33c7cd5b96668fe0a2429e926cf8c37b894ce08ecd1ae1c",
+      "size": 9868,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -90,8 +90,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
-      "templateHash": "fdc18322ee6bccebaccfcb80add7547a39f11aa55be26b3eb57974cc24c8837c",
-      "size": 11481,
+      "templateHash": "3519487b8ef05fd09d9550e1f02537d12816b2b1c9416de6fcb660cbf01d9246",
+      "size": 11776,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
