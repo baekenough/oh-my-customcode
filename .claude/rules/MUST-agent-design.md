@@ -214,6 +214,8 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 
 > **v2.1.199+**: SessionStart/Setup/SubagentStart hook이 exit code 2로 종료할 때 stderr를 조용히 숨기던 문제가 수정되어 이제 오류가 표시됩니다. `.claude/hooks.json`의 hard-block/advisory hook 디버깅 가시성이 향상됩니다(R021 Enforcement Tiers 관측성과 정합).
 
+> **v2.1.204+**: headless 세션의 SessionStart hook 중 hook 이벤트가 스트리밍되지 않아 remote worker가 hook 도중 idle-reap되던 문제가 수정되었습니다. Hook Event Types/SessionStart 관련.
+
 ## Permission Mode Guidance
 
 CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls (see R010). See guidance details via Read tool.

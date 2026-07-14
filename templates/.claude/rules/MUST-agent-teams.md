@@ -27,6 +27,8 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 
 **When Agent Teams is enabled and criteria are met, usage is required.**
 
+> **v2.1.202+**: `/config`에 "Dynamic workflow size" 설정 추가(small/medium/large agent 수 — advisory 가이드) — R018 Agent Teams 규모 판단 신호. 상세는 R009 (MUST-parallel-execution.md) cross-ref.
+
 ### Scope: Intra-Session vs Cross-Session
 
 | Scope | Tool | Protocol | Use Case |

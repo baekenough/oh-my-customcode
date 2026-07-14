@@ -3,7 +3,7 @@ name: qa-writer
 description: Use when you need to create comprehensive QA documentation from detailed plans, including test cases, test reports, and quality documentation
 model: sonnet
 domain: universal
-memory: project
+memory: local
 effort: medium
 maxTurns: 20
 limitations:

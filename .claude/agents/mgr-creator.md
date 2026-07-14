@@ -3,7 +3,7 @@ name: mgr-creator
 description: Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base
 model: sonnet
 domain: universal
-memory: project
+memory: local
 effort: high
 skills:
   - create-agent

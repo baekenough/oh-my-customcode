@@ -3,7 +3,7 @@ name: fe-svelte-agent
 description: Use for Svelte compiler-based reactivity, reactive statements ($:), Svelte stores, and SvelteKit full-stack development with SSR
 model: sonnet
 domain: frontend
-memory: project
+memory: local
 effort: medium
 skills:
   - impeccable-design

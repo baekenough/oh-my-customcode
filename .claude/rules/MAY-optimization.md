@@ -24,6 +24,8 @@
 
 > **`ls | tail` 시계열 오판 (#1417)**: `ls`는 파일명을 알파벳/사전순으로 정렬하므로 `ls <dir> | tail`로 "가장 최근 파일"을 판단하면 오판한다(파일명 순서 ≠ mtime 순서). 시계열 최신 판단은 `ls -t`, `find <dir> -newermt <ts>`, 또는 stat/timestamp 기반 정렬을 명시한다. `tail`만으로 "최신" 단정 금지. Origin: #1417 (외부 통화녹음 진단 세션 — `ls TPhoneCallRecords | tail -6`이 알파벳순이라 최신을 6/18로 오판 → `find -newermt`로 6/19~20 파일 발견해 정정).
 
+> **v2.1.206+**: `/doctor`에 checked-in CLAUDE.md에서 코드베이스로부터 파생 가능한 내용을 잘라내도록 제안하는 체크가 추가되었습니다 — R005 "Context Optimization via HTML Comments"의 컨텍스트 절감 원칙과 정합(모델 불필요 메타데이터 축소).
+
 ### Capability-Aware Tool Scheduling
 
 When dispatching parallel tool calls, consider per-tool capabilities to optimize scheduling:

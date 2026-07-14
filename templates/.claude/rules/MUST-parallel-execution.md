@@ -81,6 +81,8 @@ Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_l
 
 > **v2.1.161+**: Parallel tool calls in a single batch are now independent — a failed Bash command no longer cancels the other calls in the same batch; each tool returns its own result. This strengthens R009 batching: one failing call in a parallel dispatch no longer aborts its siblings, so independent work bundled in the same message completes regardless of a single failure. Lowers the safety cost of the announce-execution consistency self-check (#6).
 
+> **v2.1.202+**: `/config`에 "Dynamic workflow size" 설정이 추가되었습니다(small/medium/large agent 수 — advisory 가이드, 강제 cap 아님) — Workflow tool의 agent 수 규모 조정에 관련. R009 병렬 규모 판단의 플랫폼 신호. R018 Agent Teams 규모 판단과도 관련(cross-ref).
+
 ## Execution Rules
 
 | Rule | Detail |

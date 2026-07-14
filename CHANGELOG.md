@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.13] - 2026-07-14
+
+### Added
+- CC v2.1.202~207 compatibility notes across rules — R001 (transcript tampering block, Windows worktree fix), R002 (auto mode on Bedrock/Vertex/Foundry, manual mode ⏸ badge), R005 (/doctor CLAUDE.md trim check), R006 (headless SessionStart hook streaming fix), R009+R018 (Dynamic workflow size setting), R010 (/commit-push-pr push remote), R012 (workflow OTel attributes) (#1459, #1460, #1461, #1462, #1463, #1464)
+
+### Changed
+- Migrate all agent memory scope from `project` to `local` — agent session memory (`.claude/agent-memory-local/`) is now git-untracked per R011 (#1468)
+
+### Fixed
+- `.gitignore`: ensure `.claude/agent-memory-local/` contents are not git-tracked, preserving local-scope integrity (#1468)
+
 ## [1.1.12] - 2026-07-14 — 하네스 감사 stale/orphan 정리
 
 ### Removed

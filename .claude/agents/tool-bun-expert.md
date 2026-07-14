@@ -3,7 +3,7 @@ name: tool-bun-expert
 description: Use for Bun runtime development, bunfig.toml configuration, Bun test runner, fast bundling, and Node.js to Bun migrations
 model: sonnet
 domain: universal
-memory: project
+memory: local
 effort: medium
 tools:
   - Read

@@ -3,7 +3,7 @@ name: lang-rust-expert
 description: Expert Rust developer for writing safe, performant, idiomatic Rust code. Use for Rust files (*.rs, Cargo.toml), Rust-related keywords, designing safe APIs, debugging ownership/lifetime issues, and implementing high-performance systems.
 model: sonnet
 domain: backend
-memory: project
+memory: local
 effort: high
 skills:
   - rust-best-practices

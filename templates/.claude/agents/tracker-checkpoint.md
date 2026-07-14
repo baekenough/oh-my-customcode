@@ -4,7 +4,7 @@ description: Pipeline execution state tracker with checkpoint persistence. Reads
 model: sonnet
 effort: medium
 tools: [Read, Write, Edit, Bash, Glob, Grep]
-memory: project
+memory: local
 skills: [dag-orchestration, pipeline-guards]
 domain: universal
 permissionMode: bypassPermissions

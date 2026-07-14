@@ -3,7 +3,7 @@ name: fe-vercel-agent
 description: Use for React/Next.js optimization, web design review (accessibility, UX), Vercel deployment automation, and bundle size optimization
 model: sonnet
 domain: frontend
-memory: project
+memory: local
 effort: medium
 skills:
   - react-best-practices

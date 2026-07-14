@@ -3,7 +3,7 @@ name: db-alembic-expert
 description: Alembic migration specialist for generating, reviewing, fixing, and advising on SQLAlchemy database migrations
 model: sonnet
 domain: backend
-memory: project
+memory: local
 effort: high
 tools:
   - Read

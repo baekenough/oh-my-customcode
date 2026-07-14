@@ -10,7 +10,7 @@ tools:
   - Grep
   - Bash
 domain: universal
-memory: project
+memory: local
 permissionMode: bypassPermissions
 ---
 

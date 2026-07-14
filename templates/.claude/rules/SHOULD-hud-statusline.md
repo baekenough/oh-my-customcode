@@ -33,6 +33,8 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 > **v2.1.198+**: `claude agents`에 background agent notifications가 추가되어, 입력이 필요하거나 완료된 세션이 `Notification` hook을 발화합니다(`agent_needs_input` / `agent_completed`). R012 관측성을 백그라운드 subagent 상태 알림까지 확장 — HUD 이벤트 채널과 결합해 백그라운드 위임 작업의 대기/완료 상태를 놓치지 않게 합니다.
 
+> **v2.1.202+**: workflow-spawned agent 텔레메트리에 `workflow.run_id`/`workflow.name` OTel 속성이 추가되어 workflow run 활동을 OTel 데이터로 재구성할 수 있습니다. R012 관측성 확장(monitoring-setup 스킬).
+
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
 ### Parallel Display:

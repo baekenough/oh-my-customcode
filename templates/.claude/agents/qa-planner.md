@@ -3,7 +3,7 @@ name: qa-planner
 description: Use when you need to create detailed QA plans from requirements and specifications, including test strategy design, risk-based prioritization, test scenario identification, and acceptance criteria definition
 model: sonnet
 domain: universal
-memory: project
+memory: local
 effort: high
 maxTurns: 20
 disallowedTools: [Bash]
