@@ -10,7 +10,7 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Purpose: Detect repetitive failure loops and advise recovery
 # Protocol: stdin JSON -> process -> stdout pass-through
 #   - exit 0: advisory (normal cases, < HARD_BLOCK_THRESHOLD repetitions)
-#   - exit 1: hard block (extreme stuck loops, >= HARD_BLOCK_THRESHOLD repetitions)
+#   - exit 2: hard block (extreme stuck loops, >= HARD_BLOCK_THRESHOLD repetitions)
 
 # Hard block threshold: consecutive identical operations before blocking
 HARD_BLOCK_THRESHOLD=${CLAUDE_STUCK_THRESHOLD:-3}

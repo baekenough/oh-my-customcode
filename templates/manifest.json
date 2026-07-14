@@ -1,5 +1,5 @@
 {
-  "version": "1.1.13",
+  "version": "1.1.14",
   "lastUpdated": "2026-07-14T00:00:00.000Z",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
@@ -99,8 +99,7 @@
           },
           "react-best-practices",
           "typescript-best-practices",
-          "fastapi-best-practices",
-          "nextjs-best-practices"
+          "fastapi-best-practices"
         ],
         "guides": [
           "agent-design",
@@ -108,9 +107,7 @@
           "claude-code",
           "drizzle-orm",
           "docker",
-          "fastapi",
-          "nextjs",
-          "react"
+          "fastapi"
         ]
       }
     },
@@ -165,7 +162,6 @@
           "agent-design",
           "git-safety",
           "claude-code",
-          "skill-authoring",
           "agent-workflow"
         ]
       }
