@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.11] - 2026-07-14 — 하네스 감사 후속 정리 (깨진 참조 + wiki)
+
+### Fixed
+- #1472 (부분): 깨진 참조 정정 — vercel-deploy `scripts/deploy.sh`, guides/agent-eval monitoring-setup 경로, 14-token-efficiency update-config 경로, R023 dangling R013 참조, 존재하지 않는 feedback 메모리 참조 4건. (dist/ untrack·hook 주석 등 파괴적/훅 항목은 승인 필요로 별도 처리)
+- #1476 (부분): wiki 결함 정정 — qa-engineer 위키 페이지 재작성(verbatim 사본 해소), autonomous-challenge-lessons frontmatter 추가. (hooks·CI 핀·structure 파괴적 항목은 별도 처리)
+
 ## [1.1.10] - 2026-07-14 — Fable 5 하네스 감사 수정 배치
 
 ### Fixed

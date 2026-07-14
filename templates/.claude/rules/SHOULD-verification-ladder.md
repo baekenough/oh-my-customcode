@@ -22,7 +22,7 @@
 - **좋은 예**: JSON schema 오류 → Tier 1 hook이 차단 → LLM에 미전달
 - **나쁜 예**: 탭/스페이스 혼용 오류 → sonnet으로 전달 → 불필요한 비용 발생
 
-R013 (SHOULD-ecomode)의 "저렴한 검증 우선" 원칙과 정합: ecomode는 출력 토큰을 절약하고, R023은 검증 비용을 절약한다.
+R013 (SHOULD-ecomode)의 출력 토큰 절약 원칙(Compact Output — 중간 단계·장황한 설명 생략)과 정합: ecomode는 출력 토큰을, R023은 검증 비용을 절약한다.
 
 ## 기존 자산 매핑
 

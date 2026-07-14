@@ -1,3 +1,18 @@
+---
+title: "Autonomous Challenge Lessons"
+type: guide
+updated: 2026-07-14
+sources:
+  - guides/agent-workflow/05-autonomous-challenge-lessons.md
+related:
+  - [[agent-workflow]]
+  - [[qa-engineer]]
+  - [[qa-planner]]
+  - [[qa-writer]]
+  - [[r020]]
+  - [[r023]]
+---
+
 # Autonomous Challenge Lessons
 
 Lessons from the 2026-05 Minecraft Cobblemon autonomous run post-mortem (#1149). Use these as guardrails for long-running challenge, QA, and tool-heavy sessions.

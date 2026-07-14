@@ -157,9 +157,7 @@ Record findings in session context. Failure to inventory automation is a R020 vi
 
 ### Cross-reference
 
-Related memory records:
-- `feedback_github_workflows_inventory.md` — original incident (v0.87.2~v0.88.0 session)
-- `feedback_subagent_pre_existing_claims.md` — subagent false-positive pattern
+Original incident: v0.87.2~v0.88.0 session (issue #869). The originating memory files were later consolidated/removed; no live equivalents remain as of this writing.
 -->
 
 ## Interrupt Priority Re-Ordering
