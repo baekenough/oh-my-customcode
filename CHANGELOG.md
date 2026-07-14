@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #1467: 배포 엔트리 템플릿 `templates/CLAUDE.md.en`·`.ko` stale 카운트/로스터/규칙범위 정정 (init/update 오배포 해소)
 - #1469: 스킬 name과 문서화된 호출 커맨드 네임스페이스 불일치 정정 (5 스킬 + 깨진 교차참조 4곳)
 - #1470: 문서 카운트 stale 정정(README_ko/guides/templates) + R009 문구 정합 + CHANGELOG v1.0.2~v1.1.9 백필
-- #1471: CI 결정론 검증 결함 — ci.yml BSD grep 무력화(`-oP`→`-oE`), bun.lockb→bun.lock, deploy-test.yml 트리거 사장 수정, validate-docs 검증범위 확대
+- #1471: CI 결정론 검증 — ci.yml BSD grep 무력화(-oP→-oE), bun.lockb→bun.lock, validate-docs 검증범위 확대 (deploy-test.yml 완전 활성화는 후속 이슈로 분리 — prepublish 재실행 설계 수정 필요)
 
 ## [1.1.9] - 2026-07-06
 
