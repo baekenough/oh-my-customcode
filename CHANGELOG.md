@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.12] - 2026-07-14 — 하네스 감사 stale/orphan 정리
+
+### Removed
+- #1476 (부분): tracked 빌드 산출물 `dist/` untrack, dead script 3개(measure-claude-mem-usage/sync-wiki/sync-core), orphan `.github/scripts/analyze-issue.ts`·`notify-teammates.ts`, `.claude/ci-status.json.template`, `.claude/outputs/` 규약위반 잔존물 2건, stale `.claude/TODO.md` 제거
+
+### 참고
+- #1472/#1476의 hooks 편집·CI SHA핀·verify-version-sync 통일 등은 별도 신중 처리(보안/판단 필요)로 이월
+
 ## [1.1.11] - 2026-07-14 — 하네스 감사 후속 정리 (깨진 참조 + wiki)
 
 ### Fixed
