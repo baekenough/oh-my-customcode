@@ -69,12 +69,4 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 ## Agent Tool Permission Mode
 
-When spawning subagents via the Agent tool, always pass `mode: "bypassPermissions"` explicitly. The Agent tool's default mode is `acceptEdits`, which **overrides** the agent frontmatter `permissionMode` field.
-
-| Setting | Effect |
-|---------|--------|
-| Agent frontmatter `permissionMode: bypassPermissions` | Ignored if Agent tool `mode` not set |
-| Agent tool `mode: "bypassPermissions"` | **Required** — actually controls subagent permissions |
-| Agent tool `mode` omitted | Defaults to `acceptEdits` → prompts for Bash, WebFetch |
-
-Skills that spawn agents MUST include `mode: "bypassPermissions"` in their Agent tool call instructions. This applies to all routing skills, pipeline skills, and any skill that delegates work to subagents.
+> Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the full requirement, rationale, self-check, and version history. Core rule: always pass `mode: "bypassPermissions"` explicitly on every Agent tool call — the Agent tool's default `mode` (`acceptEdits`) overrides agent frontmatter `permissionMode` and causes prompts during unattended execution. Skills that spawn agents MUST include this in their Agent tool call instructions. See R010 for details.

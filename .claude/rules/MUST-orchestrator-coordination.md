@@ -278,6 +278,8 @@ Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after tri
 
 ## Universal bypassPermissions
 
+> **This section is the canonical single source for the bypassPermissions requirement.** R002 (MUST-permissions.md) and R006 (MUST-agent-design.md) reference this section rather than repeating it.
+
 **ALL Agent tool calls MUST include `mode: "bypassPermissions"`.**
 
 The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmatter `permissionMode` and causes permission prompts during unattended execution. This is a CC platform behavior, not a configuration error.

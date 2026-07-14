@@ -47,9 +47,9 @@ When the orchestrator invokes a skill via the Skill tool, the skill name MUST be
 └─ Task: {brief-task-description}
 ```
 
+<!-- DETAIL: Common Violations examples (redundant with Skill Invocation Format above)
 ### Common Violations
 
-```
 Incorrect: Skill as separate display
    ┌─ Agent: claude (default)
    └─ Task: research topic analysis
@@ -64,7 +64,7 @@ Correct: With sub-skill
    ┌─ Agent: claude → research
    ├─ Skill: result-aggregation
    └─ Task: aggregate team findings
-```
+-->
 
 ## When to Display
 
@@ -85,17 +85,17 @@ Correct: With sub-skill
 
 체크 실패 시 즉시 헤더/prefix 추가 후 도구 호출. PostCompact hook 만으로 보장되지 않으며 압축 없이도 멀티턴 누락이 발생하므로 매 턴 자가 점검 강제.
 
+<!-- DETAIL: Common Multi-Turn Violation example (redundant with Short Response Discipline table below)
 ### Common Multi-Turn Violation
 
-```
 턴 1: ┌─ Agent: claude (default) ✓
 턴 2: (헤더 없음, 짧은 답변이라 생략) ✗
 턴 3: 도구 호출 prefix 누락 ✗
-```
 
 응답 길이/턴 위치 무관. 짧은 답변에도 헤더는 필수.
 
 Reference issue: #1096.
+-->
 
 ### Short Response Discipline
 
@@ -118,7 +118,7 @@ Reference issue: #1096.
 |--------------|----------|
 | 도구 결과 수신 후 응답 텍스트 없이 turn 종료 ("(no content)") | 최소 1줄 진행 상태 + R007 헤더 출력 후 종료/계속 |
 
-Reference issues: #1188 item #2, #1198 item #2, #1409.
+<!-- Reference issues: #1188 item #2, #1198 item #2, #1409. -->
 
 ### External-Project / Debugging Session Vigilance
 
@@ -132,6 +132,6 @@ R007 헤더 누락은 외부 프로젝트 디버깅, SSH 진단, 배포 작업 �
 
 기술적 몰입 중 헤더 누락이 반복될 경우 즉시 re-anchor: 다음 응답에 `┌─ Agent:` 풀 헤더를 붙이고 이후 계속 유지한다.
 
-외부 프로젝트 진단 세션(예: #1417 통화녹음 수집 진단)에서 세션 전체에 걸쳐 헤더가 반복 누락되는 재발이 관측되었다 — 진단 몰입 중에도 매 응답 헤더를 고정한다.
-
+<!-- DETAIL: Case history — 외부 프로젝트 진단 세션(예: #1417 통화녹음 수집 진단)에서 세션 전체에 걸쳐 헤더가 반복 누락되는 재발이 관측되었다 — 진단 몰입 중에도 매 응답 헤더를 고정한다.
 Reference issues: #1401, #1417.
+-->
