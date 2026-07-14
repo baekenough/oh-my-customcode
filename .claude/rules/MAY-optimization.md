@@ -24,6 +24,8 @@
 
 > **`ls | tail` 시계열 오판 (#1417)**: `ls`는 파일명을 알파벳/사전순으로 정렬하므로 `ls <dir> | tail`로 "가장 최근 파일"을 판단하면 오판한다(파일명 순서 ≠ mtime 순서). 시계열 최신 판단은 `ls -t`, `find <dir> -newermt <ts>`, 또는 stat/timestamp 기반 정렬을 명시한다. `tail`만으로 "최신" 단정 금지. Origin: #1417 (외부 통화녹음 진단 세션 — `ls TPhoneCallRecords | tail -6`이 알파벳순이라 최신을 6/18로 오판 → `find -newermt`로 6/19~20 파일 발견해 정정).
 
+> **파이프 뒤 `$?`는 마지막 명령의 exit code (#1492)**: `script.sh | tail -N; echo $?`처럼 검증 스크립트를 파이프에 연결한 뒤 `$?`로 읽으면 파이프라인 **마지막 명령**(`tail`)의 종료코드를 얻는다 — 스크립트 자체가 실패(exit 1)해도 `tail`이 성공(exit 0)하면 `$?=0`으로 "통과"를 오판한다. 검증 스크립트는 파이프 없이 단독 실행하거나 `${PIPESTATUS[0]}`으로 원본 exit code를 읽는다. **주의**: `${PIPESTATUS[0]}` 자체는 R023 Workflow JS 템플릿 리터럴 이스케이프 이슈(#1438, `${...}`를 JS가 평가해 ReferenceError)와 별개 문제 — 본 항목은 셸에서 파이프 뒤 exit code를 읽는 각도다. Origin: #1492 (Session 132 회고 찐빠 #3). Cross-ref: R020 ("command executed" ≠ "succeeded").
+
 > **v2.1.206+**: `/doctor`에 checked-in CLAUDE.md에서 코드베이스로부터 파생 가능한 내용을 잘라내도록 제안하는 체크가 추가되었습니다 — R005 "Context Optimization via HTML Comments"의 컨텍스트 절감 원칙과 정합(모델 불필요 메타데이터 축소).
 
 > **v2.1.208+**: Fixed several tool-reliability bugs: env vars like `CLAUDE_CODE_MAX_OUTPUT_TOKENS` silently used only the mantissa of scientific-notation values (`1e6` became `1`); Edit now succeeds on a file modified after being read, as long as the target text still matches uniquely; Read no longer misreports empty files as "shorter than offset"; Grep no longer silently returns "No files found" for invalid regex, no longer under-reports paginated count-mode totals; and Glob no longer crashes on a null byte in pattern/path/cwd.
