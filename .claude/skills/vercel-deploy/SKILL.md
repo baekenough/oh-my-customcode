@@ -57,10 +57,6 @@ Preview: https://project-xxx.vercel.app
 Claim: https://vercel.com/claim/xxx
 ```
 
-## Scripts
-
-See `scripts/deploy.sh` for deployment automation.
-
 ## Requirements
 
 - Valid project structure

@@ -391,7 +391,7 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 ✓ CORRECT: Pre-check arch-documenter.disallowedTools → collect data first → pass as content
 ```
 
-Reference issues: #1202 item #2, `feedback_arch_documenter_bash_precheck.md`.
+Reference issues: #1202 item #2, `feedback_arch_documenter_no_bash.md`.
 
 ## Sensitive Path Handling (Historical: pre-CC v2.1.121)
 

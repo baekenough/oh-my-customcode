@@ -370,10 +370,7 @@ Session-end saves lose context: by the time the session ends, multiple discoveri
 
 ### Cross-reference
 
-Related records from session v0.87.2~v0.88.0 (issue #869):
-- `feedback_subagent_pre_existing_claims.md`
-- `feedback_github_workflows_inventory.md`
-- `feedback_bun_mock_module.md`
+Related records from session v0.87.2~v0.88.0 (issue #869). The originating memory files were later consolidated/removed; no live equivalents remain as of this writing.
 -->
 
 ## Safety-Related Feedback Memory Framing
