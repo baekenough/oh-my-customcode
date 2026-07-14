@@ -109,10 +109,10 @@ Build dependency graph:
 Count skills with context: fork in frontmatter:
   grep "context: fork" .claude/skills/*/SKILL.md
 
-  If count > 10:
-    ERROR: "Context fork cap exceeded: {count}/10"
+  If count > 12:
+    ERROR: "Context fork cap exceeded: {count}/12"
   If count >= 8:
-    WARN: "Context fork usage high: {count}/10 — only {10-count} slots remaining"
+    WARN: "Context fork usage high: {count}/12 — only {12-count} slots remaining"
 ```
 
 All structural lints are **advisory** (WARN level) except circular dependencies and fork cap exceeded (ERROR level — should block commit).

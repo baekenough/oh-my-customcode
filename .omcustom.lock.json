@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.18",
-  "generatedAt": "2026-07-14T09:48:24.845Z",
-  "templateVersion": "1.1.18",
+  "generatorVersion": "1.1.19",
+  "generatedAt": "2026-07-14T10:09:56.683Z",
+  "templateVersion": "1.1.19",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -930,7 +930,7 @@
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {
-      "templateHash": "df0a63f9638340d933ffa5f68cf6a6c411649824f05b0b69650f62df40848107",
+      "templateHash": "dd0dc57416454565b0c2248378d1db3de8227ca63963e755e89c2cf9005782cf",
       "size": 8821,
       "component": "skills"
     },
