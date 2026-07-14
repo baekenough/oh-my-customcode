@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# scripts/verify-version-sync.sh
+# verify-version-sync.sh
 # Verify version consistency across package.json and templates/manifest.json
 # Used by release pipeline to prevent npm publish failures (issue #1154)
+# Mirrored at scripts/verify-version-sync.sh and .github/scripts/verify-version-sync.sh
+# — keep both copies byte-identical (#1476). REPO_ROOT is resolved via git so the
+# script works unmodified regardless of which copy's directory depth invokes it.
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 PACKAGE_JSON="${REPO_ROOT}/package.json"
 MANIFEST_JSON="${REPO_ROOT}/templates/manifest.json"

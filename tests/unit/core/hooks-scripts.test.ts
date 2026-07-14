@@ -15,7 +15,10 @@ const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
 const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
 const SESSION_ENV_CHECK_SCRIPT = join(SCRIPTS_DIR, 'session-env-check.sh');
 
-const STAGE_FILE = '/tmp/.claude-dev-stage';
+// stage-blocker.sh reads /tmp/.claude-dev-stage-$PPID (PPID-scoped, per project convention).
+// runHookScript spawns `bash <script>` directly from this bun test process (no intermediate
+// shell), so the script's $PPID at runtime equals this process's PID (process.pid).
+const STAGE_FILE = `/tmp/.claude-dev-stage-${process.pid}`;
 
 // -------------------------------------------------------------------
 // Helpers

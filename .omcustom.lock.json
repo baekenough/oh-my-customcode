@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.13",
-  "generatedAt": "2026-07-14T04:58:07.357Z",
-  "templateVersion": "1.1.13",
+  "generatorVersion": "1.1.17",
+  "generatedAt": "2026-07-14T09:07:24.704Z",
+  "templateVersion": "1.1.17",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -10,13 +10,13 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "90f54a5e394459fb9517c06dcee91f185d0ed69c6bd425fa8df6fa6cb463eea3",
-      "size": 6357,
+      "templateHash": "f4b7fdb4d5bc274055a0222711646d479a4feb03701eb347be3d9e85be94ddaf",
+      "size": 6627,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "21434e88afce12966aa4deffdc0501c4a8169f05db9e2f9d90f81bd08cc7f3b8",
-      "size": 40289,
+      "templateHash": "20789ea5905aeaffc34dc812eb06e7d48694f177b1b21cb0e8d3ff5432a8debf",
+      "size": 40602,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -50,13 +50,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "542311edef7da22125f96dc7b20ee88a7bcfb2c63db6bcea827a6534e22fe2d9",
-      "size": 38047,
+      "templateHash": "a08885f48e4cd45eb5bb48784178aa2b4059ff4ae2a4040299203c58e6241589",
+      "size": 38436,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
-      "templateHash": "47542151487e1734b34dfde3a5175f194f63c3b3696d4e5bfcd2aa578732be54",
-      "size": 5313,
+      "templateHash": "5340051f2249721b52742a36e00373f01d57180812d65d3de787b1527fd6fca0",
+      "size": 5538,
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
@@ -65,8 +65,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "5f8f5ee03237913439cc3f64834201cee2d2a1077484eea3d22e221df16a530b",
-      "size": 24521,
+      "templateHash": "7eb71ba4cbaf97912ae7cd3f0df845076aafecb1f594f1101222c85266ec423e",
+      "size": 24619,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
-      "templateHash": "d074ad07e119e08d684dd87848b993cece3e4c001ff9798ffdd02f1c00f72101",
-      "size": 9465,
+      "templateHash": "cad1a91c4efb29106e6ac07cb54bd756d499a074e5a0ebe04a2a3a2ba46b1d93",
+      "size": 9468,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -90,13 +90,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
-      "templateHash": "11c9ab0de756fea87514d7fa74463a8c689025fba13f4ac3c9fced4763e590c0",
-      "size": 11432,
+      "templateHash": "fdc18322ee6bccebaccfcb80add7547a39f11aa55be26b3eb57974cc24c8837c",
+      "size": 11481,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
-      "templateHash": "4da6a3e23285deebc88c7f78fbe11755b8987aaccb7c58e77650d9607fc9d03b",
-      "size": 7348,
+      "templateHash": "3b0d46deb6a8b0488b4f1b3437f2ca73ed627f320373485bb9161f787100e027",
+      "size": 7564,
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
@@ -170,8 +170,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-sauron.md": {
-      "templateHash": "b75bda68a91bdd382649c64ce599b0c31068ade46fcc5e4e7cb011ce855d68b8",
-      "size": 1880,
+      "templateHash": "86167826de036184e82bbd8da7d7a230d91a749db5d2a14757864bdd434f0627",
+      "size": 2286,
       "component": "agents"
     },
     ".claude/agents/fe-svelte-agent.md": {
@@ -655,8 +655,8 @@
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
-      "templateHash": "86dd650e53910b91d42725bb8514a9330e310e2e3197d3fd8059886fc96cbab9",
-      "size": 7469,
+      "templateHash": "4dd9134f2a84829f4dce72e4b4502e8a18b559e60732770d0121283a62c13f9a",
+      "size": 7728,
       "component": "skills"
     },
     ".claude/skills/web-design-guidelines/SKILL.md": {
@@ -850,8 +850,8 @@
       "component": "skills"
     },
     ".claude/skills/profile/SKILL.md": {
-      "templateHash": "f5e05c5d841ccb7a74c92c43dfea1bd00a6de22b1c1dc5f7af48ed2398269837",
-      "size": 6609,
+      "templateHash": "7cccfdc187ad33a2ca95501b2f00d521e97d66272f2a3552ea1bc12e6ce94b22",
+      "size": 6264,
       "component": "skills"
     },
     ".claude/skills/pre-generation-arch-check/SKILL.md": {
@@ -930,8 +930,8 @@
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {
-      "templateHash": "2c8bb3fa768d9711bcd493a5dfd6aa1096e9e82a330b10a308374170c29b826d",
-      "size": 7671,
+      "templateHash": "df0a63f9638340d933ffa5f68cf6a6c411649824f05b0b69650f62df40848107",
+      "size": 8821,
       "component": "skills"
     },
     ".claude/skills/vercel-deploy/SKILL.md": {
@@ -1125,13 +1125,13 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stage-blocker.sh": {
-      "templateHash": "d0b8ef9f04ac7a53c5c811555e77ced3d47ff483742cfd7e8e90ab449ebd63a7",
-      "size": 800,
+      "templateHash": "fa62ce040018d3b920c8289bdce1b7a6b35bad77c098c12689dd9d6dfd2862b5",
+      "size": 824,
       "component": "hooks"
     },
     ".claude/hooks/scripts/task-state-precompact.sh": {
-      "templateHash": "0ab90dd9907c481822963c8eb45a59862158acd84fa8b5a9ada49914f1fc9d1b",
-      "size": 1916,
+      "templateHash": "c82c1a9f7ccd477ca1bff1df1371f7fe6e1b2497f12709f8b028632ac54d857e",
+      "size": 1928,
       "component": "hooks"
     },
     ".claude/hooks/scripts/skill-extractor-analyzer.sh": {
@@ -1220,7 +1220,7 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "524da01ebd098cd5761c46aa9127cc8ca3cd662f4cba6483e022a57dd2378bf0",
+      "templateHash": "38f8f37bc886bd4db7eb2f041df8b8a38fc7ac34ce33680e53430ac4be0b83ab",
       "size": 7463,
       "component": "hooks"
     },
@@ -1300,8 +1300,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "f9d50cbfdb3e02376422f39c7983fc6ac62362e97ed09dd6d303e39a6dc71690",
-      "size": 28270,
+      "templateHash": "74b879fce24c088f1a34e40f2ab380c9bb5a1bfba28e92d46ea5362994548517",
+      "size": 28271,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {

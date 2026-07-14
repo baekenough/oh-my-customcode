@@ -70,43 +70,11 @@ Profile: web-app
   Disable: codex, ralph-wiggum, agent-sdk-dev, ...
 ```
 
-6. Apply changes via /tmp script:
+6. Apply changes via direct Edit on `~/.claude/settings.json` (`mode: "bypassPermissions"`, CC v2.1.121+):
+   - Read `~/.claude/settings.json`, merge the computed diff into `enabledPlugins` (set enabled plugins to `true`, disabled plugins to `false`), then Write the updated JSON back.
 
-```bash
-cat > /tmp/profile-apply-$$.sh << 'APPLY'
-#!/usr/bin/env python3
-import json, sys
-
-settings_path = "/Users/<user>/.claude/settings.json"  # resolve from $HOME
-with open(settings_path) as f:
-    settings = json.load(f)
-
-profile_path = ".claude/profiles/<name>.json"
-with open(profile_path) as f:
-    profile = json.load(f)
-
-for plugin in profile["plugins"]["enabled"]:
-    settings.setdefault("enabledPlugins", {})[plugin] = True
-for plugin in profile["plugins"]["disabled"]:
-    settings.setdefault("enabledPlugins", {})[plugin] = False
-
-with open(settings_path, "w") as f:
-    json.dump(settings, f, indent=2)
-    f.write("\n")
-
-print("Settings updated.")
-APPLY
-python3 /tmp/profile-apply-$$.sh
-```
-
-7. Write active marker via /tmp script:
-
-```bash
-cat > /tmp/profile-marker-$$.sh << 'MARKER'
-echo "<name>" > .claude/profiles/.active
-MARKER
-bash /tmp/profile-marker-$$.sh
-```
+7. Write active marker via direct Write on `.claude/profiles/.active` (`mode: "bypassPermissions"`):
+   - Write the profile `<name>` as plain text content to `.claude/profiles/.active`.
 
 8. Confirm:
 
@@ -118,7 +86,7 @@ IMPORTANT: Restart this Claude Code session for plugin changes to take effect.
 
 ## Workflow: `/profile reset`
 
-1. Remove `.claude/profiles/.active` marker via /tmp script
+1. Remove `.claude/profiles/.active` marker via direct `Bash: /bin/rm .claude/profiles/.active` (`mode: "bypassPermissions"`)
 2. Print: `[Done] Profile marker removed. Full plugin set will be active after restart.`
 3. Note: does NOT revert `~/.claude/settings.json` — user should re-run `/profile load <other>` or manually restore
 
@@ -127,7 +95,7 @@ IMPORTANT: Restart this Claude Code session for plugin changes to take effect.
 - Profile changes to `~/.claude/settings.json` take effect only after session restart
 - Profiles define a subset: plugins not listed in `enabled` or `disabled` keep their current state
 - Profile JSON `enabled`/`disabled` lists use full plugin keys: `<name>@<marketplace>` format
-- All `.claude/` writes use the /tmp bypass pattern (see Implementation rules above)
+- All `.claude/` writes use direct Write/Edit/Bash (CC v2.1.121+, no `/tmp` wrapping — see Implementation rules above)
 
 ## Manifest Profile Integration
 

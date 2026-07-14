@@ -46,13 +46,13 @@ Stage state is tracked via a marker file for hook enforcement:
 
 ```bash
 # Set stage (used by orchestrator or skill)
-echo "plan" > /tmp/.claude-dev-stage
+echo "plan" > /tmp/.claude-dev-stage-$PPID
 
 # Valid stage values (all block Write/Edit except 'implement'):
 # plan, verify-plan, implement, verify-impl, compound, done
 
 # Clear stage (disable blocking)
-rm -f /tmp/.claude-dev-stage
+rm -f /tmp/.claude-dev-stage-$PPID
 ```
 
 A PreToolUse hook in `.claude/hooks/hooks.json` checks this marker and blocks Write/Edit tools during non-implementation stages.
@@ -140,7 +140,7 @@ Stage 1 (Plan) maps to Claude Code's `EnterPlanMode`. When the structured cycle 
 Stage 2 (Verify Plan) and Stage 4 (Verify Implementation) can invoke the `multi-model-verification` skill for comprehensive review.
 
 ### With PreToolUse Hooks
-The stage marker file (`/tmp/.claude-dev-stage`) is read by a PreToolUse hook that enforces tool restrictions. This provides a safety net beyond instruction-based compliance.
+The stage marker file (`/tmp/.claude-dev-stage-$PPID`) is read by a PreToolUse hook that enforces tool restrictions. This provides a safety net beyond instruction-based compliance.
 
 ### With Agent Teams
 For complex tasks, Agent Teams is **preferred** when available (R018):
@@ -165,19 +165,19 @@ When Agent Teams is enabled AND task involves 3+ agents or review→fix cycles, 
 
 ```bash
 # Orchestrator manages transitions:
-echo "plan" > /tmp/.claude-dev-stage           # Enter planning
-echo "verify-plan" > /tmp/.claude-dev-stage     # Enter plan verification
-echo "implement" > /tmp/.claude-dev-stage       # Enter implementation
-echo "verify-impl" > /tmp/.claude-dev-stage     # Enter impl verification
-echo "compound" > /tmp/.claude-dev-stage        # Enter compound testing
-echo "done" > /tmp/.claude-dev-stage            # Mark done
-rm -f /tmp/.claude-dev-stage                    # Clear (disable blocking)
+echo "plan" > /tmp/.claude-dev-stage-$PPID           # Enter planning
+echo "verify-plan" > /tmp/.claude-dev-stage-$PPID    # Enter plan verification
+echo "implement" > /tmp/.claude-dev-stage-$PPID      # Enter implementation
+echo "verify-impl" > /tmp/.claude-dev-stage-$PPID    # Enter impl verification
+echo "compound" > /tmp/.claude-dev-stage-$PPID       # Enter compound testing
+echo "done" > /tmp/.claude-dev-stage-$PPID           # Mark done
+rm -f /tmp/.claude-dev-stage-$PPID                   # Clear (disable blocking)
 ```
 
 ## Limitations
 
-- **Single session**: The fixed path `/tmp/.claude-dev-stage` does not support concurrent Claude Code sessions. Running multiple sessions simultaneously may cause stage state conflicts.
-- **World-writable path**: The `/tmp/` directory is accessible to all users. For multi-user environments, consider using a user-scoped path like `/tmp/.claude-dev-stage-$(id -u)`.
+- **Session scoping**: The marker path is scoped by parent PID (`/tmp/.claude-dev-stage-$PPID`), so concurrent Claude Code sessions use distinct markers and do not conflict. The reader hooks (`stage-blocker.sh`, `task-state-precompact.sh`) and the writer commands above all resolve `$PPID` to the same Claude Code process, keeping the gate consistent.
+- **World-writable path**: The `/tmp/` directory is accessible to all users. The `-$PPID` suffix isolates per-session state but does not restrict filesystem permissions; avoid storing sensitive data in the marker file.
 
 ## Permission Mode
 

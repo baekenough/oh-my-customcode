@@ -20,7 +20,7 @@ collect_state() {
   [ -f "/tmp/.claude-autonomous-$PPID" ] && autonomous="true"
 
   # Dev stage (structured-dev-cycle)
-  [ -f "/tmp/.claude-dev-stage" ] && dev_stage=$(cat "/tmp/.claude-dev-stage" 2>/dev/null)
+  [ -f "/tmp/.claude-dev-stage-$PPID" ] && dev_stage=$(cat "/tmp/.claude-dev-stage-$PPID" 2>/dev/null)
 
   # Tool call counter
   [ -f "/tmp/claude-tool-count-$PPID" ] && tool_count=$(cat "/tmp/claude-tool-count-$PPID" 2>/dev/null)

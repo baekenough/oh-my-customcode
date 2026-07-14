@@ -1,20 +1,51 @@
 #!/usr/bin/env bash
-# verify-version-sync.sh — validates package.json version matches templates/manifest.json
-# Mirrors the ci.yml version-sync job for use as a pre-publish gate in release.yml.
-# Idempotent, read-only. Works on macOS and Linux.
+# verify-version-sync.sh
+# Verify version consistency across package.json and templates/manifest.json
+# Used by release pipeline to prevent npm publish failures (issue #1154)
+# Mirrored at scripts/verify-version-sync.sh and .github/scripts/verify-version-sync.sh
+# — keep both copies byte-identical (#1476). REPO_ROOT is resolved via git so the
+# script works unmodified regardless of which copy's directory depth invokes it.
+
 set -euo pipefail
 
-pkg_version=$(node -p "require('./package.json').version")
-manifest_version=$(node -p "require('./templates/manifest.json').version")
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
-echo "package.json version:          $pkg_version"
-echo "templates/manifest.json version: $manifest_version"
+PACKAGE_JSON="${REPO_ROOT}/package.json"
+MANIFEST_JSON="${REPO_ROOT}/templates/manifest.json"
 
-if [ "$pkg_version" != "$manifest_version" ]; then
-  echo ""
-  echo "❌ Version mismatch: package.json=$pkg_version, templates/manifest.json=$manifest_version" >&2
-  echo "Fix: update templates/manifest.json version to match package.json before tagging." >&2
+if [ ! -f "${PACKAGE_JSON}" ]; then
+  echo "::error::package.json not found at ${PACKAGE_JSON}"
   exit 1
 fi
 
-echo "✓ Version sync OK: $pkg_version"
+if [ ! -f "${MANIFEST_JSON}" ]; then
+  echo "::error::templates/manifest.json not found at ${MANIFEST_JSON}"
+  exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "::warning::jq not installed — version sync verification skipped"
+  echo "Install jq: apt-get install -y jq | brew install jq | https://stedolan.github.io/jq/download/"
+  exit 0
+fi
+
+PKG_VERSION=$(jq -r '.version' "${PACKAGE_JSON}")
+MANIFEST_VERSION=$(jq -r '.version' "${MANIFEST_JSON}")
+
+if [ "${PKG_VERSION}" != "${MANIFEST_VERSION}" ]; then
+  echo "::error::Version mismatch:"
+  echo "  package.json:            ${PKG_VERSION}"
+  echo "  templates/manifest.json: ${MANIFEST_VERSION}"
+  echo ""
+  echo "These must match for npm publish (#1154 prevention)."
+  echo "templates/manifest.json structure: {version, lastUpdated, omcustomMinClaudeCode, components[]} — preserve it."
+  echo "Edit ONLY the .version field with jq; never overwrite the file with a path→hash map (#1423)."
+  echo "Recover a corrupted manifest: git show HEAD:templates/manifest.json | jq '.version=\"<NEW>\"' > templates/manifest.json"
+  echo "Run version bump in both files atomically:"
+  echo "  jq '.version = \"<NEW>\"' package.json > package.json.tmp && mv package.json.tmp package.json"
+  echo "  jq '.version = \"<NEW>\"' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json"
+  exit 1
+fi
+
+echo "[OK] Version sync verified: ${PKG_VERSION}"
+exit 0
