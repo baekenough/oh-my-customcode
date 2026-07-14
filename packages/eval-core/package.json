@@ -27,7 +27,7 @@
   "devDependencies": {
     "@types/bun": "^1.3.6",
     "drizzle-kit": "^0.31.9",
-    "typescript": "^6.0.2"
+    "typescript": "^7.0.2"
   },
   "peerDependencies": {
     "bun": ">=1.0.0"
