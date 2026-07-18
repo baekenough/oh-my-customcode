@@ -204,6 +204,8 @@ hooks:
 ```
 
 > **v2.1.85+**: `if` field supports permission rule syntax for conditional hook execution. **v2.1.88** extended `if` matching to support compound commands (`ls && git push`) and commands with env-var prefixes (`FOO=bar git push`).
+
+> **v2.1.214+**: 단일 세그먼트 `dir/**` 형태의 hook `if:` 조건이 이제 `<cwd>/dir`에만 매칭됩니다(any-depth 아님) — 모든 깊이를 매칭하려면 `**/dir/**`로 작성. 같은 버전에서 `allow` 규칙도 `<cwd>/dir`로 좁혀져 hook `if:`와 정렬되었지만, `deny`/`ask` 규칙은 any-depth 매칭을 유지합니다. 파일명 glob(예: `Edit(*.md)`)은 영향 없음. (위 v2.1.85+ `if:` 노트의 연장.)
 -->
 
 ### Main-Thread Agent Hooks (v2.1.116+)
@@ -238,6 +240,8 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 | `auto` | AI decides safety |
 
 > **v2.1.200+**: `default` 모드가 CLI·`--help`·VS Code·JetBrains에서 "Manual"로 표기됩니다 — `--permission-mode manual` / `"defaultMode": "manual"`이 `default`와 병행 허용(동일 동작). 위 표의 `default` row는 그대로 유효하며 UI 라벨만 "Manual"로 노출됩니다. cross-ref R002.
+
+> **v2.1.212+**: Agent(구 Task) tool의 `mode` 파라미터가 **deprecated되어 무시됩니다** — subagent는 **기본적으로** 부모(오케스트레이터) 세션의 permission mode를 상속합니다. 위 "CC defaults `mode` to `acceptEdits`" 서술과 R010 Universal bypassPermissions의 per-call `mode: "bypassPermissions"` 지정은 플랫폼 레벨에서 no-op가 됩니다(명시 지정 자체는 무해). 무인 실행의 실제 bypass 여부는 이제 부모 세션 mode가 결정하므로, 오케스트레이터 세션을 bypassPermissions로 유지하는 것이 핵심입니다. Canonical owner는 R010.
 
 <!-- DETAIL: Permission Mode Guidance (reasoning)
 When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:
