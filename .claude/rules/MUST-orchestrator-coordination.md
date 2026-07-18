@@ -354,6 +354,8 @@ Before spawning any agent:
 
 > **v2.1.209+**: Fixed `/model` and other dialogs being blocked in `claude agents` background sessions (reverts an overly broad guard). Continuation of the background-agent lifecycle chain above (cf. v2.1.208). `mode: "bypassPermissions"` remains required.
 
+> **v2.1.212+**: CC가 Task(=Agent) 도구의 `mode` 파라미터를 deprecated(이제 무시)했습니다 — subagent는 기본적으로 **부모(오케스트레이터) 세션의 permission mode를 상속**합니다. 따라서 이 섹션이 요구하는 per-call `mode: "bypassPermissions"`는 v2.1.212+에서 no-op이며, 무인 위임이 프롬프트 없이 돌게 하는 통제점은 per-call 파라미터가 아니라 **부모 세션의 permission mode**입니다(안전 완화 아님 — 부모가 bypassPermissions면 subagent도 상속). 단 CC < v2.1.212에서는 여전히 per-call `mode` 명시가 필요하므로(위 History #926/#947/#955) 하위 호환을 위해 계속 포함하되, 신버전에서 프롬프트 발생 시 진단은 위 Self-Check("mode 있는지 확인")가 아니라 **부모 세션 모드**를 확인합니다. cross-ref R002/R006(이 섹션을 canonical source로 참조).
+
 ## Agent Capability Pre-Check
 
 Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).
