@@ -33,6 +33,7 @@ Before writing/editing multiple files:
 4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents; for a 3+ agent batch, announce the gate result (Agent Tool fallback reason or Agent Teams choice) — see R018 Self-Check "Gate Transparency"**
 5. Running agent stalled (2x+ duration)? → Spawn independent follow-up tasks immediately
 6. Announced a parallel dispatch in prose? → ALL announced tool calls MUST be in the SAME message as the announcement (announce-execution consistency)
+   - **Verify-Bash + action-delegate asymmetry**: when the batch is a verification Bash PLUS an action delegate (Agent/Workflow), the action delegate is the call most often dropped — the Bash fires and the delegate silently slips to the next turn. Dispatch BOTH in the SAME message. Recurred v1.1.22 (resume turn) and v1.1.23 (verify-build turn) — ≥2 occurrences, R016 rule-update mandate.
 
 ### Common Violations to Avoid
 
@@ -46,6 +47,9 @@ Before writing/editing multiple files:
 
 ❌ WRONG: Announce "milestone 생성 + 구조 확인 병렬" but only dispatch one tool; the other runs next turn (announce-execution mismatch)
 ✓ CORRECT: When announcing N parallel tools, include ALL N tool calls in the SAME message as the announcement
+
+❌ WRONG: Announce "verify build (Bash) + delegate fix (Agent) 병렬" but dispatch only the Bash; the Agent delegate slips to next turn (verify-bash + action-delegate asymmetry — the expensive action call is the one dropped)
+✓ CORRECT: Dispatch BOTH the verification Bash AND the action delegate (Agent/Workflow) in the SAME message as the announcement
 ```
 
 > **Token threshold heuristic**: When a delegated agent prompt exceeds ~5000 tokens or spans 3+ unrelated domains, decompose by domain and spawn parallel agents. See R018 for Agent Teams criteria when review cycles are needed. Reference: #1085.
