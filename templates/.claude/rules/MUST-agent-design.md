@@ -33,11 +33,13 @@ Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M tok
 
 > **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via `model: fable` / `claude-fable-5`. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
 
+<!-- ARCHIVED CC version notes (historical):
 > **v2.1.173+**: Fable 5 model IDs carrying a `[1m]` suffix are now auto-normalized (the suffix is stripped) because Fable 5 includes 1M context by default. Use `claude-fable-5` / `model: fable` WITHOUT a `[1m]` suffix — appending it is redundant and normalized away. (The `[1m]` suffix remains meaningful for Opus/Sonnet IDs.)
 
 > **v2.1.197+**: Claude Sonnet 5가 Claude Code의 **기본 모델**로 도입되었습니다 — 네이티브 1M-token 컨텍스트, 프로모션 가격 $2/$10 per Mtok(2026-08-31까지). `model: sonnet5` / `claude-sonnet-5`로 사용. oh-my-customcode의 base `sonnet` alias는 안정성을 위해 `claude-sonnet-4-6`에 고정 유지(기존 `sonnet` 지정 에이전트 불변); Sonnet 5는 `sonnet5`로 명시 opt-in. Sonnet 5가 CC 신규 기본값이므로 명시 모델 없는 세션은 이제 Sonnet 5에서 동작합니다.
 
 > **v2.1.201+**: Claude Sonnet 5 세션이 harness reminder를 mid-conversation system role로 주입하지 않도록 변경되었습니다 — Sonnet 5 실행 시 하니스 리마인더(규칙 재주입 등) 전달 방식이 조정되었으며, PostCompact 규칙 재주입(R021)·세션 연속성 동작 자체에는 영향이 없습니다. Sonnet 5가 CC 기본 모델(v2.1.197+)이므로 명시 모델 없는 세션에 적용됩니다.
+-->
 
 > **Fable 5 Effort 전략**: Fable 5는 **high effort가 기본값**이며, `xhigh`는 capability-sensitive 작업(최고난도 아키텍처/추론)에 한정해야 합니다. Fable 5의 `low`/`medium` effort조차 이전 세대 모델의 `xhigh`를 상회하는 품질을 보이므로, Fable 5를 사용하는 실행 에이전트는 `effort` 필드를 신중히 명시하고 불필요한 `xhigh` 남용을 지양합니다(R005 비용/지연 인식과 정합).
 
@@ -47,7 +49,9 @@ Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M tok
 
 ### Fallback Models (CC v2.1.166+)
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.166+**: The `fallbackModel` setting configures up to three fallback models tried in order when the primary model is overloaded or unavailable. `--fallback-model` now also applies to interactive sessions. CC additionally retries a turn once on the fallback model when the API rejects an unexpected non-retryable error (auth, rate-limit, request-size, and transport errors still surface immediately).
+-->
 
 This is a settings-level resilience mechanism, distinct from the per-agent `model:` frontmatter. It complements the `model-escalation` skill (outcome-based escalation) by handling availability/overload failover at the platform level.
 
@@ -55,7 +59,9 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 
 ### Thinking Toggle (CC v2.1.166+)
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.166+**: `MAX_THINKING_TOKENS=0`, `--thinking disabled`, and the per-model thinking toggle disable thinking on models that think by default via the Claude API (3rd-party providers unchanged). Relevant when an agent's `effort` is low and thinking overhead is undesirable.
+-->
 
 <!-- ARCHIVED CC version notes (historical):
 > **v2.1.183+**: CC now warns (stderr, in `-p` print mode) when the requested model is deprecated or auto-updated to a newer model — and this warning now ALSO covers models set in agent frontmatter (`model:`). Relevant to the Model Aliases table above: a stale/deprecated `model:` value in agent frontmatter now surfaces a deprecation warning instead of silently resolving. Separately, v2.1.183 fixes `thinking.disabled.display: Extra inputs are not permitted` 400 errors on subagent spawns and session-title generation — extends the v2.1.166 toggle above; subagent spawns with thinking disabled no longer 400.
@@ -69,7 +75,9 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 
 ### Safe Mode & Bundled Skill Control (CC v2.1.169+)
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.169+**: `--safe-mode` (and `CLAUDE_CODE_SAFE_MODE`) starts Claude Code with ALL customizations disabled (CLAUDE.md, plugins, skills, hooks, MCP servers) — use it to isolate whether a project customization (agent/skill/hook) causes a regression. The `disableBundledSkills` setting (and `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` env) hides bundled skills, workflows, and built-in slash commands from the model — useful when bundled skills conflict with or duplicate project skills (R006 skill-surface management). Note: `disableBundledSkills` hides skills from the model but is a CC platform setting, distinct from the advisory `skills:` frontmatter field (which is documentation metadata, not a runtime allowlist).
+-->
 
 <!-- ARCHIVED CC version notes (historical):
 > **v2.1.172+**: `availableModels` restrictions now apply to subagent `model:` overrides, the agent dispatch model picker, and the advisor model. `availableModels` allowlists using version-specific IDs (e.g. `claude-opus-4-8`) no longer hide the Opus/Sonnet 1M picker rows, and model IDs no longer receive a doubled 1M suffix (`[1M][1m]`) when `ANTHROPIC_DEFAULT_OPUS_MODEL` already includes one. Relevant when restricting per-agent model overrides via `availableModels`.
@@ -224,7 +232,9 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 > **v2.1.199+**: SessionStart/Setup/SubagentStart hook이 exit code 2로 종료할 때 stderr를 조용히 숨기던 문제가 수정되어 이제 오류가 표시됩니다. `.claude/hooks.json`의 hard-block/advisory hook 디버깅 가시성이 향상됩니다(R021 Enforcement Tiers 관측성과 정합).
 -->
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.204+**: headless 세션의 SessionStart hook 중 hook 이벤트가 스트리밍되지 않아 remote worker가 hook 도중 idle-reap되던 문제가 수정되었습니다. Hook Event Types/SessionStart 관련.
+-->
 
 ## Permission Mode Guidance
 
@@ -239,7 +249,9 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 | `dontAsk` | Non-interactive, deny unapproved |
 | `auto` | AI decides safety |
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.200+**: `default` 모드가 CLI·`--help`·VS Code·JetBrains에서 "Manual"로 표기됩니다 — `--permission-mode manual` / `"defaultMode": "manual"`이 `default`와 병행 허용(동일 동작). 위 표의 `default` row는 그대로 유효하며 UI 라벨만 "Manual"로 노출됩니다. cross-ref R002.
+-->
 
 > **v2.1.212+**: Agent(구 Task) tool의 `mode` 파라미터가 **deprecated되어 무시됩니다** — subagent는 **기본적으로** 부모(오케스트레이터) 세션의 permission mode를 상속합니다. 위 "CC defaults `mode` to `acceptEdits`" 서술과 R010 Universal bypassPermissions의 per-call `mode: "bypassPermissions"` 지정은 플랫폼 레벨에서 no-op가 됩니다(명시 지정 자체는 무해). 무인 실행의 실제 bypass 여부는 이제 부모 세션 mode가 결정하므로, 오케스트레이터 세션을 bypassPermissions로 유지하는 것이 핵심입니다. Canonical owner는 R010.
 
@@ -422,7 +434,9 @@ description: Brief desc    # One-line summary
 
 Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, `hooks`, `paths`, `shell`, `allowed-tools`, `keep-coding-instructions`. Skill `effort` takes precedence over agent `effort` when both specified. See full optional fields via Read tool.
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.163+**: In skill `command` bodies, use `\$` to emit a literal `$` before a number (e.g., `\$1`) — previously ambiguous with shell variable expansion. Relevant when authoring skills with `shell:` or inline command steps that include dollar signs not intended as variables.
+-->
 
 <!-- ARCHIVED CC version notes (historical):
 > **v2.1.178+**: Skills in nested `.claude/skills` directories now load when working on files in that subtree; on a name clash with a higher-scope skill, the nested skill is surfaced as `<dir>:<name>` so both remain invokable. Directory-qualified nested skills also no longer trigger permission prompts in non-interactive runs. Additionally, MCP-spec entries (`mcp__server`, `mcp__server__*`, `mcp__*`) in a subagent's `disallowedTools` are now honored (previously silently ignored) — relevant to the Optional Frontmatter `disallowedTools` field. oh-my-customcode keeps a flat `.claude/skills/` layout, but the `<dir>:<name>` disambiguation matters if a nested project subtree introduces a same-named skill.

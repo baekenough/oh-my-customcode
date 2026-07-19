@@ -8,7 +8,9 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 
 **Agent Teams Exception**: Agent Teams members are peers, not hierarchical subagents. Teams members CAN spawn sub-agents via the Agent tool to execute complex workflows (e.g., research teams, verification teams). This enables Teams-compatible skills like `/research` and `/deep-plan` to run inside Team members. The Teams member acts as a local orchestrator for its own sub-tasks.
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.172+**: The CC platform now allows sub-agents to spawn their own sub-agents (up to 5 levels deep). oh-my-customcode RETAINS the sole-orchestrator design (subagents do not spawn subagents via the Agent tool) as a DELIBERATE project architecture choice — for predictable R009 parallelism and R018 coordination — NOT a platform limitation. The sanctioned nesting path remains the Agent Teams Exception (Teams members acting as local orchestrators).
+-->
 
 **The orchestrator MUST NEVER directly write, edit, or create files. ALL file modifications MUST be delegated to appropriate subagents.**
 
@@ -274,7 +276,9 @@ The Subagent Scope-Creep STOP Protocol (above) is REACTIVE — it halts an agent
 
 Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after trips) and R001 (credential/privileged-scope guardrails, re-confirm scope before irreversible shared-infra actions).
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.178+**: Auto mode now evaluates subagent spawns with the safety classifier BEFORE launch, closing a gap where a spawned subagent could request a blocked action without prior review. This is the PLATFORM-level complement to the (advisory) Pre-Delegation Privileged-Scope Boundary above: the orchestrator still states the approved/forbidden scope in the delegation prompt (proactive, model-level), and CC now also gates the spawn itself (platform-level). The two are defense-in-depth — the prompt-stated boundary remains required because the classifier gates ACTIONS, not task SCOPE.
+-->
 
 ## Universal bypassPermissions
 
@@ -348,7 +352,9 @@ Before spawning any agent:
 > **v2.1.199+**: subagent가 rate limit이나 server error로 잘리면 이제 조용히 실패하는 대신 partial work를 parent에 반환합니다. background-agent daemon(Linux)이 unclean shutdown 후 corrupted worker record로 ~50초마다 자신과 모든 agent를 죽이던 문제, macOS SSH cold-start "Could not switch to audit session" 문제, `claude stop`이 background-agent respawn과 race하면 조용히 무효화되던 문제(이제 respawn이 stop을 존중), background job progress indicator가 긴 명령 중 멈춰있던 문제가 수정되었습니다. background-agent lifecycle 견고성이 추가로 강화되었으며, `mode: "bypassPermissions"`는 여전히 필수입니다.
 -->
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.200+**: 백그라운드 세션/에이전트 견고성이 추가로 강화되었습니다 — sleep/wake 후 또는 stalled 세션 재개 시 mid-turn으로 조용히 멈추던 문제, stall respawn 후 Esc로 취소한 turn을 재실행하던 문제, 크래시가 남긴 stale `daemon.lock`(OS가 PID를 재사용)으로 백그라운드 에이전트가 다시 시작되지 않던 문제, 재설치된 구버전 빌드가 daemon을 탈취하던 문제(빌드 최신성은 이제 버전의 embedded build timestamp로 판정), 그리고 roster 일시 corruption이 orphan cleanup을 영구 비활성화하던 문제·구버전 바이너리가 신버전이 기록한 필드를 보존하지 못하던 문제·daemon 재시작 중 socket auth token이 제거되던 문제를 수정했습니다. v2.1.195~199 백그라운드-에이전트 lifecycle 견고성 체인의 연장입니다. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.
+-->
 
 > **v2.1.208+**: Added `CLAUDE_CODE_PROCESS_WRAPPER` — the background service and agent view now honor a corporate launcher by routing every Claude Code self-spawn through a required wrapper executable. Also fixed: replies typed to a background agent being lost when delivery fails (now saved and delivered on session restart), background-session attach failing permanently ("Couldn't start the background daemon") after an update replaced the binary a running session was launched from, and an older daemon no longer silently restarting workers spawned by a newer version onto the older binary. Extends the v2.1.195~200 background-agent lifecycle robustness chain. `mode: "bypassPermissions"` remains required on every Agent tool call.
 
@@ -556,7 +562,9 @@ Usage:
 
 All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Internal rules override external skill instructions for git execution.
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.206+**: `/commit-push-pr`가 origin 외에 `remote.pushDefault`(또는 단일 remote)로의 git push도 auto-allow합니다. mgr-gitnerd git 위임 흐름 관련. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.
+-->
 
 ## External Skills vs Internal Rules
 

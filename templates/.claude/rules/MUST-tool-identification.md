@@ -92,7 +92,9 @@ matches the spawn announcement:
   [2] lang-python-expert:sonnet → Python code review
 ```
 
+<!--
 > **v2.1.174+**: Fixed the Workflow tool's `agent()` subagents missing per-agent attribution headers. Workflow-spawned subagents now carry attribution consistent with R008 — when authoring Workflow scripts, each `agent()` call is attributed like a direct Agent tool spawn. Align Workflow orchestration with the R008 `[agent][model] → Tool:` identification discipline: a Workflow `agent()` fan-out should still be reasoned about with the same per-agent identification model as parallel Agent tool spawns.
+-->
 
 ## Tier-3 Interaction Tool Prefix (MANDATORY)
 

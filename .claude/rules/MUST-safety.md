@@ -25,7 +25,9 @@ The following git commands have caused working tree loss in past sessions (#1146
 
 **Recovery hint**: If working tree loss occurs, check `git reflog` immediately — most operations are recoverable within 30 days.
 
+<!--
 > **v2.1.183+**: Auto mode now BLOCKS destructive git commands at the platform level — `git reset --hard`, `git checkout -- .`, `git clean -fd`, and `git stash drop` are blocked when you did not ask to discard local work; `git commit --amend` is blocked when the commit was not made by the agent this session; and `terraform destroy` / `pulumi destroy` / `cdk destroy` are blocked unless you asked for the specific stack. This is the PLATFORM-level complement to this section's (advisory) per-invocation approval requirement and the Pre-Delegation Blast-Radius Enumeration below: the model still enumerates discard targets and requests approval (model-level), and CC now also hard-blocks the destructive command itself in auto mode (platform-level) — defense-in-depth. The advisory approval requirement remains because the platform block gates the COMMAND, not the blast-radius enumeration the user needs for an informed decision.
+-->
 
 > **v2.1.208+**: Catastrophic removals (e.g. `rm -rf ~`) wrapped in `$(…)`/backticks/`<(…)` now trigger the same prompt as the plain form in `--dangerously-skip-permissions` and auto mode — closes a subshell-obfuscation gap in the v2.1.183 platform-level destructive-command block above.
 
@@ -100,18 +102,22 @@ Cross-reference: R010 Subagent Scope-Creep STOP Protocol (2-trip stop), R015 Fai
 
 Cross-reference: R010 Subagent Scope-Creep STOP Protocol, R002 (permission tiers).
 
+<!--
 > **v2.1.187+**: Added the `sandbox.credentials` setting — blocks sandboxed commands from reading credential files and secret environment variables. Platform-level complement to this section's credential guardrails (the model still never echoes secret values; CC now also blocks sandboxed reads of credential files/secret env at the platform level) — defense-in-depth.
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.191+**: Sandbox network permission "Yes" approvals are remembered per-session (cf. R002). Reduces re-prompts but means an allowed host stays allowed for the session — scope network allows deliberately.
 -->
 
 
+<!--
 > **v2.1.193+**: `autoMode.classifyAllShell` 설정은 arbitrary-code-execution 패턴만이 아니라 **모든** Bash/PowerShell 명령을 auto-mode classifier로 라우팅합니다. 이 섹션의 파괴적/자격증명 가드에 대한 플랫폼-레벨 보완입니다(모델은 여전히 명령 전 파괴적 작업을 열거하고 승인을 요청 — model-level; CC가 모든 shell을 classifier로 게이팅 — platform-level, 방어심층). auto-mode 거부 사유가 transcript, 거부 토스트, `/permissions` recent denials에 표시됩니다.
 
 > **v2.1.196+**: 보안 — `claude mcp list`/`get`이 커밋된 `.claude/settings.json`으로 self-approved된 `.mcp.json` 서버를 더 이상 spawn하지 않으며, 신뢰되지 않은 워크스페이스는 `⏸ Pending approval`을 표시합니다. 이는 CLAUDE.md의 ".mcp.json auto-install 금지"(R001) 정책에 대한 플랫폼-레벨 보완입니다 — 플랫폼이 신뢰되지 않은 워크스페이스에서 self-approved MCP 서버 spawn을 차단합니다.
 
 > **v2.1.205+**: auto mode가 session transcript 파일 변조(tampering)를 차단하는 규칙이 추가되었습니다 — transcript 의존 스킬(homework/episodic-memory) 무결성 보호. 또한 Windows worktree 제거가 NTFS junction/symlink 존재 시 worktree 밖 파일을 삭제하던 문제가 수정되었습니다.
+-->
 
 ## Required Before Destructive Operations
 
