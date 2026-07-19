@@ -120,6 +120,16 @@ Reference issue: #1096.
 
 <!-- Reference issues: #1188 item #2, #1198 item #2, #1409. -->
 
+#### Status-Line Bracket ≠ Agent Identification Header
+
+`[FSD Iteration N]`, `[Progress]`, `[Done]`, `[Start]` 같은 R003 상태줄 브래킷은 R007 에이전트 식별 헤더를 **충족하지 않는다**. R007 헤더는 반드시 에이전트명(`┌─ Agent: {name}` 풀 헤더 또는 `[{agent-name}]` 단축 헤더)을 포함해야 한다. 장기 자율 루프(`/fsd` 등)의 기술적 몰입 중 상태줄 브래킷이 에이전트-id 브래킷을 대체하는 드리프트가 반복 관찰된다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `[FSD Iteration 3/5 — ...]` 상태줄로 응답 시작 (에이전트명 부재) | 먼저 `┌─ Agent: claude → fsd` 또는 `[claude]` R007 헤더를 출력한 뒤 상태줄; 또는 브래킷에 에이전트명 결합(`[claude][opus] [FSD Iteration 3/5]`) |
+
+Origin: #1507 (장기 자율 릴리즈 루프 몰입 중 상태줄 브래킷이 에이전트-id 브래킷 대체 — R007 External-Project/Debugging Session Vigilance의 자율-루프 각도 확장).
+
 ### External-Project / Debugging Session Vigilance
 
 R007 헤더 누락은 외부 프로젝트 디버깅, SSH 진단, 배포 작업 등 기술적 몰입 세션에서 가장 자주 발생한다. 이 규칙은 프로젝트 종류와 무관하게 모든 상황에 적용된다.
