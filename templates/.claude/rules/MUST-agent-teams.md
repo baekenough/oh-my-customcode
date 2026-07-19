@@ -27,7 +27,9 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 
 **When Agent Teams is enabled and criteria are met, usage is required.**
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.202+**: `/config`에 "Dynamic workflow size" 설정 추가(small/medium/large agent 수 — advisory 가이드) — R018 Agent Teams 규모 판단 신호. 상세는 R009 (MUST-parallel-execution.md) cross-ref.
+-->
 
 ### Scope: Intra-Session vs Cross-Session
 
@@ -40,7 +42,9 @@ These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` a
 
 ### Cross-Session Relay Authority Hardening (CC v2.1.166+)
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.166+**: Messages relayed via `SendMessage` from other Claude sessions no longer carry user authority — receivers refuse relayed permission requests, and auto mode blocks them. A relayed message cannot escalate privilege on the receiving session.
+-->
 
 | Aspect | Behavior (v2.1.166+) |
 |--------|---------------------|
@@ -375,6 +379,7 @@ Agent Teams member completion MUST be verified by deterministic ground-truth —
 
 Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command ran is not the same as verifying it succeeded).
 
+<!-- ARCHIVED CC version note (historical):
 > **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.
 
 > **CC v2.1.169+**: `claude agents --json` now includes blocked and just-dispatched background sessions (previously omitted), adds `--all` to include completed sessions, and adds `id` and `state` fields. This strengthens the deterministic ground-truth for member completion verification — `state` distinguishes blocked/running/completed directly, and `--all` confirms a member actually completed (rather than just disappearing from the active list). Use `--all` + `state` as the ground-truth signal instead of inferring completion from a member's absence.
@@ -382,6 +387,7 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 > **v2.1.198+**: Agent Teams에서 teammate가 API 오류로 죽으면 이제 lead에 "failed"를 보고하고, stuck teammate에게 메시지를 보내면 즉시 wake시켜 retry하게 합니다. 이는 v2.1.169 `state` 필드 기반 deterministic ground-truth를 보강하지만, SendMessage report 자체는 여전히 low-reliability 신호로 취급한다(위 표의 원칙 불변).
 
 > **v2.1.199+**: subagent가 rate limit/server error로 잘리면 partial work를 parent에 반환하며, subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류를 parent agent에 정확히 보고합니다. 플랫폼이 false-success 자가보고를 줄였으나, deterministic ground-truth(`git status`/`grep`/validation scripts) 검증 원칙은 여전히 유효하다.
+-->
 
 **Stall handling**: When a member shows no task progress within ~2 minutes despite spawn + owner assignment + SendMessage coordination, reassign the work to a standalone Agent (R009) rather than continuing to nudge the stalled member. Stalled Teams members waste tokens on idle polling and delay the overall workflow.
 

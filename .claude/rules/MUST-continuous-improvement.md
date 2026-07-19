@@ -55,6 +55,34 @@ When repeating agent failures or suboptimal routing is detected:
 
 This connects R016's continuous improvement loop with the adaptive-harness skill's learning capability.
 
+## Rule Clause Retirement (조항 은퇴 메커니즘)
+
+R016의 승격 루프(위반 지적 → 규칙 조항 추가)는 코퍼스의 **단조 성장**을 낳는다. 은퇴 루프를 대칭으로 신설해 코퍼스 컨텍스트 비용(세션당 고정 주입 ~49.5k 토큰)의 무한 증가를 차단한다. 승격 루프는 실증된 편익이 있으므로 유지하고, 은퇴 루프만 신설한다 — 두 루프의 대칭이 코퍼스 크기를 정상 상태로 유지한다.
+
+### 은퇴 대상
+
+| 대상 | 판정 기준 |
+|------|-----------|
+| 수정 완료된 플랫폼 버그 서사 | CC 버전노트 등 행동 지시 가치가 소멸한 조항 (버그가 이미 수정되어 회피 지침이 무의미) |
+| 장기 무발동 조항 | 마이너 2개 릴리즈 동안 위반 지적·회고 인용으로 발동되지 않은 조항 |
+
+### 은퇴 절차
+
+1. **발동 추적**: `/homework` 회고·위반 지적 시 인용된 규칙 ID/조항을 feedback memory에 기록한다 (가벼운 추적 — 완전 자동화는 불요).
+2. **후보 선정**: 마이너 2릴리즈 무발동 + 행동 지시 가치 소멸 조항을 은퇴 후보로 선정한다.
+3. **HTML-comment화**: 조항을 `<!-- RETIRED (은퇴 릴리즈 vX.Y.Z, N릴리즈 무발동): 원문 -->` 로 감싸 auto-injection에서 제외한다. Read 도구로 열람 가능하므로 무손실이다 (R005 Context Optimization via HTML Comments).
+4. **부활**: 동일 패턴이 재발하면 uncomment하여 즉시 복원한다 — 승격 루프와 대칭이다.
+
+### 버전노트 보존정책
+
+- 규칙 내 CC 버전노트(`> **v2.1.NNN+**:`)는 최근 2-3개 마이너 릴리즈(현행 기준 v2.1.208 이상)만 visible 유지한다.
+- 그 이하 버전노트는 HTML-comment화(무손실 중간 단계) 하거나 `guides/claude-code/15-version-compatibility.md`로 이관한다.
+- `claude-native` 스킬이 생성하는 버전 추적 이슈를 규칙에 반영할 때, 최신만 visible로 두고 구버전은 즉시 은닉한다.
+
+### Cross-References
+
+R005(HTML-comment 컨텍스트 최적화), R023(Deprecated-Platform-Feature Staleness Check — 폐기 참조를 결정론적으로 탐지하여 은퇴 후보를 조기 발굴), Origin #1473.
+
 ## External Repo Contribution Pre-Check
 
 Before starting work on contributing to an external repository (skill submission, agent contribution, plugin development), MUST read these files in the target repo FIRST round:

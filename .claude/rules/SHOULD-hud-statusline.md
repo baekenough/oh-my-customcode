@@ -31,9 +31,11 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 <!-- ARCHIVED CC version note (historical): v2.1.196+: 여러 병렬 요청이 사용량 한도에 도달하는 순간 rate-limit 경고가 깜빡이며 꺼지고 rate-limit telemetry가 과다 집계되던 문제를 수정. R012 관측성의 rate-limit 계측 정확도 개선입니다. -->
 
+<!--
 > **v2.1.198+**: `claude agents`에 background agent notifications가 추가되어, 입력이 필요하거나 완료된 세션이 `Notification` hook을 발화합니다(`agent_needs_input` / `agent_completed`). R012 관측성을 백그라운드 subagent 상태 알림까지 확장 — HUD 이벤트 채널과 결합해 백그라운드 위임 작업의 대기/완료 상태를 놓치지 않게 합니다.
 
 > **v2.1.202+**: workflow-spawned agent 텔레메트리에 `workflow.run_id`/`workflow.name` OTel 속성이 추가되어 workflow run 활동을 OTel 데이터로 재구성할 수 있습니다. R012 관측성 확장(monitoring-setup 스킬).
+-->
 
 > **v2.1.208+**: Fixed `/release-notes` "Show all" injecting the entire changelog into the model's context (cross-ref R013 context budget). Fixed the context window (and auto-compact indicator) briefly resetting to 200k after CLI auto-update, causing a false "100% context used" on resumed long-context sessions — relevant to the CTX% statusline segment below. Completed background agents now stay listed in `/tasks` until cleanup instead of vanishing on completion — extends the v2.1.198 background-notification observability above.
 
