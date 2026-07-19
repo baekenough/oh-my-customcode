@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.27",
-  "generatedAt": "2026-07-19T08:25:28.490Z",
-  "templateVersion": "1.1.27",
+  "generatorVersion": "1.1.28",
+  "generatedAt": "2026-07-19T10:37:31.051Z",
+  "templateVersion": "1.1.28",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -55,8 +55,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
-      "templateHash": "5340051f2249721b52742a36e00373f01d57180812d65d3de787b1527fd6fca0",
-      "size": 5538,
+      "templateHash": "5cf631bb4159755766b31c6f4cabc8b5e692e27d3968d751a4216496305bd0b5",
+      "size": 6570,
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {

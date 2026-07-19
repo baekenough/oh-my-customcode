@@ -217,8 +217,7 @@ jobs:
           NOTES=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
 
           if [ -z "$NOTES" ]; then
-            echo "::warning::No changelog entry found for version ${VERSION}."
-            echo "::warning::Will use auto-generated release notes. Consider adding a '## [${VERSION}]' section to CHANGELOG.md."
+            echo "::notice::CHANGELOG.md is deprecated (v1.1.14+); using auto-generated release notes as the single source of truth (expected, per #1503)."
             echo "notes=" >> $GITHUB_OUTPUT
             echo "has_changelog=false" >> $GITHUB_OUTPUT
           else

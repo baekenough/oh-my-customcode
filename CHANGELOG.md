@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [Deprecated — v1.1.14+]
+
+> **이 CHANGELOG는 v1.1.14부터 폐지되었습니다.**
+> v1.1.14 이후 릴리즈 노트는 [GitHub Releases](https://github.com/baekenough/oh-my-customcode/releases)의 auto-generated notes를 **단일 출처(single source of truth)** 로 합니다. `release.yml`이 릴리즈 태그의 커밋·PR 이력에서 자동 생성합니다.
+> 아래 `## [1.1.13]` 이하 엔트리는 이력 보존용으로 유지합니다 — **새 엔트리를 추가하지 마십시오**.
 
 ## [1.1.13] - 2026-07-14
 
