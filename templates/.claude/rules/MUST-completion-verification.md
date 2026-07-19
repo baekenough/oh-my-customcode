@@ -312,6 +312,18 @@ A CI publish/deploy step that LOGS an error has NOT necessarily failed — the s
 
 This is the publish-domain extension of Read-Before-Characterize ("actual outcome ≠ attempt"). Re-running a publish that actually succeeded risks duplicate-publish errors; permanently changing a workflow on a misdiagnosis is worse (cf. #1217 — npm E403 misdiagnosed as a `--provenance` conflict → wrong workflow change → repeated failure; real cause was token scope).
 
+### CI Job Conclusion vs Actual Execution (docs-only path-filter)
+
+> Origin: #1503 찐빠 #2 (FSD 3릴리즈 세션 회고) — v1.1.23 릴리즈에서 서브에이전트가 PR CI의 "Test/Rust Tests: SUCCESS"를 "두 잡 실행됨"으로 특성화했으나, 실측(job duration 5초 + "Docs-only skip notice" step 로그) 결과 v1.1.22 docs-only path-filter가 code=false로 판정해 두 잡이 skip-notice만 돌고 success를 보고한 것이었다.
+
+v1.1.22+ 이후 `.github/workflows/ci.yml`의 조건부 잡(Test / Rust Tests / Lint / Lockfile Sync)은 conclusion=success가 **full-run과 fast-skip(docs-only 변경 시 비싼 스텝 건너뜀) 양쪽**에서 나온다. CI 잡이 실제로 **실행**됐는지는 conclusion만으로 판정 불가하다 — job duration(수 분 vs ~5초) 또는 step 로그("Docs-only skip notice" 실행 여부)로 확인한다. R020 Core Rule("actual outcome ≠ attempt")을 CI 잡 결과 해석에 적용한 것이다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| CI 잡 conclusion=success를 "잡이 실행됨"으로 특성화 | duration/step-log로 full-run vs fast-skip 구분 후 특성화 |
+
+Cross-reference: 위 CI Publish-Step Error vs Published-Artifact Ground Truth, R023 (path-filter 있는 verification ladder).
+
 ### State-Change Claim → Live System Verification (#1335 ①)
 
 > Origin: #1335 ① — issue #101 (secretary teardown) was closed as "대체 완료·teardown 보류", but the secretary LaunchAgents (onedrive-bridge / calendar-worker / minikube-mount) were STILL running on the host. The user caught it ("secretary 리소스 다 내려가있는거 맞지?") — they were not.
