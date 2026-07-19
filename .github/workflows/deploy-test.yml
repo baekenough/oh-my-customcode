@@ -3,11 +3,12 @@ name: Deploy Test
 on:
   pull_request:
     branches:
-      - 'release/**'
+      - develop
 
 jobs:
   deploy-test:
     name: Deploy Test with Verdaccio
+    if: startsWith(github.head_ref, 'release/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,12 +39,17 @@ jobs:
       - name: Configure npm for Verdaccio
         run: |
           npm config set registry http://localhost:4873/
-          # Create user for publishing (htpasswd disabled by default in verdaccio)
-          npm config set //localhost:4873/:_authToken "test-token"
+          # Verdaccio's default config requires an authenticated user to publish.
+          # Register a throwaway user via the adduser API and use its real token.
+          TOKEN=$(curl -s -X PUT \
+            -H "Content-type: application/json" \
+            -d '{"name":"test","password":"test1234"}' \
+            http://localhost:4873/-/user/org.couchdb.user:test | jq -r '.token')
+          npm config set //localhost:4873/:_authToken "$TOKEN"
 
       - name: Publish to Verdaccio
         run: |
-          npm publish --registry http://localhost:4873/
+          npm publish --ignore-scripts --registry http://localhost:4873/
 
       - name: Test global install
         run: |
