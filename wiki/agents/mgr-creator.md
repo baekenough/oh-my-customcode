@@ -1,7 +1,7 @@
 ---
 title: mgr-creator
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/mgr-creator.md
 related:
@@ -30,7 +30,7 @@ The agent runs for up to 25 turns to allow thorough research and creation.
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `create-agent`
-- **Memory**: project
+- **Memory**: local (own agent memory; changed from `project` in v1.1.13 / #1468)
 - **Effort**: high
 - **Max Turns**: 25
 

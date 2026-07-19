@@ -1,7 +1,7 @@
 ---
 title: sec-codeql-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/sec-codeql-expert.md
 related:
@@ -25,9 +25,10 @@ Runs in a **sandbox** isolation mode for safety.
 - **Domain**: devops
 - **Tools**: Read, Write, Grep, Bash
 - **Skills**: `cve-triage`, `adversarial-review`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/sec-codeql-expert/`, git-untracked)
 - **Effort**: high
 - **Isolation**: sandbox
+- **Permission mode**: bypassPermissions (unattended execution, no per-call prompts)
 
 ## Report Format
 

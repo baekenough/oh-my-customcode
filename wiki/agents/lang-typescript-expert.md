@@ -1,7 +1,7 @@
 ---
 title: lang-typescript-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/lang-typescript-expert.md
 related:
@@ -32,8 +32,9 @@ Uses `typescript-best-practices` skill and `guides/typescript/`.
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `typescript-best-practices`
-- **Memory**: project
+- **Memory**: local (#1468, v1.1.13 — CC v2.1.202~207 compat agent memory scope migration)
 - **Effort**: high
+- **Permission Mode**: bypassPermissions
 
 ## Relationships
 

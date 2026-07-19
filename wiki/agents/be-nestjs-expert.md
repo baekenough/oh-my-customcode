@@ -1,7 +1,7 @@
 ---
 title: be-nestjs-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/be-nestjs-expert.md
 related:
@@ -23,7 +23,7 @@ Expert NestJS developer for opinionated, scalable Node.js applications with Type
 - **Model**: sonnet
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
 
 ## Relationships

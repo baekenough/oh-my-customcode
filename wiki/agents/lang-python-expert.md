@@ -1,7 +1,7 @@
 ---
 title: lang-python-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/lang-python-expert.md
 related:
@@ -30,7 +30,7 @@ Uses `python-best-practices` skill and `guides/python/`.
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `python-best-practices`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/lang-python-expert/`)
 - **Effort**: high
 
 ## Relationships

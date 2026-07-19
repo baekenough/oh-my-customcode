@@ -1,7 +1,7 @@
 ---
 title: mgr-updater
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/mgr-updater.md
 related:
@@ -26,7 +26,7 @@ Also handles documentation sync (`update-docs` skill) for the R017 verification 
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `update-external`, `update-docs`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/mgr-updater/`, git-untracked; migrated from `project` scope in v1.1.13 / #1468, CC v2.1.202~207 compat pass)
 - **Effort**: medium
 - **Max Turns**: 20
 - **Limitations**: cannot create new agents, cannot modify rules

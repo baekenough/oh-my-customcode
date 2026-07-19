@@ -1,7 +1,7 @@
 ---
 title: de-spark-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/de-spark-expert.md
 related:
@@ -12,11 +12,13 @@ related:
 
 # de-spark-expert
 
-Expert Apache Spark developer for PySpark and Scala distributed data processing, Structured Streaming, and storage format optimization.
+Expert Apache Spark 4.x developer for PySpark and Scala distributed data processing, Structured Streaming, and storage format optimization.
 
 ## Overview
 
-`de-spark-expert` builds high-performance distributed Spark jobs for large-scale data transformation. It uses DataFrame/Dataset APIs and Spark SQL, applies broadcast joins and hint-based optimization, designs partitioning and bucketing strategies, implements Structured Streaming applications, manages resource allocation (executor/driver memory, dynamic allocation), optimizes storage formats (Parquet, ORC, Delta, Iceberg), and profiles jobs using Spark UI.
+`de-spark-expert` builds high-performance distributed Spark jobs for large-scale data transformation, targeting Apache Spark 4.x. It uses DataFrame/Dataset APIs and Spark SQL, applies broadcast joins and hint-based optimization, designs partitioning and bucketing strategies, implements Structured Streaming applications, manages resource allocation (executor/driver memory, dynamic allocation), optimizes storage formats (Parquet, ORC, Delta, Iceberg), and profiles jobs using Spark UI.
+
+Spark 4.0 introduces two capabilities the agent is scoped around: **Spark Connect**, a decoupled client-server protocol for remote/thin-client Spark sessions, and **ANSI mode enabled by default**, which enforces stricter SQL semantics (type coercion, overflow errors) than earlier Spark versions. The agent applies ANSI-mode-compliant SQL patterns rather than legacy permissive-mode assumptions.
 
 Uses `spark-best-practices` skill and `guides/spark/` for reference.
 
@@ -26,8 +28,9 @@ Uses `spark-best-practices` skill and `guides/spark/` for reference.
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `spark-best-practices`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/de-spark-expert/`, git-untracked)
 - **Effort**: high
+- **Permission mode**: bypassPermissions
 
 ## Relationships
 
