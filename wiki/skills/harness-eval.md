@@ -1,7 +1,7 @@
 ---
 title: Harness Eval
 type: skill
-updated: 2026-04-26
+updated: 2026-07-19
 sources:
   - .claude/skills/harness-eval/SKILL.md
 related:
@@ -9,39 +9,35 @@ related:
   - [[deep-verify]]
   - [[agent-eval-framework]]
   - [[evaluator-optimizer]]
+  - [[multi-model-verification]]
 ---
 
 # Harness Eval
 
-Structured SE task evaluation using 15-task benchmark for agent quality assessment.
+Structured SE task benchmark suite for quantitative agent-quality scoring, adapted from [revfactory/claude-code-harness](https://github.com/revfactory/claude-code-harness) research that demonstrated a 60% quality gain (49.5 → 79.3 points) through structured pre-configuration.
 
 ## Overview
 
-Runs a structured benchmark of 15 canonical software engineering tasks to evaluate agent quality, rule compliance, and system health. Each task tests specific capabilities (code review, refactoring, agent creation, git operations, etc.) and is scored against defined criteria. Results identify weak areas and regression from previous versions. Used for release qualification and continuous improvement.
+Runs 15 canonical software-engineering task definitions — API Design, Data Modeling, Authentication Flow, Test Suite Creation, Error Handler, Logging System, Configuration Manager, CLI Tool, Database Migration, Cache Layer, Queue Consumer, Middleware Chain, File Processor, Webhook Handler, Rate Limiter — each scored 0-100 across four weighted quality dimensions: Test Coverage (30%), Architecture Design (25%), Error Handling (25%), Extensibility (20%). Scores map to A-D grades (80+ production-ready, 0-39 significant structural issues). Two presets: `all` (full 15-task run, ~45min, default) and `quick` (top 5 high-impact tasks — API Design, Auth Flow, Test Suite Creation, Error Handler, Middleware Chain — ~15min).
 
 ## Key Details
 
 - **Scope**: harness
 - **User-invocable**: yes
-- **Command**: `/omcustom:harness-eval`
+- **Command**: `/harness-eval [--preset all|quick] [--task <name>]`
 - **Effort**: high
+- **Output**: `.claude/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md`, written directly under the R006/R010 `.claude/**` bypassPermissions convention (no `/tmp` wrapping, CC v2.1.121+)
 
 ## 4-Metric Quantitative Layer (added v0.113.0)
 
-The 15 benchmark tasks measure task correctness (pass/fail). Starting v0.113.0, the [[agent-eval-framework]] skill layers efficiency metrics on top of each task result:
-
-- **step_ratio** — observed_steps / ideal_steps
-- **tool_call_ratio** — observed_tool_calls / ideal_tool_calls
-- **latency_ratio** — observed_latency / ideal_latency
-
-Workflow: run benchmark task → collect trajectory → compare against ideal annotation → Phase 1 (correctness) gate → Phase 2 (efficiency) comparison. Ideal trajectory annotations follow the YAML schema in `guides/agent-eval/README.md`.
+The 15 tasks measure correctness (pass/fail) only. [[agent-eval-framework]] layers efficiency metrics on top of each result — step_ratio, tool_call_ratio, latency_ratio (observed/ideal). Phase 1 gates on correctness; Phase 2 compares efficiency among passing variants against an ideal-trajectory YAML annotation defined per benchmark.
 
 ## Relationships
 
-- **Used by agents**: orchestrator
+- **Feeds**: [[evaluator-optimizer]] — harness-eval rubric dimensions become `pre_negotiation` sprint-contract criteria (`/harness-eval → loads rubric → evaluator-optimizer executes → scoring → report`)
 - **Related skills**: [[structured-dev-cycle]], [[deep-verify]], [[multi-model-verification]], [[agent-eval-framework]]
-- **See also**: [[R020]]
-- **Guide**: [Agent Eval guide](../guides/agent-eval.md)
+- **See also**: [[R020]] (completion verification — quantitative evidence attached to `[Done]` declarations)
+- **Guides**: [Agent Eval](../guides/agent-eval.md) (4-metric measurement methodology), [Harness Engineering](../guides/harness-engineering.md) (benchmark evaluation layer placement)
 
 ## Sources
 

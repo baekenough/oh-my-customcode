@@ -1,7 +1,7 @@
 ---
 title: be-springboot-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/be-springboot-expert.md
 related:
@@ -26,8 +26,9 @@ Uses the `springboot-best-practices` skill and consults `guides/springboot/` for
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `springboot-best-practices`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/be-springboot-expert/`, git-untracked)
 - **Effort**: high
+- **Permission mode**: bypassPermissions
 
 ## Relationships
 

@@ -1,7 +1,7 @@
 ---
 title: be-express-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/be-express-expert.md
 related:
@@ -25,8 +25,9 @@ The agent references the official Express.js documentation and security guide di
 - **Model**: sonnet
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/be-express-expert/`, git-untracked)
 - **Effort**: high
+- **Permission Mode**: bypassPermissions (skips prompts; R010 canonical parent-session override applies on CC v2.1.212+)
 
 ## Relationships
 

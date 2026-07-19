@@ -1,7 +1,7 @@
 ---
 title: tool-npm-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/tool-npm-expert.md
 related:
@@ -27,14 +27,14 @@ Uses three focused skills: `npm-audit`, `npm-publish`, and `npm-version`. Works 
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Bash
 - **Skills**: `npm-audit`, `npm-publish`, `npm-version`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/tool-npm-expert/`, git-untracked)
 - **Effort**: medium
 
 ## Relationships
 
 - **Depends on**: `npm-audit` skill, `npm-publish` skill, `npm-version` skill
 - **Used by**: `/omcustom:npm-publish`, `/omcustom:npm-version`, `/omcustom:npm-audit` commands, [[lang-typescript-expert]] integration
-- **See also**: [[mgr-gitnerd]] (version commits/tags), [[lang-typescript-expert]] (TS builds before publish), [[tool-bun-expert]] (Bun alternative), [[tool-optimizer]] (bundle analysis)
+- **See also**: [[mgr-gitnerd]] (version commits/tags), [[lang-typescript-expert]] (TS builds before publish), qa-lead (test validation before publish), [[tool-bun-expert]] (Bun alternative), [[tool-optimizer]] (bundle analysis)
 
 ## Sources
 

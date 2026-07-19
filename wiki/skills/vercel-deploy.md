@@ -1,35 +1,35 @@
 ---
 title: Vercel Deploy
 type: skill
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/skills/vercel-deploy/SKILL.md
 related:
   - [[fe-vercel-agent]]
   - [[react-best-practices]]
-  - [[typescript-best-practices]]
+  - [[web-design-guidelines]]
+  - [[impeccable-design]]
 ---
 
 # Vercel Deploy
 
-Deploy applications to Vercel with environment configuration and preview URLs.
+Deploys an application to Vercel with automatic framework detection and shareable preview URLs.
 
 ## Overview
 
-Automates Vercel deployments: pre-deploy checks (build passes, tests pass), `vercel deploy` execution, environment variable management, preview URL generation, and production promotion. Supports `--preview` (preview deployment) and `--prod` (production deployment) modes. Handles environment-specific config via Vercel CLI. Delegates git operations to `mgr-gitnerd` and file edits to `fe-vercel-agent`.
+`vercel-deploy` is a lightweight, framework-agnostic deployment skill: it auto-detects the project framework from `package.json` (40+ frameworks — Next.js, React, Vue, Nuxt, Svelte, Astro, and more), excludes `node_modules/`, `.git/`, and `.env` files from the upload bundle, then uploads and returns two URLs — a **Preview URL** (view the live deployment) and a **Claim URL** (transfer anonymous-deploy ownership to a Vercel account). The execution flow is a fixed 4-step pipeline: detect framework → prepare bundle → upload → return URLs. Unlike a full CI/CD deploy skill, it does not run pre-deploy build/test gates or manage environment variables/production promotion — those responsibilities stay with the invoking agent or an external Vercel account.
 
-## Key Details
-
-- **Scope**: core
-- **User-invocable**: yes
-- **Command**: `/vercel-deploy`
-- **Effort**: not specified
+| Field | Value |
+|---|---|
+| Scope | core |
+| User-invocable | yes |
+| Requirements | valid project structure, `package.json` present, Vercel CLI or API token for authenticated deploys |
+| Limitations | claimable deploys are anonymous; preview URLs are temporary; full features require a Vercel account |
 
 ## Relationships
 
-- **Used by agents**: [[fe-vercel-agent]]
-- **Related skills**: [[react-best-practices]], [[typescript-best-practices]]
-- **See also**: [[mgr-gitnerd]], [[R001]]
+- **Used by agents**: [[fe-vercel-agent]] — its `skills:` frontmatter lists `vercel-deploy` alongside [[react-best-practices]], [[web-design-guidelines]], and [[impeccable-design]] for React/Next.js optimization and deployment automation.
+- **Origin**: external skill mirrored from [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) (v1.0.0); update via `npx add-skill vercel-labs/agent-skills`.
 
 ## Sources
 

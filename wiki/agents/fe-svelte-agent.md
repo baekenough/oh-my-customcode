@@ -1,7 +1,7 @@
 ---
 title: fe-svelte-agent
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/fe-svelte-agent.md
 related:
@@ -24,8 +24,9 @@ Expert Svelte developer for compiler-based reactivity, reactive statements, Svel
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `impeccable-design`, `web-design-guidelines`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
+- **Permission Mode**: bypassPermissions
 
 ## Relationships
 

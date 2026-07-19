@@ -1,7 +1,7 @@
 ---
 title: fe-vercel-agent
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/fe-vercel-agent.md
 related:
@@ -21,7 +21,7 @@ Frontend specialist for React/Next.js optimization, web design review (accessibi
 
 `fe-vercel-agent` is an external agent derived from [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) (v1.0.0). It covers React/Next.js optimization (40+ rules), web design review with 100+ accessibility and UX/UI rules (ARIA, dark mode, i18n), and automated Vercel deployment with auto-detection for 40+ frameworks.
 
-The agent combines three specialized skills: `react-best-practices`, `web-design-guidelines`, and `vercel-deploy`, making it the all-in-one frontend deployment agent.
+The agent combines four specialized skills: `react-best-practices` and `web-design-guidelines` for code/UX review, `vercel-deploy` for deployment automation, and `impeccable-design` (AI design language covering typography, color, motion, layout, UX writing) for production-grade UI steering — making it the all-in-one frontend deployment agent.
 
 ## Key Details
 
@@ -29,8 +29,9 @@ The agent combines three specialized skills: `react-best-practices`, `web-design
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `react-best-practices`, `web-design-guidelines`, `vercel-deploy`, `impeccable-design`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
+- **Permission mode**: bypassPermissions
 - **Source**: external from https://github.com/vercel-labs/agent-skills (v1.0.0)
 
 ## Relationships

@@ -1,7 +1,7 @@
 ---
 title: qa-engineer
 type: agent
-updated: 2026-07-14
+updated: 2026-07-19
 sources:
   - .claude/agents/qa-engineer.md
 related:
@@ -10,6 +10,7 @@ related:
   - [[arch-documenter]]
   - [[autonomous-challenge-lessons]]
   - [[r020]]
+  - [[dev-lead-routing]]
 ---
 
 # qa-engineer
@@ -27,7 +28,7 @@ The agent enforces a strict verification discipline before writing any QA report
 - **Model**: sonnet
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
-- **Memory**: project
+- **Memory**: local
 - **Effort**: medium
 - **Max Turns**: 20
 - **Limitations**: cannot modify source code in production branches
@@ -40,7 +41,8 @@ Jest, Vitest, pytest, go test, JUnit, Playwright, Cypress
 
 - **Depends on**: test cases from [[qa-writer]], priorities from [[qa-planner]]
 - **Used by**: `qa-lead-routing` skill (QA execution tasks)
-- **See also**: [[qa-writer]] (upstream test case source), [[qa-planner]] (upstream priorities), [[arch-documenter]] (defect/results archive destination), [[autonomous-challenge-lessons]] (verification discipline generalized for long autonomous runs), [[r020]] (completion verification principle underlying the QA evidence discipline)
+- **Outputs to**: defects to [[dev-lead-routing]] (dev-lead), results back to [[qa-writer]]
+- **See also**: [[qa-writer]] (upstream test case source, downstream results recipient), [[qa-planner]] (upstream priorities), [[dev-lead-routing]] (defect handoff target), [[arch-documenter]] (defect/results archive destination), [[autonomous-challenge-lessons]] (verification discipline generalized for long autonomous runs), [[r020]] (completion verification principle underlying the QA evidence discipline)
 
 ## Sources
 

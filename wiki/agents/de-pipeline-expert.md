@@ -1,7 +1,7 @@
 ---
 title: de-pipeline-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/de-pipeline-expert.md
 related:
@@ -10,6 +10,8 @@ related:
   - [[de-kafka-expert]]
   - [[de-spark-expert]]
   - [[de-snowflake-expert]]
+  - [[pipeline-architecture-patterns]]
+  - [[de-lead-routing]]
 ---
 
 # de-pipeline-expert
@@ -27,14 +29,15 @@ Draws on cross-tool expertise across `guides/airflow/`, `guides/dbt/`, `guides/s
 - **Model**: sonnet
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
-- **Skills**: `pipeline-architecture-patterns`
-- **Memory**: project
+- **Skills**: [[pipeline-architecture-patterns]]
+- **Memory**: local (`.claude/agent-memory-local/de-pipeline-expert/`, git-untracked)
 - **Effort**: high
+- **Permission Mode**: bypassPermissions
 
 ## Relationships
 
-- **Depends on**: `pipeline-architecture-patterns` skill, multiple data tool guides
-- **Used by**: `de-lead-routing` skill (pipeline architecture decisions)
+- **Depends on**: [[pipeline-architecture-patterns]] skill, multiple data tool guides (`guides/airflow/`, `guides/dbt/`, `guides/spark/`, `guides/kafka/`, `guides/snowflake/`, `guides/iceberg/`)
+- **Used by**: [[de-lead-routing]] skill (pipeline architecture decisions)
 - **See also**: [[de-airflow-expert]] (orchestration), [[de-dbt-expert]] (transformation), [[de-kafka-expert]] (streaming), [[de-spark-expert]] (distributed processing), [[de-snowflake-expert]] (warehouse)
 
 ## Sources

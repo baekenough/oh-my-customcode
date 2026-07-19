@@ -1,13 +1,14 @@
 ---
 title: "tracker-checkpoint"
 type: agent
-updated: 2026-04-24
+updated: 2026-07-19
 sources:
   - .claude/agents/tracker-checkpoint.md
 related:
   - [[r006]]
   - [[r010]]
   - [[r017]]
+  - [[r011]]
 ---
 
 # tracker-checkpoint
@@ -41,7 +42,7 @@ State transitions follow a strict machine: `pending → running → completed | 
 - **Effort**: medium
 - **Tools**: Read, Write, Edit, Bash, Glob, Grep
 - **Skills**: `dag-orchestration`, `pipeline-guards`
-- **Memory**: project
+- **Memory**: local ([[r011]] — local scope, git-untracked; changed from `project` in v1.1.13/#1468)
 - **Domain**: universal
 - **Permission**: bypassPermissions
 

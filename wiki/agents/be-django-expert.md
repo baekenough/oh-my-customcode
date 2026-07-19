@@ -1,7 +1,7 @@
 ---
 title: be-django-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/be-django-expert.md
 related:
@@ -27,8 +27,9 @@ The agent uses the `django-best-practices` skill and consults `guides/django-bes
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `django-best-practices`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/be-django-expert/`, git-untracked)
 - **Effort**: high
+- **Permission Mode**: bypassPermissions
 
 ## Relationships
 

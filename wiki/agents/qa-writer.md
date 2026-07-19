@@ -1,13 +1,14 @@
 ---
 title: qa-writer
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/qa-writer.md
 related:
   - [[qa-planner]]
   - [[qa-engineer]]
   - [[arch-documenter]]
+  - [[qa-lead-routing]]
 ---
 
 # qa-writer
@@ -24,16 +25,17 @@ Results are passed to [[qa-engineer]] for execution and archived to [[arch-docum
 
 - **Model**: sonnet
 - **Domain**: universal
-- **Tools**: Read, Write, Edit, Grep, Glob (no Bash)
-- **Memory**: project
+- **Tools**: Read, Write, Edit, Grep, Glob (no Bash, `disallowedTools: [Bash]`)
+- **Memory**: local (`.claude/agent-memory-local/qa-writer/`, git-untracked — changed from `project` in v1.1.13, #1468, CC v2.1.202~207 compat pass)
 - **Effort**: medium
 - **Max Turns**: 20
+- **Permission Mode**: bypassPermissions
 - **Limitations**: cannot execute tests, cannot modify source code
 
 ## Relationships
 
 - **Depends on**: QA plans from [[qa-planner]]
-- **Used by**: `qa-lead-routing` skill (QA documentation tasks)
+- **Used by**: [[qa-lead-routing]] skill (QA documentation tasks)
 - **See also**: [[qa-planner]] (upstream plan source), [[qa-engineer]] (downstream execution consumer), [[arch-documenter]] (archive destination)
 
 ## Sources

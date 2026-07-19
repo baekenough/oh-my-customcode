@@ -1,7 +1,7 @@
 ---
 title: arch-documenter
 type: agent
-updated: 2026-04-28
+updated: 2026-07-19
 sources:
   - .claude/agents/arch-documenter.md
 related:
@@ -9,6 +9,7 @@ related:
   - [[mgr-creator]]
   - [[mgr-sauron]]
   - [[r009]]
+  - [[r010]]
   - [[r018]]
 ---
 
@@ -18,17 +19,19 @@ Architecture documentation specialist for generating system design docs, API spe
 
 ## Overview
 
-`arch-documenter` handles all software architecture documentation needs. It produces human-readable technical artifacts — from high-level system overviews to detailed API contracts — using standard formats like Markdown, Mermaid diagrams, and OpenAPI/Swagger specs. It cannot execute code or deploy systems; its role is purely documentation and specification.
+`arch-documenter` handles all software architecture documentation needs. It produces human-readable technical artifacts — from high-level system overviews to detailed API contracts — using standard formats like Markdown, Mermaid diagrams, and OpenAPI/Swagger specs. It cannot execute commands (`disallowedTools: [Bash]`) or deploy systems; its role is purely documentation and specification. This Bash restriction is a known R010 delegation pre-check limitation: callers needing shell output (e.g., `gh` calls) must pre-collect that data before delegating to this agent.
 
-The agent operates with `project`-scoped memory, meaning it retains knowledge about the project structure across sessions.
+The agent operates with `local`-scoped memory (`.claude/agent-memory-local/`, git-untracked) and `bypassPermissions` mode, and is capped at 20 turns per invocation.
 
 ## Key Details
 
 - **Model**: sonnet
 - **Domain**: universal
-- **Tools**: Read, Write, Edit, Grep, Glob (no Bash)
-- **Memory**: project
+- **Tools**: Read, Write, Edit, Grep, Glob (no Bash — `disallowedTools: [Bash]`)
+- **Memory**: local
 - **Effort**: high
+- **Max turns**: 20
+- **Permission mode**: bypassPermissions
 - **Limitations**: cannot execute commands, cannot deploy
 
 ## Document Types Produced
@@ -52,13 +55,19 @@ The agent operates with `project`-scoped memory, meaning it retains knowledge ab
 
 이 임계치는 단일 에이전트 거대 프롬프트가 유발하는 latency timeout과 context 낭비를 방지하기 위해 도입되었다. 8000+ 토큰 입력이 예상되면 호출 전에 도메인별로 분할해야 한다.
 
+## Output Constraints (Large Artifact Reply)
+
+For artifacts exceeding 50 lines or 2000 characters, `arch-documenter` replies to the caller with the file's **absolute path** and **line count** plus a 3-7 bullet summary of the sections written — it does NOT re-emit the file body as LLM output. The written file on disk is the source of truth. Exceptions: caller explicitly requests the body, the artifact is ≤50 lines / ≤2000 chars, or the output is a small patch/diff.
+
+Rationale: re-emitting large text wastes tokens, risks timeouts, and pressures context. This complements the R010 Artifact Output Convention — large writes are handed off by path, not by inline content (#1087).
+
 ## Relationships
 
 - **Depends on**: project source files (read-only), existing docs
 - **Used by**: [[mgr-sauron]] (documentation accuracy verification), [[qa-writer]] (archive destination for QA docs)
 - **See also**: [[arch-speckit-agent]] (spec-driven requirements), [[mgr-creator]] (new guides creation)
-- **Governed by**: [[r009]] (parallel execution threshold), [[r018]] (Agent Teams for large multi-domain plans)
+- **Governed by**: [[r009]] (parallel execution threshold), [[r010]] (Artifact Output Convention, Bash pre-check limitation), [[r018]] (Agent Teams for large multi-domain plans)
 
 ## Sources
 
-- `.claude/agents/arch-documenter.md` — agent definition (Input Constraints section #1085)
+- `.claude/agents/arch-documenter.md` — agent definition (Input Constraints section #1085, Output Constraints section #1087)

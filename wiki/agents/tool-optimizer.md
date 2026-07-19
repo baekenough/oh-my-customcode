@@ -1,7 +1,7 @@
 ---
 title: tool-optimizer
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/tool-optimizer.md
 related:
@@ -27,9 +27,10 @@ Uses three skills: `optimize-analyze`, `optimize-bundle`, and `optimize-report`.
 - **Domain**: universal
 - **Tools**: Read, Grep, Glob, Bash (read-only operations only)
 - **Skills**: `optimize-analyze`, `optimize-bundle`, `optimize-report`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/tool-optimizer/`, git-untracked — since v1.1.13, #1468)
 - **Effort**: medium
 - **Max Turns**: 20
+- **Permission Mode**: bypassPermissions
 - **Limitations**: cannot modify source code
 
 ## Relationships

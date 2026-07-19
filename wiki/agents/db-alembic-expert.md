@@ -1,11 +1,12 @@
 ---
 title: db-alembic-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/db-alembic-expert.md
 related:
   - [[db-postgres-expert]]
+  - [[db-supabase-expert]]
   - [[be-fastapi-expert]]
   - [[qa-engineer]]
 ---
@@ -16,7 +17,7 @@ Alembic migration lifecycle specialist for generating, reviewing, fixing, and ad
 
 ## Overview
 
-`db-alembic-expert` manages the complete Alembic migration lifecycle. It autogenerates migrations from SQLAlchemy models, performs post-generation safety reviews (detecting rename-as-drop+add, anonymous constraints, lock-risky operations), implements the Expand-Contract pattern for zero-downtime schema changes, configures `env.py` for async/multi-tenant setups, and integrates migrations into CI pipelines with pytest-alembic and Squawk linter.
+`db-alembic-expert` manages the complete Alembic migration lifecycle. It autogenerates migrations from SQLAlchemy models, performs post-generation safety reviews (detecting rename-as-drop+add, anonymous constraints, lock-risky operations), implements the Expand-Contract pattern for zero-downtime schema changes, configures `env.py` for async/multi-tenant setups, manages PostgreSQL-specific objects (views, functions, triggers, RLS policies) via alembic-utils, and integrates migrations into CI pipelines with pytest-alembic and the Squawk linter.
 
 Escalates from sonnet to opus after 2 failures (escalation policy enabled).
 
@@ -26,22 +27,22 @@ Escalates from sonnet to opus after 2 failures (escalation policy enabled).
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `alembic-best-practices`, `postgres-best-practices`
-- **Memory**: project
+- **Memory**: local
 - **Effort**: high
-- **Limitations**: cannot apply migrations directly to production databases; cannot detect rename intent without explicit instruction
+- **Limitations**: cannot apply migrations directly to production databases; cannot resolve application-level data backfill logic without domain context; cannot detect rename intent without git diff context or explicit user instruction
 
 ## Safety Rules
 
-- Never auto-fix column renames without explicit user confirmation
-- Always flag missing `downgrade()` logic
-- Never embed credentials in `alembic.ini` or `env.py`
+- Never auto-fix column renames without explicit user confirmation — autogenerate cannot distinguish rename from drop+add
+- Always flag missing `downgrade()` logic (`pass` acceptable only when explicitly justified)
+- Never embed credentials in `alembic.ini` or `env.py` — source from `os.environ`
 - Require `CONCURRENTLY` for index operations on large tables
 
 ## Relationships
 
 - **Depends on**: `alembic-best-practices` skill, `postgres-best-practices` skill
 - **Used by**: `dev-lead-routing` skill (database migration tasks)
-- **See also**: [[db-postgres-expert]] (PostgreSQL DDL nuances), [[be-fastapi-expert]] (async engine configuration), [[qa-engineer]] (migration test strategy)
+- **See also**: [[db-postgres-expert]] (PostgreSQL DDL nuances, partitioning, JSONB), [[db-supabase-expert]] (Supabase schema management), [[be-fastapi-expert]] (async engine configuration, lifespan integration), [[qa-engineer]] (migration test strategy, rollback testing)
 
 ## Sources
 

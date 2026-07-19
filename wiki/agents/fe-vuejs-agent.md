@@ -1,7 +1,7 @@
 ---
 title: fe-vuejs-agent
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/fe-vuejs-agent.md
 related:
@@ -25,8 +25,9 @@ Expert Vue.js (Vue 3) developer for Composition API, single-file components, Pin
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `impeccable-design`, `web-design-guidelines`
-- **Memory**: project
+- **Memory**: local (untracked, `.claude/agent-memory-local/fe-vuejs-agent/`)
 - **Effort**: medium
+- **Permission Mode**: bypassPermissions
 
 ## Relationships
 

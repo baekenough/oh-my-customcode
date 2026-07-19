@@ -1,7 +1,7 @@
 ---
 title: de-dbt-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/de-dbt-expert.md
 related:
@@ -17,7 +17,7 @@ Expert dbt developer for analytics engineering, SQL modeling, testing, and docum
 
 ## Overview
 
-`de-dbt-expert` covers the complete dbt analytics engineering workflow. It structures projects with the staging/intermediate/marts layering (stg_, int_, fct_, dim_ prefixes), selects appropriate materializations (view, ephemeral, table, incremental), writes schema tests (unique, not_null, relationships, accepted_values), builds DRY SQL with Jinja macros, and manages sources, seeds, snapshots, and documentation.
+`de-dbt-expert` covers the complete dbt analytics engineering workflow on **dbt-core 1.11+ with the Fusion engine** (faster parallel execution). It structures projects with the staging/intermediate/marts layering (stg_, int_, fct_, dim_ prefixes), selects appropriate materializations (view, ephemeral, table, incremental), writes schema tests (unique, not_null, relationships, accepted_values), builds DRY SQL with Jinja macros, and manages sources, seeds, snapshots, and documentation.
 
 Uses `dbt-best-practices` skill and `guides/dbt/` for reference.
 
@@ -27,8 +27,9 @@ Uses `dbt-best-practices` skill and `guides/dbt/` for reference.
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `dbt-best-practices`
-- **Memory**: project
+- **Memory**: local (agent-memory-local, git-untracked)
 - **Effort**: high
+- **Permission mode**: bypassPermissions
 
 ## Relationships
 

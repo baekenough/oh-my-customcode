@@ -1,7 +1,7 @@
 ---
 title: lang-kotlin-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/agents/lang-kotlin-expert.md
 related:
@@ -30,8 +30,9 @@ Uses `kotlin-best-practices` skill and `guides/kotlin/`.
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `kotlin-best-practices`
-- **Memory**: project
+- **Memory**: local (`.claude/agent-memory-local/lang-kotlin-expert/`, git-untracked)
 - **Effort**: high
+- **Permission Mode**: bypassPermissions
 
 ## Relationships
 
