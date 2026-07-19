@@ -3,11 +3,12 @@ name: Deploy Test
 on:
   pull_request:
     branches:
-      - 'release/**'
+      - develop
 
 jobs:
   deploy-test:
     name: Deploy Test with Verdaccio
+    if: startsWith(github.head_ref, 'release/')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,7 +44,7 @@ jobs:
 
       - name: Publish to Verdaccio
         run: |
-          npm publish --registry http://localhost:4873/
+          npm publish --ignore-scripts --registry http://localhost:4873/
 
       - name: Test global install
         run: |
