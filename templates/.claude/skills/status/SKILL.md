@@ -38,7 +38,7 @@ Agents:
 Skills:
   Total:          118 skills
 
-Guides:            57 loaded
+Guides:            56 loaded
 Commands:          60+ available
 
 Health: ✓ OK

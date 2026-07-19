@@ -1,7 +1,7 @@
 ---
 title: Status
 type: skill
-updated: 2026-04-12
+updated: 2026-07-19
 sources:
   - .claude/skills/status/SKILL.md
 related:

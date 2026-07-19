@@ -134,7 +134,7 @@ project/
 |   +-- rules/                   # Global rules (R000-R023)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
-+-- guides/                      # Reference docs (57 topics)
++-- guides/                      # Reference docs (56 topics)
 ```
 
 ## Orchestration

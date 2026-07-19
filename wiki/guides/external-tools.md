@@ -1,13 +1,14 @@
 ---
 title: External Tools Guide
 type: guide
-updated: 2026-05-18
+updated: 2026-07-19
 sources:
   - guides/external-tools/graphify-integration.md
   - guides/external-tools/ecc-absorption-decisions.md
 related:
   - [[skills/wiki-rag]]
   - [[skills/ontology-rag]]
+  - [[skills/profile]]
   - [[R019]]
   - [[R006]]
   - [[guides/hook-data-flow]]
@@ -73,7 +74,9 @@ ECC (Everything Claude Code) 패턴 흡수 결정 이력. v0.142.0–v0.143.0 �
 |------|------|------|
 | `sec-agentshield-wrapper` (#1174) | ACCEPT | pre-flight 단계 — CodeQL post-write와 시점 분리, compilation pipeline 완성 |
 | `instinct-extractor` (#1175) | ACCEPT | 누적 세션 패턴 채굴 — skill-extractor(단일)와 trigger 분리, R016 강화 |
-| `manifest-install --profile` (#1177) | ACCEPT | 도메인별 설치 profile 5종 — deactivation 비용 해소, 진입 장벽 낮춤 |
+| `manifest-install --profile` (#1177) | ACCEPT → **REMOVED (v1.1.29, #1484)** | 도메인별 설치 profile 5종으로 흡수됐으나, `--profile` CLI 배선이 실제로 이뤄지지 않은 vestigial 코드로 확인되어 제거됨 |
+
+> **후속 (v1.1.29, #1484)**: `manifest-install --profile`은 CLI 미배선(vestigial) 상태로 확인되어 제거되었습니다. `templates/manifest.json#profiles` 및 `guides/profiles/` 토픽 전체가 삭제되었으며, 대응 wiki 페이지(`guides/profiles.md`, `guides/profiles-manifest-install.md`)도 함께 제거되었습니다. [[skills/profile]] 스킬(plugin profile 전환, `.claude/profiles/*.json`)은 이 결정과 무관하게 유지됩니다 — 두 시스템은 항상 독립적이었습니다.
 
 ### 거부된 패턴 — Cross-harness Export (#1176)
 
@@ -84,7 +87,7 @@ ECC의 8개 외부 harness(Cursor/Aider/Codex/Opencode 등) export 기능.
 2. ECC와 zero-sum 경쟁 회피 — 동일 기능 중복 시 차별화 희석
 3. single-maintainer R016 부담 — 8개 harness 변동 추적이 core 개발과 경쟁
 
-**대안**: `manifest-install --profile` (#1177)이 신규 진입 문제를 부분 해소. DEFER 재검토 조건: 외부 기여자 5명+ OR 한국어 사용자 50%+.
+**대안**: 신규 진입 문제는 당시 `manifest-install --profile` (#1177)로 부분 해소를 시도했으나, 해당 기능은 v1.1.29(#1484)에서 vestigial로 제거되어 이 대안은 더 이상 유효하지 않습니다. DEFER 재검토 조건: 외부 기여자 5명+ OR 한국어 사용자 50%+.
 
 **포지셔닝 결과**:
 
