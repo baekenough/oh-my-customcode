@@ -293,7 +293,7 @@ your-project/
 │   └── ontology/               # RAG용 지식 그래프
 ├── packages/
 │   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
-└── guides/                     # 57개 레퍼런스 문서
+└── guides/                     # 56개 레퍼런스 문서
 ```
 
 ---

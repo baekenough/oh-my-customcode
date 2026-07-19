@@ -7,7 +7,6 @@ sources:
 related:
   - [[sys-memory-keeper]]
   - [[token-efficiency-audit]]
-  - [[profiles-manifest-install]]
   - [[r006]]
   - [[r010]]
   - [[r013]]
@@ -56,25 +55,13 @@ Switches the active plugin set in `~/.claude/settings.json` to match a named wor
 - `enabledPlugins` in `~/.claude/settings.json` is updated with per-plugin boolean flags
 - Plugins not listed in a profile retain their current state; changes apply only after session restart
 
-## Manifest Profile Integration
-
-`templates/manifest.json#profiles`의 Manifest profiles는 설치 시 에이전트·스킬·가이드 범위를 지정한다. Plugin profiles(plugin on/off)와 별개의 독립 시스템으로, 동일 이름(`web-app` 등)으로 두 시스템을 함께 사용할 수 있다.
-
-| 시스템 | 경로 | 역할 | 적용 시점 |
-|--------|------|------|-----------|
-| Plugin profiles | `.claude/profiles/*.json` | plugin on/off | 세션 재시작 후 |
-| Manifest profiles | `templates/manifest.json#profiles` | 설치 자산 범위 | `omcustom install --profile` |
-
-Manifest profile `include` 패턴: `"*"`(카테고리 전체), `"mgr-*"`(prefix glob), `{"scope": "core"}`(SKILL.md scope 필드 기준), 또는 특정 이름 하나만 지정.
-
-전체 사용 가이드: [[profiles-manifest-install]]
-
 ## Relationships
 
-- **Related issues**: #1041 (token overhead), #1080 (skill implementation), #1177 (manifest profiles), #1101 (bypassPermissions relaxation)
+- **Related issues**: #1041 (token overhead), #1080 (skill implementation), #1101 (bypassPermissions relaxation), #1484 (manifest profiles removal — see [[external-tools]])
 - **See also**: [[r010]], [[r013]], [[r006]]
+
+> **Note**: An earlier, separate "manifest profiles" system (`templates/manifest.json#profiles`, `omcustom install --profile`) existed alongside this plugin-profile skill but was never wired into the CLI. It was removed as vestigial in v1.1.29 (#1484) — see [[external-tools]] for the absorption/removal history. This skill (`.claude/profiles/*.json` + `~/.claude/settings.json`) is the only profile system currently in use.
 
 ## Sources
 
 - `.claude/skills/profile/SKILL.md` — skill definition
-- `guides/profiles/manifest-install.md` — manifest profile 전체 가이드

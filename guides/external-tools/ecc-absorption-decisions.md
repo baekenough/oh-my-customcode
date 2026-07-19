@@ -78,6 +78,10 @@ R016 Continuous Improvement 루프를 강화하며, 내부 구조(agent-memory +
 삭제 경로가 불명확)를 profile 전환으로 해소합니다.
 cross-harness export 거부(#1176)로 발생하는 진입로 공백을 부분 보완합니다.
 
+> **후속 (v1.1.29, #1484)**: manifest profiles는 CLI 미배선(vestigial)으로 확정되어
+> 제거되었습니다. 이 흡수 결정 자체는 당시 문서화되었으나, 실제 CLI 배선(`--profile`
+> 플래그 실행 경로)은 이뤄지지 않았습니다.
+
 ---
 
 ## 3. 거부된 패턴 — Cross-harness Export (#1176)
@@ -136,7 +140,9 @@ multi-target 전환의 결과:
 | 기존 harness 자산 재활용 | 멀티 harness 사용자 |
 | ECC와 기능 중복 | zero-sum 경쟁 |
 
-신규 사용자 진입로 문제는 `manifest-install --profile`(#1177)으로 부분 해소됩니다.
+신규 사용자 진입로 문제는 `manifest-install --profile`(#1177)으로 부분 해소되는
+것으로 판단되었으나, 해당 profile 기능은 이후 CLI 미배선(vestigial)이 확인되어
+v1.1.29(#1484)에서 제거되었습니다.
 멀티 harness 사용자는 ECC를 직접 사용하는 것이 더 효과적입니다.
 
 ---
@@ -161,7 +167,8 @@ multi-target 전환의 결과:
 
 4. **진입로 문제 대체 해소**
    #1177 `manifest-install --profile`이 신규 사용자 진입 비용을 낮추는 대안으로
-   이미 흡수되었습니다.
+   당시 흡수되었습니다(단, v1.1.29/#1484에서 CLI 미배선 확인 후 제거됨 — 위
+   §2-3 후속 노트 참조).
 
 ---
 

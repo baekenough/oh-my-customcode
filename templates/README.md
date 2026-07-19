@@ -55,7 +55,7 @@ templates/
 │   │   └── scripts/                 # 훅 셸 스크립트 (34개)
 │   ├── contexts/                    # 컨텍스트 설정 파일 (ecomode 등)
 │   └── ontology/                    # Ontology-RAG 지식 그래프
-└── guides/                          # 레퍼런스 문서 디렉토리 (57개)
+└── guides/                          # 레퍼런스 문서 디렉토리 (56개)
 ```
 
 ---
@@ -109,7 +109,7 @@ CI의 `verify-template-sync.sh`가 소스와 templates/ 간 일치를 검증합�
 | `SHOULD` | 강력 권장 | R003 상호작용, R013 Ecomode |
 | `MAY` | 선택 | R005 최적화 |
 
-### Guides (57)
+### Guides (56)
 
 `guides/*/` — 레퍼런스 문서 디렉토리.
 

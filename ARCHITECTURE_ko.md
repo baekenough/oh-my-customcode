@@ -4,7 +4,7 @@
 
 ## 1. 시스템 개요
 
-oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 49개의 사전 구축된 서브에이전트, 115개의 스킬, 23개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 레퍼런스 라이브러리에는 에이전트 설계, 베스트 프랙티스, 통합 패턴을 다루는 57개의 가이드 문서가 포함됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
+oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 49개의 사전 구축된 서브에이전트, 118개의 스킬, 23개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 레퍼런스 라이브러리에는 에이전트 설계, 베스트 프랙티스, 통합 패턴을 다루는 56개의 가이드 문서가 포함됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
 
 현재 버전: **0.124.0** -- npm 패키지명 `oh-my-customcode`, CLI: `omcustom`
 
@@ -77,7 +77,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | 시스템 | 4 | sys-memory-keeper, sys-naggy, wiki-curator, tracker-checkpoint |
 | **합계** | **49** | |
 
-### 3.3 스킬 카탈로그 (115개)
+### 3.3 스킬 카탈로그 (118개)
 
 **라우팅 스킬 (4개, context: fork, 캡 12)**
 
@@ -104,7 +104,7 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
 
-### 3.4 가이드 라이브러리 (57개 토픽)
+### 3.4 가이드 라이브러리 (56개 토픽)
 
 | 카테고리 | 가이드 |
 |----------|--------|

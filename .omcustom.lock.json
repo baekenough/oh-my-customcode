@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.28",
-  "generatedAt": "2026-07-19T10:37:31.051Z",
-  "templateVersion": "1.1.28",
+  "generatorVersion": "1.1.29",
+  "generatedAt": "2026-07-19T12:24:33.152Z",
+  "templateVersion": "1.1.29",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -760,7 +760,7 @@
       "component": "skills"
     },
     ".claude/skills/status/SKILL.md": {
-      "templateHash": "a97b76c1c75891692db5fd5824719f96359e28d1b9cc5012cbe3146592991fc9",
+      "templateHash": "776fa9c2f127a527babd8c0e19991f3d133375ec8c68cb7666e51a08a64243fc",
       "size": 3024,
       "component": "skills"
     },
@@ -850,8 +850,8 @@
       "component": "skills"
     },
     ".claude/skills/profile/SKILL.md": {
-      "templateHash": "7cccfdc187ad33a2ca95501b2f00d521e97d66272f2a3552ea1bc12e6ce94b22",
-      "size": 6264,
+      "templateHash": "9aa32406bb4abaaff335c6ee8f4ef487077fb5fca26470abc4718b97622a3453",
+      "size": 4215,
       "component": "skills"
     },
     ".claude/skills/pre-generation-arch-check/SKILL.md": {
@@ -1815,8 +1815,8 @@
       "component": "guides"
     },
     "guides/external-tools/ecc-absorption-decisions.md": {
-      "templateHash": "6e9497f1ca71d6f0a9fef7a960444ac768096c1210244456259623d5d674c7ef",
-      "size": 8626,
+      "templateHash": "cbb8412f0ab943a55fe62a1f13600cc3b7691a89b4bca0faab767f1691325e77",
+      "size": 9138,
       "component": "guides"
     },
     "guides/external-tools/graphify-integration.md": {
@@ -1879,11 +1879,6 @@
       "size": 365,
       "component": "guides"
     },
-    "guides/profiles/manifest-install.md": {
-      "templateHash": "f0dd38469b11c28fb61ac9e437d2c9de11c3a4092ae35bd150c4d3854fe3554a",
-      "size": 5980,
-      "component": "guides"
-    },
     "guides/supabase-postgres/README.md": {
       "templateHash": "b68c8bf42a09c31e5b820559e2c79fbe351fe5dbeb6f2b193b8ee472bf27bc22",
       "size": 943,
@@ -1940,8 +1935,8 @@
       "component": "guides"
     },
     "guides/index.yaml": {
-      "templateHash": "3714bf7f69a7b1fba2839c1e5eb0cbf24c19df2c65190f8c2ff25af640d72d71",
-      "size": 11981,
+      "templateHash": "a374e42b5071ad3a75c1c003875c749390426f7a77c14dc38fee71c0df227bf4",
+      "size": 11814,
       "component": "guides"
     },
     "guides/token-efficiency/semble.md": {

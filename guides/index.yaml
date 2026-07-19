@@ -372,12 +372,6 @@ guides:
     source:
       type: internal
 
-  - name: profiles
-    description: Manifest install profile guide — minimal/full profile selection patterns
-    path: ./profiles/
-    source:
-      type: internal
-
   # Security
   - name: security
     description: Security pre-flight analysis pattern (AgentShield) for pre-write risk identification

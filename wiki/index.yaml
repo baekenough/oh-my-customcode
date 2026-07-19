@@ -7,11 +7,11 @@ meta:
   # excluded: _Footer.md, _Sidebar.md, Home.md, Agents.md, Built-in-Commands.md,
   #   CLI-Reference.md, Contributing.md, Customization.md, Development.md, Guides.md,
   #   Project-Structure.md, Quick-Start.md, Rules.md, Skills.md, Sub-Agent-Model.md (15 pages)
-  total_pages: 267
-  total_sources: 275
+  total_pages: 265
+  total_sources: 274
   counts:
     skills: 118
-    guides: 64
+    guides: 62
     agents: 49
     rules: 23
 
@@ -787,18 +787,12 @@ pages:
     - file: guides/skill-promotion-instinct-extraction.md
       title: "Skill Promotion — Instinct Extraction Guide"
       summary: "Comparison guide for skill-extractor vs instinct-extractor — R016 Skill Promotion workflow, confidence cross-validation matrix, and recommended invocation frequency"
-    - file: guides/profiles-manifest-install.md
-      title: "Profiles — Manifest Install Guide"
-      summary: "omcustom install --profile flag guide — manifest profiles vs plugin profiles distinction, 5 built-in profiles (minimal/full/web-app/data-eng/harness-dev), include pattern reference"
     - file: guides/security.md
       title: "Security Guide"
       summary: "Index for guides/security/ — pre-write AgentShield pre-flight pattern, post-write adversarial review, CodeQL static analysis, and CVE triage across the full security asset timeline"
     - file: guides/skill-promotion.md
       title: "Skill Promotion Guide"
       summary: "Index for guides/skill-promotion/ — skill-extractor vs instinct-extractor comparison, R016 promotion workflow, context fork cap, and mgr-creator delegation for new SKILL.md creation"
-    - file: guides/profiles.md
-      title: "Profiles Guide"
-      summary: "Index for guides/profiles/ — profile-based installation with 5 built-in profiles (minimal/full/web-app/data-eng/harness-dev) for reducing onboarding cost and per-session token overhead"
     - file: guides/agent-teams.md
       title: "Agent Teams Troubleshooting Guide"
       summary: "Operational troubleshooting for Agent Teams graceful shutdown failures, member silence (TaskUpdate gap), and residual resource cleanup — 5-stage escalation procedure and R018 compliance reference. v0.150.0 #1210"
