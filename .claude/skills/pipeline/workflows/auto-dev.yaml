@@ -230,16 +230,19 @@ steps:
 
       ## Local CI-mimic verification (MUST run before marking implement done)
 
-      After all implementation tasks complete, run these scripts in sequence and halt on failure:
+      After all implementation tasks complete, run these scripts in sequence and halt on failure.
+      Run each standalone (NO pipe) and read its exit code directly — `$?` after a pipe is the last command's code (R005, #1492):
 
       1. bash .github/scripts/verify-template-sync.sh
       2. bash .github/scripts/verify-wiki-sync.sh
+      3. bun .github/scripts/validate-docs.ts --programmatic-only
 
-      If either fails:
+      If any fails:
       - For wiki-sync failures: delegate to wiki-curator to generate missing pages (`/omcustom:wiki ingest <path>`)
         (Regenerating the wiki source-hash manifest targets `wiki/.source-hashes.json` ALWAYS — NEVER `templates/manifest.json`. Command: `bash .github/scripts/lib/source-hash.sh generate wiki/.source-hashes.json`. Ref #1423.)
       - For template-sync failures: delegate to mgr-updater to sync `.claude/` -> `templates/.claude/`
-      - After fixes, re-run the scripts until both pass
+      - For validate-docs failures (count mismatch): delegate to mgr-updater to fix counts via EXHAUSTIVE grep across all docs — file-enumeration misses `.en`/`.ko` variants and secondary docs (#1521 — v1.1.32에서 validate-docs 누락으로 push 왕복 1회 발생)
+      - After fixes, re-run the scripts until all pass
 
       This mirrors CI and prevents the known 1-2 wasted push cycles per release (ref: issue #927, v0.98.0 PR #925).
     description: "Per-issue implementation with lifecycle, specialist routing, and CI-mimic verification"

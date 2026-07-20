@@ -88,6 +88,23 @@ Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
 
 Origin: #1512 (v1.1.28 커밋 staging에 dist/ 2파일 포함, 커밋 전 실측으로 정정; v1.1.12 dist/ untrack 회귀 방지). Cross-ref: R020 (완료 검증 — "실행됨 ≠ 성공").
 
+### Count Sync — Exhaustive Grep, Not File Enumeration
+
+카운트(스킬/에이전트/룰/가이드 수) 동기화는 **파일 목록 열거가 아니라 저장소 전수 grep + 의미 판별**로 수행한다. 같은 카운트가 15곳 이상에 흩어져 있어 열거식 위임은 목록에서 빠진 곳을 구조적으로 놓친다.
+
+절차: (a) 실제 개수 실측(`ls -1d .claude/skills/*/ | wc -l` 등) → (b) 이전 값을 저장소 전역 grep → (c) 각 히트가 **카운트를 의미하는지 판별** → (d) 카운트 의미인 것만 정정.
+
+무관한 숫자는 건드리지 않는다 — 버전번호(`v0.118.x`, CC `v2.1.118`), 이슈 번호, 과거 이력 서술("skill-count correction 114→118"), 스크립트 예시 주석은 정정 대상이 아니며 판단 근거와 함께 보고한다. grep 필터 주의: `--include='*.md'`는 `CLAUDE.md.en`/`CLAUDE.md.ko` 같은 **이중 확장자 파일을 매칭하지 못하므로**, 확장자 필터 없이 훑거나 별도 패턴을 병행한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 카운트 동기화를 "갱신할 파일 목록" 열거로 위임 | 전수 grep으로 이전 값 히트를 모두 수집한 뒤 카운트 의미만 정정 |
+| `--include='*.md'` 필터로 전수 grep 수행 | 확장자 필터 없이 훑거나 이중 확장자 패턴 병행 |
+
+위임 프롬프트에는 항상 **"실측값 기준으로 동기화하라, 추측으로 숫자를 바꾸지 말라"**를 명시해, 오케스트레이터의 잘못된 전제를 서브에이전트가 정정할 여지를 남긴다(#1443).
+
+Origin: #1521 (찐빠 #2 — v1.1.32 skills 118→114 동기화에서 파일 열거식 위임이 6곳만 갱신, CI 3곳 지적 + 전수 grep 9곳 추가 발견, 최종 15곳). Cross-ref: #1443 (실측값 기준 명시), #1287 (multi-copy 일관성).
+
 ## When Required
 
 Any change to: agents, agent frontmatter, skills, guides, routing patterns, rules, wiki pages.
