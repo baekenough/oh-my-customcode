@@ -280,6 +280,18 @@ Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after tri
 > **v2.1.178+**: Auto mode now evaluates subagent spawns with the safety classifier BEFORE launch, closing a gap where a spawned subagent could request a blocked action without prior review. This is the PLATFORM-level complement to the (advisory) Pre-Delegation Privileged-Scope Boundary above: the orchestrator still states the approved/forbidden scope in the delegation prompt (proactive, model-level), and CC now also gates the spawn itself (platform-level). The two are defense-in-depth — the prompt-stated boundary remains required because the classifier gates ACTIONS, not task SCOPE.
 -->
 
+### Parallel Delegation — Sibling-Agent Disclosure
+
+2개 이상의 서브에이전트를 같은 메시지에서 병렬 스폰할 때, 각 위임 프롬프트는 **형제 에이전트의 존재와 각자의 담당 범위**를 고지해야 한다. 서브에이전트는 격리된 컨텍스트에서 실행되어 형제를 인지할 수 없으므로, 고지가 없으면 `git status` 같은 **저장소 전역 공유 뷰**의 출력을 자기 변경분으로 오독하거나 경합 원인을 "외부 세션/프로세스"로 오귀속한다.
+
+고지에 포함할 것: 동시 실행 에이전트 수, 각 에이전트의 담당 파일/영역, 그리고 "공유 뷰에 타 에이전트 변경분이 함께 보이므로 **자기 담당 범위만 기준으로 보고**하라"는 지시.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 병렬 스폰 프롬프트에 형제 에이전트 고지 없이 위임 → 공유 뷰 출력을 오독하거나 원인을 "외부 프로세스"로 오귀속 | 각 프롬프트에 동시 실행 에이전트 수 + 각자 담당 범위 + "자기 담당 범위만 기준으로 보고" 지시 명시 |
+
+> Origin: #1518 (찐빠 #3 — 미고지 git 에이전트가 형제를 "외부 프로세스"로 오귀속; 같은 세션에서 고지한 4개 구현 에이전트는 전원 정확히 구분 보고 — 대조 실증). Cross-ref: R009 (병렬 실행 조건).
+
 ## Universal bypassPermissions
 
 > **This section is the canonical single source for the bypassPermissions requirement.** R002 (MUST-permissions.md) and R006 (MUST-agent-design.md) reference this section rather than repeating it.
