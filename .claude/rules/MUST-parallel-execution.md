@@ -15,6 +15,16 @@ Independent (MUST parallelize):
 
 Examples: creating multiple agents, reviewing multiple files, batch operations on different resources.
 
+### File-Disjoint ≠ Independent (Local Git State)
+
+로컬 git 상태를 변경하는 작업(`checkout` / `pull` / `branch` 생성·삭제·rename / `commit` / `stash` / `merge` / `rebase`)은 편집 대상 파일이 disjoint하더라도 **워킹트리·브랜치 포인터·인덱스·HEAD**라는 프로세스 수준 단일 공유 가변 상태를 경합하므로 **직렬화**한다. 실무 규칙: **동시 실행하는 git 상태변경 에이전트는 1개**. git 단계를 먼저 직렬로 끝낸 뒤 나머지를 병렬화한다. read-only 조회(`git status`/`log`/`diff`, `gh` 조회)는 병렬 가능 — 제한 대상은 상태 변경뿐이다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 편집 파일이 disjoint하다는 이유로 git 상태변경 에이전트 2개 이상을 병렬 스폰 | git 상태변경은 동시 1개로 직렬화; 완료 후 나머지 작업 병렬화 |
+
+Origin: #1518 (찐빠 #1 — git 에이전트 2개 근접 실행으로 작업 브랜치 stale; 편집 파일은 disjoint였음).
+
 ## Agent Teams Gate (R018)
 
 > Before spawning 2+ parallel agents, evaluate Agent Teams eligibility.

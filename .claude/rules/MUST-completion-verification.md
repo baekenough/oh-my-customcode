@@ -73,7 +73,7 @@ Never accept "pre-existing" without direct base-branch evidence. A false "pre-ex
 
 ### Verification-Delegation Non-Termination (검증 위임 판정 종료 보장)
 
-구조 검증(mgr-sauron R017)·판정·품질 게이트를 서브에이전트에 위임할 때, 위임 프롬프트에 **"최종 PASS/FAIL 판정 없이 turn을 종료하지 말라"**를 명시한다 — 단 이 clause는 **보조 수단**일 뿐 1차 방어선이 아니다. clause를 명시해도 mid-step 종료가 5회 재발했다(v1.1.13/14/17/18/19, 아래 Origin 참조). **1차 방어선은 오케스트레이터의 직접 ground-truth 실측**이다.
+구조 검증(mgr-sauron R017)·판정·품질 게이트를 서브에이전트에 위임할 때, 위임 프롬프트에 **"최종 PASS/FAIL 판정 없이 turn을 종료하지 말라"**를 명시한다 — 단 이 clause는 **보조 수단**일 뿐 1차 방어선이 아니다. clause를 명시해도 mid-step 종료가 **누적 11회** 재발했다(v1.1.13/14/17/18/19 … v1.1.30, 아래 Origin 참조). **1차 방어선은 오케스트레이터의 직접 ground-truth 실측**이다.
 
 mid-step 종료는 예상 가능한 정상 실패 모드로 취급한다 — 발생 시 즉시 ground-truth를 실측해 실제 진행 상태를 확인한다. **증상만으로 결과를 넘겨짚지 않는다**: 같은 "...중" 한 줄 종료라도 실측 결과는 다를 수 있다(예: "merging now" 후 종료 → 실측 시 PR 이미 MERGED, resume 불필요 / "CI 실행 중" 후 종료 → 실측 시 PR OPEN 미머지, resume 필요). 미완이면 SendMessage로 resume하되, 오케스트레이터가 실측한 값(예: "CI 전부 통과, mergeStateStatus=CLEAN")을 resume 메시지에 동봉해 에이전트가 재폴링 후 재종료하는 루프를 끊는다.
 
@@ -83,7 +83,7 @@ mid-step 종료는 예상 가능한 정상 실패 모드로 취급한다 — 발
 | mid-step 종료 증상(예: "merging now")으로 결과를 넘겨짚음 | 매번 `gh pr view`/`gh run list` 등으로 실측 후 완료/미완료 판정 |
 | resume 시 빈 재촉만 전달 | 실측값을 resume 메시지에 동봉해 재폴링 루프 차단 |
 
-Origin: #1443 (Session 126 회고 찐빠 #1) — v1.1.3 R017 검증에서 mgr-sauron이 source-hash 대조 중 판정 없이 종료 → resume 후 PASS. v1.1.4에서 "판정 반드시 출력" 명시로 1회 완료(대조 실증). **5회 재발 확인(#1492, Session 132)**: v1.1.13/14/17(clause 명시에도 재발) → v1.1.18(완료조건 6항목+종료금지 명시에도 "merging now" 한 줄 남기고 종료, 실측 결과 이미 완료) → v1.1.19(위임 프롬프트에 "4회 무시됨"까지 명시했으나 "CI 실행 중" 한 줄 남기고 종료, 실측 결과 미완료). Session 132에서 2회 모두 오케스트레이터 직접 실측으로 복구 — clause 강화가 아니라 실측 습관화가 유일하게 실증된 방어선.
+Origin: #1443 (Session 126 회고 찐빠 #1) — v1.1.3 R017 검증에서 mgr-sauron이 source-hash 대조 중 판정 없이 종료 → resume 후 PASS. v1.1.4에서 "판정 반드시 출력" 명시로 1회 완료(대조 실증). **5회 재발 확인(#1492, Session 132)**: v1.1.13/14/17(clause 명시에도 재발) → v1.1.18(완료조건 6항목+종료금지 명시에도 "merging now" 한 줄 남기고 종료, 실측 결과 이미 완료) → v1.1.19(위임 프롬프트에 "4회 무시됨"까지 명시했으나 "CI 실행 중" 한 줄 남기고 종료, 실측 결과 미완료). Session 132에서 2회 모두 오케스트레이터 직접 실측으로 복구 — clause 강화가 아니라 실측 습관화가 유일하게 실증된 방어선. **누적 11회 확인(#1518 찐빠 #2, Session 136)**: v1.1.30 릴리즈 세션에서도 "완료 조건 5항목 실측 + 판정 없이 종료 금지" 명시에도 mgr-gitnerd가 "폴링 완료 통지를 기다리겠습니다" 한 줄만 남기고 종료 → 오케스트레이터 직접 실측으로 복구(lockfile push 완료 / CI pending / PR OPEN); 이번엔 "대기 중" 증상이 실제 미완료였고 Session 132의 "머지 중" 증상은 실제 완료였다는 대비로 증상→결과 추론 금지가 재확인됨.
 
 Cross-reference: R018 (Member Completion Verification), `feedback_release_delegation_phasing`, `feedback_orchestrator_direct_verify` (release delegation phasing을 verification 위임에도 확장).
 
