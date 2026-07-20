@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-49개 에이전트. 118개 스킬. 23개 규칙. 명령어 하나.
+49개 에이전트. 114개 스킬. 23개 규칙. 명령어 하나.
 
 > **v0.74.0** — omcustom sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
 
@@ -149,7 +149,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (118개)
+## 스킬 (114개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -161,8 +161,8 @@ Agent(arch-documenter):haiku      ┘
 | 메모리 | 3 | memory-save, memory-recall, memory-management |
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
-| 보안 | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| 기타 | 7 | claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely 외 |
+| 보안 | 2 | adversarial-review, cve-triage |
+| 기타 | 44 | claude-native, vercel-deploy, skills-sh-search, result-aggregation 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
 
@@ -284,7 +284,7 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 49개 에이전트 정의
-│   ├── skills/                 # 118개 스킬 모듈
+│   ├── skills/                 # 114개 스킬 모듈
 │   ├── rules/                  # 23개 거버넌스 규칙 (R000-R023)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마

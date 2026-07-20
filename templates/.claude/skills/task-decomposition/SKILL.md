@@ -8,6 +8,10 @@ user-invocable: false
 
 # Task Decomposition Skill
 
+> **Soft-deprecated — 신규 사용 비권장.** 신규 DAG/오케스트레이션 작업은 네이티브 Workflow tool을 우선 사용하십시오. 위상정렬·병렬 팬아웃·재개를 플랫폼이 직접 제공합니다.
+> 이 스킬은 기존 파이프라인 호환을 위해 유지됩니다 — `pipeline auto-dev.yaml`과 `/fsd` 자율 루프가 의존합니다. 삭제 대상이 아니라 신규 사용만 비권장하는 상태입니다.
+> Origin: #1474 (하네스 표면 정리 — 단계적 이행 결정).
+
 Analyzes task complexity and decomposes large tasks into smaller, parallelizable subtasks compatible with the DAG orchestration skill. The orchestrator uses this as a planning frontend before execution.
 
 ## Trigger Conditions

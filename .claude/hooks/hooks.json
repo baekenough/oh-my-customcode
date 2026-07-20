@@ -263,7 +263,7 @@
           },
           {
             "type": "prompt",
-            "prompt": "A background subagent just completed. Check if there are pending workflow steps that depend on this result. If the previous subagent FAILED, do NOT auto-continue \u2014 report the failure and wait for user input. If the previous step succeeded and there are pending steps, proceed automatically. If no pending steps, report results and wait. Safety: The file /tmp/.claude-loop-count-$PPID tracks auto-continue count. After 3 consecutive auto-continues without user interaction, pause and ask the user before proceeding."
+            "prompt": "A background subagent just completed. If it FAILED, do NOT auto-continue \u2014 report the failure and wait for user input."
           }
         ],
         "description": "Record agent outcomes + auto-continue workflow on subagent completion"

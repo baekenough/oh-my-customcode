@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-49 agents. 118 skills. 23 rules. One command.
+49 agents. 114 skills. 23 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -132,7 +132,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (118)
+### Skills (114)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -144,8 +144,8 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 | Memory | 3 | memory-save, memory-recall, memory-management |
 | Package | 3 | npm-publish, npm-version, npm-audit |
 | Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
-| Security | 3 | adversarial-review, cve-triage, jinja2-prompts |
-| Other | 47 | claude-native, vercel-deploy, skills-sh-search, result-aggregation, writing-clearly-and-concisely, and ~40 more |
+| Security | 2 | adversarial-review, cve-triage |
+| Other | 44 | claude-native, vercel-deploy, skills-sh-search, result-aggregation, and ~40 more |
 
 Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill maintenance), `package` (project-specific).
 
@@ -270,7 +270,7 @@ your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
 │   ├── agents/                 # 49 agent definitions
-│   ├── skills/                 # 118 skill modules
+│   ├── skills/                 # 114 skill modules
 │   ├── rules/                  # 23 governance rules (R000-R023)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas

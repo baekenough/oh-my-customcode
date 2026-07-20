@@ -7,10 +7,10 @@ meta:
   # excluded: _Footer.md, _Sidebar.md, Home.md, Agents.md, Built-in-Commands.md,
   #   CLI-Reference.md, Contributing.md, Customization.md, Development.md, Guides.md,
   #   Project-Structure.md, Quick-Start.md, Rules.md, Skills.md, Sub-Agent-Model.md (15 pages)
-  total_pages: 265
-  total_sources: 274
+  total_pages: 261
+  total_sources: 270
   counts:
-    skills: 118
+    skills: 114
     guides: 62
     agents: 49
     rules: 23
@@ -318,9 +318,6 @@ pages:
     - file: skills/java-best-practices.md
       title: "Java Best Practices"
       summary: "Modern Java 25 LTS patterns from Virtual Threads, Pattern Matching, Records, and Sealed Classes."
-    - file: skills/jinja2-prompts.md
-      title: "Jinja2 Prompts"
-      summary: "Parameterized prompt templates using Jinja2 syntax for reusable agent instructions"
     - file: skills/kafka-best-practices.md
       title: "Kafka Best Practices"
       summary: "Apache Kafka best practices for event streaming, topic design, and consumer patterns"
@@ -378,9 +375,6 @@ pages:
     - file: skills/optimize-report.md
       title: "Optimize Report"
       summary: "Generate comprehensive optimization report with before/after metrics."
-    - file: skills/peer-messaging.md
-      title: "Peer Messaging"
-      summary: "Cross-session Claude Code instance communication via claude-peers-mcp broker."
     - file: skills/playwright-compress.md
       title: "Playwright Compress"
       summary: "PostToolUse hook that compresses Playwright MCP tool output via Haiku summarization — Layer 4 of the token defense stack (94-96% reduction)"
@@ -462,9 +456,6 @@ pages:
     - file: skills/sdd-dev.md
       title: "SDD Dev"
       summary: "Spec-Driven Development workflow using sdd/ folder as the single source of truth"
-    - file: skills/sdd-development.md
-      title: "SDD Development (Alias)"
-      summary: "Alias for sdd-dev — Spec-Driven Development workflow."
     - file: skills/sdd.md
       title: "SDD (Alias)"
       summary: "Alias for sdd-dev — Spec-Driven Development workflow."
@@ -534,9 +525,6 @@ pages:
     - file: skills/worker-reviewer-pipeline.md
       title: "Worker Reviewer Pipeline"
       summary: "Worker-Reviewer iterative pipeline for quality-gated code generation."
-    - file: skills/writing-clearly-and-concisely.md
-      title: "Writing Clearly and Concisely"
-      summary: "Apply Strunk's timeless writing rules to technical documentation and agent communication"
 
   rules:
     - file: rules/r000.md

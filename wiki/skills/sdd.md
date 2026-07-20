@@ -6,7 +6,6 @@ sources:
   - .claude/skills/sdd/SKILL.md
 related:
   - [[sdd-dev]]
-  - [[sdd-development]]
 ---
 
 # SDD (Alias)
@@ -28,7 +27,6 @@ This skill is an alias for `sdd-dev`. Invoking `/sdd [task description]` is equi
 ## Relationships
 
 - **Alias for**: [[sdd-dev]]
-- **Related**: [[sdd-development]]
 
 ## Sources
 

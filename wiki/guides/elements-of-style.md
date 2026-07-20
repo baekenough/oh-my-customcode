@@ -14,7 +14,7 @@ Reference documentation for clear, concise writing based on Strunk's classic sty
 
 ## Overview
 
-Applies Strunk & White's "Elements of Style" principles to technical writing and documentation. Covers rules for clear expression, omitting needless words, active voice usage, and paragraph structure. This guide underpins the `writing-clearly-and-concisely` skill and is referenced when writing documentation, guides, commit messages, and PR descriptions.
+Applies Strunk & White's "Elements of Style" principles to technical writing and documentation. Covers rules for clear expression, omitting needless words, active voice usage, and paragraph structure. This guide underpins the `elements-of-style:writing-clearly-and-concisely` plugin skill and is referenced when writing documentation, guides, commit messages, and PR descriptions.
 
 ## Key Topics
 
@@ -29,7 +29,7 @@ Applies Strunk & White's "Elements of Style" principles to technical writing and
 ## Relationships
 
 - **Used by agents**: [[arch-documenter]]
-- **Related skills**: [[writing-clearly-and-concisely]], [[elements-of-style:writing-clearly-and-concisely]]
+- **Related skills**: [[elements-of-style:writing-clearly-and-concisely]]
 - **See also**: [[impeccable-design]], [[web-design]]
 
 ## Sources
