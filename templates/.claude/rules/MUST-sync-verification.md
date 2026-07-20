@@ -77,6 +77,17 @@ Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
 ```
 -->
 
+### Release Commit Staging Hygiene (빌드 산출물 오염 방지)
+
+릴리즈 커밋(및 `bun run build`를 수행한 모든 커밋) 직전, `git diff --cached --name-only`로 **스테이징 목록을 실측**하여 `dist/` 등 빌드 산출물이 포함되지 않았는지 확인한다. gitignored 경로라도 `git add -f` 또는 광범위 `git add` 조합으로 스테이징될 수 있으므로, .gitignore 존재가 방어를 보장하지 않는다. 발견 시 `git reset dist/`로 제외한 뒤 커밋한다. 이는 v1.1.12의 `dist/` untrack 조치에 대한 **회귀 방지 게이트**다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 빌드 후 광범위 `git add`로 커밋 → gitignored `dist/` force-add 위험 | 커밋 직전 `git diff --cached --name-only` 실측으로 빌드 산출물 부재 확인 |
+| .gitignore에 있으니 안전하다고 가정 | force-add 경로는 .gitignore를 우회하므로 실측 필요 |
+
+Origin: #1512 (v1.1.28 커밋 staging에 dist/ 2파일 포함, 커밋 전 실측으로 정정; v1.1.12 dist/ untrack 회귀 방지). Cross-ref: R020 (완료 검증 — "실행됨 ≠ 성공").
+
 ## When Required
 
 Any change to: agents, agent frontmatter, skills, guides, routing patterns, rules, wiki pages.
