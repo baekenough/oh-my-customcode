@@ -28,6 +28,24 @@ When agents, skills, rules, or guides are created or modified, corresponding wik
 | `/omcustom:wiki lint` | After major structural changes |
 | Automatic (CI) | `.github/workflows/wiki-sync.yml` checks on PR |
 
+### Resync Completeness — 페이지 갱신 + 매니페스트 재시딩
+
+wiki 재동기화는 **두 단계 모두 완료해야 끝난다**: (a) 페이지 본문/`updated` 필드 갱신, (b) 매니페스트 재시딩. drift 판정은 페이지의 `updated` 필드가 아니라 **매니페스트의 SHA-256 대조**로 이루어지므로, 페이지만 갱신하면 drift가 잔존한다. 반대로 매니페스트만 재생성하면 drift 0으로 보이나 페이지 내용은 stale한 **false-green**이 된다 — 양방향 모두 불완전하다.
+
+```bash
+bash .github/scripts/lib/source-hash.sh generate wiki/.source-hashes.json
+```
+
+재시딩 대상은 **항상 `wiki/.source-hashes.json`**이며 `templates/manifest.json`이 아니다(#1423 혼동 사례와 동일 경계).
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 페이지만 갱신하고 매니페스트 재시딩 누락 → drift 잔존 | 페이지 갱신 + 매니페스트 재시딩 두 단계 모두 수행 |
+| 매니페스트만 재생성 → false-green (drift 0이나 페이지 stale) | 페이지를 실제로 갱신한 뒤 재시딩 |
+
+Origin: #1512 (v1.1.27 세션 — 71페이지 갱신 후 drift 71→68 잔존, 매니페스트 재시딩으로 drift 0 달성).
+Cross-reference: R017 (동기화 검증 — Phase 3 wiki sync), R020 (완료 검증 — actual outcome ≠ attempt).
+
 ## Delegation — All wiki writes via wiki-curator agent (R010). See workflow via Read tool.
 
 <!-- DETAIL: Delegation

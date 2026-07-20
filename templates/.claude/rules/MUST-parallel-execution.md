@@ -32,8 +32,8 @@ Before writing/editing multiple files:
 3. Specialized agent available? → Use it (not general-purpose)
 4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents; for a 3+ agent batch, announce the gate result (Agent Tool fallback reason or Agent Teams choice) — see R018 Self-Check "Gate Transparency"**
 5. Running agent stalled (2x+ duration)? → Spawn independent follow-up tasks immediately
-6. Announced a parallel dispatch in prose? → ALL announced tool calls MUST be in the SAME message as the announcement (announce-execution consistency)
-   - **Verify-Bash + action-delegate asymmetry**: when the batch is a verification Bash PLUS an action delegate (Agent/Workflow), the action delegate is the call most often dropped — the Bash fires and the delegate silently slips to the next turn. Dispatch BOTH in the SAME message. Recurred v1.1.22 (resume turn) and v1.1.23 (verify-build turn) — ≥2 occurrences, R016 rule-update mandate.
+6. Announced a parallel dispatch in prose? → **발화 직전 카운트 대조**: announce 산문이 명시한 도구 개수 N == 이 메시지에 실제 포함된 tool_use 블록 개수. 불일치면 보완한 뒤 발화 (announce-execution consistency)
+   - 누락 방향은 무작위다 — verify Bash가 빠지기도(v1.1.22/23), action delegate가 빠지기도(v1.1.27 세션) 했다. 방향별 서술 강화는 3회 재발로 실패가 실증됐으므로, 유일한 실효 방어선은 N↔N 카운트 대조다. Origin: #1512, #1503.
 
 ### Common Violations to Avoid
 
@@ -45,11 +45,8 @@ Before writing/editing multiple files:
    → Latency timeout, user cancellation, context waste, no review loop
 ✓ CORRECT: Pre-decompose by domain, spawn parallel agents per area (R009) or use Agent Teams (R018)
 
-❌ WRONG: Announce "milestone 생성 + 구조 확인 병렬" but only dispatch one tool; the other runs next turn (announce-execution mismatch)
-✓ CORRECT: When announcing N parallel tools, include ALL N tool calls in the SAME message as the announcement
-
-❌ WRONG: Announce "verify build (Bash) + delegate fix (Agent) 병렬" but dispatch only the Bash; the Agent delegate slips to next turn (verify-bash + action-delegate asymmetry — the expensive action call is the one dropped)
-✓ CORRECT: Dispatch BOTH the verification Bash AND the action delegate (Agent/Workflow) in the SAME message as the announcement
+❌ WRONG: Announce N개 병렬 도구(예: verify Bash + action delegate)를 예고했으나 메시지에 tool_use가 N-1개만 포함 — 누락 방향은 무작위(Bash가 빠지기도, delegate가 빠지기도)
+✓ CORRECT: 발화 직전 announce의 N과 tool_use 블록 개수를 대조해 일치시킨 뒤 같은 메시지로 발화
 ```
 
 > **Token threshold heuristic**: When a delegated agent prompt exceeds ~5000 tokens or spans 3+ unrelated domains, decompose by domain and spawn parallel agents. See R018 for Agent Teams criteria when review cycles are needed. Reference: #1085.

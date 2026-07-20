@@ -144,6 +144,7 @@ Before invoking a Workflow script, deterministically verify:
 | Template-literal / string concatenation produces the intended prompt (assemble-before-call, see above) | Post-call concatenation (`agent(prompt) + FACTS`) silently drops content |
 | Script parses — balanced braces/quotes, valid JS | A syntax error aborts the entire run after partial work |
 | 프롬프트 문자열 내 셸 변수 `${...}`(`$?`, `${PIPESTATUS[0]}`, `$(...)` 등)가 `\${...}`로 이스케이프되어 있는지 사전 grep 확인 | JS 템플릿 리터럴 안의 이스케이프 안 된 셸 `${...}`를 JS가 JS 표현식으로 평가 → 런타임 `ReferenceError`(예: `PIPESTATUS is not defined`). `node --check`는 문법만 검사하여 이 런타임 오류를 못 잡으므로 별도 결정론 grep 검사가 필요함 |
+| Workflow `args`를 사용하는 스크립트가 `typeof args === 'string' ? JSON.parse(args) : args` 방어를 거친 뒤 필드에 접근하는지 확인 | 하니스가 객체 args를 문자열로 인코딩해 전달하면 `args.<field>`가 undefined가 되어 스크립트가 즉시 런타임 실패(0 agents 실행). `node --check`는 문법만 검사하므로 위 셸 `${...}` 이스케이프 항목과 동일한 런타임 계열을 잡지 못함 |
 
 #### Common Violation (#1271)
 Session 106 follow-up to #1266 ③: a Workflow authoring error recurred — the guardrail fact-sheet was concatenated onto the agent's RETURN VALUE instead of the prompt string, and a placeholder/assembly slip went uncaught because no pre-run sanity check existed. This check is the deterministic Tier-1 guard that catches such slips before the expensive run.
@@ -152,6 +153,9 @@ Origin: #1271 (Workflow authoring error recurrence, session 106).
 
 #### Common Violation (#1438)
 Origin: #1438 (Session 125 회고 찐빠 #2) — fix Workflow의 verify 프롬프트에 `${PIPESTATUS[0]}`를 이스케이프 없이 사용 → `PIPESTATUS is not defined` ReferenceError로 verify 단계 실패. `node --check`는 통과했으나 런타임에서 실패.
+
+#### Common Violation (#1512)
+Origin: #1512 (v1.1.27 세션 회고 찐빠 #2) — Workflow `args`를 JSON 객체로 전달했으나 하니스가 문자열로 인코딩해 `args.paths`가 undefined → 0 agents 실행으로 즉시 런타임 실패. `typeof args === 'string' ? JSON.parse(args) : args` 방어 추가 후 재실행 성공.
 
 ### Verifier Ground-Truth for Cross-Cutting Facts
 
