@@ -31,7 +31,7 @@ pages:
       summary: "oh-my-customcode uses an advisory-first enforcement model: most behavioral rules"
     - file: architecture/skill-taxonomy.md
       title: "Skill Taxonomy"
-      summary: "118 skills are the source code of the system — reusable, composable instructions"
+      summary: "114 skills are the source code of the system — reusable, composable instructions"
 
   agents:
     - file: agents/arch-documenter.md
