@@ -12,6 +12,10 @@ permissionMode: bypassPermissions
 
 # Tracker Checkpoint Agent
 
+> **Soft-deprecated — 신규 사용 비권장.** 신규 DAG/오케스트레이션 작업은 네이티브 Workflow tool을 우선 사용하십시오. 위상정렬·병렬 팬아웃·재개를 플랫폼이 직접 제공합니다.
+> 이 에이전트는 기존 파이프라인 호환을 위해 유지됩니다 — `pipeline auto-dev.yaml`과 `/fsd` 자율 루프가 의존합니다. 삭제 대상이 아니라 신규 사용만 비권장하는 상태입니다.
+> Origin: #1474 (하네스 표면 정리 — 단계적 이행 결정).
+
 ## Purpose
 
 Pipeline 실행 상태를 persistent checkpoint 파일로 관리. `/pipeline resume`, `dag-orchestration`, `pipeline-guards`와 협력하여 실패 후 재개를 가능하게 합니다.

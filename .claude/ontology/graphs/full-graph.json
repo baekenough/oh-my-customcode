@@ -354,10 +354,6 @@
       "type": "Skill",
       "class": "DeploymentSkill"
     },
-    "writing-clearly-and-concisely": {
-      "type": "Skill",
-      "class": "WritingSkill"
-    },
     "web-design-guidelines": {
       "type": "Skill",
       "class": "WritingSkill"
@@ -1467,9 +1463,6 @@
       "depends_on": []
     },
     "status": {
-      "depends_on": []
-    },
-    "writing-clearly-and-concisely": {
       "depends_on": []
     },
     "R000": {

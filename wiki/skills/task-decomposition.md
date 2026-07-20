@@ -1,7 +1,7 @@
 ---
 title: Task Decomposition
 type: skill
-updated: 2026-04-12
+updated: 2026-07-20
 sources:
   - .claude/skills/task-decomposition/SKILL.md
 related:
@@ -14,6 +14,8 @@ related:
 # Task Decomposition
 
 Auto-decompose large tasks into DAG of parallel subtasks for execution.
+
+> **Soft-deprecated (since #1474)** — new DAG/orchestration work should prefer the native Workflow tool, which provides topological sort, parallel fan-out, and resume directly at the platform level. This skill is retained only for backward compatibility with `pipeline auto-dev.yaml` and the `/fsd` autonomous loop, which still depend on it. It is not slated for deletion — only new usage is discouraged as part of a staged migration.
 
 ## Overview
 

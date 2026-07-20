@@ -14,7 +14,7 @@ related:
 
 # Skill Taxonomy
 
-118 skills are the "source code" of the system — reusable, composable instruction sets that agents reference. Skills are organized by scope (core/harness/package) and functional type (routing, best-practice, workflow, utility).
+114 skills are the "source code" of the system — reusable, composable instruction sets that agents reference. Skills are organized by scope (core/harness/package) and functional type (routing, best-practice, workflow, utility).
 
 ## Overview
 

@@ -6,7 +6,6 @@ sources:
   - .claude/skills/sdd-dev/SKILL.md
 related:
   - [[sdd]]
-  - [[sdd-development]]
   - [[structured-dev-cycle]]
   - [[arch-speckit-agent]]
 ---
@@ -17,7 +16,7 @@ Spec-Driven Development workflow using sdd/ folder as the single source of truth
 
 ## Overview
 
-Implements Spec-Driven Development: spec files in `sdd/` define the intended behavior before implementation. Workflow: write spec → validate spec → implement from spec → verify against spec → update spec on change. Ensures all agents work from a consistent specification rather than inferred intent. Aliases: `/sdd` and `/sdd-development` both invoke this skill.
+Implements Spec-Driven Development: spec files in `sdd/` define the intended behavior before implementation. Workflow: write spec → validate spec → implement from spec → verify against spec → update spec on change. Ensures all agents work from a consistent specification rather than inferred intent. Alias: `/sdd` also invokes this skill.
 
 ## Key Details
 

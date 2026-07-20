@@ -54,7 +54,7 @@ classes:
     description: "Deployment automation"
 
   WritingSkill:
-    skills: [writing-clearly-and-concisely, web-design-guidelines]
+    skills: [web-design-guidelines]
     description: "Writing quality and UI/UX guidelines"
 
   MonitoringSkill:
@@ -532,13 +532,4 @@ skills:
     model_invocable: true
     summary: "UI code review guidelines for accessibility, performance, and UX best practices"
     keywords: [ui, accessibility, ux, performance, design]
-    rule_references: []
-
-  writing-clearly-and-concisely:
-    class: WritingSkill
-    description: "Apply Strunk's timeless writing rules to ANY prose humans will read—documentation, commit messages, error messages, explanations, reports, or UI text. Makes your writing clearer, stronger, and more professional."
-    user_invocable: true
-    model_invocable: true
-    summary: "Apply Strunk's Elements of Style rules to improve clarity and conciseness in writing"
-    keywords: [writing, clarity, conciseness, elements-of-style, strunk]
     rule_references: []

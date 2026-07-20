@@ -1,7 +1,7 @@
 ---
 title: "tracker-checkpoint"
 type: agent
-updated: 2026-07-19
+updated: 2026-07-20
 sources:
   - .claude/agents/tracker-checkpoint.md
 related:
@@ -9,11 +9,14 @@ related:
   - [[r010]]
   - [[r017]]
   - [[r011]]
+  - [[dag-orchestration]]
 ---
 
 # tracker-checkpoint
 
 Pipeline execution state tracker that persists checkpoint files so failed pipelines can resume from the last successful step rather than restarting from scratch.
+
+> **Soft-deprecated (since #1474)** — new DAG/orchestration work should prefer the native Workflow tool, which provides topological sort, parallel fan-out, and resume directly at the platform level. This agent is retained only for backward compatibility with `pipeline auto-dev.yaml` and the `/fsd` autonomous loop, which still depend on it. It is not slated for deletion — only new usage is discouraged as part of a staged migration.
 
 ## Overview
 

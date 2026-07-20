@@ -130,7 +130,7 @@ project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
 |   +-- agents/                  # Subagent definitions (49 files)
-|   +-- skills/                  # Skills (118 directories)
+|   +-- skills/                  # Skills (114 directories)
 |   +-- rules/                   # Global rules (R000-R023)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
