@@ -1,7 +1,7 @@
 ---
 name: mgr-gitnerd
 description: Use when you need to handle Git operations and GitHub workflow management, including commits, branches, PRs, and history management following best practices
-model: sonnet
+model: claude-sonnet-5
 domain: universal
 memory: local
 effort: medium

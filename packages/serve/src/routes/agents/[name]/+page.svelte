@@ -6,7 +6,9 @@
 	const modelColor: Record<string, string> = {
 		sonnet: 'bg-emerald-900/60 text-emerald-300 border-emerald-800',
 		opus: 'bg-violet-900/60 text-violet-300 border-violet-800',
-		haiku: 'bg-sky-900/60 text-sky-300 border-sky-800'
+		haiku: 'bg-sky-900/60 text-sky-300 border-sky-800',
+		'claude-sonnet-5': 'bg-teal-900/60 text-teal-300 border-teal-800',
+		'claude-opus-5': 'bg-purple-900/60 text-purple-300 border-purple-800'
 	};
 </script>
 

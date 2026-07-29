@@ -20,7 +20,7 @@ Expert Bun runtime developer for high-performance JavaScript/TypeScript applicat
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Bash
 - **Memory**: local (`.claude/agent-memory-local/tool-bun-expert/`, git-untracked — R006 memory scopes)

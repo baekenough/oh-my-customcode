@@ -42,7 +42,7 @@ Providers are opt-in — missing CLIs are silently skipped.
 | Skill | Uses Provider | How |
 |-------|--------------|-----|
 | `reasoning-sandwich` | Any exec skill | Pre/post reasoning with different models |
-| `model-escalation` | Claude models only | Internal escalation (haiku→sonnet→opus), not cross-provider |
+| `model-escalation` | Claude models only | Internal escalation (haiku→sonnet→opus, Agent-tool Tier 3 enum), not cross-provider |
 
 ## Relationship to Multi-Model Routing
 

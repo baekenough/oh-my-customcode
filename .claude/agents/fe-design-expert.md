@@ -1,7 +1,7 @@
 ---
 name: fe-design-expert
 description: Use for design system review, typography audit, color palette evaluation, motion design, and AI-generated design quality assessment
-model: sonnet
+model: claude-sonnet-5
 domain: frontend
 memory: local
 effort: medium

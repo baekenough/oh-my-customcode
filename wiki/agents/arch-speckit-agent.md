@@ -22,7 +22,7 @@ A key differentiator is support for EARS (Easy Approach to Requirements Syntax) 
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local (`.claude/agent-memory-local/`, git-untracked)

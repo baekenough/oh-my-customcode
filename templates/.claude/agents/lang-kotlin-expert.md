@@ -1,7 +1,7 @@
 ---
 name: lang-kotlin-expert
 description: Expert Kotlin developer for writing idiomatic, concise, null-safe Kotlin code. Use for Kotlin files (*.kt, *.kts), Kotlin-related keywords, Android development, Kotlin multiplatform projects, and migrating Java to Kotlin.
-model: sonnet
+model: claude-sonnet-5
 domain: backend
 memory: local
 effort: high

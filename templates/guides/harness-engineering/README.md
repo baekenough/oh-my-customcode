@@ -226,7 +226,7 @@ oh-my-customcode에서의 현황:
 # Break-out 시퀀스
 1. 현재 상태를 tracker-checkpoint에 기록
 2. [Warning] Doom loop detected — {action} × {n}회 반복
-3. 에스컬레이션: haiku → sonnet → opus 순서로 모델 전환
+3. 에스컬레이션: haiku → sonnet → opus 순서로 모델 전환 (Agent 도구 model 파라미터 — Tier 3 enum만 허용, sonnet5/opus5 등 전체 ID는 스폰 실패)
 4. 메모리 저장: feedback_doom_loop_{날짜}.md → 세션 간 패턴 누적
 ```
 

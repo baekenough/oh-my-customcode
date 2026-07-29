@@ -1,7 +1,7 @@
 ---
 title: Deep Plan
 type: skill
-updated: 2026-04-27
+updated: 2026-07-29
 sources:
   - .claude/skills/deep-plan/SKILL.md
 related:

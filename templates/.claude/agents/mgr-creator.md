@@ -1,7 +1,7 @@
 ---
 name: mgr-creator
 description: Use when you need to create new agents following design guidelines. Automatically researches authoritative references before agent creation to ensure high-quality knowledge base
-model: sonnet
+model: claude-sonnet-5
 domain: universal
 memory: local
 effort: high
@@ -50,7 +50,7 @@ When invoked as routing fallback (not explicit `/create-agent`):
 3. Auto-connect: scan `guides/` for relevant reference docs
 4. Create minimal viable agent with:
    - Detected skills and relevant guides
-   - `sonnet` model (default)
+   - `claude-sonnet-5` model (default; Tier 2 full model ID — CC does not resolve invented version-suffixed aliases, use the full ID per R006)
    - `project` memory scope
 5. Agent is persisted (not ephemeral) for future reuse
 

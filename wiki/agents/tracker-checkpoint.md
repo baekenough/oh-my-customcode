@@ -41,7 +41,7 @@ State transitions follow a strict machine: `pending → running → completed | 
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: haiku
 - **Effort**: medium
 - **Tools**: Read, Write, Edit, Bash, Glob, Grep
 - **Skills**: `dag-orchestration`, `pipeline-guards`

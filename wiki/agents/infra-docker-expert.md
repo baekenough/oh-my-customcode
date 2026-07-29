@@ -22,7 +22,7 @@ Uses `docker-best-practices` skill and `guides/docker/`. Memory is `user`-scoped
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: devops
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `docker-best-practices`

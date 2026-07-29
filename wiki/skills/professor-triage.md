@@ -1,7 +1,7 @@
 ---
 title: Professor Triage
 type: skill
-updated: 2026-04-27
+updated: 2026-07-29
 sources:
   - .claude/skills/professor-triage/SKILL.md
 related:

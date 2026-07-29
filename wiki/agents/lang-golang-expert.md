@@ -25,7 +25,7 @@ Pairs naturally with [[be-go-backend-expert]] for backend service concerns beyon
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `go-best-practices`

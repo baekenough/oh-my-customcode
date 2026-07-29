@@ -19,7 +19,7 @@ Task management and proactive reminder specialist that monitors stale tasks, tra
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: haiku
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep (no Bash)
 - **Memory**: local

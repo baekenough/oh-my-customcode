@@ -30,8 +30,9 @@ All wiki/ directory writes go through this agent per R010 delegation rules (Prot
 
 ## Key Details
 
-- **Model**: sonnet | **Domain**: universal | **Memory**: local (changed from `project` in v1.1.13, #1468)
+- **Model**: claude-sonnet-5 | **Domain**: universal | **Memory**: local (changed from `project` in v1.1.13, #1468)
 - **Tools**: Read, Write, Edit, Glob, Grep, Bash
+- **Effort**: medium
 - **Quality bar**: valid frontmatter, 5-10 outbound cross-refs, 150-300 words (entity) / 200-400 (synthesis), purpose over enumeration
 - **Limitations**: does not decide *what* to write (receives instructions from orchestrator/[[wiki]] skill), does not spawn subagents (leaf agent), never modifies source files — writes only to `wiki/`
 

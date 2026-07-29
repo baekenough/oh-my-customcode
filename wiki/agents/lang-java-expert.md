@@ -25,12 +25,12 @@ Uses `java-best-practices` skill and `guides/java/`. Complements [[be-springboot
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `java-best-practices`
 - **Memory**: local
-- **Effort**: high
+- **Effort**: medium
 
 ## Relationships
 

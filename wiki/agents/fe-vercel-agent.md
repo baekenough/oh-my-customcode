@@ -25,7 +25,7 @@ The agent combines four specialized skills: `react-best-practices` and `web-desi
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `react-best-practices`, `web-design-guidelines`, `vercel-deploy`, `impeccable-design`

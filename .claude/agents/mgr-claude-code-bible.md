@@ -1,7 +1,7 @@
 ---
 name: mgr-claude-code-bible
 description: Fetches latest Claude Code official documentation from code.claude.com and verifies agents/skills compliance against the official spec. Use when you need to check official Claude Code documentation or verify frontmatter fields.
-model: sonnet
+model: claude-sonnet-5
 domain: universal
 memory: local
 effort: medium

@@ -22,12 +22,12 @@ Memory is `user`-scoped for cross-project Redis expertise retention.
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `redis-best-practices`
 - **Memory**: user (cross-project Redis knowledge)
-- **Effort**: high
+- **Effort**: medium
 
 ## Relationships
 

@@ -24,7 +24,7 @@ Uses `spark-best-practices` skill and `guides/spark/` for reference.
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `spark-best-practices`

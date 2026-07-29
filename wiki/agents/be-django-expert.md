@@ -23,7 +23,7 @@ The agent uses the `django-best-practices` skill and consults `guides/django-bes
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `django-best-practices`

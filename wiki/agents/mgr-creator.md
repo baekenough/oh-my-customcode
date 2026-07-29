@@ -26,7 +26,7 @@ The agent runs for up to 25 turns to allow thorough research and creation.
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `create-agent`

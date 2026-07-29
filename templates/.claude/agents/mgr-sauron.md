@@ -1,10 +1,10 @@
 ---
 name: mgr-sauron
 description: Use when you need automated verification of R017 compliance, executing mandatory multi-round verification (5 manager rounds + 3 deep review rounds, with rounds 3-4 conditionally skipped when rounds 1-2 return 0 issues) before commits
-model: sonnet
+model: claude-opus-5
 domain: universal
 memory: local
-effort: high
+effort: medium
 skills:
   - sauron-watch
 tools:

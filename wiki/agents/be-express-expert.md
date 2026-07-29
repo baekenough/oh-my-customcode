@@ -22,7 +22,7 @@ The agent references the official Express.js documentation and security guide di
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local (`.claude/agent-memory-local/be-express-expert/`, git-untracked)

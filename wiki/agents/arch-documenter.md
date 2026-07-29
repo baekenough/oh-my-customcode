@@ -25,11 +25,11 @@ The agent operates with `local`-scoped memory (`.claude/agent-memory-local/`, gi
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash — `disallowedTools: [Bash]`)
 - **Memory**: local
-- **Effort**: high
+- **Effort**: medium
 - **Max turns**: 20
 - **Permission mode**: bypassPermissions
 - **Limitations**: cannot execute commands, cannot deploy

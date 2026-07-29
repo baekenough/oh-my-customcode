@@ -22,7 +22,7 @@ Uses `postgres-best-practices` skill and `guides/postgres/` for reference. Memor
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `postgres-best-practices`

@@ -1,7 +1,7 @@
 ---
 name: wiki-curator
 description: Dedicated wiki page CRUD agent — creates, updates, and maintains wiki/ markdown pages for the codebase knowledge base
-model: sonnet
+model: claude-sonnet-5
 tools:
   - Read
   - Write
@@ -11,6 +11,7 @@ tools:
   - Bash
 domain: universal
 memory: local
+effort: medium
 permissionMode: bypassPermissions
 ---
 

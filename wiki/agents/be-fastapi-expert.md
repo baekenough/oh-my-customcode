@@ -23,7 +23,7 @@ Commonly paired with [[db-alembic-expert]] for async SQLAlchemy migrations and [
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `fastapi-best-practices`

@@ -23,7 +23,7 @@ Uses three focused skills: `npm-audit`, `npm-publish`, and `npm-version`. Works 
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Bash
 - **Skills**: `npm-audit`, `npm-publish`, `npm-version`

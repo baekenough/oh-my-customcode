@@ -19,11 +19,9 @@ Alembic migration lifecycle specialist for generating, reviewing, fixing, and ad
 
 `db-alembic-expert` manages the complete Alembic migration lifecycle. It autogenerates migrations from SQLAlchemy models, performs post-generation safety reviews (detecting rename-as-drop+add, anonymous constraints, lock-risky operations), implements the Expand-Contract pattern for zero-downtime schema changes, configures `env.py` for async/multi-tenant setups, manages PostgreSQL-specific objects (views, functions, triggers, RLS policies) via alembic-utils, and integrates migrations into CI pipelines with pytest-alembic and the Squawk linter.
 
-Escalates from sonnet to opus after 2 failures (escalation policy enabled).
-
 ## Key Details
 
-- **Model**: sonnet (escalates to opus after 2 failures)
+- **Model**: claude-opus-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `alembic-best-practices`, `postgres-best-practices`

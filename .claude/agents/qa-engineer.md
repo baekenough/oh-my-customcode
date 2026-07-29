@@ -1,7 +1,7 @@
 ---
 name: qa-engineer
 description: Use when you need to execute tests based on detailed plans and documentation, perform manual and automated testing, report defects, and validate fixes
-model: sonnet
+model: claude-sonnet-5
 domain: universal
 memory: local
 effort: medium
