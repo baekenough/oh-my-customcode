@@ -217,7 +217,10 @@ npm publish E403을 `--provenance` attestation 충돌로 오진단 → release w
 1. 가설을 뒷받침하는 직접 증거(로그/에러 코드/문서)가 있는가?
 2. 비파괴적 방법으로 가설을 검증할 수 있는가?
 3. 변경이 되돌리기 쉬운가? (영구 워크플로우 변경 vs 일회성 시도)
+4. 결함이 발생한 실행 경로(워크플로우 YAML/스킬 정의/스크립트/CI 설정)를 직접 읽었는가? 수동 재현 성공으로 자동화 경로의 동작을 추정하지 않았는가?
 하나라도 NO면 검증을 먼저 수행한다. 근본 원인 진단은 `superpowers:systematic-debugging` 참조.
+
+Origin: #1533 (lockfile 4릴리즈 누락을 "스테이징 누락"으로 오진 — 실제 원인은 version-bump 절차에 build 단계 부재; 수동 재현 결과로 자동화 경로를 추정).
 
 ### Variant: Parallel Read + Permanent-Change Dispatch (#1250)
 
