@@ -1,7 +1,7 @@
 ---
 title: Orchestration Model
 type: architecture
-updated: 2026-04-12
+updated: 2026-07-29
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-orchestrator-coordination.md
@@ -22,7 +22,7 @@ The main Claude Code conversation is the **sole orchestrator**. It never writes 
 
 ## Overview
 
-Orchestration follows a strict hierarchical model: one orchestrator, many subagents, no transitive delegation. Subagents cannot spawn other subagents. This constraint prevents uncontrolled agent proliferation and keeps the delegation graph shallow and auditable.
+Orchestration follows a strict hierarchical model: one orchestrator, many subagents, no transitive delegation. Subagents **must not** spawn other subagents. As of CC v2.1.217+ (default changed) and v2.1.219+ (default nesting depth raised to 3), the platform itself permits nested sub-agent spawning — this is now a **project policy prohibition**, not a platform limitation. oh-my-customcode deliberately retains flat sole-orchestrator delegation to keep the delegation graph shallow and auditable and to preserve predictable [[wiki/rules/r009]] parallelism (see [[wiki/rules/r010]] for the full rationale).
 
 The orchestrator's role is exclusively coordination: read files for analysis, select routing paths, spawn agents with explicit tasks, and aggregate results. Any write operation — including file creation, git commits, or code changes — must go through a specialist.
 
@@ -83,3 +83,4 @@ Other agents handle their own paths: `sys-memory-keeper` manages `.claude/agent-
 - `CLAUDE.md` — routing skill descriptions, dynamic creation workflow
 - `.claude/rules/MUST-orchestrator-coordination.md` — R010 full rule
 - `.claude/rules/MUST-agent-teams.md` — R018 decision matrix
+- Content-drift resync 2026-07-29 (v1.1.34): reworded "Subagents cannot spawn other subagents" from a platform-capability claim to a project-policy statement — CC v2.1.217+ changed the nesting default and v2.1.219+ raised the default nested-spawn depth to 3, so the platform itself now permits nesting; oh-my-customcode's flat delegation model remains a deliberate policy choice. See [[wiki/rules/r010]] for the full rationale.

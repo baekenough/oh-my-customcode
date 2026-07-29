@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-07-19
+updated: 2026-07-29
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/03-tools.md
@@ -37,8 +37,8 @@ related:
 |-------|------|------|
 | Feature/tool overview | `01-overview.md`, `03-tools.md` | Claude's native capabilities (1M context, Skills, MCP connector, tool use) as a baseline reference |
 | Agent construction | `04-agent-skills.md`, `05-agent-sdk.md`, `11-sub-agents.md` | Building Skills/subagents on Claude Code, maps to R006 agent design |
-| Prompting & workflow | `07-prompt-engineering.md`, `12-workflow-patterns.md`, `16-fable5-prompting.md` | Prompt patterns; Fable 5 (Mythos-class) needs shorter, less-prescriptive instructions than Opus/Sonnet — feeds R006 model aliases, R009 parallel-reliability, R020 ground-truth, R023 shift-left |
-| Operations | `13-cli-flags.md`, `14-token-efficiency.md` | CLI/env reference; five-layer token defense stack (cc-token-saver → R013 Ecomode → settings gates → playwright-compress → caveman) |
+| Prompting & workflow | `07-prompt-engineering.md`, `12-workflow-patterns.md`, `16-fable5-prompting.md` | Prompt patterns; Fable 5 (Mythos-class) needs shorter, less-prescriptive instructions than Opus/Sonnet — feeds R006 model aliases, R009 parallel-reliability, R020 ground-truth, R023 shift-left. Its hierarchy claim is now scoped to "above Opus 4.8" only — relative standing vs Opus 5 (`claude-opus-5`, CC v2.1.219+ default Opus) is not officially confirmed and is never asserted |
+| Operations | `13-cli-flags.md`, `14-token-efficiency.md` | CLI/env reference; five-layer token defense stack (cc-token-saver → R013 Ecomode → settings gates → playwright-compress → caveman). `ANTHROPIC_MODEL` env var example now reflects `claude-opus-5` as CC's default Opus model (v2.1.219+) |
 | Platform tracking | `15-version-compatibility.md` | CC release-note digest |
 | Placeholders | `08-testing.md`, `09-guardrails.md`, `10-monitoring.md` | Sections await official Anthropic docs (`status: placeholder` in `index.yaml`) |
 | Protocol reference | `06-mcp.md` | Model Context Protocol server connection guide |

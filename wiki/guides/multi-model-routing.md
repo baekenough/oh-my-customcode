@@ -1,7 +1,7 @@
 ---
 title: "Multi-Model Routing Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-07-29
 sources:
   - guides/multi-model-routing/README.md
 related:
@@ -17,6 +17,8 @@ Role-based model selection strategy that maps agent task types to cost-appropria
 ## Overview
 
 Three model tiers serve distinct roles: `haiku` for retrieval and search, `sonnet` for general code generation (default), and `opus` for complex reasoning and architecture. `opusplan` adds plan-mode approval gates on top of opus. The `[1m]` suffix enables 1M token extended context on any tier.
+
+The base `sonnet` and `opus` aliases stay pinned to `claude-sonnet-4-6` and `claude-opus-4-6` respectively for stability — existing agents keep their behavior unchanged. CC's own platform defaults have since moved ahead of these pins: `claude-sonnet-5` (v2.1.197+) and `claude-opus-5` (v2.1.219+, native 1M context, fast mode at $10/$50 per Mtok) are opt-in via the explicit `sonnet5` / `opus5` aliases. `opus48` (`claude-opus-4-8`) is now the previous-generation Opus tier. Fable 5 (`fable`) remains a tier above Opus 4.8, but its relative standing versus Opus 5 is not officially confirmed and is not asserted here.
 
 ## Role-Based Routing
 
@@ -53,4 +55,4 @@ Fast Mode (`/fast`) uses the same model tier at ~2.5x output speed by reducing r
 
 ## Sources
 
-- `guides/multi-model-routing/README.md` — routing table, cost-quality matrix, escalation config, Fast Mode interaction
+- `guides/multi-model-routing/README.md` — routing table, cost-quality matrix, escalation config, Fast Mode interaction, Opus 5 / Fable 5 alias and hierarchy notes

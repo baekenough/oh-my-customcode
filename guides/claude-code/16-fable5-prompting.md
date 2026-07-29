@@ -5,7 +5,7 @@
 
 ## 개요
 
-Claude Fable 5(`claude-fable-5`)는 Mythos-class 모델로, GA 시점 기준 Opus 4.8보다 상위 티어의 최고 GA 역량을 가집니다(R006 Model Aliases 참조). Fable 5는 기존 모델 대비 다른 행동 프로파일을 가지므로, 기존 Opus/Sonnet용으로 튜닝된 하네스(rules, skills, system prompt)를 그대로 재사용하면 오히려 품질이 저하될 수 있습니다. 이 문서는 Fable 5 전용 프롬프팅·스캐폴딩 조정 패턴을 정리합니다.
+Claude Fable 5(`claude-fable-5`)는 Mythos-class 모델로, **Opus 4.8 대비** 상위 티어의 GA 역량을 가집니다(GA 시점 기준, R006 Model Aliases 참조). **Opus 5**(`claude-opus-5`, CC v2.1.219+에서 도입되어 현재 CC의 기본 Opus 모델)와의 상대 위계는 공식 자료로 확인되지 않았으므로, 이 문서는 어느 쪽이 상위 티어인지 단정하지 않습니다. Fable 5는 기존 모델 대비 다른 행동 프로파일을 가지므로, 기존 Opus/Sonnet용으로 튜닝된 하네스(rules, skills, system prompt)를 그대로 재사용하면 오히려 품질이 저하될 수 있습니다. 이 문서는 Fable 5 전용 프롬프팅·스캐폴딩 조정 패턴을 정리합니다.
 
 ## Opus 4.8 대비 행동 차이
 
@@ -59,7 +59,7 @@ Mythos 5는 Project Glasswing 한정 공급 모델로, **GA가 아닙니다**. F
 
 ## 상호 참조
 
-- **R006** (MUST-agent-design.md) — Model Aliases 표에 `fable` alias 정의, effort/model 기본값 정책
+- **R006** (MUST-agent-design.md) — Model Aliases 표에 `fable` alias 정의, effort/model 기본값 정책; Opus 5(v2.1.219+) 도입 및 Fable 5 대비 상대 위계 미확인 각주도 포함
 - **R023** (SHOULD-verification-ladder.md) — 검증 비용 ladder shift-left 원칙. 이 문서의 "과잉 처방 경고"는 검증 비용이 아닌 지시 간결성 축이므로 R023과 직교하되 상호 참조 가치가 있음
 - **R009** (MUST-parallel-execution.md) — long-lived subagent 재사용 및 병렬 서브에이전트 dispatch 신뢰성 향상과 연관
 - **R020** (MUST-completion-verification.md) — 진행 주장 ground-truth 강제 패턴(d)의 기존 선점 규칙

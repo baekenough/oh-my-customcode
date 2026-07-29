@@ -26,10 +26,13 @@ tools: [Read, Write, ...]  # Allowed tools
 | `sonnet5` | claude-sonnet-5 | CC default (v2.1.197+); native 1M context |
 | `opus` | claude-opus-4-6 | Complex reasoning, architecture |
 | `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
-| `opus48` | claude-opus-4-8 | Latest Opus model (GA); highest capability below Fable 5; supports xhigh effort |
+| `opus48` | claude-opus-4-8 | Previous-generation Opus; supports xhigh effort |
+| `opus5` | claude-opus-5 | Latest Opus (GA); now CC's default Opus model; native 1M context, fast mode at $10/$50 per Mtok |
 | `fable` | claude-fable-5 | Mythos-class; tier above Opus, highest GA capability (access added in CC v2.1.170) |
 
 Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
+
+> **v2.1.219+**: Claude Opus 5 (`claude-opus-5`) added and is now CC's default Opus model — native 1M context, fast mode at $10/$50 per Mtok. Use via `model: opus5`. Base `opus` alias remains pinned to `claude-opus-4-6` for stability (existing `model: opus` agents unaffected), matching the prior opus47→opus48 pinning pattern. Relative standing vs Fable 5 is not yet confirmed officially — do not assert an ordering.
 
 > **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via `model: fable` / `claude-fable-5`. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
 
@@ -142,7 +145,9 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 
 ## Hook Event Types
 
-20 event types supported: PreToolUse, PostToolUse, PreCompact, PostCompact, Stop, SessionStart, SessionEnd, SubagentStart, SubagentStop, UserPromptSubmit, Notification, CwdChanged, FileChanged, Elicitation, ElicitationResult, PostMessage, PermissionDenied, TeammateIdle, TaskCreated, TaskCompleted. 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
+21 event types supported: PreToolUse, PostToolUse, PreCompact, PostCompact, Stop, SessionStart, SessionEnd, SubagentStart, SubagentStop, UserPromptSubmit, Notification, CwdChanged, FileChanged, Elicitation, ElicitationResult, PostMessage, PermissionDenied, TeammateIdle, TaskCreated, TaskCompleted, DirectoryAdded. 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
+
+> **v2.1.219+**: `DirectoryAdded` hook event added — fires after `/add-dir` or an SDK `register_repo_root` control request registers a new working directory mid-session.
 
 <!-- DETAIL: Hook Event Types Full Reference
 
@@ -168,6 +173,7 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 | `TeammateIdle` | Agent Teams member idle | teammate_id | command | v2.1.83+ |
 | `TaskCreated` | Task created | task_id, description | command | v2.1.83+ |
 | `TaskCompleted` | Task completed | task_id, result | command | v2.1.83+ |
+| `DirectoryAdded` | New working directory registered mid-session (`/add-dir` or SDK `register_repo_root`) | old dirs, new_dir | command | v2.1.219+ |
 
 ### Hook Handler Types
 

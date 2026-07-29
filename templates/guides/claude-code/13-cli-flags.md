@@ -123,7 +123,7 @@ claude auto-mode critique    # Review auto mode decisions
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `ANTHROPIC_MODEL` | Override default model | `claude-opus-4-6` |
+| `ANTHROPIC_MODEL` | Override default model | `claude-opus-5` (default Opus, v2.1.219+) |
 | `CLAUDE_CODE_SUBAGENT_MODEL` | Override subagent model | `claude-haiku-4-5` |
 | `CLAUDE_CODE_EFFORT_LEVEL` | Set effort level | `high` |
 | `CLAUDE_CODE_DISABLE_FAST_MODE` | Disable fast mode | `1` |
