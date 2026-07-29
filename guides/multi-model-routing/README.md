@@ -11,14 +11,15 @@ Role-based model selection strategy for AI agent workflows. Consolidates model r
 | `haiku` | claude-haiku-4-5 | $ | Fast | Search, simple edits, file discovery |
 | `sonnet` | claude-sonnet-4-6 | $$ | Moderate | Code generation, general tasks (project base alias — pinned to 4-6 for stability) |
 | `sonnet5` | claude-sonnet-5 | $$ | Moderate | CC platform default (v2.1.197+); native 1M context |
-| `opus` | claude-opus-4-6 | $$$ | Slower | Complex reasoning, architecture, planning |
-| `opus48` | claude-opus-4-8 | $$$ | Slower | Latest Opus (GA); highest capability below Fable 5 |
+| `opus` | claude-opus-4-6 | $$$ | Slower | Complex reasoning, architecture, planning (project base alias — pinned to 4-6 for stability) |
+| `opus5` | claude-opus-5 | $$$ | Fast mode available | CC platform default Opus (v2.1.219+); native 1M context, fast mode at $10/$50 per Mtok |
+| `opus48` | claude-opus-4-8 | $$$ | Slower | Previous-generation Opus (GA); supports xhigh effort |
 | `fable` | claude-fable-5 | $$$$ | Slower | Mythos-class; tier above Opus, highest GA capability |
 | `opusplan` | claude-opus-4-6 + plan mode | $$$ | Slower | Architecture with approval gates |
 
-Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`). Fable 5 and Sonnet 5 include 1M context by default — no `[1m]` suffix needed.
+Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`). Fable 5, Sonnet 5, and Opus 5 include 1M context by default — no `[1m]` suffix needed.
 
-> **Base alias pin (design intent)**: The base `sonnet` alias stays pinned to `claude-sonnet-4-6` for stability — existing agents specifying `model: sonnet` remain unchanged. Claude Sonnet 5 (`claude-sonnet-5`) is the CC platform default as of v2.1.197 and is opt-in via the explicit `sonnet5` alias.
+> **Base alias pin (design intent)**: The base `sonnet` alias stays pinned to `claude-sonnet-4-6` for stability — existing agents specifying `model: sonnet` remain unchanged. Claude Sonnet 5 (`claude-sonnet-5`) is the CC platform default as of v2.1.197 and is opt-in via the explicit `sonnet5` alias. The same pattern applies to Opus: the base `opus` alias stays pinned to `claude-opus-4-6`; Claude Opus 5 (`claude-opus-5`) is CC's default Opus model as of v2.1.219 and is opt-in via the explicit `opus5` alias. Relative standing vs Fable 5 is not yet confirmed officially — do not assert an ordering.
 
 ## Role-Based Routing Table
 

@@ -4,7 +4,9 @@
 
 ## Core Rule
 
-The main conversation is the **sole orchestrator**. It uses routing skills to delegate tasks to subagents via the Agent tool (formerly Task tool). Subagents CANNOT spawn other subagents.
+The main conversation is the **sole orchestrator**. It uses routing skills to delegate tasks to subagents via the Agent tool (formerly Task tool). Subagents MUST NOT spawn other subagents — this is a project policy, not a platform limitation.
+
+> **Platform vs policy (CC v2.1.219+)**: CC는 기본적으로 subagent 중첩 스폰을 depth 3까지 허용합니다 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`; v2.1.217에서 depth 1 기본값 도입 → v2.1.219에서 depth 3로 상향). 그러나 oh-my-customcode는 오케스트레이터 단일성을 위해 **정책으로** flat delegation을 요구합니다 — 서브에이전트는 다른 서브에이전트를 스폰하지 않습니다. 이는 플랫폼 제약이 아니라 프로젝트 규칙이며, 위반은 R010 위반입니다.
 
 **Agent Teams Exception**: Agent Teams members are peers, not hierarchical subagents. Teams members CAN spawn sub-agents via the Agent tool to execute complex workflows (e.g., research teams, verification teams). This enables Teams-compatible skills like `/research` and `/deep-plan` to run inside Team members. The Teams member acts as a local orchestrator for its own sub-tasks.
 
