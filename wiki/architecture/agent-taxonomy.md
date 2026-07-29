@@ -1,7 +1,7 @@
 ---
 title: Agent Taxonomy
 type: architecture
-updated: 2026-07-01
+updated: 2026-07-29
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md
@@ -39,12 +39,12 @@ Framework specialists that compose language skills with framework-specific patte
 
 | Agent | Framework | Typical Model |
 |-------|-----------|--------------|
-| [[wiki/agents/be-fastapi-expert]] | FastAPI | sonnet |
-| [[wiki/agents/be-springboot-expert]] | Spring Boot | sonnet |
-| [[wiki/agents/be-go-backend-expert]] | Go backend | sonnet |
-| [[wiki/agents/be-express-expert]] | Express.js | sonnet |
-| [[wiki/agents/be-nestjs-expert]] | NestJS | sonnet |
-| [[wiki/agents/be-django-expert]] | Django | sonnet |
+| [[wiki/agents/be-fastapi-expert]] | FastAPI | claude-sonnet-5 |
+| [[wiki/agents/be-springboot-expert]] | Spring Boot | claude-sonnet-5 |
+| [[wiki/agents/be-go-backend-expert]] | Go backend | claude-sonnet-5 |
+| [[wiki/agents/be-express-expert]] | Express.js | claude-sonnet-5 |
+| [[wiki/agents/be-nestjs-expert]] | NestJS | claude-sonnet-5 |
+| [[wiki/agents/be-django-expert]] | Django | claude-sonnet-5 |
 
 ### Frontend Experts (5)
 UI and client-side specialists.
@@ -94,12 +94,16 @@ System maintenance and coordination layer.
 
 ## Model Selection Patterns
 
-| Model | Use Case | Example Agents |
-|-------|----------|---------------|
-| `haiku` | Fast, cheap: search, simple edits | Explore-type tasks |
-| `sonnet` | General code generation (default) | Most language/backend agents |
-| `opus` | Complex reasoning, architecture | mgr-sauron deep review, arch agents |
-| `opusplan` | Architecture planning with approval gates | arch-speckit-agent |
+Model specification is 3-tier (see [[wiki/rules/r006]] "3-tier model specification"): Tier 1 native alias (`sonnet`/`opus`/`haiku`/`opusplan`, resolved by CC itself, valid in both frontmatter and Agent-tool params), Tier 2 full model ID (frontmatter only, recommended — what all 49 project agents actually use), Tier 3 Agent-tool `model` param enum (`sonnet`\|`opus`\|`haiku`\|`fable` only, used by routing-skill spawn instructions). `sonnet5`/`opus5`/`opus48` are **not real values in any tier** — CC does not interpret them; a spawn using them fails.
+
+| Frontmatter value (Tier 2, actual) | Use Case | Example Agents |
+|-------------------------------------|----------|---------------|
+| `haiku` | Fast, cheap: search, simple edits | mgr-supplier, sys-naggy, tracker-checkpoint (3 of 49) |
+| `sonnet` (Tier-1 alias, CC-resolved — not pinned by this project) | General code generation, legacy usage | None currently — project agents migrated to `claude-sonnet-5` |
+| `claude-sonnet-5` | General code generation (CC default model, v2.1.197+) | Most language/backend/manager agents (41 of 49) |
+| `opus` (Tier-1 alias, CC-resolved — not pinned by this project) | Complex reasoning, legacy usage | None currently — elevated agents migrated to `claude-opus-5` |
+| `claude-opus-5` | Complex reasoning, elevated structural verification (CC default Opus, v2.1.219+) | mgr-sauron, sec-codeql-expert, db-alembic-expert, de-pipeline-expert, infra-aws-expert (5 of 49) |
+| `opusplan` | Architecture planning with approval gates | None currently assigned — 0 project agents use `opusplan` (arch-speckit-agent runs `claude-sonnet-5`) |
 
 ## Cross-Category Relationships
 

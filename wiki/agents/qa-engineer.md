@@ -25,7 +25,7 @@ The agent enforces a strict verification discipline before writing any QA report
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local

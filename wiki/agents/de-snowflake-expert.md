@@ -22,12 +22,12 @@ Uses `snowflake-best-practices` skill and consults `guides/snowflake/` and `guid
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `snowflake-best-practices`
 - **Memory**: local
-- **Effort**: high
+- **Effort**: medium
 
 ## Relationships
 

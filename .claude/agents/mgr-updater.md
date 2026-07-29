@@ -1,7 +1,7 @@
 ---
 name: mgr-updater
 description: Use when you need to update external agents, skills, and guides from their upstream sources, checking versions and applying updates
-model: sonnet
+model: claude-sonnet-5
 domain: universal
 memory: local
 effort: medium

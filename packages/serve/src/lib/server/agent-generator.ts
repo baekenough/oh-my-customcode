@@ -113,6 +113,19 @@ const LANG_RULES: Array<{ keywords: string[]; prefix: string; domain: string }> 
 // ---------------------------------------------------------------------------
 
 const MODEL_RULES: Array<{ model: string; keywords: string[] }> = [
+	// NOTE: opus5/sonnet5 rules MUST precede the generic opus rule below —
+	// `lower.includes('opus')` also matches the substring 'opus5', so placing
+	// opus5 after opus would make an "opus5" mention silently fall to 'opus'.
+	// Emitted model values use the Tier 2 full model ID (frontmatter-only) —
+	// CC v2.1.220 does not resolve the 'opus5'/'sonnet5' short aliases.
+	{
+		model: 'claude-opus-5',
+		keywords: ['opus5', 'opus 5', 'opus-5']
+	},
+	{
+		model: 'claude-sonnet-5',
+		keywords: ['sonnet5', 'sonnet 5', 'sonnet-5']
+	},
 	{
 		model: 'opus',
 		keywords: ['opus', '복잡', 'complex', 'architecture', '아키텍처', 'design', '설계', 'reasoning', 'analysis']

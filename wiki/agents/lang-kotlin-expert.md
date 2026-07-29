@@ -26,7 +26,7 @@ Uses `kotlin-best-practices` skill and `guides/kotlin/`.
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `kotlin-best-practices`

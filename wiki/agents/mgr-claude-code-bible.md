@@ -24,7 +24,7 @@ This agent is invoked by [[mgr-sauron]] during Phase 1 verification ([[r017]]) a
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Grep, Bash
 - **Skills**: `claude-code-bible`

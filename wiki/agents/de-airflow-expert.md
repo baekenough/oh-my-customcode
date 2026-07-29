@@ -26,7 +26,7 @@ Uses `airflow-best-practices` skill and `guides/airflow/` for reference document
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `airflow-best-practices`

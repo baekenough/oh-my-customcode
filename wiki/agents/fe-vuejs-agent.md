@@ -21,7 +21,7 @@ Expert Vue.js (Vue 3) developer for Composition API, single-file components, Pin
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `impeccable-design`, `web-design-guidelines`

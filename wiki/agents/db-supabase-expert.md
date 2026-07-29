@@ -22,7 +22,7 @@ Uses `supabase-postgres-best-practices` skill and consults `guides/supabase-post
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `supabase-postgres-best-practices`

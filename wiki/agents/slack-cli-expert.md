@@ -21,7 +21,7 @@ Uses `guides/slack-cli/` for detailed command reference. Always starts with `sla
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: (none specified)

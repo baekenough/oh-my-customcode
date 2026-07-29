@@ -29,7 +29,7 @@ It also owns the **Claude Design handoff** workflow: when receiving artifacts fr
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob (`disallowedTools: [Bash]`)
 - **Skills**: `impeccable-design`, `web-design-guidelines`, `diagram-design`

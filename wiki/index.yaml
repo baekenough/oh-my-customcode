@@ -738,7 +738,7 @@ pages:
       summary: "LangChain 6-stage lifecycle middleware model mapped to oh-my-customcode assets — before_agent/before_model/wrap_model_call/wrap_tool_call/after_model/after_agent with Hook vs Skill decision matrix"
     - file: guides/multi-model-routing.md
       title: "Multi-Model Routing Guide"
-      summary: "Role-based model selection strategy mapping task types to haiku/sonnet/opus tiers with escalation and project override patterns"
+      summary: "Role-based model selection strategy mapping task types to haiku/claude-sonnet-5/claude-opus-5 tiers (3-tier alias vs full-ID vs Agent-tool-enum spec) with escalation and project override patterns"
     - file: guides/multi-provider-exec.md
       title: "Multi-Provider Exec Guide"
       summary: "Unified reference for executing prompts through external LLM providers (rtk-exec) — provider matrix, selection guidance, and multi-model verification integration"

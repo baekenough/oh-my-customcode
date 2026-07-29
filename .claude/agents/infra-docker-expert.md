@@ -1,7 +1,7 @@
 ---
 name: infra-docker-expert
 description: Use for creating optimized Dockerfiles, multi-stage builds, container security hardening, Docker Compose configurations, and image size optimization
-model: sonnet
+model: claude-sonnet-5
 domain: devops
 memory: user
 effort: medium

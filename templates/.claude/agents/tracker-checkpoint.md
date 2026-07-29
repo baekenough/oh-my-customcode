@@ -1,7 +1,7 @@
 ---
 name: tracker-checkpoint
 description: Pipeline execution state tracker with checkpoint persistence. Reads/writes /tmp/.claude-pipeline-*-{PPID}.json state files and validates state transitions. Used by dag-orchestration for resume-after-failure and pipeline-guards for quality gate state.
-model: sonnet
+model: haiku
 effort: medium
 tools: [Read, Write, Edit, Bash, Glob, Grep]
 memory: local

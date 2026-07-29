@@ -109,7 +109,7 @@ Phase 3: Plan Verification Research
 
 **Invocation**: Phase 3 teams are spawned directly as parallel agents (NOT via `Skill(research)`). The orchestrator creates 3 focused agents, each with a specific verification mandate derived from the Phase 2 plan.
 
-**Model selection**: sonnet for teams, opus for synthesis.
+**Model selection**: sonnet for teams, opus for synthesis (Agent-tool Tier 3 enum — see `guides/multi-model-routing/README.md`).
 
 ### Verdict
 

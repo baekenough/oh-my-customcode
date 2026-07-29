@@ -1,7 +1,7 @@
 ---
 name: sys-memory-keeper
 description: Use when you need to manage session memory persistence via native auto-memory, save context before compaction, restore context on session start, collect session summaries, or perform session-end memory operations
-model: sonnet
+model: claude-sonnet-5
 domain: universal
 memory: local
 effort: medium

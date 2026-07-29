@@ -1,7 +1,7 @@
 ---
 name: db-postgres-expert
 description: Expert PostgreSQL DBA for pure PostgreSQL environments. Use for database design, query optimization, indexing strategies, partitioning, replication, PG-specific SQL syntax, and performance tuning without Supabase dependency.
-model: sonnet
+model: claude-sonnet-5
 domain: backend
 memory: user
 effort: high

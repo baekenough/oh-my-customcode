@@ -679,8 +679,8 @@ async function main() {
 
     const client = new Anthropic();
     const message = await client.messages.create({
-      model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
-      max_tokens: 2048,
+      model: process.env.CLAUDE_MODEL || 'claude-sonnet-5',
+      max_tokens: 8192,
       messages: [
         {
           role: 'user',

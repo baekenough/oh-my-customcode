@@ -27,7 +27,7 @@ Capabilities include conventional commit messages, branch naming enforcement, PR
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local (`.claude/agent-memory-local/mgr-gitnerd/`, git-untracked — changed from `project` scope in v1.1.13 / #1468)

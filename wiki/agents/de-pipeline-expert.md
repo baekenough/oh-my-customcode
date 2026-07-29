@@ -26,7 +26,7 @@ Draws on cross-tool expertise across `guides/airflow/`, `guides/dbt/`, `guides/s
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-opus-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: [[pipeline-architecture-patterns]]

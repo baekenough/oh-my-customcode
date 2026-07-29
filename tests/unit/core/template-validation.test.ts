@@ -91,6 +91,47 @@ function hasField(result: FrontmatterResult, fieldName: string): boolean {
   return fieldName in result.fields || result.arrayFields.has(fieldName);
 }
 
+/**
+ * Agent frontmatter `model` field 3-tier policy (R006 MUST-agent-design.md).
+ *
+ * - Tier 1: CC-native aliases, resolved by CC itself. Valid in both frontmatter
+ *   and the Agent tool's `model` parameter.
+ * - Tier 2: full model IDs, frontmatter-only (recommended). Optionally suffixed
+ *   with an extended-context marker (e.g. `claude-opus-4-6[1m]`).
+ * - Version-suffixed aliases (e.g. `sonnet5`, `opus48`) are NEVER valid — CC does
+ *   not resolve them and agent spawn fails immediately when they appear in
+ *   frontmatter. This is a deterministic regression guard (R023 shift-left):
+ *   broadening the allow-list without an explicit reject-pattern would let this
+ *   exact defect recur silently.
+ */
+const TIER1_MODEL_ALIASES = new Set(['sonnet', 'opus', 'haiku', 'opusplan', 'inherit']);
+
+const TIER2_MODEL_ID_PATTERN = /^claude-(?:opus|sonnet|haiku|fable)-\d+(?:-\d+)?(?:\[1m\])?$/;
+
+/** Matches a Tier 1 alias with a bare or hyphenated numeric version suffix (e.g. sonnet5, opus-48). */
+const VERSION_SUFFIXED_ALIAS_PATTERN = /^(?:sonnet|opus|haiku)-?\d+$/;
+
+function isValidModelValue(model: string): boolean {
+  return TIER1_MODEL_ALIASES.has(model) || TIER2_MODEL_ID_PATTERN.test(model);
+}
+
+function describeInvalidModel(model: string): string {
+  const tier1List = [...TIER1_MODEL_ALIASES].join(', ');
+
+  if (VERSION_SUFFIXED_ALIAS_PATTERN.test(model)) {
+    return (
+      `invalid model '${model}': CC does not resolve version-suffixed aliases ` +
+      `(e.g. sonnet5, opus48); use a Tier 2 full model ID such as claude-sonnet-5, ` +
+      `or a Tier 1 alias (${tier1List})`
+    );
+  }
+
+  return (
+    `invalid model '${model}' (must be a Tier 1 alias [${tier1List}] or a Tier 2 ` +
+    `full model ID matching claude-<family>-<version>, e.g. claude-sonnet-5)`
+  );
+}
+
 async function countSkillDirectories(fullPath: string): Promise<number> {
   const entries = await readdir(fullPath, { withFileTypes: true });
   return entries.filter((e) => e.isDirectory()).length;
@@ -388,7 +429,6 @@ describe('Template Validation', () => {
     });
 
     it('agent model field should be a valid model value', async () => {
-      const validModels = new Set(['sonnet', 'opus', 'haiku', 'inherit']);
       const agentsDir = join(TEMPLATES_DIR, '.claude/agents');
       const agentFiles = (await readdir(agentsDir, { withFileTypes: true }))
         .filter((e) => e.isFile() && e.name.endsWith('.md'))
@@ -403,15 +443,48 @@ describe('Template Validation', () => {
 
         if (result.isValid && result.fields.model) {
           const model = result.fields.model.trim();
-          if (!validModels.has(model)) {
-            errors.push(
-              `${agentFile}: invalid model '${model}' (must be one of: ${[...validModels].join(', ')})`
-            );
+          if (!isValidModelValue(model)) {
+            errors.push(`${agentFile}: ${describeInvalidModel(model)}`);
           }
         }
       }
 
       expect(errors).toEqual([]);
+    });
+
+    it('agent model field should reject version-suffixed aliases (regression guard)', () => {
+      // R006 / R010 policy: CC does not resolve version-suffixed aliases
+      // (sonnet5, opus5, opus48, opus47) — using them in frontmatter causes
+      // agent spawn to fail immediately. This test pins that rejection so a
+      // future broadening of the allow-list cannot silently reintroduce them.
+      const invalidVersionSuffixedAliases = ['sonnet5', 'opus5', 'opus48', 'opus47'];
+      for (const model of invalidVersionSuffixedAliases) {
+        expect(isValidModelValue(model)).toBe(false);
+      }
+
+      // Tier 1 CC-native aliases must remain valid.
+      for (const model of ['sonnet', 'opus', 'haiku', 'opusplan', 'inherit']) {
+        expect(isValidModelValue(model)).toBe(true);
+      }
+
+      // Tier 2 full model IDs (frontmatter-only) must remain valid, including
+      // the optional extended-context suffix.
+      for (const model of [
+        'claude-sonnet-5',
+        'claude-opus-5',
+        'claude-haiku-4-5',
+        'claude-opus-4-6',
+        'claude-sonnet-4-6',
+        'claude-fable-5',
+        'claude-opus-4-6[1m]',
+      ]) {
+        expect(isValidModelValue(model)).toBe(true);
+      }
+
+      // Nonsense values must still be rejected.
+      for (const model of ['gpt-4', 'claude', 'claude-', '']) {
+        expect(isValidModelValue(model)).toBe(false);
+      }
     });
 
     it('agent name field should match filename without extension', async () => {

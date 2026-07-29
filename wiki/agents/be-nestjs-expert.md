@@ -20,7 +20,7 @@ Expert NestJS developer for opinionated, scalable Node.js applications with Type
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local

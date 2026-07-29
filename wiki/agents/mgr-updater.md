@@ -22,7 +22,7 @@ Also handles documentation sync (`update-docs` skill) for the R017 verification 
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `update-external`, `update-docs`

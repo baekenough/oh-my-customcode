@@ -24,7 +24,7 @@ The agent uses the [[go-backend-best-practices]] skill and consults the [go-back
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: [[go-backend-best-practices]]

@@ -16,32 +16,38 @@ Role-based model selection strategy that maps agent task types to cost-appropria
 
 ## Overview
 
-Three model tiers serve distinct roles: `haiku` for retrieval and search, `sonnet` for general code generation (default), and `opus` for complex reasoning and architecture. `opusplan` adds plan-mode approval gates on top of opus. The `[1m]` suffix enables 1M token extended context on any tier.
+Model specification is 3-tier — see [[r006]] "3-tier model specification" (the canonical definition). WHERE a value is placed determines whether it is valid, and a single string can be correct in one position and rejected in another:
 
-The base `sonnet` and `opus` aliases stay pinned to `claude-sonnet-4-6` and `claude-opus-4-6` respectively for stability — existing agents keep their behavior unchanged. CC's own platform defaults have since moved ahead of these pins: `claude-sonnet-5` (v2.1.197+) and `claude-opus-5` (v2.1.219+, native 1M context, fast mode at $10/$50 per Mtok) are opt-in via the explicit `sonnet5` / `opus5` aliases. `opus48` (`claude-opus-4-8`) is now the previous-generation Opus tier. Fable 5 (`fable`) remains a tier above Opus 4.8, but its relative standing versus Opus 5 is not officially confirmed and is not asserted here.
+| Tier | Where valid | Values |
+|------|-------------|--------|
+| 1. CC native alias | Frontmatter `model:` AND Agent tool `model` param | `sonnet` \| `opus` \| `haiku` \| `opusplan` \| `inherit` — resolved by CC itself |
+| 2. Full model ID | Frontmatter `model:` only (recommended) | `claude-sonnet-5` \| `claude-opus-5` \| `claude-haiku-4-5` \| `claude-opus-4-6` \| `claude-opus-4-8` \| `claude-fable-5` (+ optional `[1m]` suffix) |
+| 3. Agent tool `model` param (enum) | Agent tool call only | `sonnet` \| `opus` \| `haiku` \| `fable` — exactly these 4 |
 
-## Role-Based Routing
+The Tier-1 base `sonnet` and `opus` aliases are **resolved by CC itself, not pinned by this project** — a spawn using the bare alias runs whatever CC currently maps that alias to, and this can and does drift as CC ships new defaults (measured: a frontmatter `model: sonnet` agent executed as `claude-sonnet-5`, CC's v2.1.197+ default, not a project-fixed `claude-sonnet-4-6`). Documentation claiming otherwise does not change what CC actually runs — see [[r006]] Tier 1. `claude-sonnet-5` (v2.1.197+) and `claude-opus-5` (v2.1.219+, native 1M context, fast mode at $10/$50 per Mtok) are the current CC defaults for `sonnet`/`opus`; agents that need a version-stable model regardless of future CC default changes MUST opt in via the explicit Tier-2 full ID in frontmatter — **not** via `sonnet5`/`opus5` shorthand aliases, which CC does not interpret (a spawn using them fails; this was confirmed by a same-session incident). `opus48`/`claude-opus-4-8` is now the previous-generation Opus tier. Fable 5 (`fable`) remains a tier above Opus 4.8, but its relative standing versus Opus 5 is not officially confirmed and is not asserted here.
 
-| Role | Model | Rationale |
-|------|-------|-----------|
-| File discovery / search | haiku | Fast, cheap, sufficient |
-| Code review / generation | sonnet | Balance of quality and speed |
-| Bug fix (complex), architecture | opus | Deep cross-module reasoning |
-| Release verification, orchestration | opus | Holistic validation |
+## Role-Based Routing (frontmatter, Tier 2)
 
-## Escalation Pattern
+| Role | Model (frontmatter) | Rationale |
+|------|----------------------|-----------|
+| File discovery / search | `haiku` | Fast, cheap, sufficient |
+| Code review / generation | `claude-sonnet-5` | Balance of quality and speed (CC default model, v2.1.197+) |
+| Bug fix (complex), architecture | `claude-opus-5` | Deep cross-module reasoning (CC default Opus, v2.1.219+) |
+| Release verification, orchestration | `claude-opus-5` | Holistic validation |
 
-When a lower-tier model fails, escalate: `haiku → sonnet → opus`. Configured in agent frontmatter via the `escalation` field with a `threshold` (failures before advisory).
+## Escalation Pattern (Agent-tool spawn, Tier 3)
 
-## PROJECT Override
+When a lower-tier model fails, escalate: `haiku → sonnet → opus` (de-escalation: `opus → sonnet → haiku`; `opus` is the top tier, so no further escalation target exists above it). This operates at Agent-tool spawn time, so it uses the Tier-3 enum (`sonnet`\|`opus`\|`haiku`\|`fable`) — not full model IDs, and not `sonnet5`/`opus5`. Configured in agent frontmatter via the `escalation` field with a `threshold` (failures before advisory); see [[model-escalation]] skill.
+
+## PROJECT Override (frontmatter, Tier 2)
 
 A `MODEL_ROUTING.md` file in the project root or `.claude/` directory can override default routing per agent pattern:
 
 ```markdown
 | Agent Pattern | Model | Override Reason |
 |---------------|-------|-----------------|
-| lang-*-expert | sonnet | Default sufficient |
-| mgr-sauron    | opus  | Deep verification |
+| lang-*-expert | claude-sonnet-5 | Default sufficient |
+| mgr-sauron    | claude-opus-5   | Deep verification |
 ```
 
 ## Fast Mode Interaction
@@ -56,3 +62,4 @@ Fast Mode (`/fast`) uses the same model tier at ~2.5x output speed by reducing r
 ## Sources
 
 - `guides/multi-model-routing/README.md` — routing table, cost-quality matrix, escalation config, Fast Mode interaction, Opus 5 / Fable 5 alias and hierarchy notes
+- Content-drift resync 2026-07-29 (false-green fix): removed the retracted claim that the Tier-1 base `sonnet`/`opus` aliases "stay pinned" to `claude-sonnet-4-6`/`claude-opus-4-6` — this contradicted the Tier table three lines above it ("resolved by CC itself"), and the source guide explicitly retracts the pin claim. Alias resolution is CC-controlled and drifts with platform defaults; version stability requires the Tier-2 full model ID.

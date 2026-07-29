@@ -1,7 +1,7 @@
 ---
 name: tool-optimizer
 description: Use for bundle size analysis, tree-shaking verification, performance profiling, dead code detection, and build optimization recommendations
-model: sonnet
+model: claude-sonnet-5
 domain: universal
 memory: local
 effort: medium

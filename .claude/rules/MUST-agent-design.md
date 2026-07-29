@@ -11,42 +11,68 @@ Location: `.claude/agents/{name}.md` (single file, kebab-case)
 ```yaml
 name: agent-name           # Unique identifier (kebab-case)
 description: Brief desc    # One-line summary
-model: sonnet              # sonnet | opus | haiku | opusplan (or full ID: claude-sonnet-4-6, claude-opus-4-6[1m])
+model: sonnet              # CC-native alias (Tier 1) or full model ID (Tier 2) — see "Model Specification — 3 Tiers" below
 tools: [Read, Write, ...]  # Allowed tools
 ```
 
 > **v2.1.208+**: The Agent tool no longer launches with no tools when a subagent's `tools:` list resolves to nothing — it now returns a clear error naming the unrecognized entries, catching frontmatter `tools:` typos that previously failed silently.
 
-### Model Aliases
+### Model Specification — 3 Tiers
 
-| Alias | Full ID | Use Case |
-|-------|---------|----------|
-| `haiku` | claude-haiku-4-5 | Fast, cheap tasks (search, simple edits) |
-| `sonnet` | claude-sonnet-4-6 | General tasks, code generation (default) |
-| `sonnet5` | claude-sonnet-5 | CC default (v2.1.197+); native 1M context |
-| `opus` | claude-opus-4-6 | Complex reasoning, architecture |
-| `opusplan` | claude-opus-4-6 + plan mode | Architecture planning with approval gates |
-| `opus48` | claude-opus-4-8 | Previous-generation Opus; supports xhigh effort |
-| `opus5` | claude-opus-5 | Latest Opus (GA); now CC's default Opus model; native 1M context, fast mode at $10/$50 per Mtok |
-| `fable` | claude-fable-5 | Mythos-class; tier above Opus, highest GA capability (access added in CC v2.1.170) |
+Model values resolve differently depending on WHERE they are written. Mixing tiers causes a value that is valid in one place to silently fail spawn in another (measured this session: `sonnet5`/`opus5`/`opus48` are invented names this project had documented as if they were CC-recognized — CC v2.1.220 does not resolve them, and spawn fails immediately).
+
+#### Tier 1 — CC-native aliases (valid in BOTH frontmatter `model:` AND the Agent tool `model` parameter)
+
+| Alias | Use Case |
+|-------|----------|
+| `haiku` | Fast, cheap tasks (search, simple edits) |
+| `sonnet` | General tasks, code generation (default) |
+| `opus` | Complex reasoning, architecture |
+| `opusplan` | Opus + plan mode; architecture planning with approval gates |
+| `inherit` | Inherit the parent session's model |
+
+**CC resolves these, not this project.** This project cannot "pin" an alias to a specific version — measured: a frontmatter `model: sonnet` agent executed as `claude-sonnet-5` (CC v2.1.197+ default), not a project-fixed `claude-sonnet-4-6`. Treat any "currently resolves to X" statement as a snapshot that changes when CC's own default changes.
+
+#### Tier 2 — Full model IDs (frontmatter `model:` ONLY — recommended for stability)
+
+| Full ID | Use Case |
+|---------|----------|
+| `claude-haiku-4-5` | Fast, cheap tasks |
+| `claude-sonnet-5` | Native 1M context; current CC default Sonnet (v2.1.197+) |
+| `claude-opus-4-6` | Opus, previous generation |
+| `claude-opus-4-8` | Opus, previous generation; supports xhigh effort |
+| `claude-opus-5` | Latest Opus (GA); native 1M context, fast mode at $10/$50 per Mtok |
+| `claude-fable-5` | Mythos-class; tier above Opus (access via CC v2.1.170+) |
+
+Full IDs are valid ONLY in agent frontmatter — the Agent tool's `model:` spawn parameter does NOT accept them (see Tier 3). Writing the full ID directly (not a project-invented shorthand) pins the agent regardless of future CC default changes. This is the recommended way to opt into Sonnet 5 / Opus 5 / Fable 5 explicitly rather than riding CC's Tier-1 default resolution.
 
 Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
 
-> **v2.1.219+**: Claude Opus 5 (`claude-opus-5`) added and is now CC's default Opus model — native 1M context, fast mode at $10/$50 per Mtok. Use via `model: opus5`. Base `opus` alias remains pinned to `claude-opus-4-6` for stability (existing `model: opus` agents unaffected), matching the prior opus47→opus48 pinning pattern. Relative standing vs Fable 5 is not yet confirmed officially — do not assert an ordering.
+#### Tier 3 — Agent tool `model` parameter (spawn-time override, enum of exactly 4 values)
 
-> **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via `model: fable` / `claude-fable-5`. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
+```
+Agent(subagent_type: "...", model: "opus", mode: "bypassPermissions", prompt: "...")
+```
+
+The Agent tool's `model` parameter accepts ONLY `sonnet` | `opus` | `haiku` | `fable`. It does NOT accept full model IDs (Tier 2) and does NOT accept `sonnet5`/`opus5`/`opus48` (never valid anywhere — retire these names). Note `fable` is valid HERE (Tier 3) but is NOT a Tier-1 frontmatter alias — Fable 5 in frontmatter requires the Tier-2 full ID `claude-fable-5`.
+
+Skill/rule text instructing "spawn with `model: opus`" refers to this tier — always the bare 4-value alias, never a full ID.
+
+> **v2.1.219+**: Claude Opus 5 (`claude-opus-5`) added. Opt in via the Tier-2 full ID in frontmatter; Tier-1 `opus`/`sonnet` alias resolution is CC-controlled (see Tier 1 above — this project does not pin it). Relative standing vs Fable 5 is not yet confirmed officially — do not assert an ordering.
+
+> **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via frontmatter full ID `claude-fable-5` (Tier 2) or Agent tool `model: fable` (Tier 3) — NOT via a Tier-1 frontmatter alias. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
 
 <!-- ARCHIVED CC version notes (historical):
 > **v2.1.173+**: Fable 5 model IDs carrying a `[1m]` suffix are now auto-normalized (the suffix is stripped) because Fable 5 includes 1M context by default. Use `claude-fable-5` / `model: fable` WITHOUT a `[1m]` suffix — appending it is redundant and normalized away. (The `[1m]` suffix remains meaningful for Opus/Sonnet IDs.)
 
-> **v2.1.197+**: Claude Sonnet 5가 Claude Code의 **기본 모델**로 도입되었습니다 — 네이티브 1M-token 컨텍스트, 프로모션 가격 $2/$10 per Mtok(2026-08-31까지). `model: sonnet5` / `claude-sonnet-5`로 사용. oh-my-customcode의 base `sonnet` alias는 안정성을 위해 `claude-sonnet-4-6`에 고정 유지(기존 `sonnet` 지정 에이전트 불변); Sonnet 5는 `sonnet5`로 명시 opt-in. Sonnet 5가 CC 신규 기본값이므로 명시 모델 없는 세션은 이제 Sonnet 5에서 동작합니다.
+> **v2.1.197+**: Claude Sonnet 5가 Claude Code의 **기본 모델**로 도입되었습니다 — 네이티브 1M-token 컨텍스트, 프로모션 가격 $2/$10 per Mtok(2026-08-31까지). frontmatter에서 명시 opt-in하려면 Tier-2 full ID `claude-sonnet-5`를 사용합니다(`sonnet5`는 어느 계층에서도 유효한 값이 아님 — 위 3-Tier 구분 참조). **정정(실측)**: 이 조항이 이전에 "oh-my-customcode의 base `sonnet` alias는 안정성을 위해 `claude-sonnet-4-6`에 고정 유지"라고 서술했으나 사실이 아니다 — `sonnet` alias 해석 주체는 CC이며 프로젝트가 pin할 수 없다(Tier 1 참조); frontmatter `model: sonnet` 에이전트가 실측상 `claude-sonnet-5`로 실행되었다. Sonnet 5가 CC 신규 기본값이므로 명시 모델 없는 세션은 이제 Sonnet 5에서 동작합니다.
 
 > **v2.1.201+**: Claude Sonnet 5 세션이 harness reminder를 mid-conversation system role로 주입하지 않도록 변경되었습니다 — Sonnet 5 실행 시 하니스 리마인더(규칙 재주입 등) 전달 방식이 조정되었으며, PostCompact 규칙 재주입(R021)·세션 연속성 동작 자체에는 영향이 없습니다. Sonnet 5가 CC 기본 모델(v2.1.197+)이므로 명시 모델 없는 세션에 적용됩니다.
 -->
 
 > **Fable 5 Effort 전략**: Fable 5는 **high effort가 기본값**이며, `xhigh`는 capability-sensitive 작업(최고난도 아키텍처/추론)에 한정해야 합니다. Fable 5의 `low`/`medium` effort조차 이전 세대 모델의 `xhigh`를 상회하는 품질을 보이므로, Fable 5를 사용하는 실행 에이전트는 `effort` 필드를 신중히 명시하고 불필요한 `xhigh` 남용을 지양합니다(R005 비용/지연 인식과 정합).
 
-> **Mythos 5 (`claude-mythos-5`)**: Project Glasswing 한정 공급 모델로, **GA가 아닙니다** — Fable 5(GA, 위 Model Aliases 표의 `fable`)와 구분해야 합니다. 특성: adaptive-thinking 전용 아키텍처 + 안전 분류기가 개입 시 `stop_reason: "refusal"`로 fallback하는 체계를 가집니다. oh-my-customcode 에이전트 frontmatter에는 아직 alias를 등록하지 않습니다(비-GA, 공급 제한).
+> **Mythos 5 (`claude-mythos-5`)**: Project Glasswing 한정 공급 모델로, **GA가 아닙니다** — Fable 5(GA, 위 "Model Specification — 3 Tiers"의 `claude-fable-5`/`fable`)와 구분해야 합니다. 특성: adaptive-thinking 전용 아키텍처 + 안전 분류기가 개입 시 `stop_reason: "refusal"`로 fallback하는 체계를 가집니다. oh-my-customcode 에이전트 frontmatter에는 아직 alias를 등록하지 않습니다(비-GA, 공급 제한).
 
 > **프롬프팅 패턴 상호참조**: Fable 5/Mythos 5 대상 프롬프팅 패턴(effort 조합, adaptive-thinking 활용, refusal fallback 대응)의 상세 가이드는 `guides/claude-code/16-fable5-prompting.md`를 참조하세요.
 
@@ -67,7 +93,7 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 -->
 
 <!-- ARCHIVED CC version notes (historical):
-> **v2.1.183+**: CC now warns (stderr, in `-p` print mode) when the requested model is deprecated or auto-updated to a newer model — and this warning now ALSO covers models set in agent frontmatter (`model:`). Relevant to the Model Aliases table above: a stale/deprecated `model:` value in agent frontmatter now surfaces a deprecation warning instead of silently resolving. Separately, v2.1.183 fixes `thinking.disabled.display: Extra inputs are not permitted` 400 errors on subagent spawns and session-title generation — extends the v2.1.166 toggle above; subagent spawns with thinking disabled no longer 400.
+> **v2.1.183+**: CC now warns (stderr, in `-p` print mode) when the requested model is deprecated or auto-updated to a newer model — and this warning now ALSO covers models set in agent frontmatter (`model:`). Relevant to "Model Specification — 3 Tiers" above: a stale/deprecated `model:` value in agent frontmatter now surfaces a deprecation warning instead of silently resolving. Separately, v2.1.183 fixes `thinking.disabled.display: Extra inputs are not permitted` 400 errors on subagent spawns and session-title generation — extends the v2.1.166 toggle above; subagent spawns with thinking disabled no longer 400.
 
 > **v2.1.187+**: Org-configured model restrictions now apply to the model picker, `--model`, `/model`, and `ANTHROPIC_MODEL` (a restricted model shows "restricted by your organization's settings"). Extends the v2.1.175 `enforceAvailableModels` scope to per-agent `model:` override entry points — a managed model allowlist now also constrains the picker/env paths. Also fixed `--json-schema` / workflow `agent({schema})` structured output: the model can no longer re-call `StructuredOutput` indefinitely after a successful call, and follow-up turns reliably return structured output — relevant to schema-constrained subagent spawns.
 
@@ -110,7 +136,7 @@ source:                    # For external agents
   version: 1.0.0
 escalation:              # Model escalation policy (optional)
   enabled: true          # Enable auto-escalation advisory
-  path: haiku → sonnet → opus  # Escalation sequence
+  path: haiku → sonnet → opus  # Escalation sequence (Tier-3 Agent-tool aliases only)
   threshold: 2           # Failures before advisory
 soul: true                 # Enable SOUL.md identity injection
 isolation: worktree | sandbox  # worktree = git worktree, sandbox = restricted bash
@@ -297,7 +323,7 @@ When `escalation.enabled: true`, the model-escalation hooks will track outcomes 
 | Field | Default | Description |
 |-------|---------|-------------|
 | `enabled` | false | Enable escalation tracking for this agent |
-| `path` | haiku → sonnet → opus | Model upgrade sequence |
+| `path` | haiku → sonnet → opus | Model upgrade sequence (Tier-3 Agent-tool aliases only) |
 | `threshold` | 2 | Failure count before escalation advisory |
 -->
 

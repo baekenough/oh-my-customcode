@@ -26,7 +26,7 @@ Native auto-memory (MEMORY.md) is the single persistence backend. The claude-mem
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local

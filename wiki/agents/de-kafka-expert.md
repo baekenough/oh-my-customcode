@@ -22,7 +22,7 @@ Uses `kafka-best-practices` skill and `guides/kafka/` for reference documentatio
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `kafka-best-practices`

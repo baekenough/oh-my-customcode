@@ -23,7 +23,7 @@ Uses `aws-best-practices` skill (offline Well-Architected patterns) and `guides/
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-opus-5
 - **Domain**: devops
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `aws-best-practices`

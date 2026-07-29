@@ -1,7 +1,7 @@
 ---
 title: Dynamic Agent Creation
 type: concept
-updated: 2026-04-12
+updated: 2026-07-29
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-orchestrator-coordination.md
@@ -52,7 +52,7 @@ Every agent created by `mgr-creator` must include valid frontmatter per [[wiki/r
 ```yaml
 name: agent-name       # Unique kebab-case identifier
 description: ...       # One-line summary
-model: sonnet          # haiku | sonnet | opus | opusplan
+model: sonnet          # Tier-1 alias: haiku | sonnet | opus | opusplan (or Tier-2 full ID, recommended: claude-sonnet-5 | claude-opus-5 | claude-haiku-4-5 | ...)
 tools: [Read, Write, ...]
 ```
 

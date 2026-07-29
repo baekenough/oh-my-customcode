@@ -1,7 +1,7 @@
 ---
 name: be-django-expert
 description: Expert Django developer for production-ready Python web applications. Use for Django projects, models/views/templates, Django REST Framework, authentication, admin customization, and deployment optimization.
-model: sonnet
+model: claude-sonnet-5
 domain: backend
 memory: local
 effort: high

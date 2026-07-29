@@ -20,7 +20,7 @@ Expert Svelte developer for compiler-based reactivity, reactive statements, Svel
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `impeccable-design`, `web-design-guidelines`

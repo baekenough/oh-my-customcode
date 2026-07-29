@@ -23,12 +23,12 @@ Uses `dbt-best-practices` skill and `guides/dbt/` for reference.
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `dbt-best-practices`
 - **Memory**: local (agent-memory-local, git-untracked)
-- **Effort**: high
+- **Effort**: medium
 - **Permission mode**: bypassPermissions
 
 ## Relationships

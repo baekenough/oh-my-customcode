@@ -21,7 +21,7 @@ Runs in a **sandbox** isolation mode for safety.
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-opus-5
 - **Domain**: devops
 - **Tools**: Read, Write, Grep, Bash
 - **Skills**: `cve-triage`, `adversarial-review`

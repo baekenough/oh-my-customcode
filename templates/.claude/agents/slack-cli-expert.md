@@ -1,7 +1,7 @@
 ---
 name: slack-cli-expert
 description: Expert Slack CLI developer for Slack app management, deployment, triggers, and workspace automation
-model: sonnet
+model: claude-sonnet-5
 domain: universal
 effort: medium
 tools:

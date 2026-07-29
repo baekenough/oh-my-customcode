@@ -24,7 +24,7 @@ Uses `rust-best-practices` skill and `guides/rust/` for reference documentation.
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `rust-best-practices`

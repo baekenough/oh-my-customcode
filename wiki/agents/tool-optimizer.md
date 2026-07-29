@@ -23,7 +23,7 @@ Uses three skills: `optimize-analyze`, `optimize-bundle`, and `optimize-report`.
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Grep, Glob, Bash (read-only operations only)
 - **Skills**: `optimize-analyze`, `optimize-bundle`, `optimize-report`

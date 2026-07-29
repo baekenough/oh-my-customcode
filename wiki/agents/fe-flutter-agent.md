@@ -19,7 +19,7 @@ Expert Flutter/Dart cross-platform app developer covering widget composition, st
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `flutter-best-practices`

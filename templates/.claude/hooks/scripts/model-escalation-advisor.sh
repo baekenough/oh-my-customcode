@@ -39,16 +39,20 @@ fi
 consecutive_failures=$(tail -${CONSECUTIVE_THRESHOLD} "$OUTCOME_FILE" 2>/dev/null | grep -c '"outcome":"failure"' 2>/dev/null || echo "0")
 
 # Escalation path
+# NOTE: Agent tool `model` param is an enum of exactly 4 values: sonnet | opus | haiku | fable.
+# Full model IDs and virtual/versioned aliases NEVER match here — they never reach this
+# script via tool_input.model, so using them as case labels silently no-ops the entire
+# advisory (no error, just dead code). Keep case labels as bare enum aliases only.
 next_model=""
 cost_multiplier=""
 case "$current_model" in
   haiku)
     next_model="sonnet"
-    cost_multiplier="~3-5x"
+    cost_multiplier="~3x"
     ;;
   sonnet)
     next_model="opus"
-    cost_multiplier="~5-10x"
+    cost_multiplier="~1.5-2x"
     ;;
   *)
     next_model=""
@@ -86,6 +90,7 @@ if [ "$current_model" != "haiku" ] && [ "$current_model" != "inherit" ] && [ "$c
 
   if [ "$recent_successes" -ge "$COOLDOWN" ]; then
     lower_model=""
+    # Same enum constraint as the escalation case above: bare aliases only.
     case "$current_model" in
       opus) lower_model="sonnet" ;;
       sonnet) lower_model="haiku" ;;

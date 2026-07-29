@@ -23,7 +23,7 @@ Results are passed to [[qa-engineer]] for execution and archived to [[arch-docum
 
 ## Key Details
 
-- **Model**: sonnet
+- **Model**: claude-sonnet-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash, `disallowedTools: [Bash]`)
 - **Memory**: local (`.claude/agent-memory-local/qa-writer/`, git-untracked — changed from `project` in v1.1.13, #1468, CC v2.1.202~207 compat pass)

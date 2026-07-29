@@ -27,7 +27,7 @@
 		'universal', 'backend', 'frontend', 'devops', 'database',
 		'data-engineering', 'security', 'qa', 'architecture', 'management'
 	];
-	const MODELS = ['sonnet', 'opus', 'haiku'];
+	const MODELS = ['sonnet', 'opus', 'haiku', 'claude-sonnet-5', 'claude-opus-5'];
 
 	// Populate fields when server returns analysis result
 	$: if (form?.success) {
@@ -207,6 +207,8 @@
 								class="px-3 py-1 rounded text-xs font-semibold border transition-colors {agentModel === m
 									? m === 'opus' ? 'bg-violet-800 text-violet-200 border-violet-500'
 									: m === 'haiku' ? 'bg-sky-800 text-sky-200 border-sky-500'
+									: m === 'claude-opus-5' ? 'bg-purple-800 text-purple-200 border-purple-500'
+									: m === 'claude-sonnet-5' ? 'bg-teal-800 text-teal-200 border-teal-500'
 									: 'bg-emerald-800 text-emerald-200 border-emerald-500'
 									: 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}"
 							>
