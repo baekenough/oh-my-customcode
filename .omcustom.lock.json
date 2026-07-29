@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.35",
-  "generatedAt": "2026-07-29T01:43:06.278Z",
-  "templateVersion": "1.1.35",
+  "generatorVersion": "1.1.36",
+  "generatedAt": "2026-07-29T03:43:39.274Z",
+  "templateVersion": "1.1.36",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "b0bd4f7880157a54eedae7208cc4800f0f8b5a63531416f640e30d5265f05024",
-      "size": 7838,
+      "templateHash": "c6bf4089ba08ef5b33f0f1237be44490657c2ce7760ba2345b7a0c33d6fe056d",
+      "size": 9232,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "abc288af281e4cfb887a016edd106fc8e35c662558befa36eedd1748430b345b",
-      "size": 32064,
+      "templateHash": "7f647095e0790fd4ced6b4bf499dce0dd7c2071c0dccc189c57f0b4b23186a1d",
+      "size": 32467,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -480,8 +480,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "c91ee737aa4d6250511ea72f60b799421b3ae8544c187d4b185a7cfbfc352bc2",
-      "size": 23584,
+      "templateHash": "0b0f7dd7e07c33670994ea06dc8006e57f800948f9d76812a04750d45efe832a",
+      "size": 24209,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {

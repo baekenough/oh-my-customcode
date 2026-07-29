@@ -13,8 +13,28 @@ Update the relevant rule rather than just acknowledging the violation.
 1. Acknowledge violation
 2. Identify root cause (which rule was weak/unclear?)
 3. Update the rule (add clarity, examples, self-checks)
-4. Commit the change
-5. Continue original task following updated rules
+4. Wiring check — confirm the rule is wired into an execution path, or mark it as wiring-not-required (see Rule Wiring Check below)
+5. Commit the change
+6. Continue original task following updated rules
+
+### Rule Wiring Check (배선 확인)
+
+규칙 텍스트를 추가하는 것과, 그 규칙이 실행 경로에서 발동되게 배선하는 것은 **별개 작업**이다. 텍스트만 추가하고 배선을 누락하면 동일 결함이 재발한다.
+
+**판단 항목** (규칙 승격 시 판단하고 기록):
+1. 이 규칙이 발동되어야 하는 **실행 경로**(워크플로우 YAML / 스킬 정의 / 훅 / CI 설정)가 있는가?
+2. 있다면 그 경로에 **실제로 반영**했는가?
+3. 배선 대상이 없는 순수 서술 규칙(용어 정의 등)이면 **"배선 불요"임을 명시**한다.
+
+배선이 필요한데 텍스트만 추가한 것은 **미완료**로 간주한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 규칙 조항만 추가하고 커밋 → 자동화 경로에 발동 지점이 없어 동일 결함 재발 | 발동 실행 경로 명시 + 반영 확인; 대상 없으면 "배선 불요" 명시 |
+
+Origin: #1533 (v1.1.35에서 R017 (b) 조항 추가했으나 auto-dev.yaml version-bump 절차에 bun run build 단계가 없어 발동 지점 부재 — mgr-sauron이 [FAIL]로 차단, 배선 후 통과).
+
+Cross-reference: R021(Enforcement Policy — advisory 규칙의 발동 지점), R017(구조 검증).
 
 ## Integration
 

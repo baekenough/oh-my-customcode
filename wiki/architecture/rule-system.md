@@ -72,8 +72,9 @@ When a rule violation is identified, the workflow is:
 1. Acknowledge the violation
 2. Identify which rule was weak or unclear
 3. **Update the rule before continuing the original task**
-4. Commit the rule change
-5. Resume original work
+4. **Rule Wiring Check** — confirm the new/edited clause is actually wired into an execution path (workflow step, hook, CI check), not just described in prose; if no execution path applies, state "wiring not required" explicitly (see [[wiki/rules/r016]] #1533)
+5. Commit the rule change
+6. Resume original work
 
 Rule updates are never deferred to a TODO. They happen in the same session as the violation.
 
