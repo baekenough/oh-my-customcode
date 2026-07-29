@@ -230,15 +230,19 @@ steps:
 
       ## Local CI-mimic verification (MUST run before marking implement done)
 
-      After all implementation tasks complete, run these scripts in sequence and halt on failure:
+      After all implementation tasks complete, run these scripts in sequence and halt on failure.
+      Run each standalone (NO pipe) and read its exit code directly — `$?` after a pipe is the last command's code (R005, #1492):
 
       1. bash .github/scripts/verify-template-sync.sh
       2. bash .github/scripts/verify-wiki-sync.sh
+      3. bun .github/scripts/validate-docs.ts --programmatic-only
 
-      If either fails:
+      If any fails:
       - For wiki-sync failures: delegate to wiki-curator to generate missing pages (`/omcustom:wiki ingest <path>`)
+        (Regenerating the wiki source-hash manifest targets `wiki/.source-hashes.json` ALWAYS — NEVER `templates/manifest.json`. Command: `bash .github/scripts/lib/source-hash.sh generate wiki/.source-hashes.json`. Ref #1423.)
       - For template-sync failures: delegate to mgr-updater to sync `.claude/` -> `templates/.claude/`
-      - After fixes, re-run the scripts until both pass
+      - For validate-docs failures (count mismatch): delegate to mgr-updater to fix counts via EXHAUSTIVE grep across all docs — file-enumeration misses `.en`/`.ko` variants and secondary docs (#1521 — v1.1.32에서 validate-docs 누락으로 push 왕복 1회 발생)
+      - After fixes, re-run the scripts until all pass
 
       This mirrors CI and prevents the known 1-2 wasted push cycles per release (ref: issue #927, v0.98.0 PR #925).
     description: "Per-issue implementation with lifecycle, specialist routing, and CI-mimic verification"
@@ -299,10 +303,17 @@ steps:
          Determine NEW version per semver rules below.
          npm project (package.json exists):
            a. package.json: jq '.version = "<NEW>"' package.json > package.json.tmp && mv package.json.tmp package.json
+           # ⚠ jq '.version=...' PRESERVES the manifest structure {version, lastUpdated, omcustomMinClaudeCode, components[]}.
+           #   Edit ONLY the .version field — do NOT overwrite templates/manifest.json wholesale (e.g. a source-hash path→hash map).
+           #   Recover a corrupted manifest: git show HEAD:templates/manifest.json | jq '.version="<NEW>"' > templates/manifest.json (#1423/#1154).
            b. templates/manifest.json: jq '.version = "<NEW>"' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json
-           c. mgr-gitnerd commit: "chore(release): bump to v<NEW>"
-           d. mgr-gitnerd push develop
-           e. mandatory verification (with existence guard for partial-update safety):
+           c. bun run build — run standalone (NO pipe), read exit code directly ($? after a pipe is the last command's, R005/#1492).
+              This regenerates .omcustom.lock.json (generatorVersion/templateVersion) to <NEW> via scripts/sync-source-lockfile.ts.
+           d. git status --short — enumerate ALL tracked drift (`^ M`) the build produced; stage EVERY one (esp. .omcustom.lock.json) before commit.
+              (#1531 — .omcustom.lock.json missed staging across 4 consecutive releases after v1.1.29; root cause was no build step between version bump and commit.)
+           e. mgr-gitnerd commit: "chore(release): bump to v<NEW>" — MUST include the drift from step d
+           f. mgr-gitnerd push develop
+           g. mandatory verification (with existence guard for partial-update safety):
               [ -f scripts/verify-version-sync.sh ] && bash scripts/verify-version-sync.sh || echo "::warning::verify-version-sync.sh not found, version sync verification skipped"
               (verify-version-sync.sh 가 exit 1 시 release 단계 halt)
 
@@ -318,12 +329,15 @@ steps:
       3. Adapt release mechanism to project (determines how steps 3-5 execute):
          - npm project with auto-tag.yml (this repo — release/v* PR pattern):
            a. mgr-gitnerd creates release/v{NEW} branch from develop with the version-bump commit
-           b. mgr-gitnerd creates PR: gh pr create --base develop --head release/v{NEW} --title "chore(release): bump to v{NEW}"
+           b. mgr-gitnerd creates PR: gh pr create --base develop --head release/v{NEW} --title "chore(release): bump to v{NEW}" --body "<MUST include 'Closes #N' for EVERY issue this release resolves>"
+              ⚠ auto-tag.yml closes issues by grep'ing Closes/Fixes/Resolves keywords in the PR BODY — NOT by milestone membership. If the keywords are missing, no issues close and the workflow still reports success (#1531).
+              Before creating the PR (whether via inline --body or --body-file), confirm the body text actually contains a Closes line per issue.
            c. mgr-gitnerd merges PR (admin merge required due to branch protection)
            d. DO NOT manually git tag or gh release create.
-              auto-tag.yml fires on release/v* PR merge → creates tag → closes linked issues → closes milestone → deletes release branch.
+              auto-tag.yml fires on release/v* PR merge → creates tag → closes issues linked via PR-body Closes/Fixes/Resolves keywords → closes milestone → deletes release branch.
               release.yml fires on the tag → npm publish + GitHub Release creation.
            Milestone close and issue close are handled downstream by auto-tag.yml — do NOT close them manually.
+           After merge, verify each targeted issue is actually CLOSED (gh issue view); close manually if still open. Workflow conclusion=success is not evidence of close (#1531 — v1.1.34 Closes-keyword omission left 5 issues open, manual close required).
          - Non-npm / no auto-tag.yml:
            mgr-gitnerd: git tag v{NEW} && git push origin v{NEW}
            mgr-gitnerd: gh release create v{NEW} (with release notes)
