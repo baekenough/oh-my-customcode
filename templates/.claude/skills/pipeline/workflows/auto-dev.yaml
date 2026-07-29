@@ -307,9 +307,13 @@ steps:
            #   Edit ONLY the .version field — do NOT overwrite templates/manifest.json wholesale (e.g. a source-hash path→hash map).
            #   Recover a corrupted manifest: git show HEAD:templates/manifest.json | jq '.version="<NEW>"' > templates/manifest.json (#1423/#1154).
            b. templates/manifest.json: jq '.version = "<NEW>"' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json
-           c. mgr-gitnerd commit: "chore(release): bump to v<NEW>"
-           d. mgr-gitnerd push develop
-           e. mandatory verification (with existence guard for partial-update safety):
+           c. bun run build — run standalone (NO pipe), read exit code directly ($? after a pipe is the last command's, R005/#1492).
+              This regenerates .omcustom.lock.json (generatorVersion/templateVersion) to <NEW> via scripts/sync-source-lockfile.ts.
+           d. git status --short — enumerate ALL tracked drift (`^ M`) the build produced; stage EVERY one (esp. .omcustom.lock.json) before commit.
+              (#1531 — .omcustom.lock.json missed staging across 4 consecutive releases after v1.1.29; root cause was no build step between version bump and commit.)
+           e. mgr-gitnerd commit: "chore(release): bump to v<NEW>" — MUST include the drift from step d
+           f. mgr-gitnerd push develop
+           g. mandatory verification (with existence guard for partial-update safety):
               [ -f scripts/verify-version-sync.sh ] && bash scripts/verify-version-sync.sh || echo "::warning::verify-version-sync.sh not found, version sync verification skipped"
               (verify-version-sync.sh 가 exit 1 시 release 단계 halt)
 
@@ -325,12 +329,15 @@ steps:
       3. Adapt release mechanism to project (determines how steps 3-5 execute):
          - npm project with auto-tag.yml (this repo — release/v* PR pattern):
            a. mgr-gitnerd creates release/v{NEW} branch from develop with the version-bump commit
-           b. mgr-gitnerd creates PR: gh pr create --base develop --head release/v{NEW} --title "chore(release): bump to v{NEW}"
+           b. mgr-gitnerd creates PR: gh pr create --base develop --head release/v{NEW} --title "chore(release): bump to v{NEW}" --body "<MUST include 'Closes #N' for EVERY issue this release resolves>"
+              ⚠ auto-tag.yml closes issues by grep'ing Closes/Fixes/Resolves keywords in the PR BODY — NOT by milestone membership. If the keywords are missing, no issues close and the workflow still reports success (#1531).
+              Before creating the PR (whether via inline --body or --body-file), confirm the body text actually contains a Closes line per issue.
            c. mgr-gitnerd merges PR (admin merge required due to branch protection)
            d. DO NOT manually git tag or gh release create.
-              auto-tag.yml fires on release/v* PR merge → creates tag → closes linked issues → closes milestone → deletes release branch.
+              auto-tag.yml fires on release/v* PR merge → creates tag → closes issues linked via PR-body Closes/Fixes/Resolves keywords → closes milestone → deletes release branch.
               release.yml fires on the tag → npm publish + GitHub Release creation.
            Milestone close and issue close are handled downstream by auto-tag.yml — do NOT close them manually.
+           After merge, verify each targeted issue is actually CLOSED (gh issue view); close manually if still open. Workflow conclusion=success is not evidence of close (#1531 — v1.1.34 Closes-keyword omission left 5 issues open, manual close required).
          - Non-npm / no auto-tag.yml:
            mgr-gitnerd: git tag v{NEW} && git push origin v{NEW}
            mgr-gitnerd: gh release create v{NEW} (with release notes)
