@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-05-15
+updated: 2026-07-29
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -64,6 +64,10 @@ The `auto-dev` workflow runs a full release cycle: `pre-triage → scope-selecti
 
 **Purpose**: Catches unit test regressions that static checks miss. Addresses the v0.133.0 pattern where hook script exit code changes introduced test regressions not detected by lint/typecheck alone.
 
+### release: PR-body Closes-keyword requirement (#1531)
+
+`auto-tag.yml` closes issues by grep'ing `Closes|Fixes|Resolves #N` keywords in the **merged PR body** — NOT by milestone membership. The `release` step's PR-creation instruction now mandates a `Closes #N` line for every issue the release resolves; omitting it lets the workflow report `success` while closing zero issues. After merge, the step verifies each targeted issue is actually `CLOSED` (`gh issue view`) rather than trusting workflow conclusion alone — v1.1.34 omitted the keyword and left 5 issues open despite a green run.
+
 ## Relationships
 
 - **Used by agents**: orchestrator
@@ -73,4 +77,5 @@ The `auto-dev` workflow runs a full release cycle: `pre-triage → scope-selecti
 ## Sources
 
 - `.claude/skills/pipeline/SKILL.md` — skill definition
-- `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0)
+- `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531)
+- Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)

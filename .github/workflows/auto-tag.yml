@@ -69,6 +69,9 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           ISSUES=$(echo "$PR_BODY" | grep -oEi '(Closes|Fixes|Resolves)([[:space:],]+#[0-9]+)+' | grep -oE '#[0-9]+' | grep -oE '[0-9]+' | sort -u)
+          if [ -z "$ISSUES" ]; then
+            echo "::warning::PR body contains no Closes/Fixes/Resolves keyword — no issues were closed. If this release should close issues, add 'Closes #N' lines to the PR body and close them manually."
+          fi
           for ISSUE in $ISSUES; do
             echo "Closing issue #$ISSUE"
             gh issue close "$ISSUE" \

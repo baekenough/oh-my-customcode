@@ -1,9 +1,11 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-07-19
+updated: 2026-07-29
 sources:
   - .claude/agents/mgr-gitnerd.md
+  - .claude/skills/pipeline/workflows/auto-dev.yaml
+  - .github/workflows/auto-tag.yml
 related:
   - [[mgr-sauron]]
   - [[tool-npm-expert]]
@@ -75,6 +77,14 @@ If title-matching returns no results, do NOT immediately report the milestone as
 
 Origin: #1287 (v0.164.0 session retrospective — milestone reported absent but confirmed present via direct re-query).
 
+## PR Body Closes-Keyword Requirement (#1531)
+
+`auto-tag.yml` closes issues by grep'ing `Closes|Fixes|Resolves #N` keywords in the merged PR body — NOT by milestone membership. When creating a release PR, `mgr-gitnerd` MUST include a `Closes #N` line for every issue the release resolves; a missing keyword lets the workflow report `success` while closing zero issues.
+
+After merge, `mgr-gitnerd` verifies each targeted issue is actually `CLOSED` via `gh issue view` — workflow conclusion=success is not evidence of close (cf. [[r020]] "actual outcome ≠ attempt"). If an issue is still open, close it manually.
+
+Origin: #1531 (v1.1.34 Closes-keyword omission left 5 issues open despite a green workflow; PR-body requirement + post-merge verification added in response).
+
 ## Relationships
 
 - **Depends on**: mgr-sauron verification (prerequisite for push)
@@ -107,3 +117,4 @@ The local `release` branch (file ref) conflicts with `release/v*` directory ref 
 - Issue #1148 — rustup symlink false-positive CI failure (v0.137.0)
 - Issue #1287 — milestone query false-negative retrospective (v0.164.0, origin of Milestone Query Robustness)
 - Issue #1468 — memory scope migration to `local` (v1.1.13)
+- Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
