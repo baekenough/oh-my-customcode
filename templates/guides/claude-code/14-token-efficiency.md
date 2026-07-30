@@ -224,7 +224,7 @@ External plugin (JuliusBrussee/caveman, 41.6k stars, MIT) that rewrites Claude r
 - `.claude/rules/SHOULD-ecomode.md` — Layer 2 R013 specification
 - `.claude/skills/token-efficiency-audit/SKILL.md` — Layer 3 HOW: audit and apply
 - `.claude/skills/monitoring-setup/SKILL.md` — Measure effectiveness via OTel metrics
-- `.claude/skills/update-config/` — Generic settings.json manipulation (broader scope)
+- CC bundled `update-config` skill — Generic settings.json manipulation (broader scope; not a project-local skill)
 - `.claude/skills/playwright-compress/SKILL.md` — Layer 4 MCP output compression hook
 - `.claude/hooks/scripts/playwright-compress.sh` — Layer 4 hook script
 - `https://github.com/JuliusBrussee/caveman` — Layer 5 caveman plugin (external)

@@ -4,6 +4,14 @@ import { join, resolve } from 'node:path';
 
 const TEMPLATES_DIR = resolve(import.meta.dir, '../../../templates');
 
+/**
+ * Repo root, and the EXECUTED agents directory CC actually reads when spawning
+ * agents in this project — distinct from the distribution mirror under
+ * `templates/.claude/agents` covered by TEMPLATES_DIR above (#1536).
+ */
+const PROJECT_ROOT = resolve(import.meta.dir, '../../..');
+const ACTUAL_AGENTS_DIR = join(PROJECT_ROOT, '.claude/agents');
+
 interface ManifestComponent {
   name: string;
   path: string;
@@ -238,6 +246,43 @@ async function validateAgentFrontmatter(
     // tools may be a multiline array (tools:\n  - Read), so use hasField
     if (!hasField(result, field)) {
       errors.push(`${agentFile}: missing required field '${field}'`);
+    }
+  }
+}
+
+async function validateAgentModelField(
+  agentFile: string,
+  agentsDir: string,
+  errors: string[]
+): Promise<void> {
+  const agentFilePath = join(agentsDir, agentFile);
+  const content = await readFile(agentFilePath, 'utf-8');
+  const result = parseFrontmatter(content);
+
+  if (result.isValid && result.fields.model) {
+    const model = result.fields.model.trim();
+    if (!isValidModelValue(model)) {
+      errors.push(`${agentFile}: ${describeInvalidModel(model)}`);
+    }
+  }
+}
+
+async function validateAgentNameField(
+  agentFile: string,
+  agentsDir: string,
+  errors: string[]
+): Promise<void> {
+  const agentFilePath = join(agentsDir, agentFile);
+  const content = await readFile(agentFilePath, 'utf-8');
+  const result = parseFrontmatter(content);
+
+  if (result.isValid && result.fields.name) {
+    const expectedName = agentFile.replace(/\.md$/, '');
+    const actualName = result.fields.name.trim();
+    if (actualName !== expectedName) {
+      errors.push(
+        `${agentFile}: name field '${actualName}' does not match filename '${expectedName}'`
+      );
     }
   }
 }
@@ -512,6 +557,59 @@ describe('Template Validation', () => {
       }
 
       expect(errors).toEqual([]);
+    });
+
+    // #1536: the tests above only walk the templates/.claude/agents mirror.
+    // CC spawns agents from the EXECUTED .claude/agents directory at the repo
+    // root, so an invalid `model` value there (e.g. the sonnet5/opus5 incident,
+    // #1524) can slip past this file entirely if only the mirror is checked.
+    // Re-run the same frontmatter/model/name checks against ACTUAL_AGENTS_DIR,
+    // reusing the shared (directory-agnostic) helpers/validators above rather
+    // than duplicating validation logic.
+    describe('executed .claude/agents (non-mirror)', () => {
+      it('every agent .md file should have valid YAML frontmatter', async () => {
+        const agentFiles = (await readdir(ACTUAL_AGENTS_DIR, { withFileTypes: true }))
+          .filter((e) => e.isFile() && e.name.endsWith('.md'))
+          .map((e) => e.name);
+
+        expect(agentFiles.length).toBeGreaterThan(0);
+
+        const errors: string[] = [];
+
+        for (const agentFile of agentFiles) {
+          await validateAgentFrontmatter(agentFile, ACTUAL_AGENTS_DIR, errors);
+        }
+
+        expect(errors).toEqual([]);
+      });
+
+      it('agent model field should be a valid model value', async () => {
+        const agentFiles = (await readdir(ACTUAL_AGENTS_DIR, { withFileTypes: true }))
+          .filter((e) => e.isFile() && e.name.endsWith('.md'))
+          .map((e) => e.name);
+
+        const errors: string[] = [];
+
+        for (const agentFile of agentFiles) {
+          await validateAgentModelField(agentFile, ACTUAL_AGENTS_DIR, errors);
+        }
+
+        expect(errors).toEqual([]);
+      });
+
+      it('agent name field should match filename without extension', async () => {
+        const agentFiles = (await readdir(ACTUAL_AGENTS_DIR, { withFileTypes: true }))
+          .filter((e) => e.isFile() && e.name.endsWith('.md'))
+          .map((e) => e.name);
+
+        const errors: string[] = [];
+
+        for (const agentFile of agentFiles) {
+          await validateAgentNameField(agentFile, ACTUAL_AGENTS_DIR, errors);
+        }
+
+        expect(errors).toEqual([]);
+      });
     });
   });
 

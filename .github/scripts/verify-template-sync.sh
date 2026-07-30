@@ -223,6 +223,29 @@ for rootfile in statusline.sh; do
   fi
 done
 
+# Guides content drift (#1537) — the "Guides count" check above (line ~118) only compares
+# top-level topic directory counts (guides/*/ dirs), which misses content drift within a
+# topic (e.g. guides/agent-eval/README.md edited in source without syncing the mirror).
+# guides/ lives at repo root (not under .claude/) and nests multiple levels deep
+# (guides/claude-code/14-token-efficiency.md), so check_content_dir's flat maxdepth-1
+# approach doesn't apply here — this uses a recursive find + independently-constructed
+# mirror path, following the skills inline-loop pattern above rather than check_content_dir.
+# Verified guides/ and templates/guides/ currently have full 1:1 path parity (no
+# package/harness-scope exception like skills), so a missing-mirror is treated as an error.
+if [ -d "guides" ]; then
+  while IFS= read -r src_guide; do
+    rel="${src_guide#guides/}"
+    tpl_guide="templates/guides/$rel"
+    if [ ! -f "$tpl_guide" ]; then
+      echo "::error::Template missing for guides: $rel (source exists, template absent)"
+      content_drift=$((content_drift + 1))
+    elif ! diff -q "$src_guide" "$tpl_guide" >/dev/null 2>&1; then
+      echo "::error::Content drift in guides: $rel (source != template)"
+      content_drift=$((content_drift + 1))
+    fi
+  done < <(find guides -type f -name "*.md")
+fi
+
 # Workflows yaml mirror consistency (#1286)
 # Two mirror pairs: pipeline skill internal <-> template, and repo-root legacy <-> template.
 # Only compare files present in BOTH dirs — some legacy yamls (eraser.yaml) intentionally
@@ -244,6 +267,56 @@ check_workflow_mirror() {
 }
 check_workflow_mirror ".claude/skills/pipeline/workflows" "templates/.claude/skills/pipeline/workflows"
 check_workflow_mirror "workflows" "templates/workflows"
+
+# Workflow N-way copy consistency (#1539)
+# check_workflow_mirror above only compares two PAIRS independently: (pipeline-skill
+# workflows <-> its template mirror) and (repo-root workflows <-> its template mirror).
+# Drift BETWEEN the two pairs (e.g. root auto-dev.yaml diverging from pipeline-skill
+# auto-dev.yaml while each still matches its own mirror) is invisible to pairwise
+# comparison. This checks that every same-basename file present in 2+ of the 4 real
+# copy locations shares identical content. Only basenames present in 2+ locations are
+# compared — a legacy yaml present in exactly one location (e.g. workflows/eraser.yaml,
+# which has no mirror anywhere) is intentionally not flagged, matching the same
+# false-positive avoidance already applied in check_workflow_mirror above.
+check_workflow_nway() {
+  local dirs=".claude/skills/pipeline/workflows templates/.claude/skills/pipeline/workflows workflows templates/workflows"
+  local basenames=""
+  local d f b
+  for d in $dirs; do
+    [ -d "$d" ] || continue
+    for f in "$d"/*.yaml; do
+      [ -e "$f" ] || continue
+      b=$(basename "$f")
+      case " $basenames " in
+        *" $b "*) ;;
+        *) basenames="$basenames $b" ;;
+      esac
+    done
+  done
+  for b in $basenames; do
+    local present="" ref="" mismatch=0 count
+    for d in $dirs; do
+      f="$d/$b"
+      [ -f "$f" ] || continue
+      present="$present $f"
+      if [ -z "$ref" ]; then
+        ref="$f"
+      elif ! diff -q "$ref" "$f" >/dev/null 2>&1; then
+        mismatch=1
+      fi
+    done
+    count=$(echo "$present" | wc -w | tr -d ' ')
+    [ "$count" -lt 2 ] && continue
+    if [ "$mismatch" -eq 1 ]; then
+      echo "::error::Workflow N-way drift for $b — copies do not all match:"
+      for f in $present; do
+        echo "  $f"
+      done
+      content_drift=$((content_drift + 1))
+    fi
+  done
+}
+check_workflow_nway
 
 if [ "$content_drift" -gt 0 ]; then
   echo "::error::$content_drift content drift(s) detected between .claude/ and templates/.claude/"

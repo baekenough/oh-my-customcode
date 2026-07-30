@@ -824,5 +824,10 @@ harness-eval이 task를 실행하면 agent-eval-framework가 4-metric을 측정�
 | 가이드 | 경로 | 관련성 |
 |--------|------|--------|
 | harness-engineering | `guides/harness-engineering/` | 평가 하네스 인프라 설계 |
-| monitoring-setup | `guides/monitoring-setup/` | OTEL 통합 (향후 tracing 보강) |
 | multi-agent-debate-patterns | `guides/multi-agent-debate-patterns/` | 다중 에이전트 평가 패턴 |
+
+### 관련 스킬
+
+| 스킬 | 경로 | 관련성 |
+|------|------|--------|
+| monitoring-setup | `.claude/skills/monitoring-setup/` | OTEL 통합 (향후 tracing 보강) |

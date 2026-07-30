@@ -48,7 +48,7 @@
   ".claude/agents/tool-optimizer.md": "c6a543480d4426bdb560e42bfa046af0728bb51ef67f7c044264258952d8c644",
   ".claude/agents/tracker-checkpoint.md": "2db2857a2db76ce747a55fcac15d0f536a6986702b75a620107799baf61390cd",
   ".claude/agents/wiki-curator.md": "31b8052628d38f2d452c45a9db767ec739cf7224d30dc8324a3f6e1be7a3ddb1",
-  ".claude/rules/MAY-optimization.md": "ba5b0d193b507eeee6e9371674a7a2b58c55746c69be59d7d272541add84c413",
+  ".claude/rules/MAY-optimization.md": "b852d6ea86f88cf94b0902cf945e0748daa740219aa22a0a7ad775ab5c3d40b1",
   ".claude/rules/MUST-agent-design.md": "ae24567fd513c3c80469d53afd88dfbe1439573adb6a0b55638043aa1ef3fd67",
   ".claude/rules/MUST-agent-identification.md": "5cf631bb4159755766b31c6f4cabc8b5e692e27d3968d751a4216496305bd0b5",
   ".claude/rules/MUST-agent-teams.md": "723487c1005f0abcb9bd1e6477d9f735d8c632d8dcaddd3be5114c10d695e954",

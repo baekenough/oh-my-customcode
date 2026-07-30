@@ -3,11 +3,11 @@
 > Updated: 2026-07-02
 > Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158, #1242, #1243, #1244, #1245, #1276, #1280)
 >
-> **Note (compat 노트 이관)**: 이 파일은 v2.1.159까지의 호환성 노트를 보존합니다. v2.1.160+ 이후 CC 호환성 노트는 `.claude/rules/` 각 규칙(R001/R002/R006/R010/R012 등)에 인라인으로 축적(이관)되었으므로, 최신 compat 노트는 해당 규칙 파일을 참조하세요.
+> **Note (compat 노트 이관)**: 이 파일은 v2.1.160까지의 호환성 노트를 보존합니다. v2.1.161+ 이후 CC 호환성 노트는 `.claude/rules/` 각 규칙(R001/R002/R006/R010/R012 등)에 인라인으로 축적(이관)되었으므로, 최신 compat 노트는 해당 규칙 파일을 참조하세요.
 
 ## Compatibility Baseline
 
-oh-my-customcode v1.1.1 targets Claude Code v2.1.197+ (Sonnet 5 = CC 기본 모델). 이 파일에 정리된 v2.1.117-159 항목은 하위호환이며 config 변경이 불필요합니다.
+oh-my-customcode v1.1.9 targets Claude Code v2.1.201+ (Sonnet 5 = CC 기본 모델). 이 파일에 정리된 v2.1.117-160 항목은 하위호환이며 config 변경이 불필요합니다.
 
 ## v2.1.117 (2026-04-22)
 
