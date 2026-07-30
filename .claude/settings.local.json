@@ -17,8 +17,6 @@
       "Bash(chmod:*)",
       "Edit(.claude/**)",
       "Edit(templates/.claude/**)",
-      "Bash(mkdir -p .claude/outputs/sessions/2026-04-27)",
-      "Bash(cp /tmp/professor-triage-093618.md .claude/outputs/sessions/2026-04-27/professor-triage-093618.md)",
       "Edit(.claude/outputs/**)"
     ],
     "defaultMode": "bypassPermissions"
