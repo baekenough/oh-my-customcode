@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-07-29
+updated: 2026-07-30
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -68,6 +68,14 @@ The `auto-dev` workflow runs a full release cycle: `pre-triage → scope-selecti
 
 `auto-tag.yml` closes issues by grep'ing `Closes|Fixes|Resolves #N` keywords in the **merged PR body** — NOT by milestone membership. The `release` step's PR-creation instruction now mandates a `Closes #N` line for every issue the release resolves; omitting it lets the workflow report `success` while closing zero issues. After merge, the step verifies each targeted issue is actually `CLOSED` (`gh issue view`) rather than trusting workflow conclusion alone — v1.1.34 omitted the keyword and left 5 issues open despite a green run.
 
+### release: branch-before-bump ordering (#1542)
+
+The `release` step's version-bump sub-steps were reordered so the `release/v{NEW}` branch is created **before** any bump edit (previously the branch was created afterwards, in step 3.a, from an already-bumped `develop`). Pushing the bump commit to `develop` first leaves `develop` and `release/v{NEW}` at the same commit → PR diff=0 → `gh pr create` fails with `GraphQL: No commits between develop and release/v{NEW}` (observed v1.1.38).
+
+The reordering preserves every prior guard: Pre-Branch Freshness Gate (`git pull develop`), `bun run build` + full tracked-drift staging (`.omcustom.lock.json`, #1531), and the mandatory `verify-version-sync.sh` halt.
+
+Additionally, close keywords are now forbidden in commit messages — the `implement` step uses a `Refs #N` trailer, since a `Fixes #N` trailer on a develop-bound commit auto-closes the issue before tag/publish. The PR body remains the only place a close keyword belongs.
+
 ## Relationships
 
 - **Used by agents**: orchestrator
@@ -77,5 +85,6 @@ The `auto-dev` workflow runs a full release cycle: `pre-triage → scope-selecti
 ## Sources
 
 - `.claude/skills/pipeline/SKILL.md` — skill definition
-- `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531)
+- `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531; branch-before-bump reordering added v1.1.39 / #1542)
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
+- Issue #1542 — bump pushed to develop before branching produced a diff=0 release PR (v1.1.38)

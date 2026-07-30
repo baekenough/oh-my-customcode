@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-# r007-r008-drift-advisor.sh — UserPromptSubmit hook: PROACTIVE R007/R008 drift advisory (#1229)
+# r007-r008-drift-advisor.sh — PROACTIVE R007/R008 drift advisory (#1229, #1545)
+#
+# Wired to TWO trigger points:
+#   1. UserPromptSubmit — fires before Claude responds to a user-typed prompt (#1229).
+#   2. SubagentStop — fires when a background subagent (Agent tool) completes, covering
+#      autonomous-loop re-entry (e.g. /fsd) where the orchestrator resumes WITHOUT a
+#      UserPromptSubmit event. Prior to #1545, autonomous-loop re-entry had zero R007/R008
+#      advisory coverage since UserPromptSubmit never fires in that path.
 #
 # Inspects the LAST completed assistant turn in the session transcript for R007/R008
 # compliance BEFORE Claude responds. If the previous turn drifted (missing identification
@@ -10,6 +17,9 @@
 #
 # Advisory-only: ALWAYS exits 0, ALWAYS passes stdin through to stdout, NEVER blocks.
 # Performance: parses ONLY the last assistant turn (not the whole transcript).
+# Input-schema note: session_id/transcript_path are COMMON fields present on both
+# UserPromptSubmit and SubagentStop hook payloads, so the detection logic below is
+# event-agnostic and required no functional changes for the SubagentStop wiring.
 #
 # 환경변수 override (테스트/디버깅용):
 #   OMCUSTOM_R007_ADVISOR=off  — advisory 완전 비활성화 (pass-through)

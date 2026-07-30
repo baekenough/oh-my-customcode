@@ -232,6 +232,13 @@ done
 # mirror path, following the skills inline-loop pattern above rather than check_content_dir.
 # Verified guides/ and templates/guides/ currently have full 1:1 path parity (no
 # package/harness-scope exception like skills), so a missing-mirror is treated as an error.
+#
+# NOTE (#1543): the original check restricted `find` to `-name "*.md"`, which silently
+# skipped non-md guide content (guides/**/index.yaml, guides/elements-of-style/*.html).
+# Measured (2026-07-30): guides/ and templates/guides/ each hold exactly 97 .md + 19 .yaml
+# + 1 .html = 117 files, 1:1, no binary/generated/cache files present — so this check now
+# walks ALL files under guides/ (no extension filter) to cover every content type without
+# needing to keep an extension allowlist in sync as new guide file types are added.
 if [ -d "guides" ]; then
   while IFS= read -r src_guide; do
     rel="${src_guide#guides/}"
@@ -243,7 +250,23 @@ if [ -d "guides" ]; then
       echo "::error::Content drift in guides: $rel (source != template)"
       content_drift=$((content_drift + 1))
     fi
-  done < <(find guides -type f -name "*.md")
+  done < <(find guides -type f)
+
+  # Reverse orphan check (#1543): the loop above walks guides/ -> templates/guides/, which
+  # only catches files present in source but stale/missing in the mirror. It cannot detect
+  # a file that exists ONLY in templates/guides/ (e.g. left behind after a source guide was
+  # renamed/deleted but the template mirror was not cleaned up). Walk templates/guides/ ->
+  # guides/ in the opposite direction to catch that orphan case.
+  if [ -d "templates/guides" ]; then
+    while IFS= read -r tpl_guide; do
+      rel="${tpl_guide#templates/guides/}"
+      src_guide="guides/$rel"
+      if [ ! -f "$src_guide" ]; then
+        echo "::error::Orphan template guide: $rel (template exists, source absent)"
+        content_drift=$((content_drift + 1))
+      fi
+    done < <(find templates/guides -type f)
+  fi
 fi
 
 # Workflows yaml mirror consistency (#1286)

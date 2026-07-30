@@ -262,11 +262,15 @@
             "command": "bash .claude/hooks/scripts/auto-continue-guard.sh"
           },
           {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh"
+          },
+          {
             "type": "prompt",
             "prompt": "A background subagent just completed. If it FAILED, do NOT auto-continue \u2014 report the failure and wait for user input."
           }
         ],
-        "description": "Record agent outcomes + auto-continue workflow on subagent completion"
+        "description": "Record agent outcomes + auto-continue workflow + R007/R008 drift advisory on subagent completion (autonomous-loop re-entry, #1545)"
       }
     ],
     "CwdChanged": [

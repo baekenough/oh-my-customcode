@@ -139,6 +139,7 @@
   ".claude/skills/pipeline-architecture-patterns/SKILL.md": "d4fa946d6db65d9052b94d76bd1e1db487c9f34adf6be827b6bb7c8e87958bd1",
   ".claude/skills/pipeline-guards/SKILL.md": "20159d827d809240457b3aa8a3016ecb6f375dda9c3ce83ffafd318cc084ea32",
   ".claude/skills/pipeline/SKILL.md": "1fc48a852dd5f02df9c3ba88108d2aa6b45cf136a12b9dbeddf52f2d324fb8a1",
+  ".claude/skills/pipeline/workflows/auto-dev.yaml": "326b6db760284b1fe0125856026cb323b99b5533e365d19ce8350c4ba3794704",
   ".claude/skills/playwright-compress/SKILL.md": "4cc5007c21ad6dfcd89b5e94bc1dcc30b9c0953677221423320e96fc18d3cde4",
   ".claude/skills/post-release-followup/SKILL.md": "3a4038ed9890ab23f9728d1e203b153518454027cd249ea44eea0fcc22a839e8",
   ".claude/skills/postgres-best-practices/SKILL.md": "ffe6f871002b56c4d29871978976fe856b2a9b65d7789ebeece0056a89f8f885",

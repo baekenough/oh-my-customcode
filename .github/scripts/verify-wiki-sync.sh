@@ -164,6 +164,13 @@ fi
 # jq unavailable, corrupt manifest, hash-generation failure, helper-source failure)
 # remain advisory ::warning:: + non-failing — those mean the check is UNAVAILABLE
 # (graceful degradation), not that drift was found. Only real drift blocks.
+#
+# #1544: source-hash.sh's generate_manifest() (sourced below) now also hashes the
+# canonical workflow yaml (.claude/skills/pipeline/workflows/*.yaml). This block reuses
+# that shared function as-is — no changes needed here for the drift comparison itself.
+# Workflows are deliberately NOT added to the per-name "MISSING wiki page" loops above
+# (Agents/Skills/Rules/Guides, lines ~16-72): those loops assume a 1:1 `wiki/<cat>/{name}.md`
+# naming convention that workflows do not have (see source-hash.sh header comment for why).
 echo ""
 echo "=== Wiki Content-Drift Check (Phase B — blocking) ==="
 

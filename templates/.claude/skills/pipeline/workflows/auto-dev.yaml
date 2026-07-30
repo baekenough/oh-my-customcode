@@ -210,7 +210,11 @@ steps:
          - Detect file types in scope and route to matching agent
          - Use specialized agents (lang-*, be-*, fe-*, infra-*) over general-purpose
       4. TDD via superpowers:test-driven-development when tests apply
-      5. Commit via mgr-gitnerd with `Fixes #<N>` trailer in body
+      5. Commit via mgr-gitnerd with `Refs #<N>` trailer in body — NEVER `Fixes`/`Closes`/`Resolves` (#1542).
+         ⚠ implement-stage commits land directly on develop (no PR gate here). A close-keyword trailer on a
+         develop-bound commit auto-closes the issue on push — BEFORE release/tag/publish (observed v1.1.38,
+         07:49:26Z). Close keywords belong ONLY in the release-stage PR body (see release step 3.b) — auto-tag.yml
+         greps the PR body, not commit messages, to decide which issues to close.
       6. On success: remove in-progress, add verify-ready
       7. On failure: remove in-progress, add needs-review, comment error summary
 
@@ -299,21 +303,38 @@ steps:
          Reference: issue #1141 (v0.135.0 follow-up), mgr-gitnerd MEMORY.md.
 
       1. Version bump (mandatory):
-         Orchestrator delegates to mgr-updater (R010). mgr-updater executes the following atomic edits:
-         Determine NEW version per semver rules below.
+         Orchestrator delegates to mgr-updater (R010) for the file edits below; mgr-gitnerd (R010) for branch/commit/push.
+         Determine NEW version per semver rules below FIRST — before touching any file.
+
+         ⚠ Branch-before-bump (#1542, observed v1.1.38): for npm project with auto-tag.yml (this repo), the
+         version-bump commit MUST be created ON release/v{NEW}, and MUST NOT be pushed to develop directly.
+         Pushing the bump commit to develop before branching leaves develop and release/v{NEW} pointing at the
+         SAME commit → PR diff=0 → `gh pr create` fails with "GraphQL: No commits between develop and
+         release/v{NEW}". Evidence: PR #1538 (v1.1.37) and PR #1534 (v1.1.36) each contain exactly ONE commit
+         (the bump commit) — proof the bump belongs on the release branch, never on develop directly.
+
          npm project (package.json exists):
-           a. package.json: jq '.version = "<NEW>"' package.json > package.json.tmp && mv package.json.tmp package.json
+           a. mgr-gitnerd: git checkout develop && git pull origin develop
+              (R017 Pre-Branch Freshness Gate — ensures local develop holds every merged feature commit before branching)
+           b. mgr-gitnerd creates release/v{NEW} branch from develop and checks it out — BEFORE any edit in c–i below.
+              (This is the step that used to run AFTER the bump in step 3.a of the old ordering — moving it here
+              is the #1542 fix. Do NOT perform steps c–i on develop.)
+           c. package.json: jq '.version = "<NEW>"' package.json > package.json.tmp && mv package.json.tmp package.json   [on release/v{NEW}]
            # ⚠ jq '.version=...' PRESERVES the manifest structure {version, lastUpdated, omcustomMinClaudeCode, components[]}.
            #   Edit ONLY the .version field — do NOT overwrite templates/manifest.json wholesale (e.g. a source-hash path→hash map).
            #   Recover a corrupted manifest: git show HEAD:templates/manifest.json | jq '.version="<NEW>"' > templates/manifest.json (#1423/#1154).
-           b. templates/manifest.json: jq '.version = "<NEW>"' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json
-           c. bun run build — run standalone (NO pipe), read exit code directly ($? after a pipe is the last command's, R005/#1492).
-              This regenerates .omcustom.lock.json (generatorVersion/templateVersion) to <NEW> via scripts/sync-source-lockfile.ts.
-           d. git status --short — enumerate ALL tracked drift (`^ M`) the build produced; stage EVERY one (esp. .omcustom.lock.json) before commit.
-              (#1531 — .omcustom.lock.json missed staging across 4 consecutive releases after v1.1.29; root cause was no build step between version bump and commit.)
-           e. mgr-gitnerd commit: "chore(release): bump to v<NEW>" — MUST include the drift from step d
-           f. mgr-gitnerd push develop
-           g. mandatory verification (with existence guard for partial-update safety):
+           d. templates/manifest.json: jq '.version = "<NEW>"' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json   [on release/v{NEW}]
+           e. bun run build — run standalone (NO pipe), read exit code directly ($? after a pipe is the last command's, R005/#1492).
+              This regenerates .omcustom.lock.json (generatorVersion/templateVersion) to <NEW> via scripts/sync-source-lockfile.ts.   [on release/v{NEW}]
+           f. git status --short — enumerate ALL tracked drift (`^ M`) the build produced; stage EVERY one (esp. .omcustom.lock.json) before commit.
+              (#1531 — .omcustom.lock.json missed staging across 4 consecutive releases after v1.1.29; root cause was no build step between version bump and commit.)   [on release/v{NEW}]
+           g. mgr-gitnerd commit: "chore(release): bump to v<NEW>" — MUST include the drift from step f.
+              ⚠ do NOT add Closes/Fixes/Resolves keywords to this commit message (#1542) — this commit merges into
+              develop later via the release PR; a close keyword here bypasses the PR-body mechanism auto-tag.yml
+              relies on (see step 3.b below). Use `Refs #N` if a cross-reference is needed.
+           h. mgr-gitnerd push release/v{NEW} to origin — NEVER push this commit to develop directly. Pushing to
+              develop here reproduces the diff=0 PR failure this reordering fixes (#1542).
+           i. mandatory verification (with existence guard for partial-update safety), run on release/v{NEW}:
               [ -f scripts/verify-version-sync.sh ] && bash scripts/verify-version-sync.sh || echo "::warning::verify-version-sync.sh not found, version sync verification skipped"
               (verify-version-sync.sh 가 exit 1 시 release 단계 halt)
 
@@ -328,9 +349,10 @@ steps:
       2. Release notes via omcustom-release-notes skill
       3. Adapt release mechanism to project (determines how steps 3-5 execute):
          - npm project with auto-tag.yml (this repo — release/v* PR pattern):
-           a. mgr-gitnerd creates release/v{NEW} branch from develop with the version-bump commit
+           a. release/v{NEW} branch + version-bump commit were already created in step 1.b–1.h above — do NOT
+              re-create the branch or re-run the bump here; this step only opens the PR against the existing branch.
            b. mgr-gitnerd creates PR: gh pr create --base develop --head release/v{NEW} --title "chore(release): bump to v{NEW}" --body "<MUST include 'Closes #N' for EVERY issue this release resolves>"
-              ⚠ auto-tag.yml closes issues by grep'ing Closes/Fixes/Resolves keywords in the PR BODY — NOT by milestone membership. If the keywords are missing, no issues close and the workflow still reports success (#1531).
+              ⚠ auto-tag.yml closes issues by grep'ing Closes/Fixes/Resolves keywords in the PR BODY — NOT by milestone membership NOR by commit message trailers. If the keywords are missing, no issues close and the workflow still reports success (#1531). Commit-message close keywords are explicitly forbidden during `implement` and step 1.g above (#1542) — the PR body is the ONLY place a close keyword should appear.
               Before creating the PR (whether via inline --body or --body-file), confirm the body text actually contains a Closes line per issue.
            c. mgr-gitnerd merges PR (admin merge required due to branch protection)
            d. DO NOT manually git tag or gh release create.

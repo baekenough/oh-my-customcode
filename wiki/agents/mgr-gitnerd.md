@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-07-29
+updated: 2026-07-30
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -85,6 +85,16 @@ After merge, `mgr-gitnerd` verifies each targeted issue is actually `CLOSED` via
 
 Origin: #1531 (v1.1.34 Closes-keyword omission left 5 issues open despite a green workflow; PR-body requirement + post-merge verification added in response).
 
+## Branch-Before-Bump Ordering (#1542)
+
+The version-bump commit MUST be created **on** `release/v{NEW}`, never pushed to `develop` directly. `mgr-gitnerd` refreshes `develop` (`git pull`, [[r017]] Pre-Branch Freshness Gate), creates and checks out `release/v{NEW}`, and only then does the bump edits, `bun run build`, drift staging, commit, and push of the release branch.
+
+Pushing the bump to `develop` before branching leaves both refs at the same commit → PR diff=0 → `gh pr create` fails with `GraphQL: No commits between develop and release/v{NEW}`.
+
+Complementing the PR-body requirement above: close keywords (`Closes`/`Fixes`/`Resolves`) are **forbidden in commit messages** — both in feature commits during the `implement` stage and in the bump commit. `auto-tag.yml` greps the PR body, not commit trailers; a close keyword on a develop-bound commit auto-closes the issue on push, before tag/publish. Use `Refs #N` for a cross-reference instead.
+
+Origin: #1542 (v1.1.38 — bump pushed to develop first produced a diff=0 PR; feature-commit `Fixes #N` trailer closed the issue pre-release).
+
 ## Relationships
 
 - **Depends on**: mgr-sauron verification (prerequisite for push)
@@ -118,3 +128,4 @@ The local `release` branch (file ref) conflicts with `release/v*` directory ref 
 - Issue #1287 — milestone query false-negative retrospective (v0.164.0, origin of Milestone Query Robustness)
 - Issue #1468 — memory scope migration to `local` (v1.1.13)
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
+- Issue #1542 — branch-before-bump ordering + commit-message close-keyword prohibition (v1.1.38 diff=0 PR failure)

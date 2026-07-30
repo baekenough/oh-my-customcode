@@ -9,6 +9,17 @@
 # Source-set must mirror verify-wiki-sync.sh: agents (.claude/agents/*.md),
 # skills (.claude/skills/*/SKILL.md), rules (.claude/rules/*.md), guides (guides/*/ dirs, concat-hashed).
 #
+# Workflows (.claude/skills/pipeline/workflows/*.yaml) are ALSO hashed here (#1544) but are NOT part
+# of the "mirror verify-wiki-sync.sh" invariant above — they are content-drift-tracked only, with NO
+# per-name wiki-page-existence check (unlike agents/skills/rules/guides). Workflow yaml files have no
+# 1:1 `wiki/workflows/{name}.md` naming convention: wiki/workflows/*.md are conceptual process docs
+# (development-workflow.md, release-workflow.md, ...), and the actual wiki pages that cite
+# auto-dev.yaml as a source are wiki/skills/pipeline.md and wiki/agents/mgr-gitnerd.md (see their
+# frontmatter `sources:`). Only the CANONICAL executable copy (.claude/skills/pipeline/workflows/) is
+# hashed — the other 3 mirror copies (templates/.claude/skills/pipeline/workflows/, workflows/,
+# templates/workflows/) are copy-consistency-checked separately by verify-template-sync.sh's N-way
+# check (#1539); hashing all 4 here would duplicate that check.
+#
 # Source-able (functions) AND runnable:
 #   bash .github/scripts/lib/source-hash.sh generate wiki/.source-hashes.json   → writes the wiki source-hash manifest
 #   ⚠ Target MUST be wiki/.source-hashes.json — NEVER templates/manifest.json. That file is a versioned
@@ -92,6 +103,14 @@ generate_manifest() {
       [ -n "$src" ] || continue
       printf '%s\t%s\n' "$src" "$(hash_dir_concat "$src")"
     done < <(find guides -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+
+    # Workflows — canonical executable copy only, single .yaml files (#1544).
+    # NOT mirrored across all 4 template copies here — see header comment: copy
+    # consistency is verify-template-sync.sh's N-way check (#1539), not this one's job.
+    for src in .claude/skills/pipeline/workflows/*.yaml; do
+      [ -e "$src" ] || continue
+      printf '%s\t%s\n' "$src" "$(hash_one_file "$src")"
+    done
   )
 
   # Sort by path (key) for stable, diff-friendly output, then build JSON with jq.
