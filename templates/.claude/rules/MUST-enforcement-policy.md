@@ -14,7 +14,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 | Soft Block | Stop hook prompt | R011 session-end saves | Auto-performs then approves |
 | Conversation Block | PostToolUse hook + `continueOnBlock` (CC v2.1.139+), exit 2 | stuck-detector, context-budget-advisor, cost-cap-advisor | Feeds rejection reason into conversation; Claude continues with awareness |
 | Advisory | PostToolUse hooks | R007, R008, R009, R010, R018 | Warns via stderr, never blocks |
-| Advisory (proactive) | UserPromptSubmit hook | R007, R008 (`r007-r008-drift-advisor.sh`, #1229) | Reads last assistant turn; emits stderr advisory before next response if header/prefix absent. Complements retroactive Stop-hook (`session-reflection.sh`, #1190). |
+| Advisory (proactive) | UserPromptSubmit + SubagentStop hooks | R007, R008 (`r007-r008-drift-advisor.sh`, #1229 UserPromptSubmit; #1545 added SubagentStop) | Reads last assistant turn; emits stderr advisory if header/prefix absent. SubagentStop wiring (#1545) closes a structural gap: UserPromptSubmit fires only on user input, so long-lived autonomous loops (e.g. `/fsd`) that re-enter via task notifications (no user input) never reached the advisor — measured 2026-07-30: 6 responses / 12 tool calls with missing R007/R008 and zero advisory fires. Complements retroactive Stop-hook (`session-reflection.sh`, #1190). **Delivery gap resolved (#1547, v1.1.40)**: stderr on exit 0 is never injected into model context by any hook event, so #1545's wiring fired without reaching the model. The advisory is now delivered via `hookSpecificOutput.additionalContext` (JSON stdout, exit 0) — the confirmed non-blocking context-injection path for both events; stderr is retained only as a human-visible audit trail. No top-level `decision`/`continue`/`stopReason` field is emitted, so the hook stays advisory (never blocks a Stop/SubagentStop). |
 | Prompt-based | CLAUDE.md + rules/ + PostCompact | All MUST rules | Behavioral guidance in context |
 
 <!--
@@ -34,7 +34,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 3. **Composability**: External skills and internal rules can coexist without deadlocks
 4. **PostCompact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction
 
-## Hard Enforcement Candidates — R010 git-delegation-guard (conditional), R007/R008 UserPromptSubmit advisory **implemented** (#1229, proactive) + retroactive Stop-hook (#1190); hard-block variant still candidate if advisory insufficient (#1096). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
+## Hard Enforcement Candidates — R010 git-delegation-guard (conditional), R007/R008 advisory **implemented** (#1229 UserPromptSubmit, proactive) + **#1545 SubagentStop** (closes autonomous-loop gap) + retroactive Stop-hook (#1190); model-context delivery fixed via `hookSpecificOutput.additionalContext` (#1547, v1.1.40); hard-block variant still candidate if advisory insufficient (#1096). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
 
 <!-- DETAIL: Hard Enforcement Candidates (Future)
 If advisory enforcement proves insufficient for specific rules, these are candidates for promotion to hard-block:
@@ -42,7 +42,7 @@ If advisory enforcement proves insufficient for specific rules, these are candid
 | Rule | Candidate Hook | Status | Condition for Promotion |
 |------|---------------|--------|------------------------|
 | R010 | git-delegation-guard.sh | Candidate | If orchestrator-direct-write violations exceed 3/session |
-| R007/R008 | `r007-r008-drift-advisor.sh` (UserPromptSubmit, #1229) | **Advisory implemented** — proactive pre-response check; retroactive: `session-reflection.sh` (Stop, #1190). Two-layer drift detection: proactive (#1229) + retroactive (#1190). | Promote to hard-block if advisory proves insufficient (#1096) |
+| R007/R008 | `r007-r008-drift-advisor.sh` (UserPromptSubmit #1229 + SubagentStop #1545) | **Advisory implemented** — proactive pre-response check now wired to both UserPromptSubmit and SubagentStop; the SubagentStop leg (#1545) closes the no-user-input autonomous-loop gap (`/fsd` etc.). Retroactive: `session-reflection.sh` (Stop, #1190). Two-layer drift detection: proactive (#1229/#1545) + retroactive (#1190). **Delivery mechanism fixed (#1547, v1.1.40)** — stderr on exit 0 reaches only a human (transcript debug mode), never the model, so wiring alone did not prove advisory reach; the advisory now travels via `hookSpecificOutput.additionalContext` on JSON stdout with exit 0, and emits no top-level `decision`/`continue`/`stopReason` so it remains non-blocking. | Promote to hard-block if advisory proves insufficient (#1096) |
 
 Promotion requires: (1) measured violation rate data, (2) user approval, (3) rollback plan.
 

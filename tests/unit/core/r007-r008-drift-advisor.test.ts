@@ -1,12 +1,23 @@
 /**
- * Tests for r007-r008-drift-advisor.sh hook (proactive R007/R008 drift advisory, #1229).
+ * Tests for r007-r008-drift-advisor.sh hook (proactive R007/R008 drift advisory, #1229, #1545, #1547).
  *
- * The script is a UserPromptSubmit hook:
- * - Reads UserPromptSubmit JSON from stdin (contains `session_id`)
+ * The script is wired to BOTH UserPromptSubmit and SubagentStop:
+ * - Reads the hook JSON from stdin (contains `session_id`, `hook_event_name`)
  * - Reads the session transcript JSONL at `${OMCUSTOM_TRANSCRIPT_BASE}/${session_id}.jsonl`
  * - Inspects ONLY the LAST assistant turn for R007/R008 compliance
- * - If the last turn violates → emits a Korean advisory to stderr containing `[R007/R008 Advisory]`
- * - ALWAYS passes stdin through to stdout and exits 0 (never blocks)
+ * - If the last turn violates → emits a Korean advisory to stderr (human-visible audit trail
+ *   only — stderr on exit 0 is NEVER delivered to the model per the official hook spec) AND
+ *   delivers the SAME advisory to Claude via `hookSpecificOutput.additionalContext` JSON on
+ *   stdout, with `hookSpecificOutput.hookEventName` set to the input's `hook_event_name`.
+ * - NEVER includes a top-level `decision`/`continue`/`stopReason` field — this keeps the hook
+ *   non-blocking for both UserPromptSubmit and SubagentStop (R021 advisory-first enforcement).
+ * - If the last turn is compliant, OR any early-return condition applies (opt-out, jq missing,
+ *   session_id missing, transcript missing) → stdout is EMPTY and exit is 0. There is NO stdin
+ *   pass-through: hooks in the same event array are NOT chained (each receives the original
+ *   payload independently), so echoing stdin back was inert as a pipeline mechanism and, for
+ *   UserPromptSubmit, was accidentally injecting the raw hook payload JSON into every prompt's
+ *   context for no purpose (#1547).
+ * - ALWAYS exits 0 (never blocks).
  *
  * Test strategy:
  * - Use OMCUSTOM_TRANSCRIPT_BASE env-override to isolate every test in a temp directory.
@@ -15,13 +26,16 @@
  *
  * Fixtures
  * ─────────
- * 1. Clean last turn (header + tool prefixes present) → no advisory, exit 0, stdin passed through
- * 2. R007 violation in last turn (missing agent header) → advisory in stderr, exit 0
- * 3. R008 violation in last turn (tool_use without preceding prefix) → advisory in stderr, exit 0
- * 4. Opt-out OMCUSTOM_R007_ADVISOR=off → no advisory even with violating transcript, exit 0
- * 5. Missing transcript file → no advisory, exit 0, pass through (graceful degrade)
- * 6. Missing session_id in stdin → no advisory, exit 0, pass through
+ * 1. Clean last turn (header + tool prefixes present) → no advisory, exit 0, empty stdout
+ * 2. R007 violation in last turn (missing agent header) → advisory in stderr + JSON stdout, exit 0
+ * 3. R008 violation in last turn (tool_use without preceding prefix) → advisory in stderr + JSON stdout, exit 0
+ * 4. Opt-out OMCUSTOM_R007_ADVISOR=off → no advisory even with violating transcript, exit 0, empty stdout
+ * 5. Missing transcript file → no advisory, exit 0, empty stdout (graceful degrade)
+ * 6. Missing session_id in stdin → no advisory, exit 0, empty stdout
  * 7. Only-last-turn semantics: earlier turn violates but last turn is clean → no advisory
+ * 8. hookSpecificOutput.additionalContext delivery contract (#1547): valid JSON, correct
+ *    hookEventName echo for both SubagentStop and UserPromptSubmit, no blocking fields, empty
+ *    stdout on clean turns.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
@@ -66,9 +80,14 @@ function runScript(stdinJson: string, env: Record<string, string> = {}): Promise
   });
 }
 
-/** Build the UserPromptSubmit JSON payload. */
-function promptInput(sessionId: string): string {
-  return JSON.stringify({ session_id: sessionId, prompt: 'Hello' });
+/** Build a UserPromptSubmit JSON payload (hook_event_name defaults to UserPromptSubmit). */
+function promptInput(sessionId: string, hookEventName = 'UserPromptSubmit'): string {
+  return JSON.stringify({ session_id: sessionId, prompt: 'Hello', hook_event_name: hookEventName });
+}
+
+/** Build a SubagentStop JSON payload. */
+function subagentStopInput(sessionId: string): string {
+  return JSON.stringify({ session_id: sessionId, hook_event_name: 'SubagentStop' });
 }
 
 /** Build a JSONL line for an assistant turn (mirrors session-reflection.test.ts format). */
@@ -79,6 +98,25 @@ function assistantTurn(content: object[]): string {
 /** Build a JSONL line for a user turn. */
 function userTurn(text: string): string {
   return JSON.stringify({ role: 'user', content: [{ type: 'text', text }] });
+}
+
+/**
+ * Parse stdout as the #1547 advisory JSON contract and assert its shape:
+ * valid JSON, hookSpecificOutput.{hookEventName,additionalContext} present,
+ * no top-level decision/continue/stopReason (non-blocking).
+ */
+function parseAdvisoryOutput(stdout: string): {
+  hookSpecificOutput: { hookEventName: string; additionalContext: string };
+} {
+  const trimmed = stdout.trim();
+  expect(trimmed.length).toBeGreaterThan(0);
+  const parsed = JSON.parse(trimmed);
+  expect(parsed).not.toHaveProperty('decision');
+  expect(parsed).not.toHaveProperty('continue');
+  expect(parsed).not.toHaveProperty('stopReason');
+  expect(parsed.hookSpecificOutput).toBeDefined();
+  expect(typeof parsed.hookSpecificOutput.additionalContext).toBe('string');
+  return parsed;
 }
 
 // ── Per-test isolated environment ──
@@ -136,7 +174,7 @@ describe('r007-r008-drift-advisor.sh — file existence', () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// Fixture 1: clean last turn — no advisory, exit 0, stdin passed through
+// Fixture 1: clean last turn — no advisory, exit 0, empty stdout
 // ════════════════════════════════════════════════════════════════
 
 describe('r007-r008-drift-advisor.sh — Fixture 1: clean last turn', () => {
@@ -159,8 +197,8 @@ describe('r007-r008-drift-advisor.sh — Fixture 1: clean last turn', () => {
 
     expect(r.exitCode).toBe(0);
     expect(r.stderr).not.toContain('[R007/R008 Advisory]');
-    // stdin must be passed through unchanged
-    expect(r.stdout.trim()).toBe(input);
+    // #1547: no advisory needed → stdout is empty (no pass-through, no JSON)
+    expect(r.stdout.trim()).toBe('');
   });
 
   it('emits no advisory when last turn uses shorthand [agent] header with no tool_use', async () => {
@@ -175,7 +213,7 @@ describe('r007-r008-drift-advisor.sh — Fixture 1: clean last turn', () => {
     expect(r.stderr).not.toContain('[R007/R008 Advisory]');
   });
 
-  it('passes stdin through to stdout unchanged on clean turn', async () => {
+  it('emits empty stdout on clean turn (no advisory, no JSON)', async () => {
     const sid = `passthrough-${Date.now()}`;
     await writeTranscript(sid, [
       assistantTurn([{ type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: answer' }]),
@@ -184,7 +222,8 @@ describe('r007-r008-drift-advisor.sh — Fixture 1: clean last turn', () => {
     const input = promptInput(sid);
     const r = await runScript(input, testEnv());
 
-    expect(r.stdout.trim()).toBe(input);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
   });
 });
 
@@ -214,7 +253,7 @@ describe('r007-r008-drift-advisor.sh — Fixture 2: R007 violation', () => {
     expect(r.exitCode).toBe(0);
   });
 
-  it('still passes stdin through to stdout on R007 violation', async () => {
+  it('delivers the advisory via hookSpecificOutput.additionalContext JSON on R007 violation', async () => {
     const sid = `r007-stdout-${Date.now()}`;
     await writeTranscript(sid, [
       assistantTurn([{ type: 'text', text: 'Missing identification header.' }]),
@@ -223,7 +262,8 @@ describe('r007-r008-drift-advisor.sh — Fixture 2: R007 violation', () => {
     const input = promptInput(sid);
     const r = await runScript(input, testEnv());
 
-    expect(r.stdout.trim()).toBe(input);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('[R007/R008 Advisory]');
   });
 
   it('treats ┌─ Agent: prefix as valid R007 header (no advisory)', async () => {
@@ -327,7 +367,7 @@ describe('r007-r008-drift-advisor.sh — Fixture 3: R008 violation', () => {
     expect(r.stderr).not.toContain('[R007/R008 Advisory]');
   });
 
-  it('passes stdin through to stdout on R008 violation', async () => {
+  it('delivers the advisory via hookSpecificOutput.additionalContext JSON on R008 violation', async () => {
     const sid = `r008-stdout-${Date.now()}`;
     await writeTranscript(sid, [
       assistantTurn([
@@ -339,7 +379,8 @@ describe('r007-r008-drift-advisor.sh — Fixture 3: R008 violation', () => {
     const input = promptInput(sid);
     const r = await runScript(input, testEnv());
 
-    expect(r.stdout.trim()).toBe(input);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('[R007/R008 Advisory]');
   });
 });
 
@@ -363,7 +404,7 @@ describe('r007-r008-drift-advisor.sh — Fixture 4: opt-out', () => {
     expect(r.stderr).not.toContain('[R007/R008 Advisory]');
   });
 
-  it('passes stdin through unchanged when opt-out active', async () => {
+  it('emits empty stdout when opt-out active, even with a violating transcript', async () => {
     const sid = `opt-out-pass-${Date.now()}`;
     await writeTranscript(sid, [
       assistantTurn([{ type: 'text', text: 'Violation turn without header.' }]),
@@ -376,7 +417,7 @@ describe('r007-r008-drift-advisor.sh — Fixture 4: opt-out', () => {
     });
 
     expect(r.exitCode).toBe(0);
-    expect(r.stdout.trim()).toBe(input);
+    expect(r.stdout.trim()).toBe('');
   });
 });
 
@@ -393,11 +434,12 @@ describe('r007-r008-drift-advisor.sh — Fixture 5: missing transcript', () => {
     expect(r.stderr).not.toContain('[R007/R008 Advisory]');
   });
 
-  it('passes stdin through unchanged when transcript is missing', async () => {
+  it('emits empty stdout when transcript is missing', async () => {
     const input = promptInput('no-transcript-session');
     const r = await runScript(input, testEnv());
 
-    expect(r.stdout.trim()).toBe(input);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
   });
 });
 
@@ -414,11 +456,12 @@ describe('r007-r008-drift-advisor.sh — Fixture 6: missing session_id', () => {
     expect(r.stderr).not.toContain('[R007/R008 Advisory]');
   });
 
-  it('passes stdin through unchanged when session_id is missing', async () => {
+  it('emits empty stdout when session_id is missing', async () => {
     const input = JSON.stringify({ prompt: 'No session id here' });
     const r = await runScript(input, testEnv());
 
-    expect(r.stdout.trim()).toBe(input);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
   });
 
   it('exits 0 when jq is absent (PATH stripped)', async () => {
@@ -505,5 +548,89 @@ describe('r007-r008-drift-advisor.sh — Fixture 7: only-last-turn semantics', (
 
     expect(r.exitCode).toBe(0);
     expect(r.stderr).toContain('[R007/R008 Advisory]');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 8: hookSpecificOutput.additionalContext delivery contract (#1547)
+//
+// #1545 wired this script to SubagentStop to cover autonomous-loop re-entry, but the
+// advisory was only ever written to stderr — which is NEVER delivered to the model on
+// exit 0 for ANY hook event (only visible in transcript debug mode to a human). #1547
+// fixes delivery by using `hookSpecificOutput.additionalContext`, the officially
+// confirmed non-blocking context-injection path for both UserPromptSubmit and
+// SubagentStop. These tests pin that contract directly, independent of the R007/R008
+// detection logic already covered above.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 8: hookSpecificOutput delivery contract (#1547)', () => {
+  it('emits valid JSON with hookSpecificOutput.additionalContext for a violating SubagentStop turn', async () => {
+    const sid = `hso-subagentstop-${Date.now()}`;
+    await writeTranscript(sid, [
+      assistantTurn([{ type: 'text', text: 'No header on subagent completion.' }]),
+    ]);
+
+    const r = await runScript(subagentStopInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('SubagentStop');
+  });
+
+  it('emits valid JSON with hookSpecificOutput.additionalContext for a violating UserPromptSubmit turn', async () => {
+    const sid = `hso-userpromptsubmit-${Date.now()}`;
+    await writeTranscript(sid, [
+      assistantTurn([{ type: 'text', text: 'No header on prompt submit re-entry.' }]),
+    ]);
+
+    const r = await runScript(promptInput(sid, 'UserPromptSubmit'), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+  });
+
+  it('defaults hookEventName to UserPromptSubmit when hook_event_name is absent from input', async () => {
+    const sid = `hso-default-event-${Date.now()}`;
+    await writeTranscript(sid, [
+      assistantTurn([{ type: 'text', text: 'No header, no hook_event_name in payload.' }]),
+    ]);
+    const input = JSON.stringify({ session_id: sid, prompt: 'Hello' }); // no hook_event_name field
+
+    const r = await runScript(input, testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+  });
+
+  it('never includes a top-level decision/continue/stopReason field (non-blocking for Stop/SubagentStop)', async () => {
+    const sid = `hso-nonblocking-${Date.now()}`;
+    await writeTranscript(sid, [
+      assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: read' },
+        { type: 'tool_use', id: 'tu-nb', name: 'Read', input: { file_path: 'x.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(subagentStopInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = JSON.parse(r.stdout.trim());
+    expect(parsed).not.toHaveProperty('decision');
+    expect(parsed).not.toHaveProperty('continue');
+    expect(parsed).not.toHaveProperty('stopReason');
+  });
+
+  it('emits empty stdout for a clean SubagentStop turn (no advisory, no JSON)', async () => {
+    const sid = `hso-clean-subagentstop-${Date.now()}`;
+    await writeTranscript(sid, [
+      assistantTurn([{ type: 'text', text: '[claude][sonnet] → Tool: Read' }]),
+    ]);
+
+    const r = await runScript(subagentStopInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
   });
 });
