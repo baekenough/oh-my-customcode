@@ -269,15 +269,22 @@ if [ -d "guides" ]; then
   fi
 fi
 
-# Workflows yaml mirror consistency (#1286)
+# Workflows yaml/yml mirror consistency (#1286, extension coverage #1552)
 # Two mirror pairs: pipeline skill internal <-> template, and repo-root legacy <-> template.
 # Only compare files present in BOTH dirs — some legacy yamls (eraser.yaml) intentionally
 # have no template mirror, so a "missing mirror" error would be a false positive.
+#
+# NOTE (#1552): originally globbed only "*.yaml", which silently skipped ".yml" files —
+# .github/workflows/*.yml and templates/.github/workflows/*.yml are entirely .yml (no .yaml
+# present in either), so a check restricted to .yaml would iterate zero files there and
+# report false-green. Both extensions are globbed below; each glob is guarded with
+# `[ -e "$wf" ] || continue` so a non-matching literal glob pattern is never treated as a
+# real filename (portable under `set -u`, no nullglob dependency).
 check_workflow_mirror() {
   # $1 = source dir, $2 = mirror dir
   local src="$1" mir="$2"
   [ -d "$src" ] || return 0
-  for wf in "$src"/*.yaml; do
+  for wf in "$src"/*.yaml "$src"/*.yml; do
     [ -e "$wf" ] || continue
     local base; base=$(basename "$wf")
     local m="$mir/$base"
@@ -290,6 +297,14 @@ check_workflow_mirror() {
 }
 check_workflow_mirror ".claude/skills/pipeline/workflows" "templates/.claude/skills/pipeline/workflows"
 check_workflow_mirror "workflows" "templates/workflows"
+
+# .github/workflows <-> templates/.github/workflows mirror (#1552)
+# Previously unchecked entirely — the .github/workflows tree (10 files, all .yml) had no
+# mirror-consistency check at all, only the pipeline-skill and repo-root legacy workflows
+# dirs were covered. templates/.github/workflows is a partial mirror (2 of 10 files:
+# cc-release-monitor.yml, wiki-sync.yml) by design, so — same as above — only files
+# present in BOTH dirs are compared; missing-in-template is not an error here.
+check_workflow_mirror ".github/workflows" "templates/.github/workflows"
 
 # Workflow N-way copy consistency (#1539)
 # check_workflow_mirror above only compares two PAIRS independently: (pipeline-skill
@@ -340,6 +355,30 @@ check_workflow_nway() {
   done
 }
 check_workflow_nway
+
+# templates/.github/scripts <-> .github/scripts mirror consistency (#1552)
+# templates/.github/scripts is a partial mirror (currently only verify-fork-list.sh out of
+# 8 files in .github/scripts) — same false-positive-avoidance philosophy as
+# check_workflow_mirror above: only compare files present in the (partial) mirror against
+# their source counterpart; a file present only in .github/scripts (not yet mirrored) is
+# not an error. check_content_dir (used for rules/agents/hooks) is NOT reused here because
+# it assumes a `.claude/<sub>` <-> `templates/.claude/<sub>` path convention and treats a
+# missing mirror as an error — neither fits .github/scripts's partial-mirror layout.
+check_github_scripts_mirror() {
+  local src_dir=".github/scripts" tpl_dir="templates/.github/scripts"
+  [ -d "$tpl_dir" ] || return 0
+  for tpl_file in "$tpl_dir"/*; do
+    [ -f "$tpl_file" ] || continue
+    local base; base=$(basename "$tpl_file")
+    local src_file="$src_dir/$base"
+    [ -f "$src_file" ] || continue
+    if ! diff -q "$src_file" "$tpl_file" >/dev/null 2>&1; then
+      echo "::error::Content drift in .github/scripts: $base (source != templates/.github/scripts)"
+      content_drift=$((content_drift + 1))
+    fi
+  done
+}
+check_github_scripts_mirror
 
 if [ "$content_drift" -gt 0 ]; then
   echo "::error::$content_drift content drift(s) detected between .claude/ and templates/.claude/"
