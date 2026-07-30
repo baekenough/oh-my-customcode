@@ -12,6 +12,10 @@ on:
   # Allow manual trigger
   workflow_dispatch:
 
+concurrency:
+  group: security-audit-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

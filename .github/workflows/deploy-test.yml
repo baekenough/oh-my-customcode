@@ -5,6 +5,10 @@ on:
     branches:
       - develop
 
+concurrency:
+  group: deploy-test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   deploy-test:
     name: Deploy Test with Verdaccio
