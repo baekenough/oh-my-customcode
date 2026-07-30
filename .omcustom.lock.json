@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.38",
-  "generatedAt": "2026-07-30T08:05:50.776Z",
-  "templateVersion": "1.1.38",
+  "generatorVersion": "1.1.39",
+  "generatedAt": "2026-07-30T08:58:18.753Z",
+  "templateVersion": "1.1.39",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -480,8 +480,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "0b0f7dd7e07c33670994ea06dc8006e57f800948f9d76812a04750d45efe832a",
-      "size": 24209,
+      "templateHash": "326b6db760284b1fe0125856026cb323b99b5533e365d19ce8350c4ba3794704",
+      "size": 26821,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -1185,8 +1185,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "368e2f1d7689f075c85cf57a8d7cead6ceab3028d9350a11ac85b772860d9ef5",
-      "size": 4386,
+      "templateHash": "174f5973a498a8ebc003ba50d5ff998117e6f31b2dd82fbe0008636d8edd3420",
+      "size": 5078,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix-prompt.sh": {
@@ -1280,8 +1280,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "230ca061b6714737c1bee5ebe308d136fc024c0c0b7b2e8186ae88756698f854",
-      "size": 27875,
+      "templateHash": "7b0b1652c46e358559c724d87a758e0899b98d233fb174e35e38d4e26682c9c3",
+      "size": 28071,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
