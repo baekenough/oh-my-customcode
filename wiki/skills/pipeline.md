@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-07-30
+updated: 2026-08-05
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -68,6 +68,14 @@ The `auto-dev` workflow runs a full release cycle: `pre-triage → scope-selecti
 
 `auto-tag.yml` closes issues by grep'ing `Closes|Fixes|Resolves #N` keywords in the **merged PR body** — NOT by milestone membership. The `release` step's PR-creation instruction now mandates a `Closes #N` line for every issue the release resolves; omitting it lets the workflow report `success` while closing zero issues. After merge, the step verifies each targeted issue is actually `CLOSED` (`gh issue view`) rather than trusting workflow conclusion alone — v1.1.34 omitted the keyword and left 5 issues open despite a green run.
 
+### scope-selection: milestone 3-branch state machine + docs-only/lite side-effect discipline (#1553 찐빠 #3)
+
+`scope-selection` Step 0 is explicitly documented as a **3-branch state machine**, not a gate-only pre-check: `closed → HALT` / `open → reuse` / `absent → CREATE` (`gh api .../milestones --method POST`). The `absent → create` branch is a STATE CHANGE, so it is **never** skipped by `docs-only`/`lite` compression. After the create branch, a **mandatory post-condition re-query** (`gh api ... --paginate --jq ...`) confirms the milestone actually exists and is open before proceeding — `--paginate` is required because a 100+ milestone repo can silently drop the newest entry on a single unpaginated page, making a just-created milestone read back as absent. If the re-query returns nothing, the step HALTs rather than proceeding on an unverified milestone.
+
+`compression-mode-eval` now carries an explicit **"Cross-tier — State-Change Side Effects Are NEVER Compressed"** section: `docs-only`/`lite` compression substitutes ANALYSIS ARTIFACTS ONLY (skip the professor-triage/deep-plan skill spawn, use integrated analysis instead) — it never authorizes skipping a step's `gh` state mutations (milestone create/assign, label add/remove, issue assign/comment/close). A per-step side-effect inventory table lists which steps carry mandatory state changes (`pre-triage`, `scope-selection`, `implement`, `release`, `post-release-followup`) vs. which are pure analysis and therefore compressible (`triage`, `plan`, `deep-plan`, `deep-verify`). Both the `docs-only` and `lite` tier sections now point back to this Cross-tier section explicitly.
+
+Origin: #1553 찐빠 #3 — v1.1.41 릴리즈에서 `lite` 압축이 `scope-selection`의 "마일스톤 미존재 → 생성" 분기까지 함께 생략해 마일스톤이 만들어지지 않았다. 압축 대상은 분석 산출물이었으나 상태 변경 분기가 동반 생략됐다.
+
 ### release: branch-before-bump ordering (#1542)
 
 The `release` step's version-bump sub-steps were reordered so the `release/v{NEW}` branch is created **before** any bump edit (previously the branch was created afterwards, in step 3.a, from an already-bumped `develop`). Pushing the bump commit to `develop` first leaves `develop` and `release/v{NEW}` at the same commit → PR diff=0 → `gh pr create` fails with `GraphQL: No commits between develop and release/v{NEW}` (observed v1.1.38).
@@ -85,6 +93,7 @@ Additionally, close keywords are now forbidden in commit messages — the `imple
 ## Sources
 
 - `.claude/skills/pipeline/SKILL.md` — skill definition
-- `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531; branch-before-bump reordering added v1.1.39 / #1542)
+- `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531; branch-before-bump reordering added v1.1.39 / #1542; scope-selection 3-branch state machine + `--paginate` post-condition + compression-mode-eval Cross-tier State-Change Side Effects inventory added v1.1.42 / #1553 찐빠 #3)
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
 - Issue #1542 — bump pushed to develop before branching produced a diff=0 release PR (v1.1.38)
+- Issue #1553 — lite compression silently skipped the milestone-create state-change branch alongside the compressible analysis step, leaving v1.1.41 without a milestone (v1.1.41 retrospective)

@@ -82,6 +82,20 @@ steps:
          - If not existing:
            Create new milestone: gh api repos/{owner}/{repo}/milestones --method POST --field title="vX.Y.Z"
 
+      ⚠ This step is a 3-BRANCH STATE MACHINE (closed → HALT / open → reuse / absent → CREATE),
+        NOT a gate-only pre-check. The "absent → create" branch is a STATE CHANGE and is therefore
+        NEVER skipped by compression (see "Cross-tier — State-Change Side Effects Are NEVER
+        Compressed" in compression-mode-eval). Reading this as "just a milestone existence gate"
+        and skipping it under lite/docs-only leaves the release with no milestone (#1553 찐빠 #3).
+
+      3. Post-condition — MANDATORY re-query before proceeding:
+         gh api 'repos/{owner}/{repo}/milestones?state=all&per_page=100' --paginate \
+           --jq '.[] | select(.title == "vX.Y.Z") | "\(.number)|\(.state)"'
+         The milestone MUST exist and be open. If the re-query returns nothing, the create branch
+         did not take effect — HALT; do NOT proceed to Step 1 on an unverified milestone.
+         `--paginate` is REQUIRED: with 100+ milestones in the repo a single page silently drops
+         the newest entries, so a just-created milestone can read back as absent.
+
       ## Step 1 — Label-based filtering (G4)
 
       Reference label semantics: .claude/skills/pipeline/labels.md
@@ -131,6 +145,9 @@ steps:
         - deep-plan step: skip deep-plan skill; single-response implementation notes instead
         - deep-verify step: skip deep-verify skill; perform self-review checklist instead
         - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)"
+        - ⚠ Analysis artifacts only. Every step's state-change side effect (milestone create/assign,
+          label add/remove, issue assign/comment/close) still runs in full — see "Cross-tier —
+          State-Change Side Effects Are NEVER Compressed" below.
 
       ## Tier 2 — lite (intermediate)
 
@@ -158,12 +175,51 @@ steps:
           "[compression-mode] lite — skill 단계 통합 분석 대체. 정당화: scope={n}, 모든 이슈 저위험(라벨 {labels}), 구현 대상 이슈 본문 명시 {issue_refs}"
         - If the justification cannot be stated concretely (e.g., a stage cannot be safely integrated),
           do NOT compress that stage — fall back to full skill spawn for it.
+        - ⚠ "통합 분석 대체" replaces analysis output ONLY. Every step's state-change side effect
+          (milestone create/assign, label add/remove, issue assign/comment/close) still runs in full
+          — see "Cross-tier — State-Change Side Effects Are NEVER Compressed" below.
 
       ## Tier 3 — standard (fallback)
 
       If neither docs-only nor lite met → set compression_mode=standard
         - All pipeline steps execute normally with full skill spawns
         - Log: "[compression-mode] standard mode (scope={n}, mixed/high-risk labels, large scope, or code logic change)"
+
+      ## Cross-tier — State-Change Side Effects Are NEVER Compressed
+
+      Compression (docs-only / lite) substitutes ANALYSIS ARTIFACTS ONLY. A step's
+      STATE-CHANGE SIDE EFFECTS — milestone create/assign, label add/remove, issue
+      assign, issue comment, issue/milestone close — are NOT analysis output and MUST
+      be performed regardless of compression mode. "통합 분석 대체" replaces how the
+      step THINKS, never what the step CHANGES.
+
+      A step is not a monolith: "skip the professor-triage skill spawn" does NOT
+      authorize skipping that step's gh state mutations. Before compressing any step,
+      consult the inventory below and execute every side effect it lists.
+
+      ### Step side-effect inventory (state changes; MUST run in every compression mode)
+
+      | Step | State-change side effects (MANDATORY regardless of compression_mode) |
+      |------|---------------------------------------------------------------------|
+      | pre-triage | `gh label create in-progress / verify-ready / needs-review --force` (idempotent label bootstrap) |
+      | scope-selection | Milestone 3-branch state machine (Step 0): closed → HALT / open → reuse / absent → `gh api repos/{owner}/{repo}/milestones --method POST`. Then: assign every scoped issue to that milestone. |
+      | compression-mode-eval | none (pure evaluation + justification logs) |
+      | triage | none (analysis only) — compressible |
+      | plan | none (analysis only) — compressible |
+      | deep-plan | none (analysis only) — compressible |
+      | implement | `gh issue edit <N> --add-label in-progress --assignee @me`; `gh issue comment <N>` (start notice); on success remove in-progress + add verify-ready; on failure remove in-progress + add needs-review + comment error summary |
+      | verify-build | none (gate only) |
+      | deep-verify | none (analysis only) — compressible |
+      | release | PR body MUST carry `Closes #N` for every resolved issue (auto-tag.yml greps the PR body); non-auto-tag projects additionally: `gh api .../milestones/{n} --method PATCH --field state=closed`, `gh issue close {n}`, label needs-review issues "Deferred from v{version}" |
+      | ci-check | none (verification only) |
+      | post-release-followup | new issue registration for release follow-ups (genuine defects auto-registered, no-ask per R016) |
+
+      Only the rows marked "none (analysis only)" are compressible. Any step with a
+      non-empty side-effect cell executes those effects in FULL under docs-only and lite.
+
+      Origin: #1553 찐빠 #3 — v1.1.41 릴리즈에서 lite 압축이 scope-selection의
+      "마일스톤 미존재 → 생성" 분기까지 함께 생략해 마일스톤이 만들어지지 않았다.
+      압축 대상은 분석 산출물이었으나 상태 변경 분기가 동반 생략됐다.
 
       ## Cross-tier — Pre-Existing Converged Artifact Substitution
 

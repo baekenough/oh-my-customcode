@@ -45,7 +45,7 @@ On insufficient permission: do not attempt, notify user, suggest alternative.
 
 Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, then add specific allow rules. Complements the Tier-based policy above — settings.json deny rules are evaluated by the CC platform, independent of the advisory tier table.
 
-> **v2.1.208+**: Permission rule matchers (deny/ask rules) are now compiled once and cached, fixing multi-second per-turn slowdowns in sessions with many rules. Complements the deny-by-default posture above — a large deny/allow rule set no longer costs per-turn latency.
+<!-- ARCHIVED CC version note (historical): v2.1.208+: Permission rule matchers (deny/ask rules) are now compiled once and cached, fixing multi-second per-turn slowdowns in sessions with many rules. Complements the deny-by-default posture above — a large deny/allow rule set no longer costs per-turn latency. -->
 
 <!-- ARCHIVED CC version note (historical): v2.1.183+: Fixed MCP servers requiring authentication exposing auth-stub tools to the model in headless/SDK mode — unauthenticated MCP auth-stub tools are no longer surfaced to the model in `-p` / SDK runs (they would fail on call). Relevant to the Tier-6 MCP tier: a headless run no longer offers auth-stub MCP tools. Separately, v2.1.181 added the `sandbox.allowAppleEvents` opt-in setting, letting sandboxed commands send Apple Events on macOS (default off) — a deliberate sandbox-scope widening, complementing the Tier-based policy above. -->
 
@@ -74,6 +74,11 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 > **v2.1.210+**: `Write(path)`/`NotebookEdit(path)`/`Glob(path)` 형태의 permission rule은 시작 시 경고를 발생시킵니다 — 파일 쓰기 rule은 `Edit(path)`, 읽기 rule은 `Read(path)` matcher로 작성합니다. 위 Tier 표의 Write/NotebookEdit/Glob은 도구명일 뿐 path-scoped rule matcher가 아닙니다(위 v2.1.166 unknown-tool startup warning 연장선).
 
 > **v2.1.214+**: 단일 세그먼트 `dir/**` allow rule(예: `Edit(src/**)`)이 트리 어디에나 있는 중첩 `dir/`까지 auto-approve하던 버그가 수정되어 이제 `<cwd>/dir`에만 매칭됩니다(hook `if:` 조건도 동일 — 임의 깊이 매칭이 필요하면 `**/dir/**`로 작성). **`deny`/`ask` permission rule은 any-depth 매칭을 유지**(allow만 `<cwd>`로 좁아짐). settings.json 스코프 설계 시 이 비대칭(allow 좁게 / deny·ask 넓게)을 전제로 삼습니다. 위 v2.1.210 `Edit(path)`/`Read(path)` matcher 권고의 연장선.
+
+> **v2.1.221/222+**: 세 건이 Tier-3/4 권한 흐름에 영향을 줍니다.
+> 1. **(v2.1.221) Bash 도구 권한 검사 우회 수정** — zsh가 `[[ ]]` 정규식 조건문 안에서 숨겨진 명령을 실행할 수 있었고, 해당 명령들은 이제 권한 프롬프트를 발생시킵니다. **이 저장소의 Claude Code Bash 도구 실행 셸이 zsh**이므로(R005 #1540), `[[ ... =~ ... ]]` 안에 명령을 포함하는 형태는 Tier-4 프롬프트 대상이며 무인 흐름의 새 프롬프트 발생원이 될 수 있습니다. Windows의 따옴표 포함 경로 PowerShell 권한 검사도 같은 방향으로 수정되었습니다.
+> 2. **(v2.1.221) auto mode 병렬 권한 검사 최적화** — 병렬 tool call의 권한 검사가 cache-efficient해지고 캐시된 대화 prefix 재사용으로 비용이 감소했습니다(R009 병렬 배치의 부담 완화). 검사 대기 중 모드를 전환하면 stale 결과를 적용하지 않고 재프롬프트합니다.
+> 3. **(v2.1.222) Remote Control auto-start 스코프 축소** — repo-local 설정(`.claude/settings.json` / `.claude/settings.local.json`)으로는 **켤 수 없고**(끄는 것은 가능), 활성화는 user scope `/config`에서만 가능합니다.
 
 ## Agent Tool Permission Mode
 

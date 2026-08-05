@@ -12,6 +12,7 @@ meta:
   counts:
     skills: 114
     guides: 62
+    # guides: wiki page count (source topics = 56)
     agents: 49
     rules: 23
 

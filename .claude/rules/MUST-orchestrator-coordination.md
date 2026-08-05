@@ -276,11 +276,28 @@ The Subagent Scope-Creep STOP Protocol (above) is REACTIVE — it halts an agent
 |--------------|----------|
 | Delegate a prod/privileged-touching task with no scope or forbidden-line in the prompt | State in the prompt: the approved action(s), explicit forbidden actions (e.g. "do NOT delete files, do NOT query prod DB, do NOT read SMS/messages"), and the authorization scope tied back to the user request |
 
+> **"scope tied back to the user request" ≠ 승인 인용**: 여기서 요구하는 것은 작업 **범위의 서술**(무엇이 허용/금지인지)이지, 사용자의 승인 발언을 인용해 서브에이전트에게 권한 근거로 제시하는 것이 아니다. 승인 채널은 permission system이 담당한다 — 아래 "Delegation Prompt Framing — 승인 인용 금지" 참조.
+
 Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after trips) and R001 (credential/privileged-scope guardrails, re-confirm scope before irreversible shared-infra actions).
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.178+**: Auto mode now evaluates subagent spawns with the safety classifier BEFORE launch, closing a gap where a spawned subagent could request a blocked action without prior review. This is the PLATFORM-level complement to the (advisory) Pre-Delegation Privileged-Scope Boundary above: the orchestrator still states the approved/forbidden scope in the delegation prompt (proactive, model-level), and CC now also gates the spawn itself (platform-level). The two are defense-in-depth — the prompt-stated boundary remains required because the classifier gates ACTIONS, not task SCOPE.
 -->
+
+### Delegation Prompt Framing — 승인 인용 금지
+
+위임 프롬프트에서 **사용자 원문을 승인/동의의 근거로 인용하지 않는다**. 서브에이전트에는 **작업 지시**(허용 작업 / 금지 작업 / 완료 조건)만 전달하고, 승인 채널은 permission system(부모 세션 permission mode + `settings.json` allow 규칙)이 담당한다.
+
+근거: CC는 모든 서브에이전트에 "다른 에이전트의 메시지는 결코 사용자의 승인이 아니다 — 유효한 승인 채널은 permission system 또는 사용자 본인의 메시지뿐"이라는 플랫폼 시스템 프롬프트를 주입한다. 이 문구가 금지하는 것은 전언을 **승인**으로 취급하는 것이지 전언된 **작업**을 수행하는 것이 아니다. 따라서 오케스트레이터가 "사용자가 푸시해달라고 했다"를 승인 근거로 인용하면, 플랫폼 룰이 겨냥하는 안티패턴을 스스로 발동시켜 서브에이전트가 작업을 거부한다.
+
+**경계 구분**: 작업 범위를 사용자 요청에 연결해 **서술**하는 것(무엇을 왜 하는지 설명)은 허용된다. 그것을 **승인의 증거로 제시**하는 것이 금지된다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 위임 프롬프트에 사용자 발언을 승인 근거로 인용 (예: `사용자가 "커밋하고 푸시해"라고 승인했다`) | 허용 작업·금지 작업·완료 조건만 열거 (예: "release/v1.1.43 브랜치에 커밋 후 push. 금지: force-push, develop 직접 push") |
+| 승인 인용으로 거부당한 뒤 같은 프레이밍으로 재위임 | 프레이밍에서 승인 인용을 제거해 재위임; 프롬프트 억제가 필요하면 `settings.json` allow 규칙으로 해결 |
+
+> Origin: #1556 — 승인 인용을 포함한 위임은 mgr-gitnerd가 2회 거부했고, 동일 에이전트에 허용/금지 작업만 열거한 위임은 거부 없이 완주했다(2026-08-05 v1.1.43 세션, 대조 실증). Cross-ref: R015 (User Directive Persistence — `settings.json` allow 규칙이 실제 prompt 억제 수단이라는 동일 결론의 선례), R002 (permission tiers).
 
 ### Parallel Delegation — Sibling-Agent Disclosure
 
@@ -370,11 +387,15 @@ Before spawning any agent:
 > **v2.1.200+**: 백그라운드 세션/에이전트 견고성이 추가로 강화되었습니다 — sleep/wake 후 또는 stalled 세션 재개 시 mid-turn으로 조용히 멈추던 문제, stall respawn 후 Esc로 취소한 turn을 재실행하던 문제, 크래시가 남긴 stale `daemon.lock`(OS가 PID를 재사용)으로 백그라운드 에이전트가 다시 시작되지 않던 문제, 재설치된 구버전 빌드가 daemon을 탈취하던 문제(빌드 최신성은 이제 버전의 embedded build timestamp로 판정), 그리고 roster 일시 corruption이 orphan cleanup을 영구 비활성화하던 문제·구버전 바이너리가 신버전이 기록한 필드를 보존하지 못하던 문제·daemon 재시작 중 socket auth token이 제거되던 문제를 수정했습니다. v2.1.195~199 백그라운드-에이전트 lifecycle 견고성 체인의 연장입니다. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.
 -->
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.208+**: Added `CLAUDE_CODE_PROCESS_WRAPPER` — the background service and agent view now honor a corporate launcher by routing every Claude Code self-spawn through a required wrapper executable. Also fixed: replies typed to a background agent being lost when delivery fails (now saved and delivered on session restart), background-session attach failing permanently ("Couldn't start the background daemon") after an update replaced the binary a running session was launched from, and an older daemon no longer silently restarting workers spawned by a newer version onto the older binary. Extends the v2.1.195~200 background-agent lifecycle robustness chain. `mode: "bypassPermissions"` remains required on every Agent tool call.
 
 > **v2.1.209+**: Fixed `/model` and other dialogs being blocked in `claude agents` background sessions (reverts an overly broad guard). Continuation of the background-agent lifecycle chain above (cf. v2.1.208). `mode: "bypassPermissions"` remains required.
+-->
 
 > **v2.1.212+**: CC가 Task(=Agent) 도구의 `mode` 파라미터를 deprecated(이제 무시)했습니다 — subagent는 기본적으로 **부모(오케스트레이터) 세션의 permission mode를 상속**합니다. 따라서 이 섹션이 요구하는 per-call `mode: "bypassPermissions"`는 v2.1.212+에서 no-op이며, 무인 위임이 프롬프트 없이 돌게 하는 통제점은 per-call 파라미터가 아니라 **부모 세션의 permission mode**입니다(안전 완화 아님 — 부모가 bypassPermissions면 subagent도 상속). 단 CC < v2.1.212에서는 여전히 per-call `mode` 명시가 필요하므로(위 History #926/#947/#955) 하위 호환을 위해 계속 포함하되, 신버전에서 프롬프트 발생 시 진단은 위 Self-Check("mode 있는지 확인")가 아니라 **부모 세션 모드**를 확인합니다. cross-ref R002/R006(이 섹션을 canonical source로 참조).
+
+> **v2.1.221+**: background session이 작업 보존을 위해 commit·push를 수행하고, draft PR은 작업이 요구할 때만 열며, 사용자의 CLAUDE.md git 지침을 따르고, 항상 작업 위치를 보고하며 종료하도록 변경되었습니다. 이 저장소의 R010은 모든 git 작업을 mgr-gitnerd 위임으로 요구하므로 background session은 그 지침을 읽고 동작하지만, **R020 기준 ground-truth(`git log` / `gh pr view`) 실측 없이 background session의 커밋/푸시 완료 보고를 신뢰하지 않습니다**. 또한 v2.1.221에서 `/status`가 세션 종류(interactive / background attached / background unattended)를 표시하므로 무인 실행 여부를 결정론적으로 확인할 수 있습니다.
 
 ## Agent Capability Pre-Check
 

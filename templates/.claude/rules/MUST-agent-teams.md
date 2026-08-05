@@ -54,6 +54,8 @@ These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` a
 
 This hardens cross-session coordination (claude-peers-mcp `send_message`, see Scope table above) against privilege escalation — a relayed message from session A cannot grant session B permissions the user did not authorize on B. Aligns with R001 (credential/privileged-scope guardrails) and R010 (out-of-scope privileged chaining). Intra-session Agent Teams `SendMessage` between peers in the same session is unaffected.
 
+> **v2.1.222+**: auto mode 안전성 개선 — 다른 agent session으로 `SendMessage`가 보내는 메시지가 dispatch 전에 permission classifier로 평가됩니다. v2.1.166의 relay authority hardening이 **수신** 경로를 막았다면, 이번 변경은 **발신** 경로를 게이트합니다. 따라서 SendMessage 전송 자체를 조율 성공의 증거로 삼지 말고, 아래 Member Completion Verification의 결정론적 ground-truth로 확인합니다. classifier가 2회 걸리면 R010 Subagent Scope-Creep STOP Protocol을 적용해 재전송 대신 범위를 재설계합니다.
+
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.183+**: Fixed tmux teammate panes failing to launch when the shell has slow rc-file initialization — a slow `.zshrc`/`.bashrc` no longer prevents Agent Teams teammate panes from launching in tmux. Also fixed WebSearch returning empty results in subagents: a subagent (including a Teams member) using WebSearch now returns results instead of silently empty.
 -->
@@ -378,6 +380,8 @@ Agent Teams member completion MUST be verified by deterministic ground-truth —
 | SendMessage report | Low — member may stall before sending | Use as a signal only |
 
 Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command ran is not the same as verifying it succeeded).
+
+> **v2.1.222+**: `SendMessage`가 긴 summary를 문자 수 제한으로 거부하던 동작이 **절단(truncate)**으로 변경되어 전송이 실패하지 않습니다. 전송 실패가 사라진 대신 **조용한 절단**이라는 새 실패 모드가 생겼으므로, 위 표의 "SendMessage report = Low reliability" 원칙이 오히려 강화됩니다. 긴 보고가 필요하면 SendMessage 본문 대신 아티팩트 파일 경로 전달(R006 Artifact Channel Protocol)로 대체합니다.
 
 <!-- ARCHIVED CC version note (historical):
 > **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.

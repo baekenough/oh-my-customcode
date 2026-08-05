@@ -248,6 +248,19 @@ triage-dispatch.yml 실패 원인을 파일 Read 전에 "triaged 라벨 부재 +
 
 Origin: #1266 ④.
 
+### Self-Violation Counting Is Also Diagnosis (#1553 ②)
+
+**자기 위반 횟수를 세는 것도 진단이다.** 회고·자가 보고에서 "몇 번 위반했는가"를 기억(recall)으로 세면 체계적으로 **과소 계상**된다 — 위반 순간은 정의상 자각 없이 지나간 순간이므로, 기억에는 나중에 스스로 알아챈 소수만 남는다. 위반 횟수는 추정하지 말고 **transcript를 실제로 파싱해** 센다(예: 응답 시작 라인에 R007 헤더 패턴이 없는 assistant turn 수를 grep/스크립트로 집계).
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 회고에서 "직전 두 응답에서 누락했습니다"처럼 기억 기반으로 위반 횟수 보고 | transcript를 파싱해 실측 집계 후 보고 (예: 헤더 패턴 미매칭 turn 수 grep) |
+| 실측 없이 "몇 회 정도" 추정치로 위반 심각도를 특성화 | 실측값으로 심각도 판정 — 과소 계상은 후속 조치 우선순위를 왜곡한다 |
+
+실증: 2026-07-30 세션에서 자가 보고는 "직전 두 응답에서 누락"(2회)이었으나 transcript 실측은 **7회**였다 — 3.5배 과소 계상. Origin: #1553 찐빠 #2.
+
+이는 Read-Before-Characterize의 **자기 적용** 각도다 — 진단 대상이 외부 로그가 아니라 자기 자신의 transcript일 때에도 "읽기 전 특성화 금지"가 동일하게 적용된다.
+
 ### Proxy Signal vs Canonical Ground-Truth (#1336 ①②)
 
 > Origin: #1336 ①② — transcription was alarmed as "stopped" because `.txt` files looked stale, but the canonical DB had transcripts current to 06-09 21:30 (.txt is not the whisper collector's output — it emits only to the DB). Separately, SMS was over-diagnosed as "fully blocked" from one empty OneDrive XML path + a single 401, while the DB held 17 SMS rows ingested via the app path.

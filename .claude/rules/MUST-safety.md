@@ -31,6 +31,8 @@ The following git commands have caused working tree loss in past sessions (#1146
 
 > **v2.1.208+**: Catastrophic removals (e.g. `rm -rf ~`) wrapped in `$(…)`/backticks/`<(…)` now trigger the same prompt as the plain form in `--dangerously-skip-permissions` and auto mode — closes a subshell-obfuscation gap in the v2.1.183 platform-level destructive-command block above.
 
+> **v2.1.221/222+**: v2.1.222에서 worktree-isolated 세션과 그 subagent가 main checkout에 대해 파괴적 git 명령을 실행할 수 있던 문제가 수정되어, isolation이 모든 세션 타입의 file edit과 Bash에 적용됩니다. v2.1.221에서는 `/fork` 세션이 원본 세션 checkout이 아니라 자체 worktree를 생성하도록 변경되었습니다. **완화 아님**: 위 Destructive Git Commands 표의 per-invocation 승인 요구와 아래 Pre-Delegation Blast-Radius Enumeration은 그대로 유지됩니다. 플랫폼 isolation은 격리 경계를 강화할 뿐, 사용자가 판단하는 데 필요한 blast-radius 열거를 대체하지 않습니다(v2.1.183/208 플랫폼 블록과 동일한 defense-in-depth 관계).
+
 ### Pre-Delegation Blast-Radius Enumeration
 
 > Origin: #1307 찐빠 #1 (High) — user chose "discard local changes and pull", and `git reset --hard origin/develop` was delegated immediately → user rejected (interrupt). The blast radius — that "discard local changes" included 18 files of *intended* uncommitted work (rule edits, new skills, new guides), not just a version downgrade — was never enumerated for the user.

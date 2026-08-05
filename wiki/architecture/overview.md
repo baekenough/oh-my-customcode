@@ -1,7 +1,7 @@
 ---
 title: System Architecture Overview
 type: architecture
-updated: 2026-07-01
+updated: 2026-08-05
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md
@@ -20,7 +20,7 @@ oh-my-customcode is a meta-layer for Claude Code that structures AI agent behavi
 
 ## Overview
 
-The system contains **49 agents**, **114 skills**, **23 rules**, and **57 guides** organized across four directories under `.claude/` and `guides/`. Every component has a single clear responsibility, and interactions between them are governed by explicit delegation rules.
+The system contains **49 agents**, **114 skills**, **23 rules**, and **56 guides** organized across four directories under `.claude/` and `guides/`. Every component has a single clear responsibility, and interactions between them are governed by explicit delegation rules.
 
 The core philosophy is the **compilation metaphor**: skills are source code, agents are build artifacts, rules are the compiler spec, routing skills are the linker, and guides are the standard library. This isn't merely decorative — it drives every architectural decision about where knowledge lives and how components evolve.
 
@@ -54,7 +54,7 @@ The main Claude Code conversation acts as the **sole orchestrator**. It uses fou
 .claude/
 ├── agents/          # 47 agent definitions
 ├── skills/          # 103 skill directories (each with SKILL.md)
-├── rules/           # R000-R021 rule files
+├── rules/           # R000-R023 rule files
 ├── hooks/           # PreToolUse/PostToolUse enforcement scripts
 ├── contexts/        # Ecomode context files
 └── agent-memory*/   # Per-agent persistent memory
@@ -73,3 +73,4 @@ guides/              # 33 reference topic directories
 - `CLAUDE.md` — architecture philosophy, agent summary, component counts
 - `.claude/rules/MUST-agent-design.md` — R006 separation of concerns
 - `.claude/rules/MUST-orchestrator-coordination.md` — R010 delegation model
+- Count resync 2026-08-05: "57 guides" corrected to "56 guides" (measured: `find guides -mindepth 1 -maxdepth 1 -type d` = 56 topic directories) and the File System Map's "R000-R021 rule files" comment corrected to "R000-R023" (measured highest rule ID). Other counts in this page (agent/skill/guide figures inside the Three-Layer Structure table and File System Map, e.g. "47 specialist definitions", "103 workflow definitions", "36 reference documents", "33 reference topic directories") were left untouched — out of scope for this pass, not re-verified here.

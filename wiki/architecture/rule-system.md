@@ -1,7 +1,7 @@
 ---
 title: Rule Enforcement System
 type: architecture
-updated: 2026-04-12
+updated: 2026-08-05
 sources:
   - .claude/rules/MUST-enforcement-policy.md
   - .claude/rules/MUST-continuous-improvement.md
@@ -21,12 +21,12 @@ oh-my-customcode uses an **advisory-first enforcement model**: most behavioral r
 
 ## Overview
 
-21 rules span three priority levels:
+23 rules span three priority levels:
 
 | Priority | Count | Enforcement Mechanism |
 |----------|-------|-----------------------|
 | **MUST** | 14 | Prompt + PostCompact hooks; selective hard blocks |
-| **SHOULD** | 6 | Prompt injection only |
+| **SHOULD** | 8 | Prompt injection only |
 | **MAY** | 1 | Optional guidance |
 
 Rules live in `.claude/rules/` and are auto-injected into the system prompt. After context compaction, critical MUST rules are re-injected via PostCompact hooks to combat "compaction amnesia."
@@ -98,3 +98,4 @@ Rules that may be promoted to hard-block if advisory enforcement proves insuffic
 - `.claude/rules/MUST-enforcement-policy.md` — R021 full enforcement tiers
 - `.claude/rules/MUST-continuous-improvement.md` — R016 improvement workflow
 - `CLAUDE.md` — rule summary table
+- Count resync 2026-08-05: rule count corrected 21→23, SHOULD count corrected 6→8 (measured: `ls .claude/rules/*.md` = 23 total, MUST=14, SHOULD=8, MAY=1). MUST/MAY counts were already accurate and left unchanged.

@@ -15,7 +15,9 @@ model: sonnet              # CC-native alias (Tier 1) or full model ID (Tier 2) 
 tools: [Read, Write, ...]  # Allowed tools
 ```
 
+<!-- ARCHIVED CC version note (historical):
 > **v2.1.208+**: The Agent tool no longer launches with no tools when a subagent's `tools:` list resolves to nothing — it now returns a clear error naming the unrecognized entries, catching frontmatter `tools:` typos that previously failed silently.
+-->
 
 ### Model Specification — 3 Tiers
 
@@ -59,6 +61,8 @@ The Agent tool's `model` parameter accepts ONLY `sonnet` | `opus` | `haiku` | `f
 Skill/rule text instructing "spawn with `model: opus`" refers to this tier — always the bare 4-value alias, never a full ID.
 
 > **v2.1.219+**: Claude Opus 5 (`claude-opus-5`) added. Opt in via the Tier-2 full ID in frontmatter; Tier-1 `opus`/`sonnet` alias resolution is CC-controlled (see Tier 1 above — this project does not pin it). Relative standing vs Fable 5 is not yet confirmed officially — do not assert an ordering.
+
+> **v2.1.222+**: **org-restricted 환경에서** `model: opus` 계열 subagent/teammate의 family alias가 parent model로 떨어지던 문제가 수정되어, 이제 해당 family 내에서 org가 허용한 **최신 모델로 step-down**합니다. 이는 Tier 1의 "CC resolves these, not this project" 원칙을 강화하는 사례입니다 — Tier-1 alias 해석에는 **org 제한이라는 추가 변수**가 있어 프로젝트가 pin할 수 없으므로, 특정 모델을 확정하려면 frontmatter에 **Tier-2 full ID**를 씁니다. Agent 도구 spawn 파라미터(Tier 3)는 full ID를 받지 않으므로 이 경로에서는 alias 해석이 org 설정에 좌우됩니다. (본 저장소의 org 제한 여부는 미실측 — 위 조건절이 적용 범위입니다.)
 
 > **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via frontmatter full ID `claude-fable-5` (Tier 2) or Agent tool `model: fable` (Tier 3) — NOT via a Tier-1 frontmatter alias. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
 
@@ -171,9 +175,11 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 
 ## Hook Event Types
 
-21 event types supported: PreToolUse, PostToolUse, PreCompact, PostCompact, Stop, SessionStart, SessionEnd, SubagentStart, SubagentStop, UserPromptSubmit, Notification, CwdChanged, FileChanged, Elicitation, ElicitationResult, PostMessage, PermissionDenied, TeammateIdle, TaskCreated, TaskCompleted, DirectoryAdded. 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
+31 event types supported: SessionStart, Setup, UserPromptSubmit, UserPromptExpansion, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, PostToolBatch, Notification, MessageDisplay, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, Stop, StopFailure, TeammateIdle, InstructionsLoaded, ConfigChange, CwdChanged, DirectoryAdded, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, Elicitation, ElicitationResult, SessionEnd. 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
 
-> **v2.1.219+**: `DirectoryAdded` hook event added — fires after `/add-dir` or an SDK `register_repo_root` control request registers a new working directory mid-session.
+> **`MessageDisplay`는 표시 전용 — `additionalContext` 미지원**: `MessageDisplay`는 `hookSpecificOutput.displayContent`로 **화면 표시 텍스트만** 교체하며, 트랜스크립트와 Claude가 보는 내용은 원본이 유지된다. 따라서 advisory 훅을 `MessageDisplay`에 배선하면 **모델에 도달하지 않는다**. `additionalContext`(모델 컨텍스트 주입)를 지원하는 이벤트는 SessionStart, Setup, SubagentStart, UserPromptSubmit, UserPromptExpansion, PreToolUse, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, SubagentStop이다. (이전 판이 나열하던 `PostMessage`는 문서화된 이벤트가 아니다 — 실제 이벤트명은 `MessageDisplay`.)
+
+> **신규 이벤트 발동 시점**: `Setup` — `--init-only`, 또는 `-p` 모드에서 `--init`/`--maintenance`로 시작할 때. `UserPromptExpansion` — 사용자가 입력한 커맨드가 프롬프트로 확장될 때(모델 도달 전; 확장 차단 가능). `PostToolUseFailure` — 도구 호출이 실패한 뒤. `PostToolBatch` — 병렬 도구 호출 배치 전체가 끝난 뒤, 다음 모델 호출 전. `MessageDisplay` — assistant 메시지 텍스트가 표시되는 동안(실시간 스트리밍). `DirectoryAdded` (v2.1.219+) — `/add-dir` 또는 SDK `register_repo_root`로 작업 디렉토리가 세션 중 추가될 때. (그 밖의 신규 이벤트 — `PermissionRequest`, `StopFailure`, `InstructionsLoaded`, `ConfigChange`, `WorktreeCreate`, `WorktreeRemove` — 는 발동 시점을 미실측이므로 서술하지 않는다.)
 
 <!-- DETAIL: Hook Event Types Full Reference
 
@@ -194,7 +200,7 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 | `FileChanged` | External file modification | file_path, change_type | command | v2.1.83+ |
 | `Elicitation` | Agent requests user input | question | command, prompt | v2.1.76+ |
 | `ElicitationResult` | User responds to elicitation | answer | command, prompt | v2.1.76+ |
-| `PostMessage` | After message sent | message_type | command | v2.1.76+ |
+| `MessageDisplay` | While assistant message text is displayed (live streaming); `displayContent` only — does NOT support `additionalContext` | — (not stated) | — (not stated) | not stated |
 | `PermissionDenied` | Auto mode classifier denial | tool, tool_input, denial_reason | command, prompt | v2.1.88+ |
 | `TeammateIdle` | Agent Teams member idle | teammate_id | command | v2.1.83+ |
 | `TaskCreated` | Task created | task_id, description | command | v2.1.83+ |
@@ -479,6 +485,8 @@ Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, 
 -->
 
 > **v2.1.210+**: 스킬/커맨드 본문에서 인자 없이 호출된(unmatched) `$1`/`$2` positional placeholder가 조용히 제거되던(silently stripped) 동작이 수정되어 이제 리터럴 `$1`로 verbatim 보존됩니다 — 인자 부재 시 `$1`이 확장된 프롬프트에 그대로 남아 지시가 깨지므로, silent stripping에 옵션-인자 처리를 의존하지 말고 인자 부재 케이스를 명시 처리(default text / `$ARGUMENTS` guard / `argument-hint`)해야 합니다. (위 v2.1.163+ `\$1` escape는 항상 리터럴 `$` 출력용 별개 메커니즘으로 이번 변경 대상이 아니며, 이번 수정은 치환 의도의 bare `$1`이 unmatched일 때만 적용됩니다.)
+
+> **v2.1.222+**: 스킬 frontmatter의 `disable-model-invocation: true`(모델이 스스로 그 스킬을 호출하지 못하게 막고 사용자/파이프라인의 명시적 호출만 허용하는 필드)가 설정된 스킬을 모델이 호출하려 할 때의 refusal 문구가 개선되어, 모델에게 **워크플로우를 스스로 복제하지 말고 사용자에게 실행을 요청하라**고 지시합니다. 무인 루프(`/fsd` 등)가 이런 스킬을 모델 호출 경로에 두면 실행 대신 refusal이 반환되므로, 해당 스킬은 **사용자/파이프라인 명시 호출**로 설계합니다.
 
 <!-- DETAIL: Skill Optional Fields (full yaml block)
 ```yaml
