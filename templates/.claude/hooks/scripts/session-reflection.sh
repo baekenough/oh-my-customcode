@@ -84,76 +84,76 @@ LOG_FILE="${OUTPUT_DIR}/$(date +%Y-%m-%d).md"
 ISO8601="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 # ── transcript 파싱 ──
-r007_violations=0
-r008_violations=0
-total_turns=0
-sample_count=0
-sample_lines=""
+#
+# 스키마 주의 (MEASURED 2026-08-05, #1553): Claude Code JSONL 라인에는 최상위 `role`/`content`가
+# 없다. 실제 경로는 `.message.role` / `.message.content`다. 종전 구현은 `.role`을 읽어 항상 빈 값을
+# 얻었고, 그 결과 assistant 라인이 하나도 매칭되지 않아 이 분석기는 사실상 0계층 탐지였다.
+#
+# 그리고 content 블록은 라인당 1개다 — 한 assistant 턴이 여러 줄에 걸친다. 따라서 라인 단위로
+# R008 인접성(직전 블록이 text인지)을 보면 모든 tool_use가 영구 위반으로 집계된다. 턴을 먼저
+# 복원한 뒤 블록 인접성을 본다. 턴 경계는 "진짜 user 프롬프트"(문자열 content 또는 tool_result가
+# 없는 배열)이며, tool_result user 라인은 경계가 아니다. `isSidechain: true`(서브에이전트 턴)은
+# 제외한다. `thinking` 블록은 R008 접두사를 가질 수 없으므로 인접성 판정 전에 제거한다.
+#
+# 성능: 줄마다 jq를 포크하던 구조를 jq 1회 포크로 교체.
+JQ_REFLECT='
+split("\n")
+| map(select(length > 0) | (fromjson? // empty))
+| map(select((.isSidechain // false) != true))
+| [ foreach .[] as $l (0;
+      (if ($l.message.role? == "user")
+          and ( (($l.message.content | type) == "string")
+                or (([ $l.message.content[]? | select(.type? == "tool_result") ] | length) == 0) )
+       then . + 1 else . end);
+      {g: ., l: $l}) ]
+| map(select(.l.message.role? == "assistant"))
+| group_by(.g)
+| map({ blocks: [ .[].l.message.content[]? | select(.type? != "thinking") ] })
+| . as $turns
+| ($turns | length) as $total
+| [ range(0; $total)
+    | . as $ti
+    | ($turns[$ti].blocks) as $blocks
+    | ([ $blocks[] | select(.type? == "text") ][0].text? // "") as $ftext
+    | (($ftext | split("\n") | .[0]) // "") as $fline
+    | ( if ($ftext | length) > 0
+           and ((($fline | test("^┌─ Agent:")) or ($fline | test("^\\[.+\\]"))) | not)
+        then [ {k: "R007", turn: ($ti + 1), s: ($fline[0:120])} ]
+        else [] end )
+      + [ range(0; ($blocks | length))
+          | select($blocks[.].type? == "tool_use")
+          | select( (. == 0)
+                    or ($blocks[. - 1].type? != "text")
+                    or (((($blocks[. - 1].text?) // "") | test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?(Tool|Target):")) | not) )
+          | {k: "R008", turn: ($ti + 1), s: ($blocks[.].name? // "")} ]
+  ]
+| flatten
+| . as $viol
+| ( [ ($total | tostring),
+      ([ $viol[] | select(.k == "R007") ] | length | tostring),
+      ([ $viol[] | select(.k == "R008") ] | length | tostring) ] | @tsv ),
+  ( $viol[0:3][]
+    | if .k == "R007" then "- [R007 turn \(.turn)]: \(.s)"
+      else "- [R008 turn \(.turn)]: \(.s), missing prefix" end )
+'
 
-while IFS= read -r line; do
-  role=$(echo "$line" | jq -r '.role // empty' 2>/dev/null) || continue
-  [ "$role" = "assistant" ] || continue
+analysis=$(jq -Rsr "$JQ_REFLECT" < "$TRANSCRIPT_PATH" 2>/dev/null) || analysis=""
 
-  total_turns=$((total_turns + 1))
-  turn_idx=$total_turns
+counts_line=$(printf '%s\n' "$analysis" | head -1)
+total_turns=$(printf '%s' "$counts_line" | cut -f1)
+r007_violations=$(printf '%s' "$counts_line" | cut -f2)
+r008_violations=$(printf '%s' "$counts_line" | cut -f3)
+sample_lines=$(printf '%s\n' "$analysis" | tail -n +2)
 
-  # content 배열 파싱
-  content_raw=$(echo "$line" | jq -c '.content // []' 2>/dev/null) || continue
+[ -n "$total_turns" ] || total_turns=0
+[ -n "$r007_violations" ] || r007_violations=0
+[ -n "$r008_violations" ] || r008_violations=0
 
-  # ── R007: 첫 번째 text 블록의 첫 줄 체크 ──
-  first_text=$(echo "$content_raw" | jq -r '[.[] | select(.type == "text")][0].text // empty' 2>/dev/null) || true
-  if [ -n "$first_text" ]; then
-    first_line=$(printf '%s' "$first_text" | head -1)
-    # R007 패턴: '┌─ Agent:' 또는 '[anything]' 단축 형태
-    if ! printf '%s' "$first_line" | grep -qE '(^┌─ Agent:|^\[.+\])'; then
-      r007_violations=$((r007_violations + 1))
-      if [ $sample_count -lt 3 ]; then
-        # 120자 truncate (secret-filter.sh는 PostToolUse용이라 여기서는 단순 truncate)
-        safe_text=$(printf '%s' "$first_line" | head -c 120)
-        sample_lines="${sample_lines}
-- [R007 turn ${turn_idx}]: ${safe_text}"
-        sample_count=$((sample_count + 1))
-      fi
-    fi
-  fi
-
-  # ── R008: tool_use 블록 직전 text에 prefix 체크 ──
-  content_length=$(echo "$content_raw" | jq 'length' 2>/dev/null) || continue
-
-  i=0
-  while [ $i -lt "$content_length" ]; do
-    block_type=$(echo "$content_raw" | jq -r ".[$i].type // empty" 2>/dev/null) || { i=$((i+1)); continue; }
-
-    if [ "$block_type" = "tool_use" ]; then
-      tool_name=$(echo "$content_raw" | jq -r ".[$i].name // empty" 2>/dev/null) || true
-
-      # 직전 블록이 text이고 R008 prefix를 포함하는지 체크
-      has_prefix=false
-      if [ $i -gt 0 ]; then
-        prev_type=$(echo "$content_raw" | jq -r ".[$(( i - 1 ))].type // empty" 2>/dev/null) || true
-        if [ "$prev_type" = "text" ]; then
-          prev_text=$(echo "$content_raw" | jq -r ".[$(( i - 1 ))].text // empty" 2>/dev/null) || true
-          # R008 패턴: '[agent-name][model] → Tool:' 또는 '→ Target:'
-          if printf '%s' "$prev_text" | grep -qE '\[.+\]\[.+\] ?(→|->|—>) ?(Tool|Target):'; then
-            has_prefix=true
-          fi
-        fi
-      fi
-
-      if [ "$has_prefix" = "false" ]; then
-        r008_violations=$((r008_violations + 1))
-        if [ $sample_count -lt 3 ]; then
-          sample_lines="${sample_lines}
-- [R008 turn ${turn_idx}]: ${tool_name}, missing prefix"
-          sample_count=$((sample_count + 1))
-        fi
-      fi
-    fi
-
-    i=$((i+1))
-  done
-
-done < "$TRANSCRIPT_PATH"
+if [ -n "$sample_lines" ]; then
+  sample_count=$(printf '%s\n' "$sample_lines" | grep -c . || true)
+else
+  sample_count=0
+fi
 
 # ── Phase 2 (#1196): background_tasks / session_crons 분석 ──
 bg_total=$(echo "$BG_TASKS_JSON" | jq 'length' 2>/dev/null || echo 0)

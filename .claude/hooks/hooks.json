@@ -456,6 +456,17 @@
         "description": "Context budget advisor \u2014 track tool usage patterns and advise ecomode activation"
       },
       {
+        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\" || tool == \"Read\" || tool == \"Glob\" || tool == \"Grep\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh",
+            "continueOnBlock": true
+          }
+        ],
+        "description": "Proactive R007/R008 drift advisory on tool use \u2014 covers the orchestrator-only stretch before the first subagent spawn, where neither UserPromptSubmit nor SubagentStop fires (#1553). Turn-deduplicated; exit 0 advisory only."
+      },
+      {
         "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
