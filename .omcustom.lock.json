@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "1.1.43",
-  "generatedAt": "2026-08-05T13:01:51.305Z",
+  "generatedAt": "2026-08-10T08:43:54.378Z",
   "templateVersion": "1.1.43",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -10,13 +10,13 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "35b6494cd5cd77ef229f5a32d0427cec37fb583aa325f2b7dff4e1ffc090312c",
-      "size": 7255,
+      "templateHash": "f17ccb9a79919ff362e2901cabe825f04d1b09ce0006645757e9e6c95151c232",
+      "size": 7331,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "d159b99b9d855c0e1c2f98a425b1d3e09b9217daa9e0b7eee22a34961a6376c7",
-      "size": 48075,
+      "templateHash": "19e196eba32bafbcf2c8b068ed8c28ea58c487bcf244defe934c89a8cafe2eb4",
+      "size": 50553,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -35,13 +35,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "a1e43ab30e0b80c8a8bd3c587a8c270650628f6243199e2871ccd3aac2daaf25",
-      "size": 12490,
+      "templateHash": "e896069cb80f37c69627b53847b56c1ab4558706da26a9e905c789ee42bc0745",
+      "size": 12954,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
-      "templateHash": "91604776396a5b1beb27666704998f8fc6ec8a639ef2e4c47d8cfc57f5bb628b",
-      "size": 6738,
+      "templateHash": "04d76219626860f04a5c4f8ab24e4139b637f8a62a40708553ecad72c11e17c5",
+      "size": 7295,
       "component": "rules"
     },
     ".claude/rules/MUST-language-policy.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "763c8b075b7f19a07af4e8ec8286e574101e876e928ed477d0b1d2da58c23d0f",
-      "size": 47237,
+      "templateHash": "666447cee76e066c799d640e7f3e32902a0858ebd845d695398ca4d0142e1277",
+      "size": 48480,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -65,23 +65,23 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "18111b089bf217784e65e4177becde1357c5c52885c1f5a45a6ad71c5cda2d76",
-      "size": 25870,
+      "templateHash": "5d69566ee0cc7a33fbba040a661aff4a5c1eee29c70fc08091167da1abc242f4",
+      "size": 27338,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "c44ac858488ae14b854a1aeac32a6434775ffa07ff2551fa51fac10acd0f2e55",
-      "size": 10315,
+      "templateHash": "9775898e22a48a41b803f39e6cc1b253b3c1669fdf9037e8adb2fc512d758b18",
+      "size": 10858,
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "049969954e9fc00e873f38aabd207eee95e209556490e2a7742e09bc2ca72d87",
-      "size": 9232,
+      "templateHash": "0cb66ddd7227189a77639e9ced652618221dad634e4652ce7bd276b41efa4781",
+      "size": 10529,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
-      "templateHash": "0fc05801abf48e9d8f1aaf56d0aa23d984ad1b7b8ef6a0e689673c30007e1d9b",
-      "size": 12745,
+      "templateHash": "544a03ffa872262ece2da327d55634a74b64dcaa43f0772c53fd4503455d6cda",
+      "size": 13623,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -90,8 +90,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
-      "templateHash": "23050f6966479a916dbeb401eb981d2e064146561640315e3dc9fcbde087d469",
-      "size": 12559,
+      "templateHash": "db3f595ffa93a397c0b8680247576e964bb40e404982afc3f54849d7051e71c1",
+      "size": 13585,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
@@ -100,13 +100,13 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "2918c1c74a83bb17b31ec7575fe65f1d7a213b44934dcc22b8c5edcd3acccecb",
-      "size": 14045,
+      "templateHash": "581c43a0030c62c3c1022cde36fdea6579e68789f11b5ec7499137e924db54bb",
+      "size": 15875,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "20dfbeef5e1fe32a3d2a3dec366937a022a493c5fed85ab35a4608e3f0854046",
-      "size": 22251,
+      "templateHash": "083d6de283891069e7964ed295d80f21e80dc180139760703c076943079573c0",
+      "size": 23329,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
@@ -1125,8 +1125,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-reflection.sh": {
-      "templateHash": "e0f75ea1cb5150ccb1d43054565a0fbefbbc724f02d81ac177f841141d79a980",
-      "size": 9174,
+      "templateHash": "5f1c834911415093b63420cedbf2c073dd690d78be9b830f0c46f0bfc50b4cd9",
+      "size": 10832,
       "component": "hooks"
     },
     ".claude/hooks/scripts/user-prompt-preprocessor.sh": {
@@ -1165,8 +1165,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/fail-axis-cause-advisor.sh": {
-      "templateHash": "95d4e97ff8c5c87e40a20c7a95017b574a3b5d8f685a98fdfaa709d972b6b3ee",
-      "size": 4527,
+      "templateHash": "472f8489a3c50ae680b463f9bca7a5913a405efb3296945c7af31b2d2beb1743",
+      "size": 4815,
       "component": "hooks"
     },
     ".claude/hooks/scripts/model-escalation-advisor.sh": {
@@ -1190,8 +1190,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "f77b9f933897416453c58ebf44857050f94589a1ebaca3b6f06231faff27cb58",
-      "size": 11099,
+      "templateHash": "1f397d5cf6f0ee775d280bed3693611c74d75d9581068690837810f69c3c423c",
+      "size": 13538,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix-prompt.sh": {
@@ -1210,8 +1210,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/failure-ledger.sh": {
-      "templateHash": "50373d5df18ea1944279eed00ddd2d701f245fe6e0611e348cc73c93922d4463",
-      "size": 2537,
+      "templateHash": "28e8639561ddae95294ff18ed45e2051c024f6be1e994e504387a21c1779156a",
+      "size": 3394,
       "component": "hooks"
     },
     ".claude/hooks/scripts/agent-start-recorder.sh": {
@@ -1290,8 +1290,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "8cda33f2d7d53118da4b6f2a04b77e252c2e36c6aef133065386296811dc0f30",
-      "size": 28723,
+      "templateHash": "5ffe2f9be51d5079893986c752b72fac8e2729ed52c74844aaef0f713a60ce19",
+      "size": 29493,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
