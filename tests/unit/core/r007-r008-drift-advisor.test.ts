@@ -594,6 +594,199 @@ describe('r007-r008-drift-advisor.sh — Fixture 3: R008 violation', () => {
 });
 
 // ════════════════════════════════════════════════════════════════
+// Fixture 3b: R008 is a TURN-LEVEL COUNT, not block adjacency (#1563 찐빠 #1)
+//
+// R008 verbatim: "For parallel calls: list ALL identifications BEFORE the tool calls."
+// The old implementation tested block adjacency (`$blocks[i-1]` must be a matching text
+// block), so in the parallel batch `[text, tool_use, tool_use]` — which R009 MANDATES —
+// every tool_use after the first was scored a violation. Measured: 212 bytes of advisory on
+// a compliant live turn, 348 on a synthetic fixture; both must be 0.
+//
+// New verdict: violations = max(0, tool_use blocks − announce lines).
+// `→ Target:` is deliberately NOT an announce line (it is the companion of `→ Tool:`;
+// counting it would score 2 per tool and mask genuine omissions).
+//
+// The fixtures below are paired negative (must be SILENT) / positive (must FIRE) controls —
+// a silence-only suite would pass against a script that never fires at all.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 3b: turn-level R008 counting', () => {
+  // ── Negative controls: advisory must stay SILENT (stdout 0 bytes) ──
+
+  it('N1: stays silent on a compliant parallel batch (2 → Tool: lines, 2 tool_use)', async () => {
+    const sid = `r008-parallel-ok-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Read two files in parallel'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: parallel read' },
+        {
+          type: 'text',
+          text: '[claude][sonnet] → Tool: Read\n[claude][sonnet] → Tool: Read',
+        },
+        // Both tool_use blocks are in ONE batch — the second has a tool_use predecessor,
+        // which the adjacency implementation scored as a false violation.
+        { type: 'tool_use', id: 'par-1', name: 'Read', input: { file_path: 'a.md' } },
+        { type: 'tool_use', id: 'par-2', name: 'Read', input: { file_path: 'b.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stderr).not.toContain('[R007/R008 Advisory]');
+  });
+
+  it('N2: stays silent on a compliant single call (→ Tool: + → Target: companion, 1 tool_use)', async () => {
+    const sid = `r008-single-ok-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Read one file'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: single read' },
+        {
+          type: 'text',
+          text: '[claude][sonnet] → Tool: Read\n[claude][sonnet] → Target: a.md',
+        },
+        { type: 'tool_use', id: 'single-1', name: 'Read', input: { file_path: 'a.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('N3: stays silent on a compliant 3-call parallel batch', async () => {
+    const sid = `r008-parallel3-ok-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Three things at once'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: three calls' },
+        {
+          type: 'text',
+          text: [
+            '[claude][sonnet] → Tool: Read',
+            '[claude][sonnet] → Tool: Grep',
+            '[claude][sonnet] → Tool: Bash',
+          ].join('\n'),
+        },
+        { type: 'tool_use', id: 'p3-1', name: 'Read', input: { file_path: 'a.md' } },
+        { type: 'tool_use', id: 'p3-2', name: 'Grep', input: { pattern: 'x' } },
+        { type: 'tool_use', id: 'p3-3', name: 'Bash', input: { command: 'ls' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('N4: accepts the R008 §Parallel Spawn notation (→ Spawning: + [N] lines, no → Tool:)', async () => {
+    // R008 documents parallel Agent spawns as a `→ Spawning:` header plus one indented
+    // `[N] subagent_type:model → description` line per agent — with NO `→ Tool: Agent`
+    // line. Counting only `→ Tool:` would recreate the same false positive here.
+    const sid = `r008-spawn-ok-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Review both files'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: parallel review' },
+        {
+          type: 'text',
+          text: [
+            '[secretary][opus] → Spawning:',
+            '  [1] lang-golang-expert:sonnet → Go code review',
+            '  [2] lang-python-expert:sonnet → Python code review',
+          ].join('\n'),
+        },
+        { type: 'tool_use', id: 'sp-1', name: 'Agent', input: { subagent_type: 'a' } },
+        { type: 'tool_use', id: 'sp-2', name: 'Agent', input: { subagent_type: 'b' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  // ── Positive controls: advisory MUST fire ──
+
+  it('P1: fires when announce lines under-count the batch (1 → Tool:, 2 tool_use)', async () => {
+    const sid = `r008-undercount-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Do two things'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: two calls' },
+        { type: 'text', text: '[claude][sonnet] → Tool: Read' },
+        { type: 'tool_use', id: 'uc-1', name: 'Read', input: { file_path: 'a.md' } },
+        { type: 'tool_use', id: 'uc-2', name: 'Grep', input: { pattern: 'x' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R007 헤더=0');
+  });
+
+  it('P2: fires for R007 only when the header is missing but prefixes are compliant', async () => {
+    const sid = `r007-only-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Read two files'),
+      ...assistantTurn([
+        // No ┌─ Agent: / [agent] header on the first line → R007 violation …
+        { type: 'text', text: 'Reading both files now.' },
+        // … but the R008 announce count matches the batch → R008 must be 0.
+        {
+          type: 'text',
+          text: '[claude][sonnet] → Tool: Read\n[claude][sonnet] → Tool: Read',
+        },
+        { type: 'tool_use', id: 'ro-1', name: 'Read', input: { file_path: 'a.md' } },
+        { type: 'tool_use', id: 'ro-2', name: 'Read', input: { file_path: 'b.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R007 헤더=1');
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=0');
+  });
+
+  it('P3: fires when the turn has no announce text at all (tool_use only)', async () => {
+    const sid = `r008-noannounce-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Just do it'),
+      ...assistantTurn([
+        { type: 'tool_use', id: 'na-1', name: 'Read', input: { file_path: 'a.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+  });
+
+  // ── Source-level regression guard ──
+
+  it('no longer scores R008 by block adjacency (source guard)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    // The adjacency probe (`$blocks[. - 1]`) is what produced the parallel-batch false
+    // positive. Pin its absence so a revert is caught even if a fixture is forgiving.
+    expect(src).not.toContain('$blocks[. - 1]');
+    // `→ Target:` must not be an announce line — counting it scores 2 per tool call.
+    expect(src).not.toContain('?(Tool|Target):');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
 // Fixture 4: opt-out
 // ════════════════════════════════════════════════════════════════
 

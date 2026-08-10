@@ -227,6 +227,16 @@
           }
         ],
         "description": "Inject session auto-fix findings into first user prompt (#838)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/fail-axis-cause-advisor.sh"
+          }
+        ],
+        "description": "Advisory on cause-free progress nudges when this session has logged tool failures \u2014 delivers via hookSpecificOutput.additionalContext (#1561)"
       }
     ],
     "SubagentStart": [
@@ -620,6 +630,18 @@
           }
         ],
         "description": "Print auto-dev token spend summary on session end (Issue #1057, advisory)"
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/failure-ledger.sh"
+          }
+        ],
+        "description": "FAIL-axis instrumentation \u2014 append tool failures to the error ledger (JSONL). Never blocks; feeds fail-axis-cause-advisor.sh (#1561)"
       }
     ]
   }

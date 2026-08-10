@@ -492,6 +492,65 @@ describe('session-reflection.sh — Fixture 6: turn reconstruction & sidechain',
     expect(log).toContain('**R008 violations**: 0');
   }, 15000);
 
+  it('scores R008 as a turn-level COUNT, not block adjacency (#1563 찐빠 #1)', async () => {
+    // Twin of r007-r008-drift-advisor.test.ts Fixture 3b. The two scripts share this
+    // verdict, so both suites must pin it or the next copy re-contaminates.
+    // Turn 1: compliant parallel batch (2 announce lines, 2 tool_use) → 0 violations.
+    // Turn 2: under-counted batch (1 announce line, 2 tool_use)       → 1 violation.
+    const sid = `sr-parallel-${Date.now()}`;
+    const logPath = await writeTranscript(sid, [
+      ...userTurn('Read two files in parallel'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: parallel read' },
+        { type: 'text', text: '[claude][sonnet] → Tool: Read\n[claude][sonnet] → Tool: Read' },
+        { type: 'tool_use', id: 'sr-par-1', name: 'Read', input: { file_path: 'a.md' } },
+        { type: 'tool_use', id: 'sr-par-2', name: 'Read', input: { file_path: 'b.md' } },
+      ]),
+      ...userTurn('Now two more'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: undercounted' },
+        { type: 'text', text: '[claude][sonnet] → Tool: Read' },
+        { type: 'tool_use', id: 'sr-uc-1', name: 'Read', input: { file_path: 'c.md' } },
+        { type: 'tool_use', id: 'sr-uc-2', name: 'Grep', input: { pattern: 'x' } },
+      ]),
+    ]);
+
+    await runScript(stopInput(sid), testEnv());
+
+    const log = await waitForLog(logPath, '**R008 violations**: 1');
+    expect(log).toContain('**R008 violations**: 1');
+    expect(log).toContain('**R007 violations**: 0');
+    expect(log).toContain('Total assistant turns analyzed: 2');
+    // The reported sample is the trailing unannounced call of turn 2 — never turn 1.
+    expect(log).toContain('[R008 turn 2]');
+    expect(log).not.toContain('[R008 turn 1]');
+  }, 15000);
+
+  it('accepts the R008 §Parallel Spawn notation (→ Spawning: + [N] lines)', async () => {
+    const sid = `sr-spawn-${Date.now()}`;
+    const logPath = await writeTranscript(sid, [
+      ...userTurn('Review both'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: parallel review' },
+        {
+          type: 'text',
+          text: [
+            '[secretary][opus] → Spawning:',
+            '  [1] lang-golang-expert:sonnet → Go code review',
+            '  [2] lang-python-expert:sonnet → Python code review',
+          ].join('\n'),
+        },
+        { type: 'tool_use', id: 'sr-sp-1', name: 'Agent', input: { subagent_type: 'a' } },
+        { type: 'tool_use', id: 'sr-sp-2', name: 'Agent', input: { subagent_type: 'b' } },
+      ]),
+    ]);
+
+    await runScript(stopInput(sid), testEnv());
+
+    const log = await waitForLog(logPath, '**R008 violations**: 0');
+    expect(log).toContain('**R008 violations**: 0');
+  }, 15000);
+
   it('excludes isSidechain:true (subagent) lines from the analysis', async () => {
     const sid = `sr-sidechain-${Date.now()}`;
     const logPath = await writeTranscript(sid, [

@@ -89,11 +89,23 @@ ISO8601="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 # 없다. 실제 경로는 `.message.role` / `.message.content`다. 종전 구현은 `.role`을 읽어 항상 빈 값을
 # 얻었고, 그 결과 assistant 라인이 하나도 매칭되지 않아 이 분석기는 사실상 0계층 탐지였다.
 #
-# 그리고 content 블록은 라인당 1개다 — 한 assistant 턴이 여러 줄에 걸친다. 따라서 라인 단위로
-# R008 인접성(직전 블록이 text인지)을 보면 모든 tool_use가 영구 위반으로 집계된다. 턴을 먼저
-# 복원한 뒤 블록 인접성을 본다. 턴 경계는 "진짜 user 프롬프트"(문자열 content 또는 tool_result가
-# 없는 배열)이며, tool_result user 라인은 경계가 아니다. `isSidechain: true`(서브에이전트 턴)은
-# 제외한다. `thinking` 블록은 R008 접두사를 가질 수 없으므로 인접성 판정 전에 제거한다.
+# 그리고 content 블록은 라인당 1개다 — 한 assistant 턴이 여러 줄에 걸친다. 따라서 턴을 먼저
+# 복원한 뒤 판정한다. 턴 경계는 "진짜 user 프롬프트"(문자열 content 또는 tool_result가 없는
+# 배열)이며, tool_result user 라인은 경계가 아니다. `isSidechain: true`(서브에이전트 턴)은
+# 제외한다. `thinking` 블록은 R008 접두사를 가질 수 없으므로 판정 전에 제거한다.
+#
+# R008 판정은 블록 인접성이 아니라 **턴 단위 개수 비교**다 (#1563 찐빠 #1). R008 원문은
+# "For parallel calls: list ALL identifications BEFORE the tool calls." 즉 병렬 배치의 식별을
+# 배치 앞에 모아 나열하라는 규칙이지, 매 tool_use 직전에 text 블록을 끼우라는 요구가 아니다.
+# 인접성 판정은 R009가 MUST로 요구하는 병렬 배치 `[text, tool_use, tool_use]`에서 2번째 이후
+# tool_use를 무조건 위반으로 집계했다. 새 판정: violations = max(0, tool_use 수 − announce 수).
+# announce 인정 범위: `[agent][model] → Tool:` 라인(도구당 1개). `→ Target:`은 `→ Tool:`의
+# 동반 라인이라 중복 계수 금지(도구당 2로 세어 누락을 놓침). R008 §"Parallel Spawn Prefix Rule"이
+# 규정한 spawn 표기(`→ Spawning:` 헤더 + 에이전트당 `[N] type:model → desc` 라인, `→ Tool: Agent`
+# 없음)도 포함 — 에이전트당 단위는 번호 라인이고, 번호 라인이 없을 때만(단일 spawn) 헤더를 1로 센다.
+# 위반 샘플은 announce가 모자란 만큼 턴의 마지막 tool_use들을 보고한다(결손 개수 기준).
+#
+# 이 판정은 r007-r008-drift-advisor.sh와 공유된다 — 한쪽만 고치면 재오염된다.
 #
 # 성능: 줄마다 jq를 포크하던 구조를 jq 1회 포크로 교체.
 JQ_REFLECT='
@@ -120,12 +132,17 @@ split("\n")
            and ((($fline | test("^┌─ Agent:")) or ($fline | test("^\\[.+\\]"))) | not)
         then [ {k: "R007", turn: ($ti + 1), s: ($fline[0:120])} ]
         else [] end )
-      + [ range(0; ($blocks | length))
-          | select($blocks[.].type? == "tool_use")
-          | select( (. == 0)
-                    or ($blocks[. - 1].type? != "text")
-                    or (((($blocks[. - 1].text?) // "") | test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?(Tool|Target):")) | not) )
-          | {k: "R008", turn: ($ti + 1), s: ($blocks[.].name? // "")} ]
+      + ( ([ $blocks[] | select(.type? == "text") | (.text? // "") ] | join("\n") | split("\n")) as $lines
+          | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_tool
+          | ([ $lines[] | select(test("^[[:space:]]*\\[[0-9]+\\][[:space:]].*(→|->|—>)")) ] | length) as $an_spawn_item
+          | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Spawning:")) ] | length) as $an_spawn_hdr
+          | ($an_tool + (if $an_spawn_item > 0 then $an_spawn_item else $an_spawn_hdr end)) as $announce
+          | ([ $blocks[] | select(.type? == "tool_use") ]) as $tus
+          | (if ($tus | length) > $announce then ($tus | length) - $announce else 0 end) as $r008n
+          | if $r008n > 0
+            then [ $tus[(($tus | length) - $r008n):][]
+                   | {k: "R008", turn: ($ti + 1), s: (.name? // "")} ]
+            else [] end )
   ]
 | flatten
 | . as $viol

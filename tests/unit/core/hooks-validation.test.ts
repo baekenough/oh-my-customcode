@@ -38,6 +38,7 @@ interface HooksStructure {
     TaskCompleted?: HookEntry[];
     PostCompact?: HookEntry[];
     PostToolUse?: HookEntry[];
+    PostToolUseFailure?: HookEntry[];
     Stop?: HookEntry[];
   };
 }
@@ -64,6 +65,9 @@ function getAllEntries(data: HooksStructure): HookEntry[] {
     'TaskCompleted',
     'PostCompact',
     'PostToolUse',
+    // Must stay in sync with the interface above: an event missing from this list is
+    // silently excluded from every entry-level assertion below (false-green).
+    'PostToolUseFailure',
     'Stop',
   ];
   return eventTypes.flatMap((key) => h[key] ?? []);
@@ -139,6 +143,34 @@ describe('Hooks Validation', () => {
 
       expect(data.hooks.PostToolUse).toBeDefined();
       expect((data.hooks.PostToolUse ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should have non-empty PostToolUseFailure category', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      expect(data.hooks.PostToolUseFailure).toBeDefined();
+      expect((data.hooks.PostToolUseFailure ?? []).length).toBeGreaterThan(0);
+    });
+
+    it('should wire the failure ledger on PostToolUseFailure (#1561)', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      const wired = (data.hooks.PostToolUseFailure ?? []).some((entry) =>
+        entry.hooks.some((h) => 'command' in h && h.command.includes('failure-ledger.sh'))
+      );
+      expect(wired).toBe(true);
+    });
+
+    it('should wire the fail-axis cause advisor on UserPromptSubmit (#1561)', async () => {
+      const { parsed } = await loadHooksJson();
+      const data = parsed as HooksStructure;
+
+      const wired = (data.hooks.UserPromptSubmit ?? []).some((entry) =>
+        entry.hooks.some((h) => 'command' in h && h.command.includes('fail-axis-cause-advisor.sh'))
+      );
+      expect(wired).toBe(true);
     });
 
     it('should have non-empty Stop category', async () => {

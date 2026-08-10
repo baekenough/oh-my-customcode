@@ -258,6 +258,8 @@ When a subagent trips the safety classifier (R001/R002) **2 times**, the orchest
 | 2nd trip | STOP the agent — do NOT re-run. Redesign: decompose by domain (R009) and re-delegate narrower units |
 | 3+ trips | Hard anti-pattern — indicates lost control; abort and report to user |
 
+> **v2.1.225+**: auto mode가 **자기 권한 검사에 대한 safety-filter refusal**을 consecutive-block 한도에 계상하던 결함이 수정되었습니다 — 동작은 여전히 거부되나 모델에는 재시도 대신 진행하라고 지시됩니다. 이 표의 trip 계수는 **서브에이전트가 실제 작업에서 유발한 classifier trip**만을 대상으로 하며, 플랫폼 내부 권한 검사에서 발생한 refusal은 계수 대상이 아닙니다 — 구버전에서 이 둘이 섞여 계상되었으므로, 과거 세션의 trip 횟수를 근거로 STOP 판정을 소급하지 않습니다.
+
 ### Pre-Decomposition Mandate
 
 Broad single-task scopes (e.g. "migrate + backfill") MUST be pre-decomposed by domain before delegation, so an agent cannot silently expand from its named task into adjacent privileged domains (secret rotation, tunnel creation, infra deletion, dashboard changes). See R009 (pre-decomposition) and R018 (domain-split).
@@ -298,6 +300,16 @@ Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after tri
 | 승인 인용으로 거부당한 뒤 같은 프레이밍으로 재위임 | 프레이밍에서 승인 인용을 제거해 재위임; 프롬프트 억제가 필요하면 `settings.json` allow 규칙으로 해결 |
 
 > Origin: #1556 — 승인 인용을 포함한 위임은 mgr-gitnerd가 2회 거부했고, 동일 에이전트에 허용/금지 작업만 열거한 위임은 거부 없이 완주했다(2026-08-05 v1.1.43 세션, 대조 실증). Cross-ref: R015 (User Directive Persistence — `settings.json` allow 규칙이 실제 prompt 억제 수단이라는 동일 결론의 선례), R002 (permission tiers).
+
+### Delegation Prompt Command Examples — 실측 확인 또는 예시 명시
+
+위임 프롬프트에 구체적 명령·플래그를 적을 때는 **실측으로 확인한 것만 적거나**, 확인하지 않았다면 "예시이며 실제 플래그는 확인 후 사용"을 명시한다. 미확인 플래그를 확정형으로 적으면 서브에이전트가 실행 중 `unknown flag`를 만나 복구 왕복을 소비하고, 복구에 실패하면 잘못된 대체 경로를 택한다. 확인 수단은 `--help` 또는 `command -v` 한 줄이면 충분하다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 미확인 플래그를 확정형으로 위임 프롬프트에 기재 (`gh issue edit <N> --assignee @me`) | 실행 전 `--help`로 실측 후 기재, 또는 "예시 — 실제 플래그는 확인 후 사용" 명시 |
+
+Origin: #1563 찐빠 #3 — `gh issue edit --assignee`가 gh 2.86.0에 없는 플래그였고(정답 `--add-assignee`) 에이전트가 실행 중 자체 복구했다. Cross-reference: R005(도구 플래그·기본 동작 실측 함정 사례집), 위 Agent Capability Pre-Check(위임 전 존재성 확인의 도구·경로 각도).
 
 ### Parallel Delegation — Sibling-Agent Disclosure
 
@@ -394,6 +406,8 @@ Before spawning any agent:
 -->
 
 > **v2.1.212+**: CC가 Task(=Agent) 도구의 `mode` 파라미터를 deprecated(이제 무시)했습니다 — subagent는 기본적으로 **부모(오케스트레이터) 세션의 permission mode를 상속**합니다. 따라서 이 섹션이 요구하는 per-call `mode: "bypassPermissions"`는 v2.1.212+에서 no-op이며, 무인 위임이 프롬프트 없이 돌게 하는 통제점은 per-call 파라미터가 아니라 **부모 세션의 permission mode**입니다(안전 완화 아님 — 부모가 bypassPermissions면 subagent도 상속). 단 CC < v2.1.212에서는 여전히 per-call `mode` 명시가 필요하므로(위 History #926/#947/#955) 하위 호환을 위해 계속 포함하되, 신버전에서 프롬프트 발생 시 진단은 위 Self-Check("mode 있는지 확인")가 아니라 **부모 세션 모드**를 확인합니다. cross-ref R002/R006(이 섹션을 canonical source로 참조).
+
+> **v2.1.223+**: agent definition의 `bypassPermissions` 모드가 org의 bypass-permissions 비활성 정책을 무시하던 권한 공백이 수정되었습니다. 즉 구버전에서는 **에이전트 정의 파일이 org 정책보다 우선**해 org가 끈 bypass를 되살릴 수 있었습니다. 이 저장소는 위 v2.1.212+ 서술대로 부모 세션 mode 상속을 통제점으로 삼으므로 실질 변화는 없으나, org 정책이 걸린 환경에서는 frontmatter `permissionMode: bypassPermissions`가 더 이상 무인 실행을 보장하지 않습니다 — 프롬프트 발생 시 부모 세션 mode와 **org 정책** 두 축을 확인합니다(cross-ref R002).
 
 > **v2.1.221+**: background session이 작업 보존을 위해 commit·push를 수행하고, draft PR은 작업이 요구할 때만 열며, 사용자의 CLAUDE.md git 지침을 따르고, 항상 작업 위치를 보고하며 종료하도록 변경되었습니다. 이 저장소의 R010은 모든 git 작업을 mgr-gitnerd 위임으로 요구하므로 background session은 그 지침을 읽고 동작하지만, **R020 기준 ground-truth(`git log` / `gh pr view`) 실측 없이 background session의 커밋/푸시 완료 보고를 신뢰하지 않습니다**. 또한 v2.1.221에서 `/status`가 세션 종류(interactive / background attached / background unattended)를 표시하므로 무인 실행 여부를 결정론적으로 확인할 수 있습니다.
 

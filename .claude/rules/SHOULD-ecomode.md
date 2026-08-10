@@ -86,6 +86,8 @@ Active removal of irrelevant retrieved content from agent context. Complements o
 
 ## Context Budget Management — Task-type-aware thresholds (research 40%, implementation 50%, review 60%, management 70%, general 80%). See full spec via Read tool.
 
+> **v2.1.223+**: `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 native 1M 창을 가진 **모든** Claude 모델을 auto-compaction으로 200K에 유지하도록 확대되었고(이전에는 고정 모델 목록), 미인식 model ID도 가정 컨텍스트 창 내로 유지됩니다(`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원). 위 임계값은 **창 대비 백분율**이므로 절대 토큰량은 이 env 설정에 따라 5배까지 달라집니다 — 1M 전제로 예산을 잡기 전 env 설정 여부를 확인합니다(cross-ref R006).
+
 <!-- DETAIL: Context Budget Management
 
 Task-type-aware context thresholds that trigger ecomode earlier for context-heavy operations.
