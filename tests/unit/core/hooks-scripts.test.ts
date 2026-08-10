@@ -1055,6 +1055,318 @@ describe('file-change-validator.sh', () => {
 });
 
 // -------------------------------------------------------------------
+// failure-ledger.sh  (PostToolUseFailure)
+// -------------------------------------------------------------------
+
+describe('failure-ledger.sh', () => {
+  const SCRIPT = join(SCRIPTS_DIR, 'failure-ledger.sh');
+  let ledger: string;
+
+  /**
+   * PostToolUseFailure payload, copied from the official hook docs.
+   * The error is a TOP-LEVEL `error` string — PostToolUseFailure does NOT send
+   * `tool_response` (that field belongs to PostToolUse). See the err-selector test below.
+   */
+  function makeFailureInput(over: Record<string, unknown> = {}): string {
+    return JSON.stringify({
+      session_id: 'sess-A',
+      transcript_path: '/tmp/t.jsonl',
+      cwd: '/tmp',
+      permission_mode: 'default',
+      hook_event_name: 'PostToolUseFailure',
+      tool_name: 'Bash',
+      tool_input: { command: 'npm test', description: 'Run test suite' },
+      tool_use_id: 'toolu_01ABC',
+      error: 'Command exited with non-zero status code 1',
+      is_interrupt: false,
+      duration_ms: 4187,
+      ...over,
+    });
+  }
+
+  async function readLedger(): Promise<Record<string, unknown>[]> {
+    const raw = await readFile(ledger, 'utf-8').catch(() => '');
+    return raw
+      .split('\n')
+      .filter((l) => l.trim().length > 0)
+      .map((l) => JSON.parse(l) as Record<string, unknown>);
+  }
+
+  beforeEach(() => {
+    ledger = join(
+      tmpdir(),
+      `omcc-ledger-${process.pid}-${Math.random().toString(36).slice(2)}.jsonl`
+    );
+  });
+
+  afterEach(async () => {
+    await unlink(ledger).catch(() => undefined);
+  });
+
+  it('should pass bash syntax check', async () => {
+    const { exitCode } = await bashSyntaxCheck(SCRIPT);
+    expect(exitCode).toBe(0);
+  });
+
+  // --- POSITIVE ---
+
+  it('should append exactly one JSONL record for a tool failure', async () => {
+    const result = await runHookScript(SCRIPT, makeFailureInput(), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(result.exitCode).toBe(0);
+    expect(await readLedger()).toHaveLength(1);
+  });
+
+  /**
+   * Regression guard (#1561): the first draft read `.tool_response.error`, which does not
+   * exist on a PostToolUseFailure payload, so `err` was ALWAYS "" — the same silent-selector
+   * class of defect as `.role` vs `.message.role` in r007-r008-drift-advisor.sh.
+   */
+  it('should capture the top-level `error` field, not an empty string', async () => {
+    await runHookScript(SCRIPT, makeFailureInput(), { OMCUSTOM_ERROR_LEDGER: ledger });
+    const [rec] = await readLedger();
+
+    expect(rec.err).toBe('Command exited with non-zero status code 1');
+    expect(rec.err).not.toBe('');
+  });
+
+  it('should record tool name and target', async () => {
+    await runHookScript(SCRIPT, makeFailureInput(), { OMCUSTOM_ERROR_LEDGER: ledger });
+    const [rec] = await readLedger();
+
+    expect(rec.tool).toBe('Bash');
+    expect(rec.target).toBe('npm test');
+    expect(rec.session).toBe('sess-A');
+  });
+
+  it('should flag user-interrupt failures via is_interrupt', async () => {
+    await runHookScript(SCRIPT, makeFailureInput({ is_interrupt: true }), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    const [rec] = await readLedger();
+    expect(rec.interrupt).toBe(true);
+  });
+
+  it('should mark normal failures as interrupt:false', async () => {
+    await runHookScript(SCRIPT, makeFailureInput(), { OMCUSTOM_ERROR_LEDGER: ledger });
+    const [rec] = await readLedger();
+    expect(rec.interrupt).toBe(false);
+  });
+
+  it('should append across multiple failures', async () => {
+    const env = { OMCUSTOM_ERROR_LEDGER: ledger };
+    await runHookScript(SCRIPT, makeFailureInput(), env);
+    await runHookScript(SCRIPT, makeFailureInput({ tool_name: 'Edit' }), env);
+    expect(await readLedger()).toHaveLength(2);
+  });
+
+  it('should not write anything to stdout (ledger must not emit hook JSON output)', async () => {
+    const result = await runHookScript(SCRIPT, makeFailureInput(), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(result.stdout).toBe('');
+  });
+
+  // --- NEGATIVE CONTROLS ---
+
+  it('should append NOTHING when opted out via OMCUSTOM_FAILURE_LEDGER=off', async () => {
+    const result = await runHookScript(SCRIPT, makeFailureInput(), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+      OMCUSTOM_FAILURE_LEDGER: 'off',
+    });
+    expect(result.exitCode).toBe(0);
+    expect(await readLedger()).toHaveLength(0);
+  });
+
+  it('should exit 0 and append nothing on malformed JSON', async () => {
+    const result = await runHookScript(SCRIPT, 'not json at all', {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(result.exitCode).toBe(0);
+    expect(await readLedger()).toHaveLength(0);
+  });
+
+  it('should exit 0 on empty stdin', async () => {
+    const result = await runHookScript(SCRIPT, '', { OMCUSTOM_ERROR_LEDGER: ledger });
+    expect(result.exitCode).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------
+// fail-axis-cause-advisor.sh  (UserPromptSubmit)
+// -------------------------------------------------------------------
+
+describe('fail-axis-cause-advisor.sh', () => {
+  const SCRIPT = join(SCRIPTS_DIR, 'fail-axis-cause-advisor.sh');
+  const SESSION = 'sess-A';
+  let ledger: string;
+
+  function makePrompt(prompt: string, session = SESSION): string {
+    // UserPromptSubmit delivers the typed text in `prompt` (per the official hook docs).
+    return JSON.stringify({ hook_event_name: 'UserPromptSubmit', session_id: session, prompt });
+  }
+
+  function ledgerLine(over: Record<string, unknown> = {}): string {
+    return `${JSON.stringify({
+      ts: 't',
+      session: SESSION,
+      cwd: '/tmp',
+      tool: 'Bash',
+      target: 'npm test',
+      interrupt: false,
+      err: 'exit 1',
+      ...over,
+    })}\n`;
+  }
+
+  /** Extract the model-facing advisory string, or '' when the hook stayed silent. */
+  function advisoryOf(stdout: string): string {
+    if (stdout.trim().length === 0) return '';
+    const parsed = JSON.parse(stdout) as {
+      hookSpecificOutput?: { hookEventName?: string; additionalContext?: string };
+    };
+    return parsed.hookSpecificOutput?.additionalContext ?? '';
+  }
+
+  beforeEach(async () => {
+    ledger = join(tmpdir(), `omcc-adv-${process.pid}-${Math.random().toString(36).slice(2)}.jsonl`);
+    await writeFile(ledger, ledgerLine() + ledgerLine({ tool: 'Edit', target: 'a.ts' }));
+  });
+
+  afterEach(async () => {
+    await unlink(ledger).catch(() => undefined);
+  });
+
+  it('should pass bash syntax check', async () => {
+    const { exitCode } = await bashSyntaxCheck(SCRIPT);
+    expect(exitCode).toBe(0);
+  });
+
+  // --- POSITIVE ---
+
+  it('should advise on a short cause-free nudge when the session has failures', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(result.exitCode).toBe(0);
+    expect(advisoryOf(result.stdout)).toContain('FAIL Advisory');
+  });
+
+  it('should deliver via hookSpecificOutput.additionalContext with the right event name', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    const parsed = JSON.parse(result.stdout) as {
+      hookSpecificOutput: { hookEventName: string; additionalContext: string };
+    };
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+    expect(parsed.hookSpecificOutput.additionalContext.length).toBeGreaterThan(0);
+  });
+
+  it('should never emit a decision field (advisory-only, must not block the prompt)', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+    expect(parsed.decision).toBeUndefined();
+  });
+
+  it('should report the failure count in the advisory', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(advisoryOf(result.stdout)).toContain('2건');
+  });
+
+  it('should trigger on other nudge phrasings', async () => {
+    for (const nudge of ['ㄱㄱ', 'continue', '진행해', 'go on']) {
+      const result = await runHookScript(SCRIPT, makePrompt(nudge), {
+        OMCUSTOM_ERROR_LEDGER: ledger,
+      });
+      expect(advisoryOf(result.stdout)).toContain('FAIL Advisory');
+    }
+  });
+
+  // --- NEGATIVE CONTROLS (silence is the correct answer) ---
+
+  it('should stay silent when the prompt already names a cause', async () => {
+    for (const p of ['계속해, 원인이 뭐야', '에러 때문에 실패', 'why did it fail']) {
+      const result = await runHookScript(SCRIPT, makePrompt(p), {
+        OMCUSTOM_ERROR_LEDGER: ledger,
+      });
+      expect(advisoryOf(result.stdout)).toBe('');
+    }
+  });
+
+  it('should stay silent for prompts longer than 40 characters', async () => {
+    // 41 chars — one past the boundary; 40 or fewer still fires (see boundary test below).
+    const long = `${'a'.repeat(38)}계속해`;
+    expect(long.length).toBeGreaterThan(40);
+    const result = await runHookScript(SCRIPT, makePrompt(long), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(advisoryOf(result.stdout)).toBe('');
+  });
+
+  it('should still fire at exactly the 40-character boundary', async () => {
+    const atBoundary = `${'a'.repeat(37)}계속해`;
+    expect(atBoundary.length).toBe(40);
+    const result = await runHookScript(SCRIPT, makePrompt(atBoundary), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(advisoryOf(result.stdout)).toContain('FAIL Advisory');
+  });
+
+  it('should stay silent when the prompt is not a progress nudge', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt('파일 읽어줘'), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(advisoryOf(result.stdout)).toBe('');
+  });
+
+  it('should stay silent for a different session with no failures of its own', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt('계속해', 'other-session'), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(advisoryOf(result.stdout)).toBe('');
+  });
+
+  it('should stay silent when the ledger does not exist', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
+      OMCUSTOM_ERROR_LEDGER: join(tmpdir(), 'omcc-no-such-ledger.jsonl'),
+    });
+    expect(result.exitCode).toBe(0);
+    expect(advisoryOf(result.stdout)).toBe('');
+  });
+
+  it('should stay silent when the only failures were user interrupts', async () => {
+    await writeFile(ledger, ledgerLine({ interrupt: true, err: 'interrupted' }));
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(advisoryOf(result.stdout)).toBe('');
+  });
+
+  it('should stay silent when opted out via OMCUSTOM_FAIL_ADVISOR=off', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+      OMCUSTOM_FAIL_ADVISOR: 'off',
+    });
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('should exit 0 on an empty prompt', async () => {
+    const result = await runHookScript(SCRIPT, makePrompt(''), {
+      OMCUSTOM_ERROR_LEDGER: ledger,
+    });
+    expect(result.exitCode).toBe(0);
+    expect(advisoryOf(result.stdout)).toBe('');
+  });
+});
+
+// -------------------------------------------------------------------
 // Script file validation
 // -------------------------------------------------------------------
 
@@ -1070,6 +1382,8 @@ describe('Script file validation', () => {
     'user-prompt-preprocessor.sh',
     'cwd-change-detector.sh',
     'file-change-validator.sh',
+    'failure-ledger.sh',
+    'fail-axis-cause-advisor.sh',
   ] as const;
 
   it('all expected scripts should exist in the templates directory', async () => {

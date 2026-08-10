@@ -46,7 +46,35 @@
 #     with `tool_result` content blocks. Only a genuine prompt (string content, or an array
 #     with no tool_result block) ends a turn.
 #   * `thinking` blocks are interleaved with text/tool_use and never carry an R008 prefix;
-#     they are filtered out before adjacency analysis.
+#     they are filtered out before analysis.
+#
+# ── R008 verdict: TURN-LEVEL COUNTING, not block adjacency (#1563 찐빠 #1) ─────────────
+# R008 (`.claude/rules/MUST-tool-identification.md`) says, verbatim:
+#     "For parallel calls: list ALL identifications BEFORE the tool calls."
+# The rule therefore requires the announce lines of a parallel BATCH to be grouped ahead of
+# the batch — it does NOT require a text block wedged immediately before every single
+# tool_use. The previous implementation tested block ADJACENCY (`$blocks[i-1]` is a text
+# block matching the prefix), so in a compliant parallel batch `[text, tool_use, tool_use]`
+# every tool_use after the first had a `tool_use` predecessor and was counted as a violation
+# — R009 MANDATES those batches, so the advisor fired against rule-compliant behavior
+# (measured: 212 bytes on a compliant live turn, 348 on a synthetic fixture; both must be 0).
+#
+# The verdict is now a per-turn count comparison:
+#     violations = max(0, tool_use_blocks − announce_lines)
+#
+# Announce lines counted (over ALL text blocks of the turn, split into lines):
+#   * `[agent][model] → Tool: X`   — the Core Rule form; ONE per tool call.
+#   * `→ Target:` is NOT counted. It is the COMPANION line of `→ Tool:` (Core Rule prints the
+#     pair), so counting it would score 2 per tool and silently mask real omissions.
+#   * Spawn notation from R008 §"Parallel Spawn Prefix Rule", which documents parallel Agent
+#     calls as a `[agent][model] → Spawning:` header followed by one indented
+#     `[N] subagent_type:model → description` line per agent — with NO `→ Tool: Agent` line.
+#     The per-agent unit is the numbered line, so those are counted when present; the bare
+#     `→ Spawning:` header counts only when no numbered line exists (single-agent spawn, which
+#     R008 explicitly exempts from the `[N]` prefix). Excluding this notation would recreate
+#     exactly the false positive this fix removes (N Agent tool_use blocks, 0 `Tool:` lines).
+#
+# R007 detection (first line of the turn's first text block) is unchanged.
 #
 # ── Performance ───────────────────────────────────────────────────────────────────────
 # The previous implementation forked jq once PER LINE inside a `while read` loop (measured
@@ -149,11 +177,13 @@ split("\n")
     | (if ($ftext | length) == 0 then 0
        elif ($fline | test("^┌─ Agent:")) or ($fline | test("^\\[.+\\]")) then 0
        else 1 end) as $r007
-    | ([ range(0; ($blocks | length))
-         | select($blocks[.].type? == "tool_use")
-         | select( (. == 0)
-                   or ($blocks[. - 1].type? != "text")
-                   or (((($blocks[. - 1].text?) // "") | test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?(Tool|Target):")) | not) ) ] | length) as $r008
+    | ([ $blocks[] | select(.type? == "text") | (.text? // "") ] | join("\n") | split("\n")) as $lines
+    | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_tool
+    | ([ $lines[] | select(test("^[[:space:]]*\\[[0-9]+\\][[:space:]].*(→|->|—>)")) ] | length) as $an_spawn_item
+    | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Spawning:")) ] | length) as $an_spawn_hdr
+    | ($an_tool + (if $an_spawn_item > 0 then $an_spawn_item else $an_spawn_hdr end)) as $announce
+    | ([ $blocks[] | select(.type? == "tool_use") ] | length) as $ntools
+    | (if $ntools > $announce then $ntools - $announce else 0 end) as $r008
     | [$tuuid, ($r007 | tostring), ($r008 | tostring)] | @tsv
   end
 '
