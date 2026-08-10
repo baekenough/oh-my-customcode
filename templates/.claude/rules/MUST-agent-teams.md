@@ -40,6 +40,8 @@ Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessag
 
 These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` and operates within a single Claude Code session. claude-peers-mcp `send_message` operates across separate Claude Code processes via a localhost broker.
 
+> **v2.1.224/225+**: CC 네이티브 `SendMessage`가 **cross-session으로 확장**되었습니다(다른 머신 포함, macOS/Linux) — `ListAgents`로 대상을 열거하고 `crossSessionInbound` / `dialogExpiry` 설정으로 수신·만료를 제어합니다. 위 표의 "Cross-session = claude-peers-mcp 전용" 구분은 이제 **유일한 수단이 아니며**, 브로커 없이 네이티브 경로를 쓸 수 있습니다. 다만 위 Cross-Session Relay Authority Hardening(v2.1.166)의 권한 비전파 원칙은 네이티브 경로에도 동일하게 적용됩니다 — cross-session 메시지는 조율 신호이지 승인 채널이 아닙니다. (225) cross-session 메시지가 headless 세션·기동 중에 **고지도 만료도 없이 대기**하던 결함이 수정되었으므로, 구버전에서 "응답 없음"은 미수신이 아니라 무기한 대기였을 수 있습니다.
+
 ### Cross-Session Relay Authority Hardening (CC v2.1.166+)
 
 <!-- ARCHIVED CC version note (historical):
@@ -380,6 +382,8 @@ Agent Teams member completion MUST be verified by deterministic ground-truth —
 | SendMessage report | Low — member may stall before sending | Use as a signal only |
 
 Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command ran is not the same as verifying it succeeded).
+
+> **v2.1.224+**: `SendMessage`가 **teammate inbox 쓰기에 실패해도 "Message sent"로 보고**하던 결함이 수정되어, 이제 실패가 오류로 보고됩니다. 위 표의 "SendMessage report = Low reliability"가 **전송 자체에도** 해당했다는 실증입니다 — 구버전에서는 "Message sent"가 수신은커녕 기록 성공조차 보장하지 않았습니다. 수정 후에도 전송 성공은 **수신자가 작업을 수행했다는 증거가 아니므로**, 위 표의 결정론적 ground-truth 확인은 그대로 유지합니다.
 
 > **v2.1.222+**: `SendMessage`가 긴 summary를 문자 수 제한으로 거부하던 동작이 **절단(truncate)**으로 변경되어 전송이 실패하지 않습니다. 전송 실패가 사라진 대신 **조용한 절단**이라는 새 실패 모드가 생겼으므로, 위 표의 "SendMessage report = Low reliability" 원칙이 오히려 강화됩니다. 긴 보고가 필요하면 SendMessage 본문 대신 아티팩트 파일 경로 전달(R006 Artifact Channel Protocol)로 대체합니다.
 

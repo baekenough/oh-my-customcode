@@ -103,6 +103,16 @@ staleness/audit 검증은 model ID·placeholder·TBD뿐 아니라 **폐기된 �
 
 Origin: #1455 #1 (Session 127 회고 찐빠 #1) — cc-release-monitor PR #1449 머지 후 workflow_dispatch 실검증에서 issue_body의 `<details>`·릴리즈 요약에 12칸 리터럴 들여쓰기 발견 → PR #1451 재작업. 첫 위임이 문법 검증만 지시하고 샘플 값 출력 조립 검증을 누락. `textwrap.dedent` + 멀티라인 변수 함정이 문법 검증만으로는 미노출. R020(문법 통과 ≠ 출력 정상)과 정합.
 
+## Conditional-Output Verification — Positive/Negative Pair Mandate (Origin: #1563 #2)
+
+조건부로만 출력하는 대상(advisory 훅, 가드, 경고 emitter)의 동작을 검증하도록 위임할 때, 완료 기준은 **"출력이 나와야 하는 입력"과 "나오면 안 되는 입력"을 짝으로** 지정해야 한다. "stdout ≠ 0바이트" 같은 단일 프록시는 검증이 아니다 — 침묵이 정답인 입력에서도 통과를 요구하게 되어 기준 자체가 틀리고, 반대로 오탐(준수 턴에서 발화)을 통과시킨다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| "지정 입력에서 stdout ≠ 0바이트"를 단일 완료 기준으로 위임 | 양성 케이스(발화해야 함)와 음성 케이스(침묵해야 함)를 짝으로 명시 |
+
+Origin: #1563 찐빠 #2 — R007/R008 advisor 발화 검증에 단일 "0바이트 아님" 프록시를 제시했으나, advisor는 준수 턴에서 침묵하는 것이 정상 동작이라 기준이 성립하지 않았다. Cross-reference: R020(Proxy Signal vs Canonical Ground-Truth — 프록시로 상태를 특성화하지 말 것), 위 Detection Guard Delegation Standard(positive-match vs negative-context 구분의 가드 설계 각도).
+
 ## Detection Guard Delegation Standard (Origin: #1438 #3)
 
 Tier-1 shift-left 검출 가드(예: deprecated-pattern grep 가드)의 설계·수정을 서브에이전트에 위임할 때, 위임 프롬프트는 **positive-match(genuine defect mandate — `MUST`/`MANDATORY` 인접 문맥)와 negative-context(deprecation note — "no longer"/"deprecated"/"불필요"/"폐기됨" 설명 문구)를 구분**하도록 명시해야 한다. 이를 누락하면 올바르게 수정된 파일의 폐기-설명 문구까지 과잉매칭하여 자기모순 BLOCK을 유발한다.
@@ -145,6 +155,8 @@ Before invoking a Workflow script, deterministically verify:
 | Script parses — balanced braces/quotes, valid JS | A syntax error aborts the entire run after partial work |
 | 프롬프트 문자열 내 셸 변수 `${...}`(`$?`, `${PIPESTATUS[0]}`, `$(...)` 등)가 `\${...}`로 이스케이프되어 있는지 사전 grep 확인 | JS 템플릿 리터럴 안의 이스케이프 안 된 셸 `${...}`를 JS가 JS 표현식으로 평가 → 런타임 `ReferenceError`(예: `PIPESTATUS is not defined`). `node --check`는 문법만 검사하여 이 런타임 오류를 못 잡으므로 별도 결정론 grep 검사가 필요함 |
 | Workflow `args`를 사용하는 스크립트가 `typeof args === 'string' ? JSON.parse(args) : args` 방어를 거친 뒤 필드에 접근하는지 확인 | 하니스가 객체 args를 문자열로 인코딩해 전달하면 `args.<field>`가 undefined가 되어 스크립트가 즉시 런타임 실패(0 agents 실행). `node --check`는 문법만 검사하므로 위 셸 `${...}` 이스케이프 항목과 동일한 런타임 계열을 잡지 못함 |
+
+> **v2.1.223+**: workflow script가 동적 `import()`로 workflow 샌드박스 **밖의 코드를 실행**할 수 있던 결함이 수정되었습니다. 위 표의 체크는 프롬프트 조립·문법·런타임 계열을 다루지만 **샌드박스 탈출은 다루지 않았고**, 구버전에서는 `node --check` 통과 + 프롬프트 정상 조립 상태에서도 스크립트가 경계 밖 코드를 끌어올 수 있었습니다. 외부에서 받은 workflow script를 실행하기 전 동적 `import()` 사용 여부를 grep으로 확인합니다(Tier-1 결정론 검사).
 
 #### Common Violation (#1271)
 Session 106 follow-up to #1266 ③: a Workflow authoring error recurred — the guardrail fact-sheet was concatenated onto the agent's RETURN VALUE instead of the prompt string, and a placeholder/assembly slip went uncaught because no pre-run sanity check existed. This check is the deterministic Tier-1 guard that catches such slips before the expensive run.

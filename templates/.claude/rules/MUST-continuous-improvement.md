@@ -99,6 +99,17 @@ R016의 승격 루프(위반 지적 → 규칙 조항 추가)는 코퍼스의 **
 - 그 이하 버전노트는 HTML-comment화(무손실 중간 단계) 하거나 `guides/claude-code/15-version-compatibility.md`로 이관한다.
 - `claude-native` 스킬이 생성하는 버전 추적 이슈를 규칙에 반영할 때, 최신만 visible로 두고 구버전은 즉시 은닉한다.
 
+#### 보존 기준 변경 = 전 룰 파일 스윕 (같은 릴리즈 내 필수)
+
+보존 기준선을 상향하면 **같은 릴리즈에서 23개 룰 파일 전수를 스윕**해 기준 미만 노트를 HTML-comment화한다. 기준만 올리고 적용을 다음 릴리즈로 이월하면 코퍼스가 기준과 불일치한 상태로 남고, 그 불일치는 다음 회고에서 "잔존 N건" 부채로 재발견될 때까지 보이지 않는다. 스윕 범위는 `.claude/rules/**`와 `templates/.claude/rules/**` 양쪽이며, 잔존 여부는 **HTML 주석 안/밖을 구분해** 실측한다 — 단순 `grep`은 이미 은퇴한 주석 내부 노트까지 세어 판정을 왜곡한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 보존 기준선만 상향하고 기존 노트 스윕을 다음 릴리즈로 이월 | 기준 상향과 전 룰 파일 스윕을 같은 릴리즈에서 완료 |
+| `grep -c` 히트 수로 잔존 판정 | 주석 안/밖을 구분해 **visible 잔존**만 계수 |
+
+Origin: #1563 찐빠 #4 — R016이 보존 기준을 v2.1.212로 규정했으나 R001/R005/R012에 visible v2.1.208 노트 3건이 잔존해 v1.1.44에서 뒤늦게 은퇴. Cross-reference: R005(HTML-comment 컨텍스트 최적화), R017(Count Sync — 전수 grep + 의미 판별).
+
 ### Cross-References
 
 R005(HTML-comment 컨텍스트 최적화), R023(Deprecated-Platform-Feature Staleness Check — 폐기 참조를 결정론적으로 탐지하여 은퇴 후보를 조기 발굴), Origin #1473.

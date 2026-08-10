@@ -373,6 +373,16 @@ Session-end saves lose context: by the time the session ends, multiple discoveri
 Related records from session v0.87.2~v0.88.0 (issue #869). The originating memory files were later consolidated/removed; no live equivalents remain as of this writing.
 -->
 
+## Procedure-Summary Scope Tagging
+
+절차·순서를 메모리에 압축 요약할 때는 **적용 스코프를 함께 표기**한다. 압축은 문맥 경계를 가장 먼저 버리므로, 하위 단계 내부의 순서가 파이프라인 전체 순서로 읽히는 오독이 발생한다. 스코프 표기는 괄호 한 마디면 충분하다 — "(릴리즈 단계 내부 순서)", "(구현 커밋에는 미적용)"처럼 **무엇에 적용되지 않는지**까지 적으면 오독 여지가 사라진다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `release 브랜치 선생성 → 버전범프 → PR` (스코프 미표기 → 전체 파이프라인 순서로 오독) | `릴리즈 단계 내부 순서: release 브랜치 선생성 → 버전범프 → PR (구현 커밋은 develop 직행)` |
+
+Origin: #1563 찐빠 #5 — 위 요약이 릴리즈 단계 내부 순서인데 전체 파이프라인 순서로 오독되었다. Cross-reference: R013(Compact Output — 압축이 버리는 것을 인지), 위 Mid-Session Immediate Save(트리거 문맥 보존).
+
 ## Safety-Related Feedback Memory Framing
 
 > Origin: #1307 찐빠 #2 (Medium) — a sys-memory-keeper delegation prompt framed a learning as "오탐으로 판단하고 진행한다" (conclude it's a false positive and proceed), tripping the memory-poisoning safety classifier and requiring a rewrite.

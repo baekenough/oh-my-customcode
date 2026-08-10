@@ -80,6 +80,8 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 > 2. **(v2.1.221) auto mode 병렬 권한 검사 최적화** — 병렬 tool call의 권한 검사가 cache-efficient해지고 캐시된 대화 prefix 재사용으로 비용이 감소했습니다(R009 병렬 배치의 부담 완화). 검사 대기 중 모드를 전환하면 stale 결과를 적용하지 않고 재프롬프트합니다.
 > 3. **(v2.1.222) Remote Control auto-start 스코프 축소** — repo-local 설정(`.claude/settings.json` / `.claude/settings.local.json`)으로는 **켤 수 없고**(끄는 것은 가능), 활성화는 user scope `/config`에서만 가능합니다.
 
+> **v2.1.223/225+**: 두 건이 Tier-4 Bash 권한 검사와 세션 인증에 영향을 줍니다. (223) 조작된 명령이 **자기 일부를 권한 검사에서 숨기던** 결함이 수정되었습니다 — v2.1.221 zsh `[[ ]]` 우회 수정의 연장선이며, 검사 대상 문자열과 실행 문자열이 다를 수 있었다는 뜻입니다(표시 측 결함은 R001). (225) 일시적 401이 장수명 `CLAUDE_CODE_OAUTH_TOKEN`을 저장된 단수명 토큰으로 교체해 headless 세션을 재시작 전까지 망가뜨리던 결함이 수정되었습니다 — 구버전 무인 실행에서 401 이후의 연쇄 인증 실패는 토큰 설정 오류가 아니라 이 교체 버그일 수 있으므로 진단 시 구분합니다. agent definition의 `bypassPermissions`가 org 정책을 무시하던 공백(223)은 R010 "Universal bypassPermissions"가 canonical.
+
 ## Agent Tool Permission Mode
 
 > Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the full requirement, rationale, self-check, and version history. Core rule: always pass `mode: "bypassPermissions"` explicitly on every Agent tool call — the Agent tool's default `mode` (`acceptEdits`) overrides agent frontmatter `permissionMode` and causes prompts during unattended execution. Skills that spawn agents MUST include this in their Agent tool call instructions. See R010 for details.

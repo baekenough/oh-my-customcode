@@ -106,6 +106,8 @@ Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_l
 | Instance independence | Isolated context, no shared state |
 | Large tasks (>3 min) | MUST split into parallel sub-tasks |
 
+> **v2.1.224+**: **세션당 200 subagent spawn cap이 제거**되어 장기 세션이 신규 에이전트를 거부하지 않습니다(동시성 제한과 depth 제한은 유지). 위 표의 "Max instances 5 concurrent"는 **동시성** 제한이므로 그대로 유효합니다 — 제거된 것은 세션 누적 총량 cap입니다. `/fsd` 등 장기 무인 루프에서 후반 반복의 스폰 실패를 더 이상 누적 cap으로 진단하지 않습니다.
+
 > **Fable 5 long-lived subagent reuse (Origin: #1435)**: Fable 5는 long-lived subagent 재사용(단일 subagent가 여러 단계를 이어서 수행)에 강함 — 현행 R009 병렬 실행 원칙과 상충하지 않으며, Fable 5 실행 시 short-lived 병렬 다수 대신 long-lived 재사용도 유효한 선택지. 상세는 `guides/claude-code/16-fable5-prompting.md`.
 
 ## Adaptive Parallel Splitting

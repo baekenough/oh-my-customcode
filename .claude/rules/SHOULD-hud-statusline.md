@@ -37,7 +37,7 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 > **v2.1.202+**: workflow-spawned agent 텔레메트리에 `workflow.run_id`/`workflow.name` OTel 속성이 추가되어 workflow run 활동을 OTel 데이터로 재구성할 수 있습니다. R012 관측성 확장(monitoring-setup 스킬).
 -->
 
-> **v2.1.208+**: Fixed `/release-notes` "Show all" injecting the entire changelog into the model's context (cross-ref R013 context budget). Fixed the context window (and auto-compact indicator) briefly resetting to 200k after CLI auto-update, causing a false "100% context used" on resumed long-context sessions — relevant to the CTX% statusline segment below. Completed background agents now stay listed in `/tasks` until cleanup instead of vanishing on completion — extends the v2.1.198 background-notification observability above.
+<!-- RETIRED (은퇴 릴리즈 v1.1.44, 보존 기준 v2.1.212 미만): > **v2.1.208+**: Fixed `/release-notes` "Show all" injecting the entire changelog into the model's context (cross-ref R013 context budget). Fixed the context window (and auto-compact indicator) briefly resetting to 200k after CLI auto-update, causing a false "100% context used" on resumed long-context sessions — relevant to the CTX% statusline segment below. Completed background agents now stay listed in `/tasks` until cleanup instead of vanishing on completion — extends the v2.1.198 background-notification observability above. -->
 
 <!-- DETAIL: HUD Events full spec
 ### When to Display: Multi-step tasks, parallel execution, long-running operations. Skip for single brief operations.
