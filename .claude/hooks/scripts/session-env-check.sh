@@ -82,8 +82,10 @@ if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/n
   mkdir -p "$SESSION_STATE_DIR"
 
   PROJECT_HASH=$(echo "$(pwd)" | md5 2>/dev/null || echo "$(pwd)" | md5sum 2>/dev/null | cut -c1-8)
-  # md5 on macOS outputs "MD5 (stdin) = <hash>", extract just the hash
-  PROJECT_HASH=$(echo "$PROJECT_HASH" | grep -oE '[a-f0-9]{32}' | cut -c1-8)
+  # md5 on macOS outputs "MD5 (stdin) = <hash>", extract just the hash.
+  # Guarded for the same reason as json_string_field below: on a platform where the fallback
+  # already yields an 8-char digest this grep matches nothing and would abort the hook.
+  PROJECT_HASH=$(echo "$PROJECT_HASH" | grep -oE '[a-f0-9]{32}' | cut -c1-8 || printf '')
   STATE_FILE="${SESSION_STATE_DIR}/${PROJECT_HASH}.last-head"
 
   CURRENT_HEAD=$(git log -1 --format="%H" 2>/dev/null || echo "")
@@ -126,15 +128,41 @@ OMCUSTOM_UPDATE_STATUS="unknown"
 INSTALLED_VERSION=""
 CACHED_LATEST=""
 
+# Extract a "<key>": "<value>" pair from a JSON file using grep only (no jq dependency).
+# EVERY grep here is guarded with `|| printf ''`: this script runs under `set -euo pipefail`,
+# where an unmatched grep exits 1 and (via pipefail) kills the ENTIRE SessionStart hook —
+# measured as exit 1 with 0 bytes of stdout and 11 failing tests, including the script's own
+# "should always exit with code 0" contract (#1570).
+json_string_field() {
+  local file="$1" key="$2"
+  grep -o "\"${key}\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" "$file" 2>/dev/null \
+    | head -1 \
+    | grep -o '"[^"]*"$' \
+    | tr -d '"' \
+    || printf ''
+}
+
 # Read installed version from .omcustomrc.json
 if [ -f ".omcustomrc.json" ]; then
-  INSTALLED_VERSION=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' .omcustomrc.json 2>/dev/null | head -1 | grep -o '"[^"]*"$' | tr -d '"')
+  INSTALLED_VERSION=$(json_string_field ".omcustomrc.json" "version")
 fi
 
-# Read cached latest version (no network call)
+# Read cached latest version (no network call).
+#
+# Schema note (MEASURED 2026-08-10, #1570): TWO writers produce this exact path with
+# DIFFERENT key names, and BOTH are current — neither is a legacy schema:
+#   * .claude/hooks/scripts/omcustom-auto-update.sh → {"version","timestamp","source"}
+#   * src/core/self-update.ts  writeCache()         → {"checkedAt","latestVersion"}
+# The live cache on this machine was the auto-update shape ({source,timestamp,version}), so
+# the hard-coded "latestVersion" lookup matched nothing. Read `latestVersion` first, then fall
+# back to `version`. The `"version"` pattern includes the opening quote, so it cannot
+# accidentally match the tail of `"latestVersion"`.
 CACHE_FILE="$HOME/.oh-my-customcode/self-update-cache.json"
 if [ -f "$CACHE_FILE" ]; then
-  CACHED_LATEST=$(grep -o '"latestVersion"[[:space:]]*:[[:space:]]*"[^"]*"' "$CACHE_FILE" 2>/dev/null | grep -o '"[^"]*"$' | tr -d '"')
+  CACHED_LATEST=$(json_string_field "$CACHE_FILE" "latestVersion")
+  if [ -z "$CACHED_LATEST" ]; then
+    CACHED_LATEST=$(json_string_field "$CACHE_FILE" "version")
+  fi
 fi
 
 if [ -n "$INSTALLED_VERSION" ] && [ -n "$CACHED_LATEST" ]; then

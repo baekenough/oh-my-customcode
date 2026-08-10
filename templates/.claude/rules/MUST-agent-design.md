@@ -488,7 +488,7 @@ Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, 
 > **v2.1.199+**: 스택된 slash-skill 호출(`/skill-a /skill-b do XYZ`)이 이제 leading skill을 최대 5개까지 모두 로드합니다(이전에는 첫 번째만 로드). oh-my-customcode의 라우팅 스킬 체이닝(예: `/omcustom:fsd`가 여러 스킬을 연쇄 호출하는 패턴)에서 다중 스킬 스택 호출 시 컨텍스트 손실이 줄어듭니다. 또한 subagent 조회 중 `/model`·`/fast`를 입력하면 lead의 model picker가 열리며 notice가 표시됩니다.
 -->
 
-> **v2.1.210+**: 스킬/커맨드 본문에서 인자 없이 호출된(unmatched) `$1`/`$2` positional placeholder가 조용히 제거되던(silently stripped) 동작이 수정되어 이제 리터럴 `$1`로 verbatim 보존됩니다 — 인자 부재 시 `$1`이 확장된 프롬프트에 그대로 남아 지시가 깨지므로, silent stripping에 옵션-인자 처리를 의존하지 말고 인자 부재 케이스를 명시 처리(default text / `$ARGUMENTS` guard / `argument-hint`)해야 합니다. (위 v2.1.163+ `\$1` escape는 항상 리터럴 `$` 출력용 별개 메커니즘으로 이번 변경 대상이 아니며, 이번 수정은 치환 의도의 bare `$1`이 unmatched일 때만 적용됩니다.)
+<!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: 스킬/커맨드 본문에서 인자 없이 호출된(unmatched) `$1`/`$2` positional placeholder가 조용히 제거되던(silently stripped) 동작이 수정되어 이제 리터럴 `$1`로 verbatim 보존됩니다 — 인자 부재 시 `$1`이 확장된 프롬프트에 그대로 남아 지시가 깨지므로, silent stripping에 옵션-인자 처리를 의존하지 말고 인자 부재 케이스를 명시 처리(default text / `$ARGUMENTS` guard / `argument-hint`)해야 합니다. (위 v2.1.163+ `\$1` escape는 항상 리터럴 `$` 출력용 별개 메커니즘으로 이번 변경 대상이 아니며, 이번 수정은 치환 의도의 bare `$1`이 unmatched일 때만 적용됩니다.) -->
 
 > **v2.1.222+**: 스킬 frontmatter의 `disable-model-invocation: true`(모델이 스스로 그 스킬을 호출하지 못하게 막고 사용자/파이프라인의 명시적 호출만 허용하는 필드)가 설정된 스킬을 모델이 호출하려 할 때의 refusal 문구가 개선되어, 모델에게 **워크플로우를 스스로 복제하지 말고 사용자에게 실행을 요청하라**고 지시합니다. 무인 루프(`/fsd` 등)가 이런 스킬을 모델 호출 경로에 두면 실행 대신 refusal이 반환되므로, 해당 스킬은 **사용자/파이프라인 명시 호출**로 설계합니다.
 

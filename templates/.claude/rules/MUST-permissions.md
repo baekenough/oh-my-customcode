@@ -71,7 +71,7 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 > **v2.1.207+**: Auto mode가 Bedrock/Vertex/Foundry에서 `CLAUDE_CODE_ENABLE_AUTO_MODE` opt-in 없이 사용 가능해졌습니다(설정 `disableAutoMode`로 비활성화 가능). 또한 `-p`/SDK 비대화 실행의 remote managed settings가 consent 다이얼로그 없이 동의로 기록되던 문제가 수정되었습니다. Tier-3/4 권한 흐름 관련.
 -->
 
-> **v2.1.210+**: `Write(path)`/`NotebookEdit(path)`/`Glob(path)` 형태의 permission rule은 시작 시 경고를 발생시킵니다 — 파일 쓰기 rule은 `Edit(path)`, 읽기 rule은 `Read(path)` matcher로 작성합니다. 위 Tier 표의 Write/NotebookEdit/Glob은 도구명일 뿐 path-scoped rule matcher가 아닙니다(위 v2.1.166 unknown-tool startup warning 연장선).
+<!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: `Write(path)`/`NotebookEdit(path)`/`Glob(path)` 형태의 permission rule은 시작 시 경고를 발생시킵니다 — 파일 쓰기 rule은 `Edit(path)`, 읽기 rule은 `Read(path)` matcher로 작성합니다. 위 Tier 표의 Write/NotebookEdit/Glob은 도구명일 뿐 path-scoped rule matcher가 아닙니다(위 v2.1.166 unknown-tool startup warning 연장선). -->
 
 > **v2.1.214+**: 단일 세그먼트 `dir/**` allow rule(예: `Edit(src/**)`)이 트리 어디에나 있는 중첩 `dir/`까지 auto-approve하던 버그가 수정되어 이제 `<cwd>/dir`에만 매칭됩니다(hook `if:` 조건도 동일 — 임의 깊이 매칭이 필요하면 `**/dir/**`로 작성). **`deny`/`ask` permission rule은 any-depth 매칭을 유지**(allow만 `<cwd>`로 좁아짐). settings.json 스코프 설계 시 이 비대칭(allow 좁게 / deny·ask 넓게)을 전제로 삼습니다. 위 v2.1.210 `Edit(path)`/`Read(path)` matcher 권고의 연장선.
 

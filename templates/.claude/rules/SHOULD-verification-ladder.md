@@ -103,6 +103,16 @@ staleness/audit 검증은 model ID·placeholder·TBD뿐 아니라 **폐기된 �
 
 Origin: #1455 #1 (Session 127 회고 찐빠 #1) — cc-release-monitor PR #1449 머지 후 workflow_dispatch 실검증에서 issue_body의 `<details>`·릴리즈 요약에 12칸 리터럴 들여쓰기 발견 → PR #1451 재작업. 첫 위임이 문법 검증만 지시하고 샘플 값 출력 조립 검증을 누락. `textwrap.dedent` + 멀티라인 변수 함정이 문법 검증만으로는 미노출. R020(문법 통과 ≠ 출력 정상)과 정합.
 
+## Delegated Verification Floor — CI 잡 목록에서 도출 (Origin: #1574)
+
+위임 프롬프트의 검증 항목은 "변경 파일의 영향 범위"만으로 정하면 부족하다. **하한선은 CI가 실제로 돌리는 잡 전체**다 — 워크플로 YAML의 잡 목록을 읽어 대응하는 로컬 명령(`lint` / `test` / `validate-docs` / sync 검사)을 열거하고, 그중 로컬 실행 가능한 것을 위임 완료 조건에 포함한다. 로컬에서 통과시키지 않은 CI 잡은 병합 시점에 halt로 돌아와 수정 에이전트 추가 발주를 강제한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| "변경분 영향 범위"만 보고 검증 항목을 정해 위임 → CI 전용 잡(lint 등) 누락 | 워크플로 잡 목록을 하한선으로 삼아 로컬 대응 명령을 완료 조건에 열거 |
+
+Origin: #1574 (v1.1.44 세션 — 병렬 위임 3건 모두 `bun run lint`를 누락해 verify-build halt, 수정 에이전트 1회 추가 발주). 기존 `feedback_delegation_verify_scope_by_impact`("영향 범위 기준")의 하한선을 명문화한 것이다. Cross-reference: R020(완료 검증 — 선언 전 실제 게이트 통과 확인), R017(커밋 전 검증 게이트).
+
 ## Conditional-Output Verification — Positive/Negative Pair Mandate (Origin: #1563 #2)
 
 조건부로만 출력하는 대상(advisory 훅, 가드, 경고 emitter)의 동작을 검증하도록 위임할 때, 완료 기준은 **"출력이 나와야 하는 입력"과 "나오면 안 되는 입력"을 짝으로** 지정해야 한다. "stdout ≠ 0바이트" 같은 단일 프록시는 검증이 아니다 — 침묵이 정답인 입력에서도 통과를 요구하게 되어 기준 자체가 틀리고, 반대로 오탐(준수 턴에서 발화)을 통과시킨다.
@@ -111,7 +121,7 @@ Origin: #1455 #1 (Session 127 회고 찐빠 #1) — cc-release-monitor PR #1449 
 |--------------|----------|
 | "지정 입력에서 stdout ≠ 0바이트"를 단일 완료 기준으로 위임 | 양성 케이스(발화해야 함)와 음성 케이스(침묵해야 함)를 짝으로 명시 |
 
-Origin: #1563 찐빠 #2 — R007/R008 advisor 발화 검증에 단일 "0바이트 아님" 프록시를 제시했으나, advisor는 준수 턴에서 침묵하는 것이 정상 동작이라 기준이 성립하지 않았다. Cross-reference: R020(Proxy Signal vs Canonical Ground-Truth — 프록시로 상태를 특성화하지 말 것), 위 Detection Guard Delegation Standard(positive-match vs negative-context 구분의 가드 설계 각도).
+Origin: #1563 찐빠 #2 — R007/R008 advisor 발화 검증에 단일 "0바이트 아님" 프록시를 제시했으나, advisor는 준수 턴에서 침묵하는 것이 정상 동작이라 기준이 성립하지 않았다. Cross-reference: R020(Proxy Signal vs Canonical Ground-Truth — 프록시로 상태를 특성화하지 말 것), 아래 Detection Guard Delegation Standard(positive-match vs negative-context 구분의 가드 설계 각도).
 
 ## Detection Guard Delegation Standard (Origin: #1438 #3)
 

@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-08-05
+updated: 2026-08-10
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -76,6 +76,19 @@ The `auto-dev` workflow runs a full release cycle: `pre-triage → scope-selecti
 
 Origin: #1553 찐빠 #3 — v1.1.41 릴리즈에서 `lite` 압축이 `scope-selection`의 "마일스톤 미존재 → 생성" 분기까지 함께 생략해 마일스톤이 만들어지지 않았다. 압축 대상은 분석 산출물이었으나 상태 변경 분기가 동반 생략됐다.
 
+### scope-selection Step 3: approval-required path pre-check (#1574)
+
+`scope-selection` now ends with an R010 Protected-Paths pre-check that runs **before the pipeline enters `implement`**. For each scoped issue it extracts target file/directory paths from the title and body (explicit paths, backtick-quoted paths, or clearly named targets) and classifies them against [[r010]] "Protected Paths":
+
+| Path class | Handling |
+|------------|----------|
+| `.claude/hooks/**` | Excluded from mgr-creator routing — requires **explicit user approval** (security-critical). Approval is requested for the FULL scoped set at this point |
+| `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, `guides/*/` (new dirs) | Routed to `mgr-creator` at implement time — a delegation requirement, not a HALT |
+
+The point of doing this at scope time is timing, not classification: the classification rules already existed in [[r010]], but nothing consulted them until a later step tripped over them. Discovering a hooks-path issue mid-run (e.g. at `compression-mode-eval`) means asking for approval **after scope is already committed**, so the run stalls on an interactive prompt in what is meant to be an unattended loop. Batching the request up front means one approval covers the whole scoped set. Approvals already granted this session for the same category+target are not re-requested ([[r015]] directive persistence). The step emits `approval_required_paths` (possibly empty) as pipeline state for downstream steps.
+
+Origin: #1574 찐빠 #5.
+
 ### release: branch-before-bump ordering (#1542)
 
 The `release` step's version-bump sub-steps were reordered so the `release/v{NEW}` branch is created **before** any bump edit (previously the branch was created afterwards, in step 3.a, from an already-bumped `develop`). Pushing the bump commit to `develop` first leaves `develop` and `release/v{NEW}` at the same commit → PR diff=0 → `gh pr create` fails with `GraphQL: No commits between develop and release/v{NEW}` (observed v1.1.38).
@@ -88,12 +101,13 @@ Additionally, close keywords are now forbidden in commit messages — the `imple
 
 - **Used by agents**: orchestrator
 - **Related skills**: [[dag-orchestration]], [[pipeline-guards]], [[task-decomposition]], [[professor-triage]], [[deep-verify]]
-- **See also**: [[R009]], [[R010]]
+- **See also**: [[R009]], [[R010]], [[r015]]
 
 ## Sources
 
 - `.claude/skills/pipeline/SKILL.md` — skill definition
-- `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531; branch-before-bump reordering added v1.1.39 / #1542; scope-selection 3-branch state machine + `--paginate` post-condition + compression-mode-eval Cross-tier State-Change Side Effects inventory added v1.1.42 / #1553 찐빠 #3)
+- `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531; branch-before-bump reordering added v1.1.39 / #1542; scope-selection 3-branch state machine + `--paginate` post-condition + compression-mode-eval Cross-tier State-Change Side Effects inventory added v1.1.42 / #1553 찐빠 #3; scope-selection Step 3 approval-required path pre-check added v1.1.45 / #1574 찐빠 #5)
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
 - Issue #1542 — bump pushed to develop before branching produced a diff=0 release PR (v1.1.38)
 - Issue #1553 — lite compression silently skipped the milestone-create state-change branch alongside the compressible analysis step, leaving v1.1.41 without a milestone (v1.1.41 retrospective)
+- Issue #1574 — an approval-required `.claude/hooks/**` path surfaced mid-run instead of at scope time, stalling an unattended run on an interactive approval after scope was already committed (v1.1.44 retrospective)

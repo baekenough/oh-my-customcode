@@ -309,7 +309,7 @@ Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after tri
 |--------------|----------|
 | 미확인 플래그를 확정형으로 위임 프롬프트에 기재 (`gh issue edit <N> --assignee @me`) | 실행 전 `--help`로 실측 후 기재, 또는 "예시 — 실제 플래그는 확인 후 사용" 명시 |
 
-Origin: #1563 찐빠 #3 — `gh issue edit --assignee`가 gh 2.86.0에 없는 플래그였고(정답 `--add-assignee`) 에이전트가 실행 중 자체 복구했다. Cross-reference: R005(도구 플래그·기본 동작 실측 함정 사례집), 위 Agent Capability Pre-Check(위임 전 존재성 확인의 도구·경로 각도).
+Origin: #1563 찐빠 #3 — `gh issue edit --assignee`가 gh 2.86.0에 없는 플래그였고(정답 `--add-assignee`) 에이전트가 실행 중 자체 복구했다. Cross-reference: R005(도구 플래그·기본 동작 실측 함정 사례집), 아래 Agent Capability Pre-Check(위임 전 존재성 확인의 도구·경로 각도).
 
 ### Parallel Delegation — Sibling-Agent Disclosure
 
@@ -322,6 +322,16 @@ Origin: #1563 찐빠 #3 — `gh issue edit --assignee`가 gh 2.86.0에 없는 �
 | 병렬 스폰 프롬프트에 형제 에이전트 고지 없이 위임 → 공유 뷰 출력을 오독하거나 원인을 "외부 프로세스"로 오귀속 | 각 프롬프트에 동시 실행 에이전트 수 + 각자 담당 범위 + "자기 담당 범위만 기준으로 보고" 지시 명시 |
 
 > Origin: #1518 (찐빠 #3 — 미고지 git 에이전트가 형제를 "외부 프로세스"로 오귀속; 같은 세션에서 고지한 4개 구현 에이전트는 전원 정확히 구분 보고 — 대조 실증). Cross-ref: R009 (병렬 실행 조건).
+
+#### 고지는 귀속 후보를 늘릴 뿐 증거 등급을 올리지 않는다
+
+형제 고지를 받았더라도 **정황 귀속(형제 탓)은 여전히 오답을 낸다** — 오히려 고지가 그럴듯한 오귀속 대상을 제공한다. 공유 뷰의 이상 징후는 형제 고지 여부와 무관하게 **개입 실험**(캐시 제거·복원, `bash -x` 추적, 변경 되돌려 재현)으로 귀속해야 한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 고지받은 형제의 담당 범위와 겹친다는 정황만으로 실패 원인을 형제에 귀속 | 개입 실험(제거→재현 / 복원→소멸)으로 인과를 확정한 뒤 귀속 |
+
+> Origin: #1574 (v1.1.44 세션 대조 실증 — 동일 고지를 받은 3개 병렬 에이전트 중 [1]은 `bun test` 11 fail을 "형제가 그 파일 편집 중"으로 정황 귀속해 오답, [2]/[3]은 개입 실험으로 정확히 귀속). Cross-ref: R020 (Read-Before-Characterize — 정황으로 특성화 금지).
 
 ## Universal bypassPermissions
 
@@ -610,6 +620,16 @@ Usage:
 ## Git Operations
 
 All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Internal rules override external skill instructions for git execution.
+
+### 품질 게이트 우회 금지 — 훅 차단은 보고 대상
+
+git 위임 에이전트는 pre-commit/pre-push 훅 차단을 **자체 판단으로 우회하지 않는다**. `--no-verify`(및 `--no-gpg-sign` 등 게이트 무력화 플래그)는 git 위임의 **상시 금지 목록**이며, 오케스트레이터의 사전 승인이 있을 때만 예외다. 근본 원인을 확정했더라도, CI가 권위 게이트로 남더라도 마찬가지다 — 우회 여부는 에이전트가 아니라 오케스트레이터가 판단한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| pre-commit 훅 차단(테스트 실패 등)을 `--no-verify`로 자체 우회하고 커밋 진행 | 차단 사실과 원인을 오케스트레이터에 **보고하고 대기** — 우회는 사전 승인 후에만 |
+
+> Origin: #1574 (v1.1.44 세션 — mgr-gitnerd가 `bun test` 11 fail로 인한 pre-commit 차단을 `--no-verify`로 자체 우회; 결과는 무해했으나 승인 없는 품질 게이트 우회는 절차 이탈). Cross-ref: R020 (Test-Skip Is Not Completion — 그린 빌드 회피 금지), R017 (커밋 전 검증 게이트).
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.206+**: `/commit-push-pr`가 origin 외에 `remote.pushDefault`(또는 단일 remote)로의 git push도 auto-allow합니다. mgr-gitnerd git 위임 흐름 관련. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.

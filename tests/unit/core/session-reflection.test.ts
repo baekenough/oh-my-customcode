@@ -551,6 +551,44 @@ describe('session-reflection.sh — Fixture 6: turn reconstruction & sidechain',
     expect(log).toContain('**R008 violations**: 0');
   }, 15000);
 
+  it('exempts the Skill tool from the R008 denominator (#1569)', async () => {
+    // Twin of r007-r008-drift-advisor.test.ts Fixture 3c. R008 §"Tier-3 Interaction Tool
+    // Prefix" exempts Skill verbatim ("identified via R007 `claude → {skill-name}`
+    // integrated header instead"), so a compliant skill invocation carries NO `→ Tool:`
+    // line. The two scripts share this verdict — both suites must pin it or the next copy
+    // re-contaminates.
+    //
+    // Turn 1 — negative control: Skill-only, integrated header, zero announce lines → 0.
+    // Turn 2 — positive control: exempt Skill PLUS an unannounced Read              → 1.
+    // The positive half is what proves the exemption did not simply silence the check.
+    const sid = `sr-skill-${Date.now()}`;
+    const logPath = await writeTranscript(sid, [
+      ...userTurn('run the homework skill'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude → homework\n└─ Task: session retrospective' },
+        { type: 'tool_use', id: 'sr-sk-1', name: 'Skill', input: { skill: 'homework' } },
+      ]),
+      ...userTurn('now run it and read a file'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude → homework\n└─ Task: retrospective + read' },
+        { type: 'tool_use', id: 'sr-sk-2', name: 'Skill', input: { skill: 'homework' } },
+        { type: 'tool_use', id: 'sr-sk-3', name: 'Read', input: { file_path: 'a.md' } },
+      ]),
+    ]);
+
+    await runScript(stopInput(sid), testEnv());
+
+    const log = await waitForLog(logPath, '**R008 violations**: 1');
+    expect(log).toContain('**R008 violations**: 1');
+    expect(log).toContain('**R007 violations**: 0');
+    expect(log).toContain('Total assistant turns analyzed: 2');
+    // The reported sample is turn 2's trailing Read — never the exempt Skill call, and
+    // never turn 1.
+    expect(log).toContain('[R008 turn 2]: Read');
+    expect(log).not.toContain('[R008 turn 1]');
+    expect(log).not.toContain('Skill, missing prefix');
+  }, 15000);
+
   it('excludes isSidechain:true (subagent) lines from the analysis', async () => {
     const sid = `sr-sidechain-${Date.now()}`;
     const logPath = await writeTranscript(sid, [

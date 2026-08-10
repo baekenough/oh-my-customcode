@@ -34,7 +34,7 @@
 
 <!-- RETIRED (은퇴 릴리즈 v1.1.44, 보존 기준 v2.1.212 미만): > **v2.1.208+**: Fixed several tool-reliability bugs: env vars like `CLAUDE_CODE_MAX_OUTPUT_TOKENS` silently used only the mantissa of scientific-notation values (`1e6` became `1`); Edit now succeeds on a file modified after being read, as long as the target text still matches uniquely; Read no longer misreports empty files as "shorter than offset"; Grep no longer silently returns "No files found" for invalid regex, no longer under-reports paginated count-mode totals; and Glob no longer crashes on a null byte in pattern/path/cwd. -->
 
-> **v2.1.210+**: Bash/PowerShell 명령이 timeout으로 auto-background될 때의 메시지가 개선되어 모델이 hang과 명시적 background 요청을 구분할 수 있으며, auto-background된 명령 내 `cd`는 적용되지 않고 tool result가 working directory 불변을 명시합니다 — auto-background 이후 cwd 의존 후속 명령은 절대 경로로 수행합니다. 또한 Grep content mode가 결과 끝을 지난 페이지네이션에서 "No matches found"를 반환하던 문제가 수정되었습니다(v2.1.208 Grep 페이지네이션 수정의 연장) — 구버전에서 이 응답은 "패턴 미존재"가 아니라 "페이지 끝"일 수 있습니다.
+<!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: Bash/PowerShell 명령이 timeout으로 auto-background될 때의 메시지가 개선되어 모델이 hang과 명시적 background 요청을 구분할 수 있으며, auto-background된 명령 내 `cd`는 적용되지 않고 tool result가 working directory 불변을 명시합니다 — auto-background 이후 cwd 의존 후속 명령은 절대 경로로 수행합니다. 또한 Grep content mode가 결과 끝을 지난 페이지네이션에서 "No matches found"를 반환하던 문제가 수정되었습니다(v2.1.208 Grep 페이지네이션 수정의 연장) — 구버전에서 이 응답은 "패턴 미존재"가 아니라 "페이지 끝"일 수 있습니다. -->
 
 > **v2.1.212+**: MCP 도구 호출이 2분(기본값, `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`로 임계값 조정·비활성) 초과 시 자동으로 백그라운드로 이동해 세션이 계속 사용 가능해집니다 — 위 v2.1.210 Bash/PowerShell auto-background의 MCP 도구 확장. 느린 MCP 호출(ontology-rag `rebuild_ontology`, code-review-graph 인덱싱 등)을 hang으로 오판하지 말고, 2분 초과 시 백그라운드 전환을 전제로 후속 작업을 진행합니다.
 

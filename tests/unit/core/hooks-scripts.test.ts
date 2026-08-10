@@ -927,14 +927,174 @@ describe('session-env-check.sh', () => {
     expect(codexLine).toBeDefined();
     expect(teamsLine).toBeDefined();
   });
+
+  // --- Self-update cache schema (#1570) ---
+  //
+  // The script runs under `set -euo pipefail`, so an unmatched grep exits 1 and (via
+  // pipefail) aborts the whole SessionStart hook — measured as exit 1 with 0 bytes of
+  // stdout, breaking the "always exit 0" contract asserted above.
+  //
+  // TWO writers produce this cache path with DIFFERENT key names, and both are current:
+  //   omcustom-auto-update.sh → {"version","timestamp","source"}
+  //   src/core/self-update.ts → {"checkedAt","latestVersion"}
+  // The live cache was the first shape, so the hard-coded "latestVersion" lookup matched
+  // nothing. Each case below asserts the VALUE is actually read, not merely that the crash
+  // is gone — a bare exit-0 assertion would also pass against a script that silently
+  // ignores the cache entirely.
+  describe('self-update cache schema handling', () => {
+    let cacheHome: string;
+    let projectCwd: string;
+    let cachePath: string;
+
+    beforeEach(async () => {
+      const stamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      cacheHome = join(tmpdir(), `omcc-envcheck-home-${stamp}`);
+      projectCwd = join(tmpdir(), `omcc-envcheck-cwd-${stamp}`);
+      await mkdir(join(cacheHome, '.oh-my-customcode'), { recursive: true });
+      await mkdir(projectCwd, { recursive: true });
+      cachePath = join(cacheHome, '.oh-my-customcode', 'self-update-cache.json');
+      // Installed version pinned low so any readable cache reports "update available".
+      await writeFile(join(projectCwd, '.omcustomrc.json'), JSON.stringify({ version: '1.0.0' }));
+    });
+
+    afterEach(async () => {
+      await rm(cacheHome, { recursive: true, force: true });
+      await rm(projectCwd, { recursive: true, force: true });
+    });
+
+    function runWithCacheHome() {
+      return runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, { HOME: cacheHome }, projectCwd);
+    }
+
+    it('exits 0 and passes stdin through when the cache file is absent', async () => {
+      const result = await runWithCacheHome();
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(sessionInput);
+      expect(result.stderr).toContain('[Update Check]');
+    });
+
+    it('reads the auto-update schema {version,timestamp,source} (no latestVersion key)', async () => {
+      // This is the shape that was live on disk and killed the hook.
+      await writeFile(
+        cachePath,
+        JSON.stringify({ version: '9.9.9', timestamp: 1786352189, source: 'npm-registry' })
+      );
+
+      const result = await runWithCacheHome();
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(sessionInput);
+      expect(result.stderr).toContain('oh-my-customcode v9.9.9 available');
+      expect(result.stderr).toContain('current: v1.0.0');
+    });
+
+    it('reads the self-update.ts schema {checkedAt,latestVersion}', async () => {
+      await writeFile(
+        cachePath,
+        JSON.stringify({ checkedAt: new Date().toISOString(), latestVersion: '8.8.8' })
+      );
+
+      const result = await runWithCacheHome();
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toContain('oh-my-customcode v8.8.8 available');
+    });
+
+    it('prefers latestVersion over version when a cache carries both', async () => {
+      await writeFile(
+        cachePath,
+        JSON.stringify({ latestVersion: '8.8.8', version: '9.9.9', source: 'mixed' })
+      );
+
+      const result = await runWithCacheHome();
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toContain('oh-my-customcode v8.8.8 available');
+      expect(result.stderr).not.toContain('v9.9.9 available');
+    });
+
+    it('exits 0 and degrades to no-cache when the cache carries neither version key', async () => {
+      await writeFile(cachePath, JSON.stringify({ timestamp: 1786352189, source: 'npm-registry' }));
+
+      const result = await runWithCacheHome();
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(sessionInput);
+      // No usable cached version → the "run omcustom doctor --updates" branch, not a crash.
+      expect(result.stderr).toContain("run 'omcustom doctor --updates'");
+    });
+
+    it('exits 0 on a malformed (non-JSON) cache file', async () => {
+      await writeFile(cachePath, 'this is not json');
+
+      const result = await runWithCacheHome();
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(sessionInput);
+    });
+
+    it('exits 0 on an empty cache file', async () => {
+      await writeFile(cachePath, '');
+
+      const result = await runWithCacheHome();
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(sessionInput);
+    });
+
+    it('guards every version grep against an unmatched pattern (source guard)', async () => {
+      const src = await readFile(SESSION_ENV_CHECK_SCRIPT, 'utf-8');
+      // The unguarded two-grep pipeline is the #1570 defect; pin its absence.
+      expect(src).not.toMatch(/CACHED_LATEST=\$\(grep -o '"latestVersion"/);
+      expect(src).toContain('json_string_field');
+      expect(src).toContain("|| printf ''");
+    });
+  });
 });
 
 // -------------------------------------------------------------------
 // user-prompt-preprocessor.sh
 // -------------------------------------------------------------------
 
+/**
+ * These fixtures are built from the PLATFORM payload (`prompt`), not the script-shaped
+ * `user_input` the previous suite fed in. That mismatch is the whole of #1568: the script
+ * read `.user_input`, the platform sends `prompt`, and the tests supplied `user_input` — so
+ * the suite validated the bug instead of the behavior and stayed green while the hook was a
+ * pure pass-through in production.
+ *
+ * Two axes are pinned here, because fixing either alone leaves the hook silent:
+ *   selector  — `.prompt` first, `.user_input` retained as a back-compat fallback
+ *   delivery  — hints reach the model via `hookSpecificOutput.additionalContext` on stdout
+ *               (stderr on exit 0 never reaches the model; it is a human audit trail only)
+ *
+ * Every detection case is paired: a positive (must emit) and a negative (must stay silent).
+ */
 describe('user-prompt-preprocessor.sh', () => {
   const SCRIPT = join(SCRIPTS_DIR, 'user-prompt-preprocessor.sh');
+
+  /** Build a platform-shaped UserPromptSubmit payload. */
+  function platformInput(prompt: string, hookEventName = 'UserPromptSubmit'): string {
+    return JSON.stringify({
+      session_id: 'ups-test',
+      prompt,
+      hook_event_name: hookEventName,
+    });
+  }
+
+  /** Parse the advisory contract off stdout and assert it is non-blocking. */
+  function parseAdvisory(stdout: string): {
+    hookSpecificOutput: { hookEventName: string; additionalContext: string };
+  } {
+    const trimmed = stdout.trim();
+    expect(trimmed.length).toBeGreaterThan(0);
+    const parsed = JSON.parse(trimmed);
+    expect(parsed).not.toHaveProperty('decision');
+    expect(parsed).not.toHaveProperty('continue');
+    expect(parsed).not.toHaveProperty('stopReason');
+    expect(typeof parsed.hookSpecificOutput.additionalContext).toBe('string');
+    return parsed;
+  }
 
   it('should pass bash syntax check', async () => {
     const { exitCode, stderr } = await bashSyntaxCheck(SCRIPT);
@@ -942,32 +1102,126 @@ describe('user-prompt-preprocessor.sh', () => {
     if (stderr) console.warn('Syntax warnings:', stderr);
   });
 
-  it('should pass through input unchanged on stdout', async () => {
-    const input = JSON.stringify({ user_input: 'hello world' });
-    const result = await runHookScript(SCRIPT, input);
+  // --- Selector: platform `prompt` field (#1568 axis 1) ---
+
+  it('should read the platform `prompt` field and detect session-end signals', async () => {
+    const result = await runHookScript(SCRIPT, platformInput('끝'));
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.trim()).toBe(input);
+    const parsed = parseAdvisory(result.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('Session-end signal detected');
   });
 
-  it('should detect session-end signals', async () => {
-    const input = JSON.stringify({ user_input: '종료' });
-    const result = await runHookScript(SCRIPT, input);
+  it('should read the platform `prompt` field and detect slash commands', async () => {
+    const result = await runHookScript(SCRIPT, platformInput('/status'));
     expect(result.exitCode).toBe(0);
-    expect(result.stderr).toContain('Session-end signal detected');
+    const parsed = parseAdvisory(result.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('Slash command detected');
   });
 
-  it('should detect slash commands', async () => {
-    const input = JSON.stringify({ user_input: '/status' });
+  it('should still honour the legacy `user_input` field as a fallback', async () => {
+    const input = JSON.stringify({ user_input: '종료', hook_event_name: 'UserPromptSubmit' });
     const result = await runHookScript(SCRIPT, input);
     expect(result.exitCode).toBe(0);
+    const parsed = parseAdvisory(result.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('Session-end signal detected');
+  });
+
+  it('should prefer `prompt` over `user_input` when both are present', async () => {
+    const input = JSON.stringify({
+      prompt: '/status',
+      user_input: 'fix the login bug',
+      hook_event_name: 'UserPromptSubmit',
+    });
+    const result = await runHookScript(SCRIPT, input);
+    const parsed = parseAdvisory(result.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('Slash command detected');
+  });
+
+  // --- Negative controls: must stay completely silent ---
+
+  it('should emit nothing for regular input (no hint on stdout or stderr)', async () => {
+    const result = await runHookScript(SCRIPT, platformInput('fix the login bug'));
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+    expect(result.stderr).toBe('');
+  });
+
+  it('should emit nothing when the prompt is empty', async () => {
+    const result = await runHookScript(SCRIPT, platformInput(''));
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('should emit nothing for a payload carrying neither prompt nor user_input', async () => {
+    const input = JSON.stringify({ session_id: 'x', hook_event_name: 'UserPromptSubmit' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  it('should exit 0 on malformed JSON stdin', async () => {
+    const result = await runHookScript(SCRIPT, 'not json at all');
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
+  });
+
+  // --- Delivery channel (#1568 axis 2) ---
+
+  it('should echo the firing event into hookSpecificOutput.hookEventName', async () => {
+    const result = await runHookScript(SCRIPT, platformInput('/status', 'UserPromptSubmit'));
+    const parsed = parseAdvisory(result.stdout);
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+  });
+
+  it('should emit no JSON when hook_event_name is absent (no guessed default)', async () => {
+    // hookSpecificOutput.hookEventName must match the ACTUAL firing event; a wrong value
+    // invalidates the output. The stderr audit line still fires.
+    const input = JSON.stringify({ prompt: '/status' });
+    const result = await runHookScript(SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe('');
     expect(result.stderr).toContain('Slash command detected');
   });
 
-  it('should not emit hints for regular input', async () => {
-    const input = JSON.stringify({ user_input: 'fix the login bug' });
+  it('should NOT echo the raw payload back on stdout (no pass-through)', async () => {
+    // For UserPromptSubmit, plain stdout on exit 0 is injected into the model's context, so
+    // echoing the payload would inject raw hook JSON as noise. Sibling UserPromptSubmit
+    // advisors in this repo do not echo either.
+    const input = platformInput('/status');
     const result = await runHookScript(SCRIPT, input);
+    expect(result.stdout.trim()).not.toBe(input);
+    expect(result.stdout).not.toContain('"session_id"');
+  });
+
+  it('should keep the stderr line as a human audit trail alongside the JSON', async () => {
+    const result = await runHookScript(SCRIPT, platformInput('끝'));
+    expect(result.stderr).toContain('Session-end signal detected');
+  });
+
+  it('should exit 0 when jq is unavailable (PATH stripped)', async () => {
+    const result = await runHookScript(SCRIPT, platformInput('/status'), { PATH: '/usr/bin:/bin' });
     expect(result.exitCode).toBe(0);
-    expect(result.stderr).toBe('');
+  });
+
+  // --- Source-level regression guards ---
+
+  it('should select .prompt, not .user_input alone (source guard)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).toContain('.prompt');
+    // The bare `.user_input // ""` selector is the #1568 defect; pin its absence.
+    expect(src).not.toMatch(/jq -r '\.user_input \/\/ ""'/);
+  });
+
+  it('should deliver via additionalContext, never a decision field (source guard)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).toContain('additionalContext');
+    // Strip comment lines first — the header documents WHY `"decision": "block"` is
+    // forbidden, and a naive substring match would flag that explanation as the defect.
+    const code = src
+      .split('\n')
+      .filter((line) => !line.trimStart().startsWith('#'))
+      .join('\n');
+    expect(code).not.toContain('decision');
   });
 });
 

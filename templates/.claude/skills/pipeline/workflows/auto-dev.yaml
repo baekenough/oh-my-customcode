@@ -116,12 +116,30 @@ steps:
       4. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)
       5. Minimum 1 issue; if 0 eligible, halt with "no eligible issues for auto-dev run"
 
+      ## Step 3 — Approval-required path pre-check (R010)
+
+      For each scoped issue, extract target file/directory paths from its title+body (explicit
+      paths, backtick-quoted paths, or clearly named targets).
+
+      Check against `.claude/rules/MUST-orchestrator-coordination.md` "Protected Paths":
+      - `.claude/hooks/**` → EXCLUDED from mgr-creator routing; requires EXPLICIT USER APPROVAL
+        (security-critical). If any scoped issue targets this path, request approval for the
+        FULL scoped set NOW, before proceeding — do not let a later step (e.g. compression-mode-
+        eval) discover it mid-run after scope is already committed (#1574 찐빠 #5).
+      - `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, `guides/*/` (new dirs) → route to
+        mgr-creator at implement time (delegation requirement, not a HALT).
+
+      If approval was already granted THIS session for the same category+target, do not
+      re-request (R015 directive persistence).
+
+      Output approval_required_paths (list, empty if none) as pipeline state.
+
       Assign scoped issues to milestone.
       Output markdown release manifest:
         | order | # | title | prerequisite | effort | labels |
 
       Persist manifest as pipeline state for subsequent steps.
-    description: "Milestone state pre-check, label filter, pick 3-7 issues as v{X.Y.Z} scope"
+    description: "Milestone state pre-check, label filter, pick 3-7 issues as v{X.Y.Z} scope, R010 approval-required path pre-check"
     depends_on: pre-triage
 
   - name: compression-mode-eval

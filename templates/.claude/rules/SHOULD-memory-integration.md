@@ -482,4 +482,4 @@ References: #1226 (item 3), #1227.
 - Memory write failure is **non-blocking**: MUST NOT prevent session from ending
 - If sys-memory-keeper fails to write MEMORY.md: log warning, confirm to user anyway
 
-> **v2.1.210+**: MEMORY.md 인덱스가 read limit을 초과하게 만드는 memory write는 이제 silent truncation 대신 명시적 오류를 반환합니다. write 실패는 여전히 non-blocking이지만, 오류 수신 시 log-warning으로 끝내지 말고 예산 초과 처리(Attention-Weight Tiering — Cold 항목 archive 이동)로 축소 후 재시도합니다 — 이전의 silent truncation을 가정하고 oversize write를 던지면 업데이트가 반영되지 않습니다.
+<!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: MEMORY.md 인덱스가 read limit을 초과하게 만드는 memory write는 이제 silent truncation 대신 명시적 오류를 반환합니다. write 실패는 여전히 non-blocking이지만, 오류 수신 시 log-warning으로 끝내지 말고 예산 초과 처리(Attention-Weight Tiering — Cold 항목 archive 이동)로 축소 후 재시도합니다 — 이전의 silent truncation을 가정하고 oversize write를 던지면 업데이트가 반영되지 않습니다. -->

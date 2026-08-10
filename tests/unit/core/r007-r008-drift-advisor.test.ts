@@ -787,6 +787,129 @@ describe('r007-r008-drift-advisor.sh — Fixture 3b: turn-level R008 counting', 
 });
 
 // ════════════════════════════════════════════════════════════════
+// Fixture 3c: the Skill tool is EXEMPT from the R008 denominator (#1569)
+//
+// R008 §"Tier-3 Interaction Tool Prefix" says verbatim:
+//   "Skill | NO separate R008 prefix — identified via R007 `claude → {skill-name}`
+//    integrated header instead"
+// A compliant skill invocation therefore emits ONLY the integrated R007 header and no
+// `→ Tool:` line. Counting the Skill tool_use scored `R008 접두사=1` against a turn that
+// follows the rule exactly — the advisor fired at rule-compliant behavior.
+//
+// Paired controls: N-cases must be SILENT (0 bytes), P-cases must FIRE. A silence-only
+// suite would also pass against a script that has stopped firing altogether, and the
+// exemption itself is a silence-widening change — the P-cases are what keep it honest.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 3c: Skill tool exemption (#1569)', () => {
+  // ── Negative controls: must stay SILENT ──
+
+  it('N5: stays silent on an R007-integrated-header turn whose only tool_use is Skill', async () => {
+    const sid = `skill-exempt-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('run the homework skill'),
+      ...assistantTurn([
+        // The integrated header form R008 points to — and deliberately NO `→ Tool:` line.
+        { type: 'text', text: '┌─ Agent: claude → homework\n└─ Task: session retrospective' },
+        { type: 'tool_use', id: 'sk-1', name: 'Skill', input: { skill: 'homework' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stderr).not.toContain('[R007/R008 Advisory]');
+  });
+
+  it('N6: stays silent when a Skill call is mixed with a properly announced tool call', async () => {
+    const sid = `skill-mixed-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('run the skill then read a file'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude → homework\n└─ Task: retrospective + read' },
+        // ONE announce line for the ONE non-exempt tool call. The Skill call adds no
+        // announce line and must add nothing to the denominator either.
+        { type: 'text', text: '[claude][opus] → Tool: Read' },
+        { type: 'tool_use', id: 'sk-2', name: 'Skill', input: { skill: 'homework' } },
+        { type: 'tool_use', id: 'sk-3', name: 'Read', input: { file_path: 'a.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('N7: stays silent on two consecutive Skill calls with no announce lines at all', async () => {
+    const sid = `skill-double-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('run two skills'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude → pipeline\n└─ Task: two skills' },
+        { type: 'tool_use', id: 'sk-4', name: 'Skill', input: { skill: 'pipeline' } },
+        { type: 'tool_use', id: 'sk-5', name: 'Skill', input: { skill: 'homework' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  // ── Positive controls: the exemption must NOT swallow real violations ──
+
+  it('P4: still fires for an unannounced NON-Skill call sitting beside an exempt Skill call', async () => {
+    const sid = `skill-pos-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('run the skill then read'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude → homework\n└─ Task: retrospective + read' },
+        // No announce line anywhere: Skill is exempt, Read is not → exactly 1 violation.
+        { type: 'tool_use', id: 'sk-6', name: 'Skill', input: { skill: 'homework' } },
+        { type: 'tool_use', id: 'sk-7', name: 'Read', input: { file_path: 'a.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+  });
+
+  it('P5: still fires for R007 when a Skill turn lacks any identification header', async () => {
+    const sid = `skill-r007-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('run the skill'),
+      ...assistantTurn([
+        // Skill exemption covers R008 only — the R007 header is still mandatory.
+        { type: 'text', text: 'Running the homework skill now.' },
+        { type: 'tool_use', id: 'sk-8', name: 'Skill', input: { skill: 'homework' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R007 헤더=1');
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=0');
+  });
+
+  // ── Source-level regression guard ──
+
+  it('excludes Skill from the tool_use denominator (source guard)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).toContain('!= "Skill"');
+    // The bare selector is what counted Skill; pin its absence so a revert is caught.
+    expect(src).not.toMatch(/\[ \$blocks\[\] \| select\(\.type\? == "tool_use"\) \]/);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
 // Fixture 4: opt-out
 // ════════════════════════════════════════════════════════════════
 

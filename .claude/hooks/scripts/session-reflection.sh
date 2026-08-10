@@ -105,6 +105,12 @@ ISO8601="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 # 없음)도 포함 — 에이전트당 단위는 번호 라인이고, 번호 라인이 없을 때만(단일 spawn) 헤더를 1로 센다.
 # 위반 샘플은 announce가 모자란 만큼 턴의 마지막 tool_use들을 보고한다(결손 개수 기준).
 #
+# 분모에서 제외하는 도구: `Skill` (#1569). R008 §"Tier-3 Interaction Tool Prefix" 표는 Skill을
+# 명시 면제한다 — "Skill | NO separate R008 prefix — identified via R007 `claude → {skill-name}`
+# integrated header instead". 즉 준수한 스킬 호출은 `┌─ Agent: claude → homework` 통합 헤더만
+# 남기고 `→ Tool:` 라인을 쓰지 않으므로, Skill tool_use를 세면 규칙을 정확히 지킨 턴에
+# `R008 접두사=1` 오탐이 찍힌다.
+#
 # 이 판정은 r007-r008-drift-advisor.sh와 공유된다 — 한쪽만 고치면 재오염된다.
 #
 # 성능: 줄마다 jq를 포크하던 구조를 jq 1회 포크로 교체.
@@ -137,7 +143,7 @@ split("\n")
           | ([ $lines[] | select(test("^[[:space:]]*\\[[0-9]+\\][[:space:]].*(→|->|—>)")) ] | length) as $an_spawn_item
           | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Spawning:")) ] | length) as $an_spawn_hdr
           | ($an_tool + (if $an_spawn_item > 0 then $an_spawn_item else $an_spawn_hdr end)) as $announce
-          | ([ $blocks[] | select(.type? == "tool_use") ]) as $tus
+          | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) ]) as $tus
           | (if ($tus | length) > $announce then ($tus | length) - $announce else 0 end) as $r008n
           | if $r008n > 0
             then [ $tus[(($tus | length) - $r008n):][]

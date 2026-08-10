@@ -166,6 +166,16 @@ Origin: #1492 (Session 132) — cc-release-monitor 워크플로우 삭제(#1454,
 
 Origin: #1457 (Session 128 회고 찐빠 #1) — 오케스트레이터가 stale 메모리(npm 1.1.6→target v1.1.7 추정)로 implement를 위임 → v1.1.7이 이미 배포된 closed milestone임을 에이전트가 STOP으로 감지 → v1.1.8 재위임 왕복 1회. 기존 `feedback_session_memory_git_stale`(브랜치 분기 전 pull)의 릴리즈-버전-선정 각도 확장. Cross-ref: R020 (Diagnostic Hypothesis Verification — 영구 변경/위임 전 전제 실측 확정).
 
+### 일반화 — 메모리 TODO 를 위임 전제로 쓸 때 (Origin: #1574)
+
+위 게이트는 **버전**에 대한 규정이지만 원리는 세션 메모리 항목 전반에 적용된다. `MEMORY.md`의 "선재 항목 / Next Session TODO"는 **직전 세션 종료 시점의 스냅샷**이므로 이후 해소·변경됐을 수 있다. 이를 위임 브리핑(예: mgr-sauron 검증 스코프)의 전제로 넘기기 전, 각 항목을 실측으로 재확인하거나 **측정 시점을 함께 표기**해 전달한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 메모리 TODO를 현재 상태로 간주해 위임 브리핑에 전제로 기재 | 위임 전 항목별 실측 재확인, 또는 "vX.Y.Z 시점 스냅샷 — 직접 확인하라"를 명시 |
+
+Origin: #1574 (v1.1.44 세션 — mgr-sauron 브리핑의 "선재 항목" 4건 중 3건이 부정확: 이미 해소된 항목, 의도적 차이를 결함으로 오인, 규모 과대). **완화 요인**: 프롬프트에 "그대로 믿지 말고 직접 확인하라"를 명시해 3건 전부 에이전트가 정정 — #1443의 "실측값 기준으로 동기화하라" 방어선과 동일 효과. Cross-ref: R011(메모리 신뢰도·Temporal Decay), R020(Diagnostic Hypothesis Verification).
+
 ## Post-Gate Scope-Expansion Re-Run (Origin: #1433 #2)
 
 R017 게이트(mgr-sauron) 통과 선언 후 신규 결함 발견 등으로 스코프가 확장되면(추가 파일 편집), 커밋 전 게이트를 **최종 상태에서 재실행**한다. 게이트 통과 시점 이후의 변경은 형식적으로 미검증이므로, 확장분 미검증 커밋은 R017이 최종 산출물을 커버하지 못하게 만든다.

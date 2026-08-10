@@ -74,6 +74,16 @@
 #     R008 explicitly exempts from the `[N]` prefix). Excluding this notation would recreate
 #     exactly the false positive this fix removes (N Agent tool_use blocks, 0 `Tool:` lines).
 #
+# Tool calls EXCLUDED from the denominator:
+#   * `Skill` — R008 §"Tier-3 Interaction Tool Prefix" exempts it verbatim:
+#       "Skill | NO separate R008 prefix — identified via R007 `claude → {skill-name}`
+#        integrated header instead"
+#     A compliant skill invocation therefore emits a `┌─ Agent: claude → homework` header and
+#     NO `→ Tool:` line, so counting the Skill tool_use scored `R008 접두사=1` against a turn
+#     that follows the rule exactly (verified against the R008 table, #1569). The exclusion
+#     lives in the SHARED verdict, so session-reflection.sh carries the identical select or
+#     the next copy re-contaminates.
+#
 # R007 detection (first line of the turn's first text block) is unchanged.
 #
 # ── Performance ───────────────────────────────────────────────────────────────────────
@@ -182,7 +192,7 @@ split("\n")
     | ([ $lines[] | select(test("^[[:space:]]*\\[[0-9]+\\][[:space:]].*(→|->|—>)")) ] | length) as $an_spawn_item
     | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Spawning:")) ] | length) as $an_spawn_hdr
     | ($an_tool + (if $an_spawn_item > 0 then $an_spawn_item else $an_spawn_hdr end)) as $announce
-    | ([ $blocks[] | select(.type? == "tool_use") ] | length) as $ntools
+    | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) ] | length) as $ntools
     | (if $ntools > $announce then $ntools - $announce else 0 end) as $r008
     | [$tuuid, ($r007 | tostring), ($r008 | tostring)] | @tsv
   end

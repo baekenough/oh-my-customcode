@@ -90,7 +90,7 @@ R016의 승격 루프(위반 지적 → 규칙 조항 추가)는 코퍼스의 **
 
 1. **발동 추적**: `/homework` 회고·위반 지적 시 인용된 규칙 ID/조항을 feedback memory에 기록한다 (가벼운 추적 — 완전 자동화는 불요).
 2. **후보 선정**: 마이너 2릴리즈 무발동 + 행동 지시 가치 소멸 조항을 은퇴 후보로 선정한다.
-3. **HTML-comment화**: 조항을 `<!-- RETIRED (은퇴 릴리즈 vX.Y.Z, N릴리즈 무발동): 원문 -->` 로 감싸 auto-injection에서 제외한다. Read 도구로 열람 가능하므로 무손실이다 (R005 Context Optimization via HTML Comments).
+3. **HTML-comment화**: 조항을 `<!-- RETIRED (은퇴 릴리즈 vX.Y.Z, <사유>): 원문 -->` 로 감싸 auto-injection에서 제외한다. `<사유>`는 위 「은퇴 대상」 두 범주에 대응한다 — 장기 무발동은 `N릴리즈 무발동`, 수정 완료된 플랫폼 버그 서사는 `보존 기준 v2.1.NNN 미만`. Read 도구로 열람 가능하므로 무손실이다 (R005 Context Optimization via HTML Comments).
 4. **부활**: 동일 패턴이 재발하면 uncomment하여 즉시 복원한다 — 승격 루프와 대칭이다.
 
 ### 버전노트 보존정책

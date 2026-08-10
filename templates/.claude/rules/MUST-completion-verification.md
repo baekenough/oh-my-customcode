@@ -73,9 +73,9 @@ Never accept "pre-existing" without direct base-branch evidence. A false "pre-ex
 
 ### Verification-Delegation Non-Termination (검증 위임 판정 종료 보장)
 
-구조 검증(mgr-sauron R017)·판정·품질 게이트를 서브에이전트에 위임할 때, 위임 프롬프트에 **"최종 PASS/FAIL 판정 없이 turn을 종료하지 말라"**를 명시한다 — 단 이 clause는 **보조 수단**일 뿐 1차 방어선이 아니다. clause를 명시해도 mid-step 종료가 **누적 11회** 재발했다(v1.1.13/14/17/18/19 … v1.1.30, 아래 Origin 참조). **1차 방어선은 오케스트레이터의 직접 ground-truth 실측**이다.
+구조 검증(mgr-sauron R017)·판정·품질 게이트를 서브에이전트에 위임할 때, 위임 프롬프트에 **"최종 PASS/FAIL 판정 없이 turn을 종료하지 말라"**를 명시한다 — 단 이 clause는 **보조 수단**일 뿐 1차 방어선이 아니다. clause를 명시해도 mid-step 종료가 **누적 14회** 재발했다(v1.1.13/14/17/18/19 … v1.1.44, 아래 Origin 참조). **예방의 1차 방어선은 위임 경계 분할**(아래 「위임 경계를 Phase 개수로 설계」)이고, **사후 1차 방어선은 오케스트레이터의 직접 ground-truth 실측**이다.
 
-mid-step 종료는 예상 가능한 정상 실패 모드로 취급한다 — 발생 시 즉시 ground-truth를 실측해 실제 진행 상태를 확인한다. **증상만으로 결과를 넘겨짚지 않는다**: 같은 "...중" 한 줄 종료라도 실측 결과는 다를 수 있다(예: "merging now" 후 종료 → 실측 시 PR 이미 MERGED, resume 불필요 / "CI 실행 중" 후 종료 → 실측 시 PR OPEN 미머지, resume 필요). 미완이면 SendMessage로 resume하되, 오케스트레이터가 실측한 값(예: "CI 전부 통과, mergeStateStatus=CLEAN")을 resume 메시지에 동봉해 에이전트가 재폴링 후 재종료하는 루프를 끊는다.
+mid-step 종료는 예상 가능한 정상 실패 모드로 취급한다 — 발생 시 즉시 ground-truth를 실측해 실제 진행 상태를 확인한다. **증상만으로 결과를 넘겨짚지 않는다**: 같은 "...중" 한 줄 종료라도 실측 결과는 **세 방향 모두** 관측됐다 — (a) 보고=완료("merging now" → 실측 시 PR 이미 MERGED, resume 불필요), (b) 보고=미완료("CI 실행 중" → 실측 시 PR OPEN 미머지, resume 필요), (c) **실제가 보고보다 앞섬**("커밋 1 완료, 커밋 2 스테이징으로 이어갑니다" → 실측 시 3개 커밋 전부 완료). 세 방향이 모두 나온 이상 증상 기반 진행도 추론은 **원리적으로 불가능**하며, 실측만이 유일한 판정 수단이다. 미완이면 SendMessage로 resume하되, 오케스트레이터가 실측한 값(예: "CI 전부 통과, mergeStateStatus=CLEAN")을 resume 메시지에 동봉해 에이전트가 재폴링 후 재종료하는 루프를 끊는다.
 
 | Anti-pattern | Required |
 |--------------|----------|
@@ -83,7 +83,17 @@ mid-step 종료는 예상 가능한 정상 실패 모드로 취급한다 — 발
 | mid-step 종료 증상(예: "merging now")으로 결과를 넘겨짚음 | 매번 `gh pr view`/`gh run list` 등으로 실측 후 완료/미완료 판정 |
 | resume 시 빈 재촉만 전달 | 실측값을 resume 메시지에 동봉해 재폴링 루프 차단 |
 
-Origin: #1443 (Session 126 회고 찐빠 #1) — v1.1.3 R017 검증에서 mgr-sauron이 source-hash 대조 중 판정 없이 종료 → resume 후 PASS. v1.1.4에서 "판정 반드시 출력" 명시로 1회 완료(대조 실증). **5회 재발 확인(#1492, Session 132)**: v1.1.13/14/17(clause 명시에도 재발) → v1.1.18(완료조건 6항목+종료금지 명시에도 "merging now" 한 줄 남기고 종료, 실측 결과 이미 완료) → v1.1.19(위임 프롬프트에 "4회 무시됨"까지 명시했으나 "CI 실행 중" 한 줄 남기고 종료, 실측 결과 미완료). Session 132에서 2회 모두 오케스트레이터 직접 실측으로 복구 — clause 강화가 아니라 실측 습관화가 유일하게 실증된 방어선. **누적 11회 확인(#1518 찐빠 #2, Session 136)**: v1.1.30 릴리즈 세션에서도 "완료 조건 5항목 실측 + 판정 없이 종료 금지" 명시에도 mgr-gitnerd가 "폴링 완료 통지를 기다리겠습니다" 한 줄만 남기고 종료 → 오케스트레이터 직접 실측으로 복구(lockfile push 완료 / CI pending / PR OPEN); 이번엔 "대기 중" 증상이 실제 미완료였고 Session 132의 "머지 중" 증상은 실제 완료였다는 대비로 증상→결과 추론 금지가 재확인됨.
+#### 위임 경계를 Phase 개수로 설계 (예방 1차 방어선)
+
+다중 Phase 작업을 한 에이전트에 위임하면 **Phase 경계가 곧 종료 유혹 지점**이 된다 — 완료 조건 번호 명시와 종료 금지 clause를 넣어도 동일하다. 위임 단위는 **단일 목표 1개**로 자르고, Phase가 2개 이상이면 분할해 순차 발주한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 다중 Phase 작업(3-Phase 검증, 3-커밋 시퀀스)을 한 에이전트에 위임하고 clause로 종료를 막으려 함 | 위임 단위를 단일 목표 1개로 분할해 순차 발주 — 경계 분할이 clause 강화보다 실효적 |
+
+대조 실증(#1574, v1.1.44 세션): 단일 목표 위임(PR 생성 / 머지 / 브랜치 정리 / 버전 범프) **4건 전원 완주**, 다중 Phase 위임(mgr-sauron 3-Phase, mgr-gitnerd 3-커밋) **2건 모두 mid-step 종료**. 같은 세션에서 릴리즈 단계를 push+범프 / PR 생성 / 머지로 3분할한 것이 이 설계의 적용례다.
+
+Origin: #1443 (Session 126 회고 찐빠 #1) — v1.1.3 R017 검증에서 mgr-sauron이 source-hash 대조 중 판정 없이 종료 → resume 후 PASS. v1.1.4에서 "판정 반드시 출력" 명시로 1회 완료(대조 실증). **5회 재발 확인(#1492, Session 132)**: v1.1.13/14/17(clause 명시에도 재발) → v1.1.18(완료조건 6항목+종료금지 명시에도 "merging now" 한 줄 남기고 종료, 실측 결과 이미 완료) → v1.1.19(위임 프롬프트에 "4회 무시됨"까지 명시했으나 "CI 실행 중" 한 줄 남기고 종료, 실측 결과 미완료). Session 132에서 2회 모두 오케스트레이터 직접 실측으로 복구 — clause 강화가 아니라 실측 습관화가 유일하게 실증된 방어선. **누적 11회 확인(#1518 찐빠 #2, Session 136)**: v1.1.30 릴리즈 세션에서도 "완료 조건 5항목 실측 + 판정 없이 종료 금지" 명시에도 mgr-gitnerd가 "폴링 완료 통지를 기다리겠습니다" 한 줄만 남기고 종료 → 오케스트레이터 직접 실측으로 복구(lockfile push 완료 / CI pending / PR OPEN); 이번엔 "대기 중" 증상이 실제 미완료였고 Session 132의 "머지 중" 증상은 실제 완료였다는 대비로 증상→결과 추론 금지가 재확인됨. **누적 14회 + 3방향째 확인(#1574, v1.1.44 세션)**: mgr-sauron 3-Phase / mgr-gitnerd 3-커밋 위임 2건이 Phase 경계에서 종료했고(위 「위임 경계를 Phase 개수로 설계」의 대조 실증), 그중 mgr-gitnerd는 "커밋 2로 이어가겠다"고 보고했으나 실측 시 3개 커밋이 이미 전부 완료 — 실제가 보고보다 앞서는 세 번째 방향.
 
 Cross-reference: R018 (Member Completion Verification), `feedback_release_delegation_phasing`, `feedback_orchestrator_direct_verify` (release delegation phasing을 verification 위임에도 확장).
 
@@ -93,7 +103,7 @@ Cross-reference: R018 (Member Completion Verification), `feedback_release_delega
 > **v2.1.200+**: rate limit으로 어떤 텍스트 출력도 내기 전에 잘린 subagent가 이전에는 빈 결과(empty result)를 반환하던 것을 clean failure로 반환하도록 수정되었습니다 — v2.1.199 partial-work 반환에 이어, 출력 이전 rate-limit 차단 시 조용한 빈 결과 대신 명시적 실패를 parent에 보고합니다. 플랫폼이 false-success/silent-empty 자가보고를 추가로 줄였으나, "actual outcome ≠ attempt" ground-truth 검증 원칙(R020 Core Rule)은 여전히 유지됩니다 — subagent 보고를 그대로 신뢰하지 말고 git status/grep/validation script로 재확인합니다.
 -->
 
-> **v2.1.211+**: CC의 background agent 결과 보고가 개선되어, Claude가 아직 실행 중인 agent의 상태를 그대로 보고하고 **결과를 지어내지 않고 실제 완료를 기다립니다**(previously fabricated results). v2.1.199/200(false-success·silent-empty 자가보고 감소)에 이은 플랫폼 개선으로 오케스트레이터의 fabricated-completion 리스크를 추가로 낮추지만, "actual outcome ≠ attempt" ground-truth 검증 원칙(Core Rule)은 여전히 유지됩니다 — subagent/background agent 보고를 그대로 신뢰하지 말고 `git status`/`grep`/validation script로 재확인합니다.
+<!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.211+**: CC의 background agent 결과 보고가 개선되어, Claude가 아직 실행 중인 agent의 상태를 그대로 보고하고 **결과를 지어내지 않고 실제 완료를 기다립니다**(previously fabricated results). v2.1.199/200(false-success·silent-empty 자가보고 감소)에 이은 플랫폼 개선으로 오케스트레이터의 fabricated-completion 리스크를 추가로 낮추지만, "actual outcome ≠ attempt" ground-truth 검증 원칙(Core Rule)은 여전히 유지됩니다 — subagent/background agent 보고를 그대로 신뢰하지 말고 `git status`/`grep`/validation script로 재확인합니다. -->
 
 ## Common False Completion Patterns — 8 anti-patterns including "Command executed" without exit code check, "Waiting for manual publish" when CI auto-publishes, "UI changes done" without browser render. See full table via Read tool.
 
@@ -260,6 +270,17 @@ Origin: #1266 ④.
 실증: 2026-07-30 세션에서 자가 보고는 "직전 두 응답에서 누락"(2회)이었으나 transcript 실측은 **7회**였다 — 3.5배 과소 계상. Origin: #1553 찐빠 #2.
 
 이는 Read-Before-Characterize의 **자기 적용** 각도다 — 진단 대상이 외부 로그가 아니라 자기 자신의 transcript일 때에도 "읽기 전 특성화 금지"가 동일하게 적용된다.
+
+#### 자율 루프 세션의 턴 경계 정의 (계수 전 확정 필수)
+
+위 파싱 레시피는 **"사용자 프롬프트 = 턴 경계"**를 암묵 전제한다. `/fsd` 같은 자율 루프는 사용자 프롬프트가 거의 없어(실측: 사용자 프롬프트 4개 대 assistant 응답 30여 회) 이 전제로는 경계 재구성이 실패하고, 계수 자체가 성립하지 않는다. 자율 루프 transcript를 셀 때는 대안 경계 정의(예: **`tool_result` 직후 첫 text 블록을 응답 시작으로 간주**)를 먼저 확정하고, 정의를 확정하기 전에는 **위반 횟수를 단정하지 않는다**.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 자율 루프 transcript를 사용자 프롬프트 경계로 파싱해 위반 N회로 단정 | 대안 경계 정의를 먼저 확정; 확정 전에는 횟수 단정 금지 |
+| 경계 재구성 실패를 "위반 없음"으로 해석 | 경계 무관 지표로 대체 보고 — `┌─ Agent:` 헤더 총량, tool_use 대 announce 라인 비율 |
+
+Origin: #1574 (v1.1.44 세션 — 자율 루프에서 R007 헤더 누락 계수를 시도했으나 사용자 프롬프트 4개로 턴 경계 재구성 불가). Cross-ref: R005(계수/매칭 방법 확인 — 도구 기본 동작 미확인 시 결과 오해석).
 
 ### Proxy Signal vs Canonical Ground-Truth (#1336 ①②)
 
