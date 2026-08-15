@@ -184,7 +184,7 @@ oh-my-customcode는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 
 ## Agent Teams (MUST when enabled)
 
-Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), 적격한 작업에 적극적으로 사용합니다.
+Agent Teams는 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **그리고** `TeamCreate` 도구가 도구 목록에 존재할 때만 활성입니다. env 변수는 의도의 표현일 뿐 기능의 가용성이 아닙니다 — 현행 환경(CC v2.1.233+)에서 `TeamCreate`는 도구 목록에 **미등록**(실측)이므로 R018은 비활성(dormant)이며 R009/R010이 지배합니다.
 
 | 기능 | 서브에이전트 (기본) | Agent Teams |
 |------|---------------------|-------------|
@@ -193,8 +193,8 @@ Claude Code의 Agent Teams 기능이 활성화되어 있으면 (`CLAUDE_CODE_EXP
 | 적합한 작업 | 집중된 작업 | 리서치, 리뷰, 디버깅 |
 | 토큰 비용 | 낮음 | 높음 |
 
-**활성화 시, 적격한 협업 작업에 Agent Teams를 반드시 사용해야 합니다 (R018 MUST).**
-결정 매트릭스는 R018 (MUST-agent-teams.md)을 참조하세요.
+**활성 판정이 Yes일 때, 적격한 협업 작업에 Agent Teams를 반드시 사용해야 합니다 (R018 MUST).**
+판정표와 결정 매트릭스는 R018 (MUST-agent-teams.md) `## Detection`을 참조하세요.
 하이브리드 패턴 (Claude + Codex, 동적 생성 + Teams)이 지원됩니다.
 단순/비용 민감 작업에는 Task tool + 라우팅 스킬이 폴백으로 유지됩니다.
 

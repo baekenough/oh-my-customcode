@@ -61,7 +61,7 @@ Routes data engineering tasks to appropriate DE expert agents. This skill contai
 Before routing via Agent tool, evaluate in this order:
 
 ### Step 1: Agent Teams Eligibility (R018)
-Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+Check if Agent Teams is available — `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` present in the tool list. The env var alone is NOT sufficient, and `SendMessage` presence is not evidence of Teams (see R018 Detection).
 
 | Scenario | Preferred |
 |----------|-----------|
@@ -69,6 +69,8 @@ Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or T
 | Multi-tool pipeline design (3+ tools) | Agent Teams |
 | Cross-tool data quality analysis | Agent Teams |
 | Quick DAG/model validation | Agent Tool |
+
+When Detection resolves to **No**, skip this step — route via the Agent tool under R009/R010.
 
 ### Step 2: Expert Selection
 Route to appropriate DE expert based on tool/framework detection.

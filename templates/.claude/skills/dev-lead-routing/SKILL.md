@@ -99,7 +99,7 @@ This directive is preserved inline because Agent-tool prompt synthesis can drop 
 Before selecting an expert agent, evaluate in this order:
 
 ### Step 1: Agent Teams Eligibility (R018)
-Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present).
+Check if Agent Teams is available — `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` present in the tool list. The env var alone is NOT sufficient, and `SendMessage` presence is not evidence of Teams (see R018 Detection).
 
 | Scenario | Preferred |
 |----------|-----------|
@@ -108,6 +108,8 @@ Check if Agent Teams is available (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or T
 | Code review + fix cycle | Agent Teams |
 | Cross-layer debugging (FE + BE + DB) | Agent Teams |
 | Simple file search/validation | Task Tool |
+
+When Detection resolves to **No**, skip this step — route via the Agent tool under R009/R010.
 
 ### Step 2: Expert Agent Selection
 Route to appropriate language/framework expert based on file extension and keyword mapping.

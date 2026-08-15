@@ -33,8 +33,8 @@ Inspired by Pi Coding Agent Workflow Extension's multi-model verification patter
 ## Workflow
 
 ### Prerequisites
-- Agent Teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) for full parallel execution
-- Falls back to sequential Agent tool execution if Agent Teams unavailable
+- None. This skill runs fully without Agent Teams — the three reviewers spawn as parallel Agent tool calls (see "Agent Tool Fallback" below).
+- Agent Teams mode is used only when available: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` present in the tool list. The env var alone is NOT sufficient, and `SendMessage` presence is not evidence of Teams (see R018 Detection).
 
 ### Execution Flow
 

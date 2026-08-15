@@ -695,11 +695,11 @@ The skill's WORKFLOW is followed, but git EXECUTION is delegated to mgr-gitnerd 
 
 ## Agent Teams (required when enabled)
 
-When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`: Agent Teams is required for qualifying tasks.
+Agent Teams is active only when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` is present in the tool list (the env var alone is NOT sufficient; `SendMessage` alone is not evidence). When active, Agent Teams is required for qualifying tasks; when not, R009/R010 govern.
 
-See **R018 (MUST-agent-teams.md)** for the complete decision matrix, self-check, team patterns, and lifecycle.
+See **R018 (MUST-agent-teams.md)** for the Detection table, complete decision matrix, self-check, team patterns, and lifecycle.
 
-**Quick rule**: 3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams.
+**Quick rule** (applies only when active): 3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams.
 Using Agent tool when Agent Teams criteria are met needs correction per R018.
 
 <!-- DETAIL: Announcement Format

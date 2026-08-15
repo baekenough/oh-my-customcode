@@ -129,7 +129,7 @@ Origin: #1293 (Session 110 retrospective, Low).
 
 > Origin: #1341 찐빠 #2 (low-confidence) — 4+ 병렬 Agent Tool 스폰 시 `[N]` prefix는 표기했으나 "R018 게이트: … → Agent Tool 폴백" announce를 생략한 것을 자가 위반으로 의심. 그러나 R018은 조건부 규칙이라 Agent Teams 비활성 환경에서는 게이트 투명성 자체가 미적용이다.
 
-R018 전체(게이트 투명성 포함)는 Agent Teams 활성 시에만 적용되는 조건부 규칙이다 (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 또는 TeamCreate/SendMessage 도구 존재). Agent Teams **비활성** 환경에서는:
+R018 전체(게이트 투명성 포함)는 Agent Teams 활성 시에만 적용되는 조건부 규칙이다 — 활성 조건은 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` 도구 존재이며, `SendMessage` 단독 존재는 활성 근거가 아니다(상세는 위 `## Detection`). Agent Teams **비활성** 환경에서는:
 
 - 게이트 투명성 announce 의무가 없다 — R009 `[N]` prefix 만으로 충분하다.
 - 3+ 병렬 Agent Tool 스폰을 "게이트 announce 누락"으로 자가 플래그하지 않는다 (false-positive 방지).

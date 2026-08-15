@@ -178,7 +178,7 @@ This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect 
 
 ## Agent Teams (MUST when enabled)
 
-When Claude Code's Agent Teams feature is enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`), actively use it for qualifying tasks.
+Agent Teams is active only when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` is present in the tool list. The env var expresses intent, not availability — in the current runtime (CC v2.1.233+) `TeamCreate` is **absent** from the tool list (measured), so R018 is dormant and R009/R010 govern.
 
 | Feature | Subagents (Default) | Agent Teams |
 |---------|---------------------|-------------|
@@ -187,8 +187,8 @@ When Claude Code's Agent Teams feature is enabled (`CLAUDE_CODE_EXPERIMENTAL_AGE
 | Best for | Focused tasks | Research, review, debugging |
 | Token cost | Lower | Higher |
 
-**When enabled, Agent Teams is MANDATORY for qualifying collaborative tasks (R018 MUST).**
-See R018 (MUST-agent-teams.md) for the decision matrix.
+**When Detection resolves to Yes, Agent Teams is MANDATORY for qualifying collaborative tasks (R018 MUST).**
+See R018 (MUST-agent-teams.md) `## Detection` for the detection table and decision matrix.
 Hybrid patterns (Claude + Codex, Dynamic Creation + Teams) are supported.
 Task tool + routing skills remain the fallback for simple/cost-sensitive tasks.
 
