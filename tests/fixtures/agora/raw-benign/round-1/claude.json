@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "MEDIUM",
+      "claim": "the field mapping is ambiguous between the state schema and the verdict schema",
+      "evidence": "flash memory constraints on embedded review targets are never mentioned in the design",
+      "impact": "without a tighter contract this could grow into a magnum opus of over-engineering",
+      "counter": "sonnet-length prose in the error message would only ever surface in verbose debug mode",
+      "verdict": "MODIFY"
+    }
+  ],
+  "overall": "BUILD_WITH_CHANGES",
+  "rationale": "the design is largely sound; only the field mapping ambiguity noted above needs clarification before implementation."
+}

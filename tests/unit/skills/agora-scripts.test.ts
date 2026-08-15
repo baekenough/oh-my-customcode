@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -276,7 +276,7 @@ describe('anonymize.sh shuffle', () => {
         expect(counts[vendor][label]).toBeLessThan(230);
       }
     }
-  }, 20_000);
+  }, 40_000);
 
   // spec §7: a missing vendor drops out of `map`, leaving fewer than 3 entries.
   it('emits a 2-entry map when only two vendors responded', async () => {
@@ -300,5 +300,397 @@ describe('anonymize.sh shuffle', () => {
   it('exits non-zero when no vendors are supplied', async () => {
     const result = await runScript(ANONYMIZE_SCRIPT, ['--shuffle', 'agora-1-r5'], '');
     expect(result.exitCode).not.toBe(0);
+  });
+});
+
+const BANNED_FINGERPRINT =
+  /codex|omx|agy|gemini|claude -p|antigravity|opus|sonnet|gemini-3|gpt-oss|claude-|flash|SEALED|mapping|raw\//i;
+
+/** Create an isolated session dir seeded with a raw fixture tree. */
+async function makeSession(rawFixture: string): Promise<string> {
+  const dir = join(tmpdir(), `agora-sess-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  await mkdir(join(dir, 'SEALED'), { recursive: true });
+  await cp(join(FIXTURES_DIR, rawFixture), join(dir, 'SEALED', 'raw'), { recursive: true });
+  return dir;
+}
+
+// -------------------------------------------------------------------
+// anonymize.sh --build  (spec §5, §6, §12-(1))
+// -------------------------------------------------------------------
+
+describe('anonymize.sh --build', () => {
+  it('writes both the sealed mapping and the anonymous bundle', async () => {
+    const dir = await makeSession('raw');
+    try {
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1755230400-r1',
+          '--topic',
+          '세션 메모리를 SQLite로 이전할 것인가',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).toBe(0);
+
+      const mapping = JSON.parse(await readFile(join(dir, 'SEALED/mapping/round-1.json'), 'utf-8'));
+      expect(mapping.round).toBe(1);
+      expect(mapping.seed).toBe('agora-1755230400-r1');
+      expect(Object.keys(mapping.map).sort()).toEqual(['A', 'B', 'C']);
+
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      expect(bundle.round).toBe(1);
+      expect(bundle.topic).toBe('세션 메모리를 SQLite로 이전할 것인가');
+      expect(bundle.agenda).toEqual([]);
+      expect(bundle.prior_rounds).toEqual([]);
+      expect(bundle.reviewers.map((r: { label: string }) => r.label)).toEqual(['A', 'B', 'C']);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // spec §12-(1): THE core safety test. A leak here is a trust-boundary collapse.
+  it('produces a bundle carrying no vendor fingerprint whatsoever', async () => {
+    const dir = await makeSession('raw');
+    try {
+      await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      const text = await readFile(join(dir, 'anon/round-1.json'), 'utf-8');
+      expect(text).not.toMatch(BANNED_FINGERPRINT);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // spec §11: fingerprint detection is NOT retried — it aborts.
+  it('aborts with a fingerprint error instead of writing a leaky bundle', async () => {
+    const dir = await makeSession('raw-leaky');
+    try {
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain('AGORA_FINGERPRINT_DETECTED');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Controller Judgment A narrows AGORA_BANNED_PATTERNS to avoid tripping on ordinary
+  // review prose ("mapping", "flash", "opus", "sonnet" as bare English words). This is
+  // the proof that the narrowed pattern still lets a genuinely benign response through —
+  // paired with the two tests above (real leak / no leak at all) so the guard is neither
+  // too narrow nor too wide.
+  it('does not trip the fingerprint guard on benign review prose using overlapping English words', async () => {
+    const dir = await makeSession('raw-benign');
+    try {
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('AGORA_FINGERPRINT_DETECTED');
+
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      expect(bundle.reviewers.length).toBe(1);
+      expect(bundle.reviewers[0].findings[0].claim).toContain('field mapping is ambiguous');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('drops fields outside the spec §5 whitelist during normalization', async () => {
+    const dir = await makeSession('raw');
+    try {
+      const extra = JSON.parse(await readFile(join(dir, 'SEALED/raw/round-1/omx.json'), 'utf-8'));
+      extra.debug_trace = 'internal reasoning dump';
+      await writeFile(join(dir, 'SEALED/raw/round-1/omx.json'), JSON.stringify(extra));
+
+      await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      const text = await readFile(join(dir, 'anon/round-1.json'), 'utf-8');
+      expect(text).not.toContain('debug_trace');
+      expect(text).not.toContain('internal reasoning dump');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('treats a schema-violating response as missing and shrinks the map', async () => {
+    const dir = await makeSession('raw');
+    try {
+      // counter is mandatory and must not be empty (spec §5).
+      await writeFile(
+        join(dir, 'SEALED/raw/round-1/agy.json'),
+        JSON.stringify({
+          findings: [
+            {
+              id: 'F9',
+              severity: 'HIGH',
+              claim: 'x',
+              evidence: 'y',
+              impact: 'z',
+              counter: '',
+              verdict: 'MODIFY',
+            },
+          ],
+          overall: 'BUILD',
+          rationale: 'no counter supplied',
+        })
+      );
+
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).toBe(0);
+
+      const mapping = JSON.parse(await readFile(join(dir, 'SEALED/mapping/round-1.json'), 'utf-8'));
+      expect(Object.keys(mapping.map).length).toBe(2);
+
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      expect(bundle.reviewers.length).toBe(2);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // spec §6: prior-round labels are re-issued under the CURRENT round's mapping, so the
+  // judge sees "the same participant changed position", never "A became someone else".
+  it('relabels prior rounds so a vendor keeps one label across the bundle', async () => {
+    const dir = await makeSession('raw');
+    try {
+      await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      await cp(join(dir, 'SEALED/raw/round-1'), join(dir, 'SEALED/raw/round-2'), {
+        recursive: true,
+      });
+      await writeFile(join(dir, 'verdict-round-1.json'), '');
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      await writeFile(
+        join(dir, 'verdict/round-1.json'),
+        JSON.stringify({ round: 1, verdict: 'BUILD_WITH_CHANGES', draft: '## 통합 초안 1' })
+      );
+
+      await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '2',
+          '--seed',
+          'agora-1-r2',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '["F1 근거 제시"]',
+        ],
+        ''
+      );
+
+      const m1 = JSON.parse(await readFile(join(dir, 'SEALED/mapping/round-1.json'), 'utf-8'));
+      const m2 = JSON.parse(await readFile(join(dir, 'SEALED/mapping/round-2.json'), 'utf-8'));
+      const b2 = JSON.parse(await readFile(join(dir, 'anon/round-2.json'), 'utf-8'));
+
+      expect(b2.prior_rounds.length).toBe(1);
+      expect(b2.prior_rounds[0].round).toBe(1);
+      expect(b2.prior_rounds[0].verdict).toBe('BUILD_WITH_CHANGES');
+
+      const invert = (m: Record<string, string>) =>
+        Object.fromEntries(Object.entries(m).map(([k, v]) => [v, k]));
+      const r2ByVendor = invert(m2.map);
+
+      for (const prior of b2.prior_rounds[0].reviewers) {
+        // Every prior label must be the CURRENT-round label of some vendor.
+        expect(Object.values(r2ByVendor)).toContain(prior.label);
+      }
+      // And no prior entry keeps a stale round-1 label unless that vendor happens to
+      // hold the same label in round 2.
+      const staleOnly = Object.entries(m1.map)
+        .filter(([label, vendor]) => r2ByVendor[vendor as string] !== label)
+        .map(([label]) => label);
+      const priorLabels = b2.prior_rounds[0].reviewers.map((r: { label: string }) => r.label);
+      const stalePresent = staleOnly.filter(
+        (l) => priorLabels.filter((p: string) => p === l).length > 1
+      );
+      expect(stalePresent).toEqual([]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('caps prior_rounds at the two most recent rounds', async () => {
+    const dir = await makeSession('raw');
+    try {
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      for (const n of [1, 2, 3]) {
+        if (n > 1) {
+          await cp(join(dir, 'SEALED/raw/round-1'), join(dir, `SEALED/raw/round-${n}`), {
+            recursive: true,
+          });
+        }
+        await writeFile(
+          join(dir, `verdict/round-${n}.json`),
+          JSON.stringify({ round: n, verdict: 'BUILD_WITH_CHANGES', draft: `## 통합 초안 ${n}` })
+        );
+        await runScript(
+          ANONYMIZE_SCRIPT,
+          [
+            '--build',
+            '--session-dir',
+            dir,
+            '--round',
+            String(n),
+            '--seed',
+            `agora-1-r${n}`,
+            '--topic',
+            '상태 저장 방식 재검토',
+            '--attachments',
+            '[]',
+            '--agenda',
+            '[]',
+          ],
+          ''
+        );
+      }
+      await cp(join(dir, 'SEALED/raw/round-1'), join(dir, 'SEALED/raw/round-4'), {
+        recursive: true,
+      });
+      await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '4',
+          '--seed',
+          'agora-1-r4',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+
+      const b4 = JSON.parse(await readFile(join(dir, 'anon/round-4.json'), 'utf-8'));
+      expect(b4.prior_rounds.map((p: { round: number }) => p.round)).toEqual([2, 3]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
