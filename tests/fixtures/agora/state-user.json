@@ -3,8 +3,22 @@
   "max_rounds": 5,
   "mode": "gated",
   "history": [
-    { "round": 1, "verdict": "REDESIGN", "consensus": "SPLIT", "new_findings": 6, "max_severity": "CRITICAL", "tokens": 91000 },
-    { "round": 2, "verdict": "BUILD_WITH_CHANGES", "consensus": "MAJORITY", "new_findings": 3, "max_severity": "HIGH", "tokens": 77000 }
+    {
+      "round": 1,
+      "verdict": "REDESIGN",
+      "consensus": "SPLIT",
+      "new_findings": 6,
+      "max_severity": "CRITICAL",
+      "tokens": 91000
+    },
+    {
+      "round": 2,
+      "verdict": "BUILD_WITH_CHANGES",
+      "consensus": "MAJORITY",
+      "new_findings": 3,
+      "max_severity": "HIGH",
+      "tokens": 77000
+    }
   ],
   "stop": "USER"
 }

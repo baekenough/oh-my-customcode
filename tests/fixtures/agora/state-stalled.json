@@ -3,10 +3,38 @@
   "max_rounds": 6,
   "mode": "auto",
   "history": [
-    { "round": 1, "verdict": "REDESIGN", "consensus": "SPLIT", "new_findings": 7, "max_severity": "CRITICAL", "tokens": 90000 },
-    { "round": 2, "verdict": "REDESIGN", "consensus": "SPLIT", "new_findings": 3, "max_severity": "HIGH", "tokens": 80000 },
-    { "round": 3, "verdict": "REDESIGN", "consensus": "SPLIT", "new_findings": 0, "max_severity": "HIGH", "tokens": 70000 },
-    { "round": 4, "verdict": "REDESIGN", "consensus": "SPLIT", "new_findings": 0, "max_severity": "HIGH", "tokens": 68000 }
+    {
+      "round": 1,
+      "verdict": "REDESIGN",
+      "consensus": "SPLIT",
+      "new_findings": 7,
+      "max_severity": "CRITICAL",
+      "tokens": 90000
+    },
+    {
+      "round": 2,
+      "verdict": "REDESIGN",
+      "consensus": "SPLIT",
+      "new_findings": 3,
+      "max_severity": "HIGH",
+      "tokens": 80000
+    },
+    {
+      "round": 3,
+      "verdict": "REDESIGN",
+      "consensus": "SPLIT",
+      "new_findings": 0,
+      "max_severity": "HIGH",
+      "tokens": 70000
+    },
+    {
+      "round": 4,
+      "verdict": "REDESIGN",
+      "consensus": "SPLIT",
+      "new_findings": 0,
+      "max_severity": "HIGH",
+      "tokens": 68000
+    }
   ],
   "stop": null
 }

@@ -3,11 +3,46 @@
   "max_rounds": 5,
   "mode": "auto",
   "history": [
-    { "round": 1, "verdict": "REDESIGN", "consensus": "SPLIT", "new_findings": 8, "max_severity": "CRITICAL", "tokens": 92000 },
-    { "round": 2, "verdict": "REDESIGN", "consensus": "SPLIT", "new_findings": 5, "max_severity": "CRITICAL", "tokens": 88000 },
-    { "round": 3, "verdict": "BUILD_WITH_CHANGES", "consensus": "MAJORITY", "new_findings": 4, "max_severity": "HIGH", "tokens": 79000 },
-    { "round": 4, "verdict": "BUILD_WITH_CHANGES", "consensus": "MAJORITY", "new_findings": 2, "max_severity": "MEDIUM", "tokens": 74000 },
-    { "round": 5, "verdict": "BUILD_WITH_CHANGES", "consensus": "MAJORITY", "new_findings": 1, "max_severity": "MEDIUM", "tokens": 71000 }
+    {
+      "round": 1,
+      "verdict": "REDESIGN",
+      "consensus": "SPLIT",
+      "new_findings": 8,
+      "max_severity": "CRITICAL",
+      "tokens": 92000
+    },
+    {
+      "round": 2,
+      "verdict": "REDESIGN",
+      "consensus": "SPLIT",
+      "new_findings": 5,
+      "max_severity": "CRITICAL",
+      "tokens": 88000
+    },
+    {
+      "round": 3,
+      "verdict": "BUILD_WITH_CHANGES",
+      "consensus": "MAJORITY",
+      "new_findings": 4,
+      "max_severity": "HIGH",
+      "tokens": 79000
+    },
+    {
+      "round": 4,
+      "verdict": "BUILD_WITH_CHANGES",
+      "consensus": "MAJORITY",
+      "new_findings": 2,
+      "max_severity": "MEDIUM",
+      "tokens": 74000
+    },
+    {
+      "round": 5,
+      "verdict": "BUILD_WITH_CHANGES",
+      "consensus": "MAJORITY",
+      "new_findings": 1,
+      "max_severity": "MEDIUM",
+      "tokens": 71000
+    }
   ],
   "stop": null
 }
