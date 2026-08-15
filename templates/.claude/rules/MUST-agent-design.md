@@ -492,6 +492,8 @@ Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, 
 
 > **v2.1.222+**: 스킬 frontmatter의 `disable-model-invocation: true`(모델이 스스로 그 스킬을 호출하지 못하게 막고 사용자/파이프라인의 명시적 호출만 허용하는 필드)가 설정된 스킬을 모델이 호출하려 할 때의 refusal 문구가 개선되어, 모델에게 **워크플로우를 스스로 복제하지 말고 사용자에게 실행을 요청하라**고 지시합니다. 무인 루프(`/fsd` 등)가 이런 스킬을 모델 호출 경로에 두면 실행 대신 refusal이 반환되므로, 해당 스킬은 **사용자/파이프라인 명시 호출**로 설계합니다.
 
+> **v2.1.228+**: claude.ai에서 동기화된 스킬이 하드닝되었습니다 — 로컬 커맨드·MCP prompt를 **shadow하지 않고**, description이 sanitize·labeling되며, 로컬 머신에서 그 본문이 `!` 명령을 실행하거나 `@` 파일 참조를 확장하지 **않습니다**. 즉 외부 출처 스킬은 로컬 `.claude/skills/` 스킬과 **동일한 실행 능력을 갖지 않으므로**, 동기화 스킬에 `!`/`@` 동작을 전제한 본문을 작성하면 무음 미실행이 됩니다. 구버전에서는 동기화 스킬이 로컬 커맨드를 가릴 수 있어 같은 이름 호출이 어느 정의로 해소되는지 결정론적이지 않았습니다.
+
 <!-- DETAIL: Skill Optional Fields (full yaml block)
 ```yaml
 scope: core                # core | harness | package (default: core)

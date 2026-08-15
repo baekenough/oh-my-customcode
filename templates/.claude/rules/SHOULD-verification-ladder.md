@@ -15,6 +15,8 @@
 | **3: Expensive LLM** | sonnet/opus skills (`deep-verify`, `adversarial-review`, `multi-model-verification`, `evaluator-optimizer`) | $$$ | 1-5분 | Pre-commit, PR review |
 | **4: Human** | maintainer review | time | hours-days | Final gate, contested decisions |
 
+> **v2.1.232+**: `/code-review`가 high·xhigh·max effort에서도 **background agent로 실행**됩니다(다른 레벨과 동일). 즉 Tier 3 검증 호출의 반환은 착수 신호이지 검증 결과가 아니므로, 다음 tier 진행이나 통과 판정 전에 background agent의 실제 완료와 결과를 실측합니다 — 구버전에서는 고effort 레벨만 전경 실행이라 "반환 = 결과"가 성립했고, 그 전제로 ladder를 진행하면 미완료 검증을 통과로 오판합니다(R020 "attempt ≠ outcome", cross-ref R010 non-teammate background 기본 실행).
+
 ## Shift-left 원칙
 
 결정론적 단계가 잡을 수 있는 문제는 LLM에 보내지 않는다. LLM 검증은 ambiguous/semantic 문제에 집중한다.

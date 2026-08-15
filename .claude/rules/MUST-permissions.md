@@ -82,6 +82,16 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.223/225+**: 두 건이 Tier-4 Bash 권한 검사와 세션 인증에 영향을 줍니다. (223) 조작된 명령이 **자기 일부를 권한 검사에서 숨기던** 결함이 수정되었습니다 — v2.1.221 zsh `[[ ]]` 우회 수정의 연장선이며, 검사 대상 문자열과 실행 문자열이 다를 수 있었다는 뜻입니다(표시 측 결함은 R001). (225) 일시적 401이 장수명 `CLAUDE_CODE_OAUTH_TOKEN`을 저장된 단수명 토큰으로 교체해 headless 세션을 재시작 전까지 망가뜨리던 결함이 수정되었습니다 — 구버전 무인 실행에서 401 이후의 연쇄 인증 실패는 토큰 설정 오류가 아니라 이 교체 버그일 수 있으므로 진단 시 구분합니다. agent definition의 `bypassPermissions`가 org 정책을 무시하던 공백(223)은 R010 "Universal bypassPermissions"가 canonical.
 
+> **v2.1.232/233+**: 232가 권한 검사 우회 3건을 수정했으나 **233이 그중 2건을 롤백**했습니다. 어느 것이 현행인지 버전별로 구분합니다.
+>
+> 1. **233 현재 유효 (232 수정 유지)** — (a) PowerShell에서 변수 기록 파라미터가 `$PSDefaultParameterValues`를 조용히 덮어써 이후 명령의 파일 접근을 리다이렉트할 수 있던 우회가 수정되었습니다. 또한 중첩 git 저장소가 부모 디렉토리의 trust를 상속하던 문제가 수정되어 저장소마다 별도 trust 확인이 필요하고, `sandbox.ripgrep`은 user/managed/`--settings`에서만 적용되며 **project settings로는 override 불가**입니다(위 v2.1.214 allow/deny 스코프 비대칭과 같은 계열의 축소 — repo-local 설정으로 켤 수 없는 항목이 늘었습니다).
+> 2. **233에서 롤백됨 — 현재 권한 검사되지 않음** — (b) Windows Git Bash가 경로 검증에는 일반 파일로 보이는 Cygwin-style symlink를 따라가던 우회 수정, (c) Bash 입력 리다이렉션(`< file`)을 인자 표기와 동일하게 권한 검사하던 변경. 두 건 모두 232에서 도입됐다가 233에서 되돌려졌습니다(CHANGELOG v2.1.233: "Reverted the 2.1.232 Bash permission changes for Cygwin-style symlinks on Windows and for input redirections (`< file`); a narrower version will return in a later release"). **이 두 경로는 현행 233에서 권한 검사를 거치지 않으므로, 검사된다고 가정하고 경로 스코프 규칙을 설계하면 우회됩니다.**
+> 3. **재도입 예정** — "a narrower version will return in a later release"이므로 좁힌 형태로 돌아옵니다. 재도입 시 적용 범위가 232 원본과 다를 수 있으므로 그때 다시 확인합니다.
+>
+> **`< file` 회고적 함의(버전 무관 유지)**: `< file`은 232 한 릴리즈를 제외하면 경로 스코프 규칙을 우회해 왔고 233에서 다시 그 상태이므로, **프롬프트 없이 읽힌 사실을 allow 규칙의 증거로 삼지 않습니다**. 위 v2.1.221/223 "검사 대상 문자열 ≠ 실행 문자열" 계열의 연장선입니다.
+>
+> **일반 교훈**: 단일 릴리즈의 플랫폼 권한 개선은 롤백될 수 있으므로 **항구적 보호막으로 간주하지 않습니다**. 스코프 규칙은 개선 이전 상태를 기준으로 설계하고 플랫폼 개선은 defense-in-depth로만 취급합니다(`feedback_platform_claim_staleness` 계열 — 플랫폼 주장의 시효성).
+
 ## Agent Tool Permission Mode
 
 > Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the full requirement, rationale, self-check, and version history. Core rule: always pass `mode: "bypassPermissions"` explicitly on every Agent tool call — the Agent tool's default `mode` (`acceptEdits`) overrides agent frontmatter `permissionMode` and causes prompts during unattended execution. Skills that spawn agents MUST include this in their Agent tool call instructions. See R010 for details.

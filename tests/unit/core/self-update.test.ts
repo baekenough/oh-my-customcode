@@ -3,7 +3,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { ExecuteSelfUpdateOptions, SelfUpdateOptions } from '../../../src/core/self-update.js';
@@ -16,6 +16,7 @@ import {
   isVersionPlausible,
   maybeHandleSelfUpdateForInit,
   normalizeVersion,
+  readSelfUpdateCache,
 } from '../../../src/core/self-update.js';
 
 describe('self-update module', () => {
@@ -497,6 +498,291 @@ describe('self-update module', () => {
       checkSelfUpdate(options);
 
       expect(capturedPackageName).toBe('custom-package');
+    });
+  });
+
+  // ==========================================================================
+  // readSelfUpdateCache — dual on-disk schema (#1575)
+  //
+  // ONE cache path (`~/.oh-my-customcode/self-update-cache.json`), TWO current writers
+  // with different key names:
+  //   omcustom-auto-update.sh → {version, timestamp (epoch SECONDS), source}
+  //   writeCache()            → {checkedAt, latestVersion}
+  // The cache measured live on disk was the hook shape, so the old reader — which
+  // required `checkedAt` AND `latestVersion` — returned null for it and npm was
+  // re-queried on every run. Every positive case below asserts the VALUE that came
+  // back; asserting "did not crash" alone would also pass against a reader that
+  // silently ignores the cache, which is exactly the defect.
+  // ==========================================================================
+  describe('readSelfUpdateCache — dual schema (#1575)', () => {
+    const cacheFile = (name: string): string => join(tempDir, name);
+
+    // --- positive: values must actually be read ---
+
+    it('reads the hook schema {version,timestamp,source}', () => {
+      const path = cacheFile('hook-schema.json');
+      // Byte-for-byte the shape measured live on disk during the v1.1.45 session.
+      writeFileSync(
+        path,
+        JSON.stringify({ version: '1.1.43', timestamp: 1786352189, source: 'npm-registry' })
+      );
+
+      const cache = readSelfUpdateCache(path);
+
+      expect(cache).not.toBeNull();
+      expect(cache?.latestVersion).toBe('1.1.43');
+      expect(cache?.schema).toBe('hook');
+      // epoch SECONDS → ISO instant
+      expect(cache?.checkedAt).toBe(new Date(1786352189 * 1000).toISOString());
+    });
+
+    it('reads the CLI schema {checkedAt,latestVersion}', () => {
+      const path = cacheFile('cli-schema.json');
+      const checkedAt = new Date(1786352189000).toISOString();
+      writeFileSync(path, JSON.stringify({ checkedAt, latestVersion: '8.8.8' }));
+
+      const cache = readSelfUpdateCache(path);
+
+      expect(cache).not.toBeNull();
+      expect(cache?.latestVersion).toBe('8.8.8');
+      expect(cache?.checkedAt).toBe(checkedAt);
+      expect(cache?.schema).toBe('cli');
+    });
+
+    it('prefers the CLI keys when a file carries both key sets', () => {
+      // Same precedence as the bash reader in session-env-check.sh (#1570):
+      // latestVersion first, version as fallback.
+      const path = cacheFile('both-schemas.json');
+      const checkedAt = new Date(1786352189000).toISOString();
+      writeFileSync(
+        path,
+        JSON.stringify({
+          checkedAt,
+          latestVersion: '8.8.8',
+          version: '9.9.9',
+          timestamp: 1786352189,
+          source: 'mixed',
+        })
+      );
+
+      const cache = readSelfUpdateCache(path);
+
+      expect(cache?.latestVersion).toBe('8.8.8');
+      expect(cache?.schema).toBe('cli');
+    });
+
+    it('falls back to the hook keys when the CLI keys are only partially present', () => {
+      const path = cacheFile('partial-cli.json');
+      writeFileSync(
+        path,
+        JSON.stringify({ latestVersion: '8.8.8', version: '9.9.9', timestamp: 1786352189 })
+      );
+
+      const cache = readSelfUpdateCache(path);
+
+      // `latestVersion` without `checkedAt` is not a usable CLI record.
+      expect(cache?.latestVersion).toBe('9.9.9');
+      expect(cache?.schema).toBe('hook');
+    });
+
+    it('accepts a millisecond-scale hook timestamp without dating it 50k years ahead', () => {
+      const path = cacheFile('ms-timestamp.json');
+      writeFileSync(path, JSON.stringify({ version: '1.1.43', timestamp: 1786352189000 }));
+
+      const cache = readSelfUpdateCache(path);
+
+      expect(cache?.checkedAt).toBe(new Date(1786352189000).toISOString());
+    });
+
+    it('accepts a numeric-string hook timestamp', () => {
+      const path = cacheFile('string-timestamp.json');
+      writeFileSync(path, JSON.stringify({ version: '1.1.43', timestamp: '1786352189' }));
+
+      const cache = readSelfUpdateCache(path);
+
+      expect(cache?.checkedAt).toBe(new Date(1786352189 * 1000).toISOString());
+      expect(cache?.schema).toBe('hook');
+    });
+
+    // --- negative: must return null (safe invalidation → caller re-fetches) ---
+
+    it('returns null when the cache file is absent', () => {
+      expect(readSelfUpdateCache(cacheFile('nope.json'))).toBeNull();
+    });
+
+    it('returns null on an empty cache file', () => {
+      const path = cacheFile('empty.json');
+      writeFileSync(path, '');
+      expect(readSelfUpdateCache(path)).toBeNull();
+    });
+
+    it('returns null on malformed JSON', () => {
+      const path = cacheFile('malformed.json');
+      writeFileSync(path, 'this is not json{{{');
+      expect(readSelfUpdateCache(path)).toBeNull();
+    });
+
+    it('returns null on valid JSON that is not an object', () => {
+      const arrayPath = cacheFile('array.json');
+      writeFileSync(arrayPath, JSON.stringify(['1.1.43']));
+      expect(readSelfUpdateCache(arrayPath)).toBeNull();
+
+      const nullPath = cacheFile('null.json');
+      writeFileSync(nullPath, 'null');
+      expect(readSelfUpdateCache(nullPath)).toBeNull();
+
+      const stringPath = cacheFile('string.json');
+      writeFileSync(stringPath, '"1.1.43"');
+      expect(readSelfUpdateCache(stringPath)).toBeNull();
+    });
+
+    it('returns null when neither key set is present', () => {
+      const path = cacheFile('no-version-key.json');
+      writeFileSync(path, JSON.stringify({ timestamp: 1786352189, source: 'npm-registry' }));
+      expect(readSelfUpdateCache(path)).toBeNull();
+    });
+
+    it('returns null when the hook version is present but the timestamp is unusable', () => {
+      const notANumber = cacheFile('bad-timestamp.json');
+      writeFileSync(notANumber, JSON.stringify({ version: '1.1.43', timestamp: 'not-a-number' }));
+      expect(readSelfUpdateCache(notANumber)).toBeNull();
+
+      const zero = cacheFile('zero-timestamp.json');
+      writeFileSync(zero, JSON.stringify({ version: '1.1.43', timestamp: 0 }));
+      expect(readSelfUpdateCache(zero)).toBeNull();
+
+      const missing = cacheFile('missing-timestamp.json');
+      writeFileSync(missing, JSON.stringify({ version: '1.1.43', source: 'npm-registry' }));
+      expect(readSelfUpdateCache(missing)).toBeNull();
+    });
+
+    it('returns null when version values are empty or the wrong type', () => {
+      const emptyString = cacheFile('empty-version.json');
+      writeFileSync(emptyString, JSON.stringify({ version: '   ', timestamp: 1786352189 }));
+      expect(readSelfUpdateCache(emptyString)).toBeNull();
+
+      const numeric = cacheFile('numeric-version.json');
+      writeFileSync(numeric, JSON.stringify({ version: 113, timestamp: 1786352189 }));
+      expect(readSelfUpdateCache(numeric)).toBeNull();
+    });
+  });
+
+  describe('checkSelfUpdate — hook-schema cache (#1575)', () => {
+    const cacheFile = (name: string): string => join(tempDir, name);
+
+    it('uses a FRESH hook-schema cache instead of re-querying npm', () => {
+      // The end-to-end regression: before the fix this cache read as null and every
+      // single run hit the npm registry.
+      const path = cacheFile('hook-fresh.json');
+      const now = Date.now();
+      writeFileSync(
+        path,
+        JSON.stringify({
+          version: '1.1.5',
+          timestamp: Math.floor((now - 1000) / 1000),
+          source: 'npm-registry',
+        })
+      );
+
+      const result = checkSelfUpdate({
+        currentVersion: '1.1.0',
+        cachePath: path,
+        cacheTtlMs: 24 * 60 * 60 * 1000,
+        fetchLatestVersion: () => {
+          throw new Error('Should not fetch when the hook-written cache is fresh');
+        },
+        now,
+      });
+
+      expect(result.checked).toBe(true);
+      expect(result.usedCache).toBe(true);
+      expect(result.latestVersion).toBe('1.1.5');
+      expect(result.updateAvailable).toBe(true);
+    });
+
+    it('re-fetches when the hook-schema cache is STALE', () => {
+      const path = cacheFile('hook-stale.json');
+      const now = Date.now();
+      const cacheTtlMs = 24 * 60 * 60 * 1000;
+      writeFileSync(
+        path,
+        JSON.stringify({
+          version: '1.1.5',
+          timestamp: Math.floor((now - cacheTtlMs - 60_000) / 1000),
+          source: 'npm-registry',
+        })
+      );
+
+      let fetchCalls = 0;
+      const result = checkSelfUpdate({
+        currentVersion: '1.1.0',
+        cachePath: path,
+        cacheTtlMs,
+        fetchLatestVersion: () => {
+          fetchCalls += 1;
+          return '1.1.6';
+        },
+        now,
+      });
+
+      expect(fetchCalls).toBe(1);
+      expect(result.usedCache).toBe(false);
+      expect(result.latestVersion).toBe('1.1.6');
+    });
+
+    it('re-fetches when a cache timestamp sits far in the future (fail-closed)', () => {
+      const path = cacheFile('hook-future.json');
+      const now = Date.now();
+      const cacheTtlMs = 24 * 60 * 60 * 1000;
+      writeFileSync(
+        path,
+        JSON.stringify({
+          version: '1.1.5',
+          timestamp: Math.floor((now + cacheTtlMs * 10) / 1000),
+          source: 'npm-registry',
+        })
+      );
+
+      let fetchCalls = 0;
+      const result = checkSelfUpdate({
+        currentVersion: '1.1.0',
+        cachePath: path,
+        cacheTtlMs,
+        fetchLatestVersion: () => {
+          fetchCalls += 1;
+          return '1.1.6';
+        },
+        now,
+      });
+
+      expect(fetchCalls).toBe(1);
+      expect(result.usedCache).toBe(false);
+    });
+
+    it('writes an envelope both readers can parse, converging the schema drift', () => {
+      const path = cacheFile('written-envelope.json');
+      const now = 1786352189123;
+
+      checkSelfUpdate({
+        currentVersion: '1.1.0',
+        cachePath: path,
+        fetchLatestVersion: () => '1.1.6',
+        now,
+      });
+
+      const written = JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>;
+
+      // CLI keys — read by this module and by session-env-check.sh
+      expect(written.latestVersion).toBe('1.1.6');
+      expect(written.checkedAt).toBe(new Date(now).toISOString());
+      // Hook keys — read by omcustom-auto-update.sh, which compares against `date +%s`
+      expect(written.version).toBe('1.1.6');
+      expect(written.timestamp).toBe(Math.floor(now / 1000));
+
+      // Round-trips through our own reader via the CLI branch.
+      const reread = readSelfUpdateCache(path);
+      expect(reread?.latestVersion).toBe('1.1.6');
+      expect(reread?.schema).toBe('cli');
     });
   });
 

@@ -123,6 +123,8 @@ Cross-reference: R010 Subagent Scope-Creep STOP Protocol, R002 (permission tiers
 > **v2.1.205+**: auto mode가 session transcript 파일 변조(tampering)를 차단하는 규칙이 추가되었습니다 — transcript 의존 스킬(homework/episodic-memory) 무결성 보호. 또한 Windows worktree 제거가 NTFS junction/symlink 존재 시 worktree 밖 파일을 삭제하던 문제가 수정되었습니다.
 -->
 
+> **v2.1.232+**: 시크릿·격리 보호가 확장되었습니다 — GitLab 토큰 계열(`glrt-`/`gloas-`/`glptt-`/`glagent-`/`glimt-`/`glsoat-`/`glcbt-`/`glft-`/`glffct-`) redaction 추가와 routable `glpat-`/`gldt-` 전체 redaction, `glab` CLI config가 `gh`와 동일한 샌드박스·자격증명 경로 보호를 받습니다. 또한 공유 `/tmp`의 cross-session messaging 소켓 디렉토리가 사전에 심어진 symlink나 타 사용자 소유 디렉토리를 **사용 대신 거부**하도록, Linux 파일시스템 샌드박스가 protected-path 우회에 대해 하드닝되었습니다. **구버전에서 GitLab 토큰은 redaction 대상이 아니었으므로 트랜스크립트·에이전트 출력에 원문 노출이 가능했습니다** — 과거 세션 로그를 공유하기 전 이 점을 전제합니다. 위 표의 "자격증명 저장소 덤프 금지"는 플랫폼 redaction과 무관하게 유지합니다(redaction은 최후 방어선이지 1차 방어선이 아님).
+
 ## Required Before Destructive Operations
 
 Verify target, assess impact scope, check recoverability, get user approval.

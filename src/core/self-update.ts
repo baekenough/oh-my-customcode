@@ -15,9 +15,52 @@ const DEFAULT_PACKAGE_NAME = 'oh-my-customcode';
 const DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_CACHE_PATH = join(homedir(), '.oh-my-customcode', 'self-update-cache.json');
 
-interface SelfUpdateCache {
+/**
+ * Epoch values at or above this are already MILLISECONDS, not seconds
+ * (1e12 ms = 2001-09-09; 1e12 s = year 33658 — no real `date +%s` reaches it).
+ */
+const MS_EPOCH_THRESHOLD = 1e12;
+
+/** Which on-disk key set a cache record was read from. */
+export type SelfUpdateCacheSchema = 'cli' | 'hook';
+
+/**
+ * Normalized, in-memory cache record.
+ *
+ * The on-disk file at `~/.oh-my-customcode/self-update-cache.json` has TWO current
+ * writers with DIFFERENT key names (measured 2026-08-10 — #1570, #1575):
+ *
+ *   `.claude/hooks/scripts/omcustom-auto-update.sh` → `{version, timestamp, source}`
+ *   `writeCache()` in this module                   → `{checkedAt, latestVersion}`
+ *
+ * Neither is legacy. `readSelfUpdateCache()` accepts both and normalizes to this shape,
+ * so a hook-written cache no longer forces the CLI to re-query npm on every run.
+ */
+export interface SelfUpdateCache {
+  /** ISO-8601 instant of the recorded check. */
+  checkedAt: string;
+  /** Version string exactly as stored (normalization happens at the call site). */
+  latestVersion: string;
+  /** On-disk key set this record came from. */
+  schema: SelfUpdateCacheSchema;
+}
+
+/**
+ * On-disk envelope written by {@link writeCache}.
+ *
+ * It carries BOTH key sets so every current reader gets a hit:
+ *   - this module and `session-env-check.sh` read `checkedAt` / `latestVersion`
+ *   - `omcustom-auto-update.sh` reads `version` / `timestamp` (epoch SECONDS)
+ *
+ * Writing only the CLI keys was the other half of #1575: the bash hook found no
+ * `"version"` key and re-queried the npm registry on every session start.
+ */
+interface SelfUpdateCacheFile {
   checkedAt: string;
   latestVersion: string;
+  version: string;
+  timestamp: number;
+  source: string;
 }
 
 export interface SelfUpdateCheckResult {
@@ -150,23 +193,85 @@ export function isNpxInvocation(
   );
 }
 
-function readCache(cachePath: string): SelfUpdateCache | null {
+function isJsonRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Return a trimmed non-empty string, or null for any other value. */
+function readNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}
+
+/**
+ * Convert the hook writer's epoch `timestamp` into an ISO-8601 string.
+ *
+ * `omcustom-auto-update.sh` writes `date +%s` — epoch SECONDS. Millisecond-scale values
+ * are also accepted: reading milliseconds as seconds would place `checkedAt` ~50k years
+ * in the future, and a future timestamp makes a TTL check fail OPEN (the cache would look
+ * fresh forever). See the future-timestamp guard in {@link isCacheFresh}.
+ */
+function epochToIsoString(value: unknown): string | null {
+  let numeric = Number.NaN;
+  if (typeof value === 'number') {
+    numeric = value;
+  } else if (typeof value === 'string') {
+    numeric = Number(value.trim());
+  }
+
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return null;
+  }
+
+  const milliseconds = numeric >= MS_EPOCH_THRESHOLD ? numeric : numeric * 1000;
+  const date = new Date(milliseconds);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date.toISOString();
+}
+
+/**
+ * Read the self-update cache, accepting BOTH on-disk schemas (see {@link SelfUpdateCache}).
+ *
+ * Precedence when a file carries both key sets: the CLI keys (`latestVersion`/`checkedAt`)
+ * win — identical to the bash reader in `session-env-check.sh`, which tries `latestVersion`
+ * first and falls back to `version` (#1570). Records that satisfy neither key set (missing
+ * file, empty file, malformed JSON, non-object JSON, partial keys) are safely invalidated by
+ * returning `null`, which makes the caller re-query npm rather than trust a half-read entry.
+ */
+export function readSelfUpdateCache(cachePath: string): SelfUpdateCache | null {
   if (!existsSync(cachePath)) {
     return null;
   }
 
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(readFileSync(cachePath, 'utf-8')) as Partial<SelfUpdateCache>;
-    if (!parsed.checkedAt || !parsed.latestVersion) {
-      return null;
-    }
-    return {
-      checkedAt: parsed.checkedAt,
-      latestVersion: parsed.latestVersion,
-    };
+    parsed = JSON.parse(readFileSync(cachePath, 'utf-8'));
   } catch {
     return null;
   }
+
+  if (!isJsonRecord(parsed)) {
+    return null;
+  }
+
+  const cliVersion = readNonEmptyString(parsed.latestVersion);
+  const cliCheckedAt = readNonEmptyString(parsed.checkedAt);
+  if (cliVersion && cliCheckedAt) {
+    return { checkedAt: cliCheckedAt, latestVersion: cliVersion, schema: 'cli' };
+  }
+
+  const hookVersion = readNonEmptyString(parsed.version);
+  const hookCheckedAt = epochToIsoString(parsed.timestamp);
+  if (hookVersion && hookCheckedAt) {
+    return { checkedAt: hookCheckedAt, latestVersion: hookVersion, schema: 'hook' };
+  }
+
+  return null;
 }
 
 function writeCache(cachePath: string, latestVersion: string, now: number): void {
@@ -174,9 +279,14 @@ function writeCache(cachePath: string, latestVersion: string, now: number): void
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
-  const payload: SelfUpdateCache = {
+  const payload: SelfUpdateCacheFile = {
     checkedAt: new Date(now).toISOString(),
     latestVersion,
+    // Mirror of the two fields the bash hook readers grep for. `timestamp` MUST stay in
+    // epoch seconds — `omcustom-auto-update.sh` compares it against `date +%s`.
+    version: latestVersion,
+    timestamp: Math.floor(now / 1000),
+    source: 'omcustom-cli',
   };
   writeFileSync(cachePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf-8');
 }
@@ -186,7 +296,13 @@ function isCacheFresh(cache: SelfUpdateCache, now: number, cacheTtlMs: number): 
   if (Number.isNaN(checkedAt)) {
     return false;
   }
-  return now - checkedAt < cacheTtlMs;
+  const age = now - checkedAt;
+  // Corruption guard: without this, a timestamp far in the future yields a negative age,
+  // which is always `< cacheTtlMs` — the cache would never expire.
+  if (age < -cacheTtlMs) {
+    return false;
+  }
+  return age < cacheTtlMs;
 }
 
 /**
@@ -406,7 +522,7 @@ export function checkSelfUpdate(options: SelfUpdateOptions): SelfUpdateCheckResu
 
   let latestVersion: string | null = null;
   let usedCache = false;
-  const cache = readCache(cachePath);
+  const cache = readSelfUpdateCache(cachePath);
 
   if (cache && isCacheFresh(cache, now, cacheTtlMs)) {
     const cachedVersion = normalizeVersion(cache.latestVersion);

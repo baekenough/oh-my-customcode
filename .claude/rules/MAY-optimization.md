@@ -40,6 +40,10 @@
 
 > **v2.1.224+**: mid-turn에 연결된 MCP 도구가 **이름 고지 없이** tool search로 deferred되던 결함이 수정되었습니다. 구버전에서는 세션 도중 붙은 MCP 서버의 도구가 이름조차 노출되지 않아 "그런 도구 없음"으로 오판할 수 있었으므로, 위 tool-availability 주의(`command -v` 사전 확인과 동류)를 MCP 도구에도 적용합니다 — 도구 부재 결론 전에 `ToolSearch`로 실측합니다.
 
+> **v2.1.228+**: Write 도구가 **이번 세션에 읽지 않은 기존 파일도 newer model에서는 덮어쓸 수 있도록** 변경되어 Edit 도구 규칙과 일치합니다(구모델은 여전히 read 선행 필요). 도구가 강제하던 read-before-write 가드가 모델에 따라 사라지므로, "Write가 실패했다 = 파일을 안 읽었다"는 진단이 더 이상 보편적으로 성립하지 않고, **읽지 않은 파일을 Write하면 기존 내용이 경고 없이 소실**됩니다 — 전체 교체가 아닌 변경에는 Edit을 쓰는 원칙을 도구 강제가 아니라 절차로 유지합니다. 또한 deferred-tools reminder가 skill 호출 후 모델에 두 번 전달되던 문제가 수정되었습니다(중복 컨텍스트 소모).
+
+> **v2.1.229+**: 도구 호출의 `glob`/`file_path`/`command` 값이 **비문자열일 때 에러 화면으로 크래시**하던 문제가 수정되었습니다(해당 세션의 `--resume`에서도 재발). 구버전에서 이 크래시는 세션을 복구 불가 상태로 만들면서 **원인이 도구 인자 타입이라는 단서를 남기지 않았으므로**, 스크립트로 도구 인자를 조립할 때 문자열 타입을 보장합니다(cross-ref R023 Workflow Script Sanity Check). 좁은 터미널에서 progress bar·마크다운 표 렌더링 시 발생하던 RangeError 크래시(`claude --continue`/`--resume` 시작 시에도 발생)도 함께 수정되었습니다.
+
 ### Capability-Aware Tool Scheduling
 
 When dispatching parallel tool calls, consider per-tool capabilities to optimize scheduling:

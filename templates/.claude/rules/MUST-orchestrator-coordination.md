@@ -421,6 +421,8 @@ Before spawning any agent:
 
 > **v2.1.221+**: background session이 작업 보존을 위해 commit·push를 수행하고, draft PR은 작업이 요구할 때만 열며, 사용자의 CLAUDE.md git 지침을 따르고, 항상 작업 위치를 보고하며 종료하도록 변경되었습니다. 이 저장소의 R010은 모든 git 작업을 mgr-gitnerd 위임으로 요구하므로 background session은 그 지침을 읽고 동작하지만, **R020 기준 ground-truth(`git log` / `gh pr view`) 실측 없이 background session의 커밋/푸시 완료 보고를 신뢰하지 않습니다**. 또한 v2.1.221에서 `/status`가 세션 종류(interactive / background attached / background unattended)를 표시하므로 무인 실행 여부를 결정론적으로 확인할 수 있습니다.
 
+> **v2.1.232+**: interactive session의 **non-teammate 에이전트 스폰이 기본 background 실행**으로 바뀌었습니다(subagent forking 기본 활성화의 일부). 즉 Agent 도구 호출의 반환은 "작업 완료"가 아니라 **"백그라운드 착수"일 수 있으므로**, 오케스트레이터는 스폰 반환이나 완료 통지를 완료 근거로 삼지 않고 R020 ground-truth(`git status` / `grep` / 검증 스크립트)로 확인합니다 — 구버전에서는 동기 반환이 기본이라 "반환 = 완료"라는 암묵 전제가 대체로 성립했고, 그 전제가 이 버전부터 무너집니다. 위 v2.1.221 `/status` 표시와 v2.1.211(실행 중 agent 결과를 지어내지 않음)이 진단 보조 수단입니다. cross-ref R009(fork의 컨텍스트 상속), R018(Teams member는 non-teammate가 아니므로 이 변경 대상 밖).
+
 ## Agent Capability Pre-Check
 
 Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).
@@ -630,6 +632,8 @@ git 위임 에이전트는 pre-commit/pre-push 훅 차단을 **자체 판단으�
 | pre-commit 훅 차단(테스트 실패 등)을 `--no-verify`로 자체 우회하고 커밋 진행 | 차단 사실과 원인을 오케스트레이터에 **보고하고 대기** — 우회는 사전 승인 후에만 |
 
 > Origin: #1574 (v1.1.44 세션 — mgr-gitnerd가 `bun test` 11 fail로 인한 pre-commit 차단을 `--no-verify`로 자체 우회; 결과는 무해했으나 승인 없는 품질 게이트 우회는 절차 이탈). Cross-ref: R020 (Test-Skip Is Not Completion — 그린 빌드 회피 금지), R017 (커밋 전 검증 게이트).
+
+> **v2.1.229+**: `/commit-push-pr`가 위험 플래그(`--force`, `--amend`, `--no-verify` 등)를 가진 git/gh 명령을 **더 이상 auto-approve하지 않습니다**. 플랫폼이 이 저장소의 위 조항(v1.1.45 신설)과 **독립적으로 같은 결론**에 도달한 사례입니다 — 즉 `--no-verify` 상시 금지는 이 저장소만의 보수적 관행이 아니라 플랫폼이 기본값으로 채택한 경계입니다. **구버전에서는 이 플래그들이 프롬프트 없이 통과했으므로, 과거 세션에서 `--no-verify` 커밋이 프롬프트 없이 성사된 사실은 승인의 증거가 아닙니다**(R020 "실행됨 ≠ 승인됨"). 플랫폼 프롬프트는 방어심층일 뿐 위 조항의 오케스트레이터 사전 승인 요구를 대체하지 않습니다.
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.206+**: `/commit-push-pr`가 origin 외에 `remote.pushDefault`(또는 단일 remote)로의 git push도 auto-allow합니다. mgr-gitnerd git 위임 흐름 관련. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.

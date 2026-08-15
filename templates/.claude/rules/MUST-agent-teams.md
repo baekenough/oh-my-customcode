@@ -42,6 +42,8 @@ These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` a
 
 > **v2.1.224/225+**: CC 네이티브 `SendMessage`가 **cross-session으로 확장**되었습니다(다른 머신 포함, macOS/Linux) — `ListAgents`로 대상을 열거하고 `crossSessionInbound` / `dialogExpiry` 설정으로 수신·만료를 제어합니다. 위 표의 "Cross-session = claude-peers-mcp 전용" 구분은 이제 **유일한 수단이 아니며**, 브로커 없이 네이티브 경로를 쓸 수 있습니다. 다만 위 Cross-Session Relay Authority Hardening(v2.1.166)의 권한 비전파 원칙은 네이티브 경로에도 동일하게 적용됩니다 — cross-session 메시지는 조율 신호이지 승인 채널이 아닙니다. (225) cross-session 메시지가 headless 세션·기동 중에 **고지도 만료도 없이 대기**하던 결함이 수정되었으므로, 구버전에서 "응답 없음"은 미수신이 아니라 무기한 대기였을 수 있습니다.
 
+> **v2.1.229/232+**: 네이티브 cross-session 경로의 대상 지정이 쉬워졌습니다 — (229) `ListAgents`가 끊긴 Remote Control 세션을 `offline`, 클라우드 세션을 `cloud`로 표시하므로 **열거 결과에 있다는 사실만으로 도달 가능하다고 가정하지 않습니다**(구버전에서는 살아있는 세션과 끊긴 세션이 구분 없이 나열되어 무응답 원인을 판별할 수 없었습니다). (232) 프롬프트에 `@`로 다른 세션을 이름으로 멘션하면 `SendMessage`가 그 세션에 직접 도달하고, bare name이 **살아있는 세션 1개와 정확히 일치하면 ref 확인 없이 전달**됩니다 — 같은 머신의 세션 이름은 중복 시 `name-word-word` 변형으로 유일성이 보장되므로 이름 기반 전달이 결정론적입니다. 전달 성공은 여전히 조율 신호일 뿐이며, 아래 Member Completion Verification의 ground-truth 원칙과 v2.1.166 권한 비전파 원칙은 그대로 적용됩니다. 또한 (232) interactive session의 background 기본 실행은 **non-teammate 스폰에 한정**되므로 Teams member에는 적용되지 않습니다 — 아래 stall handling의 2분 휴리스틱을 background 지연과 혼동하지 않습니다(cross-ref R010).
+
 ### Cross-Session Relay Authority Hardening (CC v2.1.166+)
 
 <!-- ARCHIVED CC version note (historical):
