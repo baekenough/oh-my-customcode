@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.45",
-  "generatedAt": "2026-08-10T12:05:42.190Z",
-  "templateVersion": "1.1.45",
+  "generatorVersion": "1.1.46",
+  "generatedAt": "2026-08-15T01:38:08.996Z",
+  "templateVersion": "1.1.46",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "4fd5560f2d363d57ba9fe6e27b9e734df744a366039f6f89cb55c6b399a48a91",
-      "size": 52707,
+      "templateHash": "9007430ef4d092c8aa7a1c1c8f25ba1cd7198fea22315a3fe3d21e0b22dfcab8",
+      "size": 54390,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "e896069cb80f37c69627b53847b56c1ab4558706da26a9e905c789ee42bc0745",
-      "size": 12954,
+      "templateHash": "b49c3caa70bcd9fc2e15d2ae6efe84cf5301bdeaad1917fe2820a774ea805c6c",
+      "size": 14584,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "fcfedfbc3f3b9c3cbee824b833239351a03de17d62083be658ed11837b9ee41f",
-      "size": 48556,
+      "templateHash": "d360aef848021e5b8943521ea71c0c44c8cf286cc1122e1db3301f3b46445526",
+      "size": 49243,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -65,13 +65,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "5d69566ee0cc7a33fbba040a661aff4a5c1eee29c70fc08091167da1abc242f4",
-      "size": 27338,
+      "templateHash": "8bd71ab47c1a787ed5226e6c5b7b5e58e88ebea17dd079fa3ac2d84c38aa9b63",
+      "size": 28615,
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "7fd13c5a453c0ab47a19199cfa3322affd0e0827ef7d84021e02d4389a79a23a",
-      "size": 10934,
+      "templateHash": "b643125a8c94e14c7dd40bc3250669e136ef3fc1b5646c7b2c421b725dadf526",
+      "size": 12396,
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
-      "templateHash": "ca61895d7c83c098589b866ebdd03030cdf486138cd0c7c3e56dd9b14aa67561",
-      "size": 13699,
+      "templateHash": "9526d7e7b674fc6d86c49ddf305163409b187686ddb3a021c0e77d63e6568e9a",
+      "size": 16228,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -90,8 +90,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
-      "templateHash": "db3f595ffa93a397c0b8680247576e964bb40e404982afc3f54849d7051e71c1",
-      "size": 13585,
+      "templateHash": "ed66d8209fea645242ac36c6e190f7c8d7871b6efa32945f472306401e6bc639",
+      "size": 14589,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
@@ -100,13 +100,13 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "a19cbd2c50d7794c8295f151e1d1e09ac3613db8c011fa5b719744b4752d6d57",
-      "size": 17116,
+      "templateHash": "b07acc06384554f5b1c052663c4c4442e473b4db5e16999bd4f1b31615c2f40f",
+      "size": 17713,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "90520fc8a94b0160a1577ba9a8e321829e22731284d938af6ed39f9b99090b70",
-      "size": 23405,
+      "templateHash": "ddc14bce27b2f159002cde9e8d3c17fd9bd2a341a42eb589d675d15694e8f351",
+      "size": 24438,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
