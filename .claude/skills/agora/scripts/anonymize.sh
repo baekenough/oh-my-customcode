@@ -66,8 +66,12 @@ shuffle_labels() {
 
 # ---------------------------------------------------------------------------
 # Fingerprint guard (spec §12-(1)). Case-insensitive; a hit aborts the session.
+# `claude` is word-bounded (not a substring match) the same way `agy` is, so it
+# also catches bare self-references ("As Claude noted...") that a
+# hyphen/space-anchored pattern alone would miss; this subsumes the narrower
+# claude-opus/claude-sonnet/claude-/"claude -p" forms, so they are folded in.
 # ---------------------------------------------------------------------------
-AGORA_BANNED_PATTERNS='codex|omx|(^|[^a-z])agy([^a-z]|$)|gemini|claude -p|antigravity|gpt-oss|claude[- ]opus|claude[- ]sonnet|claude-|SEALED/|/mapping/|raw/round-'
+AGORA_BANNED_PATTERNS='codex|omx|(^|[^a-z])agy([^a-z]|$)|gemini|antigravity|gpt-oss|(^|[^a-z])claude([^a-z]|$)|SEALED/|/mapping/|raw/round-'
 
 assert_no_fingerprint() {
   local file="$1"
@@ -111,27 +115,65 @@ normalize_response() {
 }
 
 # ---------------------------------------------------------------------------
-# relabel_prior <session_dir> <current_round> <prior_round> — spec §6.
+# relabel_prior <session_dir> <current_round> <prior_round> [map_cur_path] — spec §6.
 # vendor = map[M]⁻¹(label_M); label_N = map[N]⁻¹(vendor)
+#
+# [map_cur_path] overrides where the CURRENT round's mapping is read from; it
+# defaults to the sealed on-disk path, but build_bundle passes its staged
+# (not-yet-sealed) working copy instead, because relabel_prior runs before the
+# fingerprint guard has cleared the current round (spec §12-(1) — see C1).
+#
+# Exit codes distinguish two failure classes so the caller can react correctly:
+#   1 = prior-round data does not exist yet (normal — e.g. round 1 has no round 0)
+#   2 = prior-round data EXISTS but failed to parse (integrity problem — the
+#       caller must abort loudly rather than silently drop the round)
 # ---------------------------------------------------------------------------
 relabel_prior() {
-  local dir="$1" cur="$2" prior="$3"
+  local dir="$1" cur="$2" prior="$3" map_cur_path="${4:-$dir/SEALED/mapping/round-$cur.json}"
   local map_prior="$dir/SEALED/mapping/round-$prior.json"
-  local map_cur="$dir/SEALED/mapping/round-$cur.json"
   local bundle_prior="$dir/anon/round-$prior.json"
   local verdict_prior="$dir/verdict/round-$prior.json"
 
-  [ -f "$map_prior" ] && [ -f "$map_cur" ] && [ -f "$bundle_prior" ] || return 1
+  [ -f "$map_prior" ] && [ -f "$bundle_prior" ] && [ -f "$map_cur_path" ] || return 1
+
+  local mp mc bp
+  mp=$(jq -c '.map' "$map_prior" 2>/dev/null) || mp=''
+  if [ -z "$mp" ] || [ "$mp" = 'null' ]; then
+    printf 'anonymize.sh: INTEGRITY: round-%s mapping is unreadable or malformed (%s)\n' \
+      "$prior" "$map_prior" >&2
+    return 2
+  fi
+
+  mc=$(jq -c '.map' "$map_cur_path" 2>/dev/null) || mc=''
+  if [ -z "$mc" ] || [ "$mc" = 'null' ]; then
+    printf 'anonymize.sh: INTEGRITY: current-round mapping is unreadable or malformed (%s)\n' \
+      "$map_cur_path" >&2
+    return 2
+  fi
+
+  bp=$(jq -c '.' "$bundle_prior" 2>/dev/null) || bp=''
+  if [ -z "$bp" ]; then
+    printf 'anonymize.sh: INTEGRITY: round-%s bundle is unreadable or malformed (%s)\n' \
+      "$prior" "$bundle_prior" >&2
+    return 2
+  fi
 
   local verdict_json='{"verdict":"","draft":""}'
   if [ -f "$verdict_prior" ]; then
-    verdict_json=$(jq -c '{verdict: (.verdict // ""), draft: (.draft // "")}' "$verdict_prior")
+    local vd
+    vd=$(jq -c '{verdict: (.verdict // ""), draft: (.draft // "")}' "$verdict_prior" 2>/dev/null) || vd=''
+    if [ -z "$vd" ]; then
+      printf 'anonymize.sh: INTEGRITY: round-%s verdict is unreadable or malformed (%s)\n' \
+        "$prior" "$verdict_prior" >&2
+      return 2
+    fi
+    verdict_json="$vd"
   fi
 
   jq -c -n \
-    --argjson mp "$(jq -c '.map' "$map_prior")" \
-    --argjson mc "$(jq -c '.map' "$map_cur")" \
-    --argjson bp "$(jq -c '.' "$bundle_prior")" \
+    --argjson mp "$mp" \
+    --argjson mc "$mc" \
+    --argjson bp "$bp" \
     --argjson vd "$verdict_json" \
     --argjson rn "$prior" '
       ($mc | to_entries | map({key: .value, value: .key}) | from_entries) as $curByVendor
@@ -197,9 +239,16 @@ build_bundle() {
   local map_json
   map_json=$(shuffle_labels "$seed" "${present[@]}")
 
-  mkdir -p "$dir/SEALED/mapping" "$dir/anon"
+  # ---------------------------------------------------------------------------
+  # Stage everything under $work. Nothing is written to a trust-boundary path
+  # (SEALED/mapping/ or anon/) until the fingerprint guard below clears the
+  # assembled bundle (spec §12-(1)). Write-then-delete leaves a window where a
+  # leaked bundle — or an orphaned sealed mapping with no matching bundle — is
+  # a real file at a path Task 4/5 reviewers/judge (or the round loop) can read.
+  # ---------------------------------------------------------------------------
+  local map_work="$work/mapping.json"
   jq -n --argjson r "$round" --arg s "$seed" --argjson m "$map_json" \
-    '{round: $r, seed: $s, map: $m}' > "$dir/SEALED/mapping/round-$round.json"
+    '{round: $r, seed: $s, map: $m}' > "$map_work"
 
   # reviewers[] — always sorted by label (spec §6).
   local reviewers='[]'
@@ -212,17 +261,29 @@ build_bundle() {
       -n '$acc + [{label: $l, findings: $body[0].findings, overall: $body[0].overall, rationale: $body[0].rationale}]')
   done
 
-  # prior_rounds[] — the two most recent rounds only (spec §11).
+  # prior_rounds[] — the two most recent rounds only (spec §11). The CURRENT
+  # round's mapping is read from the staged $map_work, not from SEALED/, since
+  # it has not been sealed yet at this point in the pipeline.
   local priors='[]' p
   for p in $(seq $(( round - 2 > 1 ? round - 2 : 1 )) $(( round - 1 ))); do
     [ "$p" -ge 1 ] || continue
-    local entry
-    if entry=$(relabel_prior "$dir" "$round" "$p" 2>/dev/null); then
+    local entry relabel_err="$work/relabel-err-$p.log"
+    if entry=$(relabel_prior "$dir" "$round" "$p" "$map_work" 2>"$relabel_err"); then
       priors=$(jq -c --argjson acc "$priors" --argjson e "$entry" -n '$acc + [$e]')
+    else
+      local rc=$?
+      if [ "$rc" -eq 2 ]; then
+        # Prior-round files exist but failed to parse: an integrity problem,
+        # not an absent round. Fail loud instead of silently dropping the
+        # round — the judge must never be blind to a round without a signal.
+        cat "$relabel_err" >&2
+        return 1
+      fi
+      printf 'anonymize.sh: no prior-round data for round %s, skipping\n' "$p" >&2
     fi
   done
 
-  local out="$dir/anon/round-$round.json"
+  local bundle_work="$work/bundle.json"
   jq -n \
     --argjson r "$round" \
     --arg t "$topic" \
@@ -231,12 +292,23 @@ build_bundle() {
     --argjson rv "$reviewers" \
     --argjson pr "$priors" \
     '{round: $r, topic: $t, attachments: $att, agenda: $ag, reviewers: $rv, prior_rounds: $pr}' \
-    > "$out"
+    > "$bundle_work"
 
-  if ! assert_no_fingerprint "$out"; then
-    rm -f "$out"
+  # ---------------------------------------------------------------------------
+  # Fingerprint guard, scoped to VENDOR-DERIVED content only (reviewers +
+  # prior_rounds). topic/agenda/attachments are operator-authored — a session
+  # discussing "should we adopt Gemini" is a topic, not a leak (spec Ruling 10).
+  # ---------------------------------------------------------------------------
+  local vendor_derived="$work/vendor-derived.json"
+  jq -c '{reviewers, prior_rounds}' "$bundle_work" > "$vendor_derived"
+
+  if ! assert_no_fingerprint "$vendor_derived"; then
     return 1
   fi
+
+  mkdir -p "$dir/SEALED/mapping" "$dir/anon"
+  mv "$map_work" "$dir/SEALED/mapping/round-$round.json"
+  mv "$bundle_work" "$dir/anon/round-$round.json"
   return 0
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -414,6 +415,142 @@ describe('anonymize.sh --build', () => {
       );
       expect(result.exitCode).not.toBe(0);
       expect(result.stderr).toContain('AGORA_FINGERPRINT_DETECTED');
+
+      // spec §12-(1): a leak must never touch a trust-boundary path, not even
+      // transiently. Both SEALED/mapping (who-said-what metadata) and anon/ (the
+      // leaky bundle itself) must be entirely absent after an abort — a
+      // write-then-delete implementation would leave a window where the leak is
+      // a real file on disk, and could leave an orphaned mapping with no bundle.
+      expect(existsSync(join(dir, 'anon/round-1.json'))).toBe(false);
+      expect(existsSync(join(dir, 'SEALED/mapping/round-1.json'))).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // I1: a bare "Claude" self-reference with no model name attached is the most
+  // common form of a reviewer's first-person self-identification, and must trip
+  // the guard exactly like the "Claude Opus" case above.
+  it('detects a bare "Claude" self-reference with no model name attached', async () => {
+    const dir = await makeSession('raw-leaky-bare-claude');
+    try {
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain('AGORA_FINGERPRINT_DETECTED');
+      expect(existsSync(join(dir, 'anon/round-1.json'))).toBe(false);
+      expect(existsSync(join(dir, 'SEALED/mapping/round-1.json'))).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // I3 (Ruling 10): the fingerprint guard is scoped to vendor-derived content
+  // only (reviewers + prior_rounds). An operator's own topic naming a
+  // vendor/model is the discussion subject, not a leak, and must not abort.
+  it('does not trip the fingerprint guard on an operator-authored topic naming a vendor', async () => {
+    const dir = await makeSession('raw');
+    try {
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          'Should we adopt Gemini 3 Pro?',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('AGORA_FINGERPRINT_DETECTED');
+
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      expect(bundle.topic).toBe('Should we adopt Gemini 3 Pro?');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // I2: prior-round data that EXISTS but fails to parse is an integrity problem,
+  // not an absent round — the build must fail loudly instead of silently
+  // dropping the round from prior_rounds[], and must not leave partial output.
+  it('fails the build instead of silently dropping a round when prior-round data is corrupt', async () => {
+    const dir = await makeSession('raw');
+    try {
+      await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      await cp(join(dir, 'SEALED/raw/round-1'), join(dir, 'SEALED/raw/round-2'), {
+        recursive: true,
+      });
+      // Corrupt round 1's sealed mapping AFTER it was validly written — files
+      // present but unreadable, distinct from "no prior round yet" (missing).
+      await writeFile(join(dir, 'SEALED/mapping/round-1.json'), 'not json');
+
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '2',
+          '--seed',
+          'agora-1-r2',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).not.toBe(0);
+      expect(existsSync(join(dir, 'anon/round-2.json'))).toBe(false);
+      expect(existsSync(join(dir, 'SEALED/mapping/round-2.json'))).toBe(false);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -572,7 +709,6 @@ describe('anonymize.sh --build', () => {
       await cp(join(dir, 'SEALED/raw/round-1'), join(dir, 'SEALED/raw/round-2'), {
         recursive: true,
       });
-      await writeFile(join(dir, 'verdict-round-1.json'), '');
       await mkdir(join(dir, 'verdict'), { recursive: true });
       await writeFile(
         join(dir, 'verdict/round-1.json'),
@@ -601,30 +737,48 @@ describe('anonymize.sh --build', () => {
 
       const m1 = JSON.parse(await readFile(join(dir, 'SEALED/mapping/round-1.json'), 'utf-8'));
       const m2 = JSON.parse(await readFile(join(dir, 'SEALED/mapping/round-2.json'), 'utf-8'));
+      const b1 = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
       const b2 = JSON.parse(await readFile(join(dir, 'anon/round-2.json'), 'utf-8'));
 
       expect(b2.prior_rounds.length).toBe(1);
       expect(b2.prior_rounds[0].round).toBe(1);
       expect(b2.prior_rounds[0].verdict).toBe('BUILD_WITH_CHANGES');
 
+      // Guard the guard: if the two seeds happened to land on the same
+      // permutation, every assertion below would be vacuously satisfied even
+      // by a relabel_prior that performs no remapping at all.
+      expect(m1.map).not.toEqual(m2.map);
+
       const invert = (m: Record<string, string>) =>
         Object.fromEntries(Object.entries(m).map(([k, v]) => [v, k]));
       const r2ByVendor = invert(m2.map);
 
-      for (const prior of b2.prior_rounds[0].reviewers) {
-        // Every prior label must be the CURRENT-round label of some vendor.
-        expect(Object.values(r2ByVendor)).toContain(prior.label);
-      }
-      // And no prior entry keeps a stale round-1 label unless that vendor happens to
-      // hold the same label in round 2.
-      const staleOnly = Object.entries(m1.map)
-        .filter(([label, vendor]) => r2ByVendor[vendor as string] !== label)
-        .map(([label]) => label);
-      const priorLabels = b2.prior_rounds[0].reviewers.map((r: { label: string }) => r.label);
-      const stalePresent = staleOnly.filter(
-        (l) => priorLabels.filter((p: string) => p === l).length > 1
+      // Track each vendor across rounds via its round-1 rationale (unique per
+      // vendor in these fixtures) — a tracer independent of anything
+      // relabel_prior itself computed, so it cannot be trivially satisfied.
+      const round1LabelByRationale: Record<string, string> = Object.fromEntries(
+        b1.reviewers.map((r: { label: string; rationale: string }) => [r.rationale, r.label])
       );
-      expect(stalePresent).toEqual([]);
+
+      expect(b2.prior_rounds[0].reviewers.length).toBe(3);
+      for (const prior of b2.prior_rounds[0].reviewers) {
+        const round1Label = round1LabelByRationale[prior.rationale];
+        expect(round1Label).toBeDefined();
+        const vendor = m1.map[round1Label];
+        // The relabelled prior entry must carry the vendor's CURRENT
+        // (round-2) label, never its stale round-1 label.
+        expect(prior.label).toBe(r2ByVendor[vendor]);
+      }
+
+      // At least one vendor's label differs between round 1 and round 2
+      // (guaranteed by the map-inequality assertion above) — confirm
+      // relabel_prior actually performed that remap rather than passing
+      // round-1 labels through unchanged.
+      const changed = b2.prior_rounds[0].reviewers.some(
+        (prior: { label: string; rationale: string }) =>
+          prior.label !== round1LabelByRationale[prior.rationale]
+      );
+      expect(changed).toBe(true);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
