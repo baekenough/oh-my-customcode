@@ -10,13 +10,17 @@ Before declaring any task `[Done]`, verify completion against task-type-specific
 
 | Task Type | REQUIRED Verification Before [Done] |
 |-----------|-------------------------------------|
-| Release | All issues closed, version bumped, PR merged, GitHub Release created; **External automation verified**: `.github/workflows/` listed AND `gh run list --limit 10` checked for auto-publish workflows |
+| Release | All issues closed, version bumped, PR merged; **대기 조건은 AND** — `release.yml` completed **AND** GitHub Release `isDraft=false` (npm 도달은 충분조건이 아님, 아래 참조); **External automation verified**: `.github/workflows/` listed AND `gh run list --limit 10` checked for auto-publish workflows |
 | Implementation | Code compiles/passes lint, tests pass (if exist), no TODO markers left |
 | Documentation | Links valid, counts accurate, cross-references updated |
 | Git Operations | Operation succeeded (check exit code), working tree clean |
 | Code Review | All findings addressed or explicitly deferred with justification |
 | Agent/Skill Creation | Frontmatter valid, referenced skills exist, routing updated |
 | UI/Frontend | Browser render verified (dev server running + page loaded), no console errors, visual output matches intent; **CSS/style changes**: capture before/after visual diff or screenshot; type-check passing alone is NOT sufficient |
+
+> **비동기 연쇄의 대기 조건 = 가장 늦게 완료되는 산출물 (Origin: #1584 #2)**: 릴리즈 체인처럼 산출물이 순차 생성되는 비동기 연쇄에서, 중간 산출물 도달을 완료로 읽으면 뒤따르는 산출물이 미완인 채 남는다. npm publish는 `release.yml` **안에서** GitHub Release 생성보다 먼저 끝나므로, npm 도달 시점에 검증을 끝내면 Release가 `draft=true`로 남을 수 있다. `gh run view <id> --json status`(completed) **AND** `gh release view <tag> --json isDraft`(false)를 둘 다 확인한다.
+>
+> v1.1.44는 타이밍이 맞아 드러나지 않고 v1.1.45에서 노출된 **간헐적 결함**이다 — 한 번 통과한 검증 순서가 경합을 배제하지 않는다.
 
 ## Optional: Quantitative Evidence (advisory, added v0.114.0, #1034)
 
@@ -273,14 +277,18 @@ Origin: #1266 ④.
 
 #### 자율 루프 세션의 턴 경계 정의 (계수 전 확정 필수)
 
-위 파싱 레시피는 **"사용자 프롬프트 = 턴 경계"**를 암묵 전제한다. `/fsd` 같은 자율 루프는 사용자 프롬프트가 거의 없어(실측: 사용자 프롬프트 4개 대 assistant 응답 30여 회) 이 전제로는 경계 재구성이 실패하고, 계수 자체가 성립하지 않는다. 자율 루프 transcript를 셀 때는 대안 경계 정의(예: **`tool_result` 직후 첫 text 블록을 응답 시작으로 간주**)를 먼저 확정하고, 정의를 확정하기 전에는 **위반 횟수를 단정하지 않는다**.
+위 파싱 레시피는 **"사용자 프롬프트 = 턴 경계"**를 암묵 전제한다. `/fsd` 같은 자율 루프는 사용자 프롬프트가 거의 없어(실측: 사용자 프롬프트 4개 대 assistant 응답 30여 회) 이 전제로는 경계 재구성이 실패하고, 계수 자체가 성립하지 않는다. 자율 루프 transcript를 셀 때는 **두 단계를 순서대로** 수행하고, 완료 전에는 **위반 횟수를 단정하지 않는다**.
+
+1. **전처리 — `.message.role`이 존재하는 라인만 필터링**한다. 트랜스크립트에는 role 없는 라인(메타·이벤트·요약)이 assistant/user 사이에 대량으로 끼어 있어, 필터 없이는 **인접성 판정 자체가 깨진다**. 2단계의 어떤 경계 정의도 이 필터 없이는 성립하지 않는다.
+2. **대안 경계 정의 확정** — 예: `tool_result` 직후 첫 text 블록을 응답 시작으로 간주.
 
 | Anti-pattern | Required |
 |--------------|----------|
-| 자율 루프 transcript를 사용자 프롬프트 경계로 파싱해 위반 N회로 단정 | 대안 경계 정의를 먼저 확정; 확정 전에는 횟수 단정 금지 |
+| 자율 루프 transcript를 사용자 프롬프트 경계로 파싱해 위반 N회로 단정 | 1단계 필터 + 2단계 경계 정의를 먼저 확정; 확정 전에는 횟수 단정 금지 |
+| 필터 없이 원본 라인 순서로 인접성을 판정 → 계수 실패를 경계 정의 탓으로 오진 | `.message.role` 필터를 먼저 적용한 뒤 경계 정의를 평가 |
 | 경계 재구성 실패를 "위반 없음"으로 해석 | 경계 무관 지표로 대체 보고 — `┌─ Agent:` 헤더 총량, tool_use 대 announce 라인 비율 |
 
-Origin: #1574 (v1.1.44 세션 — 자율 루프에서 R007 헤더 누락 계수를 시도했으나 사용자 프롬프트 4개로 턴 경계 재구성 불가). Cross-ref: R005(계수/매칭 방법 확인 — 도구 기본 동작 미확인 시 결과 오해석).
+Origin: #1574 (v1.1.44 세션 — 자율 루프에서 R007 헤더 누락 계수를 시도했으나 사용자 프롬프트 4개로 턴 경계 재구성 불가); 1단계 필터는 #1584 #3 (v1.1.45 세션 — 위 조항을 신설했음에도 계수가 재실패. 실제 장애물은 경계 정의가 아니라 **`role=null` 라인 661개 / 전체 1215줄의 54%**였고, 필터 추가 즉시 성립(응답 시작 50, R007 위반 0) — 조항이 원인을 절반만 짚어 재발한 사례). Cross-ref: R005(계수/매칭 방법 확인 — 도구 기본 동작 미확인 시 결과 오해석).
 
 ### Proxy Signal vs Canonical Ground-Truth (#1336 ①②)
 

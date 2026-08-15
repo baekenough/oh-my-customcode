@@ -8,10 +8,12 @@
 |------|-------|--------|
 | 1: Always | Read, Glob, Grep, ToolSearch | Free use, read-only |
 | 2: Default | Write, Edit, NotebookEdit | State changes explicitly, notify before modifying important files |
-| 3: Context | Agent, Skill, EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree, LSP, Monitor, TodoWrite, AskUserQuestion, PushNotification | Context-dependent, no user approval needed |
+| 3: Context | Agent, Skill, EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree, LSP, Monitor, TodoWrite†, AskUserQuestion, PushNotification | Context-dependent, no user approval needed |
 | 4: Approval | Bash, PowerShell, WebFetch, WebSearch | Request user approval on first use |
-| 5: Conditional | TeamCreate, TeamDelete, SendMessage, TaskCreate, TaskGet, TaskList, TaskUpdate, TaskStop, TaskOutput | Available when Agent Teams enabled |
+| 5: Conditional | TeamCreate†, TeamDelete†, SendMessage, TaskCreate†, TaskGet†, TaskList†, TaskUpdate†, TaskStop, TaskOutput | Available when Agent Teams enabled |
 | 6: MCP | ListMcpResourcesTool, ReadMcpResourceTool, CronCreate, CronDelete, CronList, RemoteTrigger | MCP/extension tools, available when servers configured |
+
+> **†** 현행 모델의 기본 실행 환경에 **존재하지 않는다** — 아래 v2.1.233 노트 참조. 이 표는 **도구 카탈로그**이지 가용성 보증이 아니므로, 규칙이 특정 도구 호출을 의무화하기 전에 실측(도구 목록 / `ToolSearch`)으로 존재를 확인한다.
 
 ## File Access
 
@@ -84,13 +86,33 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.232/233+**: 232가 권한 검사 우회 3건을 수정했으나 **233이 그중 2건을 롤백**했습니다. 어느 것이 현행인지 버전별로 구분합니다.
 >
-> 1. **233 현재 유효 (232 수정 유지)** — (a) PowerShell에서 변수 기록 파라미터가 `$PSDefaultParameterValues`를 조용히 덮어써 이후 명령의 파일 접근을 리다이렉트할 수 있던 우회가 수정되었습니다. 또한 중첩 git 저장소가 부모 디렉토리의 trust를 상속하던 문제가 수정되어 저장소마다 별도 trust 확인이 필요하고, `sandbox.ripgrep`은 user/managed/`--settings`에서만 적용되며 **project settings로는 override 불가**입니다(위 v2.1.214 allow/deny 스코프 비대칭과 같은 계열의 축소 — repo-local 설정으로 켤 수 없는 항목이 늘었습니다).
+> 1. **233 현재 유효 (232 수정 유지)** — (a) PowerShell에서 변수 기록 파라미터가 `$PSDefaultParameterValues`를 조용히 덮어써 이후 명령의 파일 접근을 리다이렉트할 수 있던 우회가 수정되었습니다. 또한 중첩 git 저장소가 부모 디렉토리의 trust를 상속하던 문제가 수정되어 저장소마다 별도 trust 확인이 필요하고, `sandbox.ripgrep`은 user/managed/`--settings`에서만 적용되며 **project settings로는 override 불가**입니다(위 v2.1.214 allow/deny 스코프 비대칭과 같은 계열의 축소 — repo-local 설정으로 켤 수 없는 항목이 늘었습니다). 233은 추가로 **Windows NT `\??\` device prefix 경로가 UNC 경로 검증을 우회**해 NTLM 자격증명 유출 벡터가 되던 결함을 수정했습니다 — 같은 경로를 여러 표기로 쓸 수 있다는 v2.1.221/223 "검사 대상 문자열 ≠ 실행 문자열" 계열의 **경로 표기** 각도입니다.
 > 2. **233에서 롤백됨 — 현재 권한 검사되지 않음** — (b) Windows Git Bash가 경로 검증에는 일반 파일로 보이는 Cygwin-style symlink를 따라가던 우회 수정, (c) Bash 입력 리다이렉션(`< file`)을 인자 표기와 동일하게 권한 검사하던 변경. 두 건 모두 232에서 도입됐다가 233에서 되돌려졌습니다(CHANGELOG v2.1.233: "Reverted the 2.1.232 Bash permission changes for Cygwin-style symlinks on Windows and for input redirections (`< file`); a narrower version will return in a later release"). **이 두 경로는 현행 233에서 권한 검사를 거치지 않으므로, 검사된다고 가정하고 경로 스코프 규칙을 설계하면 우회됩니다.**
 > 3. **재도입 예정** — "a narrower version will return in a later release"이므로 좁힌 형태로 돌아옵니다. 재도입 시 적용 범위가 232 원본과 다를 수 있으므로 그때 다시 확인합니다.
 >
 > **`< file` 회고적 함의(버전 무관 유지)**: `< file`은 232 한 릴리즈를 제외하면 경로 스코프 규칙을 우회해 왔고 233에서 다시 그 상태이므로, **프롬프트 없이 읽힌 사실을 allow 규칙의 증거로 삼지 않습니다**. 위 v2.1.221/223 "검사 대상 문자열 ≠ 실행 문자열" 계열의 연장선입니다.
 >
 > **일반 교훈**: 단일 릴리즈의 플랫폼 권한 개선은 롤백될 수 있으므로 **항구적 보호막으로 간주하지 않습니다**. 스코프 규칙은 개선 이전 상태를 기준으로 설계하고 플랫폼 개선은 defense-in-depth로만 취급합니다(`feedback_platform_claim_staleness` 계열 — 플랫폼 주장의 시효성).
+
+### Todo/Task 도구 기본 제거 (v2.1.233+) — 위 표의 †
+
+CHANGELOG v2.1.233 원문: *"Todo/task-tracking tools (TaskCreate/Get/Update/List, TodoWrite) are no longer available on Opus 4.8, Sonnet 5, Fable 5, Mythos 5, and newer models; set `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` to bring them back"*. 이 저장소 에이전트 **49개 중 46개**(`claude-sonnet-5` 41 + `claude-opus-5` 5)가 대상 모델이므로 실행 환경의 기본값은 **부재**다(잔여 3개는 `haiku`).
+
+**실측 (2026-08-15 — `claude -p --output-format stream-json` init 이벤트의 `tools` 배열, `claude-opus-5[1m]`/`claude-sonnet-5` 3회 동일 결과)**:
+
+| 상태 | 도구 |
+|------|------|
+| 미등록 (CHANGELOG 명시) | `TodoWrite`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate` |
+| 미등록 (CHANGELOG 미명시 — 별도 게이팅) | `TeamCreate`, `TeamDelete` |
+| 잔존 | `TaskStop`, `TaskOutput`, `SendMessage` |
+
+바이너리(`2.1.233`) 게이트 함수 실측도 이를 뒷받침한다 — 게이트 대상 도구 배열은 **정확히 5개**(CHANGELOG 명시 5종)이며 `TaskOutput`은 포함되지 않는다.
+
+`TeamCreate` 부재는 CHANGELOG가 설명하지 않는 별개 사실이며, **Agent Teams 생성 경로 자체가 없다**는 뜻이다 — 환경변수 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`이 설정돼 있어도 R018은 이 환경에서 비활성이다(R018 Detection). 규칙은 **존재하지 않는 도구의 호출을 의무화하지 않는다** — 도구 의존 의무를 쓸 때는 부재 시 대체 규약을 함께 규정한다(R018 Member TaskUpdate Discipline이 그 예).
+
+`CLAUDE_CODE_ENABLE_TODO_TOOLS=1`은 복구 수단이나 **환경 설정 사안**이므로 규칙이 그 설정을 전제하지 않는다. 공식 settings 문서(`code.claude.com/docs/en/settings`)에는 2026-08-15 기준 미수록 — 현재 근거는 CHANGELOG 원문 + 위 실측이다.
+
+Origin: #1582. Cross-ref: R018(Member TaskUpdate Discipline 대체 규약), R020("도구가 있다"는 가정도 실측 대상).
 
 ## Agent Tool Permission Mode
 

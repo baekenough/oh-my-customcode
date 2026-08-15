@@ -1,7 +1,7 @@
 ---
 title: Orchestration Model
 type: architecture
-updated: 2026-07-29
+updated: 2026-08-15
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-orchestrator-coordination.md
@@ -48,6 +48,8 @@ When `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, qualifying tasks must use Agent T
 
 Agent Teams members communicate peer-to-peer via `SendMessage` and share a task list. They differ from subagents in that Teams members can spawn their own sub-agents for local workflows (e.g., a research team member running a deep-plan workflow).
 
+> **Dormant on current models (v2.1.233+).** `TeamCreate` is not registered on the models this repo's agents run on, so there is no way to create a team — the env var above no longer makes Agent Teams reachable, and delegation falls back to [[wiki/rules/r009]]/[[wiki/rules/r010]] Agent tool calls. `TaskList` is gone with it, so the shared task list that underpins the coordination model is unavailable too. Measured tool inventory: [[wiki/rules/r002]]; fallback protocol: [[wiki/rules/r018]].
+
 ## Dynamic Agent Creation
 
 When routing detects no matching specialist:
@@ -83,4 +85,5 @@ Other agents handle their own paths: `sys-memory-keeper` manages `.claude/agent-
 - `CLAUDE.md` — routing skill descriptions, dynamic creation workflow
 - `.claude/rules/MUST-orchestrator-coordination.md` — R010 full rule
 - `.claude/rules/MUST-agent-teams.md` — R018 decision matrix
+- Content-drift resync 2026-08-15 (#1582): recorded that Agent Teams is dormant on current models — `TeamCreate`/`TaskList` are unregistered (v2.1.233), so the env var no longer makes teams reachable and coordination falls back to Agent tool delegation.
 - Content-drift resync 2026-07-29 (v1.1.34): reworded "Subagents cannot spawn other subagents" from a platform-capability claim to a project-policy statement — CC v2.1.217+ changed the nesting default and v2.1.219+ raised the default nested-spawn depth to 3, so the platform itself now permits nesting; oh-my-customcode's flat delegation model remains a deliberate policy choice. See [[wiki/rules/r010]] for the full rationale.

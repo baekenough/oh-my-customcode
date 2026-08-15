@@ -1,12 +1,22 @@
 # [MUST] Agent Teams Rules (Conditional)
 
 > **Priority**: MUST | **ID**: R018
-> **Condition**: Agent Teams enabled (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
+> **Condition**: Agent Teams enabled — `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` present in the tool list (see Detection)
 > **Fallback**: When disabled, R009/R010 apply
 
 ## Detection
 
-Available when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` or TeamCreate/SendMessage tools present.
+Agent Teams is active only when the **team-creation path actually exists** — `TeamCreate` present in the tool list. The environment variable alone is NOT sufficient: it expresses intent to enable the feature, not the feature's availability.
+
+| Observed state | Teams active? |
+|----------------|---------------|
+| `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **and** `TeamCreate` present | Yes |
+| env var set, `TeamCreate` **absent** | **No** — a team cannot be created, so no member can be spawned |
+| `SendMessage` present, `TeamCreate` absent | **No** — peer/cross-session messaging is a separate capability (see Scope below), not evidence of Teams |
+
+Rationale: since v2.1.233, `TeamCreate`/`TeamDelete` are absent from the tool list in this runtime (measured — R002 "Todo/Task 도구 기본 제거"), so a set env var cannot make teams creatable. Detection therefore rests on the tools actually being present, not on the env var alone — "the tool exists" is itself a claim requiring measurement (R020).
+
+When Detection resolves to **No**, this entire rule is dormant and R009/R010 govern.
 
 ## Decision Matrix
 
@@ -354,6 +364,8 @@ Do NOT avoid Agent Teams solely for cost reasons when criteria are met.
 
 Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 명시적으로 알려야 한다. 침묵은 코디네이터가 죽었거나 멤버가 막혔다고 오인하게 만든다.
 
+> **도구 가용성 선확인 (v2.1.233+)**: `TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 제거되어 이 저장소 실행 환경에 **존재하지 않는다** — 실측은 R002 「Todo/Task 도구 기본 제거」. 아래 표는 Task 도구가 가용할 때(구모델 또는 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`)의 규정이며, **부재 시 아래 대체 규약을 따른다**. 없는 도구의 호출을 의무로 남겨두면 실행 불가능한 규정이 된다.
+
 | 시점 | 호출 |
 |------|------|
 | 작업 시작 | TaskUpdate(taskId, status: "in_progress") |
@@ -368,6 +380,16 @@ Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 �
 - 차단 사유를 SendMessage 로만 보내고 task description 업데이트 누락 → TaskList 만 보는 멤버는 사유를 모름
 
 Reference issue: #1087.
+
+### Task 도구 부재 시 대체 규약 (Origin: #1582)
+
+| 시점 | 대체 수단 |
+|------|-----------|
+| 시작 / 완료 / 차단 | `SendMessage` 1줄 보고 (`summary`에 상태 단어 포함) |
+| 장문 진행 보고 | 아티팩트 파일 경로만 전달 (R006 Artifact Channel Protocol) — SendMessage 본문은 v2.1.222+ 조용히 절단된다 |
+| 코디네이터의 완료 판정 | SendMessage 보고가 아니라 **결정론적 ground-truth** (아래 Member Completion Verification) |
+
+`TaskList` 부재로 **공유 작업 목록이라는 조율 기반 자체가 사라지므로**, 아래 Member Completion Verification의 "보고는 신호일 뿐, 판정은 실측"이 보조 원칙이 아니라 **유일한 방어선**이 된다.
 
 ## Member Completion Verification (deterministic ground-truth)
 

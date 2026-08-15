@@ -282,6 +282,18 @@ The Subagent Scope-Creep STOP Protocol (above) is REACTIVE — it halts an agent
 
 Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after trips) and R001 (credential/privileged-scope guardrails, re-confirm scope before irreversible shared-infra actions).
 
+#### 우회 플래그는 우회 대상과 근거를 명시 (Origin: #1584 #6)
+
+보호장치를 우회하는 플래그(`--admin`, `--force`, `--no-verify` 등)를 위임 프롬프트에 지시할 때는 **무엇을 우회하는지와 그것이 정당한 근거**를 함께 적는다. 플래그만 적으면 하니스·에이전트가 무권한 우회로 판정해 플래그하거나 거부한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| `gh pr merge --admin`만 지시 | 우회 대상·근거 명시 — 예: "required status check 10종 전부 pass 확인함. `--admin`이 우회하는 것은 **리뷰어 승인 요건**뿐이며, 1인 메인테이너라 셀프 리뷰 불가" |
+
+목적은 권한 확보가 아니라 **감사 추적**이다. 승인의 인용이 아니라 우회 범위의 사실 서술이므로 아래 「Delegation Prompt Framing — 승인 인용 금지」와 충돌하지 않는다.
+
+Origin: #1584 #6 — v1.1.45·v1.1.46 릴리즈 PR 머지에서 하니스가 "no visible user authorization naming that bypass"로 플래그했다.
+
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.178+**: Auto mode now evaluates subagent spawns with the safety classifier BEFORE launch, closing a gap where a spawned subagent could request a blocked action without prior review. This is the PLATFORM-level complement to the (advisory) Pre-Delegation Privileged-Scope Boundary above: the orchestrator still states the approved/forbidden scope in the delegation prompt (proactive, model-level), and CC now also gates the spawn itself (platform-level). The two are defense-in-depth — the prompt-stated boundary remains required because the classifier gates ACTIONS, not task SCOPE.
 -->
@@ -310,6 +322,16 @@ Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after tri
 | 미확인 플래그를 확정형으로 위임 프롬프트에 기재 (`gh issue edit <N> --assignee @me`) | 실행 전 `--help`로 실측 후 기재, 또는 "예시 — 실제 플래그는 확인 후 사용" 명시 |
 
 Origin: #1563 찐빠 #3 — `gh issue edit --assignee`가 gh 2.86.0에 없는 플래그였고(정답 `--add-assignee`) 에이전트가 실행 중 자체 복구했다. Cross-reference: R005(도구 플래그·기본 동작 실측 함정 사례집), 아래 Agent Capability Pre-Check(위임 전 존재성 확인의 도구·경로 각도).
+
+#### 저장소 상태 기재도 같은 규율 (Origin: #1584 #5)
+
+위임 프롬프트에 저장소 상태(HEAD SHA, 브랜치, 작업트리 청결도)를 기재할 때도 **직전 실측**이 필요하다 — `git rev-parse --short HEAD` 한 줄이면 충분하다. 세션 중 머지·pull로 HEAD는 수시로 바뀌므로, 앞선 턴에서 본 값을 그대로 옮기면 서브에이전트가 **틀린 베이스를 전제로** 작업한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 이전 턴에서 본 HEAD SHA를 위임서에 그대로 기재 | 위임 직전 `git rev-parse --short HEAD` 실측값 기재 |
+
+Origin: #1584 #5 (v1.1.45 세션 — 커밋 위임서에 `develop @ 96ef8f85`로 적었으나 실측은 `f6d3f518`; #1572 머지 후 pull 미반영). R017 「메모리 TODO를 위임 전제로 쓸 때」의 **세션 내 축소판** — 스냅샷의 수명이 세션 간이 아니라 **턴 간**이라는 차이만 있다.
 
 ### Parallel Delegation — Sibling-Agent Disclosure
 

@@ -38,6 +38,8 @@
 
 > **v2.1.212+**: MCP 도구 호출이 2분(기본값, `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`로 임계값 조정·비활성) 초과 시 자동으로 백그라운드로 이동해 세션이 계속 사용 가능해집니다 — 위 v2.1.210 Bash/PowerShell auto-background의 MCP 도구 확장. 느린 MCP 호출(ontology-rag `rebuild_ontology`, code-review-graph 인덱싱 등)을 hang으로 오판하지 말고, 2분 초과 시 백그라운드 전환을 전제로 후속 작업을 진행합니다.
 
+> **v2.1.233+**: `WebFetch`의 세션 URL 캐시 TTL이 `CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS`로 조정 가능해졌습니다(기본 15분 불변). **재확인 함정**: 같은 URL을 TTL 내 재조회하면 캐시가 반환되므로 **독립적인 2차 확인이 아닙니다** — R020 Degraded-Output Re-Verification Gate가 요구하는 "결정론적 2차 소스"로 동일 URL의 WebFetch 재호출을 쓰지 말고, 다른 소스나 CLI 실측(`npm view`, `gh`)을 사용합니다.
+
 > **v2.1.224+**: mid-turn에 연결된 MCP 도구가 **이름 고지 없이** tool search로 deferred되던 결함이 수정되었습니다. 구버전에서는 세션 도중 붙은 MCP 서버의 도구가 이름조차 노출되지 않아 "그런 도구 없음"으로 오판할 수 있었으므로, 위 tool-availability 주의(`command -v` 사전 확인과 동류)를 MCP 도구에도 적용합니다 — 도구 부재 결론 전에 `ToolSearch`로 실측합니다.
 
 > **v2.1.228+**: Write 도구가 **이번 세션에 읽지 않은 기존 파일도 newer model에서는 덮어쓸 수 있도록** 변경되어 Edit 도구 규칙과 일치합니다(구모델은 여전히 read 선행 필요). 도구가 강제하던 read-before-write 가드가 모델에 따라 사라지므로, "Write가 실패했다 = 파일을 안 읽었다"는 진단이 더 이상 보편적으로 성립하지 않고, **읽지 않은 파일을 Write하면 기존 내용이 경고 없이 소실**됩니다 — 전체 교체가 아닌 변경에는 Edit을 쓰는 원칙을 도구 강제가 아니라 절차로 유지합니다. 또한 deferred-tools reminder가 skill 호출 후 모델에 두 번 전달되던 문제가 수정되었습니다(중복 컨텍스트 소모).

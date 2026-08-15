@@ -176,9 +176,30 @@ Origin: #1457 (Session 128 회고 찐빠 #1) — 오케스트레이터가 stale 
 
 Origin: #1574 (v1.1.44 세션 — mgr-sauron 브리핑의 "선재 항목" 4건 중 3건이 부정확: 이미 해소된 항목, 의도적 차이를 결함으로 오인, 규모 과대). **완화 요인**: 프롬프트에 "그대로 믿지 말고 직접 확인하라"를 명시해 3건 전부 에이전트가 정정 — #1443의 "실측값 기준으로 동기화하라" 방어선과 동일 효과. Cross-ref: R011(메모리 신뢰도·Temporal Decay), R020(Diagnostic Hypothesis Verification).
 
+## CC 버전 노트 반영 전 — 스코프 상한 이후 릴리즈 확인 (Origin: #1584 #1)
+
+CC 버전 노트를 룰에 반영하기 **전**, `npm view @anthropic-ai/claude-code version` + `claude --version`을 실측해 **스코프 상한 버전 이후의 릴리즈 존재 여부**를 확인한다. 있으면 그 CHANGELOG를 먼저 읽어 **롤백·후속 변경**을 파악한 뒤 반영한다. 이슈 생성과 작업 사이의 간극 동안 플랫폼이 스스로 뒤집을 수 있으므로 — **이슈 번호는 최신 릴리즈를 의미하지 않는다**.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 이슈에 적힌 버전(스코프 상한)까지만 조사해 버전 노트를 반영 | 반영 전 `npm view`+`claude --version` 실측 → 상한 이후 릴리즈 CHANGELOG에서 롤백·후속 변경 확인 |
+| 롤백된 개선을 현행 보호막으로 기재 | 롤백 여부를 확인하고, 롤백된 항목은 "현재 미적용"으로 명시 |
+
+Origin: #1584 #1 (v1.1.46 세션) — 이슈 생성(8/11~14)과 작업(8/15) 사이 5일 간극 동안 v2.1.233이 v2.1.232 Bash 권한 변경 2건을 롤백했으나 이를 모른 채 배치해 mgr-sauron이 **FAIL로 차단**(당시 저장소 전역 `2.1.233` 언급 0건). Cross-ref: 위 Pre-Release Target Version Ground-Truth Gate(동일 "스냅샷 ≠ ground-truth" 원리의 버전 각도), R020(Diagnostic Hypothesis Verification), R016(버전노트 보존정책 — *어느* 노트를 남길지는 R016, *반영 전 실측*은 이 게이트).
+
 ## Post-Gate Scope-Expansion Re-Run (Origin: #1433 #2)
 
 R017 게이트(mgr-sauron) 통과 선언 후 신규 결함 발견 등으로 스코프가 확장되면(추가 파일 편집), 커밋 전 게이트를 **최종 상태에서 재실행**한다. 게이트 통과 시점 이후의 변경은 형식적으로 미검증이므로, 확장분 미검증 커밋은 R017이 최종 산출물을 커버하지 못하게 만든다.
+
+### Advisory 제시 시점 — "같은 커밋 포함 권고"는 판정과 함께 (Origin: #1584 #4)
+
+위 재실행 비용을 줄이는 방법은 권고를 **판정 시점에** 받는 것이다. mgr-sauron 위임 프롬프트에 "같은 커밋에 포함 권고" 성격의 advisory는 **PASS/FAIL 판정과 같은 응답에 제시**하도록 명시한다(또는 게이트 실행 전 예비 조회로 미리 수집). 판정 후 도착한 권고를 반영하면 그 자체가 스코프 확장이 되어 게이트 전량 재실행 + 위키 재동기화가 강제된다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 게이트 PASS 후 도착한 포함 권고를 반영해 스코프 확장 | 위임 프롬프트에 "포함 권고 advisory는 판정과 함께 제시" 명시; 판정 후 도착분은 다음 릴리즈 이월을 우선 검토 |
+
+Origin: #1584 #4 (v1.1.45 세션) — R021 자기 서술 staleness 반영을 R017 통과 **후** 수행해 위키 재동기화 1회 + 게이트 전량 재실행 발생. 포함 판단 자체는 옳았고 **시점**이 결함이었다.
 
 ## Quick Verification Commands — agent/skill/guide/wiki counts via ls/find/wc. See commands via Read tool.
 
