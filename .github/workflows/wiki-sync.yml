@@ -127,6 +127,6 @@ jobs:
           TOTAL_GUIDES=$(find guides -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
           TOTAL_WIKI=$(find wiki -name "*.md" ! -name "index.md" ! -name "log.md" 2>/dev/null | wc -l | tr -d ' ')
 
-          echo "Source entities: agents=$TOTAL_AGENTS skills=$TOTAL_SKILLS rules=$TOTAL_RULES guides=$TOTAL_GUIDES"
+          echo "Source entities: agents=$TOTAL_AGENTS skills=$TOTAL_SKILLS rules=$TOTAL_RULES guide_topics=$TOTAL_GUIDES"
           echo "Wiki pages: $TOTAL_WIKI"
           echo "All wiki pages present — sync OK"

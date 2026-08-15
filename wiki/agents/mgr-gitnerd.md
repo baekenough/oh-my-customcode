@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-07-30
+updated: 2026-08-15
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -95,6 +95,26 @@ Complementing the PR-body requirement above: close keywords (`Closes`/`Fixes`/`R
 
 Origin: #1542 (v1.1.38 — bump pushed to develop first produced a diff=0 PR; feature-commit `Fixes #N` trailer closed the issue pre-release).
 
+## Lockfile-Generation Mechanism + 3-Way Version Assertion (#1593)
+
+`bun run build` (run by `mgr-gitnerd` as part of the branch-before-bump sequence) invokes `scripts/sync-source-lockfile.ts` → `generateAndWriteLockfileForDir` (`src/core/lockfile.ts`), which reads `generatorVersion` from `package.json` and `templateVersion` from `templates/manifest.json` via `loadVersions()` (`src/core/sync.ts`) and writes both into `.omcustom.lock.json`. If `templates/manifest.json` has not yet been bumped when `bun run build` runs, the lockfile **silently records the previous `templateVersion`** — no warning, no error. `mgr-gitnerd` observed this contamination in v1.1.47 (`generatorVersion=1.1.47` / `templateVersion=1.1.46`) when the bump commit created `package.json` + the lockfile together while `manifest.json` was bumped in a later commit.
+
+`mgr-gitnerd` now runs a standalone (no-pipe) 3-way assertion on `release/v{NEW}` after the existing `verify-version-sync.sh` 2-way check (which does not catch this pattern):
+
+```
+jq -e --arg v "<NEW>" '.generatorVersion==$v and .templateVersion==$v' .omcustom.lock.json
+```
+
+Failure halts the release step; the fix is re-running the `templates/manifest.json` bump, then `bun run build`, re-staging, and re-running the assertion.
+
+Origin: #1593 (2026-08-15 — undocumented mechanism + observed version-mismatch contamination in v1.1.47).
+
+## Release-PR Merge: No `--admin` (measured, #1591)
+
+`mgr-gitnerd` merges the release PR with `gh pr merge {n} --merge --delete-branch` — **explicitly NOT `--admin`**. Ground-truth measurement (`gh api repos/{owner}/{repo}/branches/develop/protection`, 2026-08-15) found `develop` protection requires exactly **6** status checks (`Test`, `Lint`, `Template Sync`, `Version Sync`, `Dependency Security Audit`, `Rust Tests`), `enforce_admins=false`, and **no** `required_pull_request_reviews` block — no reviewer-approval gate exists to bypass. v1.1.47 merged cleanly via a plain `gh pr merge 1585 --merge --delete-branch`. If a merge is rejected, `mgr-gitnerd` re-runs the protection query to re-measure the actual blocker rather than reflexively adding `--admin` ([[r010]] bypass-flag pre-check — name what a flag bypasses, measured, before using it). A prior version of this guidance carried forward an unverified "10 required checks" / "`--admin` bypasses reviewer-approval" description across sessions without re-measuring — both details were wrong.
+
+Origin: #1591 (2026-08-15 — re-measurement found the carried-forward protection description did not match actual config; `--admin` proved unnecessary).
+
 ## Relationships
 
 - **Depends on**: mgr-sauron verification (prerequisite for push)
@@ -123,9 +143,12 @@ The local `release` branch (file ref) conflicts with `release/v*` directory ref 
 ## Sources
 
 - `.claude/agents/mgr-gitnerd.md` — agent definition
+- `.claude/skills/pipeline/workflows/auto-dev.yaml` — release-step lockfile mechanism (step 1.e/1.j) and PR-merge instruction (step 3.c) corrected 2026-08-15 per #1593/#1591
 - Issue #1146 — v0.136.0 working tree loss incident (origin of expanded Safety Rules)
 - Issue #1148 — rustup symlink false-positive CI failure (v0.137.0)
 - Issue #1287 — milestone query false-negative retrospective (v0.164.0, origin of Milestone Query Robustness)
 - Issue #1468 — memory scope migration to `local` (v1.1.13)
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
 - Issue #1542 — branch-before-bump ordering + commit-message close-keyword prohibition (v1.1.38 diff=0 PR failure)
+- Issue #1591 — release-PR merge instruction carried an unverified `--admin` flag across sessions; ground-truth measurement found no reviewer-approval gate exists (2026-08-15)
+- Issue #1593 — lockfile-generation mechanism undocumented, caused silent stale `templateVersion` in v1.1.47; 3-way assertion added (2026-08-15)

@@ -114,13 +114,18 @@ The Git Push Continuation pattern (first-time strict / follow-up relaxed, scoped
 | 1st explicit approval (category C, target T) | Proceed; advisory warning emitted |
 | Follow-up same session (same C + same T) | No re-confirmation (directive persistence) |
 | Different category or target | Fresh confirmation required |
-| Platform classifier still prompts | Advise user: add `settings.json` permission rule for the specific command |
+| Platform **permission prompt** repeats (asking to re-approve an already-allowed command) | Add a `settings.json` permission `allow` rule scoped to the specific command — this suppresses the prompt |
+| Platform **safety classifier BLOCK** (e.g. auto-mode refuses/flags the action, not merely prompting) | `allow` rule addition is **NOT effective** — the classifier is a separate layer from the permission-prompt layer. Have the user run the command directly (`!` prefix), or remove the trigger itself (e.g. drop an unnecessary bypass flag — see R010 「우회 플래그는 우회 대상과 근거를 명시」) |
 
 **R001 exclusion (MUST)**: R001-listed catastrophic git operations (`git reset --hard`, `git clean -fd`, `git push --force` to shared branches, `git branch -D` with unmerged commits) are EXCLUDED from this persistence rule — they always require explicit per-invocation approval regardless of prior session approvals.
 
 **Boundary / honesty note**: This rule is ADVISORY and governs model behavior only. It CANNOT suppress Claude Code's platform-level auto-mode classifier prompts. For genuine prompt suppression on a repeated destructive command, the user must add a `settings.json` permission allow rule scoped to the specific command (e.g., a specific `supabase db push` invocation). The model SHOULD surface this workaround when the user expresses friction about repeated prompts.
 
-Cross-references: R001 (safety — destructive operation pre-checks still apply), R002 (permission tiers). Reference issues: #1230, #1226 (item 2).
+`settings.json` **allow 규칙은 permission prompt를 억제하지만, safety classifier 차단은 억제하지 못한다 — 서로 다른 층이다** (#1592). 실효 경로는 두 가지뿐이다: (a) 사용자가 직접 실행, (b) 차단 트리거 자체를 제거(예: 불필요한 `--admin` 제거). 부가로, CC v2.1.229+는 위험 플래그(`--force`/`--amend`/`--no-verify`)를 가진 git/gh 명령을 auto-approve하지 않는다(설치 버전 실측 v2.1.233).
+
+> Origin: #1592 (v1.1.47 세션 실측) — `permissions.allow`에 `Bash(gh:*)`와 `defaultMode: bypassPermissions`가 있는데도 `--admin` 포함 머지 위임이 auto-mode classifier에 차단됐다. `Edit(.claude/**)` allow 규칙이 있는데도 `.claude/settings.local.json` 편집이 차단됐다. 두 사례 모두 allow 규칙이 걸어둔 permission-prompt 층을 이미 통과한 상태에서 별도의 classifier 층이 차단한 것 — allow 규칙 추가로는 해소되지 않았고, 실효 해법은 (a) `--admin` 제거(R010 선행 실측 조항, #1591), (b) 사용자 직접 실행이었다.
+
+Cross-references: R001 (safety — destructive operation pre-checks still apply), R002 (permission tiers), R010 (우회 플래그 선행 실측 — 차단 트리거 제거 경로). Reference issues: #1230, #1226 (item 2), #1592.
 
 ## User-Provided Input Precedence
 

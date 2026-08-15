@@ -28,6 +28,8 @@
 
 > **계수/매칭 방법 확인 (#1521)**: 카운트를 대조하기 전에 **비교 대상이 무엇을 어떻게 세는지** 먼저 확인한다 — 같은 지표라도 계수 방법이 다르면 값이 달라진다. 대표 함정 4종: (a) glob(`ls *.md`, 최상위만) vs 재귀 `find`(하위 디렉토리 포함), (b) 부분 문자열 grep(`grep "sdd"`가 `sdd-dev`까지 매칭), (c) 확장자 필터(`--include='*.md'`가 `CLAUDE.md.en`을 미매칭), (d) **머지 커밋 diff 기본 생략** — `git show --name-only <머지커밋>`은 diff를 기본적으로 출력하지 않아 변경 파일 0개로 오독된다. 머지 커밋의 변경 파일을 세려면 `--first-parent`(1차 부모 대비) 또는 `-m`(각 부모별 diff)을 명시한다. 검증 스크립트와 대조할 때는 **스크립트의 실제 계수 로직을 읽고** 같은 방법으로 센다. 위 `ls | tail` 시계열 오판(#1417)과 동류로, 도구의 기본 동작을 확인하지 않은 채 결과를 해석해 오탐에 이르는 패턴이다. Origin: #1521 (2026-07-20 세션에서 3회 반복; 두 서브에이전트가 독립적으로 동일 오탐에 도달); (d)는 #1553 찐빠 #4 (2026-07-30 세션에서 머지 커밋 `--name-only` 0파일을 "변경 없음"으로 오독).
 
+> **도구 이름 ≠ 그 프로그램 (#1590)**: 도구를 쓰기 전에 `type <tool>`로 실체를 확인한다. Bash 도구의 `grep`은 `~/.claude/shell-snapshots/snapshot-zsh-*.sh`의 **셸 함수**이며 `ugrep --ignore-files`에 위임한다. 그 결과 `.gitignore`의 리터럴 `CLAUDE.md` 패턴을 존중해, **force-tracked 파일을 재귀 탐색에서 조용히 누락**한다(에러 없이 exit 0). 명시 경로를 준 grep은 정상 동작하므로 **traversal만 영향**을 받는다. 실측(2026-08-15): 동일 패턴·동일 대상에 대해 셸 함수 36 / `command grep` 43 / `git grep` 38 히트 — 셸 함수만 `CLAUDE.md`를 0 히트로 놓쳤다. 진단 함정: `git check-ignore`는 **index-aware**라 tracked 파일에 "not ignored"(exit 1)를 반환한다 — 원인을 보려면 `git check-ignore --no-index`를 써야 한다. 처방: 저장소 전수 조사는 `git grep`을 표준으로 한다(R017 Count Sync cross-ref). Origin: #1590.
+
 <!--
 > **v2.1.206+**: `/doctor`에 checked-in CLAUDE.md에서 코드베이스로부터 파생 가능한 내용을 잘라내도록 제안하는 체크가 추가되었습니다 — R005 "Context Optimization via HTML Comments"의 컨텍스트 절감 원칙과 정합(모델 불필요 메타데이터 축소).
 -->
