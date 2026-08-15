@@ -1,0 +1,10 @@
+{
+  "round": 2,
+  "max_rounds": 5,
+  "mode": "gated",
+  "history": [
+    { "round": 1, "verdict": "REDESIGN", "consensus": "SPLIT", "new_findings": 9, "max_severity": "CRITICAL", "tokens": 94000 },
+    { "round": 2, "verdict": "BUILD_WITH_CHANGES", "consensus": "MAJORITY", "new_findings": 2, "max_severity": "HIGH", "tokens": 71000 }
+  ],
+  "stop": null
+}
