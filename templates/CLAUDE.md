@@ -117,7 +117,7 @@ oh-my-customcode로 구동됩니다.
 project/
 +-- CLAUDE.md                    # 진입점
 +-- .claude/
-|   +-- agents/                  # 서브에이전트 정의 (49 파일)
+|   +-- agents/                  # 서브에이전트 정의 (50 파일)
 |   +-- skills/                  # 스킬 (115 디렉토리)
 |   +-- rules/                   # 전역 규칙 (R000-R023)
 |   +-- hooks/                   # 훅 스크립트 (보안, 검증, HUD)
@@ -180,7 +180,7 @@ oh-my-customcode는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 | System | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
 -->
 
-총 **49개** 에이전트 (타입별 상세는 `/omcustom:lists` 또는 wiki/agents/ 참조)
+총 **50개** 에이전트 (타입별 상세는 `/omcustom:lists` 또는 wiki/agents/ 참조)
 
 ## Agent Teams (MUST when enabled)
 

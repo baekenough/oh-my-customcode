@@ -2687,6 +2687,141 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
     }, 30000);
   });
 
+  // -----------------------------------------------------------------------
+  // I3 (code review): the pre-fix run_round combined --extra-agenda into
+  // `agenda` via `jq -c --argjson extra "$extra_agenda" '. + $extra'` with NO
+  // validation. The gate's `e` option is free text the orchestrator wraps
+  // into a JSON array — one stray quote breaks it. When jq failed, `agenda`
+  // silently collapsed to an empty string; build_reviewer_prompt then
+  // rendered a blank agenda section, ALL THREE reviewer CLIs were still
+  // invoked (and billed), and only anonymize.sh's later `--agenda ''`
+  // failure surfaced the problem — after the cost was already paid.
+  // run_round must reject a malformed --extra-agenda with exit 64 BEFORE any
+  // vendor CLI runs.
+  // -----------------------------------------------------------------------
+
+  describe('agora.sh --round --extra-agenda validation (I3: reject before any vendor is invoked)', () => {
+    const judgeStubBody = (name: string, callCountFile: string) => `
+      echo "${name}" >> '${callCountFile}'
+      case "$*" in
+        *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';;
+        *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';;
+      esac
+    `;
+    const reviewerOnlyStubBody = (name: string, callCountFile: string) =>
+      `echo "${name}" >> '${callCountFile}'\n${OK_STUB}`;
+
+    it('accepts a valid JSON-array --extra-agenda and still advances the round (positive control)', async () => {
+      const root = join(tmpdir(), `agora-out-extra-agenda-valid-${Date.now()}`);
+      await mkdir(root, { recursive: true });
+      const callCountFile = join(root, 'call-count');
+      const bin = await makeStubBin({
+        claude: judgeStubBody('claude', callCountFile),
+        omx: reviewerOnlyStubBody('omx', callCountFile),
+        agy: reviewerOnlyStubBody('agy', callCountFile),
+      });
+      const env = {
+        PATH: `${bin}:${process.env.PATH}`,
+        AGORA_OMX_BIN: join(bin, 'omx'),
+        AGORA_OUTPUT_ROOT: root,
+        AGORA_SESSION_EPOCH: '1755230400',
+      };
+      try {
+        const started = await runScript(
+          AGORA_SCRIPT,
+          ['--start', '상태 저장 방식 재검토', '--max-rounds', '5'],
+          '',
+          env
+        );
+        expect(started.exitCode).toBe(0);
+        const sessionDir = started.stdout.trim().split('\n').pop() as string;
+
+        const roundResult = await runScript(
+          AGORA_SCRIPT,
+          ['--round', '2', '--session-dir', sessionDir, '--extra-agenda', '["추가 쟁점"]'],
+          '',
+          env
+        );
+        expect(roundResult.exitCode).toBe(0);
+        const state = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
+        expect(state.round).toBe(2);
+        const anon2 = JSON.parse(await readFile(join(sessionDir, 'anon/round-2.json'), 'utf-8'));
+        expect(anon2.agenda).toContain('추가 쟁점');
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    }, 30000);
+
+    it('rejects a malformed --extra-agenda with exit 64 and never invokes a reviewer/judge CLI (negative)', async () => {
+      const root = join(tmpdir(), `agora-out-extra-agenda-invalid-${Date.now()}`);
+      await mkdir(root, { recursive: true });
+      const callCountFile = join(root, 'call-count');
+      const bin = await makeStubBin({
+        claude: judgeStubBody('claude', callCountFile),
+        omx: reviewerOnlyStubBody('omx', callCountFile),
+        agy: reviewerOnlyStubBody('agy', callCountFile),
+      });
+      const env = {
+        PATH: `${bin}:${process.env.PATH}`,
+        AGORA_OMX_BIN: join(bin, 'omx'),
+        AGORA_OUTPUT_ROOT: root,
+        AGORA_SESSION_EPOCH: '1755230400',
+      };
+      try {
+        const started = await runScript(
+          AGORA_SCRIPT,
+          ['--start', '상태 저장 방식 재검토', '--max-rounds', '5'],
+          '',
+          env
+        );
+        expect(started.exitCode).toBe(0);
+        const sessionDir = started.stdout.trim().split('\n').pop() as string;
+
+        // Round 1 legitimately invokes claude(reviewer) + claude(judge) +
+        // omx(reviewer) + agy(reviewer) = 4 lines in the call-count file.
+        const countAfterRound1 = (await readFile(callCountFile, 'utf-8')).trim().split('\n').length;
+        expect(countAfterRound1).toBe(4);
+
+        for (const malformed of [
+          '롤백 경로 재검토',
+          '{"foo":1}',
+          'not json at all',
+          '"a string"',
+        ]) {
+          const roundResult = await runScript(
+            AGORA_SCRIPT,
+            ['--round', '2', '--session-dir', sessionDir, '--extra-agenda', malformed],
+            '',
+            env
+          );
+          expect(roundResult.exitCode).toBe(64);
+          expect(roundResult.stderr).toContain('--extra-agenda');
+        }
+
+        // No reviewer/judge CLI was ever invoked for any of the rejected
+        // round-2 attempts — the call count must not have moved past round 1.
+        const countAfterRejections = (await readFile(callCountFile, 'utf-8'))
+          .trim()
+          .split('\n').length;
+        expect(countAfterRejections).toBe(countAfterRound1);
+
+        // Round 2 artifacts were never created by the rejected attempts.
+        expect(existsSync(join(sessionDir, 'SEALED/raw/round-2.prompt.txt'))).toBe(false);
+        expect(existsSync(join(sessionDir, 'anon/round-2.json'))).toBe(false);
+        expect(existsSync(join(sessionDir, 'verdict/round-2.json'))).toBe(false);
+
+        // state.json is untouched by the rejected attempts.
+        const state = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
+        expect(state.round).toBe(1);
+        expect(state.history.length).toBe(1);
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    }, 30000);
+  });
+
   describe('agora.sh --report --session-dir <dir> (standalone report regeneration)', () => {
     it('regenerates report.md from the sealed mapping', async () => {
       const bin = await makeStubBin({
@@ -2889,5 +3024,45 @@ describe('agora SKILL.md', () => {
     const src = await readFile(SKILL_MD, 'utf-8');
     expect(src).toContain('68');
     expect(src).toMatch(/재시도.{0,10}(대상|아니)/);
+  });
+});
+
+const RUNNER_MD = resolve(import.meta.dir, '../../../.claude/agents/agora-runner.md');
+
+describe('agora-runner agent', () => {
+  it('exists with valid R006 frontmatter', async () => {
+    expect(existsSync(RUNNER_MD)).toBe(true);
+    const src = await readFile(RUNNER_MD, 'utf-8');
+    const fm = src.split('---')[1];
+    expect(fm).toContain('name: agora-runner');
+    expect(fm).toMatch(/description: .+/);
+    expect(fm).toMatch(/model: .+/);
+    expect(fm).toContain('Bash');
+    expect(fm).toContain('Read');
+    expect(fm).toContain('Write');
+    expect(fm).toContain('Glob');
+  });
+
+  // spec §12: the return payload is the last line of defence for the anon boundary.
+  it('restricts its return contract to a verdict summary', async () => {
+    const src = await readFile(RUNNER_MD, 'utf-8');
+    expect(src).toContain('verdict');
+    expect(src).toMatch(/반환.*요약|요약.*반환/);
+    expect(src).toContain('SEALED');
+    expect(src).toMatch(/반환하지 않|금지/);
+  });
+
+  // spec §12 / R020: one round per delegation, because a phase boundary is where
+  // subagents stop mid-step.
+  it('states that one delegation covers exactly one round', async () => {
+    const src = await readFile(RUNNER_MD, 'utf-8');
+    expect(src).toMatch(/라운드 1개|한 라운드|1 라운드/);
+    expect(src).toContain('--round');
+  });
+
+  it('does not instruct the agent to interact with the user', async () => {
+    const src = await readFile(RUNNER_MD, 'utf-8');
+    expect(src).not.toContain('AskUserQuestion');
+    expect(src).toMatch(/게이트.*오케스트레이터|오케스트레이터.*게이트/);
   });
 });

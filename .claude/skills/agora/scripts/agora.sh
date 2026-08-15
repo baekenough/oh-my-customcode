@@ -84,6 +84,7 @@ init_session() {
   jq -n --argjson mr "$max_rounds" --arg m "$mode" --arg t "$topic" --arg e "$epoch" \
     '{round: 0, max_rounds: $mr, mode: $m, topic: $t, epoch: $e, attachments: [], history: [], stop: null}' \
     > "$dir/state.json"
+  chmod 644 "$dir/state.json"
   printf '%s' "$dir"
 }
 
@@ -169,6 +170,20 @@ run_round() {
     esac
   done
   [ -n "$dir" ] && [ -n "$round" ] || { printf 'agora.sh: --session-dir and --round required\n' >&2; return 64; }
+
+  # --extra-agenda must be a JSON array BEFORE any reviewer/vendor is
+  # invoked. Left unvalidated, a malformed value (the gate's `e` option is
+  # free text assembled by the caller into JSON — one stray quote breaks it)
+  # makes the `jq -c --argjson extra ... '. + $extra'` combine below fail,
+  # collapsing agenda to an empty string; build_reviewer_prompt then silently
+  # renders a blank agenda section, all three vendors still get called (and
+  # billed), and only anonymize.sh's later `--agenda ''` failure surfaces the
+  # problem — after the cost was already paid. Fail fast here instead.
+  if ! jq -e 'type == "array"' >/dev/null 2>&1 <<< "$extra_agenda"; then
+    printf 'agora.sh: --extra-agenda must be a JSON array, got: %s\n' "$extra_agenda" >&2
+    return 64
+  fi
+
   dir=$(resolve_abs_dir "$dir") || return 66
 
   local round_start; round_start=$(date +%s)
@@ -428,17 +443,27 @@ Usage:
 
 Gated-mode contract (spec §12, "라운드 1개 = 위임 1건"):
   --start WITHOUT --auto runs exactly ROUND 1 and returns — it does not loop
-  further. Every round after that is driven by the CALLER (agora-runner /
-  the orchestrator), one round per delegation:
+  further within that one invocation. What it does next depends on round 1's
+  OWN stop decision (measured behavior, not caller-driven in this branch):
+    - If round 1 already satisfies a stop condition (CONSENSUS / STALLED /
+      MAX_ROUNDS / USER), --start writes .stop and generates report.md
+      ITSELF before returning — the gate is NOT rendered in this case.
+    - Otherwise --start renders the round-1 gate and returns WITHOUT writing
+      .stop or generating report.md.
+  Every round after round 1 is driven by the CALLER (agora-runner / the
+  orchestrator), one round per delegation, through the standalone --round
+  entry point:
     1. bash agora.sh --round <N> --session-dir <dir>    Advance one round.
     2. bash agora.sh --decide-stop < state.json         Check the stop code yourself.
     3. bash agora.sh --gate --session-dir <dir> --round <N>
                                                          Show the round's gate (skip if you already stopped).
     4. bash agora.sh --report --session-dir <dir>       Generate report.md once you decide to stop.
   --round on its own NEVER calls decide_stop, NEVER writes .stop, NEVER
-  renders a gate, and NEVER generates report.md — those four steps are the
-  caller's responsibility in gated mode. (--start --auto performs all of
-  this internally and needs none of the above.)
+  renders a gate, and NEVER generates report.md — not even when <N> reaches
+  or exceeds max_rounds (--round does not check max_rounds at all). Those
+  four steps are the caller's responsibility for every round after round 1
+  in gated mode. (--start --auto performs all of this internally, across
+  every round, and needs none of the above.)
 USAGE
       ;;
     *)
