@@ -1,6 +1,6 @@
 # Architecture
 
-> oh-my-customcode v0.126.1
+> oh-my-customcode — see `package.json` for the current version (single source of truth)
 
 ## 1. System Overview
 
@@ -8,7 +8,7 @@ oh-my-customcode is a batteries-included agent harness for Claude Code. It ships
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
-Current version: **0.126.1** — distributed as `oh-my-customcode` on npm, CLI: `omcustom`.
+Distributed as `oh-my-customcode` on npm, CLI: `omcustom`. Current version: see `package.json`.
 
 ---
 
@@ -63,7 +63,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | R015 | MUST | Intent Transparency | Display routing reasoning before execution |
 | R016 | MUST | Continuous Improvement | Rule violation -> update rule -> continue |
 | R017 | MUST | Sync Verification | 5+3 round verification before push |
-| R018 | MUST (conditional) | Agent Teams | Mandatory when CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 |
+| R018 | MUST (conditional) | Agent Teams | Mandatory when CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 AND `TeamCreate` tool present; otherwise dormant |
 | R019 | SHOULD | Ontology-RAG Routing | Enriches agent selection with contextual skill suggestions |
 | R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
 | R021 | MUST | Enforcement Policy | Advisory-first enforcement model, promotion criteria |
@@ -253,7 +253,7 @@ Large tasks exceeding 3 minutes MUST be split into parallel sub-tasks. Before sp
 
 ### 5.2 Agent Teams (R018, conditional)
 
-Active when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. When enabled and criteria are met, use is MANDATORY.
+Active only when BOTH `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` AND the `TeamCreate` tool is present in the tool list — the env var alone is not sufficient evidence, and `SendMessage` presence alone is not evidence either. As of CC v2.1.233+, `TeamCreate` is not registered in the tool list (measured) — Agent Teams is therefore dormant in this runtime, and R009/R010 govern instead. When enabled and criteria are met, use is MANDATORY.
 
 | Criteria | Agent Tool | Agent Teams (MUST) |
 |----------|-----------|-------------------|

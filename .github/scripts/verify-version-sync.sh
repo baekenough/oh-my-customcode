@@ -47,5 +47,32 @@ if [ "${PKG_VERSION}" != "${MANIFEST_VERSION}" ]; then
   exit 1
 fi
 
+# Lockfile 3-way check (#1593 제안3) — .omcustom.lock.json's generatorVersion/templateVersion are
+# written by `bun run build` (scripts/sync-source-lockfile.ts → generateAndWriteLockfileForDir →
+# loadVersions() in src/core/sync.ts), which reads generatorVersion from package.json and
+# templateVersion from templates/manifest.json AT BUILD TIME. If the build runs before BOTH
+# version files are bumped, the lockfile silently records a stale value — no warning, no error.
+# Observed: v1.1.47 shipped generatorVersion=1.1.47 / templateVersion=1.1.46 (manifest bumped in a
+# later commit than the build). This is a 2-way check above (package.json vs manifest.json only) —
+# it structurally cannot catch lockfile drift, hence this separate 3-way assertion.
+LOCKFILE="${REPO_ROOT}/.omcustom.lock.json"
+if [ ! -f "${LOCKFILE}" ]; then
+  echo "::warning::.omcustom.lock.json not found — lockfile version check skipped"
+else
+  LOCK_GEN=$(jq -r '.generatorVersion // empty' "${LOCKFILE}")
+  LOCK_TPL=$(jq -r '.templateVersion // empty' "${LOCKFILE}")
+  if [ -z "${LOCK_GEN}" ] || [ -z "${LOCK_TPL}" ]; then
+    echo "::error::.omcustom.lock.json missing generatorVersion/templateVersion"
+    exit 1
+  fi
+  if [ "${LOCK_GEN}" != "${PKG_VERSION}" ] || [ "${LOCK_TPL}" != "${PKG_VERSION}" ]; then
+    echo "::error::Lockfile version mismatch (3-way): pkg=${PKG_VERSION} manifest=${MANIFEST_VERSION} lock.gen=${LOCK_GEN} lock.tpl=${LOCK_TPL}"
+    echo "Cause: 'bun run build' ran before BOTH version bumps landed."
+    echo "Fix: bump package.json AND templates/manifest.json first, then re-run 'bun run build' and stage the lockfile."
+    exit 1
+  fi
+  echo "[OK] Lockfile version sync verified: generatorVersion=${LOCK_GEN} templateVersion=${LOCK_TPL}"
+fi
+
 echo "[OK] Version sync verified: ${PKG_VERSION}"
 exit 0

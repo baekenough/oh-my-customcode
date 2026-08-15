@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.47",
-  "generatedAt": "2026-08-15T03:06:44.193Z",
-  "templateVersion": "1.1.46",
+  "generatorVersion": "1.1.48",
+  "generatedAt": "2026-08-15T06:21:21.105Z",
+  "templateVersion": "1.1.48",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "cfdf79b6bb8824107aac24215939aeed087c98aa5a1701f2221a29fa6225e990",
@@ -15,13 +15,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "5b030f0bd5d3b32fb4614437aa91d12d952adab98c03c77615a66815fd71efad",
-      "size": 56651,
+      "templateHash": "ccc8a2ca6aad08b9aaf70663e1ab23cf7798f40df8ed4f611a5aec1c02d4c021",
+      "size": 59049,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
-      "templateHash": "dad6c542165c7d5bba6403651690aee1b3190cf732a9e115287e03eb22a31f95",
-      "size": 9012,
+      "templateHash": "5138474d0e28bf9586bcb3bef7f705f6b6757754e6702b9514e06da28b31ec81",
+      "size": 10687,
       "component": "rules"
     },
     ".claude/rules/SHOULD-error-handling.md": {
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "4034afa3e69364dd614f2c5aeba5b6b69f3b6733ac104d02e12f78ddaa5d6a9e",
-      "size": 19970,
+      "templateHash": "1ddac6c26e9e620630ba20d99ae7ad2b22a21a3fb14f8dd05f88490556e35b96",
+      "size": 20486,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
@@ -70,8 +70,8 @@
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "1ede656b6ddc2c5a54eed1e185ddfbbc9c3f2b44ab7fe58060eaa14488f7be1d",
-      "size": 12883,
+      "templateHash": "958f1d2e1e00857b1461c4b31fe9e3e9dc7f538723f4ba3cbb2df297768ad297",
+      "size": 13856,
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "0874e0136f14cc223a44da89a3c24f3a6348e6a8feb1370367398ba7f3e36a0d",
-      "size": 38915,
+      "templateHash": "93d9f7179f21679d96c09755b42bcd71eb47685fb96c2f620924e0ff8240518c",
+      "size": 40550,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -480,8 +480,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "3087021956c47960fc8699cfe1dcb88b5cff9f663c94ad4b2e34940a1251a5db",
-      "size": 32449,
+      "templateHash": "7cbcbe36043deb9cdd6321ba8896952aea4cfdf35e72164dd16d9b3b36e480c7",
+      "size": 34758,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -1293,31 +1293,6 @@
       "templateHash": "5ffe2f9be51d5079893986c752b72fac8e2729ed52c74844aaef0f713a60ce19",
       "size": 29493,
       "component": "hooks"
-    },
-    ".claude/contexts/ecomode.md": {
-      "templateHash": "6f5e7700ce8282101eb745fde0dbb92997bc05ba751f078e516a17d85230b34e",
-      "size": 2933,
-      "component": "contexts"
-    },
-    ".claude/contexts/dev.md": {
-      "templateHash": "340ea6af2e75f71f38d53975ed51d94f2062bc4aaf3ce8f2157d2e961ed0c4d4",
-      "size": 419,
-      "component": "contexts"
-    },
-    ".claude/contexts/research.md": {
-      "templateHash": "a4a34ffbc9a1efb0307e06a8297e918f622c477a03399b386d106dfeb3d4839f",
-      "size": 604,
-      "component": "contexts"
-    },
-    ".claude/contexts/review.md": {
-      "templateHash": "1af684d75668413580979e560dc5ec3e517239d4b2b8dc04319c2c9326af5eee",
-      "size": 572,
-      "component": "contexts"
-    },
-    ".claude/contexts/index.yaml": {
-      "templateHash": "1a209a8d45dc9329022d6068b5bd4ee0f2739b2c3ddd5722d4213214c47fcad7",
-      "size": 1056,
-      "component": "contexts"
     },
     ".claude/ontology/agents.yaml": {
       "templateHash": "b79c0210121740a998957638332c144cd94441d19f0e882cba7d29efe9f1c517",

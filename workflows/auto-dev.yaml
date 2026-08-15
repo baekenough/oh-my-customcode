@@ -398,8 +398,18 @@ steps:
            #   Edit ONLY the .version field — do NOT overwrite templates/manifest.json wholesale (e.g. a source-hash path→hash map).
            #   Recover a corrupted manifest: git show HEAD:templates/manifest.json | jq '.version="<NEW>"' > templates/manifest.json (#1423/#1154).
            d. templates/manifest.json: jq '.version = "<NEW>"' templates/manifest.json > templates/manifest.json.tmp && mv templates/manifest.json.tmp templates/manifest.json   [on release/v{NEW}]
-           e. bun run build — run standalone (NO pipe), read exit code directly ($? after a pipe is the last command's, R005/#1492).
-              This regenerates .omcustom.lock.json (generatorVersion/templateVersion) to <NEW> via scripts/sync-source-lockfile.ts.   [on release/v{NEW}]
+           e. ⚠ PREREQUISITE: steps c (package.json) AND d (templates/manifest.json) MUST BOTH be completed
+              before running this step. bun run build — run standalone (NO pipe), read exit code directly
+              ($? after a pipe is the last command's, R005/#1492).
+              Actual mechanism (corrected, #1593): `bun run build` invokes `scripts/sync-source-lockfile.ts`
+              (a 10-line wrapper with no version literals of its own), which calls
+              `generateAndWriteLockfileForDir` (`src/core/lockfile.ts`). That function reads versions via
+              `loadVersions()` (`src/core/sync.ts`) — `generatorVersion` FROM package.json, `templateVersion`
+              FROM templates/manifest.json — and writes both into .omcustom.lock.json. If step d has not yet
+              landed when this runs, the lockfile silently records the PREVIOUS templateVersion — no warning,
+              no error. Observed contamination: v1.1.47 shipped generatorVersion=1.1.47 / templateVersion=1.1.46
+              because the bump commit created package.json + lockfile together and manifest.json was bumped in
+              a later commit. Do NOT run this step until BOTH c and d are staged.   [on release/v{NEW}]
            f. git status --short — enumerate ALL tracked drift (`^ M`) the build produced; stage EVERY one (esp. .omcustom.lock.json) before commit.
               (#1531 — .omcustom.lock.json missed staging across 4 consecutive releases after v1.1.29; root cause was no build step between version bump and commit.)   [on release/v{NEW}]
            g. mgr-gitnerd commit: "chore(release): bump to v<NEW>" — MUST include the drift from step f.
@@ -411,6 +421,11 @@ steps:
            i. mandatory verification (with existence guard for partial-update safety), run on release/v{NEW}:
               [ -f scripts/verify-version-sync.sh ] && bash scripts/verify-version-sync.sh || echo "::warning::verify-version-sync.sh not found, version sync verification skipped"
               (verify-version-sync.sh 가 exit 1 시 release 단계 halt)
+           j. lockfile 3-way assertion (#1593 제안3, closes the gap step i's 2-way check misses) — run standalone
+              (NO pipe), read exit code directly, on release/v{NEW}:
+              jq -e --arg v "<NEW>" '.generatorVersion==$v and .templateVersion==$v' .omcustom.lock.json
+              실패 시 release 단계 halt — cause is almost always step e run before step d landed; fix by
+              re-running step d then step e, re-staging, and re-running this assertion.
 
          Version decision (semver) — PATCH-PREFERRED policy (post-1.0.0):
          - No existing tags → v0.1.0
@@ -428,7 +443,15 @@ steps:
            b. mgr-gitnerd creates PR: gh pr create --base develop --head release/v{NEW} --title "chore(release): bump to v{NEW}" --body "<MUST include 'Closes #N' for EVERY issue this release resolves>"
               ⚠ auto-tag.yml closes issues by grep'ing Closes/Fixes/Resolves keywords in the PR BODY — NOT by milestone membership NOR by commit message trailers. If the keywords are missing, no issues close and the workflow still reports success (#1531). Commit-message close keywords are explicitly forbidden during `implement` and step 1.g above (#1542) — the PR body is the ONLY place a close keyword should appear.
               Before creating the PR (whether via inline --body or --body-file), confirm the body text actually contains a Closes line per issue.
-           c. mgr-gitnerd merges PR (admin merge required due to branch protection)
+           c. mgr-gitnerd merges PR: gh pr merge {n} --merge --delete-branch (plain merge — NOT --admin).
+              Ground-truth (measured 2026-08-15, `gh api repos/{owner}/{repo}/branches/develop/protection`):
+              required status checks are exactly 6 — Test, Lint, Template Sync, Version Sync,
+              Dependency Security Audit, Rust Tests (strict=true); enforce_admins=false; NO
+              required_pull_request_reviews (no reviewer-approval requirement exists). v1.1.47 merged with a
+              plain `gh pr merge 1585 --merge --delete-branch` — no --admin needed. A plain merge succeeds
+              once all 6 checks report green. If the merge is rejected, do NOT reflexively add --admin —
+              re-run the protection query above to re-measure current requirements and report the actual
+              blocker (R010 bypass-flag pre-check: name what is bypassed and why before ever using --admin).
            d. DO NOT manually git tag or gh release create.
               auto-tag.yml fires on release/v* PR merge → creates tag → closes issues linked via PR-body Closes/Fixes/Resolves keywords → closes milestone → deletes release branch.
               release.yml fires on the tag → npm publish + GitHub Release creation.

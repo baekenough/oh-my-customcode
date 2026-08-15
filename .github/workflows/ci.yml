@@ -304,21 +304,11 @@ jobs:
         if: needs.changes.outputs.merge_commit != 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Verify package.json and manifest.json versions match
+      - name: Verify package.json / manifest.json / lockfile versions match
         if: needs.changes.outputs.merge_commit != 'true'
         run: |
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          MANIFEST_VERSION=$(node -p "require('./templates/manifest.json').version")
-
-          echo "package.json version: $PKG_VERSION"
-          echo "manifest.json version: $MANIFEST_VERSION"
-
-          if [ "$PKG_VERSION" != "$MANIFEST_VERSION" ]; then
-            echo "::error::Version mismatch! package.json ($PKG_VERSION) != templates/manifest.json ($MANIFEST_VERSION). Run: update manifest.json version to match package.json"
-            exit 1
-          fi
-
-          echo "Version sync check passed: $PKG_VERSION"
+          command -v jq >/dev/null 2>&1 || { echo "::error::jq required for version sync"; exit 1; }
+          bash .github/scripts/verify-version-sync.sh
 
   template-sync:
     name: Template Sync

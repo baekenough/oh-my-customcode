@@ -282,17 +282,21 @@ The Subagent Scope-Creep STOP Protocol (above) is REACTIVE — it halts an agent
 
 Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after trips) and R001 (credential/privileged-scope guardrails, re-confirm scope before irreversible shared-infra actions).
 
-#### 우회 플래그는 우회 대상과 근거를 명시 (Origin: #1584 #6)
+#### 우회 플래그는 우회 대상과 근거를 명시 (Origin: #1584 #6, #1591)
 
-보호장치를 우회하는 플래그(`--admin`, `--force`, `--no-verify` 등)를 위임 프롬프트에 지시할 때는 **무엇을 우회하는지와 그것이 정당한 근거**를 함께 적는다. 플래그만 적으면 하니스·에이전트가 무권한 우회로 판정해 플래그하거나 거부한다.
+**선행 실측 (신설, #1591)**: 우회 플래그(`--admin`, `--force`, `--no-verify` 등)를 위임 프롬프트에 지시하기 **전에**, 그 플래그가 실제로 필요한지 먼저 실측한다(`gh api repos/{owner}/{repo}/branches/{branch}/protection`). 불필요하면 정답은 **서술 보강이 아니라 플래그 제거**다 — 근거 서술은 플래그가 실제로 필요할 때에만 의미가 있다.
+
+보호장치를 우회하는 플래그를 위임 프롬프트에 지시할 때는 **무엇을 우회하는지와 그것이 정당한 근거**를 함께 적는다. 플래그만 적으면 하니스·에이전트가 무권한 우회로 판정해 플래그하거나 거부한다.
 
 | Anti-pattern | Required |
 |--------------|----------|
-| `gh pr merge --admin`만 지시 | 우회 대상·근거 명시 — 예: "required status check 10종 전부 pass 확인함. `--admin`이 우회하는 것은 **리뷰어 승인 요건**뿐이며, 1인 메인테이너라 셀프 리뷰 불가" |
+| 우회 플래그(`--admin` 등)만 지시하고 근거 없음 | 실측 branch protection과 대조 후, 플래그가 실제로 필요할 때만 우회 대상·근거를 명시 — 예: "required status check 6종 전부 pass 확인함. `enforce_admins=false`이므로 `--admin`이 우회하는 것은 **그 6종 CI 게이트**뿐이며, [사유]로 이를 승인한다" |
 
 목적은 권한 확보가 아니라 **감사 추적**이다. 승인의 인용이 아니라 우회 범위의 사실 서술이므로 아래 「Delegation Prompt Framing — 승인 인용 금지」와 충돌하지 않는다.
 
-Origin: #1584 #6 — v1.1.45·v1.1.46 릴리즈 PR 머지에서 하니스가 "no visible user authorization naming that bypass"로 플래그했다.
+**실측 기록 (2026-08-15, `gh api repos/{owner}/{repo}/branches/develop/protection`)**: required status checks **6종** — `Test`, `Lint`, `Template Sync`, `Version Sync`, `Dependency Security Audit`, `Rust Tests` (`strict=true`). **`enforce_admins=false`**. **`required_pull_request_reviews` 부재** — 리뷰어 승인 요건 자체가 없다. 다음 릴리즈가 재확인하지 않도록 이 값을 여기 고정 기록한다.
+
+Origin: #1584 #6 — v1.1.45·v1.1.46 릴리즈 PR 머지에서 하니스가 "no visible user authorization naming that bypass"로 플래그했다. #1591 (v1.1.47 세션 실측) — v1.1.47이 신설한 위 표의 예시가 사실과 달랐다: "required status check **10종**"은 실제 **6종**이었고, "`--admin`이 우회하는 것은 **리뷰어 승인 요건**뿐"은 틀렸다 — 리뷰어 승인 요건 자체가 존재하지 않고 `enforce_admins=false`이므로 `--admin`이 실제로 우회하는 것은 **CI 게이트 6종**이었다. 기존 예시는 더 위험한 우회를 무해한 것처럼 서술하고 있었다. 근본 원인 진단 결과 develop 브랜치에는 `--admin`이 애초에 불필요했다 — 실측 없이 확정형 근거를 적으면 우회 범위 자체를 오판할 수 있다는 사례.
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.178+**: Auto mode now evaluates subagent spawns with the safety classifier BEFORE launch, closing a gap where a spawned subagent could request a blocked action without prior review. This is the PLATFORM-level complement to the (advisory) Pre-Delegation Privileged-Scope Boundary above: the orchestrator still states the approved/forbidden scope in the delegation prompt (proactive, model-level), and CC now also gates the spawn itself (platform-level). The two are defense-in-depth — the prompt-stated boundary remains required because the classifier gates ACTIONS, not task SCOPE.
@@ -449,6 +453,8 @@ Before spawning any agent:
 
 Before delegating a task to a subagent, MUST verify the target agent's tool capabilities against the task requirements. Failure to pre-check causes round-trip waste (delegation → failure → re-delegation).
 
+> **표 조회 배선 (MUST, #1593 #1)**: 위임 프롬프트를 작성하기 **전에** 아래 "Known Limitations (Active Cache)" 표에서 대상 에이전트 이름을 조회한다. 표에 항목이 있으면 그 제약에 걸리는 완료 조건 항목을 제거하거나 대체 경로를 지정한다. **표가 존재해도 참조되지 않으면 무효**다 — R016 Rule Wiring Check의 "텍스트 ≠ 배선" 원칙이 위임 습관에도 그대로 적용된다.
+
 ### Required Checks
 
 | Task involves | Verify in target agent frontmatter |
@@ -481,7 +487,7 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 
 | Agent | Limitation | Workaround |
 |-------|-----------|-----------|
-| `arch-documenter` | `disallowedTools: [Bash]` — cannot run `gh`, shell scripts | Pre-collect data via orchestrator, pass as content; OR use `general-purpose` for the Bash-needing portion |
+| `arch-documenter` | `disallowedTools: [Bash]` — cannot run `gh`, shell scripts, `diff`/`md5`/`verify-*.sh` | Pre-collect data via orchestrator, pass as content; OR use `general-purpose` for the Bash-needing portion. **Completion-condition guard (#1593 #1)**: do NOT put `diff` / `md5` / `verify-*.sh` execution into arch-documenter's completion criteria — the orchestrator must run these itself, or split off a `general-purpose` agent for the Bash-needing verification |
 | `qa-engineer` | (verify each invocation) | — |
 
 ### Common Violation
