@@ -49,6 +49,24 @@ topic_slug() {
 }
 
 # ---------------------------------------------------------------------------
+# resolve_abs_dir <dir> — normalizes a session directory to an ABSOLUTE path.
+# The Produces contract requires --start's stdout to carry the session dir's
+# absolute path; AGORA_OUTPUT_ROOT defaults to a RELATIVE path
+# (.claude/outputs/sessions), and agora-runner (Task 8, spec §12) may invoke
+# --round/--gate/--report from a different cwd than the one --start ran in —
+# a relative path threaded through would silently resolve against the wrong
+# cwd there. Every entry point that receives or produces a session dir
+# normalizes it here rather than trusting the caller to have already done so.
+# ---------------------------------------------------------------------------
+resolve_abs_dir() {
+  local dir="$1"
+  ( cd "$dir" 2>/dev/null && pwd ) || {
+    printf 'agora.sh: session dir not found: %s\n' "$dir" >&2
+    return 66
+  }
+}
+
+# ---------------------------------------------------------------------------
 # init_session <topic> <max_rounds> <mode> — creates the session artifact
 # tree (spec §4) and the initial state.json, prints the session dir on
 # stdout. Env overrides: AGORA_SESSION_EPOCH (determinism for tests/audit),
@@ -62,6 +80,7 @@ init_session() {
   local dir="$AGORA_OUTPUT_ROOT/$day/agora-$(topic_slug "$topic")-$hms"
 
   mkdir -p "$dir/SEALED/raw" "$dir/SEALED/mapping" "$dir/anon" "$dir/verdict"
+  dir=$(resolve_abs_dir "$dir") || return 66
   jq -n --argjson mr "$max_rounds" --arg m "$mode" --arg t "$topic" --arg e "$epoch" \
     '{round: 0, max_rounds: $mr, mode: $m, topic: $t, epoch: $e, attachments: [], history: [], stop: null}' \
     > "$dir/state.json"
@@ -69,13 +88,20 @@ init_session() {
 }
 
 # ---------------------------------------------------------------------------
-# build_reviewer_prompt <session_dir> <round> <out_file> — spec §10: R1 is a
-# blank-slate independent review (topic + attachments only, no agenda, no
-# prior_rounds, no draft); R2+ injects the previous round's agenda, draft and
-# an anonymized summary of the previous round's opinions.
+# build_reviewer_prompt <session_dir> <round> <out_file> [agenda_json] —
+# spec §10: R1 is a blank-slate independent review (topic + attachments
+# only, no agenda, no prior_rounds, no draft); R2+ injects the previous
+# round's agenda, draft and an anonymized summary of the previous round's
+# opinions.
+#
+# agenda_json is the CALLER's already-combined agenda (judge agenda + any
+# --extra-agenda from the gate's `e` option, spec §10) — this function does
+# NOT re-derive it from verdict/round-N.json itself, so there is exactly one
+# place (run_round) that decides what "this round's agenda" means; a second
+# independent derivation here would drift the moment --extra-agenda exists.
 # ---------------------------------------------------------------------------
 build_reviewer_prompt() {
-  local dir="$1" round="$2" out="$3"
+  local dir="$1" round="$2" out="$3" agenda_json="${4:-[]}"
   local topic; topic=$(jq -r '.topic' "$dir/state.json")
   local attachments; attachments=$(jq -r '.attachments[]?' "$dir/state.json")
 
@@ -94,7 +120,7 @@ build_reviewer_prompt() {
     if [ "$round" -gt 1 ]; then
       local prev=$(( round - 1 ))
       printf '직전 라운드 의제:\n'
-      jq -r '.agenda[]? | "  - " + .' "$dir/verdict/round-$prev.json"
+      jq -r '.[]? | "  - " + .' <<< "$agenda_json"
       printf '\n직전 라운드 통합 초안:\n%s\n\n' "$(jq -r '.draft // ""' "$dir/verdict/round-$prev.json")"
       printf '직전 라운드 익명 의견 요약:\n%s\n\n' "$(jq -c '.reviewers | map({label, overall})' "$dir/anon/round-$prev.json")"
     fi
@@ -105,9 +131,10 @@ build_reviewer_prompt() {
 }
 
 # ---------------------------------------------------------------------------
-# run_round --session-dir <dir> --round <N> — the agora-runner delegation
-# unit (spec §12: "라운드 1개 = 위임 1건"). Drives reviewers.sh → anonymize.sh
-# → judge.sh for exactly one round, then updates state.json.
+# run_round --session-dir <dir> --round <N> [--extra-agenda <json-array>] —
+# the agora-runner delegation unit (spec §12: "라운드 1개 = 위임 1건"). Drives
+# reviewers.sh → anonymize.sh → judge.sh for exactly one round, then updates
+# state.json.
 #
 # judge.sh's exit 68 is a CONFIGURATION error (its own verdict-schema.json is
 # unreadable) — NOT a vendor/CLI failure like exit 4 (every rotation model
@@ -121,17 +148,28 @@ build_reviewer_prompt() {
 # every path they need as an explicit CLI flag, never via inherited
 # environment, so judge.sh's "no route back to who said what" claim (spec §4)
 # is not undermined by this loop leaking a sealed-path env var to it.
+#
+# --extra-agenda is the gate's `e` option (spec §10): user agenda items are
+# APPENDED after the judge's own agenda, never overwriting it — the judge's
+# REQ-6 agenda-setting authority must survive a user append. Concatenation
+# happens ONCE here and the combined array is threaded into BOTH the
+# reviewer prompt (build_reviewer_prompt) and anonymize.sh's --agenda (which
+# becomes what the judge itself reads next round) — a single source of truth
+# for "this round's agenda", not two independent re-derivations that could
+# drift from each other.
 # ---------------------------------------------------------------------------
 run_round() {
-  local dir='' round=''
+  local dir='' round='' extra_agenda='[]'
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      --session-dir) dir="$2";   shift 2 ;;
-      --round)       round="$2"; shift 2 ;;
+      --session-dir)  dir="$2";           shift 2 ;;
+      --round)        round="$2";         shift 2 ;;
+      --extra-agenda) extra_agenda="$2";  shift 2 ;;
       *) printf 'agora.sh: unknown round option %s\n' "$1" >&2; return 64 ;;
     esac
   done
   [ -n "$dir" ] && [ -n "$round" ] || { printf 'agora.sh: --session-dir and --round required\n' >&2; return 64; }
+  dir=$(resolve_abs_dir "$dir") || return 66
 
   local round_start; round_start=$(date +%s)
 
@@ -142,10 +180,11 @@ run_round() {
   if [ "$round" -gt 1 ]; then
     agenda=$(jq -c '.agenda // []' "$dir/verdict/round-$(( round - 1 )).json")
   fi
+  agenda=$(jq -c --argjson extra "$extra_agenda" '. + $extra' <<< "$agenda")
 
   local prompt_file="$dir/SEALED/raw/round-$round.prompt.txt"
   mkdir -p "$dir/SEALED/raw/round-$round"
-  build_reviewer_prompt "$dir" "$round" "$prompt_file"
+  build_reviewer_prompt "$dir" "$round" "$prompt_file" "$agenda"
 
   bash "$REVIEWERS_SH" --run --session-dir "$dir" --round "$round" --prompt-file "$prompt_file" || return $?
 
@@ -186,7 +225,7 @@ run_round() {
      '.round = $r
       | .history += [{round: $r, verdict: $verdict, consensus: $consensus,
                       new_findings: $nf, max_severity: $sev, tokens: 0, elapsed_secs: $elapsed}]' \
-     "$dir/state.json" > "$tmp" && mv "$tmp" "$dir/state.json"
+     "$dir/state.json" > "$tmp" && mv "$tmp" "$dir/state.json" && chmod 644 "$dir/state.json"
   return 0
 }
 
@@ -202,6 +241,7 @@ run_round() {
 # ---------------------------------------------------------------------------
 gate_display() {
   local dir="$1" round="$2"
+  dir=$(resolve_abs_dir "$dir") || return 66
   local v="$dir/verdict/round-$round.json"
   local a="$dir/anon/round-$round.json"
   local max_rounds; max_rounds=$(jq -r '.max_rounds' "$dir/state.json")
@@ -234,6 +274,7 @@ gate_display() {
 # ---------------------------------------------------------------------------
 generate_report() {
   local dir="$1"
+  dir=$(resolve_abs_dir "$dir") || return 66
   local out="$dir/report.md"
   local stop; stop=$(jq -r '.stop // "UNKNOWN"' "$dir/state.json")
   local last; last=$(jq -r '.round' "$dir/state.json")
@@ -264,7 +305,7 @@ generate_report() {
     jq -r '.unresolved[]? | "- " + .id + " [" + .severity + "] " + .positions' "$dir/verdict/round-$last.json"
     printf '\n'
   } > "$tmp"
-  mv "$tmp" "$out"
+  mv "$tmp" "$out" && chmod 644 "$out"
 }
 
 # ---------------------------------------------------------------------------
@@ -291,7 +332,8 @@ start_session() {
   if [ "${#attachments[@]}" -gt 0 ]; then
     local att_json; att_json=$(printf '%s\n' "${attachments[@]}" | jq -R . | jq -sc .)
     local tmp; tmp=$(mktemp)
-    jq --argjson a "$att_json" '.attachments = $a' "$dir/state.json" > "$tmp" && mv "$tmp" "$dir/state.json"
+    jq --argjson a "$att_json" '.attachments = $a' "$dir/state.json" > "$tmp" \
+      && mv "$tmp" "$dir/state.json" && chmod 644 "$dir/state.json"
   fi
 
   local round=1 stop='CONTINUE' rc
@@ -303,7 +345,8 @@ start_session() {
     stop=$(decide_stop < "$dir/state.json")
     if [ "$stop" != "CONTINUE" ]; then
       local tmp; tmp=$(mktemp)
-      jq --arg s "$stop" '.stop = $s' "$dir/state.json" > "$tmp" && mv "$tmp" "$dir/state.json"
+      jq --arg s "$stop" '.stop = $s' "$dir/state.json" > "$tmp" \
+        && mv "$tmp" "$dir/state.json" && chmod 644 "$dir/state.json"
       break
     fi
 
@@ -375,9 +418,27 @@ Usage:
   agora.sh --decide-stop                              Read state.json on stdin, print the stop code.
   agora.sh --start "<topic>" [--attach <path>]... [--max-rounds <N>] [--auto]
                                                         Create a session and drive the round loop.
-  agora.sh --round <N> --session-dir <dir>             Run exactly one round (agora-runner delegation unit).
+  agora.sh --round <N> --session-dir <dir> [--extra-agenda <json-array>]
+                                                        Run exactly one round (agora-runner delegation unit).
+                                                        --extra-agenda is the gate's `e` option (spec §10):
+                                                        it is APPENDED after the judge's own agenda, never
+                                                        overwriting it.
   agora.sh --gate --session-dir <dir> --round <N>      Render the label-only gate block for a round.
   agora.sh --report --session-dir <dir>                Regenerate report.md from the sealed mapping.
+
+Gated-mode contract (spec §12, "라운드 1개 = 위임 1건"):
+  --start WITHOUT --auto runs exactly ROUND 1 and returns — it does not loop
+  further. Every round after that is driven by the CALLER (agora-runner /
+  the orchestrator), one round per delegation:
+    1. bash agora.sh --round <N> --session-dir <dir>    Advance one round.
+    2. bash agora.sh --decide-stop < state.json         Check the stop code yourself.
+    3. bash agora.sh --gate --session-dir <dir> --round <N>
+                                                         Show the round's gate (skip if you already stopped).
+    4. bash agora.sh --report --session-dir <dir>       Generate report.md once you decide to stop.
+  --round on its own NEVER calls decide_stop, NEVER writes .stop, NEVER
+  renders a gate, and NEVER generates report.md — those four steps are the
+  caller's responsibility in gated mode. (--start --auto performs all of
+  this internally and needs none of the above.)
 USAGE
       ;;
     *)

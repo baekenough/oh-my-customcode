@@ -2401,10 +2401,118 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       // Narrow shell-error signatures only — normal diagnostics like
       // "[agora] round 1 reviewers: 3 responded" or "[agora] round 1 judged
       // by rotation slot 1 (...)" must NOT trip this (they are expected on
-      // every successful run, not error noise).
+      // every successful run, not error noise). `jq:\s*error` is included
+      // because this script's field reads are all error-handling-free `jq`
+      // calls — a `jq` error IS the representative silent-failure signature
+      // here, exactly as `printf: - : invalid option` was for F1 (see the
+      // "F2: R1 blank-slate" describe below for the mutation that proves it).
       expect(run.stderr).not.toMatch(
-        /\bprintf:\s|invalid option|command not found|unbound variable/i
+        /\bprintf:\s|invalid option|command not found|unbound variable|jq:\s*error/i
       );
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  // -----------------------------------------------------------------------
+  // F1 (spec ❌, review round 2): the brief's Produces contract requires
+  // stdout's last line to be the session dir's ABSOLUTE path. AGORA_OUTPUT_ROOT
+  // defaults to a RELATIVE path (.claude/outputs/sessions); every E2E test
+  // above injects an absolute AGORA_OUTPUT_ROOT (a tmpdir), so none of them
+  // exercised the default-path branch. agora-runner (Task 8) may invoke
+  // --round/--gate/--report from a different cwd than the one --start ran
+  // in, so a relative path threaded through would resolve against the wrong
+  // directory there.
+  // -----------------------------------------------------------------------
+
+  it('emits an absolute session-dir path even when AGORA_OUTPUT_ROOT is left at its default (F1 regression)', async () => {
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    // A dedicated cwd (NOT AGORA_OUTPUT_ROOT) so the script's default
+    // relative path (.claude/outputs/sessions) resolves somewhere isolated
+    // and fully cleanable, without needing to inject the very env var this
+    // test is proving the script works without.
+    const cwd = join(tmpdir(), `agora-defaultroot-cwd-${Date.now()}`);
+    await mkdir(cwd, { recursive: true });
+    try {
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_SESSION_EPOCH: '1755230400',
+        },
+        cwd
+      );
+      expect(result.exitCode).toBe(0);
+      const sessionDir = result.stdout.trim().split('\n').pop() as string;
+      expect(sessionDir.startsWith('/')).toBe(true);
+      expect(existsSync(join(sessionDir, 'state.json'))).toBe(true);
+      expect(existsSync(join(sessionDir, 'report.md'))).toBe(true);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(cwd, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  // -----------------------------------------------------------------------
+  // F2 (Important, review round 2): the R1 blank-slate principle (spec §10 —
+  // "R1 is the only genuinely independent review") had zero tests asserting
+  // it from the PROMPT side. The reviewer proved this with a mutation: if
+  // the `if [ "$round" -gt 1 ]` guard in build_reviewer_prompt is removed,
+  // round 1 tries to read the non-existent verdict/round-0.json and `jq`
+  // errors to stderr — yet every one of the 95 pre-existing tests stayed
+  // green, because none of them read round-1's prompt file, and the old
+  // stderr guard's pattern didn't include `jq:\s*error`. This positive/
+  // negative pair closes that gap from the prompt-content side; the
+  // updated stderr guard above closes it from the error-signature side.
+  // -----------------------------------------------------------------------
+
+  it('keeps round 1 a blank slate and injects prior-round context starting round 2 (spec §10 positive/negative pair)', async () => {
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-r1-blank-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const run = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '2', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(run.exitCode).toBe(0);
+      const sessionDir = run.stdout.trim().split('\n').pop() as string;
+
+      const round1Prompt = await readFile(
+        join(sessionDir, 'SEALED/raw/round-1.prompt.txt'),
+        'utf-8'
+      );
+      const round2Prompt = await readFile(
+        join(sessionDir, 'SEALED/raw/round-2.prompt.txt'),
+        'utf-8'
+      );
+
+      // Negative: round 1 carries NO prior-round frame of any kind.
+      expect(round1Prompt).not.toContain('직전 라운드');
+
+      // Positive: round 2 carries all three prior-round sections.
+      expect(round2Prompt).toContain('직전 라운드 의제');
+      expect(round2Prompt).toContain('직전 라운드 통합 초안');
+      expect(round2Prompt).toContain('직전 라운드 익명 의견 요약');
     } finally {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
@@ -2501,6 +2609,77 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         expect(s2.history.length).toBe(2);
         expect(existsSync(join(sessionDir, 'anon/round-2.json'))).toBe(true);
         expect(existsSync(join(sessionDir, 'verdict/round-2.json'))).toBe(true);
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    }, 30000);
+  });
+
+  // -----------------------------------------------------------------------
+  // F3 (Important, review round 2): spec §10's gate option `e` requires user
+  // agenda to be APPENDED after the judge's own agenda — the judge's REQ-6
+  // agenda-setting authority must never be silently overwritten. Before this
+  // fix there was no injection point at all for it; --round only ever read
+  // agenda from the previous verdict file. This proves append-not-overwrite
+  // from BOTH observable surfaces: the reviewer prompt text (what round 2's
+  // reviewers actually see) and the anon bundle's .agenda[] (what the judge
+  // itself reads next) — the judge's item must appear FIRST in both.
+  // -----------------------------------------------------------------------
+
+  describe('agora.sh --round --extra-agenda <json-array> (spec §10 gate "e": append, never overwrite)', () => {
+    it('appends the user agenda after the judge agenda without overwriting it', async () => {
+      const bin = await makeStubBin({
+        claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+        omx: OK_STUB,
+        agy: OK_STUB,
+      });
+      const root = join(tmpdir(), `agora-out-extra-agenda-${Date.now()}`);
+      await mkdir(root, { recursive: true });
+      const env = {
+        PATH: `${bin}:${process.env.PATH}`,
+        AGORA_OMX_BIN: join(bin, 'omx'),
+        AGORA_OUTPUT_ROOT: root,
+        AGORA_SESSION_EPOCH: '1755230400',
+      };
+      try {
+        // gated mode: --start runs round 1. judgeVerdict()'s fixed agenda is
+        // ['F2 의 심각도 판정 근거를 각자 제시할 것'] — that becomes verdict/round-1.json's
+        // .agenda, the judge-authored agenda round 2 must not lose.
+        const started = await runScript(
+          AGORA_SCRIPT,
+          ['--start', '상태 저장 방식 재검토', '--max-rounds', '5'],
+          '',
+          env
+        );
+        expect(started.exitCode).toBe(0);
+        const sessionDir = started.stdout.trim().split('\n').pop() as string;
+
+        const roundResult = await runScript(
+          AGORA_SCRIPT,
+          ['--round', '2', '--session-dir', sessionDir, '--extra-agenda', '["사용자 추가 쟁점"]'],
+          '',
+          env
+        );
+        expect(roundResult.exitCode).toBe(0);
+
+        // Surface 1: the reviewer prompt text round 2 actually sends out.
+        const round2Prompt = await readFile(
+          join(sessionDir, 'SEALED/raw/round-2.prompt.txt'),
+          'utf-8'
+        );
+        const judgeIdxInPrompt = round2Prompt.indexOf('F2 의 심각도 판정 근거를 각자 제시할 것');
+        const userIdxInPrompt = round2Prompt.indexOf('사용자 추가 쟁점');
+        expect(judgeIdxInPrompt).toBeGreaterThan(-1);
+        expect(userIdxInPrompt).toBeGreaterThan(-1);
+        expect(judgeIdxInPrompt).toBeLessThan(userIdxInPrompt);
+
+        // Surface 2: the anon bundle's .agenda[] — what the judge itself reads.
+        const anon2 = JSON.parse(await readFile(join(sessionDir, 'anon/round-2.json'), 'utf-8'));
+        expect(anon2.agenda).toEqual([
+          'F2 의 심각도 판정 근거를 각자 제시할 것',
+          '사용자 추가 쟁점',
+        ]);
       } finally {
         await rm(bin, { recursive: true, force: true });
         await rm(root, { recursive: true, force: true });
@@ -2635,5 +2814,80 @@ describe('agora.sh env hygiene (carry-over: judge.sh must never see a sealed-pat
   it('never exports an environment variable anywhere in its source (source guard)', async () => {
     const src = await readFile(AGORA_SCRIPT, 'utf-8');
     expect(src).not.toMatch(/^\s*export\s/m);
+  });
+});
+
+// -------------------------------------------------------------------
+// SKILL.md frontmatter contract (Task 7)
+// -------------------------------------------------------------------
+
+const SKILL_MD = resolve(import.meta.dir, '../../../.claude/skills/agora/SKILL.md');
+
+describe('agora SKILL.md', () => {
+  it('exists with the required frontmatter fields', async () => {
+    expect(existsSync(SKILL_MD)).toBe(true);
+    const src = await readFile(SKILL_MD, 'utf-8');
+    expect(src.startsWith('---\n')).toBe(true);
+    const fm = src.split('---')[1];
+    expect(fm).toContain('name: agora');
+    expect(fm).toMatch(/description: .+/);
+    expect(fm).toContain('scope: core');
+    expect(fm).toContain('version: 1.0.0');
+    expect(fm).toContain('user-invocable: true');
+    expect(fm).toContain('argument-hint:');
+  });
+
+  // spec §12: agora is a CLI pipeline skill, not multi-agent orchestration.
+  // The fork cap is 12 with 10 in use; there is no reason to spend one.
+  it('does not declare context: fork', async () => {
+    const src = await readFile(SKILL_MD, 'utf-8');
+    expect(src).not.toContain('context: fork');
+  });
+
+  it('documents the round pipeline in call order', async () => {
+    const src = await readFile(SKILL_MD, 'utf-8');
+    const iReviewers = src.indexOf('reviewers.sh');
+    const iAnon = src.indexOf('anonymize.sh');
+    const iJudge = src.indexOf('judge.sh');
+    expect(iReviewers).toBeGreaterThan(-1);
+    expect(iAnon).toBeGreaterThan(iReviewers);
+    expect(iJudge).toBeGreaterThan(iAnon);
+  });
+
+  it('documents the gate keys and the spec §10 display block', async () => {
+    const src = await readFile(SKILL_MD, 'utf-8');
+    expect(src).toContain('Agora Round');
+    expect(src).toContain('[c] 계속');
+    expect(src).toContain('[s] 중단하고 보고서');
+    expect(src).toContain('[e] 의제 추가 후 계속');
+  });
+
+  it('warns about --auto skipping the cost gate', async () => {
+    const src = await readFile(SKILL_MD, 'utf-8');
+    expect(src).toContain('--auto');
+    expect(src).toMatch(/경고|주의/);
+  });
+
+  it('states that SEALED is off-limits to the orchestrator', async () => {
+    const src = await readFile(SKILL_MD, 'utf-8');
+    expect(src).toContain('SEALED');
+    expect(src).toContain('report.md');
+  });
+
+  // Controller-added: SKILL.md must document AGORA_FORCE_TIMEOUT_FALLBACK as
+  // test-only, so an operator does not set it in a production run (flagged
+  // in Task 4 review as "undocumented in the interface doc").
+  it('documents AGORA_FORCE_TIMEOUT_FALLBACK as test-only', async () => {
+    const src = await readFile(SKILL_MD, 'utf-8');
+    expect(src).toContain('AGORA_FORCE_TIMEOUT_FALLBACK');
+    expect(src).toMatch(/테스트 전용/);
+  });
+
+  // Controller-added: exit 68 (schema config error) must be documented as
+  // distinct from judge failure (exit 4) and not a retry target.
+  it('documents judge.sh exit 68 as a non-retried configuration error', async () => {
+    const src = await readFile(SKILL_MD, 'utf-8');
+    expect(src).toContain('68');
+    expect(src).toMatch(/재시도.{0,10}(대상|아니)/);
   });
 });
