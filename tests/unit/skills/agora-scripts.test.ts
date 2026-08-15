@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -304,8 +304,44 @@ describe('anonymize.sh shuffle', () => {
   });
 });
 
-const BANNED_FINGERPRINT =
-  /codex|omx|agy|gemini|claude -p|antigravity|opus|sonnet|gemini-3|gpt-oss|claude-|flash|SEALED|mapping|raw\//i;
+// F2: parse AGORA_BANNED_PATTERNS directly out of anonymize.sh instead of
+// hand-maintaining a second copy of the same regex here. Two independently
+// maintained definitions of "what counts as a fingerprint" WILL drift — that
+// is exactly what happened before this fix (this constant still had
+// opus/sonnet/flash/mapping/raw\/ long after the shell guard had moved on).
+// Safe to parse because the shell value is a single-quoted, single-line
+// literal with no shell interpolation/escaping inside it — group 1 IS the
+// pattern, verbatim, and works unmodified as a JS RegExp source.
+function loadBannedFingerprintPattern(scriptPath: string): RegExp {
+  const src = readFileSync(scriptPath, 'utf-8');
+  const match = src.match(/^AGORA_BANNED_PATTERNS='([^']*)'$/m);
+  if (!match) {
+    throw new Error(
+      `could not find AGORA_BANNED_PATTERNS in ${scriptPath} — this test's sync with the shell guard broke`
+    );
+  }
+  return new RegExp(match[1], 'i');
+}
+
+const BANNED_FINGERPRINT = loadBannedFingerprintPattern(ANONYMIZE_SCRIPT);
+
+/**
+ * Mirror anonymize.sh's own fingerprint-guard scope (F1/Ruling 10): only
+ * reviewer-authored text — current-round `reviewers` and
+ * `prior_rounds[].reviewers` — is vendor-derived. topic/agenda/attachments
+ * (operator-authored) and prior_rounds[].draft/verdict (judge-authored, spec
+ * §8: the judge is the anonymization SUBJECT, not an anonymized party) are
+ * excluded, exactly like the shell's `{reviewers, prior: [...| {reviewers}]}`.
+ */
+function vendorDerivedText(bundle: {
+  reviewers: unknown;
+  prior_rounds?: Array<{ reviewers: unknown }>;
+}): string {
+  return JSON.stringify({
+    reviewers: bundle.reviewers,
+    prior: (bundle.prior_rounds ?? []).map((p) => ({ reviewers: p.reviewers })),
+  });
+}
 
 /** Create an isolated session dir seeded with a raw fixture tree. */
 async function makeSession(rawFixture: string): Promise<string> {
@@ -383,8 +419,8 @@ describe('anonymize.sh --build', () => {
         ],
         ''
       );
-      const text = await readFile(join(dir, 'anon/round-1.json'), 'utf-8');
-      expect(text).not.toMatch(BANNED_FINGERPRINT);
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      expect(vendorDerivedText(bundle)).not.toMatch(BANNED_FINGERPRINT);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -549,6 +585,147 @@ describe('anonymize.sh --build', () => {
         ''
       );
       expect(result.exitCode).not.toBe(0);
+      expect(existsSync(join(dir, 'anon/round-2.json'))).toBe(false);
+      expect(existsSync(join(dir, 'SEALED/mapping/round-2.json'))).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // F1 (Ruling 10 gap): the judge is the anonymization SUBJECT, not an
+  // anonymized party (spec §8) — its draft may legitimately quote the
+  // operator's own topic. A round-1 topic naming a vendor, echoed into the
+  // judge's round-1 draft, must not re-trip the guard when round 2 carries
+  // that draft in prior_rounds[0].draft.
+  it('does not trip the fingerprint guard when the judge draft quotes the operator topic in prior_rounds', async () => {
+    const dir = await makeSession('raw');
+    try {
+      await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          'Should we adopt Gemini 3 Pro?',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      await cp(join(dir, 'SEALED/raw/round-1'), join(dir, 'SEALED/raw/round-2'), {
+        recursive: true,
+      });
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      await writeFile(
+        join(dir, 'verdict/round-1.json'),
+        JSON.stringify({
+          round: 1,
+          verdict: 'BUILD_WITH_CHANGES',
+          draft: 'Adopting Gemini 3 Pro would require re-validating the shuffle seed strategy.',
+        })
+      );
+
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '2',
+          '--seed',
+          'agora-1-r2',
+          '--topic',
+          'Should we adopt Gemini 3 Pro?',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('AGORA_FINGERPRINT_DETECTED');
+
+      const b2 = JSON.parse(await readFile(join(dir, 'anon/round-2.json'), 'utf-8'));
+      expect(b2.prior_rounds[0].draft).toContain('Gemini 3 Pro');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // F1 reverse: proves the narrowed scope ({reviewers, prior: [...|
+  // {reviewers}]}) did NOT accidentally drop prior-round REVIEWER content
+  // from the guard's view along with judge draft/verdict. A vendor
+  // fingerprint carried in prior_rounds[0].reviewers[].rationale must still
+  // abort round 2 — paired with the no-abort test above so the F1 narrowing
+  // is neither too wide (judge text) nor too narrow (reviewer text).
+  it('still detects a vendor fingerprint carried in prior_rounds[].reviewers[]', async () => {
+    const dir = await makeSession('raw');
+    try {
+      await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      await cp(join(dir, 'SEALED/raw/round-1'), join(dir, 'SEALED/raw/round-2'), {
+        recursive: true,
+      });
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      await writeFile(
+        join(dir, 'verdict/round-1.json'),
+        JSON.stringify({ round: 1, verdict: 'BUILD_WITH_CHANGES', draft: '## 통합 초안 1' })
+      );
+
+      // Simulate a fingerprint entering the already-sealed round-1 bundle
+      // after the fact — it must still be caught once it propagates into
+      // round 2's prior_rounds[0].reviewers[] via relabel_prior.
+      const b1 = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      b1.reviewers[0].rationale = 'As Claude noted earlier, this is correct.';
+      await writeFile(join(dir, 'anon/round-1.json'), JSON.stringify(b1));
+
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '2',
+          '--seed',
+          'agora-1-r2',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr).toContain('AGORA_FINGERPRINT_DETECTED');
       expect(existsSync(join(dir, 'anon/round-2.json'))).toBe(false);
       expect(existsSync(join(dir, 'SEALED/mapping/round-2.json'))).toBe(false);
     } finally {

@@ -295,12 +295,18 @@ build_bundle() {
     > "$bundle_work"
 
   # ---------------------------------------------------------------------------
-  # Fingerprint guard, scoped to VENDOR-DERIVED content only (reviewers +
-  # prior_rounds). topic/agenda/attachments are operator-authored — a session
-  # discussing "should we adopt Gemini" is a topic, not a leak (spec Ruling 10).
+  # Fingerprint guard, scoped to REVIEWER-AUTHORED text only: current-round
+  # `.reviewers` plus `.prior_rounds[].reviewers` (spec Ruling 10). Everything
+  # else operator- or judge-authored is excluded:
+  #   - topic/agenda/attachments — operator-authored (e.g. "should we adopt
+  #     Gemini" is the discussion subject, not a leak)
+  #   - prior_rounds[].draft / prior_rounds[].verdict — JUDGE-authored (spec
+  #     §8: the judge is the anonymization SUBJECT, not an anonymized party;
+  #     its draft may legitimately quote the operator's topic verbatim, and
+  #     must not re-trip the guard on a later round)
   # ---------------------------------------------------------------------------
   local vendor_derived="$work/vendor-derived.json"
-  jq -c '{reviewers, prior_rounds}' "$bundle_work" > "$vendor_derived"
+  jq -c '{reviewers, prior: [.prior_rounds[]? | {reviewers}]}' "$bundle_work" > "$vendor_derived"
 
   if ! assert_no_fingerprint "$vendor_derived"; then
     return 1
