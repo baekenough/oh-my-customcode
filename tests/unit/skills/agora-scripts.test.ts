@@ -1,9 +1,26 @@
 import { describe, expect, it } from 'bun:test';
-import { spawn } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { chmod, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { promisify } from 'node:util';
+
+const execAsync = promisify(exec);
+
+/**
+ * Return the trimmed stdout of `pgrep -f <pattern>`, or '' when pgrep finds
+ * no match (pgrep exits 1 on no-match, which `exec` surfaces as a rejection —
+ * that rejection IS the "no survivors" success case for F1 regression tests).
+ */
+async function pgrepMatches(pattern: string): Promise<string> {
+  try {
+    const { stdout } = await execAsync(`pgrep -f '${pattern}'`);
+    return stdout.trim();
+  } catch {
+    return '';
+  }
+}
 
 const SCRIPTS_DIR = resolve(import.meta.dir, '../../../.claude/skills/agora/scripts');
 const FIXTURES_DIR = resolve(import.meta.dir, '../../fixtures/agora');
@@ -1138,6 +1155,7 @@ describe('reviewers.sh --run', () => {
       expect(result.exitCode).toBe(0);
       expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(false);
       expect(existsSync(join(dir, 'SEALED/raw/round-1/omx.json'))).toBe(true);
+      expect(existsSync(join(dir, 'SEALED/raw/round-1/agy.json'))).toBe(true);
     } finally {
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
@@ -1390,4 +1408,167 @@ describe('reviewers.sh --run', () => {
       await rm(dir, { recursive: true, force: true });
     }
   }, 30000);
+
+  // -----------------------------------------------------------------------
+  // F1 (Important, review round 2): the fallback watchdog must kill the
+  // WHOLE process group, not just the direct child. `kill -TERM "$pid"`
+  // alone orphans grandchildren a wrapped CLI forks (common in Node-wrapped
+  // vendor CLIs) — they keep running (and, in production, keep billing API
+  // calls) after reviewers.sh has already recorded the vendor as missing.
+  //
+  // Regression-proofing note: a stub that is a SINGLE command (e.g. plain
+  // `sleep 30`) can pass this class of test by accident, because bash may
+  // exec-replace the backgrounded shell with that single command, making
+  // $pid equal the sleep's own pid with no group to distinguish. This stub
+  // deliberately FORKS a background descendant (`sleep <marker> &`) before
+  // its own foreground `sleep <marker>`, so a single-pid kill provably
+  // leaves the descendant alive while a process-group kill does not.
+  // -----------------------------------------------------------------------
+  describe('F1: fallback timeout kills the whole process group', () => {
+    // A duration used as BOTH the sleep argument and the pgrep search
+    // pattern. Six-plus digits keeps collisions with other concurrently
+    // running `sleep N` processes (in this suite or elsewhere on the
+    // machine) astronomically unlikely without needing a real process-title
+    // mechanism (macOS bash has no `exec -a`/setproctitle equivalent here).
+    function uniqueMarker(): string {
+      return String(100000 + Math.floor(Math.random() * 900000));
+    }
+
+    function forkingHangStub(marker: string): string {
+      return `sleep ${marker} &\nsleep ${marker}`;
+    }
+
+    async function runForkingTimeoutCase(forceFallback: boolean): Promise<void> {
+      const marker = uniqueMarker();
+      const bin = await makeStubBin({
+        claude: forkingHangStub(marker),
+        omx: OK_STUB,
+        agy: OK_STUB,
+      });
+      const dir = join(
+        tmpdir(),
+        `agora-rv-f1-${forceFallback ? 'fallback' : 'gtimeout'}-${Date.now()}`
+      );
+      await mkdir(dir, { recursive: true });
+      const promptFile = join(dir, 'prompt.txt');
+      await writeFile(promptFile, 'x');
+      try {
+        const env: Record<string, string> = {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_TIMEOUT_SECS: '1',
+        };
+        if (forceFallback) env.AGORA_FORCE_TIMEOUT_FALLBACK = '1';
+
+        const result = await runScript(
+          REVIEWERS_SCRIPT,
+          ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+          '',
+          env
+        );
+        expect(result.exitCode).toBe(0);
+        expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(false);
+
+        // Grace period for the OS to finish reaping after SIGTERM before we
+        // sample survivors — the kill is synchronous but process teardown
+        // is not guaranteed instantaneous.
+        await new Promise((r) => setTimeout(r, 500));
+        const survivors = await pgrepMatches(`sleep ${marker}`);
+        expect(survivors).toBe('');
+      } finally {
+        await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    }
+
+    it('forced fallback path: no descendant survives (process-group kill)', async () => {
+      await runForkingTimeoutCase(true);
+    }, 30000);
+
+    it('default gtimeout path: no descendant survives either (both paths must agree)', async () => {
+      await runForkingTimeoutCase(false);
+    }, 30000);
+  });
+
+  // -----------------------------------------------------------------------
+  // F2 (Important, review round 2): vendor stderr must not be discarded
+  // wholesale. On failure, surface the LAST FEW LINES of the vendor's own
+  // stderr in reviewers.sh's diagnostic output (so auth/rate-limit/model
+  // errors are debuggable); on success, clean the captured log up so
+  // chatty vendors (omx's session/hook logs) don't leave noise behind.
+  // -----------------------------------------------------------------------
+  describe('F2: vendor stderr is captured, not discarded', () => {
+    it('surfaces vendor stderr content in the failure diagnosis instead of discarding it', async () => {
+      const dir = join(tmpdir(), `agora-rv-f2-surface-${Date.now()}`);
+      await mkdir(dir, { recursive: true });
+      const promptFile = join(dir, 'prompt.txt');
+      await writeFile(promptFile, 'x');
+      const failingWithReason = "printf 'AUTH_FAILED: invalid api key\\n' >&2\nexit 1";
+      const bin = await makeStubBin({ claude: OK_STUB, omx: failingWithReason, agy: OK_STUB });
+      try {
+        const result = await runScript(
+          REVIEWERS_SCRIPT,
+          ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+          '',
+          { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        );
+        expect(result.exitCode).toBe(0); // one missing out of three is tolerated
+        expect(result.stderr).toContain('AUTH_FAILED: invalid api key');
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('captures a persistently-failing vendor stderr log inside SEALED/raw (trust boundary), never under anon/', async () => {
+      const dir = join(tmpdir(), `agora-rv-f2-location-${Date.now()}`);
+      await mkdir(dir, { recursive: true });
+      const promptFile = join(dir, 'prompt.txt');
+      await writeFile(promptFile, 'x');
+      const bin = await makeStubBin({ claude: 'exit 1', omx: OK_STUB, agy: OK_STUB });
+      try {
+        const result = await runScript(
+          REVIEWERS_SCRIPT,
+          ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+          '',
+          { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        );
+        expect(result.exitCode).toBe(0);
+        const files = await readdir(join(dir, 'SEALED/raw/round-1'));
+        expect(
+          files.some((f) => f.startsWith('claude.attempt-') && f.endsWith('.stderr.log'))
+        ).toBe(true);
+        // Never under the anonymization output — that's the trust boundary
+        // anonymize.sh's own fingerprint guard protects (spec §12-(1)).
+        expect(existsSync(join(dir, 'anon'))).toBe(false);
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('cleans up the per-attempt stderr log once a vendor succeeds (no noise on success)', async () => {
+      const dir = join(tmpdir(), `agora-rv-f2-cleanup-${Date.now()}`);
+      await mkdir(dir, { recursive: true });
+      const promptFile = join(dir, 'prompt.txt');
+      await writeFile(promptFile, 'x');
+      const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: OK_STUB });
+      try {
+        const result = await runScript(
+          REVIEWERS_SCRIPT,
+          ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+          '',
+          { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+        );
+        expect(result.exitCode).toBe(0);
+        const files = await readdir(join(dir, 'SEALED/raw/round-1'));
+        expect(files.sort()).toEqual(['agy.json', 'claude.json', 'omx.json']);
+        expect(files.some((f) => f.includes('stderr'))).toBe(false);
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+  });
 });

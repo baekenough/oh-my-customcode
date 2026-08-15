@@ -27,6 +27,27 @@ AGORA_TIMEOUT_SECS="${AGORA_TIMEOUT_SECS:-300}"
 # path can be exercised deterministically regardless of what happens to be
 # on the machine running the tests (dev boxes have coreutils; GitHub-hosted
 # macos CI runners may not).
+#
+# F1 (review round 2, controller-measured): the fallback watchdog kills the
+# WHOLE PROCESS GROUP of the backgrounded command, not just its direct PID.
+# `kill -TERM "$pid"` alone only reaches the direct child — a vendor CLI
+# that forks a grandchild (common in Node-wrapped CLIs) orphans it, and the
+# orphan keeps running (and, against a real vendor, keeps making API calls)
+# after this function has already reported the vendor as timed out/missing.
+# Measured: `kill -TERM "$pid"` left 2/3 descendants of a forking stub
+# alive; `kill -TERM -- -"$pid"` (negative PID = process group) left 0.
+# `gtimeout`'s own default (non `--foreground`) mode already targets the
+# whole group, so only this fallback branch needed the fix.
+#
+# Getting a process group AT ALL requires job control (`set -m`) to be on —
+# without it, `"$@" &` inherits this shell's own process group, and a
+# negative-PID kill would hit this script's group, not just the timed-out
+# command's. macOS ships no `setsid`, so `set -m` is the only portable way
+# to get the backgrounded command its own group here. Scoped strictly to
+# this function: only turned on if not already on, and turned back off
+# before returning, so the rest of reviewers.sh (and any caller) is
+# unaffected by the job-control side effects (e.g. "Terminated" job
+# notifications on stray fds).
 # ---------------------------------------------------------------------------
 run_with_timeout() {
   local secs="$1"; shift
@@ -35,15 +56,30 @@ run_with_timeout() {
     return $?
   fi
 
+  local restore_job_control=0
+  case $- in
+    *m*) ;;
+    *) set -m; restore_job_control=1 ;;
+  esac
+
   "$@" &
   local pid=$!
-  ( sleep "$secs"; kill -TERM "$pid" 2>/dev/null ) &
+  # Negative PID targets the whole process group (job-control-assigned pgid
+  # == the group leader's pid), so grandchildren the command forks are
+  # reaped too, not just the direct child.
+  ( sleep "$secs"; kill -TERM -- "-$pid" 2>/dev/null ) &
   local watcher=$!
 
   local rc=0
-  wait "$pid" || rc=$?
+  # 2>/dev/null: suppresses this shell's own job-control "Terminated"
+  # notification, which (only under `set -m`) prints as a side effect of
+  # `wait` reaping a signal-killed background job — noise, not a diagnostic
+  # this script itself emits.
+  wait "$pid" 2>/dev/null || rc=$?
   kill -TERM "$watcher" 2>/dev/null || true
   wait "$watcher" 2>/dev/null || true
+
+  [ "$restore_job_control" -eq 1 ] && set +m
 
   # 143 = SIGTERM from the watchdog; normalize to the GNU timeout convention.
   [ "$rc" -eq 143 ] && rc=124
@@ -85,31 +121,60 @@ invoke_vendor() {
 }
 
 # ---------------------------------------------------------------------------
+# _emit_vendor_stderr_tail <slug> <err_file> — F2 (review round 2): print the
+# last 20 lines of a vendor's captured stderr as part of THIS script's own
+# diagnostic output, so a failure's actual cause (auth, rate-limit, model
+# deprecation, network) is debuggable instead of silently discarded. A
+# vendor's session/hook logs can be long (omx in particular), so only the
+# tail is surfaced, not the whole file.
+# ---------------------------------------------------------------------------
+_emit_vendor_stderr_tail() {
+  local slug="$1" err_file="$2"
+  if [ -s "$err_file" ]; then
+    printf '[agora] %s stderr (last 20 lines):\n' "$slug" >&2
+    tail -n 20 "$err_file" >&2
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # call_vendor <slug> <prompt_file> <out_file> — one retry, then missing
 # (spec §11). Writes <out_file> ONLY on a verified-parseable success; a
 # missing vendor leaves no file at all (silent-failure avoidance: callers
 # distinguish "responded" from "missing" by file existence, never by an
 # empty/partial file).
+#
+# F2 (review round 2): each attempt's vendor stderr is captured to
+# <out_dir>/<slug>.attempt-<N>.stderr.log — inside SEALED/raw/round-N/, the
+# same trust boundary as the raw response itself (never under anon/). On
+# success the log is removed (no noise from chatty vendors); on failure it
+# is left on disk for audit AND its tail is folded into this script's own
+# diagnostic stderr via _emit_vendor_stderr_tail.
 # ---------------------------------------------------------------------------
 call_vendor() {
   local slug="$1" prompt_file="$2" out_file="$3"
-  local attempt rc tmp
+  local attempt rc tmp err_file out_dir_path
   tmp=$(mktemp)
+  out_dir_path="$(dirname "$out_file")"
 
   for attempt in 1 2; do
     rc=0
-    invoke_vendor "$slug" "$prompt_file" > "$tmp" 2>/dev/null || rc=$?
+    err_file="$out_dir_path/$slug.attempt-$attempt.stderr.log"
+    invoke_vendor "$slug" "$prompt_file" > "$tmp" 2> "$err_file" || rc=$?
 
     if [ "$rc" -eq 124 ]; then
       printf '[agora] %s timeout on attempt %s\n' "$slug" "$attempt" >&2
+      _emit_vendor_stderr_tail "$slug" "$err_file"
     elif [ "$rc" -ne 0 ]; then
       printf '[agora] %s exited %s on attempt %s\n' "$slug" "$rc" "$attempt" >&2
+      _emit_vendor_stderr_tail "$slug" "$err_file"
     elif ! jq -e . "$tmp" >/dev/null 2>&1; then
       printf '[agora] %s returned unparsable output on attempt %s\n' "$slug" "$attempt" >&2
+      _emit_vendor_stderr_tail "$slug" "$err_file"
       rc=65
     else
       # Success is written to the final path ONLY after the response has
       # been confirmed valid JSON — never before the check is settled.
+      rm -f "$err_file"
       mv "$tmp" "$out_file"
       return 0
     fi
