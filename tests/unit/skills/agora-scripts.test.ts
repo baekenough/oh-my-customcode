@@ -1572,3 +1572,342 @@ describe('reviewers.sh --run', () => {
     });
   });
 });
+
+// -------------------------------------------------------------------
+// judge.sh --model-for-round / --run  (spec §3, §8, §11; REQ-3 rotation)
+// -------------------------------------------------------------------
+
+const JUDGE_SCRIPT = join(SCRIPTS_DIR, 'judge.sh');
+
+const VALID_VERDICT = JSON.stringify({
+  round: 1,
+  judge: 'rotation-slot-1',
+  consensus: 'MAJORITY',
+  verdict: 'BUILD_WITH_CHANGES',
+  resolved: [{ id: 'F1', resolution: '세션 디렉토리 격리로 충분' }],
+  unresolved: [{ id: 'F2', severity: 'HIGH', positions: 'A REJECT / C KEEP / B 미언급' }],
+  agenda: ['F2 의 심각도 판정 근거를 각자 제시할 것'],
+  draft: '## 통합 초안\n\n본문',
+  new_findings: 2,
+  notes: '리뷰어 3인 전원 응답',
+});
+
+describe('judge.sh rotation', () => {
+  it('should pass bash syntax check', async () => {
+    const { exitCode } = await bashSyntaxCheck(JUDGE_SCRIPT);
+    expect(exitCode).toBe(0);
+  });
+
+  // spec REQ-3: R1/R2/R3 fixed, R4 onward cycles.
+  const expected: Record<number, string> = {
+    1: 'claude:claude-opus-5',
+    2: 'agy:claude-opus-4-6-thinking',
+    3: 'agy:gpt-oss-120b-medium',
+    4: 'claude:claude-opus-5',
+    5: 'agy:claude-opus-4-6-thinking',
+    6: 'agy:gpt-oss-120b-medium',
+    7: 'claude:claude-opus-5',
+  };
+
+  for (const [round, model] of Object.entries(expected)) {
+    it(`selects ${model} for round ${round}`, async () => {
+      const result = await runScript(JUDGE_SCRIPT, ['--model-for-round', round], '');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(model);
+    });
+  }
+
+  it('advances to the next rotation slot when an offset is supplied (judge failover)', async () => {
+    const result = await runScript(JUDGE_SCRIPT, ['--model-for-round', '1', '1'], '');
+    expect(result.stdout.trim()).toBe('agy:claude-opus-4-6-thinking');
+  });
+
+  // spec REQ-3: judges must not overlap the reviewer models at all.
+  it('shares no model with the reviewer roster', async () => {
+    const reviewerModels = ['claude-opus-4-8', 'gemini-3.1-pro-high'];
+    for (const round of [1, 2, 3]) {
+      const r = await runScript(JUDGE_SCRIPT, ['--model-for-round', String(round)], '');
+      const model = r.stdout.trim().split(':')[1];
+      expect(reviewerModels).not.toContain(model);
+    }
+  });
+
+  // spec §4: the judge process must have no route to the sealed mapping.
+  it('never mentions the sealed directory anywhere in its source (source guard)', async () => {
+    const src = await readFile(JUDGE_SCRIPT, 'utf-8');
+    expect(src).not.toContain('SEALED');
+    expect(src).not.toContain('mapping/');
+  });
+});
+
+describe('judge.sh --run', () => {
+  it('writes the verdict produced by the rotation model', async () => {
+    const bin = await makeStubBin({ claude: `printf '%s' '${VALID_VERDICT}'`, agy: 'exit 1' });
+    const dir = join(tmpdir(), `agora-judge-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    try {
+      const result = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        { PATH: `${bin}:${process.env.PATH}` }
+      );
+      expect(result.exitCode).toBe(0);
+      const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
+      expect(v.verdict).toBe('BUILD_WITH_CHANGES');
+      expect(v.judge).toBe('claude:claude-opus-5');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // spec §11: judge failure falls through to the next rotation model.
+  it('falls back to the next rotation model when the primary judge fails', async () => {
+    const bin = await makeStubBin({ claude: 'exit 1', agy: `printf '%s' '${VALID_VERDICT}'` });
+    const dir = join(tmpdir(), `agora-judge-fb-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    try {
+      const result = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        { PATH: `${bin}:${process.env.PATH}` }
+      );
+      expect(result.exitCode).toBe(0);
+      const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
+      expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('exits 4 when every rotation model fails', async () => {
+    const bin = await makeStubBin({ claude: 'exit 1', agy: 'exit 1' });
+    const dir = join(tmpdir(), `agora-judge-dead-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    try {
+      const result = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        { PATH: `${bin}:${process.env.PATH}` }
+      );
+      expect(result.exitCode).toBe(4);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('passes only the anon file path to the judge process (argv guard)', async () => {
+    const bin = await makeStubBin({
+      claude: `printf '%s' "$*" > "$AGORA_ARGV_DUMP"; printf '%s' '${VALID_VERDICT}'`,
+      agy: 'exit 1',
+    });
+    const dir = join(tmpdir(), `agora-judge-argv-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    const dump = join(dir, 'argv.txt');
+    try {
+      await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_ARGV_DUMP: dump }
+      );
+      const argv = await readFile(dump, 'utf-8');
+      expect(argv).not.toContain('SEALED');
+      expect(argv).not.toContain('mapping');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // Robustness parity with reviewers.sh's call_vendor (F1, review round 2):
+  // a hanging judge process must be killed as a WHOLE PROCESS GROUP, not
+  // just its direct PID, and the rotation must still fall through to the
+  // next slot afterward. Mirrors reviewers.sh's forkingHangStub regression
+  // note: a single-command stub (`sleep 30`) can pass a single-PID kill by
+  // accident via bash's exec-replacement, so this stub deliberately forks a
+  // background descendant before its own foreground sleep.
+  it('kills a hanging judge as a whole process group on timeout and falls through to the next slot', async () => {
+    const marker = String(100000 + Math.floor(Math.random() * 900000));
+    const bin = await makeStubBin({
+      claude: `sleep ${marker} &\nsleep ${marker}`,
+      agy: `printf '%s' '${VALID_VERDICT}'`,
+    });
+    const dir = join(tmpdir(), `agora-judge-timeout-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    try {
+      const result = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_TIMEOUT_SECS: '1' }
+      );
+      expect(result.exitCode).toBe(0);
+      const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
+      expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+
+      // Grace period for the OS to finish reaping after SIGTERM before
+      // sampling survivors — mirrors reviewers.sh's F1 test.
+      await new Promise((r) => setTimeout(r, 500));
+      const survivors = await pgrepMatches(`sleep ${marker}`);
+      expect(survivors).toBe('');
+    } finally {
+      await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  // Robustness parity with reviewers.sh's F2 (stderr must not be discarded
+  // wholesale): a failed judge's own stderr must be surfaced in judge.sh's
+  // own diagnostic output, not silenced with `2>/dev/null`.
+  it('surfaces a failed judge stderr content in the diagnosis instead of discarding it', async () => {
+    const bin = await makeStubBin({
+      claude: "printf 'AUTH_FAILED: invalid api key\\n' >&2\nexit 1",
+      agy: `printf '%s' '${VALID_VERDICT}'`,
+    });
+    const dir = join(tmpdir(), `agora-judge-stderr-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    try {
+      const result = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        { PATH: `${bin}:${process.env.PATH}` }
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toContain('AUTH_FAILED: invalid api key');
+      const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
+      expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // A per-attempt stderr capture file must exist alongside the verdict
+  // output on failure (audit trail, spec §11) but must never leak toward
+  // any path containing "SEALED"/"mapping" — the sole trust-boundary
+  // invariant this script must uphold (spec §4).
+  it('captures the failing attempt stderr next to the verdict output, not under any sealed path', async () => {
+    const bin = await makeStubBin({
+      claude: "printf 'boom\\n' >&2\nexit 1",
+      agy: `printf '%s' '${VALID_VERDICT}'`,
+    });
+    const dir = join(tmpdir(), `agora-judge-stderr-loc-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    try {
+      await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        { PATH: `${bin}:${process.env.PATH}` }
+      );
+      const verdictFiles = await readdir(join(dir, 'verdict'));
+      expect(verdictFiles.some((f) => f.includes('stderr'))).toBe(true);
+      for (const f of verdictFiles) {
+        expect(f).not.toContain('SEALED');
+        expect(f).not.toContain('mapping');
+      }
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
