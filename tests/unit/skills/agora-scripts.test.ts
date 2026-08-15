@@ -1592,6 +1592,36 @@ const VALID_VERDICT = JSON.stringify({
   notes: '리뷰어 3인 전원 응답',
 });
 
+// F1 (review round): syntactically valid JSON that is missing a required
+// field (spec §8 lists 10 required fields; `unresolved` is omitted here).
+const MISSING_FIELD_VERDICT = JSON.stringify({
+  round: 1,
+  judge: 'rotation-slot-1',
+  consensus: 'MAJORITY',
+  verdict: 'BUILD_WITH_CHANGES',
+  resolved: [{ id: 'F1', resolution: '세션 디렉토리 격리로 충분' }],
+  // unresolved intentionally omitted — this IS the defect under test.
+  agenda: ['F2 의 심각도 판정 근거를 각자 제시할 것'],
+  draft: '## 통합 초안\n\n본문',
+  new_findings: 2,
+  notes: '리뷰어 3인 전원 응답',
+});
+
+// F1 (review round): syntactically valid, all required fields present, but
+// `verdict` carries a value outside verdict-schema.json's enum.
+const BAD_ENUM_VERDICT = JSON.stringify({
+  round: 1,
+  judge: 'rotation-slot-1',
+  consensus: 'MAJORITY',
+  verdict: 'MERGE',
+  resolved: [{ id: 'F1', resolution: '세션 디렉토리 격리로 충분' }],
+  unresolved: [{ id: 'F2', severity: 'HIGH', positions: 'A REJECT / C KEEP / B 미언급' }],
+  agenda: ['F2 의 심각도 판정 근거를 각자 제시할 것'],
+  draft: '## 통합 초안\n\n본문',
+  new_findings: 2,
+  notes: '리뷰어 3인 전원 응답',
+});
+
 describe('judge.sh rotation', () => {
   it('should pass bash syntax check', async () => {
     const { exitCode } = await bashSyntaxCheck(JUDGE_SCRIPT);
@@ -1628,6 +1658,9 @@ describe('judge.sh rotation', () => {
     for (const round of [1, 2, 3]) {
       const r = await runScript(JUDGE_SCRIPT, ['--model-for-round', String(round)], '');
       const model = r.stdout.trim().split(':')[1];
+      // F3 (review round): guards against this assertion passing vacuously
+      // when the script emits nothing at all (model would be `undefined`).
+      expect(model).toBeDefined();
       expect(reviewerModels).not.toContain(model);
     }
   });
@@ -1909,5 +1942,189 @@ describe('judge.sh --run', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
     }
+  });
+
+  // -----------------------------------------------------------------------
+  // F1 (Important, review round): `jq -e .` only proves a response IS json,
+  // not that it HAS the right shape (spec §8 required fields / enums). This
+  // describe block proves BOTH directions: a schema-violating response is
+  // rejected (and falls through to the next rotation slot, and the reason
+  // appears in the diagnosis), and a schema-complete response is still
+  // accepted (the validator must not reject good output).
+  // -----------------------------------------------------------------------
+  describe('F1: verdict schema validation (required fields + enums)', () => {
+    it('rejects a verdict missing a required field, records the reason, and falls through to the next slot', async () => {
+      const bin = await makeStubBin({
+        claude: `printf '%s' '${MISSING_FIELD_VERDICT}'`,
+        agy: `printf '%s' '${VALID_VERDICT}'`,
+      });
+      const dir = join(tmpdir(), `agora-judge-f1-missing-${Date.now()}`);
+      await mkdir(join(dir, 'anon'), { recursive: true });
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      await writeFile(
+        join(dir, 'anon/round-1.json'),
+        JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+      );
+      try {
+        const result = await runScript(
+          JUDGE_SCRIPT,
+          [
+            '--run',
+            '--anon-file',
+            join(dir, 'anon/round-1.json'),
+            '--out-file',
+            join(dir, 'verdict/round-1.json'),
+            '--round',
+            '1',
+          ],
+          '',
+          { PATH: `${bin}:${process.env.PATH}` }
+        );
+        expect(result.exitCode).toBe(0);
+        expect(result.stderr).toContain('missing required field: unresolved');
+        const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
+        // Fell through to the next rotation slot (agy), not the rejected claude response.
+        expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    it('rejects a verdict with an invalid enum value, records the reason, and falls through to the next slot', async () => {
+      const bin = await makeStubBin({
+        claude: `printf '%s' '${BAD_ENUM_VERDICT}'`,
+        agy: `printf '%s' '${VALID_VERDICT}'`,
+      });
+      const dir = join(tmpdir(), `agora-judge-f1-enum-${Date.now()}`);
+      await mkdir(join(dir, 'anon'), { recursive: true });
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      await writeFile(
+        join(dir, 'anon/round-1.json'),
+        JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+      );
+      try {
+        const result = await runScript(
+          JUDGE_SCRIPT,
+          [
+            '--run',
+            '--anon-file',
+            join(dir, 'anon/round-1.json'),
+            '--out-file',
+            join(dir, 'verdict/round-1.json'),
+            '--round',
+            '1',
+          ],
+          '',
+          { PATH: `${bin}:${process.env.PATH}` }
+        );
+        expect(result.exitCode).toBe(0);
+        expect(result.stderr).toContain('invalid verdict: MERGE');
+        const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
+        expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    // Negative control: proves the two tests above are catching a REAL
+    // defect, not a validator that rejects everything. A validator that is
+    // too strict (rejects well-formed output) would be just as dangerous as
+    // one that validates nothing — this is the "still passes" half of the
+    // bidirectional check.
+    it('does not reject a schema-complete verdict (negative control for the validator)', async () => {
+      const bin = await makeStubBin({
+        claude: `printf '%s' '${VALID_VERDICT}'`,
+        agy: 'exit 1',
+      });
+      const dir = join(tmpdir(), `agora-judge-f1-ok-${Date.now()}`);
+      await mkdir(join(dir, 'anon'), { recursive: true });
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      await writeFile(
+        join(dir, 'anon/round-1.json'),
+        JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+      );
+      try {
+        const result = await runScript(
+          JUDGE_SCRIPT,
+          [
+            '--run',
+            '--anon-file',
+            join(dir, 'anon/round-1.json'),
+            '--out-file',
+            join(dir, 'verdict/round-1.json'),
+            '--round',
+            '1',
+          ],
+          '',
+          { PATH: `${bin}:${process.env.PATH}` }
+        );
+        expect(result.exitCode).toBe(0);
+        expect(result.stderr).not.toContain('schema violation');
+        const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
+        expect(v.verdict).toBe('BUILD_WITH_CHANGES');
+        // Accepted from the FIRST slot (claude) — proves the validator did
+        // not force an unnecessary fallback for well-formed output.
+        expect(v.judge).toBe('claude:claude-opus-5');
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    // F1 definition-unification requirement: required/enum values must be
+    // READ from verdict-schema.json, not hardcoded — so an unreadable/absent
+    // schema must fail LOUDLY, not silently disable validation. Mirrors
+    // Task 4's loadBannedFingerprintPattern rationale (a helper that reads
+    // its own source of truth must not paper over that source going
+    // missing). The real shipped schema file is moved aside and restored in
+    // `finally` so no other test in this file is affected — bun runs `it()`
+    // blocks within one file sequentially, so this is safe.
+    it('fails explicitly (not silently) when verdict-schema.json cannot be read', async () => {
+      const schemaPath = join(SCRIPTS_DIR, 'verdict-schema.json');
+      const backupPath = join(SCRIPTS_DIR, 'verdict-schema.json.testbak');
+      const bin = await makeStubBin({
+        claude: `printf '%s' '${VALID_VERDICT}'`,
+        agy: `printf '%s' '${VALID_VERDICT}'`,
+      });
+      const dir = join(tmpdir(), `agora-judge-f1-noschema-${Date.now()}`);
+      await mkdir(join(dir, 'anon'), { recursive: true });
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      await writeFile(
+        join(dir, 'anon/round-1.json'),
+        JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+      );
+      await cp(schemaPath, backupPath);
+      await rm(schemaPath);
+      try {
+        const result = await runScript(
+          JUDGE_SCRIPT,
+          [
+            '--run',
+            '--anon-file',
+            join(dir, 'anon/round-1.json'),
+            '--out-file',
+            join(dir, 'verdict/round-1.json'),
+            '--round',
+            '1',
+          ],
+          '',
+          { PATH: `${bin}:${process.env.PATH}` }
+        );
+        // Distinct from exit 4 (every rotation model failed) — this is a
+        // config-load failure that must not even attempt the CLIs, let
+        // alone consume a rotation slot.
+        expect(result.exitCode).not.toBe(0);
+        expect(result.exitCode).not.toBe(4);
+        expect(result.stderr).toContain('verdict schema');
+        expect(existsSync(join(dir, 'verdict/round-1.json'))).toBe(false);
+      } finally {
+        await cp(backupPath, schemaPath);
+        await rm(backupPath, { force: true });
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
   });
 });

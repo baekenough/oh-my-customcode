@@ -152,13 +152,57 @@ _emit_judge_stderr_tail() {
 }
 
 # ---------------------------------------------------------------------------
+# validate_verdict <file> — spec §8: `jq -e .` (the caller's syntactic-JSON
+# check) only proves the response IS json; it does not prove the response
+# HAS the right shape. A response can be syntactically valid and still be
+# missing a required field, or carry an enum typo (verdict: "MERGE") that
+# would flow straight into Task 1's decide_stop and silently compare false
+# forever. The required-field list and enum values are read FROM
+# verdict-schema.json itself — never hardcoded here — so this cannot drift
+# from the schema file the same way anonymize.sh's fingerprint guard reads
+# its own banned-pattern constant directly instead of duplicating it.
+# Prints every rejection reason to stderr; returns 0 only when every
+# required field is present (and non-null) and every enum value it carries
+# is one of the schema's allowed values.
+# ---------------------------------------------------------------------------
+validate_verdict() {
+  local file="$1"
+  local reasons=() key val enum_field enum_values r
+
+  while IFS= read -r key; do
+    [ -n "$key" ] || continue
+    if ! jq -e --arg k "$key" 'has($k) and (.[$k] != null)' "$file" >/dev/null 2>&1; then
+      reasons+=("missing required field: $key")
+    fi
+  done < <(jq -r '.required[]' "$VERDICT_SCHEMA")
+
+  for enum_field in consensus verdict; do
+    val=$(jq -r --arg f "$enum_field" '.[$f] // empty' "$file")
+    [ -n "$val" ] || continue
+    enum_values=$(jq -r --arg f "$enum_field" '.properties[$f].enum[]' "$VERDICT_SCHEMA")
+    if ! printf '%s\n' "$enum_values" | grep -qxF -- "$val"; then
+      reasons+=("invalid $enum_field: $val")
+    fi
+  done
+
+  if [ "${#reasons[@]}" -gt 0 ]; then
+    for r in "${reasons[@]}"; do
+      printf '[agora] verdict schema violation: %s\n' "$r" >&2
+    done
+    return 1
+  fi
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # run_judge --anon-file <path> --out-file <path> --round <N>
 # Tries the three rotation slots in order (spec §11 failover). Writes
-# <out-file> only after the response is confirmed valid JSON, then stamps
-# .judge/.round onto it. Each attempt's stderr is captured next to the
-# verdict output itself (never any other session path) and removed on
-# success; a failing attempt's log is left on disk for audit and its tail is
-# folded into this script's own diagnostic stderr.
+# <out-file> only after the response is confirmed valid JSON AND schema-valid
+# (validate_verdict), then stamps .judge/.round onto it. Each attempt's
+# stderr is captured next to the verdict output itself (never any other
+# session path) and removed on success; a failing attempt's log is left on
+# disk for audit and its tail is folded into this script's own diagnostic
+# stderr.
 # ---------------------------------------------------------------------------
 run_judge() {
   local anon_file='' out_file='' round=''
@@ -176,6 +220,15 @@ run_judge() {
   }
   [ -f "$anon_file" ] || { printf 'judge.sh: %s not found\n' "$anon_file" >&2; return 66; }
 
+  # F1 (review round): fail explicitly and up front if the schema this
+  # script validates against cannot even be read/parsed — required-field and
+  # enum checks below are read FROM this file, so a silently-missing schema
+  # would silently disable validation instead of loudly failing.
+  jq -e . "$VERDICT_SCHEMA" >/dev/null 2>&1 || {
+    printf 'judge.sh: cannot read or parse verdict schema at %s\n' "$VERDICT_SCHEMA" >&2
+    return 68
+  }
+
   local out_dir; out_dir="$(dirname "$out_file")"
   mkdir -p "$out_dir"
 
@@ -184,7 +237,10 @@ run_judge() {
   for offset in 0 1 2; do
     model_id=$(judge_model_for_round "$round" "$offset")
     prompt=$(judge_prompt "$anon_file" "$model_id")
-    err_file="$out_dir/.judge-attempt-$offset.stderr.log"
+    # F2 (review round): the round is part of the filename so a later round
+    # retried in the same out_dir never overwrites an earlier round's audit
+    # log — offset alone collided across rounds.
+    err_file="$out_dir/.judge-round-$round-attempt-$offset.stderr.log"
 
     rc=0
     invoke_judge "$model_id" "$prompt" > "$tmp" 2> "$err_file" || rc=$?
@@ -198,6 +254,9 @@ run_judge() {
     elif ! jq -e . "$tmp" >/dev/null 2>&1; then
       printf '[agora] judge %s returned unparsable output for round %s\n' "$model_id" "$round" >&2
       _emit_judge_stderr_tail "$model_id" "$err_file"
+      rc=65
+    elif ! validate_verdict "$tmp"; then
+      printf '[agora] judge %s returned a schema-violating verdict for round %s\n' "$model_id" "$round" >&2
       rc=65
     else
       # Success is written to the final path ONLY after the response has
