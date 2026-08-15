@@ -79,7 +79,7 @@ fi
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 total_wiki=$(find wiki -name "*.md" ! -name "index.md" ! -name "log.md" 2>/dev/null | wc -l | tr -d ' ')
-echo "Source entities: agents=$src_agents skills=$src_skills rules=$src_rules guides=$src_guides"
+echo "Source entities: agents=$src_agents skills=$src_skills rules=$src_rules guide_topics=$src_guides"
 echo "Wiki pages (total .md): $total_wiki  |  Missing: $MISSING"
 
 if [ "$ERRORS" -gt 0 ]; then
@@ -145,6 +145,10 @@ else
   check_count "agents" "$INDEX_AGENTS" "$ACTUAL_AGENTS"
   check_count "rules"  "$INDEX_RULES"  "$ACTUAL_RULES"
   check_count "guides" "$INDEX_GUIDES" "$ACTUAL_GUIDES"
+  # Note: counts.guides above is the wiki/guides/*.md PAGE count (ACTUAL_GUIDES).
+  # It is intentionally distinct from src_guides/guide_topics (the guides/ source
+  # TOPIC-directory count) reported earlier in this script — they measure different
+  # things by design. (#1589)
 
   if [ "$COUNT_ERRORS" -gt 0 ]; then
     echo ""

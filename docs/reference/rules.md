@@ -132,8 +132,9 @@ Synchronization verification:
 
 **ID**: R018
 
-Agent Teams integration (conditional - when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`):
+Agent Teams integration (conditional - when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` AND the `TeamCreate` tool is present in the tool list; the env var alone is not sufficient, and `SendMessage` presence alone is not evidence either):
 
+- Detection: as of CC v2.1.233+, `TeamCreate` is not registered in the tool list (measured) — Agent Teams is dormant in this runtime, and R009/R010 govern instead
 - Mandatory use of Agent Teams for qualifying coordinated tasks
 - Decision matrix for Task tool vs Agent Teams
 - Team composition patterns
