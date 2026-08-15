@@ -59,7 +59,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | R021 | MUST | Enforcement Policy | Advisory-first 시행 모델, 강화 승격 기준 |
 | R022 | SHOULD | Wiki 동기화 | 에이전트/스킬/규칙/가이드 변경 시 위키 자동 동기화 |
 
-### 3.2 에이전트 분류 (49개)
+### 3.2 에이전트 분류 (50개)
 
 | 카테고리 | 수량 | 에이전트 |
 |----------|------|----------|
@@ -70,14 +70,14 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | 데이터 엔지니어링 | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | 데이터베이스 | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | 보안 | 1 | sec-codeql-expert |
-| 아키텍처 | 2 | arch-documenter, arch-speckit-agent |
+| 아키텍처 | 3 | arch-documenter, arch-speckit-agent, agora-runner |
 | 인프라 | 2 | infra-docker-expert, infra-aws-expert |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | 시스템 | 4 | sys-memory-keeper, sys-naggy, wiki-curator, tracker-checkpoint |
-| **합계** | **49** | |
+| **합계** | **50** | |
 
-### 3.3 스킬 카탈로그 (114개)
+### 3.3 스킬 카탈로그 (115개)
 
 **라우팅 스킬 (4개, context: fork, 캡 12)**
 
@@ -103,6 +103,12 @@ analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, de
 **시스템 / 내부 스킬**
 
 intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
+
+**합의 스킬 (1개)**
+
+| 스킬 | 설명 |
+|------|------|
+| agora | 익명 다중 라운드 합의 리뷰 — 설계·결정 주제를 3개 독립 벤더 CLI에 걸쳐 봉인된 A/B/C 라벨로 검토시키고, 라운드마다 모델이 바뀌는 심판이 판정한다. 익명성은 결정적으로 보장되지 않으며 그 한계가 스킬 본문에 명시돼 있다. `agora-runner`(3.2 에이전트 분류)가 위임받아 라운드 1개를 실행하고 verdict 요약만 반환한다. |
 
 ### 3.4 가이드 라이브러리 (56개 토픽)
 

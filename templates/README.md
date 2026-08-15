@@ -47,8 +47,8 @@ templates/
 ├── CLAUDE.md                        # 에이전트 시스템 진입점
 ├── manifest.json                    # 배포 컴포넌트 카운트 및 메타데이터
 ├── .claude/
-│   ├── agents/                      # 에이전트 정의 파일 (*.md, 49개)
-│   ├── skills/                      # 스킬 모듈 (각 디렉토리에 SKILL.md, 114개)
+│   ├── agents/                      # 에이전트 정의 파일 (*.md, 50개)
+│   ├── skills/                      # 스킬 모듈 (각 디렉토리에 SKILL.md, 115개)
 │   ├── rules/                       # 전역 규칙 (R000–R023, 23개)
 │   ├── hooks/
 │   │   ├── hooks.json               # 훅 이벤트 설정 (PreToolUse/PostToolUse 등)
@@ -65,7 +65,7 @@ templates/
 아래 카운트는 `templates/manifest.json`과 동기화됩니다.
 CI의 `verify-template-sync.sh`가 소스와 templates/ 간 일치를 검증합니다.
 
-### Agents (49)
+### Agents (50)
 
 `.claude/agents/*.md` — 에이전트 정의 파일.
 
@@ -80,13 +80,13 @@ CI의 `verify-template-sync.sh`가 소스와 templates/ 간 일치를 검증합�
 | DE Engineer | 6 |
 | SW Engineer / Database | 4 |
 | Security | 1 |
-| SW Architect | 2 |
+| SW Architect | 3 |
 | Infra Engineer | 2 |
 | QA Team | 3 |
 | Manager | 6 |
 | System | 4 |
 
-### Skills (114)
+### Skills (115)
 
 `.claude/skills/*/SKILL.md` — 재사용 가능한 스킬 모듈.
 

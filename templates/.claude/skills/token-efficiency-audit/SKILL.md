@@ -125,7 +125,7 @@ Applies CI/Worker-Only Levers. These disable core oh-my-customcode functionality
 
 These settings disable core oh-my-customcode functionality:
   • CLAUDE_CODE_DISABLE_CLAUDE_MDS=1  → ALL rules and routing offline (R010 disabled)
-  • CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS=1 → All 49 agents unavailable
+  • CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS=1 → All 50 agents unavailable
   • ENABLE_CLAUDEAI_MCP_SERVERS=false → MCP-dependent skills unavailable
   • CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 → No persistent memory across sessions
 

@@ -14,13 +14,13 @@
       "name": "agents",
       "path": ".claude/agents",
       "description": "AI agent definitions (flat .md files with prefixes)",
-      "files": 49
+      "files": 50
     },
     {
       "name": "skills",
       "path": ".claude/skills",
       "description": "Reusable skill modules (includes slash commands)",
-      "files": 114
+      "files": 115
     },
     {
       "name": "guides",

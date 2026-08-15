@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-49개 에이전트. 114개 스킬. 23개 규칙. 명령어 하나.
+50개 에이전트. 115개 스킬. 23개 규칙. 명령어 하나.
 
 > **v0.74.0** — omcustom sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
 
@@ -128,7 +128,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 에이전트 (49개)
+## 에이전트 (50개)
 
 | 카테고리 | 수 | 에이전트 |
 |---------|-----|---------|
@@ -138,7 +138,7 @@ Agent(arch-documenter):haiku      ┘
 | 데이터 엔지니어링 | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | 데이터베이스 | 4 | db-supabase, db-postgres, db-redis, db-alembic |
 | 툴링 | 4 | tool-npm, tool-optimizer, tool-bun, slack-cli |
-| 아키텍처 | 2 | arch-documenter, arch-speckit |
+| 아키텍처 | 3 | arch-documenter, arch-speckit, agora-runner |
 | 인프라 | 2 | infra-docker, infra-aws |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 보안 | 1 | sec-codeql |
@@ -149,7 +149,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (114개)
+## 스킬 (115개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -162,6 +162,7 @@ Agent(arch-documenter):haiku      ┘
 | 패키지 | 3 | npm-publish, npm-version, npm-audit |
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | 보안 | 2 | adversarial-review, cve-triage |
+| 합의 | 1 | agora — 익명 다중 라운드 다중 벤더 합의 리뷰 |
 | 기타 | 44 | claude-native, vercel-deploy, skills-sh-search, result-aggregation 외 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
@@ -283,8 +284,8 @@ omcustom serve-stop            # Web UI 중지
 your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
-│   ├── agents/                 # 49개 에이전트 정의
-│   ├── skills/                 # 114개 스킬 모듈
+│   ├── agents/                 # 50개 에이전트 정의
+│   ├── skills/                 # 115개 스킬 모듈
 │   ├── rules/                  # 23개 거버넌스 규칙 (R000-R023)
 │   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
 │   ├── schemas/                # 도구 입력 검증 스키마

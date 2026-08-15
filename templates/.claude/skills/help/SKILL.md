@@ -95,7 +95,7 @@ Infra Engineer:
   infra-docker-expert       Docker containerization
   infra-aws-expert          AWS architecture
 
-Total: 49 agents
+Total: 50 agents
 ```
 
 ### Rules List
