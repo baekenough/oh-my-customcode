@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -1024,4 +1024,370 @@ describe('anonymize.sh --build', () => {
       await rm(dir, { recursive: true, force: true });
     }
   });
+});
+
+// -------------------------------------------------------------------
+// reviewers.sh --run  (spec §3, §11; Ruling 12 — alias-appended flags)
+// -------------------------------------------------------------------
+
+const REVIEWERS_SCRIPT = join(SCRIPTS_DIR, 'reviewers.sh');
+
+const VALID_RESPONSE = JSON.stringify({
+  findings: [
+    {
+      id: 'F1',
+      severity: 'MEDIUM',
+      claim: '스텁 응답',
+      evidence: '테스트 픽스처',
+      impact: '없음',
+      counter: '테스트 전용이므로 실제 영향이 없다',
+      verdict: 'KEEP',
+    },
+  ],
+  overall: 'BUILD',
+  rationale: '스텁이 만든 정상 응답이다. 계약을 만족한다.',
+});
+
+/** Create a stub CLI dir. `behaviour` maps a vendor slug to a bash body. */
+async function makeStubBin(behaviour: Record<string, string>): Promise<string> {
+  const dir = join(tmpdir(), `agora-bin-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  await mkdir(dir, { recursive: true });
+  for (const [name, body] of Object.entries(behaviour)) {
+    const path = join(dir, name);
+    await writeFile(path, `#!/usr/bin/env bash\n${body}\n`);
+    await chmod(path, 0o755);
+  }
+  return dir;
+}
+
+const OK_STUB = `printf '%s' '${VALID_RESPONSE}'`;
+
+describe('reviewers.sh --run', () => {
+  it('should pass bash syntax check', async () => {
+    const { exitCode } = await bashSyntaxCheck(REVIEWERS_SCRIPT);
+    expect(exitCode).toBe(0);
+  });
+
+  it('writes one raw file per vendor when all three succeed', async () => {
+    const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: OK_STUB });
+    const dir = join(tmpdir(), `agora-rv-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, '주제: 상태 저장 방식 재검토');
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+      );
+      expect(result.exitCode).toBe(0);
+      for (const slug of ['claude', 'omx', 'agy']) {
+        const raw = await readFile(join(dir, `SEALED/raw/round-1/${slug}.json`), 'utf-8');
+        expect(JSON.parse(raw).overall).toBe('BUILD');
+      }
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // spec §11: one retry, then treat as missing.
+  it('retries a failing vendor exactly once and succeeds on the second attempt', async () => {
+    const flaky = `
+      marker="$TMPDIR/agora-flaky-marker"
+      if [ -f "$marker" ]; then printf '%s' '${VALID_RESPONSE}'; exit 0; fi
+      touch "$marker"; exit 1
+    `;
+    const bin = await makeStubBin({ claude: flaky, omx: OK_STUB, agy: OK_STUB });
+    const dir = join(tmpdir(), `agora-rv-retry-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'x');
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx'), TMPDIR: dir }
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toContain('retry');
+      const raw = await readFile(join(dir, 'SEALED/raw/round-1/claude.json'), 'utf-8');
+      expect(JSON.parse(raw).overall).toBe('BUILD');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('records a vendor as missing (no raw file) after the retry also fails', async () => {
+    const bin = await makeStubBin({ claude: 'exit 1', omx: OK_STUB, agy: OK_STUB });
+    const dir = join(tmpdir(), `agora-rv-miss-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'x');
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+      );
+      // one missing out of three is tolerated
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(false);
+      expect(existsSync(join(dir, 'SEALED/raw/round-1/omx.json'))).toBe(true);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // spec §11: a single opinion is not a consensus process.
+  it('aborts the round with exit 3 when two or more vendors are missing', async () => {
+    const bin = await makeStubBin({ claude: 'exit 1', omx: 'exit 1', agy: OK_STUB });
+    const dir = join(tmpdir(), `agora-rv-abort-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'x');
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+      );
+      expect(result.exitCode).toBe(3);
+      expect(result.stderr).toContain('2 or more reviewers missing');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('times out a hanging vendor and treats it as missing', async () => {
+    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: OK_STUB });
+    const dir = join(tmpdir(), `agora-rv-timeout-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'x');
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_TIMEOUT_SECS: '1',
+        }
+      );
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(false);
+      expect(result.stderr).toContain('timeout');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  // R005: macOS has no GNU timeout; the fallback path must exist in source.
+  it('checks for gtimeout before using it and has a wait-based fallback (source guard)', async () => {
+    const src = await readFile(REVIEWERS_SCRIPT, 'utf-8');
+    expect(src).toContain('command -v gtimeout');
+    expect(src).toContain('wait "$pid"');
+  });
+
+  it('passes the agy json-schema flag with the shipped schema file', async () => {
+    const src = await readFile(REVIEWERS_SCRIPT, 'utf-8');
+    expect(src).toContain('--json-schema');
+    expect(src).toContain('--output-format json');
+    expect(existsSync(join(SCRIPTS_DIR, 'response-schema.json'))).toBe(true);
+  });
+
+  // R023 mutation guard: a stub that only checks "a file exists" cannot tell
+  // apart a correct call shape from a wrong one (e.g. missing --enable-auto-mode).
+  // These stubs record the ACTUAL argv each vendor CLI received and assert
+  // against it, so a Ruling 12 regression (alias flag silently dropped) fails
+  // this test even though "one raw file per vendor" above would still pass.
+  it('invokes each vendor CLI with the correct argument shape, including Ruling 12 alias flags', async () => {
+    const dir = join(tmpdir(), `agora-rv-args-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'PROMPT_TEXT');
+    const argsCaptureStub = (marker: string) =>
+      `printf '%s\\n' "$@" > '${join(dir, `args-${marker}.txt`)}'\nprintf '%s' '${VALID_RESPONSE}'`;
+    const bin = await makeStubBin({
+      claude: argsCaptureStub('claude'),
+      omx: argsCaptureStub('omx'),
+      agy: argsCaptureStub('agy'),
+    });
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+      );
+      expect(result.exitCode).toBe(0);
+
+      const claudeArgs = (await readFile(join(dir, 'args-claude.txt'), 'utf-8')).trim().split('\n');
+      expect(claudeArgs).toContain('-p');
+      expect(claudeArgs).toContain('--model');
+      expect(claudeArgs).toContain('claude-opus-4-8');
+      // Ruling 12: the user's shell `claude` alias appends this flag; aliases
+      // do not expand under non-interactive `bash script.sh` execution.
+      expect(claudeArgs).toContain('--enable-auto-mode');
+      expect(claudeArgs).toContain('PROMPT_TEXT');
+
+      const omxArgs = (await readFile(join(dir, 'args-omx.txt'), 'utf-8')).trim().split('\n');
+      // omx is a plain binary, not a shell alias (spec §2) — no extra flag.
+      expect(omxArgs).toEqual(['exec', 'PROMPT_TEXT']);
+
+      const agyArgs = (await readFile(join(dir, 'args-agy.txt'), 'utf-8')).trim().split('\n');
+      expect(agyArgs).toContain('-p');
+      expect(agyArgs).toContain('--model');
+      expect(agyArgs).toContain('gemini-3.1-pro-high');
+      expect(agyArgs).toContain('--output-format');
+      expect(agyArgs).toContain('json');
+      expect(agyArgs).toContain('--json-schema');
+      // Ruling 12: the user's shell `agy` alias appends this flag; aliases do
+      // not expand under non-interactive `bash script.sh` execution.
+      expect(agyArgs).toContain('--dangerously-skip-permissions');
+      expect(agyArgs.some((a) => a.endsWith('response-schema.json'))).toBe(true);
+      expect(agyArgs).toContain('PROMPT_TEXT');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // spec §11 precision check: "one retry" must mean exactly two attempts
+  // total, not "keep retrying". A stub that only inspects the stderr string
+  // 'retry' (as the brief's flaky-vendor test does) cannot distinguish one
+  // retry from N retries — this counts actual invocations.
+  it('calls a persistently-failing vendor at most twice (one retry, not unbounded)', async () => {
+    const dir = join(tmpdir(), `agora-rv-retrycount-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'x');
+    const countFile = join(dir, 'claude-call-count');
+    const countingFail = `
+      count=$(cat '${countFile}' 2>/dev/null || echo 0)
+      count=$((count + 1))
+      printf '%s' "$count" > '${countFile}'
+      exit 1
+    `;
+    const bin = await makeStubBin({ claude: countingFail, omx: OK_STUB, agy: OK_STUB });
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+      );
+      expect(result.exitCode).toBe(0); // one missing out of three is tolerated
+      const count = (await readFile(countFile, 'utf-8')).trim();
+      expect(count).toBe('2');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // spec §11 precision check: unparsable stdout (exit 0 but not valid JSON)
+  // must be treated as a failed attempt and retried, not silently accepted
+  // and written to the sealed raw file.
+  it('treats unparsable vendor output (exit 0, invalid JSON) as a failed attempt and retries', async () => {
+    const dir = join(tmpdir(), `agora-rv-badjson-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'x');
+    const badThenGood = `
+      marker='${join(dir, 'agy-badjson-marker')}'
+      if [ -f "$marker" ]; then printf '%s' '${VALID_RESPONSE}'; exit 0; fi
+      touch "$marker"; printf 'not json'; exit 0
+    `;
+    const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: badThenGood });
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        { PATH: `${bin}:${process.env.PATH}`, AGORA_OMX_BIN: join(bin, 'omx') }
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toContain('retry');
+      const raw = await readFile(join(dir, 'SEALED/raw/round-1/agy.json'), 'utf-8');
+      expect(JSON.parse(raw).overall).toBe('BUILD');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  // R005/R023: the gtimeout branch runs implicitly whenever gtimeout is on
+  // PATH (true on this dev machine — /opt/homebrew/bin/gtimeout). CI
+  // (GitHub-hosted macos) may lack coreutils, so the wait-based fallback
+  // must also be exercised deterministically, independent of what happens
+  // to be installed locally. AGORA_FORCE_TIMEOUT_FALLBACK=1 is a test-only
+  // switch (default off, never set in production) that forces the fallback
+  // branch even when gtimeout is present.
+  it('forced fallback path: times out a hanging vendor via wait+watchdog even when gtimeout is present', async () => {
+    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: OK_STUB });
+    const dir = join(tmpdir(), `agora-rv-timeout-fallback-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'x');
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_TIMEOUT_SECS: '1',
+          AGORA_FORCE_TIMEOUT_FALLBACK: '1',
+        }
+      );
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(false);
+      expect(result.stderr).toContain('timeout');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  // Complement to the forced-fallback test above: proves the switch is truly
+  // OFF by default (the normal gtimeout-present path still times out too),
+  // so the two tests together demonstrate BOTH branches actually run and
+  // neither is a no-op.
+  it('default (non-forced) path also times out a hanging vendor when gtimeout is on PATH', async () => {
+    const bin = await makeStubBin({ claude: 'sleep 30', omx: OK_STUB, agy: OK_STUB });
+    const dir = join(tmpdir(), `agora-rv-timeout-default-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, 'x');
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_TIMEOUT_SECS: '1',
+        }
+      );
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(false);
+      expect(result.stderr).toContain('timeout');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
 });
