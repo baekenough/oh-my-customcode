@@ -2128,3 +2128,512 @@ describe('judge.sh --run', () => {
     });
   });
 });
+
+// -------------------------------------------------------------------
+// agora.sh --start / --round / --gate / --report  (Task 6: entry point
+// and round loop). Spec §4 (artifact layout), §10 (R1 blank-slate,
+// gate rendering), §12 (agora-runner delegation unit — "라운드 1개 =
+// 위임 1건").
+// -------------------------------------------------------------------
+
+describe('agora.sh round loop (E2E with stub CLIs)', () => {
+  const judgeVerdict = (round: number, consensus: string, verdict: string) =>
+    JSON.stringify({
+      round,
+      judge: 'slot',
+      consensus,
+      verdict,
+      resolved: [{ id: 'F1', resolution: '해소됨' }],
+      unresolved: [{ id: 'F2', severity: 'HIGH', positions: 'A REJECT / C KEEP / B 미언급' }],
+      agenda: ['F2 의 심각도 판정 근거를 각자 제시할 것'],
+      draft: `## 통합 초안 (라운드 ${round})`,
+      new_findings: 2,
+      notes: '리뷰어 3인 전원 응답',
+    });
+
+  it('runs two gated-off rounds and lays out artifacts exactly as spec §4 prescribes', async () => {
+    // The judge stub keys off the round number embedded in the anon bundle it is handed.
+    const judgeStub = `
+      prompt="\${!#}"
+      round=$(printf '%s' "$prompt" | grep -o '"round": *[0-9]*' | head -1 | grep -o '[0-9]*')
+      if [ "$round" = "1" ]; then printf '%s' '${judgeVerdict(1, 'SPLIT', 'REDESIGN')}';
+      else printf '%s' '${judgeVerdict(2, 'MAJORITY', 'BUILD_WITH_CHANGES')}'; fi
+    `;
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) ${judgeStub};; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '2', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(result.exitCode).toBe(0);
+
+      const sessionDir = result.stdout.trim().split('\n').pop() as string;
+      expect(sessionDir).toContain('agora-');
+
+      for (const rel of [
+        'SEALED/raw/round-1/claude.json',
+        'SEALED/raw/round-2/claude.json',
+        'SEALED/mapping/round-1.json',
+        'SEALED/mapping/round-2.json',
+        'anon/round-1.json',
+        'anon/round-2.json',
+        'verdict/round-1.json',
+        'verdict/round-2.json',
+        'state.json',
+        'report.md',
+      ]) {
+        expect(existsSync(join(sessionDir, rel))).toBe(true);
+      }
+
+      const state = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
+      expect(state.round).toBe(2);
+      expect(state.max_rounds).toBe(2);
+      expect(state.mode).toBe('auto');
+      expect(state.history.length).toBe(2);
+      expect(state.stop).toBe('MAX_ROUNDS');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  it('keeps every anon bundle free of vendor fingerprints across the whole session', async () => {
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-fp-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      const sessionDir = result.stdout.trim().split('\n').pop() as string;
+      const bundle = await readFile(join(sessionDir, 'anon/round-1.json'), 'utf-8');
+      expect(bundle).not.toMatch(BANNED_FINGERPRINT);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  // spec §4: report.md is the ONE place where anonymity is lifted.
+  it('reveals vendor identities only in report.md', async () => {
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-rep-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      const sessionDir = result.stdout.trim().split('\n').pop() as string;
+      const report = await readFile(join(sessionDir, 'report.md'), 'utf-8');
+      expect(report).toContain('claude:claude-opus-4-8');
+      expect(report).toContain('omx:default');
+      expect(report).toContain('agy:gemini-3.1-pro-high');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  // spec §10: the gate shows labels, never vendors.
+  it('renders a gate block that names labels but no vendors', async () => {
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-gate-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const run = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      const sessionDir = run.stdout.trim().split('\n').pop() as string;
+      const gate = await runScript(
+        AGORA_SCRIPT,
+        ['--gate', '--session-dir', sessionDir, '--round', '1'],
+        ''
+      );
+      expect(gate.exitCode).toBe(0);
+      expect(gate.stdout).toContain('Agora Round 1/1');
+      expect(gate.stdout).toContain('Consensus: MAJORITY');
+      expect(gate.stdout).toMatch(/리뷰어:\s+A /);
+      expect(gate.stdout).not.toMatch(BANNED_FINGERPRINT);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  it('aborts the session when reviewers.sh reports two or more missing', async () => {
+    const bin = await makeStubBin({ claude: 'exit 1', omx: 'exit 1', agy: OK_STUB });
+    const root = join(tmpdir(), `agora-out-abort-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(result.exitCode).toBe(3);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  // -----------------------------------------------------------------------
+  // F1 regression (controller-verified, real stub-CLI run): agora.sh:244's
+  // `printf '- 주제: %s\n' ...` had no `--` before its format string, which
+  // BSD/bash printf parses as an option ("- : invalid option") because the
+  // format string itself starts with a hyphen. The command failed but the
+  // script kept going (no `set -e`, exit code stays 0), silently dropping the
+  // topic line from report.md. Neither existing E2E test caught this because
+  // none asserted the topic line's presence or looked at stderr at all.
+  // -----------------------------------------------------------------------
+
+  it('includes the session topic in report.md (F1: printf format-string-as-option regression)', async () => {
+    const topic = '상태 저장 방식 재검토';
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-topic-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const run = await runScript(
+        AGORA_SCRIPT,
+        ['--start', topic, '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(run.exitCode).toBe(0);
+      const sessionDir = run.stdout.trim().split('\n').pop() as string;
+      const report = await readFile(join(sessionDir, 'report.md'), 'utf-8');
+      // The bug dropped the ENTIRE "- 주제: ..." line, not just the value —
+      // assert the full line shape, not just the bare topic substring
+      // (which alone would also appear in the `## 최종 통합 초안` heading
+      // area only incidentally and would not catch a missing label).
+      expect(report).toMatch(/^- 주제: 상태 저장 방식 재검토$/m);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  it('keeps stderr free of unexpected shell errors during a full session run (F1 regression guard)', async () => {
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-stderr-hygiene-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const run = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(run.exitCode).toBe(0);
+      // Narrow shell-error signatures only — normal diagnostics like
+      // "[agora] round 1 reviewers: 3 responded" or "[agora] round 1 judged
+      // by rotation slot 1 (...)" must NOT trip this (they are expected on
+      // every successful run, not error noise).
+      expect(run.stderr).not.toMatch(
+        /\bprintf:\s|invalid option|command not found|unbound variable/i
+      );
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  // ---------------------------------------------------------------------
+  // Task 6 supplementary coverage — controller carry-over items from the
+  // task brief (round-budget visibility) plus direct coverage of the two
+  // entry points (--round, --report) the brief's own Step-1 tests never
+  // exercise standalone (they only observe them through --start --auto).
+  // ---------------------------------------------------------------------
+
+  // Carry-over #2: judge worst case is ~15min (3 rotation slots x
+  // AGORA_TIMEOUT_SECS default 300s each) on top of the reviewer fan-out.
+  // The round loop must surface SOME duration signal so the user is not
+  // blind to how long a round actually took — this does not implement a
+  // full round-level timeout policy (out of this task's scope), only
+  // visibility.
+  it('surfaces round duration in the gate so the worst-case judge-rotation budget stays visible', async () => {
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-budget-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const run = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      const sessionDir = run.stdout.trim().split('\n').pop() as string;
+      const gate = await runScript(
+        AGORA_SCRIPT,
+        ['--gate', '--session-dir', sessionDir, '--round', '1'],
+        ''
+      );
+      expect(gate.exitCode).toBe(0);
+      expect(gate.stdout).toMatch(/소요.*\d+\s*초/);
+      expect(gate.stdout).not.toMatch(BANNED_FINGERPRINT);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  describe('agora.sh --round <N> --session-dir <dir> (agora-runner delegation unit, spec §12)', () => {
+    it('runs exactly one round via the documented CLI syntax and advances state.json', async () => {
+      const bin = await makeStubBin({
+        claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+        omx: OK_STUB,
+        agy: OK_STUB,
+      });
+      const root = join(tmpdir(), `agora-out-round-entry-${Date.now()}`);
+      await mkdir(root, { recursive: true });
+      const env = {
+        PATH: `${bin}:${process.env.PATH}`,
+        AGORA_OMX_BIN: join(bin, 'omx'),
+        AGORA_OUTPUT_ROOT: root,
+        AGORA_SESSION_EPOCH: '1755230400',
+      };
+      try {
+        // gated mode (no --auto): --start runs exactly round 1, then yields —
+        // giving us a pristine, on-disk session dir to drive round 2 through
+        // the standalone entry point ourselves, exactly as agora-runner would.
+        const started = await runScript(
+          AGORA_SCRIPT,
+          ['--start', '상태 저장 방식 재검토', '--max-rounds', '5'],
+          '',
+          env
+        );
+        expect(started.exitCode).toBe(0);
+        const sessionDir = started.stdout.trim().split('\n').pop() as string;
+        const s1 = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
+        expect(s1.round).toBe(1);
+
+        const roundResult = await runScript(
+          AGORA_SCRIPT,
+          ['--round', '2', '--session-dir', sessionDir],
+          '',
+          env
+        );
+        expect(roundResult.exitCode).toBe(0);
+        const s2 = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
+        expect(s2.round).toBe(2);
+        expect(s2.history.length).toBe(2);
+        expect(existsSync(join(sessionDir, 'anon/round-2.json'))).toBe(true);
+        expect(existsSync(join(sessionDir, 'verdict/round-2.json'))).toBe(true);
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    }, 30000);
+  });
+
+  describe('agora.sh --report --session-dir <dir> (standalone report regeneration)', () => {
+    it('regenerates report.md from the sealed mapping', async () => {
+      const bin = await makeStubBin({
+        claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${judgeVerdict(1, 'MAJORITY', 'BUILD_WITH_CHANGES')}';; esac`,
+        omx: OK_STUB,
+        agy: OK_STUB,
+      });
+      const root = join(tmpdir(), `agora-out-report-entry-${Date.now()}`);
+      await mkdir(root, { recursive: true });
+      const env = {
+        PATH: `${bin}:${process.env.PATH}`,
+        AGORA_OMX_BIN: join(bin, 'omx'),
+        AGORA_OUTPUT_ROOT: root,
+        AGORA_SESSION_EPOCH: '1755230400',
+      };
+      try {
+        const started = await runScript(
+          AGORA_SCRIPT,
+          ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+          '',
+          env
+        );
+        const sessionDir = started.stdout.trim().split('\n').pop() as string;
+        await rm(join(sessionDir, 'report.md'));
+        expect(existsSync(join(sessionDir, 'report.md'))).toBe(false);
+
+        const result = await runScript(AGORA_SCRIPT, ['--report', '--session-dir', sessionDir], '');
+        expect(result.exitCode).toBe(0);
+        const report = await readFile(join(sessionDir, 'report.md'), 'utf-8');
+        expect(report).toContain('claude:claude-opus-4-8');
+      } finally {
+        await rm(bin, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    }, 30000);
+  });
+});
+
+// ---------------------------------------------------------------------
+// Carry-over #1: judge.sh's exit 68 is a CONFIGURATION error (verdict
+// schema unreadable), not a vendor/CLI failure — the round loop must
+// consume it as an immediate hard stop, never as a target for a
+// round-level retry (retrying would fail three times for the same
+// reason and burn wall-clock for nothing).
+// ---------------------------------------------------------------------
+
+async function findSessionDir(root: string): Promise<string> {
+  const days = await readdir(root);
+  for (const day of days) {
+    const dayDir = join(root, day);
+    const entries = await readdir(dayDir);
+    const match = entries.find((e) => e.startsWith('agora-'));
+    if (match) return join(dayDir, match);
+  }
+  throw new Error(`no agora session dir found under ${root}`);
+}
+
+describe('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop (no retry)', () => {
+  it('propagates exit 68 immediately without retrying the round or advancing state.json', async () => {
+    const schemaPath = join(SCRIPTS_DIR, 'verdict-schema.json');
+    const backupPath = join(SCRIPTS_DIR, 'verdict-schema.json.testbak-round68');
+    const root = join(tmpdir(), `agora-out-e68-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    const claudeCountFile = join(root, 'claude-call-count');
+    // Only the reviewer-shaped call (--model claude-opus-4-8) is ever expected
+    // to fire; judge.sh's schema check aborts BEFORE it invokes any CLI, so a
+    // second hit here would mean the round loop retried the whole round.
+    const countingClaude = `
+      case "$*" in
+        *claude-opus-4-8*)
+          count=$(cat '${claudeCountFile}' 2>/dev/null || echo 0)
+          count=$((count + 1))
+          printf '%s' "$count" > '${claudeCountFile}'
+          printf '%s' '${VALID_RESPONSE}'
+          ;;
+        *) exit 1 ;;
+      esac
+    `;
+    const bin = await makeStubBin({ claude: countingClaude, omx: OK_STUB, agy: OK_STUB });
+    await cp(schemaPath, backupPath);
+    await rm(schemaPath);
+    try {
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(result.exitCode).toBe(68);
+      expect(result.stderr).toContain('verdict schema');
+
+      const count = (await readFile(claudeCountFile, 'utf-8')).trim();
+      expect(count).toBe('1');
+
+      const sessionDir = await findSessionDir(root);
+      const state = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
+      expect(state.round).toBe(0);
+      expect(state.history.length).toBe(0);
+      expect(existsSync(join(sessionDir, 'verdict/round-1.json'))).toBe(false);
+    } finally {
+      await cp(backupPath, schemaPath);
+      await rm(backupPath, { force: true });
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// ---------------------------------------------------------------------
+// Carry-over #3: judge.sh claims "no route back to who said what" — an
+// argument-passing guard already exists (see "passes only the anon file
+// path to the judge process (argv guard)" above), but that guard is
+// worthless if the round loop exports a sealed-path environment variable
+// that a child bash process (judge.sh) silently inherits. agora.sh must
+// never `export` anything — every path it needs is threaded through
+// explicit CLI flags to reviewers.sh / anonymize.sh / judge.sh instead.
+// ---------------------------------------------------------------------
+
+describe('agora.sh env hygiene (carry-over: judge.sh must never see a sealed-path env var)', () => {
+  it('never exports an environment variable anywhere in its source (source guard)', async () => {
+    const src = await readFile(AGORA_SCRIPT, 'utf-8');
+    expect(src).not.toMatch(/^\s*export\s/m);
+  });
+});
