@@ -129,8 +129,8 @@ NO EXCEPTIONS. NO EXCUSES.
 project/
 +-- CLAUDE.md                    # Entry point
 +-- .claude/
-|   +-- agents/                  # Subagent definitions (49 files)
-|   +-- skills/                  # Skills (114 directories)
+|   +-- agents/                  # Subagent definitions (50 files)
+|   +-- skills/                  # Skills (115 directories)
 |   +-- rules/                   # Global rules (R000-R023)
 |   +-- hooks/                   # Hook scripts (security, validation, HUD)
 |   +-- contexts/                # Context files (ecomode)
@@ -174,7 +174,7 @@ This is the core oh-my-customcode philosophy: **"No expert? CREATE one, connect 
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
-| **Total** | **49** | |
+| **Total** | **50** | |
 
 ## Agent Teams (MUST when enabled)
 

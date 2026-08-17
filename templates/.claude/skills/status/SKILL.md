@@ -33,10 +33,10 @@ Agents:
   Database:         4
   Infra Engineer:   2
   Other:           10 (security, architect, QA, system)
-  Total:           49 agents
+  Total:           50 agents
 
 Skills:
-  Total:          114 skills
+  Total:          115 skills
 
 Guides:            56 loaded
 Commands:          60+ available
@@ -131,7 +131,7 @@ status --health
 Health Checks:
 
 Agents:
-  ✓ 49/49 agents valid
+  ✓ 50/50 agents valid
   ✓ All agent files exist in .claude/agents/
 
 Dependencies:

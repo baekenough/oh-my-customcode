@@ -198,7 +198,7 @@ Starting full R017 verification...
 ═══════════════════════════════════════════════════════════
 
 [Round 1/5] mgr-supplier:audit
-  ✓ 49 agents checked, 0 issues
+  ✓ 50 agents checked, 0 issues
 
 [Round 2/5] mgr-updater:docs
   ✓ Documentation sync: OK

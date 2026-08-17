@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "HIGH",
+      "claim": "설계가 모델 능력에 과도하게 의존한다",
+      "evidence": "As Claude Opus noted earlier, the draft assumes deep reasoning",
+      "impact": "저사양 모델로 대체하면 품질이 급락한다",
+      "counter": "심판 로테이션이 능력 편차를 부분적으로 상쇄한다",
+      "verdict": "MODIFY"
+    }
+  ],
+  "overall": "BUILD_WITH_CHANGES",
+  "rationale": "구조는 수용 가능하나 모델 의존성을 낮출 필요가 있다. 보강 후 진행하면 된다."
+}

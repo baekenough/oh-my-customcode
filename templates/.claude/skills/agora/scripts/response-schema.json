@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "required": ["findings", "overall", "rationale"],
+  "additionalProperties": false,
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "claim", "evidence", "impact", "counter", "verdict"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "severity": { "type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"] },
+          "claim": { "type": "string", "minLength": 1 },
+          "evidence": { "type": "string", "minLength": 1 },
+          "impact": { "type": "string", "minLength": 1 },
+          "counter": { "type": "string", "minLength": 1 },
+          "verdict": { "type": "string", "enum": ["KEEP", "MODIFY", "REJECT"] }
+        }
+      }
+    },
+    "overall": { "type": "string", "enum": ["BUILD", "BUILD_WITH_CHANGES", "REDESIGN", "ABANDON"] },
+    "rationale": { "type": "string", "minLength": 1 }
+  }
+}

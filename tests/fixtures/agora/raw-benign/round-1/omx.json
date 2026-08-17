@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "id": "F2",
+      "severity": "MEDIUM",
+      "claim": "라운드 간 정지 판정의 경계값이 문서에 명시되지 않았다",
+      "evidence": "설계 §9 정지 판정표에 STALLED 진입 조건의 경계가 서술되어 있지 않음",
+      "impact": "구현자마다 경계 해석이 갈려 같은 입력에서도 라운드 수가 재현되지 않는다",
+      "counter": "판정 함수가 순수 함수라 단위 테스트로 경계를 고정할 수 있다",
+      "verdict": "MODIFY"
+    }
+  ],
+  "overall": "BUILD_WITH_CHANGES",
+  "rationale": "전반 구조는 타당하며 경계 조건만 문서에 명시하면 착수할 수 있다."
+}

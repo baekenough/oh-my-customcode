@@ -23,7 +23,7 @@ LangChain의 Deep Agents 평가 방법론은 "More evals ≠ better agents" 철�
 
 ### oh-my-customcode 맥락
 
-oh-my-customcode의 에이전트 시스템은 49개 전문 에이전트와 114개 스킬로 구성된다. 이 방법론은 신규 에이전트 검증(mgr-creator), 릴리즈 품질 검증(deep-verify), 반복 개선 루프(evaluator-optimizer)에 정량 차원을 추가하는 수단으로 내재화된다.
+oh-my-customcode의 에이전트 시스템은 50개 전문 에이전트와 115개 스킬로 구성된다. 이 방법론은 신규 에이전트 검증(mgr-creator), 릴리즈 품질 검증(deep-verify), 반복 개선 루프(evaluator-optimizer)에 정량 차원을 추가하는 수단으로 내재화된다.
 
 ---
 

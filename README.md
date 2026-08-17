@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-49 agents. 114 skills. 23 rules. One command.
+50 agents. 115 skills. 23 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -111,7 +111,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-### Agents (49)
+### Agents (50)
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -121,7 +121,7 @@ Agent(arch-documenter):haiku      ┘
 | Data Engineering | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | Database | 4 | db-supabase, db-postgres, db-redis, db-alembic |
 | Tooling | 4 | tool-npm, tool-optimizer, tool-bun, slack-cli |
-| Architecture | 2 | arch-documenter, arch-speckit |
+| Architecture | 3 | arch-documenter, arch-speckit, agora-runner |
 | Infrastructure | 2 | infra-docker, infra-aws |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Security | 1 | sec-codeql |
@@ -132,7 +132,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (114)
+### Skills (115)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -145,6 +145,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 | Package | 3 | npm-publish, npm-version, npm-audit |
 | Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | Security | 2 | adversarial-review, cve-triage |
+| Consensus | 1 | agora — anonymous multi-round multi-vendor consensus review |
 | Other | 44 | claude-native, vercel-deploy, skills-sh-search, result-aggregation, and ~40 more |
 
 Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill maintenance), `package` (project-specific).
@@ -269,8 +270,8 @@ omcustom serve-stop            # Stop Web UI
 your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
-│   ├── agents/                 # 49 agent definitions
-│   ├── skills/                 # 114 skill modules
+│   ├── agents/                 # 50 agent definitions
+│   ├── skills/                 # 115 skill modules
 │   ├── rules/                  # 23 governance rules (R000-R023)
 │   ├── hooks/                  # 15 lifecycle hook scripts
 │   ├── schemas/                # Tool input validation schemas
