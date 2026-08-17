@@ -910,6 +910,219 @@ describe('r007-r008-drift-advisor.sh — Fixture 3c: Skill tool exemption (#1569
 });
 
 // ════════════════════════════════════════════════════════════════
+// Fixture 3d: REVERSE signal — announced a tool call, emitted none (#1595 제안 #6)
+//
+// R009 Self-Check #6 requires the announced tool count to match the tool_use blocks actually
+// emitted in the same message. The forward verdict only catches `tool_use > announce`; this
+// signal catches the opposite direction, which is structurally invisible to it.
+//
+// It is deliberately NARROW and OPT-IN. Measured over 482 orchestrator turns:
+//   * naive `announce - ntools > 0` fires on 36/482 and DOUBLES the advisory rate — 16 of
+//     those are Skill-exclusion artifacts and 15 more are prose matching the UNANCHORED
+//     announce regexes.
+//   * "no tool_use at all" + an ANCHORED `→ Tool:` counter yields 3/3 true positives and 0
+//     false positives.
+// So the N-cases below are not decoration: RN3/RN4/RN5 each pin one of the exact false
+// positives that the narrowing removes, and RN1 pins the opt-in contract itself.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 3d: reverse signal (#1595 #6)', () => {
+  /** Env for an isolated run with the reverse signal switched ON. */
+  function reverseOnEnv(): Record<string, string> {
+    return { ...testEnv(), OMCUSTOM_R008_REVERSE: 'on' };
+  }
+
+  // ── Positive controls: MUST fire when opted in ──
+
+  it('RP1: fires when the turn announces a tool call but emits no tool_use block', async () => {
+    const sid = `rev-p1-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Spawn the reviewer'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: spawn reviewer' },
+        // Announced — and then the turn simply ends. No tool_use anywhere.
+        { type: 'text', text: '[claude][opus] → Tool: Agent' },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), reverseOnEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R009 Self-Check #6');
+  });
+
+  it('RP2: reports the announced count when two calls were announced and none emitted', async () => {
+    const sid = `rev-p2-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Read both files'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: parallel read' },
+        {
+          type: 'text',
+          text: '[claude][sonnet] → Tool: Read\n[claude][sonnet] → Tool: Grep',
+        },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), reverseOnEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('도구 호출 2건');
+  });
+
+  // ── Negative controls: MUST stay silent (stdout 0 bytes) ──
+
+  it('RN1: stays silent on the RP1 fixture when the opt-in env var is unset (default off)', async () => {
+    const sid = `rev-n1-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Spawn the reviewer'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: spawn reviewer' },
+        { type: 'text', text: '[claude][opus] → Tool: Agent' },
+      ]),
+    ]);
+
+    // Identical fixture to RP1 — only the opt-in flag differs.
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stderr).not.toContain('[R007/R008 Advisory]');
+  });
+
+  it('RN2: stays silent on a compliant turn (1 announce, 1 tool_use)', async () => {
+    const sid = `rev-n2-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Read a file'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: read' },
+        { type: 'text', text: '[claude][sonnet] → Tool: Read' },
+        { type: 'tool_use', id: 'rev-t1', name: 'Read', input: { file_path: 'a.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), reverseOnEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('RN3: stays silent when the only tool_use is Skill (Skill-exclusion artifact)', async () => {
+    // THE reason the condition counts ALL tool_use blocks instead of the Skill-excluded
+    // denominator: this turn DID call a tool, so "announced but never called" is false.
+    // Reusing $ntools here would fire on a rule-compliant Skill invocation (#1569).
+    const sid = `rev-n3-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('run the homework skill'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude → homework\n└─ Task: retrospective' },
+        { type: 'text', text: '[claude][opus] → Tool: Skill' },
+        { type: 'tool_use', id: 'rev-sk', name: 'Skill', input: { skill: 'homework' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), reverseOnEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('RN4: stays silent when the R008 form appears only inside a markdown table (anchor guard)', async () => {
+    // Documentation/retrospective turns quote the R008 prefix format constantly. The
+    // UNANCHORED forward regex matches mid-line, so without the `^` anchor this prose would
+    // be scored as an unfulfilled announcement.
+    const sid = `rev-n4-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Explain the R008 format'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: explain R008' },
+        {
+          type: 'text',
+          text: [
+            '| Anti-pattern | Required |',
+            '|---|---|',
+            '| prefix 누락 | `[agent][model] → Tool: Read` 를 붙인다 |',
+          ].join('\n'),
+        },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), reverseOnEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('RN5: stays silent on a numbered list line carrying an arrow (spawn-item guard)', async () => {
+    // `[N] ... → ...` is counted by the forward spawn-item regex. The reverse counter must
+    // NOT reuse that regex, or every numbered plan/summary list becomes a violation.
+    const sid = `rev-n5-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Summarize the plan'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: summarize' },
+        {
+          type: 'text',
+          text: ['[1] 룰 문서 수정 → 미러 동기화', '[2] 테스트 추가 → 단일 실행'].join('\n'),
+        },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), reverseOnEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('RN6: stays silent on a prose-only turn with no announce lines at all', async () => {
+    const sid = `rev-n6-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('What is R009?'),
+      ...assistantTurn([
+        {
+          type: 'text',
+          text: '┌─ Agent: claude (default)\n└─ Task: answer\n\nR009는 병렬 실행 규칙입니다.',
+        },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), reverseOnEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  // ── Source-level regression guards ──
+
+  it('anchors the REVERSE counter without anchoring the forward counter (source guard)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    const lines = src.split('\n');
+    const anAnchored = lines.find((l) => l.includes('as $an_anchored'));
+    const anTool = lines.find((l) => l.includes('as $an_tool'));
+
+    expect(anAnchored).toBeDefined();
+    expect(anTool).toBeDefined();
+    // Reverse counter is anchored to line start.
+    expect(anAnchored).toContain('test("^');
+    // Forward counter must stay UNANCHORED: the forward verdict is
+    // max(0, ntools - announce), so under-counting announce INCREASES reported violations.
+    expect(anTool).not.toContain('test("^');
+
+    // The reverse condition must use the all-tools count, never the Skill-excluded one (RN3).
+    const revLine = lines.find((l) => l.includes('as $r008rev'));
+    expect(revLine).toContain('$nall_tools == 0');
+    expect(revLine).not.toContain('$ntools');
+  });
+
+  it('keeps the reverse signal opt-in with a default of off (source guard)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).toContain('OMCUSTOM_R008_REVERSE:-off');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
 // Fixture 4: opt-out
 // ════════════════════════════════════════════════════════════════
 

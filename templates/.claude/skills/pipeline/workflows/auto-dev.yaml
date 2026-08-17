@@ -5,6 +5,14 @@ version: "2.1.0"
 # Design rule: each pipeline run produces ONE bounded release unit (3-7 issues), not all open issues.
 # This pipeline is a project-agnostic template. Project-specific overrides belong in
 # the project's own workflows/auto-dev.yaml (e.g., AgentNav, second-brain).
+#
+# Design rule (R020 「위임 경계를 Phase 개수로 설계」 배선, Origin: #1595 #4):
+# 아래 `skill:` 스텝 중 다중 Phase 스킬(deep-plan = research→plan→verify, deep-verify = 다각 검증)은
+# 스킬을 그대로 spawn하지 않는다. Phase 경계가 곧 종료 유혹 지점이므로, 발주 전에 스킬의 Phase를
+# 읽고 **단일 목표 1개짜리 위임**으로 분할해 순차 발주한다. 실측(v1.1.48): `skill: deep-plan`을
+# 그대로 호출한 결과 tool_uses=0 / 6.9초 / 산출물 0으로 종료했고, 단일 목표 Plan 에이전트로
+# 재설계하니 1/1 완주했다. `skill:` 값은 **분할의 근거가 되는 스킬 정의**를 가리키는 것이지
+# "이 스킬을 1회 호출하라"는 뜻이 아니다.
 
 steps:
   - name: pre-triage
@@ -270,7 +278,7 @@ steps:
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite"
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4)."
     depends_on: plan
 
   - name: implement
@@ -357,7 +365,7 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite"
+    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4)."
     depends_on: verify-build
 
   - name: release
@@ -431,7 +439,17 @@ steps:
          - No existing tags → v0.1.0
          - Previous tag exists → DEFAULT to patch. When in doubt, patch — do NOT reflexively bump minor for rule/doc/skill edits.
            - patch (DEFAULT): rule/doc/skill/config/wiki/workflow changes, bugfixes, hardening, CC-compat notes — the vast majority of this project's changes
-           - minor: ONLY a genuinely NEW user-facing capability (a new skill/agent/command adding user-visible surface), not a refinement of an existing one
+           - minor: ONLY a new user-facing capability that changes HOW the harness is used — a new
+             workflow axis, a new command surface users must learn, or a contract other components
+             depend on. NOT "a file was added under .claude/skills/ or .claude/agents/".
+             ⚠ Counter-example (Origin: v1.1.49 세션, 사용자 지적): adding one skill + one agent
+             (agora: skills 114→115, agents 49→50) was initially scoped as v1.2.0 minor by reading
+             the old wording literally. That was WRONG — this repo adds skills routinely, and
+             skills reached 115 while the version stayed v1.1.48, so skill/agent addition is
+             ESTABLISHED as patch (target was corrected to v1.1.49). Count growth is this repo's
+             baseline rate of change, NOT a minor signal. If a version bump would follow
+             mechanically from "a new file exists", it is patch. Ask instead: does a user's
+             workflow change because of this?
            - major: breaking changes to user-facing contracts (CLI flags, public skill/command names, public API), or a deliberate milestone declaration (e.g., v1.0.0)
          - Previous tag is ahead of source version (e.g., tag v0.136.1, package.json 0.136.0): use next available skip-version (0.136.2)
 

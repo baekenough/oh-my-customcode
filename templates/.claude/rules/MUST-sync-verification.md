@@ -158,6 +158,20 @@ Origin: #1492 (Session 132) — cc-release-monitor 워크플로우 삭제(#1454,
 |--------------|----------|
 | 원격 머지 후 stale 로컬 develop에서 릴리즈 브랜치 분기 | 분기 전 `git pull origin develop`; PR 생성 후 mergeStateStatus 확인 — CONFLICTING이면 `git merge origin/develop`+both-유지 해결 후 재CI |
 
+### 게이트는 분기 시점 1회가 아니라 상태변경 위임마다 (Origin: #1595 #1)
+
+위 게이트는 "브랜치 **분기 전** pull"을 규정하지만, 공유 워크트리에서는 **세션 도중 다른 행위자가 브랜치 자체를 바꾼다**. 따라서 git 상태를 바꾸는 위임(브랜치 생성·전환, 커밋, 머지, push) **직전마다** 브랜치 이름과 HEAD SHA를 재실측하고 세션 초반 값과 대조한다 — `git rev-parse --abbrev-ref HEAD` 와 `git rev-parse --short HEAD` 두 줄이면 충분하다.
+
+값이 달라졌으면 위임을 중단하고 **원인을 먼저 실측**한다(`git reflog`로 전환·커밋 주체와 시각 확인). #1584 #5가 "SHA의 수명은 턴 단위"를 규정했는데, 공유 워크트리에서는 **브랜치 이름조차 턴 단위 수명**이다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 세션 초반에 실측한 브랜치·HEAD를 세션 내내 유효한 사실로 사용 | 상태변경 위임 직전마다 브랜치 이름 + HEAD SHA 재실측·대조 |
+| 파일 목록·`git ls-files` 결과를 "확인된 사실"로 저장하고 재확인 트리거 없이 재사용 | 실측값에 **측정 시각**을 함께 기록하고, 위임 전제로 쓰기 전 재실측 |
+| 대조 불일치를 발견하고도 원인 규명 없이 위임 강행 | `git reflog`로 전환·커밋 주체와 시각을 실측한 뒤 재계획 |
+
+Origin: #1595 #1 (v1.1.48 세션 — 세션 시작 시 `develop @ 1b4973d5` 실측 후 진행했으나 다른 세션이 14:56·15:10에 `feat/agora-anonymous-consensus`를 만들고 커밋 2개를 쌓았고, wiki 재동기화 Phase 2까지 미탐지. 같은 세션에서 `git ls-files tests/fixtures/agora/`가 초반 0건 → 후반 6건으로 바뀌었다). Cross-ref: R010 「저장소 상태 기재도 같은 규율」(위임서 기재 각도), R011(Temporal Decay).
+
 ## Pre-Release Target Version Ground-Truth Gate (Origin: #1457)
 
 새 릴리즈의 target 버전을 선정하거나 구현/구현-위임 프롬프트에 target 버전을 전달하기 전, 반드시 원격 실측으로 다음 버전을 확정한다: `git tag --sort=-v:refname | head -1`(최신 태그) + `npm view <pkg> version`(배포된 최신)의 **max에 patch를 더한 값**을 target으로 삼는다. 세션 메모리의 버전 스냅샷(예: "npm latest 1.1.6")은 **참고용이며 ground-truth가 아니다** — 직전 세션에서 릴리즈가 진행돼 stale일 수 있다. stale 버전으로 위임하면 이미 배포된 버전을 target으로 잡아 milestone-closed STOP에 걸리고 재타겟팅 왕복이 강제된다.
@@ -203,6 +217,8 @@ R017 게이트(mgr-sauron) 통과 선언 후 신규 결함 발견 등으로 스�
 | 게이트 PASS 후 도착한 포함 권고를 반영해 스코프 확장 | 위임 프롬프트에 "포함 권고 advisory는 판정과 함께 제시" 명시; 판정 후 도착분은 다음 릴리즈 이월을 우선 검토 |
 
 Origin: #1584 #4 (v1.1.45 세션) — R021 자기 서술 staleness 반영을 R017 통과 **후** 수행해 위키 재동기화 1회 + 게이트 전량 재실행 발생. 포함 판단 자체는 옳았고 **시점**이 결함이었다.
+
+> **v2.1.233+**: `claude plugin validate`가 **bare `.claude/skills` 디렉토리**(플러그인 매니페스트 없는 스킬 트리)도 검사해, frontmatter 파싱에 실패하는 `SKILL.md`를 보고합니다. 이 저장소의 `.claude/skills/**/SKILL.md`는 아래 Quick Verification Commands가 **개수만** 세고 frontmatter 유효성은 세지 않으므로, 스킬 추가·수정 후 `claude plugin validate`를 개수 대조와 **함께** 실행해 파싱 실패를 결정론적으로 잡습니다(구버전에서는 이 경로가 검사 대상이 아니어서 깨진 frontmatter가 런타임 미로드로만 드러났습니다). Cross-ref: R023(Tier 1 결정론적 검증).
 
 ## Quick Verification Commands — agent/skill/guide/wiki counts via ls/find/wc. See commands via Read tool.
 

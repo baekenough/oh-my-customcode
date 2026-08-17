@@ -25,6 +25,25 @@ Examples: creating multiple agents, reviewing multiple files, batch operations o
 
 Origin: #1518 (찐빠 #1 — git 에이전트 2개 근접 실행으로 작업 브랜치 stale; 편집 파일은 disjoint였음).
 
+#### 파일 disjoint ≠ 자원 disjoint (Origin: #1598)
+
+git 상태 외에도 병렬 에이전트가 경합하는 공유 자원이 있다 — **검증 명령이 만지는 저장소 파일**, **CPU**, **`$TMPDIR`**. 편집 파일이 disjoint하다는 사실은 이 셋 중 어느 것도 보장하지 않는다.
+
+| 자원 | 병렬 가능 조건 |
+|------|----------------|
+| 검증 명령(`bun test` 등) | 스위트가 저장소 tracked 파일을 이동·삭제·복구하지 않고, 초 단위 타임아웃 예산에 의존하지 않을 때만. 아니면 오케스트레이터가 **직렬 1회**로 회수 |
+| CPU | 타임아웃 예산이 초 단위인 테스트는 동시 실행 금지 — 포화 시 프로세스 기동만으로 예산을 넘긴다 |
+| `$TMPDIR` | 에이전트별 고유 하위 경로를 쓸 때만. 고정 경로를 공유하면 "누수 N건" 같은 측정이 형제 잔여물을 계상한다 |
+
+**테스트가 tracked 파일을 이동시키지 않는다**: `cp` → `rm` → `finally` 복구 패턴은 병렬 경합 위양성뿐 아니라 **프로세스 중단 시 tracked 파일이 사라진 채 남는다**. 픽스처는 고유 임시 디렉토리에 사본을 만들어 조작하고 원본은 읽기만 한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 편집 파일이 disjoint하므로 각 에이전트 완료 조건에 동일 `bun test`를 넣어 병렬 발주 | 검증을 직렬 1회로 회수하거나, 공유를 고지하고 결과 해석에서 형제 경합을 먼저 배제 |
+| 테스트가 실제 저장소 tracked 파일을 `cp`→`rm`→`finally` 복구 | 고유 임시 디렉토리에 사본을 만들어 조작 — 원본은 읽기 전용 |
+
+Origin: #1598. Cross-ref: R010 「Parallel Delegation — Sibling-Agent Disclosure」(고지에 담을 내용), R023(Delegated Verification Floor).
+
 ## Agent Teams Gate (R018)
 
 > Before spawning 2+ parallel agents, evaluate Agent Teams eligibility.
@@ -187,26 +206,56 @@ Single agent spawns do NOT use the `[N]` prefix.
 
 ## Narrative Announcement Format (Before Spawn)
 
-Use markdown list format (not inline comma-separated) for parallel dispatch announcements. See correct/incorrect examples via Read tool.
+병렬 dispatch 산문 announce는 **줄 시작에 대괄호 숫자가 오는 리터럴 형식**을 쓴다. 마크다운 리스트 마커(`- `)나 백틱을 그 앞에 붙이지 않는다 — R008 판정 정규식이 줄 시작의 대괄호 숫자를 요구하므로, 리스트 형식은 **규칙을 지킨 응답이 위반으로 계상**된다.
+
+```
+[secretary][opus] → Spawning:
+[1] mgr-updater:sonnet → Group A 룰 파일 갱신
+[2] lang-typescript-expert:sonnet → Group B 테스트 보강
+```
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 리스트 마커나 백틱을 번호 앞에 붙임 | 줄 시작에 대괄호 숫자 — 앞에 공백 외 문자를 두지 않음 |
+| 헤더에 콜론 생략 | Spawning 뒤에 **콜론 필수** |
+| 화살표 없이 콜론만으로 연결 | 에이전트타입:모델 다음에 화살표 필수 |
+
+**정규식 정합 (Origin: #1595 #5)**: 위 코드 블록의 형식은 `.claude/hooks/scripts/r007-r008-drift-advisor.sh`의 판정식과 1:1 대응한다. 화살표는 U+2192, ASCII 하이픈-부등호, U+2014-부등호 3종만 인식된다. 규칙 문구와 탐지기 정규식이 어긋나면 **규칙 준수 응답이 위반으로 계상되고, 그 계수를 근거로 다시 규칙을 고치는 악순환**이 생긴다. 형식을 바꿀 때는 advisor 정규식을 같은 커밋에서 갱신한다(R016 Rule Wiring Check). 이 형식은 위 「Display Format」 섹션과 동일하다 — 두 섹션이 서로 다른 형식을 요구하지 않도록 유지한다.
 
 <!-- DETAIL: Narrative Announcement Format (Before Spawn)
-When announcing a parallel dispatch in prose text (not the Agent tool call itself), use a markdown list rather than inline comma-separated description:
+산문 announce(Agent 도구 호출 자체가 아니라 그 앞의 텍스트)는 advisor 정규식과 리터럴로 일치해야 한다.
 
 ### Correct
 
 ```
+[secretary][opus] → Spawning:
+[1] {agent-a}:{model} → {task-a}
+[2] {agent-b}:{model} → {task-b}
+```
+
+### Incorrect — 리스트 마커/백틱을 번호 앞에 붙임 (spawn-item 미매칭)
+
+```
 병렬 실행:
-- [1] {agent-a}: {task-a}
-- [2] {agent-b}: {task-b}
+- [1] {agent-a}:{model} → {task-a}
+- [2] {agent-b}:{model} → {task-b}
 ```
 
-### Incorrect
+### Incorrect — 헤더 콜론 누락 (spawn-header 미매칭)
 
 ```
-병렬 실행: [1] {agent-a}가 {task-a}, [2] {agent-b}가 {task-b}.
+[secretary][opus] → Spawning 2 agents
+[1] {agent-a}:{model} → {task-a}
 ```
 
-The list form mirrors the tool-call `[N]` prefix pattern and scales better to 3+ concurrent agents.
+### Incorrect — 화살표 누락 (spawn-item 미매칭)
+
+```
+[secretary][opus] → Spawning:
+[1] {agent-a}:{model}: {task-a}
+```
+
+세 Incorrect 변형 모두 advisor가 announce로 세지 못해, 규칙을 지킨 응답이 R008 위반으로 계상된다.
 -->
 
 ## Result Aggregation

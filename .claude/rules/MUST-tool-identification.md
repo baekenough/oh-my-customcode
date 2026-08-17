@@ -37,7 +37,7 @@ R008 prefix(announce)와 실제 도구 호출은 분리된 단계다. prefix 를
 
 | Anti-pattern | Required |
 |--------------|----------|
-| `[agent][model] → Tool: AskUserQuestion` prefix 만 출력하고 `questions` 파라미터 없이/빈 배열로 호출 | prefix + `questions` 배열(최소 1개) 모두 채워 호출 |
+| AskUserQuestion 호출 앞에 Core Rule 형식의 prefix 라인(에이전트·모델 대괄호 다음 화살표와 Tool 표기)만 출력하고 `questions` 파라미터 없이/빈 배열로 호출 | prefix + `questions` 배열(최소 1개) 모두 채워 호출 |
 | announce 후 payload 의 required 필드 누락 (announce-payload separation gap) | announce 와 동일 메시지에서 required 필드 완비 호출 |
 
 Cross-reference: R020 (action-completeness precondition — invoke 전에 required 파라미터 확인). Reference issue: #1324 (찐빠: AskUserQuestion `questions`-missing recurrence).
@@ -92,17 +92,35 @@ matches the spawn announcement:
   [2] lang-python-expert:sonnet → Python code review
 ```
 
+### Spawn Announce 리터럴 — advisor 정규식 정합 (Origin: #1595 #5)
+
+위 예시는 `.claude/hooks/scripts/r007-r008-drift-advisor.sh`의 판정식과 리터럴로 일치한다. 다음 변형은 **미매칭**되어, 규칙을 지킨 응답이 R008 위반으로 계상된다.
+
+| 금지 변형 | 미매칭 이유 |
+|-----------|-------------|
+| 번호 앞에 리스트 마커(`- `)나 백틱을 붙임 | spawn-item 정규식은 **줄 시작의 대괄호 숫자**를 요구하며, 선행 공백만 허용한다 |
+| Spawning 뒤 콜론 생략 (예: "Spawning 4 agents") | 헤더 정규식이 **콜론**을 요구한다 |
+| 에이전트타입:모델 뒤에 화살표 없이 설명만 이어붙임 | spawn-item 정규식이 **화살표**를 요구한다 (U+2192 / ASCII 하이픈-부등호 / U+2014-부등호 3종만 인식) |
+
+규칙 문구와 탐지기 정규식이 어긋나면 오탐 계수가 다시 규칙 개정의 근거가 되는 악순환이 생긴다. 형식을 바꿀 때는 advisor 정규식을 같은 커밋에서 갱신한다(R016 Rule Wiring Check).
+
+**문서 작성 주의**: advisor의 announce 정규식에는 줄 시작 앵커가 없어, 표 셀·인라인 백틱 안에 완전한 리터럴을 넣으면 **그 문서를 인용하는 응답 턴이 announce로 오계상**된다(482턴 실측에서 실제 발생). 형식 예시는 코드 펜스 안에 줄 시작으로만 두고, 표에서는 산문으로 서술한다.
+
+Cross-ref: R009 「Narrative Announcement Format」(같은 리터럴을 산문 announce에 적용), R020 「자가 계수는 advisor 판정식을 재현한다」.
+
+Origin: #1595 #5 (v1.1.48 세션 — R008 위반 3건이 단일 턴에 집중. tool_use=5 / announce=2로 계산됐고, 실제 announce는 리스트 마커와 백틱이 앞에 붙은 형식이라 전부 미매칭. 헤더도 콜론이 없었다).
+
 <!--
 > **v2.1.174+**: Fixed the Workflow tool's `agent()` subagents missing per-agent attribution headers. Workflow-spawned subagents now carry attribution consistent with R008 — when authoring Workflow scripts, each `agent()` call is attributed like a direct Agent tool spawn. Align Workflow orchestration with the R008 `[agent][model] → Tool:` identification discipline: a Workflow `agent()` fan-out should still be reasoned about with the same per-agent identification model as parallel Agent tool spawns.
 -->
 
 ## Tier-3 Interaction Tool Prefix (MANDATORY)
 
-R008 "every tool call" applies to Tier-3 interaction tools too — NOT only file/exec tools. Applying the `[agent][model] → Tool:` prefix to Agent/Bash/Read while omitting it on `AskUserQuestion`, `TodoWrite`, `EnterPlanMode`, etc. is a violation.
+R008 "every tool call" applies to Tier-3 interaction tools too — NOT only file/exec tools. Applying the Core Rule prefix form (에이전트·모델 대괄호 다음 화살표와 Tool 표기) to Agent/Bash/Read while omitting it on `AskUserQuestion`, `TodoWrite`, `EnterPlanMode`, etc. is a violation.
 
 | Tool | R008 prefix required? |
 |------|----------------------|
-| AskUserQuestion | YES — `[agent][model] → Tool: AskUserQuestion` before the call |
+| AskUserQuestion | YES — Core Rule 형식의 prefix(에이전트·모델 대괄호 + 화살표 + Tool 표기 + 도구명)를 호출 앞에 출력 |
 | TodoWrite | YES |
 | EnterPlanMode / ExitPlanMode | YES |
 | Skill | NO separate R008 prefix — identified via R007 `claude → {skill-name}` integrated header instead |
@@ -128,7 +146,7 @@ Agent(description: "[2] Python code review", subagent_type: "lang-python-expert"
 
 매 도구 호출 직전, 이전 호출이 prefix 를 가졌는지에 의존하지 말고 다시 자가 점검:
 
-1. 이 호출 위에 `[agent-name][model] → Tool: <tool-name>` 라인이 있는가?
+1. 이 호출 위에 Core Rule 형식의 prefix 라인(에이전트명·모델 대괄호 + 화살표 + Tool 표기 + 도구명)이 있는가?
 2. agent-name 과 model 이 현재 컨텍스트와 일치하는가?
 3. 이 호출에 도구 스키마상 required 파라미터가 모두 채워져 있는가? (예: AskUserQuestion 는 `questions` 배열이 비어 있지 않아야 함) prefix(announce)만 출력하고 실제 호출 payload 의 required 필드를 누락하면 안 된다.
 

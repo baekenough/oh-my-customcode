@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-08-15
+updated: 2026-08-17
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -140,10 +140,17 @@ The local `release` branch (file ref) conflicts with `release/v*` directory ref 
 - **Correct approach**: Functional verification — `cargo --list | grep test` (subcommand existence). The actual #1140 regression symptom was `cargo test` returning `error: unexpected argument 'test' found`, not symlink mismatch.
 - **Rule**: Use functional output verification, never binary identity path checks, for tool environment guards.
 
+### Version selection: skill/agent addition is patch (v1.1.49)
+
+The release step's semver rule reserves **minor** for a new user-facing capability that changes *how the harness is used* (a new workflow axis, a new command surface, a contract other components depend on) — **not** for "a file appeared under `.claude/skills/` or `.claude/agents/`".
+
+- **Counter-example**: adding one skill plus one agent (agora — skills 114→115, agents 49→50) was initially scoped as a v1.2.0 minor from a literal reading of the old wording. Wrong: the skill count reached 115 while the version stayed at v1.1.48, so skill/agent addition is **established as patch** (corrected to v1.1.49).
+- **Rule**: if a version bump would follow mechanically from "a new file exists", it is patch. Count growth is this repo's baseline rate of change, not a minor signal. Ask instead whether a user's workflow changes.
+
 ## Sources
 
 - `.claude/agents/mgr-gitnerd.md` — agent definition
-- `.claude/skills/pipeline/workflows/auto-dev.yaml` — release-step lockfile mechanism (step 1.e/1.j) and PR-merge instruction (step 3.c) corrected 2026-08-15 per #1593/#1591
+- `.claude/skills/pipeline/workflows/auto-dev.yaml` — release-step lockfile mechanism (step 1.e/1.j) and PR-merge instruction (step 3.c) corrected 2026-08-15 per #1593/#1591; semver minor definition tightened and the multi-Phase `deep-plan`/`deep-verify` split instruction wired into the step descriptions 2026-08-17 (v1.1.49, #1595 #4)
 - Issue #1146 — v0.136.0 working tree loss incident (origin of expanded Safety Rules)
 - Issue #1148 — rustup symlink false-positive CI failure (v0.137.0)
 - Issue #1287 — milestone query false-negative retrospective (v0.164.0, origin of Milestone Query Robustness)

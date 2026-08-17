@@ -3,7 +3,8 @@ set -euo pipefail
 
 # Session Environment Check Hook
 # Trigger: SessionStart
-# Purpose: Check availability of codex CLI and Agent Teams, report via stderr
+# Purpose: Check availability of codex CLI and the Agent Teams env-var INTENT (#1588),
+#          report via stderr
 # Protocol: stdin JSON -> stdout pass-through, exit 0 always
 
 input=$(cat)
@@ -37,10 +38,30 @@ if command -v rtk >/dev/null 2>&1; then
   RTK_STATUS="available"
 fi
 
-# Check Agent Teams availability
+# Check Agent Teams ENV-VAR INTENT — NOT activation (#1588)
+#
+# R018 Detection (.claude/rules/MUST-agent-teams.md) resolves Agent Teams as ACTIVE only when
+# CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 AND TeamCreate is present in the tool list.
+# A shell hook CANNOT observe the tool list. MEASURED against @anthropic-ai/claude-code 2.1.233:
+#   * SessionStart stdin carries only
+#     {session_id, transcript_path, cwd, permission_mode, agent_id, agent_type,
+#      hook_event_name, source, model} — NO hook event carries a tool inventory.
+#   * availability additionally requires a remote gate and a plan entitlement, neither of
+#     which is cached on disk, so the shell cannot read them either.
+# The env var is NECESSARY-BUT-NOT-SUFFICIENT. Reporting "enabled" here made
+# agent-teams-advisor.sh recommend TeamCreate in an environment where that tool does not exist.
+#
+# VALUE CONTRACT: agent-teams-advisor.sh reads this via `grep "agent_teams=" | cut -d= -f2`,
+# so the value MUST NOT contain '='.
 AGENT_TEAMS_STATUS="disabled"
 if [ "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS:-0}" = "1" ]; then
-  AGENT_TEAMS_STATUS="enabled"
+  AGENT_TEAMS_STATUS="env-set"
+  # Escape hatch: the operator has MEASURED TeamCreate in the live tool list (R020 — "the tool
+  # exists" is itself a claim requiring measurement). This is the only path that may report
+  # activation, because only a human/model can see the tool list.
+  if [ "${OMCUSTOM_AGENT_TEAMS_VERIFIED:-0}" = "1" ]; then
+    AGENT_TEAMS_STATUS="enabled"
+  fi
 fi
 
 # Claude Code version detection
@@ -202,6 +223,11 @@ echo "  codex CLI: ${CODEX_STATUS}" >&2
 echo "  gemini CLI: ${GEMINI_STATUS}" >&2
 echo "  RTK CLI:      ${RTK_STATUS}" >&2
 echo "  Agent Teams: ${AGENT_TEAMS_STATUS}" >&2
+if [ "$AGENT_TEAMS_STATUS" = "env-set" ]; then
+  echo "    CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 is set — this is INTENT, not activation." >&2
+  echo "    R018 also requires TeamCreate in the tool list; a shell hook cannot observe it." >&2
+  echo "    Confirm TeamCreate before treating R018 as active (OMCUSTOM_AGENT_TEAMS_VERIFIED=1)." >&2
+fi
 echo "  Claude Code: v${CLAUDE_VERSION} (${COMPAT_STATUS})" >&2
 if [ "$COMPAT_STATUS" = "outdated" ]; then
   echo "  ⚠ Claude Code v${MIN_COMPAT_VERSION}+ recommended for full hook compatibility" >&2

@@ -640,6 +640,11 @@ describe('agent-teams-advisor.sh', () => {
     const { execSync } = require('node:child_process');
     try {
       execSync('rm -f /tmp/.claude-task-count-*');
+      // #1588: session-env-check.sh writes /tmp/.claude-env-status-$PPID, which resolves to
+      // the SAME pid-scoped path this advisor reads. A leftover `agent_teams=env-set` file
+      // makes every warning assertion below silently vacuous (the script exits early), so it
+      // must be cleared here rather than relying on file ordering between describe blocks.
+      execSync('rm -f /tmp/.claude-env-status-*');
     } catch {
       // ignore if no files exist
     }
@@ -875,13 +880,42 @@ describe('session-env-check.sh', () => {
       CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '0',
     });
     expect(result.stderr).toContain('Agent Teams: disabled');
+    expect(result.stderr).not.toContain('env-set');
   });
 
-  it('should show Agent Teams enabled when env var is 1', async () => {
+  // #1588: the env var expresses INTENT. R018 Detection additionally requires TeamCreate in
+  // the tool list, which a SessionStart hook cannot observe — MEASURED against claude-code
+  // 2.1.233: SessionStart stdin carries no tool inventory, and availability additionally
+  // depends on a remote gate plus plan entitlement. So this hook must never claim activation
+  // from the env var alone.
+  it('reports env-set (NOT enabled) when only the env var is 1', async () => {
     const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
       CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
+      OMCUSTOM_AGENT_TEAMS_VERIFIED: '0',
+    });
+    expect(result.stderr).toContain('Agent Teams: env-set');
+    expect(result.stderr).toContain('INTENT, not activation');
+    expect(result.stderr).toContain('TeamCreate');
+    expect(result.stderr).not.toContain('Agent Teams: enabled');
+  });
+
+  it('reports enabled ONLY when TeamCreate presence has been measured and declared', async () => {
+    const result = await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
+      CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
+      OMCUSTOM_AGENT_TEAMS_VERIFIED: '1',
     });
     expect(result.stderr).toContain('Agent Teams: enabled');
+    expect(result.stderr).not.toContain('INTENT, not activation');
+  });
+
+  it('writes an =-free agent_teams value (agent-teams-advisor.sh cut -d= -f2 contract)', async () => {
+    await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, {
+      CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
+      OMCUSTOM_AGENT_TEAMS_VERIFIED: '0',
+    });
+    const status = await readFile(`/tmp/.claude-env-status-${process.pid}`, 'utf-8');
+    const line = status.split('\n').find((l) => l.startsWith('agent_teams='));
+    expect(line).toBe('agent_teams=env-set');
   });
 
   it('should show codex unavailable when binary is not in PATH', async () => {

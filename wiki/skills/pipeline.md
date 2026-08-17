@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-08-15
+updated: 2026-08-17
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -33,6 +33,18 @@ YAML-based pipeline executor. In list mode, scans `workflows/*.yaml` and display
 ## auto-dev Pipeline Steps
 
 The `auto-dev` workflow runs a full release cycle: `pre-triage → scope-selection → triage → plan → deep-plan → implement → verify-build → deep-verify → release → ci-check → post-release-followup`.
+
+### Multi-Phase skill steps must be split before dispatch (#1595 #4)
+
+`deep-plan` (research → plan → verify) and `deep-verify` (multi-angle verification) are **multi-Phase** steps. Do NOT spawn them as a single skill call: a Phase boundary is exactly where a delegated agent is tempted to end its turn ([[r020]] 「위임 경계를 Phase 개수로 설계」). Read the skill's Phases first, split them into **single-goal delegations**, and dispatch sequentially. A `skill:` value in the workflow names **the definition that justifies the split** — it is not an instruction to call the skill once.
+
+Measured (v1.1.48): spawning `skill: deep-plan` as-is ended at 6.9 seconds with `tool_uses=0` and zero artifacts; redesigned as a single-goal Plan agent it completed 1/1. Both step descriptions in `auto-dev.yaml` now carry the split instruction inline, and the file header states the design rule (the four mirrored copies are kept identical by CI).
+
+### semver: skill/agent addition is patch, not minor (v1.1.49)
+
+The release step's version-selection rule now defines **minor** as a new user-facing capability that changes *how the harness is used* — a new workflow axis, a new command surface users must learn, or a contract other components depend on — explicitly **not** "a file appeared under `.claude/skills/` or `.claude/agents/`".
+
+Counter-example recorded in the workflow: adding one skill plus one agent (agora — skills 114→115, agents 49→50) was initially scoped as a v1.2.0 minor by reading the old wording literally. That was wrong. This repo adds skills routinely, and the skill count reached 115 while the version stayed at v1.1.48, so skill/agent addition is **established as patch** (the target was corrected to v1.1.49). Count growth is this repo's baseline rate of change, not a minor signal — if a version bump would follow mechanically from "a new file exists", it is patch. The deciding question is whether a user's workflow changes.
 
 ### Phase 0: Sync (G1 — #1159, v0.137.0)
 
@@ -123,6 +135,7 @@ Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delet
 
 - `.claude/skills/pipeline/SKILL.md` — skill definition
 - `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531; branch-before-bump reordering added v1.1.39 / #1542; scope-selection 3-branch state machine + `--paginate` post-condition + compression-mode-eval Cross-tier State-Change Side Effects inventory added v1.1.42 / #1553 찐빠 #3; scope-selection Step 3 approval-required path pre-check added v1.1.45 / #1574 찐빠 #5; step 1.e lockfile-generation mechanism corrected + step 1.j 3-way assertion added 2026-08-15 / #1593; step 3.a–3.c `--admin` removed, ground-truth branch-protection measurement added 2026-08-15 / #1591)
+- Content-drift resync 2026-08-17 (v1.1.49): added the multi-Phase split requirement for the `deep-plan`/`deep-verify` steps ([[r020]] wiring per #1595 #4 — measured `tool_uses=0` / 6.9s / zero artifacts when spawned as one skill call) and the corrected semver minor definition with its agora counter-example (skill/agent addition is established as patch in this repo).
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
 - Issue #1542 — bump pushed to develop before branching produced a diff=0 release PR (v1.1.38)
 - Issue #1553 — lite compression silently skipped the milestone-create state-change branch alongside the compressible analysis step, leaving v1.1.41 without a milestone (v1.1.41 retrospective)

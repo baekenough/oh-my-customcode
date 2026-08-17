@@ -11,7 +11,12 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
-# Skip if Agent Teams is not available
+# Skip unless Agent Teams is CONFIRMED active.
+# session-env-check.sh writes one of: disabled | env-set | enabled (#1588).
+#   `env-set` = the env var is set but TeamCreate presence is UNVERIFIED — R018 is dormant,
+#              so recommending TeamCreate here would be unactionable advice.
+# The `!= "enabled"` test below therefore deliberately skips on `env-set`; only the measured
+# OMCUSTOM_AGENT_TEAMS_VERIFIED=1 path re-enables this advisor.
 ENV_STATUS="/tmp/.claude-env-status-${PPID}"
 if [ -f "$ENV_STATUS" ]; then
   teams_status=$(grep "agent_teams=" "$ENV_STATUS" 2>/dev/null | cut -d= -f2 || echo "unknown")

@@ -116,6 +116,7 @@
 #   OMCUSTOM_R007_ADVISOR=off  — advisory 완전 비활성화 (pass-through)
 #   OMCUSTOM_TRANSCRIPT_BASE   — transcript 디렉토리 경로 override (설정 시 최우선)
 #   OMCUSTOM_R007_MARKER_DIR   — dedup 마커 디렉토리 override (기본 ${TMPDIR:-/tmp})
+#   OMCUSTOM_R008_REVERSE=on   — 역방향 신호(예고했으나 도구 미호출) 활성화. 기본 off.
 
 set -euo pipefail
 
@@ -163,7 +164,14 @@ if [ ! -f "$TRANSCRIPT_PATH" ]; then
 fi
 
 # ── 마지막 assistant 턴 재구성 + R007/R008 판정 (jq 1회 fork) ──
-# 출력: "<turn-uuid>\t<r007-count>\t<r008-count>" (턴이 없으면 무출력)
+# 출력: "<turn-uuid>\t<r007-count>\t<r008-count>\t<r008-reverse-count>" (턴이 없으면 무출력)
+#
+# ── 역방향 신호는 이 advisor 전용 (session-reflection.sh에 복제하지 않는다) ────────────
+# forward 판정식은 session-reflection.sh(Stop 훅)와 공유되지만, 역방향 신호는 의도적으로
+# 여기에만 둔다. 근거: 역방향이 잡는 결함 턴은 tool_use가 0건이라 PostToolUse/SubagentStop이
+# 애초에 발화하지 않고, Stop 훅은 세션이 끝난 뒤라 그 턴을 교정할 기회가 이미 없다. 두
+# 파일에 복제하면 같은 결함을 두 번 보고하면서 교정 기회는 여전히 0인 상태가 된다.
+# 기본 off(OMCUSTOM_R008_REVERSE)인 실험 신호를 복제하면 되돌릴 지점도 두 곳이 된다.
 JQ_LAST_TURN='
 split("\n")
 | map(select(length > 0) | (fromjson? // empty))
@@ -194,7 +202,23 @@ split("\n")
     | ($an_tool + (if $an_spawn_item > 0 then $an_spawn_item else $an_spawn_hdr end)) as $announce
     | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) ] | length) as $ntools
     | (if $ntools > $announce then $ntools - $announce else 0 end) as $r008
-    | [$tuuid, ($r007 | tostring), ($r008 | tostring)] | @tsv
+    # REVERSE signal (#1595 제안 #6): announced a tool call, then ended the turn without
+    # emitting ANY tool_use block (R009 Self-Check #6). Uses its OWN ANCHORED counter — do NOT
+    # reuse $announce. MEASURED over 482 orchestrator turns:
+    #   * naive `announce - ntools > 0` fires on 36/482 and DOUBLES the advisory rate; 16 are
+    #     pure Skill-exclusion artifacts and 15 more are prose matching the UNANCHORED regexes.
+    #   * narrowing to "no tool_use at all" + ANCHORED `→ Tool:` yields 3/3 true positives,
+    #     0 false positives; the anchor costs 1 of 969 real announce lines corpus-wide (0.1%).
+    # The anchor MUST NOT be applied to $an_tool: forward is max(0, ntools - announce), so
+    # under-counting announce INCREASES reported violations.
+    # Condition uses ALL tool_use blocks (Skill included) — using the Skill-excluded $ntools
+    # would fire on compliant turns that only invoked Skill. This deliberately differs from
+    # the $ntools denominator above; it is a separate variable, not a weakening of the Skill
+    # exemption (#1569), which still governs the forward verdict.
+    | ([ $lines[] | select(test("^\\[[^\\]]+\\]\\[[^\\]]+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_anchored
+    | ($blocks | map(select(.type? == "tool_use")) | length) as $nall_tools
+    | (if $nall_tools == 0 and $an_anchored > 0 then $an_anchored else 0 end) as $r008rev
+    | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring)] | @tsv
   end
 '
 
@@ -207,12 +231,22 @@ fi
 turn_uuid=$(printf '%s' "$result" | cut -f1)
 r007_violations=$(printf '%s' "$result" | cut -f2)
 r008_violations=$(printf '%s' "$result" | cut -f3)
+r008_reverse=$(printf '%s' "$result" | cut -f4)
 
 : "${r007_violations:=0}"
 : "${r008_violations:=0}"
+: "${r008_reverse:=0}"
+
+# 역방향 신호는 OPT-IN, 기본 off.
+# 측정 정밀도는 3/3이지만 표본이 3건뿐이고, 배선 구조상 "예방"이 불가능하다:
+# 결함 턴은 tool_use가 0이라 PostToolUse/SubagentStop이 발화하지 않고, UserPromptSubmit은
+# 사용자가 이미 개입한 뒤에 발화한다. 기본 on 전환 전에 Stop 배선을 별도로 실측해야 한다.
+if [ "${OMCUSTOM_R008_REVERSE:-off}" != "on" ]; then
+  r008_reverse=0
+fi
 
 # ── 위반이 없으면 아무것도 출력하지 않는다 (오탐 방지) ──
-if [ "$r007_violations" -eq 0 ] && [ "$r008_violations" -eq 0 ]; then
+if [ "$r007_violations" -eq 0 ] && [ "$r008_violations" -eq 0 ] && [ "$r008_reverse" -eq 0 ]; then
   exit 0
 fi
 
@@ -231,6 +265,10 @@ fi
 
 advisory_text=$(printf '[R007/R008 Advisory] 직전 응답에서 식별 누락 감지 (R007 헤더=%s, R008 접두사=%s). 이번 응답은 ┌─ Agent: 헤더로 시작하고, 모든 도구 호출에 [agent][model] → Tool: 접두사를 포함하십시오.' \
   "$r007_violations" "$r008_violations")
+
+if [ "$r008_reverse" -gt 0 ]; then
+  advisory_text="${advisory_text} [R009 Self-Check #6] 직전 턴은 도구 호출 ${r008_reverse}건을 예고하고도 tool_use 블록 없이 종료했습니다 — 예고한 호출을 지금 실행하거나, 실행하지 않기로 한 사유를 명시하십시오."
+fi
 
 # 사람이 보는 감사 추적용 (exit 0에서는 모델에 전달되지 않음 — #1547 참고)
 printf '%s\n' "$advisory_text" >&2
