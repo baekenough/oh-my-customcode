@@ -1,5 +1,5 @@
 {
-  ".claude/agents/agora-runner.md": "fd8278c697399cc281be1bf642df2d359887594ced45b295a73f1f149377115f",
+  ".claude/agents/agora-runner.md": "8ef403878a0595da99e8e90e1ee3aec07014acf92963b5a2076d604907988a69",
   ".claude/agents/arch-documenter.md": "255a898ff3df6ba87a8ed19d81e6bd9dd1e153e6e9ca46bd7f1d5877785e7555",
   ".claude/agents/arch-speckit-agent.md": "32039aafff5811a9a771d5b6ea806c0410fe2a35ab508b1a41be6f0170b2a6c0",
   ".claude/agents/be-django-expert.md": "2a24ae75a767150a6bd1128bc5762cd63febf527d6e281e554f4c55a9da2de6b",
@@ -76,7 +76,7 @@
   ".claude/skills/adaptive-harness/SKILL.md": "7e790fbf576559253536b1bcd03c09a94a34620decd9ef478abf5cdd9abce058",
   ".claude/skills/adversarial-review/SKILL.md": "0f144abc99f1bf7a7a6a72ecf829a4bdba7bd1a4ad2f9423f2237604c152fae6",
   ".claude/skills/agent-eval-framework/SKILL.md": "caeb9de984de7fc703faf5abf87ddce1b13f2d5126d44178583a38f8f2ef2fa8",
-  ".claude/skills/agora/SKILL.md": "4ad93b22dda14fab3a232ae973d063a28fd72710df958f55149c0b225b05d11d",
+  ".claude/skills/agora/SKILL.md": "38245e55207ea37588b38090ec6c62ce6d2119a7d2b1f156fc53bdb37c6379c1",
   ".claude/skills/airflow-best-practices/SKILL.md": "4143352b05c9f149167fea0ad682257885777c9398158617148e6361ad38dee8",
   ".claude/skills/alembic-best-practices/SKILL.md": "156913739b84160ff7406dd7c254f877b8b19be5e78bc8d93fe026e3cdbbe2f7",
   ".claude/skills/ambiguity-gate/SKILL.md": "0030d8bf38b8345f5d9c29a1723d92795c540765c8fb3243600af60a835fa25b",

@@ -37,7 +37,7 @@ pages:
   agents:
     - file: agents/agora-runner.md
       title: "agora-runner"
-      summary: "Executes exactly one agora consensus round via the skill scripts and returns only a verdict summary"
+      summary: "Executes exactly one agora session step (start, one round, or finish) via the skill scripts and returns only a verdict summary"
     - file: agents/arch-documenter.md
       title: "arch-documenter"
       summary: "Architecture documentation specialist for generating system design docs, API specs"
