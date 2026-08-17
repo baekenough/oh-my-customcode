@@ -66,12 +66,44 @@ shuffle_labels() {
 
 # ---------------------------------------------------------------------------
 # Fingerprint guard (spec §12-(1)). Case-insensitive; a hit aborts the session.
-# `claude` is word-bounded (not a substring match) the same way `agy` is, so it
-# also catches bare self-references ("As Claude noted...") that a
-# hyphen/space-anchored pattern alone would miss; this subsumes the narrower
-# claude-opus/claude-sonnet/claude-/"claude -p" forms, so they are folded in.
+# Three tiers, because "vendor name" and "ordinary English word" overlap:
+#
+#   1. Unambiguous vendor/product tokens — matched as bare SUBSTRINGS, with no
+#      word boundary at all: codex, omx, gpt, claude, gemini, antigravity,
+#      anthropic, openai (+ the Korean transliterations this repo's reviewers
+#      actually write, R000). Substring — not word-bounded — because a trailing
+#      boundary lets real identifications through: `(^|[^a-z])claude([^a-z]|$)`
+#      does NOT match "claudecode", and `gpt-oss` does not match "chatgpt".
+#      None of these appear inside an ordinary English word, so the boundary
+#      bought nothing and cost coverage.
+#      `agy` KEEPS both boundaries, unchanged: at three letters it is the one
+#      token short enough to plausibly land inside an unrelated word (stagy,
+#      cagy, a surname), and unlike the others it has no self-identification
+#      form to miss — a model does not call itself "agycode".
+#
+#   2. Model-family names that are ALSO ordinary English words — opus, sonnet,
+#      haiku, flash. A bare match would abort on legitimate review prose
+#      ("magnum opus", "sonnet-length prose", "flash memory"), so these are
+#      matched only in the two shapes that actually identify a model:
+#        (a) version-adjacent — "Opus 4.8", "sonnet-5", "flash 2.0"
+#        (b) abutting non-ASCII text — "Sonnet 관점에서". This repo reviews in
+#            Korean (R000); the English idioms above are ASCII-internal
+#            collocations, whereas a bare model word touching Hangul is a
+#            self-reference dropped into Korean prose.
+#      Accepted false positive: Korean-English mixed technical terms such as
+#      "flash 메모리" trip rule (b). Accepted false negative: a bare model word
+#      inside English prose with neither a version nor adjacent Hangul
+#      ("Sonnet would argue") is regex-indistinguishable from "sonnet-length"
+#      and passes. Over-blocking is preferred to under-blocking here — a false
+#      positive aborts loudly and recoverably, a miss breaks anonymity silently.
+#
+#   3. Sealed-path forms (SEALED/, /mapping/, raw/round-) — unchanged.
+#
+# NOTE: tests/unit/skills/agora-scripts.test.ts parses this literal and feeds it
+# to `new RegExp(...)`, so the syntax must stay valid in BOTH POSIX ERE and JS:
+# no POSIX bracket classes ([[:space:]]) — plain ranges only.
 # ---------------------------------------------------------------------------
-AGORA_BANNED_PATTERNS='codex|omx|(^|[^a-z])agy([^a-z]|$)|gemini|antigravity|gpt-oss|(^|[^a-z])claude([^a-z]|$)|SEALED/|/mapping/|raw/round-'
+AGORA_BANNED_PATTERNS='codex|omx|gpt|claude|gemini|antigravity|anthropic|openai|클로드|제미나이|지피티|앤트로픽|오픈에이아이|(^|[^a-z])agy([^a-z]|$)|(opus|sonnet|haiku|flash)[ ._-]?[0-9]|(opus|sonnet|haiku|flash)[ ._-]*[^ -~]|SEALED/|/mapping/|raw/round-'
 
 assert_no_fingerprint() {
   local file="$1"
@@ -126,7 +158,10 @@ normalize_response() {
 # Exit codes distinguish two failure classes so the caller can react correctly:
 #   1 = prior-round data does not exist yet (normal — e.g. round 1 has no round 0)
 #   2 = prior-round data EXISTS but failed to parse (integrity problem — the
-#       caller must abort loudly rather than silently drop the round)
+#       caller must abort loudly rather than silently drop the round).
+#       build_bundle surfaces this to ITS caller as 65 (EX_DATAERR), keeping it
+#       distinguishable from 1, which build_bundle reserves for the fingerprint
+#       abort.
 # ---------------------------------------------------------------------------
 relabel_prior() {
   local dir="$1" cur="$2" prior="$3" map_cur_path="${4:-$dir/SEALED/mapping/round-$cur.json}"
@@ -231,9 +266,21 @@ build_bundle() {
     present+=("$id")
   done
 
-  [ "${#present[@]}" -gt 0 ] || {
-    printf 'anonymize.sh: no valid reviewer response for round %s\n' "$round" >&2
-    return 66
+  # Spec §11: a single opinion is not a consensus process. reviewers.sh already
+  # aborts with exit 3 once two vendors fail to RESPOND, but that gate cannot
+  # see the schema check above — a response that arrives and then fails
+  # validate_response is counted as missing HERE, after reviewers.sh has passed.
+  # Without the same floor on this side, 1 valid + 2 schema-violating responses
+  # produce a one-reviewer bundle and the judge ends up ruling "consensus" on a
+  # single opinion. Same threshold, same exit code (3) as reviewers.sh, so the
+  # caller (agora.sh propagates rc as-is) and the operator-facing meaning
+  # "round aborted: too few reviewers" stay identical regardless of which of the
+  # two gates fired. 3 is otherwise unused in this script (64/65/66 are usage,
+  # malformed-data and missing-input; 1 is the fingerprint abort).
+  [ "${#present[@]}" -ge 2 ] || {
+    printf 'anonymize.sh: round %s has %s valid reviewer response(s); 2 or more are required (spec §11)\n' \
+      "$round" "${#present[@]}" >&2
+    return 3
   }
 
   local map_json
@@ -276,8 +323,15 @@ build_bundle() {
         # Prior-round files exist but failed to parse: an integrity problem,
         # not an absent round. Fail loud instead of silently dropping the
         # round — the judge must never be blind to a round without a signal.
+        # 65 (EX_DATAERR), matching this script's existing use of 65 for
+        # malformed vendor data — deliberately NOT 1, which is the fingerprint
+        # abort. Both are hard stops, but "the bundle would have leaked a vendor
+        # identity" and "the previous round's sealed data is corrupt" demand
+        # different operator responses, and collapsing them into one code left
+        # the single most security-relevant stop indistinguishable from a
+        # data-integrity stop.
         cat "$relabel_err" >&2
-        return 1
+        return 65
       fi
       printf 'anonymize.sh: no prior-round data for round %s, skipping\n' "$p" >&2
     fi
@@ -295,19 +349,64 @@ build_bundle() {
     > "$bundle_work"
 
   # ---------------------------------------------------------------------------
-  # Fingerprint guard, scoped to REVIEWER-AUTHORED text only: current-round
-  # `.reviewers` plus `.prior_rounds[].reviewers` (spec Ruling 10). Everything
-  # else operator- or judge-authored is excluded:
-  #   - topic/agenda/attachments — operator-authored (e.g. "should we adopt
-  #     Gemini" is the discussion subject, not a leak)
-  #   - prior_rounds[].draft / prior_rounds[].verdict — JUDGE-authored (spec
-  #     §8: the judge is the anonymization SUBJECT, not an anonymized party;
-  #     its draft may legitimately quote the operator's topic verbatim, and
-  #     must not re-trip the guard on a later round)
+  # Fingerprint guard scope. Two classes of text reach a LATER round's judge and
+  # must therefore be scanned:
+  #   - REVIEWER-authored: current-round `.reviewers` and
+  #     `.prior_rounds[].reviewers`
+  #   - JUDGE-authored: `.prior_rounds[].draft` / `.prior_rounds[].verdict`.
+  #     The judge is the anonymization SUBJECT, not an anonymized party (spec
+  #     §8) — but relabel_prior carries its draft/verdict INTO the next round's
+  #     bundle, where a fresh judge reads it. An attribution the judge wrote
+  #     ("A는 Claude 계열로 보인다") would otherwise be handed to its successor
+  #     completely unchecked, which is precisely the leak this guard exists to
+  #     stop. Being the subject exempts the judge from being anonymized, not
+  #     from anonymizing others.
+  #
+  # OPERATOR-authored text stays out of scope: topic/agenda/attachments are the
+  # discussion subject ("should we adopt Gemini" is not a leak). The judge may
+  # legitimately quote those — verbatim or in fragments — so before scanning,
+  # judge-authored fields are reduced to the words that are NOT part of the
+  # operator's own vocabulary. Without that, adding draft/verdict to the scope
+  # would abort every round whose topic merely names a vendor.
+  #
+  # The filter works on whole WORDS (tokenize → drop operator words → rejoin),
+  # never on substrings. Substring removal would be an evasion channel in
+  # reverse: an innocuous operator word like "mini" would carve "gemini" apart
+  # and blind the guard. Word filtering can only ever leave MORE text to scan,
+  # so it cannot hide a fingerprint the operator did not already introduce.
+  # `/`, `-`, `.` and `_` are word characters here, so path forms stay intact
+  # (SEALED/mapping/round-1 must remain one token for the path patterns to fire)
+  # and version forms ("Opus 4.8") keep their spacing after the rejoin.
+  # Residual (deliberate, errs toward blocking): an operator word carrying a
+  # Korean particle in the judge's text ("제미나이는" vs the topic's "제미나이")
+  # is a different token, so it is NOT exempted and still aborts.
+  #
+  # Reviewer text is deliberately NOT filtered: reviewers are anonymized parties
+  # and echoing the topic back is already treated as a leak today.
   # ---------------------------------------------------------------------------
   local vendor_derived="$work/vendor-derived.json"
-  jq -c '{reviewers, prior: [.prior_rounds[]? | {reviewers}]}' "$bundle_work" > "$vendor_derived"
+  jq -c --arg t "$topic" --argjson ag "$agenda" --argjson att "$attachments" '
+    def toks: [scan("[^ \t\n\r,;:!?()\\[\\]{}\"]+")];
+    def scrub($ops):
+      [ toks[] | . as $w | select(($ops | index($w | ascii_downcase)) == null) ] | join(" ");
+    ( ([$t] + [$ag | .. | strings] + [$att | .. | strings])
+      | map(toks) | add | map(ascii_downcase) | unique ) as $ops
+    | {
+        reviewers,
+        prior: [
+          .prior_rounds[]?
+          | {
+              reviewers,
+              draft:   ((.draft   // "") | scrub($ops)),
+              verdict: ((.verdict // "") | scrub($ops))
+            }
+        ]
+      }
+  ' "$bundle_work" > "$vendor_derived"
 
+  # Exit 1 is reserved for THIS abort — the anonymity break (see the prior-round
+  # integrity path above, which returns 65 so the caller can tell "the bundle
+  # would have leaked" apart from "the prior round's data is corrupt").
   if ! assert_no_fingerprint "$vendor_derived"; then
     return 1
   fi

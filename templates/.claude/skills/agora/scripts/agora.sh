@@ -37,6 +37,31 @@ decide_stop() {
 }
 # --- end decide_stop ---
 
+# ---------------------------------------------------------------------------
+# stop_vocabulary — the set of codes decide_stop can actually emit, READ OUT OF
+# decide_stop's own body rather than restated here.
+#
+# A hardcoded copy would drift the moment a stop condition is added, renamed or
+# removed, and the drift would be SILENT in the worst direction: --set-stop
+# would keep accepting a code decide_stop no longer produces (so report.md
+# names a reason the engine cannot reach), or reject one it does (so a legit
+# stop cannot be recorded at all). Reading the literals from the function body
+# makes decide_stop the single source of truth for the vocabulary, exactly as
+# it is for the decision itself.
+#
+# Matches only the literals in EMITTING position (`then "X"` / `else "X"`), not
+# every uppercase string in the body — the guard expressions also mention
+# verdict/consensus values (UNANIMOUS, BUILD, BUILD_WITH_CHANGES) which are not
+# stop codes.
+# ---------------------------------------------------------------------------
+stop_vocabulary() {
+  declare -f decide_stop \
+    | grep -oE '(then|else)[[:space:]]+"[A-Z_]+"' \
+    | grep -oE '"[A-Z_]+"' \
+    | tr -d '"' \
+    | sort -u
+}
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REVIEWERS_SH="$SCRIPT_DIR/reviewers.sh"
 ANONYMIZE_SH="$SCRIPT_DIR/anonymize.sh"
@@ -64,6 +89,60 @@ resolve_abs_dir() {
     printf 'agora.sh: session dir not found: %s\n' "$dir" >&2
     return 66
   }
+}
+
+# ---------------------------------------------------------------------------
+# update_state_json <session_dir> <context> <jq-arg>... — the ONE guarded way
+# this script rewrites state.json.
+#
+# `set -e` is deliberately off in this file (see the header), so the obvious
+# spelling of this operation —
+#     jq ... "$dir/state.json" > "$tmp" && mv "$tmp" "$dir/state.json"
+# followed by anything at all — swallows its own failure: a broken jq snaps the
+# && chain and execution simply falls through to the next statement, which in
+# run_round was `return 0`. That reported SUCCESS for a round whose result was
+# never recorded, and every consumer downstream then read a stale document
+# (decide_stop reads .round, so MAX_ROUNDS/STALLED could never fire again; and
+# generate_report reads verdict/round-<stale>.json, so report.md came out
+# empty). state.json is the session's only durable record, so every writer
+# funnels through here rather than repeating — and re-fumbling — the guard.
+#
+# <context> is a short caller tag that names WHICH write failed, since the four
+# callers fail for different reasons and the operator needs to tell them apart.
+#
+# Exit 73 (EX_CANTCREAT, "output file cannot be created") on any failure: the
+# session artifact the caller is about to read could not be written. It is
+# distinct from every code already in use across this skill — 64 usage,
+# 65 vendor id, 66 missing input, 68 judge config, 4 judge CLI, 3 too few
+# reviewers, 2 anonymize mapping, 124 timeout — and all four callers want the
+# orchestrator to react identically: stop, do not consume the artifact, do not
+# re-run the round (the vendors are already billed).
+# ---------------------------------------------------------------------------
+update_state_json() {
+  local dir="$1" ctx="$2"; shift 2
+
+  local tmp
+  tmp=$(mktemp) || {
+    printf '[agora] %s: could not create a staging file for state.json\n' "$ctx" >&2
+    return 73
+  }
+  # anonymize.sh's convention: the staging file must not outlive this function
+  # on ANY path. Without it every failed update leaks a 0-byte file into
+  # $TMPDIR (measured), because the `mv` that would have consumed it never ran.
+  trap "rm -f '$tmp'" RETURN
+
+  local rc=0
+  jq "$@" "$dir/state.json" > "$tmp" \
+    && mv "$tmp" "$dir/state.json" \
+    && chmod 644 "$dir/state.json" \
+    || rc=$?
+
+  if [ "$rc" -ne 0 ]; then
+    printf '[agora] %s: state.json update FAILED (rc=%s) — %s/state.json is unchanged\n' \
+      "$ctx" "$rc" "$dir" >&2
+    return 73
+  fi
+  return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -230,17 +309,39 @@ run_round() {
     | if $m == 4 then "CRITICAL" elif $m == 3 then "HIGH"
       elif $m == 2 then "MEDIUM" elif $m == 1 then "LOW" else "NONE" end' "$v")
 
-  local tmp; tmp=$(mktemp)
-  jq --argjson r "$round" \
+  # By the time we get here the three vendors AND the judge have already run
+  # and been billed, so a silently-dropped write is the most expensive failure
+  # in this script — see update_state_json for why the bare && chain that used
+  # to live here reported success for a round it never recorded.
+  #
+  # new_findings is the realistic trigger: it reaches --argjson as raw model
+  # output, so a judge that answers "three" instead of 3 breaks the write.
+  # judge.sh's validate_verdict now type-checks this field against
+  # verdict-schema.json before any verdict file is written, so a wrong-typed
+  # value should not reach here at all — this guard is the layer BEHIND that
+  # one, and it stays because it covers the two ways that check stops
+  # applying: verdict-schema.json loosening new_findings' declared type (the
+  # check is schema-driven, so it would silently stop testing it without any
+  # code change), and a verdict file arriving by some route other than
+  # judge.sh --run. It is extracted first purely so the failure diagnostic
+  # can quote the offending value.
+  local nf; nf=$(jq -r '.new_findings' "$v")
+
+  update_state_json "$dir" "round $round" \
+     --argjson r "$round" \
      --arg verdict "$(jq -r '.verdict' "$v")" \
      --arg consensus "$(jq -r '.consensus' "$v")" \
-     --argjson nf "$(jq -r '.new_findings' "$v")" \
+     --argjson nf "$nf" \
      --arg sev "$max_sev" \
      --argjson elapsed "$elapsed" \
      '.round = $r
       | .history += [{round: $r, verdict: $verdict, consensus: $consensus,
                       new_findings: $nf, max_severity: $sev, tokens: 0, elapsed_secs: $elapsed}]' \
-     "$dir/state.json" > "$tmp" && mv "$tmp" "$dir/state.json" && chmod 644 "$dir/state.json"
+    || {
+      printf '[agora] round %s ran but was NOT recorded (reviewers and judge are already billed). Most likely cause: %s carries a non-numeric "new_findings" (observed: %s). Re-running this round would bill the vendors again.\n' \
+        "$round" "$v" "$nf" >&2
+      return 73
+    }
   return 0
 }
 
@@ -281,6 +382,57 @@ gate_display() {
 }
 
 # ---------------------------------------------------------------------------
+# record_stop <session_dir> <code> — writes .stop, the field report.md prints
+# as "종료 사유".
+#
+# Without this, .stop had no reachable writer on the gated path at all, and
+# gated is the PRIMARY path (spec §12: one round = one agora-runner
+# delegation; --auto is the discouraged, token-expensive alternative). The two
+# existing writers were both inside start_session, which in gated mode returns
+# after round 1 — so every session the orchestrator drove to a normal
+# CONSENSUS / STALLED / MAX_ROUNDS ending, and every user `s` at the gate,
+# landed on generate_report's `.stop // "UNKNOWN"` fallback and reported
+# 종료 사유: UNKNOWN. decide_stop could NAME the ending; nothing could record it.
+#
+# The accepted vocabulary comes from stop_vocabulary(), i.e. out of
+# decide_stop's own body — never a second hardcoded list here.
+#
+# CONTINUE is rejected on purpose even though decide_stop emits it: it is the
+# "no stop happened" sentinel, so persisting it into .stop would assert an
+# ending that did not occur, and report.md would print 종료 사유: CONTINUE for a
+# session that is still open. A caller that sees CONTINUE should run another
+# round, not record it.
+#
+# Deliberately session-scoped (no --round): .stop describes HOW the session
+# ended, .round already records WHERE. Writing is idempotent, so a re-issued
+# code is harmless.
+# ---------------------------------------------------------------------------
+record_stop() {
+  local dir="$1" code="$2"
+  local vocab; vocab=$(stop_vocabulary)
+  local settable; settable=$(grep -vx 'CONTINUE' <<< "$vocab")
+
+  if [ "$code" = 'CONTINUE' ]; then
+    printf 'agora.sh: CONTINUE means the session has NOT stopped — it cannot be recorded as .stop. Run another round instead.\n' >&2
+    return 64
+  fi
+  if ! grep -qx -- "$code" <<< "$vocab"; then
+    printf 'agora.sh: unknown stop code %s — accepted: %s\n' \
+      "$code" "$(printf '%s' "$settable" | tr '\n' ' ')" >&2
+    return 64
+  fi
+
+  dir=$(resolve_abs_dir "$dir") || return 66
+  update_state_json "$dir" "stop=$code" --arg s "$code" '.stop = $s' \
+    || {
+      printf '[agora] the session ending (%s) could not be recorded — report.md would say UNKNOWN, so do not generate it yet\n' \
+        "$code" >&2
+      return 73
+    }
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # generate_report <session_dir> — spec §4: the ONE place anonymity is
 # lifted. Reads SEALED/mapping/round-N.json (never read by any other
 # function in this script apart from report generation). Staged to a temp
@@ -294,7 +446,13 @@ generate_report() {
   local stop; stop=$(jq -r '.stop // "UNKNOWN"' "$dir/state.json")
   local last; last=$(jq -r '.round' "$dir/state.json")
 
-  local tmp; tmp=$(mktemp)
+  local tmp
+  tmp=$(mktemp) || {
+    printf '[agora] report: could not create a staging file for report.md\n' >&2
+    return 73
+  }
+  trap "rm -f '$tmp'" RETURN
+
   {
     printf '# Agora 합의 보고서\n\n'
     printf -- '- 주제: %s\n' "$(jq -r '.topic' "$dir/state.json")"
@@ -320,7 +478,20 @@ generate_report() {
     jq -r '.unresolved[]? | "- " + .id + " [" + .severity + "] " + .positions' "$dir/verdict/round-$last.json"
     printf '\n'
   } > "$tmp"
-  mv "$tmp" "$out" && chmod 644 "$out"
+
+  # The report is the session's deliverable and the ONE artifact that lifts
+  # anonymity — a dropped move here left the caller believing a report existed
+  # at "$out" when nothing had been written, which is exactly the class of
+  # silent failure that made the round-state bug expensive. Exit 73 for the
+  # same reason as update_state_json: the output file could not be created.
+  local rc=0
+  mv "$tmp" "$out" && chmod 644 "$out" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    printf '[agora] report: could not write %s (rc=%s) — no report was produced; the session dir may be read-only\n' \
+      "$out" "$rc" >&2
+    return 73
+  fi
+  return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -343,12 +514,24 @@ start_session() {
     esac
   done
 
-  local dir; dir=$(init_session "$topic" "$max_rounds" "$mode")
+  # Declared first, assigned second, on purpose: `local dir=$(init_session ...)`
+  # would mask init_session's exit status behind `local`'s own (always 0), so a
+  # session dir that could not be created would sail on as an empty string and
+  # surface later as a baffling error against "/state.json".
+  local dir
+  dir=$(init_session "$topic" "$max_rounds" "$mode") || return $?
   if [ "${#attachments[@]}" -gt 0 ]; then
     local att_json; att_json=$(printf '%s\n' "${attachments[@]}" | jq -R . | jq -sc .)
-    local tmp; tmp=$(mktemp)
-    jq --argjson a "$att_json" '.attachments = $a' "$dir/state.json" > "$tmp" \
-      && mv "$tmp" "$dir/state.json" && chmod 644 "$dir/state.json"
+    # Hard-fail rather than proceed: build_reviewer_prompt reads .attachments
+    # from state.json, so a dropped write here does not merely lose metadata —
+    # it silently sends all three vendors a review WITHOUT the documents the
+    # user attached, and bills the round for reviewing the wrong material.
+    # Better to abort before any vendor is invoked.
+    update_state_json "$dir" 'attachments' --argjson a "$att_json" '.attachments = $a' \
+      || {
+        printf '[agora] attachments were not recorded — aborting before any round runs, since reviewers would otherwise be billed for a review with no attachments\n' >&2
+        return 73
+      }
   fi
 
   local round=1 stop='CONTINUE' rc
@@ -359,22 +542,43 @@ start_session() {
 
     stop=$(decide_stop < "$dir/state.json")
     if [ "$stop" != "CONTINUE" ]; then
-      local tmp; tmp=$(mktemp)
-      jq --arg s "$stop" '.stop = $s' "$dir/state.json" > "$tmp" \
-        && mv "$tmp" "$dir/state.json" && chmod 644 "$dir/state.json"
+      # Same guard as every other .stop writer (record_stop): if this write is
+      # dropped, the loop still breaks and generate_report still runs — and the
+      # report would name the ending UNKNOWN while claiming to be complete.
+      update_state_json "$dir" "stop=$stop" --arg s "$stop" '.stop = $s' \
+        || {
+          printf '[agora] the session ended as %s but that could not be recorded — refusing to generate a report that would name the reason UNKNOWN\n' \
+            "$stop" >&2
+          return 73
+        }
       break
     fi
 
     # In gated mode the orchestrator drives the gate; the script yields after one round.
+    #
+    # The gate goes to STDERR, not stdout: the Produces contract (see
+    # resolve_abs_dir) reserves --start's stdout for the session dir alone, and
+    # the documented `dir=$(agora.sh --start ...)` idiom captures stdout
+    # wholesale — with the gate on stdout, $dir came back as 17 lines of gate
+    # block with the path glued on the end (measured), i.e. not a usable path.
+    # stderr also keeps the block visible when --start is delegated to
+    # agora-runner, whose structured return value has no field to carry it.
+    # The standalone --gate subcommand keeps its block on STDOUT by contrast:
+    # rendering the gate is that subcommand's entire product, not a side
+    # channel next to a machine-read value.
     if [ "$mode" = 'gated' ]; then
-      gate_display "$dir" "$round"
+      gate_display "$dir" "$round" >&2
       printf '%s\n' "$dir"
       return 0
     fi
     round=$(( round + 1 ))
   done
 
-  generate_report "$dir"
+  # Propagate, do not swallow: printing the session dir and returning 0 after a
+  # failed report is the same "success reported for work that did not happen"
+  # shape as the round-state bug — the caller would go read a report.md that
+  # was never written.
+  generate_report "$dir" || return $?
   printf '%s\n' "$dir"
   return 0
 }
@@ -415,6 +619,31 @@ main() {
       }
       gate_display "$gd" "$gr"
       ;;
+    --set-stop)
+      # `--set-stop <CODE> --session-dir <dir>` mirrors --round's shape: the
+      # value is the token right after the subcommand, not a flag pair.
+      shift
+      local sc="${1:-}"
+      case "$sc" in
+        ''|--*)
+          printf 'agora.sh: --set-stop requires a stop code, e.g. --set-stop CONSENSUS --session-dir <dir>\n' >&2
+          return 64
+          ;;
+      esac
+      shift
+      local sd=''
+      while [ "$#" -gt 0 ]; do
+        case "$1" in
+          --session-dir) sd="$2"; shift 2 ;;
+          *) printf 'agora.sh: unknown set-stop option %s\n' "$1" >&2; return 64 ;;
+        esac
+      done
+      [ -n "$sd" ] || {
+        printf 'agora.sh: --set-stop requires --session-dir\n' >&2
+        return 64
+      }
+      record_stop "$sd" "$sc"
+      ;;
     --report)
       shift
       local rd=''
@@ -439,7 +668,24 @@ Usage:
                                                         it is APPENDED after the judge's own agenda, never
                                                         overwriting it.
   agora.sh --gate --session-dir <dir> --round <N>      Render the label-only gate block for a round.
+  agora.sh --set-stop <CODE> --session-dir <dir>       Record HOW the session ended, into .stop.
+                                                        <CODE> is one of decide_stop's own stop codes —
+                                                        CONSENSUS, STALLED, MAX_ROUNDS, USER (the gate's
+                                                        `s` choice). CONTINUE is rejected: it means the
+                                                        session has NOT stopped. The accepted set is read
+                                                        from decide_stop at runtime, and an invalid code
+                                                        prints it.
   agora.sh --report --session-dir <dir>                Regenerate report.md from the sealed mapping.
+
+Which entry points WRITE (delegate these to agora-runner, spec §12):
+  --start, --round, --set-stop, --report all write into the session dir.
+  --decide-stop and --gate are read-only. --set-stop in particular mutates
+  state.json, so the orchestrator does not run it directly.
+
+Channel contract:
+  --start prints ONLY the session dir on stdout (`dir=$(agora.sh --start ...)`
+  is the intended idiom); its gate block goes to stderr. The standalone --gate
+  subcommand prints its block on stdout, since that block is its whole product.
 
 Gated-mode contract (spec §12, "라운드 1개 = 위임 1건"):
   --start WITHOUT --auto runs exactly ROUND 1 and returns — it does not loop
@@ -457,11 +703,19 @@ Gated-mode contract (spec §12, "라운드 1개 = 위임 1건"):
     2. bash agora.sh --decide-stop < state.json         Check the stop code yourself.
     3. bash agora.sh --gate --session-dir <dir> --round <N>
                                                          Show the round's gate (skip if you already stopped).
-    4. bash agora.sh --report --session-dir <dir>       Generate report.md once you decide to stop.
+    4. bash agora.sh --set-stop <CODE> --session-dir <dir>
+                                                         REQUIRED whenever step 2 returned anything other
+                                                         than CONTINUE: record that exact code before
+                                                         reporting. Also used with USER when the user picks
+                                                         `s` at the gate. .stop has no other writer on this
+                                                         path, so skipping it makes report.md say
+                                                         종료 사유: UNKNOWN no matter how cleanly the
+                                                         session actually ended.
+    5. bash agora.sh --report --session-dir <dir>       Generate report.md once you decide to stop.
   --round on its own NEVER calls decide_stop, NEVER writes .stop, NEVER
   renders a gate, and NEVER generates report.md — not even when <N> reaches
   or exceeds max_rounds (--round does not check max_rounds at all). Those
-  four steps are the caller's responsibility for every round after round 1
+  steps above are the caller's responsibility for every round after round 1
   in gated mode. (--start --auto performs all of this internally, across
   every round, and needs none of the above.)
 USAGE

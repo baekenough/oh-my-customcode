@@ -18,6 +18,42 @@ AGORA_AGY_BIN="${AGORA_AGY_BIN:-agy}"
 AGORA_TIMEOUT_SECS="${AGORA_TIMEOUT_SECS:-300}"
 
 # ---------------------------------------------------------------------------
+# _child_env_strip — the `env -u NAME` list that removes every AGORA_*
+# variable from a vendor CLI's environment.
+#
+# The anonymity of this process rests on the vendors and the judge never
+# reaching the sealed session material. Two guards already covered that:
+# agora.sh exports nothing of its own, and no session path is ever passed in
+# argv. Neither covers what the OPERATOR's shell exported before agora.sh
+# ever ran. Measured: with AGORA_OUTPUT_ROOT set in the invoking shell, that
+# value is inherited straight through agora.sh into every vendor CLI spawned
+# here, and the whole session tree — sealed round records included — sits one
+# glob below it. "We do not pass it" is no defence against a value that is
+# already in the environment.
+#
+# Prefix rule rather than a hardcoded name list, deliberately: a name list
+# leaks silently the day someone adds AGORA_SOMETHING_NEW, whereas the prefix
+# fails CLOSED — a new variable is stripped unless someone argues it back in.
+# Nothing outside the prefix is touched, so PATH, HOME, the vendors' own auth
+# tokens and proxy settings all survive; `env -i` would leave the CLIs unable
+# to authenticate at all.
+#
+# Read time and pass time are separate: the config reads above have already
+# happened, so this script goes on using AGORA_CLAUDE_BIN, AGORA_TIMEOUT_SECS
+# and friends as ordinary shell variables. Only the CHILD's copy is removed,
+# which is why test-injected configuration still works.
+#
+# Built from the exported names actually present (compgen -e), so a prefixed
+# variable this script has never heard of is covered too.
+# ---------------------------------------------------------------------------
+_child_env_strip=()
+while IFS= read -r _agora_env_name; do
+  [ -n "$_agora_env_name" ] || continue
+  _child_env_strip+=(-u "$_agora_env_name")
+done < <(compgen -e 2>/dev/null | grep '^AGORA_' || true)
+unset _agora_env_name
+
+# ---------------------------------------------------------------------------
 # run_with_timeout <seconds> <cmd>... — R005: macOS ships no GNU timeout.
 # Returns 124 on timeout, otherwise the command's own exit code.
 #
@@ -76,7 +112,23 @@ run_with_timeout() {
   # `wait` reaping a signal-killed background job — noise, not a diagnostic
   # this script itself emits.
   wait "$pid" 2>/dev/null || rc=$?
-  kill -TERM "$watcher" 2>/dev/null || true
+  # F1 (review round 3, measured): the watchdog must be torn down by PROCESS
+  # GROUP for exactly the reason the command itself is — `kill -TERM
+  # "$watcher"` reaches only the subshell, and its `sleep` child is orphaned
+  # and re-parented to init, where it lingers for the full AGORA_TIMEOUT_SECS
+  # (default 300). This is the SUCCESS path: when the command finishes first
+  # the watchdog's sleep is still running, so every completed vendor call
+  # leaked one. Measured before the fix: 1 orphaned `sleep` per call — up to
+  # 6 per round (3 reviewers + 3 judge attempts). On timeout nothing leaked,
+  # because the sleep had already elapsed by definition, which is why the
+  # existing timeout-path tests never saw it.
+  # Safe under `set -m` (guaranteed on in this branch by the block above):
+  # measured pgid(watcher) == pid(watcher) != pgid(this script), so the
+  # negative-PID kill cannot reach this script's own group. The pid also
+  # cannot have been recycled onto an unrelated group, because $watcher is
+  # still an unreaped child here — its zombie holds both the pid and the
+  # group until the `wait` below.
+  kill -TERM -- "-$watcher" 2>/dev/null || true
   wait "$watcher" 2>/dev/null || true
 
   [ "$restore_job_control" -eq 1 ] && set +m
@@ -87,8 +139,22 @@ run_with_timeout() {
 }
 
 # ---------------------------------------------------------------------------
+# run_sanitized <seconds> <cmd>... — run_with_timeout with the AGORA_*
+# variables removed from the command's environment (see _child_env_strip).
+# Wrapping the command in `env` rather than unsetting the variables in this
+# shell is what keeps the read/pass split above intact. `env` execs the
+# command in place, so the pid and process group that run_with_timeout's
+# watchdog targets are the command's own, exactly as before.
+# ---------------------------------------------------------------------------
+run_sanitized() {
+  local secs="$1"; shift
+  run_with_timeout "$secs" env ${_child_env_strip[@]+"${_child_env_strip[@]}"} "$@"
+}
+
+# ---------------------------------------------------------------------------
 # invoke_vendor <slug> <prompt_file> — dispatches to the vendor-specific CLI
-# argument shape (spec §2 REQ-1) and applies run_with_timeout uniformly.
+# argument shape (spec §2 REQ-1) and applies run_sanitized uniformly, so
+# every vendor is launched under both the timeout and the env strip.
 # ---------------------------------------------------------------------------
 invoke_vendor() {
   local slug="$1" prompt_file="$2"
@@ -99,20 +165,20 @@ invoke_vendor() {
       # flag (Ruling 12 measured); aliases do not expand under
       # non-interactive `bash script.sh` execution, so it must be passed
       # explicitly here or the CLI runs without it.
-      run_with_timeout "$AGORA_TIMEOUT_SECS" "$AGORA_CLAUDE_BIN" \
+      run_sanitized "$AGORA_TIMEOUT_SECS" "$AGORA_CLAUDE_BIN" \
         -p --model claude-opus-4-8 --enable-auto-mode "$prompt"
       ;;
     omx)
       # omx is a plain binary, not a shell alias (spec §2 measured) — no
       # extra flag is needed.
-      run_with_timeout "$AGORA_TIMEOUT_SECS" "$AGORA_OMX_BIN" exec "$prompt"
+      run_sanitized "$AGORA_TIMEOUT_SECS" "$AGORA_OMX_BIN" exec "$prompt"
       ;;
     agy)
       # --dangerously-skip-permissions: the user's shell `agy` alias appends
       # this flag (Ruling 12 measured); aliases do not expand under
       # non-interactive `bash script.sh` execution, so it must be passed
       # explicitly here or the CLI may block on a permission prompt.
-      run_with_timeout "$AGORA_TIMEOUT_SECS" "$AGORA_AGY_BIN" \
+      run_sanitized "$AGORA_TIMEOUT_SECS" "$AGORA_AGY_BIN" \
         -p --model gemini-3.1-pro-high --output-format json \
         --json-schema "$SCHEMA_PATH" --dangerously-skip-permissions "$prompt"
       ;;

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import { exec, spawn } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { chmod, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
@@ -343,21 +343,88 @@ function loadBannedFingerprintPattern(scriptPath: string): RegExp {
 const BANNED_FINGERPRINT = loadBannedFingerprintPattern(ANONYMIZE_SCRIPT);
 
 /**
- * Mirror anonymize.sh's own fingerprint-guard scope (F1/Ruling 10): only
- * reviewer-authored text — current-round `reviewers` and
- * `prior_rounds[].reviewers` — is vendor-derived. topic/agenda/attachments
- * (operator-authored) and prior_rounds[].draft/verdict (judge-authored, spec
- * §8: the judge is the anonymization SUBJECT, not an anonymized party) are
- * excluded, exactly like the shell's `{reviewers, prior: [...| {reviewers}]}`.
+ * anonymize.sh's fingerprint-guard SCOPE, extracted the same way
+ * loadBannedFingerprintPattern extracts the pattern: read the shell's own jq
+ * program out of its source instead of restating it here.
+ *
+ * A hand-written mirror of this scope is what the note above F2 warned about,
+ * and it drifted exactly as predicted: the previous copy still described the
+ * scope as `{reviewers, prior: [...| {reviewers}]}` long after the shell had
+ * (a) pulled judge-authored `prior_rounds[].draft` / `.verdict` INTO scope and
+ * (b) added the Ruling-10 operator-vocabulary scrub in front of the scan. The
+ * mirror therefore called a bundle clean that the shell would have aborted on.
+ *
+ * Extraction is safe for the same reason F2's is: the jq program is a single
+ * shell-single-quoted literal with no interpolation and no `'` inside it, so
+ * group 1 IS the program, verbatim, and runs unmodified under `jq`.
  */
-function vendorDerivedText(bundle: {
-  reviewers: unknown;
-  prior_rounds?: Array<{ reviewers: unknown }>;
-}): string {
-  return JSON.stringify({
-    reviewers: bundle.reviewers,
-    prior: (bundle.prior_rounds ?? []).map((p) => ({ reviewers: p.reviewers })),
+function loadVendorDerivedFilter(scriptPath: string): string {
+  const src = readFileSync(scriptPath, 'utf-8');
+  const match = src.match(
+    /jq -c --arg t "\$topic" --argjson ag "\$agenda" --argjson att "\$attachments" '([^']*)'/
+  );
+  if (!match) {
+    throw new Error(
+      `could not find the vendor-derived jq filter in ${scriptPath} — this test's sync with the shell guard broke`
+    );
+  }
+  return match[1];
+}
+
+const VENDOR_DERIVED_FILTER = loadVendorDerivedFilter(ANONYMIZE_SCRIPT);
+
+/** Run `jq` with the given argv, feeding `stdinInput` on stdin. */
+function runJq(args: string[], stdinInput: string): Promise<ScriptResult> {
+  return new Promise((resolve_) => {
+    const child = spawn('jq', args);
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (c: Buffer) => {
+      stdout += c.toString();
+    });
+    child.stderr.on('data', (c: Buffer) => {
+      stderr += c.toString();
+    });
+    child.on('close', (code: number | null) => resolve_({ stdout, stderr, exitCode: code ?? -1 }));
+    child.stdin.write(stdinInput);
+    child.stdin.end();
   });
+}
+
+/**
+ * Reduce a bundle to exactly the text anonymize.sh scans — by RUNNING the
+ * shell's own filter, not by re-describing it. The operator vocabulary the
+ * filter scrubs out is taken from the bundle's own topic/agenda/attachments,
+ * which is precisely what build_bundle passes through --topic/--agenda/
+ * --attachments when it writes that bundle.
+ */
+async function vendorDerivedText(bundle: {
+  topic?: unknown;
+  agenda?: unknown;
+  attachments?: unknown;
+  reviewers: unknown;
+  prior_rounds?: unknown;
+}): Promise<string> {
+  const result = await runJq(
+    [
+      '-c',
+      '--arg',
+      't',
+      String(bundle.topic ?? ''),
+      '--argjson',
+      'ag',
+      JSON.stringify(bundle.agenda ?? []),
+      '--argjson',
+      'att',
+      JSON.stringify(bundle.attachments ?? []),
+      VENDOR_DERIVED_FILTER,
+    ],
+    JSON.stringify(bundle)
+  );
+  if (result.exitCode !== 0) {
+    throw new Error(`vendor-derived filter failed (rc=${result.exitCode}): ${result.stderr}`);
+  }
+  return result.stdout.trim();
 }
 
 /** Create an isolated session dir seeded with a raw fixture tree. */
@@ -437,7 +504,7 @@ describe('anonymize.sh --build', () => {
         ''
       );
       const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
-      expect(vendorDerivedText(bundle)).not.toMatch(BANNED_FINGERPRINT);
+      expect(await vendorDerivedText(bundle)).not.toMatch(BANNED_FINGERPRINT);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -781,8 +848,24 @@ describe('anonymize.sh --build', () => {
       expect(result.stderr).not.toContain('AGORA_FINGERPRINT_DETECTED');
 
       const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
-      expect(bundle.reviewers.length).toBe(1);
-      expect(bundle.reviewers[0].findings[0].claim).toContain('field mapping is ambiguous');
+      // Two reviewers because spec §11's floor rejects a one-reviewer round
+      // before the fingerprint guard is ever reached; the SECOND response is
+      // deliberately plain prose carrying none of the overlapping words, so
+      // this test still isolates the first one's benign-but-overlapping text.
+      expect(bundle.reviewers.length).toBe(2);
+      // Located by content, never by position: labels are shuffled (spec §6),
+      // so indexing would assert on the shuffle rather than on the guard.
+      const benign = bundle.reviewers.find((r: { findings: Array<{ claim: string }> }) =>
+        r.findings.some((f) => f.claim.includes('field mapping is ambiguous'))
+      );
+      expect(benign).toBeDefined();
+      // The actual point of the narrowed pattern: every one of these ordinary
+      // English collocations overlaps a model-family name and must survive
+      // into the bundle instead of aborting the build.
+      const benignText = JSON.stringify(benign);
+      expect(benignText).toContain('flash memory');
+      expect(benignText).toContain('magnum opus');
+      expect(benignText).toContain('sonnet-length');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
@@ -1438,6 +1521,25 @@ describe('reviewers.sh --run', () => {
       return `sleep ${marker} &\nsleep ${marker}`;
     }
 
+    /**
+     * Asserts ONLY the process-group property: after the timeout fires, no
+     * descendant of the killed vendor is left running.
+     *
+     * It used to also assert `exitCode === 0` (and the timed-out vendor's raw
+     * file being absent), and that pair was the entire source of this case's
+     * intermittent failures under load. Measured, 23 runs in pure bash with no
+     * test runner attached — idle, CPU-saturated, 8-concurrent, 6-concurrent —
+     * survivors was '' in every single run. The property never wavered. What
+     * wavered was the round outcome: at AGORA_TIMEOUT_SECS=1 a saturated CPU
+     * cannot even get the one-`printf` OK stubs through process startup inside
+     * the budget, so two vendors go missing and reviewers.sh correctly returns
+     * 3. That is a statement about the test's CPU budget, not about the kill.
+     *
+     * Raising the timeout here would be treating the wrong end: the round
+     * outcome is asserted in its own case below, at a budget generous enough
+     * for the stubs, while this case keeps the 1-second budget precisely
+     * because it wants the kill to happen fast and has nothing else to say.
+     */
     async function runForkingTimeoutCase(forceFallback: boolean): Promise<void> {
       const marker = uniqueMarker();
       const bin = await makeStubBin({
@@ -1460,14 +1562,12 @@ describe('reviewers.sh --run', () => {
         };
         if (forceFallback) env.AGORA_FORCE_TIMEOUT_FALLBACK = '1';
 
-        const result = await runScript(
+        await runScript(
           REVIEWERS_SCRIPT,
           ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
           '',
           env
         );
-        expect(result.exitCode).toBe(0);
-        expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(false);
 
         // Grace period for the OS to finish reaping after SIGTERM before we
         // sample survivors — the kill is synchronous but process teardown
@@ -1489,6 +1589,48 @@ describe('reviewers.sh --run', () => {
     it('default gtimeout path: no descendant survives either (both paths must agree)', async () => {
       await runForkingTimeoutCase(false);
     }, 30000);
+
+    // The round-outcome half of what the two cases above used to assert,
+    // separated out and given a CPU budget the OK stubs can actually meet.
+    // spec §11: one timed-out vendor is not a failed round — two are.
+    it('still reports a successful round when a single vendor times out', async () => {
+      const marker = uniqueMarker();
+      const bin = await makeStubBin({
+        claude: `sleep ${marker}`,
+        omx: OK_STUB,
+        agy: OK_STUB,
+      });
+      const dir = join(tmpdir(), `agora-rv-f1-outcome-${Date.now()}`);
+      await mkdir(dir, { recursive: true });
+      const promptFile = join(dir, 'prompt.txt');
+      await writeFile(promptFile, 'x');
+      try {
+        const result = await runScript(
+          REVIEWERS_SCRIPT,
+          ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+          '',
+          {
+            PATH: `${bin}:${process.env.PATH}`,
+            AGORA_OMX_BIN: join(bin, 'omx'),
+            // Five seconds, not one: the hanging vendor still blows through
+            // any budget, while the two answering stubs get room to start
+            // even on a loaded machine. The value is a CPU-headroom knob
+            // here, never part of what is being asserted.
+            AGORA_TIMEOUT_SECS: '5',
+          }
+        );
+        expect(result.exitCode).toBe(0);
+        // The timed-out vendor leaves NO file — callers distinguish
+        // "responded" from "missing" by file existence alone.
+        expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(false);
+        expect(existsSync(join(dir, 'SEALED/raw/round-1/omx.json'))).toBe(true);
+        expect(existsSync(join(dir, 'SEALED/raw/round-1/agy.json'))).toBe(true);
+      } finally {
+        await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
+        await rm(bin, { recursive: true, force: true });
+        await rm(dir, { recursive: true, force: true });
+      }
+    }, 60000);
   });
 
   // -----------------------------------------------------------------------
@@ -1775,7 +1917,7 @@ describe('judge.sh --run', () => {
 
   it('passes only the anon file path to the judge process (argv guard)', async () => {
     const bin = await makeStubBin({
-      claude: `printf '%s' "$*" > "$AGORA_ARGV_DUMP"; printf '%s' '${VALID_VERDICT}'`,
+      claude: `printf '%s' "$*" > "$STUB_ARGV_DUMP"; printf '%s' '${VALID_VERDICT}'`,
       agy: 'exit 1',
     });
     const dir = join(tmpdir(), `agora-judge-argv-${Date.now()}`);
@@ -1799,7 +1941,7 @@ describe('judge.sh --run', () => {
           '1',
         ],
         '',
-        { PATH: `${bin}:${process.env.PATH}`, AGORA_ARGV_DUMP: dump }
+        { PATH: `${bin}:${process.env.PATH}`, STUB_ARGV_DUMP: dump }
       );
       const argv = await readFile(dump, 'utf-8');
       expect(argv).not.toContain('SEALED');
@@ -2078,12 +2220,17 @@ describe('judge.sh --run', () => {
     // schema must fail LOUDLY, not silently disable validation. Mirrors
     // Task 4's loadBannedFingerprintPattern rationale (a helper that reads
     // its own source of truth must not paper over that source going
-    // missing). The real shipped schema file is moved aside and restored in
-    // `finally` so no other test in this file is affected — bun runs `it()`
-    // blocks within one file sequentially, so this is safe.
+    // missing).
+    //
+    // S-1: this used to `cp` the real tracked schema aside, `rm` it, and
+    // restore in `finally`. Two problems, both measured: a timeout/cancel/
+    // crash between the rm and the finally leaves a TRACKED FILE DELETED in
+    // the working tree, and for the duration of the test every other process
+    // reading that path fails — which is exactly how a concurrent run of this
+    // suite made seven unrelated judge.sh tests fail with ENOENT. Pointing
+    // AGORA_VERDICT_SCHEMA at a path that never existed reproduces the same
+    // condition without the shipped tree ever being touched.
     it('fails explicitly (not silently) when verdict-schema.json cannot be read', async () => {
-      const schemaPath = join(SCRIPTS_DIR, 'verdict-schema.json');
-      const backupPath = join(SCRIPTS_DIR, 'verdict-schema.json.testbak');
       const bin = await makeStubBin({
         claude: `printf '%s' '${VALID_VERDICT}'`,
         agy: `printf '%s' '${VALID_VERDICT}'`,
@@ -2095,8 +2242,8 @@ describe('judge.sh --run', () => {
         join(dir, 'anon/round-1.json'),
         JSON.stringify({ round: 1, topic: 't', reviewers: [] })
       );
-      await cp(schemaPath, backupPath);
-      await rm(schemaPath);
+      const missingSchema = join(dir, 'no-such-verdict-schema.json');
+      expect(existsSync(missingSchema)).toBe(false);
       try {
         const result = await runScript(
           JUDGE_SCRIPT,
@@ -2110,7 +2257,7 @@ describe('judge.sh --run', () => {
             '1',
           ],
           '',
-          { PATH: `${bin}:${process.env.PATH}` }
+          { PATH: `${bin}:${process.env.PATH}`, AGORA_VERDICT_SCHEMA: missingSchema }
         );
         // Distinct from exit 4 (every rotation model failed) — this is a
         // config-load failure that must not even attempt the CLIs, let
@@ -2119,9 +2266,9 @@ describe('judge.sh --run', () => {
         expect(result.exitCode).not.toBe(4);
         expect(result.stderr).toContain('verdict schema');
         expect(existsSync(join(dir, 'verdict/round-1.json'))).toBe(false);
+        // The shipped schema was never a participant in this test.
+        expect(existsSync(join(SCRIPTS_DIR, 'verdict-schema.json'))).toBe(true);
       } finally {
-        await cp(backupPath, schemaPath);
-        await rm(backupPath, { force: true });
         await rm(bin, { recursive: true, force: true });
         await rm(dir, { recursive: true, force: true });
       }
@@ -2152,20 +2299,36 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
     });
 
   it('runs two gated-off rounds and lays out artifacts exactly as spec §4 prescribes', async () => {
+    const root = join(tmpdir(), `agora-out-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    // Records which branch each judge invocation actually took. Without it the
+    // round-1 branch can be dead and every assertion below still passes: the
+    // extraction bug this guards against (see the [0-9][0-9]* note) made
+    // `round` empty, so the else-branch answered BOTH rounds and
+    // judgeVerdict(1, 'SPLIT', 'REDESIGN') was never produced anywhere in the
+    // suite — REDESIGN/SPLIT had no execution path through the pipeline at all.
+    const branchLog = join(root, 'judge-branch.log');
     // The judge stub keys off the round number embedded in the anon bundle it is handed.
+    // `[0-9][0-9]*` (one-or-more), NOT `[0-9]*` (zero-or-more): judge_prompt
+    // inlines verdict-schema.json BEFORE the bundle, and the schema's own
+    // `"round": { "type": "number" }` line matches a zero-digit pattern, so
+    // `head -1` picked the SCHEMA and `round` came out empty every time.
     const judgeStub = `
       prompt="\${!#}"
-      round=$(printf '%s' "$prompt" | grep -o '"round": *[0-9]*' | head -1 | grep -o '[0-9]*')
-      if [ "$round" = "1" ]; then printf '%s' '${judgeVerdict(1, 'SPLIT', 'REDESIGN')}';
-      else printf '%s' '${judgeVerdict(2, 'MAJORITY', 'BUILD_WITH_CHANGES')}'; fi
+      round=$(printf '%s' "$prompt" | grep -o '"round": *[0-9][0-9]*' | head -1 | grep -o '[0-9][0-9]*')
+      if [ "$round" = "1" ]; then
+        printf 'round-1-branch\\n' >> '${branchLog}'
+        printf '%s' '${judgeVerdict(1, 'SPLIT', 'REDESIGN')}'
+      else
+        printf 'else-branch:%s\\n' "$round" >> '${branchLog}'
+        printf '%s' '${judgeVerdict(2, 'MAJORITY', 'BUILD_WITH_CHANGES')}'
+      fi
     `;
     const bin = await makeStubBin({
       claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) ${judgeStub};; esac`,
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-${Date.now()}`);
-    await mkdir(root, { recursive: true });
     try {
       const result = await runScript(
         AGORA_SCRIPT,
@@ -2198,11 +2361,28 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         expect(existsSync(join(sessionDir, rel))).toBe(true);
       }
 
+      // Both stub branches ran, in order — round 1 took the round-1 branch and
+      // round 2 fell through to the else with a correctly extracted "2".
+      const branches = (await readFile(branchLog, 'utf-8')).trim().split('\n');
+      expect(branches).toEqual(['round-1-branch', 'else-branch:2']);
+
+      // ...and the round-1 branch's distinct verdict actually reached disk,
+      // proving SPLIT/REDESIGN traverses the whole pipeline rather than just
+      // being produced by the stub.
+      const v1 = JSON.parse(await readFile(join(sessionDir, 'verdict/round-1.json'), 'utf-8'));
+      expect(v1.consensus).toBe('SPLIT');
+      expect(v1.verdict).toBe('REDESIGN');
+      const v2 = JSON.parse(await readFile(join(sessionDir, 'verdict/round-2.json'), 'utf-8'));
+      expect(v2.consensus).toBe('MAJORITY');
+      expect(v2.verdict).toBe('BUILD_WITH_CHANGES');
+
       const state = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
       expect(state.round).toBe(2);
       expect(state.max_rounds).toBe(2);
       expect(state.mode).toBe('auto');
       expect(state.history.length).toBe(2);
+      expect(state.history[0].verdict).toBe('REDESIGN');
+      expect(state.history[0].consensus).toBe('SPLIT');
       expect(state.stop).toBe('MAX_ROUNDS');
     } finally {
       await rm(bin, { recursive: true, force: true });
@@ -2868,10 +3048,41 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
 // reason and burn wall-clock for nothing).
 // ---------------------------------------------------------------------
 
+/**
+ * Create a disposable sandbox whose session output root and test observation
+ * channel are SIBLINGS, never nested one inside the other.
+ *
+ * Call-count files, throwaway schemas and stub call logs are how the test
+ * WATCHES a run; they are not session artifacts. Writing them into the output
+ * root mixes two namespaces and leaves plain files sitting among the dated
+ * session directories, which any scan of the output tree then has to walk.
+ *
+ * Remove `base` to clean up both halves.
+ */
+async function makeOutputSandbox(
+  prefix: string
+): Promise<{ base: string; root: string; obs: string }> {
+  const base = join(tmpdir(), `agora-${prefix}-${Date.now()}`);
+  const root = join(base, 'out');
+  const obs = join(base, 'obs');
+  await mkdir(root, { recursive: true });
+  await mkdir(obs, { recursive: true });
+  return { base, root, obs };
+}
+
 async function findSessionDir(root: string): Promise<string> {
-  const days = await readdir(root);
+  // readdir order is filesystem-defined, NOT creation or lexical order: bun on
+  // APFS returns entries in name-hash order, so whether a dated session
+  // directory or a sibling plain file comes first flips with the day's name.
+  // Walking an entry without checking its type therefore turns a stray file
+  // under `root` into an ENOTDIR that aborts the whole scan — on some calendar
+  // days only. Filter to directories so the scan cannot be derailed at all.
+  // (The observation files that used to sit here now live in the sandbox's
+  // `obs` sibling — see makeOutputSandbox; this check is defence in depth.)
+  const days = await readdir(root, { withFileTypes: true });
   for (const day of days) {
-    const dayDir = join(root, day);
+    if (!day.isDirectory()) continue;
+    const dayDir = join(root, day.name);
     const entries = await readdir(dayDir);
     const match = entries.find((e) => e.startsWith('agora-'));
     if (match) return join(dayDir, match);
@@ -2880,12 +3091,13 @@ async function findSessionDir(root: string): Promise<string> {
 }
 
 describe('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop (no retry)', () => {
+  // S-1: same rewrite as the judge.sh "schema cannot be read" test above —
+  // AGORA_VERDICT_SCHEMA instead of moving the real tracked file aside.
+  // agora.sh sets no environment of its own (see the env-hygiene test), so the
+  // var simply passes through to the judge.sh child by ordinary inheritance.
   it('propagates exit 68 immediately without retrying the round or advancing state.json', async () => {
-    const schemaPath = join(SCRIPTS_DIR, 'verdict-schema.json');
-    const backupPath = join(SCRIPTS_DIR, 'verdict-schema.json.testbak-round68');
-    const root = join(tmpdir(), `agora-out-e68-${Date.now()}`);
-    await mkdir(root, { recursive: true });
-    const claudeCountFile = join(root, 'claude-call-count');
+    const { base, root, obs } = await makeOutputSandbox('out-e68');
+    const claudeCountFile = join(obs, 'claude-call-count');
     // Only the reviewer-shaped call (--model claude-opus-4-8) is ever expected
     // to fire; judge.sh's schema check aborts BEFORE it invokes any CLI, so a
     // second hit here would mean the round loop retried the whole round.
@@ -2901,8 +3113,8 @@ describe('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop
       esac
     `;
     const bin = await makeStubBin({ claude: countingClaude, omx: OK_STUB, agy: OK_STUB });
-    await cp(schemaPath, backupPath);
-    await rm(schemaPath);
+    const missingSchema = join(obs, 'no-such-verdict-schema.json');
+    expect(existsSync(missingSchema)).toBe(false);
     try {
       const result = await runScript(
         AGORA_SCRIPT,
@@ -2913,6 +3125,7 @@ describe('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop
           AGORA_OMX_BIN: join(bin, 'omx'),
           AGORA_OUTPUT_ROOT: root,
           AGORA_SESSION_EPOCH: '1755230400',
+          AGORA_VERDICT_SCHEMA: missingSchema,
         }
       );
       expect(result.exitCode).toBe(68);
@@ -2926,11 +3139,11 @@ describe('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop
       expect(state.round).toBe(0);
       expect(state.history.length).toBe(0);
       expect(existsSync(join(sessionDir, 'verdict/round-1.json'))).toBe(false);
+      // The shipped schema was never a participant in this test.
+      expect(existsSync(join(SCRIPTS_DIR, 'verdict-schema.json'))).toBe(true);
     } finally {
-      await cp(backupPath, schemaPath);
-      await rm(backupPath, { force: true });
       await rm(bin, { recursive: true, force: true });
-      await rm(root, { recursive: true, force: true });
+      await rm(base, { recursive: true, force: true });
     }
   }, 30000);
 });
@@ -3020,10 +3233,27 @@ describe('agora SKILL.md', () => {
 
   // Controller-added: exit 68 (schema config error) must be documented as
   // distinct from judge failure (exit 4) and not a retry target.
+  //
+  // Meaning-based, not layout-based: the exit-code table (§종료 코드) has a
+  // dedicated 재시도 (retry) column, so this locates the `68` row directly
+  // and reads its own retry cell — it does not depend on "재시도" and
+  // "아니오/대상" sitting within N characters of each other in prose, which
+  // breaks the moment the doc is reorganized into a table (as it correctly
+  // was — the old proximity-based regex was coupled to a since-improved
+  // sentence layout, not to the actual content).
   it('documents judge.sh exit 68 as a non-retried configuration error', async () => {
     const src = await readFile(SKILL_MD, 'utf-8');
-    expect(src).toContain('68');
-    expect(src).toMatch(/재시도.{0,10}(대상|아니)/);
+    const row68 = src.split('\n').find((line) => /^\s*\|\s*`68`\s*\|/.test(line));
+    expect(row68).toBeDefined();
+    if (!row68) throw new Error('unreachable — toBeDefined asserted above');
+    const cells = row68
+      .split('|')
+      .map((c) => c.trim())
+      .filter((c) => c.length > 0);
+    // 코드 | 반환 스크립트 | 의미 | 재시도 — 4 data columns.
+    expect(cells.length).toBe(4);
+    expect(cells[2]).toMatch(/설정 오류|설정.{0,10}결함/); // configuration-error framing
+    expect(cells[3]).toBe('아니오'); // retry column: No
   });
 });
 
@@ -3065,4 +3295,1051 @@ describe('agora-runner agent', () => {
     expect(src).not.toContain('AskUserQuestion');
     expect(src).toMatch(/게이트.*오케스트레이터|오케스트레이터.*게이트/);
   });
+});
+
+// =====================================================================
+// Review round 4 — behavioural coverage for invariants that the suite so
+// far only asserted STRUCTURALLY (source greps, label-set shape) or not
+// at all. Each block below names the wrong-but-passing implementation it
+// exists to reject.
+// =====================================================================
+
+/**
+ * Reverse of anonymize.sh's vendor_id(). Written out here on purpose rather
+ * than derived from the script: a test that reads its expectations out of the
+ * thing under test cannot disagree with it.
+ */
+const VENDOR_ID_TO_SLUG: Record<string, string> = {
+  'claude:claude-opus-4-8': 'claude',
+  'omx:default': 'omx',
+  'agy:gemini-3.1-pro-high': 'agy',
+};
+
+interface ReviewerEntry {
+  label: string;
+  overall: string;
+  rationale: string;
+  findings: unknown[];
+}
+
+// ---------------------------------------------------------------------
+// C4-1: label ↔ body ↔ sealed-mapping must agree three ways.
+//
+// Nothing in the suite tied a label's BODY to the vendor its sealed
+// mapping names. The label-set assertions ("map has A/B/C", "bundle has 3
+// reviewers") hold under any permutation, and the prior-round relabel test
+// reads its expected vendor out of the mapping the same build produced —
+// self-consistency, not correspondence.
+//
+// The implementation this rejects: replace build_bundle's map-driven
+// assembly loop with a fixed `for slug in claude omx agy` loop that hands
+// out A/B/C in raw-directory order. The sealed mapping still says
+// A → whoever the shuffle picked, but the bundle's A now carries claude's
+// text — the shuffle is neutralised and report.md attributes every opinion
+// to the wrong vendor. Every pre-existing assertion still passes.
+// ---------------------------------------------------------------------
+
+describe('anonymize.sh --build: label ↔ body ↔ sealed mapping (three-way correspondence)', () => {
+  // Chosen by measurement so the shuffle displaces ALL THREE vendors off the
+  // (claude, omx, agy) order build_bundle scans the raw dir in. Under an
+  // identity permutation a fixed-order assembly loop emits a byte-identical
+  // bundle, which would make this whole case vacuous — the guard right after
+  // the build fails loudly if that ever becomes true.
+  const DISPLACING_SEED = 'seedX';
+  const RAW_DIR_ORDER = ['claude', 'omx', 'agy'];
+
+  it('gives each label the body of the vendor the sealed mapping assigns to it', async () => {
+    const dir = await makeSession('raw');
+    try {
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          DISPLACING_SEED,
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).toBe(0);
+
+      const mapping = JSON.parse(await readFile(join(dir, 'SEALED/mapping/round-1.json'), 'utf-8'));
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      expect(Object.keys(mapping.map).sort()).toEqual(['A', 'B', 'C']);
+      expect(bundle.reviewers.length).toBe(3);
+
+      // Vacuity guard: if the seed's permutation ever collapses to raw-dir
+      // order, the correspondence check below stops being able to tell a
+      // map-driven build from a map-blind one.
+      const mappedOrder = ['A', 'B', 'C'].map((l) => VENDOR_ID_TO_SLUG[mapping.map[l]]);
+      expect(mappedOrder).not.toEqual(RAW_DIR_ORDER);
+
+      for (const label of ['A', 'B', 'C']) {
+        const slug = VENDOR_ID_TO_SLUG[mapping.map[label]];
+        expect(slug).toBeDefined();
+        // Ground truth comes from the script's INPUT (the sealed raw file),
+        // never from the mapping or the bundle it produced.
+        const original = JSON.parse(
+          await readFile(join(dir, 'SEALED/raw/round-1', `${slug}.json`), 'utf-8')
+        );
+        const entry = bundle.reviewers.find((r: ReviewerEntry) => r.label === label) as
+          | ReviewerEntry
+          | undefined;
+        expect(entry).toBeDefined();
+        expect((entry as ReviewerEntry).rationale).toBe(original.rationale);
+        expect((entry as ReviewerEntry).overall).toBe(original.overall);
+        // The raw fixtures already carry exactly the spec §5 whitelist, so
+        // normalization is a no-op on them and a deep compare is valid.
+        expect((entry as ReviewerEntry).findings).toEqual(original.findings);
+      }
+
+      // Without three mutually distinguishable bodies the loop above would
+      // hold under an arbitrary permutation.
+      expect(new Set(bundle.reviewers.map((r: ReviewerEntry) => r.rationale)).size).toBe(3);
+      expect(new Set(bundle.reviewers.map((r: ReviewerEntry) => r.overall)).size).toBe(3);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------
+// C4-2: the judge process must not be handed a filesystem route into
+// SEALED — asserted by FOLLOWING what it was handed, not by grepping for
+// the string "SEALED".
+//
+// The three pre-existing guards are all source/string checks, and the one
+// runtime check ran against a session that had no SEALED/ at all, so the
+// thing it measured was a tmpdir name. The implementation this rejects:
+// pass the SESSION ROOT (or any path inside the session) to the judge CLI.
+// No argv token would contain "SEALED", yet `<dir>/SEALED/mapping/...` is
+// one dirname away.
+// ---------------------------------------------------------------------
+
+/**
+ * Follow `p` — and up to `depth` of its ancestors — asking at each level
+ * whether a sealed mapping is sitting there. Returns the sealed path actually
+ * REACHED, or null. This answers "where does this handle get you", which is
+ * the question a string check cannot.
+ */
+function reachSealedFrom(p: string, depth = 4): string | null {
+  let cur = p;
+  for (let i = 0; i <= depth; i++) {
+    const probe = join(cur, 'SEALED', 'mapping', 'round-1.json');
+    if (existsSync(probe)) return probe;
+    const parent = dirname(cur);
+    if (parent === cur) break;
+    cur = parent;
+  }
+  return null;
+}
+
+/** Every absolute-path-looking substring in a blob of argv/env text. */
+function absolutePathTokens(blob: string): string[] {
+  return [...new Set(blob.match(/\/[A-Za-z0-9._+\-/]+/g) ?? [])];
+}
+
+describe('judge.sh sealed isolation (behavioural: follow the handles, not the strings)', () => {
+  it('hands the judge CLI no argv or env value from which SEALED is reachable', async () => {
+    // A session that genuinely HAS sealed material — the previous runtime
+    // guard did not, so there was nothing for it to fail on.
+    const dir = await makeSession('raw');
+    // Dumps live outside the session tree so they cannot themselves become a
+    // route into it.
+    const dumpDir = join(tmpdir(), `agora-judge-dump-${Date.now()}`);
+    await mkdir(dumpDir, { recursive: true });
+    const argvDump = join(dumpDir, 'argv.txt');
+    const envDump = join(dumpDir, 'env.txt');
+
+    const bin = await makeStubBin({
+      claude: `printf '%s\\n' "$@" > "$STUB_ARGV_DUMP"; env > "$STUB_ENV_DUMP"; printf '%s' '${VALID_VERDICT}'`,
+      agy: 'exit 1',
+    });
+
+    try {
+      const built = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(built.exitCode).toBe(0);
+      // Negative control for the probe itself: the sealed material exists, and
+      // the probe DOES find it when handed a path the judge legitimately holds
+      // (the anon bundle). If this ever returns null the assertions below are
+      // meaningless.
+      expect(reachSealedFrom(join(dir, 'anon', 'round-1.json'))).toBe(
+        join(dir, 'SEALED', 'mapping', 'round-1.json')
+      );
+      expect(existsSync(join(dir, 'SEALED/raw/round-1/claude.json'))).toBe(true);
+
+      await mkdir(join(dir, 'verdict'), { recursive: true });
+      const run = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          STUB_ARGV_DUMP: argvDump,
+          STUB_ENV_DUMP: envDump,
+        }
+      );
+      expect(run.exitCode).toBe(0);
+
+      const argv = await readFile(argvDump, 'utf-8');
+      const envText = await readFile(envDump, 'utf-8');
+      // The judge really was given the round's material (otherwise a stub that
+      // received nothing at all would pass every check below).
+      expect(argv).toContain('익명 번들');
+
+      const candidates = [...absolutePathTokens(argv), ...absolutePathTokens(envText)];
+      expect(candidates.length).toBeGreaterThan(0);
+
+      const insideSession = candidates.filter((c) => c === dir || c.startsWith(`${dir}/`));
+      expect(insideSession).toEqual([]);
+
+      const reachable = candidates
+        .map((c) => [c, reachSealedFrom(c)] as const)
+        .filter(([, hit]) => hit !== null);
+      expect(reachable).toEqual([]);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dumpDir, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// ---------------------------------------------------------------------
+// Env inheritance: the third route into the session, which neither the
+// source guard ("agora.sh never exports") nor the argv guard covers.
+//
+// Both of those guards ask what THIS codebase hands to the child. Neither
+// asks what was already in the environment when the operator ran agora.sh.
+// AGORA_OUTPUT_ROOT is a documented operator knob, and everything the
+// anonymity property protects lives underneath the directory it names — so
+// a vendor or judge CLI that reads it out of its own environment can walk
+// down to the sealed label↔vendor record without this codebase ever having
+// passed it a path.
+//
+// The implementation these reject: launch the CLI with the inherited
+// environment untouched. The stub dumps its OWN `env` and the assertions
+// follow every absolute path in it, the same way the judge argv test above
+// follows handles instead of grepping for the string "SEALED".
+//
+// The dump path itself is deliberately NOT an AGORA_*-prefixed variable —
+// the strip is a prefix rule, so an AGORA_-prefixed dump path would be
+// stripped too and the stub would have nowhere to write, which is exactly
+// what happened when these were first run.
+// ---------------------------------------------------------------------
+
+/**
+ * A session tree sitting under an output root, mirroring the production
+ * layout `<root>/<day>/agora-<slug>-<hms>/SEALED/mapping/round-1.json`.
+ * Returns both, so a test can hand the ROOT to a child and then ask whether
+ * the sealed file underneath it was reachable from what the child received.
+ */
+async function makeRootedSession(tag: string): Promise<{ root: string; session: string }> {
+  const root = join(
+    tmpdir(),
+    `agora-root-${tag}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
+  const session = join(root, '2026-08-15', 'agora-state-topic-T-133100');
+  await mkdir(join(session, 'SEALED', 'mapping'), { recursive: true });
+  await writeFile(
+    join(session, 'SEALED', 'mapping', 'round-1.json'),
+    JSON.stringify({ A: 'claude:claude-opus-4-8', B: 'omx:default', C: 'agy:gemini-3.1-pro-high' })
+  );
+  return { root, session };
+}
+
+/**
+ * Sealed material reachable by walking DOWN from `p`, bounded by `depth`.
+ *
+ * reachSealedFrom above only ascends, which is the right question for a path
+ * INSIDE a session but the wrong one for AGORA_OUTPUT_ROOT: the root sits
+ * ABOVE the session, so the sealed record is one glob DOWN, and an
+ * ascend-only probe returns null on the very leak this file is about
+ * (measured). Both directions are asked, so "reachable" means what it says.
+ */
+function reachSealedUnder(p: string, depth = 4): string | null {
+  if (depth < 0 || !existsSync(p)) return null;
+  const direct = join(p, 'SEALED', 'mapping', 'round-1.json');
+  if (existsSync(direct)) return direct;
+  let entries: string[];
+  try {
+    entries = readdirSync(p, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name);
+  } catch {
+    return null;
+  }
+  for (const name of entries) {
+    const hit = reachSealedUnder(join(p, name), depth - 1);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/**
+ * Handles that name the output root or anything beneath it.
+ *
+ * This is the DESCENDING half of the question, asked precisely. Running
+ * reachSealedUnder over every path token instead does not work and is worth
+ * recording: the child legitimately carries TMPDIR, every test fixture here
+ * lives under it, so a generic ancestor "reaches" the sealed file and the
+ * assertion fails on paths that leak nothing (measured). Taken to its
+ * conclusion that probe flags `/` as a leak. What actually matters is
+ * whether an agora-specific coordinate was handed over.
+ */
+function tokensUnderRoot(tokens: string[], root: string): string[] {
+  return tokens.filter((c) => c === root || c.startsWith(`${root}/`));
+}
+
+/** Every `NAME=` line of an `env` dump whose name carries the given prefix. */
+function envNamesWithPrefix(dump: string, prefix: string): string[] {
+  return dump
+    .split('\n')
+    .map((line) => line.slice(0, line.indexOf('=')))
+    .filter((name) => name.startsWith(prefix));
+}
+
+describe('vendor/judge CLIs inherit no AGORA_* variable (env is the third route in)', () => {
+  it('gives a vendor CLI no environment value from which the sealed record is reachable', async () => {
+    const { root, session } = await makeRootedSession('rv');
+    const dumpDir = join(tmpdir(), `agora-envdump-rv-${Date.now()}`);
+    await mkdir(dumpDir, { recursive: true });
+    // Each vendor dumps to its own file, so a strip that only covered one
+    // dispatch branch cannot hide behind another branch's clean dump.
+    const dumpFor = (slug: string) => join(dumpDir, `${slug}.env`);
+    const dumping = (slug: string) => `env > '${dumpFor(slug)}'; ${OK_STUB}`;
+
+    const bin = await makeStubBin({
+      claude: dumping('claude'),
+      omx: dumping('omx'),
+      agy: dumping('agy'),
+    });
+    const work = join(tmpdir(), `agora-envwork-rv-${Date.now()}`);
+    await mkdir(work, { recursive: true });
+    const promptFile = join(work, 'prompt.txt');
+    await writeFile(promptFile, '주제: 상태 저장 방식 재검토');
+
+    try {
+      // Probe negative control: the sealed record really is reachable from
+      // the root, so a leaked AGORA_OUTPUT_ROOT would genuinely get a vendor
+      // there. Without this the assertions below could pass on an empty tree.
+      const sealed = join(session, 'SEALED', 'mapping', 'round-1.json');
+      expect(reachSealedFrom(join(session, 'anon'), 4)).toBe(sealed);
+      // And specifically from the ROOT, which is what the leaked variable
+      // carries — an ascend-only probe returns null here, so without this
+      // the assertions below would be measuring nothing for that shape.
+      expect(reachSealedUnder(root)).toBe(sealed);
+
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', work, '--round', '1', '--prompt-file', promptFile],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          // The leak, set exactly the way an operator would set it.
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755300000',
+        }
+      );
+      expect(result.exitCode).toBe(0);
+
+      for (const slug of ['claude', 'omx', 'agy']) {
+        // The vendor really ran — otherwise an empty dump would pass
+        // every assertion below for the wrong reason. AGORA_OMX_BIN reaching
+        // reviewers.sh is also what proves the strip is applied to the child
+        // only: the omx dispatch resolved through that injected value.
+        expect(existsSync(join(work, `SEALED/raw/round-1/${slug}.json`))).toBe(true);
+        const dump = await readFile(dumpFor(slug), 'utf-8');
+
+        // The load-bearing checks, both directions of "can this handle get
+        // the vendor there": nothing at or under the output root (the leak's
+        // own shape), and nothing from which the sealed file is reachable by
+        // walking up (a handle inside the session).
+        const tokens = absolutePathTokens(dump);
+        expect(tokensUnderRoot(tokens, root)).toEqual([]);
+        const reachable = tokens
+          .map((c) => [c, reachSealedFrom(c)] as const)
+          .filter(([, hit]) => hit !== null);
+        expect(reachable).toEqual([]);
+
+        expect(envNamesWithPrefix(dump, 'AGORA_')).toEqual([]);
+        // Not `env -i`: a vendor CLI still needs PATH/HOME to authenticate
+        // and to be found at all. Stripping everything would "pass" this
+        // test while breaking every real run.
+        expect(envNamesWithPrefix(dump, 'PATH')).toEqual(['PATH']);
+      }
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dumpDir, { recursive: true, force: true });
+      await rm(work, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  it('gives the judge CLI no environment value from which the sealed record is reachable', async () => {
+    const { root, session } = await makeRootedSession('jd');
+    const dumpDir = join(tmpdir(), `agora-envdump-jd-${Date.now()}`);
+    await mkdir(dumpDir, { recursive: true });
+    const envDump = join(dumpDir, 'judge.env');
+
+    const bin = await makeStubBin({
+      claude: `env > '${envDump}'; printf '%s' '${VALID_VERDICT}'`,
+      agy: 'exit 1',
+    });
+
+    // The judge is handed only an anonymous bundle, placed inside the same
+    // rooted session the leaked variable would point at.
+    await mkdir(join(session, 'anon'), { recursive: true });
+    await mkdir(join(session, 'verdict'), { recursive: true });
+    const anonFile = join(session, 'anon', 'round-1.json');
+    await writeFile(anonFile, JSON.stringify({ round: 1, reviewers: [{ label: 'A', body: {} }] }));
+
+    try {
+      const sealed = join(session, 'SEALED', 'mapping', 'round-1.json');
+      expect(reachSealedFrom(anonFile)).toBe(sealed);
+      expect(reachSealedUnder(root)).toBe(sealed);
+
+      const run = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          anonFile,
+          '--out-file',
+          join(session, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755300000',
+        }
+      );
+      expect(run.exitCode).toBe(0);
+
+      const dump = await readFile(envDump, 'utf-8');
+      const tokens = absolutePathTokens(dump);
+      expect(tokensUnderRoot(tokens, root)).toEqual([]);
+      const reachable = tokens
+        .map((c) => [c, reachSealedFrom(c)] as const)
+        .filter(([, hit]) => hit !== null);
+      expect(reachable).toEqual([]);
+
+      expect(envNamesWithPrefix(dump, 'AGORA_')).toEqual([]);
+      expect(envNamesWithPrefix(dump, 'PATH')).toEqual(['PATH']);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dumpDir, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  // The strip must not eat the configuration the scripts themselves read —
+  // read time and pass time are different moments. AGORA_VERDICT_SCHEMA is
+  // the sharpest case: judge.sh reads it to locate the schema it validates
+  // against, and a strip applied too early would send the judge to its
+  // default schema (or to none) while the test believed it was substituted.
+  it('still honours AGORA_VERDICT_SCHEMA in judge.sh while stripping it from the child', async () => {
+    const { root, session } = await makeRootedSession('schema');
+    const dumpDir = join(tmpdir(), `agora-envdump-schema-${Date.now()}`);
+    await mkdir(dumpDir, { recursive: true });
+    const envDump = join(dumpDir, 'judge.env');
+    const bin = await makeStubBin({
+      claude: `env > '${envDump}'; printf '%s' '${VALID_VERDICT}'`,
+      agy: 'exit 1',
+    });
+    await mkdir(join(session, 'anon'), { recursive: true });
+    const anonFile = join(session, 'anon', 'round-1.json');
+    await writeFile(anonFile, JSON.stringify({ round: 1, reviewers: [] }));
+
+    try {
+      // Pointed at a path that does not exist: judge.sh exits 68 only if it
+      // actually READ the variable. Exit 0 here would mean the strip ran too
+      // early and the override never took effect.
+      const run = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          anonFile,
+          '--out-file',
+          join(session, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_VERDICT_SCHEMA: join(dumpDir, 'no-such-schema.json'),
+        }
+      );
+      expect(run.exitCode).toBe(68);
+      expect(run.stderr).toContain('cannot read or parse verdict schema');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dumpDir, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// ---------------------------------------------------------------------
+// C3: the fallback watchdog must not orphan its own `sleep`.
+//
+// The existing F1 cases cannot see this defect: they run at
+// AGORA_TIMEOUT_SECS=1, so the watchdog's sleep dies of old age inside the
+// observation window, and they only exercise the TIMEOUT path — where the
+// sleep has by definition already elapsed. The leak is on the SUCCESS
+// path, at production-sized timeouts. The implementation this rejects is
+// the pre-fix `kill -TERM "$watcher"`, which reaps the subshell and
+// re-parents its sleep to init for the full timeout.
+// ---------------------------------------------------------------------
+
+describe('C3: the timeout watchdog leaves no orphaned sleep on the SUCCESS path', () => {
+  /**
+   * Seven digits, so it can collide neither with the six-digit markers the F1
+   * process-group cases use nor with any plausible real `sleep N` on the box.
+   * The value doubles as AGORA_TIMEOUT_SECS, i.e. as the watchdog's own sleep
+   * argument, which is what makes it findable with pgrep.
+   */
+  function watchdogMarker(): string {
+    return String(1000000 + Math.floor(Math.random() * 9000000));
+  }
+
+  it('reviewers.sh: no watchdog sleep survives a round every vendor completed', async () => {
+    const marker = watchdogMarker();
+    const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: OK_STUB });
+    const dir = join(tmpdir(), `agora-rv-c3-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    const promptFile = join(dir, 'prompt.txt');
+    await writeFile(promptFile, '주제: 상태 저장 방식 재검토');
+    try {
+      const result = await runScript(
+        REVIEWERS_SCRIPT,
+        ['--run', '--session-dir', dir, '--round', '1', '--prompt-file', promptFile],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          // Production-sized budget: the stubs return instantly, so every
+          // watchdog sleep is still alive when run_with_timeout returns.
+          AGORA_TIMEOUT_SECS: marker,
+          AGORA_FORCE_TIMEOUT_FALLBACK: '1',
+        }
+      );
+      expect(result.exitCode).toBe(0);
+      // Every vendor really did succeed — this is the success path, not a
+      // round that failed its way past the watchdog.
+      for (const slug of ['claude', 'omx', 'agy']) {
+        expect(existsSync(join(dir, `SEALED/raw/round-1/${slug}.json`))).toBe(true);
+      }
+
+      await new Promise((r) => setTimeout(r, 500));
+      expect(await pgrepMatches(`sleep ${marker}`)).toBe('');
+    } finally {
+      await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  it('judge.sh: no watchdog sleep survives a verdict the first slot produced', async () => {
+    const marker = watchdogMarker();
+    const bin = await makeStubBin({
+      claude: `printf '%s' '${VALID_VERDICT}'`,
+      agy: 'exit 1',
+    });
+    const dir = join(tmpdir(), `agora-judge-c3-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    try {
+      const result = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          join(dir, 'verdict/round-1.json'),
+          '--round',
+          '1',
+        ],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_TIMEOUT_SECS: marker,
+          AGORA_FORCE_TIMEOUT_FALLBACK: '1',
+        }
+      );
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(join(dir, 'verdict/round-1.json'))).toBe(true);
+
+      await new Promise((r) => setTimeout(r, 500));
+      expect(await pgrepMatches(`sleep ${marker}`)).toBe('');
+    } finally {
+      await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// ---------------------------------------------------------------------
+// C4-4: contract surfaces introduced by this round of fixes. Each is
+// asserted by RUNNING the script and reading its effect, never by reading
+// --help text or grepping the source.
+// ---------------------------------------------------------------------
+
+/** A schema-complete verdict, with named fields overridable per test. */
+function verdictWith(overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({
+    round: 1,
+    judge: 'slot',
+    consensus: 'MAJORITY',
+    verdict: 'BUILD_WITH_CHANGES',
+    resolved: [{ id: 'F1', resolution: '해소됨' }],
+    unresolved: [{ id: 'F2', severity: 'HIGH', positions: 'A KEEP / B REJECT' }],
+    agenda: ['F2 심각도 판정 근거'],
+    draft: '## 통합 초안',
+    new_findings: 2,
+    notes: '리뷰어 3인 전원 응답',
+    ...overrides,
+  });
+}
+
+/**
+ * Drive a complete single-round --auto session with stub CLIs and hand back
+ * the session dir plus everything the caller must clean up.
+ */
+async function completedAutoSession(tag: string): Promise<{
+  dir: string;
+  root: string;
+  bin: string;
+  env: Record<string, string>;
+}> {
+  const bin = await makeStubBin({
+    claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith()}';; esac`,
+    omx: OK_STUB,
+    agy: OK_STUB,
+  });
+  const root = join(tmpdir(), `agora-out-${tag}-${Date.now()}`);
+  await mkdir(root, { recursive: true });
+  const env = {
+    PATH: `${bin}:${process.env.PATH}`,
+    AGORA_OMX_BIN: join(bin, 'omx'),
+    AGORA_OUTPUT_ROOT: root,
+    AGORA_SESSION_EPOCH: '1755230400',
+  };
+  const started = await runScript(
+    AGORA_SCRIPT,
+    ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+    '',
+    env
+  );
+  if (started.exitCode !== 0) {
+    throw new Error(`session start failed (rc=${started.exitCode}): ${started.stderr}`);
+  }
+  return { dir: started.stdout.trim().split('\n').pop() as string, root, bin, env };
+}
+
+describe('agora.sh --set-stop: the session ending is recorded and reaches report.md', () => {
+  it('round-trips every stop code decide_stop can emit into 종료 사유', async () => {
+    const s = await completedAutoSession('setstop');
+    try {
+      for (const code of ['CONSENSUS', 'STALLED', 'MAX_ROUNDS', 'USER']) {
+        const set = await runScript(
+          AGORA_SCRIPT,
+          ['--set-stop', code, '--session-dir', s.dir],
+          '',
+          s.env
+        );
+        expect(set.exitCode).toBe(0);
+        const state = JSON.parse(await readFile(join(s.dir, 'state.json'), 'utf-8'));
+        expect(state.stop).toBe(code);
+
+        const report = await runScript(
+          AGORA_SCRIPT,
+          ['--report', '--session-dir', s.dir],
+          '',
+          s.env
+        );
+        expect(report.exitCode).toBe(0);
+        const md = await readFile(join(s.dir, 'report.md'), 'utf-8');
+        expect(md).toContain(`- 종료 사유: ${code}`);
+        expect(md).not.toContain('종료 사유: UNKNOWN');
+      }
+    } finally {
+      await rm(s.bin, { recursive: true, force: true });
+      await rm(s.root, { recursive: true, force: true });
+    }
+  }, 60000);
+
+  it('rejects CONTINUE, a typo and a lower-cased code with exit 64 and leaves .stop untouched', async () => {
+    const s = await completedAutoSession('setstop-reject');
+    try {
+      // Establish a distinctive baseline so "untouched" is observable.
+      expect(
+        (await runScript(AGORA_SCRIPT, ['--set-stop', 'USER', '--session-dir', s.dir], '', s.env))
+          .exitCode
+      ).toBe(0);
+
+      for (const bad of ['CONTINUE', 'CONSENUS', 'consensus', 'max_rounds', 'STOPPED']) {
+        const result = await runScript(
+          AGORA_SCRIPT,
+          ['--set-stop', bad, '--session-dir', s.dir],
+          '',
+          s.env
+        );
+        expect(result.exitCode).toBe(64);
+        const state = JSON.parse(await readFile(join(s.dir, 'state.json'), 'utf-8'));
+        expect(state.stop).toBe('USER');
+      }
+    } finally {
+      await rm(s.bin, { recursive: true, force: true });
+      await rm(s.root, { recursive: true, force: true });
+    }
+  }, 60000);
+});
+
+describe('agora.sh run_round state-write guard (exit 73, state.json left alone)', () => {
+  // The guard's stated trigger is a judge whose new_findings is not a number
+  // reaching jq --argjson. judge.sh's own type check normally intercepts that
+  // first, so to reach the guard the judge is pointed (via the existing
+  // AGORA_VERDICT_SCHEMA test hook) at a schema that declares new_findings as a
+  // number|string UNION — validate_verdict skips non-plain-string types by
+  // design, so the bad value flows through exactly as it would if the schema
+  // ever loosened. This is a defence-in-depth layer; it is tested as one.
+  it('exits 73 without advancing state.json when new_findings is not numeric', async () => {
+    const { base, root, obs } = await makeOutputSandbox('out-nf73');
+    const schema = JSON.parse(await readFile(join(SCRIPTS_DIR, 'verdict-schema.json'), 'utf-8'));
+    schema.properties.new_findings = { type: ['number', 'string'] };
+    const looseSchema = join(obs, 'loose-verdict-schema.json');
+    await writeFile(looseSchema, JSON.stringify(schema));
+
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith({ new_findings: 'three' })}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    try {
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '1', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+          AGORA_VERDICT_SCHEMA: looseSchema,
+        }
+      );
+      expect(result.exitCode).toBe(73);
+      expect(result.stderr).toContain('three');
+
+      const sessionDir = await findSessionDir(root);
+      // The judge DID answer — this is a recording failure, not a judge failure.
+      expect(existsSync(join(sessionDir, 'verdict/round-1.json'))).toBe(true);
+      const state = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
+      expect(state.round).toBe(0);
+      expect(state.history.length).toBe(0);
+      // No report may be produced for a round that was never recorded.
+      expect(existsSync(join(sessionDir, 'report.md'))).toBe(false);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(base, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+describe('judge.sh verdict type validation stops a wrong-typed field at the source', () => {
+  // A judge answering `"agenda": "1. 단일 의제"` used to be written straight to
+  // verdict/round-N.json; the NEXT round then read it back, collapsed the
+  // agenda to empty, and invoked (and billed) all three vendors on a blank
+  // agenda. The type check must reject it before any of that happens.
+  it('rejects a string agenda on every rotation slot and never reaches the next round', async () => {
+    const { base, root, obs } = await makeOutputSandbox('out-agenda-type');
+    const reviewerCalls = join(obs, 'reviewer-calls');
+    const judgeCalls = join(obs, 'judge-calls');
+    const badVerdict = verdictWith({ agenda: '1. 단일 의제' });
+
+    const bin = await makeStubBin({
+      claude: `case "$*" in
+        *claude-opus-4-8*) echo claude >> '${reviewerCalls}'; printf '%s' '${VALID_RESPONSE}';;
+        *) echo judge >> '${judgeCalls}'; printf '%s' '${badVerdict}';;
+      esac`,
+      omx: `echo omx >> '${reviewerCalls}'; ${OK_STUB}`,
+      agy: `case "$*" in
+        *gemini-3.1-pro-high*) echo agy >> '${reviewerCalls}'; printf '%s' '${VALID_RESPONSE}';;
+        *) echo judge >> '${judgeCalls}'; printf '%s' '${badVerdict}';;
+      esac`,
+    });
+    try {
+      const result = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '2', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      // Every rotation slot answered and every answer was rejected.
+      expect(result.exitCode).toBe(4);
+      expect(result.stderr).toContain('agenda');
+      expect(result.stderr).toContain('array');
+      expect((await readFile(judgeCalls, 'utf-8')).trim().split('\n').length).toBe(3);
+
+      // The decisive assertion: round 2's vendors were never invoked (and so
+      // never billed) on the back of a malformed agenda.
+      expect((await readFile(reviewerCalls, 'utf-8')).trim().split('\n').length).toBe(3);
+
+      const sessionDir = await findSessionDir(root);
+      expect(existsSync(join(sessionDir, 'verdict/round-1.json'))).toBe(false);
+      expect(existsSync(join(sessionDir, 'SEALED/raw/round-2'))).toBe(false);
+      const state = JSON.parse(await readFile(join(sessionDir, 'state.json'), 'utf-8'));
+      expect(state.round).toBe(0);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(base, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+describe('anonymize.sh two-valid-reviewer floor (spec §11)', () => {
+  // reviewers.sh's own floor counts vendors that failed to RESPOND; it cannot
+  // see a response that arrived and then failed validate_response. With only
+  // one valid opinion left, a bundle would let the judge rule "consensus" on a
+  // single voice.
+  it('aborts with exit 3 and writes no bundle when only one response validates', async () => {
+    const dir = await makeSession('raw');
+    try {
+      // counter is mandatory and must be non-empty (spec §5).
+      const violating = JSON.stringify({
+        findings: [
+          {
+            id: 'F9',
+            severity: 'HIGH',
+            claim: 'x',
+            evidence: 'y',
+            impact: 'z',
+            counter: '',
+            verdict: 'MODIFY',
+          },
+        ],
+        overall: 'BUILD',
+        rationale: 'counter 가 비어 있어 계약 위반이다',
+      });
+      await writeFile(join(dir, 'SEALED/raw/round-1/agy.json'), violating);
+      await writeFile(join(dir, 'SEALED/raw/round-1/omx.json'), violating);
+
+      const result = await runScript(
+        ANONYMIZE_SCRIPT,
+        [
+          '--build',
+          '--session-dir',
+          dir,
+          '--round',
+          '1',
+          '--seed',
+          'agora-1-r1',
+          '--topic',
+          '상태 저장 방식 재검토',
+          '--attachments',
+          '[]',
+          '--agenda',
+          '[]',
+        ],
+        ''
+      );
+      expect(result.exitCode).toBe(3);
+      expect(result.stderr).toContain('2 or more are required');
+      // Nothing was written at either trust-boundary path.
+      expect(existsSync(join(dir, 'anon/round-1.json'))).toBe(false);
+      expect(existsSync(join(dir, 'SEALED/mapping/round-1.json'))).toBe(false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('agora.sh --start gated: the stdout channel carries the session dir and nothing else', () => {
+  // The documented idiom is `dir=$(agora.sh --start ...)`, which captures
+  // stdout wholesale — one stray line on stdout and $dir stops being a path.
+  it('prints exactly one stdout line (an existing dir) and puts the gate on stderr', async () => {
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith()}';; esac`,
+      omx: OK_STUB,
+      agy: OK_STUB,
+    });
+    const root = join(tmpdir(), `agora-out-gate-channel-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    try {
+      const started = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '5'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(started.exitCode).toBe(0);
+
+      const stdoutLines = started.stdout.split('\n').filter((l) => l.length > 0);
+      expect(stdoutLines.length).toBe(1);
+      const dir = stdoutLines[0];
+      expect(dir.startsWith('/')).toBe(true);
+      expect(existsSync(join(dir, 'state.json'))).toBe(true);
+
+      // The gate block itself is on stderr, in full.
+      expect(started.stderr).toContain('Agora Round 1/5');
+      expect(started.stderr).toContain('[c] 계속');
+      expect(started.stderr).toContain('[s] 중단하고 보고서');
+      expect(started.stderr).toContain('[e] 의제 추가 후 계속');
+      // ...and no fragment of it leaked onto stdout.
+      expect(started.stdout).not.toContain('Agora Round');
+      expect(started.stdout).not.toContain('[c] 계속');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// ---------------------------------------------------------------------
+// C4-5: max_severity is DERIVED, and nothing derived it under test.
+//
+// Every stub in the suite emits a single HIGH unresolved item, so an
+// implementation that ignores .unresolved entirely and returns the
+// constant "HIGH" passes the whole file. The value is not cosmetic: it is
+// one of decide_stop's two STALLED inputs, so a wrong max_severity
+// propagates into the session's termination decision.
+// ---------------------------------------------------------------------
+
+describe('agora.sh max_severity is reduced from the round unresolved list', () => {
+  it('records the maximum severity per round, across every rung of the ladder', async () => {
+    const root = join(tmpdir(), `agora-out-maxsev-${Date.now()}`);
+    await mkdir(root, { recursive: true });
+    const judgeCount = join(root, 'judge-count');
+
+    // Round N's unresolved list, and the max the reduction must yield.
+    const ladder: Array<{ severities: string[]; expected: string }> = [
+      { severities: [], expected: 'NONE' },
+      { severities: ['LOW'], expected: 'LOW' },
+      { severities: ['MEDIUM', 'LOW'], expected: 'MEDIUM' },
+      { severities: ['LOW', 'HIGH', 'MEDIUM'], expected: 'HIGH' },
+      { severities: ['MEDIUM', 'CRITICAL', 'LOW'], expected: 'CRITICAL' },
+    ];
+
+    // MAJORITY (never UNANIMOUS) and a non-zero new_findings on every round,
+    // so neither the CONSENSUS nor the STALLED stop can fire and all five
+    // rounds actually run.
+    const verdictFor = (n: number) =>
+      verdictWith({
+        round: n,
+        consensus: 'MAJORITY',
+        verdict: 'BUILD_WITH_CHANGES',
+        new_findings: 2,
+        unresolved: ladder[n - 1].severities.map((severity, i) => ({
+          id: `F${n}${i}`,
+          severity,
+          positions: 'A KEEP / B REJECT',
+        })),
+      });
+
+    // One shared counter across both judge-capable stubs: the rotation lands on
+    // claude for rounds 1/4 and on agy for rounds 2/3/5, and the counter is
+    // what makes "which round is this" observable to either of them.
+    const judgeBranch = `
+      n=$(cat '${judgeCount}' 2>/dev/null || echo 0); n=$((n + 1)); printf '%s' "$n" > '${judgeCount}'
+      case "$n" in
+        1) printf '%s' '${verdictFor(1)}';;
+        2) printf '%s' '${verdictFor(2)}';;
+        3) printf '%s' '${verdictFor(3)}';;
+        4) printf '%s' '${verdictFor(4)}';;
+        *) printf '%s' '${verdictFor(5)}';;
+      esac`;
+
+    const bin = await makeStubBin({
+      claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) ${judgeBranch};; esac`,
+      omx: OK_STUB,
+      agy: `case "$*" in *gemini-3.1-pro-high*) printf '%s' '${VALID_RESPONSE}';; *) ${judgeBranch};; esac`,
+    });
+    try {
+      const started = await runScript(
+        AGORA_SCRIPT,
+        ['--start', '상태 저장 방식 재검토', '--max-rounds', '5', '--auto'],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(started.exitCode).toBe(0);
+      const dir = started.stdout.trim().split('\n').pop() as string;
+      const state = JSON.parse(await readFile(join(dir, 'state.json'), 'utf-8'));
+
+      // All five rounds ran, so all five rungs were exercised.
+      expect(state.history.length).toBe(5);
+      expect(state.history.map((h: { max_severity: string }) => h.max_severity)).toEqual(
+        ladder.map((l) => l.expected)
+      );
+      // Five distinct values — a constant-returning implementation cannot
+      // satisfy this even by luck.
+      expect(new Set(ladder.map((l) => l.expected)).size).toBe(5);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(root, { recursive: true, force: true });
+    }
+  }, 60000);
 });

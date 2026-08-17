@@ -8,11 +8,53 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERDICT_SCHEMA="$SCRIPT_DIR/verdict-schema.json"
+# AGORA_VERDICT_SCHEMA points this script at a substitute schema path. Unset —
+# which is every non-test invocation — it resolves to the file shipped next to
+# this script, byte-for-byte the previous behaviour. Same override convention
+# as AGORA_CLAUDE_BIN / AGORA_AGY_BIN / AGORA_TIMEOUT_SECS /
+# AGORA_FORCE_TIMEOUT_FALLBACK below: a test that needs to exercise the
+# "schema unreadable" path points this at a path that does not exist, instead
+# of moving the real tracked file aside and hoping its `finally` runs.
+VERDICT_SCHEMA="${AGORA_VERDICT_SCHEMA:-$SCRIPT_DIR/verdict-schema.json}"
 
 AGORA_CLAUDE_BIN="${AGORA_CLAUDE_BIN:-claude}"
 AGORA_AGY_BIN="${AGORA_AGY_BIN:-agy}"
 AGORA_TIMEOUT_SECS="${AGORA_TIMEOUT_SECS:-300}"
+
+# ---------------------------------------------------------------------------
+# _child_env_strip — the `env -u NAME` list that removes every AGORA_*
+# variable from the judge CLI's environment.
+#
+# The header above claims this script accepts no route back to who said what
+# "neither as an argument nor through the environment". Argv was guarded; the
+# environment was not. What agora.sh does not pass is beside the point — the
+# OPERATOR's shell exports reach this process anyway. Measured: with
+# AGORA_OUTPUT_ROOT set in the invoking shell, that value is inherited
+# straight through into the judge CLI, and the session tree it names holds
+# the sealed label-to-vendor record one glob below. That is the whole
+# anonymity property, handed over by inheritance.
+#
+# Prefix rule rather than a hardcoded name list, deliberately: a name list
+# leaks silently the day someone adds AGORA_SOMETHING_NEW, whereas the prefix
+# fails CLOSED — a new variable is stripped unless someone argues it back in.
+# Nothing outside the prefix is touched, so PATH, HOME, the judge CLI's own
+# auth tokens and proxy settings all survive; `env -i` would leave it unable
+# to authenticate at all.
+#
+# Read time and pass time are separate: the config reads above have already
+# happened, so this script goes on using AGORA_CLAUDE_BIN, AGORA_TIMEOUT_SECS
+# and AGORA_VERDICT_SCHEMA as ordinary shell variables. Only the CHILD's copy
+# is removed, which is why test-injected configuration still works.
+#
+# Built from the exported names actually present (compgen -e), so a prefixed
+# variable this script has never heard of is covered too.
+# ---------------------------------------------------------------------------
+_child_env_strip=()
+while IFS= read -r _agora_env_name; do
+  [ -n "$_agora_env_name" ] || continue
+  _child_env_strip+=(-u "$_agora_env_name")
+done < <(compgen -e 2>/dev/null | grep '^AGORA_' || true)
+unset _agora_env_name
 
 # spec REQ-3 rotation roster: three slots, disjoint from the reviewer
 # roster by model (reviewers.sh uses claude-opus-4-8 and gemini-3.1-pro-high).
@@ -103,7 +145,16 @@ run_with_timeout() {
   # notification, a side effect of `wait` reaping a signal-killed background
   # job under `set -m` — noise, not a diagnostic this script itself emits.
   wait "$pid" 2>/dev/null || rc=$?
-  kill -TERM "$watcher" 2>/dev/null || true
+  # Same measured fix as reviewers.sh: tear the watchdog down by PROCESS
+  # GROUP, not by bare pid. `kill -TERM "$watcher"` reaches only the subshell
+  # and orphans its `sleep`, which then lingers for the full
+  # AGORA_TIMEOUT_SECS under init. It leaks on the SUCCESS path (on timeout
+  # the sleep has already elapsed by definition), so every judge attempt that
+  # returned normally left one behind. Safe under `set -m` (guaranteed on in
+  # this branch): measured pgid(watcher) == pid(watcher) != pgid(this
+  # script), and $watcher is still unreaped here, so its pid/group cannot
+  # have been recycled onto anything else before the `wait` below.
+  kill -TERM -- "-$watcher" 2>/dev/null || true
   wait "$watcher" 2>/dev/null || true
 
   [ "$restore_job_control" -eq 1 ] && set +m
@@ -114,21 +165,35 @@ run_with_timeout() {
 }
 
 # ---------------------------------------------------------------------------
+# run_sanitized <seconds> <cmd>... — run_with_timeout with the AGORA_*
+# variables removed from the command's environment (see _child_env_strip).
+# Wrapping the command in `env` rather than unsetting the variables in this
+# shell is what keeps the read/pass split above intact. `env` execs the
+# command in place, so the pid and process group that run_with_timeout's
+# watchdog targets are the command's own, exactly as before.
+# ---------------------------------------------------------------------------
+run_sanitized() {
+  local secs="$1"; shift
+  run_with_timeout "$secs" env ${_child_env_strip[@]+"${_child_env_strip[@]}"} "$@"
+}
+
+# ---------------------------------------------------------------------------
 # invoke_judge <model_id> <prompt> — dispatches to the vendor-specific CLI
-# argument shape, applying run_with_timeout uniformly. argv carries only the
-# prompt string (itself built from nothing but the anonymous bundle) — no
-# session path, no material beyond the bundle itself.
+# argument shape, applying run_sanitized uniformly so the judge runs under
+# both the timeout and the env strip. argv carries only the prompt string
+# (itself built from nothing but the anonymous bundle) — no session path, no
+# material beyond the bundle itself.
 # ---------------------------------------------------------------------------
 invoke_judge() {
   local model_id="$1" prompt="$2"
   local cli="${model_id%%:*}" model="${model_id#*:}"
   case "$cli" in
     claude)
-      run_with_timeout "$AGORA_TIMEOUT_SECS" "$AGORA_CLAUDE_BIN" \
+      run_sanitized "$AGORA_TIMEOUT_SECS" "$AGORA_CLAUDE_BIN" \
         -p --model "$model" "$prompt"
       ;;
     agy)
-      run_with_timeout "$AGORA_TIMEOUT_SECS" "$AGORA_AGY_BIN" \
+      run_sanitized "$AGORA_TIMEOUT_SECS" "$AGORA_AGY_BIN" \
         -p --model "$model" --output-format json \
         --json-schema "$VERDICT_SCHEMA" "$prompt"
       ;;
@@ -157,17 +222,33 @@ _emit_judge_stderr_tail() {
 # HAS the right shape. A response can be syntactically valid and still be
 # missing a required field, or carry an enum typo (verdict: "MERGE") that
 # would flow straight into Task 1's decide_stop and silently compare false
-# forever. The required-field list and enum values are read FROM
-# verdict-schema.json itself — never hardcoded here — so this cannot drift
-# from the schema file the same way anonymize.sh's fingerprint guard reads
-# its own banned-pattern constant directly instead of duplicating it.
+# forever. The required-field list, the declared TYPES and the enum values
+# are all read FROM verdict-schema.json itself — never hardcoded here — so
+# this cannot drift from the schema file the same way anonymize.sh's
+# fingerprint guard reads its own banned-pattern constant directly instead
+# of duplicating it.
+#
+# F1 (review round 3, measured): presence + enums alone let a WRONG-TYPED
+# field through. A judge returning `"agenda": "1. 단일 의제"` (string where
+# the schema declares an array) passed every check here and was written to
+# verdict/round-N.json. agora.sh's run_round then reads it back next round
+# and runs `jq '. + $extra'`, which dies with `string and array cannot be
+# added`; the rc is discarded by the `agenda=$(...)` assignment, so agenda
+# collapses to empty, build_reviewer_prompt renders a BLANK agenda section,
+# and all three vendors are invoked and billed before anonymize.sh's later
+# `--agenda ''` finally surfaces the problem. That is precisely the failure
+# agora.sh's own --extra-agenda pre-check exists to prevent — but that guard
+# only covers USER input into that slot, and the judge's own output lands in
+# the same slot with no equivalent guard. This closes it at the source.
+#
 # Prints every rejection reason to stderr; returns 0 only when every
-# required field is present (and non-null) and every enum value it carries
-# is one of the schema's allowed values.
+# required field is present (and non-null), every field's value matches the
+# type the schema declares for it, and every enum value it carries is one of
+# the schema's allowed values.
 # ---------------------------------------------------------------------------
 validate_verdict() {
   local file="$1"
-  local reasons=() key val enum_field enum_values r
+  local reasons=() key val want got enum_field enum_values r
 
   while IFS= read -r key; do
     [ -n "$key" ] || continue
@@ -175,6 +256,27 @@ validate_verdict() {
       reasons+=("missing required field: $key")
     fi
   done < <(jq -r '.required[]' "$VERDICT_SCHEMA")
+
+  # Type check, driven entirely by the schema's own .properties[].type.
+  # jq's `type` yields exactly the JSON Schema primitive names (object,
+  # array, string, number, boolean, null), so the comparison is direct.
+  # Absent and null values are skipped here: every property in this schema
+  # is also in .required, so the loop above already reports them, and
+  # reporting the same defect twice would only add noise. Properties whose
+  # `type` is not a plain string (e.g. a ["string","null"] union) are
+  # skipped rather than guessed at, so a future schema edit degrades to
+  # "not type-checked" instead of to a false rejection.
+  while IFS=$'\t' read -r key want; do
+    [ -n "$key" ] && [ -n "$want" ] || continue
+    got=$(jq -r --arg k "$key" 'if has($k) then (.[$k] | type) else "absent" end' "$file" 2>/dev/null)
+    case "$got" in absent | null) continue ;; esac
+    if [ "$got" != "$want" ]; then
+      reasons+=("field $key: expected $want, got $got")
+    fi
+  done < <(jq -r '
+    .properties | to_entries[]
+    | select(.value.type | type == "string")
+    | "\(.key)\t\(.value.type)"' "$VERDICT_SCHEMA")
 
   for enum_field in consensus verdict; do
     val=$(jq -r --arg f "$enum_field" '.[$f] // empty' "$file")
