@@ -191,8 +191,39 @@ build_reviewer_prompt() {
     if [ -n "$attachments" ]; then
       printf '첨부 문서:\n'
       printf '%s\n' "$attachments" | while IFS= read -r a; do
-        printf -- '--- %s ---\n' "$a"
-        [ -f "$a" ] && cat "$a"
+        # An unreadable attachment used to emit its `--- <path> ---` header
+        # and then nothing, with no diagnostic anywhere. That is not a silent
+        # skip, it is a silent LIE: a heading with nothing under it reads to
+        # the reviewer as "this document is empty", not "this document could
+        # not be read" — and the two lead to opposite conclusions about the
+        # design under review. All three vendors are billed for the round
+        # either way, so the wrong reading is paid for at full price.
+        #
+        # Marked in the prompt AND reported on stderr, because the two
+        # channels reach different audiences and neither covers the other:
+        # the marker reaches the reviewers, who are the ones actually misled,
+        # and it persists in SEALED/raw/round-N.prompt.txt as the durable
+        # record of what was really sent; stderr reaches the operator, whose
+        # typo it usually is, but scrolls past unseen in an unattended run.
+        #
+        # Deliberately NOT an abort, unlike start_session's exit 73 when the
+        # attachment LIST cannot be recorded. That failure is total (no
+        # attachment survives the dropped write, so the round would review
+        # nothing) and lands before any vendor runs. This one is per-file and
+        # partial: the other attachments are intact, and build_reviewer_prompt
+        # runs on EVERY round, so a document moved or deleted mid-session
+        # would kill a session at round 4 that has already paid for three
+        # rounds of reviewers and judges. Once the reviewer is no longer
+        # misinformed, whether a partial document set is still worth reviewing
+        # is an operator judgement — made at the gate, with the warning in
+        # hand — not an invariant worth destroying a paid-up session over.
+        if [ -f "$a" ] && [ -r "$a" ]; then
+          printf -- '--- %s ---\n' "$a"
+          cat "$a"
+        else
+          printf -- '--- %s (읽을 수 없어 본문을 싣지 못했습니다 — 내용이 비어 있다는 뜻이 아닙니다) ---\n' "$a"
+          printf '[agora] attachment could not be read; its body is NOT in the reviewer prompt: %s\n' "$a" >&2
+        fi
       done
       printf '\n'
     fi

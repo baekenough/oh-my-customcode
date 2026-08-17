@@ -1162,6 +1162,28 @@ async function makeStubBin(behaviour: Record<string, string>): Promise<string> {
 
 const OK_STUB = `printf '%s' '${VALID_RESPONSE}'`;
 
+/**
+ * Create a disposable sandbox whose session output root and test observation
+ * channel are SIBLINGS, never nested one inside the other.
+ *
+ * Call-count files, throwaway schemas and stub call logs are how the test
+ * WATCHES a run; they are not session artifacts. Writing them into the output
+ * root mixes two namespaces and leaves plain files sitting among the dated
+ * session directories, which any scan of the output tree then has to walk.
+ *
+ * Remove `base` to clean up both halves.
+ */
+async function makeOutputSandbox(
+  prefix: string
+): Promise<{ base: string; root: string; obs: string }> {
+  const base = join(tmpdir(), `agora-${prefix}-${Date.now()}`);
+  const root = join(base, 'out');
+  const obs = join(base, 'obs');
+  await mkdir(root, { recursive: true });
+  await mkdir(obs, { recursive: true });
+  return { base, root, obs };
+}
+
 describe('reviewers.sh --run', () => {
   it('should pass bash syntax check', async () => {
     const { exitCode } = await bashSyntaxCheck(REVIEWERS_SCRIPT);
@@ -2299,15 +2321,16 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
     });
 
   it('runs two gated-off rounds and lays out artifacts exactly as spec §4 prescribes', async () => {
-    const root = join(tmpdir(), `agora-out-${Date.now()}`);
-    await mkdir(root, { recursive: true });
+    const { base, root, obs } = await makeOutputSandbox('out-artifacts');
     // Records which branch each judge invocation actually took. Without it the
     // round-1 branch can be dead and every assertion below still passes: the
     // extraction bug this guards against (see the [0-9][0-9]* note) made
     // `round` empty, so the else-branch answered BOTH rounds and
     // judgeVerdict(1, 'SPLIT', 'REDESIGN') was never produced anywhere in the
     // suite — REDESIGN/SPLIT had no execution path through the pipeline at all.
-    const branchLog = join(root, 'judge-branch.log');
+    // It lives in the sandbox's `obs` sibling, not under the output root: it is
+    // how the test watches the run, not an artifact the run produced.
+    const branchLog = join(obs, 'judge-branch.log');
     // The judge stub keys off the round number embedded in the anon bundle it is handed.
     // `[0-9][0-9]*` (one-or-more), NOT `[0-9]*` (zero-or-more): judge_prompt
     // inlines verdict-schema.json BEFORE the bundle, and the schema's own
@@ -2386,7 +2409,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       expect(state.stop).toBe('MAX_ROUNDS');
     } finally {
       await rm(bin, { recursive: true, force: true });
-      await rm(root, { recursive: true, force: true });
+      await rm(base, { recursive: true, force: true });
     }
   }, 60000);
 
@@ -2892,9 +2915,8 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       `echo "${name}" >> '${callCountFile}'\n${OK_STUB}`;
 
     it('accepts a valid JSON-array --extra-agenda and still advances the round (positive control)', async () => {
-      const root = join(tmpdir(), `agora-out-extra-agenda-valid-${Date.now()}`);
-      await mkdir(root, { recursive: true });
-      const callCountFile = join(root, 'call-count');
+      const { base, root, obs } = await makeOutputSandbox('out-extra-agenda-valid');
+      const callCountFile = join(obs, 'call-count');
       const bin = await makeStubBin({
         claude: judgeStubBody('claude', callCountFile),
         omx: reviewerOnlyStubBody('omx', callCountFile),
@@ -2929,14 +2951,13 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         expect(anon2.agenda).toContain('추가 쟁점');
       } finally {
         await rm(bin, { recursive: true, force: true });
-        await rm(root, { recursive: true, force: true });
+        await rm(base, { recursive: true, force: true });
       }
     }, 30000);
 
     it('rejects a malformed --extra-agenda with exit 64 and never invokes a reviewer/judge CLI (negative)', async () => {
-      const root = join(tmpdir(), `agora-out-extra-agenda-invalid-${Date.now()}`);
-      await mkdir(root, { recursive: true });
-      const callCountFile = join(root, 'call-count');
+      const { base, root, obs } = await makeOutputSandbox('out-extra-agenda-invalid');
+      const callCountFile = join(obs, 'call-count');
       const bin = await makeStubBin({
         claude: judgeStubBody('claude', callCountFile),
         omx: reviewerOnlyStubBody('omx', callCountFile),
@@ -2997,7 +3018,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         expect(state.history.length).toBe(1);
       } finally {
         await rm(bin, { recursive: true, force: true });
-        await rm(root, { recursive: true, force: true });
+        await rm(base, { recursive: true, force: true });
       }
     }, 30000);
   });
@@ -3047,28 +3068,6 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
 // round-level retry (retrying would fail three times for the same
 // reason and burn wall-clock for nothing).
 // ---------------------------------------------------------------------
-
-/**
- * Create a disposable sandbox whose session output root and test observation
- * channel are SIBLINGS, never nested one inside the other.
- *
- * Call-count files, throwaway schemas and stub call logs are how the test
- * WATCHES a run; they are not session artifacts. Writing them into the output
- * root mixes two namespaces and leaves plain files sitting among the dated
- * session directories, which any scan of the output tree then has to walk.
- *
- * Remove `base` to clean up both halves.
- */
-async function makeOutputSandbox(
-  prefix: string
-): Promise<{ base: string; root: string; obs: string }> {
-  const base = join(tmpdir(), `agora-${prefix}-${Date.now()}`);
-  const root = join(base, 'out');
-  const obs = join(base, 'obs');
-  await mkdir(root, { recursive: true });
-  await mkdir(obs, { recursive: true });
-  return { base, root, obs };
-}
 
 async function findSessionDir(root: string): Promise<string> {
   // readdir order is filesystem-defined, NOT creation or lexical order: bun on
@@ -4266,9 +4265,8 @@ describe('agora.sh --start gated: the stdout channel carries the session dir and
 
 describe('agora.sh max_severity is reduced from the round unresolved list', () => {
   it('records the maximum severity per round, across every rung of the ladder', async () => {
-    const root = join(tmpdir(), `agora-out-maxsev-${Date.now()}`);
-    await mkdir(root, { recursive: true });
-    const judgeCount = join(root, 'judge-count');
+    const { base, root, obs } = await makeOutputSandbox('out-maxsev');
+    const judgeCount = join(obs, 'judge-count');
 
     // Round N's unresolved list, and the max the reduction must yield.
     const ladder: Array<{ severities: string[]; expected: string }> = [
@@ -4339,7 +4337,547 @@ describe('agora.sh max_severity is reduced from the round unresolved list', () =
       expect(new Set(ladder.map((l) => l.expected)).size).toBe(5);
     } finally {
       await rm(bin, { recursive: true, force: true });
-      await rm(root, { recursive: true, force: true });
+      await rm(base, { recursive: true, force: true });
     }
   }, 60000);
+});
+
+// ---------------------------------------------------------------------
+// --attach is part of the skill's PUBLIC interface — SKILL.md's
+// argument-hint advertises it and agora.sh's own usage block documents it —
+// and nothing in this suite exercised it. Three separate things have to
+// hold for the flag to mean anything, and each can break independently:
+//
+//   1. the paths land in state.json's `attachments` (start_session),
+//   2. each attachment's CONTENT is inlined into the reviewer prompt
+//      (build_reviewer_prompt) and reaches the reviewer CLI's argv,
+//   3. a path that does not resolve behaves the way the implementation
+//      actually behaves — see the second test, which pins measured
+//      behaviour rather than desired behaviour.
+//
+// (2) is the one worth stating plainly: start_session already hard-fails
+// (exit 73) if the attachments cannot be recorded, precisely because
+// "reviewers billed for a review without the documents" is the failure it
+// fears. That guard protects the RECORDING step only; nothing protected the
+// step that turns the record into prompt text.
+// ---------------------------------------------------------------------
+
+/**
+ * Stub set for an --attach session: claude answers as both reviewer and
+ * judge, agy answers as a reviewer, and omx additionally dumps the argv it
+ * was handed so the test can see the prompt the reviewer CLI actually
+ * received — not merely the prompt file agora.sh wrote.
+ */
+async function attachStubBin(argvDump: string): Promise<string> {
+  return makeStubBin({
+    claude: `case "$*" in *claude-opus-4-8*) printf '%s' '${VALID_RESPONSE}';; *) printf '%s' '${verdictWith()}';; esac`,
+    omx: `printf '%s' "\${!#}" > '${argvDump}'\n${OK_STUB}`,
+    agy: OK_STUB,
+  });
+}
+
+describe('agora.sh --start --attach', () => {
+  it('records every attachment in state.json and inlines each one into the reviewer prompt', async () => {
+    const { base, root, obs } = await makeOutputSandbox('out-attach-ok');
+    // The documents are test INPUT, so they belong in the observation
+    // sibling, never under the session output root.
+    const docA = join(obs, 'design-a.md');
+    const docB = join(obs, 'design-b.md');
+    const argvDump = join(obs, 'omx-argv.txt');
+    // Distinct improbable markers: an implementation that inlines the PATH
+    // but not the CONTENT, or that inlines only the first attachment, fails
+    // on the body assertions below rather than sliding through.
+    await writeFile(docA, 'ATTACH_BODY_MARKER_ALPHA\n');
+    await writeFile(docB, 'ATTACH_BODY_MARKER_BETA\n');
+    const bin = await attachStubBin(argvDump);
+    try {
+      const started = await runScript(
+        AGORA_SCRIPT,
+        [
+          '--start',
+          '상태 저장 방식 재검토',
+          '--attach',
+          docA,
+          '--attach',
+          docB,
+          '--max-rounds',
+          '1',
+          '--auto',
+        ],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      expect(started.exitCode).toBe(0);
+      const dir = started.stdout.trim().split('\n').pop() as string;
+
+      // (1) Recorded verbatim, in the order the flags were given — repeated
+      // --attach accumulates rather than overwriting.
+      const state = JSON.parse(await readFile(join(dir, 'state.json'), 'utf-8'));
+      expect(state.attachments).toEqual([docA, docB]);
+
+      // (2) Content — not just the path — reaches the prompt, both
+      // attachments, in flag order.
+      const prompt = await readFile(join(dir, 'SEALED/raw/round-1.prompt.txt'), 'utf-8');
+      expect(prompt).toContain('첨부 문서:');
+      expect(prompt).toContain('ATTACH_BODY_MARKER_ALPHA');
+      expect(prompt).toContain('ATTACH_BODY_MARKER_BETA');
+      expect(prompt.indexOf('ATTACH_BODY_MARKER_ALPHA')).toBeLessThan(
+        prompt.indexOf('ATTACH_BODY_MARKER_BETA')
+      );
+      // Each body sits directly under its own `--- <path> ---` header, so a
+      // future change that emitted headers and bodies as two separate runs
+      // (all headers, then all bodies) would be caught.
+      const lines = prompt.split('\n');
+      expect(lines[lines.indexOf(`--- ${docA} ---`) + 1]).toBe('ATTACH_BODY_MARKER_ALPHA');
+      expect(lines[lines.indexOf(`--- ${docB} ---`) + 1]).toBe('ATTACH_BODY_MARKER_BETA');
+
+      // ...and the prompt FILE is not the contract — the reviewer CLI's argv
+      // is. Asserting only on the file would miss a break between "prompt
+      // written" and "prompt handed to the vendor".
+      const argv = await readFile(argvDump, 'utf-8');
+      expect(argv).toContain('ATTACH_BODY_MARKER_ALPHA');
+      expect(argv).toContain('ATTACH_BODY_MARKER_BETA');
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(base, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  // An unreadable attachment is now MARKED as unreadable in the prompt and
+  // reported on stderr, instead of emitting a bare header with nothing under
+  // it. The earlier revision of this test pinned that silent behaviour as
+  // measured-not-desired; the implementation has since been corrected, so
+  // this asserts the correction on both channels.
+  //
+  // The distinction being defended is "could not be read" vs "is empty":
+  // a heading with nothing beneath it reads as the latter to a reviewer, and
+  // all three vendors are billed for the round either way. Both channels are
+  // asserted because they reach different audiences — the marker reaches the
+  // reviewers (and persists in the prompt file), stderr reaches the operator.
+  //
+  // Not aborting stays part of the contract and is asserted below: the
+  // session still completes, the readable attachments on either side are
+  // still inlined in full, and the dead path is still recorded in state.json.
+  it('marks an unreadable attachment in the prompt and warns on stderr, without aborting', async () => {
+    const { base, root, obs } = await makeOutputSandbox('out-attach-missing');
+    const present = join(obs, 'present.md');
+    const missing = join(obs, 'no-such-attachment.md');
+    const trailing = join(obs, 'trailing.md');
+    const argvDump = join(obs, 'omx-argv.txt');
+    await writeFile(present, 'ATTACH_BODY_MARKER_PRESENT\n');
+    await writeFile(trailing, 'ATTACH_BODY_MARKER_TRAILING\n');
+    expect(existsSync(missing)).toBe(false);
+    const bin = await attachStubBin(argvDump);
+    try {
+      const started = await runScript(
+        AGORA_SCRIPT,
+        [
+          '--start',
+          '상태 저장 방식 재검토',
+          // Missing one in the MIDDLE: its section is then bounded by the
+          // next header, so "zero body lines" is directly observable
+          // instead of being confused with the end of the block.
+          '--attach',
+          present,
+          '--attach',
+          missing,
+          '--attach',
+          trailing,
+          '--max-rounds',
+          '1',
+          '--auto',
+        ],
+        '',
+        {
+          PATH: `${bin}:${process.env.PATH}`,
+          AGORA_OMX_BIN: join(bin, 'omx'),
+          AGORA_OUTPUT_ROOT: root,
+          AGORA_SESSION_EPOCH: '1755230400',
+        }
+      );
+      // The unreadable attachment does not abort the session.
+      expect(started.exitCode).toBe(0);
+      const dir = started.stdout.trim().split('\n').pop() as string;
+
+      // It is recorded exactly like the readable ones — start_session does
+      // not filter on existence.
+      const state = JSON.parse(await readFile(join(dir, 'state.json'), 'utf-8'));
+      expect(state.attachments).toEqual([present, missing, trailing]);
+
+      const prompt = await readFile(join(dir, 'SEALED/raw/round-1.prompt.txt'), 'utf-8');
+      const lines = prompt.split('\n');
+
+      // The bare `--- <path> ---` form — the one that reads as "this
+      // document is empty" — must not appear for the unreadable path at all.
+      // This is the assertion the old silent behaviour failed.
+      expect(lines).not.toContain(`--- ${missing} ---`);
+
+      // What appears instead: a single header line that names the same path
+      // and states, in the prompt the reviewer actually reads, both that it
+      // could not be read AND that this is not the same as being empty.
+      const marked = lines.filter((l) => l.includes(missing));
+      expect(marked.length).toBe(1);
+      expect(marked[0]).toContain('읽을 수 없');
+      expect(marked[0]).toContain('비어 있다는 뜻이 아');
+
+      const iMissing = lines.indexOf(marked[0]);
+      // Still zero body lines — the document genuinely was not read, so the
+      // very next line is the FOLLOWING attachment's header. The marker
+      // replaces the misleading header; it does not fabricate content.
+      expect(lines[iMissing + 1]).toBe(`--- ${trailing} ---`);
+
+      // Control: the readable attachments on either side are unaffected, so
+      // the marked section is specific to the unreadable path and not a
+      // wholesale attachment failure that would make the assertions above
+      // pass for the wrong reason.
+      expect(lines[lines.indexOf(`--- ${present} ---`) + 1]).toBe('ATTACH_BODY_MARKER_PRESENT');
+      expect(lines[iMissing + 2]).toBe('ATTACH_BODY_MARKER_TRAILING');
+
+      // The operator is told, by path, on stderr.
+      expect(started.stderr).toContain('no-such-attachment');
+      expect(started.stderr).toContain(
+        `attachment could not be read; its body is NOT in the reviewer prompt: ${missing}`
+      );
+      // …and exactly once: the readable attachments must not also warn.
+      expect(started.stderr.split('\n').filter((l) => l.includes('could not be read')).length).toBe(
+        1
+      );
+
+      // The prompt FILE is not the contract — the reviewer CLI's argv is.
+      // The marker has to survive the handoff, or the reviewer is still the
+      // one party left uninformed.
+      const argv = await readFile(argvDump, 'utf-8');
+      expect(argv).toContain('ATTACH_BODY_MARKER_PRESENT');
+      expect(argv).toContain('ATTACH_BODY_MARKER_TRAILING');
+      expect(argv).toContain('읽을 수 없');
+      expect(argv).not.toContain(`--- ${missing} ---`);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(base, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// ---------------------------------------------------------------------
+// Error paths that no test reached.
+//
+// Each of the three below is a HARD STOP the implementation went out of its
+// way to build — a distinct exit code, a distinct diagnostic, and in two
+// cases an explicit promise that nothing partial is left behind. None of
+// that was under test, so any of it could have rotted without a signal.
+//
+// Every expectation here was measured against the current implementation
+// first and then pinned; none of it was guessed from the comments.
+// ---------------------------------------------------------------------
+
+/**
+ * A session with round 1 fully built (sealed mapping + anon bundle +
+ * verdict) and round-2 raw responses staged, i.e. exactly the state
+ * anonymize.sh is in when it must relabel round 1 into round 2's bundle.
+ */
+async function sessionWithBuiltRound1(): Promise<string> {
+  const dir = await makeSession('raw');
+  await cp(join(dir, 'SEALED/raw/round-1'), join(dir, 'SEALED/raw/round-2'), { recursive: true });
+  const build1 = await runScript(
+    ANONYMIZE_SCRIPT,
+    // biome-ignore format: one flag pair per line is unreadable here
+    ['--build', '--session-dir', dir, '--round', '1', '--seed', 'agora-1-r1',
+     '--topic', '상태 저장 방식 재검토', '--attachments', '[]', '--agenda', '[]'],
+    ''
+  );
+  if (build1.exitCode !== 0) {
+    throw new Error(`round-1 build failed (rc=${build1.exitCode}): ${build1.stderr}`);
+  }
+  // anonymize.sh never creates verdict/ (agora.sh does), so stage it here.
+  await mkdir(join(dir, 'verdict'), { recursive: true });
+  await writeFile(join(dir, 'verdict/round-1.json'), verdictWith());
+  return dir;
+}
+
+function buildRound2(dir: string): Promise<ScriptResult> {
+  return runScript(
+    ANONYMIZE_SCRIPT,
+    // biome-ignore format: one flag pair per line is unreadable here
+    ['--build', '--session-dir', dir, '--round', '2', '--seed', 'agora-1-r2',
+     '--topic', '상태 저장 방식 재검토', '--attachments', '[]', '--agenda', '[]'],
+    ''
+  );
+}
+
+describe('anonymize.sh aborts round N when round N-1 exists but cannot be parsed', () => {
+  // Positive control, and the whole reason the negatives below are not
+  // vacuous: with round 1 intact the SAME round-2 build succeeds and writes
+  // both trust-boundary artifacts. An implementation that simply never
+  // produced a round-2 bundle would pass every negative and fail here.
+  it('builds round 2 normally while the round-1 material is intact (positive control)', async () => {
+    const dir = await sessionWithBuiltRound1();
+    try {
+      const result = await buildRound2(dir);
+      expect(result.exitCode).toBe(0);
+      expect(existsSync(join(dir, 'anon/round-2.json'))).toBe(true);
+      expect(existsSync(join(dir, 'SEALED/mapping/round-2.json'))).toBe(true);
+      // The prior round really was relabelled in — otherwise "no bundle
+      // written" below would be measuring a code path that never ran.
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-2.json'), 'utf-8'));
+      expect(bundle.prior_rounds.length).toBe(1);
+      expect(bundle.prior_rounds[0].round).toBe(1);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  // relabel_prior distinguishes "no prior round yet" (skip, normal) from
+  // "prior round is there and unreadable" (abort). All three sealed inputs
+  // it reads must trip the second branch, not the first — a corrupt mapping
+  // that got treated as an absent round would silently hand the judge a
+  // round-2 bundle with no round-1 signal in it at all.
+  for (const [label, corrupt] of [
+    ['the prior anon bundle', 'anon/round-1.json'],
+    ['the prior sealed mapping', 'SEALED/mapping/round-1.json'],
+    ['the prior verdict', 'verdict/round-1.json'],
+  ] as const) {
+    it(`exits 65 and writes no round-2 artifacts when ${label} is corrupt`, async () => {
+      const dir = await sessionWithBuiltRound1();
+      try {
+        // Present but unparseable — the file must EXIST, or relabel_prior
+        // takes its "no prior-round data" path (return 1) instead.
+        expect(existsSync(join(dir, corrupt))).toBe(true);
+        await writeFile(join(dir, corrupt), 'NOT JSON AT ALL');
+
+        const result = await buildRound2(dir);
+        // 65 (EX_DATAERR), NOT 1 — 1 is reserved for the fingerprint abort,
+        // and the two demand different operator responses.
+        expect(result.exitCode).toBe(65);
+        expect(result.stderr).toContain('INTEGRITY');
+        expect(result.stderr).toContain('round-1');
+
+        // Nothing partial reaches a trust-boundary path. An orphaned sealed
+        // mapping with no matching bundle is exactly the state the staging
+        // scheme exists to prevent.
+        expect(existsSync(join(dir, 'anon/round-2.json'))).toBe(false);
+        expect(existsSync(join(dir, 'SEALED/mapping/round-2.json'))).toBe(false);
+        // Round 1's own surviving artifacts are untouched by the abort.
+        expect(existsSync(join(dir, 'SEALED/raw/round-2'))).toBe(true);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    }, 30000);
+  }
+});
+
+describe('judge.sh leaves no partial verdict when every rotation slot fails', () => {
+  // Deliberately NOT `exit 1` stubs (the existing "exits 4 when every
+  // rotation model fails" test already covers a dead CLI). Here every slot
+  // RETURNS something and is rejected downstream — unparsable, then two
+  // different schema violations — because that is the only shape in which a
+  // premature write to out_file is observable at all. With `exit 1` stubs
+  // there is nothing to write prematurely, so the no-partial-artifact
+  // assertion would hold for an implementation that had lost the guarantee.
+  //
+  // Verified by mutation: adding `[ "$rc" -eq 0 ] && cp "$tmp" "$out_file"`
+  // right after invoke_judge (i.e. writing before the checks settle) leaves
+  // exit 4 intact — so the exit-code assertion alone passes the mutant — and
+  // is caught only by the existsSync assertion below, which then finds a
+  // schema-violating verdict sitting on the final path.
+  it('exits 4 without creating out_file when all three slots return rejected output', async () => {
+    const bin = await makeStubBin({
+      // slot 1 (claude:claude-opus-5) — syntactically not JSON.
+      claude: `printf '%s' 'not json at all'`,
+      // slots 2 and 3 are both agy, told apart by model.
+      agy: `case "$*" in
+              *claude-opus-4-6-thinking*) printf '%s' '${BAD_ENUM_VERDICT}';;
+              *) printf '%s' '${MISSING_FIELD_VERDICT}';;
+            esac`,
+    });
+    const dir = join(tmpdir(), `agora-judge-nopartial-${Date.now()}`);
+    await mkdir(join(dir, 'anon'), { recursive: true });
+    await mkdir(join(dir, 'verdict'), { recursive: true });
+    await writeFile(
+      join(dir, 'anon/round-1.json'),
+      JSON.stringify({ round: 1, topic: 't', reviewers: [] })
+    );
+    const outFile = join(dir, 'verdict/round-1.json');
+    try {
+      const result = await runScript(
+        JUDGE_SCRIPT,
+        [
+          '--run',
+          '--anon-file',
+          join(dir, 'anon/round-1.json'),
+          '--out-file',
+          outFile,
+          '--round',
+          '1',
+        ],
+        '',
+        { PATH: `${bin}:${process.env.PATH}` }
+      );
+      expect(result.exitCode).toBe(4);
+      // THE assertion. Nothing rejected is ever allowed onto the final path.
+      expect(existsSync(outFile)).toBe(false);
+
+      // All three slots were genuinely tried and each was rejected for its
+      // own reason — without this the test would also pass if the rotation
+      // gave up after slot 1, which is a different bug with the same exit
+      // code and the same absent out_file.
+      expect(result.stderr).toContain('judge claude:claude-opus-5 returned unparsable output');
+      expect(result.stderr).toContain(
+        'judge agy:claude-opus-4-6-thinking returned a schema-violating verdict'
+      );
+      expect(result.stderr).toContain(
+        'judge agy:gpt-oss-120b-medium returned a schema-violating verdict'
+      );
+      expect(result.stderr).toContain('every rotation model failed for round 1');
+
+      // The verdict directory holds only the per-attempt audit logs the
+      // script documents keeping — no verdict-shaped file of any name.
+      const left = await readdir(join(dir, 'verdict'));
+      expect(left.every((f) => f.startsWith('.judge-round-1-attempt-'))).toBe(true);
+    } finally {
+      await rm(bin, { recursive: true, force: true });
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+});
+
+// spec §5. validate_response is the gate that decides whether a vendor
+// answered at all, and a response it wrongly ACCEPTS flows into the bundle
+// and is judged as if it were a real opinion. Only the `counter: ''` case
+// was covered; every other clause of the contract was unguarded.
+describe('anonymize.sh validate_response rejects each spec §5 contract violation', () => {
+  const CONTRACT_OK = {
+    findings: [
+      {
+        id: 'F9',
+        severity: 'HIGH',
+        claim: '라벨 셔플이 라운드마다 재계산된다',
+        evidence: '설계 §6',
+        impact: '판정자가 동일 참여자를 추적하지 못한다',
+        counter: '라운드별 재계산이 오히려 익명성을 강화한다',
+        verdict: 'MODIFY',
+      },
+    ],
+    overall: 'BUILD',
+    rationale: '전반적으로 수용 가능하나 한 가지 수정이 필요하다.',
+  };
+
+  async function buildWith(agyResponse: unknown): Promise<{ dir: string; result: ScriptResult }> {
+    const dir = await makeSession('raw');
+    await writeFile(join(dir, 'SEALED/raw/round-1/agy.json'), JSON.stringify(agyResponse));
+    const result = await runScript(
+      ANONYMIZE_SCRIPT,
+      // biome-ignore format: one flag pair per line is unreadable here
+      ['--build', '--session-dir', dir, '--round', '1', '--seed', 'agora-1-r1',
+       '--topic', '상태 저장 방식 재검토', '--attachments', '[]', '--agenda', '[]'],
+      ''
+    );
+    return { dir, result };
+  }
+
+  // Without this control every negative below could be satisfied by a
+  // validate_response that rejects EVERYTHING — the reviewer count would sit
+  // at 2 for the right and the wrong reason alike.
+  it('accepts the unmodified contract and keeps all three reviewers (positive control)', async () => {
+    const { dir, result } = await buildWith(CONTRACT_OK);
+    try {
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('failed the schema contract');
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      expect(bundle.reviewers.length).toBe(3);
+      const mapping = JSON.parse(await readFile(join(dir, 'SEALED/mapping/round-1.json'), 'utf-8'));
+      expect(Object.keys(mapping.map).length).toBe(3);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  // One clause of the contract broken per case, everything else left valid,
+  // so a failure names the clause that regressed.
+  const violations: Array<[string, unknown]> = [
+    // `.overall | IN("BUILD","BUILD_WITH_CHANGES","REDESIGN","ABANDON")`
+    ['overall carries a value outside the enum', { ...CONTRACT_OK, overall: 'SHIP_IT' }],
+    // `.findings | type == "array"` — an object is truthy but not a list.
+    ['findings is an object rather than an array', { ...CONTRACT_OK, findings: { F9: 'x' } }],
+    // `.rationale | filled`
+    ['rationale is the empty string', { ...CONTRACT_OK, rationale: '' }],
+    // The byte-count form of that clause (`length > 0`) rejected '' but
+    // ACCEPTED these: a response that says nothing still counted toward the
+    // two-reviewer floor and still reached the judge. A space is not content.
+    ['rationale is ASCII spaces only', { ...CONTRACT_OK, rationale: '   ' }],
+    ['rationale is tabs and newlines only', { ...CONTRACT_OK, rationale: '\t\n ' }],
+    // U+3000 IDEOGRAPHIC SPACE — the blank a Korean-writing reviewer (R000)
+    // is most likely to emit, and the one an ASCII-only guard would miss.
+    ['rationale is a single ideographic space', { ...CONTRACT_OK, rationale: '　' }],
+    // Same clause, applied to the findings — checked separately because the
+    // fix had to reach every text field, not just the top-level rationale.
+    // `counter` in particular is the field the reviewer prompt singles out
+    // as one that cannot be empty.
+    [
+      'a finding carries a whitespace-only counter',
+      { ...CONTRACT_OK, findings: [{ ...CONTRACT_OK.findings[0], counter: '  ' }] },
+    ],
+    [
+      'a finding carries a whitespace-only claim',
+      { ...CONTRACT_OK, findings: [{ ...CONTRACT_OK.findings[0], claim: ' ' }] },
+    ],
+    [
+      'a finding carries a whitespace-only evidence',
+      { ...CONTRACT_OK, findings: [{ ...CONTRACT_OK.findings[0], evidence: '　' }] },
+    ],
+    // `.severity | IN("CRITICAL","HIGH","MEDIUM","LOW")`
+    [
+      'a finding carries a severity outside the enum',
+      { ...CONTRACT_OK, findings: [{ ...CONTRACT_OK.findings[0], severity: 'BLOCKER' }] },
+    ],
+  ];
+
+  // Negative control for the whitespace cases above: the rule is "contains
+  // content", not "contains no whitespace". Without this, a fix that
+  // rejected every string with a space in it — or trimmed and compared
+  // against the untrimmed original — would satisfy every rejection case
+  // above while breaking ordinary multi-word review prose.
+  it('accepts text that is padded with whitespace but carries content', async () => {
+    const { dir, result } = await buildWith({
+      ...CONTRACT_OK,
+      rationale: '  \n 여백이 앞뒤에 있으나 내용은 있다. \t ',
+      findings: [{ ...CONTRACT_OK.findings[0], counter: ' 반론 내용 ' }],
+    });
+    try {
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('failed the schema contract');
+      const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+      expect(bundle.reviewers.length).toBe(3);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  for (const [label, response] of violations) {
+    it(`treats a response as missing when ${label}`, async () => {
+      const { dir, result } = await buildWith(response);
+      try {
+        // Rejection is not an abort: spec §11's two-reviewer floor is still
+        // met by the other two vendors, so the round proceeds.
+        expect(result.exitCode).toBe(0);
+        expect(result.stderr).toContain('agy failed the schema contract, treating as missing');
+
+        // The offending vendor is dropped from BOTH the bundle and the
+        // sealed mapping — a label left in the mapping with no reviewer
+        // behind it would desynchronise the next round's relabelling.
+        const bundle = JSON.parse(await readFile(join(dir, 'anon/round-1.json'), 'utf-8'));
+        expect(bundle.reviewers.length).toBe(2);
+        const mapping = JSON.parse(
+          await readFile(join(dir, 'SEALED/mapping/round-1.json'), 'utf-8')
+        );
+        expect(Object.keys(mapping.map).length).toBe(2);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    }, 30000);
+  }
 });

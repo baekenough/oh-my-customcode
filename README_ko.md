@@ -143,7 +143,7 @@ Agent(arch-documenter):haiku      ┘
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 보안 | 1 | sec-codeql |
 | 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
-| 시스템 | 2 | sys-memory-keeper, sys-naggy |
+| 시스템 | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
 
 각 에이전트는 YAML 프론트매터에 도구, 모델, 메모리 스코프, 한계를 선언합니다. 에이전트 유형별 도구 예산이 정확도를 위해 강제됩니다.
 

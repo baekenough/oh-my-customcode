@@ -183,6 +183,37 @@ run_sanitized() {
 # both the timeout and the env strip. argv carries only the prompt string
 # (itself built from nothing but the anonymous bundle) — no session path, no
 # material beyond the bundle itself.
+#
+# Deliberate asymmetry with reviewers.sh: neither branch below passes the
+# permission-bypass flag reviewers.sh's invoke_vendor() adds for the SAME
+# CLI (claude's --enable-auto-mode, agy's --dangerously-skip-permissions —
+# Ruling 12, reviewers.sh:164-183). This is not a missed flag; it is the
+# boundary. The judge's only legitimate input is the anonymous bundle
+# (--anon-file, read by run_judge and turned into argv above) — a
+# permission-bypass flag would let the judge CLI touch the filesystem
+# without prompting, and that access is exactly what this skill's sealing
+# exists to deny: the sealed mapping directory holds the label-to-vendor
+# record the judge must never read. reviewers.sh's reviewers legitimately
+# need filesystem access for their own work (reading the code under
+# review); the judge only judges the anonymous bundle, so it needs none.
+#
+# Named in prose, never as a path literal, and not by accident: a source
+# guard in tests/unit/skills/agora-scripts.test.ts asserts this file
+# contains no spelling of that directory at all. The guard is the cheap
+# deterministic proof of the paragraph above — code that never names the
+# location cannot be assembling a route to it — so describing the
+# directory is fine while writing its path is a test failure. Do not
+# "clarify" this comment by substituting the concrete path back in.
+#
+# Operational consequence, so a future session does not "fix" this by
+# adding the flag: in an environment where the judge CLI would otherwise
+# block on a permission prompt, that attempt times out under
+# AGORA_TIMEOUT_SECS (rc=124, handled in run_judge below) and the 3-slot
+# rotation (spec REQ-3, judge_model_for_round) advances to the next model;
+# exhausting all three slots is exit 4 (run_judge, "every rotation model
+# failed"). If the judge keeps failing for this reason, the fix is to check
+# the CLI's own permission state (e.g. run it once interactively to grant
+# whatever it needs) — never to add the bypass flag here.
 # ---------------------------------------------------------------------------
 invoke_judge() {
   local model_id="$1" prompt="$2"

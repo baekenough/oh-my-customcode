@@ -116,20 +116,51 @@ assert_no_fingerprint() {
 
 # ---------------------------------------------------------------------------
 # validate_response <file> — spec §5 contract. Exit 0 when the contract holds.
+#
+# Every text field is checked with `filled`, not `length > 0`. The byte-count
+# form rejected "" but ACCEPTED "   " (measured: a three-space rationale, and
+# equally a whitespace-only claim/evidence/impact/counter/id, passed every
+# clause here). The spec's requirement is CONTENT, and the gap is not
+# cosmetic — a blank-but-present response is counted as a valid reviewer by
+# the two-reviewer floor below, so it can be the difference between "round
+# aborted, too few reviewers" and a round that reaches the judge, who then
+# weighs an opinion that says nothing. The empty string was already rejected;
+# a string of spaces says exactly as much.
+#
+# Applied uniformly across all six text fields rather than to `rationale`
+# alone: they are one clause of one contract written in one idiom, and a
+# split would leave `counter: "   "` accepted while `counter: ""` is
+# rejected — for the field the reviewer prompt singles out as one that
+# "cannot be an empty string" (agora.sh's build_reviewer_prompt).
+#
+# `test("[^[:space:]]")` = "carries at least one non-whitespace character".
+# Character-class, not a trim-then-measure, so it costs one pass and covers
+# the whitespace this repo's Korean reviewers can actually emit — measured
+# to reject U+3000 IDEOGRAPHIC SPACE and U+00A0 NBSP as well as ASCII space,
+# tab and newline. The `type == "string"` conjunct stays in front of `test`
+# on purpose: jq's `and` short-circuits, so a null/absent/number field is
+# reported as a contract violation instead of erroring out of the whole
+# filter (which >/dev/null 2>&1 would render indistinguishable from a
+# clean rejection).
+#
+# Rejection is NOT an abort — the caller treats a failing response as a
+# missing vendor (see build_bundle), so the two-reviewer floor decides
+# whether the round survives.
 # ---------------------------------------------------------------------------
 validate_response() {
   jq -e '
+    def filled: type == "string" and test("[^[:space:]]");
     (type == "object")
     and (.overall | IN("BUILD","BUILD_WITH_CHANGES","REDESIGN","ABANDON"))
-    and (.rationale | type == "string" and (length > 0))
+    and (.rationale | filled)
     and (.findings | type == "array")
     and (.findings | all(
-              (.id       | type == "string" and (length > 0))
+              (.id       | filled)
           and (.severity | IN("CRITICAL","HIGH","MEDIUM","LOW"))
-          and (.claim    | type == "string" and (length > 0))
-          and (.evidence | type == "string" and (length > 0))
-          and (.impact   | type == "string" and (length > 0))
-          and (.counter  | type == "string" and (length > 0))
+          and (.claim    | filled)
+          and (.evidence | filled)
+          and (.impact   | filled)
+          and (.counter  | filled)
           and (.verdict  | IN("KEEP","MODIFY","REJECT"))
         ))
   ' "$1" >/dev/null 2>&1
@@ -275,8 +306,13 @@ build_bundle() {
   # single opinion. Same threshold, same exit code (3) as reviewers.sh, so the
   # caller (agora.sh propagates rc as-is) and the operator-facing meaning
   # "round aborted: too few reviewers" stay identical regardless of which of the
-  # two gates fired. 3 is otherwise unused in this script (64/65/66 are usage,
-  # malformed-data and missing-input; 1 is the fingerprint abort).
+  # two gates fired. 3 is otherwise unused in this script (64/65 are this
+  # script's own usage and malformed-data codes — see build_bundle's own arg
+  # parsing above for 64, and the integrity-failure return below for 65; 1 is
+  # the fingerprint abort). 66/EX_NOINPUT is part of the same skill-wide
+  # sysexits-style convention (judge.sh and agora.sh both return it for a
+  # missing input file/dir) but this script has no missing-input case of its
+  # own to return it from.
   [ "${#present[@]}" -ge 2 ] || {
     printf 'anonymize.sh: round %s has %s valid reviewer response(s); 2 or more are required (spec §11)\n' \
       "$round" "${#present[@]}" >&2
