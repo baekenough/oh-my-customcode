@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.52",
-  "generatedAt": "2026-08-29T10:17:06.295Z",
-  "templateVersion": "1.1.52",
+  "generatorVersion": "1.1.53",
+  "generatedAt": "2026-08-29T11:32:08.988Z",
+  "templateVersion": "1.1.53",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "f75d3b7466b67b9e06fb9cb393fee75c1d34bfc11ddfe12a7eea0ab6e8f6a25f",
@@ -110,8 +110,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "5aaef3b692d36b52d380f05a49b1b3a29c89d705dfe030c4c2aec86d06c49901",
-      "size": 14634,
+      "templateHash": "e6c87e4d531a2ab086fe975443dc99b7f53a84794504804dbe5561b6ceba5925",
+      "size": 16889,
       "component": "rules"
     },
     ".claude/rules/index.yaml": {
