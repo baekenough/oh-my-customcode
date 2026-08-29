@@ -418,6 +418,7 @@ steps:
               no error. Observed contamination: v1.1.47 shipped generatorVersion=1.1.47 / templateVersion=1.1.46
               because the bump commit created package.json + lockfile together and manifest.json was bumped in
               a later commit. Do NOT run this step until BOTH c and d are staged.   [on release/v{NEW}]
+              ⚠ Recap (R017 「버전 범프 원자 순서」, #1619 #4, v1.1.50 실측): package.json과 templates/manifest.json을 동시에 범프한 뒤 bun run build를 실행하고, build가 갱신한 lockfile을 스테이징한다 — 순서 위반 시 CI Version Sync 3-way(package.json/manifest.json/lockfile) 대조가 차단한다. v1.1.50에서 manifest.json 범프 누락 → 1차 실패, build를 manifest 범프 전에 실행 → 2차 실패(lockfile에 구버전 templateVersion 각인)했다.
            f. git status --short — enumerate ALL tracked drift (`^ M`) the build produced; stage EVERY one (esp. .omcustom.lock.json) before commit.
               (#1531 — .omcustom.lock.json missed staging across 4 consecutive releases after v1.1.29; root cause was no build step between version bump and commit.)   [on release/v{NEW}]
            g. mgr-gitnerd commit: "chore(release): bump to v<NEW>" — MUST include the drift from step f.
