@@ -1,7 +1,7 @@
 ---
 title: Rule Enforcement System
 type: architecture
-updated: 2026-08-05
+updated: 2026-08-29
 sources:
   - .claude/rules/MUST-enforcement-policy.md
   - .claude/rules/MUST-continuous-improvement.md
@@ -29,7 +29,7 @@ oh-my-customcode uses an **advisory-first enforcement model**: most behavioral r
 | **SHOULD** | 8 | Prompt injection only |
 | **MAY** | 1 | Optional guidance |
 
-Rules live in `.claude/rules/` and are auto-injected into the system prompt. After context compaction, critical MUST rules are re-injected via PostCompact hooks to combat "compaction amnesia."
+Rules live in `.claude/rules/` and are auto-injected into the system prompt. After context compaction, critical MUST rules are re-injected via PostCompact hooks to combat "compaction amnesia." A newer complement, `claude-md-reinject.sh` (SessionStart, matcher `*`, #1617), re-injects the full project `CLAUDE.md` text on every session start (startup/resume/clear) and on compact-resume — closing the gap where PostCompact only re-injects rule *summaries*, not the CLAUDE.md original. Opt-out via `OMCUSTOM_CLAUDEMD_REINJECT=off`; degrades silently (no-op) if `CLAUDE.md` or `jq` is missing.
 
 ## Enforcement Tiers
 
@@ -99,3 +99,4 @@ Rules that may be promoted to hard-block if advisory enforcement proves insuffic
 - `.claude/rules/MUST-continuous-improvement.md` — R016 improvement workflow
 - `CLAUDE.md` — rule summary table
 - Count resync 2026-08-05: rule count corrected 21→23, SHOULD count corrected 6→8 (measured: `ls .claude/rules/*.md` = 23 total, MUST=14, SHOULD=8, MAY=1). MUST/MAY counts were already accurate and left unchanged.
+- Content-drift resync 2026-08-29 (v1.1.50, #1617): documented the new `claude-md-reinject.sh` SessionStart hook (full CLAUDE.md re-injection on startup/resume/clear/compact) alongside the existing PostCompact summary re-injection.

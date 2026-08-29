@@ -484,6 +484,8 @@ References: #1226 (item 3), #1227.
 
 > **v2.1.228+**: **session cleanup이 프로젝트 memory 폴더 내부 내용을 삭제하던 결함**이 수정되었습니다. 구버전에서는 MEMORY.md·archive 파일이 세션 정리 단계에서 소실될 수 있었으므로, 메모리 누락을 위 Failure Policy의 쓰기 실패로만 진단하지 않습니다 — 쓰기는 성공했으나 정리에 삭제된 경우일 수 있습니다. 위 Memory Scopes 표대로 `project` 스코프(`.claude/agent-memory/`)는 git tracked라 복구 가능하지만 `user`/`local` 스코프는 복구 수단이 없습니다.
 
+> **v2.1.251+**: 디렉토리 변경으로 세션이 동일 ID의 기존 트랜스크립트 위에 재배치돼 트랜스크립트가 손상/유실되던 결함이 수정되었습니다. 위 v2.1.228 "session cleanup이 project memory 폴더 내용을 삭제하던 결함"과 **같은 계열의 데이터 무결성 보강**입니다 — 구버전에서는 트랜스크립트 자체가 손상될 수 있었으므로, 그 시기 세션의 R020 회고적 위반 계수(트랜스크립트 파싱 기반)가 **불완전한 원본을 셌을 가능성**이 있습니다. `/cd`로 디렉토리를 옮기는 워크플로우에서 특히 유의합니다.
+
 > **v2.1.232+**: Cowork 세션이 **user-scope 메모리 파일의 외부 @-import를 인라인하지 않습니다**. 즉 `~/.claude/agent-memory/`의 MEMORY.md가 @-import로 외부 파일을 끌어오는 구조라면 세션 종류에 따라 그 내용이 컨텍스트에 없을 수 있으므로, 항상 로드되어야 하는 내용은 import 참조가 아니라 **MEMORY.md 본문**에 둡니다(위 200줄 예산 내 Hot/Warm 배치 원칙과 정합).
 
 <!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: MEMORY.md 인덱스가 read limit을 초과하게 만드는 memory write는 이제 silent truncation 대신 명시적 오류를 반환합니다. write 실패는 여전히 non-blocking이지만, 오류 수신 시 log-warning으로 끝내지 말고 예산 초과 처리(Attention-Weight Tiering — Cold 항목 archive 이동)로 축소 후 재시도합니다 — 이전의 silent truncation을 가정하고 oversize write를 던지면 업데이트가 반영되지 않습니다. -->

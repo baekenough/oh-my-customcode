@@ -126,6 +126,18 @@ Origin: #1443 (Session 126 회고 찐빠 #1) — v1.1.3 R017 검증에서 mgr-sa
 
 Cross-reference: R018 (Member Completion Verification), `feedback_release_delegation_phasing`, `feedback_orchestrator_direct_verify` (release delegation phasing을 verification 위임에도 확장).
 
+#### maxTurns 절단 실증 (Origin: v1.1.50 세션)
+
+**실측 (v1.1.50 세션)**: 오케스트레이터가 4개 그룹을 병렬 위임했고 **그중 3개가 20턴 `maxTurns` 한도로 절단**됐다. 세 건 모두 통지에 `stopped at its 20-turn limit (partial result)`이 명시됐고 출력이 작업 중간에서 끊겼다 — 한 건은 문장 중간에서 절단(진행도 불명, 실측 필요), 한 건은 "Templates 미러를 동기화합니다"라고 예고한 직후 절단(오케스트레이터는 미실행으로 추정했으나 **실측 결과 미러 동기화까지 이미 완료**돼 있었다 — 위 「증상만으로 결과를 넘겨짚지 않는다」의 "(c) 실제가 보고보다 앞섬" 재현), 한 건은 "Now R020 — three items"라고 다음 작업을 예고한 직후 절단(실측 결과 **편집은 완료, 검증만 미수행** 상태였다). 세 건 모두 **절단 위치 문장과 실제 진행도가 어긋났다** — 이것이 이 실증의 핵심이다.
+
+1. **확정**: `maxTurns` 절단은 이 조항이 누적 14회로 기록한 "판정 없이 종료" 증상의 **실재하는 원인 중 하나**다. CC v2.1.246부터 partial로 표시되므로 이제 **관측 가능**하다(그 이전에는 완료로 보였다 — R018 v2.1.246 노트 교차참조).
+2. **미확정**: 과거 14회 **각각**이 이 원인이었는지는 미검증이다. 사례별 귀속에는 turn 수·소요 시간 대조가 필요하다.
+3. **설명력**: 이것은 **왜 clause 강화가 14회 내내 실패했는지**를 설명한다 — 에이전트에게 "종료하지 말라"고 지시해도 **절단 주체가 에이전트가 아니면 지시가 닿지 않는다**. 역으로 「위임 경계를 Phase 개수로 설계」가 효과적이었던 이유도 설명된다: 작업이 작으면 턴 한도 안에 끝나기 때문이지 에이전트가 더 순종적이어서가 아니다.
+4. **정량 기준 신설**: 위임 크기 판정을 "Phase가 몇 개인가"에서 **"필요 tool call이 20턴 안에 들어가는가"**로 바꾼다. 파일 1개당 Read + Edit + 미러 Edit + diff 확인 = 약 4턴이므로, **파일 편집형 위임은 담당 파일 4~5개가 실질 상한**이다. v1.1.50 세션의 절단 3건은 담당 파일이 각각 4개·3개·7개였고 파일당 신규 노트 추가·은퇴 판정·미러 동기화를 함께 요구했다 — 산술적으로 20턴에 들어갈 수 없는 위임이었다. **이는 에이전트의 실패가 아니라 오케스트레이터의 위임 설계 결함이다.**
+5. **완화책**: 미러 동기화처럼 **후행 필수 작업은 마지막에 몰지 말고 파일 단위로 즉시 수행**한다 — 절단은 항상 마지막 작업을 자르므로, 마지막에 몰린 작업은 절단 시 전량 유실된다.
+
+Cross-reference: R018 (v2.1.246 maxTurns partial-marking 노트), R009 (Member Prompt Size Cap — 프롬프트 토큰 상한과 별개로 턴 수 상한도 위임 크기 설계 변수임을 추가).
+
 <!--
 > **v2.1.199+**: subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류가 parent agent에 정확히 보고됩니다. 플랫폼 수정으로 false-success 자가보고 빈도는 줄지만, "actual outcome ≠ attempt" ground-truth 검증 원칙(R020 Core Rule)은 여전히 유지된다 — subagent 보고를 그대로 신뢰하지 말고 `git status`/`grep`/validation script로 재확인한다.
 
@@ -298,6 +310,8 @@ Origin: #1266 ④.
 
 실증: 2026-07-30 세션에서 자가 보고는 "직전 두 응답에서 누락"(2회)이었으나 transcript 실측은 **7회**였다 — 3.5배 과소 계상. Origin: #1553 찐빠 #2.
 
+**계수를 수행하지 않았다면 그 사실을 명시할 것 (Origin: #1601, v1.1.49 세션)**: 시간·비용 제약으로 transcript 파싱 계수를 생략하는 경우, 회고 자체에 "전수 계수 미수행"임을 밝혀야 한다. 계수하지 않은 회고의 항목 목록은 위반 전수가 아니라 **"진행 중 자각했거나 서브에이전트가 지적한 항목"에 한정**되며, 이를 밝히지 않으면 독자가 목록을 전수로 오해해 후속 조치 우선순위가 왜곡된다. v1.1.49 세션 회고는 계수를 수행하지 않았고 그 사실을 스스로 명시했다(좋은 사례) — 대조적으로 그 이전 세션(위 실증)은 계수 미수행 여부를 밝히지 않은 기억 기반 자가 보고였고 실측 대비 3.5배 과소 계상이었다.
+
 이는 Read-Before-Characterize의 **자기 적용** 각도다 — 진단 대상이 외부 로그가 아니라 자기 자신의 transcript일 때에도 "읽기 전 특성화 금지"가 동일하게 적용된다.
 
 #### 자율 루프 세션의 턴 경계 정의 (계수 전 확정 필수)
@@ -374,6 +388,20 @@ When tool outputs show degradation signs — 529 errors, duplicated or truncated
 Session 106: during 529 buffering, a CHANGELOG was misdiagnosed as "61x 중복 오염" from buffered output and a recovery agent was dispatched — a self-violation of the same-session Read-Before-Characterize rule (#1266 ④). Deterministic count re-verification showed the file was clean. The 529 gate makes the re-verification mandatory, not advisory.
 
 Origin: #1269 ① (R020 self-violation, session 106).
+
+### Failure/Interrupt Report ≠ Actual Failure (reverse direction)
+
+위 항목들은 대체로 "성공 보고 ≠ 실제 성공"을 다루지만, **역방향**도 동일하게 검증 대상이다 — "실패/중단 보고"를 받았을 때도 ground-truth를 확인하기 전에는 실제로 실패했다고 단정하지 않는다.
+
+| 증상 | 실제 상태 | 확인 수단 |
+|------|-----------|-----------|
+| **v2.1.246+**: 매우 큰 기존 파일을 덮어쓴 뒤 Write 도구가 "Out of memory"를 보고하거나 오래 멈춤 | **파일 자체는 정상적으로 쓰여 있었다** | 도구의 실패 보고 대신 파일 내용/크기를 직접 재확인 |
+| **v2.1.246+**: 헤드리스/원격 세션에서 수신 메시지로 인터럽트된 MCP 도구 호출이 "출력 없이 완료됨"으로 보고됨(v2.1.246 이전) | 실제로는 **인터럽트**됐다 — 정상 완료가 아니었다 | v2.1.246+는 명시적 interrupted 에러로 보고하도록 수정됨; 구버전 세션의 "빈 출력 완료"는 무음 인터럽트였을 수 있음 |
+| **v2.1.246+**: 실행 중 인터럽트된 셸 명령이 "Ran 1 shell command"로만 표시(잘렸다는 표시 없음, v2.1.246 이전) | 명령이 **완주하지 못했다** | 출력 완결성을 별도로 확인(예상 출력 패턴 대조) 없이 "실행됨"만으로 성공 단정 금지 |
+
+> **v2.1.234+**: print/SDK 모드에서 SIGTERM 수신 시 더 이상 interrupted turn이나 synthetic tool denial을 기록하지 않는다(명령은 여전히 종료되고 프로세스는 exit code 143). 무인 실행(`-p` 모드) 강제 종료 후 트랜스크립트를 완료 판정 근거로 쓸 때, v2.1.234+에서는 SIGTERM에 의한 중단이 트랜스크립트 상에 "interrupted"로 남지 않는다는 점을 전제해야 한다 — 트랜스크립트가 깨끗해 보여도 실제로는 SIGTERM으로 잘렸을 수 있다.
+
+**교훈**: 위 Core Rule("actual outcome ≠ attempt")은 방향이 없다 — 도구가 성공을 보고하든 실패를 보고하든, 보고 자체는 ground-truth가 아니다. 실패 보고를 받았다고 곧바로 재시도·롤백에 들어가지 말고, 먼저 실제 산출물 상태를 확인한다.
 
 ### CI Publish-Step Error vs Published-Artifact Ground Truth
 
