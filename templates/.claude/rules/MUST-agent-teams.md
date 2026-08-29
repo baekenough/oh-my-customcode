@@ -411,6 +411,25 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 
 > **v2.1.222+**: `SendMessage`가 긴 summary를 문자 수 제한으로 거부하던 동작이 **절단(truncate)**으로 변경되어 전송이 실패하지 않습니다. 전송 실패가 사라진 대신 **조용한 절단**이라는 새 실패 모드가 생겼으므로, 위 표의 "SendMessage report = Low reliability" 원칙이 오히려 강화됩니다. 긴 보고가 필요하면 SendMessage 본문 대신 아티팩트 파일 경로 전달(R006 Artifact Channel Protocol)로 대체합니다.
 
+> **★★ v2.1.246+**: `maxTurns` 한도에 도달해 멈춘 서브에이전트의 결과가 이제 **partial로 표시**되고 `SendMessage`로 이어가라는 힌트가 붙습니다 — **이전에는 완료된 것처럼 보였습니다.**
+>
+> **확정된 것 (v1.1.50 세션 실측)**: `maxTurns` 절단은 R020 「Verification-Delegation Non-Termination」이 누적 14회로 기록한 "서브에이전트가 판정 없이 turn을 종료" 증상의 **실재하는 원인 중 하나**다 — 더 이상 가설이 아니다. v1.1.50 릴리즈 세션에서 오케스트레이터가 4개 그룹을 병렬 위임했고, 그중 **3개 그룹이 20턴 `maxTurns` 한도로 절단**되어 통지에 `stopped at its 20-turn limit (partial result)`이 명시됐다:
+> - 한 건은 문장 중간에서 절단(진행도 불명 — 실측 필요).
+> - 다른 한 건은 "Templates 미러를 동기화합니다" 직후 절단 — 오케스트레이터는 이 문구로 **미실행**을 추정했으나, 재개 후 실측 결과 작업은 **이미 완료돼 있었다**. 절단 위치(마지막 출력 문장)로부터 진행도를 추론하는 것 자체가 불가능함을 재확인한 사례다 — R020 「증상만으로 결과를 넘겨짚지 않는다」의 세 방향 중 "(c) 실제가 보고보다 앞섬"의 재현.
+> - 세 번째 건은 "Now R020 — three items. Let's find suitable locations."라는 **다음 작업 예고 직후** 절단 — 착수 여부조차 미실측 상태로 끊겼다.
+>
+> **v2.1.246 이전이었다면 이 partial 표시가 없어 세 건 모두 완료 보고로 읽혔을 것이다.**
+>
+> **확정되지 않은 것**: R020이 기록한 과거 14회 각각이 이 원인이었는지는 미검증이다 — 사례별 귀속은 turn 수·소요 시간을 `maxTurns` 한도와 대조하는 별도 검증이 필요하다.
+>
+> **행동 함의**: 이 원인은 R020의 clause 강화("판정 없이 종료하지 말라")가 14회 내내 실패했던 이유를 설명한다 — **절단 주체가 에이전트의 판단이 아니라 플랫폼의 turn 한도이면, 에이전트를 향한 지시는 애초에 닿지 않는다.** 대칭적으로 R020 「위임 경계를 Phase 개수로 설계」(단일 목표로 분할)가 효과적이었던 이유도 설명된다 — 작업이 작으면 `maxTurns` 안에서 자연히 끝나기 때문이지, 에이전트가 더 순종적이어서가 아니다.
+>
+> **낮추지 말 것**: 원인이 확정됐다고 해서 위 표의 결정론적 ground-truth 검증 원칙을 낮추지 않는다 — 절단이 아닌 원인(위임 경계 미분할, 에이전트 자체 판단 종료)도 계속 존재한다. 또한 **partial 표시는 v2.1.246 이상에서만 나타나므로**, 그 이전 버전에서 관측된 mid-step 종료 사례를 재해석할 때는 이 신호 자체가 부재했다는 것을 전제로 한다 — "partial 표시가 없었다"가 "maxTurns 절단이 아니었다"의 증거는 아니다.
+
+> **v2.1.251+**: Agent Teams 팀원의 최종 답변이 팀 리드에 도달하지 못하던 결함이 수정되어, 이제 idle notification에 실려 도착합니다(이전에는 내용 없는 "available" 알림만 떴습니다). 위 v2.1.224 "SendMessage teammate inbox 쓰기 실패 시에도 Message sent로 보고" 수정의 **후속 실증**입니다 — 구버전에서는 팀원이 정상 완료해도 리드가 그 답변을 못 받을 수 있었으므로, "결정론적 ground-truth로 확인"이라는 위 표의 원칙이 이 시점 이전 세션에서는 특히 중요했습니다.
+
+> **v2.1.234+**: `/config`의 "Default teammate model" 설정이 **제거**되어, agent-team teammate는 이제 spawn이 모델을 지정하지 않는 한 **leader의 모델**을 사용합니다. 이전에는 teammate 모델을 전역 설정값으로 지정할 수 있었으므로, 과거 세션의 "teammate가 어떤 모델로 실행됐는지" 서술은 이 변경 이전 버전 기준일 수 있습니다.
+
 <!-- ARCHIVED CC version note (historical):
 > **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.
 

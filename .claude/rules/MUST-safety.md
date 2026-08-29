@@ -35,6 +35,12 @@ The following git commands have caused working tree loss in past sessions (#1146
 
 > **v2.1.221/222+**: v2.1.222에서 worktree-isolated 세션과 그 subagent가 main checkout에 대해 파괴적 git 명령을 실행할 수 있던 문제가 수정되어, isolation이 모든 세션 타입의 file edit과 Bash에 적용됩니다. v2.1.221에서는 `/fork` 세션이 원본 세션 checkout이 아니라 자체 worktree를 생성하도록 변경되었습니다. **완화 아님**: 위 Destructive Git Commands 표의 per-invocation 승인 요구와 아래 Pre-Delegation Blast-Radius Enumeration은 그대로 유지됩니다. 플랫폼 isolation은 격리 경계를 강화할 뿐, 사용자가 판단하는 데 필요한 blast-radius 열거를 대체하지 않습니다(v2.1.183/208 플랫폼 블록과 동일한 defense-in-depth 관계).
 
+> **v2.1.234/236/238+**: 승인 다이얼로그 표시 무결성 결함이 3개 릴리즈 연속으로 발견·수정되었습니다. (234) permission 프롬프트 comment 필드에서 Shift+Tab을 누르면 필드를 닫는 대신 **edit을 승인하고 세션 전체 edit 권한을 부여**하던 결함. (236) managed-settings 승인 프롬프트가 **표시되지 않으면서 첫 키입력을 승인으로 소비**하던 결함 — 프롬프트를 보지 못한 사용자의 무관한 입력이 승인으로 처리될 수 있었습니다. (238) 대화상자 표시 텍스트와 "don't ask again" 옵션이 이제 항상 실제 승인 범위와 일치하도록 개선되고, 내용이 완전히 표시될 수 없으면 "don't ask again"이 보류됩니다. 이 3건은 위 v2.1.223 "탭·비가시 유니코드 패딩 명령이 자기 일부를 숨김" 결함과 **같은 계열의 반복**이며, 단발 결함이 아니라 승인 다이얼로그 표시 무결성이 여러 릴리즈에 걸쳐 계속 발견되고 있는 구조적 계열임을 실증합니다. Pre-Delegation Blast-Radius Enumeration(모델이 파괴 대상을 별도 열거)이 플랫폼 다이얼로그로 대체될 수 없다는 원칙은 이 반복으로 더욱 강화됩니다.
+
+> **v2.1.236+**: macOS 샌드박스에서 wildcard read-deny 규칙(예: `**/.env`)이 이제 허용된 read 영역 **내부에서도 우선 적용**되고, 매칭된 디렉토리의 콘텐츠까지 커버하며, 파일명 변경으로 우회할 수 없습니다. 위 v2.1.224 "sandbox filesystem deny 항목의 후행 슬래시가 조용히 우회 가능하던 결함"과 같은 sandbox deny 규칙 우회 계열의 추가 하드닝입니다 — 구버전에서는 read-deny 와일드카드가 허용 영역 안에서 무력화되거나 파일명 rename으로 우회될 수 있었습니다.
+
+> **v2.1.246/251+**: 자격증명 전송 경계 결함 2건이 수정되었습니다. (246) 서드파티 게이트웨이(`ANTHROPIC_BASE_URL`)용 API 키가 Anthropic 텔레메트리/메트릭 요청에 함께 실려 전송되던 결함 — 구버전에서는 게이트웨이 자격증명이 자기 호스트 밖으로 유출됐습니다. (251) `/ultrareview` 및 로컬 시딩 cloud session이 `prod.env` 계열·`*.tfvars` 파일, 또는 자격증명 파일의 에디터 swap/temp/backup 사본(`key.pem.tmp`, `id_rsa.swo`)을 업로드하던 결함 — 이제 로컬에 남습니다. 이 저장소는 `/ultrareview`를 사용하지 않으나, 두 항목 모두 이 섹션의 "자격증명 저장소 덤프 금지" 원칙과 동일한 위협 클래스에 대한 플랫폼 측 방어이므로 기록합니다.
+
 ### Pre-Delegation Blast-Radius Enumeration
 
 > Origin: #1307 찐빠 #1 (High) — user chose "discard local changes and pull", and `git reset --hard origin/develop` was delegated immediately → user rejected (interrupt). The blast radius — that "discard local changes" included 18 files of *intended* uncommitted work (rule edits, new skills, new guides), not just a version downgrade — was never enumerated for the user.

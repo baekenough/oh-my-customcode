@@ -86,7 +86,11 @@ Active removal of irrelevant retrieved content from agent context. Complements o
 
 ## Context Budget Management — Task-type-aware thresholds (research 40%, implementation 50%, review 60%, management 70%, general 80%). See full spec via Read tool.
 
+> **v2.1.238+**: 장시간 대화형 세션에서 subagent tool 결과가 최근 표시 윈도우를 벗어나면 이제 메모리에서 해제되는 unbounded memory growth 결함이 수정되었습니다. 구버전 장기 세션(`/fsd` 등 자율 루프 포함)에서는 subagent tool 결과가 무한 누적되어 컨텍스트/메모리 예산 관리가 왜곡될 수 있었습니다 — 위 Context Budget Management의 task-type 임계값 계산이 이 결함으로 인해 부정확했을 가능성을 회고적으로 시사합니다.
+
 > **v2.1.223+**: `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 native 1M 창을 가진 **모든** Claude 모델을 auto-compaction으로 200K에 유지하도록 확대되었고(이전에는 고정 모델 목록), 미인식 model ID도 가정 컨텍스트 창 내로 유지됩니다(`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원). 위 임계값은 **창 대비 백분율**이므로 절대 토큰량은 이 env 설정에 따라 5배까지 달라집니다 — 1M 전제로 예산을 잡기 전 env 설정 여부를 확인합니다(cross-ref R006).
+
+> **v2.1.251+**: Sonnet 5의 기본 auto-compact 창이 **전체 1M 컨텍스트로 변경**되어, 1M 창 세션이 이제 ~934K가 아니라 ~967K 토큰에서 auto-compact됩니다. 위 `CLAUDE_CODE_DISABLE_1M_CONTEXT` 노트와 **직접 상호작용**합니다 — 그 env가 **설정된 환경**에서는 여전히 200K로 강제 유지되지만, **비활성 환경**(기본값)에서는 이번 변경으로 실효 auto-compact 임계값 자체가 상향됩니다. 이 저장소 에이전트 다수가 `claude-sonnet-5`이므로, 위 임계값 표의 백분율 계산은 env 설정 여부에 더해 이 CC 버전 여부까지 함께 확인해야 절대 토큰량이 정확합니다.
 
 <!-- DETAIL: Context Budget Management
 

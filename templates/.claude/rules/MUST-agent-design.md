@@ -15,6 +15,8 @@ model: sonnet              # CC-native alias (Tier 1) or full model ID (Tier 2) 
 tools: [Read, Write, ...]  # Allowed tools
 ```
 
+> **v2.1.239+**: `.md` 파일이 UTF-8 BOM으로 시작하는 agent/skill/command 파일이 **조용히 무시**되던 결함이 수정되었습니다. 구버전에서는 BOM이 있는 `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`가 에러 없이 로드에서 누락됐습니다 — "에이전트/스킬이 없다"는 관측이 실제로는 "BOM 때문에 무음 스킵"일 수 있었습니다. R017 Count Sync가 실측하는 카운트는 파일 **존재**를 세지만, BOM 파일은 CC가 실제로 **로드하지 않았으므로** 구버전에서는 카운트와 실제 로드된 에이전트/스킬 수가 어긋날 수 있었습니다(cross-ref R017 Count Sync).
+
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.208+**: The Agent tool no longer launches with no tools when a subagent's `tools:` list resolves to nothing — it now returns a clear error naming the unrecognized entries, catching frontmatter `tools:` typos that previously failed silently.
 -->
@@ -66,9 +68,13 @@ Skill/rule text instructing "spawn with `model: opus`" refers to this tier — a
 
 > **v2.1.223+**: workflow agent · forked skill · slash command · 재개된 background agent가 **요청한 subagent 모델이 제한되어 parent model로 실행될 때 경고가 표시**됩니다. 위 v2.1.222 org step-down 노트의 직접 연장선으로, 이전에는 이 강등이 **무음**이었습니다 — 즉 "`model: opus`로 스폰했다"는 기록이 실제 실행 모델의 증거가 아니었습니다. 특정 모델을 확정하려면 frontmatter Tier-2 full ID를 쓰고, 실행 모델은 경고 표시 유무로 확인합니다(R020 "attempt ≠ outcome"의 모델 선택 각도).
 
+> **v2.1.247+**: sub-agent가 첫 호출에서 model 404(인식 불가 model ID)를 만나면 죽던 결함이 수정되어, 이제 세션의 fallback model chain을 사용합니다. 부모 세션에 전달되는 에러에도 error type/status/request id/model이 포함됩니다. 위 v2.1.233 print모드 `unrecognized_model` 진단 노트가 관측성만 다뤘다면, 이 수정은 **실행 연속성**을 추가합니다 — 구버전에서는 서브에이전트 모델 해석 실패가 fallback 없이 그대로 죽음으로 이어졌습니다.
+
 > **v2.1.233+**: print 모드(`-p`) 진단이 추가되어, Claude Code가 **인식하지 못하는 model ID**로 요청이 나가면 stderr에 `[claude-code:unrecognized_model]` 라인이 기록됩니다(`modelOverrides`로 매핑하면 억제). 구버전에서는 오타·폐기된 full ID가 **무음으로 fallback 해석**되어 "frontmatter에 적힌 모델 = 실제 실행 모델"이라는 전제가 검증 불가능했습니다 — 위 v2.1.223 강등 경고와 같은 계열의 **관측성 보강**이며, 이 저장소는 다수 에이전트가 Tier-2 full ID를 쓰므로 `-p` 실행 시 이 라인 유무가 model ID 유효성의 결정론적 증거입니다(R020 "attempt ≠ outcome"). 무인 루프(`/fsd`)의 stderr를 버리면 이 신호도 함께 사라집니다.
 
 > **v2.1.223+**: `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 **native 1M 창을 가진 모든 Claude 모델**을 auto-compaction으로 200K에 유지하도록 확대되었습니다(이전에는 고정 모델 목록). 미인식 model ID도 가정 컨텍스트 창 내로 유지되며 `CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원할 수 있습니다. 위 Tier-2 표의 `claude-sonnet-5`/`claude-opus-5`(native 1M)와 `[1m]` 접미사는 이 env가 설정된 환경에서 **실효 200K로 동작**하므로, 1M 전제의 대용량 컨텍스트 위임 전에 env 설정 여부를 확인합니다(cross-ref R013 context budget).
+
+> **v2.1.251+**: `CLAUDE_CODE_SUBAGENT_MODEL`이 이제 "모든 것을 override"가 아니라 **기본 subagent 모델만 설정**합니다 — 에이전트 정의의 `model:`(Tier 1/2)과 spawn 시점 명시적 `model`(Tier 3)이 이 env보다 **우선**합니다. 이 저장소는 다수 에이전트가 Tier-2 full ID로 model을 pin하므로, v2.1.251부터는 이 env var가 project의 model pin을 더 이상 깨뜨릴 수 없습니다(단, 이전 버전에서 실행된 세션은 여전히 영향받았을 수 있습니다).
 
 > **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via frontmatter full ID `claude-fable-5` (Tier 2) or Agent tool `model: fable` (Tier 3) — NOT via a Tier-1 frontmatter alias. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
 
@@ -77,7 +83,7 @@ Skill/rule text instructing "spawn with `model: opus`" refers to this tier — a
 
 > **v2.1.197+**: Claude Sonnet 5가 Claude Code의 **기본 모델**로 도입되었습니다 — 네이티브 1M-token 컨텍스트, 프로모션 가격 $2/$10 per Mtok(2026-08-31까지). frontmatter에서 명시 opt-in하려면 Tier-2 full ID `claude-sonnet-5`를 사용합니다(`sonnet5`는 어느 계층에서도 유효한 값이 아님 — 위 3-Tier 구분 참조). **정정(실측)**: 이 조항이 이전에 "oh-my-customcode의 base `sonnet` alias는 안정성을 위해 `claude-sonnet-4-6`에 고정 유지"라고 서술했으나 사실이 아니다 — `sonnet` alias 해석 주체는 CC이며 프로젝트가 pin할 수 없다(Tier 1 참조); frontmatter `model: sonnet` 에이전트가 실측상 `claude-sonnet-5`로 실행되었다. Sonnet 5가 CC 신규 기본값이므로 명시 모델 없는 세션은 이제 Sonnet 5에서 동작합니다.
 
-> **v2.1.201+**: Claude Sonnet 5 세션이 harness reminder를 mid-conversation system role로 주입하지 않도록 변경되었습니다 — Sonnet 5 실행 시 하니스 리마인더(규칙 재주입 등) 전달 방식이 조정되었으며, PostCompact 규칙 재주입(R021)·세션 연속성 동작 자체에는 영향이 없습니다. Sonnet 5가 CC 기본 모델(v2.1.197+)이므로 명시 모델 없는 세션에 적용됩니다.
+<!-- RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.201+**: Claude Sonnet 5 세션이 harness reminder를 mid-conversation system role로 주입하지 않도록 변경되었습니다 — Sonnet 5 실행 시 하니스 리마인더(규칙 재주입 등) 전달 방식이 조정되었으며, PostCompact 규칙 재주입(R021)·세션 연속성 동작 자체에는 영향이 없습니다. Sonnet 5가 CC 기본 모델(v2.1.197+)이므로 명시 모델 없는 세션에 적용됩니다. -->
 -->
 
 > **Fable 5 Effort 전략**: Fable 5는 **high effort가 기본값**이며, `xhigh`는 capability-sensitive 작업(최고난도 아키텍처/추론)에 한정해야 합니다. Fable 5의 `low`/`medium` effort조차 이전 세대 모델의 `xhigh`를 상회하는 품질을 보이므로, Fable 5를 사용하는 실행 에이전트는 `effort` 필드를 신중히 명시하고 불필요한 `xhigh` 남용을 지양합니다(R005 비용/지연 인식과 정합).
@@ -126,7 +132,7 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 
 ### Optional Frontmatter
 
-Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`. Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
+Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`, `experimental.cacheTtl` (v2.1.248+). Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
 
 ### Note on `skills:` field
 
@@ -167,6 +173,8 @@ limitations:               # Negative capability declarations
   - "cannot modify code"
 domain: backend              # backend | frontend | data-engineering | devops | universal
 disableSkillShellExecution: true  # Disable inline shell execution in skills (v2.1.91+)
+experimental:
+  cacheTtl: "5m"           # "5m" | "1h" — subagent prompt cache TTL when not otherwise set (v2.1.248+)
 ```
 
 > **Note**: When `disableSkillShellExecution` is enabled (v2.1.91+), skills that rely on inline shell execution (e.g., `rtk-exec`) will have their shell blocks disabled. This is a security hardening option.
@@ -181,7 +189,8 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 
 ## Hook Event Types
 
-31 event types supported: SessionStart, Setup, UserPromptSubmit, UserPromptExpansion, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, PostToolBatch, Notification, MessageDisplay, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, Stop, StopFailure, TeammateIdle, InstructionsLoaded, ConfigChange, CwdChanged, DirectoryAdded, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, Elicitation, ElicitationResult, SessionEnd. 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
+33 event types supported: SessionStart, Setup, UserPromptSubmit, UserPromptExpansion, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, PostToolBatch, Notification, MessageDisplay, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, Stop, StopFailure, TeammateIdle, InstructionsLoaded, ConfigChange, CwdChanged, DirectoryAdded, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, Elicitation, ElicitationResult, SessionEnd, PreModelSwitch, PostModelSwitch (v2.1.251+). 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
+> **v2.1.251+**: 신규 훅 이벤트 `PreModelSwitch`/`PostModelSwitch`가 추가되어 model switch를 block/confirm/annotate할 수 있습니다. 또한 `SessionStart` resume 훅이 이제 session staleness와 예상 re-cache 비용을 인자로 받습니다.
 
 > **`MessageDisplay`는 표시 전용 — `additionalContext` 미지원**: `MessageDisplay`는 `hookSpecificOutput.displayContent`로 **화면 표시 텍스트만** 교체하며, 트랜스크립트와 Claude가 보는 내용은 원본이 유지된다. 따라서 advisory 훅을 `MessageDisplay`에 배선하면 **모델에 도달하지 않는다**. `additionalContext`(모델 컨텍스트 주입)를 지원하는 이벤트는 SessionStart, Setup, SubagentStart, UserPromptSubmit, UserPromptExpansion, PreToolUse, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, SubagentStop이다. (이전 판이 나열하던 `PostMessage`는 문서화된 이벤트가 아니다 — 실제 이벤트명은 `MessageDisplay`.)
 
@@ -277,7 +286,7 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 -->
 
 <!-- ARCHIVED CC version note (historical):
-> **v2.1.204+**: headless 세션의 SessionStart hook 중 hook 이벤트가 스트리밍되지 않아 remote worker가 hook 도중 idle-reap되던 문제가 수정되었습니다. Hook Event Types/SessionStart 관련.
+<!-- RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.204+**: headless 세션의 SessionStart hook 중 hook 이벤트가 스트리밍되지 않아 remote worker가 hook 도중 idle-reap되던 문제가 수정되었습니다. Hook Event Types/SessionStart 관련. -->
 -->
 
 ## Permission Mode Guidance

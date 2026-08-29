@@ -51,6 +51,8 @@
 3. Agent effort level → Map to corresponding style
 4. Default → `balanced`
 
+> **v2.1.237+**: CC 내장 "Concise" output style이 추가됐다(`/config` > Output style에서 선택) — 결과를 먼저 제시하고 preamble·narration을 생략하며 작업 철저성은 유지한다. 위 표의 프로젝트-정의 `concise` 스타일과 이름이 겹치지만 별개다 — 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로(세션 레벨), 내장 "Concise"를 별도로 선택하지 않는다.
+
 ### Style Examples — See concise/balanced/explanatory examples via Read tool.
 
 <!-- DETAIL: Style Examples
@@ -90,6 +92,8 @@ Trade-offs: RS256 is ~10x slower than HS256 but enables asymmetric key managemen
 | **Output Styles** | 세션 전체 기본 어조/포맷 | static, session-level |
 
 기본 활성화 스타일: `korean-engineer` (`.claude/output-styles/korean-engineer.md`).
+
+> **v2.1.238+**: custom/project/plugin output style이 **세션 도중 default voice로 드리프트**하던 결함이 수정됐다. 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로 직접 해당한다 — 세션이 길어지면 격식체(R000 합쇼체)가 조용히 기본 voice로 돌아갈 수 있었다는 뜻이다. **회고적 함의**: 구버전에서는 세션 길이에 비례해 스타일 드리프트 위험이 있었으므로, 과거 세션에서 관측된 R000 합쇼체 이탈(feedback_honorific_register_drift 등)을 전부 모델의 규칙 위반으로만 귀속할 수 없다 — 일부 구간은 플랫폼 드리프트가 원인이었을 수 있다. **다만 이것을 면책으로 쓰지 말 것**: R000 준수 의무는 그대로이며, 이는 과거 관측의 재해석 근거일 뿐 향후 이탈을 정당화하지 않는다.
 
 ## Unverifiable External Product UI
 

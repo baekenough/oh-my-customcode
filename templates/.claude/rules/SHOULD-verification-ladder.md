@@ -181,6 +181,8 @@ Origin: #1438 (Session 125 회고 찐빠 #2) — fix Workflow의 verify 프롬�
 #### Common Violation (#1512)
 Origin: #1512 (v1.1.27 세션 회고 찐빠 #2) — Workflow `args`를 JSON 객체로 전달했으나 하니스가 문자열로 인코딩해 `args.paths`가 undefined → 0 agents 실행으로 즉시 런타임 실패. `typeof args === 'string' ? JSON.parse(args) : args` 방어 추가 후 재실행 성공.
 
+> **v2.1.246+**: MCP 도구 파라미터 스키마가 빈 객체(`{}`)일 때 인자가 실제 타입이 아니라 **JSON 문자열로 전달**되던 결함이 수정되었습니다. 이는 위 표의 "하니스가 객체 `args`를 문자열로 인코딩해 전달"(#1512) 버그와 **동일한 버그 클래스**가 MCP 도구 호출 경로에도 있었음을 확인시켜줍니다 — 구버전에서 스키마가 `{}`인 MCP 도구를 호출하면 인자가 문자열로 도착해 `args.<field>`가 undefined로 즉시 실패할 수 있었습니다. `typeof args === 'string' ? JSON.parse(args) : args` 방어는 Workflow 스크립트뿐 아니라 빈 스키마 MCP 도구를 감싸는 코드에도 같은 논리로 필요했다는 뜻입니다.
+
 ### Verifier Ground-Truth for Cross-Cutting Facts
 
 Cross-cutting facts not verifiable from the primary source (external URLs, in-cluster DNS/hostnames, infra topology) MUST be supplied to the verifier as explicit ground-truth. Otherwise an adversarial verifier cannot distinguish a hallucinated value from a correct one — a verification blind spot.

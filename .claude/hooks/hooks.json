@@ -195,6 +195,16 @@
           }
         ],
         "description": "Advisory check for plugin cache directories missing node_modules (#1207)"
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/claude-md-reinject.sh"
+          }
+        ],
+        "description": "Re-inject project CLAUDE.md into model context on session start/resume/clear and compact re-entry — matcher \"*\" covers all SessionStart sources including \"compact\" (#1617)"
       }
     ],
     "UserPromptSubmit": [

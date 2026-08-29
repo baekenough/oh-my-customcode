@@ -35,6 +35,10 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 > **v2.1.222+**: PreToolUse auto-allow 훅이 background agent task(summaries/compaction/renames)에서 tool restriction을 우회하던 문제가 수정되었습니다. 즉 위 Enforcement Tiers 표의 **Hard Block 계층(stage-blocker, dev-server tmux, rule-deletion-guard)이 background agent task 경로에서 우회될 수 있었다**는 뜻이며, background agent를 쓰는 장기 무인 루프에서 hard-block 훅이 실제로는 강제되지 않는 구간이 존재했습니다. v2.1.211/212/214 훅 결정 존중 체인의 연장선입니다.
 
+> **v2.1.247+**: 훅 또는 background agent가 수 메가바이트의 error 출력을 찍어 대화를 overflow시켜 세션이 "Prompt is too long"으로 멈추던 결함이 수정되었습니다. 같은 릴리즈에서 hook/background task의 output file을 쓸 수 없을 때 무한 메모리 증가하던 문제도 수정되어, 이제 출력이 소실된 위치를 파일에 남깁니다. 이 저장소는 advisory 훅(`r007-r008-drift-advisor.sh`, `failure-ledger.sh`, `fail-axis-cause-advisor.sh` 등)을 다수 운용하므로, 훅 출력 폭주가 세션 자체를 wedge시키는 이 실패 클래스에 해당합니다 — v2.1.211/212/214/222 훅 신뢰성 계열의 연장선입니다.
+
+> **v2.1.248+**: 훅 관측성이 두 건 강화되었습니다 — (a) `PermissionRequest`/`PreToolUse` 훅이 유효하지 않은 응답을 출력해 background session이 조용히 대기하던 결함이 수정되어, 이제 `claude agents` 행이 해당 훅 이름과 스키마 에러를 표시합니다. (b) 훅이 stdout으로 낸 `{…}` 객체가 유효한 JSON이 아닐 때 조용히 plain text로 처리하던 결함이 수정되어, 이제 parse 에러와 함께 훅 에러로 보고됩니다. 위 v2.1.214 "훅 stdout JSON이 스키마 검증에 실패할 때 exit code 2가 문서대로 차단하지 못하던 문제" 노트와 같은 계열 — 훅 실패가 무음에서 가시화되는 흐름의 연속입니다.
+
 ## Why Advisory-First
 
 1. **Agent flexibility**: Hard blocks can trap agents in unrecoverable states

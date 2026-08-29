@@ -94,6 +94,14 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 >
 > **일반 교훈**: 단일 릴리즈의 플랫폼 권한 개선은 롤백될 수 있으므로 **항구적 보호막으로 간주하지 않습니다**. 스코프 규칙은 개선 이전 상태를 기준으로 설계하고 플랫폼 개선은 defense-in-depth로만 취급합니다(`feedback_platform_claim_staleness` 계열 — 플랫폼 주장의 시효성).
 
+> **v2.1.251+**: Bash·경로 권한검사 우회 수정 5건이 한 릴리즈에서 함께 발견·수정되었습니다 — (a) 정수 셸 변수에 산술식을 대입하는 명령(`OPTIND=1/0`, `RANDOM=2+2`)을 auto-approve하던 결함, (b) 샌드박스 내 Bash 명령이 자기 output file을 리다이렉트·교체할 수 있던 결함, (c) 작업 디렉토리 내부 심링크가 permission check **이후** 교체(TOCTOU)되어 Read/Write/Edit가 승인 영역 밖을 접근할 수 있던 결함, (d) Grep/Glob이 심링크로 도달한 검색 경로에 `Read(...)` deny 규칙을 적용하지 못하던 결함, (e) Workflow tool이 permission check 실행 **전에** 세션이 읽을 수 없는 `scriptPath`를 먼저 읽고 에러에 그 경로를 그대로 인용하던 결함(cross-ref R023 Workflow Script Sanity Check). 한 릴리즈에서만 5건이 나왔다는 사실 자체가 위 「일반 교훈」— 단일 릴리즈의 플랫폼 권한 개선은 롤백될 수 있으므로 항구적 보호막으로 간주하지 않는다 — 를 강하게 재확인시킵니다.
+
+> **v2.1.247~251 재도입 여부 확인 (실측)**: 위 「일반 교훈」이 언급하는 v2.1.233 롤백 2건(Windows Git Bash의 Cygwin-style symlink 우회, Bash 입력 리다이렉션 `< file`)의 "좁힌 형태 재도입"은 v2.1.247~251 CHANGELOG 범위에서 **확인되지 않았습니다** — "Cygwin"이라는 단어도 `< file` 입력 리다이렉션 언급도 4개 릴리즈 어디에도 없습니다. 대신 v2.1.251에 위 5건의 (c)(d)처럼 **메커니즘이 다른** 별개의 심링크·경로 우회 수정이 새로 등장했습니다 — 같은 "심링크 우회"라는 결과이지만 원인 버그는 다릅니다. 따라서 위 "233에서 롤백됨" 서술은 이 시점까지 **여전히 유효**하며, 재도입이 확인되면 이 노트를 갱신합니다.
+
+> **v2.1.238+**: Bash 도구의 permission 검사가 zsh 전용 조건문(shell conditional) 문법에 대해 추가로 개선되었습니다. 이는 위 v2.1.221 "zsh `[[ ]]` 정규식 조건문 안에서 숨겨진 명령이 권한 검사를 우회"의 **직접 연장선**입니다 — "개선"으로만 기술되어 있어 v2.1.221 수정이 완전 해결이 아니었거나 추가 우회 벡터가 있었음을 시사합니다. 이 저장소의 Bash 도구 실행 셸이 zsh이므로(R005 #1540 실측) 직접 관련됩니다.
+
+> **v2.1.246/248+**: (246) 끝에 매달린 `&&`/`||`가 있는 손상된(malformed) 명령에 대해 Bash 권한검사가 이제 **항상 승인을 요구**합니다 — 구버전에서는 이런 형태가 검사를 우회할 수 있었습니다. (248) `--restricted`(또는 `CLAUDE_CODE_RESTRICTED=1`) 모드가 신설되어 명령/코드 실행 도구와 `WebFetch`를 제거하고(`--tools`에 명시 시 예외), 파일 도구를 작업 디렉토리 내부로 제한하며, `bypassPermissions`를 거부하고, user/project/local settings 파일을 무시합니다. 이 저장소는 기본적으로 `bypassPermissions`를 쓰므로(R010 Universal bypassPermissions) `--restricted`와는 **상호 배타적**입니다 — 이 저장소 워크플로우에는 적용하지 않되, 신규 안전 모드 옵션으로 존재를 기록합니다.
+
 ### Todo/Task 도구 기본 제거 (v2.1.233+) — 위 표의 †
 
 CHANGELOG v2.1.233 원문: *"Todo/task-tracking tools (TaskCreate/Get/Update/List, TodoWrite) are no longer available on Opus 4.8, Sonnet 5, Fable 5, Mythos 5, and newer models; set `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` to bring them back"*. 이 저장소 에이전트 **49개 중 46개**(`claude-sonnet-5` 41 + `claude-opus-5` 5)가 대상 모델이므로 실행 환경의 기본값은 **부재**다(잔여 3개는 `haiku`).

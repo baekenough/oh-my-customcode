@@ -32,6 +32,8 @@
 
 > **도구 이름 ≠ 그 프로그램 (#1590)**: 도구를 쓰기 전에 `type <tool>`로 실체를 확인한다. Bash 도구의 `grep`은 `~/.claude/shell-snapshots/snapshot-zsh-*.sh`의 **셸 함수**이며 `ugrep --ignore-files`에 위임한다. 그 결과 `.gitignore`의 리터럴 `CLAUDE.md` 패턴을 존중해, **force-tracked 파일을 재귀 탐색에서 조용히 누락**한다(에러 없이 exit 0). 명시 경로를 준 grep은 정상 동작하므로 **traversal만 영향**을 받는다. 실측(2026-08-15): 동일 패턴·동일 대상에 대해 셸 함수 36 / `command grep` 43 / `git grep` 38 히트 — 셸 함수만 `CLAUDE.md`를 0 히트로 놓쳤다. 진단 함정: `git check-ignore`는 **index-aware**라 tracked 파일에 "not ignored"(exit 1)를 반환한다 — 원인을 보려면 `git check-ignore --no-index`를 써야 한다. 처방: 저장소 전수 조사는 `git grep`을 표준으로 한다(R017 Count Sync cross-ref). Origin: #1590.
 
+> **v2.1.234+**: macOS/Linux 네이티브 빌드의 내장 `grep`이 pathological pattern에서 메모리 고갈 대신 fail fast하고, `-m N`과 `-A/-C` 옵션을 함께 쓸 때의 context 출력 정확도가 수정되었습니다(v2.1.235에서 추가 보강). 위 「도구 이름 ≠ 그 프로그램」(#1590) 조항과 인접한 함정입니다 — 이 저장소의 Bash 도구 `grep`은 셸 함수로 셰이딩돼 있으므로, 내장 `grep` 자체의 견고성 개선과 셰이딩 문제는 **별개 축**입니다. Darwin(이 저장소 실행 환경) 네이티브 빌드에 해당합니다.
+
 <!--
 > **v2.1.206+**: `/doctor`에 checked-in CLAUDE.md에서 코드베이스로부터 파생 가능한 내용을 잘라내도록 제안하는 체크가 추가되었습니다 — R005 "Context Optimization via HTML Comments"의 컨텍스트 절감 원칙과 정합(모델 불필요 메타데이터 축소).
 -->
@@ -42,7 +44,7 @@
 
 > **v2.1.212+**: MCP 도구 호출이 2분(기본값, `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`로 임계값 조정·비활성) 초과 시 자동으로 백그라운드로 이동해 세션이 계속 사용 가능해집니다 — 위 v2.1.210 Bash/PowerShell auto-background의 MCP 도구 확장. 느린 MCP 호출(ontology-rag `rebuild_ontology`, code-review-graph 인덱싱 등)을 hang으로 오판하지 말고, 2분 초과 시 백그라운드 전환을 전제로 후속 작업을 진행합니다.
 
-> **v2.1.233+**: `WebFetch`의 세션 URL 캐시 TTL이 `CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS`로 조정 가능해졌습니다(기본 15분 불변). **재확인 함정**: 같은 URL을 TTL 내 재조회하면 캐시가 반환되므로 **독립적인 2차 확인이 아닙니다** — R020 Degraded-Output Re-Verification Gate가 요구하는 "결정론적 2차 소스"로 동일 URL의 WebFetch 재호출을 쓰지 말고, 다른 소스나 CLI 실측(`npm view`, `gh`)을 사용합니다.
+> **v2.1.233+ (정정: v2.1.239에서 실제로 보장됨)**: `WebFetch`의 세션 URL 캐시 TTL이 `CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS`로 조정 가능해졌습니다(기본 15분 — **단, v2.1.239 이전에는 이 15분이 지켜지지 않고 만료된 콘텐츠가 세션 전체 동안 메모리에 남아있었습니다**. v2.1.239가 이 결함을 수정해 이제야 15분 TTL이 실제로 보장됩니다). **재확인 함정**: 같은 URL을 TTL 내 재조회하면 캐시가 반환되므로 **독립적인 2차 확인이 아닙니다** — R020 Degraded-Output Re-Verification Gate가 요구하는 "결정론적 2차 소스"로 동일 URL의 WebFetch 재호출을 쓰지 말고, 다른 소스나 CLI 실측(`npm view`, `gh`)을 사용합니다. **회고적 함의**: v2.1.239 이전 세션에서는 이 재확인 함정이 "TTL 15분 이내"가 아니라 **세션 내내** 유효했으므로, 그 시기의 WebFetch 재조회 기반 판단은 15분보다 훨씬 오래된 stale 데이터에 의존했을 수 있습니다.
 
 > **v2.1.224+**: mid-turn에 연결된 MCP 도구가 **이름 고지 없이** tool search로 deferred되던 결함이 수정되었습니다. 구버전에서는 세션 도중 붙은 MCP 서버의 도구가 이름조차 노출되지 않아 "그런 도구 없음"으로 오판할 수 있었으므로, 위 tool-availability 주의(`command -v` 사전 확인과 동류)를 MCP 도구에도 적용합니다 — 도구 부재 결론 전에 `ToolSearch`로 실측합니다.
 

@@ -25,6 +25,8 @@ Examples: creating multiple agents, reviewing multiple files, batch operations o
 
 Origin: #1518 (찐빠 #1 — git 에이전트 2개 근접 실행으로 작업 브랜치 stale; 편집 파일은 disjoint였음).
 
+> **★ v2.1.246+**: `/ultrareview` 실행과 클라우드 세션을 **같은 저장소(여러 worktree 포함)에서 동시에 시작**하면, 한 실행이 다른 실행의 **커밋되지 않은 변경분과 함께 시작**되던 결함이 수정되었습니다. 이는 위 조항이 경고하는 시나리오가 **CC 플랫폼 자체에서 실증된 사례**입니다 — 이 조항은 이 저장소의 경험(#1518)에서 나왔는데, 플랫폼이 독립적으로 같은 결함을 겪고 고쳤다는 사실이 조항의 일반성을 뒷받침합니다. 구버전에서는 병렬 실행이 **서로의 uncommitted 변경분을 상속**했으므로, 과거 세션의 설명되지 않는 오염을 이 원인으로 재해석할 수 있습니다.
+
 #### 파일 disjoint ≠ 자원 disjoint (Origin: #1598)
 
 git 상태 외에도 병렬 에이전트가 경합하는 공유 자원이 있다 — **검증 명령이 만지는 저장소 파일**, **CPU**, **`$TMPDIR`**. 편집 파일이 disjoint하다는 사실은 이 셋 중 어느 것도 보장하지 않는다.
@@ -127,7 +129,7 @@ Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_l
 
 > **v2.1.224+**: **세션당 200 subagent spawn cap이 제거**되어 장기 세션이 신규 에이전트를 거부하지 않습니다(동시성 제한과 depth 제한은 유지). 위 표의 "Max instances 5 concurrent"는 **동시성** 제한이므로 그대로 유효합니다 — 제거된 것은 세션 누적 총량 cap입니다. `/fsd` 등 장기 무인 루프에서 후반 반복의 스폰 실패를 더 이상 누적 cap으로 진단하지 않습니다.
 
-> **v2.1.232+**: subagent forking이 **기본 활성화**되어 `subagent_type: "fork"` 서브에이전트가 전체 대화와 prompt cache를 상속합니다. 위 표의 "Instance independence — Isolated context, no shared state"는 **fork에는 성립하지 않습니다** — fork는 격리된 병렬 인스턴스가 아니라 컨텍스트 사본이므로, 위 Detection Criteria의 독립성 전제로 병렬 배치를 설계할 때 fork를 일반 subagent와 동일하게 취급하지 않습니다(오케스트레이터 컨텍스트가 그대로 전달되므로 위임 프롬프트의 범위 서술이 유일한 경계가 아님). 구버전에서는 fork가 opt-in이라 이 상속이 예외 경로였습니다. 또한 interactive session의 **non-teammate 에이전트 스폰이 기본 background 실행**이므로 스폰 반환은 완료 신호가 아닙니다(R010/R020).
+> **v2.1.232+**: subagent forking이 **기본 활성화**되어 `subagent_type: "fork"` 서브에이전트가 전체 대화와 prompt cache를 상속합니다. 위 표의 "Instance independence — Isolated context, no shared state"는 **fork에는 성립하지 않습니다** — fork는 격리된 병렬 인스턴스가 아니라 컨텍스트 사본이므로, 위 Detection Criteria의 독립성 전제로 병렬 배치를 설계할 때 fork를 일반 subagent와 동일하게 취급하지 않습니다(오케스트레이터 컨텍스트가 그대로 전달되므로 위임 프롬프트의 범위 서술이 유일한 경계가 아님). 구버전에서는 fork가 opt-in이라 이 상속이 예외 경로였습니다. 또한 interactive session의 **non-teammate 에이전트 스폰이 기본 background 실행**이므로 스폰 반환은 완료 신호가 아닙니다(R010/R020). **v2.1.246+**: 이미 fork되었거나 backgrounded된 세션에서 다시 `/fork`하면 빈 대화로 시작되던 결함이 수정되었습니다 — 구버전에서는 재fork 시 위 컨텍스트·prompt cache 상속조차 깨질 수 있었습니다.
 
 > **v2.1.229+**: workflow fan-out이 같은 prefix를 공유하는 sibling agent를 **stagger**해 후속 에이전트가 prompt prefix 캐시를 재사용합니다(`CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS=0`으로 비활성). 즉 동일 접두사 병렬 배치는 동시 발사가 아니라 **의도적 시차 실행**이며, 스폰 직후 일부 에이전트의 시작 지연을 아래 Adaptive Parallel Splitting의 stall 신호로 오판하지 않습니다 — 구버전에서는 각 형제가 접두사 비용을 중복 지불했습니다. 또한 CPU 제한 컨테이너에서 dynamic workflow가 호스트 코어 수를 쓰던 문제가 수정되어, 컨테이너 실행 시 실효 동시성이 위 표의 cap보다 낮을 수 있습니다.
 
@@ -136,6 +138,8 @@ Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_l
 ## Adaptive Parallel Splitting
 
 Runtime detection and splitting of stalled parallel agents. Complements pre-execution parallelization.
+
+> **cross-ref (v1.1.50 실측)**: 병렬 위임 중 일부가 침묵·중간 절단되면, 재촉·재분할 전에 R018 `maxTurns` partial 표시(v2.1.246)를 먼저 의심한다 — 20턴 한도 절단이 v1.1.50 세션에서 병렬 4건 중 3건에 실증됐다. 상세는 R018 (MUST-agent-teams.md) Member Completion Verification 섹션.
 
 See detection signals, splitting rules, and example via Read tool.
 
