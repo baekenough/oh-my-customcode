@@ -1,119 +1,120 @@
 {
-  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "default"
+  },
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "tool == \"Write\" || tool == \"Edit\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/stage-blocker.sh"
           }
         ],
+        "matcher": "Write|Edit",
         "description": "Block Write/Edit tools during plan/verify/compound stages — only allow in implement stage"
       },
       {
-        "matcher": "tool == \"Bash\" && tool_input.command matches \"(npm run dev|pnpm( run)? dev|yarn dev|bun run dev)\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\ncmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"')\n\n# Block dev servers that aren't run in tmux\necho '[Hook] BLOCKED: Dev server must run in tmux for log access' >&2\necho '[Hook] Use this command instead:' >&2\necho \"[Hook] tmux new-session -d -s dev 'npm run dev'\" >&2\necho '[Hook] Then: tmux attach -t dev' >&2\nexit 1"
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"(npm run dev|pnpm( run)? dev|yarn dev|bun run dev)\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\ncmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"')\n\n# Block dev servers that aren't run in tmux\necho '[Hook] BLOCKED: Dev server must run in tmux for log access' >&2\necho '[Hook] Use this command instead:' >&2\necho \"[Hook] tmux new-session -d -s dev 'npm run dev'\" >&2\necho '[Hook] Then: tmux attach -t dev' >&2\nexit 1\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
+        "matcher": "Bash",
         "description": "Block dev servers outside tmux - ensures you can access logs"
       },
       {
-        "matcher": "tool == \"Bash\" && tool_input.command matches \"(npm (install|test)|pnpm (install|test)|yarn (install|test)|bun (install|test)|cargo build|make|docker|pytest|vitest|playwright)\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nif [ -z \"$TMUX\" ]; then\n  echo '[Hook] Consider running in tmux for session persistence' >&2\n  echo '[Hook] tmux new -s dev  |  tmux attach -t dev' >&2\nfi\necho \"$input\""
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"(npm (install|test)|pnpm (install|test)|yarn (install|test)|bun (install|test)|cargo build|make|docker|pytest|vitest|playwright)\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nif [ -z \"$TMUX\" ]; then\n  echo '[Hook] Consider running in tmux for session persistence' >&2\n  echo '[Hook] tmux new -s dev  |  tmux attach -t dev' >&2\nfi\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
+        "matcher": "Bash",
         "description": "Reminder to use tmux for long-running commands"
       },
       {
-        "matcher": "tool == \"Bash\" && tool_input.command matches \"git push\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\necho '[Hook] Review changes before push...' >&2\nif [ -t 0 ]; then echo '[Hook] Press Enter to continue or Ctrl+C to abort...' >&2; read -r; else echo '[Hook] Non-interactive mode, proceeding...' >&2; fi"
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"git push\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\necho '[Hook] Review changes before push...' >&2\nif [ -t 0 ]; then echo '[Hook] Press Enter to continue or Ctrl+C to abort...' >&2; read -r; else echo '[Hook] Non-interactive mode, proceeding...' >&2; fi\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
+        "matcher": "Bash",
         "description": "Pause before git push to review changes"
       },
       {
-        "matcher": "tool == \"Write\" && tool_input.file_path matches \"\\\\.(md|txt)$\" && !(tool_input.file_path matches \"README\\\\.md|CLAUDE\\\\.md|AGENT\\\\.md|SKILL\\\\.md\")",
         "hooks": [
           {
             "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [[ \"$file_path\" =~ \\.(md|txt)$ ]] && [[ ! \"$file_path\" =~ (README|CLAUDE|AGENT|SKILL)\\.md$ ]]; then\n  echo \"[Hook] BLOCKED: Unnecessary documentation file creation\" >&2\n  echo \"[Hook] File: $file_path\" >&2\n  echo \"[Hook] Use README.md or AGENT.md for documentation instead\" >&2\n  exit 1\nfi\n\necho \"$input\""
           }
         ],
+        "matcher": "Write",
         "description": "Block creation of random .md files - keeps docs consolidated"
       },
       {
-        "matcher": "tool == \"Edit\" || tool == \"Write\"",
         "hooks": [
           {
             "type": "command",
             "command": "#!/bin/bash\nCOUNTER_FILE=\"/tmp/claude-tool-count-$PPID\"\nTHRESHOLD=${COMPACT_THRESHOLD:-50}\nif [ -f \"$COUNTER_FILE\" ]; then COUNT=$(cat \"$COUNTER_FILE\"); COUNT=$((COUNT + 1)); else COUNT=1; fi\necho \"$COUNT\" > \"$COUNTER_FILE\"\nif [ \"$COUNT\" -eq \"$THRESHOLD\" ]; then echo '[StrategicCompact] Reached '$THRESHOLD' tool calls' >&2; echo '[StrategicCompact] Consider /compact if at a logical breakpoint' >&2; fi\nif [ \"$COUNT\" -gt \"$THRESHOLD\" ] && [ $(((COUNT - THRESHOLD) % 25)) -eq 0 ]; then echo \"[StrategicCompact] $COUNT tool calls - /compact reminder\" >&2; fi\ncat"
           }
         ],
+        "matcher": "Edit|Write",
         "description": "Suggest manual compaction at logical intervals"
       },
       {
-        "matcher": "tool == \"Edit\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
           }
         ],
+        "matcher": "Edit",
         "description": "Validate file content hash before Edit — advisory staleness warning"
       },
       {
-        "matcher": "tool == \"Write\" || tool == \"Edit\" || tool == \"Bash\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/schema-validator.sh"
           }
         ],
+        "matcher": "Write|Edit|Bash",
         "description": "Schema-based tool input validation — Phase 1 advisory only"
       },
       {
-        "matcher": "tool == \"Bash\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/rtk-intercept.sh"
           }
         ],
+        "matcher": "Bash",
         "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R013 advisory)"
       },
       {
-        "matcher": "tool == \"Bash\" && tool_input.command matches \"git (reset|clean|checkout|restore|switch|rebase|merge)\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/destructive-git-guard.sh"
           }
         ],
+        "matcher": "Bash",
         "description": "Warn before destructive git commands — advisory recovery guidance (R001/R021)"
       },
       {
-        "matcher": "tool == \"Bash\" && tool_input.command matches \"(rm|git rm|mv|unlink|claude/rules)\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/rule-deletion-guard.sh"
           }
         ],
+        "matcher": "Bash",
         "description": "Block rule file deletion — requires individual user confirmation per rule (R001 safety)"
       },
       {
-        "matcher": "tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",
@@ -132,126 +133,126 @@
             "command": "bash .claude/hooks/scripts/model-escalation-advisor.sh"
           }
         ],
+        "matcher": "Task|Agent",
         "description": "HUD statusline + R010 git delegation guard + R018 Agent Teams advisor on Agent/Task spawn"
       }
     ],
     "SessionStart": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": ".claude/hooks/scripts/omcustom-auto-update.sh"
           }
         ],
+        "matcher": "*",
         "description": "Interactive oh-my-customcode update check at session start (#752)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/session-env-check.sh"
           }
         ],
+        "matcher": "*",
         "description": "Check codex CLI and Agent Teams availability at session start"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/stale-todo-scanner.sh"
           }
         ],
+        "matcher": "*",
         "description": "Scan TODO.md files for stale items at session start"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/adaptive-harness-scan.sh"
           }
         ],
+        "matcher": "*",
         "description": "Lightweight project profile staleness check for adaptive harness (#831)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/session-autofix.sh"
           }
         ],
+        "matcher": "*",
         "description": "Auto-detect and fix previous session issues at start (#838)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/plugin-cache-check.sh"
           }
         ],
+        "matcher": "*",
         "description": "Advisory check for plugin cache directories missing node_modules (#1207)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/claude-md-reinject.sh"
           }
         ],
+        "matcher": "*",
         "description": "Re-inject project CLAUDE.md into model context on session start/resume/clear and compact re-entry — matcher \"*\" covers all SessionStart sources including \"compact\" (#1617)"
       }
     ],
     "UserPromptSubmit": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/user-prompt-preprocessor.sh"
           }
         ],
+        "matcher": "*",
         "description": "Advisory pre-processing of user input — skill matching hints and intent analysis"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh"
           }
         ],
+        "matcher": "*",
         "description": "Proactive R007/R008 drift advisory — checks last assistant turn for identification omission (#1229)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/session-autofix-prompt.sh"
           }
         ],
+        "matcher": "*",
         "description": "Inject session auto-fix findings into first user prompt (#838)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/fail-axis-cause-advisor.sh"
           }
         ],
+        "matcher": "*",
         "description": "Advisory on cause-free progress nudges when this session has logged tool failures — delivers via hookSpecificOutput.additionalContext (#1561)"
       }
     ],
     "SubagentStart": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
@@ -262,12 +263,12 @@
             "command": "bash .claude/hooks/scripts/agent-start-recorder.sh"
           }
         ],
+        "matcher": "*",
         "description": "HUD display + agent start time recording for stall detection (R009)"
       }
     ],
     "SubagentStop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
@@ -290,182 +291,182 @@
             "prompt": "A background subagent just completed. If it FAILED, do NOT auto-continue — report the failure and wait for user input."
           }
         ],
+        "matcher": "*",
         "description": "Record agent outcomes + auto-continue workflow + R007/R008 drift advisory on subagent completion (autonomous-loop re-entry, #1545)"
       }
     ],
     "CwdChanged": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/cwd-change-detector.sh"
           }
         ],
+        "matcher": "*",
         "description": "Auto-detect project type on working directory change (v2.1.83+)"
       }
     ],
     "FileChanged": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/file-change-validator.sh"
           }
         ],
+        "matcher": "*",
         "description": "Validate externally modified files — advisory staleness warning (v2.1.83+)"
       }
     ],
     "Notification": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\nmsg=$(echo \"$input\" | jq -r '.message // \"\"' 2>/dev/null)\nif [ -n \"$msg\" ]; then\n  echo \"[Hook] Notification: $msg\" >&2\nfi\necho \"$input\""
           }
         ],
+        "matcher": "*",
         "description": "Display notifications for long-running operation completions"
       }
     ],
     "TeammateIdle": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\nteammate=$(echo \"$input\" | jq -r '.teammate_id // \"unknown\"' 2>/dev/null)\necho \"[Hook] TeammateIdle: $teammate — available for reassignment\" >&2\necho \"$input\""
           }
         ],
+        "matcher": "*",
         "description": "Track idle Agent Teams members for work reassignment"
       }
     ],
     "TaskCreated": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCreated: $task_id — $desc\" >&2\necho \"$input\""
           }
         ],
+        "matcher": "*",
         "description": "Log task creation events for Agent Teams coordination"
       }
     ],
     "TaskCompleted": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\nresult=$(echo \"$input\" | jq -r '.result // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCompleted: $task_id — $result\" >&2\necho \"$input\""
           }
         ],
+        "matcher": "*",
         "description": "Log task completion events for Agent Teams coordination"
       }
     ],
     "PreCompact": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/task-state-precompact.sh"
           }
         ],
+        "matcher": "*",
         "description": "Serialize active task state before compaction — pairs with PostCompact restore (#922)"
       }
     ],
     "PostCompact": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "prompt",
             "prompt": "Context compacted. RULES ACTIVE.\n\nR007: next response MUST start with ┌─ Agent: claude (default) / └─ Task: {task}\nR008: before EVERY tool call → [claude][model] → Tool: Name / Target: path\nR010: write→delegate to subagent; orchestrator read-only (Read/Glob/Grep); git→mgr-gitnerd\nR009: 2+ independent tasks → parallel agents, same message\nR018: 3+ agents OR review cycle → Agent Teams\nR000: user communication in Korean (한국어); code/files in English — NON-NEGOTIABLE\nR001: prohibited actions (no secrets, no system files, no rm -rf); stop on violation → preserve state → report → wait\nR002: tool tiers (Read/Grep=free, Write/Edit=notify, Bash=approval); no writes outside project; no .env/.git/config\n\nAutonomous mode: if /tmp/.claude-autonomous-$PPID exists → simple git (add/commit/push) may run directly; Write/Edit still delegates.\nbypassPermissions does NOT persist across compaction — re-enable if tasks seem blocked.\n\nTask state restore: if /tmp/.claude-task-state-$PPID.json exists, read it to recover active pipeline, dev stage, and autonomous mode state. This was saved by PreCompact hook.\n\nRe-read CLAUDE.md NOW."
           }
         ],
+        "matcher": "*",
         "description": "Reinforce enforced rules after context compaction — prevents rule amnesia (v2.1.76+)"
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "tool == \"Bash\"",
         "hooks": [
           {
             "type": "command",
             "command": "#!/bin/bash\ninput=$(cat)\ncmd=$(echo \"$input\" | jq -r '.tool_input.command')\n\nif echo \"$cmd\" | grep -qE 'gh pr create'; then\n  output=$(echo \"$input\" | jq -r '.tool_output.output // \"\"')\n  pr_url=$(echo \"$output\" | grep -oE 'https://github.com/[^/]+/[^/]+/pull/[0-9]+')\n  \n  if [ -n \"$pr_url\" ]; then\n    echo \"[Hook] PR created: $pr_url\" >&2\n    echo \"[Hook] Checking GitHub Actions status...\" >&2\n    repo=$(echo \"$pr_url\" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/[0-9]+|\\1|')\n    pr_num=$(echo \"$pr_url\" | sed -E 's|.*/pull/([0-9]+)|\\1|')\n    echo \"[Hook] To review PR: gh pr review $pr_num --repo $repo\" >&2\n  fi\nfi\n\necho \"$input\""
           }
         ],
+        "matcher": "Bash",
         "description": "Log PR URL and provide review command after PR creation"
       },
       {
-        "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(ts|tsx|js|jsx)$\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  if command -v prettier >/dev/null 2>&1; then\n    prettier --write \"$file_path\" 2>&1 | head -5 >&2\n  fi\nfi\n\necho \"$input\""
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx|js|jsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  if command -v prettier >/dev/null 2>&1; then\n    prettier --write \"$file_path\" 2>&1 | head -5 >&2\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
+        "matcher": "Edit",
         "description": "Auto-format JS/TS files with Prettier after edits"
       },
       {
-        "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(ts|tsx)$\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  dir=$(dirname \"$file_path\")\n  project_root=\"$dir\"\n  while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/package.json\" ]; do\n    project_root=$(dirname \"$project_root\")\n  done\n  \n  if [ -f \"$project_root/tsconfig.json\" ]; then\n    cd \"$project_root\" && npx tsc --noEmit --pretty false 2>&1 | grep \"$file_path\" | head -10 >&2 || true\n  fi\nfi\n\necho \"$input\"",
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  dir=$(dirname \"$file_path\")\n  project_root=\"$dir\"\n  while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/package.json\" ]; do\n    project_root=$(dirname \"$project_root\")\n  done\n  \n  if [ -f \"$project_root/tsconfig.json\" ]; then\n    cd \"$project_root\" && npx tsc --noEmit --pretty false 2>&1 | grep \"$file_path\" | head -10 >&2 || true\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
             "continueOnBlock": true
           }
         ],
+        "matcher": "Edit",
         "description": "TypeScript check after editing .ts/.tsx files"
       },
       {
-        "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(ts|tsx|js|jsx)$\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  console_logs=$(grep -n \"console\\\\.log\" \"$file_path\" 2>/dev/null || true)\n  \n  if [ -n \"$console_logs\" ]; then\n    echo \"[Hook] WARNING: console.log found in $file_path\" >&2\n    echo \"$console_logs\" | head -5 >&2\n    echo \"[Hook] Remove console.log before committing\" >&2\n  fi\nfi\n\necho \"$input\"",
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx|js|jsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  console_logs=$(grep -n \"console\\\\.log\" \"$file_path\" 2>/dev/null || true)\n  \n  if [ -n \"$console_logs\" ]; then\n    echo \"[Hook] WARNING: console.log found in $file_path\" >&2\n    echo \"$console_logs\" | head -5 >&2\n    echo \"[Hook] Remove console.log before committing\" >&2\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
             "continueOnBlock": true
           }
         ],
+        "matcher": "Edit",
         "description": "Warn about console.log statements after edits"
       },
       {
-        "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(go)$\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  if command -v gofmt >/dev/null 2>&1; then\n    gofmt -w \"$file_path\" 2>&1 >&2\n  fi\nfi\n\necho \"$input\""
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(go)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  if command -v gofmt >/dev/null 2>&1; then\n    gofmt -w \"$file_path\" 2>&1 >&2\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
+        "matcher": "Edit",
         "description": "Auto-format Go files with gofmt after edits"
       },
       {
-        "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(py)$\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Format with ruff\n  if command -v ruff >/dev/null 2>&1; then\n    ruff format --quiet \"$file_path\" 2>&1 >&2\n    ruff check --fix --quiet \"$file_path\" 2>&1 >&2 || true\n    echo \"[Hook] Python formatted with ruff\" >&2\n  fi\nfi\n\necho \"$input\"",
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(py)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Format with ruff\n  if command -v ruff >/dev/null 2>&1; then\n    ruff format --quiet \"$file_path\" 2>&1 >&2\n    ruff check --fix --quiet \"$file_path\" 2>&1 >&2 || true\n    echo \"[Hook] Python formatted with ruff\" >&2\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
             "continueOnBlock": true
           }
         ],
+        "matcher": "Edit",
         "description": "Auto-format and lint Python files with ruff after edits"
       },
       {
-        "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.(py)$\"",
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Type check with ty\n  if command -v ty >/dev/null 2>&1; then\n    dir=$(dirname \"$file_path\")\n    project_root=\"$dir\"\n    while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/pyproject.toml\" ]; do\n      project_root=$(dirname \"$project_root\")\n    done\n    \n    if [ -f \"$project_root/pyproject.toml\" ]; then\n      cd \"$project_root\" && ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    else\n      ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    fi\n  fi\nfi\n\necho \"$input\"",
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(py)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Type check with ty\n  if command -v ty >/dev/null 2>&1; then\n    dir=$(dirname \"$file_path\")\n    project_root=\"$dir\"\n    while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/pyproject.toml\" ]; do\n      project_root=$(dirname \"$project_root\")\n    done\n    \n    if [ -f \"$project_root/pyproject.toml\" ]; then\n      cd \"$project_root\" && ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    else\n      ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    fi\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
             "continueOnBlock": true
           }
         ],
+        "matcher": "Edit",
         "description": "Type check Python files with ty after edits"
       },
       {
-        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\" || tool == \"Read\" || tool == \"Glob\" || tool == \"Grep\"",
         "hooks": [
           {
             "type": "command",
@@ -473,10 +474,10 @@
             "continueOnBlock": true
           }
         ],
+        "matcher": "Edit|Write|Bash|Task|Agent|Read|Glob|Grep",
         "description": "Context budget advisor — track tool usage patterns and advise ecomode activation"
       },
       {
-        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\" || tool == \"Read\" || tool == \"Glob\" || tool == \"Grep\"",
         "hooks": [
           {
             "type": "command",
@@ -484,10 +485,10 @@
             "continueOnBlock": true
           }
         ],
+        "matcher": "Edit|Write|Bash|Task|Agent|Read|Glob|Grep",
         "description": "Proactive R007/R008 drift advisory on tool use — covers the orchestrator-only stretch before the first subagent spawn, where neither UserPromptSubmit nor SubagentStop fires (#1553). Turn-deduplicated; exit 0 advisory only."
       },
       {
-        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",
@@ -495,10 +496,10 @@
             "continueOnBlock": true
           }
         ],
+        "matcher": "Edit|Write|Bash|Task|Agent",
         "description": "Detect repetitive failure loops and advise recovery strategies"
       },
       {
-        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",
@@ -506,40 +507,40 @@
             "continueOnBlock": true
           }
         ],
+        "matcher": "Edit|Write|Bash|Task|Agent",
         "description": "Advisory cost cap monitoring — warn when session cost approaches configurable limit"
       },
       {
-        "matcher": "tool == \"Read\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
           }
         ],
+        "matcher": "Read",
         "description": "Store content hashes for Read operations — enables Edit staleness detection"
       },
       {
-        "matcher": "tool == \"Bash\" || tool == \"Read\" || tool == \"Grep\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/secret-filter.sh"
           }
         ],
+        "matcher": "Bash|Read|Grep",
         "description": "Detect potential secrets in Bash/Read/Grep output — advisory warning only"
       },
       {
-        "matcher": "tool == \"Edit\" || tool == \"Write\" || tool == \"Bash\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/audit-log.sh"
           }
         ],
+        "matcher": "Edit|Write|Bash|Agent",
         "description": "Append-only audit log for state-changing tool operations"
       },
       {
-        "matcher": "tool == \"Write\" || tool == \"Edit\"",
         "hooks": [
           {
             "type": "command",
@@ -547,100 +548,101 @@
             "continueOnBlock": true
           }
         ],
+        "matcher": "Write|Edit",
         "description": "Advisory reminder to sync skill counts in 6 locations when a SKILL.md is created/modified (R021)"
       },
       {
-        "matcher": "mcp_tool_name matches \"mcp__playwright__.*\" || mcp_tool_name matches \"mcp__claude-in-chrome__.*\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/playwright-compress.sh"
           }
         ],
+        "matcher": "mcp__playwright__.*|mcp__claude-in-chrome__.*",
         "description": "Layer 4: Compress Playwright/Chrome MCP output via Haiku summarization"
       },
       {
-        "matcher": "tool == \"Task\" || tool == \"Agent\"",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/auto-dev-token-tracker.sh"
           }
         ],
+        "matcher": "Task|Agent",
         "description": "auto-dev token spend tracker — records per-phase token estimates during /pipeline auto-dev (Issue #1057, advisory)"
       }
     ],
     "Stop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/stop-console-audit.sh"
           }
         ],
+        "matcher": "*",
         "description": "Final console.log audit and session diagnostics before session ends"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/eval-core-batch-save.sh"
           }
         ],
+        "matcher": "*",
         "description": "Batch-save agent outcomes to eval-core DB on session end (advisory, exit 0)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/feedback-collector.sh"
           }
         ],
+        "matcher": "*",
         "description": "Auto-extract failure patterns from session outcomes (advisory, exit 0)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/session-reflection.sh"
           }
         ],
+        "matcher": "*",
         "description": "Transcript-based self-reflection: detect R007/R008 violations and log to .claude/outputs/reflections/ (Phase 1 MVP, advisory, exit 0)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/skill-extractor-analyzer.sh"
           }
         ],
+        "matcher": "*",
         "description": "Detect reusable skill candidates from session task outcomes (advisory, exit 0)"
       },
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/auto-dev-token-summary.sh"
           }
         ],
+        "matcher": "*",
         "description": "Print auto-dev token spend summary on session end (Issue #1057, advisory)"
       }
     ],
     "PostToolUseFailure": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
             "command": "bash .claude/hooks/scripts/failure-ledger.sh"
           }
         ],
+        "matcher": "*",
         "description": "FAIL-axis instrumentation — append tool failures to the error ledger (JSONL). Never blocks; feeds fail-axis-cause-advisor.sh (#1561)"
       }
     ]
