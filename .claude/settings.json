@@ -656,16 +656,6 @@
       {
         "hooks": [
           {
-            "type": "prompt",
-            "prompt": "Session-end memory checkpoint (R011 enforcement). Check if the session-end memory save workflow was completed: 1) sys-memory-keeper was delegated to update MEMORY.md. Note: episodic-memory auto-indexes after session — no manual action needed. Decision rules (evaluate in order): 1. If session had no explicit session-end signal (quick question, no memory work): APPROVE immediately. 2. If the step was already attempted (success or failure both count): APPROVE. 3. If the step was NOT yet performed: PERFORM IT NOW (maximum 1 attempt): a. Delegate to sys-memory-keeper to update MEMORY.md — call Agent tool with sys-memory-keeper. b. After completion (success or failure), APPROVE stop. IMPORTANT: Do NOT block indefinitely. After 1 attempt, always APPROVE. IMPORTANT: Do NOT loop — if you already performed this step in this same stop hook evaluation, APPROVE."
-          }
-        ],
-        "matcher": "*",
-        "description": "Enforce R011 session-end memory saves — auto-perform if not yet done (episodic-memory auto-indexes)"
-      },
-      {
-        "hooks": [
-          {
             "type": "command",
             "command": "bash .claude/hooks/scripts/auto-dev-token-summary.sh"
           }
