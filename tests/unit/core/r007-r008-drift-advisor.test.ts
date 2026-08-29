@@ -1123,6 +1123,110 @@ describe('r007-r008-drift-advisor.sh — Fixture 3d: reverse signal (#1595 #6)',
 });
 
 // ════════════════════════════════════════════════════════════════
+// Fixture 3e: #1625 찐빠 #3 — forward R008 false positives
+//
+// An explicit `$nall_tools == 0 → r008 = 0` guard. Under the pre-existing formula
+// (max(0, ntools - announce)) this was already unreachable in isolation, but the guard pins
+// the invariant in the code itself so a future formula change cannot silently break it.
+// G1/G2 are the negative pair the issue asked for; G3 is the positive control proving the
+// guard does not swallow a real violation.
+//
+// A SECOND fix was investigated and REJECTED (not applied): excluding `<task-notification>` /
+// `Stop hook feedback:` from the role=user string-content turn-boundary check. It does stop a
+// mid-batch notification from splitting an otherwise-compliant multi-tool-call turn — but a
+// live-session regression check (200ee7fe, a real `/fsd` autonomous-loop transcript, tail-200
+// window simulation) showed these markers are the ONLY turn-boundary signal available during
+// headless autonomous re-entry (no UserPromptSubmit ever fires there). Excluding them left
+// `$bi` empty, `$b` fell back to -1, and independently-compliant follow-up responses kept
+// merging into one ever-growing pseudo-turn — R008 drift measured 6 → 10 → 9 across three
+// genuinely separate responses that were each individually clean (0/0) before the exclusion
+// was applied. Net regression on the dominant real-world use case of this hook, so it was
+// reverted; see the code comment above `$bi` in the script for the full measurement.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 3e: #1625 찐빠 #3 forward guard', () => {
+  // ── explicit zero-tool_use guard ──
+
+  it('G1: stays silent on a compliant turn with ZERO tool_use blocks (header+text only)', async () => {
+    const sid = `g1625-notools-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Just summarize'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: summarize, no tool calls' },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stderr).not.toContain('[R007/R008 Advisory]');
+  });
+
+  it('G2: stays silent when announce count exactly matches tool_use count (N announces, N calls)', async () => {
+    const sid = `g1625-match-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Run three checks'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: three checks' },
+        {
+          type: 'text',
+          text: [
+            '[claude][sonnet] → Tool: Bash',
+            '[claude][sonnet] → Tool: Bash',
+            '[claude][sonnet] → Tool: Bash',
+          ].join('\n'),
+        },
+        { type: 'tool_use', id: 'g2-1', name: 'Bash', input: { command: 'echo a' } },
+        { type: 'tool_use', id: 'g2-2', name: 'Bash', input: { command: 'echo b' } },
+        { type: 'tool_use', id: 'g2-3', name: 'Bash', input: { command: 'echo c' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('G3: still fires when there is exactly one tool_use and zero announce lines', async () => {
+    const sid = `g1625-fire-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Just do it, no announce'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: silent call' },
+        { type: 'tool_use', id: 'g3-1', name: 'Bash', input: { command: 'echo x' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+  });
+
+  it('source guard: forward r008 is hard-gated on $nall_tools == 0', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    const lines = src.split('\n');
+    const r008Line = lines.findIndex((l) => l.includes('as $r008') && !l.includes('$r008rev'));
+    expect(r008Line).toBeGreaterThan(-1);
+    // The guard must appear in the small window right before the binding.
+    const window = lines.slice(Math.max(0, r008Line - 4), r008Line + 1).join('\n');
+    expect(window).toContain('$nall_tools == 0 then 0');
+  });
+
+  it('source guard: the task-notification/Stop-hook-feedback exclusion was NOT applied', async () => {
+    // Regression pin for the REJECTED fix (see describe-block comment above): a live-session
+    // check showed excluding these markers from the turn-boundary test makes autonomous
+    // `/fsd`-loop drift WORSE (they are the only boundary signal available there), so the
+    // original unconditional string-content boundary check must remain untouched.
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).not.toContain('^<task-notification>|^<system-reminder>|^Stop hook feedback:');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
 // Fixture 4: opt-out
 // ════════════════════════════════════════════════════════════════
 

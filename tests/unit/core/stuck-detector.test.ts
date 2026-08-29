@@ -770,6 +770,87 @@ describe('stuck-detector.sh', () => {
   });
 
   // -----------------------------------------------------------------
+  // Read-only Bash exemption from Hard Block Checks 1/3 (#1625 찐빠 #2)
+  // -----------------------------------------------------------------
+
+  describe('read-only Bash exemption from hard-block (#1625)', () => {
+    it('POSITIVE CONTROL: should still hard-block when the same file is Edited 3 consecutive times', async () => {
+      const input = makeInput({ tool_name: 'Edit', file_path: '/src/readonly-control.ts' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should NOT hard-block when the same read-only git command is run 3 consecutive times', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('should NOT hard-block when the same read-only gh command is run 4 consecutive times', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'gh issue view 1625' });
+      const result = await runNTimes(input, 4);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('should NOT hard-block on repeated read-only ls command', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'ls -la .claude/hooks/scripts' });
+      const result = await runNTimes(input, 4);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('should NOT hard-block on bare "git branch" (read query, no positional arg)', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git branch' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('should NOT hard-block on "gh api" without mutating flags (GET-style)', async () => {
+      const input = makeInput({
+        tool_name: 'Bash',
+        command: 'gh api repos/o/r/branches/develop/protection',
+      });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('NEGATIVE CONTROL: should still hard-block when the same non-read-only Bash command is run 3 consecutive times', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'npm install' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should still hard-block when a read-only-looking command has an ambiguous redirection', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status > /tmp/out.txt' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should still hard-block on "git branch <name>" (create, not a bare query)', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git branch new-feature' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should still hard-block on "gh api" with mutating field flags', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'gh api repos/o/r/issues -f title=x' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should still hard-block on repeated identical error even for a read-only command (Check 2 unaffected)', async () => {
+      const input = makeInput({
+        tool_name: 'Bash',
+        command: 'git status',
+        is_error: true,
+        output: 'fatal: not a git repository',
+      });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('[Stuck Detection] HARD BLOCK');
+    });
+  });
+
+  // -----------------------------------------------------------------
   // Edge cases
   // -----------------------------------------------------------------
 
