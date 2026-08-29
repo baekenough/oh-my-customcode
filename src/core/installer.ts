@@ -35,6 +35,7 @@ import {
   renderGitWorkflowEN,
   renderGitWorkflowKO,
 } from './git-workflow.js';
+import { mergeHooksIntoSettings } from './hooks-settings.js';
 import {
   getComponentPath,
   getEntryTemplateName,
@@ -370,6 +371,51 @@ async function installSettingsLocal(targetDir: string, result: InstallResult): P
 }
 
 /**
+ * Merge hooks.json wiring into settings.local.json (#1623).
+ *
+ * `.claude/hooks/hooks.json` is a human-readable declarative source, not a path CC
+ * actually loads hooks from (see hook-wiring-research.md §A/§B). CC only recognizes
+ * the `hooks` key inside `settings.json` / `settings.local.json`. Without this step,
+ * every hook in `hooks.json` is copied to disk but never fires for end users running
+ * `omcustom init`.
+ *
+ * Merge policy (default, absent an explicit override from the conversion layer):
+ * replace the omcustom-managed hooks block while preserving any user-authored custom
+ * hook entries already present in settings.local.json — mirrors the
+ * "omcustom-managed 블록 교체 + 사용자 커스텀 이벤트 보존" policy from the wiring research.
+ *
+ * Skipped when the hooks component was not installed (hooks.json absent at the
+ * target path) — e.g. `--components` excludes `hooks`, or the hooks template is
+ * missing from this package build.
+ */
+async function installHooksSettings(
+  targetDir: string,
+  _options: InstallOptions,
+  result: InstallResult
+): Promise<void> {
+  const layout = getProviderLayout();
+  const hooksJsonPath = join(targetDir, getComponentPath('hooks'), 'hooks.json');
+  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
+
+  if (!(await fileExists(hooksJsonPath))) {
+    debug('install.hooks_settings_skipped', { reason: 'hooks.json not installed' });
+    return;
+  }
+
+  try {
+    const mergeResult = await mergeHooksIntoSettings(settingsPath, hooksJsonPath);
+    if (mergeResult && Array.isArray(mergeResult.warnings) && mergeResult.warnings.length > 0) {
+      result.warnings.push(...mergeResult.warnings);
+    }
+    debug('install.hooks_settings_merged', {});
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    result.warnings.push(`Failed to merge hooks into settings.local.json: ${message}`);
+    warn('install.hooks_settings_failed', { error: message });
+  }
+}
+
+/**
  * Install entry doc and track result
  */
 async function installEntryDocWithTracking(
@@ -462,6 +508,7 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     await installStatusline(options.targetDir, options, result);
     await installTestsConfig(options.targetDir, options, result);
     await installSettingsLocal(options.targetDir, result);
+    await installHooksSettings(options.targetDir, options, result);
     await installEntryDocWithTracking(options.targetDir, options, result);
 
     // Restore critical user files AFTER installation
