@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.50",
-  "generatedAt": "2026-08-29T08:09:31.962Z",
-  "templateVersion": "1.1.50",
+  "generatorVersion": "1.1.51",
+  "generatedAt": "2026-08-29T09:38:57.800Z",
+  "templateVersion": "1.1.51",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "f75d3b7466b67b9e06fb9cb393fee75c1d34bfc11ddfe12a7eea0ab6e8f6a25f",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "867011abe16989e56867946681f38d79e7fe3499195461f23fad10a26f7cc27c",
-      "size": 66505,
+      "templateHash": "95a80ec92fd9e736da6b627dae309b52a4447b8857a0341d191c6e8437e20565",
+      "size": 67943,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "795e56c8a13d3b9b67cf7ef361023b44838a6927a9b1f7504487f02d686ca176",
-      "size": 52965,
+      "templateHash": "666d9f51cc3b7199358cba5d40c5a8391422e4ceffe5644ec953a6f8445eb31e",
+      "size": 53628,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "07ad47325bc3392f84cdccef3e4fa1bd0f9144dccf8cf63a2fb1522a344dd970",
-      "size": 23962,
+      "templateHash": "c4f5c8cb1d07f86fc62b45037d1ac8bb52146cb33ea9e0cfe51438695d26fab2",
+      "size": 28511,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
@@ -110,8 +110,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "2bd83b16e17ba7fb20b99f379681ed22d6cdf912d619bb5af0cfed325e543646",
-      "size": 13257,
+      "templateHash": "5f332a4d678ec92b7b730954ea0c399da2f393d4b5a0978364cfaad4866939ed",
+      "size": 14159,
       "component": "rules"
     },
     ".claude/rules/index.yaml": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "eda398c79386fe3d3d2bb3a7ae73116f9f813163c2230086246efea56f4749c3",
-      "size": 36741,
+      "templateHash": "c7121d3c255f1715427f7facdfc207e424df001fc86aa502d5969c0e97dd8559",
+      "size": 37253,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {

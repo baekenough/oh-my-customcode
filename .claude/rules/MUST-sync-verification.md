@@ -93,6 +93,20 @@ Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
 
 Origin: #1512 (v1.1.28 커밋 staging에 dist/ 2파일 포함, 커밋 전 실측으로 정정; v1.1.12 dist/ untrack 회귀 방지); #1531 (`.omcustom.lock.json`이 v1.1.29 이후 4개 릴리즈 연속 누락 — 혼입 방지 단방향 조항의 반대편 공백). Cross-ref: R020 (완료 검증 — "실행됨 ≠ 성공").
 
+### 버전 범프 원자 순서 (Origin: #1619 #4)
+
+버전을 보유하는 파일은 3종이다 — `package.json`(generatorVersion 출처), `templates/manifest.json`(templateVersion 출처), `.omcustom.lock.json`(`bun run build`가 위 두 값을 읽어 각인하는 **파생 산출물**). 세 파일은 **원자적으로** 갱신해야 한다: package.json과 templates/manifest.json을 **동시에** 범프 → 그 다음 `bun run build` → build가 갱신한 lockfile을 스테이징. `bun run build`를 두 범프 사이에 끼우면(예: package.json만 먼저 범프하고 build) lockfile이 **구버전 templateVersion을 무경고로 각인**한다 — CI Version Sync가 3-way(package.json / manifest.json / lockfile) 대조라서 이 상태는 뒤늦게 차단된다.
+
+**범프 위임 표준 문안**: 버전 범프를 서브에이전트에 위임할 때, 위임 프롬프트에 3파일을 **전부 열거**한다 — "package.json과 templates/manifest.json을 동시에 범프한 뒤 `bun run build`를 실행하고 lockfile을 스테이징하라." 메모리에 이 순서에 대한 학습이 있어도 위임서에 배선되지 않으면 서브에이전트에 전달되지 않는다(R010 「표 조회 배선」과 동형 — 텍스트 존재 ≠ 배선).
+
+| Anti-pattern | Required |
+|--------------|----------|
+| package.json만 먼저 범프 후 `bun run build` 실행 → manifest.json은 나중에 범프 | package.json + templates/manifest.json 동시 범프 → `bun run build` → lockfile 스테이징 |
+| `bun run build`를 두 범프 사이에 끼워 실행 | build는 두 파일이 모두 범프된 **이후에만** 실행 |
+| 위임서에 "버전 범프"만 지시하고 3파일 미열거 | 위임서에 package.json / templates/manifest.json / lockfile 3파일을 전부 열거 |
+
+Origin: #1619 #4 (v1.1.50 세션 실측) — 범프 위임이 3파일 중 templates/manifest.json을 누락해 CI Version Sync 1차 실패(`manifest=1.1.49`). manifest 수정 후에도 2차 실패(`lock.tpl=1.1.49`) — `bun run build`가 manifest 범프 **전에** 실행돼 lockfile에 구버전 templateVersion이 각인된 상태였다. CI 처방 원문: "bump package.json AND templates/manifest.json first, then re-run 'bun run build' and stage the lockfile". Cross-ref: 위 Release Commit Staging Hygiene((b) 누락 방지 — tracked 변경 잔존 확인), R016(Rule Wiring Check — auto-dev.yaml 배선 필요), #1593(v1.1.47 세션에서 밝힌 `bun run build` → `sync-source-lockfile.ts` → `loadVersions()` 메커니즘).
+
 ### Count Sync — Exhaustive Grep, Not File Enumeration
 
 카운트(스킬/에이전트/룰/가이드 수) 동기화는 **파일 목록 열거가 아니라 저장소 전수 grep + 의미 판별**로 수행한다. 같은 카운트가 15곳 이상에 흩어져 있어 열거식 위임은 목록에서 빠진 곳을 구조적으로 놓친다.
@@ -197,6 +211,19 @@ Origin: #1574 (v1.1.44 세션 — mgr-sauron 브리핑의 "선재 항목" 4건 �
 
 - **버전 판정**: 세션 메모리에 "agora 정식 마이너 릴리즈 예정"이 기록돼 있었고, 오케스트레이터가 이를 semver 판정(minor vs patch) 근거로 인용했다가 사용자 정정("스킬 하나 추가한다고 마이너패치를?")을 받았다. 메모리 스냅샷은 판정을 정당화하지 못한다 — **직전 세션도 같은 오독을 했을 수 있기 때문**이다.
 - **테스트 baseline**: verify-build 단계에서 baseline을 메모리의 "138 pass"로 삼았으나 실측은 **2291 pass / 0 fail**이었다(138은 부분집합에 불과했다). 이번엔 fail이 0이라 판정에 영향이 없었으나, **fail이 0이 아니었다면 잘못된 baseline이 회귀를 통과시켰을 것**이다. baseline은 메모리 기록이 아니라 **전체 실행 실측값**으로 잡는다.
+
+## 릴리즈 전 배포 자격증명 유효성 (Origin: #1619 #5)
+
+릴리즈 착수 전, 배포 토큰(NPM_TOKEN 등)의 만료 가능성을 사전에 확인한다: `gh secret list`로 해당 secret의 갱신일을 조회하고, 발급일로부터 90일 경과 여부를 실측한다(값 자체는 조회 불가·불필요 — 메타데이터만 확인, R001 자격증명 가드레일). 90일 경과 시 갱신 필요 가능성을 먼저 사용자에게 보고한 뒤 릴리즈를 진행한다.
+
+**npm publish 실패의 오진 위험**: npm은 PUT 요청의 인증 실패를 **404로 위장**해 반환할 수 있다 — "패키지 없음"처럼 보이는 오류가 실제로는 "토큰 만료"일 수 있다는 뜻이다. publish 실패 시 워크플로우를 영구 변경하기 전, (a) ground-truth(`npm view <pkg> version`)로 실제 미배포 여부를 확정하고, (b) 비파괴적 재실행을 먼저 시도하며, (c) 재현되면 그때 토큰 만료 가설을 `gh secret list` 갱신일 대조로 검증한다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 릴리즈 착수 전 토큰 만료 가능성을 확인하지 않고 진행 → publish 단계에서야 실패 발견 (fail-late) | 착수 전 `gh secret list` 갱신일 + 90일 경과 여부 사전 확인 |
+| npm E404-on-PUT을 "패키지 부재"로 진단해 워크플로우/재배포 로직을 변경 | ground-truth(`npm view`)로 미배포 확정 → 비파괴 재실행 → 재현 시에만 토큰 만료 가설 검증 |
+
+Origin: #1619 #5 (v1.1.50 세션 실측) — NPM_TOKEN이 90일 만료 정책으로 05-20 발급 → 08-17 마지막 성공 → 08-29 시점 E404-on-PUT 2회로 fail-late 발견. Cross-ref: R020 「CI Publish-Step Error vs Published-Artifact Ground Truth」, R020 Diagnostic Hypothesis Verification(#1217 npm E403 오진 선례 — 같은 계열의 npm 오류코드 오진 패턴), 위 Pre-Release Target Version Ground-Truth Gate(릴리즈 착수 전 실측 원칙의 자격증명 각도).
 
 ## CC 버전 노트 반영 전 — 스코프 상한 이후 릴리즈 확인 (Origin: #1584 #1)
 
