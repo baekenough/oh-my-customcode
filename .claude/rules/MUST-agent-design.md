@@ -194,7 +194,7 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 
 > **`MessageDisplay`는 표시 전용 — `additionalContext` 미지원**: `MessageDisplay`는 `hookSpecificOutput.displayContent`로 **화면 표시 텍스트만** 교체하며, 트랜스크립트와 Claude가 보는 내용은 원본이 유지된다. 따라서 advisory 훅을 `MessageDisplay`에 배선하면 **모델에 도달하지 않는다**. `additionalContext`(모델 컨텍스트 주입)를 지원하는 이벤트는 SessionStart, Setup, SubagentStart, UserPromptSubmit, UserPromptExpansion, PreToolUse, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, SubagentStop이다. (이전 판이 나열하던 `PostMessage`는 문서화된 이벤트가 아니다 — 실제 이벤트명은 `MessageDisplay`.)
 
-> **문서 시차 노트 — `PreModelSwitch`/`PostModelSwitch` 및 `PostCompact`**: 33종 중 `PreModelSwitch`/`PostModelSwitch`(v2.1.251)는 CHANGELOG(2026-08-28)에는 명시되나 공식 hooks.md "Hook events" 카탈로그 페이지에는 실측일(2026-08-29) 기준 헤더가 없다 — changelog→hooks.md 반영 시차로 판단(오류 아님, hook-events-audit 2026-08-29 실측). 또한 `PostCompact`는 공식 문서상 `additionalContext`/decision-control이 정의돼 있지 않다 — 재주입(compact 후 규칙 재주입) 용도로는 `PostCompact`가 아니라 `SessionStart`(matcher `*`)를 쓸 것(cross-ref R021 「Prompt-based」 각주).
+> **문서 시차 노트 — `PreModelSwitch`/`PostModelSwitch` 및 `PostCompact`**: 33종 중 `PreModelSwitch`/`PostModelSwitch`(v2.1.251)는 CHANGELOG(2026-08-28)에는 명시되나 공식 hooks.md "Hook events" 카탈로그 페이지에는 실측일(2026-08-29) 기준 헤더가 없다 — changelog→hooks.md 반영 시차로 판단(오류 아님, hook-events-audit 2026-08-29 실측). 또한 `PostCompact`는 공식 문서상 `additionalContext`/decision-control이 정의돼 있지 않다 — 재주입(compact 후 규칙 재주입) 용도로는 `PostCompact`가 아니라 `SessionStart`(matcher `*`)를 쓸 것(cross-ref R021 「Prompt-based」 각주). PostCompact dispatch 경로는 바이너리 실측으로 실재 확인(2026-08-29 probe) — 상세는 R021 각주.
 
 > **신규 이벤트 발동 시점**: `Setup` — `--init-only`, 또는 `-p` 모드에서 `--init`/`--maintenance`로 시작할 때. `UserPromptExpansion` — 사용자가 입력한 커맨드가 프롬프트로 확장될 때(모델 도달 전; 확장 차단 가능). `PostToolUseFailure` — 도구 호출이 실패한 뒤. `PostToolBatch` — 병렬 도구 호출 배치 전체가 끝난 뒤, 다음 모델 호출 전. `MessageDisplay` — assistant 메시지 텍스트가 표시되는 동안(실시간 스트리밍). `DirectoryAdded` (v2.1.219+) — `/add-dir` 또는 SDK `register_repo_root`로 작업 디렉토리가 세션 중 추가될 때. (그 밖의 신규 이벤트 — `PermissionRequest`, `StopFailure`, `InstructionsLoaded`, `ConfigChange`, `WorktreeCreate`, `WorktreeRemove` — 는 발동 시점을 미실측이므로 서술하지 않는다.)
 
@@ -204,8 +204,8 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 |-------|---------|---------------|---------------|------------|
 | `PreToolUse` | Before tool execution | tool, tool_input | command, prompt | v2.1.63+ |
 | `PostToolUse` | After tool execution | tool, tool_input, tool_output | command, prompt | v2.1.63+ |
-| `PreCompact` | Before context compaction | — | command, prompt | v2.1.76+ |
-| `PostCompact` | After context compaction | — | command, prompt | v2.1.76+ |
+| `PreCompact` | Before context compaction | trigger | command, prompt | v2.1.76+ |
+| `PostCompact` | After context compaction | trigger, compact_summary | command, prompt | v2.1.76+ |
 | `Stop` | Session ending | — | command, prompt | v2.1.63+ |
 | `SessionStart` | Session begins | — | command | v2.1.63+ |
 | `SessionEnd` | Session fully closes | — | command | v2.1.76+ |

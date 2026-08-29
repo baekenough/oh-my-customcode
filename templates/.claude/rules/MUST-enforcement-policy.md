@@ -6,7 +6,7 @@
 
 oh-my-customcode uses an **advisory-first enforcement model**. Most rules are enforced through prompt engineering (CLAUDE.md, rules/, `SessionStart` re-injection[^postcompact]) rather than hard-blocking hooks. This is intentional — it preserves agent flexibility while maintaining behavioral standards.
 
-[^postcompact]: compact 후 재주입의 문서상 보장 경로는 `SessionStart`(matcher `*`, `claude-md-reinject.sh` — v1.1.50 #1617)이다. 기존 PostCompact prompt 배선은 유지되나 공식 문서상 `additionalContext`가 정의돼 있지 않아 효과 미보장·발동 미검증(hook-events-audit 2026-08-29). Origin: #1619 #7 — 최초 보고는 'PostCompact 공식 부재'였으나 감사 실측 결과 실재하되 additionalContext 미정의로 정정됨. 서브에이전트 보고의 검증 없는 인용이 틀린 전제를 회고 이슈까지 전파시킨 사례 (R020 원인 분석 검증 조항의 실증).
+[^postcompact]: compact 후 재주입의 문서상 보장 경로는 `SessionStart`(matcher `*`, `claude-md-reinject.sh` — v1.1.50 #1617)이다. 기존 PostCompact prompt 배선은 유지되나 공식 문서상 `additionalContext`가 정의돼 있지 않아 효과 미보장·발동 미검증(hook-events-audit 2026-08-29). 후속 바이너리 프로브(postcompact-probe 2026-08-29, CC 2.1.251)에서 dispatch 경로 실재가 확인됨(전용 실행 함수·payload 스키마 `trigger`/`compact_summary`·dispatch map 등록, PreCompact 대비 동형 구조). 따라서 '발동 미검증'은 'dispatch 실재하나 라이브 발동·prompt 핸들러 효과는 미검증'으로 좁혀진다 — `additionalContext` 미정의는 불변이므로 재주입 보장 경로는 여전히 SessionStart다. Origin: #1619 #7 — 최초 보고는 'PostCompact 공식 부재'였으나 감사 실측 결과 실재하되 additionalContext 미정의로 정정됨. 서브에이전트 보고의 검증 없는 인용이 틀린 전제를 회고 이슈까지 전파시킨 사례 (R020 원인 분석 검증 조항의 실증).
 
 ## Enforcement Tiers
 
