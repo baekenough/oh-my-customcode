@@ -16,28 +16,27 @@ command -v jq >/dev/null 2>&1 || exit 0
 HARD_BLOCK_THRESHOLD=${CLAUDE_STUCK_THRESHOLD:-3}
 
 # Determine if a Bash command is read-only (metadata/query only, no side effects).
-# Conservative: any ambiguity (chaining, redirection, substitution, or an
+# Conservative: any ambiguity (redirection, substitution, "||", or an
 # unrecognized command/subcommand) is treated as NOT read-only (write).
-# Used ONLY to exclude read-only Bash polling from Hard Block Checks 1 and 3
-# (same-path / same-tool+target consecutive-repeat blocking) below — Signal 1
-# (repeated-error advisory) and Hard Block Check 2 (same error hash) are
-# intentionally unaffected: repeated errors are a genuine stuck signal
-# regardless of read/write (issue #1625).
-is_readonly_bash_command() {
+# Compound commands chained with "&&", ";", or a single "|" are split into
+# segments (#1629) — the whole command is read-only ONLY when EVERY segment
+# is read-only; one write segment (or one unparseable/empty segment) makes
+# the whole command a write.
+# Used to exclude read-only Bash polling from Hard Block Checks 1 and 3
+# (same-path / same-tool+target consecutive-repeat blocking) AND the Signal 3
+# tool-spam advisory below — Signal 1 (repeated-error advisory) and Hard
+# Block Check 2 (same error hash) are intentionally unaffected: repeated
+# errors are a genuine stuck signal regardless of read/write (issue #1625).
+
+# Classify a SINGLE (non-compound) command segment as read-only. Callers
+# (is_readonly_bash_command) are responsible for stripping ambiguous
+# constructs and splitting compound commands before invoking this directly.
+is_readonly_single_command() {
   local cmd="$1"
-  cmd="$(printf '%s' "$cmd" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
   if [ -z "$cmd" ]; then
     echo "false"
     return 0
   fi
-
-  # Any chaining/redirection/substitution metachar => ambiguous, treat as write
-  case "$cmd" in
-    *'>'*|*'|'*|*'&&'*|*';'*|*'$('*|*'`'*|*'<('*)
-      echo "false"
-      return 0
-      ;;
-  esac
 
   local parts=()
   read -ra parts <<< "$cmd"
@@ -117,11 +116,62 @@ is_readonly_bash_command() {
   esac
 }
 
+is_readonly_bash_command() {
+  local cmd="$1"
+  cmd="$(printf '%s' "$cmd" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  if [ -z "$cmd" ]; then
+    echo "false"
+    return 0
+  fi
+
+  # Truly ambiguous constructs: redirection, command/process substitution, or
+  # "||" (conditional-OR — intentionally NOT decomposed into segments, since
+  # its branch that actually runs depends on the first segment's exit code)
+  # => always treated as write.
+  case "$cmd" in
+    *'>'*|*'||'*|*'$('*|*'`'*|*'<('*)
+      echo "false"
+      return 0
+      ;;
+  esac
+
+  # Compound command: split on "&&", ";", or a single "|" into segments and
+  # require EVERY segment to be read-only (#1629). An empty segment (e.g. a
+  # trailing separator) is treated as ambiguous => write, same as any
+  # segment that fails single-command classification.
+  if [[ "$cmd" == *'&&'* || "$cmd" == *';'* || "$cmd" == *'|'* ]]; then
+    local normalized="$cmd"
+    normalized="${normalized//&&/$'\n'}"
+    normalized="${normalized//;/$'\n'}"
+    normalized="${normalized//|/$'\n'}"
+    local seg
+    while IFS= read -r seg; do
+      seg="$(printf '%s' "$seg" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      if [ -z "$seg" ]; then
+        echo "false"
+        return 0
+      fi
+      if [ "$(is_readonly_single_command "$seg")" != "true" ]; then
+        echo "false"
+        return 0
+      fi
+    done <<< "$normalized"
+    echo "true"
+    return 0
+  fi
+
+  is_readonly_single_command "$cmd"
+}
+
 input=$(cat)
 
 # Extract tool info
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // "unknown"')
-file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.command // ""' | head -c 120)
+# 300 (not 120): a 120-char cutoff let two genuinely different long Bash
+# commands collide on their shared 120-char prefix, causing a false-positive
+# same-path/same-tool+target hard-block. 300 chars covers the vast majority
+# of real commands without their differing tail being cut off (#1629).
+file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.command // ""' | head -c 300)
 is_error=$(printf '%s' "$input" | jq -r '.tool_output.is_error // false')
 output_preview=$(printf '%s' "$input" | jq -r '.tool_output.output // ""' | head -c 200)
 raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
@@ -150,7 +200,8 @@ entry=$(jq -cn \
   --arg err "$is_error" \
   --arg hash "$error_hash" \
   --arg preview "$output_preview" \
-  '{timestamp: $ts, tool: $tool, path: $path, is_error: $err, error_hash: $hash, preview: $preview}')
+  --arg readonly "$is_readonly" \
+  '{timestamp: $ts, tool: $tool, path: $path, is_error: $err, error_hash: $hash, preview: $preview, readonly: $readonly}')
 
 echo "$entry" >> "$HISTORY_FILE"
 
@@ -214,8 +265,13 @@ if [ "$stuck_detected" = false ] && { [ "$tool_name" = "Edit" ] || [ "$tool_name
 fi
 
 # Signal 3: Tool spam (same tool 5+ times in last 8 entries)
-if [ "$stuck_detected" = false ]; then
-  tool_repeat=$(tail -8 "$HISTORY_FILE" | grep -c "\"tool\":\"${tool_name}\"" 2>/dev/null || echo "0")
+# Read-only Bash polling is excluded from this count (issue #1629): skip
+# entirely when the CURRENT call is read-only, and exclude prior read-only
+# entries from the historical count so a mix of harmless read-only Bash
+# calls (git status / gh view / ls / ...) doesn't inflate the "same tool
+# called N times" advisory.
+if [ "$stuck_detected" = false ] && [ "$is_readonly" != "true" ]; then
+  tool_repeat=$(tail -8 "$HISTORY_FILE" | grep -v "\"readonly\":\"true\"" | grep -c "\"tool\":\"${tool_name}\"" 2>/dev/null || echo "0")
   if [ "$tool_repeat" -ge 5 ]; then
     stuck_detected=true
     signal_type="Tool loop"

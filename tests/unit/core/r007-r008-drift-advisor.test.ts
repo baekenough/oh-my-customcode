@@ -1227,6 +1227,108 @@ describe('r007-r008-drift-advisor.sh — Fixture 3e: #1625 찐빠 #3 forward gua
 });
 
 // ════════════════════════════════════════════════════════════════
+// Fixture 3f: #1628 — window-saturation guard on the $b=-1 boundary fallback
+//
+// When the tail -n 200 window contains NO turn boundary at all, the previous
+// implementation ALWAYS fell back to $b=-1, merging the ENTIRE window into one turn.
+// That is correct only when the window is NOT saturated (the file has fewer than 200
+// lines, so tail returned the whole transcript from session start — there truly is no
+// earlier boundary). When the window IS saturated (tail actually returned 200 lines),
+// a real boundary may exist just outside the window, and merging the whole window
+// misattributes announce/tool_use counts across what are really several independent,
+// individually-compliant responses — producing R008 false positives that swung
+// 5~10 across a live autonomous-loop session (#1628).
+//
+// The fix: bash measures the actual window line count ($wlc) via `awk 'END{print NR}'`
+// and passes it to jq as --argjson wlc. When $bi (candidate boundary indices) is empty
+// AND $wlc >= 200 (saturated), the verdict is skipped entirely (`empty` → no result →
+// exit 0, no advisory). When $bi is empty and $wlc < 200 (genuinely short session), the
+// original $b=-1 fallback is preserved unchanged.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 3f: #1628 window-saturation guard', () => {
+  it('TP: fires normally when a real boundary exists inside a saturated (>=200 line) window', async () => {
+    // Regression guard: the saturation gate must NOT suppress genuine violations when a
+    // boundary IS present in the window — it only applies when $bi is completely empty.
+    const sid = `g1628-tp-${Date.now()}`;
+    const lines: string[] = [];
+    for (let i = 0; i < 60; i += 1) {
+      lines.push(...userTurn(`Question ${i}`));
+      lines.push(
+        ...assistantTurn([
+          { type: 'text', text: `┌─ Agent: claude (default)\n└─ Task: answer ${i}` },
+          { type: 'text', text: '[claude][sonnet] → Tool: Read' },
+          { type: 'tool_use', id: `g1628-tp-${i}`, name: 'Read', input: { file_path: `f${i}.md` } },
+        ])
+      );
+    }
+    // LAST turn — a genuine violation, preceded by a real boundary.
+    lines.push(...userTurn('Last question'));
+    lines.push(
+      ...assistantTurn([{ type: 'tool_use', id: 'g1628-tp-last', name: 'Bash', input: {} }])
+    );
+    await writeTranscript(sid, lines);
+    // Sanity: the tail-200 window is genuinely saturated for this fixture.
+    expect(lines.length).toBeGreaterThanOrEqual(200);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+  });
+
+  it('TN1: stays SILENT when the window is saturated (>=200 lines) with NO boundary at all', async () => {
+    // This is the exact false-positive shape from #1628: a long stretch of purely
+    // assistant lines (autonomous-loop re-entry with no UserPromptSubmit boundary) that,
+    // pre-fix, would merge into one mega-turn and misfire on tool_use/announce mismatch.
+    const sid = `g1628-tn1-${Date.now()}`;
+    const lines: string[] = [];
+    for (let i = 0; i < 220; i += 1) {
+      // No text block at all → no announce lines anywhere, only tool_use blocks. Pre-fix
+      // this merges into ONE giant turn with ~220 tool_use and 0 announce → r008=220.
+      lines.push(
+        ...assistantTurn([{ type: 'tool_use', id: `g1628-tn1-${i}`, name: 'Bash', input: {} }])
+      );
+    }
+    await writeTranscript(sid, lines);
+    expect(lines.length).toBeGreaterThanOrEqual(200);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stderr).not.toContain('[R007/R008 Advisory]');
+  });
+
+  it('TN2: preserves the pre-fix $b=-1 fallback when the window is NOT saturated (<200 lines)', async () => {
+    // A genuinely short session (no earlier boundary because there IS no earlier content)
+    // must keep firing exactly as before — the saturation gate must not swallow this case.
+    const sid = `g1628-tn2-${Date.now()}`;
+    const lines: string[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      lines.push(
+        ...assistantTurn([{ type: 'tool_use', id: `g1628-tn2-${i}`, name: 'Bash', input: {} }])
+      );
+    }
+    await writeTranscript(sid, lines);
+    expect(lines.length).toBeLessThan(200);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=5');
+  });
+
+  it('source guard: the $wlc saturation check gates the empty-boundary fallback (#1628)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).toContain('$wlc >= 200');
+    expect(src).toContain('--argjson wlc');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
 // Fixture 4: opt-out
 // ════════════════════════════════════════════════════════════════
 
