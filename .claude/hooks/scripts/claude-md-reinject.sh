@@ -6,13 +6,18 @@
 #   규칙 amnesia가 재발한다. 기존 PostCompact 훅(hooks.json)은 "prompt" 타입으로 요약 지침만
 #   재주입할 뿐, CLAUDE.md 원문 전체를 재주입하지 않는다.
 #
-# 배선 이벤트 (Phase 1 판단, #1617):
+# 배선 이벤트 (Phase 1 판단, #1617 / matcher 협소화 #1626):
 #   R006 실측 기준(이 저장소 rules/MUST-agent-design.md) additionalContext 지원 이벤트 목록에
 #   SessionStart는 있고 PostCompact는 없다. 한편 공식 문서(hooks.md, 2026-08-29 재확인)의
 #   SessionStart matcher는 startup / resume / clear / compact 네 가지이며, "compact"는
-#   auto/manual compact 직후를 가리킨다 — 즉 "session start 전체와 compact 재개 이후 재주입"
-#   요구사항은 SessionStart 단일 이벤트(matcher "*")로 전부 커버된다. 별도 PostCompact 배선은
-#   불필요 — 공식 문서 이벤트 목록(### 헤더 스캔)에 PostCompact 자체가 없다(PreCompact만 존재).
+#   auto/manual compact 직후를 가리킨다. 별도 PostCompact 배선은 불필요 — 공식 문서 이벤트
+#   목록(### 헤더 스캔)에 PostCompact 자체가 없다(PreCompact만 존재).
+#
+#   #1626 실측: startup 시점 재주입은 CC의 네이티브 CLAUDE.md 자동 로드와 중복(13,817 B/세션
+#   순수 낭비)이며, resume/clear는 이전 컨텍스트가 그대로 복원되므로 재주입이 불요하다.
+#   원 목적(#1617 — compact 후 규칙 amnesia 방지)은 "compact" 소스만으로 충분히 달성되므로,
+#   hooks.json의 matcher를 "*" → "compact"로 좁혔다. 이 스크립트 자체는 source 필터링을
+#   하지 않으므로(아래 source_field는 로그 헤더용) hooks.json matcher가 유일한 게이트다.
 #
 # 동작:
 #   stdin JSON의 .source(startup/resume/clear/compact/기타)를 로그 헤더에 포함해

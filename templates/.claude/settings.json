@@ -205,8 +205,8 @@
             "command": "bash .claude/hooks/scripts/claude-md-reinject.sh"
           }
         ],
-        "matcher": "*",
-        "description": "Re-inject project CLAUDE.md into model context on session start/resume/clear and compact re-entry — matcher \"*\" covers all SessionStart sources including \"compact\" (#1617)"
+        "matcher": "compact",
+        "description": "Re-inject project CLAUDE.md into model context on compact re-entry only — CC already natively auto-loads CLAUDE.md on startup/resume/clear, so re-injecting there is pure duplication (~13.8KB/session); matcher narrowed to \"compact\" to keep the original #1617 purpose (post-compact amnesia defense) without the startup double-injection (#1626)"
       }
     ],
     "UserPromptSubmit": [
