@@ -12,15 +12,15 @@ command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
 
 # Extract current task info
-agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // "unknown"')
-current_model=$(echo "$input" | jq -r '.tool_input.model // "inherit"')
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // "unknown"')
+current_model=$(printf '%s\n' "$input" | jq -r '.tool_input.model // "inherit"')
 
 # Session-scoped outcome log
 OUTCOME_FILE="/tmp/.claude-task-outcomes-${PPID}"
 
 # Skip if no history
 if [ ! -f "$OUTCOME_FILE" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -107,5 +107,5 @@ if [ "$current_model" != "haiku" ] && [ "$current_model" != "inherit" ] && [ "$c
 fi
 
 # Pass through
-echo "$input"
+printf '%s\n' "$input"
 exit 0

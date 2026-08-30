@@ -10,9 +10,9 @@ command -v jq >/dev/null 2>&1 || { cat; exit 0; }
 
 input=$(cat)
 
-agent_type=$(echo "$input" | jq -r '.agent_type // "unknown"')
-model=$(echo "$input" | jq -r '.model // "inherit"')
-description=$(echo "$input" | jq -r '.description // ""' | head -c 80)
+agent_type=$(printf '%s\n' "$input" | jq -r '.agent_type // "unknown"')
+model=$(printf '%s\n' "$input" | jq -r '.model // "inherit"')
+description=$(printf '%s\n' "$input" | jq -r '.description // ""' | head -c 80)
 
 AGENT_START_FILE="/tmp/.claude-agent-starts-${PPID}"
 
@@ -25,7 +25,7 @@ entry=$(jq -cn \
   --arg desc "$description" \
   '{start_epoch: $ts, agent_type: $agent, model: $model, description: $desc}')
 
-echo "$entry" >> "$AGENT_START_FILE"
+printf '%s\n' "$entry" >> "$AGENT_START_FILE"
 
 # Ring buffer: 50 max
 if [ -f "$AGENT_START_FILE" ]; then
@@ -36,5 +36,5 @@ if [ -f "$AGENT_START_FILE" ]; then
   fi
 fi
 
-echo "$input"
+printf '%s\n' "$input"
 exit 0

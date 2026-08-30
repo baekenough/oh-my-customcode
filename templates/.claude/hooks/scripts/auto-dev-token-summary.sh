@@ -32,7 +32,7 @@ summary=$(jq -s -r '
 [ "$summary" = "[]" ] && exit 0
 
 # Totals
-totals=$(echo "$summary" | jq -r '
+totals=$(printf '%s\n' "$summary" | jq -r '
   {
     total_calls: (map(.calls) | add),
     total_in: (map(.tokens_in) | add),
@@ -40,10 +40,10 @@ totals=$(echo "$summary" | jq -r '
     grand: (map(.total) | add)
   }
 ')
-total_calls=$(echo "$totals" | jq -r '.total_calls')
-total_in=$(echo "$totals" | jq -r '.total_in')
-total_out=$(echo "$totals" | jq -r '.total_out')
-grand=$(echo "$totals" | jq -r '.grand')
+total_calls=$(printf '%s\n' "$totals" | jq -r '.total_calls')
+total_in=$(printf '%s\n' "$totals" | jq -r '.total_in')
+total_out=$(printf '%s\n' "$totals" | jq -r '.total_out')
+grand=$(printf '%s\n' "$totals" | jq -r '.grand')
 
 {
   echo ""
@@ -52,7 +52,7 @@ grand=$(echo "$totals" | jq -r '.grand')
   echo ""
   printf "| %-32s | %5s | %10s | %10s | %10s |\n" "Phase" "Calls" "Tokens In" "Tokens Out" "Total"
   printf "| %-32s | %5s | %10s | %10s | %10s |\n" "--------------------------------" "-----" "----------" "----------" "----------"
-  echo "$summary" | jq -r '.[] | "\(.phase)\t\(.calls)\t\(.tokens_in)\t\(.tokens_out)\t\(.total)"' | \
+  printf '%s\n' "$summary" | jq -r '.[] | "\(.phase)\t\(.calls)\t\(.tokens_in)\t\(.tokens_out)\t\(.total)"' | \
     while IFS=$'\t' read -r phase calls tin tout tot; do
       phase_trunc=$(printf "%s" "$phase" | head -c 32)
       printf "| %-32s | %5s | %10s | %10s | %10s |\n" "$phase_trunc" "$calls" "$tin" "$tout" "$tot"

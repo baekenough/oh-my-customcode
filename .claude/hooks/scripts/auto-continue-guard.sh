@@ -29,5 +29,5 @@ if [ "$count" -ge 4 ]; then
   echo '[AutoContinue] SAFETY: auto-continue limit (3) reached. Pausing.' >&2
 fi
 
-echo "$input"
+printf '%s\n' "$input"
 exit 0

@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.55",
-  "generatedAt": "2026-08-30T00:36:24.699Z",
-  "templateVersion": "1.1.55",
+  "generatorVersion": "1.1.56",
+  "generatedAt": "2026-08-30T02:02:31.768Z",
+  "templateVersion": "1.1.56",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "f75d3b7466b67b9e06fb9cb393fee75c1d34bfc11ddfe12a7eea0ab6e8f6a25f",
@@ -1135,18 +1135,18 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/eval-core-batch-save.sh": {
-      "templateHash": "4f5bcba16122eff79461166e88204a03dddd8a31a1e4bfe927252c8f1526b26f",
-      "size": 1347,
+      "templateHash": "1c31d21724d863ba87c0b2ea0505c497625aee7ca18dcdc9659654bc182436d0",
+      "size": 1365,
       "component": "hooks"
     },
     ".claude/hooks/scripts/plugin-cache-check.sh": {
-      "templateHash": "357cdc494290a7628dd557ce7fff96f97d2048497c1f03ddfde5d77deaa3f813",
-      "size": 908,
+      "templateHash": "69cc1035219ad970df389170178d07dae15537c075f4193a9d4c09089fb29be1",
+      "size": 926,
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
-      "templateHash": "a06097f9d245bd39194498452f1dac3c2df46f14939d52fe20fc31c634b61ca9",
-      "size": 2374,
+      "templateHash": "5546b5d75535ece21a4ba7d197d60f28f5c725f3abcb14f0b3b93e5a890f57ca",
+      "size": 2437,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stage-blocker.sh": {
@@ -1155,23 +1155,23 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/task-state-precompact.sh": {
-      "templateHash": "c82c1a9f7ccd477ca1bff1df1371f7fe6e1b2497f12709f8b028632ac54d857e",
-      "size": 1928,
+      "templateHash": "205bd83c7beadecfcd55f8a4009436a8b7ca12b3541d6d34e999eb1012e99fcb",
+      "size": 1937,
       "component": "hooks"
     },
     ".claude/hooks/scripts/skill-extractor-analyzer.sh": {
-      "templateHash": "98ecaa30000ae031a356291ebefadcd8ad92b1bc1e270bfc060a620f2a687231",
-      "size": 1580,
+      "templateHash": "c14d286826244019a3ec8b4576e863465edadcd49a5135a147821462f7639a58",
+      "size": 1598,
       "component": "hooks"
     },
     ".claude/hooks/scripts/destructive-git-guard.sh": {
-      "templateHash": "6191172ef064c5ca2dc937320010c5ab111996754ae9857ddaa601fd7aadf68a",
-      "size": 2816,
+      "templateHash": "9f88a5c327d0f8469adb504da9a48826e9206f33bd0691f62880660b3b0738bc",
+      "size": 2834,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-reflection.sh": {
-      "templateHash": "6bf31fab89dadd586e444224cb0617d99f87f4308136014bcb32889a4d5bf56c",
-      "size": 11356,
+      "templateHash": "c5dfd91205c9ceea129a30a960554e5e7f6e02eda99020195b5fd8d68f90957d",
+      "size": 11491,
       "component": "hooks"
     },
     ".claude/hooks/scripts/user-prompt-preprocessor.sh": {
@@ -1180,33 +1180,33 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/rtk-intercept.sh": {
-      "templateHash": "5e936074a2dcc6e17ce05992778c72ed2fac5edc3cfd8ce63a480ea5a6a95947",
-      "size": 1926,
+      "templateHash": "ea4e05809d1d7791466dffc037d464c3bb96483808f0f551b4132185f4274e23",
+      "size": 2007,
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-dev-token-summary.sh": {
-      "templateHash": "f4e9792391dc6f8c0bd541eb4187f407ac1d5e79ed3b97cea84f9ddcfc87e752",
-      "size": 2299,
+      "templateHash": "d3631c1d4f641c9c4a5137697cab96512c9ecd60903e60b512bff6b49e48de15",
+      "size": 2353,
       "component": "hooks"
     },
     ".claude/hooks/scripts/omcustom-auto-update.sh": {
-      "templateHash": "6769660d7989c12bbce413ac4ef85fc5a4f18e0bbd29a57eeb657deca611fdd9",
-      "size": 5154,
+      "templateHash": "115765a7ac6f625f2abb0deda1196c284177aa9474e99a5e7a758b2b2d555496",
+      "size": 5208,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stale-todo-scanner.sh": {
-      "templateHash": "d2f47fdfff22243a4d5cbbbb09f176e019235decf603fac17407ea17d114d17d",
-      "size": 2306,
+      "templateHash": "34ae2e2f11e467c7c73b37685390424e59f8596be684f67756101c6f7a78a913",
+      "size": 2315,
       "component": "hooks"
     },
     ".claude/hooks/scripts/playwright-compress.sh": {
-      "templateHash": "748a0f09dba2b78de3fb87ee5904ce9b397fc6bbfa14766c9fcac3dc5511e76c",
-      "size": 1650,
+      "templateHash": "5391afd2c74c1c2000ff864fa961f83a38bbe79b25e98945ad6b7f5f2b5b04ff",
+      "size": 1686,
       "component": "hooks"
     },
     ".claude/hooks/scripts/secret-filter.sh": {
-      "templateHash": "f9e002664ef091328d059e2dcf703eb30929f47ff59e81fdddd201f24783ab1f",
-      "size": 2904,
+      "templateHash": "7dae055bbb30c97fd843e89af8b46cf2b73fba32e16427b8daaaa880eb61ad72",
+      "size": 2940,
       "component": "hooks"
     },
     ".claude/hooks/scripts/fail-axis-cause-advisor.sh": {
@@ -1215,23 +1215,23 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/model-escalation-advisor.sh": {
-      "templateHash": "31940a5d710f3ec624e96738c8c873e83216a84fb48624dfa87808bcd429634a",
-      "size": 3486,
+      "templateHash": "af45c710f557c8bc25aa2090ec905b711bb81513c9798fe3f58e510bb7f2d2ac",
+      "size": 3522,
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-dev-token-tracker.sh": {
-      "templateHash": "8bd988ce08336da78d6fb1be5e6c70d80c86fc43a206da7243b4b054147bad59",
-      "size": 2235,
+      "templateHash": "1d74474d840143941e948b16c7951195481fa7bbfc4ac4937cd8a31ef4a488fd",
+      "size": 2289,
       "component": "hooks"
     },
     ".claude/hooks/scripts/schema-validator.sh": {
-      "templateHash": "7fbe5538a7c2a672adc0567e2989d0fdd9460f4c77a371ce40b4f381506d7f98",
-      "size": 3307,
+      "templateHash": "3d2108bd34bb31e7a41702118770bfe4ce270055076238b5c4b42a45740b15a9",
+      "size": 3397,
       "component": "hooks"
     },
     ".claude/hooks/scripts/git-delegation-guard.sh": {
-      "templateHash": "f6f467eff13e38dab6aa8d0db3f20243459c1480a45b6b21d1f5679b4f9dd748",
-      "size": 1984,
+      "templateHash": "1631eed539bf0dd02381b118faef57122ea61e1f8d0e0556227f644ef82a5f10",
+      "size": 2011,
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
@@ -1240,18 +1240,18 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix-prompt.sh": {
-      "templateHash": "6f65a9a59722c0538dcc2a6f65a2284a452063bf393b42f4c0d503dfb97ef62f",
-      "size": 1049,
+      "templateHash": "4cfd985c06f5bf3730d2b806d3aa71cd08807da9b72cc1dc19a2f8bd0ec4c92b",
+      "size": 1076,
       "component": "hooks"
     },
     ".claude/hooks/scripts/agent-teams-advisor.sh": {
-      "templateHash": "79dededbf09af11de060481c995ac2503c816a4a1461b6d898c86fa142d42133",
-      "size": 3269,
+      "templateHash": "446a9b7457730892a31dad3f8225aa22740dbf28d3843833fdcf937c3fc77453",
+      "size": 3305,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "c89bb8545f239b360c85aaf755db40bcbf2bec2cc21c5106b83678c18ba83073",
-      "size": 13186,
+      "templateHash": "f8d74b6f93caf485153a164bd37d4e2c29875c7077472fd05849aeed514c1bb7",
+      "size": 13231,
       "component": "hooks"
     },
     ".claude/hooks/scripts/failure-ledger.sh": {
@@ -1260,33 +1260,33 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/agent-start-recorder.sh": {
-      "templateHash": "b6d706295a97939539e67361d76cb82417b7d8dd42548f5d6d9a8908f7f72e34",
-      "size": 1125,
+      "templateHash": "74eefb4b21894f75425e6380ae4d45708576fe9d92366ec82f86c3adf1121fe9",
+      "size": 1170,
       "component": "hooks"
     },
     ".claude/hooks/scripts/file-change-validator.sh": {
-      "templateHash": "85c4f67dcef49c60534fcc4c3b4f698c9f8e8830c9a8af28483abf19b785524c",
-      "size": 749,
+      "templateHash": "435361b37a30a03de25d4c6c37b8a2ff177ea668766faeaa8271286308e1f1bc",
+      "size": 785,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-env-check.sh": {
-      "templateHash": "b6c4571cd51f9aef9bb457b4faf6adab0fd85846dcc368769dc37e35a46444b7",
-      "size": 11822,
+      "templateHash": "a35b06da5101597f27b7750c42a1e1d9dce8a1c901d40416261c956f5bcd368a",
+      "size": 11831,
       "component": "hooks"
     },
     ".claude/hooks/scripts/feedback-collector.sh": {
-      "templateHash": "32efc44b10d2b1e17f70f254bbb50625f3cac4740308bbc6b2c99491c5351f2e",
-      "size": 3058,
+      "templateHash": "ca16c4fd702a659e0bda900cfb28d49cf91bc47152effba81438ce1b14025883",
+      "size": 3121,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stop-console-audit.sh": {
-      "templateHash": "68f1273583a0aadd8fd838cba74b7b898cab4d8a236e7ee04439e32c62011e01",
-      "size": 1525,
+      "templateHash": "0545316a742a87d0993fd852f3d798d707e8192d3aa7671e31dc0e3757ad465a",
+      "size": 1534,
       "component": "hooks"
     },
     ".claude/hooks/scripts/task-outcome-recorder.sh": {
-      "templateHash": "12ff3bf4c791ba8e77b33fb574f52fbcf56f81238e2762c2640d2f4d1af3c71d",
-      "size": 4680,
+      "templateHash": "ea31b7b33a2f77906290a9534c52f56e0409ffe30a6140df3ecec1874ac0286a",
+      "size": 4752,
       "component": "hooks"
     },
     ".claude/hooks/scripts/adaptive-harness-scan.sh": {
@@ -1295,48 +1295,53 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/cwd-change-detector.sh": {
-      "templateHash": "bebc0ecb4a90437b39077af310bf04064cc4402b0cb569fcb1575d90108894bf",
-      "size": 908,
+      "templateHash": "db1757f935a056df4f1ae44cf904db0513c04aee532e70a00dc56cc4f40d684d",
+      "size": 935,
       "component": "hooks"
     },
     ".claude/hooks/scripts/content-hash-validator.sh": {
-      "templateHash": "67a486d9212f88d6c51ff477143a53f6a585537ddae3a88a355af91c7ce1e5e3",
-      "size": 2831,
+      "templateHash": "f43be5a1501b0cca04ae83306b53dc30f1109874f558517232b5f2f96d09337b",
+      "size": 2867,
       "component": "hooks"
     },
     ".claude/hooks/scripts/audit-log.sh": {
-      "templateHash": "773005b0189ef64b708995ac8377bc1e76e64ae962db861ce5bd0546ad95989f",
-      "size": 2081,
+      "templateHash": "d3788c9fe4524e53c7766c14faf7639962db392b1a34e46fbf52a5a85a2060fc",
+      "size": 2135,
       "component": "hooks"
     },
     ".claude/hooks/scripts/context-budget-advisor.sh": {
-      "templateHash": "e5a6357cbca618c7d9d776b305e87c65e3808b6d8717b2e76d1c93ee27e4ddf0",
-      "size": 3888,
+      "templateHash": "d2a68cee3c651bce6071b4a8c9d75b42cecf89162823d7e34d95dc347be7dcfe",
+      "size": 3915,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stall-detection-advisor.sh": {
-      "templateHash": "7949bdaf5942700efde75bdb1d2b21d7c7ba66a1f33500216012267e7459ad30",
-      "size": 4673,
+      "templateHash": "7ec9aade7040098935baa8a1897c2eb5ff1fc6bb2a79c002fcd4c6826888adeb",
+      "size": 4772,
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-continue-guard.sh": {
-      "templateHash": "e696f1577a793bb6e9676dd5f9a41f17a667c3dd4d3d5ca02272802390b0f15a",
-      "size": 864,
+      "templateHash": "a26db6ab9d47d9648e2fe0e282e056d44b403de62144070190ab582c4f6ea7e6",
+      "size": 873,
       "component": "hooks"
     },
     ".claude/hooks/scripts/cost-cap-advisor.sh": {
-      "templateHash": "c9c4b0daef9e59b70c8a5fe65aac273245706a3dd6a5ba501fc19789e22399ed",
-      "size": 2531,
+      "templateHash": "443ad1210298ab1c8ec5d38a245e6761634a54af2830dcb6d731c0d97c9ed728",
+      "size": 2585,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix.sh": {
-      "templateHash": "aef45df8bd40efe7548b3720ad7a35a7d04a24bf63fc6d40bcace5fb91497a95",
-      "size": 5353,
+      "templateHash": "d77cfc1b92fdb9cf89d9fea823e8bfeef9e23aec05511a1a650263469f2f7ec4",
+      "size": 5362,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/subagent-failure-advisor.sh": {
+      "templateHash": "329a7696c5a4b6de368ff844e33901065a73a57562d0ec460770dc0b5c13b0b0",
+      "size": 1930,
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "9aea4ec5fb6fbd05abf01a9098e917f4c9e6380c7de7eda2d42e400dc373a9fe",
-      "size": 28566,
+      "templateHash": "630a574f94ad85d6290265fa7b67e60fa84d1d5083daeefad4ebdfd897f125d6",
+      "size": 28996,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {

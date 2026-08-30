@@ -9,7 +9,7 @@ set -euo pipefail
 
 # Always pass through input no matter what
 input=$(cat)
-trap 'echo "$input"' EXIT
+trap 'printf "%s\n" "$input"' EXIT
 
 # Gate: only active during auto-dev pipeline
 PIPELINE_STATE="/tmp/.claude-pipeline-auto-dev-${PPID}.json"
@@ -21,10 +21,10 @@ command -v jq >/dev/null 2>&1 || exit 0
 LOG_FILE="/tmp/auto-dev-spend-${PPID}.json"
 
 # Extract fields (PostToolUse Agent shape)
-agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // "unknown"' 2>/dev/null || echo "unknown")
-description=$(echo "$input" | jq -r '.tool_input.description // ""' 2>/dev/null || echo "")
-prompt_text=$(echo "$input" | jq -r '.tool_input.prompt // ""' 2>/dev/null || echo "")
-output_text=$(echo "$input" | jq -r '.tool_output.output // .tool_output // ""' 2>/dev/null || echo "")
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // "unknown"' 2>/dev/null || echo "unknown")
+description=$(printf '%s\n' "$input" | jq -r '.tool_input.description // ""' 2>/dev/null || echo "")
+prompt_text=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt // ""' 2>/dev/null || echo "")
+output_text=$(printf '%s\n' "$input" | jq -r '.tool_output.output // .tool_output // ""' 2>/dev/null || echo "")
 
 # Derive phase from pipeline state (current_phase) or fallback to description prefix
 phase=$(jq -r '.current_phase // .phase // "unknown"' "$PIPELINE_STATE" 2>/dev/null || echo "unknown")
@@ -52,6 +52,6 @@ entry=$(jq -n -c \
   --argjson tout "$tokens_out" \
   '{ts: $ts, phase: $phase, agent: $agent, tokens_in: $tin, tokens_out: $tout}' 2>/dev/null) || exit 0
 
-echo "$entry" >> "$LOG_FILE" 2>/dev/null || true
+printf '%s\n' "$entry" >> "$LOG_FILE" 2>/dev/null || true
 
 exit 0

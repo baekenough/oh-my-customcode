@@ -9,7 +9,7 @@
 
 input=$(cat)
 if command -v jq >/dev/null 2>&1; then
-  command_text=$(echo "$input" | jq -r '.tool_input.command // ""' 2>/dev/null)
+  command_text=$(printf '%s\n' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null)
 elif command -v python3 >/dev/null 2>&1; then
   command_text=$(INPUT_JSON="$input" python3 - <<'PY' 2>/dev/null
 import json, os
@@ -57,4 +57,4 @@ if [ -n "$matched" ]; then
 fi
 
 # Always pass through - this hook is advisory only.
-echo "$input"
+printf '%s\n' "$input"

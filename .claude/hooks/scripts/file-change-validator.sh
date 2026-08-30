@@ -3,11 +3,11 @@
 # Advisory warning when files are modified outside Claude Code
 
 input=$(cat)
-file_path=$(echo "$input" | jq -r '.file_path // ""' 2>/dev/null)
-change_type=$(echo "$input" | jq -r '.change_type // "modified"' 2>/dev/null)
+file_path=$(printf '%s\n' "$input" | jq -r '.file_path // ""' 2>/dev/null)
+change_type=$(printf '%s\n' "$input" | jq -r '.change_type // "modified"' 2>/dev/null)
 
 if [ -z "$file_path" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -23,4 +23,4 @@ case "$file_path" in
     ;;
 esac
 
-echo "$input"
+printf '%s\n' "$input"

@@ -8,16 +8,16 @@ set -euo pipefail
 input=$(cat)
 
 # Dependencies check
-command -v jq >/dev/null 2>&1 || { echo "$input"; exit 0; }
-command -v sqlite3 >/dev/null 2>&1 || { echo "$input"; exit 0; }
+command -v jq >/dev/null 2>&1 || { printf '%s\n' "$input"; exit 0; }
+command -v sqlite3 >/dev/null 2>&1 || { printf '%s\n' "$input"; exit 0; }
 
 # PID scoping
 OUTCOMES_FILE="/tmp/.claude-task-outcomes-${PPID}"
-[ -f "$OUTCOMES_FILE" ] || { echo "$input"; exit 0; }
+[ -f "$OUTCOMES_FILE" ] || { printf '%s\n' "$input"; exit 0; }
 
 # DB path
 DB_PATH="${HOME}/.config/oh-my-customcode/eval-core.sqlite"
-[ -f "$DB_PATH" ] || { echo "$input"; exit 0; }
+[ -f "$DB_PATH" ] || { printf '%s\n' "$input"; exit 0; }
 
 # Log file for error diagnostics
 LOG_FILE="/tmp/.claude-feedback-collector-${PPID}.log"
@@ -30,8 +30,8 @@ declare -A FAILURE_COUNTS
 declare -A TOTAL_COUNTS
 
 while IFS= read -r line; do
-  agent_type=$(echo "$line" | jq -r '.agent_type // empty' 2>/dev/null) || continue
-  outcome=$(echo "$line" | jq -r '.outcome // empty' 2>/dev/null) || continue
+  agent_type=$(printf '%s\n' "$line" | jq -r '.agent_type // empty' 2>/dev/null) || continue
+  outcome=$(printf '%s\n' "$line" | jq -r '.outcome // empty' 2>/dev/null) || continue
   [ -z "$agent_type" ] && continue
 
   TOTAL_COUNTS[$agent_type]=$(( ${TOTAL_COUNTS[$agent_type]:-0} + 1 ))
@@ -88,5 +88,5 @@ fi
 
 # CRITICAL: Always pass through input and exit 0
 # This hook MUST NEVER block session termination
-echo "$input"
+printf '%s\n' "$input"
 exit 0

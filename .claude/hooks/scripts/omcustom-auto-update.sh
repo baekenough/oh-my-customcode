@@ -12,13 +12,13 @@ input=$(cat)
 
 # Skip if explicitly disabled
 if [ "${OMCUSTOM_SKIP_AUTO_UPDATE:-}" = "true" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
 # Skip if /dev/tty not available (CI, Docker, non-interactive)
 if ! [ -c /dev/tty ] 2>/dev/null; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -53,7 +53,7 @@ fi
 
 # Cannot determine current version — skip
 if [ -z "$CURRENT_VERSION" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -101,14 +101,14 @@ fi
 
 # Could not determine latest version — skip
 if [ -z "$LATEST_VERSION" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
 # --- Step 3: Compare versions ---
 if ! version_lt "$CURRENT_VERSION" "$LATEST_VERSION"; then
   # Already up to date
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -166,5 +166,5 @@ fi
 echo "------------------------------------" >&2
 
 # Always pass through and exit 0
-echo "$input"
+printf '%s\n' "$input"
 exit 0

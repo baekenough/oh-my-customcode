@@ -8,17 +8,17 @@ input=$(cat)
 
 # Dependency check — allow if jq missing
 if ! command -v jq &>/dev/null; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
 # Parse tool input
-tool=$(echo "$input" | jq -r '.tool // ""' 2>/dev/null) || { echo "$input"; exit 0; }
-cmd=$(echo "$input" | jq -r '.tool_input.command // ""' 2>/dev/null) || { echo "$input"; exit 0; }
+tool=$(printf '%s\n' "$input" | jq -r '.tool // ""' 2>/dev/null) || { printf '%s\n' "$input"; exit 0; }
+cmd=$(printf '%s\n' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null) || { printf '%s\n' "$input"; exit 0; }
 
 # Only check Bash tool
 if [ "$tool" != "Bash" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -56,5 +56,5 @@ if echo "$cmd" | grep -qE '(^|\s)(rm|git\s+rm|mv|unlink)\s' && echo "$cmd" | gre
 fi
 
 # Not a rule deletion — pass through
-echo "$input"
+printf '%s\n' "$input"
 exit 0

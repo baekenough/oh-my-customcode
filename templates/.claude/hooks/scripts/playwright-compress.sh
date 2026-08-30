@@ -7,12 +7,12 @@
 set -euo pipefail
 
 input=$(cat)
-tool_output=$(echo "$input" | jq -r '.tool_output // ""')
+tool_output=$(printf '%s\n' "$input" | jq -r '.tool_output // ""')
 
 # Skip if output is small (< 3000 chars)
 output_len=${#tool_output}
 if [ "$output_len" -lt 3000 ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -22,7 +22,7 @@ refs=$(echo "$tool_output" | grep -oE 'ref="[^"]*"' | sort -u || true)
 # Summarize using Haiku via subscription auth
 summary=$(echo "$tool_output" | claude -p --model haiku "Summarize this browser page content concisely. Preserve ALL ref= attribute values exactly as they appear. Focus on: page structure, interactive elements with their ref values, visible text content, and any error messages." 2>/dev/null) || {
   # Fallback: return original on failure
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 }
 
@@ -46,5 +46,5 @@ fi
 # Return compressed output
 compressed_len=${#summary}
 savings=$(( (output_len - compressed_len) * 100 / output_len ))
-echo "$input" | jq --arg summary "$summary" --arg savings "${savings}% reduced (${output_len}→${compressed_len} chars)" \
+printf '%s\n' "$input" | jq --arg summary "$summary" --arg savings "${savings}% reduced (${output_len}→${compressed_len} chars)" \
   '.tool_output = $summary | .["updatedMCPToolOutput"] = $summary'

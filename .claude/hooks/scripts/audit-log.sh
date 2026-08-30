@@ -14,11 +14,11 @@ command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
 
 # Extract fields from hook input
-tool_name=$(echo "$input" | jq -r '.tool_name // "unknown"')
-file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.command // ""' | head -c 200)
-agent_type=$(echo "$input" | jq -r '.agent_type // "unknown"')
-model=$(echo "$input" | jq -r '.model // "unknown"')
-is_error=$(echo "$input" | jq -r '.tool_output.is_error // false')
+tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // "unknown"')
+file_path=$(printf '%s\n' "$input" | jq -r '.tool_input.file_path // .tool_input.command // ""' | head -c 200)
+agent_type=$(printf '%s\n' "$input" | jq -r '.agent_type // "unknown"')
+model=$(printf '%s\n' "$input" | jq -r '.model // "unknown"')
+is_error=$(printf '%s\n' "$input" | jq -r '.tool_output.is_error // false')
 timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # Determine outcome
@@ -55,7 +55,7 @@ if [ -f "$AUDIT_LOG" ]; then
 fi
 
 # Pass through
-echo "$input"
+printf '%s\n' "$input"
 HOOK_END=$(date +%s%N 2>/dev/null || echo 0)
 if [ "$HOOK_START" != "0" ] && [ "$HOOK_END" != "0" ]; then
   HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))

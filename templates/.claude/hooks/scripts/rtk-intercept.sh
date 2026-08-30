@@ -9,9 +9,9 @@ set -euo pipefail
 input=$(cat)
 
 # Only intercept Bash tool calls
-tool_name=$(echo "$input" | jq -r '.tool // empty' 2>/dev/null || echo "")
+tool_name=$(printf '%s\n' "$input" | jq -r '.tool // empty' 2>/dev/null || echo "")
 if [ "$tool_name" != "Bash" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -25,26 +25,26 @@ elif command -v rtk >/dev/null 2>&1; then
 fi
 
 if [ "$RTK_AVAILABLE" != "true" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
 # Extract command
-cmd=$(echo "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || echo "")
+cmd=$(printf '%s\n' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || echo "")
 if [ -z "$cmd" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
 # Skip if already using rtk
 if echo "$cmd" | grep -qE '^rtk\b'; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
 # Skip complex commands (pipes, redirections, background, subshells, semicolons with multiple commands)
 if echo "$cmd" | grep -qE '[|><&]|;\s*\w'; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -64,7 +64,7 @@ for rtk_cmd in $RTK_CMDS; do
 done
 
 if [ "$SUPPORTED" != "true" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -73,5 +73,5 @@ new_cmd="rtk $cmd"
 echo "[RTK] Intercepted: $cmd → $new_cmd" >&2
 
 # Output modified JSON
-echo "$input" | jq --arg new_cmd "$new_cmd" '.tool_input.command = $new_cmd'
+printf '%s\n' "$input" | jq --arg new_cmd "$new_cmd" '.tool_input.command = $new_cmd'
 exit 0

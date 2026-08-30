@@ -298,5 +298,5 @@ fi
 echo "------------------------------------" >&2
 
 # Pass through
-echo "$input"
+printf '%s\n' "$input"
 exit 0

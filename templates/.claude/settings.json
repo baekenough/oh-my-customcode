@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"(npm run dev|pnpm( run)? dev|yarn dev|bun run dev)\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\ncmd=$(echo \"$input\" | jq -r '.tool_input.command // \"\"')\n\n# Block dev servers that aren't run in tmux\necho '[Hook] BLOCKED: Dev server must run in tmux for log access' >&2\necho '[Hook] Use this command instead:' >&2\necho \"[Hook] tmux new-session -d -s dev 'npm run dev'\" >&2\necho '[Hook] Then: tmux attach -t dev' >&2\nexit 1\n  )\nelse\n  printf '%s' \"$input\"\nfi"
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"(npm run dev|pnpm( run)? dev|yarn dev|bun run dev)\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\ncmd=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.command // \"\"')\n\n# Block dev servers that aren't run in tmux\necho '[Hook] BLOCKED: Dev server must run in tmux for log access' >&2\necho '[Hook] Use this command instead:' >&2\necho \"[Hook] tmux new-session -d -s dev 'npm run dev'\" >&2\necho '[Hook] Then: tmux attach -t dev' >&2\nexit 1\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
         "matcher": "Bash",
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"(npm (install|test)|pnpm (install|test)|yarn (install|test)|bun (install|test)|cargo build|make|docker|pytest|vitest|playwright)\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nif [ -z \"$TMUX\" ]; then\n  echo '[Hook] Consider running in tmux for session persistence' >&2\n  echo '[Hook] tmux new -s dev  |  tmux attach -t dev' >&2\nfi\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"(npm (install|test)|pnpm (install|test)|yarn (install|test)|bun (install|test)|cargo build|make|docker|pytest|vitest|playwright)\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nif [ -z \"$TMUX\" ]; then\n  echo '[Hook] Consider running in tmux for session persistence' >&2\n  echo '[Hook] tmux new -s dev  |  tmux attach -t dev' >&2\nfi\nprintf '%s\\n' \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
         "matcher": "Bash",
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [[ \"$file_path\" =~ \\.(md|txt)$ ]] && [[ ! \"$file_path\" =~ (README|CLAUDE|AGENT|SKILL)\\.md$ ]]; then\n  echo \"[Hook] BLOCKED: Unnecessary documentation file creation\" >&2\n  echo \"[Hook] File: $file_path\" >&2\n  echo \"[Hook] Use README.md or AGENT.md for documentation instead\" >&2\n  exit 1\nfi\n\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [[ \"$file_path\" =~ \\.(md|txt)$ ]] && [[ ! \"$file_path\" =~ (README|CLAUDE|AGENT|SKILL)\\.md$ ]]; then\n  echo \"[Hook] BLOCKED: Unnecessary documentation file creation\" >&2\n  echo \"[Hook] File: $file_path\" >&2\n  echo \"[Hook] Use README.md or AGENT.md for documentation instead\" >&2\n  exit 1\nfi\n\nprintf '%s\\n' \"$input\""
           }
         ],
         "matcher": "Write",
@@ -118,7 +118,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.tool_input.subagent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.tool_input.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.tool_input.description // \"\"' | head -c 40)\nresume=$(echo \"$input\" | jq -r '.tool_input.resume // empty')\nif [ -n \"$resume\" ]; then\n  echo \"─── [Resume] ${agent_type}:${model} | ${desc} ───\" >&2\nelse\n  echo \"─── [Spawn] ${agent_type}:${model} | ${desc} ───\" >&2\nfi\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.subagent_type // \"unknown\"')\nmodel=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.model // \"inherit\"')\ndesc=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.description // \"\"' | head -c 40)\nresume=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.resume // empty')\nif [ -n \"$resume\" ]; then\n  echo \"─── [Resume] ${agent_type}:${model} | ${desc} ───\" >&2\nelse\n  echo \"─── [Spawn] ${agent_type}:${model} | ${desc} ───\" >&2\nfi\nprintf '%s\\n' \"$input\""
           },
           {
             "type": "command",
@@ -256,7 +256,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(echo \"$input\" | jq -r '.agent_type // \"unknown\"')\nmodel=$(echo \"$input\" | jq -r '.model // \"inherit\"')\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' | head -c 40)\necho \"─── [SubagentStart] ${agent_type}:${model} | ${desc} ───\" >&2\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nagent_type=$(printf '%s\\n' \"$input\" | jq -r '.agent_type // \"unknown\"')\nmodel=$(printf '%s\\n' \"$input\" | jq -r '.model // \"inherit\"')\ndesc=$(printf '%s\\n' \"$input\" | jq -r '.description // \"\"' | head -c 40)\necho \"─── [SubagentStart] ${agent_type}:${model} | ${desc} ───\" >&2\nprintf '%s\\n' \"$input\""
           },
           {
             "type": "command",
@@ -287,12 +287,12 @@
             "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh"
           },
           {
-            "type": "prompt",
-            "prompt": "A background subagent just completed. If it FAILED, do NOT auto-continue — report the failure and wait for user input."
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/subagent-failure-advisor.sh"
           }
         ],
         "matcher": "*",
-        "description": "Record agent outcomes + auto-continue workflow + R007/R008 drift advisory on subagent completion (autonomous-loop re-entry, #1545)"
+        "description": "Record agent outcomes + auto-continue workflow + R007/R008 drift advisory + failure advisory on subagent completion (autonomous-loop re-entry, #1545; #1631 replaced the self-referential prompt-type judge hook with an advisory-only command hook)"
       }
     ],
     "CwdChanged": [
@@ -324,7 +324,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nmsg=$(echo \"$input\" | jq -r '.message // \"\"' 2>/dev/null)\nif [ -n \"$msg\" ]; then\n  echo \"[Hook] Notification: $msg\" >&2\nfi\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nmsg=$(printf '%s\\n' \"$input\" | jq -r '.message // \"\"' 2>/dev/null)\nif [ -n \"$msg\" ]; then\n  echo \"[Hook] Notification: $msg\" >&2\nfi\nprintf '%s\\n' \"$input\""
           }
         ],
         "matcher": "*",
@@ -336,7 +336,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nteammate=$(echo \"$input\" | jq -r '.teammate_id // \"unknown\"' 2>/dev/null)\necho \"[Hook] TeammateIdle: $teammate — available for reassignment\" >&2\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\nteammate=$(printf '%s\\n' \"$input\" | jq -r '.teammate_id // \"unknown\"' 2>/dev/null)\necho \"[Hook] TeammateIdle: $teammate — available for reassignment\" >&2\nprintf '%s\\n' \"$input\""
           }
         ],
         "matcher": "*",
@@ -348,7 +348,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\ndesc=$(echo \"$input\" | jq -r '.description // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCreated: $task_id — $desc\" >&2\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(printf '%s\\n' \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\ndesc=$(printf '%s\\n' \"$input\" | jq -r '.description // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCreated: $task_id — $desc\" >&2\nprintf '%s\\n' \"$input\""
           }
         ],
         "matcher": "*",
@@ -360,7 +360,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(echo \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\nresult=$(echo \"$input\" | jq -r '.result // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCompleted: $task_id — $result\" >&2\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\ntask_id=$(printf '%s\\n' \"$input\" | jq -r '.task_id // \"\"' 2>/dev/null)\nresult=$(printf '%s\\n' \"$input\" | jq -r '.result // \"\"' 2>/dev/null | head -c 60)\necho \"[Hook] TaskCompleted: $task_id — $result\" >&2\nprintf '%s\\n' \"$input\""
           }
         ],
         "matcher": "*",
@@ -396,7 +396,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\ncmd=$(echo \"$input\" | jq -r '.tool_input.command')\n\nif echo \"$cmd\" | grep -qE 'gh pr create'; then\n  output=$(echo \"$input\" | jq -r '.tool_output.output // \"\"')\n  pr_url=$(echo \"$output\" | grep -oE 'https://github.com/[^/]+/[^/]+/pull/[0-9]+')\n  \n  if [ -n \"$pr_url\" ]; then\n    echo \"[Hook] PR created: $pr_url\" >&2\n    echo \"[Hook] Checking GitHub Actions status...\" >&2\n    repo=$(echo \"$pr_url\" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/[0-9]+|\\1|')\n    pr_num=$(echo \"$pr_url\" | sed -E 's|.*/pull/([0-9]+)|\\1|')\n    echo \"[Hook] To review PR: gh pr review $pr_num --repo $repo\" >&2\n  fi\nfi\n\necho \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\ncmd=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.command')\n\nif echo \"$cmd\" | grep -qE 'gh pr create'; then\n  output=$(printf '%s\\n' \"$input\" | jq -r '.tool_output.output // \"\"')\n  pr_url=$(echo \"$output\" | grep -oE 'https://github.com/[^/]+/[^/]+/pull/[0-9]+')\n  \n  if [ -n \"$pr_url\" ]; then\n    echo \"[Hook] PR created: $pr_url\" >&2\n    echo \"[Hook] Checking GitHub Actions status...\" >&2\n    repo=$(echo \"$pr_url\" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/[0-9]+|\\1|')\n    pr_num=$(echo \"$pr_url\" | sed -E 's|.*/pull/([0-9]+)|\\1|')\n    echo \"[Hook] To review PR: gh pr review $pr_num --repo $repo\" >&2\n  fi\nfi\n\nprintf '%s\\n' \"$input\""
           }
         ],
         "matcher": "Bash",
@@ -406,7 +406,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx|js|jsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  if command -v prettier >/dev/null 2>&1; then\n    prettier --write \"$file_path\" 2>&1 | head -5 >&2\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx|js|jsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  if command -v prettier >/dev/null 2>&1; then\n    prettier --write \"$file_path\" 2>&1 | head -5 >&2\n  fi\nfi\n\nprintf '%s\\n' \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
         "matcher": "Edit",
@@ -416,7 +416,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  dir=$(dirname \"$file_path\")\n  project_root=\"$dir\"\n  while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/package.json\" ]; do\n    project_root=$(dirname \"$project_root\")\n  done\n  \n  if [ -f \"$project_root/tsconfig.json\" ]; then\n    cd \"$project_root\" && npx tsc --noEmit --pretty false 2>&1 | grep \"$file_path\" | head -10 >&2 || true\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  dir=$(dirname \"$file_path\")\n  project_root=\"$dir\"\n  while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/package.json\" ]; do\n    project_root=$(dirname \"$project_root\")\n  done\n  \n  if [ -f \"$project_root/tsconfig.json\" ]; then\n    cd \"$project_root\" && npx tsc --noEmit --pretty false 2>&1 | grep \"$file_path\" | head -10 >&2 || true\n  fi\nfi\n\nprintf '%s\\n' \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
             "continueOnBlock": true
           }
         ],
@@ -427,7 +427,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx|js|jsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  console_logs=$(grep -n \"console\\\\.log\" \"$file_path\" 2>/dev/null || true)\n  \n  if [ -n \"$console_logs\" ]; then\n    echo \"[Hook] WARNING: console.log found in $file_path\" >&2\n    echo \"$console_logs\" | head -5 >&2\n    echo \"[Hook] Remove console.log before committing\" >&2\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(ts|tsx|js|jsx)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  console_logs=$(grep -n \"console\\\\.log\" \"$file_path\" 2>/dev/null || true)\n  \n  if [ -n \"$console_logs\" ]; then\n    echo \"[Hook] WARNING: console.log found in $file_path\" >&2\n    echo \"$console_logs\" | head -5 >&2\n    echo \"[Hook] Remove console.log before committing\" >&2\n  fi\nfi\n\nprintf '%s\\n' \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
             "continueOnBlock": true
           }
         ],
@@ -438,7 +438,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(go)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  if command -v gofmt >/dev/null 2>&1; then\n    gofmt -w \"$file_path\" 2>&1 >&2\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(go)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  if command -v gofmt >/dev/null 2>&1; then\n    gofmt -w \"$file_path\" 2>&1 >&2\n  fi\nfi\n\nprintf '%s\\n' \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
         "matcher": "Edit",
@@ -448,7 +448,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(py)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Format with ruff\n  if command -v ruff >/dev/null 2>&1; then\n    ruff format --quiet \"$file_path\" 2>&1 >&2\n    ruff check --fix --quiet \"$file_path\" 2>&1 >&2 || true\n    echo \"[Hook] Python formatted with ruff\" >&2\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(py)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Format with ruff\n  if command -v ruff >/dev/null 2>&1; then\n    ruff format --quiet \"$file_path\" 2>&1 >&2\n    ruff check --fix --quiet \"$file_path\" 2>&1 >&2 || true\n    echo \"[Hook] Python formatted with ruff\" >&2\n  fi\nfi\n\nprintf '%s\\n' \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
             "continueOnBlock": true
           }
         ],
@@ -459,7 +459,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(py)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(echo \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Type check with ty\n  if command -v ty >/dev/null 2>&1; then\n    dir=$(dirname \"$file_path\")\n    project_root=\"$dir\"\n    while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/pyproject.toml\" ]; do\n      project_root=$(dirname \"$project_root\")\n    done\n    \n    if [ -f \"$project_root/pyproject.toml\" ]; then\n      cd \"$project_root\" && ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    else\n      ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    fi\n  fi\nfi\n\necho \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.file_path // \"\") | test(\"\\\\.(py)$\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [ -n \"$file_path\" ] && [ -f \"$file_path\" ]; then\n  # Type check with ty\n  if command -v ty >/dev/null 2>&1; then\n    dir=$(dirname \"$file_path\")\n    project_root=\"$dir\"\n    while [ \"$project_root\" != \"/\" ] && [ ! -f \"$project_root/pyproject.toml\" ]; do\n      project_root=$(dirname \"$project_root\")\n    done\n    \n    if [ -f \"$project_root/pyproject.toml\" ]; then\n      cd \"$project_root\" && ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    else\n      ty check \"$file_path\" 2>&1 | head -10 >&2 || true\n    fi\n  fi\nfi\n\nprintf '%s\\n' \"$input\"\n  )\nelse\n  printf '%s' \"$input\"\nfi",
             "continueOnBlock": true
           }
         ],

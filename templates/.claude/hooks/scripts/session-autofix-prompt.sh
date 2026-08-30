@@ -14,16 +14,16 @@ fi
 FINDINGS=$(cat "$FIXES_FILE")
 rm -f "$FIXES_FILE"
 
-ISSUE_COUNT=$(echo "$FINDINGS" | jq -r '.issue_count // 0' 2>/dev/null)
+ISSUE_COUNT=$(printf '%s\n' "$FINDINGS" | jq -r '.issue_count // 0' 2>/dev/null)
 
 if [ "$ISSUE_COUNT" -gt 0 ]; then
   echo "[Session Auto-Fix] Previous session left ${ISSUE_COUNT} issue(s):"
-  echo "$FINDINGS" | jq -r '.issues[]' 2>/dev/null | while IFS= read -r issue; do
+  printf '%s\n' "$FINDINGS" | jq -r '.issues[]' 2>/dev/null | while IFS= read -r issue; do
     type="${issue%%:*}"
     msg="${issue#*:}"
     echo "  - [${type}] ${msg}"
   done
-  FIX_COUNT=$(echo "$FINDINGS" | jq -r '.fix_count // 0' 2>/dev/null)
+  FIX_COUNT=$(printf '%s\n' "$FINDINGS" | jq -r '.fix_count // 0' 2>/dev/null)
   if [ "$FIX_COUNT" -gt 0 ]; then
     echo "Auto-fixed: ${FIX_COUNT} item(s)."
   fi

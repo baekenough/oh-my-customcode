@@ -21,7 +21,7 @@ ENV_STATUS="/tmp/.claude-env-status-${PPID}"
 if [ -f "$ENV_STATUS" ]; then
   teams_status=$(grep "agent_teams=" "$ENV_STATUS" 2>/dev/null | cut -d= -f2 || echo "unknown")
   if [ "$teams_status" != "enabled" ]; then
-    echo "$input"
+    printf '%s\n' "$input"
     exit 0
   fi
 fi
@@ -43,8 +43,8 @@ if [ -f "$RELEASE_PLAN" ]; then
 fi
 
 # Extract task info from input
-agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // "unknown"')
-prompt_preview=$(echo "$input" | jq -r '.tool_input.description // ""' | head -c 60)
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // "unknown"')
+prompt_preview=$(printf '%s\n' "$input" | jq -r '.tool_input.description // ""' | head -c 60)
 
 # Session-scoped counter using parent PID as session identifier
 COUNTER_FILE="/tmp/.claude-task-count-${PPID}"
@@ -77,5 +77,5 @@ elif [ "$COUNT" -ge 2 ]; then
 fi
 
 # Always pass through -- advisory only, never blocks
-echo "$input"
+printf '%s\n' "$input"
 exit 0

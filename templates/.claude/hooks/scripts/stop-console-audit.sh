@@ -42,5 +42,5 @@ echo "[Stop] Audit complete. Session safe to terminate." >&2
 
 # CRITICAL: Always pass through input and exit 0
 # This hook MUST NEVER block session termination
-echo "$input"
+printf '%s\n' "$input"
 exit 0

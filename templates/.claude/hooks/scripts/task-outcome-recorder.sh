@@ -12,9 +12,9 @@ command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
 
 # Extract task info — support both PostToolUse (tool_input.*) and SubagentStop (top-level) shapes
-agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // .agent_type // "unknown"')
-model=$(echo "$input" | jq -r '.tool_input.model // .model // "inherit"')
-description=$(echo "$input" | jq -r '.tool_input.description // .description // ""' | head -c 80)
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // .agent_type // "unknown"')
+model=$(printf '%s\n' "$input" | jq -r '.tool_input.model // .model // "inherit"')
+description=$(printf '%s\n' "$input" | jq -r '.tool_input.description // .description // ""' | head -c 80)
 
 # Extract skill name from description or prompt
 skill_name=""
@@ -23,16 +23,16 @@ if echo "$description" | grep -qiE '(skill:|routing|→.*skill)'; then
 fi
 # Fallback: check prompt field for "Skill: {name}" pattern
 if [ -z "$skill_name" ]; then
-  prompt=$(echo "$input" | jq -r '.tool_input.prompt // ""' | head -c 500)
+  prompt=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt // ""' | head -c 500)
   skill_name=$(echo "$prompt" | grep -oiE 'Skill:\s*[a-z]+-[a-z]+(-[a-z]+)*' | sed 's/[Ss]kill:\s*//' | head -1)
 fi
 
 # Determine outcome
-is_error=$(echo "$input" | jq -r '.tool_output.is_error // false')
+is_error=$(printf '%s\n' "$input" | jq -r '.tool_output.is_error // false')
 
 if [ "$is_error" = "true" ]; then
   outcome="failure"
-  error_summary=$(echo "$input" | jq -r '.tool_output.output // ""' | head -c 200)
+  error_summary=$(printf '%s\n' "$input" | jq -r '.tool_output.output // ""' | head -c 200)
 else
   outcome="success"
   error_summary=""
@@ -94,7 +94,7 @@ entry=$(jq -n \
   --arg dur "$duration_seconds" \
   '{timestamp: $ts, agent_type: $agent, model: $model, outcome: $outcome, pattern_used: $pattern, skill: $skill, description: $desc, error_summary: $err, duration_seconds: ($dur | tonumber)}')
 
-echo "$entry" >> "$OUTCOME_FILE"
+printf '%s\n' "$entry" >> "$OUTCOME_FILE"
 
 # Ring buffer: keep last 50 entries
 if [ -f "$OUTCOME_FILE" ]; then
@@ -115,5 +115,5 @@ if [ "$outcome" = "failure" ]; then
 fi
 
 # Pass through
-echo "$input"
+printf '%s\n' "$input"
 exit 0

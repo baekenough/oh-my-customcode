@@ -33,7 +33,7 @@ read_count=${read_count:-0}
 agent_count=${agent_count:-0}
 
 # Determine tool type from input
-TOOL=$(echo "$input" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
+TOOL=$(printf '%s\n' "$input" | jq -r '.tool_name // ""' 2>/dev/null || echo "")
 tool_count=$((tool_count + 1))
 
 case "$TOOL" in
@@ -95,7 +95,7 @@ if [ "$tool_count" -ge "$THRESHOLD" ] && [ ! -f "$BLOCK_FILE" ]; then
     HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))
     echo "[Hook Perf] $(basename "$0"): ${HOOK_MS}ms" >> "/tmp/.claude-hook-perf-${PPID}.log"
   fi
-  echo "$input"
+  printf '%s\n' "$input"
   exit 2
 fi
 
@@ -112,7 +112,7 @@ if [ "$tool_count" -gt 0 ] && [ $((tool_count % 50)) -eq 0 ]; then
 fi
 
 # Pass through
-echo "$input"
+printf '%s\n' "$input"
 HOOK_END=$(date +%s%N 2>/dev/null || echo 0)
 if [ "$HOOK_START" != "0" ] && [ "$HOOK_END" != "0" ]; then
   HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))

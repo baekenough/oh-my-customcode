@@ -3,10 +3,10 @@
 # Advisory only — provides context hints when cwd changes
 
 input=$(cat)
-new_cwd=$(echo "$input" | jq -r '.new_cwd // ""' 2>/dev/null)
+new_cwd=$(printf '%s\n' "$input" | jq -r '.new_cwd // ""' 2>/dev/null)
 
 if [ -z "$new_cwd" ] || [ ! -d "$new_cwd" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -33,4 +33,4 @@ if [ -n "$hints" ]; then
   printf "%b" "$hints" >&2
 fi
 
-echo "$input"
+printf '%s\n' "$input"

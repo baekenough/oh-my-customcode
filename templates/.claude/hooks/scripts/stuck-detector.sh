@@ -203,7 +203,7 @@ entry=$(jq -cn \
   --arg readonly "$is_readonly" \
   '{timestamp: $ts, tool: $tool, path: $path, is_error: $err, error_hash: $hash, preview: $preview, readonly: $readonly}')
 
-echo "$entry" >> "$HISTORY_FILE"
+printf '%s\n' "$entry" >> "$HISTORY_FILE"
 
 # Ring buffer: keep last 100 entries
 if [ -f "$HISTORY_FILE" ]; then
@@ -218,13 +218,13 @@ fi
 
 # Only check for patterns if we have enough history
 if [ ! -f "$HISTORY_FILE" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
 recent_count=$(wc -l < "$HISTORY_FILE")
 if [ "$recent_count" -lt 3 ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -347,7 +347,7 @@ if [ "$hard_block" = true ]; then
   echo "  Action: Blocking this tool call to break the stuck loop." >&2
   echo "  Recovery: Step back, re-read the error, and try a fundamentally different approach." >&2
   echo "=====================================" >&2
-  echo "$input"
+  printf '%s\n' "$input"
   HOOK_END=$(date +%s%N 2>/dev/null || echo 0)
   if [ "$HOOK_START" != "0" ] && [ "$HOOK_END" != "0" ]; then
     HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))
@@ -357,7 +357,7 @@ if [ "$hard_block" = true ]; then
 fi
 
 # Pass through
-echo "$input"
+printf '%s\n' "$input"
 HOOK_END=$(date +%s%N 2>/dev/null || echo 0)
 if [ "$HOOK_START" != "0" ] && [ "$HOOK_END" != "0" ]; then
   HOOK_MS=$(( (HOOK_END - HOOK_START) / 1000000 ))
