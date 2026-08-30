@@ -15,13 +15,121 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Hard block threshold: consecutive identical operations before blocking
 HARD_BLOCK_THRESHOLD=${CLAUDE_STUCK_THRESHOLD:-3}
 
+# Determine if a Bash command is read-only (metadata/query only, no side effects).
+# Conservative: any ambiguity (chaining, redirection, substitution, or an
+# unrecognized command/subcommand) is treated as NOT read-only (write).
+# Used ONLY to exclude read-only Bash polling from Hard Block Checks 1 and 3
+# (same-path / same-tool+target consecutive-repeat blocking) below — Signal 1
+# (repeated-error advisory) and Hard Block Check 2 (same error hash) are
+# intentionally unaffected: repeated errors are a genuine stuck signal
+# regardless of read/write (issue #1625).
+is_readonly_bash_command() {
+  local cmd="$1"
+  cmd="$(printf '%s' "$cmd" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  if [ -z "$cmd" ]; then
+    echo "false"
+    return 0
+  fi
+
+  # Any chaining/redirection/substitution metachar => ambiguous, treat as write
+  case "$cmd" in
+    *'>'*|*'|'*|*'&&'*|*';'*|*'$('*|*'`'*|*'<('*)
+      echo "false"
+      return 0
+      ;;
+  esac
+
+  local parts=()
+  read -ra parts <<< "$cmd"
+  local w1="${parts[0]:-}"
+  local w2="${parts[1]:-}"
+  local w3="${parts[2]:-}"
+
+  case "$w1" in
+    ls|cat|head|tail|grep|rg|wc|jq|md5|md5sum|type|command|which|echo|printf|pwd|date)
+      echo "true"
+      return 0
+      ;;
+    find)
+      case "$cmd" in
+        *-delete*|*-exec*|*-fprintf*)
+          echo "false"
+          ;;
+        *)
+          echo "true"
+          ;;
+      esac
+      return 0
+      ;;
+    git)
+      case "$w2" in
+        status|log|diff|show|rev-parse|ls-files)
+          echo "true"
+          ;;
+        tag|branch)
+          # Only a bare query (no positional args, flags only) counts as read-only.
+          # e.g. "git branch -a" / "git tag --sort=..." => read; "git branch foo"
+          # or "git branch -D foo" => write (has a non-flag token).
+          local ok="true"
+          local i
+          for ((i = 2; i < ${#parts[@]}; i++)); do
+            case "${parts[$i]}" in
+              -*) ;;
+              *) ok="false" ;;
+            esac
+          done
+          echo "$ok"
+          ;;
+        *)
+          # fetch and all other subcommands (checkout/merge/rebase/push/...) => write
+          echo "false"
+          ;;
+      esac
+      return 0
+      ;;
+    gh)
+      if [ "$w2" = "api" ]; then
+        # GET-style only; any field/method-mutation flag => write
+        case "$cmd" in
+          *' -f '*|*' -F '*|*'--raw-field'*|*'--input'*|*' -X '*|*'--method'*)
+            echo "false"
+            ;;
+          *)
+            echo "true"
+            ;;
+        esac
+      else
+        case "$w3" in
+          view|list)
+            echo "true"
+            ;;
+          *)
+            echo "false"
+            ;;
+        esac
+      fi
+      return 0
+      ;;
+    *)
+      echo "false"
+      return 0
+      ;;
+  esac
+}
+
 input=$(cat)
 
 # Extract tool info
-tool_name=$(echo "$input" | jq -r '.tool_name // "unknown"')
-file_path=$(echo "$input" | jq -r '.tool_input.file_path // .tool_input.command // ""' | head -c 120)
-is_error=$(echo "$input" | jq -r '.tool_output.is_error // false')
-output_preview=$(echo "$input" | jq -r '.tool_output.output // ""' | head -c 200)
+tool_name=$(printf '%s' "$input" | jq -r '.tool_name // "unknown"')
+file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.command // ""' | head -c 120)
+is_error=$(printf '%s' "$input" | jq -r '.tool_output.is_error // false')
+output_preview=$(printf '%s' "$input" | jq -r '.tool_output.output // ""' | head -c 200)
+raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
+
+is_readonly="false"
+if [ "$tool_name" = "Bash" ]; then
+  is_readonly=$(is_readonly_bash_command "$raw_command")
+fi
 
 # Session-scoped history
 HISTORY_FILE="/tmp/.claude-tool-history-${PPID}"
@@ -142,7 +250,9 @@ if [ -f "$HISTORY_FILE" ]; then
 
   if [ "$last_n_count" -ge "$HARD_BLOCK_THRESHOLD" ]; then
     # Check 1: Same file edited HARD_BLOCK_THRESHOLD+ times consecutively
-    if [ -n "$file_path" ]; then
+    # (skip when current call is a read-only Bash command — repeated read-only
+    # polling of the same target is not a stuck-loop signal; see #1625)
+    if [ "$is_readonly" != "true" ] && [ -n "$file_path" ]; then
       escaped_path=$(echo "$file_path" | sed 's/[.[\*^$()+?{|]/\\&/g')
       consecutive_file=$(echo "$last_n" | grep -c "\"path\":\"${escaped_path}\"" 2>/dev/null || echo "0")
       if [ "$consecutive_file" -ge "$HARD_BLOCK_THRESHOLD" ]; then
@@ -161,7 +271,8 @@ if [ -f "$HISTORY_FILE" ]; then
     fi
 
     # Check 3: Same tool+target combination HARD_BLOCK_THRESHOLD+ times consecutively
-    if [ "$hard_block" = false ] && [ -n "$file_path" ]; then
+    # (skip when current call is a read-only Bash command — see Check 1 note)
+    if [ "$hard_block" = false ] && [ "$is_readonly" != "true" ] && [ -n "$file_path" ]; then
       escaped_path=$(echo "$file_path" | sed 's/[.[\*^$()+?{|]/\\&/g')
       consecutive_tool_target=$(echo "$last_n" | grep "\"tool\":\"${tool_name}\"" | grep -c "\"path\":\"${escaped_path}\"" 2>/dev/null || echo "0")
       if [ "$consecutive_tool_target" -ge "$HARD_BLOCK_THRESHOLD" ]; then

@@ -182,6 +182,17 @@ split("\n")
 | if ($ai | length) == 0 then empty
   else
     ($ai[-1]) as $last
+    # (#1625 찐빠 #3 조사 메모) `<task-notification>` / `Stop hook feedback:`를 role=user
+    # string content 경계 판정에서 제외하는 방안을 시도했으나, 실측(200ee7fe /fsd 자율 루프
+    # 세션, tail-200 윈도우 시뮬레이션)에서 **역효과가 확정**되어 반려한다. 이 마커들은
+    # UserPromptSubmit이 발생하지 않는 자율 루프 재진입에서 사실상 유일한 턴 경계 신호다
+    # (파일 상단 header 주석 참조) — 제외하면 $bi가 통째로 비어 $b=-1로 폴백해, 서로
+    # 독립적이고 각각 컴플라이언트한 후속 응답들이 하나의 거대 turn으로 계속 병합되고
+    # r008 드리프트가 6→10→9로 오히려 커졌다(제외 적용 전에는 각 응답이 새 turn으로
+    # 올바르게 분리되어 0/0이었음). 이 조사에서 확정된 실제 원인은 별도 메커니즘이다:
+    # tail -n 200 윈도우 안에 경계가 전혀 없을 때 $b=-1로 폴백해 슬라이딩 윈도우 전체를
+    # 하나의 turn으로 병합하는 구조 — 본 수정의 승인 범위(0-tool-use 가드 1건) 밖이므로
+    # 별도 이슈로 보고한다(오케스트레이터 완료 보고 참조).
     | [ range(0; $last + 1)
         | select( ($L[.].message.role? == "user")
                   and ( (($L[.].message.content | type) == "string")
@@ -201,7 +212,14 @@ split("\n")
     | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Spawning:")) ] | length) as $an_spawn_hdr
     | ($an_tool + (if $an_spawn_item > 0 then $an_spawn_item else $an_spawn_hdr end)) as $announce
     | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) ] | length) as $ntools
-    | (if $ntools > $announce then $ntools - $announce else 0 end) as $r008
+    # 전체 tool_use(Skill 포함)가 0건인 턴은 forward 판정을 무조건 0으로 고정한다(#1625
+    # 찐빠 #3, 이슈 제안 그대로). $ntools(Skill 제외) 기반 산식은 정상 입력에서는 이미
+    # 0을 내지만, 명시 가드로 불변식을 코드에 못박아 향후 산식 변경이 이 보장을 조용히
+    # 깨뜨리지 않게 한다. $nall_tools는 아래 REVERSE 신호와 공유하는 단일 바인딩이다.
+    | ($blocks | map(select(.type? == "tool_use")) | length) as $nall_tools
+    | (if $nall_tools == 0 then 0
+       elif $ntools > $announce then $ntools - $announce
+       else 0 end) as $r008
     # REVERSE signal (#1595 제안 #6): announced a tool call, then ended the turn without
     # emitting ANY tool_use block (R009 Self-Check #6). Uses its OWN ANCHORED counter — do NOT
     # reuse $announce. MEASURED over 482 orchestrator turns:
@@ -216,7 +234,7 @@ split("\n")
     # the $ntools denominator above; it is a separate variable, not a weakening of the Skill
     # exemption (#1569), which still governs the forward verdict.
     | ([ $lines[] | select(test("^\\[[^\\]]+\\]\\[[^\\]]+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_anchored
-    | ($blocks | map(select(.type? == "tool_use")) | length) as $nall_tools
+    # $nall_tools는 위 forward r008 가드에서 이미 바인딩됨 — 재바인딩하지 않고 재사용한다.
     | (if $nall_tools == 0 and $an_anchored > 0 then $an_anchored else 0 end) as $r008rev
     | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring)] | @tsv
   end

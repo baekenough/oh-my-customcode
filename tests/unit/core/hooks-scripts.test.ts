@@ -1489,6 +1489,7 @@ describe('fail-axis-cause-advisor.sh', () => {
   const SCRIPT = join(SCRIPTS_DIR, 'fail-axis-cause-advisor.sh');
   const SESSION = 'sess-A';
   let ledger: string;
+  let markerDir: string;
 
   function makePrompt(prompt: string, session = SESSION): string {
     // UserPromptSubmit delivers the typed text in `prompt` (per the official hook docs).
@@ -1517,13 +1518,30 @@ describe('fail-axis-cause-advisor.sh', () => {
     return parsed.hookSpecificOutput?.additionalContext ?? '';
   }
 
+  /**
+   * Base env for every invocation in this describe block: an isolated ledger path AND an
+   * isolated dedup-marker directory (#1625 찐빠 #4). Without OMCUSTOM_FAIL_MARKER_DIR every
+   * test would share the marker key derived from the constant SESSION ('sess-A') against the
+   * real ${TMPDIR:-/tmp}, so the dedup feature added in this fix would make later tests in
+   * this file silently fail (marker left behind by an earlier test's fail_count=2 firing).
+   */
+  function baseEnv(over: Record<string, string> = {}): Record<string, string> {
+    return { OMCUSTOM_ERROR_LEDGER: ledger, OMCUSTOM_FAIL_MARKER_DIR: markerDir, ...over };
+  }
+
   beforeEach(async () => {
     ledger = join(tmpdir(), `omcc-adv-${process.pid}-${Math.random().toString(36).slice(2)}.jsonl`);
+    markerDir = join(
+      tmpdir(),
+      `omcc-adv-markers-${process.pid}-${Math.random().toString(36).slice(2)}`
+    );
+    await mkdir(markerDir, { recursive: true });
     await writeFile(ledger, ledgerLine() + ledgerLine({ tool: 'Edit', target: 'a.ts' }));
   });
 
   afterEach(async () => {
     await unlink(ledger).catch(() => undefined);
+    await rm(markerDir, { recursive: true, force: true }).catch(() => undefined);
   });
 
   it('should pass bash syntax check', async () => {
@@ -1534,17 +1552,13 @@ describe('fail-axis-cause-advisor.sh', () => {
   // --- POSITIVE ---
 
   it('should advise on a short cause-free nudge when the session has failures', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), baseEnv());
     expect(result.exitCode).toBe(0);
     expect(advisoryOf(result.stdout)).toContain('FAIL Advisory');
   });
 
   it('should deliver via hookSpecificOutput.additionalContext with the right event name', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), baseEnv());
     const parsed = JSON.parse(result.stdout) as {
       hookSpecificOutput: { hookEventName: string; additionalContext: string };
     };
@@ -1553,36 +1567,57 @@ describe('fail-axis-cause-advisor.sh', () => {
   });
 
   it('should never emit a decision field (advisory-only, must not block the prompt)', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), baseEnv());
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     expect(parsed.decision).toBeUndefined();
   });
 
   it('should report the failure count in the advisory', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), baseEnv());
     expect(advisoryOf(result.stdout)).toContain('2건');
   });
 
   it('should trigger on other nudge phrasings', async () => {
     for (const nudge of ['ㄱㄱ', 'continue', '진행해', 'go on']) {
-      const result = await runHookScript(SCRIPT, makePrompt(nudge), {
-        OMCUSTOM_ERROR_LEDGER: ledger,
-      });
+      // Each nudge uses its OWN session (with its own matching ledger entries) so the
+      // dedup marker (#1625 찐빠 #4) from a previous iteration's fail_count does not
+      // silence this one — dedup is keyed per session, not globally.
+      const session = `sess-nudge-${nudge}`;
+      await writeFile(
+        ledger,
+        ledgerLine({ session }) + ledgerLine({ session, tool: 'Edit', target: 'a.ts' })
+      );
+      const result = await runHookScript(SCRIPT, makePrompt(nudge, session), baseEnv());
       expect(advisoryOf(result.stdout)).toContain('FAIL Advisory');
     }
+  });
+
+  // --- POSITIVE: resolve-path dedup (#1625 찐빠 #4) ---
+
+  it('fires again once a NEW failure is appended after the first advisory', async () => {
+    const session = 'sess-dedup-new-failure';
+    await writeFile(
+      ledger,
+      ledgerLine({ session }) + ledgerLine({ session, tool: 'Edit', target: 'a.ts' })
+    );
+    const first = await runHookScript(SCRIPT, makePrompt('계속해', session), baseEnv());
+    expect(advisoryOf(first.stdout)).toContain('2건');
+
+    // A third failure lands in the ledger for the same session.
+    await writeFile(
+      ledger,
+      (await readFile(ledger, 'utf-8')) + ledgerLine({ session, tool: 'Write', target: 'b.ts' })
+    );
+
+    const second = await runHookScript(SCRIPT, makePrompt('계속해', session), baseEnv());
+    expect(advisoryOf(second.stdout)).toContain('3건');
   });
 
   // --- NEGATIVE CONTROLS (silence is the correct answer) ---
 
   it('should stay silent when the prompt already names a cause', async () => {
     for (const p of ['계속해, 원인이 뭐야', '에러 때문에 실패', 'why did it fail']) {
-      const result = await runHookScript(SCRIPT, makePrompt(p), {
-        OMCUSTOM_ERROR_LEDGER: ledger,
-      });
+      const result = await runHookScript(SCRIPT, makePrompt(p), baseEnv());
       expect(advisoryOf(result.stdout)).toBe('');
     }
   });
@@ -1591,66 +1626,108 @@ describe('fail-axis-cause-advisor.sh', () => {
     // 41 chars — one past the boundary; 40 or fewer still fires (see boundary test below).
     const long = `${'a'.repeat(38)}계속해`;
     expect(long.length).toBeGreaterThan(40);
-    const result = await runHookScript(SCRIPT, makePrompt(long), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt(long), baseEnv());
     expect(advisoryOf(result.stdout)).toBe('');
   });
 
   it('should still fire at exactly the 40-character boundary', async () => {
     const atBoundary = `${'a'.repeat(37)}계속해`;
     expect(atBoundary.length).toBe(40);
-    const result = await runHookScript(SCRIPT, makePrompt(atBoundary), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt(atBoundary), baseEnv());
     expect(advisoryOf(result.stdout)).toContain('FAIL Advisory');
   });
 
   it('should stay silent when the prompt is not a progress nudge', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt('파일 읽어줘'), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt('파일 읽어줘'), baseEnv());
     expect(advisoryOf(result.stdout)).toBe('');
   });
 
   it('should stay silent for a different session with no failures of its own', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt('계속해', 'other-session'), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt('계속해', 'other-session'), baseEnv());
     expect(advisoryOf(result.stdout)).toBe('');
   });
 
   it('should stay silent when the ledger does not exist', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
-      OMCUSTOM_ERROR_LEDGER: join(tmpdir(), 'omcc-no-such-ledger.jsonl'),
-    });
+    const result = await runHookScript(
+      SCRIPT,
+      makePrompt('계속해'),
+      baseEnv({ OMCUSTOM_ERROR_LEDGER: join(tmpdir(), 'omcc-no-such-ledger.jsonl') })
+    );
     expect(result.exitCode).toBe(0);
     expect(advisoryOf(result.stdout)).toBe('');
   });
 
   it('should stay silent when the only failures were user interrupts', async () => {
     await writeFile(ledger, ledgerLine({ interrupt: true, err: 'interrupted' }));
-    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt('계속해'), baseEnv());
     expect(advisoryOf(result.stdout)).toBe('');
   });
 
   it('should stay silent when opted out via OMCUSTOM_FAIL_ADVISOR=off', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt('계속해'), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-      OMCUSTOM_FAIL_ADVISOR: 'off',
-    });
+    const result = await runHookScript(
+      SCRIPT,
+      makePrompt('계속해'),
+      baseEnv({ OMCUSTOM_FAIL_ADVISOR: 'off' })
+    );
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe('');
   });
 
   it('should exit 0 on an empty prompt', async () => {
-    const result = await runHookScript(SCRIPT, makePrompt(''), {
-      OMCUSTOM_ERROR_LEDGER: ledger,
-    });
+    const result = await runHookScript(SCRIPT, makePrompt(''), baseEnv());
     expect(result.exitCode).toBe(0);
     expect(advisoryOf(result.stdout)).toBe('');
+  });
+
+  // --- NEGATIVE: resolve-path dedup (#1625 찐빠 #4) ---
+
+  it('stays silent on a repeat nudge when no NEW failure was appended (same fail_count)', async () => {
+    const session = 'sess-dedup-repeat';
+    await writeFile(
+      ledger,
+      ledgerLine({ session }) + ledgerLine({ session, tool: 'Edit', target: 'a.ts' })
+    );
+    const first = await runHookScript(SCRIPT, makePrompt('계속해', session), baseEnv());
+    expect(advisoryOf(first.stdout)).toContain('FAIL Advisory');
+
+    // Same ledger, same session, same fail_count=2 — this is the already-diagnosed failure
+    // set, so a second cause-free nudge must not re-fire.
+    const second = await runHookScript(SCRIPT, makePrompt('계속해', session), baseEnv());
+    expect(advisoryOf(second.stdout)).toBe('');
+  });
+
+  // --- NEGATIVE: "다음" scope-directive narrowing (#1625 찐빠 #4) ---
+
+  it('should stay silent for a scope directive using bare "다음" ("다음엔 …")', async () => {
+    // Real misfire (#1625): "다음엔 Pre,PostToolUse 찐빠도 해결한다" is a plan statement about
+    // FUTURE work, not a cause-free progress nudge on the CURRENT failure — it must not match
+    // condition 2 merely because it contains the substring "다음".
+    const result = await runHookScript(
+      SCRIPT,
+      makePrompt('다음엔 Pre,PostToolUse 찐빠도 해결한다'),
+      baseEnv()
+    );
+    expect(advisoryOf(result.stdout)).toBe('');
+  });
+
+  it('should stay silent for other bare-다음 scope directives (다음 세션/다음 릴리즈/다음번)', async () => {
+    for (const p of ['다음 세션에 마저 하자', '다음 릴리즈에서 처리', '다음번엔 미리 확인']) {
+      const result = await runHookScript(SCRIPT, makePrompt(p), baseEnv());
+      expect(advisoryOf(result.stdout)).toBe('');
+    }
+  });
+
+  it('should still fire for genuine immediate-continuation phrasing (다음 단계/다음으로/다음 진행)', async () => {
+    for (const p of ['다음 단계로', '다음으로 넘어가', '다음 진행']) {
+      // Own session + matching ledger entries per iteration — see the dedup note above.
+      const session = `sess-next-${p}`;
+      await writeFile(
+        ledger,
+        ledgerLine({ session }) + ledgerLine({ session, tool: 'Edit', target: 'a.ts' })
+      );
+      const result = await runHookScript(SCRIPT, makePrompt(p, session), baseEnv());
+      expect(advisoryOf(result.stdout)).toContain('FAIL Advisory');
+    }
   });
 });
 
