@@ -14,6 +14,7 @@ const DESTRUCTIVE_GIT_GUARD_SCRIPT = join(SCRIPTS_DIR, 'destructive-git-guard.sh
 const STOP_CONSOLE_AUDIT_SCRIPT = join(SCRIPTS_DIR, 'stop-console-audit.sh');
 const AGENT_TEAMS_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'agent-teams-advisor.sh');
 const SESSION_ENV_CHECK_SCRIPT = join(SCRIPTS_DIR, 'session-env-check.sh');
+const SUBAGENT_FAILURE_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'subagent-failure-advisor.sh');
 
 // stage-blocker.sh reads /tmp/.claude-dev-stage-$PPID (PPID-scoped, per project convention).
 // runHookScript spawns `bash <script>` directly from this bun test process (no intermediate
@@ -94,6 +95,57 @@ function makeTaskInput(subagentType: string, prompt: string): string {
 /** Build a minimal Stop hook payload. */
 function makeStopInput(extra?: Record<string, unknown>): string {
   return JSON.stringify({ tool: 'Stop', ...extra });
+}
+
+// -------------------------------------------------------------------
+// Issue #1632: `echo "$var"` JSON-payload regression scan helpers
+// -------------------------------------------------------------------
+
+/**
+ * Variables known to hold a JSON payload (raw stdin input, or a jq-extracted JSON
+ * fragment/array/object), scoped per-file since the same identifier (e.g. `summary`)
+ * holds plain text in one script (playwright-compress.sh) and a JSON array in another
+ * (auto-dev-token-summary.sh) — see #1632 fix report.
+ */
+const JSON_VARS_BY_FILE: Record<string, ReadonlySet<string>> = {
+  'session-reflection.sh': new Set([
+    'input',
+    'bg_tasks_json',
+    'session_crons_json',
+    'BG_TASKS_JSON',
+    'SESSION_CRONS_JSON',
+  ]),
+  'schema-validator.sh': new Set(['input', 'tool_input']),
+  'stall-detection-advisor.sh': new Set(['input', 'duration_entry', 'line']),
+  'auto-dev-token-tracker.sh': new Set(['input', 'entry']),
+  'auto-dev-token-summary.sh': new Set(['summary', 'totals']),
+  'task-state-precompact.sh': new Set(['state']),
+  'session-autofix-prompt.sh': new Set(['FINDINGS']),
+  'agent-start-recorder.sh': new Set(['input', 'entry']),
+  'stuck-detector.sh': new Set(['input', 'entry']),
+  'task-outcome-recorder.sh': new Set(['input', 'entry']),
+  'feedback-collector.sh': new Set(['input', 'line']),
+};
+const DEFAULT_JSON_VARS = new Set(['input']);
+
+const RISKY_ECHO_PATTERN = /echo\s+"\$[A-Za-z_][A-Za-z0-9_]*"\s*(\||>>?|$|;|\))/m;
+const ECHO_VAR_NAME_PATTERN = /echo\s+"\$([A-Za-z_][A-Za-z0-9_]*)"/;
+
+/** Returns `true` when `line` echoes a variable known to carry JSON for `scriptName`. */
+function isJsonVarEchoOffense(scriptName: string, line: string): boolean {
+  if (!RISKY_ECHO_PATTERN.test(line)) return false;
+  const varName = ECHO_VAR_NAME_PATTERN.exec(line)?.[1];
+  if (!varName) return false;
+  const jsonVarNames = JSON_VARS_BY_FILE[scriptName] ?? DEFAULT_JSON_VARS;
+  return jsonVarNames.has(varName);
+}
+
+/** Scans `content` (the text of `scriptName`) for `echo "$jsonVar"` regressions (#1632). */
+function findJsonVarEchoOffenders(scriptName: string, content: string): string[] {
+  return content
+    .split('\n')
+    .filter((line) => isJsonVarEchoOffense(scriptName, line))
+    .map((line) => `${scriptName}: ${line.trim()}`);
 }
 
 // -------------------------------------------------------------------
@@ -826,6 +878,96 @@ describe('agent-teams-advisor.sh', () => {
     } finally {
       await unlink(workflowFile).catch(() => {});
     }
+  });
+});
+
+// -------------------------------------------------------------------
+// subagent-failure-advisor.sh (#1631)
+//
+// Replaces the removed `type: "prompt"` SubagentStop hook, which asked an LLM judge
+// whether the CURRENT session's own background_tasks entry had reached "completed"
+// before allowing Stop. That transition only happens AFTER the SubagentStop hook chain
+// resolves, so a subagent judging its OWN stop always observed "running" — producing an
+// un-deduped `Stop hook feedback:` re-injection loop (8-10x per session, observed live).
+// This script is advisory-only: it inspects tool_output.is_error and, on failure, prints
+// a stderr warning — never invoking the Stop-hook-feedback / LLM-judge path, and never
+// blocking (always exit 0).
+// -------------------------------------------------------------------
+
+describe('subagent-failure-advisor.sh', () => {
+  function makeSubagentStopInput(
+    isError: boolean,
+    agentType = 'lang-typescript-expert',
+    output = ''
+  ): string {
+    return JSON.stringify({
+      agent_type: agentType,
+      tool_output: {
+        is_error: isError,
+        output,
+      },
+    });
+  }
+
+  // --- Basic pass-through behavior (never blocks) ---
+
+  it('should always exit with code 0 on failure input', async () => {
+    const input = makeSubagentStopInput(
+      true,
+      'lang-golang-expert',
+      'panic: nil pointer dereference'
+    );
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('should always exit with code 0 on success input', async () => {
+    const input = makeSubagentStopInput(false);
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('should pass stdin through to stdout unchanged', async () => {
+    const input = makeSubagentStopInput(true, 'lang-golang-expert', 'build failed');
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  // --- Positive case: is_error=true -> stderr warning ---
+
+  it('should emit a stderr warning when tool_output.is_error is true', async () => {
+    const input = makeSubagentStopInput(
+      true,
+      'lang-golang-expert',
+      'compile error: undefined symbol'
+    );
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    expect(result.stderr).toContain('Subagent Failure Advisor');
+    expect(result.stderr).toContain('lang-golang-expert');
+    expect(result.stderr).toContain('compile error: undefined symbol');
+  });
+
+  // --- Negative case: is_error=false (or absent) -> silence ---
+
+  it('should NOT emit a warning when tool_output.is_error is false', async () => {
+    const input = makeSubagentStopInput(false, 'lang-python-expert');
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    expect(result.stderr).not.toContain('Subagent Failure Advisor');
+  });
+
+  it('should NOT emit a warning when tool_output.is_error is absent', async () => {
+    const input = JSON.stringify({ agent_type: 'lang-python-expert', tool_output: {} });
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    expect(result.stderr).not.toContain('Subagent Failure Advisor');
+  });
+
+  // --- Never triggers the removed prompt/LLM-judge/Stop-hook-feedback path ---
+
+  it('should never reference background_tasks or Stop hook feedback (no self-referential judge path)', async () => {
+    const input = makeSubagentStopInput(true, 'lang-golang-expert', 'error');
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    expect(result.stdout + result.stderr).not.toContain('background_tasks');
+    expect(result.stdout + result.stderr).not.toContain('Stop hook feedback');
   });
 });
 
@@ -1735,6 +1877,110 @@ describe('fail-axis-cause-advisor.sh', () => {
 // Script file validation
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+// Issue #1632: echo pass-through escape-corruption regression guard
+// -------------------------------------------------------------------
+//
+// Live evidence (2026-08-30): a Bash grep pattern containing a literal `\|` was
+// JSON-encoded (correctly) as `\\|` in the hook input payload; `echo "$input"`
+// re-output collapsed one backslash before jq/CC ever saw it, producing invalid
+// JSON ("Invalid escape character |"). A second observation ("Unterminated
+// string") is consistent with a literal `\n` escape sequence being expanded by
+// echo into a real newline byte inside what must remain a single-line JSON
+// string. All hook scripts (and hooks.json inline commands) now use
+// `printf '%s\n' "$var"` instead of `echo "$var"` for any JSON payload that is
+// re-emitted to stdout or re-piped into jq — printf does not interpret escape
+// sequences in its %s argument, so the byte sequence survives unchanged.
+describe('Issue #1632: JSON pass-through escape safety', () => {
+  beforeEach(() => {
+    const { execSync } = require('node:child_process');
+    try {
+      execSync('rm -f /tmp/.claude-task-count-* /tmp/.claude-env-status-*');
+    } catch {
+      // ignore if no files exist
+    }
+  });
+
+  // --- Positive case A: literal backslash-pipe (\|), the exact live-evidence pattern ---
+
+  it('agent-teams-advisor.sh: stdout stays byte-identical JSON when a field contains a literal \\|', async () => {
+    const input = JSON.stringify({
+      tool_input: {
+        subagent_type: 'lang-golang-expert',
+        description: String.raw`grep -l 'a\|b' pattern with literal backslash-pipe`,
+        model: 'sonnet',
+      },
+    });
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(() => JSON.parse(result.stdout)).not.toThrow();
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('destructive-git-guard.sh: stdout stays byte-identical JSON when tool_input.command contains a literal \\|', async () => {
+    const input = JSON.stringify({
+      tool: 'Bash',
+      tool_input: {
+        command: String.raw`git status && find . -name "*.txt" -exec grep -l 'a\|b' {} \;`,
+      },
+    });
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(() => JSON.parse(result.stdout)).not.toThrow();
+    expect(result.stdout.trim()).toBe(input);
+    expect(result.stderr).not.toContain('DESTRUCTIVE GIT WARNING');
+  });
+
+  // --- Positive case B: literal backslash-n (\n) escape, the "Unterminated string" pattern ---
+
+  it('agent-teams-advisor.sh: stdout stays byte-identical JSON when a field contains a literal \\n escape', async () => {
+    const input = JSON.stringify({
+      tool_input: {
+        subagent_type: 'lang-python-expert',
+        description: String.raw`printf 'line1\nline2\n' style literal backslash-n`,
+        model: 'sonnet',
+      },
+    });
+    const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(() => JSON.parse(result.stdout)).not.toThrow();
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('destructive-git-guard.sh: stdout stays byte-identical JSON when tool_input.command contains a literal \\n escape', async () => {
+    const input = JSON.stringify({
+      tool: 'Bash',
+      tool_input: { command: String.raw`printf 'line1\nline2\n'` },
+    });
+    const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input);
+    expect(result.exitCode).toBe(0);
+    expect(() => JSON.parse(result.stdout)).not.toThrow();
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  // --- Negative/structural case: no script should re-output a JSON payload via bare `echo` ---
+  // (This is the deterministic Tier-1 guard: the functional tests above prove the fix
+  // works for two representative scripts; this proves the fix isn't merely local to
+  // those two by scanning every shipped hook script and hooks.json for the regressed
+  // pattern directly.)
+
+  it('no hook script should re-output/pipe stdin JSON via bare `echo "$var"` (regression guard)', async () => {
+    const { readdirSync } = require('node:fs');
+    const scriptNames = readdirSync(SCRIPTS_DIR).filter((f: string) => f.endsWith('.sh'));
+    const offenders: string[] = [];
+    for (const fname of scriptNames) {
+      const content = await readFile(join(SCRIPTS_DIR, fname), 'utf-8');
+      offenders.push(...findJsonVarEchoOffenders(fname, content));
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('hooks.json should not contain the literal `echo \\"$input\\"` pass-through pattern', async () => {
+    const raw = await readFile(HOOKS_JSON_PATH, 'utf-8');
+    expect(raw.includes('echo \\"$input\\"')).toBe(false);
+  });
+});
+
 describe('Script file validation', () => {
   const EXPECTED_SCRIPTS = [
     'stage-blocker.sh',
@@ -1749,6 +1995,7 @@ describe('Script file validation', () => {
     'file-change-validator.sh',
     'failure-ledger.sh',
     'fail-axis-cause-advisor.sh',
+    'subagent-failure-advisor.sh',
   ] as const;
 
   it('all expected scripts should exist in the templates directory', async () => {

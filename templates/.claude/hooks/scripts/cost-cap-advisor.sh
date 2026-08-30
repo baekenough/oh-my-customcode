@@ -15,19 +15,19 @@ COST_CAP="${CLAUDE_COST_CAP:-5.00}"
 
 # Check if cost data is available
 if [ ! -f "$COST_FILE" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
 # TSV: cost_usd, ctx_pct, timestamp, rl_5h_pct, rl_7d_pct, rl_5h_resets, rl_7d_resets
 IFS=$'\t' read -r cost_usd ctx_pct timestamp _rl_5h _rl_7d _rl_5h_resets _rl_7d_resets < "$COST_FILE" 2>/dev/null || {
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 }
 
 # Validate cost_usd is a number
 if ! printf '%f' "$cost_usd" >/dev/null 2>&1; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -39,7 +39,7 @@ cost_pct=$(echo "scale=0; $cost_usd * 100 / $COST_CAP" | bc 2>/dev/null || echo 
 now=$(date +%s)
 age=$((now - ${timestamp:-0}))
 if [ "$age" -gt 60 ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -54,7 +54,7 @@ if [ "$cost_pct" -ge 100 ] && [ "$last_level" != "100" ]; then
   echo "[Cost Cap] Session cost \$${cost_usd} has reached cap \$${COST_CAP} (${cost_pct}%)" >&2
   echo "[Cost Cap] Consider wrapping up or increasing CLAUDE_COST_CAP" >&2
   echo "100" > "$ADVISORY_FILE"
-  echo "$input"
+  printf '%s\n' "$input"
   exit 2
 elif [ "$cost_pct" -ge 90 ] && [ "$last_level" != "90" ] && [ "$last_level" != "100" ]; then
   echo "[Cost Cap] Session cost \$${cost_usd} at 90% of cap \$${COST_CAP}" >&2
@@ -69,5 +69,5 @@ elif [ "$cost_pct" -ge 50 ] && [ -z "$last_level" ]; then
 fi
 
 # Pass through — advisory only
-echo "$input"
+printf '%s\n' "$input"
 exit 0

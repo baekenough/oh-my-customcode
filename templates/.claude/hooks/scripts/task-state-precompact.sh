@@ -49,7 +49,7 @@ collect_state() {
 state=$(collect_state 2>/dev/null)
 
 if [ -n "$state" ] && [ "$state" != "{}" ]; then
-  echo "$state" > "$STATE_FILE"
+  printf '%s\n' "$state" > "$STATE_FILE"
   echo "[PreCompact] Task state saved to $STATE_FILE" >&2
 else
   echo "[PreCompact] No active task state to save" >&2

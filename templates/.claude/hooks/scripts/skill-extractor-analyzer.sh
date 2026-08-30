@@ -12,7 +12,7 @@ PROPOSALS_FILE="/tmp/.claude-skill-proposals-${PPID}"
 
 # Early exit if no outcomes
 if [ ! -f "$OUTCOMES_FILE" ] || [ ! -s "$OUTCOMES_FILE" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -45,5 +45,5 @@ fi
 
 # CRITICAL: Always pass through input and exit 0
 # This hook MUST NEVER block session termination
-echo "$input"
+printf '%s\n' "$input"
 exit 0

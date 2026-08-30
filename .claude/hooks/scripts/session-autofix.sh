@@ -142,5 +142,5 @@ fi
 mkdir -p "$LOG_DIR" 2>/dev/null
 echo "{\"date\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"issue_count\":${ISSUE_COUNT},\"fix_count\":${FIX_COUNT}}" >> "${LOG_DIR}/$(date +%Y-%m-%d).jsonl" 2>/dev/null
 
-echo "$input"
+printf '%s\n' "$input"
 exit 0

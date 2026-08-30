@@ -14,7 +14,7 @@ PPID_FILE="/tmp/.claude-task-outcomes-${PPID}"
 
 # Only attempt collection if outcome file exists
 if [ ! -f "$PPID_FILE" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -42,5 +42,5 @@ if [ -n "$EVAL_CORE" ]; then
 fi
 
 # Always pass through input and exit 0 (advisory only)
-echo "$input"
+printf '%s\n' "$input"
 exit 0

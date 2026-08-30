@@ -13,14 +13,14 @@ command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
 
 # Extract tool info
-tool_name=$(echo "$input" | jq -r '.tool_name // "unknown"')
-tool_input=$(echo "$input" | jq -r '.tool_input // {}')
+tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // "unknown"')
+tool_input=$(printf '%s\n' "$input" | jq -r '.tool_input // {}')
 
 SCHEMA_FILE=".claude/schemas/tool-inputs.json"
 
 # Skip if schema file doesn't exist
 if [ ! -f "$SCHEMA_FILE" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -28,8 +28,8 @@ warnings=()
 
 case "$tool_name" in
   "Write")
-    file_path=$(echo "$tool_input" | jq -r '.file_path // ""')
-    content=$(echo "$tool_input" | jq -r '.content // ""')
+    file_path=$(printf '%s\n' "$tool_input" | jq -r '.file_path // ""')
+    content=$(printf '%s\n' "$tool_input" | jq -r '.content // ""')
 
     if [ -z "$file_path" ]; then
       warnings+=("[Schema] Write: file_path is empty or missing")
@@ -40,9 +40,9 @@ case "$tool_name" in
     ;;
 
   "Edit")
-    file_path=$(echo "$tool_input" | jq -r '.file_path // ""')
-    old_string=$(echo "$tool_input" | jq -r '.old_string // ""')
-    new_string=$(echo "$tool_input" | jq -r '.new_string // ""')
+    file_path=$(printf '%s\n' "$tool_input" | jq -r '.file_path // ""')
+    old_string=$(printf '%s\n' "$tool_input" | jq -r '.old_string // ""')
+    new_string=$(printf '%s\n' "$tool_input" | jq -r '.new_string // ""')
 
     if [ -z "$file_path" ]; then
       warnings+=("[Schema] Edit: file_path is empty or missing")
@@ -56,7 +56,7 @@ case "$tool_name" in
     ;;
 
   "Bash")
-    command=$(echo "$tool_input" | jq -r '.command // ""')
+    command=$(printf '%s\n' "$tool_input" | jq -r '.command // ""')
 
     if [ -z "$command" ]; then
       warnings+=("[Schema] Bash: command is empty")
@@ -102,5 +102,5 @@ if [ ${#warnings[@]} -gt 0 ]; then
 fi
 
 # Always pass through (Phase 1)
-echo "$input"
+printf '%s\n' "$input"
 exit 0

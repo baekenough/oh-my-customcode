@@ -14,8 +14,8 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
-agent_type=$(echo "$input" | jq -r '.tool_input.subagent_type // ""')
-prompt=$(echo "$input" | jq -r '.tool_input.prompt // ""')
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // ""')
+prompt=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt // ""')
 
 # R010 violation tracking file (PPID-scoped for session persistence)
 VIOLATION_FILE="/tmp/.claude-r010-violations-${PPID}"
@@ -54,4 +54,4 @@ if [ "$agent_type" != "mgr-gitnerd" ]; then
 fi
 
 # Always pass through - this hook is advisory only
-echo "$input"
+printf '%s\n' "$input"

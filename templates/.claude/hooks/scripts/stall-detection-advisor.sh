@@ -17,18 +17,18 @@ AGENT_START_FILE="/tmp/.claude-agent-starts-${PPID}"
 DURATION_FILE="/tmp/.claude-agent-durations-${PPID}"
 
 # Skip if no start records exist
-[ -f "$AGENT_START_FILE" ] || { echo "$input"; exit 0; }
+[ -f "$AGENT_START_FILE" ] || { printf '%s\n' "$input"; exit 0; }
 
 # --- 1. Extract completed agent info ---
-agent_type=$(echo "$input" | jq -r '.agent_type // "unknown"')
-model=$(echo "$input" | jq -r '.model // "inherit"')
-description=$(echo "$input" | jq -r '.description // ""' | head -c 80)
+agent_type=$(printf '%s\n' "$input" | jq -r '.agent_type // "unknown"')
+model=$(printf '%s\n' "$input" | jq -r '.model // "inherit"')
+description=$(printf '%s\n' "$input" | jq -r '.description // ""' | head -c 80)
 
 # --- 2. Calculate duration from start record ---
 start_epoch=$(grep -F "\"agent_type\":\"${agent_type}\"" "$AGENT_START_FILE" 2>/dev/null | tail -1 | jq -r '.start_epoch // "0"' 2>/dev/null || echo "0")
 
 if [ "$start_epoch" = "0" ] || [ "$start_epoch" = "null" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -56,10 +56,10 @@ if [ "$completed_count" -ge 1 ]; then
     # Check for still-running agents (in start file but not in duration file)
     if [ -f "$AGENT_START_FILE" ] && [ -s "$AGENT_START_FILE" ]; then
       while IFS= read -r line; do
-        running_agent=$(echo "$line" | jq -r '.agent_type // ""' 2>/dev/null || true)
-        running_start=$(echo "$line" | jq -r '.start_epoch // "0"' 2>/dev/null || echo "0")
-        running_desc=$(echo "$line" | jq -r '.description // ""' 2>/dev/null || true)
-        running_model=$(echo "$line" | jq -r '.model // "inherit"' 2>/dev/null || true)
+        running_agent=$(printf '%s\n' "$line" | jq -r '.agent_type // ""' 2>/dev/null || true)
+        running_start=$(printf '%s\n' "$line" | jq -r '.start_epoch // "0"' 2>/dev/null || echo "0")
+        running_desc=$(printf '%s\n' "$line" | jq -r '.description // ""' 2>/dev/null || true)
+        running_model=$(printf '%s\n' "$line" | jq -r '.model // "inherit"' 2>/dev/null || true)
 
         if [ "$running_start" = "0" ] || [ "$running_start" = "null" ]; then continue; fi
 
@@ -90,7 +90,7 @@ duration_entry=$(jq -cn \
   --arg ts "$now_epoch" \
   '{agent_type: $agent, model: $model, description: $desc, duration_seconds: ($dur | tonumber), timestamp: $ts}')
 
-echo "$duration_entry" >> "$DURATION_FILE"
+printf '%s\n' "$duration_entry" >> "$DURATION_FILE"
 
 # Remove only first consumed start entry (preserve siblings for parallel same-type agents)
 if [ -f "$AGENT_START_FILE" ]; then
@@ -108,5 +108,5 @@ if [ -f "$DURATION_FILE" ]; then
 fi
 
 # Pass through
-echo "$input"
+printf '%s\n' "$input"
 exit 0

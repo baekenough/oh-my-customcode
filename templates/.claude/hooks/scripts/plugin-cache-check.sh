@@ -12,7 +12,7 @@ input=$(cat)
 PLUGIN_CACHE="${HOME}/.claude/shared-plugins/cache"
 
 if [ ! -d "$PLUGIN_CACHE" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -31,5 +31,5 @@ if [ ${#missing[@]} -gt 0 ]; then
   done
 fi
 
-echo "$input"
+printf '%s\n' "$input"
 exit 0

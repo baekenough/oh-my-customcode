@@ -13,12 +13,12 @@ command -v jq >/dev/null 2>&1 || exit 0
 input=$(cat)
 
 # Extract output to scan
-tool_name=$(echo "$input" | jq -r '.tool_name // "unknown"')
-output=$(echo "$input" | jq -r '.tool_output.output // ""')
+tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // "unknown"')
+output=$(printf '%s\n' "$input" | jq -r '.tool_output.output // ""')
 
 # Skip if no output
 if [ -z "$output" ] || [ "$output" = "null" ]; then
-  echo "$input"
+  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -96,5 +96,5 @@ if [ "$detected" = true ]; then
 fi
 
 # Pass through (always)
-echo "$input"
+printf '%s\n' "$input"
 exit 0
