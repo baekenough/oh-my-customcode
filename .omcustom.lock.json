@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.56",
-  "generatedAt": "2026-08-30T02:02:31.768Z",
-  "templateVersion": "1.1.56",
+  "generatorVersion": "1.1.57",
+  "generatedAt": "2026-08-30T02:39:58.173Z",
+  "templateVersion": "1.1.57",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "f75d3b7466b67b9e06fb9cb393fee75c1d34bfc11ddfe12a7eea0ab6e8f6a25f",
@@ -1130,8 +1130,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/claude-md-reinject.sh": {
-      "templateHash": "dc9a216e2e8d8d53bee02d7d1eac28ec90d510cafeea2cd333458297b97ba51a",
-      "size": 2930,
+      "templateHash": "0d8df4ca5a6899cf2c1f173bd95552832b2d407cb20d09cb18da047b3e0592cc",
+      "size": 3374,
       "component": "hooks"
     },
     ".claude/hooks/scripts/eval-core-batch-save.sh": {
@@ -1340,8 +1340,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "630a574f94ad85d6290265fa7b67e60fa84d1d5083daeefad4ebdfd897f125d6",
-      "size": 28996,
+      "templateHash": "794c24fcd560ef03cb6907edb630b094f8eb971b2eb4cb1fd14f4a7f9917b372",
+      "size": 29170,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
