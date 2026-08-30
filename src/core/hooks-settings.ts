@@ -414,6 +414,11 @@ function analyzeMixedAndExpr(ast: MatcherAstNode, raw: string): MatcherAnalysis 
   return { toolRegex, fieldNode };
 }
 
+/** Matches a bare single-word matcher value (no `==`/`matches`/boolean operators) — see
+ * the literal-matcher branch in {@link analyzeMatcher} below for why this needs a
+ * dedicated fast path rather than falling through to the boolean-expression parser. */
+const BARE_LITERAL_MATCHER = /^[A-Za-z_][A-Za-z0-9_-]*$/;
+
 /**
  * Analyzes a hooks.json matcher DSL string into the CC-compatible tool regex plus any
  * residual tool_input/mcp_tool_name condition CC cannot express directly.
@@ -425,6 +430,16 @@ function analyzeMixedAndExpr(ast: MatcherAstNode, raw: string): MatcherAnalysis 
 export function analyzeMatcher(raw: string | undefined): MatcherAnalysis {
   if (raw === undefined || raw === '*' || raw.trim() === '') {
     return { toolRegex: '*', fieldNode: null };
+  }
+
+  // Literal event-source matcher (e.g. SessionStart's "startup"/"resume"/"clear"/
+  // "compact") — these are plain string values CC compares directly, not boolean
+  // matcher expressions. The grammar below (`parseAtom`) always requires an operator
+  // (`==`/`matches`) after a leading identifier, so a bare word deterministically fails
+  // parsing with "unexpected end of matcher expression" (#1626) — pass it through
+  // unconverted instead of routing it into the tool-matcher expression parser.
+  if (BARE_LITERAL_MATCHER.test(raw)) {
+    return { toolRegex: raw, fieldNode: null };
   }
 
   let ast: MatcherAstNode;
