@@ -192,13 +192,26 @@ split("\n")
     # 올바르게 분리되어 0/0이었음). 이 조사에서 확정된 실제 원인은 별도 메커니즘이다:
     # tail -n 200 윈도우 안에 경계가 전혀 없을 때 $b=-1로 폴백해 슬라이딩 윈도우 전체를
     # 하나의 turn으로 병합하는 구조 — 본 수정의 승인 범위(0-tool-use 가드 1건) 밖이므로
-    # 별도 이슈로 보고한다(오케스트레이터 완료 보고 참조).
+    # 별도 이슈로 보고한다(오케스트레이터 완료 보고 참조). → #1628로 등록·수정 완료:
+    # 아래 $b 바인딩 직후의 "(#1628)" 주석 및 $wlc 포화 가드 참조.
     | [ range(0; $last + 1)
         | select( ($L[.].message.role? == "user")
                   and ( (($L[.].message.content | type) == "string")
                         or (([ $L[.].message.content[]? | select(.type? == "tool_result") ] | length) == 0) ) ) ] as $bi
     | (if ($bi | length) > 0 then $bi[-1] else -1 end) as $b
-    | [ range($b + 1; $last + 1) | $L[.] | select(.message.role? == "assistant") ] as $turn
+    # (#1628) 경계가 전혀 없는 경우($bi 비어있음)를 두 케이스로 나눈다:
+    #   (a) 윈도우가 포화($wlc >= 200 — tail -n 200이 실제로 200줄을 반환) — 윈도우 밖에
+    #       진짜 경계가 있었을 수 있다. 이 경우 $b=-1로 윈도우 전체를 하나의 turn으로
+    #       병합하면, 서로 독립적이고 각각 컴플라이언트한 여러 응답이 합쳐져 announce/
+    #       tool_use 카운트가 어긋나 R008 위양성이 5~10건대로 요동친다(#1628 실측). 판정
+    #       자체를 스킵한다(empty — 아래에서 result가 비어 exit 0으로 이어진다).
+    #   (b) 윈도우가 포화되지 않음($wlc < 200 — tail이 transcript 전체를 다 읽었다는 뜻) —
+    #       세션이 정말로 짧아 첫 턴부터 지금까지 경계가 없는 것이므로, 기존 $b=-1 폴백을
+    #       그대로 유지한다(#1625 찐빠 #3이 확정한 자율 루프 경계 대체 신호와 동일 로직).
+    | if ($bi | length) == 0 and $wlc >= 200 then empty
+      else
+      (
+      [ range($b + 1; $last + 1) | $L[.] | select(.message.role? == "assistant") ] as $turn
     | [ $turn[] | .message.content[]? | select(.type? != "thinking") ] as $blocks
     | ($turn[0].uuid? // "") as $tuuid
     | ([ $blocks[] | select(.type? == "text") ][0].text? // "") as $ftext
@@ -237,10 +250,20 @@ split("\n")
     # $nall_tools는 위 forward r008 가드에서 이미 바인딩됨 — 재바인딩하지 않고 재사용한다.
     | (if $nall_tools == 0 and $an_anchored > 0 then $an_anchored else 0 end) as $r008rev
     | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring)] | @tsv
+      )
+      end
   end
 '
 
-result=$(tail -n 200 "$TRANSCRIPT_PATH" 2>/dev/null | jq -Rsr "$JQ_LAST_TURN" 2>/dev/null) || result=""
+# ── 윈도우 포화 여부 판별 (#1628) ──
+# tail -n 200이 실제로 200줄을 반환했는지(포화 — 윈도우 밖에 잘려나간 내용이 있을 수 있음)를
+# jq 호출 전에 bash에서 측정해 $wlc로 전달한다. awk는 트레일링 개행 유무와 무관하게 정확한
+# 레코드 수를 센다(wc -l은 트레일링 개행이 없는 마지막 줄을 놓칠 수 있음).
+window_content=$(tail -n 200 "$TRANSCRIPT_PATH" 2>/dev/null) || window_content=""
+window_line_count=$(printf '%s' "$window_content" | awk 'END{print NR}')
+: "${window_line_count:=0}"
+
+result=$(printf '%s' "$window_content" | jq -Rsr --argjson wlc "$window_line_count" "$JQ_LAST_TURN" 2>/dev/null) || result=""
 
 if [ -z "$result" ]; then
   exit 0

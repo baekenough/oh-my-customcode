@@ -851,6 +851,105 @@ describe('stuck-detector.sh', () => {
   });
 
   // -----------------------------------------------------------------
+  // Compound/piped read-only command classification (#1629)
+  // -----------------------------------------------------------------
+
+  describe('compound command read-only classification (#1629)', () => {
+    it('NEGATIVE: should NOT hard-block on 3 consecutive all-read-only "|"-piped commands', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status | grep modified' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('NEGATIVE: should NOT hard-block on 3 consecutive all-read-only "&&"-chained commands', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status && git log' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('NEGATIVE: should NOT hard-block on 3 consecutive all-read-only ";"-chained commands', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'ls; pwd' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('NEGATIVE: should NOT hard-block on 3 consecutive mixed "&&"/"|"/";" all-read-only commands', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status && ls | grep x; pwd' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('POSITIVE: should still hard-block on 3 consecutive "|"-piped commands with a write segment', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'ls | tee /tmp/agent3b-out.txt' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('POSITIVE: should still hard-block on 3 consecutive "&&"-chained commands with a write segment', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status && npm install' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('POSITIVE: should still hard-block on 3 consecutive ";"-chained commands with a write segment', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'ls; npm install' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should still hard-block on "||" (conditional-OR, not decomposed) even when both sides look read-only', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status || echo fail' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should still hard-block on a trailing-separator command (empty segment => conservative write)', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status;' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+  });
+
+  // -----------------------------------------------------------------
+  // Signal 3 advisory read-only exemption (#1629)
+  // -----------------------------------------------------------------
+
+  describe('Signal 3 advisory read-only exemption (#1629)', () => {
+    it('NEGATIVE: should NOT emit Tool loop advisory for 5 consecutive read-only Bash calls', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status' });
+      const results = await runNTimesAll(input, 5);
+      for (const r of results) {
+        expect(r.stderr).not.toContain('Tool loop');
+      }
+      const last = results[results.length - 1];
+      expect(last.exitCode).toBe(0);
+    });
+
+    it('NEGATIVE: should NOT emit Tool loop advisory when read-only calls are mixed with a non-triggering write call', async () => {
+      // 4 read-only calls + a 5th write call on a distinct target: the read-only
+      // entries are excluded from the historical count, so the tool-spam
+      // threshold (5) is never reached for either read-only or write history.
+      for (let i = 0; i < 4; i++) {
+        await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git log' }));
+      }
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'npm run build' })
+      );
+      expect(result.stderr).not.toContain('Tool loop');
+    });
+
+    it('POSITIVE CONTROL: should still emit Tool loop advisory for 5 consecutive non-read-only Bash calls', async () => {
+      for (let i = 0; i < 4; i++) {
+        await runStuckDetector(makeInput({ tool_name: 'Bash', command: `npm run task-${i}` }));
+      }
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'npm run task-4' })
+      );
+      expect(result.stderr).toContain('Tool loop');
+    });
+  });
+
+  // -----------------------------------------------------------------
   // Edge cases
   // -----------------------------------------------------------------
 
