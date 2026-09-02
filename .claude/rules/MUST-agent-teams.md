@@ -430,6 +430,8 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 
 > **v2.1.234+**: `/config`의 "Default teammate model" 설정이 **제거**되어, agent-team teammate는 이제 spawn이 모델을 지정하지 않는 한 **leader의 모델**을 사용합니다. 이전에는 teammate 모델을 전역 설정값으로 지정할 수 있었으므로, 과거 세션의 "teammate가 어떤 모델로 실행됐는지" 서술은 이 변경 이전 버전 기준일 수 있습니다.
 
+> **v2.1.257+**: 세 건이 함께 수정되었습니다. (a) leader의 mailbox 쓰기가 잠시 잠긴 사이 teammate permission request가 **두 번 응답**되던 결함 수정 — v2.1.224/251 SendMessage·inbox 신뢰성 계열의 연장이며, 구버전에서 승인이 2회 적용된 흔적은 이중 승인 의도의 증거가 아닙니다. (b) tmux/iTerm2 pane의 teammate가 shutdown 확인 후에도 열려 있던 결함 수정 — 위 Lifecycle의 `TeamDelete` 이후 pane 잔존은 더 이상 정상이 아닙니다. (c) `/fork`가 원 대화의 prompt cache를 새 background 세션에서 유지하도록 개선(worktree briefing이 system-prompt 변경 대신 메시지로 도착) — R009 fork 컨텍스트 상속 노트의 비용 각도. 이 저장소는 `TeamCreate` 미등록으로 R018이 dormant이므로 (a)(b)는 기록용, (c)는 fork 사용 시 즉시 해당합니다.
+
 <!-- ARCHIVED CC version note (historical):
 > **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.
 

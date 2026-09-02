@@ -47,6 +47,7 @@ Model values resolve differently depending on WHERE they are written. Mixing tie
 | `claude-opus-4-8` | Opus, previous generation; supports xhigh effort |
 | `claude-opus-5` | Latest Opus (GA); native 1M context, fast mode at $10/$50 per Mtok |
 | `claude-fable-5` | Mythos-class; tier above Opus (access via CC v2.1.170+) |
+| `claude-fable-5-1` | Mythos-class; Fable 5.1 — v2.1.257부터 기본 Fable 모델, 1M context |
 
 Full IDs are valid ONLY in agent frontmatter — the Agent tool's `model:` spawn parameter does NOT accept them (see Tier 3). Writing the full ID directly (not a project-invented shorthand) pins the agent regardless of future CC default changes. This is the recommended way to opt into Sonnet 5 / Opus 5 / Fable 5 explicitly rather than riding CC's Tier-1 default resolution.
 
@@ -76,7 +77,11 @@ Skill/rule text instructing "spawn with `model: opus`" refers to this tier — a
 
 > **v2.1.251+**: `CLAUDE_CODE_SUBAGENT_MODEL`이 이제 "모든 것을 override"가 아니라 **기본 subagent 모델만 설정**합니다 — 에이전트 정의의 `model:`(Tier 1/2)과 spawn 시점 명시적 `model`(Tier 3)이 이 env보다 **우선**합니다. 이 저장소는 다수 에이전트가 Tier-2 full ID로 model을 pin하므로, v2.1.251부터는 이 env var가 project의 model pin을 더 이상 깨뜨릴 수 없습니다(단, 이전 버전에서 실행된 세션은 여전히 영향받았을 수 있습니다).
 
+> **v2.1.257+**: `CLAUDE_CODE_SUBAGENT_MODEL_FORCE`가 신설되어, 설정 시 `CLAUDE_CODE_SUBAGENT_MODEL`(또는 메인 모델)을 **모든** 서브에이전트에 강제 적용하며 per-spawn(Tier 3)과 agent-definition(Tier 1/2) model override를 무시합니다. 즉 위 v2.1.251 노트의 "이 env var가 project의 model pin을 더 이상 깨뜨릴 수 없다"는 서술은 **FORCE 미설정 시에 한해** 참으로 좁혀집니다. FORCE가 설정된 환경에서는 frontmatter의 model이 실행 모델의 증거가 아니므로(R020 "attempt ≠ outcome"의 모델 각도, v2.1.223 강등 경고 노트와 같은 계열) 무인 실행 전 `env | grep -c CLAUDE_CODE_SUBAGENT_MODEL_FORCE`처럼 값 노출 없이 **설정 여부만** 확인합니다.
+
 > **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via frontmatter full ID `claude-fable-5` (Tier 2) or Agent tool `model: fable` (Tier 3) — NOT via a Tier-1 frontmatter alias. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
+
+> **v2.1.257+**: Claude Fable 5.1(`claude-fable-5-1`)이 추가되어 **기본 Fable 모델**이 되었습니다 — 1M context, $10/$50 per Mtok(캐시 읽기 $0.25/Mtok). Tier-3 `model: fable` alias는 이제 Fable 5.1로 해석됩니다(단 Claude apps gateway 세션은 게이트웨이가 아직 Fable 5.1을 미지원해 당분간 Fable 5로 유지됩니다 — `/model`에서 명시 선택해야 Fable 5.1 사용 가능). frontmatter에서 확정하려면 Tier-2 full ID `claude-fable-5-1`을 쓰고, 기존 `claude-fable-5` pin은 그대로 Fable 5에 남습니다 — Tier-1 alias 해석 주체는 CC라는 위 원칙(v2.1.219/222 노트와 동일 계열)의 재확인입니다.
 
 <!-- ARCHIVED CC version notes (historical):
 > **v2.1.173+**: Fable 5 model IDs carrying a `[1m]` suffix are now auto-normalized (the suffix is stripped) because Fable 5 includes 1M context by default. Use `claude-fable-5` / `model: fable` WITHOUT a `[1m]` suffix — appending it is redundant and normalized away. (The `[1m]` suffix remains meaningful for Opus/Sonnet IDs.)
@@ -508,6 +513,8 @@ Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, 
 > **v2.1.233+**: 스킬/커맨드의 인자 치환이 **인자 값을 다시 템플릿 마커로 재확장하던** 문제가 수정되었습니다 — 인자에 `$ARGUMENTS`·`$1` 같은 문자열이 들어오면 2차 확장돼 프롬프트가 변형될 수 있었습니다. 즉 구버전에서 **인자 값은 신뢰 입력이 아니었으므로**, 인자를 지시문에 그대로 끼워 넣는 스킬은 샘플 값으로 조립 결과를 실제 확인해 검증합니다(R023 Sample-Value Assembly — 문법 검증만으로는 드러나지 않는 계열).
 
 > **v2.1.228+**: claude.ai에서 동기화된 스킬이 하드닝되었습니다 — 로컬 커맨드·MCP prompt를 **shadow하지 않고**, description이 sanitize·labeling되며, 로컬 머신에서 그 본문이 `!` 명령을 실행하거나 `@` 파일 참조를 확장하지 **않습니다**. 즉 외부 출처 스킬은 로컬 `.claude/skills/` 스킬과 **동일한 실행 능력을 갖지 않으므로**, 동기화 스킬에 `!`/`@` 동작을 전제한 본문을 작성하면 무음 미실행이 됩니다. 구버전에서는 동기화 스킬이 로컬 커맨드를 가릴 수 있어 같은 이름 호출이 어느 정의로 해소되는지 결정론적이지 않았습니다.
+
+> **v2.1.257+**: `/add-dir`이 현재 작업 디렉토리 **내부**의 디렉토리를 거부하던 문제가 수정되어, 이제 startup 시 `--add-dir`와 동일하게 그 디렉토리의 skills/commands/agents를 로드합니다. 구버전에서는 세션 중 `/add-dir`로 하위 디렉토리의 스킬 트리를 추가 로드할 수 없었으므로, 서브디렉토리 단위 스킬 확장 워크플로우가 이 버전부터 가능해집니다.
 
 <!-- DETAIL: Skill Optional Fields (full yaml block)
 ```yaml

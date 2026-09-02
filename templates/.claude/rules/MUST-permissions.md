@@ -77,6 +77,8 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.214+**: 단일 세그먼트 `dir/**` allow rule(예: `Edit(src/**)`)이 트리 어디에나 있는 중첩 `dir/`까지 auto-approve하던 버그가 수정되어 이제 `<cwd>/dir`에만 매칭됩니다(hook `if:` 조건도 동일 — 임의 깊이 매칭이 필요하면 `**/dir/**`로 작성). **`deny`/`ask` permission rule은 any-depth 매칭을 유지**(allow만 `<cwd>`로 좁아짐). settings.json 스코프 설계 시 이 비대칭(allow 좁게 / deny·ask 넓게)을 전제로 삼습니다. 위 v2.1.210 `Edit(path)`/`Read(path)` matcher 권고의 연장선.
 
+> **v2.1.252/257+**: 두 건이 allow 규칙 저장·반영 신뢰성을 보강합니다. (252) `.claude/settings.local.json`이 아직 없는 프로젝트에서 "always allow"를 눌러도 저장되지 않던 결함이 수정되었습니다 — 구버전에서 "always allow를 눌렀는데 다시 묻는다"는 관측은 이 파일 부재가 원인일 수 있었습니다. (257) 세션 시작 후 새로 생성된 `.claude/` 폴더의 settings가 재시작 전까지 반영되지 않던 결함이 수정되었습니다 — R021 「훅 배선 경로」가 서술하는 settings 재생성 흐름에서, 세션 중 생성한 settings 파일이 이제 즉시 로드됩니다.
+
 > **v2.1.221/222+**: 세 건이 Tier-3/4 권한 흐름에 영향을 줍니다.
 > 1. **(v2.1.221) Bash 도구 권한 검사 우회 수정** — zsh가 `[[ ]]` 정규식 조건문 안에서 숨겨진 명령을 실행할 수 있었고, 해당 명령들은 이제 권한 프롬프트를 발생시킵니다. **이 저장소의 Claude Code Bash 도구 실행 셸이 zsh**이므로(R005 #1540), `[[ ... =~ ... ]]` 안에 명령을 포함하는 형태는 Tier-4 프롬프트 대상이며 무인 흐름의 새 프롬프트 발생원이 될 수 있습니다. Windows의 따옴표 포함 경로 PowerShell 권한 검사도 같은 방향으로 수정되었습니다.
 > 2. **(v2.1.221) auto mode 병렬 권한 검사 최적화** — 병렬 tool call의 권한 검사가 cache-efficient해지고 캐시된 대화 prefix 재사용으로 비용이 감소했습니다(R009 병렬 배치의 부담 완화). 검사 대기 중 모드를 전환하면 stale 결과를 적용하지 않고 재프롬프트합니다.
@@ -98,9 +100,13 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 > **v2.1.247~251 재도입 여부 확인 (실측)**: 위 「일반 교훈」이 언급하는 v2.1.233 롤백 2건(Windows Git Bash의 Cygwin-style symlink 우회, Bash 입력 리다이렉션 `< file`)의 "좁힌 형태 재도입"은 v2.1.247~251 CHANGELOG 범위에서 **확인되지 않았습니다** — "Cygwin"이라는 단어도 `< file` 입력 리다이렉션 언급도 4개 릴리즈 어디에도 없습니다. 대신 v2.1.251에 위 5건의 (c)(d)처럼 **메커니즘이 다른** 별개의 심링크·경로 우회 수정이 새로 등장했습니다 — 같은 "심링크 우회"라는 결과이지만 원인 버그는 다릅니다. 따라서 위 "233에서 롤백됨" 서술은 이 시점까지 **여전히 유효**하며, 재도입이 확인되면 이 노트를 갱신합니다.
 
+> **v2.1.257+ (재도입 확인)**: v2.1.233에서 롤백됐던 2건 중 **`< file` 입력 리다이렉션 권한검사가 v2.1.257에서 재도입**됐습니다 — Bash `Read()`/`Edit()` deny 규칙이 이제 `< file` 리다이렉트와 `tac`/`egrep` 같은 reader 명령에도 적용되어, 인자나 리다이렉트 대상 중 하나라도 deny에 걸리면 명령이 거부됩니다. 232 원본("인자 표기와 동일하게 검사")보다 넓은 형태입니다. Windows Git Bash의 Cygwin-style symlink 우회 건은 v2.1.257/258 CHANGELOG에도 여전히 언급이 없어 **미재도입 상태로 유지**합니다. 위 「`< file` 회고적 함의(버전 무관 유지)」 문단은 이제 **v2.1.257 미만 버전에 한정**해 읽습니다 — v2.1.257 이후로는 `< file`이 다시 검사 대상입니다.
+
+> **v2.1.257+**: 권한검사 보강 5건이 추가로 확인되었습니다. (a) auto mode에서 `permissions.ask` 규칙이 매칭 명령이 복합 명령·서브셸 내부에서 실행될 때 건너뛰어지던 결함이 수정되어 확인 프롬프트 없이 실행되지 않습니다 — 위 「allow ≠ classifier」 계열의 ask 층 보강입니다. (b) zsh가 bash와 다르게 파싱하는 `[[ ]]` 조건문을 auto-approve하던 결함이 추가로 수정되었습니다 — v2.1.221/238에 이은 3번째 보강이며, 이 저장소의 Bash 도구 실행 셸이 zsh이므로 직접 해당합니다. (c) `permissions.blockReadsOutsideWorkingDirectories` 설정이 신설되어, auto mode에서 작업 디렉토리 밖 첫 파일 읽기 전 1회 프롬프트를 표시하고 그런 읽기를 차단하는 옵션을 제공합니다. (d) `allowManagedPermissionRulesOnly`가 활성 상태일 때 첫 settings reload 이후 `--disallowedTools`와 세션 deny 규칙이 탈락하던 결함이 수정되었습니다. (e) 워크트리 격리 세션이 git을 건드리지 않는 Bash 루프·`$VAR` 읽기·`"$(…)"`·heredoc을 "too complex to verify that it stays inside the worktree"로 거부하던 결함이 수정되었습니다 — R009 워크트리 병렬 위임 시 이런 복합 명령의 거부를 더 이상 격리 결함으로 진단하지 않습니다.
+
 > **v2.1.238+**: Bash 도구의 permission 검사가 zsh 전용 조건문(shell conditional) 문법에 대해 추가로 개선되었습니다. 이는 위 v2.1.221 "zsh `[[ ]]` 정규식 조건문 안에서 숨겨진 명령이 권한 검사를 우회"의 **직접 연장선**입니다 — "개선"으로만 기술되어 있어 v2.1.221 수정이 완전 해결이 아니었거나 추가 우회 벡터가 있었음을 시사합니다. 이 저장소의 Bash 도구 실행 셸이 zsh이므로(R005 #1540 실측) 직접 관련됩니다.
 
-> **v2.1.246/248+**: (246) 끝에 매달린 `&&`/`||`가 있는 손상된(malformed) 명령에 대해 Bash 권한검사가 이제 **항상 승인을 요구**합니다 — 구버전에서는 이런 형태가 검사를 우회할 수 있었습니다. (248) `--restricted`(또는 `CLAUDE_CODE_RESTRICTED=1`) 모드가 신설되어 명령/코드 실행 도구와 `WebFetch`를 제거하고(`--tools`에 명시 시 예외), 파일 도구를 작업 디렉토리 내부로 제한하며, `bypassPermissions`를 거부하고, user/project/local settings 파일을 무시합니다. 이 저장소는 기본적으로 `bypassPermissions`를 쓰므로(R010 Universal bypassPermissions) `--restricted`와는 **상호 배타적**입니다 — 이 저장소 워크플로우에는 적용하지 않되, 신규 안전 모드 옵션으로 존재를 기록합니다.
+> **v2.1.246/248+**: (246) 끝에 매달린 `&&`/`||`가 있는 손상된(malformed) 명령에 대해 Bash 권한검사가 이제 **항상 승인을 요구**합니다 — 구버전에서는 이런 형태가 검사를 우회할 수 있었습니다. (248) `--restricted`(또는 `CLAUDE_CODE_RESTRICTED=1`) 모드가 신설되어 명령/코드 실행 도구와 `WebFetch`를 제거하고(`--tools`에 명시 시 예외), 파일 도구를 작업 디렉토리 내부로 제한하며, `bypassPermissions`를 거부하고, user/project/local settings 파일을 무시합니다. 이 저장소는 프로젝트 settings에 `bypassPermissions`를 선언하지만 v2.1.257부터 그 선언은 무시되므로(R010 Universal bypassPermissions의 ★ v2.1.257 노트 — 2026-09-02 실측 유효 모드는 user settings `auto`), `--restricted`와의 상호 배타성은 **user/managed scope에서 bypass를 켠 경우에 한해** 성립합니다 — 이 저장소 워크플로우에는 적용하지 않되, 신규 안전 모드 옵션으로 존재를 기록합니다.
 
 ### Todo/Task 도구 기본 제거 (v2.1.233+) — 위 표의 †
 

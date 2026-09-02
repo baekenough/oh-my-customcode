@@ -56,6 +56,8 @@
 
 > **v2.1.233+**: Linux에서 Bash 도구 명령에 **memory cgroup**을 걸 수 있게 되어(`CLAUDE_CODE_TOOL_MEMORY_LIMIT`, opt-in) 폭주하는 빌드가 세션을 마비시키지 못합니다. 이 변수가 설정된 환경에서는 대용량 빌드·테스트가 **OOM으로 죽을 수 있으므로**, 실패를 코드 결함으로 특성화하기 전에 이 변수 설정 여부를 확인합니다(R020 Read-Before-Characterize). 같은 릴리즈에서 **샌드박스 활성 Linux의 유휴 세션이 CPU 코어 1개를 100% 점유하던 문제**도 수정되었습니다 — 구버전 Linux에서 병렬 배치의 CPU 포화·타임아웃 실패를 "부하 의존"으로 귀속하기 전에 유휴 세션의 상시 점유를 배제해야 했습니다(cross-ref R009 「파일 disjoint ≠ 자원 disjoint」). 이 저장소의 기본 실행 환경은 Darwin이므로 두 항목 모두 **현재 미적용**이며, Linux CI·컨테이너 실행에만 해당합니다.
 
+> **v2.1.252+/v2.1.257+**: (252) 일부 Mac에서 Bash 명령이 "task output swap refused (tasks dir moved or linked)"로 실패하던 결함 수정 — Darwin이 이 저장소 기본 실행 환경이므로 직접 해당하며, 구버전에서 이 문구의 Bash 실패는 명령 결함이 아니라 플랫폼 tasks 디렉토리 처리 결함이었습니다(R020 Read-Before-Characterize). (257) `timeout`/`setsid`로 셸에서 분리된 background 명령이 task stop·CC 종료 후에도 살아남던 결함 수정, background 명령을 tasks 패널에서 중지하면 이제 Claude에 통지됨, `claude -p --input-format stream-json`에 비-JSONL 입력 시 무한 메모리 증가 대신 즉시 실패. 위 macOS `gtimeout` 노트(#1327)와 결합하면, `gtimeout`으로 감싼 백그라운드 명령이 세션 종료 후 잔존하던 관측은 이 결함의 산물일 수 있습니다.
+
 ### Capability-Aware Tool Scheduling
 
 When dispatching parallel tool calls, consider per-tool capabilities to optimize scheduling:
