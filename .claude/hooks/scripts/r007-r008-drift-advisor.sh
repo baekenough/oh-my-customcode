@@ -304,8 +304,33 @@ if [ -n "$turn_uuid" ] && [ -f "$MARKER_FILE" ]; then
   fi
 fi
 
-advisory_text=$(printf '[R007/R008 Advisory] 직전 응답에서 식별 누락 감지 (R007 헤더=%s, R008 접두사=%s). 이번 응답은 ┌─ Agent: 헤더로 시작하고, 모든 도구 호출에 [agent][model] → Tool: 접두사를 포함하십시오.' \
-  "$r007_violations" "$r008_violations")
+# ── 위반 문구 조립 (#1643 — 판정 로직 불변, 레이블 의미를 문구 자체가 드러내도록 정정) ──
+# 이전 문구 "R007 헤더=%s, R008 접두사=%s"의 %s는 위반 "건수"(0=컴플라이언트)였는데, 레이블
+# "헤더"/"접두사"가 "개수"로 오독되어 "R007 헤더=0"이 "헤더가 없다"로 잘못 읽혔다(#1643 진단
+# 확정 — 실제로는 헤더가 정상 존재하는 컴플라이언트 상태였다). 값이 위반 건수라는 것을 문구
+# 자체가 드러내도록 "누락 N건"으로 표현하고, 위반이 없는 차원은 문구에서 아예 제외한다 — 0건인
+# 차원을 언급하면 그 차원도 위반처럼 오독될 수 있기 때문이다.
+violation_desc=""
+instruction=""
+if [ "$r007_violations" -gt 0 ]; then
+  violation_desc="R007 에이전트 식별 헤더 누락 ${r007_violations}건"
+  instruction="이번 응답은 ┌─ Agent: 헤더로 시작하십시오."
+fi
+if [ "$r008_violations" -gt 0 ]; then
+  if [ -n "$violation_desc" ]; then
+    violation_desc="${violation_desc}, R008 도구 식별 접두사 누락 ${r008_violations}건"
+    instruction="이번 응답은 ┌─ Agent: 헤더로 시작하고, 모든 도구 호출에 [agent][model] → Tool: 접두사를 포함하십시오."
+  else
+    violation_desc="R008 도구 식별 접두사 누락 ${r008_violations}건"
+    instruction="모든 도구 호출에 [agent][model] → Tool: 접두사를 포함하십시오."
+  fi
+fi
+
+if [ -n "$violation_desc" ]; then
+  advisory_text="[R007/R008 Advisory] 직전 응답에서 ${violation_desc} 감지. ${instruction}"
+else
+  advisory_text="[R007/R008 Advisory]"
+fi
 
 if [ "$r008_reverse" -gt 0 ]; then
   advisory_text="${advisory_text} [R009 Self-Check #6] 직전 턴은 도구 호출 ${r008_reverse}건을 예고하고도 tool_use 블록 없이 종료했습니다 — 예고한 호출을 지금 실행하거나, 실행하지 않기로 한 사유를 명시하십시오."

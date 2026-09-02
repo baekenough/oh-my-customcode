@@ -133,3 +133,10 @@ Origin: #1582. Cross-ref: R018(Member TaskUpdate Discipline 대체 규약), R020
 > Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the full requirement, rationale, self-check, and version history. Core rule: always pass `mode: "bypassPermissions"` explicitly on every Agent tool call — the Agent tool's default `mode` (`acceptEdits`) overrides agent frontmatter `permissionMode` and causes prompts during unattended execution. Skills that spawn agents MUST include this in their Agent tool call instructions. See R010 for details.
 
 > **v2.1.212+**: CC가 Agent(구 Task) tool의 `mode` 파라미터를 deprecated 처리했습니다(이제 무시) — subagent는 부모 세션의 permission mode를 기본 상속합니다. 위 canonical 요약의 default `mode`(`acceptEdits`)가 frontmatter `permissionMode`를 override한다는 서술 및 항상 `mode: "bypassPermissions"`를 넘기라는 요건은 이 버전부터 stale이며(파라미터가 무시됨), 무인 실행의 실질 게이트는 부모 세션의 permission mode입니다. 요건 재조정은 R010 "Universal bypassPermissions"가 canonical — R002는 이 flag만 유지합니다.
+
+> **v2.1.257+**: 프로젝트 scope `permissions.defaultMode` 가 무시됩니다(user/managed scope 또는
+> `--permission-mode` 플래그만 유효). 위 v2.1.212 노트가 "무인 실행의 실질 게이트는 부모 세션의
+> permission mode"라고 정정했는데, **그 부모 세션 모드를 프로젝트 settings로 지정하는 경로가 이
+> 버전에서 끊겼습니다** — 이 파일 상단 「Deny Rule Glob Patterns」의 v2.1.214 노트(allow 규칙만
+> `<cwd>`로 좁아진 비대칭)와 같은 계열의 **project-scope 축소** 흐름입니다. Canonical owner 는
+> R010 "Universal bypassPermissions" — 상세와 실측 절차는 그쪽을 참조합니다. Origin: #1644.

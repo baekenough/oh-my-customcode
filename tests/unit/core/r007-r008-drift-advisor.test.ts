@@ -380,7 +380,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 1b: multi-line turn reconstruct
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+    // #1643: header IS present → r007=0 must be excluded from the message entirely.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(
+      'R007 에이전트 식별 헤더 누락'
+    );
   });
 });
 
@@ -432,7 +436,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 1c: isSidechain filtering', () 
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R007 헤더=1');
+    // #1643: no tool_use at all in this turn → r008=0 must be excluded from the message.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain(
+      'R007 에이전트 식별 헤더 누락 1건'
+    );
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain('R008 도구 식별 접두사 누락');
   });
 });
 
@@ -729,8 +737,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 3b: turn-level R008 counting', 
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R007 헤더=0');
+    // #1643 regression pair (a): R007 compliant + R008 violated → message must name ONLY R008.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(
+      'R007 에이전트 식별 헤더 누락'
+    );
   });
 
   it('P2: fires for R007 only when the header is missing but prefixes are compliant', async () => {
@@ -754,8 +765,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 3b: turn-level R008 counting', 
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R007 헤더=1');
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=0');
+    // #1643 regression pair (b): R007 violated + R008 compliant → message must name ONLY R007.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain(
+      'R007 에이전트 식별 헤더 누락 1건'
+    );
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain('R008 도구 식별 접두사 누락');
   });
 
   it('P3: fires when the turn has no announce text at all (tool_use only)', async () => {
@@ -771,7 +785,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 3b: turn-level R008 counting', 
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+    // #1643: no text block at all → r007 exempt (0) → must be excluded from the message.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(
+      'R007 에이전트 식별 헤더 누락'
+    );
   });
 
   // ── Source-level regression guard ──
@@ -877,7 +895,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 3c: Skill tool exemption (#1569
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+    // #1643: header IS present → r007=0 must be excluded from the message.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(
+      'R007 에이전트 식별 헤더 누락'
+    );
   });
 
   it('P5: still fires for R007 when a Skill turn lacks any identification header', async () => {
@@ -895,8 +917,12 @@ describe('r007-r008-drift-advisor.sh — Fixture 3c: Skill tool exemption (#1569
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R007 헤더=1');
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=0');
+    // #1643 regression pair (b), Skill-exempt variant: R007 violated + R008 compliant
+    // (Skill excluded from the denominator) → message must name ONLY R007.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain(
+      'R007 에이전트 식별 헤더 누락 1건'
+    );
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain('R008 도구 식별 접두사 누락');
   });
 
   // ── Source-level regression guard ──
@@ -1203,7 +1229,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 3e: #1625 찐빠 #3 forward gua
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+    // #1643: header IS present → r007=0 must be excluded from the message.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(
+      'R007 에이전트 식별 헤더 누락'
+    );
   });
 
   it('source guard: forward r008 is hard-gated on $nall_tools == 0', async () => {
@@ -1275,7 +1305,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 3f: #1628 window-saturation gua
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=1');
+    // #1643: last turn has no text block at all → r007 exempt (0) → excluded from the message.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(
+      'R007 에이전트 식별 헤더 누락'
+    );
   });
 
   it('TN1: stays SILENT when the window is saturated (>=200 lines) with NO boundary at all', async () => {
@@ -1318,7 +1352,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 3f: #1628 window-saturation gua
 
     expect(r.exitCode).toBe(0);
     const parsed = parseAdvisoryOutput(r.stdout);
-    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 접두사=5');
+    // #1643: merged fallback turn has no text block at all → r007 exempt (0) → excluded.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 5건');
+    expect(parsed.hookSpecificOutput.additionalContext).not.toContain(
+      'R007 에이전트 식별 헤더 누락'
+    );
   });
 
   it('source guard: the $wlc saturation check gates the empty-boundary fallback (#1628)', async () => {

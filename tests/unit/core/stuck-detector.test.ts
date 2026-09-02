@@ -58,6 +58,8 @@ function makeInput(opts: {
   tool_name: string;
   file_path?: string;
   command?: string;
+  /** Edit/Write payload content — feeds edit_hash (#1641). */
+  old_string?: string;
   is_error?: boolean;
   output?: string;
 }): string {
@@ -66,6 +68,7 @@ function makeInput(opts: {
     tool_input: {
       ...(opts.file_path !== undefined ? { file_path: opts.file_path } : {}),
       ...(opts.command !== undefined ? { command: opts.command } : {}),
+      ...(opts.old_string !== undefined ? { old_string: opts.old_string } : {}),
     },
     tool_output: {
       is_error: opts.is_error ?? false,
@@ -909,6 +912,106 @@ describe('stuck-detector.sh', () => {
       expect(result.exitCode).toBe(2);
     });
   });
+  // -----------------------------------------------------------------
+  // Command substitution / loop read-only classification (#1641)
+  // -----------------------------------------------------------------
+
+  describe('command substitution and loop read-only classification (#1641)', () => {
+    /**
+     * Ground-truth read of the classifier's verdict for the most recent call.
+     * The hook records its is_readonly decision as the "readonly" field of each
+     * history entry, so this asserts is_readonly_bash_command() directly.
+     *
+     * Needed because the exitCode-2 route (hard-block Check 1/Check 3) matches
+     * history with `grep` on a sed-escaped path, and that escaping backslashes
+     * "(" / ")" — which are LITERALS in BRE, so escaping them turns them into
+     * grouping metacharacters and the match silently never succeeds. Commands
+     * containing parentheses or double quotes therefore can never reach
+     * exitCode 2 regardless of their classification. That is a pre-existing
+     * Check 1/3 defect (owned by the #1641 B2 follow-up), independent of the
+     * classification logic under test here.
+     */
+    function lastReadonlyFlag(): string {
+      const raw = require('node:fs').readFileSync(historyFilePath(), 'utf-8') as string;
+      const lines = raw.trim().split('\n');
+      return JSON.parse(lines[lines.length - 1]).readonly;
+    }
+
+    // --- NEGATIVE controls: genuinely read-only => must NOT hard-block ---
+
+    it('NEGATIVE: should NOT hard-block on a read-only "$(...)" capture piped into a read-only chain', async () => {
+      const input = makeInput({
+        tool_name: 'Bash',
+        command: 'run_id=$(gh pr view 1 --json x); gh run view "$run_id" --log-failed | grep err',
+      });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('NEGATIVE: should NOT hard-block on a "for ... do ... done" loop with a read-only body', async () => {
+      const input = makeInput({
+        tool_name: 'Bash',
+        command: 'for i in 1 2 3; do gh api repos/o/r/issues/$i; done',
+      });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('NEGATIVE: should NOT hard-block on a read-only command with ">/dev/null" redirection', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status 2>/dev/null' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('NEGATIVE: should NOT hard-block on a read-only command with "2>&1" fd duplication', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'ls -la .claude 2>&1 | grep hooks' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    // --- POSITIVE controls: the safety gate must NOT be weakened. If any of
+    // these turns into exitCode 0, the relaxation went too far — revert. ---
+
+    it('POSITIVE: should still classify a "$(...)" substitution containing a write (rm) as NOT read-only', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'echo "$(rm -rf /tmp/x1641)"' });
+      await runNTimes(input, 3);
+      expect(lastReadonlyFlag()).toBe('false');
+    });
+
+    it('POSITIVE: should still classify an assigned "$(...)" substitution containing "git push" as NOT read-only', async () => {
+      const input = makeInput({
+        tool_name: 'Bash',
+        command: 'x=$(git push origin main); echo done',
+      });
+      await runNTimes(input, 3);
+      expect(lastReadonlyFlag()).toBe('false');
+    });
+
+    it('POSITIVE: should still hard-block on a "for" loop whose body performs a write', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'for f in a b; do rm -f $f; done' });
+      const result = await runNTimes(input, 3);
+      expect(lastReadonlyFlag()).toBe('false');
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('POSITIVE: should still hard-block on a real file-write redirection (not /dev/null)', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'cat x > /tmp/out1641.txt' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('POSITIVE: should still hard-block when a backtick substitution contains a write', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'echo `npm install`' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('POSITIVE: should still hard-block on "||" (regression guard for #1629)', async () => {
+      const input = makeInput({ tool_name: 'Bash', command: 'git status || echo fail' });
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+  });
 
   // -----------------------------------------------------------------
   // Signal 3 advisory read-only exemption (#1629)
@@ -1037,6 +1140,203 @@ describe('stuck-detector.sh', () => {
       const content = await readFile(historyFilePath(), 'utf-8');
       const entry = JSON.parse(content.trim().split('\n')[0]);
       expect(entry.path).toBe('/src/path-check.ts');
+    });
+  });
+
+  // -----------------------------------------------------------------
+  // #1641 — Bash target vs file path separation + JSON-encoded history
+  //         matching (B2a scope: field split, entry schema, match fix)
+  // -----------------------------------------------------------------
+
+  describe('Bash target vs file path separation (#1641)', () => {
+    it('should record the Bash command as path and leave edit_hash empty', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'npm run build' }));
+      const content = await readFile(historyFilePath(), 'utf-8');
+      const entry = JSON.parse(content.trim().split('\n')[0]);
+      expect(entry.path).toBe('npm run build');
+      expect(entry.edit_hash).toBe('');
+    });
+
+    it('should derive edit_hash from Edit old_string (alphanumerics only)', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Edit', file_path: '/src/hash.ts', old_string: 'AAA-111 bbb' })
+      );
+      const content = await readFile(historyFilePath(), 'utf-8');
+      const entry = JSON.parse(content.trim().split('\n')[0]);
+      expect(entry.edit_hash).toBe('AAA111bbb');
+    });
+
+    it('should NOT report a Bash command as a "Same file" hard block', async () => {
+      // 3 distinct read-only queries, then one write — the pre-#1641 code fed
+      // the command text into file_path and reported it as an edited "file".
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git status' }));
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git log --oneline' }));
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'ls -la' }));
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'npm install' })
+      );
+      expect(result.stderr).not.toContain('Same file (');
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('should still hard-block an identical Bash write command repeated 3 times', async () => {
+      const result = await runNTimes(makeInput({ tool_name: 'Bash', command: 'npm install' }), 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should still hard-block an identical Edit repeated 3 times', async () => {
+      const result = await runNTimes(
+        makeInput({ tool_name: 'Edit', file_path: '/src/same-edit.ts', old_string: 'A' }),
+        3
+      );
+      expect(result.exitCode).toBe(2);
+    });
+
+    // History matching regression: the old BRE escaping turned "( ) + ? { |"
+    // into operators (they are literals in POSIX BRE) and compared a RAW value
+    // against a JSON-ENCODED history field, so any command with parentheses or
+    // quotes silently stopped matching.
+    it('should hard-block an identical command containing parentheses and quotes', async () => {
+      const cmd = 'npm install "$(echo pkg-a)"';
+      const result = await runNTimes(makeInput({ tool_name: 'Bash', command: cmd }), 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    // Narrowing regression (#1641): three DIFFERENT edits to one file is the
+    // normal incremental-edit workflow (the wiki-curator case in the issue),
+    // not a stuck loop. Before the narrowing this hard-blocked at the 3rd edit.
+    it('should NOT hard-block 3 different edits to the same file', async () => {
+      const path = '/src/incremental.ts';
+      await runStuckDetector(makeInput({ tool_name: 'Edit', file_path: path, old_string: 'A' }));
+      await runStuckDetector(makeInput({ tool_name: 'Edit', file_path: path, old_string: 'B' }));
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Edit', file_path: path, old_string: 'C' })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('HARD BLOCK');
+    });
+
+    it('should describe a repeated Bash command as a command, not a file', async () => {
+      const result = await runNTimes(makeInput({ tool_name: 'Bash', command: 'npm install' }), 3);
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).toContain('Identical Bash command');
+      expect(result.stderr).not.toContain('Same file (');
+    });
+
+    it('should NOT hard-block different commands sharing a parenthesized prefix', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'npm install "$(echo a)"' }));
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'npm install "$(echo b)"' }));
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'npm install "$(echo c)"' })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('HARD BLOCK');
+    });
+  });
+  // -----------------------------------------------------------------
+  // Adversarial-review regressions (M-4 / M-3 / L-3 / L-4)
+  // -----------------------------------------------------------------
+
+  describe('adversarial-review regressions', () => {
+    // M-4: the "$(...)" balance scan is a per-character loop that rebuilds the
+    // accumulator each iteration => O(n^2). Measured before the cap: 5 KB of
+    // inner text took 0.9 s and 20 KB took 13.6 s of hook latency. raw_command
+    // was the only field with no length cap, so a long command is now
+    // classified as a write without being scanned at all.
+    it('should classify a 20 KB command-substitution command without the O(n^2) scan', async () => {
+      const command = `ls $(echo ${'a'.repeat(20000)})`;
+      const started = Date.now();
+      const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+      const elapsed = Date.now() - started;
+      expect(result.exitCode).toBe(0);
+      expect(elapsed).toBeLessThan(5000);
+    }, 30000);
+
+    it('should treat an over-cap command as a write (conservative side)', async () => {
+      const command = `ls $(echo ${'a'.repeat(20000)})`;
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+      const content = await readFile(historyFilePath(), 'utf-8');
+      const entry = JSON.parse(content.trim().split('\n')[0]);
+      expect(entry.readonly).toBe('false');
+    });
+
+    // M-3: target_key is truncated, so two DIFFERENT long commands that share
+    // the capped prefix used to collapse to the same history key and hard-block
+    // each other (a false positive re-introduced by the grep -F switch).
+    // truncate_key() now appends the ORIGINAL length to the truncated key.
+    it('should NOT hard-block 3 long commands sharing the capped prefix', async () => {
+      const prefix = `npm install ${'a'.repeat(1100)}`;
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: `${prefix} one` }));
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: `${prefix} twotwo` }));
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: `${prefix} threethreethree` })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('HARD BLOCK');
+    });
+
+    // Negative control for the fix above: an identical over-cap command must
+    // STILL hard-block — the length tag must not defeat genuine detection.
+    it('should still hard-block an identical over-cap command repeated 3 times', async () => {
+      const command = `npm install ${'a'.repeat(1100)} same`;
+      const result = await runNTimes(makeInput({ tool_name: 'Bash', command }), 3);
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should record the original length in a truncated target key', async () => {
+      const command = `npm install ${'a'.repeat(1100)}`;
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+      const content = await readFile(historyFilePath(), 'utf-8');
+      const entry = JSON.parse(content.trim().split('\n')[0]);
+      expect(entry.path).toBe(`${command.slice(0, 1000)}#len=${command.length}`);
+    });
+
+    // L-3: basename without "--" treats a leading-dash value as an option, so
+    // it exits 1 and (under set -e) killed the whole hook with exit 1 instead
+    // of producing a verdict.
+    it('should not crash when file_path starts with a dash', async () => {
+      const result = await runNTimes(
+        makeInput({ tool_name: 'Edit', file_path: '-e', old_string: 'A' }),
+        3
+      );
+      expect(result.exitCode).toBe(2);
+      expect(result.stderr).not.toContain('illegal option');
+      expect(result.stderr).not.toContain('usage: basename');
+      expect(result.stderr).toContain('HARD BLOCK');
+    });
+
+    // L-4: the remaining `echo "$var"` call sites were replaced with printf so
+    // that backslash sequences in captured data can never be re-interpreted.
+    it('should keep backslash sequences in a command target intact', async () => {
+      const command = 'grep -c "\\n\\t" file.txt';
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+      const content = await readFile(historyFilePath(), 'utf-8');
+      const entry = JSON.parse(content.trim().split('\n')[0]);
+      expect(entry.path).toBe(command);
+    });
+
+    it('should still classify "git branch -a" read-only and "git branch foo" as a write', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git branch -a' }));
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git branch foo' }));
+      const content = await readFile(historyFilePath(), 'utf-8');
+      const lines = content.trim().split('\n');
+      expect(JSON.parse(lines[0]).readonly).toBe('true');
+      expect(JSON.parse(lines[1]).readonly).toBe('false');
+    });
+
+    it('should build an error hash from output containing backslashes', async () => {
+      const result = await runStuckDetector(
+        makeInput({
+          tool_name: 'Bash',
+          command: 'false',
+          is_error: true,
+          output: 'ENOENT: no such file \\n C:\\temp\\x',
+        })
+      );
+      expect(result.exitCode).toBe(0);
+      const content = await readFile(historyFilePath(), 'utf-8');
+      const entry = JSON.parse(content.trim().split('\n')[0]);
+      expect(entry.error_hash).not.toBe('');
     });
   });
 });

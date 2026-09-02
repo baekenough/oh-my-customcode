@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-08-17
+updated: 2026-09-03
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -109,6 +109,20 @@ Failure halts the release step; the fix is re-running the `templates/manifest.js
 
 Origin: #1593 (2026-08-15 — undocumented mechanism + observed version-mismatch contamination in v1.1.47).
 
+## Commit Timeout Budget (#1645)
+
+`.husky/pre-commit` runs on the **main worktree** only: typecheck + `bun run lint` + the full `bun test --coverage` suite (~165s measured) + coverage-threshold check + CLAUDE.md count verification, all sequentially. The Bash tool's default timeout is 120000ms (2 minutes), so a `git commit` delegation with the default budget is killed mid-hook with **exit 143 (SIGTERM)**.
+
+| Situation | Bash `timeout` |
+|---|---|
+| `git commit` on the main worktree | **≥ 400000** (≈6.7 min) |
+| `git commit` in a git worktree | default is sufficient — `.husky/pre-commit` lines 7-12 branch on `[ -f .git ]` and run `bun run typecheck` only, exiting 0 (the full suite is CI's job there) |
+| `git push` / `gh pr` (no hook attached) | default |
+
+**Forbidden**: using `--no-verify` to route around the timeout — bypassing a quality gate is a standing prohibition, permitted only with prior orchestrator approval ([[r010]] "Git Operations — No Quality-Gate Bypass"). A blocked hook is reported and waited on, not bypassed.
+
+**When the timeout cuts a commit off**: exit 143 is **not** evidence of commit failure — the hook may have passed and the commit may have landed before the SIGTERM. Before retrying, measure the actual HEAD with `git log -1 --format=%H%n%s` (cf. [[r020]] "Failure/Interrupt Report ≠ Actual Failure").
+
 ## Release-PR Merge: No `--admin` (measured, #1591)
 
 `mgr-gitnerd` merges the release PR with `gh pr merge {n} --merge --delete-branch` — **explicitly NOT `--admin`**. Ground-truth measurement (`gh api repos/{owner}/{repo}/branches/develop/protection`, 2026-08-15) found `develop` protection requires exactly **6** status checks (`Test`, `Lint`, `Template Sync`, `Version Sync`, `Dependency Security Audit`, `Rust Tests`), `enforce_admins=false`, and **no** `required_pull_request_reviews` block — no reviewer-approval gate exists to bypass. v1.1.47 merged cleanly via a plain `gh pr merge 1585 --merge --delete-branch`. If a merge is rejected, `mgr-gitnerd` re-runs the protection query to re-measure the actual blocker rather than reflexively adding `--admin` ([[r010]] bypass-flag pre-check — name what a flag bypasses, measured, before using it). A prior version of this guidance carried forward an unverified "10 required checks" / "`--admin` bypasses reviewer-approval" description across sessions without re-measuring — both details were wrong.
@@ -159,3 +173,4 @@ The release step's semver rule reserves **minor** for a new user-facing capabili
 - Issue #1542 — branch-before-bump ordering + commit-message close-keyword prohibition (v1.1.38 diff=0 PR failure)
 - Issue #1591 — release-PR merge instruction carried an unverified `--admin` flag across sessions; ground-truth measurement found no reviewer-approval gate exists (2026-08-15)
 - Issue #1593 — lockfile-generation mechanism undocumented, caused silent stale `templateVersion` in v1.1.47; 3-way assertion added (2026-08-15)
+- Content-drift resync 2026-09-03 (v1.1.59, #1645): added the "Commit Timeout Budget" section — the main-worktree `.husky/pre-commit` hook runs the full test suite (~165s measured), so `git commit` delegations require Bash `timeout: ≥400000`; the default 120000ms is killed mid-hook with exit 143, which is not evidence of commit failure.

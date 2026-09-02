@@ -44,6 +44,23 @@ is_readonly_single_command() {
   local w2="${parts[1]:-}"
   local w3="${parts[2]:-}"
 
+  # Variable assignment prefix: "VAR=value" or "VAR=value cmd args".
+  # A bare assignment has no side effect outside the shell; when followed by a
+  # command, classify that command instead. Command substitutions inside the
+  # RHS were already validated and replaced by is_readonly_bash_command (#1641).
+  case "$w1" in
+    [A-Za-z_]*=*)
+      if [ "${#parts[@]}" -le 1 ]; then
+        echo "true"
+        return 0
+      fi
+      local rest_cmd="${cmd#*"$w1"}"
+      rest_cmd="$(printf '%s' "$rest_cmd" | sed -e 's/^[[:space:]]*//')"
+      is_readonly_single_command "$rest_cmd"
+      return 0
+      ;;
+  esac
+
   case "$w1" in
     ls|cat|head|tail|grep|rg|wc|jq|md5|md5sum|type|command|which|echo|printf|pwd|date)
       echo "true"
@@ -77,7 +94,7 @@ is_readonly_single_command() {
               *) ok="false" ;;
             esac
           done
-          echo "$ok"
+          printf '%s\n' "$ok"
           ;;
         *)
           # fetch and all other subcommands (checkout/merge/rebase/push/...) => write
@@ -116,29 +133,172 @@ is_readonly_single_command() {
   esac
 }
 
+# Maximum recursion depth for nested command substitution / loop bodies.
+_RO_MAX_DEPTH=5
+# Maximum command length that is parsed at all (see Step 0 below).
+_RO_MAX_COMMAND_LEN=4000
+
 is_readonly_bash_command() {
   local cmd="$1"
+  local depth="${2:-0}"
+
+  if [ "$depth" -gt "$_RO_MAX_DEPTH" ]; then
+    echo "false"
+    return 0
+  fi
+
+  # --- Step 0: length cap (M-4). The "$(...)" balance scan below walks the
+  # remainder of the command ONE CHARACTER AT A TIME and rebuilds "$inner" on
+  # every iteration, which is O(n^2) in the substitution's length (measured:
+  # 5 KB => 0.9 s, 20 KB => 13.6 s of latency on a PostToolUse hook).
+  # "$raw_command" is the only unbounded field left after the cap on
+  # target_key, so cap it here. Nothing legitimately read-only is 4 KB long;
+  # anything over the cap is classified as a write, i.e. the conservative side
+  # (a read-only classification only ever RELAXES blocking).
+  if [ "${#cmd}" -gt "$_RO_MAX_COMMAND_LEN" ]; then
+    echo "false"
+    return 0
+  fi
+
   cmd="$(printf '%s' "$cmd" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
   if [ -z "$cmd" ]; then
     echo "false"
     return 0
   fi
 
-  # Truly ambiguous constructs: redirection, command/process substitution, or
-  # "||" (conditional-OR — intentionally NOT decomposed into segments, since
-  # its branch that actually runs depends on the first segment's exit code)
-  # => always treated as write.
+  # --- Step 1: process substitution "<(...)" stays ambiguous => write. ---
   case "$cmd" in
-    *'>'*|*'||'*|*'$('*|*'`'*|*'<('*)
+    *'<('*)
       echo "false"
       return 0
       ;;
   esac
 
-  # Compound command: split on "&&", ";", or a single "|" into segments and
+  # --- Step 2: command substitution "$(...)" / backticks.
+  # Rather than treating them as an automatic write (#1641), extract the inner
+  # command, classify it RECURSIVELY, and replace the substitution with the
+  # inert placeholder "SUBST". A write inside the substitution (e.g.
+  # "$(rm -rf /tmp/x)", "$(git push)") still makes the whole command a write.
+  while :; do
+    case "$cmd" in
+      *'$('*)
+        local before="${cmd%%'$('*}"
+        local after="${cmd#*'$('}"
+        # Balance-aware scan for the matching ")".
+        local inner="" rest="" d=1 i ch
+        for ((i = 0; i < ${#after}; i++)); do
+          ch="${after:$i:1}"
+          if [ "$ch" = "(" ]; then
+            d=$((d + 1))
+          elif [ "$ch" = ")" ]; then
+            d=$((d - 1))
+            if [ "$d" -eq 0 ]; then
+              rest="${after:$((i + 1))}"
+              break
+            fi
+          fi
+          inner="${inner}${ch}"
+        done
+        if [ "$d" -ne 0 ]; then
+          # Unbalanced => unparseable => conservative write.
+          echo "false"
+          return 0
+        fi
+        if [ "$(is_readonly_bash_command "$inner" $((depth + 1)))" != "true" ]; then
+          echo "false"
+          return 0
+        fi
+        cmd="${before}SUBST${rest}"
+        ;;
+      *'`'*)
+        # Backticks do not nest; take the text between the first pair.
+        local b_before="${cmd%%'`'*}"
+        local b_after="${cmd#*'`'}"
+        case "$b_after" in
+          *'`'*) ;;
+          *) echo "false"; return 0 ;;
+        esac
+        local b_inner="${b_after%%'`'*}"
+        local b_rest="${b_after#*'`'}"
+        if [ "$(is_readonly_bash_command "$b_inner" $((depth + 1)))" != "true" ]; then
+          echo "false"
+          return 0
+        fi
+        cmd="${b_before}SUBST${b_rest}"
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  # --- Step 3: strip harmless redirections BEFORE the ">" write check.
+  # "2>&1", ">/dev/null", "2>/dev/null", "1>/dev/null", "&>/dev/null" produce no
+  # observable side effect. Any OTHER ">" (a real file write) remains a write.
+  local stripped
+  stripped="$(printf '%s' "$cmd" \
+    | sed -E 's/[0-9]?>&[0-9]/ /g; s#[0-9]?&?>[[:space:]]*/dev/null# #g')"
+  case "$stripped" in
+    *'>'*)
+      echo "false"
+      return 0
+      ;;
+  esac
+  cmd="$stripped"
+
+  # --- Step 4: "||" is still NOT decomposed (which branch runs depends on the
+  # first segment's exit code) => write. Preserved from #1629.
+  case "$cmd" in
+    *'||'*)
+      echo "false"
+      return 0
+      ;;
+  esac
+
+  # --- Step 5: for / while loops (#1641).
+  # Normalize ";do" / ";done" spacing, then classify the header and the
+  # "do ... done" body separately. Both must be read-only.
+  case "$cmd" in
+    for\ *|while\ *)
+      local norm
+      norm="$(printf '%s' "$cmd" | sed -E 's/;[[:space:]]*do([[:space:]]|$)/ ; do /g; s/;[[:space:]]*done/ ; done/g')"
+      case "$norm" in
+        *' do '*'done'*) ;;
+        *) echo "false"; return 0 ;;
+      esac
+      local head="${norm%% do *}"
+      local tail_part="${norm#* do }"
+      local body="${tail_part%done*}"
+      head="$(printf '%s' "$head" | sed -e 's/[[:space:]]*;[[:space:]]*$//')"
+      body="$(printf '%s' "$body" | sed -e 's/[[:space:]]*;[[:space:]]*$//')"
+
+      case "$head" in
+        # "for VAR in <words>" — pure iteration, no side effect. The <words>
+        # already had any substitution validated in Step 2.
+        for\ [A-Za-z_]*\ in\ *)
+          ;;
+        while\ *)
+          # The while CONDITION is a real command — classify it.
+          local wcond="${head#while }"
+          if [ "$(is_readonly_bash_command "$wcond" $((depth + 1)))" != "true" ]; then
+            echo "false"
+            return 0
+          fi
+          ;;
+        *)
+          echo "false"
+          return 0
+          ;;
+      esac
+
+      is_readonly_bash_command "$body" $((depth + 1))
+      return 0
+      ;;
+  esac
+
+  # --- Step 6: compound command — split on "&&", ";", or a single "|" and
   # require EVERY segment to be read-only (#1629). An empty segment (e.g. a
-  # trailing separator) is treated as ambiguous => write, same as any
-  # segment that fails single-command classification.
+  # trailing separator) is ambiguous => write.
   if [[ "$cmd" == *'&&'* || "$cmd" == *';'* || "$cmd" == *'|'* ]]; then
     local normalized="$cmd"
     normalized="${normalized//&&/$'\n'}"
@@ -167,14 +327,66 @@ input=$(cat)
 
 # Extract tool info
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // "unknown"')
-# 300 (not 120): a 120-char cutoff let two genuinely different long Bash
-# commands collide on their shared 120-char prefix, causing a false-positive
-# same-path/same-tool+target hard-block. 300 chars covers the vast majority
-# of real commands without their differing tail being cut off (#1629).
-file_path=$(printf '%s' "$input" | jq -r '.tool_input.file_path // .tool_input.command // ""' | head -c 300)
+# Bash commands are NOT files. Feeding tool_input.command into file_path made
+# the hard-block message report a command fragment as a "file" and let Check 1
+# ("Same file ... edited") fire on Bash at all (#1641). Keep the command text in
+# a SEPARATE field (target_key) so tool+target repetition detection (Check 3 /
+# Signal 3) still works, while the file-oriented checks see nothing for Bash.
+#
+# 1000 (was 300, originally 120): a short cutoff let two genuinely different
+# long Bash commands collide on their shared prefix, causing a false-positive
+# same-path/same-tool+target hard-block (#1629). Truncation alone can never
+# remove that collision class, so truncate_key() ALSO appends the ORIGINAL
+# length: two values that share the capped prefix but differ in total length
+# no longer produce the same key (M-3).
+TARGET_KEY_CAP=1000
+
+truncate_key() {
+  local v="$1"
+  if [ "${#v}" -gt "$TARGET_KEY_CAP" ]; then
+    printf '%s' "${v:0:$TARGET_KEY_CAP}#len=${#v}"
+  else
+    printf '%s' "$v"
+  fi
+}
+
+if [ "$tool_name" = "Bash" ]; then
+  file_path=""
+  # ".tool_input.file_path" is a defensive fallback only: the real Bash tool has
+  # no file_path parameter, but a caller (or a test fixture) may still supply one
+  # as the target identifier. The command text wins whenever it is present.
+  target_key=$(truncate_key "$(printf '%s' "$input" | jq -r '.tool_input.command // .tool_input.file_path // ""')")
+else
+  file_path_full=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
+  # file_path is display/guard only (basename in the messages); target_key is
+  # the value matched against history, so only it carries the length tag.
+  file_path=$(printf '%s' "$file_path_full" | head -c "$TARGET_KEY_CAP")
+  target_key=$(truncate_key "$file_path_full")
+fi
 is_error=$(printf '%s' "$input" | jq -r '.tool_output.is_error // false')
 output_preview=$(printf '%s' "$input" | jq -r '.tool_output.output // ""' | head -c 200)
 raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
+
+# Distinguish "the same file edited 3 times with DIFFERENT content" (a normal
+# incremental-edit workflow — the #1641 false positive) from "the same edit
+# repeated 3 times" (a genuine stuck loop). Only the latter should hard-block.
+# Alphanumerics-only + length cap: deterministic, platform-independent (no
+# md5sum, absent on macOS) and safe to embed in a grep pattern.
+edit_hash=""
+if [ "$tool_name" = "Edit" ] || [ "$tool_name" = "Write" ]; then
+  edit_hash=$(printf '%s' "$input" \
+    | jq -r '(.tool_input.old_string // .tool_input.content // .tool_input.new_string // "")
+             | gsub("[^A-Za-z0-9]"; "") | .[0:120]')
+fi
+
+# History entries are written by jq, so their "path" values are JSON-ENCODED.
+# Matching them requires the SAME encoding, not the raw text: a raw value
+# containing a quote (common in Bash commands) can never match the encoded
+# form. The previous BRE escaping was doubly broken — in POSIX BRE "( ) + ? { |"
+# are literals, so escaping them turned them INTO operators and silently
+# stopped matching. Encode once here and match with grep -F (fixed string).
+target_key_json=$(jq -n --arg v "$target_key" '$v')
+path_match="\"path\":${target_key_json}"
 
 is_readonly="false"
 if [ "$tool_name" = "Bash" ]; then
@@ -190,18 +402,22 @@ timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 # Generate error hash for deduplication (first 50 chars of error)
 error_hash=""
 if [ "$is_error" = "true" ]; then
-  error_hash=$(echo "$output_preview" | head -c 50 | md5sum 2>/dev/null | cut -d' ' -f1 || echo "unknown")
+  error_hash=$(printf '%s' "$output_preview" | head -c 50 | md5sum 2>/dev/null | cut -d' ' -f1 || printf '%s\n' "unknown")
 fi
 
+# "path" holds $target_key — a file path for file tools, the command text for
+# Bash (#1641). Keeping Bash commands in this field preserves Check 3 / Signal 3
+# repetition detection while file_path stays empty for Bash.
 entry=$(jq -cn \
   --arg ts "$timestamp" \
   --arg tool "$tool_name" \
-  --arg path "$file_path" \
+  --arg path "$target_key" \
   --arg err "$is_error" \
   --arg hash "$error_hash" \
+  --arg ehash "$edit_hash" \
   --arg preview "$output_preview" \
   --arg readonly "$is_readonly" \
-  '{timestamp: $ts, tool: $tool, path: $path, is_error: $err, error_hash: $hash, preview: $preview, readonly: $readonly}')
+  '{timestamp: $ts, tool: $tool, path: $path, is_error: $err, error_hash: $hash, edit_hash: $ehash, preview: $preview, readonly: $readonly}')
 
 printf '%s\n' "$entry" >> "$HISTORY_FILE"
 
@@ -237,7 +453,7 @@ recovery=""
 
 # Signal 1: Repeated error (same error_hash 3+ times in last 10 entries)
 if [ "$is_error" = "true" ] && [ -n "$error_hash" ]; then
-  error_repeat=$(tail -10 "$HISTORY_FILE" | grep -c "\"error_hash\":\"${error_hash}\"" 2>/dev/null || echo "0")
+  error_repeat=$(tail -10 "$HISTORY_FILE" | grep -c "\"error_hash\":\"${error_hash}\"" 2>/dev/null || printf '%s\n' "0")
   if [ "$error_repeat" -ge 3 ]; then
     stuck_detected=true
     signal_type="Repeated error"
@@ -251,12 +467,12 @@ fi
 # Signal 2: Edit loop (same file edited 3+ times in last 8 entries)
 if [ "$stuck_detected" = false ] && { [ "$tool_name" = "Edit" ] || [ "$tool_name" = "Write" ]; }; then
   if [ -n "$file_path" ]; then
-    escaped_path=$(echo "$file_path" | sed 's/[.[\*^$()+?{|]/\\&/g')
-    edit_repeat=$(tail -8 "$HISTORY_FILE" | grep -c "\"path\":\"${escaped_path}\"" 2>/dev/null || echo "0")
+    edit_repeat=$(tail -8 "$HISTORY_FILE" | grep -cF -e "$path_match" 2>/dev/null || true)
+    [ -n "$edit_repeat" ] || edit_repeat=0
     if [ "$edit_repeat" -ge 3 ]; then
       stuck_detected=true
       signal_type="Edit loop"
-      pattern_desc="$(basename "$file_path") edited ${edit_repeat} times in last 8 calls"
+      pattern_desc="$(basename -- "$file_path") edited ${edit_repeat} times in last 8 calls"
       occurrence_count=$edit_repeat
       threshold=3
       recovery="Try a different file or approach instead of re-editing"
@@ -271,7 +487,7 @@ fi
 # calls (git status / gh view / ls / ...) doesn't inflate the "same tool
 # called N times" advisory.
 if [ "$stuck_detected" = false ] && [ "$is_readonly" != "true" ]; then
-  tool_repeat=$(tail -8 "$HISTORY_FILE" | grep -v "\"readonly\":\"true\"" | grep -c "\"tool\":\"${tool_name}\"" 2>/dev/null || echo "0")
+  tool_repeat=$(tail -8 "$HISTORY_FILE" | grep -v "\"readonly\":\"true\"" | grep -c "\"tool\":\"${tool_name}\"" 2>/dev/null || printf '%s\n' "0")
   if [ "$tool_repeat" -ge 5 ]; then
     stuck_detected=true
     signal_type="Tool loop"
@@ -302,38 +518,64 @@ hard_block_reason=""
 
 if [ -f "$HISTORY_FILE" ]; then
   last_n=$(tail -"$HARD_BLOCK_THRESHOLD" "$HISTORY_FILE" 2>/dev/null)
-  last_n_count=$(echo "$last_n" | wc -l | tr -d ' ')
+  last_n_count=$(printf '%s\n' "$last_n" | wc -l | tr -d ' ')
 
   if [ "$last_n_count" -ge "$HARD_BLOCK_THRESHOLD" ]; then
-    # Check 1: Same file edited HARD_BLOCK_THRESHOLD+ times consecutively
+    # Check 1: Same file edited with the SAME content HARD_BLOCK_THRESHOLD+
+    # times consecutively. Narrowed in #1641: three DIFFERENT edits to one file
+    # is a normal incremental workflow (observed repeatedly on wiki/rule/doc
+    # files), not a stuck loop — only an IDENTICAL repeated edit blocks. Both
+    # the path AND the edit_hash must match.
     # (skip when current call is a read-only Bash command — repeated read-only
     # polling of the same target is not a stuck-loop signal; see #1625)
+    # Bash never reaches here — file_path is empty for Bash (#1641), and
+    # edit_hash is empty too; repeated Bash commands are handled by Check 3
+    # via target_key instead.
     if [ "$is_readonly" != "true" ] && [ -n "$file_path" ]; then
-      escaped_path=$(echo "$file_path" | sed 's/[.[\*^$()+?{|]/\\&/g')
-      consecutive_file=$(echo "$last_n" | grep -c "\"path\":\"${escaped_path}\"" 2>/dev/null || echo "0")
+      consecutive_file=$(printf '%s\n' "$last_n" \
+        | grep -F -e "$path_match" \
+        | grep -cF -e "\"edit_hash\":\"${edit_hash}\"" 2>/dev/null || true)
+      [ -n "$consecutive_file" ] || consecutive_file=0
       if [ "$consecutive_file" -ge "$HARD_BLOCK_THRESHOLD" ]; then
         hard_block=true
-        hard_block_reason="Same file ($(basename "$file_path")) edited ${consecutive_file} consecutive times"
+        hard_block_reason="Same file ($(basename -- "$file_path")) received the identical edit ${consecutive_file} consecutive times"
       fi
     fi
 
     # Check 2: Same error repeated HARD_BLOCK_THRESHOLD+ times consecutively
     if [ "$hard_block" = false ] && [ "$is_error" = "true" ] && [ -n "$error_hash" ]; then
-      consecutive_error=$(echo "$last_n" | grep -c "\"error_hash\":\"${error_hash}\"" 2>/dev/null || echo "0")
+      consecutive_error=$(printf '%s\n' "$last_n" | grep -c "\"error_hash\":\"${error_hash}\"" 2>/dev/null || printf '%s\n' "0")
       if [ "$consecutive_error" -ge "$HARD_BLOCK_THRESHOLD" ]; then
         hard_block=true
         hard_block_reason="Same error repeated ${consecutive_error} consecutive times"
       fi
     fi
 
-    # Check 3: Same tool+target combination HARD_BLOCK_THRESHOLD+ times consecutively
+    # Check 3: Same tool+target combination HARD_BLOCK_THRESHOLD+ times
+    # consecutively. Uses target_key (a file path for file tools, the command
+    # text for Bash) so repeated identical Bash commands are still blocked
+    # after file_path was emptied for Bash (#1641).
     # (skip when current call is a read-only Bash command — see Check 1 note)
-    if [ "$hard_block" = false ] && [ "$is_readonly" != "true" ] && [ -n "$file_path" ]; then
-      escaped_path=$(echo "$file_path" | sed 's/[.[\*^$()+?{|]/\\&/g')
-      consecutive_tool_target=$(echo "$last_n" | grep "\"tool\":\"${tool_name}\"" | grep -c "\"path\":\"${escaped_path}\"" 2>/dev/null || echo "0")
+    # The edit_hash filter mirrors Check 1's #1641 narrowing: without it this
+    # check re-creates the very false positive Check 1 was narrowed to remove
+    # (tool=Edit + same path fires at 3 regardless of content). For Bash the
+    # filter is a no-op — every Bash history entry carries edit_hash "".
+    if [ "$hard_block" = false ] && [ "$is_readonly" != "true" ] && [ -n "$target_key" ]; then
+      consecutive_tool_target=$(printf '%s\n' "$last_n" \
+        | grep -F -e "\"tool\":\"${tool_name}\"" \
+        | grep -F -e "$path_match" \
+        | grep -cF -e "\"edit_hash\":\"${edit_hash}\"" 2>/dev/null || true)
+      [ -n "$consecutive_tool_target" ] || consecutive_tool_target=0
       if [ "$consecutive_tool_target" -ge "$HARD_BLOCK_THRESHOLD" ]; then
         hard_block=true
-        hard_block_reason="${tool_name} called on $(basename "$file_path") ${consecutive_tool_target} consecutive times"
+        # Do NOT call basename() on a Bash target: a command is not a path, and
+        # basename() on command text produced the misleading "Same file (pr)"
+        # style message reported in #1641.
+        if [ "$tool_name" = "Bash" ]; then
+          hard_block_reason="Identical Bash command repeated ${consecutive_tool_target} times: $(printf '%s' "$target_key" | head -c 60)"
+        else
+          hard_block_reason="${tool_name} called on $(basename -- "$target_key") ${consecutive_tool_target} consecutive times"
+        fi
       fi
     fi
   fi

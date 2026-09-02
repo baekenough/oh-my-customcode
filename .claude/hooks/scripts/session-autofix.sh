@@ -96,18 +96,66 @@ if [ -d "wiki" ]; then
 fi
 
 # ─── Check 6: Broken skill references (lightweight) ───
+# Parses BOTH frontmatter forms (#1640):
+#   inline : skills: [a, b]
+#   block  : skills:
+#              - a
+#              - b
+# Emits one skill name per line. Scans the YAML frontmatter only (stops at the
+# closing "---"), so a "skills:" line in the agent body is never parsed.
+parse_agent_skills() {
+  awk '
+    BEGIN {
+      SQ = sprintf("%c", 39); DQ = sprintf("%c", 34)
+      infm = 0; inskills = 0
+    }
+    function clean(s) {
+      sub(/[[:space:]]*#.*$/, "", s)
+      gsub(SQ, "", s); gsub(DQ, "", s)
+      gsub(/[[:space:]]/, "", s)
+      return s
+    }
+    NR == 1 { if ($0 ~ /^---[[:space:]]*$/) infm = 1; next }
+    infm == 0 { exit }
+    /^---[[:space:]]*$/ { exit }
+    inskills == 1 {
+      if ($0 ~ /^[[:space:]]+-[[:space:]]*/) {
+        item = $0
+        sub(/^[[:space:]]+-[[:space:]]*/, "", item)
+        item = clean(item)
+        if (item != "") print item
+        next
+      }
+      if ($0 ~ /^[[:space:]]*$/) next
+      inskills = 0
+    }
+    /^skills:/ {
+      rest = $0
+      sub(/^skills:[[:space:]]*/, "", rest)
+      sub(/[[:space:]]*#.*$/, "", rest)
+      if (rest ~ /^\[/) {
+        sub(/^\[/, "", rest); sub(/\][[:space:]]*$/, "", rest)
+        n = split(rest, arr, ",")
+        for (i = 1; i <= n; i++) {
+          s = clean(arr[i])
+          if (s != "") print s
+        }
+      } else if (rest == "") {
+        inskills = 1
+      }
+      next
+    }
+  ' "$1"
+}
+
 broken_refs=0
 for agent in .claude/agents/*.md; do
-  skills_line=$(grep -E '^skills:' "$agent" 2>/dev/null | head -1)
-  if [ -n "$skills_line" ]; then
-    skills=$(echo "$skills_line" | sed 's/skills: *\[//;s/\]//;s/,/ /g;s/"//g' | tr -d "'")
-    for skill in $skills; do
-      skill=$(echo "$skill" | tr -d ' ')
-      if [ -n "$skill" ] && [ ! -f ".claude/skills/${skill}/SKILL.md" ]; then
-        broken_refs=$((broken_refs + 1))
-      fi
-    done
-  fi
+  [ -f "$agent" ] || continue
+  while IFS= read -r skill; do
+    if [ -n "$skill" ] && [ ! -f ".claude/skills/${skill}/SKILL.md" ]; then
+      broken_refs=$((broken_refs + 1))
+    fi
+  done <<< "$(parse_agent_skills "$agent")"
 done
 if [ "$broken_refs" -gt 0 ]; then
   add_issue "broken-refs:${broken_refs} broken skill reference(s) in agent frontmatter"

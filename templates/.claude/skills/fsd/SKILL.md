@@ -169,6 +169,22 @@ If any of those underlying skills evolve, FSD automatically benefits — its onl
 
 When this skill delegates work via Agent tool calls, ALL Agent tool calls MUST include `mode: "bypassPermissions"` per R010 Universal bypassPermissions.
 
+⚠ **그 파라미터는 CC v2.1.212+ 에서 무시되며, 프로젝트 scope `permissions.defaultMode` 역시
+CC v2.1.257+ 에서 무시된다(#1644).** 즉 위 지시를 지켰다는 사실은 **무인 실행의 증거가 아니다**.
+자율 루프 진입 전에 유효 모드를 실측한다:
+
+```bash
+jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json 2>/dev/null || echo unset
+```
+
+`bypassPermissions` 가 아니면 루프 도중 permission 프롬프트로 정지할 수 있으므로,
+`--permission-mode bypassPermissions` 로 재시작하거나 사람이 지켜보는 실행임을 전제한다.
+(파이프라인 쪽 배선은 `pipeline auto-dev` 의 pre-triage Phase 0.5 가 담당한다.)
+
+⚠ **커밋 위임 타임아웃 (#1645)**: 메인 워크트리의 `.husky/pre-commit` 이 전체 테스트
+스위트(약 165초)를 돌리므로, `git commit` 을 위임할 때는 Bash `timeout: 400000` 을 명시한다.
+기본값 120000ms 로는 exit 143(SIGTERM)으로 끊긴다. `--no-verify` 우회는 금지(R010).
+
 ## Artifact Output
 
 Artifacts from each iteration follow the conventions of the constituent skills:

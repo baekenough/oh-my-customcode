@@ -428,7 +428,17 @@ The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmat
 ### Self-Check
 
 Before spawning any agent:
-1. Does the Agent tool call include `mode: "bypassPermissions"`? → YES: proceed → NO: add it
+1. **유효 permission mode 확인** — per-call `mode` 파라미터는 v2.1.212+ 에서 무시되고,
+   **프로젝트 scope `permissions.defaultMode` 는 v2.1.257+ 에서도 무시된다(#1644)**.
+   무인 실행 전 실측할 것: `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json`
+   (user scope) — 이 값 또는 `--permission-mode` 실행 플래그만이 유효하다.
+   bypassPermissions 가 아니면 프롬프트 발생을 전제로 계획한다.
+   하위 호환을 위해 per-call `mode: "bypassPermissions"` 는 계속 포함하되,
+   **그 존재를 무인 실행의 증거로 삼지 않는다**(R020 "attempt ≠ outcome").
+   실측(2026-09-03, `claude -p --debug-file`): `[WARN] settings defaultMode "bypassPermissions"
+   ignored — only policy/user/flag settings may grant bypass mode (projectSettings and
+   localSettings are repo-controllable)` — 무시 동작이 직접 실증되었다. 프로젝트 settings에는
+   `permissions._comment_defaultMode` 안내 키가 추가되었다(v1.1.59).
 2. Is this a new skill that spawns agents? → Add Permission Mode section
 
 ### Common Violation

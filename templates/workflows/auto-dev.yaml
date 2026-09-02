@@ -54,6 +54,30 @@ steps:
               "[pre-triage] WARNING: Issue #N references vX.Y.Z (not in git tags) — body may be stale"
             - Output all warnings as advisory log; do NOT halt
 
+      Phase 0.5 — Measure the EFFECTIVE permission mode (advisory, do NOT halt).
+
+      Why: CC v2.1.257 stopped honoring `permissions.defaultMode` declared in PROJECT scope
+      (`.claude/settings.json` / `.claude/settings.local.json`). Only user/managed scope or an
+      explicit `--permission-mode` flag takes effect. R010 「Universal bypassPermissions」 assumes
+      the parent session runs unattended under bypassPermissions; if that assumption is silently
+      false, this pipeline stalls on a permission prompt mid-run with no diagnostic (#1644).
+
+      1. Read the user-scope setting (project scope is NOT authoritative on v2.1.257+):
+         user_mode=$(jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json 2>/dev/null || echo "unset")
+
+      2. The `--permission-mode` launch flag cannot be read from inside the session. Treat it as
+         UNKNOWN — never infer that it was passed.
+
+      3. Report and, when not bypassPermissions, warn:
+         - user_mode == "bypassPermissions":
+           report: "[pre-triage] effective permission mode: bypassPermissions (user scope)"
+         - otherwise:
+           stderr warning: "[pre-triage] WARNING: effective permission mode is <user_mode>; unattended run may prompt. Project-scope permissions.defaultMode is IGNORED on CC v2.1.257+ (#1644). To run unattended, launch with --permission-mode bypassPermissions or set it in user-scope ~/.claude/settings.json."
+         - Do NOT halt (advisory only — a prompted run still completes with a human present).
+
+      4. Do NOT read, echo, or modify any credential material while checking settings — read the
+         single `permissions.defaultMode` field only (R001).
+
       Phase 1 — Ensure required labels exist, then scan issues.
 
       1. Create labels if missing (idempotent):
@@ -297,6 +321,14 @@ steps:
          develop-bound commit auto-closes the issue on push — BEFORE release/tag/publish (observed v1.1.38,
          07:49:26Z). Close keywords belong ONLY in the release-stage PR body (see release step 3.b) — auto-tag.yml
          greps the PR body, not commit messages, to decide which issues to close.
+             ⚠ Bash timeout (#1645): the main-worktree `.husky/pre-commit` runs typecheck + lint +
+             the FULL `bun test --coverage` suite (~165s measured) before the commit lands. The Bash
+             tool's default timeout is 120000ms, so a `git commit` delegation with the default budget
+             is killed mid-hook with exit 143 (SIGTERM). Delegate `git commit` with an explicit
+             `timeout: 400000` (≈6.7 min). Do NOT work around a timeout with `--no-verify` — that
+             bypasses the quality gate and is on the standing deny list (R010).
+             Note: git worktrees run typecheck only (`.husky/pre-commit` lines 7-12 branch on
+             `[ -f .git ]` and exit 0), so the long budget matters most on the MAIN worktree.
       6. On success: remove in-progress, add verify-ready
       7. On failure: remove in-progress, add needs-review, comment error summary
 
@@ -425,6 +457,9 @@ steps:
               ⚠ do NOT add Closes/Fixes/Resolves keywords to this commit message (#1542) — this commit merges into
               develop later via the release PR; a close keyword here bypasses the PR-body mechanism auto-tag.yml
               relies on (see step 3.b below). Use `Refs #N` if a cross-reference is needed.
+               ⚠ Bash timeout (#1645): delegate this commit with an explicit `timeout: 400000` — the
+               main-worktree pre-commit hook runs the full test suite (~165s) and the Bash default of
+               120000ms kills it with exit 143. `--no-verify` is NOT an acceptable workaround (R010).
            h. mgr-gitnerd push release/v{NEW} to origin — NEVER push this commit to develop directly. Pushing to
               develop here reproduces the diff=0 PR failure this reordering fixes (#1542).
            i. mandatory verification (with existence guard for partial-update safety), run on release/v{NEW}:

@@ -19,6 +19,7 @@
       "Edit(templates/.claude/**)",
       "Edit(.claude/outputs/**)"
     ],
+    "_comment_defaultMode": "DEAD CONFIG on CC v2.1.257+ (#1644): project-scope permissions.defaultMode is IGNORED. The effective mode comes from user scope (~/.claude/settings.json) or the --permission-mode launch flag. Kept for CC < v2.1.257 compatibility — do NOT rely on it for unattended runs. See R010 Universal bypassPermissions.",
     "defaultMode": "bypassPermissions"
   },
   "enableAllProjectMcpServers": true,

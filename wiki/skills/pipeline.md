@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-08-17
+updated: 2026-09-03
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -57,6 +57,15 @@ Counter-example recorded in the workflow: adding one skill plus one agent (agora
 5. Report: latest tag, local HEAD SHA, behind state, and flag any tag/context version mismatch
 
 **Purpose**: Prevents stale session memory (from previous session's git state) from causing incorrect version selection or duplicate issue processing. Resolves the pattern where pipeline memory held an old version while git HEAD had already advanced.
+
+### Phase 0.5: Effective permission mode pre-flight (advisory, #1644)
+
+`pre-triage` now includes a Phase 0.5 that measures the **effective** permission mode before the pipeline runs unattended — advisory only, never halts. Motivation: CC v2.1.257 stopped honoring project-scope `permissions.defaultMode` (`.claude/settings.json` / `.claude/settings.local.json`); only user/managed scope or an explicit `--permission-mode` flag takes effect. [[r010]] "Universal bypassPermissions" assumes the parent session runs unattended under `bypassPermissions` — if that assumption is silently false, the pipeline stalls mid-run on a permission prompt with no diagnostic.
+
+1. Read the user-scope setting (project scope is not authoritative on v2.1.257+): `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json`.
+2. The `--permission-mode` launch flag cannot be read from inside the session — treat it as unknown, never infer it was passed.
+3. Report `bypassPermissions` as a one-line confirmation; otherwise emit a stderr warning naming the effective mode and that project-scope `defaultMode` is ignored on v2.1.257+, with the remediation (`--permission-mode bypassPermissions` or user-scope settings). Never halt — a prompted run still completes with a human present.
+4. Only the single `permissions.defaultMode` field is read — no credential material is echoed (R001).
 
 ### verify-build: bun test with Baseline Delta Guard (G2 — #1160, #1156, v0.137.0)
 
@@ -121,6 +130,10 @@ jq -e --arg v "<NEW>" '.generatorVersion==$v and .templateVersion==$v' .omcustom
 
 Failure halts the `release` step — the cause is almost always step 1.e having run before step 1.d landed; the fix is to re-run 1.d then 1.e, re-stage, and re-run the 1.j assertion.
 
+### implement/release commit steps: Bash timeout for pre-commit hook (#1645)
+
+Both the `implement` step's per-issue commit and the `release` step's version-bump commit now carry an explicit warning: the main-worktree `.husky/pre-commit` hook runs typecheck + `bun run lint` + the **full** `bun test --coverage` suite (~165s measured) plus coverage-threshold and CLAUDE.md count checks before the commit lands. The Bash tool's default timeout (120000ms) kills a `git commit` delegation mid-hook with exit 143 (SIGTERM), so both steps now instruct delegating the commit with an explicit `timeout: 400000` (≈6.7 min). `--no-verify` is never an acceptable workaround — it is a standing-prohibition quality-gate bypass per [[r010]]. Git worktrees are unaffected (the pre-commit hook branches on `[ -f .git ]` and runs typecheck only there, exiting 0 — the full suite is CI's job on that path). See [[mgr-gitnerd]] "Commit Timeout Budget" for the full breakdown, and the reminder that exit 143 is not evidence of commit failure — `git log -1` ground-truth is required before retrying.
+
 ### release step 3.a–3.c: `--admin` removed from the PR-merge instruction (#1591)
 
 Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delete-branch --admin` to a **plain merge, explicitly annotated "NOT --admin"**. Ground-truth measurement (`gh api repos/{owner}/{repo}/branches/develop/protection`, 2026-08-15) found `develop` protection requires exactly **6** status checks (`Test`, `Lint`, `Template Sync`, `Version Sync`, `Dependency Security Audit`, `Rust Tests`), `enforce_admins=false`, and **no** `required_pull_request_reviews` block — there is no reviewer-approval gate to bypass in the first place. v1.1.47 merged cleanly via `gh pr merge 1585 --merge --delete-branch` with no `--admin`. The step now instructs: attempt the plain merge once all 6 checks are green; if merge is rejected, re-run the protection query to re-measure the actual blocker rather than reflexively adding `--admin` ([[r010]] bypass-flag pre-check — name what a bypass flag bypasses, measured, before using it).
@@ -136,6 +149,7 @@ Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delet
 - `.claude/skills/pipeline/SKILL.md` — skill definition
 - `.claude/skills/pipeline/workflows/auto-dev.yaml` — auto-dev workflow YAML (G1/G2 added v0.137.0; release step PR-body Closes-keyword requirement added v1.1.35 / #1531; branch-before-bump reordering added v1.1.39 / #1542; scope-selection 3-branch state machine + `--paginate` post-condition + compression-mode-eval Cross-tier State-Change Side Effects inventory added v1.1.42 / #1553 찐빠 #3; scope-selection Step 3 approval-required path pre-check added v1.1.45 / #1574 찐빠 #5; step 1.e lockfile-generation mechanism corrected + step 1.j 3-way assertion added 2026-08-15 / #1593; step 3.a–3.c `--admin` removed, ground-truth branch-protection measurement added 2026-08-15 / #1591)
 - Content-drift resync 2026-08-17 (v1.1.49): added the multi-Phase split requirement for the `deep-plan`/`deep-verify` steps ([[r020]] wiring per #1595 #4 — measured `tool_uses=0` / 6.9s / zero artifacts when spawned as one skill call) and the corrected semver minor definition with its agora counter-example (skill/agent addition is established as patch in this repo).
+- Content-drift resync 2026-09-03 (v1.1.59, #1644, #1645): added the "Phase 0.5: Effective permission mode pre-flight" subsection (advisory, never halts — project-scope `permissions.defaultMode` ignored on CC v2.1.257+, cross-ref [[r010]]) and the "implement/release commit steps: Bash timeout for pre-commit hook" subsection (main-worktree `.husky/pre-commit` runs the full ~165s test suite; commit delegations require `timeout: 400000`, `--no-verify` remains prohibited).
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
 - Issue #1542 — bump pushed to develop before branching produced a diff=0 release PR (v1.1.38)
 - Issue #1553 — lite compression silently skipped the milestone-create state-change branch alongside the compressible analysis step, leaving v1.1.41 without a milestone (v1.1.41 retrospective)

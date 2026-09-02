@@ -50,6 +50,27 @@ Types: feat, fix, docs, style, refactor, test, chore
 - ALWAYS check `git reflog` before declaring work lost — most destructive ops are recoverable for 30 days
 - Reference: R001 Destructive Git Commands section, #1146 (v0.136.0 working tree loss incident)
 
+## Commit Timeout Budget (#1645)
+
+`.husky/pre-commit` 는 **메인 워크트리**에서 typecheck + `bun run lint` + `bun test --coverage`
+전체 스위트(실측 약 **165초**) + 커버리지 임계값 + CLAUDE.md 카운트 검증까지 순차 실행한다.
+Bash 도구 기본 타임아웃은 **120000ms(2분)** 이라 `git commit` 이 훅 실행 도중
+**exit 143(SIGTERM)** 으로 끊긴다.
+
+| 상황 | Bash `timeout` |
+|---|---|
+| 메인 워크트리에서 `git commit` | **≥ 400000** (약 6.7분) |
+| git worktree 에서 `git commit` | 기본값으로 충분 (`.husky/pre-commit` **7-12행**이 `[ -f .git ]` 로 분기해 `bun run typecheck` 만 실행하고 `exit 0` — 전체 스위트는 CI 담당) |
+| `git push` / `gh pr` 등 훅 없는 명령 | 기본값 |
+
+**금지**: 타임아웃 회피 목적의 `--no-verify` 사용. 품질 게이트 우회는 상시 금지이며
+오케스트레이터의 사전 승인이 있을 때만 예외다(R010 「품질 게이트 우회 금지」).
+훅이 차단하면 우회하지 말고 **차단 사실과 원인을 보고하고 대기**한다.
+
+**타임아웃으로 끊긴 경우**: exit 143 은 "커밋 실패"의 증거가 아니다 — 훅이 통과한 뒤
+커밋이 성사됐을 수도 있다. 재시도 전 `git log -1 --format=%H%n%s` 로 **실제 HEAD 를 실측**하라
+(R020 「Failure/Interrupt Report ≠ Actual Failure」).
+
 ## Push Rules (R016)
 
 All pushes require prior mgr-sauron:watch verification. If sauron was not run, REFUSE the push.
