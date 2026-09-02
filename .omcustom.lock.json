@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.58",
-  "generatedAt": "2026-09-02T13:22:55.998Z",
-  "templateVersion": "1.1.58",
+  "generatorVersion": "1.1.59",
+  "generatedAt": "2026-09-02T18:45:33.576Z",
+  "templateVersion": "1.1.59",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "f75d3b7466b67b9e06fb9cb393fee75c1d34bfc11ddfe12a7eea0ab6e8f6a25f",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "2fdddb17463ab479bef418f2f153546135a0ea4bf1937269b7953e6d587290a9",
-      "size": 69448,
+      "templateHash": "1794c24103b6a1cfdaebbe88eac1711e245473e06a22a86233d58eee98eb0d06",
+      "size": 70394,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -80,8 +80,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
-      "templateHash": "701270fbfbfab13eae4b8fe055ba27e61da2fb6de300899318fab15b2c2d97dd",
-      "size": 25268,
+      "templateHash": "df56bf403b851022681cf623b7dd7df6bbb734e63dad7e6981b116e1eb512fc7",
+      "size": 25969,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -295,8 +295,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-gitnerd.md": {
-      "templateHash": "7ed0d20c76edeab8ff70358dfe101a3bc8bfec88391224ed3c92dacb5a7326a2",
-      "size": 3045,
+      "templateHash": "34cb0969531da80cdf1e3dc07068d0ea9c8c89ac118a4f2796ca59566e879842",
+      "size": 4432,
       "component": "agents"
     },
     ".claude/agents/mgr-creator.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "c7121d3c255f1715427f7facdfc207e424df001fc86aa502d5969c0e97dd8559",
-      "size": 37253,
+      "templateHash": "83294c1325f38972bd27b85d1bcf94ea88fa8a384cf4d368c8dd962ee704396d",
+      "size": 40035,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -785,8 +785,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "4968355e6b2ccd1bddb7b27c1e4abee1b3da15d76358a26a457cf2766a809a58",
-      "size": 8962,
+      "templateHash": "eae17b942cd7a6f2f57d9150f1f19af7c27dd60ddc6345be728ff0a626e8d2df",
+      "size": 9999,
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
@@ -1235,8 +1235,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "3be4626f9445d6c8bc04de4b113561a41db140b5c0f1cb372f80063404d278ee",
-      "size": 21027,
+      "templateHash": "abad1ce83759db9a0bcbec0f02a3436c273915d30af38e0eb99632e1bf197e41",
+      "size": 22381,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix-prompt.sh": {
@@ -1250,8 +1250,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "f8d74b6f93caf485153a164bd37d4e2c29875c7077472fd05849aeed514c1bb7",
-      "size": 13231,
+      "templateHash": "2808b21ad1b8cb83fbf3a0e7490586e9bca6278584cb255f0b844435f53520bd",
+      "size": 22784,
       "component": "hooks"
     },
     ".claude/hooks/scripts/failure-ledger.sh": {
@@ -1330,8 +1330,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix.sh": {
-      "templateHash": "d77cfc1b92fdb9cf89d9fea823e8bfeef9e23aec05511a1a650263469f2f7ec4",
-      "size": 5362,
+      "templateHash": "8e416e3ea6f32040c9a1d0759b47b9eabf18b2fa165188130fc67390ca3c88d0",
+      "size": 6583,
       "component": "hooks"
     },
     ".claude/hooks/scripts/subagent-failure-advisor.sh": {
