@@ -117,6 +117,9 @@ Reference issue: #1096.
 | Anti-pattern | Required |
 |--------------|----------|
 | 도구 결과 수신 후 응답 텍스트 없이 turn 종료 ("(no content)") | 최소 1줄 진행 상태 + R007 헤더 출력 후 종료/계속 |
+| 백그라운드 에이전트 완료 통지·task-notification 등 **system-reminder 통지 수신 후** 도구만 호출하고 텍스트 없이 turn 종료 | 통지 처리 턴에도 헤더 + 상태 1줄 출력 후 도구 호출 |
+
+v1.1.58 세션 트랜스크립트 실측 — 응답 22건 중 3건이 텍스트 블록 없이 tool_use만 있었고 전부 통지 수신 직후 턴이었다(#1646).
 
 <!-- Reference issues: #1188 item #2, #1198 item #2, #1409. -->
 

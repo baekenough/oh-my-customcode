@@ -38,6 +38,18 @@ is_readonly_single_command() {
     return 0
   fi
 
+  # A NEWLINE is a statement separator, so this function — which classifies a
+  # SINGLE statement — must never see one: "read -ra" below stops at the first
+  # newline, so "git status\nrm -rf build" used to be judged on "git status"
+  # alone and came back read-only (#1647 M-5). Callers split on newlines
+  # (Step 6); anything still multi-line here is ambiguous => write.
+  case "$cmd" in
+    *$'\n'*)
+      echo "false"
+      return 0
+      ;;
+  esac
+
   local parts=()
   read -ra parts <<< "$cmd"
   local w1="${parts[0]:-}"
@@ -48,8 +60,28 @@ is_readonly_single_command() {
   # A bare assignment has no side effect outside the shell; when followed by a
   # command, classify that command instead. Command substitutions inside the
   # RHS were already validated and replaced by is_readonly_bash_command (#1641).
+  #
+  # EXCEPTION (#1647 L-1): a few variables change WHICH program runs, or how it
+  # is loaded, so the trailing command's NAME no longer describes what the
+  # command does — "LD_PRELOAD=./evil.so ls" is not "ls", and "PATH=/tmp ls"
+  # runs an arbitrary /tmp/ls. Assignments to those names are writes whether or
+  # not a command follows them; an ordinary "FOO=1 ls" still defers to "ls".
+  #
+  # The git entry is the GLOB "GIT_*", not the three names GIT_DIR /
+  # GIT_WORK_TREE / GIT_INDEX_FILE it replaced: git has many more variables
+  # that run an arbitrary program (GIT_EXTERNAL_DIFF, GIT_PAGER, GIT_EDITOR,
+  # GIT_SSH, GIT_*_COMMAND, ...) or relocate the repository, and enumerating
+  # them one at a time keeps losing that race. GLOBIGNORE (changes which files
+  # a glob expands to) and BASH_XTRACEFD (sends trace output to an arbitrary
+  # descriptor, i.e. a file) are writes for the same reason.
   case "$w1" in
     [A-Za-z_]*=*)
+      case "${w1%%=*}" in
+        PATH|LD_*|DYLD_*|BASH_ENV|ENV|IFS|PROMPT_COMMAND|SHELLOPTS|BASHOPTS|GLOBIGNORE|BASH_XTRACEFD|GIT_*)
+          echo "false"
+          return 0
+          ;;
+      esac
       if [ "${#parts[@]}" -le 1 ]; then
         echo "true"
         return 0
@@ -62,13 +94,40 @@ is_readonly_single_command() {
   esac
 
   case "$w1" in
-    ls|cat|head|tail|grep|rg|wc|jq|md5|md5sum|type|command|which|echo|printf|pwd|date)
+    ls|cat|head|tail|grep|rg|wc|jq|md5|md5sum|type|which|echo|printf|pwd|date)
       echo "true"
       return 0
       ;;
+    command)
+      # "command" used to sit in the whitelist above, which made
+      # "command rm -rf x" read-only (#1647 L-5) — it is a PREFIX around an
+      # arbitrary program, not a program. Only the lookup forms ("command -v",
+      # "command -V") are read-only. "builtin" and "exec" are deliberately
+      # absent from the whitelist for the same reason: they fall through to the
+      # "*)" write default below.
+      case "$w2" in
+        -v|-V)
+          echo "true"
+          ;;
+        *)
+          echo "false"
+          ;;
+      esac
+      return 0
+      ;;
     find)
+      # Writing actions (#1647 L-5): -delete/-exec/-execdir remove or run
+      # things, -ok/-okdir are the interactive forms of -exec, and
+      # -fprint/-fprint0/-fprintf/-fls all CREATE a file. Each pattern is
+      # wrapped in "*" on BOTH sides, so it matches the fragment ANYWHERE in
+      # the command, not just as an option prefix: that is how the "dir"/"0"/
+      # "f" variants ("-execdir", "-fprint0", "-okdir") are covered by a single
+      # entry, and it also means an operand that merely CONTAINS the fragment
+      # (e.g. "find . -name '*-exec*'") is classified as a write. That
+      # over-match is the safe direction — a write verdict only ever tightens
+      # blocking.
       case "$cmd" in
-        *-delete*|*-exec*|*-fprintf*)
+        *-delete*|*-exec*|*-fprint*|*-fls*|*-ok*)
           echo "false"
           ;;
         *)
@@ -131,6 +190,61 @@ is_readonly_single_command() {
       return 0
       ;;
   esac
+}
+
+# Remove heredoc BODIES ("<<DELIM", "<<-'DELIM'") from a command, keeping the
+# header line. A heredoc body is DATA, not statements: without this, the
+# newline splitting in Step 6 (#1647 M-5) would classify every data line as a
+# command and turn "cat <<'EOF' ... EOF" — read-only before #1647 — into a
+# write. Herestrings ("<<<") are single-line and are NOT heredocs. An
+# UNTERMINATED heredoc is unparseable, so a sentinel word is emitted instead
+# and the caller classifies the command as a write. The same sentinel route is
+# taken when the "<<" turns out to sit INSIDE a quoted string (see below).
+_strip_heredoc_bodies() {
+  local text="$1"
+  local out="" line tok delim="" in_body=0
+  local before_op dq sq
+  while IFS= read -r line; do
+    if [ "$in_body" -eq 1 ]; then
+      # "<<-" allows leading tabs before the terminator; accept leading
+      # whitespace for either form.
+      tok="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      if [ "$tok" = "$delim" ]; then
+        in_body=0
+      fi
+      continue
+    fi
+    out="${out}${line}"$'\n'
+    # A DELIMITER FORGERY guard: the extraction below has no idea whether the
+    # "<<" it finds is shell syntax or literal text inside a quoted string, so
+    # `echo "a << EOF"` followed by `rm -rf x` and a line reading `EOF` used to
+    # hand the rm to the heredoc BODY — where it was dropped as data — and the
+    # command came back read-only. Quote state is not tracked here, so rather
+    # than guess, count the quotes preceding the "<<": an ODD number of " or '
+    # means the "<<" is quoted, the command is unparseable by this function,
+    # and the sentinel makes the CALLER classify the whole multi-line command
+    # as a write. "${line%<<*}" strips the shortest matching suffix, i.e. it
+    # yields the text before the LAST "<<" — the same occurrence the greedy
+    # extraction regex below settles on.
+    if [ "$line" != "${line%<<*}" ]; then
+      before_op="${line%<<*}"
+      dq="$(printf '%s' "$before_op" | tr -cd '"' | wc -c | tr -d '[:space:]')"
+      sq="$(printf '%s' "$before_op" | tr -cd "'" | wc -c | tr -d '[:space:]')"
+      if [ $((dq % 2)) -eq 1 ] || [ $((sq % 2)) -eq 1 ]; then
+        printf '%s' "${out}__QUOTED_HEREDOC_OPENER__"$'\n'
+        return 0
+      fi
+    fi
+    delim="$(printf '%s' "$line" \
+      | sed -n -E "s/^.*[^<]<<-?[[:space:]]*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?.*\$/\\1/p")"
+    if [ -n "$delim" ]; then
+      in_body=1
+    fi
+  done <<< "$text"
+  if [ "$in_body" -eq 1 ]; then
+    out="${out}__UNTERMINATED_HEREDOC__"$'\n'
+  fi
+  printf '%s' "$out"
 }
 
 # Maximum recursion depth for nested command substitution / loop bodies.
@@ -235,9 +349,14 @@ is_readonly_bash_command() {
   # --- Step 3: strip harmless redirections BEFORE the ">" write check.
   # "2>&1", ">/dev/null", "2>/dev/null", "1>/dev/null", "&>/dev/null" produce no
   # observable side effect. Any OTHER ">" (a real file write) remains a write.
+  # ">&N" is stripped ONLY for N in {1,2} (stdout/stderr). An arbitrary
+  # descriptor writes wherever that fd was opened, so "cat x >&3" stays a write
+  # (#1647 L-2). The trailing "[^0-9]" / "$" guard stops ">&10" from being read
+  # as ">&1" plus a stray "0"; the two expressions differ only in whether the
+  # redirection is followed by another character or ends the command.
   local stripped
   stripped="$(printf '%s' "$cmd" \
-    | sed -E 's/[0-9]?>&[0-9]/ /g; s#[0-9]?&?>[[:space:]]*/dev/null# #g')"
+    | sed -E 's/[0-9]?>&[12]([^0-9])/ \1/g; s/[0-9]?>&[12]$/ /; s#[0-9]?&?>[[:space:]]*/dev/null# #g')"
   case "$stripped" in
     *'>'*)
       echo "false"
@@ -296,10 +415,38 @@ is_readonly_bash_command() {
       ;;
   esac
 
-  # --- Step 6: compound command — split on "&&", ";", or a single "|" and
-  # require EVERY segment to be read-only (#1629). An empty segment (e.g. a
-  # trailing separator) is ambiguous => write.
-  if [[ "$cmd" == *'&&'* || "$cmd" == *';'* || "$cmd" == *'|'* ]]; then
+  # --- Step 6: compound command — split on "&&", ";", a single "|", or a
+  # NEWLINE and require EVERY segment to be read-only (#1629, #1647 M-5).
+  # A newline separates statements exactly like ";"; before #1647 it was not a
+  # separator at all, so a multi-line command fell through to
+  # is_readonly_single_command, whose "read -ra" only ever saw the FIRST line
+  # ("git status\nrm -rf build" => read-only).
+  #
+  # Order matters: the ">" (Step 3) and "||" (Step 4) checks above still ran
+  # against the FULL text including any heredoc body, so those verdicts are
+  # unchanged. Heredoc bodies are dropped only here, right before the split.
+  # CR / CRLF are newlines too.
+  cmd="${cmd//$'\r\n'/$'\n'}"
+  cmd="${cmd//$'\r'/$'\n'}"
+  if [[ "$cmd" == *$'\n'* ]]; then
+    # A heredoc body needs a following line, so only a MULTI-LINE command can
+    # have one — checking "<<" on a single-line command would misread a literal
+    # "<<" (e.g. `echo "a << b"`) as an opener.
+    case "$cmd" in
+      *'<<'*)
+        cmd="$(_strip_heredoc_bodies "$cmd")"
+        ;;
+    esac
+    # A BLANK line is not a statement, so drop blank lines before splitting;
+    # otherwise they would look like an empty — i.e. ambiguous — segment. A
+    # genuinely empty segment from a trailing ";" or "&&" still means write.
+    cmd="$(printf '%s' "$cmd" | sed -e '/^[[:space:]]*$/d')"
+    if [ -z "$cmd" ]; then
+      echo "false"
+      return 0
+    fi
+  fi
+  if [[ "$cmd" == *'&&'* || "$cmd" == *';'* || "$cmd" == *'|'* || "$cmd" == *$'\n'* ]]; then
     local normalized="$cmd"
     normalized="${normalized//&&/$'\n'}"
     normalized="${normalized//;/$'\n'}"
@@ -360,11 +507,25 @@ else
   file_path_full=$(printf '%s' "$input" | jq -r '.tool_input.file_path // ""')
   # file_path is display/guard only (basename in the messages); target_key is
   # the value matched against history, so only it carries the length tag.
-  file_path=$(printf '%s' "$file_path_full" | head -c "$TARGET_KEY_CAP")
+  # "|| true": same broken-pipe class as output_preview below (#1647 M-6) —
+  # an over-cap file_path would make head close the pipe and take the hook
+  # down through pipefail. The captured bytes are unaffected.
+  file_path=$(printf '%s' "$file_path_full" | head -c "$TARGET_KEY_CAP" || true)
   target_key=$(truncate_key "$file_path_full")
 fi
 is_error=$(printf '%s' "$input" | jq -r '.tool_output.is_error // false')
-output_preview=$(printf '%s' "$input" | jq -r '.tool_output.output // ""' | head -c 200)
+# "head -c 200" closes the pipe after 200 bytes. Once tool_output.output is
+# larger than the pipe buffer (~64 KB), jq keeps writing, dies of SIGPIPE
+# (exit 141), and "set -o pipefail" + "set -e" aborted the ENTIRE hook before
+# the history entry was ever appended — a 300 KB tool output silently erased
+# the record it was supposed to create (#1647 M-6). Two independent guards:
+# (a) slice inside jq so nothing large is piped at all, and (b) "|| true" so a
+# broken pipe can never again take the hook down. The byte cap is still
+# enforced by head (jq slices by codepoint, head by byte, and 200 codepoints
+# are always >= 200 bytes, so the resulting bytes are unchanged).
+output_preview=$(printf '%s' "$input" \
+  | jq -r '(.tool_output.output // "" | tostring)[0:200]' \
+  | head -c 200 || true)
 raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
 
 # Distinguish "the same file edited 3 times with DIFFERENT content" (a normal

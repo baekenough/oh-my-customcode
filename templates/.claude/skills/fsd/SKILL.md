@@ -69,6 +69,14 @@ All PR merge operations are delegated to **mgr-gitnerd** (R010). After merging, 
 
 Do NOT merge PRs that require user approval for architectural decisions. Surface them with a short summary and wait.
 
+### `.claude/hooks/**` 이슈 — 무인 루프 분리 스코프
+
+FSD는 사용자가 실시간 응답할 수 없는 무인 루프이므로, scope-selection의 R010 approval-required
+path pre-check(`auto-dev.yaml`)가 `.claude/hooks/**` 대상 이슈를 발견하면 매 이터레이션마다
+즉시 승인을 요청하지 않는다. 대신 그 이슈를 이번 스코프에서 **분리·이월**하고 나머지 적격 이슈로
+계속 진행하며, `/homework` 반복 경계(게이트)에서 이월된 hooks 이슈들을 **1회 묶어** 승인 질문으로
+제시한다. 승인을 받으면 R015 directive persistence로 세션 내 동일 카테고리에 지속 적용한다.
+
 ### Iteration Flow (per iteration)
 
 ```

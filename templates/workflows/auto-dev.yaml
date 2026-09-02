@@ -164,6 +164,13 @@ steps:
       If approval was already granted THIS session for the same category+target, do not
       re-request (R015 directive persistence).
 
+      무인 실행(`/fsd` 등 사용자가 실시간 응답할 수 없는 루프)에서는 `.claude/hooks/**` 대상 이슈를
+      이번 스코프에서 **분리·이월**하고 나머지 적격 이슈로 진행하며, 반복 경계(homework 게이트)에서
+      승인 질문을 **1회** 묶어 제시한다. 승인을 받으면 R015 directive persistence로 세션 내 동일
+      카테고리에 지속 적용. 유인 모드에서는 기존대로 즉시 승인 요청. 무인 판별 신호는 "오케스트레이터가
+      `/fsd`로 진입했거나 세션 지침이 autonomous임을 명시한 경우"로 판단한다 — 결정론적 판별 신호
+      확립은 후속 과제로 남긴다.
+
       Output approval_required_paths (list, empty if none) as pipeline state.
 
       Assign scoped issues to milestone.
@@ -194,6 +201,10 @@ steps:
         - plan step: skip release-plan skill; single-response plan instead
         - deep-plan step: skip deep-plan skill; single-response implementation notes instead
         - deep-verify step: skip deep-verify skill; perform self-review checklist instead
+          — 단, 변경 집합에 `.claude/rules/**`(또는 agents/skills frontmatter 등 구조 표면)가
+          포함되면 self-review로 대체하지 않고 mgr-sauron R017 검증을 **단일 목표 위임으로 필수
+          실행**한다(Tier 2 lite의 R017 조항과 동일 원칙; Origin: v1.1.58 세션 — docs-only 티어였으나
+          sauron이 R002/R010 모순 advisory 1건을 포착).
         - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)"
         - ⚠ Analysis artifacts only. Every step's state-change side effect (milestone create/assign,
           label add/remove, issue assign/comment/close) still runs in full — see "Cross-tier —

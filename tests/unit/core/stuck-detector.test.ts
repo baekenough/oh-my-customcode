@@ -1339,4 +1339,321 @@ describe('stuck-detector.sh', () => {
       expect(entry.error_hash).not.toBe('');
     });
   });
+
+  // -----------------------------------------------------------------
+  // Newline decomposition + SIGPIPE-safe preview (#1647 M-5 / M-6)
+  // -----------------------------------------------------------------
+
+  describe('newline separators and large tool output (#1647)', () => {
+    /**
+     * Ground-truth read of the classifier verdict recorded for the LAST call.
+     * The hook writes its is_readonly decision as the "readonly" field of each
+     * history entry, so this asserts is_readonly_bash_command() directly
+     * instead of going through the exit-code route.
+     */
+    function lastEntry(): Record<string, string> {
+      const raw = require('node:fs').readFileSync(historyFilePath(), 'utf-8') as string;
+      const lines = raw.trim().split('\n');
+      return JSON.parse(lines[lines.length - 1]);
+    }
+
+    // --- M-5: a newline was not a statement separator, and
+    // is_readonly_single_command's `read -ra` stops at the first newline, so
+    // everything after line 1 was invisible to the classifier.
+
+    it('POSITIVE: should classify a write hidden on the second line as a write', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git status\nrm -rf build' }));
+      expect(lastEntry().readonly).toBe('false');
+    });
+
+    it('NEGATIVE: should keep an all-read-only newline-separated command read-only', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git status\ngit log' }));
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    it('POSITIVE: should hard-block 3 newline-separated commands with a write line', async () => {
+      const result = await runNTimes(
+        makeInput({ tool_name: 'Bash', command: 'git status\nnpm install' }),
+        3
+      );
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('NEGATIVE: should NOT hard-block 3 all-read-only newline-separated commands', async () => {
+      const result = await runNTimes(makeInput({ tool_name: 'Bash', command: 'ls\npwd' }), 3);
+      expect(result.exitCode).toBe(0);
+    });
+
+    it('should treat CRLF as a separator in both directions', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'git status\r\nrm -rf build' })
+      );
+      expect(lastEntry().readonly).toBe('false');
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git status\r\ngit log' }));
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    it('should not treat a blank line between read-only commands as an empty segment', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git status\n\ngit log' }));
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    it('should still treat a trailing ";" as an empty (ambiguous) segment', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'git status;' }));
+      expect(lastEntry().readonly).toBe('false');
+    });
+
+    // A heredoc body is DATA, not statements: splitting it into commands would
+    // have flipped the pre-#1647 verdict for `cat <<'EOF' ... EOF`.
+    it('should keep a heredoc command read-only (pre-#1647 verdict preserved)', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: "cat <<'EOF'\nhello world\nEOF" })
+      );
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    it('should keep a redirecting heredoc a write (pre-#1647 verdict preserved)', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: "cat > out.txt <<'EOF'\nx\nEOF" })
+      );
+      expect(lastEntry().readonly).toBe('false');
+    });
+
+    it('should classify a write that FOLLOWS a heredoc body as a write', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: "cat <<'EOF'\nhello\nEOF\nrm -rf build" })
+      );
+      expect(lastEntry().readonly).toBe('false');
+    });
+
+    it('should classify an unterminated heredoc as a write', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: "cat <<'EOF'\nno terminator here" })
+      );
+      expect(lastEntry().readonly).toBe('false');
+    });
+
+    it('should not mistake a herestring "<<<" for a heredoc opener', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'grep x <<< foo' }));
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    it('should not mistake a literal "<<" in a single-line command for a heredoc', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'echo "a << b"' }));
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    // --- M-1: heredoc DELIMITER FORGERY. The opener scan does not know
+    // whether the "<<" it found is shell syntax or literal text inside a
+    // quoted string, so a forged opener let a real command be swallowed as
+    // heredoc DATA and dropped — the whole thing came back read-only
+    // (measured before the fix: "true").
+
+    it('POSITIVE: should classify a forged heredoc delimiter as a write', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'echo "a << EOF"\nrm -rf x\nEOF' })
+      );
+      expect(lastEntry().readonly).toBe('false');
+    });
+
+    it('NEGATIVE: should keep a genuine heredoc read-only after the forgery guard', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: "cat <<'EOF'\nhello\nEOF" }));
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    it('NEGATIVE: should keep a heredoc opened after BALANCED quotes read-only', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'echo "hi" && cat <<\'EOF\'\nx\nEOF' })
+      );
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    it('should conservatively classify a quoted "<<" on a MULTI-line command as a write', async () => {
+      // Same root cause as the forgery above: the quote count before the "<<"
+      // is odd, so the command is unparseable here and falls back to write.
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'echo "a << b"\nls' }));
+      expect(lastEntry().readonly).toBe('false');
+    });
+
+    it('should not let the forgery guard disturb a herestring', async () => {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'grep x <<< foo' }));
+      expect(lastEntry().readonly).toBe('true');
+    });
+
+    // --- M-6: `jq | head -c 200` let jq die of SIGPIPE once the output
+    // exceeded the pipe buffer; with `set -o pipefail` that killed the hook
+    // BEFORE the history append, so the entry the hook exists to write was
+    // silently lost (measured: 300 KB => exit 141, 0 history lines).
+
+    it('should record a history entry for a 300 KB tool output without dying', async () => {
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'ls big', output: 'X'.repeat(300000) })
+      );
+      expect(result.exitCode).toBe(0);
+      const raw = await readFile(historyFilePath(), 'utf-8');
+      expect(raw.trim().split('\n').length).toBe(1);
+      expect(lastEntry().preview.length).toBe(200);
+    }, 30000);
+
+    it('should keep the 200-byte preview cap for a below-buffer output (unchanged)', async () => {
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'ls small', output: 'Y'.repeat(70000) })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(lastEntry().preview).toBe('Y'.repeat(200));
+    }, 30000);
+
+    it('should append every entry when large and small outputs are interleaved', async () => {
+      await runStuckDetector(
+        makeInput({ tool_name: 'Bash', command: 'ls a', output: 'A'.repeat(300000) })
+      );
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'ls b', output: 'B' }));
+      const raw = await readFile(historyFilePath(), 'utf-8');
+      expect(raw.trim().split('\n').length).toBe(2);
+      expect(lastEntry().preview).toBe('B');
+    }, 30000);
+  });
+
+  // -----------------------------------------------------------------
+  // Execution-environment prefixes, ">&N", and prefix verbs (#1647 L-1/L-2/L-5)
+  // -----------------------------------------------------------------
+
+  describe('assignment prefixes, fd redirection and prefix verbs (#1647)', () => {
+    /** Ground-truth read of the classifier verdict recorded for the LAST call. */
+    function lastEntry(): Record<string, string> {
+      const raw = require('node:fs').readFileSync(historyFilePath(), 'utf-8') as string;
+      const lines = raw.trim().split('\n');
+      return JSON.parse(lines[lines.length - 1]);
+    }
+
+    async function readonlyOf(command: string): Promise<string> {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+      return lastEntry().readonly;
+    }
+
+    // --- L-1: "VAR=value cmd" deferred to cmd unconditionally, so a variable
+    // that changes WHICH program runs (PATH) or how it loads (LD_PRELOAD) was
+    // classified by the innocent-looking trailing verb.
+
+    it('NEGATIVE: should keep an ordinary assignment prefix deferring to the trailing command', async () => {
+      expect(await readonlyOf('FOO=1 ls')).toBe('true');
+      expect(await readonlyOf('FOO=bar git status')).toBe('true');
+    });
+
+    it('NEGATIVE: should keep a bare ordinary assignment read-only', async () => {
+      expect(await readonlyOf('FOO=1')).toBe('true');
+    });
+
+    it('POSITIVE: should classify an LD_/DYLD_ preload prefix as a write', async () => {
+      expect(await readonlyOf('LD_PRELOAD=./evil.so ls')).toBe('false');
+      expect(await readonlyOf('DYLD_INSERT_LIBRARIES=./evil.dylib ls')).toBe('false');
+    });
+
+    it('POSITIVE: should classify a PATH prefix as a write', async () => {
+      expect(await readonlyOf('PATH=/tmp ls')).toBe('false');
+    });
+
+    it('POSITIVE: should classify BASH_ENV / IFS / PROMPT_COMMAND prefixes as writes', async () => {
+      expect(await readonlyOf('BASH_ENV=/tmp/x ls')).toBe('false');
+      expect(await readonlyOf('IFS=, ls')).toBe('false');
+      expect(await readonlyOf('PROMPT_COMMAND=x ls')).toBe('false');
+    });
+
+    it('POSITIVE: should classify GIT_DIR / GIT_WORK_TREE prefixes as writes', async () => {
+      expect(await readonlyOf('GIT_DIR=/other/.git git status')).toBe('false');
+      expect(await readonlyOf('GIT_WORK_TREE=/other git status')).toBe('false');
+    });
+
+    // The three enumerated GIT_ names were replaced by the glob "GIT_*": git
+    // has many more variables that run an arbitrary program or relocate the
+    // repository, and naming them one at a time kept losing that race.
+
+    it('POSITIVE: should classify GIT_* program-substituting prefixes as writes', async () => {
+      expect(await readonlyOf('GIT_EXTERNAL_DIFF=./evil git diff')).toBe('false');
+      expect(await readonlyOf('GIT_PAGER=./evil git log')).toBe('false');
+      expect(await readonlyOf('GIT_INDEX_FILE=/tmp/idx git status')).toBe('false');
+    });
+
+    it('POSITIVE: should classify GLOBIGNORE / BASH_XTRACEFD prefixes as writes', async () => {
+      expect(await readonlyOf('GLOBIGNORE=x ls')).toBe('false');
+      expect(await readonlyOf('BASH_XTRACEFD=3 ls')).toBe('false');
+    });
+
+    it('NEGATIVE: should not let "GIT_*" swallow an unrelated name', async () => {
+      expect(await readonlyOf('GITFOO=1 ls')).toBe('true');
+    });
+
+    it('POSITIVE: should classify a BARE environment-altering assignment as a write', async () => {
+      expect(await readonlyOf('PATH=/tmp')).toBe('false');
+    });
+
+    // --- L-2: every ">&N" was stripped, so "cat x >&3" lost its redirection
+    // before the ">" write check and came back read-only.
+
+    it('NEGATIVE: should keep ">&1" / ">&2" redirections read-only', async () => {
+      expect(await readonlyOf('git status 2>&1')).toBe('true');
+      expect(await readonlyOf('ls >&1')).toBe('true');
+      expect(await readonlyOf('ls 1>&2')).toBe('true');
+    });
+
+    it('NEGATIVE: should keep "/dev/null" redirections read-only', async () => {
+      expect(await readonlyOf('ls >/dev/null')).toBe('true');
+      expect(await readonlyOf('ls 2>/dev/null')).toBe('true');
+      expect(await readonlyOf('ls &>/dev/null')).toBe('true');
+    });
+
+    it('POSITIVE: should classify a redirection to an arbitrary fd as a write', async () => {
+      expect(await readonlyOf('cat x >&3')).toBe('false');
+      expect(await readonlyOf('cat x 2>&5')).toBe('false');
+    });
+
+    it('POSITIVE: should not read ">&10" as ">&1" plus a stray digit', async () => {
+      expect(await readonlyOf('cat x >&10')).toBe('false');
+    });
+
+    // --- L-5: "command" sat in the read-only whitelist, so "command rm -rf x"
+    // was read-only; find's writing actions were only partially matched
+    // ("-fprintf" but not "-fprint"/"-fls"/"-ok").
+
+    it('NEGATIVE: should keep "command -v" / "command -V" lookups read-only', async () => {
+      expect(await readonlyOf('command -v jq')).toBe('true');
+      expect(await readonlyOf('command -V jq')).toBe('true');
+    });
+
+    it('POSITIVE: should classify "command <program>" as a write', async () => {
+      expect(await readonlyOf('command rm -rf x')).toBe('false');
+      expect(await readonlyOf('command ls')).toBe('false');
+    });
+
+    it('POSITIVE: should classify "builtin" / "exec" prefixes as writes', async () => {
+      expect(await readonlyOf('builtin cd /tmp')).toBe('false');
+      expect(await readonlyOf('exec rm -rf x')).toBe('false');
+    });
+
+    it('NEGATIVE: should keep a plain find query read-only', async () => {
+      expect(await readonlyOf('find . -name x')).toBe('true');
+      expect(await readonlyOf('find . -type f -maxdepth 2')).toBe('true');
+    });
+
+    it('POSITIVE: should classify find -delete / -exec / -execdir as writes', async () => {
+      expect(await readonlyOf('find . -delete')).toBe('false');
+      expect(await readonlyOf('find . -exec rm {} +')).toBe('false');
+      expect(await readonlyOf('find . -execdir rm {} +')).toBe('false');
+    });
+
+    it('POSITIVE: should classify find -fprint / -fprint0 / -fprintf as writes', async () => {
+      expect(await readonlyOf('find . -fprint out')).toBe('false');
+      expect(await readonlyOf('find . -fprint0 out')).toBe('false');
+      expect(await readonlyOf('find . -fprintf out %p')).toBe('false');
+    });
+
+    it('POSITIVE: should classify find -fls as a write', async () => {
+      expect(await readonlyOf('find . -fls out')).toBe('false');
+    });
+
+    it('POSITIVE: should classify find -ok / -okdir as writes', async () => {
+      expect(await readonlyOf('find . -ok rm')).toBe('false');
+      expect(await readonlyOf('find . -okdir rm')).toBe('false');
+    });
+  });
 });
