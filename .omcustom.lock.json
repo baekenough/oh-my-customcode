@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.59",
-  "generatedAt": "2026-09-02T18:45:33.576Z",
-  "templateVersion": "1.1.59",
+  "generatorVersion": "1.1.60",
+  "generatedAt": "2026-09-02T19:41:55.128Z",
+  "templateVersion": "1.1.60",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "f75d3b7466b67b9e06fb9cb393fee75c1d34bfc11ddfe12a7eea0ab6e8f6a25f",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "1794c24103b6a1cfdaebbe88eac1711e245473e06a22a86233d58eee98eb0d06",
-      "size": 70394,
+      "templateHash": "af457dc1cbd53ab37c7f8c202c890e26bf4397be83aca2c66054fb5ccd5d2a30",
+      "size": 71643,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -55,8 +55,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
-      "templateHash": "a828d087d98612df86e80b3bac1a6a3d616eda5f02e23d5d02a8616723a194dd",
-      "size": 8009,
+      "templateHash": "c9a00559be5547c309783d1d53ec8abb67a156d422aa2ceab659d4a899fa5764",
+      "size": 8407,
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "83294c1325f38972bd27b85d1bcf94ea88fa8a384cf4d368c8dd962ee704396d",
-      "size": 40035,
+      "templateHash": "2ffc67f60ab19e2a43e08cf219c015aaa2a4d4630a3b339504dd45f68cb22813",
+      "size": 41156,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -785,8 +785,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "eae17b942cd7a6f2f57d9150f1f19af7c27dd60ddc6345be728ff0a626e8d2df",
-      "size": 9999,
+      "templateHash": "6527383ae4182afb28d570cdc9cc83f86a5c90613a88ea402b99acb1b85a45d9",
+      "size": 10678,
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
@@ -1250,8 +1250,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "2808b21ad1b8cb83fbf3a0e7490586e9bca6278584cb255f0b844435f53520bd",
-      "size": 22784,
+      "templateHash": "321cedaf70fcfc2321973a71b6bbfac039e3c4bc6ba021845c8564007f58c5b0",
+      "size": 30867,
       "component": "hooks"
     },
     ".claude/hooks/scripts/failure-ledger.sh": {
