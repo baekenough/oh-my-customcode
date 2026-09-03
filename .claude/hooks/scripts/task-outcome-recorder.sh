@@ -5,9 +5,33 @@ set -euo pipefail
 command -v jq >/dev/null 2>&1 || exit 0
 
 # Task/Agent Outcome Recorder Hook
-# Trigger: PostToolUse (tool == "Task" || "Agent") and SubagentStop
-# Purpose: Record task outcomes for model escalation decisions
+# Trigger: SubagentStop (settings.json wires this script to that event and no other)
+# Purpose: Record agent outcomes for model escalation decisions
 # Protocol: stdin JSON -> process -> stdout pass-through, exit 0 always
+#
+# MEASURED SubagentStop payload (CC 2.1.259 embedded hook schema; #1656 B):
+#   session_id, transcript_path, cwd, prompt_id?, permission_mode?, effort?,
+#   hook_event_name:"SubagentStop", stop_hook_active, agent_id,
+#   agent_transcript_path, agent_type,
+#   last_assistant_message?, background_tasks?, session_crons?
+#
+# Note what the event does NOT carry: no `tool_input`, no `tool_output`, no
+# `model`, no `description`, no `prompt`, and no error signal of any kind. The
+# selectors below therefore read the top-level fields first and fall back to
+# `last_assistant_message` — the one text-bearing field SubagentStop provides —
+# for the description and skill-name extraction. The `tool_input`/`tool_output`
+# branches are retained as fallbacks so the script stays correct if it is ever
+# re-wired to PostToolUse.
+#
+# This project's transcript corpus (889 files) holds ZERO SubagentStop hook
+# records — SubagentStop output is not attached to the parent transcript — so
+# the shape above is schema-derived, not corpus-derived.
+#
+# Outcome caveat: SubagentStop exposes no failure signal, so entries recorded
+# from that event are always outcome=success. There is no working hand-off for
+# that gap today: SubagentStop payload carries no failure signal;
+# subagent-failure-advisor.sh currently reads `.tool_output.is_error`, which is
+# absent here, so failure detection on this path is 0 until #1656 G is resolved.
 
 input=$(cat)
 
@@ -15,11 +39,24 @@ input=$(cat)
 # jq's parse error propagates through `set -euo pipefail` as rc=5 without this.
 printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
 
-# Extract task info — support both PostToolUse (tool_input.*) and SubagentStop (top-level) shapes.
-# `?` suppresses "Cannot index string with ..." when tool_input arrives as a scalar.
-agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type? // .agent_type? // "unknown"')
-model=$(printf '%s\n' "$input" | jq -r '.tool_input.model? // .model? // "inherit"')
-description=$(printf '%s\n' "$input" | jq -r '.tool_input.description? // .description? // ""' | head -c 80)
+# Extract agent info. Measured SubagentStop fields come first; the PostToolUse
+# `tool_input.*` shape is kept as a fallback.
+# `?` suppresses "Cannot index string with ..." when tool_input arrives as a scalar;
+# `tostring` normalises a scalar (e.g. a numeric agent_type) instead of aborting.
+agent_type=$(printf '%s\n' "$input" | jq -r \
+  '(.agent_type? // .tool_input?.subagent_type? // "unknown") | tostring' 2>/dev/null) \
+  || agent_type="unknown"
+# SubagentStop carries no `model`; this resolves to "inherit" there by design.
+model=$(printf '%s\n' "$input" | jq -r \
+  '(.model? // .tool_input?.model? // "inherit") | tostring' 2>/dev/null) || model="inherit"
+# `strings` drops non-string shapes so an object-valued field degrades to "" rather
+# than dumping raw JSON into the description.
+description=$(printf '%s\n' "$input" | jq -r '
+  [ (.tool_input?.description? | strings),
+    (.description?             | strings),
+    (.last_assistant_message?  | strings) ]
+  | map(select(. != "")) | first // ""
+' 2>/dev/null | head -c 200) || description=""
 
 # Extract skill name from description or prompt
 skill_name=""
@@ -28,18 +65,35 @@ skill_name=""
 if echo "$description" | grep -qiE '(skill:|routing|→.*skill)'; then
   skill_name=$(echo "$description" | grep -oiE '[a-z]+-[a-z]+(-[a-z]+)*-?(routing|skill|practices|detection|decomposition|orchestration|pipeline|guards|cycle|plan|review|refactor|publish|version|audit|exec|analyze|bundle|report|setup|watch|lists|status|help|save|recall)' | head -1 || true)
 fi
-# Fallback: check prompt field for "Skill: {name}" pattern
+# Fallback: check the prompt / last assistant message for a "Skill: {name}" pattern.
+# SubagentStop has no `prompt`, so `last_assistant_message` is the live source here.
 if [ -z "$skill_name" ]; then
-  prompt=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt? // ""' | head -c 500)
-  skill_name=$(echo "$prompt" | grep -oiE 'Skill:\s*[a-z]+-[a-z]+(-[a-z]+)*' | sed 's/[Ss]kill:\s*//' | head -1 || true)
+  prompt=$(printf '%s\n' "$input" | jq -r '
+    [ (.tool_input?.prompt?      | strings),
+      (.last_assistant_message?  | strings) ]
+    | map(select(. != "")) | first // ""
+  ' 2>/dev/null | head -c 500) || prompt=""
+  # POSIX character classes, not `\s`: BSD sed (macOS, this repo's runtime) does not
+  # implement the GNU `\s` escape, so `s/[Ss]kill:\s*//` stripped only the colon and
+  # left a leading space on every extracted skill name. Same family as the BSD `\?`
+  # gap recorded in R005. (#1656 B)
+  skill_name=$(echo "$prompt" | grep -oiE 'Skill:[[:space:]]*[a-z]+-[a-z]+(-[a-z]+)*' | sed 's/[Ss]kill:[[:space:]]*//' | head -1 || true)
 fi
 
-# Determine outcome
-is_error=$(printf '%s\n' "$input" | jq -r '.tool_output.is_error? // false')
+# Determine outcome. SubagentStop carries no error signal, so this is always false
+# there; `.tool_response.is_error` is the measured PostToolUse field (`.tool_output`
+# is the legacy shape) and both are kept for re-wiring safety.
+is_error=$(printf '%s\n' "$input" | jq -r '
+  (.tool_response?.is_error? // .tool_output?.is_error? // false) | tostring
+' 2>/dev/null) || is_error="false"
 
 if [ "$is_error" = "true" ]; then
   outcome="failure"
-  error_summary=$(printf '%s\n' "$input" | jq -r '.tool_output.output? // ""' | head -c 200)
+  error_summary=$(printf '%s\n' "$input" | jq -r '
+    [ (.tool_response?.output? | strings),
+      (.tool_output?.output?   | strings) ]
+    | map(select(. != "")) | first // ""
+  ' 2>/dev/null | head -c 200) || error_summary=""
 else
   outcome="success"
   error_summary=""
@@ -50,11 +104,29 @@ OUTCOME_FILE="/tmp/.claude-task-outcomes-${PPID}"
 TASK_COUNT_FILE="/tmp/.claude-task-count-${PPID}"
 
 # --- Pattern Detection ---
-# Priority: skill-specific patterns > parallel > sequential (default)
-pattern="sequential"
+# Priority: skill-specific patterns > parallel > agent-count inference > default.
+#
+# INPUT SCOPE (#1656 D): the cascade below reads ONLY `tool_input.description` —
+# the spawn argument the orchestrator wrote — never `$description`, which now
+# falls back to `last_assistant_message`, i.e. free-form prose the subagent wrote
+# about itself. A closing summary that merely says "ran the parallel review" or
+# "orchestrator finished" would otherwise be recorded as
+# pattern_used=parallel/orchestrator, fabricating a workflow shape out of English.
+# SubagentStop carries no `tool_input`, so on that event this source is empty and
+# the pattern degrades to the session-level agent-count signal (a real, non-prose
+# signal) and then to "unknown" — an honest absence rather than a default
+# "sequential" that reads as a measurement.
+pattern_source=$(printf '%s\n' "$input" | jq -r '
+  (.tool_input?.description? | strings) // ""
+' 2>/dev/null | head -c 200) || pattern_source=""
 
-# Check description for skill-specific workflow patterns
-desc_lower=$(echo "$description" | tr '[:upper:]' '[:lower:]')
+if [ -n "$pattern_source" ]; then
+  pattern="sequential"
+else
+  pattern="unknown"
+fi
+
+desc_lower=$(printf '%s' "$pattern_source" | tr '[:upper:]' '[:lower:]')
 
 if echo "$desc_lower" | grep -qE '(evaluator.optimizer|evaluator_optimizer)'; then
   pattern="evaluator-optimizer"
@@ -87,9 +159,17 @@ if [ -f "$AGENT_START_FILE" ]; then
   fi
 fi
 
-# Append JSON line entry
+# Append JSON line entry.
+# `-c` (compact) is REQUIRED, not cosmetic: this file is consumed as JSONL by
+# eval-core's outcome-parser (`content.split('\n')` + `JSON.parse(line)`) and by
+# model-escalation-advisor.sh (`grep -c '"agent_type":"X".*"outcome":"failure"'`,
+# `tail -N`), and the ring buffer below trims by `wc -l`. A pretty-printed entry
+# spans 11 lines (measured: 9 fields plus the braces), so it broke every one of
+# those readers and let `tail -50` slice
+# an object in half. Sibling recorders (agent-start-recorder.sh, stuck-detector.sh)
+# already use `jq -cn`. (#1656 B)
 timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-entry=$(jq -n \
+entry=$(jq -cn \
   --arg ts "$timestamp" \
   --arg agent "$agent_type" \
   --arg model "$model" \

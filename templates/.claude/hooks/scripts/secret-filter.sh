@@ -12,8 +12,8 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
-# Non-object stdin guard (#1650 B) — rejects ONLY non-object stdin, which carries
-# no scannable payload anyway; a well-formed object always reaches the scan below.
+# Non-object stdin guard (#1650 B). PostToolUse stdin is always an object; a
+# bare-string stdin is rejected by design, not because it is known to be empty.
 printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
 
 tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name? // "unknown"')
@@ -21,19 +21,23 @@ tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name? // "unknown"')
 # Collect every text-bearing field of the payload into one scan buffer.
 #
 # PostToolUse carries the result under `tool_response`, NOT `tool_output`
-# (measured 2026-09-03: 1764 PostToolUse payloads echoed into this project's
-# session transcripts had `tool_response` 1764/1764 and `tool_output` 0/1764;
+# (measured at v1.1.62 against this project's session transcripts: every
+# PostToolUse record carried `tool_response` and none carried `tool_output`;
 # the CC 2.1.259 embedded hook reference documents `"tool_response": {...}
 # // PostToolUse only`). Reading `.tool_output.output` therefore always yielded
 # "" and the scan below never ran — every AWS key, private key and PAT passed
 # through unflagged.
 #
-# Measured text-bearing fields, by tool:
-#   Bash   .tool_response.stdout / .stderr
-#   Read   .tool_response.file.content
-#   Write  .tool_response.content
-#   Agent  .tool_response.prompt
-#   MCP    .tool_response (string) or .tool_response.content[].text
+# Text-bearing fields, by tool. This hook's matcher is `Bash|Read|Grep`, so only
+# the first two rows fire in production; the rest are defensive so a matcher
+# widening does not silently reintroduce the blind spot above.
+#   Bash   .tool_response.stdout / .stderr          (measured, in matcher)
+#   Read   .tool_response.file.content              (measured, in matcher)
+#   Write  .tool_response.content                   (measured, out of matcher)
+#   Agent  .tool_response.prompt / .output          (measured, out of matcher)
+#   MCP    .tool_response (string)
+#          or .tool_response.content[].text         (defensive — unmeasured;
+#                                                    MCP corpus 0 records)
 # `.tool_output.output` and a string-shaped `.tool_output` are kept as
 # fallbacks for events that still use the older shape (e.g. SubagentStop).
 #

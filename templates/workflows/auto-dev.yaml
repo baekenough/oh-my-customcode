@@ -441,7 +441,7 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착."
+    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정한다 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째)."
     depends_on: verify-build
 
   - name: release
@@ -585,6 +585,10 @@ steps:
          - If failures: diagnose, fix, re-verify
       3. For npm projects with auto-tag.yml: MANDATORY additional check:
          gh run list --workflow auto-tag.yml --limit 1 --json conclusion,displayTitle
+         ⚠ auto-tag.yml run의 `headSha`는 **release 브랜치 head(PR head SHA)**이지 머지 커밋이 아니다 — 폴링 종료
+         조건을 머지 커밋 SHA로 걸면 영원히 미일치해 타임아웃까지 전량 소진한다(v1.1.61 세션 실측: 40회/10분 전량
+         소진, v1.1.62에서 PR head로 정정 → 22회 정상 종료). release.yml run은 `displayTitle`에 PR 번호/브랜치명이
+         들어가므로 그것으로 식별한다.
          → conclusion MUST be "success" before declaring release complete.
          If auto-tag.yml concluded "failure": diagnose root cause. Do NOT retry with manual git tag.
          Common causes:

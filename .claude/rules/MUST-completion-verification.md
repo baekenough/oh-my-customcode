@@ -388,6 +388,12 @@ This applies when a change touches a field that participates in an override/prec
 |--------------|----------|
 | Plan a provider/endpoint switch as N commands without reading the config's override chain | Read the full config schema (which field wins, defaults, inheritance) → enumerate EVERY field the switch touches (incl. base_url) → then plan |
 
+**훅 스크립트 각도 — stdin 필드 형상은 실측 후 편집 (Origin: #1658 #1, v1.1.62)**: 훅 스크립트가 읽는 stdin 필드(`tool_input`/`tool_response`/`agent_id` 등)를 편집·가드·억제하기 전에 **실제 페이로드 형상을 실측**한다 — 트랜스크립트의 `attachment.type=="hook_success"` 레코드에서 `attachment.stdout`이 pass-through 훅이 되돌린 stdin 원문이며, CC 바이너리 내장 훅 문서로 교차검증한다. 처방("가드 추가·`?` 억제")만 위임하면 선택자 결함 위에 가드를 얹어 마지막 실패 신호까지 지운다. 실증: v1.1.62에서 `secret-filter.sh`가 PostToolUse에 존재하지 않는 `tool_output`(0/1764)을 읽어 실제 페이로드를 한 번도 스캔하지 않던 선재 결함 위에 `?` 억제가 추가됐고(rc=5 신호 소멸), 적대적 리뷰가 실측 형상 재현으로 FAIL 판정해 `tool_response`(1764/1764)로 교체했다. 훅 편집 위임서 표준 문안: "스크립트가 읽는 stdin 필드는 `hook_success` 레코드로 형상 실측 후 편집".
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 훅 위임서에 "가드 추가·`?` 억제" 처방만 전달 | 읽는 필드의 실제 형상(`hook_success` stdin 원문 + 바이너리 훅 문서) 실측을 위임서 완료 조건에 포함 |
+
 Sibling discipline to Read-Before-Characterize (that rule governs diagnosis — don't label before reading; this one governs edit-planning completeness — enumerate every interdependent field before editing). Cross-ref: R023 (verification ladder — config completeness is a Tier-1 deterministic pre-check).
 
 ### Degraded-Output Re-Verification Gate (529 / buffering)

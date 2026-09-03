@@ -12,11 +12,19 @@ input=$(cat)
 # Hooks must never crash (R021); jq parse errors would otherwise abort under `set -e`. (#1650)
 printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
 # PostToolUse carries the tool result under `tool_response`, not `tool_output`
-# (measured 2026-09-03: 1764/1764 PostToolUse payloads had `tool_response`,
-# 0/1764 had `tool_output`), so the previous `.tool_output` read always yielded
-# "" and this hook never compressed anything. MCP responses arrive either as a
-# bare string or as `{content: [{type:"text", text:...}]}`; `.tool_output` is
-# kept as a fallback for events still using the older shape.
+# (measured at v1.1.62: every PostToolUse record in this project's transcripts
+# carried `tool_response` and none carried `tool_output`), so the previous
+# `.tool_output` read always yielded "" and this hook never compressed anything.
+# MCP responses arrive either as a bare string or as
+# `{content: [{type:"text", text:...}]}`; `.tool_output` is kept as a fallback
+# for events still using the older shape.
+#
+# MATCHER-SCOPED: `.stdout` and `.file.content` are read here only because this
+# hook's matcher is `mcp__playwright__.*|mcp__claude-in-chrome__.*`, so those
+# branches can never fire on a real Bash or Read result. This is a lossy hook —
+# it REPLACES `.tool_response` with a Haiku summary — so widening the matcher to
+# cover Bash/Read without first dropping those two branches would silently
+# destroy genuine command output and file contents. (#1656 F)
 tool_output=$(printf '%s\n' "$input" | jq -r '
   [
     (.tool_response?   | if type == "string" then . else empty end),

@@ -14,8 +14,18 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
-agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // ""')
-prompt=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt // ""')
+# Guard: non-object stdin (non-JSON / JSON array / empty) — swallow and exit 0
+# instead of reflecting garbage back on stdout. The sibling hooks (audit-log.sh,
+# model-escalation-advisor.sh, task-outcome-recorder.sh) all carry this guard;
+# this one did not, so a non-object payload was echoed through verbatim. (#1656 F)
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
+# `?` suppresses jq's "Cannot index <type> with string" when tool_input arrives as a
+# scalar/array instead of an object (measured #1656 A: the bare form leaked a jq error to
+# stderr on every non-object tool_input). 2>/dev/null + `|| echo ""` keep the hook silent
+# and advisory-only even if jq itself fails for an unrelated reason.
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type? // ""' 2>/dev/null || echo "")
+prompt=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt? // ""' 2>/dev/null || echo "")
 
 # R010 violation tracking file (PPID-scoped for session persistence)
 VIOLATION_FILE="/tmp/.claude-r010-violations-${PPID}"

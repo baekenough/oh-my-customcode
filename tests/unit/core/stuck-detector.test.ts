@@ -1789,4 +1789,164 @@ describe('stuck-detector.sh', () => {
       expect(result.exitCode).toBe(2);
     });
   });
+
+  // -----------------------------------------------------------------
+  // Remaining "printf | sed" trims removed (#1656 E)
+  // -----------------------------------------------------------------
+
+  describe('sed-free per-line trim and heredoc delimiter scan (#1656 E)', () => {
+    function lastEntry(): Record<string, string> {
+      const raw = require('node:fs').readFileSync(historyFilePath(), 'utf-8') as string;
+      const lines = raw.trim().split('\n');
+      return JSON.parse(lines[lines.length - 1]);
+    }
+
+    async function readonlyOf(command: string): Promise<string> {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+      return lastEntry().readonly;
+    }
+
+    // #1650 A converted the two SINGLE-LINE trims to parameter expansion but
+    // left two "printf | sed" sites behind: Step 0 trims EVERY line of a
+    // multi-line command (sed applies "^"/"$" once per line, so it is not the
+    // same transformation as a whole-string trim) and the heredoc opener scan
+    // extracted the delimiter with "sed -n -E". Both are pure bash now — a
+    // per-line read loop and bash's own "=~". Every assertion below is a
+    // regression check: the rewrite must not move a single verdict.
+    //
+    // Verified separately against the pre-change script over 51 hand-built
+    // boundary cases and 200 seeded fuzz cases (LC_ALL=C and en_US.UTF-8):
+    // 0 differences in verdict or in _strip_heredoc_bodies output bytes.
+
+    // --- Step 0: per-line trim of a multi-line command.
+
+    it('NEGATIVE: should keep a padded all-read-only multi-line command read-only', async () => {
+      expect(await readonlyOf('  git status  \n  pwd  ')).toBe('true');
+    });
+
+    it('POSITIVE: should still see a write hidden on a padded last line', async () => {
+      expect(await readonlyOf('  git status  \n  rm -rf build  ')).toBe('false');
+    });
+
+    it('NEGATIVE: should keep a tab-padded single-line command read-only', async () => {
+      expect(await readonlyOf('\t ls -la \t')).toBe('true');
+    });
+
+    it('NEGATIVE: should keep blank and whitespace-only lines harmless', async () => {
+      expect(await readonlyOf('  ls  \n\n   \n  pwd  ')).toBe('true');
+    });
+
+    // --- Delimiter scan: the shapes the old ERE accepted, and the ones it
+    // deliberately rejected. "^.*" is greedy in both engines, so the LAST
+    // "<<" on the line still wins.
+
+    it('NEGATIVE: should still strip a tab-indented "<<-" heredoc body', async () => {
+      expect(await readonlyOf('cat <<-EOF\n\tbody\n\tEOF\nls')).toBe('true');
+    });
+
+    it('POSITIVE: should still see a write after a "<<-" heredoc body', async () => {
+      expect(await readonlyOf('cat <<-EOF\n\tbody\n\tEOF\nrm -rf x')).toBe('false');
+    });
+
+    it('NEGATIVE: should still accept a double-quoted delimiter', async () => {
+      expect(await readonlyOf('cat <<"EOF"\nbody\nEOF\nls')).toBe('true');
+    });
+
+    it('NEGATIVE: should still accept whitespace between "<<" and the delimiter', async () => {
+      expect(await readonlyOf('cat << EOF\nbody\nEOF\nls')).toBe('true');
+    });
+
+    it('NEGATIVE: should still settle on the LAST "<<" of an opener line', async () => {
+      expect(await readonlyOf('cat <<A; cat <<B\nb\nB\nls')).toBe('true');
+    });
+
+    it('NEGATIVE: should still treat "<<<" as a herestring, not a heredoc', async () => {
+      expect(await readonlyOf('ls <<<EOF\npwd')).toBe('true');
+    });
+
+    it('NEGATIVE: should still ignore a shift-like "<<" with a numeric operand', async () => {
+      expect(await readonlyOf('echo 1 << 2\nls')).toBe('true');
+    });
+
+    it('POSITIVE: should still reject a line-leading "<<" as an opener', async () => {
+      expect(await readonlyOf('<<EOF\nbody\nEOF\nls')).toBe('false');
+    });
+
+    it('POSITIVE: should still reject a delimiter that starts with a digit', async () => {
+      expect(await readonlyOf('cat <<"123"\nbody\n123\nls')).toBe('false');
+    });
+
+    // --- Locale independence of the delimiter scan.
+    //
+    // The hook has no BASH_SOURCE guard, so sourcing it whole would run the
+    // hook and exit; slicing at the "input=$(cat)" anchor is the only way to
+    // reach the classifier helpers directly. It is also the only way to feed
+    // them a raw invalid UTF-8 byte at all — the normal path arrives through
+    // jq, which normalises the payload first.
+    //
+    // With sed, an opener line carrying an invalid byte died with
+    // "RE error: illegal byte sequence" on every extraction. bash's "=~"
+    // reports no match instead, so the scan stays silent and the lines after
+    // the (undetected) opener are still handed to the classifier.
+    function runAgainstFunctions(body: string): Promise<ScriptResult> {
+      const awkSlice = String.raw`awk '/^input=\$\(cat\)$/{exit} {print}'`;
+      const driver = [
+        'set -uo pipefail',
+        'prelude="$(mktemp "${TMPDIR:-/tmp}/sd-funcs-XXXXXX")"',
+        `${awkSlice} '${STUCK_DETECTOR_SCRIPT}' > "$prelude"`,
+        '. "$prelude"',
+        body,
+      ].join('\n');
+      return new Promise((resolve_) => {
+        // A UTF-8 locale is what makes sed reject the byte; on a machine
+        // without one the probe degrades to a plain equivalence check rather
+        // than failing.
+        const child = spawn('bash', ['-c', driver], {
+          env: { ...process.env, LC_ALL: 'en_US.UTF-8' },
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.on('data', (c: Buffer) => {
+          stdout += c.toString();
+        });
+        child.stderr.on('data', (c: Buffer) => {
+          stderr += c.toString();
+        });
+        child.on('close', (code: number | null) => {
+          resolve_({ stdout, stderr, exitCode: code ?? -1 });
+        });
+        child.stdin.end();
+      });
+    }
+
+    it('POSITIVE: should scan an opener line with invalid UTF-8 without a regex error', async () => {
+      const result = await runAgainstFunctions(
+        [
+          `cmd=$'cat <<EOF \\xff\\xfe\\nbody\\nEOF\\nrm -rf /x'`,
+          'out="$(_strip_heredoc_bodies "$cmd")"',
+          'case "$out" in *"rm -rf /x"*) echo KEPT;; *) echo LOST;; esac',
+          'echo DONE',
+        ].join('\n')
+      );
+      expect(result.stdout).toContain('DONE');
+      expect(result.stdout).toContain('KEPT');
+      expect(result.stderr).not.toContain('illegal byte sequence');
+    });
+
+    it('NEGATIVE: should still drop the body of a well-formed heredoc', async () => {
+      const result = await runAgainstFunctions(
+        [
+          `cmd=$'cat <<EOF\\nbody\\nEOF\\nrm -rf /x'`,
+          'out="$(_strip_heredoc_bodies "$cmd")"',
+          'case "$out" in *body*) echo BODY_KEPT;; *) echo BODY_DROPPED;; esac',
+          'case "$out" in *"rm -rf /x"*) echo KEPT;; *) echo LOST;; esac',
+          'echo DONE',
+        ].join('\n')
+      );
+      expect(result.stdout).toContain('BODY_DROPPED');
+      expect(result.stdout).toContain('KEPT');
+      expect(result.stdout).toContain('DONE');
+      expect(result.stderr).toBe('');
+    });
+  });
 });

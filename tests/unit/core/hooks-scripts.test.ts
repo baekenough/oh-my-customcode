@@ -2577,3 +2577,189 @@ describe('PostToolUse `tool_response` payload field (measured shape)', () => {
     });
   });
 });
+
+// -------------------------------------------------------------------
+// Issue #1656 A: scalar-shaped tool_input / tool_response sweep
+// -------------------------------------------------------------------
+// v1.1.62 hardened 10 scripts against non-object *stdin*. This is the
+// follow-up sweep for non-object *field shapes*: `{"tool_input":"x"}` makes
+// jq raise `Cannot index string with string` on any bare `.tool_input.<k>`
+// access. Measured across all 36 in-scope scripts x 6 event/tool gates x 5
+// shapes (scalar string / number / array / absent / well-formed object);
+// two scripts carried an unguarded access:
+//
+//   git-delegation-guard.sh — leaked the jq error to stderr on every
+//     non-object tool_input (rc stayed 0: the script has no `set -e`).
+//   failure-ledger.sh       — the jq error was swallowed by
+//     `2>/dev/null || true`, so the crash surfaced as **silent total record
+//     loss** rather than a non-zero exit. rc 0 + empty stderr is therefore
+//     NOT sufficient evidence of correctness for an append-only ledger.
+//
+// Both now normalise the shape before indexing (`?` / an explicit
+// `type == "object"` check), matching the pattern already used for
+// `.tool_response` in failure-ledger.sh.
+describe('Issue #1656 A: scalar-shaped tool_input/tool_response', () => {
+  const SCALAR_SHAPES: Array<[string, string]> = [
+    ['string scalar', '"x"'],
+    ['number scalar', '42'],
+    ['array', '["a"]'],
+    ['absent', 'ABSENT'],
+  ];
+
+  function makeShapeInput(shape: string, eventName: string, toolName: string): string {
+    if (shape === 'ABSENT') {
+      return `{"hook_event_name":"${eventName}","tool_name":"${toolName}","session_id":"s1"}`;
+    }
+    return (
+      `{"hook_event_name":"${eventName}","tool_name":"${toolName}","session_id":"s1",` +
+      `"tool_input":${shape},"tool_response":${shape}}`
+    );
+  }
+
+  // --- git-delegation-guard.sh (advisory, no `set -e`: assert on stderr) ---
+
+  describe('git-delegation-guard.sh', () => {
+    for (const [label, shape] of SCALAR_SHAPES) {
+      it(`emits no jq error and passes through on ${label} tool_input`, async () => {
+        const input = makeShapeInput(shape, 'PreToolUse', 'Task');
+        const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, input);
+        expect(result.exitCode).toBe(0);
+        expect(result.stderr).toBe('');
+        expect(result.stdout.trim()).toBe(input);
+      });
+    }
+
+    it('still warns for a git op delegated away from mgr-gitnerd (object regression)', async () => {
+      const input = JSON.stringify({
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Task',
+        tool_input: { subagent_type: 'general-purpose', prompt: 'please git push origin main' },
+      });
+      const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, input);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toContain('R010 violation detected');
+      expect(result.stderr).toContain('git push');
+      expect(result.stdout.trim()).toBe(input);
+    });
+
+    it('stays silent for mgr-gitnerd (object regression, negative control)', async () => {
+      const input = JSON.stringify({
+        hook_event_name: 'PreToolUse',
+        tool_name: 'Task',
+        tool_input: { subagent_type: 'mgr-gitnerd', prompt: 'git push origin main' },
+      });
+      const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, input);
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout.trim()).toBe(input);
+    });
+  });
+
+  // --- failure-ledger.sh (rc is always 0: assert on the ledger contents) ---
+
+  describe('failure-ledger.sh', () => {
+    const FAILURE_LEDGER_SCRIPT = join(SCRIPTS_DIR, 'failure-ledger.sh');
+    let ledgerDir: string;
+
+    beforeEach(async () => {
+      ledgerDir = join(tmpdir(), `omc-1656a-${process.pid}-${Math.random().toString(36).slice(2)}`);
+      await mkdir(ledgerDir, { recursive: true });
+    });
+
+    afterEach(async () => {
+      await rm(ledgerDir, { recursive: true, force: true });
+    });
+
+    async function runLedger(input: string): Promise<{ exitCode: number; records: string[] }> {
+      const ledger = join(ledgerDir, 'error-ledger.jsonl');
+      const result = await runHookScript(FAILURE_LEDGER_SCRIPT, input, {
+        OMCUSTOM_ERROR_LEDGER: ledger,
+      });
+      const raw = existsSync(ledger) ? await readFile(ledger, 'utf-8') : '';
+      return { exitCode: result.exitCode, records: raw.split('\n').filter(Boolean) };
+    }
+
+    for (const [label, shape] of SCALAR_SHAPES) {
+      it(`still records the failure when tool_input is a ${label}`, async () => {
+        const base = makeShapeInput(shape, 'PostToolUseFailure', 'Bash');
+        // splice the top-level `error` field in without disturbing the shape fixture
+        const input = `${base.slice(0, -1)},"error":"boom boom"}`;
+        const { exitCode, records } = await runLedger(input);
+        expect(exitCode).toBe(0);
+        // The pre-fix behaviour lost the whole record here (jq indexing error
+        // swallowed by `2>/dev/null || true`), so length 1 is the assertion.
+        expect(records).toHaveLength(1);
+        const rec = JSON.parse(records[0]!) as Record<string, unknown>;
+        expect(rec.tool).toBe('Bash');
+        expect(rec.err).toBe('boom boom');
+        expect(rec.target).toBe('');
+      });
+    }
+
+    it('extracts tool_input.command when tool_input is a well-formed object', async () => {
+      const input = JSON.stringify({
+        hook_event_name: 'PostToolUseFailure',
+        tool_name: 'Bash',
+        session_id: 's1',
+        error: 'boom',
+        tool_input: { command: 'ls -la' },
+      });
+      const { exitCode, records } = await runLedger(input);
+      expect(exitCode).toBe(0);
+      expect(records).toHaveLength(1);
+      expect((JSON.parse(records[0]!) as Record<string, unknown>).target).toBe('ls -la');
+    });
+
+    it('falls back to tool_input.file_path when no command is present', async () => {
+      const input = JSON.stringify({
+        hook_event_name: 'PostToolUseFailure',
+        tool_name: 'Edit',
+        session_id: 's1',
+        error: 'boom',
+        tool_input: { file_path: '/tmp/omc-1656a.txt' },
+      });
+      const { exitCode, records } = await runLedger(input);
+      expect(exitCode).toBe(0);
+      expect(records).toHaveLength(1);
+      expect((JSON.parse(records[0]!) as Record<string, unknown>).target).toBe(
+        '/tmp/omc-1656a.txt'
+      );
+    });
+
+    it('keeps the pre-existing scalar tool_response guard intact', async () => {
+      const input = JSON.stringify({
+        hook_event_name: 'PostToolUse',
+        tool_name: 'Bash',
+        tool_input: { command: 'x' },
+        tool_response: 'plain-string-error',
+      });
+      const { exitCode, records } = await runLedger(input);
+      expect(exitCode).toBe(0);
+      expect(records).toHaveLength(1);
+      expect((JSON.parse(records[0]!) as Record<string, unknown>).err).toBe('plain-string-error');
+    });
+  });
+
+  // --- Structural guard: neither script may regress to a bare index ---
+
+  it('git-delegation-guard.sh keeps `?` on every nested tool_input access', async () => {
+    const content = await readFile(join(SCRIPTS_DIR, 'git-delegation-guard.sh'), 'utf-8');
+    const bare = content
+      .split('\n')
+      .filter((l) => !l.trimStart().startsWith('#'))
+      // `[A-Za-z_]+` alone backtracks past the final char, so the lookahead must also
+      // exclude further identifier chars for it to actually mean "not followed by `?`".
+      .filter((l) => /\.tool_input\.[A-Za-z_]+(?![A-Za-z_?])/.test(l));
+    expect(bare).toEqual([]);
+  });
+
+  it('failure-ledger.sh keeps the tool_input type check before indexing', async () => {
+    const content = await readFile(join(SCRIPTS_DIR, 'failure-ledger.sh'), 'utf-8');
+    const body = content
+      .split('\n')
+      .filter((l) => !l.trimStart().startsWith('#'))
+      .join('\n');
+    expect(body).toContain('(.tool_input | type) == "object"');
+    expect(body).toContain('(.tool_response | type) == "object"');
+  });
+});

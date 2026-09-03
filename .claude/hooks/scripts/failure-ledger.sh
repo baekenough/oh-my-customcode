@@ -52,6 +52,9 @@ ts=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "")
 #   (r007-r008-drift-advisor.sh의 `.role` vs `.message.role`과 동일 계열).
 #   .tool_error / .tool_response.* fallback은 스키마 변화에 대한 방어로만 남긴다 —
 #   tool_response가 문자열인 경우 인덱싱 에러로 레코드가 통째로 유실되므로 type 검사로 감싼다.
+#   .tool_input도 같은 이유로 type 검사를 씌운다 (#1656 A 실측): 스칼라/배열 tool_input이
+#   오면 jq가 인덱싱 에러로 죽고 `2>/dev/null || true` 때문에 **조용히 레코드 전체가
+#   유실**됐다 — rc는 0이고 stderr도 비어 있어 크래시가 아니라 데이터 손실로 나타난다.
 #
 # 단일 라인(<1KB) append 이므로 O_APPEND 원자성에 기대어 병렬 에이전트 환경에서도 안전.
 printf '%s' "$input" \
@@ -61,7 +64,9 @@ printf '%s' "$input" \
         session: (.session_id // ""),
         cwd:     $cwd,
         tool:    (.tool_name // "unknown"),
-        target:  ((.tool_input.command // .tool_input.file_path // "") | tostring | .[0:160]),
+        target:  ((if (.tool_input | type) == "object"
+                    then (.tool_input.command // .tool_input.file_path // "")
+                    else "" end) | tostring | .[0:160]),
         interrupt: (.is_interrupt == true),
         err:     ((.error
                    // .tool_error

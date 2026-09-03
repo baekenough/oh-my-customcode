@@ -125,6 +125,17 @@ Origin: #1595 #5 (v1.1.48 세션 — R008 위반 3건이 단일 턴에 집중. t
 > **v2.1.174+**: Fixed the Workflow tool's `agent()` subagents missing per-agent attribution headers. Workflow-spawned subagents now carry attribution consistent with R008 — when authoring Workflow scripts, each `agent()` call is attributed like a direct Agent tool spawn. Align Workflow orchestration with the R008 `[agent][model] → Tool:` identification discipline: a Workflow `agent()` fan-out should still be reasoned about with the same per-agent identification model as parallel Agent tool spawns.
 -->
 
+## announce와 헤더는 narration이 아니라 visible text 블록으로 (Origin: #1654)
+
+모델 출력에는 `text` 블록과 **narration 블록**(트랜스크립트에 `type:"thinking"` + signature 라벨 `narration`으로 직렬화되는 사용자향 짧은 산문)이 있고, 한 API 메시지에는 **둘 중 하나만** 실린다(v1.1.61~62 세션 실측: 115메시지 중 공존 0). 도구 호출 턴을 narration 요약 한 문장("…했습니다. 이제 …하겠습니다")으로 시작하면 R007 헤더와 R008 접두사는 **어디에도 남지 않는다** — 실측: narration 47블록에 R007 헤더 0건, 대괄호 번호 항목 0건, Tool 표기 0건(조사 문장 인용 제외). advisor는 `type != "thinking"` 필터로 narration을 배제하므로 이 턴들은 전부 누락으로 계상되며, 실제로 v1.1.61 세션 advisory 18건은 **전부 진양성**이었다(직렬화 유실 가설은 advisor가 메시지 직후에 판정했다는 사실로 배제됨).
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 도구 호출 턴을 짧은 요약 산문만으로 시작(narration 채널로 흐름) | 헤더(`┌─ Agent:` 또는 단축 헤더)와 Core Rule 접두사를 **text 블록**으로 명시 — 산문 요약은 그 뒤에 |
+| "announce를 썼다"는 기억으로 advisory를 오탐으로 가정 | 트랜스크립트의 `text` 블록에서 마커를 실측(R020 Self-Violation Counting) |
+
+Iteration 1(Agent 스폰 15메시지 전부 narration)과 Iteration 2(7메시지 text)의 대비는 계수 도구 결함이 아니라 출력 채널 선택의 차이였다. 채널 선택 요인은 미귀속이다.
+
 ## Tier-3 Interaction Tool Prefix (MANDATORY)
 
 R008 "every tool call" applies to Tier-3 interaction tools too — NOT only file/exec tools. Applying the Core Rule prefix form (에이전트·모델 대괄호 다음 화살표와 Tool 표기) to Agent/Bash/Read while omitting it on `AskUserQuestion`, `TodoWrite`, `EnterPlanMode`, etc. is a violation.

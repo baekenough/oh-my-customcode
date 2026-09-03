@@ -131,6 +131,7 @@ Each iteration operates under full project rules — no relaxation because FSD i
 | R015 (intent persistence) | If user explicitly defers a specific PR this session, honor that deferral — do not retry it. |
 | R017 (sync verification) | mgr-sauron passes required before any commit. |
 | R020 (completion verification) | Each release verified via `npm view`, `gh release view`, closed issues before `[Done]`. PR merges verified via `gh pr view` ground-truth before declaring iteration complete. |
+| cost-cap advisory (`cost-cap-advisor.sh`, Conversation Block) | FSD는 사용자가 명시 호출한 다중 릴리즈 루프라 세션 비용이 상한(기본 $5)을 필연적으로 넘는다. advisory 발화는 루프를 멈추는 신호가 아니며, 오케스트레이터는 발화 사실과 누적 비용을 반복 경계(homework 게이트)에서 사용자에게 고지한다. 상한을 올리려면 `CLAUDE_COST_CAP`(v1.1.61 세션 실측: 착수 직후 $5.38에서 발화). |
 
 `/homework` runs as a **retrospective gate** between iterations — findings go through `omcustom-feedback`'s Phase 4A confirmation gate. The loop does NOT skip homework on the grounds that it is "automated". If homework requires user confirmation (e.g., to file a feedback issue), the loop pauses and waits.
 

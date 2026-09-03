@@ -20,14 +20,34 @@ printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
 # Extract fields from hook input
 tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // "unknown"')
 file_path=$(printf '%s\n' "$input" | jq -r '.tool_input.file_path? // .tool_input.command? // ""' | head -c 200)
-agent_type=$(printf '%s\n' "$input" | jq -r '.agent_type // "unknown"')
-model=$(printf '%s\n' "$input" | jq -r '.model // "unknown"')
+# Agent identity and model. PostToolUse has NO top-level `model` at all, and its
+# top-level `agent_type` is present only when the hook fires from inside a subagent
+# (CC 2.1.259 schema: "Present when the hook fires from within a subagent") — so on
+# the main thread both reads resolved to "unknown" on every single entry.
+# Measured replacements (#1656 C): the Agent tool's result object carries
+# `resolvedModel` (892 occurrences in this project's transcript corpus, e.g.
+# "claude-sonnet-5" / "claude-opus-5[1m]") and, on the synchronous shape, `agentType`;
+# the spawn arguments carry `subagent_type`.
+# `?` keeps a scalar-shaped tool_input/tool_response from aborting under `set -euo pipefail`.
+agent_type=$(printf '%s\n' "$input" | jq -r '
+  (.agent_type?
+    // .tool_input?.subagent_type?
+    // .tool_response?.agentType?
+    // "unknown") | tostring
+' 2>/dev/null) || agent_type="unknown"
+model=$(printf '%s\n' "$input" | jq -r '
+  (.model?
+    // .tool_response?.resolvedModel?
+    // "unknown") | tostring
+' 2>/dev/null) || model="unknown"
 # Outcome signal. PostToolUse carries the result under `tool_response`, not
 # `tool_output` (measured 2026-09-03: 1764/1764 PostToolUse payloads had
 # `tool_response`, 0/1764 had `tool_output`), so the old `.tool_output.is_error`
 # read was always absent and every entry was logged as outcome=success.
-# Measured failure signals: `.tool_response.is_error` (generic) and
-# `.tool_response.interrupted` (present on every Bash response).
+# Failure signals read below: `.tool_response.is_error` (generic) and
+# `.tool_response.interrupted`. The latter is present on every Bash response but
+# was never observed true in this corpus (0/1555), so it is defensive coverage —
+# not a signal measured to fire.
 # jq's `//` treats both null and false as absent, so this chain is an OR:
 # the result is true iff at least one signal is true.
 is_error=$(printf '%s\n' "$input" | jq -r '

@@ -113,6 +113,8 @@ Origin: #1455 #1 (Session 127 회고 찐빠 #1) — cc-release-monitor PR #1449 
 |--------------|----------|
 | "변경분 영향 범위"만 보고 검증 항목을 정해 위임 → CI 전용 잡(lint 등) 누락 | 워크플로 잡 목록을 하한선으로 삼아 로컬 대응 명령을 완료 조건에 열거 |
 
+**상한선 — 오케스트레이터 사전 실측 항목은 재실행 금지 (Origin: #1655 제안 2)**: 하한선이 CI 잡 목록이라면 상한선은 "오케스트레이터가 이미 실측한 항목"이다. 검증 위임서에는 사전 실측 결과(테스트 pass/fail, lint·typecheck exit, 스크립트 exit, 미러 md5)를 **재실행 금지 목록**으로 열거하고 재실측 대상만 지정한다 — 서브에이전트가 전체 테스트를 재실행하면 턴 예산이 소진돼 판정 없이 절단된다. 실증: v1.1.61 세션 mgr-sauron 1차 위임(금지 목록 없음)은 `bun test` 재실행으로 25턴 절단, 2차 위임(금지 목록 + 15턴 내 판정 명시)은 16 tool_uses로 PASS 완주(R020 maxTurns 절단 누적 7건째). auto-dev.yaml deep-verify 스텝 description에 같은 문안이 배선돼 있다.
+
 Origin: #1574 (v1.1.44 세션 — 병렬 위임 3건 모두 `bun run lint`를 누락해 verify-build halt, 수정 에이전트 1회 추가 발주). 기존 `feedback_delegation_verify_scope_by_impact`("영향 범위 기준")의 하한선을 명문화한 것이다. Cross-reference: R020(완료 검증 — 선언 전 실제 게이트 통과 확인), R017(커밋 전 검증 게이트).
 
 ## Conditional-Output Verification — Positive/Negative Pair Mandate (Origin: #1563 #2)

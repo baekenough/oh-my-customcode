@@ -34,13 +34,22 @@ CONSECUTIVE_THRESHOLD=3
 COOLDOWN=5
 
 # Count failures for this agent type
+#
+# `grep -c` COUNT HYGIENE (#1656 E): a no-match `grep -c` prints `0` on stdout AND
+# exits 1, so the old `$(grep -c ... || echo "0")` appended a SECOND zero and the
+# variable became the two-line string "0\n0". Every later `[ "$count" -ge N ]` then
+# failed with "integer expression expected" on stderr — noise indistinguishable
+# from a real hook fault, on the exact path (zero failures) that is the common case.
+# `|| true` keeps grep's own `0` and `${x:-0}` covers an unreadable file.
 agent_failures=0
 if [ -n "$agent_type" ] && [ "$agent_type" != "unknown" ]; then
-  agent_failures=$(grep -c "\"agent_type\":\"${agent_type}\".*\"outcome\":\"failure\"" "$OUTCOME_FILE" 2>/dev/null || echo "0")
+  agent_failures=$(grep -c "\"agent_type\":\"${agent_type}\".*\"outcome\":\"failure\"" "$OUTCOME_FILE" 2>/dev/null || true)
+  agent_failures=${agent_failures:-0}
 fi
 
 # Count consecutive failures (tail entries)
-consecutive_failures=$(tail -${CONSECUTIVE_THRESHOLD} "$OUTCOME_FILE" 2>/dev/null | grep -c '"outcome":"failure"' 2>/dev/null || echo "0")
+consecutive_failures=$(tail -${CONSECUTIVE_THRESHOLD} "$OUTCOME_FILE" 2>/dev/null | grep -c '"outcome":"failure"' 2>/dev/null || true)
+consecutive_failures=${consecutive_failures:-0}
 
 # Escalation path
 # NOTE: Agent tool `model` param is an enum of exactly 4 values: sonnet | opus | haiku | fable.
@@ -90,7 +99,9 @@ fi
 
 # De-escalation check
 if [ "$current_model" != "haiku" ] && [ "$current_model" != "inherit" ] && [ "$current_model" != "" ]; then
-  recent_successes=$(tail -${COOLDOWN} "$OUTCOME_FILE" 2>/dev/null | grep -c '"outcome":"success"' 2>/dev/null || echo "0")
+  # Same `grep -c` hygiene as above (#1656 E).
+  recent_successes=$(tail -${COOLDOWN} "$OUTCOME_FILE" 2>/dev/null | grep -c '"outcome":"success"' 2>/dev/null || true)
+  recent_successes=${recent_successes:-0}
 
   if [ "$recent_successes" -ge "$COOLDOWN" ]; then
     lower_model=""

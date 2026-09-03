@@ -207,6 +207,9 @@ _strip_heredoc_bodies() {
   # A literal single quote cannot be written inside the bracket expression of
   # the quote-counting expansion below, so hold one in a variable.
   local sq_char="'"
+  # Same expression the extraction below used to hand to "sed -n -E", now fed
+  # to bash's own "=~" (see the delimiter scan for why it moved).
+  local delim_re="^.*[^<]<<-?[[:space:]]*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?.*\$"
   while IFS= read -r line; do
     if [ "$in_body" -eq 1 ]; then
       # "<<-" allows leading tabs before the terminator; accept leading
@@ -253,8 +256,18 @@ _strip_heredoc_bodies() {
       printf '%s' "${out}__QUOTED_HEREDOC_OPENER__"$'\n'
       return 0
     fi
-    delim="$(printf '%s' "$line" \
-      | sed -n -E "s/^.*[^<]<<-?[[:space:]]*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?.*\$/\\1/p")"
+    # bash's "=~" runs the SAME POSIX ERE the "sed -n -E" here used to run —
+    # both engines are leftmost-longest, so the greedy "^.*" still settles on
+    # the LAST "<<" (verified against sed over 251 cases, #1656 E). Two forks
+    # per opener line are saved, but the reason it moved is correctness: sed
+    # aborts with "RE error: illegal byte sequence" on a line carrying invalid
+    # UTF-8, and under "set -o pipefail" that non-zero pipeline killed the
+    # whole hook. "=~" simply reports no match there.
+    if [[ "$line" =~ $delim_re ]]; then
+      delim="${BASH_REMATCH[1]}"
+    else
+      delim=""
+    fi
     if [ -n "$delim" ]; then
       in_body=1
     fi
@@ -292,7 +305,28 @@ is_readonly_bash_command() {
     return 0
   fi
 
-  cmd="$(printf '%s' "$cmd" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  # sed applies "^" and "$" once PER LINE, so this trims every line of a
+  # multi-line command — it is NOT the whole-string parameter-expansion trim
+  # used in Step 6 and in _strip_heredoc_bodies, which is why it survived
+  # #1650 A. The loop below reproduces the per-line form exactly: each line is
+  # trimmed and re-terminated, then the trailing newlines are dropped the same
+  # way the "$( )" around the old pipeline dropped them. Two forks are saved,
+  # but the reason it changed (#1656 E) is correctness: sed aborts a multi-line
+  # command with "RE error: illegal byte sequence" at the first invalid UTF-8
+  # byte, and under "set -o pipefail" that non-zero pipeline killed the hook
+  # outright — so a heredoc body carrying raw bytes could stop the classifier
+  # before it ever reached a trailing "rm -rf". Parameter expansion has no
+  # locale dependency.
+  local trimmed="" tline
+  while IFS= read -r tline; do
+    tline="${tline#"${tline%%[![:space:]]*}"}"
+    tline="${tline%"${tline##*[![:space:]]}"}"
+    trimmed="${trimmed}${tline}"$'\n'
+  done <<< "$cmd"
+  while [ "${trimmed%$'\n'}" != "$trimmed" ]; do
+    trimmed="${trimmed%$'\n'}"
+  done
+  cmd="$trimmed"
   if [ -z "$cmd" ]; then
     echo "false"
     return 0

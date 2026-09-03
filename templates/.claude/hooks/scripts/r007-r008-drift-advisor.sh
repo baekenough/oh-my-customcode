@@ -52,6 +52,9 @@
 #     with no tool_result block) ends a turn.
 #   * `thinking` blocks are interleaved with text/tool_use and never carry an R008 prefix;
 #     they are filtered out before analysis.
+#   * NOTE (#1654, v1.1.63): narration 블록은 트랜스크립트에 type:"thinking"(signature 라벨
+#     narration)으로 직렬화되므로 아래 select(.type? != "thinking")이 함께 배제한다 — 의도된
+#     동작: narration에는 R007/R008 마커가 실리지 않는다(실측 47블록 0건).
 #
 # ── R008 verdict: TURN-LEVEL COUNTING, not block adjacency (#1563 찐빠 #1) ─────────────
 # R008 (`.claude/rules/MUST-tool-identification.md`) says, verbatim:
