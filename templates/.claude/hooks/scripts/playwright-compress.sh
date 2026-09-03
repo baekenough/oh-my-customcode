@@ -7,7 +7,30 @@
 set -euo pipefail
 
 input=$(cat)
-tool_output=$(printf '%s\n' "$input" | jq -r '.tool_output // ""')
+
+# Guard: non-object stdin (non-JSON / JSON array / empty) — swallow and exit 0.
+# Hooks must never crash (R021); jq parse errors would otherwise abort under `set -e`. (#1650)
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+# PostToolUse carries the tool result under `tool_response`, not `tool_output`
+# (measured 2026-09-03: 1764/1764 PostToolUse payloads had `tool_response`,
+# 0/1764 had `tool_output`), so the previous `.tool_output` read always yielded
+# "" and this hook never compressed anything. MCP responses arrive either as a
+# bare string or as `{content: [{type:"text", text:...}]}`; `.tool_output` is
+# kept as a fallback for events still using the older shape.
+tool_output=$(printf '%s\n' "$input" | jq -r '
+  [
+    (.tool_response?   | if type == "string" then . else empty end),
+    (.tool_response?.content? | strings),
+    (.tool_response?.content? | if type == "array"
+                                then map(.text? | strings) | join("\n")
+                                else empty end),
+    (.tool_response?.stdout?  | strings),
+    (.tool_response?.file?.content? | strings),
+    (.tool_output?     | if type == "string" then . else empty end),
+    (.tool_output?.output?    | strings)
+  ]
+  | map(select(. != "")) | join("\n")
+' 2>/dev/null) || tool_output=""
 
 # Skip if output is small (< 3000 chars)
 output_len=${#tool_output}
@@ -47,4 +70,4 @@ fi
 compressed_len=${#summary}
 savings=$(( (output_len - compressed_len) * 100 / output_len ))
 printf '%s\n' "$input" | jq --arg summary "$summary" --arg savings "${savings}% reduced (${output_len}→${compressed_len} chars)" \
-  '.tool_output = $summary | .["updatedMCPToolOutput"] = $summary'
+  '.tool_response = $summary | .tool_output = $summary | .["updatedMCPToolOutput"] = $summary'

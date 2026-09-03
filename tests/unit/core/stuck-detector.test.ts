@@ -1656,4 +1656,137 @@ describe('stuck-detector.sh', () => {
       expect(await readonlyOf('find . -okdir rm')).toBe('false');
     });
   });
+
+  // -----------------------------------------------------------------
+  // Per-line fork cost + non-object stdin (#1650 A / B)
+  // -----------------------------------------------------------------
+
+  describe('per-line fork cost and non-object stdin (#1650)', () => {
+    function lastEntry(): Record<string, string> {
+      const raw = require('node:fs').readFileSync(historyFilePath(), 'utf-8') as string;
+      const lines = raw.trim().split('\n');
+      return JSON.parse(lines[lines.length - 1]);
+    }
+
+    async function readonlyOf(command: string): Promise<string> {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+      return lastEntry().readonly;
+    }
+
+    // --- A (#1650): the multi-line path forked twice PER LINE. The ";"/newline
+    // segment loop trimmed each segment with `printf | sed`, and
+    // _strip_heredoc_bodies trimmed every heredoc BODY line the same way while
+    // also running a `printf | sed -n -E` delimiter scan on every non-body
+    // line — even lines with no "<<" in them at all. Measured before the fix:
+    // 300 newline-separated segments 800 ms, a 1000-line heredoc body 1832 ms.
+    // The trims are pure parameter expansion now (fork 0) and the delimiter
+    // scan only runs on lines that actually contain "<<".
+    //
+    // The verdict assertions below are the regression half: the rewrite must
+    // not change a single classification.
+
+    const line40 = Array(40).fill('git status').join('\n');
+    const line300 = Array(300).fill('ls').join('\n');
+    const heredoc1000 = `cat <<'EOF'\n${Array(1000).fill('x').join('\n')}\nEOF`;
+
+    it('NEGATIVE: should keep a 40-line all-read-only command read-only', async () => {
+      expect(await readonlyOf(line40)).toBe('true');
+    });
+
+    it('POSITIVE: should still see a write hidden on the last of 40 lines', async () => {
+      expect(await readonlyOf(`${line40}\nrm -rf build`)).toBe('false');
+    });
+
+    it('NEGATIVE: should keep a 300-segment all-read-only command read-only', async () => {
+      expect(await readonlyOf(line300)).toBe('true');
+    });
+
+    it('NEGATIVE: should keep a 1000-line heredoc body read-only', async () => {
+      expect(await readonlyOf(heredoc1000)).toBe('true');
+    });
+
+    it('POSITIVE: should still see a write AFTER a 1000-line heredoc body', async () => {
+      expect(await readonlyOf(`${heredoc1000}\nrm -rf build`)).toBe('false');
+    });
+
+    it('POSITIVE: should still classify an unterminated 1000-line heredoc as a write', async () => {
+      expect(await readonlyOf(`cat <<'EOF'\n${Array(1000).fill('x').join('\n')}`)).toBe('false');
+    });
+
+    it('POSITIVE: should still catch delimiter forgery after 1000 body lines', async () => {
+      const forged = `echo "a << EOF"\n${Array(1000).fill('x').join('\n')}\nEOF\nrm -rf build`;
+      expect(await readonlyOf(forged)).toBe('false');
+    });
+
+    it('should classify a 300-segment command in well under the pre-fix cost', async () => {
+      const started = Date.now();
+      const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command: line300 }));
+      const elapsed = Date.now() - started;
+      expect(result.exitCode).toBe(0);
+      expect(elapsed).toBeLessThan(400);
+    }, 30000);
+
+    it('should classify a 1000-line heredoc in well under the pre-fix cost', async () => {
+      const started = Date.now();
+      const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command: heredoc1000 }));
+      const elapsed = Date.now() - started;
+      expect(result.exitCode).toBe(0);
+      expect(elapsed).toBeLessThan(500);
+    }, 30000);
+
+    // --- B (#1650): stdin that is not a JSON OBJECT (a bare string, a JSON
+    // array, a scalar) made the first `jq -r` fail; "set -euo pipefail" then
+    // took the hook down with rc=5. A hook must never crash the tool call it
+    // observes, so a non-object payload is swallowed: exit 0, no stdout.
+
+    it('NEGATIVE: should exit 0 with no stdout on non-JSON stdin', async () => {
+      const result = await runStuckDetector('not json at all');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    it('NEGATIVE: should exit 0 with no stdout on a JSON array', async () => {
+      const result = await runStuckDetector('[1,2,3]');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    it('NEGATIVE: should exit 0 with no stdout on a JSON scalar', async () => {
+      const result = await runStuckDetector('"a string"');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    it('NEGATIVE: should exit 0 with no stdout on JSON null', async () => {
+      const result = await runStuckDetector('null');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    it('NEGATIVE: should exit 0 with no stdout on empty stdin', async () => {
+      const result = await runStuckDetector('');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    it('NEGATIVE: should exit 0 with no stdout on truncated JSON', async () => {
+      const result = await runStuckDetector('{"tool_name": "Bash"');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+
+    it('POSITIVE: should still pass a well-formed object through to stdout', async () => {
+      const input = makeInput({ tool_name: 'Edit', file_path: '/src/foo.ts' });
+      const result = await runStuckDetector(input);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(input);
+    });
+
+    it('POSITIVE: should still hard-block after a non-object payload is swallowed', async () => {
+      const input = makeInput({ tool_name: 'Edit', file_path: '/src/foo.ts' });
+      await runStuckDetector('not json at all');
+      const result = await runNTimes(input, 3);
+      expect(result.exitCode).toBe(2);
+    });
+  });
 });

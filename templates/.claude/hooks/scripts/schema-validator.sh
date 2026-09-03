@@ -12,9 +12,14 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
-# Extract tool info
-tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // "unknown"')
-tool_input=$(printf '%s\n' "$input" | jq -r '.tool_input // {}')
+# Non-object stdin guard (#1650 B): a hook must never crash on garbage stdin.
+# jq's parse error propagates through `set -euo pipefail` as rc=5 without this.
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
+# Extract tool info — `?` suppresses errors when tool_input arrives as a scalar
+tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name? // "unknown"')
+tool_input=$(printf '%s\n' "$input" | jq -c 'if (.tool_input? | type) == "object" then .tool_input else {} end' 2>/dev/null) || tool_input='{}'
+[ -n "$tool_input" ] || tool_input='{}'
 
 SCHEMA_FILE=".claude/schemas/tool-inputs.json"
 
@@ -28,8 +33,8 @@ warnings=()
 
 case "$tool_name" in
   "Write")
-    file_path=$(printf '%s\n' "$tool_input" | jq -r '.file_path // ""')
-    content=$(printf '%s\n' "$tool_input" | jq -r '.content // ""')
+    file_path=$(printf '%s\n' "$tool_input" | jq -r '.file_path? // ""')
+    content=$(printf '%s\n' "$tool_input" | jq -r '.content? // ""')
 
     if [ -z "$file_path" ]; then
       warnings+=("[Schema] Write: file_path is empty or missing")
@@ -40,9 +45,9 @@ case "$tool_name" in
     ;;
 
   "Edit")
-    file_path=$(printf '%s\n' "$tool_input" | jq -r '.file_path // ""')
-    old_string=$(printf '%s\n' "$tool_input" | jq -r '.old_string // ""')
-    new_string=$(printf '%s\n' "$tool_input" | jq -r '.new_string // ""')
+    file_path=$(printf '%s\n' "$tool_input" | jq -r '.file_path? // ""')
+    old_string=$(printf '%s\n' "$tool_input" | jq -r '.old_string? // ""')
+    new_string=$(printf '%s\n' "$tool_input" | jq -r '.new_string? // ""')
 
     if [ -z "$file_path" ]; then
       warnings+=("[Schema] Edit: file_path is empty or missing")
@@ -56,7 +61,7 @@ case "$tool_name" in
     ;;
 
   "Bash")
-    command=$(printf '%s\n' "$tool_input" | jq -r '.command // ""')
+    command=$(printf '%s\n' "$tool_input" | jq -r '.command? // ""')
 
     if [ -z "$command" ]; then
       warnings+=("[Schema] Bash: command is empty")

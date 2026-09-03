@@ -12,9 +12,51 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
-# Extract output to scan
-tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // "unknown"')
-output=$(printf '%s\n' "$input" | jq -r '.tool_output.output // ""')
+# Non-object stdin guard (#1650 B) — rejects ONLY non-object stdin, which carries
+# no scannable payload anyway; a well-formed object always reaches the scan below.
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
+tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name? // "unknown"')
+
+# Collect every text-bearing field of the payload into one scan buffer.
+#
+# PostToolUse carries the result under `tool_response`, NOT `tool_output`
+# (measured 2026-09-03: 1764 PostToolUse payloads echoed into this project's
+# session transcripts had `tool_response` 1764/1764 and `tool_output` 0/1764;
+# the CC 2.1.259 embedded hook reference documents `"tool_response": {...}
+# // PostToolUse only`). Reading `.tool_output.output` therefore always yielded
+# "" and the scan below never ran — every AWS key, private key and PAT passed
+# through unflagged.
+#
+# Measured text-bearing fields, by tool:
+#   Bash   .tool_response.stdout / .stderr
+#   Read   .tool_response.file.content
+#   Write  .tool_response.content
+#   Agent  .tool_response.prompt
+#   MCP    .tool_response (string) or .tool_response.content[].text
+# `.tool_output.output` and a string-shaped `.tool_output` are kept as
+# fallbacks for events that still use the older shape (e.g. SubagentStop).
+#
+# `?` suppresses jq path errors when a field is a scalar rather than an object;
+# every branch is optional, so an unexpected shape degrades to "" instead of
+# aborting the hook under `set -euo pipefail`.
+output=$(printf '%s\n' "$input" | jq -r '
+  [
+    (.tool_response?      | if type == "string" then . else empty end),
+    (.tool_response?.stdout?        | strings),
+    (.tool_response?.stderr?        | strings),
+    (.tool_response?.content?       | strings),
+    (.tool_response?.content?       | if type == "array"
+                                      then map(.text? | strings) | join("\n")
+                                      else empty end),
+    (.tool_response?.file?.content? | strings),
+    (.tool_response?.prompt?        | strings),
+    (.tool_response?.output?        | strings),
+    (.tool_output?        | if type == "string" then . else empty end),
+    (.tool_output?.output?          | strings)
+  ]
+  | map(select(. != "")) | join("\n")
+' 2>/dev/null) || output=""
 
 # Skip if no output
 if [ -z "$output" ] || [ "$output" = "null" ]; then
@@ -44,7 +86,7 @@ if echo "$output" | grep -qE 'ghp_[a-zA-Z0-9]{36}'; then
 fi
 
 # Private Key
-if echo "$output" | grep -qE '-----BEGIN.*PRIVATE KEY-----'; then
+if echo "$output" | grep -qE -- '-----BEGIN.*PRIVATE KEY-----'; then
   echo "[Security] Potential private key detected in ${tool_name} output" >&2
   detected=true
 fi

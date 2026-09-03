@@ -204,17 +204,34 @@ _strip_heredoc_bodies() {
   local text="$1"
   local out="" line tok delim="" in_body=0
   local before_op dq sq
+  # A literal single quote cannot be written inside the bracket expression of
+  # the quote-counting expansion below, so hold one in a variable.
+  local sq_char="'"
   while IFS= read -r line; do
     if [ "$in_body" -eq 1 ]; then
       # "<<-" allows leading tabs before the terminator; accept leading
-      # whitespace for either form.
-      tok="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      # whitespace for either form. The trim is pure parameter expansion: as
+      # "printf | sed" it cost TWO forks on every BODY line, which is the
+      # dominant cost of a long heredoc (measured: a 1000-line body took
+      # 1.8 s of hook latency, #1650 A).
+      tok="${line#"${line%%[![:space:]]*}"}"
+      tok="${tok%"${tok##*[![:space:]]}"}"
       if [ "$tok" = "$delim" ]; then
         in_body=0
       fi
       continue
     fi
     out="${out}${line}"$'\n'
+    # A line with no "<<" can open no heredoc, so neither the forgery guard nor
+    # the delimiter scan below has anything to find on it. Skipping them keeps
+    # the extraction "sed" off every ordinary line, which used to run
+    # unconditionally — two more forks per line (#1650 A). "delim" must still be
+    # cleared here, or a delimiter captured on an EARLIER line would re-open a
+    # body on this one.
+    case "$line" in
+      *'<<'*) ;;
+      *) delim=""; continue ;;
+    esac
     # A DELIMITER FORGERY guard: the extraction below has no idea whether the
     # "<<" it finds is shell syntax or literal text inside a quoted string, so
     # `echo "a << EOF"` followed by `rm -rf x` and a line reading `EOF` used to
@@ -226,14 +243,15 @@ _strip_heredoc_bodies() {
     # as a write. "${line%<<*}" strips the shortest matching suffix, i.e. it
     # yields the text before the LAST "<<" — the same occurrence the greedy
     # extraction regex below settles on.
-    if [ "$line" != "${line%<<*}" ]; then
-      before_op="${line%<<*}"
-      dq="$(printf '%s' "$before_op" | tr -cd '"' | wc -c | tr -d '[:space:]')"
-      sq="$(printf '%s' "$before_op" | tr -cd "'" | wc -c | tr -d '[:space:]')"
-      if [ $((dq % 2)) -eq 1 ] || [ $((sq % 2)) -eq 1 ]; then
-        printf '%s' "${out}__QUOTED_HEREDOC_OPENER__"$'\n'
-        return 0
-      fi
+    # The quote counts are parameter expansions rather than
+    # "printf | tr | wc | tr" (four more forks per opener line): "${v//[^X]/}"
+    # deletes everything that is not X, so the remaining LENGTH is the count.
+    before_op="${line%<<*}"
+    dq="${before_op//[^\"]/}"
+    sq="${before_op//[^$sq_char]/}"
+    if [ $(( ${#dq} % 2 )) -eq 1 ] || [ $(( ${#sq} % 2 )) -eq 1 ]; then
+      printf '%s' "${out}__QUOTED_HEREDOC_OPENER__"$'\n'
+      return 0
     fi
     delim="$(printf '%s' "$line" \
       | sed -n -E "s/^.*[^<]<<-?[[:space:]]*[\"']?([A-Za-z_][A-Za-z0-9_]*)[\"']?.*\$/\\1/p")"
@@ -453,7 +471,12 @@ is_readonly_bash_command() {
     normalized="${normalized//|/$'\n'}"
     local seg
     while IFS= read -r seg; do
-      seg="$(printf '%s' "$seg" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+      # Pure parameter expansion, not "printf | sed": each segment is a single
+      # line, so the two forms trim identically, but the sed form spent two
+      # forks on EVERY segment of a multi-line command (measured: 300
+      # newline-separated segments took 0.8 s of hook latency, #1650 A).
+      seg="${seg#"${seg%%[![:space:]]*}"}"
+      seg="${seg%"${seg##*[![:space:]]}"}"
       if [ -z "$seg" ]; then
         echo "false"
         return 0
@@ -471,6 +494,15 @@ is_readonly_bash_command() {
 }
 
 input=$(cat)
+
+# A hook must never crash the tool call it observes. stdin that is not a JSON
+# OBJECT — empty, a bare scalar, a JSON array, truncated, or not JSON at all —
+# carries no tool record, and the very first "jq -r" below died on it; with
+# "set -euo pipefail" that took the WHOLE hook down with rc=5 (#1650 B).
+# Swallow it instead: exit 0 with no stdout, exactly as if the hook had not
+# run. "jq -e" exits non-zero both for a parse error and for a false/null
+# result, so one guard covers every non-object shape.
+printf '%s' "$input" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
 
 # Extract tool info
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // "unknown"')

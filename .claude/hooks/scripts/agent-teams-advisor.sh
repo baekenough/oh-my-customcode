@@ -11,6 +11,10 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
+# Guard: non-object stdin (non-JSON / JSON array / empty) — swallow and exit 0.
+# Hooks must never crash (R021); jq parse errors would otherwise abort under `set -e`. (#1650)
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
 # Skip unless Agent Teams is CONFIRMED active.
 # session-env-check.sh writes one of: disabled | env-set | enabled (#1588).
 #   `env-set` = the env var is set but TeamCreate presence is UNVERIFIED — R018 is dormant,
@@ -43,8 +47,8 @@ if [ -f "$RELEASE_PLAN" ]; then
 fi
 
 # Extract task info from input
-agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // "unknown"')
-prompt_preview=$(printf '%s\n' "$input" | jq -r '.tool_input.description // ""' | head -c 60)
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type? // "unknown"')
+prompt_preview=$(printf '%s\n' "$input" | jq -r '.tool_input.description? // ""' | head -c 60)
 
 # Session-scoped counter using parent PID as session identifier
 COUNTER_FILE="/tmp/.claude-task-count-${PPID}"

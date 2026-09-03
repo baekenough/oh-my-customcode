@@ -11,9 +11,13 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
+# Guard: non-object stdin (non-JSON / JSON array / empty) — swallow and exit 0.
+# Hooks must never crash (R021); jq parse errors would otherwise abort under `set -e`. (#1650)
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
 # Extract current task info
-agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // "unknown"')
-current_model=$(printf '%s\n' "$input" | jq -r '.tool_input.model // "inherit"')
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type? // "unknown"')
+current_model=$(printf '%s\n' "$input" | jq -r '.tool_input.model? // "inherit"')
 
 # Session-scoped outcome log
 OUTCOME_FILE="/tmp/.claude-task-outcomes-${PPID}"

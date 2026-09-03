@@ -12,6 +12,10 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
+# Guard: non-object stdin (non-JSON / JSON array / empty) — swallow and exit 0.
+# Hooks must never crash (R021); jq parse errors would otherwise abort under `set -e`. (#1650)
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
 # Hash store (PPID-scoped, session-only)
 HASH_STORE="/tmp/.claude-content-hashes-${PPID}"
 
@@ -20,7 +24,7 @@ tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // "unknown"')
 case "$tool_name" in
   "Read")
     # Store content hash for the file that was just read
-    file_path=$(printf '%s\n' "$input" | jq -r '.tool_input.file_path // ""')
+    file_path=$(printf '%s\n' "$input" | jq -r '.tool_input.file_path? // ""')
 
     if [ -n "$file_path" ] && [ -f "$file_path" ]; then
       content_hash=$(md5 -q "$file_path" 2>/dev/null || md5sum "$file_path" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
@@ -43,7 +47,7 @@ case "$tool_name" in
 
   "Edit")
     # Validate that file hasn't changed since last Read
-    file_path=$(printf '%s\n' "$input" | jq -r '.tool_input.file_path // ""')
+    file_path=$(printf '%s\n' "$input" | jq -r '.tool_input.file_path? // ""')
 
     if [ -n "$file_path" ] && [ -f "$HASH_STORE" ] && [ -f "$file_path" ]; then
       stored_hash=$(grep "\"path\":\"${file_path}\"" "$HASH_STORE" 2>/dev/null | tail -1 | jq -r '.hash // ""' 2>/dev/null || echo "")

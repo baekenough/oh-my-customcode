@@ -13,6 +13,10 @@ set -euo pipefail
 # ── Stop hook 프로토콜: stdin을 먼저 읽음 ──
 input=$(cat)
 
+# ── 비객체 stdin 가드 (#1650 B) — 없으면 jq 파싱 오류가 pipefail로 rc=5 전파.
+# worker의 `.message.role` 트랜스크립트 파서 경로는 그대로 유지된다.
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
 # ── Opt-out 체크 ──
 if [ "${OMCUSTOM_SESSION_REFLECTION:-}" = "off" ]; then
   printf '%s\n' "$input"
@@ -40,7 +44,7 @@ bg_tasks_count=$(printf '%s\n' "$bg_tasks_json" | jq 'length' 2>/dev/null || ech
 session_crons_count=$(printf '%s\n' "$session_crons_json" | jq 'length' 2>/dev/null || echo 0)
 
 # 미완료 백그라운드 태스크: running/pending/in_progress 상태 카운트
-bg_dangling_count=$(printf '%s\n' "$bg_tasks_json" | jq '[.[] | select(.status == "running" or .status == "pending" or .status == "in_progress")] | length' 2>/dev/null || echo 0)
+bg_dangling_count=$(printf '%s\n' "$bg_tasks_json" | jq '[.[] | select(.status? == "running" or .status? == "pending" or .status? == "in_progress")] | length' 2>/dev/null || echo 0)
 
 # ── 경로 결정 (환경변수 override 지원) ──
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

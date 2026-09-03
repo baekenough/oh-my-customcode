@@ -1747,3 +1747,338 @@ describe('r007-r008-drift-advisor.sh — Fixture 10: transcript_path + performan
     expect(elapsed).toBeLessThan(1500);
   });
 });
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 11: subagent-session suppression (#1650 D)
+//
+// settings hooks fire inside SUBAGENT sessions too (PostToolUse on every tool the subagent
+// calls). MEASURED against the CC 2.1.259 binary's own hook-input schema:
+//
+//   agent_id: optional — "Subagent identifier. Present only when the hook fires from within
+//   a subagent (e.g., a tool called by an AgentTool worker). Absent for the main thread,
+//   even in --agent sessions. Use this field (not agent_type) to distinguish subagent calls
+//   from main-thread calls."
+//
+// and the base payload builder literally emits `agent_id: o?.agentId` on EVERY hook event.
+// So `agent_id` is the platform-documented discriminator — the ONLY one that works here,
+// because the base builder also sets `transcript_path: Lp(e.id)` from the SESSION id, and a
+// subagent shares its parent's session id (measured: every agent-*.jsonl line carries
+// `sessionId` == the parent's UUID). A subagent's PostToolUse therefore resolves to the
+// PARENT's transcript, so neither the transcript's `isSidechain` flag nor an `agent-*.jsonl`
+// path pattern can see the difference — the file being read really is the orchestrator's.
+// Without the gate the advisor analyses the ORCHESTRATOR's last turn and injects the advisory
+// into the SUBAGENT (the hook-feedback encroachment of R020 8항).
+//
+// SubagentStart/SubagentStop are EXEMPT: their schemas make `agent_id` a REQUIRED field that
+// names the TARGET subagent (`uoe = Ae().and({hook_event_name:"SubagentStop", agent_id, ...})`),
+// so it is not an in-subagent marker there. Gating on it would kill the #1545 wiring.
+// ════════════════════════════════════════════════════════════════
+
+/** Build a payload as it arrives when the hook fires from INSIDE a subagent (#1650 D). */
+function inSubagentInput(
+  sessionId: string,
+  hookEventName = 'PostToolUse',
+  agentId = 'adf9db6'
+): string {
+  return JSON.stringify({
+    session_id: sessionId,
+    hook_event_name: hookEventName,
+    agent_id: agentId,
+    agent_type: 'general-purpose',
+  });
+}
+
+describe('r007-r008-drift-advisor.sh — Fixture 11: subagent-session suppression (#1650 D)', () => {
+  /** A transcript whose last turn violates R007 — the advisory bait. */
+  async function violatingTranscript(sid: string) {
+    await writeTranscript(sid, [
+      ...userTurn('Do the thing'),
+      ...assistantTurn([{ type: 'text', text: 'No header on this orchestrator turn.' }]),
+    ]);
+  }
+
+  it('D-POS: fires for a main-thread PostToolUse (no agent_id in payload)', async () => {
+    const sid = `d-pos-${Date.now()}`;
+    await violatingTranscript(sid);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain(
+      'R007 에이전트 식별 헤더 누락 1건'
+    );
+  });
+
+  it('D-NEG: stays SILENT on the identical transcript when agent_id marks a subagent call', async () => {
+    const sid = `d-neg-${Date.now()}`;
+    await violatingTranscript(sid);
+
+    const r = await runScript(inSubagentInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stderr).not.toContain('[R007/R008 Advisory]');
+  });
+
+  it('D-NEG2: stays silent for a subagent UserPromptSubmit-shaped payload with agent_id', async () => {
+    const sid = `d-neg2-${Date.now()}`;
+    await violatingTranscript(sid);
+
+    const r = await runScript(inSubagentInput(sid, 'UserPromptSubmit'), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('D-EXEMPT: SubagentStop still fires even though its schema always carries agent_id (#1545)', async () => {
+    // SubagentStop fires on the MAIN thread and its agent_id names the completed subagent.
+    // Gating on agent_id here would silently delete the autonomous-loop coverage of #1545.
+    const sid = `d-exempt-${Date.now()}`;
+    await violatingTranscript(sid);
+
+    const r = await runScript(inSubagentInput(sid, 'SubagentStop'), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('SubagentStop');
+  });
+
+  it('D-EXEMPT2: SubagentStart is likewise exempt (agent_id is a required target id there)', async () => {
+    const sid = `d-exempt2-${Date.now()}`;
+    await violatingTranscript(sid);
+
+    const r = await runScript(inSubagentInput(sid, 'SubagentStart'), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('SubagentStart');
+  });
+
+  it('source guard: the gate keys on agent_id, not agent_type (#1650 D)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).toContain('.agent_id');
+    // agent_type is explicitly NOT a discriminator: the platform schema says it is also
+    // present on the MAIN thread of a `--agent` session (without agent_id).
+    expect(src).not.toMatch(/\$agent_type/);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 12: single-spawn announce counting (#1650 E)
+//
+// `$an_spawn_item` only counts the NUMBERED parallel form (`[N] type:model → desc`), so a
+// SINGLE spawn written in the bare `type:model → desc` form (R008 §"Agent Tool Format", which
+// explicitly exempts single spawns from the `[N]` prefix) contributed nothing and the Agent
+// tool_use was scored a violation. This adds a third spawn tier for that line shape.
+//
+// Double-count guard: when the turn ALSO carries the Core-Rule `→ Tool: Agent` prefix line
+// (the form R008 v1.1.61 now mandates), the spawn-notation lines are descriptive companions
+// of the SAME call — exactly like `→ Target:` is the companion of `→ Tool:`. The spawn
+// contribution is therefore reduced by the number of `→ Tool: Agent` lines (floored at 0)
+// instead of being added on top, so an inflated announce count cannot mask a genuine omission
+// elsewhere in the same turn.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 12: single-spawn announce (#1650 E)', () => {
+  it('E1: stays silent on a bare single-spawn line with one Agent tool_use', async () => {
+    const sid = `e1-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Delegate the commit'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: delegate commit' },
+        { type: 'text', text: 'mgr-gitnerd:sonnet → 커밋 위임' },
+        { type: 'tool_use', id: 'e1-a', name: 'Agent', input: { subagent_type: 'mgr-gitnerd' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stderr).not.toContain('[R007/R008 Advisory]');
+  });
+
+  it('E1b: counts several bare single-spawn lines under one Spawning header', async () => {
+    // Three agents announced with the un-numbered form. Pre-fix only the header counted (1),
+    // so two of the three spawns were scored as violations.
+    const sid = `e1b-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Delegate three'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: three spawns' },
+        {
+          type: 'text',
+          text: [
+            '[secretary][opus] → Spawning:',
+            'mgr-updater:sonnet → 룰 갱신',
+            'mgr-gitnerd:sonnet → 커밋',
+            'qa-engineer:sonnet → 검증',
+          ].join('\n'),
+        },
+        { type: 'tool_use', id: 'e1b-1', name: 'Agent', input: {} },
+        { type: 'tool_use', id: 'e1b-2', name: 'Agent', input: {} },
+        { type: 'tool_use', id: 'e1b-3', name: 'Agent', input: {} },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('E2: still fires when a spawn has no announce line at all', async () => {
+    const sid = `e2-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Delegate the commit'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: silent spawn' },
+        { type: 'tool_use', id: 'e2-a', name: 'Agent', input: { subagent_type: 'mgr-gitnerd' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+  });
+
+  it('E3: stays silent when the Core-Rule prefix AND the bare line describe the same spawn', async () => {
+    const sid = `e3-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Delegate the commit'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: delegate commit' },
+        {
+          type: 'text',
+          text: '[claude][opus] → Tool: Agent\nmgr-gitnerd:sonnet → 커밋 위임',
+        },
+        { type: 'tool_use', id: 'e3-a', name: 'Agent', input: { subagent_type: 'mgr-gitnerd' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('E4: the companion line must NOT inflate the count and mask a separate omission', async () => {
+    // `→ Tool: Agent` + the bare companion line describe ONE call. A second, entirely
+    // unannounced Read must still be reported. The pre-fix additive formula would have
+    // scored announce=2 against ntools=2 and stayed silent.
+    const sid = `e4-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Delegate and read'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: delegate + read' },
+        {
+          type: 'text',
+          text: '[claude][opus] → Tool: Agent\nmgr-gitnerd:sonnet → 커밋 위임',
+        },
+        { type: 'tool_use', id: 'e4-a', name: 'Agent', input: { subagent_type: 'mgr-gitnerd' } },
+        { type: 'tool_use', id: 'e4-b', name: 'Read', input: { file_path: 'a.md' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+  });
+
+  it('E5: a markdown list marker before the line is NOT a spawn announce (anchor guard)', async () => {
+    // `- mgr-x:sonnet → desc` is prose in a bullet list, not an announce line. The anchor
+    // allows leading WHITESPACE only, so this must not be counted.
+    const sid = `e5-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Delegate the commit'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: bullet prose' },
+        { type: 'text', text: '- mgr-gitnerd:sonnet → 커밋 위임 (계획 항목)' },
+        { type: 'tool_use', id: 'e5-a', name: 'Agent', input: {} },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('R008 도구 식별 접두사 누락 1건');
+  });
+
+  it('E6: the numbered [N] form still wins over the single-spawn tier', async () => {
+    // Regression pin for N4: `[N] type:model → desc` lines match BOTH the numbered regex and
+    // (were the anchor looser) the single-spawn one. The numbered tier must remain the unit.
+    const sid = `e6-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Review both files'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (secretary-routing)\n└─ Task: parallel review' },
+        {
+          type: 'text',
+          text: [
+            '[secretary][opus] → Spawning:',
+            '[1] lang-golang-expert:sonnet → Go code review',
+            '[2] lang-python-expert:sonnet → Python code review',
+          ].join('\n'),
+        },
+        { type: 'tool_use', id: 'e6-1', name: 'Agent', input: {} },
+        { type: 'tool_use', id: 'e6-2', name: 'Agent', input: {} },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('source guard: single-spawn tier is anchored and the overlap is subtracted', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    const lines = src.split('\n');
+    const single = lines.find((l) => l.includes('as $an_spawn_single'));
+    expect(single).toBeDefined();
+    expect(single).toContain('test("^');
+    // The overlap with the Core-Rule `→ Tool: Agent` prefix must be SUBTRACTED, not added.
+    expect(src).toContain('$an_tool_agent');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 13: stdin guard — non-JSON / non-object input degrades silently
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 13: stdin guard', () => {
+  it('exits 0 with empty stdout on non-JSON stdin', async () => {
+    const r = await runScript('this is not json at all\n', testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stderr).not.toContain('[R007/R008 Advisory]');
+  });
+
+  it('exits 0 with empty stdout on empty stdin', async () => {
+    const r = await runScript('', testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('exits 0 with empty stdout on a JSON array (valid JSON, wrong shape)', async () => {
+    const r = await runScript('[1,2,3]', testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('exits 0 with empty stdout on a bare JSON string', async () => {
+    const r = await runScript('"just a string"', testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+});

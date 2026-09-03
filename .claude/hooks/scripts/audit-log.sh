@@ -13,12 +13,29 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
+# Guard: non-object stdin (non-JSON / JSON array / empty) — swallow and exit 0.
+# Hooks must never crash (R021); jq parse errors would otherwise abort under `set -e`. (#1650)
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
 # Extract fields from hook input
 tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // "unknown"')
-file_path=$(printf '%s\n' "$input" | jq -r '.tool_input.file_path // .tool_input.command // ""' | head -c 200)
+file_path=$(printf '%s\n' "$input" | jq -r '.tool_input.file_path? // .tool_input.command? // ""' | head -c 200)
 agent_type=$(printf '%s\n' "$input" | jq -r '.agent_type // "unknown"')
 model=$(printf '%s\n' "$input" | jq -r '.model // "unknown"')
-is_error=$(printf '%s\n' "$input" | jq -r '.tool_output.is_error // false')
+# Outcome signal. PostToolUse carries the result under `tool_response`, not
+# `tool_output` (measured 2026-09-03: 1764/1764 PostToolUse payloads had
+# `tool_response`, 0/1764 had `tool_output`), so the old `.tool_output.is_error`
+# read was always absent and every entry was logged as outcome=success.
+# Measured failure signals: `.tool_response.is_error` (generic) and
+# `.tool_response.interrupted` (present on every Bash response).
+# jq's `//` treats both null and false as absent, so this chain is an OR:
+# the result is true iff at least one signal is true.
+is_error=$(printf '%s\n' "$input" | jq -r '
+  (.tool_response?.is_error?
+    // .tool_response?.interrupted?
+    // .tool_output?.is_error?
+    // false) | tostring
+' 2>/dev/null) || is_error="false"
 timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # Determine outcome

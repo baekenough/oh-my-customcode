@@ -22,6 +22,11 @@
 #
 # Advisory-only: ALWAYS exits 0, NEVER blocks.
 #
+# Scope gate (#1650 D): the advisor judges the ORCHESTRATOR's turns only. When the hook fires
+# from INSIDE a subagent session (the payload carries `agent_id`) it exits immediately — see
+# the measured rationale at the gate itself. SubagentStart/SubagentStop are exempt because
+# `agent_id` is a required TARGET identifier there, not an in-subagent marker.
+#
 # ── Transcript schema (MEASURED 2026-08-05, #1553) ────────────────────────────────────
 # Claude Code JSONL lines do NOT carry a TOP-LEVEL `role`/`content`. The measured top-level
 # key set is:
@@ -134,14 +139,57 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 # ── 입력 필드 추출 (jq 1회 fork) ──
-meta=$(printf '%s' "$input" | jq -r '[(.session_id // ""), (.hook_event_name // ""), (.transcript_path // "")] | @tsv' 2>/dev/null) || exit 0
+# stdin 가드: 비-JSON이면 jq가 실패해 `|| exit 0`으로 무음 종료하고, 유효 JSON이지만 객체가
+# 아니면(배열/문자열/숫자) `select(type == "object")`가 걸러 빈 출력 → session_id 공백 → exit 0.
+# 두 경로 모두 추가 fork 없이 기존 1회 fork 안에서 처리한다(PostToolUse는 매 도구 호출마다 발화).
+meta=$(printf '%s' "$input" | jq -r 'select(type == "object") | [(.session_id // ""), (.hook_event_name // ""), (.transcript_path // ""), (.agent_id // "")] | @tsv' 2>/dev/null) || exit 0
 session_id=$(printf '%s' "$meta" | cut -f1)
 hook_event_name=$(printf '%s' "$meta" | cut -f2)
 transcript_in=$(printf '%s' "$meta" | cut -f3)
+agent_id=$(printf '%s' "$meta" | cut -f4)
 
 if [ -z "$session_id" ]; then
   exit 0
 fi
+
+# ── 서브에이전트 세션이면 즉시 종료 (#1650 D) ────────────────────────────────────────────
+# settings 훅은 서브에이전트 세션에서도 발화한다(서브에이전트의 매 도구 호출마다 PostToolUse).
+# 그 발화가 남기는 advisory 피드백이 서브에이전트의 마지막 턴들을 잠식해 완료 보고를 대체하는
+# 현상이 관측됐다(R020 8항 — 훅 피드백 잠식).
+#
+# 판별 신호 실측 (CC 2.1.259 바이너리의 훅 입력 zod 스키마 원문):
+#   agent_id: optional — "Subagent identifier. Present only when the hook fires from within a
+#   subagent (e.g., a tool called by an AgentTool worker). Absent for the main thread, even in
+#   --agent sessions. Use this field (not agent_type) to distinguish subagent calls from
+#   main-thread calls."
+# 그리고 공통 페이로드 빌더가 모든 훅 이벤트에 `agent_id: o?.agentId`를 실어 보낸다.
+# 즉 플랫폼이 명시적으로 지정한 판별 필드다. `agent_type`은 쓰지 않는다 — 같은 스키마가
+# "--agent로 시작한 세션의 메인 스레드에도(agent_id 없이) 존재한다"고 못박고 있다.
+#
+# 다른 두 후보가 왜 작동하지 않는지(실측):
+#   * 트랜스크립트의 isSidechain / agentId 레코드 필드 — 서브에이전트 전용 파일
+#     agent-<hex>.jsonl의 전 레코드에 존재하지만(실측 65/65, 3/3), 공통 빌더는
+#     `transcript_path: Lp(e.id)`로 **세션 id**에서 경로를 만들고 서브에이전트는 부모의
+#     session id를 공유한다(실측: agent-*.jsonl의 sessionId == 부모 UUID). 따라서 서브에이전트
+#     안에서 발화한 훅이 읽는 파일은 **부모의 메인 트랜스크립트**이고, 그 파일에는 isSidechain
+#     true도 agentId도 없다. 이것이 바로 잠식 경로다.
+#   * transcript_path의 `agent-*.jsonl` 경로 패턴 — 같은 이유로 그 경로가 오지 않는다
+#     (`agent_transcript_path`는 SubagentStop 페이로드에만 추가되는 별도 필드다).
+#
+# SubagentStart/SubagentStop은 예외다: 두 이벤트의 스키마는 agent_id를 **필수**로 두고 그 값은
+# "대상 서브에이전트"의 식별자다(`Ae().and({hook_event_name:"SubagentStop", agent_id, ...})`).
+# 즉 이 두 이벤트에서 agent_id는 "서브에이전트 안에서 발화했다"는 표지가 아니므로, 여기서
+# 게이트를 걸면 #1545 자율 루프 커버리지가 통째로 사라진다.
+case "$hook_event_name" in
+  SubagentStart|SubagentStop)
+    : # agent_id는 대상 식별자 — 판별 신호로 쓰지 않는다
+    ;;
+  *)
+    if [ -n "$agent_id" ]; then
+      exit 0
+    fi
+    ;;
+esac
 
 # hook_event_name이 없으면 hookSpecificOutput.hookEventName을 정확히 채울 수 없다.
 # 잘못된 기본값은 출력을 무효화하므로 추측하지 않고 즉시 종료한다 (fallback 제거).
@@ -221,9 +269,31 @@ split("\n")
        else 1 end) as $r007
     | ([ $blocks[] | select(.type? == "text") | (.text? // "") ] | join("\n") | split("\n")) as $lines
     | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_tool
+    # Core Rule 접두사 중 Agent 스폰을 가리키는 것만 따로 센다 — 아래 스폰 표기 중복 차감용.
+    | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool: ?Agent")) ] | length) as $an_tool_agent
     | ([ $lines[] | select(test("^[[:space:]]*\\[[0-9]+\\][[:space:]].*(→|->|—>)")) ] | length) as $an_spawn_item
+    # 단일 스폰 표기 (#1650 E): R008 §"Agent Tool Format"이 규정하는 `subagent_type:model → desc`
+    # 라인. 같은 절의 Parallel Spawn Prefix Rule은 **단일 스폰을 `[N]` 접두사에서 명시적으로
+    # 면제**하므로, 번호 없는 이 형태가 단일 스폰의 정규 표기다. $an_spawn_item은 번호 형태만
+    # 세므로 이 라인은 announce에 0을 기여했고, Agent tool_use가 그대로 위반으로 계상됐다.
+    # 줄 시작 앵커(선행 공백만 허용)는 필수다 — `- mgr-x:sonnet → ...` 같은 리스트 산문이나
+    # 문장 중간 인용이 announce로 계상되면 forward 판정(max(0, ntools - announce))에서 실제
+    # 누락을 가려버린다.
+    | ([ $lines[] | select(test("^[[:space:]]*[a-z][a-z0-9-]*:(haiku|sonnet|opus|fable|inherit)[[:space:]]*(→|->|—>)")) ] | length) as $an_spawn_single
     | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Spawning:")) ] | length) as $an_spawn_hdr
-    | ($an_tool + (if $an_spawn_item > 0 then $an_spawn_item else $an_spawn_hdr end)) as $announce
+    # 스폰 표기의 단위는 세분화된 것 우선: 번호 라인 > 단일 스폰 라인 > Spawning 헤더.
+    | (if $an_spawn_item > 0 then $an_spawn_item
+       elif $an_spawn_single > 0 then $an_spawn_single
+       else $an_spawn_hdr end) as $an_spawn
+    # 중복 계수 차감 (#1650 E): 같은 턴에 Core Rule `→ Tool: Agent` 접두사가 함께 있으면 스폰
+    # 표기 라인은 **같은 호출의 동반 라인**이다 — `→ Target:`이 `→ Tool:`의 동반 라인이라 세지
+    # 않는 것과 동일한 논리다. 더해버리면 한 호출이 2로 계상돼, 같은 턴의 다른 진짜 누락을
+    # 가린다(forward는 max(0, ntools - announce)라 과대 announce는 조용한 마스킹이 된다).
+    # 그래서 스폰 기여분에서 `→ Tool: Agent` 라인 수를 빼되 0에서 바닥을 친다 — 빼기만 하므로
+    # announce가 늘지 않아 신규 오탐은 생기지 않는다. 대신 구식의 과대 announce(접두사 +
+    # 항목 이중 계수)가 가리던 진짜 누락 — 예: 접두사 1 + [1] 항목 1 + tools=(Agent, Read)에서
+    # 미announce Read — 은 새로 발화한다(의도된 동작, v1.1.62 적대적 리뷰 재현 C1/C2).
+    | ($an_tool + (if $an_spawn > $an_tool_agent then $an_spawn - $an_tool_agent else 0 end)) as $announce
     | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) ] | length) as $ntools
     # 전체 tool_use(Skill 포함)가 0건인 턴은 forward 판정을 무조건 0으로 고정한다(#1625
     # 찐빠 #3, 이슈 제안 그대로). $ntools(Skill 제외) 기반 산식은 정상 입력에서는 이미

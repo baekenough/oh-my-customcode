@@ -10,6 +10,10 @@ command -v jq >/dev/null 2>&1 || { cat; exit 0; }
 
 input=$(cat)
 
+# Guard: non-object stdin (non-JSON / JSON array / empty) — swallow and exit 0.
+# Hooks must never crash (R021); jq parse errors would otherwise abort under `set -e`. (#1650)
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
 agent_type=$(printf '%s\n' "$input" | jq -r '.agent_type // "unknown"')
 model=$(printf '%s\n' "$input" | jq -r '.model // "inherit"')
 description=$(printf '%s\n' "$input" | jq -r '.description // ""' | head -c 80)

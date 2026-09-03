@@ -799,10 +799,13 @@ describe('agent-teams-advisor.sh', () => {
     expect(result.exitCode).toBe(0);
   });
 
-  it('should exit non-zero on malformed JSON due to set -euo pipefail', async () => {
-    // The script uses set -euo pipefail; jq parse error causes non-zero exit.
+  // Superseded by issue #1650 B: a hook must NEVER crash on malformed stdin.
+  // Previously this script exited 5 (jq parse error propagated through
+  // `set -euo pipefail`); it now swallows non-object stdin and exits 0.
+  it('should exit 0 and emit nothing on malformed JSON (#1650 B)', async () => {
     const result = await runHookScript(AGENT_TEAMS_ADVISOR_SCRIPT, 'not json');
-    expect(result.exitCode).not.toBe(0);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe('');
   });
 
   it('should truncate long descriptions to 60 characters in warning', async () => {
@@ -2044,5 +2047,533 @@ describe('Script file validation', () => {
       expect(exitCode).toBe(0);
       expect(stderr).toBe('');
     }
+  });
+});
+
+// -------------------------------------------------------------------
+// Issue #1650 B: non-object stdin must never crash a hook
+// -------------------------------------------------------------------
+// Measured: `printf 'not json' | bash <hook>.sh` exited 5 (jq parse error
+// propagated through `set -euo pipefail`) for 10 of 40 scripts. The hook
+// protocol requires an `exit 0` swallow (R021 — hooks must never crash), so
+// each affected script now guards its stdin immediately after `input=$(cat)`:
+//
+//   printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+//
+// The same crash class also fired on type-shape mismatch (tool_input /
+// tool_output arriving as a scalar instead of an object), fixed with jq's `?`
+// error-suppression operator on nested path accesses.
+describe('Issue #1650 B: non-object stdin swallow (exit 0, no stdout)', () => {
+  const HARDENED_SCRIPTS = [
+    'agent-start-recorder.sh',
+    'agent-teams-advisor.sh',
+    'audit-log.sh',
+    'content-hash-validator.sh',
+    'model-escalation-advisor.sh',
+    'playwright-compress.sh',
+    'schema-validator.sh',
+    'secret-filter.sh',
+    'session-reflection.sh',
+    'task-outcome-recorder.sh',
+  ];
+
+  const NON_OBJECT_INPUTS: Array<[string, string]> = [
+    ['non-JSON text', 'not json'],
+    ['JSON array', '[]'],
+    ['JSON array with elements', '[{"tool_name":"Read"}]'],
+    ['empty stdin', ''],
+    ['bare JSON string', '"hello"'],
+    ['bare JSON number', '42'],
+  ];
+
+  // --- Negative cases: garbage stdin -> rc 0, empty stdout, no crash ---
+
+  for (const scriptName of HARDENED_SCRIPTS) {
+    for (const [label, payload] of NON_OBJECT_INPUTS) {
+      it(`${scriptName}: exits 0 with empty stdout on ${label}`, async () => {
+        const result = await runHookScript(join(SCRIPTS_DIR, scriptName), payload);
+        expect(result.exitCode).toBe(0);
+        expect(result.stdout).toBe('');
+        expect(result.stderr).not.toContain('parse error');
+      });
+    }
+  }
+
+  // --- Positive cases: a well-formed object still passes through unchanged ---
+
+  for (const scriptName of HARDENED_SCRIPTS) {
+    it(`${scriptName}: passes a well-formed object through unchanged`, async () => {
+      const input = JSON.stringify({
+        tool_name: 'Read',
+        agent_type: 'general-purpose',
+        model: 'sonnet',
+        description: 'issue-1650 positive case',
+        tool_input: { file_path: '/nonexistent/issue-1650-probe.txt' },
+        tool_output: { is_error: false },
+      });
+      const result = await runHookScript(join(SCRIPTS_DIR, scriptName), input);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(input);
+    });
+  }
+
+  // --- Positive case: scalar-shaped tool_input/tool_output must not crash jq ---
+
+  for (const scriptName of HARDENED_SCRIPTS) {
+    it(`${scriptName}: survives scalar-shaped tool_input/tool_output without crashing`, async () => {
+      const input = JSON.stringify({
+        tool_name: 'Read',
+        agent_type: 'general-purpose',
+        model: 'sonnet',
+        tool_input: 'scalar-instead-of-object',
+        tool_output: 'scalar-instead-of-object',
+      });
+      const result = await runHookScript(join(SCRIPTS_DIR, scriptName), input);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(input);
+      expect(result.stderr).not.toContain('Cannot index');
+    });
+  }
+
+  // --- Structural regression guard: the guard line must stay present ---
+
+  it('every hardened script keeps the non-object stdin guard immediately after `input=$(cat)`', async () => {
+    const missing: string[] = [];
+    for (const scriptName of HARDENED_SCRIPTS) {
+      const content = await readFile(join(SCRIPTS_DIR, scriptName), 'utf-8');
+      const lines = content.split('\n');
+      const anchor = lines.findIndex((l) => l.trim() === 'input=$(cat)');
+      if (anchor === -1) {
+        missing.push(`${scriptName}: no \`input=$(cat)\` anchor`);
+        continue;
+      }
+      const window = lines.slice(anchor, anchor + 6).join('\n');
+      if (!window.includes(`jq -e 'type=="object"'`)) {
+        missing.push(`${scriptName}: guard not found within 5 lines of anchor`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+
+  // --- Guard must not become a detection bypass (security-hook carve-out) ---
+  //
+  // secret-filter.sh is a security hook: the non-object guard rejects only stdin
+  // a scanner could never read anyway. A well-formed object MUST still be scanned
+  // and still warn. Without this positive case, a future "harden" edit could turn
+  // the guard into a silent bypass and every negative case would stay green.
+
+  it('secret-filter.sh still detects secrets in a well-formed object after the guard', async () => {
+    const input = JSON.stringify({
+      tool_name: 'Bash',
+      tool_output: { output: 'export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE' },
+    });
+    const result = await runHookScript(join(SCRIPTS_DIR, 'secret-filter.sh'), input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('[Security]');
+    expect(result.stderr).toContain('AWS Access Key');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('schema-validator.sh still emits dangerous-pattern warnings after the guard', async () => {
+    const input = JSON.stringify({
+      tool_name: 'Bash',
+      tool_input: { command: 'sudo rm -rf /etc' },
+    });
+    // cwd MUST be the repo root: the script resolves `.claude/schemas/tool-inputs.json`
+    // relative to cwd and passes stdin straight through when that file is absent.
+    const repoRoot = resolve(import.meta.dir, '../../..');
+    const result = await runHookScript(
+      join(SCRIPTS_DIR, 'schema-validator.sh'),
+      input,
+      {},
+      repoRoot
+    );
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('[Schema]');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  // --- Regression: `set -euo pipefail` + no-match grep aborted the hook (rc=1) ---
+  //
+  // Measured before the fix: task-outcome-recorder.sh exited 1 on empty stdin AND
+  // on a well-formed object carrying no skill name, because `grep -oiE ... | head -1`
+  // exits 1 when nothing matches and pipefail propagates it out of the assignment.
+
+  it('task-outcome-recorder.sh exits 0 on a well-formed object with no skill name', async () => {
+    const input = JSON.stringify({
+      tool_input: { subagent_type: 'general-purpose', description: 'plain description' },
+      tool_output: { is_error: false },
+    });
+    const result = await runHookScript(join(SCRIPTS_DIR, 'task-outcome-recorder.sh'), input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout.trim()).toBe(input);
+  });
+});
+
+// -------------------------------------------------------------------
+// secret-filter.sh: private-key leading-dash grep option-injection bypass
+// -------------------------------------------------------------------
+//
+// Measured before the fix: the private-key pattern `-----BEGIN.*PRIVATE
+// KEY-----` starts with `-`, so `grep -qE 'PATTERN'` (no `--`) parses the
+// pattern text itself as a run of short options. grep aborts with
+// `unrecognized option` (rc=2), which the `if grep -qE ...; then` guard
+// silently absorbs as "no match" — real PEM private-key blocks pass through
+// the hook with zero [Security] warning. Only this one pattern starts with
+// `-`; the other 9 secret patterns in the file do not exhibit the bug.
+describe('secret-filter.sh: private-key detection (leading-dash grep bypass)', () => {
+  it('detects a PEM RSA private key block and emits a [Security] warning', async () => {
+    const pemBlock = [
+      '-----BEGIN RSA PRIVATE KEY-----',
+      'MIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu',
+      'KUpRKfFLfRYC9AIKjbJTWit+CqvjWYzvQwECAwEAAQ==',
+      '-----END RSA PRIVATE KEY-----',
+    ].join('\n');
+    const input = JSON.stringify({
+      tool_name: 'Bash',
+      tool_output: { output: pemBlock },
+    });
+    const result = await runHookScript(join(SCRIPTS_DIR, 'secret-filter.sh'), input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('[Security]');
+    expect(result.stderr).toContain('private key');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('does not flag a plain certificate block (negative control — not a private key)', async () => {
+    const certBlock = [
+      '-----BEGIN CERTIFICATE-----',
+      'MIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu',
+      '-----END CERTIFICATE-----',
+    ].join('\n');
+    const input = JSON.stringify({
+      tool_name: 'Bash',
+      tool_output: { output: certBlock },
+    });
+    const result = await runHookScript(join(SCRIPTS_DIR, 'secret-filter.sh'), input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).not.toContain('private key');
+    expect(result.stdout.trim()).toBe(input);
+  });
+});
+
+// -------------------------------------------------------------------
+// PostToolUse payload field name: `tool_response`, NOT `tool_output`
+// -------------------------------------------------------------------
+//
+// Measured 2026-09-03 over 1764 PostToolUse payloads echoed by this project's
+// own pass-through hooks into the session transcripts
+// (~/.claude/projects/<slug>/*.jsonl -> records with type "attachment",
+// attachment.type == "hook_success", attachment.stdout == the hook's stdin
+// verbatim):
+//
+//   top-level keys : session_id, transcript_path, cwd, prompt_id,
+//                    permission_mode, effort, hook_event_name, tool_name,
+//                    tool_input, tool_response, tool_use_id, duration_ms
+//                    (+ scratchpad_dir on 1187 of them)
+//   `tool_output`  : present in 0 of 1764.  `tool_response`: 1764 of 1764.
+//
+//   Bash  .tool_response = {stdout, stderr, interrupted, isImage,
+//                           noOutputExpected} (+ backgroundTaskId /
+//                           returnCodeInterpretation / persistedOutputPath)
+//   Read  .tool_response = {type:"text", file:{filePath, content}}
+//   Write .tool_response = {type:"create", filePath, content,
+//                           originalFile, structuredPatch, userModified}
+//   Agent .tool_response = {agentId, status, description, prompt,
+//                           resolvedModel, isAsync, outputFile,
+//                           canReadOutputFile}
+//
+// The CC 2.1.259 binary agrees: its embedded hook reference documents
+//   "tool_response": { "success": true }  // PostToolUse only
+// and its own example hooks read `.tool_response.filePath`. (The 2 `tool_output`
+// strings in the binary are unrelated — a telemetry event name and an HTTP-hook
+// error message.)
+//
+// Before the fix, all three scripts read `.tool_output...`, which is never
+// present on PostToolUse: secret-filter.sh saw output="" and returned before
+// scanning a single pattern (AWS keys / private keys / PATs all passed through
+// unflagged), audit-log.sh recorded outcome=success unconditionally, and
+// playwright-compress.sh never compressed anything.
+describe('PostToolUse `tool_response` payload field (measured shape)', () => {
+  const SECRET_FILTER = join(SCRIPTS_DIR, 'secret-filter.sh');
+  const AUDIT_LOG = join(SCRIPTS_DIR, 'audit-log.sh');
+  const PLAYWRIGHT_COMPRESS = join(SCRIPTS_DIR, 'playwright-compress.sh');
+
+  const AWS_KEY = 'AKIAIOSFODNN7EXAMPLE';
+  const GH_PAT = `ghp_${'a1B2c3D4e5F6g7H8i9J0kLmNoPqRsTuVwXyZ'.slice(0, 36)}`;
+  const PEM_KEY = [
+    '-----BEGIN RSA PRIVATE KEY-----',
+    'MIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu',
+    'KUpRKfFLfRYC9AIKjbJTWit+CqvjWYzvQwECAwEAAQ==',
+    '-----END RSA PRIVATE KEY-----',
+  ].join('\n');
+
+  // ---------------- secret-filter.sh: positive cases (measured shapes) -------
+
+  it('secret-filter.sh detects an AWS key in Bash `.tool_response.stdout`', async () => {
+    const input = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'cat ~/.aws/credentials' },
+      tool_response: {
+        stdout: `aws_access_key_id = ${AWS_KEY}`,
+        stderr: '',
+        interrupted: false,
+        isImage: false,
+        noOutputExpected: false,
+      },
+    });
+    const result = await runHookScript(SECRET_FILTER, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('[Security]');
+    expect(result.stderr).toContain('AWS Access Key');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('secret-filter.sh detects a PEM private key in Read `.tool_response.file.content`', async () => {
+    const input = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Read',
+      tool_input: { file_path: '/home/u/.ssh/id_rsa' },
+      tool_response: {
+        type: 'text',
+        file: { filePath: '/home/u/.ssh/id_rsa', content: PEM_KEY },
+      },
+    });
+    const result = await runHookScript(SECRET_FILTER, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('[Security]');
+    expect(result.stderr).toContain('private key');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('secret-filter.sh detects a GitHub PAT in Write `.tool_response.content`', async () => {
+    const input = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Write',
+      tool_input: { file_path: '/tmp/ci.env' },
+      tool_response: {
+        type: 'create',
+        filePath: '/tmp/ci.env',
+        content: `GITHUB_TOKEN=${GH_PAT}\n`,
+        userModified: false,
+      },
+    });
+    const result = await runHookScript(SECRET_FILTER, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('[Security]');
+    expect(result.stderr).toContain('GitHub PAT');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('secret-filter.sh detects a secret in Bash `.tool_response.stderr`', async () => {
+    const input = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_response: { stdout: '', stderr: `auth failed for ${AWS_KEY}`, interrupted: false },
+    });
+    const result = await runHookScript(SECRET_FILTER, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('AWS Access Key');
+  });
+
+  it('secret-filter.sh detects a secret in a string-shaped `.tool_response` (MCP-style)', async () => {
+    const input = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'mcp__example__fetch',
+      tool_response: `token: ${GH_PAT}`,
+    });
+    const result = await runHookScript(SECRET_FILTER, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('GitHub PAT');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('secret-filter.sh detects a secret in an MCP `.tool_response.content[].text` array', async () => {
+    const input = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'mcp__example__read',
+      tool_response: {
+        content: [
+          { type: 'text', text: 'header line' },
+          { type: 'text', text: `aws_access_key_id = ${AWS_KEY}` },
+        ],
+      },
+    });
+    const result = await runHookScript(SECRET_FILTER, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('AWS Access Key');
+  });
+
+  // ---------------- secret-filter.sh: negative control ----------------------
+
+  it('secret-filter.sh stays silent on a clean `.tool_response` (negative control)', async () => {
+    const input = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_response: {
+        stdout: 'total 8\ndrwxr-xr-x  2 u  staff   64 Sep  3 10:00 .\n',
+        stderr: '',
+        interrupted: false,
+      },
+    });
+    const result = await runHookScript(SECRET_FILTER, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).not.toContain('[Security]');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  // ---------------- secret-filter.sh: legacy fallback must keep working -----
+
+  it('secret-filter.sh still detects secrets via the legacy `.tool_output.output` fallback', async () => {
+    const input = JSON.stringify({
+      tool_name: 'Bash',
+      tool_output: { output: `export AWS_ACCESS_KEY_ID=${AWS_KEY}` },
+    });
+    const result = await runHookScript(SECRET_FILTER, input);
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toContain('AWS Access Key');
+    expect(result.stdout.trim()).toBe(input);
+  });
+
+  // ---------------- audit-log.sh: outcome must reflect real failures --------
+
+  describe('audit-log.sh outcome field', () => {
+    let auditHome: string;
+
+    beforeEach(async () => {
+      auditHome = join(
+        tmpdir(),
+        `audit-home-${process.pid}-${Math.random().toString(36).slice(2)}`
+      );
+      await mkdir(join(auditHome, '.claude'), { recursive: true });
+    });
+
+    afterEach(async () => {
+      await rm(auditHome, { recursive: true, force: true });
+    });
+
+    async function runAudit(payload: unknown): Promise<Record<string, unknown>> {
+      const input = JSON.stringify(payload);
+      const result = await runHookScript(AUDIT_LOG, input, { HOME: auditHome });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(input);
+      const raw = await readFile(join(auditHome, '.claude', 'audit.jsonl'), 'utf-8');
+      const lines = raw.trim().split('\n').filter(Boolean);
+      return JSON.parse(lines[lines.length - 1]) as Record<string, unknown>;
+    }
+
+    it('records outcome=error from `.tool_response.is_error`', async () => {
+      const entry = await runAudit({
+        hook_event_name: 'PostToolUse',
+        tool_name: 'Write',
+        tool_input: { file_path: '/tmp/x.txt' },
+        tool_response: { is_error: true, content: 'EACCES: permission denied' },
+      });
+      expect(entry.outcome).toBe('error');
+    });
+
+    it('records outcome=error from Bash `.tool_response.interrupted`', async () => {
+      const entry = await runAudit({
+        hook_event_name: 'PostToolUse',
+        tool_name: 'Bash',
+        tool_input: { command: 'sleep 600' },
+        tool_response: { stdout: '', stderr: '', interrupted: true, isImage: false },
+      });
+      expect(entry.outcome).toBe('error');
+    });
+
+    it('records outcome=success on a clean measured `.tool_response`', async () => {
+      const entry = await runAudit({
+        hook_event_name: 'PostToolUse',
+        tool_name: 'Bash',
+        tool_input: { command: 'git status --short' },
+        tool_response: { stdout: '', stderr: '', interrupted: false, isImage: false },
+      });
+      expect(entry.outcome).toBe('success');
+      expect(entry.tool).toBe('Bash');
+    });
+
+    it('still honours the legacy `.tool_output.is_error` fallback', async () => {
+      const entry = await runAudit({
+        tool_name: 'Edit',
+        tool_input: { file_path: '/tmp/y.txt' },
+        tool_output: { is_error: true },
+      });
+      expect(entry.outcome).toBe('error');
+    });
+  });
+
+  // ---------------- playwright-compress.sh: must actually compress ----------
+
+  describe('playwright-compress.sh compression path', () => {
+    let stubDir: string;
+    const STUB_SUMMARY = 'STUBBED-HAIKU-SUMMARY: page with interactive elements';
+
+    beforeAll(async () => {
+      stubDir = join(tmpdir(), `claude-stub-${process.pid}`);
+      await mkdir(stubDir, { recursive: true });
+      // Offline stub for `claude -p --model haiku` so the compression branch is
+      // deterministic and never reaches the network.
+      await writeFile(
+        join(stubDir, 'claude'),
+        `#!/bin/bash\ncat >/dev/null\nprintf '%s\\n' '${STUB_SUMMARY}'\n`,
+        { mode: 0o755 }
+      );
+    });
+
+    afterAll(async () => {
+      await rm(stubDir, { recursive: true, force: true });
+    });
+
+    /** >3000 chars of page-like text carrying a ref= attribute. */
+    function bigPage(): string {
+      return `<button ref="e42">Submit</button>\n${'lorem ipsum dolor sit amet '.repeat(150)}`;
+    }
+
+    it('compresses a large measured `.tool_response` payload', async () => {
+      const page = bigPage();
+      expect(page.length).toBeGreaterThan(3000);
+      const input = JSON.stringify({
+        hook_event_name: 'PostToolUse',
+        tool_name: 'mcp__claude-in-chrome__read_page',
+        tool_response: { content: [{ type: 'text', text: page }] },
+      });
+      const result = await runHookScript(PLAYWRIGHT_COMPRESS, input, {
+        PATH: `${stubDir}:${process.env.PATH}`,
+      });
+      expect(result.exitCode).toBe(0);
+      const out = JSON.parse(result.stdout) as Record<string, unknown>;
+      expect(String(out.updatedMCPToolOutput)).toContain(STUB_SUMMARY);
+      // ref= values must survive the summarisation
+      expect(String(out.updatedMCPToolOutput)).toContain('ref="e42"');
+    });
+
+    it('still compresses a large legacy `.tool_output` payload (fallback)', async () => {
+      const page = bigPage();
+      const input = JSON.stringify({
+        tool_name: 'mcp__claude-in-chrome__read_page',
+        tool_output: page,
+      });
+      const result = await runHookScript(PLAYWRIGHT_COMPRESS, input, {
+        PATH: `${stubDir}:${process.env.PATH}`,
+      });
+      expect(result.exitCode).toBe(0);
+      const out = JSON.parse(result.stdout) as Record<string, unknown>;
+      expect(String(out.updatedMCPToolOutput)).toContain(STUB_SUMMARY);
+    });
+
+    it('passes a small `.tool_response` payload through untouched', async () => {
+      const input = JSON.stringify({
+        hook_event_name: 'PostToolUse',
+        tool_name: 'mcp__claude-in-chrome__read_page',
+        tool_response: { content: [{ type: 'text', text: 'tiny page' }] },
+      });
+      const result = await runHookScript(PLAYWRIGHT_COMPRESS, input, {
+        PATH: `${stubDir}:${process.env.PATH}`,
+      });
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.trim()).toBe(input);
+    });
   });
 });

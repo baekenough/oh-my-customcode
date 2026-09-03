@@ -11,28 +11,35 @@ command -v jq >/dev/null 2>&1 || exit 0
 
 input=$(cat)
 
-# Extract task info — support both PostToolUse (tool_input.*) and SubagentStop (top-level) shapes
-agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // .agent_type // "unknown"')
-model=$(printf '%s\n' "$input" | jq -r '.tool_input.model // .model // "inherit"')
-description=$(printf '%s\n' "$input" | jq -r '.tool_input.description // .description // ""' | head -c 80)
+# Non-object stdin guard (#1650 B): a hook must never crash on garbage stdin.
+# jq's parse error propagates through `set -euo pipefail` as rc=5 without this.
+printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || exit 0
+
+# Extract task info — support both PostToolUse (tool_input.*) and SubagentStop (top-level) shapes.
+# `?` suppresses "Cannot index string with ..." when tool_input arrives as a scalar.
+agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type? // .agent_type? // "unknown"')
+model=$(printf '%s\n' "$input" | jq -r '.tool_input.model? // .model? // "inherit"')
+description=$(printf '%s\n' "$input" | jq -r '.tool_input.description? // .description? // ""' | head -c 80)
 
 # Extract skill name from description or prompt
 skill_name=""
+# `|| true`: a no-match grep exits 1 and `set -euo pipefail` would abort the hook
+# (measured rc=1 on empty stdin AND on a well-formed object with no skill name).
 if echo "$description" | grep -qiE '(skill:|routing|→.*skill)'; then
-  skill_name=$(echo "$description" | grep -oiE '[a-z]+-[a-z]+(-[a-z]+)*-?(routing|skill|practices|detection|decomposition|orchestration|pipeline|guards|cycle|plan|review|refactor|publish|version|audit|exec|analyze|bundle|report|setup|watch|lists|status|help|save|recall)' | head -1)
+  skill_name=$(echo "$description" | grep -oiE '[a-z]+-[a-z]+(-[a-z]+)*-?(routing|skill|practices|detection|decomposition|orchestration|pipeline|guards|cycle|plan|review|refactor|publish|version|audit|exec|analyze|bundle|report|setup|watch|lists|status|help|save|recall)' | head -1 || true)
 fi
 # Fallback: check prompt field for "Skill: {name}" pattern
 if [ -z "$skill_name" ]; then
-  prompt=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt // ""' | head -c 500)
-  skill_name=$(echo "$prompt" | grep -oiE 'Skill:\s*[a-z]+-[a-z]+(-[a-z]+)*' | sed 's/[Ss]kill:\s*//' | head -1)
+  prompt=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt? // ""' | head -c 500)
+  skill_name=$(echo "$prompt" | grep -oiE 'Skill:\s*[a-z]+-[a-z]+(-[a-z]+)*' | sed 's/[Ss]kill:\s*//' | head -1 || true)
 fi
 
 # Determine outcome
-is_error=$(printf '%s\n' "$input" | jq -r '.tool_output.is_error // false')
+is_error=$(printf '%s\n' "$input" | jq -r '.tool_output.is_error? // false')
 
 if [ "$is_error" = "true" ]; then
   outcome="failure"
-  error_summary=$(printf '%s\n' "$input" | jq -r '.tool_output.output // ""' | head -c 200)
+  error_summary=$(printf '%s\n' "$input" | jq -r '.tool_output.output? // ""' | head -c 200)
 else
   outcome="success"
   error_summary=""
