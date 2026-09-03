@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.62",
-  "generatedAt": "2026-09-03T03:03:16.334Z",
-  "templateVersion": "1.1.62",
+  "generatorVersion": "1.1.63",
+  "generatedAt": "2026-09-03T04:24:34.187Z",
+  "templateVersion": "1.1.63",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "f75d3b7466b67b9e06fb9cb393fee75c1d34bfc11ddfe12a7eea0ab6e8f6a25f",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "56fd65bd0fd83946bd0b407ab28750197b869e8847c758ba78683a0e97517bd7",
-      "size": 72706,
+      "templateHash": "e103d6bf2c4864f1bbcc904d3f09f09ce371b971bbc7bed95aafd3d8c3ade8e4",
+      "size": 73364,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -95,13 +95,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
-      "templateHash": "fe5bf5e5bf64305d13aaaa389a74a7e99c8768fe75dd57a5fd3b32dc32b1840d",
-      "size": 11608,
+      "templateHash": "2255eec219f7139bd0aed6f11853e1adaed21108b60a4549103f47d4a537e2cd",
+      "size": 13257,
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "40a17bc1b44e558947b06740ac410922b069ff37b6ec770844de6254f4371bf3",
-      "size": 18463,
+      "templateHash": "d05df90fad113102d08752b11118516cff6d22c8bc0dc8402f38277881d33b64",
+      "size": 19310,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "551f4047fe13e6c6b4a49b756bb98c5ec1a468e5c46a9dce72b2f95279c6ba3e",
-      "size": 56596,
+      "templateHash": "8bec17c07d7cc3efdfb8148386e287f5a75e2f7620630dc513acb8d408c29d80",
+      "size": 57936,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "dca4797e26901c81878383a121a33319e21c21c83747bc280a7891318d4aa6b3",
-      "size": 44215,
+      "templateHash": "972af1d17f11dee883e96bd5b5352e2761ad4ba7ea90d9b6c53062926566558d",
+      "size": 45161,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -785,8 +785,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "7f36423f2e52e9e0d6df2c5c2c84d5e62dba789aa7b58a45bdd1da59ee33fbbd",
-      "size": 14194,
+      "templateHash": "991bb857f8d7b57bc1f80803724895c3ed41ce2c845f049f68f84df1911d4ecc",
+      "size": 14679,
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
@@ -1200,13 +1200,13 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/playwright-compress.sh": {
-      "templateHash": "9adbacf8fff07b407e06ecf0d947f894b6e846b23b6bcf70d48d6e769c4e08c0",
-      "size": 2959,
+      "templateHash": "0bd929f559ccc276a61fd921fe6f4d12d08a81d69374db015d4ba92117905a12",
+      "size": 3456,
       "component": "hooks"
     },
     ".claude/hooks/scripts/secret-filter.sh": {
-      "templateHash": "06ec12a5c29f960aa801e28b94465910150bc313163b5b7ac7d4cace55a44022",
-      "size": 5047,
+      "templateHash": "048514b25399930e75fb0179d4d75007c474871c82aae0b65c06d9e1e898e8db",
+      "size": 5492,
       "component": "hooks"
     },
     ".claude/hooks/scripts/fail-axis-cause-advisor.sh": {
@@ -1215,8 +1215,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/model-escalation-advisor.sh": {
-      "templateHash": "8d120b19c8ac446d152adece140956cf88721d4f8072c00438a9320679bfc2dc",
-      "size": 3774,
+      "templateHash": "c805c9447ec2ed8eac961acdb63f79adf28b3f39e41521c12ccf72a3f68ca4fa",
+      "size": 4429,
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-dev-token-tracker.sh": {
@@ -1230,13 +1230,13 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/git-delegation-guard.sh": {
-      "templateHash": "1631eed539bf0dd02381b118faef57122ea61e1f8d0e0556227f644ef82a5f10",
-      "size": 2011,
+      "templateHash": "56bb6a056cbf6db57c8511a0a730e5af93ea4dff80ac816554d52f8b29f931c2",
+      "size": 2790,
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "3ea04de5c35fbc5eb2452598b2455576b6af962df66f385040acb3098996b408",
-      "size": 28301,
+      "templateHash": "91a7512389ea47d5e6f52dc5f26d9bd2c9ce34962ce067fc844f77796ca8409b",
+      "size": 28613,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix-prompt.sh": {
@@ -1250,13 +1250,13 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "ae4aec6a3ae44270f31b4c9b58cf7776d4b10b859d432ae2d1173bdf31f49087",
-      "size": 32717,
+      "templateHash": "2482c3d5c036f4cdadda7855c18550700043ca756e89a86b998a303a0d218057",
+      "size": 34542,
       "component": "hooks"
     },
     ".claude/hooks/scripts/failure-ledger.sh": {
-      "templateHash": "28e8639561ddae95294ff18ed45e2051c024f6be1e994e504387a21c1779156a",
-      "size": 3394,
+      "templateHash": "db1a09cf53439ccfe74c5e1d3f958a1df7fd7e24ec57259e7ce943ab47178722",
+      "size": 3825,
       "component": "hooks"
     },
     ".claude/hooks/scripts/agent-start-recorder.sh": {
@@ -1285,8 +1285,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/task-outcome-recorder.sh": {
-      "templateHash": "f06991b04330642d00e2f59e813823eb33705aaedfb5a78737215d7da56f7a49",
-      "size": 5257,
+      "templateHash": "077dfb096334d07823ae5fa4078877929bfba7006f25779087e45fbf79b1b680",
+      "size": 9750,
       "component": "hooks"
     },
     ".claude/hooks/scripts/adaptive-harness-scan.sh": {
@@ -1305,8 +1305,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/audit-log.sh": {
-      "templateHash": "5349418e1c25630eab89df829ec9a20cdae652f274424a756251d504e1ed2435",
-      "size": 3074,
+      "templateHash": "d7ee41ff4918306b39bbbfe9222ee23cdfb19967e009ad3099dc6f7b7bd2df84",
+      "size": 4128,
       "component": "hooks"
     },
     ".claude/hooks/scripts/context-budget-advisor.sh": {
