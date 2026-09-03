@@ -56,16 +56,34 @@ Extracted from the manual pattern used in Session 114 (2026-06-09), which ran 2 
 Each FSD iteration:
 
 ```
+[FSD Entry]              → write marker /tmp/.claude-fsd-$PPID
 [FSD Iteration N]
 ├── /pipeline auto-dev     → one release (PR → merge → npm publish → milestone close)
 ├── /homework              → retrospective 찐빠 audit gate (pauses for user confirmation if needed)
 ├── Open PR processing     → handle all open PRs (dependabot included)
-└── Check: eligible issues = 0 AND open PRs = 0?
-    ├── YES → [FSD Done] converged naturally
-    └── NO  → next iteration
+└── Check convergence: eligible issues = 0 AND open PRs = 0?
+    ├── YES → [FSD Done] converged naturally → rm -f /tmp/.claude-fsd-$PPID
+    └── NO  → cap reached or classifier block? → YES → [FSD Stop] → rm -f /tmp/.claude-fsd-$PPID
+                                                → NO  → next iteration (re-write marker first)
 ```
 
 Issue eligibility follows `/pipeline auto-dev` label selection exactly — **included**: `verify-ready`, unlabeled candidates; **excluded**: `verify-done`, `needs-review`, `decision-needed`.
+
+### Unattended-Mode Marker — Deterministic Detection Signal (#1650 C)
+
+`[[pipeline]]` `auto-dev`'s scope-selection Step 3 needs to know whether the run is unattended (to defer `.claude/hooks/**` approval requests). Until v1.1.60 this was decided by prose inference ("entered via `/fsd`"), which is not measurable. FSD now writes a marker file at entry:
+
+```bash
+printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "/tmp/.claude-fsd-$PPID"
+```
+
+`$PPID` inside the Bash tool is the Claude Code process and is stable across calls (measured: identical across two calls). The marker is runtime state scoped by process ID under `/tmp` outside the project tree, so it falls under [[r010]]'s "Exception: Simple Tasks" **PPID-scoped `/tmp` runtime state marker carve-out** — the orchestrator writes/removes it directly, not via delegation. It is a distinct class from structured pipeline state (`/tmp/.claude-pipeline-{name}-{PPID}.json`), which remains delegated to `tracker-checkpoint` because its content requires validation rather than being a one-line signal.
+
+`pipeline auto-dev`'s pre-triage Phase 0.6 measures the marker (or the `OMCUSTOM_UNATTENDED=1` env fallback for paths like `claude -p`/scheduled runs where a marker can't be pre-written) to derive `unattended_mode` state; scope-selection Step 3 uses that state to decide hooks-path deferral.
+
+**Re-written every iteration + 6-hour stale guard:** at the start of every iteration FSD re-runs the same `printf` command to refresh the marker's mtime. Phase 0.6 treats a marker older than 360 minutes (6 hours) as **absent**, not present — a guard against a marker surviving a process crash or PID reuse and causing a later *manual* `/pipeline auto-dev` invocation in the same session to be misclassified as unattended.
+
+**Cleared on every exit path:** `command rm -f "/tmp/.claude-fsd-$PPID"` runs regardless of how the loop ends — natural convergence (`[FSD Done]`), the release cap being reached, a safety-classifier block, or a user interrupt (`[FSD Stop]`). Leaving the marker behind on any of these paths would misclassify a later manual `/pipeline auto-dev` in the same session as unattended. `command` is prefixed because a shell with `rm` aliased to `trash` rejects `rm -f` (R005, measured).
 
 ## Open PR Processing Rules
 
@@ -104,6 +122,8 @@ FSD operates under full project rules without relaxation:
 
 `/homework` is a mandatory retrospective gate between iterations — it is NOT skipped in automated mode. If homework requires user confirmation (e.g., to file a feedback issue), the loop pauses and waits.
 
+**Homework submission-gate bundling (opt-in, #1652 #4):** the default contract presents the gate **every iteration**, as above. Only when the user explicitly instructs it during the session (e.g., "bundle the homework gate at convergence") or declares an unattended run with bundling specified may the loop record the homework artifact (`homework-{HHmmss}.md`) each iteration while presenting the `omcustom-feedback` Phase 4A submission gate just **once**, at convergence (or release-cap) time — alongside any deferred `.claude/hooks/**` approval question. Whether to bundle is a user decision, not something the orchestrator selects unilaterally — a v1.1.59/60 session where the orchestrator bundled on its own was retrospectively flagged as a skill-contract deviation. **Bundling is never derived from `unattended_mode`** (the marker/env state above) — the deterministic marker signal is used solely for `.claude/hooks/**` issue deferral in scope-selection; the sole trigger for homework-gate bundling is an explicit user instruction. Once instructed, [[r015]] directive persistence keeps the bundling choice for the rest of the session.
+
 ### Pre-Flight and Commit Timeout Guardrails (#1644, #1645)
 
 Two operational warnings were added to the skill body ahead of unattended loop entry:
@@ -136,3 +156,5 @@ Because FSD is an unattended loop with no live user to answer approval prompts, 
 - `.claude/skills/fsd/SKILL.md` — skill definition
 - Content-drift resync 2026-09-03 (v1.1.59, #1644, #1645): added the Pre-Flight and Commit Timeout Guardrails subsection — effective permission mode must be measured before unattended entry (project-scope `defaultMode` ignored on CC v2.1.257+, cross-ref [[r010]]) and commit delegations require Bash `timeout: 400000` due to the main-worktree pre-commit hook's ~165s full test suite (cross-ref [[mgr-gitnerd]]).
 - Content-drift resync 2026-09-03 (v1.1.60): added "`.claude/hooks/**` Issues — Unattended-Loop Scope Split" — FSD defers `.claude/hooks/**`-touching issues instead of interrupting the loop, batching a single approval question at the `/homework` gate (cross-ref [[pipeline]] scope-selection Step 3).
+- Content-drift resync 2026-09-03 (v1.1.60, #1650 C / #1652 #4): added the "Unattended-Mode Marker — Deterministic Detection Signal" subsection (a `/tmp/.claude-fsd-$PPID` marker written at entry and removed at convergence replaces prose inference for `unattended_mode`, feeding [[pipeline]] pre-triage Phase 0.6), the `[FSD Entry]`/`rm -f` marker lines in Iteration Flow, and the "Homework submission-gate bundling" paragraph (opt-in only on explicit user instruction — bundling it unilaterally was retrospectively flagged as a contract deviation in the v1.1.59/60 sessions).
+- Content-drift resync 2026-09-03 (v1.1.61, #1650 C): grounded the marker section explicitly in [[r010]]'s new PPID-scoped `/tmp` runtime state marker carve-out (vs. `tracker-checkpoint`-delegated structured pipeline state); documented the every-iteration re-write + 360-minute (6h) stale guard that treats an old marker as absent; enumerated all four exit paths that clear the marker (convergence, release cap, safety-classifier block, user interrupt); added the `[FSD Stop]` branch to the Iteration Flow diagram (cap/classifier-block vs. next-iteration re-write); and stated explicitly that homework-gate bundling is never derived from `unattended_mode` — only an explicit user instruction triggers it.

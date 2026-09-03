@@ -79,6 +79,14 @@ gh issue create \
   --body "## 출처\n\nv{version} 릴리즈 워크플로우에서 자동 등록.\n\n## 컨텍스트\n\n{상세 컨텍스트}\n\n## 권장 조치\n\n{권장 사항}" \
   --label "professor"
 ```
+
+**이슈 본문의 코드 위치 표기 — 행 번호 대신 앵커 (#1652 #3-2)**: `## 컨텍스트`에서 코드 위치는 행
+번호가 아니라 **함수명·고유 앵커 문자열**(예: 함수명, 해당 위치의 고유 주석 문구)로 적는다. 행
+번호는 다음 릴리즈 커밋에서 stale해진다 — v1.1.60 세션에서 #1647 본문의 행 346-348은 v1.1.59 시점
+값이었고, 스크립트가 608→733행으로 성장해 구현 에이전트 2개가 재탐색해야 했다. 행 번호를
+병기하려면 기준 커밋 SHA를 함께 적고 "참고용"임을 명시한다. 후속 위임서도 "행 번호는 참고, 앵커로
+재탐색"을 전제로 작성된다(auto-dev.yaml substitution 조항 cross-ref).
+
 Add priority label (`P3` default for defects surfaced here; escalate to `P2` if MEDIUM+ severity).
 
 **Authority**: user directive (session 102) — genuine defects found during release workflows should be registered without prompting. See also R016 Defect Response Matrix: CI/infra defect and Process gap both require Issue registration.

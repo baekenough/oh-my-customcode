@@ -78,6 +78,17 @@ Agent(description: "[2] Python code review", subagent_type: "lang-python-expert"
 
 Single agent spawns do NOT use the `[N]` prefix.
 
+**단일 스폰도 Core Rule 접두사 필수 (Origin: #1652 #3-3)**: 단일 Agent 스폰은 `[N]` 항목 형식 대신 Core Rule 형식의 접두사 라인(에이전트·모델 대괄호 + 화살표 + Tool 표기 + `Agent`)을 호출 직전에 출력한다. advisor(`.claude/hooks/scripts/r007-r008-drift-advisor.sh`)가 announce로 계수하는 것은 3종 — Tool 표기 라인, Spawning 헤더 라인(대괄호 번호 항목이 0개일 때 폴백으로 계수), 대괄호 번호가 붙은 spawn 항목 — 이며, **대괄호 번호 없이 에이전트타입:모델 다음에 화살표와 설명만 이어붙인 단독 라인은 계수하지 않는다** — Tool 표기 라인도 Spawning 헤더도 없이 그 단독 라인만 쓰면 규칙을 지킨 응답이 R008 누락 1건으로 계상된다(v1.1.60 세션 실측 — advisory가 반복돼 세션 중 접두사 형식을 바꿔야 했다; v1.1.61 적대적 리뷰가 합성 트랜스크립트 양성/음성 짝으로 재현). 정합 방향은 **규칙 문구 쪽**으로 확정한다. advisor 정규식 쪽 대안(번호 없는 단독 라인을 spawn 항목으로 계수)은 `.claude/hooks/**` 승인 사안이라 **#1650 E 항목**으로 이월했으며, 적용 시 이 조항의 advisor 동작 서술을 같은 커밋에서 갱신한다(R016 Rule Wiring Check).
+
+```
+[claude][opus] → Tool: Agent
+[claude][opus] → Target: mgr-updater:sonnet → R008 clause update
+```
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 단일 스폰을 번호 없는 에이전트타입:모델 화살표 설명 단독 라인으로만 announce | Core Rule 접두사 라인(Tool 표기 + Agent)을 호출 직전에 출력; 항목 라인은 Target 라인으로 병기 가능 |
+
 This ensures the Running display:
 ```
 ⏺ Running 2 agents… (ctrl+o to expand)

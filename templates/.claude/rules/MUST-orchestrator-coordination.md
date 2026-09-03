@@ -690,6 +690,8 @@ Subagent NOT required for:
 
 "Simple" means READ-ONLY operations. If the task involves any file creation, modification, or deletion, it must be delegated. There is no "too small to delegate" exception for write operations.
 
+**Carve-out — PPID 스코프 `/tmp` 런타임 상태 마커 (Origin: #1650 C, v1.1.61)**: 프로젝트 트리 **밖**의 `/tmp` 아래에 세션 프로세스 ID로 스코프된 1줄짜리 런타임 마커(예: `/tmp/.claude-fsd-$PPID`)를 만들거나 지우는 것은 프로젝트 파일 쓰기가 아니므로 오케스트레이터가 Bash 한 줄로 직접 수행할 수 있다. 조건: (1) 경로가 `/tmp` 하위이고 프로세스 ID로 스코프됨, (2) 내용이 타임스탬프 등 1줄 신호에 불과함, (3) 프로젝트 트리·홈 디렉토리·설정 파일을 건드리지 않음. 구조화된 파이프라인 상태(`/tmp/.claude-pipeline-{name}-{PPID}.json`)는 이 carve-out 대상이 아니며 기존대로 `tracker-checkpoint`에 위임한다 — 마커와 상태 파일의 차이는 내용 구조(1줄 신호 vs 검증이 필요한 JSON 상태)다. 위임 비용(스폰 30초 이상)이 작업(1줄 touch)보다 큰 경우를 위한 좁은 예외이며, "작아서" 예외가 아니라 **프로젝트 파일이 아니라서** 예외다.
+
 ## Dynamic Agent Creation (No-Match Fallback)
 
 When routing detects no matching agent for a specialized task:

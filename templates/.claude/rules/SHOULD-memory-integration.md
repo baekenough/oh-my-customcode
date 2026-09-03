@@ -358,6 +358,9 @@ Save memory IMMEDIATELY upon surprising discovery — do not defer to session en
 | Unexpected tool behavior / workaround | Save `feedback_*.md` now | Session state defense |
 | Subagent false-positive detected | Save `feedback_*.md` now | Prevent repeat in same session |
 | User correction / feedback | Save `feedback_*.md` now | Honor correction immediately |
+| Root-cause hypothesis (원인 진단) | Save `feedback_*.md` ONLY with a `[hypothesis: <unverified-basis summary>]` first-line tag until the code path has been read and the decision logic reproduced 1:1; promote to plain fact only after that verification | Statistical correlation from transcript counts is NOT code causation — an unverified cause saved as fact propagates to issues and future sessions (#1652 #1; R020 「통계적 상관 ≠ 코드 인과」) |
+
+**`[hypothesis: …]` 태그 규약 (Origin: #1652 #1)**: 원인 진단을 메모리에 즉시 저장할 때는 본문 첫 줄에 `[hypothesis: <미검증 근거 요약>]`를 붙인다. 검증(코드 경로 대조·판정 로직 1:1 재현) 완료 시 태그를 제거하거나 파일을 정정한다. 태그가 남아 있는 항목은 후속 세션에서 전제로 쓰지 않고 **검증 트리거로만** 사용한다 — 위 「Safety-Related Feedback Memory Framing」과 같은 원리(결론형이 아니라 검증 의무형)다. 실증: v1.1.59 세션에서 #1643 원인을 트랜스크립트 통계(첫 레코드 thinking 13/21)만으로 "advisor가 thinking 전용 첫 레코드를 병합하지 못함"이라 확정 저장했다가 jq 1:1 재현으로 반박됐고(실제 원인은 레이블 문구 모호성), 같은 세션에서 `gh pr merge --delete-branch` 로컬 부수효과도 reflog 3건으로 "확정" 저장한 뒤 4번째 머지에서 재현되지 않아 "원인 미확정"으로 정정했다. 리터럴은 `[hypothesis:` 접두 하나로 통일하며, 검증 여부 조회는 `grep -l '^\[hypothesis:' <memory dir>`로 결정론적으로 수행한다. 최초 적용 대상: `feedback_gh_merge_delete_branch_local_side_effect.md`(v1.1.60 세션에서 "원인 미확정"으로 정정된 항목) — v1.1.61 세션 종료 시 sys-memory-keeper가 태그를 부착한다.
 
 See rationale and cross-references via Read tool.
 

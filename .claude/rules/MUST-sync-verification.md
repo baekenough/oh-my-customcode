@@ -131,6 +131,10 @@ Origin: #1521 (찐빠 #2 — v1.1.32 skills 118→114 동기화에서 파일 열
 
 Any change to: agents, agent frontmatter, skills, guides, routing patterns, rules, wiki pages.
 
+### auto-dev.yaml 압축 티어와의 양방향 참조 (Origin: #1650 C 부수)
+
+이 소절은 R017 적용 범위 자체를 넓히지 않는다 — 위 범위 열거가 압축 파이프라인에서 어떻게 배선되는지를 기록한다. `.claude/skills/pipeline/workflows/auto-dev.yaml`의 compression-mode-eval은 docs-only 티어에서 deep-verify를 self-review로 대체하되, 변경 집합에 `.claude/rules/**`(또는 agents/skills frontmatter 등 구조 표면)가 포함되면 mgr-sauron R017 검증을 단일 목표 위임으로 **필수 실행**하는 carve-out을 둔다(v1.1.58 세션 — docs-only 티어였으나 sauron이 R002/R010 모순 advisory 1건을 포착). 이 절의 적용 조건과 그 carve-out은 같은 조건을 서로 가리킨다 — 한쪽을 바꾸면 다른 쪽도 같은 커밋에서 갱신한다(R016 Rule Wiring Check). 이전까지는 yaml → R017 단방향 인용만 있어 R017 쪽에서 carve-out의 존재를 알 수 없었다.
+
 ## Structural Migration Verification
 
 디렉토리 재구조화, 템플릿 평탄화(flat templates), 브랜치 전략 변경 등 **구조 마이그레이션** 시, 경로 참조와 파일 존재성 회귀를 사전 검사해야 한다. 표준 5-round 검증이 콘텐츠 정합성에 집중하는 반면, 구조 마이그레이션은 경로·존재성 회귀를 별도로 점검한다.

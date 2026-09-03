@@ -76,10 +76,37 @@ path pre-check(`auto-dev.yaml`)가 `.claude/hooks/**` 대상 이슈를 발견하
 즉시 승인을 요청하지 않는다. 대신 그 이슈를 이번 스코프에서 **분리·이월**하고 나머지 적격 이슈로
 계속 진행하며, `/homework` 반복 경계(게이트)에서 이월된 hooks 이슈들을 **1회 묶어** 승인 질문으로
 제시한다. 승인을 받으면 R015 directive persistence로 세션 내 동일 카테고리에 지속 적용한다.
+무인 여부의 판별 신호는 아래 「무인 모드 마커」 절이 정의한다.
+
+### 무인 모드 마커 — 결정론적 판별 신호 (#1650 C)
+
+`pipeline auto-dev`의 scope-selection Step 3가 요구하는 "무인 여부"는 산문 추론이 아니라 마커 파일로
+판정한다. FSD 진입 시 오케스트레이터가 Bash로 아래 한 줄을 실행한다. 이 마커는 R010 「Exception:
+Simple Tasks」의 carve-out(PPID 스코프 `/tmp` 런타임 상태 마커 — v1.1.61 신설)에 해당하므로
+오케스트레이터가 직접 실행한다. 구조화된 파이프라인 상태(`/tmp/.claude-pipeline-*-{PPID}.json`)는 이
+예외 대상이 아니며 기존대로 `tracker-checkpoint`에 위임된다.
+
+```bash
+printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "/tmp/.claude-fsd-$PPID"
+```
+
+- `$PPID`는 Bash 도구 셸의 부모, 즉 Claude Code 프로세스이며 호출 간 안정적이다(2026-09-03 실측: 두
+  호출 모두 동일 값).
+- `claude -p`·예약 실행처럼 마커를 미리 만들 수 없는 경로는 env `OMCUSTOM_UNATTENDED=1`로 대체한다.
+- `pipeline auto-dev` pre-triage Phase 0.6이 마커 존재 또는 env 값을 실측해 `unattended_mode` 상태를
+  산출하고, scope-selection Step 3는 그 상태로 `.claude/hooks/**` 이슈 분리·이월을 결정한다.
+- 매 반복 시작 시 같은 명령으로 마커를 다시 써서 mtime을 갱신한다. Phase 0.6은 mtime이 6시간(360분)보다
+  오래된 마커를 **부재로 취급**한다 — 프로세스 크래시·PID 재사용으로 남은 마커가 이후 수동
+  `/pipeline auto-dev`를 무인으로 오판하지 않게 하는 가드다.
+- 수렴(`[FSD Done]`), 릴리즈 cap 도달, safety classifier 차단으로 인한 중단, 사용자 인터럽트 — **어느
+  경로로 끝나든** `command rm -f "/tmp/.claude-fsd-$PPID"`로 마커를 제거한다 — 남겨두면
+  같은 세션의 이후 수동 `/pipeline auto-dev`가 무인으로 오판된다. `rm`이 alias(`trash`)로 셰이딩된
+  셸에서 `rm -f`는 거부되므로 `command`를 붙인다(R005, 2026-09-03 실측).
 
 ### Iteration Flow (per iteration)
 
 ```
+[FSD Entry] write marker /tmp/.claude-fsd-$PPID
 [FSD Iteration N]
 ├── /pipeline auto-dev        → one release (PR create → merge → npm publish → milestone close)
 ├── /homework                 → extract 찐빠, confirm gate (or --dry-run if requested)
@@ -87,8 +114,9 @@ path pre-check(`auto-dev.yaml`)가 `.claude/hooks/**` 대상 이슈를 발견하
 │                                                  fix-then-merge (known CI failure pattern)
 │                                                  defer+surface (design decision needed)
 └── Check convergence: eligible issues = 0 AND open PRs = 0 (merged or deferred)?
-    ├── YES → [FSD Done] converged naturally
-    └── NO  → next iteration
+    ├── YES → [FSD Done] converged naturally → command rm -f /tmp/.claude-fsd-$PPID
+    └── NO  → cap reached or classifier block? → YES → [FSD Stop] → command rm -f /tmp/.claude-fsd-$PPID
+                                                 → NO  → next iteration (re-write marker first)
 ```
 
 ## Safety and Discipline
@@ -105,6 +133,16 @@ Each iteration operates under full project rules — no relaxation because FSD i
 | R020 (completion verification) | Each release verified via `npm view`, `gh release view`, closed issues before `[Done]`. PR merges verified via `gh pr view` ground-truth before declaring iteration complete. |
 
 `/homework` runs as a **retrospective gate** between iterations — findings go through `omcustom-feedback`'s Phase 4A confirmation gate. The loop does NOT skip homework on the grounds that it is "automated". If homework requires user confirmation (e.g., to file a feedback issue), the loop pauses and waits.
+
+**Homework 제출 게이트 묶음 (opt-in, #1652 #4)**: 기본 계약은 위와 같이 **반복마다** 게이트를
+제시하는 것이다. 사용자가 세션 중 명시적으로 지시하거나(예: "homework 게이트는 수렴 시점에 1회로
+묶어라") 무인 실행을 선언하며 묶음을 지정한 경우에만, homework 아티팩트(`homework-{HHmmss}.md`)는
+반복마다 기록하되 `omcustom-feedback` Phase 4A 제출 게이트는 수렴 시점(또는 릴리즈 cap 도달 시점)에
+**1회** 묶어 제시한다 — 이월된 `.claude/hooks/**` 승인 질문과 같은 자리에서 함께 제시한다. 묶음
+여부는 사용자 결정 사항이며 오케스트레이터가 단독으로 선택하지 않는다(v1.1.59/60 세션에서
+오케스트레이터가 단독 결정한 것이 스킬 계약 이탈로 회고됐다). 한 번 지시되면 R015 directive
+persistence로 세션 내 유지된다. 묶음 여부는 `unattended_mode`(마커·env)에서 **도출하지 않는다** —
+무인 판별은 hooks 이슈 분리·이월에만 쓰이고, 게이트 묶음은 사용자 지시가 유일한 트리거다.
 
 If a release operation triggers the safety classifier, the current iteration stops and surfaces the block to the user before continuing.
 

@@ -271,9 +271,13 @@ This is the interrupt-intent extension of Read-Before-Characterize ("actual inte
 | 에러 원인 추정 | 첫 가설로 워크플로우/설정 영구 수정 | 가설을 좁은 범위에서 검증 후 변경 |
 | CI/publish 실패 | 추정 기반 우회 커밋 머지 | 에러 메시지/로그로 실제 원인 확정 |
 | 권한/토큰 오류 | 플래그/옵션 변경으로 우회 시도 | 권한 범위·토큰 종류 직접 확인 |
+| 트랜스크립트·로그 통계로 원인 추정 | 통계적 상관(예: "첫 레코드 thinking 13/21")만으로 코드 경로의 인과를 "확정"해 이슈 코멘트·메모리에 기록 | 해당 코드 경로를 읽고 판정 로직을 1:1 재현(jq/스크립트)해 인과를 확인한 뒤 기록; 그 전에는 R011 `[hypothesis]` 태그로만 저장 |
 
 ### Common Violation (#1217 item #4)
 npm publish E403을 `--provenance` attestation 충돌로 오진단 → release workflow에서 `--provenance` 제거 커밋 머지 → 2차 시도 동일 실패 → 실제 원인은 NPM_TOKEN 권한(Automation token 필요). 잘못된 추정으로 릴리즈 워크플로우를 영구 변경.
+
+### Common Violation (#1652 #1) — 통계적 상관 ≠ 코드 인과
+v1.1.59 세션에서 #1643(advisor "R007 헤더=0" 오탐) 원인을 트랜스크립트 통계만으로 "advisor가 thinking 전용 첫 레코드를 병합하지 못함"이라 이슈 코멘트·feedback 메모리에 확정 기록 → triage가 현행 코드(이미 병합·thinking 제외)와의 불일치를 지적 → 진단 에이전트가 jq로 판정 로직을 1:1 재현해 반박 — 실제 원인은 레이블 문구 모호성(값은 위반 건수인데 "헤더=0"으로 읽힘). 같은 세션 2회째: `gh pr merge --delete-branch` 로컬 부수효과를 reflog 3건으로 "확정" 저장했으나 4번째 머지(PR #1651)에서 재현되지 않아 "원인 미확정"으로 정정. 두 건 모두 상관을 인과로 승격한 Read-Before-Characterize 자기 위반이며, R011 즉시 저장과 결합해 틀린 전제가 영속화될 뻔했다. Cross-ref: R011 「Mid-Session Immediate Save」 `[hypothesis]` 행, R010 「저장소 상태 기재도 같은 규율」, 아래 「Self-Violation Counting Is Also Diagnosis」.
 
 ### Self-Check (영구 변경 전)
 1. 가설을 뒷받침하는 직접 증거(로그/에러 코드/문서)가 있는가?
