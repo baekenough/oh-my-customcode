@@ -190,6 +190,8 @@ Origin: #1492 (Session 132) — cc-release-monitor 워크플로우 삭제(#1454,
 
 Origin: #1595 #1 (v1.1.48 세션 — 세션 시작 시 `develop @ 1b4973d5` 실측 후 진행했으나 다른 세션이 14:56·15:10에 `feat/agora-anonymous-consensus`를 만들고 커밋 2개를 쌓았고, wiki 재동기화 Phase 2까지 미탐지. 같은 세션에서 `git ls-files tests/fixtures/agora/`가 초반 0건 → 후반 6건으로 바뀌었다). Cross-ref: R010 「저장소 상태 기재도 같은 규율」(위임서 기재 각도), R011(Temporal Decay).
 
+> **v2.1.269/271+**: (269) compaction 이후 시스템 컨텍스트에 표시되는 git status가 **세션 시작 시점 스냅샷이 아니라 현재 상태**로 바뀌었습니다 — 269 이전에는 compaction 후 세션이 stale한 branch/HEAD 스냅샷으로 추론할 수 있었고, 이는 정확히 위 「게이트는 분기 시점 1회가 아니라 상태변경 위임마다」가 경고하는 실패입니다. 상태변경 위임 직전마다 재실측하는 규범은 유지됩니다(이 수정은 staleness 원인 하나를 제거할 뿐, 공유 워크트리의 다른 행위자로 인한 staleness는 여전히 존재합니다). (271, Linux only) 샌드박스 명령이 시작에 실패한 뒤 남은 낡은 `.git/config.lock`이 세션 나머지 동안 `git checkout -b`/`git push -u`/`git config`를 깨뜨리던 결함이 수정되었습니다 — Darwin(이 저장소 기본 환경)은 미해당이며 Linux CI/컨테이너 실행에 관련됩니다; 271 이전 Linux에서 위임받은 git 에이전트가 "config.lock exists"를 만나면 `rm`으로 자체 우회하지 말고 보고해야 합니다(R001). (271) `/cd` 이후 `/reload-skills`가 슬래시 메뉴와 다른 스킬 개수를 보고하던 결함이 수정되었습니다 — 그래도 「Count Sync」의 권위 있는 스킬 카운트 소스는 여전히 `ls -1d .claude/skills/*/ | wc -l`이며, `/reload-skills` 메시지를 신뢰 가능한 카운트 ground-truth로 삼지 않습니다.
+
 ## Pre-Release Target Version Ground-Truth Gate (Origin: #1457)
 
 새 릴리즈의 target 버전을 선정하거나 구현/구현-위임 프롬프트에 target 버전을 전달하기 전, 반드시 원격 실측으로 다음 버전을 확정한다: `git tag --sort=-v:refname | head -1`(최신 태그) + `npm view <pkg> version`(배포된 최신)의 **max에 patch를 더한 값**을 target으로 삼는다. 세션 메모리의 버전 스냅샷(예: "npm latest 1.1.6")은 **참고용이며 ground-truth가 아니다** — 직전 세션에서 릴리즈가 진행돼 stale일 수 있다. stale 버전으로 위임하면 이미 배포된 버전을 target으로 잡아 milestone-closed STOP에 걸리고 재타겟팅 왕복이 강제된다.

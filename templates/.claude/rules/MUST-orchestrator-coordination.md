@@ -260,6 +260,8 @@ When a subagent trips the safety classifier (R001/R002) **2 times**, the orchest
 
 > **v2.1.225+**: auto mode가 **자기 권한 검사에 대한 safety-filter refusal**을 consecutive-block 한도에 계상하던 결함이 수정되었습니다 — 동작은 여전히 거부되나 모델에는 재시도 대신 진행하라고 지시됩니다. 이 표의 trip 계수는 **서브에이전트가 실제 작업에서 유발한 classifier trip**만을 대상으로 하며, 플랫폼 내부 권한 검사에서 발생한 refusal은 계수 대상이 아닙니다 — 구버전에서 이 둘이 섞여 계상되었으므로, 과거 세션의 trip 횟수를 근거로 STOP 판정을 소급하지 않습니다.
 
+> **v2.1.273+**: 서브에이전트·백그라운드 에이전트가 최종 스트리밍 응답에 토큰 사용량이나 model id가 빠졌을 때 **FAILED로 보고되고 결과가 전달되지 않던** 결함이 수정되었습니다. 이 표의 trip 계수에 대한 함의: 273 이전의 FAILED 통지는 서브에이전트가 실제로 작업에서 classifier에 걸렸다는 증거가 아니고, 침묵도 정지의 증거가 아닙니다 — R020 ground-truth(`git status`/`grep`)만이 유일한 판정 수단이며, 잘못 전달된 FAILED를 이 표의 trip으로 계상하지 않습니다. 같은 릴리즈에서 bypass 모드의 subshell 안에 숨긴 위험한 `rm`이 프롬프트를 우회하던 결함도 수정되었습니다(R001 위험한 `rm` 프롬프트 확장 계열과 동일 수정) — v2.1.274에서는 워크트리 격리 세션이 특정 중첩 셸 확장을 포함한 Bash 명령을 **거부**하므로(v2.1.257 완화의 반대 방향), 격리 세션에서 복합 확장 명령이 거부되면 classifier trip으로 계상하기 전에 명령 단순화를 먼저 시도합니다.
+
 ### Pre-Decomposition Mandate
 
 Broad single-task scopes (e.g. "migrate + backfill") MUST be pre-decomposed by domain before delegation, so an agent cannot silently expand from its named task into adjacent privileged domains (secret rotation, tunnel creation, infra deletion, dashboard changes). See R009 (pre-decomposition) and R018 (domain-split).
@@ -537,6 +539,10 @@ Before spawning any agent:
 > **v2.1.259+**: 무인 헤드리스 호스트용 신규 실행 플래그 `--permission-prompts none`이 추가되었습니다 — 프롬프트를 발생시켰을 대상은 자동으로 **거부**되고, 나머지는 활성 permission mode(auto mode 포함)가 그대로 판정합니다. 이는 위 v2.1.257 노트가 규정한 user-scope `permissions.defaultMode`, `--permission-mode` 플래그에 이은 **세 번째 통제점**입니다 — 이 플래그는 bypass를 부여하지 않고 "프롬프트했을 상황"을 "거부"로 전환할 뿐이므로, 이 플래그로 실행한 `/fsd` 류 루프는 프롬프트에 걸려 정지하지 않는 대신 프롬프트가 필요했을 스텝이 **거부(실패)로 종료**될 수 있습니다. 무인 스텝이 멈춘 것과 거부된 것은 R020 진단 축이 다릅니다 — 이 플래그로 실행한 경우 정지한 프롬프트가 아니라 **거부 에러 메시지**를 먼저 찾습니다. 또한 v2.1.260에서 **서브에이전트**가 시작한 백그라운드 명령의 1시간 시간 제한이 제거되어(메인 세션과 동일하게 종료·중지 시까지 실행), v2.1.232 background-spawn 노트와 결합하면 서브에이전트의 장기 백그라운드 명령이 더 이상 60분에 죽지 않으므로, 260+에서는 "1시간 뒤 조용히 종료됨"을 더 이상 유효한 진단으로 쓰지 않습니다.
 
 > **v2.1.259/265+**: (259) 중첩(nested) 백그라운드 서브에이전트의 결과가 이제 **부모 서브에이전트의 트랜스크립트**에 저장되어, resume된 서브에이전트가 결과를 유지하고 공유 트랜스크립트에서 전달이 드러납니다 — 이는 CC의 기본 nested-spawn 능력을 서술할 뿐이며, 위 flat-delegation **정책**(Core Rule)은 그대로 불변입니다. (259) remote-control 세션에서 `Stop`이 백그라운드 에이전트·워크플로우를 실제로 멈추지 못하던 결함이 수정되어, kill된 작업이 프로세스가 실제로 종료될 때까지 계속 보이고 재중지 가능합니다(cross-ref R020 역방향 노트 — "실패/중단 보고 ≠ 실제 실패"). (265) foreground로 스폰한 서브에이전트를 resume하면 도구 목록과 시스템 프롬프트 prefix가 바뀌어(prompt-cache 파손) 있던 결함이 수정되었고, non-interactive 세션(`-p` stream-json / SDK / cloud)이 사용자 메시지마다 셸 cwd를 초기화하던 결함도 수정되어 이제 `cd`가 턴 사이에 유지됩니다 — 턴별로 명령을 연쇄하는 `-p` 위임 스크립트에 직접 영향을 줍니다.
+
+> **v2.1.268/269+**: (268) auto mode가 어떤 action을 거부할 때 이제 **그 거부를 유발한 규칙 이름**을 함께 표시합니다 — 위 Subagent Scope-Creep STOP Protocol의 trip 계수가 "차단됨"이라는 모호한 신호가 아니라 **어느 규칙이 걸렸는지** 결정론적으로 확인 가능해지고, R015의 allow rule vs classifier 구분도 거부 텍스트에서 바로 읽을 수 있습니다. (269) `/goal`이 일시적 API 오류를 backoff로 재시도하고 goal을 조용히 종료하지 않도록 수정되었습니다 — `/goal`을 감싸는 `/fsd`가 일시적 5xx로 죽지 않으며, 269+에서 `/goal`이 갑자기 끝났다면 그것은 네트워크 순간 장애가 아니라 실제 중단입니다(cross-ref R004 Retryable).
+
+> **v2.1.274+**: (274) 멀티세션 에이전트 뷰인 `claude agents`가 auto-update 이후 `--permission-mode` 플래그를 잃어, 그 뷰로 착수한 세션이 시작 당시와 다른 permission mode로 돌아올 수 있던 결함이 수정되었습니다. 이는 실행 모드를 실행 플래그로 가정하지 말고 **실측**해야 한다는 위 ★ v2.1.257 프로젝트-scope `defaultMode` 노트를 확장하는 또 다른 사례입니다 — `claude agents`로 위임한 무인 실행은 auto-update 이후 유효 모드를 원래 지정한 `--permission-mode`가 아니라 다시 확인합니다.
 
 > **cross-ref (v1.1.50 실측)**: R018의 `maxTurns` partial 표시(v2.1.246)가 R020 「Verification-Delegation Non-Termination」 mid-step 종료 패턴의 **실재 원인 중 하나로 확정**되었다 — 위임 프롬프트에 종료 금지 clause를 아무리 강화해도, 절단 주체가 플랫폼 turn 한도이면 에이전트에 닿지 않는다. 위임 경계를 단일 목표로 분할하는 것(R020 해당 조항)이 여전히 1차 방어선인 이유다. 상세는 R018 (MUST-agent-teams.md) Member Completion Verification 섹션.
 

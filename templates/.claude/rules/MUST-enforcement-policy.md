@@ -51,6 +51,12 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 > **v2.1.261/265/267+**: resume 시 훅 컨텍스트 무결성 결함 3건이 수정되었습니다. (261) 세션 재개 시 **병렬 도구 호출 주변**의 훅 출력 등 컨텍스트가 유실되어 재개된 요청이 달라지던 결함이 수정되었습니다. (267) 대용량 세션(트랜스크립트 5MB 초과) 재개 시 병렬 도구 호출과 그 훅 출력이 누락되던 결함이 수정되었습니다. (265) agent teammate와 재개된 서브에이전트가 이후 턴에서 `SubagentStart` 훅 컨텍스트와 preload된 스킬을 prompt prefix 밖으로 이동시켜 prompt-cache 재사용을 깨뜨리던 결함이 수정되었습니다. 함의: 구버전에서 재개된 세션의 대화에 어떤 훅의 출력이 보이지 않는다고 해서 그 훅이 **발화하지 않았다**는 증거는 아닙니다 — 「배선 확인 ≠ 전달 확인 ≠ 발화 확인 ≠ 로드 확인」4층 구분에 5번째 각도(**발화 ≠ 재개 후 보존**)가 추가됩니다. 또한 (267) managed `allowedHttpHookUrls`/`httpHookAllowedEnvVars`가 읽을 수 없을 때 아무것도 허용하지 않도록(fail-closed) 변경되었습니다.
 
+> **v2.1.268+**: 훅 발화·타임아웃 결함 두 건과 auto mode 차단 메시지 개선 한 건이 수정되었습니다. `PermissionRequest` 훅이 `--print` 모드에서 발화하지 않던 결함이 수정되어, v2.1.268 이전 `-p` 실행에서는 이 이벤트 계열의 훅이 무음으로 부재했습니다(향후 `PermissionRequest` 배선 시 참고). `CLAUDE_CODE_SESSIONEND_HOOKS_TIMEOUT_MS`가 per-hook `timeout`이 없는 `SessionEnd` 훅에는 적용되지 않아 여전히 1.5초 만에 취소되던 결함도 수정되었습니다 — 이 저장소는 R011 세션 종료 시 메모리 저장을 훅 경로로 수행하므로, 구버전에서 명시적 `timeout` 없는 SessionEnd 훅은 env var와 무관하게 1.5초 상한이었다는 뜻이며, 과거 세션의 메모리 저장 누락을 이 상한으로 재해석할 여지가 있습니다(단정 금지 — R011 `[hypothesis]` 태그로만 취급). auto mode 거부 메시지가 이제 차단한 규칙을 명시하고 더 안전한 방법 시도와 무관한 작업 마무리를 요청합니다 — R010 Scope-Creep STOP 관점에서 거부가 이제 특정 규칙에 귀속 가능합니다.
+
+> **v2.1.271+**: 훅 실행 자체가 처음으로 **가시화**되었습니다 — `SessionStart`/`UserPromptSubmit`/`PreToolUse`/`SessionEnd` 훅이 도는 동안 스피너에 경과 시간과 함께 표시되고, `SessionStart` 훅을 기다리는 프롬프트는 Esc로 취소 가능합니다. 이는 「배선 확인 ≠ 전달 확인 ≠ 발화 확인 ≠ 로드 확인」4층 구분에 **훅이 지금 실행 중임이 화면에 보인다**는 인터랙티브 신호를 더합니다. 또한 세션 밖에서 발생한 settings 파일 변경이 macOS의 파일-이벤트 서비스 포화 시 감지되지 않던 결함이 수정되어 watcher가 폴링으로 폴백합니다 — 위 「훅 배선 경로」의 settings 재생성 흐름에서, fs-event 포화 상황에서도 재생성된 settings.json이 이제 반영됩니다.
+
+> **v2.1.274+**: Stop prompt 훅이 대화 중 매 block마다 **전체 프롬프트를 통째로 재전송**하던 결함이 수정되어, 반복 block은 이제 500자 라벨로 조건만 명시합니다. R020 8항·메모리 v1.1.53~56에 기록된 "Stop 훅 잠식" 패턴에 직접 관련됩니다 — 구버전에서는 Stop 훅이 반복 block될 때마다 전체 프롬프트 텍스트가 모델 컨텍스트에 재주입됐으므로, 당시 관측된 토큰/턴 소모의 **기계적으로 충분한 원인**입니다(가설 등급 귀속 — 관측과 정합하나 이것으로 확정되지는 않음, R020 hypothesis 규율). 또한 플러그인 `hooks/hooks.json` 최상위의 `$schema` 키에 대해 "unknown key" 통지가 더 이상 뜨지 않게 되었습니다 — 이 저장소의 `.claude/hooks/hooks.json` 소스 파일에 향후 `$schema`를 추가할 때 관련됩니다.
+
 ## Why Advisory-First
 
 1. **Agent flexibility**: Hard blocks can trap agents in unrecoverable states
