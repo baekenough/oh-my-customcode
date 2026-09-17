@@ -62,6 +62,8 @@ Countdown format: >=1d → "{d}d{h}h", >=1h → "{h}h{m}m", <1h → "{m}m", unav
 RL/WL segments omitted on CC older than v2.1.80.
 -->
 
+> **v2.1.260+**: 상태줄의 `prompt_cache` 필드(및 `/cost`)가 이제 prompt-cache miss의 **가능성 있는 원인**을 함께 보여줍니다 — 예: 도구 정의나 시스템 프롬프트가 변경됨, TTL을 넘겨 유휴 상태였음. `.claude/statusline.sh`를 확장해 캐시 상태를 노출하려면 이 필드가 캐시 hit/miss 상태의 결정론적 소스입니다 — 함께 표시되는 원인은 플랫폼의 추정 후보이지 확정 원인이 아닙니다. cross-ref R013(context budget), R009(v2.1.229 prefix stagger — 병렬 배치에서 "도구 정의 변경됨"이 원인으로 뜨면 stagger의 캐시 재사용 이득이 소실됐다는 뜻입니다).
+
 ## Integration
 
 Integrates with R007 (Agent ID), R008 (Tool ID), R009 (Parallel).
