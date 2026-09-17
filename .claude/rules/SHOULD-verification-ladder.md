@@ -176,6 +176,10 @@ Before invoking a Workflow script, deterministically verify:
 
 > **v2.1.267+**: auto mode에서 **큰 출력 스키마**를 가진 Workflow `agent()` 호출이 safety classifier의 검토 대신 **거부**되던 결함이 수정되었습니다. 구버전에서 큰 스키마 `agent()` 호출의 거부는 classifier 판정이 아니라 플랫폼 크기 제약의 산물이었으므로, R010 Subagent Scope-Creep STOP Protocol의 trip 횟수에 계상하지 않습니다. 또한 (261) `bashOutputMaxChars`/`taskOutputMaxChars` 설정(최대 128K자)이 신설되어 명령/백그라운드 작업 출력이 파일로 저장되기 전 모델에 인라인으로 도달하는 양을 조정합니다 — Tier-1 검증 스크립트의 출력이 파일로 잘려 pass/fail 라인이 유실될 때 관련됩니다; 한도를 올리기보다 exit code를 단독으로 읽는 방식(R005 #1492)을 우선합니다.
 
+> **v2.1.269+**: `claude plugin eval`이 플러그인의 eval suite를 Claude Code 자체로 실행해 점수화·재현 가능한 결과(JSON + HTML 리포트)를 냅니다 — 이 ladder에 스킬 품질 검증을 위한 새 Tier-1/2 도구가 추가된 것입니다(cross-ref `skill-creator`, R006). `CLAUDE_CODE_WORKFLOW_MAX_CONCURRENT_AGENTS`(1~256)가 신설되어 Workflow 도구의 실행당 동시 agent 한도를 조정할 수 있게 되었습니다 — 플랫폼 상한은 이제 설정 가능하지만, 이 저장소의 R009 정책 상한(동시 5, soft 4)은 그대로 적용됩니다. `--output-format stream-json`의 `permission_denials`가 경로 스코프 deny 규칙에 걸린 Read/Edit/Write 호출도 이제 포함합니다 — 구버전 `-p` 검증 실행에서는 이런 거부가 denial 계측에서 누락됐을 수 있습니다. `bashEditDiffEnabled`가 Bash 명령이 변경한 파일의 diff를 Bash 도구 결과에 함께 실어, 셸을 통한 편집을 Tier-1 결정론적으로 사후 점검할 수 있게 합니다.
+
+> **v2.1.271/274+**: (271) `claude plugin install`/`update`에 `--accept-command <sha256>`이 추가되어, `-y`(blanket yes) 대신 이전 `--json` 실행이 표시한 명령을 정확히 그 sha256으로만 승인할 수 있습니다 — 콘텐츠 주소화된 결정론적(Tier 1) 승인이 blanket yes보다 우선됩니다. dynamic workflow가 usage limit에 도달하면 이제 agent를 드롭하는 대신 **일시정지 후 한도 리셋 시 재개**합니다(cross-ref 위 「Workflow Script Sanity Check」의 resume 관련 항목). (274) Monitor 도구 통지가 스크립트의 최종 출력과 exit을 **하나의 통지**로 묶어 전달합니다(모델 턴 절약). `CLAUDE_CODE_MCP_STARTUP_WAIT_MS`가 신설되어 첫 non-interactive 턴이 연결 중인 MCP 서버를 기다리는 시간을 제한합니다(`0`=대기 안 함) — Tier-1 검증용 `-p` 실행이 MCP 기동으로 지연되지 않아야 할 때 관련됩니다.
+
 #### Common Violation (#1271)
 Session 106 follow-up to #1266 ③: a Workflow authoring error recurred — the guardrail fact-sheet was concatenated onto the agent's RETURN VALUE instead of the prompt string, and a placeholder/assembly slip went uncaught because no pre-run sanity check existed. This check is the deterministic Tier-1 guard that catches such slips before the expensive run.
 

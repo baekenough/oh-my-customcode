@@ -96,6 +96,10 @@ Active removal of irrelevant retrieved content from agent context. Complements o
 
 > **v2.1.261+**: 컨텍스트 비용 진단 도구 2종이 추가되었습니다. `/skill-doctor`는 로드된 스킬 중 사용되지 않는 것과 그 컨텍스트 비용을 표시해 가지치기 대상을 알려줍니다 — 이 저장소의 115개 스킬 열거 블록과 `profile` 스킬의 플러그인 세트 전환에 직접 관련됩니다. `bashOutputMaxChars`/`taskOutputMaxChars` 설정은 command·background-task 출력이 파일로 저장되기 전 모델에 인라인 전달되는 상한을 올릴 수 있습니다(최대 128K자). 지침: 이 상한을 기본값으로 올리지 않습니다 — 이 규칙의 압축 원칙(파일 목록 → 개수, 오류 트레이스 → 앞/뒤 줄)이 작은 인라인 출력을 선호하므로, pass/fail 라인이 잘리는 특정 검증에 한해서만 올리고 그 외에는 독립적인 exit-code 조회(R005 #1492)를 우선합니다.
 
+> **v2.1.269/273+**: (269) auto-compaction이 요약할 완전한 이전 대화 교환이 없을 때(주로 매우 큰 프롬프트를 쓰는 SDK 세션) "Prompt is too long"으로 세션이 영구적으로 멈추던 결함이 수정되었습니다. (273) context meter와 auto-compact가 advisor-tool 턴을 실제 컨텍스트 크기의 약 **2배**로 계산해 auto-compact가 실제 창의 약 **절반** 지점에서 발동하던 결함이 수정되었습니다 — 이 규칙의 백분율 임계값에 대한 함의: 273 이전 2.1.2xx에서 advisor tool을 쓴 세션은 CTX% 수치와 auto-compact 시점이 최대 2배 부풀려져, 그 수치에 근거한 예산 판단이 의도치 않게 보수적이었습니다; 273+에서는 미터를 다시 신뢰할 수 있습니다(cross-ref R012 statusline CTX 세그먼트).
+
+> **v2.1.274+**: (274) 훅 주도 세션(활성 `/goal` 등)이 컨텍스트가 다시 넘칠 때 reactive compaction 후 compact 대신 "Prompt is too long"으로 종료되던 결함이 수정되었고, compact된 세션을 재개할 때 활성 `/goal`이 더 이상 소실되지 않습니다(둘 다 `/goal`을 감싸는 `/fsd`와 직결). (274) 메모리 사용량이 치명적일 때 메모리를 확보하거나 안전하게 재시작하는 절차와 함께 가시적 경고가 표시됩니다 — 위 v2.1.238 unbounded-memory 노트와 짝짓습니다: 이제 메모리 압박이 느려짐으로만 암시되지 않고 표면화됩니다. (274) headless/SDK 세션이 완료된 background task마다 별도 모델 호출을 하던 것이, 이제 이미 큐에 쌓인 완료분을 한 번의 호출로 응답합니다(`-p` 아래에서 도는 R009 fan-out의 직접적인 토큰 절감).
+
 <!-- DETAIL: Context Budget Management
 
 Task-type-aware context thresholds that trigger ecomode earlier for context-heavy operations.
