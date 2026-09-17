@@ -85,11 +85,14 @@ Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
 
 **(b) 누락 방지**: `bun run build` 실행 후 `git status --short`에 **tracked 변경(`^ M`)이 남아 있으면 스테이징 누락**이다. 커밋 직전 tracked 변경이 0인지 확인한다.
 
+**(c) untracked 신규 산출물 실측 (Origin: #1660 찐빠 #3)**: 커밋 위임서를 작성하기 직전 `git status --short | grep '^??'`로 untracked 목록을 실측하고, 위임서에 **포함할 신규 파일과 제외할 파일을 경로로 명시**합니다. `git add -u`나 "변경분을 커밋하라"만 지시하면 서브에이전트가 만든 신규 테스트·스크립트·픽스처가 커밋에서 빠지고, 반대로 광범위 `git add`는 이전부터 존재하던 무관한 untracked 파일(계획 문서·로컬 캐시 등)을 끌어들입니다. (a)·(b)가 tracked/gitignored 경로를 다룬다면 (c)는 그 사이의 **untracked 경로**를 다룹니다.
+
 | Anti-pattern | Required |
 |--------------|----------|
 | 빌드 후 광범위 `git add`로 커밋 → gitignored `dist/` force-add 위험 | 커밋 직전 `git diff --cached --name-only` 실측으로 빌드 산출물 부재 확인 |
 | .gitignore에 있으니 안전하다고 가정 | force-add 경로는 .gitignore를 우회하므로 실측 필요 |
 | `dist/` 미포함만 확인하고 커밋 → 빌드가 갱신한 tracked 산출물 누락 | `git status --short`로 tracked 변경 잔존 0 확인 |
+| `git add -u`만 지시하거나 untracked 목록 미실측 → 신규 테스트 파일 누락 또는 무관 파일 혼입 | 위임 직전 `git status --short \| grep '^??'` 실측 → 포함/제외 경로를 위임서에 명시 |
 
 Origin: #1512 (v1.1.28 커밋 staging에 dist/ 2파일 포함, 커밋 전 실측으로 정정; v1.1.12 dist/ untrack 회귀 방지); #1531 (`.omcustom.lock.json`이 v1.1.29 이후 4개 릴리즈 연속 누락 — 혼입 방지 단방향 조항의 반대편 공백). Cross-ref: R020 (완료 검증 — "실행됨 ≠ 성공").
 

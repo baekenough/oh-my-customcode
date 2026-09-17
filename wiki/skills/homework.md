@@ -1,7 +1,7 @@
 ---
 title: Homework
 type: skill
-updated: 2026-06-10
+updated: 2026-09-18
 sources:
   - .claude/skills/homework/SKILL.md
 related:
@@ -55,6 +55,8 @@ Runs **before** `sys-memory-keeper`'s MEMORY.md update at session end (R011 orde
 
 **R020 read-before-characterize applies to the analysis itself**: do not characterize mistakes before reading the transcript evidence.
 
+**Phase 2a now leads with an advisor-reuse counting script (#1683 #2)**: when the transcript path is known, homework first runs `bash scripts/count-r007-r008.sh "$TRANSCRIPT" --json`, which drives `.claude/hooks/scripts/r007-r008-drift-advisor.sh` turn-by-turn so self-counted R007/R008 findings reproduce the hook's own verdict instead of a separately re-implemented regex. This follows [[R020]]'s "self-counting reproduces the advisor's judgment formula" principle — v1.1.64 saw self-counting fail three sessions in a row from ad-hoc method errors (record-boundary confusion, merge-key mismatch, nested double-counting) before this script was introduced. The prior sources (rule-violation-marker grep, JSONL transcript scan, model recall) are renumbered 2–4 and remain the fallback chain when the script is unavailable or fails — in which case the retrospective must explicitly note that advisor-reuse counting was not performed.
+
 ## Severity Scale
 
 | Level | Criteria |
@@ -84,3 +86,4 @@ Origin: #1336 — second-brain project had model invocation disabled; retrospect
 ## Sources
 
 - `.claude/skills/homework/SKILL.md` — skill definition
+- Content-drift resync 2026-09-18 (v1.1.67, #1683): Phase 2a gained the advisor-reuse counting script (`scripts/count-r007-r008.sh`) as its first source, renumbering prior sources 2–4, and Limitations gained a "Count fidelity" note that only the advisor-reuse script reproduces the hook verdict.

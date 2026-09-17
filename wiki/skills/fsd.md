@@ -2,7 +2,7 @@
 title: FSD (Full Self Driving)
 type: skill
 scope: harness
-updated: 2026-09-03
+updated: 2026-09-18
 sources:
   - .claude/skills/fsd/SKILL.md
 related:
@@ -34,6 +34,8 @@ Thin alias / orchestrator skill. FSD expands into:
 It does not implement loop logic, issue-polling, release steps, or verification itself — it delegates entirely to [[goal]], [[pipeline]], [[homework]], and [[mgr-gitnerd]]. The loop converges naturally when the auto-dev-eligible issue set reaches zero **and** all open PRs are merged or deferred.
 
 Extracted from the manual pattern used in Session 114 (2026-06-09), which ran 2 iterations (v0.177.0 and v0.178.0) before converging.
+
+**Inline execution is now an explicitly sanctioned equivalent (#1683 #4)**: the loop driver is the main conversation itself — calling `/goal`/`/loop` is one way to express the loop, not a mandatory call. The orchestrator may drive iterations inline as long as it holds the minimum per-iteration contract: refresh the unattended-mode marker at iteration start, run `/pipeline auto-dev` once → record one homework artifact → process open PRs, perform a measured convergence check (eligible issues == 0 AND open PRs == 0) via R020 ground-truth, and clear the marker regardless of exit path. `/goal`/`/loop` remains the recommended path for genuinely unattended sessions (`claude -p`, scheduled runs) that need self-pacing; interactive sessions satisfy the same contract inline without the skill-call overhead.
 
 ## Key Details
 
@@ -160,3 +162,4 @@ Because FSD is an unattended loop with no live user to answer approval prompts, 
 - Content-drift resync 2026-09-03 (v1.1.60, #1650 C / #1652 #4): added the "Unattended-Mode Marker — Deterministic Detection Signal" subsection (a `/tmp/.claude-fsd-$PPID` marker written at entry and removed at convergence replaces prose inference for `unattended_mode`, feeding [[pipeline]] pre-triage Phase 0.6), the `[FSD Entry]`/`rm -f` marker lines in Iteration Flow, and the "Homework submission-gate bundling" paragraph (opt-in only on explicit user instruction — bundling it unilaterally was retrospectively flagged as a contract deviation in the v1.1.59/60 sessions).
 - Content-drift resync 2026-09-03 (v1.1.61, #1650 C): grounded the marker section explicitly in [[r010]]'s new PPID-scoped `/tmp` runtime state marker carve-out (vs. `tracker-checkpoint`-delegated structured pipeline state); documented the every-iteration re-write + 360-minute (6h) stale guard that treats an old marker as absent; enumerated all four exit paths that clear the marker (convergence, release cap, safety-classifier block, user interrupt); added the `[FSD Stop]` branch to the Iteration Flow diagram (cap/classifier-block vs. next-iteration re-write); and stated explicitly that homework-gate bundling is never derived from `unattended_mode` — only an explicit user instruction triggers it.
 - Content-drift resync 2026-09-03: added a cost-cap advisory row to Safety and Discipline — `CLAUDE_COST_CAP`-driven cost-cap advisory is a notification surfaced at the gate, not a loop-stop signal; FSD reports and continues.
+- Content-drift resync 2026-09-18 (v1.1.67, #1683): documented inline execution as a sanctioned equivalent to `/goal`/`/loop` — the orchestrator may drive iterations directly as long as it holds the minimum per-iteration contract (marker refresh, pipeline→homework artifact→open-PR processing, measured convergence check, marker removal on any exit path).
