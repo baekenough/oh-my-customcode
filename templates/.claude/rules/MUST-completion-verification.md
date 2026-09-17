@@ -426,6 +426,10 @@ Origin: #1269 ① (R020 self-violation, session 106).
 
 **교훈**: 위 Core Rule("actual outcome ≠ attempt")은 방향이 없다 — 도구가 성공을 보고하든 실패를 보고하든, 보고 자체는 ground-truth가 아니다. 실패 보고를 받았다고 곧바로 재시도·롤백에 들어가지 말고, 먼저 실제 산출물 상태를 확인한다.
 
+> **v2.1.259/261+**: "정지 보고 ≠ 실제 정지" 결함 3건이 수정되었습니다. (259) Stop이 remote-control 세션의 background agent·workflow를 실제로 멈추지 못했던 결함 — 이제 kill된 task는 프로세스가 종료될 때까지 계속 표시되고 재정지 가능합니다. (261) SDK·cloud 세션이 첫 프롬프트 직후, turn이 시작하기 전에 도착한 Stop/interrupt를 무시하고 turn을 끝까지 실행하던 결함이 수정되었습니다. (261) 터미널 진행 표시(iTerm2, Ghostty, ConEmu)가 background workflow/agent가 아직 실행 중인데도 세션을 완료된 것으로 표시하던 결함이 수정되었습니다. 세 건 모두 이 섹션 원칙의 **역방향 쌍둥이**입니다 — "정지됨"/"완료됨" 신호도 ground-truth가 아니므로, 인터럽트가 실제로 적용됐다고 단정하기 전에 프로세스/run 상태(`gh run list`, task 패널, `pgrep`)로 확인합니다. 같은 릴리즈에서 (259) 이전 정지 실행이 종료 중인 상태에서 workflow run을 재개하면 그 에이전트들이 **중복 실행**될 수 있던 결함도 수정되었습니다(cross-ref R023 Workflow resume).
+
+> **v2.1.265/267+**: (265) 이전 프로세스가 도구 실행 중 죽은 뒤 재개하면 마지막 프롬프트를 더 이상 재작성하지 않고, 중단된 도구 호출을 유지하며 **interrupted로 명시 표시**합니다 — 위 v2.1.246 행(인터럽트된 셸 명령이 단순 "실행됨"으로만 표시)의 연장선으로, 이 경로에서는 이제 트랜스크립트에 명시적 interrupted 마커가 남으므로 v2.1.265+에서는 그 부재가 유의미한 증거지만 구버전에서는 아닙니다. (267) `/compact` 또는 다른 슬래시 커맨드 직후 `-p --resume`으로 재개할 때 가짜 "Continue from where you left off." turn이 더 이상 삽입되지 않습니다 — `/fsd` 류 `-p` 루프에서 이런 turn을 사용자 입력으로 오인할 수 있었던 경로와 관련됩니다(R015: 이것은 지시가 아닙니다). 또한 큰 세션(트랜스크립트 5MB 초과)을 재개할 때 병렬 도구 호출과 그 훅 출력이 재로드된 대화에서 누락되던 결함도 수정되었습니다(cross-ref R021) — 회고적 트랜스크립트 계수(「Self-Violation Counting Is Also Diagnosis」)에서, 구버전으로 재개된 5MB 초과 세션은 도구 호출이 유실됐을 수 있으므로 그런 트랜스크립트의 계수는 **하한값**으로 취급합니다.
+
 ### CI Publish-Step Error vs Published-Artifact Ground Truth
 
 > Origin: #1332 — `npm publish --provenance` emitted a Sigstore `TLOG_CREATE_ENTRY_ERROR` 409, but the publish step's `|| npm view <pkg>@<ver>` fallback recovered (the package WAS published) and release.yml succeeded on all jobs. A subagent read the tlog error in the logs and prematurely declared the run "failed", recommending a re-run; deterministic ground-truth (`npm view`, `gh release view`) showed the release had fully succeeded.

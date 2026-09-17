@@ -172,6 +172,10 @@ Before invoking a Workflow script, deterministically verify:
 
 > **v2.1.223+**: workflow script가 동적 `import()`로 workflow 샌드박스 **밖의 코드를 실행**할 수 있던 결함이 수정되었습니다. 위 표의 체크는 프롬프트 조립·문법·런타임 계열을 다루지만 **샌드박스 탈출은 다루지 않았고**, 구버전에서는 `node --check` 통과 + 프롬프트 정상 조립 상태에서도 스크립트가 경계 밖 코드를 끌어올 수 있었습니다. 외부에서 받은 workflow script를 실행하기 전 동적 `import()` 사용 여부를 grep으로 확인합니다(Tier-1 결정론 검사).
 
+> **v2.1.259/260+**: Workflow 도구 견고성 수정 3건입니다. (259) 워크플로 실행 재개 시 직전 stop된 실행의 프로세스가 아직 종료 중이면 그 agent들이 **중복 실행**될 수 있던 결함이 수정되었습니다 — 구버전에서는 `resumeFromRunId`를 stop 직후 바로 호출하는 것이 안전하지 않았으므로, stop → 프로세스 종료 확인 → resume 순서를 지킵니다. (260) Workflow `agent({schema})`가 이제 **충족 불가능한 JSON Schema를 사전 거부**하고, 재시도 한도 초과 에러에 마지막 검증 실패 내용을 포함합니다 — 플랫폼이 스스로 수행하는 Tier-1 결정론 사전 점검이며, 위 표의 sanity-check 항목에 "충족 불가능한 schema는 어떤 agent도 실행되기 전에 거부됨"을 추가로 간주할 수 있습니다. (260) 장시간 context compaction이 진행 중인 Workflow subagent가 "stalled"로 재시작되던 결함이 수정되었습니다 — R009 Adaptive Parallel Splitting과 교차 참조: compaction 대기는 stall이 아닙니다.
+
+> **v2.1.267+**: auto mode에서 **큰 출력 스키마**를 가진 Workflow `agent()` 호출이 safety classifier의 검토 대신 **거부**되던 결함이 수정되었습니다. 구버전에서 큰 스키마 `agent()` 호출의 거부는 classifier 판정이 아니라 플랫폼 크기 제약의 산물이었으므로, R010 Subagent Scope-Creep STOP Protocol의 trip 횟수에 계상하지 않습니다. 또한 (261) `bashOutputMaxChars`/`taskOutputMaxChars` 설정(최대 128K자)이 신설되어 명령/백그라운드 작업 출력이 파일로 저장되기 전 모델에 인라인으로 도달하는 양을 조정합니다 — Tier-1 검증 스크립트의 출력이 파일로 잘려 pass/fail 라인이 유실될 때 관련됩니다; 한도를 올리기보다 exit code를 단독으로 읽는 방식(R005 #1492)을 우선합니다.
+
 #### Common Violation (#1271)
 Session 106 follow-up to #1266 ③: a Workflow authoring error recurred — the guardrail fact-sheet was concatenated onto the agent's RETURN VALUE instead of the prompt string, and a placeholder/assembly slip went uncaught because no pre-run sanity check existed. This check is the deterministic Tier-1 guard that catches such slips before the expensive run.
 

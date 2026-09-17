@@ -133,6 +133,8 @@ Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_l
 
 > **v2.1.229+**: workflow fan-out이 같은 prefix를 공유하는 sibling agent를 **stagger**해 후속 에이전트가 prompt prefix 캐시를 재사용합니다(`CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS=0`으로 비활성). 즉 동일 접두사 병렬 배치는 동시 발사가 아니라 **의도적 시차 실행**이며, 스폰 직후 일부 에이전트의 시작 지연을 아래 Adaptive Parallel Splitting의 stall 신호로 오판하지 않습니다 — 구버전에서는 각 형제가 접두사 비용을 중복 지불했습니다. 또한 CPU 제한 컨테이너에서 dynamic workflow가 호스트 코어 수를 쓰던 문제가 수정되어, 컨테이너 실행 시 실효 동시성이 위 표의 cap보다 낮을 수 있습니다.
 
+> **v2.1.265/267+**: 병렬/백그라운드 배치의 비용 모델에 영향을 주는 prompt-cache 안정성 수정 다수입니다. (265) 전경(foreground)으로 스폰된 subagent를 재개(resume)하면 그 에이전트의 tool 목록과 system prompt prefix가 바뀌어 prompt-cache 재사용이 깨지던 결함이 수정되었습니다. (267) 대화에서 fork된 background worker가 세션 도중 대화의 tool 블록에 `EnterWorktree`를 추가하던 결함(cache 단절), `ToolSearch`가 없는 세션에서 세션 도중 추가된 MCP/plugin tool이 tool 목록에 즉시 실려 cache가 단절되던 결함(지원 모델은 이제 deferred definition으로 전달받음), `/model`로 모델을 전환하면 모든 tool 정의를 다시 전송해 cache miss가 발생하던 결함이 수정되었습니다. 이 규칙의 비용 모델에 대한 함의: 구버전에서는 fork/resume이 prefix를 바꿀 때마다 위 v2.1.229 prefix-stagger 이점이 조용히 소실됐으므로, 그 시기 버전에서 측정된 "병렬 신규 스폰"과 "long-lived 재사용"(아래 Fable 5 노트) 간 비용 차이는 현행 동작과 비교 불가합니다. 또한 (261) background agent가 재개(resume)되지 못하고 wake-up이 tight loop로 재시도되며 CPU가 지속 고점유되던 결함이 수정되었습니다 — 구버전에서는 병렬 배치 중 CPU 포화가 배치 자체가 아니라 재개 불가한 background agent에서 비롯될 수 있었습니다(「파일 disjoint ≠ 자원 disjoint」 CPU 행과 교차 참조).
+
 > **Fable 5 long-lived subagent reuse (Origin: #1435)**: Fable 5는 long-lived subagent 재사용(단일 subagent가 여러 단계를 이어서 수행)에 강함 — 현행 R009 병렬 실행 원칙과 상충하지 않으며, Fable 5 실행 시 short-lived 병렬 다수 대신 long-lived 재사용도 유효한 선택지. 상세는 `guides/claude-code/16-fable5-prompting.md`.
 
 ## Adaptive Parallel Splitting

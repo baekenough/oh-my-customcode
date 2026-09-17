@@ -47,6 +47,10 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 > **v2.1.248+**: 훅 관측성이 두 건 강화되었습니다 — (a) `PermissionRequest`/`PreToolUse` 훅이 유효하지 않은 응답을 출력해 background session이 조용히 대기하던 결함이 수정되어, 이제 `claude agents` 행이 해당 훅 이름과 스키마 에러를 표시합니다. (b) 훅이 stdout으로 낸 `{…}` 객체가 유효한 JSON이 아닐 때 조용히 plain text로 처리하던 결함이 수정되어, 이제 parse 에러와 함께 훅 에러로 보고됩니다. 위 v2.1.214 "훅 stdout JSON이 스키마 검증에 실패할 때 exit code 2가 문서대로 차단하지 못하던 문제" 노트와 같은 계열 — 훅 실패가 무음에서 가시화되는 흐름의 연속입니다.
 
+> **v2.1.259+**: blocking Stop 훅이 발동한 턴의 **다음** 턴이 그 턴의 모델 reasoning을 잃고, 일부 모델에서는 prompt cache까지 miss하던 결함이 수정되었습니다. 이 저장소의 Stop-hook 계층(`session-reflection.sh`, retroactive R007/R008 advisory)에 직접 해당됩니다 — 구버전에서는 Stop 훅의 block이 차단 자체 외에 **숨은 비용**(reasoning 유실 + cache miss)을 수반했으므로, v1.1.53~56에 기록된 "Stop 훅 잠식" 패턴의 **원인 후보 중 하나**로 재해석할 여지가 있습니다. 단 확정 원인은 아니며 가설 후보로만 취급합니다(R020 hypothesis 규율). 같은 릴리즈에서 `claude plugin validate --json`이 기계 판독 가능한 리포트를 제공하게 되었습니다(위 R017 v2.1.233 `plugin validate` 노트의 연장) — Tier-1 결정론적 검사로 활용 가능합니다.
+
+> **v2.1.261/265/267+**: resume 시 훅 컨텍스트 무결성 결함 3건이 수정되었습니다. (261) 세션 재개 시 **병렬 도구 호출 주변**의 훅 출력 등 컨텍스트가 유실되어 재개된 요청이 달라지던 결함이 수정되었습니다. (267) 대용량 세션(트랜스크립트 5MB 초과) 재개 시 병렬 도구 호출과 그 훅 출력이 누락되던 결함이 수정되었습니다. (265) agent teammate와 재개된 서브에이전트가 이후 턴에서 `SubagentStart` 훅 컨텍스트와 preload된 스킬을 prompt prefix 밖으로 이동시켜 prompt-cache 재사용을 깨뜨리던 결함이 수정되었습니다. 함의: 구버전에서 재개된 세션의 대화에 어떤 훅의 출력이 보이지 않는다고 해서 그 훅이 **발화하지 않았다**는 증거는 아닙니다 — 「배선 확인 ≠ 전달 확인 ≠ 발화 확인 ≠ 로드 확인」4층 구분에 5번째 각도(**발화 ≠ 재개 후 보존**)가 추가됩니다. 또한 (267) managed `allowedHttpHookUrls`/`httpHookAllowedEnvVars`가 읽을 수 없을 때 아무것도 허용하지 않도록(fail-closed) 변경되었습니다.
+
 ## Why Advisory-First
 
 1. **Agent flexibility**: Hard blocks can trap agents in unrecoverable states
