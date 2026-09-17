@@ -1689,6 +1689,48 @@ describe('stuck-detector.sh', () => {
     const line300 = Array(300).fill('ls').join('\n');
     const heredoc1000 = `cat <<'EOF'\n${Array(1000).fill('x').join('\n')}\nEOF`;
 
+    // --- #1681: the two cost assertions below were absolute wall-clock bounds
+    // (300 segments < 400 ms, 1000-line heredoc < 500 ms). On GitHub
+    // macos-latest runners the 300-segment case measured 413 / 446 / 490 /
+    // 554 ms and failed 5 times in one day, once skipping Publish/Verify in
+    // release.yml. Nothing in the script had changed — the runner had.
+    //
+    // The regression these two tests guard (per-line forking, #1650 A) is
+    // LINEAR in line count, so it appears as a MULTIPLE of the single-line
+    // cost, never as a fixed number of milliseconds:
+    //
+    //   healthy (local, Apple Silicon)  300 segments   4.1x idle, 5.5x at load 8, 7.0x at load 16
+    //                                   1000-line HD   2.1-2.3x idle
+    //   pre-fix (#1650 A, re-measured   300 segments   827 ms = 17.6x idle, 29.9x at load 16
+    //   2026-09-17 from 8eb9ef1d^)      1000-line HD  2027 ms = 43x idle
+    //
+    // K = 10 sits between the two: ~1.4x headroom over the worst healthy ratio
+    // seen under a 16-process load, and the cheapest regression signal (17.6x)
+    // is still 1.76x above the bound; the regression margin widens under load.
+    // A ratio is runner-independent — a 2.4x slower runner scales baseline and
+    // measurement alike. The absolute floor keeps the bound meaningful when the
+    // baseline is small enough that spawn jitter dominates it. Blind spot: a
+    // uniform slowdown of the shared prologue raises the baseline too; only the
+    // floor catches its mild form.
+    const PER_LINE_FORK_RATIO = 10;
+
+    /**
+     * Cost of classifying a ONE-line read-only Bash command, in this process,
+     * on this machine, right now. One discarded warm-up run (cold bash/jq page
+     * cache) then the median of 3 samples. Each sample uses a distinct command
+     * so the samples cannot accumulate into a repeat signal.
+     */
+    async function singleLineBaselineMs(): Promise<number> {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command: 'ls warmup' }));
+      const samples: number[] = [];
+      for (let i = 0; i < 3; i++) {
+        const started = performance.now();
+        await runStuckDetector(makeInput({ tool_name: 'Bash', command: `ls baseline-${i}` }));
+        samples.push(performance.now() - started);
+      }
+      return samples.sort((a, b) => a - b)[1];
+    }
+
     it('NEGATIVE: should keep a 40-line all-read-only command read-only', async () => {
       expect(await readonlyOf(line40)).toBe('true');
     });
@@ -1719,19 +1761,24 @@ describe('stuck-detector.sh', () => {
     });
 
     it('should classify a 300-segment command in well under the pre-fix cost', async () => {
-      const started = Date.now();
+      const baseline = await singleLineBaselineMs();
+      const started = performance.now();
       const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command: line300 }));
-      const elapsed = Date.now() - started;
+      const elapsed = performance.now() - started;
       expect(result.exitCode).toBe(0);
-      expect(elapsed).toBeLessThan(400);
+      // 300 lines may cost up to PER_LINE_FORK_RATIO x one line (floor 400 ms).
+      // Per-line forking measured 17.6x, so it still fails this bound.
+      expect(elapsed).toBeLessThan(Math.max(400, PER_LINE_FORK_RATIO * baseline));
     }, 30000);
 
     it('should classify a 1000-line heredoc in well under the pre-fix cost', async () => {
-      const started = Date.now();
+      const baseline = await singleLineBaselineMs();
+      const started = performance.now();
       const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command: heredoc1000 }));
-      const elapsed = Date.now() - started;
+      const elapsed = performance.now() - started;
       expect(result.exitCode).toBe(0);
-      expect(elapsed).toBeLessThan(500);
+      // Per-line heredoc-body trimming measured 43x one line; healthy is ~2.2x.
+      expect(elapsed).toBeLessThan(Math.max(500, PER_LINE_FORK_RATIO * baseline));
     }, 30000);
 
     // --- B (#1650): stdin that is not a JSON OBJECT (a bare string, a JSON
