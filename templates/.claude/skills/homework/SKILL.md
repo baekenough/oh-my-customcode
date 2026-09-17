@@ -50,19 +50,25 @@ Parse arguments:
 
 Attempt deterministic transcript extraction. Preferred sources (in order):
 
-1. **Grep for rule-violation markers** in the current conversation context:
+1. **advisor 판정 재사용 계수 스크립트 (1순위, #1683 #2)** — 트랜스크립트 경로를 알 수 있으면 먼저 실행합니다:
+   ```bash
+   bash scripts/count-r007-r008.sh "$TRANSCRIPT" --json
+   ```
+   이 스크립트는 `.claude/hooks/scripts/r007-r008-drift-advisor.sh`를 턴 단위로 호출해 R007 헤더 누락·R008 접두사 누락 건수를 **훅과 동일한 판정식**으로 셉니다. 자체 정규식으로 재구현하지 않습니다 — v1.1.64 세션에서 자가 계수가 3회 연속 방법 오류(레코드 분리 미인지, 병합 키 불일치, 중첩 중복 계상)로 실패한 것이 기원이며, R020 「자가 계수는 advisor 판정식을 재현한다」가 규범입니다. 스크립트가 없거나 실패하면 아래 소스로 내려가되, 회고에 "advisor 재사용 계수 미수행"을 명시합니다.
+
+2. **Grep for rule-violation markers** in the current conversation context:
    - Safety classifier trip signals: `[Safety]`, `[R001]`, `[Warning]`, classifier denial messages
    - Self-corrections: "sorry", "I made an error", "let me correct", "이전 답변 수정", "죄송합니다"
    - Premature hypothesis signals: "I assume", "probably", "should be" followed by a contradiction in a later turn
    - Interrupt + re-plan events: user corrections, "no", "wrong", "다시", "아니"
 
-2. **Transcript files** (CC v2.1.x session JSONL):
+3. **Transcript files** (CC v2.1.x session JSONL):
    ```bash
    find ~/.claude/projects -name "session-*.jsonl" -newer "$(date -v-1d +%Y-%m-%dT00:00:00)" 2>/dev/null | head -5
    ```
    Parse `type: "error"`, `type: "correction"`, `type: "feedback"` events.
 
-3. **Fallback**: Rely on the model's recall of the current conversation (impressionistic, lower confidence — mark findings as `[recall]` not `[transcript]`).
+4. **Fallback**: Rely on the model's recall of the current conversation (impressionistic, lower confidence — mark findings as `[recall]` not `[transcript]`).
 
 #### 2b. Linked Previous Sessions (when `--days` > 0)
 
@@ -224,7 +230,8 @@ This skill does NOT use `context: fork`. The fork cap is at 10/12; homework is a
 
 ## Limitations
 
-- **Transcript availability**: CC `session-*.jsonl` schema may change; Phase 2a source (1) grep is more resilient than JSONL parsing.
+- **Transcript availability**: CC `session-*.jsonl` schema may change; Phase 2a source (2) grep is more resilient than JSONL parsing.
 - **Recall accuracy**: When transcript files are unavailable, findings are marked `[recall]` and confidence is lower.
 - **episodic-memory dependency**: `--days` mode degrades gracefully when the plugin is unavailable (falls back to JSONL scan).
 - **Scope**: This skill analyzes session behavior, not code quality. For code-quality retrospectives, use `dev-review` or `adversarial-review`.
+- **Count fidelity**: only the advisor-reuse script (2a source 1) reproduces the hook verdict; sources 2–4 are approximations and must be labeled as such in the retrospective.

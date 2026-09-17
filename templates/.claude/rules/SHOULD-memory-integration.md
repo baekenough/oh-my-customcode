@@ -348,6 +348,8 @@ Temporal Decay(시간 경과 기반)와 Attention-Weight Tiering(접근 빈도 �
 - 세션 종료: 이번 세션 참조 여부 기반 tier 재평가 → archive 이동 실행
 - archive 이동 시: `sessions_archive_*.md`에 append, MEMORY.md에 인덱스 라인 유지
 
+**위임서 표준 문안 (Origin: #1660 하네스 제안)**: sys-memory-keeper에 세션 메모리 갱신을 위임할 때 위임서에 "**압축·정리·티어 재평가 불요 — 지시한 항목만 기록**"을 명시합니다(정리가 필요하면 별도 위임으로 분리). 명시하지 않으면 에이전트가 자체적으로 MEMORY.md 압축을 목표에 추가해 턴 예산을 소진합니다 — v1.1.63 반복(#1660)에서 이 원인으로 15턴 절단이 2회 발생했습니다(R020 「maxTurns 절단 실증」의 메모리 위임 각도). 위 Tier 승강·archive 이동은 세션 종료 시 **별도 단일 목표 위임**으로 수행합니다.
+
 ## Mid-Session Immediate Save
 
 Save memory IMMEDIATELY upon surprising discovery — do not defer to session end.

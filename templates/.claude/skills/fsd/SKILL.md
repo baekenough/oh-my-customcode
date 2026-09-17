@@ -10,11 +10,13 @@ effort: high
 
 # /omcustom:fsd — Full Self Driving
 
-Autonomous release loop. Equivalent to running:
+Autonomous release loop. Can be expressed as running:
 
 ```
 /goal "모든 이슈가 처리될 때까지" /loop "/pipeline auto-dev -> /homework"
 ```
+
+> The main conversation may also drive the same loop inline without invoking `goal`/`loop` — see 「인라인 실행 허용 — 계약과 실측의 정합 (#1683 #4)」 below.
 
 This is a **thin alias / orchestrator skill**. It does not implement loop, issue-polling, release, or verification logic — it delegates entirely to existing skills.
 
@@ -119,6 +121,19 @@ printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "/tmp/.claude-fsd-$PPID"
                                                  → NO  → next iteration (re-write marker first)
 ```
 
+### 인라인 실행 허용 — 계약과 실측의 정합 (#1683 #4)
+
+FSD의 루프 드라이버는 **메인 대화(오케스트레이터) 자신**입니다. `/goal`·`/loop`(ScheduleWakeup) 스킬 호출은 루프를 표현하는 한 방법일 뿐 필수 호출이 아니며, 오케스트레이터가 아래 최소 계약을 지키면 스킬 호출 없이 인라인으로 반복을 진행하는 것도 이 스킬의 정상 실행입니다. v1.1.64 반복이 인라인으로 실행된 것을 계약 이탈로 회고한 것(#1683 찐빠 #4)이 이 절의 기원이며, 같은 세션의 v1.1.65·v1.1.66 반복도 인라인으로 실행되었습니다(세션 실측, 이슈 범위 밖).
+
+| 반복마다 지켜야 할 최소 계약 | 근거 |
+|------------------------------|------|
+| 반복 시작 시 무인 마커 갱신(`/tmp/.claude-fsd-$PPID`) | 위 「무인 모드 마커」 |
+| `/pipeline auto-dev` 1회 → homework 아티팩트 1개 기록 → 열린 PR 처리 | 「Iteration Flow」 |
+| 반복 끝에 수렴 판정(적격 이슈 0 AND 열린 PR 0)을 실측으로 수행 | R020 |
+| 종료 경로와 무관하게 마커 제거(`command rm -f`) | 「무인 모드 마커」 |
+
+`/goal`·`/loop`를 호출하는 경로는 여전히 유효하며, 세션이 무인(`claude -p`, 예약 실행)이라 자기 페이싱이 필요할 때 권장됩니다. 대화형 세션에서는 인라인 실행이 스킬 호출 오버헤드 없이 같은 계약을 만족합니다.
+
 ## Safety and Discipline
 
 Each iteration operates under full project rules — no relaxation because FSD is autonomous:
@@ -209,6 +224,7 @@ This skill is intentionally a **thin alias**. It does NOT duplicate:
 - Retrospective analysis (owned by `homework`)
 - PR merge execution (owned by `mgr-gitnerd`)
 - Completion verification (owned by R020 + `goal`)
+- Loop driving itself — the main conversation may run the iteration inline (see 「인라인 실행 허용」); `goal`/`omcustom-loop` are optional expressions of the same contract
 
 If any of those underlying skills evolve, FSD automatically benefits — its only responsibility is declaring the intent and forwarding to the right components.
 

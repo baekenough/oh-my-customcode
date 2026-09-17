@@ -20,6 +20,8 @@
 
 > **zsh 내장 `echo`는 이스케이프를 확장한다 (#1625)**: zsh(이 저장소 Bash 도구 실행 셸)의 내장 `echo`는 `\n` 등 백슬래시 이스케이프를 기본 확장하므로, JSON 문자열을 파이프에 실을 때 `echo "$var"`를 쓰면 valid JSON을 스스로 깨뜨려 하류 파서 오진을 유발한다(v1.1.53 세션 훅 오진의 실제 원인). JSON/구조화 문자열 전달은 `printf '%s' "$var"`를 표준으로 한다.
 
+> **zsh는 미인용 `$var`를 단어 분할하지 않는다 (#1683 #5)**: bash에서 관용적인 `for l in $list` / `set -- $line` 은 zsh(이 저장소 Bash 도구 실행 셸)에서 변수 전체를 **한 단어**로 취급하므로, `set -u`와 결합하면 `$2` 접근이 `parameter not set`으로 즉시 종료됩니다. 단어 분할이 필요하면 `${=var}`(zsh 전용) 또는 배열(`arr=(a b c); for x in "${arr[@]}"`)을 사용하고, 여러 필드가 든 문자열은 `read -r a b c <<< "$line"`으로 분해합니다. Origin: #1683 찐빠 #5 (v1.1.64 세션 — pre-triage 라벨 부트스트랩 스니펫이 1턴 실패 후 명시 인자로 재실행). Cross-ref: 위 zsh `echo` 노트, 파이프 `$?` 노트(#1540 zsh 변형) — 같은 "이 저장소의 셸은 zsh" 계열입니다.
+
 > **로컬 실행 옵션 제시 전 자원 가용성 선확인 (#1455 #2)**: 로컬 실행에 의존하는 검증 옵션(로컬 스모크 테스트, 로컬 스크립트 실행 등)을 사용자에게 제시하기 **전에**, 그 실행에 필요한 로컬 자원(env 키, CLI 도구, 인증 상태)의 가용성을 먼저 확인한다. **저장소 secret 존재 ≠ 로컬 셸 env 존재** — `gh secret list`로 저장소 secret을 확인해도 로컬 셸에 해당 env가 있으리라 단정하지 말 것. 자원 부재 시 옵션에 전제조건을 명시하거나 옵션에서 제외하여, 사용자가 실행 불가한 옵션을 선택했다가 되돌리는 왕복(AskUserQuestion 재질문)을 방지한다. Cross-ref: R020(사전 검증). Origin: #1455 #2 (Session 127 회고 찐빠 #2) — 사용자가 "로컬 스모크 테스트 먼저"를 선택했으나 로컬 셸에 ANTHROPIC_API_KEY 부재로 실행 불가 → "스킵, 바로 커밋" 재선택, AskUserQuestion 왕복 1회 발생.
 
 > **Shell output parsing — use Python, not read/grep (#1401 찐빠 #3)**: adb bounds rect, 좌표쌍, JSON 분할 등 구조화된 출력 파싱은 `read`+`grep -o` 파이프라인 대신 Python (`python3 -c "..."`) 을 사용한다. `read`+`grep -o` 조합은 공백 차이에 취약해 헛값을 산출한다. SSH 원격 `bash -c` 인자에 소괄호 포함 금지 — `ssh host "cmd; cmd2"` 형식 사용.

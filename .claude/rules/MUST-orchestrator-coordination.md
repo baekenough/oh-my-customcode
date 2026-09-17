@@ -631,7 +631,8 @@ After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. N
 | Kotlin/Spring | lang-kotlin-expert / be-springboot-expert |
 | Architecture docs | arch-documenter |
 | Test strategy | qa-planner |
-| CI/CD, GitHub config | mgr-gitnerd |
+| CI/CD workflow files, GitHub config (branch protection, secrets) | mgr-gitnerd — `gh run rerun` is GitHub metadata, see next row |
+| GitHub metadata only (issue create/comment/label/milestone, `gh run rerun`, read-only `gh` queries) | Orchestrator (direct) or mgr-gitnerd — see Rules bullet below |
 | Docker/Infra | infra-docker-expert |
 | Server deployment (docker, scp) | infra-docker-expert |
 | Server state changes (restart, env) | infra-docker-expert |
@@ -644,6 +645,7 @@ After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. N
 - Use specialized agents, not general-purpose, when one exists
 - general-purpose only for truly generic tasks (file moves, simple scripts)
 - No exceptions for "small" or "quick" changes
+- GitHub 메타데이터 작업(이슈 생성·코멘트·라벨·마일스톤, `gh run rerun`, 읽기 전용 `gh` 조회)은 프로젝트 파일 쓰기가 아니므로 오케스트레이터 직접 실행이 허용됩니다 — 위임도 허용되며, PR 생성·머지와 로컬 git 상태 변경은 계속 mgr-gitnerd 소유입니다 (Origin: #1683 찐빠 #6 — CI 재실행 4회·이슈 2건·코멘트 1건을 직접 실행했으나 소유 에이전트가 미명시였던 경계 모호).
 
 ### Protected Paths (mgr-creator Required)
 
