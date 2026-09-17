@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.67",
-  "generatedAt": "2026-09-17T22:36:17.817Z",
-  "templateVersion": "1.1.67",
+  "generatorVersion": "1.1.68",
+  "generatedAt": "2026-09-17T23:27:29.532Z",
+  "templateVersion": "1.1.68",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "b31b36d5e6206a56bc5c4b78c20ba631697148322cf3735192182dd70f139923",
@@ -1235,8 +1235,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "91a7512389ea47d5e6f52dc5f26d9bd2c9ce34962ce067fc844f77796ca8409b",
-      "size": 28613,
+      "templateHash": "53b18f6535ab61dcbeac89666f4719982bdd0e5b77afb3485c49f1e6bc389ce7",
+      "size": 30145,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix-prompt.sh": {
@@ -1250,8 +1250,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "2482c3d5c036f4cdadda7855c18550700043ca756e89a86b998a303a0d218057",
-      "size": 34542,
+      "templateHash": "05b80da16b1f01de53487046304997e8e7017a6900a6bde95cff03b6786aa2b0",
+      "size": 36479,
       "component": "hooks"
     },
     ".claude/hooks/scripts/failure-ledger.sh": {

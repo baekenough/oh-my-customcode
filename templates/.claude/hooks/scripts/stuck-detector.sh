@@ -597,13 +597,34 @@ raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
 # Distinguish "the same file edited 3 times with DIFFERENT content" (a normal
 # incremental-edit workflow — the #1641 false positive) from "the same edit
 # repeated 3 times" (a genuine stuck loop). Only the latter should hard-block.
-# Alphanumerics-only + length cap: deterministic, platform-independent (no
-# md5sum, absent on macOS) and safe to embed in a grep pattern.
+# #1649: the original alphanumerics-only + 120-char-cut key had two defects —
+# (M-1) edits differing only in punctuation/whitespace (e.g. re-aligning a
+# markdown table) collapsed to the SAME key and were falsely blocked as
+# "identical", and (M-2) Write calls sharing a long identical prefix (e.g.
+# frontmatter) collided after the 120-char cut even when the body differed.
+# New spec: collapse whitespace runs to one space (still deterministic,
+# platform-independent, no md5sum) but PRESERVE punctuation, then key on
+# "<len>#<full>" when the normalized string is <=120 chars (short strings fit
+# whole, so no sum is needed), else "<len>#<codepoint sum>#<first 80 chars>
+# #<last 40 chars>" — length + codepoint sum + head/tail. Adversarial review
+# found the length+head+tail-only key (no sum) still collides when a
+# same-length middle-only substitution falls entirely outside both the head
+# and tail windows (e.g. this repo's own count/version-bump Writes: 80 "A"s +
+# "version-115-count" + 40 "Z"s vs "...-116-..." vs "...-117-..." — all 137
+# chars, identical head/tail). The codepoint sum changes whenever the changed
+# substring's characters change, so a substitution is now caught by the sum;
+# a same-sum transposition of the middle segment can still collide — an
+# accepted residual risk, not fully eliminated.
 edit_hash=""
 if [ "$tool_name" = "Edit" ] || [ "$tool_name" = "Write" ]; then
   edit_hash=$(printf '%s' "$input" \
     | jq -r '(.tool_input.old_string // .tool_input.content // .tool_input.new_string // "")
-             | gsub("[^A-Za-z0-9]"; "") | .[0:120]')
+             | gsub("[[:space:]]+"; " ") | ltrimstr(" ") | rtrimstr(" ")
+             | (length as $l
+                | if $l <= 120 then "\($l)#\(.)"
+                  else ((explode | add // 0) as $sum
+                        | "\($l)#\($sum)#\(.[0:80])#\(.[-40:])")
+                  end)')
 fi
 
 # History entries are written by jq, so their "path" values are JSON-ENCODED.
@@ -614,6 +635,15 @@ fi
 # stopped matching. Encode once here and match with grep -F (fixed string).
 target_key_json=$(jq -n --arg v "$target_key" '$v')
 path_match="\"path\":${target_key_json}"
+
+# #1649 follow-up: edit_hash now preserves punctuation (see the edit_hash
+# comment above), so it can contain quotes/backslashes just like a Bash
+# command can. It is written to history the same JSON-encoded way "path" is
+# (--arg ehash "$edit_hash" -> jq serializes it), so Check 1 / Check 3 below
+# must match it with the SAME JSON-encoded literal, not the raw string — same
+# fix as path_match above, applied to edit_hash.
+edit_hash_json=$(jq -n --arg v "$edit_hash" '$v')
+edit_hash_match="\"edit_hash\":${edit_hash_json}"
 
 is_readonly="false"
 if [ "$tool_name" = "Bash" ]; then
@@ -761,7 +791,7 @@ if [ -f "$HISTORY_FILE" ]; then
     if [ "$is_readonly" != "true" ] && [ -n "$file_path" ]; then
       consecutive_file=$(printf '%s\n' "$last_n" \
         | grep -F -e "$path_match" \
-        | grep -cF -e "\"edit_hash\":\"${edit_hash}\"" 2>/dev/null || true)
+        | grep -cF -e "$edit_hash_match" 2>/dev/null || true)
       [ -n "$consecutive_file" ] || consecutive_file=0
       if [ "$consecutive_file" -ge "$HARD_BLOCK_THRESHOLD" ]; then
         hard_block=true
@@ -791,7 +821,7 @@ if [ -f "$HISTORY_FILE" ]; then
       consecutive_tool_target=$(printf '%s\n' "$last_n" \
         | grep -F -e "\"tool\":\"${tool_name}\"" \
         | grep -F -e "$path_match" \
-        | grep -cF -e "\"edit_hash\":\"${edit_hash}\"" 2>/dev/null || true)
+        | grep -cF -e "$edit_hash_match" 2>/dev/null || true)
       [ -n "$consecutive_tool_target" ] || consecutive_tool_target=0
       if [ "$consecutive_tool_target" -ge "$HARD_BLOCK_THRESHOLD" ]; then
         hard_block=true
