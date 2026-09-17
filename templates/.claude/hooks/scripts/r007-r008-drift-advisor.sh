@@ -298,6 +298,10 @@ split("\n")
     # 미announce Read — 은 새로 발화한다(의도된 동작, v1.1.62 적대적 리뷰 재현 C1/C2).
     | ($an_tool + (if $an_spawn > $an_tool_agent then $an_spawn - $an_tool_agent else 0 end)) as $announce
     | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) ] | length) as $ntools
+    # 미접두 도구 이름 (#1687): $ntools와 동일한 필터(non-Skill tool_use)로 순서를 보존한 이름
+    # 목록을 뽑는다. $r008(누락 건수)이 어떤 도구인지 shell에서 드러내기 위한 부가 필드 —
+    # 판정식($r008 산출) 자체는 건드리지 않는다.
+    | ([ $blocks[] | select((.type? == "tool_use") and ((.name? // "") != "Skill")) | (.name? // "") ]) as $tool_names_list
     # 전체 tool_use(Skill 포함)가 0건인 턴은 forward 판정을 무조건 0으로 고정한다(#1625
     # 찐빠 #3, 이슈 제안 그대로). $ntools(Skill 제외) 기반 산식은 정상 입력에서는 이미
     # 0을 내지만, 명시 가드로 불변식을 코드에 못박아 향후 산식 변경이 이 보장을 조용히
@@ -322,7 +326,7 @@ split("\n")
     | ([ $lines[] | select(test("^\\[[^\\]]+\\]\\[[^\\]]+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_anchored
     # $nall_tools는 위 forward r008 가드에서 이미 바인딩됨 — 재바인딩하지 않고 재사용한다.
     | (if $nall_tools == 0 and $an_anchored > 0 then $an_anchored else 0 end) as $r008rev
-    | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring)] | @tsv
+    | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring), ($tool_names_list | join(","))] | @tsv
       )
       end
   end
@@ -346,6 +350,8 @@ turn_uuid=$(printf '%s' "$result" | cut -f1)
 r007_violations=$(printf '%s' "$result" | cut -f2)
 r008_violations=$(printf '%s' "$result" | cut -f3)
 r008_reverse=$(printf '%s' "$result" | cut -f4)
+# 미접두 도구 이름 목록 (#1687) — $ntools와 동일 필터의 순서 보존 목록, "," join.
+tool_names=$(printf '%s' "$result" | cut -f5)
 
 : "${r007_violations:=0}"
 : "${r008_violations:=0}"
@@ -396,6 +402,26 @@ if [ "$r008_violations" -gt 0 ]; then
   else
     violation_desc="R008 도구 식별 접두사 누락 ${r008_violations}건"
     instruction="모든 도구 호출에 [agent][model] → Tool: 접두사를 포함하십시오."
+  fi
+  # 미접두 도구 이름 귀속 (#1687): announce는 턴 단위로 매칭되므로, $tool_names(순서 보존,
+  # non-Skill tool_use)의 마지막 r008_violations개를 부족분으로 귀속한다. 카운트 문구
+  # "R008 도구 식별 접두사 누락 N건"은 위에서 이미 확정되어 바이트 동일 유지 — 이 접미사는
+  # 항상 그 뒤에 이어붙인다(scripts/count-r007-r008.sh의 grep -oE 앵커와 무관).
+  if [ -n "$tool_names" ]; then
+    r008_missing_tools=$(printf '%s' "$tool_names" | awk -F',' -v n="$r008_violations" '{
+      total = NF
+      start = total - n + 1
+      if (start < 1) start = 1
+      out = ""
+      for (i = start; i <= total; i++) {
+        if (out != "") out = out ", "
+        out = out $i
+      }
+      print out
+    }')
+    if [ -n "$r008_missing_tools" ]; then
+      violation_desc="${violation_desc} (미접두 도구: ${r008_missing_tools})"
+    fi
   fi
 fi
 

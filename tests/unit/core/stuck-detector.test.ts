@@ -1157,13 +1157,15 @@ describe('stuck-detector.sh', () => {
       expect(entry.edit_hash).toBe('');
     });
 
-    it('should derive edit_hash from Edit old_string (alphanumerics only)', async () => {
+    it('should derive edit_hash from Edit old_string (whitespace-collapsed, punctuation preserved, #1649)', async () => {
       await runStuckDetector(
         makeInput({ tool_name: 'Edit', file_path: '/src/hash.ts', old_string: 'AAA-111 bbb' })
       );
       const content = await readFile(historyFilePath(), 'utf-8');
       const entry = JSON.parse(content.trim().split('\n')[0]);
-      expect(entry.edit_hash).toBe('AAA111bbb');
+      // "AAA-111 bbb" is 11 chars, already single-spaced and untrimmed, so the
+      // <=120 branch keys on "<len>#<full string>" with punctuation intact.
+      expect(entry.edit_hash).toBe('11#AAA-111 bbb');
     });
 
     it('should NOT report a Bash command as a "Same file" hard block', async () => {
@@ -1233,6 +1235,153 @@ describe('stuck-detector.sh', () => {
       expect(result.stderr).not.toContain('HARD BLOCK');
     });
   });
+
+  // -----------------------------------------------------------------
+  // #1649 — edit_hash key: whitespace-collapsed, punctuation-preserving,
+  //         <len>#<head>#<tail> (fixes M-1 punctuation collision and M-2
+  //         long-shared-prefix collision from the old alnum-only + 120-char
+  //         cut key)
+  // -----------------------------------------------------------------
+
+  describe('edit_hash punctuation/prefix collision fixes (#1649)', () => {
+    // M-1: three table-realignment edits that differ only in PUNCTUATION
+    // (pipe placement / a semicolon) used to collapse to the same alnum-only
+    // key and were falsely blocked as "the same edit repeated". Whitespace-only
+    // differences still collapse by design (see `#1649: the original` comment
+    // in stuck-detector.sh) — punctuation is what must now distinguish them.
+    it('should NOT hard-block 3 edits to the same file differing only in punctuation', async () => {
+      const path = '/src/table.md';
+      await runStuckDetector(
+        makeInput({ tool_name: 'Edit', file_path: path, old_string: '| a | b |' })
+      );
+      await runStuckDetector(
+        makeInput({ tool_name: 'Edit', file_path: path, old_string: '| a | b | c |' })
+      );
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Edit', file_path: path, old_string: '| a ; b |' })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('HARD BLOCK');
+    });
+
+    // Negative control for the fix above: a byte-identical edit repeated 3
+    // times must STILL hard-block — punctuation-sensitivity must not defeat
+    // genuine stuck-loop detection.
+    it('should still hard-block a byte-identical edit repeated 3 times', async () => {
+      const result = await runNTimes(
+        makeInput({ tool_name: 'Edit', file_path: '/src/table.md', old_string: '| a | b |' }),
+        3
+      );
+      expect(result.exitCode).toBe(2);
+    });
+
+    // M-2: three Write calls sharing a long (200-char) identical frontmatter
+    // prefix used to collide after the old 120-char cut landed entirely inside
+    // the shared prefix, regardless of how the body differed. The new
+    // <len>#<head:80>#<tail:40> key keeps the body (and its length) in the key.
+    it('should NOT hard-block 3 Write calls sharing a 200-char prefix but different bodies', async () => {
+      const path = '/src/frontmatter.md';
+      const prefix = 'F'.repeat(200);
+      await runStuckDetector(
+        makeInput({ tool_name: 'Write', file_path: path, old_string: `${prefix}BODY_A` })
+      );
+      await runStuckDetector(
+        makeInput({ tool_name: 'Write', file_path: path, old_string: `${prefix}BODY_B_LONGER` })
+      );
+      const result = await runStuckDetector(
+        makeInput({
+          tool_name: 'Write',
+          file_path: path,
+          old_string: `${prefix}BODY_C_EVEN_LONGER_STILL`,
+        })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('HARD BLOCK');
+    });
+
+    // Negative control: an identical over-cap Write (same 200-char prefix,
+    // same body, so same length/head/tail) repeated 3 times must STILL
+    // hard-block.
+    it('should still hard-block an identical over-cap Write repeated 3 times', async () => {
+      const path = '/src/frontmatter.md';
+      const content = `${'F'.repeat(200)}BODY_SAME`;
+      const result = await runNTimes(
+        makeInput({ tool_name: 'Write', file_path: path, old_string: content }),
+        3
+      );
+      expect(result.exitCode).toBe(2);
+    });
+
+    // Follow-up regression: edit_hash preserving punctuation means it can now
+    // contain quotes/backslashes, just like a Bash command can (#1641). The
+    // history-entry match must use the SAME JSON-encoded literal the write
+    // side serializes ("edit_hash_json", mirroring "path_match" above) — a
+    // raw-string grep pattern silently stops matching once edit_hash contains
+    // a quote or backslash, which would make byte-identical edits containing
+    // quotes NEVER hard-block (most code edits contain quotes).
+    it('should still hard-block a byte-identical edit containing quotes and a backslash', async () => {
+      const result = await runNTimes(
+        makeInput({
+          tool_name: 'Edit',
+          file_path: '/src/quoted.ts',
+          old_string: 'contains "quotes" and \\ backslash',
+        }),
+        3
+      );
+      expect(result.exitCode).toBe(2);
+    });
+
+    it('should NOT hard-block 3 edits containing quotes that differ only in the last char', async () => {
+      const path = '/src/quoted-variant.ts';
+      await runStuckDetector(
+        makeInput({ tool_name: 'Edit', file_path: path, old_string: 'say "hi" A' })
+      );
+      await runStuckDetector(
+        makeInput({ tool_name: 'Edit', file_path: path, old_string: 'say "hi" B' })
+      );
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Edit', file_path: path, old_string: 'say "hi" C' })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('HARD BLOCK');
+    });
+
+    // Adversarial-review follow-up: length+head(80)+tail(40) alone still
+    // collides when a same-length edit changes only a MIDDLE segment that
+    // falls entirely outside both windows — exactly this repo's own
+    // count/version-bump Write shape (a long stable prefix, a short version
+    // token in the middle, a long stable suffix). The codepoint-sum term
+    // added to the key must distinguish these.
+    it('should NOT hard-block 3 same-length Writes differing only in a middle version token', async () => {
+      const path = '/src/version-bump.md';
+      const makeContent = (n: number) => `${'A'.repeat(80)}version-${n}-count${'Z'.repeat(40)}`;
+      expect(makeContent(115).length).toBe(137); // >120 => codepoint-sum branch
+      await runStuckDetector(
+        makeInput({ tool_name: 'Write', file_path: path, old_string: makeContent(115) })
+      );
+      await runStuckDetector(
+        makeInput({ tool_name: 'Write', file_path: path, old_string: makeContent(116) })
+      );
+      const result = await runStuckDetector(
+        makeInput({ tool_name: 'Write', file_path: path, old_string: makeContent(117) })
+      );
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).not.toContain('HARD BLOCK');
+    });
+
+    // Negative control for the fix above: the SAME 137-char content (identical
+    // head/tail/sum) repeated 3 times must STILL hard-block.
+    it('should still hard-block an identical 137-char Write with a middle version token repeated 3 times', async () => {
+      const path = '/src/version-bump.md';
+      const content = `${'A'.repeat(80)}version-115-count${'Z'.repeat(40)}`;
+      const result = await runNTimes(
+        makeInput({ tool_name: 'Write', file_path: path, old_string: content }),
+        3
+      );
+      expect(result.exitCode).toBe(2);
+    });
+  });
+
   // -----------------------------------------------------------------
   // Adversarial-review regressions (M-4 / M-3 / L-3 / L-4)
   // -----------------------------------------------------------------

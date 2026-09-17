@@ -805,6 +805,84 @@ describe('r007-r008-drift-advisor.sh — Fixture 3b: turn-level R008 counting', 
 });
 
 // ════════════════════════════════════════════════════════════════
+// Fixture 12: R008 trailing-tool-name attribution (#1687)
+//
+// The advisor previously reported R008 violations only as a bare count
+// ("R008 도구 식별 접두사 누락 N건"). This fixture verifies the new suffix that names
+// WHICH tool(s) were unannounced — the trailing N entries of the turn's ordered,
+// non-Skill tool_use name list, e.g. "R008 도구 식별 접두사 누락 1건 (미접두 도구: Agent)".
+//
+// R023 positive/negative pair: (a) fires with the suffix, (b) fully compliant turn stays
+// completely silent, (c) Skill-only turn keeps the existing exemption (no suffix, no count).
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 12: R008 trailing-tool-name attribution (#1687)', () => {
+  it('(a) names the trailing unannounced tool: two tool_use (Bash, Agent), one announce', async () => {
+    const sid = `r008-names-fire-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Do two things'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: two calls' },
+        { type: 'text', text: '[claude][sonnet] → Tool: Bash' },
+        { type: 'tool_use', id: 'tn-1', name: 'Bash', input: { command: 'ls' } },
+        { type: 'tool_use', id: 'tn-2', name: 'Agent', input: { subagent_type: 'Explore' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    const parsed = parseAdvisoryOutput(r.stdout);
+    // The bare-count phrase must remain byte-identical and contiguous (count-r007-r008.sh
+    // anchors on it with `grep -oE 'R008 도구 식별 접두사 누락 [0-9]+건'`), immediately
+    // followed by the trailing-name suffix.
+    expect(parsed.hookSpecificOutput.additionalContext).toContain(
+      'R008 도구 식별 접두사 누락 1건 (미접두 도구: Agent)'
+    );
+  });
+
+  it('(b) stays fully silent on a fully compliant turn (announce count == tool_use count)', async () => {
+    const sid = `r008-names-silent-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('Do two things, announced'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: two calls' },
+        {
+          type: 'text',
+          text: '[claude][sonnet] → Tool: Bash\n[claude][sonnet] → Tool: Agent',
+        },
+        { type: 'tool_use', id: 'tn-3', name: 'Bash', input: { command: 'ls' } },
+        { type: 'tool_use', id: 'tn-4', name: 'Agent', input: { subagent_type: 'Explore' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    // Fully compliant → no advisory at all (stdout empty, no additionalContext).
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('(c) Skill-only turn with no announce keeps the exemption: no suffix, no R008 count', async () => {
+    const sid = `r008-names-skill-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('run a skill'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude → pipeline\n└─ Task: run skill' },
+        { type: 'tool_use', id: 'tn-5', name: 'Skill', input: { skill: 'pipeline' } },
+      ]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+    expect(r.stdout).not.toContain('(미접두 도구:');
+    expect(r.stdout).not.toContain('R008 도구 식별 접두사 누락');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
 // Fixture 3c: the Skill tool is EXEMPT from the R008 denominator (#1569)
 //
 // R008 §"Tier-3 Interaction Tool Prefix" says verbatim:
