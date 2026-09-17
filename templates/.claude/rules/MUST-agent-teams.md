@@ -432,6 +432,10 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 
 > **v2.1.257+**: 세 건이 함께 수정되었습니다. (a) leader의 mailbox 쓰기가 잠시 잠긴 사이 teammate permission request가 **두 번 응답**되던 결함 수정 — v2.1.224/251 SendMessage·inbox 신뢰성 계열의 연장이며, 구버전에서 승인이 2회 적용된 흔적은 이중 승인 의도의 증거가 아닙니다. (b) tmux/iTerm2 pane의 teammate가 shutdown 확인 후에도 열려 있던 결함 수정 — 위 Lifecycle의 `TeamDelete` 이후 pane 잔존은 더 이상 정상이 아닙니다. (c) `/fork`가 원 대화의 prompt cache를 새 background 세션에서 유지하도록 개선(worktree briefing이 system-prompt 변경 대신 메시지로 도착) — R009 fork 컨텍스트 상속 노트의 비용 각도. 이 저장소는 `TeamCreate` 미등록으로 R018이 dormant이므로 (a)(b)는 기록용, (c)는 fork 사용 시 즉시 해당합니다.
 
+> **v2.1.260+**: `SendMessage`/teams 신뢰성 계열에서 세 건이 추가로 수정되었습니다 — 다른 에이전트를 `SendMessage`로 resume한 서브에이전트가 그 에이전트의 완료 알림을 받지 못하고(알림이 대신 main conversation으로 갔습니다), in-process teammate의 트랜스크립트가 긴 API 재시도 대기(`CLAUDE_CODE_RETRY_WATCHDOG` 등) 중 재시도 알림에 실제 메시지가 덮여 유실되거나 비어 보였으며, background로 이동한 세션이 `ListAgents`에 동일 이름의 "interactive" 유령 쌍둥이로 **두 번** 나타나 뷰어 쪽이 `SendMessage` 전달을 받는 문제가 있었습니다 — 위 v2.1.229 `ListAgents` 노트("열거됐다고 도달 가능하다고 가정하지 않는다")를 확장합니다: 나열된 이름이 단일 실제 대상이라는 보장조차 없었습니다. 결론은 그대로입니다 — 결정론적 ground-truth만이 완료 증거입니다.
+
+> **v2.1.261+**: 다른 머신의 OFFLINE Remote Control 세션으로 `SendMessage`를 보내면 전송됨으로 읽혔으나, 이제 그 머신이 재연결될 때까지 전달이 큐잉된다는 결과를 반환합니다 — v2.1.224 inbox 쓰기 실패·v2.1.251 최종 답변 유실에 이은 이 계열의 세 번째 사례이며, 구버전의 "Message sent"는 상대가 온라인이라는 보장조차 아니었습니다. 같은 릴리즈에서 in-process agent-team teammate가 두 번째 턴에 첫 턴의 도구·스킬 announcement를 재전송해 요청 prefix가 바뀌고 prompt cache를 놓치던 결함도 수정되었고, (265) teammate·resumed 서브에이전트가 `SubagentStart` 훅 컨텍스트와 preloaded skill을 prompt prefix 밖으로 이동시키던 결함도 수정되었습니다. 이 저장소의 R018은 `TeamCreate` 부재로 dormant이므로, 이 노트는 cross-session `SendMessage` 경로에 한해 기록합니다.
+
 <!-- ARCHIVED CC version note (historical):
 > **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.
 

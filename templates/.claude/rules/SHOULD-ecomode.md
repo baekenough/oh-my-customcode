@@ -92,6 +92,10 @@ Active removal of irrelevant retrieved content from agent context. Complements o
 
 > **v2.1.251+**: Sonnet 5의 기본 auto-compact 창이 **전체 1M 컨텍스트로 변경**되어, 1M 창 세션이 이제 ~934K가 아니라 ~967K 토큰에서 auto-compact됩니다. 위 `CLAUDE_CODE_DISABLE_1M_CONTEXT` 노트와 **직접 상호작용**합니다 — 그 env가 **설정된 환경**에서는 여전히 200K로 강제 유지되지만, **비활성 환경**(기본값)에서는 이번 변경으로 실효 auto-compact 임계값 자체가 상향됩니다. 이 저장소 에이전트 다수가 `claude-sonnet-5`이므로, 위 임계값 표의 백분율 계산은 env 설정 여부에 더해 이 CC 버전 여부까지 함께 확인해야 절대 토큰량이 정확합니다.
 
+> **v2.1.260+**: 1M 컨텍스트를 가진 모델의 auto-compact 시점이 확대되어, Opus·Fable 세션도 이제 1M 토큰 한도 직전에 compact되고 매우 큰 컨텍스트에서의 recovery compaction이 더 이상 10분 타임아웃으로 실패하지 않습니다 — 위 v2.1.251 Sonnet 5 노트를 Opus/Fable 계열로 확장하는 것이므로, `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 설정되지 않은 한 이 섹션의 백분율 임계값은 이제 세 모델군 전체에서 절대 토큰량 ~1M에 대응합니다. 같은 릴리즈에서 `/cost`와 statusline의 `prompt_cache` 필드가 prompt-cache miss의 **가능성 있는 원인**(도구 정의·시스템 프롬프트 변경, TTL 경과 idle)을 표시하도록 개선되어, 이 규칙이 다루는 캐시 관련 비용 이상 징후를 진단할 때 그 원인 후보를 출발점으로 삼을 수 있습니다 — 후보이지 확정 원인이 아니므로 R020 Proxy Signal 원칙대로 실측으로 확정합니다(cross-ref R012 statusline).
+
+> **v2.1.261+**: 컨텍스트 비용 진단 도구 2종이 추가되었습니다. `/skill-doctor`는 로드된 스킬 중 사용되지 않는 것과 그 컨텍스트 비용을 표시해 가지치기 대상을 알려줍니다 — 이 저장소의 115개 스킬 열거 블록과 `profile` 스킬의 플러그인 세트 전환에 직접 관련됩니다. `bashOutputMaxChars`/`taskOutputMaxChars` 설정은 command·background-task 출력이 파일로 저장되기 전 모델에 인라인 전달되는 상한을 올릴 수 있습니다(최대 128K자). 지침: 이 상한을 기본값으로 올리지 않습니다 — 이 규칙의 압축 원칙(파일 목록 → 개수, 오류 트레이스 → 앞/뒤 줄)이 작은 인라인 출력을 선호하므로, pass/fail 라인이 잘리는 특정 검증에 한해서만 올리고 그 외에는 독립적인 exit-code 조회(R005 #1492)를 우선합니다.
+
 <!-- DETAIL: Context Budget Management
 
 Task-type-aware context thresholds that trigger ecomode earlier for context-heavy operations.
