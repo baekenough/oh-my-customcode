@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.66",
-  "generatedAt": "2026-09-17T21:50:13.746Z",
-  "templateVersion": "1.1.66",
+  "generatorVersion": "1.1.67",
+  "generatedAt": "2026-09-17T22:36:17.817Z",
+  "templateVersion": "1.1.67",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "b31b36d5e6206a56bc5c4b78c20ba631697148322cf3735192182dd70f139923",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "667970cce59fee2773d6e792d0cef40cb743a9d4ad1dc1fd38f9eae88dd8428a",
-      "size": 78466,
+      "templateHash": "3e6e6188e26d03ad172153685315683934f6809922ae6099852a9f92c8a46448",
+      "size": 79225,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "4c8103828d466f8e4bf718484e6499583126e77adc6a64fc80e6656aa1caf7a8",
-      "size": 32149,
+      "templateHash": "bae9c9821e0a641b500900082ce29ff9847a41d1f8ad3024280ee491047c4443",
+      "size": 33067,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
@@ -70,8 +70,8 @@
       "component": "rules"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "81c5a3a63ed6d5fcc568b573121314626dec9688701ff238c4ecf8b08b12773c",
-      "size": 24844,
+      "templateHash": "62e823a017fa5788f7fc3352374dfaf752a0e945128875f476c13caeb054da1c",
+      "size": 25645,
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
@@ -105,8 +105,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "9cf1f0d3804236e4a52be0e2c48ed7d51ea077aafe46d4390eb2ac123552bbdd",
-      "size": 29031,
+      "templateHash": "3eef89f608cb212e0ca71c8c65d09b8953262fa06d3f778053008763b53b0051",
+      "size": 29702,
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
@@ -785,8 +785,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "991bb857f8d7b57bc1f80803724895c3ed41ce2c845f049f68f84df1911d4ecc",
-      "size": 14679,
+      "templateHash": "cf5654a6bf09809d0edb29d52d14556580547a888b6c7d4421c02907058c8d43",
+      "size": 16516,
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
@@ -895,8 +895,8 @@
       "component": "skills"
     },
     ".claude/skills/homework/SKILL.md": {
-      "templateHash": "67409a2e7903832b36b10f5cd3f3526f0d2d703699933ef44fb85b9c714dec91",
-      "size": 12592,
+      "templateHash": "8d62806690bd0db58852a5e8d3ecb89ad68008888d42287d0743f213062a0fee",
+      "size": 13638,
       "component": "skills"
     },
     ".claude/skills/typescript-best-practices/SKILL.md": {
