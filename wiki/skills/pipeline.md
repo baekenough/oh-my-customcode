@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-09-03
+updated: 2026-09-18
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -11,6 +11,7 @@ related:
   - [[task-decomposition]]
   - [[professor-triage]]
   - [[deep-verify]]
+  - [[r022]]
 ---
 
 # Pipeline
@@ -175,6 +176,22 @@ Origin: #1655.
 
 Cross-reference: [[r023]] Delegated Verification Floor (ceiling half), [[r020]] maxTurns Truncation (turn-budget sizing).
 
+### Wiki resync/reseed ordering — dispatch after deep-verify, not alongside it (#1688)
+
+Wiki resync and the `wiki/.source-hashes.json` manifest reseed for the changed rules/skills are now dispatched **only after** the deep-verify findings for this run have been applied — never in parallel with deep-verify. This is a per-compression-tier ordering rule:
+
+| Tier | What "deep-verify" means here | Wiki dispatch point |
+|------|-------------------------------|----------------------|
+| `docs-only` | The self-review checklist substitute, plus the mandatory mgr-sauron [[r017]] delegation when `.claude/rules/**` is in scope | After the checklist/R017 findings and any resulting corrections have landed |
+| `lite` | The 2-delegation split (mgr-sauron R017 + change-type-appropriate adversarial review, see "deep-verify: lite-tier split standard" above) | After the adversarial-review findings are applied |
+| Uncompressed | The full `deep-verify` skill spawn | After the spawn's findings are applied |
+
+Rationale: wiki pages summarize the rules, so a review-driven rule fix invalidates any wiki page written before the review lands. v1.1.66 dispatched wiki resync in parallel with review and had to rework 3 pages after review findings changed the rules; v1.1.67 switched to review-first ordering and needed 0 rework (#1688 Iteration 3 #2).
+
+The `implement` step's CI-mimic block (the pre-commit `verify-*.sh` script pass that includes `verify-wiki-sync.sh`) carries a matching **EXCEPTION**: when the changed set is rules/skills **TEXT only** (no new or renamed entity), the step does NOT fix wiki drift there — it records the drift and defers the wiki resync + manifest reseed until after deep-verify findings are applied, then re-runs `verify-wiki-sync.sh` before release. Missing PAGES for newly created entities are still generated at this point regardless of tier — CI blocks on missing pages, so page creation is not deferred, only the resync/reseed of already-existing pages against text-only rule/skill edits.
+
+Cross-reference: [[r022]] wiki sync (the two-stage "page update + manifest reseed" requirement this ordering rule sequences relative to deep-verify), [[r017]] (the mgr-sauron delegation whose findings can invalidate an already-written wiki page).
+
 ### release step 3.a–3.c: `--admin` removed from the PR-merge instruction (#1591)
 
 Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delete-branch --admin` to a **plain merge, explicitly annotated "NOT --admin"**. Ground-truth measurement (`gh api repos/{owner}/{repo}/branches/develop/protection`, 2026-08-15) found `develop` protection requires exactly **6** status checks (`Test`, `Lint`, `Template Sync`, `Version Sync`, `Dependency Security Audit`, `Rust Tests`), `enforce_admins=false`, and **no** `required_pull_request_reviews` block — there is no reviewer-approval gate to bypass in the first place. v1.1.47 merged cleanly via `gh pr merge 1585 --merge --delete-branch` with no `--admin`. The step now instructs: attempt the plain merge once all 6 checks are green; if merge is rejected, re-run the protection query to re-measure the actual blocker rather than reflexively adding `--admin` ([[r010]] bypass-flag pre-check — name what a bypass flag bypasses, measured, before using it).
@@ -195,6 +212,7 @@ Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delet
 - Content-drift resync 2026-09-03 (v1.1.60, #1650 C / #1652): added "Phase 0.6: unattended-mode detection" to pre-triage (consumes the [[fsd]] `/tmp/.claude-fsd-$PPID` marker or `OMCUSTOM_UNATTENDED=1` env, replacing prose inference), upgraded scope-selection Step 3's hooks-path deferral to use that deterministic signal, added the 4th substitution condition requiring anchor-based re-location in implement prompts when a same-session artifact substitutes for `deep-plan` (line numbers cited in an issue/artifact go stale across release commits), and added the `lite`-tier `deep-verify` 2-delegation split standard (mgr-sauron R017 + change-type-appropriate adversarial review), which caught a genuine regression via execution reproduction in two consecutive v1.1.59/60 iterations.
 - Content-drift resync 2026-09-03 (v1.1.61, #1650 C): corrected Phase 0.6's marker check to its actual three-state form (`present`/`stale`/`absent`, not a binary present/absent) with the 360-minute (6h) stale threshold explicitly stated; noted the snippet's `if`/`fi` + trailing `echo` structure always exits 0, so a `false` result is a valid measurement outcome and never halts the pipeline.
 - Content-drift resync 2026-09-03 (#1655): added "ci-check: auto-tag `run.headSha` may lag the PR head" (cross-check against `gh pr view --json mergeCommit` rather than trusting `run.headSha` as the merged commit) and "deep-verify: standard delegation wording — do not re-run pre-measured items" (aligned with [[r023]]'s new verification-floor ceiling — a paired mgr-sauron delegation measured 25-turn truncation with a re-verified pre-measured item vs. 16-turn completion without it).
+- Content-drift resync 2026-09-18 (v1.1.69, #1688): added "Wiki resync/reseed ordering — dispatch after deep-verify, not alongside it" — the `docs-only`/`lite`/uncompressed tiers all now dispatch wiki resync and the `wiki/.source-hashes.json` reseed only after that tier's deep-verify substitute (self-review/R017, or the R017+adversarial-review split, or the full skill) has landed, with a matching EXCEPTION in the `implement` step's CI-mimic block that defers wiki drift fixes for rules/skills TEXT-only changes (page generation for newly created entities is not deferred). v1.1.66 reworked 3 wiki pages after parallel-dispatched review changed the rules; v1.1.67's review-first ordering needed 0 rework (#1688 Iteration 3 #2).
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
 - Issue #1542 — bump pushed to develop before branching produced a diff=0 release PR (v1.1.38)
 - Issue #1553 — lite compression silently skipped the milestone-create state-change branch alongside the compressible analysis step, leaving v1.1.41 without a milestone (v1.1.41 retrospective)

@@ -48,6 +48,8 @@ The loop converges naturally when **both** conditions are met:
 1. The auto-dev-eligible issue set reaches 0
 2. All open PRs have been either merged or explicitly deferred
 
+수렴을 선언하기 전에(수렴 조건이 아니라 **선언 직전 게이트**로) 이 세션의 homework 아티팩트 수를 실측해 반복 수와 대조합니다. 불일치는 다음 반복을 돌리는 신호가 아니라 **누락분을 기록하라는 신호**이므로, 회상 기반(`[recall]` 표시)으로라도 기록한 뒤 수렴을 선언합니다. v1.1.65 반복은 아티팩트를 기록하지 않은 채 다음 반복으로 넘어갔고 Iteration 4 종료 후에야 누락이 발견되어 회상 기반으로 보완되었습니다(#1688 Iteration 2 #1).
+
 FSD processes **open PRs as part of each iteration**, not only issues. This includes dependabot PRs and any automatically created PRs. Issue eligibility follows `/pipeline auto-dev` label selection exactly:
 
 - **Included**: `verify-ready` (preferred), unlabeled auto-dev candidates
@@ -116,7 +118,7 @@ printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "/tmp/.claude-fsd-$PPID"
 │                                                  fix-then-merge (known CI failure pattern)
 │                                                  defer+surface (design decision needed)
 └── Check convergence: eligible issues = 0 AND open PRs = 0 (merged or deferred)?
-    ├── YES → [FSD Done] converged naturally → command rm -f /tmp/.claude-fsd-$PPID
+    ├── YES → record any missing homework artifact (recall-based) → [FSD Done] converged naturally → command rm -f /tmp/.claude-fsd-$PPID
     └── NO  → cap reached or classifier block? → YES → [FSD Stop] → command rm -f /tmp/.claude-fsd-$PPID
                                                  → NO  → next iteration (re-write marker first)
 ```
@@ -129,7 +131,7 @@ FSD의 루프 드라이버는 **메인 대화(오케스트레이터) 자신**입
 |------------------------------|------|
 | 반복 시작 시 무인 마커 갱신(`/tmp/.claude-fsd-$PPID`) | 위 「무인 모드 마커」 |
 | `/pipeline auto-dev` 1회 → homework 아티팩트 1개 기록 → 열린 PR 처리 | 「Iteration Flow」 |
-| 반복 끝에 수렴 판정(적격 이슈 0 AND 열린 PR 0)을 실측으로 수행 | R020 |
+| 반복 끝에 수렴 판정(적격 이슈 0 AND 열린 PR 0)을 실측으로 수행하고, 선언 직전 **반복 수 == homework 아티팩트 수**를 `ls .claude/outputs/sessions/{YYYY-MM-DD}/homework-*.md`로 대조 — 세션이 UTC 자정을 넘길 수 있으므로 세션이 걸친 **모든 날짜 디렉토리**를 포함합니다(예: `ls .claude/outputs/sessions/2026-09-1[78]/homework-*.md`) | R020, #1688 |
 | 종료 경로와 무관하게 마커 제거(`command rm -f`) | 「무인 모드 마커」 |
 
 `/goal`·`/loop`를 호출하는 경로는 여전히 유효하며, 세션이 무인(`claude -p`, 예약 실행)이라 자기 페이싱이 필요할 때 권장됩니다. 대화형 세션에서는 인라인 실행이 스킬 호출 오버헤드 없이 같은 계약을 만족합니다.

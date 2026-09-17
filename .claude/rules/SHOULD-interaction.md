@@ -93,7 +93,7 @@ Trade-offs: RS256 is ~10x slower than HS256 but enables asymmetric key managemen
 
 기본 활성화 스타일: `korean-engineer` (`.claude/output-styles/korean-engineer.md`).
 
-> **v2.1.238+**: custom/project/plugin output style이 **세션 도중 default voice로 드리프트**하던 결함이 수정됐다. 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로 직접 해당한다 — 세션이 길어지면 격식체(R000 합쇼체)가 조용히 기본 voice로 돌아갈 수 있었다는 뜻이다. **회고적 함의**: 구버전에서는 세션 길이에 비례해 스타일 드리프트 위험이 있었으므로, 과거 세션에서 관측된 R000 합쇼체 이탈(feedback_honorific_register_drift 등)을 전부 모델의 규칙 위반으로만 귀속할 수 없다 — 일부 구간은 플랫폼 드리프트가 원인이었을 수 있다. **다만 이것을 면책으로 쓰지 말 것**: R000 준수 의무는 그대로이며, 이는 과거 관측의 재해석 근거일 뿐 향후 이탈을 정당화하지 않는다.
+> **v2.1.238+**: custom/project/plugin output style이 **세션 도중 default voice로 드리프트**하던 결함이 수정되었습니다. 이 저장소는 `korean-engineer` 커스텀 output style을 상시 활성화하므로 직접 해당합니다 — 세션이 길어지면 격식체(R000 합쇼체)가 조용히 기본 voice로 돌아갈 수 있었다는 뜻입니다. **회고적 함의**: 구버전에서는 세션 길이에 비례해 스타일 드리프트 위험이 있었으므로, 과거 세션에서 관측된 R000 합쇼체 이탈(feedback_honorific_register_drift 등)을 전부 모델의 규칙 위반으로만 귀속할 수 없습니다 — 일부 구간은 플랫폼 드리프트가 원인이었을 수 있습니다. **다만 이것을 면책으로 쓰지 않습니다**: R000 준수 의무는 그대로이며, 이는 과거 관측의 재해석 근거일 뿐 향후 이탈을 정당화하지 않습니다.
 
 > **v2.1.269+**: `/output-style [name]`이 output style을 목록 조회·전환할 수 있게 되었으며, Remote Control과 cloud/headless 세션에서도 동작합니다. 이 저장소의 `korean-engineer` 커스텀 스타일을 세션 도중 `/output-style korean-engineer`로 재선택·재확인할 수 있게 되어, 위 v2.1.238-era 드리프트에 대한 직접 구제 수단이 생겼습니다 — `-p`/cloud 실행에서는 스타일이 실제로 활성 상태인지를 기본값에 의존하지 않고 보장하는 방법이기도 합니다. 참고로 (271) `--resume`/`/teleport` 관련 결함 수정은 R011 소관이므로 여기서 중복 서술하지 않습니다.
 
