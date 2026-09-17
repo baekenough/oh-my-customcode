@@ -41,6 +41,10 @@ The following git commands have caused working tree loss in past sessions (#1146
 
 > **v2.1.246/251+**: 자격증명 전송 경계 결함 2건이 수정되었습니다. (246) 서드파티 게이트웨이(`ANTHROPIC_BASE_URL`)용 API 키가 Anthropic 텔레메트리/메트릭 요청에 함께 실려 전송되던 결함 — 구버전에서는 게이트웨이 자격증명이 자기 호스트 밖으로 유출됐습니다. (251) `/ultrareview` 및 로컬 시딩 cloud session이 `prod.env` 계열·`*.tfvars` 파일, 또는 자격증명 파일의 에디터 swap/temp/backup 사본(`key.pem.tmp`, `id_rsa.swo`)을 업로드하던 결함 — 이제 로컬에 남습니다. 이 저장소는 `/ultrareview`를 사용하지 않으나, 두 항목 모두 이 섹션의 "자격증명 저장소 덤프 금지" 원칙과 동일한 위협 클래스에 대한 플랫폼 측 방어이므로 기록합니다.
 
+> **v2.1.261+**: 위험한 `rm` 안전 프롬프트가 **positional parameter에 대한 `rm -rf`**(`rm -rf "$@"` 등)와 **큰따옴표로 감싼 `sh -c` 스크립트 내부**의 `rm -rf`까지 잡도록 확장되었습니다 — 위 Destructive Git Commands 표의 per-invocation 승인 요구와 동일한 원칙을 셸 레벨에서 보강하는 플랫폼 측 defense-in-depth이며, Pre-Delegation Blast-Radius Enumeration을 대체하지 않습니다. 또한 auto mode가 **공개 다이어그램 렌더러 URL에 다이어그램 소스를 실어 보내는 링크**(mermaid/kroki류 렌더 URL)를 그 사이트로의 **업로드**로 취급해, 사용자가 요청하지 않은 한 더 이상 auto-approve하지 않습니다. 이 저장소의 다이어그램 스킬(`eraser-diagrams`, mermaid 렌더링)이 이런 링크를 생성할 수 있으므로, 이런 링크에서 classifier가 멈추는 것은 정상 동작이지 오작동이 아닙니다 — 재시도하지 않습니다(cross-ref R010 Subagent Scope-Creep STOP Protocol).
+
+> **v2.1.260/265/267+**: (260) `!` bash-mode 프롬프트에서 직접 입력한 명령은 strict sandbox mode에서도 샌드박스 **밖에서** 실행됩니다 — 즉 위 「Standing User-Deny + Classifier Block」섹션의 "`!`로 사용자에게 넘기는" 패턴은 설계상 **비샌드박스 경로**임을 명시적으로 인지해야 합니다. (265) macOS/Linux에서 백슬래시를 포함한 플러그인 경로가 symlink containment 검사를 우회하던 결함, (267) fetched marketplace entry 경로에 대한 동일 계열 결함이 각각 수정되었습니다 — 둘 다 v2.1.233 `\??\` device prefix 노트와 같은 **경로 표기 우회 계열**(같은 위치를 다르게 표기해 검사를 피함)입니다. 또한 (259) 동시 세션이 서로의 `~/.claude.json` 변경(workspace trust 초기화, MCP/project state 유실)을 조용히 되돌리던 결함도 수정되었습니다 — 공유 워크트리 다중 세션 실행 시 관련됩니다.
+
 ### Pre-Delegation Blast-Radius Enumeration
 
 > Origin: #1307 찐빠 #1 (High) — user chose "discard local changes and pull", and `git reset --hard origin/develop` was delegated immediately → user rejected (interrupt). The blast radius — that "discard local changes" included 18 files of *intended* uncommitted work (rule edits, new skills, new guides), not just a version downgrade — was never enumerated for the user.

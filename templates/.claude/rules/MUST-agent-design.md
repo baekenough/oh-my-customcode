@@ -79,9 +79,13 @@ Skill/rule text instructing "spawn with `model: opus`" refers to this tier — a
 
 > **v2.1.257+**: `CLAUDE_CODE_SUBAGENT_MODEL_FORCE`가 신설되어, 설정 시 `CLAUDE_CODE_SUBAGENT_MODEL`(또는 메인 모델)을 **모든** 서브에이전트에 강제 적용하며 per-spawn(Tier 3)과 agent-definition(Tier 1/2) model override를 무시합니다. 즉 위 v2.1.251 노트의 "이 env var가 project의 model pin을 더 이상 깨뜨릴 수 없다"는 서술은 **FORCE 미설정 시에 한해** 참으로 좁혀집니다. FORCE가 설정된 환경에서는 frontmatter의 model이 실행 모델의 증거가 아니므로(R020 "attempt ≠ outcome"의 모델 각도, v2.1.223 강등 경고 노트와 같은 계열) 무인 실행 전 `env | grep -c CLAUDE_CODE_SUBAGENT_MODEL_FORCE`처럼 값 노출 없이 **설정 여부만** 확인합니다.
 
+> **v2.1.259+**: 프론트매터 `model:` 관련 결함 2건이 수정되었습니다 — (a) 커스텀 커맨드와 **스킬**의 프론트매터 `model:`이 interactive 세션에서 **무시**되던 결함이 수정되어, 259 이전에는 이 파일 「Skill Frontmatter」의 선택적 `model` 필드가 interactive 실행에서 **효과가 없었고**, 스킬의 실제 실행 모델은 스킬이 무엇을 선언했든 세션 모델 그대로였습니다(R020 "attempt ≠ outcome"의 스킬 model pin 각도). (b) auto mode가 커맨드·스킬 프론트매터 `model:`이 명명한, 지원하지 않는 모델로 turn을 실행하던 결함이 수정되어 이제 세션 모델을 유지합니다 — 즉 auto mode에서는 스킬 `model:` pin이 세션 모델에 조용히 override될 수 있으므로, 실제 실행 모델은 프론트매터가 아니라 v2.1.223 강등 경고로 확인합니다.
+
 > **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via frontmatter full ID `claude-fable-5` (Tier 2) or Agent tool `model: fable` (Tier 3) — NOT via a Tier-1 frontmatter alias. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
 
 > **v2.1.257+**: Claude Fable 5.1(`claude-fable-5-1`)이 추가되어 **기본 Fable 모델**이 되었습니다 — 1M context, $10/$50 per Mtok(캐시 읽기 $0.25/Mtok). Tier-3 `model: fable` alias는 이제 Fable 5.1로 해석됩니다(단 Claude apps gateway 세션은 게이트웨이가 아직 Fable 5.1을 미지원해 당분간 Fable 5로 유지됩니다 — `/model`에서 명시 선택해야 Fable 5.1 사용 가능). frontmatter에서 확정하려면 Tier-2 full ID `claude-fable-5-1`을 쓰고, 기존 `claude-fable-5` pin은 그대로 Fable 5에 남습니다 — Tier-1 alias 해석 주체는 CC라는 위 원칙(v2.1.219/222 노트와 동일 계열)의 재확인입니다.
+
+> **v2.1.260+**: Fable 5.1 관련 결함 3건이 수정되고 개선 1건이 적용되었습니다 — `model: fable` 에이전트가 `ANTHROPIC_DEFAULT_FABLE_MODEL` pin에 `[1m]` 태그를 붙여도 이를 무시하고 200K 컨텍스트 창으로 조용히 실행되던 결함(즉 260 이전에는 Fable에 붙인 Tier-2 `[1m]` 접미사가 이 env pin 경로에서 **존중되지 않았습니다**); `/model` 피커가 Fable 5.1을 표시하지 않던 결함(`/model claude-fable-5-1` 직접 입력만 동작); Fable 5.1의 prompt caching이 도구 결과 이후 첨부된 컨텍스트를 커버하지 못해 매 도구-호출 turn마다 uncached 입력으로 재전송되던 결함; 그리고 세션 중 `/effort` 변경이 이제 Fable 5.1의 prompt cache를 무효화하지 않도록 개선되었습니다. 또한 (260) 1M-컨텍스트 모델의 auto-compact가 강화되어 Opus·Fable 세션이 1M-token 한도 직전에 compact하며, 초대형 컨텍스트의 복구 compaction이 10분 타임아웃으로 끊기지 않습니다 — 위 R013 v2.1.251 Sonnet 5 1M auto-compact 노트를 Opus/Fable로 확장합니다(cross-ref R013).
 
 <!-- ARCHIVED CC version notes (historical):
 > **v2.1.173+**: Fable 5 model IDs carrying a `[1m]` suffix are now auto-normalized (the suffix is stripped) because Fable 5 includes 1M context by default. Use `claude-fable-5` / `model: fable` WITHOUT a `[1m]` suffix — appending it is redundant and normalized away. (The `[1m]` suffix remains meaningful for Opus/Sonnet IDs.)
@@ -92,6 +96,8 @@ Skill/rule text instructing "spawn with `model: opus`" refers to this tier — a
 -->
 
 > **Fable 5 Effort 전략**: Fable 5는 **high effort가 기본값**이며, `xhigh`는 capability-sensitive 작업(최고난도 아키텍처/추론)에 한정해야 합니다. Fable 5의 `low`/`medium` effort조차 이전 세대 모델의 `xhigh`를 상회하는 품질을 보이므로, Fable 5를 사용하는 실행 에이전트는 `effort` 필드를 신중히 명시하고 불필요한 `xhigh` 남용을 지양합니다(R005 비용/지연 인식과 정합).
+
+> **v2.1.267+**: `effort:` 프론트매터 관련 결함·신규 상한 3건 — (a) 커스텀 커맨드·스킬·서브에이전트의 `effort:` 프론트매터가, 기본 effort가 여전히 고정된 모델(Opus 4.7, Opus 4.8, Fable 5)에서 **무시**되던 결함이 수정되었습니다. 즉 267 이전에는 이 파일의 "스킬 `effort`가 에이전트 `effort`보다 우선한다"는 서술과 위 「Fable 5 Effort 전략」의 `effort` 명시 지침이 Fable 5 / Opus 4.8 에이전트에서 **런타임 효과가 없었습니다** — 프론트매터 effort는 실제 실행된 effort의 증거가 아니었습니다. (b) 신규 `maxEffortLevel` 설정(최상위 또는 `modelSettings` 하위 모델별)이 모든 provider에서 effort 레벨 상한을 강제합니다 — 사용자는 여전히 더 낮은 레벨을 선택할 수 있습니다. 이는 프론트매터 `effort`보다 **상위에 위치하는 설정 레벨 상한**이므로, `xhigh`를 선언한 에이전트도 상한이 설정돼 있으면 그 상한에서 실행됩니다(프론트매터로 유추하지 말고 실효 effort를 확인). (c) `/model opusplan[1m]`이 "Model not found"로 거부되던 결함이 265에서 수정되어, `/model` 명령에서 이 표기가 이제 수용됩니다 — 프론트매터 `model: opusplan[1m]` 경로는 릴리즈 노트가 언급하지 않으므로 미실측입니다.
 
 > **Mythos 5 (`claude-mythos-5`)**: Project Glasswing 한정 공급 모델로, **GA가 아닙니다** — Fable 5(GA, 위 "Model Specification — 3 Tiers"의 `claude-fable-5`/`fable`)와 구분해야 합니다. 특성: adaptive-thinking 전용 아키텍처 + 안전 분류기가 개입 시 `stop_reason: "refusal"`로 fallback하는 체계를 가집니다. oh-my-customcode 에이전트 frontmatter에는 아직 alias를 등록하지 않습니다(비-GA, 공급 제한).
 
@@ -138,6 +144,8 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 ### Optional Frontmatter
 
 Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`, `experimental.cacheTtl` (v2.1.248+). Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
+
+> **v2.1.261/265/267+**: 서브에이전트/스킬 런타임 관련 3건 — (261) `--append-subagent-system-prompt-file`이 신설되어 커맨드라인에 담기 힘들 만큼 큰 서브에이전트 시스템 프롬프트를 파일에서 읽습니다(R009의 ~5000-token 프롬프트 휴리스틱과 정합 — 대형 프롬프트는 단순 파일 로드가 아니라 우선 분할의 신호입니다). (265) forked 스킬(`context: fork`)이 착수(kickoff) 프롬프트를 스트리밍하지 않고, `--forward-subagent-text`와 함께 쓸 때 그 텍스트 turn을 stream-json progress 이벤트로 내보내지 않던 결함이 수정되었습니다 — 아래 「Context Fork Criteria」의 10/12 `context: fork` 스킬을 `-p --output-format stream-json`으로 실행할 때 관련되며, 구버전에서는 fork progress 이벤트 부재가 fork가 실행되지 않았다는 증거가 아니었습니다. (267) `--system-prompt`/`--append-system-prompt`로 시작한 서브에이전트·세션이 이제 시스템 프롬프트와 도구 정의를 매 요청마다 재렌더링하는 대신 한 번만 기록합니다(prompt-cache 안정성) — `--system-prompt-snapshot off`는 프롬프트 반복 작업을 위해 매 요청 새로 렌더링합니다.
 
 ### Note on `skills:` field
 

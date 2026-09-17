@@ -256,6 +256,8 @@ Origin: #1584 #4 (v1.1.45 세션) — R021 자기 서술 staleness 반영을 R01
 
 > **v2.1.233+**: `claude plugin validate`가 **bare `.claude/skills` 디렉토리**(플러그인 매니페스트 없는 스킬 트리)도 검사해, frontmatter 파싱에 실패하는 `SKILL.md`를 보고합니다. 이 저장소의 `.claude/skills/**/SKILL.md`는 아래 Quick Verification Commands가 **개수만** 세고 frontmatter 유효성은 세지 않으므로, 스킬 추가·수정 후 `claude plugin validate`를 개수 대조와 **함께** 실행해 파싱 실패를 결정론적으로 잡습니다(구버전에서는 이 경로가 검사 대상이 아니어서 깨진 frontmatter가 런타임 미로드로만 드러났습니다). Cross-ref: R023(Tier 1 결정론적 검증).
 
+> **v2.1.259/265+**: (259) `claude plugin validate --json`이 기계 판독 가능한 검증 리포트를 제공합니다 — 위 검사가 짝을 이루는 개수 대조와 함께 쓸 때는 이 리포트를 frontmatter 파싱 확인의 우선 수단으로 삼습니다. (259) 동시 세션이 서로의 `~/.claude.json` 변경(workspace trust 초기화, MCP/프로젝트 상태 유실)을 조용히 되돌리던 결함이 수정되었습니다 — 구버전의 공유 워크트리 다중 세션 실행(위 「게이트는 분기 시점 1회가 아니라 상태변경 위임마다」 참조)은 브랜치 상태뿐 아니라 trust/MCP 상태도 유실될 수 있었습니다. (265) Claude Code 자체의 git status·diff 프로브가 작업트리 내부의 **중첩 저장소**가 설정한 clean filter를 거쳐 실행되던 결함이 수정되었습니다 — 구버전에서는 중첩 저장소의 clean filter가 CC의 작업트리 인식을 셸에서 직접 실행한 `git status` 결과와 다르게 만들 수 있었으므로, 이 규칙이 의존하는 두 ground-truth 소스(CC 내부 관측 vs 셸 직접 실행)가 항상 일치한다고 보장되지 않았습니다.
+
 ## Quick Verification Commands — agent/skill/guide/wiki counts via ls/find/wc. See commands via Read tool.
 
 <!-- DETAIL: Quick Verification Commands
