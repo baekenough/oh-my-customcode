@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.70",
-  "generatedAt": "2026-09-18T12:39:06.275Z",
-  "templateVersion": "1.1.70",
+  "generatorVersion": "1.1.71",
+  "generatedAt": "2026-09-18T18:01:58.367Z",
+  "templateVersion": "1.1.71",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "9404ca3619bef195271d64c3d4371cc741c2227645a414478e09ee1fa0023e56",
-      "size": 81237,
+      "templateHash": "e99f0b3c3119466adf0928e2744c487c2e7fb96f8bbac77af586645eb2219d55",
+      "size": 83376,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "810504bd44c980650b6a173f6b0935a165f5a62c306d201d27453e6a75b4c5aa",
-      "size": 34555,
+      "templateHash": "3bef627799b5de9337f31d1c5ccb9e7ccd325079092f6030275326409492143e",
+      "size": 35285,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "9f7268974ae6af2237a8f3b0a4fd8956bdc25bd4cde98d91bb8a4edb9305cd4f",
-      "size": 14622,
+      "templateHash": "81952840acfd7dd30a431b3bdad2f644485f9a011d1fc0688da8c0f20d84bdb0",
+      "size": 15785,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "60e6c8667e253b14e0871fa8fcee3de987b596c5e7f2efa6956f4122b0d35704",
-      "size": 24624,
+      "templateHash": "e541ed9300cb0cd8f14b0ba094d45da765a1d674c2a0182377338c6f2b0c6852",
+      "size": 25659,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "af4c364161a8ffd8da0d9034ef3e40decb202d081947580eb278817def958d8d",
-      "size": 64999,
+      "templateHash": "9f6fb4add0409e47ad96e0223ff8bf22b3b5d8fefefa3f46e621beabd43013e6",
+      "size": 66289,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
