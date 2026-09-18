@@ -394,6 +394,13 @@ This applies when a change touches a field that participates in an override/prec
 |--------------|----------|
 | 훅 위임서에 "가드 추가·`?` 억제" 처방만 전달 | 읽는 필드의 실제 형상(`hook_success` stdin 원문 + 바이너리 훅 문서) 실측을 위임서 완료 조건에 포함 |
 
+**값 표현 변경 각도 — 소비자 경로 전수 열거 (Origin: #1691 #2, v1.1.71)**: 저장되는 값의 **표현**(정규화 규칙·인코딩·키 형식)을 바꾸는 위임서는 그 값을 **읽는 모든 소비자 경로**를 `grep`으로 열거하고 **동일 인코딩으로 대조**하도록 완료 조건에 넣습니다. v1.1.68에서 stuck-detector `edit_hash`의 정규화만 바꾸고 소비자(JSON 직렬화 저장값 ↔ grep 원문 패턴)를 열거하지 않아 따옴표·백슬래시 회귀가 1차 구현에 남았고, 위임서의 "consumers logic unchanged" 지시 때문에 에이전트가 발견한 결함을 고치지 않고 넘겼습니다. 이 맥락의 "소비자 로직 변경 금지" 지시는 "결함 발견 시 보고 후 지시 대기"로 씁니다 — 프로덕션·권한 경계의 금지 목록(R010 「Pre-Delegation Privileged-Scope Boundary」)은 이 완화 대상이 아닙니다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 값의 정규화·인코딩만 바꾸고 소비자 경로를 열거하지 않은 위임 | 소비자 경로 전수 grep + 동일 인코딩 대조를 완료 조건에 포함 |
+| "소비자 로직 변경 금지"로 결함 수정까지 봉쇄 | "결함 발견 시 보고 후 지시 대기"로 완화 |
+
 Sibling discipline to Read-Before-Characterize (that rule governs diagnosis — don't label before reading; this one governs edit-planning completeness — enumerate every interdependent field before editing). Cross-ref: R023 (verification ladder — config completeness is a Tier-1 deterministic pre-check).
 
 ### Degraded-Output Re-Verification Gate (529 / buffering)
