@@ -231,6 +231,7 @@ steps:
           포함되면 self-review로 대체하지 않고 mgr-sauron R017 검증을 **단일 목표 위임으로 필수
           실행**한다(Tier 2 lite의 R017 조항과 동일 원칙; Origin: v1.1.58 세션 — docs-only 티어였으나
           sauron이 R002/R010 모순 advisory 1건을 포착).
+        - Wiki resync + manifest reseed (R022) run AFTER the deep-verify substitute for this tier (self-review checklist, plus the mandatory mgr-sauron R017 delegation when `.claude/rules/**` is in scope) and any resulting corrections have landed — never in parallel with it; this is the implement step's #1688 EXCEPTION applied to Tier 1. Wiki pages summarize the rules, so a review-driven rule fix invalidates any wiki written earlier (v1.1.66: 3 pages reworked; v1.1.67 with review-first ordering: 0 rework — #1688 Iteration 3 #2).
         - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)"
         - ⚠ Analysis artifacts only. Every step's state-change side effect (milestone create/assign,
           label add/remove, issue assign/comment/close) still runs in full — see "Cross-tier —
@@ -257,6 +258,7 @@ steps:
           (template-sync + md5 multi-copy + counts + bun test), under a MANDATORY justification log:
           "[compression-mode] lite deep-verify — R017 spawn skipped (no structural surface); deterministic self-check only".
           (#1311, extends #1309 substitution principle.)
+        - Wiki resync/reseed only after deep-verify (adversarial review) findings are applied — same ordering rule as Tier 1; this overrides the implement-step CI-mimic wiki fix for rules/skills text changes (see the implement step's #1688 EXCEPTION) (#1688).
         - implement / verify-build / release / ci-check / post-release-followup: execute normally (no compression)
         - MANDATORY justification log (REQUIRED whenever a skill stage is replaced by integrated analysis):
           "[compression-mode] lite — skill 단계 통합 분석 대체. 정당화: scope={n}, 모든 이슈 저위험(라벨 {labels}), 구현 대상 이슈 본문 명시 {issue_refs}"
@@ -402,6 +404,7 @@ steps:
       If any fails:
       - For wiki-sync failures: delegate to wiki-curator to generate missing pages (`/omcustom:wiki ingest <path>`)
         (Regenerating the wiki source-hash manifest targets `wiki/.source-hashes.json` ALWAYS — NEVER `templates/manifest.json`. Command: `bash .github/scripts/lib/source-hash.sh generate wiki/.source-hashes.json`. Ref #1423.)
+      - EXCEPTION (#1688 ordering): when the change set is rules/skills TEXT only (no new or renamed entity), do NOT fix wiki drift here — record the drift and defer the wiki resync + `wiki/.source-hashes.json` reseed until AFTER deep-verify findings are applied, then re-run `verify-wiki-sync.sh` before release. Missing PAGES for newly created entities are still generated here (CI blocks on them).
       - For template-sync failures: delegate to mgr-updater to sync `.claude/` -> `templates/.claude/`
       - For validate-docs failures (count mismatch): delegate to mgr-updater to fix counts via EXHAUSTIVE grep across all docs — file-enumeration misses `.en`/`.ko` variants and secondary docs (#1521 — v1.1.32에서 validate-docs 누락으로 push 왕복 1회 발생)
       - After fixes, re-run the scripts until all pass
@@ -441,7 +444,7 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정한다 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째)."
+    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정한다 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688)."
     depends_on: verify-build
 
   - name: release

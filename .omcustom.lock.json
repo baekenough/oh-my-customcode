@@ -1,12 +1,12 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.68",
-  "generatedAt": "2026-09-17T23:27:29.532Z",
-  "templateVersion": "1.1.68",
+  "generatorVersion": "1.1.69",
+  "generatedAt": "2026-09-18T00:02:21.737Z",
+  "templateVersion": "1.1.69",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
-      "templateHash": "b31b36d5e6206a56bc5c4b78c20ba631697148322cf3735192182dd70f139923",
-      "size": 6451,
+      "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
+      "size": 6486,
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "3e6e6188e26d03ad172153685315683934f6809922ae6099852a9f92c8a46448",
-      "size": 79225,
+      "templateHash": "9404ca3619bef195271d64c3d4371cc741c2227645a414478e09ee1fa0023e56",
+      "size": 81237,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -60,8 +60,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "bae9c9821e0a641b500900082ce29ff9847a41d1f8ad3024280ee491047c4443",
-      "size": 33067,
+      "templateHash": "810504bd44c980650b6a173f6b0935a165f5a62c306d201d27453e6a75b4c5aa",
+      "size": 34555,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "ce30bfa64efaf6d582f83ecf17c3acefb679c74cea20c3c1eb2609c8a4e47761",
-      "size": 23236,
+      "templateHash": "60e6c8667e253b14e0871fa8fcee3de987b596c5e7f2efa6956f4122b0d35704",
+      "size": 24624,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "972af1d17f11dee883e96bd5b5352e2761ad4ba7ea90d9b6c53062926566558d",
-      "size": 45161,
+      "templateHash": "394133143df9a41b0debac0c3e07566e85e71d679543ab93f6f09d6682d13b2e",
+      "size": 46516,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -785,8 +785,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "cf5654a6bf09809d0edb29d52d14556580547a888b6c7d4421c02907058c8d43",
-      "size": 16516,
+      "templateHash": "6ad9a6dc70dc0a34c2a193f7fe353080666c13e4e0dd458b7b37853b8f151d24",
+      "size": 17475,
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {

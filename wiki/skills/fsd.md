@@ -35,7 +35,7 @@ It does not implement loop logic, issue-polling, release steps, or verification 
 
 Extracted from the manual pattern used in Session 114 (2026-06-09), which ran 2 iterations (v0.177.0 and v0.178.0) before converging.
 
-**Inline execution is now an explicitly sanctioned equivalent (#1683 #4)**: the loop driver is the main conversation itself — calling `/goal`/`/loop` is one way to express the loop, not a mandatory call. The orchestrator may drive iterations inline as long as it holds the minimum per-iteration contract: refresh the unattended-mode marker at iteration start, run `/pipeline auto-dev` once → record one homework artifact → process open PRs, perform a measured convergence check (eligible issues == 0 AND open PRs == 0) via R020 ground-truth, and clear the marker regardless of exit path. `/goal`/`/loop` remains the recommended path for genuinely unattended sessions (`claude -p`, scheduled runs) that need self-pacing; interactive sessions satisfy the same contract inline without the skill-call overhead.
+**Inline execution is now an explicitly sanctioned equivalent (#1683 #4)**: the loop driver is the main conversation itself — calling `/goal`/`/loop` is one way to express the loop, not a mandatory call. The orchestrator may drive iterations inline as long as it holds the minimum per-iteration contract: refresh the unattended-mode marker at iteration start, run `/pipeline auto-dev` once → record one homework artifact → process open PRs, perform a measured convergence check (eligible issues == 0 AND open PRs == 0) via R020 ground-truth — right before declaring it, cross-checking iteration count against homework-artifact count across every date directory the session spanned, per the Pre-Declaration Artifact Gate above (#1688) — and clear the marker regardless of exit path. `/goal`/`/loop` remains the recommended path for genuinely unattended sessions (`claude -p`, scheduled runs) that need self-pacing; interactive sessions satisfy the same contract inline without the skill-call overhead.
 
 ## Key Details
 
@@ -64,7 +64,7 @@ Each FSD iteration:
 ├── /homework              → retrospective 찐빠 audit gate (pauses for user confirmation if needed)
 ├── Open PR processing     → handle all open PRs (dependabot included)
 └── Check convergence: eligible issues = 0 AND open PRs = 0?
-    ├── YES → [FSD Done] converged naturally → rm -f /tmp/.claude-fsd-$PPID
+    ├── YES → record any missing homework artifact (recall-based) → [FSD Done] converged naturally → rm -f /tmp/.claude-fsd-$PPID
     └── NO  → cap reached or classifier block? → YES → [FSD Stop] → rm -f /tmp/.claude-fsd-$PPID
                                                 → NO  → next iteration (re-write marker first)
 ```
@@ -108,6 +108,10 @@ FSD converges when **both** conditions are met:
 2. Open PR set = 0 (all PRs merged or explicitly deferred)
 
 Checking only issue eligibility and ignoring open PRs is insufficient for convergence.
+
+### Pre-Declaration Artifact Gate (#1688 Iteration 2 #1)
+
+Before *declaring* convergence — this is a gate applied right before the declaration, not a third convergence condition — FSD measures this session's homework artifact count and compares it against the number of iterations run: `ls .claude/outputs/sessions/{YYYY-MM-DD}/homework-*.md`, including **every date directory the session spanned** (a session can cross UTC midnight, e.g. `ls .claude/outputs/sessions/2026-09-1[78]/homework-*.md`). A mismatch is not a signal to run another iteration — it is a signal that a homework artifact from a past iteration was never recorded. The fix is to record the missing artifact retroactively, recall-based (marked `[recall]`), and only then declare `[FSD Done]`. Origin: the v1.1.65 iteration completed without recording its homework artifact, and the gap went undetected until Iteration 4 ended — it was backfilled from recall at that point (#1688 Iteration 2 #1).
 
 ## Safety and Discipline
 
@@ -163,3 +167,4 @@ Because FSD is an unattended loop with no live user to answer approval prompts, 
 - Content-drift resync 2026-09-03 (v1.1.61, #1650 C): grounded the marker section explicitly in [[r010]]'s new PPID-scoped `/tmp` runtime state marker carve-out (vs. `tracker-checkpoint`-delegated structured pipeline state); documented the every-iteration re-write + 360-minute (6h) stale guard that treats an old marker as absent; enumerated all four exit paths that clear the marker (convergence, release cap, safety-classifier block, user interrupt); added the `[FSD Stop]` branch to the Iteration Flow diagram (cap/classifier-block vs. next-iteration re-write); and stated explicitly that homework-gate bundling is never derived from `unattended_mode` — only an explicit user instruction triggers it.
 - Content-drift resync 2026-09-03: added a cost-cap advisory row to Safety and Discipline — `CLAUDE_COST_CAP`-driven cost-cap advisory is a notification surfaced at the gate, not a loop-stop signal; FSD reports and continues.
 - Content-drift resync 2026-09-18 (v1.1.67, #1683): documented inline execution as a sanctioned equivalent to `/goal`/`/loop` — the orchestrator may drive iterations directly as long as it holds the minimum per-iteration contract (marker refresh, pipeline→homework artifact→open-PR processing, measured convergence check, marker removal on any exit path).
+- Content-drift resync 2026-09-18 (v1.1.69, #1688): added the "Pre-Declaration Artifact Gate" subsection — right before declaring convergence (not a third convergence condition) FSD counts this session's `homework-*.md` artifacts across every UTC-midnight-spanning date directory and compares against the iteration count; a mismatch means recording the missing artifact recall-based (`[recall]`), not running another iteration. Updated Iteration Flow's `[FSD Done]` branch and the inline-execution minimum contract to reference this gate. Origin: the v1.1.65 iteration's homework artifact was never recorded and the gap surfaced only after Iteration 4 (#1688 Iteration 2 #1).

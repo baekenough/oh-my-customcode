@@ -127,6 +127,12 @@ Origin: #1574 (v1.1.44 세션 — 병렬 위임 3건 모두 `bun run lint`를 �
 
 Origin: #1563 찐빠 #2 — R007/R008 advisor 발화 검증에 단일 "0바이트 아님" 프록시를 제시했으나, advisor는 준수 턴에서 침묵하는 것이 정상 동작이라 기준이 성립하지 않았다. Cross-reference: R020(Proxy Signal vs Canonical Ground-Truth — 프록시로 상태를 특성화하지 말 것), 아래 Detection Guard Delegation Standard(positive-match vs negative-context 구분의 가드 설계 각도).
 
+**래퍼·재사용 스크립트 위임의 음성 픽스처 — 원본 전처리 필터 계열별 (Origin: #1688 — Iteration 4 #3)**: 기존 스크립트(훅·판정기)를 래핑하거나 그 판정을 재사용하는 스크립트를 위임할 때, 위임서는 **원본이 입력에서 제외하는 계열**(예: advisor의 `isSidechain` 레코드, `thinking` 블록, `agent_id` 세션 게이트)을 전부 열거하고 **계열별로 적용 또는 의도적 미적용을 판정해 사유를 기재**하도록 요구하며, **제외 계열마다 음성 픽스처**를 요구합니다. 양성/음성 짝이 있어도 제외 계열이 픽스처에 없으면 "1:1 재현" 주장은 검증되지 않은 것입니다 — v1.1.67에서 `scripts/count-r007-r008.sh`가 advisor의 사이드체인 필터를 누락해 사이드체인이 섞인 트랜스크립트에서 같은 턴을 이중 계상할 수 있었고, 픽스처가 전부 `isSidechain: false`라 적대적 리뷰 전까지 미탐지였습니다. 아래 Detection Guard Delegation Standard(positive/negative 문맥 구분)와 같은 계열입니다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 래퍼 스크립트 위임서에 경계 규칙만 지정하고 원본의 전처리 필터 미열거 | 원본 제외 계열 전수 열거 + 계열별 적용/미적용 판정과 사유 + 계열별 음성 픽스처 요구 |
+
 ## Detection Guard Delegation Standard (Origin: #1438 #3)
 
 Tier-1 shift-left 검출 가드(예: deprecated-pattern grep 가드)의 설계·수정을 서브에이전트에 위임할 때, 위임 프롬프트는 **positive-match(genuine defect mandate — `MUST`/`MANDATORY` 인접 문맥)와 negative-context(deprecation note — "no longer"/"deprecated"/"불필요"/"폐기됨" 설명 문구)를 구분**하도록 명시해야 한다. 이를 누락하면 올바르게 수정된 파일의 폐기-설명 문구까지 과잉매칭하여 자기모순 BLOCK을 유발한다.
