@@ -149,6 +149,8 @@ Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `backgro
 
 > **v2.1.261/265/267+**: 서브에이전트/스킬 런타임 관련 3건 — (261) `--append-subagent-system-prompt-file`이 신설되어 커맨드라인에 담기 힘들 만큼 큰 서브에이전트 시스템 프롬프트를 파일에서 읽습니다(R009의 ~5000-token 프롬프트 휴리스틱과 정합 — 대형 프롬프트는 단순 파일 로드가 아니라 우선 분할의 신호입니다). (265) forked 스킬(`context: fork`)이 착수(kickoff) 프롬프트를 스트리밍하지 않고, `--forward-subagent-text`와 함께 쓸 때 그 텍스트 turn을 stream-json progress 이벤트로 내보내지 않던 결함이 수정되었습니다 — 아래 「Context Fork Criteria」의 10/12 `context: fork` 스킬을 `-p --output-format stream-json`으로 실행할 때 관련되며, 구버전에서는 fork progress 이벤트 부재가 fork가 실행되지 않았다는 증거가 아니었습니다. (267) `--system-prompt`/`--append-system-prompt`로 시작한 서브에이전트·세션이 이제 시스템 프롬프트와 도구 정의를 매 요청마다 재렌더링하는 대신 한 번만 기록합니다(prompt-cache 안정성) — `--system-prompt-snapshot off`는 프롬프트 반복 작업을 위해 매 요청 새로 렌더링합니다.
 
+> **v2.1.275+**: (275) "Fixed `--forward-subagent-text` stream-json and SDK output dropping the messages of subagents spawned by a `context: fork` skill, and of forked skills invoked by a subagent or another forked skill" — 위 v2.1.265 노트의 연장선입니다. (275) 「Context Fork Criteria」의 10/12 `context: fork` 스킬을 `-p --output-format stream-json`으로 실행할 때, 275 이전에는 fork 내부 서브에이전트 메시지 부재가 미실행의 증거가 아니었습니다.
+
 > **v2.1.271+**: 신규 에이전트 프론트매터 필드 `omitClaudeMd`(및 `--agents` JSON에도 동일 필드)가 추가되어, 커스텀·플러그인 서브에이전트가 user/project/local CLAUDE.md 파일을 **전혀 로드하지 않고** 실행할 수 있습니다(managed policy 파일은 계속 로드됩니다). 이 저장소는 오늘 스폰되는 모든 서브에이전트가 프로젝트 CLAUDE.md + 23개 룰(고정 주입 ~49.5k 토큰, R016 코퍼스 비용 cross-ref)을 그대로 상속하므로, `omitClaudeMd: true`는 `Explore`나 `tracker-checkpoint`처럼 좁고 비용에 민감한 에이전트에 새로운 레버가 됩니다 — 단 그렇게 스폰된 에이전트는 R007/R008/R010을 보지 못하므로, 오케스트레이터는 그 출력을 **rule-unaware**로 취급해야 합니다. 위 「Optional Frontmatter」 필드 목록에 추가할 때는 이 무규칙 특성을 함께 명시합니다. 또한 (271) `--resume` 시 재개 세션의 모델 패밀리가 설정된 기본값과 다르면 1M 컨텍스트 창(`[1m]`)이 소실되던 결함이 수정되었습니다(Tier-2 `[1m]` 접미사 각도, cross-ref R013).
 
 ### Note on `skills:` field
@@ -527,6 +529,8 @@ Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, 
 > **v2.1.233+**: 스킬/커맨드의 인자 치환이 **인자 값을 다시 템플릿 마커로 재확장하던** 문제가 수정되었습니다 — 인자에 `$ARGUMENTS`·`$1` 같은 문자열이 들어오면 2차 확장돼 프롬프트가 변형될 수 있었습니다. 즉 구버전에서 **인자 값은 신뢰 입력이 아니었으므로**, 인자를 지시문에 그대로 끼워 넣는 스킬은 샘플 값으로 조립 결과를 실제 확인해 검증합니다(R023 Sample-Value Assembly — 문법 검증만으로는 드러나지 않는 계열).
 
 > **v2.1.228+**: claude.ai에서 동기화된 스킬이 하드닝되었습니다 — 로컬 커맨드·MCP prompt를 **shadow하지 않고**, description이 sanitize·labeling되며, 로컬 머신에서 그 본문이 `!` 명령을 실행하거나 `@` 파일 참조를 확장하지 **않습니다**. 즉 외부 출처 스킬은 로컬 `.claude/skills/` 스킬과 **동일한 실행 능력을 갖지 않으므로**, 동기화 스킬에 `!`/`@` 동작을 전제한 본문을 작성하면 무음 미실행이 됩니다. 구버전에서는 동기화 스킬이 로컬 커맨드를 가릴 수 있어 같은 이름 호출이 어느 정의로 해소되는지 결정론적이지 않았습니다.
+
+> **v2.1.275+**: (275) "Added syncing of the skills and plugins enabled on your claude.ai account to terminal sessions signed in with it; opt out with `syncClaudeAiSkills: false` or `syncClaudeAiPlugins: false`" — 위 v2.1.228 동기화-스킬 하드닝 노트의 연장선입니다. (275) 동기화 스킬은 로컬 `.claude/skills/`와 실행 능력이 다르므로, 이 저장소 세션에서 예상 밖 스킬이 보이면 계정 동기화 여부를 먼저 확인하고 필요 시 `syncClaudeAiSkills: false`/`syncClaudeAiPlugins: false`로 opt-out합니다.
 
 > **v2.1.257+**: `/add-dir`이 현재 작업 디렉토리 **내부**의 디렉토리를 거부하던 문제가 수정되어, 이제 startup 시 `--add-dir`와 동일하게 그 디렉토리의 skills/commands/agents를 로드합니다. 구버전에서는 세션 중 `/add-dir`로 하위 디렉토리의 스킬 트리를 추가 로드할 수 없었으므로, 서브디렉토리 단위 스킬 확장 워크플로우가 이 버전부터 가능해집니다.
 
