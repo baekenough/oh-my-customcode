@@ -57,6 +57,8 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 > **v2.1.274+**: Stop prompt 훅이 대화 중 매 block마다 **전체 프롬프트를 통째로 재전송**하던 결함이 수정되어, 반복 block은 이제 500자 라벨로 조건만 명시합니다. R020 8항·메모리 v1.1.53~56에 기록된 "Stop 훅 잠식" 패턴에 직접 관련됩니다 — 구버전에서는 Stop 훅이 반복 block될 때마다 전체 프롬프트 텍스트가 모델 컨텍스트에 재주입됐으므로, 당시 관측된 토큰/턴 소모의 **기계적으로 충분한 원인**입니다(가설 등급 귀속 — 관측과 정합하나 이것으로 확정되지는 않음, R020 hypothesis 규율). 또한 플러그인 `hooks/hooks.json` 최상위의 `$schema` 키에 대해 "unknown key" 통지가 더 이상 뜨지 않게 되었습니다 — 이 저장소의 `.claude/hooks/hooks.json` 소스 파일에 향후 `$schema`를 추가할 때 관련됩니다.
 
+> **v2.1.275+**: (275) "Fixed `SubagentStop` hooks with a specific `matcher` firing for every stopping subagent whose agent type was empty" — 실측(`.claude/settings.json` SubagentStop 블록) 결과 이 저장소의 배선은 `"matcher": "*"` **와일드카드**이므로, "specific matcher"를 대상으로 하는 이 결함의 직접 대상이 **아닙니다**. (275) 와일드카드는 모든 서브에이전트 종료에 발화하는 것이 정상 동작이므로, 275 이전 SubagentStop 발화 계수(R020 Self-Violation Counting)를 이 결함으로 재해석하지 않습니다 — 기록용입니다. (275) 향후 agent type별 matcher(예: `"mgr-gitnerd"`)로 좁히는 배선을 도입하면 그때부터 이 결함의 대상이 되므로, v2.1.275 미만 환경에서는 좁힌 matcher가 빈 agent type에도 매칭된다는 점을 전제합니다.
+
 ## Why Advisory-First
 
 1. **Agent flexibility**: Hard blocks can trap agents in unrecoverable states
