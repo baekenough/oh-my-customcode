@@ -13,7 +13,7 @@ Update the relevant rule rather than just acknowledging the violation.
 1. Acknowledge violation
 2. Identify root cause (which rule was weak/unclear?)
 3. Update the rule (add clarity, examples, self-checks)
-4. Wiring check — confirm the rule is wired into an execution path, or mark it as wiring-not-required (see Rule Wiring Check below)
+4. Wiring check — confirm the rule is wired into an execution path, or mark it as wiring-not-required (see Rule Wiring Check below) — and, when the new clause governs delegation prompts, apply it to this iteration's own delegation prompts before continuing (동일 반복 self-check)
 5. Commit the change
 6. Continue original task following updated rules
 
@@ -31,6 +31,12 @@ Update the relevant rule rather than just acknowledging the violation.
 | Anti-pattern | Required |
 |--------------|----------|
 | 규칙 조항만 추가하고 커밋 → 자동화 경로에 발동 지점이 없어 동일 결함 재발 | 발동 실행 경로 명시 + 반영 확인; 대상 없으면 "배선 불요" 명시 |
+
+**신설 조항의 동일 반복 self-check (Origin: #1691 #4·#5·#7 — v1.1.71)**: 위임서 규율을 신설·보강한 반복에서는, 그 조항을 **같은 반복에서 오케스트레이터가 작성하는 이후 위임서에 즉시 적용**한 뒤 다음 단계로 넘어갑니다. v1.1.69에서 R010 「출처 인용과 인접 문구 점검도 같은 규율」을 신설한 바로 그 반복의 위임서가 이슈 문장을 인용하지 않고 같은 파일 grep을 요구하지 않아 자기 위반 3건(High 1건 포함)이 적대적 리뷰에서 적발되었습니다 — 텍스트가 룰에 실렸다는 사실은 오케스트레이터 자신의 행동이 바뀌었다는 증거가 아닙니다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 위임서 규율을 신설한 반복에서 이후 위임서를 이전 습관대로 작성 | 신설 조항을 같은 반복의 위임서에 즉시 적용하고, 리뷰 위임서에 그 조항 준수 여부를 점검 항목으로 포함 |
 
 Origin: #1533 (v1.1.35에서 R017 (b) 조항 추가했으나 auto-dev.yaml version-bump 절차에 bun run build 단계가 없어 발동 지점 부재 — mgr-sauron이 [FAIL]로 차단, 배선 후 통과).
 
