@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.73",
-  "generatedAt": "2026-09-19T04:11:02.289Z",
-  "templateVersion": "1.1.73",
+  "generatorVersion": "1.1.74",
+  "generatedAt": "2026-09-19T06:28:58.154Z",
+  "templateVersion": "1.1.74",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "ac0bd43f078fb1435a8441b58abcad7d6b721803160cd3f6721266f5607f92ea",
-      "size": 87114,
+      "templateHash": "a8ec30deaca1fa106d69f814a0aed027c58c5e1da2a98125cde52739553ad812",
+      "size": 88135,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "e541ed9300cb0cd8f14b0ba094d45da765a1d674c2a0182377338c6f2b0c6852",
-      "size": 25659,
+      "templateHash": "a0b8b0c77ae271b6f9765d29b3d8a382d0eeb53596c0441d3087a70f9742ec9e",
+      "size": 26441,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
@@ -110,8 +110,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "913c45af821e0fd474cf4ce3814f2a94e9bf154e769c181a943b1f4458593126",
-      "size": 23429,
+      "templateHash": "8cb5efe3eef67886e53d5e67399243b470cfc03dd3812dea4b1fcc88cfd9056c",
+      "size": 23566,
       "component": "rules"
     },
     ".claude/rules/index.yaml": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "9f6fb4add0409e47ad96e0223ff8bf22b3b5d8fefefa3f46e621beabd43013e6",
-      "size": 66289,
+      "templateHash": "9bdb70f378c491517a113e628713b3feab419e585fa4b48478cb14a9e17653bc",
+      "size": 67820,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "13c81d4db3abb1a4a35029eb9de5d35dcbd1fac64a215ce2fd99de213c24ac7b",
-      "size": 47211,
+      "templateHash": "2c22bef3c06c95ee0a342e759160a8b4041bf8418577dbc4a485a87af87efad9",
+      "size": 47643,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -1235,8 +1235,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "7ea7c89e051a42bf2fb33bb6a0fd18561d10a80503f074708af2f172ca28cbdf",
-      "size": 33751,
+      "templateHash": "53b18f6535ab61dcbeac89666f4719982bdd0e5b77afb3485c49f1e6bc389ce7",
+      "size": 30145,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix-prompt.sh": {
