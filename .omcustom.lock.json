@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.75",
-  "generatedAt": "2026-09-19T08:04:41.111Z",
-  "templateVersion": "1.1.75",
+  "generatorVersion": "1.1.76",
+  "generatedAt": "2026-09-19T10:08:38.103Z",
+  "templateVersion": "1.1.76",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "ebc1dd42dd7a5ace7c023a2fc5f34f1567ff63b311ad1367e46c12cd3fb8d846",
-      "size": 88978,
+      "templateHash": "5c0b7f1f71e5da87829773cdee354a614d5fa88ff8e3713bd3416d7834ded0f6",
+      "size": 94363,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -100,8 +100,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "47eb8f4c7e4030366a1ea2ee894de207bfa1c707efbb2a606459d20d9d3ec0fe",
-      "size": 27370,
+      "templateHash": "8f5d235b4372e31f914ba2fc281359102d0b1fcf8f34f3cde758cd7ea93d1809",
+      "size": 28487,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
@@ -120,8 +120,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
-      "templateHash": "9bdb70f378c491517a113e628713b3feab419e585fa4b48478cb14a9e17653bc",
-      "size": 67820,
+      "templateHash": "e8aeebca163438373707c00f103ee4d30235feee3bea6bcf102a24571f34f214",
+      "size": 69717,
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "720447f8022cd4de14e432c08ab7bed5fce1d1a9dadb9db7f0693583266ff57c",
-      "size": 48706,
+      "templateHash": "ab7704109195355e51e363942eb297185f8b32b57376b8fb8cc6f7b6ff376c6e",
+      "size": 51001,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
