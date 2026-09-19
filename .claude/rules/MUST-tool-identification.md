@@ -134,7 +134,9 @@ Origin: #1595 #5 (v1.1.48 세션 — R008 위반 3건이 단일 턴에 집중. t
 | 도구 호출 턴을 짧은 요약 산문만으로 시작(narration 채널로 흐름) | 헤더(`┌─ Agent:` 또는 단축 헤더)와 Core Rule 접두사를 **text 블록**으로 명시 — 산문 요약은 그 뒤에 |
 | "announce를 썼다"는 기억으로 advisory를 오탐으로 가정 | 트랜스크립트의 `text` 블록에서 마커를 실측(R020 Self-Violation Counting) |
 
-Iteration 1(Agent 스폰 15메시지 전부 narration)과 Iteration 2(7메시지 text)의 대비는 계수 도구 결함이 아니라 출력 채널 선택의 차이였다. 채널 선택 요인은 미귀속이다.
+Iteration 1(Agent 스폰 15메시지 전부 narration)과 Iteration 2(7메시지 text)의 대비는 계수 도구 결함이 아니라 출력 채널 선택의 차이로 서술했으나, 이 귀속은 아래 v1.1.75 보강으로 대체되었다.
+
+**원인 귀속 보강 (Origin: #1703·#1706 — v1.1.75)**: 실 세션 6건·tool_use 응답 1008건(아티팩트 Part B 표 5건 860건 + 각주 인용 2.1.251 세션 148건, 재계산)을 재측정한 결과, text 블록이 없는 tool_use 응답의 비율이 CC 2.1.233에서 0%(0/256)였다가 2.1.251에서 39.2%(58/148)로 급증하고 2.1.258~2.1.275 구간에서 53.6~61.8%로 유지되는 것을 확인했습니다. 이 경계는 CHANGELOG v2.1.251의 "Fixed conversations getting stuck on \"text content blocks must be non-empty\" errors after a turn where the model produced only thinking" 항목과 일치합니다. narration 채널 옵션은 thinking 본문 354건 전수에서 마커가 0건 매칭되어 은퇴했으므로(#1703), R008 누락 턴은 마커가 narration으로 옮겨간 것이 아니라 thinking과 tool_use만 있고 text 블록이 없는 형태로 기록된 것입니다. `[가설]` 2.1.251 이전의 thinking-only 턴이 클라이언트 측 text 강제 주입으로 감춰졌는지 API 재시도로 트랜스크립트에서 탈락했는지, 그리고 thinking 내용이 announce 정규식과 왜 불일치하는지는 API 원본 스트리밍 로그 대조 없이는 미확정입니다.
 
 ## Tier-3 Interaction Tool Prefix (MANDATORY)
 

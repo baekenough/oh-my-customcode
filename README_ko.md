@@ -15,26 +15,9 @@
 
 50개 에이전트. 115개 스킬. 23개 규칙. 명령어 하나.
 
-> **v0.74.0** — omcustom sync, init --from-snapshot, analysis --interview, skill-extractor (100번째 스킬), User Model, 릴리즈 정리 자동화
-
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
 ```
-
-`omcustom init`은 언어, 프레임워크, 팀 모드를 묻는 인터랙티브 마법사를 실행합니다 (@clack/prompts 기반).
-
----
-
-## v0.74.0의 새로운 기능
-
-| 기능 | 설명 |
-|------|------|
-| **`omcustom sync`** | `.claude/` 설정 드리프트 감지 — lockfile 비교, 팀 스냅샷 내보내기 |
-| **`omcustom init --from-snapshot`** | 팀 재현성 — 사전 구성된 스냅샷에서 설치 |
-| **`analysis --interview`** | 파일 기반 탐지 전 대화형 AI 아키텍처 인터뷰 |
-| **skill-extractor** | 100번째 스킬 — 성공한 작업 궤적에서 재사용 가능한 SKILL.md 후보 제안 |
-| **User Model** | 교정 패턴, 스킬 선호도, 전문 분야 구조적 추적 |
-| **릴리즈 정리 자동화** | PR 머지 시 연관 이슈 자동 close + 릴리즈 브랜치 자동 삭제 |
 
 ---
 
@@ -126,9 +109,11 @@ Agent(qa-engineer):sonnet         │
 Agent(arch-documenter):haiku      ┘
 ```
 
+소프트 기본값은 동시 에이전트 4개, 하드 캡은 5개입니다. Agent Teams(공유 작업 목록, 피어 메시징)를 사용할 수 있다면 단순 병렬 에이전트 대신 사용되지만, Claude Code가 `TeamCreate` 도구를 노출해야 하며 현재 기본 설치에는 이 도구가 존재하지 않습니다. 그전까지는 위의 oh-my-customcode 표준 Agent 도구 병렬 모델이 실제로 실행되는 방식입니다.
+
 ---
 
-## 에이전트 (50개)
+### 에이전트 (50개)
 
 | 카테고리 | 수 | 에이전트 |
 |---------|-----|---------|
@@ -149,7 +134,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-## 스킬 (115개)
+### 스킬 (115개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -163,11 +148,9 @@ Agent(arch-documenter):haiku      ┘
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | 보안 | 2 | adversarial-review, cve-triage |
 | 합의 | 1 | agora — 익명 다중 라운드 다중 벤더 합의 리뷰 |
-| 기타 | 44 | claude-native, vercel-deploy, skills-sh-search, result-aggregation 외 |
+| 기타 | 44 | claude-native, vercel-deploy, skills-sh-search, result-aggregation 외 40개 이상 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
-
-`context:fork` 상한이 12로 확장되었습니다 (현재 10개 활성).
 
 ---
 
@@ -188,7 +171,10 @@ Agent(arch-documenter):haiku      ┘
 | `/ambiguity-gate` | 사전 라우팅 모호성 분석 |
 | `/adversarial-review` | 공격자 관점 보안 코드 리뷰 |
 | `/pipeline` | YAML 파이프라인 실행 |
-| `/pipeline resume` | 중단된 파이프라인 재개 |
+| `/pipeline resume` | 마지막 실패 지점부터 중단된 파이프라인 재개 |
+| `/omcustom:fsd` | Full Self Driving — 자율 릴리즈 루프: 적격 이슈가 남지 않을 때까지 `/pipeline auto-dev`(이슈 → 구현 → 검증 → 릴리즈)와 `/homework`(회고 감사)를 반복 실행 |
+| `/homework` | 현재 세션에 대한 회고 감사 — 프로세스 공백을 피드백/이슈로 표면화 |
+| `/agora` | 적대적 검토가 필요한 결정을 위한 익명 다중 라운드·다중 벤더 합의 리뷰 (독립 CLI 리뷰어 + 순환 심사자) |
 
 ### 에이전트 관리
 
@@ -222,12 +208,13 @@ Agent(arch-documenter):haiku      ┘
 | 커맨드 | 기능 |
 |--------|------|
 | `/omcustom:monitoring-setup` | OTel 모니터링 토글 |
+| `/omcustom-loop` | 백그라운드 에이전트 워크플로우 자동 이어가기 (3회 연속 안전 제한) |
 | `/omcustom:lists` | 전체 커맨드 표시 |
 | `/omcustom:status` | 시스템 상태 확인 |
 
 ---
 
-## 규칙 (23개)
+### 규칙 (23개)
 
 | 우선순위 | 수 | 목적 |
 |---------|-----|------|
@@ -235,32 +222,42 @@ Agent(arch-documenter):haiku      ┘
 | **SHOULD** | 8 | 상호작용, 오류 처리, 메모리, HUD, ecomode, ontology 라우팅, 위키 동기화, 검증 사다리 |
 | **MAY** | 1 | 최적화 |
 
-핵심 규칙: R010 (오케스트레이터 직접 쓰기 금지), R009 (병렬 실행 의무), R017 (푸시 전 sauron 검증), R020 (완료 선언 전 검증 의무), R021 (어드바이저리 우선 집행 모델).
+핵심 규칙: R010 (오케스트레이터는 파일을 직접 쓰지 않음), R009 (병렬 실행 의무), R017 (푸시 전 sauron 검증), R020 (완료 선언 전 검증 의무), R021 (어드바이저리 우선 집행 — 대부분의 규칙은 프롬프트 기반이며 하드 블록되지 않음), R016 (지속적 개선 — 위반은 규칙을 갱신시키고, 낡은 조항은 무한히 누적되는 대신 HTML 주석으로 은퇴함), R023 (검증 사다리 — 가장 저렴한 검사부터: 결정론적 훅/린터 → 저비용 모델 리뷰 → 고비용 모델 리뷰 → 사람).
+
+R018 (Agent Teams)은 조건부입니다: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`이 설정되어 있고 동시에 `TeamCreate` 도구가 도구 목록에 존재할 때만 효력을 갖습니다. 현재 기본 Claude Code 설치에서는 `TeamCreate`가 등록되어 있지 않으므로 R018은 비활성 상태이며, 그 대신 R009/R010(표준 Agent 도구 병렬 실행 모델)이 적용됩니다.
+
+---
+
+### 가이드 (56개)
+
+베스트 프랙티스, 아키텍처 결정, 통합 패턴을 다루는 레퍼런스 문서입니다. 프로젝트 루트의 `guides/`에 위치하며, 에이전트 설계부터 CI/CD, 관측성까지 다양한 주제를 다룹니다.
 
 ---
 
 ## 보안
 
-15개 라이프사이클 훅이 도구 호출마다 실행됩니다. 그 중 세 가지 보안 훅:
+oh-my-customcode는 보안, 드리프트 감지, 규칙 강화를 다루는 42개의 라이프사이클 훅 스크립트를 제공합니다. 몇 가지 예시:
 
 | 훅 | 트리거 | 동작 |
 |----|--------|------|
 | secret-filter | Bash, Read 출력 | AWS 키, API 토큰, 개인 키, bearer 토큰 감지 |
 | audit-log | Edit, Write, Bash, Agent | `~/.claude/audit.jsonl`에 append-only JSONL 기록 |
 | schema-validator | Write, Edit, Bash 입력 | 도구 입력 검증, 위험 패턴 플래그 |
+| claude-md-reinject | SessionStart (새 세션, resume, 또는 compact) | CLAUDE.md와 강제 규칙 세트를 재주입 — 컨텍스트 압축 후 규칙 망각 방지 |
+| stuck-detector | PostToolUse, 반복 편집 | 에이전트가 진행 없이 같은 파일/편집을 반복하면 플래그 |
+| r007-r008-drift-advisor | UserPromptSubmit, SubagentStop, PostToolUse | 직전 턴이 필수 에이전트/도구 식별 헤더를 포함했는지 확인하는 어드바이저리 체크 |
 
-모든 보안 훅은 어드바이저리입니다 (exit 0). 경고만 하고 차단하지 않습니다.
+대부분의 훅은 어드바이저리(exit 0)입니다 — 경고만 하고 절대 차단하지 않습니다. 소수의 하드 블록 훅(예: `stage-blocker`, `rule-deletion-guard`)은 도구 호출 자체를 거부합니다(exit 2). oh-my-customcode 자체의 거버넌스 규칙(`.claude/rules/`)은 **어드바이저리 우선 집행 모델**을 따릅니다: 프롬프트 기반 가이드가 기본이며, 규칙이 차단 훅으로 승격되는 것은 반복적으로 관측된 위반이 있을 때뿐입니다. 규칙은 은퇴하기도 합니다 — 이미 수정된 플랫폼 버그에 묶인 조항이나 두 마이너 릴리즈 동안 발동되지 않은 조항은 무한히 누적되는 대신 HTML 주석으로 감싸집니다(소스 파일을 통해 여전히 읽을 수 있지만 에이전트의 컨텍스트에는 보이지 않음).
 
-**PostCompact 훅** (Claude Code v2.1.76+)은 컨텍스트 컴팩션 이후 핵심 규칙(R007-R018, R021)을 자동으로 재강화합니다.
+훅의 소스 오브 트루스는 `.claude/hooks/hooks.json`입니다. `omcustom init`은 이를 `src/core/hooks-settings.ts`를 통해 `.claude/settings.json`의 `hooks` 블록으로 컴파일하며, Claude Code가 실제로 로드하는 파일은 바로 이 `settings.json`입니다.
 
 ---
 
 ## CLI
 
 ```bash
-omcustom init                  # 인터랙티브 마법사로 초기화 (언어, 프레임워크, 팀 모드)
+omcustom init                  # 인터랙티브 설정 마법사 (언어, 프레임워크, 팀 모드)
 omcustom init --lang ko        # 한국어로 초기화
-omcustom init --team           # 팀 모드 활성화
 omcustom init --from-snapshot  # 사전 구성된 팀 스냅샷에서 설치
 omcustom sync                  # .claude/ 상태와 lockfile 간 드리프트 감지
 omcustom sync --check          # 변경 없이 드리프트 확인
@@ -287,13 +284,11 @@ your-project/
 │   ├── agents/                 # 50개 에이전트 정의
 │   ├── skills/                 # 115개 스킬 모듈
 │   ├── rules/                  # 23개 거버넌스 규칙 (R000-R023)
-│   ├── hooks/                  # 15개 라이프사이클 훅 스크립트
+│   ├── hooks/                  # 42개 라이프사이클 훅 스크립트 (hooks.json이 소스; settings.json으로 컴파일됨)
 │   ├── schemas/                # 도구 입력 검증 스키마
 │   ├── specs/                  # 추출된 canonical spec
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
 │   └── ontology/               # RAG용 지식 그래프
-├── packages/
-│   └── eval-core/              # LLM 평가 엔진 (세션/턴/결과 수집, SQLite)
 └── guides/                     # 56개 레퍼런스 문서
 ```
 
@@ -322,17 +317,9 @@ bun test             # 테스트 실행
 bun run build        # 프로덕션 빌드
 ```
 
-요구사항: Node.js >= 18.0.0, Claude Code CLI.
+요구사항: Node.js >= 18.0.0, Claude Code CLI (Claude Code v2.1.277 기준으로 개발 및 테스트됨).
 
-### @omcustom/eval-core
-
-v0.38.0에서 추가된 LLM 평가 엔진입니다. 세션/턴/결과를 수집하고 SQLite(Drizzle ORM)에 저장합니다.
-
-```bash
-cd packages/eval-core
-bun install
-bun run cli -- --help
-```
+릴리즈는 2단계 자동화로 이루어집니다: 머지된 `release/vX.Y.Z` PR이 `auto-tag.yml`을 트리거해 git 태그를 생성하고, 그 태그 푸시가 다시 `release.yml`을 트리거해 빌드·검증·npm 배포를 수행합니다. 이 프로젝트 자체의 기여자 지식 베이스 — 에이전트, 스킬, 규칙, 워크플로우를 다루는 저장소 내 `wiki/` 디렉토리(278페이지) — 는 모든 PR에서 source-hash 매니페스트와 대조하여 CI로 검증되므로, 위키 페이지가 그것이 설명하는 코드로부터 조용히 drift될 수 없습니다.
 
 ---
 

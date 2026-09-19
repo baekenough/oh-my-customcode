@@ -196,6 +196,17 @@ Cross-reference: [[r022]] wiki sync (the two-stage "page update + manifest resee
 
 Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delete-branch --admin` to a **plain merge, explicitly annotated "NOT --admin"**. Ground-truth measurement (`gh api repos/{owner}/{repo}/branches/develop/protection`, 2026-08-15) found `develop` protection requires exactly **6** status checks (`Test`, `Lint`, `Template Sync`, `Version Sync`, `Dependency Security Audit`, `Rust Tests`), `enforce_admins=false`, and **no** `required_pull_request_reviews` block — there is no reviewer-approval gate to bypass in the first place. v1.1.47 merged cleanly via `gh pr merge 1585 --merge --delete-branch` with no `--admin`. The step now instructs: attempt the plain merge once all 6 checks are green; if merge is rejected, re-run the protection query to re-measure the actual blocker rather than reflexively adding `--admin` ([[r010]] bypass-flag pre-check — name what a bypass flag bypasses, measured, before using it).
 
+### deep-plan: research-conclusion figures must be recomputed from the artifact table (#1707 #4)
+
+The `deep-plan` step description now adds: a research/measurement delegation's completion criteria must require every number appearing in the conclusion sentence to be recomputed from the artifact's own table (jq/awk) and paired alongside it. Cross-ref [[r023]] 「리서치 위임의 결론 수치는 표에서 재계산해 병기」.
+
+### implement step: Anti-pattern 1:1 comparison + a fixed constraint block for text-editing delegations (#1707)
+
+Two new standing bullets were added to the `implement` step's rules/gates block:
+
+- **Anti-pattern 1:1 comparison** — before dispatching any delegation prompt in an iteration that created or reinforced a rule clause, the orchestrator MUST compare that clause's Anti-pattern table rows 1:1 against the delegation prompt's sentences and rewrite any match. Cause: [[r016]] 「신설 조항의 동일 반복 self-check」 was known as text but not executed as a procedure (#1707 #1).
+- **Fixed constraint block** — every rule/skill/guide TEXT-editing delegation prompt must now include a standing 5-item block: (a) Korean 합쇼체 for new sentences, do not imitate adjacent 반말; (b) locate by anchor strings, never line numbers; (c) copy quotations from `gh issue view --json body` output and verify with `grep -F`; (d) a ±1 heading check including re-binding of relative references ("위 표"/"아래 표"/"직전 조항"); (e) copy to the `templates/` mirror and confirm `md5 -q` equality (#1707 #3).
+
 ## Relationships
 
 - **Used by agents**: orchestrator
@@ -217,6 +228,7 @@ Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delet
 - Content-drift resync 2026-09-19 (v1.1.73, #1701): extended that same `implement` step bullet — the orchestrator's own requirement/scope summary counts as final wording too; copy the issue's proposal sentence from `gh issue view` output verbatim, and tag any orchestrator paraphrase "[요약 — 원문 우선]" (#1701 #1). Cross-ref [[r010]] 보강 2항목's new #1701 #1 item.
 - Content-drift resync 2026-09-19 (v1.1.74, #1704): extended that same `implement` step bullet a third time — the orchestrator's own wiring judgement (e.g. "the existing implement-step bullet already covers this") also counts as final wording; the prompt supplies candidate files/anchors only, and the subagent decides coverage by quoting the covering sentence (#1704 #1). Cross-ref [[r010]] 보강 2항목's new #1704 #1 item.
 - Content-drift resync 2026-09-19 (v1.1.74, #1703): the `deep-verify` step description now adds a completion condition when the change is a hook/advisor option — count real-transcript matches (not just synthetic fixtures) for at least one transcript from this project (#1703 권장 2). Cross-ref [[r023]] 「훅 옵션 검증은 합성 픽스처 + 실 트랜스크립트 1건」.
+- Content-drift resync 2026-09-19 (v1.1.75, #1707): added "deep-plan: research-conclusion figures must be recomputed from the artifact table" (#1707 #4) and "implement step: Anti-pattern 1:1 comparison + a fixed constraint block for text-editing delegations" (#1707 #1, #1707 #3) — the latter closes the gap where a rule-authoring/wiring self-check was known as text but never executed as a checklist against the delegation prompt itself, and standardizes a 5-item (a)–(e) constraint block on every rule/skill/guide TEXT-editing delegation prompt. Cross-ref [[r023]] and [[r016]] Rule Wiring Check.
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
 - Issue #1542 — bump pushed to develop before branching produced a diff=0 release PR (v1.1.38)
 - Issue #1553 — lite compression silently skipped the milestone-create state-change branch alongside the compressible analysis step, leaving v1.1.41 without a milestone (v1.1.41 retrospective)

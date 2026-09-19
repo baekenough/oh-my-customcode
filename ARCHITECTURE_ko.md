@@ -88,21 +88,25 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | de-lead-routing | de-* 에이전트 |
 | qa-lead-routing | qa-* 에이전트 |
 
-**오케스트레이션 스킬 (6개, context: fork)**
+**오케스트레이션 스킬 (10개, context: fork)**
 
-dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage, roundtable-debate
+secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage, roundtable-debate
 
-**베스트 프랙티스 스킬 (~26개)**
+**베스트 프랙티스 스킬 (26개)**
 
-go-best-practices, go-backend-best-practices, python-best-practices, rust-best-practices, kotlin-best-practices, typescript-best-practices, java21-best-practices, react-best-practices, web-design-guidelines, fastapi-best-practices, springboot-best-practices, django-best-practices, flutter-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, kafka-best-practices, dbt-best-practices, spark-best-practices, snowflake-best-practices, airflow-best-practices, pipeline-architecture-patterns, vercel-deploy, writing-clearly-and-concisely
+go-best-practices, go-backend-best-practices, python-best-practices, rust-best-practices, kotlin-best-practices, typescript-best-practices, java-best-practices, react-best-practices, web-design-guidelines, fastapi-best-practices, springboot-best-practices, django-best-practices, flutter-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, kafka-best-practices, dbt-best-practices, spark-best-practices, snowflake-best-practices, airflow-best-practices, pipeline-architecture-patterns, vercel-deploy, alembic-best-practices
 
-**슬래시 커맨드 / 사용자 직접 호출 스킬**
+**슬래시 커맨드 / 사용자 직접 호출 스킬 (48개)**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, sdd-dev, harness-synthesizer
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-improve-report, omcustom-feedback, omcustom-web, omcustom-loop, fsd, sdd-dev, sdd, harness-synthesizer, goal, idea, homework, profile, pipeline, wiki, wiki-rag, post-release-followup, token-efficiency-audit
 
-**시스템 / 내부 스킬**
+**시스템 / 내부 스킬 (27개)**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, action-validator, adaptive-harness, agent-eval-framework, claude-native, crg-integration, harness-eval, instinct-extractor, omcustom-auto-improve, pipeline-guards, playwright-compress, pre-generation-arch-check, rtk-exec, sec-agentshield-wrapper, semble-integration, hada-scout
+
+**디자인 & 제품 스킬 (5개)**
+
+design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-docs
 
 **합의 스킬 (1개)**
 
@@ -129,7 +133,9 @@ intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-mo
 
 ### 3.5 훅 시스템
 
-훅 시스템은 모든 에이전트 작업에 횡단 관심사(cross-cutting concerns)를 제공합니다. 훅은 설계상 어드바이저리 전용입니다: PostToolUse 훅은 상태를 기록하고 PreToolUse 훅은 어드바이저리를 제공하지만, 실행을 차단하지 않습니다 (stage-blocker 및 dev 서버 tmux 강제 제외).
+훅 시스템은 모든 에이전트 작업에 횡단 관심사(cross-cutting concerns)를 제공합니다. 훅은 설계상 어드바이저리 우선(R021)입니다: 대부분의 PostToolUse/PreToolUse 훅은 경고하거나 상태를 기록할 뿐 차단하지 않으며, 소수(stage-blocker, dev 서버 tmux 강제, rule-deletion-guard)만 `exit 2`로 하드 블록합니다.
+
+**소스 → 빌드 산출물**: `.claude/hooks/hooks.json`은 **소스 파일**입니다 — Claude Code가 이 파일을 직접 로드하지 않습니다. 실제 로드 경로는 `.claude/settings.json`(+ `.claude/settings.local.json`, + `templates/` 미러) 내부의 `hooks` 블록이며, `src/core/hooks-settings.ts`가 `hooks.json`으로부터 컴파일하고 `omcustom init`/`omcustom update` 시 `installer.ts`가 병합합니다. `hooks.json`만 편집하면 settings 파일이 재생성되기 전까지 런타임 동작이 바뀌지 않습니다 — 이 소스/빌드 분리는 v1.1.53에서 발견·수정되었으며, 그 이전 릴리즈들에서는 `hooks.json`이 조용히 미로드 상태였습니다. 실측(verify-template-sync 출력): 훅 스크립트 42개, 훅 matcher 57개.
 
 | 이벤트 | 스크립트 / 핸들러 | 목적 |
 |--------|------------------|------|
@@ -341,15 +347,17 @@ MEMORY.md 200줄 예산에 근접하면 다음 순서로 정리합니다:
 
 MEMORY.md는 선택적 `## Behaviors` 섹션을 지원하여 사용자 상호작용 선호도와 워크플로우 패턴을 추적합니다. 행동 관찰은 SOUL.md 기본값보다 우선합니다 (R006).
 
-### 6.4 MCP 메모리 (보조)
+### 6.4 MCP 메모리 (보조) — Superseded
+
+> **현재 소스와 상충함 (R011, `.claude/rules/SHOULD-memory-integration.md`)**: #1253(v0.157.0) 기준으로 이 프로젝트는 **네이티브 자동 메모리만** 사용합니다. claude-mem과 agentmemory MCP 백엔드는 **영구 제거**되었습니다 — `memory-recall`, `memory-save`, `memory-management` 스킬이 삭제되었고, `.mcp.json`은 더 이상 두 서버 중 어느 것도 등록하지 않습니다. R011은 명시적으로 규정합니다: *"claude-mem and agentmemory MCP are NOT used in this project."* 아래의 `memory-mcp-server` 패키지 및 native/episodic-memory/llm-memory 어댑터 서술은 그 제거 이전 시점의 서술이며, 역사적 기록으로만 유지됩니다 — 이 절을 현행 가이드로 취급하지 마십시오. 현행 유일한 메모리 메커니즘은 §6.1(네이티브 자동 메모리)을 참조하십시오.
 
 MCP 도구는 오케스트레이터 스코프이며, 서브에이전트는 접근할 수 없습니다.
 
 | 시스템 | 도구 | 사용 사례 |
 |--------|------|-----------|
-| memory-mcp-server | `memory_get`, `memory_search`, `memory_stats`, `memory_list` (4개 MCP 도구) | 네이티브 메모리 어댑터를 통한 통합 메모리 액세스 (v0.123.0+) |
+| memory-mcp-server | `memory_get`, `memory_search`, `memory_stats`, `memory_list` (4개 MCP 도구) | 어댑터 전반의 통합 메모리 액세스 (v0.123.0+; #1253 이전) |
 
-네이티브 자동 메모리를 우선 사용합니다. 교차 세션 검색 또는 시간 기반 쿼리가 필요한 경우에만 MCP를 사용합니다.
+`packages/memory-mcp-server/`는 메모리 통합 계층(native/episodic-memory/llm-memory 어댑터) 위에 통합 MCP 인터페이스를 제공**했습니다**. 오케스트레이터에서의 접근을 위해 `.mcp.json`으로 등록했습니다.
 
 ### 6.5 세션 종료 흐름
 
@@ -419,13 +427,19 @@ haiku -> sonnet -> opus (에스컬레이션 경로)
 | Lint | ci.yml | 소스 파일 biome check |
 | Test | ci.yml | bun test 커버리지 임계값 포함 |
 | Rust Tests | ci.yml | Rust 컴포넌트 cargo test |
-| Version Sync | ci.yml | manifest.json과 package.json 일치 여부 |
+| Version Sync | ci.yml | manifest.json과 package.json 일치 여부 (+ lockfile 3-way 검사) |
 | Template Sync | ci.yml | 템플릿 파일과 소스 일치 검증, 스킬 스크립트 파일 패리티 |
 | Dependency Security Audit | security-audit.yml | 자동 취약점 스캔 |
-| Auto Tag | auto-tag.yml | release PR 머지 시 버전 태그 자동 생성 |
-| Issue Analyzer | issue-analyzer.yml | 이슈 자동 분석 댓글 |
-| PR Analysis | pr-analysis.yml | PR 자동 분석 |
+| Wiki Sync | wiki-sync.yml | PR에서 위키 페이지 부재/stale 여부 확인 (R022) |
+| Docs Sync | docs-sync.yml | 문서 drift 검사 (validate-docs.ts programmatic 모드) |
+| Issue Triage Dispatch | triage-dispatch.yml | `issues` 이벤트에 대한 라벨/코멘트 자동화(idempotent) |
+| CC Release Monitor | cc-release-monitor.yml | Claude Code 버전 추적 이슈 자동 생성 (저장소 내부 cron; v0.156.0에서 외부 Airflow DAG를 대체) |
+| Deploy Test | deploy-test.yml | Verdaccio 기반 publish 스모크 테스트 |
+| Auto Tag | auto-tag.yml | `release/*` PR이 `develop`에 머지될 때 `package.json`에서 버전을 추출해 머지 커밋에 태그; 마일스톤 자동 종료도 처리 |
+| Release | release.yml | `auto-tag.yml`이 머지 커밋에 태그를 단 후 npm 배포 + GitHub Release 생성 |
 | Daily Report | reusable-daily-report.yml | 이슈/PR 일일 리포트 |
+
+**릴리즈 체인**: `release/*` 브랜치를 열어 → PR을 `develop`에 머지하면 → `auto-tag.yml`이 머지 커밋에 태그를 달고 → `release.yml`이 `npm publish` + GitHub Release 생성을 수행합니다. 이 체인과 `/homework` 회고를 반복 구동하는 것이 `/omcustom:fsd`(FSD 루프, v0.179.0+)입니다: `/goal "모든 이슈가 처리될 때까지" /loop "/pipeline auto-dev -> /homework"` — 적격 이슈가 남지 않을 때까지 `/pipeline auto-dev`(triage → plan → implement → verify → PR)와 `/homework`(세션 회고)를 반복합니다.
 
 ---
 
@@ -591,7 +605,17 @@ v0.123.0에서 추가된 스킬 프로필 시스템입니다. `/profile` 커맨�
 | 네이티브 바이너리 스포닝 | 아니오 | 예 (v2.1.113+) | 호환 — 플랫폼별 옵셔널 의존성이 번들 JavaScript 대체 |
 | `/loop` Esc 취소 | 아니오 | 예 (v2.1.113+) | 호환 — Esc로 대기 중인 웨이크업 취소 |
 
-Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인.
+Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인 (규칙 레벨 버전-노트 커버리지는 이제 v2.1.276까지 확장됨 — `.claude/rules/*.md`의 인라인 `> **v2.1.NNN+**:` 노트 참조; 보존 기준선 미만의 구노트는 R016 Rule Clause Retirement에 따라 HTML 주석으로 은퇴됨).
+
+측정된 현행 기준선 사실 (v1.1.74 / CC v2.1.277 기준):
+
+| 사실 | 상세 |
+|------|------|
+| 규칙 버전-노트 보존 기준선 | v2.1.230 — 이 선 미만 노트는 더 최신 노트가 인용하거나 현행 동작을 서술하는 경우가 아니면 HTML-comment 은퇴 후보(R016) |
+| Agent Teams (R018) | **Dormant** — 현행 모델의 도구 목록에 `TeamCreate`/`TeamDelete`가 부재함(CC v2.1.233부터 실측) — `TeamCreate`가 재등장하기 전까지는 R009/R010이 대신 지배 |
+| Todo/Task 도구 | Opus 4.8/Sonnet 5/Fable 5/Mythos 5+ 에서 `TodoWrite`, `TaskCreate/Get/List/Update`가 기본 부재(CC v2.1.233+); `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`로 복원 가능. `TaskStop`/`TaskOutput`/`SendMessage`는 여전히 사용 가능 |
+| 프로젝트 스코프 `permissions.defaultMode` | CC v2.1.257+부터 무시됨 — user/managed 스코프 설정 또는 `--permission-mode` 플래그만이 실제로 `bypassPermissions`를 부여함; Agent 도구 호출의 per-call `mode: "bypassPermissions"`는 v2.1.212부터 no-op(서브에이전트가 부모 세션의 모드를 상속) |
+| Agent 도구 `model` 파라미터 | v2.1.212부터 deprecated/무시됨 — 프론트매터(Tier 1/2)로 override하지 않으면 서브에이전트는 부모 세션 모델을 상속 |
 
 ---
 
@@ -624,6 +648,27 @@ Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인.
 
 | 버전 | 주요 변경 사항 |
 |------|--------------|
+| v1.1.64–74 | `/fsd` 8회 반복 자율 실행(세션 151): R010 "출처 인용 및 인접성 점검" 위임 규율, R017 묶음 버전-노트 (NNN) 문장 태그, R023 래퍼 스크립트 양성/음성 픽스처 짝, 훅 후속 수정(#1649 edit_hash 정규화, #1687 advisor 미접두 도구명), fsd 사전선언 아티팩트 카운트 수렴 게이트, CC v2.1.275/276 규칙 노트(#1693/#1694), R016/R020/R023 소비자-경로 열거 + 키/해시 설계 픽스처(#1691/#1696) |
+| v1.1.61–63 | R007/R008 "announce text-block 부재" 근본원인 확정 — 도구 호출 전 산문이 `narration` 블록(text와 상호 배타)으로 직렬화될 수 있어 헤더/접두사 마커가 어디에도 남지 않음; R008이 이제 헤더/접두사를 text 블록에 요구. 훅 40개 전수 감사에서 선재 결함 발견(`secret-filter.sh`가 존재하지 않는 `tool_output`을 읽음 — 시크릿 미스캔). R011 `[hypothesis:]` 메모리 태그; R020 "통계적 상관 ≠ 코드 인과" |
+| v1.1.58–60 | CC v2.1.257+부터 프로젝트 스코프 `permissions.defaultMode: bypassPermissions` 무시(user/managed 스코프 또는 `--permission-mode` 플래그 필요) 실측 — R010/R002 갱신; `stuck-detector.sh` 재수정 |
+| v1.1.53–57 | `.claude/hooks/hooks.json`이 Claude Code에 로드된 적이 없었음을 발견 — 실제 로드 경로는 `settings.json`의 `hooks` 블록이며 신규 `src/core/hooks-settings.ts` + installer 배선으로 `hooks.json`에서 컴파일됨; Stop-훅 피드백-루프 근본 원인 제거(echo-escape → printf, SubagentStop 자기참조 데드락) |
+| v1.1.50–52 | CC v2.1.234–251 호환성 노트; R016 Rule Clause Retirement 3조건 승격; `claude-md-reinject.sh` SessionStart 훅; 3파일 버전 범프 원자적 순서; 병렬 위임 크로스그룹 narration 금지; PostCompact 바이너리 dispatch 프로브 |
+| v1.1.49 | `agora` 스킬(재추가) — 3개 봉인된 vendor-CLI 라벨에 걸쳐 로테이션 모델 심판이 판정하는 익명 다중 라운드 합의 리뷰 |
+| v1.1.47–48 | CC v2.1.233 Todo/Task 도구 제거 반영(TaskCreate/Get/Update/List, TodoWrite가 현행 모델에서 부재); R018 Agent Teams 활성-판정 재정렬(`TeamCreate` 부재 확인) |
+| v1.1.43–46 | `settings.json` 위생 정리: 무효 `Write(...)` 권한 규칙 제거, 일회성 Bash 권한 규칙 정리, `settings.local.json` untrack; R017/R020 게이트 하드닝; 의존성 범프 |
+| v1.1.37–42 | 모델 지정을 3-tier 체계로 이관: Tier 1 CC-네이티브 alias, Tier 2 풀 모델 ID(프론트매터 전용), Tier 3 Agent-도구 `model` enum(4값) — 자체 발명 명칭(`sonnet5`, `opus48`) 은퇴 |
+| v1.1.34–36 | CC v2.1.217/219 호환성 노트; R017 빌드-배선 회고 수정(#1531, #1533) |
+| v1.1.30–33 | 의존성 범프(actions/setup-node, @anthropic-ai/sdk); 정기 유지보수 |
+| v1.1.24–29 | R020 "CI 잡 성공 ≠ 실행됨"(docs-only path-filter fast-skip) 강화; R009 announce-execution 자가점검; `deploy-test.yml` Verdaccio 스모크 게이트 완전 활성화; 규칙 코퍼스 컨텍스트 비용 절감(#1473); stale 위키 페이지 71개 재동기화; CHANGELOG를 v1.1.14부터 GitHub Releases 자동 노트로 대체 폐기; R007 status-line-bracket-≠-agent-header 명확화 |
+| v1.1.14–23 | 하네스 위생 정리 배치(#1472/#1476); R017 검증 비용 최적화 + canonical 단일소싱; 컨텍스트 비용 절감(#1473); CC v2.1.208–214 호환성 노트(R001/R002/R005/R006/R009/R010/R012/R018 전반 14행) |
+| v1.1.5–13 | Fable 5 하네스-감사 수정 배치: 깨진 상호참조 복구, 에이전트 메모리 스코프 `project` → `local`(git-untracked) 이관, CC v2.1.200–207 호환성 노트, `/tmp/*.sh` 민감경로 우회 완전 은퇴 |
+| v1.1.0–1.0.20 | Sonnet 5 모델-alias 호환성; freshness-audit 정리(폐기 패턴/모델 참조/카운트/네임스페이스 전수 점검); `grill-with-docs` 스킬; R017 "Pre-Branch Freshness Gate"; CC v2.1.193–196 호환성 노트 |
+| v1.0.0–1.0.19 | **v1.0.0 안정성 마일스톤** — 180+회 반복 릴리즈 후 49 에이전트 / 117 스킬 / 23 규칙 안정 선언; patch-우선 버전 정책 채택(minor는 신규 사용자-대상 스킬/에이전트/커맨드용으로 예약); `semble-integration` 스킬; R010 source-hash 대상 명확화 |
+| v0.179.0–0.182.0 | `/omcustom:fsd`(Full Self Driving) 씬-alias 스킬 — `/goal` + `/pipeline auto-dev` + `/homework`를 반복 자율 릴리즈 루프로 래핑; Claude Fable 5 모델 alias(`fable` → `claude-fable-5`); R023 "Safety-Signal Rule Authoring — Carve-Out Pre-Check"; R020 "Interrupt ≠ Prior-Request Cancellation" + R003 우선순위(Risky > Interrupt > Ambiguous > Clear) + R018 Gate Transparency를 Agent-Teams-활성 환경으로 범위 한정 |
+| v0.156.0–v0.170.0 | 저장소 내부 `cc-release-monitor` GitHub Actions 워크플로우(폐기된 외부 Airflow DAG 대체); **claude-mem 및 agentmemory MCP 백엔드 영구 제거** — 네이티브 자동 메모리만 사용(v0.157.0, #1253 종료); `/homework` 스킬(`omcustom-feedback` 경유 세션 회고); `skill-extractor` 증거-게이트 Selection Discipline; R023 "Workflow Script Sanity Check"; R018/R009 announce-execution + gate-transparency 하드닝 |
+| v0.145.0–v0.151.0 | `systematic-debugging` 스킬 확장(신규 phase 파일 4개); `session-reflection.sh` Stop 훅(백그라운드 R007/R008 위반 감지, #1190 Phase 1); R015/R020 하드닝 배치(#1188 — Honorific 회귀, Interrupt Priority Re-Ordering); R010/R017 강화 배치(#1217 — Diagnostic Hypothesis Verification, Test-Skip Is Not Completion, Structural Migration Verification); `guides/agent-teams/troubleshooting.md` |
+| v0.130.0–v0.138.0 | CHANGELOG 역사적 백필(v0.36.0–v0.127.0); `/goal` 씬-래퍼 스킬; `/pipeline auto-dev` G3–G7 하드닝(closed-milestone 사전 점검, 라벨 표준화); `destructive-git-guard.sh` + `guides/git-safety/README.md`(#1146); R021 "Conversation Block" enforcement tier(`continueOnBlock`, CC v2.1.139+) |
+| v0.125.0–v0.129.0 | Memory MCP 서버 기반 작업; `permissions.defaultMode` 설계; R007/R008 multi-turn 자가점검 + hard-enforcement 후보 플래깅 |
 | v0.124.0 | R009/R018 단일 에이전트 거대 프롬프트 안티패턴 명문화; arch-documenter Input Constraints 3단계 임계치 (<5000 / 5000-8000 / >8000 토큰) |
 | v0.123.0 | memory MCP 서버 (4 MCP 도구: save/recall/list/delete) + skill profile loader (/profile, 4 기본 프로필) |
 | v0.122.0 | 메모리 영속성 서비스; MemoryRecord 영속화 계층 |

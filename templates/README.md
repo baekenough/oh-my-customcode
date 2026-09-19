@@ -80,11 +80,12 @@ CI의 `verify-template-sync.sh`가 소스와 templates/ 간 일치를 검증합�
 | DE Engineer | 6 |
 | SW Engineer / Database | 4 |
 | Security | 1 |
-| SW Architect | 3 |
+| SW Architect | 2 |
 | Infra Engineer | 2 |
 | QA Team | 3 |
 | Manager | 6 |
 | System | 4 |
+| Agora | 1 |
 
 ### Skills (115)
 
@@ -115,7 +116,7 @@ CI의 `verify-template-sync.sh`가 소스와 templates/ 간 일치를 검증합�
 
 각 디렉토리는 단일 토픽에 대한 best practices, 튜토리얼, 또는 설계 가이드를 담습니다. 에이전트가 작업 중 참조합니다 (R006 관심사 분리).
 
-### Hooks (35)
+### Hooks (42)
 
 `.claude/hooks/scripts/*.sh` — 라이프사이클 훅 스크립트.
 

@@ -348,7 +348,7 @@ steps:
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4)."
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시한다(#1707 #4)."
     depends_on: plan
 
   - name: implement
@@ -389,6 +389,15 @@ steps:
         (#1701 #1). The orchestrator's own wiring judgement (which file/anchor already covers a
         new clause) counts as final wording too — the prompt supplies candidate files/anchors
         only, and the subagent decides coverage by quoting the covering sentence (R010 [#1704 #1]).
+      - Before dispatching any delegation prompt in an iteration that created or reinforced a rule
+        clause, the orchestrator MUST compare that clause's Anti-pattern table rows 1:1 against the
+        delegation prompt's sentences and rewrite any match (cause: the R016 「신설 조항의 동일
+        반복 self-check」 was known as text but not executed as a procedure, #1707 #1).
+      - Every rule/skill/guide TEXT-editing delegation prompt MUST include this fixed constraint
+        block: (a) Korean 합쇼체 for new sentences, do not imitate adjacent 반말; (b) locate by anchor
+        strings, never line numbers; (c) copy quotations from `gh issue view --json body` output and
+        verify with `grep -F`; (d) ±1 heading check including re-binding of relative references (위
+        표/아래 표/직전 조항); (e) copy to `templates/` mirror and confirm `md5 -q` equality (#1707 #3).
 
 
       ## Sensitive Path Handling (CC v2.1.121+)

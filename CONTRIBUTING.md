@@ -359,32 +359,19 @@ When adding a feature, ask yourself:
 
 ### Adding New Agents
 
-1. Create directory structure:
-   ```
-   templates/agents/{category}/{agent-name}/
-   ├── AGENT.md       # Agent definition
-   ├── index.yaml     # Metadata
-   └── refs/          # Symlinks to skills/guides (optional)
-   ```
+New agents are created and structurally validated via `mgr-creator` (R010 Protected Paths) — do not hand-write `.claude/agents/*.md` directly.
 
-2. Update `templates/agents/index.yaml`
-
-3. Update `templates/skills/orchestration/intent-detection/patterns/agent-triggers.yaml` if adding intent triggers
-
-4. **Add tests** to verify the agent is detected and works
+1. Create the agent definition as a single file: `.claude/agents/{name}.md` (kebab-case), with required frontmatter (`name`, `description`, `model`, `tools`) — see R006.
+2. Mirror the file to `templates/.claude/agents/{name}.md` and bump the agent count in `templates/manifest.json`, `README.md`, `README_ko.md`, and `CLAUDE.md`/`templates/CLAUDE.md*` (R017 Count Sync — exhaustive grep, not file enumeration).
+3. Update `.claude/skills/intent-detection/patterns/agent-triggers.yaml` if adding routing triggers.
+4. **Add tests** to verify the agent is detected and works.
 
 ### Adding New Skills
 
-1. Create directory structure:
-   ```
-   templates/skills/{category}/{skill-name}/
-   ├── SKILL.md       # Skill instructions
-   └── index.yaml     # Metadata
-   ```
-
-2. Link from relevant agents using symlinks in their `refs/` directory
-
-3. **Add tests** to verify the skill is loaded correctly
+1. Create directory structure: `.claude/skills/{skill-name}/SKILL.md` (kebab-case directory, `SKILL.md` required fields `name`, `description`; see R006 Skill Frontmatter for optional fields).
+2. Mirror to `templates/.claude/skills/{skill-name}/SKILL.md` and bump the skill count in the same doc set as above.
+3. Reference the skill from relevant agents' `skills:` frontmatter (advisory metadata, not a runtime allowlist — R006).
+4. **Add tests** to verify the skill is loaded correctly.
 
 ---
 

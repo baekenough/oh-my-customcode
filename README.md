@@ -109,6 +109,8 @@ Agent(qa-engineer):sonnet         │
 Agent(arch-documenter):haiku      ┘
 ```
 
+Soft default is 4 concurrent agents, hard cap 5. Agent Teams (shared task list, peer messaging) is used instead of plain parallel agents when it's available — but it requires Claude Code to expose a `TeamCreate` tool, which is not present on a stock install today. Until then, oh-my-customcode's standard Agent-tool parallel model above is what actually runs.
+
 ---
 
 ### Agents (50)
@@ -170,6 +172,9 @@ All commands are invoked inside the Claude Code conversation.
 | `/adversarial-review` | Attacker-mindset security code review |
 | `/pipeline` | Execute YAML-defined pipelines |
 | `/pipeline resume` | Resume a halted pipeline from last failure point |
+| `/omcustom:fsd` | Full Self Driving — autonomous release loop: repeats `/pipeline auto-dev` (issue → implement → verify → release) then `/homework` (retrospective audit) until no eligible issues remain |
+| `/homework` | Retrospective audit of the current session, surfacing process gaps as feedback/issues |
+| `/agora` | Anonymized multi-round, multi-vendor consensus review (independent CLI reviewers + rotating judge) for decisions that need adversarial scrutiny |
 
 ### Agent Management
 
@@ -217,7 +222,9 @@ All commands are invoked inside the Claude Code conversation.
 | **SHOULD** | 8 | Interaction, error handling, memory, HUD, ecomode, ontology routing, wiki sync, verification ladder |
 | **MAY** | 1 | Optimization |
 
-Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done), R021 (advisory-first enforcement model).
+Key rules: R010 (orchestrator never writes files), R009 (parallel execution mandatory), R017 (sauron verification before push), R020 (completion verification before declaring done), R021 (advisory-first enforcement — most rules are prompt-based, not hard-blocked), R016 (continuous improvement — violations update the rule, and stale clauses are retired into HTML comments rather than accumulating forever), R023 (verification ladder — cheapest check first: deterministic hooks/linters, then cheap-model review, then expensive-model review, then human).
+
+R018 (Agent Teams) is conditional: it only takes effect when both `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is set AND the `TeamCreate` tool is present in the tool list. On a stock Claude Code install today, `TeamCreate` is not registered, so R018 is dormant and R009/R010 (the standard Agent-tool parallel-execution model) govern instead.
 
 ---
 
@@ -229,16 +236,20 @@ Reference documentation covering best practices, architecture decisions, and int
 
 ## Safety
 
-oh-my-customcode includes security and lifecycle hooks:
+oh-my-customcode ships 42 lifecycle hook scripts covering security, drift detection, and rule reinforcement. A few examples:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
 | secret-filter | Bash, Read output | Detects AWS keys, API tokens, private keys, bearer tokens |
 | audit-log | Edit, Write, Bash, Agent | Append-only JSONL at `~/.claude/audit.jsonl` |
 | schema-validator | Write, Edit, Bash input | Validates tool inputs, flags dangerous patterns |
-| PostCompact | Context compaction | Reinjects enforced rules (R007–R018, R021) — prevents rule amnesia |
+| claude-md-reinject | SessionStart (fresh session, resume, or compact) | Reinjects CLAUDE.md and the enforced rule set — prevents rule amnesia after context compaction |
+| stuck-detector | PostToolUse, repeated edits | Flags an agent looping on the same file/edit without progress |
+| r007-r008-drift-advisor | UserPromptSubmit, SubagentStop, PostToolUse | Advisory check that the last turn carried the required agent/tool identification headers |
 
-Security hooks are advisory (exit 0). They warn but never block.
+Most hooks are advisory (exit 0) — they warn but never block. A small number of hard-block hooks (e.g. `stage-blocker`, `rule-deletion-guard`) reject the tool call outright (exit 2). oh-my-customcode's own governance rules (`.claude/rules/`) follow an **advisory-first enforcement model**: prompt-based guidance is the default, and a rule is only promoted to a blocking hook after repeated, observed violations. Rules also retire — clauses tied to since-fixed platform bugs or that go unused for two minor releases are wrapped in HTML comments (still readable via the source file, invisible to the agent's context) rather than left to accumulate indefinitely.
+
+The hook source of truth is `.claude/hooks/hooks.json`; `omcustom init` compiles it into the `hooks` block of `.claude/settings.json` (via `src/core/hooks-settings.ts`), which is the file Claude Code actually loads.
 
 ---
 
@@ -273,7 +284,7 @@ your-project/
 │   ├── agents/                 # 50 agent definitions
 │   ├── skills/                 # 115 skill modules
 │   ├── rules/                  # 23 governance rules (R000-R023)
-│   ├── hooks/                  # 15 lifecycle hook scripts
+│   ├── hooks/                  # 42 lifecycle hook scripts (hooks.json source; compiled into settings.json)
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
 │   ├── contexts/               # 4 shared context files
@@ -306,7 +317,9 @@ bun test             # Run tests
 bun run build        # Production build
 ```
 
-Requirements: Node.js >= 18.0.0, Claude Code CLI.
+Requirements: Node.js >= 18.0.0, Claude Code CLI (developed and tested against Claude Code v2.1.277).
+
+Releases are two-stage automation: a merged `release/vX.Y.Z` PR triggers `auto-tag.yml`, which creates the git tag; the tag push then triggers `release.yml`, which builds, verifies, and publishes to npm. The project's own contributor knowledge base — the in-repo wiki at `wiki/` (278 pages covering agents, skills, rules, and workflows) — is CI-verified on every PR against a source-hash manifest, so wiki pages cannot silently drift from the code they document.
 
 ---
 
