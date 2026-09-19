@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.71",
-  "generatedAt": "2026-09-18T18:01:58.367Z",
-  "templateVersion": "1.1.71",
+  "generatorVersion": "1.1.72",
+  "generatedAt": "2026-09-19T03:01:02.581Z",
+  "templateVersion": "1.1.72",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "e99f0b3c3119466adf0928e2744c487c2e7fb96f8bbac77af586645eb2219d55",
-      "size": 83376,
+      "templateHash": "fd9938307b37500735ea76235abdddbcd0914dbd260dae81621b1c0cb2f3f797",
+      "size": 85908,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "81952840acfd7dd30a431b3bdad2f644485f9a011d1fc0688da8c0f20d84bdb0",
-      "size": 15785,
+      "templateHash": "bf1722336dd318d8b9d2a6c205e595bbffa973353f777c4c75f25daf88fee814",
+      "size": 16144,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "394133143df9a41b0debac0c3e07566e85e71d679543ab93f6f09d6682d13b2e",
-      "size": 46516,
+      "templateHash": "97315576047011d54d89ff587cbcac16233f6a2e0fec77c90dda375ad89cacb3",
+      "size": 46972,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
