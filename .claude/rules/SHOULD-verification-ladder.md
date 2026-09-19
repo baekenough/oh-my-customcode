@@ -119,6 +119,14 @@ Origin: #1455 #1 (Session 127 회고 찐빠 #1) — cc-release-monitor PR #1449 
 
 배선: auto-dev.yaml deep-plan 스텝 description (4사본) — 「Delegated Verification Floor」 상한선 조항과 같은 방식입니다.
 
+**오케스트레이터가 전달하는 에이전트 보고 수치도 재계산 의무 (Origin: #1709 찐빠 #5, v1.1.75)**: 위 조항은 리서치 에이전트 자신의 산출물 검증을 다루지만, **오케스트레이터가 한 에이전트의 보고 수치를 다음 위임서로 옮겨 적을 때도 같은 의무**가 적용됩니다 — 옮기기 전 `git diff --stat`/`grep -c` 등으로 1회 재계산한 뒤 기재합니다. v1.1.75 세션에서 문서 갱신 에이전트가 "20 new grouped rows"로 보고했으나 실제 diff는 21행이었고, 오케스트레이터가 그 수치를 검증 없이 후속 위임서에 그대로 옮겨 적어 후속 에이전트가 diff 계수로 재정정했습니다 — R016 「신설 조항의 동일 반복 self-check」의 수치 각도이기도 합니다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 에이전트 보고 수치를 재계산 없이 다음 위임서에 그대로 전달 | 옮겨 적기 전 `git diff --stat`/`grep -c` 등으로 1회 재계산 후 기재 |
+
+배선: auto-dev.yaml implement 스텝 표준 제약 블록 (4사본).
+
 ## Delegated Verification Floor — CI 잡 목록에서 도출 (Origin: #1574)
 
 위임 프롬프트의 검증 항목은 "변경 파일의 영향 범위"만으로 정하면 부족하다. **하한선은 CI가 실제로 돌리는 잡 전체**다 — 워크플로 YAML의 잡 목록을 읽어 대응하는 로컬 명령(`lint` / `test` / `validate-docs` / sync 검사)을 열거하고, 그중 로컬 실행 가능한 것을 위임 완료 조건에 포함한다. 로컬에서 통과시키지 않은 CI 잡은 병합 시점에 halt로 돌아와 수정 에이전트 추가 발주를 강제한다.

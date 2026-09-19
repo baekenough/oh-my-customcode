@@ -356,6 +356,18 @@ git branch --list
 
 Origin: #1646 (v1.1.58 세션 — 커밋 위임서 `12e74a76` vs 실제 `e101a0b4`, 정리 위임서 '로컬 브랜치 2개 존재' vs 실제 부재; 원인은 `gh pr merge --delete-branch`가 체크아웃된 브랜치를 base로 전환·pull·삭제하는 부수효과였음 — 도구 부수효과를 모른 채 상태를 예측한 사례).
 
+#### 브리프 실측값에는 측정 명령을 병기 (Origin: #1709 #3)
+
+위임서의 브리프(사전 실측)에 적는 수치 — CC 버전, 룰 노트 커버리지 최댓값, 카운트 등 — 에는 그 숫자를 낸 **측정 명령을 함께 기재합니다**. 같은 숫자라도 출처(예: 로컬 CLI 설치 버전 vs 룰 코퍼스 내 버전 노트 최댓값)가 다르면 의미가 다르므로, 측정 명령이 없으면 서브에이전트가 숫자의 의미를 오해합니다.
+
+예: `claude --version`=X(CLI 설치 버전) / `git grep -oh '2\.1\.2[0-9][0-9]' .claude/rules | sort -V | tail -1`=Y(룰 코퍼스 버전-노트 커버리지 최댓값) — 두 값은 서로 다른 것을 측정하므로 X와 Y가 다를 수 있으며, **그 차이 자체가 이 조항이 방지하려는 오독의 요점**입니다. 이 예시에 실제 버전 리터럴을 쓰면, 룰 코퍼스가 곧 `git grep` 대상이므로 조항 자신이 측정 결과를 오염시킵니다 — 그래서 X/Y 플레이스홀더로 표기합니다.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 브리프에 "CC 최신 버전은 2.1.2NN입니다"처럼 측정 명령 없이 수치만 기재 | 수치 옆에 측정 명령을 병기(예: `claude --version`=X / `git grep ... \| sort -V \| tail -1`=Y) |
+
+Origin: #1709 찐빠 #3 — 브리프의 숫자에 출처·의미(CLI 설치 버전 vs 룰 노트 커버리지)를 붙이지 않았습니다. R010 「출처 인용과 인접 문구 점검…」 보강 [#1698 #1]의 "실측 사실은 오케스트레이터가 계속 기재" 예외를 쓰면서 실측의 **대상**을 명시하지 않은 사례입니다. Cross-ref: 위 「Delegation Prompt Command Examples」(명령·플래그 실측), 위 「저장소 상태 기재도 같은 규율」(SHA/브랜치 실측). 배선: auto-dev.yaml implement 스텝 표준 제약 블록 (4사본).
+
 #### 출처 인용과 인접 문구 점검도 같은 규율 (Origin: #1688 — Iteration 3 #1, Iteration 4 #1·#2)
 
 위임서에 **Origin 이슈·CHANGELOG·메모리에서 가져온 사실**을 적을 때는 그 출처의 해당 문장을 `gh issue view <N> --json body` 또는 원문 파일에서 **인용 형태로 동봉합니다**. 기억이나 메모리 요약을 전제로 옮겨 적으면 서브에이전트가 그것을 사실로 기재하고, 위키까지 전파된 뒤에야 적대적 리뷰가 잡습니다 — v1.1.66에서 CHANGELOG에 없는 원인("부모가 mid-turn일 때")을, v1.1.67에서 메모리의 세션 번호를 릴리즈 번호로 잘못 옮긴 것("v1.1.61" — 실제 #1660은 v1.1.63 반복)이 각각 High로 적발되었습니다. R017 「메모리 TODO를 위임 전제로 쓸 때」의 위임서 각도이며, 위 「저장소 상태 기재도 같은 규율」이 SHA에 대해 요구하는 것을 **출처 문장**에 대해 요구합니다.
@@ -592,8 +604,17 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 | `Write` files | `tools:` includes Write (and target path not in `disallowedTools` scope) |
 | MCP server calls | `mcpServers:` includes the required server |
 | Task targets a specific file path | The path EXISTS (`Glob`/`ls`) — capability check alone does not catch a missing/renamed file |
+| Task targets an EXISTING file for editing/commit (not a newly-created file) | The path is git-tracked (`git ls-files <path>` non-empty) — an existing-but-untracked target needs an explicit scope decision before delegation |
 
 > **Path existence ≠ tool capability (#1269 ③)**: the pre-check above verifies the agent HAS Read/Write/Bash, but not that the target path actually exists. Delegating a read/write to a missing or renamed path causes the same round-trip waste the capability pre-check is meant to prevent. Verify path existence (Glob/ls) before delegating path-specific work.
+
+> **Tracked 여부도 path existence 확인에 포함 (#1709 #4)**: 위 path existence 확인(`Glob`/`ls`)은 파일 **존재**를 확인하지만 **tracked 여부**는 확인하지 않습니다. **적용 범위는 기존 파일을 편집·커밋 대상으로 지정할 때에 한하며, 신규 생성 대상(아직 존재하지 않아 처음부터 untracked인 파일)은 제외**합니다 — 신규 파일은 존재하지 않으므로 `git ls-files`가 빈 결과를 내는 것이 정상이고 스코프 결정 대상이 아닙니다. 기존 파일에서 `git ls-files <path>`가 빈 결과를 반환하면 그 경로는 존재해도 git에 추적되지 않는 파일이므로(예: `.gitignore`로 제외됨), 그 경로를 위임 범위에 넣기 전에 범위에서 제외할지 force-add가 필요한지를 먼저 결정합니다. untracked 여부는 `git ls-files <path>`(빈 결과) 또는 `git check-ignore -v --no-index <path>`(히트 시 제외 사유까지 확인 가능)로 판별합니다.
+>
+> | Anti-pattern | Required |
+> |--------------|----------|
+> | 경로 존재(`ls`/`Glob`)만 확인하고 위임 → 기존 파일 대상이 untracked라 커밋 단계에서야 발견 | 기존 파일 편집·커밋 대상에 한해 `git ls-files <path>`(또는 `git check-ignore -v --no-index <path>`)로 tracked 여부까지 확인; untracked면 위임 범위에서 제외하거나 force-add 여부를 사전 결정. 신규 생성 대상은 이 확인에서 제외 |
+>
+> Origin: #1709 찐빠 #4 — `git ls-files AGENTS.md` = 0, `git check-ignore -v --no-index` 히트(AGENTS.md가 `.gitignore` 리터럴로 제외됨). 문서 갱신 대상을 열거할 때 경로 존재만 확인(위 Path existence)하고 tracked 여부는 확인하지 않았습니다. R017 (c)의 "untracked 신규 산출물 실측"은 **커밋 직전** 실측을 다루지만, 이 조항은 **위임 전** 대상 파일이 애초에 tracked인지 판별하는 것을 다룬다는 점에서 범위가 다릅니다. 배선: auto-dev.yaml implement 스텝 표준 제약 블록 (4사본).
 
 > **Multi-copy content consistency (#1287)**: 동일 파일이 다중 사본으로 존재하는 경우(예: auto-dev.yaml이 실행본 + templates 미러 + 레거시 사본 등 N곳), 위임 전 경로 존재뿐 아니라 **사본 간 내용 일관성(md5/diff)도 확인**해야 한다. 사본이 drift된 상태에서 "N곳 동일 변경 적용"으로 위임하면 에이전트가 작업 중에야 drift를 발견(round-trip)하거나, 일부 사본만 갱신되어 불일치가 심화된다.
 >
@@ -602,6 +623,14 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 > | `find`로 N곳 존재 확인 후 "N곳 동일 변경" 위임 | 위임 전 `md5`/`diff -q`로 N곳 내용 일치 확인; drift 시 canonical 기준 정렬을 위임 prompt에 명시 |
 >
 > Origin: #1287 (v0.164.0 세션 회고 찐빠 #1).
+
+> **언어 미러·parity 위임은 추가·수정·삭제 세 방향 (#1709 #2)**: en 원본에 대응하는 로컬라이즈 미러(README_ko, ARCHITECTURE_ko 등) 동기화를 위임할 때는 표준 문안에 "en에 있는 내용을 **추가**, en과 달라진 내용을 **수정**, en에서 사라진 내용을 **삭제**해 세 방향 모두 일치시키라"를 고정하고, 완료 조건에 "en에 없는데 ko에만 남은 행·문장이 0건임을 grep으로 확인"을 포함합니다. 추가만 지시하면(additive-only) en에서 제거된 행이 ko에 stale로 잔존합니다.
+>
+> | Anti-pattern | Required |
+> |--------------|----------|
+> | 미러 동기화 위임을 "en의 새 내용을 ko에 반영하라"로만 지시(추가 전용) | "추가·수정·삭제 세 방향으로 en과 일치"를 표준 문안에 고정 + "en에 없는 행 0건 grep" 완료 조건 포함 |
+>
+> Origin: #1709 찐빠 #2 — parity 지시가 추가 전용이라 en에서 제거된 행이 ko 미러에 stale로 남았습니다. Cross-ref: 위 Multi-copy content consistency(사본 간 md5/diff 일치 확인)의 언어 미러 변형. 배선: auto-dev.yaml implement 스텝 표준 제약 블록 (4사본).
 
 > **New-File Count-Impact Pre-Check (#1443)**: 신규 파일 추가를 서브에이전트에 위임하기 전, 그 파일이 **새 최상위 토픽/엔티티 디렉토리**(카운트 증가)인지 **기존 디렉토리 내부 문서**(카운트 불변)인지 사전 판별해야 한다. 사전 판별 없이 "카운트 N→N+1 동기화"로 위임하면 잘못된 전제가 서브에이전트에 전파된다. `find <dir> -mindepth 1 -maxdepth 1 -type d | wc -l` 등으로 토픽 디렉토리 실측하고, 카운트 위임 프롬프트에는 항상 "실측값 기준으로 동기화하라, 추측으로 숫자를 바꾸지 말라"를 명시해 잘못된 전제를 서브에이전트가 정정할 여지를 확보한다.
 >

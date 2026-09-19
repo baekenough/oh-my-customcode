@@ -398,6 +398,33 @@ steps:
         strings, never line numbers; (c) copy quotations from `gh issue view --json body` output and
         verify with `grep -F`; (d) ±1 heading check including re-binding of relative references (위
         표/아래 표/직전 조항); (e) copy to `templates/` mirror and confirm `md5 -q` equality (#1707 #3).
+      - Document mirror/parity delegations (README/ARCHITECTURE/CLAUDE.md ko-en, templates
+        mirrors, etc.) MUST be split to ≤3 files per delegation (a companion cap alongside the
+        arithmetic below, not a replacement for it); compute turn arithmetic (files × 3 +
+        edit_items × 2 ≤ 16 — a #1709-proposed guide kept below the 20-turn limit, not a
+        truncation guarantee, per R020 「maxTurns 절단 실증」 6항) and state that arithmetic in
+        the delegation prompt before dispatch (#1709 #1).
+      - Parity delegation prompts (e.g. a ko mirror tracking an en source) MUST require THREE
+        directions — additions, edits, AND deletions — to match the source, never additions
+        only; completion criteria MUST include a `grep -F` confirming zero rows/sentences are
+        present in the target but absent from the source (#1709 #2).
+      - When a delegation prompt or brief states a measured version/count value (CC version,
+        rule-note coverage ceiling, file/skill counts), append the exact command used to
+        measure it (e.g. `claude --version`=X / `git grep -oh '2\.1\.2[0-9][0-9]'
+        .claude/rules | sort -V | tail -1`=Y) so the subagent can distinguish a CLI-install
+        version from a rule-corpus coverage ceiling (#1709 #3).
+      - Before delegating an edit/commit to an EXISTING file (not a newly-created target, which
+        is by definition untracked), confirm the path is git-tracked via `git ls-files <path>`
+        — not just existence via Glob/ls. An existing-but-untracked path — verify with
+        `git check-ignore -v --no-index <path>` to confirm intentional exclusion (e.g. a
+        `.gitignore` rule) — MUST be excluded from delegation scope, or its tracked status
+        decided first, before dispatch (R010 「Agent Capability Pre-Check」 git-tracked row)
+        (#1709 #4).
+      - When forwarding a number an agent reported (row/line/file counts, etc.) into a
+        subsequent delegation prompt, recompute it once via diff/ls (e.g. `git diff -U0 --
+        <path> | grep -c '^+[^+]'`) before restating it — do not relay an unverified
+        agent-reported count (R023 「리서치 위임의 결론 수치는 표에서 재계산해 병기」 #1707 #4
+        확장, #1709 #5).
 
 
       ## Sensitive Path Handling (CC v2.1.121+)
