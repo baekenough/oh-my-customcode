@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-09-18
+updated: 2026-09-19
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -213,6 +213,7 @@ Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delet
 - Content-drift resync 2026-09-03 (v1.1.61, #1650 C): corrected Phase 0.6's marker check to its actual three-state form (`present`/`stale`/`absent`, not a binary present/absent) with the 360-minute (6h) stale threshold explicitly stated; noted the snippet's `if`/`fi` + trailing `echo` structure always exits 0, so a `false` result is a valid measurement outcome and never halts the pipeline.
 - Content-drift resync 2026-09-03 (#1655): added "ci-check: auto-tag `run.headSha` may lag the PR head" (cross-check against `gh pr view --json mergeCommit` rather than trusting `run.headSha` as the merged commit) and "deep-verify: standard delegation wording — do not re-run pre-measured items" (aligned with [[r023]]'s new verification-floor ceiling — a paired mgr-sauron delegation measured 25-turn truncation with a re-verified pre-measured item vs. 16-turn completion without it).
 - Content-drift resync 2026-09-18 (v1.1.69, #1688): added "Wiki resync/reseed ordering — dispatch after deep-verify, not alongside it" — the `docs-only`/`lite`/uncompressed tiers all now dispatch wiki resync and the `wiki/.source-hashes.json` reseed only after that tier's deep-verify substitute (self-review/R017, or the R017+adversarial-review split, or the full skill) has landed, with a matching EXCEPTION in the `implement` step's CI-mimic block that defers wiki drift fixes for rules/skills TEXT-only changes (page generation for newly created entities is not deferred). v1.1.66 reworked 3 wiki pages after parallel-dispatched review changed the rules; v1.1.67's review-first ordering needed 0 rework (#1688 Iteration 3 #2).
+- Content-drift resync 2026-09-19 (v1.1.72, #1698): the `implement` step's rules/gates block now adds a standing instruction — when a delegation edits rule/skill/guide TEXT, the orchestrator must NOT author the final committed wording; the subagent writes it directly from the issue body (`gh issue view <N> --json body`), and the delegation prompt supplies only pointers, insertion anchors, constraints, and verbatim quoted facts. Cross-ref [[r010]] 「출처 인용과 인접 문구 점검도 같은 규율」 보강 2항목 (#1698 #1) — the same 3rd-recurrence citation-accuracy defect that motivated that R010 addition (v1.1.69 session number → v1.1.70 "and marketplace" → v1.1.71 "High 2건") traced back to the orchestrator hand-authoring rule prose instead of the subagent quoting the issue.
 - Issue #1531 — PR-body Closes-keyword omission left 5 issues open despite green workflow (v1.1.34)
 - Issue #1542 — bump pushed to develop before branching produced a diff=0 release PR (v1.1.38)
 - Issue #1553 — lite compression silently skipped the milestone-create state-change branch alongside the compressible analysis step, leaving v1.1.41 without a milestone (v1.1.41 retrospective)

@@ -42,6 +42,8 @@ Origin: #1533 (v1.1.35에서 R017 (b) 조항 추가했으나 auto-dev.yaml versi
 
 Cross-reference: R021(Enforcement Policy — advisory 규칙의 발동 지점), R017(구조 검증).
 
+**적용 범위 확장 (Origin: #1698 #1 — v1.1.72)**: 이 self-check는 서브에이전트에 **요구하는** 규율뿐 아니라 오케스트레이터가 **스스로 작성하는 산문(룰 문안·요약·수치)**에도 대칭 적용됩니다. 상세·인용은 R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 2항목 참조.
+
 ## Integration
 
 | Situation | Action |
