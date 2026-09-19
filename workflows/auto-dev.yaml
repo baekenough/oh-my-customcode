@@ -386,7 +386,9 @@ steps:
       - Mid-run scope additions (a new issue added via user interrupt AFTER implement began) MUST re-enter the verify-build gate before release — do NOT let a late-added scope item ride to release on a prior verify-build pass. Critical for code changes; benign for docs-only (#1301).
       - When an implement-stage delegation edits rule/skill/guide TEXT, the orchestrator MUST NOT author the final committed wording — the subagent writes it directly from the issue body (`gh issue view <N> --json body`); the delegation prompt supplies pointers, insertion anchors, constraints, verbatim tool-output quotations, and measured facts only
         (R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 2항목, #1698 #1). The orchestrator's own requirement/scope summary counts as final wording too — copy the issue's proposal sentence from `gh issue view` output verbatim, and tag any orchestrator paraphrase "[요약 — 원문 우선]"
-        (#1701 #1).
+        (#1701 #1). The orchestrator's own wiring judgement (which file/anchor already covers a
+        new clause) counts as final wording too — the prompt supplies candidate files/anchors
+        only, and the subagent decides coverage by quoting the covering sentence (R010 [#1704 #1]).
 
 
       ## Sensitive Path Handling (CC v2.1.121+)
@@ -447,7 +449,7 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정한다 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688)."
+    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정한다 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688)."
     depends_on: verify-build
 
   - name: release

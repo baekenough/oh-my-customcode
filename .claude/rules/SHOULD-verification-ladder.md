@@ -139,6 +139,8 @@ Origin: #1563 찐빠 #2 — R007/R008 advisor 발화 검증에 단일 "0바이�
 |--------------|----------|
 | 래퍼 스크립트 위임서에 경계 규칙만 지정하고 원본의 전처리 필터 미열거 | 원본 제외 계열 전수 열거 + 계열별 적용/미적용 판정과 사유 + 계열별 음성 픽스처 요구 |
 
+**훅 옵션 검증은 합성 픽스처 + 실 트랜스크립트 1건 (Origin: #1703 권장 2, #1704 #4 — v1.1.74)**: 트랜스크립트 블록 형상을 읽는 훅/advisor 옵션 변경을 위임할 때는, R023 양성/음성 합성 픽스처 짝 외에 이 프로젝트의 실 트랜스크립트 최소 1건에서의 계수 실측(건수만)을 완료 조건에 포함합니다. 합성 픽스처는 평문 `thinking` 텍스트로 통과했으나 실 트랜스크립트에서는 `thinking` 블록 86건 중 본문 있는 38건 가운데 announce 마커 매칭이 **0건**이었습니다(`scripts/count-r007-r008.sh --json`, env on/off 동일 결과) — 합성 픽스처만으로는 형상 불일치를 잡지 못합니다. 배선: auto-dev.yaml deep-verify 스텝 description.
+
 ## Detection Guard Delegation Standard (Origin: #1438 #3)
 
 Tier-1 shift-left 검출 가드(예: deprecated-pattern grep 가드)의 설계·수정을 서브에이전트에 위임할 때, 위임 프롬프트는 **positive-match(genuine defect mandate — `MUST`/`MANDATORY` 인접 문맥)와 negative-context(deprecation note — "no longer"/"deprecated"/"불필요"/"폐기됨" 설명 문구)를 구분**하도록 명시해야 한다. 이를 누락하면 올바르게 수정된 파일의 폐기-설명 문구까지 과잉매칭하여 자기모순 BLOCK을 유발한다.
