@@ -58,11 +58,21 @@ if [ -z "$user_input" ]; then
   exit 0
 fi
 
+# ── 출처 필터 (#1692) ──
+# session-end 트리거 단어("done"/"완료"/"마무리" 등)는 서브에이전트 hand-back 메시지나
+# task-notification/system-reminder 프레임 안에도 나타날 수 있다. 그런 입력은 사용자 발화가
+# 아니므로, 아래 프레임 마커가 프롬프트 어디에든 있으면 session-end 감지만 건너뛴다
+# (slash-command 감지 등 다른 전처리는 영향받지 않는다).
+is_non_user_frame=0
+if printf '%s' "$user_input" | grep -qiE '(<agent-message|\[Subagent hand-back\]|<task-notification>|<system-reminder>|\[SYSTEM NOTIFICATION|⏺ Agent "|This session is being continued from a previous conversation|Base directory for this skill:)'; then
+  is_non_user_frame=1
+fi
+
 # ── 패턴 탐지 ──
 hints=""
 
-# Korean session-end signals
-if printf '%s' "$user_input" | grep -qiE '(끝|종료|마무리|done|wrap up|end session)'; then
+# Korean session-end signals (genuine user utterances only — see 출처 필터 above)
+if [ "$is_non_user_frame" -eq 0 ] && printf '%s' "$user_input" | grep -qiE '(끝|종료|마무리|done|wrap up|end session)'; then
   hints="${hints}[Hook] Session-end signal detected — R011 memory saves will be triggered"$'\n'
 fi
 

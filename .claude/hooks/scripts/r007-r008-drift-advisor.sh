@@ -125,6 +125,9 @@
 #   OMCUSTOM_TRANSCRIPT_BASE   — transcript 디렉토리 경로 override (설정 시 최우선)
 #   OMCUSTOM_R007_MARKER_DIR   — dedup 마커 디렉토리 override (기본 ${TMPDIR:-/tmp})
 #   OMCUSTOM_R008_REVERSE=on   — 역방향 신호(예고했으나 도구 미호출) 활성화. 기본 off.
+#   OMCUSTOM_R008_NARRATION=on — narration(thinking 직렬화) 채널도 announce 정규식으로 스캔해
+#                                "그중 narration 채널에만 존재 M건"을 문구에 덧붙임. 기본 off —
+#                                꺼진 상태에서는 판정/문구가 기존과 바이트 동일(#1701 하네스 제안 2).
 
 set -euo pipefail
 
@@ -326,7 +329,32 @@ split("\n")
     | ([ $lines[] | select(test("^\\[[^\\]]+\\]\\[[^\\]]+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_anchored
     # $nall_tools는 위 forward r008 가드에서 이미 바인딩됨 — 재바인딩하지 않고 재사용한다.
     | (if $nall_tools == 0 and $an_anchored > 0 then $an_anchored else 0 end) as $r008rev
-    | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring), ($tool_names_list | join(","))] | @tsv
+    # ── OPT-IN narration split (#1701 하네스 제안 2) ────────────────────────────────
+    # 기본 판정($r008)은 `$blocks`(thinking 제외)만 본다 — 이 절은 그 판정을 바꾸지 않고,
+    # 같은 announce 정규식을 thinking(narration) 블록의 `.thinking` 텍스트에도 적용해
+    # "누락으로 계상된 건 중 narration 채널에만 존재하는 건수"를 부가 필드로만 산출한다.
+    # #1654가 확정한 대로 narration ≠ text이므로 기본 판정은 그대로 위반으로 남는다 —
+    # 이 필드는 진단 정보(어느 채널에 있었는지)만 덧붙인다. OMCUSTOM_R008_NARRATION=on일
+    # 때만 bash 쪽에서 문구에 반영하고, 기본(off)에서는 아래 tsv 6번째 필드가 계산은 되지만
+    # bash가 0으로 강제해 문구·판정 바이트가 기존과 동일하게 유지된다.
+    | ([ $turn[] | .message.content[]? | select(.type? == "thinking") | (.thinking? // "") ]
+       | join("\n") | split("\n")) as $nlines
+    | ([ $nlines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_tool_narr
+    | ([ $nlines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool: ?Agent")) ] | length) as $an_tool_agent_narr
+    | ([ $nlines[] | select(test("^[[:space:]]*\\[[0-9]+\\][[:space:]].*(→|->|—>)")) ] | length) as $an_spawn_item_narr
+    | ([ $nlines[] | select(test("^[[:space:]]*[a-z][a-z0-9-]*:(haiku|sonnet|opus|fable|inherit)[[:space:]]*(→|->|—>)")) ]
+       | length) as $an_spawn_single_narr
+    | ([ $nlines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Spawning:")) ] | length) as $an_spawn_hdr_narr
+    | (if $an_spawn_item_narr > 0 then $an_spawn_item_narr
+       elif $an_spawn_single_narr > 0 then $an_spawn_single_narr
+       else $an_spawn_hdr_narr end) as $an_spawn_narr
+    | ($an_tool_narr + (if $an_spawn_narr > $an_tool_agent_narr then $an_spawn_narr - $an_tool_agent_narr else 0 end))
+      as $announce_narr
+    # 부가 필드는 $r008(기존 판정)을 상한으로 bound한다 — narration에 announce가 더 많아도
+    # "누락으로 계상된 건수"를 초과해 보고하지 않는다(과대 서술 방지).
+    | (if $r008 > 0 then (if $announce_narr < $r008 then $announce_narr else $r008 end) else 0 end) as $r008narr
+    | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring), ($tool_names_list | join(",")),
+       ($r008narr | tostring)] | @tsv
       )
       end
   end
@@ -352,10 +380,18 @@ r008_violations=$(printf '%s' "$result" | cut -f3)
 r008_reverse=$(printf '%s' "$result" | cut -f4)
 # 미접두 도구 이름 목록 (#1687) — $ntools와 동일 필터의 순서 보존 목록, "," join.
 tool_names=$(printf '%s' "$result" | cut -f5)
+# narration 채널 분리 카운트 (#1701 하네스 제안 2) — $r008(기존 판정)의 부분집합, 상한 bound.
+r008_narration=$(printf '%s' "$result" | cut -f6)
 
 : "${r007_violations:=0}"
 : "${r008_violations:=0}"
 : "${r008_reverse:=0}"
+: "${r008_narration:=0}"
+
+# narration 분리 신호는 OPT-IN, 기본 off — 켜지지 않으면 문구/판정은 기존과 바이트 동일.
+if [ "${OMCUSTOM_R008_NARRATION:-off}" != "on" ]; then
+  r008_narration=0
+fi
 
 # 역방향 신호는 OPT-IN, 기본 off.
 # 측정 정밀도는 3/3이지만 표본이 3건뿐이고, 배선 구조상 "예방"이 불가능하다:
@@ -402,6 +438,12 @@ if [ "$r008_violations" -gt 0 ]; then
   else
     violation_desc="R008 도구 식별 접두사 누락 ${r008_violations}건"
     instruction="모든 도구 호출에 [agent][model] → Tool: 접두사를 포함하십시오."
+  fi
+  # narration 채널 분리 (#1701 하네스 제안 2, OPT-IN): 판정 자체는 그대로 위반으로 남기고,
+  # 그중 몇 건이 narration(thinking 직렬화)에만 존재했는지를 문구에 덧붙인다. 기본 off에서는
+  # r008_narration이 위에서 0으로 강제되어 이 블록이 문구를 바꾸지 않는다.
+  if [ "$r008_narration" -gt 0 ]; then
+    violation_desc="${violation_desc} (그중 narration 채널에만 존재 ${r008_narration}건)"
   fi
   # 미접두 도구 이름 귀속 (#1687): announce는 턴 단위로 매칭되므로, $tool_names(순서 보존,
   # non-Skill tool_use)의 마지막 r008_violations개를 부족분으로 귀속한다. 카운트 문구

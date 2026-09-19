@@ -385,7 +385,8 @@ steps:
       - All Agent tool calls MUST pass mode: "bypassPermissions" to prevent permission prompts during unattended execution
       - Mid-run scope additions (a new issue added via user interrupt AFTER implement began) MUST re-enter the verify-build gate before release — do NOT let a late-added scope item ride to release on a prior verify-build pass. Critical for code changes; benign for docs-only (#1301).
       - When an implement-stage delegation edits rule/skill/guide TEXT, the orchestrator MUST NOT author the final committed wording — the subagent writes it directly from the issue body (`gh issue view <N> --json body`); the delegation prompt supplies pointers, insertion anchors, constraints, verbatim tool-output quotations, and measured facts only
-        (R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 2항목, #1698 #1).
+        (R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 2항목, #1698 #1). The orchestrator's own requirement/scope summary counts as final wording too — copy the issue's proposal sentence from `gh issue view` output verbatim, and tag any orchestrator paraphrase "[요약 — 원문 우선]"
+        (#1701 #1).
 
 
       ## Sensitive Path Handling (CC v2.1.121+)
