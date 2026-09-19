@@ -100,21 +100,25 @@ Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specif
 | de-lead-routing | de-* agents |
 | qa-lead-routing | qa-* agents |
 
-**Orchestration skills (6, context: fork)**
+**Orchestration skills (10, context: fork)**
 
 secretary-routing, dev-lead-routing, de-lead-routing, qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage, roundtable-debate
 
-**Best-practices skills (~26)**
+**Best-practices skills (26)**
 
-go-best-practices, go-backend-best-practices, python-best-practices, rust-best-practices, kotlin-best-practices, typescript-best-practices, java21-best-practices, react-best-practices, web-design-guidelines, fastapi-best-practices, springboot-best-practices, django-best-practices, flutter-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, kafka-best-practices, dbt-best-practices, spark-best-practices, snowflake-best-practices, airflow-best-practices, pipeline-architecture-patterns, vercel-deploy, writing-clearly-and-concisely
+go-best-practices, go-backend-best-practices, python-best-practices, rust-best-practices, kotlin-best-practices, typescript-best-practices, java-best-practices, react-best-practices, web-design-guidelines, fastapi-best-practices, springboot-best-practices, django-best-practices, flutter-best-practices, docker-best-practices, aws-best-practices, postgres-best-practices, supabase-postgres-best-practices, redis-best-practices, kafka-best-practices, dbt-best-practices, spark-best-practices, snowflake-best-practices, airflow-best-practices, pipeline-architecture-patterns, vercel-deploy, alembic-best-practices
 
-**Slash command / user-invocable skills**
+**Slash command / user-invocable skills (48)**
 
-analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-workflow, omcustom-workflow-resume, improve-report, omcustom-feedback, omcustom-web, omcustom-loop, fsd, sdd-dev, harness-synthesizer
+analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-improve-report, omcustom-feedback, omcustom-web, omcustom-loop, fsd, sdd-dev, sdd, harness-synthesizer, goal, idea, homework, profile, pipeline, wiki, wiki-rag, post-release-followup, token-efficiency-audit
 
-**System / internal skills**
+**System / internal skills (27)**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, jinja2-prompts, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, workflow-runner, alembic-best-practices, action-validator, peer-messaging
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, action-validator, adaptive-harness, agent-eval-framework, claude-native, crg-integration, harness-eval, instinct-extractor, omcustom-auto-improve, pipeline-guards, playwright-compress, pre-generation-arch-check, rtk-exec, sec-agentshield-wrapper, semble-integration, hada-scout
+
+**Design & product skills (5)**
+
+design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-docs
 
 **Consensus skill (1)**
 
@@ -141,7 +145,9 @@ intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-mo
 
 ### 3.5 Hook System
 
-The hook system provides cross-cutting concerns across all agent operations. Hooks are advisory-only by design: PostToolUse hooks record state, PreToolUse hooks advise, but neither blocks execution (except stage-blocker and dev-server tmux enforcement).
+The hook system provides cross-cutting concerns across all agent operations. Hooks are advisory-first by design (R021): most PostToolUse/PreToolUse hooks warn or record state but never block; a small set (stage-blocker, dev-server tmux enforcement, rule-deletion-guard) hard-blocks via `exit 2`.
+
+**Source → build artifact**: `.claude/hooks/hooks.json` is a **source file** — Claude Code does not load it directly. The actual load path is the `hooks` block inside `.claude/settings.json` (+ `.claude/settings.local.json`, + `templates/` mirrors), compiled from `hooks.json` by `src/core/hooks-settings.ts` and merged in during `omcustom init`/`omcustom update` via `installer.ts`. Editing `hooks.json` alone does not change runtime behavior until the settings files are regenerated — this source/build split was discovered and fixed in v1.1.53 after `hooks.json` had silently gone unloaded for prior releases. Measured (verify-template-sync output): 42 hook scripts, 57 hook matchers.
 
 | Event | Scripts / Handlers | Purpose |
 |-------|--------------------|---------|
@@ -420,17 +426,17 @@ Introduced in v0.73.0. sys-memory-keeper maintains a structured `## User Model` 
 
 This structured model enables agents to anticipate user preferences rather than requiring repeated corrections across sessions. sys-memory-keeper updates the User Model at session end alongside the standard behavioral memory update.
 
-### 6.6 MCP Memory (Supplementary)
+### 6.6 MCP Memory (Supplementary) — Superseded
+
+> **Contradicted by current source (R011, `.claude/rules/SHOULD-memory-integration.md`)**: as of #1253 (v0.157.0), this project uses **native auto-memory ONLY**. claude-mem and agentmemory MCP backends were **permanently removed** — the `memory-recall`, `memory-save`, and `memory-management` skills were deleted, and `.mcp.json` no longer registers either server. R011 explicitly states: *"claude-mem and agentmemory MCP are NOT used in this project."* The `memory-mcp-server` package and its native/episodic-memory/llm-memory adapter description below predate that removal and are retained here as historical record — do not treat this section as current guidance. See §6.1 (Native Auto-Memory) for the current, sole memory mechanism.
 
 MCP tools are orchestrator-scoped — subagents cannot access them.
 
 | System | Tool | Use Case |
 |--------|------|----------|
-| memory-mcp-server | `memory_get`, `memory_search`, `memory_stats`, `memory_list` (4 tools) | Unified memory access across adapters (v0.123.0+) |
+| memory-mcp-server | `memory_get`, `memory_search`, `memory_stats`, `memory_list` (4 tools) | Unified memory access across adapters (v0.123.0+; pre-#1253) |
 
-`packages/memory-mcp-server/` provides a unified MCP interface over the memory unification layer (native/episodic-memory/llm-memory adapters). Exposes 4 MCP tools for retrieval, search, statistics, and listing. Register via `.mcp.json` for access from the orchestrator.
-
-Episodic-memory auto-indexes conversations after session end — no manual action is needed. Use native auto-memory first; fall back to MCP only for cross-session search or temporal queries.
+`packages/memory-mcp-server/` provided a unified MCP interface over the memory unification layer (native/episodic-memory/llm-memory adapters). Register via `.mcp.json` for access from the orchestrator.
 
 ### 6.7 Session-End Flow
 
@@ -483,12 +489,19 @@ The task-outcome-recorder hook (PostToolUse + SubagentStop) records success/fail
 | Lint | ci.yml | biome check on source files |
 | Test | ci.yml | bun test with coverage threshold |
 | Rust Tests | ci.yml | cargo test for Rust components |
-| Version Sync | ci.yml | manifest.json matches package.json |
+| Version Sync | ci.yml | manifest.json matches package.json (+ lockfile 3-way check) |
 | Template Sync | ci.yml | Verify template files match source, skill script file parity |
 | Dependency Security Audit | security-audit.yml | Automated vulnerability scanning |
-| Auto Tag | auto-tag.yml | Create version tag on release PR merge |
-| Release Cleanup | release-cleanup.yml | Auto-close linked issues + delete release branches on merge |
+| Wiki Sync | wiki-sync.yml | Checks for missing/stale wiki pages on PR (R022) |
+| Docs Sync | docs-sync.yml | Doc drift checks (validate-docs.ts programmatic mode) |
+| Issue Triage Dispatch | triage-dispatch.yml | Idempotent label/comment automation on `issues` events |
+| CC Release Monitor | cc-release-monitor.yml | Auto-creates Claude Code version-tracking issues (repo-internal cron; replaced an external Airflow DAG in v0.156.0) |
+| Deploy Test | deploy-test.yml | Verdaccio-backed publish smoke test |
+| Auto Tag | auto-tag.yml | Extracts version from `package.json` and tags the merge commit when a `release/*` PR merges to `develop`; also handles milestone auto-close |
+| Release | release.yml | Publishes to npm and creates the GitHub Release once `auto-tag.yml` has tagged the merge commit |
 | Daily Report | reusable-daily-report.yml | Scheduled issue/PR reporting |
+
+**Release chain**: a `release/*` branch is opened → PR merges to `develop` → `auto-tag.yml` tags the merge commit → `release.yml` runs `npm publish` + creates the GitHub Release. This chain, plus `/homework` retrospectives, is what `/omcustom:fsd` (the FSD loop, v0.179.0+) drives repeatedly: `/goal "모든 이슈가 처리될 때까지" /loop "/pipeline auto-dev -> /homework"` — repeating `/pipeline auto-dev` (triage → plan → implement → verify → PR) followed by `/homework` (session retrospective) until no eligible issues remain.
 
 ---
 
@@ -643,7 +656,17 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Native binary spawning | No | Yes (v2.1.113+) | Compatible — per-platform optional dependency replaces bundled JavaScript |
 | `/loop` Esc cancel | No | Yes (v2.1.113+) | Compatible — Esc now cancels pending wakeups |
 
-Tested and compatible with Claude Code v2.1.72 through v2.1.114+.
+Tested and compatible with Claude Code v2.1.72 through v2.1.114+ (rule-level version-note coverage now extends through v2.1.276 — see `.claude/rules/*.md` inline `> **v2.1.NNN+**:` notes; older notes below the retention baseline are retired to HTML comments per R016 Rule Clause Retirement).
+
+Key current-baseline facts (measured, v1.1.74 / CC v2.1.277):
+
+| Fact | Detail |
+|------|--------|
+| Rule version-note retention baseline | v2.1.230 — notes below this line are candidates for HTML-comment retirement (R016) unless still cited by a newer note or describing current behavior |
+| Agent Teams (R018) | **Dormant** — `TeamCreate`/`TeamDelete` are absent from the tool list on current models (measured since CC v2.1.233); R009/R010 govern instead until `TeamCreate` reappears |
+| Todo/Task tools | `TodoWrite`, `TaskCreate/Get/List/Update` absent by default on Opus 4.8/Sonnet 5/Fable 5/Mythos 5+ (CC v2.1.233+); restorable via `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`. `TaskStop`/`TaskOutput`/`SendMessage` remain available |
+| Project-scope `permissions.defaultMode` | Ignored since CC v2.1.257+ — only user/managed-scope settings or the `--permission-mode` flag actually grant `bypassPermissions`; per-call `mode: "bypassPermissions"` on Agent tool calls has been a no-op since v2.1.212 (subagents inherit the parent session's mode) |
+| Agent tool `model` parameter | Deprecated/ignored since v2.1.212 — subagents inherit the parent session model unless overridden via frontmatter (Tier 1/2) |
 
 ---
 
@@ -707,6 +730,27 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 
 | Version | Key Changes |
 |---------|-------------|
+| v1.1.64–74 | `/fsd` 8-iteration autonomous run (session 151): R010 "Origin-quote & adjacency check" delegation discipline, R017 bundled-version-note (NNN) sentence tags, R023 wrapper-script positive/negative fixture pairs, hook carryover fixes (#1649 edit_hash normalization, #1687 advisor unprefixed tool name), fsd pre-declaration artifact-count convergence gate, CC v2.1.275/276 rule notes (#1693/#1694), R016/R020/R023 consumer-path enumeration + key/hash design fixtures (#1691/#1696) |
+| v1.1.61–63 | Root-caused R007/R008 "announce text-block absent" — assistant prose before tool calls can serialize to a `narration` block (mutually exclusive with `text`), so header/prefix markers land nowhere; R008 now requires headers/prefixes in `text` blocks. Full 40-hook audit uncovered pre-existing `secret-filter.sh` defect (reading nonexistent `tool_output` instead of `tool_response` — secrets were never scanned). R011 `[hypothesis:]` memory tag for unverified root causes; R020 "statistical correlation ≠ code causation" |
+| v1.1.58–60 | Measured CC v2.1.257+ ignores project-scope `permissions.defaultMode: bypassPermissions` (user/managed scope or `--permission-mode` flag required) — R010/R002 updated; `stuck-detector.sh` re-fix |
+| v1.1.53–57 | Discovered `.claude/hooks/hooks.json` was never loaded by Claude Code — the actual load path is `settings.json`'s `hooks` block, compiled from `hooks.json` via new `src/core/hooks-settings.ts` + installer wiring; Stop-hook feedback-loop root causes removed (echo-escape → printf, SubagentStop self-reference deadlock) |
+| v1.1.50–52 | CC v2.1.234–251 compatibility notes; R016 Rule Clause Retirement 3-condition promotion; `claude-md-reinject.sh` SessionStart hook; atomic 3-file version-bump ordering; cross-group narration ban in parallel delegation; PostCompact binary dispatch probe |
+| v1.1.49 | `agora` skill (re-added) — anonymous multi-round consensus review across 3 sealed vendor-CLI labels judged by a rotating-model judge |
+| v1.1.47–48 | CC v2.1.233 Todo/Task tool removal reflected (TaskCreate/Get/Update/List, TodoWrite absent on current models); R018 Agent Teams active-detection realigned (`TeamCreate` absence confirmed) |
+| v1.1.43–46 | `settings.json` hygiene: invalid `Write(...)` permission rules removed, one-off Bash permission rules cleaned, `settings.local.json` untracked; R017/R020 gate hardening; dependency bumps |
+| v1.1.37–42 | Model specification migrated to 3-tier system: Tier 1 CC-native aliases, Tier 2 full model IDs (frontmatter only), Tier 3 Agent-tool `model` enum (4 values) — retires invented shorthand names (`sonnet5`, `opus48`) |
+| v1.1.34–36 | CC v2.1.217/219 compatibility notes; R017 build-wiring retrospective fixes (#1531, #1533) |
+| v1.1.30–33 | Dependency bumps (actions/setup-node, @anthropic-ai/sdk); routine chores |
+| v1.1.24–29 | R020 "CI job success ≠ executed" (docs-only path-filter fast-skip) hardened; R009 announce-execution self-check; `deploy-test.yml` Verdaccio smoke gate fully activated; rule-corpus context-cost reduction (#1473); 71 stale wiki pages resynced; CHANGELOG deprecated as of v1.1.14 in favor of GitHub Releases auto-notes; R007 status-line-bracket-≠-agent-header clarification |
+| v1.1.14–23 | Harness-hygiene cleanup batch (#1472/#1476); R017 verification-cost optimization + canonical single-sourcing; context-cost reduction (#1473); CC v2.1.208–214 compatibility notes (14 rows across R001/R002/R005/R006/R009/R010/R012/R018) |
+| v1.1.5–13 | Fable 5 harness-audit fix batch: broken cross-references repaired, agent memory scope migrated `project` → `local` (git-untracked), CC v2.1.200–207 compatibility notes, `/tmp/*.sh` sensitive-path bypass fully retired |
+| v1.1.0–1.0.20 | Sonnet 5 model-alias compatibility; freshness-audit cleanup (deprecated-pattern/model-reference/count/namespace sweep); `grill-with-docs` skill; R017 "Pre-Branch Freshness Gate"; CC v2.1.193–196 compatibility notes |
+| v1.0.0–1.0.19 | **v1.0.0 stability milestone** — 49 agents / 117 skills / 23 rules declared stable after 180+ iterative releases; patch-preferred versioning policy adopted (minor reserved for new user-facing skills/agents/commands); `semble-integration` skill; R010 source-hash target clarification |
+| v0.179.0–0.182.0 | `/omcustom:fsd` (Full Self Driving) thin-alias skill wrapping `/goal` + `/pipeline auto-dev` + `/homework` into a repeating autonomous release loop; Claude Fable 5 model alias (`fable` → `claude-fable-5`); R023 "Safety-Signal Rule Authoring — Carve-Out Pre-Check"; R020 "Interrupt ≠ Prior-Request Cancellation" + R003 precedence (Risky > Interrupt > Ambiguous > Clear) + R018 Gate Transparency scoped to Agent-Teams-enabled only |
+| v0.156.0–v0.170.0 | Repo-internal `cc-release-monitor` GitHub Actions workflow (replaces deprecated external Airflow DAG); **claude-mem and agentmemory MCP backends permanently removed** — native auto-memory only (v0.157.0, closes #1253); `/homework` skill (session retrospective via `omcustom-feedback`); `skill-extractor` evidence-gated Selection Discipline; R023 "Workflow Script Sanity Check"; R018/R009 announce-execution + gate-transparency hardening |
+| v0.145.0–v0.151.0 | `systematic-debugging` skill expanded (4 new phase files); `session-reflection.sh` Stop hook (background R007/R008 violation detection, #1190 Phase 1); R015/R020 hardening batch (#1188 — Honorific regression, Interrupt Priority Re-Ordering); R010/R017 strengthening batch (#1217 — Diagnostic Hypothesis Verification, Test-Skip Is Not Completion, Structural Migration Verification); `guides/agent-teams/troubleshooting.md` |
+| v0.130.0–v0.138.0 | CHANGELOG historical backfill (v0.36.0–v0.127.0); `/goal` thin-wrapper skill; `/pipeline auto-dev` G3–G7 hardening (closed-milestone pre-check, label standardization); `destructive-git-guard.sh` + `guides/git-safety/README.md` (#1146); R021 "Conversation Block" enforcement tier (`continueOnBlock`, CC v2.1.139+) |
+| v0.125.0–v0.129.0 | Memory MCP server groundwork; `permissions.defaultMode` planning; R007/R008 multi-turn self-check + hard-enforcement candidate flagging |
 | v0.124.0 | R009/R018 giant-prompt anti-pattern documented; arch-documenter Input Constraints (3-tier token threshold, >8000 halt + decomposition) |
 | v0.123.0 | memory MCP server (packages/memory-mcp-server, 4 MCP tools) + skill profile loader (4 default profiles, /profile command) |
 | v0.122.0 | Memory persistence service (unified adapter write-back + TTL eviction) |

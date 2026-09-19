@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.74",
-  "generatedAt": "2026-09-19T06:28:58.154Z",
-  "templateVersion": "1.1.74",
+  "generatorVersion": "1.1.75",
+  "generatedAt": "2026-09-19T08:04:41.111Z",
+  "templateVersion": "1.1.75",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -15,8 +15,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "a8ec30deaca1fa106d69f814a0aed027c58c5e1da2a98125cde52739553ad812",
-      "size": 88135,
+      "templateHash": "ebc1dd42dd7a5ace7c023a2fc5f34f1567ff63b311ad1367e46c12cd3fb8d846",
+      "size": 88978,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -75,8 +75,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-continuous-improvement.md": {
-      "templateHash": "bf1722336dd318d8b9d2a6c205e595bbffa973353f777c4c75f25daf88fee814",
-      "size": 16144,
+      "templateHash": "269845cee9d10abc47d84a57aff9c6c7dcc2c0563b39953b38698f9c1adb2232",
+      "size": 16284,
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
@@ -95,13 +95,13 @@
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
-      "templateHash": "2255eec219f7139bd0aed6f11853e1adaed21108b60a4549103f47d4a537e2cd",
-      "size": 13257,
+      "templateHash": "f69349cdb65d5a4ae6f19bc143d91d4d0f8cc8c07469c1c1039d5583e93c99a4",
+      "size": 14510,
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "a0b8b0c77ae271b6f9765d29b3d8a382d0eeb53596c0441d3087a70f9742ec9e",
-      "size": 26441,
+      "templateHash": "47eb8f4c7e4030366a1ea2ee894de207bfa1c707efbb2a606459d20d9d3ec0fe",
+      "size": 27370,
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "2c22bef3c06c95ee0a342e759160a8b4041bf8418577dbc4a485a87af87efad9",
-      "size": 47643,
+      "templateHash": "720447f8022cd4de14e432c08ab7bed5fce1d1a9dadb9db7f0693583266ff57c",
+      "size": 48706,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {

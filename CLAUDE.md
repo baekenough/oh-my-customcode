@@ -178,6 +178,7 @@ oh-my-customcode는 소프트웨어 컴파일과 동일한 구조를 따릅니�
 | QA Team | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | System | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
+| Agora | 1 | agora-runner |
 -->
 
 총 **50개** 에이전트 (타입별 상세는 `/omcustom:lists` 또는 wiki/agents/ 참조)

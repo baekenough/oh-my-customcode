@@ -15,13 +15,13 @@ hero:
 
 features:
   - icon: "🤖"
-    title: 42 Pre-built Agents
+    title: 50 Pre-built Agents
     details: Specialized agents for development, testing, documentation, infrastructure, and more. Each agent has a clear role and expertise.
   - icon: "⚡"
-    title: 51 Skills
+    title: 115 Skills
     details: Development best practices, orchestration patterns, and system utilities. Skills encapsulate knowledge that agents can use.
   - icon: "📜"
-    title: 18 Rules
+    title: 23 Rules
     details: Enforced coding standards and workflow patterns. MUST, SHOULD, and MAY priority levels for clear guidance.
   - icon: "🎨"
     title: Full Customization
@@ -67,3 +67,8 @@ Claude Code is powerful, but setting up an effective agent system takes time. oh
 - **Best Practices** - Built-in rules enforce good patterns
 - **Scalability** - From solo projects to team environments
 - **Flexibility** - Customize everything to fit your workflow
+
+## Further Reading
+
+- [Getting Started](/guide/getting-started) · [Commands](/guide/commands) · [Customization](/guide/customization)
+- [Agents Reference](/reference/agents) · [Skills Reference](/reference/skills) · [Rules Reference](/reference/rules)
