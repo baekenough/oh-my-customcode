@@ -425,6 +425,12 @@ steps:
         <path> | grep -c '^+[^+]'`) before restating it — do not relay an unverified
         agent-reported count (R023 「리서치 위임의 결론 수치는 표에서 재계산해 병기」 #1707 #4
         확장, #1709 #5).
+      - For `claude-code-release` issues, CC release knowledge goes to
+        `guides/claude-code/15-version-compatibility.md` (+ templates mirror) per rule; a rule
+        file gets at most ONE line of behavioral norm only when agent behavior must change.
+        Delegations adding visible text to `CLAUDE.md`/`.claude/rules/*.md` MUST keep the
+        comment-stripped total ≤140,000 chars (hard limit 150,000, validate-docs
+        `--programmatic-only`) — retire/DETAIL-wrap something else in-change if needed (R016 버전노트 보존정책 / 예산 게이트, #1717).
 
 
       ## Sensitive Path Handling (CC v2.1.121+)

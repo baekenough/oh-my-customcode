@@ -6,7 +6,11 @@
 
 oh-my-customcode uses an **advisory-first enforcement model**. Most rules are enforced through prompt engineering (CLAUDE.md, rules/, `SessionStart` re-injection[^postcompact]) rather than hard-blocking hooks. This is intentional — it preserves agent flexibility while maintaining behavioral standards.
 
+[^postcompact]: 재주입 보장 경로는 `SessionStart`(matcher `*`, `claude-md-reinject.sh`)다. PostCompact 배선은 유지되나 `additionalContext` 미정의로 효과 미보장. Origin: #1619 #7. 상세는 Read 도구로 열람.
+
+<!-- DETAIL: [^postcompact] footnote (full text)
 [^postcompact]: compact 후 재주입의 문서상 보장 경로는 `SessionStart`(matcher `*`, `claude-md-reinject.sh` — v1.1.50 #1617)이다. 기존 PostCompact prompt 배선은 유지되나 공식 문서상 `additionalContext`가 정의돼 있지 않아 효과 미보장·발동 미검증(hook-events-audit 2026-08-29). 후속 바이너리 프로브(postcompact-probe 2026-08-29, CC 2.1.251)에서 dispatch 경로 실재가 확인됨(전용 실행 함수·payload 스키마 `trigger`/`compact_summary`·dispatch map 등록, PreCompact 대비 동형 구조). 따라서 '발동 미검증'은 'dispatch 실재하나 라이브 발동·prompt 핸들러 효과는 미검증'으로 좁혀진다 — `additionalContext` 미정의는 불변이므로 재주입 보장 경로는 여전히 SessionStart다. Origin: #1619 #7 — 최초 보고는 'PostCompact 공식 부재'였으나 감사 실측 결과 실재하되 additionalContext 미정의로 정정됨. 서브에이전트 보고의 검증 없는 인용이 틀린 전제를 회고 이슈까지 전파시킨 사례 (R020 원인 분석 검증 조항의 실증).
+-->
 
 ## Enforcement Tiers
 
@@ -16,20 +20,28 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 | Soft Block | Stop hook prompt | R011 session-end saves | Auto-performs then approves |
 | Conversation Block | PostToolUse hook + `continueOnBlock` (CC v2.1.139+), exit 2 | stuck-detector, context-budget-advisor, cost-cap-advisor | Feeds rejection reason into conversation; Claude continues with awareness |
 | Advisory | PostToolUse hooks | R007, R008, R009, R010, R018 | Warns via stderr, never blocks |
-| Advisory (proactive) | UserPromptSubmit + SubagentStop + PostToolUse hooks | R007, R008 (`r007-r008-drift-advisor.sh` — #1229 UserPromptSubmit, #1545 SubagentStop, #1553 PostToolUse) | Reads last assistant turn; emits advisory if header/prefix absent. SubagentStop wiring (#1545) closes the no-user-input autonomous-loop gap (`/fsd`); PostToolUse (#1553) covers the orchestrator-only stretch before the first subagent spawn. Complements retroactive Stop-hook (`session-reflection.sh`, #1190). **v1.1.43부터 실제 발화 — 아래 각주 참조.** v1.1.49부터 역방향(announce > tool_use) 신호 포함, 기본 off 옵트인 (#1595 #6). v1.1.73의 narration 채널 분리 옵션(`OMCUSTOM_R008_NARRATION`, #1701 #2)은 실 세션 5건(CC 2.1.233~2.1.274) 실측에서 narration 마커 매칭 0/354·판정 on/off 동일로 전제가 성립하지 않아 v1.1.74에서 은퇴했습니다(#1703) — R008 누락은 채널 오선택이 아니라 마커 미직렬화 형태입니다. **v1.1.62(#1650 D)부터 서브에이전트 세션에서는 침묵**: hook stdin의 `agent_id`(CC 스키마상 서브에이전트 내부 발화에만 존재)가 있으면 exit 0 — 단 `SubagentStart`/`SubagentStop`은 `agent_id`가 대상 식별자라 예외(판정 수행). 중첩 서브에이전트 안의 SubagentStop은 억제 못 함(R010 정책상 도달 불가 경로). 완료 보고가 advisory 응답으로 대체되던 훅 피드백 잠식(R020 8항, #1652 #3)의 advisory 계열 차단. |
+| Advisory (proactive) | UserPromptSubmit + SubagentStop + PostToolUse hooks | R007, R008 (`r007-r008-drift-advisor.sh` — #1229 UserPromptSubmit, #1545 SubagentStop, #1553 PostToolUse) | Reads last assistant turn; emits advisory if header/prefix absent. SubagentStop wiring (#1545) closes the no-user-input autonomous-loop gap (`/fsd`); PostToolUse (#1553) covers the orchestrator-only stretch before the first subagent spawn. Complements retroactive Stop-hook (`session-reflection.sh`, #1190). **v1.1.43부터 실제 발화**(파서 셀렉터 `.role`→`.message.role` 수정 — 상세는 Read 도구로 원문 주석 참조). v1.1.49부터 역방향(announce > tool_use) 신호 포함, 기본 off 옵트인 (#1595 #6). v1.1.73의 narration 채널 분리 옵션(`OMCUSTOM_R008_NARRATION`, #1701 #2)은 실 세션 5건(CC 2.1.233~2.1.274) 실측에서 narration 마커 매칭 0/354·판정 on/off 동일로 전제가 성립하지 않아 v1.1.74에서 은퇴했습니다(#1703) — R008 누락은 채널 오선택이 아니라 마커 미직렬화 형태입니다. **v1.1.62(#1650 D)부터 서브에이전트 세션에서는 침묵**: hook stdin의 `agent_id`(CC 스키마상 서브에이전트 내부 발화에만 존재)가 있으면 exit 0 — 단 `SubagentStart`/`SubagentStop`은 `agent_id`가 대상 식별자라 예외(판정 수행). 중첩 서브에이전트 안의 SubagentStop은 억제 못 함(R010 정책상 도달 불가 경로). 완료 보고가 advisory 응답으로 대체되던 훅 피드백 잠식(R020 8항, #1652 #3)의 advisory 계열 차단. |
 | Advisory (telemetry) | PostToolUseFailure hook | — (계측 전용, 규칙 강제 없음) | `failure-ledger.sh` (#1561, v1.1.44) — 도구 실패를 JSONL 원장에 append. stdout/stderr 무출력이라 모델에 도달하지 않으며 절대 차단하지 않음 |
 | Advisory (proactive) | UserPromptSubmit hook | R020 (원인 진단) | `fail-axis-cause-advisor.sh` (#1561, v1.1.44) — 원장에 실패 기록이 있는데 원인 진술 없는 재촉 프롬프트가 오면 `hookSpecificOutput.additionalContext`로 "원인 가설 되묻기" advisory 전달. 원장 부재 시 조용히 통과 |
 | Prompt-based | CLAUDE.md + rules/ + `SessionStart` 재주입(matcher `*`; PostCompact 이벤트 배선은 유지되나 효과 미보장[^postcompact]) | All MUST rules | Behavioral guidance in context |
 
+훅 배선: `.claude/hooks/hooks.json`은 CC가 직접 로드하지 않는다 — 로드되는 것은 `.claude/settings.json`(+로컬+templates 미러)이며 `hooks-settings.ts`가 변환한다. 편집 후 재생성(빌드) 필수 — 누락 시 변경이 발화에 반영되지 않는다. Origin: #1623 (v1.1.53). 상세는 Read 도구로 열람.
+
+<!-- DETAIL: 훅 배선 경로 (v1.1.53, #1623) — full narrative
 > **훅 배선 경로 (v1.1.53, #1623)**: `.claude/hooks/hooks.json`은 CC가 로드하는 파일이 아니다 — CC 2.1.251 바이너리에 `.claude/hooks` 경로 참조가 0건이고, `settings.json`에 `hooks` 키가 이력상 존재한 적이 없었다. 컴파일레이션 메타포로는 `hooks.json` = **소스**(source), CC가 실제 로드하는 것은 `.claude/settings.json`(+`.local.json`, +`templates/` 미러)의 공식 `hooks` 블록 = **빌드 산출물**이며, 변환은 `src/core/hooks-settings.ts`가 담당한다(matcher 조건 DSL 12건은 스크립트 자체 가드 3건 + stdin-가드 래퍼 9건으로 이관). `omcustom init` 사용자는 `installHooksSettings()`가 최종 settings.local.json에 병합하는 경로를 거친다. **`hooks.json`만 고치고 settings 재생성(빌드)을 누락하면 변경이 발화에 반영되지 않는다** — R022 Wiki Sync의 "페이지 갱신 + 매니페스트 재시딩" 이원 요구와 동형이다. 라이브 실증(2026-08-29 새 세션 프로브): SessionStart hook_success 9건(플러그인 2 + 프로젝트 7), `[claude-md-reinject]` 마커 5히트, UserPromptSubmit·Stop 발화 확인 — **세션 단위 발화의 최초 실측**은 이 릴리즈다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | `hooks.json`만 편집하고 커밋 → settings.json `hooks` 블록 미재생성 | 편집 후 `hooks-settings.ts` 변환기(빌드) 실행 → settings.json(+local+templates) 재생성 확인 후 커밋 |
 
+교훈: **배선 확인 ≠ 전달 확인 ≠ 발화 확인 ≠ 로드 확인** — R020 "actual outcome ≠ attempt"의 훅 도메인 재현 사례. 상세는 Read 도구로 열람.
+
+<!-- DETAIL: Advisory 발화 결함과 해소 + 교훈 상세 (실측)
 > **Advisory (proactive/retroactive) 발화 결함과 해소 (실측)**: `hookSpecificOutput.additionalContext` **전달 경로 자체는 #1547(v1.1.40)에서 구현**됐으나, 그 앞단 **파서 셀렉터 결함**으로 advisory가 **v1.1.42까지 한 번도 발화하지 못했다** — `jq -r '.role'`로 읽었으나 트랜스크립트 최상위에 `role` 키가 없어(실제는 `.message.role`) `last_assistant`가 항상 비고 즉시 `exit 0`으로 종료됐다. 당시 실측: 트랜스크립트 771개 전수에서 `"additionalContext":` 출현 0건, 라이브 프로브 stdout/stderr 각 0바이트. **proactive(`r007-r008-drift-advisor.sh`)와 retroactive(`session-reflection.sh`, 동일 결함) 두 계층 모두 미발화**였다. **v1.1.43에서 양 계층 파서 복구 + `PostToolUse` 배선을 완료했고, 라이브 프로브로 최초 발화를 확인했다(#1553).** **재검토(#1623)**: 이 서술은 세션 단위 CC 훅 서브시스템 경유 증거가 없다 — 당시에도 CC가 로드하는 `settings.json`에 `hooks` 블록이 부재했으므로, 리서치(git 이력 전수) 판단으로는 스크립트에 synthetic stdin을 직접 주입한 검증이었을 가능성이 가장 유력하다(단정 금지 — "직접 증거 없음"으로 기록). 세션 단위 발화의 최초 실측은 위 「훅 배선 경로 (v1.1.53, #1623)」의 v1.1.53이다. 후속으로 v1.1.44에서 R008 판정을 블록 인접 비교 → 턴 단위 개수 비교로 전환(#1563), v1.1.45에서 Skill 도구 면제를 추가했다(#1569). **v1.1.49에서 역방향 신호**(announce > tool_use — 도구 호출을 예고해 놓고 tool_use 블록 없이 턴을 종료한 방향)**를 추가했다(#1595 #6)** — 기존 판정식 `max(0, tool_use − announce)`는 이 방향을 **구조적으로 0으로 처리**해 원리적으로 탐지 불가였다. 역방향은 **전용 앵커 정규식**(`$an_anchored`, 줄 시작 앵커 있음 — forward의 `$an_tool`에는 적용하지 않는다. forward는 announce를 덜 세면 위반이 **늘어나기** 때문)을 쓰고, **Skill 포함 전체 tool_use가 0건**일 때만 계상한다(Skill 제외 카운트를 쓰면 Skill만 호출한 준수 턴에서 오발화). 기본 off 옵트인(`OMCUSTOM_R008_REVERSE=on`으로 활성)이다 — 482턴 실측에서 순진한 `announce − ntools > 0` 구현은 36턴에 발화해 advisory 총량을 2배로 만들었고(16건은 Skill 제외 아티팩트, 15건은 앵커 없는 정규식의 산문 매칭), 협소화 후 3/3 진양성·오탐 0(앵커 비용은 실제 announce 969줄 중 1줄, 0.1%)이 되었으나 표본이 3건이라 기본 활성은 보류했다. **배선 구조상 예방 효과가 없다는 점도 보류 근거다** — 결함 턴은 tool_use가 0이라 `PostToolUse`·`SubagentStop`이 발화하지 않고, `UserPromptSubmit`은 사용자가 이미 개입한 뒤 발화한다. 정시에 발화하는 유일한 이벤트는 `Stop`이며 거기 걸린 훅은 `session-reflection.sh`다. 역방향은 그래서 **의도적으로 advisor 전용**이며 `session-reflection.sh`에는 복제하지 않았다(같은 결함을 두 번 보고하면서 교정 기회는 여전히 0이 되고, 되돌릴 지점만 두 곳이 된다).
 >
 > 교훈: **배선 확인 ≠ 전달 확인 ≠ 발화 확인 ≠ 로드 확인** — R020 "actual outcome ≠ attempt"의 훅 도메인 재현 사례. v1.1.53(#1623)이 드러낸 것은 이 셋보다 앞선 **제4층**이다 — 배선 파일(`hooks.json`) 자체가 CC에 **로드되지 않았다면** 배선·전달·발화 확인은 전부 무의미한 층 위에서 이루어진 것이다.
+-->
 
 <!--
 > **v2.1.163+**: Stop and SubagentStop hooks can return `hookSpecificOutput.additionalContext` (JSON) to feed structured feedback back into Claude's context without triggering a hook error label. This enables advisory-style enforcement via Stop/SubagentStop hooks (e.g., `session-reflection.sh`, omcustom-loop SubagentStop) to pass richer context — replacing plain stderr text — without disrupting the turn continuation behavior that advisory-first enforcement relies on.
@@ -39,6 +51,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 <!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: hook callback timeout이 모델에 user rejection으로 오보고되어 unattended 세션이 정지 대기하던 문제가 수정되었습니다. R021 advisory 훅(PostToolUse/UserPromptSubmit/Stop 등)이 매 턴 발화하고 /fsd 등 장기 무인 루프가 이에 의존하므로, hook timeout이 더 이상 phantom rejection으로 무인 세션을 중단시키지 않습니다 — cf. v2.1.199 훅 실패 관측성. -->
 
+<!-- DETAIL: CC version notes (v2.1.211-v2.1.275)
 > **v2.1.211/212/214+**: 훅의 enforcement 결정이 auto/unattended 모드에서 안정적으로 존중되도록 세 건이 수정되었습니다 — (211) auto mode가 unsandboxed Bash에 대한 PreToolUse 훅의 `ask` 결정을 덮어쓰던 문제가 수정되어 훅 `ask`가 최소 prompt로 floor되고, (212) `continue:false` 훅의 halt가 도구 실패·중간 완료 시 누락되던 문제 및 훅 인프라 오류가 user rejection으로 오보고되던 문제가 수정되었으며, (214) 훅 stdout JSON이 스키마 검증에 실패할 때 exit code 2가 문서대로 차단하지 못하던 문제가 수정되었습니다. R021 Enforcement Tiers(Hard Block=exit 2, Conversation Block=continueOnBlock exit 2, Advisory)가 훅의 block/ask 결정 존중에 의존하므로, 세 수정 모두 hard-block·advisory 훅(stage-blocker, rule-deletion-guard, stuck-detector 등)의 강제 신뢰성을 강화합니다 — v2.1.210 훅 timeout phantom-rejection 수정의 연장선.
 
 > **v2.1.222+**: PreToolUse auto-allow 훅이 background agent task(summaries/compaction/renames)에서 tool restriction을 우회하던 문제가 수정되었습니다. 즉 위 Enforcement Tiers 표의 **Hard Block 계층(stage-blocker, dev-server tmux, rule-deletion-guard)이 background agent task 경로에서 우회될 수 있었다**는 뜻이며, background agent를 쓰는 장기 무인 루프에서 hard-block 훅이 실제로는 강제되지 않는 구간이 존재했습니다. v2.1.211/212/214 훅 결정 존중 체인의 연장선입니다.
@@ -58,6 +71,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 > **v2.1.274+**: Stop prompt 훅이 대화 중 매 block마다 **전체 프롬프트를 통째로 재전송**하던 결함이 수정되어, 반복 block은 이제 500자 라벨로 조건만 명시합니다. R020 8항·메모리 v1.1.53~56에 기록된 "Stop 훅 잠식" 패턴에 직접 관련됩니다 — 구버전에서는 Stop 훅이 반복 block될 때마다 전체 프롬프트 텍스트가 모델 컨텍스트에 재주입됐으므로, 당시 관측된 토큰/턴 소모의 **기계적으로 충분한 원인**입니다(가설 등급 귀속 — 관측과 정합하나 이것으로 확정되지는 않음, R020 hypothesis 규율). 또한 플러그인 `hooks/hooks.json` 최상위의 `$schema` 키에 대해 "unknown key" 통지가 더 이상 뜨지 않게 되었습니다 — 이 저장소의 `.claude/hooks/hooks.json` 소스 파일에 향후 `$schema`를 추가할 때 관련됩니다.
 
 > **v2.1.275+**: (275) "Fixed `SubagentStop` hooks with a specific `matcher` firing for every stopping subagent whose agent type was empty" — 실측(`.claude/settings.json` SubagentStop 블록) 결과 이 저장소의 배선은 `"matcher": "*"` **와일드카드**이므로, "specific matcher"를 대상으로 하는 이 결함의 직접 대상이 **아닙니다**. (275) 와일드카드는 모든 서브에이전트 종료에 발화하는 것이 정상 동작이므로, 275 이전 SubagentStop 발화 계수(R020 Self-Violation Counting)를 이 결함으로 재해석하지 않습니다 — 기록용입니다. (275) 향후 agent type별 matcher(예: `"mgr-gitnerd"`)로 좁히는 배선을 도입하면 그때부터 이 결함의 대상이 되므로, v2.1.275 미만 환경에서는 좁힌 matcher가 빈 agent type에도 매칭된다는 점을 전제합니다.
+-->
 
 ## Why Advisory-First
 

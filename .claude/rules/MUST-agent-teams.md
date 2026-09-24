@@ -1,20 +1,37 @@
 # [MUST] Agent Teams Rules (Conditional)
 
 > **Priority**: MUST | **ID**: R018
+> **Condition**: env var **AND** `TeamCreate` present in the tool list (see Detection)
+
+<!-- DETAIL: Condition line, original wording
 > **Condition**: Agent Teams enabled — `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` present in the tool list (see Detection)
+-->
 > **Fallback**: When disabled, R009/R010 apply
 
 ## Detection
 
+Agent Teams is active only when `TeamCreate` is present in the tool list — the env var alone expresses intent, not availability.
+
+<!-- DETAIL: Detection paragraph, original wording
 Agent Teams is active only when the **team-creation path actually exists** — `TeamCreate` present in the tool list. The environment variable alone is NOT sufficient: it expresses intent to enable the feature, not the feature's availability.
+-->
 
 | Observed state | Teams active? |
 |----------------|---------------|
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **and** `TeamCreate` present | Yes |
+| env var set, `TeamCreate` **absent** | **No** — no team creatable, no member spawnable |
+| `SendMessage` present, `TeamCreate` absent | **No** — peer/cross-session messaging is separate (see Scope), not Teams evidence |
+
+<!-- DETAIL: Detection table rows, original wording
 | env var set, `TeamCreate` **absent** | **No** — a team cannot be created, so no member can be spawned |
 | `SendMessage` present, `TeamCreate` absent | **No** — peer/cross-session messaging is a separate capability (see Scope below), not evidence of Teams |
+-->
 
+Rationale: v2.1.233+부터 `TeamCreate`/`TeamDelete`가 부재하다(R002). env var만으로는 불가 — 판정은 도구 존재 실측이다(R020).
+
+<!-- DETAIL: Rationale, original wording
 Rationale: since v2.1.233, `TeamCreate`/`TeamDelete` are absent from the tool list in this runtime (measured — R002 "Todo/Task 도구 기본 제거"), so a set env var cannot make teams creatable. Detection therefore rests on the tools actually being present, not on the env var alone — "the tool exists" is itself a claim requiring measurement (R020).
+-->
 
 When Detection resolves to **No**, this entire rule is dormant and R009/R010 govern.
 
@@ -32,8 +49,13 @@ When Detection resolves to **No**, this entire rule is dormant and R009/R010 gov
 | Single file operations | Agent Tool | Overkill for simple tasks |
 | Dynamic agent creation + usage | **Agent Teams** | Create → test → iterate cycle |
 | Multi-issue release batch | **Agent Teams** | Shared task tracking, coordinated release |
+| Large plan / multi-domain prompt (>5000 tokens, 3+ areas) | **Agent Teams** | Domain-split + review avoids single-agent timeout |
+| Mechanical disjoint-file refactoring (bulk delete + reference cleanup) | Agent Tool | No peer coordination/review needed; Teams stall risk outweighs benefit (R009) |
+
+<!-- DETAIL: Decision Matrix reason cells, original wording
 | Large plan / multi-domain prompt (>5000 tokens, 3+ areas) | **Agent Teams** | Domain-split parallel writing + review loop avoids single-agent timeout |
 | Mechanical disjoint-file refactoring (bulk delete + reference cleanup) | Agent Tool | Pure parallel edits with no peer coordination or review loop; Teams member-stall risk outweighs benefit — use standalone parallel Agents (R009) |
+-->
 
 **When Agent Teams is enabled and criteria are met, usage is required.**
 
@@ -43,23 +65,34 @@ When Detection resolves to **No**, this entire rule is dormant and R009/R010 gov
 
 ### Scope: Intra-Session vs Cross-Session
 
+Intra-session: `SendMessage`(Agent Teams), peer-to-peer, `TeamCreate` 필요. Cross-session: `send_message`(claude-peers-mcp), broker 경유, 별도 프로세스 간.
+
+<!-- DETAIL: Scope table and mechanism-distinction paragraph, original wording
 | Scope | Tool | Protocol | Use Case |
 |-------|------|----------|----------|
 | Intra-session | `SendMessage` (Agent Teams) | Peer-to-peer within team | Multi-agent collaboration in one session |
 | Cross-session | `send_message` (claude-peers-mcp) | Broker-mediated | Multi-terminal/project coordination |
 
 These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` and operates within a single Claude Code session. claude-peers-mcp `send_message` operates across separate Claude Code processes via a localhost broker.
+-->
 
+네이티브 `SendMessage`는 cross-session(다른 머신 포함)으로도 동작하나(v2.1.224+), 전달·열거 성공은 조율 신호일 뿐 승인 채널이 아니며 완료의 증거도 아니다.
+
+<!-- DETAIL: Scope cross-session version notes (v2.1.224/225, v2.1.229/232), original wording
 > **v2.1.224/225+**: CC 네이티브 `SendMessage`가 **cross-session으로 확장**되었습니다(다른 머신 포함, macOS/Linux) — `ListAgents`로 대상을 열거하고 `crossSessionInbound` / `dialogExpiry` 설정으로 수신·만료를 제어합니다. 위 표의 "Cross-session = claude-peers-mcp 전용" 구분은 이제 **유일한 수단이 아니며**, 브로커 없이 네이티브 경로를 쓸 수 있습니다. 다만 위 Cross-Session Relay Authority Hardening(v2.1.166)의 권한 비전파 원칙은 네이티브 경로에도 동일하게 적용됩니다 — cross-session 메시지는 조율 신호이지 승인 채널이 아닙니다. (225) cross-session 메시지가 headless 세션·기동 중에 **고지도 만료도 없이 대기**하던 결함이 수정되었으므로, 구버전에서 "응답 없음"은 미수신이 아니라 무기한 대기였을 수 있습니다.
 
 > **v2.1.229/232+**: 네이티브 cross-session 경로의 대상 지정이 쉬워졌습니다 — (229) `ListAgents`가 끊긴 Remote Control 세션을 `offline`, 클라우드 세션을 `cloud`로 표시하므로 **열거 결과에 있다는 사실만으로 도달 가능하다고 가정하지 않습니다**(구버전에서는 살아있는 세션과 끊긴 세션이 구분 없이 나열되어 무응답 원인을 판별할 수 없었습니다). (232) 프롬프트에 `@`로 다른 세션을 이름으로 멘션하면 `SendMessage`가 그 세션에 직접 도달하고, bare name이 **살아있는 세션 1개와 정확히 일치하면 ref 확인 없이 전달**됩니다 — 같은 머신의 세션 이름은 중복 시 `name-word-word` 변형으로 유일성이 보장되므로 이름 기반 전달이 결정론적입니다. 전달 성공은 여전히 조율 신호일 뿐이며, 아래 Member Completion Verification의 ground-truth 원칙과 v2.1.166 권한 비전파 원칙은 그대로 적용됩니다. 또한 (232) interactive session의 background 기본 실행은 **non-teammate 스폰에 한정**되므로 Teams member에는 적용되지 않습니다 — 아래 stall handling의 2분 휴리스틱을 background 지연과 혼동하지 않습니다(cross-ref R010).
+-->
 
 ### Cross-Session Relay Authority Hardening (CC v2.1.166+)
+
+릴레이된 permission request는 수신자가 거부하고 auto mode가 차단한다 — 세션 B의 미승인 권한을 부여할 수 없다(R001/R010). 세션 내부 Agent Teams `SendMessage`는 영향받지 않는다.
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.166+**: Messages relayed via `SendMessage` from other Claude sessions no longer carry user authority — receivers refuse relayed permission requests, and auto mode blocks them. A relayed message cannot escalate privilege on the receiving session.
 -->
 
+<!-- DETAIL: Relay hardening aspect table and paragraph, original wording
 | Aspect | Behavior (v2.1.166+) |
 |--------|---------------------|
 | Relayed permission request | Refused by receiver |
@@ -67,8 +100,11 @@ These are distinct mechanisms. Agent Teams `SendMessage` requires `TeamCreate` a
 | User authority across relay | Not propagated |
 
 This hardens cross-session coordination (claude-peers-mcp `send_message`, see Scope table above) against privilege escalation — a relayed message from session A cannot grant session B permissions the user did not authorize on B. Aligns with R001 (credential/privileged-scope guardrails) and R010 (out-of-scope privileged chaining). Intra-session Agent Teams `SendMessage` between peers in the same session is unaffected.
+-->
 
+<!-- DETAIL: Relay hardening v2.1.222 note, original wording
 > **v2.1.222+**: auto mode 안전성 개선 — 다른 agent session으로 `SendMessage`가 보내는 메시지가 dispatch 전에 permission classifier로 평가됩니다. v2.1.166의 relay authority hardening이 **수신** 경로를 막았다면, 이번 변경은 **발신** 경로를 게이트합니다. 따라서 SendMessage 전송 자체를 조율 성공의 증거로 삼지 말고, 아래 Member Completion Verification의 결정론적 ground-truth로 확인합니다. classifier가 2회 걸리면 R010 Subagent Scope-Creep STOP Protocol을 적용해 재전송 대신 범위를 재설계합니다.
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.183+**: Fixed tmux teammate panes failing to launch when the shell has slow rc-file initialization — a slow `.zshrc`/`.bashrc` no longer prevents Agent Teams teammate panes from launching in tmux. Also fixed WebSearch returning empty results in subagents: a subagent (including a Teams member) using WebSearch now returns results instead of silently empty.
@@ -77,8 +113,12 @@ This hardens cross-session coordination (claude-peers-mcp `send_message`, see Sc
 
 ## Self-Check (Before Agent Tool)
 
+Quick rule (before Agent tool for 2+ tasks): User explicitly preferred plain subagents this session? → use Agent Tool (R000 > R018). Otherwise: 3+ agents OR review cycle → Agent Teams. Sequential deps/scaffolding → Agent Tool. 2+ issues same batch → prefer Agent Teams.
+
+<!-- DETAIL: Self-Check intro and original Quick rule wording
 Before using Agent tool for 2+ agent tasks, complete this check:
 Quick rule: User explicitly preferred plain subagents this session? → use Agent Tool (R000 user instructions > R018). Otherwise: 3+ agents OR review cycle → use Agent Teams. Sequential deps / scaffolding → Agent Tool. 2+ issues in same batch → prefer Agent Teams.
+-->
 
 <!-- DETAIL: Self-Check (Before Agent Tool)
 ╔══════════════════════════════════════════════════════════════════╗
@@ -117,16 +157,25 @@ Quick rule: User explicitly preferred plain subagents this session? → use Agen
 
 ### Gate Transparency
 
+게이트가 3+ 에이전트 dispatch에서 **Agent Tool**로 해소되면 스폰 전 한 줄로 announce한다 — 예: `R018 게이트: 3개 disjoint-file 도메인, 리뷰 사이클 없음 → Agent Tool 폴백`. 침묵 선택은 R009 Self-Check #4 스킵처럼 읽힌다.
+
+<!-- DETAIL: Gate Transparency paragraph, original wording
 When the gate resolves to **Agent Tool** for a 3+ agent dispatch (e.g. mechanical disjoint-file editing with no review loop), announce the gate result in one line BEFORE spawning — e.g. `R018 게이트: 3개 disjoint-file 도메인, 리뷰 사이클 없음 → Agent Tool 폴백`. Silently selecting Agent Tool on a 3+ agent batch loses the gate-evaluation audit trail and reads as if the R018/R009 Self-Check #4 gate was skipped.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 3+ 에이전트 병렬 스폰 announce에 게이트 평가 결과 누락 | 스폰 전 한 줄로 게이트 결과 명시 (Agent Tool 폴백 사유 또는 Agent Teams 선택 사유) |
 
+<!-- DETAIL: Origin note
 Origin: #1293 (Session 110 retrospective, Low).
+-->
 
 #### Gate Transparency Scope — Agent Teams Enabled Only (#1341 ②)
 
+게이트 투명성은 Agent Teams **활성** 시에만 적용된다(위 Detection).
+
+<!-- DETAIL: Gate Transparency Scope origin and expanded rationale, original wording
 > Origin: #1341 찐빠 #2 (low-confidence) — 4+ 병렬 Agent Tool 스폰 시 `[N]` prefix는 표기했으나 "R018 게이트: … → Agent Tool 폴백" announce를 생략한 것을 자가 위반으로 의심. 그러나 R018은 조건부 규칙이라 Agent Teams 비활성 환경에서는 게이트 투명성 자체가 미적용이다.
 
 R018 전체(게이트 투명성 포함)는 Agent Teams 활성 시에만 적용되는 조건부 규칙이다 — 활성 조건은 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **AND** `TeamCreate` 도구 존재이며, `SendMessage` 단독 존재는 활성 근거가 아니다(상세는 위 `## Detection`). Agent Teams **비활성** 환경에서는:
@@ -135,6 +184,7 @@ R018 전체(게이트 투명성 포함)는 Agent Teams 활성 시에만 적용�
 - 3+ 병렬 Agent Tool 스폰을 "게이트 announce 누락"으로 자가 플래그하지 않는다 (false-positive 방지).
 
 게이트 투명성 announce는 Agent Teams가 활성이고 게이트가 Agent Tool로 해소될 때만 의무다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
@@ -142,7 +192,11 @@ R018 전체(게이트 투명성 포함)는 Agent Teams 활성 시에만 적용�
 
 ### Spawn Completeness Check
 
+All members must be spawned in a single message — partial spawning needs correction (R018/R009).
+
+<!-- DETAIL: Spawn Completeness Check, original wording
 All members must be spawned in a single message. Partial spawning needs correction per R018 and R009.
+-->
 
 <!-- DETAIL: Self-Check (Spawn Completeness)
 ╔══════════════════════════════════════════════════════════════════╗
@@ -174,6 +228,9 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
 
 ## Common Violations
 
+norm(활성 시): 3+ tasks → Agent Teams — 단 리뷰 사이클 없는 기계적 disjoint-file 작업은 예외(Agent Tool, 위 Decision Matrix); Detection=No면 R018 dormant(R009/R010 적용). 오버사이즈 multi-domain 프롬프트 → domain-split team. See DETAIL.
+
+<!-- DETAIL: Common Violations compact examples, original wording
 ```
 ❌ WRONG: 3+ tasks using Agent tool instead of Agent Teams
    Agent(Explore):haiku → Analysis 1
@@ -192,6 +249,7 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
 ✓ CORRECT: TeamCreate("plan-team") + parallel domain leads + reviewer
    TeamCreate("plan-team") + Agent(metrics-lead) + Agent(dsl-lead) + Agent(risk-lead) + Agent(reviewer) + SendMessage(coordinate)
 ```
+-->
 
 <!-- DETAIL: Common Violations (full examples)
 ❌ WRONG: Agent Teams enabled, 3+ research tasks using Agent tool
@@ -242,6 +300,9 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
 
 ## Cost Guidelines
 
+Agent Tool: 1-2 agents, no dependency, no iteration cycles, <3분, no shared state. Agent Teams: 3+ agents, dependency present, review→fix→re-review cycles, >3분, shared state needed.
+
+<!-- DETAIL: Cost Guidelines table, original wording
 | Criteria | Agent Tool | Agent Teams |
 |----------|-----------|-------------|
 | Agent count | 1-2 | 3+ |
@@ -249,11 +310,16 @@ The skill's steps are followed, but agent spawning uses Teams when criteria are 
 | Iteration cycles | None | Present (review→fix→re-review) |
 | Estimated duration | < 3 min | > 3 min |
 | Shared state needed | No | Yes |
+-->
 
 ## Team Patterns
 
+표준/하이브리드/동적 패턴 목록은 Read 도구로 열람(DETAIL 주석).
+
+<!-- DETAIL: Team Patterns compact summary, original wording
 Standard: Research (researcher-1 + researcher-2 + synthesizer), Development (implementer + reviewer + tester), Debug (investigator-1 + investigator-2 + fixer).
 Hybrid: Review+Fix, Create+Validate, Multi-Expert, Dynamic Creation.
+-->
 
 <!-- DETAIL: Team Patterns
 ### Standard Patterns
@@ -280,8 +346,12 @@ When Agent Teams creates a new agent via mgr-creator:
 
 ## Blocked Agent Behavior
 
+Blocked member: Deferred spawn > Silent wait > Reassign (>2min). Post-completion: SendMessage + wait silently — do NOT browse TaskList or edit out-of-scope files.
+
+<!-- DETAIL: Blocked Agent Behavior summary, original wording
 When a team member is blocked: prefer Deferred spawn (no wasted tokens) > Silent wait (short waits) > Reassign (blocked >2 min).
 Post-completion: report via SendMessage, wait silently. Do NOT browse TaskList or modify files outside scope.
+-->
 
 <!-- DETAIL: Blocked Agent Behavior
 | Strategy | When | Benefit |
@@ -335,7 +405,11 @@ When spawning agents that may be blocked:
 
 ## Lifecycle
 
+`TeamCreate → TaskCreate → Agent(spawn members) → SendMessage → TaskUpdate → ... → TeamDelete`.
+
+<!-- DETAIL: Lifecycle line, original wording
 `TeamCreate → TaskCreate → Agent(spawn members) → SendMessage → TaskUpdate → ... → TeamDelete`. See full lifecycle via Read tool.
+-->
 
 <!-- DETAIL: Lifecycle diagram
 ```
@@ -344,6 +418,11 @@ TeamCreate → TaskCreate → Agent(spawn members) → SendMessage(coordinate)
 ```
 -->
 
+## Fallback & Cost Awareness
+
+Agent Teams 비가용 시 Agent Tool + R009/R010. 가용 시 적격 작업에 우선 사용 — **MUST**: 기준 충족 시 비용을 이유로 회피하지 않는다(위 Cost Guidelines).
+
+<!-- DETAIL: Fallback and Cost Awareness sections, original wording
 ## Fallback
 
 When Agent Teams unavailable: use Agent tool with R009/R010 rules.
@@ -359,12 +438,21 @@ Agent Teams actively preferred for qualifying collaborative tasks. Use Agent too
 Do NOT avoid Agent Teams solely for cost reasons when criteria are met.
 
 **Active preference rule**: When Agent Teams is available, default to using it for any multi-step or multi-issue work. Only fall back to Agent tool for truly simple, single-issue tasks with no verification needs.
+-->
 
 ## Member TaskUpdate Discipline
 
-Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 명시적으로 알려야 한다. 침묵은 코디네이터가 죽었거나 멤버가 막혔다고 오인하게 만든다.
+Agent Teams 멤버는 long-running 작업 중 TaskUpdate 로 진행 상태를 명시해야 한다(침묵은 오인 유발).
 
+<!-- DETAIL: Member TaskUpdate Discipline intro, original wording
+Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 명시적으로 알려야 한다. 침묵은 코디네이터가 죽었거나 멤버가 막혔다고 오인하게 만든다.
+-->
+
+`TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 미제공(R002) — 가용 시 아래 표, 부재 시 「대체 규약」을 따른다.
+
+<!-- DETAIL: Task tool availability measurement note, original wording
 > **도구 가용성 선확인 (v2.1.233+)**: `TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 제거되어 이 저장소 실행 환경에 **존재하지 않는다** — 실측은 R002 「Todo/Task 도구 기본 제거」. 아래 표는 Task 도구가 가용할 때(구모델 또는 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`)의 규정이며, **부재 시 아래 대체 규약을 따른다**. 없는 도구의 호출을 의무로 남겨두면 실행 불가능한 규정이 된다.
+-->
 
 | 시점 | 호출 |
 |------|------|
@@ -375,11 +463,15 @@ Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 �
 
 ### Common Violations
 
+미준수 시: task claim 충돌, 후속 작업 영구 blocked, 차단 사유 불투명 — 모두 위 호출 시점 표를 지키면 방지된다.
+
+<!-- DETAIL: Common Violations detail, original wording
 - 30초 이상 작업하면서 in_progress 미설정 → 다른 멤버가 task 를 claim 시도해 충돌
 - 완료 후 status 미갱신 → 후속 작업이 영원히 blocked
 - 차단 사유를 SendMessage 로만 보내고 task description 업데이트 누락 → TaskList 만 보는 멤버는 사유를 모름
 
 Reference issue: #1087.
+-->
 
 ### Task 도구 부재 시 대체 규약 (Origin: #1582)
 
@@ -389,7 +481,11 @@ Reference issue: #1087.
 | 장문 진행 보고 | 아티팩트 파일 경로만 전달 (R006 Artifact Channel Protocol) — SendMessage 본문은 v2.1.222+ 조용히 절단된다 |
 | 코디네이터의 완료 판정 | SendMessage 보고가 아니라 **결정론적 ground-truth** (아래 Member Completion Verification) |
 
+`TaskList` 부재로 공유 작업목록 기반이 사라지므로, 아래 ground-truth 원칙이 보조가 아니라 **유일한 방어선**이 된다.
+
+<!-- DETAIL: Task 도구 부재 paragraph, original wording
 `TaskList` 부재로 **공유 작업 목록이라는 조율 기반 자체가 사라지므로**, 아래 Member Completion Verification의 "보고는 신호일 뿐, 판정은 실측"이 보조 원칙이 아니라 **유일한 방어선**이 된다.
+-->
 
 ## Member Completion Verification (deterministic ground-truth)
 
@@ -405,8 +501,15 @@ Agent Teams member completion MUST be verified by deterministic ground-truth —
 | TaskList status | Low — member may not update | Use as a signal only |
 | SendMessage report | Low — member may stall before sending | Use as a signal only |
 
-Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command ran is not the same as verifying it succeeded).
+Cross-reference: R020 ("actual outcome ≠ attempt").
 
+<!-- DETAIL: Cross-reference line, original wording
+Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command ran is not the same as verifying it succeeded).
+-->
+
+SendMessage/Teams 신뢰성·`maxTurns` 버전 세부는 DETAIL — 전송·보고 성공은 완료 증거 아님(위 표).
+
+<!-- DETAIL: SendMessage/Teams reliability and maxTurns version notes (v2.1.222~274), original wording
 > **v2.1.224+**: `SendMessage`가 **teammate inbox 쓰기에 실패해도 "Message sent"로 보고**하던 결함이 수정되어, 이제 실패가 오류로 보고됩니다. 위 표의 "SendMessage report = Low reliability"가 **전송 자체에도** 해당했다는 실증입니다 — 구버전에서는 "Message sent"가 수신은커녕 기록 성공조차 보장하지 않았습니다. 수정 후에도 전송 성공은 **수신자가 작업을 수행했다는 증거가 아니므로**, 위 표의 결정론적 ground-truth 확인은 그대로 유지합니다.
 
 > **v2.1.222+**: `SendMessage`가 긴 summary를 문자 수 제한으로 거부하던 동작이 **절단(truncate)**으로 변경되어 전송이 실패하지 않습니다. 전송 실패가 사라진 대신 **조용한 절단**이라는 새 실패 모드가 생겼으므로, 위 표의 "SendMessage report = Low reliability" 원칙이 오히려 강화됩니다. 긴 보고가 필요하면 SendMessage 본문 대신 아티팩트 파일 경로 전달(R006 Artifact Channel Protocol)로 대체합니다.
@@ -439,6 +542,7 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 > **v2.1.268/271+**: (268) 신뢰하지 않은 폴더의 동일 이름 agent 파일에서 tools나 system prompt를 물려받은 채 respawn되던 in-process teammate 결함이 수정되었습니다 — agent 정의에 대한 trust boundary이며 R001과 교차합니다. 같은 릴리즈에서 `claude remote-control`로 서빙되는 Remote Control 세션이 `ListAgents`에 세션 제목 대신 생성된 이름으로 표시되던 결함도 수정되었습니다. (271) 수신 세션의 permission-mode 정책에 의해 보류된 cross-session 메시지가 흔적 없이 사라지던 결함이 수정되어, 이제 headless 발신자는 전달 통지를 받고 `SendMessage` 결과가 더 이상 "읽힘"을 함의하지 않습니다 — v2.1.224/251/260/261 SendMessage 신뢰성 계열에 "전달됨 ≠ 읽힘"이 명시적으로 추가됩니다. 같은 릴리즈에서 `claude mcp serve`가 30초마다 진행 업데이트를 보내 장시간 무음 도구 호출이 idle 타임아웃으로 중단되지 않도록 개선되었습니다.
 
 > **v2.1.273/274+**: (273) 최종 스트리밍 응답에 토큰 사용량이나 model id가 빠졌을 때 서브에이전트/백그라운드 에이전트가 FAILED로 보고되고 결과가 전달되지 않던 결함이 수정되었습니다(R020 「Failure/Interrupt Report ≠ Actual Failure」cross-ref). (274) 서브에이전트가 메인 세션에 보낸 메시지가 relaunch 후 Claude Desktop 트랜스크립트에서 사라지던 결함이 수정되었고, headless/SDK 세션이 완료된 background task마다 개별 모델 호출을 하던 것이 이미 큐잉된 완료건은 한 번의 호출로 응답하도록 바뀌었습니다(R009 fan-out의 비용 각도). (273) `/tui`가 이미 완료된 agent-team teammate 때문에 재시작을 거부하던 결함도 수정되었습니다. 결론은 그대로입니다 — 결정론적 ground-truth만이 완료 증거이며, 이 수정들은 잘못된 "failed"/"idle" 신호를 줄일 뿐 검증을 대체하지 않습니다.
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **CC v2.1.162+**: `claude agents --json` now includes a `waitingFor` field showing what a waiting session is blocked on (e.g. a permission prompt). Use it as an additional deterministic ground-truth signal — a member with a non-empty `waitingFor` is blocked on input (needs unblocking), NOT silently stalled (reassign per stall handling below). This distinguishes the two failure modes the verification is meant to separate.
@@ -450,9 +554,13 @@ Cross-reference: R020 ("actual outcome ≠ attempt" — verifying that a command
 > **v2.1.199+**: subagent가 rate limit/server error로 잘리면 partial work를 parent에 반환하며, subagent가 API 오류(usage limit reached 등)를 성공 결과로 오보하던 문제가 수정되어 이제 오류를 parent agent에 정확히 보고합니다. 플랫폼이 false-success 자가보고를 줄였으나, deterministic ground-truth(`git status`/`grep`/validation scripts) 검증 원칙은 여전히 유효하다.
 -->
 
+**Stall handling**: 멤버가 spawn + owner assignment + SendMessage 조율에도 불구하고 ~2분간 진행이 없으면, 계속 독촉하지 말고 standalone Agent(R009)로 재할당한다 — 정체된 멤버는 idle polling으로 토큰을 낭비하고 워크플로우를 지연시킨다.
+
+<!-- DETAIL: Stall handling, original wording and observed instance
 **Stall handling**: When a member shows no task progress within ~2 minutes despite spawn + owner assignment + SendMessage coordination, reassign the work to a standalone Agent (R009) rather than continuing to nudge the stalled member. Stalled Teams members waste tokens on idle polling and delay the overall workflow.
 
 Observed instance: v0.159.0 release (session 105) — members assigned to disjoint-file cleanup tasks went idle without executing; deterministic git-diff check exposed the gap; work was reassigned to standalone parallel Agents. References: #1261, #1262.
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.186+**: Added the `teammateMode: "iterm2"` setting (warns when auto mode cannot find the `it2` CLI), and added status filtering (press `f`) to the `/workflows` agent detail view. Relevant to Agent Teams teammate launch configuration (cf. v2.1.183 tmux teammate-pane fix).
@@ -461,4 +569,8 @@ Observed instance: v0.159.0 release (session 105) — members assigned to disjoi
 
 ## Member Prompt Size Cap
 
+Keep per-member prompts under ~5000 tokens, single domain — oversized/multi-domain risks malformed-parsing truncation (R009). Decompose across members/standalone Agents.
+
+<!-- DETAIL: Member Prompt Size Cap, original wording
 Keep per-member delegation prompts under ~5000 tokens and within a single domain. Oversized or multi-domain prompts risk malformed-parsing truncation in the CC platform (see R009 giant-prompt heuristic and `feedback_agent_malformed_parsing.md`). Large multi-file delegations should be decomposed and split across multiple members or standalone Agents.
+-->

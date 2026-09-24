@@ -15,12 +15,16 @@ For parallel calls: list ALL identifications BEFORE the tool calls.
 
 ### Common Violations to Avoid
 
+See examples via Read tool.
+
+<!-- DETAIL: Common Violations to Avoid — code block
 ```
 ❌ Missing: tool call with no identification prefix
 ✓ Correct: [agent-name][model] → Tool: WebFetch
            [agent-name][model] → Fetching: url
            <tool_call>...</tool_call>
 ```
+-->
 
 <!-- DETAIL: Full violation examples
 Incorrect: Calling tools without identification — no [agent][model] prefix before tool_call
@@ -33,31 +37,56 @@ Correct parallel: list ALL [agent][model] → Tool/Fetching/Running lines FIRST,
 
 ### Required-Parameter Completeness Check
 
-R008 prefix(announce)와 실제 도구 호출은 분리된 단계다. prefix 를 출력한 뒤 호출 payload 에서 도구 스키마상 required 파라미터를 누락하면 호출이 실패하거나 빈 동작이 된다. 호출 직전, prefix 존재뿐 아니라 required 파라미터가 모두 채워졌는지 확인한다.
+R008 prefix와 실제 호출은 분리 — prefix 출력 후 required 파라미터 완비를 확인한다.
 
+<!-- DETAIL: Required-Parameter Completeness Check intro — full text
+R008 prefix(announce)와 실제 도구 호출은 분리된 단계다. prefix 를 출력한 뒤 호출 payload 에서 도구 스키마상 required 파라미터를 누락하면 호출이 실패하거나 빈 동작이 된다. 호출 직전, prefix 존재뿐 아니라 required 파라미터가 모두 채워졌는지 확인한다.
+-->
+
+Anti-pattern: prefix만 출력·required 필드 누락 → prefix + required 필드 완비 후 호출.
+
+<!-- DETAIL: Required-Parameter Completeness Check table — full text
 | Anti-pattern | Required |
 |--------------|----------|
+| prefix만 출력하고 `questions` 배열 없음/빈 배열로 호출 | prefix + `questions` 배열(≥1) 모두 채워 호출 |
+| announce 후 payload required 필드 누락 | announce와 동일 메시지에서 required 필드 완비 호출 |
+-->
+
+<!-- DETAIL: Required-Parameter Completeness Check table rows — full text
 | AskUserQuestion 호출 앞에 Core Rule 형식의 prefix 라인(에이전트·모델 대괄호 다음 화살표와 Tool 표기)만 출력하고 `questions` 파라미터 없이/빈 배열로 호출 | prefix + `questions` 배열(최소 1개) 모두 채워 호출 |
 | announce 후 payload 의 required 필드 누락 (announce-payload separation gap) | announce 와 동일 메시지에서 required 필드 완비 호출 |
+-->
 
+Cross-reference: R020. Reference issue: #1324.
+
+<!-- DETAIL: Required-Parameter Completeness Check cross-ref — full text
 Cross-reference: R020 (action-completeness precondition — invoke 전에 required 파라미터 확인). Reference issue: #1324 (찐빠: AskUserQuestion `questions`-missing recurrence).
+-->
 
 ## Models
 
+`opus`(reasoning)/`sonnet`(default)/`haiku`(fast).
+
+<!-- DETAIL: Models table — full text
 | Model | Use |
 |-------|-----|
 | `opus` | Complex reasoning, architecture |
 | `sonnet` | General tasks, code generation (default) |
 | `haiku` | Fast simple tasks, file search |
+-->
 
 ## Tool Categories
 
+File Read/Write, Network(WebFetch), Execution(Bash/Agent).
+
+<!-- DETAIL: Tool Categories table — full text
 | Category | Tools | Verb |
 |----------|-------|------|
 | File Read | Read, Glob, Grep | Reading / Searching |
 | File Write | Write, Edit | Writing / Editing |
 | Network | WebFetch | Fetching |
 | Execution | Bash, Agent | Running / Spawning |
+-->
 
 ## Agent Tool Format
 
@@ -69,7 +98,11 @@ subagent_type:model → description
 
 ## Parallel Spawn Prefix Rule
 
+2+ 병렬 스폰 시 각 에이전트 `description`에 `[N]` 접두사(1-indexed) 필수.
+
+<!-- DETAIL: Parallel Spawn Prefix Rule intro — full text
 When spawning 2+ agents in parallel, each agent's `description` parameter MUST include a `[N]` prefix (1-indexed) to enable correlation with the Running display:
+-->
 
 ```
 Agent(description: "[1] Go code review", subagent_type: "lang-golang-expert")
@@ -78,7 +111,11 @@ Agent(description: "[2] Python code review", subagent_type: "lang-python-expert"
 
 Single agent spawns do NOT use the `[N]` prefix.
 
+단일 스폰도 Core Rule 접두사 필수 — advisor는 Tool 표기/번호 항목/단독 라인/Spawning 헤더 4종을 인식하나 요구 형식은 Core Rule 접두사다. Origin: #1652 #3-3.
+
+<!-- DETAIL: 단일 스폰 Core Rule 접두사 필수 — full text
 **단일 스폰도 Core Rule 접두사 필수 (Origin: #1652 #3-3, advisor 정합 #1650 E)**: 단일 Agent 스폰은 `[N]` 항목 형식 대신 Core Rule 형식의 접두사 라인(에이전트·모델 대괄호 + 화살표 + Tool 표기 + `Agent`)을 호출 직전에 출력한다. advisor(`.claude/hooks/scripts/r007-r008-drift-advisor.sh`)가 announce로 계수하는 것은 4종 — Tool 표기 라인, 대괄호 번호가 붙은 spawn 항목, **대괄호 번호 없이 에이전트타입:모델 다음에 화살표와 설명이 이어지는 단독 라인**(#1650 E에서 추가), Spawning 헤더 라인 — 이며 스폰 표기 3종은 **번호 항목 > 단독 라인 > Spawning 헤더** 순으로 하나만 채택된다. 단독 라인만 쓴 응답이 R008 누락으로 오계상되던 결함은 v1.1.62에서 해소됐다(v1.1.60 세션 실측 → v1.1.61 적대적 리뷰 재현 → #1650 E 적용). **다만 규칙이 요구하는 형식은 여전히 Core Rule 접두사 라인이다** — 단독 라인 계수는 오탐 제거이지 표기 승격이 아니다. 접두사 라인과 단독 라인이 함께 있으면 advisor는 단독 라인을 **동반 라인으로 보아 차감**하므로(Target 라인과 동일 취급) 병기해도 이중 계수되지 않는다. **단독 라인은 반드시 줄 시작(선행 공백만 허용)이어야 한다** — 리스트 마커가 앞에 붙으면 계수되지 않는다. advisor 판정식을 바꿀 때 이 문단을 같은 커밋에서 갱신한다(R016 Rule Wiring Check).
+-->
 
 ```
 [claude][opus] → Tool: Agent
@@ -87,7 +124,11 @@ Single agent spawns do NOT use the `[N]` prefix.
 
 | Anti-pattern | Required |
 |--------------|----------|
+| 단일 스폰을 단독 라인으로만 announce | Core Rule 접두사 라인을 호출 직전 출력 |
+
+<!-- DETAIL: Parallel Spawn Prefix Rule anti-pattern row — full text
 | 단일 스폰을 번호 없는 에이전트타입:모델 화살표 설명 단독 라인으로만 announce | Core Rule 접두사 라인(Tool 표기 + Agent)을 호출 직전에 출력; 항목 라인은 Target 라인으로 병기 가능 |
+-->
 
 This ensures the Running display:
 ```
@@ -105,21 +146,39 @@ matches the spawn announcement:
 
 ### Spawn Announce 리터럴 — advisor 정규식 정합 (Origin: #1595 #5)
 
-위 예시는 `.claude/hooks/scripts/r007-r008-drift-advisor.sh`의 판정식과 리터럴로 일치한다. 다음 변형은 **미매칭**되어, 규칙을 지킨 응답이 R008 위반으로 계상된다.
 
+<!-- DETAIL: Spawn Announce 리터럴 intro — full text
+위 예시는 `.claude/hooks/scripts/r007-r008-drift-advisor.sh`의 판정식과 리터럴로 일치한다. 다음 변형은 **미매칭**되어, 규칙을 지킨 응답이 R008 위반으로 계상된다.
+-->
+
+금지: 번호 앞 리스트마커/백틱, Spawning 뒤 콜론 생략, 화살표 없이 설명만 이어붙임 — 셋 다 advisor 미매칭.
+
+<!-- DETAIL: Spawn Announce 리터럴 mismatch table — full text
 | 금지 변형 | 미매칭 이유 |
 |-----------|-------------|
 | 번호 앞에 리스트 마커(`- `)나 백틱을 붙임 | spawn-item 정규식은 **줄 시작의 대괄호 숫자**를 요구하며, 선행 공백만 허용한다 |
 | Spawning 뒤 콜론 생략 (예: "Spawning 4 agents") | 헤더 정규식이 **콜론**을 요구한다 |
 | 에이전트타입:모델 뒤에 화살표 없이 설명만 이어붙임 | spawn-item 정규식이 **화살표**를 요구한다 (U+2192 / ASCII 하이픈-부등호 / U+2014-부등호 3종만 인식) |
+-->
 
+<!-- DETAIL: 규칙-정규식 정합 필요성 — full text
 규칙 문구와 탐지기 정규식이 어긋나면 오탐 계수가 다시 규칙 개정의 근거가 되는 악순환이 생긴다. 형식을 바꿀 때는 advisor 정규식을 같은 커밋에서 갱신한다(R016 Rule Wiring Check).
+-->
 
+
+<!-- DETAIL: 문서 작성 주의 — full text
 **문서 작성 주의**: advisor의 announce 정규식에는 줄 시작 앵커가 없어, 표 셀·인라인 백틱 안에 완전한 리터럴을 넣으면 **그 문서를 인용하는 응답 턴이 announce로 오계상**된다(482턴 실측에서 실제 발생). 형식 예시는 코드 펜스 안에 줄 시작으로만 두고, 표에서는 산문으로 서술한다.
+-->
 
+Cross-ref: R009, R020.
+
+<!-- DETAIL: Spawn Announce 리터럴 cross-ref — full text
 Cross-ref: R009 「Narrative Announcement Format」(같은 리터럴을 산문 announce에 적용), R020 「자가 계수는 advisor 판정식을 재현한다」.
+-->
 
+<!-- DETAIL: Origin #1595 #5 — full text
 Origin: #1595 #5 (v1.1.48 세션 — R008 위반 3건이 단일 턴에 집중. tool_use=5 / announce=2로 계산됐고, 실제 announce는 리스트 마커와 백틱이 앞에 붙은 형식이라 전부 미매칭. 헤더도 콜론이 없었다).
+-->
 
 <!--
 > **v2.1.174+**: Fixed the Workflow tool's `agent()` subagents missing per-agent attribution headers. Workflow-spawned subagents now carry attribution consistent with R008 — when authoring Workflow scripts, each `agent()` call is attributed like a direct Agent tool spawn. Align Workflow orchestration with the R008 `[agent][model] → Tool:` identification discipline: a Workflow `agent()` fan-out should still be reasoned about with the same per-agent identification model as parallel Agent tool spawns.
@@ -127,29 +186,51 @@ Origin: #1595 #5 (v1.1.48 세션 — R008 위반 3건이 단일 턴에 집중. t
 
 ## announce와 헤더는 narration이 아니라 visible text 블록으로 (Origin: #1654)
 
-모델 출력에는 `text` 블록과 **narration 블록**(트랜스크립트에 `type:"thinking"` + signature 라벨 `narration`으로 직렬화되는 사용자향 짧은 산문)이 있고, 한 API 메시지에는 **둘 중 하나만** 실린다(v1.1.61~62 세션 실측: 115메시지 중 공존 0). 도구 호출 턴을 narration 요약 한 문장("…했습니다. 이제 …하겠습니다")으로 시작하면 R007 헤더와 R008 접두사는 **어디에도 남지 않는다** — 실측: narration 47블록에 R007 헤더 0건, 대괄호 번호 항목 0건, Tool 표기 0건(조사 문장 인용 제외). advisor는 `type != "thinking"` 필터로 narration을 배제하므로 이 턴들은 전부 누락으로 계상되며, 실제로 v1.1.61 세션 advisory 18건은 **전부 진양성**이었다(직렬화 유실 가설은 advisor가 메시지 직후에 판정했다는 사실로 배제됨).
+`text` 블록과 narration 블록은 한 메시지에 공존하지 않는다 — narration 요약만으로 턴을 시작하면 R007/R008 마커가 어디에도 남지 않는다. 헤더(`┌─ Agent:` 또는 단축 헤더)와 Core Rule 접두사를 **text 블록**에 먼저 쓴다 — 산문 요약은 그 뒤에. "announce를 썼다"는 기억으로 advisory를 오탐이라 가정하지 말고, 트랜스크립트의 text 블록에서 마커를 실측한다.
 
+<!-- DETAIL: announce/헤더 narration vs text 블록 — full text
+모델 출력에는 `text` 블록과 **narration 블록**(트랜스크립트에 `type:"thinking"` + signature 라벨 `narration`으로 직렬화되는 사용자향 짧은 산문)이 있고, 한 API 메시지에는 **둘 중 하나만** 실린다(v1.1.61~62 세션 실측: 115메시지 중 공존 0). 도구 호출 턴을 narration 요약 한 문장("…했습니다. 이제 …하겠습니다")으로 시작하면 R007 헤더와 R008 접두사는 **어디에도 남지 않는다** — 실측: narration 47블록에 R007 헤더 0건, 대괄호 번호 항목 0건, Tool 표기 0건(조사 문장 인용 제외). advisor는 `type != "thinking"` 필터로 narration을 배제하므로 이 턴들은 전부 누락으로 계상되며, 실제로 v1.1.61 세션 advisory 18건은 **전부 진양성**이었다(직렬화 유실 가설은 advisor가 메시지 직후에 판정했다는 사실로 배제됨).
+-->
+
+<!-- DETAIL: announce/헤더 narration Anti-pattern table — full text
 | Anti-pattern | Required |
 |--------------|----------|
 | 도구 호출 턴을 짧은 요약 산문만으로 시작(narration 채널로 흐름) | 헤더(`┌─ Agent:` 또는 단축 헤더)와 Core Rule 접두사를 **text 블록**으로 명시 — 산문 요약은 그 뒤에 |
 | "announce를 썼다"는 기억으로 advisory를 오탐으로 가정 | 트랜스크립트의 `text` 블록에서 마커를 실측(R020 Self-Violation Counting) |
+-->
 
+<!-- DETAIL: Iteration 1/2 대비 서술 (v1.1.75 보강으로 대체됨) — full text
 Iteration 1(Agent 스폰 15메시지 전부 narration)과 Iteration 2(7메시지 text)의 대비는 계수 도구 결함이 아니라 출력 채널 선택의 차이로 서술했으나, 이 귀속은 아래 v1.1.75 보강으로 대체되었다.
+-->
 
+실측(1008건): text 블록 부재 비율이 CC 2.1.251+에서 급증 — 근본 원인 `[가설]` 미확정.
+
+<!-- DETAIL: 원인 귀속 보강 (Origin #1703·#1706, v1.1.75) — full text
 **원인 귀속 보강 (Origin: #1703·#1706 — v1.1.75)**: 실 세션 6건·tool_use 응답 1008건(아티팩트 Part B 표 5건 860건 + 각주 인용 2.1.251 세션 148건, 재계산)을 재측정한 결과, text 블록이 없는 tool_use 응답의 비율이 CC 2.1.233에서 0%(0/256)였다가 2.1.251에서 39.2%(58/148)로 급증하고 2.1.258~2.1.275 구간에서 53.6~61.8%로 유지되는 것을 확인했습니다. 이 경계는 CHANGELOG v2.1.251의 "Fixed conversations getting stuck on \"text content blocks must be non-empty\" errors after a turn where the model produced only thinking" 항목과 일치합니다. narration 채널 옵션은 thinking 본문 354건 전수에서 마커가 0건 매칭되어 은퇴했으므로(#1703), R008 누락 턴은 마커가 narration으로 옮겨간 것이 아니라 thinking과 tool_use만 있고 text 블록이 없는 형태로 기록된 것입니다. `[가설]` 2.1.251 이전의 thinking-only 턴이 클라이언트 측 text 강제 주입으로 감춰졌는지 API 재시도로 트랜스크립트에서 탈락했는지, 그리고 thinking 내용이 announce 정규식과 왜 불일치하는지는 API 원본 스트리밍 로그 대조 없이는 미확정입니다.
+-->
 
 ## Tier-3 Interaction Tool Prefix (MANDATORY)
 
+<!-- DETAIL: Tier-3 Interaction Tool Prefix intro — full text
 R008 "every tool call" applies to Tier-3 interaction tools too — NOT only file/exec tools. Applying the Core Rule prefix form (에이전트·모델 대괄호 다음 화살표와 Tool 표기) to Agent/Bash/Read while omitting it on `AskUserQuestion`, `TodoWrite`, `EnterPlanMode`, etc. is a violation.
+-->
 
+AskUserQuestion/TodoWrite/EnterPlanMode/ExitPlanMode 필수; Skill만 예외(R007 헤더로 식별).
+
+<!-- DETAIL: Tier-3 prefix table — full text
 | Tool | R008 prefix required? |
 |------|----------------------|
 | AskUserQuestion | YES — Core Rule 형식의 prefix(에이전트·모델 대괄호 + 화살표 + Tool 표기 + 도구명)를 호출 앞에 출력 |
 | TodoWrite | YES |
 | EnterPlanMode / ExitPlanMode | YES |
 | Skill | NO separate R008 prefix — identified via R007 `claude → {skill-name}` integrated header instead |
+-->
 
+Skill 호출만 예외 — R007 통합 헤더(`claude → {skill-name}`)로 식별하며 별도 R008 접두사는 불요.
+
+<!-- DETAIL: Skill invocation exception — full text
 Skill invocation is the one exception: it is identified through the R007 integrated identification block (`┌─ Agent: claude → {skill-name}`), not a standalone R008 tool prefix.
+-->
 
 <!-- Reference issue: #1321 (session 113 retrospective, 찐빠 #2 — AskUserQuestion prefix omitted twice). -->
 
@@ -172,7 +253,11 @@ Agent(description: "[2] Python code review", subagent_type: "lang-python-expert"
 
 1. 이 호출 위에 Core Rule 형식의 prefix 라인(에이전트명·모델 대괄호 + 화살표 + Tool 표기 + 도구명)이 있는가?
 2. agent-name 과 model 이 현재 컨텍스트와 일치하는가?
+3. required 파라미터가 모두 채워져 있는가? (예: AskUserQuestion의 `questions` 배열이 비어 있지 않아야 함)
+
+<!-- DETAIL: Multi-Turn Self-Check item 3 — full text
 3. 이 호출에 도구 스키마상 required 파라미터가 모두 채워져 있는가? (예: AskUserQuestion 는 `questions` 배열이 비어 있지 않아야 함) prefix(announce)만 출력하고 실제 호출 payload 의 required 필드를 누락하면 안 된다.
+-->
 
 체크 실패 시 즉시 prefix/필수 파라미터를 보완한 후 호출.
 
@@ -190,8 +275,11 @@ Reference issue: #1096.
 
 ### Short Response Discipline
 
-도구 호출 prefix 도 응답 길이와 무관하게 필수. 같은 턴 내 여러 도구를 호출할 때 각 호출 직전에 개별 prefix 표시:
+도구 호출 prefix 도 응답 길이와 무관하게 필수. 같은 턴 내 여러 도구를 호출할 때 각 호출 직전에 개별 prefix 표시.
 
+형식은 Core Rule 코드 블록과 동일 — 호출마다 개별 표시. 상세는 Read 도구로 열람.
+
+<!-- DETAIL: Short Response Discipline — code block
 ```
 [agent][model] → Tool: Read
 [agent][model] → Target: file1.md
@@ -201,11 +289,15 @@ Reference issue: #1096.
 [agent][model] → Target: gh issue list
 <Bash call>
 ```
+-->
 
 <!-- Reference issues: #1188 item #3, #1198 item #3. -->
 
 ### External-Project / Debugging Session Vigilance
 
+R007과 세트로 자가 점검 — oh-my-customcode/외부 프로젝트/SSH·배포·인프라 작업 모두 동일하게 필수.
+
+<!-- DETAIL: External-Project Vigilance intro + session table — full text
 R007 헤더와 마찬가지로, R008 prefix 누락도 외부 프로젝트 디버깅·배포 세션에서 가장 자주 발생한다. R007/R008은 세트로 함께 자가 점검한다.
 
 | 세션 유형 | R008 prefix |
@@ -213,6 +305,7 @@ R007 헤더와 마찬가지로, R008 prefix 누락도 외부 프로젝트 디버
 | oh-my-customcode 작업 | 필수 |
 | 외부 프로젝트 디버깅 | **동일하게 필수** |
 | SSH / 배포 / 인프라 작업 | **동일하게 필수** |
+-->
 
 <!-- DETAIL: Case history — 외부 프로젝트 진단 세션(#1417)에서 Bash/Edit/Read/Agent 모든 호출에 `[agent][model] → Tool:` prefix가 세션 전체 누락된 재발이 관측되었다 — 도구 호출 직전 prefix 부착을 워크플로에 내재화한다.
 Reference issues: #1401, #1417.

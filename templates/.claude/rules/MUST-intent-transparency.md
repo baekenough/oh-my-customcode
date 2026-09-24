@@ -81,7 +81,10 @@ At the start of every new task, issue, or autonomous sub-loop, answer these thre
 
 ### Failed Tool Re-Try Discipline
 
+<!-- DETAIL: Failed Tool Re-Try Discipline intro (full wording)
 User-specified tools/formats persist across failures. After a tool rejection or failure, retry with the SAME tool — do NOT silently switch to a different mechanism.
+-->
+User-specified tools persist across failures — retry the SAME tool, do NOT silently switch.
 
 | 시나리오 | Required |
 |---------|----------|
@@ -89,12 +92,18 @@ User-specified tools/formats persist across failures. After a tool rejection or 
 | 자유 텍스트로 재질문 | 금지 — directive 위반 |
 | 다른 도구로 silent switch | 금지 — 명시적 사용자 확인 필요 |
 
+<!-- DETAIL: Failed Tool Re-Try reference issue
 Reference issues: #1188 item #4.
+-->
 
 ### User Directive Persistence — Git Push Continuation
 
+<!-- DETAIL: Git Push Continuation intro (full original wording)
 사용자가 같은 세션 내에서 명시적으로 커밋/푸시를 한 번 허용했다면, 동일 카테고리/동일 브랜치의 후속 작업은 추가 확인 없이 진행 가능. push security policy classifier가 first-time strict, follow-up relaxed로 동작해야 함.
+-->
+사용자가 동일 세션·브랜치의 git 커밋/푸시를 한 번 허용하면 후속 동일 작업은 재확인 불요(advisory warning만 출력) — 아래 「Destructive Operation Approval Persistence」의 git 특수 사례.
 
+<!-- DETAIL: Git Push Continuation full table + rationale
 | 시나리오 | 동작 |
 |----------|------|
 | 1차 명시 "커밋, 푸시" + 동일 브랜치 | mgr-gitnerd push 진행 (advisory warning은 출력) |
@@ -102,11 +111,16 @@ Reference issues: #1188 item #4.
 | 다른 브랜치 / 다른 카테고리 | 새 confirmation 필요 |
 
 **Why**: 사용자 directive 일관성 — #1208 보고. 같은 세션 내 동일 의도를 반복 차단하면 R015 user directive persistence 위반.
+-->
 
 ### Destructive Operation Approval Persistence (Generalized)
 
+<!-- DETAIL: Destructive Operation Approval Persistence intro (full wording)
 The Git Push Continuation pattern (first-time strict / follow-up relaxed, scoped to session + category + target) generalizes to ALL repeated destructive operations within the same session. Examples: `supabase db push`, `terraform apply`, `kubectl delete`, bulk file deletes, database migrations.
+-->
+사용자가 category C·target T에 1차 명시 승인한 후 동일 C+T 반복은 재확인 불요(advisory 경고 유지); 다른 category/target은 새 확인 필요. 예: `supabase db push`, `terraform apply`, `kubectl delete`.
 
+<!-- DETAIL: Destructive Operation Approval Persistence Scope (full wording) + dropped Scenario/Behavior table (redundant with the sentence above)
 **Scope**: once the user explicitly approves a destructive operation of category C against target T in a session, follow-up operations of the SAME C + SAME T do NOT require re-confirmation. An advisory warning is still emitted. A different category or different target always requires fresh confirmation.
 
 | Scenario | Behavior |
@@ -114,33 +128,58 @@ The Git Push Continuation pattern (first-time strict / follow-up relaxed, scoped
 | 1st explicit approval (category C, target T) | Proceed; advisory warning emitted |
 | Follow-up same session (same C + same T) | No re-confirmation (directive persistence) |
 | Different category or target | Fresh confirmation required |
+
 | Platform **permission prompt** repeats (asking to re-approve an already-allowed command) | Add a `settings.json` permission `allow` rule scoped to the specific command — this suppresses the prompt |
 | Platform **safety classifier BLOCK** (e.g. auto-mode refuses/flags the action, not merely prompting) | `allow` rule addition is **NOT effective** — the classifier is a separate layer from the permission-prompt layer. Have the user run the command directly (`!` prefix), or remove the trigger itself (e.g. drop an unnecessary bypass flag — see R010 「우회 플래그는 우회 대상과 근거를 명시」) |
+-->
 
+**R001 예외 (MUST)**: R001의 파괴적 git 명령(`reset --hard`/`clean -fd`/공유 `push --force`/미병합 `branch -D`)은 제외 — 매번 명시 승인 필요.
+
+**Advisory 한계**: allow 규칙으로는 safety-classifier 차단이 해소되지 않습니다 — 사용자가 `!`로 직접 실행하거나 차단 트리거를 제거해야 합니다.
+
+<!-- DETAIL: R001 exclusion full English wording
 **R001 exclusion (MUST)**: R001-listed catastrophic git operations (`git reset --hard`, `git clean -fd`, `git push --force` to shared branches, `git branch -D` with unmerged commits) are EXCLUDED from this persistence rule — they always require explicit per-invocation approval regardless of prior session approvals.
+-->
 
+<!-- DETAIL: Boundary/honesty note + allow-vs-classifier full rationale
 **Boundary / honesty note**: This rule is ADVISORY and governs model behavior only. It CANNOT suppress Claude Code's platform-level auto-mode classifier prompts. For genuine prompt suppression on a repeated destructive command, the user must add a `settings.json` permission allow rule scoped to the specific command (e.g., a specific `supabase db push` invocation). The model SHOULD surface this workaround when the user expresses friction about repeated prompts.
 
 `settings.json` **allow 규칙은 permission prompt를 억제하지만, safety classifier 차단은 억제하지 못한다 — 서로 다른 층이다** (#1592). 실효 경로는 두 가지뿐이다: (a) 사용자가 직접 실행, (b) 차단 트리거 자체를 제거(예: 불필요한 `--admin` 제거). 부가로, CC v2.1.229+는 위험 플래그(`--force`/`--amend`/`--no-verify`)를 가진 git/gh 명령을 auto-approve하지 않는다(설치 버전 실측 v2.1.233).
+-->
 
+<!-- DETAIL: Origin #1592 case narrative
 > Origin: #1592 (v1.1.47 세션 실측) — `permissions.allow`에 `Bash(gh:*)`와 `defaultMode: bypassPermissions`가 있는데도 `--admin` 포함 머지 위임이 auto-mode classifier에 차단됐다. `Edit(.claude/**)` allow 규칙이 있는데도 `.claude/settings.local.json` 편집이 차단됐다. 두 사례 모두 allow 규칙이 걸어둔 permission-prompt 층을 이미 통과한 상태에서 별도의 classifier 층이 차단한 것 — allow 규칙 추가로는 해소되지 않았고, 실효 해법은 (a) `--admin` 제거(R010 선행 실측 조항, #1591), (b) 사용자 직접 실행이었다.
+-->
 
+<!-- DETAIL: Cross-references (full list)
 Cross-references: R001 (safety — destructive operation pre-checks still apply), R002 (permission tiers), R010 (우회 플래그 선행 실측 — 차단 트리거 제거 경로). Reference issues: #1230, #1226 (item 2), #1592.
+-->
 
 ## User-Provided Input Precedence
 
+<!-- DETAIL: Origin #1327 OAuth case narrative
 > Origin: #1327 찐빠 #1 — the user created a NEW GitHub OAuth App and provided fresh credentials, but a script's "reuse existing github IdP if present" logic kept the OLD IdP/client_id, so login flowed through the stale credential. The freshly-provided input was silently ignored.
+-->
 
+<!-- DETAIL: User-Provided Input Precedence full rationale
 When the user EXPLICITLY provides new input (credentials, config values, IdP, API keys, endpoints), applying that new input takes precedence over idempotent "reuse existing" logic. After applying, VERIFY the change took effect — but compare ONLY non-secret identifiers (client_id, endpoint URL, key fingerprint/last-4), NEVER echo secret values into the transcript (R001). For secret material, verify via a side-effect probe (e.g., a test auth call succeeds) rather than value comparison.
+-->
+사용자가 명시적으로 새 입력(자격증명·설정값·키)을 제공하면 기존 재사용 로직보다 우선 적용 — 검증은 **비밀 아닌 식별자**로만(시크릿 echo 금지, R001; 시크릿 자체는 side-effect probe로 검증).
 
 | Anti-pattern | Required |
 |--------------|----------|
 | "An existing X is present → reuse it" when the user just supplied a new X | Apply the user-supplied X; treat reuse-logic as a fallback only when the user supplied nothing |
+
+<!-- DETAIL: additional Anti-pattern rows (equals-case / subset-fields / post-apply-verify — narrower cases of the kept row above)
 | User-supplied X EQUALS the existing X | Reuse is correct (idempotent no-op) — do NOT re-provision |
 | User supplies only a SUBSET of fields | Apply the supplied fields; reuse existing values only for the unsupplied fields |
 | Apply new credential, assume it took effect | Verify post-apply via non-secret identifier match or a side-effect probe — never echo secret values (R001) |
+-->
 
+<!-- DETAIL: Cross-reference (full wording)
 Cross-reference: R001 (credential guardrails — never echo secret values), R020 (verify actual outcome).
+-->
+Cross-ref: R001, R020.
 
 ## Agent Triggers
 

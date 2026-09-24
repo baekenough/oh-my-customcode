@@ -173,6 +173,135 @@ export async function validateAdditionalDocFiles(
   return mismatches;
 }
 
+/**
+ * Instruction budget thresholds (in visible chars, i.e. after HTML comments are
+ * stripped). These mirror what Claude Code itself counts toward the fixed
+ * per-session context injection (CLAUDE.md + .claude/rules/*.md) — Claude Code
+ * does not count `<!--...-->` comment content, so raw file length overstates
+ * the actual injected size (see #1717 measurement: raw 430,808 vs CC-reported
+ * ~308,800, matching the comment-stripped total of 306,752).
+ */
+export const INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT = 150_000;
+export const INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT = 140_000;
+
+/** A single instruction file (CLAUDE.md or a .claude/rules/*.md file) fed to the budget check. */
+export interface InstructionFileInput {
+  file: string;
+  content: string;
+}
+
+export interface InstructionFileMeasurement {
+  file: string;
+  rawLength: number;
+  visibleLength: number;
+  /**
+   * True when the comment-stripped text still contains a `-->` or `<!--`
+   * marker — evidence of an orphan/nested HTML comment (e.g. a `<!-- ... -->`
+   * nested inside another comment closes the outer comment early and leaks a
+   * stray `-->` into the visible, auto-injected text).
+   */
+  hasStrayCommentMarker: boolean;
+}
+
+export interface InstructionBudgetResult {
+  files: InstructionFileMeasurement[];
+  totalRawLength: number;
+  totalVisibleLength: number;
+  /** Top 3 files by visible size, descending. */
+  topFiles: InstructionFileMeasurement[];
+  errors: string[];
+  warnings: string[];
+}
+
+/** Strips HTML comments (non-greedy, dotall) — matches Claude Code's auto-injection behavior. */
+export function stripHtmlComments(content: string): string {
+  return content.replace(/<!--[\s\S]*?-->/g, '');
+}
+
+/**
+ * Pure measuring logic for the instruction-file context budget (#1717). Takes
+ * file contents directly (no filesystem access) so it is unit-testable in
+ * isolation. Computes the comment-stripped ("visible") size of each file,
+ * flags stray comment markers left behind by orphan/nested comments, and
+ * checks the total against the error/warning thresholds.
+ */
+export function measureInstructionBudget(
+  files: InstructionFileInput[],
+  options: { errorLimit?: number; warnLimit?: number } = {},
+): InstructionBudgetResult {
+  const errorLimit = options.errorLimit ?? INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT;
+  const warnLimit = options.warnLimit ?? INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT;
+
+  const measurements: InstructionFileMeasurement[] = files.map(({ file, content }) => {
+    const visible = stripHtmlComments(content);
+    return {
+      file,
+      rawLength: content.length,
+      visibleLength: visible.length,
+      hasStrayCommentMarker: visible.includes('-->') || visible.includes('<!--'),
+    };
+  });
+
+  const totalRawLength = measurements.reduce((sum, m) => sum + m.rawLength, 0);
+  const totalVisibleLength = measurements.reduce((sum, m) => sum + m.visibleLength, 0);
+
+  const topFiles = [...measurements]
+    .sort((a, b) => b.visibleLength - a.visibleLength)
+    .slice(0, 3);
+
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  for (const m of measurements) {
+    if (m.hasStrayCommentMarker) {
+      errors.push(
+        `${m.file}: stray HTML comment marker (--> or <!--) remains after comment stripping — check for an orphan or nested <!-- --> comment`,
+      );
+    }
+  }
+
+  if (totalVisibleLength > errorLimit) {
+    errors.push(
+      `Instruction budget exceeded: ${totalVisibleLength} visible chars > ${errorLimit} limit`,
+    );
+  } else if (totalVisibleLength > warnLimit) {
+    warnings.push(
+      `Instruction budget warning: ${totalVisibleLength} visible chars > ${warnLimit} (error limit ${errorLimit})`,
+    );
+  }
+
+  return { files: measurements, totalRawLength, totalVisibleLength, topFiles, errors, warnings };
+}
+
+/**
+ * Reads the actual instruction files Claude Code auto-injects every session:
+ * repo-root CLAUDE.md + every repo-root `.claude/rules/*.md` file. Distinct
+ * from `collectImplementationStats`, which reads `templates/.claude/rules`
+ * (the distributable template, not this repo's own live rules).
+ */
+async function collectInstructionFiles(): Promise<InstructionFileInput[]> {
+  const files: InstructionFileInput[] = [];
+
+  const claudeMdPath = 'CLAUDE.md';
+  if (fs.existsSync(claudeMdPath)) {
+    files.push({ file: claudeMdPath, content: await extractReadmeClaims(claudeMdPath) });
+  }
+
+  const rulesDir = path.join('.claude', 'rules');
+  if (fs.existsSync(rulesDir)) {
+    const ruleFiles = fs
+      .readdirSync(rulesDir)
+      .filter((f) => f.endsWith('.md'))
+      .sort();
+    for (const f of ruleFiles) {
+      const filePath = path.join(rulesDir, f);
+      files.push({ file: filePath, content: await extractReadmeClaims(filePath) });
+    }
+  }
+
+  return files;
+}
+
 export async function collectImplementationStats(): Promise<ImplementationStats> {
   const stats: ImplementationStats = {
     agent_count: 0,
@@ -539,6 +668,7 @@ function printProgrammaticResults(
   validation: ValidationResult,
   slashCommandValidation: SlashCommandValidation,
   additionalDocMismatches: DocCountMismatch[] = [],
+  instructionBudget?: InstructionBudgetResult,
 ): boolean {
   console.log('📋 Programmatic Validation Results');
 
@@ -549,7 +679,8 @@ function printProgrammaticResults(
     validation.extraInReadme.skills.length > 0 ||
     validation.countMismatches.length > 0 ||
     slashCommandValidation.phantom.length > 0 ||
-    additionalDocMismatches.length > 0;
+    additionalDocMismatches.length > 0 ||
+    (instructionBudget !== undefined && instructionBudget.errors.length > 0);
 
   // Agent count line
   const agentMismatch = validation.countMismatches.find((m) => m.field === 'agents');
@@ -644,6 +775,26 @@ function printProgrammaticResults(
     console.log('✅ Secondary docs (README_ko.md, templates/CLAUDE.md.*, templates/README.md): counts matched');
   }
 
+  // Instruction budget (#1717): CLAUDE.md + .claude/rules/*.md, comment-stripped size
+  if (instructionBudget) {
+    const topFilesText = instructionBudget.topFiles
+      .map((f) => `${f.file} (${f.visibleLength.toLocaleString()})`)
+      .join(', ');
+    console.log(
+      `📏 Instruction budget: ${instructionBudget.totalVisibleLength.toLocaleString()} visible chars across ${instructionBudget.files.length} files (error limit ${INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT.toLocaleString()}, warn limit ${INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT.toLocaleString()})`,
+    );
+    console.log(`   top 3 by visible size: ${topFilesText}`);
+    for (const warning of instructionBudget.warnings) {
+      console.log(`⚠️ ${warning}`);
+    }
+    for (const error of instructionBudget.errors) {
+      console.log(`❌ ${error}`);
+    }
+    if (instructionBudget.errors.length === 0 && instructionBudget.warnings.length === 0) {
+      console.log('✅ Instruction budget: within limit');
+    }
+  }
+
   return !hasProgrammaticIssues;
 }
 
@@ -664,9 +815,17 @@ async function main() {
     const skillsDir = path.join('templates', '.claude/skills');
     const slashCommandValidation = validateSlashCommands(readmeEn, skillsDir);
     const additionalDocMismatches = await validateAdditionalDocFiles(stats);
+    const instructionFiles = await collectInstructionFiles();
+    const instructionBudget = measureInstructionBudget(instructionFiles);
 
     if (programmaticOnly) {
-      const passed = printProgrammaticResults(stats, validation, slashCommandValidation, additionalDocMismatches);
+      const passed = printProgrammaticResults(
+        stats,
+        validation,
+        slashCommandValidation,
+        additionalDocMismatches,
+        instructionBudget,
+      );
       const status = passed ? 'PASS' : 'FAIL';
       console.log(`\n<!-- VALIDATION_STATUS: ${status} -->`);
       if (!passed) {
@@ -705,6 +864,20 @@ async function main() {
       }
     }
 
+    const topFilesText = instructionBudget.topFiles
+      .map((f) => `${f.file} (${f.visibleLength.toLocaleString()})`)
+      .join(', ');
+    console.log(
+      `📏 Instruction budget: ${instructionBudget.totalVisibleLength.toLocaleString()} visible chars across ${instructionBudget.files.length} files (error limit ${INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT.toLocaleString()}, warn limit ${INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT.toLocaleString()})`,
+    );
+    console.log(`   top 3 by visible size: ${topFilesText}`);
+    for (const warning of instructionBudget.warnings) {
+      console.log(`⚠️ ${warning}`);
+    }
+    for (const error of instructionBudget.errors) {
+      console.log(`❌ ${error}`);
+    }
+
     // Determine pass/fail from programmatic validation and LLM output
     const hasProgrammaticIssues =
       validation.missingFromReadme.agents.length > 0 ||
@@ -713,7 +886,8 @@ async function main() {
       validation.extraInReadme.skills.length > 0 ||
       validation.countMismatches.length > 0 ||
       slashCommandValidation.phantom.length > 0 ||
-      additionalDocMismatches.length > 0;
+      additionalDocMismatches.length > 0 ||
+      instructionBudget.errors.length > 0;
     // Check for explicit LLM verdict first, fall back to marker detection
     const hasExplicitFail = /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);
     const hasExplicitPass = /최종 판정[\s\S]*?\*\*(✅\s*)?PASS\*\*/i.test(result);

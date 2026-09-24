@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-07-29
+updated: 2026-09-24
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/03-tools.md
@@ -25,6 +25,7 @@ related:
   - [[r011]]
   - [[r012]]
   - [[r013]]
+  - [[r016]]
   - [[r020]]
   - [[r023]]
 ---
@@ -43,6 +44,6 @@ related:
 | Placeholders | `08-testing.md`, `09-guardrails.md`, `10-monitoring.md` | Sections await official Anthropic docs (`status: placeholder` in `index.yaml`) |
 | Protocol reference | `06-mcp.md` | Model Context Protocol server connection guide |
 
-**Non-obvious constraint**: as of oh-my-customcode v1.1.9 (targeting CC v2.1.201+), `15-version-compatibility.md` caps its per-version log at v2.1.160 — newer CC compatibility notes are appended inline to the affected rule files (`.claude/rules/MUST-safety.md`, `MUST-permissions.md`, `MUST-agent-design.md`, `MUST-orchestrator-coordination.md`, `SHOULD-hud-statusline.md`) instead of growing this file unboundedly. Consult the relevant rule's version-note history for v2.1.161+ changes, not this guide.
+**Policy reversed (v1.1.77, #1717) — destination is now this guide, not the rules**: from oh-my-customcode v1.1.9 through v1.1.76, `15-version-compatibility.md` capped its per-version log at v2.1.160 and newer CC compatibility notes accumulated inline in the affected rule files instead — that v2.1.161–v2.1.276 span of inline rule notes is preserved as-is. A `/memory` warning (#1717) measured the resulting rule corpus at 306,752 chars (comments stripped) against CC's 150,000-char limit, so [[r016]] replaced the accumulate-in-rules approach with a destination-based policy: **starting at v2.1.277, new CC release knowledge is recorded here** as a per-rule section (see the file's own version-range headers), and a rule file itself gets at most one line — only when the release changes current agent behavior — gated by [[r016]]'s new ≤140,000-char instruction-budget check. Consult this guide for v2.1.277+ changes; consult the relevant rule's version-note history for v2.1.161–276.
 
-See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[agent-teams]], and [R017 sync verification](../rules/r017.md) for when this guide requires re-sync.
+See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[agent-teams]], [[r016]] (instruction-budget policy that now routes new content here), and [R017 sync verification](../rules/r017.md) for when this guide requires re-sync.

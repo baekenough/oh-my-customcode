@@ -4,9 +4,17 @@
 
 ## Core Rule
 
-After modifying agents, skills, or guides: run full verification before committing AND pushing. Never ask to commit/push before `mgr-sauron:watch` passes.
+After modifying agents/skills/guides: full verification before commit AND push — never ask to commit/push before `mgr-sauron:watch` passes.
 
+<!-- DETAIL: Core Rule paragraph, original wording
+After modifying agents, skills, or guides: run full verification before committing AND pushing. Never ask to commit/push before `mgr-sauron:watch` passes.
+-->
+
+Every push requires: `mgr-sauron:watch` pass first.
+
+<!-- DETAIL: Core Rule 2nd line, original wording
 Every `git push` requires: `mgr-sauron:watch` → all pass → `git push`
+-->
 
 ## Verification Phases
 
@@ -14,30 +22,57 @@ Every `git push` requires: `mgr-sauron:watch` → all pass → `git push`
 
 | Round | Actions |
 |-------|---------|
+| 1-2 | mgr-supplier:audit, mgr-updater:docs, fix issues |
+| 3-4 | Re-verify + fix remaining |
+| 5 | Final: counts match, frontmatter valid, skill refs exist, routing patterns updated |
+
+<!-- DETAIL: Phase 1 table rows, original wording
 | 1-2 | mgr-supplier:audit, mgr-updater:docs (sync check), fix issues |
 | 3-4 | Re-verify mgr-supplier:audit + re-run mgr-updater:docs, fix remaining |
 | 5 | Final: all counts match, frontmatter valid, skill refs exist, memory scopes valid, routing patterns updated |
+-->
 
+Also run: mgr-claude-code-bible:verify
+
+<!-- DETAIL: Phase 1 also-run line, original wording
 Also run: mgr-claude-code-bible:verify (official spec compliance)
+-->
 
 ### Phase 2: Deep Review (3 rounds)
 
 | Round | Focus |
 |-------|-------|
+| 1 | Workflow alignment: routing skills complete |
+| 2 | References: no orphans/circular refs |
+| 3 | Philosophy: R006/R009/R010/R007/R008 |
+
+<!-- DETAIL: Phase 2 table rows, original wording
 | 1 | Workflow alignment: routing skills have complete agent mappings |
 | 2 | References: no orphans, no circular refs, valid skill/memory refs |
 | 3 | Philosophy: R006 separation, R009 parallel, R010 delegation, R007/R008 identification |
+-->
 
 ### Phase 3: Wiki Sync Verification
 
 | Check | Action |
 |-------|--------|
+| Missing pages | No wiki page → `/omcustom:wiki` |
+| Stale pages | Source newer than wiki `updated` → `/omcustom:wiki ingest <path>` |
+| Broken cross-refs | Links to non-existent pages → `/omcustom:wiki lint` |
+| index.md accuracy | Index count matches actual |
+
+<!-- DETAIL: Phase 3 table rows, original wording
 | Missing pages | Source entities without wiki pages → run `/omcustom:wiki` |
 | Stale pages | Source modification date newer than wiki `updated` field → run `/omcustom:wiki ingest <path>` |
 | Broken cross-refs | Wiki links pointing to non-existent pages → run `/omcustom:wiki lint` |
 | index.md accuracy | Wiki index page count matches actual page count |
+-->
 
+Also enforced by CI (`.github/workflows/wiki-sync.yml`).
+
+<!-- DETAIL: Wiki CI enforcement line, original wording
 Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
+-->
 
 ### Phase 4: Fix all discovered issues
 
@@ -79,200 +114,428 @@ Wiki verification is also enforced by CI (`.github/workflows/wiki-sync.yml`).
 
 ### Release Commit Staging Hygiene (빌드 산출물 오염/누락 방지)
 
+릴리즈 커밋 스테이징은 **양방향** 검증: 혼입(a) + 누락(b).
+
+<!-- DETAIL: Release Commit Staging Hygiene intro, original wording
 릴리즈 커밋(및 `bun run build`를 수행한 모든 커밋) 직전, 스테이징 검증은 **양방향**이다 — (a) gitignored 빌드 산출물(`dist/` 등)이 **혼입**되지 않았는가, (b) 빌드가 갱신한 **tracked** 산출물(`.omcustom.lock.json` 등)이 **누락**되지 않았는가. 두 방향은 서로 다른 경로(gitignored vs tracked)를 대상으로 하므로, 한쪽만 확인하면 반대 방향 결함이 통과한다 — .gitignore 존재/부재 확인만으로는 부족하다.
+-->
 
+**(a)**: `git diff --cached --name-only`로 `dist/` 부재 확인.
+
+<!-- DETAIL: (a) 혼입 방지, original wording
 **(a) 혼입 방지**: `git diff --cached --name-only`로 **스테이징 목록을 실측**하여 `dist/` 등 빌드 산출물이 포함되지 않았는지 확인한다. gitignored 경로라도 `git add -f` 또는 광범위 `git add` 조합으로 스테이징될 수 있다. 발견 시 `git reset dist/`로 제외한 뒤 커밋한다. 이는 v1.1.12의 `dist/` untrack 조치에 대한 **회귀 방지 게이트**다.
+-->
 
+**(b)**: `bun run build` 후 tracked 변경 잔존 = 누락.
+
+<!-- DETAIL: (b) 누락 방지, original wording
 **(b) 누락 방지**: `bun run build` 실행 후 `git status --short`에 **tracked 변경(`^ M`)이 남아 있으면 스테이징 누락**이다. 커밋 직전 tracked 변경이 0인지 확인한다.
+-->
 
+**(c)**: 위임 직전 `git status --short | grep '^??'`로 포함/제외 경로 명시.
+
+<!-- DETAIL: (c) untracked 신규 산출물 실측, original wording
 **(c) untracked 신규 산출물 실측 (Origin: #1660 찐빠 #3)**: 커밋 위임서를 작성하기 직전 `git status --short | grep '^??'`로 untracked 목록을 실측하고, 위임서에 **포함할 신규 파일과 제외할 파일을 경로로 명시**합니다. `git add -u`나 "변경분을 커밋하라"만 지시하면 서브에이전트가 만든 신규 테스트·스크립트·픽스처가 커밋에서 빠지고, 반대로 광범위 `git add`는 이전부터 존재하던 무관한 untracked 파일(계획 문서·로컬 캐시 등)을 끌어들입니다. (a)·(b)가 tracked/gitignored 경로를 다룬다면 (c)는 그 사이의 **untracked 경로**를 다룹니다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| 광범위 `git add` → gitignored `dist/` force-add 위험 | 커밋 직전 `git diff --cached --name-only` 실측 확인 |
+
+<!-- DETAIL: Release Commit Staging Hygiene anti-pattern row 1, original wording
 | 빌드 후 광범위 `git add`로 커밋 → gitignored `dist/` force-add 위험 | 커밋 직전 `git diff --cached --name-only` 실측으로 빌드 산출물 부재 확인 |
+-->
+
+<!-- DETAIL: Release Commit Staging Hygiene anti-pattern table, additional rows
 | .gitignore에 있으니 안전하다고 가정 | force-add 경로는 .gitignore를 우회하므로 실측 필요 |
 | `dist/` 미포함만 확인하고 커밋 → 빌드가 갱신한 tracked 산출물 누락 | `git status --short`로 tracked 변경 잔존 0 확인 |
 | `git add -u`만 지시하거나 untracked 목록 미실측 → 신규 테스트 파일 누락 또는 무관 파일 혼입 | 위임 직전 `git status --short \| grep '^??'` 실측 → 포함/제외 경로를 위임서에 명시 |
+-->
 
+<!-- DETAIL: Origin note
 Origin: #1512 (v1.1.28 커밋 staging에 dist/ 2파일 포함, 커밋 전 실측으로 정정; v1.1.12 dist/ untrack 회귀 방지); #1531 (`.omcustom.lock.json`이 v1.1.29 이후 4개 릴리즈 연속 누락 — 혼입 방지 단방향 조항의 반대편 공백). Cross-ref: R020 (완료 검증 — "실행됨 ≠ 성공").
+-->
 
 ### 버전 범프 원자 순서 (Origin: #1619 #4)
 
-버전을 보유하는 파일은 3종이다 — `package.json`(generatorVersion 출처), `templates/manifest.json`(templateVersion 출처), `.omcustom.lock.json`(`bun run build`가 위 두 값을 읽어 각인하는 **파생 산출물**). 세 파일은 **원자적으로** 갱신해야 한다: package.json과 templates/manifest.json을 **동시에** 범프 → 그 다음 `bun run build` → build가 갱신한 lockfile을 스테이징. `bun run build`를 두 범프 사이에 끼우면(예: package.json만 먼저 범프하고 build) lockfile이 **구버전 templateVersion을 무경고로 각인**한다 — CI Version Sync가 3-way(package.json / manifest.json / lockfile) 대조라서 이 상태는 뒤늦게 차단된다.
+버전 파일 3종(package.json, templates/manifest.json, 빌드 파생물 `.omcustom.lock.json`)은 **원자적으로** 갱신: package.json+manifest 동시 범프 → build → lockfile 스테이징(수동 범프 아님).
 
+<!-- DETAIL: 버전 범프 원자 순서 intro, original wording
+버전을 보유하는 파일은 3종이다 — `package.json`(generatorVersion 출처), `templates/manifest.json`(templateVersion 출처), `.omcustom.lock.json`(`bun run build`가 위 두 값을 읽어 각인하는 **파생 산출물**). 세 파일은 **원자적으로** 갱신해야 한다: package.json과 templates/manifest.json을 **동시에** 범프 → 그 다음 `bun run build` → build가 갱신한 lockfile을 스테이징. `bun run build`를 두 범프 사이에 끼우면(예: package.json만 먼저 범프하고 build) lockfile이 **구버전 templateVersion을 무경고로 각인**한다 — CI Version Sync가 3-way(package.json / manifest.json / lockfile) 대조라서 이 상태는 뒤늦게 차단된다.
+-->
+
+**범프 위임 표준 문안**: 위임 프롬프트에 3파일을 전부 열거한다(텍스트 존재 ≠ 배선, R010).
+
+<!-- DETAIL: 범프 위임 표준 문안, original wording
 **범프 위임 표준 문안**: 버전 범프를 서브에이전트에 위임할 때, 위임 프롬프트에 3파일을 **전부 열거**한다 — "package.json과 templates/manifest.json을 동시에 범프한 뒤 `bun run build`를 실행하고 lockfile을 스테이징하라." 메모리에 이 순서에 대한 학습이 있어도 위임서에 배선되지 않으면 서브에이전트에 전달되지 않는다(R010 「표 조회 배선」과 동형 — 텍스트 존재 ≠ 배선).
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| package.json만 먼저 범프 후 build → manifest 나중 범프 | 두 파일 동시 범프 → `bun run build` → lockfile 스테이징 |
+
+<!-- DETAIL: 버전 범프 anti-pattern row 1, original wording
 | package.json만 먼저 범프 후 `bun run build` 실행 → manifest.json은 나중에 범프 | package.json + templates/manifest.json 동시 범프 → `bun run build` → lockfile 스테이징 |
+-->
+
+<!-- DETAIL: 버전 범프 anti-pattern table, additional rows
 | `bun run build`를 두 범프 사이에 끼워 실행 | build는 두 파일이 모두 범프된 **이후에만** 실행 |
 | 위임서에 "버전 범프"만 지시하고 3파일 미열거 | 위임서에 package.json / templates/manifest.json / lockfile 3파일을 전부 열거 |
+-->
 
+<!-- DETAIL: Origin note
 Origin: #1619 #4 (v1.1.50 세션 실측) — 범프 위임이 3파일 중 templates/manifest.json을 누락해 CI Version Sync 1차 실패(`manifest=1.1.49`). manifest 수정 후에도 2차 실패(`lock.tpl=1.1.49`) — `bun run build`가 manifest 범프 **전에** 실행돼 lockfile에 구버전 templateVersion이 각인된 상태였다. CI 처방 원문: "bump package.json AND templates/manifest.json first, then re-run 'bun run build' and stage the lockfile". Cross-ref: 위 Release Commit Staging Hygiene((b) 누락 방지 — tracked 변경 잔존 확인), R016(Rule Wiring Check — auto-dev.yaml 배선 필요), #1593(v1.1.47 세션에서 밝힌 `bun run build` → `sync-source-lockfile.ts` → `loadVersions()` 메커니즘).
+-->
 
 ### Count Sync — Exhaustive Grep, Not File Enumeration
 
+카운트 동기화는 **전수 grep + 의미 판별**로 수행한다(열거식은 구조적으로 놓친다).
+
+<!-- DETAIL: Count Sync intro, original wording
 카운트(스킬/에이전트/룰/가이드 수) 동기화는 **파일 목록 열거가 아니라 저장소 전수 grep + 의미 판별**로 수행한다. 같은 카운트가 15곳 이상에 흩어져 있어 열거식 위임은 목록에서 빠진 곳을 구조적으로 놓친다.
+-->
 
+절차: 실제 개수 실측 → `git grep -n` 조사 → 의미 판별 → 정정.
+
+<!-- DETAIL: Count Sync 절차, original wording
 절차: (a) 실제 개수 실측(`ls -1d .claude/skills/*/ | wc -l` 등) → (b) 이전 값을 저장소 전역 `git grep -n`으로 조사 → (c) 각 히트가 **카운트를 의미하는지 판별** → (d) 카운트 의미인 것만 정정.
+-->
 
+무관한 숫자는 정정 대상 아님. `--include='*.md'`는 이중 확장자를 놓친다.
+
+<!-- DETAIL: Count Sync 무관 숫자·grep 필터 note, original wording
 무관한 숫자는 건드리지 않는다 — 버전번호(`v0.118.x`, CC `v2.1.118`), 이슈 번호, 과거 이력 서술("skill-count correction 114→118"), 스크립트 예시 주석은 정정 대상이 아니며 판단 근거와 함께 보고한다. grep 필터 주의: `--include='*.md'`는 `CLAUDE.md.en`/`CLAUDE.md.ko` 같은 **이중 확장자 파일을 매칭하지 못하므로**, 확장자 필터 없이 훑거나 별도 패턴을 병행한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 카운트 동기화를 "갱신할 파일 목록" 열거로 위임 | 전수 grep으로 이전 값 히트를 모두 수집한 뒤 카운트 의미만 정정 |
+
+<!-- DETAIL: Count Sync anti-pattern table, additional rows
 | `--include='*.md'` 필터로 전수 grep 수행 | 확장자 필터 없이 훑거나 이중 확장자 패턴 병행 |
 | 셸의 `grep -rn`으로 전수 조사 | `git grep -n` 사용 — tracked 기준이라 릴리즈 대상과 일치하고 셸 함수/alias 셰이딩에 면역 (#1590) |
+-->
 
+위임 프롬프트에는 항상 **"실측값 기준으로 동기화하라"**를 명시한다(#1443).
+
+<!-- DETAIL: 실측값 기준 명시, original wording
 위임 프롬프트에는 항상 **"실측값 기준으로 동기화하라, 추측으로 숫자를 바꾸지 말라"**를 명시해, 오케스트레이터의 잘못된 전제를 서브에이전트가 정정할 여지를 남긴다(#1443).
+-->
 
+`git grep`은 untracked를 못 본다 — `git status --porcelain` 확인 또는 병행.
+
+<!-- DETAIL: git grep untracked note, original wording
 `git grep`은 **untracked 파일을 보지 못한다** — 조사 전 `git status --porcelain`으로 untracked 0을 확인하거나, untracked 가능성이 있으면 `command grep`을 병행한다.
+-->
 
+<!-- DETAIL: Origin note
 Origin: #1521 (찐빠 #2 — v1.1.32 skills 118→114 동기화에서 파일 열거식 위임이 6곳만 갱신, CI 3곳 지적 + 전수 grep 9곳 추가 발견, 최종 15곳); #1590 (셸 `grep`이 shell function으로 shadow되어 tracked 파일을 재귀 탐색에서 누락 — `git grep` 표준화). Cross-ref: #1443 (실측값 기준 명시), #1287 (multi-copy 일관성).
+-->
 
 ## When Required
 
+Any change to: agents, skills, guides, routing patterns, rules, wiki pages.
+
+<!-- DETAIL: When Required line, original wording
 Any change to: agents, agent frontmatter, skills, guides, routing patterns, rules, wiki pages.
+-->
 
 ### auto-dev.yaml 압축 티어와의 양방향 참조 (Origin: #1650 C 부수)
 
+auto-dev.yaml 압축 티어는 `.claude/rules/**` 변경 시 mgr-sauron R017 필수 실행 carve-out을 둔다 — 같은 커밋에서 갱신(R016).
+
+<!-- DETAIL: auto-dev.yaml 압축 티어 paragraph, original wording
 이 소절은 R017 적용 범위 자체를 넓히지 않는다 — 위 범위 열거가 압축 파이프라인에서 어떻게 배선되는지를 기록한다. `.claude/skills/pipeline/workflows/auto-dev.yaml`의 compression-mode-eval은 docs-only 티어에서 deep-verify를 self-review로 대체하되, 변경 집합에 `.claude/rules/**`(또는 agents/skills frontmatter 등 구조 표면)가 포함되면 mgr-sauron R017 검증을 단일 목표 위임으로 **필수 실행**하는 carve-out을 둔다(v1.1.58 세션 — docs-only 티어였으나 sauron이 R002/R010 모순 advisory 1건을 포착). 이 절의 적용 조건과 그 carve-out은 같은 조건을 서로 가리킨다 — 한쪽을 바꾸면 다른 쪽도 같은 커밋에서 갱신한다(R016 Rule Wiring Check). 이전까지는 yaml → R017 단방향 인용만 있어 R017 쪽에서 carve-out의 존재를 알 수 없었다.
+-->
 
 ## Structural Migration Verification
 
-디렉토리 재구조화, 템플릿 평탄화(flat templates), 브랜치 전략 변경 등 **구조 마이그레이션** 시, 경로 참조와 파일 존재성 회귀를 사전 검사해야 한다. 표준 5-round 검증이 콘텐츠 정합성에 집중하는 반면, 구조 마이그레이션은 경로·존재성 회귀를 별도로 점검한다.
+**구조 마이그레이션** 시 경로 참조·파일 존재성 회귀를 사전 검사한다(표준 5-round는 콘텐츠 위주).
 
+<!-- DETAIL: Structural Migration Verification intro, original wording
+디렉토리 재구조화, 템플릿 평탄화(flat templates), 브랜치 전략 변경 등 **구조 마이그레이션** 시, 경로 참조와 파일 존재성 회귀를 사전 검사해야 한다. 표준 5-round 검증이 콘텐츠 정합성에 집중하는 반면, 구조 마이그레이션은 경로·존재성 회귀를 별도로 점검한다.
+-->
+
+점검: 경로 참조, validate-docs 경로, CI trigger 일관성, tracked 존재.
+
+<!-- DETAIL: Structural Migration Verification table, original wording
 | 마이그레이션 유형 | 검사 항목 |
 |------------------|-----------|
 | 디렉토리 재구조화 | 모든 경로 참조(스크립트, 테스트, CI workflow)가 새 경로로 업데이트되었는가 |
 | 템플릿 평탄화 | validate-docs/sync 스크립트가 새 경로를 참조하는가 |
 | 브랜치 전략 변경 | CI trigger 경로, 파일 git tracked 상태가 일관되는가 |
 | 파일 존재성 | 테스트가 read하는 파일이 CI 체크아웃 환경(clean clone)에 존재(git tracked)하는가 |
+-->
 
+### Common Violations (#1217 items #2/#3/#7)
+
+옛 경로 잔존, untracked 필수 파일, skip 검증 방치 — 아래 Self-Check로 방지.
+
+<!-- DETAIL: Common Violations bullets, original wording
 ### Common Violations (#1217 items #2/#3/#7)
 - flat templates 마이그레이션 후 `validate-docs.ts`가 옛 경로 참조 → G1 CI 실패
 - `CLAUDE.md` untracked → strict allowlist `.gitignore`와 결합되어 CI 체크아웃 환경에서 ENOENT
 - release/develop 듀얼 브랜치 전환 시 `verify-template-sync.sh`가 임시 skip 상태로 머지
+-->
 
 ### Self-Check (구조 마이그레이션 커밋 전)
+1. `grep`으로 옛 경로 잔존 확인?
+
+<!-- DETAIL: Self-Check item 1, original wording
 1. `grep`으로 옛 경로 참조 잔존을 확인했는가?
+-->
+2. 테스트 파일의 git tracked 상태 확인? (`git ls-files`)
+
+<!-- DETAIL: Self-Check item 2, original wording
 2. 테스트가 읽는 파일의 git tracked 상태를 확인했는가? (`git ls-files` 대조)
+-->
+3. 임시 skip된 검증 스크립트가 없는가?
+
+<!-- DETAIL: Self-Check item 3, original wording
 3. 임시 skip된 검증 스크립트/테스트가 남아있지 않은가?
+-->
 
 ### Restore-From-Deletion Regression Check (Origin: #1492)
 
-삭제된 파일/워크플로우/자산을 복원(restore)할 때, 삭제 이전에 그 파일에 적용된 **머지된 수정이 유실되지 않는지** 확인한다. 복원은 "되살리기"가 아니라 **최신 상태로의 재구성**이어야 한다.
+복원 시 삭제 이전 **머지된 수정 유실 여부**를 확인한다 — 복원은 **최신 상태 재구성**이다.
 
+<!-- DETAIL: Restore-From-Deletion intro, original wording
+삭제된 파일/워크플로우/자산을 복원(restore)할 때, 삭제 이전에 그 파일에 적용된 **머지된 수정이 유실되지 않는지** 확인한다. 복원은 "되살리기"가 아니라 **최신 상태로의 재구성**이어야 한다.
+-->
+
+`git log --oneline -- <path>`로 이력 확인, 삭제 직전 커밋 여부, PR 핵심 변경 grep 재확인.
+
+<!-- DETAIL: Restore-From-Deletion table, original wording
 | 확인 항목 | 명령 |
 |-----------|------|
 | 삭제 이전 수정 이력 | `git log --oneline -- <path>` (삭제 커밋 이전 커밋들 확인) |
 | 복원 소스 시점 | 복원 대상이 **삭제 직전 커밋**인지 확인 — 더 오래된 버전/외부 사본이면 회귀 |
 | 관련 PR 반영 여부 | 과거 수정 PR의 핵심 변경을 `grep`으로 재확인 |
+-->
 
+<!-- DETAIL: Origin note
 Origin: #1492 (Session 132) — cc-release-monitor 워크플로우 삭제(#1454, 세션127) 후 복원(세션129)이 삭제 직전 이전 버전을 되살려 머지된 수정(#1451, `textwrap.dedent` 제거)이 소실. 약 8일간 결함 상태로 이슈 자동생성(#1489/#1490에 8칸 선행 들여쓰기+절단). Cross-ref: R020 (Read-Before-Characterize), R023 (Sample-Value Assembly — 문법 검증으로는 미노출, 샘플 조립 검증으로만 드러남).
+-->
 
 ## Pre-Branch Freshness Gate (Origin: #1433 #1, ≥3회 재발)
 
+원격 머지 후 분기 전 `git pull origin develop`로 최신화한다 — stale이면 PR CONFLICTING(≥3회 재발로 필수 게이트).
+
+<!-- DETAIL: Pre-Branch Freshness Gate intro, original wording
 세션 중 원격 머지(`gh pr merge` 등)가 발생한 뒤 새 릴리즈/작업 브랜치를 분기하기 전, 반드시 `git checkout develop && git pull origin develop`로 로컬 develop을 최신화한다. stale 로컬 develop에서 분기하면 새 브랜치가 이미 머지된 변경(직전 릴리즈)을 누락해 PR이 CONFLICTING 상태가 되고, merge+충돌해결+재CI 사이클이 강제된다. advisory 메모리(`feedback_session_memory_git_stale`)만으로는 ≥3회 재발을 막지 못해 R017 필수 게이트로 승격한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| stale 로컬 develop에서 릴리즈 브랜치 분기 | 분기 전 `git pull origin develop`; PR 생성 후 mergeStateStatus 확인, CONFLICTING이면 재해결 |
+
+<!-- DETAIL: Pre-Branch Freshness Gate anti-pattern row, original wording
 | 원격 머지 후 stale 로컬 develop에서 릴리즈 브랜치 분기 | 분기 전 `git pull origin develop`; PR 생성 후 mergeStateStatus 확인 — CONFLICTING이면 `git merge origin/develop`+both-유지 해결 후 재CI |
+-->
 
 ### 게이트는 분기 시점 1회가 아니라 상태변경 위임마다 (Origin: #1595 #1)
 
-위 게이트는 "브랜치 **분기 전** pull"을 규정하지만, 공유 워크트리에서는 **세션 도중 다른 행위자가 브랜치 자체를 바꾼다**. 따라서 git 상태를 바꾸는 위임(브랜치 생성·전환, 커밋, 머지, push) **직전마다** 브랜치 이름과 HEAD SHA를 재실측하고 세션 초반 값과 대조한다 — `git rev-parse --abbrev-ref HEAD` 와 `git rev-parse --short HEAD` 두 줄이면 충분하다.
+공유 워크트리는 도중 브랜치가 바뀔 수 있다 — 상태변경 위임 **직전마다** 브랜치·HEAD 재실측한다.
 
+<!-- DETAIL: 게이트는 분기 시점 1회가 아니라 상태변경 위임마다 intro, original wording
+위 게이트는 "브랜치 **분기 전** pull"을 규정하지만, 공유 워크트리에서는 **세션 도중 다른 행위자가 브랜치 자체를 바꾼다**. 따라서 git 상태를 바꾸는 위임(브랜치 생성·전환, 커밋, 머지, push) **직전마다** 브랜치 이름과 HEAD SHA를 재실측하고 세션 초반 값과 대조한다 — `git rev-parse --abbrev-ref HEAD` 와 `git rev-parse --short HEAD` 두 줄이면 충분하다.
+-->
+
+값이 달라졌으면 위임을 중단하고 **원인을 먼저 실측**한다(`git reflog`) — 공유 워크트리에서는 브랜치 이름조차 턴 단위 수명이다.
+
+<!-- DETAIL: 값이 달라졌으면 위임 중단, original wording
 값이 달라졌으면 위임을 중단하고 **원인을 먼저 실측**한다(`git reflog`로 전환·커밋 주체와 시각 확인). #1584 #5가 "SHA의 수명은 턴 단위"를 규정했는데, 공유 워크트리에서는 **브랜치 이름조차 턴 단위 수명**이다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| 초반 실측 브랜치·HEAD를 세션 내내 유효로 사용 | 상태변경 위임 직전마다 재실측·대조 |
+
+<!-- DETAIL: 게이트는 분기 시점 anti-pattern row 1, original wording
 | 세션 초반에 실측한 브랜치·HEAD를 세션 내내 유효한 사실로 사용 | 상태변경 위임 직전마다 브랜치 이름 + HEAD SHA 재실측·대조 |
+-->
+
+<!-- DETAIL: 게이트는 분기 시점 anti-pattern table, additional rows
 | 파일 목록·`git ls-files` 결과를 "확인된 사실"로 저장하고 재확인 트리거 없이 재사용 | 실측값에 **측정 시각**을 함께 기록하고, 위임 전제로 쓰기 전 재실측 |
 | 대조 불일치를 발견하고도 원인 규명 없이 위임 강행 | `git reflog`로 전환·커밋 주체와 시각을 실측한 뒤 재계획 |
+-->
 
+<!-- DETAIL: Origin note
 Origin: #1595 #1 (v1.1.48 세션 — 세션 시작 시 `develop @ 1b4973d5` 실측 후 진행했으나 다른 세션이 14:56·15:10에 `feat/agora-anonymous-consensus`를 만들고 커밋 2개를 쌓았고, wiki 재동기화 Phase 2까지 미탐지. 같은 세션에서 `git ls-files tests/fixtures/agora/`가 초반 0건 → 후반 6건으로 바뀌었다). Cross-ref: R010 「저장소 상태 기재도 같은 규율」(위임서 기재 각도), R011(Temporal Decay).
+-->
 
+<!-- DETAIL: v2.1.269/271 note, original wording
 > **v2.1.269/271+**: (269) compaction 이후 시스템 컨텍스트에 표시되는 git status가 **세션 시작 시점 스냅샷이 아니라 현재 상태**로 바뀌었습니다 — 269 이전에는 compaction 후 세션이 stale한 branch/HEAD 스냅샷으로 추론할 수 있었고, 이는 정확히 위 「게이트는 분기 시점 1회가 아니라 상태변경 위임마다」가 경고하는 실패입니다. 상태변경 위임 직전마다 재실측하는 규범은 유지됩니다(이 수정은 staleness 원인 하나를 제거할 뿐, 공유 워크트리의 다른 행위자로 인한 staleness는 여전히 존재합니다). (271, Linux only) 샌드박스 명령이 시작에 실패한 뒤 남은 낡은 `.git/config.lock`이 세션 나머지 동안 `git checkout -b`/`git push -u`/`git config`를 깨뜨리던 결함이 수정되었습니다 — Darwin(이 저장소 기본 환경)은 미해당이며 Linux CI/컨테이너 실행에 관련됩니다; 271 이전 Linux에서 위임받은 git 에이전트가 "config.lock exists"를 만나면 `rm`으로 자체 우회하지 말고 보고해야 합니다(R001). (271) `/cd` 이후 `/reload-skills`가 슬래시 메뉴와 다른 스킬 개수를 보고하던 결함이 수정되었습니다 — 그래도 「Count Sync」의 권위 있는 스킬 카운트 소스는 여전히 `ls -1d .claude/skills/*/ | wc -l`이며, `/reload-skills` 메시지를 신뢰 가능한 카운트 ground-truth로 삼지 않습니다.
+-->
 
 ## Pre-Release Target Version Ground-Truth Gate (Origin: #1457)
 
+target 버전은 `git tag`+`npm view`의 **max+patch**로 확정한다 — 메모리 스냅샷은 참고용, ground-truth 아님.
+
+<!-- DETAIL: Pre-Release Target Version intro, original wording
 새 릴리즈의 target 버전을 선정하거나 구현/구현-위임 프롬프트에 target 버전을 전달하기 전, 반드시 원격 실측으로 다음 버전을 확정한다: `git tag --sort=-v:refname | head -1`(최신 태그) + `npm view <pkg> version`(배포된 최신)의 **max에 patch를 더한 값**을 target으로 삼는다. 세션 메모리의 버전 스냅샷(예: "npm latest 1.1.6")은 **참고용이며 ground-truth가 아니다** — 직전 세션에서 릴리즈가 진행돼 stale일 수 있다. stale 버전으로 위임하면 이미 배포된 버전을 target으로 잡아 milestone-closed STOP에 걸리고 재타겟팅 왕복이 강제된다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
-| 세션 메모리 버전 스냅샷으로 target 버전을 추정해 구현/릴리즈 위임 | 위임 전 `git tag`+`npm view` 실측 → max+patch를 target으로 확정 |
-| milestone-closed STOP에 걸린 뒤에야 stale을 인지 | 사전 실측으로 STOP+재위임 왕복을 원천 차단 (가드레일은 fail-safe이지 1차 방어선이 아님) |
+| 메모리 스냅샷으로 target 버전 추정 위임 | 위임 전 `git tag`+`npm view` 실측 → max+patch 확정 |
 
+<!-- DETAIL: Pre-Release Target Version anti-pattern row 1, original wording
+| 세션 메모리 버전 스냅샷으로 target 버전을 추정해 구현/릴리즈 위임 | 위임 전 `git tag`+`npm view` 실측 → max+patch를 target으로 확정 |
+-->
+
+<!-- DETAIL: Pre-Release Target Version anti-pattern table, additional row
+| milestone-closed STOP에 걸린 뒤에야 stale을 인지 | 사전 실측으로 STOP+재위임 왕복을 원천 차단 (가드레일은 fail-safe이지 1차 방어선이 아님) |
+-->
+
+<!-- DETAIL: Origin note
 Origin: #1457 (Session 128 회고 찐빠 #1) — 오케스트레이터가 stale 메모리(npm 1.1.6→target v1.1.7 추정)로 implement를 위임 → v1.1.7이 이미 배포된 closed milestone임을 에이전트가 STOP으로 감지 → v1.1.8 재위임 왕복 1회. 기존 `feedback_session_memory_git_stale`(브랜치 분기 전 pull)의 릴리즈-버전-선정 각도 확장. Cross-ref: R020 (Diagnostic Hypothesis Verification — 영구 변경/위임 전 전제 실측 확정).
+-->
 
 ### 일반화 — 메모리 TODO 를 위임 전제로 쓸 때 (Origin: #1574)
 
+원리는 메모리 항목 전반에 적용 — `MEMORY.md` TODO는 스냅샷이므로 위임 전 실측 재확인하거나 측정 시점을 표기한다.
+
+<!-- DETAIL: 일반화 intro, original wording
 위 게이트는 **버전**에 대한 규정이지만 원리는 세션 메모리 항목 전반에 적용된다. `MEMORY.md`의 "선재 항목 / Next Session TODO"는 **직전 세션 종료 시점의 스냅샷**이므로 이후 해소·변경됐을 수 있다. 이를 위임 브리핑(예: mgr-sauron 검증 스코프)의 전제로 넘기기 전, 각 항목을 실측으로 재확인하거나 **측정 시점을 함께 표기**해 전달한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
-| 메모리 TODO를 현재 상태로 간주해 위임 브리핑에 전제로 기재 | 위임 전 항목별 실측 재확인, 또는 "vX.Y.Z 시점 스냅샷 — 직접 확인하라"를 명시 |
+| 메모리 TODO를 현재 상태로 간주해 전제 기재 | 위임 전 실측 재확인 또는 "스냅샷 — 직접 확인" 명시 |
 
+<!-- DETAIL: 일반화 anti-pattern row 1, original wording
+| 메모리 TODO를 현재 상태로 간주해 위임 브리핑에 전제로 기재 | 위임 전 항목별 실측 재확인, 또는 "vX.Y.Z 시점 스냅샷 — 직접 확인하라"를 명시 |
+-->
+
+추가 사례(#1601): semver 오판·baseline(메모리 vs 실측 2291) 모두 스냅샷을 판정 근거로 쓰면 안 된다.
+
+<!-- DETAIL: Origin note and 추가 사례 2건, original wording
 Origin: #1574 (v1.1.44 세션 — mgr-sauron 브리핑의 "선재 항목" 4건 중 3건이 부정확: 이미 해소된 항목, 의도적 차이를 결함으로 오인, 규모 과대). **완화 요인**: 프롬프트에 "그대로 믿지 말고 직접 확인하라"를 명시해 3건 전부 에이전트가 정정 — #1443의 "실측값 기준으로 동기화하라" 방어선과 동일 효과. Cross-ref: R011(메모리 신뢰도·Temporal Decay), R020(Diagnostic Hypothesis Verification).
 
 **추가 사례 2건 (Origin: #1601, v1.1.49 세션)**:
 
 - **버전 판정**: 세션 메모리에 "agora 정식 마이너 릴리즈 예정"이 기록돼 있었고, 오케스트레이터가 이를 semver 판정(minor vs patch) 근거로 인용했다가 사용자 정정("스킬 하나 추가한다고 마이너패치를?")을 받았다. 메모리 스냅샷은 판정을 정당화하지 못한다 — **직전 세션도 같은 오독을 했을 수 있기 때문**이다.
 - **테스트 baseline**: verify-build 단계에서 baseline을 메모리의 "138 pass"로 삼았으나 실측은 **2291 pass / 0 fail**이었다(138은 부분집합에 불과했다). 이번엔 fail이 0이라 판정에 영향이 없었으나, **fail이 0이 아니었다면 잘못된 baseline이 회귀를 통과시켰을 것**이다. baseline은 메모리 기록이 아니라 **전체 실행 실측값**으로 잡는다.
+-->
 
 ## 릴리즈 전 배포 자격증명 유효성 (Origin: #1619 #5)
 
-릴리즈 착수 전, 배포 토큰(NPM_TOKEN 등)의 만료 가능성을 사전에 확인한다: `gh secret list`로 해당 secret의 갱신일을 조회하고, 발급일로부터 90일 경과 여부를 실측한다(값 자체는 조회 불가·불필요 — 메타데이터만 확인, R001 자격증명 가드레일). 90일 경과 시 갱신 필요 가능성을 먼저 사용자에게 보고한 뒤 릴리즈를 진행한다.
+릴리즈 착수 전 NPM_TOKEN 만료 가능성을 확인한다: `gh secret list` 갱신일 90일 경과 여부(메타데이터만, R001).
 
+<!-- DETAIL: 릴리즈 전 배포 자격증명 유효성 intro, original wording
+릴리즈 착수 전, 배포 토큰(NPM_TOKEN 등)의 만료 가능성을 사전에 확인한다: `gh secret list`로 해당 secret의 갱신일을 조회하고, 발급일로부터 90일 경과 여부를 실측한다(값 자체는 조회 불가·불필요 — 메타데이터만 확인, R001 자격증명 가드레일). 90일 경과 시 갱신 필요 가능성을 먼저 사용자에게 보고한 뒤 릴리즈를 진행한다.
+-->
+
+**npm publish 오진 위험**: 인증 실패가 **404로 위장**될 수 있다 — (a) `npm view` 확정, (b) 비파괴 재실행, (c) 재현 시 토큰 검증.
+
+<!-- DETAIL: npm publish 실패 오진 위험, original wording
 **npm publish 실패의 오진 위험**: npm은 PUT 요청의 인증 실패를 **404로 위장**해 반환할 수 있다 — "패키지 없음"처럼 보이는 오류가 실제로는 "토큰 만료"일 수 있다는 뜻이다. publish 실패 시 워크플로우를 영구 변경하기 전, (a) ground-truth(`npm view <pkg> version`)로 실제 미배포 여부를 확정하고, (b) 비파괴적 재실행을 먼저 시도하며, (c) 재현되면 그때 토큰 만료 가설을 `gh secret list` 갱신일 대조로 검증한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
-| 릴리즈 착수 전 토큰 만료 가능성을 확인하지 않고 진행 → publish 단계에서야 실패 발견 (fail-late) | 착수 전 `gh secret list` 갱신일 + 90일 경과 여부 사전 확인 |
-| npm E404-on-PUT을 "패키지 부재"로 진단해 워크플로우/재배포 로직을 변경 | ground-truth(`npm view`)로 미배포 확정 → 비파괴 재실행 → 재현 시에만 토큰 만료 가설 검증 |
+| 릴리즈 착수 전 토큰 만료 가능성을 확인하지 않고 진행 → fail-late | 착수 전 `gh secret list` 갱신일 + 90일 경과 여부 사전 확인 |
 
+<!-- DETAIL: 릴리즈 전 배포 자격증명 anti-pattern row, original wording
+| 릴리즈 착수 전 토큰 만료 가능성을 확인하지 않고 진행 → publish 단계에서야 실패 발견 (fail-late) | 착수 전 `gh secret list` 갱신일 + 90일 경과 여부 사전 확인 |
+-->
+
+<!-- DETAIL: 릴리즈 전 배포 자격증명 anti-pattern table, additional row
+| npm E404-on-PUT을 "패키지 부재"로 진단해 워크플로우/재배포 로직을 변경 | ground-truth(`npm view`)로 미배포 확정 → 비파괴 재실행 → 재현 시에만 토큰 만료 가설 검증 |
+-->
+
+<!-- DETAIL: Origin note
 Origin: #1619 #5 (v1.1.50 세션 실측) — NPM_TOKEN이 90일 만료 정책으로 05-20 발급 → 08-17 마지막 성공 → 08-29 시점 E404-on-PUT 2회로 fail-late 발견. Cross-ref: R020 「CI Publish-Step Error vs Published-Artifact Ground Truth」, R020 Diagnostic Hypothesis Verification(#1217 npm E403 오진 선례 — 같은 계열의 npm 오류코드 오진 패턴), 위 Pre-Release Target Version Ground-Truth Gate(릴리즈 착수 전 실측 원칙의 자격증명 각도).
+-->
 
 ## CC 버전 노트 반영 전 — 스코프 상한 이후 릴리즈 확인 (Origin: #1584 #1)
 
+CC 버전 노트 반영 **전** `npm view`+`claude --version`으로 상한 이후 릴리즈를 확인하고 CHANGELOG에서 롤백 여부를 본다. 반영 목적지는 R016 정책(가이드 절 vs 룰 1줄)을 따른다.
+
+<!-- DETAIL: CC 버전 노트 반영 전 intro, original wording
 CC 버전 노트를 룰에 반영하기 **전**, `npm view @anthropic-ai/claude-code version` + `claude --version`을 실측해 **스코프 상한 버전 이후의 릴리즈 존재 여부**를 확인한다. 있으면 그 CHANGELOG를 먼저 읽어 **롤백·후속 변경**을 파악한 뒤 반영한다. 이슈 생성과 작업 사이의 간극 동안 플랫폼이 스스로 뒤집을 수 있으므로 — **이슈 번호는 최신 릴리즈를 의미하지 않는다**.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
-| 이슈에 적힌 버전(스코프 상한)까지만 조사해 버전 노트를 반영 | 반영 전 `npm view`+`claude --version` 실측 → 상한 이후 릴리즈 CHANGELOG에서 롤백·후속 변경 확인 |
-| 롤백된 개선을 현행 보호막으로 기재 | 롤백 여부를 확인하고, 롤백된 항목은 "현재 미적용"으로 명시 |
+| 이슈 버전(스코프 상한)까지만 조사해 반영 | 반영 전 `npm view`+`claude --version` 실측, 상한 이후 CHANGELOG 확인 |
 
+<!-- DETAIL: CC 버전 노트 반영 전 anti-pattern row 1, original wording
+| 이슈에 적힌 버전(스코프 상한)까지만 조사해 버전 노트를 반영 | 반영 전 `npm view`+`claude --version` 실측 → 상한 이후 릴리즈 CHANGELOG에서 롤백·후속 변경 확인 |
+-->
+
+<!-- DETAIL: CC 버전 노트 반영 전 anti-pattern table, additional row
+| 롤백된 개선을 현행 보호막으로 기재 | 롤백 여부를 확인하고, 롤백된 항목은 "현재 미적용"으로 명시 |
+-->
+
+<!-- DETAIL: Origin note
 Origin: #1584 #1 (v1.1.46 세션) — 이슈 생성(8/11~14)과 작업(8/15) 사이 5일 간극 동안 v2.1.233이 v2.1.232 Bash 권한 변경 2건을 롤백했으나 이를 모른 채 배치해 mgr-sauron이 **FAIL로 차단**(당시 저장소 전역 `2.1.233` 언급 0건). Cross-ref: 위 Pre-Release Target Version Ground-Truth Gate(동일 "스냅샷 ≠ ground-truth" 원리의 버전 각도), R020(Diagnostic Hypothesis Verification), R016(버전노트 보존정책 — *어느* 노트를 남길지는 R016, *반영 전 실측*은 이 게이트).
+-->
 
 ### 묶음 버전 노트 위임서 — 문장별 (NNN) 태그와 합쇼체 예시 (Origin: #1688 — Iteration 3 #3·#4)
 
+여러 릴리즈를 한 노트로 묶을 때, 위임서는 **문장마다 릴리즈 번호 태그**를 의무화한다(헤더만 묶으면 오귀속). v1.1.77+ 반영 대상은 주로 `guides/claude-code/15-version-compatibility.md`(R016 정책) — 룰에는 행동 변화 항목만 1줄.
+
+<!-- DETAIL: 묶음 버전 노트 위임서 intro, original wording
 여러 릴리즈의 항목을 한 노트(`> **v2.1.268/271+**:` 형식)로 묶어 위임할 때, 위임서는 **각 문장에 릴리즈 번호 태그 "(NNN)"를 의무화**하고 헤더는 태그의 합집합으로 도출합니다. 헤더 묶음만 주고 문장 태그를 생략하면 서브에이전트가 헤더 위치로 귀속해 오귀속이 생깁니다 — v1.1.66에서 `/tui`(273을 274 위치에), usage-limit 일시정지(271을 269 헤더 아래), 워크트리 거부(274를 "같은 릴리즈"로) 3건이 같은 리뷰에서 적발되었습니다. 함께 위임서에는 **합쇼체 예시 1문장**을 동봉하고, 인접 기존 노트가 반말(-다)이면 "인접 문체를 따르지 말 것"을 명시합니다 — 같은 릴리즈에서 R003 신규 노트 4문장이 인접 노트의 반말을 그대로 따라 작성되었습니다. 각 항목에는 CHANGELOG 원문 1줄을 인용해 동봉합니다(R010 「출처 인용과 인접 문구 점검도 같은 규율」).
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
-| 헤더에 릴리즈 번호를 묶고 문장에는 태그 없이 위임 | 문장마다 "(NNN)" 태그, 헤더는 태그 합집합, 항목별 CHANGELOG 원문 1줄 동봉 |
-| 영어 위임서에 "Korean 합쇼체"만 적고 예시 없음 | 합쇼체 예시 1문장 동봉 + 인접 반말 노트 추종 금지 명시 |
+| 헤더에 번호를 묶고 문장 태그 없이 위임 | 문장마다 "(NNN)" 태그, 항목별 CHANGELOG 원문 동봉 |
 
-**보강 2항목 (Origin: #1696 #2·#3 — v1.1.71)**: (a) 항목별 CHANGELOG 원문 1줄은 `gh issue view --json body` 출력에서 **복사**해 동봉하고, 완료 조건에 "인용문을 이슈 본문과 `grep -F`로 대조"를 넣습니다(v1.1.70 — 수기 전사로 "and marketplace" 누락). (b) "같은 계열 최신 노트 뒤에 배치·cross-ref"를 지시할 때 **참조 대상이 `<!-- RETIRED` 주석 안이면 cross-ref 대신 권고 내용을 인라인**하도록 명시합니다(v1.1.70 — R002 새 노트가 은퇴된 v2.1.210 권고를 체인으로 가리켜 visible 텍스트가 없었습니다). R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 3항목과 짝을 이룹니다.
+<!-- DETAIL: 묶음 버전 노트 anti-pattern row 1, original wording
+| 헤더에 릴리즈 번호를 묶고 문장에는 태그 없이 위임 | 문장마다 "(NNN)" 태그, 헤더는 태그 합집합, 항목별 CHANGELOG 원문 1줄 동봉 |
+-->
+
+<!-- DETAIL: 묶음 버전 노트 anti-pattern table, additional row
+| 영어 위임서에 "Korean 합쇼체"만 적고 예시 없음 | 합쇼체 예시 1문장 동봉 + 인접 반말 노트 추종 금지 명시 |
+-->
+
+**보강**: CHANGELOG 원문은 복사+`grep -F` 대조; 은퇴(RETIRED) 처리된 주석을 참조할 때는 cross-ref 대신 인라인.
+
+<!-- DETAIL: 보강 2항목, paraphrased for comment-safety (원문은 은퇴 표시 HTML 주석의 여는 토큰을 직접 인용하나, 중첩 주석 마커를 피하기 위해 여기서는 산문으로 대체함 — 원문 리터럴을 재도입하지 않음)
+**보강 2항목 (Origin: #1696 #2·#3 — v1.1.71)**: (a) 항목별 CHANGELOG 원문 1줄은 `gh issue view --json body` 출력에서 **복사**해 동봉하고, 완료 조건에 "인용문을 이슈 본문과 `grep -F`로 대조"를 넣습니다(v1.1.70 — 수기 전사로 "and marketplace" 누락). (b) "같은 계열 최신 노트 뒤에 배치·cross-ref"를 지시할 때 **참조 대상이 은퇴(RETIRED) 처리된 주석 안이면 cross-ref 대신 권고 내용을 인라인**하도록 명시합니다(v1.1.70 — R002 새 노트가 은퇴된 v2.1.210 권고를 체인으로 가리켜 visible 텍스트가 없었습니다). R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 3항목과 짝을 이룹니다.
+-->
 
 ## Post-Gate Scope-Expansion Re-Run (Origin: #1433 #2)
 
+R017 게이트 통과 후 스코프가 확장되면(추가 파일 편집), 커밋 전 게이트를 **최종 상태에서 재실행**한다.
+
+<!-- DETAIL: Post-Gate Scope-Expansion Re-Run intro, original wording
 R017 게이트(mgr-sauron) 통과 선언 후 신규 결함 발견 등으로 스코프가 확장되면(추가 파일 편집), 커밋 전 게이트를 **최종 상태에서 재실행**한다. 게이트 통과 시점 이후의 변경은 형식적으로 미검증이므로, 확장분 미검증 커밋은 R017이 최종 산출물을 커버하지 못하게 만든다.
+-->
 
 ### Advisory 제시 시점 — "같은 커밋 포함 권고"는 판정과 함께 (Origin: #1584 #4)
 
+재실행 비용 절감을 위해 권고를 **판정 시점에** 받는다 — 위임서에 "advisory는 판정과 같은 응답에 제시"를 명시한다.
+
+<!-- DETAIL: Advisory 제시 시점 intro, original wording
 위 재실행 비용을 줄이는 방법은 권고를 **판정 시점에** 받는 것이다. mgr-sauron 위임 프롬프트에 "같은 커밋에 포함 권고" 성격의 advisory는 **PASS/FAIL 판정과 같은 응답에 제시**하도록 명시한다(또는 게이트 실행 전 예비 조회로 미리 수집). 판정 후 도착한 권고를 반영하면 그 자체가 스코프 확장이 되어 게이트 전량 재실행 + 위키 재동기화가 강제된다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| 게이트 PASS 후 도착한 권고 반영으로 스코프 확장 | 위임서에 "advisory는 판정과 함께 제시" 명시; 도착분은 이월 검토 |
+
+<!-- DETAIL: Post-Gate Advisory anti-pattern row, original wording
 | 게이트 PASS 후 도착한 포함 권고를 반영해 스코프 확장 | 위임 프롬프트에 "포함 권고 advisory는 판정과 함께 제시" 명시; 판정 후 도착분은 다음 릴리즈 이월을 우선 검토 |
+-->
 
+<!-- DETAIL: Origin note
 Origin: #1584 #4 (v1.1.45 세션) — R021 자기 서술 staleness 반영을 R017 통과 **후** 수행해 위키 재동기화 1회 + 게이트 전량 재실행 발생. 포함 판단 자체는 옳았고 **시점**이 결함이었다.
+-->
 
+스킬 추가·수정 후 `claude plugin validate`를 개수 대조와 함께 실행한다(R023).
+
+<!-- DETAIL: v2.1.233 note, original wording
 > **v2.1.233+**: `claude plugin validate`가 **bare `.claude/skills` 디렉토리**(플러그인 매니페스트 없는 스킬 트리)도 검사해, frontmatter 파싱에 실패하는 `SKILL.md`를 보고합니다. 이 저장소의 `.claude/skills/**/SKILL.md`는 아래 Quick Verification Commands가 **개수만** 세고 frontmatter 유효성은 세지 않으므로, 스킬 추가·수정 후 `claude plugin validate`를 개수 대조와 **함께** 실행해 파싱 실패를 결정론적으로 잡습니다(구버전에서는 이 경로가 검사 대상이 아니어서 깨진 frontmatter가 런타임 미로드로만 드러났습니다). Cross-ref: R023(Tier 1 결정론적 검증).
+-->
 
+<!-- DETAIL: v2.1.259/265 note, original wording
 > **v2.1.259/265+**: (259) `claude plugin validate --json`이 기계 판독 가능한 검증 리포트를 제공합니다 — 위 검사가 짝을 이루는 개수 대조와 함께 쓸 때는 이 리포트를 frontmatter 파싱 확인의 우선 수단으로 삼습니다. (259) 동시 세션이 서로의 `~/.claude.json` 변경(workspace trust 초기화, MCP/프로젝트 상태 유실)을 조용히 되돌리던 결함이 수정되었습니다 — 구버전의 공유 워크트리 다중 세션 실행(위 「게이트는 분기 시점 1회가 아니라 상태변경 위임마다」 참조)은 브랜치 상태뿐 아니라 trust/MCP 상태도 유실될 수 있었습니다. (265) Claude Code 자체의 git status·diff 프로브가 작업트리 내부의 **중첩 저장소**가 설정한 clean filter를 거쳐 실행되던 결함이 수정되었습니다 — 구버전에서는 중첩 저장소의 clean filter가 CC의 작업트리 인식을 셸에서 직접 실행한 `git status` 결과와 다르게 만들 수 있었으므로, 이 규칙이 의존하는 두 ground-truth 소스(CC 내부 관측 vs 셸 직접 실행)가 항상 일치한다고 보장되지 않았습니다.
+-->
 
 ## Quick Verification Commands — agent/skill/guide/wiki counts via ls/find/wc. See commands via Read tool.
 

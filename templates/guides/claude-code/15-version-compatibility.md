@@ -1,9 +1,11 @@
 # Claude Code Version Compatibility
 
-> Updated: 2026-07-02
-> Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158, #1242, #1243, #1244, #1245, #1276, #1280)
+> Updated: 2026-09-24
+> Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158, #1242, #1243, #1244, #1245, #1276, #1280, #1713, #1714, #1716)
 >
-> **Note (compat 노트 이관)**: 이 파일은 v2.1.160까지의 호환성 노트를 보존합니다. v2.1.161+ 이후 CC 호환성 노트는 `.claude/rules/` 각 규칙(R001/R002/R006/R010/R012 등)에 인라인으로 축적(이관)되었으므로, 최신 compat 노트는 해당 규칙 파일을 참조하세요.
+> **Note (compat 노트 이관, v1.1.9~v1.1.76)**: v2.1.161~v2.1.276 구간의 CC 호환성 노트는 `.claude/rules/` 각 규칙(R001/R002/R006/R010/R012 등)에 인라인으로 축적되어 있으며, 이 구간은 그대로 보존합니다.
+>
+> **Note (정책 전환, #1717 — v1.1.77+)**: 룰 코퍼스 컨텍스트 예산 초과(#1717 실측: 주석 제외 306,752자, `/memory` 150k자 한도 초과)를 계기로, v2.1.277+부터 신규 CC 버전 노트는 다시 이 가이드로 돌아옵니다. 룰 파일(`.claude/rules/*.md`)에는 현재 행동을 바꾸는 규범이 있을 때만 1줄로 남기고, CHANGELOG 인용·영향 서사·Origin 배경은 이 가이드가 전담합니다(R016 「버전노트 보존정책」).
 
 ## Compatibility Baseline
 
@@ -1217,6 +1219,184 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 ---
 
+## v2.1.277 (2026-09-18)
+
+> Issue: #1714 — Claude Code v2.1.277 compatibility documentation
+
+### 설정 · CLAUDE.md 로딩
+
+- CHANGELOG 원문: "Added AGENTS.md support: in a project with no CLAUDE.md, Claude Code reads AGENTS.md instead; change it under "Project instructions" in `/config` (not yet on Bedrock, Vertex or Foundry)"
+  (277) 이 저장소는 루트에 `CLAUDE.md`가 있으므로 AGENTS.md 대체 로딩은 발동하지 않습니다 — 다만 저장소 루트의 `AGENTS.md`는 `.gitignore` 리터럴로 미추적 상태이므로(세션152 실측), 이 파일이 실수로 tracked화되어 CLAUDE.md와 내용이 갈리는 일이 없도록 유지합니다.
+
+### 헤드리스(`-p`) · 백그라운드
+
+- CHANGELOG 원문: "Fixed `claude -p` and Agent SDK sessions that could hang with no result after an internal error; they now report the error and exit with code 1"
+  (277) `/fsd` 등 `-p` 기반 무인 루프에서 내부 오류로 인한 무응답 행이 사라지고 exit code 1로 종료되므로, 무인 루프 감시 스크립트는 이제 이 종료 코드를 정지 신호로 사용할 수 있습니다.
+- CHANGELOG 원문: "Fixed a headless resume (`claude -p --resume`, the SDK, a VS Code extension window reload) starting the session's cost and usage totals at zero; headless sessions now save their totals at exit"
+  (277) `-p --resume`으로 이어가는 헤드리스 세션의 비용·사용량 누적이 이제 정확히 보존되므로, 릴리즈 세션 비용 추정 시 재개 이전 구간이 0으로 초기화되던 오차가 사라집니다.
+- CHANGELOG 원문: "Fixed background sessions (`claude --bg`) exiting when a plugin's LSP server exited or closed its stdin"
+  (277) `--bg` 백그라운드 세션이 LSP 플러그인의 stdin 종료만으로 함께 종료되던 결함이 수정되어, 무인 백그라운드 실행의 뜻밖의 조기 종료 원인 후보 하나가 사라집니다.
+- CHANGELOG 원문: "Improved session start-up for SDK and headless (`-p`) use: the first turn no longer waits on the per-directory CLAUDE.md lookup"
+  (277) 이 저장소는 CLAUDE.md + 23개 룰을 매 세션 고정 주입하므로, 헤드리스 첫 턴의 디렉터리별 CLAUDE.md 조회 대기가 제거되면 `-p` 기반 파이프라인(`/pipeline auto-dev` 등)의 착수 지연이 줄어듭니다.
+- CHANGELOG 원문: "Removed the background Haiku auto-title request from `claude -p` runs launched outside an SDK or IDE"
+  (277) `-p` 단독 실행에서 백그라운드 자동 제목 요청이 제거되어, 순수 CLI 기반 무인 실행의 부가 API 호출이 줄어듭니다 — 이 저장소 R005 비용 인식 원칙과 정합합니다.
+
+### 훅 · 재개 · prompt cache
+
+- CHANGELOG 원문: "Fixed conversations failing every request with "text content blocks must be non-empty" when an earlier assistant turn held an empty text block beside other content, including after `--resume`"
+  (277) 이 오류 문구는 R021이 v2.1.251 이후 text 블록 부재율 급증의 원인으로 추정한 CHANGELOG 항목과 같은 계열입니다 — 이 수정이 R008 advisory 진양성 원인(#1706 `[hypothesis]`)을 직접 해소하는지는 미확정이며, 다음 세션에서 v2.1.277+ 트랜스크립트로 재측정이 필요합니다.
+- CHANGELOG 원문: "Fixed sessions continued after `/clear` (restart, `--continue`, `--resume`) missing part of their first message when a SessionStart hook printed output, causing a full prompt-cache miss"
+  (277) 이 저장소는 `SessionStart` 훅(`claude-md-reinject.sh`)으로 매 세션 CLAUDE.md를 재주입하므로, v2.1.277 미만에서는 `/clear` 이후 재개 시 그 훅 출력이 prompt-cache를 전면 무효화했을 수 있습니다 — R021의 SessionStart 재주입 경로 신뢰성이 개선됩니다.
+- CHANGELOG 원문: "Fixed resumed subagents and teammates re-rendering the MCP tool definitions they had loaded, which broke prompt caching for that agent"
+  (277) 재개된 서브에이전트·teammate의 MCP 도구 정의 재렌더링으로 인한 prompt-cache 파손이 수정되어, R009 v2.1.265 계열의 prefix 안정성 노트가 한 건 더 보강됩니다.
+- CHANGELOG 원문: "Fixed attachments recorded earlier in a conversation being re-rendered after a resume or relaunch, which dropped extended thinking and missed the prompt cache"
+  (277) 재개·재실행 후 첨부물 재렌더링으로 extended thinking이 소실되고 캐시가 깨지던 결함이 수정되어, 재개 세션의 reasoning 보존 신뢰성이 개선됩니다.
+- CHANGELOG 원문: "Fixed a crash ("unrecoverable interface error") when resuming a session whose saved transcript contains a stop hook summary without a well-formed hook list"
+  (277) Stop 훅 요약이 불완전한 트랜스크립트를 재개할 때의 크래시가 수정되어, R021이 운용하는 `session-reflection.sh` Stop 훅 경로의 재개 안정성이 개선됩니다.
+- CHANGELOG 원문: "Fixed messages typed while Claude is still working sometimes being ignored by the model"
+  (277) 작업 중 입력한 메시지가 무시되던 결함이 수정되어, R020 Interrupt 관련 규칙이 전제하는 "인터럽트가 모델에 도달한다"는 가정의 신뢰성이 높아집니다.
+
+### Bash · 샌드박스 · 권한
+
+- CHANGELOG 원문: "Fixed `$TMPDIR` expanding empty in Bash commands that run outside the sandbox while sandboxing is enabled"
+  (277) 샌드박스 활성 중 비샌드박스 Bash 명령에서 `$TMPDIR`가 빈 값으로 확장되던 결함이 수정되어, R010의 PPID 스코프 `/tmp` 마커 carve-out과 R009의 에이전트별 고유 `$TMPDIR` 경로 지침이 이제 더 안정적으로 동작합니다.
+- CHANGELOG 원문: "Fixed a `sandbox.excludedCommands` glob exempting an entire compound Bash command from the sandbox when only one part matched; every part must now match"
+  (277) 복합 Bash 명령의 일부만 매칭돼도 전체가 샌드박스에서 면제되던 결함이 수정되어, `sandbox.excludedCommands`를 쓰는 환경의 샌드박스 우회 폭이 좁아집니다.
+- CHANGELOG 원문: "Fixed the Write tool silently ending the turn as a declined permission when the target path is an existing directory; it now reports a clear error"
+  (277) 기존 디렉터리 경로에 Write를 시도할 때 무음으로 거부되던 결함이 수정되어, R020 "actual outcome ≠ attempt" 진단에서 원인 후보(무음 권한 거부 vs 명확한 오류)를 구분하기 쉬워집니다.
+- CHANGELOG 원문: "Improved the dangerous-rm permission prompt to name the flagged rm command and suggest a `${VAR:?}` guard, so headless runs can recover"
+  (277) 위험한 `rm` 프롬프트가 플래그된 명령과 가드 방법을 명시하게 되어, R001 파괴적 명령 승인 절차의 실효성이 헤드리스 실행에서도 개선됩니다.
+- CHANGELOG 원문: "Improved prompt handling: invisible Unicode formatting and tag characters in a prompt are removed and the cleaned prompt is shown for review before it is sent"
+  (277) 비가시 유니코드로 명령 일부를 숨기던 R001 v2.1.223 계열의 승인 다이얼로그 무결성 결함과 같은 위협 축을 프롬프트 입력 단계에서도 방어하게 됩니다.
+
+### 서브에이전트 · SendMessage
+
+- CHANGELOG 원문: "Fixed messages from other agents (such as a subagent's SendMessage) that arrived mid-turn showing up below the "Ran N shell commands" row instead of where they arrived"
+  (277) 서브에이전트 SendMessage가 도착 위치가 아니라 엉뚱한 곳에 표시되던 결함이 수정되어, R018 SendMessage 신뢰성 계열 노트가 표시 정확성 측면에서 한 건 더 보강됩니다.
+- CHANGELOG 원문: "Changed subagent results to reach the main agent under a header marking them as subagent output, with the result indented, so text in a subagent's result cannot pass as the session's own instructions"
+  (277) 서브에이전트 결과가 이제 "서브에이전트 출력"임을 표시하는 헤더로 감싸져 도착하므로, R015 "다른 에이전트의 메시지는 결코 사용자의 승인이 아니다" 원칙이 플랫폼 레벨에서도 표시적으로 강화됩니다.
+
+### 스킬 · 플러그인 · 도구
+
+- CHANGELOG 원문: "Fixed project skills from the main repository not loading in `--worktree` sessions when `.claude/skills` is untracked"
+  (277) 이 저장소는 `.claude/skills`가 tracked이므로 이 결함의 직접 대상은 아니지만, `isolation: "worktree"`로 스폰하는 에이전트가 untracked 스킬 디렉터리를 가진 다른 프로젝트에서는 이제 정상 로드됩니다.
+- CHANGELOG 원문: "Fixed `claude plugin install` sometimes failing and breaking the installed copy when reinstalling a plugin version that a session or another program was using; an unchanged copy is now left alone"
+  (277) 사용 중인 플러그인 버전을 재설치할 때 설치본이 깨지던 결함이 수정되어, 세션 도중 플러그인 재설치가 더 안전해집니다.
+- CHANGELOG 원문: "Fixed Grep and Glob reporting no matches when the search could not start because the system was out of processes, memory or file handles; they now return an error saying so"
+  (277) 자원 고갈로 탐색 자체가 시작되지 못했을 때 "매치 없음"으로 오보고되던 결함이 수정되어, R005 「도구 이름 ≠ 그 프로그램」이 경고하는 0건 결과 오독 위험이 이 원인 축에서는 줄어듭니다.
+- CHANGELOG 원문: "Changed Fable to always appear in `/model` on the Anthropic API; it is greyed out only when your organization's settings disable it"
+  (277) `/model`에서 Fable이 항상 노출되도록 바뀌어, R006 Fable 5 tier 안내(Tier 2 `claude-fable-5`/`claude-fable-5-1`)를 선택할 때 조직 정책으로 비활성화된 경우만 회색으로 구분됩니다.
+- CHANGELOG 원문: "Removed the deprecated TaskOutput tool; Claude reads a background task's output file with Read instead, and the `taskOutputMaxChars` setting and `TASK_MAX_OUTPUT_LENGTH` no longer have any effect"
+  (277) `TaskOutput` 도구 자체가 제거되고 `taskOutputMaxChars`/`TASK_MAX_OUTPUT_LENGTH` 설정이 무효화되므로, 이 두 항목을 언급하는 기존 룰 텍스트(R002 Tier 5 표, R013 인라인 출력 상한 노트)는 이제 사실과 어긋납니다 — 아래 「rule candidates」 참조.
+
+기타 67건 — 이 저장소 비해당(VSCode/Claude Code on the web/Claude Tag 전용 UI 18건 포함, 나머지는 게이트웨이 전용 설정, 로그인/인증 UX, 저빈도 크래시 edge case, `/plugin`·`/mcp` 표시 버그 등).
+
+**Action items**:
+- R002 Tier 5 표와 R013 인라인 출력 상한 노트의 `TaskOutput`/`taskOutputMaxChars`/`TASK_MAX_OUTPUT_LENGTH` 참조를 v1.1.77에서 정정 완료(위 서술의 "R005"는 R013의 오기였습니다).
+- 그 외 항목은 CC 플랫폼이 자체 해소한 신뢰성 개선이며, 이 저장소 harness 변경은 불필요합니다.
+
+---
+
+## v2.1.278 (2026-09-19)
+
+> Issue: #1713 — Claude Code v2.1.278 compatibility documentation
+
+### 자동 모드 · 비용
+
+- CHANGELOG 원문: "Changed auto mode for Claude API and Enterprise users, and on Bedrock, Vertex, Foundry and gateways, to default to the server-side classifier, which does not charge for classifier overhead (`CLAUDE_CODE_AUTO_MODE_SERVER=0` opts out on Bedrock, Vertex, Foundry and gateways); warns on billed fallback. See https://code.claude.com/docs/en/auto-mode-classifier-billing"
+  (278) auto mode classifier가 기본적으로 서버사이드로 전환되어 classifier 오버헤드가 과금되지 않으므로, 이 저장소가 상시 사용하는 auto mode 세션의 실질 비용이 낮아집니다 — R005 비용 인식 원칙에 유리한 방향의 변경입니다.
+- CHANGELOG 원문: "Added an `Auto mode server` row to `/status` showing whether this session's auto mode classifier runs on the server"
+  (278) `/status`에서 이 세션의 classifier가 서버에서 도는지 직접 확인할 수 있게 되어, 위 비용 절감이 실제로 적용됐는지를 실측(R020 ground-truth)할 수 있습니다.
+
+**Action items**:
+- 코드·룰 변경 불필요. `/status`의 `Auto mode server` 행으로 상태만 확인 가능합니다(docs-only).
+
+---
+
+## v2.1.280 (2026-09-22)
+
+> Issue: #1716 — Claude Code v2.1.280 compatibility documentation
+
+### 모델 · effort
+
+- CHANGELOG 원문: "Added Claude Opus 5.5 (`claude-opus-5-5`), now the default Opus model — 1M context, $4/$20 per Mtok with $0.20/Mtok cache reads"
+  (280) Opus 5.5가 기본 Opus 모델이 되었으므로, R006 Model Specification Tier 2 표에 `claude-opus-5-5` 전체 ID를 추가할지 검토가 필요합니다 — 아래 rule candidates 참조.
+- CHANGELOG 원문: "Changed the default model on Pro and Team Standard plans from Sonnet to Opus, matching Max, Team Premium, and Enterprise"
+  (280) Pro/Team Standard 플랜의 기본 모델이 Sonnet에서 Opus로 바뀌었으므로, 해당 플랜을 쓰는 세션은 R005 비용 인식 관점에서 기본값 자체가 더 비싸진 상태로 시작됩니다.
+- CHANGELOG 원문: "Changed an effort level saved before `/effort` became per-model to no longer apply to newly released models such as Opus 5.5; they start at their default until you pick a level"
+  (280) Opus 5.5처럼 새로 출시된 모델은 과거 저장된 effort 값을 물려받지 않고 기본 effort로 시작하므로, 이 저장소의 effort 관련 지침을 새 모델에 그대로 적용하기 전 실측이 필요합니다.
+- CHANGELOG 원문: "Changed Opus 4.7, Opus 4.8 and Fable 5 to stop holding their launch-default effort over `/effort` in `-p` or the Agent SDK, a project, managed or `--settings` `effortLevel`, or a per-model level"
+  (280) Opus 4.7·4.8·Fable 5가 더 이상 `/effort` 등 명시적 effort 설정을 무시하지 않게 되어, R006이 v2.1.267 노트에서 기록한 "effort 프론트매터가 무시된다"는 전제가 이 세 모델에서는 더 이상 성립하지 않습니다 — 아래 rule candidates 참조.
+
+### MCP
+
+- CHANGELOG 원문: "Added `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` to change the 2,048-character cap on MCP tool descriptions and server instructions for every MCP server in the session"
+  (280) MCP 도구 설명·서버 안내문의 2,048자 상한을 세션 단위로 조정할 수 있게 되어, `ontology-rag`·`semble-integration`·`code-review-graph` 등 이 저장소가 연동하는 MCP 서버의 설명이 길어질 때 절단 위험을 env var로 완화할 수 있습니다.
+
+### 권한 · 자동 모드
+
+- CHANGELOG 원문: "Fixed writes through a symlinked path being judged by their in-tree spelling: the prompt names where the write lands, and `acceptEdits`, allow rules and auto mode no longer approve one landing outside"
+  (280) 심볼릭 링크 경로를 통한 쓰기가 트리 내부 표기만으로 승인되던 우회가 수정되어, R002가 반복 기록해 온 "경로 표기 우회" 계열(예: v2.1.233 `\??\`, v2.1.268 symlink 디렉터리)의 최신 보강입니다.
+- CHANGELOG 원문: "Fixed auto mode retrying an action over and over when a safety check declined to review it; the action is now denied once, noting that retrying won't help"
+  (280) safety check가 검토를 거부한 행동을 auto mode가 무한 재시도하던 결함이 수정되어, R010 Subagent Scope-Creep STOP Protocol이 전제하는 "재시도가 아니라 범위 재설계"라는 원칙과 플랫폼 동작이 더 가까워집니다.
+- CHANGELOG 원문: "Fixed auto mode denying actions over and over without pause when a safety check gave no answer; retries now back off, and the turn stops with a message after ten in a row"
+  (280) safety check 무응답 시의 무한 거부 루프가 backoff + 10회 후 정지로 수정되어, 무인 루프가 이런 상황에서 조기에 눈에 띄는 정지 메시지로 멈추게 됩니다.
+- CHANGELOG 원문: "Fixed Write calls failing validation when a model sends `path`, `file_text`, `file_content` or a stray `description` instead of `file_path` and `content`"
+  (280) 잘못된 파라미터명으로 인한 Write 검증 실패가 완화되어, R020 도구 호출 완결성 관련 왕복 낭비가 이 원인 축에서는 줄어듭니다.
+- CHANGELOG 원문: "Changed `PermissionRequest` hooks: an agent-type hook no longer runs there, since its answer could never allow or deny the request; it now shows an error pointing to command or http hooks"
+  (280) `PermissionRequest` 훅에 agent-type 핸들러를 쓰면 이제 오류로 안내되므로, 이 이벤트에는 command 또는 http 핸들러만 유효하다는 제약이 명시화됩니다 — 이 저장소는 현재 `PermissionRequest`를 배선하지 않았습니다.
+
+### 백그라운드 서브에이전트 · SendMessage · 압축
+
+- CHANGELOG 원문: "Fixed resuming a session with unfinished background agents, shells or workflows starting a model turn on its own before you typed anything"
+  (280) 미완료 백그라운드 작업이 있는 세션을 재개할 때 사용자 입력 없이 턴이 저절로 시작되던 결함이 수정되어, R010 v2.1.232 "non-teammate 스폰이 기본 background 실행"이 야기하는 재개 시 예상치 못한 자동 진행 위험이 줄어듭니다.
+- CHANGELOG 원문: "Fixed messages sent to a background subagent being silently lost in headless and SDK sessions when the subagent was finishing its turn"
+  (280) 서브에이전트가 턴을 마무리하는 시점에 헤드리스·SDK 세션에서 메시지가 무음 소실되던 결함이 수정되어, R018 SendMessage 신뢰성 계열("전달됨 ≠ 읽힘" 등)에 헤드리스 경로의 보강이 추가됩니다.
+- CHANGELOG 원문: "Fixed a finished subagent's report being lost when the conversation that launched it was compacted before the report was read"
+  (280) 완료된 서브에이전트 보고가 compact로 소실되던 결함이 수정되어, R013/R018이 함께 다루는 compaction-서브에이전트 보고 상호작용의 신뢰성이 개선됩니다.
+- CHANGELOG 원문: "Fixed background subagents being unable to use the LSP tool when an LSP plugin is active"
+  (280) LSP 플러그인 활성 시 백그라운드 서브에이전트가 LSP 도구를 쓰지 못하던 결함이 수정되어, 백그라운드로 이동한 서브에이전트의 도구 가용성 격차가 줄어듭니다.
+- CHANGELOG 원문: "Fixed background shell tasks reporting benign non-zero exits (e.g. grep with no matches) as failures"
+  (280) `grep` 무매치처럼 무해한 non-zero exit을 백그라운드 셸 작업이 실패로 오보고하던 결함이 수정되어, R020 "실행됨 ≠ 실패"류 오판 원인 하나가 background shell 경로에서 사라집니다.
+- CHANGELOG 원문: "Fixed background sessions (`claude --bg`) being unable to run git, hooks, plugins and other helper programs when an environment variable handed to the session contained a NUL character"
+  (280) NUL 문자가 든 환경변수로 인해 `--bg` 세션이 git·훅·플러그인을 실행하지 못하던 결함이 수정되어, 이 저장소처럼 훅에 의존하는 백그라운드 실행의 안정성이 개선됩니다.
+
+### 스킬 · 메모리 · prompt cache
+
+- CHANGELOG 원문: "Fixed skills in `~/.claude/skills/` being moved to `~/.claude/skills/.trash/` when a `manifest.json` in that folder listed their names"
+  (280) 사용자 스코프 스킬이 `manifest.json` 이름 목록과 겹치면 `.trash/`로 이동해 버리던 결함이 수정되어, R017 Count Sync가 전제하는 스킬 파일의 존재 안정성이 보강됩니다 — 이 저장소 스킬은 프로젝트 스코프(tracked)라 직접 대상은 아니었으나, 사용자 스코프 스킬을 병행하는 세션에서는 데이터 손실 위험이 있었습니다.
+- CHANGELOG 원문: "Fixed memory write conflicts in Cowork sessions showing Claude only the start and end of a memory file over about 10,800 characters, so the retried write dropped the middle"
+  (280) Cowork 세션에서 10,800자 초과 메모리 파일의 중간 구간이 재시도 쓰기에서 소실되던 결함이 수정되어, R011의 200줄 예산 관리와 무관하게 존재하던 별도의 메모리 파일 무결성 위험이 줄어듭니다.
+- CHANGELOG 원문: "Fixed a model switch made from a host app (Claude Desktop, VS Code, SDK) while Claude is working causing a prompt-cache miss on the next prompt"
+  (280) 작업 중 모델 전환으로 인한 prompt-cache miss가 수정되어, R013/R009가 다루는 prompt-cache 안정성 계열에 호스트 앱발 모델 전환 축이 보강됩니다.
+- CHANGELOG 원문: "Fixed resumed fork subagents rebuilding their tool list instead of re-sending the one they first used, which broke prompt caching for that agent"
+  (280) fork된 서브에이전트를 재개할 때 도구 목록을 재구성해 prompt cache가 깨지던 결함이 수정되어, R009 fork 컨텍스트 상속 관련 비용 안정성이 개선됩니다.
+- CHANGELOG 원문: "Improved `/cost` cache-miss causes to name thinking mode and thinking display changes"
+  (280) `/cost`의 cache-miss 원인 표시에 thinking 모드·표시 변경이 추가되어, R012/R013이 다루는 prompt-cache 원인 후보 진단이 더 세밀해집니다.
+
+### 훅 · 안정성
+
+- CHANGELOG 원문: "Added hook output sizes and the number of oversized outputs saved to a file to the `hook_execution_complete` OpenTelemetry event"
+  (280) 훅 출력 크기와 파일로 저장된 초과분 개수가 OpenTelemetry 이벤트에 추가되어, R021이 기록한 v2.1.247 훅 출력 폭주(대화 overflow) 계열 결함을 모니터링으로 조기 발견할 수 있게 됩니다.
+- CHANGELOG 원문: "Improved the UserPromptSubmit hook timeout notice and the debug log to name which hook command timed out"
+  (280) `UserPromptSubmit` 훅 타임아웃 알림이 어느 훅 명령이 타임아웃됐는지 명시하게 되어, 이 저장소가 이 이벤트에 배선한 `r007-r008-drift-advisor.sh`·`fail-axis-cause-advisor.sh`·`claude-md-reinject.sh` 등 다중 훅의 원인 진단이 쉬워집니다.
+- CHANGELOG 원문: "Fixed conversations failing on every turn with a "role 'system' must precede an 'assistant' message" API error"
+  (280) 이 API 오류로 전 턴이 실패하던 결함이 수정되어, 관련 세션 자체 종료 위험이 사라집니다.
+- CHANGELOG 원문: "Fixed conversations with the advisor on failing every turn with API Error 400 "Input tag 'advisor_20260301'" behind a proxy or gateway that doesn't support it; the request now retries without it"
+  (280) advisor 미지원 프록시·게이트웨이 경유 시의 400 오류가 이제 advisor 없이 재시도되어, R005가 기록한 v2.1.276의 같은 오류 문구(2.1.275 회귀)와는 별개 시나리오가 추가로 해소됩니다.
+- CHANGELOG 원문: "Fixed a crash when resuming a session whose saved transcript holds a malformed system message or a memory-saved notice without its file list"
+  (280) 메모리 저장 알림에 파일 목록이 없어 재개 시 크래시하던 결함이 수정되어, R011 세션 종료 메모리 저장 경로의 재개 안정성이 개선됩니다.
+- CHANGELOG 원문: "Fixed `/config` crashing and some on/off preferences being misread when a preference that has moved to `settings.json` still holds a value like `null` or `"false"` in `~/.claude.json`"
+  (280) `settings.json`으로 이관된 설정이 `~/.claude.json`에 `null`/`"false"`로 남아 있을 때의 오독·크래시가 수정되어, R002/R010이 의존하는 설정 계층(user/project/local) 판독 신뢰성이 개선됩니다.
+
+기타 91건 — 이 저장소 비해당(VSCode/Claude Code on the web/Claude Tag/Code Review 전용 29건, Windows·self-hosted runner 전용 4건 포함, 나머지는 UI 다이얼로그·마우스·키바인딩 폴리시, Artifact 도구 세부사항, 마켓플레이스 커밋 추적 등 저빈도 항목).
+
+**Action items**:
+- R006 Model Specification Tier 2 표에 `claude-opus-5-5` 행을 v1.1.77에서 추가 완료. v2.1.267 DETAIL 노트(Opus 4.7·4.8·Fable 5 effort 무시 서술)는 이번 릴리즈의 반전 사실을 아직 반영하지 않았으므로 다음 룰 편집 세션에서 정정이 필요합니다.
+- 그 외 항목은 CC 플랫폼 신뢰성 개선이며 이 저장소 harness 변경은 불필요합니다.
+
+---
+
 ## Known Platform Issues & Workarounds
 
 ### Agent tool malformed parsing on long / special-character prompts (#1241)
@@ -1256,6 +1436,10 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - #1245 — Claude Code v2.1.156 compatibility documentation
 - #1276 — Claude Code v2.1.159 compatibility documentation
 - #1280 — Claude Code v2.1.160 compatibility documentation
+- #1713 — Claude Code v2.1.278 compatibility documentation
+- #1714 — Claude Code v2.1.277 compatibility documentation
+- #1716 — Claude Code v2.1.280 compatibility documentation
+- #1717 — 컨텍스트 예산 초과 대응: CC 버전 노트 이관 정책 전환(룰 → 가이드)
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec
