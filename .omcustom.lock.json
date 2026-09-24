@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "1.1.78",
-  "generatedAt": "2026-09-24T09:33:05.851Z",
+  "generatedAt": "2026-09-24T10:53:02.368Z",
   "templateVersion": "1.1.78",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -655,8 +655,8 @@
       "component": "skills"
     },
     ".claude/skills/agora/scripts/anonymize.sh": {
-      "templateHash": "ec07a0745e311312ab880610114ae21686305cee85683843ccc095a144c8711d",
-      "size": 22044,
+      "templateHash": "73f96977770009b260f6fd81ab050e1a9073218e8dcfb610ea5d0be9bf95b554",
+      "size": 29151,
       "component": "skills"
     },
     ".claude/skills/agora/SKILL.md": {

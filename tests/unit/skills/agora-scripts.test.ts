@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { exec, spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { chmod, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -264,12 +265,15 @@ describe('anonymize.sh shuffle', () => {
   });
 
   // spec §12-(2): if a vendor skews toward a label, the judge can infer identity from position.
-  // NOTE (deviation from brief, documented in task-2-report.md): hash_int shells out to
-  // `shasum` per Fisher-Yates swap (2 subprocess pipelines per shuffle), so the sample size
-  // was reduced from the brief's 3000 to 600 per controller ruling (2026-08-15) — 600 keeps
-  // 2.6σ of detection power (expected 200/cell, ±15% tolerance = 170~230) at 1/5 the runtime.
-  // Only the timeout and sample-size parameters below changed; the assertions' shape and the
-  // shuffle algorithm are unchanged from the brief.
+  // NOTE (deviation from brief, documented in task-2-report.md): the sample size was reduced
+  // from the brief's 3000 to 600 per controller ruling (2026-08-15) — 600 keeps 2.6σ of
+  // detection power (expected 200/cell, ±15% tolerance = 170~230). `--shuffle-many` originally
+  // shelled out to `shasum` per Fisher-Yates swap (2 subprocess pipelines per shuffle, 1200
+  // total for 600 shuffles of 3 vendors), which pushed CI runtime past the 40s timeout (#1724).
+  // `shuffle_many` (anonymize.sh) now hashes every swap of the whole batch in one perl process
+  // instead — same algorithm, same output, ~0.1s instead of tens of seconds — so the timeout
+  // below is tightened accordingly. Only the timeout and sample-size parameters changed; the
+  // assertions' shape and the shuffle algorithm are unchanged from the brief.
   it('distributes labels uniformly over 600 shuffles', async () => {
     const result = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', '600', ...VENDOR_IDS], '');
     expect(result.exitCode).toBe(0);
@@ -294,7 +298,87 @@ describe('anonymize.sh shuffle', () => {
         expect(counts[vendor][label]).toBeLessThan(230);
       }
     }
-  }, 40_000);
+  }, 10_000);
+
+  // #1724: `--shuffle-many N` must stay byte-identical to N sequential `--shuffle
+  // agora-shuffle-k` calls — the batched hashing path (shuffle_many/hash_hex_stream) is an
+  // implementation detail, not a behavior change.
+  it('produces the same output as N sequential --shuffle calls, per line', async () => {
+    const many3 = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', '30', ...VENDOR_IDS], '');
+    expect(many3.exitCode).toBe(0);
+    const lines3 = many3.stdout.trim().split('\n');
+    expect(lines3.length).toBe(30);
+    for (let k = 1; k <= 30; k++) {
+      const single = await runScript(
+        ANONYMIZE_SCRIPT,
+        ['--shuffle', `agora-shuffle-${k}`, ...VENDOR_IDS],
+        ''
+      );
+      expect(lines3[k - 1]).toBe(single.stdout.trim());
+    }
+
+    const two = [VENDOR_IDS[0], VENDOR_IDS[2]];
+    const many2 = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', '10', ...two], '');
+    expect(many2.exitCode).toBe(0);
+    const lines2 = many2.stdout.trim().split('\n');
+    expect(lines2.length).toBe(10);
+    for (let k = 1; k <= 10; k++) {
+      const single = await runScript(
+        ANONYMIZE_SCRIPT,
+        ['--shuffle', `agora-shuffle-${k}`, ...two],
+        ''
+      );
+      expect(lines2[k - 1]).toBe(single.stdout.trim());
+    }
+  }, 15_000);
+
+  // #1724: fixed baseline against the ORIGINAL (pre-batching) script — measured via
+  // `bash anonymize.sh --shuffle-many 600 claude:claude-opus-4-8 omx:default \
+  //   agy:gemini-3.1-pro-high | shasum -a 256 | cut -c1-16` on the script before this fix.
+  // Pins the batched-hashing rewrite to the exact same permutations as the subprocess-per-swap
+  // implementation it replaces (a uniformity-distribution check alone cannot catch a
+  // consistently-wrong-but-still-uniform shuffle).
+  it('matches the pre-#1724 fixed-seed output hash (regression pin)', async () => {
+    const result = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', '600', ...VENDOR_IDS], '');
+    expect(result.exitCode).toBe(0);
+    const hash = createHash('sha256').update(result.stdout).digest('hex');
+    expect(hash.slice(0, 16)).toBe('654b0eb042bc97b7');
+  }, 10_000);
+
+  // Same fixed-baseline pin as above, for the 2-vendor path (per_row=1, the
+  // shortest non-trivial swap sequence) — measured the same way, against the
+  // ORIGINAL (pre-#1724) script: `bash anonymize.sh --shuffle-many 600
+  // claude:claude-opus-4-8 agy:gemini-3.1-pro-high | shasum -a 256 | cut -c1-16`.
+  it('matches the pre-#1724 fixed-seed output hash for the 2-vendor path (regression pin)', async () => {
+    const two = [VENDOR_IDS[0], VENDOR_IDS[2]];
+    const result = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', '600', ...two], '');
+    expect(result.exitCode).toBe(0);
+    const hash = createHash('sha256').update(result.stdout).digest('hex');
+    expect(hash.slice(0, 16)).toBe('7201dfb09e4a4a9f');
+  }, 10_000);
+
+  // #1724 review M1: a non-integer count must fail loudly (64/EX_USAGE) with
+  // no output at all, instead of the original script's mix of silent rc-0
+  // (short-circuited by `[ "$count" -ge 1 ] || return 0` failing internally)
+  // and, for some shapes, an uncaught arithmetic error from deep inside the
+  // batching loop.
+  it('rejects a non-integer --shuffle-many count with exit 64 and no output', async () => {
+    const result = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', 'abc', ...VENDOR_IDS], '');
+    expect(result.exitCode).toBe(64);
+    expect(result.stderr).toContain(
+      'anonymize.sh: --shuffle-many count must be a non-negative integer'
+    );
+    expect(result.stdout).toBe('');
+  });
+
+  // #1724 review M1: count=0 is a legitimate empty batch, not an error —
+  // must stay exit 0 with no output, exactly as the original script.
+  it('accepts --shuffle-many count 0 with exit 0 and no output', async () => {
+    const result = await runScript(ANONYMIZE_SCRIPT, ['--shuffle-many', '0', ...VENDOR_IDS], '');
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('');
+  });
 
   // spec §7: a missing vendor drops out of `map`, leaving fewer than 3 entries.
   it('emits a 2-entry map when only two vendors responded', async () => {

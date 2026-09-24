@@ -34,20 +34,22 @@ hash_int() {
 }
 
 # ---------------------------------------------------------------------------
-# shuffle_labels <seed> <vendor_id>... — seeded Fisher-Yates, then A/B/C in order.
+# label_permutation <r-list> <vendor_id>... — apply a precomputed Fisher-Yates
+# swap sequence and emit A/B/C JSON. <r-list> is a single space-joined string
+# of decimal integers, one per swap step, ordered i=n-1..1 (the same order the
+# loop below walks) — a STRING, not a bash array: a 1-vendor caller produces
+# an EMPTY r-list, and under `set -u` a zero-element bash array is unbound on
+# access (bash 3.2 quirk), whereas an empty string has no such trap.
 # ---------------------------------------------------------------------------
-shuffle_labels() {
-  local seed="$1"; shift
-  if [ "$#" -eq 0 ]; then
-    printf 'anonymize.sh: shuffle_labels needs at least one vendor\n' >&2
-    return 64
-  fi
-
+label_permutation() {
+  local r_list="$1"; shift
   local vendors=("$@")
   local n=${#vendors[@]}
   local i j r tmp
+  # shellcheck disable=SC2086  # intentional word-split of the r-list string
+  set -- $r_list
   for (( i = n - 1; i > 0; i-- )); do
-    r=$(hash_int "$seed" "$i")
+    r="$1"; shift
     j=$(( r % (i + 1) ))
     tmp="${vendors[$i]}"
     vendors[$i]="${vendors[$j]}"
@@ -62,6 +64,160 @@ shuffle_labels() {
   done
   out+='}'
   printf '%s\n' "$out"
+}
+
+# ---------------------------------------------------------------------------
+# shuffle_labels <seed> <vendor_id>... — seeded Fisher-Yates, then A/B/C in order.
+# ---------------------------------------------------------------------------
+shuffle_labels() {
+  local seed="$1"; shift
+  if [ "$#" -eq 0 ]; then
+    printf 'anonymize.sh: shuffle_labels needs at least one vendor\n' >&2
+    return 64
+  fi
+
+  local n=$#
+  local i rs=''
+  for (( i = n - 1; i > 0; i-- )); do
+    rs+="$(hash_int "$seed" "$i") "
+  done
+
+  label_permutation "$rs" "$@"
+}
+
+# ---------------------------------------------------------------------------
+# hash_hex_stream — batch form of hash_int's hex step: reads "<seed>:<counter>"
+# lines on stdin, emits one 8-hex-char digest per line. `shasum` itself is a
+# perl script wrapping Digest::SHA (`head -1 "$(which shasum)"` shows the
+# shebang `#!/usr/bin/perl` — an ABSOLUTE path), but this function resolves
+# `perl` from PATH instead of that fixed interpreter; the two usually
+# coincide but are not guaranteed identical. What "no new dependency" means
+# precisely: Digest::SHA is already required because shasum needs it, so
+# calling perl directly here trades N subprocess forks — one `shasum`
+# pipeline per Fisher-Yates swap — for one perl process handling every swap
+# of every seed in a `--shuffle-many` batch (spec #1724).
+# ---------------------------------------------------------------------------
+hash_hex_stream() {
+  perl -MDigest::SHA=sha256_hex -lne 'print substr(sha256_hex($_), 0, 8)'
+}
+
+# ---------------------------------------------------------------------------
+# shuffle_many <count> <vendor_id>... — batch form of calling
+# `shuffle_labels "agora-shuffle-$k" <vendor_id>...` for k=1..count and
+# concatenating the output, but with ALL hashing for the whole batch done by
+# a SINGLE hash_hex_stream invocation instead of one `shasum` pipeline per
+# swap per k (#1724 — CI timeout on 600 sequential shuffles). Emits one JSON
+# map per line, same as the loop it replaces.
+# ---------------------------------------------------------------------------
+shuffle_many() {
+  local count="$1"; shift
+
+  # Validate count as a non-negative DECIMAL integer, rejecting anything a
+  # bare `[ "$count" -ge 1 ]` would either silently accept-as-wrong or blow
+  # up on later (measured against the original script, a70f6f47): "abc",
+  # "3.0", "0x3" and "1+1" all made `[` itself fail with "integer expression
+  # expected" while `shuffle_many` had ALREADY returned rc 0 with no output
+  # (the `||` short-circuits `[`'s failure into the same path as count=0);
+  # "08" reached the arithmetic `for` below and aborted there instead, with
+  # "value too great for base", because bash arithmetic context reads a
+  # leading-zero numeral as OCTAL and "8" is not a valid octal digit. Every
+  # one of those is a silent-or-confusing failure for a caller that passed a
+  # non-integer; reject them all up front with one explicit message instead.
+  #
+  # Design choices, both intentionally more conservative than the original:
+  #   - Negative counts ("-3"): the original returned rc 0 with no output,
+  #     identical to a real count of 0 — indistinguishable from "the batch
+  #     was empty on purpose". Reject instead so a negative count can never
+  #     be mistaken for a legitimate empty result (spec #1724 review M1).
+  #   - Leading zeros ("08", "00"): reject rather than normalize (e.g. by
+  #     stripping to "8"), because normalization would let two different
+  #     caller-supplied strings silently produce the same batch size — an
+  #     error is more honest than a silent reinterpretation. "0" itself
+  #     (the literal zero, not zero-with-padding) stays valid and unchanged:
+  #     rc 0, no output, exactly as before.
+  case "$count" in
+    0) ;;
+    *[!0-9]*|'')
+      printf 'anonymize.sh: --shuffle-many count must be a non-negative integer\n' >&2
+      return 64
+      ;;
+    0*)
+      printf 'anonymize.sh: --shuffle-many count must be a non-negative integer\n' >&2
+      return 64
+      ;;
+  esac
+
+  [ "$count" -ge 1 ] || return 0
+
+  if [ "$#" -eq 0 ]; then
+    # Zero vendors: reuse shuffle_labels for its existing error message and
+    # exit code (64) — under `set -e` this aborts the whole script on the
+    # first call, exactly as the original per-k loop did on its first
+    # iteration, regardless of how large `count` is.
+    shuffle_labels "agora-shuffle-1" "$@"
+    return
+  fi
+
+  local n=$#
+  local per_row=$(( n - 1 ))
+  local k
+
+  if [ "$per_row" -le 0 ]; then
+    # Single-vendor case: no Fisher-Yates swaps needed, so no hashing at all —
+    # the same short-circuit label_permutation already takes for an empty
+    # r-list, just repeated `count` times.
+    for (( k = 1; k <= count; k++ )); do
+      label_permutation '' "$@"
+    done
+    return
+  fi
+
+  # Build every "<seed>:<counter>" line for the whole batch up front, in the
+  # same nested order (k outer, i=n-1..1 inner) that the per-row consumption
+  # loop below expects, then hash them all in one perl process.
+  local i lines=''
+  for (( k = 1; k <= count; k++ )); do
+    for (( i = n - 1; i > 0; i-- )); do
+      lines+="agora-shuffle-$k:$i"$'\n'
+    done
+  done
+
+  local hexes
+  hexes=$(printf '%s' "$lines" | hash_hex_stream)
+
+  # hash_hex_stream runs under a pipeline, and `set -euo pipefail` only
+  # catches a non-zero EXIT from perl — it says nothing about the perl
+  # process emitting fewer lines than it was fed while still exiting 0
+  # (e.g. a truncating wrapper ahead of the real perl on PATH). A short
+  # stream here is silent data loss: label_permutation would just get
+  # called fewer times than `count`, with no error at all. Count the hex
+  # lines actually consumed and require BOTH that the total matches
+  # count*per_row (spec #1724 review L1) AND that the consume loop below
+  # ends with `seen -eq 0` — i.e. the last group closed exactly on a
+  # `per_row` boundary rather than being cut off mid-group. The second
+  # check is redundant with the first in every case this function can
+  # reach (count*per_row is itself a multiple of per_row, so a short total
+  # is caught either way), but it is cheap and it directly verifies the
+  # invariant the consume loop below depends on, rather than trusting the
+  # arithmetic that implies it.
+  local hex rs='' seen=0 total=0
+  while IFS= read -r hex; do
+    rs+="$(( 16#$hex )) "
+    seen=$(( seen + 1 ))
+    total=$(( total + 1 ))
+    if [ "$seen" -eq "$per_row" ]; then
+      label_permutation "$rs" "$@"
+      rs=''
+      seen=0
+    fi
+  done <<< "$hexes"
+
+  local expected=$(( count * per_row ))
+  if [ "$total" -ne "$expected" ] || [ "$seen" -ne 0 ]; then
+    printf 'anonymize.sh: --shuffle-many hash stream truncated: got %s hex digest(s), expected %s\n' \
+      "$total" "$expected" >&2
+    return 70
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -464,10 +620,7 @@ main() {
     --shuffle-many)
       shift
       local count="$1"; shift
-      local k
-      for (( k = 1; k <= count; k++ )); do
-        shuffle_labels "agora-shuffle-$k" "$@"
-      done
+      shuffle_many "$count" "$@"
       ;;
     --build)
       shift
