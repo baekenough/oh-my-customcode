@@ -10,8 +10,12 @@ related:
   - [[pipeline-guards]]
   - [[task-decomposition]]
   - [[professor-triage]]
+  - [[deep-plan]]
   - [[deep-verify]]
+  - [[r010]]
+  - [[r020]]
   - [[r022]]
+  - [[r023]]
 ---
 
 # Pipeline
@@ -38,6 +42,17 @@ The `auto-dev` workflow runs a full release cycle: `pre-triage → scope-selecti
 ### Cross-tier: pre-existing converged artifact substitution — anchor re-location for same-session deep-plan substitution (#1652 #3-1/#3-2)
 
 Independent of the compression tier, an individual planning/verification step (triage / plan / deep-plan / deep-verify) may be satisfied by a pre-existing converged artifact instead of a fresh skill spawn, under the existing 3-condition substitution rule (converged artifact exists, covers scope, planning/verification step only). A 4th condition was added: when the substituting artifact is a **same-session** triage/plan output standing in for `deep-plan` (or `plan`), every implement-stage delegation prompt MUST instruct the agent to re-locate targets by **anchor** (function name / unique string), treating any line numbers cited in the issue body or artifact as reference only. Line numbers go stale across release commits — v1.1.60 measured: `#1647` cited lines 346-348 from the v1.1.59 state, but the script had grown to 608→733 lines by the time implement ran, forcing two agents to re-search. The substitution justification log must name the artifact AND state that anchor-based re-measurement was included in the delegation prompts.
+
+### Cross-tier: Lightweight Skill-Mode Substitution (v1.1.81, #1721/#1727)
+
+Independent of the compression tier selected, the `triage` / `plan` / `deep-plan` skill spawns MAY be replaced by orchestrator-integrated analysis — a lightweight mode — even in `standard` mode, ONLY when ALL of the following hold. `deep-verify` is NOT eligible for this substitution — it remains eligible only for the separate pre-existing-converged-artifact substitution above (a full prior skill spawn's output reused, not orchestrator-integrated shortcutting).
+
+1. Scope size ≤3 issues (user decision, #1721 제안 4: 상한 3건).
+2. For EVERY scoped issue in the substitution, EITHER the issue body cites concrete code evidence (a file path AND an anchor — function name / unique string, not just a claim), OR the orchestrator has recorded the measured root cause together with the exact command used to measure it (#1727 찐빠 #1).
+3. A mandatory justification log line is emitted naming the step and the evidence basis: `"[compression-mode] lightweight skill-mode substitution — step '{step}', scope={n}, evidence={file:anchor or measured-cause+command}"`.
+4. The resulting artifact explicitly states its own mode (`mode: full` or `mode: lightweight`) so downstream steps and reviewers can tell it apart from a full skill spawn (#1721 제안 4).
+
+This substitution is NEVER available for `implement`, `verify-build`, `release`, `ci-check`, or `deep-verify`. It replaces analysis output only — every step's state-change side effect still runs in full regardless of substitution (see "Cross-tier — State-Change Side Effects Are NEVER Compressed" below). If any condition above cannot be concretely asserted, the step does not substitute — it spawns the skill. See [[deep-plan]] and [[professor-triage]] for the skill-side cross-references to this gate.
 
 ### deep-verify: lite-tier split standard (#1652 #3-4)
 
@@ -98,8 +113,9 @@ Counter-example recorded in the workflow: adding one skill plus one agent (agora
    - If current FAIL count **>** baseline → new regression detected → halt + report failure list
    - If current FAIL count **≤** baseline → continue with advisory `"X failures (baseline {n}, delta {d})"`
 5. Build script (if exists)
+6. **Coverage threshold check (v1.1.81)** — equivalent to `.husky/pre-commit`'s coverage gate, added so a deferred implement-stage commit (see the `implement` step's "deferred combined commit" option below) is still coverage-gated before release even though the hook has not run yet: run `bun test --coverage` standalone (no pipe, exit code read directly), extract Function/Line coverage from the "All files" summary line, and read the CURRENT threshold value and the new-source-file relaxation rule directly from `.husky/pre-commit` at run time rather than hardcoding a number — the hook's threshold can change independently of this workflow file. If either Function or Line coverage falls below the threshold `.husky/pre-commit` currently applies (accounting for its dynamic relaxation for commits containing newly added `src/**/*.ts`/`.tsx` files), the step halts and reports the shortfall.
 
-**Halt conditions**: lint errors, typecheck errors, NEW test failures (regression from baseline), build failure, lockfile drift.
+**Halt conditions**: lint errors, typecheck errors, NEW test failures (regression from baseline), coverage below the threshold `.husky/pre-commit` currently applies, build failure, lockfile drift.
 
 **Purpose**: Catches unit test regressions that static checks miss. Addresses the v0.133.0 pattern where hook script exit code changes introduced test regressions not detected by lint/typecheck alone.
 
@@ -136,6 +152,8 @@ The point of doing this at scope time is timing, not classification: the classif
 
 Origin: #1574 찐빠 #5.
 
+**Existing-file `git ls-files` check (v1.1.81, #1725 찐빠 #4)**: the path extraction that feeds this pre-check now measures each extracted path with `git ls-files` immediately, before scope is committed (not deferred to implement time) — but ONLY for a target the issue treats as an EXISTING file (an edit/refactor of a path the issue claims already exists). If such a path is absent from this repo (e.g. it belongs to a different repository), the issue is routed to `decision-needed` or excluded from scope immediately. For a target the issue is CREATING (a new file), this absence check does not apply — a new file is by definition untracked ([[r010]] "Required Checks": new-creation targets are excluded from path-existence checks); instead the parent directory's existence is confirmed, and the issue is not excluded solely because the new file path itself is absent.
+
 ### release: branch-before-bump ordering (#1542)
 
 The `release` step's version-bump sub-steps were reordered so the `release/v{NEW}` branch is created **before** any bump edit (previously the branch was created afterwards, in step 3.a, from an already-bumped `develop`). Pushing the bump commit to `develop` first leaves `develop` and `release/v{NEW}` at the same commit → PR diff=0 → `gh pr create` fails with `GraphQL: No commits between develop and release/v{NEW}` (observed v1.1.38).
@@ -156,6 +174,12 @@ jq -e --arg v "<NEW>" '.generatorVersion==$v and .templateVersion==$v' .omcustom
 
 Failure halts the `release` step — the cause is almost always step 1.e having run before step 1.d landed; the fix is to re-run 1.d then 1.e, re-stage, and re-run the 1.j assertion.
 
+### implement step 5: commit trailer restriction + deferred combined-commit option (v1.1.81)
+
+The `implement` step's per-issue commit instruction now states that commit trailers MUST use ONLY the exact trailer text the orchestrator supplies in the delegation prompt — the agent MUST NOT add or rewrite any other trailer. This closed a gap observed in another project's session: a subagent added an unapproved model-attribution trailer to 4 local commits, citing the repo's own past-commit convention as justification; the trailer did not survive because the squash-merge specified the PR body separately (#1728 찐빠 #6). The same restriction is echoed on the `release` step's version-bump commit instruction.
+
+A new OPTION allows deferring the implement-stage commit until AFTER `deep-verify` corrections have landed, combining the implement changes and the deep-verify corrections into ONE commit (정정 커밋 추가 비용 절감, #1727 찐빠 #4) — allowed ONLY before any push to `develop`, and MUST be announced to the user. The deferred commit still carries the `Refs #<N>` trailer and the 400000ms timeout (see below). Risk: `verify-build` and `deep-verify` then run against an uncommitted working tree until the combined commit lands (this is why `verify-build`'s new coverage-threshold check above exists — it re-covers ground the pre-commit hook would otherwise have gated). DEADLINE: the combined commit MUST land — with the `.husky/pre-commit` gate passing — before the `release` step begins; `release` step 1.a requires a clean working tree, so a deferred commit cannot cross into `release`.
+
 ### implement/release commit steps: Bash timeout for pre-commit hook (#1645)
 
 Both the `implement` step's per-issue commit and the `release` step's version-bump commit now carry an explicit warning: the main-worktree `.husky/pre-commit` hook runs typecheck + `bun run lint` + the **full** `bun test --coverage` suite (~165s measured) plus coverage-threshold and CLAUDE.md count checks before the commit lands. The Bash tool's default timeout (120000ms) kills a `git commit` delegation mid-hook with exit 143 (SIGTERM), so both steps now instruct delegating the commit with an explicit `timeout: 400000` (≈6.7 min). `--no-verify` is never an acceptable workaround — it is a standing-prohibition quality-gate bypass per [[r010]]. Git worktrees are unaffected (the pre-commit hook branches on `[ -f .git ]` and runs typecheck only there, exiting 0 — the full suite is CI's job on that path). See [[mgr-gitnerd]] "Commit Timeout Budget" for the full breakdown, and the reminder that exit 143 is not evidence of commit failure — `git log -1` ground-truth is required before retrying.
@@ -170,11 +194,19 @@ The `ci-check` step's auto-tag verification (`gh run list`/`gh run view` on the 
 
 Origin: #1655.
 
+### ci-check: bounded CI polling + issue label/state lifecycle fix step (v1.1.81)
+
+`ci-check`'s CI-wait instruction now requires polling WITHIN the Bash timeout budget (loop_count × sleep_interval + command time ≤ timeout, with margin), or preferring a single bounded call — `gh run watch <run-id> --exit-status` (optionally `run_in_background`) — over an unbounded manual poll loop (#1711 찐빠 #6).
+
+A new final step verifies every scoped issue's label/state lifecycle actually landed: `in-progress` removed and the issue CLOSED for each issue in this release's scope — checked directly with `gh issue view <N> --json state,labels` rather than trusting that the `implement` step ran the lifecycle transition (#1722 찐빠 #6, closes a gap where CLOSED issues retained a stale `in-progress` label). This step finds AND fixes, not verify-only: a stale `in-progress` label is removed and the fix reported; an issue still OPEN is NOT closed here — closing stays with `auto-tag.yml` unless it failed to close that issue, in which case the open issue is reported for manual close per the `release` step's closing mechanism (#1722 하네스 제안 4).
+
 ### deep-verify: standard delegation wording — do not re-run pre-measured items (#1655)
 
 `deep-verify`'s delegation prompt now carries standard wording aligned with [[r023]] "상한선 — 오케스트레이터 사전 실측 항목은 재실행 금지": the prompt must enumerate which items the orchestrator has already measured before delegation (e.g. file existence, counts, branch-protection scope) and instruct the agent NOT to re-verify those — verification effort goes only to items not yet measured. Re-including pre-measured items in the completion criteria wastes turn budget and, measured on a paired mgr-sauron delegation, was the difference between a 25-turn truncation and a 16-turn completion.
 
 Cross-reference: [[r023]] Delegated Verification Floor (ceiling half), [[r020]] maxTurns Truncation (turn-budget sizing).
+
+**Verification delegations also require turn-arithmetic sizing (v1.1.81, #1722 찐빠 #2)**: verification delegations must compute turn arithmetic (target file count × judgment-item count) the same way editing delegations do and state it in the delegation prompt, splitting by file group when the budget is exceeded. A v1.1.77 first-pass mgr-sauron delegation put 30+ files and 4 judgment items into a single delegation and was truncated at 25 turns with no verdict.
 
 ### Wiki resync/reseed ordering — dispatch after deep-verify, not alongside it (#1688)
 
@@ -200,12 +232,29 @@ Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delet
 
 The `deep-plan` step description now adds: a research/measurement delegation's completion criteria must require every number appearing in the conclusion sentence to be recomputed from the artifact's own table (jq/awk) and paired alongside it. Cross-ref [[r023]] 「리서치 위임의 결론 수치는 표에서 재계산해 병기」.
 
-### implement step: Anti-pattern 1:1 comparison + a fixed constraint block for text-editing delegations (#1707)
+### implement step: Anti-pattern 1:1 comparison + a fixed constraint block for text-editing delegations (#1707, expanded v1.1.81)
 
 Two new standing bullets were added to the `implement` step's rules/gates block:
 
 - **Anti-pattern 1:1 comparison** — before dispatching any delegation prompt in an iteration that created or reinforced a rule clause, the orchestrator MUST compare that clause's Anti-pattern table rows 1:1 against the delegation prompt's sentences and rewrite any match. Cause: [[r016]] 「신설 조항의 동일 반복 self-check」 was known as text but not executed as a procedure (#1707 #1).
-- **Fixed constraint block** — every rule/skill/guide TEXT-editing delegation prompt must now include a standing 5-item block: (a) Korean 합쇼체 for new sentences, do not imitate adjacent 반말; (b) locate by anchor strings, never line numbers; (c) copy quotations from `gh issue view --json body` output and verify with `grep -F`; (d) a ±1 heading check including re-binding of relative references ("위 표"/"아래 표"/"직전 조항"); (e) copy to the `templates/` mirror and confirm `md5 -q` equality (#1707 #3).
+- **Fixed constraint block** — every rule/skill/guide TEXT-editing delegation prompt must now include a standing block, expanded from 5 to 8 items:
+  - (a) Korean 합쇼체 for new sentences, do not imitate adjacent 반말. As of v1.1.81 the completion criteria MUST include THREE deterministic checks, scoped to edited text files (md/yaml) and restricted to added lines only (`git diff -U0 -- <edited md/yaml files> | grep '^+'`): a family-word check, a line-final auxiliary check, and a line-final noun-ending check (added because 반말/명사 종결 endings such as 확인함·정정 필요·완료됨 fall entirely outside the 다-ending regexes, #1728 찐빠 #2 residual). Even with all three checks a residual gap remains for 반말/명사 종결 variants the patterns don't enumerate, so the agent MUST also read the newly added lines directly as a final check, not rely on regex alone. When an edit re-emits a pre-existing line unchanged in meaning (e.g. reformatting), only the newly added span is judged, not the whole re-emitted line.
+  - (b) locate by anchor strings, never line numbers;
+  - (c) copy quotations from `gh issue view --json body` output and verify with `grep -F`;
+  - (d) a ±1 heading check including re-binding of relative references ("위 표"/"아래 표"/"직전 조항");
+  - (e) copy to the `templates/` mirror and confirm `md5 -q` equality (#1707 #3);
+  - (f) **[new, v1.1.81]** when paraphrasing a quoted source, preserve its result word, subject, and causal direction (결과어·주체·인과 방향 보존) — checked SEPARATELY from the `grep -F` lexical match, by placing the paraphrase and the original sentence side by side in the completion report (#1711 찐빠 #1);
+  - (g) **[new, v1.1.81]** version/count example values written into rule/skill text use placeholders, never real literals — the rule corpus is itself a grep target, and a real literal can contaminate the very command a clause cites (#1711 찐빠 #2);
+  - (h) **[new, v1.1.81]** any temporary file the delegation creates MUST live under a per-agent-unique path (`$TMPDIR` or the session scratchpad), never a fixed shared path (#1722 찐빠 #7). The orchestrator MUST confirm with `git status --short` after such a delegation that no stray file was left in the repo (#1721 찐빠 #7).
+
+Additional standing bullets added to the same rules/gates block (v1.1.81):
+
+- **Guard/classifier bypass prohibition** — every delegation prompt (not only rule/skill/guide TEXT edits) MUST instruct the agent that if a guard, classifier, or permission check blocks an action, it MUST NOT route around it (e.g. via a shell glob or path rewrite) — it MUST stop and report the block verbatim ([[r010]] 「품질 게이트 우회 금지 — 훅 차단은 보고 대상」, extended here from git hooks to guards/classifiers/permissions generally, #1728 찐빠 #1).
+- **Forwarded number/identifier re-verification** — when forwarding a number OR an identifier (file path, rule number, issue number) an agent reported into a subsequent delegation prompt, the orchestrator recomputes the number once via diff/ls AND re-checks the identifier once via a corpus-wide grep of the reported CONTENT key, not the reported identifier itself (e.g. if an agent reports "rule N covers content key X", grep for X, not N) and compares the file/rule where that content actually lives against the reported identifier before restating either ([[r023]] 「리서치 위임의 결론 수치는 표에서 재계산해 병기」 확장, #1709 #5 확장, #1722 찐빠 #3).
+- **Harness/production-path delegation bidirectional proof** — delegations that build or replace an evaluation/test harness or a production code path (fixtures, ablation lanes, scoring/oracle logic) MUST require bidirectional proof, not a single-direction pass: (a) positive AND negative fixtures, including invalid-input fixtures compared against the original's rc/stderr for a replaced code path, not just valid-input stdout parity; (b) a mandatory control — the change measured before AND after together with the SAME harness (대조군, #1721 찐빠 #1) — reverting the change to confirm the result flips, or a synthetic positive-control input, are additional proof means, not substitutes for the before/after measurement; (c) no working around a discovered product/measurement defect to force a pass — halt and report instead ([[r023]] 「Conditional-Output Verification」 확장, #1721 찐빠 #1, #1727 찐빠 #2, #1728 찐빠 #2).
+- **CC-note correction ground truth** — delegations correcting a CC release note (a note the issue claims is wrong) MUST enclose the upstream CHANGELOG lines (measured with `grep -nF`) and the original target paragraph as ground truth; if the issue's premise differs from the primary source, the primary source wins and the discrepancy is reported rather than silently inherited into the corrected wording (#1730 찐빠 #1).
+- **Split-delegation full findings list** — when review-correction work is split across file-ownership delegations (one file per agent), every split delegation prompt MUST carry the FULL list of review findings (not only the subset touching that agent's file) as a self-check list, so a fix in one file does not reintroduce a defect the review flagged in a sibling file (#1730 찐빠 #2).
+- **DETAIL-wrap visible-sentence preservation check** — any delegation that compresses or conceals rule text (DETAIL-wrapping, retirement) MUST deterministically confirm that every visible approval/prohibition/MUST sentence present in the file at HEAD is semantically still present in the new visible text afterwards — a visible-text-to-visible-text comparison, not a summary-vs-summary one, using per-sentence `grep -F` of key phrases from each of HEAD's visible sentences against the new comment-stripped text (#1722 찐빠 #1).
 
 ## Relationships
 
@@ -236,3 +285,4 @@ Two new standing bullets were added to the `implement` step's rules/gates block:
 - Issue #1591 — release-PR merge instruction carried an unverified `--admin` flag across sessions; ground-truth measurement found no reviewer-approval gate exists and a plain merge succeeds (2026-08-15)
 - Issue #1593 — step 1.e's lockfile mechanism was undocumented and silently recorded a stale `templateVersion` when run before step 1.d landed; step 1.j 3-way assertion added to close the gap step 1.i's 2-way check misses (2026-08-15)
 - Content-drift resync 2026-09-24 (v1.1.77, #1717): added an `implement`-step description bullet for `claude-code-release` issues — CC release knowledge goes to `guides/claude-code/15-version-compatibility.md` per rule (+ templates mirror); a rule file gets at most ONE behavioral line, and only when agent behavior must change. Delegations adding visible text to `CLAUDE.md`/`.claude/rules/*.md` must keep the comment-stripped total ≤140,000 chars (hard cap 150,000, `validate-docs --programmatic-only`) — retire/DETAIL-wrap another clause in the same change if needed. Cross-ref [[r016]]'s new instruction-budget policy.
+- Content-drift resync 2026-09-24 (v1.1.81, #1721/#1722/#1725/#1727/#1728/#1730): added "Cross-tier: Lightweight Skill-Mode Substitution" (triage/plan/deep-plan may run as orchestrator-integrated analysis under a 4-condition gate — scope ≤3 issues, code evidence or measured root cause, mandatory justification log, mode-labeled output; cross-ref [[deep-plan]], [[professor-triage]]); the scope-selection existing-file `git ls-files` check (excludes the new-creation carve-out already in [[r010]] "Required Checks"); "implement step 5: commit trailer restriction + deferred combined-commit option" (trailers limited to the exact text supplied, and an implement-stage commit may be deferred to combine with deep-verify corrections before any push to develop); the `verify-build` coverage-threshold check (reads the live `.husky/pre-commit` threshold rather than hardcoding one — exists specifically to cover the deferred-commit gap); expanded the fixed constraint block from 5 to 8 items ((f) result-word/subject/causal-direction preservation, (g) placeholders not real literals in rule examples, (h) unique temp-file paths + post-delegation `git status --short` check) and added six new standing implement-step bullets (guard/classifier bypass prohibition, forwarded number/identifier re-verification, harness/production-path bidirectional-proof requirement, CC-note correction ground truth, split-delegation full findings list, DETAIL-wrap visible-sentence preservation check); added verification-delegation turn-arithmetic sizing to the `deep-verify` standard-delegation-wording section; and added "ci-check: bounded CI polling + issue label/state lifecycle fix step" (`gh run watch --exit-status` over unbounded polling, plus a find-and-fix pass for stale `in-progress` labels on closed issues).

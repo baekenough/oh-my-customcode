@@ -178,6 +178,17 @@ steps:
       For each scoped issue, extract target file/directory paths from its title+body (explicit
       paths, backtick-quoted paths, or clearly named targets).
 
+      Measure each extracted path with `git ls-files` NOW, before scope is committed — do not
+      defer this to implement time — but ONLY for a target the issue treats as an EXISTING
+      file (edit/refactor of a path the issue claims already exists). If such a path is absent
+      from this repo (e.g. it belongs to a different repository), route that issue to
+      decision-needed or exclude it from this scope immediately (scope-selection 단계에서
+      이슈가 가리키는 경로의 `git ls-files` 실측을 선행, #1725 찐빠 #4). For a target the issue
+      is CREATING (a new file), this absence check does not apply — a new file is by
+      definition untracked (R010 「Required Checks」: 신규 생성 대상은 path-existence 확인에서
+      제외); instead confirm the parent directory exists, and do NOT exclude the issue solely
+      because the new file path itself is absent.
+
       Check against `.claude/rules/MUST-orchestrator-coordination.md` "Protected Paths":
       - `.claude/hooks/**` → EXCLUDED from mgr-creator routing; requires EXPLICIT USER APPROVAL
         (security-critical). If any scoped issue targets this path, request approval for the
@@ -271,7 +282,10 @@ steps:
       ## Tier 3 — standard (fallback)
 
       If neither docs-only nor lite met → set compression_mode=standard
-        - All pipeline steps execute normally with full skill spawns
+        - All pipeline steps execute normally with full skill spawns — EXCEPT the two
+          Cross-tier exceptions below ("Pre-Existing Converged Artifact Substitution" and
+          "Lightweight Skill-Mode Substitution"), which stay available under standard mode too
+          when their own conditions are met ("Independent of the tier selected above").
         - Log: "[compression-mode] standard mode (scope={n}, mixed/high-risk labels, large scope, or code logic change)"
 
       ## Cross-tier — State-Change Side Effects Are NEVER Compressed
@@ -330,6 +344,36 @@ steps:
 
       This authorizes, under an audit log, a substitution that would otherwise be a standard-mode contract deviation. Origin: #1309 (a converged `/research` artifact was used in place of triage/plan/deep-plan under standard mode without an authorizing rule).
 
+      ## Cross-tier — Lightweight Skill-Mode Substitution
+
+      Independent of the tier selected above, the triage / plan / deep-plan skill spawns MAY be
+      replaced by orchestrator-integrated analysis — a lightweight mode — even in standard mode,
+      ONLY when ALL of the following hold. deep-verify is NOT eligible for this lightweight-mode
+      substitution (see NEVER list below) — it remains eligible only for the separate
+      pre-existing-converged-artifact substitution described above (a full prior skill spawn's
+      output reused, not orchestrator-integrated shortcutting).
+      1. Scope size ≤ 3 issues (이슈에 코드 근거가 있고 범위가 이슈 3건 이하이면 경량 모드,
+         #1721 제안 4 — 사용자 결정: 상한 3건).
+      2. For EVERY scoped issue in this substitution, EITHER the issue body cites concrete code
+         evidence (a file path AND an anchor — function name / unique string, not just a claim),
+         OR the orchestrator has recorded the measured root cause together with the exact
+         command used to measure it (scope=1 + 오케스트레이터 실측 원인 확정 조건의 감사 로그
+         대체 조항, #1727 찐빠 #1).
+      3. A MANDATORY justification log line is emitted naming the step and the evidence basis:
+         "[compression-mode] lightweight skill-mode substitution — step '{step}', scope={n},
+         evidence={file:anchor or measured-cause+command}".
+      4. The resulting artifact explicitly states its own mode (`mode: full` or
+         `mode: lightweight`) so downstream steps and reviewers can tell it apart from a full
+         skill spawn (결과물에 모드를 표시, #1721 제안 4).
+
+      This substitution is NEVER available for implement, verify-build, release, ci-check, or
+      deep-verify.
+      It replaces analysis output ONLY — every step's state-change side effect still runs in
+      full regardless of substitution (see "Cross-tier — State-Change Side Effects Are NEVER
+      Compressed" above).
+
+      If any condition above cannot be concretely asserted, do NOT substitute — spawn the skill.
+
       ## Output
 
       compression_mode ∈ {docs-only, lite, standard} as pipeline state for downstream steps.
@@ -338,17 +382,17 @@ steps:
 
   - name: triage
     skill: professor-triage
-    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — skipped if docs-only, integrated-analysis allowed if lite"
+    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met"
     depends_on: compression-mode-eval
 
   - name: plan
     skill: release-plan
-    description: "Release unit plan from triaged issues — skipped if docs-only, integrated-analysis allowed if lite"
+    description: "Release unit plan from triaged issues — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met"
     depends_on: triage
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시한다(#1707 #4)."
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시한다(#1707 #4)."
     depends_on: plan
 
   - name: implement
@@ -363,6 +407,12 @@ steps:
          - Use specialized agents (lang-*, be-*, fe-*, infra-*) over general-purpose
       4. TDD via superpowers:test-driven-development when tests apply
       5. Commit via mgr-gitnerd with `Refs #<N>` trailer in body — NEVER `Fixes`/`Closes`/`Resolves` (#1542).
+         Commit trailers MUST use ONLY the exact trailer text the orchestrator supplies in the
+         delegation prompt — the agent MUST NOT add or rewrite any other trailer (observed in
+         another project's session: a subagent added an unapproved model-attribution trailer to 4
+         local commits, citing the repo's own past-commit convention as justification; the trailer
+         did not remain on the target branch because the squash-merge specified the PR body
+         separately) (#1728 찐빠 #6).
          ⚠ implement-stage commits land directly on develop (no PR gate here). A close-keyword trailer on a
          develop-bound commit auto-closes the issue on push — BEFORE release/tag/publish (observed v1.1.38,
          07:49:26Z). Close keywords belong ONLY in the release-stage PR body (see release step 3.b) — auto-tag.yml
@@ -375,6 +425,15 @@ steps:
              bypasses the quality gate and is on the standing deny list (R010).
              Note: git worktrees run typecheck only (`.husky/pre-commit` lines 7-12 branch on
              `[ -f .git ]` and exit 0), so the long budget matters most on the MAIN worktree.
+             OPTION: the implement-stage commit MAY be deferred until AFTER deep-verify
+             corrections have landed, combining the implement changes and the deep-verify
+             corrections into ONE commit (정정 커밋 추가 비용 절감, #1727 찐빠 #4) — allowed
+             ONLY before any push to develop, and MUST be announced to the user. The deferred
+             commit still carries the `Refs #<N>` trailer and the 400000ms timeout above. Risk:
+             verify-build and deep-verify then run against an uncommitted working tree until the
+             combined commit lands. DEADLINE: the combined commit MUST land — with the
+             `.husky/pre-commit` gate passing — before the release step begins; release step
+             1.a requires a clean working tree, so a deferred commit cannot cross into release.
       6. On success: remove in-progress, add verify-ready
       7. On failure: remove in-progress, add needs-review, comment error summary
 
@@ -394,10 +453,44 @@ steps:
         delegation prompt's sentences and rewrite any match (cause: the R016 「신설 조항의 동일
         반복 self-check」 was known as text but not executed as a procedure, #1707 #1).
       - Every rule/skill/guide TEXT-editing delegation prompt MUST include this fixed constraint
-        block: (a) Korean 합쇼체 for new sentences, do not imitate adjacent 반말; (b) locate by anchor
+        block: (a) Korean 합쇼체 for new sentences, do not imitate adjacent 반말 — completion
+        criteria MUST include THREE deterministic checks, scoped to edited text files (md/yaml)
+        and restricted to added lines only (`git diff -U0 -- <edited md/yaml files> | grep
+        '^+'`): family check `grep -cE '(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 "]'`
+        = 0, line-final auxiliary check `grep -E '다[.。"]?$' | grep -vc '니다[.。"]?$'` = 0
+        (the family list alone misses endings such as 따른다/했다/있다 and unpunctuated
+        line-final endings; the line-final check excludes 합쇼체 `-니다` endings so it does not
+        flag correct sentences — verified against 6 반말/평서형 positive samples and 6 합쇼체
+        negative samples, 12/12 correct) (#1711 찐빠 #3), AND line-final noun-ending check
+        `grep -E '(함|됨|필요)[.。"]?$'` = 0 (반말/명사 종결 endings such as 확인함·정정
+        필요·완료됨 fall entirely outside the 다-ending regexes above and were previously
+        undetectable — verified against 4 명사 종결 positive samples and 4 합쇼체 negative
+        samples, 8/8 correct) (#1728 찐빠 #2 residual). Even with all three checks, a residual
+        gap remains for 반말/명사 종결 variants the patterns above do not enumerate — the agent
+        MUST also read the newly added lines directly as a final check, not rely on regex alone.
+        When an edit re-emits a pre-existing
+        line unchanged in meaning (e.g. reformatting), judge only the newly added span, not the
+        whole re-emitted line; (b) locate by anchor
         strings, never line numbers; (c) copy quotations from `gh issue view --json body` output and
         verify with `grep -F`; (d) ±1 heading check including re-binding of relative references (위
-        표/아래 표/직전 조항); (e) copy to `templates/` mirror and confirm `md5 -q` equality (#1707 #3).
+        표/아래 표/직전 조항); (e) copy to `templates/` mirror and confirm `md5 -q` equality (#1707 #3);
+        (f) when paraphrasing a quoted source, preserve its result word, subject, and causal
+        direction (결과어·주체·인과 방향 보존) — this is checked SEPARATELY from the `grep -F`
+        lexical match, by placing the paraphrase and the original sentence side by side in the
+        completion report (#1711 찐빠 #1); (g) version/count example values written
+        into rule/skill text use placeholders, never real literals (룰 예시 값은 플레이스홀더,
+        실값 리터럴 금지) — the rule corpus is itself a grep target, and a real literal can
+        contaminate the very command a clause cites (#1711 찐빠 #2); (h) any temporary file the
+        delegation creates MUST live under a per-agent-unique path (`$TMPDIR` or the session
+        scratchpad), never a fixed shared path (#1722 찐빠 #7).
+      - Every delegation prompt (not only rule/skill/guide TEXT edits) MUST instruct the agent
+        that if a guard, classifier, or permission check blocks an action, it MUST NOT route
+        around it (e.g. via a shell glob or path rewrite) — it MUST stop and report the block
+        verbatim (R010 「품질 게이트 우회 금지 — 훅 차단은 보고 대상」, extended here from git
+        hooks to guards/classifiers/permissions generally) (#1728 찐빠 #1).
+      - After any delegation that creates temporary files under constraint (h) above, the
+        orchestrator MUST confirm with `git status --short` that no stray file was left in the
+        repo (#1721 찐빠 #7).
       - Document mirror/parity delegations (README/ARCHITECTURE/CLAUDE.md ko-en, templates
         mirrors, etc.) MUST be split to ≤3 files per delegation (a companion cap alongside the
         arithmetic below, not a replacement for it); compute turn arithmetic (files × 3 +
@@ -420,17 +513,52 @@ steps:
         `.gitignore` rule) — MUST be excluded from delegation scope, or its tracked status
         decided first, before dispatch (R010 「Agent Capability Pre-Check」 git-tracked row)
         (#1709 #4).
-      - When forwarding a number an agent reported (row/line/file counts, etc.) into a
-        subsequent delegation prompt, recompute it once via diff/ls (e.g. `git diff -U0 --
-        <path> | grep -c '^+[^+]'`) before restating it — do not relay an unverified
-        agent-reported count (R023 「리서치 위임의 결론 수치는 표에서 재계산해 병기」 #1707 #4
-        확장, #1709 #5).
+      - When forwarding a number OR an identifier (file path, rule number, issue number) an
+        agent reported into a subsequent delegation prompt, recompute the number once via
+        diff/ls (e.g. `git diff -U0 -- <path> | grep -c '^+[^+]'`) AND re-check the
+        identifier once via a corpus-wide grep of the reported CONTENT key, not the reported
+        identifier itself (e.g. if an agent reports "<rule-N> covers <content key>", grep the
+        content key — `git grep -n '<content key>' .claude/rules/` — not `<rule-N>`) and
+        compare the file/rule where that content actually lives against the reported identifier
+        before restating either — do not relay an unverified agent-reported count or identifier
+        (R023 「리서치 위임의 결론 수치는 표에서 재계산해 병기」 #1707 #4 확장, #1709 #5, #1722
+        찐빠 #3).
+      - Delegations that build or replace an evaluation/test harness or a production code path
+        (fixtures, ablation lanes, scoring/oracle logic) MUST require bidirectional proof, not
+        a single-direction pass: (a) positive AND negative fixtures — a fixture set that can
+        both pass and fail, and for a replaced code path, invalid-input fixtures compared
+        against the original's rc/stderr, not just valid-input stdout parity; (b) a control —
+        the change MUST be measured before AND after together with the SAME harness (대조군:
+        변경 전후를 함께 측정, #1721 찐빠 #1) — this before/after measurement is MANDATORY, not
+        an example; reverting the change to confirm the result flips, or a synthetic
+        positive-control input returning a non-zero candidate/hit count, are additional means
+        of proving the harness can detect an effect at all, not substitutes for the before/after
+        measurement; (c) no working around a discovered product or measurement defect to force
+        a pass — halt and report instead (R023 「Conditional-Output Verification」 양성/음성 짝
+        원칙 확장, #1721 찐빠 #1, #1727 찐빠 #2, #1728 찐빠 #2).
       - For `claude-code-release` issues, CC release knowledge goes to
         `guides/claude-code/15-version-compatibility.md` (+ templates mirror) per rule; a rule
         file gets at most ONE line of behavioral norm only when agent behavior must change.
-        Delegations adding visible text to `CLAUDE.md`/`.claude/rules/*.md` MUST keep the
+        Delegations correcting a CC-note (a note the issue claims is wrong) MUST enclose the
+        upstream CHANGELOG lines (measured with `grep -nF`) and the original target paragraph
+        as ground truth; if the issue's premise differs from the primary source, the primary
+        source wins and the discrepancy is reported rather than silently inherited into the
+        corrected wording (#1730 찐빠 #1).
+      - When review-correction work is split across file-ownership delegations (one file per
+        agent), every split delegation prompt MUST carry the FULL list of review findings
+        (not only the subset touching that agent's file) as a self-check list, so a fix in one
+        file does not reintroduce a defect the review flagged in a sibling file (#1730 찐빠
+        #2).
+      - Delegations adding visible text to `CLAUDE.md`/`.claude/rules/*.md` MUST keep the
         comment-stripped total ≤140,000 chars (hard limit 150,000, validate-docs
-        `--programmatic-only`) — retire/DETAIL-wrap something else in-change if needed (R016 버전노트 보존정책 / 예산 게이트, #1717).
+        `--programmatic-only`) — retire/DETAIL-wrap something else in-change if needed (R016
+        버전노트 보존정책 / 예산 게이트, #1717). Any delegation that compresses or conceals rule
+        text (DETAIL-wrapping, retirement) MUST deterministically confirm that every visible
+        approval/prohibition/MUST sentence present in the file at HEAD is semantically still
+        present in the new visible text afterwards (의미상 남았는가) — a visible-text-to-visible-
+        text comparison, not a summary-vs-summary one, using a deterministic method: per-sentence
+        `grep -F` of key phrases from each of HEAD's visible approval/prohibition/MUST sentences
+        against the new comment-stripped text (#1722 찐빠 #1).
 
 
       ## Sensitive Path Handling (CC v2.1.121+)
@@ -475,6 +603,17 @@ steps:
          - If current FAIL count > baseline → NEW regression detected → halt + report failure list
          - If current FAIL count <= baseline → continue with advisory log "X failures (baseline {n}, delta {d})"
       5. Build verification (if package has build script)
+      6. Coverage threshold check (equivalent to `.husky/pre-commit`'s coverage gate — this
+         step exists so that a deferred implement-stage commit, per the implement step 5
+         OPTION, is still coverage-gated before release even though the hook has not run yet):
+         - bun test --coverage — standalone (NO pipe), read exit code directly
+         - Extract Function/Line coverage from the "All files" summary line
+         - Read the CURRENT threshold value and the new-source-file relaxation rule directly
+           from `.husky/pre-commit` at run time — do NOT hardcode a threshold number in this
+           workflow; the hook's threshold can change independently of this file
+         - If either Function or Line coverage falls below the threshold `.husky/pre-commit`
+           currently applies (accounting for its dynamic relaxation for commits containing
+           newly added `src/**/*.ts`/`.tsx` files): halt + report the shortfall
 
       For Python/Go/Docker/static-site projects: auto-detect and run equivalent (py_compile + pytest / go build + go vet + go test / docker build / file validation).
 
@@ -482,6 +621,7 @@ steps:
       - Lint errors (exit != 0)
       - Typecheck errors
       - NEW test failures (regression from baseline)
+      - Coverage below the threshold `.husky/pre-commit` currently applies
       - Build failure
       - Lockfile drift
 
@@ -491,7 +631,7 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정한다 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688)."
+    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron R017 + core self-check if lite. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정한다 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). 검증 위임도 편집 위임과 동일하게 턴 산술(대상 파일 수 × 판단 항목 수)을 계산해 위임서에 명시하고, 예산을 넘으면 파일군별로 분할해야 합니다 — v1.1.77 sauron 1차 위임은 30여 파일 + 판단 4항목을 단일 위임에 넣어 판정 없이 25턴에서 절단됐습니다(#1722 찐빠 #2). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688)."
     depends_on: verify-build
 
   - name: release
@@ -551,6 +691,8 @@ steps:
               ⚠ do NOT add Closes/Fixes/Resolves keywords to this commit message (#1542) — this commit merges into
               develop later via the release PR; a close keyword here bypasses the PR-body mechanism auto-tag.yml
               relies on (see step 3.b below). Use `Refs #N` if a cross-reference is needed.
+              ⚠ Commit trailers MUST use ONLY the exact trailer text supplied in this delegation
+              prompt — do not add or rewrite any other trailer (#1728 찐빠 #6; see implement step 5).
                ⚠ Bash timeout (#1645): delegate this commit with an explicit `timeout: 400000` — the
                main-worktree pre-commit hook runs the full test suite (~165s) and the Bash default of
                120000ms kills it with exit 143. `--no-verify` is NOT an acceptable workaround (R010).
@@ -631,7 +773,10 @@ steps:
          If NOT: skip with "No CI configured. Skipping." and continue.
       2. If CI exists:
          - gh run list --limit 10
-         - Wait for runs triggered by the new tag/push
+         - Wait for runs triggered by the new tag/push — poll WITHIN the Bash timeout budget
+           (loop_count × sleep_interval + command time ≤ timeout, with margin), or prefer a
+           single bounded call `gh run watch <run-id> --exit-status` (optionally
+           run_in_background) over an unbounded manual poll loop (#1711 찐빠 #6).
          - If failures: diagnose, fix, re-verify
       3. For npm projects with auto-tag.yml: MANDATORY additional check:
          gh run list --workflow auto-tag.yml --limit 1 --json conclusion,displayTitle
@@ -646,7 +791,17 @@ steps:
            - Branch naming mismatch (branch not matching release/v* pattern — fix: verify branch name)
          Report: "[ci-check] auto-tag.yml: {conclusion}" as mandatory line in CI status report.
       4. For npm projects: verify npm publish succeeded (npm view <pkg> version)
-      5. Report final CI status.
+      5. Verify every scoped issue's label/state lifecycle landed: `in-progress` removed and
+         the issue CLOSED for each issue that was in this release's scope — do not rely on the
+         implement step having run the lifecycle transition; check directly with
+         `gh issue view <N> --json state,labels` (#1722 찐빠 #6, closes gap where CLOSED issues
+         retained `in-progress`). This step finds AND fixes, not verify-only: if a stale
+         `in-progress` label remains, remove it (`gh issue edit <N> --remove-label
+         in-progress`) and report the fix; if the issue is still OPEN, do NOT close it here —
+         closing stays with auto-tag.yml unless it failed to close that issue, in which case
+         report the open issue for manual close per release step 3.d above (#1722 하네스 제안
+         4).
+      6. Report final CI status.
     description: "Post-release CI verification and fix loop"
     depends_on: release
 

@@ -1,15 +1,17 @@
 ---
 title: Deep Plan
 type: skill
-updated: 2026-07-29
+updated: 2026-09-24
 sources:
   - .claude/skills/deep-plan/SKILL.md
 related:
   - [[research]]
   - [[structured-dev-cycle]]
   - [[deep-verify]]
+  - [[pipeline]]
   - [[r009]]
   - [[r018]]
+  - [[r020]]
 ---
 
 # Deep Plan
@@ -39,6 +41,14 @@ Three-phase planning workflow: (1) Discovery Research via 10-team parallel `/res
 
 Max 2 REVISE cycles before user escalation.
 
+## Lightweight Mode (conditional, v1.1.81)
+
+The full 3-phase pipeline MAY be substituted with a lightweight pass when the conditions defined in `auto-dev.yaml`'s `## Cross-tier — Lightweight Skill-Mode Substitution` section are met — this skill does not restate those conditions itself; they are read from that section (see [[pipeline]] "Cross-tier — Lightweight Skill-Mode Substitution") before invoking lightweight mode. The resulting plan artifact or output MUST state which mode ran (`mode: full` or `mode: lightweight`) and MUST include the justification log required by that section.
+
+## Positive-Control Gate (Search/Retrieval Experiment Plans, v1.1.81)
+
+When a plan's Phase 1/2 measures a search or retrieval experiment (a new lane, ranking knob, or similar), a negative or neutral result is not trusted until a positive control confirms the measurement can detect an effect — the change must be verified to move candidates for at least one real query from the actual query distribution. If it does not, the result is reported as "measurement inconclusive", not "no effect".
+
 ## Differentiation
 
 | Skill | Code Verification | Phases |
@@ -60,3 +70,4 @@ Phase 3 verification reports written to `.claude/outputs/sessions/{date}/deep-pl
 ## Sources
 
 - `.claude/skills/deep-plan/SKILL.md` — skill definition (sensitive-path protocol added #1054)
+- Content-drift resync 2026-09-24 (v1.1.81): added "Lightweight Mode (conditional)" — the cross-tier substitution defined in `auto-dev.yaml`, with mode-labeling in the output — and "Positive-Control Gate (Search/Retrieval Experiment Plans)" — a negative/neutral search-experiment result is not trusted without a positive control confirming the measurement can detect an effect.

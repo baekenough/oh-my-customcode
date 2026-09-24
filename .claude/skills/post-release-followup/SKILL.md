@@ -166,6 +166,8 @@ gh issue create \
 
 Add priority label (`P1`, `P2`, `P3`) based on categorization. Default for auto-registered items: `P3` (escalate to `P2` for MEDIUM+ severity).
 
+**`## 권장 조치`의 미검증 제안은 `[가설]` 태그 필수**: `{권장 사항}`에 적는 수정안이 실행·테스트 등으로 검증되지 않았다면, 문장 앞에 `[가설]` 태그를 붙이고 무엇을 확인하면 검증되는지 함께 적으십시오. 원인 진단에만 `[가설]`을 붙이고 제안 수정안은 확정형으로 적으면, 그 제안을 그대로 적용했을 때 실패할 위험이 후속 세션으로 이월됩니다(R020 Diagnostic Hypothesis Verification, Origin: #1725 찐빠 #1).
+
 ## Notes
 
 - This skill runs in the main conversation context (via workflow skill step)

@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "1.1.80",
-  "generatedAt": "2026-09-24T11:55:42.747Z",
+  "generatedAt": "2026-09-24T13:07:39.952Z",
   "templateVersion": "1.1.80",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "3d3031d2286b522f85cf67df1c955c7f0932d6c831d518d61c9f0b4260d6b8ac",
-      "size": 51581,
+      "templateHash": "685ec617baaa1331db498b255e8f40618f16ee1cf0895d80b2d8db4ea7f5aa81",
+      "size": 65744,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -610,8 +610,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "7b414065c2c598bbe237e8209e41923f85edceb5c4ca03f74ff8691632294432",
-      "size": 8496,
+      "templateHash": "f3e291c02c11d1c989d8906ea50c9ef11e630b4c31b873ca7e60658f5d7c5c94",
+      "size": 9028,
       "component": "skills"
     },
     ".claude/skills/analysis/SKILL.md": {
@@ -770,8 +770,8 @@
       "component": "skills"
     },
     ".claude/skills/deep-plan/SKILL.md": {
-      "templateHash": "50e12868258b159a7d93fc986d9e36986e6e7041316122291c62bb66dd92897d",
-      "size": 4542,
+      "templateHash": "739e2d3fc0d5445a519b46b769b7c79a739565259a85caacc84564ae715e9e2a",
+      "size": 5524,
       "component": "skills"
     },
     ".claude/skills/omcustom-feedback/SKILL.md": {
@@ -810,8 +810,8 @@
       "component": "skills"
     },
     ".claude/skills/professor-triage/SKILL.md": {
-      "templateHash": "5c972f6af15b0cd8e0804c5a179a35c37361f849372d7d8acdba086d18803fc7",
-      "size": 4117,
+      "templateHash": "5d8797924d3755cc62a4d5b871861cccba746e7ad3e7ce72251806a77ce43a52",
+      "size": 4878,
       "component": "skills"
     },
     ".claude/skills/adversarial-review/SKILL.md": {

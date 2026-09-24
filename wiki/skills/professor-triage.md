@@ -1,13 +1,14 @@
 ---
 title: Professor Triage
 type: skill
-updated: 2026-07-29
+updated: 2026-09-24
 sources:
   - .claude/skills/professor-triage/SKILL.md
 related:
   - [[release-plan]]
   - [[deep-verify]]
   - [[post-release-followup]]
+  - [[pipeline]]
   - [[r009]]
   - [[r010]]
   - [[r018]]
@@ -44,6 +45,10 @@ Analyzes GitHub issues directly against the current codebase. For each issue, se
 
 Phase 4 uses `general-purpose` (NOT `arch-documenter`) — `arch-documenter` has `disallowedTools: [Bash]` and cannot run the `gh`/shell commands these phases require. See #1043.
 
+## Lightweight Mode (Cross-Tier Substitution, v1.1.81)
+
+Independent of the `auto-dev` compression tier selected, Phase 1-4 may be replaced by a lightweight orchestrator analysis instead of a full skill spawn — but only when the conditions in `auto-dev.yaml`'s `## Cross-tier — Lightweight Skill-Mode Substitution` section are met (scope ≤3 issues, code evidence or a measured root cause with the command used, and a mandatory justification log entry; see [[pipeline]] "Cross-tier — Lightweight Skill-Mode Substitution"). This skill does not duplicate those conditions — that section is the authoritative gate. When lightweight mode is used, the triage output (Phase 4E artifact and/or Phase 4D comment) MUST state which mode produced it: `mode: full` or `mode: lightweight`.
+
 ## Parallelization
 
 - 1-3 issues: single Explore agent per issue in parallel
@@ -69,3 +74,4 @@ Under `mode: "bypassPermissions"`, Phase 4 agents write directly to `.claude/out
 ## Sources
 
 - `.claude/skills/professor-triage/SKILL.md` — skill definition (restructured v2.3.0, #1054: 16KB→6KB, phase detail moved to guides/professor-triage/phases.md)
+- Content-drift resync 2026-09-24 (v1.1.81): added "Lightweight Mode (Cross-Tier Substitution)" — cross-references the `auto-dev.yaml` gate rather than duplicating its conditions; requires the output to state which mode produced it.

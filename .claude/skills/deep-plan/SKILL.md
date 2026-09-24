@@ -60,6 +60,14 @@ Research-only analysis produces findings based on assumptions about the codebase
 | Ecomode | Auto-activate for team result aggregation (R013) |
 | REVISE limit | Max 2 cycles before user escalation |
 
+## Lightweight Mode (conditional)
+
+Deep Plan MAY substitute a lightweight pass for the full 3-phase pipeline when the conditions defined in `auto-dev.yaml`'s `## Cross-tier — Lightweight Skill-Mode Substitution` section are met — this skill does not restate those conditions; read them from that section before invoking lightweight mode. The resulting plan artifact or output MUST state which mode ran (`mode: full` or `mode: lightweight`) and MUST include the justification log required by that section.
+
+## Positive-Control Gate (Search/Retrieval Experiment Plans)
+
+When a plan's Phase 1/2 measures a search or retrieval experiment (a new lane, ranking knob, or similar), do NOT trust a negative or neutral result until a positive control confirms the measurement can detect an effect — verify that the change moves candidates for at least one real query from the actual query distribution. If it does not, report the result as "measurement inconclusive", not "no effect".
+
 ## Differentiation
 
 | Skill | Scope | Code Verification | Phases |

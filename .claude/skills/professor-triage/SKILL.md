@@ -38,6 +38,12 @@ Analyzes GitHub issues directly against the current codebase. For each issue, se
 | 4 | Multi-Perspective Analysis & Output | general-purpose agents | sonnet/opus |
 | 5 | Act | mgr-gitnerd | — |
 
+## Lightweight Mode (Cross-Tier Substitution)
+
+Independent of the auto-dev compression tier selected, this skill's Phase 1-4 may be replaced by a lightweight orchestrator analysis instead of a full skill spawn, but only when the conditions in `.claude/skills/pipeline/workflows/auto-dev.yaml` (runtime source) `## Cross-tier — Lightweight Skill-Mode Substitution` are met (scope ≤3 issues, code evidence or a measured root cause with the command used, and a mandatory justification log entry). This skill does not duplicate those conditions here — that section is the authoritative gate.
+
+When lightweight mode is used, the triage output (Phase 4E artifact and/or Phase 4D comment) MUST state which mode produced it: `mode: full` or `mode: lightweight`.
+
 ## Delegation Contract
 
 | Phase | Agent | Mode |
