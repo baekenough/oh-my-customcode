@@ -7,6 +7,8 @@ auto-install-peers = true
 coverage = true
 coverageDir = "coverage"
 coverageReporter = ["text", "lcov"]
+# CI tooling, not shipped code — exclude from the coverage gate.
+coveragePathIgnorePatterns = [".github/**"]
 
 [run]
 # Bun runtime options

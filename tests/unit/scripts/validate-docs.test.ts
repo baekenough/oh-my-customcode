@@ -1,19 +1,40 @@
-import { describe, test, expect } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { existsSync, readdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import {
-  extractNamesFromReadme,
-  programmaticValidation,
   buildPrompt,
   collectImplementationStats,
+  extractNamesFromReadme,
   extractSlashCommandsFromReadme,
-  stripHtmlComments,
-  measureInstructionBudget,
+  type ImplementationStats,
   INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT,
   INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT,
-  type ImplementationStats,
-  type ValidationResult,
-  type SlashCommandValidation,
   type InstructionFileInput,
-} from './validate-docs';
+  measureInstructionBudget,
+  programmaticValidation,
+  type SlashCommandValidation,
+  stripHtmlComments,
+  type ValidationResult,
+} from '../../../.github/scripts/validate-docs';
+
+// ---------------------------------------------------------------------------
+// cwd fixture — collectImplementationStats() resolves repo-relative paths
+// (`templates/.claude/agents`, `templates/.claude/skills`, `templates/.claude/rules`,
+// `templates/guides`, etc.) against process.cwd(), so this suite must run with cwd
+// at the repo root even though the test file itself now lives under tests/unit/scripts/.
+// ---------------------------------------------------------------------------
+
+const REPO_ROOT = resolve(import.meta.dir, '../../..');
+let originalCwd: string;
+
+beforeAll(() => {
+  originalCwd = process.cwd();
+  process.chdir(REPO_ROOT);
+});
+
+afterAll(() => {
+  process.chdir(originalCwd);
+});
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -537,7 +558,7 @@ describe('buildPrompt', () => {
       README_WITH_CANONICAL_BLOCKS,
       readmeKo,
       VALIDATION_ALL_CLEAN,
-      SLASH_COMMAND_VALIDATION_CLEAN,
+      SLASH_COMMAND_VALIDATION_CLEAN
     );
 
     expect(prompt).toContain('"agent_count": 3');
@@ -551,10 +572,12 @@ describe('buildPrompt', () => {
       README_WITH_CANONICAL_BLOCKS,
       readmeKo,
       VALIDATION_ALL_CLEAN,
-      SLASH_COMMAND_VALIDATION_CLEAN,
+      SLASH_COMMAND_VALIDATION_CLEAN
     );
 
-    expect(prompt).toContain('✅ 모든 agent/skill 이름과 개수가 README와 실제 구현에서 정확히 일치합니다.');
+    expect(prompt).toContain(
+      '✅ 모든 agent/skill 이름과 개수가 README와 실제 구현에서 정확히 일치합니다.'
+    );
   });
 
   test('includes mismatch details when validation has issues', () => {
@@ -563,7 +586,7 @@ describe('buildPrompt', () => {
       README_WITH_CANONICAL_BLOCKS,
       readmeKo,
       VALIDATION_WITH_ISSUES,
-      SLASH_COMMAND_VALIDATION_CLEAN,
+      SLASH_COMMAND_VALIDATION_CLEAN
     );
 
     expect(prompt).toContain('불일치 발견');
@@ -581,7 +604,7 @@ describe('buildPrompt', () => {
       README_WITH_CANONICAL_BLOCKS,
       readmeKo,
       VALIDATION_ALL_CLEAN,
-      SLASH_COMMAND_VALIDATION_CLEAN,
+      SLASH_COMMAND_VALIDATION_CLEAN
     );
 
     expect(prompt).toContain('README의 모든 슬래시 커맨드');
@@ -594,7 +617,7 @@ describe('buildPrompt', () => {
       README_WITH_CANONICAL_BLOCKS,
       readmeKo,
       VALIDATION_ALL_CLEAN,
-      SLASH_COMMAND_VALIDATION_WITH_PHANTOM,
+      SLASH_COMMAND_VALIDATION_WITH_PHANTOM
     );
 
     expect(prompt).toContain('Phantom 슬래시 커맨드 발견');
@@ -607,7 +630,7 @@ describe('buildPrompt', () => {
       README_WITH_CANONICAL_BLOCKS,
       readmeKo,
       VALIDATION_ALL_CLEAN,
-      SLASH_COMMAND_VALIDATION_CLEAN,
+      SLASH_COMMAND_VALIDATION_CLEAN
     );
 
     expect(prompt).toContain('oh-my-customcode');
@@ -620,10 +643,12 @@ describe('buildPrompt', () => {
       README_WITH_CANONICAL_BLOCKS,
       readmeKo,
       VALIDATION_WITH_ISSUES,
-      SLASH_COMMAND_VALIDATION_CLEAN,
+      SLASH_COMMAND_VALIDATION_CLEAN
     );
 
-    expect(prompt).not.toContain('✅ 모든 agent/skill 이름과 개수가 README와 실제 구현에서 정확히 일치합니다.');
+    expect(prompt).not.toContain(
+      '✅ 모든 agent/skill 이름과 개수가 README와 실제 구현에서 정확히 일치합니다.'
+    );
   });
 
   test('returns a non-empty string', () => {
@@ -632,7 +657,7 @@ describe('buildPrompt', () => {
       README_WITH_CANONICAL_BLOCKS,
       readmeKo,
       VALIDATION_ALL_CLEAN,
-      SLASH_COMMAND_VALIDATION_CLEAN,
+      SLASH_COMMAND_VALIDATION_CLEAN
     );
 
     expect(typeof prompt).toBe('string');
@@ -646,10 +671,8 @@ describe('buildPrompt', () => {
 
 describe('LLM verdict regex parsing', () => {
   // Mirrors the fixed regex from validate-docs.ts lines 450-451
-  const hasExplicitFail = (result: string) =>
-    /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);
-  const hasExplicitPass = (result: string) =>
-    /최종 판정[\s\S]*?\*\*(✅\s*)?PASS\*\*/i.test(result);
+  const hasExplicitFail = (result: string) => /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);
+  const hasExplicitPass = (result: string) => /최종 판정[\s\S]*?\*\*(✅\s*)?PASS\*\*/i.test(result);
 
   test('detects PASS with emoji prefix (**✅ PASS**)', () => {
     const result = '최종 판정\n**✅ PASS**';
@@ -783,6 +806,23 @@ describe('LLM verdict regex parsing', () => {
 // ---------------------------------------------------------------------------
 
 describe('collectImplementationStats', () => {
+  // Expected values below are computed from ABSOLUTE paths (rooted at REPO_ROOT),
+  // independent of process.cwd() — mirroring the exact directory/filter logic that
+  // collectImplementationStats() (.github/scripts/validate-docs.ts) applies to its
+  // (cwd-relative) `templates/...` paths. Because the expected side does not depend
+  // on the cwd pin above, a broken pin (collectImplementationStats() reading from
+  // the wrong cwd, e.g. an empty/unrelated directory) makes `stats.*` diverge from
+  // these expected values instead of both sides vacuously agreeing on zero.
+  const TEMPLATES_DIR = join(REPO_ROOT, 'templates');
+
+  const mdFileNames = (dir: string): string[] => readdirSync(dir).filter((f) => f.endsWith('.md'));
+
+  const skillDirNames = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .filter((d) => existsSync(join(dir, d.name, 'SKILL.md')))
+      .map((d) => d.name);
+
   test('returns an object with all required numeric fields', async () => {
     const stats = await collectImplementationStats();
 
@@ -797,10 +837,43 @@ describe('collectImplementationStats', () => {
     expect(typeof stats.context_count).toBe('number');
   });
 
+  test('agent_count/agent_names match templates/.claude/agents on disk (catches a broken cwd pin)', async () => {
+    const stats = await collectImplementationStats();
+    const expectedNames = mdFileNames(join(TEMPLATES_DIR, '.claude', 'agents')).map((f) =>
+      f.replace('.md', '')
+    );
+
+    expect(stats.agent_count).toBeGreaterThan(0);
+    expect(stats.agent_count).toBe(expectedNames.length);
+    expect([...stats.agent_names].sort()).toEqual([...expectedNames].sort());
+  });
+
+  test('skill_count/skill_names match templates/.claude/skills on disk (catches a broken cwd pin)', async () => {
+    const stats = await collectImplementationStats();
+    const expectedNames = skillDirNames(join(TEMPLATES_DIR, '.claude', 'skills'));
+
+    expect(stats.skill_count).toBeGreaterThan(0);
+    expect(stats.skill_count).toBe(expectedNames.length);
+    expect([...stats.skill_names].sort()).toEqual([...expectedNames].sort());
+  });
+
+  test('rule_count and MUST/SHOULD/MAY breakdown match templates/.claude/rules on disk (catches a broken cwd pin)', async () => {
+    const stats = await collectImplementationStats();
+    const ruleFiles = mdFileNames(join(TEMPLATES_DIR, '.claude', 'rules'));
+
+    expect(stats.rule_count).toBeGreaterThan(0);
+    expect(stats.rule_count).toBe(ruleFiles.length);
+    expect(stats.rule_must_count).toBe(ruleFiles.filter((f) => f.startsWith('MUST-')).length);
+    expect(stats.rule_should_count).toBe(ruleFiles.filter((f) => f.startsWith('SHOULD-')).length);
+    expect(stats.rule_may_count).toBe(ruleFiles.filter((f) => f.startsWith('MAY-')).length);
+  });
+
   test('rule breakdown sum equals rule_count', async () => {
     const stats = await collectImplementationStats();
 
-    expect(stats.rule_must_count + stats.rule_should_count + stats.rule_may_count).toBe(stats.rule_count);
+    expect(stats.rule_must_count + stats.rule_should_count + stats.rule_may_count).toBe(
+      stats.rule_count
+    );
   });
 
   test('rule breakdown counts are non-negative integers', async () => {
@@ -888,7 +961,9 @@ describe('measureInstructionBudget', () => {
     ]);
     const result = measureInstructionBudget(files);
 
-    expect(result.files[0].rawLength).toBe('visible text<!-- this comment is not counted at all -->more visible'.length);
+    expect(result.files[0].rawLength).toBe(
+      'visible text<!-- this comment is not counted at all -->more visible'.length
+    );
     expect(result.files[0].visibleLength).toBe('visible textmore visible'.length);
     expect(result.totalVisibleLength).toBe('visible textmore visible'.length);
     expect(result.totalVisibleLength).toBeLessThan(result.totalRawLength);
@@ -941,9 +1016,11 @@ describe('measureInstructionBudget', () => {
     const result = measureInstructionBudget(files);
 
     expect(result.files[0].hasStrayCommentMarker).toBe(true);
-    expect(result.errors.some((e) => e.includes('MUST-safety.md') && e.includes('stray HTML comment marker'))).toBe(
-      true,
-    );
+    expect(
+      result.errors.some(
+        (e) => e.includes('MUST-safety.md') && e.includes('stray HTML comment marker')
+      )
+    ).toBe(true);
   });
 
   test('nested comment `<!-- a <!-- b --> c -->` leaves a stray --> and errors', () => {
@@ -954,14 +1031,16 @@ describe('measureInstructionBudget', () => {
     expect(result.files[0].hasStrayCommentMarker).toBe(true);
     expect(
       result.errors.some(
-        (e) => e.includes('MUST-orchestrator-coordination.md') && e.includes('nested'),
-      ),
+        (e) => e.includes('MUST-orchestrator-coordination.md') && e.includes('nested')
+      )
     ).toBe(true);
   });
 
   test('clean nested-looking but properly closed comments do not error', () => {
     // A single well-formed comment with no interior "-->" — not the nested-defect case.
-    const files = makeFiles([['CLAUDE.md', 'visible<!-- just one comment, nothing tricky -->text']]);
+    const files = makeFiles([
+      ['CLAUDE.md', 'visible<!-- just one comment, nothing tricky -->text'],
+    ]);
     const result = measureInstructionBudget(files);
 
     expect(result.files[0].hasStrayCommentMarker).toBe(false);
