@@ -14,6 +14,7 @@ import { unregisterProject } from '../../src/core/registry.js';
 describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
   let tempDir: string;
   let cliPath: string;
+  const originalCwd = process.cwd();
 
   beforeAll(() => {
     // Path to the CLI entry point (run with bun)
@@ -33,6 +34,9 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
     process.chdir(tmpdir());
     await unregisterProject(tempDir);
     await rm(tempDir, { recursive: true, force: true });
+    // Restore the original working directory so downstream coverage/tests
+    // (and any later test file) don't inherit a leaked cwd.
+    process.chdir(originalCwd);
   });
 
   /**
