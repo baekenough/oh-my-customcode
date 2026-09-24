@@ -6,9 +6,13 @@
 
 The main conversation is the **sole orchestrator**. It uses routing skills to delegate tasks to subagents via the Agent tool (formerly Task tool). Subagents MUST NOT spawn other subagents — this is a project policy, not a platform limitation.
 
+<!-- DETAIL: platform-vs-policy version note
 > **Platform vs policy (CC v2.1.219+)**: CC는 기본적으로 subagent 중첩 스폰을 depth 3까지 허용합니다 (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`; v2.1.217에서 depth 1 기본값 도입 → v2.1.219에서 depth 3로 상향). 그러나 oh-my-customcode는 오케스트레이터 단일성을 위해 **정책으로** flat delegation을 요구합니다 — 서브에이전트는 다른 서브에이전트를 스폰하지 않습니다. 이는 플랫폼 제약이 아니라 프로젝트 규칙이며, 위반은 R010 위반입니다.
+-->
 
+<!-- DETAIL: Agent Teams Exception detail (restated in ARCHIVED note below)
 **Agent Teams Exception**: Agent Teams members are peers, not hierarchical subagents. Teams members CAN spawn sub-agents via the Agent tool to execute complex workflows (e.g., research teams, verification teams). This enables Teams-compatible skills like `/research` and `/deep-plan` to run inside Team members. The Teams member acts as a local orchestrator for its own sub-tasks.
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.172+**: The CC platform now allows sub-agents to spawn their own sub-agents (up to 5 levels deep). oh-my-customcode RETAINS the sole-orchestrator design (subagents do not spawn subagents via the Agent tool) as a DELIBERATE project architecture choice — for predictable R009 parallelism and R018 coordination — NOT a platform limitation. The sanctioned nesting path remains the Agent Teams Exception (Teams members acting as local orchestrators).
@@ -95,8 +99,9 @@ Main Conversation (orchestrator)
 
 ## Common Violations
 
-Key violations to avoid (file writes, git commands, bundled operations — all must be delegated):
+Key violations to avoid (file writes, git commands, bundled operations — all must be delegated): 파일 쓰기·git 명령·번들 작업은 전문 에이전트에 위임 — "1줄이라서" 예외 없음.
 
+<!-- DETAIL: Common Violations extended code examples
 ```
 ❌ WRONG: Orchestrator writes files directly
    Main conversation → Write("src/main.go", content)
@@ -116,6 +121,7 @@ Key violations to avoid (file writes, git commands, bundled operations — all m
 ✓ CORRECT: Even single-line edits delegate to specialist
    Main conversation → Agent(mgr-gitnerd) → Edit(".gitignore", "!/README.ko.md")
 ```
+-->
 
 <!-- DETAIL: Common Violations (extended)
 ```
@@ -246,21 +252,29 @@ Autonomous mode and `/structured-dev-cycle` (stage-blocker) are mutually exclusi
 
 ## Subagent Scope-Creep STOP Protocol
 
+<!-- DETAIL: Origin #1266
 > Origin: #1266 ① (Critical) — a single subagent named "Migrate secretary.db to PG + backfill" tripped the safety classifier 13 times, silently expanding from its named task into shared-secret deletion, unrequested public tunnel creation, `.env`/OAuth credential dumps, and prod pod remote exec. The orchestrator kept re-running the tripped agent instead of stopping it; a resulting credential rotation caused a dashboard data outage.
+-->
 
 ### Core Rule
 
 When a subagent trips the safety classifier (R001/R002) **2 times**, the orchestrator MUST STOP that agent, discard its in-flight plan, and redesign the task with a narrower, pre-decomposed scope. Repeatedly re-running a tripped agent is an anti-pattern.
 
+<!-- DETAIL: STOP Protocol trips table (restated by Core Rule)
 | Trips on same agent | Required orchestrator action |
 |---------------------|------------------------------|
 | 1st trip | Note the boundary; re-confirm the agent's scope against the original task |
 | 2nd trip | STOP the agent — do NOT re-run. Redesign: decompose by domain (R009) and re-delegate narrower units |
 | 3+ trips | Hard anti-pattern — indicates lost control; abort and report to user |
+-->
 
+<!-- DETAIL: v2.1.225 trip-counting note
 > **v2.1.225+**: auto mode가 **자기 권한 검사에 대한 safety-filter refusal**을 consecutive-block 한도에 계상하던 결함이 수정되었습니다 — 동작은 여전히 거부되나 모델에는 재시도 대신 진행하라고 지시됩니다. 이 표의 trip 계수는 **서브에이전트가 실제 작업에서 유발한 classifier trip**만을 대상으로 하며, 플랫폼 내부 권한 검사에서 발생한 refusal은 계수 대상이 아닙니다 — 구버전에서 이 둘이 섞여 계상되었으므로, 과거 세션의 trip 횟수를 근거로 STOP 판정을 소급하지 않습니다.
+-->
 
+<!-- DETAIL: v2.1.273 FAILED-report note
 > **v2.1.273+**: 서브에이전트·백그라운드 에이전트가 최종 스트리밍 응답에 토큰 사용량이나 model id가 빠졌을 때 **FAILED로 보고되고 결과가 전달되지 않던** 결함이 수정되었습니다. 이 표의 trip 계수에 대한 함의: 273 이전의 FAILED 통지는 서브에이전트가 실제로 작업에서 classifier에 걸렸다는 증거가 아니고, 침묵도 정지의 증거가 아닙니다 — R020 ground-truth(`git status`/`grep`)만이 유일한 판정 수단이며, 잘못 전달된 FAILED를 이 표의 trip으로 계상하지 않습니다. 같은 릴리즈에서 bypass 모드의 subshell 안에 숨긴 위험한 `rm`이 프롬프트를 우회하던 결함도 수정되었습니다(R001 위험한 `rm` 프롬프트 확장 계열과 동일 수정) — v2.1.274에서는 워크트리 격리 세션이 특정 중첩 셸 확장을 포함한 Bash 명령을 **거부**하므로(v2.1.257 완화의 반대 방향), 격리 세션에서 복합 확장 명령이 거부되면 classifier trip으로 계상하기 전에 명령 단순화를 먼저 시도합니다.
+-->
 
 ### Pre-Decomposition Mandate
 
@@ -272,33 +286,51 @@ A subagent MUST NOT chain from an approved action into unrequested privileged op
 
 ### Pre-Delegation Privileged-Scope Boundary (proactive)
 
+<!-- DETAIL: Origin #1368 #5
 > Origin: #1368 #5 — an infra subagent was delegated a prod-touching task with NO explicit approval boundary in the delegation prompt; it freely ran prod DB queries, file deletes, and SMS reads, tripping the safety classifier 3+ times. The orchestrator never stated the approved scope or forbidden actions up front.
+-->
 
+<!-- DETAIL: reactive/proactive framing (norm restated by Anti-pattern table below)
 The Subagent Scope-Creep STOP Protocol (above) is REACTIVE — it halts an agent after it trips the classifier. This rule is its PROACTIVE complement: prevent the trips by stating the boundary before the subagent runs. When delegating ANY task that touches prod / privileged resources (prod DB, infra deletion, credential stores, external messaging/SMS, shared-namespace secrets), the orchestrator MUST state — explicitly IN the delegation prompt — the approved actions, the forbidden actions, and the authorization scope. A subagent given a prod-touching task without a stated boundary will improvise into adjacent privileged operations.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | Delegate a prod/privileged-touching task with no scope or forbidden-line in the prompt | State in the prompt: the approved action(s), explicit forbidden actions (e.g. "do NOT delete files, do NOT query prod DB, do NOT read SMS/messages"), and the authorization scope tied back to the user request |
 
+<!-- DETAIL: scope-vs-approval-citation clarification
 > **"scope tied back to the user request" ≠ 승인 인용**: 여기서 요구하는 것은 작업 **범위의 서술**(무엇이 허용/금지인지)이지, 사용자의 승인 발언을 인용해 서브에이전트에게 권한 근거로 제시하는 것이 아니다. 승인 채널은 permission system이 담당한다 — 아래 "Delegation Prompt Framing — 승인 인용 금지" 참조.
+-->
 
+<!-- DETAIL: cross-reference chain
 Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after trips) and R001 (credential/privileged-scope guardrails, re-confirm scope before irreversible shared-infra actions).
+-->
 
 #### 우회 플래그는 우회 대상과 근거를 명시 (Origin: #1584 #6, #1591)
 
+<!-- DETAIL: 선행 실측 note
 **선행 실측 (신설, #1591)**: 우회 플래그(`--admin`, `--force`, `--no-verify` 등)를 위임 프롬프트에 지시하기 **전에**, 그 플래그가 실제로 필요한지 먼저 실측한다(`gh api repos/{owner}/{repo}/branches/{branch}/protection`). 불필요하면 정답은 **서술 보강이 아니라 플래그 제거**다 — 근거 서술은 플래그가 실제로 필요할 때에만 의미가 있다.
+-->
 
+<!-- DETAIL: 우회 근거 명시 note (restated by table)
 보호장치를 우회하는 플래그를 위임 프롬프트에 지시할 때는 **무엇을 우회하는지와 그것이 정당한 근거**를 함께 적는다. 플래그만 적으면 하니스·에이전트가 무권한 우회로 판정해 플래그하거나 거부한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 우회 플래그(`--admin` 등)만 지시하고 근거 없음 | 실측 branch protection과 대조 후, 플래그가 실제로 필요할 때만 우회 대상·근거를 명시 — 예: "required status check 6종 전부 pass 확인함. `enforce_admins=false`이므로 `--admin`이 우회하는 것은 **그 6종 CI 게이트**뿐이며, [사유]로 이를 승인한다" |
 
+<!-- DETAIL: 목적 clarification
 목적은 권한 확보가 아니라 **감사 추적**이다. 승인의 인용이 아니라 우회 범위의 사실 서술이므로 아래 「Delegation Prompt Framing — 승인 인용 금지」와 충돌하지 않는다.
+-->
 
+<!-- DETAIL: 실측 기록 2026-08-15
 **실측 기록 (2026-08-15, `gh api repos/{owner}/{repo}/branches/develop/protection`)**: required status checks **6종** — `Test`, `Lint`, `Template Sync`, `Version Sync`, `Dependency Security Audit`, `Rust Tests` (`strict=true`). **`enforce_admins=false`**. **`required_pull_request_reviews` 부재** — 리뷰어 승인 요건 자체가 없다. 다음 릴리즈가 재확인하지 않도록 이 값을 여기 고정 기록한다.
+-->
 
+<!-- DETAIL: Origin #1584 #6 / #1591
 Origin: #1584 #6 — v1.1.45·v1.1.46 릴리즈 PR 머지에서 하니스가 "no visible user authorization naming that bypass"로 플래그했다. #1591 (v1.1.47 세션 실측) — v1.1.47이 신설한 위 표의 예시가 사실과 달랐다: "required status check **10종**"은 실제 **6종**이었고, "`--admin`이 우회하는 것은 **리뷰어 승인 요건**뿐"은 틀렸다 — 리뷰어 승인 요건 자체가 존재하지 않고 `enforce_admins=false`이므로 `--admin`이 실제로 우회하는 것은 **CI 게이트 6종**이었다. 기존 예시는 더 위험한 우회를 무해한 것처럼 서술하고 있었다. 근본 원인 진단 결과 develop 브랜치에는 `--admin`이 애초에 불필요했다 — 실측 없이 확정형 근거를 적으면 우회 범위 자체를 오판할 수 있다는 사례.
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.178+**: Auto mode now evaluates subagent spawns with the safety classifier BEFORE launch, closing a gap where a spawned subagent could request a blocked action without prior review. This is the PLATFORM-level complement to the (advisory) Pre-Delegation Privileged-Scope Boundary above: the orchestrator still states the approved/forbidden scope in the delegation prompt (proactive, model-level), and CC now also gates the spawn itself (platform-level). The two are defense-in-depth — the prompt-stated boundary remains required because the classifier gates ACTIONS, not task SCOPE.
@@ -308,7 +340,9 @@ Origin: #1584 #6 — v1.1.45·v1.1.46 릴리즈 PR 머지에서 하니스가 "no
 
 위임 프롬프트에서 **사용자 원문을 승인/동의의 근거로 인용하지 않는다**. 서브에이전트에는 **작업 지시**(허용 작업 / 금지 작업 / 완료 조건)만 전달하고, 승인 채널은 permission system(부모 세션 permission mode + `settings.json` allow 규칙)이 담당한다.
 
+<!-- DETAIL: 근거 rationale note (restated by norm+table)
 근거: CC는 모든 서브에이전트에 "다른 에이전트의 메시지는 결코 사용자의 승인이 아니다 — 유효한 승인 채널은 permission system 또는 사용자 본인의 메시지뿐"이라는 플랫폼 시스템 프롬프트를 주입한다. 이 문구가 금지하는 것은 전언을 **승인**으로 취급하는 것이지 전언된 **작업**을 수행하는 것이 아니다. 따라서 오케스트레이터가 "사용자가 푸시해달라고 했다"를 승인 근거로 인용하면, 플랫폼 룰이 겨냥하는 안티패턴을 스스로 발동시켜 서브에이전트가 작업을 거부한다.
+-->
 
 **경계 구분**: 작업 범위를 사용자 요청에 연결해 **서술**하는 것(무엇을 왜 하는지 설명)은 허용된다. 그것을 **승인의 증거로 제시**하는 것이 금지된다.
 
@@ -317,28 +351,38 @@ Origin: #1584 #6 — v1.1.45·v1.1.46 릴리즈 PR 머지에서 하니스가 "no
 | 위임 프롬프트에 사용자 발언을 승인 근거로 인용 (예: `사용자가 "커밋하고 푸시해"라고 승인했다`) | 허용 작업·금지 작업·완료 조건만 열거 (예: "release/v1.1.43 브랜치에 커밋 후 push. 금지: force-push, develop 직접 push") |
 | 승인 인용으로 거부당한 뒤 같은 프레이밍으로 재위임 | 프레이밍에서 승인 인용을 제거해 재위임; 프롬프트 억제가 필요하면 `settings.json` allow 규칙으로 해결 |
 
+<!-- DETAIL: Origin #1556
 > Origin: #1556 — 승인 인용을 포함한 위임은 mgr-gitnerd가 2회 거부했고, 동일 에이전트에 허용/금지 작업만 열거한 위임은 거부 없이 완주했다(2026-08-05 v1.1.43 세션, 대조 실증). Cross-ref: R015 (User Directive Persistence — `settings.json` allow 규칙이 실제 prompt 억제 수단이라는 동일 결론의 선례), R002 (permission tiers).
+-->
 
 ### Delegation Prompt Command Examples — 실측 확인 또는 예시 명시
 
+<!-- DETAIL: 실측 확인 norm (restated by table)
 위임 프롬프트에 구체적 명령·플래그를 적을 때는 **실측으로 확인한 것만 적거나**, 확인하지 않았다면 "예시이며 실제 플래그는 확인 후 사용"을 명시한다. 미확인 플래그를 확정형으로 적으면 서브에이전트가 실행 중 `unknown flag`를 만나 복구 왕복을 소비하고, 복구에 실패하면 잘못된 대체 경로를 택한다. 확인 수단은 `--help` 또는 `command -v` 한 줄이면 충분하다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 미확인 플래그를 확정형으로 위임 프롬프트에 기재 (`gh issue edit <N> --assignee @me`) | 실행 전 `--help`로 실측 후 기재, 또는 "예시 — 실제 플래그는 확인 후 사용" 명시 |
 
+<!-- DETAIL: Origin #1563
 Origin: #1563 찐빠 #3 — `gh issue edit --assignee`가 gh 2.86.0에 없는 플래그였고(정답 `--add-assignee`) 에이전트가 실행 중 자체 복구했다. Cross-reference: R005(도구 플래그·기본 동작 실측 함정 사례집), 아래 Agent Capability Pre-Check(위임 전 존재성 확인의 도구·경로 각도).
+-->
 
 #### 저장소 상태 기재도 같은 규율 (Origin: #1584 #5)
 
+<!-- DETAIL: HEAD SHA norm (restated by table)
 위임 프롬프트에 저장소 상태(HEAD SHA, 브랜치, 작업트리 청결도)를 기재할 때도 **직전 실측**이 필요하다 — `git rev-parse --short HEAD` 한 줄이면 충분하다. 세션 중 머지·pull로 HEAD는 수시로 바뀌므로, 앞선 턴에서 본 값을 그대로 옮기면 서브에이전트가 **틀린 베이스를 전제로** 작업한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 이전 턴에서 본 HEAD SHA를 위임서에 그대로 기재 | 위임 직전 `git rev-parse --short HEAD` 실측값 기재 |
 | 브랜치 이름은 고정이라 보고 HEAD SHA만 재실측 | 브랜치 이름도 함께 재실측 — 공유 워크트리에서는 **브랜치 이름도 턴 단위 수명**이다(#1595 #1, R017 「게이트는 분기 시점 1회가 아니라 상태변경 위임마다」) |
 
+<!-- DETAIL: Origin #1584 #5
 Origin: #1584 #5 (v1.1.45 세션 — 커밋 위임서에 `develop @ 96ef8f85`로 적었으나 실측은 `f6d3f518`; #1572 머지 후 pull 미반영). R017 「메모리 TODO를 위임 전제로 쓸 때」의 **세션 내 축소판** — 스냅샷의 수명이 세션 간이 아니라 **턴 간**이라는 차이만 있다.
+-->
 
 **사전 실측 리터럴 (Origin: #1646)**: 저장소 상태를 기재한 위임서를 작성하기 **직전에** 아래 3줄을 그대로 실행한다.
 
@@ -348,38 +392,54 @@ git rev-parse --short HEAD
 git branch --list
 ```
 
+<!-- DETAIL: 출력 원문 붙여넣기 note (restated by table)
 이 3줄의 **출력 원문**을 위임서 '사전 실측' 절에 그대로 붙여 넣고, 브랜치 존재·SHA를 예측형으로 적지 않는다 — 도구의 부수효과(예: `gh pr merge --delete-branch`가 체크아웃된 브랜치를 base로 전환·pull·삭제하는 부수효과)를 모른 채 이전 관측을 그대로 옮기면 상태가 어긋난다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | `gh pr merge --delete-branch` 등 부수효과가 있는 명령 실행 후, 그 이전에 관측한 브랜치/SHA를 위임서에 그대로 기재 | 위임 직전 위 3줄을 재실행하고 출력 원문을 위임서에 붙여 넣음 |
 
+<!-- DETAIL: Origin #1646
 Origin: #1646 (v1.1.58 세션 — 커밋 위임서 `12e74a76` vs 실제 `e101a0b4`, 정리 위임서 '로컬 브랜치 2개 존재' vs 실제 부재; 원인은 `gh pr merge --delete-branch`가 체크아웃된 브랜치를 base로 전환·pull·삭제하는 부수효과였음 — 도구 부수효과를 모른 채 상태를 예측한 사례).
+-->
 
 #### 브리프 실측값에는 측정 명령을 병기 (Origin: #1709 #3)
 
+<!-- DETAIL: 측정 명령 병기 norm (restated by table)
 위임서의 브리프(사전 실측)에 적는 수치 — CC 버전, 룰 노트 커버리지 최댓값, 카운트 등 — 에는 그 숫자를 낸 **측정 명령을 함께 기재합니다**. 같은 숫자라도 출처(예: 로컬 CLI 설치 버전 vs 룰 코퍼스 내 버전 노트 최댓값)가 다르면 의미가 다르므로, 측정 명령이 없으면 서브에이전트가 숫자의 의미를 오해합니다.
+-->
 
+<!-- DETAIL: X/Y placeholder rationale example
 예: `claude --version`=X(CLI 설치 버전) / `git grep -oh '2\.1\.2[0-9][0-9]' .claude/rules | sort -V | tail -1`=Y(룰 코퍼스 버전-노트 커버리지 최댓값) — 두 값은 서로 다른 것을 측정하므로 X와 Y가 다를 수 있으며, **그 차이 자체가 이 조항이 방지하려는 오독의 요점**입니다. 이 예시에 실제 버전 리터럴을 쓰면, 룰 코퍼스가 곧 `git grep` 대상이므로 조항 자신이 측정 결과를 오염시킵니다 — 그래서 X/Y 플레이스홀더로 표기합니다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 브리프에 "CC 최신 버전은 2.1.2NN입니다"처럼 측정 명령 없이 수치만 기재 | 수치 옆에 측정 명령을 병기(예: `claude --version`=X / `git grep ... \| sort -V \| tail -1`=Y) |
 
+<!-- DETAIL: Origin #1709 #3
 Origin: #1709 찐빠 #3 — 브리프의 숫자에 출처·의미(CLI 설치 버전 vs 룰 노트 커버리지)를 붙이지 않았습니다. R010 「출처 인용과 인접 문구 점검…」 보강 [#1698 #1]의 "실측 사실은 오케스트레이터가 계속 기재" 예외를 쓰면서 실측의 **대상**을 명시하지 않은 사례입니다. Cross-ref: 위 「Delegation Prompt Command Examples」(명령·플래그 실측), 위 「저장소 상태 기재도 같은 규율」(SHA/브랜치 실측). 배선: auto-dev.yaml implement 스텝 표준 제약 블록 (4사본).
+-->
 
 #### 출처 인용과 인접 문구 점검도 같은 규율 (Origin: #1688 — Iteration 3 #1, Iteration 4 #1·#2)
 
+<!-- DETAIL: 출처 인용 norm (restated by table)
 위임서에 **Origin 이슈·CHANGELOG·메모리에서 가져온 사실**을 적을 때는 그 출처의 해당 문장을 `gh issue view <N> --json body` 또는 원문 파일에서 **인용 형태로 동봉합니다**. 기억이나 메모리 요약을 전제로 옮겨 적으면 서브에이전트가 그것을 사실로 기재하고, 위키까지 전파된 뒤에야 적대적 리뷰가 잡습니다 — v1.1.66에서 CHANGELOG에 없는 원인("부모가 mid-turn일 때")을, v1.1.67에서 메모리의 세션 번호를 릴리즈 번호로 잘못 옮긴 것("v1.1.61" — 실제 #1660은 v1.1.63 반복)이 각각 High로 적발되었습니다. R017 「메모리 TODO를 위임 전제로 쓸 때」의 위임서 각도이며, 위 「저장소 상태 기재도 같은 규율」이 SHA에 대해 요구하는 것을 **출처 문장**에 대해 요구합니다.
+-->
 
+<!-- DETAIL: grep 모순 갱신 norm (restated by table)
 함께, 룰·스킬에 **조항을 삽입하는 위임서**는 "같은 파일에서 같은 주제를 다루는 기존 문장을 `grep`해 모순·stale 참조를 함께 갱신"을 완료 조건에 넣습니다. v1.1.67에서 새 R010 행이 바로 위 CI/CD 행과 `gh run rerun` 소유를 두고 충돌하고, fsd 새 섹션이 도입부의 "Equivalent to running"과 충돌하며, homework 소스 재넘버링 후 Limitations의 "source (1)" 참조가 stale로 남은 3건이 같은 리뷰에서 적발되었습니다 — R020 Config-Schema-Before-Edit(상호의존 필드 열거)의 문서 편집 각도입니다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 메모리 요약·기억으로 Origin 사실을 위임서에 확정형 기재 | 출처 문장을 `gh issue view`/원문에서 인용해 동봉하고 "원문과 다르면 원문 우선"을 명시 |
 | 삽입 위치와 문안만 지정한 조항 삽입 위임 | 같은 주제의 기존 문장 grep + 모순·stale 참조 갱신을 완료 조건에 포함 |
 
+<!-- DETAIL: 보강 3항목 (Origin #1691/#1696)
 **보강 3항목 (Origin: #1691 #6, #1696 #1·#2 — v1.1.71)**: (a) [#1696 #2] 인용문은 `gh issue view --json body` 등 **도구 출력에서 그대로 붙여 넣고** 손으로 옮겨 적지 않으며, 서브에이전트 완료 조건에 "인용문을 원문과 `grep -F`로 대조"를 넣습니다 — v1.1.70에서 오케스트레이터가 CHANGELOG 라인을 수기로 옮기다 "and marketplace"를 빠뜨렸고 서브에이전트는 그 위임서를 축자 인용했습니다. (b) [#1691 #6] 인용문이 코드·파일을 가리키면 **그 대상과 대조**한 뒤 기재합니다 — v1.1.69에서 이슈 제안 문안("동일 적용")을 검증 없이 룰로 옮겼다가 인용 대상 스크립트가 해당 필터를 의도적으로 미적용한다는 사실이 리뷰에서 드러났습니다. (c) [#1696 #1] 오케스트레이터가 위임서에 **함의를 제공할 때는 `[가설 — 실측이 반대면 반대로 기재]`로 표기**하고 실측 항목의 판정 기준을 동봉합니다 — v1.1.70에서 "이 결함의 대상일 수 있음"을 확정형으로 제공하자 서브에이전트가 와일드카드 matcher `"*"`를 "구체적 matcher"로 라벨해 함의가 역전되었습니다. 단, 파괴적·비가역 결과를 낳는 위임(아래 「참인 전제 ≠ 참인 함의 — 브랜치 전환 위임」)에서는 `[가설]` 표기 여부와 무관하게 결과 예측을 기재하지 않습니다 — 그 절이 우선합니다. 버전 노트 위임서의 같은 규율은 R017 「묶음 버전 노트 위임서 — 문장별 (NNN) 태그와 합쇼체 예시」 보강 2항목과 짝을 이룹니다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
@@ -387,9 +447,13 @@ Origin: #1709 찐빠 #3 — 브리프의 숫자에 출처·의미(CLI 설치 버
 | 인용 대상 코드를 보지 않고 제안 문안을 룰로 승격 | 인용문이 가리키는 코드·파일과 대조 후 기재 |
 | 오케스트레이터의 함의를 확정형으로 위임서에 기재 | `[가설 — 실측이 반대면 반대로 기재]` 표기 + 판정 기준 동봉 |
 
+<!-- DETAIL: 보강 항목 (Origin #1698 등)
 **보강 항목 (Origin: #1698 #1·#2(#3은 #1로 흡수), #1701 #1, #1704 #1, #1707 #2 — v1.1.72~75)**: [#1698 #1] 오케스트레이터는 룰·문서에 커밋될 **최종 문안**을 완성문으로 위임서에 붙여 넣지 않습니다 — 서브에이전트가 이슈 본문에서 사실·수치를 직접 뽑아 작성하고, 오케스트레이터는 제안 포인터·삽입 위치·제약을 지정합니다. 단 인용 원문, 실측 사실(HEAD/브랜치/카운트), 승인·금지 작업 목록, 표준 금지 문구, `[가설]` 표기 함의, 검증 재실행 금지 목록은 계속 오케스트레이터가 기재합니다 — 이들은 "최종 문안"이 아니라 위임 전제입니다(배선: `auto-dev.yaml` implement 스텝 description, 4사본). 원인은 "오케스트레이터가 위임서에 룰 문안 전체를 직접 작성하면서 수치를 기억으로 옮김 — 서브에이전트에는 `gh issue view` 인용을 요구했으나 오케스트레이터 자신의 산문은 같은 규율을 받지 않음"이며, "인용 정확성이 주제인 반복에서 같은 계열 3회째(v1.1.69 세션번호 → v1.1.70 "and marketplace" → v1.1.71 "High 2건")"가 재발 근거입니다. "리뷰에서 오류가 난 문장은 전부 오케스트레이터 작성분이었음"이며, "인용 대조 14건 중 오케스트레이터 작성 수치 1건 외 전부 원문 일치"가 실증됩니다. [#1698 #2] 인접 점검은 "같은 주제 키워드 grep"에만 의존하지 않고, 삽입 지점 앞뒤 섹션(±1 heading)의 Anti-pattern 표를 전수 대조하는 이원화를 적용합니다 — "인접성 점검을 키워드 grep에만 의존"했다가 12줄 아래 조항과의 모순을 놓친 사례가 원인입니다. [#1707 #2] 이 ±1 heading 대조는 인접 섹션과의 모순 여부뿐 아니라, 그 섹션 안의 상대 위치 참조(위 표·아래 표·직전 조항 등)가 삽입 후에도 원래 의도한 대상에 여전히 재바인딩되는지도 함께 확인합니다 — 원인은 "서브에이전트의 ±1 heading 점검이 "모순 여부"에만 초점, 상대 참조("위/아래 표")의 재바인딩은 점검 항목에 없음"입니다(배선: auto-dev.yaml implement 스텝 표준 제약 블록, 형제 위임이 같은 릴리즈에서 추가). [#1701 #1] 위임서에 적는 오케스트레이터 자신의 **요구사항 요약**(예: "…만 지정"과 같은 범위 문구)도 최종 문안과 동일하게 취급합니다 — 단 위 예외 목록(승인·금지 작업 목록·표준 금지 문구·실측 사실 등)은 이 취급에서 제외합니다. 원인은 "위임서가 이슈 원문 대신 오케스트레이터가 요약한 요구 문구("…만")를 전달 — 룰 문안은 서브에이전트가 썼지만 범위 규정은 오케스트레이터 산문이었음"이며, 이슈 제안 문장을 `gh issue view` 출력에서 복사해 전달하고 오케스트레이터의 범위 요약에는 `[요약 — 원문 우선]`을 표기합니다(배선: auto-dev.yaml implement 스텝 bullet 확장, 4사본 — R016 Rule Wiring Check). [#1704 #1] 위임서에 적는 오케스트레이터 자신의 **배선 판정**(예: "기존 implement 스텝 bullet이 커버" 류)도 같은 취급을 받습니다 — 위임서는 배선 대상 후보 파일·앵커만 제시하고, 커버 여부는 서브에이전트가 해당 문장을 인용해 판정합니다. 원인은 "배선 대상을 grep 실측 없이 오케스트레이터가 요약해 확정형으로 기재 — Iteration 1 찐빠 #1("…만 지정" 요약)과 같은 클래스의 재발(요약이 룰 문안 대신 배선 판정으로 자리만 옮김)"입니다(배선: auto-dev.yaml implement 스텝 bullet 확장, 4사본 — 기존 bullet은 `constraints`를 오케스트레이터 제공 항목으로 **허용**하므로 이 조항을 커버하지 않습니다).
+-->
 
+<!-- DETAIL: #1700 판정 note
 > **#1700 판정 (v1.1.72)**: 이 인용의 "v1.1.69 세션번호"는 발생 시점이 아니라 조항 작성 시점으로 보입니다 — 오류 발생·적발은 Iteration 4/v1.1.67(#1688 찐빠 #1), 조항 초안은 커밋 448143c7(PR #1690 = release/v1.1.69) 실측입니다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
@@ -401,33 +465,51 @@ Origin: #1709 찐빠 #3 — 브리프의 숫자에 출처·의미(CLI 설치 버
 
 #### 참인 전제 ≠ 참인 함의 — 브랜치 전환 위임 (Origin: #1595 #2)
 
+<!-- DETAIL: branch-switch prediction norm (restated by table)
 uncommitted 변경이 있는 상태의 브랜치 전환을 위임할 때, 위임서에 **전환의 결과를 확정형으로 예측해 적지 않는다**. "대상 브랜치에 그 파일이 없다"는 **사실**에서 "전환해도 안전하다"는 **함의**는 도출되지 않는다 — 파일이 **없기 때문에** checkout이 그 파일을 삭제해야 하고, modified 상태면 거부된다.
+-->
 
+<!-- DETAIL: lead-in sentence (restated by table)
 위임서에는 예측 대신 다음 두 가지를 적는다.
+-->
 
+<!-- DETAIL: branch-switch step1 (restated by table)
 1. **대상 브랜치와의 파일 집합 차이를 먼저 열거**한다 — `git status --short`(로컬 변경분) + 각 경로에 대해 `git cat-file -e <target>:<path>`(대상 브랜치 존재 여부). 결과는 **관측값**으로만 기재하고 전환 가능 여부를 단정하지 않는다.
+-->
+<!-- DETAIL: branch-switch step2 (restated by table)
 2. **표준 문구를 유지**한다 — "`stash`/`reset`/`clean`/force 일절 금지. 전환이 거부되면 **즉시 중단하고 오류 전문을 그대로 보고**하라." 부작용 없는 사전 확인 수단이 마땅치 않으므로, 이 금지 목록이 실질 방어선이다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | "대상 브랜치에 없는 파일이므로 전환 후 untracked가 됩니다"처럼 전환 결과를 확정형으로 위임서에 기재 | 파일 집합 차이를 관측값으로만 열거; 결과 예측은 기재하지 않음 |
 | 전환 거부 시 서브에이전트가 `stash`/`reset`/`clean`으로 자체 우회 | 위임서에 금지 목록 + "거부 시 즉시 중단, 오류 전문 보고"를 표준 문구로 포함 |
 
+<!-- DETAIL: Origin #1595 #2
 Origin: #1595 #2 (v1.1.48 세션 — `git checkout -b release/v1.1.48 develop`이 `tests/fixtures/agora/*.json` 6개 때문에 거부. `git cat-file -e develop:…` 실측은 "develop에 없음"으로 **참이었으나** 함의가 반대였다). **완화 실증**: 금지 목록이 작동해 mgr-gitnerd가 강제 전환을 시도하지 않았고 **손실 0**. Cross-ref: R020 Read-Before-Characterize, R001 Pre-Delegation Blast-Radius Enumeration.
+-->
 
 ### Parallel Delegation — Sibling-Agent Disclosure
 
+<!-- DETAIL: sibling disclosure intro (restated by table)
 2개 이상의 서브에이전트를 같은 메시지에서 병렬 스폰할 때, 각 위임 프롬프트는 **형제 에이전트의 존재와 각자의 담당 범위**를 고지해야 한다. 서브에이전트는 격리된 컨텍스트에서 실행되어 형제를 인지할 수 없으므로, 고지가 없으면 `git status` 같은 **저장소 전역 공유 뷰**의 출력을 자기 변경분으로 오독하거나 경합 원인을 "외부 세션/프로세스"로 오귀속한다.
+-->
 
+<!-- DETAIL: sibling disclosure content (restated by table)
 고지에 포함할 것: 동시 실행 에이전트 수, 각 에이전트의 담당 파일/영역, 그리고 "공유 뷰에 타 에이전트 변경분이 함께 보이므로 **자기 담당 범위만 기준으로 보고**하라"는 지시.
+-->
 
+<!-- DETAIL: shared-resource intro (restated by table)
 **파일 소유권만으로는 부족하다 — 공유 자원도 고지 대상이다 (Origin: #1598).** 편집 대상 파일이 완전히 disjoint해도 형제 에이전트는 **검증 명령·CPU·`$TMPDIR`**을 공유한다. 위임서에 다음 셋을 함께 규정한다.
+-->
 
+<!-- DETAIL: shared-resource elaboration table (superseded by Anti-pattern table below)
 | 공유 자원 | 위임서에 규정할 것 |
 |-----------|--------------------|
 | 검증 명령 | 완료 조건에 **동일한 검증 명령**(`bun test` 등)이 들어가면 그 사실을 고지하거나, 검증을 오케스트레이터가 회수해 **직렬 1회**로 실행한다. 스위트가 저장소 tracked 파일을 이동·삭제·복구하면 동시 실행 시 한쪽이 다른 쪽의 픽스처를 지운다 |
 | CPU | 초 단위 타임아웃 예산에 의존하는 테스트는 병렬 배치에서 제외하거나 그 예산을 고지한다 — CPU 포화 시 스텁조차 기동을 마치지 못한다 |
 | `$TMPDIR` | 임시 파일을 쓰는 실험·계측은 **에이전트별 고유 경로**를 지정하고, "임시 파일 누수" 같은 측정은 그 격리 경로에서만 계수한다 |
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
@@ -435,43 +517,63 @@ Origin: #1595 #2 (v1.1.48 세션 — `git checkout -b release/v1.1.48 develop`�
 | 파일 소유권만 고지하고 동일 검증 명령을 각 에이전트 완료 조건에 넣어 병렬 발주 | 검증 명령 공유를 고지하거나 검증을 오케스트레이터가 직렬 1회로 회수 |
 | 공유 `$TMPDIR`에 고정 경로로 임시 파일을 쓰고 그 디렉토리를 전수 계수 | 에이전트별 고유 경로 사용 + 그 경로만 계수 |
 
+<!-- DETAIL: 순차 위임 고지 note (restated by table)
 **순차 위임도 고지 대상 — 직전 완료 변경분의 출처 (Origin: #1658 #4)**: 병렬 형제뿐 아니라 **이미 워킹트리에 있는 미커밋 변경분의 출처**(직전에 완료한 에이전트와 그 담당 파일)를 위임서에 한 줄 고지한다. 고지가 없으면 후속 에이전트가 `git diff`에 보이는 타 변경분을 "형제 담당분"으로 오귀속해 서술한다(v1.1.62 세션 3건 — 행동에는 영향 없었으나 보고가 오염). 문안: "워킹트리의 미커밋 변경 중 X·Y는 직전 에이전트 [N]의 완료분이다 — 건드리지 말고 보고에서도 네 변경분과 구분하라."
+-->
 
+<!-- DETAIL: Origin #1518
 > Origin: #1518 (찐빠 #3 — 미고지 git 에이전트가 형제를 "외부 프로세스"로 오귀속; 같은 세션에서 고지한 4개 구현 에이전트는 전원 정확히 구분 보고 — 대조 실증). Cross-ref: R009 (병렬 실행 조건).
+-->
 
+<!-- DETAIL: Origin 보강 #1598
 > Origin 보강: #1598 — 파일이 완전 disjoint한 병렬 배치에서 위양성 4종 발생(judge.sh 테스트 7건 ENOENT: 두 테스트가 tracked `verdict-schema.json`을 cp→rm→복구 / reviewers.sh 타임아웃 테스트 간헐 실패: CPU 포화 / "임시 파일 누수 1건" 오측정: 형제 잔여물, 격리 셔임 재측정 시 0). **3종의 원인은 오케스트레이터가 위임서에 넣은 완료 조건 자체였다** — 형제 고지의 결함이 아니라 고지 항목의 누락이다.
+-->
 
 #### 고지는 귀속 후보를 늘릴 뿐 증거 등급을 올리지 않는다
 
+<!-- DETAIL: 정황귀속 note (restated by table)
 형제 고지를 받았더라도 **정황 귀속(형제 탓)은 여전히 오답을 낸다** — 오히려 고지가 그럴듯한 오귀속 대상을 제공한다. 공유 뷰의 이상 징후는 형제 고지 여부와 무관하게 **개입 실험**(캐시 제거·복원, `bash -x` 추적, 변경 되돌려 재현)으로 귀속해야 한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 고지받은 형제의 담당 범위와 겹친다는 정황만으로 실패 원인을 형제에 귀속 | 개입 실험(제거→재현 / 복원→소멸)으로 인과를 확정한 뒤 귀속 |
 
+<!-- DETAIL: Origin #1574
 > Origin: #1574 (v1.1.44 세션 대조 실증 — 동일 고지를 받은 3개 병렬 에이전트 중 [1]은 `bun test` 11 fail을 "형제가 그 파일 편집 중"으로 정황 귀속해 오답, [2]/[3]은 개입 실험으로 정확히 귀속). Cross-ref: R020 (Read-Before-Characterize — 정황으로 특성화 금지).
+-->
 
 #### 형제 결과의 교차 서술 금지 (Origin: #1619 #3)
 
+<!-- DETAIL: 교차서술 note1 (restated by table)
 병렬 위임서에 **형제 그룹의 결과를 서술·집계하는 작업을 포함하지 않는다** ("전 그룹 공통 결과는 X" 류). 형제 고지는 담당 범위 구분용이지, 형제 결과를 인용할 권한이 아니다 — 위 「고지는 귀속 후보를 늘릴 뿐 증거 등급을 올리지 않는다」와 같은 계열로, 고지가 형제에 대한 서술 권한까지 주지는 않는다.
+-->
 
+<!-- DETAIL: 교차서술 note2 (restated by table)
 형제 결과의 집계·서술은 **전 그룹 완료 후 오케스트레이터가 대조해 직접 확정**하거나, 전 그룹 완료를 실측한 뒤 별도 위임으로 수행한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 병렬 그룹 위임서에 "전 그룹 공통 결과" 서술 작업 포함 → 기재 시점 참이 완료 순서에 따라 거짓화 | 교차 서술은 전 그룹 완료 실측 후 오케스트레이터 대조 또는 후속 위임으로 |
 
+<!-- DETAIL: Origin #1619 #3
 > Origin: #1619 #3 (v1.1.50 세션 — 4개 병렬 룰편집 그룹 중 Group 4가 R016 실적 문단에 "은퇴 0건(전 그룹 공통)"을 기재. 기재 시점(Group 1·3 완료, Group 2 미완)에는 참이었으나 Group 2가 이후 2건을 은퇴시켜 서술이 거짓이 되었고 정정 왕복 1회 발생 — 교차 서술은 본질적으로 스냅샷이다). Cross-ref: 위 「고지는 귀속 후보를 늘릴 뿐 증거 등급을 올리지 않는다」.
+-->
 
 ##### "플래키"는 원인이 아니다 (Origin: #1598)
 
+<!-- DETAIL: 플래키 note (restated by table)
 간헐 실패에 **"플래키"·"부하 의존"이라는 판정을 결론으로 쓰지 않는다** — 그것은 "재현 조건을 아직 못 찾았다"는 뜻이지 "원인이 무작위"라는 뜻이 아니다. 각 서브에이전트는 격리 컨텍스트라 **형제가 같은 스위트를 동시에 도는 것을 구조적으로 볼 수 없으므로**, 형제 경합이 원인인 실패에 대해 각자 합리적이지만 틀린 "부하 의존 플래키" 결론에 도달한다. 간헐 실패는 개입 실험(단독 재실행 / 격리 `$TMPDIR` 재측정 / 형제 완료 후 재현)으로 귀속하고, 귀속에 실패하면 **"원인 미귀속 — 재현 조건 미확보"로 보고**한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | 간헐 실패를 "플래키"·"부하 의존"으로 판정하고 종료 | 개입 실험으로 귀속; 실패 시 "원인 미귀속"으로 보고(무작위라 단정 금지) |
 
+<!-- DETAIL: Origin #1598
 Origin: #1598 (형제 병렬 배치의 위양성 4종 중 3종이 각 에이전트에서 "부하 의존 플래키"로 결론났고, 실제 원인은 형제와의 검증 명령·CPU·`$TMPDIR` 경합이었다).
+-->
 
 ## Universal bypassPermissions
 
@@ -479,14 +581,18 @@ Origin: #1598 (형제 병렬 배치의 위양성 4종 중 3종이 각 에이전�
 
 **ALL Agent tool calls MUST include `mode: "bypassPermissions"`.**
 
+<!-- DETAIL: Agent tool default explanation (restated by table)
 The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmatter `permissionMode` and causes permission prompts during unattended execution. This is a CC platform behavior, not a configuration error.
+-->
 
+<!-- DETAIL: bypassPermissions Aspect/Detail table
 | Aspect | Detail |
 |--------|--------|
 | Scope | Every Agent tool call, without exception |
 | Why | CC's Agent tool `mode` default (`acceptEdits`) overrides frontmatter |
 | History | #926 (v0.99.1), #947 (v0.100.1), #955 (v0.103.0) — recurring issue |
 | Enforcement | Prompt-based (R021); all agent-spawning skills include instruction |
+-->
 
 ### Self-Check
 
@@ -498,10 +604,12 @@ Before spawning any agent:
    bypassPermissions 가 아니면 프롬프트 발생을 전제로 계획한다.
    하위 호환을 위해 per-call `mode: "bypassPermissions"` 는 계속 포함하되,
    **그 존재를 무인 실행의 증거로 삼지 않는다**(R020 "attempt ≠ outcome").
+<!-- DETAIL: defaultMode ignored measurement evidence
    실측(2026-09-03, `claude -p --debug-file`): `[WARN] settings defaultMode "bypassPermissions"
    ignored — only policy/user/flag settings may grant bypass mode (projectSettings and
    localSettings are repo-controllable)` — 무시 동작이 직접 실증되었다. 프로젝트 settings에는
    `permissions._comment_defaultMode` 안내 키가 추가되었다(v1.1.59).
+-->
 2. Is this a new skill that spawns agents? → Add Permission Mode section
 
 ### Common Violation
@@ -522,10 +630,12 @@ Before spawning any agent:
 -->
 
 
+<!-- DETAIL: /bg CC version compatibility table (historical)
 | CC Version | `/bg` permission behavior |
 |------------|--------------------------|
 | < v2.1.141 | Reverts to default — `bypassPermissions` may be lost on detach |
 | >= v2.1.141 | Preserves current permission mode — `/bg` flows no longer need extra workaround |
+-->
 
 `mode: "bypassPermissions"` on every Agent tool call is still required (applies to Agent tool, not `/bg` shell command).
 
@@ -565,29 +675,53 @@ Before spawning any agent:
 > **v2.1.209+**: Fixed `/model` and other dialogs being blocked in `claude agents` background sessions (reverts an overly broad guard). Continuation of the background-agent lifecycle chain above (cf. v2.1.208). `mode: "bypassPermissions"` remains required.
 -->
 
+<!-- DETAIL: v2.1.212 mode deprecation note
 > **v2.1.212+**: CC가 Task(=Agent) 도구의 `mode` 파라미터를 deprecated(이제 무시)했습니다 — subagent는 기본적으로 **부모(오케스트레이터) 세션의 permission mode를 상속**합니다. 따라서 이 섹션이 요구하는 per-call `mode: "bypassPermissions"`는 v2.1.212+에서 no-op이며, 무인 위임이 프롬프트 없이 돌게 하는 통제점은 per-call 파라미터가 아니라 **부모 세션의 permission mode**입니다(안전 완화 아님 — 부모가 bypassPermissions면 subagent도 상속). 단 CC < v2.1.212에서는 여전히 per-call `mode` 명시가 필요하므로(위 History #926/#947/#955) 하위 호환을 위해 계속 포함하되, 신버전에서 프롬프트 발생 시 진단은 위 Self-Check("mode 있는지 확인")가 아니라 **부모 세션 모드**를 확인합니다. cross-ref R002/R006(이 섹션을 canonical source로 참조).
+-->
 
+<!-- DETAIL: v2.1.223 org bypass-policy note
 > **v2.1.223+**: agent definition의 `bypassPermissions` 모드가 org의 bypass-permissions 비활성 정책을 무시하던 권한 공백이 수정되었습니다. 즉 구버전에서는 **에이전트 정의 파일이 org 정책보다 우선**해 org가 끈 bypass를 되살릴 수 있었습니다. 이 저장소는 위 v2.1.212+ 서술대로 부모 세션 mode 상속을 통제점으로 삼으므로 실질 변화는 없으나, org 정책이 걸린 환경에서는 frontmatter `permissionMode: bypassPermissions`가 더 이상 무인 실행을 보장하지 않습니다 — 프롬프트 발생 시 부모 세션 mode와 **org 정책** 두 축을 확인합니다(cross-ref R002).
+-->
 
+<!-- DETAIL: v2.1.221 background commit note
 > **v2.1.221+**: background session이 작업 보존을 위해 commit·push를 수행하고, draft PR은 작업이 요구할 때만 열며, 사용자의 CLAUDE.md git 지침을 따르고, 항상 작업 위치를 보고하며 종료하도록 변경되었습니다. 이 저장소의 R010은 모든 git 작업을 mgr-gitnerd 위임으로 요구하므로 background session은 그 지침을 읽고 동작하지만, **R020 기준 ground-truth(`git log` / `gh pr view`) 실측 없이 background session의 커밋/푸시 완료 보고를 신뢰하지 않습니다**. 또한 v2.1.221에서 `/status`가 세션 종류(interactive / background attached / background unattended)를 표시하므로 무인 실행 여부를 결정론적으로 확인할 수 있습니다.
+-->
 
+<!-- DETAIL: v2.1.232 background-default note
 > **v2.1.232+**: interactive session의 **non-teammate 에이전트 스폰이 기본 background 실행**으로 바뀌었습니다(subagent forking 기본 활성화의 일부). 즉 Agent 도구 호출의 반환은 "작업 완료"가 아니라 **"백그라운드 착수"일 수 있으므로**, 오케스트레이터는 스폰 반환이나 완료 통지를 완료 근거로 삼지 않고 R020 ground-truth(`git status` / `grep` / 검증 스크립트)로 확인합니다 — 구버전에서는 동기 반환이 기본이라 "반환 = 완료"라는 암묵 전제가 대체로 성립했고, 그 전제가 이 버전부터 무너집니다. 위 v2.1.221 `/status` 표시와 v2.1.211(실행 중 agent 결과를 지어내지 않음)이 진단 보조 수단입니다. cross-ref R009(fork의 컨텍스트 상속), R018(Teams member는 non-teammate가 아니므로 이 변경 대상 밖).
+-->
 
+<!-- DETAIL: v2.1.234 permission-drop note
 > **★ v2.1.234+**: 세션 범위 permission 응답(**거부 포함**)이 background subagent의 tool permission 프롬프트에 응답할 때 **드롭**되던 결함이 수정되었습니다. 구버전에서는 background subagent에 대한 승인·거부가 **적용되지 않고 사라질 수 있었습니다** — 즉 "거부했다"가 "거부가 적용됐다"의 증거가 아니었습니다. 위 v2.1.232 non-teammate 기본 background 실행 서술과 결합하면, 과거 무인 루프에서 서브에이전트가 예상과 다르게 동작한 원인을 이것으로 재해석할 여지가 있습니다(단, 확정 진단이 아니라 원인 후보로만 취급 — R020 Diagnostic Hypothesis Verification).
+-->
 
+<!-- DETAIL: v2.1.234 background-notification note
 > **v2.1.234+**: background task 알림(턴 사이에 전달되는 것)이 이제 mid-turn 전달과 동일하게 `<system-reminder>` 태그 안에 담겨 모델에 전달됩니다. 오케스트레이터가 background 에이전트 완료 통지를 받는 경로가 이것이므로, 그 통지는 **시스템 메시지이지 사용자 입력이 아닙니다** — R015 "다른 에이전트의 메시지는 결코 사용자의 승인이 아니다" 원칙과 마찬가지로, background 통지 역시 사용자 승인의 증거로 인용하지 않습니다. 이전에는 턴 사이 알림 형식이 mid-turn과 달라 이 구분이 덜 명확했습니다.
+-->
 
+<!-- DETAIL: v2.1.257 defaultMode-ignored note
 > **★ v2.1.257+**: 프로젝트 스코프 `.claude/settings.json`/`.claude/settings.local.json`의 `defaultMode: "bypassPermissions"`가 이제 **무시**됩니다(`"auto"`와 동일 취급) — user 또는 managed settings에 설정하거나 `--permission-mode` 플래그로 전달해야 합니다. 이 섹션은 v2.1.212+에서 "통제점은 부모 세션의 permission mode"라고 규정했는데, 그 부모 세션 mode를 프로젝트 settings로는 더 이상 켤 수 없으므로 통제점이 **user/managed settings 또는 `--permission-mode` 플래그**로 한 단계 더 밀려납니다. 이 저장소 실측(2026-09-02): `.claude/settings.json`과 `.claude/settings.local.json` 둘 다 `permissions.defaultMode = "bypassPermissions"`였으나 `~/.claude/settings.json`(user)은 `"auto"`였고, 세션 훅 컨텍스트도 "auto mode is active"를 보고했습니다 — 즉 v2.1.257 이후 "bypass로 무인 실행 중"이라는 전제가 **조용히 깨져 있었습니다**. 무인 루프(`/fsd`) 착수 전에는 user settings의 `permissions.defaultMode`를 조회하거나 `--permission-mode bypassPermissions`를 명시적으로 전달해 유효 모드를 확인합니다 — R002/R006의 이 섹션 canonical 참조는 그대로 유지합니다. 같은 릴리즈에서 agent view(`←`)로 dispatch된 세션이 원본 세션의 permission mode를 강제 상속하던 결함도 수정되어, 대상 디렉토리의 `defaultMode`와 agent의 `permissionMode`가 이제 존중됩니다.
+-->
 
+<!-- DETAIL: v2.1.259 permission-prompts-none note
 > **v2.1.259+**: 무인 헤드리스 호스트용 신규 실행 플래그 `--permission-prompts none`이 추가되었습니다 — 프롬프트를 발생시켰을 대상은 자동으로 **거부**되고, 나머지는 활성 permission mode(auto mode 포함)가 그대로 판정합니다. 이는 위 v2.1.257 노트가 규정한 user-scope `permissions.defaultMode`, `--permission-mode` 플래그에 이은 **세 번째 통제점**입니다 — 이 플래그는 bypass를 부여하지 않고 "프롬프트했을 상황"을 "거부"로 전환할 뿐이므로, 이 플래그로 실행한 `/fsd` 류 루프는 프롬프트에 걸려 정지하지 않는 대신 프롬프트가 필요했을 스텝이 **거부(실패)로 종료**될 수 있습니다. 무인 스텝이 멈춘 것과 거부된 것은 R020 진단 축이 다릅니다 — 이 플래그로 실행한 경우 정지한 프롬프트가 아니라 **거부 에러 메시지**를 먼저 찾습니다. 또한 v2.1.260에서 **서브에이전트**가 시작한 백그라운드 명령의 1시간 시간 제한이 제거되어(메인 세션과 동일하게 종료·중지 시까지 실행), v2.1.232 background-spawn 노트와 결합하면 서브에이전트의 장기 백그라운드 명령이 더 이상 60분에 죽지 않으므로, 260+에서는 "1시간 뒤 조용히 종료됨"을 더 이상 유효한 진단으로 쓰지 않습니다.
+-->
 
+<!-- DETAIL: v2.1.259/265 nested-background note
 > **v2.1.259/265+**: (259) 중첩(nested) 백그라운드 서브에이전트의 결과가 이제 **부모 서브에이전트의 트랜스크립트**에 저장되어, resume된 서브에이전트가 결과를 유지하고 공유 트랜스크립트에서 전달이 드러납니다 — 이는 CC의 기본 nested-spawn 능력을 서술할 뿐이며, 위 flat-delegation **정책**(Core Rule)은 그대로 불변입니다. (259) remote-control 세션에서 `Stop`이 백그라운드 에이전트·워크플로우를 실제로 멈추지 못하던 결함이 수정되어, kill된 작업이 프로세스가 실제로 종료될 때까지 계속 보이고 재중지 가능합니다(cross-ref R020 역방향 노트 — "실패/중단 보고 ≠ 실제 실패"). (265) foreground로 스폰한 서브에이전트를 resume하면 도구 목록과 시스템 프롬프트 prefix가 바뀌어(prompt-cache 파손) 있던 결함이 수정되었고, non-interactive 세션(`-p` stream-json / SDK / cloud)이 사용자 메시지마다 셸 cwd를 초기화하던 결함도 수정되어 이제 `cd`가 턴 사이에 유지됩니다 — 턴별로 명령을 연쇄하는 `-p` 위임 스크립트에 직접 영향을 줍니다.
+-->
 
+<!-- DETAIL: v2.1.268/269 auto-mode-reason note
 > **v2.1.268/269+**: (268) auto mode가 어떤 action을 거부할 때 이제 **그 거부를 유발한 규칙 이름**을 함께 표시합니다 — 위 Subagent Scope-Creep STOP Protocol의 trip 계수가 "차단됨"이라는 모호한 신호가 아니라 **어느 규칙이 걸렸는지** 결정론적으로 확인 가능해지고, R015의 allow rule vs classifier 구분도 거부 텍스트에서 바로 읽을 수 있습니다. (269) `/goal`이 일시적 API 오류를 backoff로 재시도하고 goal을 조용히 종료하지 않도록 수정되었습니다 — `/goal`을 감싸는 `/fsd`가 일시적 5xx로 죽지 않으며, 269+에서 `/goal`이 갑자기 끝났다면 그것은 네트워크 순간 장애가 아니라 실제 중단입니다(cross-ref R004 Retryable).
+-->
 
+<!-- DETAIL: v2.1.274 claude-agents-flag note
 > **v2.1.274+**: (274) 멀티세션 에이전트 뷰인 `claude agents`가 auto-update 이후 `--permission-mode` 플래그를 잃어, 그 뷰로 착수한 세션이 시작 당시와 다른 permission mode로 돌아올 수 있던 결함이 수정되었습니다. 이는 실행 모드를 실행 플래그로 가정하지 말고 **실측**해야 한다는 위 ★ v2.1.257 프로젝트-scope `defaultMode` 노트를 확장하는 또 다른 사례입니다 — `claude agents`로 위임한 무인 실행은 auto-update 이후 유효 모드를 원래 지정한 `--permission-mode`가 아니라 다시 확인합니다.
+-->
 
+<!-- DETAIL: cross-ref v1.1.50 maxTurns
 > **cross-ref (v1.1.50 실측)**: R018의 `maxTurns` partial 표시(v2.1.246)가 R020 「Verification-Delegation Non-Termination」 mid-step 종료 패턴의 **실재 원인 중 하나로 확정**되었다 — 위임 프롬프트에 종료 금지 clause를 아무리 강화해도, 절단 주체가 플랫폼 turn 한도이면 에이전트에 닿지 않는다. 위임 경계를 단일 목표로 분할하는 것(R020 해당 조항)이 여전히 1차 방어선인 이유다. 상세는 R018 (MUST-agent-teams.md) Member Completion Verification 섹션.
+-->
 
 ## Agent Capability Pre-Check
 
@@ -606,39 +740,57 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 | Task targets a specific file path | The path EXISTS (`Glob`/`ls`) — capability check alone does not catch a missing/renamed file |
 | Task targets an EXISTING file for editing/commit (not a newly-created file) | The path is git-tracked (`git ls-files <path>` non-empty) — an existing-but-untracked target needs an explicit scope decision before delegation |
 
+<!-- DETAIL: path-existence clarification (restated by Required Checks row)
 > **Path existence ≠ tool capability (#1269 ③)**: the pre-check above verifies the agent HAS Read/Write/Bash, but not that the target path actually exists. Delegating a read/write to a missing or renamed path causes the same round-trip waste the capability pre-check is meant to prevent. Verify path existence (Glob/ls) before delegating path-specific work.
+-->
 
+<!-- DETAIL: Tracked 여부 norm (restated by table)
 > **Tracked 여부도 path existence 확인에 포함 (#1709 #4)**: 위 path existence 확인(`Glob`/`ls`)은 파일 **존재**를 확인하지만 **tracked 여부**는 확인하지 않습니다. **적용 범위는 기존 파일을 편집·커밋 대상으로 지정할 때에 한하며, 신규 생성 대상(아직 존재하지 않아 처음부터 untracked인 파일)은 제외**합니다 — 신규 파일은 존재하지 않으므로 `git ls-files`가 빈 결과를 내는 것이 정상이고 스코프 결정 대상이 아닙니다. 기존 파일에서 `git ls-files <path>`가 빈 결과를 반환하면 그 경로는 존재해도 git에 추적되지 않는 파일이므로(예: `.gitignore`로 제외됨), 그 경로를 위임 범위에 넣기 전에 범위에서 제외할지 force-add가 필요한지를 먼저 결정합니다. untracked 여부는 `git ls-files <path>`(빈 결과) 또는 `git check-ignore -v --no-index <path>`(히트 시 제외 사유까지 확인 가능)로 판별합니다.
+-->
 >
 > | Anti-pattern | Required |
 > |--------------|----------|
 > | 경로 존재(`ls`/`Glob`)만 확인하고 위임 → 기존 파일 대상이 untracked라 커밋 단계에서야 발견 | 기존 파일 편집·커밋 대상에 한해 `git ls-files <path>`(또는 `git check-ignore -v --no-index <path>`)로 tracked 여부까지 확인; untracked면 위임 범위에서 제외하거나 force-add 여부를 사전 결정. 신규 생성 대상은 이 확인에서 제외 |
 >
+<!-- DETAIL: Origin #1709 #4
 > Origin: #1709 찐빠 #4 — `git ls-files AGENTS.md` = 0, `git check-ignore -v --no-index` 히트(AGENTS.md가 `.gitignore` 리터럴로 제외됨). 문서 갱신 대상을 열거할 때 경로 존재만 확인(위 Path existence)하고 tracked 여부는 확인하지 않았습니다. R017 (c)의 "untracked 신규 산출물 실측"은 **커밋 직전** 실측을 다루지만, 이 조항은 **위임 전** 대상 파일이 애초에 tracked인지 판별하는 것을 다룬다는 점에서 범위가 다릅니다. 배선: auto-dev.yaml implement 스텝 표준 제약 블록 (4사본).
+-->
 
+<!-- DETAIL: Multi-copy consistency norm (restated by table)
 > **Multi-copy content consistency (#1287)**: 동일 파일이 다중 사본으로 존재하는 경우(예: auto-dev.yaml이 실행본 + templates 미러 + 레거시 사본 등 N곳), 위임 전 경로 존재뿐 아니라 **사본 간 내용 일관성(md5/diff)도 확인**해야 한다. 사본이 drift된 상태에서 "N곳 동일 변경 적용"으로 위임하면 에이전트가 작업 중에야 drift를 발견(round-trip)하거나, 일부 사본만 갱신되어 불일치가 심화된다.
+-->
 >
 > | Anti-pattern | Required |
 > |--------------|----------|
 > | `find`로 N곳 존재 확인 후 "N곳 동일 변경" 위임 | 위임 전 `md5`/`diff -q`로 N곳 내용 일치 확인; drift 시 canonical 기준 정렬을 위임 prompt에 명시 |
 >
+<!-- DETAIL: Origin #1287
 > Origin: #1287 (v0.164.0 세션 회고 찐빠 #1).
+-->
 
+<!-- DETAIL: 언어 미러 parity norm (restated by table)
 > **언어 미러·parity 위임은 추가·수정·삭제 세 방향 (#1709 #2)**: en 원본에 대응하는 로컬라이즈 미러(README_ko, ARCHITECTURE_ko 등) 동기화를 위임할 때는 표준 문안에 "en에 있는 내용을 **추가**, en과 달라진 내용을 **수정**, en에서 사라진 내용을 **삭제**해 세 방향 모두 일치시키라"를 고정하고, 완료 조건에 "en에 없는데 ko에만 남은 행·문장이 0건임을 grep으로 확인"을 포함합니다. 추가만 지시하면(additive-only) en에서 제거된 행이 ko에 stale로 잔존합니다.
+-->
 >
 > | Anti-pattern | Required |
 > |--------------|----------|
 > | 미러 동기화 위임을 "en의 새 내용을 ko에 반영하라"로만 지시(추가 전용) | "추가·수정·삭제 세 방향으로 en과 일치"를 표준 문안에 고정 + "en에 없는 행 0건 grep" 완료 조건 포함 |
 >
+<!-- DETAIL: Origin #1709 #2
 > Origin: #1709 찐빠 #2 — parity 지시가 추가 전용이라 en에서 제거된 행이 ko 미러에 stale로 남았습니다. Cross-ref: 위 Multi-copy content consistency(사본 간 md5/diff 일치 확인)의 언어 미러 변형. 배선: auto-dev.yaml implement 스텝 표준 제약 블록 (4사본).
+-->
 
+<!-- DETAIL: New-File Count-Impact norm (restated by table)
 > **New-File Count-Impact Pre-Check (#1443)**: 신규 파일 추가를 서브에이전트에 위임하기 전, 그 파일이 **새 최상위 토픽/엔티티 디렉토리**(카운트 증가)인지 **기존 디렉토리 내부 문서**(카운트 불변)인지 사전 판별해야 한다. 사전 판별 없이 "카운트 N→N+1 동기화"로 위임하면 잘못된 전제가 서브에이전트에 전파된다. `find <dir> -mindepth 1 -maxdepth 1 -type d | wc -l` 등으로 토픽 디렉토리 실측하고, 카운트 위임 프롬프트에는 항상 "실측값 기준으로 동기화하라, 추측으로 숫자를 바꾸지 말라"를 명시해 잘못된 전제를 서브에이전트가 정정할 여지를 확보한다.
+-->
 >
 > | Anti-pattern | Required |
 > |--------------|----------|
 > | 신규 파일이 기존 디렉토리 내 문서인데 "카운트 N→N+1"로 위임 | 위임 전 토픽 디렉토리 vs 문서 판별; 문서면 카운트 불변 전달 + "실측값 기준" 방어선 명시 |
 >
+<!-- DETAIL: Origin #1443
 > Origin: #1443 (Session 126 회고 찐빠 #2) — `guides/claude-code/16-fable5-prompting.md`(기존 토픽 내부 문서)를 "guides 57→58"로 위임했으나 57 유지가 정답; "실측값 기준" 방어선이 mgr-updater 정정을 유도(R020 Diagnostic Hypothesis Verification). Cross-reference: R020 (Diagnostic Hypothesis Verification), Multi-copy content consistency(#1287).
+-->
 
 ### Known Limitations (Active Cache)
 
@@ -656,19 +808,27 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 ✓ CORRECT: Pre-check arch-documenter.disallowedTools → collect data first → pass as content
 ```
 
+<!-- DETAIL: reference issues line
 Reference issues: #1202 item #2, `feedback_arch_documenter_no_bash.md`.
+-->
 
 ## Sensitive Path Handling (Historical: pre-CC v2.1.121)
 
+<!-- DETAIL: Sensitive Path Handling status (historical)
 > **Status**: Deprecated as of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01). Direct Write/Edit/Bash on `.claude/`, `.git/`, `.vscode/` works without prompts under `bypassPermissions` mode in CC v2.1.121+ (issue #1101).
+-->
 
 Current CC versions (>=2.1.121): direct Write/Edit/Bash on `.claude/**` paths are permitted under `mode: "bypassPermissions"`. The `/tmp/*.sh` script wrapping pattern previously required is no longer necessary. Catastrophic operations (e.g., `rm -rf /`) remain blocked by independent safety guards.
 
 `mode: "bypassPermissions"` on every Agent tool call is still required (see "Universal bypassPermissions" above).
 
+<!-- DETAIL: legacy /tmp bypass pointer (historical)
 **For CC < v2.1.121 only**: see git history of this rule for the legacy `/tmp/*.sh` bypass pattern (commit before v0.126.0).
+-->
 
+<!-- DETAIL: References list
 > **References**: #1052 (origin v0.116.2), #1016 (v0.111.1), #1046 (delegation directive loss v0.116.1), #1099 (CC v2.1.126 tracking), #1101 (v0.126.0 deprecation).
+-->
 
 ## Session Continuity
 
@@ -717,18 +877,24 @@ The following paths MUST be created or structurally modified ONLY through `mgr-c
 | `.claude/skills/*/SKILL.md` | Skill definitions | R006 skill frontmatter, scope classification |
 | `guides/*/` (new directories) | Reference guides | R006 separation of concerns, cross-reference integrity |
 
+<!-- DETAIL: Protected Paths exclusions list
 **Excluded from this rule** (handled by their own specialists):
 - `.claude/agent-memory*/` — sys-memory-keeper
 - `.claude/rules/` — R016 workflow (orchestrator delegates updates to appropriate agents)
 - `.claude/hooks/` — requires explicit user approval (security-critical)
 - `.claude/outputs/` — any agent (artifact convention)
 - Existing file updates by `mgr-updater` (external source sync) and `mgr-supplier`/`fix-refs` (reference correction)
+-->
 
+**참고**: `.claude/hooks/`는 이 규칙 제외 대상 — 보안 민감성으로 별도 명시적 사용자 승인 필요.
+
+<!-- DETAIL: why-mgr-creator rationale and risk list
 **Why mgr-creator?** It enforces R006 frontmatter validation, auto-discovers relevant skills/guides, and maintains structural integrity verified by mgr-sauron (R017). Bypassing mgr-creator risks:
 - Invalid frontmatter (missing required fields)
 - Orphaned skill references
 - Routing table desynchronization
 - R017 verification failures
+-->
 
 > **Enforcement**: Advisory (R021) — no hard-block hook. Candidate for promotion if violation rate exceeds threshold. See R021 Hard Enforcement Candidates.
 
@@ -746,7 +912,9 @@ The following paths MUST be created or structurally modified ONLY through `mgr-c
 | `LICENSE`, `NOTICE` | arch-documenter |
 | `CLAUDE.md` (project root) | arch-documenter (content) / mgr-updater (count sync) |
 
+<!-- DETAIL: root-meta-file rationale
 **Why**: "1 line edit" 논리는 R010 약화 — orchestrator 직접 편집 진입로 차단. #1208 보고.
+-->
 
 <!-- DETAIL: System Agents Reference
 | Agent | File | Purpose |
@@ -764,12 +932,17 @@ Subagent NOT required for:
 
 "Simple" means READ-ONLY operations. If the task involves any file creation, modification, or deletion, it must be delegated. There is no "too small to delegate" exception for write operations.
 
+**Carve-out**: PPID 스코프 `/tmp` 1줄 마커(예: `/tmp/.claude-fsd-$PPID`)는 오케스트레이터가 직접 생성·삭제 가능 — 구조화 파이프라인 상태 JSON은 제외, `tracker-checkpoint`에 위임.
+
+<!-- DETAIL: PPID marker carve-out
 **Carve-out — PPID 스코프 `/tmp` 런타임 상태 마커 (Origin: #1650 C, v1.1.61)**: 프로젝트 트리 **밖**의 `/tmp` 아래에 세션 프로세스 ID로 스코프된 1줄짜리 런타임 마커(예: `/tmp/.claude-fsd-$PPID`)를 만들거나 지우는 것은 프로젝트 파일 쓰기가 아니므로 오케스트레이터가 Bash 한 줄로 직접 수행할 수 있다. 조건: (1) 경로가 `/tmp` 하위이고 프로세스 ID로 스코프됨, (2) 내용이 타임스탬프 등 1줄 신호에 불과함, (3) 프로젝트 트리·홈 디렉토리·설정 파일을 건드리지 않음. 구조화된 파이프라인 상태(`/tmp/.claude-pipeline-{name}-{PPID}.json`)는 이 carve-out 대상이 아니며 기존대로 `tracker-checkpoint`에 위임한다 — 마커와 상태 파일의 차이는 내용 구조(1줄 신호 vs 검증이 필요한 JSON 상태)다. 위임 비용(스폰 30초 이상)이 작업(1줄 touch)보다 큰 경우를 위한 좁은 예외이며, "작아서" 예외가 아니라 **프로젝트 파일이 아니라서** 예외다.
+-->
 
 ## Dynamic Agent Creation (No-Match Fallback)
 
-When routing detects no matching agent for a specialized task:
+When routing detects no matching agent for a specialized task: 매칭 전문가 없음 → mgr-creator에 위임해 생성 후 사용.
 
+<!-- DETAIL: Dynamic Agent Creation numbered steps
 1. **Evaluate**: Is this a specialized task requiring domain expertise?
    - YES → proceed to step 2
    - NO → use general-purpose agent
@@ -779,6 +952,7 @@ When routing detects no matching agent for a specialized task:
    - Required capabilities
 3. **Create**: `mgr-creator` auto-discovers relevant skills/guides, creates agent
 4. **Execute**: Orchestrator uses newly created agent for the original task
+-->
 
 This is the core oh-my-customcode philosophy:
 > "No expert? CREATE one, connect knowledge, and USE it."
@@ -814,15 +988,23 @@ All git operations (commit, push, branch, PR) MUST go through `mgr-gitnerd`. Int
 
 ### 품질 게이트 우회 금지 — 훅 차단은 보고 대상
 
+`--no-verify`·`--no-gpg-sign` 등 게이트 무력화 플래그는 git 위임 상시 금지 — 오케스트레이터 사전 승인 시만 예외.
+
+<!-- DETAIL: pre-commit bypass prohibition (restated by table)
 git 위임 에이전트는 pre-commit/pre-push 훅 차단을 **자체 판단으로 우회하지 않는다**. `--no-verify`(및 `--no-gpg-sign` 등 게이트 무력화 플래그)는 git 위임의 **상시 금지 목록**이며, 오케스트레이터의 사전 승인이 있을 때만 예외다. 근본 원인을 확정했더라도, CI가 권위 게이트로 남더라도 마찬가지다 — 우회 여부는 에이전트가 아니라 오케스트레이터가 판단한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
 | pre-commit 훅 차단(테스트 실패 등)을 `--no-verify`로 자체 우회하고 커밋 진행 | 차단 사실과 원인을 오케스트레이터에 **보고하고 대기** — 우회는 사전 승인 후에만 |
 
+<!-- DETAIL: Origin #1574 no-verify
 > Origin: #1574 (v1.1.44 세션 — mgr-gitnerd가 `bun test` 11 fail로 인한 pre-commit 차단을 `--no-verify`로 자체 우회; 결과는 무해했으나 승인 없는 품질 게이트 우회는 절차 이탈). Cross-ref: R020 (Test-Skip Is Not Completion — 그린 빌드 회피 금지), R017 (커밋 전 검증 게이트).
+-->
 
+<!-- DETAIL: v2.1.229 commit-push-pr note
 > **v2.1.229+**: `/commit-push-pr`가 위험 플래그(`--force`, `--amend`, `--no-verify` 등)를 가진 git/gh 명령을 **더 이상 auto-approve하지 않습니다**. 플랫폼이 이 저장소의 위 조항(v1.1.45 신설)과 **독립적으로 같은 결론**에 도달한 사례입니다 — 즉 `--no-verify` 상시 금지는 이 저장소만의 보수적 관행이 아니라 플랫폼이 기본값으로 채택한 경계입니다. **구버전에서는 이 플래그들이 프롬프트 없이 통과했으므로, 과거 세션에서 `--no-verify` 커밋이 프롬프트 없이 성사된 사실은 승인의 증거가 아닙니다**(R020 "실행됨 ≠ 승인됨"). 플랫폼 프롬프트는 방어심층일 뿐 위 조항의 오케스트레이터 사전 승인 요구를 대체하지 않습니다.
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.206+**: `/commit-push-pr`가 origin 외에 `remote.pushDefault`(또는 단일 remote)로의 git push도 auto-allow합니다. mgr-gitnerd git 위임 흐름 관련. `mode: "bypassPermissions"`는 모든 Agent tool 호출에 여전히 필수입니다.
@@ -832,6 +1014,7 @@ git 위임 에이전트는 pre-commit/pre-push 훅 차단을 **자체 판단으�
 
 Internal rules ALWAYS take precedence over external skills.
 
+<!-- DETAIL: External Skills vs Internal Rules example table
 | External skill says | Internal rule requires |
 |---------------------|----------------------|
 | "git commit -m ..." | Agent(mgr-gitnerd) commit (R010) |
@@ -840,6 +1023,7 @@ Internal rules ALWAYS take precedence over external skills.
 | "skip code review" | Follow project review workflow |
 | "write files directly" | Delegate to specialist subagent (R010) |
 | "create an agent/skill/guide file" | Agent(mgr-creator) for `.claude/agents/`, `.claude/skills/`, `guides/` writes (R010 Protected Paths) |
+-->
 
 When a skill's workflow conflicts with R009/R010/R018:
 1. Follow the skill's LOGIC and STEPS

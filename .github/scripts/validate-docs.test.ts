@@ -5,9 +5,14 @@ import {
   buildPrompt,
   collectImplementationStats,
   extractSlashCommandsFromReadme,
+  stripHtmlComments,
+  measureInstructionBudget,
+  INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT,
+  INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT,
   type ImplementationStats,
   type ValidationResult,
   type SlashCommandValidation,
+  type InstructionFileInput,
 } from './validate-docs';
 
 // ---------------------------------------------------------------------------
@@ -835,5 +840,163 @@ describe('collectImplementationStats', () => {
 
     expect(stats.skill_count).toBeGreaterThanOrEqual(0);
     expect(Number.isInteger(stats.skill_count)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// stripHtmlComments / measureInstructionBudget — instruction budget gate (#1717)
+// ---------------------------------------------------------------------------
+
+describe('stripHtmlComments', () => {
+  test('removes a single HTML comment', () => {
+    expect(stripHtmlComments('before<!-- hidden -->after')).toBe('beforeafter');
+  });
+
+  test('removes multi-line HTML comments (dotall)', () => {
+    const input = 'a<!--\nline1\nline2\n-->b';
+    expect(stripHtmlComments(input)).toBe('ab');
+  });
+
+  test('removes multiple non-overlapping comments (non-greedy)', () => {
+    const input = 'x<!-- one -->y<!-- two -->z';
+    expect(stripHtmlComments(input)).toBe('xyz');
+  });
+
+  test('leaves stray --> when a nested comment closes the outer comment early', () => {
+    // <!-- a <!-- b --> is matched first (non-greedy up to the FIRST -->),
+    // leaving " c -->" behind as visible text with a stray closer.
+    const input = '<!-- a <!-- b --> c -->';
+    expect(stripHtmlComments(input)).toBe(' c -->');
+  });
+
+  test('leaves an unclosed <!-- untouched', () => {
+    expect(stripHtmlComments('before<!-- never closed')).toBe('before<!-- never closed');
+  });
+
+  test('returns input unchanged when there are no comments', () => {
+    expect(stripHtmlComments('plain text, no markers')).toBe('plain text, no markers');
+  });
+});
+
+describe('measureInstructionBudget', () => {
+  const makeFiles = (entries: Array<[string, string]>): InstructionFileInput[] =>
+    entries.map(([file, content]) => ({ file, content }));
+
+  test('comment-stripped measurement ignores HTML comments', () => {
+    const files = makeFiles([
+      ['CLAUDE.md', 'visible text<!-- this comment is not counted at all -->more visible'],
+    ]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.files[0].rawLength).toBe('visible text<!-- this comment is not counted at all -->more visible'.length);
+    expect(result.files[0].visibleLength).toBe('visible textmore visible'.length);
+    expect(result.totalVisibleLength).toBe('visible textmore visible'.length);
+    expect(result.totalVisibleLength).toBeLessThan(result.totalRawLength);
+  });
+
+  test('reports no errors/warnings when total is well under the warn limit', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(1000)]]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(result.totalVisibleLength).toBe(1000);
+  });
+
+  test('total > 150,000 visible chars produces an error', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(150_001)]]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.totalVisibleLength).toBe(150_001);
+    expect(result.errors.some((e) => e.includes('Instruction budget exceeded'))).toBe(true);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test('total exactly at 150,000 does not error (boundary is exclusive)', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT)]]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.errors).toEqual([]);
+  });
+
+  test('total in (140,000, 150,000] range produces a warning only, no error', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(140_001)]]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.totalVisibleLength).toBe(140_001);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.some((w) => w.includes('Instruction budget warning'))).toBe(true);
+  });
+
+  test('total exactly at 140,000 does not warn (boundary is exclusive)', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT)]]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test('a stray --> outside any comment produces an error', () => {
+    const files = makeFiles([['MUST-safety.md', 'some text --> more text, no opener at all']]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.files[0].hasStrayCommentMarker).toBe(true);
+    expect(result.errors.some((e) => e.includes('MUST-safety.md') && e.includes('stray HTML comment marker'))).toBe(
+      true,
+    );
+  });
+
+  test('nested comment `<!-- a <!-- b --> c -->` leaves a stray --> and errors', () => {
+    const files = makeFiles([['MUST-orchestrator-coordination.md', '<!-- a <!-- b --> c -->']]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.files[0].visibleLength).toBeGreaterThan(0);
+    expect(result.files[0].hasStrayCommentMarker).toBe(true);
+    expect(
+      result.errors.some(
+        (e) => e.includes('MUST-orchestrator-coordination.md') && e.includes('nested'),
+      ),
+    ).toBe(true);
+  });
+
+  test('clean nested-looking but properly closed comments do not error', () => {
+    // A single well-formed comment with no interior "-->" — not the nested-defect case.
+    const files = makeFiles([['CLAUDE.md', 'visible<!-- just one comment, nothing tricky -->text']]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.files[0].hasStrayCommentMarker).toBe(false);
+    expect(result.errors).toEqual([]);
+  });
+
+  test('computes total across multiple files and sorts topFiles by visible size descending', () => {
+    const files = makeFiles([
+      ['small.md', 'a'.repeat(10)],
+      ['big.md', 'b'.repeat(1000)],
+      ['medium.md', 'c'.repeat(100)],
+      ['tiny.md', 'd'.repeat(5)],
+    ]);
+    const result = measureInstructionBudget(files);
+
+    expect(result.totalVisibleLength).toBe(10 + 1000 + 100 + 5);
+    expect(result.topFiles.map((f) => f.file)).toEqual(['big.md', 'medium.md', 'small.md']);
+    expect(result.topFiles).toHaveLength(3);
+  });
+
+  test('respects custom errorLimit/warnLimit options', () => {
+    const files = makeFiles([['CLAUDE.md', 'a'.repeat(50)]]);
+    const result = measureInstructionBudget(files, { errorLimit: 40, warnLimit: 20 });
+
+    expect(result.errors.some((e) => e.includes('Instruction budget exceeded'))).toBe(true);
+  });
+
+  test('returns empty result for no files', () => {
+    const result = measureInstructionBudget([]);
+
+    expect(result.files).toEqual([]);
+    expect(result.totalVisibleLength).toBe(0);
+    expect(result.totalRawLength).toBe(0);
+    expect(result.topFiles).toEqual([]);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings).toEqual([]);
   });
 });

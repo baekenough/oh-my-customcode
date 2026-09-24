@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-09-19
+updated: 2026-09-24
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -235,3 +235,4 @@ Two new standing bullets were added to the `implement` step's rules/gates block:
 - Issue #1574 — an approval-required `.claude/hooks/**` path surfaced mid-run instead of at scope time, stalling an unattended run on an interactive approval after scope was already committed (v1.1.44 retrospective)
 - Issue #1591 — release-PR merge instruction carried an unverified `--admin` flag across sessions; ground-truth measurement found no reviewer-approval gate exists and a plain merge succeeds (2026-08-15)
 - Issue #1593 — step 1.e's lockfile mechanism was undocumented and silently recorded a stale `templateVersion` when run before step 1.d landed; step 1.j 3-way assertion added to close the gap step 1.i's 2-way check misses (2026-08-15)
+- Content-drift resync 2026-09-24 (v1.1.77, #1717): added an `implement`-step description bullet for `claude-code-release` issues — CC release knowledge goes to `guides/claude-code/15-version-compatibility.md` per rule (+ templates mirror); a rule file gets at most ONE behavioral line, and only when agent behavior must change. Delegations adding visible text to `CLAUDE.md`/`.claude/rules/*.md` must keep the comment-stripped total ≤140,000 chars (hard cap 150,000, `validate-docs --programmatic-only`) — retire/DETAIL-wrap another clause in the same change if needed. Cross-ref [[r016]]'s new instruction-budget policy.

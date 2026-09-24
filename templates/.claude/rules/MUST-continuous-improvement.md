@@ -4,21 +4,39 @@
 
 ## Core Rule
 
-When user points out a violation: update the relevant rule → commit → then continue original task.
+When user points out a violation: update the relevant rule → commit → then continue original task. Update the rule itself, not just acknowledge the violation.
 
+<!-- DETAIL: Core Rule, original 2nd sentence
 Update the relevant rule rather than just acknowledging the violation.
+-->
 
 ## Workflow
 
+1. Acknowledge violation
+2. Identify root cause
+3. Update the rule
+4. Wiring check (see below) — when the new clause governs delegation prompts, apply it to this iteration's own delegation prompts before continuing
+5. Commit
+6. Continue original task
+
+<!-- DETAIL: Workflow, original wording
 1. Acknowledge violation
 2. Identify root cause (which rule was weak/unclear?)
 3. Update the rule (add clarity, examples, self-checks)
 4. Wiring check — confirm the rule is wired into an execution path, or mark it as wiring-not-required (see Rule Wiring Check below) — and, when the new clause governs delegation prompts, apply it to this iteration's own delegation prompts before continuing (동일 반복 self-check)
 5. Commit the change
 6. Continue original task following updated rules
+-->
 
 ### Rule Wiring Check (배선 확인)
 
+텍스트 추가와 실행 경로 배선은 별개다. 배선 누락 시 동일 결함이 재발한다. 판단: (1) 실행 경로(워크플로우/스킬/훅/CI) 존재 여부 (2) 반영 여부 (3) 없으면 "배선 불요" 명시. 오케스트레이터 자신의 산문·신설 조항의 동일 반복 내 즉시 적용에도 대칭 적용.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 조항만 추가하고 커밋 → 발동 지점 없어 재발 | 발동 실행 경로 명시 + 반영 확인; 없으면 "배선 불요" |
+
+<!-- DETAIL: Rule Wiring Check intro, original wording
 규칙 텍스트를 추가하는 것과, 그 규칙이 실행 경로에서 발동되게 배선하는 것은 **별개 작업**이다. 텍스트만 추가하고 배선을 누락하면 동일 결함이 재발한다.
 
 **판단 항목** (규칙 승격 시 판단하고 기록):
@@ -31,7 +49,9 @@ Update the relevant rule rather than just acknowledging the violation.
 | Anti-pattern | Required |
 |--------------|----------|
 | 규칙 조항만 추가하고 커밋 → 자동화 경로에 발동 지점이 없어 동일 결함 재발 | 발동 실행 경로 명시 + 반영 확인; 대상 없으면 "배선 불요" 명시 |
+-->
 
+<!-- DETAIL: Rule Wiring Check, 원문 전문 (신설 조항 self-check, Origin, 적용 범위 확장)
 **신설 조항의 동일 반복 self-check (Origin: #1691 #4·#5·#7 — v1.1.71)**: 위임서 규율을 신설·보강한 반복에서는, 그 조항을 **같은 반복에서 오케스트레이터가 작성하는 이후 위임서에 즉시 적용**한 뒤 다음 단계로 넘어갑니다. v1.1.69에서 R010 「출처 인용과 인접 문구 점검도 같은 규율」을 신설한 바로 그 반복의 위임서가 이슈 문장을 인용하지 않고 같은 파일 grep을 요구하지 않아 자기 위반 3건(High 1건 포함)이 적대적 리뷰에서 적발되었습니다 — 텍스트가 룰에 실렸다는 사실은 오케스트레이터 자신의 행동이 바뀌었다는 증거가 아닙니다(배선: auto-dev.yaml implement 스텝 bullet — 신설·보강 조항의 Anti-pattern 표를 위임서와 1:1 대조, 4사본 — v1.1.75).
 
 | Anti-pattern | Required |
@@ -43,6 +63,7 @@ Origin: #1533 (v1.1.35에서 R017 (b) 조항 추가했으나 auto-dev.yaml versi
 Cross-reference: R021(Enforcement Policy — advisory 규칙의 발동 지점), R017(구조 검증).
 
 **적용 범위 확장 (Origin: #1698 #1 — v1.1.72)**: 이 self-check는 서브에이전트에 **요구하는** 규율뿐 아니라 오케스트레이터가 **스스로 작성하는 산문(룰 문안·요약·수치)**에도 대칭 적용됩니다. 상세·인용은 R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 항목 참조.
+-->
 
 ## Integration
 
@@ -54,6 +75,18 @@ Cross-reference: R021(Enforcement Policy — advisory 규칙의 발동 지점), 
 
 ## Defect Response Matrix
 
+| Defect Type | Rule | Memory | Issue | Skill |
+|-------------|:----:|:------:|:-----:|:-----:|
+| Rule violation | ✅ | — | — | — |
+| CI/infra defect | — | ✅ | ✅ | — |
+| Process gap | ✅ | ✅ | ✅ | ⚠️3회+ |
+| Repeatable bug | — | ✅ | ✅ | ⚠️구조적 |
+| Agent selection fail | — | ✅ | — | ✅라우팅 |
+| Ext. convention miss | ✅ | ✅ | — | ⚠️3회+ |
+
+Skill 승격: candidacy ≥2회, 확정 ≥3회. CI/process/repeatable은 memory+issue 둘 다 필수. 릴리즈 결함은 자동 이슈 등록. 반복 실패는 feedback + `/omcustom:adaptive-harness --learn`.
+
+<!-- DETAIL: Defect Response Matrix, original table
 | Defect Type | Rule Update | Memory | Issue | Skill Promotion |
 |-------------|:-----------:|:------:|:-----:|:---------------:|
 | Rule violation (agent behavior) | ✅ | — | — | — |
@@ -62,7 +95,9 @@ Cross-reference: R021(Enforcement Policy — advisory 규칙의 발동 지점), 
 | Repeatable system bug | — | ✅ | ✅ | ⚠️ (수정이 구조적일 경우, 일회성 아닐 때) |
 | Agent selection failure (wrong agent routed) | — | ✅ | — | ✅ (라우팅 스킬 업데이트 후보) |
 | External repo convention miss | ✅ | ✅ | — | ⚠️ (3회 이상 반복 시) |
+-->
 
+<!-- DETAIL: Defect Response Matrix 원문 전문
 **Skill Promotion**: feedback memory가 동일 패턴으로 3회 이상 반복되면 "failure pattern"으로 승격. skill-extractor의 `--mode failure` 플래그로 스킬 후보 분석 가능 (Skillify 내재화, #972).
 
 > **Quantitative threshold (clarified, #1268)**: candidacy begins at **≥2 occurrences** (propose a candidate via skill-extractor's 4-criteria gate); confirmed promotion to a tracked failure pattern requires **≥3 occurrences**. The ≥2 candidacy tier feeds skill-extractor Phase 1; the ≥3 tier gates actual skill creation. See `skill-extractor` Selection Discipline.
@@ -82,64 +117,132 @@ When repeating agent failures or suboptimal routing is detected:
 3. Profile updates improve future agent selection and harness optimization
 
 This connects R016's continuous improvement loop with the adaptive-harness skill's learning capability.
+-->
 
 ## Rule Clause Retirement (조항 은퇴 메커니즘)
 
+승격 루프(위반 지적 → 조항 추가)만 돌면 코퍼스가 단조 성장한다. 은퇴 루프를 대칭으로 운용해 코퍼스 크기를 정상 상태로 유지한다.
+
+<!-- DETAIL: Rule Clause Retirement intro, original wording (stale "~49.5k 토큰" figure — replaced by #1717 문자 단위 실측, see 예산 게이트 DETAIL below)
 R016의 승격 루프(위반 지적 → 규칙 조항 추가)는 코퍼스의 **단조 성장**을 낳는다. 은퇴 루프를 대칭으로 신설해 코퍼스 컨텍스트 비용(세션당 고정 주입 ~49.5k 토큰)의 무한 증가를 차단한다. 승격 루프는 실증된 편익이 있으므로 유지하고, 은퇴 루프만 신설한다 — 두 루프의 대칭이 코퍼스 크기를 정상 상태로 유지한다.
+-->
 
 ### 은퇴 대상
 
 | 대상 | 판정 기준 |
 |------|-----------|
+| 수정 완료된 플랫폼 버그 서사 | 행동 지시 가치 소멸 |
+| 장기 무발동 조항 | 마이너 2릴리즈 미발동 |
+
+<!-- DETAIL: 은퇴 대상, original wording
+| 대상 | 판정 기준 |
+|------|-----------|
 | 수정 완료된 플랫폼 버그 서사 | CC 버전노트 등 행동 지시 가치가 소멸한 조항 (버그가 이미 수정되어 회피 지침이 무의미) |
 | 장기 무발동 조항 | 마이너 2개 릴리즈 동안 위반 지적·회고 인용으로 발동되지 않은 조항 |
+-->
 
 ### 은퇴 절차
 
+1. 발동 추적(feedback memory) 2. 후보 선정(무발동+가치소멸) 3. HTML 주석으로 감싸 RETIRED 표식(릴리즈·사유)을 붙여 제외(무손실, Read 열람 — R005) 4. 재발 시 uncomment 복원
+
+<!-- DETAIL: 은퇴 절차, original wording
 1. **발동 추적**: `/homework` 회고·위반 지적 시 인용된 규칙 ID/조항을 feedback memory에 기록한다 (가벼운 추적 — 완전 자동화는 불요).
 2. **후보 선정**: 마이너 2릴리즈 무발동 + 행동 지시 가치 소멸 조항을 은퇴 후보로 선정한다.
-3. **HTML-comment화**: 조항을 `<!-- RETIRED (은퇴 릴리즈 vX.Y.Z, <사유>): 원문 -->` 로 감싸 auto-injection에서 제외한다. `<사유>`는 위 「은퇴 대상」 두 범주에 대응한다 — 장기 무발동은 `N릴리즈 무발동`, 수정 완료된 플랫폼 버그 서사는 `보존 기준 v2.1.NNN 미만`. Read 도구로 열람 가능하므로 무손실이다 (R005 Context Optimization via HTML Comments).
+3. **HTML-comment화**: 조항을 `<!\-\- RETIRED (은퇴 릴리즈 vX.Y.Z, <사유>): 원문 \-\->` 로 감싸 auto-injection에서 제외한다. `<사유>`는 위 「은퇴 대상」 두 범주에 대응한다 — 장기 무발동은 `N릴리즈 무발동`, 수정 완료된 플랫폼 버그 서사는 `보존 기준 v2.1.NNN 미만`. Read 도구로 열람 가능하므로 무손실이다 (R005 Context Optimization via HTML Comments).
 4. **부활**: 동일 패턴이 재발하면 uncomment하여 즉시 복원한다 — 승격 루프와 대칭이다.
+-->
 
-### 버전노트 보존정책
+### 버전노트 보존정책 (v1.1.77 개정 — 서사는 가이드, 룰은 1줄만)
 
+CC 릴리즈 지식은 `guides/claude-code/15-version-compatibility.md`에 규칙별 절로 기록한다. 룰 본문에는 **현재 행동을 바꾸는 규범일 때만** 최대 1줄 — 버전 나열·근거 서사는 가이드로, 룰에 쌓지 않는다. `claude-native` 버전 추적 이슈의 액션 아이템도 이 목적지를 따른다. auto-dev.yaml `implement` 스텝의 규칙 목록(4사본)에 이 목적지 규범을 배선했다.
+
+<!-- DETAIL: 구 정책(v1.1.50, 상대폭 기준선) — 원 헤딩 "### 버전노트 보존정책" — v1.1.77에서 위 정책으로 대체(RETIRED, #1717)
 - 규칙 내 CC 버전노트(`> **v2.1.NNN+**:`)는 최근 2-3개 마이너 릴리즈(현행 기준 v2.1.230 이상)만 visible 유지한다.
 - 그 이하 버전노트는 HTML-comment화(무손실 중간 단계) 하거나 `guides/claude-code/15-version-compatibility.md`로 이관한다.
 - `claude-native` 스킬이 생성하는 버전 추적 이슈를 규칙에 반영할 때, 최신만 visible로 두고 구버전은 즉시 은닉한다.
 - **기준선은 고정 상수가 아니라 최신 CC 대비 상대 폭으로 유지한다**: 기준선 v2.1.212가 설정될 당시 CC 최신은 v2.1.233이었으므로 보존 폭은 약 21 patch였다. 이번 상향(v1.1.50, `claude --version` = `npm view @anthropic-ai/claude-code version` 실측 = v2.1.251) 시점에 같은 폭을 유지하려면 기준선이 v2.1.230이어야 한다 — 기준선 갱신 시 "최신 실측값 − 약 20 patch"로 재계산할 것.
 
-#### 은퇴 판정 기준 (기준선 미만 ≠ 자동 은퇴)
+폐지 사유: 상대폭 재계산은 매 릴리즈 반복 비용을 낳았고, `/memory` 경고(#1717 실측)가 근본 한계를 드러냈다 — 24개 instruction 파일이 308.8k자로 CC 150k자 한도를 초과했다. 새 정책은 임계값 대신 목적지(가이드 vs 1줄)로 통제한다.
+-->
 
-기준선 미만은 은퇴 **검토 대상**을 정의할 뿐, 은퇴 **여부**를 자동으로 결정하지 않는다. 기준선 미만 노트는 다음 3개 조건을 **모두** 충족할 때만 은퇴(HTML-comment화)한다 — 하나라도 걸리면 **유지**하고, 유지 판정과 사유를 스윕 기록에 남긴다.
+### 예산 게이트 (Tier 1, Origin: #1717)
 
+`CLAUDE.md` + `.claude/rules/*.md` 주석 제외 합계는 **≤140,000자**(하드 한도 150,000자, validate-docs CI 강제). 초과 시 같은 커밋에서 다른 조항을 은퇴·DETAIL화 — 순증 커밋 금지.
+
+측정: `python3 -c "import re,glob; f=['CLAUDE.md']+glob.glob('.claude/rules/*.md'); print(sum(len(re.sub(r'<!\-\-.*?\-\->','',open(x).read(),flags=re.S)) for x in f))"`
+
+<!-- DETAIL: #1717 실측 근거, 이슈 원문 인용
+실측 (2026-09-24, develop `aee1e50e`). 측정 명령: `python3`로 `CLAUDE.md` + `.claude/rules/*.md` 각 파일의 (a) 원문 길이, (b) `<!\-\-.*?\-\->` 제거 후 길이, (c) 주석 제거본에서 `^> \*\*(★+ )?v2\.1` 로 시작하는 blockquote 문단 길이를 합산.
+
+| 지표 | 값 |
+|------|----|
+| 원문 합계 | 430,808자 |
+| **HTML 주석 제외 합계** | **306,752자** (경고의 308.8k와 일치 → CC는 주석을 세지 않음) |
+| 그중 CC 버전 노트 | 78,620자 |
+| 최대 파일(주석 제외) | R010 46,219 / R020 39,954 / R006 25,103 / R002 17,469 / R017 16,781 |
+
+R016이 적어 두었던 "세션당 고정 주입 ~49.5k 토큰"은 낡은 수치다 — 위 문자 단위 실측으로 대체한다(토큰 수는 tokenizer에 따라 달라지므로 문자 수를 1차 지표로 삼는다). Origin: #1717.
+-->
+
+### 은퇴 판정 기준 (후보 선정 ≠ 자동 은퇴)
+
+3조건 **모두** 충족해야 은퇴 — 하나라도 거짓이면 유지+사유 기록.
+
+| 조건 | 판정 |
+|------|------|
+| (a) 인용 부재 | 다른 visible 노트가 인용하지 않는가 |
+| (b) 비현행 | 현행 동작을 규정하지 않는가 |
+| (c) 진단 함의 소멸 | 회고적 재해석 근거가 없는가 |
+
+<!-- DETAIL: 은퇴 판정 기준, original table
 | 조건 | 판정 |
 |------|------|
 | (a) 인용 부재 | 다른 어떤 visible 노트도 그것을 "같은 계열"(cf., 연장선, 인접 등)로 인용하지 않는가 |
 | (b) 비현행 | 현행 동작을 규정하지 않는가 (예: 이미 롤백/재수정된 과거 상태 서술) |
 | (c) 진단 함의 소멸 | 회고적 진단 함의(과거 관측 재해석 근거)가 더 이상 없는가 |
+-->
+
+<!-- DETAIL: 은퇴 판정 기준, original heading "#### 은퇴 판정 기준 (기준선 미만 ≠ 자동 은퇴)" + 원문 전문 + v1.1.50 실적
+기준선 미만은 은퇴 **검토 대상**을 정의할 뿐, 은퇴 **여부**를 자동으로 결정하지 않는다. 기준선 미만 노트는 다음 3개 조건을 **모두** 충족할 때만 은퇴(HTML-comment화)한다 — 하나라도 걸리면 **유지**하고, 유지 판정과 사유를 스윕 기록에 남긴다.
 
 세 조건 모두 참 → 은퇴. 하나라도 거짓 → 유지(anchor로 인용되거나, 현행 동작을 서술하거나, 진단 함의가 살아있는 노트는 기준선 미만이어도 보존 가치가 있다). 이 기준은 v1.1.50 4개 병렬 그룹의 실제 판정에서 역추출한 것이다(아래 실적 참조) — "기준선 미만 = 즉시 은퇴"로 문자 그대로 읽으면 이 기준과 모순된다.
 
-#### 보존 기준 변경 = 전 룰 파일 스윕 (같은 릴리즈 내 필수)
+Origin: #1563 찐빠 #4 — R016이 보존 기준을 v2.1.212로 규정했으나 R001/R005/R012에 visible v2.1.208 노트 3건이 잔존해 v1.1.44에서 뒤늦게 은퇴. Cross-reference: R005(HTML-comment 컨텍스트 최적화), R017(Count Sync — 전수 grep + 의미 판별).
 
-보존 기준선을 상향하면 **같은 릴리즈에서 23개 룰 파일 전수를 스윕**한다 — "스윕"은 기준 미만 노트의 **전량 HTML-comment화**가 아니라, 위 「은퇴 판정 기준」 3조건에 따른 **전수 검토**(각 노트를 은퇴/유지로 판정하고 유지 시 사유를 기록)를 의미한다. 기준만 올리고 검토 자체를 다음 릴리즈로 이월하면 코퍼스가 기준과 불일치한 상태로 남고, 그 불일치는 다음 회고에서 "잔존 N건" 부채로 재발견될 때까지 보이지 않는다 — **이월 금지는 변하지 않는다**, 변하는 것은 "전수 은퇴"가 아니라 "전수 판정"이 의무라는 점이다. 스윕 범위는 `.claude/rules/**`와 `templates/.claude/rules/**` 양쪽이며, 잔존 여부는 **HTML 주석 안/밖을 구분해** 실측한다 — 단순 `grep`은 이미 은퇴한 주석 내부 노트까지 세어 판정을 왜곡한다.
+**실적 (v1.1.50)**: 기준선을 v2.1.212→v2.1.230으로 상향할 때, 룰 파일 소유권을 4개 병렬 그룹으로 분배해 각 그룹이 자기 담당 파일만 스윕했다 — 스윕을 **작업 종류**(예: "은퇴 담당" vs "신규 노트 담당")가 아니라 **파일 소유권**으로 분배해야 병렬 에이전트 간 동일 파일 동시 편집 충돌이 발생하지 않는다(R009 File-Disjoint 원칙의 룰 코퍼스 자체 적용 사례). 스윕 결과는 **은퇴 2건 / 유지 다수**(기준선 미만 visible 노트 49건이 11개 파일에 잔존 — 전수 검토 후 유지 판정) — 은퇴된 2건은 어떤 visible 노트도 인용하지 않는 순수 이력 서사(R006 v2.1.201/204: v2.1.201 Sonnet 5 harness reminder 전달방식, v2.1.204 headless SessionStart 스트리밍)였고, 유지된 노트 대부분은 다른 visible 노트가 "같은 계열"로 인용하는 anchor이거나(예: v2.1.222가 v2.1.211/212/214를 인용) 현행 동작을 서술 중이었다. 은퇴 2건이 바로 "인용 없는 서사만 은퇴됐다"는 판정 기준의 양성 사례다. **판정이 버전 번호가 아니라 인용 관계로 이루어졌다는 뜻**이며, **이 판정 기준을 같은 릴리즈에서 정식 조항으로 승격했다**(sauron FAIL 지적 → 같은 커밋 내 정합화 — 위 「은퇴 판정 기준」참조). 잔존 49건/11파일은 결함이 아니라 3조건 판정에 따른 유지 결과이므로, 다음 회고가 이를 "잔존 N건" 부채로 오인하지 않도록 여기 고정 기록한다.
+-->
 
+### 판정 기준 조정 시 전 룰 파일 스윕
+
+은퇴 판정 기준이 조정될 때 **같은 릴리즈에서 룰 파일 전수를 판정**(전량 은퇴 아닌 위 3조건 전수 검토, 이월 금지) — 예산 초과 자체의 remedy는 위 예산 게이트(같은 커밋에서 초과분만 은퇴·DETAIL화)이며 이 절과 별개다. 범위 `.claude/rules/**`+`templates/.claude/rules/**`, 잔존은 주석 안/밖 구분 실측.
+
+| Anti-pattern | Required |
+|--------------|----------|
+| 판정 없이 전량 은닉/이월, `grep -c`로 잔존 판정 | 3조건 항목별 판정 후 같은 릴리즈에서 완료; 주석 안/밖 구분해 visible만 계수 |
+
+<!-- DETAIL: 예산 초과·기준 변경 시 전 룰 파일 스윕, original anti-pattern table
 | Anti-pattern | Required |
 |--------------|----------|
 | 보존 기준선만 상향하고 기존 노트 검토를 다음 릴리즈로 이월 | 기준 상향과 전 룰 파일의 **전수 판정**(은퇴/유지 + 유지 사유 기록)을 같은 릴리즈에서 완료 |
 | 기준선 미만 노트를 판정 없이 전량 HTML-comment화 | 「은퇴 판정 기준」 3조건(인용 부재 AND 비현행 AND 진단 함의 소멸)을 적용해 항목별 판정 |
 | `grep -c` 히트 수로 잔존 판정 | 주석 안/밖을 구분해 **visible 잔존**만 계수 — 잔존 자체는 결함이 아니다(유지 판정의 결과일 수 있음) |
+-->
 
-Origin: #1563 찐빠 #4 — R016이 보존 기준을 v2.1.212로 규정했으나 R001/R005/R012에 visible v2.1.208 노트 3건이 잔존해 v1.1.44에서 뒤늦게 은퇴. Cross-reference: R005(HTML-comment 컨텍스트 최적화), R017(Count Sync — 전수 grep + 의미 판별).
-
-**실적 (v1.1.50)**: 기준선을 v2.1.212→v2.1.230으로 상향할 때, 룰 파일 소유권을 4개 병렬 그룹으로 분배해 각 그룹이 자기 담당 파일만 스윕했다 — 스윕을 **작업 종류**(예: "은퇴 담당" vs "신규 노트 담당")가 아니라 **파일 소유권**으로 분배해야 병렬 에이전트 간 동일 파일 동시 편집 충돌이 발생하지 않는다(R009 File-Disjoint 원칙의 룰 코퍼스 자체 적용 사례). 스윕 결과는 **은퇴 2건 / 유지 다수**(기준선 미만 visible 노트 49건이 11개 파일에 잔존 — 전수 검토 후 유지 판정) — 은퇴된 2건은 어떤 visible 노트도 인용하지 않는 순수 이력 서사(R006 v2.1.201/204: v2.1.201 Sonnet 5 harness reminder 전달방식, v2.1.204 headless SessionStart 스트리밍)였고, 유지된 노트 대부분은 다른 visible 노트가 "같은 계열"로 인용하는 anchor이거나(예: v2.1.222가 v2.1.211/212/214를 인용) 현행 동작을 서술 중이었다. 은퇴 2건이 바로 "인용 없는 서사만 은퇴됐다"는 판정 기준의 양성 사례다. **판정이 버전 번호가 아니라 인용 관계로 이루어졌다는 뜻**이며, **이 판정 기준을 같은 릴리즈에서 정식 조항으로 승격했다**(sauron FAIL 지적 → 같은 커밋 내 정합화 — 위 「은퇴 판정 기준」참조). 잔존 49건/11파일은 결함이 아니라 3조건 판정에 따른 유지 결과이므로, 다음 회고가 이를 "잔존 N건" 부채로 오인하지 않도록 여기 고정 기록한다.
+<!-- DETAIL: 원 헤딩 "#### 보존 기준 변경 = 전 룰 파일 스윕 (같은 릴리즈 내 필수)", original wording
+보존 기준선을 상향하면 **같은 릴리즈에서 23개 룰 파일 전수를 스윕**한다 — "스윕"은 기준 미만 노트의 **전량 HTML-comment화**가 아니라, 위 「은퇴 판정 기준」 3조건에 따른 **전수 검토**(각 노트를 은퇴/유지로 판정하고 유지 시 사유를 기록)를 의미한다. 기준만 올리고 검토 자체를 다음 릴리즈로 이월하면 코퍼스가 기준과 불일치한 상태로 남고, 그 불일치는 다음 회고에서 "잔존 N건" 부채로 재발견될 때까지 보이지 않는다 — **이월 금지는 변하지 않는다**, 변하는 것은 "전수 은퇴"가 아니라 "전수 판정"이 의무라는 점이다. 스윕 범위는 `.claude/rules/**`와 `templates/.claude/rules/**` 양쪽이며, 잔존 여부는 **HTML 주석 안/밖을 구분해** 실측한다 — 단순 `grep`은 이미 은퇴한 주석 내부 노트까지 세어 판정을 왜곡한다.
+-->
 
 ### Cross-References
 
+R005(HTML-comment 최적화), R017(버전 노트 반영 전 실측 게이트), R023(폐기 참조 탐지), Origin #1473, #1717.
+
+<!-- DETAIL: Cross-References, original wording
 R005(HTML-comment 컨텍스트 최적화), R023(Deprecated-Platform-Feature Staleness Check — 폐기 참조를 결정론적으로 탐지하여 은퇴 후보를 조기 발굴), Origin #1473.
+-->
 
-## External Repo Contribution Pre-Check
+## External Repo Contribution Pre-Check — Before contributing to an external repo, MUST read CONTRIBUTING.md/AGENTS.md/domain checklist/validation commands FIRST round, before implementation. See file table + self-check via Read tool.
 
+<!-- DETAIL: External Repo Contribution Pre-Check, original wording
 Before starting work on contributing to an external repository (skill submission, agent contribution, plugin development), MUST read these files in the target repo FIRST round:
 
 | File | Purpose |
@@ -166,6 +269,7 @@ Before first implementation commit on external contribution:
 ```
 
 Reference issues: #1188 item #5, #1188 item #7, #1198 item #5.
+-->
 
 ## Anti-Patterns — 5 patterns: "I'll update later", "one-time exception", "doesn't cover this", "finish task first", "calibration during action-oriented tone". See table via Read tool.
 

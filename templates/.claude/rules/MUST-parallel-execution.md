@@ -17,43 +17,77 @@ Examples: creating multiple agents, reviewing multiple files, batch operations o
 
 ### File-Disjoint ≠ Independent (Local Git State)
 
+로컬 git 상태변경 작업(`checkout`/`pull`/`branch`/`commit`/`stash`/`merge`/`rebase`)은 편집 파일이 disjoint해도 워킹트리·HEAD라는 공유 상태를 경합하므로 **직렬화**한다 — 동시 실행 git 상태변경 에이전트는 1개. read-only 조회는 병렬 가능. 상세는 Read 도구로 열람.
+
+<!-- DETAIL: File-Disjoint ≠ Independent — full paragraph
 로컬 git 상태를 변경하는 작업(`checkout` / `pull` / `branch` 생성·삭제·rename / `commit` / `stash` / `merge` / `rebase`)은 편집 대상 파일이 disjoint하더라도 **워킹트리·브랜치 포인터·인덱스·HEAD**라는 프로세스 수준 단일 공유 가변 상태를 경합하므로 **직렬화**한다. 실무 규칙: **동시 실행하는 git 상태변경 에이전트는 1개**. git 단계를 먼저 직렬로 끝낸 뒤 나머지를 병렬화한다. read-only 조회(`git status`/`log`/`diff`, `gh` 조회)는 병렬 가능 — 제한 대상은 상태 변경뿐이다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| 편집 파일 disjoint 이유로 git 상태변경 2+ 병렬 스폰 | 동시 1개로 직렬화; 완료 후 나머지 병렬화 |
+
+<!-- DETAIL: git-state Anti-pattern row — full text
 | 편집 파일이 disjoint하다는 이유로 git 상태변경 에이전트 2개 이상을 병렬 스폰 | git 상태변경은 동시 1개로 직렬화; 완료 후 나머지 작업 병렬화 |
+-->
 
 Origin: #1518 (찐빠 #1 — git 에이전트 2개 근접 실행으로 작업 브랜치 stale; 편집 파일은 disjoint였음).
 
+<!-- DETAIL: CC v2.1.246 note (/ultrareview shared-repo uncommitted-state bug)
 > **★ v2.1.246+**: `/ultrareview` 실행과 클라우드 세션을 **같은 저장소(여러 worktree 포함)에서 동시에 시작**하면, 한 실행이 다른 실행의 **커밋되지 않은 변경분과 함께 시작**되던 결함이 수정되었습니다. 이는 위 조항이 경고하는 시나리오가 **CC 플랫폼 자체에서 실증된 사례**입니다 — 이 조항은 이 저장소의 경험(#1518)에서 나왔는데, 플랫폼이 독립적으로 같은 결함을 겪고 고쳤다는 사실이 조항의 일반성을 뒷받침합니다. 구버전에서는 병렬 실행이 **서로의 uncommitted 변경분을 상속**했으므로, 과거 세션의 설명되지 않는 오염을 이 원인으로 재해석할 수 있습니다.
+-->
 
 #### 파일 disjoint ≠ 자원 disjoint (Origin: #1598)
 
+<!-- DETAIL: 파일 disjoint ≠ 자원 disjoint — intro paragraph
 git 상태 외에도 병렬 에이전트가 경합하는 공유 자원이 있다 — **검증 명령이 만지는 저장소 파일**, **CPU**, **`$TMPDIR`**. 편집 파일이 disjoint하다는 사실은 이 셋 중 어느 것도 보장하지 않는다.
+-->
 
 | 자원 | 병렬 가능 조건 |
 |------|----------------|
+| 검증 명령 | tracked 파일 이동 없고 초 단위 타임아웃 미의존 시만 — 아니면 오케스트레이터가 직렬 1회로 회수 |
+| CPU | 초 단위 타임아웃 테스트는 동시 실행 금지 |
+| `$TMPDIR` | 에이전트별 고유 경로 사용 시만 |
+
+<!-- DETAIL: 자원 표 원문 (3행)
 | 검증 명령(`bun test` 등) | 스위트가 저장소 tracked 파일을 이동·삭제·복구하지 않고, 초 단위 타임아웃 예산에 의존하지 않을 때만. 아니면 오케스트레이터가 **직렬 1회**로 회수 |
 | CPU | 타임아웃 예산이 초 단위인 테스트는 동시 실행 금지 — 포화 시 프로세스 기동만으로 예산을 넘긴다 |
 | `$TMPDIR` | 에이전트별 고유 하위 경로를 쓸 때만. 고정 경로를 공유하면 "누수 N건" 같은 측정이 형제 잔여물을 계상한다 |
+-->
 
+<!-- DETAIL: tracked 파일 이동 금지 — intro paragraph
 **테스트가 tracked 파일을 이동시키지 않는다**: `cp` → `rm` → `finally` 복구 패턴은 병렬 경합 위양성뿐 아니라 **프로세스 중단 시 tracked 파일이 사라진 채 남는다**. 픽스처는 고유 임시 디렉토리에 사본을 만들어 조작하고 원본은 읽기만 한다.
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| 편집 파일이 disjoint하므로 동일 `bun test`를 각 에이전트 완료조건에 넣어 병렬 발주 | 검증을 직렬 1회로 회수하거나 형제 경합을 먼저 배제 |
+| 테스트가 tracked 파일을 `cp`→`rm`→`finally` 복구 | 고유 임시 디렉토리에 사본을 만들어 조작 — 원본은 읽기 전용 |
+
+<!-- DETAIL: 자원 disjoint Anti-pattern 표 원문 (2행)
 | 편집 파일이 disjoint하므로 각 에이전트 완료 조건에 동일 `bun test`를 넣어 병렬 발주 | 검증을 직렬 1회로 회수하거나, 공유를 고지하고 결과 해석에서 형제 경합을 먼저 배제 |
 | 테스트가 실제 저장소 tracked 파일을 `cp`→`rm`→`finally` 복구 | 고유 임시 디렉토리에 사본을 만들어 조작 — 원본은 읽기 전용 |
+-->
 
+Origin: #1598 (R010, R023).
+
+<!-- DETAIL: 파일 disjoint ≠ 자원 disjoint Origin line — full text
 Origin: #1598. Cross-ref: R010 「Parallel Delegation — Sibling-Agent Disclosure」(고지에 담을 내용), R023(Delegated Verification Floor).
+-->
+
 
 ## Agent Teams Gate (R018)
 
+Agent Teams 기준 확인 후 스폰 — 미확인은 위반. 3+ 에이전트/리뷰사이클/2+이슈 배치 → Agent Teams(R018).
+
+<!-- DETAIL: Agent Teams Gate blockquote — full text
 > Before spawning 2+ parallel agents, evaluate Agent Teams eligibility.
 > Skipping this check does not follow R009 and R018.
 >
 > **See R018 (MUST-agent-teams.md) for the complete self-check and decision matrix.**
 >
 > Quick rule: **3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams**
+-->
 
 ## Self-Check
 
@@ -61,12 +95,24 @@ Before writing/editing multiple files:
 1. Are files independent? → YES: spawn parallel agents
 2. Using Write/Edit sequentially for 2+ files? → parallelize instead
 3. Specialized agent available? → Use it (not general-purpose)
+4. Agent Teams available? → R018 확인 후 스폰; 3+ 배치는 게이트 결과 announce.
+
+<!-- DETAIL: Self-Check item 4 — full text
 4. Agent Teams available? → **Check R018 criteria before spawning 2+ agents; for a 3+ agent batch, announce the gate result (Agent Tool fallback reason or Agent Teams choice) — see R018 Self-Check "Gate Transparency"**
+-->
 5. Running agent stalled (2x+ duration)? → Spawn independent follow-up tasks immediately
+6. Announced a parallel dispatch in prose? → N(announce)==N(tool_use) 대조 후 발화.
+
+<!-- DETAIL: Self-Check item 6 + sub-point — full text
 6. Announced a parallel dispatch in prose? → **발화 직전 카운트 대조**: announce 산문이 명시한 도구 개수 N == 이 메시지에 실제 포함된 tool_use 블록 개수. 불일치면 보완한 뒤 발화 (announce-execution consistency)
    - 누락 방향은 무작위다 — verify Bash가 빠지기도(v1.1.22/23), action delegate가 빠지기도(v1.1.27 세션) 했다. 방향별 서술 강화는 3회 재발로 실패가 실증됐으므로, 유일한 실효 방어선은 N↔N 카운트 대조다. Origin: #1512, #1503.
+-->
 
 ### Common Violations to Avoid
+
+See examples via Read tool.
+
+<!-- DETAIL: Common Violations to Avoid — examples + Token threshold heuristic
 
 ```
 ❌ WRONG: Write(file1.kt) → Write(file2.kt) → ... (sequential)
@@ -81,17 +127,32 @@ Before writing/editing multiple files:
 ```
 
 > **Token threshold heuristic**: When a delegated agent prompt exceeds ~5000 tokens or spans 3+ unrelated domains, decompose by domain and spawn parallel agents. See R018 for Agent Teams criteria when review cycles are needed. Reference: #1085.
+-->
 
 ### LLM Batch Output Token Budget
 
+출력 예산 사전 계산 필요 — N×항목당 토큰 계산, ≤40개 청크 분할이 불변 해법.
+
+<!-- DETAIL: LLM Batch Output Token Budget — full paragraph
 The giant-prompt heuristic above governs INPUT tokens. The symmetric OUTPUT-side rule: when a single LLM call processes N items (scoring/classifying/extracting) and must emit structured output (e.g. JSON) per item, pre-compute the output budget = N × per-item output tokens BEFORE the call. Exceeding `max_tokens` truncates the response mid-structure → silent parse failure (the call "succeeds" but JSON.parse throws).
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| 가변 크기 리스트를 고정 소형 max_tokens로 단일 호출 | ≤40개 청크 분할 + 항목당 길이 제약 |
+| max_tokens만 올림 | 불충분 — 청크 분할이 불변 해법 |
+
+<!-- DETAIL: LLM Batch Anti-pattern 표 원문 (2행)
 | Single batch call over a variable-size list with a fixed small max_tokens | Chunk into ≤40-item batches; constrain per-item output length (e.g. reason ≤10 words); raise max_tokens to fit one chunk |
 | Raising max_tokens alone | Insufficient — defers the failure as the list grows. Chunking is the invariant fix. |
+-->
 
+Reference: #1320, #1321, `feedback_llm_batch_truncation.md`.
+
+<!-- DETAIL: LLM Batch Output Token Budget Reference line — full text
 Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_llm_batch_truncation.md`.
+-->
+
 
 <!-- DETAIL: Full violation examples (4 pairs)
 ❌ WRONG: Writing files one by one
@@ -109,7 +170,11 @@ Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_l
 ✓ CORRECT: Agent(lang-kotlin-expert→usecase commands) + Agent(lang-kotlin-expert→usecase queries) + Agent(be-springboot-expert→persistence) + Agent(be-springboot-expert→security) — all spawned together
 -->
 
+Agent Teams partial spawn → R018 (MUST-agent-teams.md) "Spawn Completeness Check".
+
+<!-- DETAIL: Agent Teams partial spawn note — full text
 > **Agent Teams partial spawn** → See R018 (MUST-agent-teams.md) "Spawn Completeness Check".
+-->
 
 <!--
 > **v2.1.161+**: Parallel tool calls in a single batch are now independent — a failed Bash command no longer cancels the other calls in the same batch; each tool returns its own result. This strengthens R009 batching: one failing call in a parallel dispatch no longer aborts its siblings, so independent work bundled in the same message completes regardless of a single failure. Lowers the safety cost of the announce-execution consistency self-check (#6).
@@ -127,6 +192,9 @@ Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_l
 | Instance independence | Isolated context, no shared state |
 | Large tasks (>3 min) | MUST split into parallel sub-tasks |
 
+Fable 5는 long-lived subagent 재사용에 강함 — `guides/claude-code/16-fable5-prompting.md` 참조.
+
+<!-- DETAIL: CC version notes (v2.1.224-v2.1.273) + Fable 5 note
 > **v2.1.224+**: **세션당 200 subagent spawn cap이 제거**되어 장기 세션이 신규 에이전트를 거부하지 않습니다(동시성 제한과 depth 제한은 유지). 위 표의 "Max instances 5 concurrent"는 **동시성** 제한이므로 그대로 유효합니다 — 제거된 것은 세션 누적 총량 cap입니다. `/fsd` 등 장기 무인 루프에서 후반 반복의 스폰 실패를 더 이상 누적 cap으로 진단하지 않습니다.
 
 > **v2.1.232+**: subagent forking이 **기본 활성화**되어 `subagent_type: "fork"` 서브에이전트가 전체 대화와 prompt cache를 상속합니다. 위 표의 "Instance independence — Isolated context, no shared state"는 **fork에는 성립하지 않습니다** — fork는 격리된 병렬 인스턴스가 아니라 컨텍스트 사본이므로, 위 Detection Criteria의 독립성 전제로 병렬 배치를 설계할 때 fork를 일반 subagent와 동일하게 취급하지 않습니다(오케스트레이터 컨텍스트가 그대로 전달되므로 위임 프롬프트의 범위 서술이 유일한 경계가 아님). 구버전에서는 fork가 opt-in이라 이 상속이 예외 경로였습니다. 또한 interactive session의 **non-teammate 에이전트 스폰이 기본 background 실행**이므로 스폰 반환은 완료 신호가 아닙니다(R010/R020). **v2.1.246+**: 이미 fork되었거나 backgrounded된 세션에서 다시 `/fork`하면 빈 대화로 시작되던 결함이 수정되었습니다 — 구버전에서는 재fork 시 위 컨텍스트·prompt cache 상속조차 깨질 수 있었습니다.
@@ -140,12 +208,17 @@ Reference: #1320 (fix), #1321 (session 113 retrospective 찐빠 #1), `feedback_l
 > **v2.1.273+**: (273) `scheduled_tasks.json`이 worktree-isolated 실행에 복사되어, 예약 작업이 **엉뚱한(worktree) 세션에서** 발동할 수 있던 결함이 수정되었습니다. worktree 병렬 위임(`isolation: "worktree"`)에 대한 함의: 273 이전에는 메인 세션에서 armed한 cron/예약 작업이 형제 worktree 에이전트의 컨텍스트에서 실행될 수 있었는데, 이는 이 규칙의 "Instance independence — Isolated context, no shared state" 행이 전제하지 않은 숨은 공유 상태 채널입니다 — 273+에서는 예약 작업에도 이 격리가 적용됩니다. ground-truth 원칙(R020)은 그대로 유지합니다 — 273 이전 버전에서 worktree 에이전트의 "예약 작업이 실행됐다"는 보고는 잘못 라우팅된 메인 세션 작업일 수 있습니다.
 
 > **Fable 5 long-lived subagent reuse (Origin: #1435)**: Fable 5는 long-lived subagent 재사용(단일 subagent가 여러 단계를 이어서 수행)에 강함 — 현행 R009 병렬 실행 원칙과 상충하지 않으며, Fable 5 실행 시 short-lived 병렬 다수 대신 long-lived 재사용도 유효한 선택지. 상세는 `guides/claude-code/16-fable5-prompting.md`.
+-->
 
 ## Adaptive Parallel Splitting
 
 Runtime detection and splitting of stalled parallel agents. Complements pre-execution parallelization.
 
+cross-ref: R018 `maxTurns` partial 표시 — 침묵·중간 절단 시 먼저 의심.
+
+<!-- DETAIL: cross-ref (v1.1.50 실측) — full text
 > **cross-ref (v1.1.50 실측)**: 병렬 위임 중 일부가 침묵·중간 절단되면, 재촉·재분할 전에 R018 `maxTurns` partial 표시(v2.1.246)를 먼저 의심한다 — 20턴 한도 절단이 v1.1.50 세션에서 병렬 4건 중 3건에 실증됐다. 상세는 R018 (MUST-agent-teams.md) Member Completion Verification 섹션.
+-->
 
 See detection signals, splitting rules, and example via Read tool.
 
@@ -182,7 +255,11 @@ After (adaptive split):
 
 ## Stability Testing Protocol
 
+Soft default 4, hard cap 5; latency>2x/failure>10%/context error 시 4로 축소.
+
+<!-- DETAIL: Stability Testing Protocol intro — full text
 Soft default: 4 concurrent agents; hard cap: 5. Reduce to 4 if latency >2x, failure rate >10%, or context errors. See full protocol via Read tool.
+-->
 
 <!-- DETAIL: Stability Testing Protocol
 When testing 5 concurrent agents (above the soft default of 4):
@@ -210,13 +287,21 @@ When testing 5 concurrent agents (above the soft default of 4):
 [3] Explore:haiku → Search codebase
 ```
 
+`[N] {subagent_type}:{model}` 형식 사용 — `[N]`은 1-indexed이며 Agent 도구 `description` 파라미터 접두사와 일치해야 Running display가 상관된다.
+
+<!-- DETAIL: Display Format explanatory sentence — full text
 Must use `[N] {subagent_type}:{model}` format. `[N]` is 1-indexed and MUST match the `description` parameter prefix of the Agent tool call for Running display correlation.
+-->
 
 Single agent spawns do NOT use the `[N]` prefix.
 
 ## Narrative Announcement Format (Before Spawn)
 
+병렬 dispatch 산문 announce는 줄 시작에 대괄호 숫자가 오는 리터럴 형식을 쓴다 — 리스트 마커·백틱 금지(R008 판정 정규식 요구). 상세는 Read 도구로 열람.
+
+<!-- DETAIL: Narrative Announcement Format intro — full text
 병렬 dispatch 산문 announce는 **줄 시작에 대괄호 숫자가 오는 리터럴 형식**을 쓴다. 마크다운 리스트 마커(`- `)나 백틱을 그 앞에 붙이지 않는다 — R008 판정 정규식이 줄 시작의 대괄호 숫자를 요구하므로, 리스트 형식은 **규칙을 지킨 응답이 위반으로 계상**된다.
+-->
 
 ```
 [secretary][opus] → Spawning:
@@ -230,7 +315,11 @@ Single agent spawns do NOT use the `[N]` prefix.
 | 헤더에 콜론 생략 | Spawning 뒤에 **콜론 필수** |
 | 화살표 없이 콜론만으로 연결 | 에이전트타입:모델 다음에 화살표 필수 |
 
+형식을 바꿀 때는 advisor 정규식(`r007-r008-drift-advisor.sh`)을 같은 커밋에서 갱신한다(R016 Rule Wiring Check). 상세는 Read 도구로 열람.
+
+<!-- DETAIL: 정규식 정합 (Origin: #1595 #5) — full paragraph
 **정규식 정합 (Origin: #1595 #5)**: 위 코드 블록의 형식은 `.claude/hooks/scripts/r007-r008-drift-advisor.sh`의 판정식과 1:1 대응한다. 화살표는 U+2192, ASCII 하이픈-부등호, U+2014-부등호 3종만 인식된다. 규칙 문구와 탐지기 정규식이 어긋나면 **규칙 준수 응답이 위반으로 계상되고, 그 계수를 근거로 다시 규칙을 고치는 악순환**이 생긴다. 형식을 바꿀 때는 advisor 정규식을 같은 커밋에서 갱신한다(R016 Rule Wiring Check). 이 형식은 위 「Display Format」 섹션과 동일하다 — 두 섹션이 서로 다른 형식을 요구하지 않도록 유지한다.
+-->
 
 <!-- DETAIL: Narrative Announcement Format (Before Spawn)
 산문 announce(Agent 도구 호출 자체가 아니라 그 앞의 텍스트)는 advisor 정규식과 리터럴로 일치해야 한다.
@@ -278,12 +367,20 @@ Single agent spawns do NOT use the `[N]` prefix.
 
 ## Parallel Feature Integration Gate
 
+병렬 각자의 "build green"은 통합 정합성 미보장 — 병합 후 통합 빌드+런타임 스모크 게이트 필수.
+
+<!-- DETAIL: Parallel Feature Integration Gate — Origin + full paragraph
 > Origin: #1335 ③ — parallel lang-kotlin-expert rounds each reported "build green", but the COMBINED runtime had a DataStore singleton crash, a Settings→Dashboard nav crash, a recording 400, and cursor pre-advance bugs — caught only by on-device testing.
 
 Per-subagent "build green" does NOT guarantee integrated runtime correctness. When parallel feature subagents edit interdependent code, the orchestrator MUST run an INTEGRATION verification gate after the parallel work merges — a combined build PLUS a runtime/smoke check (or device test for apps) — before declaring the feature done. Independent green builds can still combine into runtime crashes (shared singletons, navigation, API contracts).
+-->
 
 | Anti-pattern | Required |
 |--------------|----------|
+| 각 병렬 subagent의 "build green"만 신뢰하고 완료 선언 | 병합 결과에 통합 빌드 + 런타임/스모크 게이트를 오케스트레이터가 먼저 실행 |
+
+<!-- DETAIL: Parallel Feature Integration Gate Anti-pattern row — full text
 | Trust each parallel subagent's "build green" and declare done | Orchestrator runs a combined build + runtime/smoke gate on the merged result first |
+-->
 
 Cross-reference: R020 (actual outcome ≠ attempt; completion verification).

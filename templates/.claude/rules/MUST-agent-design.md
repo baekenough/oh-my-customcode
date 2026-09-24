@@ -15,7 +15,9 @@ model: sonnet              # CC-native alias (Tier 1) or full model ID (Tier 2) 
 tools: [Read, Write, ...]  # Allowed tools
 ```
 
+<!-- DETAIL: BOM silent-skip (v2.1.239, historical)
 > **v2.1.239+**: `.md` 파일이 UTF-8 BOM으로 시작하는 agent/skill/command 파일이 **조용히 무시**되던 결함이 수정되었습니다. 구버전에서는 BOM이 있는 `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`가 에러 없이 로드에서 누락됐습니다 — "에이전트/스킬이 없다"는 관측이 실제로는 "BOM 때문에 무음 스킵"일 수 있었습니다. R017 Count Sync가 실측하는 카운트는 파일 **존재**를 세지만, BOM 파일은 CC가 실제로 **로드하지 않았으므로** 구버전에서는 카운트와 실제 로드된 에이전트/스킬 수가 어긋날 수 있었습니다(cross-ref R017 Count Sync).
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.208+**: The Agent tool no longer launches with no tools when a subagent's `tools:` list resolves to nothing — it now returns a clear error naming the unrecognized entries, catching frontmatter `tools:` typos that previously failed silently.
@@ -23,7 +25,10 @@ tools: [Read, Write, ...]  # Allowed tools
 
 ### Model Specification — 3 Tiers
 
+<!-- DETAIL: Tier-mixing example detail
 Model values resolve differently depending on WHERE they are written. Mixing tiers causes a value that is valid in one place to silently fail spawn in another (measured this session: `sonnet5`/`opus5`/`opus48` are invented names this project had documented as if they were CC-recognized — CC v2.1.220 does not resolve them, and spawn fails immediately).
+-->
+Tier를 섞으면(예: frontmatter에 Tier-3 전용 값을 쓰거나 그 반대) 한 곳에서 유효한 값이 다른 곳에서 스폰 실패를 일으킵니다.
 
 #### Tier 1 — CC-native aliases (valid in BOTH frontmatter `model:` AND the Agent tool `model` parameter)
 
@@ -45,7 +50,8 @@ Model values resolve differently depending on WHERE they are written. Mixing tie
 | `claude-sonnet-5` | Native 1M context; current CC default Sonnet (v2.1.197+) |
 | `claude-opus-4-6` | Opus, previous generation |
 | `claude-opus-4-8` | Opus, previous generation; supports xhigh effort |
-| `claude-opus-5` | Latest Opus (GA); native 1M context, fast mode at $10/$50 per Mtok |
+| `claude-opus-5` | Opus, previous generation (GA); native 1M context, fast mode at $10/$50 per Mtok |
+| `claude-opus-5-5` | Latest Opus (GA), default Opus model (v2.1.280+); 1M context, $4/$20 per Mtok, $0.20/Mtok cache reads |
 | `claude-fable-5` | Mythos-class; tier above Opus (access via CC v2.1.170+) |
 | `claude-fable-5-1` | Mythos-class; Fable 5.1 — v2.1.257부터 기본 Fable 모델, 1M context |
 
@@ -63,6 +69,7 @@ The Agent tool's `model` parameter accepts ONLY `sonnet` | `opus` | `haiku` | `f
 
 Skill/rule text instructing "spawn with `model: opus`" refers to this tier — always the bare 4-value alias, never a full ID.
 
+<!-- DETAIL: Model-tier resolution CC version notes (historical/diagnostic)
 > **v2.1.219+**: Claude Opus 5 (`claude-opus-5`) added. Opt in via the Tier-2 full ID in frontmatter; Tier-1 `opus`/`sonnet` alias resolution is CC-controlled (see Tier 1 above — this project does not pin it). Relative standing vs Fable 5 is not yet confirmed officially — do not assert an ordering.
 
 > **v2.1.222+**: **org-restricted 환경에서** `model: opus` 계열 subagent/teammate의 family alias가 parent model로 떨어지던 문제가 수정되어, 이제 해당 family 내에서 org가 허용한 **최신 모델로 step-down**합니다. 이는 Tier 1의 "CC resolves these, not this project" 원칙을 강화하는 사례입니다 — Tier-1 alias 해석에는 **org 제한이라는 추가 변수**가 있어 프로젝트가 pin할 수 없으므로, 특정 모델을 확정하려면 frontmatter에 **Tier-2 full ID**를 씁니다. Agent 도구 spawn 파라미터(Tier 3)는 full ID를 받지 않으므로 이 경로에서는 alias 해석이 org 설정에 좌우됩니다. (본 저장소의 org 제한 여부는 미실측 — 위 조건절이 적용 범위입니다.)
@@ -82,28 +89,45 @@ Skill/rule text instructing "spawn with `model: opus`" refers to this tier — a
 > **v2.1.259+**: 프론트매터 `model:` 관련 결함 2건이 수정되었습니다 — (a) 커스텀 커맨드와 **스킬**의 프론트매터 `model:`이 interactive 세션에서 **무시**되던 결함이 수정되어, 259 이전에는 이 파일 「Skill Frontmatter」의 선택적 `model` 필드가 interactive 실행에서 **효과가 없었고**, 스킬의 실제 실행 모델은 스킬이 무엇을 선언했든 세션 모델 그대로였습니다(R020 "attempt ≠ outcome"의 스킬 model pin 각도). (b) auto mode가 커맨드·스킬 프론트매터 `model:`이 명명한, 지원하지 않는 모델로 turn을 실행하던 결함이 수정되어 이제 세션 모델을 유지합니다 — 즉 auto mode에서는 스킬 `model:` pin이 세션 모델에 조용히 override될 수 있으므로, 실제 실행 모델은 프론트매터가 아니라 v2.1.223 강등 경고로 확인합니다.
 
 > **v2.1.274+**: `claude agents` CLI가 auto-update 재실행 이후 `--model`, `--effort`, `--permission-mode`, `--allow-dangerously-skip-permissions`, `--agent` 플래그를 잃던 결함이 수정되었습니다 — 구버전에서는 `claude agents` 백그라운드 세션이 auto-update 재실행 후 시작 당시 지정한 permission mode·model을 **조용히 잃을 수 있었습니다**(R010 「Universal bypassPermissions」의 "유효 모드는 실측해야 한다"는 원칙과 직결). 또한 (274) Bedrock/Vertex/Foundry에서 `model: "opus"` 서브에이전트가 세션 model id에서 인식 가능한 model family를 찾지 못하면(`ANTHROPIC_DEFAULT_OPUS_MODEL` 미설정 시) 세션 모델을 **벗어나던** 결함이 수정되어 이제 세션 모델을 유지합니다 — 이 저장소 환경은 아니지만 "CC가 alias를 해석한다"는 위 Tier-1 원칙의 또 다른 경계 사례로 기록합니다.
+-->
 
+<!-- DETAIL: Fable 5 GA description (redundant with Tier-2 table row)
 > **Claude Fable 5 (access via CC v2.1.170+)**: Mythos-class model, GA on the Claude API and positioned as a tier above Opus — its capabilities exceed any previously GA model. CC v2.1.170 is the client version that adds access (the model's GA is an API/platform property, not a CC-release milestone). Available via frontmatter full ID `claude-fable-5` (Tier 2) or Agent tool `model: fable` (Tier 3) — NOT via a Tier-1 frontmatter alias. Reserve for the most complex reasoning where its capability premium is warranted; `sonnet` remains the default for general tasks and `opus` for architecture (cost/latency awareness, R005). CC v2.1.170 also fixes session transcripts not saving (and not appearing in `--resume`) when launched from a VS Code integrated terminal or any shell inheriting Claude Code env vars — relevant to transcript-dependent skills (`homework`, `episodic-memory`). Closes #1352.
+-->
 
+<!-- DETAIL: Fable 5.1 default-model note (redundant with Tier-2 table row)
 > **v2.1.257+**: Claude Fable 5.1(`claude-fable-5-1`)이 추가되어 **기본 Fable 모델**이 되었습니다 — 1M context, $10/$50 per Mtok(캐시 읽기 $0.25/Mtok). Tier-3 `model: fable` alias는 이제 Fable 5.1로 해석됩니다(단 Claude apps gateway 세션은 게이트웨이가 아직 Fable 5.1을 미지원해 당분간 Fable 5로 유지됩니다 — `/model`에서 명시 선택해야 Fable 5.1 사용 가능). frontmatter에서 확정하려면 Tier-2 full ID `claude-fable-5-1`을 쓰고, 기존 `claude-fable-5` pin은 그대로 Fable 5에 남습니다 — Tier-1 alias 해석 주체는 CC라는 위 원칙(v2.1.219/222 노트와 동일 계열)의 재확인입니다.
+-->
 
+<!-- DETAIL: Fable 5.1 defect-fix notes (historical)
 > **v2.1.260+**: Fable 5.1 관련 결함 3건이 수정되고 개선 1건이 적용되었습니다 — `model: fable` 에이전트가 `ANTHROPIC_DEFAULT_FABLE_MODEL` pin에 `[1m]` 태그를 붙여도 이를 무시하고 200K 컨텍스트 창으로 조용히 실행되던 결함(즉 260 이전에는 Fable에 붙인 Tier-2 `[1m]` 접미사가 이 env pin 경로에서 **존중되지 않았습니다**); `/model` 피커가 Fable 5.1을 표시하지 않던 결함(`/model claude-fable-5-1` 직접 입력만 동작); Fable 5.1의 prompt caching이 도구 결과 이후 첨부된 컨텍스트를 커버하지 못해 매 도구-호출 turn마다 uncached 입력으로 재전송되던 결함; 그리고 세션 중 `/effort` 변경이 이제 Fable 5.1의 prompt cache를 무효화하지 않도록 개선되었습니다. 또한 (260) 1M-컨텍스트 모델의 auto-compact가 강화되어 Opus·Fable 세션이 1M-token 한도 직전에 compact하며, 초대형 컨텍스트의 복구 compaction이 10분 타임아웃으로 끊기지 않습니다 — 위 R013 v2.1.251 Sonnet 5 1M auto-compact 노트를 Opus/Fable로 확장합니다(cross-ref R013).
+-->
 
 <!-- ARCHIVED CC version notes (historical):
 > **v2.1.173+**: Fable 5 model IDs carrying a `[1m]` suffix are now auto-normalized (the suffix is stripped) because Fable 5 includes 1M context by default. Use `claude-fable-5` / `model: fable` WITHOUT a `[1m]` suffix — appending it is redundant and normalized away. (The `[1m]` suffix remains meaningful for Opus/Sonnet IDs.)
 
 > **v2.1.197+**: Claude Sonnet 5가 Claude Code의 **기본 모델**로 도입되었습니다 — 네이티브 1M-token 컨텍스트, 프로모션 가격 $2/$10 per Mtok(2026-08-31까지). frontmatter에서 명시 opt-in하려면 Tier-2 full ID `claude-sonnet-5`를 사용합니다(`sonnet5`는 어느 계층에서도 유효한 값이 아님 — 위 3-Tier 구분 참조). **정정(실측)**: 이 조항이 이전에 "oh-my-customcode의 base `sonnet` alias는 안정성을 위해 `claude-sonnet-4-6`에 고정 유지"라고 서술했으나 사실이 아니다 — `sonnet` alias 해석 주체는 CC이며 프로젝트가 pin할 수 없다(Tier 1 참조); frontmatter `model: sonnet` 에이전트가 실측상 `claude-sonnet-5`로 실행되었다. Sonnet 5가 CC 신규 기본값이므로 명시 모델 없는 세션은 이제 Sonnet 5에서 동작합니다.
 
-<!-- RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.201+**: Claude Sonnet 5 세션이 harness reminder를 mid-conversation system role로 주입하지 않도록 변경되었습니다 — Sonnet 5 실행 시 하니스 리마인더(규칙 재주입 등) 전달 방식이 조정되었으며, PostCompact 규칙 재주입(R021)·세션 연속성 동작 자체에는 영향이 없습니다. Sonnet 5가 CC 기본 모델(v2.1.197+)이므로 명시 모델 없는 세션에 적용됩니다. -->
+RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.201+**: Claude Sonnet 5 세션이 harness reminder를 mid-conversation system role로 주입하지 않도록 변경되었습니다 — Sonnet 5 실행 시 하니스 리마인더(규칙 재주입 등) 전달 방식이 조정되었으며, PostCompact 규칙 재주입(R021)·세션 연속성 동작 자체에는 영향이 없습니다. Sonnet 5가 CC 기본 모델(v2.1.197+)이므로 명시 모델 없는 세션에 적용됩니다.
 -->
 
+<!-- DETAIL: Fable 5 Effort strategy (full rationale)
 > **Fable 5 Effort 전략**: Fable 5는 **high effort가 기본값**이며, `xhigh`는 capability-sensitive 작업(최고난도 아키텍처/추론)에 한정해야 합니다. Fable 5의 `low`/`medium` effort조차 이전 세대 모델의 `xhigh`를 상회하는 품질을 보이므로, Fable 5를 사용하는 실행 에이전트는 `effort` 필드를 신중히 명시하고 불필요한 `xhigh` 남용을 지양합니다(R005 비용/지연 인식과 정합).
+-->
+Fable 5는 high effort가 기본값이며, `xhigh`는 capability-sensitive 작업(최고난도 아키텍처/추론)에 한정합니다 — 불필요한 `xhigh` 남용은 지양합니다(R005 비용/지연 인식).
 
+<!-- DETAIL: effort frontmatter CC version notes (historical)
 > **v2.1.267+**: `effort:` 프론트매터 관련 결함·신규 상한 3건 — (a) 커스텀 커맨드·스킬·서브에이전트의 `effort:` 프론트매터가, 기본 effort가 여전히 고정된 모델(Opus 4.7, Opus 4.8, Fable 5)에서 **무시**되던 결함이 수정되었습니다. 즉 267 이전에는 이 파일의 "스킬 `effort`가 에이전트 `effort`보다 우선한다"는 서술과 위 「Fable 5 Effort 전략」의 `effort` 명시 지침이 Fable 5 / Opus 4.8 에이전트에서 **런타임 효과가 없었습니다** — 프론트매터 effort는 실제 실행된 effort의 증거가 아니었습니다. (b) 신규 `maxEffortLevel` 설정(최상위 또는 `modelSettings` 하위 모델별)이 모든 provider에서 effort 레벨 상한을 강제합니다 — 사용자는 여전히 더 낮은 레벨을 선택할 수 있습니다. 이는 프론트매터 `effort`보다 **상위에 위치하는 설정 레벨 상한**이므로, `xhigh`를 선언한 에이전트도 상한이 설정돼 있으면 그 상한에서 실행됩니다(프론트매터로 유추하지 말고 실효 effort를 확인). (c) `/model opusplan[1m]`이 "Model not found"로 거부되던 결함이 265에서 수정되어, `/model` 명령에서 이 표기가 이제 수용됩니다 — 프론트매터 `model: opusplan[1m]` 경로는 릴리즈 노트가 언급하지 않으므로 미실측입니다.
+-->
 
+<!-- DETAIL: Mythos 5 (non-GA, not registered — reference only)
 > **Mythos 5 (`claude-mythos-5`)**: Project Glasswing 한정 공급 모델로, **GA가 아닙니다** — Fable 5(GA, 위 "Model Specification — 3 Tiers"의 `claude-fable-5`/`fable`)와 구분해야 합니다. 특성: adaptive-thinking 전용 아키텍처 + 안전 분류기가 개입 시 `stop_reason: "refusal"`로 fallback하는 체계를 가집니다. oh-my-customcode 에이전트 frontmatter에는 아직 alias를 등록하지 않습니다(비-GA, 공급 제한).
+-->
 
+<!-- DETAIL: 프롬프팅 패턴 상호참조 full text
 > **프롬프팅 패턴 상호참조**: Fable 5/Mythos 5 대상 프롬프팅 패턴(effort 조합, adaptive-thinking 활용, refusal fallback 대응)의 상세 가이드는 `guides/claude-code/16-fable5-prompting.md`를 참조하세요.
+-->
+Fable 5/Mythos 5 프롬프팅 상세: `guides/claude-code/16-fable5-prompting.md`.
 
 ### Fallback Models (CC v2.1.166+)
 
@@ -111,7 +135,10 @@ Skill/rule text instructing "spawn with `model: opus`" refers to this tier — a
 > **v2.1.166+**: The `fallbackModel` setting configures up to three fallback models tried in order when the primary model is overloaded or unavailable. `--fallback-model` now also applies to interactive sessions. CC additionally retries a turn once on the fallback model when the API rejects an unexpected non-retryable error (auth, rate-limit, request-size, and transport errors still surface immediately).
 -->
 
+<!-- DETAIL: Fallback Models rationale
 This is a settings-level resilience mechanism, distinct from the per-agent `model:` frontmatter. It complements the `model-escalation` skill (outcome-based escalation) by handling availability/overload failover at the platform level.
+-->
+Settings-level 가용성/과부하 failover — per-agent `model:` frontmatter와는 별개이며 `model-escalation` 스킬을 보완합니다.
 
 <!-- ARCHIVED CC version note (historical): > **v2.1.178+**: Compaction now honors the `fallbackModel` chain — on overload or model-availability errors during context compaction, CC falls back to the configured fallback model instead of failing the compaction. Extends the v2.1.166 `fallbackModel` resilience to the compaction path. -->
 
@@ -147,17 +174,29 @@ This is a settings-level resilience mechanism, distinct from the per-agent `mode
 
 Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `background`, `maxTurns`, `maxTokens`, `mcpServers`, `hooks`, `permissionMode`, `disallowedTools`, `limitations`, `domain`, `disableSkillShellExecution`, `experimental.cacheTtl` (v2.1.248+). Supported since CC v2.1.63+. See full optional frontmatter via Read tool.
 
+<!-- DETAIL: Subagent/skill runtime CC version notes (historical)
 > **v2.1.261/265/267+**: 서브에이전트/스킬 런타임 관련 3건 — (261) `--append-subagent-system-prompt-file`이 신설되어 커맨드라인에 담기 힘들 만큼 큰 서브에이전트 시스템 프롬프트를 파일에서 읽습니다(R009의 ~5000-token 프롬프트 휴리스틱과 정합 — 대형 프롬프트는 단순 파일 로드가 아니라 우선 분할의 신호입니다). (265) forked 스킬(`context: fork`)이 착수(kickoff) 프롬프트를 스트리밍하지 않고, `--forward-subagent-text`와 함께 쓸 때 그 텍스트 turn을 stream-json progress 이벤트로 내보내지 않던 결함이 수정되었습니다 — 아래 「Context Fork Criteria」의 10/12 `context: fork` 스킬을 `-p --output-format stream-json`으로 실행할 때 관련되며, 구버전에서는 fork progress 이벤트 부재가 fork가 실행되지 않았다는 증거가 아니었습니다. (267) `--system-prompt`/`--append-system-prompt`로 시작한 서브에이전트·세션이 이제 시스템 프롬프트와 도구 정의를 매 요청마다 재렌더링하는 대신 한 번만 기록합니다(prompt-cache 안정성) — `--system-prompt-snapshot off`는 프롬프트 반복 작업을 위해 매 요청 새로 렌더링합니다.
+-->
 
+<!-- DETAIL: context:fork message-forwarding CC version note (historical)
 > **v2.1.275+**: (275) "Fixed `--forward-subagent-text` stream-json and SDK output dropping the messages of subagents spawned by a `context: fork` skill, and of forked skills invoked by a subagent or another forked skill" — 위 v2.1.265 노트의 연장선입니다. (275) 「Context Fork Criteria」의 10/12 `context: fork` 스킬을 `-p --output-format stream-json`으로 실행할 때, 275 이전에는 fork 내부 서브에이전트 메시지 부재가 미실행의 증거가 아니었습니다.
+-->
 
+<!-- DETAIL: omitClaudeMd CC version note (full rationale)
 > **v2.1.271+**: 신규 에이전트 프론트매터 필드 `omitClaudeMd`(및 `--agents` JSON에도 동일 필드)가 추가되어, 커스텀·플러그인 서브에이전트가 user/project/local CLAUDE.md 파일을 **전혀 로드하지 않고** 실행할 수 있습니다(managed policy 파일은 계속 로드됩니다). 이 저장소는 오늘 스폰되는 모든 서브에이전트가 프로젝트 CLAUDE.md + 23개 룰(고정 주입 ~49.5k 토큰, R016 코퍼스 비용 cross-ref)을 그대로 상속하므로, `omitClaudeMd: true`는 `Explore`나 `tracker-checkpoint`처럼 좁고 비용에 민감한 에이전트에 새로운 레버가 됩니다 — 단 그렇게 스폰된 에이전트는 R007/R008/R010을 보지 못하므로, 오케스트레이터는 그 출력을 **rule-unaware**로 취급해야 합니다. 위 「Optional Frontmatter」 필드 목록에 추가할 때는 이 무규칙 특성을 함께 명시합니다. 또한 (271) `--resume` 시 재개 세션의 모델 패밀리가 설정된 기본값과 다르면 1M 컨텍스트 창(`[1m]`)이 소실되던 결함이 수정되었습니다(Tier-2 `[1m]` 접미사 각도, cross-ref R013).
+-->
+`omitClaudeMd: true` — 서브에이전트가 CLAUDE.md/룰을 전혀 로드하지 않고 실행(비용 절감용; managed policy 파일은 계속 로드); 그렇게 스폰된 에이전트는 R007/R008/R010을 보지 못하므로 오케스트레이터는 그 출력을 rule-unaware로 취급합니다.
 
 ### Note on `skills:` field
 
+<!-- DETAIL: skills: field full rationale
 The `skills:` frontmatter field is **advisory metadata** consumed by oh-my-customcode tooling (graph-builder, mgr-sauron) for documentation and validation. It is **NOT a runtime allowlist** — Claude Code does not filter the available skills based on this field, and subagents can invoke any registered skill regardless of what `skills:` declares. Use it to document a subagent's intended skill dependencies; do not rely on it for access control.
+-->
+`skills:` frontmatter는 **advisory metadata일 뿐 runtime allowlist가 아닙니다** — CC는 이 필드로 스킬 접근을 제한하지 않으므로, access control로 의존하지 마세요(문서화 용도로만 사용).
 
+<!-- DETAIL: skills: field issue reference
 Reference: research findings on issue #1055 (closed not-planned).
+-->
 
 <!-- DETAIL: Optional Frontmatter (full yaml block)
 ```yaml
@@ -208,14 +247,26 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 
 ## Hook Event Types
 
+<!-- DETAIL: full 33-event-name enumeration (kept verbatim, see full reference table via Read tool)
 33 event types supported: SessionStart, Setup, UserPromptSubmit, UserPromptExpansion, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, PostToolBatch, Notification, MessageDisplay, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, Stop, StopFailure, TeammateIdle, InstructionsLoaded, ConfigChange, CwdChanged, DirectoryAdded, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, Elicitation, ElicitationResult, SessionEnd, PreModelSwitch, PostModelSwitch (v2.1.251+). 4 handler types: command, prompt, http, agent. See full reference table via Read tool.
+-->
+33개 이벤트 타입, 4개 핸들러 타입(command/prompt/http/agent) 지원 — 전체 목록·트리거·데이터는 Read 도구로 확인.
+<!-- DETAIL: PreModelSwitch/PostModelSwitch CC version note (historical)
 > **v2.1.251+**: 신규 훅 이벤트 `PreModelSwitch`/`PostModelSwitch`가 추가되어 model switch를 block/confirm/annotate할 수 있습니다. 또한 `SessionStart` resume 훅이 이제 session staleness와 예상 re-cache 비용을 인자로 받습니다.
+-->
 
+<!-- DETAIL: MessageDisplay full rationale + historical PostMessage note
 > **`MessageDisplay`는 표시 전용 — `additionalContext` 미지원**: `MessageDisplay`는 `hookSpecificOutput.displayContent`로 **화면 표시 텍스트만** 교체하며, 트랜스크립트와 Claude가 보는 내용은 원본이 유지된다. 따라서 advisory 훅을 `MessageDisplay`에 배선하면 **모델에 도달하지 않는다**. `additionalContext`(모델 컨텍스트 주입)를 지원하는 이벤트는 SessionStart, Setup, SubagentStart, UserPromptSubmit, UserPromptExpansion, PreToolUse, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, SubagentStop이다. (이전 판이 나열하던 `PostMessage`는 문서화된 이벤트가 아니다 — 실제 이벤트명은 `MessageDisplay`.)
+-->
+`MessageDisplay`는 표시 전용(`additionalContext` 미지원, 모델 미도달) — advisory 훅은 SessionStart/Setup/SubagentStart/UserPromptSubmit/UserPromptExpansion/PreToolUse/PostToolUse류·Stop·SubagentStop에 배선하세요.
 
+<!-- DETAIL: hooks.md doc-lag diagnostic note
 > **문서 시차 노트 — `PreModelSwitch`/`PostModelSwitch` 및 `PostCompact`**: 33종 중 `PreModelSwitch`/`PostModelSwitch`(v2.1.251)는 CHANGELOG(2026-08-28)에는 명시되나 공식 hooks.md "Hook events" 카탈로그 페이지에는 실측일(2026-08-29) 기준 헤더가 없다 — changelog→hooks.md 반영 시차로 판단(오류 아님, hook-events-audit 2026-08-29 실측). 또한 `PostCompact`는 공식 문서상 `additionalContext`/decision-control이 정의돼 있지 않다 — 재주입(compact 후 규칙 재주입) 용도로는 `PostCompact`가 아니라 `SessionStart`(matcher `*`)를 쓸 것(cross-ref R021 「Prompt-based」 각주). PostCompact dispatch 경로는 바이너리 실측으로 실재 확인(2026-08-29 probe) — 상세는 R021 각주.
+-->
 
+<!-- DETAIL: hook event trigger-timing detail
 > **신규 이벤트 발동 시점**: `Setup` — `--init-only`, 또는 `-p` 모드에서 `--init`/`--maintenance`로 시작할 때. `UserPromptExpansion` — 사용자가 입력한 커맨드가 프롬프트로 확장될 때(모델 도달 전; 확장 차단 가능). `PostToolUseFailure` — 도구 호출이 실패한 뒤. `PostToolBatch` — 병렬 도구 호출 배치 전체가 끝난 뒤, 다음 모델 호출 전. `MessageDisplay` — assistant 메시지 텍스트가 표시되는 동안(실시간 스트리밍). `DirectoryAdded` (v2.1.219+) — `/add-dir` 또는 SDK `register_repo_root`로 작업 디렉토리가 세션 중 추가될 때. (그 밖의 신규 이벤트 — `PermissionRequest`, `StopFailure`, `InstructionsLoaded`, `ConfigChange`, `WorktreeCreate`, `WorktreeRemove` — 는 발동 시점을 미실측이므로 서술하지 않는다.)
+-->
 
 <!-- DETAIL: Hook Event Types Full Reference
 
@@ -292,9 +343,14 @@ hooks:
 
 ### Main-Thread Agent Hooks (v2.1.116+)
 
+<!-- DETAIL: Main-Thread Agent Hooks rationale (v2.1.116, historical)
 Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent via `--agent` flag. Previously, frontmatter hooks only fired when spawned as subagents via the Agent tool.
+-->
+Agent frontmatter `hooks:`는 `--agent`로 실행되는 main-thread agent에서도 발화합니다(서브에이전트 한정 아님).
 
+<!-- DETAIL: reload-plugins CC version note (historical)
 > **Note**: `/reload-plugins` now auto-installs missing plugin dependencies from added marketplaces (v2.1.116+).
+-->
 
 <!-- ARCHIVED CC version notes (historical):
 > **v2.1.157+**: `settings.json` `agent` field is now honored for dispatched sessions (with `--agent <name>` override). `EnterWorktree` can switch between Claude-managed worktrees mid-session, and worktrees are left unlocked when the agent finishes (enabling `git worktree remove`/`prune` cleanup).
@@ -307,12 +363,12 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 -->
 
 <!-- ARCHIVED CC version note (historical):
-<!-- RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.204+**: headless 세션의 SessionStart hook 중 hook 이벤트가 스트리밍되지 않아 remote worker가 hook 도중 idle-reap되던 문제가 수정되었습니다. Hook Event Types/SessionStart 관련. -->
+RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.204+**: headless 세션의 SessionStart hook 중 hook 이벤트가 스트리밍되지 않아 remote worker가 hook 도중 idle-reap되던 문제가 수정되었습니다. Hook Event Types/SessionStart 관련.
 -->
 
 ## Permission Mode Guidance
 
-> Canonical source for the bypassPermissions requirement: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions". CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls. See R010 for the full requirement, rationale, and self-check.
+> Canonical source for the bypassPermissions requirement: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions". CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls. See R010 for the full requirement, rationale, and self-check. Note: as of v2.1.212+, the Agent tool's `mode` parameter is ignored — subagents inherit the parent session's permission mode instead (canonical: R010 Self-Check).
 
 | Mode | Behavior |
 |------|----------|
@@ -327,7 +383,9 @@ Agent frontmatter `hooks:` now fire when the agent runs as a main-thread agent v
 > **v2.1.200+**: `default` 모드가 CLI·`--help`·VS Code·JetBrains에서 "Manual"로 표기됩니다 — `--permission-mode manual` / `"defaultMode": "manual"`이 `default`와 병행 허용(동일 동작). 위 표의 `default` row는 그대로 유효하며 UI 라벨만 "Manual"로 노출됩니다. cross-ref R002.
 -->
 
+<!-- DETAIL: Agent tool mode deprecation rationale (canonical: R010)
 > **v2.1.212+**: Agent(구 Task) tool의 `mode` 파라미터가 **deprecated되어 무시됩니다** — subagent는 **기본적으로** 부모(오케스트레이터) 세션의 permission mode를 상속합니다. 위 "CC defaults `mode` to `acceptEdits`" 서술과 R010 Universal bypassPermissions의 per-call `mode: "bypassPermissions"` 지정은 플랫폼 레벨에서 no-op가 됩니다(명시 지정 자체는 무해). 무인 실행의 실제 bypass 여부는 이제 부모 세션 mode가 결정하므로, 오케스트레이터 세션을 bypassPermissions로 유지하는 것이 핵심입니다. Canonical owner는 R010.
+-->
 
 <!-- DETAIL: Permission Mode Guidance (reasoning)
 When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:
@@ -399,6 +457,7 @@ Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HH
 
 ### Sensitive Path Handling
 
+<!-- DETAIL: Sensitive Path Handling — full rationale + numbered practice
 > **Status (CC v2.1.121+)**: `.claude/`, `.git/`, `.vscode/` direct Write/Edit/Bash works without prompts under `mode: "bypassPermissions"`. The historical `/tmp/*.sh` bypass pattern is deprecated. See #1101.
 
 Current CC behavior: under `bypassPermissions`, all `.claude/**` paths (including `.claude/outputs/**`, `.claude/agents/**`, `.claude/skills/**`, `.claude/rules/**`, `templates/.claude/**`) accept Write/Edit/Bash directly. Catastrophic shell operations remain blocked by independent safety guards.
@@ -407,6 +466,8 @@ Current CC behavior: under `bypassPermissions`, all `.claude/**` paths (includin
 1. Pass `mode: "bypassPermissions"` on every Agent tool call (R010 Universal bypassPermissions)
 2. Use Write/Edit directly for `.claude/**` paths — no `/tmp/*.sh` wrapping needed
 3. For CC < v2.1.121: see git history of this section (pre-v0.126.0) for the legacy bypass pattern
+-->
+CC v2.1.121+: `bypassPermissions`에서 `.claude/**`(templates 미러 포함)·`.git/`·`.vscode/` 직접 Write/Edit/Bash 허용 — 레거시 `/tmp/*.sh` 우회는 폐기(#1101). 파괴적 셸 작업은 별도 가드가 차단합니다.
 
 <!-- DETAIL: Pre-v2.1.121 sensitive path behavior (historical)
 | Path | Tool | Allow rule | Result (CC < v2.1.121) |
@@ -436,6 +497,7 @@ Current CC behavior: under `bypassPermissions`, all `.claude/**` paths (includin
 | Session-scoped | 아티팩트는 세션 범위 — `{YYYY-MM-DD}` 디렉토리로 격리 |
 | Single-writer | 한 아티팩트는 하나의 에이전트만 작성. 후속 에이전트는 새 아티팩트 생성 |
 
+<!-- DETAIL: Artifact Channel Protocol usage contexts + related rules
 #### 사용 맥락
 
 1. **Parallel agents → Aggregator**: N 병렬 에이전트가 각자 `skill-HHmmss.md` 작성 → aggregator가 N개 경로를 받아 단일 요약 생성
@@ -447,6 +509,7 @@ Current CC behavior: under `bypassPermissions`, all `.claude/**` paths (includin
 - R013 SHOULD-ecomode.md Deep Insight Context Handoff Pattern (per-agent budget + handoff protocol)
 - `result-aggregation` 스킬 (channel read pattern 구현)
 - R011 SHOULD-memory-integration.md (장기 persistence는 memory, 세션 handoff는 channel)
+-->
 
 <!-- DETAIL: Artifact Output full spec
 **Format**: Metadata header with `skill`, `date`, `query` fields, followed by skill output content.
@@ -508,7 +571,9 @@ description: Brief desc    # One-line summary
 
 Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, `hooks`, `paths`, `shell`, `allowed-tools`, `keep-coding-instructions`. Skill `effort` takes precedence over agent `effort` when both specified. See full optional fields via Read tool.
 
+<!-- DETAIL: claude plugin eval CC version note (historical)
 > **v2.1.269+**: `claude plugin eval`이 신설되어 플러그인의 eval suite를 실행하고 채점된 재현 가능 결과(JSON + HTML report)를 생성합니다 — 스킬/플러그인 품질을 위한 결정론적 Tier-1/2 계측 도구입니다(cross-ref R023, `skill-creator`의 eval 워크플로우). 또한 (269) Skill 도구의 "Unknown skill" 오류가 bare name이 정확히 하나의 플러그인 스킬과 일치할 때 그 플러그인 스킬의 전체 이름을 명시하도록 개선되었고, cloud 세션에서 claude.ai로부터 동기화된 스킬은 `anthropic-skills:<name>`으로 명명됩니다(bare name이 유일하면 여전히 동작) — 위 v2.1.228 동기화-스킬 하드닝 노트와 관련됩니다.
+-->
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.163+**: In skill `command` bodies, use `\$` to emit a literal `$` before a number (e.g., `\$1`) — previously ambiguous with shell variable expansion. Relevant when authoring skills with `shell:` or inline command steps that include dollar signs not intended as variables.
@@ -524,15 +589,26 @@ Key optional fields: `scope`, `context`, `version`, `effort`, `model`, `agent`, 
 
 <!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: 스킬/커맨드 본문에서 인자 없이 호출된(unmatched) `$1`/`$2` positional placeholder가 조용히 제거되던(silently stripped) 동작이 수정되어 이제 리터럴 `$1`로 verbatim 보존됩니다 — 인자 부재 시 `$1`이 확장된 프롬프트에 그대로 남아 지시가 깨지므로, silent stripping에 옵션-인자 처리를 의존하지 말고 인자 부재 케이스를 명시 처리(default text / `$ARGUMENTS` guard / `argument-hint`)해야 합니다. (위 v2.1.163+ `\$1` escape는 항상 리터럴 `$` 출력용 별개 메커니즘으로 이번 변경 대상이 아니며, 이번 수정은 치환 의도의 bare `$1`이 unmatched일 때만 적용됩니다.) -->
 
+<!-- DETAIL: disable-model-invocation CC version note (full rationale)
 > **v2.1.222+**: 스킬 frontmatter의 `disable-model-invocation: true`(모델이 스스로 그 스킬을 호출하지 못하게 막고 사용자/파이프라인의 명시적 호출만 허용하는 필드)가 설정된 스킬을 모델이 호출하려 할 때의 refusal 문구가 개선되어, 모델에게 **워크플로우를 스스로 복제하지 말고 사용자에게 실행을 요청하라**고 지시합니다. 무인 루프(`/fsd` 등)가 이런 스킬을 모델 호출 경로에 두면 실행 대신 refusal이 반환되므로, 해당 스킬은 **사용자/파이프라인 명시 호출**로 설계합니다.
+-->
 
+<!-- DETAIL: argument re-expansion CC version note (full rationale)
 > **v2.1.233+**: 스킬/커맨드의 인자 치환이 **인자 값을 다시 템플릿 마커로 재확장하던** 문제가 수정되었습니다 — 인자에 `$ARGUMENTS`·`$1` 같은 문자열이 들어오면 2차 확장돼 프롬프트가 변형될 수 있었습니다. 즉 구버전에서 **인자 값은 신뢰 입력이 아니었으므로**, 인자를 지시문에 그대로 끼워 넣는 스킬은 샘플 값으로 조립 결과를 실제 확인해 검증합니다(R023 Sample-Value Assembly — 문법 검증만으로는 드러나지 않는 계열).
+-->
+인자 값을 지시문에 그대로 끼워 넣는 스킬은 샘플 값으로 조립 결과를 실제 확인해 검증합니다(R023 Sample-Value Assembly).
 
+<!-- DETAIL: claude.ai synced-skill hardening CC version note (historical)
 > **v2.1.228+**: claude.ai에서 동기화된 스킬이 하드닝되었습니다 — 로컬 커맨드·MCP prompt를 **shadow하지 않고**, description이 sanitize·labeling되며, 로컬 머신에서 그 본문이 `!` 명령을 실행하거나 `@` 파일 참조를 확장하지 **않습니다**. 즉 외부 출처 스킬은 로컬 `.claude/skills/` 스킬과 **동일한 실행 능력을 갖지 않으므로**, 동기화 스킬에 `!`/`@` 동작을 전제한 본문을 작성하면 무음 미실행이 됩니다. 구버전에서는 동기화 스킬이 로컬 커맨드를 가릴 수 있어 같은 이름 호출이 어느 정의로 해소되는지 결정론적이지 않았습니다.
+-->
 
+<!-- DETAIL: synced-skill opt-out CC version note (historical)
 > **v2.1.275+**: (275) "Added syncing of the skills and plugins enabled on your claude.ai account to terminal sessions signed in with it; opt out with `syncClaudeAiSkills: false` or `syncClaudeAiPlugins: false`" — 위 v2.1.228 동기화-스킬 하드닝 노트의 연장선입니다. (275) 동기화 스킬은 로컬 `.claude/skills/`와 실행 능력이 다르므로, 이 저장소 세션에서 예상 밖 스킬이 보이면 계정 동기화 여부를 먼저 확인하고 필요 시 `syncClaudeAiSkills: false`/`syncClaudeAiPlugins: false`로 opt-out합니다.
+-->
 
+<!-- DETAIL: /add-dir subdirectory CC version note (historical)
 > **v2.1.257+**: `/add-dir`이 현재 작업 디렉토리 **내부**의 디렉토리를 거부하던 문제가 수정되어, 이제 startup 시 `--add-dir`와 동일하게 그 디렉토리의 skills/commands/agents를 로드합니다. 구버전에서는 세션 중 `/add-dir`로 하위 디렉토리의 스킬 트리를 추가 로드할 수 없었으므로, 서브디렉토리 단위 스킬 확장 워크플로우가 이 버전부터 가능해집니다.
+-->
 
 <!-- DETAIL: Skill Optional Fields (full yaml block)
 ```yaml

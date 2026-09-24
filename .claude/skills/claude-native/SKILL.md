@@ -99,6 +99,8 @@ Issue body format (matching the pattern established by issue #683):
 ## 액션 아이템
 
 - [ ] oh-my-customcode 영향도 관점에서 릴리즈 노트 검토
+- [ ] 새 지식은 `guides/claude-code/15-version-compatibility.md`(+ `templates/` 미러)에 규칙별 절로 기록 (서사·근거는 가이드, 룰에 쌓지 않는다 — R016 「버전노트 보존정책」)
+- [ ] 이 릴리즈가 **현재 에이전트 행동을 바꾸는 규범**이면 해당 룰에 최대 1줄만 추가 — 추가 전 `CLAUDE.md`+`.claude/rules/*.md` 주석 제외 합계가 R016 예산(140,000자)을 넘지 않는지 확인, 넘으면 다른 조항을 은퇴·DETAIL화
 - [ ] 새 Claude Code 기능이 에이전트에 영향을 주면 에이전트 정의 갱신
 - [ ] 현재 oh-my-customcode 버전과의 호환성 테스트
 - [ ] 새 기능이 관련되면 CLAUDE.md 갱신

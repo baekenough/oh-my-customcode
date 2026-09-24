@@ -1,7 +1,7 @@
 ---
 title: Claude Native
 type: skill
-updated: 2026-07-19
+updated: 2026-09-24
 sources:
   - .claude/skills/claude-native/SKILL.md
 related:
@@ -18,7 +18,7 @@ Monitor Claude Code (the CLI tool) release history and auto-generate one GitHub 
 
 ## Overview
 
-Fetches Claude Code releases from `gh api repos/anthropics/claude-code/releases`, dedups against existing `Claude Code v{version}` issues (title-pattern search), and files a new issue per gap using a fixed template (release summary + a 4-item review checklist covering agent/rule impact, feature relevance, and version compatibility). Only versions >= `2.1.86` are in scope — monitoring resumed there after the deprecated customclaw Airflow-based watcher stopped (deprecated 2026-03-18); this skill fills that gap and is the successor mechanism. Default run checks only the latest 5 releases; `--backfill` scans the full paginated history; `--dry-run` reports without creating issues. Version compare is numeric semver (major.minor.patch) and explicitly does NOT assume contiguous patch numbers — CC skips some patches (e.g. v2.1.151, v2.1.155 never shipped), so the skill acts only on versions actually present in the API response.
+Fetches Claude Code releases from `gh api repos/anthropics/claude-code/releases`, dedups against existing `Claude Code v{version}` issues (title-pattern search), and files a new issue per gap using a fixed template (release summary + a 6-item review checklist covering agent/rule impact, feature relevance, and version compatibility — expanded from 4 items in v1.1.77, #1717). Two new checklist items route new knowledge to its post-R016-policy destination: record new CC knowledge as a per-rule section in `guides/claude-code/15-version-compatibility.md` (+ `templates/` mirror) rather than accumulating it in a rule body, and add at most ONE line to a rule only when the release changes current agent behavior — checking first that `CLAUDE.md` + `.claude/rules/*.md` (comments stripped) stays under R016's 140,000-char budget gate before adding it. Only versions >= `2.1.86` are in scope — monitoring resumed there after the deprecated customclaw Airflow-based watcher stopped (deprecated 2026-03-18); this skill fills that gap and is the successor mechanism. Default run checks only the latest 5 releases; `--backfill` scans the full paginated history; `--dry-run` reports without creating issues. Version compare is numeric semver (major.minor.patch) and explicitly does NOT assume contiguous patch numbers — CC skips some patches (e.g. v2.1.151, v2.1.155 never shipped), so the skill acts only on versions actually present in the API response.
 
 ## Key Details
 
@@ -37,3 +37,4 @@ Fetches Claude Code releases from `gh api repos/anthropics/claude-code/releases`
 ## Sources
 
 - `.claude/skills/claude-native/SKILL.md` — skill definition
+- Content-drift resync 2026-09-24 (v1.1.77, #1717): added two action-item checklist entries routing new CC knowledge to `guides/claude-code/15-version-compatibility.md` per rule and capping rule-body additions at one behavioral line, gated by [[r016]]'s new 140,000-char instruction-budget check. See [[r016]] for the full policy this issues from.

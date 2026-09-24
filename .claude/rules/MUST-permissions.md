@@ -10,7 +10,7 @@
 | 2: Default | Write, Edit, NotebookEdit | State changes explicitly, notify before modifying important files |
 | 3: Context | Agent, Skill, EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree, LSP, Monitor, TodoWrite†, AskUserQuestion, PushNotification | Context-dependent, no user approval needed |
 | 4: Approval | Bash, PowerShell, WebFetch, WebSearch | Request user approval on first use |
-| 5: Conditional | TeamCreate†, TeamDelete†, SendMessage, TaskCreate†, TaskGet†, TaskList†, TaskUpdate†, TaskStop, TaskOutput | Available when Agent Teams enabled |
+| 5: Conditional | TeamCreate†, TeamDelete†, SendMessage, TaskCreate†, TaskGet†, TaskList†, TaskUpdate†, TaskStop | Available when Agent Teams enabled (TaskOutput 제거됨, v2.1.277+ — 아래 참조) |
 | 6: MCP | ListMcpResourcesTool, ReadMcpResourceTool, CronCreate, CronDelete, CronList, RemoteTrigger | MCP/extension tools, available when servers configured |
 
 > **†** 현행 모델의 기본 실행 환경에 **존재하지 않는다** — 아래 v2.1.233 노트 참조. 이 표는 **도구 카탈로그**이지 가용성 보증이 아니므로, 규칙이 특정 도구 호출을 의무화하기 전에 실측(도구 목록 / `ToolSearch`)으로 존재를 확인한다.
@@ -23,7 +23,10 @@
 | Write | Source code, new files in project, `.claude/**` (CC v2.1.121+ under `bypassPermissions`) | .env, .git/config, paths outside project |
 | Delete | Temp files created by agent | Existing files (without request), entire directories |
 
+<!-- DETAIL: Sensitive paths note (full rationale)
 > **Sensitive paths note**: As of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01), `.claude/`, `.git/`, `.vscode/` are no longer prompted for Write/Edit/Bash under `mode: "bypassPermissions"`. The legacy `/tmp/*.sh` script bypass (R010 historical section) is deprecated for CC >= v2.1.121. Catastrophic operations (`rm -rf /`) remain blocked. See #1101.
+-->
+CC v2.1.121+: `.claude/`·`.git/`·`.vscode/`는 `bypassPermissions`에서 프롬프트 없음(레거시 `/tmp/*.sh` 우회는 폐기, #1101). 파괴적 작업(`rm -rf /`)은 계속 차단됩니다.
 
 ## Permission Request Format
 
@@ -75,6 +78,7 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 
 <!-- RETIRED (은퇴 릴리즈 v1.1.45, 보존 기준 v2.1.212 미만): > **v2.1.210+**: `Write(path)`/`NotebookEdit(path)`/`Glob(path)` 형태의 permission rule은 시작 시 경고를 발생시킵니다 — 파일 쓰기 rule은 `Edit(path)`, 읽기 rule은 `Read(path)` matcher로 작성합니다. 위 Tier 표의 Write/NotebookEdit/Glob은 도구명일 뿐 path-scoped rule matcher가 아닙니다(위 v2.1.166 unknown-tool startup warning 연장선). -->
 
+<!-- DETAIL: Permission-check CC version notes (historical/diagnostic)
 > **v2.1.214+**: 단일 세그먼트 `dir/**` allow rule(예: `Edit(src/**)`)이 트리 어디에나 있는 중첩 `dir/`까지 auto-approve하던 버그가 수정되어 이제 `<cwd>/dir`에만 매칭됩니다(hook `if:` 조건도 동일 — 임의 깊이 매칭이 필요하면 `**/dir/**`로 작성). **`deny`/`ask` permission rule은 any-depth 매칭을 유지**(allow만 `<cwd>`로 좁아짐). settings.json 스코프 설계 시 이 비대칭(allow 좁게 / deny·ask 넓게)을 전제로 삼습니다. 위 v2.1.210 `Edit(path)`/`Read(path)` matcher 권고의 연장선.
 
 > **v2.1.252/257+**: 두 건이 allow 규칙 저장·반영 신뢰성을 보강합니다. (252) `.claude/settings.local.json`이 아직 없는 프로젝트에서 "always allow"를 눌러도 저장되지 않던 결함이 수정되었습니다 — 구버전에서 "always allow를 눌렀는데 다시 묻는다"는 관측은 이 파일 부재가 원인일 수 있었습니다. (257) 세션 시작 후 새로 생성된 `.claude/` 폴더의 settings가 재시작 전까지 반영되지 않던 결함이 수정되었습니다 — R021 「훅 배선 경로」가 서술하는 settings 재생성 흐름에서, 세션 중 생성한 settings 파일이 이제 즉시 로드됩니다.
@@ -123,19 +127,30 @@ Use a `"*"` deny rule in `settings.json` to enforce a deny-by-default posture, t
 > **v2.1.238+**: Bash 도구의 permission 검사가 zsh 전용 조건문(shell conditional) 문법에 대해 추가로 개선되었습니다. 이는 위 v2.1.221 "zsh `[[ ]]` 정규식 조건문 안에서 숨겨진 명령이 권한 검사를 우회"의 **직접 연장선**입니다 — "개선"으로만 기술되어 있어 v2.1.221 수정이 완전 해결이 아니었거나 추가 우회 벡터가 있었음을 시사합니다. 이 저장소의 Bash 도구 실행 셸이 zsh이므로(R005 #1540 실측) 직접 관련됩니다.
 
 > **v2.1.246/248+**: (246) 끝에 매달린 `&&`/`||`가 있는 손상된(malformed) 명령에 대해 Bash 권한검사가 이제 **항상 승인을 요구**합니다 — 구버전에서는 이런 형태가 검사를 우회할 수 있었습니다. (248) `--restricted`(또는 `CLAUDE_CODE_RESTRICTED=1`) 모드가 신설되어 명령/코드 실행 도구와 `WebFetch`를 제거하고(`--tools`에 명시 시 예외), 파일 도구를 작업 디렉토리 내부로 제한하며, `bypassPermissions`를 거부하고, user/project/local settings 파일을 무시합니다. 이 저장소는 프로젝트 settings에 `bypassPermissions`를 선언하지만 v2.1.257부터 그 선언은 무시되므로(R010 Universal bypassPermissions의 ★ v2.1.257 노트 — 2026-09-02 실측 유효 모드는 user settings `auto`), `--restricted`와의 상호 배타성은 **user/managed scope에서 bypass를 켠 경우에 한해** 성립합니다 — 이 저장소 워크플로우에는 적용하지 않되, 신규 안전 모드 옵션으로 존재를 기록합니다.
+-->
 
 ### Todo/Task 도구 기본 제거 (v2.1.233+) — 위 표의 †
 
+<!-- DETAIL: Todo/Task CHANGELOG quote + agent-count rationale
 CHANGELOG v2.1.233 원문: *"Todo/task-tracking tools (TaskCreate/Get/Update/List, TodoWrite) are no longer available on Opus 4.8, Sonnet 5, Fable 5, Mythos 5, and newer models; set `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` to bring them back"*. 이 저장소 에이전트 **49개 중 46개**(`claude-sonnet-5` 41 + `claude-opus-5` 5)가 대상 모델이므로 실행 환경의 기본값은 **부재**다(잔여 3개는 `haiku`).
+-->
 
+<!-- DETAIL: Todo/Task measurement caption (full wording; table kept visible below)
 **실측 (2026-08-15 — `claude -p --output-format stream-json` init 이벤트의 `tools` 배열, `claude-opus-5[1m]`/`claude-sonnet-5` 3회 동일 결과)**:
+-->
+**실측 (2026-08-15) + CHANGELOG v2.1.277**: 이 저장소 실행 환경(`claude-opus-5[1m]`/`claude-sonnet-5`)의 실제 tools 배열 기준.
 
 | 상태 | 도구 |
 |------|------|
 | 미등록 (CHANGELOG 명시) | `TodoWrite`, `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate` |
 | 미등록 (CHANGELOG 미명시 — 별도 게이팅) | `TeamCreate`, `TeamDelete` |
-| 잔존 | `TaskStop`, `TaskOutput`, `SendMessage` |
+| 잔존 | `TaskStop`, `SendMessage` |
+| 제거됨 (v2.1.277+) | `TaskOutput` — background task output은 Read로 직접 읽는다; `taskOutputMaxChars`/`TASK_MAX_OUTPUT_LENGTH` 무효 |
 
+<!-- DETAIL: TaskOutput 2026-08-15 측정 당시 잔존 표기(v2.1.233 기준) — CC v2.1.277 CHANGELOG: "Removed the deprecated TaskOutput tool; Claude reads a background task's output file with Read instead, and the `taskOutputMaxChars` setting and `TASK_MAX_OUTPUT_LENGTH` no longer have any effect" Origin: #1714.
+-->
+
+<!-- DETAIL: Todo/Task gate-function measurement + TeamCreate/env-var rationale + Origin
 바이너리(`2.1.233`) 게이트 함수 실측도 이를 뒷받침한다 — 게이트 대상 도구 배열은 **정확히 5개**(CHANGELOG 명시 5종)이며 `TaskOutput`은 포함되지 않는다.
 
 `TeamCreate` 부재는 CHANGELOG가 설명하지 않는 별개 사실이며, **Agent Teams 생성 경로 자체가 없다**는 뜻이다 — 환경변수 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`이 설정돼 있어도 R018은 이 환경에서 비활성이다(R018 Detection). 규칙은 **존재하지 않는 도구의 호출을 의무화하지 않는다** — 도구 의존 의무를 쓸 때는 부재 시 대체 규약을 함께 규정한다(R018 Member TaskUpdate Discipline이 그 예).
@@ -143,16 +158,24 @@ CHANGELOG v2.1.233 원문: *"Todo/task-tracking tools (TaskCreate/Get/Update/Lis
 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`은 복구 수단이나 **환경 설정 사안**이므로 규칙이 그 설정을 전제하지 않는다. 공식 settings 문서(`code.claude.com/docs/en/settings`)에는 2026-08-15 기준 미수록 — 현재 근거는 CHANGELOG 원문 + 위 실측이다.
 
 Origin: #1582. Cross-ref: R018(Member TaskUpdate Discipline 대체 규약), R020("도구가 있다"는 가정도 실측 대상).
+-->
+`TeamCreate`/`TeamDelete`도 별도로 부재 — R018은 이 환경에서 비활성입니다(R018 Detection). 규칙은 **존재하지 않는 도구의 호출을 의무화하지 않으며**, 도구 의존 의무를 쓸 때는 부재 시 대체 규약을 함께 규정합니다(R018 Member TaskUpdate Discipline이 그 예). `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`은 환경 설정 사안이므로 규칙이 전제하지 않습니다. Origin: #1582.
 
 ## Agent Tool Permission Mode
 
 > Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the full requirement, rationale, self-check, and version history. Core rule: always pass `mode: "bypassPermissions"` explicitly on every Agent tool call — the Agent tool's default `mode` (`acceptEdits`) overrides agent frontmatter `permissionMode` and causes prompts during unattended execution. Skills that spawn agents MUST include this in their Agent tool call instructions. See R010 for details.
 
-> **v2.1.212+**: CC가 Agent(구 Task) tool의 `mode` 파라미터를 deprecated 처리했습니다(이제 무시) — subagent는 부모 세션의 permission mode를 기본 상속합니다. 위 canonical 요약의 default `mode`(`acceptEdits`)가 frontmatter `permissionMode`를 override한다는 서술 및 항상 `mode: "bypassPermissions"`를 넘기라는 요건은 이 버전부터 stale이며(파라미터가 무시됨), 무인 실행의 실질 게이트는 부모 세션의 permission mode입니다. 요건 재조정은 R010 "Universal bypassPermissions"가 canonical — R002는 이 flag만 유지합니다.
+**주의**: v2.1.212+부터 `mode` 파라미터는 무시되며 유효 모드는 부모 세션이 결정합니다 — 실측은 R010 Self-Check를 참조합니다.
 
+<!-- DETAIL: Agent tool mode deprecation rationale (canonical: R010)
+> **v2.1.212+**: CC가 Agent(구 Task) tool의 `mode` 파라미터를 deprecated 처리했습니다(이제 무시) — subagent는 부모 세션의 permission mode를 기본 상속합니다. 위 canonical 요약의 default `mode`(`acceptEdits`)가 frontmatter `permissionMode`를 override한다는 서술 및 항상 `mode: "bypassPermissions"`를 넘기라는 요건은 이 버전부터 stale이며(파라미터가 무시됨), 무인 실행의 실질 게이트는 부모 세션의 permission mode입니다. 요건 재조정은 R010 "Universal bypassPermissions"가 canonical — R002는 이 flag만 유지합니다.
+-->
+
+<!-- DETAIL: defaultMode project-scope-ignored rationale (canonical: R010)
 > **v2.1.257+**: 프로젝트 scope `permissions.defaultMode` 가 무시됩니다(user/managed scope 또는
 > `--permission-mode` 플래그만 유효). 위 v2.1.212 노트가 "무인 실행의 실질 게이트는 부모 세션의
 > permission mode"라고 정정했는데, **그 부모 세션 모드를 프로젝트 settings로 지정하는 경로가 이
 > 버전에서 끊겼습니다** — 이 파일 상단 「Deny Rule Glob Patterns」의 v2.1.214 노트(allow 규칙만
 > `<cwd>`로 좁아진 비대칭)와 같은 계열의 **project-scope 축소** 흐름입니다. Canonical owner 는
 > R010 "Universal bypassPermissions" — 상세와 실측 절차는 그쪽을 참조합니다. Origin: #1644.
+-->
