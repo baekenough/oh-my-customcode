@@ -1397,6 +1397,73 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 ---
 
+## v2.1.281 (2026-09-23)
+
+> Issue: #1731 — Claude Code v2.1.281 compatibility documentation
+> Scope-ceiling check (R017): 설치 CC는 **2.1.282**(`claude --version`=2.1.282, `npm view @anthropic-ai/claude-code version`=2.1.282 실측)입니다. 2.1.282 CHANGELOG를 확인한 결과 2.1.281 항목을 되돌린 사례는 없습니다 — 아래 "재개된 세션 재전송" 항목(3번)은 2.1.282에서 "Fixed more cases of continued or resumed sessions (`--continue`, `--resume`) re-sending earlier messages in a changed form, which could make the API drop Claude's earlier reasoning"로 사례가 확장될 뿐, 되돌리기가 아니라 같은 방향의 보강입니다.
+
+### 설정 · 세션 위임
+
+- CHANGELOG 원문: "Added `"attribution": false` in `settings.json` to hide all commit and PR attribution; older CLI versions skip a settings file that holds it, so keep the object form in files shared across versions"
+  (281) 이 저장소는 attribution을 CC 설정이 아니라 system-reminder 기반 `Co-Authored-By`/`Generated with` 문구로 관리하므로, `settings.json`에 이 키를 추가할 계획이 없다면 harness 변경은 불필요합니다 — 향후 추가할 경우 구버전 CLI와 공유하는 설정 파일에서는 object 형태를 유지해야 합니다.
+- CHANGELOG 원문: "Fixed `--setting-sources` (and SDK `settingSources`) not being forwarded to spawned sessions: teammates, `/bg`, `claude agents` sessions and `--worktree --tmux` now start with the parent's restriction"
+  (281) `--setting-sources`로 제한한 설정 범위가 teammate·`/bg`·`claude agents`·`--worktree --tmux`로 스폰된 세션에 전달되지 않던 결함이 수정되어, 부모 세션의 설정 제한이 이제 하위 세션까지 상속됩니다 — 이 저장소는 `--setting-sources`를 명시적으로 쓰지 않으므로 직접 영향은 없습니다.
+
+### 재개(resume) · prompt cache
+
+- CHANGELOG 원문: "Fixed resumed sessions re-sending earlier turns in a changed form (a parallel tool-call turn, an MCP tool call's input or a tool-search result while its server was still reconnecting, or a tool-search result whose loading turn was interrupted), which could make the API drop the conversation's prior reasoning"
+  (281) 재개된 세션이 병렬 tool-call 턴·재연결 중이던 MCP 도구 입력·로딩이 끊긴 tool-search 결과를 바뀐 형태로 재전송해 API가 이전 reasoning을 버리던 결함이 수정되었습니다 — 위 스코프 상한 확인대로 2.1.282에서 사례가 추가로 확장됩니다.
+- CHANGELOG 원문: "Fixed resuming a very large session sometimes restoring only its last few messages"
+  (281) 매우 큰 세션을 재개할 때 마지막 몇 메시지만 복원되던 결함이 수정되어, `/fsd` 등 장기 세션을 압축 후 재개하는 흐름의 신뢰성이 개선됩니다.
+- CHANGELOG 원문: "Fixed a session resumed after a restart during a pending permission prompt sending a different history than before, which broke the prompt cache from that point"
+  (281) 대기 중인 권한 프롬프트 도중 재시작 후 재개된 세션이 이전과 다른 히스토리를 보내 그 지점부터 prompt cache가 깨지던 결함이 수정되어, R012 statusline `prompt_cache` 필드가 보고하는 cache-miss 원인 후보 중 하나가 줄어듭니다.
+- CHANGELOG 원문: "Fixed resuming a session that ended during a tool call: Claude now sees the call and is told its outcome is unknown, and a manual resume no longer adds a hidden "Continue" message"
+  (281) 도구 호출 도중 종료된 세션을 재개하면 이제 Claude가 그 호출을 인지하고 결과를 "알 수 없음"으로 안내받으며, 수동 재개 시 숨은 "Continue" 메시지도 더 이상 추가되지 않습니다 — R020 "Failure/Interrupt Report ≠ Actual Failure" 표가 다루는 중단 처리 계열과 같은 방향의 보강입니다.
+- CHANGELOG 원문: "Fixed sessions with an earlier advisor result the API could no longer read failing one request every turn and repeatedly losing earlier reasoning; the history is now repaired once"
+  (281) 이전 advisor 결과를 API가 더 이상 읽지 못해 매 턴 요청이 실패하고 이전 reasoning을 반복 소실하던 결함이 수정되어(히스토리를 1회 복구), R005가 기록한 advisor 미지원 프록시 계열 오류와는 별개로 advisor 자체의 히스토리 손상 축이 줄어듭니다.
+- CHANGELOG 원문: "Fixed the prompt cache being lost when an MCP server disconnects mid-conversation, or is still connecting after a resume, while tool search is off (for example behind a proxy or gateway)"
+  (281) MCP 서버가 대화 도중 연결이 끊기거나 재개 후에도 계속 연결 중일 때(tool search가 꺼진 상태) prompt cache가 소실되던 결함이 수정되어, R019 ontology-RAG/wiki-RAG처럼 이 저장소가 세션 중 MCP 서버에 의존하는 경로의 비용 안정성이 개선됩니다.
+- CHANGELOG 원문: "Improved auto mode after resuming a session in a new process: the permission classifier can now reuse its earlier prompt cache instead of rewriting it"
+  (281) 새 프로세스에서 세션을 재개한 뒤 auto mode 권한 classifier가 이전 prompt cache를 재사용할 수 있게 되어, `defaultMode` 무시 결함(v2.1.257, R010/R002 기록)과 별개로 재개 직후 auto mode 판정 비용이 줄어듭니다.
+
+### 권한 · rm 프롬프트 · sandbox
+
+- CHANGELOG 원문: "Fixed a turn that could retry indefinitely, ignoring `--max-turns`, when the model alternated unparseable tool calls and output-limit truncation"
+  (281) 모델이 파싱 불가능한 도구 호출과 출력 상한 절단을 번갈아 낼 때 `--max-turns`를 무시하고 무한 재시도하던 결함이 수정되어, R020 "maxTurns 절단 실증" 항목이 전제하는 턴 상한 자체의 신뢰성이 개선됩니다 — 이 결함은 "무시하고 계속 도는" 역방향 사례이므로, R020이 주로 다루는 "조기 절단" 문제와는 반대 축입니다.
+- CHANGELOG 원문: "Fixed a recursive `rm` whose target is only command-substitution output, such as `rm -rf "$(pwd)"`, running unprompted in auto and `--dangerously-skip-permissions` mode; it now asks even with a Bash allow rule, unless run with `CLAUDE_CODE_DISABLE_SUBSTITUTION_RM_PROMPT=1`"
+  (281) `rm -rf "$(pwd)"`처럼 대상이 command-substitution 출력뿐인 재귀 `rm`이 auto·`--dangerously-skip-permissions` 모드에서 무프롬프트로 실행되던 결함이 수정되어, Bash allow rule이 있어도 이제 확인을 묻습니다(`CLAUDE_CODE_DISABLE_SUBSTITUTION_RM_PROMPT=1`로 끌 수 있음) — R001 Destructive Git Commands 표가 다루는 파괴적 명령 계열과 같은 방향의 플랫폼 보강입니다.
+- CHANGELOG 원문: "Improved the dangerous-rm check to also flag a removal at a shell variable followed by a top-level directory name, at a variable derived from the working directory, or at a backslash-only target"
+  (281) 작업 디렉터리에서 파생된 변수나 최상위 디렉터리명이 뒤따르는 셸 변수, backslash-only 대상까지 dangerous-rm 검사가 넓어져, 위 항목과 함께 R001이 명시하지 않는 rm 패턴의 플랫폼 측 탐지 범위가 확장됩니다.
+- CHANGELOG 원문: "Changed the dangerous `rm` prompt in `--dangerously-skip-permissions` and auto mode to wait 2 minutes for an answer, then deny the command with a rewrite hint so unattended sessions keep going (`CLAUDE_CODE_DISABLE_DANGEROUS_RM_TIMEOUT=1` turns this off)"
+  (281) `--dangerously-skip-permissions`·auto mode의 dangerous rm 프롬프트가 응답을 2분 대기한 뒤 거부(재작성 힌트 포함)하도록 바뀌어, 무인 세션이 응답 없는 rm 프롬프트에 영구히 멈추지 않고 진행합니다(`CLAUDE_CODE_DISABLE_DANGEROUS_RM_TIMEOUT=1`로 끌 수 있음) — `/fsd` 같은 무인 루프에서 rm이 필요한 작업이 있다면 2분 뒤 자동 거부됨을 전제해야 합니다.
+- CHANGELOG 원문: "Fixed sandboxed Bash commands being unable to write to `$TMPDIR` when `CLAUDE_CODE_TMPDIR` is set"
+  (281) `CLAUDE_CODE_TMPDIR`가 설정된 상태에서 샌드박스된 Bash 명령이 `$TMPDIR`에 쓰지 못하던 결함이 수정되어, R005가 기록한 샌드박스 도구 공백·`$TMPDIR` 안내와 함께 이 저장소의 스크래치패드 작업 경로 안정성이 개선됩니다.
+
+### 훅 · MCP 연결 타이밍 · plugin validate
+
+- CHANGELOG 원문: "Fixed `mcp_tool` hooks on blocking events (PreToolUse and similar) being skipped while their MCP server was still connecting; they now wait for it, up to the MCP connect timeout"
+  (281) `mcp_tool` 훅이 blocking 이벤트(PreToolUse 등)에서 MCP 서버가 아직 연결 중일 때 건너뛰던 결함이 수정되어 이제 MCP connect timeout까지 대기합니다 — 이 저장소는 현재 `mcp_tool` 타입 훅을 배선하지 않았으나, R006 Hook Event Types가 다루는 4개 핸들러 타입 중 하나의 신뢰성 보강입니다.
+- CHANGELOG 원문: "Added MCP server checks to `claude plugin validate`: it reports `.mcp.json` entries that would be silently dropped at load, undeclared `${user_config.*}` references, and insecure URLs"
+  (281) `claude plugin validate`에 `.mcp.json` 항목이 로드 시 조용히 누락되는 경우, 미선언 `${user_config.*}` 참조, 불안전한 URL을 보고하는 MCP 검사가 추가되어, R017 "스킬 추가·수정 후 `claude plugin validate`를 개수 대조와 함께 실행" 조항의 검증 범위가 넓어집니다.
+- CHANGELOG 원문: "Fixed `claude plugin validate` reporting `privacyPolicyUrl`, `supportUrl` and other listing metadata keys in plugin.json as unknown fields"
+  (281) `claude plugin validate`가 plugin.json의 `privacyPolicyUrl`·`supportUrl` 등 리스팅 메타데이터 키를 unknown field로 오보고하던 결함이 수정되어, 위 R017 조항 실행 시의 오탐 1종이 줄어듭니다.
+- CHANGELOG 원문: "Improved plugin hook-failure errors to name the offending plugin, and added a `claude plugin validate` warning when a shell-form hook leaves `${CLAUDE_PLUGIN_ROOT}` unquoted (it breaks on plugin paths with spaces)"
+  (281) 플러그인 훅 실패 오류에 해당 플러그인 이름이 명시되고, shell-form 훅이 `${CLAUDE_PLUGIN_ROOT}`를 따옴표 없이 쓰면(경로에 공백이 있을 때 깨짐) `claude plugin validate` 경고가 추가되어, R023 Workflow Script Sanity Check가 다루는 "셸 변수 이스케이프" 계열 점검이 plugin validate 단계에서도 보강됩니다.
+
+### /loop · 예약 작업
+
+- CHANGELOG 원문: "Fixed scheduled tasks and `/loop` wakeups being fired again every second when their delivery failed, which could make Claude Code exit at the end of a turn"
+  (281) 전달에 실패한 예약 작업·`/loop` 웨이크업이 매초 재발화되어 턴 종료 시 Claude Code가 종료될 수 있던 결함이 수정되어, 이 저장소가 무인 루프(`/fsd` 등)에서 겪을 수 있던 조용한 조기 종료 원인 하나가 줄어듭니다.
+
+기타 157건 — 이 저장소 비해당 (VSCode·Claude Code on the web·Claude Tag·Code Review 전용 26건(VSCode 6, web 6, Claude Tag 13, Code Review 1), Windows 전용 2건 포함, 나머지 129건은 UI 다이얼로그·키바인딩·마우스·vim 모드·Claude apps gateway/Bedrock/Vertex 세부사항 등).
+
+**Action items**:
+- 19건 모두 CC 플랫폼 신뢰성·안전장치 보강이며 즉각적인 harness 변경(룰 수정)은 불필요합니다.
+- 위 dangerous rm 2분 타임아웃(권한 · rm 프롬프트 · sandbox 3번째 항목)은 `/fsd` 등 무인 루프가 rm을 직접 실행하지 않는 한(R010 Sensitive Path Handling상 `.claude/**` 조작은 rm이 아닌 Write/Edit) 이 저장소에는 즉시 영향이 없으나, 향후 무인 루프에 rm이 포함될 경우 이 타임아웃을 전제로 설계해야 합니다.
+- 2.1.282 CHANGELOG의 harness 관련 항목(예: 2.1.281 "재전송 changed form" resume 결함의 추가 사례 수정)은 별도 이슈에서 2.1.282 섹션으로 다룹니다.
+
+---
+
 ## Known Platform Issues & Workarounds
 
 ### Agent tool malformed parsing on long / special-character prompts (#1241)

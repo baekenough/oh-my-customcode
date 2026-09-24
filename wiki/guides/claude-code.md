@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-09-24
+updated: 2026-09-25
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/03-tools.md

@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "1.1.81",
-  "generatedAt": "2026-09-24T13:25:16.976Z",
+  "generatedAt": "2026-09-24T23:16:40.184Z",
   "templateVersion": "1.1.81",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -1455,8 +1455,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "2b3de1a6c364231b045dec4c82f3d1cf9fed363cf8869eaf70a66db3188b96eb",
-      "size": 101157,
+      "templateHash": "05f78c343110ae86fde0922c3850f3ea1bab1c3937fcaea8681be65c9170fe8b",
+      "size": 113320,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
