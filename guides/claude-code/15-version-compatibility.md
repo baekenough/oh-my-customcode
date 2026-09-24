@@ -1320,13 +1320,13 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 ### 모델 · effort
 
 - CHANGELOG 원문: "Added Claude Opus 5.5 (`claude-opus-5-5`), now the default Opus model — 1M context, $4/$20 per Mtok with $0.20/Mtok cache reads"
-  (280) Opus 5.5가 기본 Opus 모델이 되었으므로, R006 Model Specification Tier 2 표에 `claude-opus-5-5` 전체 ID를 추가할지 검토가 필요합니다 — 아래 rule candidates 참조.
+  (280) Opus 5.5가 기본 Opus 모델이 되었으므로, R006 Model Specification Tier 2 표에 `claude-opus-5-5` 전체 ID를 추가할지 검토가 필요합니다 — 아래 Action items 참조.
 - CHANGELOG 원문: "Changed the default model on Pro and Team Standard plans from Sonnet to Opus, matching Max, Team Premium, and Enterprise"
   (280) Pro/Team Standard 플랜의 기본 모델이 Sonnet에서 Opus로 바뀌었으므로, 해당 플랜을 쓰는 세션은 R005 비용 인식 관점에서 기본값 자체가 더 비싸진 상태로 시작됩니다.
 - CHANGELOG 원문: "Changed an effort level saved before `/effort` became per-model to no longer apply to newly released models such as Opus 5.5; they start at their default until you pick a level"
   (280) Opus 5.5처럼 새로 출시된 모델은 과거 저장된 effort 값을 물려받지 않고 기본 effort로 시작하므로, 이 저장소의 effort 관련 지침을 새 모델에 그대로 적용하기 전 실측이 필요합니다.
 - CHANGELOG 원문: "Changed Opus 4.7, Opus 4.8 and Fable 5 to stop holding their launch-default effort over `/effort` in `-p` or the Agent SDK, a project, managed or `--settings` `effortLevel`, or a per-model level"
-  (280) Opus 4.7·4.8·Fable 5가 더 이상 `/effort` 등 명시적 effort 설정을 무시하지 않게 되어, R006이 v2.1.267 노트에서 기록한 "effort 프론트매터가 무시된다"는 전제가 이 세 모델에서는 더 이상 성립하지 않습니다 — 아래 rule candidates 참조.
+  (280) Opus 4.7·4.8·Fable 5는 `-p`나 Agent SDK에서 쓰는 `/effort`, 프로젝트·managed·`--settings` `effortLevel`, 모델별 레벨에 대해 launch-default effort를 더 이상 우선시하지 않게 되었습니다. R006이 v2.1.267 노트에서 기록한 것은 이 세 모델의 커스텀 커맨드·스킬·서브에이전트 `effort:` 프론트매터 무시 결함이 267에서 **수정됐다**는 사실이며, 280은 그 수정을 세션·설정 경로로 확장한 후속 변경입니다 — 아래 Action items 참조.
 
 ### MCP
 
@@ -1392,7 +1392,7 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 기타 91건 — 이 저장소 비해당(VSCode/Claude Code on the web/Claude Tag/Code Review 전용 29건, Windows·self-hosted runner 전용 4건 포함, 나머지는 UI 다이얼로그·마우스·키바인딩 폴리시, Artifact 도구 세부사항, 마켓플레이스 커밋 추적 등 저빈도 항목).
 
 **Action items**:
-- R006 Model Specification Tier 2 표에 `claude-opus-5-5` 행을 v1.1.77에서 추가 완료. v2.1.267 DETAIL 노트(Opus 4.7·4.8·Fable 5 effort 무시 서술)는 이번 릴리즈의 반전 사실을 아직 반영하지 않았으므로 다음 룰 편집 세션에서 정정이 필요합니다.
+- R006 Model Specification Tier 2 표에 `claude-opus-5-5` 행을 v1.1.77에서 추가 완료. R006의 v2.1.267 DETAIL 노트(Opus 4.7·4.8·Fable 5의 `effort:` 프론트매터 무시 결함이 267에서 수정됐다는 기록)에는 #1720에서 v2.1.280의 후속 변경("Changed Opus 4.7, Opus 4.8 and Fable 5 to stop holding their launch-default effort over `/effort` in `-p` or the Agent SDK, a project, managed or `--settings` `effortLevel`, or a per-model level")을 반영한 후속 노트를 추가했습니다.
 - 그 외 항목은 CC 플랫폼 신뢰성 개선이며 이 저장소 harness 변경은 불필요합니다.
 
 ---

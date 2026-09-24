@@ -118,6 +118,8 @@ Fable 5는 high effort가 기본값이며, `xhigh`는 capability-sensitive 작�
 
 <!-- DETAIL: effort frontmatter CC version notes (historical)
 > **v2.1.267+**: `effort:` 프론트매터 관련 결함·신규 상한 3건 — (a) 커스텀 커맨드·스킬·서브에이전트의 `effort:` 프론트매터가, 기본 effort가 여전히 고정된 모델(Opus 4.7, Opus 4.8, Fable 5)에서 **무시**되던 결함이 수정되었습니다. 즉 267 이전에는 이 파일의 "스킬 `effort`가 에이전트 `effort`보다 우선한다"는 서술과 위 「Fable 5 Effort 전략」의 `effort` 명시 지침이 Fable 5 / Opus 4.8 에이전트에서 **런타임 효과가 없었습니다** — 프론트매터 effort는 실제 실행된 effort의 증거가 아니었습니다. (b) 신규 `maxEffortLevel` 설정(최상위 또는 `modelSettings` 하위 모델별)이 모든 provider에서 effort 레벨 상한을 강제합니다 — 사용자는 여전히 더 낮은 레벨을 선택할 수 있습니다. 이는 프론트매터 `effort`보다 **상위에 위치하는 설정 레벨 상한**이므로, `xhigh`를 선언한 에이전트도 상한이 설정돼 있으면 그 상한에서 실행됩니다(프론트매터로 유추하지 말고 실효 effort를 확인). (c) `/model opusplan[1m]`이 "Model not found"로 거부되던 결함이 265에서 수정되어, `/model` 명령에서 이 표기가 이제 수용됩니다 — 프론트매터 `model: opusplan[1m]` 경로는 릴리즈 노트가 언급하지 않으므로 미실측입니다.
+>
+> **후속 (v2.1.280+)**: CHANGELOG 원문 — "Changed Opus 4.7, Opus 4.8 and Fable 5 to stop holding their launch-default effort over `/effort` in `-p` or the Agent SDK, a project, managed or `--settings` `effortLevel`, or a per-model level." 이는 위 (a) 프론트매터 결함(267에서 이미 수정됨)과는 별개로, `-p`/Agent SDK의 `/effort`·프로젝트/managed/`--settings`의 `effortLevel`·모델별 레벨이 launch-default effort에 눌리던 문제를 해소한 후속 조치입니다 — 프론트매터·스킬/에이전트 effort 우선순위에 대한 영향은 릴리즈 노트가 언급하지 않아 미실측이며, 위 (b) `maxEffortLevel` 상한 원칙은 이 후속 조치와 무관하게 그대로 유효합니다.
 -->
 
 <!-- DETAIL: Mythos 5 (non-GA, not registered — reference only)

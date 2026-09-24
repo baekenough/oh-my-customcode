@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "1.1.79",
-  "generatedAt": "2026-09-24T11:00:39.215Z",
+  "generatedAt": "2026-09-24T11:48:25.290Z",
   "templateVersion": "1.1.79",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "0550a114ca7062272b5e2d989b33d411aba38490e83549930d13a6982341ad3b",
-      "size": 68865,
+      "templateHash": "1adb0181be32f5e378c9cffc03e1db6b9c8ed55847e4fbdb07cff62763ee960e",
+      "size": 69615,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -1455,8 +1455,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "206f8c8cc745b3daf37236c4462fbf29c2bc5348aae4d04fa088c2be0d60f3f9",
-      "size": 100699,
+      "templateHash": "2b3de1a6c364231b045dec4c82f3d1cf9fed363cf8869eaf70a66db3188b96eb",
+      "size": 101157,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
