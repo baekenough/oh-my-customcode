@@ -365,6 +365,8 @@ Single agent spawns do NOT use the `[N]` prefix.
   ✗ agent-2: failed (reason)
 ```
 
+완료 알림에 보고 본문이 없으면 한 턴 기다리고, 그래도 없으면 산출물을 실측(ground truth)한 뒤 SendMessage로 재요청합니다 — 모든 위임 결과 수집 단계에 적용됩니다.
+
 ## Parallel Feature Integration Gate
 
 병렬 각자의 "build green"은 통합 정합성 미보장 — 병합 후 통합 빌드+런타임 스모크 게이트 필수.

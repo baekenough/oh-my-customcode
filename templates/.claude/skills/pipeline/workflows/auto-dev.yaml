@@ -158,7 +158,7 @@ steps:
       Reference label semantics: .claude/skills/pipeline/labels.md
 
       Apply filter rules:
-      - EXCLUDE: blocked_by_decision == true OR labels ∩ {decision-needed, needs-review, verify-done, manual-action, in-progress} ≠ ∅
+      - EXCLUDE: blocked_by_decision == true OR labels ∩ {decision-needed, needs-review, triage-complete, manual-action, in-progress} ≠ ∅
       - INCLUDE (preferred): labels ∩ {verify-ready, claude-code-release, documentation} ≠ ∅
       - INCLUDE (standard): P1/P2/P3 issues not in excluded set
       - Tie-break: P1 > P2 > P3 > unclassified
@@ -237,6 +237,9 @@ steps:
         - triage step: skip professor-triage skill; perform direct manifest summary instead
         - plan step: skip release-plan skill; single-response plan instead
         - deep-plan step: skip deep-plan skill; single-response implementation notes instead
+          (except when scope contains a security/availability issue — see the Cross-tier
+          「Lightweight Skill-Mode Substitution」 restriction below, which forbids this
+          substitution for such issues)
         - deep-verify step: skip deep-verify skill; perform self-review checklist instead
           — 단, 변경 집합에 `.claude/rules/**`(또는 agents/skills frontmatter 등 구조 표면)가
           포함되면 self-review로 대체하지 않고 mgr-sauron R017 검증을 **단일 목표 위임으로 필수
@@ -262,6 +265,9 @@ steps:
         - triage step: MAY replace professor-triage skill spawn with orchestrator integrated analysis
         - plan step: MAY replace release-plan skill spawn with orchestrator integrated analysis
         - deep-plan step: MAY replace deep-plan skill spawn with orchestrator integrated analysis
+          (except when scope contains a security/availability issue — see the Cross-tier
+          「Lightweight Skill-Mode Substitution」 restriction below, which forbids this
+          substitution for such issues)
         - deep-verify step: perform via mgr-sauron R017 structural verification + core self-check (split standard: see the deep-verify step description — R017 spawn + change-type adversarial review, one single-goal delegation each)
           (instead of full deep-verify skill spawn). If the change set has NO structural surface
           (no agent/skill/guide/rule frontmatter changed — e.g. a workflow-yaml-only or docs-only change),
@@ -307,14 +313,14 @@ steps:
       | pre-triage | `gh label create in-progress / verify-ready / needs-review --force` (idempotent label bootstrap) |
       | scope-selection | Milestone 3-branch state machine (Step 0): closed → HALT / open → reuse / absent → `gh api repos/{owner}/{repo}/milestones --method POST`. Then: assign every scoped issue to that milestone. |
       | compression-mode-eval | none (pure evaluation + justification logs) |
-      | triage | none (analysis only) — compressible |
+      | triage | `verify-ready` added to manifest issues selected by professor-triage when it runs inside this step (NOT `triage-complete`) — analysis output is compressible, this label side effect is not; when triage is skipped (docs-only) or substituted (lite integrated-analysis, lightweight mode), no separate label action is required here — the implement step's per-issue success path (row below: "On success: remove in-progress, add verify-ready") already adds `verify-ready` to each processed issue before this release completes |
       | plan | none (analysis only) — compressible |
       | deep-plan | none (analysis only) — compressible |
       | implement | `gh issue edit <N> --add-label in-progress --assignee @me`; `gh issue comment <N>` (start notice); on success remove in-progress + add verify-ready; on failure remove in-progress + add needs-review + comment error summary |
       | verify-build | none (gate only) |
       | deep-verify | none (analysis only) — compressible |
       | release | PR body MUST carry `Closes #N` for every resolved issue (auto-tag.yml greps the PR body); non-auto-tag projects additionally: `gh api .../milestones/{n} --method PATCH --field state=closed`, `gh issue close {n}`, label needs-review issues "Deferred from v{version}" |
-      | ci-check | none (verification only) |
+      | ci-check | `gh issue edit <N> --remove-label in-progress` for stale labels; `gh issue edit <N> --remove-label verify-ready` for THIS release's CLOSED scoped issues only (past closed issues excluded, #1734) |
       | post-release-followup | new issue registration for release follow-ups (genuine defects auto-registered, no-ask per R016) |
 
       Only the rows marked "none (analysis only)" are compressible. Any step with a
@@ -366,6 +372,20 @@ steps:
          `mode: lightweight`) so downstream steps and reviewers can tell it apart from a full
          skill spawn (결과물에 모드를 표시, #1721 제안 4).
 
+      Additional restriction — security/availability scope (#1733 찐빠 #9): if ANY scoped issue
+      carries the `security` label, OR its title/body explicitly states a security/availability
+      concern (e.g. rate limiting, resource exhaustion, injection, denial-of-service — this repo
+      has no separate `availability` label; measured via `gh label list`, so an availability
+      concern must be asserted in the issue text, not inferred from a label), this lightweight
+      substitution is FORBIDDEN for deep-plan on that issue — AND compression-mode-eval Tier 2
+      lite's deep-plan integrated-analysis substitution is also FORBIDDEN for it; deep-plan MUST
+      run as a full skill spawn. Because deep-plan is a single release-scoped step (not run
+      per-issue), when ANY scoped issue qualifies, this restriction applies to the whole
+      release's deep-plan step. The entry-point audit for such an issue MUST include an
+      "executions per request (amplification)" check — how many downstream operations a single
+      request can trigger (e.g. GraphQL alias batching, N+1 fan-out) — not only a per-call
+      timeout/rate-limit check. (GraphQL document fuzz testing is OUT of scope here.)
+
       This substitution is NEVER available for implement, verify-build, release, ci-check, or
       deep-verify.
       It replaces analysis output ONLY — every step's state-change side effect still runs in
@@ -382,7 +402,7 @@ steps:
 
   - name: triage
     skill: professor-triage
-    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met"
+    description: "Cross-analysis triage with priority assessment (scoped to release manifest) — invoke professor-triage WITH the release manifest issue numbers from scope-selection's output as input; in this auto-dev context, manifest issues receive `verify-ready` (not `triage-complete`) per the side-effect inventory above — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met"
     depends_on: compression-mode-eval
 
   - name: plan
@@ -448,6 +468,16 @@ steps:
         (#1701 #1). The orchestrator's own wiring judgement (which file/anchor already covers a
         new clause) counts as final wording too — the prompt supplies candidate files/anchors
         only, and the subagent decides coverage by quoting the covering sentence (R010 [#1704 #1]).
+        Non-issue sources (더루키 회상, 메모리, 다른 프로젝트 관측) MUST be placed in a separate
+        block labeled with its source (e.g. `[출처: 더루키 회상 — <project>]`) and MUST NOT be
+        mixed into issue-quote sentences — completion criteria MUST state this separation
+        explicitly, applying to every orchestrator-authored delegation, all tiers (R010 「출처
+        인용과 인접 문구 점검」 확장, #1735 찐빠 #1).
+      - A release that bundles ≥2 `feedback`-type issue proposals MUST produce a per-proposal
+        application-boundary table (exceptions, deadlines, tiers/steps) during plan/deep-plan or
+        its lightweight tier substitute, applying to lite and standard tiers, and
+        implement-stage delegation prompts MUST carry the relevant boundary row for each edit
+        (회고 제안 묶음 릴리즈의 통합 분석에 적용 경계 표 필수, #1735 찐빠 #4).
       - Before dispatching any delegation prompt in an iteration that created or reinforced a rule
         clause, the orchestrator MUST compare that clause's Anti-pattern table rows 1:1 against the
         delegation prompt's sentences and rewrite any match (cause: the R016 「신설 조항의 동일
@@ -488,6 +518,14 @@ steps:
         around it (e.g. via a shell glob or path rewrite) — it MUST stop and report the block
         verbatim (R010 「품질 게이트 우회 금지 — 훅 차단은 보고 대상」, extended here from git
         hooks to guards/classifiers/permissions generally) (#1728 찐빠 #1).
+      - No state-changing command (`gh issue create/edit/close`, `gh pr create/edit/close/merge`,
+        `git push`, label changes) — including the orchestrator's own direct commands, not only
+        delegated ones — MAY use a `||` fallback that prints success-looking output; the observed
+        failure mode was a failed `gh issue create` followed by a `||` fallback that printed a
+        DIFFERENT issue's URL, which the orchestrator briefly read as a successful create
+        (#1735 찐빠 #2). Exceptions: a `||` fallback whose output is explicitly marked as
+        failure (e.g. `|| echo "::warning::…"`, a literal `MISS` token) and idempotent bootstrap
+        commands (no `||` success masking) such as `gh label create --force 2>/dev/null`.
       - After any delegation that creates temporary files under constraint (h) above, the
         orchestrator MUST confirm with `git status --short` that no stray file was left in the
         repo (#1721 찐빠 #7).
@@ -496,7 +534,13 @@ steps:
         arithmetic below, not a replacement for it); compute turn arithmetic (files × 3 +
         edit_items × 2 ≤ 16 — a #1709-proposed guide kept below the 20-turn limit, not a
         truncation guarantee, per R020 「maxTurns 절단 실증」 6항) and state that arithmetic in
-        the delegation prompt before dispatch (#1709 #1).
+        the delegation prompt before dispatch (#1709 #1). Any edit delegation requiring
+        verification of N quotations or identifiers (not only claude-code-release CC-note
+        delegations) MUST perform that verification with batched command(s) (a single loop or
+        combined `grep -F` pass over all N items), never per-item invocations, and the turn
+        arithmetic above MUST add a batched-verification term — ⌈N/batch⌉ — still an
+        upper-bound guide that may still truncate, not a truncation guarantee (검증 비용을
+        턴 산술에 반영, R020 「maxTurns 절단 실증」 6항 확장, #1737 찐빠 #1).
       - Parity delegation prompts (e.g. a ko mirror tracking an en source) MUST require THREE
         directions — additions, edits, AND deletions — to match the source, never additions
         only; completion criteria MUST include a `grep -F` confirming zero rows/sentences are
@@ -523,6 +567,16 @@ steps:
         before restating either — do not relay an unverified agent-reported count or identifier
         (R023 「리서치 위임의 결론 수치는 표에서 재계산해 병기」 #1707 #4 확장, #1709 #5, #1722
         찐빠 #3).
+      - Delegations that create files, binaries, worktrees, or branches (artifact-creating
+        delegations only — text-only edits are excluded) MUST include measured output in their
+        completion report — `file <bin>` for binaries, `ls -la <path>` for created paths, `git
+        worktree list` for worktrees, `git branch --list` for branches, as applicable — and the
+        orchestrator MUST confirm architecture/path from that measured output before using the
+        artifact, not from the agent's self-report alone (R020 Subagent Self-Report
+        Verification, #1733 찐빠 #1). (#1733 찐빠 #1's third proposal — never use haiku for
+        worktree/cross-compile delegations — is not added separately here: R006
+        (`.claude/rules/MUST-agent-design.md`) already scopes `haiku` to "Fast, cheap tasks
+        (search, simple edits)", which excludes multi-step build/worktree work.)
       - Delegations that build or replace an evaluation/test harness or a production code path
         (fixtures, ablation lanes, scoring/oracle logic) MUST require bidirectional proof, not
         a single-direction pass: (a) positive AND negative fixtures — a fixture set that can
@@ -536,6 +590,14 @@ steps:
         measurement; (c) no working around a discovered product or measurement defect to force
         a pass — halt and report instead (R023 「Conditional-Output Verification」 양성/음성 짝
         원칙 확장, #1721 찐빠 #1, #1727 찐빠 #2, #1728 찐빠 #2).
+      - Delegations that inject faults / modify-then-restore files — not limited to harness
+        builds — MUST back up the original file under `bak/<repo-relative-path>` (the full
+        repo-relative path, not filename-only) nested under the session scratchpad or `$TMPDIR`
+        (not inside the repo, to stay consistent with constraint (h) above), and a checksum
+        comparison after restore is MANDATORY. A `git diff`-based patch approach is also allowed.
+        `git stash` is otherwise allowed EXCEPT when parallel delegations share the working tree
+        (R009 「File-Disjoint ≠ Independent (Local Git State)」), where it MUST NOT be used
+        (#1733 코멘트 찐빠 #8).
       - For `claude-code-release` issues, CC release knowledge goes to
         `guides/claude-code/15-version-compatibility.md` (+ templates mirror) per rule; a rule
         file gets at most ONE line of behavioral norm only when agent behavior must change.
@@ -637,6 +699,19 @@ steps:
   - name: release
     prompt: |
       Create a GitHub Release.
+
+      0a. User-execution constraint check (mandatory, before step 0, #1733 찐빠 #2): read
+          CLAUDE.md, session memory, and the entry card (if the environment provides one, e.g. a
+          recall entry card) for any user-execution constraint (e.g. "merge/tag/publish must be
+          run by the user, not the agent"). For each command this release step is about to run:
+          if it is COVERED by a constraint (merge, tag, publish), do NOT execute it — present the
+          exact command(s) to the user and STOP this step; if it is NOT covered (e.g. branch
+          creation, version bump, PR creation — coverage is judged by the scope of the constraint
+          text actually found in CLAUDE.md/session memory, not by this example list), proceed
+          normally. No matching constraint found → unchanged behavior, proceed to step 0. User decision
+          (recorded): in an unattended run (`/fsd` etc. — see pre-triage Phase 0.6
+          `unattended_mode`), STOP at the first covered command, present it to the user, and HOLD
+          the convergence declaration until the user runs it and confirms.
 
       0. Pre-check (mandatory, delegate to mgr-gitnerd per R010): Detect and remove stale local `release` branch if present.
          The local `release` branch (file ref) conflicts with `release/v*` directory ref namespace.
@@ -800,7 +875,11 @@ steps:
          in-progress`) and report the fix; if the issue is still OPEN, do NOT close it here —
          closing stays with auto-tag.yml unless it failed to close that issue, in which case
          report the open issue for manual close per release step 3.d above (#1722 하네스 제안
-         4).
+         4). Additionally, for each scoped issue that IS closed by THIS release, remove a
+         lingering `verify-ready` label if present (`gh issue edit <N> --remove-label
+         verify-ready`) — scoped to THIS release's closed issues only; bulk-removing
+         `verify-ready` from previously closed issues is explicitly excluded (user decision,
+         #1734).
       6. Report final CI status.
     description: "Post-release CI verification and fix loop"
     depends_on: release

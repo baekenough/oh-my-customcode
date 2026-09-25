@@ -8,7 +8,7 @@ Used by `scope-selection` to include/exclude issues and by `implement` for lifec
 | Label | Meaning | scope-selection 처리 |
 |-------|---------|----------------------|
 | `verify-ready` | Triage 완료, 즉시 verify 가능 (자동화 후보) | INCLUDE (preferred) |
-| `verify-done` | Triage 완료했으나 deferred 또는 이미 처리됨 (이번 사이클 미포함) | EXCLUDE |
+| `triage-complete` | Triage 완료, auto-dev 스코프에 선택되지 않음 (standalone triage 또는 deferred) — release-plan이 수집; auto-dev 내부 triage에서 manifest 선택 이슈는 `verify-ready` 부여 (#1734) | EXCLUDE |
 | `in-progress` | 작업 진행 중 (다른 세션에서 claim됨) | EXCLUDE |
 | `needs-review` | 사람 검토 필요 (자동 파이프라인 진입 불가) | EXCLUDE |
 | `decision-needed` | 결정 필요 (보안, 정책 critical) | EXCLUDE |
@@ -22,7 +22,7 @@ Used by `scope-selection` to include/exclude issues and by `implement` for lifec
 ```
 EXCLUDE if:
   - blocked_by_decision == true
-  - labels ∩ {decision-needed, needs-review, verify-done, manual-action, in-progress} ≠ ∅
+  - labels ∩ {decision-needed, needs-review, triage-complete, manual-action, in-progress} ≠ ∅
 
 INCLUDE (preferred tier):
   - labels ∩ {verify-ready, claude-code-release, documentation} ≠ ∅
@@ -55,5 +55,5 @@ If ALL scoped issues carry at least one lite-eligible label AND scope size ≤ 7
 | Work started | Add `in-progress`, assign @me |
 | Work succeeded | Remove `in-progress`, add `verify-ready` |
 | Work failed | Remove `in-progress`, add `needs-review` |
-| Released | Remove `verify-ready`, close with "Fixed in v{version}" |
-| Deferred | Add `verify-done`, label "Deferred from v{version}" |
+| Released | Remove `verify-ready`, close with "Fixed in v{version}" (auto-dev's `ci-check` step applies the `verify-ready` removal to the CURRENT release's scoped issues only; past closed issues' stale `verify-ready` are out of scope by user decision, #1734) |
+| Deferred | Add `triage-complete`, label "Deferred from v{version}" |

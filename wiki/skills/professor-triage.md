@@ -1,7 +1,7 @@
 ---
 title: Professor Triage
 type: skill
-updated: 2026-09-24
+updated: 2026-09-25
 sources:
   - .claude/skills/professor-triage/SKILL.md
 related:
@@ -57,7 +57,9 @@ Independent of the `auto-dev` compression tier selected, Phase 1-4 may be replac
 
 ## Phase 5 Action Policy
 
-**Automatic**: close resolved issues, close N/A issues, close duplicates, add `verify-done` label, assign P-labels.
+**Automatic**: close resolved issues, close N/A issues, close duplicates, add `triage-complete` label (label renamed v1.1.83, #1734 — meaning: triaged but not selected into an auto-dev scope, standalone triage or deferred, collected by [[release-plan]]), assign P-labels.
+
+**Auto-dev manifest detection (v1.1.83, #1734):** when the caller supplies a release manifest — the issue numbers `pipeline auto-dev`'s scope-selection step selected — as this skill's issue-number argument, the skill treats it as auto-dev context and labels those manifest issues `verify-ready` instead of `triage-complete`. With no manifest supplied (standalone `/professor-triage`, `--label`, `--state`, or `--since` invocation), the default `triage-complete` label applies.
 
 **Requires confirmation**: reopen, new issue creation, epic linking, body modification.
 
@@ -75,3 +77,4 @@ Under `mode: "bypassPermissions"`, Phase 4 agents write directly to `.claude/out
 
 - `.claude/skills/professor-triage/SKILL.md` — skill definition (restructured v2.3.0, #1054: 16KB→6KB, phase detail moved to guides/professor-triage/phases.md)
 - Content-drift resync 2026-09-24 (v1.1.81): added "Lightweight Mode (Cross-Tier Substitution)" — cross-references the `auto-dev.yaml` gate rather than duplicating its conditions; requires the output to state which mode produced it.
+- Content-drift resync 2026-09-25 (v1.1.83, #1734): renamed the Phase 5 completed-triage label to `triage-complete` (meaning: triaged but not selected this cycle); added "Auto-dev manifest detection" — when `pipeline auto-dev`'s triage step invokes this skill with a scope-selection-supplied manifest, manifest issues get `verify-ready` instead.

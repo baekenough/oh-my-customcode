@@ -432,7 +432,7 @@ pages:
       summary: "Redis best practices for caching, session management, and pub/sub patterns."
     - file: skills/release-plan.md
       title: "Release Plan"
-      summary: "Generate release-unit development plan from verify-done issues."
+      summary: "Generate release-unit development plan from triage-complete issues."
     - file: skills/research.md
       title: "Research"
       summary: "10-team parallel deep analysis with cross-validation for complex research tasks."

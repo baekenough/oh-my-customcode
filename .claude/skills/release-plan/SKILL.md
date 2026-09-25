@@ -1,6 +1,6 @@
 ---
 name: release-plan
-description: Generate release-unit development plans from professor-triage completed (verify-done) issues, grouping by priority and size
+description: Generate release-unit development plans from professor-triage completed (triage-complete) issues, grouping by priority and size
 scope: harness
 user-invocable: true
 effort: medium
@@ -10,12 +10,12 @@ effort: medium
 
 ## Purpose
 
-Collects open GitHub issues labeled `verify-done` (triage-completed by `/professor-triage`), groups them into release units by priority and estimated size, and generates a structured release plan document. Plan only — no implementation, no commits.
+Collects open GitHub issues labeled `triage-complete` (triage-completed by `/professor-triage`), groups them into release units by priority and estimated size, and generates a structured release plan document. Plan only — no implementation, no commits.
 
 ## Usage
 
 ```
-/release-plan                    # Default: all verify-done open issues
+/release-plan                    # Default: all triage-complete open issues
 /release-plan --next minor       # Force minor version bump
 /release-plan --next patch       # Force patch version bump
 /release-plan --dry-run          # Print plan to stdout only, no file write
@@ -26,14 +26,14 @@ Collects open GitHub issues labeled `verify-done` (triage-completed by `/profess
 ### Phase 1: Collect Issues
 
 ```bash
-# Get all open issues labeled verify-done
-gh issue list --state open --label verify-done \
+# Get all open issues labeled triage-complete
+gh issue list --state open --label triage-complete \
   --json number,title,labels,body,createdAt
 ```
 
-If `verify-done` label returns 0 results, check label existence:
+If `triage-complete` label returns 0 results, check label existence:
 ```bash
-gh label list | grep verify-done
+gh label list | grep triage-complete
 ```
 Report if label is missing and stop.
 
@@ -81,10 +81,10 @@ Use title keywords as additional hints:
 - Epic references → group constraint
 
 **Epic handling**:
-- Epic issues (title starts with "epic:" or has `epic` label) with `verify-done` label:
+- Epic issues (title starts with "epic:" or has `epic` label) with `triage-complete` label:
   - Do NOT include the epic itself in release bins
   - DO scan epic body for child issue references (#NNN)
-  - Include any open child issues that have `verify-done` label
+  - Include any open child issues that have `triage-complete` label
   - If all child issues are closed, recommend closing the epic
 
 ### Phase 4: Group into Release Units
@@ -151,8 +151,8 @@ For each release group, produce:
 ### Completeness Check
 
 Before generating the plan document, verify:
-- Every verify-done issue is assigned to a release bin (none dropped)
-- Epic child issues with verify-done are included
+- Every triage-complete issue is assigned to a release bin (none dropped)
+- Epic child issues with triage-complete are included
 - Issue count in plan == issue count from Phase 1 collection (minus epics themselves)
 - No issue is deferred without explicit user approval
 
@@ -186,7 +186,7 @@ File header format:
 ```markdown
 # 릴리즈 계획 — YYYY-MM-DD 생성
 
-> 출처: YYYY-MM-DD 기준 `verify-done` 라벨 오픈 이슈
+> 출처: YYYY-MM-DD 기준 `triage-complete` 라벨 오픈 이슈
 > 제외된 이슈 (이미 오픈 PR에 포함): #NNN, #NNN
 
 {릴리즈 그룹}

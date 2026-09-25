@@ -19,7 +19,7 @@ After PR creation in the auto-dev release workflow, collect unaddressed findings
 Gather unfinished work from multiple sources:
 
 **Source A — Remaining open issues**:
-- Run: `gh issue list --label verify-done --state open --json number,title,labels`
+- Run: `gh issue list --label triage-complete --state open --json number,title,labels`
 - These are triaged issues NOT included in the current release
 
 **Source B — Deep-verify findings**:

@@ -17,7 +17,7 @@ The SKILL.md is intentionally thin — it carries only the workflow contract and
 ## Usage
 
 ```
-/professor-triage                          # Default: --state open (excludes verify-done)
+/professor-triage                          # Default: --state open (excludes triage-complete)
 /professor-triage 587 589 590 591 592      # Direct issue numbers
 /professor-triage --label codex-release    # Custom label filter
 /professor-triage --since 2026-03-20       # Date filter

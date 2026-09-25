@@ -2,7 +2,7 @@
 title: FSD (Full Self Driving)
 type: skill
 scope: harness
-updated: 2026-09-18
+updated: 2026-09-25
 sources:
   - .claude/skills/fsd/SKILL.md
 related:
@@ -69,7 +69,7 @@ Each FSD iteration:
                                                 → NO  → next iteration (re-write marker first)
 ```
 
-Issue eligibility follows `/pipeline auto-dev` label selection exactly — **included**: `verify-ready`, unlabeled candidates; **excluded**: `verify-done`, `needs-review`, `decision-needed`.
+Issue eligibility follows `/pipeline auto-dev` label selection exactly — **included**: `verify-ready`, unlabeled candidates; **excluded**: `triage-complete` (label renamed v1.1.83, #1734 — triaged but not selected into an auto-dev scope, see [[professor-triage]] and [[pipeline]]), `needs-review`, `decision-needed`.
 
 ### Unattended-Mode Marker — Deterministic Detection Signal (#1650 C)
 
@@ -100,6 +100,8 @@ After each `/homework` gate, FSD processes all open PRs before checking converge
 
 PR merge execution is always delegated to [[mgr-gitnerd]] ([R010](../rules/r010.md)). Post-merge ground-truth verification uses `gh pr view` ([R020](../rules/r020.md)).
 
+**PR-merge user-execution constraint check (v1.1.83, #1733):** before executing any merge in the table above, FSD applies the same user-execution constraint check used by the release step's step 0a (below) — reading CLAUDE.md / session memory / the entry card for a "merge must be run by the user" constraint. If the merge is covered, FSD does NOT execute it; it presents the exact command to the user and waits.
+
 ## Loop Convergence
 
 FSD converges when **both** conditions are met:
@@ -108,6 +110,8 @@ FSD converges when **both** conditions are met:
 2. Open PR set = 0 (all PRs merged or explicitly deferred)
 
 Checking only issue eligibility and ignoring open PRs is insufficient for convergence.
+
+**Convergence hold on a pending user-execution constraint (v1.1.83, #1733 찐빠 #2):** if a release step is held pending a user-executed constrained command (per [[pipeline]] `auto-dev`'s release-step step 0a user-execution constraint check, below), FSD MUST NOT declare convergence — it presents the pending command(s) and waits, even if the eligible issue set and open-PR count would otherwise read as zero.
 
 ### Pre-Declaration Artifact Gate (#1688 Iteration 2 #1)
 
@@ -168,3 +172,4 @@ Because FSD is an unattended loop with no live user to answer approval prompts, 
 - Content-drift resync 2026-09-03: added a cost-cap advisory row to Safety and Discipline — `CLAUDE_COST_CAP`-driven cost-cap advisory is a notification surfaced at the gate, not a loop-stop signal; FSD reports and continues.
 - Content-drift resync 2026-09-18 (v1.1.67, #1683): documented inline execution as a sanctioned equivalent to `/goal`/`/loop` — the orchestrator may drive iterations directly as long as it holds the minimum per-iteration contract (marker refresh, pipeline→homework artifact→open-PR processing, measured convergence check, marker removal on any exit path).
 - Content-drift resync 2026-09-18 (v1.1.69, #1688): added the "Pre-Declaration Artifact Gate" subsection — right before declaring convergence (not a third convergence condition) FSD counts this session's `homework-*.md` artifacts across every UTC-midnight-spanning date directory and compares against the iteration count; a mismatch means recording the missing artifact recall-based (`[recall]`), not running another iteration. Updated Iteration Flow's `[FSD Done]` branch and the inline-execution minimum contract to reference this gate. Origin: the v1.1.65 iteration's homework artifact was never recorded and the gap surfaced only after Iteration 4 (#1688 Iteration 2 #1).
+- Content-drift resync 2026-09-25 (v1.1.83, #1733/#1734): renamed the excluded triage label to `triage-complete` (meaning unchanged: triaged but not selected into this auto-dev scope) throughout, matching [[professor-triage]] and [[pipeline]]. Added "Convergence hold on a pending user-execution constraint" — FSD MUST NOT declare convergence while a release step (step 0a) is holding on a user-executed command, even if issue/PR counts read zero. Added a PR-merge user-execution constraint check applying the same step-0a check before any table-driven PR merge (#1733 찐빠 #2).

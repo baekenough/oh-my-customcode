@@ -48,12 +48,14 @@ The loop converges naturally when **both** conditions are met:
 1. The auto-dev-eligible issue set reaches 0
 2. All open PRs have been either merged or explicitly deferred
 
+If a release step is held pending a user-executed constrained command (per `pipeline auto-dev`'s release-step user-execution constraint check), convergence MUST NOT be declared — present the pending command(s) to the user and wait, even if the eligible issue set and open-PR count would otherwise read as zero (#1733 찐빠 #2).
+
 수렴을 선언하기 전에(수렴 조건이 아니라 **선언 직전 게이트**로) 이 세션의 homework 아티팩트 수를 실측해 반복 수와 대조합니다. 불일치는 다음 반복을 돌리는 신호가 아니라 **누락분을 기록하라는 신호**이므로, 회상 기반(`[recall]` 표시)으로라도 기록한 뒤 수렴을 선언합니다. v1.1.65 반복은 아티팩트를 기록하지 않은 채 다음 반복으로 넘어갔고 Iteration 4 종료 후에야 누락이 발견되어 회상 기반으로 보완되었습니다(#1688 Iteration 2 #1).
 
 FSD processes **open PRs as part of each iteration**, not only issues. This includes dependabot PRs and any automatically created PRs. Issue eligibility follows `/pipeline auto-dev` label selection exactly:
 
 - **Included**: `verify-ready` (preferred), unlabeled auto-dev candidates
-- **Excluded**: `verify-done`, `needs-review`, `decision-needed` labels
+- **Excluded**: `triage-complete`, `needs-review`, `decision-needed` labels
 
 Do NOT invent new label logic here — defer to the `pipeline` skill's auto-dev issue selection.
 
@@ -68,6 +70,8 @@ When open PRs are found during an iteration:
 | CI failing with unknown cause | Diagnose; if fixable within iteration, fix and merge; otherwise defer |
 | Breaking change / design judgment required | Defer and surface to user |
 | Explicitly excluded by user this session | Skip (honor directive persistence, R015) |
+
+Before executing any merge in this table, apply the same user-execution constraint check used by the release step (CLAUDE.md / session memory / the entry card, if the environment provides one, e.g. a recall entry card) — if the merge is covered by a user-execution constraint, do NOT execute it; present the exact command to the user and wait (#1733 찐빠 #2).
 
 All PR merge operations are delegated to **mgr-gitnerd** (R010). After merging, verify ground-truth via `gh pr view` or `git log` before declaring done (R020).
 

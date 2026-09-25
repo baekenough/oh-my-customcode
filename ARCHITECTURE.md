@@ -358,7 +358,7 @@ Analyzes GitHub issues directly against the current codebase. 5-phase workflow:
 
 ### 5.10 Release Plan (/release-plan)
 
-Collects verify-done issues, groups by priority and size into release units. Generates structured release plan documents with implementation order and agent suggestions.
+Collects triage-complete issues, groups by priority and size into release units. Generates structured release plan documents with implementation order and agent suggestions.
 
 ### 5.11 Autonomous Mode (R010)
 

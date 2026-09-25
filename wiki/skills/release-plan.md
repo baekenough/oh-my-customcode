@@ -1,7 +1,7 @@
 ---
 title: Release Plan
 type: skill
-updated: 2026-04-12
+updated: 2026-09-25
 sources:
   - .claude/skills/release-plan/SKILL.md
 related:
@@ -12,11 +12,11 @@ related:
 
 # Release Plan
 
-Generate release-unit development plan from verify-done issues.
+Generate release-unit development plan from triage-complete issues.
 
 ## Overview
 
-Reads GitHub issues labeled `verify-done`, groups them into cohesive release units, generates an ordered implementation plan, and assigns agents per issue type. Output is a structured release plan with issue list, agent assignments, verification steps, and estimated complexity. Input to the auto-dev pipeline. Run after `professor-triage` has labeled and prioritized issues.
+Reads GitHub issues labeled `triage-complete` (label renamed v1.1.83, #1734), groups them into cohesive release units, generates an ordered implementation plan, and assigns agents per issue type. Output is a structured release plan with issue list, agent assignments, verification steps, and estimated complexity. Input to the auto-dev pipeline. Run after `professor-triage` has labeled and prioritized issues.
 
 ## Key Details
 
@@ -36,3 +36,4 @@ Reads GitHub issues labeled `verify-done`, groups them into cohesive release uni
 ## Sources
 
 - `.claude/skills/release-plan/SKILL.md` — skill definition
+- Content-drift resync 2026-09-25 (v1.1.83, #1734): renamed the collected label to `triage-complete` throughout (Usage, Phase 1 collection command, epic handling, Completeness Check, plan-file header) — meaning unchanged (triaged, not yet in a release).

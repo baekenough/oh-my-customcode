@@ -7,7 +7,7 @@ Companion to `guides/professor-triage/README.md`. Detailed workflow for each pha
 1. Parse arguments to determine target issues:
    - If issue numbers provided: use those directly
    - If `--label` provided: `gh issue list --label <label> --state <state> --json number`
-   - Default: `gh issue list --state open --json number` + exclude issues with `verify-done` label
+   - Default: `gh issue list --state open --json number` + exclude issues with `triage-complete` label
    - If `--since` provided: add `--search "created:>YYYY-MM-DD"` filter
 
 2. For each issue, fetch full details:
@@ -17,7 +17,7 @@ gh issue view NNN --json number,title,body,comments,labels,createdAt
 
 3. For batches >20 issues, prefer `gh api graphql` for batch fetching to respect GitHub API rate limits (5000/hour authenticated).
 
-4. If filter returns 0 results: if `--label` was used, check label existence via `gh label list`. Report if label missing. If default filter, report "No open issues without verify-done label found."
+4. If filter returns 0 results: if `--label` was used, check label existence via `gh label list`. Report if label missing. If default filter, report "No open issues without triage-complete label found."
 
 ## Phase 2: Codebase Analysis
 
@@ -293,7 +293,8 @@ Delegate ALL GitHub operations to mgr-gitnerd.
 | Phase 2 found issue already resolved (with commit evidence) | `gh issue close --reason "completed"` + comment with resolving commit |
 | Cross-analysis concludes "Not Applicable" / "no action needed" | `gh issue close --reason "not planned"` |
 | Cross-analysis detects same-series duplicates | Keep latest, close others + `duplicate` label |
-| All analysis complete | Add `verify-done` label |
+| All analysis complete (standalone triage, not selected this cycle) | Add `triage-complete` label |
+| All analysis complete (invoked within auto-dev's triage step, manifest-selected) | Add `verify-ready` label instead |
 | Priority assigned | Add `P1`/`P2`/`P3` label |
 
 ### Confirmation Required (high-risk)
@@ -307,7 +308,7 @@ Present to user and wait for approval before executing:
 | Epic/milestone linking | Propose link | Project structure change |
 | Issue body modification | Present edit draft | Respect original author intent |
 
-**Ensure `verify-done` label exists**: If not, create with `gh label create "verify-done" --color "0E8A16"`.
+**Ensure `triage-complete` label exists**: If not, create with `gh label create "triage-complete" --color "0E8A16"`.
 
 ## Phase Notes Summary
 

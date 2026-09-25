@@ -20,11 +20,13 @@ Analyzes GitHub issues directly against the current codebase. For each issue, se
 ## Usage
 
 ```
-/professor-triage                          # Default: --state open (excludes verify-done)
+/professor-triage                          # Default: --state open (excludes triage-complete)
 /professor-triage 587 589 590 591 592      # Direct issue numbers
 /professor-triage --label codex-release    # Custom label filter
 /professor-triage --since 2026-03-20       # Date filter
 ```
+
+When `pipeline auto-dev`'s triage step invokes this skill with a release manifest (issue numbers from scope-selection) instead of a user typing issue numbers directly, the Phase 5 label differs — see the "Auto-dev manifest detection" bullet under Phase 5 Action Policy below.
 
 ## Workflow Contract
 
@@ -86,12 +88,13 @@ See R006 "Sensitive Path Handling" (CC v2.1.121+ direct-write convention).
 - Issue already resolved by commit → `gh issue close --reason "completed"` + resolving commit comment
 - Cross-analysis "Not Applicable" → `gh issue close --reason "not planned"`
 - Duplicate series → close older + `duplicate` label
-- All analysis complete → add `verify-done` label
+- All analysis complete → add `triage-complete` label (meaning: triaged but not selected in this auto-dev cycle — deferred/excluded, collected by release-plan; when this skill runs standalone rather than inside auto-dev's triage step, this is the label applied — manifest-selected issues inside auto-dev get `verify-ready` instead, #1734)
+- **Auto-dev manifest detection**: when the caller supplies a release manifest (the list of issue numbers selected by `pipeline auto-dev`'s scope-selection step) as this skill's issue-number argument, treat it as auto-dev context — label those manifest issues `verify-ready`, NOT `triage-complete`. With no manifest supplied (standalone `/professor-triage`, `--label`, `--state`, or `--since` invocation), apply the default `triage-complete` label per the bullet above.
 - Priority assigned → add `P1`/`P2`/`P3` label
 
 **Confirmation required** (high-risk): issue reopen, new issue creation, epic linking, issue body modification.
 
-**Ensure `verify-done` label exists**: `gh label create "verify-done" --color "0E8A16"` if missing.
+**Ensure `triage-complete` label exists**: `gh label create "triage-complete" --color "0E8A16"` if missing.
 
 ## Permission Mode
 

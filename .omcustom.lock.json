@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "1.1.82",
-  "generatedAt": "2026-09-24T23:21:00.487Z",
+  "generatedAt": "2026-09-25T00:24:30.635Z",
   "templateVersion": "1.1.82",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -35,8 +35,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
-      "templateHash": "82bd955059fc9810a6b51c86c702a72dbb6c66f86dd816bad9efb507da4f07ac",
-      "size": 27631,
+      "templateHash": "7940b0b212dc9ec482a48736e4b25431c5daf6d9c942498bf5cd82c5fd18ebfb",
+      "size": 27852,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "685ec617baaa1331db498b255e8f40618f16ee1cf0895d80b2d8db4ea7f5aa81",
-      "size": 65744,
+      "templateHash": "44bee2e4e569251dab64c8ca1dadddfb465856c827730535ae0841131563b421",
+      "size": 73712,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -495,8 +495,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/labels.md": {
-      "templateHash": "0132c0cb172f6912528c59808ea62c8f031a87d9db1bf65b1981d4c77c2ac8ec",
-      "size": 2850,
+      "templateHash": "a1fa83f840c0b4551604713cba172ae15bbf52df2115722e84bf000d1640111f",
+      "size": 3174,
       "component": "skills"
     },
     ".claude/skills/dev-refactor/SKILL.md": {
@@ -610,8 +610,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "f3e291c02c11d1c989d8906ea50c9ef11e630b4c31b873ca7e60658f5d7c5c94",
-      "size": 9028,
+      "templateHash": "d420dfc2e1121667c7e545048ebc530011cedd757b1f65b0439cd78a2c22c0a1",
+      "size": 9032,
       "component": "skills"
     },
     ".claude/skills/analysis/SKILL.md": {
@@ -690,8 +690,8 @@
       "component": "skills"
     },
     ".claude/skills/release-plan/SKILL.md": {
-      "templateHash": "925bafbbaf06d9cfa563c4fad83d1f517b03df66ab7fb9114c33bc16bdd44775",
-      "size": 7460,
+      "templateHash": "3cb47775c0aae8d3dccdc65f090e0103df8a8d6cab8221d3eb60899782d5e889",
+      "size": 7508,
       "component": "skills"
     },
     ".claude/skills/structured-dev-cycle/SKILL.md": {
@@ -785,8 +785,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "6ad9a6dc70dc0a34c2a193f7fe353080666c13e4e0dd458b7b37853b8f151d24",
-      "size": 17475,
+      "templateHash": "11ebdcccb6ea056f435457099ec27e7979d27f8abe6630bca52f720943784c27",
+      "size": 18176,
       "component": "skills"
     },
     ".claude/skills/dev-lead-routing/SKILL.md": {
@@ -810,8 +810,8 @@
       "component": "skills"
     },
     ".claude/skills/professor-triage/SKILL.md": {
-      "templateHash": "5d8797924d3755cc62a4d5b871861cccba746e7ad3e7ce72251806a77ce43a52",
-      "size": 4878,
+      "templateHash": "6d97f4a79c90e52362c2584b868532854eebfdde247fc40cb855322917dbd306",
+      "size": 5934,
       "component": "skills"
     },
     ".claude/skills/adversarial-review/SKILL.md": {
@@ -1730,13 +1730,13 @@
       "component": "guides"
     },
     "guides/professor-triage/phases.md": {
-      "templateHash": "1df0adb87956f0bb0741d258cbe394f643ca7e6fb9bd2f3063e56c0732540155",
-      "size": 12505,
+      "templateHash": "b4226838adb4127000444802e1ddfcabff38536e1d457501cba5e475b799c533",
+      "size": 12690,
       "component": "guides"
     },
     "guides/professor-triage/README.md": {
-      "templateHash": "8b7ab9965e80c953e82a1f23959239635f93cce42064f58f1f88bd21b35d6df1",
-      "size": 2214,
+      "templateHash": "084cd30bb15ca09fe77fda845eaf27ce6a583ad5232052b4f946018fb0b60112",
+      "size": 2218,
       "component": "guides"
     },
     "guides/iceberg/README.md": {
