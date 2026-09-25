@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.84",
-  "generatedAt": "2026-09-25T01:44:28.533Z",
-  "templateVersion": "1.1.84",
+  "generatorVersion": "1.1.85",
+  "generatedAt": "2026-09-25T05:34:14.104Z",
+  "templateVersion": "1.1.85",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "44bee2e4e569251dab64c8ca1dadddfb465856c827730535ae0841131563b421",
-      "size": 73712,
+      "templateHash": "1e0b1ccfbfc5b8ab3b313e32b83d74301af19e7d6e55483d34a83d402b0427cf",
+      "size": 73919,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -495,8 +495,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/labels.md": {
-      "templateHash": "a1fa83f840c0b4551604713cba172ae15bbf52df2115722e84bf000d1640111f",
-      "size": 3174,
+      "templateHash": "d1d19b7b23646374637dfcbf6f2a4756bc952f9542a2e0fdd11c064db63db767",
+      "size": 3486,
       "component": "skills"
     },
     ".claude/skills/dev-refactor/SKILL.md": {
