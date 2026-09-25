@@ -1880,6 +1880,31 @@ describe('stuck-detector.sh', () => {
       return samples.sort((a, b) => a - b)[1];
     }
 
+    /**
+     * Cost of classifying `command`, in this process, on this machine, right
+     * now: one discarded warm-up run then the median of 3 timed samples —
+     * the same warm-up-then-median-of-3 shape as singleLineBaselineMs above.
+     * #1739: a single-sample measurement let one stray tick (1413 ms vs. a
+     * ~94 ms baseline that run, itself normal) flip a healthy run past the
+     * bound even though the underlying cost never regressed; a median of 3
+     * absorbs one outlier sample. Unlike singleLineBaselineMs, every sample
+     * here reuses the SAME `command` — that is safe (does not itself trip a
+     * stuck-loop hard block) only because line300/heredoc1000 are read-only
+     * Bash commands, and the #1650 hard-block "same tool+target repeated"
+     * checks explicitly skip read-only Bash.
+     */
+    async function medianElapsedMs(command: string): Promise<number> {
+      await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+      const samples: number[] = [];
+      for (let i = 0; i < 3; i++) {
+        const started = performance.now();
+        const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
+        samples.push(performance.now() - started);
+        expect(result.exitCode).toBe(0);
+      }
+      return samples.sort((a, b) => a - b)[1];
+    }
+
     it('NEGATIVE: should keep a 40-line all-read-only command read-only', async () => {
       expect(await readonlyOf(line40)).toBe('true');
     });
@@ -1911,10 +1936,9 @@ describe('stuck-detector.sh', () => {
 
     it('should classify a 300-segment command in well under the pre-fix cost', async () => {
       const baseline = await singleLineBaselineMs();
-      const started = performance.now();
-      const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command: line300 }));
-      const elapsed = performance.now() - started;
-      expect(result.exitCode).toBe(0);
+      // Median of 3 (see medianElapsedMs) — a lone slow sample must not flip
+      // a healthy run past the bound (#1739).
+      const elapsed = await medianElapsedMs(line300);
       // 300 lines may cost up to PER_LINE_FORK_RATIO x one line (floor 400 ms).
       // Per-line forking measured 17.6x, so it still fails this bound.
       expect(elapsed).toBeLessThan(Math.max(400, PER_LINE_FORK_RATIO * baseline));
@@ -1922,10 +1946,9 @@ describe('stuck-detector.sh', () => {
 
     it('should classify a 1000-line heredoc in well under the pre-fix cost', async () => {
       const baseline = await singleLineBaselineMs();
-      const started = performance.now();
-      const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command: heredoc1000 }));
-      const elapsed = performance.now() - started;
-      expect(result.exitCode).toBe(0);
+      // Median of 3 (see medianElapsedMs) — a lone slow sample must not flip
+      // a healthy run past the bound (#1739).
+      const elapsed = await medianElapsedMs(heredoc1000);
       // Per-line heredoc-body trimming measured 43x one line; healthy is ~2.2x.
       expect(elapsed).toBeLessThan(Math.max(500, PER_LINE_FORK_RATIO * baseline));
     }, 30000);
