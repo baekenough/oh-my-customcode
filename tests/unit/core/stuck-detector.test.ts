@@ -1892,8 +1892,15 @@ describe('stuck-detector.sh', () => {
      * stuck-loop hard block) only because line300/heredoc1000 are read-only
      * Bash commands, and the #1650 hard-block "same tool+target repeated"
      * checks explicitly skip read-only Bash.
+     *
+     * #1742: an optional `bound` (ms) lets the caller enable early-exit —
+     * once 2 of the (at most 3) samples are already at or above `bound`, the
+     * remaining sample is skipped and the smaller of those two samples is
+     * returned immediately, without changing the below/at-or-above-bound
+     * verdict a full 3-sample median would have produced. See EARLY-EXIT
+     * EQUIVALENCE below the loop for the proof.
      */
-    async function medianElapsedMs(command: string): Promise<number> {
+    async function medianElapsedMs(command: string, bound?: number): Promise<number> {
       await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
       const samples: number[] = [];
       for (let i = 0; i < 3; i++) {
@@ -1901,6 +1908,22 @@ describe('stuck-detector.sh', () => {
         const result = await runStuckDetector(makeInput({ tool_name: 'Bash', command }));
         samples.push(performance.now() - started);
         expect(result.exitCode).toBe(0);
+
+        // EARLY-EXIT EQUIVALENCE: with i < 2 (a sample still remains to be
+        // taken) and >= 2 of the samples collected so far at or above
+        // `bound`, the median of the full 3-sample run is guaranteed to also
+        // be at or above `bound` — sorted ascending, at most one sample can
+        // be below `bound`, so it can only occupy the smallest (index 0)
+        // position, leaving the two >= bound samples at indices 1 and 2; the
+        // middle-of-3 (index 1) is therefore always the SMALLER of the two
+        // >= bound samples, regardless of what the skipped sample would have
+        // measured. That single sentence is the full equivalence proof.
+        if (bound !== undefined && i < 2) {
+          const atOrAboveBound = samples.filter((s) => s >= bound).sort((a, b) => a - b);
+          if (atOrAboveBound.length >= 2) {
+            return atOrAboveBound[0];
+          }
+        }
       }
       return samples.sort((a, b) => a - b)[1];
     }
@@ -1936,21 +1959,27 @@ describe('stuck-detector.sh', () => {
 
     it('should classify a 300-segment command in well under the pre-fix cost', async () => {
       const baseline = await singleLineBaselineMs();
-      // Median of 3 (see medianElapsedMs) — a lone slow sample must not flip
-      // a healthy run past the bound (#1739).
-      const elapsed = await medianElapsedMs(line300);
       // 300 lines may cost up to PER_LINE_FORK_RATIO x one line (floor 400 ms).
       // Per-line forking measured 17.6x, so it still fails this bound.
-      expect(elapsed).toBeLessThan(Math.max(400, PER_LINE_FORK_RATIO * baseline));
+      const bound = Math.max(400, PER_LINE_FORK_RATIO * baseline);
+      // Median of 3 (see medianElapsedMs) — a lone slow sample must not flip
+      // a healthy run past the bound (#1739). #1742: passing `bound` lets a
+      // clearly-over-bound run exit after 2 samples instead of 3, trimming
+      // worst-case wall-clock on a defective/overloaded runner.
+      const elapsed = await medianElapsedMs(line300, bound);
+      expect(elapsed).toBeLessThan(bound);
     }, 30000);
 
     it('should classify a 1000-line heredoc in well under the pre-fix cost', async () => {
       const baseline = await singleLineBaselineMs();
-      // Median of 3 (see medianElapsedMs) — a lone slow sample must not flip
-      // a healthy run past the bound (#1739).
-      const elapsed = await medianElapsedMs(heredoc1000);
       // Per-line heredoc-body trimming measured 43x one line; healthy is ~2.2x.
-      expect(elapsed).toBeLessThan(Math.max(500, PER_LINE_FORK_RATIO * baseline));
+      const bound = Math.max(500, PER_LINE_FORK_RATIO * baseline);
+      // Median of 3 (see medianElapsedMs) — a lone slow sample must not flip
+      // a healthy run past the bound (#1739). #1742: passing `bound` lets a
+      // clearly-over-bound run exit after 2 samples instead of 3, trimming
+      // worst-case wall-clock on a defective/overloaded runner.
+      const elapsed = await medianElapsedMs(heredoc1000, bound);
+      expect(elapsed).toBeLessThan(bound);
     }, 30000);
 
     // --- B (#1650): stdin that is not a JSON OBJECT (a bare string, a JSON

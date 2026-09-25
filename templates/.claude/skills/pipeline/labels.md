@@ -3,6 +3,12 @@
 Canonical reference for GitHub issue label semantics in the auto-dev pipeline.
 Used by `scope-selection` to include/exclude issues and by `implement` for lifecycle management.
 
+## Rename Verification
+
+After renaming a label, verify absence by checking that `gh label list` no longer contains the old
+name — do NOT use an issue count from `--label <old-name>` as evidence, since GitHub resolves an
+old label name to the renamed label and still returns matching issues (#1740 찐빠 #3).
+
 ## Label Definitions
 
 | Label | Meaning | scope-selection 처리 |

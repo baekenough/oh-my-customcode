@@ -109,6 +109,7 @@ steps:
          gh label create in-progress --color "FBCA04" --description "Work in progress" --force 2>/dev/null
          gh label create verify-ready --color "0E8A16" --description "Ready for verification" --force 2>/dev/null
          gh label create needs-review --color "D93F0B" --description "Needs manual review" --force 2>/dev/null
+         Run these three commands literally as written — do NOT rewrite them as a shell loop (zsh does not word-split an unquoted `$var`, which can silently create malformed label names, #1743 찐빠 #1).
 
       2. Scan open GitHub issues:
          gh issue list --state open --limit 100 --json number,title,labels,body,milestone
