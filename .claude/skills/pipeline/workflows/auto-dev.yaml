@@ -496,7 +496,20 @@ steps:
         `grep -E '(함|됨|필요)[.。"]?$'` = 0 (반말/명사 종결 endings such as 확인함·정정
         필요·완료됨 fall entirely outside the 다-ending regexes above and were previously
         undetectable — verified against 4 명사 종결 positive samples and 4 합쇼체 negative
-        samples, 8/8 correct) (#1728 찐빠 #2 residual). Even with all three checks, a residual
+        samples, 8/8 correct) (#1728 찐빠 #2 residual). On macOS, a `grep -E` run of these three
+        checks MAY false-positive on multibyte UTF-8 lines (line-final `$` anchor mismatch
+        observed, [hypothesis: unverified]) and this repo's Bash `grep` MAY be a shell function
+        shadowing the real binary (R005) — the agent MUST ALSO run the same three checks as a
+        python3 `re` equivalent of all THREE checks above, reading from the SAME piped stdin as
+        (a) (`git diff -U0 -- <edited md/yaml files> | grep '^+' | python3 -c "import re,sys;
+        text=sys.stdin.read();
+        fam=len(re.findall(r'(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 \"]', text));
+        lf=len(re.findall(r'다[.。\"]?$', text, re.M)) - len(re.findall(r'니다[.。\"]?$', text, re.M));
+        noun=len(re.findall(r'(함|됨|필요)[.。\"]?$', text, re.M));
+        print(fam, lf, noun)"`, NOT a file-argument read — the input is the piped diff, never a
+        file path), in ADDITION to (not instead of) the grep commands above, and
+        treat a python3/grep disagreement as evidence the grep result is unreliable (macOS
+        line-final 오탐 가능성 대응, R005, R023, #1749 찐빠 #3). Even with all three checks, a residual
         gap remains for 반말/명사 종결 variants the patterns above do not enumerate — the agent
         MUST also read the newly added lines directly as a final check, not rely on regex alone.
         When an edit re-emits a pre-existing
@@ -542,6 +555,13 @@ steps:
         arithmetic above MUST add a batched-verification term — ⌈N/batch⌉ — still an
         upper-bound guide that may still truncate, not a truncation guarantee (검증 비용을
         턴 산술에 반영, R020 「maxTurns 절단 실증」 6항 확장, #1737 찐빠 #1).
+      - A single-file edit delegation (of any type, not only rule/skill/guide TEXT edits) whose
+        target file is ≥1,000 lines (measure `wc -l`) MUST either (i) split "본문 편집" (body edit) from "미러 복사·검증·
+        보고" (mirror copy, verification, and completion report) into separate delegations, or
+        (ii) add a large-file fixed-cost term to the turn arithmetic above — a large-file edit
+        can exceed what the arithmetic assumes even when the item count stays small; read-only
+        review delegations are excluded (대형 파일 편집 위임 20턴 절단 재발 방지, R020
+        「maxTurns 절단 실증」, R009, #1749 찐빠 #1).
       - Parity delegation prompts (e.g. a ko mirror tracking an en source) MUST require THREE
         directions — additions, edits, AND deletions — to match the source, never additions
         only; completion criteria MUST include a `grep -F` confirming zero rows/sentences are
@@ -606,7 +626,19 @@ steps:
         upstream CHANGELOG lines (measured with `grep -nF`) and the original target paragraph
         as ground truth; if the issue's premise differs from the primary source, the primary
         source wins and the discrepancy is reported rather than silently inherited into the
-        corrected wording (#1730 찐빠 #1).
+        corrected wording (#1730 찐빠 #1). A `claude-code-release` delegation prompt that writes
+        a count sentence (e.g. "기타 N건") MUST specify, in the prompt itself, the exact counting
+        range (which section of the issue body to count) and the exact measurement command; the
+        resulting guide/rule text MUST carry that same command alongside the number — delegations
+        that produce no count sentence are excluded (계수 구간 정의 부재로 인한 수치 오류 방지,
+        R023 「리서치 위임의 결론 수치는 표에서 재계산해 병기」, R020, #1749 찐빠 #2).
+      - Any delegation correcting a fact (the issue states an existing statement in a target file
+        is wrong) — not only `claude-code-release` CC-notes — MUST include, as a completion
+        criterion, an exhaustive `grep` across the target file(s) for the claim's key terms, not
+        only the single string anchor supplied in the prompt, so a second copy of the same claim
+        elsewhere in the file is also caught; pure additions (no existing statement is being
+        corrected) are excluded (앵커 1개 한정으로 인한 동일 주장 잔존 사본 방지, R010 「출처
+        인용과 인접 문구 점검」, R022, #1749 찐빠 #4).
       - When review-correction work is split across file-ownership delegations (one file per
         agent), every split delegation prompt MUST carry the FULL list of review findings
         (not only the subset touching that agent's file) as a self-check list, so a fix in one
