@@ -527,6 +527,13 @@ steps:
         contaminate the very command a clause cites (#1711 찐빠 #2); (h) any temporary file the
         delegation creates MUST live under a per-agent-unique path (`$TMPDIR` or the session
         scratchpad), never a fixed shared path (#1722 찐빠 #7).
+      - Any implement-stage delegation that writes an executable command or code snippet into
+        rule/skill/guide/workflow TEXT (not a prose-only edit) MUST require, as a completion-report
+        item, that the agent copy the command OUT of the edited file and run it once on a positive
+        fixture (the check-triggering case) and once on a negative fixture (the check-passing
+        case), reporting both raw outputs (룰/스킬/워크플로 텍스트에 넣는 실행 명령은 편집 파일에서
+        그대로 복사해 양성·음성 픽스처로 실행한 출력을 완료 보고에 포함해야 합니다; 정정 위임은 이미
+        적용해 통과한 결과로 갈음합니다) (R023 「Sample-Value Assembly」, #1752 찐빠 #1).
       - Every delegation prompt (not only rule/skill/guide TEXT edits) MUST instruct the agent
         that if a guard, classifier, or permission check blocks an action, it MUST NOT route
         around it (e.g. via a shell glob or path rewrite) — it MUST stop and report the block
@@ -885,6 +892,12 @@ steps:
            (loop_count × sleep_interval + command time ≤ timeout, with margin), or prefer a
            single bounded call `gh run watch <run-id> --exit-status` (optionally
            run_in_background) over an unbounded manual poll loop (#1711 찐빠 #6).
+         - Any wait/poll loop in this step, including a release-publish package-availability
+           wait, MUST print one progress line per iteration (attempt count, current observed
+           value) so a long-but-normal wait is not mistaken for a stall — a single bounded
+           `gh run watch`/`gh pr checks --watch` call already streams periodic status, which
+           serves the same anti-stall purpose and satisfies this requirement without extra
+           instrumentation (#1752 찐빠 #2).
          - If failures: diagnose, fix, re-verify
       3. For npm projects with auto-tag.yml: MANDATORY additional check:
          gh run list --workflow auto-tag.yml --limit 1 --json conclusion,displayTitle
