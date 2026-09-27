@@ -1,7 +1,7 @@
 # Claude Code Version Compatibility
 
 > Updated: 2026-09-24
-> Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158, #1242, #1243, #1244, #1245, #1276, #1280, #1713, #1714, #1716)
+> Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158, #1242, #1243, #1244, #1245, #1276, #1280, #1713, #1714, #1716, #1746, #1747)
 >
 > **Note (compat 노트 이관, v1.1.9~v1.1.76)**: v2.1.161~v2.1.276 구간의 CC 호환성 노트는 `.claude/rules/` 각 규칙(R001/R002/R006/R010/R012 등)에 인라인으로 축적되어 있으며, 이 구간은 그대로 보존합니다.
 >
@@ -1464,6 +1464,93 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 ---
 
+## v2.1.282 (2026-09-24)
+
+> Issue: #1746 — Claude Code v2.1.282 compatibility documentation
+> Scope-ceiling check (R017): 설치 CC는 **2.1.283**(`claude --version`=2.1.283, `npm view @anthropic-ai/claude-code version`=2.1.283 실측)이며 2.1.283이 상한입니다. 2.1.283 CHANGELOG를 확인한 결과 아래 "namespace 예약" 항목은 `claude-ai` 이름 부분만 되돌려졌습니다 — "Reverted the 2.1.282 reservation of the `claude-ai` name: skills, commands, workflows and MCP servers' skills and prompts so named load again, and `Skill(claude-ai:*)` rules are ordinary prefix rules". `anthropic-skills` 이름 예약은 되돌려지지 않았으므로 아래 항목은 그 범위만 유효합니다.
+
+### 텔레메트리 · settings
+
+- CHANGELOG 원문: "Changed project and local settings to ignore OpenTelemetry variables that turn on export, set its endpoint, or capture content, like `CLAUDE_CODE_ENABLE_TELEMETRY` and `OTEL_LOG_*`"
+  (282) 프로젝트·로컬 설정 파일에 적힌 OpenTelemetry 관련 변수를 이제 CC가 무시합니다 — CHANGELOG는 export 활성화·엔드포인트 지정·콘텐츠 캡처라는 세 클래스를 `CLAUDE_CODE_ENABLE_TELEMETRY`·`OTEL_LOG_*` 예시로만 들었을 뿐 전체 목록을 열거하지 않았으므로, 같은 클래스에 속하는 한 `OTEL_METRICS_EXPORTER`·`OTEL_LOGS_EXPORTER`처럼 예시에 없는 변수도 마찬가지로 무시되며, 어차피 마스터 토글(`CLAUDE_CODE_ENABLE_TELEMETRY`)이 무시되므로 export 계열 변수는 값을 설정해도 무력화됩니다 — `.claude/skills/monitoring-setup/SKILL.md`가 이 값들을 `.claude/settings.local.json`에 기록하도록 안내하는 절이 이 변경의 직접 영향 범위이며, 별도 서브에이전트가 해당 스킬 자체를 수정 중입니다.
+- CHANGELOG 원문: "Added a startup notice, and `/status` and `claude doctor` entries, listing telemetry variables in a project's settings files that were ignored or that turned telemetry off"
+  (282) 프로젝트 설정 파일에 적혔으나 무시되거나 텔레메트리를 끈 변수들이 시작 알림·`/status`·`claude doctor`에 나열되어, 위 항목의 무시 여부를 세션 시작 시 바로 확인할 수 있습니다.
+
+### skill/plugin namespace 예약
+
+- CHANGELOG 원문: "Changed `Skill(anthropic-skills:*)` and `Skill(claude-ai:*)` allow rules to cover only skills synced from claude.ai, not plugins or other skills that merely use such a name"
+  (282) `Skill(anthropic-skills:*)`·`Skill(claude-ai:*)` allow rule이 claude.ai에서 동기화된 스킬만 가리키도록 좁혀져, 같은 이름을 쓰는 플러그인·다른 스킬은 더 이상 이 allow rule로 커버되지 않습니다 — 이 저장소 스킬 frontmatter `name:` 값은 `anthropic-skills`·`claude-ai`와 겹치지 않습니다(실측: `git grep -h '^name:' .claude/skills/*/SKILL.md | grep -cE 'anthropic-skills|claude-ai'` = 0), `.mcp.json`의 서버명도 `eraser`·`ontology-rag`뿐이라(`jq -r '.mcpServers|keys[]' .mcp.json`) 이름 충돌 대상이 아닙니다.
+- CHANGELOG 원문: "Changed skill folders, command files and workflow commands in the `anthropic-skills` or `claude-ai` namespace to no longer load; a plugin so named still loads but yields name ties to synced skills"
+  (282) `anthropic-skills`·`claude-ai` namespace의 스킬 폴더·명령 파일·workflow 명령이 더 이상 로드되지 않도록 바뀌었습니다(같은 이름의 플러그인 자체는 계속 로드되나 이름 충돌 시 동기화된 스킬에 양보) — 위에서 확인한 대로 이 저장소 스킬은 해당 namespace를 쓰지 않아 영향이 없습니다.
+- CHANGELOG 원문: "Changed MCP servers configured under the name `anthropic-skills` or `claude-ai` to list no skills or prompts (their tools still work); rename the server in your MCP configuration to list them again"
+  (282) `anthropic-skills`·`claude-ai` 이름으로 설정된 MCP 서버는 스킬·프롬프트 목록을 더 이상 제공하지 않습니다(도구 자체는 계속 동작) — 이 저장소가 쓰는 `ontology-rag` 등 MCP 서버 이름은 이 두 이름과 겹치지 않으므로 직접 영향은 없습니다.
+
+### 권한 · 압축 · thinking 복구
+
+- CHANGELOG 원문: "Fixed Bash permission rules with a mid-pattern `:*` being skipped in settings files while `--allowedTools` honored them; they now work from every source, with a startup warning on how they match"
+  (282) settings 파일에서 중간에 `:*`가 들어간 Bash permission rule이 건너뛰어지던 결함이 수정되어 이제 모든 출처에서 동일하게 매칭되고, 매칭 방식에 대한 시작 경고도 추가됩니다 — R002 Deny Rule Glob Patterns 표가 다루는 glob 매칭 신뢰성이 개선됩니다.
+- CHANGELOG 원문: "Fixed compaction failing when the summarization request is refused; it now retries on a fallback model"
+  (282) 요약 요청이 거부되어 compaction이 실패하던 결함이 수정되어 이제 폴백 모델로 재시도합니다 — R013 Context Budget Management가 전제하는 compaction 신뢰성이 개선됩니다.
+- CHANGELOG 원문: "Fixed sessions failing on every turn with an \"Invalid `data` in `redacted_thinking` block\" API error; Claude Code now drops the conversation's thinking blocks and retries once"
+  (282) "Invalid `data` in `redacted_thinking` block" API 오류로 매 턴 실패하던 세션이, 대화의 thinking 블록을 삭제하고 1회 재시도하도록 수정되어 복구됩니다 — R004 Recovery 표의 "Retryable" 축과 같은 방향의 플랫폼 보강입니다.
+
+### 재개(resume) — 281 항목의 확장
+
+- CHANGELOG 원문: "Fixed more cases of continued or resumed sessions (`--continue`, `--resume`) re-sending earlier messages in a changed form, which could make the API drop Claude's earlier reasoning"
+  (282) 위 v2.1.281 섹션의 Scope-ceiling check가 예고한 대로, 재개된 세션이 이전 메시지를 바뀐 형태로 재전송해 API가 이전 reasoning을 버리는 사례가 추가로 수정되었습니다 — 되돌리기가 아니라 281의 같은 결함 계열이 넓어진 것입니다.
+
+기타 77건 — 이 저장소 비해당(VSCode 4건, Cloud sessions 5건, Claude Tag 11건 포함, 나머지 57건은 UI 다이얼로그·vim 모드·PDF 렌더링·artifact 게시 등 harness 비영향 세부사항). 실측: `gh issue view 1746 --json body --jq .body | sed -n '/What.s changed/,/액션 아이템/p' | grep -c '^- '` = 86건 중 위 본문 9건(텔레메트리 2·namespace 3·권한·압축·thinking 복구 3·재개 확장 1)을 다뤘으므로 86 − 9 = 77건입니다.
+
+**Action items**:
+- 위 텔레메트리 변수 무시 항목은 `.claude/skills/monitoring-setup/SKILL.md`의 `.claude/settings.local.json` 기록 절 갱신이 필요하며, 별도 서브에이전트가 처리합니다.
+- namespace 예약 항목은 이 저장소의 `omcustom` namespace와 충돌하지 않아 즉각적인 harness 변경은 불필요합니다.
+- 나머지 항목은 CC 플랫폼 신뢰성 보강이며 룰 수정은 불필요합니다.
+
+---
+
+## v2.1.283 (2026-09-25)
+
+> Issue: #1747 — Claude Code v2.1.283 compatibility documentation
+> Scope-ceiling check (R017): 설치 CC·npm latest 모두 **2.1.283**(`claude --version`=2.1.283, `npm view @anthropic-ai/claude-code version`=2.1.283 실측)로 이 릴리즈가 상한이며, 2.1.283보다 나중 릴리즈는 없습니다.
+
+### namespace 예약 되돌림
+
+- CHANGELOG 원문: "Reverted the 2.1.282 reservation of the `claude-ai` name: skills, commands, workflows and MCP servers' skills and prompts so named load again, and `Skill(claude-ai:*)` rules are ordinary prefix rules"
+  (283) 위 v2.1.282 섹션의 `claude-ai` namespace 예약이 되돌려져, 그 이름의 스킬·명령·workflow·MCP 서버 스킬/프롬프트가 다시 로드되고 `Skill(claude-ai:*)` rule도 평범한 prefix rule로 돌아갑니다 — `anthropic-skills` 이름 예약은 이 되돌림 대상이 아니므로 위 2.1.282 섹션 해당 항목은 `anthropic-skills` 범위에서만 유효합니다.
+
+### 지시 파일 감사 · plugin validate
+
+- CHANGELOG 원문: "Added `/doctor prompt-audit` (also `/checkup prompt-audit`) to audit your CLAUDE.md files, skills, agents and commands for prompting patterns written for older models"
+  (283) CLAUDE.md·스킬·에이전트·명령의 프롬프팅 패턴을 감사하는 `/doctor prompt-audit`(`/checkup prompt-audit`)이 추가되어, R016 예산 게이트(`validate-docs`)가 다루는 지시 파일 크기·구식 패턴 점검을 CC 자체 도구로도 보완할 수 있습니다.
+  (283) 이어서 "Improved `prompt-audit` on Claude Code configuration: stale paths, stale commands and contradicting instruction files now lead the report, and thinking keywords that Claude Code documents are kept"에 따르면 구식 경로·구식 명령·상충하는 지시 파일이 보고서 상단에 오르도록 개선되어, R023 Deprecated-Platform-Feature Staleness Check가 겨냥하는 폐기된 플랫폼 기능 참조 탐지와 목적이 겹칩니다.
+- CHANGELOG 원문: "Fixed `claude plugin validate` saying Claude Code accepts a plugin or marketplace name it cannot install; such names in `marketplace.json` now fail validation"
+  (283) `claude plugin validate`가 실제로 설치할 수 없는 플러그인·마켓플레이스 이름을 수용 가능하다고 오보고하던 결함이 수정되어, 그런 이름은 이제 `marketplace.json`에서 검증 실패로 잡힙니다.
+- CHANGELOG 원문: "Fixed `claude plugin validate` passing plugins whose `outputStyles`, `themes`, `monitors`, or `lspServers` paths are missing or point outside the plugin directory"
+  (283) `outputStyles`·`themes`·`monitors`·`lspServers` 경로가 누락되거나 플러그인 디렉터리 밖을 가리켜도 통과하던 `claude plugin validate` 결함이 수정되어, R017 "스킬 추가·수정 후 `claude plugin validate`를 개수 대조와 함께 실행" 조항이 잡아내는 결함 범위가 넓어집니다.
+
+### auto-memory · 권한 모드
+
+- CHANGELOG 원문: "Fixed Claude's edits to its own auto-memory notes being blocked as sensitive-file writes when Claude Code was started in a subdirectory of a git repository"
+  (283) git 저장소의 하위 디렉터리에서 시작된 세션이 자신의 auto-memory 노트를 편집할 때 sensitive-file write로 차단되던 결함이 수정되었습니다 — R011 Subagent memory:project Source-Tree Pollution Guard와는 "하위 디렉터리 실행"이라는 트리거 조건만 같을 뿐 실패 양상은 다릅니다: R011 가드는 `memory: project` 서브에이전트가 소스 트리 하위에 `.claude/agent-memory/`를 잘못 생성하는 것을 경고하는 반면, 이번 283 수정은 CC 자신의 auto-memory 편집이 sensitive-file write로 오탐 차단되던 것을 고친 것입니다 — 가드 자체(중첩 생성 방지 확인)는 계속 필요합니다.
+- CHANGELOG 원문: "Changed interactive sessions on third-party providers or with telemetry off to start in auto mode when no permission mode is configured; `permissions.defaultMode` still overrides it"
+  (283) 서드파티 provider를 쓰거나 텔레메트리를 끈 상태에서 permission mode가 설정되지 않은 대화형 세션이 이제 auto mode로 시작합니다(`permissions.defaultMode`가 설정돼 있으면 계속 그 값이 우선) — R010 Self-Check가 요구하는 유효 permission mode 실측(`jq -r '.permissions.defaultMode // "unset"'`)이 이 조건에서는 auto mode로 귀결됨을 새로 고려해야 합니다.
+
+### /context · 워크플로 폴백
+
+- CHANGELOG 원문: "Fixed `/context` not counting MCP server instructions: they now appear as their own row and count toward the total"
+  (283) `/context`가 MCP 서버 instructions를 집계하지 않던 결함이 수정되어 이제 별도 행으로 표시되고 총량에도 반영됩니다 — R013 Context Budget Management의 백분율 임계값 계산에 MCP 서버 instructions 몫이 추가로 포함됩니다.
+- CHANGELOG 원문: "Fixed dynamic workflows started during a model fallback running every agent on the fallback model instead of retrying the configured model"
+  (283) 모델 폴백 도중 시작된 dynamic workflow가 모든 에이전트를 폴백 모델로 실행하던 결함이 수정되어 이제 원래 설정된 모델로 재시도합니다 — R006 Fallback Models 절이 다루는 설정-레벨 failover가 workflow 실행 중에도 원래 모델 지향으로 동작합니다.
+
+기타 85건 — 이 저장소 비해당(VSCode 7건, Cloud sessions 3건, Claude Tag 7건, Code Review 2건 포함, 나머지 66건은 vim 모드·키바인딩·UI 리스트·Bedrock/Vertex·self-hosted runner git 세부사항 등 harness 비영향). 실측: `gh issue view 1747 --json body --jq .body | sed -n '/What.s changed/,/액션 아이템/p' | grep -c '^- '` = 94건 중 위 본문 9건(namespace 되돌림 1·지시 파일 감사/plugin validate 4·auto-memory·권한 모드 2·`/context`·워크플로 폴백 2)을 다뤘으므로 94 − 9 = 85건입니다.
+
+**Action items**:
+- `claude-ai` namespace 되돌림은 이 저장소의 `omcustom` namespace와 무관해 즉각적인 harness 변경은 불필요합니다.
+- `/doctor prompt-audit`·`claude plugin validate` 강화 항목은 R016 예산 게이트·R017 plugin validate 실행 시 참고할 보조 도구로 기록해 두었으며 룰 수정은 불필요합니다.
+- auto-memory 차단 결함 수정, auto mode 시작 조건 변경, `/context` MCP 집계, workflow 폴백 수정은 모두 기존 룰이 이미 다루는 전제를 강화하는 방향이며 룰 문안 변경은 불필요합니다.
+
+---
+
 ## Known Platform Issues & Workarounds
 
 ### Agent tool malformed parsing on long / special-character prompts (#1241)
@@ -1507,6 +1594,8 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - #1714 — Claude Code v2.1.277 compatibility documentation
 - #1716 — Claude Code v2.1.280 compatibility documentation
 - #1717 — 컨텍스트 예산 초과 대응: CC 버전 노트 이관 정책 전환(룰 → 가이드)
+- #1746 — Claude Code v2.1.282 compatibility documentation
+- #1747 — Claude Code v2.1.283 compatibility documentation
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec

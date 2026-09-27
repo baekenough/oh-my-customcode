@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-09-25
+updated: 2026-09-27
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/03-tools.md
@@ -45,5 +45,7 @@ related:
 | Protocol reference | `06-mcp.md` | Model Context Protocol server connection guide |
 
 **Policy reversed (v1.1.77, #1717) — destination is now this guide, not the rules**: from oh-my-customcode v1.1.9 through v1.1.76, `15-version-compatibility.md` capped its per-version log at v2.1.160 and newer CC compatibility notes accumulated inline in the affected rule files instead — that v2.1.161–v2.1.276 span of inline rule notes is preserved as-is. A `/memory` warning (#1717) measured the resulting rule corpus at 306,752 chars (comments stripped) against CC's 150,000-char limit, so [[r016]] replaced the accumulate-in-rules approach with a destination-based policy: **starting at v2.1.277, new CC release knowledge is recorded here** as a per-rule section (see the file's own version-range headers), and a rule file itself gets at most one line — only when the release changes current agent behavior — gated by [[r016]]'s new ≤140,000-char instruction-budget check. Consult this guide for v2.1.277+ changes; consult the relevant rule's version-note history for v2.1.161–276.
+
+**v2.1.282 (#1746) / v2.1.283 (#1747)**: v2.1.282 changed project/local settings to ignore OpenTelemetry variables that turn on export, set an endpoint, or capture content (`CLAUDE_CODE_ENABLE_TELEMETRY`, `OTEL_LOG_*`, and by the same class `OTEL_METRICS_EXPORTER`/`OTEL_LOGS_EXPORTER`) — a startup notice plus `/status` and `claude doctor` entries now list which telemetry variables were ignored; `.claude/skills/monitoring-setup/SKILL.md` ([[monitoring-setup]]) now branches on installed CC version, moving to user-scope `~/.claude/settings.json` or shell `export` on 2.1.282+. The same release reserved the `anthropic-skills`/`claude-ai` skill namespaces (this repo's `omcustom` namespace does not collide); v2.1.283 reverted the `claude-ai` half of that reservation while leaving `anthropic-skills` reserved. v2.1.283 also added `/doctor prompt-audit` (stale paths/commands, contradicting instruction files surfaced first) and tightened `claude plugin validate` (rejects uninstallable plugin/marketplace names, checks `outputStyles`/`themes`/`monitors`/`lspServers` paths) — both relevant to [[r016]]'s instruction-budget gate and [[r017]]'s `claude plugin validate` step. See the guide's own v2.1.282/v2.1.283 sections for the full CHANGELOG-sourced item list and per-item repo-impact assessment.
 
 See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[agent-teams]], [[r016]] (instruction-budget policy that now routes new content here), and [R017 sync verification](../rules/r017.md) for when this guide requires re-sync.
