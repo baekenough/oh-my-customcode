@@ -1878,13 +1878,13 @@ describe('judge.sh rotation', () => {
 
   // spec REQ-3: R1/R2/R3 fixed, R4 onward cycles.
   const expected: Record<number, string> = {
-    1: 'claude:claude-opus-5',
+    1: 'claude:claude-opus-5-5',
     2: 'agy:claude-opus-4-6-thinking',
     3: 'agy:gpt-oss-120b-medium',
-    4: 'claude:claude-opus-5',
+    4: 'claude:claude-opus-5-5',
     5: 'agy:claude-opus-4-6-thinking',
     6: 'agy:gpt-oss-120b-medium',
-    7: 'claude:claude-opus-5',
+    7: 'claude:claude-opus-5-5',
   };
 
   for (const [round, model] of Object.entries(expected)) {
@@ -1949,7 +1949,7 @@ describe('judge.sh --run', () => {
       expect(result.exitCode).toBe(0);
       const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
       expect(v.verdict).toBe('BUILD_WITH_CHANGES');
-      expect(v.judge).toBe('claude:claude-opus-5');
+      expect(v.judge).toBe('claude:claude-opus-5-5');
     } finally {
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
@@ -2314,7 +2314,7 @@ describe('judge.sh --run', () => {
         expect(v.verdict).toBe('BUILD_WITH_CHANGES');
         // Accepted from the FIRST slot (claude) — proves the validator did
         // not force an unnecessary fallback for well-formed output.
-        expect(v.judge).toBe('claude:claude-opus-5');
+        expect(v.judge).toBe('claude:claude-opus-5-5');
       } finally {
         await rm(bin, { recursive: true, force: true });
         await rm(dir, { recursive: true, force: true });
@@ -4770,7 +4770,7 @@ describe('judge.sh leaves no partial verdict when every rotation slot fails', ()
   // schema-violating verdict sitting on the final path.
   it('exits 4 without creating out_file when all three slots return rejected output', async () => {
     const bin = await makeStubBin({
-      // slot 1 (claude:claude-opus-5) — syntactically not JSON.
+      // slot 1 (claude:claude-opus-5-5) — syntactically not JSON.
       claude: `printf '%s' 'not json at all'`,
       // slots 2 and 3 are both agy, told apart by model.
       agy: `case "$*" in
@@ -4809,7 +4809,7 @@ describe('judge.sh leaves no partial verdict when every rotation slot fails', ()
       // own reason — without this the test would also pass if the rotation
       // gave up after slot 1, which is a different bug with the same exit
       // code and the same absent out_file.
-      expect(result.stderr).toContain('judge claude:claude-opus-5 returned unparsable output');
+      expect(result.stderr).toContain('judge claude:claude-opus-5-5 returned unparsable output');
       expect(result.stderr).toContain(
         'judge agy:claude-opus-4-6-thinking returned a schema-violating verdict'
       );

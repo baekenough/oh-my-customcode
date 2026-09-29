@@ -1,7 +1,7 @@
 ---
 title: Agora
 type: skill
-updated: 2026-08-17
+updated: 2026-09-29
 sources:
   - .claude/skills/agora/SKILL.md
 related:
@@ -47,7 +47,7 @@ Reviewer vendors and judge rotation slots do NOT overlap at the model-ID level, 
 
 | Axis | Overlap |
 |------|---------|
-| Model ID | None — reviewers use `claude-opus-4-8` (`claude`) / omx default (`omx`) / `gemini-3.1-pro-high` (`agy`); judges use `claude-opus-5` (`claude`) / `claude-opus-4-6-thinking` (`agy`) / `gpt-oss-120b-medium` (`agy`) |
+| Model ID | None — reviewers use `claude-opus-4-8` (`claude`) / omx default (`omx`) / `gemini-3.1-pro-high` (`agy`); judges use `claude-opus-5-5` (`claude`) / `claude-opus-4-6-thinking` (`agy`) / `gpt-oss-120b-medium` (`agy`) |
 | CLI binary | **Yes** — the `claude` binary backs the `claude` reviewer and judge slot 1; `agy` backs the `agy` reviewer and judge slots 2-3 |
 | Model family | **Yes** — 2 of 3 judge slots are Claude-family, same family as the `claude` reviewer |
 
