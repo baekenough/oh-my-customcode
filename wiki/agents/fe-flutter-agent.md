@@ -1,7 +1,7 @@
 ---
 title: fe-flutter-agent
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/fe-flutter-agent.md
 related:
@@ -19,7 +19,7 @@ Expert Flutter/Dart cross-platform app developer covering widget composition, st
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `flutter-best-practices`

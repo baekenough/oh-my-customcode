@@ -1,7 +1,7 @@
 ---
 title: infra-aws-expert
 type: agent
-updated: 2026-06-13
+updated: 2026-09-29
 sources:
   - .claude/agents/infra-aws-expert.md
 related:
@@ -23,7 +23,7 @@ Uses `aws-best-practices` skill (offline Well-Architected patterns) and `guides/
 
 ## Key Details
 
-- **Model**: claude-opus-5
+- **Model**: claude-opus-5-5
 - **Domain**: devops
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `aws-best-practices`

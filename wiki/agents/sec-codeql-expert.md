@@ -1,7 +1,7 @@
 ---
 title: sec-codeql-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/sec-codeql-expert.md
 related:
@@ -21,7 +21,7 @@ Runs in a **sandbox** isolation mode for safety.
 
 ## Key Details
 
-- **Model**: claude-opus-5
+- **Model**: claude-opus-5-5
 - **Domain**: devops
 - **Tools**: Read, Write, Grep, Bash
 - **Skills**: `cve-triage`, `adversarial-review`

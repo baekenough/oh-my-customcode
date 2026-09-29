@@ -1,7 +1,7 @@
 ---
 title: sys-memory-keeper
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/sys-memory-keeper.md
 related:
@@ -26,7 +26,7 @@ Native auto-memory (MEMORY.md) is the single persistence backend. The claude-mem
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local

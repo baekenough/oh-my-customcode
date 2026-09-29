@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.88",
-  "generatedAt": "2026-09-27T02:55:55.395Z",
-  "templateVersion": "1.1.88",
+  "generatorVersion": "1.1.89",
+  "generatedAt": "2026-09-29T01:13:22.630Z",
+  "templateVersion": "1.1.89",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -40,8 +40,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-ecomode.md": {
-      "templateHash": "f2c6ef368ad4015894fbc68d782f7ac740b9e944fffc722e43c15d3e6e692d67",
-      "size": 12349,
+      "templateHash": "f0718f065157044b8d14a488abab9ca9af212ec8a0d06adc74c9d6eee31950b9",
+      "size": 12695,
       "component": "rules"
     },
     ".claude/rules/MUST-language-policy.md": {
@@ -50,8 +50,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "1adb0181be32f5e378c9cffc03e1db6b9c8ed55847e4fbdb07cff62763ee960e",
-      "size": 69615,
+      "templateHash": "71df936c2ee1a7396e0babe3da21ae458cc7f10a0d22ba23f07cf7a9f054e87b",
+      "size": 69889,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -125,68 +125,68 @@
       "component": "rules"
     },
     ".claude/agents/be-springboot-expert.md": {
-      "templateHash": "06cbe62cf7b6837e96d6849abc07c11920d37d825b0fe1d7051e023c5ef4909d",
-      "size": 1333,
+      "templateHash": "8139b7e13858a64a5e63af2965499bb124c927c2970d4e362a22a59d6dac6edd",
+      "size": 1335,
       "component": "agents"
     },
     ".claude/agents/db-postgres-expert.md": {
-      "templateHash": "983d3d162c19a608b17bb46aa369bae81c49562d7b2f297755eda52ea1a8e475",
-      "size": 1211,
+      "templateHash": "c14e83f759828a1314c8f67b6f8d2e58c050aec3d01d08d43b342cb62657d772",
+      "size": 1213,
       "component": "agents"
     },
     ".claude/agents/wiki-curator.md": {
-      "templateHash": "31b8052628d38f2d452c45a9db767ec739cf7224d30dc8324a3f6e1be7a3ddb1",
-      "size": 2330,
+      "templateHash": "9cb16e0c9e031975bdd2344bd6f33a96b02dd598427c6f2d7fa442dd7e88be12",
+      "size": 2332,
       "component": "agents"
     },
     ".claude/agents/arch-speckit-agent.md": {
-      "templateHash": "32039aafff5811a9a771d5b6ea806c0410fe2a35ab508b1a41be6f0170b2a6c0",
-      "size": 2697,
+      "templateHash": "894618ba3a6530e3b73fc733efb561bb94c9243c90b8bef9bad19edc11f88f9e",
+      "size": 2699,
       "component": "agents"
     },
     ".claude/agents/lang-rust-expert.md": {
-      "templateHash": "f9f7c5248ca69d4696ae0cb576fea7ad4b069dcad033194a6e685e1ef2d19e6c",
-      "size": 1394,
+      "templateHash": "51bd014ec701f78635d8278fab30f5a1f4a9da8c9be903116fd4df9896e15a7e",
+      "size": 1396,
       "component": "agents"
     },
     ".claude/agents/mgr-updater.md": {
-      "templateHash": "66119f59f384f677496b5253942da74bedc42e9160aa21a049f6d2b353a53f1b",
-      "size": 1034,
+      "templateHash": "4a233cb16fb9c088612a6e8e8e3762536af21ea272c11bd571ca5160851b6aad",
+      "size": 1036,
       "component": "agents"
     },
     ".claude/agents/lang-kotlin-expert.md": {
-      "templateHash": "9a86f14c3d7e67c259c3ddda6ae2389ebea6ae9607a9b5dcb2f4bb2bba1b6f0b",
-      "size": 1377,
+      "templateHash": "8605c84000cbcaaa01a0f93c7ddebbc10a7b544896e1ccce0ab71a717766ab4b",
+      "size": 1379,
       "component": "agents"
     },
     ".claude/agents/fe-design-expert.md": {
-      "templateHash": "2f9bc6d8376fe1c1fc2c193a2a8b0970718e523ccb3cf4c658f523040ecc149b",
-      "size": 5243,
+      "templateHash": "23783ae2ba0d28c504602bd3cf7d761885115f3b5ad0a2f744563dcca7a155ae",
+      "size": 5245,
       "component": "agents"
     },
     ".claude/agents/be-express-expert.md": {
-      "templateHash": "9c951073d00ffc98f0b7f7339885963bc84699d3daed3bea61d82e15b5936cd0",
-      "size": 1073,
+      "templateHash": "1775d4eb4ab0b550a4bdc591c35b266fb3189754111989ad7af17d52d56ea8e8",
+      "size": 1075,
       "component": "agents"
     },
     ".claude/agents/mgr-sauron.md": {
-      "templateHash": "4c7194a28482a914eabcf899aeeceb5a5799d692b6d46c2e31e1af9a400c04ba",
-      "size": 2295,
+      "templateHash": "5fe78feb22307c6ac6e3f197c441f727800fd6599e031e16613cd3bc605e1212",
+      "size": 2297,
       "component": "agents"
     },
     ".claude/agents/fe-svelte-agent.md": {
-      "templateHash": "c109f9dabd818e8720f429066519568dcb6dbf195afddf6d679d4aa8684b1f84",
-      "size": 794,
+      "templateHash": "d1329a3f5af9ca11e0a79bb5fe2e037772b9250ed746091dc0e7bc48f462ea34",
+      "size": 796,
       "component": "agents"
     },
     ".claude/agents/lang-golang-expert.md": {
-      "templateHash": "fc4a07a9b4dbd3ea38266b226d76591a208eccf5656192281f80d18a79958e22",
-      "size": 1367,
+      "templateHash": "b0a0bc7129216b3d43d55d7ba1902b2dc24ceafac3909aa760f93b568f1b8684",
+      "size": 1369,
       "component": "agents"
     },
     ".claude/agents/de-airflow-expert.md": {
-      "templateHash": "10b550dc4441bf917118aeba720e182936aba05cbd2852855f0512c1368adee6",
-      "size": 1650,
+      "templateHash": "b0bb033249b682cec19d1b44df0a1cabacf9a355ef4f84fcec58c6fea50f4d64",
+      "size": 1652,
       "component": "agents"
     },
     ".claude/agents/sys-naggy.md": {
@@ -195,53 +195,53 @@
       "component": "agents"
     },
     ".claude/agents/db-redis-expert.md": {
-      "templateHash": "3fa1658bbbf4c33fa605fc0bd86a9566e82739dad35557b66c972b2adae761d8",
-      "size": 1167,
+      "templateHash": "1717007afc07a0824b167f7d5815f46ead3f5cbf3d5bf43b95d2c3caa1d5a15e",
+      "size": 1169,
       "component": "agents"
     },
     ".claude/agents/de-pipeline-expert.md": {
-      "templateHash": "605a1d5610ce14faa48ac3bf8861983a0b99aa7ac02110d5ff231facc17d0646",
-      "size": 1106,
+      "templateHash": "538e0125ec4af1ccb51534a5e8a1af64c8d1f7f9c89ac37dd9212e4a31f644c6",
+      "size": 1108,
       "component": "agents"
     },
     ".claude/agents/lang-typescript-expert.md": {
-      "templateHash": "8e5a4d9657cca760ffaec63a8c8d290cdfbf80fdfe8c0cc0d65bbbbf45f83f21",
-      "size": 1506,
+      "templateHash": "4c93deb7e9f13e06dda7cc67dacb1f80a2e2cd82b0d49a8d9e2ad39a23196fdd",
+      "size": 1508,
       "component": "agents"
     },
     ".claude/agents/be-nestjs-expert.md": {
-      "templateHash": "3f1bc5362a5fde3a4422cc570fde30b851c98a4f1921295d58535d777e786779",
-      "size": 879,
+      "templateHash": "1a581141af84fbd311ed23e7a77632e688cb38a67ca1d4d669c1ee48b3da9930",
+      "size": 881,
       "component": "agents"
     },
     ".claude/agents/be-django-expert.md": {
-      "templateHash": "2a24ae75a767150a6bd1128bc5762cd63febf527d6e281e554f4c55a9da2de6b",
-      "size": 1663,
+      "templateHash": "65e4537bf982c1935511cebf876b1234644f29005ebb035fa0a3e03c73a8ee34",
+      "size": 1665,
       "component": "agents"
     },
     ".claude/agents/tool-optimizer.md": {
-      "templateHash": "c6a543480d4426bdb560e42bfa046af0728bb51ef67f7c044264258952d8c644",
-      "size": 1097,
+      "templateHash": "d648d4e02840879a77d52130f9d0c1ca8923ff9784476a8847146d5b4528ac6e",
+      "size": 1099,
       "component": "agents"
     },
     ".claude/agents/qa-engineer.md": {
-      "templateHash": "9e0630065908f3e28840c58cf21f282aac0b9c1762d223a3cd9a7e72957e959f",
-      "size": 1592,
+      "templateHash": "b6d40e9fbdb7739692b644b1107718ed336cdaab1aeb0a3dc3e9e1ebd1d67ef0",
+      "size": 1594,
       "component": "agents"
     },
     ".claude/agents/fe-vercel-agent.md": {
-      "templateHash": "edd5b74765d2a3c23fd588caeec97d20ba9c75e0f6677c272429ffd2bbda5264",
-      "size": 1053,
+      "templateHash": "53d5139f8669d850434ee0137465a038c50f32b593fe2a5a4d5d5cca08b83d45",
+      "size": 1055,
       "component": "agents"
     },
     ".claude/agents/fe-vuejs-agent.md": {
-      "templateHash": "c8492349ed91109547ed637711974c809342f42f5edf3bd77c95f5d1e5016b8d",
-      "size": 793,
+      "templateHash": "d295ab19a28b2e5d996f113b46108156ef0c51785e5918dc3d22994a2ea32a53",
+      "size": 795,
       "component": "agents"
     },
     ".claude/agents/tool-npm-expert.md": {
-      "templateHash": "71358db6071dad340065c2a6232fc2191a9f0b876087378e3e2b24ccca935693",
-      "size": 879,
+      "templateHash": "13073eca11ff2dc5a159e4f1da3c7495380664a0c977cf8b2e46909df91a0cdd",
+      "size": 881,
       "component": "agents"
     },
     ".claude/agents/tracker-checkpoint.md": {
@@ -250,13 +250,13 @@
       "component": "agents"
     },
     ".claude/agents/de-dbt-expert.md": {
-      "templateHash": "3b6dca81117b4b80927b7dcccaa67cc3e5d04dd1147f88388efceb21afa943db",
-      "size": 1046,
+      "templateHash": "79a79fcd97cb7215f166d1111e29da19d9bfc6cf92dc2aa39a47002eeecf3e7f",
+      "size": 1048,
       "component": "agents"
     },
     ".claude/agents/de-spark-expert.md": {
-      "templateHash": "ac32ad3190a5141fe2e10e10efba55e3c821852eedfb6710879f8eed74d652ab",
-      "size": 1293,
+      "templateHash": "b22796f400cdce0d03bd892c5a3f2e37a992c98e2450bfd802cd8096a8d819fd",
+      "size": 1295,
       "component": "agents"
     },
     ".claude/agents/souls/lang-golang-expert.soul.md": {
@@ -265,63 +265,63 @@
       "component": "agents"
     },
     ".claude/agents/de-kafka-expert.md": {
-      "templateHash": "8a7bf5a61135002910e121a4554caa7a2b8501cb86510604390a04deea98b640",
-      "size": 2807,
+      "templateHash": "1e540ec19ec9d53d9155ec0eea54afa317e72a5ee19fa74c77d70f4612b24d91",
+      "size": 2809,
       "component": "agents"
     },
     ".claude/agents/be-go-backend-expert.md": {
-      "templateHash": "9034dddd4136040282c16d0f4f0006f9b3c62f02011fce3611aa27f553d81948",
-      "size": 1274,
+      "templateHash": "356b29c0ea7a7a0e95b33c28a19fed20ed908cd824dfaf00ab048393fbedfae0",
+      "size": 1276,
       "component": "agents"
     },
     ".claude/agents/mgr-claude-code-bible.md": {
-      "templateHash": "cbcc8271d1d286a5c9c1b436999359d1b59ac7e0f68a102f5c75464c69e48974",
-      "size": 2262,
+      "templateHash": "b19339a1dfe007cb44e9afb33b718437ad1b407c3d4ab818da72cba69b4454be",
+      "size": 2264,
       "component": "agents"
     },
     ".claude/agents/fe-flutter-agent.md": {
-      "templateHash": "428c768f0df36a0f73e6b1c9bfaedecd30ce1b00c58c45b2f2fd08157e0feea9",
-      "size": 1358,
+      "templateHash": "d5ff4445412143919bf1ae637c895f8b4f2bd14c6eaaaacde452a10056f477cb",
+      "size": 1360,
       "component": "agents"
     },
     ".claude/agents/infra-docker-expert.md": {
-      "templateHash": "daae45fbcbfc5d8662f607de96764105acc113a5d4380a4805a97f0c70ea5c54",
-      "size": 1206,
+      "templateHash": "91d5216768aa418f16563212de8d4052fef9ea81ce89943a743911b577f5eb28",
+      "size": 1208,
       "component": "agents"
     },
     ".claude/agents/sec-codeql-expert.md": {
-      "templateHash": "06662e5d6be2a4409a53cc1b3390cecbf88d6031b5e18c0e28f4ae9cdfd2ac7f",
-      "size": 1999,
+      "templateHash": "1f7d4770275d7659cfc7f1718e80aa351e8770c4323be2a84a936ac69d2084b2",
+      "size": 2001,
       "component": "agents"
     },
     ".claude/agents/mgr-gitnerd.md": {
-      "templateHash": "34cb0969531da80cdf1e3dc07068d0ea9c8c89ac118a4f2796ca59566e879842",
-      "size": 4432,
+      "templateHash": "3d369c68eb3a9bb378d491026ec43c9aacef2346d4f91ad16da9f28de4d5bbc6",
+      "size": 4434,
       "component": "agents"
     },
     ".claude/agents/mgr-creator.md": {
-      "templateHash": "b3b95b7412c7fe4a517129a60683c7979af74919b03375ba34a0550125826363",
-      "size": 1922,
+      "templateHash": "9930b868377ed3ac6f155758dfdc5cd96937a4bc035731f5a5f4c45da7a89cab",
+      "size": 1926,
       "component": "agents"
     },
     ".claude/agents/qa-writer.md": {
-      "templateHash": "80ff1e5c446befe5b0f9e2d2b238d8a28c4a945c22a3eb724815b2c5dbbbab81",
-      "size": 915,
+      "templateHash": "ce29090651fca4646f41b8a8e0e53c31050c5049d75f2d72170cffd180c299f9",
+      "size": 917,
       "component": "agents"
     },
     ".claude/agents/db-supabase-expert.md": {
-      "templateHash": "f3031193e7fbcdeec9e462dcdf0fd3c5380c4cc1203902a31c6534cafad8cc7f",
-      "size": 1074,
+      "templateHash": "98099339733efc90a5e688407683db2b1515500c47c834aa708e11ee0cd68d59",
+      "size": 1076,
       "component": "agents"
     },
     ".claude/agents/lang-python-expert.md": {
-      "templateHash": "6542677b4b60f2e05f002ad19c605256f2cb7ac924491baf875292bad78646c2",
-      "size": 1354,
+      "templateHash": "8f7de0e8cb2bec41d2237847a6c353be2c9a329303550a2fef51e3842811423a",
+      "size": 1356,
       "component": "agents"
     },
     ".claude/agents/tool-bun-expert.md": {
-      "templateHash": "9dba7bf6eee55c2de1bfd0afc3c259f969a9f330a3b56c84b156071ab6b31c45",
-      "size": 755,
+      "templateHash": "976bbfed29bdf8c6aacebef8fd0788b0d3af80ef4d0fdb6dfce52a307ed1cba6",
+      "size": 757,
       "component": "agents"
     },
     ".claude/agents/mgr-supplier.md": {
@@ -330,53 +330,53 @@
       "component": "agents"
     },
     ".claude/agents/arch-documenter.md": {
-      "templateHash": "255a898ff3df6ba87a8ed19d81e6bd9dd1e153e6e9ca46bd7f1d5877785e7555",
-      "size": 2568,
+      "templateHash": "964a4271716ab7d2d737b3b8965760a6367f4bc36718e1991f74b9b2ff4f935e",
+      "size": 2570,
       "component": "agents"
     },
     ".claude/agents/qa-planner.md": {
-      "templateHash": "ad2c281982de83f6b9314168579e6fd0002b14a153c6ae3d0f13034566847cbf",
-      "size": 1913,
+      "templateHash": "abadfb20a764c4d0bdc95d1d96c8b16611a3aebb22a786dad56d9c39c091156c",
+      "size": 1915,
       "component": "agents"
     },
     ".claude/agents/lang-java-expert.md": {
-      "templateHash": "dada9c3b240521c928cbc99da826489d9142e52af211b01b0f769fc81fe4a6ca",
-      "size": 1267,
+      "templateHash": "366a415431db69650ed664a5f9908a98d09de96e51c9cba619bd3a6ca9e360bf",
+      "size": 1269,
       "component": "agents"
     },
     ".claude/agents/db-alembic-expert.md": {
-      "templateHash": "0073b794f6fbd8ac3dec0efb60f006cba75a31b36cd38c401f47798f4fab05bf",
-      "size": 3797,
+      "templateHash": "4e1dbb8846c4c54ba5a3dd1c540de229684b64695a49775d1d998a36d74d13e3",
+      "size": 3799,
       "component": "agents"
     },
     ".claude/agents/sys-memory-keeper.md": {
-      "templateHash": "666b8f24d34c1b8ce8287968dd94ffd0ab16e7f3378ad6eb73e0f94b85455cf3",
-      "size": 3929,
+      "templateHash": "94e92a81f67ae259c1722ee4fcb50553ad5ab1948d88a2b92556e480d62ca52d",
+      "size": 3931,
       "component": "agents"
     },
     ".claude/agents/infra-aws-expert.md": {
-      "templateHash": "3f49c11e960eac2457a70778a4cb77d9f13c850a39e5041f560c754f1bd574a8",
-      "size": 5106,
+      "templateHash": "72e823adf76373cb7095029a3bfba3cb32bf9c68544121b874f9401185092e57",
+      "size": 5108,
       "component": "agents"
     },
     ".claude/agents/slack-cli-expert.md": {
-      "templateHash": "c0dbd32c0c191aa9af678a85bfbdb2acc5071a0ade8cdd33e22c017b3c042398",
-      "size": 1474,
+      "templateHash": "ef8efb2f5ac7e0de3f419e8334f46bd8991c0b93cf9e7f90f50dabaaaf773018",
+      "size": 1476,
       "component": "agents"
     },
     ".claude/agents/agora-runner.md": {
-      "templateHash": "8ef403878a0595da99e8e90e1ee3aec07014acf92963b5a2076d604907988a69",
-      "size": 8725,
+      "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
+      "size": 8727,
       "component": "agents"
     },
     ".claude/agents/be-fastapi-expert.md": {
-      "templateHash": "0a3e984074ea34357ec36dc2291517edc2cdd4547948f8f3be9daba45e28edf5",
-      "size": 1243,
+      "templateHash": "77bd3f7436c2ee8d7c3235530023e4c9bbd965fe32d1801312834eeece481bfd",
+      "size": 1245,
       "component": "agents"
     },
     ".claude/agents/de-snowflake-expert.md": {
-      "templateHash": "ec77aa36147eef2d3b7ebeb60e65cf92e6c7a5f7c04dc559c3e4251f41907747",
-      "size": 1126,
+      "templateHash": "90adfbb2a437c6488b844a89a00d80fda4a8b21d132b21c46ac0d91e9ec574e2",
+      "size": 1128,
       "component": "agents"
     },
     ".claude/skills/pr-auto-improve/SKILL.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "5a4ec6a569ce73546a0051db8a243de519e8ea5ed0353f03afa3d7aeb4a0900f",
-      "size": 78305,
+      "templateHash": "cfe3c75f4b5fa391d1fa2fdeec20c2fcccad034575347d4be060fb780d95365b",
+      "size": 80587,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -1435,8 +1435,8 @@
       "component": "guides"
     },
     "guides/claude-code/03-tools.md": {
-      "templateHash": "2db66d39c9a9ffe15192a7c38c7d4b085317e52138e7dcaef65f4c8a31af33aa",
-      "size": 4132,
+      "templateHash": "098065903125953181c96f970b3c8c2c8ad75baf08e1eed6986994cffb2ed0e0",
+      "size": 4134,
       "component": "guides"
     },
     "guides/claude-code/08-testing.md": {
@@ -1445,8 +1445,8 @@
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
-      "templateHash": "5177afca60dad66fb07029be3b169f23e0088f6f482fc978dd5e667b5969ae5f",
-      "size": 7135,
+      "templateHash": "63d23f8dd67f6c8d70e33adcc396c554666bdd7ccef20b9298882c7823995d1d",
+      "size": 7250,
       "component": "guides"
     },
     "guides/claude-code/10-monitoring.md": {
@@ -1455,8 +1455,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "58be7cb519af2bb1f35353ee1f151471a6ae1d4ff533915cd441702e8fd3c480",
-      "size": 127260,
+      "templateHash": "0115231fc918940fe45e07b59f78fab434af8e099503b3e7f171a762cdb7e068",
+      "size": 137994,
       "component": "guides"
     },
     "guides/claude-code/11-sub-agents.md": {
@@ -1475,8 +1475,8 @@
       "component": "guides"
     },
     "guides/claude-code/06-mcp.md": {
-      "templateHash": "e64dfc07c1f417b29291704bcdd98eaa7fa42f069df978b92be039766eb20c44",
-      "size": 3890,
+      "templateHash": "011c016c36b5e49beca6817b9113b8c43d07ae00810abf6cee1dcee38c6660b6",
+      "size": 3892,
       "component": "guides"
     },
     "guides/claude-code/01-overview.md": {
@@ -1485,8 +1485,8 @@
       "component": "guides"
     },
     "guides/claude-code/13-cli-flags.md": {
-      "templateHash": "8b84fc54cfff108a5ba75ad0092c4e05e009f342c94bb15ec448d94cd182eda7",
-      "size": 4955,
+      "templateHash": "db633641e122e526686530645ef5754f4788e0e1b5a871328f8fa37662722ad1",
+      "size": 4957,
       "component": "guides"
     },
     "guides/claude-code/12-workflow-patterns.md": {
@@ -1755,8 +1755,8 @@
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {
-      "templateHash": "b692080022d3b0140524aace97927e6497fd64eb8b93e32921b86aa452382eda",
-      "size": 7421,
+      "templateHash": "e0439a9a9ffca8b3f5cde76e4dc448876790837d1526bec738468cdd663b32b3",
+      "size": 7873,
       "component": "guides"
     },
     "guides/agent-teams/troubleshooting.md": {

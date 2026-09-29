@@ -1,7 +1,7 @@
 ---
 title: agora-runner
 type: agent
-updated: 2026-08-17
+updated: 2026-09-29
 sources:
   - .claude/agents/agora-runner.md
 related:
@@ -24,7 +24,7 @@ Per-invocation scope is deliberately narrow: **one delegation = one step**. Step
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Tools**: Bash, Read, Write, Glob
 - **Skills**: agora
 - **Scope per call**: one of — session start, one round, or session finish

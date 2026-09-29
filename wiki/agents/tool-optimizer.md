@@ -1,7 +1,7 @@
 ---
 title: tool-optimizer
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/tool-optimizer.md
 related:
@@ -23,7 +23,7 @@ Uses three skills: `optimize-analyze`, `optimize-bundle`, and `optimize-report`.
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Grep, Glob, Bash (read-only operations only)
 - **Skills**: `optimize-analyze`, `optimize-bundle`, `optimize-report`

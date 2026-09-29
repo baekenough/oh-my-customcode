@@ -40,14 +40,15 @@ Tier를 섞으면(예: frontmatter에 Tier-3 전용 값을 쓰거나 그 반대)
 | `opusplan` | Opus + plan mode; architecture planning with approval gates |
 | `inherit` | Inherit the parent session's model |
 
-**CC resolves these, not this project.** This project cannot "pin" an alias to a specific version — measured: a frontmatter `model: sonnet` agent executed as `claude-sonnet-5` (CC v2.1.197+ default), not a project-fixed `claude-sonnet-4-6`. Treat any "currently resolves to X" statement as a snapshot that changes when CC's own default changes.
+**CC resolves these, not this project.** This project cannot "pin" an alias to a specific version — measured: a frontmatter `model: sonnet` agent executed as `claude-sonnet-5` (the v2.1.197-era default), not a project-fixed `claude-sonnet-4-6`. Treat any "currently resolves to X" statement as a snapshot that changes when CC's own default changes.
 
 #### Tier 2 — Full model IDs (frontmatter `model:` ONLY — recommended for stability)
 
 | Full ID | Use Case |
 |---------|----------|
 | `claude-haiku-4-5` | Fast, cheap tasks |
-| `claude-sonnet-5` | Native 1M context; current CC default Sonnet (v2.1.197+) |
+| `claude-sonnet-5` | Native 1M context; previous-generation Sonnet (v2.1.197+; on the Anthropic API, `claude-sonnet-5-5` is now the default Sonnet model, v2.1.284+) |
+| `claude-sonnet-5-5` | Now the default Sonnet model on the Anthropic API (v2.1.284+); 1M context, $2/$10 per Mtok, $0.20/Mtok cache reads |
 | `claude-opus-4-6` | Opus, previous generation |
 | `claude-opus-4-8` | Opus, previous generation; supports xhigh effort |
 | `claude-opus-5` | Opus, previous generation (GA); native 1M context, fast mode at $10/$50 per Mtok |
@@ -55,7 +56,7 @@ Tier를 섞으면(예: frontmatter에 Tier-3 전용 값을 쓰거나 그 반대)
 | `claude-fable-5` | Mythos-class; tier above Opus (access via CC v2.1.170+) |
 | `claude-fable-5-1` | Mythos-class; Fable 5.1 — v2.1.257부터 기본 Fable 모델, 1M context |
 
-Full IDs are valid ONLY in agent frontmatter — the Agent tool's `model:` spawn parameter does NOT accept them (see Tier 3). Writing the full ID directly (not a project-invented shorthand) pins the agent regardless of future CC default changes. This is the recommended way to opt into Sonnet 5 / Opus 5 / Fable 5 explicitly rather than riding CC's Tier-1 default resolution.
+Full IDs are valid ONLY in agent frontmatter — the Agent tool's `model:` spawn parameter does NOT accept them (see Tier 3). Writing the full ID directly (not a project-invented shorthand) pins the agent regardless of future CC default changes. This is the recommended way to opt into Sonnet 5.5 / Opus 5.5 / Fable 5 explicitly rather than riding CC's Tier-1 default resolution.
 
 Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
 
@@ -80,7 +81,7 @@ Skill/rule text instructing "spawn with `model: opus`" refers to this tier — a
 
 > **v2.1.233+**: print 모드(`-p`) 진단이 추가되어, Claude Code가 **인식하지 못하는 model ID**로 요청이 나가면 stderr에 `[claude-code:unrecognized_model]` 라인이 기록됩니다(`modelOverrides`로 매핑하면 억제). 구버전에서는 오타·폐기된 full ID가 **무음으로 fallback 해석**되어 "frontmatter에 적힌 모델 = 실제 실행 모델"이라는 전제가 검증 불가능했습니다 — 위 v2.1.223 강등 경고와 같은 계열의 **관측성 보강**이며, 이 저장소는 다수 에이전트가 Tier-2 full ID를 쓰므로 `-p` 실행 시 이 라인 유무가 model ID 유효성의 결정론적 증거입니다(R020 "attempt ≠ outcome"). 무인 루프(`/fsd`)의 stderr를 버리면 이 신호도 함께 사라집니다.
 
-> **v2.1.223+**: `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 **native 1M 창을 가진 모든 Claude 모델**을 auto-compaction으로 200K에 유지하도록 확대되었습니다(이전에는 고정 모델 목록). 미인식 model ID도 가정 컨텍스트 창 내로 유지되며 `CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원할 수 있습니다. 위 Tier-2 표의 `claude-sonnet-5`/`claude-opus-5`(native 1M)와 `[1m]` 접미사는 이 env가 설정된 환경에서 **실효 200K로 동작**하므로, 1M 전제의 대용량 컨텍스트 위임 전에 env 설정 여부를 확인합니다(cross-ref R013 context budget).
+> **v2.1.223+**: `CLAUDE_CODE_DISABLE_1M_CONTEXT`가 **native 1M 창을 가진 모든 Claude 모델**을 auto-compaction으로 200K에 유지하도록 확대되었습니다(이전에는 고정 모델 목록). 미인식 model ID도 가정 컨텍스트 창 내로 유지되며 `CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`로 복원할 수 있습니다. 위 Tier-2 표의 `claude-sonnet-5`/`claude-opus-5`/`claude-sonnet-5-5`/`claude-opus-5-5`(native 1M)와 `[1m]` 접미사는 이 env가 설정된 환경에서 **실효 200K로 동작**하므로, 1M 전제의 대용량 컨텍스트 위임 전에 env 설정 여부를 확인합니다(cross-ref R013 context budget).
 
 > **v2.1.251+**: `CLAUDE_CODE_SUBAGENT_MODEL`이 이제 "모든 것을 override"가 아니라 **기본 subagent 모델만 설정**합니다 — 에이전트 정의의 `model:`(Tier 1/2)과 spawn 시점 명시적 `model`(Tier 3)이 이 env보다 **우선**합니다. 이 저장소는 다수 에이전트가 Tier-2 full ID로 model을 pin하므로, v2.1.251부터는 이 env var가 project의 model pin을 더 이상 깨뜨릴 수 없습니다(단, 이전 버전에서 실행된 세션은 여전히 영향받았을 수 있습니다).
 

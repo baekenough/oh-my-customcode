@@ -113,18 +113,30 @@ const LANG_RULES: Array<{ keywords: string[]; prefix: string; domain: string }> 
 // ---------------------------------------------------------------------------
 
 const MODEL_RULES: Array<{ model: string; keywords: string[] }> = [
-	// NOTE: opus5/sonnet5 rules MUST precede the generic opus rule below —
-	// `lower.includes('opus')` also matches the substring 'opus5', so placing
-	// opus5 after opus would make an "opus5" mention silently fall to 'opus'.
-	// Emitted model values use the Tier 2 full model ID (frontmatter-only) —
-	// CC v2.1.220 does not resolve the 'opus5'/'sonnet5' short aliases.
+	// NOTE: 5.5 규칙은 이전 세대(5) 규칙보다 반드시 앞에 둔다 — 'opus 5'는
+	// 'opus 5.5'/'opus-5-5'의 부분 문자열이므로 순서가 바뀌면 5.5 요청이 조용히
+	// 이전 세대 ID로 떨어진다. 이 두 규칙 그룹은 또한 일반 'opus' 규칙보다 앞에 둔다
+	// ('opus5'도 'opus'를 포함하기 때문).
+	// emit 값은 frontmatter 전용 Tier 2 전체 모델 ID이다 — 'opus5'/'sonnet5' 같은
+	// 짧은 별칭은 CC가 해석하지 않는다.
+	// CC v2.1.284에서 claude-sonnet-5-5/claude-opus-5-5가 새 기본 세대로 추가됐다.
+	// 명시적 5.5 표현만 5.5 ID로, 이전 세대 표현(opus 5, claude-opus-5 등)은
+	// claude-cli.ts와 동일하게 이전 세대 ID(claude-opus-5/claude-sonnet-5)로 유지한다.
+	{
+		model: 'claude-opus-5-5',
+		keywords: ['claude-opus-5-5', 'opus 5.5', 'opus-5-5', 'opus5.5', 'opus-5.5']
+	},
+	{
+		model: 'claude-sonnet-5-5',
+		keywords: ['claude-sonnet-5-5', 'sonnet 5.5', 'sonnet-5-5', 'sonnet5.5', 'sonnet-5.5']
+	},
 	{
 		model: 'claude-opus-5',
-		keywords: ['opus5', 'opus 5', 'opus-5']
+		keywords: ['claude-opus-5', 'opus 5', 'opus-5', 'opus5']
 	},
 	{
 		model: 'claude-sonnet-5',
-		keywords: ['sonnet5', 'sonnet 5', 'sonnet-5']
+		keywords: ['claude-sonnet-5', 'sonnet 5', 'sonnet-5', 'sonnet5']
 	},
 	{
 		model: 'opus',

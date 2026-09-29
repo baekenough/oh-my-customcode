@@ -1,7 +1,7 @@
 ---
 title: mgr-claude-code-bible
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/mgr-claude-code-bible.md
 related:
@@ -24,7 +24,7 @@ This agent is invoked by [[mgr-sauron]] during Phase 1 verification ([[r017]]) a
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Grep, Bash
 - **Skills**: `claude-code-bible`

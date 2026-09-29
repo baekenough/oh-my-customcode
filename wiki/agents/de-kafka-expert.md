@@ -1,7 +1,7 @@
 ---
 title: de-kafka-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/de-kafka-expert.md
 related:
@@ -22,7 +22,7 @@ Uses `kafka-best-practices` skill and `guides/kafka/` for reference documentatio
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `kafka-best-practices`

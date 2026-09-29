@@ -1,7 +1,7 @@
 ---
 title: mgr-sauron
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/mgr-sauron.md
 related:
@@ -28,7 +28,7 @@ Cost-aware verification ([[r023]] shift-left, added v1.1.15/#1475): Round 3-4 re
 
 ## Key Details
 
-- **Model**: claude-opus-5
+- **Model**: claude-opus-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `sauron-watch`

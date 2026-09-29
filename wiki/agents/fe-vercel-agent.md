@@ -1,7 +1,7 @@
 ---
 title: fe-vercel-agent
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/fe-vercel-agent.md
 related:
@@ -25,7 +25,7 @@ The agent combines four specialized skills: `react-best-practices` and `web-desi
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `react-best-practices`, `web-design-guidelines`, `vercel-deploy`, `impeccable-design`

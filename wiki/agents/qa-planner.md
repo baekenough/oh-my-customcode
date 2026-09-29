@@ -1,7 +1,7 @@
 ---
 title: qa-planner
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/qa-planner.md
 related:
@@ -22,7 +22,7 @@ Outputs a YAML-structured QA plan consumed by [[qa-writer]] for detailed test ca
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash)
 - **Memory**: local (scoped to `.claude/agent-memory-local/qa-planner/`, git-untracked; changed from `project` in v1.1.13, #1468)

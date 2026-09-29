@@ -1,7 +1,7 @@
 ---
 title: fe-vuejs-agent
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/fe-vuejs-agent.md
 related:
@@ -21,7 +21,7 @@ Expert Vue.js (Vue 3) developer for Composition API, single-file components, Pin
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `impeccable-design`, `web-design-guidelines`

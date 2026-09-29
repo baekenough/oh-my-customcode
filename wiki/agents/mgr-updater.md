@@ -1,7 +1,7 @@
 ---
 title: mgr-updater
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/mgr-updater.md
 related:
@@ -22,7 +22,7 @@ Also handles documentation sync (`update-docs` skill) for the R017 verification 
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `update-external`, `update-docs`

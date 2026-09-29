@@ -1,7 +1,7 @@
 ---
 title: be-fastapi-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/be-fastapi-expert.md
 related:
@@ -23,7 +23,7 @@ Commonly paired with [[db-alembic-expert]] for async SQLAlchemy migrations and [
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `fastapi-best-practices`

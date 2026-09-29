@@ -1,7 +1,7 @@
 ---
 title: de-airflow-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/de-airflow-expert.md
 related:
@@ -26,7 +26,7 @@ Uses `airflow-best-practices` skill and `guides/airflow/` for reference document
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `airflow-best-practices`

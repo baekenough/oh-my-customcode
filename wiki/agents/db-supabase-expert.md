@@ -1,7 +1,7 @@
 ---
 title: db-supabase-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-09-29
 sources:
   - .claude/agents/db-supabase-expert.md
 related:
@@ -22,7 +22,7 @@ Uses `supabase-postgres-best-practices` skill and consults `guides/supabase-post
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `supabase-postgres-best-practices`

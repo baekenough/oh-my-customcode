@@ -16,7 +16,7 @@ Valid in BOTH agent frontmatter `model:` AND the Agent tool `model` parameter. *
 
 ### Tier 2 — Full Model ID (frontmatter only)
 
-Values: `claude-sonnet-5` | `claude-opus-5` | `claude-haiku-4-5` | `claude-opus-4-6` | `claude-opus-4-8` | `claude-fable-5`, etc.
+Values: `claude-sonnet-5-5` | `claude-sonnet-5` | `claude-opus-5-5` | `claude-opus-5` | `claude-haiku-4-5` | `claude-opus-4-6` | `claude-opus-4-8` | `claude-fable-5`, etc.
 
 Valid ONLY in frontmatter `model:` — the Agent tool `model` parameter does NOT accept full model IDs. Use a Tier 2 ID when you want the agent pinned to a specific model regardless of any future drift in what CC's Tier 1 aliases resolve to.
 
@@ -34,15 +34,17 @@ Values: `sonnet` | `opus` | `haiku` | `fable` — **only these four**. Does NOT 
 |---------------|------|-------|----------|
 | `claude-haiku-4-5` | $ | Fast | Search, simple edits, file discovery |
 | `claude-sonnet-4-6` | $$ | Moderate | Code generation, general tasks — historically what the Tier 1 `sonnet` alias resolved to; CC's actual resolution target can drift (see Tier 1 above) |
-| `claude-sonnet-5` | $$ | Moderate | Native 1M context; use as an explicit frontmatter pin |
+| `claude-sonnet-5-5` | $$ | Moderate | Native 1M context; now the default Sonnet model on the Anthropic API, $2/$10 per Mtok with $0.20/Mtok cache reads |
+| `claude-sonnet-5` | $$ | Moderate | Previous-generation Sonnet; native 1M context — use as an explicit frontmatter pin |
 | `claude-opus-4-6` | $$$ | Slower | Complex reasoning, architecture, planning |
-| `claude-opus-5` | $$$ | Fast mode available | Native 1M context, fast mode at $10/$50 per Mtok |
+| `claude-opus-5-5` | $$$ | — | Latest Opus (GA), default Opus model; native 1M context, $4/$20 per Mtok, $0.20/Mtok cache reads |
+| `claude-opus-5` | $$$ | Fast mode available | Previous-generation Opus (GA); native 1M context, fast mode at $10/$50 per Mtok |
 | `claude-opus-4-8` | $$$ | Slower | Previous-generation Opus; supports xhigh effort |
 | `claude-fable-5` | $$$$ | Slower | Mythos-class; use the full ID in frontmatter (bare `fable` is Tier 3 Agent-tool-only) |
 
-Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`). Sonnet 5, Opus 5, and Fable 5 include 1M context by default — no `[1m]` suffix needed.
+Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`). Sonnet 5, Sonnet 5.5, Opus 5, Opus 5.5, and Fable 5 include 1M context by default — no `[1m]` suffix needed.
 
-> Relative standing of Fable 5 vs Opus 5 is not officially confirmed — do not assert an ordering.
+> Relative standing of Fable 5 vs Opus 5 and Opus 5.5 is not officially confirmed — do not assert an ordering.
 
 ## Role-Based Routing Table
 
@@ -51,15 +53,15 @@ This table recommends **frontmatter (Tier 2) full model IDs** for pinning an age
 | Role | Recommended Frontmatter ID (Tier 2) | Agent-Tool Equivalent (Tier 3) | Rationale |
 |------|--------------------------------------|----------------------------------|-----------|
 | Code search / file discovery | `claude-haiku-4-5` | `haiku` | Fast, cheap, sufficient for retrieval |
-| Code review | `claude-sonnet-5` | `sonnet` | Needs understanding, not deep reasoning |
-| Code generation | `claude-sonnet-5` | `sonnet` | Good balance of quality and speed |
-| Bug fix (simple) | `claude-sonnet-5` | `sonnet` | Pattern recognition sufficient |
-| Bug fix (complex) | `claude-opus-5` | `opus` | Needs deep reasoning across modules |
-| Architecture design | `claude-opus-5` / `opusplan` | `opus` | Requires holistic thinking |
-| Test generation | `claude-sonnet-5` | `sonnet` | Template-driven, moderate complexity |
-| Documentation | `claude-sonnet-5` | `sonnet` | Straightforward generation |
-| Release verification | `claude-opus-5` | `opus` | Cross-cutting validation |
-| Orchestration | `claude-opus-5` | `opus` | Routing decisions need broad context |
+| Code review | `claude-sonnet-5-5` | `sonnet` | Needs understanding, not deep reasoning |
+| Code generation | `claude-sonnet-5-5` | `sonnet` | Good balance of quality and speed |
+| Bug fix (simple) | `claude-sonnet-5-5` | `sonnet` | Pattern recognition sufficient |
+| Bug fix (complex) | `claude-opus-5-5` | `opus` | Needs deep reasoning across modules |
+| Architecture design | `claude-opus-5-5` / `opusplan` | `opus` | Requires holistic thinking |
+| Test generation | `claude-sonnet-5-5` | `sonnet` | Template-driven, moderate complexity |
+| Documentation | `claude-sonnet-5-5` | `sonnet` | Straightforward generation |
+| Release verification | `claude-opus-5-5` | `opus` | Cross-cutting validation |
+| Orchestration | `claude-opus-5-5` | `opus` | Routing decisions need broad context |
 
 ## Cost-Quality Tradeoff Matrix
 
@@ -88,8 +90,8 @@ Projects can declare a `MODEL_ROUTING.md` file to override default routing. This
 
 | Agent Pattern | Model | Override Reason |
 |---------------|-------|-----------------|
-| lang-*-expert | claude-sonnet-5 | Default sufficient for code generation |
-| mgr-sauron | claude-opus-5 | Verification requires deep analysis |
+| lang-*-expert | claude-sonnet-5-5 | Default sufficient for code generation |
+| mgr-sauron | claude-opus-5-5 | Verification requires deep analysis |
 | Explore | claude-haiku-4-5 | Search-only, no generation needed |
 ```
 
@@ -100,7 +102,7 @@ Place in project root or `.claude/` directory.
 ```yaml
 # .claude/agents/example.md
 name: example-agent
-model: claude-sonnet-5  # Tier 2 full model ID (recommended) — see Model Specification — 3 Tiers above
+model: claude-sonnet-5-5  # Tier 2 full model ID (recommended) — see Model Specification — 3 Tiers above
 ```
 
 The `model` field in agent frontmatter accepts EITHER a Tier 1 alias (`sonnet`/`opus`/`haiku`/`opusplan`/`inherit`) OR a Tier 2 full model ID, and sets the agent's default. The Agent tool's `model` parameter at spawn time accepts ONLY the Tier 3 enum (`sonnet`/`opus`/`haiku`/`fable`) and overrides the frontmatter default when supplied.

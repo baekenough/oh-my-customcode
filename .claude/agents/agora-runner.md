@@ -1,7 +1,7 @@
 ---
 name: agora-runner
 description: Executes exactly one agora session step (start, one round, or finish) via the skill scripts and returns only a verdict summary. Never returns reviewer text, vendor attribution or sealed paths.
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 tools: [Bash, Read, Write, Glob]
 skills: [agora]
 ---

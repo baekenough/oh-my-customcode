@@ -1,7 +1,7 @@
 ---
 title: tool-npm-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/tool-npm-expert.md
 related:
@@ -23,7 +23,7 @@ Uses three focused skills: `npm-audit`, `npm-publish`, and `npm-version`. Works 
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Bash
 - **Skills**: `npm-audit`, `npm-publish`, `npm-version`

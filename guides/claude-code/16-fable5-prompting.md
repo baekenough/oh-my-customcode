@@ -5,7 +5,7 @@
 
 ## 개요
 
-Claude Fable 5(`claude-fable-5`)는 Mythos-class 모델로, **Opus 4.8 대비** 상위 티어의 GA 역량을 가집니다(GA 시점 기준, R006 Model Aliases 참조). **Opus 5**(`claude-opus-5`, CC v2.1.219+에서 도입되어 현재 CC의 기본 Opus 모델)와의 상대 위계는 공식 자료로 확인되지 않았으므로, 이 문서는 어느 쪽이 상위 티어인지 단정하지 않습니다. Fable 5는 기존 모델 대비 다른 행동 프로파일을 가지므로, 기존 Opus/Sonnet용으로 튜닝된 하네스(rules, skills, system prompt)를 그대로 재사용하면 오히려 품질이 저하될 수 있습니다. 이 문서는 Fable 5 전용 프롬프팅·스캐폴딩 조정 패턴을 정리합니다.
+Claude Fable 5(`claude-fable-5`)는 Mythos-class 모델로, **Opus 4.8 대비** 상위 티어의 GA 역량을 가집니다(GA 시점 기준, R006 Model Aliases 참조). **Opus 5**(`claude-opus-5`)는 CC v2.1.219+에서 도입된 이전 세대 Opus 모델입니다. 현재 CC의 기본 Opus 모델은 Opus 5.5(`claude-opus-5-5`, v2.1.280+)입니다. Fable 5와 Opus 5 및 Opus 5.5의 상대 위계는 공식 자료로 확인되지 않았으므로, 이 문서는 어느 쪽이 상위 티어인지 단정하지 않습니다. Fable 5는 기존 모델 대비 다른 행동 프로파일을 가지므로, 기존 Opus/Sonnet용으로 튜닝된 하네스(rules, skills, system prompt)를 그대로 재사용하면 오히려 품질이 저하될 수 있습니다. 이 문서는 Fable 5 전용 프롬프팅·스캐폴딩 조정 패턴을 정리합니다.
 
 ## Opus 4.8 대비 행동 차이
 

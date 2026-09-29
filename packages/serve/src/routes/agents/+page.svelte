@@ -67,6 +67,8 @@
 		sonnet: 'bg-emerald-900/50 text-emerald-300 border-emerald-700',
 		opus: 'bg-violet-900/50 text-violet-300 border-violet-700',
 		haiku: 'bg-sky-900/50 text-sky-300 border-sky-700',
+		'claude-sonnet-5-5': 'bg-cyan-900/50 text-cyan-300 border-cyan-700',
+		'claude-opus-5-5': 'bg-fuchsia-900/50 text-fuchsia-300 border-fuchsia-700',
 		'claude-sonnet-5': 'bg-teal-900/50 text-teal-300 border-teal-700',
 		'claude-opus-5': 'bg-purple-900/50 text-purple-300 border-purple-700'
 	};
@@ -75,6 +77,8 @@
 		sonnet: 'bg-emerald-800 text-emerald-200 border-emerald-500',
 		opus: 'bg-violet-800 text-violet-200 border-violet-500',
 		haiku: 'bg-sky-800 text-sky-200 border-sky-500',
+		'claude-sonnet-5-5': 'bg-cyan-800 text-cyan-200 border-cyan-500',
+		'claude-opus-5-5': 'bg-fuchsia-800 text-fuchsia-200 border-fuchsia-500',
 		'claude-sonnet-5': 'bg-teal-800 text-teal-200 border-teal-500',
 		'claude-opus-5': 'bg-purple-800 text-purple-200 border-purple-500'
 	};
@@ -143,8 +147,8 @@
 	<!-- Model filter -->
 	<div class="mb-5">
 		<div class="text-xs text-zinc-600 mb-2 uppercase tracking-wide font-medium">Model</div>
-		<div class="flex gap-2">
-			{#each ['opus', 'sonnet', 'haiku', 'claude-sonnet-5', 'claude-opus-5'] as model}
+		<div class="flex flex-wrap gap-2">
+			{#each ['opus', 'sonnet', 'haiku', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-sonnet-5', 'claude-opus-5'] as model}
 				<button
 					onclick={() => toggleModel(model)}
 					class="px-3 py-1 rounded text-xs font-semibold border transition-colors {selectedModels.has(model)

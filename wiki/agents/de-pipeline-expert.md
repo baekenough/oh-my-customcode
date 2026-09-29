@@ -1,7 +1,7 @@
 ---
 title: de-pipeline-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/de-pipeline-expert.md
 related:
@@ -26,7 +26,7 @@ Draws on cross-tool expertise across `guides/airflow/`, `guides/dbt/`, `guides/s
 
 ## Key Details
 
-- **Model**: claude-opus-5
+- **Model**: claude-opus-5-5
 - **Domain**: data-engineering
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: [[pipeline-architecture-patterns]]
