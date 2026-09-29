@@ -1698,10 +1698,6 @@ describe('update command', () => {
     it('should call spawnSync and exit when executeSelfUpdate returns updated=true and guard is not set', async () => {
       spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
 
-      mock.module('node:child_process', () => ({
-        spawnSync: spawnSyncMock,
-      }));
-
       mock.module('../../../src/core/self-update.js', () => ({
         executeSelfUpdate: mock(() => ({
           updated: true,
@@ -1726,7 +1722,8 @@ describe('update command', () => {
 
       const { updateCommand } = await import('../../../src/cli/update.js');
 
-      await updateCommand({ skipSelf: false });
+      // mock.module 대신 주입형 spawnFn 사용 (다른 테스트 파일로의 모듈 모킹 누수 방지, #1760)
+      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
 
       // spawnSync must have been called with process.execPath and argv re-exec args
       expect(spawnSyncMock).toHaveBeenCalledTimes(1);
@@ -1744,10 +1741,6 @@ describe('update command', () => {
       process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
 
       spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
-
-      mock.module('node:child_process', () => ({
-        spawnSync: spawnSyncMock,
-      }));
 
       // executeSelfUpdate itself short-circuits internally when the env guard is set,
       // so it returns updated=false — spawnSync must not be called
@@ -1775,7 +1768,8 @@ describe('update command', () => {
 
       const { updateCommand } = await import('../../../src/cli/update.js');
 
-      await updateCommand({ skipSelf: false });
+      // mock.module 대신 주입형 spawnFn 사용 (누수 방지, #1760)
+      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
 
       expect(spawnSyncMock).not.toHaveBeenCalled();
       // Should not call process.exit (no re-exec)
@@ -1784,10 +1778,6 @@ describe('update command', () => {
 
     it('should NOT call spawnSync when executeSelfUpdate returns updated=false', async () => {
       spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
-
-      mock.module('node:child_process', () => ({
-        spawnSync: spawnSyncMock,
-      }));
 
       mock.module('../../../src/core/self-update.js', () => ({
         executeSelfUpdate: mock(() => ({
@@ -1813,7 +1803,8 @@ describe('update command', () => {
 
       const { updateCommand } = await import('../../../src/cli/update.js');
 
-      await updateCommand({ skipSelf: false });
+      // mock.module 대신 주입형 spawnFn 사용 (누수 방지, #1760)
+      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
 
       expect(spawnSyncMock).not.toHaveBeenCalled();
       expect(exitCode).toBeUndefined();

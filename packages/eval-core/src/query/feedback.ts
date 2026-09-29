@@ -297,7 +297,9 @@ export async function getRoutingMissPatterns(
  */
 export async function getImprovementSuggestions(
   db: EvalDb,
-  options: FeedbackQueryOptions = {}
+  options: FeedbackQueryOptions = {},
+  // 테스트에서 네트워크/gh 인증 의존을 끊기 위한 주입 지점 (기본값은 실제 gh 호출)
+  fetchUserFeedback: () => UserFeedbackEntry[] = fetchUserFeedbackIssues
 ): Promise<ImprovementSuggestion[]> {
   const [agentPatterns, skillRecords, routingMiss] = await Promise.all([
     getAgentFailurePatterns(db, options),
@@ -393,7 +395,7 @@ export async function getImprovementSuggestions(
   }
 
   // Merge user-explicit feedback from GitHub issues
-  const userFeedback = fetchUserFeedbackIssues();
+  const userFeedback = fetchUserFeedback();
   const userSuggestions = userFeedbackToSuggestions(userFeedback);
   suggestions.push(...userSuggestions);
 
