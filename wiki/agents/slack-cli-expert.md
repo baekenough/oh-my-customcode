@@ -1,7 +1,7 @@
 ---
 title: slack-cli-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-09-29
 sources:
   - .claude/agents/slack-cli-expert.md
 related:
@@ -21,7 +21,7 @@ Uses `guides/slack-cli/` for detailed command reference. Always starts with `sla
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: (none specified)

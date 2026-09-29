@@ -1,7 +1,7 @@
 ---
 title: db-postgres-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-09-29
 sources:
   - .claude/agents/db-postgres-expert.md
 related:
@@ -22,7 +22,7 @@ Uses `postgres-best-practices` skill and `guides/postgres/` for reference. Memor
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `postgres-best-practices`

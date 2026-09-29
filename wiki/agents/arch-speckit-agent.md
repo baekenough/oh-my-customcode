@@ -1,7 +1,7 @@
 ---
 title: arch-speckit-agent
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/arch-speckit-agent.md
 related:
@@ -22,7 +22,7 @@ A key differentiator is support for EARS (Easy Approach to Requirements Syntax) 
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local (`.claude/agent-memory-local/`, git-untracked)

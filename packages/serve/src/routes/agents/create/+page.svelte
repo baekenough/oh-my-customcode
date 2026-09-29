@@ -27,7 +27,7 @@
 		'universal', 'backend', 'frontend', 'devops', 'database',
 		'data-engineering', 'security', 'qa', 'architecture', 'management'
 	];
-	const MODELS = ['sonnet', 'opus', 'haiku', 'claude-sonnet-5', 'claude-opus-5'];
+	const MODELS = ['sonnet', 'opus', 'haiku', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-sonnet-5', 'claude-opus-5'];
 
 	// Populate fields when server returns analysis result
 	$: if (form?.success) {
@@ -200,13 +200,15 @@
 				<!-- Model -->
 				<div>
 					<p class="text-xs text-zinc-500 mb-1">Model</p>
-					<div class="flex gap-2">
+					<div class="flex flex-wrap gap-2">
 						{#each MODELS as m}
 							<button
 								onclick={() => (agentModel = m)}
 								class="px-3 py-1 rounded text-xs font-semibold border transition-colors {agentModel === m
 									? m === 'opus' ? 'bg-violet-800 text-violet-200 border-violet-500'
 									: m === 'haiku' ? 'bg-sky-800 text-sky-200 border-sky-500'
+									: m === 'claude-opus-5-5' ? 'bg-fuchsia-800 text-fuchsia-200 border-fuchsia-500'
+									: m === 'claude-sonnet-5-5' ? 'bg-cyan-800 text-cyan-200 border-cyan-500'
 									: m === 'claude-opus-5' ? 'bg-purple-800 text-purple-200 border-purple-500'
 									: m === 'claude-sonnet-5' ? 'bg-teal-800 text-teal-200 border-teal-500'
 									: 'bg-emerald-800 text-emerald-200 border-emerald-500'

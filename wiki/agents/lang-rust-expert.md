@@ -1,7 +1,7 @@
 ---
 title: lang-rust-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/lang-rust-expert.md
 related:
@@ -24,7 +24,7 @@ Uses `rust-best-practices` skill and `guides/rust/` for reference documentation.
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `rust-best-practices`

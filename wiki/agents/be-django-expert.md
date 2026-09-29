@@ -1,7 +1,7 @@
 ---
 title: be-django-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/be-django-expert.md
 related:
@@ -23,7 +23,7 @@ The agent uses the `django-best-practices` skill and consults `guides/django-bes
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `django-best-practices`

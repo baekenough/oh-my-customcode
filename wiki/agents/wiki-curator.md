@@ -1,7 +1,7 @@
 ---
 title: Wiki Curator
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/wiki-curator.md
 related:
@@ -30,7 +30,7 @@ All wiki/ directory writes go through this agent per R010 delegation rules (Prot
 
 ## Key Details
 
-- **Model**: claude-sonnet-5 | **Domain**: universal | **Memory**: local (changed from `project` in v1.1.13, #1468)
+- **Model**: claude-sonnet-5-5 | **Domain**: universal | **Memory**: local (changed from `project` in v1.1.13, #1468)
 - **Tools**: Read, Write, Edit, Glob, Grep, Bash
 - **Effort**: medium
 - **Quality bar**: valid frontmatter, 5-10 outbound cross-refs, 150-300 words (entity) / 200-400 (synthesis), purpose over enumeration

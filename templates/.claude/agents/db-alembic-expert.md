@@ -1,7 +1,7 @@
 ---
 name: db-alembic-expert
 description: Alembic migration specialist for generating, reviewing, fixing, and advising on SQLAlchemy database migrations
-model: claude-opus-5
+model: claude-opus-5-5
 domain: backend
 memory: local
 effort: high

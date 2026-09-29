@@ -1,7 +1,7 @@
 ---
 title: qa-engineer
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/qa-engineer.md
 related:
@@ -25,7 +25,7 @@ The agent enforces a strict verification discipline before writing any QA report
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Memory**: local

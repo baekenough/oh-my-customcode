@@ -1,7 +1,7 @@
 ---
 name: de-dbt-expert
 description: Expert dbt developer for SQL modeling, testing, and documentation. Use for dbt model files (*.sql in models/), schema.yml, dbt_project.yml, dbt-related keywords, and analytics engineering workflows.
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 domain: data-engineering
 memory: local
 effort: medium

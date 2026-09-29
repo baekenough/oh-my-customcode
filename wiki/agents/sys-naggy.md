@@ -1,7 +1,7 @@
 ---
 title: sys-naggy
 type: agent
-updated: 2026-04-12
+updated: 2026-09-29
 sources:
   - .claude/agents/sys-naggy.md
 related:

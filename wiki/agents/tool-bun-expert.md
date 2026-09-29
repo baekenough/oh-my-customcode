@@ -1,7 +1,7 @@
 ---
 title: tool-bun-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/tool-bun-expert.md
 related:
@@ -20,7 +20,7 @@ Expert Bun runtime developer for high-performance JavaScript/TypeScript applicat
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Bash
 - **Memory**: local (`.claude/agent-memory-local/tool-bun-expert/`, git-untracked — R006 memory scopes)

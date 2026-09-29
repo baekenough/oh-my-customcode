@@ -1,7 +1,7 @@
 ---
 title: fe-design-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/fe-design-expert.md
 related:
@@ -29,7 +29,7 @@ It also owns the **Claude Design handoff** workflow: when receiving artifacts fr
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: frontend
 - **Tools**: Read, Write, Edit, Grep, Glob (`disallowedTools: [Bash]`)
 - **Skills**: `impeccable-design`, `web-design-guidelines`, `diagram-design`

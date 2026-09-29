@@ -9,7 +9,7 @@
 
 ## Compatibility Baseline
 
-oh-my-customcode v1.1.9 targets Claude Code v2.1.201+ (Sonnet 5 = CC 기본 모델). 이 파일에 정리된 v2.1.117-160 항목은 하위호환이며 config 변경이 불필요합니다.
+oh-my-customcode v1.1.9 targets Claude Code v2.1.201+ (v2.1.197부터 Sonnet 5가 CC 기본 Sonnet 모델이었고, v2.1.284부터 Anthropic API의 기본 Sonnet 모델은 Sonnet 5.5). 이 파일에 정리된 v2.1.117-160 항목은 하위호환이며 config 변경이 불필요합니다.
 
 ## v2.1.117 (2026-04-22)
 
@@ -1551,6 +1551,63 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 ---
 
+## v2.1.284 (2026-09-28)
+
+> Issue: #1755 — Claude Code v2.1.284 compatibility documentation
+> Scope-ceiling check (R017): 설치 CC·npm latest 모두 **2.1.284**(`claude --version`=2.1.284, `npm view @anthropic-ai/claude-code version`=2.1.284 실측)로 이 릴리즈가 상한이며, 릴리즈 게시 시각은 2026-09-28T18:02:03Z(`gh release view v2.1.284 -R anthropics/claude-code --json publishedAt` 실측)입니다. 2.1.284보다 나중 릴리즈는 없습니다.
+
+### Sonnet 5.5 · 모델 핀 이전
+
+- CHANGELOG 원문: "Added Claude Sonnet 5.5 (`claude-sonnet-5-5`), now the default Sonnet model on the Anthropic API — 1M context, $2/$10 per Mtok with $0.20/Mtok cache reads"
+  (284) Sonnet 5.5(`claude-sonnet-5-5`)가 추가되어 Anthropic API의 기본 Sonnet 모델이 되었습니다. #1755의 범위 결정에 따라 이 저장소는 v1.1.89에서 에이전트 모델 핀 전체를 `claude-sonnet-5-5`/`claude-opus-5-5`로 이전했으며, R006 Model Specification Tier 2 표에 `claude-sonnet-5-5` 행이 추가되었습니다. Tier 1 alias(`sonnet`)는 계속 CC가 해석하므로 프로젝트가 고정할 수 없다는 R006의 설명은 그대로입니다.
+
+### 권한 · 시작 모드
+
+- CHANGELOG 원문: "Added a "Yes, but ask again next time" answer to auto mode's prompt before a read outside the working directories, so you can allow that one read and still be asked about later ones"
+  (284) 작업 디렉터리 밖 읽기를 묻는 auto mode 프롬프트에 "Yes, but ask again next time" 응답이 추가되어, 해당 읽기 한 건만 허용하고 이후 읽기는 계속 확인받을 수 있습니다. 이는 사용자 대화형 프롬프트의 응답 선택지이며 R010 Self-Check가 실측하는 유효 permission mode 판정과 R002 도구 티어 정책을 바꾸지 않습니다.
+- CHANGELOG 원문: "Changed interactive terminal and VS Code sessions to start in auto mode when no permission mode is configured, on every plan and provider; `permissions.defaultMode` still overrides it"
+  (284) permission mode가 설정되지 않은 대화형 터미널·VS Code 세션은 모든 플랜과 provider에서 auto mode로 시작합니다(`permissions.defaultMode`가 설정돼 있으면 계속 그 값이 우선). 위 v2.1.283 섹션의 "서드파티 provider 또는 텔레메트리 off" 조건이 모든 플랜·provider로 넓어진 것입니다. 이 변경은 대화형 터미널·VS Code 세션에 대한 것이므로, R010 Self-Check의 `jq -r '.permissions.defaultMode // "unset"'`(user scope 실측, 무인 실행 전 점검)가 "unset"을 내더라도 무인(`-p`/headless) 실행의 모드를 이 변경으로 판단해서는 안 됩니다. 무인 실행은 이 변경의 대상이 아닙니다.
+
+### 상태줄 · 재시도 · 컨텍스트
+
+- CHANGELOG 원문: "Added dollar amounts to the Claude apps gateway spend limit in `/usage` and the status line (for example "$271.40 / $500.00 spent this month") when the gateway runs this version or later; the status line's `rate_limits.spend_limit` also gains `used_usd`, `limit_usd` and `period`"
+  (284) 상태줄의 `rate_limits.spend_limit`에 `used_usd`, `limit_usd`, `period` 필드가 추가되었습니다(gateway가 이 버전 이상일 때). R012 Statusline API 포맷은 이 필드를 요구하지 않으므로 `.claude/statusline.sh` 확장은 선택 사항입니다.
+- CHANGELOG 원문: "Fixed a damaged response stream showing raw errors such as "JSON Parse error" or "undefined is not an object", or writing the word "undefined" into an answer, instead of being retried or reported as an interrupted response"
+  (284) 손상된 응답 스트림이 원시 오류("JSON Parse error" 등)나 답변 속 "undefined" 문자열로 노출되던 결함이 수정되어 재시도되거나 중단된 응답으로 보고됩니다. R004 Retryable 재시도 전략을 플랫폼이 이 경로에서도 수행하므로, 구버전 세션의 "undefined" 혼입은 모델 오류가 아니라 스트림 손상이었을 수 있습니다.
+- CHANGELOG 원문: "Fixed an overloaded or server error arriving right after a thinking block ending the turn with an error instead of being retried"
+  (284) thinking 블록 직후에 도착한 overloaded·서버 오류가 재시도되지 않고 턴을 오류로 끝내던 결함이 수정되었습니다. R004 v2.1.246/257 자동 이어감 노트와 같은 계열이며, 무인 루프 중단을 "재시도 로직 부재"로 오진하기 전에 확인할 경계가 하나 더 생겼습니다.
+- CHANGELOG 원문: "Fixed "Prompt is too long" errors that persisted after compacting: when the compacted request is still too long, Claude Code now compacts once more, keeping less of the recent conversation"
+  (284) compact 후에도 요청이 너무 길면 CC가 최근 대화를 덜 남기고 한 번 더 compact합니다. R013의 v2.1.269/274 "Prompt is too long" 수정 노트를 이어받는 항목이며, 재compact 이후에는 최근 대화 보존량이 줄어든다는 점을 컨텍스트 예산 판단에 반영해야 합니다.
+
+### 규칙 · 훅 · 메시징
+
+- CHANGELOG 원문: "Fixed rules symlinked into `.claude/rules` from outside the project being skipped without ever showing the external-imports approval prompt; a `.claude` directory symlinked from outside the project now asks for the same approval"
+  (284) 프로젝트 밖에서 `.claude/rules`로 symlink된 룰이 승인 프롬프트 없이 건너뛰어지던 결함이 수정되었고, 프로젝트 밖에서 symlink된 `.claude` 디렉터리도 같은 승인을 요구합니다. 이 저장소의 룰은 프로젝트 내부 실파일이므로 영향이 없지만, 룰을 외부 경로에서 링크하는 사용자 환경에서는 승인 프롬프트가 새로 나타납니다.
+- CHANGELOG 원문: "Fixed the debug log dropping a failed hook's stderr when the hook also wrote to stdout, and logging nothing for a failed hook with no output; failed hooks now also log their status code"
+  (284) 실패한 훅의 stderr가 stdout과 함께 쓰였을 때 debug 로그에서 누락되던 결함과, 출력 없는 실패 훅이 아무것도 기록되지 않던 결함이 수정되었고 상태 코드도 기록됩니다. R021 훅 발화 진단(배선 확인 ≠ 발화 확인)에서 debug 로그를 근거로 삼을 때 신뢰도가 높아집니다.
+- CHANGELOG 원문: "Fixed `{"decision":"block"}` returned by Elicitation and ElicitationResult hooks being ignored; it now declines the MCP elicitation, as exit code 2 does"
+  (284) Elicitation·ElicitationResult 훅이 반환한 `{"decision":"block"}`이 무시되던 결함이 수정되어 exit code 2와 같이 MCP elicitation을 거부합니다. 이 저장소는 해당 훅을 배선하지 않으므로 R021 Enforcement Tiers 변경은 불필요합니다.
+- CHANGELOG 원문: "Fixed sessions launched without the `SendMessage` tool (such as by Claude Desktop) still being told to message other sessions with it"
+  (284) `SendMessage` 도구 없이 시작된 세션(예: Claude Desktop)에 여전히 그 도구로 메시지를 보내라고 안내하던 결함이 수정되었습니다. R018 Detection이 이미 `SendMessage` 존재를 Teams 활성 증거로 쓰지 않으므로 판정표 변경은 불필요합니다.
+
+### 서브에이전트 · 출력 · 메모리
+
+- CHANGELOG 원문: "Fixed the Explore subagent switching to Opus on the Claude API when the session runs a model ID Claude Code doesn't recognize, such as a custom model behind a proxy; Explore now inherits that model"
+  (284) 세션이 CC가 인식하지 못하는 모델 ID(예: proxy 뒤 custom 모델)로 실행될 때 Explore 서브에이전트가 Opus로 전환되던 결함이 수정되어 이제 그 모델을 상속합니다. R006 모델 명세 표의 `inherit` 의미와 같은 방향이며, 구버전에서 Explore가 Opus로 전환된 관측은 이 결함이 원인일 수 있습니다.
+- CHANGELOG 원문: "Fixed `/loop` status updates in self-paced mode often not being shown because Claude wrote them only in its reasoning; Claude now writes each update, and the outcome when the loop stops, as visible text"
+  (284) self-paced `/loop`의 상태 갱신이 reasoning에만 쓰여 표시되지 않던 결함이 수정되어, 각 갱신과 루프 종료 결과가 visible text로 기록됩니다. 원문상 원인은 Claude가 갱신을 reasoning에만 썼다는 모델 출력 동작이며, R007/R008 헤더·접두사가 text 블록에 남지 않던 문제(R008 원인 귀속 노트)와 같은 원인이라는 근거는 없습니다. 이 수정이 R008 text 블록 부재율 전반을 해소한다는 증거는 없으므로 계수 결과는 실측으로 확인해야 합니다.
+- CHANGELOG 원문: "Improved auto-memory loading: invisible characters and tags that imitate Claude Code's own markup are neutralized in `MEMORY.md` and recalled memory notes before they reach Claude"
+  (284) `MEMORY.md`와 회상된 메모리 노트에서 보이지 않는 문자와 CC 자체 markup을 흉내 내는 태그가 Claude에 도달하기 전에 무력화됩니다. R011 native auto memory 경로의 방어가 강화된 것이며, 메모리에 `<system-reminder>` 류 태그를 그대로 적어 두는 관행은 더 이상 원문 그대로 전달되지 않는다고 봐야 합니다.
+
+기타 86건 — 이 저장소 비해당(VSCode 18건, Claude Tag 10건, Cloud sessions 1건, Code Review 1건 포함, 나머지 56건은 gateway·vim 모드·키바인딩·UI 리스트·plugin 화면·Windows/Linux 세부사항 등 harness 비영향). 실측: `gh issue view 1755 --json body --jq .body | sed -n '/^## 릴리즈 요약/,$p' | grep -c '^- '` = 100건 중 위 본문 14건(Sonnet 5.5·모델 핀 1, 권한·시작 모드 2, 상태줄·재시도·컨텍스트 4, 규칙·훅·메시징 4, 서브에이전트·출력·메모리 3)을 다뤘으므로 100 − 14 = 86건입니다.
+
+**Action items**:
+- v1.1.89에서 에이전트 모델 핀을 `claude-sonnet-5-5`/`claude-opus-5-5`로 이전했고 R006 Tier 2 표에 `claude-sonnet-5-5` 행을 추가했습니다(#1755 범위 결정).
+- auto mode 시작 조건 확대와 "ask again next time" 응답은 R010 Self-Check의 유효 permission mode 실측 절차를 바꾸지 않으므로 룰 수정은 불필요합니다.
+- 상태줄 `spend_limit` 필드, 재시도·재compact 수정, 훅 로그·Elicitation·`SendMessage` 안내 수정, Explore 상속, `/loop` 표시, auto-memory 무력화는 기존 룰이 이미 다루는 전제를 강화하는 방향이며 룰 문안 변경은 불필요합니다.
+
+---
+
 ## Known Platform Issues & Workarounds
 
 ### Agent tool malformed parsing on long / special-character prompts (#1241)
@@ -1596,6 +1653,7 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - #1717 — 컨텍스트 예산 초과 대응: CC 버전 노트 이관 정책 전환(룰 → 가이드)
 - #1746 — Claude Code v2.1.282 compatibility documentation
 - #1747 — Claude Code v2.1.283 compatibility documentation
+- #1755 — Claude Code v2.1.284 compatibility documentation
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec

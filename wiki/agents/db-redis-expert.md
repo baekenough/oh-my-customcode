@@ -1,7 +1,7 @@
 ---
 title: db-redis-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-09-29
 sources:
   - .claude/agents/db-redis-expert.md
 related:
@@ -22,7 +22,7 @@ Memory is `user`-scoped for cross-project Redis expertise retention.
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `redis-best-practices`

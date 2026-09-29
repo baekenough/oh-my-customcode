@@ -1,7 +1,7 @@
 ---
 title: mgr-creator
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/mgr-creator.md
 related:
@@ -26,7 +26,7 @@ The agent runs for up to 25 turns to allow thorough research and creation.
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `create-agent`

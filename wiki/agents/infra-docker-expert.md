@@ -1,7 +1,7 @@
 ---
 title: infra-docker-expert
 type: agent
-updated: 2026-04-12
+updated: 2026-09-29
 sources:
   - .claude/agents/infra-docker-expert.md
 related:
@@ -22,7 +22,7 @@ Uses `docker-best-practices` skill and `guides/docker/`. Memory is `user`-scoped
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: devops
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `docker-best-practices`

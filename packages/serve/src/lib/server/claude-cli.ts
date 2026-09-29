@@ -231,7 +231,7 @@ The file must follow this exact format:
 ---
 name: {kebab-case-name}
 description: {one-line English description}
-model: {sonnet | opus | haiku | claude-sonnet-5 | claude-opus-5}
+model: {sonnet | opus | haiku | claude-sonnet-5-5 | claude-opus-5-5 | claude-sonnet-5 | claude-opus-5}
 tools:
   - Read
   - Write
@@ -256,7 +256,7 @@ Rules:
 - name must be kebab-case (e.g., lang-rust-expert, be-fastapi-expert)
 - Use existing naming conventions: lang-* for languages, be-* for backends, fe-* for frontends, de-* for data engineering, db-* for databases, infra-* for infrastructure, mgr-* for managers, sec-* for security, qa-* for QA, arch-* for architecture, tool-* for tooling
 - description must be in English, one line
-- model: use sonnet for general tasks, opus for complex reasoning/architecture, haiku for simple/fast tasks; use the full model ID claude-sonnet-5/claude-opus-5 only when the description explicitly requests the newer model generation (short aliases sonnet5/opus5 are invalid in frontmatter)
+- model: use sonnet for general tasks, opus for complex reasoning/architecture, haiku for simple/fast tasks; use the full model ID claude-sonnet-5-5/claude-opus-5-5 when the description explicitly requests the newest model generation, or claude-sonnet-5/claude-opus-5 for the previous generation (short aliases like sonnet5/opus5/sonnet5.5/opus5.5 are invalid in frontmatter)
 - tools: always include Read, Grep, Glob. Add Write, Edit for code modification. Add Bash for execution.
 - Body sections in English
 

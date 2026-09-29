@@ -317,7 +317,7 @@ steps:
       | triage | `verify-ready` added to manifest issues selected by professor-triage when it runs inside this step (NOT `triage-complete`) — analysis output is compressible, this label side effect is not; when triage is skipped (docs-only) or substituted (lite integrated-analysis, lightweight mode), no separate label action is required here — the implement step's per-issue success path (row below: "On success: remove in-progress, add verify-ready") already adds `verify-ready` to each processed issue before this release completes |
       | plan | none (analysis only) — compressible |
       | deep-plan | none (analysis only) — compressible |
-      | implement | `gh issue edit <N> --add-label in-progress --assignee @me`; `gh issue comment <N>` (start notice); on success remove in-progress + add verify-ready; on failure remove in-progress + add needs-review + comment error summary |
+      | implement | `gh issue edit <N> --add-label in-progress --add-assignee @me`; `gh issue comment <N>` (start notice); on success remove in-progress + add verify-ready; on failure remove in-progress + add needs-review + comment error summary |
       | verify-build | none (gate only) |
       | deep-verify | none (analysis only) — compressible |
       | release | PR body MUST carry `Closes #N` for every resolved issue (auto-tag.yml greps the PR body); non-auto-tag projects additionally: `gh api .../milestones/{n} --method PATCH --field state=closed`, `gh issue close {n}`, label needs-review issues "Deferred from v{version}" |
@@ -421,7 +421,7 @@ steps:
       Execute the deep-plan output for the scoped release manifest.
 
       Per-issue lifecycle:
-      1. Start: gh issue edit <N> --add-label in-progress --assignee @me
+      1. Start: gh issue edit <N> --add-label in-progress --add-assignee @me
       2. Comment: gh issue comment <N> --body "Implementation started via auto-dev pipeline"
       3. Dispatch specialist agents per file domain:
          - Detect file types in scope and route to matching agent
@@ -534,11 +534,33 @@ steps:
         case), reporting both raw outputs (룰/스킬/워크플로 텍스트에 넣는 실행 명령은 편집 파일에서
         그대로 복사해 양성·음성 픽스처로 실행한 출력을 완료 보고에 포함해야 합니다; 정정 위임은 이미
         적용해 통과한 결과로 갈음합니다) (R023 「Sample-Value Assembly」, #1752 찐빠 #1).
+      - The fixture-execution norm above (copy the command OUT of the edited file and run it,
+        reporting raw output) extends to CI workflow scripts (e.g. GitHub Actions YAML steps)
+        being verified during implement/verify-build/deep-verify: when the agent extracts a step
+        into a runnable copy to verify it, edits to that copy are LIMITED to execution-environment
+        substitution ONLY (e.g. disabling `sleep`, or pointing a summary-output target such as
+        `$GITHUB_STEP_SUMMARY` at a local file) — the step's logic and echo/output text MUST
+        remain exactly as written in the source file (editing a step's command line to fake a
+        network response is a logic edit; if a response must be simulated, do it via the
+        environment, e.g. a PATH shim, never by editing the step's lines), and the completion
+        report MUST show the RAW fixture output, not a summarized or paraphrased rendering (CI
+        워크플로 스크립트를 사본으로 추출해 검증할 때 사본 수정은 `sleep` 무력화·요약 출력 대상
+        지정처럼 실행 환경 대체로만 제한하고 로직·echo 문구는 원문 그대로 유지하며, 완료 보고에는
+        요약이 아닌 raw 출력을 포함해야 합니다) (R023 「Sample-Value Assembly」, #1754 찐빠 #2).
       - Every delegation prompt (not only rule/skill/guide TEXT edits) MUST instruct the agent
         that if a guard, classifier, or permission check blocks an action, it MUST NOT route
         around it (e.g. via a shell glob or path rewrite) — it MUST stop and report the block
         verbatim (R010 「품질 게이트 우회 금지 — 훅 차단은 보고 대상」, extended here from git
         hooks to guards/classifiers/permissions generally) (#1728 찐빠 #1).
+      - The standard wording of STATE-CHANGING delegation prompts (git/gh commands,
+        file-creating and file-editing delegations — NOT read-only review/analysis delegations) MUST instruct
+        the agent to report ONLY what it directly observed within its own execution context, and
+        MUST NOT narrate history it did not itself observe (e.g. asserting a branch/file
+        "originally didn't exist" or "already had unrelated uncommitted changes before this
+        session" without having checked) — where the delegation prompt's context leaves a gap, the
+        agent MUST state it as "not observed" rather than fill it by inference (상태 변경 위임서의 표준 문안에 "직접 관측한
+        것만 보고하고, 관측하지 않은 이력은 서술하지 말 것"을 포함해야 합니다) (R020 「보유
+        실측값과 어긋나는 서브에이전트 서술은 즉시 정정」, R010, #1754 찐빠 #1).
       - No state-changing command (`gh issue create/edit/close`, `gh pr create/edit/close/merge`,
         `git push`, label changes) — including the orchestrator's own direct commands, not only
         delegated ones — MAY use a `||` fallback that prints success-looking output; the observed

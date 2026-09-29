@@ -1,7 +1,7 @@
 ---
 title: arch-documenter
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/arch-documenter.md
 related:
@@ -25,7 +25,7 @@ The agent operates with `local`-scoped memory (`.claude/agent-memory-local/`, gi
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: universal
 - **Tools**: Read, Write, Edit, Grep, Glob (no Bash — `disallowedTools: [Bash]`)
 - **Memory**: local

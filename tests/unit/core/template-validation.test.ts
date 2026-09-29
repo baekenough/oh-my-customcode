@@ -129,14 +129,14 @@ function describeInvalidModel(model: string): string {
   if (VERSION_SUFFIXED_ALIAS_PATTERN.test(model)) {
     return (
       `invalid model '${model}': CC does not resolve version-suffixed aliases ` +
-      `(e.g. sonnet5, opus48); use a Tier 2 full model ID such as claude-sonnet-5, ` +
+      `(e.g. sonnet5, opus48); use a Tier 2 full model ID such as claude-sonnet-5-5, ` +
       `or a Tier 1 alias (${tier1List})`
     );
   }
 
   return (
     `invalid model '${model}' (must be a Tier 1 alias [${tier1List}] or a Tier 2 ` +
-    `full model ID matching claude-<family>-<version>, e.g. claude-sonnet-5)`
+    `full model ID matching claude-<family>-<version>, e.g. claude-sonnet-5-5)`
   );
 }
 
@@ -515,6 +515,8 @@ describe('Template Validation', () => {
       // Tier 2 full model IDs (frontmatter-only) must remain valid, including
       // the optional extended-context suffix.
       for (const model of [
+        'claude-sonnet-5-5',
+        'claude-opus-5-5',
         'claude-sonnet-5',
         'claude-opus-5',
         'claude-haiku-4-5',

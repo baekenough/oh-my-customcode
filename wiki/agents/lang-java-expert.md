@@ -1,7 +1,7 @@
 ---
 title: lang-java-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/lang-java-expert.md
 related:
@@ -25,7 +25,7 @@ Uses `java-best-practices` skill and `guides/java/`. Complements [[be-springboot
 
 ## Key Details
 
-- **Model**: claude-sonnet-5
+- **Model**: claude-sonnet-5-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `java-best-practices`

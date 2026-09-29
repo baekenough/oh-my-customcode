@@ -1,7 +1,7 @@
 ---
 title: "tracker-checkpoint"
 type: agent
-updated: 2026-07-20
+updated: 2026-09-29
 sources:
   - .claude/agents/tracker-checkpoint.md
 related:

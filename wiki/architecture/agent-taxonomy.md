@@ -1,7 +1,7 @@
 ---
 title: Agent Taxonomy
 type: architecture
-updated: 2026-07-29
+updated: 2026-09-29
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md
@@ -39,12 +39,12 @@ Framework specialists that compose language skills with framework-specific patte
 
 | Agent | Framework | Typical Model |
 |-------|-----------|--------------|
-| [[wiki/agents/be-fastapi-expert]] | FastAPI | claude-sonnet-5 |
-| [[wiki/agents/be-springboot-expert]] | Spring Boot | claude-sonnet-5 |
-| [[wiki/agents/be-go-backend-expert]] | Go backend | claude-sonnet-5 |
-| [[wiki/agents/be-express-expert]] | Express.js | claude-sonnet-5 |
-| [[wiki/agents/be-nestjs-expert]] | NestJS | claude-sonnet-5 |
-| [[wiki/agents/be-django-expert]] | Django | claude-sonnet-5 |
+| [[wiki/agents/be-fastapi-expert]] | FastAPI | claude-sonnet-5-5 |
+| [[wiki/agents/be-springboot-expert]] | Spring Boot | claude-sonnet-5-5 |
+| [[wiki/agents/be-go-backend-expert]] | Go backend | claude-sonnet-5-5 |
+| [[wiki/agents/be-express-expert]] | Express.js | claude-sonnet-5-5 |
+| [[wiki/agents/be-nestjs-expert]] | NestJS | claude-sonnet-5-5 |
+| [[wiki/agents/be-django-expert]] | Django | claude-sonnet-5-5 |
 
 ### Frontend Experts (5)
 UI and client-side specialists.
@@ -99,11 +99,11 @@ Model specification is 3-tier (see [[wiki/rules/r006]] "3-tier model specificati
 | Frontmatter value (Tier 2, actual) | Use Case | Example Agents |
 |-------------------------------------|----------|---------------|
 | `haiku` | Fast, cheap: search, simple edits | mgr-supplier, sys-naggy, tracker-checkpoint (3 of 49) |
-| `sonnet` (Tier-1 alias, CC-resolved — not pinned by this project) | General code generation, legacy usage | None currently — project agents migrated to `claude-sonnet-5` |
-| `claude-sonnet-5` | General code generation (CC default model, v2.1.197+) | Most language/backend/manager agents (41 of 49) |
-| `opus` (Tier-1 alias, CC-resolved — not pinned by this project) | Complex reasoning, legacy usage | None currently — elevated agents migrated to `claude-opus-5` |
-| `claude-opus-5` | Complex reasoning, elevated structural verification (CC default Opus, v2.1.219+) | mgr-sauron, sec-codeql-expert, db-alembic-expert, de-pipeline-expert, infra-aws-expert (5 of 49) |
-| `opusplan` | Architecture planning with approval gates | None currently assigned — 0 project agents use `opusplan` (arch-speckit-agent runs `claude-sonnet-5`) |
+| `sonnet` (Tier-1 alias, CC-resolved — not pinned by this project) | General code generation, legacy usage | None currently — project agents migrated to `claude-sonnet-5-5` |
+| `claude-sonnet-5-5` | General code generation | Most language/backend/manager agents (42 of 50) |
+| `opus` (Tier-1 alias, CC-resolved — not pinned by this project) | Complex reasoning, legacy usage | None currently — elevated agents migrated to `claude-opus-5-5` |
+| `claude-opus-5-5` | Complex reasoning, elevated structural verification (CC default Opus, v2.1.280+) | mgr-sauron, sec-codeql-expert, db-alembic-expert, de-pipeline-expert, infra-aws-expert (5 of 50) |
+| `opusplan` | Architecture planning with approval gates | None currently assigned — 0 project agents use `opusplan` (arch-speckit-agent runs `claude-sonnet-5-5`) |
 
 ## Cross-Category Relationships
 

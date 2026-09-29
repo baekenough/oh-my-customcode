@@ -1,7 +1,7 @@
 ---
 title: db-alembic-expert
 type: agent
-updated: 2026-07-19
+updated: 2026-09-29
 sources:
   - .claude/agents/db-alembic-expert.md
 related:
@@ -21,7 +21,7 @@ Alembic migration lifecycle specialist for generating, reviewing, fixing, and ad
 
 ## Key Details
 
-- **Model**: claude-opus-5
+- **Model**: claude-opus-5-5
 - **Domain**: backend
 - **Tools**: Read, Write, Edit, Grep, Glob, Bash
 - **Skills**: `alembic-best-practices`, `postgres-best-practices`
