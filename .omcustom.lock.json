@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.89",
-  "generatedAt": "2026-09-29T01:13:22.630Z",
-  "templateVersion": "1.1.89",
+  "generatorVersion": "1.1.90",
+  "generatedAt": "2026-09-29T02:06:52.873Z",
+  "templateVersion": "1.1.90",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "cfe3c75f4b5fa391d1fa2fdeec20c2fcccad034575347d4be060fb780d95365b",
-      "size": 80587,
+      "templateHash": "d923ae524aacee52cd3e7ce18163df4ef06376d9729221c05ac9cc053048838b",
+      "size": 83683,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -645,8 +645,8 @@
       "component": "skills"
     },
     ".claude/skills/agora/scripts/judge.sh": {
-      "templateHash": "e01109c75eab5a1f41a66cb8f1f2f1a39faf7a87b51b00e5abe907e45f583b60",
-      "size": 20467,
+      "templateHash": "8e84a07bd7ff2cc6320f589b034d64a134615486d57022f3d679aafc526599e4",
+      "size": 20469,
       "component": "skills"
     },
     ".claude/skills/agora/scripts/verdict-schema.json": {
@@ -660,8 +660,8 @@
       "component": "skills"
     },
     ".claude/skills/agora/SKILL.md": {
-      "templateHash": "38245e55207ea37588b38090ec6c62ce6d2119a7d2b1f156fc53bdb37c6379c1",
-      "size": 35793,
+      "templateHash": "8e321434a7977cfe239d284fc678b502d36739198ccf82506cc7c2cf258c8ada",
+      "size": 35799,
       "component": "skills"
     },
     ".claude/skills/fastapi-best-practices/SKILL.md": {
