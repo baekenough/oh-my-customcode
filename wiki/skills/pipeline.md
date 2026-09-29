@@ -301,6 +301,15 @@ Two new standing implement-step bullets plus one flag correction:
 - **State-changing delegations report only what the agent observed** — the standard wording of STATE-CHANGING delegation prompts (git/gh commands, file-creating and file-editing delegations; read-only review/analysis delegations excluded) must instruct the agent to report ONLY what it directly observed within its own execution context and not to narrate history it did not observe (e.g. asserting a branch/file "originally didn't exist" without checking). Where the prompt's context leaves a gap, the agent states it as "not observed" rather than inferring. Cross-ref [[r020]] (immediate correction of sub-agent statements that conflict with held measurements) and [[r010]].
 - **Flag fix** — the `implement` side-effect inventory row and the per-issue lifecycle step 1 now use `gh issue edit <N> --add-label in-progress --add-assignee @me` instead of `--assignee @me`.
 
+### implement step: inspection fixed cost + mirror order + per-cell source table + release-quote verification (#1757)
+
+Four standing implement-step bullets, plus a deterministic guard for the flag fix above:
+
+- **Inspection fixed cost and mirror order** — every text-edit delegation must add an inspection fixed cost to the turn arithmetic (합쇼체 checks and each exhaustive grep ≈ 1 turn each), with or without mirrors. A target with mirrors (templates copies, ko/en pairs, or the 4-copy workflow set) must also fix the order "본문 편집 → 즉시 미러 복사 → 검사·보고" in the prompt, so a truncation cannot leave mirror drift behind. Under option (i) of the ≥1,000-line split the body-edit delegation does no mirror copy and the second delegation starts with "미러 복사 → 검사·보고"; under option (ii) (single delegation) the full order applies.
+- **Per-cell source table** — a delegation that adds table rows must include, as a completion item, a table mapping every cell of each new row 1:1 to a source sentence; a cell without a source is written "—" and never copied from an adjacent row. Prose-only edits are excluded.
+- **`claude-code-release` quote verification** — the `grep -F` check must target a file cut to that version's CHANGELOG section only (`awk -v v="<X.Y.Z>" '/^## /{p=($2==v)} p' CHANGELOG.md > <section-file>`); an empty section file means the version is absent and the delegation must stop and report. For a bundled multi-version note, cut one section file per version and verify each quote against its own file.
+- **Deterministic guard for flags** — the new Tier-1 test `tests/unit/scripts/gh-flag-validity.test.ts` checks that every `gh <noun> <verb> --flag` written in skills, workflows and CI text (templates copies included) exists in the real `gh --help` FLAGS / INHERITED FLAGS. This is the static check behind the `--add-assignee` fix above: a nonexistent flag such as `gh issue edit --assignee` would otherwise surface only at runtime as "unknown flag" ([[r023]] shift-left).
+
 ## Relationships
 
 - **Used by agents**: orchestrator

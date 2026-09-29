@@ -21,9 +21,9 @@ argument-hint: "<topic> [--attach <path>] [--max-rounds <N>] [--auto]"
 
 | 축 | 겹침 |
 |----|------|
-| 모델 ID | 없음 — 리뷰어는 `claude-opus-4-8`(`claude` CLI) / `omx` 기본 모델(`omx` CLI) / `gemini-3.1-pro-high`(`agy` CLI), 심판 슬롯은 1: `claude-opus-5`(`claude` CLI) / 2: `claude-opus-4-6-thinking`(`agy` CLI) / 3: `gpt-oss-120b-medium`(`agy` CLI) |
+| 모델 ID | 없음 — 리뷰어는 `claude-opus-4-8`(`claude` CLI) / `omx` 기본 모델(`omx` CLI) / `gemini-3.1-pro-high`(`agy` CLI), 심판 슬롯은 1: `claude-opus-5-5`(`claude` CLI) / 2: `claude-opus-4-6-thinking`(`agy` CLI) / 3: `gpt-oss-120b-medium`(`agy` CLI) |
 | CLI 바이너리 | **있음** — `claude` 바이너리는 `claude` 리뷰어와 심판 슬롯 1이, `agy` 바이너리는 `agy` 리뷰어와 심판 슬롯 2·3이 공유합니다 |
-| 모델 계열 | **있음** — 심판 3슬롯 중 2슬롯(`claude-opus-5`, `claude-opus-4-6-thinking`)이 `claude` 리뷰어의 모델(`claude-opus-4-8`)과 같은 Claude 계열입니다. 이 2슬롯은 CLI로는 각각 `claude`와 `agy`이므로 CLI 축과 계열 축은 서로 다른 모양으로 겹칩니다 |
+| 모델 계열 | **있음** — 심판 3슬롯 중 2슬롯(`claude-opus-5-5`, `claude-opus-4-6-thinking`)이 `claude` 리뷰어의 모델(`claude-opus-4-8`)과 같은 Claude 계열입니다. 이 2슬롯은 CLI로는 각각 `claude`와 `agy`이므로 CLI 축과 계열 축은 서로 다른 모양으로 겹칩니다 |
 
 따라서 "리뷰-판정 간 교차 오염이 없다"고 말할 수 있는 범위는 **모델 ID 단위까지**입니다. 같은 계열 모델이 공유하는 사전 학습 편향은 이 분리로 제거되지 않습니다.
 
@@ -300,7 +300,7 @@ Consensus: MAJORITY          Verdict: BUILD_WITH_CHANGES
 | 2. 영어 일반 단어와 겹치는 모델 계열명 | `opus` `sonnet` `haiku` `flash` | **두 형태에서만** — (a) 버전 인접(`Opus 4.8`, `sonnet-5`, `flash 2.0`) (b) 비ASCII 문자 인접(`Sonnet 관점에서`). 맨 단어를 막으면 정상 리뷰 산문("magnum opus", "flash memory")에서 중단됩니다 |
 | 3. 봉인 경로 형태 | `SEALED/` `/mapping/` `raw/round-` | 부분 문자열 |
 
-실제로 이 세션에서 쓰이는 모델 ID는 전부 계층 1에 걸립니다 — `claude-opus-4-8`/`claude-opus-5`/`claude-opus-4-6-thinking`은 `claude`로, `gemini-3.1-pro-high`는 `gemini`로, `gpt-oss-120b-medium`은 `gpt`로, `omx:default`는 `omx`로 걸립니다.
+실제로 이 세션에서 쓰이는 모델 ID는 전부 계층 1에 걸립니다 — `claude-opus-4-8`/`claude-opus-5-5`/`claude-opus-4-6-thinking`은 `claude`로, `gemini-3.1-pro-high`는 `gemini`로, `gpt-oss-120b-medium`은 `gpt`로, `omx:default`는 `omx`로 걸립니다.
 
 **감수한 미탐(false negative)**: 버전도 한글 인접도 없이 영어 산문 안에 놓인 맨 모델 계열명 — 예: `Sonnet would argue` — 은 `sonnet-length prose` 와 정규식으로 구별할 수 없어 **통과합니다**. **감수한 오탐(false positive)**: `flash 메모리` 같은 한영 혼용 기술 용어는 계층 2-(b)에 걸려 라운드를 중단시킵니다. 오탐은 시끄럽고 복구 가능하지만 미탐은 조용히 익명성을 깨므로, 과차단 쪽을 택한 결과입니다.
 

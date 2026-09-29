@@ -59,7 +59,7 @@ unset _agora_env_name
 # spec REQ-3 rotation roster: three slots, disjoint from the reviewer
 # roster by model (reviewers.sh uses claude-opus-4-8 and gemini-3.1-pro-high).
 JUDGE_ROTATION=(
-  'claude:claude-opus-5'
+  'claude:claude-opus-5-5'
   'agy:claude-opus-4-6-thinking'
   'agy:gpt-oss-120b-medium'
 )
