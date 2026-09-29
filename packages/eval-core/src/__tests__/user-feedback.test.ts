@@ -3,7 +3,11 @@
  * and userFeedbackToSuggestions (integration with feedback.ts).
  */
 
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+
+// 모킹 전에 실제 모듈을 캡처해 둔다. bun의 mock.module은 파일 경계를 넘어 유지되므로
+// (mock.restore()로 복원되지 않음) afterAll에서 이 원본으로 다시 덮어써 누수를 막는다 (#1760).
+const realChildProcess = { ...(await import('node:child_process')) };
 
 // Mock node:child_process before any imports that use it.
 // Bun hoists mock.module calls, so this applies to all subsequent imports.
@@ -12,6 +16,11 @@ const mockExecSync = mock(() => '[]');
 mock.module('node:child_process', () => ({
   execSync: mockExecSync,
 }));
+
+// 이 파일 종료 시 node:child_process를 원본으로 복원 (다른 테스트 파일 보호)
+afterAll(() => {
+  mock.module('node:child_process', () => realChildProcess);
+});
 
 import { fetchUserFeedbackIssues, parseIssueToFeedback } from '../query/user-feedback.js';
 import { userFeedbackToSuggestions } from '../query/feedback.js';

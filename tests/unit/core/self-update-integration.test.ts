@@ -7,7 +7,7 @@
  * - User input via readline (mocked)
  */
 
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -36,10 +36,19 @@ const mockSpawnSync = mock(() => ({
   signal: null,
 }));
 
+// 모킹 전에 실제 모듈을 캡처해 둔다. bun의 mock.module은 파일 경계를 넘어 유지되므로
+// (mock.restore()로 복원되지 않음) afterAll에서 이 원본으로 다시 덮어써 누수를 막는다 (#1760).
+const realChildProcess = { ...(await import('node:child_process')) };
+
 mock.module('node:child_process', () => ({
   execSync: mockExecSync,
   spawnSync: mockSpawnSync,
 }));
+
+// 이 파일 종료 시 node:child_process를 원본으로 복원 (다른 테스트 파일의 spawnSync 등을 보호)
+afterAll(() => {
+  mock.module('node:child_process', () => realChildProcess);
+});
 
 // Mock readline/promises
 let mockQuestionAnswer = 'y';

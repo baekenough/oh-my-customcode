@@ -11,18 +11,31 @@ import * as schema from '../db/schema.js';
 import type { EvalDb } from '../db/client.js';
 import {
   getAgentFailurePatterns,
-  getImprovementSuggestions,
+  getImprovementSuggestions as getImprovementSuggestionsWithFetcher,
   getPendingImprovementActions,
   getRoutingMissPatterns,
   getSkillEffectiveness,
   saveImprovementActions,
   updateImprovementActionStatus,
+  type FeedbackQueryOptions,
   type ImprovementSuggestion,
 } from '../query/feedback.js';
+import type { UserFeedbackEntry } from '../query/user-feedback.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// GitHub 이슈 조회(gh)를 빈 결과로 고정한다. 단위 테스트가 네트워크나 로컬 gh 인증에
+// 의존하지 않도록 하며, mock.module을 쓰지 않으므로 다른 파일로 누수되지 않는다.
+const noUserFeedback = (): UserFeedbackEntry[] => [];
+
+function getImprovementSuggestions(
+  db: EvalDb,
+  options: FeedbackQueryOptions = {}
+): ReturnType<typeof getImprovementSuggestionsWithFetcher> {
+  return getImprovementSuggestionsWithFetcher(db, options, noUserFeedback);
+}
 
 function makeDb(): { db: EvalDb; sqlite: Database } {
   const sqlite = new Database(':memory:');
@@ -610,6 +623,75 @@ describe('getRoutingMissPatterns', () => {
     const descriptions = result.recentMisses.map((m) => m.description);
     expect(descriptions).toContain('analyze this file');
     expect(descriptions).toContain('find all tests');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getImprovementSuggestions — user feedback merge (주입된 fetcher 사용)
+// ---------------------------------------------------------------------------
+
+function makeUserFeedback(overrides: Partial<UserFeedbackEntry> = {}): UserFeedbackEntry {
+  return {
+    issueNumber: 101,
+    title: 'agent: feedback-target keeps failing',
+    body: '',
+    createdAt: '2026-01-01T00:00:00Z',
+    target: 'feedback-target',
+    targetType: 'agent',
+    sentiment: 'negative',
+    feedbackSource: 'user_explicit',
+    ...overrides,
+  };
+}
+
+describe('getImprovementSuggestions user feedback merge', () => {
+  it('merges negative user feedback from a non-empty injected fetcher', async () => {
+    const { db } = makeDb();
+    const fetcher = (): UserFeedbackEntry[] => [makeUserFeedback()];
+
+    const result = await getImprovementSuggestionsWithFetcher(db, {}, fetcher);
+
+    expect(result).toHaveLength(1);
+    const merged = result[0];
+    expect(merged?.target).toBe('feedback-target');
+    expect(merged?.targetType).toBe('agent');
+    expect(merged?.actionType).toBe('revise');
+    expect(merged?.confidence).toBe('medium');
+    expect(merged?.evidence.metric).toBe('user_feedback');
+    expect(merged?.description).toContain('issue #101');
+  });
+
+  it('excludes positive and general-target feedback entries', async () => {
+    const { db } = makeDb();
+    const fetcher = (): UserFeedbackEntry[] => [
+      makeUserFeedback({ issueNumber: 1, sentiment: 'positive', target: 'happy-agent' }),
+      makeUserFeedback({
+        issueNumber: 2,
+        targetType: 'general',
+        target: 'general',
+        sentiment: 'negative',
+      }),
+      makeUserFeedback({ issueNumber: 3, target: 'unhappy-agent' }),
+    ];
+
+    const result = await getImprovementSuggestionsWithFetcher(db, {}, fetcher);
+
+    expect(result.map((s) => s.target)).toEqual(['unhappy-agent']);
+  });
+
+  it('keeps DB-derived suggestions alongside merged user feedback', async () => {
+    const { db } = makeDb();
+    for (let i = 0; i < 4; i++) seedInvocation(db, 'failing-agent', 'failure');
+    seedInvocation(db, 'failing-agent', 'success');
+    const fetcher = (): UserFeedbackEntry[] => [makeUserFeedback()];
+
+    const result = await getImprovementSuggestionsWithFetcher(db, { minSessions: 5 }, fetcher);
+
+    const targets = result.map((s) => s.target);
+    expect(targets).toContain('failing-agent');
+    expect(targets).toContain('feedback-target');
+    const metrics = result.filter((s) => s.evidence.metric === 'user_feedback');
+    expect(metrics).toHaveLength(1);
   });
 });
 

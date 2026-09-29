@@ -455,7 +455,12 @@ steps:
              combined commit lands. DEADLINE: the combined commit MUST land — with the
              `.husky/pre-commit` gate passing — before the release step begins; release step
              1.a requires a clean working tree, so a deferred commit cannot cross into release.
-      6. On success: remove in-progress, add verify-ready
+             LABEL TIMING: when this OPTION is used, the moment right after the combined commit
+             lands is the per-issue "success" point — run lifecycle item 6 (`gh issue edit <N>
+             --remove-label in-progress --add-label verify-ready`) there for every issue in the
+             commit, at that point rather than deferring it to ci-check, whose step 5 remains the
+             safety net (통합 커밋 직후에 이슈별 라벨 전환을 실행합니다, #1760 찐빠 #6).
+      6. On success: remove in-progress, add verify-ready (combined-commit OPTION: right after the combined commit lands, #1760 찐빠 #6)
       7. On failure: remove in-progress, add needs-review, comment error summary
 
       Rules:
@@ -488,11 +493,13 @@ steps:
         criteria MUST include THREE deterministic checks, scoped to edited text files (md/yaml)
         and restricted to added lines only (`git diff -U0 -- <edited md/yaml files> | grep
         '^+'`): family check `grep -cE '(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 "]'`
-        = 0, line-final auxiliary check `grep -E '다[.。"]?$' | grep -vc '니다[.。"]?$'` = 0
+        = 0, line-final auxiliary check `grep -E '다[.。"]?$' | grep -vcE '니다[.。"]?$'` = 0
         (the family list alone misses endings such as 따른다/했다/있다 and unpunctuated
         line-final endings; the line-final check excludes 합쇼체 `-니다` endings so it does not
-        flag correct sentences — verified against 6 반말/평서형 positive samples and 6 합쇼체
-        negative samples, 12/12 correct) (#1711 찐빠 #3), AND line-final noun-ending check
+        flag correct sentences — the second grep MUST use `-E`: in BRE `?` is a literal
+        character, so the original `grep -vc` form flagged all 6 합쇼체 negatives (6/12 correct,
+        re-measured #1760); with `-vcE` the 6 반말/평서형 positive and 6 합쇼체 negative samples
+        give 12/12 correct) (#1711 찐빠 #3), AND line-final noun-ending check
         `grep -E '(함|됨|필요)[.。"]?$'` = 0 (반말/명사 종결 endings such as 확인함·정정
         필요·완료됨 fall entirely outside the 다-ending regexes above and were previously
         undetectable — verified against 4 명사 종결 positive samples and 4 합쇼체 negative

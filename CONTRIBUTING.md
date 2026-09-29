@@ -353,6 +353,13 @@ When adding a feature, ask yourself:
 2. **How do modules interact?** → Write integration test
 3. **What edge cases exist?** → Write unit tests
 
+#### Process Execution in Tests
+
+- Module mocks (`mock.module('node:child_process', …)`) can persist across test files within a single `bun test` process (depending on how modules are loaded), so they may replace `spawnSync` for unrelated tests and cause failures that appear only in the full suite.
+- Prefer injecting the process runner (the injectable `spawnFn` pattern, e.g. `tests/unit/cli/update.test.ts`).
+- If the code under test imports `child_process` statically and injection is not possible, a module mock is allowed only when the test captures the real module before mocking and re-registers it in `afterAll` (example: `tests/unit/core/preflight-brew.test.ts`). This pattern is only sound because EVERY such mock in the suite restores: a mock left unrestored by an earlier file would be captured as the "real" module. `tests/unit/scripts/child-process-mock-hygiene.test.ts` enforces an `afterAll` restore in every git-tracked test file that mocks `node:child_process` (it scans tracked files only, so a new file is checked once it is added to git).
+- Tests that must actually execute a process call `Bun.spawnSync` rather than `child_process`.
+
 ---
 
 ## Adding New Components
