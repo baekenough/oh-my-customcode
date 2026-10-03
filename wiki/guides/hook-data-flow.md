@@ -1,7 +1,7 @@
 ---
 title: "Hook Data Flow Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-10-03
 sources:
   - guides/hook-data-flow/README.md
 related:
@@ -23,6 +23,8 @@ Documents the three-script pipeline introduced in v0.78.0: `agent-start-recorder
 - Stall detection logic: `avg_duration * 2` threshold against still-running agents
 - Advisory output format to stderr (R021 advisory-only, never blocks)
 - Hook ordering criticality in `hooks.json` array
+- Hook commands are anchored to the project root: `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/<name>.sh"` — Claude Code injects `CLAUDE_PROJECT_DIR` into hook processes, and the `:-.` fallback keeps relative-path behavior when it is unset
+- `hooks.json` is the source; the tracked `settings.json` hooks blocks are generated from it by `bun run sync:hooks` (also run at the end of `bun run build`) and must never be hand-edited
 - Integration with R009 Adaptive Parallel Splitting rule
 
 ## Relationships

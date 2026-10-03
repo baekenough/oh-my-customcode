@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stage-blocker.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stage-blocker.sh\""
           }
         ],
         "description": "Block Write/Edit tools during plan/verify/compound stages — only allow in implement stage"
@@ -67,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/content-hash-validator.sh\""
           }
         ],
         "description": "Validate file content hash before Edit — advisory staleness warning"
@@ -77,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/schema-validator.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/schema-validator.sh\""
           }
         ],
         "description": "Schema-based tool input validation — Phase 1 advisory only"
@@ -87,7 +87,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/rtk-intercept.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/rtk-intercept.sh\""
           }
         ],
         "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R013 advisory)"
@@ -97,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/destructive-git-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/destructive-git-guard.sh\""
           }
         ],
         "description": "Warn before destructive git commands — advisory recovery guidance (R001/R021)"
@@ -107,7 +107,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/rule-deletion-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/rule-deletion-guard.sh\""
           }
         ],
         "description": "Block rule file deletion — requires individual user confirmation per rule (R001 safety)"
@@ -121,15 +121,15 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/git-delegation-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/git-delegation-guard.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/agent-teams-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/agent-teams-advisor.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/model-escalation-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/model-escalation-advisor.sh\""
           }
         ],
         "description": "HUD statusline + R010 git delegation guard + R018 Agent Teams advisor on Agent/Task spawn"
@@ -141,7 +141,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/scripts/omcustom-auto-update.sh"
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/omcustom-auto-update.sh\""
           }
         ],
         "description": "Interactive oh-my-customcode update check at session start (#752)"
@@ -151,7 +151,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/session-env-check.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-env-check.sh\""
           }
         ],
         "description": "Check codex CLI and Agent Teams availability at session start"
@@ -161,7 +161,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stale-todo-scanner.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stale-todo-scanner.sh\""
           }
         ],
         "description": "Scan TODO.md files for stale items at session start"
@@ -171,7 +171,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/adaptive-harness-scan.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/adaptive-harness-scan.sh\""
           }
         ],
         "description": "Lightweight project profile staleness check for adaptive harness (#831)"
@@ -181,7 +181,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/session-autofix.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-autofix.sh\""
           }
         ],
         "description": "Auto-detect and fix previous session issues at start (#838)"
@@ -191,7 +191,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/plugin-cache-check.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/plugin-cache-check.sh\""
           }
         ],
         "description": "Advisory check for plugin cache directories missing node_modules (#1207)"
@@ -201,7 +201,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/claude-md-reinject.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/claude-md-reinject.sh\""
           }
         ],
         "description": "Re-inject project CLAUDE.md into model context on compact re-entry only — CC already natively auto-loads CLAUDE.md on startup/resume/clear, so re-injecting there is pure duplication (~13.8KB/session); matcher narrowed to \"compact\" to keep the original #1617 purpose (post-compact amnesia defense) without the startup double-injection (#1626)"
@@ -213,7 +213,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/user-prompt-preprocessor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/user-prompt-preprocessor.sh\""
           }
         ],
         "description": "Advisory pre-processing of user input — skill matching hints and intent analysis"
@@ -223,7 +223,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/r007-r008-drift-advisor.sh\""
           }
         ],
         "description": "Proactive R007/R008 drift advisory — checks last assistant turn for identification omission (#1229)"
@@ -233,7 +233,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/session-autofix-prompt.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-autofix-prompt.sh\""
           }
         ],
         "description": "Inject session auto-fix findings into first user prompt (#838)"
@@ -243,7 +243,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/fail-axis-cause-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/fail-axis-cause-advisor.sh\""
           }
         ],
         "description": "Advisory on cause-free progress nudges when this session has logged tool failures — delivers via hookSpecificOutput.additionalContext (#1561)"
@@ -259,7 +259,7 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/agent-start-recorder.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/agent-start-recorder.sh\""
           }
         ],
         "description": "HUD display + agent start time recording for stall detection (R009)"
@@ -271,23 +271,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/task-outcome-recorder.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stall-detection-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stall-detection-advisor.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/auto-continue-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/auto-continue-guard.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/r007-r008-drift-advisor.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/subagent-failure-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/subagent-failure-advisor.sh\""
           }
         ],
         "description": "Record agent outcomes + auto-continue workflow + R007/R008 drift advisory + failure advisory on subagent completion (autonomous-loop re-entry, #1545; #1631 replaced the self-referential prompt-type judge hook with an advisory-only command hook)"
@@ -299,7 +299,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/cwd-change-detector.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/cwd-change-detector.sh\""
           }
         ],
         "description": "Auto-detect project type on working directory change (v2.1.83+)"
@@ -311,7 +311,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/file-change-validator.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/file-change-validator.sh\""
           }
         ],
         "description": "Validate externally modified files — advisory staleness warning (v2.1.83+)"
@@ -371,7 +371,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/task-state-precompact.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/task-state-precompact.sh\""
           }
         ],
         "description": "Serialize active task state before compaction — pairs with PostCompact restore (#922)"
@@ -469,7 +469,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/context-budget-advisor.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/context-budget-advisor.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -480,7 +480,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/r007-r008-drift-advisor.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -491,7 +491,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stuck-detector.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stuck-detector.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -502,7 +502,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/cost-cap-advisor.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/cost-cap-advisor.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -513,7 +513,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/content-hash-validator.sh\""
           }
         ],
         "description": "Store content hashes for Read operations — enables Edit staleness detection"
@@ -523,7 +523,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/secret-filter.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/secret-filter.sh\""
           }
         ],
         "description": "Detect potential secrets in Bash/Read/Grep output — advisory warning only"
@@ -533,7 +533,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/audit-log.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/audit-log.sh\""
           }
         ],
         "description": "Append-only audit log for state-changing tool operations"
@@ -543,7 +543,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/skill-count-reminder.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/skill-count-reminder.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -554,7 +554,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/playwright-compress.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/playwright-compress.sh\""
           }
         ],
         "description": "Layer 4: Compress Playwright/Chrome MCP output via Haiku summarization"
@@ -564,7 +564,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/auto-dev-token-tracker.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/auto-dev-token-tracker.sh\""
           }
         ],
         "description": "auto-dev token spend tracker — records per-phase token estimates during /pipeline auto-dev (Issue #1057, advisory)"
@@ -576,7 +576,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stop-console-audit.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stop-console-audit.sh\""
           }
         ],
         "description": "Final console.log audit and session diagnostics before session ends"
@@ -586,7 +586,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/eval-core-batch-save.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/eval-core-batch-save.sh\""
           }
         ],
         "description": "Batch-save agent outcomes to eval-core DB on session end (advisory, exit 0)"
@@ -596,7 +596,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/feedback-collector.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/feedback-collector.sh\""
           }
         ],
         "description": "Auto-extract failure patterns from session outcomes (advisory, exit 0)"
@@ -606,7 +606,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/session-reflection.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-reflection.sh\""
           }
         ],
         "description": "Transcript-based self-reflection: detect R007/R008 violations and log to .claude/outputs/reflections/ (Phase 1 MVP, advisory, exit 0)"
@@ -616,7 +616,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/skill-extractor-analyzer.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/skill-extractor-analyzer.sh\""
           }
         ],
         "description": "Detect reusable skill candidates from session task outcomes (advisory, exit 0)"
@@ -626,7 +626,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/auto-dev-token-summary.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/auto-dev-token-summary.sh\""
           }
         ],
         "description": "Print auto-dev token spend summary on session end (Issue #1057, advisory)"
@@ -638,7 +638,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/failure-ledger.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/failure-ledger.sh\""
           }
         ],
         "description": "FAIL-axis instrumentation — append tool failures to the error ledger (JSONL). Never blocks; feeds fail-axis-cause-advisor.sh (#1561)"

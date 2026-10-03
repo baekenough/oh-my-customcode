@@ -380,6 +380,12 @@ New agents are created and structurally validated via `mgr-creator` (R010 Protec
 3. Reference the skill from relevant agents' `skills:` frontmatter (advisory metadata, not a runtime allowlist — R006).
 4. **Add tests** to verify the skill is loaded correctly.
 
+### Editing Hooks
+
+`.claude/hooks/hooks.json` is the source of truth for hook wiring; the `hooks` blocks in the tracked settings files (`.claude/settings.json`, `templates/.claude/settings.json`) are generated from it. After editing `hooks.json` (and its `templates/` mirror), run `bun run sync:hooks` (or `bun run build`, which ends with the same generator). Never hand-edit the settings `hooks` blocks. `bun run scripts/sync-hooks-settings.ts --check` verifies without writing (exit 1 on drift), and `--local` also regenerates `.claude/settings.local.json` if it exists. `tests/unit/core/hooks-wiring.test.ts` fails when the settings drift from `hooks.json`.
+
+Hook commands use the anchored form `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/<path>"`, and hook scripts that read repo files must derive the root from `${CLAUDE_PROJECT_DIR:-<script-relative fallback>}`.
+
 ---
 
 ## Code Style

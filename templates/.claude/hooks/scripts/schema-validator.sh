@@ -21,7 +21,11 @@ tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name? // "unknown"')
 tool_input=$(printf '%s\n' "$input" | jq -c 'if (.tool_input? | type) == "object" then .tool_input else {} end' 2>/dev/null) || tool_input='{}'
 [ -n "$tool_input" ] || tool_input='{}'
 
-SCHEMA_FILE=".claude/schemas/tool-inputs.json"
+# Locate the repo root ourselves (#1767): hooks run in the session cwd, which may be
+# a subdirectory. Prefer CLAUDE_PROJECT_DIR; fall back to this script's own location
+# (<root>/.claude/hooks/scripts/ -> three levels up).
+ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
+SCHEMA_FILE="$ROOT/.claude/schemas/tool-inputs.json"
 
 # Skip if schema file doesn't exist
 if [ ! -f "$SCHEMA_FILE" ]; then

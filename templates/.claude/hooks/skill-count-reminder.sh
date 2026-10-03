@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+# Locate the repo root ourselves: hooks run in the session cwd, which may be a subdirectory
+ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+
 # Read tool input from stdin
 INPUT=$(cat)
 
@@ -14,7 +17,8 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // 
 # Only trigger for .claude/skills/ paths with SKILL.md
 if [[ "$FILE_PATH" == *".claude/skills/"*"SKILL.md"* ]]; then
     SKILL_NAME=$(echo "$FILE_PATH" | sed 's|.*\.claude/skills/||' | sed 's|/SKILL.md||')
-    ACTUAL_COUNT=$(find .claude/skills -name 'SKILL.md' 2>/dev/null | wc -l | tr -d ' ')
+    # '|| true' keeps the advisory contract (exit 0) even if the skills directory is missing under pipefail
+    ACTUAL_COUNT=$( { find "$ROOT/.claude/skills" -name 'SKILL.md' 2>/dev/null || true; } | wc -l | tr -d ' ')
 
     cat >&2 << EOF
 ─── [Skill Sync Reminder] New/modified skill: ${SKILL_NAME} ───

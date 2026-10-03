@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stage-blocker.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stage-blocker.sh\""
           }
         ],
         "matcher": "Write|Edit",
@@ -68,7 +68,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/content-hash-validator.sh\""
           }
         ],
         "matcher": "Edit",
@@ -78,7 +78,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/schema-validator.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/schema-validator.sh\""
           }
         ],
         "matcher": "Write|Edit|Bash",
@@ -88,7 +88,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/rtk-intercept.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/rtk-intercept.sh\""
           }
         ],
         "matcher": "Bash",
@@ -98,7 +98,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/destructive-git-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/destructive-git-guard.sh\""
           }
         ],
         "matcher": "Bash",
@@ -108,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/rule-deletion-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/rule-deletion-guard.sh\""
           }
         ],
         "matcher": "Bash",
@@ -122,15 +122,15 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/git-delegation-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/git-delegation-guard.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/agent-teams-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/agent-teams-advisor.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/model-escalation-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/model-escalation-advisor.sh\""
           }
         ],
         "matcher": "Task|Agent",
@@ -142,7 +142,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/scripts/omcustom-auto-update.sh"
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/omcustom-auto-update.sh\""
           }
         ],
         "matcher": "*",
@@ -152,7 +152,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/session-env-check.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-env-check.sh\""
           }
         ],
         "matcher": "*",
@@ -162,7 +162,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stale-todo-scanner.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stale-todo-scanner.sh\""
           }
         ],
         "matcher": "*",
@@ -172,7 +172,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/adaptive-harness-scan.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/adaptive-harness-scan.sh\""
           }
         ],
         "matcher": "*",
@@ -182,7 +182,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/session-autofix.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-autofix.sh\""
           }
         ],
         "matcher": "*",
@@ -192,7 +192,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/plugin-cache-check.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/plugin-cache-check.sh\""
           }
         ],
         "matcher": "*",
@@ -202,7 +202,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/claude-md-reinject.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/claude-md-reinject.sh\""
           }
         ],
         "matcher": "compact",
@@ -214,7 +214,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/user-prompt-preprocessor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/user-prompt-preprocessor.sh\""
           }
         ],
         "matcher": "*",
@@ -224,7 +224,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/r007-r008-drift-advisor.sh\""
           }
         ],
         "matcher": "*",
@@ -234,7 +234,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/session-autofix-prompt.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-autofix-prompt.sh\""
           }
         ],
         "matcher": "*",
@@ -244,7 +244,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/fail-axis-cause-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/fail-axis-cause-advisor.sh\""
           }
         ],
         "matcher": "*",
@@ -260,7 +260,7 @@
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/agent-start-recorder.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/agent-start-recorder.sh\""
           }
         ],
         "matcher": "*",
@@ -272,23 +272,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/task-outcome-recorder.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stall-detection-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stall-detection-advisor.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/auto-continue-guard.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/auto-continue-guard.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/r007-r008-drift-advisor.sh\""
           },
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/subagent-failure-advisor.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/subagent-failure-advisor.sh\""
           }
         ],
         "matcher": "*",
@@ -300,7 +300,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/cwd-change-detector.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/cwd-change-detector.sh\""
           }
         ],
         "matcher": "*",
@@ -312,7 +312,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/file-change-validator.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/file-change-validator.sh\""
           }
         ],
         "matcher": "*",
@@ -372,7 +372,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/task-state-precompact.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/task-state-precompact.sh\""
           }
         ],
         "matcher": "*",
@@ -470,7 +470,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/context-budget-advisor.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/context-budget-advisor.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -481,7 +481,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/r007-r008-drift-advisor.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/r007-r008-drift-advisor.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -492,7 +492,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stuck-detector.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stuck-detector.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -503,7 +503,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/cost-cap-advisor.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/cost-cap-advisor.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -514,7 +514,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/content-hash-validator.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/content-hash-validator.sh\""
           }
         ],
         "matcher": "Read",
@@ -524,7 +524,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/secret-filter.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/secret-filter.sh\""
           }
         ],
         "matcher": "Bash|Read|Grep",
@@ -534,7 +534,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/audit-log.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/audit-log.sh\""
           }
         ],
         "matcher": "Edit|Write|Bash|Agent",
@@ -544,7 +544,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/skill-count-reminder.sh",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/skill-count-reminder.sh\"",
             "continueOnBlock": true
           }
         ],
@@ -555,7 +555,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/playwright-compress.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/playwright-compress.sh\""
           }
         ],
         "matcher": "mcp__playwright__.*|mcp__claude-in-chrome__.*",
@@ -565,7 +565,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/auto-dev-token-tracker.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/auto-dev-token-tracker.sh\""
           }
         ],
         "matcher": "Task|Agent",
@@ -577,7 +577,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/stop-console-audit.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stop-console-audit.sh\""
           }
         ],
         "matcher": "*",
@@ -587,7 +587,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/eval-core-batch-save.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/eval-core-batch-save.sh\""
           }
         ],
         "matcher": "*",
@@ -597,7 +597,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/feedback-collector.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/feedback-collector.sh\""
           }
         ],
         "matcher": "*",
@@ -607,7 +607,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/session-reflection.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-reflection.sh\""
           }
         ],
         "matcher": "*",
@@ -617,7 +617,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/skill-extractor-analyzer.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/skill-extractor-analyzer.sh\""
           }
         ],
         "matcher": "*",
@@ -627,7 +627,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/auto-dev-token-summary.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/auto-dev-token-summary.sh\""
           }
         ],
         "matcher": "*",
@@ -639,7 +639,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash .claude/hooks/scripts/failure-ledger.sh"
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/failure-ledger.sh\""
           }
         ],
         "matcher": "*",

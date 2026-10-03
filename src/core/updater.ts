@@ -21,6 +21,7 @@ import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
+import { migrateHookCommands } from './hook-command-migration.js';
 import { getProviderLayout } from './layout.js';
 import {
   computeFileHash,
@@ -478,6 +479,57 @@ async function backfillStatusLineRefreshInterval(
 }
 
 /**
+ * Rewrite cwd-relative omcustom hook commands in settings.local.json to the
+ * CLAUDE_PROJECT_DIR-anchored form (#1767).
+ *
+ * Rewrite-only: hooks are never added, removed or regenerated, and the file is written
+ * only when at least one command changed (so a second run is a no-op). The file's
+ * trailing-newline convention and leading UTF-8 BOM (if any) are preserved.
+ */
+async function migrateHookCommandsInSettingsLocal(
+  targetDir: string,
+  options: UpdateOptions
+): Promise<void> {
+  if (options.dryRun) {
+    return;
+  }
+
+  const layout = getProviderLayout();
+  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
+
+  if (!(await fileExists(settingsPath))) {
+    return;
+  }
+
+  try {
+    const raw = await readTextFile(settingsPath);
+    // A leading UTF-8 BOM makes JSON.parse throw; strip it for parsing and restore it on write.
+    const bom = raw.startsWith('﻿') ? '﻿' : '';
+    const parsed: unknown = JSON.parse(bom ? raw.slice(bom.length) : raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return;
+    }
+
+    const { settings, rewritten } = migrateHookCommands(parsed as Record<string, unknown>);
+    if (rewritten === 0) {
+      return;
+    }
+
+    const trailingNewline = raw.endsWith('\n') ? '\n' : '';
+    await writeTextFile(
+      settingsPath,
+      `${bom}${JSON.stringify(settings, null, 2)}${trailingNewline}`
+    );
+    info('update.hook_commands_migrated', { count: String(rewritten) });
+  } catch {
+    // Non-blocking: parse/read/write failure should not abort the update
+    warn('update.hook_commands_migration_failed', {
+      path: settingsPath,
+    });
+  }
+}
+
+/**
  * Handle full-update-only post-processing steps and log success
  */
 async function runFullUpdatePostProcessing(
@@ -498,6 +550,12 @@ async function runFullUpdatePostProcessing(
       await updateEntryDoc(options.targetDir, config, options);
       await backfillStatusLineRefreshInterval(options.targetDir, options);
     }
+  }
+
+  // The hooks component copies a new-form hooks.json, but CC reads the installed
+  // settings.local.json, so migrate it on full updates and hooks-component updates (#1767).
+  if (isFullUpdate || options.components?.includes('hooks')) {
+    await migrateHookCommandsInSettingsLocal(options.targetDir, options);
   }
 
   if (!options.dryRun) {

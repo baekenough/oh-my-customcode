@@ -13,7 +13,7 @@ if ! command -v jq &>/dev/null; then
 fi
 
 # Parse tool input
-tool=$(printf '%s\n' "$input" | jq -r '.tool // ""' 2>/dev/null) || { printf '%s\n' "$input"; exit 0; }
+tool=$(printf '%s\n' "$input" | jq -r '.tool_name // .tool // ""' 2>/dev/null) || { printf '%s\n' "$input"; exit 0; }
 cmd=$(printf '%s\n' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null) || { printf '%s\n' "$input"; exit 0; }
 
 # Only check Bash tool

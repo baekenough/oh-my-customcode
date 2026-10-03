@@ -48,9 +48,12 @@ mock.module('node:child_process', () => ({
 // 이 파일 종료 시 node:child_process를 원본으로 복원 (다른 테스트 파일의 spawnSync 등을 보호)
 afterAll(() => {
   mock.module('node:child_process', () => realChildProcess);
+  // node:readline/promises도 동일하게 원본으로 복원합니다 (#1761)
+  mock.module('node:readline/promises', () => realReadlinePromises);
 });
 
-// Mock readline/promises
+// Mock readline/promises (모킹 전에 원본을 캡처해 afterAll에서 복원합니다, #1761)
+const realReadlinePromises = { ...(await import('node:readline/promises')) };
 let mockQuestionAnswer = 'y';
 const mockClose = mock(() => {});
 

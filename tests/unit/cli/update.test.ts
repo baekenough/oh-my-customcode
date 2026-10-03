@@ -1,9 +1,30 @@
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { realpathSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { initI18n } from '../../../src/i18n/index.js';
+
+// 모킹 전에 실제 모듈을 캡처해 둡니다. bun의 mock.module은 파일 경계를 넘어 유지되며
+// (mock.restore()로 복원되지 않음) 복원하지 않으면 뒤따르는 테스트 파일(self-update 계열 등)이
+// 이 파일의 스텁을 import하게 됩니다. 아래 afterAll에서 원본으로 다시 덮어써 누수를 막습니다 (#1761).
+// 이 캡처는 파일 최상단에서 한 번만 수행되므로 각 테스트의 모킹 동작에는 영향을 주지 않습니다.
+const realProjects = { ...(await import('../../../src/cli/projects.js')) };
+const realProvider = { ...(await import('../../../src/core/provider.js')) };
+const realRegistry = { ...(await import('../../../src/core/registry.js')) };
+const realSelfUpdate = { ...(await import('../../../src/core/self-update.js')) };
+const realUpdater = { ...(await import('../../../src/core/updater.js')) };
+const realInquirerPrompts = { ...(await import('@inquirer/prompts')) };
+
+// 이 파일 종료 시 mock.module로 교체한 모든 대상을 원본으로 복원합니다 (#1761).
+afterAll(() => {
+  mock.module('../../../src/cli/projects.js', () => realProjects);
+  mock.module('../../../src/core/provider.js', () => realProvider);
+  mock.module('../../../src/core/registry.js', () => realRegistry);
+  mock.module('../../../src/core/self-update.js', () => realSelfUpdate);
+  mock.module('../../../src/core/updater.js', () => realUpdater);
+  mock.module('@inquirer/prompts', () => realInquirerPrompts);
+});
 
 describe('update command', () => {
   let tempDir: string;
