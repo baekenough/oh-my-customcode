@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.94",
-  "generatedAt": "2026-10-03T08:52:02.487Z",
-  "templateVersion": "1.1.94",
+  "generatorVersion": "1.1.95",
+  "generatedAt": "2026-10-03T10:06:31.231Z",
+  "templateVersion": "1.1.95",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -295,8 +295,8 @@
       "component": "agents"
     },
     ".claude/agents/mgr-gitnerd.md": {
-      "templateHash": "3d369c68eb3a9bb378d491026ec43c9aacef2346d4f91ad16da9f28de4d5bbc6",
-      "size": 4434,
+      "templateHash": "515ea7e612cbdb830f20161b3d7af5fd4359a9109dc1c707142c45f509bf25a0",
+      "size": 5060,
       "component": "agents"
     },
     ".claude/agents/mgr-creator.md": {
@@ -485,8 +485,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "07dd7ee1f30749478f68b39d0014adf4e201044cdf72f22693c34404dfdc95d1",
-      "size": 89064,
+      "templateHash": "f95b84e1597cbecc7b98e3c86a2a44dbb401fe04028e8d83d7860ab31d4988de",
+      "size": 90847,
       "component": "skills"
     },
     ".claude/skills/pipeline/SKILL.md": {
@@ -510,8 +510,8 @@
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
-      "templateHash": "4cc5007c21ad6dfcd89b5e94bc1dcc30b9c0953677221423320e96fc18d3cde4",
-      "size": 2274,
+      "templateHash": "53390a1936232cae164e4375fbb3b7ad296ab935e0eac7ed769d17714a511136",
+      "size": 2359,
       "component": "skills"
     },
     ".claude/skills/airflow-best-practices/SKILL.md": {
@@ -720,8 +720,8 @@
       "component": "skills"
     },
     ".claude/skills/claude-native/SKILL.md": {
-      "templateHash": "ff9e7974a836c19bcd93a91e7b2f4afce178c29f46d44e1813466b258e386a71",
-      "size": 6623,
+      "templateHash": "743bcc18bd542ab4abb7cfd783d8076abb6e29dcd79312fb0169ff1e8a2399b3",
+      "size": 6803,
       "component": "skills"
     },
     ".claude/skills/model-escalation/SKILL.md": {
@@ -895,8 +895,8 @@
       "component": "skills"
     },
     ".claude/skills/homework/SKILL.md": {
-      "templateHash": "8d62806690bd0db58852a5e8d3ecb89ad68008888d42287d0743f213062a0fee",
-      "size": 13638,
+      "templateHash": "aacd9eb6bcb1975d7ec390a573cddf1df2b0cec9747c36afafc89036435a368f",
+      "size": 14117,
       "component": "skills"
     },
     ".claude/skills/typescript-best-practices/SKILL.md": {
@@ -1145,8 +1145,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
-      "templateHash": "26ae8bbdb57e113434a86520a13424b8d042ea4ace06487eab40932e048fe4a5",
-      "size": 2451,
+      "templateHash": "1885ebb762130804758f03ee075b6cf62c71628d9cc0e5a6131acc092ca4a931",
+      "size": 34592,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stage-blocker.sh": {
@@ -1995,8 +1995,8 @@
       "component": "guides"
     },
     "guides/middleware-patterns/README.md": {
-      "templateHash": "e761f3597b911367605acb91555f4e0d7c4c9114bc44a8792999b1d912ade16b",
-      "size": 21508,
+      "templateHash": "f0c180b94ed1866379fb8e6f26cc908d3411162ef9f131259c5a8034f5deb6b7",
+      "size": 21637,
       "component": "guides"
     },
     "guides/agents-md-quality/README.md": {
