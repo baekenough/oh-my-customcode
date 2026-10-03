@@ -413,7 +413,7 @@ steps:
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시한다(#1707 #4). 테스트 격리·모듈 모킹 수정을 다루는 리서치·계획 위임에도 대상 src 파일과 All files의 수정 전후 커버리지를 동일 하네스로 비교하도록 완료 조건에 명시합니다(#1778 찐빠 #5, implement 스텝 Rules와 동일 요구)."
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시한다(#1707 #4). 테스트 격리·모듈 모킹 수정을 다루는 리서치·계획 위임에도 대상 src 파일과 All files의 수정 전후 커버리지를 동일 하네스로 비교하도록 완료 조건에 명시합니다(#1778 찐빠 #5, implement 스텝 Rules와 동일 요구). 적용 경계 표에는 각 행마다 이 위치를 읽는 위임 유형/단계 열을 두고 결함이 발생한 단계와 일치하는지 표에서 대조합니다(#1781 찐빠 #2). 기본값·출력 리터럴을 바꾸는 계획은 그 리터럴을 단언하는 기존 테스트를 git grep으로 전수 열거해 웨이브 표의 파일 소유권에 포함합니다(git grep은 untracked 파일을 보지 못하므로 git status --porcelain도 확인합니다, #1786 찐빠 #5)."
     depends_on: plan
 
   - name: implement
@@ -486,6 +486,9 @@ steps:
         its lightweight tier substitute, applying to lite and standard tiers, and
         implement-stage delegation prompts MUST carry the relevant boundary row for each edit
         (회고 제안 묶음 릴리즈의 통합 분석에 적용 경계 표 필수, #1735 찐빠 #4).
+        The table MUST include a column naming which delegation type/step reads each target
+        location and be checked against the step where the defect occurred; a mismatch means
+        the clause must also be placed at the location that step reads (#1781 찐빠 #2).
       - Before dispatching any delegation prompt in an iteration that created or reinforced a rule
         clause, the orchestrator MUST compare that clause's Anti-pattern table rows 1:1 against the
         delegation prompt's sentences and rewrite any match (cause: the R016 「신설 조항의 동일
@@ -502,7 +505,7 @@ steps:
         block: (a) Korean 합쇼체 for new sentences, do not imitate adjacent 반말 — completion
         criteria MUST include THREE deterministic checks, scoped to edited text files (md/yaml)
         and restricted to added lines only (`git diff -U0 -- <edited md/yaml files> | grep
-        '^+'`): family check `grep -cE '(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 "]'`
+        '^+'`): family check `grep -cE '(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 "(]'`
         = 0, line-final auxiliary check `grep -E '다[.。"]?$' | grep -vcE '니다[.。"]?$'` = 0
         (the family list alone misses endings such as 따른다/했다/있다 and unpunctuated
         line-final endings; the line-final check excludes 합쇼체 `-니다` endings so it does not
@@ -521,7 +524,7 @@ steps:
         python3 `re` equivalent of all THREE checks above, reading from the SAME piped stdin as
         (a) (`git diff -U0 -- <edited md/yaml files> | grep '^+' | python3 -c "import re,sys;
         text=sys.stdin.read();
-        fam=len(re.findall(r'(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 \"]', text));
+        fam=len(re.findall(r'(한다|된다|않는다|따른다|했다|있다|없다|넣는다|이다)[.。 \"(]', text));
         lf=len(re.findall(r'다[.。\"]?$', text, re.M)) - len(re.findall(r'니다[.。\"]?$', text, re.M));
         noun=len(re.findall(r'(함|됨|필요)[.。\"]?$', text, re.M));
         print(fam, lf, noun)"`, NOT a file-argument read — the input is the piped diff, never a
@@ -550,7 +553,11 @@ steps:
         delegation creates MUST live under a per-agent-unique path (`$TMPDIR` or the session
         scratchpad), never a fixed shared path (#1722 찐빠 #7). This governs the agent's own
         ad-hoc temp files; temp paths created at runtime by test code are governed by the
-        separate test-code temp-path bullet below (#1778 찐빠 #4).
+        separate test-code temp-path bullet below (#1778 찐빠 #4); (i) when the edit writes a runnable
+        command or code snippet into rule/skill/guide/workflow text, the agent MUST copy that command OUT of the
+        edited file and run it on a positive and a negative fixture, putting both raw outputs in the
+        completion report (the #1752 fixture bullet below, carried here so it reaches the prompt;
+        #1781 찐빠 #1).
       - Any implement-stage delegation that writes an executable command or code snippet into
         rule/skill/guide/workflow TEXT (not a prose-only edit) MUST require, as a completion-report
         item, that the agent copy the command OUT of the edited file and run it once on a positive
@@ -706,6 +713,13 @@ steps:
         measurement; (c) no working around a discovered product or measurement defect to force
         a pass — halt and report instead (R023 「Conditional-Output Verification」 양성/음성 짝
         원칙 확장, #1721 찐빠 #1, #1727 찐빠 #2, #1728 찐빠 #2).
+      - A delegation that adds an item to an existing list or loop (e.g. a sync-file list) MUST
+        require, as a completion item, citing with file:line how that list handles preserveFiles,
+        protection and backup contracts, and judging whether the new item is consistent with the
+        other components in the same run (#1786 찐빠 #1).
+      - A delegation that writes migration/upgrade tests MUST require, as a completion item, that
+        every "old state" fixture be derived from that version's generator output (or real tagged
+        artifacts; cite the call used), never hand-written from source expressions (#1786 찐빠 #2).
       - Delegations (research or implementation) that design or fix test isolation or module
         mocking MUST include in their completion criteria a before/after coverage comparison
         of the target src file(s) AND the All-files total, measured with the SAME harness

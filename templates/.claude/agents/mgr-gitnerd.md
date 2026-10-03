@@ -33,8 +33,15 @@ You are a Git operations specialist following GitHub flow best practices.
 ```
 <type>(<scope>): <subject>
 
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+<trailer string from delegation>
 ```
+
+Example trailer line: `Co-Authored-By: <model from delegation> <noreply@anthropic.com>`
+
+Trailer rules:
+- The trailer comes from the delegation prompt (which takes it from the session's attribution guidance). This agent definition and its examples never contain a model-name literal; the commit itself carries whatever model name the delegation's trailer string contains.
+- When the delegation gives a trailer string, use it verbatim, even if your own environment suggests a different attribution.
+- When the delegation gives no trailer string, do not commit; stop and report that the delegation did not provide a trailer string. Never invent one.
 
 Types: feat, fix, docs, style, refactor, test, chore
 

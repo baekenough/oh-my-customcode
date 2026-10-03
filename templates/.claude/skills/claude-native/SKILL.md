@@ -182,13 +182,13 @@ Semver comparison: major → minor → patch (all numeric). Pre-release suffixes
 
 ### Automatic (SessionStart Hook)
 
-Can be integrated into the SessionStart hook to check for new releases at session start:
+Can be integrated into the SessionStart hook to check for new releases at session start (illustrative example — `claude-native-check.sh` is a hypothetical script you would write yourself; it is not shipped or registered in `hooks.json`):
 
 ```json
 {
   "SessionStart": [
     {
-      "command": "bash .claude/hooks/scripts/claude-native-check.sh"
+      "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/claude-native-check.sh\""
     }
   ]
 }

@@ -50,14 +50,14 @@ MCP tool response (37K+ chars)
 
 ## Hook Configuration
 
-Configured in `.claude/hooks/hooks.json` PostToolUse section:
+Configured in `.claude/hooks/hooks.json` PostToolUse section (the entry whose command runs `playwright-compress.sh`):
 
 ```json
 {
   "matcher": "mcp_tool_name matches \"mcp__playwright__.*\" || mcp_tool_name matches \"mcp__claude-in-chrome__.*\"",
   "hooks": [{
     "type": "command",
-    "command": "bash .claude/hooks/scripts/playwright-compress.sh"
+    "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/playwright-compress.sh\""
   }],
   "description": "Layer 4: Compress Playwright/Chrome MCP output via Haiku summarization"
 }

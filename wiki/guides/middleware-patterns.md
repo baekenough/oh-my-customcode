@@ -1,7 +1,7 @@
 ---
 title: Middleware Patterns Guide
 type: guide
-updated: 2026-04-27
+updated: 2026-10-03
 sources:
   - guides/middleware-patterns/README.md
 related:
@@ -58,6 +58,10 @@ LangChain 6-stage lifecycle middleware 모델을 oh-my-customcode 기존 자산�
 ```
 
 SKILL.md `description` 첫 줄에 `[lifecycle: <단계>]` 명시 권장.
+
+## 훅 등록·테스트 예시 (#1774)
+
+가이드의 hooks.json 등록 예시는 illustrative(`your-middleware.sh`는 placeholder이며 배포 스크립트가 아님)로 표기되고, command는 `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/your-middleware.sh"`처럼 프로젝트 루트에 고정(anchored)됩니다. 단위 테스트 예시 경로도 `.claude/hooks/scripts/`를 사용합니다.
 
 ## Related
 
