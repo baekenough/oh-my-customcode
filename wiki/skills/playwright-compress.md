@@ -1,7 +1,7 @@
 ---
 title: Playwright Compress
 type: skill
-updated: 2026-04-19
+updated: 2026-10-03
 sources:
   - .claude/skills/playwright-compress/SKILL.md
 related:
@@ -18,7 +18,7 @@ PostToolUse hook that compresses Playwright MCP tool output using Haiku summariz
 
 ## Overview
 
-Reduces Playwright MCP tool output tokens by 94–96% using intelligent Haiku summarization while preserving `ref=` values for interactive flow continuity. Operates as a PostToolUse hook triggered on `mcp__playwright__.*` and `mcp__claude-in-chrome__.*` tools. If output is under 3000 characters, compression is skipped. If Haiku summarization fails, the original output is returned unchanged (safe fallback).
+Reduces Playwright MCP tool output tokens by 94–96% using intelligent Haiku summarization while preserving `ref=` values for interactive flow continuity. Operates as a PostToolUse hook triggered on `mcp__playwright__.*` and `mcp__claude-in-chrome__.*` tools. If output is under 3000 characters, compression is skipped. If Haiku summarization fails, the original output is returned unchanged (safe fallback). The hook is registered in `.claude/hooks/hooks.json` PostToolUse (the entry whose command runs `playwright-compress.sh`), using the anchored form `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/playwright-compress.sh"`.
 
 ## Key Details
 
@@ -48,3 +48,4 @@ Reduces Playwright MCP tool output tokens by 94–96% using intelligent Haiku su
 
 - `.claude/skills/playwright-compress/SKILL.md` — skill definition
 - `.claude/hooks/hooks.json` — PostToolUse hook configuration
+- Content-drift resync 2026-10-03 (#1774): hook example matches the real hooks.json entry (anchored form), referenced by script name.

@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-09-29
+updated: 2026-10-03
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -41,8 +41,16 @@ Capabilities include conventional commit messages, branch naming enforcement, PR
 ```
 <type>(<scope>): <subject>
 
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+<trailer string from delegation>
 ```
+
+Example trailer line: `Co-Authored-By: <model from delegation> <noreply@anthropic.com>`
+
+Trailer rules (#1779):
+
+- The trailer comes from the delegation prompt (which takes it from the session's attribution guidance). The agent definition and its examples never contain a model-name literal; the commit carries whatever model name the delegation's trailer string contains.
+- When the delegation gives a trailer string, use it verbatim, even if the agent's own environment suggests a different attribution.
+- When the delegation gives no trailer string, do not commit; stop and report that no trailer string was provided. Never invent one.
 
 Types: feat, fix, docs, style, refactor, test, chore
 
@@ -174,3 +182,4 @@ The release step's semver rule reserves **minor** for a new user-facing capabili
 - Issue #1591 — release-PR merge instruction carried an unverified `--admin` flag across sessions; ground-truth measurement found no reviewer-approval gate exists (2026-08-15)
 - Issue #1593 — lockfile-generation mechanism undocumented, caused silent stale `templateVersion` in v1.1.47; 3-way assertion added (2026-08-15)
 - Content-drift resync 2026-09-03 (v1.1.59, #1645): added the "Commit Timeout Budget" section — the main-worktree `.husky/pre-commit` hook runs the full test suite (~165s measured), so `git commit` delegations require Bash `timeout: ≥400000`; the default 120000ms is killed mid-hook with exit 143, which is not evidence of commit failure.
+- Content-drift resync 2026-10-03 (#1779): replaced the hardcoded `Co-Authored-By` model-name trailer with a delegation-supplied trailer (used verbatim; no trailer given means do not commit and report).

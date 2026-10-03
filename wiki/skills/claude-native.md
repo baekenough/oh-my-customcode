@@ -1,7 +1,7 @@
 ---
 title: Claude Native
 type: skill
-updated: 2026-09-24
+updated: 2026-10-03
 sources:
   - .claude/skills/claude-native/SKILL.md
 related:
@@ -32,9 +32,10 @@ Fetches Claude Code releases from `gh api repos/anthropics/claude-code/releases`
 - **Feeds**: issues consumed by [[mgr-claude-code-bible]] (spec compliance) and [[update-external]] (agent/skill sync) review cycles
 - **Related skills**: [[update-external]], [[claude-code-bible]], [[audit-agents]]
 - **See also**: [[claude-code]] (guide referencing skill-generated issues), [[R016]] (continuous improvement — issues drive rule updates)
-- **Integration paths**: manual slash command, SessionStart hook (`claude-native-check.sh` dry-run notify), or scheduled via `/schedule` / CronCreate MCP
+- **Integration paths**: manual slash command, SessionStart hook (illustrative example only: `claude-native-check.sh` is a hypothetical script you would write yourself, not shipped or registered in `hooks.json`; the example command uses the anchored form `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/claude-native-check.sh"`), or scheduled via `/schedule` / CronCreate MCP
 
 ## Sources
 
 - `.claude/skills/claude-native/SKILL.md` — skill definition
 - Content-drift resync 2026-09-24 (v1.1.77, #1717): added two action-item checklist entries routing new CC knowledge to `guides/claude-code/15-version-compatibility.md` per rule and capping rule-body additions at one behavioral line, gated by [[r016]]'s new 140,000-char instruction-budget check. See [[r016]] for the full policy this issues from.
+- Content-drift resync 2026-10-03 (#1774): SessionStart hook example now uses the anchored `${CLAUDE_PROJECT_DIR:-.}` form and is marked illustrative.

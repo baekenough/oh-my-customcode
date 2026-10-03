@@ -615,7 +615,7 @@ export const CLASSIFICATION_TABLE: ClassificationEntry[] = [
       'Block rule file deletion — requires individual user confirmation per rule (R001 safety)',
     decision: 'drop-condition',
     reason:
-      'rule-deletion-guard.sh explicitly re-checks `tool != "Bash"` (passthrough) and re-greps tool_input.command for rm/git rm/mv/unlink AND a .claude/rules path before blocking — matcher condition is redundant',
+      'rule-deletion-guard.sh explicitly re-checks `tool != "Bash"` (passthrough) and itself decides whether to block: it blocks destructive operations (rm/mv/unlink/find -delete/xargs rm/truncate/git rm|mv|clean/`>` redirect) whose resolved target is inside or an ancestor of the project .claude/rules or templates/.claude/rules, falling back to pattern matching for opaque commands (use the Write/Edit tools to modify rule files) — matcher condition is redundant',
   },
   {
     event: 'PostToolUse',

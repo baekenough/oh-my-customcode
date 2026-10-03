@@ -145,6 +145,8 @@ Assemble a feedback issue in Korean using the #1266 format:
 
 If `--severity` filter is active, include only findings at or above the threshold. Note the filter in the issue body.
 
+When a 하네스 제안 item contains a runnable command, run it once at draft time (positive and negative fixture where applicable) and record the observed exit code/output next to that proposal; a command that only reports failure must be caught here, not in review (e.g. `bunx biome check` exits 0 inside biome's `files.includes` scope but 1 outside it, so a norm requiring it for all TS/JS reports failure for out-of-scope files regardless of formatting). (#1781 찐빠 #1)
+
 If no findings are discovered, output:
 ```
 [homework] 이번 세션에서 찐빠를 발견하지 못했습니다. (세션 정상 종료)

@@ -85,8 +85,14 @@ export interface Registry {
   projects: Record<string, RegistryEntry>;
 }
 
-/** Empty registry sentinel */
-const EMPTY_REGISTRY: Registry = { projects: {} };
+/**
+ * Create a fresh empty registry.
+ * Must return a new `projects` object on every call — sharing one object across
+ * reads lets a later mutation pollute subsequent empty reads (#1783).
+ */
+function emptyRegistry(): Registry {
+  return { projects: {} };
+}
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -109,10 +115,10 @@ async function readRegistryRaw(): Promise<Registry> {
     ) {
       return parsed as Registry;
     }
-    return { ...EMPTY_REGISTRY };
+    return emptyRegistry();
   } catch {
     // File not found or invalid JSON — return empty registry (non-blocking)
-    return { ...EMPTY_REGISTRY };
+    return emptyRegistry();
   }
 }
 

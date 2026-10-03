@@ -87,6 +87,34 @@ describe('readRegistry()', () => {
     const registry = await readRegistry();
     expect(Object.keys(registry.projects).length).toBe(0);
   });
+
+  it('does not share the empty-registry projects object across reads (#1783)', async () => {
+    const { readRegistry, registerProject } = await import('../../../src/core/registry.js');
+
+    // 1. Empty read from a directory with no projects.json, then mutate via registerProject
+    const emptyDir = join(tempRoot, 'empty-registry-dir');
+    await mkdir(emptyDir, { recursive: true });
+    _setRegistryDirForTesting(emptyDir);
+    expect(Object.keys((await readRegistry()).projects).length).toBe(0);
+    await registerProject(join(tempRoot, 'polluter-project'), '1.0.0');
+
+    // 2. A later empty read (invalid JSON) must still be empty
+    const invalidDir = join(tempRoot, 'invalid-registry-dir');
+    await mkdir(invalidDir, { recursive: true });
+    await writeFile(join(invalidDir, 'projects.json'), 'not-json', 'utf-8');
+    _setRegistryDirForTesting(invalidDir);
+    const registry = await readRegistry();
+    expect(Object.keys(registry.projects).length).toBe(0);
+
+    // 3. Mutating a returned empty registry must not leak into the next empty read
+    registry.projects['/leaked/project'] = {
+      version: '0.0.0',
+      installedAt: 'x',
+      updatedAt: 'x',
+    };
+    const next = await readRegistry();
+    expect(Object.keys(next.projects).length).toBe(0);
+  });
 });
 
 // ---------------------------------------------------------------------------

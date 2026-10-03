@@ -550,12 +550,17 @@ describe('logger utilities', () => {
     });
 
     it('should override existing messages', () => {
-      addMessages('en', { 'install.start': 'Custom Start Message' });
+      // Override a test-owned key, not a production key such as 'install.start':
+      // addMessages mutates the process-wide table and has no restore API, so
+      // overwriting a real key would leak into later tests (#1783).
+      addMessages('en', { 'test.override': 'Original Message' });
+      addMessages('en', { 'test.override': 'Overridden Message' });
 
-      info('install.start');
+      info('test.override');
 
       const call = consoleInfoSpy.mock.calls[0][0];
-      expect(call).toContain('Custom Start Message');
+      expect(call).toContain('Overridden Message');
+      expect(call).not.toContain('Original Message');
     });
 
     it('should create new locale if it does not exist', () => {

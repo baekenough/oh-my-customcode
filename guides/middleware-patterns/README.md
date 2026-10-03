@@ -348,13 +348,13 @@ fi
 exit 0
 ```
 
-hooks.json 등록:
+hooks.json 등록 (illustrative — `your-middleware.sh` is a placeholder, not a shipped script):
 ```json
 {
   "PreToolUse": [
     {
       "matcher": "Bash",
-      "command": ".claude/hooks/your-middleware.sh",
+      "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/your-middleware.sh\"",
       "description": "lifecycle: wrap_tool_call — 위험 패턴 감지"
     }
   ]
@@ -394,7 +394,7 @@ limitations:
 훅 스크립트의 단위 테스트:
 ```bash
 # PreToolUse hook 직접 테스트
-CLAUDE_TOOL_NAME="Bash" CLAUDE_TOOL_INPUT="rm -rf /" .claude/hooks/your-middleware.sh
+CLAUDE_TOOL_NAME="Bash" CLAUDE_TOOL_INPUT="rm -rf /" .claude/hooks/scripts/your-middleware.sh
 echo "Exit: $?"  # 0 또는 2 확인
 ```
 
