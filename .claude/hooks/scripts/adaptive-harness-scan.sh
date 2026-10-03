@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# #1770: honor CLAUDE_PROJECT_DIR first; fallback git toplevel (or pwd), not script location.
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 PROFILE="$PROJECT_ROOT/.claude/project-profile.yaml"
 
 # Skip if this IS the oh-my-customcode project itself (meta-project)

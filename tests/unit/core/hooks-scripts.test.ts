@@ -42,7 +42,12 @@ function runHookScript(
   cwd?: string
 ): Promise<ScriptResult> {
   return new Promise((resolve_) => {
-    const childEnv: NodeJS.ProcessEnv = { ...process.env, ...env };
+    // #1770: the SessionStart scripts anchor to ${CLAUDE_PROJECT_DIR:-<git toplevel || pwd>}.
+    // Under a Claude Code session (or CI) the parent exports CLAUDE_PROJECT_DIR = the real repo,
+    // which would make fixture-cwd tests read the repo instead. Scrub the inherited value; a
+    // test that wants it passes it explicitly via `env`.
+    const { CLAUDE_PROJECT_DIR: _inheritedProjectDir, ...inheritedEnv } = process.env;
+    const childEnv: NodeJS.ProcessEnv = { ...inheritedEnv, ...env };
     const child = spawn('bash', [scriptPath], {
       env: childEnv,
       cwd: cwd ?? tmpdir(),
@@ -1123,14 +1128,18 @@ describe('session-env-check.sh', () => {
   describe('self-update cache schema handling', () => {
     let cacheHome: string;
     let projectCwd: string;
+    let otherCwd: string;
     let cachePath: string;
 
     beforeEach(async () => {
       const stamp = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       cacheHome = join(tmpdir(), `omcc-envcheck-home-${stamp}`);
       projectCwd = join(tmpdir(), `omcc-envcheck-cwd-${stamp}`);
+      // Distinct, empty, non-git dir used as the spawn cwd in the #1770 root-anchor tests.
+      otherCwd = join(tmpdir(), `omcc-envcheck-other-${stamp}`);
       await mkdir(join(cacheHome, '.oh-my-customcode'), { recursive: true });
       await mkdir(projectCwd, { recursive: true });
+      await mkdir(otherCwd, { recursive: true });
       cachePath = join(cacheHome, '.oh-my-customcode', 'self-update-cache.json');
       // Installed version pinned low so any readable cache reports "update available".
       await writeFile(join(projectCwd, '.omcustomrc.json'), JSON.stringify({ version: '1.0.0' }));
@@ -1139,11 +1148,67 @@ describe('session-env-check.sh', () => {
     afterEach(async () => {
       await rm(cacheHome, { recursive: true, force: true });
       await rm(projectCwd, { recursive: true, force: true });
+      await rm(otherCwd, { recursive: true, force: true });
     });
 
     function runWithCacheHome() {
       return runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput, { HOME: cacheHome }, projectCwd);
     }
+
+    // #1770 env-scrub proof (R023 positive/negative pair): the project root comes from
+    // CLAUDE_PROJECT_DIR, falling back to cwd — and runHookScript no longer inherits the
+    // parent's value, so these two cases are the only way the var reaches the script.
+    it('follows CLAUDE_PROJECT_DIR to a different fixture dir than the spawn cwd (positive)', async () => {
+      await writeFile(cachePath, JSON.stringify({ latestVersion: '9.9.9' }));
+
+      const result = await runHookScript(
+        SESSION_ENV_CHECK_SCRIPT,
+        sessionInput,
+        { HOME: cacheHome, CLAUDE_PROJECT_DIR: projectCwd },
+        otherCwd
+      );
+
+      expect(result.exitCode).toBe(0);
+      // .omcustomrc.json lives only in projectCwd; seeing v1.0.0 proves the script cd'd there.
+      expect(result.stderr).toContain('oh-my-customcode v9.9.9 available (current: v1.0.0)');
+    });
+
+    it('falls back to the spawn cwd when CLAUDE_PROJECT_DIR is unset (negative)', async () => {
+      await writeFile(cachePath, JSON.stringify({ latestVersion: '9.9.9' }));
+
+      const result = await runHookScript(
+        SESSION_ENV_CHECK_SCRIPT,
+        sessionInput,
+        { HOME: cacheHome },
+        otherCwd
+      );
+
+      expect(result.exitCode).toBe(0);
+      // otherCwd has no .omcustomrc.json and projectCwd is not consulted -> no update report.
+      expect(result.stderr).not.toContain('v9.9.9 available');
+      expect(result.stderr).not.toContain('current: v1.0.0');
+    });
+
+    it('does not inherit an ambient CLAUDE_PROJECT_DIR from the parent process (scrub)', async () => {
+      await writeFile(cachePath, JSON.stringify({ latestVersion: '9.9.9' }));
+      const previous = process.env.CLAUDE_PROJECT_DIR;
+      process.env.CLAUDE_PROJECT_DIR = projectCwd;
+      try {
+        const result = await runHookScript(
+          SESSION_ENV_CHECK_SCRIPT,
+          sessionInput,
+          { HOME: cacheHome },
+          otherCwd
+        );
+        expect(result.stderr).not.toContain('v9.9.9 available');
+      } finally {
+        if (previous === undefined) {
+          delete process.env.CLAUDE_PROJECT_DIR;
+        } else {
+          process.env.CLAUDE_PROJECT_DIR = previous;
+        }
+      }
+    });
 
     it('exits 0 and passes stdin through when the cache file is absent', async () => {
       const result = await runWithCacheHome();

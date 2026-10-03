@@ -77,7 +77,7 @@ export async function generateMCPConfig(targetDir: string): Promise<void> {
     await writeFile(mcpConfigPath, `${JSON.stringify(config, null, 2)}\n`);
   }
 
-  info('ontology-rag MCP server configured successfully');
+  info('mcp.ontology_rag_configured');
 }
 
 /**

@@ -27,6 +27,9 @@ const OLD_BARE_NEW_FORM = `"${ANCHOR}/.claude/hooks/scripts/omcustom-auto-update
 const OLD_TOP_LEVEL = 'bash .claude/hooks/skill-count-reminder.sh';
 const OLD_TOP_LEVEL_NEW_FORM = `bash "${ANCHOR}/.claude/hooks/skill-count-reminder.sh"`;
 const CUSTOM = 'sh .claude/hooks/x.sh';
+const OLD_STATUSLINE = '.claude/statusline.sh';
+const OLD_STATUSLINE_NEW_FORM = `bash "${ANCHOR}/.claude/statusline.sh"`;
+const CUSTOM_STATUSLINE = '.claude/custom-statusline.sh';
 
 interface HookEntry {
   type: string;
@@ -42,7 +45,7 @@ interface Settings {
   customKey: { keep: string[] };
 }
 
-function buildOldSettings(): Settings {
+function buildOldSettings(statusLineCommand: string = OLD_STATUSLINE): Settings {
   return {
     hooks: {
       SessionStart: [{ hooks: [{ type: 'command', command: OLD_BARE }] }],
@@ -57,7 +60,7 @@ function buildOldSettings(): Settings {
       ],
       PostToolUse: [{ matcher: 'Write', hooks: [{ type: 'command', command: OLD_TOP_LEVEL }] }],
     },
-    statusLine: { type: 'command', command: '.claude/statusline.sh', refreshInterval: 10 },
+    statusLine: { type: 'command', command: statusLineCommand, refreshInterval: 10 },
     customKey: { keep: ['a', 'b'] },
   };
 }
@@ -97,9 +100,10 @@ describe('update() hook-command migration (#1767)', () => {
     // Custom hook and unrelated keys are untouched.
     expect(settings.hooks.PreToolUse?.[0]?.hooks[1]?.command).toBe(CUSTOM);
     expect(settings.hooks.PreToolUse?.[0]?.matcher).toBe('Bash');
+    // Exact-default statusLine command is anchored; type/refreshInterval are preserved (#1769).
     expect(settings.statusLine).toEqual({
       type: 'command',
-      command: '.claude/statusline.sh',
+      command: OLD_STATUSLINE_NEW_FORM,
       refreshInterval: 10,
     });
     expect(settings.customKey).toEqual({ keep: ['a', 'b'] });
@@ -147,6 +151,23 @@ describe('update() hook-command migration (#1767)', () => {
     expect(raw.startsWith(bom)).toBe(true);
     expect(raw.endsWith('\n')).toBe(true);
     expectMigrated(JSON.parse(raw.slice(bom.length)) as Settings);
+  });
+
+  it('leaves a custom statusLine command untouched while still migrating hook commands (#1769)', async () => {
+    await writeSettings(`${JSON.stringify(buildOldSettings(CUSTOM_STATUSLINE), null, 2)}\n`);
+
+    const result = await update({ targetDir: tempDir, components: ['hooks'] });
+
+    expect(result.success).toBe(true);
+    const settings = await readSettings();
+    expect(settings.statusLine).toEqual({
+      type: 'command',
+      command: CUSTOM_STATUSLINE,
+      refreshInterval: 10,
+    });
+    expect(settings.hooks.SessionStart?.[0]?.hooks[0]?.command).toBe(OLD_BARE_NEW_FORM);
+    expect(settings.hooks.PreToolUse?.[0]?.hooks[0]?.command).toBe(OLD_SCRIPT_NEW_FORM);
+    expect(settings.hooks.PostToolUse?.[0]?.hooks[0]?.command).toBe(OLD_TOP_LEVEL_NEW_FORM);
   });
 
   it('does not write again when nothing is left to migrate (second update is a no-op)', async () => {

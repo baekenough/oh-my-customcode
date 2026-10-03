@@ -360,6 +360,23 @@ When adding a feature, ask yourself:
 - If the code under test imports `child_process` statically and injection is not possible, a module mock is allowed only when the test captures the real module before mocking and re-registers it in `afterAll` (example: `tests/unit/core/preflight-brew.test.ts`). This pattern is only sound because EVERY such mock in the suite restores: a mock left unrestored by an earlier file would be captured as the "real" module. `tests/unit/scripts/child-process-mock-hygiene.test.ts` enforces an `afterAll` restore in every git-tracked test file that mocks `node:child_process` (it scans tracked files only, so a new file is checked once it is added to git).
 - Tests that must actually execute a process call `Bun.spawnSync` rather than `child_process`.
 
+#### Module Mocks Must Be Restored (`mock.module`)
+
+The `child_process` rule above applies to every module mocked with bun's `mock.module(spec, …)`, not only `node:child_process`.
+
+- `mock.restore()` does NOT undo `mock.module`. A module mock stays registered for the rest of the `bun test` process, so a later test file that imports the real module can get the mock and fail only in the full suite, depending on file order.
+- Capture the real module before the first `mock.module` call and re-register it in a top-level `afterAll`:
+
+  ```ts
+  const realX = { ...(await import('../../../src/core/x.js')) };
+  afterAll(() => {
+    mock.module('../../../src/core/x.js', () => realX);
+  });
+  ```
+
+- Restores inside `afterEach`, inline at the end of a test, or in a helper function are not recognized by the hygiene test; the re-registration must sit directly in an `afterAll` callback.
+- `tests/unit/scripts/child-process-mock-hygiene.test.ts` enforces this for every spec mocked in git-tracked test files, with an empty allowlist.
+
 ---
 
 ## Adding New Components

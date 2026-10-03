@@ -963,6 +963,69 @@ describe('updater', () => {
       expect(stats.mode & 0o100).toBeTruthy();
     });
 
+    it('should sync schemas/tool-inputs.json and create the missing parent dir (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      // Only the root dir exists; schemas/ must be created by the sync
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+      const schemaDest = join(tempDir, layout.rootDir, 'schemas', 'tool-inputs.json');
+      expect(await readFile(schemaDest, 'utf-8').catch(() => null)).toBeNull();
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(true);
+      expect(result.syncedRootFiles).toContain('schemas/tool-inputs.json');
+
+      const templateContent = readFileSync(
+        pathJoin(import.meta.dir, '../../../templates', layout.rootDir, 'schemas/tool-inputs.json'),
+        'utf-8'
+      );
+      expect(await readFile(schemaDest, 'utf-8')).toBe(templateContent);
+    });
+
+    it('should overwrite a stale schemas/tool-inputs.json with template content (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await createDirStructure({
+        [`${layout.rootDir}/schemas/tool-inputs.json`]: '{"stale":true}',
+      });
+
+      await update({ targetDir: tempDir });
+
+      const templateContent = readFileSync(
+        pathJoin(import.meta.dir, '../../../templates', layout.rootDir, 'schemas/tool-inputs.json'),
+        'utf-8'
+      );
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'schemas', 'tool-inputs.json'), 'utf-8')
+      ).toBe(templateContent);
+    });
+
+    it('should keep syncing the three original root files alongside schemas (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.syncedRootFiles).toEqual(
+        expect.arrayContaining(['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh'])
+      );
+      const fs = await import('node:fs/promises');
+      for (const name of ['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh']) {
+        const stats = await fs.stat(join(tempDir, layout.rootDir, name));
+        expect(stats.mode & 0o100).toBeTruthy();
+      }
+      // Non-.sh schema file is not forced executable
+      const schemaStats = await fs.stat(
+        join(tempDir, layout.rootDir, 'schemas', 'tool-inputs.json')
+      );
+      expect(schemaStats.mode & 0o100).toBeFalsy();
+    });
+
     it('should return file list in dry run mode without copying', async () => {
       await createConfig('0.1.0');
 
@@ -976,6 +1039,7 @@ describe('updater', () => {
 
       expect(result.success).toBe(true);
       expect(result.syncedRootFiles.length).toBeGreaterThan(0);
+      expect(result.syncedRootFiles).toContain('schemas/tool-inputs.json');
 
       // Files should NOT actually exist (dry run)
       const statuslinePath = join(tempDir, layout.rootDir, 'statusline.sh');

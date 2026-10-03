@@ -9,6 +9,13 @@ set -euo pipefail
 
 input=$(cat)
 
+# Anchor cwd to the project root (#1770): hooks may be launched from a subdirectory.
+# Fallback is the git toplevel (or pwd), NOT the script location: tests run these scripts
+# from a tmp cwd with inherited env. (schema-validator.sh/skill-count-reminder.sh instead
+# use a script-location fallback.) The guarded cd must not abort under set -e (e.g. mode-000 dir).
+ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+{ [ -d "$ROOT" ] && cd "$ROOT"; } 2>/dev/null || true
+
 TODO_FILES=("TODO.md" ".claude/TODO.md")
 NOW=$(date +%s)
 FOUND_ANY=false

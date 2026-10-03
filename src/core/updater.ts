@@ -1123,9 +1123,15 @@ async function updateComponent(
 
 /**
  * Root-level files in .claude/ that should be synced during update
- * These are files that exist directly under templates/.claude/ (not in subdirectories)
+ * Most live directly under templates/.claude/; entries may also be relative subpaths
+ * (e.g. schemas/tool-inputs.json) — the parent directory is created on copy.
  */
-const ROOT_LEVEL_FILES = ['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh'];
+const ROOT_LEVEL_FILES = [
+  'statusline.sh',
+  'install-hooks.sh',
+  'uninstall-hooks.sh',
+  'schemas/tool-inputs.json',
+];
 
 /**
  * Sync root-level files from templates/.claude/ to target .claude/ directory

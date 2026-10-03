@@ -18,11 +18,13 @@ import {
   listFiles,
   move,
   normalizePath,
+  parseJsonText,
   readJsonFile,
   readTextFile,
   remove,
   resolvePath,
   resolveTemplatePath,
+  stringifyJson,
   validatePreserveFilePath,
   writeJsonFile,
   writeTextFile,
@@ -342,6 +344,81 @@ describe('fs utilities', () => {
 
       const result = await readJsonFile<{ new: string }>(filePath);
       expect(result.new).toBe('data');
+    });
+  });
+
+  describe('parseJsonText / stringifyJson', () => {
+    const data = { key: 'value', nested: { a: 1 } };
+    const body = JSON.stringify(data, null, 2);
+    const combos = [
+      { name: 'BOM + trailing newline', bom: true, trailingNewline: true },
+      { name: 'BOM, no trailing newline', bom: true, trailingNewline: false },
+      { name: 'no BOM, trailing newline', bom: false, trailingNewline: true },
+      { name: 'no BOM, no trailing newline', bom: false, trailingNewline: false },
+    ];
+
+    for (const combo of combos) {
+      const raw = `${combo.bom ? '\uFEFF' : ''}${body}${combo.trailingNewline ? '\n' : ''}`;
+
+      it(`parses ${combo.name} and reports its format`, () => {
+        const result = parseJsonText<typeof data>(raw);
+
+        expect(result.data).toEqual(data);
+        expect(result.format).toEqual({
+          bom: combo.bom,
+          trailingNewline: combo.trailingNewline,
+        });
+      });
+
+      it(`round-trips ${combo.name} byte-for-byte`, () => {
+        const parsed = parseJsonText(raw);
+
+        expect(stringifyJson(parsed.data, parsed.format)).toBe(raw);
+      });
+    }
+
+    it('stringifies with a caller-chosen convention using 2-space indent', () => {
+      expect(stringifyJson({ a: 1 }, { bom: false, trailingNewline: false })).toBe(
+        '{\n  "a": 1\n}'
+      );
+      expect(stringifyJson({ a: 1 }, { bom: true, trailingNewline: true })).toBe(
+        '\uFEFF{\n  "a": 1\n}\n'
+      );
+    });
+
+    it('stringifyJson output matches writeJsonFile bytes when no BOM and no newline', async () => {
+      const filePath = join(tempDir, 'parity.json');
+      await writeJsonFile(filePath, data);
+
+      const content = await readFile(filePath, 'utf-8');
+      expect(stringifyJson(data, { bom: false, trailingNewline: false })).toBe(content);
+    });
+
+    it('treats CRLF line endings as a trailing newline', () => {
+      const result = parseJsonText('{"a":1}\r\n');
+
+      expect(result.data).toEqual({ a: 1 });
+      expect(result.format.trailingNewline).toBe(true);
+    });
+
+    it('throws on invalid JSON', () => {
+      expect(() => parseJsonText('not valid json')).toThrow();
+    });
+
+    it('throws on empty text', () => {
+      expect(() => parseJsonText('')).toThrow();
+    });
+
+    it('throws on a BOM followed by nothing', () => {
+      expect(() => parseJsonText('\uFEFF')).toThrow();
+    });
+
+    it('strips only one leading BOM (a second BOM still fails to parse)', () => {
+      expect(() => parseJsonText('\uFEFF\uFEFF{"a":1}')).toThrow();
+    });
+
+    it('does not strip a BOM that is not at the start', () => {
+      expect(() => parseJsonText('{"a":1}\uFEFF{"b":2}')).toThrow();
     });
   });
 
