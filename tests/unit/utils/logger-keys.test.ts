@@ -19,8 +19,11 @@
  *      private `MESSAGES` table is needed): print it at `error` level with the locale under test
  *      and compare against the raw key. Both `en` and `ko` are checked.
  *
- * Known limitations: a regex literal containing an unbalanced quote can derail the string masking;
- * calls through an aliased variable (`const l = info`) are not seen; only `src/**\/*.ts` is
+ * Regex literals (`/^["']|["']$/g`) are recognized by the lexer (expression-start heuristic, see
+ * `regexEnd`) so a quote inside one cannot derail string masking; a per-file guard test compares the
+ * extractor with an independent naive count to catch any remaining lexer drift (#1769).
+ *
+ * Known limitations: calls through an aliased variable (`const l = info`) are not seen; only `src/**\/*.ts` is
  * scanned (`src/utils/logger.ts` itself is excluded). The check is level-agnostic by construction,
  * so debug-only keys are covered too.
  *
@@ -55,6 +58,93 @@ function stringEnd(code: string, index: number): number {
   return Math.min(i + 1, code.length);
 }
 
+/** Words after which a `/` begins a regex literal rather than a division */
+const REGEX_PRECEDING_WORDS: ReadonlySet<string> = new Set([
+  'return',
+  'typeof',
+  'case',
+  'in',
+  'of',
+  'else',
+  'do',
+  'void',
+  'delete',
+  'throw',
+  'new',
+  'yield',
+  'await',
+]);
+
+/** Characters after which a `/` is in expression-start position (so it opens a regex literal) */
+const REGEX_PRECEDING_CHARS = '(,=:[!&|?{};}';
+
+/** True when the `/` at `index` sits in an expression-start position. */
+function isRegexPosition(code: string, index: number): boolean {
+  let i = index - 1;
+  while (i >= 0 && /\s/.test(code.charAt(i))) {
+    i--;
+  }
+  if (i < 0) {
+    return true; // start of file (leading whitespace skipped)
+  }
+  const prev = code.charAt(i);
+  if (REGEX_PRECEDING_CHARS.includes(prev)) {
+    return true;
+  }
+  let start = i;
+  while (start >= 0 && /[\w$]/.test(code.charAt(start))) {
+    start--;
+  }
+  return REGEX_PRECEDING_WORDS.has(code.slice(start + 1, i + 1));
+}
+
+/** Position of the closing `/` of a regex body starting at `from`, or -1 (newline / end of input). */
+function regexBodyClose(code: string, from: number): number {
+  let i = from;
+  let inClass = false;
+  while (i < code.length && code.charAt(i) !== '\n') {
+    const ch = code.charAt(i);
+    if (ch === '\\') {
+      i += 2;
+      continue;
+    }
+    if (ch === '/' && !inClass) {
+      return i;
+    }
+    if (ch === '[') {
+      inClass = true;
+    } else if (ch === ']') {
+      inClass = false;
+    }
+    i++;
+  }
+  return -1;
+}
+
+/**
+ * If a regex literal starts at `index`, return the position after its closing `/` and flags; else
+ * `index`. A `/` in expression-start position opens a regex that runs to the next unescaped `/`
+ * outside a character class (`[...]`); a newline before the close means it was not a regex.
+ */
+function regexEnd(code: string, index: number): number {
+  if (code.charAt(index) !== '/') {
+    return index;
+  }
+  const next = code.charAt(index + 1);
+  if (next === '/' || next === '*' || next === '' || !isRegexPosition(code, index)) {
+    return index;
+  }
+  const close = regexBodyClose(code, index + 1);
+  if (close === -1) {
+    return index;
+  }
+  let end = close + 1;
+  while (end < code.length && /[a-z]/i.test(code.charAt(end))) {
+    end++;
+  }
+  return end;
+}
+
 /** If a comment starts at `index`, return the position after its end; else `index`. */
 function commentEnd(code: string, index: number): number {
   const pair = code.slice(index, index + 2);
@@ -83,6 +173,12 @@ function stripComments(source: string): string {
       i = commentStop;
       continue;
     }
+    const regexStop = regexEnd(source, i);
+    if (regexStop > i) {
+      out += source.slice(i, regexStop);
+      i = regexStop;
+      continue;
+    }
     const stringStop = stringEnd(source, i);
     if (stringStop > i) {
       out += source.slice(i, stringStop);
@@ -100,6 +196,12 @@ function maskStrings(code: string): string {
   let out = '';
   let i = 0;
   while (i < code.length) {
+    const regexStop = regexEnd(code, i);
+    if (regexStop > i) {
+      out += code.slice(i, regexStop).replace(/[^\n]/g, ' ');
+      i = regexStop;
+      continue;
+    }
     const stringStop = stringEnd(code, i);
     if (stringStop > i) {
       const literal = code.slice(i, stringStop);
@@ -464,6 +566,44 @@ describe('extractLogKeyCalls (fixtures)', () => {
     expect(summarize(src)).toEqual(['warn:literal:fake.after_url']);
   });
 
+  it('finds a call after the regex literal /^["\']|["\']$/g (updater.ts pattern, positive)', () => {
+    const src = [
+      LOGGER_IMPORT_LINE,
+      "const trimQuotes = (v: string) => v.replace(/^[\"']|[\"']$/g, '');",
+      "warn('fake.after_regex');",
+    ].join('\n');
+    expect(summarize(src)).toEqual(['warn:literal:fake.after_regex']);
+  });
+
+  it('does not treat a division as a regex literal (negative)', () => {
+    const src = [
+      LOGGER_IMPORT_LINE,
+      "const ratio = a / b; const other = c / d; const s = 'x'; warn('fake.after_division');",
+      "const half = (a + b) / 2; warn('fake.after_paren_division');",
+    ].join('\n');
+    expect(summarize(src)).toEqual([
+      'warn:literal:fake.after_division',
+      'warn:literal:fake.after_paren_division',
+    ]);
+  });
+
+  it('handles a quote inside a regex character class and an escaped slash (positive)', () => {
+    const src = [
+      LOGGER_IMPORT_LINE,
+      "const a = /[\"'/]x/.test(v); warn('fake.after_class');",
+      "const b = /a\\/b'/u.test(v); warn('fake.after_escape');",
+    ].join('\n');
+    expect(summarize(src)).toEqual([
+      'warn:literal:fake.after_class',
+      'warn:literal:fake.after_escape',
+    ]);
+  });
+
+  it('does not see a logger call inside a regex literal (negative)', () => {
+    const src = [LOGGER_IMPORT_LINE, "const re = /warn\\('fake.in_regex'\\)/;"].join('\n');
+    expect(extractLogKeyCalls(src)).toEqual([]);
+  });
+
   it('ignores console methods, member calls and unrelated functions (negative)', () => {
     const src = [
       LOGGER_IMPORT_LINE,
@@ -661,5 +801,68 @@ describe('logger message keys (repository scan)', () => {
 
   it('the allowlist has no entries without a reason and no stale entries', () => {
     expect(findAllowlistProblems(ALLOWED_KEYS, scan.findings)).toEqual([]);
+  });
+});
+
+/**
+ * Independent naive count of `debug|info|warn|error|success('...` openers (standalone name, not a
+ * member call) on lines that are not comment lines. Deliberately shares no lexer code with the
+ * extractor, so a masking/stripping bug in one is exposed by disagreement with the other.
+ */
+function naiveLiteralCallCount(source: string): number {
+  const opener = /(?<![.\w$])(?:debug|info|warn|error|success)\(\s*['"]/g;
+  let count = 0;
+  let inBlock = false;
+  for (const line of source.split('\n')) {
+    const trimmed = line.trim();
+    if (inBlock) {
+      inBlock = !trimmed.includes('*/');
+      continue;
+    }
+    if (trimmed.startsWith('//')) {
+      continue;
+    }
+    if (trimmed.startsWith('/*')) {
+      inBlock = !trimmed.includes('*/');
+      continue;
+    }
+    count += line.match(opener)?.length ?? 0;
+  }
+  return count;
+}
+
+/** Per tracked src file whose extractor count (quote-led first argument) differs from the naive one. */
+function extractorDisagreements(): string[] {
+  const out: string[] = [];
+  for (const file of listTrackedSourceFiles()) {
+    const fullPath = join(REPO_ROOT, file);
+    if (!existsSync(fullPath)) {
+      continue;
+    }
+    const source = readFileSync(fullPath, 'utf-8');
+    const extracted = extractLogKeyCalls(source).length;
+    const naive = naiveLiteralCallCount(source);
+    if (extracted !== naive) {
+      out.push(`${file}: extractor=${extracted} naive=${naive}`);
+    }
+  }
+  return out;
+}
+
+describe('extractor vs naive count (per-file guard, #1769)', () => {
+  it('fixture: a regex literal with quotes does not hide a later call (guard sees agreement)', () => {
+    const src = [
+      LOGGER_IMPORT_LINE,
+      "const t = (v: string) => v.replace(/^[\"']|[\"']$/g, '');",
+      "warn('fake.after_regex');",
+    ].join('\n');
+    expect(extractLogKeyCalls(src).length).toBe(naiveLiteralCallCount(src));
+  });
+
+  it('every tracked src file: extracted logger calls equal the naive call count', () => {
+    expect(
+      extractorDisagreements(),
+      'the extractor lexer lost or invented calls in these files (masking drift); fix the lexer, not the guard'
+    ).toEqual([]);
   });
 });

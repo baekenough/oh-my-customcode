@@ -25,6 +25,7 @@ import {
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { convertHooksJson, type RawHooksJson } from '../../../src/core/hooks-settings.js';
 import type { InstallResult } from '../../../src/core/installer.js';
 
 const RTK_MODULE = '../../../src/core/rtk-installer.js';
@@ -48,6 +49,25 @@ interface HookGroup {
 function commandsOf(hooks: Record<string, HookGroup[]> | undefined, event: string): string[] {
   const groups = hooks?.[event] ?? [];
   return groups.flatMap((group) => (group.hooks ?? []).map((hook) => hook.command ?? ''));
+}
+
+const TEMPLATE_HOOKS_JSON = join(import.meta.dir, '../../../templates/.claude/hooks/hooks.json');
+
+/**
+ * The matcher an installed settings file really contains for the stage-blocker group: the
+ * converted CC form (e.g. `Write|Edit`), derived from the template hooks.json via the same
+ * converter the installer uses. Installed settings never hold the raw hooks.json DSL form.
+ */
+async function convertedStageBlockerMatcher(): Promise<string> {
+  const raw = JSON.parse(await readFile(TEMPLATE_HOOKS_JSON, 'utf-8')) as RawHooksJson;
+  const { hooks } = convertHooksJson(raw);
+  const group = (hooks.PreToolUse ?? []).find((g) =>
+    g.hooks.some((h) => h.command?.includes('stage-blocker.sh'))
+  );
+  if (group?.matcher === undefined) {
+    throw new Error('stage-blocker group with a matcher not found in converted template hooks');
+  }
+  return group.matcher;
 }
 
 describe('installer --backup restore: hook command migration (#1767)', () => {
@@ -205,9 +225,10 @@ describe('installer --backup restore: hook command migration (#1767)', () => {
     const userElicitation = {
       hooks: [{ type: 'command', command: 'bash ~/team/notify.sh' }],
     };
-    // Old omcustom group (relative form of a shipped script, no description).
+    // Old omcustom group: relative command form of a shipped script, no description, but the
+    // matcher is the converted CC form a real old install contains (not the raw hooks.json DSL).
     const oldOmcustomPreToolUse = {
-      matcher: 'tool == "Write" || tool == "Edit"',
+      matcher: await convertedStageBlockerMatcher(),
       hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/stage-blocker.sh' }],
     };
     await writeFile(
@@ -251,6 +272,46 @@ describe('installer --backup restore: hook command migration (#1767)', () => {
     expect(
       commandsOf(settings.hooks, 'PreToolUse').filter((c) => c.includes('stage-blocker.sh'))
     ).toHaveLength(1);
+  });
+
+  it('keeps a user group with a different matcher running a shipped script path (#1768 D1)', async () => {
+    const claudeDir = join(tempDir, '.claude');
+    await mkdir(claudeDir, { recursive: true });
+    const settingsPath = join(claudeDir, 'settings.local.json');
+    const userGroup = {
+      matcher: 'MyTool',
+      hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/stage-blocker.sh' }],
+    };
+    await writeFile(
+      settingsPath,
+      JSON.stringify({ hooks: { PreToolUse: [userGroup] } }, null, 2),
+      'utf-8'
+    );
+    const generatedMatcher = await convertedStageBlockerMatcher();
+    expect(generatedMatcher).not.toBe('MyTool');
+    const { install } = await import('../../../src/core/installer.js');
+
+    const result = await install({ targetDir: tempDir, backup: true, skipConfirm: true });
+
+    expect(result.success).toBe(true);
+    const settings = JSON.parse(await readFile(settingsPath, 'utf-8')) as {
+      hooks?: Record<string, HookGroup[]>;
+    };
+    const preToolUse = settings.hooks?.PreToolUse ?? [];
+    // Same event, different matcher: the user group is user-owned and survives (not deduped).
+    const userGroups = preToolUse.filter((g) => g.matcher === 'MyTool');
+    expect(userGroups).toHaveLength(1);
+    // The post-restore command migration still anchors the relative script path of any group.
+    expect(commandsOf({ PreToolUse: userGroups }, 'PreToolUse')).toEqual([
+      `bash "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stage-blocker.sh"`,
+    ]);
+    // The generated stage-blocker group (converted matcher) appears exactly once.
+    const generatedGroups = preToolUse.filter(
+      (g) =>
+        g.matcher === generatedMatcher &&
+        (g.hooks ?? []).some((h) => h.command?.includes('stage-blocker.sh'))
+    );
+    expect(generatedGroups).toHaveLength(1);
   });
 
   function newInstallResult(): InstallResult {

@@ -16,9 +16,12 @@ import {
   ensureDirectory,
   fileExists,
   getPackageRoot,
+  type JsonTextFormat,
+  parseJsonText,
   readJsonFile,
   readTextFile,
   resolveTemplatePath,
+  stringifyJson,
   writeJsonFile,
   writeTextFile,
 } from '../utils/fs.js';
@@ -391,16 +394,18 @@ function updateExistingStatusLine(existing: Record<string, unknown>): {
 /**
  * Merge the statusLine configuration into an existing, parsed settings.local.json
  * (adds a missing statusLine; otherwise re-anchors the exact old default and backfills
- * refreshInterval) and write the file back only when something changed.
+ * refreshInterval) and write the file back only when something changed, preserving the
+ * file's BOM / trailing-newline conventions.
  */
 async function mergeStatusLineIntoExisting(
   settingsPath: string,
   existing: Record<string, unknown>,
+  format: JsonTextFormat,
   defaults: { statusLine: Record<string, unknown> }
 ): Promise<void> {
   if (!existing.statusLine) {
     existing.statusLine = defaults.statusLine;
-    await writeJsonFile(settingsPath, existing);
+    await writeTextFile(settingsPath, stringifyJson(existing, format));
     debug('install.settings_local_merged', {});
     return;
   }
@@ -411,7 +416,7 @@ async function mergeStatusLineIntoExisting(
     return;
   }
 
-  await writeJsonFile(settingsPath, existing);
+  await writeTextFile(settingsPath, stringifyJson(existing, format));
   if (commandMigrated) {
     debug('install.settings_local_statusline_migrated', {});
   }
@@ -438,8 +443,12 @@ async function installSettingsLocal(targetDir: string, result: InstallResult): P
 
   if (await fileExists(settingsPath)) {
     try {
-      const existing = await readJsonFile<Record<string, unknown>>(settingsPath);
-      await mergeStatusLineIntoExisting(settingsPath, existing, statusLineConfig);
+      // parseJsonText tolerates a leading UTF-8 BOM (JSON.parse alone rejects it) and reports
+      // the file's text conventions so the write-back keeps them.
+      const { data: existing, format } = parseJsonText<Record<string, unknown>>(
+        await readTextFile(settingsPath)
+      );
+      await mergeStatusLineIntoExisting(settingsPath, existing, format, statusLineConfig);
     } catch {
       result.warnings.push(
         'Failed to parse existing settings.local.json, skipping statusLine config'

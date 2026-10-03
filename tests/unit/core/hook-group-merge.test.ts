@@ -150,7 +150,7 @@ describe('mergeHookBlocks', () => {
 
     it('keeps a mixed group as its user residual only', () => {
       const mixed = {
-        matcher: 'Bash',
+        matcher: '*',
         description: 'My team hooks',
         hooks: [
           { type: 'command', command: 'bash .claude/hooks/scripts/secret-filter.sh' },
@@ -161,7 +161,7 @@ describe('mergeHookBlocks', () => {
       expect(merged.PostToolUse).toEqual([
         ...makeGenerated().PostToolUse,
         {
-          matcher: 'Bash',
+          matcher: '*',
           description: 'My team hooks',
           hooks: [{ type: 'command', command: 'bash ~/team/audit.sh' }],
         },
@@ -207,7 +207,10 @@ describe('mergeHookBlocks', () => {
       ['new anchored', anchored('scripts/secret-filter.sh')],
     ])('drops a %s command for a script shipped under the same event', (_label, command) => {
       const generated = makeGenerated();
-      const merged = mergeHookBlocks({ PostToolUse: [userGroup(command)] }, generated);
+      const merged = mergeHookBlocks(
+        { PostToolUse: [userGroup(command, { matcher: '*' })] },
+        generated
+      );
       expect(merged.PostToolUse).toEqual(generated.PostToolUse);
     });
 
@@ -251,9 +254,11 @@ describe('mergeHookBlocks', () => {
     const existing = () => ({
       PostToolUse: [
         userGroup('bash ~/team/audit.sh'),
-        userGroup('bash .claude/hooks/scripts/secret-filter.sh'),
+        userGroup('bash .claude/hooks/scripts/secret-filter.sh', { matcher: '*' }),
       ],
-      SessionStart: [userGroup('bash .claude/hooks/scripts/claude-md-reinject.sh')],
+      SessionStart: [
+        userGroup('bash .claude/hooks/scripts/claude-md-reinject.sh', { matcher: '*' }),
+      ],
       Elicitation: [userGroup('bash ~/team/notify.sh')],
       SubagentStop: [
         {
@@ -330,10 +335,79 @@ describe('mergeHookBlocks', () => {
 
     it('drops the same script wired under the event that ships it (control)', () => {
       const merged = mergeHookBlocks(
-        { PostToolUse: [userGroup('bash .claude/hooks/scripts/secret-filter.sh')] },
+        {
+          PostToolUse: [userGroup('bash .claude/hooks/scripts/secret-filter.sh', { matcher: '*' })],
+        },
         makeGenerated()
       );
       expect(merged.PostToolUse).toEqual(makeGenerated().PostToolUse);
+    });
+
+    // M1 (#1768 review): ownership is scoped to event AND matcher.
+    it('keeps a same-event user group that wires a shipped script under a different matcher', () => {
+      const user = userGroup('bash .claude/hooks/scripts/secret-filter.sh', { matcher: 'MyTool' });
+      const merged = mergeHookBlocks({ PostToolUse: [user] }, makeGenerated());
+      expect(merged.PostToolUse).toEqual([...makeGenerated().PostToolUse, user]);
+    });
+
+    it('keeps a user copy of an exact generated command under a different matcher', () => {
+      const user = userGroup(INLINE_COMMAND, { matcher: 'MyTool' });
+      const merged = mergeHookBlocks({ PostToolUse: [user] }, makeGenerated());
+      expect(merged.PostToolUse).toEqual([...makeGenerated().PostToolUse, user]);
+    });
+
+    it('still replaces a same-event same-matcher group (control for the matcher scope)', () => {
+      const merged = mergeHookBlocks(
+        {
+          PostToolUse: [
+            userGroup('bash .claude/hooks/scripts/secret-filter.sh', { matcher: '*' }),
+            userGroup(INLINE_COMMAND, { matcher: 'Bash' }),
+          ],
+        },
+        makeGenerated()
+      );
+      expect(merged.PostToolUse).toEqual(makeGenerated().PostToolUse);
+    });
+
+    it('treats a missing matcher and an empty matcher as the same matcher', () => {
+      const generated = {
+        Notification: [{ hooks: [{ type: 'command', command: anchored('scripts/notify.sh') }] }],
+      };
+      const missing = {
+        hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/notify.sh' }],
+      };
+      const empty = {
+        matcher: '',
+        hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/notify.sh' }],
+      };
+      expect(mergeHookBlocks({ Notification: [missing] }, generated).Notification).toEqual(
+        generated.Notification
+      );
+      expect(mergeHookBlocks({ Notification: [empty] }, generated).Notification).toEqual(
+        generated.Notification
+      );
+      const other = { matcher: 'X', hooks: missing.hooks };
+      expect(mergeHookBlocks({ Notification: [other] }, generated).Notification).toEqual([
+        ...generated.Notification,
+        other,
+      ]);
+    });
+
+    it('is idempotent for a different-matcher user group', () => {
+      const generated = makeGenerated();
+      const existing = {
+        PostToolUse: [
+          userGroup('bash .claude/hooks/scripts/secret-filter.sh', { matcher: 'MyTool' }),
+          userGroup('bash .claude/hooks/scripts/secret-filter.sh', { matcher: '*' }),
+        ],
+      };
+      const first = mergeHookBlocks(existing, generated);
+      const second = mergeHookBlocks(first, generated);
+      expect(JSON.stringify(second)).toBe(JSON.stringify(first));
+      expect(first.PostToolUse).toEqual([
+        ...generated.PostToolUse,
+        userGroup('bash .claude/hooks/scripts/secret-filter.sh', { matcher: 'MyTool' }),
+      ]);
     });
 
     it('keeps a shipped script wired under a generated event that does not ship it', () => {

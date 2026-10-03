@@ -729,6 +729,53 @@ describe('installer', () => {
         expect(content.statusLine.command).toBe(command);
       }
     });
+
+    it('should migrate statusLine in a BOM settings.local.json and preserve the BOM', async () => {
+      const fs = await import('node:fs/promises');
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      await fs.writeFile(
+        settingsPath,
+        `﻿${JSON.stringify({
+          keep: 'me',
+          statusLine: { type: 'command', command: OLD_STATUSLINE_COMMAND, padding: 0 },
+        })}\n`,
+        'utf-8'
+      );
+
+      const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+      const raw = await fs.readFile(settingsPath, 'utf-8');
+      expect(raw.startsWith('﻿')).toBe(true);
+      expect(raw.endsWith('\n')).toBe(true);
+      const content = JSON.parse(raw.slice(1));
+      expect(content.keep).toBe('me');
+      expect(content.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
+      expect(content.statusLine.refreshInterval).toBe(10);
+      expect(result.warnings.some((w) => w.includes('settings.local.json'))).toBe(false);
+    });
+
+    it('should add statusLine to a BOM settings.local.json without one and preserve the BOM', async () => {
+      const fs = await import('node:fs/promises');
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      await fs.writeFile(
+        settingsPath,
+        `﻿${JSON.stringify({ enableAllProjectMcpServers: true })}`,
+        'utf-8'
+      );
+
+      const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+      const raw = await fs.readFile(settingsPath, 'utf-8');
+      expect(raw.startsWith('﻿')).toBe(true);
+      const content = JSON.parse(raw.slice(1));
+      expect(content.enableAllProjectMcpServers).toBe(true);
+      expect(content.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
+      // The hooks merge in the same run wrote the same BOM file: both are present and valid
+      expect(Object.keys(content.hooks ?? {}).length).toBeGreaterThan(0);
+      expect(result.warnings.some((w) => w.includes('settings.local.json'))).toBe(false);
+    });
   });
 
   describe('error handling', () => {

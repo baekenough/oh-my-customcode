@@ -66,7 +66,7 @@
   ".claude/rules/MUST-tool-identification.md": "866e37f0573b2b1d8e1497635d8498c9b3fe17348d9777e1b53dbfa30e31d4e3",
   ".claude/rules/SHOULD-ecomode.md": "f0718f065157044b8d14a488abab9ca9af212ec8a0d06adc74c9d6eee31950b9",
   ".claude/rules/SHOULD-error-handling.md": "8619e3b932dfa1b05f9b2c01a97c8905fb8f59ccb311d6c26fd98d1bbfd3084d",
-  ".claude/rules/SHOULD-hud-statusline.md": "810da7d475e4f72ec889a610d3fa43920c620050015f020df177f66cbd893828",
+  ".claude/rules/SHOULD-hud-statusline.md": "d6957f6ae29fee00f88f057020361977e9b825836ab493ae098d9fa055466719",
   ".claude/rules/SHOULD-interaction.md": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
   ".claude/rules/SHOULD-memory-integration.md": "d58ba98cbc6cdf3ec07cc078ddf7d3724fc1232f50b69d066f5f26eb752d0788",
   ".claude/rules/SHOULD-ontology-rag-routing.md": "209bee296e9ab4d99865958934cf7fdf7c75b8379c5b8ab2422ca61de530aa74",

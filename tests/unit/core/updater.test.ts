@@ -1003,6 +1003,79 @@ describe('updater', () => {
       ).toBe(templateContent);
     });
 
+    it('should keep a user-customized schemas/tool-inputs.json listed in config preserveFiles (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      const schemaRel = `${layout.rootDir}/schemas/tool-inputs.json`;
+      const config = JSON.parse(await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8'));
+      config.preserveFiles = [schemaRel];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+      await createDirStructure({ [schemaRel]: '{"user":"custom"}' });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(tempDir, schemaRel), 'utf-8')).toBe('{"user":"custom"}');
+      expect(result.syncedRootFiles).not.toContain('schemas/tool-inputs.json');
+      expect(result.preservedFiles).toContain(schemaRel);
+      // Unlisted root files are still synced
+      expect(result.syncedRootFiles).toContain('install-hooks.sh');
+    });
+
+    it('should overwrite a customized schema when it is not listed in preserveFiles (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      const schemaRel = `${layout.rootDir}/schemas/tool-inputs.json`;
+      await createDirStructure({ [schemaRel]: '{"user":"custom"}' });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.syncedRootFiles).toContain('schemas/tool-inputs.json');
+      expect(await readFile(join(tempDir, schemaRel), 'utf-8')).not.toBe('{"user":"custom"}');
+      expect(result.preservedFiles).not.toContain(schemaRel);
+    });
+
+    it('should keep a customized statusline.sh listed in manifest preserveFiles (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      const statuslineRel = `${layout.rootDir}/statusline.sh`;
+      await createDirStructure({
+        [statuslineRel]: '#!/bin/sh\necho custom\n',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [statuslineRel],
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(await readFile(join(tempDir, statuslineRel), 'utf-8')).toBe(
+        '#!/bin/sh\necho custom\n'
+      );
+      expect(result.syncedRootFiles).not.toContain('statusline.sh');
+      expect(result.syncedRootFiles).toContain('install-hooks.sh');
+    });
+
+    it('should overwrite preserved root files when forceOverwriteAll is set (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      const schemaRel = `${layout.rootDir}/schemas/tool-inputs.json`;
+      const config = JSON.parse(await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8'));
+      config.preserveFiles = [schemaRel];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+      await createDirStructure({ [schemaRel]: '{"user":"custom"}' });
+
+      await update({ targetDir: tempDir, forceOverwriteAll: true });
+
+      expect(await readFile(join(tempDir, schemaRel), 'utf-8')).not.toBe('{"user":"custom"}');
+    });
+
     it('should keep syncing the three original root files alongside schemas (#1770)', async () => {
       await createConfig('0.1.0');
 

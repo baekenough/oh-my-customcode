@@ -12,10 +12,12 @@
  *      one ({@link LEGACY_OMCUSTOM_DESCRIPTIONS}). This is the only way prompt/agent hooks and
  *      inline scripts are recognized. Limitation: user commands appended INSIDE an owned
  *      group are lost with it.
- *   2. A single `command` hook that, under the SAME event, either equals a generated command
- *      string or is a standalone call of a script the generated hooks of that event ship
+ *   2. A single `command` hook that, under the SAME event AND inside a group with the SAME
+ *      `matcher` (absent and `''` count as the same), either equals a generated command string
+ *      or is a standalone call of a script the generated groups of that event+matcher ship
  *      (`[bash ]<anchored|./|bare>.claude/hooks/<script>.sh`, quotes balanced). Both the old
- *      cwd-relative and the `${CLAUDE_PROJECT_DIR:-.}`-anchored forms are accepted.
+ *      cwd-relative and the `${CLAUDE_PROJECT_DIR:-.}`-anchored forms are accepted. A user
+ *      group reusing a shipped script under another matcher is the user's own wiring and kept.
  * Everything else, including unknown shapes, is kept: user hooks are never deleted on a guess.
  */
 
@@ -48,12 +50,15 @@ const STANDALONE_SCRIPT_COMMAND =
 /** Finds every shipped script referenced anywhere inside a generated command string. */
 const SCRIPT_REFERENCE = /\.claude\/hooks\/((?:scripts\/)?[A-Za-z0-9._-]+\.sh)/g;
 
-interface EventOwnership {
-  /** Exact generated command strings of the event. */
+interface MatcherOwnership {
+  /** Exact generated command strings of the event+matcher. */
   commands: Set<string>;
-  /** Scripts (`scripts/x.sh`) referenced by the generated commands of the event. */
+  /** Scripts (`scripts/x.sh`) referenced by the generated commands of the event+matcher. */
   scripts: Set<string>;
 }
+
+/** Generated command ownership of one event, keyed by {@link matcherKey}. */
+type EventOwnership = Map<string, MatcherOwnership>;
 
 interface Ownership {
   /** Generated group descriptions plus {@link LEGACY_OMCUSTOM_DESCRIPTIONS}. */
@@ -61,12 +66,17 @@ interface Ownership {
   events: Map<string, EventOwnership>;
 }
 
+/** Normalizes a group `matcher` so a missing matcher and `''` compare equal. */
+function matcherKey(group: Record<string, unknown>): string {
+  return typeof group.matcher === 'string' ? group.matcher : '';
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Records the exact command and every referenced shipped script of one generated hook. */
-function addHookOwnership(hook: unknown, owned: EventOwnership): void {
+function addHookOwnership(hook: unknown, owned: MatcherOwnership): void {
   if (!isRecord(hook) || typeof hook.command !== 'string') {
     return;
   }
@@ -81,12 +91,18 @@ function addGroupOwnership(group: unknown, owned: EventOwnership, descriptions: 
   if (!isRecord(group)) {
     return;
   }
+  const key = matcherKey(group);
+  let forMatcher = owned.get(key);
+  if (forMatcher === undefined) {
+    forMatcher = { commands: new Set(), scripts: new Set() };
+    owned.set(key, forMatcher);
+  }
   if (typeof group.description === 'string') {
     descriptions.add(group.description);
   }
   if (Array.isArray(group.hooks)) {
     for (const hook of group.hooks) {
-      addHookOwnership(hook, owned);
+      addHookOwnership(hook, forMatcher);
     }
   }
 }
@@ -95,7 +111,7 @@ function collectOwnership(generated: Record<string, unknown[]>): Ownership {
   const descriptions = new Set<string>(LEGACY_OMCUSTOM_DESCRIPTIONS);
   const events = new Map<string, EventOwnership>();
   for (const [event, groups] of Object.entries(generated)) {
-    const owned: EventOwnership = { commands: new Set(), scripts: new Set() };
+    const owned: EventOwnership = new Map();
     events.set(event, owned);
     for (const group of groups) {
       addGroupOwnership(group, owned, descriptions);
@@ -104,7 +120,7 @@ function collectOwnership(generated: Record<string, unknown[]>): Ownership {
   return { descriptions, events };
 }
 
-function isOwnedCommand(hook: unknown, owned: EventOwnership | undefined): boolean {
+function isOwnedCommand(hook: unknown, owned: MatcherOwnership | undefined): boolean {
   if (owned === undefined || !isRecord(hook) || hook.type !== 'command') {
     return false;
   }
@@ -132,7 +148,8 @@ function userResidual(
   if (typeof group.description === 'string' && ownership.descriptions.has(group.description)) {
     return [];
   }
-  const remaining = group.hooks.filter((hook) => !isOwnedCommand(hook, owned));
+  const ownedForMatcher = owned?.get(matcherKey(group));
+  const remaining = group.hooks.filter((hook) => !isOwnedCommand(hook, ownedForMatcher));
   if (remaining.length === group.hooks.length) {
     return [group];
   }

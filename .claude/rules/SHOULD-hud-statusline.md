@@ -51,11 +51,11 @@ Format: `─── [Spawn] {subagent_type}:{model} | {description} ───` �
 
 Format: `{Cost} | {project} | {branch} | RL:{rate_limit}% {countdown} | WL:{weekly_limit}% {countdown} | CTX:{usage}%`
 
-Config in `.claude/settings.local.json`: `statusLine.type: "command"`, `statusLine.command: ".claude/statusline.sh"`. Requires CC v2.1.80+ for RL/WL segments. `refreshInterval` setting (v2.1.97+): Auto-refresh interval in seconds for the status line command. Set in `statusLine.refreshInterval` in settings.json.
+Config in `.claude/settings.local.json`: `statusLine.type: "command"`, `statusLine.command: "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh\""` (anchored form written by the installer; the old bare `.claude/statusline.sh` default is migrated on update/init). Requires CC v2.1.80+ for RL/WL segments. `refreshInterval` setting (v2.1.97+): Auto-refresh interval in seconds for the status line command. Set in `statusLine.refreshInterval` in settings.json.
 
 <!-- DETAIL: Statusline configuration JSON and color coding
 ```json
-{ "statusLine": { "type": "command", "command": ".claude/statusline.sh", "padding": 0 } }
+{ "statusLine": { "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh\"", "padding": 0 } }
 ```
 Color coding: Cost (<$1 green, $1-4.99 yellow, >=5 red), RL/WL (<50% green, 50-79% yellow, >=80% red), CTX (<60% green, 60-79% yellow, >=80% red).
 Countdown format: >=1d → "{d}d{h}h", >=1h → "{h}h{m}m", <1h → "{m}m", unavailable → omitted.

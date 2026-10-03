@@ -101,7 +101,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.lockfile_generated': 'Lockfile generated ({{files}} files tracked)',
     'install.lockfile_failed': 'Failed to generate lockfile: {{error}}',
     'install.hook_commands_migrated':
-      'Migrated {{rewritten}} hook command(s) in settings.local.json',
+      'Migrated {{rewritten}} hook/statusLine command(s) in settings.local.json',
     'install.hook_commands_migration_failed':
       'Failed to migrate hook commands in settings.local.json: {{error}}',
 
@@ -130,7 +130,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.protected_file_updated': '⟳ Protected file {{file}} in {{component}} updated: {{hint}}',
     'update.namespace_synced': 'Namespace synced: {{file}} ({{component}})',
     'update.hook_commands_migrated':
-      'Migrated {{count}} hook command(s) to CLAUDE_PROJECT_DIR-anchored paths',
+      'Migrated {{count}} hook/statusLine command(s) to CLAUDE_PROJECT_DIR-anchored paths',
     'update.hook_commands_migration_failed': 'Failed to migrate hook commands in {{path}}',
 
     // Config messages
@@ -247,7 +247,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.lockfile_generated': '잠금 파일 생성 완료 ({{files}}개 파일 추적)',
     'install.lockfile_failed': '잠금 파일 생성 실패: {{error}}',
     'install.hook_commands_migrated':
-      'settings.local.json의 훅 명령 {{rewritten}}개를 마이그레이션했습니다',
+      'settings.local.json의 훅/상태줄 명령 {{rewritten}}개를 마이그레이션했습니다',
     'install.hook_commands_migration_failed':
       'settings.local.json의 훅 명령 마이그레이션에 실패했습니다: {{error}}',
 
@@ -276,7 +276,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.protected_file_updated': '⟳ 보호 파일 {{file}} ({{component}}) 업데이트됨: {{hint}}',
     'update.namespace_synced': '네임스페이스 동기화: {{file}} ({{component}})',
     'update.hook_commands_migrated':
-      'CLAUDE_PROJECT_DIR 기준 경로로 훅 명령 {{count}}개를 마이그레이션했습니다',
+      'CLAUDE_PROJECT_DIR 기준 경로로 훅/상태줄 명령 {{count}}개를 마이그레이션했습니다',
     'update.hook_commands_migration_failed': '{{path}}의 훅 명령 마이그레이션에 실패했습니다',
 
     // Config messages
