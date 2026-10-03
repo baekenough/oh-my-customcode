@@ -86,6 +86,8 @@ zsh는 미인용 `$var`를 단어분할하지 않습니다(#1683 #5) — 분할�
 
 도구 이름 ≠ 그 프로그램(#1590): 사용 전 `type <tool>`로 실체를 확인합니다 — 이 저장소 Bash의 `grep`은 `.gitignore`를 존중하는 셸 함수이므로 저장소 전수조사는 `git grep`을 표준으로 합니다.
 
+Bash `cd`는 세션 cwd로 남습니다(#1778, #1767): 훅 명령은 `CLAUDE_PROJECT_DIR`로 고정되어 지속 `cd`에 영향받지 않지만, 상대 경로를 내부에서 읽는 스크립트·도구와 이후 명령의 상대 경로는 어긋날 수 있습니다 — 절대 경로나 서브셸 `( cd <dir> && … )`만 사용하고 지속 `cd`는 남기지 않습니다.
+
 <!-- DETAIL: tool name vs program
 > **도구 이름 ≠ 그 프로그램 (#1590)**: 도구를 쓰기 전에 `type <tool>`로 실체를 확인한다. Bash 도구의 `grep`은 `~/.claude/shell-snapshots/snapshot-zsh-*.sh`의 **셸 함수**이며 `ugrep --ignore-files`에 위임한다. 그 결과 `.gitignore`의 리터럴 `CLAUDE.md` 패턴을 존중해, **force-tracked 파일을 재귀 탐색에서 조용히 누락**한다(에러 없이 exit 0). 명시 경로를 준 grep은 정상 동작하므로 **traversal만 영향**을 받는다. 실측(2026-08-15): 동일 패턴·동일 대상에 대해 셸 함수 36 / `command grep` 43 / `git grep` 38 히트 — 셸 함수만 `CLAUDE.md`를 0 히트로 놓쳤다. 진단 함정: `git check-ignore`는 **index-aware**라 tracked 파일에 "not ignored"(exit 1)를 반환한다 — 원인을 보려면 `git check-ignore --no-index`를 써야 한다. 처방: 저장소 전수 조사는 `git grep`을 표준으로 한다(R017 Count Sync cross-ref). Origin: #1590.
 -->

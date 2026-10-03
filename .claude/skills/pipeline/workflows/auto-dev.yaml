@@ -413,7 +413,7 @@ steps:
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시한다(#1707 #4)."
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시한다(#1707 #4). 테스트 격리·모듈 모킹 수정을 다루는 리서치·계획 위임에도 대상 src 파일과 All files의 수정 전후 커버리지를 동일 하네스로 비교하도록 완료 조건에 명시합니다(#1778 찐빠 #5, implement 스텝 Rules와 동일 요구)."
     depends_on: plan
 
   - name: implement
@@ -433,7 +433,9 @@ steps:
          another project's session: a subagent added an unapproved model-attribution trailer to 4
          local commits, citing the repo's own past-commit convention as justification; the trailer
          did not remain on the target branch because the squash-merge specified the PR body
-         separately) (#1728 찐빠 #6).
+         separately) (#1728 찐빠 #6). This holds even when the agent's own environment or system
+         instructions suggest a different attribution: it uses the delegation's string verbatim
+         (#1778 찐빠 #2).
          ⚠ implement-stage commits land directly on develop (no PR gate here). A close-keyword trailer on a
          develop-bound commit auto-closes the issue on push — BEFORE release/tag/publish (observed v1.1.38,
          07:49:26Z). Close keywords belong ONLY in the release-stage PR body (see release step 3.b) — auto-tag.yml
@@ -488,6 +490,14 @@ steps:
         clause, the orchestrator MUST compare that clause's Anti-pattern table rows 1:1 against the
         delegation prompt's sentences and rewrite any match (cause: the R016 「신설 조항의 동일
         반복 self-check」 was known as text but not executed as a procedure, #1707 #1).
+      - A delegation whose convention/doc text describes an implementation choice made in the SAME
+        release (e.g. a test-writing convention that depends on how a mock-leak fix is
+        implemented) MUST be dispatched sequentially, AFTER the implementation report arrives —
+        file-disjoint is not independent when the wording depends on an undecided implementation
+        choice (R009 「File-Disjoint ≠ Independent」 document-implementation variant); docs
+        independent of any in-release implementation choice may still run in parallel
+        (같은 릴리즈의 구현 선택을 서술하는 규약·문서 위임은 구현 보고를 받은 뒤 순차 발주합니다,
+        #1763 찐빠 #2).
       - Every rule/skill/guide TEXT-editing delegation prompt MUST include this fixed constraint
         block: (a) Korean 합쇼체 for new sentences, do not imitate adjacent 반말 — completion
         criteria MUST include THREE deterministic checks, scoped to edited text files (md/yaml)
@@ -503,10 +513,11 @@ steps:
         `grep -E '(함|됨|필요)[.。"]?$'` = 0 (반말/명사 종결 endings such as 확인함·정정
         필요·완료됨 fall entirely outside the 다-ending regexes above and were previously
         undetectable — verified against 4 명사 종결 positive samples and 4 합쇼체 negative
-        samples, 8/8 correct) (#1728 찐빠 #2 residual). On macOS, a `grep -E` run of these three
-        checks MAY false-positive on multibyte UTF-8 lines (line-final `$` anchor mismatch
-        observed, [hypothesis: unverified]) and this repo's Bash `grep` MAY be a shell function
-        shadowing the real binary (R005) — the agent MUST ALSO run the same three checks as a
+        samples, 8/8 correct) (#1728 찐빠 #2 residual). The earlier unverified "macOS multibyte
+        false positive" hypothesis is retired: the cause measured in #1763 찐빠 #1 for the
+        grep/python3 disagreement was the missing `-E` on the second grep (in BRE `?` is a literal
+        character), not a platform effect (re-measured 12/12 with `-vcE`; this text entered via commit 54f92b85, Refs #1760 — not in #1760's issue body). This repo's
+        Bash `grep` MAY still be a shell function shadowing the real binary (R005) — the agent MUST ALSO run the same three checks as a
         python3 `re` equivalent of all THREE checks above, reading from the SAME piped stdin as
         (a) (`git diff -U0 -- <edited md/yaml files> | grep '^+' | python3 -c "import re,sys;
         text=sys.stdin.read();
@@ -515,8 +526,12 @@ steps:
         noun=len(re.findall(r'(함|됨|필요)[.。\"]?$', text, re.M));
         print(fam, lf, noun)"`, NOT a file-argument read — the input is the piped diff, never a
         file path), in ADDITION to (not instead of) the grep commands above, and
-        treat a python3/grep disagreement as evidence the grep result is unreliable (macOS
-        line-final 오탐 가능성 대응, R005, R023, #1749 찐빠 #3). Even with all three checks, a residual
+        treat a python3/grep disagreement as a trigger to investigate, not as a known false
+        positive: on the FIRST observation the agent MUST reproduce the cause within that same
+        iteration (e.g. run each check on a printf positive/negative fixture and report which
+        command or flag differs) and MUST NOT dismiss it with a `[hypothesis]` tag
+        (grep/python3 불일치가 처음 관측되면 그 반복 안에서 원인을 재현으로 가릅니다, 가설 태그로
+        넘기지 않습니다; R005, R023, #1749 찐빠 #3, #1763 찐빠 #1). Even with all three checks, a residual
         gap remains for 반말/명사 종결 variants the patterns above do not enumerate — the agent
         MUST also read the newly added lines directly as a final check, not rely on regex alone.
         When an edit re-emits a pre-existing
@@ -533,7 +548,9 @@ steps:
         실값 리터럴 금지) — the rule corpus is itself a grep target, and a real literal can
         contaminate the very command a clause cites (#1711 찐빠 #2); (h) any temporary file the
         delegation creates MUST live under a per-agent-unique path (`$TMPDIR` or the session
-        scratchpad), never a fixed shared path (#1722 찐빠 #7).
+        scratchpad), never a fixed shared path (#1722 찐빠 #7). This governs the agent's own
+        ad-hoc temp files; temp paths created at runtime by test code are governed by the
+        separate test-code temp-path bullet below (#1778 찐빠 #4).
       - Any implement-stage delegation that writes an executable command or code snippet into
         rule/skill/guide/workflow TEXT (not a prose-only edit) MUST require, as a completion-report
         item, that the agent copy the command OUT of the edited file and run it once on a positive
@@ -554,11 +571,33 @@ steps:
         워크플로 스크립트를 사본으로 추출해 검증할 때 사본 수정은 `sleep` 무력화·요약 출력 대상
         지정처럼 실행 환경 대체로만 제한하고 로직·echo 문구는 원문 그대로 유지하며, 완료 보고에는
         요약이 아닌 raw 출력을 포함해야 합니다) (R023 「Sample-Value Assembly」, #1754 찐빠 #2).
+      - A delegation that creates or edits TS/JS files located inside biome's configured scope
+        (the `files.includes` globs in `biome.json`, currently `src/**`, `tests/**`, `scripts/**`)
+        MUST include in its completion criteria `bunx biome check <the target files>` (the local
+        counterpart of the CI Lint job for those paths, R023 「Delegated Verification Floor」) with
+        the raw exit code reported. For TS/JS files outside that scope (e.g. `packages/**`,
+        `.github/scripts/**`) the same command exits 1 regardless of formatting because the path
+        is ignored, so the agent MUST NOT report that exit as a lint failure and MUST NOT work
+        around it: it reports those files as "outside biome scope" instead. Read-only review
+        delegations are excluded (biome 설정 범위 안의 TS/JS 파일을 만들거나 고치는 위임의 완료
+        조건에 대상 파일의 `bunx biome check`를 포함합니다. 범위 밖 파일은 실패로 보고하지 않고
+        "biome 범위 밖"으로 보고합니다, #1778 찐빠 #3).
+      - A delegation that writes test code MUST instruct the agent that temp paths created at
+        runtime by that test code come from `mkdtempSync(join(tmpdir(), …))` (or the language's
+        equivalent), and that a session scratchpad path MUST NOT be hardcoded in the code. This
+        applies to every test-writing delegation, not only rule/skill/guide TEXT edits (이 규범은
+        테스트 코드를 작성하는 모든 위임에 적용됩니다, #1778 찐빠 #4).
       - Every delegation prompt (not only rule/skill/guide TEXT edits) MUST instruct the agent
         that if a guard, classifier, or permission check blocks an action, it MUST NOT route
         around it (e.g. via a shell glob or path rewrite) — it MUST stop and report the block
         verbatim (R010 「품질 게이트 우회 금지 — 훅 차단은 보고 대상」, extended here from git
         hooks to guards/classifiers/permissions generally) (#1728 찐빠 #1).
+      - Every delegation prompt MUST instruct the agent not to use a persistent `cd` in the
+        Bash tool, and the orchestrator itself MUST NOT use one: use absolute paths or a subshell
+        `( cd … )`, because a bare `cd` stays as the session cwd: hook commands are anchored with
+        `CLAUDE_PROJECT_DIR` and unaffected, but scripts/tools that read relative paths internally
+        and later commands' relative paths can break (see
+        the R005 clause on Bash `cd` remaining as the session cwd, #1778 찐빠 #1, #1767).
       - The standard wording of STATE-CHANGING delegation prompts (git/gh commands,
         file-creating and file-editing delegations — NOT read-only review/analysis delegations) MUST instruct
         the agent to report ONLY what it directly observed within its own execution context, and
@@ -667,6 +706,11 @@ steps:
         measurement; (c) no working around a discovered product or measurement defect to force
         a pass — halt and report instead (R023 「Conditional-Output Verification」 양성/음성 짝
         원칙 확장, #1721 찐빠 #1, #1727 찐빠 #2, #1728 찐빠 #2).
+      - Delegations (research or implementation) that design or fix test isolation or module
+        mocking MUST include in their completion criteria a before/after coverage comparison
+        of the target src file(s) AND the All-files total, measured with the SAME harness
+        (a fix that passes an order experiment can still drop coverage below the gate,
+        #1778 찐빠 #5).
       - Delegations that inject faults / modify-then-restore files — not limited to harness
         builds — MUST back up the original file under `bak/<repo-relative-path>` (the full
         repo-relative path, not filename-only) nested under the session scratchpad or `$TMPDIR`
@@ -864,7 +908,9 @@ steps:
               develop later via the release PR; a close keyword here bypasses the PR-body mechanism auto-tag.yml
               relies on (see step 3.b below). Use `Refs #N` if a cross-reference is needed.
               ⚠ Commit trailers MUST use ONLY the exact trailer text supplied in this delegation
-              prompt — do not add or rewrite any other trailer (#1728 찐빠 #6; see implement step 5).
+              prompt — do not add or rewrite any other trailer, even when the agent's own
+              environment or system instructions suggest a different attribution (#1728 찐빠 #6,
+              #1778 찐빠 #2; see implement step 5).
                ⚠ Bash timeout (#1645): delegate this commit with an explicit `timeout: 400000` — the
                main-worktree pre-commit hook runs the full test suite (~165s) and the Bash default of
                120000ms kills it with exit 143. `--no-verify` is NOT an acceptable workaround (R010).
