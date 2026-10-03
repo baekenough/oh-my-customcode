@@ -1608,6 +1608,155 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 ---
 
+## v2.1.285 (2026-09-29)
+
+> Issue: #1764 — Claude Code v2.1.285 compatibility documentation
+> Scope-ceiling check (R017): 조사 시점의 최신 릴리즈는 2.1.288(`claude --version`=2.1.288)이며, 2.1.285 이후 2.1.286~2.1.288의 CHANGELOG를 확인한 결과 이 릴리즈 항목의 롤백(revert)은 관측되지 않았습니다. 다만 아래 백그라운드 시간 제한 항목은 2.1.288에서 적용 범위가 좁혀졌습니다(해당 항목 참조). 릴리즈 게시 시각은 2026-09-29T19:27:30Z입니다.
+
+### 백그라운드 · 시간 제한
+
+- CHANGELOG 원문: "Changed background Bash and PowerShell commands to stop after a time limit (their `timeout` with `run_in_background`, default 30 min, max 2 h); Claude is notified when one is stopped"
+  (285) 백그라운드 Bash·PowerShell 명령이 시간 제한(`run_in_background`와 함께 쓰는 `timeout`, 기본 30분, 최대 2시간) 후 중단되며, 중단되면 Claude에 알림이 갑니다. auto-dev.yaml의 ci-check 단계는 단일 한정 호출 `gh run watch <run-id> --exit-status`를 선택적으로(optionally) `run_in_background`로 실행하도록 안내하므로, 백그라운드로 실행하는 경우에 한해 이 기본 30분 제한이 확인할 지점이지만, 어떤 룰도 백그라운드 제한을 규정하지 않으므로 룰 문안 변경은 불필요합니다.
+  (288) 이후 이 제한은 좁혀졌습니다. CHANGELOG 원문: "Changed the background command time limit to apply only in unattended sessions (`-p`, Agent SDK, CI, cloud); terminal, desktop app and VS Code sessions have no limit" — 대화형 터미널 세션에는 제한이 없고 `-p`·SDK·CI·cloud 세션에만 남습니다. 이는 위 변경의 롤백이 아니라 적용 범위의 축소입니다.
+
+### 서브에이전트 · 권한 모드
+
+- CHANGELOG 원문: "Improved subagents in auto mode: a subagent's run now ends as soon as it hands its report back to its caller, instead of taking extra turns that reach no one"
+  (285) auto mode의 서브에이전트가 보고를 호출자에게 넘기는 즉시 종료되며, 아무에게도 닿지 않는 추가 턴을 쓰지 않습니다. 플랫폼 동작 개선이며 R009/R018의 maxTurns 절단 노트는 영향을 받지 않습니다.
+- CHANGELOG 원문: "Fixed fork subagents not keeping the session's plan mode or `dontAsk` mode: a fork now runs under its parent's permission mode and cannot exit plan mode"
+  (285) fork 서브에이전트가 부모의 permission mode로 실행되고 plan mode를 빠져나갈 수 없습니다. 서브에이전트의 유효 모드를 부모 세션이 결정한다는 R010 Self-Check의 전제를 강화하는 항목입니다.
+- CHANGELOG 원문: "Fixed background subagents in auto mode prompting a second, redundant reply after each report"
+  (285) auto mode의 백그라운드 서브에이전트가 보고마다 중복 응답을 한 번 더 요구하던 결함이 수정되었습니다. 백그라운드 서브에이전트 보고를 다루는 맥락 정보이며 룰 변경은 없습니다.
+- CHANGELOG 원문: "Fixed `claude -p --permission-prompt-tool`: a background subagent's permission request now goes to the prompt tool instead of being auto-denied"
+  (285) `claude -p --permission-prompt-tool` 사용 시 백그라운드 서브에이전트의 권한 요청이 자동 거부되는 대신 prompt tool로 전달됩니다. headless 권한 라우팅에 관한 항목이며 이 저장소에는 연결된 배선이 없습니다.
+- CHANGELOG 원문: "Changed `claude -p` and Python Agent SDK sessions on third-party providers or with telemetry off to start in auto mode when no permission mode is configured, like interactive sessions; `--permission-mode` still overrides it"
+  (285) 서드파티 provider이거나 텔레메트리가 꺼진 `claude -p`·Python Agent SDK 세션도 permission mode가 설정되지 않았으면 대화형 세션처럼 auto mode로 시작하며 `--permission-mode`가 계속 우선합니다. 위 v2.1.283·v2.1.284 섹션의 auto mode 시작 조건 노트를 이어받는 항목입니다. R010 Self-Check는 user scope `permissions.defaultMode`를 실측하는 절차이므로 바뀌지 않습니다.
+
+### 훅
+
+- CHANGELOG 원문: "Fixed synchronous hooks hanging Claude Code while a background process the hook started (for example `some-daemon &`) kept its output open; the hook now finishes shortly after its own process exits"
+  (285) 훅이 시작한 백그라운드 프로세스가 출력을 열어 둔 동안 동기 훅이 Claude Code를 멈추게 하던 결함이 수정되어, 훅은 자신의 프로세스가 끝난 직후 종료됩니다. 훅 신뢰성에 관한 항목이며 R021 훅 발화 진단의 맥락 정보입니다.
+- CHANGELOG 원문: "Fixed hooks and SDK permission callbacks seeing a missing or outdated plan on ExitPlanMode when the plan was written in the same response"
+  (285) 같은 응답에서 plan이 작성된 경우 훅과 SDK 권한 콜백이 ExitPlanMode 시점에 plan을 보지 못하거나 오래된 plan을 보던 결함이 수정되었습니다. 이 저장소는 ExitPlanMode 훅을 배선하지 않으므로 영향이 없습니다.
+
+### Workflow · 재시도
+
+- CHANGELOG 원문: "Fixed a failed `agent()`, `parallel()` or `pipeline()` call that a workflow script awaits later, or not at all, being treated as an unhandled promise rejection, which could end a background session"
+  (285) workflow 스크립트가 나중에 await하거나 아예 await하지 않는 `agent()`·`parallel()`·`pipeline()` 호출의 실패가 unhandled promise rejection으로 처리되어 백그라운드 세션을 끝낼 수 있던 결함이 수정되었습니다. R023 Workflow Script Sanity Check의 맥락 정보입니다.
+- CHANGELOG 원문: "Fixed a failing API request being retried up to 21 times when streaming kept failing; the non-streaming fallback now shares the request's retry budget instead of getting a fresh set of retries"
+  (285) 스트리밍이 계속 실패할 때 API 요청이 최대 21회까지 재시도되던 결함이 수정되어, non-streaming fallback이 새 재시도 횟수를 받는 대신 요청의 재시도 예산을 공유합니다. R004 Retryable 재시도 전략의 맥락 정보입니다.
+
+### MCP
+
+- CHANGELOG 원문: "Changed MCP tools so a tool that sets its own `_meta['anthropic/alwaysLoad']` to false stays deferred when its `--mcp-config`, Agent SDK or plugin server is set to `alwaysLoad`"
+  (285) 도구가 자신의 `_meta['anthropic/alwaysLoad']`를 false로 설정하면, 해당 서버(`--mcp-config`, Agent SDK, plugin)가 `alwaysLoad`로 설정돼 있어도 그 도구는 deferred 상태를 유지합니다. 이 저장소의 설정에는 `alwaysLoad`가 없으므로 영향이 없습니다.
+
+### 메모리 · 컨텍스트
+
+- CHANGELOG 원문: "Changed /memory so that Auto-memory can no longer be turned on from a background session or from a session one of Claude Code's own tools started; turning it off there still works"
+  (285) 백그라운드 세션이나 Claude Code 자체 도구가 시작한 세션에서는 `/memory`로 Auto-memory를 켤 수 없고 끄는 것만 가능합니다. R011의 native auto memory 경로 설명은 바뀌지 않습니다.
+- CHANGELOG 원문: "Changed sessions behind a custom `ANTHROPIC_BASE_URL` to use the 1M context window of models that have one (Opus 4.7+, Sonnet 5+, Fable); run `/autocompact 200k` if your gateway stops at 200K"
+  (285) 커스텀 `ANTHROPIC_BASE_URL` 뒤의 세션이 1M 컨텍스트 창을 가진 모델(Opus 4.7+, Sonnet 5+, Fable)에서 그 창을 사용하며, gateway가 200K에서 멈추면 `/autocompact 200k`를 실행하라고 안내합니다. R013 임계값은 창 대비 백분율이므로 이 환경에서는 절대 토큰량이 달라질 수 있습니다.
+
+기타 123건 — 이 저장소 비해당(VSCode·Claude Code on the web·Claude Tag·Code Review 전용 항목과 UI 다이얼로그·키바인딩·vim 모드 등 harness 비영향 세부사항). 실측: `gh release view v2.1.285 --repo anthropics/claude-code --json body --jq .body | grep -c '^- '` = 136건 중 위 본문 13건을 다뤘으므로 136 − 13 = 123건입니다. 계수 범위는 해당 릴리즈 노트의 최상위 불릿 줄(`- `로 시작하는 줄)입니다.
+
+**Action items**:
+- 백그라운드 시간 제한, 서브에이전트·권한 모드, 훅, Workflow·재시도, MCP, 메모리·컨텍스트 항목은 모두 기존 룰이 이미 다루는 전제를 강화하거나 이 저장소에 배선이 없는 기능에 관한 것이며 룰 문안 변경은 불필요합니다.
+
+---
+
+## v2.1.286 (2026-09-30)
+
+> Issue: #1765 — Claude Code v2.1.286 compatibility documentation
+> Scope-ceiling check (R017): 조사 시점의 최신 릴리즈는 2.1.288(`claude --version`=2.1.288)이며, 2.1.288 CHANGELOG에서 이 릴리즈 항목의 롤백은 관측되지 않았습니다. 릴리즈 게시 시각은 2026-09-30T19:10:13Z입니다.
+
+### 서브에이전트
+
+- CHANGELOG 원문: "Fixed foreground subagents sometimes missing the task-tracking tools (TaskCreate/Get/Update/List, TodoWrite) in sessions that have them enabled"
+  (286) 작업 추적 도구(TaskCreate/Get/Update/List, TodoWrite)가 활성화된 세션에서 foreground 서브에이전트가 가끔 그 도구를 받지 못하던 결함이 수정되었습니다. 이 수정은 해당 도구가 활성화된 세션에만 적용되며 이 저장소 환경에는 그 도구가 없으므로, R002의 † 표기(현행 환경에 존재하지 않음)는 그대로 유효합니다.
+- CHANGELOG 원문: "Fixed subagents spawned with worktree isolation loading the project CLAUDE.md and its imports a second time from the worktree copy on their first file read"
+  (286) worktree 격리로 스폰된 서브에이전트가 첫 파일 읽기 때 worktree 사본에서 프로젝트 CLAUDE.md와 그 import를 한 번 더 로드하던 결함이 수정되었습니다. 중복 로드에 관한 플랫폼 수정이며 룰 변경은 없습니다.
+- CHANGELOG 원문: "Fixed the commit attribution reminder being re-sent inside tool output when a model fallback lasts only one turn"
+  (286) 모델 fallback이 한 턴만 지속될 때 commit attribution 안내가 도구 출력 안에서 다시 전송되던 결함이 수정되었습니다. 안내 중복에 관한 항목이며 룰 변경은 없습니다.
+
+### Workflow · 재시도
+
+- CHANGELOG 원문: "Fixed Workflow tool subagents being restarted from their original prompt when a connection stalled for a few minutes mid-response"
+  (286) 응답 도중 연결이 몇 분간 정체되면 Workflow 도구의 서브에이전트가 원래 프롬프트부터 다시 시작되던 결함이 수정되었습니다. R023 Workflow 관련 맥락 정보입니다.
+- CHANGELOG 원문: "Changed how failed API requests are retried: one limit now covers a whole model call, so with the default retry settings a failing call sends at most 14 requests"
+  (286) 실패한 API 요청의 재시도 한도가 모델 호출 전체에 대해 하나로 적용되어, 기본 재시도 설정에서 실패하는 호출은 최대 14개의 요청을 보냅니다. 위 (285)의 재시도 예산 공유 수정을 이어받는 항목이며 R004 재시도 예산의 맥락 정보입니다.
+
+### 스킬
+
+- CHANGELOG 원문: "Improved commit guidance: when your project or user skills include one named `verify`, Claude is now told to run it right before committing, except for docs-only and tests-only commits"
+  (286) 프로젝트 또는 사용자 스킬에 `verify`라는 이름의 스킬이 있으면 docs-only·tests-only 커밋을 제외하고 커밋 직전에 실행하라고 Claude에 안내됩니다. 관측한 범위에서 이 저장소에는 `verify`라는 이름의 스킬이 없고(`deep-verify`는 이름이 일치하지 않습니다) 사용자 스킬에서도 관측되지 않았으므로 조치는 없습니다.
+
+### 훅 · 안정성
+
+- CHANGELOG 원문: "Changed `--bare` to connect only the MCP servers named on the command line, send the model no system reminders, and start no background tasks; under `--bare`, a shell command that reaches its timeout now stops instead of moving to the background"
+  (286) `--bare`는 명령줄에 지정한 MCP 서버만 연결하고, 모델에 system reminder를 보내지 않으며, 백그라운드 작업을 시작하지 않습니다. 또한 `--bare`에서는 timeout에 도달한 셸 명령이 백그라운드로 넘어가는 대신 중단됩니다. 이 저장소는 `--bare`를 사용하지 않으므로 영향이 없습니다.
+
+### 모델
+
+- CHANGELOG 원문: "Fixed every turn failing when the Anthropic API refuses the model your default or a model alias resolves to: Claude Code now retries once on the previous model of the same tier"
+  (286) Anthropic API가 기본 모델 또는 모델 alias가 해석된 모델을 거부해 모든 턴이 실패하던 결함이 수정되어, 이제 같은 티어의 이전 모델로 한 번 재시도합니다. R006은 Tier 1 alias를 CC가 해석한다고 이미 규정하므로 문안 변경은 불필요합니다.
+
+기타 80건 — 이 저장소 비해당(VSCode·Claude Code on the web·Claude Tag·Code Review 전용 항목과 UI 다이얼로그·키바인딩·vim 모드 등 harness 비영향 세부사항). 실측: `gh release view v2.1.286 --repo anthropics/claude-code --json body --jq .body | grep -c '^- '` = 88건 중 위 본문 8건을 다뤘으므로 88 − 8 = 80건입니다. 계수 범위는 해당 릴리즈 노트의 최상위 불릿 줄(`- `로 시작하는 줄)입니다.
+
+**Action items**:
+- 서브에이전트, Workflow·재시도, 스킬, `--bare`, 모델 항목은 기존 룰이 이미 다루는 전제를 강화하거나 이 저장소에 해당 구성이 없는 항목이며 룰 문안 변경은 불필요합니다.
+
+---
+
+## v2.1.287 (2026-10-01)
+
+> Issue: #1766 — Claude Code v2.1.287 compatibility documentation
+> Scope-ceiling check (R017): 조사 시점의 최신 릴리즈는 2.1.288(`claude --version`=2.1.288)입니다. 2.1.288 CHANGELOG는 이 릴리즈의 항목을 롤백하지 않았고, 아래 `rm` 안전장치 수정은 오히려 `bash -c`·`sh -c` 스크립트로 확장되었습니다(288 CHANGELOG 원문: "Fixed a dangerous `rm` (such as one on `/` or the home directory) inside a `bash -c` or `sh -c` script running without a prompt in bypassPermissions mode or under a shell allow rule (anthropics/claude-code#96300)"). 릴리즈 게시 시각은 2026-10-01T18:00:22Z입니다.
+
+### 지시 파일
+
+- CHANGELOG 원문: "Fixed a folder's CLAUDE.md being attached a second time after resuming a session or after a compaction"
+  (287) 세션을 재개하거나 compaction을 한 뒤 폴더의 CLAUDE.md가 한 번 더 첨부되던 결함이 수정되었습니다. R021의 재주입 경로는 `SessionStart` 훅(`claude-md-reinject.sh`)이며 CC 자체의 CLAUDE.md 첨부와 별개이므로 재주입은 계속 유지합니다. 다만 중복 첨부 위험이 있었다는 점은 기록해 둡니다.
+
+### 권한 · rm
+
+- CHANGELOG 원문: "Fixed a dangerous `rm` (such as one on `/` or the home directory) losing its always-ask safeguard when the same command also redirected output to a `~` or wildcard path"
+  (287) 위험한 `rm`(예: `/` 또는 홈 디렉터리 대상)이 같은 명령에서 `~`나 와일드카드 경로로 출력을 리다이렉트할 때 항상 확인하는 안전장치를 잃던 결함이 수정되었습니다. R001의 `rm` 금지 맥락과 같은 방향의 플랫폼 수정이며 R001 문안 변경은 없습니다.
+- CHANGELOG 원문: "Changed whole-tool `Bash` allow rules and allowing hooks to prompt for, not run, shell writes to files Claude Code's file tools refuse outright (the Anthropic profile store, the host credentials file)"
+  (287) Bash 전체 allow 규칙과 허용 훅이, Claude Code의 파일 도구가 아예 거부하는 파일(Anthropic profile store, host credentials file)에 대한 셸 쓰기를 실행하지 않고 확인을 요구합니다. R002 Bash 티어의 맥락 정보이며 티어 정책은 바뀌지 않습니다.
+
+### 훅
+
+- CHANGELOG 원문: "Fixed hooks configured with `asyncRewake` waking Claude over and over with "found issues" notifications when the hook's script file is missing; the broken hook is now reported once"
+  (287) `asyncRewake`로 구성된 훅의 스크립트 파일이 없을 때 "found issues" 알림으로 Claude를 계속 깨우던 결함이 수정되어, 깨진 훅은 한 번만 보고됩니다. 관측한 범위에서 이 저장소에는 `asyncRewake` 훅이 없으므로 영향이 없습니다.
+
+### 텔레메트리
+
+- CHANGELOG 원문: "Added `prompt_text` to the OpenTelemetry `user_prompt` event, a copy of `prompt` for backends that nest dotted keys; drop or mask it wherever you drop or mask `prompt` (anthropics/claude-code#70763)"
+  (287) OpenTelemetry `user_prompt` 이벤트에 `prompt_text`가 추가되었고, `prompt`를 제거하거나 마스킹하는 곳에서는 이 필드도 같이 제거하거나 마스킹해야 합니다. monitoring-setup 스킬을 다루는 맥락 정보입니다.
+
+### MCP
+
+- CHANGELOG 원문: "Changed MCP server `alwaysLoad: false` to defer all of that server's tools behind tool search"
+  (287) MCP 서버의 `alwaysLoad: false`는 그 서버의 모든 도구를 tool search 뒤로 deferred 처리합니다. 위 (285)의 `alwaysLoad` 항목과 같은 계열이며, 이 저장소의 설정에는 `alwaysLoad`가 없으므로 영향이 없습니다.
+
+### 메모리 · 컨텍스트
+
+- CHANGELOG 원문: "Changed Opus 4.7+ and Fable to use a 1M context window by default on Bedrock, Vertex, Foundry and the Claude apps gateway, with no `[1m]` suffix (`CLAUDE_CODE_DISABLE_1M_CONTEXT=1` keeps 200K)"
+  (287) Bedrock, Vertex, Foundry, Claude apps gateway에서 Opus 4.7+와 Fable이 `[1m]` 접미사 없이 기본으로 1M 컨텍스트 창을 사용하며 `CLAUDE_CODE_DISABLE_1M_CONTEXT=1`이면 200K를 유지합니다. R013 임계값은 창 대비 백분율이므로 절대 토큰량은 이 설정에 따라 달라집니다.
+
+### 모델
+
+- CHANGELOG 원문: "Fixed picking Fable in `/model` on a claude.ai login saving the current version's id, so your saved default now follows the newest Fable like Opus and Sonnet do"
+  (287) claude.ai 로그인에서 `/model`로 Fable을 고르면 현재 버전의 id가 저장되던 결함이 수정되어, 저장된 기본값이 Opus·Sonnet처럼 최신 Fable을 따라갑니다. R006 모델 티어 설명의 맥락 정보이며 룰 변경은 없습니다.
+
+기타 98건 — 이 저장소 비해당(VSCode·Claude Code on the web·Claude Tag·Code Review 전용 항목과 UI 다이얼로그·키바인딩·vim 모드 등 harness 비영향 세부사항). 실측: `gh release view v2.1.287 --repo anthropics/claude-code --json body --jq .body | grep -c '^- '` = 106건 중 위 본문 8건을 다뤘으므로 106 − 8 = 98건입니다. 계수 범위는 해당 릴리즈 노트의 최상위 불릿 줄(`- `로 시작하는 줄)입니다.
+
+**Action items**:
+- 지시 파일, 권한·`rm`, 훅, 텔레메트리, MCP, 메모리·컨텍스트, 모델 항목은 기존 룰이 이미 다루는 전제를 강화하거나 이 저장소에 해당 구성이 없는 항목이며 룰 문안 변경은 불필요합니다. R021의 `SessionStart` 재주입은 유지합니다.
+
+---
+
 ## Known Platform Issues & Workarounds
 
 ### Agent tool malformed parsing on long / special-character prompts (#1241)
