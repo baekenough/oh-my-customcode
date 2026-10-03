@@ -21,11 +21,20 @@
  *   Does NOT touch utils/fs.js, avoiding cross-module contamination.
  */
 
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LOCKFILE_NAME, LOCKFILE_VERSION, type Lockfile } from '../../../src/core/lockfile.js';
+
+// Capture the real module before any mock.module call. bun's mock.module persists across
+// test files (mock.restore() does not undo it), so without the afterAll re-registration
+// below the lockfile mock leaks into later-ordered files (#1772).
+const realLockfile = { ...(await import('../../../src/core/lockfile.js')) };
+
+afterAll(() => {
+  mock.module('../../../src/core/lockfile.js', () => realLockfile);
+});
 
 describe('sync error paths (isolated mock.module tests)', () => {
   let tempDir: string;

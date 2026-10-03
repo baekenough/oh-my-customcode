@@ -11,10 +11,23 @@
  *   - lockfile warning path during install (lines 458-459)
  */
 
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+// Capture the real modules before any mock.module call. bun's mock.module persists across
+// test files (mock.restore() does not undo it), so without the afterAll re-registration
+// below the mocks leak into later-ordered files that import these modules (#1772).
+const realRtkInstaller = { ...(await import('../../../src/core/rtk-installer.js')) };
+const realCodexInstaller = { ...(await import('../../../src/core/codex-installer.js')) };
+const realLockfile = { ...(await import('../../../src/core/lockfile.js')) };
+
+afterAll(() => {
+  mock.module('../../../src/core/rtk-installer.js', () => realRtkInstaller);
+  mock.module('../../../src/core/codex-installer.js', () => realCodexInstaller);
+  mock.module('../../../src/core/lockfile.js', () => realLockfile);
+});
 
 describe('installer RTK/Codex paths', () => {
   let tempDir: string;

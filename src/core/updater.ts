@@ -535,13 +535,19 @@ async function migrateHookCommandsInSettingsLocal(
 async function runFullUpdatePostProcessing(
   options: UpdateOptions,
   result: UpdateResult,
-  config: OmccConfig
+  config: OmccConfig,
+  customizations: CustomizationManifest | null
 ): Promise<void> {
   const isFullUpdate = !options.components || options.components.length === 0;
 
   if (isFullUpdate) {
-    const synced = await syncRootLevelFiles(options.targetDir, options);
+    const { synced, preserved } = await syncRootLevelFiles(
+      options.targetDir,
+      options,
+      customizations
+    );
     result.syncedRootFiles = synced;
+    result.preservedFiles.push(...preserved);
 
     const removed = await removeDeprecatedFiles(options.targetDir, options);
     result.removedDeprecatedFiles = removed;
@@ -732,7 +738,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       lockfile
     );
 
-    await runFullUpdatePostProcessing(options, result, config);
+    await runFullUpdatePostProcessing(options, result, config, customizations);
 
     // Regenerate lockfile after successful update (#316)
     await regenerateLockfile(options.targetDir, result);
@@ -1123,27 +1129,53 @@ async function updateComponent(
 
 /**
  * Root-level files in .claude/ that should be synced during update
- * These are files that exist directly under templates/.claude/ (not in subdirectories)
+ * Most live directly under templates/.claude/; entries may also be relative subpaths
+ * (e.g. schemas/tool-inputs.json) — the parent directory is created on copy.
  */
-const ROOT_LEVEL_FILES = ['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh'];
+const ROOT_LEVEL_FILES = [
+  'statusline.sh',
+  'install-hooks.sh',
+  'uninstall-hooks.sh',
+  'schemas/tool-inputs.json',
+];
 
 /**
  * Sync root-level files from templates/.claude/ to target .claude/ directory
  * These files don't belong to any component subdirectory.
+ *
+ * Honors preserveFiles (config + manifest, already merged into `customizations`) with the same
+ * semantics as updateComponent: entries are relative to the target dir (e.g.
+ * ".claude/schemas/tool-inputs.json") and are ignored when forceOverwriteAll is set.
+ * Lockfile-based "user modified" protection is intentionally not applied — like updateComponent,
+ * it is limited to protected framework/rule files (isProtectedFile), which root files are not.
  */
-async function syncRootLevelFiles(targetDir: string, options: UpdateOptions): Promise<string[]> {
+async function syncRootLevelFiles(
+  targetDir: string,
+  options: UpdateOptions,
+  customizations: CustomizationManifest | null
+): Promise<{ synced: string[]; preserved: string[] }> {
   if (options.dryRun) {
-    return ROOT_LEVEL_FILES;
+    return { synced: ROOT_LEVEL_FILES, preserved: [] };
   }
 
   const fs = await import('node:fs/promises');
   const layout = getProviderLayout();
   const synced: string[] = [];
+  const preserved: string[] = [];
+  const preserveSet = new Set(
+    customizations && !options.forceOverwriteAll ? customizations.preserveFiles : []
+  );
 
   for (const fileName of ROOT_LEVEL_FILES) {
     const srcPath = resolveTemplatePath(join(layout.rootDir, fileName));
 
     if (!(await fileExists(srcPath))) {
+      continue;
+    }
+
+    const relPath = `${layout.rootDir}/${fileName}`;
+    if (preserveSet.has(relPath)) {
+      preserved.push(relPath);
       continue;
     }
 
@@ -1163,7 +1195,7 @@ async function syncRootLevelFiles(targetDir: string, options: UpdateOptions): Pr
     debug('update.root_files_synced', { files: synced.join(', ') });
   }
 
-  return synced;
+  return { synced, preserved };
 }
 
 /**

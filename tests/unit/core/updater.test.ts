@@ -963,6 +963,142 @@ describe('updater', () => {
       expect(stats.mode & 0o100).toBeTruthy();
     });
 
+    it('should sync schemas/tool-inputs.json and create the missing parent dir (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      // Only the root dir exists; schemas/ must be created by the sync
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+      const schemaDest = join(tempDir, layout.rootDir, 'schemas', 'tool-inputs.json');
+      expect(await readFile(schemaDest, 'utf-8').catch(() => null)).toBeNull();
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(true);
+      expect(result.syncedRootFiles).toContain('schemas/tool-inputs.json');
+
+      const templateContent = readFileSync(
+        pathJoin(import.meta.dir, '../../../templates', layout.rootDir, 'schemas/tool-inputs.json'),
+        'utf-8'
+      );
+      expect(await readFile(schemaDest, 'utf-8')).toBe(templateContent);
+    });
+
+    it('should overwrite a stale schemas/tool-inputs.json with template content (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await createDirStructure({
+        [`${layout.rootDir}/schemas/tool-inputs.json`]: '{"stale":true}',
+      });
+
+      await update({ targetDir: tempDir });
+
+      const templateContent = readFileSync(
+        pathJoin(import.meta.dir, '../../../templates', layout.rootDir, 'schemas/tool-inputs.json'),
+        'utf-8'
+      );
+      expect(
+        await readFile(join(tempDir, layout.rootDir, 'schemas', 'tool-inputs.json'), 'utf-8')
+      ).toBe(templateContent);
+    });
+
+    it('should keep a user-customized schemas/tool-inputs.json listed in config preserveFiles (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      const schemaRel = `${layout.rootDir}/schemas/tool-inputs.json`;
+      const config = JSON.parse(await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8'));
+      config.preserveFiles = [schemaRel];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+      await createDirStructure({ [schemaRel]: '{"user":"custom"}' });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(tempDir, schemaRel), 'utf-8')).toBe('{"user":"custom"}');
+      expect(result.syncedRootFiles).not.toContain('schemas/tool-inputs.json');
+      expect(result.preservedFiles).toContain(schemaRel);
+      // Unlisted root files are still synced
+      expect(result.syncedRootFiles).toContain('install-hooks.sh');
+    });
+
+    it('should overwrite a customized schema when it is not listed in preserveFiles (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      const schemaRel = `${layout.rootDir}/schemas/tool-inputs.json`;
+      await createDirStructure({ [schemaRel]: '{"user":"custom"}' });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.syncedRootFiles).toContain('schemas/tool-inputs.json');
+      expect(await readFile(join(tempDir, schemaRel), 'utf-8')).not.toBe('{"user":"custom"}');
+      expect(result.preservedFiles).not.toContain(schemaRel);
+    });
+
+    it('should keep a customized statusline.sh listed in manifest preserveFiles (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      const statuslineRel = `${layout.rootDir}/statusline.sh`;
+      await createDirStructure({
+        [statuslineRel]: '#!/bin/sh\necho custom\n',
+        '.omcustom-customizations.json': JSON.stringify({
+          modifiedFiles: [],
+          preserveFiles: [statuslineRel],
+          customComponents: [],
+          lastUpdated: '2025-01-01T00:00:00Z',
+        }),
+      });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(await readFile(join(tempDir, statuslineRel), 'utf-8')).toBe(
+        '#!/bin/sh\necho custom\n'
+      );
+      expect(result.syncedRootFiles).not.toContain('statusline.sh');
+      expect(result.syncedRootFiles).toContain('install-hooks.sh');
+    });
+
+    it('should overwrite preserved root files when forceOverwriteAll is set (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      const schemaRel = `${layout.rootDir}/schemas/tool-inputs.json`;
+      const config = JSON.parse(await readFile(join(tempDir, '.omcustomrc.json'), 'utf-8'));
+      config.preserveFiles = [schemaRel];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config, null, 2));
+      await createDirStructure({ [schemaRel]: '{"user":"custom"}' });
+
+      await update({ targetDir: tempDir, forceOverwriteAll: true });
+
+      expect(await readFile(join(tempDir, schemaRel), 'utf-8')).not.toBe('{"user":"custom"}');
+    });
+
+    it('should keep syncing the three original root files alongside schemas (#1770)', async () => {
+      await createConfig('0.1.0');
+
+      const layout = getProviderLayout();
+      await mkdir(join(tempDir, layout.rootDir), { recursive: true });
+
+      const result = await update({ targetDir: tempDir });
+
+      expect(result.syncedRootFiles).toEqual(
+        expect.arrayContaining(['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh'])
+      );
+      const fs = await import('node:fs/promises');
+      for (const name of ['statusline.sh', 'install-hooks.sh', 'uninstall-hooks.sh']) {
+        const stats = await fs.stat(join(tempDir, layout.rootDir, name));
+        expect(stats.mode & 0o100).toBeTruthy();
+      }
+      // Non-.sh schema file is not forced executable
+      const schemaStats = await fs.stat(
+        join(tempDir, layout.rootDir, 'schemas', 'tool-inputs.json')
+      );
+      expect(schemaStats.mode & 0o100).toBeFalsy();
+    });
+
     it('should return file list in dry run mode without copying', async () => {
       await createConfig('0.1.0');
 
@@ -976,6 +1112,7 @@ describe('updater', () => {
 
       expect(result.success).toBe(true);
       expect(result.syncedRootFiles.length).toBeGreaterThan(0);
+      expect(result.syncedRootFiles).toContain('schemas/tool-inputs.json');
 
       // Files should NOT actually exist (dry run)
       const statuslinePath = join(tempDir, layout.rootDir, 'statusline.sh');

@@ -6,7 +6,8 @@
  * every hook fails with exit 127 (a non-blocking error, i.e. fail-open). The new form is
  * anchored: `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/x.sh"`.
  *
- * This module only REWRITES matching command strings. It never regenerates, adds or
+ * This module only REWRITES matching command strings (hook commands, plus the exact old
+ * default statusLine command, #1769). It never regenerates, adds or
  * removes hooks, so user-authored hooks survive untouched unless they happen to be in the
  * exact omcustom shape (see {@link OLD_HOOK_COMMAND}).
  */
@@ -73,20 +74,55 @@ function rewriteNode(node: unknown, counter: { count: number }): unknown {
 }
 
 /**
- * Rewrites old cwd-relative omcustom hook commands inside `settings.hooks` to the
- * `CLAUDE_PROJECT_DIR`-anchored form. Pure: returns a new object and the rewrite count.
- * All keys outside `hooks` are returned as-is (same references).
+ * The ONLY statusLine command omcustom ever wrote (installer `installSettingsLocal`, and the
+ * repo's own settings.json). Matched by exact string equality so that a user-customized
+ * command (`./.claude/statusline.sh`, `bash .claude/statusline.sh`, custom scripts, extra
+ * arguments) is never touched (#1769).
+ */
+const OLD_STATUSLINE_COMMAND = '.claude/statusline.sh';
+
+/** Anchored replacement for {@link OLD_STATUSLINE_COMMAND}; `bash` avoids exec-bit dependence. */
+export const NEW_STATUSLINE_COMMAND = `bash "\${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh"`;
+
+/**
+ * Rewrites `statusLine.command` when it is exactly the old default. Returns the new
+ * `statusLine` object, or `null` when nothing matches (missing, non-object, custom command,
+ * already anchored).
+ */
+function migrateStatusLine(statusLine: unknown): Record<string, unknown> | null {
+  if (!isRecord(statusLine) || statusLine.command !== OLD_STATUSLINE_COMMAND) {
+    return null;
+  }
+  return { ...statusLine, command: NEW_STATUSLINE_COMMAND };
+}
+
+/**
+ * Rewrites old cwd-relative omcustom commands to the `CLAUDE_PROJECT_DIR`-anchored form:
+ * hook commands inside `settings.hooks`, and the exact old default `statusLine.command`
+ * (`.claude/statusline.sh`, #1769). The `rewritten` count includes both kinds.
+ * Pure: returns a new object (input is never mutated). Untouched keys keep their references.
  */
 export function migrateHookCommands<T extends Record<string, unknown>>(
   settings: T
 ): HookMigrationResult<T> {
-  if (!isRecord(settings.hooks)) {
-    return { settings, rewritten: 0 };
-  }
   const counter = { count: 0 };
-  const hooks = rewriteNode(settings.hooks, counter);
+  const updates: Record<string, unknown> = {};
+
+  if (isRecord(settings.hooks)) {
+    const hooks = rewriteNode(settings.hooks, counter);
+    if (counter.count > 0) {
+      updates.hooks = hooks;
+    }
+  }
+
+  const statusLine = migrateStatusLine(settings.statusLine);
+  if (statusLine !== null) {
+    counter.count++;
+    updates.statusLine = statusLine;
+  }
+
   if (counter.count === 0) {
     return { settings, rewritten: 0 };
   }
-  return { settings: { ...settings, hooks }, rewritten: counter.count };
+  return { settings: { ...settings, ...updates }, rewritten: counter.count };
 }

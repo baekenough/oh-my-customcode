@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.93",
-  "generatedAt": "2026-10-03T07:12:39.924Z",
-  "templateVersion": "1.1.93",
+  "generatorVersion": "1.1.94",
+  "generatedAt": "2026-10-03T08:52:02.487Z",
+  "templateVersion": "1.1.94",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
       "templateHash": "d052177f29970250bed111ca88f0b648d16ddaf98e20a4b938a46e71a4d0ed13",
@@ -10,8 +10,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-hud-statusline.md": {
-      "templateHash": "810da7d475e4f72ec889a610d3fa43920c620050015f020df177f66cbd893828",
-      "size": 8020,
+      "templateHash": "d6957f6ae29fee00f88f057020361977e9b825836ab493ae098d9fa055466719",
+      "size": 8202,
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
@@ -1130,8 +1130,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/claude-md-reinject.sh": {
-      "templateHash": "0d8df4ca5a6899cf2c1f173bd95552832b2d407cb20d09cb18da047b3e0592cc",
-      "size": 3374,
+      "templateHash": "c4640211ca73fcadd24412b56ccfb4eb3db0f6c7d3fbfb3e5cae0116d5d57a4a",
+      "size": 3491,
       "component": "hooks"
     },
     ".claude/hooks/scripts/eval-core-batch-save.sh": {
@@ -1190,13 +1190,13 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/omcustom-auto-update.sh": {
-      "templateHash": "115765a7ac6f625f2abb0deda1196c284177aa9474e99a5e7a758b2b2d555496",
-      "size": 5208,
+      "templateHash": "3d15d5297a7c8d6e1588c1a200853147bc989f83fea4231741d63286fdd6c248",
+      "size": 5709,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stale-todo-scanner.sh": {
-      "templateHash": "34ae2e2f11e467c7c73b37685390424e59f8596be684f67756101c6f7a78a913",
-      "size": 2315,
+      "templateHash": "42d28e52af16581a9f7e5b1d0aaca1dcb31368c3cb28c047b34d301165c89e95",
+      "size": 2816,
       "component": "hooks"
     },
     ".claude/hooks/scripts/playwright-compress.sh": {
@@ -1270,8 +1270,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-env-check.sh": {
-      "templateHash": "a35b06da5101597f27b7750c42a1e1d9dce8a1c901d40416261c956f5bcd368a",
-      "size": 11831,
+      "templateHash": "69e60729e4c973cc0ac49751e65a2bcd027bcfa33e2428abda20a8861d86d1cd",
+      "size": 12332,
       "component": "hooks"
     },
     ".claude/hooks/scripts/feedback-collector.sh": {
@@ -1290,8 +1290,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/adaptive-harness-scan.sh": {
-      "templateHash": "94ec5d840b196825eb8d4e1a57338b6763406d28d9ee5e0e03332839bcade41b",
-      "size": 1703,
+      "templateHash": "ad0249e521167ffeeae6e0a12a14ecbb07ea1852bfbaebdddb972ffc02b4c532",
+      "size": 1820,
       "component": "hooks"
     },
     ".claude/hooks/scripts/cwd-change-detector.sh": {
@@ -1330,8 +1330,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-autofix.sh": {
-      "templateHash": "8e416e3ea6f32040c9a1d0759b47b9eabf18b2fa165188130fc67390ca3c88d0",
-      "size": 6583,
+      "templateHash": "ca62e35faa4b4688562ef4e13ed4bf0351935996765e38fe282c4e69e83a07e0",
+      "size": 7084,
       "component": "hooks"
     },
     ".claude/hooks/scripts/subagent-failure-advisor.sh": {

@@ -25,6 +25,7 @@ import {
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { convertHooksJson, type RawHooksJson } from '../../../src/core/hooks-settings.js';
 import type { InstallResult } from '../../../src/core/installer.js';
 
 const RTK_MODULE = '../../../src/core/rtk-installer.js';
@@ -48,6 +49,25 @@ interface HookGroup {
 function commandsOf(hooks: Record<string, HookGroup[]> | undefined, event: string): string[] {
   const groups = hooks?.[event] ?? [];
   return groups.flatMap((group) => (group.hooks ?? []).map((hook) => hook.command ?? ''));
+}
+
+const TEMPLATE_HOOKS_JSON = join(import.meta.dir, '../../../templates/.claude/hooks/hooks.json');
+
+/**
+ * The matcher an installed settings file really contains for the stage-blocker group: the
+ * converted CC form (e.g. `Write|Edit`), derived from the template hooks.json via the same
+ * converter the installer uses. Installed settings never hold the raw hooks.json DSL form.
+ */
+async function convertedStageBlockerMatcher(): Promise<string> {
+  const raw = JSON.parse(await readFile(TEMPLATE_HOOKS_JSON, 'utf-8')) as RawHooksJson;
+  const { hooks } = convertHooksJson(raw);
+  const group = (hooks.PreToolUse ?? []).find((g) =>
+    g.hooks.some((h) => h.command?.includes('stage-blocker.sh'))
+  );
+  if (group?.matcher === undefined) {
+    throw new Error('stage-blocker group with a matcher not found in converted template hooks');
+  }
+  return group.matcher;
 }
 
 describe('installer --backup restore: hook command migration (#1767)', () => {
@@ -148,9 +168,152 @@ describe('installer --backup restore: hook command migration (#1767)', () => {
     expect(raw).toBe(JSON.stringify(JSON.parse(raw), null, 2));
   });
 
-  // The two cases below call the migration directly on a file in the state the restore step
-  // leaves it in: the merge step (writeJsonFile) normalises bytes, so the byte-convention
-  // behaviour of the migration itself is only observable with a directly seeded file.
+  // The restore step (mergeJsonFile) keeps the old file's newline/BOM convention (#1776), so the
+  // end-to-end cases below observe those bytes through install(). The cases after them call the
+  // migration directly on a seeded file to isolate its own byte-convention behaviour.
+  it('keeps the old trailing newline through install({ backup: true }) (#1776)', async () => {
+    const settingsPath = await seedOldSettings({ trailingNewline: true });
+    const { install } = await import('../../../src/core/installer.js');
+
+    const result = await install({ targetDir: tempDir, backup: true, skipConfirm: true });
+
+    expect(result.success).toBe(true);
+    const raw = await readFile(settingsPath, 'utf-8');
+    expect(raw.endsWith('\n')).toBe(true);
+    expect(raw.endsWith('\n\n')).toBe(false);
+    const settings = JSON.parse(raw) as {
+      enableAllProjectMcpServers?: boolean;
+      hooks?: Record<string, HookGroup[]>;
+    };
+    expect(settings.enableAllProjectMcpServers).toBe(true);
+    expect(commandsOf(settings.hooks, 'SessionStart')).toContain(ANCHORED_SESSION_START);
+  });
+
+  it('restores a BOM-prefixed old settings.local.json and keeps the BOM and newline (#1776)', async () => {
+    const settingsPath = await seedOldSettings({ bom: true, trailingNewline: true });
+    const { install } = await import('../../../src/core/installer.js');
+
+    const result = await install({ targetDir: tempDir, backup: true, skipConfirm: true });
+
+    expect(result.success).toBe(true);
+    expect(result.warnings.filter((w) => w.includes('Failed to restore'))).toEqual([]);
+    const raw = await readFile(settingsPath, 'utf-8');
+    expect(raw.startsWith('﻿')).toBe(true);
+    expect(raw.startsWith('﻿﻿')).toBe(false);
+    expect(raw.endsWith('\n')).toBe(true);
+    const settings = JSON.parse(raw.slice(1)) as {
+      enableAllProjectMcpServers?: boolean;
+      statusLine?: unknown;
+      hooks?: Record<string, HookGroup[]>;
+    };
+    // Old keys survived the restore, template keys are still merged in.
+    expect(settings.enableAllProjectMcpServers).toBe(true);
+    expect(settings.statusLine).toBeDefined();
+    const sessionStart = commandsOf(settings.hooks, 'SessionStart');
+    expect(sessionStart).toContain(CUSTOM_COMMAND);
+    expect(sessionStart).toContain(ANCHORED_SESSION_START);
+  });
+
+  it('keeps fresh omcustom groups and user hooks through install({ backup: true }) (#1768 D1)', async () => {
+    const claudeDir = join(tempDir, '.claude');
+    await mkdir(claudeDir, { recursive: true });
+    const settingsPath = join(claudeDir, 'settings.local.json');
+    const userPreToolUse = {
+      matcher: 'Bash',
+      hooks: [{ type: 'command', command: 'bash ~/team/audit.sh' }],
+    };
+    const userElicitation = {
+      hooks: [{ type: 'command', command: 'bash ~/team/notify.sh' }],
+    };
+    // Old omcustom group: relative command form of a shipped script, no description, but the
+    // matcher is the converted CC form a real old install contains (not the raw hooks.json DSL).
+    const oldOmcustomPreToolUse = {
+      matcher: await convertedStageBlockerMatcher(),
+      hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/stage-blocker.sh' }],
+    };
+    await writeFile(
+      settingsPath,
+      JSON.stringify(
+        {
+          mySetting: 'keep-me',
+          hooks: {
+            PreToolUse: [oldOmcustomPreToolUse, userPreToolUse],
+            Elicitation: [userElicitation],
+          },
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    );
+    const generatedRaw = JSON.parse(
+      await readFile(join(import.meta.dir, '../../../templates/.claude/hooks/hooks.json'), 'utf-8')
+    ) as { hooks?: Record<string, unknown[]> } & Record<string, unknown[]>;
+    const generated = generatedRaw.hooks ?? generatedRaw;
+    const { install } = await import('../../../src/core/installer.js');
+
+    const result = await install({ targetDir: tempDir, backup: true, skipConfirm: true });
+
+    expect(result.success).toBe(true);
+    const settings = JSON.parse(await readFile(settingsPath, 'utf-8')) as {
+      mySetting?: string;
+      hooks?: Record<string, HookGroup[]>;
+    };
+    expect(settings.mySetting).toBe('keep-me');
+    // User hooks survive: same event and an event the templates do not generate.
+    expect(commandsOf(settings.hooks, 'PreToolUse')).toContain('bash ~/team/audit.sh');
+    expect(commandsOf(settings.hooks, 'Elicitation')).toEqual(['bash ~/team/notify.sh']);
+    // The old omcustom group was replaced, not pinned next to the generated one: every
+    // generated group is present exactly once and only the one user group is added.
+    for (const [event, groups] of Object.entries(generated)) {
+      const expected = groups.length + (event === 'PreToolUse' ? 1 : 0);
+      expect(settings.hooks?.[event]?.length).toBe(expected);
+    }
+    expect(
+      commandsOf(settings.hooks, 'PreToolUse').filter((c) => c.includes('stage-blocker.sh'))
+    ).toHaveLength(1);
+  });
+
+  it('keeps a user group with a different matcher running a shipped script path (#1768 D1)', async () => {
+    const claudeDir = join(tempDir, '.claude');
+    await mkdir(claudeDir, { recursive: true });
+    const settingsPath = join(claudeDir, 'settings.local.json');
+    const userGroup = {
+      matcher: 'MyTool',
+      hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/stage-blocker.sh' }],
+    };
+    await writeFile(
+      settingsPath,
+      JSON.stringify({ hooks: { PreToolUse: [userGroup] } }, null, 2),
+      'utf-8'
+    );
+    const generatedMatcher = await convertedStageBlockerMatcher();
+    expect(generatedMatcher).not.toBe('MyTool');
+    const { install } = await import('../../../src/core/installer.js');
+
+    const result = await install({ targetDir: tempDir, backup: true, skipConfirm: true });
+
+    expect(result.success).toBe(true);
+    const settings = JSON.parse(await readFile(settingsPath, 'utf-8')) as {
+      hooks?: Record<string, HookGroup[]>;
+    };
+    const preToolUse = settings.hooks?.PreToolUse ?? [];
+    // Same event, different matcher: the user group is user-owned and survives (not deduped).
+    const userGroups = preToolUse.filter((g) => g.matcher === 'MyTool');
+    expect(userGroups).toHaveLength(1);
+    // The post-restore command migration still anchors the relative script path of any group.
+    expect(commandsOf({ PreToolUse: userGroups }, 'PreToolUse')).toEqual([
+      `bash "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stage-blocker.sh"`,
+    ]);
+    // The generated stage-blocker group (converted matcher) appears exactly once.
+    const generatedGroups = preToolUse.filter(
+      (g) =>
+        g.matcher === generatedMatcher &&
+        (g.hooks ?? []).some((h) => h.command?.includes('stage-blocker.sh'))
+    );
+    expect(generatedGroups).toHaveLength(1);
+  });
+
   function newInstallResult(): InstallResult {
     return {
       success: false,

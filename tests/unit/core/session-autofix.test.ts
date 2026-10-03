@@ -19,9 +19,18 @@ interface ScriptResult {
   exitCode: number;
 }
 
-function runSessionAutofix(cwd: string): Promise<ScriptResult> {
+/**
+ * Spawn the script from `cwd`. #1770: the script anchors to
+ * ${CLAUDE_PROJECT_DIR:-<git toplevel || pwd>}, so the inherited CLAUDE_PROJECT_DIR (set when
+ * `bun test` runs inside a Claude Code session or CI) is scrubbed; `projectDir` sets it
+ * explicitly for the tests that exercise the anchor.
+ */
+function runSessionAutofix(cwd: string, projectDir?: string): Promise<ScriptResult> {
   return new Promise((res) => {
-    const child = spawn('bash', [SESSION_AUTOFIX_SCRIPT], { cwd });
+    const { CLAUDE_PROJECT_DIR: _inheritedProjectDir, ...inheritedEnv } = process.env;
+    const env: NodeJS.ProcessEnv =
+      projectDir === undefined ? inheritedEnv : { ...inheritedEnv, CLAUDE_PROJECT_DIR: projectDir };
+    const child = spawn('bash', [SESSION_AUTOFIX_SCRIPT], { cwd, env });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (c: Buffer) => {
@@ -133,5 +142,53 @@ describe('session-autofix broken skill reference parsing (#1640)', () => {
     const result = await runSessionAutofix(dir);
 
     expect(brokenRefCount(result.stderr)).toBe(2);
+  });
+});
+
+describe('session-autofix CLAUDE_PROJECT_DIR root anchoring (#1770)', () => {
+  let otherDir: string;
+
+  beforeEach(() => {
+    // Distinct empty, non-git dir used as the spawn cwd.
+    otherDir = mkdtempSync(join(tmpdir(), 'session-autofix-other-'));
+  });
+  afterEach(() => {
+    rmSync(otherDir, { recursive: true, force: true });
+  });
+
+  it('8. positive: follows CLAUDE_PROJECT_DIR to the fixture even when cwd is a different dir', async () => {
+    skill('alpha');
+    agent('a1', 'name: a1\nskills: [alpha, ghost]');
+
+    const result = await runSessionAutofix(otherDir, dir);
+
+    // The broken ref exists only under `dir`; seeing it proves the script cd'd to the anchor.
+    expect(brokenRefCount(result.stderr)).toBe(1);
+  });
+
+  it('9. negative: with CLAUDE_PROJECT_DIR unset it uses cwd and does not see the fixture', async () => {
+    skill('alpha');
+    agent('a1', 'name: a1\nskills: [alpha, ghost]');
+
+    const result = await runSessionAutofix(otherDir);
+
+    expect(brokenRefCount(result.stderr)).toBe(0);
+  });
+
+  it('10. scrub: an ambient CLAUDE_PROJECT_DIR in the parent process is not inherited', async () => {
+    skill('alpha');
+    agent('a1', 'name: a1\nskills: [alpha, ghost]');
+    const previous = process.env.CLAUDE_PROJECT_DIR;
+    process.env.CLAUDE_PROJECT_DIR = dir;
+    try {
+      const result = await runSessionAutofix(otherDir);
+      expect(brokenRefCount(result.stderr)).toBe(0);
+    } finally {
+      if (previous === undefined) {
+        delete process.env.CLAUDE_PROJECT_DIR;
+      } else {
+        process.env.CLAUDE_PROJECT_DIR = previous;
+      }
+    }
   });
 });

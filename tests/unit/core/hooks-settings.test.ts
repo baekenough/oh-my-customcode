@@ -13,11 +13,13 @@ import { spawn } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { LEGACY_OMCUSTOM_DESCRIPTIONS } from '../../../src/core/hook-group-merge.js';
 import {
   analyzeMatcher,
   buildGuardedCommand,
   CLASSIFICATION_TABLE,
   type ClassificationEntry,
+  convertHookCommand,
   convertHooksJson,
   fieldNodeToJq,
   type MatcherAstNode,
@@ -445,5 +447,287 @@ describe('mergeHooksIntoSettings', () => {
     expect(result.warnings).toEqual([]);
     const merged = JSON.parse(await readFile(settingsPath, 'utf-8'));
     expect(merged.hooks).toBeDefined();
+  });
+});
+
+// -------------------------------------------------------------------
+// mergeHooksIntoSettings — preserveUserHooks / BOM / unparsable-file guard (#1768, #1776)
+// -------------------------------------------------------------------
+
+describe('mergeHooksIntoSettings options (#1768 / #1776)', () => {
+  const BOM = '\uFEFF';
+  const userBashGroup = {
+    matcher: 'Bash',
+    hooks: [{ type: 'command', command: 'bash ~/team/audit.sh' }],
+  };
+  const userElicitationGroup = {
+    matcher: '*',
+    hooks: [{ type: 'command', command: 'bash ~/team/notify.sh' }],
+  };
+  interface SettingsFile {
+    mySetting?: string;
+    keep?: number;
+    enableAllProjectMcpServers?: boolean;
+    hooks: Record<string, unknown[]>;
+  }
+  let tempDir: string;
+  let settingsPath: string;
+  let hooksJsonPath: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'omcustom-hooks-settings-opts-test-'));
+    settingsPath = join(tempDir, 'settings.local.json');
+    hooksJsonPath = join(tempDir, 'hooks.json');
+    await writeFile(hooksJsonPath, await readFile(HOOKS_JSON_PATH, 'utf-8'), 'utf-8');
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  async function generatedHooks(): Promise<Record<string, unknown[]>> {
+    return convertHooksJson(await loadRealHooksJson()).hooks;
+  }
+
+  async function readSettings(): Promise<SettingsFile> {
+    return JSON.parse((await readFile(settingsPath, 'utf-8')).replace(BOM, ''));
+  }
+
+  describe('preserveUserHooks: true', () => {
+    it('keeps user hook groups (same event and other event) and other top-level keys', async () => {
+      const generated = await generatedHooks();
+      await writeFile(
+        settingsPath,
+        JSON.stringify({
+          enableAllProjectMcpServers: true,
+          hooks: { PreToolUse: [userBashGroup], Elicitation: [userElicitationGroup] },
+        }),
+        'utf-8'
+      );
+
+      const result = await mergeHooksIntoSettings(settingsPath, hooksJsonPath, {
+        preserveUserHooks: true,
+      });
+      expect(result.warnings).toEqual([]);
+
+      const merged = await readSettings();
+      expect(merged.enableAllProjectMcpServers).toBe(true);
+      expect(merged.hooks.PreToolUse).toEqual([
+        ...(generated.PreToolUse as unknown[]),
+        userBashGroup,
+      ]);
+      expect(merged.hooks.Elicitation).toEqual([userElicitationGroup]);
+      expect(merged.hooks.SessionStart).toEqual(generated.SessionStart);
+    });
+
+    it('drops a retired omcustom group instead of keeping it as a user hook', async () => {
+      const legacyDescription = LEGACY_OMCUSTOM_DESCRIPTIONS[0] as string;
+      await writeFile(
+        settingsPath,
+        JSON.stringify({
+          hooks: {
+            SubagentStop: [
+              {
+                hooks: [{ type: 'prompt', prompt: 'old auto-continue' }],
+                description: legacyDescription,
+              },
+            ],
+          },
+        }),
+        'utf-8'
+      );
+
+      await mergeHooksIntoSettings(settingsPath, hooksJsonPath, { preserveUserHooks: true });
+
+      const merged = await readSettings();
+      const generated = await generatedHooks();
+      expect(merged.hooks.SubagentStop).toEqual(generated.SubagentStop);
+    });
+
+    it('is byte-idempotent across repeated merges and leaves a fresh file with only generated hooks', async () => {
+      await mergeHooksIntoSettings(settingsPath, hooksJsonPath, { preserveUserHooks: true });
+      const fresh = await readSettings();
+      expect(fresh.hooks).toEqual(await generatedHooks());
+
+      await writeFile(
+        settingsPath,
+        JSON.stringify(
+          { ...fresh, hooks: { ...fresh.hooks, Elicitation: [userElicitationGroup] } },
+          null,
+          2
+        ),
+        'utf-8'
+      );
+      await mergeHooksIntoSettings(settingsPath, hooksJsonPath, { preserveUserHooks: true });
+      const first = await readFile(settingsPath, 'utf-8');
+      await mergeHooksIntoSettings(settingsPath, hooksJsonPath, { preserveUserHooks: true });
+      expect(await readFile(settingsPath, 'utf-8')).toBe(first);
+    });
+
+    it('parses a BOM-prefixed file, keeps its keys and user hooks, and keeps the BOM', async () => {
+      await writeFile(
+        settingsPath,
+        `${BOM}${JSON.stringify({ mySetting: 'keep-me', hooks: { Elicitation: [userElicitationGroup] } })}`,
+        'utf-8'
+      );
+
+      const result = await mergeHooksIntoSettings(settingsPath, hooksJsonPath, {
+        preserveUserHooks: true,
+      });
+      expect(result.warnings).toEqual([]);
+
+      const raw = await readFile(settingsPath, 'utf-8');
+      expect(raw.startsWith(BOM)).toBe(true);
+      expect(raw.endsWith('\n')).toBe(true);
+      const merged = await readSettings();
+      expect(merged.mySetting).toBe('keep-me');
+      expect(merged.hooks.Elicitation).toEqual([userElicitationGroup]);
+    });
+
+    it('refuses to overwrite an unparsable non-empty file and warns', async () => {
+      const original = '{ "mySetting": "keep-me", ';
+      await writeFile(settingsPath, original, 'utf-8');
+
+      const result = await mergeHooksIntoSettings(settingsPath, hooksJsonPath, {
+        preserveUserHooks: true,
+      });
+
+      expect(await readFile(settingsPath, 'utf-8')).toBe(original);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toContain(settingsPath);
+      expect(result.warnings[0]).toContain('hooks were NOT installed');
+      expect(result.warnings[0]).toContain('omcustom init');
+    });
+
+    it('refuses to overwrite a file whose top-level JSON value is not an object', async () => {
+      for (const original of ['[]', 'null', '42']) {
+        await writeFile(settingsPath, original, 'utf-8');
+
+        const result = await mergeHooksIntoSettings(settingsPath, hooksJsonPath, {
+          preserveUserHooks: true,
+        });
+
+        expect(await readFile(settingsPath, 'utf-8')).toBe(original);
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0]).toContain('not a JSON object');
+      }
+    });
+
+    it('treats empty, whitespace-only and BOM-only files as empty settings', async () => {
+      for (const original of ['', '  \n', BOM]) {
+        await writeFile(settingsPath, original, 'utf-8');
+
+        const result = await mergeHooksIntoSettings(settingsPath, hooksJsonPath, {
+          preserveUserHooks: true,
+        });
+
+        expect(result.warnings).toEqual([]);
+        expect((await readSettings()).hooks).toEqual(await generatedHooks());
+      }
+    });
+  });
+
+  describe('default mode (no option / preserveUserHooks: false)', () => {
+    it.each([
+      ['no options', undefined],
+      ['preserveUserHooks: false', { preserveUserHooks: false }],
+    ])('still replaces the whole hooks value (%s)', async (_label, options) => {
+      await writeFile(
+        settingsPath,
+        JSON.stringify({
+          keep: 1,
+          hooks: { PreToolUse: [userBashGroup], Elicitation: [userElicitationGroup] },
+        }),
+        'utf-8'
+      );
+
+      await mergeHooksIntoSettings(settingsPath, hooksJsonPath, options);
+
+      const merged = await readSettings();
+      expect(merged.keep).toBe(1);
+      expect(merged.hooks).toEqual(await generatedHooks());
+    });
+
+    it('parses a BOM-prefixed file, keeps its other keys and keeps the BOM', async () => {
+      await writeFile(settingsPath, `${BOM}${JSON.stringify({ mySetting: 'keep-me' })}`, 'utf-8');
+
+      await mergeHooksIntoSettings(settingsPath, hooksJsonPath);
+
+      const raw = await readFile(settingsPath, 'utf-8');
+      expect(raw.startsWith(BOM)).toBe(true);
+      expect(raw.endsWith('\n')).toBe(true);
+      expect((await readSettings()).mySetting).toBe('keep-me');
+    });
+
+    it('treats a non-object top-level JSON value as empty instead of throwing', async () => {
+      await writeFile(settingsPath, 'null', 'utf-8');
+
+      const result = await mergeHooksIntoSettings(settingsPath, hooksJsonPath);
+
+      expect(result.warnings).toEqual([]);
+      expect((await readSettings()).hooks).toEqual(await generatedHooks());
+    });
+  });
+});
+
+// -------------------------------------------------------------------
+// convertHookCommand — fallback paths when a condition cannot be wrapped/translated
+// -------------------------------------------------------------------
+
+describe('convertHookCommand fallbacks', () => {
+  /** A structurally invalid node: `fieldNodeToJq` dereferences the missing child and throws. */
+  const untranslatable = { kind: 'not' } as unknown as MatcherAstNode;
+
+  function collector() {
+    const messages: string[] = [];
+    return { messages, push: (msg: string) => messages.push(msg) };
+  }
+
+  it('excludes a hard-block command whose condition cannot be translated', () => {
+    const warnings = collector();
+    const result = convertHookCommand(
+      { type: 'command', command: 'echo blocked >&2; exit 2' },
+      untranslatable,
+      'wrap-guard',
+      warnings,
+      'ctx'
+    );
+    expect(result).toBeNull();
+    expect(warnings.messages).toHaveLength(1);
+    expect(warnings.messages[0]).toContain('EXCLUDED');
+  });
+
+  it('relaxes an advisory command whose condition cannot be translated to unconditional firing', () => {
+    const warnings = collector();
+    const cmd = { type: 'command', command: 'echo advisory' };
+    const result = convertHookCommand(cmd, untranslatable, 'wrap-guard', warnings, 'ctx');
+    expect(result).toEqual(cmd);
+    expect(warnings.messages[0]).toContain('relaxed to unconditional firing');
+  });
+
+  it('passes a non-command hook through with a warning instead of wrapping it', () => {
+    const warnings = collector();
+    const cmd = { type: 'prompt', prompt: 'remind me' };
+    const field: MatcherAstNode = { kind: 'fieldMatch', field: 'tool_input.command', pattern: 'x' };
+    const result = convertHookCommand(cmd, field, 'wrap-guard', warnings, 'ctx');
+    expect(result).toEqual(cmd);
+    expect(warnings.messages[0]).toContain('cannot wrap a non-command hook');
+  });
+});
+
+describe('convertHooksJson warnings', () => {
+  it('collects a warning and excludes an entry whose matcher cannot be converted', () => {
+    const result = convertHooksJson({
+      hooks: {
+        PreToolUse: [
+          { matcher: 'not a matcher !!', hooks: [{ type: 'command', command: 'echo x' }] },
+          { matcher: 'Bash', hooks: [{ type: 'command', command: 'echo y' }] },
+        ],
+      },
+    });
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toContain('EXCLUDED');
+    expect(result.hooks.PreToolUse).toHaveLength(1);
+    expect(result.hooks.PreToolUse?.[0]?.matcher).toBe('Bash');
   });
 });

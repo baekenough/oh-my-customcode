@@ -278,6 +278,41 @@ export async function writeJsonFile(path: string, data: unknown): Promise<void> 
 }
 
 /**
+ * Text-level conventions of a JSON file that JSON.parse/JSON.stringify do not carry
+ */
+export interface JsonTextFormat {
+  /** File starts with a UTF-8 byte order mark (U+FEFF) */
+  bom: boolean;
+  /** File ends with a newline */
+  trailingNewline: boolean;
+}
+
+const UTF8_BOM = '\uFEFF';
+
+/**
+ * Parse JSON text, tolerating one leading UTF-8 BOM, and report the text conventions.
+ * Pure: no filesystem access. Throws (SyntaxError) on invalid JSON.
+ */
+export function parseJsonText<T>(raw: string): { data: T; format: JsonTextFormat } {
+  const bom = raw.startsWith(UTF8_BOM);
+  const text = bom ? raw.slice(UTF8_BOM.length) : raw;
+  return {
+    data: JSON.parse(text) as T,
+    format: { bom, trailingNewline: text.endsWith('\n') },
+  };
+}
+
+/**
+ * Serialize data as JSON (2-space indent, like writeJsonFile) using the given text conventions.
+ * Pure: no filesystem access.
+ */
+export function stringifyJson(data: unknown, format: JsonTextFormat): string {
+  return `${format.bom ? UTF8_BOM : ''}${JSON.stringify(data, null, 2)}${
+    format.trailingNewline ? '\n' : ''
+  }`;
+}
+
+/**
  * Read a text file
  */
 export async function readTextFile(path: string): Promise<string> {

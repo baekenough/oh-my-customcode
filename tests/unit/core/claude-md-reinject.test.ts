@@ -37,7 +37,11 @@ function runHookScript(
   cwd?: string
 ): Promise<ScriptResult> {
   return new Promise((resolve_) => {
-    const childEnv: NodeJS.ProcessEnv = { ...process.env, ...env };
+    // #1770: the script anchors to ${CLAUDE_PROJECT_DIR:-<git toplevel || pwd>}. Scrub the
+    // inherited value (set when `bun test` runs inside a Claude Code session or CI) so the
+    // fixture cwd is used; a test that wants it passes it explicitly via `env`.
+    const { CLAUDE_PROJECT_DIR: _inheritedProjectDir, ...inheritedEnv } = process.env;
+    const childEnv: NodeJS.ProcessEnv = { ...inheritedEnv, ...env };
     const child = spawn('bash', [scriptPath], {
       env: childEnv,
       cwd: cwd ?? tmpdir(),
@@ -188,6 +192,62 @@ describe('claude-md-reinject.sh', () => {
       workDir
     );
     expect(additionalContextOf(result.stdout)).toContain('y'.repeat(500));
+  });
+
+  // --- CLAUDE_PROJECT_DIR root anchoring (#1770, positive/negative pair) ---
+
+  it('should follow CLAUDE_PROJECT_DIR to a different fixture dir than the spawn cwd (positive)', async () => {
+    const otherDir = await mkdtemp(join(tmpdir(), 'omcc-claude-md-reinject-other-'));
+    try {
+      await writeFile(join(workDir, 'CLAUDE.md'), '# Anchored Root Rules\n');
+      const result = await runHookScript(
+        SCRIPT,
+        makeSessionStartInput('startup'),
+        { CLAUDE_PROJECT_DIR: workDir },
+        otherDir
+      );
+      expect(result.exitCode).toBe(0);
+      expect(additionalContextOf(result.stdout)).toContain('# Anchored Root Rules');
+    } finally {
+      await rm(otherDir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  });
+
+  it('should ignore a CLAUDE.md in cwd when CLAUDE_PROJECT_DIR points at a dir without one (positive)', async () => {
+    const emptyRoot = await mkdtemp(join(tmpdir(), 'omcc-claude-md-reinject-empty-'));
+    try {
+      await writeFile(join(workDir, 'CLAUDE.md'), '# Cwd Rules\n');
+      const result = await runHookScript(
+        SCRIPT,
+        makeSessionStartInput('startup'),
+        { CLAUDE_PROJECT_DIR: emptyRoot },
+        workDir
+      );
+      expect(result.exitCode).toBe(0);
+      expect(additionalContextOf(result.stdout)).toBe('');
+    } finally {
+      await rm(emptyRoot, { recursive: true, force: true }).catch(() => undefined);
+    }
+  });
+
+  it('should fall back to cwd (not an inherited CLAUDE_PROJECT_DIR) when the var is unset (negative)', async () => {
+    const otherDir = await mkdtemp(join(tmpdir(), 'omcc-claude-md-reinject-other-'));
+    const previous = process.env.CLAUDE_PROJECT_DIR;
+    process.env.CLAUDE_PROJECT_DIR = workDir; // ambient value the scrub must drop
+    try {
+      await writeFile(join(workDir, 'CLAUDE.md'), '# Ambient Rules\n');
+      const result = await runHookScript(SCRIPT, makeSessionStartInput('startup'), {}, otherDir);
+      expect(result.exitCode).toBe(0);
+      // otherDir has no CLAUDE.md and is not a git repo -> pwd fallback -> silent.
+      expect(additionalContextOf(result.stdout)).toBe('');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.CLAUDE_PROJECT_DIR;
+      } else {
+        process.env.CLAUDE_PROJECT_DIR = previous;
+      }
+      await rm(otherDir, { recursive: true, force: true }).catch(() => undefined);
+    }
   });
 
   // --- JSON validity (R021 v2.1.248 — invalid hook JSON now surfaces as a hook error) ---

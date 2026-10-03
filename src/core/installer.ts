@@ -9,16 +9,19 @@ import {
   rename,
   stat,
 } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import {
   copyDirectory,
   copyFile,
   ensureDirectory,
   fileExists,
   getPackageRoot,
+  type JsonTextFormat,
+  parseJsonText,
   readJsonFile,
   readTextFile,
   resolveTemplatePath,
+  stringifyJson,
   writeJsonFile,
   writeTextFile,
 } from '../utils/fs.js';
@@ -37,7 +40,7 @@ import {
   renderGitWorkflowEN,
   renderGitWorkflowKO,
 } from './git-workflow.js';
-import { migrateHookCommands } from './hook-command-migration.js';
+import { migrateHookCommands, NEW_STATUSLINE_COMMAND } from './hook-command-migration.js';
 import { mergeHooksIntoSettings } from './hooks-settings.js';
 import {
   getComponentPath,
@@ -302,6 +305,41 @@ async function installStatusline(
 }
 
 /**
+ * Install schemas/tool-inputs.json to the target directory (#1770).
+ *
+ * The shipped schema-validator hook reads `.claude/schemas/tool-inputs.json` and silently
+ * no-ops when it is missing, so it must reach user projects. The updater keeps it in sync
+ * via ROOT_LEVEL_FILES; this covers `omcustom init`. Existing-file semantics mirror
+ * installStatusline: kept unless `force` or `backup` is set.
+ */
+async function installSchemas(
+  targetDir: string,
+  options: InstallOptions,
+  _result: InstallResult
+): Promise<void> {
+  const layout = getProviderLayout();
+  const relPath = join(layout.rootDir, 'schemas', 'tool-inputs.json');
+  const srcPath = resolveTemplatePath(relPath);
+  const destPath = join(targetDir, relPath);
+
+  if (!(await fileExists(srcPath))) {
+    debug('install.schemas_not_found', { path: srcPath });
+    return;
+  }
+
+  if (await fileExists(destPath)) {
+    if (!options.force && !options.backup) {
+      debug('install.schemas_skipped', { reason: 'exists' });
+      return;
+    }
+  }
+
+  await ensureDirectory(dirname(destPath));
+  await copyFile(srcPath, destPath);
+  debug('install.schemas_installed', {});
+}
+
+/**
  * Install tests/tsconfig.json to the target directory
  */
 async function installTestsConfig(
@@ -328,6 +366,65 @@ async function installTestsConfig(
   debug('install.tests_config_installed', {});
 }
 
+/** Default refreshInterval (seconds) backfilled into an existing statusLine. */
+const STATUSLINE_REFRESH_INTERVAL = 10;
+
+/**
+ * Update the statusLine of an existing settings.local.json object in place:
+ * re-anchor the exact old default command only (#1769, custom commands are untouched) and
+ * backfill a missing refreshInterval. Reports which changes were applied.
+ */
+function updateExistingStatusLine(existing: Record<string, unknown>): {
+  commandMigrated: boolean;
+  refreshIntervalAdded: boolean;
+} {
+  const migrated = migrateHookCommands({ statusLine: existing.statusLine });
+  const commandMigrated = migrated.rewritten > 0;
+  if (commandMigrated) {
+    existing.statusLine = migrated.settings.statusLine;
+  }
+  const sl = existing.statusLine as Record<string, unknown>;
+  const refreshIntervalAdded = sl.refreshInterval === undefined;
+  if (refreshIntervalAdded) {
+    sl.refreshInterval = STATUSLINE_REFRESH_INTERVAL;
+  }
+  return { commandMigrated, refreshIntervalAdded };
+}
+
+/**
+ * Merge the statusLine configuration into an existing, parsed settings.local.json
+ * (adds a missing statusLine; otherwise re-anchors the exact old default and backfills
+ * refreshInterval) and write the file back only when something changed, preserving the
+ * file's BOM / trailing-newline conventions.
+ */
+async function mergeStatusLineIntoExisting(
+  settingsPath: string,
+  existing: Record<string, unknown>,
+  format: JsonTextFormat,
+  defaults: { statusLine: Record<string, unknown> }
+): Promise<void> {
+  if (!existing.statusLine) {
+    existing.statusLine = defaults.statusLine;
+    await writeTextFile(settingsPath, stringifyJson(existing, format));
+    debug('install.settings_local_merged', {});
+    return;
+  }
+
+  const { commandMigrated, refreshIntervalAdded } = updateExistingStatusLine(existing);
+  if (!commandMigrated && !refreshIntervalAdded) {
+    debug('install.settings_local_skipped', { reason: 'statusLine exists' });
+    return;
+  }
+
+  await writeTextFile(settingsPath, stringifyJson(existing, format));
+  if (commandMigrated) {
+    debug('install.settings_local_statusline_migrated', {});
+  }
+  if (refreshIntervalAdded) {
+    debug('install.settings_local_refreshInterval_added', {});
+  }
+}
+
 /**
  * Create or merge settings.local.json with statusLine configuration
  */
@@ -338,29 +435,20 @@ async function installSettingsLocal(targetDir: string, result: InstallResult): P
   const statusLineConfig = {
     statusLine: {
       type: 'command' as const,
-      command: '.claude/statusline.sh',
+      command: NEW_STATUSLINE_COMMAND,
       padding: 0,
-      refreshInterval: 10,
+      refreshInterval: STATUSLINE_REFRESH_INTERVAL,
     },
   };
 
   if (await fileExists(settingsPath)) {
     try {
-      const existing = await readJsonFile<Record<string, unknown>>(settingsPath);
-      if (!existing.statusLine) {
-        existing.statusLine = statusLineConfig.statusLine;
-        await writeJsonFile(settingsPath, existing);
-        debug('install.settings_local_merged', {});
-      } else {
-        const sl = existing.statusLine as Record<string, unknown>;
-        if (sl.refreshInterval === undefined) {
-          sl.refreshInterval = statusLineConfig.statusLine.refreshInterval;
-          await writeJsonFile(settingsPath, existing);
-          debug('install.settings_local_refreshInterval_added', {});
-        } else {
-          debug('install.settings_local_skipped', { reason: 'statusLine exists' });
-        }
-      }
+      // parseJsonText tolerates a leading UTF-8 BOM (JSON.parse alone rejects it) and reports
+      // the file's text conventions so the write-back keeps them.
+      const { data: existing, format } = parseJsonText<Record<string, unknown>>(
+        await readTextFile(settingsPath)
+      );
+      await mergeStatusLineIntoExisting(settingsPath, existing, format, statusLineConfig);
     } catch {
       result.warnings.push(
         'Failed to parse existing settings.local.json, skipping statusLine config'
@@ -382,10 +470,11 @@ async function installSettingsLocal(targetDir: string, result: InstallResult): P
  * every hook in `hooks.json` is copied to disk but never fires for end users running
  * `omcustom init`.
  *
- * Merge policy (default, absent an explicit override from the conversion layer):
- * replace the omcustom-managed hooks block while preserving any user-authored custom
- * hook entries already present in settings.local.json — mirrors the
- * "omcustom-managed 블록 교체 + 사용자 커스텀 이벤트 보존" policy from the wiring research.
+ * Merge policy: opts into `preserveUserHooks` — the omcustom-owned hook groups (recognized
+ * by group description or by standalone calls of shipped `.claude/hooks/*.sh` scripts, see
+ * hook-group-merge.ts) are replaced by the freshly generated ones, while the user's own hook
+ * groups/events and every other settings key survive. An existing settings.local.json that
+ * cannot be parsed is left byte-identical and a warning is returned instead (#1768).
  *
  * Skipped when the hooks component was not installed (hooks.json absent at the
  * target path) — e.g. `--components` excludes `hooks`, or the hooks template is
@@ -406,7 +495,9 @@ async function installHooksSettings(
   }
 
   try {
-    const mergeResult = await mergeHooksIntoSettings(settingsPath, hooksJsonPath);
+    const mergeResult = await mergeHooksIntoSettings(settingsPath, hooksJsonPath, {
+      preserveUserHooks: true,
+    });
     if (mergeResult && Array.isArray(mergeResult.warnings) && mergeResult.warnings.length > 0) {
       result.warnings.push(...mergeResult.warnings);
     }
@@ -552,6 +643,7 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 
     await installAllComponents(options.targetDir, options, result);
     await installStatusline(options.targetDir, options, result);
+    await installSchemas(options.targetDir, options, result);
     await installTestsConfig(options.targetDir, options, result);
     await installSettingsLocal(options.targetDir, result);
     await installHooksSettings(options.targetDir, options, result);

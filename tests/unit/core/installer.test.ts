@@ -14,6 +14,10 @@ import * as fsUtils from '../../../src/utils/fs.js';
 
 const { fileExists } = fsUtils;
 
+const OLD_STATUSLINE_COMMAND = '.claude/statusline.sh';
+// biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell expansion, not a JS template
+const ANCHORED_STATUSLINE_COMMAND = 'bash "${CLAUDE_PROJECT_DIR:-.}/.claude/statusline.sh"';
+
 describe('installer', () => {
   let tempDir: string;
   let consoleSpy: ReturnType<typeof spyOn>;
@@ -501,6 +505,62 @@ describe('installer', () => {
     });
   });
 
+  describe('schemas installation (#1770)', () => {
+    const schemaRel = join('.claude', 'schemas', 'tool-inputs.json');
+    const templateSchema = join(getTemplateDir(), '.claude', 'schemas', 'tool-inputs.json');
+
+    it('should install schemas/tool-inputs.json during init', async () => {
+      const fs = await import('node:fs/promises');
+      const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+      expect(result.success).toBe(true);
+      const installed = await fs.readFile(join(tempDir, schemaRel), 'utf-8');
+      expect(installed).toBe(await fs.readFile(templateSchema, 'utf-8'));
+    });
+
+    it('should skip schemas/tool-inputs.json if already exists and no force', async () => {
+      const fs = await import('node:fs/promises');
+      await install({ targetDir: tempDir, skipConfirm: true });
+      await fs.writeFile(join(tempDir, schemaRel), '{"custom":true}', 'utf-8');
+
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      expect(await fs.readFile(join(tempDir, schemaRel), 'utf-8')).toBe('{"custom":true}');
+    });
+
+    it('should overwrite schemas/tool-inputs.json with force option', async () => {
+      const fs = await import('node:fs/promises');
+      await install({ targetDir: tempDir, skipConfirm: true });
+      await fs.writeFile(join(tempDir, schemaRel), '{"custom":true}', 'utf-8');
+
+      await install({ targetDir: tempDir, force: true, skipConfirm: true });
+
+      expect(await fs.readFile(join(tempDir, schemaRel), 'utf-8')).toBe(
+        await fs.readFile(templateSchema, 'utf-8')
+      );
+    });
+
+    it('should skip schemas gracefully when the template source is missing', async () => {
+      const originalFileExists = fsUtils.fileExists;
+      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(async (path) => {
+        const pathStr = String(path);
+        if (pathStr.includes('templates') && pathStr.endsWith('tool-inputs.json')) {
+          return false;
+        }
+        return originalFileExists(path);
+      });
+
+      try {
+        const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+        expect(result.success).toBe(true);
+        expect(await originalFileExists(join(tempDir, schemaRel))).toBe(false);
+      } finally {
+        fileExistsSpy.mockRestore();
+      }
+    });
+  });
+
   describe('settings.local.json installation', () => {
     it('should create settings.local.json during init', async () => {
       await install({ targetDir: tempDir, skipConfirm: true });
@@ -515,7 +575,7 @@ describe('installer', () => {
       const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
       expect(content.statusLine).toBeDefined();
       expect(content.statusLine.type).toBe('command');
-      expect(content.statusLine.command).toBe('.claude/statusline.sh');
+      expect(content.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
       expect(content.statusLine.padding).toBe(0);
       expect(content.statusLine.refreshInterval).toBe(10);
     });
@@ -538,7 +598,7 @@ describe('installer', () => {
       expect(content.enableAllProjectMcpServers).toBe(true);
       // statusLine added
       expect(content.statusLine).toBeDefined();
-      expect(content.statusLine.command).toBe('.claude/statusline.sh');
+      expect(content.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
     });
 
     it('should not overwrite existing statusLine configuration', async () => {
@@ -580,8 +640,8 @@ describe('installer', () => {
       await install({ targetDir: tempDir, skipConfirm: true });
 
       const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
-      // Command and padding should be preserved (not overwritten)
-      expect(content.statusLine.command).toBe('.claude/statusline.sh');
+      // Exact old default command is re-anchored (#1769); padding is preserved
+      expect(content.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
       expect(content.statusLine.padding).toBe(0);
       // refreshInterval should be backfilled
       expect(content.statusLine.refreshInterval).toBe(10);
@@ -605,8 +665,116 @@ describe('installer', () => {
       await install({ targetDir: tempDir, skipConfirm: true });
 
       const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
-      // Custom refreshInterval should be preserved
+      // Custom refreshInterval should be preserved; the exact old default command is re-anchored
       expect(content.statusLine.refreshInterval).toBe(30);
+      expect(content.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
+    });
+
+    it('should rewrite only the exact old default statusLine command (#1769)', async () => {
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      const fs = await import('node:fs/promises');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      await fs.writeFile(
+        settingsPath,
+        JSON.stringify({
+          keep: 'me',
+          statusLine: {
+            type: 'command',
+            command: OLD_STATUSLINE_COMMAND,
+            padding: 3,
+            refreshInterval: 20,
+          },
+        }),
+        'utf-8'
+      );
+
+      await install({ targetDir: tempDir, skipConfirm: true });
+
+      const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      expect(content.statusLine).toEqual({
+        type: 'command',
+        command: ANCHORED_STATUSLINE_COMMAND,
+        padding: 3,
+        refreshInterval: 20,
+      });
+      expect(content.keep).toBe('me');
+
+      // Idempotent: a second init leaves the anchored command as-is
+      await install({ targetDir: tempDir, skipConfirm: true });
+      const again = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+      expect(again.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
+    });
+
+    it('should leave custom statusLine command variants untouched (#1769)', async () => {
+      const fs = await import('node:fs/promises');
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+
+      for (const command of [
+        './.claude/statusline.sh',
+        'bash .claude/statusline.sh',
+        '.claude/statusline.sh --verbose',
+      ]) {
+        await fs.writeFile(
+          settingsPath,
+          JSON.stringify({
+            statusLine: { type: 'command', command, padding: 0, refreshInterval: 10 },
+          }),
+          'utf-8'
+        );
+
+        await install({ targetDir: tempDir, skipConfirm: true });
+
+        const content = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
+        expect(content.statusLine.command).toBe(command);
+      }
+    });
+
+    it('should migrate statusLine in a BOM settings.local.json and preserve the BOM', async () => {
+      const fs = await import('node:fs/promises');
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      await fs.writeFile(
+        settingsPath,
+        `﻿${JSON.stringify({
+          keep: 'me',
+          statusLine: { type: 'command', command: OLD_STATUSLINE_COMMAND, padding: 0 },
+        })}\n`,
+        'utf-8'
+      );
+
+      const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+      const raw = await fs.readFile(settingsPath, 'utf-8');
+      expect(raw.startsWith('﻿')).toBe(true);
+      expect(raw.endsWith('\n')).toBe(true);
+      const content = JSON.parse(raw.slice(1));
+      expect(content.keep).toBe('me');
+      expect(content.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
+      expect(content.statusLine.refreshInterval).toBe(10);
+      expect(result.warnings.some((w) => w.includes('settings.local.json'))).toBe(false);
+    });
+
+    it('should add statusLine to a BOM settings.local.json without one and preserve the BOM', async () => {
+      const fs = await import('node:fs/promises');
+      const settingsPath = join(tempDir, '.claude', 'settings.local.json');
+      await fs.mkdir(join(tempDir, '.claude'), { recursive: true });
+      await fs.writeFile(
+        settingsPath,
+        `﻿${JSON.stringify({ enableAllProjectMcpServers: true })}`,
+        'utf-8'
+      );
+
+      const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+      const raw = await fs.readFile(settingsPath, 'utf-8');
+      expect(raw.startsWith('﻿')).toBe(true);
+      const content = JSON.parse(raw.slice(1));
+      expect(content.enableAllProjectMcpServers).toBe(true);
+      expect(content.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
+      // The hooks merge in the same run wrote the same BOM file: both are present and valid
+      expect(Object.keys(content.hooks ?? {}).length).toBeGreaterThan(0);
+      expect(result.warnings.some((w) => w.includes('settings.local.json'))).toBe(false);
     });
   });
 
@@ -917,6 +1085,8 @@ describe('installer', () => {
       expect(restored.enableAllProjectMcpServers).toBe(true);
       expect(restored.enabledMcpjsonServers).toEqual(['ontology-rag']);
       expect(restored.statusLine).toBeDefined();
+      // The restored exact-default command is re-anchored by the backup-path migration (#1769)
+      expect(restored.statusLine.command).toBe(ANCHORED_STATUSLINE_COMMAND);
     });
 
     it('should preserve settings.json during backup reinstall', async () => {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -409,6 +409,212 @@ describe('file-preservation', () => {
 
       const result = await readJsonFile<Record<string, unknown>>(targetPath);
       expect(result.onlyUser).toBe(true);
+    });
+
+    describe('text conventions follow the preserved (user) file (#1776)', () => {
+      const BOM = '﻿';
+      const pretty = (value: unknown): string => JSON.stringify(value, null, 2);
+
+      it('keeps the trailing newline when the preserved file has one', async () => {
+        const preservedPath = join(preserveDir, 'test.json');
+        const targetPath = join(rootDir, 'test.json');
+        await writeFile(preservedPath, `${pretty({ user: true })}\n`);
+        await writeFile(targetPath, pretty({ template: true }));
+
+        await mergeJsonFile(preservedPath, targetPath);
+
+        const raw = await readFile(targetPath, 'utf-8');
+        expect(raw.endsWith('\n')).toBe(true);
+        expect(raw.endsWith('\n\n')).toBe(false);
+        expect(JSON.parse(raw)).toEqual({ template: true, user: true });
+      });
+
+      it('does not add a trailing newline when the preserved file has none, even if the target does', async () => {
+        const preservedPath = join(preserveDir, 'test.json');
+        const targetPath = join(rootDir, 'test.json');
+        await writeFile(preservedPath, pretty({ user: true }));
+        await writeFile(targetPath, `${pretty({ template: true })}\n`);
+
+        await mergeJsonFile(preservedPath, targetPath);
+
+        const raw = await readFile(targetPath, 'utf-8');
+        expect(raw.endsWith('\n')).toBe(false);
+      });
+
+      it('restores a BOM-prefixed preserved file (keys survive) and keeps the BOM', async () => {
+        const preservedPath = join(preserveDir, 'test.json');
+        const targetPath = join(rootDir, 'test.json');
+        await writeFile(preservedPath, `${BOM}${pretty({ user: true, shared: 'user' })}\n`);
+        await writeFile(targetPath, pretty({ template: true, shared: 'template' }));
+
+        await mergeJsonFile(preservedPath, targetPath);
+
+        const raw = await readFile(targetPath, 'utf-8');
+        expect(raw.startsWith(BOM)).toBe(true);
+        expect(raw.startsWith(`${BOM}${BOM}`)).toBe(false);
+        expect(raw.endsWith('\n')).toBe(true);
+        expect(JSON.parse(raw.slice(1))).toEqual({ user: true, template: true, shared: 'user' });
+      });
+
+      it('tolerates a BOM-prefixed target file and does not copy the BOM when the preserved file has none', async () => {
+        const preservedPath = join(preserveDir, 'test.json');
+        const targetPath = join(rootDir, 'test.json');
+        await writeFile(preservedPath, pretty({ user: true }));
+        await writeFile(targetPath, `${BOM}${pretty({ template: true })}`);
+
+        await mergeJsonFile(preservedPath, targetPath);
+
+        const raw = await readFile(targetPath, 'utf-8');
+        expect(raw.startsWith(BOM)).toBe(false);
+        expect(JSON.parse(raw)).toEqual({ template: true, user: true });
+      });
+
+      it('copies the preserved file byte-for-byte (BOM + newline) when the target does not exist', async () => {
+        const preservedPath = join(preserveDir, 'test.json');
+        const targetPath = join(rootDir, 'test.json');
+        const original = `${BOM}${pretty({ onlyUser: true })}\n`;
+        await writeFile(preservedPath, original);
+
+        await mergeJsonFile(preservedPath, targetPath);
+
+        expect(await readFile(targetPath, 'utf-8')).toBe(original);
+      });
+
+      it('still throws on an invalid preserved file (restore reports the failure)', async () => {
+        const preservedPath = join(preserveDir, 'test.json');
+        const targetPath = join(rootDir, 'test.json');
+        await writeFile(preservedPath, `${BOM}{ not json`);
+        await writeFile(targetPath, pretty({ template: true }));
+
+        await expect(mergeJsonFile(preservedPath, targetPath)).rejects.toThrow();
+        expect(JSON.parse(await readFile(targetPath, 'utf-8'))).toEqual({ template: true });
+      });
+
+      it('restoreCriticalFiles restores a BOM + newline settings.local.json end to end', async () => {
+        await writeFile(join(rootDir, 'settings.local.json'), pretty({ template: true }));
+        await writeFile(
+          join(preserveDir, 'settings.local.json'),
+          `${BOM}${pretty({ mySetting: 'keep-me' })}\n`
+        );
+
+        const result = await restoreCriticalFiles(rootDir, {
+          tempDir: preserveDir,
+          extractedFiles: ['settings.local.json'],
+          extractedDirs: [],
+          failures: [],
+        });
+
+        expect(result.failures).toEqual([]);
+        const raw = await readFile(join(rootDir, 'settings.local.json'), 'utf-8');
+        expect(raw.startsWith(BOM)).toBe(true);
+        expect(raw.endsWith('\n')).toBe(true);
+        expect(JSON.parse(raw.slice(1))).toEqual({ template: true, mySetting: 'keep-me' });
+      });
+    });
+
+    describe('hooks key keeps user hooks and fresh omcustom groups (#1768 D1)', () => {
+      const pretty = (value: unknown): string => JSON.stringify(value, null, 2);
+      const GENERATED_SCRIPT = 'bash "$CLAUDE_PROJECT_DIR/.claude/hooks/scripts/guard.sh"';
+      const generatedGroup = {
+        matcher: 'Bash',
+        description: 'omcustom guard',
+        hooks: [{ type: 'command', command: GENERATED_SCRIPT }],
+      };
+      const userGroup = {
+        matcher: 'Bash',
+        hooks: [{ type: 'command', command: 'bash ~/team/audit.sh' }],
+      };
+      const oldOmcustomGroup = {
+        matcher: 'Bash',
+        hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/guard.sh' }],
+      };
+
+      async function runMerge(
+        preserved: unknown,
+        target: unknown,
+        fileName = 'settings.local.json'
+      ): Promise<Record<string, unknown>> {
+        const preservedPath = join(preserveDir, fileName);
+        const targetPath = join(rootDir, fileName);
+        await writeFile(preservedPath, pretty(preserved));
+        await writeFile(targetPath, pretty(target));
+        await mergeJsonFile(preservedPath, targetPath);
+        return readJsonFile<Record<string, unknown>>(targetPath);
+      }
+
+      it('replaces stale omcustom groups with the generated ones and keeps user groups and events', async () => {
+        const preserved = {
+          mySetting: 'keep-me',
+          hooks: {
+            PreToolUse: [oldOmcustomGroup, userGroup],
+            Elicitation: [{ hooks: [{ type: 'command', command: 'bash ~/team/notify.sh' }] }],
+          },
+        };
+        const result = await runMerge(preserved, { hooks: { PreToolUse: [generatedGroup] } });
+
+        expect(result.mySetting).toBe('keep-me');
+        const hooks = result.hooks as Record<string, unknown[]>;
+        expect(hooks.PreToolUse).toEqual([generatedGroup, userGroup]);
+        expect(hooks.Elicitation).toEqual(preserved.hooks.Elicitation);
+      });
+
+      it('is idempotent when the merged output is restored again', async () => {
+        const preserved = { hooks: { PreToolUse: [oldOmcustomGroup, userGroup] } };
+        const target = { hooks: { PreToolUse: [generatedGroup] } };
+        const first = await runMerge(preserved, target);
+        const second = await runMerge(first, target);
+
+        expect(second).toEqual(first);
+      });
+
+      it('applies to settings.json as well', async () => {
+        const result = await runMerge(
+          { hooks: { PreToolUse: [userGroup] } },
+          { hooks: { PreToolUse: [generatedGroup] } },
+          'settings.json'
+        );
+
+        expect((result.hooks as Record<string, unknown[]>).PreToolUse).toEqual([
+          generatedGroup,
+          userGroup,
+        ]);
+      });
+
+      it('keeps the old deepMerge behavior when the target has no hooks block', async () => {
+        const result = await runMerge({ hooks: { PreToolUse: [userGroup] } }, { template: true });
+
+        expect(result.template).toBe(true);
+        expect(result.hooks).toEqual({ PreToolUse: [userGroup] });
+      });
+
+      it('does not treat a malformed target hooks block as generated', async () => {
+        const result = await runMerge(
+          { hooks: { PreToolUse: [userGroup] } },
+          { hooks: { PreToolUse: 'not-an-array' } }
+        );
+
+        expect(result.hooks).toEqual({ PreToolUse: [userGroup] });
+      });
+
+      it('does not apply the hooks merge to other JSON files', async () => {
+        const result = await runMerge(
+          { hooks: { PreToolUse: [oldOmcustomGroup] } },
+          { hooks: { PreToolUse: [generatedGroup] } },
+          'other.json'
+        );
+
+        expect((result.hooks as Record<string, unknown[]>).PreToolUse).toEqual([oldOmcustomGroup]);
+      });
+
+      it('returns the generated block when the preserved file has no hooks', async () => {
+        const result = await runMerge(
+          { mySetting: 1 },
+          { hooks: { PreToolUse: [generatedGroup] } }
+        );
+
+        expect(result.hooks).toEqual({ PreToolUse: [generatedGroup] });
+        expect(result.mySetting).toBe(1);
+      });
     });
   });
 

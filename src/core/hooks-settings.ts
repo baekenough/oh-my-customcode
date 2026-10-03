@@ -34,7 +34,15 @@
  */
 
 import { dirname } from 'node:path';
-import { ensureDirectory, readJsonFile, readTextFile, writeTextFile } from '../utils/fs.js';
+import {
+  ensureDirectory,
+  parseJsonText,
+  readJsonFile,
+  readTextFile,
+  stringifyJson,
+  writeTextFile,
+} from '../utils/fs.js';
+import { mergeHookBlocks } from './hook-group-merge.js';
 
 // ---------------------------------------------------------------------------
 // Raw hooks.json shape
@@ -804,34 +812,91 @@ export interface MergeHooksResult {
   warnings: string[];
 }
 
+export interface MergeHooksOptions {
+  /**
+   * `true`: rebuild `hooks` with {@link mergeHookBlocks} — freshly generated omcustom groups
+   * plus the user's own groups/events — and refuse to overwrite an unparsable existing file.
+   * `false`/omitted: replace the whole `hooks` value (what the settings generator needs for
+   * drift detection).
+   */
+  preserveUserHooks?: boolean;
+}
+
+const UTF8_BOM = '\uFEFF';
+
+type ExistingSettings =
+  | { ok: true; settings: Record<string, unknown>; bom: boolean }
+  | { ok: false; reason: string; bom: boolean };
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Reads an existing settings file, tolerating one leading BOM. A missing/unreadable file and
+ * an empty (whitespace/BOM-only) file are valid empty settings; invalid JSON or a non-object
+ * top-level value is reported as `ok: false` so the caller can decide whether to overwrite.
+ */
+async function readExistingSettings(settingsPath: string): Promise<ExistingSettings> {
+  let raw: string;
+  try {
+    raw = await readTextFile(settingsPath);
+  } catch {
+    return { ok: true, settings: {}, bom: false };
+  }
+  const bom = raw.startsWith(UTF8_BOM);
+  if ((bom ? raw.slice(UTF8_BOM.length) : raw).trim() === '') {
+    return { ok: true, settings: {}, bom };
+  }
+  try {
+    const { data } = parseJsonText<unknown>(raw);
+    if (isPlainObject(data)) {
+      return { ok: true, settings: data, bom };
+    }
+    return { ok: false, reason: 'the top-level JSON value is not a JSON object', bom };
+  } catch (err) {
+    return { ok: false, reason: err instanceof Error ? err.message : String(err), bom };
+  }
+}
+
 /**
  * Reads `hooksJsonPath`, converts its `hooks` block to CC's settings schema, and merges
- * the result into `settingsPath` as the `hooks` key — replacing any prior omcustom-
- * managed `hooks` value while preserving every other existing top-level key
- * (statusLine, permissions, outputStyle, user-added keys, etc.).
+ * the result into `settingsPath` as the `hooks` key while preserving every other existing
+ * top-level key (statusLine, permissions, outputStyle, user-added keys, etc.).
  *
- * If `settingsPath` does not exist or is not valid JSON, it is treated as `{}` (a fresh
- * settings file is created holding only the converted `hooks` key).
+ * By default the prior `hooks` value is replaced wholesale. With
+ * `options.preserveUserHooks` the user's own hook groups and events survive (see
+ * {@link mergeHookBlocks}) and an existing file that cannot be parsed is left untouched with
+ * a warning instead of being overwritten.
+ *
+ * A leading UTF-8 BOM on the existing file is tolerated and kept on write; the file always
+ * ends with a newline. In default mode a missing or unparsable file is treated as `{}`.
  */
 export async function mergeHooksIntoSettings(
   settingsPath: string,
-  hooksJsonPath: string
+  hooksJsonPath: string,
+  options: MergeHooksOptions = {}
 ): Promise<MergeHooksResult> {
   const hooksJson = await readJsonFile<RawHooksJson>(hooksJsonPath);
   const { hooks, warnings } = convertHooksJson(hooksJson);
+  const preserve = options.preserveUserHooks === true;
 
-  let settings: Record<string, unknown> = {};
-  try {
-    const existingRaw = await readTextFile(settingsPath);
-    settings = JSON.parse(existingRaw) as Record<string, unknown>;
-  } catch {
-    settings = {};
+  const existing = await readExistingSettings(settingsPath);
+  if (!existing.ok && preserve) {
+    warnings.push(
+      `hooks: could not parse existing ${settingsPath} (${existing.reason}); the file was left unchanged and hooks were NOT installed — fix or move the file, then re-run \`omcustom init\``
+    );
+    return { warnings };
   }
 
-  settings.hooks = hooks;
+  const settings = existing.ok ? existing.settings : {};
+  settings.hooks = preserve ? mergeHookBlocks(settings.hooks, hooks) : hooks;
 
   await ensureDirectory(dirname(settingsPath));
-  await writeTextFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+  await writeTextFile(
+    settingsPath,
+    stringifyJson(settings, { bom: existing.bom, trailingNewline: true })
+  );
 
   return { warnings };
 }

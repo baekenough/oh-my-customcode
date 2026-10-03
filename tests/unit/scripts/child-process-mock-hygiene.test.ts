@@ -1,15 +1,27 @@
 /**
- * Tier-1 위생 검사: `node:child_process` 모듈 목(mock)의 누수 방지 (#1760)
+ * Tier-1 hygiene check: leaked `mock.module()` targets (#1760, widened by #1772)
  *
- * bun의 `mock.module()`은 파일 경계를 넘어 같은 프로세스 안에서 유지되고
- * `mock.restore()`로도 복원되지 않는다. `node:child_process`를 목킹한 테스트 파일이
- * `afterAll`에서 원본으로 다시 등록하지 않으면, 이후 실행되는 다른 파일의 `spawnSync` 등이
- * 목으로 대체되어 전체 스위트에서만 실패하는 문제가 생긴다.
- * 또한 "원본 캡처 후 복원" 패턴은 앞선 파일이 누수시킨 모듈을 캡처하면 무효가 되므로,
- * 스위트 내 모든 child_process 모듈 목이 복원해야만 안전하다 (Adversarial M1).
+ * Bun's `mock.module()` persists across file boundaries within one process and is NOT undone
+ * by `mock.restore()`. A test file that mocks a module without re-registering the real module
+ * in `afterAll` leaks the mock into every file that runs later, so failures show up only in
+ * the full suite and only in some orders. A "capture the original, then restore" pattern is
+ * itself invalid if the capture happens after an earlier file already leaked, so the invariant
+ * must hold for every mock in the suite (Adversarial M1).
  *
- * 이 검사는 git 추적 테스트 파일을 정적으로 스캔해, child_process 모듈 목이 있는데
- * `afterAll` 안에서 같은 모듈을 다시 등록하지 않는 파일을 file:line 으로 보고한다.
+ * Invariant (every `mock.module(<spec>)` target in every tracked test file):
+ *   1. capture the real module BEFORE the first installing mock:
+ *        const realX = { ...(await import(SPEC)) };
+ *   2. re-register the captured value inside an `afterAll(...)` call:
+ *        afterAll(() => { mock.module(SPEC, () => realX); });
+ *
+ * The scan is a static text scan (comments stripped, string-aware). Fail-closed rules:
+ *   - a first argument that is neither a plain string literal nor a bare identifier is reported
+ *     (`dynamic-spec` for a template literal with a substitution, `unparsable-spec` for
+ *     concatenation, `join(...)`, `require.resolve(...)`, ...) and never skipped silently (R6);
+ *   - restores performed in `afterEach` or through a helper function (`afterAll(restoreAll)`)
+ *     are NOT recognised and are reported as `no-restore`. These are known, intentional
+ *     false positives: the inline `afterAll` pattern above is the only supported form.
+ * Known false negative: an aliased `mock.module` (`const m = mock.module`) is not seen.
  */
 
 import { describe, expect, it } from 'bun:test';
@@ -17,18 +29,25 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 // ---------------------------------------------------------------------------
-// 스캐너
+// Scanner
 // ---------------------------------------------------------------------------
 
-/** child_process 모듈 목 호출 (node: 접두 유무 모두 허용) */
-const CHILD_PROCESS_MOCK_PATTERN = /mock\.module\(\s*(['"`])(?:node:)?child_process\1/g;
-
 export interface MockViolation {
-  /** 1-기반 줄 번호 (복원이 없는 첫 목 등록 위치) */
+  /** 1-based line of the first mock registration without restore */
   line: number;
 }
 
-/** 문자열/템플릿 리터럴이 `index`에서 시작하면 닫는 따옴표 다음 위치를, 아니면 `index`를 반환 */
+export type ViolationReason = 'no-capture' | 'no-restore' | 'dynamic-spec' | 'unparsable-spec';
+
+export interface ModuleMockViolation {
+  /** Spec key: `node:` prefix stripped, `<ident:NAME>` for identifiers, `<dynamic>`/`<unparsable>` */
+  spec: string;
+  /** 1-based line of the first installing mock (or of the unparsable call) */
+  line: number;
+  reason: ViolationReason;
+}
+
+/** If a string/template literal starts at `index`, return the position after its closing quote; else `index`. */
 function stringEnd(code: string, index: number): number {
   const quote = code.charAt(index);
   if (quote !== "'" && quote !== '"' && quote !== '`') {
@@ -41,7 +60,7 @@ function stringEnd(code: string, index: number): number {
   return Math.min(i + 1, code.length);
 }
 
-/** 주석이 `index`에서 시작하면 주석 끝 다음 위치를, 아니면 `index`를 반환 */
+/** If a comment starts at `index`, return the position after its end; else `index`. */
 function commentEnd(code: string, index: number): number {
   const pair = code.slice(index, index + 2);
   if (pair === '//') {
@@ -56,8 +75,8 @@ function commentEnd(code: string, index: number): number {
 }
 
 /**
- * 주석을 공백으로 치환한다(줄바꿈은 보존하여 줄 번호 유지).
- * 문자열/템플릿 리터럴 내부의 `//` 는 주석으로 오인하지 않는다.
+ * Replace comments with spaces (newlines are preserved so line numbers stay valid).
+ * A `//` inside a string or template literal is not treated as a comment.
  */
 export function stripComments(source: string): string {
   let out = '';
@@ -81,7 +100,7 @@ export function stripComments(source: string): string {
   return out;
 }
 
-/** `from`(여는 괄호 직후)부터 짝이 맞는 닫는 괄호 다음 위치를 반환. 문자열 내부 괄호는 무시한다. */
+/** Position after the closing paren matching the open paren just before `from`. Parens inside strings are ignored. */
 function closingParenEnd(code: string, from: number): number {
   let depth = 1;
   let i = from;
@@ -98,7 +117,7 @@ function closingParenEnd(code: string, from: number): number {
   return i;
 }
 
-/** `afterAll(` 호출의 괄호 범위 [start, end) 목록 */
+/** Paren ranges [start, end) of every `afterAll(` call */
 function findAfterAllRanges(code: string): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
   const opener = /\bafterAll\s*\(/g;
@@ -120,39 +139,408 @@ function lineOf(code: string, index: number): number {
   return line;
 }
 
-/**
- * child_process 모듈 목이 있는데 `afterAll` 안에서 재등록하지 않으면 위반으로 보고한다.
- * 목이 없으면 빈 배열, 복원이 있으면 빈 배열.
- */
-export function findUnrestoredChildProcessMocks(source: string): MockViolation[] {
-  const code = stripComments(source);
-  const mockIndexes: number[] = [];
-  CHILD_PROCESS_MOCK_PATTERN.lastIndex = 0;
-  let match: RegExpExecArray | null = CHILD_PROCESS_MOCK_PATTERN.exec(code);
-  while (match !== null) {
-    mockIndexes.push(match.index);
-    match = CHILD_PROCESS_MOCK_PATTERN.exec(code);
+function skipSpaces(code: string, index: number): number {
+  let i = index;
+  while (i < code.length && /\s/.test(code.charAt(i))) {
+    i++;
   }
-  if (mockIndexes.length === 0) {
-    return [];
+  return i;
+}
+
+function normalizeSpec(spec: string): string {
+  return spec.startsWith('node:') ? spec.slice('node:'.length) : spec;
+}
+
+type SpecKind = 'literal' | 'identifier' | 'dynamic' | 'unparsable';
+
+interface SpecArg {
+  kind: SpecKind;
+  key: string;
+  /** Index of the `,` or `)` that terminates the first argument */
+  end: number;
+}
+
+const IDENTIFIER_AT = /[A-Za-z_$][\w$]*/y;
+
+/**
+ * Parse the first argument of a call whose open paren ends just before `from`.
+ * Anything that is not a plain string literal, a template literal without substitutions,
+ * or a bare identifier directly followed by `,` or `)` is `unparsable` (fail-closed, R6).
+ */
+function parseSpecArg(code: string, from: number): SpecArg {
+  const unparsable: SpecArg = { kind: 'unparsable', key: '<unparsable>', end: from };
+  const start = skipSpaces(code, from);
+  const first = code.charAt(start);
+  let kind: SpecKind;
+  let key: string;
+  let after: number;
+  if (first === "'" || first === '"' || first === '`') {
+    after = stringEnd(code, start);
+    const body = code.slice(start + 1, after - 1);
+    const dynamic = first === '`' && body.includes('${');
+    kind = dynamic ? 'dynamic' : 'literal';
+    key = dynamic ? '<dynamic>' : normalizeSpec(body);
+  } else {
+    IDENTIFIER_AT.lastIndex = start;
+    const ident = IDENTIFIER_AT.exec(code);
+    if (ident === null) {
+      return unparsable;
+    }
+    after = start + ident[0].length;
+    kind = 'identifier';
+    key = `<ident:${ident[0]}>`;
+  }
+  const end = skipSpaces(code, after);
+  const terminator = code.charAt(end);
+  return terminator === ',' || terminator === ')' ? { kind, key, end } : unparsable;
+}
+
+interface MockCall {
+  index: number;
+  line: number;
+  arg: SpecArg;
+  /** Identifier returned by a `() => NAME` factory, else null */
+  returned: string | null;
+  /** True when the call lies inside an `afterAll(...)` range */
+  restore: boolean;
+}
+
+function returnedIdentifier(code: string, commaIndex: number): string | null {
+  if (code.charAt(commaIndex) !== ',') {
+    return null;
+  }
+  const factory = /,\s*\(\s*\)\s*=>\s*([A-Za-z_$][\w$]*)\s*\)/y;
+  factory.lastIndex = commaIndex;
+  return factory.exec(code)?.[1] ?? null;
+}
+
+function collectMockCalls(code: string): MockCall[] {
+  const ranges = findAfterAllRanges(code);
+  const calls: MockCall[] = [];
+  const opener = /\bmock\.module\s*\(/g;
+  let match: RegExpExecArray | null = opener.exec(code);
+  while (match !== null) {
+    const index = match.index;
+    const arg = parseSpecArg(code, index + match[0].length);
+    calls.push({
+      index,
+      line: lineOf(code, index),
+      arg,
+      returned: returnedIdentifier(code, arg.end),
+      restore: ranges.some(([start, end]) => index > start && index < end),
+    });
+    match = opener.exec(code);
+  }
+  return calls;
+}
+
+interface Capture {
+  index: number;
+  name: string;
+  key: string;
+}
+
+/** `NAME = { ...(await import(SPEC)) }` captures (const/let and parens optional) */
+function collectCaptures(code: string): Capture[] {
+  const captures: Capture[] = [];
+  const opener = /\b([A-Za-z_$][\w$]*)\s*=\s*\{\s*\.\.\.\s*\(?\s*await\s+import\(/g;
+  let match: RegExpExecArray | null = opener.exec(code);
+  while (match !== null) {
+    const arg = parseSpecArg(code, match.index + match[0].length);
+    if (arg.kind === 'literal' || arg.kind === 'identifier') {
+      captures.push({ index: match.index, name: match[1] ?? '', key: arg.key });
+    }
+    match = opener.exec(code);
+  }
+  return captures;
+}
+
+/** Evaluate "no restore at all" first, then "no capture before the mock", then restore linkage. */
+function restoreFailure(
+  spec: string,
+  first: MockCall,
+  restores: MockCall[],
+  captures: Capture[]
+): 'no-restore' | 'no-capture' | null {
+  if (restores.length === 0) {
+    return 'no-restore';
+  }
+  const names = new Set(
+    captures.filter((c) => c.key === spec && c.index < first.index).map((c) => c.name)
+  );
+  if (names.size === 0) {
+    return 'no-capture';
+  }
+  const linked = restores.some((r) => r.returned !== null && names.has(r.returned));
+  return linked ? null : 'no-restore';
+}
+
+/**
+ * Report every `mock.module(<spec>)` target that is not captured before mocking and
+ * re-registered with the captured value inside `afterAll`. One violation per spec.
+ */
+export function findModuleMockViolations(source: string): ModuleMockViolation[] {
+  const code = stripComments(source);
+  const captures = collectCaptures(code);
+  const violations: ModuleMockViolation[] = [];
+  const bySpec = new Map<string, MockCall[]>();
+
+  for (const call of collectMockCalls(code)) {
+    if (call.arg.kind === 'dynamic' || call.arg.kind === 'unparsable') {
+      const reason = call.arg.kind === 'dynamic' ? 'dynamic-spec' : 'unparsable-spec';
+      violations.push({ spec: call.arg.key, line: call.line, reason });
+      continue;
+    }
+    bySpec.set(call.arg.key, [...(bySpec.get(call.arg.key) ?? []), call]);
   }
 
-  const ranges = findAfterAllRanges(code);
-  const restored = mockIndexes.some((idx) =>
-    ranges.some(([start, end]) => idx > start && idx < end)
-  );
-  if (restored) {
-    return [];
+  for (const [spec, calls] of bySpec) {
+    const first = calls.find((c) => !c.restore);
+    if (first === undefined) {
+      continue; // restore-only: nothing installed in this file
+    }
+    const reason = restoreFailure(
+      spec,
+      first,
+      calls.filter((c) => c.restore),
+      captures
+    );
+    if (reason !== null) {
+      violations.push({ spec, line: first.line, reason });
+    }
   }
-  const first = mockIndexes[0] ?? 0;
-  return [{ line: lineOf(code, first) }];
+  return violations.sort((a, b) => a.line - b.line);
+}
+
+/**
+ * Backward-compatible #1760 view: violations for `child_process` / `node:child_process` only.
+ */
+export function findUnrestoredChildProcessMocks(source: string): MockViolation[] {
+  return findModuleMockViolations(source)
+    .filter((v) => v.spec === 'child_process')
+    .map((v) => ({ line: v.line }));
 }
 
 // ---------------------------------------------------------------------------
-// 단위 픽스처 (인라인 문자열 — 양성/음성 짝)
+// Allowlist
 // ---------------------------------------------------------------------------
 
-describe('findUnrestoredChildProcessMocks (fixtures)', () => {
+export interface AllowedUnrestored {
+  /** Repo-relative path of the test file */
+  file: string;
+  /** Spec key as reported by the scanner (`node:` prefix stripped) */
+  spec: string;
+  /** Why this (file, spec) pair may stay unrestored. Must be non-empty. */
+  reason: string;
+}
+
+/**
+ * Exemptions from the invariant. Intentionally EMPTY: every current mock target is a shared
+ * `src/` module or a Node builtin, so no legitimate exemption exists. Do not add entries to
+ * make a red scan green; fix the leaking file instead (capture + `afterAll` re-register).
+ */
+export const ALLOWED_UNRESTORED: ReadonlyArray<AllowedUnrestored> = [];
+
+interface RepoViolation extends ModuleMockViolation {
+  file: string;
+}
+
+/** Problems with the allowlist itself: entries without a reason, and stale entries. */
+export function findAllowlistProblems(
+  allowlist: ReadonlyArray<AllowedUnrestored>,
+  violations: ReadonlyArray<{ file: string; spec: string }>
+): string[] {
+  const problems: string[] = [];
+  for (const entry of allowlist) {
+    if (entry.reason.trim() === '') {
+      problems.push(`no-reason: ${entry.file} ${entry.spec}`);
+    }
+    const stillViolates = violations.some((v) => v.file === entry.file && v.spec === entry.spec);
+    if (!stillViolates) {
+      problems.push(`stale: ${entry.file} ${entry.spec}`);
+    }
+  }
+  return problems;
+}
+
+// ---------------------------------------------------------------------------
+// Unit fixtures (inline strings, positive/negative pairs)
+// ---------------------------------------------------------------------------
+
+/** Compact `spec:reason` view of the scanner result */
+function summarize(source: string): string[] {
+  return findModuleMockViolations(source).map((v) => `${v.spec}:${v.reason}`);
+}
+
+describe('findModuleMockViolations (fixtures)', () => {
+  it('reports a mock without any afterAll restore (positive)', () => {
+    const src = ["mock.module('../src/core/x.js', () => ({}));"].join('\n');
+    expect(findModuleMockViolations(src)).toEqual([
+      { spec: '../src/core/x.js', line: 1, reason: 'no-restore' },
+    ]);
+  });
+
+  it('reports when afterAll exists but does not re-register this spec (positive)', () => {
+    const src = [
+      "const realX = { ...(await import('../src/core/x.js')) };",
+      "mock.module('../src/core/x.js', () => ({}));",
+      'afterAll(() => {',
+      '  cleanup();',
+      '});',
+    ].join('\n');
+    expect(summarize(src)).toEqual(['../src/core/x.js:no-restore']);
+  });
+
+  it('reports a restore without a prior capture (positive)', () => {
+    const src = [
+      "mock.module('../src/core/x.js', () => ({}));",
+      'afterAll(() => {',
+      "  mock.module('../src/core/x.js', () => realX);",
+      '});',
+    ].join('\n');
+    expect(summarize(src)).toEqual(['../src/core/x.js:no-capture']);
+  });
+
+  it('reports a restore that returns something other than the capture (positive)', () => {
+    const src = [
+      "const realX = { ...(await import('../src/core/x.js')) };",
+      "mock.module('../src/core/x.js', () => ({ a: 1 }));",
+      'afterAll(() => {',
+      "  mock.module('../src/core/x.js', () => ({}));",
+      '});',
+    ].join('\n');
+    expect(summarize(src)).toEqual(['../src/core/x.js:no-restore']);
+  });
+
+  it('reports a capture placed textually after the first mock (positive)', () => {
+    const src = [
+      "mock.module('../src/core/x.js', () => ({}));",
+      "const realX = { ...(await import('../src/core/x.js')) };",
+      'afterAll(() => {',
+      "  mock.module('../src/core/x.js', () => realX);",
+      '});',
+    ].join('\n');
+    expect(summarize(src)).toEqual(['../src/core/x.js:no-capture']);
+  });
+
+  it('reports only the unrestored spec when two specs are mocked (positive)', () => {
+    const src = [
+      "const realA = { ...(await import('../src/core/a.js')) };",
+      "mock.module('../src/core/a.js', () => ({}));",
+      "mock.module('../src/core/b.js', () => ({}));",
+      'afterAll(() => {',
+      "  mock.module('../src/core/a.js', () => realA);",
+      '});',
+    ].join('\n');
+    expect(findModuleMockViolations(src)).toEqual([
+      { spec: '../src/core/b.js', line: 3, reason: 'no-restore' },
+    ]);
+  });
+
+  it('reports a template-literal spec with a substitution as dynamic-spec (positive)', () => {
+    const src = `mock.module(\`../src/core/\${name}.js\`, () => ({}));`;
+    expect(summarize(src)).toEqual(['<dynamic>:dynamic-spec']);
+  });
+
+  it('fails closed on non-literal, non-identifier specs instead of skipping (R6, positive)', () => {
+    const concat = "mock.module('../src/core/' + name + '.js', () => ({}));";
+    const joined = "mock.module(join(base, 'x.js'), () => ({}));";
+    const resolved = "mock.module(require.resolve('../src/core/x.js'), () => ({}));";
+    const meta = "mock.module(import.meta.resolve('../src/core/x.js'), () => ({}));";
+    for (const src of [concat, joined, resolved, meta]) {
+      expect(summarize(src)).toEqual(['<unparsable>:unparsable-spec']);
+    }
+  });
+
+  it('documents afterEach and helper restores as fail-safe false positives (positive)', () => {
+    const inAfterEach = [
+      "const realX = { ...(await import('../src/core/x.js')) };",
+      "mock.module('../src/core/x.js', () => ({}));",
+      'afterEach(() => {',
+      "  mock.module('../src/core/x.js', () => realX);",
+      '});',
+    ].join('\n');
+    const viaHelper = [
+      "const realX = { ...(await import('../src/core/x.js')) };",
+      "mock.module('../src/core/x.js', () => ({}));",
+      'function restoreAll() {',
+      "  mock.module('../src/core/x.js', () => realX);",
+      '}',
+      'afterAll(restoreAll);',
+    ].join('\n');
+    expect(summarize(inAfterEach)).toEqual(['../src/core/x.js:no-restore']);
+    expect(summarize(viaHelper)).toEqual(['../src/core/x.js:no-restore']);
+  });
+
+  it('accepts capture plus afterAll re-registration of a literal spec (negative)', () => {
+    const src = [
+      "const realX = { ...(await import('../src/core/x.js')) };",
+      "mock.module('../src/core/x.js', () => ({ a: 1 }));",
+      'afterAll(() => {',
+      "  mock.module('../src/core/x.js', () => realX);",
+      '});',
+    ].join('\n');
+    expect(findModuleMockViolations(src)).toEqual([]);
+  });
+
+  it('accepts an identifier spec captured in beforeAll and restored in afterAll (negative)', () => {
+    const src = [
+      "const RTK_MODULE = '../src/core/rtk.js';",
+      'let realRtk: Record<string, unknown>;',
+      'beforeAll(async () => {',
+      '  realRtk = { ...(await import(RTK_MODULE)) };',
+      '});',
+      'it("x", () => {',
+      '  mock.module(RTK_MODULE, () => ({}));',
+      '});',
+      'afterAll(() => {',
+      '  mock.module(RTK_MODULE, () => realRtk);',
+      '});',
+    ].join('\n');
+    expect(findModuleMockViolations(src)).toEqual([]);
+  });
+
+  it('treats node: and bare builtin specifiers as the same module (negative)', () => {
+    const src = [
+      "const realCp = { ...(await import('node:child_process')) };",
+      "mock.module('child_process', () => ({}));",
+      'afterAll(() => {',
+      "  mock.module('node:child_process', () => realCp);",
+      '});',
+    ].join('\n');
+    expect(findModuleMockViolations(src)).toEqual([]);
+  });
+
+  it('ignores mentions in line and block comments (negative)', () => {
+    const src = [
+      "// mock.module('node:child_process', () => ({}))",
+      '/*',
+      " * mock.module('../src/core/x.js', () => ({}))",
+      ' */',
+      'const x = 1;',
+    ].join('\n');
+    expect(findModuleMockViolations(src)).toEqual([]);
+  });
+
+  it('ignores a restore-only afterAll with no installing mock (negative)', () => {
+    const src = ['afterAll(() => {', "  mock.module('../src/core/x.js', () => realX);", '});'].join(
+      '\n'
+    );
+    expect(findModuleMockViolations(src)).toEqual([]);
+  });
+
+  it('does not treat // inside a string as a comment', () => {
+    const src = [
+      "const url = 'http://example.com';",
+      "mock.module('../src/core/x.js', () => ({}));",
+    ].join('\n');
+    expect(findModuleMockViolations(src)).toEqual([
+      { spec: '../src/core/x.js', line: 2, reason: 'no-restore' },
+    ]);
+  });
+});
+
+describe('findUnrestoredChildProcessMocks (child_process view, fixtures)', () => {
   it('reports a child_process mock without afterAll restore (positive)', () => {
     const src = [
       "import { mock } from 'bun:test';",
@@ -188,33 +576,37 @@ describe('findUnrestoredChildProcessMocks (fixtures)', () => {
     expect(findUnrestoredChildProcessMocks(src)).toEqual([]);
   });
 
-  it('ignores mentions in line and block comments (negative)', () => {
-    const src = [
-      "// mock.module('node:child_process', () => ({}))",
-      '/*',
-      " * mock.module('node:child_process', () => ({}))",
-      ' */',
-      'const x = 1;',
-    ].join('\n');
-    expect(findUnrestoredChildProcessMocks(src)).toEqual([]);
-  });
-
   it('ignores mocks of other modules (negative)', () => {
     const src = "mock.module('../../../src/core/updater.js', () => ({}));";
     expect(findUnrestoredChildProcessMocks(src)).toEqual([]);
   });
+});
 
-  it('does not treat // inside a string as a comment', () => {
-    const src = [
-      "const url = 'http://example.com';",
-      "mock.module('node:child_process', () => ({}));",
-    ].join('\n');
-    expect(findUnrestoredChildProcessMocks(src)).toEqual([{ line: 2 }]);
+describe('findAllowlistProblems (meta-test fixtures)', () => {
+  const violations = [{ file: 'tests/a.test.ts', spec: '../src/x.js' }];
+
+  it('accepts an entry with a reason that still matches a violation (negative)', () => {
+    const entry = { file: 'tests/a.test.ts', spec: '../src/x.js', reason: 'separate process' };
+    expect(findAllowlistProblems([entry], violations)).toEqual([]);
+  });
+
+  it('reports a stale entry that no longer matches any violation (positive)', () => {
+    const entry = { file: 'tests/gone.test.ts', spec: '../src/x.js', reason: 'old' };
+    expect(findAllowlistProblems([entry], violations)).toEqual([
+      'stale: tests/gone.test.ts ../src/x.js',
+    ]);
+  });
+
+  it('reports an entry with an empty reason (positive)', () => {
+    const entry = { file: 'tests/a.test.ts', spec: '../src/x.js', reason: '  ' };
+    expect(findAllowlistProblems([entry], violations)).toEqual([
+      'no-reason: tests/a.test.ts ../src/x.js',
+    ]);
   });
 });
 
 // ---------------------------------------------------------------------------
-// 저장소 스캔 (git 추적 테스트 파일)
+// Repository scan (git-tracked test files)
 // ---------------------------------------------------------------------------
 
 const REPO_ROOT = resolve(import.meta.dir, '../../..');
@@ -226,7 +618,7 @@ const TEST_FILE_PATTERNS: RegExp[] = [
 ];
 
 function listTrackedTestFiles(): string[] {
-  // child_process를 쓰지 않도록 Bun.spawnSync 사용 (모듈 목의 영향을 받지 않는다)
+  // Use Bun.spawnSync, not child_process, so module mocks cannot affect the scan
   const result = Bun.spawnSync(['git', 'ls-files', '--', 'tests', 'packages'], {
     cwd: REPO_ROOT,
   });
@@ -237,30 +629,60 @@ function listTrackedTestFiles(): string[] {
     .toString()
     .split('\n')
     .filter((file) => file.length > 0)
-    .filter((file) => file !== SELF_PATH) // 자기 자신의 픽스처 문자열은 제외
+    .filter((file) => file !== SELF_PATH) // this file's own fixture strings are excluded
     .filter((file) => TEST_FILE_PATTERNS.some((pattern) => pattern.test(file)));
 }
 
-describe('child_process module mock hygiene (repository scan)', () => {
-  it('every child_process module mock is restored in afterAll', () => {
-    const offenders: string[] = [];
-    let scanned = 0;
-    for (const file of listTrackedTestFiles()) {
-      const fullPath = join(REPO_ROOT, file);
-      if (!existsSync(fullPath)) {
-        continue; // 추적 중이나 작업 트리에서 삭제된 파일
-      }
-      scanned++;
-      const violations = findUnrestoredChildProcessMocks(readFileSync(fullPath, 'utf-8'));
-      for (const violation of violations) {
-        offenders.push(`${file}:${violation.line}`);
-      }
-    }
+interface RepoScan {
+  scanned: number;
+  /** All violations, before the allowlist is applied */
+  violations: RepoViolation[];
+}
 
-    expect(scanned).toBeGreaterThan(0);
+function scanRepository(): RepoScan {
+  const violations: RepoViolation[] = [];
+  let scanned = 0;
+  for (const file of listTrackedTestFiles()) {
+    const fullPath = join(REPO_ROOT, file);
+    if (!existsSync(fullPath)) {
+      continue; // tracked but deleted in the working tree
+    }
+    scanned++;
+    for (const violation of findModuleMockViolations(readFileSync(fullPath, 'utf-8'))) {
+      violations.push({ file, ...violation });
+    }
+  }
+  return { scanned, violations };
+}
+
+function formatOffenders(violations: ReadonlyArray<RepoViolation>): string {
+  return violations.map((v) => `${v.file}:${v.line} ${v.spec} [${v.reason}]`).join(', ');
+}
+
+describe('module mock hygiene (repository scan)', () => {
+  const scan = scanRepository();
+
+  it('every child_process module mock is restored in afterAll', () => {
+    const offenders = scan.violations.filter((v) => v.spec === 'child_process');
+    expect(scan.scanned).toBeGreaterThan(0);
     expect(
-      offenders,
-      `node:child_process 모듈 목이 afterAll 복원 없이 등록됨 (#1760): ${offenders.join(', ')}`
+      offenders.map((v) => `${v.file}:${v.line}`),
+      `node:child_process module mock registered without capture + afterAll restore (#1760): ${formatOffenders(offenders)}`
     ).toEqual([]);
+  });
+
+  it('every mock.module target is captured before mocking and restored in afterAll', () => {
+    const offenders = scan.violations.filter(
+      (v) => !ALLOWED_UNRESTORED.some((a) => a.file === v.file && a.spec === v.spec)
+    );
+    expect(scan.scanned).toBeGreaterThan(0);
+    expect(
+      offenders.map((v) => `${v.file}:${v.line} ${v.spec} [${v.reason}]`),
+      `mock.module target leaks across files (#1772). Fix: capture \`const realX = { ...(await import(SPEC)) }\` before mocking and call \`afterAll(() => { mock.module(SPEC, () => realX); })\`: ${formatOffenders(offenders)}`
+    ).toEqual([]);
+  });
+
+  it('the allowlist has no entries without a reason and no stale entries', () => {
+    expect(findAllowlistProblems(ALLOWED_UNRESTORED, scan.violations)).toEqual([]);
   });
 });

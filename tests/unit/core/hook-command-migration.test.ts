@@ -63,7 +63,13 @@ async function loadOldFormSettings(): Promise<Json> {
     }
     return node;
   };
-  return { ...settings, hooks: rewrite(settings.hooks) } as Json;
+  const statusLine = settings.statusLine as Json | undefined;
+  return {
+    ...settings,
+    hooks: rewrite(settings.hooks),
+    // Keep the fixture old-form regardless of whether settings.json is already migrated (#1769).
+    ...(statusLine ? { statusLine: { ...statusLine, command: '.claude/statusline.sh' } } : {}),
+  } as Json;
 }
 
 describe('rewriteRelativeHookCommand', () => {
@@ -107,9 +113,10 @@ describe('migrateHookCommands — tracked settings fixture', () => {
     const before = collectCommands(oldSettings);
     const expected = before.filter((c) => /\.claude\/hooks\//.test(c)).length;
     expect(expected).toBeGreaterThan(0);
+    const statusLineRewrites = oldSettings.statusLine ? 1 : 0;
 
     const first = migrateHookCommands(oldSettings);
-    expect(first.rewritten).toBe(expected);
+    expect(first.rewritten).toBe(expected + statusLineRewrites);
     for (const command of collectCommands(first.settings)) {
       expect(command).not.toMatch(/^(bash )?(\.\/)?\.claude\/hooks\//);
     }
@@ -125,9 +132,14 @@ describe('migrateHookCommands — tracked settings fixture', () => {
     const snapshot = structuredClone(oldSettings);
     const { settings } = migrateHookCommands(oldSettings);
     expect(oldSettings).toEqual(snapshot);
-    const { hooks: _a, ...restBefore } = oldSettings;
-    const { hooks: _b, ...restAfter } = settings;
+    const { hooks: _a, statusLine: slBefore, ...restBefore } = oldSettings;
+    const { hooks: _b, statusLine: slAfter, ...restAfter } = settings;
     expect(restAfter).toEqual(restBefore);
+    // Only statusLine.command may change; every other statusLine field is preserved.
+    expect({ ...(slAfter as Json), command: undefined }).toEqual({
+      ...(slBefore as Json),
+      command: undefined,
+    });
     expect(Object.keys(settings)).toEqual(Object.keys(oldSettings));
   });
 
@@ -284,4 +296,87 @@ describe('migrateHookCommands — runtime behavior from a subdirectory (spaces i
     expect(proc.exitCode).toBe(0);
     expect(proc.stdout.toString().trim()).toBe('probe-ok');
   });
+});
+
+describe('migrateHookCommands — statusLine exact-default migration (#1769, R3)', () => {
+  const OLD_DEFAULT = '.claude/statusline.sh';
+  const NEW_DEFAULT = `bash "${ANCHOR}/.claude/statusline.sh"`;
+  const oldHookCommand = 'bash .claude/hooks/scripts/x.sh';
+  const newHookCommand = `bash "${ANCHOR}/.claude/hooks/scripts/x.sh"`;
+
+  it('rewrites the exact old default statusLine command and counts it', () => {
+    const input = { statusLine: { type: 'command', command: OLD_DEFAULT, refreshInterval: 5 } };
+    const result = migrateHookCommands(input);
+    expect(result.rewritten).toBe(1);
+    expect(result.settings).toEqual({
+      statusLine: { type: 'command', command: NEW_DEFAULT, refreshInterval: 5 },
+    });
+  });
+
+  it('rewrites the statusLine even when the settings have no hooks block', () => {
+    const input = { permissions: { defaultMode: 'default' }, statusLine: { command: OLD_DEFAULT } };
+    const result = migrateHookCommands(input);
+    expect(result.rewritten).toBe(1);
+    expect(result.settings.permissions).toBe(input.permissions);
+    expect(result.settings.statusLine).toEqual({ command: NEW_DEFAULT });
+  });
+
+  it('counts hook and statusLine rewrites together', () => {
+    const input = {
+      hooks: { Stop: [{ hooks: [{ type: 'command', command: oldHookCommand }] }] },
+      statusLine: { type: 'command', command: OLD_DEFAULT },
+    };
+    const result = migrateHookCommands(input);
+    expect(result.rewritten).toBe(2);
+    expect(collectCommands(result.settings)).toEqual([newHookCommand]);
+    expect(result.settings.statusLine).toEqual({ type: 'command', command: NEW_DEFAULT });
+  });
+
+  it('rewrites only the statusLine when hooks has nothing to migrate', () => {
+    const hooks = { Stop: [{ hooks: [{ type: 'command', command: newHookCommand }] }] };
+    const result = migrateHookCommands({ hooks, statusLine: { command: OLD_DEFAULT } });
+    expect(result.rewritten).toBe(1);
+    expect(result.settings.hooks).toBe(hooks);
+  });
+
+  it('does not mutate its input', () => {
+    const input = { statusLine: { type: 'command', command: OLD_DEFAULT } };
+    const snapshot = structuredClone(input);
+    migrateHookCommands(input);
+    expect(input).toEqual(snapshot);
+  });
+
+  it('is idempotent', () => {
+    const first = migrateHookCommands({ statusLine: { command: OLD_DEFAULT } });
+    const second = migrateHookCommands(first.settings);
+    expect(second.rewritten).toBe(0);
+    expect(second.settings).toEqual(first.settings);
+  });
+
+  // Negative fixtures: anything other than the exact old default is left untouched.
+  const untouched: Array<[string, Json]> = [
+    [
+      'custom command',
+      { statusLine: { type: 'command', command: '.claude/custom-statusline.sh' } },
+    ],
+    ['leading ./ variant', { statusLine: { command: './.claude/statusline.sh' } }],
+    ['bash-prefixed variant', { statusLine: { command: 'bash .claude/statusline.sh' } }],
+    ['trailing argument', { statusLine: { command: '.claude/statusline.sh --verbose' } }],
+    ['already anchored', { statusLine: { command: NEW_DEFAULT } }],
+    ['absolute path', { statusLine: { command: '/abs/proj/.claude/statusline.sh' } }],
+    ['missing statusLine', { permissions: {} }],
+    ['statusLine without command', { statusLine: { type: 'command' } }],
+    ['non-string command', { statusLine: { command: 42 } }],
+    ['string statusLine', { statusLine: OLD_DEFAULT }],
+    ['null statusLine', { statusLine: null }],
+    ['array statusLine', { statusLine: [OLD_DEFAULT] }],
+  ];
+
+  for (const [label, input] of untouched) {
+    it(`leaves unchanged: ${label}`, () => {
+      const result = migrateHookCommands(input);
+      expect(result.rewritten).toBe(0);
+      expect(result.settings).toBe(input);
+    });
+  }
 });

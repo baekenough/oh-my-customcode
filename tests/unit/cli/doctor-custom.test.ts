@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,6 +8,15 @@ import {
   getDefaultConfig,
   saveConfig,
 } from '../../../src/core/config.js';
+
+// mock.restore() does NOT undo mock.module() (bun), so the real module is captured before the
+// first mock and re-registered afterwards (#1772). The specifier must match the mock's exactly.
+const CONFIG_MODULE = '../../../src/core/config.js';
+const realConfig = { ...(await import(CONFIG_MODULE)) };
+
+afterAll(() => {
+  mock.module(CONFIG_MODULE, () => realConfig);
+});
 
 describe('doctor custom components', () => {
   let tempDir: string;
@@ -297,22 +306,25 @@ describe('doctor custom components', () => {
     // This covers the defensive catch block in checkCustomComponents (lines 600-606).
     // Under normal circumstances loadConfig never throws because it catches all
     // internal errors and returns getDefaultConfig(), so a mock is required.
-    mock.module('../../../src/core/config.js', () => ({
-      loadConfig: async () => {
-        throw new Error('Permission denied');
-      },
-      getDefaultConfig,
-      saveConfig,
-    }));
+    try {
+      mock.module(CONFIG_MODULE, () => ({
+        loadConfig: async () => {
+          throw new Error('Permission denied');
+        },
+        getDefaultConfig,
+        saveConfig,
+      }));
 
-    const result = await checkCustomComponents(tempDir, '.claude');
+      const result = await checkCustomComponents(tempDir, '.claude');
 
-    expect(result.status).toBe('pass');
-    expect(result.name).toBe('Custom components');
-    expect(result.message).toBe('No config file found');
-    expect(result.fixable).toBe(false);
-
-    // Restore real module
-    mock.restore();
+      expect(result.status).toBe('pass');
+      expect(result.name).toBe('Custom components');
+      expect(result.message).toBe('No config file found');
+      expect(result.fixable).toBe(false);
+    } finally {
+      // Restore the real module so later tests in this file (any order) and other files see it.
+      // mock.restore() alone does not revert module mocks.
+      mock.module(CONFIG_MODULE, () => realConfig);
+    }
   });
 });
