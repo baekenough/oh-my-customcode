@@ -85,11 +85,13 @@ The SubagentStop hook array in `hooks.json` defines a strict ordering:
 
 ```json
 "SubagentStop": [
-  { "command": "bash .claude/hooks/scripts/task-outcome-recorder.sh" },
-  { "command": "bash .claude/hooks/scripts/stall-detection-advisor.sh" },
+  { "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/task-outcome-recorder.sh\"" },
+  { "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/stall-detection-advisor.sh\"" },
   ...
 ]
 ```
+
+Hook commands are anchored to the project root with `${CLAUDE_PROJECT_DIR:-.}`: hooks run in the session cwd, Claude Code injects `CLAUDE_PROJECT_DIR` into hook processes, and the `:-.` fallback keeps the relative-path behavior when it is unset. `hooks.json` is the source; the tracked `settings.json` hooks blocks are generated from it by `bun run sync:hooks` (also run at the end of `bun run build`) — never hand-edit them.
 
 **task-outcome-recorder MUST run before stall-detection-advisor.**
 

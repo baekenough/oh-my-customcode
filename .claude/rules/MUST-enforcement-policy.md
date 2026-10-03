@@ -33,7 +33,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 | Anti-pattern | Required |
 |--------------|----------|
-| `hooks.json`만 편집하고 커밋 → settings.json `hooks` 블록 미재생성 | 편집 후 `hooks-settings.ts` 변환기(빌드) 실행 → settings.json(+local+templates) 재생성 확인 후 커밋 |
+| `hooks.json`만 편집하고 커밋 → settings.json `hooks` 블록 미재생성 | 편집 후 `bun run sync:hooks`(또는 `bun run build`) 실행 → settings.json(+local+templates) 재생성 확인 후 커밋 |
 
 교훈: **배선 확인 ≠ 전달 확인 ≠ 발화 확인 ≠ 로드 확인** — R020 "actual outcome ≠ attempt"의 훅 도메인 재현 사례. 상세는 Read 도구로 열람.
 

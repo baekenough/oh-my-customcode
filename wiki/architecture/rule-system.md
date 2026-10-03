@@ -1,7 +1,7 @@
 ---
 title: Rule Enforcement System
 type: architecture
-updated: 2026-08-29
+updated: 2026-10-03
 sources:
   - .claude/rules/MUST-enforcement-policy.md
   - .claude/rules/MUST-continuous-improvement.md
@@ -31,7 +31,7 @@ oh-my-customcode uses an **advisory-first enforcement model**: most behavioral r
 
 Rules live in `.claude/rules/` and are auto-injected into the system prompt. After context compaction, critical MUST rules are re-injected via PostCompact hooks to combat "compaction amnesia." A newer complement, `claude-md-reinject.sh` (SessionStart, matcher `*`, #1617), re-injects the full project `CLAUDE.md` text on every session start (startup/resume/clear) and on compact-resume — closing the gap where PostCompact only re-injects rule *summaries*, not the CLAUDE.md original. Opt-out via `OMCUSTOM_CLAUDEMD_REINJECT=off`; degrades silently (no-op) if `CLAUDE.md` or `jq` is missing.
 
-**Hook wiring path (v1.1.53, #1623):** `.claude/hooks/hooks.json` is a **source** file, not something CC loads directly — the CC 2.1.251 binary has zero references to a `.claude/hooks` path, and `settings.json` has never historically carried a `hooks` key. What CC actually loads is the official `hooks` block inside `.claude/settings.json` (+ `.local.json`, + the `templates/` mirror), a **build artifact** produced by `src/core/hooks-settings.ts` (its matcher-condition DSL's 12 cases become 3 self-guarding scripts + 9 stdin-guard wrapper cases). `omcustom init` merges the result via `installHooksSettings()`. Editing only `hooks.json` without regenerating settings means the change never fires. A fresh-session probe (2026-08-29) is the first confirmed session-level firing: 9 SessionStart `hook_success` events, 5 `[claude-md-reinject]` marker hits, and UserPromptSubmit/Stop firing observed.
+**Hook wiring path (v1.1.53, #1623):** `.claude/hooks/hooks.json` is a **source** file, not something CC loads directly — the CC 2.1.251 binary has zero references to a `.claude/hooks` path, and `settings.json` has never historically carried a `hooks` key. What CC actually loads is the official `hooks` block inside `.claude/settings.json` (+ `.local.json`, + the `templates/` mirror), a **build artifact** produced by `src/core/hooks-settings.ts` (its matcher-condition DSL's 12 cases become 3 self-guarding scripts + 9 stdin-guard wrapper cases). `omcustom init` merges the result via `installHooksSettings()`. Editing only `hooks.json` without regenerating settings means the change never fires; regenerate with `bun run sync:hooks` (or `bun run build`), confirm settings.json (+local+templates) were regenerated, then commit. A fresh-session probe (2026-08-29) is the first confirmed session-level firing: 9 SessionStart `hook_success` events, 5 `[claude-md-reinject]` marker hits, and UserPromptSubmit/Stop firing observed.
 
 ## Enforcement Tiers
 

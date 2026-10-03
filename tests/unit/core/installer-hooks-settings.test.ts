@@ -17,10 +17,20 @@
  * (possibly still-in-progress) implementation.
  */
 
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+// Capture the real module before any mock.module call. bun's mock.module persists across
+// test files (mock.restore() does not undo it), so without the afterAll re-registration
+// below, later files importing hooks-settings.js would receive this file's stub (#1767).
+// This top-level capture runs once and does not affect per-test mocking behavior.
+const realHooksSettings = { ...(await import('../../../src/core/hooks-settings.js')) };
+
+afterAll(() => {
+  mock.module('../../../src/core/hooks-settings.js', () => realHooksSettings);
+});
 
 describe('installer hooks.json -> settings.local.json wiring (#1623)', () => {
   let tempDir: string;

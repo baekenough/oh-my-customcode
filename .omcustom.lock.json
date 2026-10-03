@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "1.1.91",
-  "generatedAt": "2026-09-29T02:54:07.379Z",
+  "generatedAt": "2026-10-03T06:14:43.103Z",
   "templateVersion": "1.1.91",
   "files": {
     ".claude/rules/SHOULD-interaction.md": {
@@ -110,8 +110,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "3f3c5f34ab5c0d441bc10cda1b83c00c9dfbf5152ef03bcb63112b42ae228a03",
-      "size": 24666,
+      "templateHash": "40de4d4b7b04690298cd03956e784a30f6541499195c9c69c1c544c912252887",
+      "size": 24673,
       "component": "rules"
     },
     ".claude/rules/index.yaml": {
@@ -1125,8 +1125,8 @@
       "component": "hooks"
     },
     ".claude/hooks/skill-count-reminder.sh": {
-      "templateHash": "3d2f3908c497d26cb1c0bf408f17a8302fa2b724cdc455797f16016e44f95c03",
-      "size": 1461,
+      "templateHash": "ac02e59b2c423a5d49150d4d6886a9cd5f8b6b136fc39925a651c0ac6cd6af24",
+      "size": 1766,
       "component": "hooks"
     },
     ".claude/hooks/scripts/claude-md-reinject.sh": {
@@ -1145,8 +1145,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
-      "templateHash": "5546b5d75535ece21a4ba7d197d60f28f5c725f3abcb14f0b3b93e5a890f57ca",
-      "size": 2437,
+      "templateHash": "26ae8bbdb57e113434a86520a13424b8d042ea4ace06487eab40932e048fe4a5",
+      "size": 2451,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stage-blocker.sh": {
@@ -1225,8 +1225,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/schema-validator.sh": {
-      "templateHash": "9b0af3e85d298b6b04139489a106440e4da6ee71339c360ba192b667f02adec2",
-      "size": 3816,
+      "templateHash": "df4fed7940dc893226c8046f4fb2f9a32ae5d63ea7af36d1c08c8fb090adc7c5",
+      "size": 4131,
       "component": "hooks"
     },
     ".claude/hooks/scripts/git-delegation-guard.sh": {
@@ -1340,8 +1340,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "794c24fcd560ef03cb6907edb630b094f8eb971b2eb4cb1fd14f4a7f9917b372",
-      "size": 29170,
+      "templateHash": "f4e0ee471f8f45f3bf636aa62a68eca66ff04e762b80af6e7a7ae897738b3805",
+      "size": 30504,
       "component": "hooks"
     },
     ".claude/contexts/ecomode.md": {
@@ -1955,8 +1955,8 @@
       "component": "guides"
     },
     "guides/hook-data-flow/README.md": {
-      "templateHash": "17dd482fc76adad7b527e9c560795126cbbff01699ec721c3e591b14b942b1e6",
-      "size": 6715,
+      "templateHash": "3e58172e0c5f072aef0371d11e0b87ca1324d3fbb2a1714af815cc5b6e096639",
+      "size": 7202,
       "component": "guides"
     },
     "guides/browser-automation/02-lightweight-cdp-alternatives.md": {

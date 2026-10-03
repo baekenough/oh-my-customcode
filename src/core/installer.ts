@@ -17,8 +17,10 @@ import {
   fileExists,
   getPackageRoot,
   readJsonFile,
+  readTextFile,
   resolveTemplatePath,
   writeJsonFile,
+  writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
@@ -35,6 +37,7 @@ import {
   renderGitWorkflowEN,
   renderGitWorkflowKO,
 } from './git-workflow.js';
+import { migrateHookCommands } from './hook-command-migration.js';
 import { mergeHooksIntoSettings } from './hooks-settings.js';
 import {
   getComponentPath,
@@ -415,6 +418,49 @@ async function installHooksSettings(
   }
 }
 
+/** UTF-8 byte order mark, as decoded by readFile(..., 'utf-8'). */
+const BOM = '\uFEFF';
+
+/**
+ * Re-anchor cwd-relative omcustom hook commands in settings.local.json after the
+ * `--backup` restore step (#1767).
+ *
+ * restoreCriticalFiles() deep-merges the user's OLD settings.local.json over the freshly
+ * written one with preserved values winning and arrays replaced, so per-event hook arrays
+ * from the old file bring back old relative commands. Rewrite-only: nothing is added or
+ * removed, and the file is written back only when at least one command changed.
+ */
+export async function migrateRestoredHookCommands(
+  targetDir: string,
+  result: InstallResult
+): Promise<void> {
+  const layout = getProviderLayout();
+  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
+
+  if (!(await fileExists(settingsPath))) {
+    return;
+  }
+
+  try {
+    const raw = await readTextFile(settingsPath);
+    // Strip a leading UTF-8 BOM before parsing (JSON.parse rejects it), and re-emit the same
+    // byte-order mark and trailing newline on write so the file keeps its original conventions.
+    const hasBom = raw.startsWith(BOM);
+    const trailingNewline = raw.endsWith('\n') ? '\n' : '';
+    const current = JSON.parse(hasBom ? raw.slice(BOM.length) : raw) as Record<string, unknown>;
+    const { settings, rewritten } = migrateHookCommands(current);
+    if (rewritten > 0) {
+      const body = `${JSON.stringify(settings, null, 2)}${trailingNewline}`;
+      await writeTextFile(settingsPath, hasBom ? `${BOM}${body}` : body);
+      debug('install.hook_commands_migrated', { rewritten: String(rewritten) });
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    result.warnings.push(`Failed to migrate hook commands in settings.local.json: ${message}`);
+    warn('install.hook_commands_migration_failed', { error: message });
+  }
+}
+
 /**
  * Install entry doc and track result
  */
@@ -529,6 +575,8 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
           result.warnings.push(`Failed to restore ${failure.path}: ${failure.reason}`);
         }
       }
+
+      await migrateRestoredHookCommands(options.targetDir, result);
 
       await cleanupPreservation(preservation.tempDir);
     }
