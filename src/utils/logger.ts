@@ -114,6 +114,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'lockfile.component_dir_missing': 'Component directory missing: {{path}}',
     'lockfile.hash_failed': 'Failed to hash file: {{path}} — {{error}}',
     'lockfile.entry_added': 'Lockfile entry added: {{path}} ({{component}})',
+    'lockfile.entry_git_excluded': 'Lockfile entry skipped (not in git listing): {{path}}',
 
     // Update messages
     'update.start': 'Checking for updates...',
@@ -260,6 +261,7 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'lockfile.component_dir_missing': '컴포넌트 디렉토리 없음: {{path}}',
     'lockfile.hash_failed': '파일 해시 실패: {{path}} — {{error}}',
     'lockfile.entry_added': '잠금 파일 항목 추가: {{path}} ({{component}})',
+    'lockfile.entry_git_excluded': '잠금 파일 항목 제외 (git 목록에 없음): {{path}}',
 
     // Update messages
     'update.start': '업데이트 확인 중...',
