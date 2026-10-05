@@ -5,6 +5,7 @@
  * project discovery does not rely on directory-scanning heuristics.
  */
 
+import { realpathSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve, sep } from 'node:path';
@@ -44,6 +45,18 @@ export function isTempPath(projectPath: string): boolean {
   candidates.add('/tmp');
   candidates.add('/var/tmp');
   candidates.add('/var/folders');
+
+  // #1806: on macOS /var and /tmp are symlinks into /private, and process.cwd()
+  // returns the realpath form, so also accept each candidate's realpath. The
+  // input path is deliberately not realpath'd: registry entries may no longer
+  // exist, and the expanded candidate set already covers both forms.
+  for (const candidate of [...candidates]) {
+    try {
+      candidates.add(realpathSync(candidate));
+    } catch {
+      // Candidate does not exist (e.g. TMPDIR points at a missing dir) — skip it.
+    }
+  }
 
   for (const candidate of candidates) {
     if (normalized === candidate || normalized.startsWith(candidate + sep)) {
