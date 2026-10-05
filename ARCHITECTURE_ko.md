@@ -616,7 +616,7 @@ Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인 (규칙 레벨 버�
 | 규칙 버전-노트 보존 기준선 | v2.1.230 — 이 선 미만 노트는 더 최신 노트가 인용하거나 현행 동작을 서술하는 경우가 아니면 HTML-comment 은퇴 후보(R016) |
 | Agent Teams (R018) | **Dormant** — 현행 모델의 도구 목록에 `TeamCreate`/`TeamDelete`가 부재함(CC v2.1.233부터 실측) — `TeamCreate`가 재등장하기 전까지는 R009/R010이 대신 지배 |
 | Todo/Task 도구 | Opus 4.8/Sonnet 5/Fable 5/Mythos 5+ 에서 `TodoWrite`, `TaskCreate/Get/List/Update`가 기본 부재(CC v2.1.233+); `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`로 복원 가능. `TaskStop`/`SendMessage`는 여전히 사용 가능; `TaskOutput`은 v2.1.277+에서 제거됨(background task 출력은 Read로 직접 읽음) |
-| 프로젝트 스코프 `permissions.defaultMode` | CC v2.1.257+부터 무시됨 — user/managed 스코프 설정 또는 `--permission-mode` 플래그만이 실제로 `bypassPermissions`를 부여함; Agent 도구 호출의 per-call `mode: "bypassPermissions"`는 v2.1.212부터 no-op(서브에이전트가 부모 세션의 모드를 상속) |
+| 프로젝트/로컬 스코프 `permissions.defaultMode` | CC v2.1.257+부터 프로젝트·로컬 스코프에서 `bypassPermissions` 값이 무시됨(2.1.257 CHANGELOG상 `"auto"`와 마찬가지로; `"auto"` 부분은 CHANGELOG에 근거하며 이 저장소에서 측정한 것이 아님), 측정된 다른 값(`default`, `acceptEdits` 등)은 그대로 적용됨; `bypassPermissions`는 user/managed 스코프 설정 또는 실행 플래그(`--permission-mode`, `--dangerously-skip-permissions`)로만 부여됨. 우선순위 상세: R010 "Universal bypassPermissions"; Agent 도구 호출의 per-call `mode: "bypassPermissions"`는 v2.1.212부터 no-op(서브에이전트가 부모 세션의 모드를 상속) |
 | Agent 도구 `model` 파라미터 | 유효한 스폰 시점 override(Tier 3; CC v2.1.289에서 관측) — `sonnet`/`opus`/`haiku`/`fable`만 허용; 에이전트 프론트매터 `model` 및 설정된 기본 서브에이전트 모델보다 우선; 생략 시 프론트매터 `model`, 없으면 기본값(기본 서브에이전트 모델이 설정되지 않았으면 부모 상속) 적용; `subagent_type: "fork"`에서는 무시됨(fork는 항상 부모 모델 상속) |
 
 ---

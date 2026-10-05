@@ -1566,7 +1566,7 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - CHANGELOG 원문: "Added a "Yes, but ask again next time" answer to auto mode's prompt before a read outside the working directories, so you can allow that one read and still be asked about later ones"
   (284) 작업 디렉터리 밖 읽기를 묻는 auto mode 프롬프트에 "Yes, but ask again next time" 응답이 추가되어, 해당 읽기 한 건만 허용하고 이후 읽기는 계속 확인받을 수 있습니다. 이는 사용자 대화형 프롬프트의 응답 선택지이며 R010 Self-Check가 실측하는 유효 permission mode 판정과 R002 도구 티어 정책을 바꾸지 않습니다.
 - CHANGELOG 원문: "Changed interactive terminal and VS Code sessions to start in auto mode when no permission mode is configured, on every plan and provider; `permissions.defaultMode` still overrides it"
-  (284) permission mode가 설정되지 않은 대화형 터미널·VS Code 세션은 모든 플랜과 provider에서 auto mode로 시작합니다(`permissions.defaultMode`가 설정돼 있으면 계속 그 값이 우선). 위 v2.1.283 섹션의 "서드파티 provider 또는 텔레메트리 off" 조건이 모든 플랜·provider로 넓어진 것입니다. 이 변경은 대화형 터미널·VS Code 세션에 대한 것이므로, R010 Self-Check의 `jq -r '.permissions.defaultMode // "unset"'`(user scope 실측, 무인 실행 전 점검)가 "unset"을 내더라도 무인(`-p`/headless) 실행의 모드를 이 변경으로 판단해서는 안 됩니다. 무인 실행은 이 변경의 대상이 아닙니다.
+  (284) permission mode가 설정되지 않은 대화형 터미널·VS Code 세션은 모든 플랜과 provider에서 auto mode로 시작합니다(`permissions.defaultMode`가 설정돼 있으면 계속 그 값이 우선). 위 v2.1.283 섹션의 "서드파티 provider 또는 텔레메트리 off" 조건이 모든 플랜·provider로 넓어진 것입니다. 이 변경은 대화형 터미널·VS Code 세션에 대한 것이므로, R010 Self-Check의 `jq -r '.permissions.defaultMode // "unset"'`(R010은 이를 user·project·local 세 범위에 적용, 무인 실행 전 점검)가 "unset"을 내더라도 무인(`-p`/headless) 실행의 모드를 이 변경으로 판단해서는 안 됩니다. 무인 실행은 이 변경의 대상이 아닙니다.
 
 ### 상태줄 · 재시도 · 컨텍스트
 
@@ -1630,7 +1630,7 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - CHANGELOG 원문: "Fixed `claude -p --permission-prompt-tool`: a background subagent's permission request now goes to the prompt tool instead of being auto-denied"
   (285) `claude -p --permission-prompt-tool` 사용 시 백그라운드 서브에이전트의 권한 요청이 자동 거부되는 대신 prompt tool로 전달됩니다. headless 권한 라우팅에 관한 항목이며 이 저장소에는 연결된 배선이 없습니다.
 - CHANGELOG 원문: "Changed `claude -p` and Python Agent SDK sessions on third-party providers or with telemetry off to start in auto mode when no permission mode is configured, like interactive sessions; `--permission-mode` still overrides it"
-  (285) 서드파티 provider이거나 텔레메트리가 꺼진 `claude -p`·Python Agent SDK 세션도 permission mode가 설정되지 않았으면 대화형 세션처럼 auto mode로 시작하며 `--permission-mode`가 계속 우선합니다. 위 v2.1.283·v2.1.284 섹션의 auto mode 시작 조건 노트를 이어받는 항목입니다. R010 Self-Check는 user scope `permissions.defaultMode`를 실측하는 절차이므로 바뀌지 않습니다.
+  (285) 서드파티 provider이거나 텔레메트리가 꺼진 `claude -p`·Python Agent SDK 세션도 permission mode가 설정되지 않았으면 대화형 세션처럼 auto mode로 시작하며 `--permission-mode`가 계속 우선합니다. 위 v2.1.283·v2.1.284 섹션의 auto mode 시작 조건 노트를 이어받는 항목입니다. R010 Self-Check는 user·project·local 세 범위의 `permissions.defaultMode`를 함께 실측하는 절차이며, 이 항목으로 바뀌지 않습니다.
 
 ### 훅
 
@@ -1893,7 +1893,23 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 **Action items**:
 - 권한·Bash deny/ask, MCP, 플러그인·에이전트 항목은 기존 룰이 이미 다루는 전제를 강화하거나 이 저장소에 해당 구성(sandbox, `permissions.deny`, 조직 관리 MCP, `.claude-plugin/`)이 없는 항목이며 룰 문안 변경은 불필요합니다.
-- 룰 변경 제안은 없습니다.
+- 룰 변경 제안은 없습니다(CC 2.1.289 CHANGELOG 항목 기준; #1827·#1828 실측에 따른 룰 정정은 아래 두 노트에 기록).
+
+### permission mode 실측 노트 (#1828)
+
+- 실측(CC 2.1.289, 2026-10-06, `claude -p … --output-format stream-json --verbose --no-session-persistence`의 `system/init` `permissionMode`): `defaultMode` 우선순위는 local > project > user입니다. project의 `"default"`는 user의 `auto`/`bypassPermissions`를 덮고, 키가 없으면 user 값이 유지됩니다. project/local `bypassPermissions`는 무시되며(디버그 로그: `[WARN] settings defaultMode "bypassPermissions" ignored — only policy/user/flag settings may grant bypass mode`) 그 범위는 `default`로 귀결되어 user의 bypass가 아닌 값을 덮습니다: 격리 user=`acceptEdits` + project 또는 local=`bypassPermissions` → `default`(E8b/E8c), user∈{`plan`,`auto`,`acceptEdits`} + project·local=`bypassPermissions` → `default`(C4·C6·C7·C9). user=`bypassPermissions`이면 project·local=`bypassPermissions`여도 결과는 `bypassPermissions`였고 무시 WARN은 0줄이었습니다(C1~C3). 근거: 이슈 #1828 코멘트(E1~E8)와 정정 코멘트(C0~C9 원자료, https://github.com/baekenough/oh-my-customcode/issues/1828#issuecomment-5998595610). `[가설]`(미관측): 인터랙티브 TTY 세션, `default`에서 실제 프롬프트 여부, managed 정책·`--settings`, 다른 CC 버전, 서브에이전트 상속.
+- 기존 설치본 안내(`bun -e` deepMerge 시뮬레이션으로 관측: `settings.json` deep merge는 사용자 측 값을 우선하고 `preserveFiles`도 적용되어, 이미 설치된 프로젝트의 `permissions.defaultMode: "default"`는 업데이트 후에도 남습니다): 값 확인은 `jq -r '.permissions.defaultMode // "unset"' .claude/settings.json`(프로젝트 루트에서)이며, 직접 설정한 값이 아니라면 해당 키를 삭제하면 user 범위 값이 유지됩니다(예: `jq 'del(.permissions.defaultMode)' .claude/settings.json > settings.json.new && mv settings.json.new .claude/settings.json`).
+- 반영: R010 「Universal bypassPermissions」 단락과 Self-Check 1번, 배포 템플릿 `templates/.claude/settings.json`에서 `permissions.defaultMode: "default"`를 제거했습니다(키 부재 시 user 값 유지). `.claude/settings.json` 주석과 ARCHITECTURE 두 행도 같은 실측에 맞게 정정됐습니다.
+
+### 이름 붙인 Agent 스폰 / 암묵적 팀 실측 노트 (#1827)
+
+- 실측(CC 2.1.289, 2026-10-05~06, 오케스트레이터): Agent 도구 스키마의 `team_name`은 "Deprecated; ignored. The session has a single implicit team.", `name`은 "Name for the spawned agent. Makes it addressable via SendMessage({to: name}) while running."입니다. `name: "teams-probe"` 스폰 결과는 "Spawned successfully."로 시작하고 `agent_id: <name>@session-<id>`(내부 식별자는 자리표시자로 치환), `name: teams-probe`, "The agent is now running and will receive instructions via mailbox."를 담았으며, 이름 없는 스폰은 "Async agent launched successfully."였습니다.
+- 이름 붙인 멤버(스폰 입력 `model: haiku`)가 보고한 직접 도구 14개: Agent, AskUserQuestion, Artifact, Bash, Edit, ListAgents, Read, ReportFindings, ScheduleWakeup, SendFeedback, Skill, ToolSearch, Workflow, Write. 직접 목록에 없던 것: SendMessage, TaskCreate, TaskList, TaskUpdate, TeamCreate, TeamDelete, SubagentHandback, Glob, Grep. 멤버는 호출자를 `teammate_id="team-lead"`로 관측했고, 지연 도구 목록은 관측되지 않았습니다. 비교: frontmatter `tools:`가 명시된 `qa-writer`(이름 없이 스폰)의 런타임 도구는 Read, Write, Edit, Grep, Glob였습니다.
+- `SendMessage({to: "teams-probe"})` 결과: `{"success":true,"message":"Message sent to teams-probe's inbox", … "routing":{"sender":"team-lead","target":"@teams-probe", …}}`. `ListAgents`는 "Subagents (2): …"와 `Teammates (1): teams-probe [<ref>] · general-purpose · pane · started 4m ago`(`<ref>`는 내부 ref 자리표시자)를 구분해 표시했습니다. 멤버의 첫 보고는 `<teammate-message teammate_id="teams-probe" color="blue">` 안의 `idle_notification` 형태로 메인 대화에 도착했습니다.
+- 후속 실측: 멤버가 `ToolSearch`를 query "select:SendMessage"로 1회 호출하자 SendMessage 스키마가 반환됐습니다. 이어 `SendMessage({to: "team-lead", message: "probe-ok: SendMessage loaded via ToolSearch"})`가 반환한 원문은 `{"success": true, "message": "Message sent to team-lead's inbox", … "routing": {"sender": "teams-probe", "senderColor": "blue", "target": "@team-lead", "summary": "probe ok", "content": "probe-ok: SendMessage loaded via ToolSearch"}}`였고, 메인 대화는 `<teammate-message teammate_id="teams-probe" color="blue" summary="probe ok">probe-ok: SendMessage loaded via ToolSearch</teammate-message>`로 받았습니다. 즉 SendMessage는 직접 목록에 없어도 지연 로드할 수 있습니다.
+- `[가설]`(미관측): 멤버→다른 멤버 피어 메시징, 메시지의 메인 대화 전달 시점(관측된 것은 발신 15:26:05Z 메시지가 메인 대화의 다음 턴 경계에서 표시됐다는 사실뿐이며 원인은 미확정).
+- Task·Team 도구 실측(모델별 각 1건): haiku 팀원(스폰 입력 `model: haiku`)이 `ToolSearch`를 "select:TaskCreate,TaskList,TaskUpdate,TaskGet,TeamCreate,TeamDelete"로 호출하자 TaskCreate, TaskList, TaskUpdate, TaskGet은 반환됐고 TeamCreate, TeamDelete는 반환되지 않았습니다. sonnet 팀원(자기 보고 "You are powered by the model named Sonnet 5.5. The exact model ID is claude-sonnet-5-5.")이 "select:TaskCreate,TaskList,TaskUpdate,TaskGet,TeamCreate,TeamDelete,SendMessage"로 호출하자 SendMessage 1개만 반환되고 나머지 6개는 반환되지 않았으며, 이어 `SendMessage({to:"team-lead"})`가 "Message sent to team-lead's inbox"를 반환했습니다. 메인 세션(`claude-opus-5-5`)의 같은 Task·Team 질의는 "No matching deferred tools found."였습니다. 판정: Task 도구 가용성은 역할이 아니라 모델을 따르며, CHANGELOG 2.1.233이 Task 도구를 제거한 "Opus 4.8, Sonnet 5, Fable 5, Mythos 5, and newer models"와 일치합니다(R002 DETAIL 인용). `SendMessage`는 두 모델(haiku, sonnet-5-5) 팀원 각 1건이 로드했습니다(다른 모델은 `[가설]`). Team 도구는 측정한 셋 모두 불가입니다. `[가설]`(미관측): 팀원의 TaskList가 팀원끼리 공유되는지, opus 팀원의 도구 구성, 인터랙티브 세션.
+- 반영: R018 Detection은 `TeamCreate` 존재 기준을 유지합니다 — 오케스트레이터는 lifecycle 시작 도구 `TeamCreate`를 쓸 수 없으므로 Detection = No(dormant)입니다(R018은 Task 도구가 없어도 「Task 도구 부재 시 대체 규약」으로 의무를 유지하므로 공유 작업 목록은 판정 기준이 아닙니다). R010 「Agent Teams (required when enabled)」 문장도 같은 실측에 맞게 정정됐습니다. Detection 표의 "no member spawnable", Scope의 "`TeamCreate` 필요", 「멤버 도구 부재 시 대체 규약」(Detection = No 한정·`ToolSearch` 로드)·「Member TaskUpdate Discipline」 문장을 실측에 맞게 정정했고, R002 Tier 5의 `SendMessage` 문구와 Todo/Task 표 주석을 보강했습니다.
 
 ---
 

@@ -19,7 +19,7 @@
       "Edit(templates/.claude/**)",
       "Edit(.claude/outputs/**)"
     ],
-    "_comment_defaultMode": "DEAD CONFIG on CC v2.1.257+ (#1644): project-scope permissions.defaultMode is IGNORED. The effective mode comes from user scope (~/.claude/settings.json) or the --permission-mode launch flag. Kept for CC < v2.1.257 compatibility — do NOT rely on it for unattended runs. See R010 Universal bypassPermissions.",
+    "_comment_defaultMode": "CC v2.1.257+ ignores defaultMode bypassPermissions (and auto) in project/local settings; other values still apply (#1828 comments, CHANGELOG 2.1.257; ignore note #1644). Measured on CC 2.1.289 (#1828 comment 5998595610): under claude -p, this file's bypassPermissions combined with a user auto (as on the maintainer's machine) starts in default, shadowing the user value (interactive result unobserved; an earlier interactive record showed the user value); a user bypassPermissions value stays bypassPermissions. CC logs: \"only policy/user/flag settings may grant bypass mode\". Do NOT rely on this key for unattended runs. See R010 Universal bypassPermissions.",
     "defaultMode": "bypassPermissions"
   },
   "enableAllProjectMcpServers": true,

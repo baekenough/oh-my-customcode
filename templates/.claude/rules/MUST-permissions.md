@@ -10,7 +10,7 @@
 | 2: Default | Write, Edit, NotebookEdit | State changes explicitly, notify before modifying important files |
 | 3: Context | Agent, Skill, EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree, LSP, Monitor, TodoWrite†, AskUserQuestion, PushNotification | Context-dependent, no user approval needed |
 | 4: Approval | Bash, PowerShell, WebFetch, WebSearch | Request user approval on first use |
-| 5: Conditional | TeamCreate†, TeamDelete†, SendMessage, TaskCreate†, TaskGet†, TaskList†, TaskUpdate†, TaskStop | Available when Agent Teams enabled (TaskOutput 제거됨, v2.1.277+ — 아래 참조) |
+| 5: Conditional | TeamCreate†, TeamDelete†, SendMessage, TaskCreate†, TaskGet†, TaskList†, TaskUpdate†, TaskStop | Available when Agent Teams enabled; `SendMessage` to a named agent also delivered without `TeamCreate` (CC 2.1.289 measured) (TaskOutput 제거됨, v2.1.277+ — 아래 참조) |
 | 6: MCP | ListMcpResourcesTool, ReadMcpResourceTool, CronCreate, CronDelete, CronList, RemoteTrigger | MCP/extension tools, available when servers configured |
 
 > **†** 현행 모델의 기본 실행 환경에 **존재하지 않는다** — 아래 v2.1.233 노트 참조. 이 표는 **도구 카탈로그**이지 가용성 보증이 아니므로, 규칙이 특정 도구 호출을 의무화하기 전에 실측(도구 목록 / `ToolSearch`)으로 존재를 확인한다.
@@ -150,6 +150,8 @@ CHANGELOG v2.1.233 원문: *"Todo/task-tracking tools (TaskCreate/Get/Update/Lis
 | 미등록 (CHANGELOG 미명시 — 별도 게이팅) | `TeamCreate`, `TeamDelete` |
 | 잔존 | `TaskStop`, `SendMessage` |
 | 제거됨 (v2.1.277+) | `TaskOutput` — background task output은 Read로 직접 읽는다; `taskOutputMaxChars`/`TASK_MAX_OUTPUT_LENGTH` 무효 |
+
+이 표(2026-08-15, `claude-opus-5[1m]`/`claude-sonnet-5`)는 2026-10-06 재측정 `claude-opus-5-5` 메인에서도 같았다 — haiku 팀원 1건은 `ToolSearch`로 `TaskCreate`/`TaskList`/`TaskUpdate`/`TaskGet`을 로드했고 sonnet-5-5 팀원 1건은 불가였으며, `TeamCreate`/`TeamDelete`는 측정한 셋 모두 불가였다(CC 2.1.289 실측).
 
 <!-- DETAIL: TaskOutput 2026-08-15 측정 당시 잔존 표기(v2.1.233 기준) — CC v2.1.277 CHANGELOG: "Removed the deprecated TaskOutput tool; Claude reads a background task's output file with Read instead, and the `taskOutputMaxChars` setting and `TASK_MAX_OUTPUT_LENGTH` no longer have any effect" Origin: #1714.
 -->
