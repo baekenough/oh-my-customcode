@@ -17,9 +17,10 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { projectsCommand, writeLockFile } from '../../../src/cli/projects.js';
+import { _setRegistryDirForTesting } from '../../../src/core/registry.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -45,6 +46,7 @@ async function createProject(dir: string, version = '0.46.0'): Promise<void> {
 
 let tempRoot: string;
 let originalCwd: string;
+let originalHome: string | undefined;
 let consoleLogSpy: ReturnType<typeof spyOn>;
 let consoleErrorSpy: ReturnType<typeof spyOn>;
 
@@ -52,12 +54,28 @@ beforeEach(async () => {
   const raw = await mkdtemp(join(tmpdir(), 'omcc-cmd-test-'));
   tempRoot = realpathSync(raw);
   originalCwd = process.cwd();
+
+  // Redirect HOME to the temp dir and isolate the registry so no projectsCommand()
+  // call reads or writes the real user's ~/.oh-my-customcode registry.
+  originalHome = process.env.HOME;
+  process.env.HOME = tempRoot;
+  const registryDir = join(tempRoot, '.oh-my-customcode');
+  await mkdir(registryDir, { recursive: true });
+  await writeFile(join(registryDir, 'projects.json'), JSON.stringify({ projects: {} }), 'utf-8');
+  _setRegistryDirForTesting(registryDir);
+
   consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
   consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(async () => {
+  _setRegistryDirForTesting(undefined);
   process.chdir(originalCwd);
+  if (originalHome === undefined) {
+    delete process.env.HOME;
+  } else {
+    process.env.HOME = originalHome;
+  }
   consoleLogSpy.mockRestore();
   consoleErrorSpy.mockRestore();
   await rm(tempRoot, { recursive: true, force: true });
@@ -241,30 +259,24 @@ describe('writeLockFile()', () => {
 });
 
 // ---------------------------------------------------------------------------
-// projectsCommand — home directory path produces ~ in table output
-// Coverage for shortenPath() line 372 (the ~ branch).
-// Tests that projectsCommand succeeds when project path is inside homedir.
-// The ~ rendering in output is verified here; inline with the homedir path.
+// projectsCommand — HOME-relative path produces ~ in table output
+// Coverage for shortenPath()'s ~ branch.
+// HOME is redirected to tempRoot in beforeEach, so a project directly under
+// tempRoot must render as `~/<basename>` and the raw tempRoot must not appear.
+// The real user home is never touched.
 // ---------------------------------------------------------------------------
 
 describe('projectsCommand() — home-dir path shortening in table output', () => {
-  it('succeeds when the search path is inside homedir', async () => {
-    // Create a unique temp directory directly inside homedir()
-    const homeSubDir = join(homedir(), `.omcc-test-${Date.now()}`);
-    await mkdir(homeSubDir, { recursive: true });
+  it('renders a project under the (temp) HOME as ~/<name> in the table', async () => {
+    const projectDir = await mkDir(tempRoot, 'home-shorten-project');
+    await createProject(projectDir);
 
-    try {
-      await createProject(homeSubDir);
+    const result = await projectsCommand({ paths: [projectDir], format: 'table' });
 
-      // projectsCommand with the home subdir as explicit search path.
-      const result = await projectsCommand({ paths: [homeSubDir], format: 'table' });
-
-      expect(result.success).toBe(true);
-      // At least one log call was made (search message + table content)
-      expect(consoleLogSpy.mock.calls.length).toBeGreaterThan(0);
-    } finally {
-      await rm(homeSubDir, { recursive: true, force: true });
-    }
+    expect(result.success).toBe(true);
+    const output = consoleLogSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('~/home-shorten-project');
+    expect(output).not.toContain(tempRoot);
   });
 });
 
