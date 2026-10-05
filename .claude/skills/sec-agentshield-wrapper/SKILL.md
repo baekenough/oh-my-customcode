@@ -171,4 +171,4 @@ CRG 미연결 시 Grep + Read 조합으로 fallback.
 
 ## Permission Mode
 
-이 스킬에서 Agent 도구를 사용하여 에이전트를 스폰할 경우, 항상 `mode: "bypassPermissions"` 를 전달해야 한다. Agent 도구의 기본값(`acceptEdits`)은 에이전트 frontmatter `permissionMode` 를 덮어쓰므로 무인 실행 중 권한 프롬프트가 발생할 수 있다.
+호환을 위해 Agent 호출에 `mode: "bypassPermissions"`를 전달하십시오. CC 2.1.212 미만에서는 필수이며(호출별 기본값 `acceptEdits`가 에이전트 frontmatter `permissionMode`를 덮어씁니다), 2.1.212+에서는 무시되고 서브에이전트가 부모 세션의 권한 모드를 상속합니다(에이전트 frontmatter `permissionMode`로 조정 가능). 무인 실행 전 유효 모드 확인은 R010 「Universal bypassPermissions」 참조.

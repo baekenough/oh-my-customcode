@@ -1,7 +1,7 @@
 ---
 title: Professor Triage
 type: skill
-updated: 2026-09-25
+updated: 2026-10-05
 sources:
   - .claude/skills/professor-triage/SKILL.md
 related:
@@ -65,7 +65,7 @@ Independent of the `auto-dev` compression tier selected, Phase 1-4 may be replac
 
 ## Artifact Output (R006/R010)
 
-Under `mode: "bypassPermissions"`, Phase 4 agents write directly to `.claude/outputs/` with the Write/Edit tools — no `/tmp/*.sh` temp-script wrapping is needed (CC v2.1.121+, #1101). Every Agent tool call MUST pass `mode: "bypassPermissions"` (the Agent tool default `acceptEdits` overrides agent frontmatter `permissionMode`); include this directive inline in agent prompts when spawning Phase 4 agents — NOT in SKILL.md body alone.
+Under the `bypassPermissions` permission mode, Phase 4 agents write directly to `.claude/outputs/` with the Write/Edit tools — no `/tmp/*.sh` temp-script wrapping is needed (CC v2.1.121+, #1101). Agent tool calls pass `mode: "bypassPermissions"` for compatibility: it is required on CC < 2.1.212 (the per-call default `acceptEdits` overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where the parent session mode applies unless agent frontmatter `permissionMode` overrides it (the Delegation Contract Mode column now reads "pass `bypassPermissions` (required on CC < 2.1.212; ignored on 2.1.212+ ...)"); include the write-permission directive inline in agent prompts when spawning Phase 4 agents — NOT in SKILL.md body alone.
 
 ## Relationships
 

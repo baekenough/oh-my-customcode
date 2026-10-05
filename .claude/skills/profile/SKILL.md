@@ -23,7 +23,7 @@ Switch the active plugin set to match a workflow profile, reducing per-spawn ski
 ## Implementation rules
 
 > **.claude/ path handling (CC v2.1.121+)**
-> Direct Write/Edit on `.claude/profiles/.active` and `~/.claude/settings.json` is permitted under `mode: "bypassPermissions"` (CC v2.1.121+, #1101). The legacy `/tmp/*.sh` bypass is deprecated. For CC < v2.1.121, see git history for the legacy pattern.
+> Direct Write/Edit on `.claude/profiles/.active` and `~/.claude/settings.json` is permitted under the `bypassPermissions` permission mode (CC v2.1.121+, #1101). The legacy `/tmp/*.sh` bypass is deprecated. For CC < v2.1.121, see git history for the legacy pattern.
 
 ## Profiles directory
 
@@ -70,10 +70,10 @@ Profile: web-app
   Disable: codex, ralph-wiggum, agent-sdk-dev, ...
 ```
 
-6. Apply changes via direct Edit on `~/.claude/settings.json` (`mode: "bypassPermissions"`, CC v2.1.121+):
+6. Apply changes via direct Edit on `~/.claude/settings.json` (under `bypassPermissions` permission mode, CC v2.1.121+):
    - Read `~/.claude/settings.json`, merge the computed diff into `enabledPlugins` (set enabled plugins to `true`, disabled plugins to `false`), then Write the updated JSON back.
 
-7. Write active marker via direct Write on `.claude/profiles/.active` (`mode: "bypassPermissions"`):
+7. Write active marker via direct Write on `.claude/profiles/.active` (under `bypassPermissions` permission mode):
    - Write the profile `<name>` as plain text content to `.claude/profiles/.active`.
 
 8. Confirm:
@@ -86,7 +86,7 @@ IMPORTANT: Restart this Claude Code session for plugin changes to take effect.
 
 ## Workflow: `/profile reset`
 
-1. Remove `.claude/profiles/.active` marker via direct `Bash: /bin/rm .claude/profiles/.active` (`mode: "bypassPermissions"`)
+1. Remove `.claude/profiles/.active` marker via direct `Bash: /bin/rm .claude/profiles/.active` (under `bypassPermissions` permission mode)
 2. Print: `[Done] Profile marker removed. Full plugin set will be active after restart.`
 3. Note: does NOT revert `~/.claude/settings.json` — user should re-run `/profile load <other>` or manually restore
 

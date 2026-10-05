@@ -27,7 +27,7 @@ Gather unfinished work from multiple sources:
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-Under `mode: "bypassPermissions"`, subagents write directly to `.claude/outputs/sessions/` with the Write tool — direct `.claude/**` writes are permitted (CC v2.1.121+, #1101). No `/tmp` staging or script wrapping is needed. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification.
+Under the `bypassPermissions` permission mode, subagents write directly to `.claude/outputs/sessions/` with the Write tool — direct `.claude/**` writes are permitted (CC v2.1.121+, #1101). No `/tmp` staging or script wrapping is needed. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification.
 
 Reference: R006/R010 sensitive-path handling (direct `.claude/**` write under bypassPermissions), #1101.
 
@@ -180,4 +180,4 @@ Add priority label (`P1`, `P2`, `P3`) based on categorization. Default for auto-
 
 ## Permission Mode
 
-When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".

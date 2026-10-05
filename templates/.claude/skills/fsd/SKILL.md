@@ -236,11 +236,10 @@ If any of those underlying skills evolve, FSD automatically benefits — its onl
 
 ## Permission Mode Note
 
-When this skill delegates work via Agent tool calls, ALL Agent tool calls MUST include `mode: "bypassPermissions"` per R010 Universal bypassPermissions.
+호환을 위해 Agent 호출에 `mode: "bypassPermissions"`를 전달하십시오. CC 2.1.212 미만에서는 필수이며(호출별 기본값 `acceptEdits`가 에이전트 frontmatter `permissionMode`를 덮어씁니다), 2.1.212+에서는 무시되고 서브에이전트가 부모 세션의 권한 모드를 상속합니다(에이전트 frontmatter `permissionMode`로 조정 가능). 무인 실행 전 유효 모드 확인은 R010 「Universal bypassPermissions」 참조.
 
-⚠ **그 파라미터는 CC v2.1.212+ 에서 무시되며, 프로젝트 scope `permissions.defaultMode` 역시
-CC v2.1.257+ 에서 무시된다(#1644).** 즉 위 지시를 지켰다는 사실은 **무인 실행의 증거가 아니다**.
-자율 루프 진입 전에 유효 모드를 실측한다:
+⚠ 프로젝트 scope `permissions.defaultMode` 역시 CC v2.1.257+ 에서 무시됩니다(#1644). 즉 `mode` 파라미터를 넘겼다는 사실은 **무인 실행의 증거가 아닙니다**.
+자율 루프 진입 전에 유효 모드를 실측합니다:
 
 ```bash
 jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json 2>/dev/null || echo unset

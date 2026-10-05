@@ -1,7 +1,7 @@
 ---
 title: Harness Synthesizer
 type: skill
-updated: 2026-04-18
+updated: 2026-10-05
 sources:
   - .claude/skills/harness-synthesizer/SKILL.md
 related:

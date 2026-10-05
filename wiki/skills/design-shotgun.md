@@ -1,7 +1,7 @@
 ---
 title: Design Shotgun
 type: skill
-updated: 2026-04-19
+updated: 2026-10-05
 sources:
   - .claude/skills/design-shotgun/SKILL.md
 related:
@@ -39,7 +39,7 @@ Generates 4 independent design variations simultaneously (Minimal, Data-dense, V
 
 - **Related skills**: [[impeccable-design]], [[web-design-guidelines]], [[product-strategy]]
 - **Agents**: [[agents/fe-design-expert]] (production refinement after selection)
-- **Rules**: [[R009]] (4 parallel agents), [[R002]] (bypassPermissions for unattended spawning)
+- **Rules**: [[R009]] (4 parallel agents), [[R002]] (permission mode for unattended spawning: pass `mode: "bypassPermissions"` for compatibility — required on CC < 2.1.212, ignored on 2.1.212+, where subagents inherit the parent session's permission mode)
 - **Source**: Adapted from [garrytan/gstack](https://github.com/garrytan/gstack) /design-shotgun pattern
 
 ## Sources

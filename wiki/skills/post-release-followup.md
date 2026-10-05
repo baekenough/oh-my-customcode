@@ -1,7 +1,7 @@
 ---
 title: Post-Release Followup
 type: skill
-updated: 2026-09-24
+updated: 2026-10-05
 sources:
   - .claude/skills/post-release-followup/SKILL.md
 related:

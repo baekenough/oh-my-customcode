@@ -492,7 +492,7 @@ steps:
       - Parallel execution per R009 (max 4 concurrent, respect dependencies)
       - Issues whose prerequisites failed in-run MUST be skipped (log reason)
       - No direct orchestrator writes (R010)
-      - All Agent tool calls MUST pass mode: "bypassPermissions" to prevent permission prompts during unattended execution
+      - On CC < 2.1.212 Agent tool calls need `mode: "bypassPermissions"` (the per-call default acceptEdits overrides frontmatter `permissionMode`), so pass it for compatibility. On CC >= 2.1.212 `mode` is ignored and subagents inherit the parent session's permission mode (frontmatter `permissionMode` may adjust it). Verify the effective mode before unattended execution per R010 「Universal bypassPermissions」 (pre-triage)
       - Mid-run scope additions (a new issue added via user interrupt AFTER implement began) MUST re-enter the verify-build gate before release — do NOT let a late-added scope item ride to release on a prior verify-build pass. Critical for code changes; benign for docs-only (#1301).
       - When an implement-stage delegation edits rule/skill/guide TEXT, the orchestrator MUST NOT author the final committed wording — the subagent writes it directly from the issue body (`gh issue view <N> --json body`); the delegation prompt supplies pointers, insertion anchors, constraints, verbatim tool-output quotations, and measured facts only
         (R010 「출처 인용과 인접 문구 점검도 같은 규율」 보강 2항목, #1698 #1). The orchestrator's own requirement/scope summary counts as final wording too — copy the issue's proposal sentence from `gh issue view` output verbatim, and tag any orchestrator paraphrase "[요약 — 원문 우선]"
@@ -803,7 +803,7 @@ steps:
 
       ## Sensitive Path Handling (CC v2.1.121+)
 
-      Direct Write/Edit/Bash on `.claude/**` is permitted under `mode: "bypassPermissions"` as of CC v2.1.121 (#1101). The legacy `/tmp/*.sh` bypass is no longer required. Structural changes (new agents/skills) still go through mgr-creator with R017 verification.
+      Direct Write/Edit/Bash on `.claude/**` is permitted under the `bypassPermissions` permission mode as of CC v2.1.121 (#1101). The legacy `/tmp/*.sh` bypass is no longer required. Structural changes (new agents/skills) still go through mgr-creator with R017 verification.
 
       For CC < v2.1.121 see git history for the legacy bypass pattern.
 

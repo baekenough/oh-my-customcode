@@ -417,7 +417,7 @@ Rewind 메뉴에 이전 턴까지의 컨텍스트를 압축하되 최근 대화�
 
 `/bg` 또는 `←←`로 실행된 백그라운드 에이전트가 기본값으로 되돌아가지 않고 현재 세션의 권한 모드를 유지합니다.
 
-**oh-my-customcode 연관**: R010 `bypassPermissions` 맥락에서 중요한 개선. 이전에는 `/bg`로 에이전트를 분리하면 `bypassPermissions` 설정이 유실되어 unattended 실행 중 권한 프롬프트가 발생할 수 있었습니다. **v2.1.141+에서는 `/bg` 플로우에서 권한 모드 드롭이 더 이상 발생하지 않음** — R010 Universal bypassPermissions 규칙은 Agent tool 호출에 여전히 필요하지만, `/bg` 전환 시 추가 workaround 불필요.
+**oh-my-customcode 연관**: R010 `bypassPermissions` 맥락에서 중요한 개선. 이전에는 `/bg`로 에이전트를 분리하면 `bypassPermissions` 설정이 유실되어 unattended 실행 중 권한 프롬프트가 발생할 수 있었습니다. **v2.1.141+에서는 `/bg` 플로우에서 권한 모드 드롭이 더 이상 발생하지 않음** — R010 Universal bypassPermissions 규칙에 따라 Agent tool 호출의 `mode: "bypassPermissions"`는 CC 2.1.212 미만에서 필요하고 2.1.212+에서는 무시되지만 호환을 위해 계속 전달하며, `/bg` 전환 시 추가 workaround 불필요.
 
 ### `claude agents`: 백그라운드 셸 잔류 에이전트 상태 수정
 

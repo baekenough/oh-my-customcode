@@ -1,7 +1,7 @@
 ---
 title: Structured Dev Cycle
 type: skill
-updated: 2026-07-19
+updated: 2026-10-05
 sources:
   - .claude/skills/structured-dev-cycle/SKILL.md
 related:
@@ -23,7 +23,7 @@ Enforces a disciplined 6-stage cycle: Plan (Read/Glob/Grep/WebSearch/WebFetch on
 
 Stage transitions are tracked via a PID-scoped marker file, `/tmp/.claude-dev-stage-$PPID`, so concurrent Claude Code sessions do not collide. A PreToolUse hook (`stage-blocker.sh`, registered in `.claude/hooks/hooks.json`) reads the marker and blocks Write/Edit outside the `implement` stage — a safety net beyond prompt-based compliance. Because `/tmp/` is world-writable, the marker's PID suffix isolates sessions but does not restrict filesystem permissions, so sensitive data must not be stored in it.
 
-The skill previously offered a Codex-Exec Hybrid option in Stage 3 (auto-delegating scaffolding to `codex-exec`); this was retired in v0.159.0 alongside the broader codex-exec/gemini-exec/agora deprecation in favor of `codex-plugin-cc`. Stage 3 is now Claude-experts-only. For complex tasks, [[r018]] Agent Teams is preferred when available — Plan/Verify use architect and reviewer agents, Implement uses a domain expert, Compound uses a QA agent; Agent Teams is mandatory when 3+ agents or review→fix cycles are involved. Cycle depth scales with task size: skip for <3 files, abbreviated (stages 1/3/4/6) for 3-10 files, full 6-stage for 10+ files or security-critical code. Agent tool calls made during this skill's execution must pass `mode: "bypassPermissions"` (R010).
+The skill previously offered a Codex-Exec Hybrid option in Stage 3 (auto-delegating scaffolding to `codex-exec`); this was retired in v0.159.0 alongside the broader codex-exec/gemini-exec/agora deprecation in favor of `codex-plugin-cc`. Stage 3 is now Claude-experts-only. For complex tasks, [[r018]] Agent Teams is preferred when available — Plan/Verify use architect and reviewer agents, Implement uses a domain expert, Compound uses a QA agent; Agent Teams is mandatory when 3+ agents or review→fix cycles are involved. Cycle depth scales with task size: skip for <3 files, abbreviated (stages 1/3/4/6) for 3-10 files, full 6-stage for 10+ files or security-critical code. Agent tool calls made during this skill's execution pass `mode: "bypassPermissions"` for compatibility (required on CC < 2.1.212, ignored on 2.1.212+ where subagents inherit the parent session mode; R010 "Universal bypassPermissions").
 
 ## Key Details
 

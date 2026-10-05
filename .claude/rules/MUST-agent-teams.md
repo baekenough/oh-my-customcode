@@ -448,10 +448,10 @@ Agent Teams 멤버는 long-running 작업 중 TaskUpdate 로 진행 상태를 �
 Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 명시적으로 알려야 한다. 침묵은 코디네이터가 죽었거나 멤버가 막혔다고 오인하게 만든다.
 -->
 
-`TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 미제공(R002) — 가용 시 아래 표, 부재 시 「대체 규약」을 따른다.
+`TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 미제공(R002) — 가용 시 아래 표, 부재 시 「Task 도구 부재 시 대체 규약」을 따른다.
 
 <!-- DETAIL: Task tool availability measurement note, original wording
-> **도구 가용성 선확인 (v2.1.233+)**: `TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 제거되어 이 저장소 실행 환경에 **존재하지 않는다** — 실측은 R002 「Todo/Task 도구 기본 제거」. 아래 표는 Task 도구가 가용할 때(구모델 또는 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`)의 규정이며, **부재 시 아래 대체 규약을 따른다**. 없는 도구의 호출을 의무로 남겨두면 실행 불가능한 규정이 된다.
+> **도구 가용성 선확인 (v2.1.233+)**: `TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 제거되어 이 저장소 실행 환경에 **존재하지 않는다** — 실측은 R002 「Todo/Task 도구 기본 제거」. 아래 표는 Task 도구가 가용할 때(구모델 또는 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`)의 규정이며, **부재 시 아래 「Task 도구 부재 시 대체 규약」을 따른다**. 없는 도구의 호출을 의무로 남겨두면 실행 불가능한 규정이 된다.
 -->
 
 | 시점 | 호출 |
@@ -486,6 +486,17 @@ Reference issue: #1087.
 <!-- DETAIL: Task 도구 부재 paragraph, original wording
 `TaskList` 부재로 **공유 작업 목록이라는 조율 기반 자체가 사라지므로**, 아래 Member Completion Verification의 "보고는 신호일 뿐, 판정은 실측"이 보조 원칙이 아니라 **유일한 방어선**이 된다.
 -->
+
+### 멤버 도구 부재 시 대체 규약 (Origin: #1817)
+
+멤버의 도구 구성은 그 에이전트의 frontmatter `tools:`와 실행 환경에 좌우되는 것으로 추정된다(#1817 "추정 원인 (미검증)") — `SendMessage`·`Agent`·`ToolSearch`가 있다고 가정하지 않는다(#1817: 멤버 3종에서 일부 부재 관측). 전용 `Glob`/`Grep`은 실측됐다(R002 ‡, CC 2.1.289): frontmatter `tools:`에 명시한 `qa-writer`는 받았고, 명시 목록이 없는 메인 세션에는 없었다 — 명시되지 않은 쪽은 부재로 전제한다. 멤버 측 `SendMessage` 지시(위 「Task 도구 부재 시 대체 규약」 표, TaskUpdate 표의 "차단 시" 행, 「Blocked Agent Behavior」의 "Post-completion: SendMessage + wait silently")는 모두 `SendMessage` 부재 시 아래 표를 따른다.
+
+| 부재 도구 | 대체 수단 |
+|-----------|-----------|
+| `SendMessage` | 아티팩트 파일 채널(R006 Artifact Channel Protocol) — 오케스트레이터가 경로를 중계 |
+| `Agent` | 멤버는 필요한 스폰(예: R017 `mgr-sauron:watch`)을 보고하고 오케스트레이터가 스폰 |
+| `ToolSearch` | 로드할 수 없는 지연 도구는 부재로 취급하고 이 표의 해당 행을 따른다(R002 §) |
+| 전용 `Glob`/`Grep` (명시 목록에 없음) | 읽기 전용 Bash(`git grep`·`find`, R002 Tier 4 승인 정책 적용). Bash도 없으면 오케스트레이터가 사전 수집해 내용으로 전달(R010 「Known Limitations (Active Cache)」) |
 
 ## Member Completion Verification (deterministic ground-truth)
 

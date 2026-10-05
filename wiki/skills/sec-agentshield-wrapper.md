@@ -1,7 +1,7 @@
 ---
 title: sec-agentshield-wrapper
 type: skill
-updated: 2026-05-18
+updated: 2026-10-05
 sources:
   - .claude/skills/sec-agentshield-wrapper/SKILL.md
   - guides/security/agentshield-pre-flight.md

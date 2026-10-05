@@ -72,10 +72,10 @@ find ~/.claude/projects -name "session-*.jsonl" \
 추출된 이벤트를 `(domain, action_verb, error_class)` 튜플로 그룹화:
 
 ```
-Cluster: (agent-design, write, missing-frontmatter)
+Cluster: (agent-delegation, spawn, unverified-permission-mode)
   → sessions: [s1, s3, s7], count: 4
   → first_seen: 2026-05-01, last_seen: 2026-05-15
-  → example_corrections: ["bypassPermissions 누락", "name 필드 없음"]
+  → example_corrections: ["무인 실행 전 유효 권한 모드 미확인", "per-call mode 값을 무인 실행 증거로 간주"]
 ```
 
 필터링 기준:
@@ -88,9 +88,9 @@ Cluster: (agent-design, write, missing-frontmatter)
 각 클러스터를 "instinct 후보"로 명명:
 
 ```
-instinct: prevent-missing-bypassPermissions
-  근거: 4회 반복 (2주), agent spawn 시 mode 누락
-  대응 패턴: spawn 전 bypassPermissions 자가 체크
+instinct: verify-permission-mode-before-unattended
+  근거: 4회 반복 (2주), 무인 실행 전 유효 권한 모드 미확인
+  대응 패턴: 무인 실행 전 유효 권한 모드 실측(R010 Self-Check 1)
   제안 자산: 기존 R010 강화 OR 신규 guard skill
 ```
 
@@ -111,9 +111,9 @@ context fork cap (12개) 확인: 신규 skill이 `context: fork` 필요 시 현�
 ```
 [instinct-extractor] {N}개 instinct 후보 발견 (최근 {DAYS}일, {M}개 세션)
 
-  1. [high] prevent-missing-bypassPermissions
-     반복: 4회 | 마지막: 2026-05-15 | 도메인: agent-design
-     대응 본능: spawn 전 mode 체크 → skill 후보: bypassPermissions-guard
+  1. [high] verify-permission-mode-before-unattended
+     반복: 4회 | 마지막: 2026-05-15 | 도메인: agent-delegation
+     대응 본능: 무인 실행 전 유효 모드 실측 → skill 후보: permission-mode-guard
 
   2. [medium] transcript-scan-format-mismatch
      반복: 3회 | 마지막: 2026-05-10 | 도메인: memory

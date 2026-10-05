@@ -9,7 +9,7 @@ context: fork
 
 When this skill spawns a subagent via the Agent tool, the spawned prompt MUST include this directive verbatim (or equivalent):
 
-> 이 스킬이 Agent tool로 서브에이전트를 스폰할 때 mode: "bypassPermissions"를 반드시 포함한다. 서브에이전트는 .claude/ 경로에 직접 Write/Edit/Bash를 사용한다(/tmp 우회 불필요, CC v2.1.121+). See R010.
+> 호환을 위해 Agent 호출에 `mode: "bypassPermissions"`를 전달하십시오. CC 2.1.212 미만에서는 필수이며(호출별 기본값 `acceptEdits`가 에이전트 frontmatter `permissionMode`를 덮어씁니다), 2.1.212+에서는 무시되고 서브에이전트가 부모 세션의 권한 모드를 상속합니다(에이전트 frontmatter `permissionMode`로 조정 가능). 무인 실행 전 유효 모드 확인은 R010 「Universal bypassPermissions」 참조. bypassPermissions 세션에서 서브에이전트는 .claude/ 경로에 직접 Write/Edit/Bash를 사용합니다(/tmp 우회 불필요, CC v2.1.121+).
 
 This directive is preserved inline because Agent-tool prompt synthesis can drop SKILL.md notes; inline mandatory directives survive (#1046 lesson).
 
@@ -54,7 +54,7 @@ quality_analysis   → qa-planner + qa-engineer (parallel)
 full_qa_cycle      → all agents (sequential)
 ```
 
-> **Permission Mode**: When spawning agents via Agent tool, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+> **Permission Mode**: Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".
 
 ### Ontology-RAG Enrichment (R019)
 

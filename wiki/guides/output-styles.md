@@ -1,7 +1,7 @@
 ---
 title: Output Styles
 type: guide
-updated: 2026-04-25
+updated: 2026-10-05
 sources:
   - .claude/output-styles/korean-engineer.md
   - .claude/rules/SHOULD-interaction.md
@@ -41,7 +41,7 @@ Default style for oh-my-customcode sessions.
 | Agent ID (R007) | Every response starts with `┌─ Agent:` header |
 | Tool ID (R008) | Every tool call preceded by `[agent][model] → Tool:` prefix |
 | Response style (R003) | Balanced by default; concise in ecomode |
-| Delegation (R010) | Orchestrator delegates all file writes; `mode: "bypassPermissions"` on all Agent calls |
+| Delegation (R010) | Orchestrator delegates all file writes; `mode: "bypassPermissions"` needed on CC < 2.1.212; on 2.1.212+ it is ignored and subagents inherit the parent session's permission mode (frontmatter `permissionMode` may override) |
 | Completion (R020) | Verifies actual outcome before `[Done]` |
 
 **Frontmatter:**

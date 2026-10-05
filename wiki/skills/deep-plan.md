@@ -1,7 +1,7 @@
 ---
 title: Deep Plan
 type: skill
-updated: 2026-09-24
+updated: 2026-10-05
 sources:
   - .claude/skills/deep-plan/SKILL.md
 related:
@@ -59,7 +59,7 @@ When a plan's Phase 1/2 measures a search or retrieval experiment (a new lane, r
 
 ## Artifact Output (R006/R010)
 
-Phase 3 verification reports written to `.claude/outputs/sessions/{date}/deep-plan-{HHmmss}.md` are written with the Write tool directly under `mode: "bypassPermissions"` — no `/tmp/*.sh` temp-script wrapping is needed (CC v2.1.121+, #1101). The directive must be included inline in synthesis agent prompts.
+Phase 3 verification reports written to `.claude/outputs/sessions/{date}/deep-plan-{HHmmss}.md` are written with the Write tool directly under the `bypassPermissions` permission mode — no `/tmp/*.sh` temp-script wrapping is needed (CC v2.1.121+, #1101). The directive must be included inline in synthesis agent prompts.
 
 ## Relationships
 

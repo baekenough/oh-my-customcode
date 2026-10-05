@@ -1,7 +1,7 @@
 ---
 title: Idea
 type: skill
-updated: 2026-04-18
+updated: 2026-10-05
 sources:
   - .claude/skills/idea/SKILL.md
 related:
@@ -31,7 +31,7 @@ Takes a free-form idea description, analyzes it against the current project stru
 
 1. **Parse** — extract core intent from natural language input
 2. **Analyze** — Glob and Grep current project structure; identify affected modules, patterns, and conflicts
-3. **Assess** — spawn a sonnet agent (bypassPermissions) for feasibility: scope, complexity (XS/S/M/L), dependencies, risks
+3. **Assess** — spawn a sonnet agent for feasibility (pass `mode: "bypassPermissions"` for compatibility: required on CC < 2.1.212, ignored on 2.1.212+ where subagents inherit the parent session's permission mode; see R010 "Universal bypassPermissions"): scope, complexity (XS/S/M/L), dependencies, risks
 4. **Output** — emit a fenced JSON block with `title`, `scope`, `estimatedIssues`, `details`, and `issueSpecs[]`
 
 ## Output Contract

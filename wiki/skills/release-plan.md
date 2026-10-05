@@ -1,7 +1,7 @@
 ---
 title: Release Plan
 type: skill
-updated: 2026-09-25
+updated: 2026-10-05
 sources:
   - .claude/skills/release-plan/SKILL.md
 related:

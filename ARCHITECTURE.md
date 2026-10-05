@@ -190,7 +190,7 @@ Four hooks form the observability backbone, added as part of the Harness Enginee
 
 ### 4.1 Singleton Orchestrator (R010)
 
-The main conversation is the **sole orchestrator**. It coordinates via routing skills and the Agent tool. It NEVER writes or edits files directly — all file mutations are delegated to subagents. The only exception: Agent Teams members act as local orchestrators for their own sub-tasks and CAN spawn sub-agents.
+The main conversation is the **sole orchestrator**. It coordinates via routing skills and the Agent tool. It NEVER writes or edits files directly — all file mutations are delegated to subagents. The only exception: Agent Teams members act as local orchestrators for their own sub-tasks and can spawn sub-agents only when their tool set includes the Agent tool; otherwise they use file channels and orchestrator relay.
 
 <p align="center">
   <img src="assets/diagrams/02-orchestration-flow.png" alt="Orchestration Flow" width="800" />
@@ -279,7 +279,7 @@ Active only when BOTH `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` AND the `TeamCrea
 
 Lifecycle: `TeamCreate -> TaskCreate -> Agent(spawn all members in one message) -> SendMessage -> TaskUpdate -> TeamDelete`
 
-Agent Teams members are peers, not hierarchical subagents. Members CAN spawn sub-agents via the Agent tool to execute complex workflows (R010 exception). This enables teams-compatible skills like `/research` and `/deep-plan` to run inside team members.
+Agent Teams members are peers, not hierarchical subagents. Members can spawn sub-agents via the Agent tool (R010 exception) only when their tool set includes Agent; members without it use file channels and orchestrator relay. When dedicated Glob/Grep tools are absent, read-only Bash (`find`/`git grep`) is used for searching. This enables teams-compatible skills like `/research` and `/deep-plan` to run inside team members that have the Agent tool.
 
 ### 5.3 Evaluator-Optimizer Pattern
 
@@ -666,9 +666,9 @@ Key current-baseline facts (measured, v1.1.74 / CC v2.1.277):
 |------|--------|
 | Rule version-note retention baseline | v2.1.230 — notes below this line are candidates for HTML-comment retirement (R016) unless still cited by a newer note or describing current behavior |
 | Agent Teams (R018) | **Dormant** — `TeamCreate`/`TeamDelete` are absent from the tool list on current models (measured since CC v2.1.233); R009/R010 govern instead until `TeamCreate` reappears |
-| Todo/Task tools | `TodoWrite`, `TaskCreate/Get/List/Update` absent by default on Opus 4.8/Sonnet 5/Fable 5/Mythos 5+ (CC v2.1.233+); restorable via `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`. `TaskStop`/`TaskOutput`/`SendMessage` remain available |
+| Todo/Task tools | `TodoWrite`, `TaskCreate/Get/List/Update` absent by default on Opus 4.8/Sonnet 5/Fable 5/Mythos 5+ (CC v2.1.233+); restorable via `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`. `TaskStop`/`SendMessage` remain available; `TaskOutput` was removed in v2.1.277+ (read background task output with Read) |
 | Project-scope `permissions.defaultMode` | Ignored since CC v2.1.257+ — only user/managed-scope settings or the `--permission-mode` flag actually grant `bypassPermissions`; per-call `mode: "bypassPermissions"` on Agent tool calls has been a no-op since v2.1.212 (subagents inherit the parent session's mode) |
-| Agent tool `model` parameter | Deprecated/ignored since v2.1.212 — subagents inherit the parent session model unless overridden via frontmatter (Tier 1/2) |
+| Agent tool `model` parameter | Active spawn-time override (Tier 3; observed on CC v2.1.289) — accepts only `sonnet`/`opus`/`haiku`/`fable`; takes precedence over the agent's frontmatter `model` and the configured default subagent model; if omitted, the frontmatter `model` applies, else the default (inherits the parent unless a default subagent model is configured); ignored for `subagent_type: "fork"` (forks always inherit the parent model) |
 
 ---
 

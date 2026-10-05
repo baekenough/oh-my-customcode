@@ -371,7 +371,7 @@ RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.204+
 
 ## Permission Mode Guidance
 
-> Canonical source for the bypassPermissions requirement: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions". CC defaults `mode` to `acceptEdits` if not specified — always pass `mode: "bypassPermissions"` explicitly in Agent tool calls. See R010 for the full requirement, rationale, and self-check. Note: as of v2.1.212+, the Agent tool's `mode` parameter is ignored — subagents inherit the parent session's permission mode instead (canonical: R010 Self-Check).
+> Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions". Below CC 2.1.212, CC defaults per-call `mode` to `acceptEdits` — pass `mode: "bypassPermissions"` explicitly. From 2.1.212 the parameter is ignored: subagents inherit the parent session's mode, and frontmatter `permissionMode` (modes in the table below) may override it. Keep passing `mode` for compatibility; see R010 for the version table and self-check.
 
 | Mode | Behavior |
 |------|----------|
@@ -390,7 +390,7 @@ RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.204+
 > **v2.1.212+**: Agent(구 Task) tool의 `mode` 파라미터가 **deprecated되어 무시됩니다** — subagent는 **기본적으로** 부모(오케스트레이터) 세션의 permission mode를 상속합니다. 위 "CC defaults `mode` to `acceptEdits`" 서술과 R010 Universal bypassPermissions의 per-call `mode: "bypassPermissions"` 지정은 플랫폼 레벨에서 no-op가 됩니다(명시 지정 자체는 무해). 무인 실행의 실제 bypass 여부는 이제 부모 세션 mode가 결정하므로, 오케스트레이터 세션을 bypassPermissions로 유지하는 것이 핵심입니다. Canonical owner는 R010.
 -->
 
-<!-- DETAIL: Permission Mode Guidance (reasoning)
+<!-- DETAIL (applies to CC < 2.1.212 only, #1818): Permission Mode Guidance (reasoning)
 When spawning agents via the Agent tool, CC applies a default `mode` of `acceptEdits` if not explicitly specified. To maintain consistent permission behavior:
 
 1. **Agent frontmatter `permissionMode`**: Declares the agent's intended permission level. CC respects this when the agent is spawned via Agent tool.

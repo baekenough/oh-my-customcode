@@ -1,7 +1,7 @@
 ---
 title: Omcustom Release Notes
 type: skill
-updated: 2026-04-12
+updated: 2026-10-05
 sources:
   - .claude/skills/omcustom-release-notes/SKILL.md
 related:

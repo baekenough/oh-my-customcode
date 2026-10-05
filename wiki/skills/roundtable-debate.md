@@ -1,7 +1,7 @@
 ---
 title: roundtable-debate
 type: skill
-updated: 2026-04-25
+updated: 2026-10-05
 sources:
   - .claude/skills/roundtable-debate/SKILL.md
 related:
@@ -38,7 +38,7 @@ Designed for situations where diverse perspectives matter more than a single ans
 ## Workflow Phases
 
 1. **Phase 0** — Independent parallel analysis (4–5 personas, no peer visibility)
-2. **Phase 1** — Round 1 discussion via SendMessage; minority opinions tracked separately
+2. **Phase 1** — Round 1 discussion via SendMessage (if a member's tool set lacks SendMessage, opinions go to artifact files whose paths the orchestrator relays — [[R018]] "멤버 도구 부재 시 대체 규약", #1817); minority opinions tracked separately
 3. **Phase 2** — Round 2 convergence attempt; terminates regardless of consensus
 4. **Phase 3** — Orchestrator synthesizes 3-part report; unresolved areas marked "합의 없음 — 사용자 결정 필요"
 

@@ -1,7 +1,7 @@
 ---
 title: Deep Plan Guide
 type: guide
-updated: 2026-04-27
+updated: 2026-10-05
 sources:
   - guides/deep-plan/README.md
   - guides/deep-plan/phases.md
@@ -50,7 +50,7 @@ Research-only analysis produces assumptions that often diverge from reality (e.g
 
 ## Teams Mode
 
-When running inside an Agent Teams member, Phase 1 executes the research workflow inline (NOT via `Skill(research)`) because fork context blocks sub-agent spawning. Phase 3 delivers the verified plan via `SendMessage` to the team lead instead of returning to the main conversation.
+When running inside an Agent Teams member, Phase 1 executes the research workflow inline (NOT via `Skill(research)`) because fork context blocks sub-agent spawning. Phase 3 delivers the verified plan via `SendMessage` to the team lead instead of returning to the main conversation. Sub-agent spawning and `SendMessage` delivery apply only when the member's tool set includes Agent and SendMessage respectively; when either is absent, the plan is written to an artifact file that the orchestrator relays (R018 "멤버 도구 부재 시 대체 규약", #1817).
 
 ## Companion skill
 

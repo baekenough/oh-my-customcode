@@ -1,7 +1,7 @@
 ---
 title: Agent Eval Framework
 type: skill
-updated: 2026-04-26
+updated: 2026-10-05
 sources:
   - .claude/skills/agent-eval-framework/SKILL.md
 related:

@@ -1,7 +1,7 @@
 ---
 title: instinct-extractor
 type: skill
-updated: 2026-05-18
+updated: 2026-10-05
 sources:
   - .claude/skills/instinct-extractor/SKILL.md
   - guides/skill-promotion/instinct-extraction.md

@@ -58,7 +58,7 @@ TeamCreate("verification-team")
 └── style-reviewer (haiku) → Style review
 ```
 
-Members communicate findings via SendMessage for cross-cutting concerns.
+Members communicate findings via SendMessage for cross-cutting concerns when their tool set includes it; otherwise they write findings to artifact files whose paths the orchestrator relays (R018 "멤버 도구 부재 시 대체 규약", #1817).
 
 ### Agent Tool Fallback
 
@@ -129,4 +129,4 @@ Multi-model verification uses 3x the tokens of a single review. Reserve for:
 - Architecture decisions
 - Pre-release verification
 
-When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".

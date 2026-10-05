@@ -84,9 +84,9 @@ Run these checks before declaring release READY. Any match is a release blocker.
 
 | Guard | Detection Command | Severity | Remediation |
 |-------|-------------------|----------|-------------|
-| Residual deprecated `/tmp` sensitive-path bypass narrative | `grep -rnE -e 'regardless of[[:space:]]+.?bypassPermissions' -e '(MUST|MANDATORY|Mandatory)[^\n]{0,80}/tmp/\*\.sh' -e '/tmp/\*\.sh[^\n]{0,80}(MANDATORY|MUST be used|bypass script)' .claude/skills/ templates/.claude/skills/ .claude/agents/ templates/.claude/agents/ 2>/dev/null` | **BLOCK** | Remove the deprecated temp-script bypass narrative — it was retired in CC v2.1.121 (#1101). Under `mode: "bypassPermissions"`, write directly to `.claude/` with Write/Edit. See R006 "Sensitive Path Handling" |
+| Residual deprecated `/tmp` sensitive-path bypass narrative | `grep -rnE -e 'regardless of[[:space:]]+.?bypassPermissions' -e '(MUST|MANDATORY|Mandatory)[^\n]{0,80}/tmp/\*\.sh' -e '/tmp/\*\.sh[^\n]{0,80}(MANDATORY|MUST be used|bypass script)' .claude/skills/ templates/.claude/skills/ .claude/agents/ templates/.claude/agents/ 2>/dev/null` | **BLOCK** | Remove the deprecated temp-script bypass narrative — it was retired in CC v2.1.121 (#1101). Under the `bypassPermissions` permission mode, write directly to `.claude/` with Write/Edit. See R006 "Sensitive Path Handling" |
 
-> **Why**: The temp-script sensitive-path bypass for `.claude/` paths was deprecated in CC v2.1.121 (2026-04-28, #1101). Direct Write/Edit/Bash on `.claude/**` works under `mode: "bypassPermissions"`; only catastrophic shell operations (`rm -rf /`) remain independently blocked. Residual bypass procedures or false "guard blocks bypassPermissions" claims in skills/agents are now defects — this guard catches them with a cheap deterministic grep (R023 shift-left: catch stale platform procedures before they reach expensive review).
+> **Why**: The temp-script sensitive-path bypass for `.claude/` paths was deprecated in CC v2.1.121 (2026-04-28, #1101). Direct Write/Edit/Bash on `.claude/**` works under the `bypassPermissions` permission mode; only catastrophic shell operations (`rm -rf /`) remain independently blocked. Residual bypass procedures or false "guard blocks bypassPermissions" claims in skills/agents are now defects — this guard catches them with a cheap deterministic grep (R023 shift-left: catch stale platform procedures before they reach expensive review).
 
 ## Output Format
 
@@ -122,4 +122,4 @@ Run these checks before declaring release READY. Any match is a release blocker.
 
 ## Permission Mode
 
-When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".

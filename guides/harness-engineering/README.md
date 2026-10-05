@@ -43,6 +43,7 @@ Deep Insight가 제안하는 4계층 구조는 oh-my-customcode에 이미 구현
 메인 대화 → Write(".claude/agents/new.md", content)  ← R010 위반
 
 # 교정: Executor에게 위임
+# mode: CC < 2.1.212에서 필요; 2.1.212+에서는 무시되고 부모 세션 모드 또는 에이전트 frontmatter `permissionMode`(mgr-creator: bypassPermissions)가 적용됨
 메인 대화 → Agent(mgr-creator, mode: "bypassPermissions") → Write(".claude/agents/new.md", content)
 ```
 
@@ -167,7 +168,7 @@ opt-in: hard-enforce (filter 모드, --hard-enforce 플래그) — 명시적 사
 | R005 (Capability-aware Tool Scheduling) | ouroboros PR #353 capability graph 패턴. action-validator Capability Hints와 직접 연동 |
 | R006 (Agent Design) | `tools`, `domain`, `limitations`, `isolation` 필드가 하네스 행동 제어의 선언 계층 |
 | R009 (Parallel Execution) | Executor 병렬화 원칙. adaptive-harness `--scan`의 병렬 Glob/Grep 호출 근거 |
-| R010 (Orchestrator Coordination) | Coordinator 계층의 파일 수정 금지 + Universal bypassPermissions 강제 |
+| R010 (Orchestrator Coordination) | Coordinator 계층의 파일 수정 금지 + CC < 2.1.212에서는 호출별 `mode: "bypassPermissions"` 필요, 2.1.212+에서는 부모 세션 권한 모드 상속(R010 Universal bypassPermissions 절) |
 | R013 (Ecomode) | Context budget thresholds가 Context Engineering 섹션의 per-agent 예산 할당 기반 |
 | R017 (Sync Verification) | mgr-sauron이 Supervisor 계층 역할. 하네스 구조 변경 후 R017 검증 필수 |
 | R018 (Agent Teams) | 3+ 에이전트 또는 review cycle → Agent Teams. 하네스 설계 검토에도 적용 |

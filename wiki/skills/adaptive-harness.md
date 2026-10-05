@@ -1,7 +1,7 @@
 ---
 title: Adaptive Harness
 type: skill
-updated: 2026-07-19
+updated: 2026-10-05
 sources:
   - .claude/skills/adaptive-harness/SKILL.md
 related:
@@ -43,7 +43,7 @@ Default (no flag) runs `--scan` then `--optimize`. `--dry-run` suppresses all wr
 
 ## Notes
 
-Writes (profile, `.inactive/` moves, `.claude/outputs/harness-adaptations/YYYY-MM-DD.md` log) are direct under `mode: "bypassPermissions"` (CC v2.1.121+) — no `/tmp/*.sh` wrapper needed. `.inactive/` is git-tracked so deactivation history is visible.
+Writes (profile, `.inactive/` moves, `.claude/outputs/harness-adaptations/YYYY-MM-DD.md` log) are direct under the `bypassPermissions` permission mode (CC v2.1.121+) — no `/tmp/*.sh` wrapper needed. `.inactive/` is git-tracked so deactivation history is visible.
 
 ## Sources
 

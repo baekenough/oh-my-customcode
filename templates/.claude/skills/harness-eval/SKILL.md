@@ -92,7 +92,7 @@ Results saved to `.claude/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-Under `mode: "bypassPermissions"`, direct Write/Edit/Bash on `.claude/**` paths (including `.claude/outputs/sessions/`) is permitted (CC v2.1.121+, #1101) — no `/tmp` wrapping is needed.
+Under the `bypassPermissions` permission mode, direct Write/Edit/Bash on `.claude/**` paths (including `.claude/outputs/sessions/`) is permitted (CC v2.1.121+, #1101) — no `/tmp` wrapping is needed.
 
 Write harness-eval results directly to `.claude/outputs/sessions/$(date +%Y-%m-%d)/harness-eval-$(date +%H%M%S).md`. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification. Catastrophic shell operations (e.g., `rm -rf /`) remain blocked by independent safety guards. For CC < v2.1.121, see git history for the legacy `/tmp/*.sh` bypass pattern.
 

@@ -75,11 +75,11 @@ Use this taxonomy to **select representative tasks per category** when building 
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-Under `mode: "bypassPermissions"`, direct Write/Edit/Bash on `.claude/**` paths is permitted (CC v2.1.121+, #1101) — no `/tmp/*.sh` wrapping is needed.
+Under the `bypassPermissions` permission mode, direct Write/Edit/Bash on `.claude/**` paths is permitted (CC v2.1.121+, #1101) — no `/tmp/*.sh` wrapping is needed.
 
 To write eval trajectories or result reports under `.claude/outputs/evals/`:
 
-1. Write the artifact body directly to `.claude/outputs/evals/{trajectories,sessions}/...` with the Write tool (every Agent tool call includes `mode: "bypassPermissions"`, R010)
+1. Write the artifact body directly to `.claude/outputs/evals/{trajectories,sessions}/...` with the Write tool (under the `bypassPermissions` permission mode, R010)
 2. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification
 
 Reference: R006/R010 sensitive-path handling (CC v2.1.121+), #1101.

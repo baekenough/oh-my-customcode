@@ -1,7 +1,7 @@
 ---
 title: Harness Eval
 type: skill
-updated: 2026-07-19
+updated: 2026-10-05
 sources:
   - .claude/skills/harness-eval/SKILL.md
 related:
@@ -26,7 +26,7 @@ Runs 15 canonical software-engineering task definitions — API Design, Data Mod
 - **User-invocable**: yes
 - **Command**: `/harness-eval [--preset all|quick] [--task <name>]`
 - **Effort**: high
-- **Output**: `.claude/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md`, written directly under the R006/R010 `.claude/**` bypassPermissions convention (no `/tmp` wrapping, CC v2.1.121+)
+- **Output**: `.claude/outputs/sessions/{YYYY-MM-DD}/harness-eval-{HHmmss}.md`, written directly under the R006/R010 `.claude/**` convention for the `bypassPermissions` permission mode (no `/tmp` wrapping, CC v2.1.121+)
 
 ## 4-Metric Quantitative Layer (added v0.113.0)
 

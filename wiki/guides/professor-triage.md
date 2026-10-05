@@ -1,7 +1,7 @@
 ---
 title: Professor Triage Guide
 type: guide
-updated: 2026-04-27
+updated: 2026-10-05
 sources:
   - guides/professor-triage/README.md
   - guides/professor-triage/phases.md
@@ -24,7 +24,7 @@ GitHub 이슈를 현재 코드베이스에 직접 대조 분석하는 5-phase �
 - Phase-by-phase implementation detail for the `/professor-triage` skill
 - Agent selection rationale (why `general-purpose` not `arch-documenter` for Phase 4)
 - Parallelization strategy per R009/R018 for each phase
-- Artifact write protocol (`.claude/outputs/` via direct Write under `mode: "bypassPermissions"` — CC v2.1.121+, no `/tmp/*.sh` wrapping)
+- Artifact write protocol (`.claude/outputs/` via direct Write under `bypassPermissions` — CC < 2.1.212: pass `mode: "bypassPermissions"` per call; CC >= 2.1.212: `mode` is ignored and the parent session mode is inherited; verify per R010 "Universal bypassPermissions" — CC v2.1.121+, no `/tmp/*.sh` wrapping)
 - Comment verification gate (Phase 4F) before GitHub actions
 
 ## 5-Phase Architecture

@@ -54,13 +54,13 @@ TeamCreate("roundtable-{topic}")
 
 If your task involves writing artifacts under `.claude/outputs/`, write the file to
 `.claude/outputs/sessions/<date>/<artifact>.md` using the Write tool directly (create the
-directory if needed). Your Agent tool call runs under `mode: "bypassPermissions"`, so direct
+directory if needed). If your session runs under the `bypassPermissions` permission mode, direct
 Write/Edit on `.claude/` is permitted (CC v2.1.121+).
 ```
 
 ### Phase 1: Round 1 — Discussion
 
-모든 독립 분석 공개 후 라운드 1 토론. SendMessage로 peer 의견 교환.
+모든 독립 분석 공개 후 라운드 1 토론. SendMessage로 peer 의견 교환 (멤버 도구에 SendMessage가 없으면 의견을 아티팩트 파일에 쓰고 오케스트레이터가 경로를 중계 — R018 「멤버 도구 부재 시 대체 규약」, #1817).
 
 규칙:
 1. 다른 의견을 기각할 때 명시적 정당화 (3개 근거) 필수

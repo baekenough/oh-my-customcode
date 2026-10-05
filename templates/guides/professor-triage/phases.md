@@ -229,7 +229,7 @@ _`/professor-triage` v2.3.0에 의해 현재 코드베이스 대비 분석됨 �
 
 Delegate to general-purpose. Path: `.claude/outputs/sessions/YYYY-MM-DD/professor-triage-HHmmss.md`
 
-**Artifact write**: Under `mode: "bypassPermissions"`, write the artifact directly with the Write tool (create the dated directory first if needed). Direct Write/Edit/Bash on `.claude/outputs/` is permitted since CC v2.1.121 — no `/tmp/*.sh` wrapping is needed (R006/R010). Only catastrophic shell operations (`rm -rf /`) remain blocked by independent safety guards.
+**Artifact write**: Under `bypassPermissions` (CC < 2.1.212: pass `mode: "bypassPermissions"` per call; CC >= 2.1.212: `mode` is ignored, parent session mode inherited; verify per R010 「Universal bypassPermissions」), write the artifact directly with the Write tool (create the dated directory first if needed). Direct Write/Edit/Bash on `.claude/outputs/` is permitted since CC v2.1.121 — no `/tmp/*.sh` wrapping is needed (R006/R010). Only catastrophic shell operations (`rm -rf /`) remain blocked by independent safety guards.
 
 Artifact template:
 

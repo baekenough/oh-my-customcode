@@ -2,7 +2,7 @@
 title: FSD (Full Self Driving)
 type: skill
 scope: harness
-updated: 2026-09-25
+updated: 2026-10-05
 sources:
   - .claude/skills/fsd/SKILL.md
 related:
@@ -139,7 +139,7 @@ FSD operates under full project rules without relaxation:
 
 Two operational warnings were added to the skill body ahead of unattended loop entry:
 
-- **Effective permission mode (#1644)**: the `mode: "bypassPermissions"` instruction on every Agent tool call is stated per [[r010]] Universal bypassPermissions, but that per-call parameter has been a no-op since CC v2.1.212, and project-scope `permissions.defaultMode` is now **ignored** as of CC v2.1.257 — so stating the instruction proves nothing about whether the loop will actually run unattended. Before entering the loop, FSD measures the effective mode: `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json`. If it is not `bypassPermissions`, the loop can stall mid-run on a permission prompt — relaunch with `--permission-mode bypassPermissions` or assume a human is watching. The corresponding [[pipeline]] `auto-dev` wiring is the pre-triage Phase 0.5 advisory gate (does not halt, only warns).
+- **Effective permission mode (#1644)**: `mode: "bypassPermissions"` is passed on Agent calls for compatibility per [[r010]] "Universal bypassPermissions" — required on CC < 2.1.212 and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`) — and project-scope `permissions.defaultMode` is now **ignored** as of CC v2.1.257 — so passing the `mode` parameter proves nothing about whether the loop will actually run unattended. Before entering the loop, FSD measures the effective mode: `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json`. If it is not `bypassPermissions`, the loop can stall mid-run on a permission prompt — relaunch with `--permission-mode bypassPermissions` or assume a human is watching. The corresponding [[pipeline]] `auto-dev` wiring is the pre-triage Phase 0.5 advisory gate (does not halt, only warns).
 - **Commit delegation timeout (#1645)**: on the main worktree, `.husky/pre-commit` runs the full test suite (~165s measured) plus typecheck, lint, and CLAUDE.md count verification before a commit lands. The Bash tool's default 120000ms timeout kills a `git commit` delegation mid-hook with exit 143 (SIGTERM). FSD-driven commit delegations must specify Bash `timeout: 400000` (≈6.7 min); `--no-verify` is never an acceptable workaround for the timeout (R010 quality-gate bypass prohibition). See [[mgr-gitnerd]] "Commit Timeout Budget" for the full worktree-vs-main-checkout distinction.
 
 ### `.claude/hooks/**` Issues — Unattended-Loop Scope Split (v1.1.58)

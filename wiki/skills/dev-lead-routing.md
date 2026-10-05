@@ -1,7 +1,7 @@
 ---
 title: Dev Lead Routing
 type: skill
-updated: 2026-08-15
+updated: 2026-10-05
 sources:
   - .claude/skills/dev-lead-routing/SKILL.md
 related:

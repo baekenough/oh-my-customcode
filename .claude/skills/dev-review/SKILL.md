@@ -116,11 +116,11 @@ If only PASS/INFO: proceed automatically.
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-Under `mode: "bypassPermissions"`, direct Write/Edit/Bash on `.claude/**` paths is permitted (CC v2.1.121+, #1101) — no `/tmp/*.sh` wrapping is needed.
+Under the `bypassPermissions` permission mode, direct Write/Edit/Bash on `.claude/**` paths is permitted (CC v2.1.121+, #1101) — no `/tmp/*.sh` wrapping is needed.
 
 To write dev-review results under `.claude/outputs/sessions/`:
 
-1. Write the artifact body directly to `.claude/outputs/sessions/$(date +%Y-%m-%d)/dev-review-$(date +%H%M%S).md` with the Write tool (every Agent tool call includes `mode: "bypassPermissions"`, R010)
+1. Write the artifact body directly to `.claude/outputs/sessions/$(date +%Y-%m-%d)/dev-review-$(date +%H%M%S).md` with the Write tool (under the `bypassPermissions` permission mode, R010)
 2. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification
 
 Reference: R006/R010 sensitive-path handling (CC v2.1.121+), #1101.

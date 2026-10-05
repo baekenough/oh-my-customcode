@@ -50,13 +50,13 @@ When lightweight mode is used, the triage output (Phase 4E artifact and/or Phase
 
 | Phase | Agent | Mode |
 |-------|-------|------|
-| Phase 2 codebase search | Explore (haiku) | bypassPermissions |
-| Phase 4A Senior Architect | general-purpose (sonnet) | bypassPermissions |
-| Phase 4B Project Colleague | general-purpose (sonnet) | bypassPermissions |
-| Phase 4C Professor Synthesis | general-purpose (opus) | bypassPermissions |
-| Phase 4D triage comment | mgr-gitnerd | bypassPermissions |
-| Phase 4E artifact report | general-purpose | bypassPermissions |
-| Phase 5 GitHub actions | mgr-gitnerd | bypassPermissions |
+| Phase 2 codebase search | Explore (haiku) | pass `bypassPermissions` (required on CC < 2.1.212; ignored on 2.1.212+, where the parent session mode applies unless agent frontmatter `permissionMode` overrides it) |
+| Phase 4A Senior Architect | general-purpose (sonnet) | pass `bypassPermissions` (required on CC < 2.1.212; ignored on 2.1.212+, where the parent session mode applies unless agent frontmatter `permissionMode` overrides it) |
+| Phase 4B Project Colleague | general-purpose (sonnet) | pass `bypassPermissions` (required on CC < 2.1.212; ignored on 2.1.212+, where the parent session mode applies unless agent frontmatter `permissionMode` overrides it) |
+| Phase 4C Professor Synthesis | general-purpose (opus) | pass `bypassPermissions` (required on CC < 2.1.212; ignored on 2.1.212+, where the parent session mode applies unless agent frontmatter `permissionMode` overrides it) |
+| Phase 4D triage comment | mgr-gitnerd | pass `bypassPermissions` (required on CC < 2.1.212; ignored on 2.1.212+, where the parent session mode applies unless agent frontmatter `permissionMode` overrides it) |
+| Phase 4E artifact report | general-purpose | pass `bypassPermissions` (required on CC < 2.1.212; ignored on 2.1.212+, where the parent session mode applies unless agent frontmatter `permissionMode` overrides it) |
+| Phase 5 GitHub actions | mgr-gitnerd | pass `bypassPermissions` (required on CC < 2.1.212; ignored on 2.1.212+, where the parent session mode applies unless agent frontmatter `permissionMode` overrides it) |
 
 **Agent selection constraint**: Phases 4A, 4B, 4C, 4E MUST use `general-purpose` (NOT `arch-documenter`). `arch-documenter` has `disallowedTools: [Bash]` — cannot run the `gh`/shell commands these phases require. See #1043.
 
@@ -69,14 +69,14 @@ When lightweight mode is used, the triage output (Phase 4E artifact and/or Phase
 
 ## Artifact Output (R006/R010)
 
-Under `mode: "bypassPermissions"`, agents write directly to `.claude/outputs/` with Write/Edit — no temp-script wrapping is needed (CC v2.1.121+, #1101). When spawning Phase 4A/4B/4C/4E agents, include verbatim in each agent prompt:
+Under the `bypassPermissions` permission mode, agents write directly to `.claude/outputs/` with Write/Edit — no temp-script wrapping is needed (CC v2.1.121+, #1101). When spawning Phase 4A/4B/4C/4E agents, include verbatim in each agent prompt:
 
 ```
 **Artifact output (for this task)**
 
 If your task involves writing artifacts under `.claude/outputs/`, write the file to
 `.claude/outputs/sessions/<date>/<artifact>.md` using the Write tool directly (create the
-directory if needed). Your Agent tool call runs under `mode: "bypassPermissions"`, so direct
+directory if needed). If your session runs under the `bypassPermissions` permission mode, direct
 Write/Edit on `.claude/` is permitted.
 ```
 
@@ -98,4 +98,4 @@ See R006 "Sensitive Path Handling" (CC v2.1.121+ direct-write convention).
 
 ## Permission Mode
 
-When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".

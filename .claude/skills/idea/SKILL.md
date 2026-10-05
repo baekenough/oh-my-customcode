@@ -32,7 +32,9 @@ Extract the core intent from the natural language input.
 
 ### Phase 3: Feasibility Analysis
 
-Analyze using a sonnet agent (always spawn with `mode: "bypassPermissions"`):
+Analyze using a sonnet agent:
+
+Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".
 
 - **Scope**: Which modules/files would be affected
 - **Complexity**: XS/S/M/L effort estimate
@@ -73,7 +75,7 @@ The JSON block MUST be wrapped in triple backtick json fence for parsing.
 | Rule | How |
 |------|-----|
 | R009 | Single agent for analysis |
-| R010 | Orchestrator manages phases; analysis delegated to agent with `mode: "bypassPermissions"` |
+| R010 | Orchestrator manages phases; analysis delegated to an agent (permission mode per R010 "Universal bypassPermissions") |
 
 ## Output Format
 
