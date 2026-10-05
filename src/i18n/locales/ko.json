@@ -277,12 +277,16 @@
         "started": "Web UI 시작됨: http://localhost:{{port}}",
         "failed": "Web UI 서버 시작 실패",
         "homeUnresolved": "Web UI 서버를 시작할 수 없습니다: 홈 디렉토리를 확인할 수 없어 PID 파일 위치를 정할 수 없습니다. HOME이 상대 경로이거나, HOME·OS 보고 홈·passwd 항목이 모두 비어 있는 경우입니다. HOME을 절대 경로로 설정하세요.",
-        "pidNotWritable": "Web UI 서버를 시작할 수 없습니다: PID 파일 {{path}}에 쓸 수 없습니다 ({{error}}). PID 파일 경로와 그 상위 디렉토리를 확인하세요."
+        "pidNotWritable": "Web UI 서버를 시작할 수 없습니다: PID 파일 {{path}}에 쓸 수 없습니다 ({{error}}). PID 파일 경로와 그 상위 디렉토리를 확인하세요.",
+        "alreadyRunning": "Web UI 서버가 이미 실행 중입니다 (PID {{pid}}). 새 서버를 시작하지 않았습니다. 서버의 포트는 기록되지 않으므로 시작할 때 지정한 포트를 확인하세요.",
+        "alreadyRunningNotPermitted": "PID 파일에 기록된 PID {{pid}}는 다른 사용자의 프로세스라서 Web UI 서버인지 이 명령으로 확인할 수 없습니다. 새 서버를 시작하지 않았습니다. omcustom Web UI 서버가 실행 중이 아니라면 PID 파일({{path}})을 삭제한 뒤 다시 시도하세요.",
+        "startingElsewhere": "다른 Web UI 시작이 진행 중입니다. 이 명령은 서버를 시작하지 않았습니다."
       },
       "stop": {
         "description": "Web UI 서버 중지",
         "stopped": "Web UI 서버가 중지되었습니다",
-        "notRunning": "Web UI 서버가 실행 중이 아닙니다"
+        "notRunning": "Web UI 서버가 실행 중이 아닙니다",
+        "notPermitted": "Web UI 서버를 중지할 수 없습니다: {{path}}에 기록된 프로세스 {{pid}}가 존재하지만 신호를 보낼 권한이 없습니다. 다른 사용자의 프로세스이거나, PID 파일이 오래되어 PID가 무관한 프로세스에 재사용된 경우입니다. 해당 사용자로 중지하거나, 오래된 PID 파일이면 삭제하세요."
       },
       "status": {
         "description": "Web UI 서버 상태 표시",

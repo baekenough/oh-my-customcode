@@ -585,7 +585,7 @@ Origin: #1598 (형제 병렬 배치의 위양성 4종 중 3종이 각 에이전�
 | < 2.1.212 (min supported 2.1.121) | **Required** — the Agent tool's default `acceptEdits` overrides frontmatter `permissionMode` and causes prompts during unattended runs |
 | ≥ 2.1.212 | Ignored — 2.1.212 CHANGELOG (#1497): "Deprecated the Task tool's `mode` parameter (now ignored); subagents inherit the parent session's permission mode by default". The frontmatter override comes from the Agent tool schema observed on CC 2.1.289 (`claude --version`), not from the 2.1.212 entry: "Deprecated; ignored. Subagents inherit the parent session's permission mode; agent-definition frontmatter may override it." |
 
-Keep passing `mode` on every Agent call for compatibility (harmless on 2.1.212+), but never treat its presence as evidence of unattended execution. On 2.1.212+ the inherited parent mode comes from the `permissions.defaultMode` settings (managed, local, project, user) or a launch flag such as `--permission-mode`. Since 2.1.257 the `bypassPermissions` value is narrower: project (`.claude/settings.json`) and local (`.claude/settings.local.json`) `defaultMode: "bypassPermissions"` is ignored, like `"auto"` (2.1.257 CHANGELOG); other values there still apply. Bypass can still be granted elsewhere, e.g. user or managed settings, `--permission-mode`, or `--dangerously-skip-permissions` (`claude --help` on 2.1.289: "Bypass all permission checks.") (#1644).
+Keep passing `mode` on every Agent call for compatibility (harmless on 2.1.212+), but never treat its presence as evidence of unattended execution. On 2.1.212+ the inherited parent mode comes from the `permissions.defaultMode` settings (managed, local, project, user) or a launch flag such as `--permission-mode`. Since 2.1.257 the `bypassPermissions` value is narrower: project (`.claude/settings.json`) and local (`.claude/settings.local.json`) `defaultMode: "bypassPermissions"` is ignored, like `"auto"` (2.1.257 CHANGELOG), and an ignored project/local `bypassPermissions` is dropped, so that scope resolves to `default` and overrides a non-bypass user value (user `plan`/`auto`/`acceptEdits` → `default`), whereas with user `bypassPermissions` the result stays `bypassPermissions` (no ignore WARN observed); other values there (measured: `default`, `acceptEdits`; `auto` is ignored per the same CHANGELOG entry, unmeasured `[가설]`; `plan`/`dontAsk` unmeasured) still apply and override the user value, with precedence local > project > user (a project `"default"` overrides a user `auto`/`bypassPermissions`; an absent key leaves the user value in effect) — measured via `claude -p` init `permissionMode` (#1828 comments 5997497206 (E1–E8) / 5998595610 (C0–C9), CC 2.1.289, 2026-10-06). `[가설]` (unobserved): interactive TTY sessions (the 2026-09-02 DETAIL record below, user=auto + project·local=bypass → "auto mode is active", is not reconciled with the `-p` result; a launch flag such as an alias's `--enable-auto-mode` is only a hypothesis), whether `default` actually prompts, managed policy/`--settings` scopes, other CC versions, subagent inheritance. Bypass can still be granted elsewhere, e.g. user or managed settings, `--permission-mode`, or `--dangerously-skip-permissions` (`claude --help` on 2.1.289: "Bypass all permission checks.") (#1644).
 
 <!-- DETAIL (applies to CC < 2.1.212 only, #1818): Agent tool default explanation
 The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmatter `permissionMode` and causes permission prompts during unattended execution. This is a CC platform behavior, not a configuration error.
@@ -605,12 +605,17 @@ The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmat
 Before unattended execution (item 1) and when authoring a skill that spawns agents (item 2):
 1. **유효 permission mode 실측** — CC ≥ 2.1.212: 부모 모드는 `permissions.defaultMode`(managed·local·
    project·user 범위)와 실행 플래그(`--permission-mode` 등)가 정한다. 2.1.257+에서 무시되는 것은
-   project/local의 `bypassPermissions` **값뿐**이며 그 범위의 다른 값(예: init 배포본의 `"default"`)은
+   project/local의 `bypassPermissions` 값(CHANGELOG상 `auto`도, 미측정 `[가설]`)이며 그 범위의 다른 값(예: 사용자가 project에 둔 `"default"`)은
    여전히 원천이다(위 문단). 세 파일을 함께 실측한다 —
    `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json .claude/settings.json .claude/settings.local.json`
    (출력 순서 user·project·local) — managed 설정과 실행 플래그도 원천이므로 별도로 확인한다. 범위 간
-   우선순위(예: project의 `"default"`가 user의 `bypassPermissions`보다 앞서는지)는 `[가설]` — 미실측.
-   대상 에이전트 frontmatter `permissionMode`가 이를 덮어쓸 수 있다 — 근거는 CHANGELOG 항목이 아니라
+   우선순위는 local > project > user이며 project의 `"default"`는 user의 `auto`/`bypassPermissions`를 덮는다
+   (#1828 comments 5997497206 (E1–E8) / 5998595610 (C0–C9), CC 2.1.289, 2026-10-06, `claude -p` init `permissionMode` 실측). 키가 없으면 user 값이 유지되고,
+   project/local `bypassPermissions`는 무시되어 그 범위는 `default`로 귀결되고 bypass가 아닌 user 값
+   (`plan`/`auto`/`acceptEdits`)을 덮는다; user가 `bypassPermissions`이면 결과는 `bypassPermissions`다.
+   TTY 세션(2026-09-02 DETAIL 기록과 미조정)·`default`의 실제 프롬프트 여부·managed/`--settings`·다른 버전·
+   서브에이전트 상속은 `[가설]` — 미관측.
+   대상 에이전트 frontmatter `permissionMode`가 위에서 실측한 유효 부모 모드를 덮어쓸 수 있다 — 근거는 CHANGELOG 항목이 아니라
    CC 2.1.289에서 관측한 Agent tool 스키마("agent-definition frontmatter may override it")다. 이 구간에서
    per-call `mode` 값은 무인 실행의 증거가 아니다(R020 "actual outcome ≠ attempt").
    CC < 2.1.212: per-call `mode`가 서브에이전트 모드를 정한다 — 생략하면 기본값 `acceptEdits`가
@@ -1063,7 +1068,7 @@ See **R018 (MUST-agent-teams.md)** for the Detection table, complete decision ma
 **Quick rule** (applies only when active): 3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams.
 Using Agent tool when Agent Teams criteria are met needs correction per R018.
 
-Exception to the Core Rule ("Subagents MUST NOT spawn other subagents"), only when R018 Detection = Yes: Agent Teams members are peers, not hierarchical subagents (Agent Teams Exception — narrowed by #1817). When Detection = No, every agent spawned via the Agent tool is a subagent under the Core Rule. Members spawn sub-agents or message peers only if `Agent`/`SendMessage` are in their tool list; otherwise the orchestrator relays via files and spawns on their behalf (R018 「멤버 도구 부재 시 대체 규약」).
+Exception to the Core Rule ("Subagents MUST NOT spawn other subagents"), only when R018 Detection = Yes: Agent Teams members are peers, not hierarchical subagents (Agent Teams Exception — narrowed by #1817). When Detection = No, every agent spawned via the Agent tool is treated as a subagent under the Core Rule by policy (even if a named spawn appears as a Teammate in `ListAgents`). Members spawn sub-agents or message peers only if `Agent`/`SendMessage` are available to them (directly or loadable via `ToolSearch`); otherwise the orchestrator relays via files and spawns on their behalf (R018 「멤버 도구 부재 시 대체 규약」).
 
 <!-- DETAIL: Announcement Format
 ```

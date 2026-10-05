@@ -19,10 +19,10 @@ Agent Teams is active only when the **team-creation path actually exists** — `
 | Observed state | Teams active? |
 |----------------|---------------|
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` **and** `TeamCreate` present | Yes |
-| env var set, `TeamCreate` **absent** | **No** — no team creatable, no member spawnable |
+| env var set, `TeamCreate` **absent** | **No** — no team creatable. A named `Agent` spawn (`name:`) still creates a teammate of the session's implicit team (CC 2.1.289 measured), but without `TeamCreate`/`TeamDelete` in the session (main or teammate) it is governed by R009/R010 as a subagent |
 | `SendMessage` present, `TeamCreate` absent | **No** — peer/cross-session messaging is separate (see Scope), not Teams evidence |
 
-<!-- DETAIL: Detection table rows, original wording
+<!-- DETAIL: Detection table rows, original wording — superseded by #1827 (CC 2.1.289 measured) — do not restore as-is
 | env var set, `TeamCreate` **absent** | **No** — a team cannot be created, so no member can be spawned |
 | `SendMessage` present, `TeamCreate` absent | **No** — peer/cross-session messaging is a separate capability (see Scope below), not evidence of Teams |
 -->
@@ -33,7 +33,7 @@ Rationale: v2.1.233+부터 `TeamCreate`/`TeamDelete`가 부재하다(R002). env 
 Rationale: since v2.1.233, `TeamCreate`/`TeamDelete` are absent from the tool list in this runtime (measured — R002 "Todo/Task 도구 기본 제거"), so a set env var cannot make teams creatable. Detection therefore rests on the tools actually being present, not on the env var alone — "the tool exists" is itself a claim requiring measurement (R020).
 -->
 
-When Detection resolves to **No**, this entire rule is dormant and R009/R010 govern.
+When Detection resolves to **No**, this entire rule is dormant and R009/R010 govern (the named-spawn note in 「멤버 도구 부재 시 대체 규약」 restates R010 policy and applies under R010).
 
 ## Decision Matrix
 
@@ -65,9 +65,9 @@ When Detection resolves to **No**, this entire rule is dormant and R009/R010 gov
 
 ### Scope: Intra-Session vs Cross-Session
 
-Intra-session: `SendMessage`(Agent Teams), peer-to-peer, `TeamCreate` 필요. Cross-session: `send_message`(claude-peers-mcp), broker 경유, 별도 프로세스 간.
+Intra-session: `SendMessage`. 메인→이름 붙인 멤버 전달은 `TeamCreate` 없이 동작(CC 2.1.289 실측, general-purpose 팀원 1건); 멤버→멤버 peer-to-peer는 `[가설]` 미관측. Cross-session: `send_message`(claude-peers-mcp), broker 경유, 별도 프로세스 간.
 
-<!-- DETAIL: Scope table and mechanism-distinction paragraph, original wording
+<!-- DETAIL: Scope table and mechanism-distinction paragraph, original wording — superseded by #1827 (CC 2.1.289 measured) — do not restore as-is
 | Scope | Tool | Protocol | Use Case |
 |-------|------|----------|----------|
 | Intra-session | `SendMessage` (Agent Teams) | Peer-to-peer within team | Multi-agent collaboration in one session |
@@ -448,7 +448,7 @@ Agent Teams 멤버는 long-running 작업 중 TaskUpdate 로 진행 상태를 �
 Agent Teams 멤버는 long-running 작업 중 진행 상태를 TaskUpdate 로 명시적으로 알려야 한다. 침묵은 코디네이터가 죽었거나 멤버가 막혔다고 오인하게 만든다.
 -->
 
-`TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 미제공(R002) — 가용 시 아래 표, 부재 시 「Task 도구 부재 시 대체 규약」을 따른다.
+`TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 미제공(R002) — 가용 시 아래 표, 부재 시 「Task 도구 부재 시 대체 규약」을 따른다. 가용성은 모델을 따른다 — haiku 팀원 1건은 `ToolSearch`로 로드, sonnet-5-5 팀원 1건과 `claude-opus-5-5` 메인은 불가(CC 2.1.289 실측).
 
 <!-- DETAIL: Task tool availability measurement note, original wording
 > **도구 가용성 선확인 (v2.1.233+)**: `TaskCreate/Get/Update/List`는 현행 모델(Opus 4.8 / Sonnet 5 / Fable 5 / Mythos 5 이상)에서 기본 제거되어 이 저장소 실행 환경에 **존재하지 않는다** — 실측은 R002 「Todo/Task 도구 기본 제거」. 아래 표는 Task 도구가 가용할 때(구모델 또는 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`)의 규정이며, **부재 시 아래 「Task 도구 부재 시 대체 규약」을 따른다**. 없는 도구의 호출을 의무로 남겨두면 실행 불가능한 규정이 된다.
@@ -489,7 +489,7 @@ Reference issue: #1087.
 
 ### 멤버 도구 부재 시 대체 규약 (Origin: #1817)
 
-멤버의 도구 구성은 그 에이전트의 frontmatter `tools:`와 실행 환경에 좌우되는 것으로 추정된다(#1817 "추정 원인 (미검증)") — `SendMessage`·`Agent`·`ToolSearch`가 있다고 가정하지 않는다(#1817: 멤버 3종에서 일부 부재 관측). 전용 `Glob`/`Grep`은 실측됐다(R002 ‡, CC 2.1.289): frontmatter `tools:`에 명시한 `qa-writer`는 받았고, 명시 목록이 없는 메인 세션에는 없었다 — 명시되지 않은 쪽은 부재로 전제한다. 멤버 측 `SendMessage` 지시(위 「Task 도구 부재 시 대체 규약」 표, TaskUpdate 표의 "차단 시" 행, 「Blocked Agent Behavior」의 "Post-completion: SendMessage + wait silently")는 모두 `SendMessage` 부재 시 아래 표를 따른다.
+멤버의 도구 구성은 그 에이전트의 frontmatter `tools:`와 실행 환경에 좌우되는 것으로 추정된다(#1817 "추정 원인 (미검증)") — `SendMessage`·`Agent`·`ToolSearch`가 있다고 가정하지 않는다(#1817: 멤버 3종에서 일부 부재 관측). 전용 `Glob`/`Grep`은 실측됐다(R002 ‡, CC 2.1.289): frontmatter `tools:`에 명시한 `qa-writer`는 받았고, 명시 목록이 없는 메인 세션에는 없었다 — 명시되지 않은 쪽은 부재로 전제한다. Detection = No일 때 이름 붙인 멤버(general-purpose 팀원 1건 실측)는 직접 도구에 `Agent`가 있어도(CC 2.1.289) R010 Core Rule상 서브에이전트를 스폰하지 않는다 — 이는 도구 부재가 아니라 프로젝트 정책이며(Detection = Yes 멤버는 R010의 Agent Teams 예외를 따른다), `SendMessage`는 직접 목록에는 없으나 `ToolSearch`(query "select:SendMessage")로 지연 로드해 `team-lead`에게 전달됐다(CC 2.1.289 실측) — 따라서 `SendMessage` 부재를 전제하지 말고 먼저 로드를 시도한다. 멤버→멤버 메시징은 `[가설]` 미관측이다. 멤버 측 `SendMessage` 지시(위 「Task 도구 부재 시 대체 규약」 표, TaskUpdate 표의 "차단 시" 행, 「Blocked Agent Behavior」의 "Post-completion: SendMessage + wait silently")는 모두 `SendMessage` 부재 시 아래 표를 따른다.
 
 | 부재 도구 | 대체 수단 |
 |-----------|-----------|

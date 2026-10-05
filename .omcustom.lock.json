@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.103",
-  "generatedAt": "2026-10-05T14:47:45.347Z",
-  "templateVersion": "1.1.103",
+  "generatorVersion": "1.1.104",
+  "generatedAt": "2026-10-05T18:04:42.081Z",
+  "templateVersion": "1.1.104",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -550,8 +550,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-teams.md": {
-      "templateHash": "38acf5b8f1ac4501c5b1f6416549878501b49f692b262f13bf939ff7d5220a8c",
-      "size": 47867,
+      "templateHash": "610dceb649a427bd95528feb7cf7f59c55ac36a26f92d57acab8cc155c71d918",
+      "size": 49245,
       "component": "rules"
     },
     ".claude/rules/MUST-completion-verification.md": {
@@ -580,8 +580,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "d0f9a9c29a9eec3737aaa7341c6a6405358ea660bb8c3ffa8ab172f59daf2128",
-      "size": 104291,
+      "templateHash": "5b3ceafde23920f79fec14dda356abccf55cd4469e7aceaf9fa6459278c1999e",
+      "size": 106217,
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
@@ -590,8 +590,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-permissions.md": {
-      "templateHash": "d2e58efce323043ef362f86a6093750490dfe644b59c8c219f942df3d3a824db",
-      "size": 38853,
+      "templateHash": "b3f0edaa4a4344a596eac3318b9565aeb6a42d87138bca607c70b619e41915b0",
+      "size": 39301,
       "component": "rules"
     },
     ".claude/rules/MUST-safety.md": {
@@ -850,8 +850,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "868383be0f76dc3acd0493a2f264a493dfdcc54e4ef74711314248a441cda12d",
-      "size": 18460,
+      "templateHash": "3c1d8a3cc4ab604474e24fe9f3c87e9dc482393188672d924295b35d3bf12393",
+      "size": 23075,
       "component": "skills"
     },
     ".claude/skills/go-backend-best-practices/SKILL.md": {
@@ -1059,9 +1059,14 @@
       "size": 3486,
       "component": "skills"
     },
+    ".claude/skills/pipeline/scripts/trusted-issue-filter.jq": {
+      "templateHash": "85526c16f3ae02f5b4c9ea3c51f7454fab99be6a5bc7153b68992ae71b949e04",
+      "size": 2219,
+      "component": "skills"
+    },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "d9dffb31ace63dcbaef89fbda5f6064ce288a97e89271c6cee946b33bbad7e5e",
-      "size": 93174,
+      "templateHash": "cbbac0d6af61154f08dd2c286a2f35d245d3d38be944299304b7d590ed69c4ca",
+      "size": 105421,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1550,8 +1555,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "96e560b09f0dd4b31a150c315b7e9b917e5f0333b5a198bf04bbc5856e188788",
-      "size": 187231,
+      "templateHash": "9046a118f9481dddc534ec4b445e167c1796e2b755925019157d8d8f8979361d",
+      "size": 194680,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {

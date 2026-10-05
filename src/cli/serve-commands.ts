@@ -9,8 +9,11 @@ import {
   DEFAULT_PORT,
   type FindServeBuildDirOptions,
   findServeBuildDir,
-  isServeRunning,
+  getServerPid,
+  resolveServePidFile,
   ServePidFileError,
+  type ServeStartResult,
+  ServeStopPermissionError,
   startServeBackground,
   stopServe,
 } from './serve.js';
@@ -48,8 +51,9 @@ export async function serveCommand(options: ServeCommandOptions): Promise<void> 
     return;
   }
 
+  let result: ServeStartResult;
   try {
-    await startServeBackground(cwd, port, buildDirOpts);
+    result = await startServeBackground(cwd, port, buildDirOpts);
   } catch (error: unknown) {
     if (!(error instanceof ServePidFileError)) {
       throw error;
@@ -58,8 +62,32 @@ export async function serveCommand(options: ServeCommandOptions): Promise<void> 
     process.exit(1);
   }
 
-  const running = await isServeRunning();
-  if (running) {
+  // Only a start this call performed may be reported as started on `port`: the
+  // port of a server that was already running is not recorded anywhere, so the
+  // other outcomes state the situation without naming one (idempotent, exit 0).
+  switch (result.status) {
+    case 'already-running':
+      console.log(
+        result.notPermitted === true
+          ? i18n.t('cli.web.start.alreadyRunningNotPermitted', {
+              pid: result.pid,
+              path: String(resolveServePidFile()),
+            })
+          : i18n.t('cli.web.start.alreadyRunning', { pid: result.pid })
+      );
+      return;
+    case 'starting-elsewhere':
+      console.log(i18n.t('cli.web.start.startingElsewhere'));
+      return;
+    case 'build-missing':
+    case 'spawn-failed':
+      console.error(i18n.t('cli.web.start.failed'));
+      process.exit(1);
+  }
+
+  // started: the spawned server may have exited already, and another start may
+  // have taken its place in the PID file — only this call's own server counts
+  if ((await getServerPid()) === result.pid) {
     console.log(i18n.t('cli.web.start.started', { port }));
   } else {
     console.error(i18n.t('cli.web.start.failed'));
@@ -82,7 +110,16 @@ function describePidFileError(error: ServePidFileError): string {
  * Handler for `omcustom serve-stop`
  */
 export async function serveStopCommand(): Promise<void> {
-  const stopped = await stopServe();
+  let stopped: boolean;
+  try {
+    stopped = await stopServe();
+  } catch (error: unknown) {
+    if (!(error instanceof ServeStopPermissionError)) {
+      throw error;
+    }
+    console.error(i18n.t('cli.web.stop.notPermitted', { pid: error.pid, path: error.pidFile }));
+    process.exit(1);
+  }
   if (stopped) {
     console.log(i18n.t('cli.web.stop.stopped'));
   } else {

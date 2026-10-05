@@ -1,6 +1,22 @@
 /**
  * Background web server management for omcustom CLI
  * Manages the lifecycle of the packages/serve SvelteKit server process
+ *
+ * PID protocol — known limits and design decisions (#1825):
+ * - A start that ends without running cleanup (e.g. SIGKILL; this module
+ *   installs no signal handlers) after the spawn but before the PID file is
+ *   replaced leaves a detached server that nothing tracks. Accepted limit.
+ * - The protocol is not collapsed into one `wx` lock file that serialises every
+ *   operation. That would rewrite a design that has passed two adversarial
+ *   reviews (#1822), for a regression risk larger than the gain.
+ * - A server record never ages out: when its PID now belongs to another user's
+ *   process (EPERM, e.g. after a reboot) it still counts as running. Expiring it
+ *   by boot time (`Date.now() - os.uptime()`) was rejected: a clock step after
+ *   boot (NTP) could mark a live server's record stale and break the
+ *   one-server guarantee. The start message tells the user how to clear it.
+ * - Processes in different PID namespaces that share one HOME (e.g. containers
+ *   with a mounted home) are unsupported: a PID recorded in one namespace
+ *   means nothing in another.
  */
 
 import { spawn } from 'node:child_process';
@@ -31,6 +47,9 @@ const PID_FILE_NAME = '.omcustom-serve.pid';
  * a claim can be told apart from another claim made by the same process.
  */
 const STARTING_RECORD = /^starting:(\d+):/;
+
+/** Largest PID `process.kill` accepts (int32). */
+const MAX_PID = 2147483647;
 
 /** How often a start re-tries to claim the PID file after removing a stale record. */
 const MAX_CLAIM_ATTEMPTS = 3;
@@ -79,6 +98,25 @@ const SIBLING_REMNANT =
   /^\.omcustom-serve\.pid\.(\d+)\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:tmp|taken)$/;
 
 /**
+ * What {@link startServeBackground} did, so a caller never reports a server it
+ * did not start:
+ * - `started`: this call spawned the server and its PID is recorded
+ * - `already-running`: another server is running (the PID file holds its PID;
+ *   the port it listens on is not recorded). `notPermitted` is set when that PID
+ *   belongs to another user, so the record may be stale
+
+ * - `starting-elsewhere`: another start is in progress, or this call lost the
+ *   race for the PID file and stopped the server it had spawned
+ * - `build-missing` / `spawn-failed`: nothing was started and nothing runs
+ */
+export type ServeStartResult =
+  | { status: 'started'; pid: number }
+  | { status: 'already-running'; pid: number; notPermitted?: true }
+  | { status: 'starting-elsewhere' }
+  | { status: 'build-missing' }
+  | { status: 'spawn-failed' };
+
+/**
  * Why {@link startServeBackground} refused to (keep) a server running:
  * - `home-unresolved`: the home directory is empty or relative, so there is no PID file location
  * - `pid-not-writable`: the PID file (or its directory) cannot be written
@@ -103,6 +141,25 @@ export class ServePidFileError extends Error {
     );
     this.name = 'ServePidFileError';
     this.reason = reason;
+    this.pidFile = pidFile;
+  }
+}
+
+/**
+ * Thrown by {@link stopServe} when the recorded server process exists but the
+ * caller may not signal it (`EPERM`): it belongs to another user, or the PID
+ * file is stale and the PID now belongs to an unrelated process. The record is
+ * left in place; the process is still reported as running by
+ * {@link isServeRunning}.
+ */
+export class ServeStopPermissionError extends Error {
+  readonly pid: number;
+  readonly pidFile: string;
+
+  constructor(pid: number, pidFile: string, options?: ErrorOptions) {
+    super(`Not permitted to signal the serve process ${pid} recorded in ${pidFile}`, options);
+    this.name = 'ServeStopPermissionError';
+    this.pid = pid;
     this.pidFile = pidFile;
   }
 }
@@ -138,12 +195,23 @@ export interface FindServeBuildDirOptions {
    * from interfering with tests that expect a missing build directory.
    */
   skipNpmFallback?: boolean;
+  /**
+   * Package root whose `packages/serve/build` is checked by the npm fallback.
+   * Defaults to the omcustom package root, resolved two levels above this
+   * module (`dist/cli/` when compiled, `src/cli/` from source). Ignored when
+   * `skipNpmFallback` is true. Tests inject a temp directory here so they never
+   * write into the repository's own `packages/serve`.
+   */
+  npmPackageRoot?: string;
 }
 
 /**
  * Find the built SvelteKit server directory.
- * Checks two locations: the local monorepo packages/serve/build,
- * and the npm-installed package path relative to this module.
+ * Checks two locations in order: the local monorepo
+ * `<projectRoot>/packages/serve/build`, then the npm fallback
+ * `<npmPackageRoot>/packages/serve/build` (the omcustom package root relative
+ * to this module unless `options.npmPackageRoot` overrides it). Returns the
+ * first directory containing `index.js`, or null when neither does.
  */
 export function findServeBuildDir(
   projectRoot: string,
@@ -156,7 +224,8 @@ export function findServeBuildDir(
   // 2. npm global: installed next to dist/ inside the omcustom package
   // __dirname is dist/cli/ when compiled, so go up two levels to package root
   if (options?.skipNpmFallback !== true) {
-    const npmBuild = join(import.meta.dirname, '..', '..', 'packages', 'serve', 'build');
+    const npmPackageRoot = options?.npmPackageRoot ?? join(import.meta.dirname, '..', '..');
+    const npmBuild = join(npmPackageRoot, 'packages', 'serve', 'build');
     if (existsSync(join(npmBuild, 'index.js'))) return npmBuild;
   }
 
@@ -178,20 +247,40 @@ function parsePidRecord(raw: string): PidRecord | null {
   const text = raw.trim();
   const match = STARTING_RECORD.exec(text);
   const pid = Number(match === null ? text : match[1]);
-  if (!Number.isFinite(pid) || pid <= 0) {
+  // Only a real PID: `process.kill` rejects anything else with a non-errno error
+  // that would read as "alive" forever
+  if (!Number.isSafeInteger(pid) || pid <= 0 || pid > MAX_PID) {
     return null;
   }
   return { pid, starting: match !== null };
 }
 
-/** Whether a process with this PID exists (signal 0 = existence check only). */
-function isProcessAlive(pid: number): boolean {
+/** What signal 0 says about a PID: see {@link probeProcess}. */
+type ProcessProbe = 'exists' | 'not-permitted' | 'unknown' | 'gone';
+
+/** Probe a PID with signal 0 (existence check only). Only `ESRCH` proves it is gone. */
+function probeProcess(pid: number): ProcessProbe {
   try {
     process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
+    return 'exists';
+  } catch (error: unknown) {
+    const code = errorCode(error);
+    if (code === 'ESRCH') {
+      return 'gone';
+    }
+    return code === 'EPERM' ? 'not-permitted' : 'unknown';
   }
+}
+
+/**
+ * Whether a process with this PID may exist.
+ *
+ * Only `ESRCH` proves a process is gone. `EPERM` means it exists but belongs to
+ * another user, and any other errno proves nothing, so both count as alive:
+ * wrongly reclaiming a live server's record would let a second server start.
+ */
+function isProcessAlive(pid: number): boolean {
+  return probeProcess(pid) !== 'gone';
 }
 
 /** The errno code of a caught error, if any. */
@@ -269,14 +358,48 @@ export async function isServeRunning(): Promise<boolean> {
  * {@link isServeRunning} against an already-resolved PID file path.
  */
 async function isServeRunningAt(pidFile: string): Promise<boolean> {
+  return (await readLiveRecord(pidFile)) !== null;
+}
+
+/** The PID file's record when it stands for a live server or start, else `null`. */
+async function readLiveRecord(pidFile: string): Promise<PidRecord | null> {
   let raw: string;
   try {
     raw = await readPidFileSettled(pidFile);
   } catch {
-    return false; // absent, or unreadable
+    return null; // absent, or unreadable
   }
   const record = parsePidRecord(raw);
-  return record !== null && (await isRecordLive(pidFile, record));
+  return record !== null && (await isRecordLive(pidFile, record)) ? record : null;
+}
+
+/**
+ * The result for a start that found the PID file held by `record` (see
+ * {@link claimPidFile}): a running server is `already-running` — flagged
+ * `notPermitted` when the PID only proved to exist through `EPERM`, so the
+ * caller can say the record may be stale — anything else is `starting-elsewhere`.
+ */
+function heldResult(record: PidRecord | null): ServeStartResult {
+  if (record === null || record.starting) {
+    return { status: 'starting-elsewhere' };
+  }
+  const probe = probeProcess(record.pid);
+  if (probe === 'gone') {
+    return { status: 'starting-elsewhere' };
+  }
+  return probe === 'not-permitted'
+    ? { status: 'already-running', pid: record.pid, notPermitted: true }
+    : { status: 'already-running', pid: record.pid };
+}
+
+/** The PID of the live server the PID file records, or `null` (none, or only a start in progress). */
+export async function getServerPid(): Promise<number | null> {
+  const pidFile = resolveServePidFile();
+  if (pidFile === null) {
+    return null;
+  }
+  const record = await readLiveRecord(pidFile);
+  return record !== null && !record.starting ? record.pid : null;
 }
 
 /**
@@ -288,27 +411,28 @@ async function isServeRunningAt(pidFile: string): Promise<boolean> {
  * 1. Resolve the PID file location; when none can be resolved (empty or
  *    relative home), throw {@link ServePidFileError} `home-unresolved` — even
  *    when the build is missing, since nothing can be checked without a location.
- * 2. Already running (per the PID file) — return silently.
- * 3. Build missing — return silently.
+ * 2. Already running (per the PID file) — return `already-running` with the
+ *    server's PID, or `starting-elsewhere` when the record is a start in progress.
+ * 3. Build missing — return `build-missing`.
  * 4. PID directory not writable — throw {@link ServePidFileError}
  *    `pid-not-writable` without spawning.
  * 5. Claim the PID file by creating it exclusively with a `starting` record
  *    (see {@link claimPidFile}). When a live record already holds it (another
- *    start won the race), return silently without spawning. A stale record is
+ *    start won the race), return as in step 2 without spawning. A stale record is
  *    removed and the claim re-tried, up to {@link MAX_CLAIM_ATTEMPTS}
- *    attempts; when they run out, return silently without spawning. When the
+ *    attempts; when they run out, return `starting-elsewhere`. When the
  *    claim cannot be created or the existing file cannot be read, throw
  *    {@link ServePidFileError} `pid-not-writable` without spawning.
  * 6. Spawn. When the spawn itself fails (`child.pid` is `undefined`), remove
- *    the claim and return silently: no process exists, and the caller's
- *    {@link isServeRunning} check reports the failed start.
+ *    the claim and return `spawn-failed`: no process exists.
  * 7. Record the child's PID (see {@link recordServerPid}): where the PID path
  *    is empty — a remover may have taken the claim away for a moment — the
  *    record is created exclusively, so a claim put back later cannot replace
- *    it; where the path still holds this start's claim, the claim is replaced.
+ *    it; where the path still holds this start's claim, the claim is replaced
+ *    and `started` is returned.
  *    When the path holds anything else (another start reclaimed the claim,
  *    e.g. after {@link CLAIM_MAX_AGE_MS}), send the child SIGTERM and return
- *    silently, leaving the other record untouched — as in step 5, the PID file
+ *    as in step 2 for what took its place, leaving the other record untouched — as in step 5, the PID file
  *    belongs to another start. When the record cannot be written or the PID
  *    file cannot be read, send the child SIGTERM, remove the claim, and throw
  *    {@link ServePidFileError} `pid-not-writable`.
@@ -319,27 +443,29 @@ async function isServeRunningAt(pidFile: string): Promise<boolean> {
  * @param projectRoot - Absolute path to the project root (used to find build dir)
  * @param port - TCP port to bind (default: 4321)
  * @param buildDirOpts - Options forwarded to findServeBuildDir (e.g. skipNpmFallback for tests)
+ * @returns what the call did; only `started` means it started a server
  * @throws {ServePidFileError} when the server's PID cannot be recorded
  */
 export async function startServeBackground(
   projectRoot: string,
   port: number = DEFAULT_PORT,
   buildDirOpts?: FindServeBuildDirOptions
-): Promise<void> {
+): Promise<ServeStartResult> {
   const pidFile = resolveServePidFile();
   if (pidFile === null) {
     // no stable PID location — do not spawn an untrackable server
     throw new ServePidFileError('home-unresolved', null);
   }
 
-  if (await isServeRunningAt(pidFile)) {
-    return; // already running — no-op
+  const running = await readLiveRecord(pidFile);
+  if (running !== null) {
+    return heldResult(running); // already running or starting — no-op
   }
 
   const buildDir = findServeBuildDir(projectRoot, buildDirOpts);
   if (buildDir === null) {
-    // Build not present (serve package not installed / not yet built) — silently skip
-    return;
+    // Build not present (serve package not installed / not yet built)
+    return { status: 'build-missing' };
   }
 
   try {
@@ -348,15 +474,16 @@ export async function startServeBackground(
     throw new ServePidFileError('pid-not-writable', pidFile, { cause: error });
   }
 
-  let claim: string | null;
+  let claimed: ClaimResult;
   try {
-    claim = await claimPidFile(pidFile);
+    claimed = await claimPidFile(pidFile);
   } catch (error: unknown) {
     throw new ServePidFileError('pid-not-writable', pidFile, { cause: error });
   }
-  if (claim === null) {
-    return; // another start holds the PID file — it owns the spawn
+  if ('held' in claimed) {
+    return heldResult(claimed.held); // another start holds the PID file — it owns the spawn
   }
+  const { claim } = claimed;
 
   const child = spawn('node', [join(buildDir, 'index.js')], {
     env: {
@@ -386,12 +513,12 @@ export async function startServeBackground(
   if (child.pid === undefined) {
     // spawn failed — no process exists that would need tracking
     await removePidFileIf(pidFile, claim);
-    return;
+    return { status: 'spawn-failed' };
   }
 
-  let recorded: boolean;
+  let outcome: Awaited<ReturnType<typeof recordServerPid>>;
   try {
-    recorded = await recordServerPid(pidFile, claim, String(child.pid));
+    outcome = await recordServerPid(pidFile, claim, String(child.pid));
   } catch (error: unknown) {
     // Recording the PID failed (e.g. permissions changed, or the PID file
     // became unreadable): do not leave the spawned server running untracked.
@@ -399,12 +526,15 @@ export async function startServeBackground(
     await removePidFileIf(pidFile, claim);
     throw new ServePidFileError('pid-not-writable', pidFile, { cause: error });
   }
-  if (!recorded) {
+  if (!outcome.recorded) {
     // The claim was lost (taken over as stale): the PID file is another
     // start's to record. Do not overwrite it, and do not leave this server
-    // running untracked.
+    // running untracked. What took its place decides the result: a running
+    // server is `already-running`, a start in progress `starting-elsewhere`.
     child.kill('SIGTERM');
+    return heldResult(outcome.lost);
   }
+  return { status: 'started', pid: child.pid };
 }
 
 /**
@@ -419,13 +549,18 @@ export async function startServeBackground(
  * path (taken away again) starts the next attempt, up to
  * {@link MAX_CLAIM_ATTEMPTS}; anything else means the claim was lost.
  *
- * @returns `true` when the PID was recorded, `false` when the claim was lost
+ * @returns `recorded` when the PID was recorded; otherwise `lost` with the
+ *   record found in place of the claim (`null` when none could be read)
  * @throws when the record cannot be written or the PID file cannot be read
  */
-async function recordServerPid(pidFile: string, claim: string, pid: string): Promise<boolean> {
+async function recordServerPid(
+  pidFile: string,
+  claim: string,
+  pid: string
+): Promise<{ recorded: true } | { recorded: false; lost: PidRecord | null }> {
   for (let attempt = 0; attempt < MAX_CLAIM_ATTEMPTS; attempt++) {
     if (await createPidFileExclusive(pidFile, pid)) {
-      return true;
+      return { recorded: true };
     }
     let current: string;
     try {
@@ -437,12 +572,12 @@ async function recordServerPid(pidFile: string, claim: string, pid: string): Pro
       throw error;
     }
     if (current !== claim) {
-      return false;
+      return { recorded: false, lost: parsePidRecord(current) };
     }
     await replacePidFile(pidFile, pid);
-    return true;
+    return { recorded: true };
   }
-  return false;
+  return { recorded: false, lost: null };
 }
 
 /**
@@ -454,8 +589,13 @@ async function recordServerPid(pidFile: string, claim: string, pid: string): Pro
  * starter is never signalled), a malformed record, or a record whose process
  * is gone. Reclaiming those is left to the next start.
  *
+ * A process that exists but may not be signalled (`EPERM`) is not "nothing
+ * running": {@link isServeRunning} reports it as running, so reporting "not
+ * running" here would contradict it. It throws instead and keeps the record.
+ *
  * @returns `true` if a running process was stopped, `false` if nothing was running
  *   (including when no PID file location can be resolved).
+ * @throws {ServeStopPermissionError} when the recorded process cannot be signalled (`EPERM`)
  */
 export async function stopServe(): Promise<boolean> {
   const pidFile = resolveServePidFile();
@@ -474,7 +614,10 @@ export async function stopServe(): Promise<boolean> {
   }
   try {
     process.kill(record.pid, 'SIGTERM');
-  } catch {
+  } catch (error: unknown) {
+    if (errorCode(error) === 'EPERM') {
+      throw new ServeStopPermissionError(record.pid, pidFile, { cause: error });
+    }
     return false;
   }
   await removePidFileIf(pidFile, raw);
@@ -501,16 +644,17 @@ function siblingPath(pidFile: string, suffix: string): string {
  * A PID path that is a dangling symbolic link is removed as stale (the link
  * itself, never its target).
  *
- * @returns the claim's record, or `null` when a live record holds the PID file
- *   (or the claim still failed after {@link MAX_CLAIM_ATTEMPTS} attempts)
+ * @returns the claim's record, or `held` with the live record that holds the PID
+ *   file (`null` when that record is only possibly partial, or when the claim
+ *   still failed after {@link MAX_CLAIM_ATTEMPTS} attempts)
  * @throws when the claim cannot be created or an existing PID file cannot be read
  */
-async function claimPidFile(pidFile: string): Promise<string | null> {
+async function claimPidFile(pidFile: string): Promise<ClaimResult> {
   await removeDeadSiblings(pidFile);
   const claim = `starting:${process.pid}:${randomUUID()}`;
   for (let attempt = 0; attempt < MAX_CLAIM_ATTEMPTS; attempt++) {
     if (await createPidFileExclusive(pidFile, claim)) {
-      return claim;
+      return { claim };
     }
     let raw: string;
     try {
@@ -524,12 +668,15 @@ async function claimPidFile(pidFile: string): Promise<string | null> {
       throw error;
     }
     if (await isRecordHeld(pidFile, raw)) {
-      return null;
+      return { held: parsePidRecord(raw) };
     }
     await removePidFileIf(pidFile, raw);
   }
-  return null;
+  return { held: null };
 }
+
+/** The outcome of {@link claimPidFile}. */
+type ClaimResult = { claim: string } | { held: PidRecord | null };
 
 /** Whether a record read from the PID file must not be reclaimed (see {@link claimPidFile}). */
 async function isRecordHeld(pidFile: string, raw: string): Promise<boolean> {
@@ -567,19 +714,9 @@ async function removeDeadSiblings(pidFile: string): Promise<void> {
   }
   for (const name of names) {
     const match = SIBLING_REMNANT.exec(name);
-    if (match !== null && isProcessGone(Number(match[1]))) {
+    if (match !== null && !isProcessAlive(Number(match[1]))) {
       await unlinkQuietly(join(dir, name));
     }
-  }
-}
-
-/** Whether no process with this PID exists — only `ESRCH` proves it. */
-function isProcessGone(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return false;
-  } catch (error: unknown) {
-    return errorCode(error) === 'ESRCH';
   }
 }
 

@@ -277,12 +277,16 @@
         "started": "Web UI started: http://localhost:{{port}}",
         "failed": "Failed to start Web UI server",
         "homeUnresolved": "Cannot start the Web UI server: the home directory cannot be resolved, either because HOME is a relative path or because HOME, the OS-reported home and the passwd entry are all empty, so the PID file location cannot be determined. Set HOME to an absolute path.",
-        "pidNotWritable": "Cannot start the Web UI server: the PID file {{path}} cannot be written ({{error}}). Check the PID file path and its parent directory."
+        "pidNotWritable": "Cannot start the Web UI server: the PID file {{path}} cannot be written ({{error}}). Check the PID file path and its parent directory.",
+        "alreadyRunning": "Web UI server is already running (PID {{pid}}); no new server was started. Its port is not recorded — check the port you started it with.",
+        "alreadyRunningNotPermitted": "The PID file records PID {{pid}}, which belongs to another user, so this command cannot tell whether it is the Web UI server; no new server was started. If no omcustom Web UI server is running, delete the PID file ({{path}}) and try again.",
+        "startingElsewhere": "Another Web UI start is in progress; this command did not start a server."
       },
       "stop": {
         "description": "Stop the Web UI server",
         "stopped": "Web UI server stopped",
-        "notRunning": "Web UI server is not running"
+        "notRunning": "Web UI server is not running",
+        "notPermitted": "Cannot stop the Web UI server: process {{pid}} recorded in {{path}} exists but you are not permitted to signal it. It belongs to another user, or the PID file is stale and the PID was reused by an unrelated process. Stop it as that user, or remove the PID file if it is stale."
       },
       "status": {
         "description": "Show Web UI server status",
