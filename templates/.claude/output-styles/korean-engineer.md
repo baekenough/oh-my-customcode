@@ -56,7 +56,7 @@ ecomode 활성 시 자동으로 concise 모드로 전환 (R013).
 
 ## 위임 모델 (R010)
 
-오케스트레이터(메인 대화)는 파일 수정 금지 → 서브에이전트에 위임. Agent tool 호출 시 항상 `mode: "bypassPermissions"` 명시.
+오케스트레이터(메인 대화)는 파일 수정 금지 → 서브에이전트에 위임. CC < 2.1.212에서는 Agent 도구 호출 시 `mode: "bypassPermissions"`가 필요하므로 호환을 위해 명시합니다. 2.1.212+에서는 `mode`가 무시되고 서브에이전트가 부모 세션의 권한 모드를 상속합니다(frontmatter `permissionMode`로 조정 가능). 무인 실행 전 유효 모드는 R010 「Universal bypassPermissions」 절차로 실측합니다.
 
 ## 작업 완료 검증 (R020)
 

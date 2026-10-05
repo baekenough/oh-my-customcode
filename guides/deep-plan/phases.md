@@ -18,7 +18,7 @@ Phase 1: Discovery Research
 ### Execution Modes
 
 - **Orchestrator mode**: Delegates to `/research` skill via `Skill(research, args="<topic>")`.
-- **Teams mode**: Executes the research workflow inline — the member spawns research teams directly as sub-agents. Does NOT use `Skill(research)` because fork context blocks sub-agent spawning in Teams mode.
+- **Teams mode**: Executes the research workflow inline — the member spawns research teams directly as sub-agents when its tool set includes Agent (otherwise it reports the needed spawns and the orchestrator spawns them, R018). Does NOT use `Skill(research)` because fork context blocks sub-agent spawning in Teams mode.
 
 The executor waits for completion before proceeding to Phase 2.
 
@@ -126,7 +126,7 @@ Phase 1 research artifact is persisted by the `/research` skill.
 
 Phase 3 verification report path: `.claude/outputs/sessions/{YYYY-MM-DD}/deep-plan-{HHmmss}.md`
 
-**Artifact write protocol**: Under `mode: "bypassPermissions"`, write artifacts under `.claude/outputs/` directly with the Write tool (create the dated directory first if needed). Direct `Write`/`Edit`/`Bash` on `.claude/` is permitted since CC v2.1.121 — no `/tmp/*.sh` wrapping is needed (R006/R010). Only catastrophic shell operations (`rm -rf /`) remain blocked by independent safety guards.
+**Artifact write protocol**: Under `bypassPermissions` (CC < 2.1.212: pass `mode: "bypassPermissions"` per call; CC >= 2.1.212: `mode` is ignored and the parent session's mode is inherited — verify the effective mode per R010 「Universal bypassPermissions」), write artifacts under `.claude/outputs/` directly with the Write tool (create the dated directory first if needed). Direct `Write`/`Edit`/`Bash` on `.claude/` is permitted since CC v2.1.121 — no `/tmp/*.sh` wrapping is needed (R006/R010). Only catastrophic shell operations (`rm -rf /`) remain blocked by independent safety guards.
 
 When spawning the final synthesis agent to write this artifact, include these instructions verbatim in the agent prompt:
 
@@ -136,7 +136,7 @@ When spawning the final synthesis agent to write this artifact, include these in
 Write the artifact under `.claude/outputs/` directly with the Write tool:
 1. Ensure the dated directory exists: .claude/outputs/sessions/<date>/
 2. Write .claude/outputs/sessions/<date>/deep-plan-<HHmmss>.md with the Write tool.
-This Agent tool call runs with mode: "bypassPermissions", under which direct Write/Edit/Bash on `.claude/` is permitted (CC v2.1.121+) — no /tmp/*.sh wrapping needed.
+This Agent call needs `mode: "bypassPermissions"` on CC < 2.1.212 and inherits the parent session's mode on CC >= 2.1.212; under bypassPermissions, direct Write/Edit/Bash on `.claude/` is permitted (CC v2.1.121+) — no /tmp/*.sh wrapping needed.
 ```
 
 Artifact metadata header:
@@ -196,12 +196,12 @@ After PASS verdict:
 
 ## Teams Mode (Agent Teams)
 
-When running inside an Agent Teams member (not via Skill tool), the deep-plan workflow operates identically with these adaptations:
+When running inside an Agent Teams member (not via Skill tool), the deep-plan workflow operates identically with these adaptations. Sub-agent spawning and `SendMessage` delivery below apply only when the member's tool set includes Agent and SendMessage respectively; when either is absent, follow R018 "멤버 도구 부재 시 대체 규약" — file channels and orchestrator relay (#1817):
 
-1. Phase 1: Executes research workflow inline (not via `Skill(research)`) — spawns 10 research teams as sub-agents
+1. Phase 1: Executes research workflow inline (not via `Skill(research)`) — spawns 10 research teams as sub-agents (requires Agent)
 2. Phase 2: Uses EnterPlanMode/ExitPlanMode and Explore agents normally
-3. Phase 3: Spawns 3 verification teams as sub-agents
-4. Delivers final verified plan via `SendMessage` to team lead
+3. Phase 3: Spawns 3 verification teams as sub-agents (requires Agent)
+4. Delivers final verified plan via `SendMessage` to team lead (if SendMessage is absent: artifact file relayed by orchestrator)
 
 ### Prompt Embedding Pattern
 
@@ -219,6 +219,8 @@ Agent(
 
   Topic: {user's planning topic}
   Deliver verified plan via SendMessage to team lead when complete.
+  If SendMessage is not in your tool set, write the plan to an artifact
+  file and report its path for the orchestrator to relay.
   """
 )
 ```
@@ -229,8 +231,8 @@ Agent(
 |--------|------------------|------------|
 | Invocation | `Skill(deep-plan)` | Prompt embedding |
 | Phase 1 research | `Skill(research)` | Inline execution |
-| Result delivery | Return to main conversation | `SendMessage` to team lead |
-| Plan approval | User via ExitPlanMode | Team lead via SendMessage |
+| Result delivery | Return to main conversation | `SendMessage` to team lead (if absent: artifact file relayed by orchestrator) |
+| Plan approval | User via ExitPlanMode | Team lead via SendMessage (if absent: via orchestrator-relayed artifact file) |
 
 ## Fallback Behavior
 

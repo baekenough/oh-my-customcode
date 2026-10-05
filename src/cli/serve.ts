@@ -4,14 +4,79 @@
  */
 
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { constants, existsSync } from 'node:fs';
-import { access, readFile, unlink, writeFile } from 'node:fs/promises';
+import {
+  access,
+  link,
+  readdir,
+  readFile,
+  readlink,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
 import { dirname, isAbsolute, join } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { type HomeSources, resolveHomeDir } from '../utils/home.js';
 
 export const DEFAULT_PORT = 4321;
 
 const PID_FILE_NAME = '.omcustom-serve.pid';
+
+/**
+ * A start in progress records `starting:<starter pid>:<nonce>` in the PID file
+ * until the server's PID replaces it. The nonce makes every claim distinct, so
+ * a claim can be told apart from another claim made by the same process.
+ */
+const STARTING_RECORD = /^starting:(\d+):/;
+
+/** How often a start re-tries to claim the PID file after removing a stale record. */
+const MAX_CLAIM_ATTEMPTS = 3;
+
+/**
+ * Age (by mtime) after which a `starting` claim is stale even though its
+ * starter PID is alive — that PID may have been reused by an unrelated
+ * process after the starter died. Between claim and PID record a start only
+ * spawns and renames a file (milliseconds), so a minute is far beyond any
+ * real start while bounding how long a leftover claim can block new starts.
+ *
+ * @internal exported for tests only
+ */
+export const CLAIM_MAX_AGE_MS = 60_000;
+
+/**
+ * Age (by mtime) below which a record that may be partially written (see
+ * {@link isPossiblyPartialRecord}) is not reclaimed. Where hard links are
+ * unsupported, a record is created with `O_EXCL` and its content written
+ * afterwards, so a reader may see it empty or cut short for a moment; ten
+ * seconds covers that write with a wide margin.
+ *
+ * @internal exported for tests only
+ */
+export const PARTIAL_RECORD_GRACE_MS = 10_000;
+
+/**
+ * How long a reader waits before reading an absent PID file once more. A
+ * remover takes the PID file away and may put it back a moment later (see
+ * {@link removePidFileWhen}), so one absent read is not proof of absence.
+ */
+const ABSENT_RETRY_DELAY_MS = 10;
+
+/**
+ * `link` errors meaning the filesystem does not support hard links (e.g.
+ * FAT32/exFAT: `ENOTSUP` on macOS, `EPERM` on Linux), so exclusive creation
+ * falls back to an `O_EXCL` write.
+ */
+const HARD_LINK_UNSUPPORTED = new Set(['ENOTSUP', 'EOPNOTSUPP', 'EPERM', 'EXDEV']);
+
+/**
+ * Names of the staged (`.tmp`) and taken (`.taken`) siblings of the PID file,
+ * as made by {@link siblingPath}: `<PID file name>.<pid>.<uuid>.<suffix>`.
+ */
+const SIBLING_REMNANT =
+  /^\.omcustom-serve\.pid\.(\d+)\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:tmp|taken)$/;
 
 /**
  * Why {@link startServeBackground} refused to (keep) a server running:
@@ -98,10 +163,98 @@ export function findServeBuildDir(
   return null;
 }
 
+/** A parsed PID file record: a running server, or a start in progress. */
+interface PidRecord {
+  /** The server's PID, or the starter's PID while `starting` */
+  pid: number;
+  starting: boolean;
+}
+
+/**
+ * Parse PID file contents: `<pid>` (a server) or `starting:<pid>:<nonce>`
+ * (a start in progress). Returns `null` for anything else.
+ */
+function parsePidRecord(raw: string): PidRecord | null {
+  const text = raw.trim();
+  const match = STARTING_RECORD.exec(text);
+  const pid = Number(match === null ? text : match[1]);
+  if (!Number.isFinite(pid) || pid <= 0) {
+    return null;
+  }
+  return { pid, starting: match !== null };
+}
+
+/** Whether a process with this PID exists (signal 0 = existence check only). */
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The errno code of a caught error, if any. */
+function errorCode(error: unknown): string | undefined {
+  return (error as NodeJS.ErrnoException | null)?.code;
+}
+
+/**
+ * Whether the file at `path` was last modified at least `ms` ago. A file whose
+ * age cannot be read counts as younger: nothing is reclaimed on a guess.
+ */
+async function isOlderThan(path: string, ms: number): Promise<boolean> {
+  try {
+    const { mtimeMs } = await stat(path);
+    return Date.now() - mtimeMs >= ms;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether a parsed record still stands for a live server or start: its
+ * process exists and, for a `starting` claim, the claim is younger than
+ * {@link CLAIM_MAX_AGE_MS}.
+ */
+async function isRecordLive(pidFile: string, record: PidRecord): Promise<boolean> {
+  if (!isProcessAlive(record.pid)) {
+    return false;
+  }
+  return !record.starting || !(await isOlderThan(pidFile, CLAIM_MAX_AGE_MS));
+}
+
+/**
+ * Read the PID file for a reader. When it is absent, wait
+ * {@link ABSENT_RETRY_DELAY_MS} and read it once more: a remover may have
+ * taken it away for a moment and be about to put it back.
+ *
+ * @throws the second read's error (e.g. `ENOENT` when it is still absent), or
+ *   the first read's error when that is not `ENOENT`
+ */
+async function readPidFileSettled(pidFile: string): Promise<string> {
+  try {
+    return await readFile(pidFile, 'utf-8');
+  } catch (error: unknown) {
+    if (errorCode(error) !== 'ENOENT') {
+      throw error;
+    }
+  }
+  await delay(ABSENT_RETRY_DELAY_MS);
+  return readFile(pidFile, 'utf-8');
+}
+
 /**
  * Check whether the serve process is currently running.
- * Reads the PID file and sends signal 0 to verify the process exists.
- * Cleans up a stale PID file if the process is gone.
+ *
+ * Reads the PID file and sends signal 0 to verify the recorded process exists.
+ * A start in progress counts as running while its starter process is alive
+ * and its claim is younger than {@link CLAIM_MAX_AGE_MS}.
+ * This is a read only: a record that is malformed, or whose process is gone,
+ * is reported as not running but never removed — only a start reclaims it
+ * (see {@link startServeBackground}). An unreadable PID file (e.g. a
+ * directory) is reported as not running; an absent one is read once more
+ * before it is (see {@link readPidFileSettled}).
  * Returns `false` when no PID file location can be resolved (see {@link resolveServePidFile}).
  */
 export async function isServeRunning(): Promise<boolean> {
@@ -116,26 +269,22 @@ export async function isServeRunning(): Promise<boolean> {
  * {@link isServeRunning} against an already-resolved PID file path.
  */
 async function isServeRunningAt(pidFile: string): Promise<boolean> {
+  let raw: string;
   try {
-    const raw = await readFile(pidFile, 'utf-8');
-    const pid = Number(raw.trim());
-    if (!Number.isFinite(pid) || pid <= 0) {
-      await cleanupPidFile(pidFile);
-      return false;
-    }
-    process.kill(pid, 0); // signal 0 = existence check only
-    return true;
+    raw = await readPidFileSettled(pidFile);
   } catch {
-    await cleanupPidFile(pidFile);
-    return false;
+    return false; // absent, or unreadable
   }
+  const record = parsePidRecord(raw);
+  return record !== null && (await isRecordLive(pidFile, record));
 }
 
 /**
  * Start the SvelteKit web server as a detached background process.
  *
  * A detached server whose PID is not recorded could never be found or stopped
- * again, so the PID file is guarded on both sides of the spawn. Steps, in order:
+ * again, so the PID file is claimed before the spawn and replaced after it.
+ * Steps, in order:
  * 1. Resolve the PID file location; when none can be resolved (empty or
  *    relative home), throw {@link ServePidFileError} `home-unresolved` — even
  *    when the build is missing, since nothing can be checked without a location.
@@ -143,10 +292,29 @@ async function isServeRunningAt(pidFile: string): Promise<boolean> {
  * 3. Build missing — return silently.
  * 4. PID directory not writable — throw {@link ServePidFileError}
  *    `pid-not-writable` without spawning.
- * 5. Spawn. When the spawn itself fails (`child.pid` is `undefined`), return
- *    silently: no process exists, and the caller's {@link isServeRunning}
- *    check reports the failed start. When writing the PID file fails, send the
- *    child SIGTERM and throw {@link ServePidFileError} `pid-not-writable`.
+ * 5. Claim the PID file by creating it exclusively with a `starting` record
+ *    (see {@link claimPidFile}). When a live record already holds it (another
+ *    start won the race), return silently without spawning. A stale record is
+ *    removed and the claim re-tried, up to {@link MAX_CLAIM_ATTEMPTS}
+ *    attempts; when they run out, return silently without spawning. When the
+ *    claim cannot be created or the existing file cannot be read, throw
+ *    {@link ServePidFileError} `pid-not-writable` without spawning.
+ * 6. Spawn. When the spawn itself fails (`child.pid` is `undefined`), remove
+ *    the claim and return silently: no process exists, and the caller's
+ *    {@link isServeRunning} check reports the failed start.
+ * 7. Record the child's PID (see {@link recordServerPid}): where the PID path
+ *    is empty — a remover may have taken the claim away for a moment — the
+ *    record is created exclusively, so a claim put back later cannot replace
+ *    it; where the path still holds this start's claim, the claim is replaced.
+ *    When the path holds anything else (another start reclaimed the claim,
+ *    e.g. after {@link CLAIM_MAX_AGE_MS}), send the child SIGTERM and return
+ *    silently, leaving the other record untouched — as in step 5, the PID file
+ *    belongs to another start. When the record cannot be written or the PID
+ *    file cannot be read, send the child SIGTERM, remove the claim, and throw
+ *    {@link ServePidFileError} `pid-not-writable`.
+ *
+ * Reading the claim and replacing it are two operations: a record written
+ * between them is still overwritten.
  *
  * @param projectRoot - Absolute path to the project root (used to find build dir)
  * @param port - TCP port to bind (default: 4321)
@@ -180,6 +348,16 @@ export async function startServeBackground(
     throw new ServePidFileError('pid-not-writable', pidFile, { cause: error });
   }
 
+  let claim: string | null;
+  try {
+    claim = await claimPidFile(pidFile);
+  } catch (error: unknown) {
+    throw new ServePidFileError('pid-not-writable', pidFile, { cause: error });
+  }
+  if (claim === null) {
+    return; // another start holds the PID file — it owns the spawn
+  }
+
   const child = spawn('node', [join(buildDir, 'index.js')], {
     env: {
       ...process.env,
@@ -194,9 +372,9 @@ export async function startServeBackground(
 
   // A failed spawn (e.g. `node` not on PATH) reports itself through an
   // asynchronous 'error' event; with no listener that event crashes the CLI
-  // with a stack trace. The failure needs no handling here: no process exists
-  // and no PID file is written, so the caller's running check reports the same
-  // "failed to start" outcome as any other start that did not happen.
+  // with a stack trace. The failure needs no handling here beyond removing the
+  // claim below: no process exists, so the caller's running check reports the
+  // same "failed to start" outcome as any other start that did not happen.
   // Node may also emit 'error' when a signal cannot be delivered (subprocess.kill()
   // docs), in which case this listener would also swallow a failed SIGTERM from the
   // catch below.
@@ -206,22 +384,75 @@ export async function startServeBackground(
   child.unref();
 
   if (child.pid === undefined) {
-    return; // spawn failed — no process exists that would need tracking
+    // spawn failed — no process exists that would need tracking
+    await removePidFileIf(pidFile, claim);
+    return;
   }
 
+  let recorded: boolean;
   try {
-    await writeFile(pidFile, String(child.pid), 'utf-8');
+    recorded = await recordServerPid(pidFile, claim, String(child.pid));
   } catch (error: unknown) {
-    // The directory check above passed, but the write still failed (e.g. the
-    // PID path is a directory, or permissions changed): do not leave the
-    // spawned server running untracked.
+    // Recording the PID failed (e.g. permissions changed, or the PID file
+    // became unreadable): do not leave the spawned server running untracked.
     child.kill('SIGTERM');
+    await removePidFileIf(pidFile, claim);
     throw new ServePidFileError('pid-not-writable', pidFile, { cause: error });
+  }
+  if (!recorded) {
+    // The claim was lost (taken over as stale): the PID file is another
+    // start's to record. Do not overwrite it, and do not leave this server
+    // running untracked.
+    child.kill('SIGTERM');
   }
 }
 
 /**
+ * Record a spawned server's PID in place of this start's claim.
+ *
+ * An absent PID path does not mean the claim is lost: a remover that judged an
+ * older record stale may have taken the claim away and be about to put it
+ * back. So the record is first created exclusively (like the claim, see
+ * {@link createPidFileExclusive}) — the remover's put-back then finds the path
+ * taken and drops the claim. When the path exists, it is read: this start's
+ * claim is replaced with the record (see {@link replacePidFile}); an absent
+ * path (taken away again) starts the next attempt, up to
+ * {@link MAX_CLAIM_ATTEMPTS}; anything else means the claim was lost.
+ *
+ * @returns `true` when the PID was recorded, `false` when the claim was lost
+ * @throws when the record cannot be written or the PID file cannot be read
+ */
+async function recordServerPid(pidFile: string, claim: string, pid: string): Promise<boolean> {
+  for (let attempt = 0; attempt < MAX_CLAIM_ATTEMPTS; attempt++) {
+    if (await createPidFileExclusive(pidFile, pid)) {
+      return true;
+    }
+    let current: string;
+    try {
+      current = await readFile(pidFile, 'utf-8');
+    } catch (error: unknown) {
+      if (errorCode(error) === 'ENOENT') {
+        continue; // taken away again since the create failed — try again
+      }
+      throw error;
+    }
+    if (current !== claim) {
+      return false;
+    }
+    await replacePidFile(pidFile, pid);
+    return true;
+  }
+  return false;
+}
+
+/**
  * Stop the background serve process.
+ *
+ * Only a server record is acted on: its process is sent SIGTERM and, when the
+ * signal was delivered, the record is removed. Anything else is left in place
+ * and `false` is returned — a start in progress (a `starting` record, whose
+ * starter is never signalled), a malformed record, or a record whose process
+ * is gone. Reclaiming those is left to the next start.
  *
  * @returns `true` if a running process was stopped, `false` if nothing was running
  *   (including when no PID file location can be resolved).
@@ -231,28 +462,285 @@ export async function stopServe(): Promise<boolean> {
   if (pidFile === null) {
     return false;
   }
+  let raw: string;
   try {
-    const raw = await readFile(pidFile, 'utf-8');
-    const pid = Number(raw.trim());
-    if (!Number.isFinite(pid) || pid <= 0) {
-      await cleanupPidFile(pidFile);
-      return false;
-    }
-    process.kill(pid, 'SIGTERM');
-    await cleanupPidFile(pidFile);
-    return true;
+    raw = await readPidFileSettled(pidFile);
   } catch {
-    await cleanupPidFile(pidFile);
+    return false; // absent, or unreadable
+  }
+  const record = parsePidRecord(raw);
+  if (record === null || record.starting) {
     return false;
+  }
+  try {
+    process.kill(record.pid, 'SIGTERM');
+  } catch {
+    return false;
+  }
+  await removePidFileIf(pidFile, raw);
+  return true;
+}
+
+/** A unique sibling path of the PID file, for staging and taking records. */
+function siblingPath(pidFile: string, suffix: string): string {
+  return `${pidFile}.${process.pid}.${randomUUID()}.${suffix}`;
+}
+
+/**
+ * Claim the PID file for a start: create it exclusively with a fresh
+ * `starting` record.
+ *
+ * Before claiming, staged and taken siblings left by dead processes are
+ * removed (see {@link removeDeadSiblings}). When the PID file exists, its
+ * record is judged:
+ * - live (see {@link isRecordLive}): the claim gives up;
+ * - possibly partial (see {@link isPossiblyPartialRecord}) and younger than
+ *   {@link PARTIAL_RECORD_GRACE_MS} (a record still being written): the claim
+ *   gives up;
+ * - otherwise stale: it is removed and the claim re-tried.
+ * A PID path that is a dangling symbolic link is removed as stale (the link
+ * itself, never its target).
+ *
+ * @returns the claim's record, or `null` when a live record holds the PID file
+ *   (or the claim still failed after {@link MAX_CLAIM_ATTEMPTS} attempts)
+ * @throws when the claim cannot be created or an existing PID file cannot be read
+ */
+async function claimPidFile(pidFile: string): Promise<string | null> {
+  await removeDeadSiblings(pidFile);
+  const claim = `starting:${process.pid}:${randomUUID()}`;
+  for (let attempt = 0; attempt < MAX_CLAIM_ATTEMPTS; attempt++) {
+    if (await createPidFileExclusive(pidFile, claim)) {
+      return claim;
+    }
+    let raw: string;
+    try {
+      raw = await readFile(pidFile, 'utf-8');
+    } catch (error: unknown) {
+      if (errorCode(error) === 'ENOENT') {
+        // removed since the claim failed, or a dangling symbolic link
+        await removeDanglingLink(pidFile);
+        continue;
+      }
+      throw error;
+    }
+    if (await isRecordHeld(pidFile, raw)) {
+      return null;
+    }
+    await removePidFileIf(pidFile, raw);
+  }
+  return null;
+}
+
+/** Whether a record read from the PID file must not be reclaimed (see {@link claimPidFile}). */
+async function isRecordHeld(pidFile: string, raw: string): Promise<boolean> {
+  const record = parsePidRecord(raw);
+  if (record === null) {
+    return isPossiblyPartialRecord(raw) && !(await isOlderThan(pidFile, PARTIAL_RECORD_GRACE_MS));
+  }
+  return isRecordLive(pidFile, record);
+}
+
+/**
+ * Whether unparsable PID file contents may be a record still being written:
+ * empty, or a strict prefix of a `starting:<pid>:` claim (a cut-short server
+ * PID is itself a parsable number). Anything else can never become a valid
+ * record and is reclaimed regardless of its age.
+ */
+function isPossiblyPartialRecord(raw: string): boolean {
+  return 'starting:'.startsWith(raw) || /^starting:\d*$/.test(raw);
+}
+
+/**
+ * Remove staged and taken siblings of the PID file (named
+ * `<PID file name>.<pid>.<uuid>.tmp|.taken`, see {@link siblingPath}) whose
+ * embedded process no longer exists (`ESRCH`) — left behind by a crash.
+ * Files of a live process (or one that cannot be signalled, `EPERM`) and any
+ * file not matching that exact pattern are kept. Best effort: errors are ignored.
+ */
+async function removeDeadSiblings(pidFile: string): Promise<void> {
+  const dir = dirname(pidFile);
+  let names: string[];
+  try {
+    names = await readdir(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    const match = SIBLING_REMNANT.exec(name);
+    if (match !== null && isProcessGone(Number(match[1]))) {
+      await unlinkQuietly(join(dir, name));
+    }
+  }
+}
+
+/** Whether no process with this PID exists — only `ESRCH` proves it. */
+function isProcessGone(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return false;
+  } catch (error: unknown) {
+    return errorCode(error) === 'ESRCH';
   }
 }
 
 /**
- * Remove the PID file, ignoring errors if it does not exist.
+ * Create the PID file with `content` only if it does not exist.
+ *
+ * The content is staged in a unique file and hard-linked into place: `link`
+ * fails when the target exists, and the file appears with its content
+ * complete, so no reader ever sees an empty or partial record. Where hard
+ * links are unsupported ({@link HARD_LINK_UNSUPPORTED}), the PID file is
+ * created with `O_EXCL` instead — still exclusive, but a reader may briefly
+ * see it empty or partial (see {@link PARTIAL_RECORD_GRACE_MS}).
+ *
+ * @returns `false` when the PID file already exists
  */
-async function cleanupPidFile(pidFile: string): Promise<void> {
+async function createPidFileExclusive(pidFile: string, content: string): Promise<boolean> {
+  const staged = siblingPath(pidFile, 'tmp');
   try {
-    await unlink(pidFile);
+    await writeFile(staged, content, { encoding: 'utf-8', flag: 'wx' });
+    await linkExclusive(staged, pidFile, content);
+    return true;
+  } catch (error: unknown) {
+    if (errorCode(error) === 'EEXIST') {
+      return false;
+    }
+    throw error;
+  } finally {
+    await unlinkQuietly(staged);
+  }
+}
+
+/**
+ * Hard-link `source` to `target`, failing with `EEXIST` when `target` exists.
+ * Where hard links are unsupported, write `content` to `target` with `O_EXCL`.
+ */
+async function linkExclusive(source: string, target: string, content: string): Promise<void> {
+  try {
+    await link(source, target);
+  } catch (error: unknown) {
+    if (!HARD_LINK_UNSUPPORTED.has(errorCode(error) ?? '')) {
+      throw error;
+    }
+    await writeFile(target, content, { encoding: 'utf-8', flag: 'wx' });
+  }
+}
+
+/**
+ * Replace the PID file's record with `content` in one step: the content is
+ * staged in a unique file and renamed over the PID file, so no reader ever
+ * sees an empty or partial record.
+ */
+async function replacePidFile(pidFile: string, content: string): Promise<void> {
+  const staged = siblingPath(pidFile, 'tmp');
+  try {
+    await writeFile(staged, content, { encoding: 'utf-8', flag: 'wx' });
+    await rename(staged, pidFile);
+  } catch (error: unknown) {
+    await unlinkQuietly(staged);
+    throw error;
+  }
+}
+
+/**
+ * Remove the PID file only if it still holds exactly `expected`.
+ *
+ * Reading the file and then unlinking its path would race with a start that
+ * replaced the record in between, deleting that start's fresh claim. Instead
+ * the file is taken (see {@link removePidFileWhen}) and the taken file compared:
+ * - it holds `expected`: it is deleted;
+ * - it holds anything else, or cannot be read: it is put back.
+ */
+async function removePidFileIf(pidFile: string, expected: string): Promise<void> {
+  await removePidFileWhen(pidFile, async (taken) => {
+    try {
+      return (await readFile(taken, 'utf-8')) === expected;
+    } catch {
+      return false; // unreadable — not the record that was judged removable
+    }
+  });
+}
+
+/**
+ * Remove the PID path when it is a dangling symbolic link: the link itself is
+ * removed, never its target. Anything else at the path is left alone.
+ */
+async function removeDanglingLink(pidFile: string): Promise<void> {
+  if (!(await isDanglingLink(pidFile))) {
+    return; // gone, or not a dangling symbolic link
+  }
+  await removePidFileWhen(pidFile, isDanglingLink);
+}
+
+/** Whether `path` is a symbolic link whose target does not exist. */
+async function isDanglingLink(path: string): Promise<boolean> {
+  try {
+    await readlink(path);
+  } catch {
+    return false; // absent, or not a symbolic link
+  }
+  try {
+    await stat(path);
+    return false; // the target exists
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Remove the PID path only if `isExpected` accepts what was there.
+ *
+ * The path is first renamed to a unique sibling (one atomic step, so at most
+ * one caller takes any given file; a symbolic link is moved as a link) and the
+ * taken file is checked:
+ * - accepted: it is deleted;
+ * - rejected: it is put back. Putting back never overwrites (a hard link, or
+ *   an `O_EXCL` write of its content where hard links are unsupported), so
+ *   when a newer record has appeared at the path meanwhile, the newer one is
+ *   kept and the taken one is deleted (as it is when putting back fails for
+ *   any other reason).
+ *
+ * When the path cannot be taken (already gone, or not movable), nothing happens.
+ */
+async function removePidFileWhen(
+  pidFile: string,
+  isExpected: (taken: string) => Promise<boolean>
+): Promise<void> {
+  const taken = siblingPath(pidFile, 'taken');
+  try {
+    await rename(pidFile, taken);
+  } catch {
+    return;
+  }
+  if (!(await isExpected(taken))) {
+    await putBack(taken, pidFile);
+  }
+  await unlinkQuietly(taken);
+}
+
+/** Put a taken file back at the PID path without overwriting; failures are ignored. */
+async function putBack(taken: string, pidFile: string): Promise<void> {
+  try {
+    await link(taken, pidFile);
+    return;
+  } catch (error: unknown) {
+    if (!HARD_LINK_UNSUPPORTED.has(errorCode(error) ?? '')) {
+      return; // a newer record holds the path — it wins over the taken one
+    }
+  }
+  try {
+    await writeFile(pidFile, await readFile(taken, 'utf-8'), { encoding: 'utf-8', flag: 'wx' });
+  } catch {
+    // a newer record holds the path, or the taken file is unreadable
+  }
+}
+
+/**
+ * Remove a file, ignoring errors (it may already be absent).
+ */
+async function unlinkQuietly(path: string): Promise<void> {
+  try {
+    await unlink(path);
   } catch {
     // ignore — file may already be absent
   }

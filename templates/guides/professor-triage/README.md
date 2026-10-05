@@ -38,5 +38,5 @@ The SKILL.md is intentionally thin — it carries only the workflow contract and
 ## Key Design Decisions
 
 - **Phase 4 uses `general-purpose` (NOT `arch-documenter`)**: `arch-documenter` has `disallowedTools: [Bash]` — cannot run `gh` (comment posting) or shell scripts these phases require. `general-purpose` has Bash access. See #1043 and R010 Known Limitations.
-- **Artifact write**: `.claude/outputs/` writes use the Write tool directly under `mode: "bypassPermissions"` — direct Write/Edit/Bash on `.claude/` is permitted since CC v2.1.121 (R006/R010); no `/tmp/*.sh` wrapping needed. See phases.md Phase 4E.
+- **Artifact write**: `.claude/outputs/` writes use the Write tool directly under `bypassPermissions` (CC < 2.1.212: pass `mode: "bypassPermissions"` per call; CC >= 2.1.212: `mode` is ignored, parent session mode inherited; verify per R010 「Universal bypassPermissions」) — direct Write/Edit/Bash on `.claude/` is permitted since CC v2.1.121 (R006/R010); no `/tmp/*.sh` wrapping needed. See phases.md Phase 4E.
 - **Parallelization**: Phase 4A + 4B parallel; Phase 4C after both; Phase 4D + 4E parallel; Phase 4F verification gate.

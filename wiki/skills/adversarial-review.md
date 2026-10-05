@@ -1,7 +1,7 @@
 ---
 title: Adversarial Review
 type: skill
-updated: 2026-05-18
+updated: 2026-10-05
 sources:
   - .claude/skills/adversarial-review/SKILL.md
 related:

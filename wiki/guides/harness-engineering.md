@@ -1,7 +1,7 @@
 ---
 title: Harness Engineering Guide
 type: guide
-updated: 2026-04-27
+updated: 2026-10-05
 sources:
   - guides/harness-engineering/README.md
 related:

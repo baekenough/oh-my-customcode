@@ -170,7 +170,7 @@ R006 Artifact Channel Protocol을 소비하는 표준 패턴. 병렬 에이전�
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-Under `mode: "bypassPermissions"`, subagents write directly to `.claude/outputs/sessions/` with the Write tool — direct `.claude/**` writes are permitted (CC v2.1.121+, #1101). No `/tmp` staging or script wrapping is needed. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification.
+Under the `bypassPermissions` permission mode, subagents write directly to `.claude/outputs/sessions/` with the Write tool — direct `.claude/**` writes are permitted (CC v2.1.121+, #1101). No `/tmp` staging or script wrapping is needed. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification.
 
 Reference: R006/R010 sensitive-path handling (direct `.claude/**` write under bypassPermissions), #1101.
 

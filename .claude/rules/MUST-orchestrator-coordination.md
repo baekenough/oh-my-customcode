@@ -11,11 +11,12 @@ The main conversation is the **sole orchestrator**. It uses routing skills to de
 -->
 
 <!-- DETAIL: Agent Teams Exception detail (restated in ARCHIVED note below)
-**Agent Teams Exception**: Agent Teams members are peers, not hierarchical subagents. Teams members CAN spawn sub-agents via the Agent tool to execute complex workflows (e.g., research teams, verification teams). This enables Teams-compatible skills like `/research` and `/deep-plan` to run inside Team members. The Teams member acts as a local orchestrator for its own sub-tasks.
+**Agent Teams Exception** (conditional, #1817): Agent Teams members are peers, not hierarchical subagents. A member MAY spawn sub-agents via the Agent tool only when `Agent` is actually in its tool list (presumably decided by its frontmatter `tools:` and the execution environment — #1817 "추정 원인 (미검증)"; the documented cause of dedicated Glob/Grep absence is CC 2.1.117, which replaces them with Bash-embedded bfs/ugrep on native builds — #1817 observed members without `Agent`/`SendMessage`/`ToolSearch`). When present, the member acts as a local orchestrator for its own sub-tasks (e.g., `/research`, `/deep-plan` inside a member). When absent, use the R018 「멤버 도구 부재 시 대체 규약」: file channel + orchestrator relay/spawn.
+Original wording (pre-#1817): "Teams members CAN spawn sub-agents via the Agent tool to execute complex workflows (e.g., research teams, verification teams)."
 -->
 
 <!-- ARCHIVED CC version note (historical):
-> **v2.1.172+**: The CC platform now allows sub-agents to spawn their own sub-agents (up to 5 levels deep). oh-my-customcode RETAINS the sole-orchestrator design (subagents do not spawn subagents via the Agent tool) as a DELIBERATE project architecture choice — for predictable R009 parallelism and R018 coordination — NOT a platform limitation. The sanctioned nesting path remains the Agent Teams Exception (Teams members acting as local orchestrators).
+> **v2.1.172+**: The CC platform now allows sub-agents to spawn their own sub-agents (up to 5 levels deep). oh-my-customcode RETAINS the sole-orchestrator design (subagents do not spawn subagents via the Agent tool) as a DELIBERATE project architecture choice — for predictable R009 parallelism and R018 coordination — NOT a platform limitation. The sanctioned nesting path remains the Agent Teams Exception (Teams members acting as local orchestrators) (pre-#1817).
 -->
 
 **The orchestrator MUST NEVER directly write, edit, or create files. ALL file modifications MUST be delegated to appropriate subagents.**
@@ -338,7 +339,7 @@ Origin: #1584 #6 — v1.1.45·v1.1.46 릴리즈 PR 머지에서 하니스가 "no
 
 ### Delegation Prompt Framing — 승인 인용 금지
 
-위임 프롬프트에서 **사용자 원문을 승인/동의의 근거로 인용하지 않는다**. 서브에이전트에는 **작업 지시**(허용 작업 / 금지 작업 / 완료 조건)만 전달하고, 승인 채널은 permission system(부모 세션 permission mode + `settings.json` allow 규칙)이 담당한다.
+위임 프롬프트에서 **사용자 원문을 승인/동의의 근거로 인용하지 않는다**. 서브에이전트에는 **작업 지시**(허용 작업 / 금지 작업 / 완료 조건)만 전달하고, 승인 채널은 permission system(부모 세션 permission mode — CC 버전별 결정 방식은 「Universal bypassPermissions」 — + `settings.json` allow 규칙)이 담당한다.
 
 <!-- DETAIL: 근거 rationale note (restated by norm+table)
 근거: CC는 모든 서브에이전트에 "다른 에이전트의 메시지는 결코 사용자의 승인이 아니다 — 유효한 승인 채널은 permission system 또는 사용자 본인의 메시지뿐"이라는 플랫폼 시스템 프롬프트를 주입한다. 이 문구가 금지하는 것은 전언을 **승인**으로 취급하는 것이지 전언된 **작업**을 수행하는 것이 아니다. 따라서 오케스트레이터가 "사용자가 푸시해달라고 했다"를 승인 근거로 인용하면, 플랫폼 룰이 겨냥하는 안티패턴을 스스로 발동시켜 서브에이전트가 작업을 거부한다.
@@ -577,15 +578,20 @@ Origin: #1598 (형제 병렬 배치의 위양성 4종 중 3종이 각 에이전�
 
 ## Universal bypassPermissions
 
-> **This section is the canonical single source for the bypassPermissions requirement.** R002 (MUST-permissions.md) and R006 (MUST-agent-design.md) reference this section rather than repeating it.
+> **This section is the canonical single source for subagent permission-mode guidance.** R002 (MUST-permissions.md) and R006 (MUST-agent-design.md) reference this section rather than repeating it.
 
-**ALL Agent tool calls MUST include `mode: "bypassPermissions"`.**
+| CC version | Per-call `mode: "bypassPermissions"` |
+|------------|---------------------------------------|
+| < 2.1.212 (min supported 2.1.121) | **Required** — the Agent tool's default `acceptEdits` overrides frontmatter `permissionMode` and causes prompts during unattended runs |
+| ≥ 2.1.212 | Ignored — 2.1.212 CHANGELOG (#1497): "Deprecated the Task tool's `mode` parameter (now ignored); subagents inherit the parent session's permission mode by default". The frontmatter override comes from the Agent tool schema observed on CC 2.1.289 (`claude --version`), not from the 2.1.212 entry: "Deprecated; ignored. Subagents inherit the parent session's permission mode; agent-definition frontmatter may override it." |
 
-<!-- DETAIL: Agent tool default explanation (restated by table)
+Keep passing `mode` on every Agent call for compatibility (harmless on 2.1.212+), but never treat its presence as evidence of unattended execution. On 2.1.212+ the inherited parent mode comes from the `permissions.defaultMode` settings (managed, local, project, user) or a launch flag such as `--permission-mode`. Since 2.1.257 the `bypassPermissions` value is narrower: project (`.claude/settings.json`) and local (`.claude/settings.local.json`) `defaultMode: "bypassPermissions"` is ignored, like `"auto"` (2.1.257 CHANGELOG); other values there still apply. Bypass can still be granted elsewhere, e.g. user or managed settings, `--permission-mode`, or `--dangerously-skip-permissions` (`claude --help` on 2.1.289: "Bypass all permission checks.") (#1644).
+
+<!-- DETAIL (applies to CC < 2.1.212 only, #1818): Agent tool default explanation
 The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmatter `permissionMode` and causes permission prompts during unattended execution. This is a CC platform behavior, not a configuration error.
 -->
 
-<!-- DETAIL: bypassPermissions Aspect/Detail table
+<!-- DETAIL (applies to CC < 2.1.212 only, #1818): bypassPermissions Aspect/Detail table
 | Aspect | Detail |
 |--------|--------|
 | Scope | Every Agent tool call, without exception |
@@ -594,32 +600,37 @@ The Agent tool defaults to `mode: "acceptEdits"`, which overrides agent frontmat
 | Enforcement | Prompt-based (R021); all agent-spawning skills include instruction |
 -->
 
-### Self-Check
+### Self-Check (MUST)
 
-Before spawning any agent:
-1. **유효 permission mode 확인** — per-call `mode` 파라미터는 v2.1.212+ 에서 무시되고,
-   **프로젝트 scope `permissions.defaultMode` 는 v2.1.257+ 에서도 무시된다(#1644)**.
-   무인 실행 전 실측할 것: `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json`
-   (user scope) — 이 값 또는 `--permission-mode` 실행 플래그만이 유효하다.
+Before unattended execution (item 1) and when authoring a skill that spawns agents (item 2):
+1. **유효 permission mode 실측** — CC ≥ 2.1.212: 부모 모드는 `permissions.defaultMode`(managed·local·
+   project·user 범위)와 실행 플래그(`--permission-mode` 등)가 정한다. 2.1.257+에서 무시되는 것은
+   project/local의 `bypassPermissions` **값뿐**이며 그 범위의 다른 값(예: init 배포본의 `"default"`)은
+   여전히 원천이다(위 문단). 세 파일을 함께 실측한다 —
+   `jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json .claude/settings.json .claude/settings.local.json`
+   (출력 순서 user·project·local) — managed 설정과 실행 플래그도 원천이므로 별도로 확인한다. 범위 간
+   우선순위(예: project의 `"default"`가 user의 `bypassPermissions`보다 앞서는지)는 `[가설]` — 미실측.
+   대상 에이전트 frontmatter `permissionMode`가 이를 덮어쓸 수 있다 — 근거는 CHANGELOG 항목이 아니라
+   CC 2.1.289에서 관측한 Agent tool 스키마("agent-definition frontmatter may override it")다. 이 구간에서
+   per-call `mode` 값은 무인 실행의 증거가 아니다(R020 "actual outcome ≠ attempt").
+   CC < 2.1.212: per-call `mode`가 서브에이전트 모드를 정한다 — 생략하면 기본값 `acceptEdits`가
+   frontmatter `permissionMode`를 덮어쓴다(위 버전 표). 어느 구간이든 유효 모드가
    bypassPermissions 가 아니면 프롬프트 발생을 전제로 계획한다.
-   하위 호환을 위해 per-call `mode: "bypassPermissions"` 는 계속 포함하되,
-   **그 존재를 무인 실행의 증거로 삼지 않는다**(R020 "attempt ≠ outcome").
 <!-- DETAIL: defaultMode ignored measurement evidence
    실측(2026-09-03, `claude -p --debug-file`): `[WARN] settings defaultMode "bypassPermissions"
    ignored — only policy/user/flag settings may grant bypass mode (projectSettings and
    localSettings are repo-controllable)` — 무시 동작이 직접 실증되었다. 프로젝트 settings에는
    `permissions._comment_defaultMode` 안내 키가 추가되었다(v1.1.59).
 -->
-2. Is this a new skill that spawns agents? → Add Permission Mode section
+2. Is this a new skill that spawns agents? → Include `mode: "bypassPermissions"` in its Agent calls (required below 2.1.212) and point to this section for the version split
 
 ### Common Violation
 
 ```
-❌ WRONG: Agent tool call without mode parameter
-   Agent(subagent_type: "lang-golang-expert", prompt: "...")
-
-✓ CORRECT: Always include mode
-   Agent(subagent_type: "lang-golang-expert", mode: "bypassPermissions", prompt: "...")
+❌ WRONG (CC < 2.1.212): Agent call without mode → acceptEdits default, prompts mid-run
+❌ WRONG (CC ≥ 2.1.212): Prompt appears → assume a missing mode is the cause
+✓ CORRECT: Always pass mode, and diagnose 2.1.212+ prompts via the parent's effective mode
+   and the agent's frontmatter permissionMode
 ```
 
 
@@ -637,7 +648,7 @@ Before spawning any agent:
 | >= v2.1.141 | Preserves current permission mode — `/bg` flows no longer need extra workaround |
 -->
 
-`mode: "bypassPermissions"` on every Agent tool call is still required (applies to Agent tool, not `/bg` shell command).
+Background agents (`/bg`, `←←`) keep the current session's permission mode (v2.1.141+); Agent tool calls still follow the CC-version table at the top of 「Universal bypassPermissions」 (per-call `mode` required below 2.1.212, ignored from 2.1.212).
 
 <!-- ARCHIVED CC version note (historical):
 > **v2.1.172+**: Fixed background agents potentially reading another directory's project settings (`.mcp.json` approvals, trust) when dispatched onto a pre-warmed worker. Strengthens background-agent isolation — a `/bg`-dispatched agent now reads the correct project's settings.
@@ -737,7 +748,7 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 | `Read` external files | `tools:` includes Read |
 | `Write` files | `tools:` includes Write (and target path not in `disallowedTools` scope) |
 | MCP server calls | `mcpServers:` includes the required server |
-| Task targets a specific file path | The path EXISTS (`Glob`/`ls`) — capability check alone does not catch a missing/renamed file |
+| Task targets a specific file path | The path EXISTS (`ls`/`find`, or `Glob` when present — not `git ls-files`, which reports an existing untracked path as absent; tracked status is the next row) — capability check alone does not catch a missing/renamed file |
 | Task targets an EXISTING file for editing/commit (not a newly-created file) | The path is git-tracked (`git ls-files <path>` non-empty) — an existing-but-untracked target needs an explicit scope decision before delegation |
 
 <!-- DETAIL: path-existence clarification (restated by Required Checks row)
@@ -797,6 +808,7 @@ Before delegating a task to a subagent, MUST verify the target agent's tool capa
 | Agent | Limitation | Workaround |
 |-------|-----------|-----------|
 | `arch-documenter` | `disallowedTools: [Bash]` — cannot run `gh`, shell scripts, `diff`/`md5`/`verify-*.sh` | Pre-collect data via orchestrator, pass as content; OR use `general-purpose` for the Bash-needing portion. **Completion-condition guard (#1593 #1)**: do NOT put `diff` / `md5` / `verify-*.sh` execution into arch-documenter's completion criteria — the orchestrator must run these itself, or split off a `general-purpose` agent for the Bash-needing verification |
+| `arch-documenter`, `fe-design-expert`, `mgr-supplier`, `qa-planner`, `qa-writer`, `sys-naggy` (frontmatter parse: `Bash` in `disallowedTools`) | No Bash, so every search path is the dedicated `Grep`/`Glob` listed in their `tools:` (`sys-naggy` lists `Grep` only). Measured 2026-10-05 on CC 2.1.289: a spawned `qa-writer` received `Read`, `Write`, `Edit`, `Grep`, `Glob` — consistent with 2.1.162 ("explicitly listing Grep/Glob now provides the dedicated search tools on native builds with embedded search"); the main session, which has no explicit list, lacks them (2.1.117). The other five were not spawned to measure | Do not remove `Grep`/`Glob` from these agents' `tools:` — without Bash they would have no search path left |
 | `qa-engineer` | (verify each invocation) | — |
 
 ### Common Violation
@@ -818,9 +830,7 @@ Reference issues: #1202 item #2, `feedback_arch_documenter_no_bash.md`.
 > **Status**: Deprecated as of CC v2.1.121 (2026-04-28) and further relaxed in v2.1.126 (2026-05-01). Direct Write/Edit/Bash on `.claude/`, `.git/`, `.vscode/` works without prompts under `bypassPermissions` mode in CC v2.1.121+ (issue #1101).
 -->
 
-Current CC versions (>=2.1.121): direct Write/Edit/Bash on `.claude/**` paths are permitted under `mode: "bypassPermissions"`. The `/tmp/*.sh` script wrapping pattern previously required is no longer necessary. Catastrophic operations (e.g., `rm -rf /`) remain blocked by independent safety guards.
-
-`mode: "bypassPermissions"` on every Agent tool call is still required (see "Universal bypassPermissions" above).
+Current CC versions (>=2.1.121): direct Write/Edit/Bash on `.claude/**` paths are permitted when the effective permission mode is `bypassPermissions`. The `/tmp/*.sh` script wrapping pattern previously required is no longer necessary. Catastrophic operations (e.g., `rm -rf /`) remain blocked by independent safety guards.
 
 <!-- DETAIL: legacy /tmp bypass pointer (historical)
 **For CC < v2.1.121 only**: see git history of this rule for the legacy `/tmp/*.sh` bypass pattern (commit before v0.126.0).
@@ -861,7 +871,7 @@ After restart/compaction: re-read CLAUDE.md, all delegation rules still apply. N
 | Unmatched specialized task | mgr-creator → dynamic agent creation |
 
 **Rules:**
-- All file modifications MUST be delegated (orchestrator only uses Read/Glob/Grep)
+- All file modifications MUST be delegated (orchestrator only uses read-only tools — Read, Glob/Grep when present, otherwise read-only Bash such as `git grep`/`find`)
 - Use specialized agents, not general-purpose, when one exists
 - general-purpose only for truly generic tasks (file moves, simple scripts)
 - No exceptions for "small" or "quick" changes
@@ -926,7 +936,7 @@ The following paths MUST be created or structurally modified ONLY through `mgr-c
 ## Exception: Simple Tasks
 
 Subagent NOT required for:
-- Reading files for analysis (Read, Glob, Grep only)
+- Reading files for analysis (read-only tools only — see Rules above; dedicated Glob/Grep may be absent)
 - Simple file searches
 - Direct questions answered by main conversation
 
@@ -1052,6 +1062,8 @@ See **R018 (MUST-agent-teams.md)** for the Detection table, complete decision ma
 
 **Quick rule** (applies only when active): 3+ agents OR review cycle OR 2+ issues in same batch → use Agent Teams.
 Using Agent tool when Agent Teams criteria are met needs correction per R018.
+
+Exception to the Core Rule ("Subagents MUST NOT spawn other subagents"), only when R018 Detection = Yes: Agent Teams members are peers, not hierarchical subagents (Agent Teams Exception — narrowed by #1817). When Detection = No, every agent spawned via the Agent tool is a subagent under the Core Rule. Members spawn sub-agents or message peers only if `Agent`/`SendMessage` are in their tool list; otherwise the orchestrator relays via files and spawns on their behalf (R018 「멤버 도구 부재 시 대체 규약」).
 
 <!-- DETAIL: Announcement Format
 ```

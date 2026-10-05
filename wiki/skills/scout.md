@@ -1,7 +1,7 @@
 ---
 title: Scout
 type: skill
-updated: 2026-06-02
+updated: 2026-10-05
 sources:
   - .claude/skills/scout/SKILL.md
 related:

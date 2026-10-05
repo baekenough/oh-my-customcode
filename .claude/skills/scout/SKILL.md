@@ -105,14 +105,9 @@ Before execution, show the plan:
 
 ### Phase 3: Fit Analysis
 
-> **MUST**: Agent tool 호출 시 반드시 `mode: "bypassPermissions"` 파라미터를 포함해야 한다 (R010 Universal bypassPermissions). CC Agent tool의 기본값은 `acceptEdits`이며, 이는 agent frontmatter의 `permissionMode`를 덮어쓴다. `mode` 누락 시 Bash/WebFetch 권한 프롬프트가 발생하여 비대화형 실행이 중단된다.
->
-> ```
-> ❌ Agent(subagent_type: "general-purpose", prompt: "...")
-> ✓  Agent(subagent_type: "general-purpose", mode: "bypassPermissions", prompt: "...")
-> ```
+> 호환을 위해 Agent 호출에 `mode: "bypassPermissions"`를 전달하십시오. CC 2.1.212 미만에서는 필수이며(호출별 기본값 `acceptEdits`가 에이전트 frontmatter `permissionMode`를 덮어씁니다), 2.1.212+에서는 무시되고 서브에이전트가 부모 세션의 권한 모드를 상속합니다(에이전트 frontmatter `permissionMode`로 조정 가능). 무인 실행 전 유효 모드 확인은 R010 「Universal bypassPermissions」 참조.
 
-Spawn 1 sonnet agent with `mode: "bypassPermissions"` and the following analysis prompt.
+Spawn 1 sonnet agent with the following analysis prompt.
 
 **Inputs**:
 - Fetched content summary (Phase 1)
@@ -163,7 +158,7 @@ Return a structured verdict:
 
 ### Phase 4: Issue Creation
 
-> **NOTE**: Phase 4는 orchestrator가 직접 `gh issue create` (Bash)로 처리한다. 만약 이슈 생성을 Agent(mgr-gitnerd 등)에 위임할 경우, 해당 Agent tool 호출에도 반드시 `mode: "bypassPermissions"`를 포함해야 한다 (R010).
+> **NOTE**: Phase 4는 orchestrator가 직접 `gh issue create` (Bash)로 처리한다. 만약 이슈 생성을 Agent(mgr-gitnerd 등)에 위임할 경우, 권한 모드는 R010 「Universal bypassPermissions」를 따른다.
 
 1. Ensure scout labels exist (defensive, idempotent):
 ```bash

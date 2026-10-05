@@ -81,14 +81,14 @@ When a plan's Phase 1/2 measures a search or retrieval experiment (a new lane, r
 
 Phase 3 verification report path: `.claude/outputs/sessions/{YYYY-MM-DD}/deep-plan-{HHmmss}.md`
 
-Under `mode: "bypassPermissions"`, subagents write directly to `.claude/outputs/` with Write/Edit — no temp-script wrapping is needed (CC v2.1.121+, #1101). When spawning the final synthesis agent to write this artifact, include verbatim in the agent prompt:
+Under the `bypassPermissions` permission mode, subagents write directly to `.claude/outputs/` with Write/Edit — no temp-script wrapping is needed (CC v2.1.121+, #1101). When spawning the final synthesis agent to write this artifact, include verbatim in the agent prompt:
 
 ```
 **Artifact output (for this task)**
 
 Write the verification report to `.claude/outputs/sessions/<date>/deep-plan-<HHmmss>.md`
-using the Write tool directly (create the directory if needed). Your Agent tool call
-runs under `mode: "bypassPermissions"`, so direct Write/Edit on `.claude/` is permitted.
+using the Write tool directly (create the directory if needed). If your session runs under the
+`bypassPermissions` permission mode, direct Write/Edit on `.claude/` is permitted.
 ```
 
 See R006 "Sensitive Path Handling" (CC v2.1.121+ direct-write convention).
@@ -113,4 +113,4 @@ After PASS verdict:
 
 ## Permission Mode
 
-When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".

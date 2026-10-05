@@ -1,7 +1,7 @@
 ---
 title: Dev Review
 type: skill
-updated: 2026-05-18
+updated: 2026-10-05
 sources:
   - .claude/skills/dev-review/SKILL.md
 related:

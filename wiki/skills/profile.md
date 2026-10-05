@@ -1,7 +1,7 @@
 ---
 title: Profile
 type: skill
-updated: 2026-07-19
+updated: 2026-10-05
 sources:
   - .claude/skills/profile/SKILL.md
 related:
@@ -50,7 +50,7 @@ Switches the active plugin set in `~/.claude/settings.json` to match a named wor
 
 - Profile JSON files live in `.claude/profiles/*.json`
 - Active profile marker stored in `.claude/profiles/.active`
-- All `.claude/` writes use direct Write/Edit/Bash under `mode: "bypassPermissions"` (CC v2.1.121+, [[r010]] sensitive-path relaxation) — the legacy `/tmp/*.sh` bypass wrapper is deprecated
+- All `.claude/` writes use direct Write/Edit/Bash under the `bypassPermissions` permission mode (CC v2.1.121+, [[r010]] sensitive-path relaxation) — the legacy `/tmp/*.sh` bypass wrapper is deprecated
 - `/profile reset` deletes the marker via `Bash: /bin/rm .claude/profiles/.active` (explicit binary path, not a bare `rm`)
 - `enabledPlugins` in `~/.claude/settings.json` is updated with per-plugin boolean flags
 - Plugins not listed in a profile retain their current state; changes apply only after session restart

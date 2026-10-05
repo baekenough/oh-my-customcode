@@ -194,7 +194,7 @@ Convergence expected by round 3. Hard stop at round 30.
 
 ### Tool: Writing artifacts under .claude/outputs/
 
-Under `mode: "bypassPermissions"`, subagents write directly to `.claude/outputs/sessions/` with the Write tool — direct `.claude/**` writes are permitted (CC v2.1.121+, #1101). No `/tmp` staging or script wrapping is needed. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification.
+Under the `bypassPermissions` permission mode, subagents write directly to `.claude/outputs/sessions/` with the Write tool — direct `.claude/**` writes are permitted (CC v2.1.121+, #1101). No `/tmp` staging or script wrapping is needed. Read-only Bash on `.claude/outputs/` (e.g., `cat`, `head`, `wc`) is allowed for verification.
 
 Reference: R006/R010 sensitive-path handling (direct `.claude/**` write under bypassPermissions), #1101.
 
@@ -427,9 +427,9 @@ When running inside an Agent Teams member (not via Skill tool), the research wor
 
 The orchestrator reads this SKILL.md and includes the research instructions directly in the Teams member's prompt. The member then:
 
-1. Executes Phase 1-4 autonomously using its own Agent tool access
-2. Spawns research teams as sub-agents (Teams members CAN spawn sub-agents)
-3. Delivers results via `SendMessage` to the team lead instead of returning to orchestrator
+1. Executes Phase 1-4 autonomously, using its own Agent tool access when its tool set includes Agent (see item 2 otherwise)
+2. Spawns research teams as sub-agents (Teams members can spawn sub-agents only if their tool set includes Agent; otherwise fall back to file-channel handoff relayed by the orchestrator, #1817)
+3. Delivers results via `SendMessage` to the team lead instead of returning to orchestrator when its tool set includes SendMessage; otherwise writes the results to an artifact file and reports the path, which the orchestrator relays (R018 "멤버 도구 부재 시 대체 규약", #1817)
 
 ### Prompt Embedding Pattern
 
@@ -444,6 +444,8 @@ Agent(
 
   Topic: {user's research topic}
   Deliver results via SendMessage to team lead when complete.
+  If SendMessage is not in your tool set, write the results to an artifact
+  file and report its path for the orchestrator to relay.
   """
 )
 ```
@@ -453,7 +455,7 @@ Agent(
 | Aspect | Orchestrator Mode | Teams Mode |
 |--------|------------------|------------|
 | Invocation | `Skill(research)` | Prompt embedding |
-| Result delivery | Return to main conversation | `SendMessage` to team lead |
+| Result delivery | Return to main conversation | `SendMessage` to team lead (if absent: artifact file relayed by orchestrator) |
 | Artifact persistence | Teams member writes artifact | Same |
 | GitHub issue creation | Orchestrator handles | Teams member handles directly |
 | Phase management | Orchestrator manages phases | Member manages phases autonomously |
@@ -478,4 +480,4 @@ Agent(
 | result-aggregation | Team results formatted per aggregation skill |
 | multi-model-verification | Phase 2 uses multi-model verification pattern |
 
-When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".

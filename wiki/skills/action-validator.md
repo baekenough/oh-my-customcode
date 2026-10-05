@@ -1,7 +1,7 @@
 ---
 title: Action Validator
 type: skill
-updated: 2026-04-12
+updated: 2026-10-05
 sources:
   - .claude/skills/action-validator/SKILL.md
 related:

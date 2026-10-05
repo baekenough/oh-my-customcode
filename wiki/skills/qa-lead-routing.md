@@ -1,7 +1,7 @@
 ---
 title: QA Lead Routing
 type: skill
-updated: 2026-04-12
+updated: 2026-10-05
 sources:
   - .claude/skills/qa-lead-routing/SKILL.md
 related:

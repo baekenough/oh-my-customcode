@@ -101,7 +101,7 @@ Categorize each finding with the following structure (mirror #1266 format):
 |-------|----------|---------|
 | Critical | Safety classifier trip, credential exposure, scope-creep into privileged domains, working-tree loss | R001 violation, secret dump, unauthorized infra action |
 | High | Rule violation with downstream impact, hallucinated fact acted upon, premature hypothesis causing permanent change | R020 Parallel Read+Change, wrong root cause → wrong fix |
-| Medium | Process gap, missed convention, advisory rule ignored | R007 header missing, bypassPermissions omitted, count sync missed |
+| Medium | Process gap, missed convention, advisory rule ignored | R007 header missing, effective permission mode not verified before unattended run, count sync missed |
 | Low | Minor style drift, non-impactful oversight | honorific regression, ecomode token waste |
 
 **Mistake categories to look for:**
@@ -112,7 +112,7 @@ Categorize each finding with the following structure (mirror #1266 format):
 | Scope-creep | Subagent task expanding beyond its named scope (R010 Subagent Scope-Creep STOP Protocol) |
 | Hallucinated facts | External UI fields stated as fact (R003 Unverifiable External Product UI), in-cluster hostnames, unverified URLs |
 | Premature hypotheses | Diagnosis before reading evidence (R020 Read-Before-Characterize), parallel Read+permanent-change dispatch (R020 Variant) |
-| Missed conventions | Count sync drift (3-way sync), template mirror omitted, bypassPermissions missing |
+| Missed conventions | Count sync drift (3-way sync), template mirror omitted, effective permission mode not verified before unattended run |
 | Over-claim completion | [Done] without verification (R020), test-skip masking failures |
 
 **Do NOT over-claim.** If evidence for a finding is weak or based on recall only, mark it `[recall, low-confidence]` and note what would be needed to confirm it. R020 read-before-characterize applies to this analysis itself.
@@ -224,7 +224,7 @@ If Phase 5 is skipped (`--dry-run`), the draft issue body is written to this art
 
 ## Permission Mode Note
 
-This skill does not spawn subagents directly. If future versions delegate analysis to subagents, ALL Agent tool calls MUST include `mode: "bypassPermissions"` per R010 Universal bypassPermissions.
+This skill does not spawn subagents directly, but future versions may delegate analysis to subagents. Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".
 
 ## Context Fork Note
 

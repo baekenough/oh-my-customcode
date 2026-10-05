@@ -1,7 +1,20 @@
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import * as fsPromises from 'node:fs/promises';
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   computeFileHash,
@@ -796,6 +809,631 @@ describe('lockfile', () => {
       // Even if it succeeds (package root is accessible), verify shape
       expect(typeof result.fileCount).toBe('number');
       expect(result.warning === undefined || typeof result.warning === 'string').toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe('excludeGitIgnored (#1819)', () => {
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
+
+    /**
+     * Hermetic git for every process this block starts — the fixture git calls, the sync
+     * script, and the git children of in-process `generateLockfile` (which copy
+     * `process.env`). Inherited GIT_* variables are removed; global/system config is off;
+     * HOME and XDG_CONFIG_HOME point at an empty directory so the default per-user excludes
+     * file ($XDG_CONFIG_HOME/git/ignore, else $HOME/.config/git/ignore) is not the
+     * developer's. GIT_CONFIG_GLOBAL=/dev/null alone does not cover that file. Same GIT_*
+     * policy as gitFixtureEnv() in tests/unit/core/git-workflow.test.ts.
+     */
+    let gitHome: string;
+    let savedEnv: Map<string, string | undefined>;
+
+    function setEnv(key: string, value: string | undefined): void {
+      if (!savedEnv.has(key)) {
+        savedEnv.set(key, process.env[key]);
+      }
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+
+    beforeEach(async () => {
+      savedEnv = new Map();
+      gitHome = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-githome-'));
+      for (const key of Object.keys(process.env)) {
+        if (key.startsWith('GIT_')) {
+          setEnv(key, undefined);
+        }
+      }
+      setEnv('GIT_CONFIG_GLOBAL', '/dev/null');
+      setEnv('GIT_CONFIG_NOSYSTEM', '1');
+      setEnv('HOME', gitHome);
+      setEnv('XDG_CONFIG_HOME', join(gitHome, 'xdg'));
+    });
+
+    afterEach(async () => {
+      for (const [key, value] of savedEnv) {
+        if (value === undefined) {
+          delete process.env[key];
+        } else {
+          process.env[key] = value;
+        }
+      }
+      await rm(gitHome, { recursive: true, force: true });
+    });
+
+    /** Env for child processes: the hermetic process.env minus any GIT_* a test planted. */
+    function fixtureEnv(): NodeJS.ProcessEnv {
+      const env: NodeJS.ProcessEnv = {};
+      for (const [key, value] of Object.entries(process.env)) {
+        if (!key.startsWith('GIT_')) {
+          env[key] = value;
+        }
+      }
+      env.GIT_CONFIG_GLOBAL = '/dev/null';
+      env.GIT_CONFIG_NOSYSTEM = '1';
+      return env;
+    }
+
+    function git(cwd: string, ...args: string[]): string {
+      return execFileSync('git', args, {
+        cwd,
+        env: fixtureEnv(),
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      });
+    }
+
+    function commit(cwd: string): void {
+      git(cwd, '-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'seed');
+    }
+
+    async function put(root: string, relPath: string, content: string): Promise<void> {
+      const fullPath = join(root, relPath);
+      await mkdir(dirname(fullPath), { recursive: true });
+      await writeFile(fullPath, content, 'utf-8');
+    }
+
+    /**
+     * Mirror of this repository's layout: `.claude/*` ignored except the re-included
+     * component directories, so `.claude/contexts/` is ignored as a whole directory (untracked);
+     * the rest is tracked.
+     */
+    async function seedRepo(root: string): Promise<void> {
+      git(root, 'init', '-q');
+      await put(root, '.gitignore', '.claude/*\n!.claude/rules/\n!.claude/skills/\n');
+      await put(root, '.claude/rules/MUST-safety.md', '# Safety');
+      await put(root, '.claude/skills/alpha/SKILL.md', '# alpha');
+      await put(root, 'guides/intro.md', '# guide');
+      git(root, 'add', '.gitignore', '.claude/rules', '.claude/skills', 'guides');
+      await put(root, '.claude/contexts/dev.md', '# dev');
+      await put(root, '.claude/contexts/index.yaml', 'a: 1\n');
+      await put(root, '.claude/contexts/sub/deep.md', '# deep');
+    }
+
+    const TRACKED_KEYS = [
+      '.claude/rules/MUST-safety.md',
+      '.claude/skills/alpha/SKILL.md',
+      'guides/intro.md',
+    ];
+
+    const filteredOf = (dir: string): Promise<Lockfile> =>
+      generateLockfile(dir, '1.0.0', '1.0.0', { excludeGitIgnored: true });
+
+    function keysOf(lockfile: Lockfile): string[] {
+      return Object.keys(lockfile.files);
+    }
+
+    it('omits every file of a directory ignored as a whole (.claude/contexts/)', async () => {
+      await seedRepo(tempDir);
+
+      const unfiltered = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(unfiltered)).toContain('.claude/contexts/dev.md');
+      expect(keysOf(unfiltered)).toContain('.claude/contexts/index.yaml');
+      expect(keysOf(unfiltered)).toContain('.claude/contexts/sub/deep.md');
+      expect(keysOf(filtered)).toEqual(TRACKED_KEYS);
+    });
+
+    it('explicit false behaves like the default (installer/updater contract)', async () => {
+      await seedRepo(tempDir);
+
+      const explicit = await generateLockfile(tempDir, '1.0.0', '1.0.0', {
+        excludeGitIgnored: false,
+      });
+      const implicit = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+
+      expect(keysOf(explicit)).toEqual(keysOf(implicit));
+      expect(keysOf(explicit)).toContain('.claude/contexts/dev.md');
+    });
+
+    it('default path does not need git: works outside any git work tree', async () => {
+      await put(tempDir, '.claude/contexts/dev.md', '# dev');
+
+      const lockfile = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+
+      expect(keysOf(lockfile)).toEqual(['.claude/contexts/dev.md']);
+    });
+
+    it('a copy holding only tracked files yields the same lockfile as the full copy', async () => {
+      await seedRepo(tempDir);
+      const trackedOnly = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-tracked-'));
+      try {
+        git(trackedOnly, 'init', '-q');
+        for (const key of [...TRACKED_KEYS, '.gitignore']) {
+          await mkdir(dirname(join(trackedOnly, key)), { recursive: true });
+          await cp(join(tempDir, key), join(trackedOnly, key));
+        }
+
+        const full = await filteredOf(tempDir);
+        const partial = await filteredOf(trackedOnly);
+
+        expect(full.files).toEqual(partial.files);
+        expect(Object.keys(full.files)).toHaveLength(TRACKED_KEYS.length);
+      } finally {
+        await rm(trackedOnly, { recursive: true, force: true });
+      }
+    });
+
+    it('keeps tracked files even when an ignore rule matches them (force-added)', async () => {
+      await seedRepo(tempDir);
+      git(tempDir, 'add', '-f', '.claude/contexts/dev.md');
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered)).toContain('.claude/contexts/dev.md');
+      expect(keysOf(filtered)).not.toContain('.claude/contexts/index.yaml');
+    });
+
+    it('keeps untracked files that are not ignored (they ship once committed)', async () => {
+      await seedRepo(tempDir);
+      await put(tempDir, '.claude/rules/SHOULD-new.md', '# new, not yet added');
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered)).toContain('.claude/rules/SHOULD-new.md');
+    });
+
+    it('honors ignore rules deeper in the tree (nested .gitignore and name patterns)', async () => {
+      await seedRepo(tempDir);
+      await put(tempDir, '.claude/skills/alpha/.gitignore', '*.local\n');
+      await put(tempDir, '.claude/skills/alpha/notes.local', 'scratch');
+      await put(tempDir, '.claude/skills/alpha/ref/deep.md', '# deep');
+      await put(tempDir, '.claude/skills/alpha/ref/deep.local', 'scratch');
+
+      const unfiltered = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(unfiltered)).toContain('.claude/skills/alpha/notes.local');
+      expect(keysOf(unfiltered)).toContain('.claude/skills/alpha/ref/deep.local');
+      expect(keysOf(filtered)).not.toContain('.claude/skills/alpha/notes.local');
+      expect(keysOf(filtered)).not.toContain('.claude/skills/alpha/ref/deep.local');
+      expect(keysOf(filtered)).toContain('.claude/skills/alpha/ref/deep.md');
+    });
+
+    it('applies per-user excludes ($XDG_CONFIG_HOME/git/ignore): never added here, never cloned', async () => {
+      await seedRepo(tempDir);
+      await put(tempDir, '.claude/rules/SHOULD-new.md', '# personal scratch');
+      await put(gitHome, 'xdg/git/ignore', 'SHOULD-*\n');
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered)).toEqual(TRACKED_KEYS);
+    });
+
+    it('matches file names with spaces, non-ASCII and quote characters exactly', async () => {
+      await seedRepo(tempDir);
+      const names = [
+        '.claude/rules/with space.md',
+        '.claude/rules/한글-규칙.md',
+        '.claude/rules/quote"d.md',
+      ];
+      for (const name of names) {
+        await put(tempDir, name, `# ${name}`);
+      }
+
+      const filtered = await filteredOf(tempDir);
+
+      for (const name of names) {
+        expect(keysOf(filtered)).toContain(name);
+      }
+    });
+
+    it('keeps a tracked file whose on-disk name is NFD (git may report it as NFC)', async () => {
+      await seedRepo(tempDir);
+      // Case folding off, so only the NFC fallback can match git's NFC spelling.
+      git(tempDir, 'config', 'core.ignorecase', 'false');
+      const nfd = '.claude/rules/cafe\u0301.md';
+      await put(tempDir, nfd, '# nfd');
+      git(tempDir, 'add', '.claude/rules');
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered).map((key) => key.normalize('NFC'))).toContain(nfd.normalize('NFC'));
+    });
+
+    it('keeps a tracked file whose index spelling is NFD while the disk spelling is NFC', async () => {
+      await seedRepo(tempDir);
+      // Raw (NFD) names from git, no case folding, and the NFC disk name matches an ignore
+      // rule, so only git's NFD index entry can vouch for the file.
+      git(tempDir, 'config', 'core.precomposeunicode', 'false');
+      git(tempDir, 'config', 'core.ignorecase', 'false');
+      await put(tempDir, '.claude/rules/.gitignore', 'caf*\n');
+      await put(tempDir, '.claude/rules/cafe\u0301.md', '# tracked');
+      git(tempDir, 'add', '-f', '.claude/rules/cafe\u0301.md');
+      await rename(
+        join(tempDir, '.claude/rules/cafe\u0301.md'),
+        join(tempDir, '.claude/rules/caf\u00e9.md')
+      );
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered)).toContain('.claude/rules/caf\u00e9.md');
+    });
+
+    it('excludes an ignored file whose on-disk name is NFD (compared after NFC normalization)', async () => {
+      await seedRepo(tempDir);
+      await put(tempDir, '.claude/rules/.gitignore', '*.local\n');
+      await put(tempDir, '.claude/rules/cafe\u0301.local', 'scratch');
+
+      const unfiltered = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+      const filtered = await filteredOf(tempDir);
+      const nfc = (lockfile: Lockfile): string[] =>
+        keysOf(lockfile).map((key) => key.normalize('NFC'));
+
+      expect(nfc(unfiltered)).toContain('.claude/rules/café.local'.normalize('NFC'));
+      expect(nfc(filtered)).not.toContain('.claude/rules/café.local'.normalize('NFC'));
+    });
+
+    it('excludes an ignored NFD-named file when git reports raw names (core.precomposeunicode=false)', async () => {
+      await seedRepo(tempDir);
+      // Without precomposition git prints the on-disk (NFD) bytes, so its side needs NFC too.
+      git(tempDir, 'config', 'core.precomposeunicode', 'false');
+      await put(tempDir, '.claude/rules/.gitignore', '*.local\n');
+      await put(tempDir, '.claude/rules/cafe\u0301.local', 'scratch');
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered).map((key) => key.normalize('NFC'))).not.toContain(
+        '.claude/rules/café.local'.normalize('NFC')
+      );
+    });
+
+    it('keeps a tracked file after a case-only rename on disk (core.ignorecase=true)', async () => {
+      await seedRepo(tempDir);
+      git(tempDir, 'config', 'core.ignorecase', 'true');
+      await put(tempDir, '.claude/rules/Foo.md', '# foo');
+      git(tempDir, 'add', '.claude/rules/Foo.md');
+      // Two steps so the rename also takes effect on case-insensitive file systems.
+      await rename(join(tempDir, '.claude/rules/Foo.md'), join(tempDir, '.claude/rules/tmp.md'));
+      await rename(join(tempDir, '.claude/rules/tmp.md'), join(tempDir, '.claude/rules/foo.md'));
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered)).toContain('.claude/rules/foo.md');
+    });
+
+    // The case-insensitive fallback is gated on core.ignorecase: an ignored on-disk `foo.md`
+    // whose only match is the tracked `Foo.md` is kept with ignorecase=true, excluded otherwise
+    // (false, or unset — git's default).
+    for (const ignoreCase of ['true', 'yes', 'false', 'unset'] as const) {
+      it(`case-insensitive fallback applies only when core.ignorecase=true (${ignoreCase})`, async () => {
+        await seedRepo(tempDir);
+        if (ignoreCase === 'unset') {
+          // Set first so --unset succeeds where git init did not write the key (Linux).
+          git(tempDir, 'config', 'core.ignorecase', 'true');
+          git(tempDir, 'config', '--unset', 'core.ignorecase');
+        } else {
+          git(tempDir, 'config', 'core.ignorecase', ignoreCase);
+        }
+        await put(tempDir, '.claude/rules/.gitignore', 'foo.md\n');
+        await put(tempDir, '.claude/rules/Foo.md', '# foo');
+        git(tempDir, 'add', '-f', '.claude/rules/Foo.md');
+        await rename(join(tempDir, '.claude/rules/Foo.md'), join(tempDir, '.claude/rules/tmp.md'));
+        await rename(join(tempDir, '.claude/rules/tmp.md'), join(tempDir, '.claude/rules/foo.md'));
+
+        const keys = keysOf(await filteredOf(tempDir));
+
+        expect(keys.includes('.claude/rules/foo.md')).toBe(
+          ignoreCase === 'true' || ignoreCase === 'yes'
+        );
+      });
+    }
+
+    it('keeps tracked files after a stray `git init` inside their directory', async () => {
+      await seedRepo(tempDir);
+      git(join(tempDir, '.claude', 'skills', 'alpha'), 'init', '-q');
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered)).toEqual(TRACKED_KEYS);
+    });
+
+    it('keeps untracked files in a directory whose .git file is invalid (git treats it as plain)', async () => {
+      await seedRepo(tempDir);
+      await put(tempDir, '.claude/skills/wt/.git', 'gitdir: /nonexistent/wt\n');
+      await put(tempDir, '.claude/skills/wt/x.md', '# ships once added');
+
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(filtered)).toContain('.claude/skills/wt/x.md');
+      expect(keysOf(filtered)).not.toContain('.claude/skills/wt/.git');
+    });
+
+    it('records nothing below a gitlink (submodule content is not in a clone)', async () => {
+      await seedRepo(tempDir);
+      const sub = join(tempDir, '.claude', 'skills', 'sub');
+      await put(sub, 'SKILL.md', '# sub');
+      git(sub, 'init', '-q');
+      git(sub, 'add', 'SKILL.md');
+      commit(sub);
+      git(tempDir, 'add', '.claude/skills/sub');
+      expect(git(tempDir, 'ls-files', '-s', '.claude/skills/sub')).toStartWith('160000');
+
+      const unfiltered = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(unfiltered)).toContain('.claude/skills/sub/SKILL.md');
+      expect(keysOf(filtered)).toEqual(TRACKED_KEYS);
+    });
+
+    it('accepts the root of a linked worktree (.git is a file)', async () => {
+      await seedRepo(tempDir);
+      commit(tempDir);
+      const parent = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-wt-'));
+      try {
+        const worktree = join(parent, 'wt');
+        git(tempDir, 'worktree', 'add', '-q', worktree);
+
+        const filtered = await filteredOf(worktree);
+
+        expect(keysOf(filtered)).toEqual(TRACKED_KEYS);
+      } finally {
+        await rm(parent, { recursive: true, force: true });
+      }
+    });
+
+    it('accepts a work tree root whose path ends with a space', async () => {
+      const spaced = join(tempDir, 'repo ');
+      await mkdir(spaced);
+      await seedRepo(spaced);
+
+      const filtered = await filteredOf(spaced);
+
+      expect(keysOf(filtered)).toEqual(TRACKED_KEYS);
+    });
+
+    it('wraps a failure to resolve the work tree root with the #1819 guidance', async () => {
+      await seedRepo(tempDir);
+      const spy = vi.spyOn(fsPromises, 'realpath').mockRejectedValue(new Error('realpath boom'));
+      try {
+        const failure = filteredOf(tempDir);
+
+        await expect(failure).rejects.toThrow('realpath boom');
+        await expect(failure).rejects.toThrow('build from a git checkout');
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    for (const tracked of [false, true]) {
+      it(`does not follow a symlinked directory into files git does not list (tracked link: ${tracked})`, async () => {
+        await seedRepo(tempDir);
+        const outside = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-outside-'));
+        try {
+          await writeFile(join(outside, 'leak.md'), '# outside the repo', 'utf-8');
+          await symlink(outside, join(tempDir, '.claude', 'rules', 'linked'));
+          if (tracked) {
+            git(tempDir, 'add', '.claude/rules/linked');
+          }
+
+          const unfiltered = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+          const filtered = await filteredOf(tempDir);
+
+          // The default walk descends into the link target; git lists only the link itself.
+          expect(keysOf(unfiltered)).toContain('.claude/rules/linked/leak.md');
+          expect(keysOf(filtered)).not.toContain('.claude/rules/linked/leak.md');
+        } finally {
+          await rm(outside, { recursive: true, force: true });
+        }
+      });
+    }
+
+    it('stops at a nested repository: neither its files nor its .git internals are recorded', async () => {
+      await seedRepo(tempDir);
+      const nested = join(tempDir, '.claude', 'skills', 'beta');
+      await put(nested, 'SKILL.md', '# beta, a separate repository');
+      git(nested, 'init', '-q');
+
+      const unfiltered = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+      const filtered = await filteredOf(tempDir);
+
+      expect(keysOf(unfiltered)).toContain('.claude/skills/beta/SKILL.md');
+      expect(keysOf(unfiltered)).toContain('.claude/skills/beta/.git/HEAD');
+      expect(keysOf(filtered)).toEqual(TRACKED_KEYS);
+    });
+
+    it('accepts targetDir given through a symlink to the work tree root (realpath compare)', async () => {
+      await seedRepo(tempDir);
+      const linkParent = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-link-'));
+      try {
+        const link = join(linkParent, 'repo');
+        await symlink(tempDir, link);
+
+        const filtered = await filteredOf(link);
+
+        expect(keysOf(filtered)).toEqual(TRACKED_KEYS);
+      } finally {
+        await rm(linkParent, { recursive: true, force: true });
+      }
+    });
+
+    it('rejects a targetDir that is a subdirectory of its work tree', async () => {
+      await seedRepo(tempDir);
+      const sub = join(tempDir, 'pkg');
+      await put(sub, '.claude/rules/MUST-sub.md', '# sub');
+
+      await expect(filteredOf(sub)).rejects.toThrow('not the root of its git work tree');
+    });
+
+    it('rejects a directory that a parent repository ignores instead of recording 0 files', async () => {
+      await seedRepo(tempDir);
+      await put(tempDir, '.gitignore', 'vendor/\n');
+      const vendored = join(tempDir, 'vendor', 'pkg');
+      await put(vendored, '.claude/rules/MUST-vendored.md', '# vendored');
+
+      expect(keysOf(await generateLockfile(vendored, '1.0.0', '1.0.0'))).toEqual([
+        '.claude/rules/MUST-vendored.md',
+      ]);
+      await expect(filteredOf(vendored)).rejects.toThrow('not the root of its git work tree');
+    });
+
+    // Decoys a parent git process can export (a git hook sets GIT_DIR/GIT_INDEX_FILE). Each would
+    // change the result if git honored it: the decoy repository has an empty index and an
+    // info/exclude that ignores SHOULD-*; GIT_WORK_TREE would make the decoy the work tree root.
+    // GIT_PREFIX is not covered: measured to have no effect on `git ls-files` (git 2.52.0).
+    for (const key of ['GIT_DIR', 'GIT_INDEX_FILE', 'GIT_WORK_TREE', 'GIT_COMMON_DIR'] as const) {
+      it(`ignores an inherited ${key} that points at another repository`, async () => {
+        await seedRepo(tempDir);
+        git(tempDir, 'add', '-f', '.claude/contexts/dev.md');
+        await put(tempDir, '.claude/rules/SHOULD-new.md', '# new');
+        const decoy = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-decoy-'));
+        try {
+          git(decoy, 'init', '-q');
+          await put(decoy, '.git/info/exclude', 'SHOULD-*\n');
+          const decoyValue: Record<typeof key, string> = {
+            GIT_DIR: join(decoy, '.git'),
+            GIT_INDEX_FILE: join(decoy, '.git', 'index'),
+            GIT_WORK_TREE: decoy,
+            GIT_COMMON_DIR: join(decoy, '.git'),
+          };
+          setEnv(key, decoyValue[key]);
+
+          const filtered = await filteredOf(tempDir);
+
+          expect(keysOf(filtered)).toEqual([
+            '.claude/contexts/dev.md',
+            '.claude/rules/MUST-safety.md',
+            '.claude/rules/SHOULD-new.md',
+            '.claude/skills/alpha/SKILL.md',
+            'guides/intro.md',
+          ]);
+        } finally {
+          await rm(decoy, { recursive: true, force: true });
+        }
+      });
+    }
+
+    for (const form of ['GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT'] as const) {
+      it(`ignores excludes injected through ${form} (git -c from a parent process)`, async () => {
+        await seedRepo(tempDir);
+        await put(tempDir, '.claude/rules/SHOULD-new.md', '# new');
+        const excludes = join(gitHome, 'injected-excludes');
+        await writeFile(excludes, 'SHOULD-*\n', 'utf-8');
+        if (form === 'GIT_CONFIG_PARAMETERS') {
+          setEnv('GIT_CONFIG_PARAMETERS', `'core.excludesfile'='${excludes}'`);
+        } else {
+          setEnv('GIT_CONFIG_COUNT', '1');
+          setEnv('GIT_CONFIG_KEY_0', 'core.excludesFile');
+          setEnv('GIT_CONFIG_VALUE_0', excludes);
+        }
+
+        const filtered = await filteredOf(tempDir);
+
+        expect(keysOf(filtered)).toContain('.claude/rules/SHOULD-new.md');
+      });
+    }
+
+    it('rejects outside a git work tree instead of silently recording everything', async () => {
+      await put(tempDir, '.claude/contexts/dev.md', '# dev');
+
+      await expect(filteredOf(tempDir)).rejects.toThrow('build from a git checkout');
+    });
+
+    it('generateAndWriteLockfileForDir returns { fileCount: 0, warning } with guidance and writes nothing without git', async () => {
+      await put(tempDir, '.claude/contexts/dev.md', '# dev');
+
+      const result = await generateAndWriteLockfileForDir(tempDir, { excludeGitIgnored: true });
+
+      expect(result.fileCount).toBe(0);
+      expect(result.warning).toContain('Lockfile generation failed');
+      expect(result.warning).toContain('build from a git checkout');
+      expect(result.warning).toContain('#1819');
+      expect(await readLockfile(tempDir)).toBeNull();
+    });
+
+    it('generateAndWriteLockfileForDir applies the option and still keeps generatedAt', async () => {
+      await seedRepo(tempDir);
+      const options = { excludeGitIgnored: true };
+
+      const first = await generateAndWriteLockfileForDir(tempDir, options);
+      const before = await readFile(join(tempDir, LOCKFILE_NAME), 'utf-8');
+      const second = await generateAndWriteLockfileForDir(tempDir, options);
+
+      expect(first.fileCount).toBe(TRACKED_KEYS.length);
+      expect(second.fileCount).toBe(TRACKED_KEYS.length);
+      expect(await readFile(join(tempDir, LOCKFILE_NAME), 'utf-8')).toBe(before);
+    });
+
+    it('scripts/sync-source-lockfile.ts (bun run build path) drops ignored files', async () => {
+      await seedRepo(tempDir);
+
+      const out = execFileSync(
+        process.execPath,
+        [join(repoRoot, 'scripts', 'sync-source-lockfile.ts')],
+        { cwd: tempDir, env: fixtureEnv(), encoding: 'utf-8', stdio: 'pipe' }
+      );
+
+      expect(out).toContain(`(${TRACKED_KEYS.length} files)`);
+      const lockfile = await readLockfile(tempDir);
+      expect(keysOf(lockfile as Lockfile)).toEqual(TRACKED_KEYS);
+    });
+
+    it('scripts/sync-source-lockfile.ts exits 1 outside a git checkout and says why', async () => {
+      await put(tempDir, '.claude/rules/MUST-safety.md', '# Safety');
+
+      const run = spawnSync(
+        process.execPath,
+        [join(repoRoot, 'scripts', 'sync-source-lockfile.ts')],
+        {
+          cwd: tempDir,
+          env: fixtureEnv(),
+          encoding: 'utf-8',
+        }
+      );
+
+      expect(run.status).toBe(1);
+      expect(run.stderr).toContain('build from a git checkout');
+      expect(await readLockfile(tempDir)).toBeNull();
+    });
+
+    /** Repo-relative paths (forward slashes) of files under `top` that mention `needle`. */
+    async function filesMentioning(top: string, needle: string): Promise<string[]> {
+      const entries = await readdir(join(repoRoot, top), { recursive: true, withFileTypes: true });
+      const found: string[] = [];
+      for (const entry of entries.filter((candidate) => candidate.isFile())) {
+        const absolute = join(entry.parentPath, entry.name);
+        if ((await readFile(absolute, 'utf-8')).includes(needle)) {
+          found.push(relative(repoRoot, absolute).split(sep).join('/'));
+        }
+      }
+      return found;
+    }
+
+    it('only the source-repo script opts in: scan of src/ and scripts/ finds no other caller', async () => {
+      const mentions = [
+        ...(await filesMentioning('src', 'excludeGitIgnored')),
+        ...(await filesMentioning('scripts', 'excludeGitIgnored')),
+      ];
+      const found = mentions.filter((path) => path !== 'src/core/lockfile.ts');
+
+      expect(found).toEqual(['scripts/sync-source-lockfile.ts']);
+      expect(await readFile(join(repoRoot, 'scripts/sync-source-lockfile.ts'), 'utf-8')).toContain(
+        'excludeGitIgnored: true'
+      );
     });
   });
 });

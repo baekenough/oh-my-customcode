@@ -1,7 +1,7 @@
 ---
 title: Task Decomposition
 type: skill
-updated: 2026-07-20
+updated: 2026-10-05
 sources:
   - .claude/skills/task-decomposition/SKILL.md
 related:

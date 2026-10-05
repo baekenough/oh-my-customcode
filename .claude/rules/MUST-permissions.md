@@ -6,7 +6,7 @@
 
 | Tier | Tools | Policy |
 |------|-------|--------|
-| 1: Always | Read, Glob, Grep, ToolSearch | Free use, read-only |
+| 1: Always | Read, Glob‡, Grep‡, ToolSearch§ | Free use, read-only |
 | 2: Default | Write, Edit, NotebookEdit | State changes explicitly, notify before modifying important files |
 | 3: Context | Agent, Skill, EnterPlanMode, ExitPlanMode, EnterWorktree, ExitWorktree, LSP, Monitor, TodoWrite†, AskUserQuestion, PushNotification | Context-dependent, no user approval needed |
 | 4: Approval | Bash, PowerShell, WebFetch, WebSearch | Request user approval on first use |
@@ -14,6 +14,10 @@
 | 6: MCP | ListMcpResourcesTool, ReadMcpResourceTool, CronCreate, CronDelete, CronList, RemoteTrigger | MCP/extension tools, available when servers configured |
 
 > **†** 현행 모델의 기본 실행 환경에 **존재하지 않는다** — 아래 v2.1.233 노트 참조. 이 표는 **도구 카탈로그**이지 가용성 보증이 아니므로, 규칙이 특정 도구 호출을 의무화하기 전에 실측(도구 목록 / `ToolSearch`)으로 존재를 확인한다.
+
+> **‡** 네이티브 빌드(macOS/Linux)에서는 전용 `Glob`/`Grep`이 Bash 내장 `bfs`/`ugrep`으로 대체되고(CHANGELOG 2.1.117: "the `Glob` and `Grep` tools are replaced by embedded `bfs` and `ugrep` available through the Bash tool"), `--tools`로 명시하면 전용 도구가 제공된다(2.1.162: "explicitly listing Grep/Glob now provides the dedicated search tools on native builds with embedded search"). 실측(CC 2.1.289, 2026-10-05): frontmatter `tools:`에 Grep/Glob을 명시한 `qa-writer`는 전용 `Grep`/`Glob`을 받았고(Bash 없음), 명시 목록이 없는 메인 세션에는 없었다 — frontmatter 명시가 `--tools` 명시와 같은 효과라는 일반화는 이 1건에 근거한 추정이다. 전용 도구가 없으면 읽기 전용 Bash(`git grep`·`find`)로 대체한다(R005: 가용성 미확인 시 Bash 우선 #1307, 전수조사 `git grep` 표준 #1590). 이 대체는 Tier 1 작업을 Tier 4로 옮기므로 Tier 4 정책("Request user approval on first use")이 적용된다. Bash도, frontmatter에 명시된 해당 검색 도구도 없는 경우(예: `sys-naggy`는 Grep만 명시 — Glob 검색)에만 오케스트레이터가 사전 수집해 내용으로 전달한다(R010 「Known Limitations (Active Cache)」).
+
+> **§** `ToolSearch`도 멤버 실행 환경에 없을 수 있다(#1817 QA teammate 관측) — 없으면 지연 도구를 로드할 수 없으므로 그 지연 도구는 부재로 취급한다(R018 「멤버 도구 부재 시 대체 규약」).
 
 ## File Access
 
@@ -157,25 +161,24 @@ CHANGELOG v2.1.233 원문: *"Todo/task-tracking tools (TaskCreate/Get/Update/Lis
 
 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`은 복구 수단이나 **환경 설정 사안**이므로 규칙이 그 설정을 전제하지 않는다. 공식 settings 문서(`code.claude.com/docs/en/settings`)에는 2026-08-15 기준 미수록 — 현재 근거는 CHANGELOG 원문 + 위 실측이다.
 
-Origin: #1582. Cross-ref: R018(Member TaskUpdate Discipline 대체 규약), R020("도구가 있다"는 가정도 실측 대상).
+Origin: #1582. Cross-ref: R018 「Task 도구 부재 시 대체 규약」(Member TaskUpdate Discipline 하위 절), R020("도구가 있다"는 가정도 실측 대상).
 -->
 `TeamCreate`/`TeamDelete`도 별도로 부재 — R018은 이 환경에서 비활성입니다(R018 Detection). 규칙은 **존재하지 않는 도구의 호출을 의무화하지 않으며**, 도구 의존 의무를 쓸 때는 부재 시 대체 규약을 함께 규정합니다(R018 Member TaskUpdate Discipline이 그 예). `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`은 환경 설정 사안이므로 규칙이 전제하지 않습니다. Origin: #1582.
 
 ## Agent Tool Permission Mode
 
-> Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the full requirement, rationale, self-check, and version history. Core rule: always pass `mode: "bypassPermissions"` explicitly on every Agent tool call — the Agent tool's default `mode` (`acceptEdits`) overrides agent frontmatter `permissionMode` and causes prompts during unattended execution. Skills that spawn agents MUST include this in their Agent tool call instructions. See R010 for details.
-
-**주의**: v2.1.212+부터 `mode` 파라미터는 무시되며 유효 모드는 부모 세션이 결정합니다 — 실측은 R010 Self-Check를 참조합니다.
+> Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions" owns the guidance, self-check, and version history. Core: below CC 2.1.212, per-call `mode: "bypassPermissions"` is required (the Agent tool's default `acceptEdits` overrides frontmatter `permissionMode`); from 2.1.212 it is ignored and subagents inherit the parent session's mode, which frontmatter `permissionMode` may override. Keep passing `mode` for compatibility, but measure the effective mode before unattended runs (R010 Self-Check 1).
 
 <!-- DETAIL: Agent tool mode deprecation rationale (canonical: R010)
 > **v2.1.212+**: CC가 Agent(구 Task) tool의 `mode` 파라미터를 deprecated 처리했습니다(이제 무시) — subagent는 부모 세션의 permission mode를 기본 상속합니다. 위 canonical 요약의 default `mode`(`acceptEdits`)가 frontmatter `permissionMode`를 override한다는 서술 및 항상 `mode: "bypassPermissions"`를 넘기라는 요건은 이 버전부터 stale이며(파라미터가 무시됨), 무인 실행의 실질 게이트는 부모 세션의 permission mode입니다. 요건 재조정은 R010 "Universal bypassPermissions"가 canonical — R002는 이 flag만 유지합니다.
 -->
 
 <!-- DETAIL: defaultMode project-scope-ignored rationale (canonical: R010)
-> **v2.1.257+**: 프로젝트 scope `permissions.defaultMode` 가 무시됩니다(user/managed scope 또는
-> `--permission-mode` 플래그만 유효). 위 v2.1.212 노트가 "무인 실행의 실질 게이트는 부모 세션의
-> permission mode"라고 정정했는데, **그 부모 세션 모드를 프로젝트 settings로 지정하는 경로가 이
-> 버전에서 끊겼습니다** — 이 파일 상단 「Deny Rule Glob Patterns」의 v2.1.214 노트(allow 규칙만
+> **v2.1.257+**: `.claude/settings.json`·`.claude/settings.local.json`의 `defaultMode: "bypassPermissions"`
+> 값이 `"auto"`처럼 무시됩니다(CHANGELOG 2.1.257 — 다른 값은 이 항목의 대상이 아님; bypass는 user/managed
+> settings 또는 `--permission-mode`로 지정). 위 v2.1.212 노트가 "무인 실행의 실질 게이트는 부모 세션의
+> permission mode"라고 정정했는데, **그 부모 세션 모드를 프로젝트 settings로 `bypassPermissions`로
+> 지정하는 경로가 이 버전에서 끊겼습니다** — 이 파일 상단 「Deny Rule Glob Patterns」의 v2.1.214 노트(allow 규칙만
 > `<cwd>`로 좁아진 비대칭)와 같은 계열의 **project-scope 축소** 흐름입니다. Canonical owner 는
 > R010 "Universal bypassPermissions" — 상세와 실측 절차는 그쪽을 참조합니다. Origin: #1644.
 -->

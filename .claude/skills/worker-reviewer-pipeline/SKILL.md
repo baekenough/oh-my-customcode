@@ -91,7 +91,11 @@ When Agent Teams is enabled, the pipeline SHOULD use Agent Teams:
 TeamCreate("review-pipeline")
   Worker (team member) ←→ Reviewer (team member)
   SendMessage for feedback exchange
+    (if a member lacks SendMessage: artifact files relayed by the
+     orchestrator, R018 "멤버 도구 부재 시 대체 규약", #1817)
   Shared TaskList for tracking issues
+    (if TaskList is absent — not registered by default, R002: follow
+     R018 "Task 도구 부재 시 대체 규약", #1582)
 ```
 
 When Agent Teams is NOT available, falls back to sequential Agent tool calls:
@@ -164,4 +168,4 @@ config: {max_iterations: 1, quality_gate: majority_pass}
 - Nested pipelines not supported (use dag-orchestration for complex flows)
 - Pipeline does not auto-commit; orchestrator decides post-pipeline actions
 
-When spawning agents via the Agent tool during this skill's execution, always pass `mode: "bypassPermissions"`. The Agent tool default (`acceptEdits`) overrides agent frontmatter `permissionMode`, causing permission prompts during unattended execution.
+Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".

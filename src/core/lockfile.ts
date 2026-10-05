@@ -7,10 +7,12 @@
  * vs. upstream template changes.
  */
 
+import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { readdir, stat } from 'node:fs/promises';
+import { readdir, realpath, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
+import { promisify } from 'node:util';
 import { fileExists, getPackageRoot, readJsonFile, writeJsonFile } from '../utils/fs.js';
 import { debug, warn } from '../utils/logger.js';
 import { getComponentPath, type InstallComponent } from './layout.js';
@@ -96,6 +98,194 @@ const LOCKFILE_COMPONENTS: readonly InstallComponent[] = [
 const COMPONENT_PATHS: ReadonlyArray<readonly [string, string]> = LOCKFILE_COMPONENTS.map(
   (component) => [getComponentPath(component), component] as const
 );
+
+/**
+ * Options for lockfile generation.
+ */
+export interface LockfileGenerationOptions {
+  /**
+   * Record only files git would carry into a fresh clone of this working tree: tracked files
+   * (including force-added files that match an ignore rule) plus untracked files that are
+   * not ignored. Files matched by an ignore rule and not tracked are left out (#1819).
+   *
+   * Intended for the source repository's own lockfile (`bun run build`), whose tracked copy
+   * must be reproducible from a clone. Installed projects (installer/updater) keep the
+   * default `false`: there the lockfile describes what was installed, which is deliberately
+   * independent of git.
+   *
+   * A walked file is kept only if `git ls-files --cached --others --exclude-standard` lists it,
+   * so git's own structure rules decide: nothing below a symlinked directory, an untracked
+   * nested repository (listed as `dir/`) or a gitlink is recorded, while tracked files are kept
+   * even if someone ran `git init` inside their directory. When git spells a path differently
+   * from the file system, matching falls back from exact bytes to NFC-normalized comparison
+   * (NFD names on macOS), then — only when the repository's `core.ignorecase` is true — to a
+   * case-insensitive comparison (case-only renames). Invariant: a tracked file present on disk
+   * is never dropped over a spelling difference. Caveats: the fallbacks fail toward inclusion,
+   * so an ignored spelling twin of a visible path (same name up to NFC or case) is also kept;
+   * and keys use the on-disk spelling, which can differ from a clone's (a clone writes git's
+   * spelling, e.g. NFC).
+   *
+   * Requires `targetDir` to be the root of its own git work tree, with a `git` binary on PATH;
+   * otherwise generation rejects (never silently falls back to an unfiltered walk, and never
+   * filters against a parent repository's rules). Ignore rules come from
+   * `git ls-files --exclude-standard`: the repository's `.gitignore` files and
+   * `.git/info/exclude`, and per-user excludes (`core.excludesFile`, default
+   * `$XDG_CONFIG_HOME/git/ignore`) also apply. That is deliberate: a file this machine's user
+   * ignores is never added from this machine, so it is not in a clone either. Defaults to
+   * `false`.
+   */
+  excludeGitIgnored?: boolean;
+}
+
+const execFileAsync = promisify(execFile);
+
+/** Environment variables that make git operate on a repository other than `targetDir`'s own. */
+const GIT_LOCATION_ENV_KEYS = [
+  'GIT_DIR',
+  'GIT_WORK_TREE',
+  'GIT_INDEX_FILE',
+  'GIT_PREFIX',
+  'GIT_COMMON_DIR',
+] as const;
+
+/**
+ * Environment variables carrying one-off `git -c` configuration from a parent git process (a
+ * hook run under `git -c core.excludesFile=… commit`). Dropped so ignore rules do not depend
+ * on how the build was launched. `GIT_CONFIG_GLOBAL`/`GIT_CONFIG_SYSTEM`/`GIT_CONFIG_NOSYSTEM`
+ * are the user's own environment and are kept.
+ */
+const GIT_INJECTED_CONFIG_ENV_KEYS = ['GIT_CONFIG_PARAMETERS', 'GIT_CONFIG_COUNT'] as const;
+const GIT_INJECTED_CONFIG_ENV_PREFIXES = ['GIT_CONFIG_KEY_', 'GIT_CONFIG_VALUE_'] as const;
+
+/** Guidance appended to every git failure in `excludeGitIgnored` mode. */
+const GIT_REQUIRED_HINT =
+  'build from a git checkout: excluding ignored local files from the lockfile requires git (#1819)';
+
+/**
+ * Copy of `process.env` without the variables that relocate git or inject configuration, so
+ * git resolves the repository and ignore rules from `targetDir` itself.
+ */
+function gitChildEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  for (const key of [...GIT_LOCATION_ENV_KEYS, ...GIT_INJECTED_CONFIG_ENV_KEYS]) {
+    delete env[key];
+  }
+  for (const key of Object.keys(env)) {
+    if (GIT_INJECTED_CONFIG_ENV_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+      delete env[key];
+    }
+  }
+  return env;
+}
+
+async function runGit(targetDir: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync('git', args, {
+      cwd: targetDir,
+      env,
+      encoding: 'utf-8',
+      maxBuffer: 256 * 1024 * 1024,
+    });
+    return stdout;
+  } catch (err) {
+    const detail = err instanceof Error ? err.message.trim() : String(err);
+    throw new Error(`git ${args[0]} failed in ${targetDir}: ${detail} — ${GIT_REQUIRED_HINT}`);
+  }
+}
+
+/**
+ * Paths git would carry into a fresh clone, indexed for exact and fallback matching.
+ */
+interface GitVisiblePaths {
+  /** Paths exactly as git printed them. */
+  exact: ReadonlySet<string>;
+  /** The same paths, NFC-normalized. */
+  nfc: ReadonlySet<string>;
+  /** NFC-normalized and lower-cased; `null` unless the repository sets `core.ignorecase`. */
+  folded: ReadonlySet<string> | null;
+}
+
+function foldCase(nfcPath: string): string {
+  return nfcPath.toLowerCase();
+}
+
+/**
+ * Whether a walked path (relative, forward slashes, on-disk spelling) is one git lists:
+ * exact bytes first, then NFC-normalized, then case-insensitive when `core.ignorecase` is set.
+ */
+function isGitVisible(visible: GitVisiblePaths, relativePath: string): boolean {
+  if (visible.exact.has(relativePath)) {
+    return true;
+  }
+  const nfc = relativePath.normalize('NFC');
+  if (visible.nfc.has(nfc)) {
+    return true;
+  }
+  return visible.folded?.has(foldCase(nfc)) ?? false;
+}
+
+/** Remove one trailing newline (git's line terminator); path characters, spaces included, stay. */
+function stripFinalNewline(output: string): string {
+  return output.endsWith('\n') ? output.slice(0, -1) : output;
+}
+
+/**
+ * Reject unless `targetDir` is the root of its own work tree (compared by realpath, so `/var`
+ * and `/private/var` agree): a subdirectory, or a directory inside another repository
+ * (including one that repository ignores), would otherwise be filtered by the wrong rules.
+ */
+async function assertGitWorkTreeRoot(targetDir: string, env: NodeJS.ProcessEnv): Promise<void> {
+  const topLevel = stripFinalNewline(
+    await runGit(targetDir, ['rev-parse', '--show-toplevel'], env)
+  );
+  let realTop: string;
+  let realTarget: string;
+  try {
+    [realTop, realTarget] = await Promise.all([realpath(topLevel), realpath(targetDir)]);
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `cannot resolve the git work tree root of ${targetDir}: ${detail} — ${GIT_REQUIRED_HINT}`
+    );
+  }
+  if (realTop !== realTarget) {
+    throw new Error(
+      `${targetDir} is not the root of its git work tree (root: ${topLevel}) — ${GIT_REQUIRED_HINT}`
+    );
+  }
+}
+
+/**
+ * List the paths under the component roots that git would carry into a fresh clone: tracked
+ * entries plus untracked entries not matched by an ignore rule (`ls-files --cached --others
+ * --exclude-standard`), relative to `targetDir` with forward slashes. `-z` keeps unusual file
+ * names (spaces, non-ASCII, newlines) unquoted.
+ *
+ * @throws when git fails or `targetDir` is not the root of its own git work tree
+ */
+async function listGitVisiblePaths(targetDir: string): Promise<GitVisiblePaths> {
+  const env = gitChildEnv();
+  await assertGitWorkTreeRoot(targetDir, env);
+
+  const pathspecs = COMPONENT_PATHS.map(([prefix]) => prefix);
+  const [listing, ignoreCase] = await Promise.all([
+    runGit(
+      targetDir,
+      ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', ...pathspecs],
+      env
+    ),
+    runGit(
+      targetDir,
+      ['config', '--type=bool', '--default=false', '--get', 'core.ignorecase'],
+      env
+    ),
+  ]);
+
+  const exact = new Set(listing.split('\0').filter((entry) => entry.length > 0));
+  const nfc = new Set([...exact].map((entry) => entry.normalize('NFC')));
+  const folded = stripFinalNewline(ignoreCase) === 'true' ? new Set([...nfc].map(foldCase)) : null;
+  return { exact, nfc, folded };
+}
 
 /**
  * Compute SHA-256 hash of a file using a read stream.
@@ -245,13 +435,16 @@ function sortFilesByPath(files: Record<string, LockfileEntry>): Record<string, L
 /**
  * Generate a lockfile by walking all installed template files in targetDir.
  * Computes SHA-256 for each file and resolves the component from the path.
+ * With `options.excludeGitIgnored`, only files git would carry into a fresh clone are kept.
  */
 export async function generateLockfile(
   targetDir: string,
   generatorVersion: string,
-  templateVersion: string
+  templateVersion: string,
+  options: LockfileGenerationOptions = {}
 ): Promise<Lockfile> {
   const files: Record<string, LockfileEntry> = {};
+  const gitVisible = options.excludeGitIgnored ? await listGitVisiblePaths(targetDir) : null;
 
   // Walk each component root that may exist in the target directory
   const componentRoots = COMPONENT_PATHS.map(([prefix]) => join(targetDir, prefix));
@@ -267,6 +460,11 @@ export async function generateLockfile(
 
     for (const absolutePath of allFiles) {
       const relativePath = relative(targetDir, absolutePath).replace(/\\/g, '/');
+
+      if (gitVisible !== null && !isGitVisible(gitVisible, relativePath)) {
+        debug('lockfile.entry_git_excluded', { path: relativePath });
+        continue;
+      }
 
       let hash: string;
       let size: number;
@@ -380,10 +578,12 @@ export function preserveGeneratedAt(next: Lockfile, previous: Lockfile | null): 
  * Generate and write a lockfile for a target directory.
  * Reads package.json and manifest.json from the package root to determine versions.
  * Keeps the existing lockfile's `generatedAt` when nothing else changed (idempotent rebuild).
- * Non-throwing: returns warnings array on failure.
+ * Non-throwing: on failure (including git failure when `options.excludeGitIgnored` is set)
+ * returns `{ fileCount: 0, warning }` and writes nothing.
  */
 export async function generateAndWriteLockfileForDir(
-  targetDir: string
+  targetDir: string,
+  options: LockfileGenerationOptions = {}
 ): Promise<{ fileCount: number; warning?: string }> {
   try {
     const packageRoot = getPackageRoot();
@@ -393,7 +593,12 @@ export async function generateAndWriteLockfileForDir(
     const { version: generatorVersion } = await readJsonFile<{ version: string }>(
       join(packageRoot, 'package.json')
     );
-    const generated = await generateLockfile(targetDir, generatorVersion, manifest.version);
+    const generated = await generateLockfile(
+      targetDir,
+      generatorVersion,
+      manifest.version,
+      options
+    );
     const previous = await readLockfile(targetDir);
     const lockfile = preserveGeneratedAt(generated, previous);
     await writeLockfile(targetDir, lockfile);

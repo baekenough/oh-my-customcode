@@ -1,7 +1,7 @@
 ---
 title: Evaluator Optimizer
 type: skill
-updated: 2026-07-19
+updated: 2026-10-05
 sources:
   - .claude/skills/evaluator-optimizer/SKILL.md
 related:
