@@ -1,6 +1,6 @@
 # Claude Code Version Compatibility
 
-> Updated: 2026-09-24
+> Updated: 2026-10-05
 > Source: Claude Code release notes (#967, #968, #969, #1126 auto-detected by claude-native skill, #1137, #1158, #1242, #1243, #1244, #1245, #1276, #1280, #1713, #1714, #1716, #1746, #1747)
 >
 > **Note (compat 노트 이관, v1.1.9~v1.1.76)**: v2.1.161~v2.1.276 구간의 CC 호환성 노트는 `.claude/rules/` 각 규칙(R001/R002/R006/R010/R012 등)에 인라인으로 축적되어 있으며, 이 구간은 그대로 보존합니다.
@@ -1757,6 +1757,146 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 ---
 
+## v2.1.288 (2026-10-02)
+
+> Issue: #1790 — Claude Code v2.1.288 compatibility documentation
+> Scope-ceiling check (R017): 조사 시점(2026-10-05)의 최신 릴리즈는 2.1.289입니다(`claude --version`=2.1.289, `npm view @anthropic-ai/claude-code version`=2.1.289). 2.1.289 CHANGELOG에는 "[VSCode] Reverted a 2.1.288 change to `claude auth status` that may have made sign-outs more frequent"가 있으나, 2.1.288 CHANGELOG 절에는 `claude auth status` 문구가 없어(`grep -F` 0건) 되돌려진 288 항목을 특정할 수 없고 VSCode 전용이므로 아래 항목의 롤백은 확인되지 않았습니다. 릴리즈 게시 시각은 2026-10-02T20:19:57Z입니다(`gh release view v2.1.288 --repo anthropics/claude-code --json publishedAt`).
+
+### 세션 · 재개 · 컨텍스트
+
+- CHANGELOG 원문: "Fixed mid-response API timeouts failing the turn: non-interactive sessions and subagents now continue from the partial response, and thinking-only responses are retried"
+  (288) 응답 도중 API 타임아웃이 턴을 실패시키던 결함이 수정되어, 비대화형 세션과 서브에이전트가 부분 응답에서 이어가고 thinking만 있는 응답은 재시도됩니다. R004 Retryable 재시도 전략을 플랫폼이 서브에이전트 경로에서도 수행한다는 (257)·(246)의 자동 이어감과 같은 계열이므로, 위임 에이전트의 중간 종료를 진단할 때 네트워크 절단 축은 후순위로 두고 R020의 maxTurns 한도를 먼저 확인하는 기존 순서를 유지합니다. 룰 변경은 없습니다.
+- CHANGELOG 원문: "Fixed long conversations failing with "Prompt is too long" instead of auto-compacting when the last reply reported zero token usage"
+  (288) 마지막 응답이 토큰 사용량 0을 보고하면 긴 대화가 auto-compact 대신 "Prompt is too long"으로 실패하던 결함이 수정되었습니다. R013 컨텍스트 예산·(269)(274)의 "Prompt is too long" 계열 수정과 같은 맥락이며 임계값 정의는 바뀌지 않습니다. `/fsd` 같은 장기 자율 루프에 유리한 수정입니다.
+- CHANGELOG 원문: "Fixed `--resume` sometimes dropping files and other context that a compaction had just restored"
+  (288) `--resume`이 compaction 직후 복원된 파일과 컨텍스트를 간혹 누락하던 결함이 수정되었습니다. 압축·재시작 뒤 CLAUDE.md를 다시 읽는 R010의 Session Continuity 절차는 그대로 유지하며(재개 관련 버전 노트는 R011이 담당합니다), 이 수정은 구버전 재개 세션의 컨텍스트 누락을 모델 규칙 위반으로만 귀속하지 않는 근거가 됩니다.
+- CHANGELOG 원문: "Fixed a resumed session sometimes not saving the last response of a turn, so that the next `--resume` showed the prompt unanswered"
+  (288) 재개된 세션이 간혹 턴의 마지막 응답을 저장하지 못해 다음 `--resume`에서 프롬프트가 미응답으로 보이던 결함이 수정되었습니다. 미응답처럼 보이지만 실제로는 응답이 있었을 수 있는 역방향 사례이므로 R020의 Failure/Interrupt Report ≠ Actual Failure (reverse direction) 조항대로, 재개 뒤 미응답으로 보이는 턴은 트랜스크립트 표시가 아니라 산출물 실측으로 판정합니다.
+- CHANGELOG 원문: "Fixed resume occasionally loading a transcript cut short when the same session rewrote the file during the load"
+  (288) 같은 세션이 로드 중 파일을 다시 쓰면 재개가 간혹 잘린 트랜스크립트를 읽던 결함이 수정되었습니다. 트랜스크립트 계수(`scripts/count-r007-r008.sh`, R023)의 입력 신뢰도에 관한 맥락 정보입니다. R011의 (275) 노트는 275 이전에 malformed 엔트리 하나 때문에 재개에 실패한 세션을 대상으로 R020 트랜스크립트 계수를 하한값으로 취급하도록 하며, 잘린 트랜스크립트를 읽은 세션의 계수도 하한값으로 보는 것이 같은 방향입니다 [가설 — 잘린 로드 세션의 계수 보정은 (275) 노트가 직접 다루지 않는 유비]. 룰 변경은 없습니다.
+- CHANGELOG 원문: "Fixed resuming a conversation started on 2.1.286 or earlier dropping the model's earlier thinking"
+  (288) 2.1.286 이하에서 시작한 대화를 재개하면 모델의 이전 thinking이 누락되던 결함이 수정되었습니다. 맥락 정보이며 영향은 확인되지 않았습니다.
+- CHANGELOG 원문: "Fixed session titles, memory recall and prompt hooks failing on Mantle or behind gateways that reject structured outputs; added `CLAUDE_CODE_DISABLE_STRUCTURED_OUTPUTS` to turn structured outputs off"
+  (288) Mantle이나 structured outputs를 거부하는 게이트웨이 뒤에서 세션 제목·메모리 recall·prompt 훅이 실패하던 결함이 수정되었고, `CLAUDE_CODE_DISABLE_STRUCTURED_OUTPUTS`로 structured outputs를 끌 수 있습니다. 관측한 범위에서 이 저장소에는 `type: prompt` 훅이 PostCompact(matcher `*`) 1개 있으나, 프로젝트 `.claude/settings.json`에 `env`가 없고(`.claude/settings.local.json`의 env 키는 `CLAUDE_COST_CAP`뿐) Mantle·게이트웨이 설정이 관측되지 않아 영향이 없습니다.
+- CHANGELOG 원문: "Changed `/autocompact` to save the auto-compact window per model, so each model keeps its own setting when you switch"
+  (288) `/autocompact`가 auto-compact 창을 모델별로 저장하므로 모델을 바꿔도 각 모델이 자기 설정을 유지합니다. R013 임계값은 창 대비 백분율이므로 모델 전환 시 절대 토큰량이 모델별 설정에 따라 달라질 수 있습니다 [가설 — 저장소에서 /autocompact 사용 여부 미관측].
+- CHANGELOG 원문: "Fixed the first request in a fresh environment or after a model switch using the built-in output limit and auto-compact window, not the server's; that request may now wait up to 1.5 seconds"
+  (288) 새 환경이나 모델 전환 뒤 첫 요청이 서버의 출력 한도·auto-compact 창 대신 내장값을 쓰던 결함이 수정되었고, 그 요청은 이제 최대 1.5초 기다릴 수 있습니다. 위 `/autocompact` 항목과 함께 R013 컨텍스트 예산의 절대 토큰량 해석에 관한 맥락 정보이며, 임계값 정의는 바뀌지 않습니다.
+- CHANGELOG 원문: "Fixed unattended sessions (`CLAUDE_CODE_RETRY_WATCHDOG`) retrying for hours after a very long response stream failed; Claude Code now streams again, and gives up after three timeouts"
+  (288) `CLAUDE_CODE_RETRY_WATCHDOG`을 쓰는 무인 세션이 매우 긴 응답 스트림 실패 뒤 몇 시간씩 재시도하던 결함이 수정되어, 이제 다시 스트리밍하고 타임아웃 세 번 뒤 포기합니다. R018의 (260) 노트가 이 환경 변수를 예시로 언급합니다. (288) 타임아웃 세 번 뒤 포기하는 동작은 R004의 최대 3회 재시도 후 보고하는 전략과 방향이 같습니다. (288) 저장소에서 이 환경 변수 사용은 관측되지 않았습니다.
+- CHANGELOG 원문: "Fixed headless (`-p` / SDK) sessions occasionally ignoring SIGTERM when a supervisor such as `timeout` or systemd sends SIGCONT alongside it"
+  (288) 감독자(`timeout`, systemd 등)가 SIGCONT를 함께 보낼 때 headless(`-p` / SDK) 세션이 간혹 SIGTERM을 무시하던 결함이 수정되었습니다. 관측한 범위에서 `infra/hada-scout/scout-runner.sh`가 `timeout "${SCOUT_TIMEOUT}" claude -p`(`-k` 없음)로 실행하므로 해당 구성입니다. 288 이전에는 SIGTERM이 간혹 무시되어 실행이 끝나지 않을 수 있었다는 회고적 함의가 있습니다 [가설 — 실제 배포 여부와 이미지의 CC 버전 미실측]. 룰 변경은 없습니다.
+
+### 권한 · auto mode · rm
+
+- CHANGELOG 원문: "Fixed auto mode denials pointing Claude at a Bash permission rule when the blocked tool was not Bash"
+  (288) 차단된 도구가 Bash가 아닌데도 auto mode 거부 메시지가 Bash 권한 규칙을 가리키던 결함이 수정되었습니다. 관측한 범위에서 사용자 scope 유효 permission mode는 `auto`(`jq -r '.permissions.defaultMode // "unset"' ~/.claude/settings.json`)이므로 직접 관련됩니다. R001의 classifier 차단 후 재시도 금지 취지와 R010 STOP Protocol의 진단 정확도가 높아질 뿐 규범은 그대로입니다.
+- CHANGELOG 원문: "Improved auto mode: when a conversation grows too long for the client-side safety classifier to review, it is now compacted instead of prompting for, or failing, every tool call"
+  (288) auto mode에서 대화가 클라이언트 측 안전 classifier가 검토하기에 너무 길어지면 모든 도구 호출을 묻거나 실패시키는 대신 compact됩니다. 유효 모드가 `auto`인 이 저장소의 긴 세션에 해당합니다. 구버전의 긴 세션에서 도구 호출 거부·프롬프트가 있었다면 모델 규칙 위반으로만 귀속할 수 없습니다 [가설 — 해당 거부·프롬프트가 실제로 있었는지 미관측]. R002·R021 문안 변경은 없습니다.
+- CHANGELOG 원문: "Changed the client-side auto mode classifier to ignore an `ANTHROPIC_DEFAULT_SONNET_MODEL` pin that names Claude Sonnet 5.5 or Opus 5.5 and use Claude Sonnet 5 instead"
+  (288) 클라이언트 측 auto mode classifier는 Claude Sonnet 5.5 또는 Opus 5.5를 가리키는 `ANTHROPIC_DEFAULT_SONNET_MODEL` 고정을 무시하고 Claude Sonnet 5를 사용합니다. 관측한 범위에서 프로젝트 `.claude/settings.json`에 `env`가 없고 `.claude/settings.local.json`의 env 키는 `CLAUDE_COST_CAP`뿐이어서 이 env 고정은 쓰이지 않습니다(사용자 scope는 미관측). 이 저장소의 에이전트 핀은 frontmatter의 Tier 2 전체 ID(R006)이며, auto mode classifier가 에이전트 핀과 무관한 모델로 동작한다는 점은 R006 모델 설명의 맥락 정보입니다.
+- CHANGELOG 원문: "Fixed Bash tool permission check to prompt before a `BASHPID` assignment whose value the shell would evaluate as arithmetic, instead of allowing it silently"
+  (288) 셸이 산술식으로 평가할 값을 가진 `BASHPID` 할당을 조용히 허용하지 않고 먼저 확인합니다. R002 Bash 티어(Tier 4 승인) 방향의 플랫폼 수정이며 티어 정책은 바뀌지 않습니다. 저장소에 `BASHPID` 할당 사용은 관측되지 않았습니다.
+- CHANGELOG 원문: "Fixed a dangerous `rm` (such as one on `/` or the home directory) inside a `bash -c` or `sh -c` script running without a prompt in bypassPermissions mode or under a shell allow rule (anthropics/claude-code#96300)"
+  (288) `bash -c`·`sh -c` 스크립트 안의 위험한 `rm`(예: `/`나 홈 디렉터리 대상)이 bypassPermissions 모드나 셸 allow 규칙 아래에서 프롬프트 없이 실행되던 결함이 수정되었습니다. 이 수정은 (287)의 `rm` 안전장치 수정이 스크립트 래퍼로 확장된 것이며, 가장 직접적인 선행 노트는 R001의 (261) 노트(positional parameter와 큰따옴표 `sh -c` 내부 `rm -rf`까지 확인을 확장)와 (273) 노트(bypass 모드 subshell 안의 `rm`)입니다. 관측한 범위에서 프로젝트 settings.json에는 `Bash(rm:*)` allow와 `defaultMode: bypassPermissions`(R010에 따라 2.1.257부터 프로젝트 scope에서는 무시됩니다)가 있고 `Bash(bash:*)`·`Bash(sh:*)` allow는 없으며, 유효 모드(사용자 scope)는 `auto`입니다. R001 문안 변경은 없고, 이 플랫폼 가드는 R001의 위임 전 blast-radius 열거를 대체하지 않습니다.
+- CHANGELOG 원문: "Changed the background command time limit to apply only in unattended sessions (`-p`, Agent SDK, CI, cloud); terminal, desktop app and VS Code sessions have no limit"
+  (288) 백그라운드 명령 시간 제한이 무인 세션(`-p`, Agent SDK, CI, cloud)에만 적용되고, 터미널·데스크톱 앱·VS Code 세션에는 제한이 없습니다. 이 가이드 (285) 절의 백그라운드 시간 제한 항목("(288) 이후 이 제한은 좁혀졌습니다"로 이 불릿을 인용)과 이어지며, 룰 변경은 없습니다.
+
+### 훅
+
+- CHANGELOG 원문: "Fixed PreToolUse and PermissionRequest hooks being skipped when matching them failed or the tool's input could not be serialized to JSON; the call is now blocked"
+  (288) matcher 평가 자체가 오류로 실패하거나 도구 입력을 JSON으로 직렬화할 수 없을 때 PreToolUse·PermissionRequest 훅이 건너뛰어지던 결함이 수정되어, 이제 해당 호출이 차단됩니다(matcher가 일치하지 않는 훅은 원래도 실행되지 않으며 이 항목의 대상이 아닙니다). 이 fail-closed 동작은 R021의 Hard Block 계열에 한정되지 않고 advisory를 포함한 모든 PreToolUse 그룹에 적용되므로, 평가 중 오류를 내는 matcher는 이제 호출을 차단합니다. 관측한 범위에서 PreToolUse 그룹은 12개(advisory 포함)이고 PermissionRequest 훅은 없습니다. R021 Advisory-first 정책 문안 변경은 없으며, 훅 matcher 편집 뒤 `bun run sync:hooks` 재생성 확인(R021)의 중요도가 커집니다.
+- CHANGELOG 원문: "Fixed `idle_prompt` notification hooks firing while background agents are still running (anthropics/claude-code#93672)"
+  (288) 백그라운드 에이전트가 실행 중인데 `idle_prompt` 알림 훅이 발화하던 결함이 수정되었습니다. 관측한 범위에서 Notification 훅은 1개이고 matcher가 `*`이며 `.message`를 stderr에 출력할 뿐이어서 영향은 stderr 줄 1개 수준입니다. 이 훅이 `idle_prompt` 알림에도 걸리는지는 확인하지 않았습니다 [가설 — matcher *가 idle_prompt 알림에도 걸릴 가능성].
+- CHANGELOG 원문: "Fixed the InstructionsLoaded hook omitting agent_id and agent_type when a subagent's file access loads a rule or nested CLAUDE.md; rules and nested CLAUDE.md files loaded on file access now also report effort"
+  (288) 서브에이전트의 파일 접근이 룰이나 nested CLAUDE.md를 로드할 때 InstructionsLoaded 훅이 agent_id·agent_type을 빠뜨리던 결함이 수정되었고, 파일 접근으로 로드된 룰·nested CLAUDE.md는 effort도 보고합니다. 관측한 범위에서 InstructionsLoaded 훅이 없어 영향이 없습니다(`jq -r '.hooks.InstructionsLoaded // [] | length' .claude/settings.json` = 0, `git grep -c -F 'InstructionsLoaded' -- .claude/hooks/hooks.json` 출력 없음(rc=1)). 훅 stdin 필드는 실측으로 확인한다는 기존 규율(R020 Config-Schema-Before-Edit)을 유지합니다.
+
+### 지시 파일
+
+- CHANGELOG 원문: "Fixed path-scoped `.claude/rules` and nested CLAUDE.md files not loading when Write or Edit creates or changes a file in their scope (previously only Read loaded them)"
+  (288) path-scoped `.claude/rules`와 nested CLAUDE.md가 Write·Edit으로 해당 범위의 파일을 만들거나 바꿀 때도 로드됩니다(이전에는 Read만 로드). 관측한 범위에서 `.claude/rules/*.md`에는 frontmatter가 없어 path-scoped 룰이 없습니다(`paths:` 일치 1건은 R006 본문의 스킬 frontmatter 예시 줄입니다). `git ls-files '*CLAUDE.md'` 기준 CLAUDE.md 파일은 `CLAUDE.md`, `templates/CLAUDE.md` 2개이며, 이 중 nested CLAUDE.md는 `templates/CLAUDE.md`(루트와 내용이 다름)입니다. 따라서 288부터 `templates/` 아래 파일을 Write·Edit할 때도 이 파일이 로드됩니다. Edit과 기존 파일 덮어쓰기는 선행 Read가 필요하므로 새로 생기는 차이는 주로 새 파일 Write일 것입니다 [가설 — 선행 Read 때문에 Read 로드가 이미 일어났을 가능성]. R021의 `SessionStart` 재주입 경로는 별개이며 유지합니다.
+
+### 서브에이전트 · Agent Teams
+
+- CHANGELOG 원문: "Fixed agent teams: a plugin-defined agent spawned by name now runs with its own prompt, tools, disallowedTools and effort instead of the defaults"
+  (288) agent teams에서 이름으로 스폰한 plugin 정의 에이전트가 기본값 대신 자기 prompt·tools·disallowedTools·effort로 실행됩니다. R018은 `TeamCreate` 부재 환경에서 비활성(dormant)이고 관측한 범위에서 `.claude-plugin/` 디렉토리가 없어 plugin 정의 에이전트도 없으므로 영향이 없습니다. 룰 변경은 없습니다.
+- CHANGELOG 원문: "Fixed a stall when launching an agent whose `tools:` lists very many `Agent(...)` entries"
+  (288) `tools:`에 `Agent(...)` 항목이 매우 많은 에이전트를 시작할 때의 정체가 수정되었습니다. 관측한 범위에서 `.claude/agents/*.md` 중 `tools:`에 `Agent(` 항목이 있는 파일은 0개이므로 영향이 없습니다. R006 에이전트 설계 문안 변경은 없습니다.
+- CHANGELOG 원문: "Fixed Claude reporting a message to another session as delivered when that session held it: the notice now says it wasn't delivered and names the session, and in SDK sessions Claude can now learn of it mid-turn"
+  (288) 다른 세션이 메시지를 보류하고 있는데 전달됨으로 보고하던 결함이 수정되어, 이제 전달되지 않았음과 세션 이름을 알리고 SDK 세션에서는 턴 도중에도 이를 알 수 있습니다. 직접 선행 노트는 R018의 (271) 노트(보류된 교차 세션 메시지, 전달됨 ≠ 읽힘)이며, R018 Scope의 "전달·열거 성공은 조율 신호일 뿐 승인 채널이 아니며 완료의 증거도 아니다"와 R020의 actual outcome ≠ attempt와 같은 방향입니다. 룰 변경은 없습니다.
+
+### MCP · LSP
+
+- CHANGELOG 원문: "Fixed MCP tool calls sometimes running twice when a remote server's result was over 16 MB or could not be parsed"
+  (288) 원격 서버의 결과가 16MB를 넘거나 파싱할 수 없을 때 MCP 도구 호출이 간혹 두 번 실행되던 결함이 수정되었습니다. 부작용이 있는 MCP 호출의 중복 실행 위험에 관한 맥락 정보이며 R001·R002 문안 변경은 없습니다.
+- CHANGELOG 원문: "Fixed LSP tool calls hanging indefinitely when a language server uses dynamic capability registration or stops responding; requests now time out after 60s (per-server `requestTimeout`)"
+  (288) language server가 동적 capability 등록을 쓰거나 응답을 멈출 때 LSP 도구 호출이 무한 대기하던 결함이 수정되어, 요청이 60초 뒤 타임아웃됩니다(서버별 `requestTimeout`). R002 Tier 3의 LSP 도구에 관한 맥락 정보이며 룰 변경은 없습니다.
+
+### 텔레메트리
+
+- CHANGELOG 원문: "Fixed OpenTelemetry `claude_code.tool.blocked_on_user` spans reporting `unknown` source or decision in `-p` and SDK sessions and for PreToolUse hook approvals"
+  (288) `-p`·SDK 세션과 PreToolUse 훅 승인에서 OpenTelemetry `claude_code.tool.blocked_on_user` span이 source·decision을 `unknown`으로 보고하던 결함이 수정되었습니다. monitoring-setup 스킬을 다루는 맥락 정보입니다.
+- CHANGELOG 원문: "Fixed permission asks that ended unanswered, in `-p` or on an interrupted turn, emitting no `tool_decision` event"
+  (288) `-p`에서 또는 인터럽트된 턴에서 응답 없이 끝난 권한 요청이 `tool_decision` 이벤트를 내보내지 않던 결함이 수정되었습니다. 응답 없는 권한 요청이 이제 관측 가능하다는 monitoring-setup 맥락 정보이며, R003 인터럽트 처리·R020 인터럽트 규칙의 문안 변경은 없습니다.
+
+### 코드 리뷰
+
+- CHANGELOG 원문: "Added `--max-findings <n>|all` to /code-review to report more or fewer findings than the usual limit; the choice is reused until you pass `--max-findings default`"
+  (288) `/code-review`에 `--max-findings <n>|all`이 추가되어 보고 건수 상한을 바꿀 수 있고, 선택값은 `--max-findings default`를 지정할 때까지 다음 실행에도 유지됩니다. R023의 (232) 노트가 `/code-review`를 Tier 3 검증 호출로 다루므로, 상한이 걸린 리뷰를 완전한 리뷰로 오인할 수 있다는 함의가 있습니다. 관측한 범위에서 이 저장소 파이프라인에 `/code-review` 호출은 없습니다. 룰 변경은 없습니다.
+
+### 설치
+
+- CHANGELOG 원문: "Fixed the npm auto-updater reporting success when the platform-native binary failed to download and only the placeholder `claude` stub was installed"
+  (288) npm auto-updater가 플랫폼 네이티브 바이너리 다운로드에 실패하고 placeholder `claude` 스텁만 설치됐는데도 성공을 보고하던 결함이 수정되었습니다. R020의 actual outcome ≠ attempt가 설치 도메인에 나타난 사례입니다. R017 게이트의 `claude --version` 실측이 스텁 설치 실패를 부수적으로 드러낼 수 있습니다 [가설 — 스텁이 `--version` 출력으로 구분되는지 미실측]. 룰 변경은 없습니다.
+
+기타 59건 — 이 저장소 비해당(VSCode·Cloud sessions·Cowork·Claude Tag·Claude in Chrome·플러그인 마켓플레이스/`--plugin-dir`·mods·screen reader 모드·agents view 키바인딩·Windows·Bedrock/Vertex 인증 등 harness 비영향 세부사항). 실측: `gh release view v2.1.288 --repo anthropics/claude-code --json body --jq .body | grep -c '^- '` = 89건 중 위 본문 30건을 다뤘으므로 89 − 30 = 59건입니다. 계수 범위는 해당 릴리즈 노트의 최상위 불릿 줄(`- `로 시작하는 줄)입니다.
+
+**Action items**:
+- 세션·재개·컨텍스트, 권한·auto mode·`rm`, 훅, 지시 파일, 서브에이전트·Agent Teams, MCP·LSP, 텔레메트리, 코드 리뷰, 설치 항목은 기존 룰이 이미 다루는 전제를 강화하거나, 이 저장소에 해당 구성이 없거나, 해당 구성이 있어도 현재 행동을 바꾸는 규범이 아니므로 룰 문안 변경은 불필요합니다. R021의 `SessionStart` 재주입은 유지합니다.
+- 제안 없음: R016 정책상 룰에는 현재 행동을 바꾸는 규범만 1줄로 들어가며, 위 항목 중 행동을 바꾸는 것은 확인되지 않았습니다.
+- 미확인 사항: Notification 훅(matcher `*`)이 `idle_prompt` 알림에도 걸리는지는 확인하지 않았습니다 [가설 — matcher *가 idle_prompt 알림에도 걸릴 가능성].
+- 미확인 사항: `infra/hada-scout/scout-runner.sh`(`timeout … claude -p`)의 실제 배포 여부와 이미지의 CC 버전은 확인하지 않았습니다 [가설 — 배포 이미지가 288 미만 CC를 쓸 가능성].
+
+---
+
+## v2.1.289 (2026-10-03)
+
+> Issue: #1791 — Claude Code v2.1.289 compatibility documentation
+> Scope-ceiling check (R017): 조사 시점(2026-10-05)의 최신 릴리즈는 2.1.289입니다(`claude --version`=2.1.289, `npm view @anthropic-ai/claude-code version`=2.1.289). 따라서 이 릴리즈 이후 릴리즈의 롤백 확인 대상이 없습니다. 이 릴리즈 CHANGELOG의 "[VSCode] Reverted a 2.1.288 change to `claude auth status` that may have made sign-outs more frequent"는 2.1.288 항목의 롤백이며 VSCode 전용입니다(288 절에는 `claude auth status` 문구가 없습니다). 릴리즈 게시 시각은 2026-10-03T23:07:17Z입니다(`gh release view v2.1.289 --repo anthropics/claude-code --json publishedAt`).
+
+### 권한 · Bash deny/ask 규칙
+
+- CHANGELOG 원문: "Fixed Bash deny and ask rules missing a command behind an environment variable prefix with an expanded value (e.g. `TZ="$HOME" rm -rf build`) when the sandbox auto-allows commands"
+  (289) sandbox가 명령을 자동 허용하는 경우, 확장된 값을 가진 환경 변수 접두(예: `TZ="$HOME" rm -rf build`) 뒤의 명령을 Bash deny·ask 규칙이 놓치던 결함이 수정되었습니다. R002·R001의 `rm` 금지 맥락과 같은 방향의 플랫폼 수정입니다. 관측한 범위에서 프로젝트 `.claude/settings.json`에는 `permissions.deny`가 0개이고 `sandbox` 설정이 없어 이 수정의 전제 조건(sandbox auto-allow)이 없으므로 영향이 없습니다.
+- CHANGELOG 원문: "Fixed a Bash deny or ask rule being skipped under sandbox auto-allow when a bare variable assignment came before the command"
+  (289) sandbox auto-allow 상태에서 명령 앞에 bare 변수 할당이 오면 Bash deny·ask 규칙이 건너뛰어지던 결함이 수정되었습니다. 위 항목과 같은 전제(sandbox auto-allow)를 요구하므로 관측한 범위에서 이 저장소에는 해당하지 않습니다.
+- CHANGELOG 원문: "Fixed a deny or ask rule on a nested part of a compound shell command not holding over a user-installed mod's approval on managed machines"
+  (289) 관리형 머신에서 compound shell 명령의 중첩 부분에 걸린 deny·ask 규칙이, 사용자가 설치한 mod의 승인 앞에서 유지되지 않던 결함이 수정되었습니다. 이 결함은 CHANGELOG 원문대로 관리형 머신에서만 발생하며, 관리형 머신 여부와 사용자가 설치한 mod는 머신·사용자 수준 구성이라 저장소에서 관측할 수 없습니다. 관측한 범위에서 이 저장소에는 mod 구성이 없고 R002 티어 정책도 바뀌지 않습니다. 이 개발 환경이 관리형 머신이 아니어서 영향이 없을 것으로 봅니다 [가설 — 머신 관리 여부는 미관측].
+- CHANGELOG 원문: "Fixed `Read` deny rules not applying to files @-mentioned, changed, or selected in the IDE through a symlink"
+  (289) IDE에서 @-멘션되거나 변경되거나 선택된 파일이 심볼릭 링크를 통해 들어올 때 `Read` deny 규칙이 적용되지 않던 결함이 수정되었습니다. R002 파일 접근 범위와 같은 방향의 플랫폼 수정이며, 관측한 범위에서 프로젝트 `permissions.deny`가 0개이므로 이 저장소에서는 영향이 없습니다.
+
+### MCP
+
+- CHANGELOG 원문: "Fixed a user-installed plugin being able to rewrite the descriptions of an organization-managed MCP server's sign-in tools"
+  (289) 사용자가 설치한 플러그인이 조직 관리 MCP 서버의 로그인 도구 설명을 다시 쓸 수 있던 결함이 수정되었습니다. 관측한 범위에서 이 저장소는 조직 관리 MCP 서버 구성을 두지 않으며 R002 Tier 6(MCP) 정책도 바뀌지 않습니다.
+
+### 플러그인 · 에이전트
+
+- CHANGELOG 원문: "Fixed `claude plugin validate` skipping the plugin when the folder also holds a marketplace manifest"
+  (289) 폴더에 marketplace manifest도 함께 있으면 `claude plugin validate`가 플러그인을 건너뛰던 결함이 수정되었습니다. 관측한 범위에서 이 저장소의 검증 대상에는 marketplace manifest가 없으므로(`.claude-plugin/` 디렉토리 없음) 이 결함 조건에 해당하지 않습니다. 참고로 R017 본문에 "스킬 추가·수정 후 `claude plugin validate`를 개수 대조와 함께 실행한다(R023)"는 문장이 있으나, 이 수정은 그 문장의 동작을 바꾸지 않습니다.
+- CHANGELOG 원문: "Fixed `claude plugin validate` failing an Anthropic marketplace's own plugin and listing a clean `plugin.json` in `--json`"
+  (289) `claude plugin validate`가 Anthropic marketplace의 자체 플러그인을 실패 처리하고 `--json` 출력에 깨끗한 `plugin.json`을 목록으로 나열하던 결함이 수정되었습니다. 결함 대상이 Anthropic marketplace의 자체 플러그인이고 이 저장소의 검증 대상에는 marketplace manifest가 없으므로 영향이 없습니다.
+- CHANGELOG 원문: "Added `agent.spawn` for teammates, one agent id across plugin hook events, and idle and waiting states in `$.agent.list()`"
+  (289) teammates용 `agent.spawn`, 플러그인 훅 이벤트 전반의 단일 agent id, `$.agent.list()`의 idle·waiting 상태가 추가되었습니다. R010은 서브에이전트의 다른 서브에이전트 스폰을 프로젝트 정책으로 금지하며, 이 항목은 플러그인 API 표면이므로 R010을 바꾸지 않습니다. R018은 `TeamCreate` 부재 시 dormant이며 이 항목은 그 판정을 바꾸지 않습니다. 이 항목의 "plugin hook events"는 플러그인·mod 훅 표면이고, R021의 `r007-r008-drift-advisor.sh`가 읽는 것은 프로젝트 `settings.json` 훅의 stdin(`agent_id`)이므로 두 표면은 서로 다릅니다. 다만 플러그인 훅 agent id 변경이 프로젝트 훅 stdin의 `agent_id`에 영향을 줄 가능성은 남습니다 [가설 — 두 표면의 연동 여부는 미실측].
+
+기타 19건 — 이 저장소 비해당(mods·plugin 패널 UI 렌더링, 터미널 렌더링·제어 문자 처리, `ui.render` 훅, 플러그인 표시 행, VSCode 전용 롤백 등 harness 비영향 세부사항이며 이 저장소는 mods·plugin 패널 UI를 개발하지 않습니다). 실측: `gh release view v2.1.289 --repo anthropics/claude-code --json body --jq .body | grep -c '^- '` = 27건 중 위 본문 8건을 다뤘으므로 27 − 8 = 19건입니다. 계수 범위는 해당 릴리즈 노트의 최상위 불릿 줄(`- `로 시작하는 줄)입니다.
+
+**Action items**:
+- 권한·Bash deny/ask, MCP, 플러그인·에이전트 항목은 기존 룰이 이미 다루는 전제를 강화하거나 이 저장소에 해당 구성(sandbox, `permissions.deny`, 조직 관리 MCP, `.claude-plugin/`)이 없는 항목이며 룰 문안 변경은 불필요합니다.
+- 룰 변경 제안은 없습니다.
+
+---
+
 ## Known Platform Issues & Workarounds
 
 ### Agent tool malformed parsing on long / special-character prompts (#1241)
@@ -1781,6 +1921,7 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - #1134 — Claude Code v2.1.140 release note
 - #1137 — Claude Code v2.1.141 compatibility documentation
 - #1158 — Claude Code v2.1.142 compatibility documentation
+- #1166 — CC v2.1.143 compatibility documentation
 - #1147 — .gitignore nested .md pattern limitation note
 - #1187 — Claude Code v2.1.144 compatibility documentation
 - #1191 — Claude Code v2.1.145 compatibility documentation
@@ -1800,9 +1941,15 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - #1714 — Claude Code v2.1.277 compatibility documentation
 - #1716 — Claude Code v2.1.280 compatibility documentation
 - #1717 — 컨텍스트 예산 초과 대응: CC 버전 노트 이관 정책 전환(룰 → 가이드)
+- #1731 — Claude Code v2.1.281 compatibility documentation
 - #1746 — Claude Code v2.1.282 compatibility documentation
 - #1747 — Claude Code v2.1.283 compatibility documentation
 - #1755 — Claude Code v2.1.284 compatibility documentation
+- #1764 — Claude Code v2.1.285 compatibility documentation
+- #1765 — Claude Code v2.1.286 compatibility documentation
+- #1766 — Claude Code v2.1.287 compatibility documentation
+- #1790 — Claude Code v2.1.288 compatibility documentation
+- #1791 — Claude Code v2.1.289 compatibility documentation
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec

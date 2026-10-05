@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { execFileSync } from 'node:child_process';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,15 +14,85 @@ import {
 } from '../../../src/core/git-workflow.js';
 
 /**
- * Helper to run git commands in the test directory.
- * Clears GIT_DIR/GIT_WORK_TREE to isolate from parent repo (e.g., during pre-commit hooks).
+ * #1795: env for every git call that builds a fixture repo (the `git()` helper and the two `clone`
+ * calls). It is read from process.env at call time. Every inherited GIT_* variable is dropped,
+ * then two are set.
+ *
+ * Dropped:
+ * - Repo-location variables exported by a parent git context. A pre-commit hook running bun test
+ *   gets GIT_INDEX_FILE; for `git commit -a` it is the absolute path of the real repo's
+ *   .git/index.lock, so a fixture git call that honoured it would overwrite the index being
+ *   committed.
+ * - Config injected through the environment. `git -c k=v commit` exports GIT_CONFIG_PARAMETERS,
+ *   and GIT_CONFIG_COUNT / GIT_CONFIG_KEY_<n> / GIT_CONFIG_VALUE_<n> work the same way. Both apply
+ *   on top of any config file, so GIT_CONFIG_GLOBAL cannot neutralise them; they must be removed.
+ *
+ * Then set:
+ * - GIT_CONFIG_GLOBAL=/dev/null + GIT_CONFIG_NOSYSTEM=1 stop git from reading the user's
+ *   global (~/.gitconfig and $XDG_CONFIG_HOME/git/config) and system config files, so settings
+ *   such as commit.gpgsign=true or init.defaultBranch cannot change how fixtures are created.
+ * Dropping the whole GIT_ prefix rather than a list of names also covers variables not named
+ * here, such as GIT_OBJECT_DIRECTORY or GIT_COMMON_DIR. Same policy as gitFixtureEnv() in
+ * tests/unit/core/hooks-scripts.test.ts; keep the two in sync.
+ */
+function gitFixtureEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!key.startsWith('GIT_')) {
+      env[key] = value;
+    }
+  }
+  env.GIT_CONFIG_GLOBAL = '/dev/null';
+  env.GIT_CONFIG_NOSYSTEM = '1';
+  return env;
+}
+
+/**
+ * #1795: plant in process.env the git variables a parent git context can export, run `body`, then
+ * restore process.env. GIT_INDEX_FILE points at a file that must never be created, and config
+ * injected both ways (GIT_CONFIG_PARAMETERS and GIT_CONFIG_COUNT/KEY/VALUE) turns on commit
+ * signing with a signer that always fails (`false`), so a commit that inherits it fails fast.
+ */
+async function withInheritedGitBait(body: (baitIndex: string) => Promise<void>): Promise<void> {
+  const baitDir = mkdtempSync(join(tmpdir(), 'omcustom-git-bait-'));
+  const baitIndex = join(baitDir, 'index');
+  const bait: Record<string, string> = {
+    GIT_INDEX_FILE: baitIndex,
+    GIT_CONFIG_PARAMETERS: "'commit.gpgsign=true' 'gpg.program=false'",
+    GIT_CONFIG_COUNT: '2',
+    GIT_CONFIG_KEY_0: 'commit.gpgsign',
+    GIT_CONFIG_VALUE_0: 'true',
+    GIT_CONFIG_KEY_1: 'gpg.program',
+    GIT_CONFIG_VALUE_1: 'false',
+  };
+  const saved = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(bait)) {
+    saved.set(key, process.env[key]);
+    process.env[key] = value;
+  }
+  try {
+    await body(baitIndex);
+  } finally {
+    for (const [key, value] of saved) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    rmSync(baitDir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Helper to run git commands in the test directory with the isolated gitFixtureEnv().
  */
 function git(args: string[], cwd: string): string {
   return execFileSync('git', args, {
     cwd,
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined },
+    env: gitFixtureEnv(),
   }).trim();
 }
 
@@ -58,6 +129,21 @@ describe('git-workflow', () => {
 
   afterEach(async () => {
     await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('builds fixtures without an inherited GIT_INDEX_FILE or env-injected git config (#1795)', async () => {
+    const repo = mkdtempSync(join(tmpdir(), 'omcustom-git-bait-repo-'));
+    try {
+      await withInheritedGitBait(async (baitIndex) => {
+        // Throws at the commit if the injected commit.gpgsign + gpg.program=false reached git.
+        await initTestRepo(repo);
+        // Created if git honoured the inherited GIT_INDEX_FILE.
+        expect(existsSync(baitIndex)).toBe(false);
+      });
+      expect(git(['rev-list', '--count', 'HEAD'], repo)).toBe('1');
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
   });
 
   describe('isGitRepo', () => {
@@ -162,7 +248,7 @@ describe('git-workflow', () => {
           execFileSync('git', ['clone', bareDir, cloneDir], {
             encoding: 'utf-8',
             stdio: ['pipe', 'pipe', 'pipe'],
-            env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined },
+            env: gitFixtureEnv(),
           });
           git(['config', 'user.email', 'test@test.com'], cloneDir);
           git(['config', 'user.name', 'Test'], cloneDir);
@@ -244,7 +330,7 @@ describe('git-workflow', () => {
           execFileSync('git', ['clone', bareDir, cloneDir], {
             encoding: 'utf-8',
             stdio: ['pipe', 'pipe', 'pipe'],
-            env: { ...process.env, GIT_DIR: undefined, GIT_WORK_TREE: undefined },
+            env: gitFixtureEnv(),
           });
           git(['config', 'user.email', 'test@test.com'], cloneDir);
           git(['config', 'user.name', 'Test'], cloneDir);

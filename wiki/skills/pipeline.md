@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-10-03
+updated: 2026-10-05
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -146,6 +146,10 @@ The `docs-only` compression tier's `deep-verify` substitution ("skip the deep-ve
 **Excluded triage label renamed to `triage-complete` (v1.1.83, #1734)**: the label excluded from `scope-selection`'s filter (`labels ∩ {decision-needed, needs-review, triage-complete, manual-action, in-progress} ≠ ∅`) was renamed, meaning unchanged — triaged but not selected into an auto-dev scope. The side-effect inventory's `triage` row was clarified: when `professor-triage` runs inside this step against a scope-selection manifest, manifest issues get `verify-ready`, NOT `triage-complete` — the label side effect is not compressible even when triage analysis is (skipped for docs-only, substituted under lite/lightweight mode); when triage is skipped or substituted, the `implement` step's own per-issue success path already adds `verify-ready` before the release completes, so no separate label action is required. The `ci-check` row gained a matching state change: `gh issue edit <N> --remove-label in-progress` for stale labels, and `--remove-label verify-ready` scoped to THIS release's CLOSED issues only (past closed issues excluded, user decision). See [[professor-triage]] and [[fsd]] for the skill-side rename.
 
 Origin: #1553 찐빠 #3 — v1.1.41 릴리즈에서 `lite` 압축이 `scope-selection`의 "마일스톤 미존재 → 생성" 분기까지 함께 생략해 마일스톤이 만들어지지 않았다. 압축 대상은 분석 산출물이었으나 상태 변경 분기가 동반 생략됐다.
+
+### scope-selection rule 6: batch-size norm (v1.1.102)
+
+Rule 4 ("Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)") gained a pointer: "EXCEPT the batch-size fill in rule 6, which takes precedence when the top tier has < 3." The new rule 6 is a fill exception to "don't mix tiers": if the top tier has fewer than 3 eligible issues, fill from the next tiers in order (bug → chore → feature, then preferred-label / retrospective-proposal issues) until the scope is 3-7 issues. Tier mixing is allowed ONLY for this fill, and a 1-2 issue release is permitted ONLY when the eligible total across ALL tiers is < 3. Issues split off or deferred pending approval or a decision (the `.claude/hooks/**` unattended split in Step 3, decision-needed, etc.) do not count toward the eligible total. Because the Step 3 split happens AFTER this step, the fill is re-evaluated after the split: if the remaining scope is below 3 and eligible issues remain, fill again from the next tiers, then re-run the Step 3 path pre-check on any newly added issue (Step 3 also states: "After an unattended split, re-evaluate the Step 2 rule 6 batch-size fill against the remaining scope (split-off issues do not count) before assigning the milestone."). When the scope has multiple issues, implementation delegations are issued in parallel ([[r009]]) unless their target files overlap, or one delegation depends on another's in-release implementation choice (sequential dispatch, per the `implement` step's document-implementation variant of "File-Disjoint ≠ Independent"); local git state changes (per-issue lifecycle commits via mgr-gitnerd) remain serialized, one at a time (R009 "File-Disjoint ≠ Independent (Local Git State)"). Rationale recorded in the YAML: the fixed per-release cost (review rounds, CI, release.yml) must not be carried by 1-2 issues, and consecutive top-tier-only runs starve lower tiers. Origin: user feedback 2026-10-05 and the #1814 harness proposal R3 (lower-tier starvation).
 
 ### scope-selection Step 3: approval-required path pre-check (#1574)
 
@@ -337,7 +341,7 @@ Four standing implement-step bullets, plus a deterministic guard for the flag fi
 
 - **Used by agents**: orchestrator
 - **Related skills**: [[dag-orchestration]], [[pipeline-guards]], [[task-decomposition]], [[professor-triage]], [[deep-verify]]
-- **See also**: [[R009]], [[R010]], [[r015]]
+- **See also**: [[r009]], [[r010]], [[r015]]
 
 ## Sources
 
@@ -371,3 +375,4 @@ Four standing implement-step bullets, plus a deterministic guard for the flag fi
 - Content-drift resync 2026-09-29 (#1760): added combined-commit OPTION LABEL TIMING clause (per-issue `verify-ready` transition right after the combined commit lands; `ci-check` step 5 stays the safety net) and corrected constraint (a)'s second grep to `grep -vcE` with the re-measured 6/12 → 12/12 note.
 - Content-drift resync 2026-10-03 (v1.1.93, #1763, #1778): added "implement step norms: grep/python disagreement, doc sequencing, biome, test temp dirs, no persistent `cd`, trailer, coverage" — reproduce a grep/python3 disagreement on first observation (macOS multibyte hypothesis retired), sequential dispatch for docs describing an in-release implementation choice, `bunx biome check` for TS/JS inside biome's includes, `mkdtemp(tmpdir())` for test-code temp dirs, no persistent `cd`, trailer verbatim, and before/after coverage for test-isolation/mocking fixes (also in `deep-plan`).
 - Content-drift resync 2026-10-03 (#1781, #1786): added "Application-boundary column, test enumeration, runnable-snippet check, list/loop contracts, migration fixtures".
+- Content-drift resync 2026-10-05 (v1.1.102): added "scope-selection rule 6: batch-size norm" (fill from lower tiers to reach 3-7 issues; 1-2 issue release only when the eligible total across all tiers is < 3) and the rule 4 pointer to it.

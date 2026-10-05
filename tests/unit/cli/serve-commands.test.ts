@@ -12,31 +12,33 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, rm, unlink, writeFile } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import type { ChildProcess } from 'node:child_process';
+import * as childProcess from 'node:child_process';
+import { EventEmitter } from 'node:events';
+import { readFileSync } from 'node:fs';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { serveCommand, serveStopCommand } from '../../../src/cli/serve-commands.js';
-import { initI18n } from '../../../src/i18n/index.js';
-
-const PID_FILE = join(homedir(), '.omcustom-serve.pid');
-
-async function removePidFile(): Promise<void> {
-  try {
-    await unlink(PID_FILE);
-  } catch {
-    // Ignore — file may not exist
-  }
-}
+import { i18n, initI18n } from '../../../src/i18n/index.js';
 
 describe('serve-commands.ts', () => {
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleErrorSpy: ReturnType<typeof spyOn>;
   let emptyTempDir: string;
+  let fakeHome: string;
+  let pidFile: string;
+  let originalHome: string | undefined;
 
   beforeEach(async () => {
     await initI18n('en');
-    await removePidFile();
     emptyTempDir = await mkdtemp(join(tmpdir(), 'omcustom-serve-cmd-test-'));
+    // serve.ts resolves the PID file from process.env.HOME on every call: point
+    // HOME at a per-test temp dir so no test touches the real home.
+    fakeHome = await mkdtemp(join(tmpdir(), 'omcustom-serve-cmd-home-'));
+    pidFile = join(fakeHome, '.omcustom-serve.pid');
+    originalHome = process.env.HOME;
+    process.env.HOME = fakeHome;
     consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -44,8 +46,13 @@ describe('serve-commands.ts', () => {
   afterEach(async () => {
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
-    await removePidFile();
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
     await rm(emptyTempDir, { recursive: true, force: true });
+    await rm(fakeHome, { recursive: true, force: true });
   });
 
   // ---------------------------------------------------------------------------
@@ -157,6 +164,118 @@ describe('serve-commands.ts', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // serveCommand — the server's PID cannot be recorded (#1795 F2/F5)
+  // A build IS present in these tests, so the generic "failed" path (no build)
+  // cannot be what produces the exit.
+  // ---------------------------------------------------------------------------
+
+  describe('serveCommand() — PID file cannot be recorded', () => {
+    async function createBuild(): Promise<void> {
+      const buildDir = join(emptyTempDir, 'packages', 'serve', 'build');
+      await mkdir(buildDir, { recursive: true });
+      await writeFile(join(buildDir, 'index.js'), 'process.exit(0);', 'utf-8');
+    }
+
+    it('should explain the unresolvable home, not spawn, and exit 1 when HOME is relative', async () => {
+      await createBuild();
+      const spawnSpy = spyOn(childProcess, 'spawn');
+      const processExitSpy = spyOn(process, 'exit').mockImplementation((code?: number) => {
+        throw new Error(`process.exit(${code})`);
+      });
+      const originalCwd = process.cwd();
+      process.chdir(emptyTempDir); // a relative HOME could only resolve under this temp dir
+      process.env.HOME = 'rel-home';
+
+      try {
+        await expect(serveCommand({ port: '4321', _projectRoot: emptyTempDir })).rejects.toThrow(
+          'process.exit(1)'
+        );
+
+        const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+        expect(errorOutput).toContain(i18n.t('cli.web.start.homeUnresolved'));
+        expect(errorOutput).not.toContain(i18n.t('cli.web.start.failed'));
+        expect(spawnSpy).not.toHaveBeenCalled();
+      } finally {
+        process.chdir(originalCwd);
+        processExitSpy.mockRestore();
+        spawnSpy.mockRestore();
+      }
+    });
+
+    it('should name the unusable PID file, not spawn, and exit 1 (ENOTDIR, root-safe)', async () => {
+      await createBuild();
+      const spawnSpy = spyOn(childProcess, 'spawn');
+      const processExitSpy = spyOn(process, 'exit').mockImplementation((code?: number) => {
+        throw new Error(`process.exit(${code})`);
+      });
+      // A regular file in the home path fails with ENOTDIR for every user, root included
+      const blocker = join(fakeHome, 'blocker');
+      await writeFile(blocker, '', 'utf-8');
+      process.env.HOME = join(blocker, 'home');
+
+      try {
+        await expect(serveCommand({ port: '4321', _projectRoot: emptyTempDir })).rejects.toThrow(
+          'process.exit(1)'
+        );
+
+        const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+        expect(errorOutput).toContain(join(blocker, 'home', '.omcustom-serve.pid'));
+        expect(errorOutput).toContain('ENOTDIR');
+        expect(spawnSpy).not.toHaveBeenCalled();
+      } finally {
+        processExitSpy.mockRestore();
+        spawnSpy.mockRestore();
+      }
+    });
+
+    it('should report the generic start failure, not crash, when spawn fails asynchronously', async () => {
+      await createBuild();
+      const failedChild = Object.assign(new EventEmitter(), { pid: undefined, unref: () => {} });
+      const spawnSpy = spyOn(childProcess, 'spawn').mockImplementation(() => {
+        process.nextTick(() => failedChild.emit('error', new Error('spawn node ENOENT')));
+        return failedChild as unknown as ChildProcess;
+      });
+      const processExitSpy = spyOn(process, 'exit').mockImplementation((code?: number) => {
+        throw new Error(`process.exit(${code})`);
+      });
+
+      try {
+        await expect(serveCommand({ port: '4321', _projectRoot: emptyTempDir })).rejects.toThrow(
+          'process.exit(1)'
+        );
+        await new Promise((resolve) => setImmediate(resolve)); // let the error fire
+
+        const errorOutput = consoleErrorSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+        expect(errorOutput).toContain(i18n.t('cli.web.start.failed'));
+        expect(failedChild.listenerCount('error')).toBeGreaterThan(0);
+      } finally {
+        processExitSpy.mockRestore();
+        spawnSpy.mockRestore();
+      }
+    });
+
+    it('should rethrow an unrelated start failure without exiting', async () => {
+      await createBuild();
+      const spawnSpy = spyOn(childProcess, 'spawn').mockImplementation(() => {
+        throw new Error('spawn exploded');
+      });
+      const processExitSpy = spyOn(process, 'exit').mockImplementation((code?: number) => {
+        throw new Error(`process.exit(${code})`);
+      });
+
+      try {
+        await expect(serveCommand({ port: '4321', _projectRoot: emptyTempDir })).rejects.toThrow(
+          'spawn exploded'
+        );
+        expect(processExitSpy).not.toHaveBeenCalled();
+      } finally {
+        processExitSpy.mockRestore();
+        spawnSpy.mockRestore();
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // serveCommand — success path (lines 44-47)
   // Write current PID to PID file before calling serveCommand so that
   // isServeRunning() returns true → success path with console.log
@@ -165,14 +284,84 @@ describe('serve-commands.ts', () => {
   describe('serveCommand() — success path (server already running)', () => {
     it('should log the started message when isServeRunning returns true', async () => {
       // Write current process PID so isServeRunning() → true
-      await writeFile(PID_FILE, String(process.pid), 'utf-8');
+      await writeFile(pidFile, String(process.pid), 'utf-8');
+      // A build in a temp project root (never the real packages/serve/build): if
+      // the "already running" short-circuit regressed, only this exiting stub
+      // could be spawned — and the spy below would catch it.
+      const buildDir = join(emptyTempDir, 'packages', 'serve', 'build');
+      await mkdir(buildDir, { recursive: true });
+      await writeFile(join(buildDir, 'index.js'), 'process.exit(0);', 'utf-8');
+      const spawnSpy = spyOn(childProcess, 'spawn');
 
-      // startServeBackground will short-circuit (already running), then
-      // isServeRunning() returns true → console.log started message (line 44)
-      await serveCommand({ port: '4321' });
+      try {
+        // startServeBackground short-circuits (already running), then
+        // isServeRunning() returns true → console.log started message
+        await serveCommand({ port: '4321', _projectRoot: emptyTempDir });
 
-      const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
-      expect(logOutput).toContain('4321');
+        const logOutput = consoleLogSpy.mock.calls.map((c) => c.join(' ')).join('\n');
+        expect(logOutput).toContain('4321');
+        expect(spawnSpy).not.toHaveBeenCalled();
+      } finally {
+        spawnSpy.mockRestore();
+      }
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Locale placeholders of the messages added for #1795: a typo such as
+  // `{{paht}}` in one locale renders literally instead of failing loudly.
+  // ---------------------------------------------------------------------------
+
+  describe('PID-file message placeholders', () => {
+    const KEYS = ['homeUnresolved', 'pidNotWritable'] as const;
+
+    function startMessages(locale: 'en' | 'ko'): Record<string, string> {
+      const path = join(
+        import.meta.dirname,
+        '..',
+        '..',
+        '..',
+        'src',
+        'i18n',
+        'locales',
+        `${locale}.json`
+      );
+      const parsed = JSON.parse(readFileSync(path, 'utf-8')) as {
+        cli: { web: { start: Record<string, string> } };
+      };
+      return parsed.cli.web.start;
+    }
+
+    function placeholders(message: string | undefined): string[] {
+      return [...(message ?? '').matchAll(/\{\{\s*(\w+)\s*\}\}/g)].map((m) => m[1] ?? '').sort();
+    }
+
+    it.each(KEYS)('should use the same placeholders in en and ko for %s', (key) => {
+      const en = startMessages('en')[key];
+      const ko = startMessages('ko')[key];
+      expect(en).toBeDefined();
+      expect(ko).toBeDefined();
+      expect(placeholders(ko)).toEqual(placeholders(en));
+    });
+
+    it.each([
+      'en',
+      'ko',
+    ] as const)('should leave no unsubstituted placeholder in %s', async (locale) => {
+      await initI18n(locale);
+      const rendered = [
+        i18n.t('cli.web.start.homeUnresolved'),
+        i18n.t('cli.web.start.pidNotWritable', {
+          path: '/abs/.omcustom-serve.pid',
+          error: 'EISDIR',
+        }),
+      ];
+      for (const message of rendered) {
+        expect(message).not.toContain('{{');
+        expect(message).not.toContain('cli.web.start');
+      }
+      expect(rendered[1]).toContain('/abs/.omcustom-serve.pid');
+      expect(rendered[1]).toContain('EISDIR');
     });
   });
 
@@ -194,7 +383,7 @@ describe('serve-commands.ts', () => {
 
       try {
         // Write a valid PID (current process) — process.kill is mocked so no signal sent
-        await writeFile(PID_FILE, String(process.pid), 'utf-8');
+        await writeFile(pidFile, String(process.pid), 'utf-8');
 
         await serveStopCommand();
 

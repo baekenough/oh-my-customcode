@@ -38,11 +38,25 @@ export interface Lockfile {
   lockfileVersion: typeof LOCKFILE_VERSION;
   /** oh-my-customcode version that generated this lockfile */
   generatorVersion: string;
-  /** ISO timestamp of lockfile generation */
+  /**
+   * ISO timestamp (`Date#toISOString()` format) of generation. Only
+   * `generateAndWriteLockfileForDir` keeps the previous value when a regeneration changes
+   * nothing; it is called by `bun run build` (scripts/sync-source-lockfile.ts), the installer
+   * and the updater. `exportSnapshot` embeds a freshly generated lockfile (new timestamp) in
+   * the export, and `syncCheck` compares an in-memory snapshot that is never written. It is
+   * not part of the content comparison.
+   */
   generatedAt: string;
   /** Template manifest version at install time */
   templateVersion: string;
-  /** Per-file entries, keyed by relative path from project root */
+  /**
+   * Per-file entries, keyed by relative path from project root. Generated in ascending
+   * code-unit (locale-independent) path order so the serialized lockfile does not depend on
+   * the filesystem's directory enumeration order.
+   *
+   * Only the fields declared here are read, compared and written: unknown top-level or
+   * per-entry fields found in an existing lockfile are ignored and dropped on regeneration.
+   */
   files: Record<string, LockfileEntry>;
 }
 
@@ -220,6 +234,15 @@ async function collectFiles(
 }
 
 /**
+ * Return a copy of `files` with keys in ascending UTF-16 code-unit order.
+ * Deliberately not `localeCompare`: the order must not vary with the host locale.
+ */
+function sortFilesByPath(files: Record<string, LockfileEntry>): Record<string, LockfileEntry> {
+  const sorted = Object.keys(files).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  return Object.fromEntries(sorted.map((key) => [key, files[key]]));
+}
+
+/**
  * Generate a lockfile by walking all installed template files in targetDir.
  * Computes SHA-256 for each file and resolves the component from the path.
  */
@@ -274,13 +297,89 @@ export async function generateLockfile(
     generatorVersion,
     generatedAt: new Date().toISOString(),
     templateVersion,
-    files,
+    files: sortFilesByPath(files),
   };
+}
+
+/**
+ * Whether two lockfiles describe the same content: identical format/generator/template
+ * versions and identical per-file entries. `generatedAt` is deliberately NOT compared, and
+ * key order of `files` is irrelevant (comparison is by key lookup, not by serialization).
+ * `previous` may come from disk, so its entries are checked defensively.
+ */
+function hasSameLockfileContent(next: Lockfile, previous: Lockfile): boolean {
+  if (
+    next.lockfileVersion !== previous.lockfileVersion ||
+    next.generatorVersion !== previous.generatorVersion ||
+    next.templateVersion !== previous.templateVersion
+  ) {
+    return false;
+  }
+
+  const nextKeys = Object.keys(next.files);
+  if (nextKeys.length !== Object.keys(previous.files).length) {
+    return false;
+  }
+
+  return nextKeys.every((key) => {
+    if (!Object.hasOwn(previous.files, key)) {
+      return false;
+    }
+    const before = previous.files[key];
+    const after = next.files[key];
+    return (
+      typeof before === 'object' &&
+      before !== null &&
+      before.templateHash === after.templateHash &&
+      before.size === after.size &&
+      before.component === after.component
+    );
+  });
+}
+
+/**
+ * Whether `value` is a timestamp in exactly the format this module writes
+ * (`Date#toISOString()`). `Date.parse` alone is too lenient: it accepts `"1"`, `"2026"`
+ * or `"March 7, 2020"`, which must not be carried forward as a generation time.
+ */
+function isIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  const time = new Date(value).getTime();
+  return !Number.isNaN(time) && new Date(time).toISOString() === value;
+}
+
+/**
+ * Keep the previous `generatedAt` when the regenerated lockfile has the same content,
+ * so rebuilding without any change leaves the tracked lockfile byte-identical (#1796).
+ *
+ * Content = `lockfileVersion`, `generatorVersion`, `templateVersion` and every file entry's
+ * `templateHash`/`size`/`component` (strict equality; keys compared as a set, order-free).
+ * Returns `next` unchanged (fresh timestamp) when there is no previous lockfile, when the
+ * previous `generatedAt` is not in `toISOString()` format, or when any of that differs.
+ *
+ * The result always has the structure and key order of `next`: unknown top-level fields or
+ * per-entry fields in `previous` are ignored (they neither affect the comparison nor are
+ * carried over), only the timestamp value is taken from `previous`. Never mutates its
+ * arguments.
+ */
+export function preserveGeneratedAt(next: Lockfile, previous: Lockfile | null): Lockfile {
+  if (previous === null || !isIsoTimestamp(previous.generatedAt)) {
+    return next;
+  }
+
+  if (!hasSameLockfileContent(next, previous)) {
+    return next;
+  }
+
+  return { ...next, generatedAt: previous.generatedAt };
 }
 
 /**
  * Generate and write a lockfile for a target directory.
  * Reads package.json and manifest.json from the package root to determine versions.
+ * Keeps the existing lockfile's `generatedAt` when nothing else changed (idempotent rebuild).
  * Non-throwing: returns warnings array on failure.
  */
 export async function generateAndWriteLockfileForDir(
@@ -294,7 +393,9 @@ export async function generateAndWriteLockfileForDir(
     const { version: generatorVersion } = await readJsonFile<{ version: string }>(
       join(packageRoot, 'package.json')
     );
-    const lockfile = await generateLockfile(targetDir, generatorVersion, manifest.version);
+    const generated = await generateLockfile(targetDir, generatorVersion, manifest.version);
+    const previous = await readLockfile(targetDir);
+    const lockfile = preserveGeneratedAt(generated, previous);
     await writeLockfile(targetDir, lockfile);
     return { fileCount: Object.keys(lockfile.files).length };
   } catch (err) {
