@@ -275,7 +275,9 @@
         "openOption": "Open browser automatically after start",
         "foregroundOption": "Run in foreground (not detached)",
         "started": "Web UI started: http://localhost:{{port}}",
-        "failed": "Failed to start Web UI server"
+        "failed": "Failed to start Web UI server",
+        "homeUnresolved": "Cannot start the Web UI server: the home directory cannot be resolved, either because HOME is a relative path or because HOME, the OS-reported home and the passwd entry are all empty, so the PID file location cannot be determined. Set HOME to an absolute path.",
+        "pidNotWritable": "Cannot start the Web UI server: the PID file {{path}} cannot be written ({{error}}). Check the PID file path and its parent directory."
       },
       "stop": {
         "description": "Stop the Web UI server",

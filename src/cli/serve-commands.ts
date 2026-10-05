@@ -10,6 +10,7 @@ import {
   type FindServeBuildDirOptions,
   findServeBuildDir,
   isServeRunning,
+  ServePidFileError,
   startServeBackground,
   stopServe,
 } from './serve.js';
@@ -47,7 +48,15 @@ export async function serveCommand(options: ServeCommandOptions): Promise<void> 
     return;
   }
 
-  await startServeBackground(cwd, port, buildDirOpts);
+  try {
+    await startServeBackground(cwd, port, buildDirOpts);
+  } catch (error: unknown) {
+    if (!(error instanceof ServePidFileError)) {
+      throw error;
+    }
+    console.error(describePidFileError(error));
+    process.exit(1);
+  }
 
   const running = await isServeRunning();
   if (running) {
@@ -56,6 +65,17 @@ export async function serveCommand(options: ServeCommandOptions): Promise<void> 
     console.error(i18n.t('cli.web.start.failed'));
     process.exit(1);
   }
+}
+
+/**
+ * User-facing explanation of why the server's PID could not be recorded.
+ */
+function describePidFileError(error: ServePidFileError): string {
+  if (error.reason === 'home-unresolved') {
+    return i18n.t('cli.web.start.homeUnresolved');
+  }
+  const cause = error.cause instanceof Error ? error.cause.message : String(error.cause);
+  return i18n.t('cli.web.start.pidNotWritable', { path: String(error.pidFile), error: cause });
 }
 
 /**

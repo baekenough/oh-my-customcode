@@ -1,9 +1,10 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { mkdir, readFile, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { isPathWithin } from '../../../src/utils/home.js';
 
 const SCRIPTS_DIR = resolve(import.meta.dir, '../../../templates/.claude/hooks/scripts');
 const HOOKS_JSON_PATH = resolve(import.meta.dir, '../../../templates/.claude/hooks/hooks.json');
@@ -20,6 +21,118 @@ const SUBAGENT_FAILURE_ADVISOR_SCRIPT = join(SCRIPTS_DIR, 'subagent-failure-advi
 // runHookScript spawns `bash <script>` directly from this bun test process (no intermediate
 // shell), so the script's $PPID at runtime equals this process's PID (process.pid).
 const STAGE_FILE = `/tmp/.claude-dev-stage-${process.pid}`;
+
+// #1795: hook scripts write under $HOME (e.g. audit-log.sh appends to ~/.claude/audit.jsonl).
+// Every script spawned by runHookScript gets this per-file temp HOME, so no test touches the
+// real home; a test that needs its own HOME still passes one explicitly via `env`.
+const HOOK_HOME = mkdtempSync(join(tmpdir(), 'omcc-hooks-scripts-home-'));
+
+// #1795: agent-teams-advisor.sh / task-outcome-recorder.sh / session-env-check.sh key their
+// session state by $PPID, which is process.pid here (see STAGE_FILE above). Per-test cleanup
+// (beforeEach/afterEach) removes only these two named paths; the final afterAll sweep also
+// removes the other /tmp/.claude-*-<pid> files of this pid only (see removeOwnPidStateFiles).
+// A `/tmp/.claude-task-count-*` glob would also delete the state files of every other Claude Code
+// session on this machine, including the one running these tests.
+const TASK_COUNT_FILE = `/tmp/.claude-task-count-${process.pid}`;
+const ENV_STATUS_FILE = `/tmp/.claude-env-status-${process.pid}`;
+
+function removeSessionStateFiles(...paths: string[]): void {
+  for (const path of paths) {
+    rmSync(path, { force: true });
+  }
+}
+
+// Other hooks run here leave more state keyed by this process's pid (agent-starts,
+// destructive-git-guard, r010-violations, task-outcomes, hook-perf-<pid>.log, ...). The final
+// sweep removes every /tmp/.claude-<name>-<pid> and /tmp/.claude-<name>-<pid>.log for THIS pid
+// only: the pid must follow a `-` and end the name (before an optional `.log`), so another
+// process's files (e.g. pid 183719 when this pid is 83719) never match.
+const OWN_PID_STATE_FILE = new RegExp(`^\\.claude-[A-Za-z0-9-]+-${process.pid}(\\.log)?$`);
+
+function removeOwnPidStateFiles(): void {
+  for (const name of readdirSync('/tmp')) {
+    if (OWN_PID_STATE_FILE.test(name)) {
+      rmSync(join('/tmp', name), { force: true });
+    }
+  }
+}
+
+afterAll(() => {
+  rmSync(HOOK_HOME, { recursive: true, force: true });
+  removeSessionStateFiles(TASK_COUNT_FILE, ENV_STATUS_FILE);
+  removeOwnPidStateFiles();
+});
+
+/**
+ * #1795: env for every git process this file starts: the fixture `runGit` calls and, through
+ * runHookScript, the git calls inside the hook scripts. It is read from process.env at call time.
+ * Every inherited GIT_* variable is dropped, then two are set.
+ *
+ * Dropped:
+ * - Repo-location variables exported by a parent git context. A pre-commit hook running bun test
+ *   gets GIT_INDEX_FILE; for `git commit -a` it is the absolute path of the real repo's
+ *   .git/index.lock, so a fixture git call that honoured it would overwrite the index being
+ *   committed.
+ * - Config injected through the environment. `git -c k=v commit` exports GIT_CONFIG_PARAMETERS,
+ *   and GIT_CONFIG_COUNT / GIT_CONFIG_KEY_<n> / GIT_CONFIG_VALUE_<n> work the same way. Both apply
+ *   on top of any config file, so GIT_CONFIG_GLOBAL cannot neutralise them; they must be removed.
+ *
+ * Then set:
+ * - GIT_CONFIG_GLOBAL=/dev/null + GIT_CONFIG_NOSYSTEM=1 stop git from reading the user's
+ *   global (~/.gitconfig and $XDG_CONFIG_HOME/git/config) and system config files.
+ *
+ * Dropping the whole GIT_ prefix rather than a list of names also covers variables not named
+ * here, such as GIT_OBJECT_DIRECTORY or GIT_COMMON_DIR. Same policy as gitFixtureEnv() in
+ * tests/unit/core/git-workflow.test.ts; keep the two in sync.
+ */
+function gitFixtureEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!key.startsWith('GIT_')) {
+      env[key] = value;
+    }
+  }
+  env.GIT_CONFIG_GLOBAL = '/dev/null';
+  env.GIT_CONFIG_NOSYSTEM = '1';
+  return env;
+}
+
+/**
+ * #1795: plant in process.env the git variables a parent git context can export, run `body`, then
+ * restore process.env. GIT_INDEX_FILE points at a file that must never be created, and config
+ * injected both ways (GIT_CONFIG_PARAMETERS and GIT_CONFIG_COUNT/KEY/VALUE) turns on commit
+ * signing with a signer that always fails (`false`), so a commit that inherits it fails fast.
+ */
+async function withInheritedGitBait<T>(body: (baitIndex: string) => Promise<T>): Promise<T> {
+  const baitDir = mkdtempSync(join(tmpdir(), 'omcc-git-bait-'));
+  const baitIndex = join(baitDir, 'index');
+  const bait: Record<string, string> = {
+    GIT_INDEX_FILE: baitIndex,
+    GIT_CONFIG_PARAMETERS: "'commit.gpgsign=true' 'gpg.program=false'",
+    GIT_CONFIG_COUNT: '2',
+    GIT_CONFIG_KEY_0: 'commit.gpgsign',
+    GIT_CONFIG_VALUE_0: 'true',
+    GIT_CONFIG_KEY_1: 'gpg.program',
+    GIT_CONFIG_VALUE_1: 'false',
+  };
+  const saved = new Map<string, string | undefined>();
+  for (const [key, value] of Object.entries(bait)) {
+    saved.set(key, process.env[key]);
+    process.env[key] = value;
+  }
+  try {
+    return await body(baitIndex);
+  } finally {
+    for (const [key, value] of saved) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    rmSync(baitDir, { recursive: true, force: true });
+  }
+}
 
 // -------------------------------------------------------------------
 // Helpers
@@ -46,8 +159,10 @@ function runHookScript(
     // Under a Claude Code session (or CI) the parent exports CLAUDE_PROJECT_DIR = the real repo,
     // which would make fixture-cwd tests read the repo instead. Scrub the inherited value; a
     // test that wants it passes it explicitly via `env`.
-    const { CLAUDE_PROJECT_DIR: _inheritedProjectDir, ...inheritedEnv } = process.env;
-    const childEnv: NodeJS.ProcessEnv = { ...inheritedEnv, ...env };
+    // #1795: the hooks' own git calls get the same GIT_* isolation as runGit (gitFixtureEnv), so an
+    // inherited GIT_INDEX_FILE or env-injected config never reaches them.
+    const { CLAUDE_PROJECT_DIR: _inheritedProjectDir, ...inheritedEnv } = gitFixtureEnv();
+    const childEnv: NodeJS.ProcessEnv = { ...inheritedEnv, HOME: HOOK_HOME, ...env };
     const child = spawn('bash', [scriptPath], {
       env: childEnv,
       cwd: cwd ?? tmpdir(),
@@ -101,6 +216,35 @@ function makeTaskInput(subagentType: string, prompt: string): string {
 function makeStopInput(extra?: Record<string, unknown>): string {
   return JSON.stringify({ tool: 'Stop', ...extra });
 }
+
+// -------------------------------------------------------------------
+// #1795: runHookScript HOME isolation detector
+// -------------------------------------------------------------------
+
+describe('runHookScript HOME isolation (#1795)', () => {
+  // Contract: a hook spawned through runHookScript without an explicit HOME sees HOOK_HOME,
+  // a temp dir outside this process's HOME (neither equal to it nor beneath it). audit-log.sh appends to $HOME/.claude/
+  // audit.jsonl, so its entry must land under HOOK_HOME. If runHookScript stops overriding
+  // HOME, the entry goes to the inherited HOME (the real home outside a fake-HOME run) and
+  // this test fails instead of the suite silently writing there.
+  it('audit-log.sh writes its log under HOOK_HOME, not the inherited HOME', async () => {
+    expect(isPathWithin(resolve(HOOK_HOME), resolve(process.env.HOME ?? '/'))).toBe(false);
+
+    const marker = `hooks-home-isolation-${process.pid}-${Date.now()}`;
+    const input = JSON.stringify({
+      hook_event_name: 'PostToolUse',
+      tool_name: marker,
+      tool_input: { command: 'true' },
+      tool_response: { stdout: '', stderr: '', interrupted: false, isImage: false },
+    });
+    const result = await runHookScript(join(SCRIPTS_DIR, 'audit-log.sh'), input);
+    expect(result.exitCode).toBe(0);
+
+    const logPath = join(HOOK_HOME, '.claude', 'audit.jsonl');
+    expect(existsSync(logPath)).toBe(true);
+    expect(await readFile(logPath, 'utf-8')).toContain(marker);
+  });
+});
 
 // -------------------------------------------------------------------
 // Issue #1632: `echo "$var"` JSON-payload regression scan helpers
@@ -161,39 +305,29 @@ describe('stop-console-audit.sh', () => {
   let tmpGitDir: string;
   let nonGitDir: string;
 
+  // Every git call this block makes (setup and per-test staging) runs with gitFixtureEnv() (see
+  // there). #1795, measured: with commit.gpgsign=true in the user's global config, the setup
+  // commit failed and the whole block errored.
+  function runGit(args: string[], cwd: string = tmpGitDir): void {
+    execFileSync('git', args, { cwd, stdio: 'pipe', env: gitFixtureEnv() });
+  }
+
   beforeAll(async () => {
     // Create a temporary git repository for git-context tests.
     tmpGitDir = join(tmpdir(), `omcc-test-git-${Date.now()}`);
     await mkdir(tmpGitDir, { recursive: true });
 
-    // Strip git env vars so temp repo operations don't inherit GIT_DIR from
-    // a parent hook context (e.g., pre-commit hook running bun test --coverage).
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { GIT_DIR: _gd, GIT_WORK_TREE: _gwt, GIT_INDEX_FILE: _gif, ...cleanEnv } = process.env;
-
-    execFileSync('git', ['init'], { cwd: tmpGitDir, stdio: 'pipe', env: cleanEnv });
-    execFileSync('git', ['config', 'user.email', 'test@test.com'], {
-      cwd: tmpGitDir,
-      stdio: 'pipe',
-      env: cleanEnv,
-    });
-    execFileSync('git', ['config', 'user.name', 'Test User'], {
-      cwd: tmpGitDir,
-      stdio: 'pipe',
-      env: cleanEnv,
-    });
+    runGit(['init']);
+    runGit(['config', 'user.email', 'test@test.com']);
+    runGit(['config', 'user.name', 'Test User']);
     // Disable hooks in the temp repo to prevent inheriting the project's core.hooksPath
-    execFileSync('git', ['config', 'core.hooksPath', '/dev/null'], {
-      cwd: tmpGitDir,
-      stdio: 'pipe',
-      env: cleanEnv,
-    });
+    runGit(['config', 'core.hooksPath', '/dev/null']);
 
     // Create an initial commit so HEAD is defined.
     const initFile = join(tmpGitDir, 'initial.txt');
     await writeFile(initFile, 'init\n');
-    execFileSync('git', ['add', '.'], { cwd: tmpGitDir, stdio: 'pipe', env: cleanEnv });
-    execFileSync('git', ['commit', '-m', 'init'], { cwd: tmpGitDir, stdio: 'pipe', env: cleanEnv });
+    runGit(['add', '.']);
+    runGit(['commit', '-m', 'init']);
 
     // Create a non-git directory.
     nonGitDir = join(tmpdir(), `omcc-test-nongit-${Date.now()}`);
@@ -201,8 +335,63 @@ describe('stop-console-audit.sh', () => {
   });
 
   afterAll(async () => {
-    await rm(tmpGitDir, { recursive: true, force: true });
-    await rm(nonGitDir, { recursive: true, force: true });
+    // Either may be unset when beforeAll failed part-way.
+    if (tmpGitDir) {
+      await rm(tmpGitDir, { recursive: true, force: true });
+    }
+    if (nonGitDir) {
+      await rm(nonGitDir, { recursive: true, force: true });
+    }
+  });
+
+  // --- #1795: inherited git env never reaches the fixture repo or the hook ---
+
+  it('runGit ignores an inherited GIT_INDEX_FILE and env-injected git config', async () => {
+    const repo = mkdtempSync(join(tmpdir(), 'omcc-git-bait-repo-'));
+    try {
+      await withInheritedGitBait(async (baitIndex) => {
+        runGit(['init'], repo);
+        runGit(['config', 'user.email', 'test@test.com'], repo);
+        runGit(['config', 'user.name', 'Test User'], repo);
+        await writeFile(join(repo, 'bait.txt'), 'bait\n');
+        runGit(['add', 'bait.txt'], repo);
+        // Throws if the injected commit.gpgsign + gpg.program=false reached git.
+        runGit(['commit', '-m', 'bait'], repo);
+        // Created if git honoured the inherited GIT_INDEX_FILE.
+        expect(existsSync(baitIndex)).toBe(false);
+      });
+      const commits = execFileSync('git', ['rev-list', '--count', 'HEAD'], {
+        cwd: repo,
+        env: gitFixtureEnv(),
+      });
+      expect(commits.toString().trim()).toBe('1');
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+    }
+  });
+
+  it('hook git calls ignore an inherited GIT_INDEX_FILE', async () => {
+    // With an inherited GIT_INDEX_FILE, the hook's `git diff --name-only HEAD` would read that
+    // (here: missing, hence empty) index instead of the repo's, and miss the staged file.
+    const tsFile = join(tmpGitDir, 'bait-warn.ts');
+    await writeFile(tsFile, 'console.log("bait");\nexport const bait = 1;\n');
+    runGit(['add', 'bait-warn.ts']);
+    try {
+      const { result, baitCreated } = await withInheritedGitBait(async (baitIndex) => {
+        const hookResult = await runHookScript(
+          STOP_CONSOLE_AUDIT_SCRIPT,
+          makeStopInput(),
+          {},
+          tmpGitDir
+        );
+        return { result: hookResult, baitCreated: existsSync(baitIndex) };
+      });
+      expect(result.stderr).toContain('bait-warn.ts');
+      expect(baitCreated).toBe(false);
+    } finally {
+      runGit(['reset', 'HEAD', 'bait-warn.ts']);
+      await unlink(tsFile);
+    }
   });
 
   // --- Basic behavior ---
@@ -238,11 +427,11 @@ describe('stop-console-audit.sh', () => {
   it('should warn about console.log in modified .ts files', async () => {
     const tsFile = join(tmpGitDir, 'test-warn.ts');
     await writeFile(tsFile, 'console.log("debug");\nexport const x = 1;\n');
-    execFileSync('git', ['add', 'test-warn.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['add', 'test-warn.ts']);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'test-warn.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['reset', 'HEAD', 'test-warn.ts']);
     await unlink(tsFile);
 
     expect(result.stderr).toContain('console.log');
@@ -255,11 +444,11 @@ describe('stop-console-audit.sh', () => {
       tsxFile,
       'console.log("render");\nexport default function C() { return null; }\n'
     );
-    execFileSync('git', ['add', 'component.tsx'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['add', 'component.tsx']);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'component.tsx'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['reset', 'HEAD', 'component.tsx']);
     await unlink(tsxFile);
 
     expect(result.stderr).toContain('console.log');
@@ -269,11 +458,11 @@ describe('stop-console-audit.sh', () => {
   it('should warn about console.log in modified .js files', async () => {
     const jsFile = join(tmpGitDir, 'util.js');
     await writeFile(jsFile, 'console.log("js log");\nmodule.exports = {};\n');
-    execFileSync('git', ['add', 'util.js'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['add', 'util.js']);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'util.js'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['reset', 'HEAD', 'util.js']);
     await unlink(jsFile);
 
     expect(result.stderr).toContain('console.log');
@@ -283,11 +472,11 @@ describe('stop-console-audit.sh', () => {
   it('should warn about console.log in modified .jsx files', async () => {
     const jsxFile = join(tmpGitDir, 'app.jsx');
     await writeFile(jsxFile, 'console.log("jsx");\nfunction App() { return null; }\n');
-    execFileSync('git', ['add', 'app.jsx'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['add', 'app.jsx']);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'app.jsx'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['reset', 'HEAD', 'app.jsx']);
     await unlink(jsxFile);
 
     expect(result.stderr).toContain('console.log');
@@ -297,11 +486,11 @@ describe('stop-console-audit.sh', () => {
   it('should NOT warn when no console.log exists in modified files', async () => {
     const cleanFile = join(tmpGitDir, 'clean.ts');
     await writeFile(cleanFile, 'export const greeting = "hello";\n');
-    execFileSync('git', ['add', 'clean.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['add', 'clean.ts']);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'clean.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['reset', 'HEAD', 'clean.ts']);
     await unlink(cleanFile);
 
     expect(result.stderr).not.toContain('WARNING: console.log');
@@ -310,11 +499,11 @@ describe('stop-console-audit.sh', () => {
   it('should NOT warn when only non-JS/TS files are modified', async () => {
     const mdFile = join(tmpGitDir, 'NOTES.md');
     await writeFile(mdFile, '# console.log\nThis is docs.\n');
-    execFileSync('git', ['add', 'NOTES.md'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['add', 'NOTES.md']);
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
-    execFileSync('git', ['reset', 'HEAD', 'NOTES.md'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['reset', 'HEAD', 'NOTES.md']);
     await unlink(mdFile);
 
     // "console.log" appears in the file but .md is excluded from the grep filter
@@ -354,19 +543,19 @@ describe('stop-console-audit.sh', () => {
     // Create, commit, modify+stage, then physically delete without unstaging.
     const deletedFile = join(tmpGitDir, 'deleted.ts');
     await writeFile(deletedFile, 'console.log("exists");\n');
-    execFileSync('git', ['add', 'deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['commit', '-m', 'add deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['add', 'deleted.ts']);
+    runGit(['commit', '-m', 'add deleted.ts']);
 
     await writeFile(deletedFile, 'console.log("modified");\n');
-    execFileSync('git', ['add', 'deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['add', 'deleted.ts']);
     await unlink(deletedFile); // file no longer on disk but staged
 
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, tmpGitDir);
 
     // Cleanup
-    execFileSync('git', ['reset', 'HEAD', 'deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['rm', '-f', '--cached', 'deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
-    execFileSync('git', ['commit', '-m', 'remove deleted.ts'], { cwd: tmpGitDir, stdio: 'pipe' });
+    runGit(['reset', 'HEAD', 'deleted.ts']);
+    runGit(['rm', '-f', '--cached', 'deleted.ts']);
+    runGit(['commit', '-m', 'remove deleted.ts']);
 
     expect(result.exitCode).toBe(0);
   });
@@ -693,18 +882,12 @@ describe('agent-teams-advisor.sh', () => {
   }
 
   beforeEach(() => {
-    // Clean up session-scoped counter files before each test so counts reset.
-    const { execSync } = require('node:child_process');
-    try {
-      execSync('rm -f /tmp/.claude-task-count-*');
-      // #1588: session-env-check.sh writes /tmp/.claude-env-status-$PPID, which resolves to
-      // the SAME pid-scoped path this advisor reads. A leftover `agent_teams=env-set` file
-      // makes every warning assertion below silently vacuous (the script exits early), so it
-      // must be cleared here rather than relying on file ordering between describe blocks.
-      execSync('rm -f /tmp/.claude-env-status-*');
-    } catch {
-      // ignore if no files exist
-    }
+    // Reset this process's session-scoped counter so counts start from zero.
+    // #1588: session-env-check.sh writes /tmp/.claude-env-status-$PPID, which resolves to
+    // the SAME pid-scoped path this advisor reads. A leftover `agent_teams=env-set` file
+    // makes every warning assertion below silently vacuous (the script exits early), so it
+    // must be cleared here rather than relying on file ordering between describe blocks.
+    removeSessionStateFiles(TASK_COUNT_FILE, ENV_STATUS_FILE);
   });
 
   // --- Basic pass-through behavior ---
@@ -987,13 +1170,8 @@ describe('session-env-check.sh', () => {
   const sessionInput = JSON.stringify({ event: 'session_start' });
 
   afterEach(() => {
-    // Clean up status files created during tests.
-    const { execSync } = require('node:child_process');
-    try {
-      execSync('rm -f /tmp/.claude-env-status-*');
-    } catch {
-      // ignore if no files exist
-    }
+    // Clean up the status file this process's hook runs created.
+    removeSessionStateFiles(ENV_STATUS_FILE);
   });
 
   // --- Basic pass-through behavior ---
@@ -1063,7 +1241,7 @@ describe('session-env-check.sh', () => {
       CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
       OMCUSTOM_AGENT_TEAMS_VERIFIED: '0',
     });
-    const status = await readFile(`/tmp/.claude-env-status-${process.pid}`, 'utf-8');
+    const status = await readFile(ENV_STATUS_FILE, 'utf-8');
     const line = status.split('\n').find((l) => l.startsWith('agent_teams='));
     expect(line).toBe('agent_teams=env-set');
   });
@@ -1083,12 +1261,9 @@ describe('session-env-check.sh', () => {
 
   it('should create a status file in /tmp', async () => {
     await runHookScript(SESSION_ENV_CHECK_SCRIPT, sessionInput);
-    const { execSync } = require('node:child_process');
-    // The file is named .claude-env-status-<PPID>; at least one must exist after the run.
-    const output = execSync('ls /tmp/.claude-env-status-* 2>/dev/null || echo "none"')
-      .toString()
-      .trim();
-    expect(output).not.toBe('none');
+    // The file is named .claude-env-status-<PPID>, and $PPID is this process. Checking the exact
+    // path keeps another session's status file from satisfying this assertion.
+    expect(existsSync(ENV_STATUS_FILE)).toBe(true);
   });
 
   it('should handle empty stdin gracefully', async () => {
@@ -1961,12 +2136,7 @@ describe('fail-axis-cause-advisor.sh', () => {
 // sequences in its %s argument, so the byte sequence survives unchanged.
 describe('Issue #1632: JSON pass-through escape safety', () => {
   beforeEach(() => {
-    const { execSync } = require('node:child_process');
-    try {
-      execSync('rm -f /tmp/.claude-task-count-* /tmp/.claude-env-status-*');
-    } catch {
-      // ignore if no files exist
-    }
+    removeSessionStateFiles(TASK_COUNT_FILE, ENV_STATUS_FILE);
   });
 
   // --- Positive case A: literal backslash-pipe (\|), the exact live-evidence pattern ---

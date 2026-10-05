@@ -5,15 +5,38 @@
 
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import packageJson from '../../package.json';
 import { i18n } from '../i18n/index.js';
+import { type HomeSources, resolveHomeDir } from '../utils/home.js';
 
 const DEFAULT_PACKAGE_NAME = 'oh-my-customcode';
 const DEFAULT_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_CACHE_PATH = join(homedir(), '.oh-my-customcode', 'self-update-cache.json');
+const CACHE_DIR_NAME = '.oh-my-customcode';
+const CACHE_FILE_NAME = 'self-update-cache.json';
+
+/**
+ * Default path of the self-update cache (`<home>/.oh-my-customcode/self-update-cache.json`).
+ *
+ * The home directory is resolved on EVERY call (never memoised), so a change to
+ * `process.env.HOME` is picked up by the next call.
+ *
+ * Returns `null` when the resolved home is empty or relative: a relative home would
+ * make the cache location depend on the current directory, so each directory would
+ * read and write its own cache file. Callers treat `null` as "no cache available" and
+ * check npm directly (#1820).
+ *
+ * @param sources - Home-directory sources override (for tests)
+ */
+export function resolveSelfUpdateCachePath(sources?: HomeSources): string | null {
+  const home = resolveHomeDir(sources);
+  // An unresolvable home is '' — not absolute either
+  if (!isAbsolute(home)) {
+    return null;
+  }
+  return join(home, CACHE_DIR_NAME, CACHE_FILE_NAME);
+}
 
 /**
  * Epoch values at or above this are already MILLISECONDS, not seconds
@@ -274,21 +297,64 @@ export function readSelfUpdateCache(cachePath: string): SelfUpdateCache | null {
   return null;
 }
 
-function writeCache(cachePath: string, latestVersion: string, now: number): void {
-  const dir = dirname(cachePath);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+/**
+ * Read the cache at `cachePath`; `null` (no resolvable home, #1820) means "no cache".
+ *
+ * Never throws: {@link readSelfUpdateCache} swallows read and parse errors.
+ */
+function readCacheAt(cachePath: string | null): SelfUpdateCache | null {
+  // Keep this guard: `existsSync(null)` returns false in both Bun and Node, so removing it
+  // is invisible to Bun tests. Node, however, also prints a DEP0187 DeprecationWarning
+  // ("Passing invalid argument types to fs.existsSync is deprecated") to stderr, once per
+  // process (on the first such call; measured with `node -e` on v25.6.1).
+  return cachePath === null ? null : readSelfUpdateCache(cachePath);
+}
+
+/**
+ * True for errors raised by the OS through `node:fs` (ENOTDIR, EACCES, EISDIR, ...): a string
+ * `code` AND a numeric `errno`. A string `code` alone is not enough: Node's own argument
+ * validation errors (e.g. `ERR_INVALID_ARG_TYPE` from `dirname(null)`) carry one too, but no
+ * `errno` (measured on node v25.6.1 and Bun).
+ */
+function isFileSystemError(error: unknown): boolean {
+  // `?? {}` covers a thrown null/undefined; destructuring a primitive is harmless
+  const { code, errno } = (error ?? {}) as { code?: unknown; errno?: unknown };
+  return typeof code === 'string' && typeof errno === 'number';
+}
+
+/**
+ * Persist the cache at `cachePath`; `null` (no resolvable home, #1820) skips the write.
+ *
+ * Never throws because of the filesystem. The cache is only an optimization, so any mkdir/write
+ * failure (ENOTDIR, EACCES, EROFS, EISDIR, ...) is swallowed: callers such as `doctor` and
+ * `init` must still get the npm result. Programming errors (a TypeError from a bad path, a
+ * RangeError from an invalid `now`) are NOT filesystem errors and are re-thrown.
+ */
+function writeCache(cachePath: string | null, latestVersion: string, now: number): void {
+  if (cachePath === null) {
+    return;
   }
-  const payload: SelfUpdateCacheFile = {
-    checkedAt: new Date(now).toISOString(),
-    latestVersion,
-    // Mirror of the two fields the bash hook readers grep for. `timestamp` MUST stay in
-    // epoch seconds — `omcustom-auto-update.sh` compares it against `date +%s`.
-    version: latestVersion,
-    timestamp: Math.floor(now / 1000),
-    source: 'omcustom-cli',
-  };
-  writeFileSync(cachePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf-8');
+  try {
+    const dir = dirname(cachePath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    const payload: SelfUpdateCacheFile = {
+      checkedAt: new Date(now).toISOString(),
+      latestVersion,
+      // Mirror of the two fields the bash hook readers grep for. `timestamp` MUST stay in
+      // epoch seconds — `omcustom-auto-update.sh` compares it against `date +%s`.
+      version: latestVersion,
+      timestamp: Math.floor(now / 1000),
+      source: 'omcustom-cli',
+    };
+    writeFileSync(cachePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf-8');
+  } catch (error: unknown) {
+    // Best-effort cache: a failed write only means the next run queries npm again.
+    if (!isFileSystemError(error)) {
+      throw error;
+    }
+  }
 }
 
 function isCacheFresh(cache: SelfUpdateCache, now: number, cacheTtlMs: number): boolean {
@@ -501,10 +567,15 @@ export function executeSelfUpdate(options: ExecuteSelfUpdateOptions = {}): Execu
 
 /**
  * Core check with cache support.
+ *
+ * Never throws because of the cache: a missing, unreadable or unwritable cache only means
+ * the npm lookup runs. The `cachePath` fallback uses `||` on purpose, so an empty string
+ * selects the default path instead of reaching `writeFileSync('')` (ENOENT).
  */
 export function checkSelfUpdate(options: SelfUpdateOptions): SelfUpdateCheckResult {
   const packageName = options.packageName || DEFAULT_PACKAGE_NAME;
-  const cachePath = options.cachePath || DEFAULT_CACHE_PATH;
+  // null = no usable home: skip cache reads and writes, the npm lookup still runs (#1820)
+  const cachePath = options.cachePath || resolveSelfUpdateCachePath();
   const cacheTtlMs = options.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
   const fetchLatestVersion = options.fetchLatestVersion || fetchLatestVersionFromNpm;
   const now = options.now ?? Date.now();
@@ -522,7 +593,7 @@ export function checkSelfUpdate(options: SelfUpdateOptions): SelfUpdateCheckResu
 
   let latestVersion: string | null = null;
   let usedCache = false;
-  const cache = readSelfUpdateCache(cachePath);
+  const cache = readCacheAt(cachePath);
 
   if (cache && isCacheFresh(cache, now, cacheTtlMs)) {
     const cachedVersion = normalizeVersion(cache.latestVersion);

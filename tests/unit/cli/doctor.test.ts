@@ -6,6 +6,7 @@ import {
   type CheckResult,
   checkAgents,
   checkClaudeMd,
+  checkCodex,
   checkIndexFiles,
   checkRules,
   checkSkills,
@@ -14,6 +15,7 @@ import {
   fixIssues,
   printCheck,
 } from '../../../src/cli/doctor.js';
+import * as codexInstaller from '../../../src/core/codex-installer.js';
 import { initI18n } from '../../../src/i18n/index.js';
 
 describe('doctor command', () => {
@@ -644,18 +646,87 @@ describe('doctor command', () => {
     });
   });
 
+  describe('checkCodex', () => {
+    let isInstalledSpy: ReturnType<typeof spyOn>;
+    let versionSpy: ReturnType<typeof spyOn>;
+
+    afterEach(() => {
+      isInstalledSpy.mockRestore();
+      versionSpy.mockRestore();
+    });
+
+    it('should warn (fixable) when Codex CLI is not installed', async () => {
+      isInstalledSpy = spyOn(codexInstaller, 'isCodexInstalled').mockReturnValue(false);
+      versionSpy = spyOn(codexInstaller, 'getCodexVersion').mockReturnValue(null);
+
+      const result = await checkCodex();
+
+      expect(result.status).toBe('warn');
+      expect(result.fixable).toBe(true);
+    });
+
+    it('should pass with the reported version when Codex CLI is installed', async () => {
+      isInstalledSpy = spyOn(codexInstaller, 'isCodexInstalled').mockReturnValue(true);
+      versionSpy = spyOn(codexInstaller, 'getCodexVersion').mockReturnValue('codex-cli 9.9.9');
+
+      const result = await checkCodex();
+
+      expect(result.status).toBe('pass');
+      expect(result.message).toContain('codex-cli 9.9.9');
+    });
+
+    it('should report an unknown version when the version lookup fails', async () => {
+      isInstalledSpy = spyOn(codexInstaller, 'isCodexInstalled').mockReturnValue(true);
+      versionSpy = spyOn(codexInstaller, 'getCodexVersion').mockReturnValue(null);
+
+      const result = await checkCodex();
+
+      expect(result.status).toBe('pass');
+      expect(result.message).toContain('unknown version');
+    });
+  });
+
   describe('doctorCommand', () => {
     let originalCwd: typeof process.cwd;
     let consoleSpy: ReturnType<typeof spyOn>;
+    // #1795: checkCodex would otherwise run the user's real `codex` binary, which
+    // writes under ~/.codex. Pin it to "not installed" (the CI condition).
+    let codexInstalledSpy: ReturnType<typeof spyOn>;
+    let codexVersionSpy: ReturnType<typeof spyOn>;
+    let codexInstallSpy: ReturnType<typeof spyOn>;
 
     beforeEach(() => {
       originalCwd = process.cwd;
       consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+      codexInstalledSpy = spyOn(codexInstaller, 'isCodexInstalled').mockReturnValue(false);
+      codexVersionSpy = spyOn(codexInstaller, 'getCodexVersion').mockReturnValue(null);
+      codexInstallSpy = spyOn(codexInstaller, 'installCodex').mockReturnValue(false);
     });
 
     afterEach(() => {
       process.cwd = originalCwd;
       consoleSpy.mockRestore();
+      codexInstalledSpy.mockRestore();
+      codexVersionSpy.mockRestore();
+      codexInstallSpy.mockRestore();
+    });
+
+    it('answers the Codex check from the pinned spies, never the real codex (#1795)', async () => {
+      process.cwd = () => tempDir;
+
+      const result = await doctorCommand();
+      const codex = result.checks.find((check) => check.name === 'Codex');
+
+      // beforeEach pins isCodexInstalled to false, so `which codex` / `codex --version` never run.
+      // If isCodexInstalled called through, a machine with codex installed would get `true`, run
+      // the real `codex --version` (writing under ~/.codex), and report a "Codex CLI OK" pass
+      // here, failing the warn / "not installed" assertions. On a machine without codex the real
+      // answer is also "not installed", so those assertions cannot fail falsely there (and
+      // nothing is run, with the spies in place). If the pin is bypassed, the
+      // toHaveBeenCalled() check below fails first, on every machine.
+      expect(codexInstalledSpy).toHaveBeenCalled();
+      expect(codex?.status).toBe('warn');
+      expect(codex?.message).toContain('not installed');
     });
 
     it('should run doctor command on current directory', async () => {

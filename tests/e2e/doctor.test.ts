@@ -3,23 +3,37 @@
  * Tests the actual CLI command execution end-to-end
  */
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { access, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, join } from 'node:path';
 import { spawn } from 'bun';
 
 // Set 30s timeout for E2E tests (CI environments are slower)
 describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
   let tempDir: string;
   let cliPath: string;
+  // #1795: doctor's Codex check runs `codex --version`; the user's real codex
+  // writes under ~/.codex. A stub `codex` placed first on the CLI's PATH answers
+  // instead, so the real binary never runs.
+  let codexStubDir: string;
+  const CODEX_STUB_VERSION = 'codex-cli 0.0.0-e2e-stub';
   const originalCwd = process.cwd();
 
-  beforeAll(() => {
+  beforeAll(async () => {
     // Path to the CLI entry point (run with bun)
     // Using dirname to get the project root from the test file location
     const projectRoot = join(import.meta.dir, '../..');
     cliPath = join(projectRoot, 'src/cli/index.ts');
+
+    codexStubDir = await mkdtemp(join(tmpdir(), 'omcustom-e2e-codex-stub-'));
+    await writeFile(join(codexStubDir, 'codex'), `#!/bin/sh\necho "${CODEX_STUB_VERSION}"\n`, {
+      mode: 0o755,
+    });
+  });
+
+  afterAll(async () => {
+    await rm(codexStubDir, { recursive: true, force: true });
   });
 
   beforeEach(async () => {
@@ -50,6 +64,7 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
       stderr: 'pipe',
       env: {
         ...process.env,
+        PATH: `${codexStubDir}${delimiter}${process.env.PATH ?? ''}`,
         OMCUSTOM_REGISTRY_DIR: join(tempDir, '.omcustom-registry'),
         OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP: '1',
       },
@@ -124,6 +139,17 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
           output.includes('healthy') ||
           output.includes('All checks')
       ).toBe(true);
+    });
+
+    it('answers the Codex check from the PATH stub, never the real codex (#1795)', async () => {
+      const result = await runCli('doctor');
+
+      expect(result.exitCode).toBe(0);
+      // checkCodex reports the `codex --version` output. The stub's version string shows up only
+      // when the CLI resolved `codex` to the stub. Without the stub, a machine
+      // with no codex (CI) reports "not installed" and a machine with codex reports the real
+      // version (after running it against the real ~/.codex); both fail this assertion.
+      expect(result.stdout).toContain(CODEX_STUB_VERSION);
     });
 
     it('should show checking message at start', async () => {

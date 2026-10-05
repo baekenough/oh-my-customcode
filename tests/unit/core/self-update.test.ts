@@ -3,9 +3,9 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { join, sep } from 'node:path';
 import type { ExecuteSelfUpdateOptions, SelfUpdateOptions } from '../../../src/core/self-update.js';
 import {
   checkSelfUpdate,
@@ -17,6 +17,7 @@ import {
   maybeHandleSelfUpdateForInit,
   normalizeVersion,
   readSelfUpdateCache,
+  resolveSelfUpdateCachePath,
 } from '../../../src/core/self-update.js';
 
 describe('self-update module', () => {
@@ -783,6 +784,331 @@ describe('self-update module', () => {
       const reread = readSelfUpdateCache(path);
       expect(reread?.latestVersion).toBe('1.1.6');
       expect(reread?.schema).toBe('cli');
+    });
+  });
+
+  describe('default cache path resolution (#1820)', () => {
+    const CACHE_RELATIVE = join('.oh-my-customcode', 'self-update-cache.json');
+    const NOW = Date.UTC(2026, 9, 5, 12, 0, 0);
+
+    // The default cache path is resolved from process.env.HOME on every call, so each test
+    // points HOME at its own temp directory and never touches the real home. Tests that use
+    // a relative HOME also move the cwd into tempDir so a cwd-relative write stays contained.
+    let fakeHome: string;
+    let originalHome: string | undefined;
+    let originalCwd: string;
+
+    beforeEach(() => {
+      fakeHome = mkdtempSync(join(tmpdir(), 'omcustom-selfupdate-home-'));
+      originalHome = process.env.HOME;
+      originalCwd = process.cwd();
+      process.env.HOME = fakeHome;
+    });
+
+    afterEach(() => {
+      process.chdir(originalCwd);
+      if (originalHome === undefined) {
+        delete process.env.HOME;
+      } else {
+        process.env.HOME = originalHome;
+      }
+      rmSync(fakeHome, { recursive: true, force: true });
+    });
+
+    describe('resolveSelfUpdateCachePath', () => {
+      it('should place the cache under <HOME>/.oh-my-customcode', () => {
+        expect(resolveSelfUpdateCachePath()).toBe(join(fakeHome, CACHE_RELATIVE));
+      });
+
+      it('should re-read HOME on every call (never memoised)', () => {
+        const otherHome = mkdtempSync(join(tmpdir(), 'omcustom-selfupdate-home2-'));
+        try {
+          expect(resolveSelfUpdateCachePath()).toBe(join(fakeHome, CACHE_RELATIVE));
+          process.env.HOME = otherHome;
+          expect(resolveSelfUpdateCachePath()).toBe(join(otherHome, CACHE_RELATIVE));
+        } finally {
+          rmSync(otherHome, { recursive: true, force: true });
+        }
+      });
+
+      it('should skip an empty HOME and use the next home source (no cwd-relative path)', () => {
+        // Models Node with HOME="": os.homedir() is "" too, the passwd entry still resolves
+        const result = resolveSelfUpdateCachePath({
+          envHome: () => '',
+          osHome: () => '',
+          passwdHome: () => fakeHome,
+        });
+        expect(result).toBe(join(fakeHome, CACHE_RELATIVE));
+      });
+
+      it('should return null when no home source yields a value', () => {
+        const result = resolveSelfUpdateCachePath({
+          envHome: () => '',
+          osHome: () => '',
+          passwdHome: () => '',
+        });
+        expect(result).toBeNull();
+      });
+
+      it('should return null when the resolved home is a relative path', () => {
+        process.env.HOME = 'rel-home';
+        expect(resolveSelfUpdateCachePath()).toBeNull();
+      });
+
+      it('should join a HOME that ends in a separator without doubling it (I1)', () => {
+        process.env.HOME = `${fakeHome}${sep}`;
+        const result = resolveSelfUpdateCachePath();
+
+        expect(result).toBe(join(fakeHome, '.oh-my-customcode', 'self-update-cache.json'));
+        // A plain string concatenation would leave "<home>//.oh-my-customcode"
+        expect(result).not.toContain(`${sep}${sep}`);
+      });
+
+      it('should return a normalized path, not a concatenation of the HOME text (I1)', () => {
+        // resolveHomeDir already strips trailing separators, so a trailing "/" alone cannot tell
+        // join() from string concatenation. A "<dir>/.." segment can: only join() collapses it.
+        process.env.HOME = `${fakeHome}${sep}detour${sep}..${sep}`;
+
+        expect(resolveSelfUpdateCachePath()).toBe(join(fakeHome, CACHE_RELATIVE));
+      });
+    });
+
+    describe('checkSelfUpdate without an explicit cachePath', () => {
+      const lookup = (version: string) => ({
+        calls: 0,
+        fetch(): string {
+          this.calls += 1;
+          return version;
+        },
+      });
+
+      it('should write the cache under the HOME in effect at call time', () => {
+        const fetcher = lookup('1.1.0');
+
+        const result = checkSelfUpdate({
+          currentVersion: '1.0.0',
+          fetchLatestVersion: () => fetcher.fetch(),
+          now: NOW,
+        });
+
+        expect(result.checked).toBe(true);
+        expect(result.latestVersion).toBe('1.1.0');
+        const written = JSON.parse(readFileSync(join(fakeHome, CACHE_RELATIVE), 'utf-8'));
+        expect(written.latestVersion).toBe('1.1.0');
+        expect(written.checkedAt).toBe(new Date(NOW).toISOString());
+      });
+
+      it('should follow a HOME change between calls (never memoised)', () => {
+        const otherHome = mkdtempSync(join(tmpdir(), 'omcustom-selfupdate-home2-'));
+        try {
+          const options: SelfUpdateOptions = {
+            currentVersion: '1.0.0',
+            fetchLatestVersion: () => '1.1.0',
+            now: NOW,
+          };
+          checkSelfUpdate(options);
+          process.env.HOME = otherHome;
+          checkSelfUpdate(options);
+
+          expect(existsSync(join(fakeHome, CACHE_RELATIVE))).toBe(true);
+          expect(existsSync(join(otherHome, CACHE_RELATIVE))).toBe(true);
+        } finally {
+          rmSync(otherHome, { recursive: true, force: true });
+        }
+      });
+
+      it('should read a fresh cache from HOME without querying npm (negative control)', () => {
+        mkdirSync(join(fakeHome, '.oh-my-customcode'), { recursive: true });
+        writeFileSync(
+          join(fakeHome, CACHE_RELATIVE),
+          JSON.stringify({ checkedAt: new Date(NOW - 1000).toISOString(), latestVersion: '1.5.0' })
+        );
+        const fetcher = lookup('1.1.0');
+
+        const result = checkSelfUpdate({
+          currentVersion: '1.0.0',
+          fetchLatestVersion: () => fetcher.fetch(),
+          now: NOW,
+        });
+
+        expect(result.usedCache).toBe(true);
+        expect(result.latestVersion).toBe('1.5.0');
+        expect(fetcher.calls).toBe(0);
+      });
+
+      it('should skip cache reads and writes when HOME is relative, still checking npm', () => {
+        process.chdir(tempDir);
+        process.env.HOME = 'rel-home';
+        // A cache planted where a cwd-relative path would point must NOT be trusted
+        const cwdCacheDir = join(tempDir, 'rel-home', '.oh-my-customcode');
+        mkdirSync(cwdCacheDir, { recursive: true });
+        const cwdCache = join(cwdCacheDir, 'self-update-cache.json');
+        const planted = JSON.stringify({
+          checkedAt: new Date(NOW - 1000).toISOString(),
+          latestVersion: '1.9.0',
+        });
+        writeFileSync(cwdCache, planted);
+        // Runtime-reported home (frozen at process start under Bun): must stay untouched too
+        const runtimeCache = join(homedir(), CACHE_RELATIVE);
+        const runtimeBefore = existsSync(runtimeCache) ? readFileSync(runtimeCache, 'utf-8') : null;
+        const fetcher = lookup('1.1.0');
+
+        const result = checkSelfUpdate({
+          currentVersion: '1.0.0',
+          fetchLatestVersion: () => fetcher.fetch(),
+          now: NOW,
+        });
+
+        expect(result.checked).toBe(true);
+        expect(result.latestVersion).toBe('1.1.0');
+        expect(result.updateAvailable).toBe(true);
+        expect(result.usedCache).toBe(false);
+        expect(fetcher.calls).toBe(1);
+        expect(readFileSync(cwdCache, 'utf-8')).toBe(planted);
+        const runtimeAfter = existsSync(runtimeCache) ? readFileSync(runtimeCache, 'utf-8') : null;
+        expect(runtimeAfter).toBe(runtimeBefore);
+      });
+
+      it('should not create a cwd-relative cache directory when HOME is relative', () => {
+        process.chdir(tempDir);
+        process.env.HOME = 'rel-home';
+
+        checkSelfUpdate({
+          currentVersion: '1.0.0',
+          fetchLatestVersion: () => '1.1.0',
+          now: NOW,
+        });
+
+        expect(existsSync(join(tempDir, 'rel-home'))).toBe(false);
+        expect(existsSync(join(tempDir, '.oh-my-customcode'))).toBe(false);
+      });
+
+      it('should send an EMPTY cachePath to the default path, not to writeFileSync("") (L1)', () => {
+        // `options.cachePath || default` is intentional: with `??` the empty string would be
+        // used as-is and the write would fail instead of landing under HOME.
+        const result = checkSelfUpdate({
+          currentVersion: '1.0.0',
+          cachePath: '',
+          fetchLatestVersion: () => '1.1.0',
+          now: NOW,
+        });
+
+        expect(result.checked).toBe(true);
+        expect(result.latestVersion).toBe('1.1.0');
+        const written = JSON.parse(readFileSync(join(fakeHome, CACHE_RELATIVE), 'utf-8'));
+        expect(written.latestVersion).toBe('1.1.0');
+      });
+
+      it('should write under a HOME that ends in a separator (I1)', () => {
+        process.env.HOME = `${fakeHome}${sep}`;
+
+        checkSelfUpdate({
+          currentVersion: '1.0.0',
+          fetchLatestVersion: () => '1.1.0',
+          now: NOW,
+        });
+
+        expect(existsSync(join(fakeHome, CACHE_RELATIVE))).toBe(true);
+      });
+    });
+  });
+
+  // The cache is an optimization. doctor.ts calls checkSelfUpdate without a try/catch, and the
+  // init path shares it, so a cache that cannot be written must never turn into an exception.
+  describe('checkSelfUpdate — cache I/O failures never throw (#1820 I2)', () => {
+    const NOW = Date.UTC(2026, 9, 5, 12, 0, 0);
+
+    it('should return the npm result when the cache parent is a regular file (ENOTDIR)', () => {
+      const blocker = join(tempDir, 'blocker');
+      writeFileSync(blocker, 'not a directory');
+      let fetchCalls = 0;
+
+      const run = () =>
+        checkSelfUpdate({
+          currentVersion: '1.0.0',
+          cachePath: join(blocker, 'nested', 'cache.json'),
+          fetchLatestVersion: () => {
+            fetchCalls += 1;
+            return '1.1.0';
+          },
+          now: NOW,
+        });
+
+      expect(run).not.toThrow();
+      const result = run();
+      expect(result.checked).toBe(true);
+      expect(result.updateAvailable).toBe(true);
+      expect(result.latestVersion).toBe('1.1.0');
+      expect(result.usedCache).toBe(false);
+      // No cache could be stored, so each call queried npm
+      expect(fetchCalls).toBe(2);
+      expect(readFileSync(blocker, 'utf-8')).toBe('not a directory');
+    });
+
+    it('should return the npm result when cachePath is itself a directory (read and write fail)', () => {
+      const cachePath = join(tempDir, 'cache-is-a-directory');
+      mkdirSync(cachePath);
+
+      const result = checkSelfUpdate({
+        currentVersion: '1.0.0',
+        cachePath,
+        fetchLatestVersion: () => '1.1.0',
+        now: NOW,
+      });
+
+      expect(result.checked).toBe(true);
+      expect(result.latestVersion).toBe('1.1.0');
+      expect(result.usedCache).toBe(false);
+    });
+
+    // L4: only filesystem errors are swallowed. A programming error must stay visible, or
+    // removing a guard (e.g. the null-path check) would change nothing observable.
+    it('should NOT swallow a programming error from the cache write (invalid now)', () => {
+      const cachePath = join(tempDir, 'bad-now', 'cache.json');
+
+      // new Date(NaN).toISOString() throws a RangeError: not a filesystem error
+      expect(() =>
+        checkSelfUpdate({
+          currentVersion: '1.0.0',
+          cachePath,
+          fetchLatestVersion: () => '1.1.0',
+          now: Number.NaN,
+        })
+      ).toThrow(RangeError);
+    });
+
+    it('should NOT swallow a Node argument-validation error (string code, no errno)', () => {
+      // dirname(123) throws TypeError [ERR_INVALID_ARG_TYPE]: it has a string `code` like a
+      // filesystem error does, but no numeric `errno`, so it must propagate.
+      expect(() =>
+        checkSelfUpdate({
+          currentVersion: '1.0.0',
+          cachePath: 123 as unknown as string,
+          fetchLatestVersion: () => '1.1.0',
+          now: NOW,
+        })
+      ).toThrow(TypeError);
+    });
+
+    it('should not throw for a null cache path (no resolvable home), writing nothing', () => {
+      // dirname(null) would throw a TypeError (ERR_INVALID_ARG_TYPE) if the null guard were gone
+      const originalHome = process.env.HOME;
+      process.env.HOME = 'relative-home';
+      try {
+        const result = checkSelfUpdate({
+          currentVersion: '1.0.0',
+          fetchLatestVersion: () => '1.1.0',
+          now: NOW,
+        });
+        expect(result.checked).toBe(true);
+        expect(result.latestVersion).toBe('1.1.0');
+      } finally {
+        if (originalHome === undefined) {
+          delete process.env.HOME;
+        } else {
+          process.env.HOME = originalHome;
+        }
+      }
     });
   });
 

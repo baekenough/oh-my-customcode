@@ -2,7 +2,11 @@
  * Unit tests for codex-installer module
  */
 
-import { describe, expect, it } from 'bun:test';
+import { afterAll, describe, expect, it } from 'bun:test';
+import { execSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   getCodexVersion,
   type InstallerDeps,
@@ -20,6 +24,50 @@ function createMockDeps(overrides: Partial<InstallerDeps> = {}): InstallerDeps {
     getPlatform: () => 'darwin',
     ...overrides,
   };
+}
+
+/** Deps whose exec records every command and never runs anything. */
+function createRecordingDeps(): { deps: InstallerDeps; commands: string[] } {
+  const commands: string[] = [];
+  const deps = createMockDeps({
+    exec: (cmd) => {
+      commands.push(cmd);
+      throw new Error(`exec must not run in this test: ${cmd}`);
+    },
+  });
+  return { deps, commands };
+}
+
+// #1795: running the real `codex` binary writes under ~/.codex. The shell
+// integration tests below still use the real execSync, but with an explicit
+// PATH holding either a stub `codex` or none (plus the system dirs for `which`),
+// so the user's codex never runs. The PATH must be passed via `env`: Bun's
+// execSync ignores runtime changes to process.env.PATH.
+const STUB_ROOT = mkdtempSync(join(tmpdir(), 'omcc-codex-stub-'));
+const WITH_CODEX_BIN = join(STUB_ROOT, 'with-codex');
+const WITHOUT_CODEX_BIN = join(STUB_ROOT, 'without-codex');
+const SYSTEM_PATH = '/usr/bin:/bin';
+const STUB_VERSION = 'codex-cli 0.0.0-stub';
+
+mkdirSync(WITH_CODEX_BIN, { recursive: true });
+mkdirSync(WITHOUT_CODEX_BIN, { recursive: true });
+writeFileSync(join(WITH_CODEX_BIN, 'codex'), `#!/bin/sh\nprintf '  %s  \\n' '${STUB_VERSION}'\n`, {
+  mode: 0o755,
+});
+
+afterAll(() => {
+  rmSync(STUB_ROOT, { recursive: true, force: true });
+});
+
+/** Deps that run commands through the real execSync with PATH limited to `binDir`. */
+function createShellDeps(binDir: string): InstallerDeps {
+  return createMockDeps({
+    exec: (cmd, opts) =>
+      execSync(cmd, {
+        ...opts,
+        env: { ...process.env, PATH: `${binDir}:${SYSTEM_PATH}`, HOME: STUB_ROOT },
+      }),
+  });
 }
 
 /**
@@ -60,15 +108,12 @@ function clearEnvGuards(): () => void {
 
 describe('codex-installer', () => {
   describe('isCodexInstalled', () => {
-    it('should return a boolean (real env)', () => {
-      const result = isCodexInstalled();
-      expect(typeof result).toBe('boolean');
+    it('should return true when a codex executable is on PATH (real shell)', () => {
+      expect(isCodexInstalled(createShellDeps(WITH_CODEX_BIN))).toBe(true);
     });
 
-    it('should return false when codex is not in PATH (real env)', () => {
-      if (!isCodexInstalled()) {
-        expect(isCodexInstalled()).toBe(false);
-      }
+    it('should return false when codex is not on PATH (real shell)', () => {
+      expect(isCodexInstalled(createShellDeps(WITHOUT_CODEX_BIN))).toBe(false);
     });
 
     it('should return true when exec succeeds', () => {
@@ -93,22 +138,12 @@ describe('codex-installer', () => {
   // ---------------------------------------------------------------------------
 
   describe('getCodexVersion', () => {
-    it('should return null or string (real env)', () => {
-      const result = getCodexVersion();
-      expect(result === null || typeof result === 'string').toBe(true);
+    it('should return null when codex is not on PATH (real shell)', () => {
+      expect(getCodexVersion(createShellDeps(WITHOUT_CODEX_BIN))).toBeNull();
     });
 
-    it('should return null when codex is not installed (real env)', () => {
-      if (!isCodexInstalled()) {
-        expect(getCodexVersion()).toBeNull();
-      }
-    });
-
-    it('should return a trimmed string when codex is installed (real env)', () => {
-      const version = getCodexVersion();
-      if (version !== null) {
-        expect(version).toBe(version.trim());
-      }
+    it('should return the trimmed version output of codex --version (real shell)', () => {
+      expect(getCodexVersion(createShellDeps(WITH_CODEX_BIN))).toBe(STUB_VERSION);
     });
 
     it('should return trimmed version string when exec succeeds', () => {
@@ -137,7 +172,9 @@ describe('codex-installer', () => {
       const originalBunEnv = process.env.BUN_ENV;
       process.env.BUN_ENV = 'test';
       try {
-        expect(installCodex()).toBe(false);
+        const { deps, commands } = createRecordingDeps();
+        expect(installCodex(deps)).toBe(false);
+        expect(commands).toEqual([]);
       } finally {
         if (originalBunEnv !== undefined) {
           process.env.BUN_ENV = originalBunEnv;
@@ -153,7 +190,9 @@ describe('codex-installer', () => {
       delete process.env.BUN_ENV;
       process.env.NODE_ENV = 'test';
       try {
-        expect(installCodex()).toBe(false);
+        const { deps, commands } = createRecordingDeps();
+        expect(installCodex(deps)).toBe(false);
+        expect(commands).toEqual([]);
       } finally {
         if (originalBunEnv !== undefined) {
           process.env.BUN_ENV = originalBunEnv;
@@ -174,7 +213,9 @@ describe('codex-installer', () => {
       delete process.env.NODE_ENV;
       process.env.CI = 'true';
       try {
-        expect(installCodex()).toBe(false);
+        const { deps, commands } = createRecordingDeps();
+        expect(installCodex(deps)).toBe(false);
+        expect(commands).toEqual([]);
       } finally {
         if (originalCI !== undefined) {
           process.env.CI = originalCI;
@@ -198,7 +239,9 @@ describe('codex-installer', () => {
       delete process.env.NODE_ENV;
       process.env.CI = '1';
       try {
-        expect(installCodex()).toBe(false);
+        const { deps, commands } = createRecordingDeps();
+        expect(installCodex(deps)).toBe(false);
+        expect(commands).toEqual([]);
       } finally {
         if (originalCI !== undefined) {
           process.env.CI = originalCI;
@@ -214,8 +257,11 @@ describe('codex-installer', () => {
       }
     });
 
-    it('should return boolean (bun always sets BUN_ENV=test)', () => {
-      expect(typeof installCodex()).toBe('boolean');
+    it('should not run any command under the ambient test environment', () => {
+      // bun test sets NODE_ENV=test, so the env guard returns before any exec
+      const { deps, commands } = createRecordingDeps();
+      expect(installCodex(deps)).toBe(false);
+      expect(commands).toEqual([]);
     });
   });
 
