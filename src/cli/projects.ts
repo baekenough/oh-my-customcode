@@ -4,11 +4,11 @@
  * and shows their version status compared to the currently installed CLI version.
  */
 
-import { homedir } from 'node:os';
 import { basename, join, sep } from 'node:path';
 import packageJson from '../../package.json';
 import { readRegistry } from '../core/registry.js';
 import { fileExists, readJsonFile, resolveTemplatePath } from '../utils/fs.js';
+import { isUnderHome, resolveHomeDir, shortenHome } from '../utils/home.js';
 
 /**
  * Lock file schema for .omcustom.lock.json
@@ -141,13 +141,6 @@ function matchesSearchPaths(projectPath: string, searchPaths: string[] | undefin
 }
 
 /**
- * Check whether a project path is under the user's home directory.
- */
-function isUnderHome(projectPath: string, home: string): boolean {
-  return projectPath.startsWith(home + sep) || projectPath === home;
-}
-
-/**
  * Sort projects: latest first, then alphabetically by name.
  */
 function sortProjects(projects: ProjectInfo[]): ProjectInfo[] {
@@ -186,7 +179,7 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
   }
 
   const results: ProjectInfo[] = [];
-  const home = process.env.HOME ?? homedir();
+  const home = resolveHomeDir();
 
   for (const [projectPath, entry] of Object.entries(registry.projects)) {
     if (!matchesSearchPaths(projectPath, options.paths)) continue;
@@ -285,7 +278,7 @@ async function _findProjectsFromLockfiles(
 
   const seen = new Set<string>();
   const results: ProjectInfo[] = [];
-  const home = process.env.HOME ?? homedir();
+  const home = resolveHomeDir();
 
   const searchPaths: string[] = options.paths ? [...options.paths] : [];
 
@@ -342,8 +335,9 @@ function formatProjectsTable(projects: ProjectInfo[], currentVersion: string): v
     return;
   }
 
+  const home = resolveHomeDir();
   const nameWidth = Math.max(20, ...projects.map((p) => p.name.length));
-  const pathWidth = Math.max(35, ...projects.map((p) => shortenPath(p.path).length));
+  const pathWidth = Math.max(35, ...projects.map((p) => shortenHome(p.path, home).length));
   const versionWidth = 10;
 
   console.log('\n  oh-my-customcode 적용 프로젝트 목록:\n');
@@ -360,7 +354,7 @@ function formatProjectsTable(projects: ProjectInfo[], currentVersion: string): v
 
   for (const project of projects) {
     const name = project.name.padEnd(nameWidth);
-    const path = shortenPath(project.path).padEnd(pathWidth);
+    const path = shortenHome(project.path, home).padEnd(pathWidth);
     const version = (project.version || 'unknown').padEnd(versionWidth);
     const statusIcon =
       project.status === 'latest'
@@ -385,29 +379,31 @@ function formatProjectsTable(projects: ProjectInfo[], currentVersion: string): v
 }
 
 /**
- * Shorten a path by replacing home directory with ~
- */
-function shortenPath(path: string): string {
-  // Use process.env.HOME when available so tests can redirect to a temp directory
-  // (Bun's os.homedir() caches the value and ignores runtime HOME changes).
-  const home = process.env.HOME ?? homedir();
-  if (path.startsWith(home)) {
-    return `~${path.slice(home.length)}`;
-  }
-  return path;
-}
-
-/**
  * Format project list as simple text
  */
 function formatProjectsSimple(projects: ProjectInfo[], currentVersion: string): void {
   console.log(`\noh-my-customcode 적용 프로젝트 (${projects.length}개):`);
+  const home = resolveHomeDir();
   for (const project of projects) {
     const version = project.version ? `v${project.version}` : 'unknown';
     const status = project.status === 'latest' ? '✓' : project.status === 'outdated' ? '⚠' : '?';
-    console.log(`  ${status} ${project.name} [${version}] — ${shortenPath(project.path)}`);
+    console.log(`  ${status} ${project.name} [${version}] — ${shortenHome(project.path, home)}`);
   }
   console.log(`\n현재 설치 버전: v${currentVersion}`);
+}
+
+const DEFAULT_SEARCH_DIRS = ['workspace', 'projects', 'dev', 'src', 'code', 'repos', 'work'];
+
+/**
+ * Build the directory list scanned by the registry migration.
+ * An unresolvable (empty) home yields no default search dirs rather than cwd-relative ones.
+ * @internal — exported for unit tests only
+ */
+export function buildMigrationSearchDirs(
+  home: string,
+  extraPaths: readonly string[] = []
+): string[] {
+  return [...(home ? DEFAULT_SEARCH_DIRS.map((d) => join(home, d)) : []), ...extraPaths];
 }
 
 /**
@@ -416,10 +412,7 @@ function formatProjectsSimple(projects: ProjectInfo[], currentVersion: string): 
  */
 async function runMigration(options: ProjectsOptions): Promise<string | null> {
   const { migrateFromLockfiles } = await import('../core/registry.js');
-  const DEFAULT_SEARCH_DIRS = ['workspace', 'projects', 'dev', 'src', 'code', 'repos', 'work'];
-  // Same HOME-first pattern as src/core/registry.ts (Bun's os.homedir() caches the value).
-  const home = process.env.HOME ?? homedir();
-  const searchDirs = [...DEFAULT_SEARCH_DIRS.map((d) => join(home, d)), ...(options.paths ?? [])];
+  const searchDirs = buildMigrationSearchDirs(resolveHomeDir(), options.paths ?? []);
   const cwd = process.cwd();
   if (!searchDirs.includes(cwd)) searchDirs.push(cwd);
 

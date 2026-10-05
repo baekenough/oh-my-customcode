@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { realpathSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { initI18n } from '../../../src/i18n/index.js';
@@ -45,10 +45,24 @@ describe('update command', () => {
   // call process.exit on a 1.0.0 major-bump version).
   let savedSkipSelfUpdate: string | undefined;
 
+  // Registry isolation (#1793): updateCommand({ all: true }) runs the real cleanRegistry(),
+  // which prunes and rewrites ~/.oh-my-customcode/projects.json. Every test therefore runs
+  // with HOME and the registry directory redirected into the per-test temp dir.
+  let originalHome: string | undefined;
+  let homeDir: string;
+
   beforeEach(async () => {
     tempDir = realpathSync(await mkdtemp(join(tmpdir(), 'omcustom-update-test-')));
     originalCwd = process.cwd();
     process.chdir(tempDir);
+
+    originalHome = process.env.HOME;
+    homeDir = join(tempDir, 'home');
+    const isolatedRegistryDir = join(homeDir, '.oh-my-customcode');
+    await mkdir(isolatedRegistryDir, { recursive: true });
+    await writeFile(join(isolatedRegistryDir, 'projects.json'), '{"projects":{}}', 'utf-8');
+    process.env.HOME = homeDir;
+    realRegistry._setRegistryDirForTesting(isolatedRegistryDir);
 
     // Initialize i18n for tests that assert on log content
     await initI18n('en');
@@ -75,6 +89,14 @@ describe('update command', () => {
   });
 
   afterEach(async () => {
+    // Registry isolation must be undone before anything else can throw (#1793).
+    realRegistry._setRegistryDirForTesting(undefined);
+    if (originalHome !== undefined) {
+      process.env.HOME = originalHome;
+    } else {
+      delete process.env.HOME;
+    }
+
     process.chdir(originalCwd);
     await rm(tempDir, { recursive: true, force: true });
 
@@ -1926,6 +1948,88 @@ describe('update command', () => {
 
       // Only the surviving project should be updated, not the deleted one
       expect(mockUpdate).toHaveBeenCalledTimes(1);
+      expect(exitCode).toBeUndefined();
+    });
+  });
+
+  describe('updateCommand --all registry isolation (#1793)', () => {
+    it('should prune only the registry in the isolated dir and never touch the HOME registry', async () => {
+      // Earlier tests in this file leave cleanRegistry/findProjects stubs installed
+      // (mock.module persists), so re-install the real modules with literal specs first.
+      mock.module('../../../src/core/registry.js', () => realRegistry);
+      mock.module('../../../src/cli/projects.js', () => realProjects);
+
+      mock.module('../../../src/core/provider.js', () => ({
+        detectProvider: async () => ({
+          provider: 'claude',
+          source: 'override',
+          confidence: 'high',
+          reason: 'test',
+        }),
+      }));
+
+      const mockUpdate = mock(async () => ({
+        success: true,
+        updatedComponents: ['rules'],
+        skippedComponents: [],
+        preservedFiles: [],
+        backedUpPaths: [],
+        previousVersion: '0.0.1',
+        newVersion: '0.45.0',
+        warnings: [],
+      }));
+
+      mock.module('../../../src/core/updater.js', () => ({
+        update: mockUpdate,
+      }));
+
+      const livePath = join(homeDir, 'live-project');
+      const stalePath = join(homeDir, 'stale-project-never-created');
+      await mkdir(livePath, { recursive: true });
+
+      const entry = {
+        version: '0.0.1',
+        installedAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      // Isolated registry: one live entry and one stale entry (path never created).
+      const isolatedDir = join(tempDir, 'isolated-registry');
+      const isolatedFile = join(isolatedDir, 'projects.json');
+      await mkdir(isolatedDir, { recursive: true });
+      await writeFile(
+        isolatedFile,
+        JSON.stringify({ projects: { [livePath]: entry, [stalePath]: entry } }),
+        'utf-8'
+      );
+      realRegistry._setRegistryDirForTesting(isolatedDir);
+
+      // Decoy: the HOME-derived registry with its own stale entry. It must survive untouched.
+      const decoyFile = join(homeDir, '.oh-my-customcode', 'projects.json');
+      await writeFile(
+        decoyFile,
+        JSON.stringify({ projects: { [join(homeDir, 'decoy-stale-project')]: entry } }),
+        'utf-8'
+      );
+      const decoyBefore = await readFile(decoyFile);
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+
+      await updateCommand({ all: true });
+
+      const isolatedAfter = JSON.parse(await readFile(isolatedFile, 'utf-8')) as {
+        projects: Record<string, unknown>;
+      };
+      expect(Object.keys(isolatedAfter.projects)).toEqual([livePath]);
+
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+      const callArgs = (mockUpdate.mock.calls as unknown[][])[0]?.[0] as
+        | Record<string, unknown>
+        | undefined;
+      expect(callArgs?.targetDir).toBe(livePath);
+
+      const decoyAfter = await readFile(decoyFile);
+      expect(decoyAfter.equals(decoyBefore)).toBe(true);
       expect(exitCode).toBeUndefined();
     });
   });

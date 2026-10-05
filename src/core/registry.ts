@@ -6,8 +6,9 @@
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { basename, join, resolve, sep } from 'node:path';
+import { resolveHomeDir } from '../utils/home.js';
 
 /**
  * Override for the registry directory path, used in tests only.
@@ -52,16 +53,23 @@ export function isTempPath(projectPath: string): boolean {
   return false;
 }
 
-/** Compute the registry directory path at call-time (respects HOME env changes in tests). */
-function registryDir(): string {
+/**
+ * Compute the registry directory path at call-time (respects HOME env changes in tests).
+ *
+ * @internal — exported for unit tests only.
+ */
+export function registryDir(home?: string): string {
   if (_registryDirOverride !== undefined) return _registryDirOverride;
   // #859: subprocess test isolation via env var
   const envOverride = process.env.OMCUSTOM_REGISTRY_DIR;
   if (envOverride) return envOverride;
-  // Use process.env.HOME when available so tests can redirect to a temp directory
-  // (Bun's os.homedir() caches the value and ignores runtime HOME changes).
-  const home = process.env.HOME ?? homedir();
-  return join(home, '.oh-my-customcode');
+  // #1794: resolveHomeDir() reads HOME on every call and skips an empty value, so
+  // HOME="" can never yield the relative path ".oh-my-customcode" under Node.
+  const resolved = home ?? resolveHomeDir();
+  if (resolved === '') {
+    throw new Error('Could not determine the home directory for the project registry');
+  }
+  return join(resolved, '.oh-my-customcode');
 }
 
 /** Compute the registry file path at call-time. */
