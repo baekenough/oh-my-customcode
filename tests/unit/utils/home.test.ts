@@ -177,6 +177,46 @@ describe('symlinked HOME (realpath-aware comparison)', () => {
     expect(isUnderHome(join(link, 'does-not-exist', 'q'), link)).toBe(true);
   });
 
+  it('isUnderHome/shortenHome: nonexistent symlink-form path (depth >= 2) under a realpath-form home', () => {
+    const gone = join(link, 'gone', 'q');
+    const home = realpathSync(realDir);
+    expect(isUnderHome(gone, home)).toBe(true);
+    expect(shortenHome(gone, home)).toBe(`~${sep}${join('gone', 'q')}`);
+  });
+
+  it('isUnderHome/shortenHome: nonexistent path under a sibling of the home stays outside', () => {
+    const realx = join(scratch, 'realx');
+    const linkx = join(scratch, 'linkx');
+    mkdirSync(realx, { recursive: true });
+    symlinkSync(realx, linkx, 'dir');
+    const gone = join(linkx, 'gone', 'q');
+    const home = realpathSync(realDir);
+    expect(isUnderHome(gone, home)).toBe(false);
+    expect(shortenHome(gone, home)).toBe(gone);
+  });
+
+  it('isUnderHome: a symlink-loop ancestor does not throw and is not under an unrelated home', () => {
+    const a = join(scratch, 'a');
+    const b = join(scratch, 'b');
+    symlinkSync(b, a);
+    symlinkSync(a, b);
+    const looped = join(a, 'x', 'y');
+    const unrelated = realpathSync(realDir);
+    expect(() => isUnderHome(looped, unrelated)).not.toThrow();
+    expect(isUnderHome(looped, unrelated)).toBe(false);
+    expect(shortenHome(looped, unrelated)).toBe(looped);
+  });
+
+  it('isUnderHome: a nonexistent path whose only existing ancestor is / is compared as given', () => {
+    const orphan = join(sep, 'omc-nonexistent-top-level', 'x', 'y');
+    expect(() => isUnderHome(orphan, realpathSync(realDir))).not.toThrow();
+    expect(isUnderHome(orphan, realpathSync(realDir))).toBe(false);
+    expect(isUnderHome(orphan, join(sep, 'omc-nonexistent-top-level'))).toBe(true);
+    expect(shortenHome(orphan, join(sep, 'omc-nonexistent-top-level'))).toBe(
+      `~${sep}${join('x', 'y')}`
+    );
+  });
+
   it('isUnderHome: an explicit empty home is never matched', () => {
     expect(isUnderHome(join(link, 'p'), '')).toBe(false);
   });
