@@ -4,11 +4,11 @@
  * and shows their version status compared to the currently installed CLI version.
  */
 
-import { basename, join, sep } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import packageJson from '../../package.json';
 import { readRegistry } from '../core/registry.js';
 import { fileExists, readJsonFile, resolveTemplatePath } from '../utils/fs.js';
-import { isUnderHome, resolveHomeDir, shortenHome } from '../utils/home.js';
+import { isPathWithin, isUnderHome, resolveHomeDir, shortenHome } from '../utils/home.js';
 
 /**
  * Lock file schema for .omcustom.lock.json
@@ -131,13 +131,21 @@ async function getTemplateVersion(): Promise<string> {
 }
 
 /**
- * Check whether a project path matches the optional search paths filter.
+ * Normalize user-provided search paths. An empty or missing array means
+ * "unspecified" and yields `undefined`; otherwise each path is resolved against
+ * cwd (relative paths) and loses any trailing separator.
+ */
+function normalizeSearchPaths(paths: string[] | undefined): string[] | undefined {
+  if (!paths || paths.length === 0) return undefined;
+  return paths.map((p) => resolve(p));
+}
+
+/**
+ * Check whether a project path matches the optional (normalized) search paths filter.
  */
 function matchesSearchPaths(projectPath: string, searchPaths: string[] | undefined): boolean {
   if (!searchPaths || searchPaths.length === 0) return true;
-  return searchPaths.some(
-    (searchPath) => projectPath === searchPath || projectPath.startsWith(searchPath + sep)
-  );
+  return searchPaths.some((searchPath) => isPathWithin(projectPath, searchPath));
 }
 
 /**
@@ -169,7 +177,7 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
   // so the command still works before migration is run.
   if (Object.keys(registry.projects).length === 0) {
     const fallbackResults = await _findProjectsFromLockfiles(options, currentVersion);
-    if (fallbackResults.length === 0 && !options.paths) {
+    if (fallbackResults.length === 0 && !normalizeSearchPaths(options.paths)) {
       // Print migration hint to stderr so it doesn't pollute json output
       process.stderr.write(
         '  No projects in registry. Run `omcustom projects --migrate` to import existing projects.\n'
@@ -180,9 +188,10 @@ export async function findProjects(options: ProjectsOptions = {}): Promise<Proje
 
   const results: ProjectInfo[] = [];
   const home = resolveHomeDir();
+  const searchPaths = normalizeSearchPaths(options.paths);
 
   for (const [projectPath, entry] of Object.entries(registry.projects)) {
-    if (!matchesSearchPaths(projectPath, options.paths)) continue;
+    if (!matchesSearchPaths(projectPath, searchPaths)) continue;
     if (!isUnderHome(projectPath, home)) continue;
 
     results.push({
@@ -280,9 +289,10 @@ async function _findProjectsFromLockfiles(
   const results: ProjectInfo[] = [];
   const home = resolveHomeDir();
 
-  const searchPaths: string[] = options.paths ? [...options.paths] : [];
+  const providedPaths = normalizeSearchPaths(options.paths);
+  const searchPaths: string[] = providedPaths ? [...providedPaths] : [];
 
-  if (!options.paths) {
+  if (!providedPaths) {
     const cwd = process.cwd();
     if (!searchPaths.includes(cwd)) searchPaths.push(cwd);
     const parent = dirname(cwd);

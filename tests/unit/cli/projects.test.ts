@@ -18,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join, relative } from 'node:path';
 import { findProjects, projectsCommand } from '../../../src/cli/projects.js';
 import { _setRegistryDirForTesting, readRegistry } from '../../../src/core/registry.js';
 
@@ -1143,5 +1143,143 @@ describe('home resolution (#1794)', () => {
     const found = results.find((p) => p.path === projectDir);
     expect(found).toBeDefined();
     expect(found?.detectionMethod).toBe('lockfile');
+  });
+});
+
+describe('search path normalization (#1805, #1808)', () => {
+  const entryMeta = {
+    version: '0.0.1',
+    installedAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  async function seedRegistry(paths: string[]): Promise<void> {
+    const registryDir = join(tempRoot, '.oh-my-customcode');
+    await mkdir(registryDir, { recursive: true });
+    const projects: Record<string, unknown> = {};
+    for (const p of paths) {
+      projects[p] = entryMeta;
+    }
+    await writeFile(
+      join(registryDir, 'projects.json'),
+      JSON.stringify({ projects }, null, 2),
+      'utf-8'
+    );
+    _setRegistryDirForTesting(registryDir);
+  }
+
+  it('#1805: a --path with a trailing slash still matches registry entries beneath it', async () => {
+    const entry = join(tempRoot, 'ws', 'proj');
+    await seedRegistry([entry]);
+
+    const results = await findProjects({ paths: [`${tempRoot}/ws/`] });
+
+    expect(results.map((p) => p.path)).toEqual([entry]);
+  });
+
+  it('#1805: a sibling directory sharing the --path prefix is not matched', async () => {
+    const inside = join(tempRoot, 'ws', 'proj');
+    const sibling = join(tempRoot, 'ws2', 'proj');
+    await seedRegistry([inside, sibling]);
+
+    const results = await findProjects({ paths: [`${tempRoot}/ws`] });
+
+    expect(results.map((p) => p.path)).toEqual([inside]);
+  });
+
+  it('#1805: a relative --path is resolved against cwd before matching', async () => {
+    const entry = join(tempRoot, 'ws', 'proj');
+    await seedRegistry([entry]);
+
+    const results = await findProjects({
+      paths: [relative(process.cwd(), join(tempRoot, 'ws'))],
+    });
+
+    expect(results.map((p) => p.path)).toEqual([entry]);
+  });
+
+  it('#1808: paths: [] (CLI default) still falls back to the lock-file scan of cwd', async () => {
+    const projectDir = await mkDir(tempRoot, 'fallback-project');
+    await writeLockFile(projectDir);
+    process.chdir(projectDir);
+
+    const results = await findProjects({ paths: [] });
+
+    const found = results.find((p) => p.path === projectDir);
+    expect(found).toBeDefined();
+    expect(found?.detectionMethod).toBe('lockfile');
+  });
+
+  it('#1808: paths: [] with an empty registry prints the migration hint to stderr', async () => {
+    const plainDir = await mkDir(tempRoot, 'plain-dir');
+    process.chdir(plainDir);
+    const written: string[] = [];
+    const stderrSpy = spyOn(process.stderr, 'write').mockImplementation(((chunk: unknown) => {
+      written.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write);
+
+    try {
+      const results = await findProjects({ paths: [] });
+      expect(results).toEqual([]);
+    } finally {
+      stderrSpy.mockRestore();
+    }
+
+    expect(written.join('')).toContain('No projects in registry');
+  });
+
+  it('#1805: lock-file fallback resolves a relative --path to an absolute project path', async () => {
+    const scanRoot = await mkDir(tempRoot, 'scan-root');
+    const projectDir = await mkDir(scanRoot, 'proj');
+    await writeLockFile(projectDir);
+
+    const results = await findProjects({ paths: [relative(process.cwd(), scanRoot)] });
+
+    const found = results.find((p) => p.name === 'proj');
+    expect(found).toBeDefined();
+    expect(found?.path).toBe(join(scanRoot, 'proj'));
+    expect(isAbsolute(found?.path ?? '')).toBe(true);
+  });
+
+  it('#1805: lock-file fallback strips a trailing slash from the --path', async () => {
+    const scanRoot = await mkDir(tempRoot, 'scan-root');
+    const projectDir = await mkDir(scanRoot, 'proj');
+    await writeLockFile(projectDir);
+
+    const results = await findProjects({ paths: [`${scanRoot}/`] });
+
+    const found = results.find((p) => p.name === 'proj');
+    expect(found).toBeDefined();
+    expect(found?.path).toBe(join(scanRoot, 'proj'));
+    expect(found?.path.endsWith('/')).toBe(false);
+  });
+
+  it('#1805: a root --path ("/") matches every registry entry beneath it', async () => {
+    const first = join(tempRoot, 'ws', 'one');
+    const second = join(tempRoot, 'other', 'two');
+    await seedRegistry([first, second]);
+
+    const results = await findProjects({ paths: ['/'] });
+
+    expect(results.map((p) => p.path).sort()).toEqual([first, second].sort());
+  });
+
+  it('#1808: an explicit --path with an empty registry and no match suppresses the migration hint', async () => {
+    const emptyDir = await mkDir(tempRoot, 'empty-scan-dir');
+    const written: string[] = [];
+    const stderrSpy = spyOn(process.stderr, 'write').mockImplementation(((chunk: unknown) => {
+      written.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write);
+
+    try {
+      const results = await findProjects({ paths: [emptyDir] });
+      expect(results).toEqual([]);
+    } finally {
+      stderrSpy.mockRestore();
+    }
+
+    expect(written.join('')).not.toContain('No projects in registry');
   });
 });

@@ -8,6 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { existsSync, realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join } from 'node:path';
@@ -188,6 +189,35 @@ describe('isTempPath()', () => {
 
   it('returns true for a path under /var/folders', () => {
     expect(isTempPath('/var/folders/zz/y')).toBe(true);
+  });
+
+  // #1806: on macOS /var and /tmp are symlinks into /private, and process.cwd()
+  // returns the realpath form. Expectations are computed from the filesystem so
+  // the tests stay portable (on Linux the real and plain forms are identical).
+  it('returns true for the realpath form of the OS temp directory (#1806)', () => {
+    expect(isTempPath(join(realpathSync(tmpdir()), 'x'))).toBe(true);
+  });
+
+  it('returns true for the realpath form of /tmp (#1806)', () => {
+    expect(isTempPath(join(realpathSync('/tmp'), 'x'))).toBe(true);
+  });
+
+  it('returns true for the realpath form of /var/folders when it exists (#1806)', () => {
+    if (existsSync('/var/folders')) {
+      expect(isTempPath(join(realpathSync('/var/folders'), 'zz', 'x'))).toBe(true);
+    }
+  });
+
+  it('skips a nonexistent TMPDIR without throwing and still rejects non-temp paths (#1806)', () => {
+    const original = process.env.TMPDIR;
+    try {
+      process.env.TMPDIR = join(tempRoot, 'does-not-exist-1806');
+      expect(() => isTempPath('/omc-1806-not-temp/x')).not.toThrow();
+      expect(isTempPath('/omc-1806-not-temp/x')).toBe(false);
+    } finally {
+      if (original === undefined) delete process.env.TMPDIR;
+      else process.env.TMPDIR = original;
+    }
   });
 });
 
