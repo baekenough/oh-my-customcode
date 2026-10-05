@@ -14,7 +14,7 @@
 
 import { realpathSync } from 'node:fs';
 import { homedir, userInfo } from 'node:os';
-import { isAbsolute, parse, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, parse, sep } from 'node:path';
 
 /**
  * Overridable home-directory sources (for tests). Resolved in order:
@@ -103,20 +103,39 @@ export function isPathWithin(path: string, base: string): boolean {
 }
 
 /**
- * `realpathSync(p)`, or `p` itself when it is empty, relative, or cannot be
- * resolved (e.g. the path does not exist). A relative path is left alone
- * because `realpathSync` would resolve it against the current directory.
- * Never memoised.
+ * `realpathSync(p)` for an absolute path; empty and relative paths are returned
+ * unchanged (`realpathSync` would resolve a relative path against the current
+ * directory).
+ *
+ * When `p` cannot be resolved (e.g. it does not exist), the deepest ancestor
+ * that `realpathSync` CAN resolve is used instead and the remaining tail
+ * segments are re-appended (via `join`, which normalises `.` and `..`), so a
+ * nonexistent symlink-form path such as `<link>/gone/q` still maps into its
+ * realpath form. A component that exists but does not resolve (a dangling
+ * symlink, a symlink loop, or a permission error) is skipped over and stays in
+ * the re-appended tail under its own name. If no ancestor below the filesystem root
+ * resolves, `p` is returned as given. Never throws; never memoised.
  */
 function realpathOrSelf(p: string): string {
   if (p === '' || !isAbsolute(p)) {
     return p;
   }
-  try {
-    return realpathSync(p);
-  } catch {
-    return p;
+  const tail: string[] = [];
+  let current = p;
+  let parent = dirname(current);
+  // The filesystem root has no parent and is its own realpath, so reaching it
+  // means no ancestor below it resolved: `p` is returned as given.
+  while (parent !== current) {
+    try {
+      return join(realpathSync(current), ...tail);
+    } catch {
+      // Not resolvable here - retry one level up with this segment as tail
+    }
+    tail.unshift(basename(current));
+    current = parent;
+    parent = dirname(current);
   }
+  return p;
 }
 
 /**
