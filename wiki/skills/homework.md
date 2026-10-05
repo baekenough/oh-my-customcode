@@ -1,7 +1,7 @@
 ---
 title: Homework
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/homework/SKILL.md
 related:
@@ -78,6 +78,10 @@ When `homework` is imported into a project where `omcustom-feedback` has model i
 | `omcustom-feedback` model invocation DISABLED in importing project | Fall back to manual: present draft, ask user to file |
 
 Origin: #1336 — second-brain project had model invocation disabled; retrospective was filed manually. Ensures cross-project imports degrade gracefully rather than silently failing Phase 5.
+
+## Artifact Delegation
+
+A delegation that writes the artifact or draft issue body must carry the Standard delegation-prompt block from the [auto-dev workflow](../../.claude/skills/pipeline/workflows/auto-dev.yaml), including the target agent’s Known Limitations lookup. This applies to artifact writers as well as implementation agents. See [[pipeline]] and [[r010]].
 
 ## Relationships
 

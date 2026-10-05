@@ -1,7 +1,7 @@
 ---
 title: Post-Release Followup
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/post-release-followup/SKILL.md
 related:
@@ -30,6 +30,10 @@ After PR creation in a release workflow, collects unaddressed findings from mult
 - **Scope**: harness
 - **User-invocable**: no
 - **Effort**: medium
+
+## Registration Boundary
+
+Delegate body-file creation and issue creation together to [[mgr-gitnerd]]. The agent writes the body to a unique, git-ignored output path and uses `--body-file`; the prompt includes auto-dev’s Standard delegation-prompt block. Before registration, verify claimed existing paths with `git ls-files`; newly created targets are exempt. Create referenced artifacts before citing identifiers from their command output. See [source skill](../../.claude/skills/post-release-followup/SKILL.md) and [[r010]].
 
 ## Relationships
 

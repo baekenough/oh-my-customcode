@@ -222,6 +222,8 @@ When `homework` is imported into a project OTHER than oh-my-customcode, its auto
 
 If Phase 5 is skipped (`--dry-run`), the draft issue body is written to this artifact path for reference.
 
+When the artifact (or the draft body) is written by delegating to an agent, the delegation prompt MUST include the "Standard delegation-prompt block" defined in `.claude/skills/pipeline/workflows/auto-dev.yaml`, including its one-line Known Limitations lookup for the target agent (Origin: #1807 찐빠 #8). This section only points to the block and does not restate it.
+
 ## Permission Mode Note
 
 This skill does not spawn subagents directly, but future versions may delegate analysis to subagents. Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".

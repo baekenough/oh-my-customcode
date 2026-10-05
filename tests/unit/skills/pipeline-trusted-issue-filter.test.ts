@@ -58,8 +58,11 @@ function readText(rel: string): string {
 }
 
 function run(cmd: string[], stdin: string, env: Record<string, string> = {}, cwd = REPO_ROOT) {
-  // Strip inherited GIT_* (git hooks export a relative GIT_DIR, GIT_INDEX_FILE, ...) so
-  // `git rev-parse` inside the block resolves from cwd, not from the parent hook's repo state.
+  // Strip every inherited GIT_* so `git` inside the block resolves from cwd, not from the parent's
+  // repo state. Measured (git 2.52.0): a pre-commit hook receives GIT_INDEX_FILE (.git/index; an
+  // absolute index.lock path for `commit -a`), GIT_PREFIX, GIT_EXEC_PATH, GIT_EDITOR and
+  // GIT_AUTHOR_*, but NOT GIT_DIR or GIT_WORK_TREE. The variable behind hook-only failures is
+  // not yet attributed (#1833).
   const inherited: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) {
     if (!key.startsWith('GIT_') && value !== undefined) {
@@ -460,19 +463,29 @@ describe('shell blocks in auto-dev.yaml run as written (fake gh, no network)', (
     expect((JSON.parse(res.stdout) as FilterOutput).kept.map((i) => i.number)).toEqual([101]);
   });
 
-  test('works from a subdirectory even when the parent exports a relative GIT_DIR (git hook environment)', () => {
+  test('works from a subdirectory even when the parent exports GIT_* variables (GIT_INDEX_FILE and GIT_PREFIX as a git hook does, plus a relative GIT_DIR)', () => {
     writeFileSync(issuesFile, JSON.stringify([OWNER_ISSUE]));
-    const original = process.env.GIT_DIR;
-    process.env.GIT_DIR = '.git';
+    const injected: Record<string, string> = {
+      GIT_INDEX_FILE: '.git/index',
+      GIT_PREFIX: '',
+      GIT_DIR: '.git',
+    };
+    const original: Record<string, string | undefined> = {};
+    for (const [k, v] of Object.entries(injected)) {
+      original[k] = process.env[k];
+      process.env[k] = v;
+    }
     try {
       const res = runTrustBlock(same, {}, join(REPO_ROOT, 'src'));
       expect(res.code).toBe(0);
       expect((JSON.parse(res.stdout) as FilterOutput).kept.map((i) => i.number)).toEqual([101]);
     } finally {
-      if (original === undefined) {
-        delete process.env.GIT_DIR;
-      } else {
-        process.env.GIT_DIR = original;
+      for (const [k, v] of Object.entries(original)) {
+        if (v === undefined) {
+          delete process.env[k];
+        } else {
+          process.env[k] = v;
+        }
       }
     }
   });
@@ -1025,12 +1038,25 @@ describe('a body that tries to break out of a shell literal is never executed (#
 // Step 3 path pre-check and quotation verification: issue text only through the allowed channels.
 // ---------------------------------------------------------------------------
 
-function extractPathPrecheckBlock(): string {
+// `name` is `path-precheck` or `path-precheck-file`; the `\(ONE` / `\n\s*# END <name>\n` anchors
+// keep the shorter name from matching the longer one.
+function extractBlock(name: 'path-precheck' | 'path-precheck-file'): string {
   const m = readText(AUTO_DEV_COPIES[0]).match(
-    /# BEGIN path-precheck \(ONE Bash call\)\n([\s\S]*?)\n\s*# END path-precheck/
+    new RegExp(`# BEGIN ${name} \\(ONE Bash call\\)\\n([\\s\\S]*?)\\n\\s*# END ${name}\\n`)
   );
   expect(m).not.toBeNull();
   return ((m as RegExpMatchArray)[1] as string).trim();
+}
+
+const extractPathPrecheckBlock = () => extractBlock('path-precheck');
+
+// Replace `from` with `to` everywhere; the mutation must really change the block, so a typo in
+// `from` cannot turn a mutation control into a vacuous pass.
+function mutateBlock(block: string, from: string, to: string): string {
+  expect(block).toContain(from);
+  const mutated = block.split(from).join(to);
+  expect(mutated).not.toBe(block);
+  return mutated;
 }
 
 describe('scope-selection Step 3 and quotation checks use the allowed channels (#1824)', () => {
@@ -1053,12 +1079,23 @@ describe('scope-selection Step 3 and quotation checks use the allowed channels (
     rmSync(tmp, { recursive: true, force: true });
   });
 
-  const runStep3 = (title: string, body: string | null) => {
+  // opts.block substitutes a mutated block (mutation controls); opts.cwd / opts.env as for run().
+  const runStep3 = (
+    title: string,
+    body: string | null,
+    opts: { cwd?: string; env?: Record<string, string>; block?: string } = {}
+  ) => {
     writeFileSync(viewFile, JSON.stringify({ title, body }));
-    return run(['bash', '-c', extractPathPrecheckBlock().replace('<N>', '7')], '', {
-      PATH: `${binDir}:${process.env.PATH}`,
-      FAKE_VIEW_FILE: viewFile,
-    });
+    return run(
+      ['bash', '-c', (opts.block ?? extractPathPrecheckBlock()).replace('<N>', '7')],
+      '',
+      {
+        PATH: `${binDir}:${process.env.PATH}`,
+        FAKE_VIEW_FILE: viewFile,
+        ...opts.env,
+      },
+      opts.cwd
+    );
   };
 
   test('positive: tracked file, tracked directory, new file under an existing directory, new file under a missing directory', () => {
@@ -1094,9 +1131,18 @@ describe('scope-selection Step 3 and quotation checks use the allowed channels (
 
   test('the block takes the text from gh and never from the model: no title/body literal in the command', () => {
     const block = extractPathPrecheckBlock();
-    expect(block).toStartWith('gh issue view <N> --json title,body --jq');
-    expect(block).toContain('while IFS= read -r p');
-    expect(block).toContain('git ls-files -- "$p"');
+    // The text comes from gh itself and is only ever piped data (channel (b)).
+    expect(block).toContain('gh issue view <N> --json title,body --jq');
+    expect(block).toContain('set -o pipefail');
+    expect(block).toContain('git rev-parse --show-toplevel');
+    expect(block).toContain("tr -d '\\000'");
+    expect(block).toContain('core.quotepath=false ls-files');
+    expect(block).toContain('[path-precheck] HALT');
+    // c-all5z: NUL-separated listing and a dropped `~` token (a home path is not a repo path).
+    expect(block).toContain('ls-files -z');
+    expect(block).toContain('substr($0,1,1)=="~"{next}');
+    // No grep stage and no path typed as a pathspec string.
+    expect(block).not.toContain('grep ');
     expect(block).not.toContain('git ls-files "');
   });
 
@@ -1116,14 +1162,203 @@ describe('scope-selection Step 3 and quotation checks use the allowed channels (
     rmSync(flag, { force: true });
   });
 
+  // -------------------------------------------------------------------------
+  // #1831 F2/F3 behavior of the tokenizer-based path-precheck block. Expected tracked counts
+  // are computed with `git ls-files` (run() strips GIT_*), never hard-coded. Every behavior
+  // test is paired with a mutation control: the extracted block is altered and the same input
+  // must then give a different result.
+  // -------------------------------------------------------------------------
+  const SAFE_PATH = /^[A-Za-z0-9_./+-]*[A-Za-z0-9]$/;
+  const lines = (s: string) => s.split('\n').filter(Boolean).sort();
+  const lsFiles = () => run(['git', 'ls-files', '-z'], '').stdout.split('\0').filter(Boolean);
+  const lineFor = (p: string, dir: 'yes' | 'no', parent: 'yes' | 'no' = 'yes') =>
+    `${p} tracked=${trackedCount(p)} dir=${dir} parent=${parent}`;
+
+  const PKG_FILE = (() => {
+    const all = lsFiles();
+    return all.includes('packages/eval-core/src/index.ts')
+      ? 'packages/eval-core/src/index.ts'
+      : (all.find((f) => f.startsWith('packages/') && SAFE_PATH.test(f)) as string);
+  })();
+  const PKG_DIR = PKG_FILE.split('/').slice(0, 2).join('/');
+  const TOP_EMPTY_FROM = 'if(i) top[substr($0,1,i-1)]=1; else rootf[$0]=1;';
+
+  test('F2a: a packages/ path (not in the old prefix list) is measured as itself, not cut to a shorter path', () => {
+    const res = runStep3('x', `edit ${PKG_FILE} and ${PKG_DIR}`);
+    expect(res.stderr).toBe('');
+    expect(lines(res.stdout)).toEqual(
+      lines(`${lineFor(PKG_FILE, 'no')}\n${lineFor(PKG_DIR, 'yes')}`)
+    );
+    expect(trackedCount(PKG_FILE)).toBe(1);
+    // Mutation control: an empty top-level set (no tracked top-level name is recognised).
+    const mut = runStep3('x', `edit ${PKG_FILE} and ${PKG_DIR}`, {
+      block: mutateBlock(
+        extractPathPrecheckBlock(),
+        TOP_EMPTY_FROM,
+        'if(i) i=0; else rootf[$0]=1;'
+      ),
+    });
+    expect(lines(mut.stdout)).not.toEqual(lines(res.stdout));
+  });
+
+  test('F2b: root files outside the old list (README_ko.md, ARCHITECTURE.md) are measured; mutation: no root-file set', () => {
+    const body = 'see README_ko.md and ARCHITECTURE.md';
+    const res = runStep3('x', body);
+    expect(res.stderr).toBe('');
+    expect(lines(res.stdout)).toEqual(
+      lines(`${lineFor('README_ko.md', 'no')}\n${lineFor('ARCHITECTURE.md', 'no')}`)
+    );
+    expect(trackedCount('README_ko.md')).toBe(1);
+    const mut = runStep3('x', body, {
+      block: mutateBlock(extractPathPrecheckBlock(), 'else rootf[$0]=1;', 'else i=0;'),
+    });
+    expect(mut.stdout.trim()).toBe('');
+  });
+
+  // Documented trade-off, not a defect: auto-dev.yaml [AD05] "Known limits" says the block cuts at
+  // the first tracked top-level component so the hooks-approval and unattended-split gates do not
+  // miss a path behind a variable or absolute prefix; a foreign prefix is therefore reported as
+  // this repository's path (the wrong cut makes the gate stricter, not looser).
+  test('F2c (documented limit): a foreign prefix is cut to the repository path (foo/src/index.ts -> src/index.ts)', () => {
+    expect(trackedCount('src/index.ts')).toBe(1);
+    const res = runStep3('x', 'see foo/src/index.ts');
+    expect(res.stderr).toBe('');
+    expect(res.stdout.trim()).toBe(lineFor('src/index.ts', 'no'));
+    // Mutation control: without the prefix cut the foreign path yields no line at all.
+    const mut = runStep3('x', 'see foo/src/index.ts', {
+      block: mutateBlock(extractPathPrecheckBlock(), 'for(k=1;k<=n;k++)', 'for(k=1;k<=1;k++)'),
+    });
+    expect(mut.stdout.trim()).toBe('');
+  });
+
+  const prefixBody = () =>
+    [
+      `A: bash "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/rule-deletion-guard.sh"`,
+      `B: ${REPO_ROOT}/.claude/hooks/scripts/failure-ledger.sh`,
+      'C: ./.claude/hooks/scripts/fail-axis-cause-advisor.sh',
+      `D: ../${REPO_ROOT.split('/').pop()}/.claude/hooks/hooks.json`,
+      'E: [link](.claude/hooks/scripts/secret-filter.sh)',
+      'F: .claude/hooks/scripts/stuck-detector.sh:42',
+      'G: $R/src/cli/serve.ts',
+      'H: templates/.claude/hooks/scripts/failure-ledger.sh',
+    ].join('\n');
+  const PREFIX_EXPECTED = [
+    '.claude/hooks/scripts/rule-deletion-guard.sh',
+    '.claude/hooks/scripts/failure-ledger.sh',
+    '.claude/hooks/scripts/fail-axis-cause-advisor.sh',
+    '.claude/hooks/hooks.json',
+    '.claude/hooks/scripts/secret-filter.sh',
+    '.claude/hooks/scripts/stuck-detector.sh',
+    'src/cli/serve.ts',
+    'templates/.claude/hooks/scripts/failure-ledger.sh',
+  ];
+
+  test('prefix forms A-H (variable, absolute repo path, ./, ../<repo>/, link, :line, $R/, plain) all measure the repository path', () => {
+    const res = runStep3('prefix probe', prefixBody());
+    expect(res.stderr).toBe('');
+    expect(lines(res.stdout)).toEqual(
+      lines(PREFIX_EXPECTED.map((p) => lineFor(p, 'no')).join('\n'))
+    );
+    // Mutation control: without the prefix cut, A, B, D and G (glued prefixes) are lost.
+    const mut = runStep3('prefix probe', prefixBody(), {
+      block: mutateBlock(extractPathPrecheckBlock(), 'for(k=1;k<=n;k++)', 'for(k=1;k<=1;k++)'),
+    });
+    const got = lines(mut.stdout);
+    expect(got.length).toBeLessThan(PREFIX_EXPECTED.length);
+    expect(got.some((l) => l.startsWith('.claude/hooks/scripts/rule-deletion-guard.sh '))).toBe(
+      false
+    );
+    expect(got.some((l) => l.startsWith('src/cli/serve.ts '))).toBe(false);
+  });
+
+  test('negative: a ~ home path is not a repository path (zero lines); mutation: dropping the ~ skip reports it', () => {
+    const body = '~/.claude/hooks/x.sh and ~/.claude/audit.jsonl';
+    const res = runStep3('x', body);
+    expect(res.stderr).toBe('');
+    expect(res.stdout).toBe('');
+    const mut = runStep3('x', body, {
+      block: mutateBlock(extractPathPrecheckBlock(), 'substr($0,1,1)=="~"{next} ', ''),
+    });
+    expect(mut.stdout).toContain('.claude/audit.jsonl ');
+  });
+
+  test('F3: from cwd=<repo>/src the output equals the root run; mutation: without the root pin it differs', () => {
+    const title = '.claude/skills/pipeline/SKILL.md';
+    const body = 'README.md and src/cli';
+    const atRoot = runStep3(title, body);
+    expect(atRoot.stdout).toContain(`README.md tracked=${trackedCount('README.md')} `);
+    expect(atRoot.stdout).toContain(`src/cli tracked=${trackedCount('src/cli')} dir=yes`);
+    const fromSrc = runStep3(title, body, { cwd: join(REPO_ROOT, 'src') });
+    expect(fromSrc.stderr).toBe('');
+    expect(fromSrc.code).toBe(0);
+    expect(fromSrc.stdout).toBe(atRoot.stdout);
+    const mut = runStep3(title, body, {
+      cwd: join(REPO_ROOT, 'src'),
+      block: mutateBlock(extractPathPrecheckBlock(), 'cd "$root" && ', ''),
+    });
+    expect(mut.stdout).not.toBe(atRoot.stdout);
+  });
+
+  describe('non-ASCII tracked names are counted (temporary git repository)', () => {
+    let repo: string;
+
+    beforeAll(() => {
+      repo = join(tmp, 'nonascii-repo');
+      mkdirSync(join(repo, 'docs', 'sub'), { recursive: true });
+      writeFileSync(join(repo, 'docs', 'sub', 'a.md'), 'a\n');
+      writeFileSync(join(repo, 'docs', 'sub', '한글.md'), 'b\n');
+      expect(run(['git', 'init', '-q', repo], '').code).toBe(0);
+      expect(run(['git', 'add', '-A'], '', {}, repo).code).toBe(0);
+    });
+
+    test('docs/sub counts both the ASCII and the Hangul file (tracked=2); mutation: plain `git ls-files` (quoted paths) undercounts', () => {
+      const res = runStep3('x', 'see docs/sub', { cwd: repo });
+      expect(res.stderr).toBe('');
+      expect(res.stdout.trim()).toBe('docs/sub tracked=2 dir=yes parent=yes');
+      // Mutation control: removing quotepath=false together with the NUL listing leaves git's
+      // quoted "docs/sub/\355..." entry, which no longer counts under docs/sub.
+      const mut = runStep3('x', 'see docs/sub', {
+        cwd: repo,
+        block: mutateBlock(
+          extractPathPrecheckBlock(),
+          "git -c core.quotepath=false ls-files -z | tr '\\000' '\\n'",
+          'git ls-files'
+        ),
+      });
+      expect(mut.stdout.trim()).not.toBe('docs/sub tracked=2 dir=yes parent=yes');
+    });
+  });
+
+  test('both blocks are extractable by name and the file block is a read loop pinned to the root', () => {
+    const fileBlock = extractBlock('path-precheck-file');
+    expect(fileBlock).toContain('git --literal-pathspecs ls-files');
+    expect(fileBlock).toContain('cd "$root"');
+    expect(extractBlock('path-precheck')).not.toBe(fileBlock);
+  });
+
   for (const rel of AUTO_DEV_COPIES) {
     test(`${rel}: quotation checks name the file-pattern form and the old inline forms are gone`, () => {
       const text = readText(rel);
-      expect(text).toContain('Write tool and verify with `grep -F -f <file>`');
+      // Canonical quote-verify block: both marker lines, a per-quotation count, a failure on 0.
+      expect(text).toContain('# BEGIN quote-verify (ONE Bash call)');
+      expect(text).toContain('# END quote-verify');
+      const verify = text.slice(
+        text.indexOf('# BEGIN quote-verify'),
+        text.indexOf('# END quote-verify')
+      );
+      expect(verify).toContain('command grep -cF -e "$q" -- "$T"');
+      expect(verify).toContain('[quote-verify] HALT');
+      expect(verify).not.toContain('grep -F -f');
+      // Any-match single-grep prescriptions for quotation verification are gone; the remaining
+      // `grep -F -f` mentions are the shell-rule channel (c) example, the standard sentence and
+      // the explicit "is any-match / NOT a verification" statements.
+      expect(text).not.toContain('Write tool and verify with `grep -F -f <file>`');
       expect(text).not.toContain('verify with `grep -F`;');
-      expect(text).toContain('`grep -nF -f <quotation-file>`');
-      expect(text).toContain('`grep -F -f <quotation-file>`');
-      expect(text).toContain('`grep -F -f <items-file>`');
+      expect(text).not.toContain('`grep -nF -f <quotation-file>`');
+      expect(text).not.toContain('`grep -F -f <quotation-file>`');
+      expect(text).not.toContain('`grep -F -f <items-file>`');
+      expect(text).toContain('a combined `grep -F -f <file>`');
+      expect(text).toContain('NOT a verification');
       expect(text).toContain('# BEGIN path-precheck (ONE Bash call)');
       expect(text).not.toContain('Measure each extracted path with `git ls-files` NOW');
     });
@@ -1131,6 +1366,7 @@ describe('scope-selection Step 3 and quotation checks use the allowed channels (
 });
 
 function trackedCount(path: string): number {
-  const res = Bun.spawnSync(['git', 'ls-files', '--', path], { cwd: REPO_ROOT });
-  return res.stdout.toString().split('\n').filter(Boolean).length;
+  // run() strips inherited GIT_*, so the count is the same under a pre-commit hook.
+  const res = run(['git', 'ls-files', '--', path], '');
+  return res.stdout.split('\n').filter(Boolean).length;
 }

@@ -73,11 +73,34 @@ Remove duplicates (same issue referenced from multiple sources). Categorize:
 **When ambiguous, lean toward registering.** Registering a borderline item costs nothing; missing a genuine defect costs a future session.
 
 **How to auto-register:**
+이 스킬은 메인 대화(오케스트레이터)가 실행하며 오케스트레이터는 파일을 쓸 수 없습니다(R010). 따라서
+본문 파일 작성과 `gh issue create --body-file` 실행은 **mgr-gitnerd 1회 위임**으로 묶습니다. 그 위임에서
+에이전트가 Write 도구로 본문을 위임 고유의 git-ignored 경로(예:
+`.claude/outputs/sessions/{YYYY-MM-DD}/` 아래 고유 파일명)에 쓰고, 같은 위임 안에서 아래 명령을 실행합니다.
+위임서에는 auto-dev.yaml의 "Standard delegation-prompt block"을 넣습니다. 본문은 셸 인자로 넘기지 않고
+파일로만 전달합니다(`$(…)`·백틱이 든 본문이 셸에서 실행되지 않도록 하기 위함입니다).
+
 ```bash
 gh issue create \
   --title "{간결한 설명}" \
-  --body "## 출처\n\nv{version} 릴리즈 워크플로우에서 자동 등록.\n\n## 컨텍스트\n\n{상세 컨텍스트}\n\n## 권장 조치\n\n{권장 사항}" \
+  --body-file "{본문 파일 경로}" \
   --label "professor"
+```
+
+본문 파일 내용(실제 줄바꿈 포함):
+
+```markdown
+## 출처
+
+v{version} 릴리즈 워크플로우에서 자동 등록.
+
+## 컨텍스트
+
+{상세 컨텍스트}
+
+## 권장 조치
+
+{권장 사항}
 ```
 
 **이슈 본문의 코드 위치 표기 — 행 번호 대신 앵커 (#1652 #3-2)**: `## 컨텍스트`에서 코드 위치는 행
@@ -87,11 +110,20 @@ gh issue create \
 병기하려면 기준 커밋 SHA를 함께 적고 "참고용"임을 명시한다. 후속 위임서도 "행 번호는 참고, 앵커로
 재탐색"을 전제로 작성된다(auto-dev.yaml substitution 조항 cross-ref).
 
+**이슈 본문의 파일 경로 — 등록 전 `git ls-files` 확인 (#1799 찐빠 #4)**: 오케스트레이터가 등록하는
+이슈의 `## 컨텍스트`에 파일 경로를 적을 때는 등록 위임 직전에 오케스트레이터가 읽기 전용 명령
+`git ls-files -- <path>`로 추적 여부를 확인한 뒤 본문에 기재합니다. 출력이 비어 있으면 경로가 틀린 것이므로 그대로 적지 않고
+`git grep`으로 실제 위치를 찾습니다. 신규 생성 대상 경로는 처음부터 untracked이므로 이 확인에서 제외합니다.
+
 Add priority label (`P3` default for defects surfaced here; escalate to `P2` if MEDIUM+ severity).
 
 **Authority**: user directive (session 102) — genuine defects found during release workflows should be registered without prompting. See also R016 Defect Response Matrix: CI/infra defect and Process gap both require Issue registration.
 
 After auto-registering, include the created issue numbers in the summary display.
+
+**번호 인용 순서 (#1803 찐빠 #2)**: 방금 등록한 이슈의 번호를 다른 이슈의 코멘트나 본문에서 인용할 때는
+R010 「GitHub 메타데이터 작업」 bullet의 번호 인용 순서 조항을 따릅니다. 이슈를 먼저 만든 뒤 그 위임의
+명령 출력(URL·번호)에서 받은 번호를 인용합니다.
 
 ### 3. Present to User
 
@@ -146,13 +178,33 @@ Use AskUserQuestion (or equivalent user prompt) to get the choice **only if ther
 
 ## Issue Creation Template
 
+두 템플릿 모두 위 "How to auto-register"의 mgr-gitnerd 1회 위임으로 실행합니다. 본문 파일 작성(Write 도구,
+위임 고유의 git-ignored 경로)과 `--body-file` 실행이 같은 위임에 들어가며, 생성된 이슈 번호는 그 위임의
+명령 출력(URL·번호)에서 받습니다.
+
 For auto-registered genuine defects / process gaps:
 
 ```bash
 gh issue create \
   --title "{간결한 설명}" \
-  --body "## 출처\n\nv{version} 릴리즈 워크플로우에서 자동 등록.\n\n## 컨텍스트\n\n{triage/verify에서의 상세 컨텍스트}\n\n## 권장 조치\n\n{권장 사항}" \
+  --body-file "{본문 파일 경로}" \
   --label "professor"
+```
+
+본문 파일 내용(실제 줄바꿈 포함):
+
+```markdown
+## 출처
+
+v{version} 릴리즈 워크플로우에서 자동 등록.
+
+## 컨텍스트
+
+{triage/verify에서의 상세 컨텍스트}
+
+## 권장 조치
+
+{권장 사항}
 ```
 
 For user-requested issue creation (Option C fallback, if ever used):
@@ -160,8 +212,24 @@ For user-requested issue creation (Option C fallback, if ever used):
 ```bash
 gh issue create \
   --title "{간결한 설명}" \
-  --body "## 출처\n\nv{version} 릴리즈 워크플로우에서 발견.\n\n## 컨텍스트\n\n{triage/verify에서의 상세 컨텍스트}\n\n## 권장 조치\n\n{권장 사항}" \
+  --body-file "{본문 파일 경로}" \
   --label "professor"
+```
+
+본문 파일 내용(실제 줄바꿈 포함):
+
+```markdown
+## 출처
+
+v{version} 릴리즈 워크플로우에서 발견.
+
+## 컨텍스트
+
+{triage/verify에서의 상세 컨텍스트}
+
+## 권장 조치
+
+{권장 사항}
 ```
 
 Add priority label (`P1`, `P2`, `P3`) based on categorization. Default for auto-registered items: `P3` (escalate to `P2` for MEDIUM+ severity).
@@ -174,7 +242,7 @@ Add priority label (`P1`, `P2`, `P3`) based on categorization. Default for auto-
 - Genuine defect/process gap items are auto-registered as issues WITHOUT user confirmation (session 102 directive)
 - Only "즉시 실행" (code-changing immediate action) items require user confirmation
 - All file modifications delegated to specialist subagents per R010
-- Issue creation uses `gh` CLI directly (read-only operation pattern)
+- Issue creation uses the `gh` CLI with `--body-file`; the body file is written and `gh issue create` is run in one mgr-gitnerd delegation (R010), not by the orchestrator directly
 - If no follow-up candidates found, report "No follow-up actions needed" and complete
 - PR review feedback is available shortly after PR creation — the omc_pr_analyzer bot comments automatically
 

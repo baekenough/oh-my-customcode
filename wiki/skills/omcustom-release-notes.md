@@ -1,7 +1,7 @@
 ---
 title: Omcustom Release Notes
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/omcustom-release-notes/SKILL.md
 related:
@@ -24,6 +24,10 @@ Generates release notes by reading git log between two refs and fetching closed 
 - **User-invocable**: yes
 - **Command**: `/omcustom-release-notes`
 - **Effort**: not specified
+
+## File-Based Apply
+
+Write generated notes to a delegation-unique, git-ignored notes file and pass its path using `--notes-file` for release creation or editing. Never inline notes containing shell syntax. The tracked `release_notes.md` remains a review output and is not the apply input. See [source skill](../../.claude/skills/omcustom-release-notes/SKILL.md), [[pipeline]], and [[r010]].
 
 ## Relationships
 
