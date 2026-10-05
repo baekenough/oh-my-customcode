@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { isAbsolute } from 'node:path';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { isAbsolute, join, sep } from 'node:path';
 import {
   isPathWithin,
   isUnderHome,
@@ -138,6 +140,101 @@ describe('isUnderHome', () => {
     const home = resolveHomeDir();
     expect(home).not.toBe('');
     expect(isUnderHome(home)).toBe(true);
+  });
+});
+
+describe('symlinked HOME (realpath-aware comparison)', () => {
+  let scratch: string;
+  let realDir: string;
+  let link: string;
+
+  beforeEach(() => {
+    // Real temp dirs outside $HOME; `link` is a symlink to `realDir`.
+    scratch = mkdtempSync(join(tmpdir(), 'omc-home-link-'));
+    realDir = join(scratch, 'real');
+    link = join(scratch, 'link');
+    mkdirSync(join(realDir, 'p'), { recursive: true });
+    symlinkSync(realDir, link, 'dir');
+  });
+
+  afterEach(() => {
+    rmSync(scratch, { recursive: true, force: true });
+  });
+
+  it('isUnderHome: realpath-form path under a symlink-form home', () => {
+    expect(isUnderHome(join(realpathSync(realDir), 'p'), link)).toBe(true);
+  });
+
+  it('isUnderHome: symlink-form path under a realpath-form home', () => {
+    expect(isUnderHome(join(link, 'p'), realpathSync(realDir))).toBe(true);
+  });
+
+  it('isUnderHome: sibling sharing the prefix is NOT under the symlinked home', () => {
+    expect(isUnderHome(join(`${realpathSync(realDir)}x`, 'p'), link)).toBe(false);
+  });
+
+  it('isUnderHome: nonexistent path under the symlinked home matches without throwing', () => {
+    expect(isUnderHome(join(link, 'does-not-exist', 'q'), link)).toBe(true);
+  });
+
+  it('isUnderHome: an explicit empty home is never matched', () => {
+    expect(isUnderHome(join(link, 'p'), '')).toBe(false);
+  });
+
+  it('shortenHome: realpath-form path with a symlink-form home', () => {
+    expect(shortenHome(join(realpathSync(realDir), 'p'), link)).toBe(`~${sep}p`);
+  });
+
+  it('shortenHome: symlink-form path with a realpath-form home', () => {
+    expect(shortenHome(join(link, 'p'), realpathSync(realDir))).toBe(`~${sep}p`);
+  });
+
+  it('shortenHome: the symlinked home itself becomes ~', () => {
+    expect(shortenHome(realpathSync(realDir), link)).toBe('~');
+  });
+
+  it('shortenHome: sibling and empty home return the path unchanged', () => {
+    const sibling = join(`${realpathSync(realDir)}x`, 'p');
+    expect(shortenHome(sibling, link)).toBe(sibling);
+    expect(shortenHome(join(link, 'p'), '')).toBe(join(link, 'p'));
+  });
+
+  it('isUnderHome: follows a retargeted home symlink (no memoisation)', () => {
+    const d1 = join(scratch, 'd1');
+    const d2 = join(scratch, 'd2');
+    const hm = join(scratch, 'hm');
+    mkdirSync(join(d1, 'p'), { recursive: true });
+    mkdirSync(join(d2, 'p'), { recursive: true });
+    symlinkSync(d1, hm, 'dir');
+    expect(isUnderHome(join(d1, 'p'), hm)).toBe(true);
+
+    unlinkSync(hm);
+    symlinkSync(d2, hm, 'dir');
+    expect(isUnderHome(join(d1, 'p'), hm)).toBe(false);
+    expect(isUnderHome(join(d2, 'p'), hm)).toBe(true);
+  });
+
+  it('two different aliases of the same real dir match (realpath x realpath)', () => {
+    const l1 = join(scratch, 'l1');
+    const l2 = join(scratch, 'l2');
+    symlinkSync(realDir, l1, 'dir');
+    symlinkSync(realDir, l2, 'dir');
+    expect(isUnderHome(join(l2, 'p'), l1)).toBe(true);
+    expect(shortenHome(join(l2, 'p'), l1)).toBe(`~${sep}p`);
+  });
+
+  it('relative paths are never resolved against the cwd', () => {
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(realDir);
+      const home = realpathSync(scratch);
+      expect(isUnderHome('p', home)).toBe(false);
+      expect(isUnderHome('.', home)).toBe(false);
+      expect(shortenHome('p', home)).toBe('p');
+      expect(shortenHome('.', home)).toBe('.');
+    } finally {
+      process.chdir(originalCwd);
+    }
   });
 });
 

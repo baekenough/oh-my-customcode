@@ -9,11 +9,12 @@
  * from `process.env` on EVERY call (never memoised) and an empty value falls
  * through to the next source instead of being used as-is.
  *
- * Leaf module: depends only on `node:os` and `node:path`.
+ * Leaf module: depends only on `node:fs`, `node:os` and `node:path`.
  */
 
+import { realpathSync } from 'node:fs';
 import { homedir, userInfo } from 'node:os';
-import { parse, sep } from 'node:path';
+import { isAbsolute, parse, sep } from 'node:path';
 
 /**
  * Overridable home-directory sources (for tests). Resolved in order:
@@ -102,24 +103,48 @@ export function isPathWithin(path: string, base: string): boolean {
 }
 
 /**
- * True when `path` is the home directory or lies beneath it.
- * `home` defaults to `resolveHomeDir()`.
+ * `realpathSync(p)`, or `p` itself when it is empty, relative, or cannot be
+ * resolved (e.g. the path does not exist). A relative path is left alone
+ * because `realpathSync` would resolve it against the current directory.
+ * Never memoised.
  */
-export function isUnderHome(path: string, home?: string): boolean {
-  return isPathWithin(path, home ?? resolveHomeDir());
+function realpathOrSelf(p: string): string {
+  if (p === '' || !isAbsolute(p)) {
+    return p;
+  }
+  try {
+    return realpathSync(p);
+  } catch {
+    return p;
+  }
 }
 
 /**
- * Replace the home prefix with `~` (`~` for home itself, `~/rest` beneath it).
- * Returns the path unchanged when it is outside home or home is empty.
+ * True when `path` is the home directory or lies beneath it.
+ * `home` defaults to `resolveHomeDir()`. Both sides are also compared in
+ * realpath form, so a symlinked HOME (e.g. macOS `/var` -> `/private/var`)
+ * still matches registry keys recorded from the real cwd.
+ *
+ * Membership is the UNION of the raw and realpath comparisons: a path outside
+ * home that is a symlink into home counts as inside.
  */
-export function shortenHome(path: string, home?: string): string {
-  const base = stripTrailingSeparators(home ?? resolveHomeDir());
+export function isUnderHome(path: string, home?: string): boolean {
+  const base = home ?? resolveHomeDir();
+  const paths = [path, realpathOrSelf(path)];
+  const bases = [base, realpathOrSelf(base)];
+  return paths.some((p) => bases.some((b) => isPathWithin(p, b)));
+}
+
+/**
+ * Replace `path`'s `base` prefix with `~`, or `undefined` when `path` is not
+ * within `base`.
+ */
+function tildeRelative(path: string, rawBase: string): string | undefined {
+  const base = stripTrailingSeparators(rawBase);
   if (!isPathWithin(path, base)) {
-    return path;
+    return undefined;
   }
-  const strippedPath = stripTrailingSeparators(path);
-  if (strippedPath === base) {
+  if (stripTrailingSeparators(path) === base) {
     return '~';
   }
   let rest = path.slice(base.length);
@@ -127,4 +152,36 @@ export function shortenHome(path: string, home?: string): string {
     rest = rest.slice(1);
   }
   return `~${sep}${rest}`;
+}
+
+/**
+ * Replace the home prefix with `~` (`~` for home itself, `~/rest` beneath it).
+ * Returns the path unchanged when it is outside home or home is empty.
+ *
+ * Pairs are tried in order (path, home), (path, realpath(home)),
+ * (realpath(path), home), (realpath(path), realpath(home)); the first pair
+ * that matches yields the result, so a symlinked HOME still shortens a
+ * realpath-form path (and vice versa).
+ *
+ * Membership is the UNION of the raw and realpath comparisons (same as
+ * `isUnderHome`): an existing path whose realpath is inside home is shortened
+ * to `~/…` even when its raw form is outside home.
+ */
+export function shortenHome(path: string, home?: string): string {
+  const base = home ?? resolveHomeDir();
+  const realPath = realpathOrSelf(path);
+  const realBase = realpathOrSelf(base);
+  const candidates: Array<[string, string]> = [
+    [path, base],
+    [path, realBase],
+    [realPath, base],
+    [realPath, realBase],
+  ];
+  for (const [p, b] of candidates) {
+    const shortened = tildeRelative(p, b);
+    if (shortened !== undefined) {
+      return shortened;
+    }
+  }
+  return path;
 }
