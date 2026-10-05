@@ -954,11 +954,11 @@ describe('projectsCommand() — simple formatting', () => {
 });
 
 // ---------------------------------------------------------------------------
-// shortenPath — coverage (Lines 348-352)
+// shortenHome — coverage (via projectsCommand output)
 // The home directory path shortening is exercised when a project path is under ~
 // ---------------------------------------------------------------------------
 
-describe('projectsCommand() — shortenPath coverage', () => {
+describe('projectsCommand() — shortenHome coverage', () => {
   it('shortens home directory paths to ~ in table output', async () => {
     // HOME stays at tempRoot (set in beforeEach); never touch the real home.
     // Fake a registry entry under the temp HOME to trigger the ~ shortening branch.
@@ -989,52 +989,9 @@ describe('projectsCommand() — shortenPath coverage', () => {
       await projectsCommand({ format: 'table' });
       const output = logLines.join('\n');
       // Path under home should be shortened to ~ (the Name column shows the bare
-      // basename, so the '~/' prefix can only come from shortenPath()).
+      // basename, so the '~/' prefix can only come from shortenHome()).
       expect(output).toContain('~/.oh-my-customcode-test-project-coverage');
       expect(output).not.toContain(tempRoot);
-    } finally {
-      consoleSpy.mockRestore();
-    }
-  });
-
-  it('leaves paths outside the current HOME unshortened (HOME is read at call time)', async () => {
-    const projectUnderHome = join(tempRoot, '.oh-my-customcode-test-project-outside');
-    const registryDir = join(tempRoot, '.oh-my-customcode');
-    await writeFile(
-      join(registryDir, 'projects.json'),
-      JSON.stringify({
-        projects: {
-          [projectUnderHome]: {
-            version: '0.0.1',
-            installedAt: '2026-01-01T00:00:00.000Z',
-            updatedAt: '2026-01-01T00:00:00.000Z',
-          },
-        },
-      }),
-      'utf-8'
-    );
-    _setRegistryDirForTesting(registryDir);
-
-    // findProjects() (registry path and lock-file fallback) only lists projects that pass
-    // isUnderHome(path, HOME), which is stricter than shortenPath()'s startsWith(HOME),
-    // so with a stable HOME the "not under HOME" branch is unreachable.
-    // Switch HOME as soon as the list heading is printed (after filtering, before
-    // shortenPath() runs) to exercise that branch.
-    // afterEach restores the original HOME.
-    const logLines: string[] = [];
-    const consoleSpy = spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-      const line = args.map(String).join(' ');
-      logLines.push(line);
-      if (line.includes('적용 프로젝트 (')) {
-        process.env.HOME = join(tempRoot, 'some-other-home');
-      }
-    });
-
-    try {
-      await projectsCommand({ format: 'simple' });
-      const output = logLines.join('\n');
-      expect(output).toContain(`— ${projectUnderHome}`);
-      expect(output).not.toContain('— ~');
     } finally {
       consoleSpy.mockRestore();
     }
@@ -1077,5 +1034,114 @@ describe('findProjects() — sort tie-breaking (same status, alphabetical)', () 
     const betaIdx = results.findIndex((p) => p.path === betaDir);
     // alpha- comes before beta- alphabetically
     expect(alphaIdx).toBeLessThan(betaIdx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Home resolution (#1794)
+// A trailing-slash HOME, a sibling directory sharing HOME as a string prefix,
+// and an empty HOME must all be handled on a path-separator boundary.
+// ---------------------------------------------------------------------------
+
+describe('home resolution (#1794)', () => {
+  const entryMeta = {
+    version: '0.0.1',
+    installedAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  async function seedRegistry(paths: string[]): Promise<void> {
+    const registryDir = join(tempRoot, '.oh-my-customcode');
+    await mkdir(registryDir, { recursive: true });
+    const projects: Record<string, unknown> = {};
+    for (const p of paths) {
+      projects[p] = entryMeta;
+    }
+    await writeFile(
+      join(registryDir, 'projects.json'),
+      JSON.stringify({ projects }, null, 2),
+      'utf-8'
+    );
+    _setRegistryDirForTesting(registryDir);
+  }
+
+  async function captureOutput(format: 'table' | 'simple'): Promise<string> {
+    const logLines: string[] = [];
+    const consoleSpy = spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+      logLines.push(args.map(String).join(' '));
+    });
+    try {
+      await projectsCommand({ format });
+    } finally {
+      consoleSpy.mockRestore();
+    }
+    return logLines.join('\n');
+  }
+
+  it('keeps registry entries and displays ~/<name> when HOME has a trailing slash', async () => {
+    const entry = join(tempRoot, 'trail-proj');
+    await seedRegistry([entry]);
+    process.env.HOME = `${tempRoot}/`;
+
+    const results = await findProjects();
+    expect(results.map((p) => p.path)).toEqual([entry]);
+
+    const table = await captureOutput('table');
+    expect(table).toContain('~/trail-proj');
+    expect(table).not.toContain('~trail-proj');
+    expect(table).not.toContain(tempRoot);
+
+    const simple = await captureOutput('simple');
+    expect(simple).toContain('— ~/trail-proj');
+    expect(simple).not.toContain('~trail-proj');
+  });
+
+  it('guard: does not treat a sibling directory sharing the HOME prefix as under HOME', async () => {
+    // Expected to pass on the old code too - it locks in the separator boundary.
+    const home = join(tempRoot, 'home');
+    const inside = join(home, 'p');
+    const sibling = join(tempRoot, 'homework', 'q');
+    await seedRegistry([inside, sibling]);
+    process.env.HOME = home;
+
+    const results = await findProjects();
+    expect(results.map((p) => p.path)).toEqual([inside]);
+
+    const table = await captureOutput('table');
+    const simple = await captureOutput('simple');
+    for (const output of [table, simple]) {
+      expect(output).toContain('~/p');
+      expect(output).not.toContain('~work');
+    }
+  });
+
+  it('treats HOME="" as unresolved instead of a prefix of every absolute path', async () => {
+    // Only findProjects() runs here: no runMigration/cleanRegistry/registerProject and
+    // a non-empty registry (so the lock-file fallback scan is never triggered).
+    // Under Bun, os.homedir() is frozen to the developer's real home, which this
+    // path is outside of.
+    const outside = '/omc-1794-outside-home/p';
+    await seedRegistry([outside]);
+    process.env.HOME = '';
+
+    const results = await findProjects();
+    expect(results.map((p) => p.path)).not.toContain(outside);
+    expect(results).toEqual([]);
+  });
+
+  it('keeps lock-file fallback projects when HOME has a trailing slash', async () => {
+    // The registry stays empty (beforeEach), so findProjects() takes the lock-file
+    // fallback. The old local isUnderHome built `home + sep` = `<root>//`, which
+    // dropped every project under a trailing-slash HOME.
+    const searchRoot = await mkDir(tempRoot, 'scan-root');
+    const projectDir = await mkDir(searchRoot, 'trail-lock-proj');
+    await writeLockFile(projectDir);
+    process.env.HOME = `${tempRoot}/`;
+
+    const results = await findProjects({ paths: [searchRoot] });
+
+    const found = results.find((p) => p.path === projectDir);
+    expect(found).toBeDefined();
+    expect(found?.detectionMethod).toBe('lockfile');
   });
 });

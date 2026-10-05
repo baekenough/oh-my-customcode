@@ -8,7 +8,6 @@ import { access, mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'bun';
-import { unregisterProject } from '../../src/core/registry.js';
 
 // Set 30s timeout for E2E tests (CI environments are slower)
 describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
@@ -32,7 +31,6 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
   afterEach(async () => {
     // Reset to a safe directory before cleanup
     process.chdir(tmpdir());
-    await unregisterProject(tempDir);
     await rm(tempDir, { recursive: true, force: true });
     // Restore the original working directory so downstream coverage/tests
     // (and any later test file) don't inherit a leaked cwd.

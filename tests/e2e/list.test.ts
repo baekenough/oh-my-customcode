@@ -8,7 +8,6 @@ import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'bun';
-import { unregisterProject } from '../../src/core/registry.js';
 
 describe('E2E: omcustom list', () => {
   let tempDir: string;
@@ -31,7 +30,6 @@ describe('E2E: omcustom list', () => {
   afterEach(async () => {
     // Reset to a safe directory before cleanup
     process.chdir(tmpdir());
-    await unregisterProject(tempDir);
     await rm(tempDir, { recursive: true, force: true });
     // Restore the original working directory so downstream coverage/tests
     // (and any later test file) don't inherit a leaked cwd.

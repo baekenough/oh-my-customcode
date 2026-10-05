@@ -6,7 +6,7 @@
  *   - projectsCommand() with table / json / simple formats
  *   - projectsCommand() returns success shape
  *   - writeLockFile() create and merge behaviour
- *   - shortenPath() ~ path output via table format
+ *   - shortenHome() ~ path output via table format
  *
  * NOTE: These tests avoid relying on specific project names in output
  * because update.test.ts uses mock.module() on projects.js in the same
@@ -19,7 +19,11 @@ import { realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { projectsCommand, writeLockFile } from '../../../src/cli/projects.js';
+import {
+  buildMigrationSearchDirs,
+  projectsCommand,
+  writeLockFile,
+} from '../../../src/cli/projects.js';
 import { _setRegistryDirForTesting } from '../../../src/core/registry.js';
 
 // ---------------------------------------------------------------------------
@@ -260,7 +264,7 @@ describe('writeLockFile()', () => {
 
 // ---------------------------------------------------------------------------
 // projectsCommand — HOME-relative path produces ~ in table output
-// Coverage for shortenPath()'s ~ branch.
+// Coverage for shortenHome()'s ~ branch.
 // HOME is redirected to tempRoot in beforeEach, so a project directly under
 // tempRoot must render as `~/<basename>` and the raw tempRoot must not appear.
 // The real user home is never touched.
@@ -298,5 +302,31 @@ describe('projectsCommand() — result shape', () => {
 
     expect(result.success).toBe(true);
     expect(result.errors).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildMigrationSearchDirs — pure search-dir computation for runMigration
+// ---------------------------------------------------------------------------
+
+describe('buildMigrationSearchDirs() (#1794)', () => {
+  const DEFAULTS = ['workspace', 'projects', 'dev', 'src', 'code', 'repos', 'work'];
+
+  it('returns only the extra paths when home is unresolvable (empty)', () => {
+    expect(buildMigrationSearchDirs('', ['/extra'])).toEqual(['/extra']);
+  });
+
+  it('joins the 7 default dirs under home in order, followed by extras', () => {
+    const result = buildMigrationSearchDirs('/x/home', ['/extra']);
+
+    expect(result).toEqual([...DEFAULTS.map((d) => `/x/home/${d}`), '/extra']);
+    expect(result).toHaveLength(8);
+  });
+
+  it('treats a trailing-slash home the same as one without, with no double slash', () => {
+    const withSlash = buildMigrationSearchDirs('/x/home/', ['/extra']);
+
+    expect(withSlash).toEqual(buildMigrationSearchDirs('/x/home', ['/extra']));
+    expect(withSlash.some((d) => d.includes('//'))).toBe(false);
   });
 });

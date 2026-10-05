@@ -10,8 +10,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { _setRegistryDirForTesting } from '../../../src/core/registry.js';
+import { isAbsolute, join } from 'node:path';
+import { _setRegistryDirForTesting, isTempPath, registryDir } from '../../../src/core/registry.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -54,6 +54,141 @@ beforeEach(async () => {
 afterEach(async () => {
   _setRegistryDirForTesting(undefined);
   await rm(tempRoot, { recursive: true, force: true });
+});
+
+// ---------------------------------------------------------------------------
+// registryDir — home resolution (#1794)
+// ---------------------------------------------------------------------------
+
+/**
+ * Run `fn` with the override cleared, OMCUSTOM_REGISTRY_DIR unset and HOME set
+ * to `home` (or deleted when `home` is undefined). All three are restored in
+ * `finally`. Callers must only compute paths here — never read or write the
+ * registry, because Bun freezes os.homedir() to the developer's real home.
+ */
+function withHome<T>(home: string | undefined, fn: () => T): T {
+  const originalHome = process.env.HOME;
+  const originalEnvDir = process.env.OMCUSTOM_REGISTRY_DIR;
+  try {
+    _setRegistryDirForTesting(undefined);
+    delete process.env.OMCUSTOM_REGISTRY_DIR;
+    if (home === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = home;
+    }
+    return fn();
+  } finally {
+    if (originalHome === undefined) {
+      delete process.env.HOME;
+    } else {
+      process.env.HOME = originalHome;
+    }
+    if (originalEnvDir === undefined) {
+      delete process.env.OMCUSTOM_REGISTRY_DIR;
+    } else {
+      process.env.OMCUSTOM_REGISTRY_DIR = originalEnvDir;
+    }
+    _setRegistryDirForTesting(join(tempRoot, '.oh-my-customcode'));
+  }
+}
+
+describe('registryDir() (#1794)', () => {
+  it('prefers the test override over OMCUSTOM_REGISTRY_DIR and HOME', () => {
+    const originalHome = process.env.HOME;
+    const originalEnvDir = process.env.OMCUSTOM_REGISTRY_DIR;
+    try {
+      process.env.HOME = '/home-a';
+      process.env.OMCUSTOM_REGISTRY_DIR = '/env-dir';
+      _setRegistryDirForTesting('/override-dir');
+      expect(registryDir()).toBe('/override-dir');
+    } finally {
+      if (originalHome === undefined) delete process.env.HOME;
+      else process.env.HOME = originalHome;
+      if (originalEnvDir === undefined) delete process.env.OMCUSTOM_REGISTRY_DIR;
+      else process.env.OMCUSTOM_REGISTRY_DIR = originalEnvDir;
+      _setRegistryDirForTesting(join(tempRoot, '.oh-my-customcode'));
+    }
+  });
+
+  it('prefers OMCUSTOM_REGISTRY_DIR over HOME when no override is set', () => {
+    const originalHome = process.env.HOME;
+    const originalEnvDir = process.env.OMCUSTOM_REGISTRY_DIR;
+    try {
+      _setRegistryDirForTesting(undefined);
+      process.env.HOME = '/home-a';
+      process.env.OMCUSTOM_REGISTRY_DIR = '/env-dir';
+      expect(registryDir()).toBe('/env-dir');
+    } finally {
+      if (originalHome === undefined) delete process.env.HOME;
+      else process.env.HOME = originalHome;
+      if (originalEnvDir === undefined) delete process.env.OMCUSTOM_REGISTRY_DIR;
+      else process.env.OMCUSTOM_REGISTRY_DIR = originalEnvDir;
+      _setRegistryDirForTesting(join(tempRoot, '.oh-my-customcode'));
+    }
+  });
+
+  it('falls back to HOME when neither override nor env var is set', () => {
+    const result = withHome('/home-a', () => registryDir());
+    expect(result).toBe(join('/home-a', '.oh-my-customcode'));
+  });
+
+  it('treats an empty OMCUSTOM_REGISTRY_DIR as unset and falls through to HOME', () => {
+    // withHome() deletes the variable first and restores it in `finally`, so
+    // setting it inside the callback is safe.
+    const result = withHome('/home-a', () => {
+      process.env.OMCUSTOM_REGISTRY_DIR = '';
+      return registryDir();
+    });
+    expect(result).toBe(join('/home-a', '.oh-my-customcode'));
+  });
+
+  it('reads HOME on every call', () => {
+    const first = withHome('/home-a', () => registryDir());
+    const second = withHome('/home-b', () => registryDir());
+    expect(first).toBe(join('/home-a', '.oh-my-customcode'));
+    expect(second).toBe(join('/home-b', '.oh-my-customcode'));
+  });
+
+  it('does not double the separator when HOME has a trailing slash', () => {
+    const result = withHome('/home-a/', () => registryDir());
+    expect(result).toBe(join('/home-a', '.oh-my-customcode'));
+    expect(result).not.toContain('//');
+  });
+
+  it('returns an absolute path when HOME is empty (pure path computation)', () => {
+    const result = withHome('', () => registryDir());
+    expect(isAbsolute(result)).toBe(true);
+    expect(result.endsWith('.oh-my-customcode')).toBe(true);
+    expect(result).not.toBe('.oh-my-customcode');
+  });
+
+  it('throws when the home directory cannot be determined', () => {
+    const run = (): string => withHome(undefined, () => registryDir(''));
+    expect(run).toThrow(/home directory/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isTempPath — pure path classification
+// ---------------------------------------------------------------------------
+
+describe('isTempPath()', () => {
+  it('returns false for a path outside every temp candidate', () => {
+    expect(isTempPath('/omc-1793-not-temp/project')).toBe(false);
+  });
+
+  it('returns true for a path under the OS temp directory', () => {
+    expect(isTempPath(join(tmpdir(), 'x'))).toBe(true);
+  });
+
+  it('returns true for /tmp itself', () => {
+    expect(isTempPath('/tmp')).toBe(true);
+  });
+
+  it('returns true for a path under /var/folders', () => {
+    expect(isTempPath('/var/folders/zz/y')).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
