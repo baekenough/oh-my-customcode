@@ -16,9 +16,9 @@
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import { realpathSync } from 'node:fs';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, isAbsolute, join, relative } from 'node:path';
+import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { findProjects, projectsCommand } from '../../../src/cli/projects.js';
 import { _setRegistryDirForTesting, readRegistry } from '../../../src/core/registry.js';
 
@@ -1281,5 +1281,74 @@ describe('search path normalization (#1805, #1808)', () => {
     }
 
     expect(written.join('')).not.toContain('No projects in registry');
+  });
+});
+
+describe('symlinked HOME (#1810)', () => {
+  const entryMeta = {
+    version: '0.0.1',
+    installedAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  // HOME is the symlink form (homeLink), while registerProject() records the realpath form
+  // (realHome/proj). Everything lives under the per-test tempRoot; nothing touches the real $HOME.
+  async function setupSymlinkedHome(extraKeys: (realHome: string) => string[] = () => []) {
+    const realHome = join(tempRoot, 'realHome');
+    await mkdir(realHome, { recursive: true });
+    const homeLink = join(tempRoot, 'homeLink');
+    await symlink(realHome, homeLink);
+    const realHomePath = realpathSync(realHome);
+    const entry = join(realHomePath, 'proj');
+    const keys = [entry, ...extraKeys(realHomePath)];
+
+    const projects: Record<string, unknown> = {};
+    for (const key of keys) {
+      projects[key] = entryMeta;
+    }
+    const registryDir = join(tempRoot, '.oh-my-customcode');
+    await writeFile(
+      join(registryDir, 'projects.json'),
+      JSON.stringify({ projects }, null, 2),
+      'utf-8'
+    );
+    _setRegistryDirForTesting(registryDir);
+
+    process.env.HOME = homeLink;
+    return { entry, realHomePath };
+  }
+
+  it('lists a realpath-form registry entry when HOME is a symlink (positive)', async () => {
+    const { entry } = await setupSymlinkedHome();
+
+    const results = await findProjects({});
+
+    expect(results.map((p) => p.path)).toEqual([entry]);
+  });
+
+  it('does not list a sibling whose path only shares the realpath-home prefix (negative)', async () => {
+    const { entry } = await setupSymlinkedHome((realHomePath) => [
+      join(`${realHomePath}2`, 'proj'),
+    ]);
+
+    const results = await findProjects({});
+
+    expect(results.map((p) => p.path)).toEqual([entry]);
+  });
+
+  it('prints the entry as ~/proj in the table output', async () => {
+    await setupSymlinkedHome();
+    const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+
+    try {
+      const result = await projectsCommand({ format: 'table' });
+      expect(result.success).toBe(true);
+      expect(result.projects).toHaveLength(1);
+
+      const output = consoleSpy.mock.calls.map((args) => args.join(' ')).join('\n');
+      expect(output).toContain(`~${sep}proj`);
+    } finally {
+      consoleSpy.mockRestore();
+    }
   });
 });
