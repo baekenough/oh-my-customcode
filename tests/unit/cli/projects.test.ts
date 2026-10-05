@@ -2,11 +2,11 @@
  * Unit tests for findProjects() in src/cli/projects.ts
  *
  * Focus: edge cases introduced by the cwd/parent-dir addition (fix #546)
- *   - CWD project is found when not in DEFAULT_SEARCH_DIRS
- *   - Parent dir project is found when not in DEFAULT_SEARCH_DIRS
+ *   - CWD project is found by the lock-file scan (cwd is searched when options.paths is absent)
+ *   - Parent dir project is found by the lock-file scan (parent of cwd is searched too)
  *   - Deduplication: same project not returned twice when cwd and parent overlap
  *   - Root directory: parent === cwd does not produce duplicate search
- *   - options.paths provided: cwd/parent injection is skipped (defaults still run)
+ *   - options.paths provided: only those paths are scanned (cwd/parent injection is skipped)
  *   - Non-existent cwd: gracefully ignored
  *   - Sibling projects under parent are found
  *
@@ -20,7 +20,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { findProjects, projectsCommand } from '../../../src/cli/projects.js';
-import { _setRegistryDirForTesting } from '../../../src/core/registry.js';
+import { _setRegistryDirForTesting, readRegistry } from '../../../src/core/registry.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -54,8 +54,8 @@ let originalCwd: string;
 let originalHome: string | undefined;
 
 beforeEach(async () => {
-  // Create a temp dir that is OUTSIDE DEFAULT_SEARCH_DIRS so default search
-  // does not accidentally discover our test projects.
+  // Create a per-test temp dir for the projects under test. findProjects() scans
+  // only options.paths, or cwd + its parent when options.paths is absent.
   // Use realpathSync to normalize macOS symlinks (/var → /private/var).
   const raw = await mkdtemp(join(tmpdir(), 'omcc-projects-test-'));
   tempRoot = realpathSync(raw);
@@ -85,7 +85,11 @@ beforeEach(async () => {
 afterEach(async () => {
   _setRegistryDirForTesting(undefined);
   process.chdir(originalCwd);
-  process.env.HOME = originalHome;
+  if (originalHome === undefined) {
+    delete process.env.HOME;
+  } else {
+    process.env.HOME = originalHome;
+  }
   await rm(tempRoot, { recursive: true, force: true });
 });
 
@@ -94,7 +98,7 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------
 
 describe('findProjects() — cwd inclusion (fix #546)', () => {
-  it('finds a project in cwd when cwd is outside DEFAULT_SEARCH_DIRS', async () => {
+  it('finds a project in cwd via the lock-file scan', async () => {
     const projectDir = await mkDir(tempRoot, 'my-project');
     await writeLockFile(projectDir);
     process.chdir(projectDir);
@@ -138,7 +142,7 @@ describe('findProjects() — cwd inclusion (fix #546)', () => {
 // ---------------------------------------------------------------------------
 
 describe('findProjects() — parent dir inclusion (fix #546)', () => {
-  it('finds a project in the parent dir when parent is outside DEFAULT_SEARCH_DIRS', async () => {
+  it('finds a project in the parent dir via the lock-file scan', async () => {
     // Structure: tempRoot/parent-project/.omcustom.lock.json
     //            tempRoot/parent-project/sub/   ← cwd
     const parentProjectDir = await mkDir(tempRoot, 'parent-project');
@@ -272,9 +276,8 @@ describe('findProjects() — options.paths skips cwd/parent injection', () => {
     process.chdir(projectDir);
 
     // options.paths is set → cwd injection branch is skipped.
-    // We provide an empty dir that does not contain any projects.
-    // Default search dirs (~/workspace etc.) may still return results from the
-    // real filesystem, so we verify the cwd-specific project is NOT present.
+    // We provide an empty dir that does not contain any projects. Only
+    // options.paths is scanned, so the cwd-specific project must NOT be present.
     const emptySearchDir = await mkDir(tempRoot, 'empty-search');
     const results = await findProjects({ paths: [emptySearchDir] });
 
@@ -315,7 +318,7 @@ describe('findProjects() — non-existent directory handling', () => {
 
   it('does not throw when options.paths contains non-existent paths', async () => {
     const phantomPath = join(tempRoot, 'ghost-path-12345');
-    // Should not throw; results may come from DEFAULT_SEARCH_DIRS only.
+    // Should not throw; the non-existent path is skipped and the result is an array.
     const results = await findProjects({ paths: [phantomPath] });
     expect(Array.isArray(results)).toBe(true);
   });
@@ -652,6 +655,33 @@ describe('projectsCommand() — migration mode', () => {
     }
   });
 
+  it('scans HOME-relative search dirs under the temp HOME, never the real home (#1787)', async () => {
+    // Project under <HOME>/workspace — one of runMigration()'s DEFAULT_SEARCH_DIRS.
+    const projectDir = await mkDir(tempRoot, 'workspace', 'home-scan-target');
+    await writeLockFile(projectDir, '0.78.0');
+    // cwd is a tempRoot subdir that is not itself a project.
+    const cwdDir = await mkDir(tempRoot, 'cwd-sub');
+    process.chdir(cwdDir);
+
+    const consoleSpy = spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      const result = await projectsCommand({ migrate: true, format: 'json' });
+      expect(result.success).toBe(true);
+
+      const registry = await readRegistry();
+      const paths = Object.keys(registry.projects);
+
+      // Positive: the project under the temp HOME was discovered via HOME/workspace.
+      expect(paths).toContain(projectDir);
+      // Negative: nothing from the real user home leaked into the registry.
+      for (const p of paths) {
+        expect(p.startsWith(tempRoot)).toBe(true);
+      }
+    } finally {
+      consoleSpy.mockRestore();
+    }
+  });
+
   it('returns success: false and includes error when migration throws', async () => {
     // Corrupt the registry directory so migrateFromLockfiles cannot write
     const registryDir = join(tempRoot, '.oh-my-customcode');
@@ -930,15 +960,9 @@ describe('projectsCommand() — simple formatting', () => {
 
 describe('projectsCommand() — shortenPath coverage', () => {
   it('shortens home directory paths to ~ in table output', async () => {
-    const { homedir } = await import('node:os');
-    // Use the real homedir (not tempRoot) so the project path is under ~
-    // and the homedir filter in findProjects() allows it through.
-    const realHome = homedir();
-    process.env.HOME = realHome;
-
-    // Create a project path under home dir to trigger the ~ shortening branch
-    // We don't actually create the directory — we fake the registry entry instead
-    const projectUnderHome = join(realHome, '.oh-my-customcode-test-project-coverage');
+    // HOME stays at tempRoot (set in beforeEach); never touch the real home.
+    // Fake a registry entry under the temp HOME to trigger the ~ shortening branch.
+    const projectUnderHome = join(tempRoot, '.oh-my-customcode-test-project-coverage');
     const registryDir = join(tempRoot, '.oh-my-customcode');
     await mkdir(registryDir, { recursive: true });
     await writeFile(
@@ -964,12 +988,55 @@ describe('projectsCommand() — shortenPath coverage', () => {
     try {
       await projectsCommand({ format: 'table' });
       const output = logLines.join('\n');
-      // Path under home should be shortened to ~
-      expect(output).toContain('~');
+      // Path under home should be shortened to ~ (the Name column shows the bare
+      // basename, so the '~/' prefix can only come from shortenPath()).
+      expect(output).toContain('~/.oh-my-customcode-test-project-coverage');
+      expect(output).not.toContain(tempRoot);
     } finally {
       consoleSpy.mockRestore();
-      // Restore HOME to tempRoot for the afterEach cleanup to work correctly
-      process.env.HOME = tempRoot;
+    }
+  });
+
+  it('leaves paths outside the current HOME unshortened (HOME is read at call time)', async () => {
+    const projectUnderHome = join(tempRoot, '.oh-my-customcode-test-project-outside');
+    const registryDir = join(tempRoot, '.oh-my-customcode');
+    await writeFile(
+      join(registryDir, 'projects.json'),
+      JSON.stringify({
+        projects: {
+          [projectUnderHome]: {
+            version: '0.0.1',
+            installedAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        },
+      }),
+      'utf-8'
+    );
+    _setRegistryDirForTesting(registryDir);
+
+    // findProjects() (registry path and lock-file fallback) only lists projects that pass
+    // isUnderHome(path, HOME), which is stricter than shortenPath()'s startsWith(HOME),
+    // so with a stable HOME the "not under HOME" branch is unreachable.
+    // Switch HOME as soon as the list heading is printed (after filtering, before
+    // shortenPath() runs) to exercise that branch.
+    // afterEach restores the original HOME.
+    const logLines: string[] = [];
+    const consoleSpy = spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
+      const line = args.map(String).join(' ');
+      logLines.push(line);
+      if (line.includes('적용 프로젝트 (')) {
+        process.env.HOME = join(tempRoot, 'some-other-home');
+      }
+    });
+
+    try {
+      await projectsCommand({ format: 'simple' });
+      const output = logLines.join('\n');
+      expect(output).toContain(`— ${projectUnderHome}`);
+      expect(output).not.toContain('— ~');
+    } finally {
+      consoleSpy.mockRestore();
     }
   });
 });

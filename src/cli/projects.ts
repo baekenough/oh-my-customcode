@@ -388,7 +388,9 @@ function formatProjectsTable(projects: ProjectInfo[], currentVersion: string): v
  * Shorten a path by replacing home directory with ~
  */
 function shortenPath(path: string): string {
-  const home = homedir();
+  // Use process.env.HOME when available so tests can redirect to a temp directory
+  // (Bun's os.homedir() caches the value and ignores runtime HOME changes).
+  const home = process.env.HOME ?? homedir();
   if (path.startsWith(home)) {
     return `~${path.slice(home.length)}`;
   }
@@ -414,9 +416,9 @@ function formatProjectsSimple(projects: ProjectInfo[], currentVersion: string): 
  */
 async function runMigration(options: ProjectsOptions): Promise<string | null> {
   const { migrateFromLockfiles } = await import('../core/registry.js');
-  const { homedir: _homedir } = await import('node:os');
   const DEFAULT_SEARCH_DIRS = ['workspace', 'projects', 'dev', 'src', 'code', 'repos', 'work'];
-  const home = _homedir();
+  // Same HOME-first pattern as src/core/registry.ts (Bun's os.homedir() caches the value).
+  const home = process.env.HOME ?? homedir();
   const searchDirs = [...DEFAULT_SEARCH_DIRS.map((d) => join(home, d)), ...(options.paths ?? [])];
   const cwd = process.cwd();
   if (!searchDirs.includes(cwd)) searchDirs.push(cwd);
