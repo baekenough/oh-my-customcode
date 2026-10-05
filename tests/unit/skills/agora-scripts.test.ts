@@ -23,6 +23,43 @@ async function pgrepMatches(pattern: string): Promise<string> {
   }
 }
 
+/**
+ * Poll `pgrepMatches(pattern)` every 25 ms and return '' as soon as three
+ * consecutive samples are empty (a single empty sample can race a process that
+ * is mid-teardown). If the deadline passes first, return the last non-empty
+ * result so the caller's `.toBe('')` fails with the surviving PIDs. Replaces a
+ * fixed 500 ms grace sleep: the common case (already reaped) now returns in
+ * ~75 ms, while a genuine survivor is still reported after at most `deadlineMs`.
+ */
+async function pgrepUntilGone(pattern: string, deadlineMs = 500): Promise<string> {
+  const deadline = Date.now() + deadlineMs;
+  let consecutiveEmpty = 0;
+  let last = '';
+  while (true) {
+    last = await pgrepMatches(pattern);
+    if (last === '') {
+      consecutiveEmpty += 1;
+      if (consecutiveEmpty >= 3) {
+        return '';
+      }
+    } else {
+      consecutiveEmpty = 0;
+    }
+    if (Date.now() >= deadline) {
+      return last;
+    }
+    await new Promise((r) => setTimeout(r, 25));
+  }
+}
+
+/**
+ * Collision-proof suffix for temp-path names. `Date.now()` alone collides when
+ * two tests in a concurrent describe pick the same prefix within one ms.
+ */
+function uniqueSuffix(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 const SCRIPTS_DIR = resolve(import.meta.dir, '../../../.claude/skills/agora/scripts');
 const FIXTURES_DIR = resolve(import.meta.dir, '../../fixtures/agora');
 
@@ -1260,7 +1297,7 @@ const OK_STUB = `printf '%s' '${VALID_RESPONSE}'`;
 async function makeOutputSandbox(
   prefix: string
 ): Promise<{ base: string; root: string; obs: string }> {
-  const base = join(tmpdir(), `agora-${prefix}-${Date.now()}`);
+  const base = join(tmpdir(), `agora-${prefix}-${uniqueSuffix()}`);
   const root = join(base, 'out');
   const obs = join(base, 'obs');
   await mkdir(root, { recursive: true });
@@ -1675,11 +1712,9 @@ describe('reviewers.sh --run', () => {
           env
         );
 
-        // Grace period for the OS to finish reaping after SIGTERM before we
-        // sample survivors — the kill is synchronous but process teardown
-        // is not guaranteed instantaneous.
-        await new Promise((r) => setTimeout(r, 500));
-        const survivors = await pgrepMatches(`sleep ${marker}`);
+        // Poll until the OS has finished reaping after SIGTERM — the kill is
+        // synchronous but process teardown is not guaranteed instantaneous.
+        const survivors = await pgrepUntilGone(`sleep ${marker}`);
         expect(survivors).toBe('');
       } finally {
         await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
@@ -2097,10 +2132,9 @@ describe('judge.sh --run', () => {
       const v = JSON.parse(await readFile(join(dir, 'verdict/round-1.json'), 'utf-8'));
       expect(v.judge).toBe('agy:claude-opus-4-6-thinking');
 
-      // Grace period for the OS to finish reaping after SIGTERM before
-      // sampling survivors — mirrors reviewers.sh's F1 test.
-      await new Promise((r) => setTimeout(r, 500));
-      const survivors = await pgrepMatches(`sleep ${marker}`);
+      // Poll until the OS has finished reaping after SIGTERM — mirrors
+      // reviewers.sh's F1 test.
+      const survivors = await pgrepUntilGone(`sleep ${marker}`);
       expect(survivors).toBe('');
     } finally {
       await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
@@ -2389,7 +2423,7 @@ describe('judge.sh --run', () => {
 // 위임 1건").
 // -------------------------------------------------------------------
 
-describe('agora.sh round loop (E2E with stub CLIs)', () => {
+describe.concurrent('agora.sh round loop (E2E with stub CLIs)', () => {
   const judgeVerdict = (round: number, consensus: string, verdict: string) =>
     JSON.stringify({
       round,
@@ -2495,7 +2529,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(base, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   it('keeps every anon bundle free of vendor fingerprints across the whole session', async () => {
     const bin = await makeStubBin({
@@ -2503,7 +2537,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-fp-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-fp-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const result = await runScript(
@@ -2524,7 +2558,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   // spec §4: report.md is the ONE place where anonymity is lifted.
   it('reveals vendor identities only in report.md', async () => {
@@ -2533,7 +2567,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-rep-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-rep-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const result = await runScript(
@@ -2556,7 +2590,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   // spec §10: the gate shows labels, never vendors.
   it('renders a gate block that names labels but no vendors', async () => {
@@ -2565,7 +2599,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-gate-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-gate-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const run = await runScript(
@@ -2594,11 +2628,11 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   it('aborts the session when reviewers.sh reports two or more missing', async () => {
     const bin = await makeStubBin({ claude: 'exit 1', omx: 'exit 1', agy: OK_STUB });
-    const root = join(tmpdir(), `agora-out-abort-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-abort-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const result = await runScript(
@@ -2617,7 +2651,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   // -----------------------------------------------------------------------
   // F1 regression (controller-verified, real stub-CLI run): agora.sh:244's
@@ -2636,7 +2670,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-topic-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-topic-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const run = await runScript(
@@ -2662,7 +2696,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   it('keeps stderr free of unexpected shell errors during a full session run (F1 regression guard)', async () => {
     const bin = await makeStubBin({
@@ -2670,7 +2704,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-stderr-hygiene-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-stderr-hygiene-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const run = await runScript(
@@ -2700,7 +2734,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   // -----------------------------------------------------------------------
   // F1 (spec ❌, review round 2): the brief's Produces contract requires
@@ -2723,7 +2757,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
     // relative path (.claude/outputs/sessions) resolves somewhere isolated
     // and fully cleanable, without needing to inject the very env var this
     // test is proving the script works without.
-    const cwd = join(tmpdir(), `agora-defaultroot-cwd-${Date.now()}`);
+    const cwd = join(tmpdir(), `agora-defaultroot-cwd-${uniqueSuffix()}`);
     await mkdir(cwd, { recursive: true });
     try {
       const result = await runScript(
@@ -2746,7 +2780,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(cwd, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   // -----------------------------------------------------------------------
   // F2 (Important, review round 2): the R1 blank-slate principle (spec §10 —
@@ -2767,7 +2801,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-r1-blank-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-r1-blank-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const run = await runScript(
@@ -2804,7 +2838,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   // ---------------------------------------------------------------------
   // Task 6 supplementary coverage — controller carry-over items from the
@@ -2825,7 +2859,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-budget-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-budget-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const run = await runScript(
@@ -2852,7 +2886,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   describe('agora.sh --round <N> --session-dir <dir> (agora-runner delegation unit, spec §12)', () => {
     it('runs exactly one round via the documented CLI syntax and advances state.json', async () => {
@@ -2861,7 +2895,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         omx: OK_STUB,
         agy: OK_STUB,
       });
-      const root = join(tmpdir(), `agora-out-round-entry-${Date.now()}`);
+      const root = join(tmpdir(), `agora-out-round-entry-${uniqueSuffix()}`);
       await mkdir(root, { recursive: true });
       const env = {
         PATH: `${bin}:${process.env.PATH}`,
@@ -2900,7 +2934,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         await rm(bin, { recursive: true, force: true });
         await rm(root, { recursive: true, force: true });
       }
-    }, 30000);
+    }, 120_000);
   });
 
   // -----------------------------------------------------------------------
@@ -2921,7 +2955,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         omx: OK_STUB,
         agy: OK_STUB,
       });
-      const root = join(tmpdir(), `agora-out-extra-agenda-${Date.now()}`);
+      const root = join(tmpdir(), `agora-out-extra-agenda-${uniqueSuffix()}`);
       await mkdir(root, { recursive: true });
       const env = {
         PATH: `${bin}:${process.env.PATH}`,
@@ -2971,7 +3005,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         await rm(bin, { recursive: true, force: true });
         await rm(root, { recursive: true, force: true });
       }
-    }, 30000);
+    }, 120_000);
   });
 
   // -----------------------------------------------------------------------
@@ -3037,7 +3071,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         await rm(bin, { recursive: true, force: true });
         await rm(base, { recursive: true, force: true });
       }
-    }, 30000);
+    }, 120_000);
 
     it('rejects a malformed --extra-agenda with exit 64 and never invokes a reviewer/judge CLI (negative)', async () => {
       const { base, root, obs } = await makeOutputSandbox('out-extra-agenda-invalid');
@@ -3104,7 +3138,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         await rm(bin, { recursive: true, force: true });
         await rm(base, { recursive: true, force: true });
       }
-    }, 30000);
+    }, 120_000);
   });
 
   describe('agora.sh --report --session-dir <dir> (standalone report regeneration)', () => {
@@ -3114,7 +3148,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         omx: OK_STUB,
         agy: OK_STUB,
       });
-      const root = join(tmpdir(), `agora-out-report-entry-${Date.now()}`);
+      const root = join(tmpdir(), `agora-out-report-entry-${uniqueSuffix()}`);
       await mkdir(root, { recursive: true });
       const env = {
         PATH: `${bin}:${process.env.PATH}`,
@@ -3141,7 +3175,7 @@ describe('agora.sh round loop (E2E with stub CLIs)', () => {
         await rm(bin, { recursive: true, force: true });
         await rm(root, { recursive: true, force: true });
       }
-    }, 30000);
+    }, 120_000);
   });
 });
 
@@ -3173,7 +3207,7 @@ async function findSessionDir(root: string): Promise<string> {
   throw new Error(`no agora session dir found under ${root}`);
 }
 
-describe('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop (no retry)', () => {
+describe.concurrent('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop (no retry)', () => {
   // S-1: same rewrite as the judge.sh "schema cannot be read" test above —
   // AGORA_VERDICT_SCHEMA instead of moving the real tracked file aside.
   // agora.sh sets no environment of its own (see the env-hygiene test), so the
@@ -3228,7 +3262,7 @@ describe('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop
       await rm(bin, { recursive: true, force: true });
       await rm(base, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
 // ---------------------------------------------------------------------
@@ -3241,7 +3275,7 @@ describe('agora.sh --round consumes judge.sh exit 68 as a hard config-error stop
 // explicit CLI flags to reviewers.sh / anonymize.sh / judge.sh instead.
 // ---------------------------------------------------------------------
 
-describe('agora.sh env hygiene (carry-over: judge.sh must never see a sealed-path env var)', () => {
+describe.concurrent('agora.sh env hygiene (carry-over: judge.sh must never see a sealed-path env var)', () => {
   it('never exports an environment variable anywhere in its source (source guard)', async () => {
     const src = await readFile(AGORA_SCRIPT, 'utf-8');
     expect(src).not.toMatch(/^\s*export\s/m);
@@ -3254,7 +3288,7 @@ describe('agora.sh env hygiene (carry-over: judge.sh must never see a sealed-pat
 
 const SKILL_MD = resolve(import.meta.dir, '../../../.claude/skills/agora/SKILL.md');
 
-describe('agora SKILL.md', () => {
+describe.concurrent('agora SKILL.md', () => {
   it('exists with the required frontmatter fields', async () => {
     expect(existsSync(SKILL_MD)).toBe(true);
     const src = await readFile(SKILL_MD, 'utf-8');
@@ -3342,7 +3376,7 @@ describe('agora SKILL.md', () => {
 
 const RUNNER_MD = resolve(import.meta.dir, '../../../.claude/agents/agora-runner.md');
 
-describe('agora-runner agent', () => {
+describe.concurrent('agora-runner agent', () => {
   it('exists with valid R006 frontmatter', async () => {
     expect(existsSync(RUNNER_MD)).toBe(true);
     const src = await readFile(RUNNER_MD, 'utf-8');
@@ -3422,7 +3456,7 @@ interface ReviewerEntry {
 // to the wrong vendor. Every pre-existing assertion still passes.
 // ---------------------------------------------------------------------
 
-describe('anonymize.sh --build: label ↔ body ↔ sealed mapping (three-way correspondence)', () => {
+describe.concurrent('anonymize.sh --build: label ↔ body ↔ sealed mapping (three-way correspondence)', () => {
   // Chosen by measurement so the shuffle displaces ALL THREE vendors off the
   // (claude, omx, agy) order build_bundle scans the raw dir in. Under an
   // identity permutation a fixed-order assembly loop emits a byte-identical
@@ -3531,14 +3565,14 @@ function absolutePathTokens(blob: string): string[] {
   return [...new Set(blob.match(/\/[A-Za-z0-9._+\-/]+/g) ?? [])];
 }
 
-describe('judge.sh sealed isolation (behavioural: follow the handles, not the strings)', () => {
+describe.concurrent('judge.sh sealed isolation (behavioural: follow the handles, not the strings)', () => {
   it('hands the judge CLI no argv or env value from which SEALED is reachable', async () => {
     // A session that genuinely HAS sealed material — the previous runtime
     // guard did not, so there was nothing for it to fail on.
     const dir = await makeSession('raw');
     // Dumps live outside the session tree so they cannot themselves become a
     // route into it.
-    const dumpDir = join(tmpdir(), `agora-judge-dump-${Date.now()}`);
+    const dumpDir = join(tmpdir(), `agora-judge-dump-${uniqueSuffix()}`);
     await mkdir(dumpDir, { recursive: true });
     const argvDump = join(dumpDir, 'argv.txt');
     const envDump = join(dumpDir, 'env.txt');
@@ -3620,7 +3654,7 @@ describe('judge.sh sealed isolation (behavioural: follow the handles, not the st
       await rm(dumpDir, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
 // ---------------------------------------------------------------------
@@ -3655,7 +3689,7 @@ describe('judge.sh sealed isolation (behavioural: follow the handles, not the st
 async function makeRootedSession(tag: string): Promise<{ root: string; session: string }> {
   const root = join(
     tmpdir(),
-    `agora-root-${tag}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    `agora-root-${tag}-${uniqueSuffix()}-${Math.random().toString(36).slice(2)}`
   );
   const session = join(root, '2026-08-15', 'agora-state-topic-T-133100');
   await mkdir(join(session, 'SEALED', 'mapping'), { recursive: true });
@@ -3717,10 +3751,10 @@ function envNamesWithPrefix(dump: string, prefix: string): string[] {
     .filter((name) => name.startsWith(prefix));
 }
 
-describe('vendor/judge CLIs inherit no AGORA_* variable (env is the third route in)', () => {
+describe.concurrent('vendor/judge CLIs inherit no AGORA_* variable (env is the third route in)', () => {
   it('gives a vendor CLI no environment value from which the sealed record is reachable', async () => {
     const { root, session } = await makeRootedSession('rv');
-    const dumpDir = join(tmpdir(), `agora-envdump-rv-${Date.now()}`);
+    const dumpDir = join(tmpdir(), `agora-envdump-rv-${uniqueSuffix()}`);
     await mkdir(dumpDir, { recursive: true });
     // Each vendor dumps to its own file, so a strip that only covered one
     // dispatch branch cannot hide behind another branch's clean dump.
@@ -3732,7 +3766,7 @@ describe('vendor/judge CLIs inherit no AGORA_* variable (env is the third route 
       omx: dumping('omx'),
       agy: dumping('agy'),
     });
-    const work = join(tmpdir(), `agora-envwork-rv-${Date.now()}`);
+    const work = join(tmpdir(), `agora-envwork-rv-${uniqueSuffix()}`);
     await mkdir(work, { recursive: true });
     const promptFile = join(work, 'prompt.txt');
     await writeFile(promptFile, '주제: 상태 저장 방식 재검토');
@@ -3793,11 +3827,11 @@ describe('vendor/judge CLIs inherit no AGORA_* variable (env is the third route 
       await rm(work, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 
   it('gives the judge CLI no environment value from which the sealed record is reachable', async () => {
     const { root, session } = await makeRootedSession('jd');
-    const dumpDir = join(tmpdir(), `agora-envdump-jd-${Date.now()}`);
+    const dumpDir = join(tmpdir(), `agora-envdump-jd-${uniqueSuffix()}`);
     await mkdir(dumpDir, { recursive: true });
     const envDump = join(dumpDir, 'judge.env');
 
@@ -3853,7 +3887,7 @@ describe('vendor/judge CLIs inherit no AGORA_* variable (env is the third route 
       await rm(dumpDir, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 
   // The strip must not eat the configuration the scripts themselves read —
   // read time and pass time are different moments. AGORA_VERDICT_SCHEMA is
@@ -3862,7 +3896,7 @@ describe('vendor/judge CLIs inherit no AGORA_* variable (env is the third route 
   // default schema (or to none) while the test believed it was substituted.
   it('still honours AGORA_VERDICT_SCHEMA in judge.sh while stripping it from the child', async () => {
     const { root, session } = await makeRootedSession('schema');
-    const dumpDir = join(tmpdir(), `agora-envdump-schema-${Date.now()}`);
+    const dumpDir = join(tmpdir(), `agora-envdump-schema-${uniqueSuffix()}`);
     await mkdir(dumpDir, { recursive: true });
     const envDump = join(dumpDir, 'judge.env');
     const bin = await makeStubBin({
@@ -3902,7 +3936,7 @@ describe('vendor/judge CLIs inherit no AGORA_* variable (env is the third route 
       await rm(dumpDir, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
 // ---------------------------------------------------------------------
@@ -3917,7 +3951,7 @@ describe('vendor/judge CLIs inherit no AGORA_* variable (env is the third route 
 // re-parents its sleep to init for the full timeout.
 // ---------------------------------------------------------------------
 
-describe('C3: the timeout watchdog leaves no orphaned sleep on the SUCCESS path', () => {
+describe.concurrent('C3: the timeout watchdog leaves no orphaned sleep on the SUCCESS path', () => {
   /**
    * Seven digits, so it can collide neither with the six-digit markers the F1
    * process-group cases use nor with any plausible real `sleep N` on the box.
@@ -3931,7 +3965,7 @@ describe('C3: the timeout watchdog leaves no orphaned sleep on the SUCCESS path'
   it('reviewers.sh: no watchdog sleep survives a round every vendor completed', async () => {
     const marker = watchdogMarker();
     const bin = await makeStubBin({ claude: OK_STUB, omx: OK_STUB, agy: OK_STUB });
-    const dir = join(tmpdir(), `agora-rv-c3-${Date.now()}`);
+    const dir = join(tmpdir(), `agora-rv-c3-${uniqueSuffix()}`);
     await mkdir(dir, { recursive: true });
     const promptFile = join(dir, 'prompt.txt');
     await writeFile(promptFile, '주제: 상태 저장 방식 재검토');
@@ -3956,14 +3990,13 @@ describe('C3: the timeout watchdog leaves no orphaned sleep on the SUCCESS path'
         expect(existsSync(join(dir, `SEALED/raw/round-1/${slug}.json`))).toBe(true);
       }
 
-      await new Promise((r) => setTimeout(r, 500));
-      expect(await pgrepMatches(`sleep ${marker}`)).toBe('');
+      expect(await pgrepUntilGone(`sleep ${marker}`)).toBe('');
     } finally {
       await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 
   it('judge.sh: no watchdog sleep survives a verdict the first slot produced', async () => {
     const marker = watchdogMarker();
@@ -3971,7 +4004,7 @@ describe('C3: the timeout watchdog leaves no orphaned sleep on the SUCCESS path'
       claude: `printf '%s' '${VALID_VERDICT}'`,
       agy: 'exit 1',
     });
-    const dir = join(tmpdir(), `agora-judge-c3-${Date.now()}`);
+    const dir = join(tmpdir(), `agora-judge-c3-${uniqueSuffix()}`);
     await mkdir(join(dir, 'anon'), { recursive: true });
     await mkdir(join(dir, 'verdict'), { recursive: true });
     await writeFile(
@@ -4000,14 +4033,13 @@ describe('C3: the timeout watchdog leaves no orphaned sleep on the SUCCESS path'
       expect(result.exitCode).toBe(0);
       expect(existsSync(join(dir, 'verdict/round-1.json'))).toBe(true);
 
-      await new Promise((r) => setTimeout(r, 500));
-      expect(await pgrepMatches(`sleep ${marker}`)).toBe('');
+      expect(await pgrepUntilGone(`sleep ${marker}`)).toBe('');
     } finally {
       await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
 // ---------------------------------------------------------------------
@@ -4048,7 +4080,7 @@ async function completedAutoSession(tag: string): Promise<{
     omx: OK_STUB,
     agy: OK_STUB,
   });
-  const root = join(tmpdir(), `agora-out-${tag}-${Date.now()}`);
+  const root = join(tmpdir(), `agora-out-${tag}-${uniqueSuffix()}`);
   await mkdir(root, { recursive: true });
   const env = {
     PATH: `${bin}:${process.env.PATH}`,
@@ -4068,7 +4100,7 @@ async function completedAutoSession(tag: string): Promise<{
   return { dir: started.stdout.trim().split('\n').pop() as string, root, bin, env };
 }
 
-describe('agora.sh --set-stop: the session ending is recorded and reaches report.md', () => {
+describe.concurrent('agora.sh --set-stop: the session ending is recorded and reaches report.md', () => {
   it('round-trips every stop code decide_stop can emit into 종료 사유', async () => {
     const s = await completedAutoSession('setstop');
     try {
@@ -4098,7 +4130,7 @@ describe('agora.sh --set-stop: the session ending is recorded and reaches report
       await rm(s.bin, { recursive: true, force: true });
       await rm(s.root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 
   it('rejects CONTINUE, a typo and a lower-cased code with exit 64 and leaves .stop untouched', async () => {
     const s = await completedAutoSession('setstop-reject');
@@ -4124,10 +4156,10 @@ describe('agora.sh --set-stop: the session ending is recorded and reaches report
       await rm(s.bin, { recursive: true, force: true });
       await rm(s.root, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 });
 
-describe('agora.sh run_round state-write guard (exit 73, state.json left alone)', () => {
+describe.concurrent('agora.sh run_round state-write guard (exit 73, state.json left alone)', () => {
   // The guard's stated trigger is a judge whose new_findings is not a number
   // reaching jq --argjson. judge.sh's own type check normally intercepts that
   // first, so to reach the guard the judge is pointed (via the existing
@@ -4175,10 +4207,10 @@ describe('agora.sh run_round state-write guard (exit 73, state.json left alone)'
       await rm(bin, { recursive: true, force: true });
       await rm(base, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
-describe('judge.sh verdict type validation stops a wrong-typed field at the source', () => {
+describe.concurrent('judge.sh verdict type validation stops a wrong-typed field at the source', () => {
   // A judge answering `"agenda": "1. 단일 의제"` used to be written straight to
   // verdict/round-N.json; the NEXT round then read it back, collapsed the
   // agenda to empty, and invoked (and billed) all three vendors on a blank
@@ -4231,10 +4263,10 @@ describe('judge.sh verdict type validation stops a wrong-typed field at the sour
       await rm(bin, { recursive: true, force: true });
       await rm(base, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
-describe('anonymize.sh two-valid-reviewer floor (spec §11)', () => {
+describe.concurrent('anonymize.sh two-valid-reviewer floor (spec §11)', () => {
   // reviewers.sh's own floor counts vendors that failed to RESPOND; it cannot
   // see a response that arrived and then failed validate_response. With only
   // one valid opinion left, a bundle would let the judge rule "consensus" on a
@@ -4291,7 +4323,7 @@ describe('anonymize.sh two-valid-reviewer floor (spec §11)', () => {
   });
 });
 
-describe('agora.sh --start gated: the stdout channel carries the session dir and nothing else', () => {
+describe.concurrent('agora.sh --start gated: the stdout channel carries the session dir and nothing else', () => {
   // The documented idiom is `dir=$(agora.sh --start ...)`, which captures
   // stdout wholesale — one stray line on stdout and $dir stops being a path.
   it('prints exactly one stdout line (an existing dir) and puts the gate on stderr', async () => {
@@ -4300,7 +4332,7 @@ describe('agora.sh --start gated: the stdout channel carries the session dir and
       omx: OK_STUB,
       agy: OK_STUB,
     });
-    const root = join(tmpdir(), `agora-out-gate-channel-${Date.now()}`);
+    const root = join(tmpdir(), `agora-out-gate-channel-${uniqueSuffix()}`);
     await mkdir(root, { recursive: true });
     try {
       const started = await runScript(
@@ -4334,7 +4366,7 @@ describe('agora.sh --start gated: the stdout channel carries the session dir and
       await rm(bin, { recursive: true, force: true });
       await rm(root, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
 // ---------------------------------------------------------------------
@@ -4347,7 +4379,7 @@ describe('agora.sh --start gated: the stdout channel carries the session dir and
 // propagates into the session's termination decision.
 // ---------------------------------------------------------------------
 
-describe('agora.sh max_severity is reduced from the round unresolved list', () => {
+describe.concurrent('agora.sh max_severity is reduced from the round unresolved list', () => {
   it('records the maximum severity per round, across every rung of the ladder', async () => {
     const { base, root, obs } = await makeOutputSandbox('out-maxsev');
     const judgeCount = join(obs, 'judge-count');
@@ -4423,7 +4455,7 @@ describe('agora.sh max_severity is reduced from the round unresolved list', () =
       await rm(bin, { recursive: true, force: true });
       await rm(base, { recursive: true, force: true });
     }
-  }, 60000);
+  }, 120_000);
 });
 
 // ---------------------------------------------------------------------
@@ -4460,7 +4492,7 @@ async function attachStubBin(argvDump: string): Promise<string> {
   });
 }
 
-describe('agora.sh --start --attach', () => {
+describe.concurrent('agora.sh --start --attach', () => {
   it('records every attachment in state.json and inlines each one into the reviewer prompt', async () => {
     const { base, root, obs } = await makeOutputSandbox('out-attach-ok');
     // The documents are test INPUT, so they belong in the observation
@@ -4530,7 +4562,7 @@ describe('agora.sh --start --attach', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(base, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 
   // An unreadable attachment is now MARKED as unreadable in the prompt and
   // reported on stderr, instead of emitting a bare header with nothing under
@@ -4644,7 +4676,7 @@ describe('agora.sh --start --attach', () => {
       await rm(bin, { recursive: true, force: true });
       await rm(base, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
 // ---------------------------------------------------------------------
@@ -4693,7 +4725,7 @@ function buildRound2(dir: string): Promise<ScriptResult> {
   );
 }
 
-describe('anonymize.sh aborts round N when round N-1 exists but cannot be parsed', () => {
+describe.concurrent('anonymize.sh aborts round N when round N-1 exists but cannot be parsed', () => {
   // Positive control, and the whole reason the negatives below are not
   // vacuous: with round 1 intact the SAME round-2 build succeeds and writes
   // both trust-boundary artifacts. An implementation that simply never
@@ -4713,7 +4745,7 @@ describe('anonymize.sh aborts round N when round N-1 exists but cannot be parsed
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 
   // relabel_prior distinguishes "no prior round yet" (skip, normal) from
   // "prior round is there and unreadable" (abort). All three sealed inputs
@@ -4750,11 +4782,11 @@ describe('anonymize.sh aborts round N when round N-1 exists but cannot be parsed
       } finally {
         await rm(dir, { recursive: true, force: true });
       }
-    }, 30000);
+    }, 120_000);
   }
 });
 
-describe('judge.sh leaves no partial verdict when every rotation slot fails', () => {
+describe.concurrent('judge.sh leaves no partial verdict when every rotation slot fails', () => {
   // Deliberately NOT `exit 1` stubs (the existing "exits 4 when every
   // rotation model fails" test already covers a dead CLI). Here every slot
   // RETURNS something and is rejected downstream — unparsable, then two
@@ -4778,7 +4810,7 @@ describe('judge.sh leaves no partial verdict when every rotation slot fails', ()
               *) printf '%s' '${MISSING_FIELD_VERDICT}';;
             esac`,
     });
-    const dir = join(tmpdir(), `agora-judge-nopartial-${Date.now()}`);
+    const dir = join(tmpdir(), `agora-judge-nopartial-${uniqueSuffix()}`);
     await mkdir(join(dir, 'anon'), { recursive: true });
     await mkdir(join(dir, 'verdict'), { recursive: true });
     await writeFile(
@@ -4826,14 +4858,14 @@ describe('judge.sh leaves no partial verdict when every rotation slot fails', ()
       await rm(bin, { recursive: true, force: true });
       await rm(dir, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 });
 
 // spec §5. validate_response is the gate that decides whether a vendor
 // answered at all, and a response it wrongly ACCEPTS flows into the bundle
 // and is judged as if it were a real opinion. Only the `counter: ''` case
 // was covered; every other clause of the contract was unguarded.
-describe('anonymize.sh validate_response rejects each spec §5 contract violation', () => {
+describe.concurrent('anonymize.sh validate_response rejects each spec §5 contract violation', () => {
   const CONTRACT_OK = {
     findings: [
       {
@@ -4878,7 +4910,7 @@ describe('anonymize.sh validate_response rejects each spec §5 contract violatio
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 
   // One clause of the contract broken per case, everything else left valid,
   // so a failure names the clause that regressed.
@@ -4939,7 +4971,7 @@ describe('anonymize.sh validate_response rejects each spec §5 contract violatio
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
-  }, 30000);
+  }, 120_000);
 
   for (const [label, response] of violations) {
     it(`treats a response as missing when ${label}`, async () => {
@@ -4962,6 +4994,6 @@ describe('anonymize.sh validate_response rejects each spec §5 contract violatio
       } finally {
         await rm(dir, { recursive: true, force: true });
       }
-    }, 30000);
+    }, 120_000);
   }
 });

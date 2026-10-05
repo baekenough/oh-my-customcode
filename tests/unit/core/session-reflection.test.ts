@@ -49,6 +49,27 @@ const SCRIPT = join(SCRIPTS_DIR, 'session-reflection.sh');
 
 // ── Helpers ──
 
+/** PIDs of every hook process spawned by the current test (reset in beforeEach). */
+let spawnedPids: number[] = [];
+
+/**
+ * The hook backgrounds a worker as `/tmp/.claude-reflection-worker-${PPID}-$$.sh` and removes
+ * it as its last action. From this process, the hook's PPID is process.pid and `$$` is the
+ * spawned child's pid. The static contract test below pins this naming against the script.
+ */
+function workerScriptPath(pid: number): string {
+  return `/tmp/.claude-reflection-worker-${process.pid}-${pid}.sh`;
+}
+
+/** Poll until no tracked worker script exists (worker finished) or the deadline passes. */
+async function waitForWorkers(timeoutMs = 2000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!spawnedPids.some((pid) => existsSync(workerScriptPath(pid)))) return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 interface ScriptResult {
   stdout: string;
   stderr: string;
@@ -66,6 +87,7 @@ function runScript(
       env: { ...process.env, ...env },
       cwd: cwd ?? tmpdir(),
     });
+    if (child.pid !== undefined) spawnedPids.push(child.pid);
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (c: Buffer) => {
@@ -152,7 +174,7 @@ async function waitForLog(
       const text = await readFile(logPath, 'utf-8');
       if (text.includes(expectedText)) return text;
     }
-    await new Promise((r) => setTimeout(r, 150));
+    await new Promise((r) => setTimeout(r, 20));
   }
   return existsSync(logPath) ? readFile(logPath, 'utf-8') : '';
 }
@@ -164,6 +186,7 @@ let transcriptDir: string;
 let reflectionsDir: string;
 
 beforeEach(async () => {
+  spawnedPids = [];
   tmpRoot = join(tmpdir(), `sr-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   transcriptDir = join(tmpRoot, 'transcripts');
   reflectionsDir = join(tmpRoot, '.claude', 'outputs', 'reflections');
@@ -172,9 +195,9 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  // Give the disowned background worker time to finish writing before deleting tmpRoot.
-  // The worker typically completes within 200ms; 2000ms is a safe upper bound.
-  await new Promise((r) => setTimeout(r, 2000));
+  // Wait for the disowned background worker (its script file disappears when it is done)
+  // before deleting tmpRoot; bounded at 2000ms.
+  await waitForWorkers();
   await rm(tmpRoot, { recursive: true, force: true });
 });
 
@@ -224,6 +247,38 @@ describe('session-reflection.sh — file existence', () => {
     expect(src).toContain('.message.role');
     expect(src).toContain('.message.content');
     expect(src).not.toMatch(/jq -r '\.role \/\/ empty'/);
+  });
+
+  it('keeps the worker-script naming contract that waitForWorkers() relies on', async () => {
+    // waitForWorkers() polls /tmp/.claude-reflection-worker-${process.pid}-${childPid}.sh.
+    // If the hook renames or stops removing that file, the wait silently becomes a no-op.
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).toContain(`WORKER_SCRIPT="/tmp/.claude-reflection-worker-\${PPID}-$$.sh"`);
+    expect(src).toContain('rm -f "$WORKER_SCRIPT"');
+  });
+
+  it('positive control: a spawned bash sees PPID === process.pid and $$ === child.pid', async () => {
+    // The contract test above only pins the hook's SOURCE text. waitForWorkers() additionally
+    // assumes that, at runtime, a child spawned the way runScript() spawns it has
+    // $PPID === process.pid and $$ === child.pid. If that ever stopped holding (e.g. a Bun
+    // process-model change or an intermediate shell), the derived worker path would never match
+    // and waitForWorkers() would silently become a no-op. This probes the same relationship
+    // with the same spawn shape (same env/cwd handling, piped stdio) as runScript().
+    const probe = await new Promise<{ pid: number | undefined; stdout: string }>((done) => {
+      const child = spawn('bash', ['-c', 'echo "$PPID $$"'], {
+        env: { ...process.env },
+        cwd: tmpdir(),
+      });
+      let stdout = '';
+      child.stdout.on('data', (c: Buffer) => {
+        stdout += c.toString();
+      });
+      child.on('close', () => done({ pid: child.pid, stdout }));
+      child.stdin.end();
+    });
+    const [ppid, selfPid] = probe.stdout.trim().split(/\s+/).map(Number);
+    expect(ppid).toBe(process.pid);
+    expect(selfPid).toBe(probe.pid as number);
   });
 });
 
@@ -415,8 +470,8 @@ describe('session-reflection.sh — Fixture 4: opt-out', () => {
       OMCUSTOM_SESSION_REFLECTION: 'off',
     });
 
-    // give a moment to confirm nothing is written
-    await new Promise((r) => setTimeout(r, 800));
+    // wait for any spawned worker to finish, then confirm nothing was written
+    await waitForWorkers();
     expect(existsSync(logPath)).toBe(false);
   });
 
