@@ -171,8 +171,28 @@ steps:
          - Otherwise: highest-priority open tier (bug → chore → feature)
       2. Apply Step 1 filter (label-based exclusion and preference)
       3. Sort by dependency: prerequisites before dependents
-      4. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)
+      4. Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers) —
+         EXCEPT the batch-size fill in rule 6, which takes precedence when the top tier has < 3.
       5. Minimum 1 issue; if 0 eligible, halt with "no eligible issues for auto-dev run"
+      6. Batch-size norm (fill exception to "don't mix tiers"): if the top tier has fewer than
+         3 eligible issues, fill from the next tiers in order (bug → chore → feature, then
+         preferred-label / retrospective-proposal issues) until the scope is 3-7 issues. Tier
+         mixing is allowed ONLY for this fill. A 1-2 issue release is permitted ONLY when the
+         eligible total across ALL tiers is < 3. Issues split off or deferred pending approval
+         or a decision (`.claude/hooks/**` unattended split in Step 3, decision-needed, etc.)
+         do NOT count toward the eligible total. Because the Step 3 split happens AFTER this
+         step, re-evaluate this fill after the Step 3 split: if the remaining scope is below 3
+         and eligible issues remain, fill again from the next tiers, then re-run the Step 3 path
+         pre-check on any newly added issue. When the scope has multiple issues, issue
+         implementation delegations in parallel (R009) unless their target files overlap, or one
+         delegation depends on another's in-release implementation choice (see the implement
+         step's R009 「File-Disjoint ≠ Independent」 document-implementation variant); local git
+         state changes (per-issue lifecycle commits via mgr-gitnerd) remain serialized, one at a
+         time (R009 「File-Disjoint ≠ Independent (Local Git State)」).
+         Rationale: the fixed per-release cost (review rounds, CI, release.yml) must not be
+         carried by 1-2 issues; consecutive top-tier-only runs also starve lower tiers.
+         Origin: user feedback 2026-10-05 ("이슈를 너무 조금씩 해결한다"); #1814 harness proposal R3
+         (lower-tier starvation).
 
       ## Step 3 — Approval-required path pre-check (R010)
 
@@ -210,6 +230,9 @@ steps:
       같다")으로 무인 여부를 판정하지 않는다.
 
       Output approval_required_paths (list, empty if none) as pipeline state.
+
+      After an unattended split, re-evaluate the Step 2 rule 6 batch-size fill against the
+      remaining scope (split-off issues do not count) before assigning the milestone.
 
       Assign scoped issues to milestone.
       Output markdown release manifest:
