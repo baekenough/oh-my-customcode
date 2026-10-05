@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:te
 import type { ChildProcess } from 'node:child_process';
 import * as childProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
+import * as nodeFs from 'node:fs';
 import {
   existsSync,
   linkSync,
@@ -25,10 +26,12 @@ import {
   CLAIM_MAX_AGE_MS,
   DEFAULT_PORT,
   findServeBuildDir,
+  getServerPid,
   isServeRunning,
   PARTIAL_RECORD_GRACE_MS,
   resolveServePidFile,
   ServePidFileError,
+  ServeStopPermissionError,
   startServeBackground,
   stopServe,
 } from '../../../src/cli/serve.js';
@@ -58,6 +61,22 @@ function fakeKill(pid: number): true {
   }
   return true;
 }
+
+/**
+ * A `process.kill` stand-in where `pid` fails with errno `code` and every other
+ * PID behaves as in {@link fakeKill}.
+ */
+function killFailingWith(pid: number, code: string): (target: number) => true {
+  return (target: number): true => {
+    if (target === pid) {
+      throw errnoError(code);
+    }
+    return fakeKill(target);
+  };
+}
+
+/** A PID that exists but belongs to another user (signal 0 fails with EPERM). */
+const OTHER_USER_PID = 424243;
 
 /** Set a file's mtime `ms` (plus one second of margin) into the past. */
 function backdate(path: string, ms: number): void {
@@ -103,8 +122,21 @@ describe('serve.ts', () => {
   let fakeHome: string;
   let pidFile: string;
   let originalHome: string | undefined;
+  // Fake npm package roots created by a test, removed in afterEach
+  let npmRoots: string[];
+
+  /** A temp directory laid out as an omcustom package root with a built serve. */
+  async function makeFakeNpmPackageRoot(): Promise<string> {
+    const root = await mkdtemp(join(tmpdir(), 'omcustom-serve-npmroot-'));
+    npmRoots.push(root);
+    const buildDir = join(root, 'packages', 'serve', 'build');
+    await mkdir(buildDir, { recursive: true });
+    await writeFile(join(buildDir, 'index.js'), '// mock npm build for test');
+    return root;
+  }
 
   beforeEach(async () => {
+    npmRoots = [];
     tempDir = await mkdtemp(join(tmpdir(), 'omcustom-serve-test-'));
     fakeHome = await mkdtemp(join(tmpdir(), 'omcustom-serve-home-'));
     pidFile = join(fakeHome, PID_FILE_NAME);
@@ -120,6 +152,9 @@ describe('serve.ts', () => {
     }
     await rm(tempDir, { recursive: true, force: true });
     await rm(fakeHome, { recursive: true, force: true });
+    for (const root of npmRoots) {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   /**
@@ -203,8 +238,9 @@ describe('serve.ts', () => {
       const localBuildDir = join(tempDir, 'packages', 'serve', 'build');
       await mkdir(localBuildDir, { recursive: true });
       await writeFile(join(localBuildDir, 'index.js'), '// local build');
+      const npmRoot = await makeFakeNpmPackageRoot();
 
-      const result = findServeBuildDir(tempDir);
+      const result = findServeBuildDir(tempDir, { npmPackageRoot: npmRoot });
 
       expect(result).toBe(localBuildDir);
     });
@@ -220,36 +256,55 @@ describe('serve.ts', () => {
     });
 
     it('should return npm package build path when local build is absent and npm build exists', async () => {
-      // serve.ts is loaded from src/cli/serve.ts in the test environment.
-      // Its import.meta.dirname resolves to {project_root}/src/cli.
-      // The npm fallback path is: src/cli/../../packages/serve/build
-      //                          = {project_root}/packages/serve/build
-      const serveModuleDir = join(import.meta.dirname, '..', '..', '..', 'src', 'cli');
-      const npmBuildPath = join(serveModuleDir, '..', '..', 'packages', 'serve', 'build');
-      const npmIndexJs = join(npmBuildPath, 'index.js');
+      // The fake package root lives in its own temp directory — nothing is
+      // written under the repository's packages/serve.
+      const npmRoot = await makeFakeNpmPackageRoot();
+      const npmBuildPath = join(npmRoot, 'packages', 'serve', 'build');
 
-      const dirExistedBefore = existsSync(npmBuildPath);
-      const indexExistedBefore = existsSync(npmIndexJs);
+      // tempDir has no local packages/serve/build — npm fallback should trigger
+      const result = findServeBuildDir(tempDir, { npmPackageRoot: npmRoot });
 
-      if (!dirExistedBefore) {
-        await mkdir(npmBuildPath, { recursive: true });
-      }
-      if (!indexExistedBefore) {
-        await writeFile(npmIndexJs, '// mock npm build for test');
-      }
+      expect(result).toBe(npmBuildPath);
+    });
 
+    it('should return null when neither local nor injected npm build has index.js', async () => {
+      const emptyRoot = await mkdtemp(join(tmpdir(), 'omcustom-serve-npmroot-'));
+      npmRoots.push(emptyRoot);
+      await mkdir(join(emptyRoot, 'packages', 'serve', 'build'), { recursive: true });
+
+      const result = findServeBuildDir(tempDir, { npmPackageRoot: emptyRoot });
+
+      expect(result).toBeNull();
+    });
+
+    it('should not consult the npm fallback when skipNpmFallback is true', async () => {
+      const npmRoot = await makeFakeNpmPackageRoot();
+
+      const result = findServeBuildDir(tempDir, { skipNpmFallback: true, npmPackageRoot: npmRoot });
+
+      expect(result).toBeNull();
+    });
+
+    it('should default the npm fallback root to the package root above this module', () => {
+      // Record the paths probed without touching the real filesystem.
+      const probed: string[] = [];
+      const existsSpy = spyOn(nodeFs, 'existsSync').mockImplementation((path) => {
+        probed.push(String(path));
+        return false;
+      });
       try {
-        // tempDir has no local packages/serve/build — npm fallback should trigger
         const result = findServeBuildDir(tempDir);
-        expect(result).toBe(npmBuildPath);
+
+        expect(result).toBeNull();
       } finally {
-        if (!indexExistedBefore) {
-          await rm(npmIndexJs, { force: true });
-        }
-        if (!dirExistedBefore) {
-          await rm(npmBuildPath, { recursive: true, force: true });
-        }
+        existsSpy.mockRestore();
       }
+
+      const repoRoot = join(import.meta.dirname, '..', '..', '..');
+      expect(probed).toEqual([
+        join(tempDir, 'packages', 'serve', 'build', 'index.js'),
+        join(repoRoot, 'packages', 'serve', 'build', 'index.js'),
+      ]);
     });
   });
 
@@ -296,6 +351,58 @@ describe('serve.ts', () => {
       const result = await isServeRunning();
 
       expect(result).toBe(true);
+    });
+
+    // Only ESRCH proves a process is gone (#1825): EPERM means it exists, and an
+    // unknown errno proves nothing, so neither may make a record look stale.
+    describe('a recorded process that cannot be probed', () => {
+      it.each([
+        ['EPERM', 'belongs to another user'],
+        ['EINVAL', 'fails with an unexpected errno'],
+      ])('should report a server record as running when the probe fails with %s (%s)', async (code) => {
+        await writeFile(pidFile, String(OTHER_USER_PID), 'utf-8');
+        const killSpy = spyOn(process, 'kill').mockImplementation(
+          killFailingWith(OTHER_USER_PID, code) as typeof process.kill
+        );
+        try {
+          expect(await isServeRunning()).toBe(true);
+        } finally {
+          killSpy.mockRestore();
+        }
+        expect(readFileSync(pidFile, 'utf-8')).toBe(String(OTHER_USER_PID));
+      });
+
+      it('should report a server record as not running when the probe fails with ESRCH', async () => {
+        await writeFile(pidFile, String(OTHER_USER_PID), 'utf-8');
+        const killSpy = spyOn(process, 'kill').mockImplementation(
+          killFailingWith(OTHER_USER_PID, 'ESRCH') as typeof process.kill
+        );
+        try {
+          expect(await isServeRunning()).toBe(false);
+        } finally {
+          killSpy.mockRestore();
+        }
+        expect(readFileSync(pidFile, 'utf-8')).toBe(String(OTHER_USER_PID));
+      });
+
+      it('should still age out a claim whose starter cannot be probed (EPERM)', async () => {
+        const claim = `starting:${OTHER_USER_PID}:foreign-starter`;
+        await writeFile(pidFile, claim, 'utf-8');
+        const killSpy = spyOn(process, 'kill').mockImplementation(
+          killFailingWith(OTHER_USER_PID, 'EPERM') as typeof process.kill
+        );
+        try {
+          await atAge(pidFile, CLAIM_MAX_AGE_MS - 1, async () => {
+            expect(await isServeRunning()).toBe(true);
+          });
+          await atAge(pidFile, CLAIM_MAX_AGE_MS, async () => {
+            expect(await isServeRunning()).toBe(false);
+          });
+        } finally {
+          killSpy.mockRestore();
+        }
+        expect(readFileSync(pidFile, 'utf-8')).toBe(claim);
+      });
     });
 
     /** A `readFile` spy that reports the PID file absent on its first read only. */
@@ -518,6 +625,43 @@ describe('serve.ts', () => {
       expect(readFileSync(pidFile, 'utf-8')).toBe('999999999');
     });
 
+    describe('a recorded process that cannot be signalled', () => {
+      it('should throw ServeStopPermissionError on EPERM and keep the record (#1825)', async () => {
+        await writeFile(pidFile, String(OTHER_USER_PID), 'utf-8');
+        const killSpy = spyOn(process, 'kill').mockImplementation(
+          killFailingWith(OTHER_USER_PID, 'EPERM') as typeof process.kill
+        );
+        let caught: unknown;
+        try {
+          await stopServe().catch((error: unknown) => {
+            caught = error;
+          });
+          expect(killSpy).toHaveBeenCalledWith(OTHER_USER_PID, 'SIGTERM');
+        } finally {
+          killSpy.mockRestore();
+        }
+        expect(caught).toBeInstanceOf(ServeStopPermissionError);
+        const error = caught as ServeStopPermissionError;
+        expect(error.pid).toBe(OTHER_USER_PID);
+        expect(error.pidFile).toBe(pidFile);
+        expect(error.message).toContain(String(OTHER_USER_PID));
+        expect(readFileSync(pidFile, 'utf-8')).toBe(String(OTHER_USER_PID));
+      });
+
+      it('should return false on any other signalling error and keep the record', async () => {
+        await writeFile(pidFile, String(OTHER_USER_PID), 'utf-8');
+        const killSpy = spyOn(process, 'kill').mockImplementation(
+          killFailingWith(OTHER_USER_PID, 'EINVAL') as typeof process.kill
+        );
+        try {
+          expect(await stopServe()).toBe(false);
+        } finally {
+          killSpy.mockRestore();
+        }
+        expect(readFileSync(pidFile, 'utf-8')).toBe(String(OTHER_USER_PID));
+      });
+    });
+
     it('should signal the recorded PID and remove the PID file under HOME', async () => {
       const killSpy = spyOn(process, 'kill').mockImplementation(() => true);
       try {
@@ -578,7 +722,7 @@ describe('serve.ts', () => {
       // build and spawning an orphan detached server process.
       await expect(
         startServeBackground(tempDir, undefined, { skipNpmFallback: true })
-      ).resolves.toBeUndefined();
+      ).resolves.toEqual({ status: 'build-missing' });
     });
 
     it('should silently skip when server is already running (PID file points to this process)', async () => {
@@ -590,7 +734,7 @@ describe('serve.ts', () => {
       // in case the isServeRunning check does not short-circuit first.
       await expect(
         startServeBackground(tempDir, undefined, { skipNpmFallback: true })
-      ).resolves.toBeUndefined();
+      ).resolves.toEqual({ status: 'already-running', pid: process.pid });
     });
 
     /** Create a build whose index.js exits immediately (a harmless detached child). */
@@ -776,7 +920,7 @@ describe('serve.ts', () => {
       await withSpawnSpy(async (spawnSpy) => {
         await expect(
           startServeBackground(tempDir, undefined, { skipNpmFallback: true })
-        ).resolves.toBeUndefined();
+        ).resolves.toEqual({ status: 'already-running', pid: process.pid });
         expect(spawnSpy).not.toHaveBeenCalled();
       });
       expect((await readFile(pidFile, 'utf-8')).trim()).toBe(String(process.pid));
@@ -805,7 +949,7 @@ describe('serve.ts', () => {
       await withSpawnSpy(async (spawnSpy) => {
         await expect(
           startServeBackground(tempDir, undefined, { skipNpmFallback: true })
-        ).resolves.toBeUndefined();
+        ).resolves.toEqual({ status: 'build-missing' });
         expect(spawnSpy).not.toHaveBeenCalled();
       });
     });
@@ -825,7 +969,7 @@ describe('serve.ts', () => {
       try {
         await expect(
           startServeBackground(tempDir, undefined, { skipNpmFallback: true })
-        ).resolves.toBeUndefined();
+        ).resolves.toEqual({ status: 'spawn-failed' });
         await new Promise((resolve) => setImmediate(resolve)); // let the error fire
 
         expect(failedChild.listenerCount('error')).toBeGreaterThan(0);
@@ -889,9 +1033,16 @@ describe('serve.ts', () => {
         const writeSpy = spyOn(fsp, 'writeFile'); // call-through: records the staged claims
         try {
           await withStubSpawn(STUB_PID, async (spawnSpy) => {
-            await Promise.all([start(), start()]);
+            const results = await Promise.all([start(), start()]);
             expect(arrived).toBe(2);
             expect(spawnSpy).toHaveBeenCalledTimes(1);
+            // Exactly one start performed the start (#1825): the other must say it
+            // did not — whether it met the winner's claim or its recorded server.
+            expect(results.filter((result) => result.status === 'started')).toEqual([
+              { status: 'started', pid: STUB_PID },
+            ]);
+            const loser = results.find((result) => result.status !== 'started');
+            expect(['starting-elsewhere', 'already-running']).toContain(loser?.status);
           });
           // Both starts staged a claim, and the two claims differ although both
           // come from this one process (the nonce tells them apart).
@@ -985,13 +1136,23 @@ describe('serve.ts', () => {
         expect(readFileSync(pidFile, 'utf-8')).toBe(String(STUB_PID));
       });
 
+      it('should report started with the PID it recorded', async () => {
+        await createExitingBuild();
+
+        await withStubSpawn(STUB_PID, async (spawnSpy) => {
+          await expect(start()).resolves.toEqual({ status: 'started', pid: STUB_PID });
+          expect(spawnSpy).toHaveBeenCalledTimes(1);
+        });
+        expect(readFileSync(pidFile, 'utf-8')).toBe(String(STUB_PID));
+      });
+
       it('should not start while a live start holds the claim', async () => {
         await createExitingBuild();
         const claim = `starting:${process.pid}:other-start`;
         await writeFile(pidFile, claim, 'utf-8');
 
         await withStubSpawn(STUB_PID, async (spawnSpy) => {
-          await expect(start()).resolves.toBeUndefined();
+          await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
           expect(spawnSpy).not.toHaveBeenCalled();
         });
         expect(readFileSync(pidFile, 'utf-8')).toBe(claim);
@@ -1005,7 +1166,7 @@ describe('serve.ts', () => {
         });
         try {
           await withStubSpawn(STUB_PID, async (spawnSpy) => {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual({ status: 'already-running', pid: process.pid });
             expect(spawnSpy).not.toHaveBeenCalled();
           });
         } finally {
@@ -1018,7 +1179,7 @@ describe('serve.ts', () => {
         await createExitingBuild();
 
         await withStubSpawn(undefined, async (spawnSpy) => {
-          await expect(start()).resolves.toBeUndefined();
+          await expect(start()).resolves.toEqual({ status: 'spawn-failed' });
           expect(spawnSpy).toHaveBeenCalledTimes(1);
         });
         expect(await readdir(fakeHome)).toEqual([]);
@@ -1081,7 +1242,7 @@ describe('serve.ts', () => {
         });
         try {
           await withStubSpawn(STUB_PID, async (spawnSpy) => {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
             expect(spawnSpy).not.toHaveBeenCalled();
           });
         } finally {
@@ -1110,7 +1271,7 @@ describe('serve.ts', () => {
         });
         try {
           await withStubSpawn(STUB_PID, async (spawnSpy) => {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
             expect(spawnSpy).not.toHaveBeenCalled();
           });
         } finally {
@@ -1144,7 +1305,7 @@ describe('serve.ts', () => {
         });
         try {
           await withStubSpawn(STUB_PID, async (spawnSpy) => {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
             expect(spawnSpy).not.toHaveBeenCalled();
           });
         } finally {
@@ -1169,7 +1330,7 @@ describe('serve.ts', () => {
         }) as typeof realReadFile);
         try {
           await withStubSpawn(STUB_PID, async (spawnSpy) => {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
             expect(spawnSpy).not.toHaveBeenCalled();
           });
         } finally {
@@ -1307,21 +1468,36 @@ describe('serve.ts', () => {
       });
 
       describe('a claim lost before the PID is recorded', () => {
-        it('should terminate its server and keep the record of a start that took the claim over', async () => {
+        // #1825 review A1: what took the claim's place decides the result.
+        it.each([
+          [
+            'a running server',
+            String(process.pid),
+            { status: 'already-running', pid: process.pid },
+          ],
+          [
+            'a live start in progress',
+            `starting:${process.pid}:other-start`,
+            { status: 'starting-elsewhere' },
+          ],
+          ['a server that is already gone', String(DEAD_PID), { status: 'starting-elsewhere' }],
+        ])('should terminate its server, keep the record of a start that took the claim over, and report %s', async (_, other, expected) => {
           await createExitingBuild();
           const child = stubChild(STUB_PID);
           const spawnSpy = spyOn(childProcess, 'spawn').mockImplementation((() => {
             // meanwhile another start reclaimed this claim and recorded its server
-            writeFileSync(pidFile, '222', 'utf-8');
+            writeFileSync(pidFile, other, 'utf-8');
             return child;
           }) as unknown as typeof childProcess.spawn);
+          const killSpy = spyOn(process, 'kill').mockImplementation(fakeKill);
           try {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual(expected);
             expect(child.kill).toHaveBeenCalledWith('SIGTERM');
           } finally {
+            killSpy.mockRestore();
             spawnSpy.mockRestore();
           }
-          expect(readFileSync(pidFile, 'utf-8')).toBe('222');
+          expect(readFileSync(pidFile, 'utf-8')).toBe(other);
           expect(await readdir(fakeHome)).toEqual([PID_FILE_NAME]);
         });
 
@@ -1335,7 +1511,7 @@ describe('serve.ts', () => {
             return child;
           }) as unknown as typeof childProcess.spawn);
           try {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual({ status: 'started', pid: STUB_PID });
             expect(child.kill).not.toHaveBeenCalled();
           } finally {
             spawnSpy.mockRestore();
@@ -1403,7 +1579,7 @@ describe('serve.ts', () => {
             }
           });
           try {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual({ status: 'started', pid: STUB_PID });
             expect(spawnSpy).toHaveBeenCalledTimes(1);
             expect(child.kill).not.toHaveBeenCalled();
           } finally {
@@ -1452,7 +1628,7 @@ describe('serve.ts', () => {
             }
           }) as typeof realReadFile);
           try {
-            await expect(start()).resolves.toBeUndefined();
+            await expect(start()).resolves.toEqual({ status: 'started', pid: STUB_PID });
             expect(child.kill).not.toHaveBeenCalled();
           } finally {
             readSpy.mockRestore();
@@ -1564,7 +1740,7 @@ describe('serve.ts', () => {
           });
           try {
             await withStubSpawn(STUB_PID, async (spawnSpy) => {
-              await expect(start()).resolves.toBeUndefined();
+              await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
               expect(spawnSpy).not.toHaveBeenCalled();
             });
           } finally {
@@ -1587,7 +1763,7 @@ describe('serve.ts', () => {
 
           await atAge(pidFile, PARTIAL_RECORD_GRACE_MS - 1, async () => {
             await withStubSpawn(STUB_PID, async (spawnSpy) => {
-              await expect(start()).resolves.toBeUndefined();
+              await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
               expect(spawnSpy).not.toHaveBeenCalled();
             });
           });
@@ -1651,7 +1827,7 @@ describe('serve.ts', () => {
           });
           try {
             await withStubSpawn(STUB_PID, async (spawnSpy) => {
-              await expect(start()).resolves.toBeUndefined();
+              await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
               expect(spawnSpy).not.toHaveBeenCalled();
             });
           } finally {
@@ -1678,7 +1854,7 @@ describe('serve.ts', () => {
           }) as typeof realStat);
           try {
             await withStubSpawn(STUB_PID, async (spawnSpy) => {
-              await expect(start()).resolves.toBeUndefined();
+              await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
               expect(spawnSpy).not.toHaveBeenCalled();
             });
           } finally {
@@ -1713,6 +1889,74 @@ describe('serve.ts', () => {
           expect(readFileSync(pidFile, 'utf-8')).toBe(String(STUB_PID));
         });
 
+        // #1825: a record whose process exists but is not signallable (EPERM)
+        // is live. Treating it as dead let a second server start next to it.
+        it('should not reclaim a server record whose process cannot be signalled (EPERM)', async () => {
+          await createExitingBuild();
+          await writeFile(pidFile, String(OTHER_USER_PID), 'utf-8');
+          const killSpy = spyOn(process, 'kill').mockImplementation(
+            killFailingWith(OTHER_USER_PID, 'EPERM') as typeof process.kill
+          );
+          try {
+            await withStubSpawn(STUB_PID, async (spawnSpy) => {
+              await expect(start()).resolves.toEqual({
+                status: 'already-running',
+                pid: OTHER_USER_PID,
+                notPermitted: true,
+              });
+              expect(spawnSpy).not.toHaveBeenCalled();
+            });
+          } finally {
+            killSpy.mockRestore();
+          }
+          expect(readFileSync(pidFile, 'utf-8')).toBe(String(OTHER_USER_PID));
+        });
+
+        it('should still reclaim a server record whose process is gone (ESRCH)', async () => {
+          await createExitingBuild();
+          await writeFile(pidFile, String(OTHER_USER_PID), 'utf-8');
+          const killSpy = spyOn(process, 'kill').mockImplementation(
+            killFailingWith(OTHER_USER_PID, 'ESRCH') as typeof process.kill
+          );
+          try {
+            await withStubSpawn(STUB_PID, async (spawnSpy) => {
+              await start();
+              expect(spawnSpy).toHaveBeenCalledTimes(1);
+            });
+          } finally {
+            killSpy.mockRestore();
+          }
+          expect(readFileSync(pidFile, 'utf-8')).toBe(String(STUB_PID));
+        });
+
+        it('should keep a young claim of a starter that cannot be signalled, and reclaim it at the limit', async () => {
+          await createExitingBuild();
+          const claim = `starting:${OTHER_USER_PID}:foreign-starter`;
+          await writeFile(pidFile, claim, 'utf-8');
+          const killSpy = spyOn(process, 'kill').mockImplementation(
+            killFailingWith(OTHER_USER_PID, 'EPERM') as typeof process.kill
+          );
+          try {
+            await atAge(pidFile, CLAIM_MAX_AGE_MS - 1, async () => {
+              await withStubSpawn(STUB_PID, async (spawnSpy) => {
+                await start();
+                expect(spawnSpy).not.toHaveBeenCalled();
+              });
+            });
+            expect(readFileSync(pidFile, 'utf-8')).toBe(claim);
+
+            await atAge(pidFile, CLAIM_MAX_AGE_MS, async () => {
+              await withStubSpawn(STUB_PID, async (spawnSpy) => {
+                await start();
+                expect(spawnSpy).toHaveBeenCalledTimes(1);
+              });
+            });
+          } finally {
+            killSpy.mockRestore();
+          }
+          expect(readFileSync(pidFile, 'utf-8')).toBe(String(STUB_PID));
+        });
+
         it('should reclaim a claim exactly at the limit', async () => {
           await createExitingBuild();
           await writeFile(pidFile, `starting:${process.pid}:at-limit`, 'utf-8');
@@ -1732,7 +1976,7 @@ describe('serve.ts', () => {
 
           await atAge(pidFile, CLAIM_MAX_AGE_MS - 1, async () => {
             await withStubSpawn(STUB_PID, async (spawnSpy) => {
-              await expect(start()).resolves.toBeUndefined();
+              await expect(start()).resolves.toEqual({ status: 'starting-elsewhere' });
               expect(spawnSpy).not.toHaveBeenCalled();
             });
           });
@@ -1765,6 +2009,59 @@ describe('serve.ts', () => {
             expect(spawnSpy).not.toHaveBeenCalled();
           });
           expect(readFileSync(pidFile, 'utf-8')).toBe(String(process.pid));
+        });
+      });
+
+      // #1825 review M1: `process.kill` rejects a PID that is not an int32 with an
+      // error that has no errno, which "any other errno = alive" would read as
+      // a live process. Such a record is not a record: status, stop and start
+      // must agree on that.
+      describe('a record whose PID cannot be a process', () => {
+        it.each([
+          '1.5',
+          '99999999999',
+          '2147483648',
+          '1e10',
+          'starting:99999999999:other-start',
+          'starting:2147483648:other-start',
+        ])('should treat %s as no server in status, stop and start alike', async (content) => {
+          await createExitingBuild();
+          await writeFile(pidFile, content, 'utf-8');
+
+          // real process.kill: the point is what it does with such a PID
+          expect(await isServeRunning()).toBe(false);
+          expect(await getServerPid()).toBeNull();
+          expect(await stopServe()).toBe(false);
+          expect(readFileSync(pidFile, 'utf-8')).toBe(content);
+
+          await withStubSpawn(STUB_PID, async (spawnSpy) => {
+            await expect(start()).resolves.toEqual({ status: 'started', pid: STUB_PID });
+            expect(spawnSpy).toHaveBeenCalledTimes(1);
+          });
+          expect(readFileSync(pidFile, 'utf-8')).toBe(String(STUB_PID));
+        });
+
+        it('should still accept the largest int32 PID', async () => {
+          await writeFile(pidFile, '2147483647', 'utf-8');
+          const alive = spyOn(process, 'kill').mockImplementation(() => true);
+          try {
+            expect(await isServeRunning()).toBe(true);
+            expect(await getServerPid()).toBe(2147483647);
+          } finally {
+            alive.mockRestore();
+          }
+        });
+      });
+
+      describe('getServerPid', () => {
+        it('should return the PID of a live server record only', async () => {
+          expect(await getServerPid()).toBeNull(); // absent
+          await writeFile(pidFile, String(process.pid), 'utf-8');
+          expect(await getServerPid()).toBe(process.pid);
+          await writeFile(pidFile, String(DEAD_PID), 'utf-8');
+          expect(await getServerPid()).toBeNull(); // gone
+          await writeFile(pidFile, `starting:${process.pid}:other-start`, 'utf-8');
+          expect(await getServerPid()).toBeNull(); // a start in progress is not a server
         });
       });
 
