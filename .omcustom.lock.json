@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.104",
-  "generatedAt": "2026-10-05T18:04:42.081Z",
-  "templateVersion": "1.1.104",
+  "generatorVersion": "1.1.105",
+  "generatedAt": "2026-10-05T22:35:55.173Z",
+  "templateVersion": "1.1.105",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -535,8 +535,8 @@
       "component": "ontology"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "6063d84ca1ad22fca76bc30b11febbc42a756585ac68d81a36b873c353c214b8",
-      "size": 32177,
+      "templateHash": "e270fbb5db35a0d16939d0fe40fbb65e0a922e0f9d7a74003921d99073c93583",
+      "size": 32382,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
@@ -580,8 +580,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "5b3ceafde23920f79fec14dda356abccf55cd4469e7aceaf9fa6459278c1999e",
-      "size": 106217,
+      "templateHash": "a051ace3c37e8b64636793c1f6f45a148bcf00f57e612650ed4d2dc1b2e93266",
+      "size": 106404,
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
@@ -600,8 +600,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-sync-verification.md": {
-      "templateHash": "2c2bf045a72d64240ccc3dcfab9bebcb2d3eabea935ba376a856034352da4d8a",
-      "size": 47708,
+      "templateHash": "67ceed5b49b2457df8ec222627562cccb8256d99fd503977a00f41a7dcb0e622",
+      "size": 48234,
       "component": "rules"
     },
     ".claude/rules/MUST-tool-identification.md": {
@@ -850,8 +850,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "3c1d8a3cc4ab604474e24fe9f3c87e9dc482393188672d924295b35d3bf12393",
-      "size": 23075,
+      "templateHash": "4ee6d71595782d8d6a269c557c853a6dd6af10ab04efc1da2ff4c672d1f96ed6",
+      "size": 23848,
       "component": "skills"
     },
     ".claude/skills/go-backend-best-practices/SKILL.md": {
@@ -910,8 +910,8 @@
       "component": "skills"
     },
     ".claude/skills/homework/SKILL.md": {
-      "templateHash": "f6c668e194660a55e0985934c1856d9177bb11242e37452a4fdd6456e9c1085d",
-      "size": 14503,
+      "templateHash": "c3df40526051be014a5478a63faeabf7e8b047833c7aab1f669fb43275e3d783",
+      "size": 14875,
       "component": "skills"
     },
     ".claude/skills/idea/SKILL.md": {
@@ -1010,8 +1010,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "ec5bbca5e2745a6ce737d34ad13ff80eeeacb6713c739d55289ee8f6c4fe031d",
-      "size": 7795,
+      "templateHash": "20175c07c0bfdc717e7c7f9c01c783cd637506bb4703c438034492eab221285a",
+      "size": 8325,
       "component": "skills"
     },
     ".claude/skills/omcustom-takeover/SKILL.md": {
@@ -1065,8 +1065,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "cbbac0d6af61154f08dd2c286a2f35d245d3d38be944299304b7d590ed69c4ca",
-      "size": 105421,
+      "templateHash": "9cecd7f8b4dd13ac112017d052e390bef4f82ff5203577bbf08208b1c2a1c767",
+      "size": 129055,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1075,8 +1075,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "49e19daf6ca64b9f637ef58c5a21eeeb7cd2216953769d154dfa0ad8e4747b98",
-      "size": 9202,
+      "templateHash": "7666336d7f5e5c08c2e42a7993ea19e364af419685b90336ab3cba18d317489a",
+      "size": 11534,
       "component": "skills"
     },
     ".claude/skills/postgres-best-practices/SKILL.md": {

@@ -12,7 +12,7 @@ Generate structured release notes directly within the Claude Code session, using
 
 ## Purpose
 
-Replaces the CI-based `release-notes.yml` workflow that previously used Claude API (`ANTHROPIC_API_KEY`). The release notes are now generated in-session and passed directly to `gh release create --notes`.
+Replaces the CI-based `release-notes.yml` workflow that previously used Claude API (`ANTHROPIC_API_KEY`). The release notes are now generated in-session and written to a notes file and passed to `gh release create --notes-file`.
 
 ## Usage
 
@@ -96,9 +96,9 @@ _Release notes generated with Claude Code_
 ### Phase 4: Apply
 
 The generated notes can be:
-1. **Direct**: Passed to `gh release create --notes "{notes}"`
+1. **Direct**: Write the notes to a git-ignored notes file (for example `.claude/outputs/sessions/{date}/release-notes-{VERSION}.md`) with the Write tool, then run `gh release create v{VERSION} --notes-file <notes-file>`. Do not inline the notes text in the command line, because `$(…)` and backticks inside the notes would be executed by the shell. `release_notes.md` is a tracked file and is not used as the `--notes-file` input.
 2. **File**: Written to `release_notes.md` for review before use
-3. **Update**: Used with `gh release edit v{VERSION} --notes "{notes}"`
+3. **Update**: Write the notes to the same kind of git-ignored notes file, then run `gh release edit v{VERSION} --notes-file <notes-file>` (again, `release_notes.md` is not used as the `--notes-file` input)
 
 ### Phase 5: Promote `## [Unreleased]` in CHANGELOG.md (Optional but Recommended)
 

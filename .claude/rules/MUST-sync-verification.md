@@ -242,9 +242,10 @@ Any change to: agents, agent frontmatter, skills, guides, routing patterns, rule
 
 ### auto-dev.yaml 압축 티어와의 양방향 참조 (Origin: #1650 C 부수)
 
-auto-dev.yaml 압축 티어는 `.claude/rules/**` 변경 시 mgr-sauron R017 필수 실행 carve-out을 둔다 — 같은 커밋에서 갱신(R016).
+auto-dev.yaml은 모든 티어에서 커밋 전(첫 push 전) mgr-sauron:watch를 1회 실행하며 구조 표면이 없어도 생략하지 않습니다 — 한쪽을 바꾸면 같은 커밋에서 갱신(R016).
 
 <!-- DETAIL: auto-dev.yaml 압축 티어 paragraph, original wording
+이력 (v1.1.105, #1799 찐빠 #1): v1.1.58에서 `.claude/rules/**` 변경 시에만 mgr-sauron R017을 필수 실행하는 carve-out을 도입했으나, v1.1.105에서 docs-only·lite·standard 전 티어가 커밋 전, 따라서 첫 push 전에 mgr-sauron:watch 단일 목표 위임을 1회 실행하는 기준으로 바꾸었습니다. 구조 표면이 없다는 것은 생략 사유가 아닙니다. 아래 원문은 v1.1.58 도입 당시의 서술입니다.
 이 소절은 R017 적용 범위 자체를 넓히지 않는다 — 위 범위 열거가 압축 파이프라인에서 어떻게 배선되는지를 기록한다. `.claude/skills/pipeline/workflows/auto-dev.yaml`의 compression-mode-eval은 docs-only 티어에서 deep-verify를 self-review로 대체하되, 변경 집합에 `.claude/rules/**`(또는 agents/skills frontmatter 등 구조 표면)가 포함되면 mgr-sauron R017 검증을 단일 목표 위임으로 **필수 실행**하는 carve-out을 둔다(v1.1.58 세션 — docs-only 티어였으나 sauron이 R002/R010 모순 advisory 1건을 포착). 이 절의 적용 조건과 그 carve-out은 같은 조건을 서로 가리킨다 — 한쪽을 바꾸면 다른 쪽도 같은 커밋에서 갱신한다(R016 Rule Wiring Check). 이전까지는 yaml → R017 단방향 인용만 있어 R017 쪽에서 carve-out의 존재를 알 수 없었다.
 -->
 

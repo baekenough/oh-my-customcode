@@ -133,7 +133,7 @@ Cross-reference: [[fsd]] "Issue Trust Boundary and PR Merge Boundary".
    - If current FAIL count **>** baseline → new regression detected → halt + report failure list
    - If current FAIL count **≤** baseline → continue with advisory `"X failures (baseline {n}, delta {d})"`
 5. Build script (if exists)
-6. **Coverage threshold check (v1.1.81)** — equivalent to `.husky/pre-commit`'s coverage gate, added so a deferred implement-stage commit (see the `implement` step's "deferred combined commit" option below) is still coverage-gated before release even though the hook has not run yet: run `bun test --coverage` standalone (no pipe, exit code read directly), extract Function/Line coverage from the "All files" summary line, and read the CURRENT threshold value and the new-source-file relaxation rule directly from `.husky/pre-commit` at run time rather than hardcoding a number — the hook's threshold can change independently of this workflow file. If either Function or Line coverage falls below the threshold `.husky/pre-commit` currently applies (accounting for its dynamic relaxation for commits containing newly added `src/**/*.ts`/`.tsx` files), the step halts and reports the shortfall.
+6. **Coverage threshold check (v1.1.81)** — equivalent to `.husky/pre-commit`'s coverage gate, added so a deferred implement-stage commit (see the `implement` step's required combined-commit ordering below) is still coverage-gated before release even though the hook has not run yet: run `bun test --coverage` standalone (no pipe, exit code read directly), extract Function/Line coverage from the "All files" summary line, and read the CURRENT threshold value and the new-source-file relaxation rule directly from `.husky/pre-commit` at run time rather than hardcoding a number — the hook's threshold can change independently of this workflow file. If either Function or Line coverage falls below the threshold `.husky/pre-commit` currently applies (accounting for its dynamic relaxation for commits containing newly added `src/**/*.ts`/`.tsx` files), the step halts and reports the shortfall.
 
 **Halt conditions**: lint errors, typecheck errors, NEW test failures (regression from baseline), coverage below the threshold `.husky/pre-commit` currently applies, build failure, lockfile drift.
 
@@ -147,9 +147,9 @@ Cross-reference: [[fsd]] "Issue Trust Boundary and PR Merge Boundary".
 
 Step 3's R010 approval-required path pre-check now branches on whether the run is unattended. As of v1.1.58 this was decided by prose ("`/fsd` or an autonomous-session directive" — no deterministic signal, flagged as a follow-up item); v1.1.60 closes that gap by consuming the `unattended_mode` state that pre-triage Phase 0.6 measured from the `/tmp/.claude-fsd-$PPID` marker or `OMCUSTOM_UNATTENDED=1` env — the step no longer infers unattended-ness from prose ("looks like it entered via /fsd"). In an unattended loop, an issue touching `.claude/hooks/**` is no longer surfaced for immediate approval mid-run; it is **split off and deferred** from the current scope, and the run continues on the remaining eligible issues. Deferred hooks issues are batched into a **single** approval question at the next iteration boundary (the `/homework` gate) rather than interrupting the loop per-issue. Once approved, [[r015]] directive persistence applies for the rest of the session for the same category. In attended (interactive) mode, the pre-check behaves as before — immediate approval request. See [[fsd]] "Unattended-Mode Marker — Deterministic Detection Signal" for the skill-side half of this split.
 
-### deep-verify: mgr-sauron carve-out inside docs-only compression (v1.1.58)
+### deep-verify: mandatory mgr-sauron verification in every tier
 
-The `docs-only` compression tier's `deep-verify` substitution ("skip the deep-verify skill; perform self-review checklist instead") now carries an explicit carve-out: if the changed-file set includes `.claude/rules/**` (or agent/skill frontmatter — structural surface), self-review substitution is **not** used — mgr-sauron [[r017]] verification runs as a **mandatory single-goal delegation** instead, the same principle already applied in the `lite` tier's R017 clause. Origin: a v1.1.58 session ran the `docs-only` tier on a rule-file change and mgr-sauron caught an R002/R010 contradiction advisory that self-review would have missed.
+Every compression tier runs one mandatory [[mgr-sauron]] single-goal verification before the implementation commit and first push. No structural surface is not a waiver. Include a do-not-rerun list for already measured checks; apply deep-verify corrections before verification and commit. See [[r017]].
 
 ### scope-selection: milestone 3-branch state machine + docs-only/lite side-effect discipline (#1553 찐빠 #3)
 
@@ -161,9 +161,13 @@ The `docs-only` compression tier's `deep-verify` substitution ("skip the deep-ve
 
 Origin: #1553 찐빠 #3 — v1.1.41 릴리즈에서 `lite` 압축이 `scope-selection`의 "마일스톤 미존재 → 생성" 분기까지 함께 생략해 마일스톤이 만들어지지 않았다. 압축 대상은 분석 산출물이었으나 상태 변경 분기가 동반 생략됐다.
 
-### scope-selection rule 6: batch-size norm (v1.1.102)
+### scope-selection rule 6: batch size and lower-tier fairness
 
-Rule 4 ("Cap at 7 issues; if priority issues < 7, stop at that priority (don't mix tiers)") gained a pointer: "EXCEPT the batch-size fill in rule 6, which takes precedence when the top tier has < 3." The new rule 6 is a fill exception to "don't mix tiers": if the top tier has fewer than 3 eligible issues, fill from the next tiers in order (bug → chore → feature, then preferred-label / retrospective-proposal issues) until the scope is 3-7 issues. Tier mixing is allowed ONLY for this fill, and a 1-2 issue release is permitted ONLY when the eligible total across ALL tiers is < 3. Issues split off or deferred pending approval or a decision (the `.claude/hooks/**` unattended split in Step 3, decision-needed, etc.) do not count toward the eligible total. Because the Step 3 split happens AFTER this step, the fill is re-evaluated after the split: if the remaining scope is below 3 and eligible issues remain, fill again from the next tiers, then re-run the Step 3 path pre-check on any newly added issue (Step 3 also states: "After an unattended split, re-evaluate the Step 2 rule 6 batch-size fill against the remaining scope (split-off issues do not count) before assigning the milestone."). When the scope has multiple issues, implementation delegations are issued in parallel ([[r009]]) unless their target files overlap, or one delegation depends on another's in-release implementation choice (sequential dispatch, per the `implement` step's document-implementation variant of "File-Disjoint ≠ Independent"); local git state changes (per-issue lifecycle commits via mgr-gitnerd) remain serialized, one at a time (R009 "File-Disjoint ≠ Independent (Local Git State)"). Rationale recorded in the YAML: the fixed per-release cost (review rounds, CI, release.yml) must not be carried by 1-2 issues, and consecutive top-tier-only runs starve lower tiers. Origin: user feedback 2026-10-05 and the #1814 harness proposal R3 (lower-tier starvation).
+When the top tier has fewer than 3 eligible issues, fill from lower tiers to reach 3–7 issues; 1–2 issue releases are allowed only when fewer than 3 issues remain eligible. Re-evaluate after approval/decision deferrals.
+
+After 3 consecutive bug-only releases, reserve a slot in the next scope for an eligible preferred-label or retrospective-proposal issue, even if 3 or more bugs remain. Selection follows existing preference/priority ordering, then oldest creation time. Preserve trust, approval, dependency and path checks. If the reserved candidate is deferred, try another; retain the counter if none qualifies. Reset only after an actual release includes a lower-tier issue, and record the counter/reservation at each iteration boundary.
+
+Plan-observed same-tier defects may join before implementation starts, within the cap of 7, with trust/path checks, milestone assignment, label and start comment.
 
 ### scope-selection Step 3: approval-required path pre-check (#1574)
 
@@ -204,11 +208,9 @@ jq -e --arg v "<NEW>" '.generatorVersion==$v and .templateVersion==$v' .omcustom
 
 Failure halts the `release` step — the cause is almost always step 1.e having run before step 1.d landed; the fix is to re-run 1.d then 1.e, re-stage, and re-run the 1.j assertion.
 
-### implement step 5: commit trailer restriction + deferred combined-commit option (v1.1.81)
+### implement step 5: commit trailers and required review-before-commit ordering
 
-The `implement` step's per-issue commit instruction now states that commit trailers MUST use ONLY the exact trailer text the orchestrator supplies in the delegation prompt — the agent MUST NOT add or rewrite any other trailer. This closed a gap observed in another project's session: a subagent added an unapproved model-attribution trailer to 4 local commits, citing the repo's own past-commit convention as justification; the trailer did not survive because the squash-merge specified the PR body separately (#1728 찐빠 #6). The same restriction is echoed on the `release` step's version-bump commit instruction.
-
-A new OPTION allows deferring the implement-stage commit until AFTER `deep-verify` corrections have landed, combining the implement changes and the deep-verify corrections into ONE commit (정정 커밋 추가 비용 절감, #1727 찐빠 #4) — allowed ONLY before any push to `develop`, and MUST be announced to the user. The deferred commit still carries the `Refs #<N>` trailer and the 400000ms timeout (see below). Risk: `verify-build` and `deep-verify` then run against an uncommitted working tree until the combined commit lands (this is why `verify-build`'s new coverage-threshold check above exists — it re-covers ground the pre-commit hook would otherwise have gated). DEADLINE: the combined commit MUST land — with the `.husky/pre-commit` gate passing — before the `release` step begins; `release` step 1.a requires a clean working tree, so a deferred commit cannot cross into `release`.
+Commit trailers use only the orchestrator-supplied text. Defer implementation commits until deep-verify corrections and mandatory Sauron verification have completed, combining implementation and corrections into one commit in every tier. Announce this ordering; keep `Refs #<N>` trailers and the documented commit timeout. Verify-build and deep-verify operate on the uncommitted working tree until that commit passes the pre-commit gate. The combined commit must land before release begins; switch every scoped issue to verify-ready immediately afterward.
 
 ### implement/release commit steps: Bash timeout for pre-commit hook (#1645)
 
@@ -330,7 +332,7 @@ Four standing implement-step bullets, plus a deterministic guard for the flag fi
 
 ### implement step / ci-check: combined-commit label timing + `grep -vcE` correction (#1760)
 
-- **LABEL TIMING for the combined-commit OPTION** — when the combined-commit OPTION is used, the moment right after the combined commit lands is the per-issue "success" point: run lifecycle item 6 (`gh issue edit <N> --remove-label in-progress --add-label verify-ready`) there for every issue in the commit, rather than deferring it to `ci-check`, whose step 5 remains the safety net. Lifecycle item 6 itself now carries the same note.
+- **LABEL TIMING for the required combined commit** — under the required review-before-commit ordering, the moment right after the combined commit lands is the per-issue "success" point: run lifecycle item 6 (`gh issue edit <N> --remove-label in-progress --add-label verify-ready`) there for every issue in the commit, rather than deferring it to `ci-check`, whose step 5 remains the safety net. Lifecycle item 6 itself now carries the same note.
 - **합쇼체 line-final auxiliary check uses `grep -vcE`** — in constraint (a) of the fixed constraint block, the second grep must use `-E`: in BRE `?` is a literal character, so the original `grep -vc` form flagged all 6 합쇼체 negative samples (6/12 correct, re-measured #1760); with `-vcE` the 6 반말/평서형 positive and 6 합쇼체 negative samples give 12/12 correct. This corrects the earlier "12/12" claim of #1711 찐빠 #3. See [[r005]] for the related `git grep -E` portability note.
 
 ### implement step norms: grep/python disagreement, doc sequencing, biome, test temp dirs, no persistent `cd`, trailer, coverage (#1763, #1778)
@@ -350,6 +352,16 @@ Four standing implement-step bullets, plus a deterministic guard for the flag fi
 - **Constraint item (i)** — when an edit writes a runnable command or code snippet into rule/skill/guide/workflow text, the agent copies it out of the edited file and runs it on a positive and a negative fixture, with both raw outputs in the completion report (#1781 찐빠 #1).
 - **implement Rules: list/loop additions** — a delegation adding an item to an existing list or loop (e.g. a sync-file list) must cite with file:line how that list handles preserveFiles, protection and backup contracts and judge consistency with the other components in the same run (#1786 찐빠 #1).
 - **implement Rules: migration/upgrade tests** — every "old state" fixture is derived from that version's generator output (or real tagged artifacts, citing the call used), never hand-written from source expressions (#1786 찐빠 #2).
+
+### Quotation, Path, Delegation and Release Checks
+
+The [canonical workflow](../../.claude/skills/pipeline/workflows/auto-dev.yaml) treats external and repository text containing shell syntax as inert data. Quote verification counts each quotation independently, fails on any zero count or empty input, and keeps an unterminated last line. A combined pattern grep is only any-match, not proof that every quotation exists.
+
+Path pre-checks run at the repository root and check Git listing failures before extraction. They include tracked top-level directories and root files, discard home-path tokens, and expose documented prefix/token limits. Unsupported targets use the literal file-input channel. A HALT or partial output is not completed measurement.
+
+Every delegation carries the Standard delegation-prompt block: shadowed-command handling, no HOME probes, unique temporary paths, Known Limitations lookup, shell-loop discipline, guard stop/report, fixed working directory and observed-only reporting. Code changes require branch mutants, input-domain cases and relevant comment contracts, including existing contracts affected by a new operation. Fail-closed chains require single-defect fixtures and step mutants. Guard rewrites also require differential old/new blocking checks. Coverage compares uncovered sets; CI timing uses unchanged files as controls. Report test-induced production ordering for judgment before review.
+
+Before any release PR or tag push, verify an open target milestone and assignment of all scoped issues, including plan-admitted issues. PR bodies and release notes use files. See [[post-release-followup]], [[omcustom-release-notes]], [[fsd]] and [[r010]].
 
 ## Relationships
 

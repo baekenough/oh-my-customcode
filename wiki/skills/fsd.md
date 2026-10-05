@@ -162,6 +162,10 @@ Because FSD is an unattended loop with no live user to answer approval prompts, 
 | Only `decision-needed` / `needs-review` issues remain and no open PRs | NO — loop converges immediately |
 | Cost-sensitive, large backlog | Inspect eligible set first |
 
+## Release and Delegation Gates
+
+Before each release PR, the [auto-dev workflow](../../.claude/skills/pipeline/workflows/auto-dev.yaml) must confirm an open target milestone and assignment of every scoped issue. Homework-artifact delegations carry its Standard delegation-prompt block, including the target agent’s Known Limitations lookup. See [[pipeline]] and [[homework]].
+
 ## Relationships
 
 - **Delegates to**: [[goal]] (objective wrapper + R020 verification), [[pipeline]] (auto-dev release pipeline per iteration), [[homework]] (retrospective gate per iteration), [[mgr-gitnerd]] (git operations and PR merges)

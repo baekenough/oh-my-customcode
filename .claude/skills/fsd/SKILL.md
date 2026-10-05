@@ -167,6 +167,7 @@ FSD의 루프 드라이버는 **메인 대화(오케스트레이터) 자신**입
 | `/pipeline auto-dev` 1회 → homework 아티팩트 1개 기록 → 열린 PR 처리 | 「Iteration Flow」 |
 | 반복 끝에 수렴 판정(적격 이슈 0 AND 열린 PR 0)을 실측으로 수행하고, 선언 직전 **반복 수 == homework 아티팩트 수**를 `ls .claude/outputs/sessions/{YYYY-MM-DD}/homework-*.md`로 대조 — 세션이 UTC 자정을 넘길 수 있으므로 세션이 걸친 **모든 날짜 디렉토리**를 포함합니다(예: `ls .claude/outputs/sessions/2026-09-1[78]/homework-*.md`) | R020, #1688 |
 | 종료 경로와 무관하게 마커 제거(`command rm -f`) | 「무인 모드 마커」 |
+| 반복의 릴리즈는 PR 생성 전에 auto-dev 릴리즈 단계의 마일스톤 배정 게이트가 PASS여야 합니다(마일스톤 vX.Y.Z가 open이고 스코프 이슈 전부가 배정됨) | auto-dev.yaml release 단계 "Milestone assignment gate", #1789 찐빠 #2(인라인 루프가 scope-selection의 마일스톤 생성·배정 부수효과를 건너뛰어 릴리즈가 마일스톤 없이 나감) |
 
 `/goal`·`/loop`를 호출하는 경로는 여전히 유효하며, 세션이 무인(`claude -p`, 예약 실행)이라 자기 페이싱이 필요할 때 권장됩니다. 대화형 세션에서는 인라인 실행이 스킬 호출 오버헤드 없이 같은 계약을 만족합니다.
 
@@ -297,3 +298,5 @@ jq -r '.permissions.defaultMode // "unset"' "$(git rev-parse --show-toplevel)/.c
 Artifacts from each iteration follow the conventions of the constituent skills:
 - Pipeline artifacts: `.claude/outputs/sessions/{YYYY-MM-DD}/pipeline-auto-dev-{HHmmss}.md`
 - Homework artifacts: `.claude/outputs/sessions/{YYYY-MM-DD}/homework-{HHmmss}.md`
+
+When the homework artifact is written by delegating to an agent, the delegation prompt MUST include the "Standard delegation-prompt block" defined in `.claude/skills/pipeline/workflows/auto-dev.yaml`, including its one-line Known Limitations lookup for the target agent (Origin: #1807 찐빠 #8). This section only points to the block and does not restate it.
