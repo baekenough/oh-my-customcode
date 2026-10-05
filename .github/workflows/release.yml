@@ -18,10 +18,19 @@ jobs:
   test:
     name: Test
     runs-on: macos-latest
+    # Job-level permissions REPLACE the workflow-level block for this job (unlisted scopes = none), so the
+    # three existing scopes are repeated unchanged; checks + actions: read serve "Detect tree already verified by PR CI".
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      checks: read
+      actions: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # fetch-depth: 0 is required by "Detect tree already verified by PR CI" (second parent + ancestry check)
           fetch-depth: 0
 
       - name: Setup Bun
@@ -49,7 +58,56 @@ jobs:
       - name: Run Biome lint
         run: bun run lint
 
+      # Skip the duplicate suite ONLY with proof that this exact tree already passed PR CI; any doubt => full suite.
+      # Needs: Checkout fetch-depth: 0 (second parent + ancestry), the checks/actions read scopes above.
+      # Couples to ci.yml: workflow "CI", job "Test", step "Run tests with coverage and check threshold".
+      - name: Detect tree already verified by PR CI
+        id: prverified
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Fail-closed: every path below ends in `exit 0`; only the final line of the happy path writes skip=true.
+          set +e
+          run_suite() {
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::full test suite will run — $1"
+            exit 0
+          }
+          command -v gh >/dev/null 2>&1 || run_suite "gh CLI not available"
+          command -v jq >/dev/null 2>&1 || run_suite "jq not available"
+
+          # 1) structural: GITHUB_SHA is a PR-merge commit ("<sha> <parent>..." has 3 fields for 2 parents, same test as ci.yml mergecheck)
+          SHA="$(git rev-parse --verify "${GITHUB_SHA}^{commit}" 2>/dev/null)" || run_suite "cannot resolve ${GITHUB_SHA}"
+          PARENTS="$(git rev-list --parents -n 1 "$SHA" 2>/dev/null | wc -w | tr -d ' ')"
+          [ "$PARENTS" = "3" ] || run_suite "not a 2-parent merge commit (fields=$PARENTS)"
+          P1="$(git rev-parse --verify "${SHA}^1^{commit}" 2>/dev/null)" || run_suite "first parent unavailable"
+          P2="$(git rev-parse --verify "${SHA}^2^{commit}" 2>/dev/null)" || run_suite "second parent unavailable (shallow checkout?)"
+
+          # 2) identical tree: the merge added nothing on top of the PR head
+          TREE="$(git rev-parse --verify "${SHA}^{tree}" 2>/dev/null)" || run_suite "tree unavailable"
+          P2_TREE="$(git rev-parse --verify "${P2}^{tree}" 2>/dev/null)" || run_suite "PR-head tree unavailable"
+          [ -n "$TREE" ] && [ "$TREE" = "$P2_TREE" ] || run_suite "tree $TREE differs from PR-head tree $P2_TREE"
+
+          # 3) PR head already contained the base (strict up-to-date), so CI's test-merge tree == PR-head tree
+          git merge-base --is-ancestor "$P1" "$P2" 2>/dev/null || run_suite "base parent is not an ancestor of the PR head (PR was not up to date)"
+
+          # 4) exactly one completed GitHub Actions (app 15368) check run named Test on the PR head, concluded success
+          RUNS="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${P2}/check-runs?check_name=Test&app_id=15368&filter=latest&per_page=100")" || run_suite "check-runs lookup failed for PR head $P2"
+          JOB_ID="$(printf '%s' "$RUNS" | jq -r --arg sha "$P2" '[.check_runs[] | select(.name == "Test" and .app.id == 15368 and .head_sha == $sha and .status == "completed")] | if length == 1 and .[0].conclusion == "success" then .[0].id else empty end')"
+          case "$JOB_ID" in ''|*[!0-9]*) run_suite "no single completed successful Test check run on PR head $P2" ;; esac
+
+          # 5) ci.yml reports Test=success on its docs-only fast path without running any test, so require the real test step itself to have succeeded
+          JOB="$(gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/${JOB_ID}")" || run_suite "job lookup failed for check run $JOB_ID"
+          STEP_OK="$(printf '%s' "$JOB" | jq -r --arg sha "$P2" 'select(.workflow_name == "CI" and .name == "Test" and .head_sha == $sha and .conclusion == "success") | [.steps[] | select(.name == "Run tests with coverage and check threshold" and .conclusion == "success")] | length')"
+          [ "$STEP_OK" = "1" ] || run_suite "PR-head Test job $JOB_ID did not run the real test step to success (docs-only fast path, or step renamed in ci.yml)"
+
+          echo "::notice::tree $TREE already passed PR CI (PR head $P2, Test job $JOB_ID) — skipping duplicate test run"
+          echo "skip=true" >> "$GITHUB_OUTPUT"
+
       - name: Run tests with coverage
+        if: steps.prverified.outputs.skip != 'true'
         run: bun test --coverage
 
       - name: Build
