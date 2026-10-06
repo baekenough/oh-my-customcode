@@ -7,10 +7,12 @@ meta:
   # excluded: _Footer.md, _Sidebar.md, Home.md, Agents.md, Built-in-Commands.md,
   #   CLI-Reference.md, Contributing.md, Customization.md, Development.md, Guides.md,
   #   Project-Structure.md, Quick-Start.md, Rules.md, Skills.md, Sub-Agent-Model.md (15 pages)
-  total_pages: 263
-  total_sources: 272
+  total_pages: 262
+  # total_sources counts the canonical source-hash helper's keys:
+  # agents + skills + rules + guide topic directories + canonical workflow YAMLs.
+  total_sources: 244
   counts:
-    skills: 115
+    skills: 114
     guides: 62
     # guides: wiki page count (source topics = 56)
     agents: 50
@@ -20,7 +22,7 @@ pages:
   architecture:
     - file: architecture/agent-taxonomy.md
       title: "Agent Taxonomy"
-      summary: "49 agents are organized into 12 functional categories. Each agent is a specialist"
+      summary: "50 agents are organized into 13 functional categories. Each agent is a specialist"
     - file: architecture/orchestration.md
       title: "Orchestration Model"
       summary: "The main Claude Code conversation is the sole orchestrator. It never writes files"
@@ -442,9 +444,6 @@ pages:
     - file: skills/roundtable-debate.md
       title: "roundtable-debate"
       summary: "Multi-agent structured debate with anti-groupthink mechanisms — divergence preservation over consensus, 2-round hard cap, Devil's Advocate slot"
-    - file: skills/rtk-exec.md
-      title: "RTK Exec"
-      summary: "Execute CLI commands through RTK proxy for token compression."
     - file: skills/rust-best-practices.md
       title: "Rust Best Practices"
       summary: "Idiomatic Rust patterns from official Rust API Guidelines and The Rust Book."
@@ -748,7 +747,7 @@ pages:
       summary: "Role-based model selection strategy mapping task types to haiku/claude-sonnet-5-5/claude-opus-5-5 tiers (3-tier alias vs full-ID vs Agent-tool-enum spec) with escalation and project override patterns"
     - file: guides/multi-provider-exec.md
       title: "Multi-Provider Exec Guide"
-      summary: "Unified reference for executing prompts through external LLM providers (rtk-exec) — provider matrix, selection guidance, and multi-model verification integration"
+      summary: "External provider availability and explicit execution guidance, including RTK project integration retirement in v2.0.0"
     - file: guides/agents-md-quality.md
       title: "Agent Definition Quality Standards Guide"
       summary: "Quality criteria for .claude/agents/*.md files — four-section structure, frontmatter checklist, anti-patterns, and verification workflow"

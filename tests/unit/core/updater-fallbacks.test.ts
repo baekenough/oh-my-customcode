@@ -9,9 +9,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import * as childProcess from 'node:child_process';
+import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import * as codexInstaller from '../../../src/core/codex-installer.js';
 
 // Import fs utilities to spy on
 import * as fsUtils from '../../../src/utils/fs.js';
@@ -207,5 +209,133 @@ describe('updater fallback paths', () => {
       expect(result.success).toBe(true);
       expect(result.removedDeprecatedFiles).toEqual([]);
     });
+  });
+});
+
+// Every updater invocation uses a local spy; no external CLI or installer is launched.
+let codexCheckSpy: ReturnType<typeof spyOn>;
+let codexInstallSpy: ReturnType<typeof spyOn>;
+let networkSpy: ReturnType<typeof spyOn>;
+let syncCommandSpy: ReturnType<typeof spyOn>;
+beforeEach(() => {
+  networkSpy = spyOn(globalThis, 'fetch').mockRejectedValue(
+    new Error('network forbidden in updater fixture')
+  );
+  syncCommandSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
+    throw new Error('external synchronous command forbidden');
+  });
+  codexCheckSpy = spyOn(codexInstaller, 'isCodexInstalled').mockReturnValue(true);
+  codexInstallSpy = spyOn(codexInstaller, 'installCodex').mockReturnValue(false);
+});
+afterEach(() => {
+  const networkCalls = networkSpy.mock.calls.length;
+  const syncCommandCalls = syncCommandSpy.mock.calls.length;
+  networkSpy.mockRestore();
+  syncCommandSpy.mockRestore();
+  codexCheckSpy.mockRestore();
+  codexInstallSpy.mockRestore();
+  expect(networkCalls).toBe(0);
+  expect(syncCommandCalls).toBe(0);
+});
+
+describe('update RTK ownership fallback and containment', () => {
+  let project: string;
+  let scratch: string;
+  const wrapper = '.claude/skills/rtk-exec/scripts/rtk-wrapper.cjs';
+  beforeEach(async () => {
+    scratch = await mkdtemp(join(tmpdir(), 'omcustom-update-rtk-containment-'));
+    project = join(scratch, 'project');
+    await mkdir(project);
+    const config = getDefaultConfig();
+    config.version = '0.1.0';
+    await saveConfig(project, config);
+    await mkdir(join(project, wrapper, '..'), { recursive: true });
+  });
+  afterEach(async () => {
+    await rm(scratch, { recursive: true, force: true });
+  });
+
+  for (const oldLock of [
+    '{ corrupt',
+    JSON.stringify({ lockfileVersion: 99, files: {} }),
+    JSON.stringify({ lockfileVersion: 1, files: {} }),
+  ]) {
+    it(`preserves unknown RTK bytes for old lock ${oldLock}`, async () => {
+      await writeFile(join(project, wrapper), 'user data');
+      await writeFile(join(project, '.omcustom.lock.json'), oldLock);
+      const result = await update({ targetDir: project, components: ['skills'] });
+      expect(result.success).toBe(true);
+      expect(await readFile(join(project, wrapper), 'utf8')).toBe('user data');
+      expect(result.rtkRetirement?.removed).toEqual([]);
+      expect(result.rtkRetirement?.preserved.some((entry) => entry.path === wrapper)).toBe(true);
+      const next = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
+      expect(next.files[wrapper]).toBeUndefined();
+      expect(Object.keys(next.files).length).toBeGreaterThan(0);
+    });
+  }
+
+  it('preserves RTK bytes when prior ownership cannot be read', async () => {
+    await writeFile(join(project, wrapper), 'user data');
+    await mkdir(join(project, '.omcustom.lock.json'));
+    const result = await update({ targetDir: project, components: ['skills'] });
+    expect(await readFile(join(project, wrapper), 'utf8')).toBe('user data');
+    expect(result.rtkRetirement?.removed).toEqual([]);
+    expect(result.rtkRetirement?.preserved.some((entry) => entry.path === wrapper)).toBe(true);
+    expect((await lstat(join(project, '.omcustom.lock.json'))).isDirectory()).toBe(true);
+  });
+
+  for (const target of ['internal', 'external', 'dangling'] as const) {
+    it(`never unlinks a ${target} RTK target symlink or modifies its owned sentinel`, async () => {
+      const sentinel =
+        target === 'internal'
+          ? join(project, '.claude/skills/sentinel.cjs')
+          : join(scratch, 'sentinel.cjs');
+      const content = 'protected sentinel';
+      if (target !== 'dangling') await writeFile(sentinel, content);
+      await symlink(sentinel, join(project, wrapper));
+      const { createHash } = await import('node:crypto');
+      await writeFile(
+        join(project, '.omcustom.lock.json'),
+        JSON.stringify({
+          lockfileVersion: 1,
+          generatorVersion: '0.1.0',
+          templateVersion: '0.1.0',
+          generatedAt: '2025-01-01T00:00:00Z',
+          files: {
+            [wrapper]: {
+              templateHash: createHash('sha256').update(content).digest('hex'),
+              size: content.length,
+              component: 'skills',
+            },
+          },
+        })
+      );
+      const result = await update({ targetDir: project, components: ['skills'] });
+      expect(result.rtkRetirement?.removed).toEqual([]);
+      expect(result.rtkRetirement?.preserved).toContainEqual({
+        path: wrapper,
+        reason: 'not a regular owned file',
+      });
+      expect((await lstat(join(project, wrapper))).isSymbolicLink()).toBe(true);
+      if (target !== 'dangling') expect(await readFile(sentinel, 'utf8')).toBe(content);
+    });
+  }
+  it('preserves a regular RTK file whose parent resolves outside the project', async () => {
+    const outside = join(scratch, 'outside');
+    await mkdir(outside);
+    await writeFile(join(outside, 'rtk-wrapper.cjs'), 'outside sentinel');
+    await rm(join(project, wrapper, '..'), { recursive: true });
+    await symlink(outside, join(project, wrapper, '..'));
+    const result = await update({ targetDir: project, components: ['rules'] });
+    expect(result.success).toBe(true);
+    // Rules-only control must not even select RTK retirement.
+    expect(result.rtkRetirement?.removed ?? []).toEqual([]);
+    const selected = await update({ targetDir: project, components: ['skills'], force: true });
+    expect(selected.rtkRetirement?.removed).toEqual([]);
+    expect(selected.rtkRetirement?.preserved).toContainEqual({
+      path: wrapper,
+      reason: 'resolved path escapes project',
+    });
+    expect(await readFile(join(outside, 'rtk-wrapper.cjs'), 'utf8')).toBe('outside sentinel');
   });
 });

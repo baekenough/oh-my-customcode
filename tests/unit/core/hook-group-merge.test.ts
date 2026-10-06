@@ -9,6 +9,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   LEGACY_OMCUSTOM_DESCRIPTIONS,
   mergeHookBlocks,
+  retireRtkHookBlocks,
 } from '../../../src/core/hook-group-merge.js';
 
 const anchored = (script: string): string =>
@@ -67,6 +68,106 @@ const userGroup = (command: string, extra: Record<string, unknown> = {}) => ({
   matcher: 'Bash',
   hooks: [{ type: 'command', command }],
   ...extra,
+});
+
+describe('exact RTK hook retirement', () => {
+  const retiredDescription =
+    'RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R013 advisory)';
+  const legacyCommands = [
+    '.claude/hooks/scripts/rtk-intercept.sh',
+    'bash .claude/hooks/scripts/rtk-intercept.sh',
+    'bash ./.claude/hooks/scripts/rtk-intercept.sh',
+    'bash ".claude/hooks/scripts/rtk-intercept.sh"',
+    'bash "./.claude/hooks/scripts/rtk-intercept.sh"',
+    anchored('scripts/rtk-intercept.sh'),
+  ];
+
+  it.each(legacyCommands)('retires only the recognized standalone command %s', (command) => {
+    const sibling = { type: 'command', command: 'bash ~/team/audit.sh --strict' };
+    const group = {
+      matcher: 'Bash',
+      description: retiredDescription,
+      timeout: 7,
+      hooks: [{ type: 'command', command }, sibling],
+    };
+    const existing = { PreToolUse: [group] };
+    const snapshot = structuredClone(existing);
+    const expected = { ...group, hooks: [sibling] };
+    const retired = retireRtkHookBlocks(existing);
+    expect(retired).toEqual({ PreToolUse: [expected] });
+    expect(retireRtkHookBlocks(retired)).toBe(retired);
+    const generated = makeGenerated();
+    const merged = mergeHookBlocks(existing, generated);
+    expect(merged.PreToolUse).toEqual([expected]);
+    expect(merged.PostToolUse).toEqual(generated.PostToolUse);
+    expect(mergeHookBlocks(merged, generated)).toEqual(merged);
+    expect(existing).toEqual(snapshot);
+  });
+
+  it('drops an empty retired group but preserves unrelated LEGACY groups in retirement-only mode', () => {
+    const legacy = {
+      matcher: '*',
+      description: LEGACY_OMCUSTOM_DESCRIPTIONS[0],
+      hooks: [{ type: 'prompt', prompt: 'legacy user data' }],
+    };
+    const existing = {
+      PreToolUse: [userGroup(legacyCommands[0] as string)],
+      SubagentStop: [legacy],
+      unknown: 'unchanged',
+    };
+    const retired = retireRtkHookBlocks(existing) as typeof existing;
+    expect(retired.PreToolUse).toEqual([]);
+    expect(retired.SubagentStop).toBe(existing.SubagentStop);
+    expect(retired.unknown).toBe('unchanged');
+    expect(retireRtkHookBlocks(retired)).toBe(retired);
+    // Full merge still applies its original legacy ownership and generated groups.
+    expect(mergeHookBlocks(existing, makeGenerated()).SubagentStop).toEqual(
+      makeGenerated().SubagentStop
+    );
+  });
+
+  it.each([
+    ['different event', 'PostToolUse', 'Bash', legacyCommands[0]],
+    ['different matcher', 'PreToolUse', 'MyTool', legacyCommands[0]],
+    ['combined matcher', 'PreToolUse', 'Bash|Edit', legacyCommands[0]],
+    ['absent matcher', 'PreToolUse', undefined, legacyCommands[0]],
+    ['pipeline', 'PreToolUse', 'Bash', 'bash .claude/hooks/scripts/rtk-intercept.sh | tee log'],
+    ['arguments', 'PreToolUse', 'Bash', 'bash .claude/hooks/scripts/rtk-intercept.sh --user'],
+    ['suffix', 'PreToolUse', 'Bash', 'bash .claude/hooks/scripts/rtk-intercept.sh.backup'],
+    [
+      'absolute user',
+      'PreToolUse',
+      'Bash',
+      'bash /opt/project/.claude/hooks/scripts/rtk-intercept.sh',
+    ],
+    ['different interpreter', 'PreToolUse', 'Bash', 'sh .claude/hooks/scripts/rtk-intercept.sh'],
+    ['unbalanced quote', 'PreToolUse', 'Bash', 'bash ".claude/hooks/scripts/rtk-intercept.sh'],
+    ['unknown script', 'PreToolUse', 'Bash', 'bash .claude/hooks/scripts/rtk-custom.sh'],
+  ])('preserves %s even under the old RTK description', (_label, event, matcher, command) => {
+    const group = {
+      matcher,
+      description: retiredDescription,
+      hooks: [{ type: 'command', command }],
+    };
+    const existing = { [event as string]: [group] };
+    expect(retireRtkHookBlocks(existing)).toBe(existing);
+    const generated = makeGenerated();
+    expect(mergeHookBlocks(existing, generated)[event as string]).toContain(group);
+  });
+
+  it('preserves unknown shapes and non-command siblings rather than guessing ownership', () => {
+    const shapes = [null, 'unknown', { matcher: 'Bash', hooks: 'unknown' }, { hooks: [] }];
+    const sibling = { type: 'prompt', command: legacyCommands[0], prompt: 'user prompt' };
+    const existing = {
+      PreToolUse: [...shapes, { matcher: 'Bash', hooks: [null, 5, sibling] }],
+      OtherEvent: { malformed: 'kept' },
+    };
+    expect(retireRtkHookBlocks(existing)).toBe(existing);
+    expect(mergeHookBlocks(existing, makeGenerated()).PreToolUse).toEqual(existing.PreToolUse);
+    for (const unusable of [undefined, null, 'unknown', 5, []]) {
+      expect(retireRtkHookBlocks(unusable)).toBe(unusable);
+    }
+  });
 });
 
 const LEGACY_SUBAGENT_STOP =

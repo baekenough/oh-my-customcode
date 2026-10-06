@@ -1,8 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import * as childProcess from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, join as pathJoin } from 'node:path';
+import * as codexInstaller from '../../../src/core/codex-installer.js';
 import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
 import { getProviderLayout } from '../../../src/core/layout.js';
 import {
@@ -1365,5 +1368,311 @@ describe('updater', () => {
       expect(result.success).toBe(true);
       expect(result.skippedSource).toBeUndefined();
     });
+  });
+});
+
+// Every updater invocation uses a local spy; no external CLI or installer is launched.
+let codexCheckSpy: ReturnType<typeof spyOn>;
+let codexInstallSpy: ReturnType<typeof spyOn>;
+let networkSpy: ReturnType<typeof spyOn>;
+let syncCommandSpy: ReturnType<typeof spyOn>;
+beforeEach(() => {
+  networkSpy = spyOn(globalThis, 'fetch').mockRejectedValue(
+    new Error('network forbidden in updater fixture')
+  );
+  syncCommandSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
+    throw new Error('external synchronous command forbidden');
+  });
+  codexCheckSpy = spyOn(codexInstaller, 'isCodexInstalled').mockReturnValue(true);
+  codexInstallSpy = spyOn(codexInstaller, 'installCodex').mockReturnValue(false);
+});
+afterEach(() => {
+  const networkCalls = networkSpy.mock.calls.length;
+  const syncCommandCalls = syncCommandSpy.mock.calls.length;
+  networkSpy.mockRestore();
+  syncCommandSpy.mockRestore();
+  codexCheckSpy.mockRestore();
+  codexInstallSpy.mockRestore();
+  expect(networkCalls).toBe(0);
+  expect(syncCommandCalls).toBe(0);
+});
+
+describe('update RTK retirement lifecycle', () => {
+  let project: string;
+  const skill = '.claude/skills/rtk-exec/SKILL.md';
+  const wrapper = '.claude/skills/rtk-exec/scripts/rtk-wrapper.cjs';
+  const hook = '.claude/hooks/scripts/rtk-intercept.sh';
+  const owned = 'old managed RTK content\n';
+  const hash = createHash('sha256').update(owned).digest('hex');
+  const paths = [skill, wrapper, hook];
+
+  beforeEach(async () => {
+    project = await mkdtemp(join(tmpdir(), 'omcustom-retirement-update-'));
+    const config = getDefaultConfig();
+    config.version = '0.1.0';
+    await saveConfig(project, config);
+    for (const path of paths) {
+      await mkdir(join(project, path, '..'), { recursive: true });
+      await writeFile(join(project, path), owned);
+    }
+    await mkdir(join(project, '.claude/rules'), { recursive: true });
+    await writeFile(join(project, '.claude/rules/user-sentinel.md'), 'non-RTK sentinel');
+    await writeFile(
+      join(project, '.omcustom.lock.json'),
+      JSON.stringify({
+        lockfileVersion: 1,
+        generatorVersion: '0.1.0',
+        templateVersion: '0.1.0',
+        generatedAt: '2025-01-01T00:00:00.000Z',
+        files: Object.fromEntries(
+          paths.map((path) => [
+            path,
+            {
+              templateHash: hash,
+              size: Buffer.byteLength(owned),
+              component: path === hook ? 'hooks' : 'skills',
+            },
+          ])
+        ),
+      })
+    );
+  });
+  afterEach(async () => {
+    await rm(project, { recursive: true, force: true });
+  });
+
+  async function assertNewLockExcluded(excluded: string[]) {
+    const lock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
+    for (const path of excluded) expect(lock.files[path]).toBeUndefined();
+    expect(lock.files['.claude/rules/user-sentinel.md']).toBeDefined();
+    expect(Object.keys(lock.files).length).toBeGreaterThan(0);
+  }
+
+  it('removes only old-hash-owned RTK files and keeps a non-RTK corpus', async () => {
+    const result = await update({ targetDir: project });
+    expect(result.success).toBe(true);
+    expect(result.rtkRetirement?.removed.sort()).toEqual([...paths].sort());
+    for (const path of paths) await expect(access(join(project, path))).rejects.toThrow();
+    expect(await readFile(join(project, '.claude/rules/user-sentinel.md'), 'utf8')).toBe(
+      'non-RTK sentinel'
+    );
+    await assertNewLockExcluded(paths);
+    expect(codexCheckSpy).toHaveBeenCalledTimes(1);
+    expect(codexInstallSpy).not.toHaveBeenCalled();
+  });
+
+  it('preserves modified and unknown files without registering them in the new lock, including repeat update', async () => {
+    await writeFile(join(project, skill), '---\nname: user-owned-rtk\n---\nuser changes');
+    const oldLock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
+    delete oldLock.files[wrapper];
+    await writeFile(join(project, '.omcustom.lock.json'), JSON.stringify(oldLock));
+    for (let iteration = 0; iteration < 2; iteration++) {
+      const result = await update({ targetDir: project, force: true });
+      expect(result.success).toBe(true);
+      expect(result.rtkRetirement?.preserved.map((entry) => entry.path)).toEqual(
+        expect.arrayContaining([skill, wrapper])
+      );
+      expect(await readFile(join(project, skill), 'utf8')).toContain('user changes');
+      expect(await readFile(join(project, wrapper), 'utf8')).toBe(owned);
+      await assertNewLockExcluded(paths);
+    }
+    // A retained user-owned SKILL remains discoverable; this is not an inactive claim.
+    expect(await readFile(join(project, skill), 'utf8')).toContain('name: user-owned-rtk');
+  });
+
+  it('keeps retained RTK ownership excluded across full, rules-only, and full forced updates', async () => {
+    const modified = '---\nname: user-retained-rtk\n---\nuser changes';
+    await writeFile(join(project, skill), modified);
+    const oldLock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
+    delete oldLock.files[wrapper];
+    delete oldLock.files[hook];
+    await writeFile(join(project, '.omcustom.lock.json'), JSON.stringify(oldLock));
+
+    const stages: Array<UpdateComponent[] | undefined> = [undefined, ['rules'], undefined];
+    for (const [stage, components] of stages.entries()) {
+      const settingsBefore = await Promise.all(
+        ['.claude/settings.json', '.claude/settings.local.json'].map((path) =>
+          readFile(join(project, path)).catch(() => null)
+        )
+      );
+      const result = await update({
+        targetDir: project,
+        force: true,
+        components,
+      });
+      expect(result.success).toBe(true);
+      expect(result.rtkRetirement?.removed ?? []).toEqual([]);
+      expect(await readFile(join(project, skill), 'utf8')).toBe(modified);
+      expect(await readFile(join(project, wrapper), 'utf8')).toBe(owned);
+      expect(await readFile(join(project, hook), 'utf8')).toBe(owned);
+      await assertNewLockExcluded(paths);
+      expect(codexCheckSpy).toHaveBeenCalledTimes(stage + 1);
+      expect(codexInstallSpy).not.toHaveBeenCalled();
+      if (stage === 1) {
+        expect(result.rtkRetirement?.preserved ?? []).toEqual([]);
+        expect(result.rtkRetirement?.settingsChanged ?? []).toEqual([]);
+        for (const [index, path] of [
+          '.claude/settings.json',
+          '.claude/settings.local.json',
+        ].entries()) {
+          expect(await readFile(join(project, path)).catch(() => null)).toEqual(
+            settingsBefore[index]
+          );
+        }
+      } else {
+        expect(result.rtkRetirement?.preserved.map((entry) => entry.path)).toEqual(
+          expect.arrayContaining(paths)
+        );
+      }
+    }
+  });
+
+  it('preserves files with no prior lock and reports missing ownership', async () => {
+    await rm(join(project, '.omcustom.lock.json'));
+    const result = await update({ targetDir: project });
+    expect(result.success).toBe(true);
+    expect(result.rtkRetirement?.preserved).toHaveLength(3);
+    for (const path of paths) expect(await readFile(join(project, path), 'utf8')).toBe(owned);
+    await assertNewLockExcluded(paths);
+  });
+
+  for (const options of [
+    { force: true },
+    { forceOverwriteAll: true },
+    { preserveCustomizations: false },
+  ]) {
+    it(`keeps modified RTK data with ${JSON.stringify(options)}`, async () => {
+      await writeFile(join(project, wrapper), 'user-custom wrapper');
+      const result = await update({ targetDir: project, ...options });
+      expect(result.success).toBe(true);
+      expect(await readFile(join(project, wrapper), 'utf8')).toBe('user-custom wrapper');
+      expect(result.rtkRetirement?.preserved.some((entry) => entry.path === wrapper)).toBe(true);
+      await assertNewLockExcluded(paths);
+    });
+  }
+
+  it('honors explicit config preservation even with forceOverwriteAll', async () => {
+    const config = getDefaultConfig();
+    config.version = '0.1.0';
+    config.preserveFiles = [skill];
+    await saveConfig(project, config);
+    const result = await update({ targetDir: project, forceOverwriteAll: true });
+    expect(result.success).toBe(true);
+    expect(await readFile(join(project, skill), 'utf8')).toBe(owned);
+    expect(result.rtkRetirement?.preserved).toContainEqual({
+      path: skill,
+      reason: 'explicitly preserved',
+    });
+    await assertNewLockExcluded(paths);
+  });
+
+  for (const component of ['skills', 'hooks', 'rules'] as const) {
+    it(`retires only files for selected ${component} component`, async () => {
+      const result = await update({ targetDir: project, components: [component] });
+      expect(result.success).toBe(true);
+      const retired =
+        component === 'skills' ? [skill, wrapper] : component === 'hooks' ? [hook] : [];
+      expect(result.rtkRetirement?.removed ?? []).toEqual(retired);
+      for (const path of paths.filter((path) => !retired.includes(path))) {
+        expect(await readFile(join(project, path), 'utf8')).toBe(owned);
+      }
+      if (retired.length) await assertNewLockExcluded(retired);
+    });
+  }
+
+  it('honors ancestor custom-component ownership without deleting unchanged RTK data', async () => {
+    const config = getDefaultConfig();
+    config.version = '0.1.0';
+    config.customComponents = [
+      { type: 'skill', name: 'user-rtk', path: '.claude/skills/rtk-exec', managed: false },
+    ];
+    await saveConfig(project, config);
+    const result = await update({ targetDir: project, forceOverwriteAll: true });
+    expect(result.success).toBe(true);
+    for (const path of [skill, wrapper]) {
+      expect(await readFile(join(project, path), 'utf8')).toBe(owned);
+      expect(result.rtkRetirement?.preserved).toContainEqual({
+        path,
+        reason: 'explicitly preserved',
+      });
+    }
+    await assertNewLockExcluded(paths);
+  });
+
+  it('honors a manifest-preserved managed file under the default option', async () => {
+    await saveCustomizationManifest(project, {
+      modifiedFiles: [],
+      preserveFiles: [wrapper],
+      customComponents: [],
+      lastUpdated: new Date().toISOString(),
+    });
+    const result = await update({ targetDir: project });
+    expect(result.success).toBe(true);
+    expect(await readFile(join(project, wrapper), 'utf8')).toBe(owned);
+    expect(result.rtkRetirement?.preserved).toContainEqual({
+      path: wrapper,
+      reason: 'explicitly preserved',
+    });
+    await assertNewLockExcluded(paths);
+  });
+
+  it('disables manifest preservation explicitly while keeping the old ownership hash guard', async () => {
+    await saveCustomizationManifest(project, {
+      modifiedFiles: [],
+      preserveFiles: [wrapper],
+      customComponents: [],
+      lastUpdated: new Date().toISOString(),
+    });
+    const result = await update({ targetDir: project, preserveCustomizations: false });
+    expect(result.success).toBe(true);
+    expect(result.rtkRetirement?.removed).toContain(wrapper);
+    await expect(access(join(project, wrapper))).rejects.toThrow();
+    await assertNewLockExcluded(paths);
+  });
+
+  it('rejects malformed old ownership hashes without losing user data', async () => {
+    const oldLock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
+    oldLock.files[wrapper].templateHash = 'invalid hash';
+    await writeFile(join(project, '.omcustom.lock.json'), JSON.stringify(oldLock));
+    const result = await update({ targetDir: project });
+    expect(result.success).toBe(true);
+    expect(await readFile(join(project, wrapper), 'utf8')).toBe(owned);
+    expect(result.rtkRetirement?.preserved).toContainEqual({
+      path: wrapper,
+      reason: 'missing or invalid old ownership',
+    });
+    await assertNewLockExcluded(paths);
+  });
+
+  it('dry-run leaves file/settings/lock/config bytes and directory entries unchanged with backup requested', async () => {
+    const settingsPath = '.claude/settings.local.json';
+    await writeFile(
+      join(project, settingsPath),
+      JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/rtk-intercept.sh' }],
+            },
+          ],
+        },
+      })
+    );
+    const snapshotPaths = [...paths, settingsPath, '.omcustom.lock.json', '.omcustomrc.json'];
+    const before = await Promise.all(snapshotPaths.map((path) => readFile(join(project, path))));
+    const entries = await readdir(project);
+    const result = await update({ targetDir: project, dryRun: true, backup: true });
+    expect(result.success).toBe(true);
+    expect(result.rtkRetirement?.wouldRemove.sort()).toEqual([...paths].sort());
+    expect(result.rtkRetirement?.wouldChangeSettings).toContain(settingsPath);
+    expect(result.rtkRetirement?.removed).toEqual([]);
+    expect(result.backedUpPaths).toEqual([]);
+    expect(codexCheckSpy).not.toHaveBeenCalled();
+    expect(codexInstallSpy).not.toHaveBeenCalled();
+    for (const [index, path] of snapshotPaths.entries()) {
+      expect(await readFile(join(project, path))).toEqual(before[index]);
+    }
+    expect(await readdir(project)).toEqual(entries);
   });
 });

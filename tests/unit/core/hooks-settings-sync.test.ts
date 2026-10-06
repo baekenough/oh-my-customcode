@@ -205,3 +205,136 @@ describe('tracked files drift guard (read-only, real repo)', () => {
     expect(result.drifted).toEqual([]);
   });
 });
+
+describe('syncHooksSettings — local preservation and exact retirement', () => {
+  const retiredDescription =
+    'RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R013 advisory)';
+  const generatedGroup = {
+    matcher: 'Bash',
+    description: 'Fixture generated audit',
+    hooks: [{ type: 'command', command: 'bash .claude/hooks/scripts/fixture-audit.sh' }],
+  };
+  const rtkCommand = 'bash .claude/hooks/scripts/rtk-intercept.sh';
+  const sibling = { type: 'command', command: 'bash ~/team/user-audit.sh --strict' };
+
+  async function seed() {
+    const hooksSource = { hooks: { PreToolUse: [generatedGroup] } };
+    await writeJson('.claude/hooks/hooks.json', hooksSource);
+    await writeJson('templates/.claude/hooks/hooks.json', hooksSource);
+    const local = {
+      customKey: { preserved: true },
+      permissions: { defaultMode: 'default' },
+      statusLine: { type: 'command', command: 'user-statusline' },
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: 'Bash',
+            description: retiredDescription,
+            hooks: [{ type: 'command', command: rtkCommand }, sibling],
+          },
+          { matcher: 'UserTool', hooks: [{ type: 'command', command: rtkCommand }] },
+          { matcher: 'Bash', hooks: 'unknown-shape' },
+          null,
+        ],
+        UserEvent: [{ hooks: [sibling] }],
+      },
+    };
+    await writeJson(LOCAL_SETTINGS, local);
+    return local;
+  }
+
+  it('preserves local user siblings/other matcher/unknown shape/keys while replacing both tracked targets', async () => {
+    const localBefore = await seed();
+    const sourceBefore = await Promise.all([
+      readText('.claude/hooks/hooks.json'),
+      readText('templates/.claude/hooks/hooks.json'),
+    ]);
+    const result = await syncHooksSettings({ rootDir: root, local: true });
+    expect(result.warnings).toEqual([]);
+    expect(result.drifted).toEqual([]);
+    expect(result.files).toEqual(
+      [ROOT_SETTINGS, TEMPLATE_SETTINGS, LOCAL_SETTINGS].map((file) => ({
+        file,
+        status: 'updated',
+      }))
+    );
+    for (const target of [ROOT_SETTINGS, TEMPLATE_SETTINGS]) {
+      expect((await readJson(target)).hooks).toEqual({ PreToolUse: [generatedGroup] });
+    }
+    const local = await readJson(LOCAL_SETTINGS);
+    expect(local.customKey).toEqual(localBefore.customKey);
+    expect(local.permissions).toEqual(localBefore.permissions);
+    expect(local.statusLine).toEqual(localBefore.statusLine);
+    expect(local.hooks).toEqual({
+      PreToolUse: [
+        generatedGroup,
+        { matcher: 'Bash', description: retiredDescription, hooks: [sibling] },
+        ...localBefore.hooks.PreToolUse.slice(1),
+      ],
+      UserEvent: localBefore.hooks.UserEvent,
+    });
+    expect(
+      await Promise.all([
+        readText('.claude/hooks/hooks.json'),
+        readText('templates/.claude/hooks/hooks.json'),
+      ])
+    ).toEqual(sourceBefore);
+    const bytes = await Promise.all(
+      [ROOT_SETTINGS, TEMPLATE_SETTINGS, LOCAL_SETTINGS].map(readText)
+    );
+    const second = await syncHooksSettings({ rootDir: root, local: true });
+    expect(second.files.every((file) => file.status === 'unchanged')).toBe(true);
+    expect(second.warnings).toEqual([]);
+    expect(
+      await Promise.all([ROOT_SETTINGS, TEMPLATE_SETTINGS, LOCAL_SETTINGS].map(readText))
+    ).toEqual(bytes);
+  });
+
+  it('check reports all three drifted targets and writes none', async () => {
+    await seed();
+    const targets = [ROOT_SETTINGS, TEMPLATE_SETTINGS, LOCAL_SETTINGS];
+    const before = await Promise.all(targets.map(readText));
+    const result = await syncHooksSettings({ rootDir: root, local: true, check: true });
+    expect(result.drifted).toEqual(targets);
+    expect(result.warnings).toEqual([]);
+    expect(await Promise.all(targets.map(readText))).toEqual(before);
+  });
+
+  it('converter warnings prevent every target write rather than partially updating', async () => {
+    await seed();
+    await writeJson('templates/.claude/hooks/hooks.json', {
+      hooks: {
+        PreToolUse: [{ matcher: '&& (', hooks: [{ type: 'command', command: 'echo fixture' }] }],
+      },
+    });
+    const targets = [ROOT_SETTINGS, TEMPLATE_SETTINGS, LOCAL_SETTINGS];
+    const before = await Promise.all(targets.map(readText));
+    const result = await syncHooksSettings({ rootDir: root, local: true });
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(result.warnings.some((warning) => warning.includes(TEMPLATE_SETTINGS))).toBe(true);
+    expect(result.files.every((file) => file.status === 'drifted')).toBe(true);
+    expect(await Promise.all(targets.map(readText))).toEqual(before);
+  });
+
+  it.each([
+    '{ not json',
+    '[]',
+    'null',
+    '\uFEFF{"user":true}',
+  ])('malformed local %j cannot cause tracked half-writes', async (text) => {
+    await seed();
+    await writeFile(join(root, LOCAL_SETTINGS), text, 'utf8');
+    const targets = [ROOT_SETTINGS, TEMPLATE_SETTINGS, LOCAL_SETTINGS];
+    const before = await Promise.all(targets.map(readText));
+    if (text.startsWith('{') || text.startsWith('\uFEFF')) {
+      await expect(syncHooksSettings({ rootDir: root, local: true })).rejects.toThrow(
+        'invalid JSON'
+      );
+    } else {
+      const result = await syncHooksSettings({ rootDir: root, local: true });
+      expect(result.warnings.length).toBeGreaterThan(0);
+      expect(result.files.every((file) => file.status !== 'updated')).toBe(true);
+    }
+    expect(await Promise.all(targets.map(readText))).toEqual(before);
+  });
+});

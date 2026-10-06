@@ -9,10 +9,12 @@
  * tests/unit/scripts/child-process-mock-hygiene.test.ts).
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import * as childProcess from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, stat, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import * as codexInstaller from '../../../src/core/codex-installer.js';
 import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
 import { getProviderLayout } from '../../../src/core/layout.js';
 import { update } from '../../../src/core/updater.js';
@@ -220,5 +222,154 @@ describe('update() hook-command migration (#1767)', () => {
 
     expect(result.success).toBe(true);
     await expect(stat(settingsPath)).rejects.toThrow();
+  });
+});
+
+// Every updater invocation uses a local spy; no external CLI or installer is launched.
+let codexCheckSpy: ReturnType<typeof spyOn>;
+let codexInstallSpy: ReturnType<typeof spyOn>;
+let networkSpy: ReturnType<typeof spyOn>;
+let syncCommandSpy: ReturnType<typeof spyOn>;
+beforeEach(() => {
+  networkSpy = spyOn(globalThis, 'fetch').mockRejectedValue(
+    new Error('network forbidden in updater fixture')
+  );
+  syncCommandSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
+    throw new Error('external synchronous command forbidden');
+  });
+  codexCheckSpy = spyOn(codexInstaller, 'isCodexInstalled').mockReturnValue(true);
+  codexInstallSpy = spyOn(codexInstaller, 'installCodex').mockReturnValue(false);
+});
+afterEach(() => {
+  const networkCalls = networkSpy.mock.calls.length;
+  const syncCommandCalls = syncCommandSpy.mock.calls.length;
+  networkSpy.mockRestore();
+  syncCommandSpy.mockRestore();
+  codexCheckSpy.mockRestore();
+  codexInstallSpy.mockRestore();
+  expect(networkCalls).toBe(0);
+  expect(syncCommandCalls).toBe(0);
+});
+
+describe('update exact RTK settings retirement', () => {
+  let project: string;
+  const retired = 'bash .claude/hooks/scripts/rtk-intercept.sh';
+  beforeEach(async () => {
+    project = await mkdtemp(join(tmpdir(), 'omcustom-update-rtk-settings-'));
+    const config = getDefaultConfig();
+    config.version = '0.1.0';
+    await saveConfig(project, config);
+    await mkdir(join(project, '.claude'), { recursive: true });
+  });
+  afterEach(async () => {
+    await rm(project, { recursive: true, force: true });
+  });
+
+  for (const filename of ['settings.json', 'settings.local.json']) {
+    it(`retires exact RTK command in ${filename} and preserves BOM/newline/user sibling/legacy groups`, async () => {
+      const path = join(project, '.claude', filename);
+      const sibling = { type: 'command', command: 'printf user-sibling', timeout: 17 };
+      const legacy = {
+        description: 'Omcustom session context re-inject',
+        hooks: [{ type: 'prompt', prompt: 'user legacy text' }],
+      };
+      const original = {
+        customKey: ['keep'],
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              description: 'RTK command interception',
+              extra: 1,
+              hooks: [{ type: 'command', command: retired }, sibling],
+            },
+          ],
+          SessionStart: [legacy],
+        },
+      };
+      await writeFile(path, `\uFEFF${JSON.stringify(original)}\n`);
+      const result = await update({ targetDir: project, components: ['hooks'] });
+      expect(result.success).toBe(true);
+      expect(result.rtkRetirement?.settingsChanged).toContain(`.claude/${filename}`);
+      const raw = await readFile(path, 'utf8');
+      expect(raw.startsWith('\uFEFF')).toBe(true);
+      expect(raw.endsWith('\n')).toBe(true);
+      const next = JSON.parse(raw.slice(1));
+      expect(next.hooks.PreToolUse).toEqual([
+        { ...original.hooks.PreToolUse[0], hooks: [sibling] },
+      ]);
+      expect(next.hooks.SessionStart).toEqual([legacy]);
+      expect(next.customKey).toEqual(['keep']);
+      const repeat = await update({ targetDir: project, components: ['hooks'], force: true });
+      expect(repeat.success).toBe(true);
+      expect(await readFile(path, 'utf8')).toBe(raw);
+      expect(repeat.rtkRetirement?.settingsChanged).toEqual([]);
+    });
+  }
+
+  it('preserves different matcher/event, user arguments, absolute command and unknown shapes as reported conflicts', async () => {
+    const path = join(project, '.claude/settings.json');
+    const group = (matcher: string, command: string) => ({
+      matcher,
+      hooks: [{ type: 'command', command }],
+    });
+    const original = {
+      hooks: {
+        PreToolUse: [
+          group('Write', retired),
+          group('Bash', `${retired} --user`),
+          group('Bash', '/owned/user/rtk-intercept.sh'),
+          group('Bash', `${retired} | user-filter`),
+          { matcher: 'Bash', hooks: { user: 'rtk-intercept.sh' } },
+        ],
+        PostToolUse: [group('Bash', retired)],
+      },
+      unrelated: { preserve: true },
+    };
+    const raw = JSON.stringify(original);
+    await writeFile(path, raw);
+    const result = await update({ targetDir: project, components: ['hooks'] });
+    expect(result.success).toBe(true);
+    expect(await readFile(path, 'utf8')).toBe(raw);
+    expect(result.rtkRetirement?.settingsConflicts).toContain('.claude/settings.json');
+    expect(result.rtkRetirement?.settingsChanged).toEqual([]);
+    expect(
+      result.warnings.some((warning) => warning.includes('retained user or unknown wiring'))
+    ).toBe(true);
+  });
+
+  it('reports malformed settings as conflict, preserves bytes and does not remove a hash-owned RTK file', async () => {
+    const settings = join(project, '.claude/settings.local.json');
+    const hook = '.claude/hooks/scripts/rtk-intercept.sh';
+    await mkdir(join(project, hook, '..'), { recursive: true });
+    const content = 'owned hook';
+    await writeFile(join(project, hook), content);
+    const { createHash } = await import('node:crypto');
+    await writeFile(
+      join(project, '.omcustom.lock.json'),
+      JSON.stringify({
+        lockfileVersion: 1,
+        generatorVersion: '0.1.0',
+        templateVersion: '0.1.0',
+        generatedAt: '2025-01-01T00:00:00Z',
+        files: {
+          [hook]: {
+            templateHash: createHash('sha256').update(content).digest('hex'),
+            size: content.length,
+            component: 'hooks',
+          },
+        },
+      })
+    );
+    await writeFile(settings, '{ bad json');
+    const result = await update({ targetDir: project, components: ['hooks'] });
+    expect(result.success).toBe(true);
+    expect(await readFile(settings, 'utf8')).toBe('{ bad json');
+    expect(await readFile(join(project, hook), 'utf8')).toBe(content);
+    expect(result.rtkRetirement?.settingsConflicts).toContain('.claude/settings.local.json');
+    expect(result.rtkRetirement?.preserved).toContainEqual({
+      path: hook,
+      reason: 'settings retirement conflict',
+    });
   });
 });

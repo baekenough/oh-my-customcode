@@ -2,7 +2,8 @@
  * Updater module - Update agents from source
  */
 
-import { join } from 'node:path';
+import { lstat, realpath, unlink } from 'node:fs/promises';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import packageJson from '../../package.json';
 import { i18n } from '../i18n/index.js';
 import {
@@ -22,6 +23,7 @@ import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
 import { migrateHookCommands } from './hook-command-migration.js';
+import { retireRtkHookBlocks } from './hook-group-merge.js';
 import { getProviderLayout } from './layout.js';
 import {
   computeFileHash,
@@ -29,7 +31,6 @@ import {
   type Lockfile,
   readLockfile,
 } from './lockfile.js';
-import { installRtk, isRtkInstalled } from './rtk-installer.js';
 
 /**
  * Options for update operation
@@ -95,6 +96,15 @@ export interface UpdateResult {
   skippedSource?: boolean;
   /** Error message if failed */
   error?: string;
+  /** Exact RTK retirement decisions; dry-run reports plans without changing target bytes. */
+  rtkRetirement?: {
+    removed: string[];
+    wouldRemove: string[];
+    preserved: { path: string; reason: string }[];
+    settingsChanged: string[];
+    wouldChangeSettings: string[];
+    settingsConflicts: string[];
+  };
 }
 
 /**
@@ -160,6 +170,117 @@ interface CustomizationManifest {
 }
 
 const CUSTOMIZATION_MANIFEST_FILE = '.omcustom-customizations.json';
+
+const RETIRED_RTK_FILES = [
+  { path: '.claude/skills/rtk-exec/SKILL.md', component: 'skills' },
+  { path: '.claude/skills/rtk-exec/scripts/rtk-wrapper.cjs', component: 'skills' },
+  { path: '.claude/hooks/scripts/rtk-intercept.sh', component: 'hooks' },
+] as const;
+
+function getRtkRetirement(result: UpdateResult) {
+  result.rtkRetirement ??= {
+    removed: [],
+    wouldRemove: [],
+    preserved: [],
+    settingsChanged: [],
+    wouldChangeSettings: [],
+    settingsConflicts: [],
+  };
+  return result.rtkRetirement;
+}
+
+/** Existing regular files only; neither target symlinks nor parent escapes are owned. */
+async function validateRtkTarget(targetDir: string, path: string): Promise<void> {
+  const validation = validatePreserveFilePath(path, targetDir);
+  if (!validation.valid) throw new Error('path escapes project');
+  const fullPath = resolve(targetDir, path);
+  const fileStat = await lstat(fullPath);
+  if (!fileStat.isFile() || fileStat.isSymbolicLink()) throw new Error('not a regular owned file');
+  const root = await realpath(targetDir);
+  const resolvedFile = await realpath(fullPath);
+  const within = relative(root, resolvedFile);
+  if (within === '' || within === '..' || within.startsWith(`..${sep}`) || isAbsolute(within)) {
+    throw new Error('resolved path escapes project');
+  }
+}
+
+function isRtkPathPreserved(
+  path: string,
+  config: OmccConfig,
+  customizations: CustomizationManifest | null
+): boolean {
+  const paths = [
+    ...(config.preserveFiles ?? []),
+    ...(customizations?.preserveFiles ?? []),
+    ...(customizations?.modifiedFiles ?? []),
+    ...(config.customComponents ?? []).map((component) => component.path),
+  ];
+  return paths.some((preserved) => path === preserved || path.startsWith(`${preserved}/`));
+}
+
+async function retireRtkFile(
+  path: string,
+  options: UpdateOptions,
+  lockfile: Lockfile | null,
+  result: UpdateResult,
+  preserved: boolean
+): Promise<void> {
+  const retirement = getRtkRetirement(result);
+  try {
+    await validateRtkTarget(options.targetDir, path);
+    if (preserved) throw new Error('explicitly preserved');
+    if (retirement.settingsConflicts.length > 0) throw new Error('settings retirement conflict');
+    const entry = lockfile?.files[path];
+    if (
+      !entry ||
+      typeof entry.templateHash !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(entry.templateHash)
+    ) {
+      throw new Error('missing or invalid old ownership');
+    }
+    const fullPath = join(options.targetDir, path);
+    if ((await computeFileHash(fullPath)) !== entry.templateHash)
+      throw new Error('user-modified file');
+    if (options.dryRun) {
+      retirement.wouldRemove.push(path);
+      return;
+    }
+    await validateRtkTarget(options.targetDir, path);
+    await unlink(fullPath);
+    retirement.removed.push(path);
+    result.removedDeprecatedFiles.push(path);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+    const reason = err instanceof Error ? err.message : 'unreadable ownership or file';
+    retirement.preserved.push({ path, reason });
+    result.preservedFiles.push(path);
+    result.warnings.push(`RTK retirement preserved ${path}: ${reason}`);
+  }
+}
+
+async function retireRtkFiles(
+  options: UpdateOptions,
+  lockfile: Lockfile | null,
+  result: UpdateResult,
+  config: OmccConfig,
+  customizations: CustomizationManifest | null
+): Promise<string[]> {
+  const fullUpdate = !options.components || options.components.length === 0;
+  const files = RETIRED_RTK_FILES.filter(
+    (file) => fullUpdate || options.components?.includes(file.component)
+  );
+  for (const file of files) {
+    await retireRtkFile(
+      file.path,
+      options,
+      lockfile,
+      result,
+      isRtkPathPreserved(file.path, config, customizations)
+    );
+  }
+  // Lock regeneration scans every component, regardless of the selected deletion scope.
+  return RETIRED_RTK_FILES.map((file) => file.path);
+}
 
 /** Create initial update result */
 function createUpdateResult(): UpdateResult {
@@ -482,46 +603,73 @@ async function backfillStatusLineRefreshInterval(
  * Rewrite cwd-relative omcustom hook commands in settings.local.json to the
  * CLAUDE_PROJECT_DIR-anchored form (#1767).
  *
- * Rewrite-only: hooks are never added, removed or regenerated, and the file is written
- * only when at least one command changed (so a second run is a no-op). The file's
+ * Retire exact RTK commands, then apply the existing command rewrite without regenerating
+ * unrelated hook groups. The file is written only when a command changed. The file's
  * trailing-newline convention and leading UTF-8 BOM (if any) are preserved.
  */
 async function migrateHookCommandsInSettingsLocal(
   targetDir: string,
-  options: UpdateOptions
+  options: UpdateOptions,
+  result: UpdateResult
 ): Promise<void> {
-  if (options.dryRun) {
-    return;
+  for (const name of ['settings.json', 'settings.local.json']) {
+    await migrateRtkSettingsFile(targetDir, options, result, name);
   }
+}
 
+async function migrateRtkSettingsFile(
+  targetDir: string,
+  options: UpdateOptions,
+  result: UpdateResult,
+  name: string
+): Promise<void> {
   const layout = getProviderLayout();
-  const settingsPath = join(targetDir, layout.rootDir, 'settings.local.json');
-
-  if (!(await fileExists(settingsPath))) {
-    return;
-  }
-
+  const path = `${layout.rootDir}/${name}`;
+  const settingsPath = join(targetDir, path);
+  const retirement = getRtkRetirement(result);
   try {
+    await validateRtkTarget(targetDir, path);
     const raw = await readTextFile(settingsPath);
     // A leading UTF-8 BOM makes JSON.parse throw; strip it for parsing and restore it on write.
     const bom = raw.startsWith('﻿') ? '﻿' : '';
     const parsed: unknown = JSON.parse(bom ? raw.slice(bom.length) : raw);
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      throw new Error('unknown settings shape');
+    }
+
+    const current = parsed as Record<string, unknown>;
+    const hooks = retireRtkHookBlocks(current.hooks);
+    const retired = hooks !== current.hooks;
+    const input = retired ? { ...current, hooks } : current;
+    const { settings, rewritten } =
+      name === 'settings.local.json'
+        ? migrateHookCommands(input)
+        : { settings: input, rewritten: 0 };
+    if (JSON.stringify(settings.hooks)?.includes('rtk-intercept.sh')) {
+      retirement.settingsConflicts.push(path);
+      result.warnings.push(`RTK retirement retained user or unknown wiring in ${path}`);
+    }
+    if (!retired && rewritten === 0) {
       return;
     }
 
-    const { settings, rewritten } = migrateHookCommands(parsed as Record<string, unknown>);
-    if (rewritten === 0) {
+    if (options.dryRun) {
+      retirement.wouldChangeSettings.push(path);
       return;
     }
 
     const trailingNewline = raw.endsWith('\n') ? '\n' : '';
+    await validateRtkTarget(targetDir, path);
     await writeTextFile(
       settingsPath,
       `${bom}${JSON.stringify(settings, null, 2)}${trailingNewline}`
     );
+    retirement.settingsChanged.push(path);
     info('update.hook_commands_migrated', { count: String(rewritten) });
-  } catch {
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+    retirement.settingsConflicts.push(path);
+    result.warnings.push(`RTK retirement could not safely migrate ${path}`);
     // Non-blocking: parse/read/write failure should not abort the update
     warn('update.hook_commands_migration_failed', {
       path: settingsPath,
@@ -561,7 +709,7 @@ async function runFullUpdatePostProcessing(
   // The hooks component copies a new-form hooks.json, but CC reads the installed
   // settings.local.json, so migrate it on full updates and hooks-component updates (#1767).
   if (isFullUpdate || options.components?.includes('hooks')) {
-    await migrateHookCommandsInSettingsLocal(options.targetDir, options);
+    await migrateHookCommandsInSettingsLocal(options.targetDir, options, result);
   }
 
   if (!options.dryRun) {
@@ -597,20 +745,6 @@ function compareSemver(a: string, b: string): number {
 }
 
 /**
- * Check if RTK is installed after an update and install it if missing
- */
-function checkAndInstallRtkAfterUpdate(): void {
-  if (!isRtkInstalled()) {
-    warn('update.rtk_missing');
-    console.log(i18n.t('cli.update.rtkMissing'));
-    const rtkInstalled = installRtk();
-    if (rtkInstalled) {
-      console.log(i18n.t('cli.update.rtkInstalled'));
-    }
-  }
-}
-
-/**
  * Update the project registry with the new version after a successful update.
  * Non-blocking — registry update is informational only.
  */
@@ -627,8 +761,13 @@ async function updateProjectRegistry(targetDir: string, newVersion: string): Pro
  * Regenerate and log the lockfile result after a successful update.
  * Extracted to reduce cognitive complexity of update().
  */
-async function regenerateLockfile(targetDir: string, result: UpdateResult): Promise<void> {
-  const lockfileResult = await generateAndWriteLockfileForDir(targetDir);
+async function regenerateLockfile(
+  options: UpdateOptions,
+  result: UpdateResult,
+  retiredPaths: readonly string[]
+): Promise<void> {
+  if (options.dryRun) return;
+  const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir, { retiredPaths });
   if (lockfileResult.warning) {
     result.warnings.push(lockfileResult.warning);
     warn('update.lockfile_failed', { error: lockfileResult.warning });
@@ -711,7 +850,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       return result;
     }
 
-    await handleBackupIfRequested(options.targetDir, !!options.backup, result);
+    await handleBackupIfRequested(options.targetDir, !!options.backup && !options.dryRun, result);
 
     // Load preservation config from BOTH sources
     const manifestCustomizations = await resolveManifestCustomizations(options, options.targetDir);
@@ -740,14 +879,13 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     await runFullUpdatePostProcessing(options, result, config, customizations);
 
-    // Regenerate lockfile after successful update (#316)
-    await regenerateLockfile(options.targetDir, result);
+    const retiredPaths = await retireRtkFiles(options, lockfile, result, config, customizations);
 
-    // Check RTK after update
-    checkAndInstallRtkAfterUpdate();
+    // Regenerate lockfile after successful update (#316)
+    await regenerateLockfile(options, result, retiredPaths);
 
     // Check Codex CLI after update
-    checkAndInstallCodexAfterUpdate();
+    if (!options.dryRun) checkAndInstallCodexAfterUpdate();
 
     // Update project registry with new version (non-blocking)
     if (result.success && !options.dryRun) {

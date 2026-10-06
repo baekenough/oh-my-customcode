@@ -3,7 +3,7 @@
  * `preserveUserHooks` (#1768).
  *
  * Runs install() for real against a temp project with the REAL mergeHooksIntoSettings (it is
- * never mocked here). Only the RTK/Codex installers are replaced, since they would shell out to
+ * never mocked here). Only the Codex installer is replaced, since they would shell out to
  * package managers; the originals are re-registered in afterAll so the mocks do not leak into
  * other test files (#1772).
  */
@@ -15,11 +15,9 @@ import { join } from 'node:path';
 import { LEGACY_OMCUSTOM_DESCRIPTIONS } from '../../../src/core/hook-group-merge.js';
 
 // Capture the real modules before any mock.module call (bun's mock.module persists across files).
-const realRtkInstaller = { ...(await import('../../../src/core/rtk-installer.js')) };
 const realCodexInstaller = { ...(await import('../../../src/core/codex-installer.js')) };
 
 afterAll(() => {
-  mock.module('../../../src/core/rtk-installer.js', () => realRtkInstaller);
   mock.module('../../../src/core/codex-installer.js', () => realCodexInstaller);
 });
 
@@ -56,11 +54,6 @@ describe('installer hooks step preserves user hooks (#1768)', () => {
     consoleSpies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) =>
       spyOn(console, method).mockImplementation(() => {})
     );
-    mock.module('../../../src/core/rtk-installer.js', () => ({
-      isRtkInstalled: () => true,
-      installRtk: () => true,
-      getRtkVersion: () => '1.0.0',
-    }));
     mock.module('../../../src/core/codex-installer.js', () => ({
       isCodexInstalled: () => true,
       installCodex: () => true,

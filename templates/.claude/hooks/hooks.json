@@ -83,16 +83,6 @@
         "description": "Schema-based tool input validation — Phase 1 advisory only"
       },
       {
-        "matcher": "tool == \"Bash\"",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/rtk-intercept.sh\""
-          }
-        ],
-        "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R013 advisory)"
-      },
-      {
         "matcher": "tool == \"Bash\" && tool_input.command matches \"git (reset|clean|checkout|restore|switch|rebase|merge)\"",
         "hooks": [
           {

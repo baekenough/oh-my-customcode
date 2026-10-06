@@ -102,7 +102,9 @@ async function planTarget(
   try {
     const scratchPath = join(scratchDir, 'settings.json');
     await writeTextFile(scratchPath, original);
-    const merged = await mergeHooksIntoSettings(scratchPath, hooksPath);
+    const merged = await mergeHooksIntoSettings(scratchPath, hooksPath, {
+      preserveUserHooks: target.settings === LOCAL_HOOK_SYNC_TARGET.settings,
+    });
     for (const warning of merged.warnings) {
       warnings.push(`${target.settings}: ${warning}`);
     }
