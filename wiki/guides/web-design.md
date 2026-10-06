@@ -1,7 +1,7 @@
 ---
 title: "Web Design Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - guides/web-design/accessibility.md
 related:
@@ -31,7 +31,7 @@ Covers WCAG 2.1 compliance (Level AA standard), POUR principles (Perceivable, Op
 
 - **Used by agents**: [[fe-design-expert]]
 - **Related skills**: [[web-design-guidelines]]
-- **See also**: [[impeccable-design]], [[elements-of-style]], [[typescript]]
+- **See also**: [[guides/impeccable-design|impeccable-design]], [[elements-of-style]], [[typescript]]
 
 ## Sources
 

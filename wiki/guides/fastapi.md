@@ -1,7 +1,7 @@
 ---
 title: "FastAPI Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - guides/fastapi/best-practices.md
 related:
@@ -31,7 +31,7 @@ Covers domain-driven project structure, async/sync I/O patterns, dependency inje
 
 - **Used by agents**: [[be-fastapi-expert]]
 - **Related skills**: [[fastapi-best-practices]]
-- **See also**: [[python]], [[alembic]], [[postgres]], [[django-best-practices]]
+- **See also**: [[python]], [[alembic]], [[postgres]], [[guides/django-best-practices|django-best-practices]]
 
 ## Sources
 

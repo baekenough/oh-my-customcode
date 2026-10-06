@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "rootDir": ".", "strict": true },
+  "include": ["scripts/verify-wiki-links.ts", "tests/unit/scripts/verify-wiki-links.test.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,11 +1,11 @@
 ---
 title: Product Strategy
 type: skill
-updated: 2026-04-19
+updated: 2026-10-06
 sources:
   - .claude/skills/product-strategy/SKILL.md
 related:
-  - [[deep-plan]]
+  - [[skills/deep-plan|deep-plan]]
   - [[design-shotgun]]
   - [[release-plan]]
   - [[R010]]
@@ -36,7 +36,7 @@ Forces rigorous product thinking by applying YC's 6 mandatory questions before a
 
 ## Relationships
 
-- **Related skills**: [[deep-plan]], [[design-shotgun]], [[release-plan]]
+- **Related skills**: [[skills/deep-plan|deep-plan]], [[design-shotgun]], [[release-plan]]
 - **Rules**: [[R010]] (orchestrator invokes, no file writes), [[R015]] (transparent assessment)
 - **Source**: Adapted from [garrytan/gstack](https://github.com/garrytan/gstack) /office-hours + /plan-ceo-review patterns
 

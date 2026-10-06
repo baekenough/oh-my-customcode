@@ -56,4 +56,10 @@ related:
 
 **permission mode / named-spawn measurement notes (#1828 / #1827, CC 2.1.289, 2026-10-06)** — two new guide sections. (#1828) `claude -p` init `permissionMode` measurement: `defaultMode` precedence is local > project > user; an ignored project/local `bypassPermissions` resolves that scope to `default` and overrides a non-bypass user value, while user `bypassPermissions` stays `bypassPermissions`; the deployed template no longer sets `permissions.defaultMode`, and the guide gives an existing-install check (`jq`) and removal example. TTY sessions, whether `default` prompts, managed/`--settings`, other versions, and subagent inheritance remain `[가설]`. The v2.1.284/v2.1.285 notes now say R010's Self-Check applies the `jq` to the user, project, and local scopes. (#1827) Named `Agent` spawns create teammates of the session's implicit team; one named teammate's tool inventory, `SendMessage` loading via `ToolSearch`, and per-model Task-tool availability (haiku teammate yes, sonnet-5-5 teammate and opus-5-5 main no, `TeamCreate`/`TeamDelete` none) are recorded, with member-to-member messaging `[가설]`. The guide's 2.1.289 action items now point at these two notes; the resulting rule edits are in [[r010]], [[r018]], and [[r002]].
 
+## Action item 측정 근거
+
+[15-version-compatibility.md의 Action items 작성 지침](../../guides/claude-code/15-version-compatibility.md)을 따라 측정 결과를 comment/rule의 근거로 쓰기 전에 변수별 검증 행렬을 확인하십시오. 사용자 scope 값·모델·세션 유형 등 결과에 영향을 주는 각 변수에 대해 다른 조건을 유지한 값 변경 대조를 최소 한 번 포함하십시오. 미수행 조건은 미측정으로 표시하고 일반화 근거에서 제외하십시오.
+
+일반화 문장에는 실제 측정한 조건을 함께 적고 결과의 주체·적용범위를 구분하십시오. 관측된 값 차이보다 넓은 인과관계를 단정하지 마십시오. 행렬이 불완전하면 추가 측정 조건을 action item에 남기십시오. 이 지침은 특정 model/session의 새 동작을 측정했다는 주장이 아닙니다.
+
 See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[agent-teams]], [[r016]] (instruction-budget policy that now routes new content here), and [R017 sync verification](../rules/r017.md) for when this guide requires re-sync.

@@ -238,8 +238,13 @@ interface CommandResult {
 }
 
 function runCommand(cmd: string[], cwd?: string): CommandResult {
+  // Only Git corpus commands need the parent's repository/config state removed.
+  const env =
+    cmd[0] === 'git'
+      ? Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')))
+      : process.env;
   try {
-    const proc = Bun.spawnSync({ cmd, cwd, stdout: 'pipe', stderr: 'pipe' });
+    const proc = Bun.spawnSync({ cmd, cwd, env, stdout: 'pipe', stderr: 'pipe' });
     return {
       ok: proc.exitCode === 0,
       stdout: proc.stdout?.toString() ?? '',
@@ -456,6 +461,10 @@ describe('findFlagMismatches (inline fixtures)', () => {
 // ---------------------------------------------------------------------------
 
 describe('gh flag validity in execution-path text (#1757)', () => {
+  test('scans this repository execution texts even with inherited Git state', () => {
+    expect(listTrackedScanFiles()).toContain('.claude/skills/fsd/SKILL.md');
+  });
+
   // L1: 조용한 skip 금지 -- CI에서 gh가 없으면 skip이 아니라 실패한다 (R020 Test-Skip Is Not Completion)
   test('gh CLI is available (mandatory in CI, warn-only locally)', () => {
     if (!ghAvailable) {

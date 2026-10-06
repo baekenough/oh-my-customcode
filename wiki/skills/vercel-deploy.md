@@ -1,14 +1,14 @@
 ---
 title: Vercel Deploy
 type: skill
-updated: 2026-07-19
+updated: 2026-10-06
 sources:
   - .claude/skills/vercel-deploy/SKILL.md
 related:
   - [[fe-vercel-agent]]
   - [[react-best-practices]]
   - [[web-design-guidelines]]
-  - [[impeccable-design]]
+  - [[skills/impeccable-design|impeccable-design]]
 ---
 
 # Vercel Deploy
@@ -28,7 +28,7 @@ Deploys an application to Vercel with automatic framework detection and shareabl
 
 ## Relationships
 
-- **Used by agents**: [[fe-vercel-agent]] — its `skills:` frontmatter lists `vercel-deploy` alongside [[react-best-practices]], [[web-design-guidelines]], and [[impeccable-design]] for React/Next.js optimization and deployment automation.
+- **Used by agents**: [[fe-vercel-agent]] — its `skills:` frontmatter lists `vercel-deploy` alongside [[react-best-practices]], [[web-design-guidelines]], and [[skills/impeccable-design|impeccable-design]] for React/Next.js optimization and deployment automation.
 - **Origin**: external skill mirrored from [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) (v1.0.0); update via `npx add-skill vercel-labs/agent-skills`.
 
 ## Sources

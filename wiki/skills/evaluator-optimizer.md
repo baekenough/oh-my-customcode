@@ -1,7 +1,7 @@
 ---
 title: Evaluator Optimizer
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/evaluator-optimizer/SKILL.md
 related:
@@ -10,7 +10,7 @@ related:
   - [[reasoning-sandwich]]
   - [[agent-eval-framework]]
   - [[harness-eval]]
-  - [[impeccable-design]]
+  - [[skills/impeccable-design|impeccable-design]]
 ---
 
 # Evaluator Optimizer
@@ -46,12 +46,12 @@ Apply when: multiple candidates pass the rubric, an objective tiebreaker is need
 
 ## Domain Presets
 
-Documented domain mappings (generator/evaluator/rubric focus) span code review, documentation, architecture, test plans/coverage, agent creation, and security audit. Two named presets: **UI generation** rubrics weight originality > craft > functionality (anti-AI-slop, works with [[impeccable-design]]); the **[[harness-eval]]** skill supplies a 15-task SE benchmark rubric (Test Coverage 30%, Architecture 25%, Error Handling 25%, Extensibility 20%) as a ready-made sprint contract.
+Documented domain mappings (generator/evaluator/rubric focus) span code review, documentation, architecture, test plans/coverage, agent creation, and security audit. Two named presets: **UI generation** rubrics weight originality > craft > functionality (anti-AI-slop, works with [[skills/impeccable-design|impeccable-design]]); the **[[harness-eval]]** skill supplies a 15-task SE benchmark rubric (Test Coverage 30%, Architecture 25%, Error Handling 25%, Extensibility 20%) as a ready-made sprint contract.
 
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[worker-reviewer-pipeline]], [[pipeline-guards]], [[reasoning-sandwich]], [[agent-eval-framework]], [[harness-eval]], [[impeccable-design]]
+- **Related skills**: [[worker-reviewer-pipeline]], [[pipeline-guards]], [[reasoning-sandwich]], [[agent-eval-framework]], [[harness-eval]], [[skills/impeccable-design|impeccable-design]]
 - **See also**: [[R009]] (sequential dependency — evaluator needs generator output), [[R010]] (orchestrator invokes agents via Agent tool)
 - **Guide**: [Agent Eval guide](../guides/agent-eval.md)
 

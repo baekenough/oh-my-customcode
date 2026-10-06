@@ -1,13 +1,13 @@
 ---
 title: Python Best Practices
 type: skill
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - .claude/skills/python-best-practices/SKILL.md
 related:
   - [[lang-python-expert]]
   - [[fastapi-best-practices]]
-  - [[django-best-practices]]
+  - [[skills/django-best-practices|django-best-practices]]
 ---
 
 # Python Best Practices
@@ -27,7 +27,7 @@ Reference patterns for idiomatic Python: PEP 8 style, type hints (PEP 484, 526, 
 ## Relationships
 
 - **Used by agents**: [[lang-python-expert]]
-- **Related skills**: [[fastapi-best-practices]], [[django-best-practices]], [[alembic-best-practices]]
+- **Related skills**: [[fastapi-best-practices]], [[skills/django-best-practices|django-best-practices]], [[alembic-best-practices]]
 - **See also**: guides/python/
 
 ## Sources

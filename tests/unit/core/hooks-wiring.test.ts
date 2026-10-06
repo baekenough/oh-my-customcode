@@ -33,6 +33,12 @@ import { mergeHooksIntoSettings } from '../../../src/core/hooks-settings.js';
 
 const REPO_ROOT = resolve(import.meta.dir, '../../..');
 
+// runScript/runIsolatedScript await synchronous children before this file teardown.
+afterAll(() => {
+  rmSync(`/tmp/.claude-session-fixes-${process.pid}`, { force: true });
+  rmSync(`/tmp/.claude-env-status-${process.pid}`, { force: true });
+});
+
 // biome-ignore lint/suspicious/noTemplateCurlyInString: literal shell expansion matched verbatim, not a JS template
 const ANCHOR = '${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/';
 

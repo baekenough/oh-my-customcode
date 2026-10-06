@@ -1,13 +1,13 @@
 ---
 title: Grill With Docs
 type: skill
-updated: 2026-07-01
+updated: 2026-10-06
 sources:
   - .claude/skills/grill-with-docs/SKILL.md
 related:
-  - [[deep-plan]]
+  - [[skills/deep-plan|deep-plan]]
   - [[ambiguity-gate]]
-  - [[brainstorming]]
+  - "superpowers:brainstorming"
 ---
 
 # Grill With Docs
@@ -54,7 +54,7 @@ The skill ships its own `CONTEXT.md` glossary entry format and ADR stub template
 
 ## Relationships
 
-- **Related skills**: [[deep-plan]], [[ambiguity-gate]]
+- **Related skills**: [[skills/deep-plan|deep-plan]], [[ambiguity-gate]]
 - **Overlapping community skills**: `superpowers:brainstorming` (idea expansion without domain grounding)
 - **Inspiration**: Matt Pocock grill-with-docs, w00ing/skills packaging
 

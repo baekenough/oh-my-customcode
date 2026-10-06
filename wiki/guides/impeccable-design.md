@@ -1,12 +1,12 @@
 ---
 title: "Impeccable Design Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - guides/impeccable-design/color-and-contrast.md
 related:
   - [[fe-design-expert]]
-  - [[impeccable-design]]
+  - [[skills/impeccable-design|impeccable-design]]
 ---
 
 # Impeccable Design Guide
@@ -29,7 +29,7 @@ Based on the open-source Impeccable design language (Apache 2.0), this guide cov
 ## Relationships
 
 - **Used by agents**: [[fe-design-expert]]
-- **Related skills**: [[impeccable-design]], [[web-design-guidelines]]
+- **Related skills**: [[skills/impeccable-design|impeccable-design]], [[web-design-guidelines]]
 - **See also**: [[web-design]], [[elements-of-style]]
 
 ## Sources

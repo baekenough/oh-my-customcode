@@ -7,7 +7,7 @@ sources:
 related:
   - [[release-plan]]
   - [[deep-verify]]
-  - [[professor-triage]]
+  - [[skills/professor-triage|professor-triage]]
   - [[r020]]
 ---
 
@@ -33,12 +33,14 @@ After PR creation in a release workflow, collects unaddressed findings from mult
 
 ## Registration Boundary
 
-Delegate body-file creation and issue creation together to [[mgr-gitnerd]]. The agent writes the body to a unique, git-ignored output path and uses `--body-file`; the prompt includes auto-dev’s Standard delegation-prompt block. Before registration, verify claimed existing paths with `git ls-files`; newly created targets are exempt. Create referenced artifacts before citing identifiers from their command output. See [source skill](../../.claude/skills/post-release-followup/SKILL.md) and [[r010]].
+제목·본문 파일 작성과 제출을 [[agents/mgr-gitnerd|mgr-gitnerd]] 한 위임으로 묶으십시오. Write로 완성 제목과 본문을 위임 고유의 git-ignored 파일에 쓰고 외부 문구를 셸 소스로 입력하지 마십시오. 세 생성 예시는 각각 같은 자급 가능한 preflight를 사용합니다. 제목 raw bytes에서 NUL·CR·내부/추가 LF·빈 값·space/tab-only를 거부하고 마지막 LF 0개/1개와 의미 있는 공백을 유지하십시오. 본문 regular file 읽기·NUL 부재를 확인한 뒤 quoted title argv/body-file로 제출하십시오. Write-produced UTF-8 텍스트의 구조 검사이며 범용 UTF-8 검증은 아닙니다.
+
+위임에 auto-dev Standard delegation-prompt block을 포함하십시오. 기존 urgency·dedup·source-risk gate, 즉시 code-changing A–C 확인, genuine defect no-ask 등록 및 최대 한 건의 통합 잔여 이슈 규율을 유지하십시오. 기존 경로는 tracked 여부를 확인하고 신규 생성 대상은 해당 carve-out을 유지하십시오. 도구·읽기·금지 구조 오류는 중단하고 자기 문안 파일만 정리하십시오. [source How to auto-register 및 세 예시](../../.claude/skills/post-release-followup/SKILL.md)와 [[r010]]을 참고하십시오.
 
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[release-plan]], [[deep-verify]], [[professor-triage]], [[omcustom-release-notes]]
+- **Related skills**: [[release-plan]], [[deep-verify]], [[skills/professor-triage|professor-triage]], [[omcustom-release-notes]]
 - **See also**: [[R020]], [[R016]]
 
 ## Artifact Output

@@ -3,7 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "1.1.105",
+  "version": "1.1.106",
   "description": "Batteries-included agent harness for Claude Code",
   "type": "module",
   "bin": {
@@ -37,7 +37,7 @@
     "lint": "biome check src/ tests/ scripts/",
     "lint:fix": "biome check --write src/ tests/ scripts/",
     "format": "biome format --write src/ tests/ scripts/",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.wiki-links.json",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "prepare": "sh scripts/setup-hooks.sh || true",
@@ -49,7 +49,7 @@
     "@inquirer/prompts": "^8.3.2",
     "commander": "^15.0.0",
     "i18next": "^26.0.2",
-    "yaml": "^2.8.2"
+    "yaml": "2.8.3"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
@@ -58,6 +58,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/nodemailer": "^8.0.0",
     "js-yaml": "^5.0.0",
+    "mdast-util-from-markdown": "2.1.0",
     "nodemailer": "^10.0.0",
     "typescript": "^7.0.2",
     "vitepress": "^1.6.4"

@@ -68,6 +68,7 @@ async function waitForWorkers(timeoutMs = 2000): Promise<void> {
     if (!spawnedPids.some((pid) => existsSync(workerScriptPath(pid)))) return;
     await new Promise((r) => setTimeout(r, 10));
   }
+  throw new Error('Owned reflection worker did not finish before teardown deadline');
 }
 
 interface ScriptResult {
@@ -198,6 +199,7 @@ afterEach(async () => {
   // Wait for the disowned background worker (its script file disappears when it is done)
   // before deleting tmpRoot; bounded at 2000ms.
   await waitForWorkers();
+  await rm(`/tmp/.claude-reflection-err-${process.pid}.log`, { force: true });
   await rm(tmpRoot, { recursive: true, force: true });
 });
 

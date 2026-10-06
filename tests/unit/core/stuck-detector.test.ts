@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -135,6 +135,8 @@ describe('stuck-detector.sh', () => {
 
   afterEach(() => {
     cleanHistory();
+    // runScript resolves on child close, after the hook's final performance write.
+    rmSync(`/tmp/.claude-hook-perf-${process.pid}.log`, { force: true });
   });
 
   // -----------------------------------------------------------------

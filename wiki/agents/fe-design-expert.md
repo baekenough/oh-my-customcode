@@ -1,7 +1,7 @@
 ---
 title: fe-design-expert
 type: agent
-updated: 2026-09-29
+updated: 2026-10-06
 sources:
   - .claude/agents/fe-design-expert.md
 related:
@@ -9,7 +9,7 @@ related:
   - [[fe-vuejs-agent]]
   - [[fe-svelte-agent]]
   - [[tool-optimizer]]
-  - [[impeccable-design]]
+  - [[skills/impeccable-design|impeccable-design]]
   - [[web-design-guidelines]]
   - [[diagram-design]]
   - [[claude-design]]

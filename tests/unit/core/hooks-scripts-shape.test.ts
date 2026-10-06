@@ -45,6 +45,11 @@ const OUTCOME_FILE = `/tmp/.claude-task-outcomes-${process.pid}`;
 const TASK_COUNT_FILE = `/tmp/.claude-task-count-${process.pid}`;
 const R010_VIOLATION_FILE = `/tmp/.claude-r010-violations-${process.pid}`;
 
+// runHookScript resolves on child close, after audit-log's final performance write.
+afterEach(async () => {
+  await rm(`/tmp/.claude-hook-perf-${process.pid}.log`, { force: true });
+});
+
 interface ScriptResult {
   stdout: string;
   stderr: string;

@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-10-03
+updated: 2026-10-06
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -168,6 +168,12 @@ The release step's semver rule reserves **minor** for a new user-facing capabili
 
 - **Counter-example**: adding one skill plus one agent (agora — skills 114→115, agents 49→50) was initially scoped as a v1.2.0 minor from a literal reading of the old wording. Wrong: the skill count reached 115 while the version stayed at v1.1.48, so skill/agent addition is **established as patch** (corrected to v1.1.49).
 - **Rule**: if a version bump would follow mechanically from "a new file exists", it is patch. Count growth is this repo's baseline rate of change, not a minor signal. Ask instead whether a user's workflow changes.
+
+## commit 결과와 최종 wiki reader
+
+[auto-dev Commit hook diagnostics 및 Post-wiki deterministic verification](../../.claude/skills/pipeline/workflows/auto-dev.yaml)을 읽고 raw unique commit log·실제 exit code·실제 HEAD를 보고하십시오. 각 실패 줄과 앞 40줄을 원본에서 추출하십시오. timeout이나 외부 green만으로 commit 실패 또는 intermittent를 단정하지 말고 재시도 전에 실제 HEAD를 확인하십시오. 기존 400000ms timeout·통합 commit·release branch-before-bump·실제 precommit 규율을 유지하십시오.
+
+commit dispatcher는 source 정정·영향 재검증 뒤 mandatory source Sauron, wiki-curator의 분류된 문서 drift 정정, QA의 link/quote/residual/hash 및 현재 유효한 실제 CI 전체 대응 PASS를 차례로 읽어 전달하십시오. early pending 표의 미해결 행·검사 실패·증거 누락은 commit/release를 차단하십시오. source 변경과 precommit auto-fix는 기존 evidence 유효성을 다시 확인해야 합니다. 같은 source의 full Sauron을 wiki-only 작업 때문에 중복하지 마십시오.
 
 ## Sources
 

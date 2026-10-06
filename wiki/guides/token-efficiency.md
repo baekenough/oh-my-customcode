@@ -1,7 +1,7 @@
 ---
 title: "Token Efficiency — Three-Layer Defense Stack"
 type: guide
-updated: 2026-04-19
+updated: 2026-10-06
 sources:
   - guides/claude-code/14-token-efficiency.md
   - guides/cc-token-saver/README.md
@@ -12,7 +12,7 @@ related:
   - [[R012]]
   - [[R010]]
   - [[R001]]
-  - [[13-cli-flags]]
+  - [[guides/claude-code]]
 ---
 
 # Token Efficiency — Three-Layer Defense Stack
@@ -62,7 +62,7 @@ Setting output limits too low forces repeated re-call loops that cost more than 
 ## Cross-References
 
 - [cc-token-saver guide](cc-token-saver.md) — Layer 1 detailed integration
-- [13-cli-flags guide](guides/claude-code/13-cli-flags.md) — CLI flags for CI/non-interactive invocation
+- [13-cli-flags guide](/guides/claude-code/13-cli-flags.md) — CLI flags for CI/non-interactive invocation
 - [[R013]] — Layer 2 Ecomode specification
 - [[R012]] — HUD statusline (CTX% measures combined Layer 2+3 impact)
 - [[R010]] — `CLAUDE_CODE_DISABLE_CLAUDE_MDS` disables R010 enforcement (CI-only)

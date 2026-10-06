@@ -1,13 +1,13 @@
 ---
 title: Deep Verify
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/deep-verify/SKILL.md
 related:
   - [[release-plan]]
-  - [[deep-plan]]
-  - [[professor-triage]]
+  - [[skills/deep-plan|deep-plan]]
+  - [[skills/professor-triage|professor-triage]]
 ---
 
 # Deep Verify
@@ -28,7 +28,7 @@ Performs comprehensive multi-perspective verification of a release: code quality
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[release-plan]], [[professor-triage]], [[post-release-followup]], [[multi-model-verification]]
+- **Related skills**: [[release-plan]], [[skills/professor-triage|professor-triage]], [[post-release-followup]], [[multi-model-verification]]
 - **See also**: [[R020]]
 
 ## Sources

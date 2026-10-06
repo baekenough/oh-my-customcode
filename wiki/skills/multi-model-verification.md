@@ -1,12 +1,12 @@
 ---
 title: Multi-Model Verification
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/multi-model-verification/SKILL.md
 related:
   - [[structured-dev-cycle]]
-  - [[deep-plan]]
+  - [[skills/deep-plan|deep-plan]]
   - [[deep-verify]]
 ---
 
@@ -33,7 +33,7 @@ Earlier revisions described the non-Teams path as a fallback to **sequential** e
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[structured-dev-cycle]], [[deep-plan]], [[deep-verify]], [[reasoning-sandwich]]
+- **Related skills**: [[structured-dev-cycle]], [[skills/deep-plan|deep-plan]], [[deep-verify]], [[reasoning-sandwich]]
 - **See also**: [[R009]], [[R018]]
 
 ## Sources

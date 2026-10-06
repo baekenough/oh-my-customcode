@@ -719,8 +719,12 @@ const REPO_ROOT = resolve(import.meta.dir, '../../..');
 const LOGGER_PATH = 'src/utils/logger.ts';
 
 function listTrackedSourceFiles(): string[] {
+  // A parent's absolute index can select a different corpus despite cwd.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+  );
   // Use Bun.spawnSync, not child_process, so module mocks cannot affect the scan
-  const result = Bun.spawnSync(['git', 'ls-files', '--', 'src'], { cwd: REPO_ROOT });
+  const result = Bun.spawnSync(['git', 'ls-files', '--', 'src'], { cwd: REPO_ROOT, env });
   if (result.exitCode !== 0) {
     throw new Error(`git ls-files failed: ${result.stderr.toString()}`);
   }
@@ -769,6 +773,10 @@ function distinctOffenders(findings: ReadonlyArray<KeyFinding>): string[] {
 }
 
 describe('logger message keys (repository scan)', () => {
+  it('scans this repository source corpus even with inherited Git state', () => {
+    expect(listTrackedSourceFiles()).toContain('src/utils/fs.ts');
+  });
+
   const scan = scanRepository();
   const active = scan.findings.filter((f) => !ALLOWED_KEYS.some((a) => a.key === f.key));
 

@@ -1,13 +1,13 @@
 ---
 title: "Claude Design Handoff Guide"
 type: guide
-updated: 2026-04-18
+updated: 2026-10-06
 sources:
   - guides/claude-design/index.md
 related:
   - [[fe-design-expert]]
   - [[fe-vercel-agent]]
-  - [[impeccable-design]]
+  - [[skills/impeccable-design|impeccable-design]]
   - [[web-design-guidelines]]
   - [[guides/impeccable-design]]
 ---
@@ -34,7 +34,7 @@ Claude Design is Anthropic's conversational design tool that produces structured
 
 - **Primary consumer**: [[fe-design-expert]] — receives handoff, validates, implements
 - **Downstream agent**: [[fe-vercel-agent]] — accessibility and semantic HTML pass
-- **Related skills**: [[impeccable-design]], [[web-design-guidelines]]
+- **Related skills**: [[skills/impeccable-design|impeccable-design]], [[web-design-guidelines]]
 - **See also**: [[guides/impeccable-design]], [[web-design]]
 
 ## Sources

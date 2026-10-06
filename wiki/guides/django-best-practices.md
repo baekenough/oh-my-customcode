@@ -1,12 +1,12 @@
 ---
 title: "Django Best Practices Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - guides/django-best-practices/README.md
 related:
   - [[be-django-expert]]
-  - [[django-best-practices]]
+  - [[skills/django-best-practices|django-best-practices]]
 ---
 
 # Django Best Practices Guide
@@ -30,7 +30,7 @@ Covers project structure, settings management, custom User models, REST API desi
 ## Relationships
 
 - **Used by agents**: [[be-django-expert]]
-- **Related skills**: [[django-best-practices]]
+- **Related skills**: [[skills/django-best-practices|django-best-practices]]
 - **See also**: [[fastapi]], [[python]], [[postgres]]
 
 ## Sources

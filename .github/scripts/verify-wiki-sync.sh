@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# verify-wiki-sync.sh — mirrors "Check for missing wiki pages" step of wiki-sync.yml
-# Idempotent, read-only. Exits 1 on any missing page.
+# verify-wiki-sync.sh — canonical local and CI wiki verification entrypoint
+# Read-only verification of pages, counts, source hashes, and local links.
 # Works on macOS and Linux.
 set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
+cd "$REPO_ROOT"
 
 ERRORS=0
 MISSING=0
@@ -194,6 +197,8 @@ done
 DRIFT_MARKER="$(mktemp 2>/dev/null || echo "/tmp/wiki-drift-marker.$$")"
 rm -f "$DRIFT_MARKER" 2>/dev/null || true
 
+
+
 # Run the drift detection in a guarded subshell so set -e inside the helper can't
 # abort the parent script. Genuine drift is signalled out via $DRIFT_MARKER, not
 # via the subshell's exit status (which is deliberately swallowed below).
@@ -272,3 +277,14 @@ if [ -f "$DRIFT_MARKER" ]; then
   exit 1
 fi
 rm -f "$DRIFT_MARKER" 2>/dev/null || true
+
+# Link validation is mandatory; missing runtime/helper must not look like PASS.
+if ! command -v bun >/dev/null 2>&1; then
+  echo "ERROR: Bun is required for wiki link verification"
+  exit 1
+fi
+if [ ! -f "$REPO_ROOT/scripts/verify-wiki-links.ts" ]; then
+  echo "ERROR: scripts/verify-wiki-links.ts is missing"
+  exit 1
+fi
+bun run "$REPO_ROOT/scripts/verify-wiki-links.ts" --root "$REPO_ROOT"

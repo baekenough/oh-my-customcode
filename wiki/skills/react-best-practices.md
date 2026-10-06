@@ -1,7 +1,7 @@
 ---
 title: React Best Practices
 type: skill
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - .claude/skills/react-best-practices/SKILL.md
 related:
@@ -27,7 +27,7 @@ Reference patterns for React and Next.js: component composition, hooks rules and
 ## Relationships
 
 - **Used by agents**: [[fe-vercel-agent]]
-- **Related skills**: [[typescript-best-practices]], [[web-design-guidelines]], [[impeccable-design]]
+- **Related skills**: [[typescript-best-practices]], [[web-design-guidelines]], [[skills/impeccable-design|impeccable-design]]
 - **See also**: guides/react-best-practices/
 
 ## Sources

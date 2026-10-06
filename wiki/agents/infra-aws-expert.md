@@ -1,7 +1,7 @@
 ---
 title: infra-aws-expert
 type: agent
-updated: 2026-09-29
+updated: 2026-10-06
 sources:
   - .claude/agents/infra-aws-expert.md
 related:
@@ -43,7 +43,7 @@ The AWS MCP Server is a remote MCP server managed by AWS that provides live docu
 
 **Workflow priority**: use `search_documentation`/`read_documentation` first; generate IaC by default; use `call_aws` only on explicit user request with confirmed scope.
 
-**Activation (opt-in, user-manual)**: R001 prohibits auto-installation. See [guides/aws/](guides/aws/) for the install command.
+**Activation (opt-in, user-manual)**: R001 prohibits auto-installation. See [guides/aws/](/guides/aws/) for the install command.
 
 ### R010/R001 Privileged-Scope Boundary
 
