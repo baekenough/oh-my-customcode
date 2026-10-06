@@ -13,7 +13,7 @@
 
 **[English Documentation](./README.md)**
 
-50개 에이전트. 115개 스킬. 23개 규칙. 명령어 하나.
+50개 에이전트. 114개 스킬. 23개 규칙. 명령어 하나.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -134,7 +134,7 @@ Agent(arch-documenter):haiku      ┘
 
 ---
 
-### 스킬 (115개)
+### 스킬 (114개)
 
 | 카테고리 | 수 | 포함 |
 |---------|-----|------|
@@ -148,7 +148,7 @@ Agent(arch-documenter):haiku      ┘
 | 최적화 | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | 보안 | 2 | adversarial-review, cve-triage |
 | 합의 | 1 | agora — 익명 다중 라운드 다중 벤더 합의 리뷰 |
-| 기타 | 44 | claude-native, vercel-deploy, skills-sh-search, result-aggregation 외 40개 이상 |
+| 기타 | 43 | claude-native, vercel-deploy, skills-sh-search, result-aggregation 외 39개 |
 
 스킬은 3-tier scope 시스템을 사용합니다: `core` (범용), `harness` (에이전트/스킬 관리), `package` (프로젝트 특화).
 
@@ -236,7 +236,7 @@ R018 (Agent Teams)은 조건부입니다: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=
 
 ## 보안
 
-oh-my-customcode는 보안, 드리프트 감지, 규칙 강화를 다루는 42개의 라이프사이클 훅 스크립트를 제공합니다. 몇 가지 예시:
+oh-my-customcode는 보안, 드리프트 감지, 규칙 강화를 다루는 41개의 라이프사이클 훅 스크립트를 제공합니다. 몇 가지 예시:
 
 | 훅 | 트리거 | 동작 |
 |----|--------|------|
@@ -282,9 +282,9 @@ your-project/
 ├── CLAUDE.md                   # 진입점
 ├── .claude/
 │   ├── agents/                 # 50개 에이전트 정의
-│   ├── skills/                 # 115개 스킬 모듈
+│   ├── skills/                 # 114개 스킬 모듈
 │   ├── rules/                  # 23개 거버넌스 규칙 (R000-R023)
-│   ├── hooks/                  # 42개 라이프사이클 훅 스크립트 (hooks.json이 소스; settings.json으로 컴파일됨)
+│   ├── hooks/                  # 41개 라이프사이클 훅 스크립트 (hooks.json이 소스; settings.json으로 컴파일됨)
 │   ├── schemas/                # 도구 입력 검증 스키마
 │   ├── specs/                  # 추출된 canonical spec
 │   ├── contexts/               # 4개 공유 컨텍스트 파일
@@ -296,11 +296,10 @@ your-project/
 
 ## 외부 도구 통합
 
-RTK는 `omcustom init` 시 자동 설치되어 60-90% 토큰을 절감합니다. 나머지는 선택입니다:
+v2.0.0부터 프로젝트 RTK 통합을 퇴역합니다. 공개 `/rtk-exec` 스킬, 자동 설치, doctor 연결 및 RTK 훅을 제거하며 머신에 별도로 설치한 RTK 바이너리는 유지합니다. 업데이트는 이전 lockfile의 hash와 일치하는 퇴역 관리 파일만 자동 정리합니다. 수정된 파일과 소유권이 미확인된 파일은 보존하고 conflict를 안내합니다. 보존된 사용자 스킬 파일은 자동 발견될 수 있으므로 이 한계를 확인하십시오. 다른 도구는 선택입니다:
 
 | 도구 | 용도 | 설치 | 상태 |
 |------|------|------|------|
-| [RTK](https://github.com/rtk-ai/rtk) | CLI 출력 토큰 60-90% 절감 | `omcustom init` 시 자동 설치 | **권장** |
 | [Codex CLI](https://github.com/openai/codex) | OpenAI Codex 하이브리드 워크플로우 | `npm i -g @openai/codex` | 선택 |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google Gemini 하이브리드 워크플로우 | `npm i -g @google/gemini-cli` | 선택 |
 
@@ -319,7 +318,7 @@ bun run build        # 프로덕션 빌드
 
 요구사항: Node.js >= 18.0.0, Claude Code CLI (Claude Code v2.1.277 기준으로 개발 및 테스트됨).
 
-릴리즈는 2단계 자동화로 이루어집니다: 머지된 `release/vX.Y.Z` PR이 `auto-tag.yml`을 트리거해 git 태그를 생성하고, 그 태그 푸시가 다시 `release.yml`을 트리거해 빌드·검증·npm 배포를 수행합니다. 이 프로젝트 자체의 기여자 지식 베이스 — 에이전트, 스킬, 규칙, 워크플로우를 다루는 저장소 내 `wiki/` 디렉토리(278페이지) — 는 모든 PR에서 source-hash 매니페스트와 대조하여 CI로 검증되므로, 위키 페이지가 그것이 설명하는 코드로부터 조용히 drift될 수 없습니다.
+릴리즈는 2단계 자동화로 이루어집니다: 머지된 `release/vX.Y.Z` PR이 `auto-tag.yml`을 트리거해 git 태그를 생성하고, 그 태그 푸시가 다시 `release.yml`을 트리거해 빌드·검증·npm 배포를 수행합니다. 이 프로젝트 자체의 기여자 지식 베이스 — 에이전트, 스킬, 규칙, 워크플로우를 다루는 저장소 내 `wiki/` 디렉토리 — 는 모든 PR에서 source-hash 매니페스트와 대조하여 CI로 검증되므로, 위키 페이지가 그것이 설명하는 코드로부터 조용히 drift될 수 없습니다.
 
 ---
 

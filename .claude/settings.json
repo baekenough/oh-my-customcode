@@ -119,16 +119,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/rtk-intercept.sh\""
-          }
-        ],
-        "matcher": "Bash",
-        "description": "RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R013 advisory)"
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/destructive-git-guard.sh\""
           }
         ],
@@ -765,7 +755,6 @@
     "templates:research": "off",
     "templates:result-aggregation": "off",
     "templates:roundtable-debate": "off",
-    "templates:rtk-exec": "off",
     "templates:rust-best-practices": "off",
     "templates:sauron-watch": "off",
     "templates:scout": "off",

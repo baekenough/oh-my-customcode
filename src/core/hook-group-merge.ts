@@ -18,6 +18,8 @@
  *      (`[bash ]<anchored|./|bare>.claude/hooks/<script>.sh`, quotes balanced). Both the old
  *      cwd-relative and the `${CLAUDE_PROJECT_DIR:-.}`-anchored forms are accepted. A user
  *      group reusing a shipped script under another matcher is the user's own wiring and kept.
+ *   3. Retired RTK standalone commands are removed only under PreToolUse/Bash. The old
+ *      RTK description never owns a whole group: user-added sibling hooks survive retirement.
  * Everything else, including unknown shapes, is kept: user hooks are never deleted on a guess.
  */
 
@@ -49,6 +51,9 @@ const STANDALONE_SCRIPT_COMMAND =
 
 /** Finds every shipped script referenced anywhere inside a generated command string. */
 const SCRIPT_REFERENCE = /\.claude\/hooks\/((?:scripts\/)?[A-Za-z0-9._-]+\.sh)/g;
+
+const RETIRED_RTK_DESCRIPTION =
+  'RTK auto-intercept — transparently rewrites CLI commands through RTK proxy when available (R013 advisory)';
 
 interface MatcherOwnership {
   /** Exact generated command strings of the event+matcher. */
@@ -136,20 +141,81 @@ function isOwnedCommand(hook: unknown, owned: MatcherOwnership | undefined): boo
   return script !== undefined && owned.scripts.has(script);
 }
 
+/** Retired ownership stays independent of the scripts in the new generated hook set. */
+function isRetiredRtkCommand(hook: unknown, event: string, matcher: string): boolean {
+  if (
+    event !== 'PreToolUse' ||
+    matcher !== 'Bash' ||
+    !isRecord(hook) ||
+    hook.type !== 'command' ||
+    typeof hook.command !== 'string'
+  ) {
+    return false;
+  }
+  const match = STANDALONE_SCRIPT_COMMAND.exec(hook.command);
+  return (match?.[1] ?? match?.[2]) === 'scripts/rtk-intercept.sh';
+}
+
+/** Removes only retired RTK commands, retaining every other hook and group property. */
+function retireRtkGroup(group: unknown, event: string): unknown[] {
+  if (!isRecord(group) || !Array.isArray(group.hooks)) {
+    return [group];
+  }
+  const remaining = group.hooks.filter(
+    (hook) => !isRetiredRtkCommand(hook, event, matcherKey(group))
+  );
+  if (remaining.length === group.hooks.length) {
+    return [group];
+  }
+  return remaining.length === 0 ? [] : [{ ...group, hooks: remaining }];
+}
+
+/**
+ * Retires RTK wiring without applying generated or legacy ownership to unrelated groups.
+ * Pure and idempotent; malformed/unknown shapes and untouched values keep their references.
+ * Unlike mergeHookBlocks, this does not regenerate hooks or remove legacy description groups.
+ */
+export function retireRtkHookBlocks(existing: unknown): unknown {
+  if (!isRecord(existing)) {
+    return existing;
+  }
+  const updates: Record<string, unknown> = {};
+  for (const [event, value] of Object.entries(existing)) {
+    if (!Array.isArray(value)) {
+      continue;
+    }
+    const residual = value.flatMap((group) => retireRtkGroup(group, event));
+    if (
+      residual.length !== value.length ||
+      residual.some((group, index) => group !== value[index])
+    ) {
+      updates[event] = residual;
+    }
+  }
+  return Object.keys(updates).length === 0 ? existing : { ...existing, ...updates };
+}
+
 /** Returns the part of one existing group that the user owns (0 or 1 group). */
 function userResidual(
   group: unknown,
+  event: string,
   owned: EventOwnership | undefined,
   ownership: Ownership
 ): unknown[] {
   if (!isRecord(group) || !Array.isArray(group.hooks)) {
     return [group];
   }
+  const matcher = matcherKey(group);
+  if (group.description === RETIRED_RTK_DESCRIPTION) {
+    return retireRtkGroup(group, event);
+  }
   if (typeof group.description === 'string' && ownership.descriptions.has(group.description)) {
     return [];
   }
-  const ownedForMatcher = owned?.get(matcherKey(group));
-  const remaining = group.hooks.filter((hook) => !isOwnedCommand(hook, ownedForMatcher));
+  const ownedForMatcher = owned?.get(matcher);
+  const remaining = group.hooks.filter(
+    (hook) => !isRetiredRtkCommand(hook, event, matcher) && !isOwnedCommand(hook, ownedForMatcher)
+  );
   if (remaining.length === group.hooks.length) {
     return [group];
   }
@@ -185,7 +251,7 @@ export function mergeHookBlocks(
       continue;
     }
     const owned = ownership.events.get(event);
-    const residual = value.flatMap((group) => userResidual(group, owned, ownership));
+    const residual = value.flatMap((group) => userResidual(group, event, owned, ownership));
     if (residual.length === 0) {
       continue;
     }

@@ -1,7 +1,7 @@
 ---
 title: Agent Taxonomy
 type: architecture
-updated: 2026-09-29
+updated: 2026-10-06
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md
@@ -14,7 +14,7 @@ related:
 
 # Agent Taxonomy
 
-49 agents are organized into 12 functional categories. Each agent is a specialist "build artifact" that composes skills into a focused domain expert with a specific model, toolset, and memory scope.
+50 agents are organized into 13 functional categories. Each agent is a specialist "build artifact" that composes skills into a focused domain expert with a specific model, toolset, and memory scope.
 
 ## Overview
 
@@ -90,15 +90,16 @@ System maintenance and coordination layer.
 | Architect | `arch-documenter`, `arch-speckit-agent` | Docs and specs |
 | Infra | `infra-docker-expert`, `infra-aws-expert` | Deploy and cloud |
 | QA | `qa-planner`, `qa-writer`, `qa-engineer` | Full QA lifecycle |
-| System | `sys-memory-keeper`, `sys-naggy` | Session memory and task tracking |
+| System | `sys-memory-keeper`, `sys-naggy`, `tracker-checkpoint`, `wiki-curator` | Session memory, task tracking, pipeline checkpoints, and wiki maintenance |
+| Agora | `agora-runner` | Executes one Agora session step and returns only its verdict summary |
 
 ## Model Selection Patterns
 
-Model specification is 3-tier (see [[wiki/rules/r006]] "3-tier model specification"): Tier 1 native alias (`sonnet`/`opus`/`haiku`/`opusplan`, resolved by CC itself, valid in both frontmatter and Agent-tool params), Tier 2 full model ID (frontmatter only, recommended — what all 49 project agents actually use), Tier 3 Agent-tool `model` param enum (`sonnet`\|`opus`\|`haiku`\|`fable` only, used by routing-skill spawn instructions). `sonnet5`/`opus5`/`opus48` are **not real values in any tier** — CC does not interpret them; a spawn using them fails.
+Model specification is 3-tier (see [[wiki/rules/r006]] "3-tier model specification"): Tier 1 native alias (`sonnet`/`opus`/`haiku`/`opusplan`, resolved by CC itself, valid in both frontmatter and Agent-tool params), Tier 2 full model ID (frontmatter only, recommended — used by 47 project agents), Tier 3 Agent-tool `model` param enum (`sonnet`\|`opus`\|`haiku`\|`fable` only, used by routing-skill spawn instructions). The remaining three agents declare the Tier-1 `haiku` alias. These counts describe frontmatter declarations, not measured runtime model selection. `sonnet5`/`opus5`/`opus48` are **not real values in any tier** — CC does not interpret them; a spawn using them fails.
 
-| Frontmatter value (Tier 2, actual) | Use Case | Example Agents |
+| Frontmatter value (Tier 1 or Tier 2) | Use Case | Example Agents |
 |-------------------------------------|----------|---------------|
-| `haiku` | Fast, cheap: search, simple edits | mgr-supplier, sys-naggy, tracker-checkpoint (3 of 49) |
+| `haiku` (Tier-1 alias) | Fast, cheap: search, simple edits | mgr-supplier, sys-naggy, tracker-checkpoint (3 of 50) |
 | `sonnet` (Tier-1 alias, CC-resolved — not pinned by this project) | General code generation, legacy usage | None currently — project agents migrated to `claude-sonnet-5-5` |
 | `claude-sonnet-5-5` | General code generation | Most language/backend/manager agents (42 of 50) |
 | `opus` (Tier-1 alias, CC-resolved — not pinned by this project) | Complex reasoning, legacy usage | None currently — elevated agents migrated to `claude-opus-5-5` |

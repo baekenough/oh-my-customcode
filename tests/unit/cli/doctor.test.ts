@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import * as childProcess from 'node:child_process';
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -727,6 +728,63 @@ describe('doctor command', () => {
       expect(codexInstalledSpy).toHaveBeenCalled();
       expect(codex?.status).toBe('warn');
       expect(codex?.message).toContain('not installed');
+    });
+
+    it('never probes RTK in ordinary or fixing entry runs while retaining other prerequisites', async () => {
+      process.cwd = () => tempDir;
+      await writeFile(join(tempDir, 'CLAUDE.md'), '# Owned fixture');
+      const execSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
+        throw new Error('doctor must not execute RTK or installation commands');
+      });
+      try {
+        expect(() => childProcess.execSync('rtk --version')).toThrow(
+          'doctor must not execute RTK or installation commands'
+        );
+        expect(execSpy).toHaveBeenCalledTimes(1);
+        execSpy.mockClear();
+        for (const fix of [false, true]) {
+          const result = await doctorCommand({ fix, quiet: true });
+          expect(result.checks.length).toBeGreaterThan(0);
+          expect(result.checks.some((check) => /rtk/i.test(check.name))).toBe(false);
+          expect(result.checks.find((check) => check.name === 'Codex')?.status).toBe('warn');
+          expect(result.checks.find((check) => check.name === 'CLAUDE.md')?.status).toBe('pass');
+          expect(result.checks.some((check) => check.name === 'Rules')).toBe(true);
+          if (fix) expect(result.fixedCount).toBeGreaterThan(0);
+        }
+        expect(codexInstalledSpy).toHaveBeenCalledTimes(2);
+        expect(execSpy).not.toHaveBeenCalled();
+      } finally {
+        execSpy.mockRestore();
+      }
+    });
+
+    it('has no legacy RTK fixer but still fixes an unrelated Rules prerequisite', async () => {
+      const legacy: CheckResult = {
+        name: 'RTK',
+        status: 'fail',
+        message: 'legacy fixture',
+        fixable: true,
+      };
+      const rules: CheckResult = {
+        name: 'Rules',
+        status: 'fail',
+        message: 'missing fixture rules',
+        fixable: true,
+      };
+      const execSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
+        throw new Error('a retired RTK fixer must not execute');
+      });
+      try {
+        const result = await fixIssues([legacy, rules], tempDir);
+        expect(result[0]).toBe(legacy);
+        expect(result[0]?.fixed).toBeUndefined();
+        expect(result[1]?.fixed).toBe(true);
+        expect((await checkRules(tempDir)).status).toBe('warn');
+        expect(execSpy).not.toHaveBeenCalled();
+        expect(codexInstallSpy).not.toHaveBeenCalled();
+      } finally {
+        execSpy.mockRestore();
+      }
     });
 
     it('should run doctor command on current directory', async () => {

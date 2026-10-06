@@ -39,12 +39,6 @@ if command -v gemini >/dev/null 2>&1; then
   fi
 fi
 
-# Check RTK CLI availability
-RTK_STATUS="unavailable"
-if command -v rtk >/dev/null 2>&1; then
-  RTK_STATUS="available"
-fi
-
 # Check Agent Teams ENV-VAR INTENT — NOT activation (#1588)
 #
 # R018 Detection (.claude/rules/MUST-agent-teams.md) resolves Agent Teams as ACTIVE only when
@@ -216,7 +210,6 @@ STATUS_FILE="/tmp/.claude-env-status-${PPID}"
 cat > "$STATUS_FILE" << ENVEOF
 codex=${CODEX_STATUS}
 gemini=${GEMINI_STATUS}
-rtk=${RTK_STATUS}
 agent_teams=${AGENT_TEAMS_STATUS}
 git_branch=${CURRENT_BRANCH}
 claude_version=${CLAUDE_VERSION}
@@ -228,7 +221,6 @@ ENVEOF
 # Report to stderr (visible in conversation)
 echo "  codex CLI: ${CODEX_STATUS}" >&2
 echo "  gemini CLI: ${GEMINI_STATUS}" >&2
-echo "  RTK CLI:      ${RTK_STATUS}" >&2
 echo "  Agent Teams: ${AGENT_TEAMS_STATUS}" >&2
 if [ "$AGENT_TEAMS_STATUS" = "env-set" ]; then
   echo "    CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 is set — this is INTENT, not activation." >&2

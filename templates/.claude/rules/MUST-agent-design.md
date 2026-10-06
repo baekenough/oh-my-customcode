@@ -238,7 +238,7 @@ experimental:
   cacheTtl: "5m"           # "5m" | "1h" — subagent prompt cache TTL when not otherwise set (v2.1.248+)
 ```
 
-> **Note**: When `disableSkillShellExecution` is enabled (v2.1.91+), skills that rely on inline shell execution (e.g., `rtk-exec`) will have their shell blocks disabled. This is a security hardening option.
+> **Note**: When `disableSkillShellExecution` is enabled (v2.1.91+), skills that rely on inline shell execution will have their shell blocks disabled. This is a security hardening option.
 -->
 
 <!-- DETAIL: CC Version Compatibility History

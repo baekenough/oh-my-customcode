@@ -1,10 +1,11 @@
 ---
 title: Skill Taxonomy
 type: architecture
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - .claude/rules/MUST-agent-design.md
   - CLAUDE.md
+  - .claude/skills/
 related:
   - [[overview]]
   - [[agent-taxonomy]]
@@ -22,13 +23,14 @@ Skills live at `.claude/skills/{name}/SKILL.md`. They define HOW to perform task
 
 ## Scope Classification
 
-| Scope | Purpose | Auto-deployed by `/init`? | Example Skills |
-|-------|---------|--------------------------|----------------|
-| `core` | Universal development tools | Yes | `dev-review`, `research`, `deep-plan` |
-| `harness` | Agent/skill/rule maintenance | Yes | `sauron-watch`, `create-agent`, `audit-agents` |
-| `package` | Package-specific workflows | No | `npm-publish`, `npm-version`, `npm-audit` |
+| Declared Scope | Count | Purpose | Deployed via init? | Example Skills |
+|----------------|-------|---------|--------------------|----------------|
+| `core` | 82 | Universal development tools | Yes | `dev-review`, `research`, `deep-plan` |
+| `harness` | 25 | Agent/skill/rule maintenance | Yes | `sauron-watch`, `create-agent`, `audit-agents` |
+| `package` | 6 | Package-specific workflows | No | `npm-publish`, `npm-version`, `npm-audit` |
+| Omitted | 1 | No declared scope | Not inferred from this inventory | `systematic-debugging` |
 
-The `core` and `harness` scopes form the deployed baseline. `package` skills are opt-in for specific project types.
+The counts describe current SKILL.md frontmatters and sum to 114. The omitted field is recorded separately from explicit `core` declarations. R006 documents `core` as the omitted-field default; this inventory does not measure runtime deployment. The `core` and `harness` scopes form the documented deployed baseline. `package` skills are opt-in for specific project types.
 
 ## Functional Types
 
@@ -40,7 +42,7 @@ These orchestrate agent selection and are invoked by the main conversation:
 - `qa-lead-routing` — QA workflow coordination
 - `intent-detection` — pre-routing ambiguity analysis
 
-Routing skills use `context: fork` because they orchestrate multi-agent workflows. Maximum 12 forked-context skills; current count is 9.
+The four routing skills declare `context: fork`; `intent-detection` does not. Ten skills in total declare forked context, within the R006 cap of 12. The other six are `dag-orchestration`, `task-decomposition`, `worker-reviewer-pipeline`, `deep-plan`, `professor-triage`, and `roundtable-debate`.
 
 ### Best-Practice Skills
 Domain knowledge encoded as instructions. Named `{language/framework}-best-practices`:
@@ -110,3 +112,5 @@ Skills support optional fields that control behavior:
 
 - `.claude/rules/MUST-agent-design.md` — R006 skill frontmatter, scope table, context fork criteria
 - `CLAUDE.md` — slash command list reflects available skills
+
+- `.claude/skills/*/SKILL.md` — current scope declarations and ten fork declarations, counted 2026-10-06

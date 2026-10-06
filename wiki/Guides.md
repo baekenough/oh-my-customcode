@@ -1,6 +1,6 @@
 # Guides
 
-Comprehensive reference documentation covering **57 topics**:
+Comprehensive reference documentation covering **56 source topics**:
 
 - Agent creation and management
 - Skill development
@@ -12,7 +12,7 @@ Comprehensive reference documentation covering **57 topics**:
 
 ## Cross-Provider Execution
 
-- [[multi-provider-exec]] — Execute prompts through external LLM providers (Codex, Gemini, RTK); complements [[multi-model-routing]]
+- [[multi-provider-exec]] — External provider availability and explicit execution guidance; records RTK project integration retirement in v2.0.0 and complements [[multi-model-routing]]
 
 ---
 

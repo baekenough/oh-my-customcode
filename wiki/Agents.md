@@ -1,6 +1,6 @@
 # Agents
 
-oh-my-customcode includes **49 specialized agents** organized by category.
+oh-my-customcode includes **50 specialized agents** organized into 13 categories.
 
 | Category | Count | Agents |
 |----------|-------|--------|
@@ -16,6 +16,7 @@ oh-my-customcode includes **49 specialized agents** organized by category.
 | **QA** | 3 | qa-planner, qa-writer, qa-engineer |
 | **Managers** | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
 | **System** | 4 | sys-memory-keeper, sys-naggy, tracker-checkpoint, wiki-curator |
+| **Agora** | 1 | agora-runner |
 
 ---
 

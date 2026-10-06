@@ -49,7 +49,6 @@ import {
   type InstallComponent,
 } from './layout.js';
 import { generateAndWriteLockfileForDir } from './lockfile.js';
-import { installRtk, isRtkInstalled } from './rtk-installer.js';
 import {
   getAgentDomain,
   getSkillScope,
@@ -590,25 +589,6 @@ async function updateInstallConfig(
 }
 
 /**
- * Install RTK if not already installed, adding warnings to result on failure
- */
-function installRtkIfNeeded(result: InstallResult): void {
-  if (!isRtkInstalled()) {
-    info('install.rtk_installing');
-    const rtkInstalled = installRtk();
-    if (rtkInstalled) {
-      info('install.rtk_success');
-    } else {
-      result.warnings.push(
-        'RTK installation failed — install manually: brew install rtk-ai/tap/rtk'
-      );
-    }
-  } else {
-    info('install.rtk_already');
-  }
-}
-
-/**
  * Install Codex CLI if not already installed, adding warnings to result on failure
  */
 function installCodexIfNeeded(result: InstallResult): void {
@@ -683,9 +663,6 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
     } else {
       info('install.lockfile_generated', { files: String(lockfileResult.fileCount) });
     }
-
-    // Install RTK for token optimization
-    installRtkIfNeeded(result);
 
     // Install Codex CLI for AI-assisted development
     installCodexIfNeeded(result);

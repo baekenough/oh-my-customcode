@@ -97,6 +97,10 @@ ECC의 8개 외부 harness(Cursor/Aider/Codex/Opencode 등) export 기능.
 | oh-my-customcode | compilation metaphor pure-play |
 | ECC | cross-harness pragmatist |
 
+### Historical Alternative Paths
+
+The ECC archive preserves the alternatives considered at the time: an RTK proxy skill and Codex/Gemini executor skills. The project RTK integration retires in v2.0.0; the historical proxy example must not be used as a current execution path. The archive's claim of covering over 80% of use cases is historical, not a new measurement for the current version. See [the source archive](../../guides/external-tools/ecc-absorption-decisions.md) for the original decision context.
+
 ### KPI 모니터링
 
 내부 메트릭: `.claude/agent-memory/sys-memory-keeper/` → `[[project-ecc-kpi-internal-metrics]]`

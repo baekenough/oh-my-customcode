@@ -13,7 +13,7 @@
 
 **[한국어 문서 (Korean)](./README_ko.md)**
 
-50 agents. 115 skills. 23 rules. One command.
+50 agents. 114 skills. 23 rules. One command.
 
 ```bash
 npm install -g oh-my-customcode && cd your-project && omcustom init
@@ -134,7 +134,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 
 ---
 
-### Skills (115)
+### Skills (114)
 
 | Category | Count | Includes |
 |----------|-------|----------|
@@ -148,7 +148,7 @@ Each agent declares its tools, model, memory scope, and limitations in YAML fron
 | Optimization | 3 | optimize-analyze, optimize-bundle, optimize-report |
 | Security | 2 | adversarial-review, cve-triage |
 | Consensus | 1 | agora — anonymous multi-round multi-vendor consensus review |
-| Other | 44 | claude-native, vercel-deploy, skills-sh-search, result-aggregation, and ~40 more |
+| Other | 43 | claude-native, vercel-deploy, skills-sh-search, result-aggregation, and ~39 more |
 
 Skills use a 3-tier scope system: `core` (universal), `harness` (agent/skill maintenance), `package` (project-specific).
 
@@ -236,7 +236,7 @@ Reference documentation covering best practices, architecture decisions, and int
 
 ## Safety
 
-oh-my-customcode ships 42 lifecycle hook scripts covering security, drift detection, and rule reinforcement. A few examples:
+oh-my-customcode ships 41 lifecycle hook scripts covering security, drift detection, and rule reinforcement. A few examples:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
@@ -282,9 +282,9 @@ your-project/
 ├── CLAUDE.md                   # Entry point
 ├── .claude/
 │   ├── agents/                 # 50 agent definitions
-│   ├── skills/                 # 115 skill modules
+│   ├── skills/                 # 114 skill modules
 │   ├── rules/                  # 23 governance rules (R000-R023)
-│   ├── hooks/                  # 42 lifecycle hook scripts (hooks.json source; compiled into settings.json)
+│   ├── hooks/                  # 41 lifecycle hook scripts (hooks.json source; compiled into settings.json)
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
 │   ├── contexts/               # 4 shared context files
@@ -296,11 +296,10 @@ your-project/
 
 ## External Tool Integrations
 
-RTK is automatically installed during `omcustom init` for 60-90% token savings. Other tools are optional:
+Starting with v2.0.0, project RTK integration is retired: the public `/rtk-exec` skill, automatic installation, doctor integration, and RTK hooks are removed. Separately installed RTK binaries remain on your machine. Updates automatically remove retired managed files only when their hashes match the previous lockfile. Modified files and files with unknown ownership are preserved and reported as conflicts; retained user skill files may still be discovered automatically. Other tools are optional:
 
 | Tool | Purpose | Install | Status |
 |------|---------|---------|--------|
-| [RTK](https://github.com/rtk-ai/rtk) | 60-90% token savings on CLI output | Auto-installed via `omcustom init` | **Recommended** |
 | [Codex CLI](https://github.com/openai/codex) | OpenAI Codex hybrid workflows | `npm i -g @openai/codex` | Optional |
 | [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google Gemini hybrid workflows | `npm i -g @google/gemini-cli` | Optional |
 
@@ -319,7 +318,7 @@ bun run build        # Production build
 
 Requirements: Node.js >= 18.0.0, Claude Code CLI (developed and tested against Claude Code v2.1.277).
 
-Releases are two-stage automation: a merged `release/vX.Y.Z` PR triggers `auto-tag.yml`, which creates the git tag; the tag push then triggers `release.yml`, which builds, verifies, and publishes to npm. The project's own contributor knowledge base — the in-repo wiki at `wiki/` (278 pages covering agents, skills, rules, and workflows) — is CI-verified on every PR against a source-hash manifest, so wiki pages cannot silently drift from the code they document.
+Releases are two-stage automation: a merged `release/vX.Y.Z` PR triggers `auto-tag.yml`, which creates the git tag; the tag push then triggers `release.yml`, which builds, verifies, and publishes to npm. The project's own contributor knowledge base — the in-repo wiki at `wiki/` (covering agents, skills, rules, and workflows) — is CI-verified on every PR against a source-hash manifest, so wiki pages cannot silently drift from the code they document.
 
 ---
 

@@ -6,7 +6,7 @@
  * arrays are replaced). Per-event hook arrays from the old file therefore bring back the old
  * cwd-relative commands. install() must migrate them again after the restore step.
  *
- * Runs install() for real against a temp project. Only the RTK/Codex installers are replaced
+ * Runs install() for real against a temp project. Only the Codex installer is replaced
  * (they would shell out to package managers); the originals are re-registered in afterAll so
  * the mocks do not leak into other test files (#1760/#1761).
  */
@@ -28,7 +28,6 @@ import { join } from 'node:path';
 import { convertHooksJson, type RawHooksJson } from '../../../src/core/hooks-settings.js';
 import type { InstallResult } from '../../../src/core/installer.js';
 
-const RTK_MODULE = '../../../src/core/rtk-installer.js';
 const CODEX_MODULE = '../../../src/core/codex-installer.js';
 
 const ANCHORED_SESSION_START = `bash "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/session-start.sh"`;
@@ -71,19 +70,12 @@ async function convertedStageBlockerMatcher(): Promise<string> {
 }
 
 describe('installer --backup restore: hook command migration (#1767)', () => {
-  let realRtk: Record<string, unknown>;
   let realCodex: Record<string, unknown>;
   let tempDir: string;
   let consoleSpies: Array<ReturnType<typeof spyOn>>;
 
   beforeAll(async () => {
-    realRtk = { ...(await import(RTK_MODULE)) };
     realCodex = { ...(await import(CODEX_MODULE)) };
-    mock.module(RTK_MODULE, () => ({
-      ...realRtk,
-      isRtkInstalled: () => true,
-      installRtk: () => true,
-    }));
     mock.module(CODEX_MODULE, () => ({
       ...realCodex,
       isCodexInstalled: () => true,
@@ -92,7 +84,6 @@ describe('installer --backup restore: hook command migration (#1767)', () => {
   });
 
   afterAll(() => {
-    mock.module(RTK_MODULE, () => realRtk);
     mock.module(CODEX_MODULE, () => realCodex);
   });
 

@@ -135,6 +135,13 @@ export interface LockfileGenerationOptions {
    * `false`.
    */
   excludeGitIgnored?: boolean;
+  /**
+   * Additional exact canonical relative paths retired by an installed-project migration. Files may
+   * remain on disk for user preservation, but must not become managed template entries again.
+   * The three built-in retired RTK paths are always excluded, including with an empty list.
+   * No glob, prefix, case-folding or Unicode normalization matching is performed.
+   */
+  retiredPaths?: readonly string[];
 }
 
 const execFileAsync = promisify(execFile);
@@ -432,6 +439,27 @@ function sortFilesByPath(files: Record<string, LockfileEntry>): Record<string, L
   return Object.fromEntries(sorted.map((key) => [key, files[key]]));
 }
 
+const RETIRED_RTK_PATHS = [
+  '.claude/skills/rtk-exec/SKILL.md',
+  '.claude/skills/rtk-exec/scripts/rtk-wrapper.cjs',
+  '.claude/hooks/scripts/rtk-intercept.sh',
+] as const;
+
+/** Validates exact retirement keys before generation performs any filesystem work. */
+function getRetiredPaths(options: LockfileGenerationOptions): Set<string> {
+  const retiredPaths = new Set([...RETIRED_RTK_PATHS, ...(options.retiredPaths ?? [])]);
+  for (const path of retiredPaths) {
+    if (
+      typeof path !== 'string' ||
+      /[\\:*?[\]{}\0]/.test(path) ||
+      path.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')
+    ) {
+      throw new Error('retiredPaths must contain exact canonical relative file paths');
+    }
+  }
+  return retiredPaths;
+}
+
 /**
  * Generate a lockfile by walking all installed template files in targetDir.
  * Computes SHA-256 for each file and resolves the component from the path.
@@ -444,6 +472,7 @@ export async function generateLockfile(
   options: LockfileGenerationOptions = {}
 ): Promise<Lockfile> {
   const files: Record<string, LockfileEntry> = {};
+  const retiredPaths = getRetiredPaths(options);
   const gitVisible = options.excludeGitIgnored ? await listGitVisiblePaths(targetDir) : null;
 
   // Walk each component root that may exist in the target directory
@@ -456,7 +485,9 @@ export async function generateLockfile(
       continue;
     }
 
-    const allFiles = await collectFiles(componentRoot, targetDir, false);
+    const allFiles = (await collectFiles(componentRoot, targetDir, false)).filter(
+      (absolutePath) => !retiredPaths.has(relative(targetDir, absolutePath).replace(/\\/g, '/'))
+    );
 
     for (const absolutePath of allFiles) {
       const relativePath = relative(targetDir, absolutePath).replace(/\\/g, '/');

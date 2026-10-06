@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "1.1.106",
-  "generatedAt": "2026-10-06T03:44:48.089Z",
-  "templateVersion": "1.1.106",
+  "generatorVersion": "2.0.0",
+  "generatedAt": "2026-10-06T06:54:27.878Z",
+  "templateVersion": "2.0.0",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -265,8 +265,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "f4e0ee471f8f45f3bf636aa62a68eca66ff04e762b80af6e7a7ae897738b3805",
-      "size": 30504,
+      "templateHash": "5f5c9923cd1e77b4bf678dd4efd337abc8257f16f05e0215056015531374ecbd",
+      "size": 30132,
       "component": "hooks"
     },
     ".claude/hooks/scripts/adaptive-harness-scan.sh": {
@@ -320,8 +320,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/cost-cap-advisor.sh": {
-      "templateHash": "443ad1210298ab1c8ec5d38a245e6761634a54af2830dcb6d731c0d97c9ed728",
-      "size": 2585,
+      "templateHash": "838775501383652eb7d0bd1bf0ec9737db564d71eb57b1990e359797a3e30034",
+      "size": 4854,
       "component": "hooks"
     },
     ".claude/hooks/scripts/cwd-change-detector.sh": {
@@ -389,11 +389,6 @@
       "size": 30145,
       "component": "hooks"
     },
-    ".claude/hooks/scripts/rtk-intercept.sh": {
-      "templateHash": "ea4e05809d1d7791466dffc037d464c3bb96483808f0f551b4132185f4274e23",
-      "size": 2007,
-      "component": "hooks"
-    },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
       "templateHash": "1885ebb762130804758f03ee075b6cf62c71628d9cc0e5a6131acc092ca4a931",
       "size": 34592,
@@ -420,8 +415,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-env-check.sh": {
-      "templateHash": "69e60729e4c973cc0ac49751e65a2bcd027bcfa33e2428abda20a8861d86d1cd",
-      "size": 12332,
+      "templateHash": "c6764df19ce8a1d5ae609a615ec83806a68c5dfb84491484331dc0731c21afab",
+      "size": 12150,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-reflection.sh": {
@@ -540,8 +535,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "e3a8e8a72eec2d9d8f8dc51b1c440213179e43bf0f7381cbbf7744b9e3007b92",
-      "size": 69892,
+      "templateHash": "f6628e6af371ddfb040712aea5514f5709c1e4344d0fe44cae33f3c9a8c713da",
+      "size": 69873,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -630,8 +625,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "d58ba98cbc6cdf3ec07cc078ddf7d3724fc1232f50b69d066f5f26eb752d0788",
-      "size": 34172,
+      "templateHash": "6311b3b104c584123512cee9fb6e72fe9c9e3ee55ea384e70dd9dfec653b0b80",
+      "size": 34312,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -935,8 +930,8 @@
       "component": "skills"
     },
     ".claude/skills/intent-detection/patterns/agent-triggers.yaml": {
-      "templateHash": "b6ee3cd2a8cef5f51d4533f464d8ccaa18fdff19226418f8806a61ffffafd812",
-      "size": 28834,
+      "templateHash": "10da08608c80e7d8e156784d001395800a538d19653e2beb2f1144a58ea32415",
+      "size": 28566,
       "component": "skills"
     },
     ".claude/skills/java-best-practices/SKILL.md": {
@@ -1152,16 +1147,6 @@
     ".claude/skills/roundtable-debate/SKILL.md": {
       "templateHash": "29ba5d2d4648573fdc65594d8e9cc50f3a8bdf84fcb2f1d8691f95ec09608610",
       "size": 4735,
-      "component": "skills"
-    },
-    ".claude/skills/rtk-exec/SKILL.md": {
-      "templateHash": "b9b39ca65327cb17357ad13f493c187836b4d76fa83984b21fd861fc077f4b29",
-      "size": 5981,
-      "component": "skills"
-    },
-    ".claude/skills/rtk-exec/scripts/rtk-wrapper.cjs": {
-      "templateHash": "19d0647e53d54d322cc5a90d0c2e87f694042d563ca4c7814764bbfaee5b76f1",
-      "size": 9964,
       "component": "skills"
     },
     ".claude/skills/rust-best-practices/SKILL.md": {
@@ -1630,8 +1615,8 @@
       "component": "guides"
     },
     "guides/external-tools/ecc-absorption-decisions.md": {
-      "templateHash": "cbb8412f0ab943a55fe62a1f13600cc3b7691a89b4bca0faab767f1691325e77",
-      "size": 9138,
+      "templateHash": "31367acb00728d2f8b3525394ce8b5539acf7810f773804d91f1e48c269a4858",
+      "size": 9440,
       "component": "guides"
     },
     "guides/external-tools/graphify-integration.md": {
@@ -1825,8 +1810,8 @@
       "component": "guides"
     },
     "guides/multi-provider-exec/README.md": {
-      "templateHash": "4e8d88be9fb5b0153bc073a8de3ad67be626399d192a875236d65bdc50c3d8fb",
-      "size": 2517,
+      "templateHash": "104bcb6c958002d8808c7c88cede7cdddc97063bf7db088d69607db97cd262ce",
+      "size": 2836,
       "component": "guides"
     },
     "guides/postgres/README.md": {

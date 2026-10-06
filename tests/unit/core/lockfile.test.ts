@@ -409,6 +409,167 @@ describe('lockfile', () => {
   });
 
   // -------------------------------------------------------------------------
+  describe('exact retiredPaths exclusions', () => {
+    const retired = [
+      '.claude/hooks/scripts/rtk-intercept.sh',
+      '.claude/skills/rtk-exec/SKILL.md',
+      '.claude/skills/rtk-exec/scripts/rtk-wrapper.cjs',
+    ];
+    const retained = [
+      '.claude/agents/user-agent.md',
+      '.claude/rules/MUST-user.md',
+      '.claude/hooks/scripts/rtk-intercept.sh.backup',
+      '.claude/skills/rtk-exec-user/SKILL.md',
+      '.claude/skills/rtk-exec/SKILL.md.backup',
+      '.claude/skills/rtk-exec/scripts/rtk-wrapper.sh',
+    ];
+
+    async function seedRetirementCorpus() {
+      for (const path of [...retired, ...retained]) {
+        await mkdir(dirname(join(tempDir, path)), { recursive: true });
+        await writeFile(join(tempDir, path), `user-maintained:${path}\n`, 'utf8');
+      }
+    }
+
+    it('excludes only exact retirement keys and leaves retained user files on disk', async () => {
+      await seedRetirementCorpus();
+      const baseline = await generateLockfile(tempDir, '2.0.0', '2.0.0');
+      expect(Object.keys(baseline.files)).toEqual([...retained].sort());
+      const excluded = await generateLockfile(tempDir, '2.0.0', '2.0.0', { retiredPaths: retired });
+      expect(Object.keys(excluded.files)).toEqual([...retained].sort());
+      expect(Object.keys(excluded.files).length).toBeGreaterThan(0);
+      for (const path of retained) {
+        expect(excluded.files[path]).toEqual(baseline.files[path]);
+      }
+      for (const path of retired) {
+        expect(excluded.files[path]).toBeUndefined();
+        expect(await readFile(join(tempDir, path), 'utf8')).toBe(`user-maintained:${path}\n`);
+      }
+    });
+
+    it('default/empty additional exclusions keep retired ownership absent and the non-RTK corpus unchanged', async () => {
+      await seedRetirementCorpus();
+      const baseline = await generateLockfile(tempDir, '2.0.0', '2.0.0');
+      const empty = await generateLockfile(tempDir, '2.0.0', '2.0.0', { retiredPaths: [] });
+      expect(Object.keys(baseline.files)).toEqual([...retained].sort());
+      expect(empty.files).toEqual(baseline.files);
+      expect((await generateLockfile(tempDir, '2.0.0', '2.0.0')).files).toEqual(baseline.files);
+      for (const path of retired) {
+        expect(baseline.files[path]).toBeUndefined();
+        expect(empty.files[path]).toBeUndefined();
+        expect(await readFile(join(tempDir, path), 'utf8')).toBe(`user-maintained:${path}\n`);
+      }
+    });
+
+    it('matching is literal: wrong case, missing path and suffix neighbor do not exclude the original', async () => {
+      await seedRetirementCorpus();
+      const result = await generateLockfile(tempDir, '2.0.0', '2.0.0', {
+        retiredPaths: ['.claude/hooks/scripts/RTK-intercept.sh', '.claude/skills/missing/SKILL.md'],
+      });
+      expect(Object.keys(result.files)).toEqual([...retained].sort());
+      const suffix = await generateLockfile(tempDir, '2.0.0', '2.0.0', {
+        retiredPaths: ['.claude/hooks/scripts/rtk-intercept.sh.backup'],
+      });
+      expect(Object.keys(suffix.files)).toEqual(
+        retained.filter((path) => path !== '.claude/hooks/scripts/rtk-intercept.sh.backup').sort()
+      );
+      for (const path of retired) expect(suffix.files[path]).toBeUndefined();
+      expect(suffix.files['.claude/hooks/scripts/rtk-intercept.sh.backup']).toBeUndefined();
+    });
+
+    for (const additionalPaths of [undefined, []]) {
+      it(`default writer never reacquires retained RTK ownership with ${JSON.stringify(additionalPaths)}`, async () => {
+        await seedRetirementCorpus();
+        const result =
+          additionalPaths === undefined
+            ? await generateAndWriteLockfileForDir(tempDir)
+            : await generateAndWriteLockfileForDir(tempDir, { retiredPaths: additionalPaths });
+        expect(result.warning).toBeUndefined();
+        expect(result.fileCount).toBe(retained.length);
+        const lock = await readLockfile(tempDir);
+        expect(Object.keys(lock?.files ?? {})).toEqual([...retained].sort());
+        for (const path of [...retired, ...retained]) {
+          const content = `user-maintained:${path}\n`;
+          expect(await readFile(join(tempDir, path), 'utf8')).toBe(content);
+          if (retired.includes(path)) {
+            expect(lock?.files[path]).toBeUndefined();
+          } else {
+            expect(lock?.files[path]?.templateHash).toBe(expectedSha256(content));
+          }
+        }
+      });
+    }
+
+    it('additional caller exclusions extend built-in retirement without changing neighbor hashes', async () => {
+      await seedRetirementCorpus();
+      const baseline = await generateLockfile(tempDir, '2.0.0', '2.0.0');
+      const extra = '.claude/agents/user-agent.md';
+      const extended = await generateLockfile(tempDir, '2.0.0', '2.0.0', {
+        retiredPaths: [extra],
+      });
+      expect(Object.keys(extended.files)).toEqual(retained.filter((path) => path !== extra).sort());
+      for (const path of [...retired, extra]) expect(extended.files[path]).toBeUndefined();
+      for (const path of retained.filter((path) => path !== extra)) {
+        expect(extended.files[path]).toEqual(baseline.files[path]);
+      }
+      expect(await readFile(join(tempDir, extra), 'utf8')).toBe(`user-maintained:${extra}\n`);
+    });
+
+    it('regeneration keeps retirement exclusions and idempotence while preserving RTK disk data', async () => {
+      await seedRetirementCorpus();
+      const options = { retiredPaths: retired };
+      const first = await generateAndWriteLockfileForDir(tempDir, options);
+      expect(first.warning).toBeUndefined();
+      expect(first.fileCount).toBe(retained.length);
+      const bytes = await readFile(join(tempDir, LOCKFILE_NAME), 'utf8');
+      const second = await generateAndWriteLockfileForDir(tempDir, options);
+      expect(second.warning).toBeUndefined();
+      expect(second.fileCount).toBe(retained.length);
+      expect(await readFile(join(tempDir, LOCKFILE_NAME), 'utf8')).toBe(bytes);
+      expect(Object.keys((await readLockfile(tempDir))?.files ?? {})).toEqual([...retained].sort());
+      for (const path of retired) {
+        expect(await readFile(join(tempDir, path), 'utf8')).toBe(`user-maintained:${path}\n`);
+      }
+    });
+
+    it.each([
+      '',
+      '/absolute/path',
+      'trailing/',
+      './relative',
+      '../parent',
+      'a/../b',
+      'a//b',
+      'a\\b',
+      'a*b',
+      'a?b',
+      'a[b]',
+      'a{b}',
+      'a:b',
+      'a\0b',
+    ])('invalid retirement key %j rejects without writing or replacing an existing lockfile', async (path) => {
+      const bytes = JSON.stringify(makeLockfile(), null, 2);
+      await writeFile(join(tempDir, LOCKFILE_NAME), bytes);
+      await expect(
+        generateLockfile(tempDir, '2.0.0', '2.0.0', { retiredPaths: [path] })
+      ).rejects.toThrow('exact canonical relative file paths');
+      const result = await generateAndWriteLockfileForDir(tempDir, { retiredPaths: [path] });
+      expect(result.fileCount).toBe(0);
+      expect(result.warning).toContain('exact canonical relative file paths');
+      expect(await readFile(join(tempDir, LOCKFILE_NAME), 'utf8')).toBe(bytes);
+      expect(await readdir(tempDir)).toEqual([LOCKFILE_NAME]);
+    });
+
+    it('rejects a runtime non-string retirement key before generation writes anything', async () => {
+      await expect(
+        generateLockfile(tempDir, '2.0.0', '2.0.0', {
+          retiredPaths: [42 as unknown as string],
+        })
+      ).rejects.toThrow('exact canonical relative file paths');
+      expect(await readdir(tempDir)).toEqual([]);
+    });
+  });
+
   describe('diffLockfiles', () => {
     it('detects files added in current that are absent in base', () => {
       const base = makeLockfile({ files: {} });

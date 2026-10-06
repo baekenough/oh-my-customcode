@@ -1,35 +1,23 @@
-/**
- * Tests for installer.ts RTK/Codex installation paths.
- * These paths require mock.module to intercept the static imports in installer.ts.
- * Tests cover:
- *   - installRtkIfNeeded when RTK is not installed and install succeeds (lines 379-382)
- *   - installRtkIfNeeded when RTK is not installed and install fails (lines 379-386)
- *   - installCodexIfNeeded when Codex is not installed and install succeeds (lines 398-402)
- *   - installCodexIfNeeded when Codex is not installed and install fails (lines 398-405)
- *   - installAgents domain filtering (lines 608-613)
- *   - restoration failures during backup (lines 444-447)
- *   - lockfile warning path during install (lines 458-459)
- */
+/** Installer Codex/domain/lockfile guarantees after RTK retirement. */
 
 import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import * as childProcess from 'node:child_process';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 // Capture the real modules before any mock.module call. bun's mock.module persists across
 // test files (mock.restore() does not undo it), so without the afterAll re-registration
 // below the mocks leak into later-ordered files that import these modules (#1772).
-const realRtkInstaller = { ...(await import('../../../src/core/rtk-installer.js')) };
 const realCodexInstaller = { ...(await import('../../../src/core/codex-installer.js')) };
 const realLockfile = { ...(await import('../../../src/core/lockfile.js')) };
 
 afterAll(() => {
-  mock.module('../../../src/core/rtk-installer.js', () => realRtkInstaller);
   mock.module('../../../src/core/codex-installer.js', () => realCodexInstaller);
   mock.module('../../../src/core/lockfile.js', () => realLockfile);
 });
 
-describe('installer RTK/Codex paths', () => {
+describe('installer Codex paths and RTK retirement', () => {
   let tempDir: string;
   let consoleLogSpy: ReturnType<typeof spyOn>;
   let consoleInfoSpy: ReturnType<typeof spyOn>;
@@ -56,57 +44,37 @@ describe('installer RTK/Codex paths', () => {
     mock.restore();
   });
 
-  it('should add warning when RTK not installed and installRtk fails (lines 379-386)', async () => {
-    // Mock rtk-installer: RTK not installed, installation fails
-    mock.module('../../../src/core/rtk-installer.js', () => ({
-      isRtkInstalled: () => false,
-      installRtk: () => false,
-      getRtkVersion: () => null,
-    }));
-    // Mock codex-installer: Codex already installed (to isolate RTK path)
+  it('does not execute RTK probes or downloads during init', async () => {
+    const installedProbe = mock(() => true);
     mock.module('../../../src/core/codex-installer.js', () => ({
-      isCodexInstalled: () => true,
-      installCodex: () => true,
+      isCodexInstalled: installedProbe,
+      installCodex: mock(() => {
+        throw new Error('installed Codex must not be installed again');
+      }),
       getCodexVersion: () => '1.0.0',
     }));
-
-    const { install } = await import('../../../src/core/installer.js');
-
-    const result = await install({ targetDir: tempDir, skipConfirm: true });
-
-    expect(result.success).toBe(true);
-    expect(result.warnings.some((w) => w.includes('RTK installation failed'))).toBe(true);
-  });
-
-  it('should log success when RTK not installed but installRtk succeeds (lines 379-382)', async () => {
-    // Mock rtk-installer: RTK not installed, but installation succeeds
-    mock.module('../../../src/core/rtk-installer.js', () => ({
-      isRtkInstalled: () => false,
-      installRtk: () => true,
-      getRtkVersion: () => null,
-    }));
-    mock.module('../../../src/core/codex-installer.js', () => ({
-      isCodexInstalled: () => true,
-      installCodex: () => true,
-      getCodexVersion: () => '1.0.0',
-    }));
-
-    const { install } = await import('../../../src/core/installer.js');
-
-    const result = await install({ targetDir: tempDir, skipConfirm: true });
-
-    expect(result.success).toBe(true);
-    // No RTK warning when install succeeds
-    expect(result.warnings.some((w) => w.includes('RTK installation failed'))).toBe(false);
+    const execSpy = spyOn(childProcess, 'execSync').mockImplementation(() => {
+      throw new Error('init must not execute RTK or download commands');
+    });
+    try {
+      // Prove the interception is live without launching a binary, then observe init alone.
+      expect(() => childProcess.execSync('rtk --version')).toThrow(
+        'init must not execute RTK or download commands'
+      );
+      expect(execSpy).toHaveBeenCalledTimes(1);
+      execSpy.mockClear();
+      const { install } = await import('../../../src/core/installer.js');
+      const result = await install({ targetDir: tempDir, skipConfirm: true });
+      expect(result.success).toBe(true);
+      expect(installedProbe).toHaveBeenCalledTimes(1);
+      expect(execSpy).not.toHaveBeenCalled();
+      expect(result.warnings.filter((warning) => /rtk/i.test(warning))).toEqual([]);
+    } finally {
+      execSpy.mockRestore();
+    }
   });
 
   it('should add warning when Codex not installed and installCodex fails (lines 398-405)', async () => {
-    // Mock rtk-installer: RTK already installed (to isolate Codex path)
-    mock.module('../../../src/core/rtk-installer.js', () => ({
-      isRtkInstalled: () => true,
-      installRtk: () => true,
-      getRtkVersion: () => '0.34.2',
-    }));
     // Mock codex-installer: Codex not installed, installation fails
     mock.module('../../../src/core/codex-installer.js', () => ({
       isCodexInstalled: () => false,
@@ -123,11 +91,6 @@ describe('installer RTK/Codex paths', () => {
   });
 
   it('should log success when Codex not installed but installCodex succeeds (lines 398-402)', async () => {
-    mock.module('../../../src/core/rtk-installer.js', () => ({
-      isRtkInstalled: () => true,
-      installRtk: () => true,
-      getRtkVersion: () => '0.34.2',
-    }));
     // Mock codex-installer: Codex not installed, but installation succeeds
     mock.module('../../../src/core/codex-installer.js', () => ({
       isCodexInstalled: () => false,
@@ -145,11 +108,6 @@ describe('installer RTK/Codex paths', () => {
   });
 
   it('should filter agents by domain when domain option is set (lines 608-613)', async () => {
-    mock.module('../../../src/core/rtk-installer.js', () => ({
-      isRtkInstalled: () => true,
-      installRtk: () => true,
-      getRtkVersion: () => '0.34.2',
-    }));
     mock.module('../../../src/core/codex-installer.js', () => ({
       isCodexInstalled: () => true,
       installCodex: () => true,
@@ -166,16 +124,15 @@ describe('installer RTK/Codex paths', () => {
       domain: 'backend',
     });
 
-    // Install may succeed or produce warnings — the key is domain filtering code path was hit
     expect(result).toBeDefined();
+    expect(result.success).toBe(true);
+    const agents = await readdir(join(tempDir, '.claude', 'agents'));
+    expect(agents).toContain('be-express-expert.md');
+    expect(agents).toContain('qa-planner.md');
+    expect(agents).not.toContain('fe-vuejs-agent.md');
   });
 
   it('should add lockfile warning to result when lockfile generation fails (lines 458-459)', async () => {
-    mock.module('../../../src/core/rtk-installer.js', () => ({
-      isRtkInstalled: () => true,
-      installRtk: () => true,
-      getRtkVersion: () => '0.34.2',
-    }));
     mock.module('../../../src/core/codex-installer.js', () => ({
       isCodexInstalled: () => true,
       installCodex: () => true,

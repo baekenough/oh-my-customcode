@@ -8,18 +8,13 @@ Inspired by OpenHarness's provider profile switching pattern, adapted for oh-my-
 
 ## Provider Matrix
 
-| Provider | Skill | CLI Dependency | Model | Strengths |
-|----------|-------|---------------|-------|-----------|
-| RTK (proxy) | `rtk-exec` | `rtk` CLI | Configurable | Token-optimized output, cost reduction |
+v2.0.0에서는 사용자 결정에 따라 프로젝트 RTK 통합과 공개 `rtk-exec` 스킬을 퇴역합니다. 이 가이드의 RTK 실행 예시·추천을 사용하지 마십시오. 머신에 별도로 설치한 RTK 바이너리는 이 변경으로 제거하지 않습니다.
 
 ## Availability Detection
 
 The `session-env-check.sh` hook (SessionStart) auto-detects available providers:
 
-```
-[SessionStart] Checking external CLI availability...
-  rtk: ✓ available
-```
+RTK availability 점검과 상태 출력은 퇴역합니다. Codex·Gemini 등 나머지 CLI availability 점검은 기존 session hook 계약을 유지합니다.
 
 Providers are opt-in — missing CLIs are silently skipped.
 
@@ -27,15 +22,11 @@ Providers are opt-in — missing CLIs are silently skipped.
 
 ### Direct Invocation
 
-```
-/rtk-exec "List files matching pattern X"
-```
+공개 `/rtk-exec` 명령은 제거됩니다. 이 문서에서 다른 provider의 실행 스킬이나 자동 대체 명령을 새로 지정하지 않습니다.
 
 ### Provider Selection Guide
 
-| Task | Recommended Provider | Rationale |
-|------|---------------------|-----------|
-| Token-heavy batch operations | rtk-exec | Compressed output reduces context cost |
+기존 RTK 추천 항목은 제거됩니다. provider를 선택할 때는 사용 가능한 스킬의 실제 계약과 CLI 설정을 확인하십시오.
 
 ### Integration with Existing Skills
 
@@ -49,18 +40,16 @@ Providers are opt-in — missing CLIs are silently skipped.
 | Aspect | Multi-Model Routing | Multi-Provider Exec |
 |--------|--------------------|--------------------|
 | Scope | Claude model selection | Cross-provider execution |
-| Models | haiku / sonnet / opus | RTK proxy |
+| Models | haiku / sonnet / opus | 명시적으로 선택한 외부 provider의 모델 |
 | Mechanism | `model` frontmatter field | Exec skill invocation |
-| Use case | Cost/quality optimization within Claude | Token-optimized output via RTK proxy |
+| Use case | Cost/quality optimization within Claude | 명시적으로 선택한 외부 provider 실행 |
 | Guide | `guides/multi-model-routing/` | `guides/multi-provider-exec/` |
 
 ## Configuration
 
 No global configuration required. Each exec skill reads its own CLI configuration:
 
-| Skill | Config Source |
-|-------|-------------|
-| rtk-exec | RTK proxy running on localhost |
+RTK 전용 설정 연결은 제거됩니다. 이 변경은 다른 CLI의 사용자 설정을 삭제하지 않습니다.
 
 ## Limitations
 

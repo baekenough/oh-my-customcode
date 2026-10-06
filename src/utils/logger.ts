@@ -147,18 +147,10 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'codex.installing_npm': 'Installing Codex CLI via npm...',
     'codex.install_failed': 'Failed to install Codex CLI: {{error}}',
     'codex.unsupported_os': 'Codex CLI auto-install is not supported on {{os}}',
-    'rtk.already_installed': 'RTK is already installed',
-    'rtk.installing_brew': 'Installing RTK via Homebrew...',
-    'rtk.installing_curl': 'Installing RTK via install script...',
-    'rtk.install_failed': 'Failed to install RTK: {{error}}',
-    'rtk.unsupported_os': 'RTK auto-install is not supported on {{os}}',
     'mcp.ontology_rag_configured': 'ontology-rag MCP server configured successfully',
     'install.codex_installing': 'Installing Codex CLI...',
     'install.codex_success': 'Codex CLI installed successfully',
     'install.codex_already': 'Codex CLI is already installed',
-    'install.rtk_installing': 'Installing RTK...',
-    'install.rtk_success': 'RTK installed successfully',
-    'install.rtk_already': 'RTK is already installed',
     'install.preserved':
       'Preserved {{files}} file(s) and {{dirs}} directory(ies) from the existing installation',
     'install.restored': 'Restored {{files}} file(s) and {{dirs}} directory(ies) after installation',
@@ -172,7 +164,6 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'preserve_files.invalid_path':
       'Ignored invalid preserve_files entry from {{source}}: {{path}} ({{reason}})',
     'update.codex_missing': 'Codex CLI is not installed',
-    'update.rtk_missing': 'RTK is not installed',
     'update.self_update_skipped': 'Skipped update: source project cannot update itself',
     'update.deprecated_file_invalid_path':
       'Skipped deprecated file with invalid path: {{path}} ({{reason}})',
@@ -294,18 +285,10 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'codex.installing_npm': 'npm으로 Codex CLI를 설치합니다...',
     'codex.install_failed': 'Codex CLI 설치에 실패했습니다: {{error}}',
     'codex.unsupported_os': '{{os}}에서는 Codex CLI 자동 설치를 지원하지 않습니다',
-    'rtk.already_installed': 'RTK가 이미 설치되어 있습니다',
-    'rtk.installing_brew': 'Homebrew로 RTK를 설치합니다...',
-    'rtk.installing_curl': '설치 스크립트로 RTK를 설치합니다...',
-    'rtk.install_failed': 'RTK 설치에 실패했습니다: {{error}}',
-    'rtk.unsupported_os': '{{os}}에서는 RTK 자동 설치를 지원하지 않습니다',
     'mcp.ontology_rag_configured': 'ontology-rag MCP 서버 구성을 완료했습니다',
     'install.codex_installing': 'Codex CLI를 설치합니다...',
     'install.codex_success': 'Codex CLI를 설치했습니다',
     'install.codex_already': 'Codex CLI가 이미 설치되어 있습니다',
-    'install.rtk_installing': 'RTK를 설치합니다...',
-    'install.rtk_success': 'RTK를 설치했습니다',
-    'install.rtk_already': 'RTK가 이미 설치되어 있습니다',
     'install.preserved': '기존 설치에서 파일 {{files}}개와 디렉토리 {{dirs}}개를 보존했습니다',
     'install.restored': '설치 후 파일 {{files}}개와 디렉토리 {{dirs}}개를 복원했습니다',
     'install.backup_failed': '{{path}} 백업에 실패했습니다: {{error}}',
@@ -318,7 +301,6 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'preserve_files.invalid_path':
       '{{source}}의 유효하지 않은 preserve_files 항목을 무시했습니다: {{path}} ({{reason}})',
     'update.codex_missing': 'Codex CLI가 설치되어 있지 않습니다',
-    'update.rtk_missing': 'RTK가 설치되어 있지 않습니다',
     'update.self_update_skipped':
       '업데이트를 건너뜁니다: 소스 프로젝트는 스스로 업데이트할 수 없습니다',
     'update.deprecated_file_invalid_path':

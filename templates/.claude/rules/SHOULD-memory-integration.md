@@ -259,7 +259,7 @@ MEMORY.md supports an optional `## User Model` section (DISTINCT from `## Behavi
     - Focus: AI agent orchestration, CLI tooling
 
     ### Override Decisions [confidence: low]
-    - Overrode /scout SKIP verdict → INTEGRATE for RTK (#756)
+    - Overrode /scout SKIP verdict → INTEGRATE for RTK (#756) (과거 결정 예시입니다. RTK 프로젝트 통합은 v2.0.0에서 퇴역하며 현재 실행 추천으로 해석하지 마십시오.)
 
 ### Categories
 
