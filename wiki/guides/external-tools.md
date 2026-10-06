@@ -1,13 +1,13 @@
 ---
 title: External Tools Guide
 type: guide
-updated: 2026-07-19
+updated: 2026-10-06
 sources:
   - guides/external-tools/graphify-integration.md
   - guides/external-tools/ecc-absorption-decisions.md
 related:
   - [[skills/wiki-rag]]
-  - [[skills/ontology-rag]]
+  - "ontology-rag MCP integration"
   - [[skills/profile]]
   - [[R019]]
   - [[R006]]
@@ -52,7 +52,8 @@ graphify는 code/docs/paper corpus를 queryable knowledge graph로 전환하는 
 ## Relationships
 
 - **Rules**: [[R019]] (dual-layer enrichment — graphify는 Layer-3 후보)
-- **Skills**: [[skills/wiki-rag]], [[skills/ontology-rag]]
+- **Skills**: [[skills/wiki-rag]]
+- **외부 연동**: `ontology-rag`는 R019 Layer-1의 MCP 서버 연동입니다.
 - **Background**: issue #977 (scout:integrate)
 
 ## ECC Absorption Decisions

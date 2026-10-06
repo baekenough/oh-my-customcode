@@ -1,11 +1,11 @@
 ---
 title: Structured Dev Cycle
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/structured-dev-cycle/SKILL.md
 related:
-  - [[deep-plan]]
+  - [[skills/deep-plan|deep-plan]]
   - [[multi-model-verification]]
   - [[reasoning-sandwich]]
   - [[r018]]
@@ -35,7 +35,7 @@ The skill previously offered a Codex-Exec Hybrid option in Stage 3 (auto-delegat
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[deep-plan]], [[multi-model-verification]], [[reasoning-sandwich]]
+- **Related skills**: [[skills/deep-plan|deep-plan]], [[multi-model-verification]], [[reasoning-sandwich]]
 - **See also**: [[r018]] (Agent Teams), [[r009]] (parallel execution), [[r010]] (bypassPermissions delegation)
 
 ## Sources

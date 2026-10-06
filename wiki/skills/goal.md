@@ -2,14 +2,14 @@
 title: Goal
 type: skill
 scope: core
-updated: 2026-05-08
+updated: 2026-10-06
 sources:
   - .claude/skills/goal/SKILL.md
 related:
   - [[ambiguity-gate]]
   - [[idea]]
   - [[sdd-dev]]
-  - [[deep-plan]]
+  - [[skills/deep-plan|deep-plan]]
   - [[result-aggregation]]
   - [[R020]]
 ---
@@ -37,7 +37,7 @@ A thin orchestrator skill that wires together the full task lifecycle in a fixed
 3. **Inspect** — invoke [[idea]] to analyze the repo: affected modules, feasibility, estimated issue count
 4. **Plan** — choose planning path:
    - Simple / spec-driven tasks → [[sdd-dev]]
-   - Complex / multi-domain tasks → [[deep-plan]]
+   - Complex / multi-domain tasks → [[skills/deep-plan|deep-plan]]
 5. **Execute** — delegate implementation to specialist agents per R010
 6. **Verify** — apply R020 task-type completion matrix; do not declare done until criteria pass
 7. **Report** — aggregate results via [[result-aggregation]] and present summary
@@ -52,7 +52,7 @@ A thin orchestrator skill that wires together the full task lifecycle in a fixed
 
 - Single-step read-only tasks (use the target skill directly)
 - Already-planned work with a concrete spec ready (skip to sdd-dev or deep-plan)
-- Exploratory research without an execution target (use [[idea]] or [[deep-plan]] alone)
+- Exploratory research without an execution target (use [[idea]] or [[skills/deep-plan|deep-plan]] alone)
 
 ## Integration
 
@@ -61,7 +61,7 @@ A thin orchestrator skill that wires together the full task lifecycle in a fixed
 | [[ambiguity-gate]] | Scores clarity; halts on score ≥ 0.5 until gaps are filled |
 | [[idea]] | Repo analysis and feasibility assessment |
 | [[sdd-dev]] | Spec-driven planning and implementation for well-scoped tasks |
-| [[deep-plan]] | Multi-domain planning for complex or ambiguous objectives |
+| [[skills/deep-plan|deep-plan]] | Multi-domain planning for complex or ambiguous objectives |
 | [[result-aggregation]] | Aggregates multi-agent outputs into a single report |
 | [R020](../rules/r020.md) | Completion verification gate before reporting done |
 

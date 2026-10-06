@@ -1,13 +1,13 @@
 ---
 title: Idea
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/idea/SKILL.md
 related:
   - [[scout]]
-  - [[deep-plan]]
-  - [[professor-triage]]
+  - [[skills/deep-plan|deep-plan]]
+  - [[skills/professor-triage|professor-triage]]
   - [[release-plan]]
 ---
 
@@ -57,7 +57,7 @@ The JSON structure is a stable contract — field names must not change.
 ## Relationships
 
 - **Used by agents**: orchestrator, builder-factory Discord bot
-- **Related skills**: [[scout]], [[deep-plan]], [[professor-triage]], [[release-plan]]
+- **Related skills**: [[scout]], [[skills/deep-plan|deep-plan]], [[skills/professor-triage|professor-triage]], [[release-plan]]
 - **See also**: [[R009]], [[R010]]
 
 ## Sources

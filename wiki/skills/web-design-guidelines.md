@@ -1,13 +1,13 @@
 ---
 title: Web Design Guidelines
 type: skill
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - .claude/skills/web-design-guidelines/SKILL.md
 related:
   - [[fe-design-expert]]
   - [[react-best-practices]]
-  - [[impeccable-design]]
+  - [[skills/impeccable-design|impeccable-design]]
 ---
 
 # Web Design Guidelines
@@ -27,7 +27,7 @@ Comprehensive ruleset for web UI code review covering 100+ criteria: accessibili
 ## Relationships
 
 - **Used by agents**: [[fe-design-expert]]
-- **Related skills**: [[react-best-practices]], [[impeccable-design]], [[flutter-best-practices]]
+- **Related skills**: [[react-best-practices]], [[skills/impeccable-design|impeccable-design]], [[flutter-best-practices]]
 - **See also**: guides/web-design/
 
 ## Sources

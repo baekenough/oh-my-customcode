@@ -618,9 +618,14 @@ const TEST_FILE_PATTERNS: RegExp[] = [
 ];
 
 function listTrackedTestFiles(): string[] {
+  // A parent's absolute index can select a different corpus despite cwd.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))
+  );
   // Use Bun.spawnSync, not child_process, so module mocks cannot affect the scan
   const result = Bun.spawnSync(['git', 'ls-files', '--', 'tests', 'packages'], {
     cwd: REPO_ROOT,
+    env,
   });
   if (result.exitCode !== 0) {
     throw new Error(`git ls-files failed: ${result.stderr.toString()}`);
@@ -660,6 +665,10 @@ function formatOffenders(violations: ReadonlyArray<RepoViolation>): string {
 }
 
 describe('module mock hygiene (repository scan)', () => {
+  it('scans this repository test corpus even with inherited Git state', () => {
+    expect(listTrackedTestFiles()).toContain('tests/unit/core/git-workflow.test.ts');
+  });
+
   const scan = scanRepository();
 
   it('every child_process module mock is restored in afterAll', () => {

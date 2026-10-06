@@ -1,7 +1,7 @@
 ---
 title: "Agent Teams Troubleshooting Guide"
 type: guide
-updated: "2026-05-21"
+updated: 2026-10-06
 sources:
   - guides/agent-teams/troubleshooting.md
 related:
@@ -47,7 +47,7 @@ Omitting these causes coordinators to misread member state as dead and attempt r
 
 ## CC Upstream Limitations (v2.1.146)
 
-No `force` option on `TeamDelete`, no member-kill API, no configurable graceful timeout. Tracked in [[guides/claude-code-tracking]]. When CC adds a formal force-shutdown API, stages 3–4 above become obsolete.
+No `force` option on `TeamDelete`, no member-kill API, no configurable graceful timeout. Tracked in [Claude Code tracking](/guides/claude-code-tracking.md). When CC adds a formal force-shutdown API, stages 3–4 above become obsolete.
 
 ## Cross-References
 

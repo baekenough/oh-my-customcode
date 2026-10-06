@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -53,6 +53,11 @@ function brokenRefCount(stderr: string): number {
 
 let dir: string;
 
+// Direct bash children write this marker using their PPID (this Bun process).
+function cleanSessionFixes(markerDir = '/tmp', parentPid = process.pid): void {
+  rmSync(join(markerDir, `.claude-session-fixes-${parentPid}`), { force: true });
+}
+
 function agent(name: string, frontmatter: string): void {
   writeFileSync(
     join(dir, '.claude/agents', `${name}.md`),
@@ -70,7 +75,18 @@ beforeEach(() => {
   mkdirSync(join(dir, '.claude/skills'), { recursive: true });
 });
 afterEach(() => {
+  cleanSessionFixes();
   rmSync(dir, { recursive: true, force: true });
+});
+
+it('cleans only the owned session marker, preserving neighboring PID names', () => {
+  const ownedPid = 424242;
+  const names = [ownedPid, 24242, 4242427].map((pid) => join(dir, `.claude-session-fixes-${pid}`));
+  for (const name of names) writeFileSync(name, 'sentinel');
+  cleanSessionFixes(dir, ownedPid);
+  expect(existsSync(names[0])).toBe(false);
+  expect(existsSync(names[1])).toBe(true);
+  expect(existsSync(names[2])).toBe(true);
 });
 
 describe('session-autofix broken skill reference parsing (#1640)', () => {

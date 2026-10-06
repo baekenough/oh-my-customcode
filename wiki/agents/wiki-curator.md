@@ -1,7 +1,7 @@
 ---
 title: Wiki Curator
 type: agent
-updated: 2026-09-29
+updated: 2026-10-06
 sources:
   - .claude/agents/wiki-curator.md
 related:
@@ -18,7 +18,7 @@ Dedicated agent for wiki file operations — creates, updates, and maintains wik
 
 ## Overview
 
-All wiki/ directory writes go through this agent per R010 delegation rules (Protected Paths excluded — wiki-curator is the standing specialist for the `wiki/` directory itself). The orchestrator reads wiki pages freely but never writes them directly. wiki-curator handles page CRUD, index.yaml/log.jsonl maintenance, cross-reference management ([[wikilink]] + standard markdown links), and lint fixes. It also generates synthesis pages (architecture, workflows, concepts) that summarize multiple sources rather than mirroring a single file.
+All wiki/ directory writes go through this agent per R010 delegation rules (Protected Paths excluded — wiki-curator is the standing specialist for the `wiki/` directory itself). The orchestrator reads wiki pages freely but never writes them directly. wiki-curator handles page CRUD, index.yaml/log.jsonl maintenance, cross-reference management (`[[wikilink]]` + standard markdown links), and lint fixes. It also generates synthesis pages (architecture, workflows, concepts) that summarize multiple sources rather than mirroring a single file.
 
 ## Workflow Patterns
 

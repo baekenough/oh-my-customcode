@@ -429,7 +429,7 @@ steps:
           모든 릴리즈는 implement 단계의 필수 통합 커밋 순서를 따라 이 위임이
           deep-verify 정정 뒤, 통합 커밋 앞에 오게 합니다(Origin: v1.1.58 세션 — docs-only 티어였으나
           sauron이 R002/R010 모순 advisory 1건을 포착; #1799 제안 1).
-        - Wiki resync + manifest reseed (R022) run AFTER the deep-verify substitute for this tier (self-review checklist, plus the mandatory mgr-sauron:watch single-goal delegation, which runs in every tier) and any resulting corrections have landed — never in parallel with it; this is the implement step's #1688 EXCEPTION applied to Tier 1. Wiki pages summarize the rules, so a review-driven rule fix invalidates any wiki written earlier (v1.1.66: 3 pages reworked; v1.1.67 with review-first ordering: 0 rework — #1688 Iteration 3 #2).
+        - Wiki resync + manifest reseed (R022) run AFTER the deep-verify substitute for this tier (self-review checklist, plus the mandatory mgr-sauron:watch single-goal delegation, which runs in every tier) and any resulting corrections have landed — never in parallel with it; 이는 implement의 Early wiki result classification and handoff를 Tier 1에도 적용하는 순서입니다(#1688). Wiki pages summarize the rules, so a review-driven rule fix invalidates any wiki written earlier (v1.1.66: 3 pages reworked; v1.1.67 with review-first ordering: 0 rework — #1688 Iteration 3 #2).
         - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)"
         - ⚠ Analysis artifacts only. Every step's state-change side effect (milestone create/assign,
           label add/remove, issue assign/comment/close) still runs in full — see "Cross-tier —
@@ -460,7 +460,7 @@ steps:
           (template-sync + md5 multi-copy + counts + bun test); "no structural surface" is not a reason to skip.
           Log: "[compression-mode] lite deep-verify — mgr-sauron:watch single-goal delegation run once (no structural surface does not waive it)".
           (#1311, extends #1309 substitution principle; #1799 proposal 1.)
-        - Wiki resync/reseed only after deep-verify (adversarial review) findings are applied — same ordering rule as Tier 1; this overrides the implement-step CI-mimic wiki fix for rules/skills text changes (see the implement step's #1688 EXCEPTION) (#1688).
+        - wiki resync/reseed는 Tier 1과 같은 review-first 순서를 따르십시오. implement의 Early wiki result classification and handoff는 혼합 범위를 포함한 모든 티어에 적용되며, 분류된 기존 문서 drift만 source Sauron 뒤로 넘기고 새 entity 누락 및 runtime/I/O/infra 실패는 즉시 HALT하십시오(#1688).
         - implement / verify-build / release / ci-check / post-release-followup: execute normally (no compression)
         - MANDATORY justification log (REQUIRED whenever a skill stage is replaced by integrated analysis):
           "[compression-mode] lite — skill 단계 통합 분석 대체. 정당화: scope={n}, 모든 이슈 저위험(라벨 {labels}), 구현 대상 이슈 본문 명시 {issue_refs}"
@@ -501,9 +501,9 @@ steps:
       | triage | `verify-ready` added to manifest issues selected by professor-triage when it runs inside this step (NOT `triage-complete`) — analysis output is compressible, this label side effect is not; when triage is skipped (docs-only) or substituted (lite integrated-analysis, lightweight mode), no separate label action is required here — the implement step's per-issue success path (row below: "On success: remove in-progress, add verify-ready") already adds `verify-ready` to each processed issue before this release completes |
       | plan | none (analysis only) — compressible |
       | deep-plan | none (analysis only) — compressible |
-      | implement | `gh issue edit <N> --add-label in-progress --add-assignee @me`; `gh issue comment <N>` (start notice); on success remove in-progress + add verify-ready; on failure remove in-progress + add needs-review + comment error summary |
+      | implement | `gh issue edit <N> --add-label in-progress --add-assignee @me`; `gh issue comment <N>` (start notice); on success remove in-progress + add verify-ready; on failure remove in-progress + add needs-review + `gh issue comment <N> --body-file <file>` via the implement 「Failure comment file channel」 preflight |
       | verify-build | none (gate only) |
-      | deep-verify | none (analysis only) — compressible |
+      | deep-verify | analysis output only is compressible; correction/wiki file edits and Post-wiki deterministic verification results are not waived; no new GitHub mutation is authorized here |
       | release | PR body MUST carry `Closes #N` for every resolved issue (auto-tag.yml greps the PR body); non-auto-tag projects additionally: `gh api .../milestones/{n} --method PATCH --field state=closed`, `gh issue close {n}`, label needs-review issues "Deferred from v{version}" |
       | ci-check | `gh issue edit <N> --remove-label in-progress` for stale labels; `gh issue edit <N> --remove-label verify-ready` for THIS release's CLOSED scoped issues only (past closed issues excluded, #1734) |
       | post-release-followup | new issue registration for release follow-ups (genuine defects auto-registered, no-ask per R016) |
@@ -593,12 +593,12 @@ steps:
 
   - name: plan
     skill: release-plan
-    description: "Release unit plan from triaged issues — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met"
+    description: "Release unit plan from triaged issues — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met plan 발주자는 Standard delegation-prompt block의 저비용 가설 선측정·귀속 원본 대조·측정 대조 조건을 완료 조건에 포함하십시오(#1830 P4, #1833 P5)."
     depends_on: triage
 
   - name: deep-plan
     skill: deep-plan
-    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시한다(#1707 #4). 속도 개선을 주장하는 계획의 계측 요구에는 총 벽시계 하나로 개선 여부를 판정하지 않고 파일별 벽시계 시간을 무변경 파일 대조군과 함께 비교해 실행 순서로 귀속하도록 명시합니다(러너 편차 ±20% 이상 관측 [이슈 서술], #1803 제안 3). 테스트 격리·모듈 모킹 수정을 다루는 리서치·계획 위임에도 대상 src 파일과 All files의 수정 전후 커버리지를 동일 하네스로 비교하도록 완료 조건에 명시합니다(#1778 찐빠 #5, implement 스텝 Rules와 동일 요구) 경로 로직을 다루는 계획의 프로브는 심볼릭 링크를 거치는 위치(예: 플랫폼이 임시 디렉터리를 심볼릭 링크 아래에 두는 기본 경로)와 realpath로 해석한 위치 두 곳에서 실행하고, 위임서의 기대값을 형태별로 적습니다(#1811 Q1). 적용 경계 표에는 각 행마다 이 위치를 읽는 위임 유형/단계 열을 두고 결함이 발생한 단계와 일치하는지 표에서 대조합니다(#1781 찐빠 #2). 기본값·출력 리터럴을 바꾸는 계획은 그 리터럴을 단언하는 기존 테스트를 git grep으로 전수 열거해 웨이브 표의 파일 소유권에 포함합니다(git grep은 untracked 파일을 보지 못하므로 git status --porcelain도 확인합니다, #1786 찐빠 #5). 결함 수정 계획(경량 모드 포함)은 그 결함을 우회하려고 실제 환경에 기대는 기존 시험을 결함 API 이름과 우회 패턴(예: 시험 안의 homedir())으로 git grep해 전수 열거하고, 그 결과를 웨이브 표의 파일 소유권에 포함합니다(#1799 찐빠 #2). deep-plan 단계에서 같은 티어 결함을 범위에 편입할 때는 scope-selection Step 2의 rule 7 「Plan-stage admission (same tier only)」을 따릅니다(#1811 Q5)."
+    description: "Research-validated implementation plan (research → plan → verify) — skipped if docs-only, integrated-analysis allowed if lite; independent of tier, MAY run in lightweight mode when compression-mode-eval's 'Cross-tier — Lightweight Skill-Mode Substitution' conditions are met. MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주하십시오 (#1595 #4). 리서치·계측 위임의 완료 조건에는 결론 수치를 산출물 표에서 jq/awk로 재계산해 병기하도록 명시하십시오(#1707 #4). 속도 개선을 주장하는 계획의 계측 요구에는 총 벽시계 하나로 개선 여부를 판정하지 않고 파일별 벽시계 시간을 무변경 파일 대조군과 함께 비교해 실행 순서로 귀속하도록 명시합니다(러너 편차 ±20% 이상 관측 [이슈 서술], #1803 제안 3). 테스트 격리·모듈 모킹 수정을 다루는 리서치·계획 위임에도 대상 src 파일과 All files의 수정 전후 커버리지를 동일 하네스로 비교하도록 완료 조건에 명시합니다(#1778 찐빠 #5, implement 스텝 Rules와 동일 요구) 경로 로직을 다루는 계획의 프로브는 심볼릭 링크를 거치는 위치(예: 플랫폼이 임시 디렉터리를 심볼릭 링크 아래에 두는 기본 경로)와 realpath로 해석한 위치 두 곳에서 실행하고, 위임서의 기대값을 형태별로 적습니다(#1811 Q1). 적용 경계 표에는 각 행마다 이 위치를 읽는 위임 유형/단계 열을 두고 결함이 발생한 단계와 일치하는지 표에서 대조합니다(#1781 찐빠 #2). 기본값·출력 리터럴을 바꾸는 계획은 그 리터럴을 단언하는 기존 테스트를 git grep으로 전수 열거해 웨이브 표의 파일 소유권에 포함합니다(git grep은 untracked 파일을 보지 못하므로 git status --porcelain도 확인합니다, #1786 찐빠 #5). 결함 수정 계획(경량 모드 포함)은 그 결함을 우회하려고 실제 환경에 기대는 기존 시험을 결함 API 이름과 우회 패턴(예: 시험 안의 homedir())으로 git grep해 전수 열거하고, 그 결과를 웨이브 표의 파일 소유권에 포함합니다(#1799 찐빠 #2). deep-plan 단계에서 같은 티어 결함을 범위에 편입할 때는 scope-selection Step 2의 rule 7 「Plan-stage admission (same tier only)」을 따릅니다(#1811 Q5). deep-plan 발주자는 Standard delegation-prompt block의 가설 선측정·측정 변수별 대조 조건을 전달하고 그 결과 표를 읽어 계획 근거로 삼으십시오(#1830 P4, #1833 P5)."
     depends_on: plan
 
   - name: implement
@@ -631,6 +631,9 @@ steps:
              is killed mid-hook with exit 143 (SIGTERM). Delegate `git commit` with an explicit
              `timeout: 400000` (≈6.7 min). Do NOT work around a timeout with `--no-verify` — that
              bypasses the quality gate and is on the standing deny list (R010).
+             이 위임은 verify-build의 Commit hook diagnostics를 읽고 고유 raw 로그·실제 exit/HEAD를
+             제출하십시오. commit dispatcher는 Post-wiki deterministic verification PASS도 읽은
+             뒤 통합 커밋을 발주하고 자동 수정 델타가 있으면 이전 검증의 유효성을 다시 판정하십시오.
              Note: git worktrees run typecheck only (`.husky/pre-commit` lines 7-12 branch on
              `[ -f .git ]` and exit 0), so the long budget matters most on the MAIN worktree.
              REQUIRED ordering: defer the implement-stage commit until AFTER deep-verify
@@ -650,9 +653,64 @@ steps:
              safety net (통합 커밋 직후에 이슈별 라벨 전환을 실행합니다, #1760 찐빠 #6).
       6. On success: remove in-progress, add verify-ready (required combined-commit ordering: right after the combined commit lands, #1760 찐빠 #6)
       7. On failure: remove in-progress, add needs-review, comment error summary
+         오류 코멘트는 아래 Failure comment file channel을 읽고 mgr-gitnerd에 파일 작성·제출을 위임하십시오.
+
+      ## Failure comment file channel
+
+      실패 lifecycle dispatcher는 오류 요약을 비신뢰 데이터로 전달하고 mgr-gitnerd가 Write 도구로
+      HOME 밖의 고유 파일에 완성 코멘트를 작성하게 하십시오. 본문은 셸 소스에 붙이지 마십시오.
+      아래 절대 경로와 번호는 해당 위임의 고유 파일·승인된 scope 이슈로 지정하십시오.
+      Write-produced UTF-8 텍스트의 regular-file 읽기와 NUL 부재를 POSIX od/awk로 검사한 뒤
+      body-file로 제출하십시오. multiline/CRLF는 유지하며 universal strict UTF-8 검증을 주장하지
+      마십시오. 도구 누락·읽기 실패·NUL이면 HALT하고 미게시 사실을 보고하십시오. labels 변경은
+      기존 실패 lifecycle대로 처리하며 코멘트 실패를 성공으로 덮지 마십시오. 자기 파일만 정리하십시오.
+
+      # BEGIN failure-comment-file-submit
+      body_file='<absolute-body-file>'
+      issue_number='<issue-number>'
+      for dependency in od awk mktemp gh; do
+        command -v "$dependency" >/dev/null 2>&1 || { printf '%s\n' '[gh-file] HALT: missing prerequisite' >&2; exit 1; }
+      done
+      byte_dump=$(mktemp /tmp/omcustom-gh-byte-dump.XXXXXX) || exit 1
+      trap 'command rm -f -- "$byte_dump"' 0
+      trap 'exit 1' HUP INT TERM
+      [ -f "$body_file" ] || { printf '%s\n' '[gh-file] HALT: body is not a regular file' >&2; exit 1; }
+      command od -A n -v -t u1 "$body_file" > "$byte_dump" || { printf '%s\n' '[gh-file] HALT: body read failed' >&2; exit 1; }
+      command awk '{ for (i = 1; i <= NF; i++) if ($i + 0 == 0) bad = 1; } END { if (bad) exit 1; }' "$byte_dump" || { printf '%s\n' '[gh-file] HALT: body contains NUL' >&2; exit 1; }
+      gh issue comment "$issue_number" --body-file "$body_file"
+      # END failure-comment-file-submit
+
+      ## Implement evidence handoff
+
+      lifecycle step 3 발주자는 아래 Rules의 주장↔근거·원 보장/producer·파괴적 경로 경계와
+      Standard delegation-prompt block을 작성자 완료 조건에 넣으십시오. implement dispatcher는
+      완료 보고의 각 표·실측을 읽고 누락·실패이면 다음 단계로 넘기지 마십시오. 정정된 문구의
+      읽기 전용 대조는 저비용 문구 리뷰어에게 위임하고 그 결과까지 completion으로 확인하십시오.
 
       Rules:
       - Parallel execution per R009 (max 4 concurrent, respect dependencies)
+      - 문구 작성·정정 위임은 새 주석/JSDoc/i18n/위키의 주장 문장마다 코드 앵커 또는 실측
+        출력과 대응한 표를 완료 보고에 넣으십시오. 인용은 기존 quote-verify로 원문별 hit를
+        확인하고 의역은 인용으로 표시하지 마십시오. implement dispatcher는 각 정정 writer의
+        보고 뒤 읽기 전용 문구 리뷰를 발주하고 주장 근거·인접 heading/ref·원래 결과/주체/인과를
+        대조한 결과를 읽으십시오. 이 문구 검사는 코드/변이 검사나 독립 델타 리뷰를 대신하지 않습니다.
+        오케스트레이터의 runtime 전제도 실측을 첨부하거나 가설과 판정 방법으로 표시하십시오
+        (#1823 H1).
+      - 파괴적 결함을 다룰 때는 수정 전 코드 경로를 red·baseline 계수·전체 시험·pre-commit 등
+        어떤 목적으로도 실행하지 마십시오. 기준선은 정적 판독이나 읽기 전용 glob 목록으로만
+        확인하십시오. implement dispatcher는 각 위임에 이 금지를 넣고 QA/reviewer/commit
+        담당자에게도 위험 경로를 전달하십시오. 수정된 경로의 밀폐와 도달성을 확인하기 전
+        이를 포함한 suite를 실행하지 마십시오. 기존 before/after·differential 기준선 요구와
+        충돌하면 파괴적 old 경로 실행 대신 정적 기준선과 안전 모의 대조를 보고하고 old runtime
+        미검증을 명시하십시오(#1823 H2).
+      - 필터·게이트 변경 발주자는 원 설계의 보장과 입력 생산자 전수를 표로 넣으십시오.
+        repository 작성자/봇/앱 분포와 그 입력을 생산하는 호출·조회 범위/페이지·limit를
+        실제로 확인하고 포함/제외/명시 승인 예외를 함께 기록하십시오. bounded 조회를 전체 분포로
+        부르지 마십시오. 표에는 새 하위 규칙과 기존 지시·실행 환경 접점을 포함하고 writer가
+        보장·producer별 회귀 증거를 제출하게 하십시오. implement dispatcher와 다음 reviewer는
+        이 표와 증거를 읽으며 누락이면 발주/완료를 중단하십시오. app/github-actions 고정 신뢰,
+        push collaborator, attended 명시 승인, labels 비신뢰와 기존 scope 제외를 유지하십시오
+        (#1833 P6, #1830 P1(a,b)).
       - Issues whose prerequisites failed in-run MUST be skipped (log reason)
       - No direct orchestrator writes (R010)
       - On CC < 2.1.212 Agent tool calls need `mode: "bypassPermissions"` (the per-call default acceptEdits overrides frontmatter `permissionMode`), so pass it for compatibility. On CC >= 2.1.212 `mode` is ignored and subagents inherit the parent session's permission mode (frontmatter `permissionMode` may adjust it). Verify the effective mode before unattended execution per R010 「Universal bypassPermissions」 (pre-triage)
@@ -857,6 +915,19 @@ steps:
         with `pgrep -f` (#1803 찐빠 #1). (모든 위임서에 위 표준 블록을 넣어야 하며, 이를 이름으로
         가리키는 규범은 이 블록의 제목 구절 "Standard delegation-prompt block"을 인용합니다,
         #1807 찐빠 #5, #1807 찐빠 #8, #1811 찐빠 #4).
+        추가 표준 항목은 다음과 같습니다. 발주자는 현재 형제 작업뿐 아니라 곧 발주할
+        정정·재리뷰를 고지하고 실제 writer 상태가 바뀌면 고지를 갱신하십시오. 변이는 원본
+        제자리 대신 자기 scratch 사본에서만 실행하십시오. 공개 예시의 도구 출력은 에이전트
+        식별자·세션 접미사·대괄호 단축 ID를 placeholder로 마스킹하고 sanitized example으로
+        표시하십시오. 원문 인용 검증과 마스킹 예시를 같은 결과로 보고하지 마십시오(#1833 P8).
+        한 번의 조회/프로브로 판정할 수 있는 가설은 문안보다 먼저 측정하십시오. 회고·후속
+        이슈의 제안 귀속과 리뷰 회차는 원본 transcript/log와 대조하고, 원본이 없으면 recall 등
+        출처 한계를 표시하십시오. 발주자는 homework/후속 문안 writer의 완료 표를 읽고
+        검증되지 않은 귀속을 확정형으로 넘기지 마십시오(#1830 P4).
+        리서치/실측 발주자는 결과가 달라질 변수(user 값·모델·세션 종류 등)를 열거하십시오.
+        각 변수에 최소 한 값 변경 대조 조건을 두게 하십시오. 측정 writer는 조건·결과 표를 제출하고
+        일반화 문장에 측정 조건을 함께 적으십시오. dispatcher는 대조가 없는 함의를 가설로
+        제한하며 표 없는 runtime 일반화를 완료로 받지 마십시오(#1833 P5).
       - No state-changing command (`gh issue create/edit/close`, `gh pr create/edit/close/merge`,
         `git push`, label changes) — including the orchestrator's own direct commands, not only
         delegated ones — MAY use a `||` fallback that prints success-looking output; the observed
@@ -973,6 +1044,11 @@ steps:
         startsWith, relative paths), probe in two locations, the symlinked form (the default
         `mktemp -d` location, e.g. `/var/folders` on macOS; on Linux build it with a `ln -s`
         fixture) and the realpath form, and state the expected value per form in the prompt.
+        변이 writer와 adversarial reviewer는 매 실행 뒤 sandbox 경로의 자기 프로세스를
+        pgrep로 확인하고 자기 프로세스만 정리한 뒤 잔존 수를 기록하십시오. scratch를 지우기
+        전에 명령줄 소유권을 확인하십시오. 실제 서버가 가능한 경로는 임시 projectRoot와
+        실제 production spawn 미호출 단언으로 밀폐하십시오. dispatcher는 매 변이 보고의
+        projectRoot/spawn/정리 증거를 읽고 누락이면 proof로 받지 마십시오(#1823 H3).
         Exempt: an equivalent mutant (one whose behaviour is identical to the original in the
         test environment; the report states why) and documentation-only or yaml-only changes
         (#1811 제안 2·제안 1, #1814 제안 1, #1803 제안 2).
@@ -996,13 +1072,16 @@ steps:
         mocking MUST include in their completion criteria a before/after coverage comparison
         of the target src file(s) AND the All-files total, measured with the SAME harness
         (a fix that passes an order experiment can still drop coverage below the gate,
-        #1778 찐빠 #5). The completion condition is the SET of uncovered lines and functions,
-        not the percentage: no new uncovered line or function relative to the baseline, and
-        after an isolation fix the touched files' uncovered set is taken from the full suite
-        and compared with the baseline. A percentage drop that comes only from a smaller
-        denominator (e.g. deleting an already-covered helper) is not a failure of this item,
-        because the set comparison decides; a new file has no baseline, so the report lists
-        its whole uncovered set (#1807 제안 3).
+        #1778 찐빠 #5). 동일 하네스의 측정 가능한 uncovered line 집합과 파일별 function
+        deficit를 기준선과 비교하고 새 미커버 line·function deficit 증가가 없어야 합니다.
+        isolation 수정 뒤의 touched 파일 결과는 전체 suite에서 읽으십시오. FN/FNDA identity가
+        실제 제공되는 하네스에서만 함수 식별자 집합을 비교하십시오. 현재 LCOV가 DA 및 FNF/FNH만
+        제공하면 exact uncovered lines와 파일별 FNF-FNH를 기록하고 함수 identity 동일성은
+        미검증이라고 명시하십시오. deficit 계수로 identity 보존을 증명했다고 말하지 마십시오.
+        작아진 denominator만으로 생긴 percentage 하락은 실패 근거가 아니며 새 파일은 baseline이
+        없어 측정 가능한 전체 uncovered lines/deficit를 보고하십시오. 직접 src 변경이 없는
+        global test 수정도 All-files 비교를 면제하지 말고 대상 src 집합이 빈 이유를 적으십시오
+        (#1807 제안 3, 현재 하네스 관측 한계).
       - Delegations that inject faults / modify-then-restore files — not limited to harness
         builds — MUST back up the original file under `bak/<repo-relative-path>` (the full
         repo-relative path, not filename-only) nested under the session scratchpad or `$TMPDIR`
@@ -1071,22 +1150,46 @@ steps:
 
       ## Local CI-mimic verification (MUST run before marking implement done)
 
-      After all implementation tasks complete, run these scripts in sequence and halt on failure.
-      Run each standalone (NO pipe) and read its exit code directly — `$?` after a pipe is the last command's code (R005, #1492):
+      구현 작업 뒤 아래 CI 대응 검사를 순차 실행하십시오. 각 명령을 standalone으로 실행하고
+      raw log와 직접 exit code를 읽으십시오. pipe 뒤 `$?`를 원 명령 결과로 쓰지 마십시오(R005, #1492).
 
       1. bash .github/scripts/verify-template-sync.sh
       2. bash .github/scripts/verify-wiki-sync.sh
       3. bun .github/scripts/validate-docs.ts --programmatic-only
 
-      If any fails:
-      - For wiki-sync failures: delegate to wiki-curator to generate missing pages (`/omcustom:wiki ingest <path>`)
-        (Regenerating the wiki source-hash manifest targets `wiki/.source-hashes.json` ALWAYS — NEVER `templates/manifest.json`. Command: `bash .github/scripts/lib/source-hash.sh generate wiki/.source-hashes.json`. Ref #1423.)
-      - EXCEPTION (#1688 ordering): when the change set is rules/skills TEXT only (no new or renamed entity), do NOT fix wiki drift here — record the drift and defer the wiki resync + `wiki/.source-hashes.json` reseed until AFTER deep-verify findings are applied, then re-run `verify-wiki-sync.sh` before release. Missing PAGES for newly created entities are still generated here (CI blocks on them).
-      - For template-sync failures: delegate to mgr-updater to sync `.claude/` -> `templates/.claude/`
-      - For validate-docs failures (count mismatch): delegate to mgr-updater to fix counts via EXHAUSTIVE grep across all docs — file-enumeration misses `.en`/`.ko` variants and secondary docs (#1521 — v1.1.32에서 validate-docs 누락으로 push 왕복 1회 발생)
-      - After fixes, re-run the scripts until all pass
+      ## Early wiki result classification and handoff
 
-      This mirrors CI and prevents the known 1-2 wasted push cycles per release (ref: issue #927, v0.98.0 PR #925).
+      QA 검증 담당자는 wiki 검사 raw log/exit code, 실제 checker structured diagnostics,
+      source/entity 변경 목록과 비교한 실패별 분류 표를 제출하십시오. implement dispatcher는
+      각 실패의 원 producer·원 보장·reader·다음 조치를 읽고 아래 분기로 처리하십시오.
+      wrapper가 hash drift에서 먼저 종료하면 link 검사 성공을 추정하지 말고 같은 checker를
+      별도로 실행하여 runtime/I/O 실패 여부와 link 진단을 수집하십시오. 이 실행은 분류 근거이며
+      wrapper 전체 PASS를 대신하지 않습니다. infra-unavailable warning도 성공으로 취급하지 마십시오.
+
+      | 실패 분류 / 원 보장 | Producer | Reader / 조치 |
+      |---|---|---|
+      | 기존 문서의 분류된 link/hash/content drift / review-first wiki 작성 | 기존 wiki 페이지·source hash·checker link 진단 | implement dispatcher는 실패를 pending-documentation으로 기록하고 Source gate and wiki handoff에 표와 raw 근거를 넘기십시오. |
+      | 새 entity의 누락 페이지 및 page/count floor / CI entity 완전성 | entity/page/index 생성 담당자·기존 CI 검사 | implement dispatcher는 즉시 HALT하고 wiki-curator에 /omcustom:wiki ingest <path>로 누락 페이지를 맡기십시오. 페이지/count floor를 복구한 뒤 영향을 받은 검사를 다시 실행하십시오. |
+      | runtime/tool/dependency/parser/metadata/I/O/infra 실패 또는 미분류 오류 / fail closed | checker·filesystem·toolchain·CI adapter | implement dispatcher는 즉시 HALT하고 해당 소유 담당자에게 원 log와 실패를 넘기십시오. 문서 drift로 바꾸어 유예하지 마십시오. |
+      | template sync 및 validate-docs 실패 / mirror·전역 count floor | template/count producer | implement dispatcher는 mgr-updater에 sync 또는 .en/.ko variant와 secondary docs를 포함한 EXHAUSTIVE 문서 count 정정을 맡기고 영향 검사를 재실행하십시오(#1521). |
+
+      pending-documentation 분기는 docs-only/lite/standard와 code/test+text 혼합 범위 모두에
+      적용하십시오(#1688 review-first ordering). 기존 문서의 link/hash/content drift라는 근거가
+      있는 결과만 유예하고 실패 유형이 섞이면 즉시 HALT 대상부터 해결하십시오. 새 entity 페이지
+      누락은 유예하지 마십시오. template/count 검사 등 나머지 CI floor는 그대로 통과해야 합니다.
+      분류 표가 없거나 원인을 구분할 수 없으면 implement 완료를 HALT하십시오.
+      implement 완료 보고에는 pending-documentation을 미완료 검증으로 명시하십시오. 이 상태는
+      verify-build와 source 정정·Sauron으로 진행할 수 있는 handoff이며 CI 전체 green이 아닙니다.
+      조기 wiki resync/reseed로 리뷰 순서를 앞당기지 마십시오. Source gate and wiki handoff의
+      mandatory source Sauron 뒤 wiki-curator가 분류된 drift를 정정하고, Post-wiki deterministic
+      verification의 QA가 분류 표 모든 행과 실제 CI 전체 대응 검사 PASS를 읽어 닫게 하십시오.
+      최종 미해결 행·검사 실패·증거 누락은 commit/release를 HALT합니다. 같은 입력에서 이미
+      유효한 CI 대응 결과만 재사용하며 wiki/source 정정으로 무효화된 검사는 다시 실행하십시오.
+      source-hash reseed 대상은 항상 wiki/.source-hashes.json이며 templates/manifest.json이
+      아닙니다. 페이지 정정 뒤 bash .github/scripts/lib/source-hash.sh generate
+      wiki/.source-hashes.json을 실행하십시오(Ref #1423). 원 보장을 생략하는 waiver나 checker
+      ignore list를 만들지 마십시오. 이 분기는 기존 1–2회 push 왕복을 막는 CI-mimic 목적을
+      유지하면서 최종 CI floor와 review-first 순서를 함께 보존합니다(Ref #927).
     description: "Per-issue implementation with lifecycle, specialist routing, and CI-mimic verification"
     depends_on: deep-plan
 
@@ -1095,10 +1198,14 @@ steps:
       Project-specific build + test verification.
 
       For Node/Bun projects (this repo):
-      1. bun install — verify lockfile sync (halt on lockfile drift)
+      1. frozen-lockfile install로 lockfile 정합을 확인하고 drift이면 중단하십시오. 새 dependency
+         변경 소유자의 설치/audit 결과와 CI의 실제 대응 명령을 읽으며 install script 정책을 보존하십시오.
       2. bun run lint (if package.json has lint script)
       3. bun run typecheck (if available)
       4. bun test — MANDATORY, no silent skip
+         아래 Owned hook-like coverage verification 조건의 `bun test --coverage` 한 직렬 실행을
+         이 test gate와 item 6 coverage gate에 함께 사용하십시오. 같은 입력 상태의 전체 suite를
+         bun test와 coverage로 중복 실행하지 마십시오. 실제 pre-commit은 별도 필수 실행입니다.
          - Baseline reference: #1156 historically documented 86 failures; v0.136.2 fixes resolved them → current baseline = 0
          - Each release: adopt prior version's test result as baseline (dynamic, not hardcoded)
          - Compute current pass/fail counts
@@ -1107,8 +1214,10 @@ steps:
       5. Build verification (if package has build script)
       6. Coverage threshold check (equivalent to `.husky/pre-commit`'s coverage gate — this
          step exists so that a deferred implement-stage commit, per the implement step 5
-         OPTION, is still coverage-gated before release even though the hook has not run yet):
-         - bun test --coverage — standalone (NO pipe), read exit code directly
+         REQUIRED ordering, is still coverage-gated before release even though the hook has not run yet):
+         - item 4의 동일 상태 coverage raw log와 직접 읽은 exit를 재사용하십시오. build/item 5 등으로
+           시험 입력이 바뀌면 stale 결과를 사용하지 말고 영향 항목을 재검증하십시오. NO pipe로
+           읽은 exit·pass/fail·All files coverage와 입력 fingerprint를 같은 보고에 기록하십시오.
          - Extract Function/Line coverage from the "All files" summary line
          - Read the CURRENT threshold value and the new-source-file relaxation rule directly
            from `.husky/pre-commit` at run time — do NOT hardcode a threshold number in this
@@ -1116,6 +1225,54 @@ steps:
          - If either Function or Line coverage falls below the threshold `.husky/pre-commit`
            currently applies (accounting for its dynamic relaxation for commits containing
            newly added `src/**/*.ts`/`.tsx` files): halt + report the shortfall
+
+      ## Owned hook-like coverage verification
+
+      verify-build dispatcher는 QA 한 소유자에게 직렬 실행을 위임하십시오. QA는 real HOME을
+      바꾸지 않고 자식 env에 고유 fake HOME/TMPDIR를 전달하십시오. 실제 소스 상태와 시험 입력의
+      fingerprint·Git/Bun 조건·원본 log를 기록하고 결과를 dispatcher가 item 4/6에서 읽게 하십시오.
+      fingerprint는 source/test/config/dependency 입력의 path·hash manifest로 기록하며 tracked
+      파일뿐 아니라 이번 생성 untracked 대상도 포함하십시오. 제외 입력은 이유를 적으십시오.
+      inherited GIT_*는 제거한 뒤 owned aborting hook에서 관측한 비credential key whitelist를
+      scratch identity/path 값으로 재구성하십시오. Git 2.52/macOS 관측 key는 AUTHOR_DATE,
+      AUTHOR_EMAIL, AUTHOR_NAME, EDITOR, EXEC_PATH, INDEX_FILE, PREFIX이며 실제 변수 이름에는
+      GIT_ 접두사가 붙습니다. 일반 commit 상대 index와 commit-a 절대 index를 구별하고 다른
+      버전/플랫폼은 관측 또는 가설로 표시하십시오. default 관측에 없는 GIT_DIR/GIT_WORK_TREE를
+      authentic 조건이라고 추가하지 마십시오. 상대 GIT_DIR 주입은 별도 artificial 회귀입니다.
+      commit-a 전체 coverage는 owned parent scratch repo의 절대 GIT_INDEX_FILE을 bait로 쓰고
+      main worktree live index는 사용하지 마십시오. parent index SHA-256은 실행 전후 동일해야
+      합니다. focused negative는 unsanitized parent-marker, positive는 sanitize된 intended
+      corpus/child를 증명하고 일반 상대 index 조건도 별도 확인하십시오. index 한 변수 fixture를
+      전체 authentic 환경 proof로 부르지 마십시오. corpus Git consumer 전수 조사·caller/env
+      표를 QA와 dispatcher가 읽고 기존 nonempty/identity/failclosed floor를 유지하십시오.
+      전체 suite가 끝나면 fake HOME 생성물을 나열하고 문서화한 좁은 Bun cache 예외만 제외하십시오.
+      /tmp/.claude-* 전후 차이는 suite-owned PID/external owner/unresolved로 귀속하십시오.
+      unresolved 차이가 있으면 pollution 0 PASS를 선언하지 말고 조사·보고하십시오. 실제 HOME
+      mtime으로 귀속하지 마십시오. 공유 marker를 proof용으로 만들거나 지우지 마십시오.
+      센티널은 위험 cleanup namespace의 안전한 모의 tree에서 보존을 검증하고 무관한 scratch
+      생존을 실제 broad cleanup 안전 증명으로 부르지 마십시오. 삭제 전 자기 경로 pgrep로
+      프로세스 소유권을 확인·정리하고 정리 후 잔존 수를 기록하십시오. 예상 밖 실제 서버가
+      시작되면 자기 PID와 관련 포트 해제까지 확인하십시오(#1823 H4, #1833 P1/P2).
+
+      ## Commit hook diagnostics
+
+      implement/release의 commit 발주자는 이 anchor와 Standard delegation-prompt block을
+      mgr-gitnerd 완료 조건으로 전달하십시오. 실제 commit은 400000ms 이상 예산 또는 지속
+      프로세스로 실행하고 stdout/stderr 전문을 고유 mktemp log에 직접 저장하십시오. pipe로
+      rc를 숨기지 말고 실제 commit 종료 코드를 먼저 보존하십시오. 차단되면 retry 전에 실제
+      HEAD·exit·실행 조건 및 아래 각 `(fail)`과 앞 40줄을 읽어 dispatcher에 보고하십시오.
+      훅 밖 재실행 green을 intermittency 근거로 쓰지 마십시오. 자동 수정·restage 델타는
+      검토하고 이전 evidence를 무효화할지 판정하십시오. no-verify로 우회하지 마십시오.
+      아래는 이미 저장한 로그의 읽기 전용 진단이며 commit을 수행하는 코드가 아닙니다.
+
+      # BEGIN commit-hook-diagnostics
+      commit_log='<owned-raw-log-file>'
+      commit_rc='<observed-exit-code>'
+      [ -f "$commit_log" ] || exit 1
+      printf 'commit_exit=%s\n' "$commit_rc"
+      git rev-parse --verify HEAD || exit 1
+      command awk '{ lines[NR] = $0; if (index($0, "(fail)")) { start = NR - 40; if (start < 1) start = 1; printf "failure_line=%d\n", NR; for (j = start; j <= NR; j++) printf "%d:%s\n", j, lines[j]; } }' "$commit_log" || exit 1
+      # END commit-hook-diagnostics
 
       For Python/Go/Docker/static-site projects: auto-detect and run equivalent (py_compile + pytest / go build + go vet + go test / docker build / file validation).
 
@@ -1126,6 +1283,7 @@ steps:
       - Coverage below the threshold `.husky/pre-commit` currently applies
       - Build failure
       - Lockfile drift
+      - owned hook-like 환경·index hash 불변·corpus floor 또는 isolation 귀속 증거의 실패/누락
 
       Halt → report exact command + stderr + delta details. Do NOT proceed to release on any halt.
     description: "Auto-detected build + test verification (bun test with baseline delta guard)"
@@ -1133,7 +1291,66 @@ steps:
 
   - name: deep-verify
     skill: deep-verify
-    description: "Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron:watch single-goal delegation in every tier (docs-only, lite, standard) + core self-check if lite. mgr-sauron:watch 단일 목표 위임은 모든 티어에서 커밋 전, 따라서 첫 push 전에 1회 실행하며 재실행 금지 목록(이미 실측한 bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)을 동봉합니다. 구조 표면이 없다는 것은 생략 사유가 아닙니다. 모든 릴리즈는 implement 단계의 필수 통합 커밋 순서를 따라 이 위임이 deep-verify 정정 뒤, 통합 커밋 앞에 오게 합니다(#1799 제안 1). MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주한다 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정한다 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). 검증 위임도 편집 위임과 동일하게 턴 산술(대상 파일 수 × 판단 항목 수)을 계산해 위임서에 명시하고, 예산을 넘으면 파일군별로 분할해야 합니다 — v1.1.77 sauron 1차 위임은 30여 파일 + 판단 4항목을 단일 위임에 넣어 판정 없이 25턴에서 절단됐습니다(#1722 찐빠 #2). 리뷰어의 수정 제안과 「변이 X가 생존/포착된다」는 주장은 (a) 시험 런타임에서 도달할 수 있는지(예: Bun은 os.homedir()을 프로세스 시작 시 고정합니다), (b) 그 변이가 시험 환경에서 동치인지를 확인한 뒤에만 채택하며, 리뷰어 위임서에는 이 근거를 함께 적게 합니다. 문서·텍스트 제안은 도달성 검사 예외입니다. 가설 접수 원칙은 R020 「원인 분석도 완료 보고와 같은 등급의 검증 대상」(MUST-completion-verification.md)을 따릅니다(#1807 제안 2, #1811 찐빠 #3). 리뷰어 위임서도 implement 단계 Rules의 Standard delegation-prompt block을 지니며, 그 항목 중 「$HOME 아래 프로브·임시 파일 금지」가 리뷰어에게 적용됩니다(#1811 제안 4). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688)."
+    description: |
+      Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron:watch single-goal delegation in every tier (docs-only, lite, standard) + core self-check if lite. mgr-sauron:watch 단일 목표 위임은 모든 티어에서 커밋 전, 따라서 첫 push 전에 1회 실행하며 재실행 금지 목록(이미 실측한 bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)을 동봉합니다. 구조 표면이 없다는 것은 생략 사유가 아닙니다. 모든 릴리즈는 implement 단계의 필수 통합 커밋 순서를 따라 이 위임이 deep-verify 정정 뒤, 통합 커밋 앞에 오게 합니다(#1799 제안 1). MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주하십시오 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정하십시오 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). 검증 위임도 편집 위임과 동일하게 턴 산술(대상 파일 수 × 판단 항목 수)을 계산해 위임서에 명시하고, 예산을 넘으면 파일군별로 분할해야 합니다 — v1.1.77 sauron 1차 위임은 30여 파일 + 판단 4항목을 단일 위임에 넣어 판정 없이 25턴에서 절단됐습니다(#1722 찐빠 #2). 리뷰어의 수정 제안과 「변이 X가 생존/포착된다」는 주장은 (a) 시험 런타임에서 도달할 수 있는지(예: Bun은 os.homedir()을 프로세스 시작 시 고정합니다), (b) 그 변이가 시험 환경에서 동치인지를 확인한 뒤에만 채택하며, 리뷰어 위임서에는 이 근거를 함께 적게 합니다. 문서·텍스트 제안은 도달성 검사 예외입니다. 가설 접수 원칙은 R020 「원인 분석도 완료 보고와 같은 등급의 검증 대상」(MUST-completion-verification.md)을 따릅니다(#1807 제안 2, #1811 찐빠 #3). 리뷰어 위임서도 implement 단계 Rules의 Standard delegation-prompt block을 지니며, 그 항목 중 「$HOME 아래 프로브·임시 파일 금지」가 리뷰어에게 적용됩니다(#1811 제안 4). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688).
+
+      ## Correction dispatcher
+
+      deep-verify 발주자는 각 writer/QA/fresh reviewer의 실제 thread identity와 이 영역의
+      이전 review 참여를 기록하십시오. 역할 이름만 바꿔 fresh라고 하지 마십시오. slot 교체나
+      순차 새 thread가 가능한지 실제로 확인하고 불가하면 unmet을 보고하고 중단하십시오.
+      Standard delegation-prompt block과 Implement evidence handoff를 모든 위임에 전달하십시오.
+      dispatcher는 원 지적 전체와 원 설계 보장·입력 producer·새 하위 규칙·기존 지시/환경 접점
+      표를 correction writer에게 전달하고 완료 보고에서 다시 읽으십시오. 표 누락이면 writer
+      완료나 다음 리뷰 발주를 통과시키지 마십시오. 새 메커니즘 접점은 전수 검색 범위/한계와
+      기존 지시 정합을 보고하십시오. reviewer는 보장·producer별 회귀 증거를 같은 표로 읽습니다.
+      writer completion에는 실제 CI 잡 전체의 로컬 대응 결과를 넣으십시오(R023 floor).
+      유효한 사전 결과는 재실행 금지 목록으로 전달하고, 새 메시지/export/config key는
+      repository scan 등 전역 불변식 증거를 추가하십시오. targeted fixture만으로 완료하지
+      마십시오. dispatcher가 source fingerprint/의존 입력을 비교해 변경으로 무효화한 항목만
+      verify-build로 돌리고 실패·새 델타가 review도 무효화하는지 판정하십시오. clean 동일
+      환경의 same-harness coverage 비교와 authentic bait proof는 구별하고 LCOV identity
+      한계는 implement coverage clause대로 보고하십시오. 바뀐 상태에 옛 green을 쓰지 마십시오.
+      정정 round는 최초 구현 리뷰를 제외하고 최대 3차입니다. 각 correction delta마다 그 영역의
+      이전 리뷰에 참여하지 않은 fresh reviewer에게 독립 재리뷰를 발주하고 새 Medium+ 건수,
+      기존 미해결 지적, writer/reviewer identity와 델타를 기록하십시오. 마지막 델타의 새
+      Medium+ 0건과 현재 소스의 미해결 Medium+ 0건을 모두 확인해야 종료할 수 있습니다.
+      3차에도 기존 또는 신규 Medium+가 남으면 release를 HALT하십시오. 비차단 이월 항목은
+      한 후속 이슈로 통합하되 상한 도달을 현재 source 결함 waiver나 부분 해결 이슈의 전체
+      close 근거로 사용하지 마십시오(#1830 P1/P2, #1833 P4/P6).
+      예외는 Low만 남은 기계적 문구 치환이고 새 동작/메커니즘/측정 주장/보장 변화가 없을 때만
+      허용하십시오. dispatcher는 해당 근거와 미러 cmp·예산·치환 계수·해당 설정 JSON 유효성을
+      Tier 1로 읽고 닫을 수 있습니다. purported Low가 위 조건을 바꾸면 fresh review를 생략하지
+      마십시오. 이 예외는 mandatory source Sauron/전역 불변식/actual precommit을 면제하지 않습니다.
+      branch 체크는 첫 정정 수렴, 3차 잔여 Medium, 3차 새 Medium, strict Low-only, behavior를
+      바꾼 Low 거부, 표 누락 HALT를 실제 발주·완료 기록에 대응하십시오. 산문 지시를 가짜
+      executable state-machine 시험으로 실행 검증했다고 주장하지 마십시오.
+
+      ## Source gate and wiki handoff
+
+      정정·영향 재검증 뒤 mandatory source Sauron을 기존 모든 티어 순서로 발주하십시오.
+      reviewed source 주장/인용·유효 deterministic 결과와 예정 wiki 경계를 입력으로 주고
+      아직 생성되지 않은 wiki 완료 표를 요구하지 마십시오. 이후 wiki-curator에게 소스 직접
+      문구/relative ref와 인용별 원문 검증·변경 주장 단위의 이전 표현 잔존 검색을 완료 조건으로
+      위임하십시오. Early wiki result classification and handoff의 pending-documentation 표와
+      raw log도 함께 전달하고 각 행의 정정·잔존 여부를 wiki-curator 완료 표에 대응하십시오.
+      잔존 검색은 본문뿐 아니라 변경 로그·요약까지 포함하고 hit가 있으면 관련성
+      판정 근거를 보고하십시오. 의역은 인용으로 표시하지 마십시오. wiki 페이지 수정이 끝난
+      뒤 documented source-hash script로 wiki/.source-hashes.json만 reseed하십시오.
+
+      ## Post-wiki deterministic verification
+
+      wiki resync dispatcher는 wiki-curator 완료 표·실제 wiki artifact를 QA 검증 담당자에게
+      전달하십시오. QA는 link/quote/residual/hash 결과를 직접 재계산하고 dispatcher가 그 PASS를
+      읽어 mgr-gitnerd 통합 commit 전 조건에 전달하게 하십시오. QA는 조기 pending-documentation
+      표의 모든 행이 해소됐는지와 실제 CI 전체 대응 결과의 현재 유효성을 함께 읽으십시오.
+      미해결 행·표 누락·검사 실패는 commit/release를 HALT합니다. 유예를 최종 면제로 바꾸지 마십시오.
+      deterministic link 진입점은 bash .github/scripts/verify-wiki-sync.sh이며 source hash PASS를
+      link PASS로 바꾸어 부르지 마십시오. wiki-only 실패는 위키 정정·해당 결정론 검사로 돌아가고
+      source 변경이 필요하면 Correction dispatcher의 invalidation branch로 돌아가십시오.
+      동일 source의 full Sauron을 post-wiki라는 이유로 중복하지 마십시오. R017 Post-Gate
+      Scope-Expansion Re-Run의 실제 변경 집합/조건은 그대로 적용하십시오. 최종 source delta와
+      actual precommit 자동 수정도 유효성 확인 없이 기존 PASS를 재사용하지 마십시오.
     depends_on: verify-build
 
   - name: release
@@ -1214,6 +1431,9 @@ steps:
                ⚠ Bash timeout (#1645): delegate this commit with an explicit `timeout: 400000` — the
                main-worktree pre-commit hook runs the full test suite (~165s) and the Bash default of
                120000ms kills it with exit 143. `--no-verify` is NOT an acceptable workaround (R010).
+               이 bump commit 위임도 verify-build의 Commit hook diagnostics를 읽고 고유 raw
+               log·실제 exit/HEAD·각 failure 앞 40줄을 보고하십시오. 자동 수정 델타와 기존
+               source/post-wiki evidence의 유효성을 dispatcher가 재판정한 뒤에만 진행하십시오.
            h. mgr-gitnerd push release/v{NEW} to origin — NEVER push this commit to develop directly. Pushing to
               develop here reproduces the diff=0 PR failure this reordering fixes (#1542).
            i. mandatory verification (with existence guard for partial-update safety), run on release/v{NEW}:

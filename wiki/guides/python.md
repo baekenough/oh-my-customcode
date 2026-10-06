@@ -1,7 +1,7 @@
 ---
 title: "Python Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - guides/python/pep8-style-guide.md
 related:
@@ -31,7 +31,7 @@ Covers PEP 8 style guide (indentation, line length, imports, naming), Pythonic i
 
 - **Used by agents**: [[lang-python-expert]], [[be-fastapi-expert]], [[be-django-expert]]
 - **Related skills**: [[python-best-practices]]
-- **See also**: [[fastapi]], [[django-best-practices]], [[alembic]]
+- **See also**: [[fastapi]], [[guides/django-best-practices|django-best-practices]], [[alembic]]
 
 ## Sources
 

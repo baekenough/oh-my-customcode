@@ -1,7 +1,7 @@
 ---
 title: Systematic Debugging
 type: skill
-updated: 2026-05-20
+updated: 2026-10-06
 sources:
   - .claude/skills/systematic-debugging/SKILL.md
   - .claude/skills/systematic-debugging/phases/timeline-correlation.md
@@ -12,7 +12,7 @@ related:
   - [[dev-review]]
   - [[adversarial-review]]
   - [[stuck-recovery]]
-  - [[test-driven-development]]
+  - "superpowers:test-driven-development"
 ---
 
 # Systematic Debugging
@@ -55,7 +55,7 @@ Provides a strict reproduce-first, root-cause-first, failing-test-first debuggin
 ## Relationships
 
 - **Used by agents**: all agents when encountering bugs
-- **Related skills**: [[dev-review]], [[adversarial-review]], [[stuck-recovery]], [[test-driven-development]]
+- **Related skills**: [[dev-review]], [[adversarial-review]], [[stuck-recovery]], `superpowers:test-driven-development`
 - **See also**: [[R004]]
 
 ## Sources

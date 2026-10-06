@@ -1,7 +1,7 @@
 ---
 title: "Elements of Style Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - guides/elements-of-style/elements-of-style.html
 related:
@@ -30,7 +30,7 @@ Applies Strunk & White's "Elements of Style" principles to technical writing and
 
 - **Used by agents**: [[arch-documenter]]
 - **Related skills**: [[elements-of-style:writing-clearly-and-concisely]]
-- **See also**: [[impeccable-design]], [[web-design]]
+- **See also**: [[guides/impeccable-design|impeccable-design]], [[web-design]]
 
 ## Sources
 

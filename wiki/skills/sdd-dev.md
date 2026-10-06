@@ -1,7 +1,7 @@
 ---
 title: SDD Dev
 type: skill
-updated: 2026-04-12
+updated: 2026-10-06
 sources:
   - .claude/skills/sdd-dev/SKILL.md
 related:
@@ -29,7 +29,7 @@ Implements Spec-Driven Development: spec files in `sdd/` define the intended beh
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[structured-dev-cycle]], [[omcustom-takeover]], [[deep-plan]]
+- **Related skills**: [[structured-dev-cycle]], [[omcustom-takeover]], [[skills/deep-plan|deep-plan]]
 - **See also**: [[arch-speckit-agent]], [[R020]]
 
 ## Sources

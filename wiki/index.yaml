@@ -225,7 +225,7 @@ pages:
       summary: "Claude Code official spec compliance verification and reference."
     - file: skills/claude-native.md
       title: "Claude Native"
-      summary: "Monitor Claude Code releases and automatically create issues for relevant changes"
+      summary: "Monitor Claude Code releases and create one tracking issue per untracked eligible version via file-based submission."
     - file: skills/create-agent.md
       title: "Create Agent"
       summary: "Create a new agent definition with proper frontmatter and skill wiring."
@@ -282,7 +282,7 @@ pages:
       summary: "Fix broken references in agent definitions, skills, and routing tables."
     - file: skills/fsd.md
       title: "FSD (Full Self Driving)"
-      summary: "Autonomous release loop — thin alias for /goal + /loop(/pipeline auto-dev -> /homework) that processes all auto-dev-eligible issues until exhausted."
+      summary: "Autonomous release loop — thin alias for /goal + /loop(/pipeline auto-dev -> /homework) that processes all auto-dev-eligible issues and open PRs until both are exhausted."
     - file: skills/flutter-best-practices.md
       title: "Flutter Best Practices"
       summary: "Flutter/Dart development best practices for mobile and cross-platform apps."
@@ -402,7 +402,7 @@ pages:
       summary: "YC-style product strategy assessment with forced questions and CEO scope modes — prevents build-first-think-later anti-pattern"
     - file: skills/post-release-followup.md
       title: "Post-Release Followup"
-      summary: "Analyze release workflow findings and recommend follow-up actions"
+      summary: "Analyze release workflow findings, auto-register genuine defects, and seek confirmation for immediate code-changing actions."
     - file: skills/profile.md
       title: "Profile"
       summary: "Load a skill profile to switch active plugin set — four built-in profiles (web-app/data-eng/harness-dev/minimal) reduce per-session token overhead and plugin enumeration cost"

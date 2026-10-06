@@ -1,11 +1,11 @@
 ---
 title: Research
 type: skill
-updated: 2026-10-05
+updated: 2026-10-06
 sources:
   - .claude/skills/research/SKILL.md
 related:
-  - [[deep-plan]]
+  - [[skills/deep-plan|deep-plan]]
   - [[result-aggregation]]
   - [[R018]]
 ---
@@ -29,7 +29,7 @@ Spawns 10 parallel research agents (Agent Teams when available, R018) to analyze
 ## Relationships
 
 - **Used by agents**: orchestrator
-- **Related skills**: [[deep-plan]], [[result-aggregation]], [[task-decomposition]]
+- **Related skills**: [[skills/deep-plan|deep-plan]], [[result-aggregation]], [[task-decomposition]]
 - **See also**: [[R018]], [[R009]]
 
 ## Sources
