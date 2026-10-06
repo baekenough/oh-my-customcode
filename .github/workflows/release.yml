@@ -200,7 +200,7 @@ jobs:
       - name: Publish to npm
         if: steps.npm_check.outputs.exists == 'false'
         run: |
-          npm publish --ignore-scripts --provenance --access public 2>&1 || {
+          npm publish --ignore-scripts --provenance --access public --tag latest 2>&1 || {
             EXIT_CODE=$?
             # Check if failure is due to version already existing (race condition with local publish)
             if npm view oh-my-customcode@${{ steps.npm_check.outputs.version }} version 2>/dev/null; then
@@ -319,6 +319,63 @@ jobs:
           prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  recover-patch-release:
+    name: Recover Patch Release
+    needs: [publish]
+    if: github.ref == 'refs/tags/v1.1.107'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js for npm
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Restore patch latest and remove mistaken major version
+        shell: bash
+        run: |
+          set -euo pipefail
+          registry='https://registry.npmjs.org/'
+          published=$(npm view oh-my-customcode@1.1.107 version --registry="$registry" --prefer-online)
+          if [ "$published" != '1.1.107' ]; then
+            echo '::error::Patch 1.1.107 is not available; refusing recovery'
+            exit 1
+          fi
+
+          npm dist-tag add oh-my-customcode@1.1.107 latest --registry="$registry"
+          latest=$(npm view oh-my-customcode dist-tags.latest --registry="$registry" --prefer-online)
+          if [ "$latest" != '1.1.107' ]; then
+            echo '::error::latest does not point to 1.1.107; refusing unpublish'
+            exit 1
+          fi
+
+          has_mistaken_version() {
+            npm view oh-my-customcode versions --json --registry="$registry" --prefer-online |
+              node -e 'let input = ""; process.stdin.setEncoding("utf8"); process.stdin.on("data", chunk => input += chunk); process.stdin.on("end", () => { const versions = JSON.parse(input); if (!Array.isArray(versions) || !versions.every(version => typeof version === "string")) throw new Error("Invalid npm versions response"); console.log(versions.includes("2.0.0") ? "true" : "false"); });'
+          }
+          mistaken=$(has_mistaken_version)
+          if [ "$mistaken" = 'true' ]; then
+            npm unpublish oh-my-customcode@2.0.0 --registry="$registry"
+          else
+            echo '::notice::Version 2.0.0 is already absent; unpublish skipped'
+          fi
+
+          mistaken=$(has_mistaken_version)
+          if [ "$mistaken" != 'false' ]; then
+            echo '::error::Version 2.0.0 is still published'
+            exit 1
+          fi
+          latest=$(npm view oh-my-customcode dist-tags.latest --registry="$registry" --prefer-online)
+          if [ "$latest" != '1.1.107' ]; then
+            echo '::error::latest changed during recovery'
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   verify-release:
     name: Verify Release

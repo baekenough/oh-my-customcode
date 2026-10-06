@@ -17,7 +17,7 @@ Unified reference for executing prompts through external LLM providers via exec 
 
 ## Overview
 
-In v2.0.0, project RTK integration and the public `/rtk-exec` skill are retired. Earlier RTK execution examples and recommendations no longer apply. This change does not uninstall a separately installed RTK binary on the user's machine.
+In v1.1.107, project RTK integration and the public `/rtk-exec` skill are retired. Earlier RTK execution examples and recommendations no longer apply. This change does not uninstall a separately installed RTK binary on the user's machine.
 
 ## Availability and Provider Selection
 

@@ -29,22 +29,67 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
-# ── session_id 추출 ──
-session_id=$(printf '%s\n' "$input" | jq -r '.session_id // empty' 2>/dev/null)
+# ── 부모 필드 추출: 한 jq 생산자, 독립 오류 fallback 유지 ──
+# jq -j는 session_id의 원래 raw/pretty 출력을 유지한다. 문자열의 실제 NUL만
+# 제거하여 필드 구분자와 충돌하지 않게 하고, 각 필드의 끝 LF는 기존 command
+# substitution처럼 제거한다. JSON 문자열 안의 escaped NUL은 그대로 유지한다.
+# slurp 후에도 입력별 출력 순서와 오류 전 부분 출력 + fallback을 유지한다.
+# process substitution의 jq 실패를 잃지 않도록 별도 종료 상태 필드를 보낸다.
+parent_fields=()
+while IFS= read -r -d '' parent_field; do
+  parent_fields[${#parent_fields[@]}]="$parent_field"
+done < <(
+  if printf '%s\n' "$input" | jq -sj '
+    . as $inputs
+    | [try ($inputs[] | .background_tasks // [] | tojson) catch "[]"] as $bg
+    | [try ($inputs[] | .session_crons // [] | tojson) catch "[]"] as $crons
+    | [try ($bg[] | fromjson | length) catch 0] as $bg_count
+    | [try ($crons[] | fromjson | length) catch 0] as $cron_count
+    | [try ($bg[] | fromjson
+        | [.[] | select(.status? == "running" or .status? == "pending" or .status? == "in_progress")]
+        | length) catch 0] as $dangling
+    | ($inputs[] | .session_id // empty
+        | if type == "string" then gsub("\u0000"; "") else . end
+        | (., "\n")),
+      "\u0000",
+      ($bg | join("\n")), "\u0000",
+      ($crons | join("\n")), "\u0000",
+      ($bg_count | map(tostring) | join("\n")), "\u0000",
+      ($cron_count | map(tostring) | join("\n")), "\u0000",
+      ($dangling | map(tostring) | join("\n")), "\u0000"
+  ' 2>/dev/null; then
+    parent_status=0
+  else
+    parent_status=$?
+  fi
+  # An extra separator terminates partial last fields from a failed producer.
+  printf '\0%s\0' "$parent_status"
+)
+parent_status="${parent_fields[${#parent_fields[@]}-1]}"
+if [ "$parent_status" -ne 0 ]; then
+  exit "$parent_status"
+fi
+if [ "${#parent_fields[@]}" -ne 8 ] || [ -n "${parent_fields[6]}" ]; then
+  exit 1
+fi
+for parent_index in 0 1 2 3 4 5; do
+  while [[ "${parent_fields[$parent_index]}" == *$'\n' ]]; do
+    parent_fields[$parent_index]="${parent_fields[$parent_index]%$'\n'}"
+  done
+done
+session_id="${parent_fields[0]}"
 if [ -z "$session_id" ]; then
   printf '%s\n' "$input"
   exit 0
 fi
 
-# ── Phase 2 (#1196): background_tasks / session_crons 추출 (CC v2.1.145+) ──
-# 신규 필드 미존재 시 빈 배열로 처리 (graceful degrade).
-bg_tasks_json=$(printf '%s\n' "$input" | jq -c '.background_tasks // []' 2>/dev/null || echo '[]')
-session_crons_json=$(printf '%s\n' "$input" | jq -c '.session_crons // []' 2>/dev/null || echo '[]')
-bg_tasks_count=$(printf '%s\n' "$bg_tasks_json" | jq 'length' 2>/dev/null || echo 0)
-session_crons_count=$(printf '%s\n' "$session_crons_json" | jq 'length' 2>/dev/null || echo 0)
-
-# 미완료 백그라운드 태스크: running/pending/in_progress 상태 카운트
-bg_dangling_count=$(printf '%s\n' "$bg_tasks_json" | jq '[.[] | select(.status? == "running" or .status? == "pending" or .status? == "in_progress")] | length' 2>/dev/null || echo 0)
+# ── Phase 2 (#1196): background_tasks / session_crons (CC v2.1.145+) ──
+# Missing/null/false fields retain [], and each count retains its own fallback.
+bg_tasks_json="${parent_fields[1]}"
+session_crons_json="${parent_fields[2]}"
+bg_tasks_count="${parent_fields[3]}"
+session_crons_count="${parent_fields[4]}"
+bg_dangling_count="${parent_fields[5]}"
 
 # ── 경로 결정 (환경변수 override 지원) ──
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -239,7 +284,8 @@ WORKER_EOF
 chmod +x "$WORKER_SCRIPT"
 
 # ── 백그라운드로 실행 (Stop hook 시간 예산 <3s 준수) ──
-# setsid로 부모 종료 후에도 실행 지속; 완료 후 임시 파일 자정리
+# 전체 subshell의 표준 입출력을 분리하여 부모의 파이프를 붙들지 않는다.
+# 분석은 비동기이며 완료 후 임시 파일을 제거한다. setsid/session 생존 보장은 없다.
 WORKER_ERR_LOG="/tmp/.claude-reflection-err-${PPID}.log"
 
 (
@@ -250,10 +296,9 @@ WORKER_ERR_LOG="/tmp/.claude-reflection-err-${PPID}.log"
     "$SCRIPT_DIR" \
     "$bg_tasks_json" \
     "$session_crons_json" \
-    "$bg_dangling_count" \
-    2>>"$WORKER_ERR_LOG"
+    "$bg_dangling_count"
   rm -f "$WORKER_SCRIPT"
-) &
+) </dev/null >/dev/null 2>>"$WORKER_ERR_LOG" &
 disown $! 2>/dev/null || true
 
 # ── 즉시 stdin pass-through 후 exit 0 (Stop hook 체인 유지) ──

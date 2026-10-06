@@ -101,6 +101,15 @@ Fable 5 실행 에이전트/스킬은 지시(instruction) 장문화가 오히려
 - [ ] Tier 1에서 잡을 수 있는 문제를 다루는가? (상위 tier 대신 시프트 권고)
 - [ ] Ladder 순서를 문서화했는가? (어떤 검사를 먼저 실행하는지)
 
+### 문구 작성·정정
+
+새 주석/JSDoc/문서의 문구 작성·정정 시 확인합니다(#1816 H1):
+
+- [ ] 새 문구의 사실 절마다 코드 앵커 또는 실제 관측 출력을 대응표에 기록했는가?
+- [ ] 독립 문구 검토로 사실 절과 근거의 대응을 확인했는가?
+
+lint·typecheck·테스트 통과만으로 문구의 사실 정확성을 확정하지 않습니다. pipeline auto-dev의 문구 검토 요구와 함께 확인합니다.
+
 ## Safety-Signal Rule Authoring — Carve-Out Pre-Check (shift-left)
 
 <!-- DETAIL: Origin note

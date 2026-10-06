@@ -10,9 +10,10 @@
 
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import * as childProcess from 'node:child_process';
-import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import packageJson from '../../../package.json';
 import * as codexInstaller from '../../../src/core/codex-installer.js';
 
 // Import fs utilities to spy on
@@ -67,6 +68,79 @@ describe('updater fallback paths', () => {
     }
     await saveConfig(tempDir, config);
   }
+
+  describe('release correction manifest failures', () => {
+    const originalCliVersion = packageJson.version;
+    let manifestSpy: ReturnType<typeof spyOn> | undefined;
+
+    afterEach(() => {
+      packageJson.version = originalCliVersion;
+      manifestSpy?.mockRestore();
+      manifestSpy = undefined;
+      expect(packageJson.version).toBe(originalCliVersion);
+    });
+
+    it.each([
+      'missing',
+      'mismatch',
+      'null',
+      'array',
+      'invalid-json',
+      'read-failure',
+      'second-read',
+    ])('fails closed before backups or writes for %s manifest', async (fixture) => {
+      packageJson.version = '1.1.107';
+      await createConfig('2.0.0');
+      await mkdir(join(tempDir, '.claude/rules'), { recursive: true });
+      const userPath = join(tempDir, '.claude/rules/recovery-user.md');
+      await writeFile(userPath, 'unchanged custom bytes\n');
+      const configPath = join(tempDir, '.omcustomrc.json');
+      const beforeConfig = await readFile(configPath);
+      const beforeUser = await readFile(userPath);
+      const beforeEntries = await readdir(tempDir);
+      const manifestPath = resolveTemplatePath(getProviderLayout().manifestFile);
+      let manifestReads = 0;
+      if (fixture === 'missing') overrideNonExistentPaths.add(manifestPath);
+      const manifestResponses: Record<string, () => unknown> = {
+        missing: () => ({ version: '1.1.107' }),
+        mismatch: () => ({ version: '1.1.106' }),
+        null: () => null,
+        array: () => [],
+        'invalid-json': () => JSON.parse('{invalid'),
+        'read-failure': () => {
+          throw new Error('owned manifest read failure');
+        },
+        'second-read': () => ({ version: manifestReads > 1 ? '1.1.106' : '1.1.107' }),
+      };
+      manifestSpy = spyOn(fsUtils, 'readJsonFile').mockImplementation(
+        async <T>(path: string): Promise<T> => {
+          if (path !== manifestPath) return originalReadJsonFile<T>(path);
+          manifestReads++;
+          return manifestResponses[fixture]() as T;
+        }
+      );
+      const result = await update({
+        targetDir: tempDir,
+        components: ['rules'],
+        force: true,
+        forceOverwriteAll: true,
+        backup: true,
+      });
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
+      expect(result.backedUpPaths).toEqual([]);
+      expect(result.updatedComponents).toEqual([]);
+      expect(await readFile(configPath)).toEqual(beforeConfig);
+      expect(await readFile(userPath)).toEqual(beforeUser);
+      expect(await readdir(tempDir)).toEqual(beforeEntries);
+      expect(await readdir(join(tempDir, '.claude/rules'))).toEqual(['recovery-user.md']);
+      expect(await originalFileExists(join(tempDir, '.omcustom.lock.json'))).toBe(false);
+      expect(codexCheckSpy).not.toHaveBeenCalled();
+      expect(codexInstallSpy).not.toHaveBeenCalled();
+      expect(manifestReads).toBe(fixture === 'missing' ? 0 : fixture === 'second-read' ? 2 : 1);
+      if (fixture === 'second-read') expect(result.error).toContain('Version correction prevented');
+    });
+  });
 
   describe('getLatestVersion() fallback (lines 565-566)', () => {
     it('should return 0.0.0 when manifest.json does not exist', async () => {

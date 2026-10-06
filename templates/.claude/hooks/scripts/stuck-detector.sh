@@ -536,8 +536,92 @@ input=$(cat)
 # Swallow it instead: exit 0 with no stdout, exactly as if the hook had not
 # run. "jq -e" exits non-zero both for a parse error and for a false/null
 # result, so one guard covers every non-object shape.
-printf '%s' "$input" | jq -e 'type == "object"' >/dev/null 2>&1 || exit 0
+# Common string fields can share one jq producer. Unusual types and embedded
+# NUL retain the original extraction path: command substitution has platform-
+# specific NUL handling, and independent jq failures are part of the contract.
+extraction_mode=$(printf '%s' "$input" | jq -er '
+  if type != "object" then false
+  elif any(.. | strings; contains("\u0000")) then "legacy"
+  elif ((.tool_name // "unknown" | type) != "string") then "legacy"
+  elif ((.tool_input != null) and ((.tool_input | type) != "object")) then "legacy"
+  elif ((.tool_output != null) and ((.tool_output | type) != "object")) then "legacy"
+  elif ((.tool_input.file_path // "" | type) != "string")
+    or ((.tool_input.command // "" | type) != "string")
+    or ((.tool_input.old_string // .tool_input.content // .tool_input.new_string // "" | type) != "string")
+  then "legacy" else "batched" end
+' 2>/dev/null) || exit 0
 
+# NUL-delimited fields are safe only after the guard above excludes embedded
+# NUL. A final producer-status record makes jq failures observable; process
+# substitution alone would discard its exit status. jq -j preserves -r scalar
+# rendering without an added newline; trim actual trailing LF just as $(...) did.
+_read_stuck_fields() {
+  local filter="$1" field status
+  STUCK_FIELDS=()
+  while IFS= read -r -d '' field; do
+    while [[ "$field" == *$'\n' ]]; do field="${field%$'\n'}"; done
+    STUCK_FIELDS[${#STUCK_FIELDS[@]}]="$field"
+  done < <(
+    if printf '%s' "$input" | jq -j "$filter"; then
+      printf '%s\0' '__OMCUSTOM_JQ_STATUS__0'
+    else
+      printf '__OMCUSTOM_JQ_STATUS__%s\0' "$?"
+    fi
+  )
+  status="${STUCK_FIELDS[${#STUCK_FIELDS[@]}-1]:-}"
+  case "$status" in
+    __OMCUSTOM_JQ_STATUS__*) status="${status#__OMCUSTOM_JQ_STATUS__}" ;;
+    *) return 1 ;;
+  esac
+  unset "STUCK_FIELDS[$((${#STUCK_FIELDS[@]} - 1))]"
+  return "$status"
+}
+
+TARGET_KEY_CAP=1000
+
+truncate_key() {
+  local v="$1"
+  if [ "${#v}" -gt "$TARGET_KEY_CAP" ]; then
+    printf '%s' "${v:0:$TARGET_KEY_CAP}#len=${#v}"
+  else
+    printf '%s' "$v"
+  fi
+}
+
+# Batched extraction changes no classifier or detector inputs. Preview retains
+# its original byte-cap pipeline, including broken-pipe tolerance.
+if [ "$extraction_mode" = "batched" ]; then
+  _read_stuck_fields '(.tool_name // "unknown"), "\u0000",
+    (if (.tool_name // "unknown") == "Bash"
+      then (.tool_input.command // .tool_input.file_path // "")
+      else (.tool_input.file_path // "") end), "\u0000",
+    (.tool_output.is_error // false), "\u0000"'
+  [ "${#STUCK_FIELDS[@]}" -eq 3 ] || exit 1
+  tool_name="${STUCK_FIELDS[0]}"
+  if [ "$tool_name" = "Bash" ]; then
+    file_path=""
+    target_key=$(truncate_key "${STUCK_FIELDS[1]}")
+  else
+    file_path_full="${STUCK_FIELDS[1]}"
+    file_path=$(printf '%s' "$file_path_full" | head -c "$TARGET_KEY_CAP" || true)
+    target_key=$(truncate_key "$file_path_full")
+  fi
+  is_error="${STUCK_FIELDS[2]}"
+  output_preview=$(printf '%s' "$input" \
+    | jq -r '(.tool_output.output // "" | tostring)[0:200]' \
+    | head -c 200 || true)
+  _read_stuck_fields '(.tool_input.command // ""), "\u0000",
+    (if (.tool_name == "Edit" or .tool_name == "Write")
+     then ((.tool_input.old_string // .tool_input.content // .tool_input.new_string // "")
+       | gsub("[[:space:]]+"; " ") | ltrimstr(" ") | rtrimstr(" ")
+       | (length as $l | if $l <= 120 then "\($l)#\(.)"
+          else ((explode | add // 0) as $sum
+            | "\($l)#\($sum)#\(.[0:80])#\(.[-40:])") end))
+     else "" end), "\u0000"'
+  [ "${#STUCK_FIELDS[@]}" -eq 2 ] || exit 1
+  raw_command="${STUCK_FIELDS[0]}"
+  edit_hash="${STUCK_FIELDS[1]}"
+else
 # Extract tool info
 tool_name=$(printf '%s' "$input" | jq -r '.tool_name // "unknown"')
 # Bash commands are NOT files. Feeding tool_input.command into file_path made
@@ -552,16 +636,6 @@ tool_name=$(printf '%s' "$input" | jq -r '.tool_name // "unknown"')
 # remove that collision class, so truncate_key() ALSO appends the ORIGINAL
 # length: two values that share the capped prefix but differ in total length
 # no longer produce the same key (M-3).
-TARGET_KEY_CAP=1000
-
-truncate_key() {
-  local v="$1"
-  if [ "${#v}" -gt "$TARGET_KEY_CAP" ]; then
-    printf '%s' "${v:0:$TARGET_KEY_CAP}#len=${#v}"
-  else
-    printf '%s' "$v"
-  fi
-}
 
 if [ "$tool_name" = "Bash" ]; then
   file_path=""
@@ -627,13 +701,35 @@ if [ "$tool_name" = "Edit" ] || [ "$tool_name" = "Write" ]; then
                   end)')
 fi
 
+fi
+
 # History entries are written by jq, so their "path" values are JSON-ENCODED.
 # Matching them requires the SAME encoding, not the raw text: a raw value
 # containing a quote (common in Bash commands) can never match the encoded
 # form. The previous BRE escaping was doubly broken — in POSIX BRE "( ) + ? { |"
 # are literals, so escaping them turned them INTO operators and silently
 # stopped matching. Encode once here and match with grep -F (fixed string).
-target_key_json=$(jq -n --arg v "$target_key" '$v')
+# JSON-encoded literals contain no raw NUL or LF, including legacy fields.
+encoded_matches=()
+while IFS= read -r -d '' encoded_match; do
+  encoded_matches[${#encoded_matches[@]}]="$encoded_match"
+done < <(
+  if jq -nj --arg path "$target_key" --arg edit "$edit_hash" \
+    '($path | tojson), "\u0000", ($edit | tojson), "\u0000"'; then
+    printf '%s\0' '__OMCUSTOM_JQ_STATUS__0'
+  else
+    printf '__OMCUSTOM_JQ_STATUS__%s\0' "$?"
+  fi
+)
+encoded_status="${encoded_matches[${#encoded_matches[@]}-1]:-}"
+case "$encoded_status" in
+  __OMCUSTOM_JQ_STATUS__0) ;;
+  __OMCUSTOM_JQ_STATUS__*) exit "${encoded_status#__OMCUSTOM_JQ_STATUS__}" ;;
+  *) exit 1 ;;
+esac
+[ "${#encoded_matches[@]}" -eq 3 ] || exit 1
+target_key_json="${encoded_matches[0]}"
+edit_hash_json="${encoded_matches[1]}"
 path_match="\"path\":${target_key_json}"
 
 # #1649 follow-up: edit_hash now preserves punctuation (see the edit_hash
@@ -642,7 +738,7 @@ path_match="\"path\":${target_key_json}"
 # (--arg ehash "$edit_hash" -> jq serializes it), so Check 1 / Check 3 below
 # must match it with the SAME JSON-encoded literal, not the raw string — same
 # fix as path_match above, applied to edit_hash.
-edit_hash_json=$(jq -n --arg v "$edit_hash" '$v')
+# edit_hash_json was encoded together with target_key_json above.
 edit_hash_match="\"edit_hash\":${edit_hash_json}"
 
 is_readonly="false"
@@ -651,7 +747,7 @@ if [ "$tool_name" = "Bash" ]; then
 fi
 
 # Session-scoped history
-HISTORY_FILE="/tmp/.claude-tool-history-${PPID}"
+HISTORY_FILE="${OMCUSTOM_STUCK_HISTORY_FILE:-/tmp/.claude-tool-history-${PPID}}"
 
 # Create entry
 timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)

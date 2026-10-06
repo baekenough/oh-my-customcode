@@ -198,6 +198,11 @@ export async function extractCriticalFiles(
  * to combine user customizations with new template defaults.
  * For directories, copies them back directly.
  *
+ * Failure limits (#1784 A-L4): if a fresh JSON target already exists, invalid or null
+ * preserved JSON makes the merge fail. The failure is reported, the target is left as-is,
+ * and the extracted original is not rewritten. If the target is absent, valid parsed JSON
+ * (including null) is copied byte-for-byte instead; invalid JSON fails before that copy.
+ *
  * @param rootDir - The .claude directory path
  * @param preservation - Result from extractCriticalFiles
  * @returns RestorationResult
@@ -270,8 +275,11 @@ function isGeneratedHookBlock(value: unknown): value is Record<string, unknown[]
 /**
  * Deep merge a preserved JSON file with the newly installed version.
  *
- * Strategy: preserved (user) values take precedence over new (template) values.
- * This ensures user customizations are never lost.
+ * Strategy for successful object merges: preserved (user) values take precedence over new
+ * (template) values. Parsing or merging failures throw before writing an existing target;
+ * restoreCriticalFiles reports the failure instead of copying unusable JSON over that target.
+ * The preserved input is only read. With no target, parsing still happens first, then the
+ * original bytes are copied for any successfully parsed JSON value, including null (#1784 A-L4).
  *
  * Text conventions (leading UTF-8 BOM, trailing newline) follow the preserved
  * (user) file, not the fresh template file (#1776). A BOM on either input is

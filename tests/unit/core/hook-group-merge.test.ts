@@ -195,6 +195,28 @@ describe('mergeHookBlocks', () => {
       expect(merged.PostToolUse).not.toBe(generated.PostToolUse);
     });
 
+    it('documents malformed input replacement and unknown-shape preservation (#1784 A-L3)', () => {
+      const generated = makeGenerated();
+      const unknownGroup = {
+        matcher: 'Bash',
+        description: 'Inline guard',
+        hooks: 'not-an-array',
+      };
+      const existing = {
+        PostToolUse: 'not-an-array',
+        Elicitation: 'user-blob',
+        SessionStart: [unknownGroup],
+      };
+      const merged = mergeHookBlocks(existing, generated);
+
+      // The parameterized cases above also cover other unusable top-level values.
+      expect(mergeHookBlocks(null, generated)).toEqual(generated);
+      expect(merged.PostToolUse).toEqual(generated.PostToolUse);
+      expect(merged.Elicitation).toBe(existing.Elicitation);
+      // Even a recognized description does not own a group with malformed hooks.
+      expect(merged.SessionStart).toEqual([...generated.SessionStart, unknownGroup]);
+    });
+
     it('tolerates generated groups of unknown shape without owning anything', () => {
       const generated = makeOddGenerated();
       const user = userGroup('bash .claude/hooks/scripts/secret-filter.sh');
@@ -313,6 +335,26 @@ describe('mergeHookBlocks', () => {
         generated
       );
       expect(merged.PostToolUse).toEqual(generated.PostToolUse);
+    });
+
+    it('replaces appended commands in owned groups but keeps a separate user group (#1784 A-M2)', () => {
+      const generated = makeGenerated();
+      const appended = { type: 'command', command: 'echo mine' };
+      const owned = {
+        matcher: 'Bash',
+        description: 'Inline guard',
+        hooks: [{ type: 'command', command: INLINE_COMMAND }, appended],
+      };
+      const separate = userGroup(appended.command, { description: 'Team append' });
+
+      expect(mergeHookBlocks({ PostToolUse: [owned] }, generated).PostToolUse).toEqual(
+        generated.PostToolUse
+      );
+      expect(mergeHookBlocks({ PostToolUse: [owned, separate] }, generated).PostToolUse).toEqual([
+        ...generated.PostToolUse,
+        separate,
+      ]);
+      expect(owned.hooks).toContain(appended);
     });
 
     it('drops a group whose description is owned, even if the inline text changed', () => {

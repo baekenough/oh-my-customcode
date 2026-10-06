@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 const SCRIPTS_DIR = resolve(import.meta.dir, '../../../templates/.claude/hooks/scripts');
 const STUCK_DETECTOR_SCRIPT = resolve(SCRIPTS_DIR, 'stuck-detector.sh');
@@ -18,35 +19,62 @@ interface ScriptResult {
 }
 
 /**
- * Run the stuck-detector hook script by spawning bash.
- * stdinInput is piped to stdin. Returns stdout, stderr, exitCode.
- *
- * The stuck-detector uses /tmp/.claude-tool-history-${PPID} to track
- * history. When spawned via spawn('bash', [script]), the PPID of the
- * bash process is the bun test runner's PID — so sequential calls
- * within a single test process share the same history file. This is
- * what allows us to build up state across multiple calls.
+ * Each test owns one history path; repeated calls inside that test share it.
+ * The default PPID path is exercised separately, never used by other fixtures.
  */
-function runStuckDetector(stdinInput: string, env?: Record<string, string>): Promise<ScriptResult> {
-  return new Promise((resolve_) => {
-    const childEnv: NodeJS.ProcessEnv = { ...process.env, ...env };
+function hookEnvironment(overrides: Record<string, string> = {}): NodeJS.ProcessEnv {
+  const childEnv: NodeJS.ProcessEnv = { ...process.env };
+  for (const key of Object.keys(childEnv)) {
+    if (
+      key.startsWith('GIT_') ||
+      key.startsWith('BASH_FUNC_') ||
+      [
+        'BASH_ENV',
+        'ENV',
+        'LD_PRELOAD',
+        'DYLD_INSERT_LIBRARIES',
+        'OMCUSTOM_STUCK_HISTORY_FILE',
+        'CLAUDE_STUCK_THRESHOLD',
+      ].includes(key)
+    ) {
+      delete childEnv[key];
+    }
+  }
+  return {
+    ...childEnv,
+    ...overrides,
+    HOME: join(testRuntime, 'home'),
+    TMPDIR: join(testRuntime, 'tmp'),
+    TMP: join(testRuntime, 'tmp'),
+    TEMP: join(testRuntime, 'tmp'),
+    XDG_CACHE_HOME: join(testRuntime, 'cache'),
+    OMCUSTOM_STUCK_HISTORY_FILE: overrides.OMCUSTOM_STUCK_HISTORY_FILE ?? historyFilePath(),
+  };
+}
+
+function runStuckDetector(
+  stdinInput: string,
+  env?: Record<string, string>,
+  useDefaultHistory = false
+): Promise<ScriptResult> {
+  return new Promise((resolve_, reject) => {
+    const childEnv = hookEnvironment(env);
+    if (useDefaultHistory) delete childEnv.OMCUSTOM_STUCK_HISTORY_FILE;
     const child = spawn('bash', [STUCK_DETECTOR_SCRIPT], { env: childEnv });
 
     let stdout = '';
     let stderr = '';
-
     child.stdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString();
     });
     child.stderr.on('data', (chunk: Buffer) => {
       stderr += chunk.toString();
     });
+    child.on('error', reject);
     child.on('close', (code: number | null) => {
       resolve_({ stdout, stderr, exitCode: code ?? -1 });
     });
-
-    child.stdin.write(stdinInput);
-    child.stdin.end();
+    child.stdin.end(stdinInput);
   });
 }
 
@@ -110,18 +138,19 @@ async function runNTimesAll(
 // Test state management
 // -------------------------------------------------------------------
 
-/** The history file path is /tmp/.claude-tool-history-<bun-pid> */
+let testRuntime: string;
+
+/** Isolated history path used by both the hook helper and fixture assertions. */
 function historyFilePath(): string {
+  return join(testRuntime, 'history.jsonl');
+}
+
+function defaultHistoryFilePath(): string {
   return `/tmp/.claude-tool-history-${process.pid}`;
 }
 
-/** Remove the history file so each test starts with a clean state. */
 function cleanHistory(): void {
-  try {
-    require('node:fs').unlinkSync(historyFilePath());
-  } catch {
-    // ignore if file doesn't exist
-  }
+  rmSync(historyFilePath(), { force: true });
 }
 
 // -------------------------------------------------------------------
@@ -130,6 +159,8 @@ function cleanHistory(): void {
 
 describe('stuck-detector.sh', () => {
   beforeEach(() => {
+    testRuntime = mkdtempSync(join(tmpdir(), 'omcc-stuck-test-'));
+    for (const name of ['home', 'tmp', 'cache']) mkdirSync(join(testRuntime, name));
     cleanHistory();
   });
 
@@ -137,6 +168,75 @@ describe('stuck-detector.sh', () => {
     cleanHistory();
     // runScript resolves on child close, after the hook's final performance write.
     rmSync(`/tmp/.claude-hook-perf-${process.pid}.log`, { force: true });
+    rmSync(testRuntime, { recursive: true, force: true });
+  });
+
+  describe('isolated history override (#1800)', () => {
+    const input = makeInput({
+      tool_name: 'Edit',
+      file_path: '/src/isolated.ts',
+      old_string: 'same',
+    });
+
+    it('should share one owned override across calls and preserve the third-call block', async () => {
+      const results = await runNTimesAll(input, 3);
+      expect(results.map((result) => result.exitCode)).toEqual([0, 0, 2]);
+      const lines = (await readFile(historyFilePath(), 'utf-8')).trim().split('\n');
+      expect(lines).toHaveLength(3);
+      expect(lines.map((line) => JSON.parse(line).path)).toEqual(Array(3).fill('/src/isolated.ts'));
+    });
+
+    for (const mode of ['unset', 'empty'] as const) {
+      it(`should retain the default PPID history when override is ${mode}`, async () => {
+        const defaultPath = defaultHistoryFilePath();
+        expect(existsSync(defaultPath)).toBe(false);
+        try {
+          const result = await runStuckDetector(
+            input,
+            mode === 'empty' ? { OMCUSTOM_STUCK_HISTORY_FILE: '' } : undefined,
+            mode === 'unset'
+          );
+          expect(result.exitCode).toBe(0);
+          expect(result.stdout).toBe(`${input}\n`);
+          expect(existsSync(defaultPath)).toBe(true);
+          expect(existsSync(historyFilePath())).toBe(false);
+          const lines = (await readFile(defaultPath, 'utf-8')).trim().split('\n');
+          expect(lines).toHaveLength(1);
+          expect(JSON.parse(lines[0]).path).toBe('/src/isolated.ts');
+        } finally {
+          rmSync(defaultPath, { force: true });
+        }
+      });
+    }
+
+    it('should fail an invalid override without making directories or using the default', async () => {
+      const parent = join(testRuntime, 'missing-parent');
+      const defaultPath = defaultHistoryFilePath();
+      expect(existsSync(defaultPath)).toBe(false);
+      const result = await runStuckDetector(input, {
+        OMCUSTOM_STUCK_HISTORY_FILE: join(parent, 'history.jsonl'),
+      });
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain('No such file or directory');
+      expect(existsSync(parent)).toBe(false);
+      expect(existsSync(defaultPath)).toBe(false);
+      expect(existsSync(historyFilePath())).toBe(false);
+    });
+
+    it('should keep concurrent repeated-call sequences in independent histories', async () => {
+      const paths = [join(testRuntime, 'a.jsonl'), join(testRuntime, 'b.jsonl')];
+      const results = await Promise.all(
+        paths.map((path) => runNTimesAll(input, 3, { OMCUSTOM_STUCK_HISTORY_FILE: path }))
+      );
+      for (let i = 0; i < paths.length; i++) {
+        expect(results[i].map((result) => result.exitCode)).toEqual([0, 0, 2]);
+        const lines = (await readFile(paths[i], 'utf-8')).trim().split('\n');
+        expect(lines).toHaveLength(3);
+        expect(lines.every((line) => JSON.parse(line).path === '/src/isolated.ts')).toBe(true);
+      }
+      expect(existsSync(historyFilePath())).toBe(false);
+    });
   });
 
   // -----------------------------------------------------------------
@@ -156,7 +256,7 @@ describe('stuck-detector.sh', () => {
 
     it('should pass bash -n syntax check', async () => {
       const result = await new Promise<ScriptResult>((res) => {
-        const child = spawn('bash', ['-n', STUCK_DETECTOR_SCRIPT]);
+        const child = spawn('bash', ['-n', STUCK_DETECTOR_SCRIPT], { env: hookEnvironment() });
         let stderr = '';
         child.stderr.on('data', (d: Buffer) => {
           stderr += d.toString();
@@ -2152,7 +2252,7 @@ describe('stuck-detector.sh', () => {
         // without one the probe degrades to a plain equivalence check rather
         // than failing.
         const child = spawn('bash', ['-c', driver], {
-          env: { ...process.env, LC_ALL: 'en_US.UTF-8' },
+          env: hookEnvironment({ LC_ALL: 'en_US.UTF-8' }),
         });
         let stdout = '';
         let stderr = '';

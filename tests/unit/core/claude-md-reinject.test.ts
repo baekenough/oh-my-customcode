@@ -14,7 +14,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -248,6 +248,105 @@ describe('claude-md-reinject.sh', () => {
       }
       await rm(otherDir, { recursive: true, force: true }).catch(() => undefined);
     }
+  });
+
+  it('documents manual monorepo anchoring with a Git-root stub control (B-L1)', async () => {
+    const packageDir = join(workDir, 'packages', 'fixture');
+    const binDir = join(workDir, 'bin');
+    const ownedScript = join(workDir, 'claude-md-reinject.sh');
+    await mkdir(packageDir, { recursive: true });
+    await mkdir(binDir);
+    await copyFile(SCRIPT, ownedScript);
+    await writeFile(join(workDir, 'CLAUDE.md'), '# Repository Root Rules\n');
+    await writeFile(join(packageDir, 'CLAUDE.md'), '# Package Rules\n');
+    const gitStub = join(binDir, 'git');
+    await writeFile(
+      gitStub,
+      `${[
+        '#!/bin/bash',
+        'if [ "$#" -eq 2 ] && [ "$1" = rev-parse ] && [ "$2" = --show-toplevel ]; then',
+        '  printf "%s\\n" "$OMCC_GIT_FIXTURE_ROOT"',
+        'else',
+        '  exit 9',
+        'fi',
+      ].join('\n')}\n`
+    );
+    await chmod(gitStub, 0o700);
+    const stubEnv = {
+      PATH: `${binDir}:${process.env.PATH ?? ''}`,
+      OMCC_GIT_FIXTURE_ROOT: workDir,
+    };
+    // This deterministic stub exercises branch selection, not real Git discovery.
+    const cases: Array<{
+      cwd: string;
+      env: Record<string, string>;
+      expected: string;
+      excluded: string;
+    }> = [
+      {
+        cwd: workDir,
+        env: {},
+        expected: '# Repository Root Rules',
+        excluded: '# Package Rules',
+      },
+      {
+        cwd: packageDir,
+        env: {},
+        expected: '# Repository Root Rules',
+        excluded: '# Package Rules',
+      },
+      {
+        cwd: packageDir,
+        env: { CLAUDE_PROJECT_DIR: '' },
+        expected: '# Repository Root Rules',
+        excluded: '# Package Rules',
+      },
+      {
+        cwd: packageDir,
+        env: { CLAUDE_PROJECT_DIR: packageDir },
+        expected: '# Package Rules',
+        excluded: '# Repository Root Rules',
+      },
+    ];
+    for (const fixture of cases) {
+      const result = await runHookScript(
+        ownedScript,
+        makeSessionStartInput('compact'),
+        { ...stubEnv, ...fixture.env },
+        fixture.cwd
+      );
+      expect(result.exitCode).toBe(0);
+      expect(additionalContextOf(result.stdout)).toContain(fixture.expected);
+      expect(additionalContextOf(result.stdout)).not.toContain(fixture.excluded);
+    }
+  });
+
+  it('keeps invalid nonempty anchors authoritative against a valid root control (B-L2)', async () => {
+    const ownedScript = join(workDir, 'claude-md-reinject.sh');
+    const fileAnchor = join(workDir, 'anchor-file');
+    await copyFile(SCRIPT, ownedScript);
+    await writeFile(join(workDir, 'CLAUDE.md'), '# Valid Cwd Rules\n');
+    await writeFile(fileAnchor, 'owned file, not a directory\n');
+    for (const invalidAnchor of [join(workDir, 'missing-directory'), fileAnchor]) {
+      const result = await runHookScript(
+        ownedScript,
+        makeSessionStartInput('compact'),
+        { CLAUDE_PROJECT_DIR: invalidAnchor },
+        workDir
+      );
+      // A valid cwd cannot override a nonempty invalid anchor: no fallback.
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe('');
+    }
+    const validRoot = await runHookScript(
+      ownedScript,
+      makeSessionStartInput('compact'),
+      { CLAUDE_PROJECT_DIR: workDir },
+      workDir
+    );
+    expect(validRoot.exitCode).toBe(0);
+    expect(additionalContextOf(validRoot.stdout)).toContain('# Valid Cwd Rules');
   });
 
   // --- JSON validity (R021 v2.1.248 — invalid hook JSON now surfaces as a hook error) ---

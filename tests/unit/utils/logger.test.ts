@@ -130,6 +130,59 @@ describe('logger utilities', () => {
     });
   });
 
+  describe('protected-file explanations without caller hints (#1784 C-L4)', () => {
+    it.each([
+      {
+        locale: 'en' as const,
+        key: 'update.protected_file_force_overwrite',
+        explanation:
+          'The --force-overwrite-all option bypasses the protected-file preservation policy.',
+      },
+      {
+        locale: 'ko' as const,
+        key: 'update.protected_file_force_overwrite',
+        explanation: '--force-overwrite-all 옵션에 따라 보호 파일 보존 정책을 적용하지 않습니다.',
+      },
+      {
+        locale: 'en' as const,
+        key: 'update.protected_file_skipped',
+        explanation:
+          'The protected-file preservation policy skips this update. Use --force-overwrite-all to override.',
+      },
+      {
+        locale: 'ko' as const,
+        key: 'update.protected_file_skipped',
+        explanation:
+          '보호 파일 보존 정책에 따라 업데이트를 건너뜁니다. 덮어쓰려면 --force-overwrite-all 옵션을 사용하십시오.',
+      },
+      {
+        locale: 'en' as const,
+        key: 'update.protected_file_updated',
+        explanation: 'The protected-file policy allows this template update.',
+      },
+      {
+        locale: 'ko' as const,
+        key: 'update.protected_file_updated',
+        explanation: '보호 파일 정책에 따라 템플릿 업데이트가 허용됩니다.',
+      },
+    ])('renders $key in $locale without a hint', ({ locale, key, explanation }) => {
+      setLocale(locale);
+      setColors(false);
+      const updated = key === 'update.protected_file_updated';
+      const log = updated ? info : warn;
+      log(key, { file: 'MUST-example.md', component: 'rules' });
+
+      const spy = updated ? consoleInfoSpy : consoleWarnSpy;
+      expect(spy).toHaveBeenCalledTimes(1);
+      const call = spy.mock.calls[0][0];
+      expect(call).toContain('MUST-example.md');
+      expect(call).toContain('rules');
+      expect(call).toContain(explanation);
+      expect(call).not.toContain('{{');
+      expect(call).toContain(updated ? '[INFO]' : '[WARN]');
+    });
+  });
+
   describe('info', () => {
     it('should output message to console.info', () => {
       info('install.start');

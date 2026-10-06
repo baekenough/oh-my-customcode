@@ -38,8 +38,8 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { existsSync, writeFileSync } from 'node:fs';
+import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -77,7 +77,11 @@ interface ScriptResult {
   exitCode: number;
 }
 
-/** Run session-reflection.sh with given stdin and env overrides. */
+/**
+ * Run session-reflection.sh with given stdin and env overrides.
+ * Resolves when parent stdio closes; detached worker completion is a separate
+ * waitForWorkers()/waitForLog() contract, not implied by this promise.
+ */
 function runScript(
   stdinJson: string,
   env: Record<string, string> = {},
@@ -313,6 +317,98 @@ describe('session-reflection.sh — Stop hook pass-through', () => {
 // ════════════════════════════════════════════════════════════════
 // Fixture 1: clean transcript
 // ════════════════════════════════════════════════════════════════
+
+// Worker-only jq wrapper: owned PATH injection, not a native Claude survival probe.
+// Parent jq calls pass through; injected jq stderr retains existing analysis suppression.
+async function workerJqEnv(mode: 'hold' | 'fail'): Promise<Record<string, string>> {
+  const binDir = join(tmpRoot, 'worker-bin');
+  await mkdir(binDir);
+  const realJq = execFileSync('bash', ['-c', 'command -v jq']).toString().trim();
+  const wrapper = join(binDir, 'jq');
+  await writeFile(
+    wrapper,
+    `${[
+      '#!/bin/bash',
+      'if [ "${1:-}" = -Rsr ]; then',
+      '  printf "%s\\n" "[fixture] worker jq diagnostic" >&2',
+      '  printf "%s\\n" entered > "$OMCC_WORKER_ENTERED"',
+      '  if [ "$OMCC_WORKER_MODE" = fail ]; then exit 7; fi',
+      '  while [ ! -f "$OMCC_WORKER_RELEASE" ]; do sleep 0.01; done',
+      'fi',
+      'exec "$OMCC_REAL_JQ" "$@"',
+    ].join('\n')}\n`
+  );
+  await chmod(wrapper, 0o700);
+  return {
+    ...testEnv(),
+    PATH: `${binDir}:${process.env.PATH ?? ''}`,
+    OMCC_REAL_JQ: realJq,
+    OMCC_WORKER_MODE: mode,
+    OMCC_WORKER_ENTERED: join(tmpRoot, 'worker-entered'),
+    OMCC_WORKER_RELEASE: join(tmpRoot, 'worker-release'),
+  };
+}
+
+describe('session-reflection.sh — detached worker lifecycle (#1800)', () => {
+  it('closes parent pipes before held worker completion, then logs and self-removes', async () => {
+    const sid = 'held-worker';
+    const logPath = await writeTranscript(sid, [
+      ...userTurn('fixture'),
+      ...assistantTurn([{ type: 'text', text: '┌─ Agent: fixture' }]),
+    ]);
+    const env = await workerJqEnv('hold');
+    const releasePath = env.OMCC_WORKER_RELEASE as string;
+    // A safety release prevents an inherited-pipe regression from hanging teardown.
+    // No wall-clock speed threshold is asserted; the marker orders completion.
+    const failsafe = setTimeout(() => writeFileSync(releasePath, 'release'), 8000);
+    try {
+      const input = stopInput(sid);
+      const result = await runScript(input, env);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe(`${input}\n`);
+      expect(result.stderr).toBe('');
+      expect(spawnedPids.some((pid) => existsSync(workerScriptPath(pid)))).toBe(true);
+      expect(existsSync(logPath)).toBe(false);
+      expect(await waitForLog(env.OMCC_WORKER_ENTERED as string, 'entered')).toContain('entered');
+      await writeFile(releasePath, 'release');
+      const log = await waitForLog(logPath, 'Total assistant turns analyzed: 1');
+      expect(log).toContain('**R007 violations**: 0');
+      expect(log).toContain('**R008 violations**: 0');
+      await waitForWorkers();
+      expect(spawnedPids.every((pid) => !existsSync(workerScriptPath(pid)))).toBe(true);
+      const diagnostic = await readFile(`/tmp/.claude-reflection-err-${process.pid}.log`, 'utf-8');
+      expect(diagnostic).not.toContain('[fixture] worker jq diagnostic');
+      expect(diagnostic).toContain('[session-reflection] Analysis complete:');
+    } finally {
+      clearTimeout(failsafe);
+      await writeFile(releasePath, 'release');
+      await waitForWorkers();
+    }
+  }, 15000);
+
+  it('retains worker stderr and analysis fallback when owned jq exits with an error', async () => {
+    const sid = 'failed-worker-analysis';
+    const logPath = await writeTranscript(sid, [
+      ...userTurn('fixture'),
+      ...assistantTurn([{ type: 'text', text: 'Missing header in fixture' }]),
+    ]);
+    const input = stopInput(sid);
+    const result = await runScript(input, await workerJqEnv('fail'));
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe(`${input}\n`);
+    expect(result.stderr).toBe('');
+    const log = await waitForLog(logPath, 'Total assistant turns analyzed: 0');
+    // jq failure uses the existing empty-analysis fallback; it is not proof
+    // that this deliberately violating transcript contains no violations.
+    expect(log).toContain('**R007 violations**: 0');
+    expect(log).toContain('**R008 violations**: 0');
+    await waitForWorkers();
+    expect(spawnedPids.every((pid) => !existsSync(workerScriptPath(pid)))).toBe(true);
+    const diagnostic = await readFile(`/tmp/.claude-reflection-err-${process.pid}.log`, 'utf-8');
+    expect(diagnostic).not.toContain('[fixture] worker jq diagnostic');
+    expect(diagnostic).toContain('[session-reflection] Analysis complete:');
+  }, 15000);
+});
 
 describe('session-reflection.sh — Fixture 1: clean transcript', () => {
   it('emits log with R007=0 R008=0 when all turns are compliant', async () => {

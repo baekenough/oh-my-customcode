@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, join as pathJoin } from 'node:path';
+import packageJson from '../../../package.json';
 import * as codexInstaller from '../../../src/core/codex-installer.js';
 import { getDefaultConfig, saveConfig } from '../../../src/core/config.js';
 import { getProviderLayout } from '../../../src/core/layout.js';
@@ -18,6 +19,7 @@ import {
   type UpdateComponent,
   update,
 } from '../../../src/core/updater.js';
+import * as fsUtils from '../../../src/utils/fs.js';
 
 // Read manifest version dynamically to avoid hardcoding
 const MANIFEST_VERSION = JSON.parse(
@@ -61,6 +63,172 @@ describe('updater', () => {
     const content = await readFile(fullPath, 'utf-8');
     expect(content).toBe(expectedContent);
   }
+
+  describe('accidental 2.0.0 release correction', () => {
+    const originalCliVersion = packageJson.version;
+    const originalReadJsonFile = fsUtils.readJsonFile;
+    let manifestSpy: ReturnType<typeof spyOn> | undefined;
+
+    afterEach(() => {
+      packageJson.version = originalCliVersion;
+      manifestSpy?.mockRestore();
+      manifestSpy = undefined;
+      expect(packageJson.version).toBe(originalCliVersion);
+    });
+
+    async function snapshotProject(): Promise<Record<string, string>> {
+      const result: Record<string, string> = {};
+      async function walk(directory: string, prefix = '') {
+        for (const entry of await readdir(directory, { withFileTypes: true })) {
+          const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+          if (entry.isDirectory()) {
+            result[`${path}/`] = 'directory';
+            await walk(join(directory, entry.name), path);
+          } else {
+            result[path] = (await readFile(join(directory, entry.name))).toString('base64');
+          }
+        }
+      }
+      await walk(tempDir);
+      return result;
+    }
+
+    function useMatchingArtifact(version: string): void {
+      packageJson.version = version;
+      const manifestPath = fsUtils.resolveTemplatePath(getProviderLayout().manifestFile);
+      manifestSpy = spyOn(fsUtils, 'readJsonFile').mockImplementation(
+        async <T>(path: string): Promise<T> => {
+          if (path !== manifestPath) return originalReadJsonFile<T>(path);
+          const manifest = await originalReadJsonFile<Record<string, unknown>>(path);
+          return { ...manifest, version } as T;
+        }
+      );
+    }
+
+    it.each([
+      '1.1.107',
+      '1.1.108',
+    ])('corrects to matching controlled %s artifacts while retaining user customization bytes', async (version) => {
+      useMatchingArtifact(version);
+      await createConfig('2.0.0');
+      const customPath = '.claude/rules/recovery-user.md';
+      const customBytes = 'user-owned recovery content\n';
+      await createDirStructure({ [customPath]: customBytes });
+      const config = JSON.parse(await readFile(join(tempDir, '.omcustomrc.json'), 'utf8'));
+      config.preserveFiles = [customPath];
+      await writeFile(join(tempDir, '.omcustomrc.json'), JSON.stringify(config));
+      const result = await update({ targetDir: tempDir, components: ['rules'], backup: true });
+      expect(result.success).toBe(true);
+      expect(result.previousVersion).toBe('2.0.0');
+      expect(result.newVersion).toBe(version);
+      expect(result.updatedComponents).toContain('rules');
+      expect(result.preservedFiles).toContain(customPath);
+      await verifyFileContent(customPath, customBytes);
+      expect(JSON.parse(await readFile(join(tempDir, '.omcustomrc.json'), 'utf8')).version).toBe(
+        version
+      );
+      const lock = JSON.parse(await readFile(join(tempDir, '.omcustom.lock.json'), 'utf8'));
+      expect(lock.templateVersion).toBe(version);
+      // Generator provenance uses the unchanged on-disk package, not the simulated CLI object.
+      expect(lock.generatorVersion).toBe(originalCliVersion);
+      expect(result.backedUpPaths).toHaveLength(1);
+      expect(codexInstallSpy).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      '1.1.107',
+      '1.1.108',
+    ])('plans controlled %s recovery without changing project bytes or directory entries', async (version) => {
+      useMatchingArtifact(version);
+      await createConfig('2.0.0');
+      await createDirStructure({
+        '.claude/rules/user.md': 'user bytes\n',
+        '.claude/settings.local.json': '{"hooks":{}}\n',
+        '.omcustom.lock.json': JSON.stringify({
+          lockfileVersion: 1,
+          generatorVersion: '2.0.0',
+          templateVersion: '2.0.0',
+          generatedAt: '2025-01-01T00:00:00.000Z',
+          files: {},
+        }),
+      });
+      const before = await snapshotProject();
+      const result = await update({ targetDir: tempDir, dryRun: true, backup: true });
+      expect(result.success).toBe(true);
+      expect(result.newVersion).toBe(version);
+      expect(result.backedUpPaths).toEqual([]);
+      expect(await snapshotProject()).toEqual(before);
+      expect(codexCheckSpy).not.toHaveBeenCalled();
+      expect(codexInstallSpy).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['2.0.1', '1.1.107'],
+      ['2.1.0', '1.1.107'],
+      ['3.0.0', '1.1.107'],
+      ['2.0.0', '1.1.106'],
+      ['2.0.0', '1.1.107-beta.1'],
+      ['2.0.0', '1.0.107'],
+      ['2.0.0', '1.2.107'],
+      ['2.0.0', '1.1.9007199254740992'],
+      ['2.0.0', '1.1.0107'],
+    ])('blocks unsupported correction %s -> %s even with force options', async (installed, cli) => {
+      packageJson.version = cli;
+      await createConfig(installed);
+      await createDirStructure({ '.claude/rules/user.md': 'unchanged user bytes' });
+      const before = await snapshotProject();
+      for (const force of [false, true]) {
+        const result = await update({
+          targetDir: tempDir,
+          components: ['rules'],
+          backup: true,
+          force,
+          forceOverwriteAll: force,
+        });
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('Downgrade prevented');
+        expect(result.backedUpPaths).toEqual([]);
+        expect(result.updatedComponents).toEqual([]);
+        expect(await snapshotProject()).toEqual(before);
+        expect(codexCheckSpy).not.toHaveBeenCalled();
+        expect(codexInstallSpy).not.toHaveBeenCalled();
+      }
+    });
+
+    it('keeps ordinary upgrade manifest reads and NaN comparison behavior unchanged', async () => {
+      const manifestPath = fsUtils.resolveTemplatePath(getProviderLayout().manifestFile);
+      let manifestReads = 0;
+      manifestSpy = spyOn(fsUtils, 'readJsonFile').mockImplementation(async <T>(path: string) => {
+        if (path === manifestPath) manifestReads++;
+        return originalReadJsonFile<T>(path);
+      });
+      for (const installed of ['0.1.0', '1.1.invalid']) {
+        await createConfig(installed);
+        const before = await snapshotProject();
+        manifestReads = 0;
+        const result = await update({ targetDir: tempDir, components: ['rules'], dryRun: true });
+        expect(result.success).toBe(true);
+        expect(result.newVersion).toBe(MANIFEST_VERSION);
+        expect(manifestReads).toBe(1);
+        expect(await snapshotProject()).toEqual(before);
+      }
+    });
+
+    it('retains source-package self-skip before backups for ordinary and recovery installs', async () => {
+      await createDirStructure({ 'package.json': JSON.stringify({ name: 'oh-my-customcode' }) });
+      for (const installed of ['0.1.0', '2.0.0']) {
+        await createConfig(installed);
+        const before = await snapshotProject();
+        const result = await update({ targetDir: tempDir, force: true, backup: true });
+        expect(result.success).toBe(true);
+        expect(result.skippedSource).toBe(true);
+        expect(result.updatedComponents).toEqual([]);
+        expect(result.backedUpPaths).toEqual([]);
+        expect(await snapshotProject()).toEqual(before);
+        expect(codexCheckSpy).not.toHaveBeenCalled();
+      }
+    });
+  });
 
   describe('checkForUpdates', () => {
     it('should detect updates when component versions differ', async () => {

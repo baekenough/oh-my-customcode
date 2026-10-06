@@ -8,10 +8,11 @@
  *
  * Ownership rules. Something is omcustom-owned (and therefore replaced by the freshly
  * generated groups) only when it is positively recognized:
- *   1. A matcher group whose `description` equals a generated group description or a retired
- *      one ({@link LEGACY_OMCUSTOM_DESCRIPTIONS}). This is the only way prompt/agent hooks and
- *      inline scripts are recognized. Limitation: user commands appended INSIDE an owned
- *      group are lost with it.
+ *   1. A matcher group with an array-valued `hooks` whose `description` equals a generated
+ *      group description or a retired one ({@link LEGACY_OMCUSTOM_DESCRIPTIONS}). This is the
+ *      only way prompt/agent hooks are recognized. The whole owned group is replaced, including
+ *      any user commands appended inside it, without a per-command warning (#1784 A-M2).
+ *      Keep personal hooks in a separate unowned group instead of editing an owned group.
  *   2. A single `command` hook that, under the SAME event AND inside a group with the SAME
  *      `matcher` (absent and `''` count as the same), either equals a generated command string
  *      or is a standalone call of a script the generated groups of that event+matcher ship
@@ -20,7 +21,10 @@
  *      group reusing a shipped script under another matcher is the user's own wiring and kept.
  *   3. Retired RTK standalone commands are removed only under PreToolUse/Bash. The old
  *      RTK description never owns a whole group: user-added sibling hooks survive retirement.
- * Everything else, including unknown shapes, is kept: user hooks are never deleted on a guess.
+ * Shape limits (#1784 A-L3): a non-object top-level `hooks` value and a non-array value on a
+ * generated event are replaced by the generated blocks. Non-array values on other events and
+ * unknown matcher-group shapes are retained. Within event arrays, groups and hooks that are
+ * not positively recognized as owned are kept; ownership is never inferred from an odd shape.
  */
 
 /**

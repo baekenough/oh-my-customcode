@@ -38,7 +38,13 @@ fi
 
 source_field=$(printf '%s' "$input" | jq -r '.source // "unknown"' 2>/dev/null) || source_field="unknown"
 
-# #1770: honor CLAUDE_PROJECT_DIR first; fallback git toplevel (or pwd), not script location.
+# #1770 / B-L1: nonempty CLAUDE_PROJECT_DIR selects the anchor. When manually
+# running inside a Git monorepo package, set it to that package to select its
+# CLAUDE.md; unset/empty instead selects the Git toplevel, then pwd if Git fails.
+# The script location is never the fallback project anchor.
+# B-L2: a nonempty invalid anchor is authoritative; there is no Git/cwd retry.
+# If its CLAUDE.md is missing (including a missing directory or a file anchor),
+# the file check below returns silently with exit 0, preserving advisory behavior.
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 CLAUDE_MD="$PROJECT_ROOT/CLAUDE.md"
 

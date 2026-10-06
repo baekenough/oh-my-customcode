@@ -183,7 +183,7 @@ v1.1.29(#1484)에서 제거되었습니다.
 
 DEFER 기간 동안의 cross-tool integration 우회 경로:
 
-아래 대안과 use case 범위는 당시 결정 이력으로 보존합니다. RTK 프로젝트 통합은 v2.0.0에서 퇴역하므로 RTK proxy skill을 현재 실행 경로로 사용하지 마십시오. 이 기록의 효과 범위를 현재 버전에서 새로 실측했다는 뜻은 아닙니다.
+아래 대안과 use case 범위는 당시 결정 이력으로 보존합니다. RTK 프로젝트 통합은 v1.1.107에서 퇴역하므로 RTK proxy skill을 현재 실행 경로로 사용하지 마십시오. 이 기록의 효과 범위를 현재 버전에서 새로 실측했다는 뜻은 아닙니다.
 
 - **RTK proxy skill**: 기존 infra 활용, Cursor 등에서 oh-my-customcode skill 호출
 - **Codex/Gemini exec skill**: 외부 LLM executor를 skill로 래핑, harness 종속성 없음

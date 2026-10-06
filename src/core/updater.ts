@@ -731,6 +731,48 @@ async function runFullUpdatePostProcessing(
 }
 
 /**
+ * Keep the ordinary downgrade comparison, allowing correction of 2.0.0 only to a stable
+ * 1.1 patch from 107 onward, with an existing manifest matching this CLI.
+ * This checks release versions, not the contents of every template file.
+ */
+async function getUpdateVersionDecision(
+  installedVersion: string,
+  cliVersion: string
+): Promise<'standard' | 'blocked' | 'correction'> {
+  if (!(installedVersion !== '0.0.0' && compareSemver(installedVersion, cliVersion) > 0)) {
+    return 'standard';
+  }
+
+  if (installedVersion !== '2.0.0') {
+    return 'blocked';
+  }
+
+  const match = /^1\.1\.(0|[1-9]\d*)$/.exec(cliVersion);
+  if (!match) {
+    return 'blocked';
+  }
+
+  const patch = Number(match[1]);
+  if (!Number.isSafeInteger(patch) || patch < 107) {
+    return 'blocked';
+  }
+
+  const manifestPath = resolveTemplatePath(getProviderLayout().manifestFile);
+  if (!(await fileExists(manifestPath))) {
+    return 'blocked';
+  }
+
+  const manifest = await readJsonFile<unknown>(manifestPath);
+  const correctionAllowed =
+    typeof manifest === 'object' &&
+    manifest !== null &&
+    !Array.isArray(manifest) &&
+    'version' in manifest &&
+    manifest.version === cliVersion;
+  return correctionAllowed ? 'correction' : 'blocked';
+}
+
+/**
  * Compare two semver strings numerically.
  * Returns a positive number if a > b, negative if a < b, 0 if equal.
  */
@@ -823,14 +865,11 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     const config = await loadConfig(options.targetDir);
     result.previousVersion = config.version;
 
-    // Guard against version downgrade (#579).
-    // If the project's installed version is newer than this CLI's own version,
-    // an outdated CLI binary is running. Abort to prevent a downgrade.
+    // Guard against version downgrade (#579), except for the narrowly checked
+    // correction of the accidentally published 2.0.0 release.
     const cliVersion = packageJson.version as string;
-    if (
-      result.previousVersion !== '0.0.0' &&
-      compareSemver(result.previousVersion, cliVersion) > 0
-    ) {
+    const versionDecision = await getUpdateVersionDecision(result.previousVersion, cliVersion);
+    if (versionDecision === 'blocked') {
       result.success = false;
       result.error = `Downgrade prevented: project has v${result.previousVersion} but CLI is v${cliVersion}. Update the CLI first: npm install -g oh-my-customcode@latest`;
       return result;
@@ -841,6 +880,12 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     }
 
     const updateCheck = await checkForUpdates(options.targetDir);
+    // Recheck the selected template version before backups or update writes.
+    if (versionDecision === 'correction' && updateCheck.latestVersion !== cliVersion) {
+      result.success = false;
+      result.error = `Version correction prevented: CLI is v${cliVersion} but templates are v${updateCheck.latestVersion}. Reinstall the CLI: npm install -g oh-my-customcode@latest`;
+      return result;
+    }
     result.newVersion = updateCheck.latestVersion;
 
     if (!updateCheck.hasUpdates && !options.force) {
@@ -1221,23 +1266,20 @@ async function updateComponent(
       warn('update.protected_file_force_overwrite', {
         file: protectedPath,
         component,
-        hint: 'File contains AI behavioral constraints. Overwriting because --force-overwrite-all was set.',
       });
     } else {
       warn('update.protected_file_skipped', {
         file: protectedPath,
         component,
-        hint: 'File was modified by user and preserved. Use --force-overwrite-all to override.',
       });
     }
   }
 
-  // Log protected files that WILL be updated (unmodified by user, matches lockfile hash)
+  // Log protected files selected for update by the protection policy.
   for (const updatedPath of protectedUpdatedPaths) {
     info('update.protected_file_updated', {
       file: updatedPath,
       component,
-      hint: 'Protected file updated (unmodified by user, matches lockfile hash).',
     });
   }
 
