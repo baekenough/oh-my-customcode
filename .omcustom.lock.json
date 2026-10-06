@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.0",
-  "generatedAt": "2026-10-06T06:54:27.878Z",
-  "templateVersion": "2.0.0",
+  "generatorVersion": "1.1.107",
+  "generatedAt": "2026-10-06T12:01:03.365Z",
+  "templateVersion": "1.1.107",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -305,8 +305,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/claude-md-reinject.sh": {
-      "templateHash": "c4640211ca73fcadd24412b56ccfb4eb3db0f6c7d3fbfb3e5cae0116d5d57a4a",
-      "size": 3491,
+      "templateHash": "f1ee16d9a04aae5d0a982cabcacac49fa0ef131dc11acce0e4a1ad774c2b902f",
+      "size": 3937,
       "component": "hooks"
     },
     ".claude/hooks/scripts/content-hash-validator.sh": {
@@ -420,8 +420,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-reflection.sh": {
-      "templateHash": "46e79ca0700d3983860b873cc553a1d4d80bc87652d0a36c01fcf3aca8b5ecba",
-      "size": 11756,
+      "templateHash": "b89f27ad0052f9eb92636aa7674b4e1279968907e75aab790f4f23d194a040df",
+      "size": 13541,
       "component": "hooks"
     },
     ".claude/hooks/scripts/skill-extractor-analyzer.sh": {
@@ -450,8 +450,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "05b80da16b1f01de53487046304997e8e7017a6900a6bde95cff03b6786aa2b0",
-      "size": 36479,
+      "templateHash": "1c3b8b5da5c5d8e764decbacaff0f9dab86483388351a6e8c140abb880e7aa1b",
+      "size": 40619,
       "component": "hooks"
     },
     ".claude/hooks/scripts/subagent-failure-advisor.sh": {
@@ -530,8 +530,8 @@
       "component": "ontology"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "e270fbb5db35a0d16939d0fe40fbb65e0a922e0f9d7a74003921d99073c93583",
-      "size": 32382,
+      "templateHash": "1f2c61d2b53780e2c02d29e6f1548ec3446de5be7c3d04e0de89eb14739deac6",
+      "size": 32529,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
@@ -625,8 +625,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "6311b3b104c584123512cee9fb6e72fe9c9e3ee55ea384e70dd9dfec653b0b80",
-      "size": 34312,
+      "templateHash": "96e61b7f066ed1088b0ce3071a4cfb0ce2593f10e6359feacd59b2d2038a4506",
+      "size": 34314,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -635,8 +635,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-verification-ladder.md": {
-      "templateHash": "5aa9829dd4d6c95966b10ebbfec47f4af94d51c85662af7ee1e88ce4a8485b6f",
-      "size": 35694,
+      "templateHash": "ee257352ed3a8ba101c2aa05e7b5aa3bbd1bdf19f648f06fc828a3f973cd6cba",
+      "size": 36166,
       "component": "rules"
     },
     ".claude/rules/SHOULD-wiki-sync.md": {
@@ -1060,8 +1060,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "9c32a530bc5e562d3f1c6a5aba61fdc0bf826e00aafbeb5480ecdaf5393b18ef",
-      "size": 151733,
+      "templateHash": "70ee3864b37315f019ee5b94bc42a482b694b0b092c762c0bfd0704d340e20e9",
+      "size": 152284,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1615,8 +1615,8 @@
       "component": "guides"
     },
     "guides/external-tools/ecc-absorption-decisions.md": {
-      "templateHash": "31367acb00728d2f8b3525394ce8b5539acf7810f773804d91f1e48c269a4858",
-      "size": 9440,
+      "templateHash": "9802a3a86f124a04908d21dfd7d38f76699c80301b44f1fa078d82f0dcc0ee5f",
+      "size": 9442,
       "component": "guides"
     },
     "guides/external-tools/graphify-integration.md": {
@@ -1810,8 +1810,8 @@
       "component": "guides"
     },
     "guides/multi-provider-exec/README.md": {
-      "templateHash": "104bcb6c958002d8808c7c88cede7cdddc97063bf7db088d69607db97cd262ce",
-      "size": 2836,
+      "templateHash": "6112cbda38c46d6b9dd78a6a6c85e51f5efdc1dff2a75a24862f884a2b0d86a3",
+      "size": 2838,
       "component": "guides"
     },
     "guides/postgres/README.md": {

@@ -411,6 +411,74 @@ describe('file-preservation', () => {
       expect(result.onlyUser).toBe(true);
     });
 
+    it.each([
+      ['null', 'null\n'],
+      ['invalid JSON', '{ not json\n'],
+    ])('keeps template and %s bytes on restore failure (#1784 A-L4)', async (_label, original) => {
+      const preservedPath = join(preserveDir, 'settings.local.json');
+      const targetPath = join(rootDir, 'settings.local.json');
+      const template = '{\n  "template": true\n}\n';
+      await writeFile(preservedPath, original);
+      await writeFile(targetPath, template);
+
+      const result = await restoreCriticalFiles(rootDir, {
+        tempDir: preserveDir,
+        extractedFiles: ['settings.local.json'],
+        extractedDirs: [],
+        failures: [],
+      });
+
+      expect(result.restoredFiles).toEqual([]);
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0]?.path).toBe('settings.local.json');
+      expect(result.failures[0]?.reason.length).toBeGreaterThan(0);
+      expect(await readFile(targetPath, 'utf-8')).toBe(template);
+      expect(await readFile(preservedPath, 'utf-8')).toBe(original);
+    });
+
+    it.each([
+      ['null', '\uFEFFnull\n'],
+      ['object', '\uFEFF{"user": true}\n'],
+    ])('copies parsed %s to an absent target (#1784 A-L4)', async (_label, original) => {
+      const preservedPath = join(preserveDir, 'settings.local.json');
+      const targetPath = join(rootDir, 'settings.local.json');
+      await writeFile(preservedPath, original);
+      expect(await fileExists(targetPath)).toBe(false);
+
+      const result = await restoreCriticalFiles(rootDir, {
+        tempDir: preserveDir,
+        extractedFiles: ['settings.local.json'],
+        extractedDirs: [],
+        failures: [],
+      });
+
+      expect(result.failures).toEqual([]);
+      expect(result.restoredFiles).toEqual(['settings.local.json']);
+      expect(await readFile(targetPath, 'utf-8')).toBe(original);
+      expect(await readFile(preservedPath, 'utf-8')).toBe(original);
+    });
+
+    it('reports invalid JSON before copying to an absent target (#1784 A-L4)', async () => {
+      const preservedPath = join(preserveDir, 'settings.local.json');
+      const targetPath = join(rootDir, 'settings.local.json');
+      const original = '{ not json\n';
+      await writeFile(preservedPath, original);
+      expect(await fileExists(targetPath)).toBe(false);
+
+      const result = await restoreCriticalFiles(rootDir, {
+        tempDir: preserveDir,
+        extractedFiles: ['settings.local.json'],
+        extractedDirs: [],
+        failures: [],
+      });
+
+      expect(result.restoredFiles).toEqual([]);
+      expect(result.failures).toHaveLength(1);
+      expect(result.failures[0]?.path).toBe('settings.local.json');
+      expect(await fileExists(targetPath)).toBe(false);
+      expect(await readFile(preservedPath, 'utf-8')).toBe(original);
+    });
+
     describe('text conventions follow the preserved (user) file (#1776)', () => {
       const BOM = '﻿';
       const pretty = (value: unknown): string => JSON.stringify(value, null, 2);

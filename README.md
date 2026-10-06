@@ -296,7 +296,7 @@ your-project/
 
 ## External Tool Integrations
 
-Starting with v2.0.0, project RTK integration is retired: the public `/rtk-exec` skill, automatic installation, doctor integration, and RTK hooks are removed. Separately installed RTK binaries remain on your machine. Updates automatically remove retired managed files only when their hashes match the previous lockfile. Modified files and files with unknown ownership are preserved and reported as conflicts; retained user skill files may still be discovered automatically. Other tools are optional:
+Starting with v1.1.107, project RTK integration is retired: the public `/rtk-exec` skill, automatic installation, doctor integration, and RTK hooks are removed. Separately installed RTK binaries remain on your machine. Updates automatically remove retired managed files only when their hashes match the previous lockfile. Modified files and files with unknown ownership are preserved and reported as conflicts; retained user skill files may still be discovered automatically. Other tools are optional:
 
 | Tool | Purpose | Install | Status |
 |------|---------|---------|--------|

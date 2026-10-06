@@ -128,7 +128,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.file_applied': 'Applied update to {{path}}',
     'update.lockfile_regenerated': 'Lockfile regenerated ({{files}} files tracked)',
     'update.lockfile_failed': 'Failed to regenerate lockfile: {{error}}',
-    'update.protected_file_updated': '⟳ Protected file {{file}} in {{component}} updated: {{hint}}',
+    'update.protected_file_updated':
+      '⟳ Protected file {{file}} in {{component}} selected for update: The protected-file policy allows this template update.',
     'update.namespace_synced': 'Namespace synced: {{file}} ({{component}})',
     'update.hook_commands_migrated':
       'Migrated {{count}} hook/statusLine command(s) to CLAUDE_PROJECT_DIR-anchored paths',
@@ -173,8 +174,9 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.entry_merge_warning': 'Entry document merge warning: {{warning}}',
     'update.entry_template_not_found': 'Entry document template not found: {{template}}',
     'update.protected_file_force_overwrite':
-      'Protected file {{file}} in {{component}} overwritten: {{hint}}',
-    'update.protected_file_skipped': 'Protected file {{file}} in {{component}} skipped: {{hint}}',
+      'Protected file {{file}} in {{component}} selected for overwrite: The --force-overwrite-all option bypasses the protected-file preservation policy.',
+    'update.protected_file_skipped':
+      'Protected file {{file}} in {{component}} skipped: The protected-file preservation policy skips this update. Use --force-overwrite-all to override.',
     'update.settings_local_backfill_failed':
       'Failed to backfill statusLine refreshInterval in {{path}}',
 
@@ -266,7 +268,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.file_applied': '{{path}} 업데이트 적용',
     'update.lockfile_regenerated': '잠금 파일 재생성 완료 ({{files}}개 파일 추적)',
     'update.lockfile_failed': '잠금 파일 재생성 실패: {{error}}',
-    'update.protected_file_updated': '⟳ 보호 파일 {{file}} ({{component}}) 업데이트됨: {{hint}}',
+    'update.protected_file_updated':
+      '⟳ 보호 파일 {{file}} ({{component}}) 업데이트 대상: 보호 파일 정책에 따라 템플릿 업데이트가 허용됩니다.',
     'update.namespace_synced': '네임스페이스 동기화: {{file}} ({{component}})',
     'update.hook_commands_migrated':
       'CLAUDE_PROJECT_DIR 기준 경로로 훅/상태줄 명령 {{count}}개를 마이그레이션했습니다',
@@ -311,9 +314,9 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.entry_merge_warning': '진입 문서 병합 경고: {{warning}}',
     'update.entry_template_not_found': '진입 문서 템플릿을 찾을 수 없습니다: {{template}}',
     'update.protected_file_force_overwrite':
-      '{{component}}의 보호 파일 {{file}}을(를) 덮어썼습니다: {{hint}}',
+      '{{component}}의 보호 파일 {{file}} 덮어쓰기 대상: --force-overwrite-all 옵션에 따라 보호 파일 보존 정책을 적용하지 않습니다.',
     'update.protected_file_skipped':
-      '{{component}}의 보호 파일 {{file}}을(를) 건너뜁니다: {{hint}}',
+      '{{component}}의 보호 파일 {{file}}을(를) 건너뜁니다: 보호 파일 보존 정책에 따라 업데이트를 건너뜁니다. 덮어쓰려면 --force-overwrite-all 옵션을 사용하십시오.',
     'update.settings_local_backfill_failed':
       '{{path}}의 statusLine refreshInterval 보충에 실패했습니다',
 

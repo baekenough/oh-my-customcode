@@ -21,7 +21,15 @@
  *   - restores performed in `afterEach` or through a helper function (`afterAll(restoreAll)`)
  *     are NOT recognised and are reported as `no-restore`. These are known, intentional
  *     false positives: the inline `afterAll` pattern above is the only supported form.
- * Known false negative: an aliased `mock.module` (`const m = mock.module`) is not seen.
+ * Explicit limits (paired fixtures below record findings, not runtime safety):
+ *   - C-M1: capture order is textual; a beforeAll callback may run after a top-level mock.
+ *     A [] finding does not prove callback execution order or an uncontaminated capture.
+ *   - C-M2: every mock.module call inside afterAll is classified as a restore candidate;
+ *     a fake-only afterAll registration can produce [] without restoring any real module.
+ *   - C-L1: only direct mock.module calls are recognised; import aliases and computed
+ *     accesses are unseen. vi.mock is outside this Bun mock.module invariant.
+ *   - C-L2: the string-aware scan has no regex-literal lexer. A quote in a regex can
+ *     extend an afterAll range and hide a later installing mock. [] is not safety proof.
  */
 
 import { describe, expect, it } from 'bun:test';
@@ -255,7 +263,10 @@ function collectCaptures(code: string): Capture[] {
   return captures;
 }
 
-/** Evaluate "no restore at all" first, then "no capture before the mock", then restore linkage. */
+/**
+ * Evaluate restore presence, textual capture position, then name linkage.
+ * C-M1: index comparison cannot prove when beforeAll callbacks execute.
+ */
 function restoreFailure(
   spec: string,
   first: MockCall,
@@ -297,7 +308,9 @@ export function findModuleMockViolations(source: string): ModuleMockViolation[] 
   for (const [spec, calls] of bySpec) {
     const first = calls.find((c) => !c.restore);
     if (first === undefined) {
-      continue; // restore-only: nothing installed in this file
+      // C-M2: range classification alone also skips fake-only afterAll calls;
+      // this is not proof that no installing mock executes in the file.
+      continue;
     }
     const reason = restoreFailure(
       spec,
@@ -527,6 +540,76 @@ describe('findModuleMockViolations (fixtures)', () => {
       '\n'
     );
     expect(findModuleMockViolations(src)).toEqual([]);
+  });
+
+  it('documents textual capture order without proving callback execution order (C-M1)', () => {
+    const deferredCapture = [
+      'let realX: Record<string, unknown>;',
+      'beforeAll(async () => {',
+      "  realX = { ...(await import('../src/core/x.js')) };",
+      '});',
+      "mock.module('../src/core/x.js', () => ({}));",
+      'afterAll(() => {',
+      "  mock.module('../src/core/x.js', () => realX);",
+      '});',
+    ].join('\n');
+    const topLevelCapture = [
+      "const realX = { ...(await import('../src/core/x.js')) };",
+      "mock.module('../src/core/x.js', () => ({}));",
+      'afterAll(() => {',
+      "  mock.module('../src/core/x.js', () => realX);",
+      '});',
+    ].join('\n');
+    // Both are textually linked. Only the control captures at top level;
+    // the scanner does not prove that deferredCapture captured before mocking.
+    expect(summarize(deferredCapture)).toEqual([]);
+    expect(summarize(topLevelCapture)).toEqual([]);
+  });
+
+  it('documents fake-only afterAll calls as an unseen installation (C-M2)', () => {
+    const fakeOnlyAfterAll = [
+      'afterAll(() => {',
+      "  mock.module('../src/core/x.js', () => ({}));",
+      '});',
+    ].join('\n');
+    const topLevelFake = "mock.module('../src/core/x.js', () => ({}));";
+    // [] records range classification, not successful restoration.
+    expect(summarize(fakeOnlyAfterAll)).toEqual([]);
+    expect(summarize(topLevelFake)).toEqual(['../src/core/x.js:no-restore']);
+  });
+
+  it('documents alias, computed access, and vi calls outside direct recognition (C-L1)', () => {
+    const importAlias = [
+      "import { mock as mocked } from 'bun:test';",
+      "mocked.module('../src/core/x.js', () => ({}));",
+    ].join('\n');
+    const computedAccess = "mock['module']('../src/core/x.js', () => ({}));";
+    const vitestCall = "vi.mock('../src/core/x.js', () => ({}));";
+    const directCall = "mock.module('../src/core/x.js', () => ({}));";
+    // Unsupported spelling is unseen; none of these [] findings proves hygiene.
+    for (const unsupported of [importAlias, computedAccess, vitestCall]) {
+      expect(summarize(unsupported)).toEqual([]);
+    }
+    expect(summarize(directCall)).toEqual(['../src/core/x.js:no-restore']);
+  });
+
+  it('documents regex quote range confusion against a plain regex control (C-L2)', () => {
+    const quoteRegex = [
+      'afterAll(() => {',
+      "  const pattern = /'/;",
+      '});',
+      'mock.module("../src/core/x.js", () => ({}));',
+    ].join('\n');
+    const plainRegex = [
+      'afterAll(() => {',
+      '  const pattern = /x/;',
+      '});',
+      'mock.module("../src/core/x.js", () => ({}));',
+    ].join('\n');
+    // A regex quote is mistaken for a string opener, extending the afterAll
+    // range over the later mock. The resulting [] is a false negative.
+    expect(summarize(quoteRegex)).toEqual([]);
+    expect(summarize(plainRegex)).toEqual(['../src/core/x.js:no-restore']);
   });
 
   it('does not treat // inside a string as a comment', () => {

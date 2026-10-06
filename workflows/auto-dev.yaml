@@ -1446,9 +1446,11 @@ steps:
               re-running step d then step e, re-staging, and re-running this assertion.
 
          Version decision (semver) — PATCH-PREFERRED policy (post-1.0.0):
+         - The user's explicit version or bump-level judgment takes precedence. Approval to remove a feature or change hooks is not approval for a major or minor version.
          - No existing tags → v0.1.0
          - Previous tag exists → DEFAULT to patch. When in doubt, patch — do NOT reflexively bump minor for rule/doc/skill edits.
            - patch (DEFAULT): rule/doc/skill/config/wiki/workflow changes, bugfixes, hardening, CC-compat notes — the vast majority of this project's changes
+           - Public skill/agent/integration additions and removals follow this repository's PATCH-PREFERRED lifecycle policy, including RTK integration and /rtk-exec retirement. Names, files, or counts appearing or disappearing alone do not justify a major or minor bump.
            - minor: ONLY a new user-facing capability that changes HOW the harness is used — a new
              workflow axis, a new command surface users must learn, or a contract other components
              depend on. NOT "a file was added under .claude/skills/ or .claude/agents/".
@@ -1460,7 +1462,7 @@ steps:
              baseline rate of change, NOT a minor signal. If a version bump would follow
              mechanically from "a new file exists", it is patch. Ask instead: does a user's
              workflow change because of this?
-           - major: breaking changes to user-facing contracts (CLI flags, public skill/command names, public API), or a deliberate milestone declaration (e.g., v1.0.0)
+           - major: actual compatibility breaks in existing CLI flags or public APIs, or an explicit major milestone declaration (e.g., v1.0.0). Skill/agent/integration lifecycle changes alone are excluded; the user's explicit version or bump-level judgment takes precedence.
          - Previous tag is ahead of source version (e.g., tag v0.136.1, package.json 0.136.0): use next available skip-version (0.136.2)
 
       2. Release notes via omcustom-release-notes skill

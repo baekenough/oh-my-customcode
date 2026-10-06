@@ -8,7 +8,7 @@ Inspired by OpenHarness's provider profile switching pattern, adapted for oh-my-
 
 ## Provider Matrix
 
-v2.0.0에서는 사용자 결정에 따라 프로젝트 RTK 통합과 공개 `rtk-exec` 스킬을 퇴역합니다. 이 가이드의 RTK 실행 예시·추천을 사용하지 마십시오. 머신에 별도로 설치한 RTK 바이너리는 이 변경으로 제거하지 않습니다.
+v1.1.107에서는 사용자 결정에 따라 프로젝트 RTK 통합과 공개 `rtk-exec` 스킬을 퇴역합니다. 이 가이드의 RTK 실행 예시·추천을 사용하지 마십시오. 머신에 별도로 설치한 RTK 바이너리는 이 변경으로 제거하지 않습니다.
 
 ## Availability Detection
 

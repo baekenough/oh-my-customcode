@@ -12,7 +12,7 @@ Comprehensive reference documentation covering **56 source topics**:
 
 ## Cross-Provider Execution
 
-- [[multi-provider-exec]] — External provider availability and explicit execution guidance; records RTK project integration retirement in v2.0.0 and complements [[multi-model-routing]]
+- [[multi-provider-exec]] — External provider availability and explicit execution guidance; records RTK project integration retirement in v1.1.107 and complements [[multi-model-routing]] ([source guide](../guides/multi-provider-exec/README.md))
 
 ---
 

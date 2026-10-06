@@ -1475,6 +1475,118 @@ describe('session-env-check.sh', () => {
 // user-prompt-preprocessor.sh
 // -------------------------------------------------------------------
 
+describe('stale-todo-scanner root contracts (#1784 B-L1/B-L2)', () => {
+  let fixtureDir: string;
+  let projectRoot: string;
+  let packageDir: string;
+  let copiedTodo: string;
+  let copiedReinject: string;
+  let fixtureEnv: Record<string, string>;
+  const input = JSON.stringify({ hook_event_name: 'SessionStart', source: 'compact' });
+
+  beforeEach(async () => {
+    fixtureDir = mkdtempSync(join(tmpdir(), 'omcc-todo-root-contract-'));
+    projectRoot = join(fixtureDir, 'project');
+    packageDir = join(projectRoot, 'packages', 'example');
+    const stubBin = join(fixtureDir, 'bin');
+    await mkdir(packageDir, { recursive: true });
+    await mkdir(stubBin);
+    await writeFile(join(projectRoot, 'TODO.md'), '# TODO\n- [ ] ROOT_ONLY\n');
+    await writeFile(join(packageDir, 'TODO.md'), '# TODO\n- [ ] PACKAGE_A\n- [ ] PACKAGE_B\n');
+    await writeFile(join(packageDir, 'CLAUDE.md'), '# PACKAGE_CONTEXT\n');
+    await writeFile(join(fixtureDir, 'anchor-file'), 'not a directory\n');
+    copiedTodo = join(fixtureDir, 'stale-todo-scanner.sh');
+    copiedReinject = join(fixtureDir, 'claude-md-reinject.sh');
+    await writeFile(copiedTodo, await readFile(join(SCRIPTS_DIR, 'stale-todo-scanner.sh')));
+    await writeFile(copiedReinject, await readFile(join(SCRIPTS_DIR, 'claude-md-reinject.sh')));
+    // Controlled git return values exercise root selection, not actual Git discovery.
+    await writeFile(
+      join(stubBin, 'git'),
+      [
+        '#!/bin/sh',
+        '[ "$1" = rev-parse ] && [ "$2" = --show-toplevel ] || exit 3',
+        'if [ "$OMCC_FIXTURE_GIT_FAIL" = yes ]; then exit 1; fi',
+        'printf "%s\n" "$OMCC_FIXTURE_GIT_ROOT"',
+        '',
+      ].join('\n'),
+      { mode: 0o700 }
+    );
+    fixtureEnv = {
+      PATH: `${stubBin}:/usr/bin:/bin:/opt/homebrew/bin`,
+      OMCC_FIXTURE_GIT_ROOT: projectRoot,
+      OMCC_FIXTURE_GIT_FAIL: 'no',
+    };
+  });
+
+  afterEach(async () => {
+    await rm(fixtureDir, { recursive: true, force: true });
+  });
+
+  it('selects the controlled git root when the project env is unset', async () => {
+    const result = await runHookScript(copiedTodo, input, fixtureEnv, packageDir);
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(JSON.parse(input));
+    expect(result.stderr).toContain('Pending items: 1');
+    expect(result.stderr).not.toContain('Pending items: 2');
+  });
+
+  it('selects the explicit package env instead of the controlled git root', async () => {
+    const result = await runHookScript(
+      copiedTodo,
+      input,
+      { ...fixtureEnv, CLAUDE_PROJECT_DIR: packageDir },
+      packageDir
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(JSON.parse(input));
+    expect(result.stderr).toContain('Pending items: 2');
+    expect(result.stderr).not.toContain('Pending items: 1');
+  });
+
+  it('uses the package cwd when the project env is unset and git fails', async () => {
+    const result = await runHookScript(
+      copiedTodo,
+      input,
+      { ...fixtureEnv, OMCC_FIXTURE_GIT_FAIL: 'yes' },
+      packageDir
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual(JSON.parse(input));
+    expect(result.stderr).toContain('Pending items: 2');
+    expect(result.stderr).not.toContain('Pending items: 1');
+  });
+
+  it.each([
+    'missing-directory',
+    'anchor-file',
+  ])('keeps the TODO cwd for an invalid %s anchor while reinject stays silent', async (anchor) => {
+    const invalidEnv = { ...fixtureEnv, CLAUDE_PROJECT_DIR: join(fixtureDir, anchor) };
+    const todo = await runHookScript(copiedTodo, input, invalidEnv, packageDir);
+    const reinject = await runHookScript(copiedReinject, input, invalidEnv, packageDir);
+    const validReinject = await runHookScript(
+      copiedReinject,
+      input,
+      { ...fixtureEnv, CLAUDE_PROJECT_DIR: packageDir },
+      packageDir
+    );
+
+    expect(todo.exitCode).toBe(0);
+    expect(JSON.parse(todo.stdout)).toEqual(JSON.parse(input));
+    expect(todo.stderr).toContain('Pending items: 2');
+    expect(todo.stderr).not.toContain('Pending items: 1');
+    expect(reinject.exitCode).toBe(0);
+    expect(reinject.stdout).toBe('');
+    // The valid control proves silence is not caused by missing jq or an absent document.
+    expect(validReinject.exitCode).toBe(0);
+    expect(JSON.parse(validReinject.stdout).hookSpecificOutput.additionalContext).toContain(
+      '# PACKAGE_CONTEXT'
+    );
+  });
+});
+
 /**
  * These fixtures are built from the PLATFORM payload (`prompt`), not the script-shaped
  * `user_input` the previous suite fed in. That mismatch is the whole of #1568: the script

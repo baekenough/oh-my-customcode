@@ -71,6 +71,8 @@ Measured (v1.1.48): spawning `skill: deep-plan` as-is ended at 6.9 seconds with 
 
 The release step's version-selection rule now defines **minor** as a new user-facing capability that changes *how the harness is used* — a new workflow axis, a new command surface users must learn, or a contract other components depend on — explicitly **not** "a file appeared under `.claude/skills/` or `.claude/agents/`".
 
+The user's explicit version or bump-level judgment takes precedence. Approval to remove a feature or change hooks does not approve a major or minor bump. Public skill, agent, and integration additions or removals follow this repository's PATCH-PREFERRED lifecycle policy, including RTK integration and `/rtk-exec` retirement; names, files, or counts appearing or disappearing alone do not justify major or minor. Major applies to actual compatibility breaks in existing CLI flags or public APIs, or an explicit major milestone, with the user's explicit judgment taking precedence. See the [canonical workflow](../../.claude/skills/pipeline/workflows/auto-dev.yaml).
+
 Counter-example recorded in the workflow: adding one skill plus one agent (agora — skills 114→115, agents 49→50) was initially scoped as a v1.2.0 minor by reading the old wording literally. That was wrong. This repo adds skills routinely, and the skill count reached 115 while the version stayed at v1.1.48, so skill/agent addition is **established as patch** (the target was corrected to v1.1.49). Count growth is this repo's baseline rate of change, not a minor signal — if a version bump would follow mechanically from "a new file exists", it is patch. The deciding question is whether a user's workflow changes.
 
 ### Phase 0: label bootstrap must run literally, not as a loop (#1743)
@@ -207,6 +209,10 @@ jq -e --arg v "<NEW>" '.generatorVersion==$v and .templateVersion==$v' .omcustom
 ```
 
 Failure halts the `release` step — the cause is almost always step 1.e having run before step 1.d landed; the fix is to re-run 1.d then 1.e, re-stage, and re-run the 1.j assertion.
+
+### implement step: factual-clause evidence and independent wording review
+
+Delegations that write or correct comments, JSDoc, i18n text, or Wiki claims include a completion table matching each factual clause to a code anchor or observed output. Verify each quotation against its original text and label paraphrases separately. After each correction writer's report, the dispatcher requests a read-only wording review of claim evidence, adjacent headings and references, and the original result, actor, and causal direction. Read that review's result before treating the wording task as complete. This wording check supplements code, mutation, and independent delta reviews; runtime premises need observations or an explicitly identified hypothesis and judgment method. These are prose instructions for the review procedure, not a new automatic runtime enforcement mechanism. See the [canonical workflow](../../.claude/skills/pipeline/workflows/auto-dev.yaml) and [[r023]].
 
 ### implement step 5: commit trailers and required review-before-commit ordering
 
@@ -412,3 +418,4 @@ commit은 원본 unique log·실제 exit/HEAD·실패 줄과 앞 40줄을 읽고
 - Content-drift resync 2026-10-05 (v1.1.102): added "scope-selection rule 6: batch-size norm" (fill from lower tiers to reach 3-7 issues; 1-2 issue release only when the eligible total across all tiers is < 3) and the rule 4 pointer to it.
 - Content-drift resync 2026-10-05 (#1818): `mode: "bypassPermissions"` guidance on Agent calls is now version-conditional (required on CC < 2.1.212, ignored on 2.1.212+ where subagents inherit the parent session mode; verify the effective mode per [[r010]] "Universal bypassPermissions") in both `SKILL.md` ("Agent mode") and `auto-dev.yaml` (pre-triage), and `.claude/**` direct-write wording now keys on the `bypassPermissions` permission mode.
 - Content-drift resync 2026-10-06 (#1824, #1828): replaced the Phase 0.5 description (it read only user scope) with the three-scope read-and-report form that does not derive an effective mode, and added the Phase 1 author trust filter / issue-content-as-data / shell-rule section (Phase 0 step 5b version-only output, nonce data blocks, `path-precheck`, `author`/`trusted` columns); added `trusted-issue-filter.jq` to sources.
+- Content-drift resync 2026-10-06: reflected explicit user version/bump priority and PATCH-PREFERRED skill/agent/integration lifecycle policy, including RTK retirement; feature/hook approval alone does not authorize major/minor. Added the existing implement-stage factual-clause evidence table and independent read-only wording-review instructions, without claiming automatic runtime enforcement.
