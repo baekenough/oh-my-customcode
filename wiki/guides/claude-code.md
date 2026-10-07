@@ -1,7 +1,7 @@
 ---
 title: "Claude Code Guide"
 type: guide
-updated: 2026-10-06
+updated: 2026-10-07
 sources:
   - guides/claude-code/01-overview.md
   - guides/claude-code/03-tools.md
@@ -61,5 +61,7 @@ related:
 [15-version-compatibility.md의 Action items 작성 지침](../../guides/claude-code/15-version-compatibility.md)을 따라 측정 결과를 comment/rule의 근거로 쓰기 전에 변수별 검증 행렬을 확인하십시오. 사용자 scope 값·모델·세션 유형 등 결과에 영향을 주는 각 변수에 대해 다른 조건을 유지한 값 변경 대조를 최소 한 번 포함하십시오. 미수행 조건은 미측정으로 표시하고 일반화 근거에서 제외하십시오.
 
 일반화 문장에는 실제 측정한 조건을 함께 적고 결과의 주체·적용범위를 구분하십시오. 관측된 값 차이보다 넓은 인과관계를 단정하지 마십시오. 행렬이 불완전하면 추가 측정 조건을 action item에 남기십시오. 이 지침은 특정 model/session의 새 동작을 측정했다는 주장이 아닙니다.
+
+**v2.1.290 (#1845) / v2.1.291 (#1844)** — static official-source compatibility review, with no native Claude Code compatibility run. (290) In-process teammate Agent results now carry an agent ID as the value of `agent_id`; `teammate_id` retains the `name@team` address, and TeammateIdle no longer fires for that teammate’s subagents or forks. This does not establish a rename of standard hook stdin `.agent_id`. Background subagents retain their own worktree write/Bash access after the main session changes worktrees; idle sessions moved to the background can resume after restart or idle cleanup. `/loop` jobs and reminders return on resume after compaction performed from this version onward; foreground-scheduled jobs survive background hand-off, and recurring jobs no longer run extra times on resume, respawn or fork. (291) Cloud-session permission answers are no longer lost by the 2.1.290 regression, and session exit no longer loses the last messages through the 2.1.288 regression. These fixes do not establish broader project permissions, recovery of previously lost data or successful native validation. Issues #1844 and #1845 remain manual-action items. See the [version compatibility guide](../../guides/claude-code/15-version-compatibility.md) for the selected seven facts and their scope.
 
 See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[agent-teams]], [[r016]] (instruction-budget policy that now routes new content here), and [R017 sync verification](../rules/r017.md) for when this guide requires re-sync.

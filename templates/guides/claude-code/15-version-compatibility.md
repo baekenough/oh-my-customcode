@@ -1919,6 +1919,29 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 
 ---
 
+## v2.1.290 (2026-10-05) — 호환성 정적 검토
+
+> Issue: #1845
+> Sources: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.290) · [version CHANGELOG section](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#21290)
+
+- (290) 인프로세스 teammate의 Agent 반환 결과에서 `agent_id`는 agent ID로 바뀌며 `name@team` 주소는 `teammate_id`에 남습니다. 해당 teammate의 서브에이전트나 fork에서는 TeammateIdle 훅이 더 이상 발화하지 않습니다. 현재 프로젝트·템플릿의 TeammateIdle 명령은 `.teammate_id`를 읽지만, Agent 반환 결과 변경을 표준 훅 stdin의 필드 변경으로 단정하지 않습니다.
+- (290) 메인 세션이 다른 worktree에 들어가거나 나간 뒤 백그라운드 서브에이전트가 자기 worktree의 write·Bash 접근을 잃던 결함이 수정되었습니다. 이 수정은 플랫폼의 접근 복원이며 프로젝트의 도구 허용 범위를 넓히는 근거로 사용하지 않습니다.
+- (290) idle 상태에서 백그라운드로 옮긴 세션이 재시작·idle cleanup 후 "no saved transcript"로 열리던 결함이 수정되었으며, 해당 세션은 대화를 재개합니다. 이 저장소의 기존 재개 절차를 바꾸지 않고 실제 재개 검증 여부와 문서 검토를 구분합니다.
+- (290) 대화 압축 후 재개 시 `/loop` 간격 작업·reminder가 돌아오지 않던 결함이 수정되었습니다. 원문은 이 버전부터 수행한 compaction을 적용 범위로 한정하므로 과거에 압축된 세션까지 복구된다고 확장하지 않습니다.
+- (290) foreground에서 설정한 작업이 ← 또는 `/background` hand-off 뒤 실행되지 않던 결함과, recurring 작업이 resume·respawn·fork마다 추가 실행되던 결함이 수정되었습니다. 프로젝트의 스케줄러 변경이나 과거 작업 복구 완료를 뜻하지 않습니다.
+
+(290) mod의 `$.process`·`turn.step` API, Agent 반환 결과, 프로젝트 `settings.json`의 표준 Claude 훅 stdin은 서로 다른 표면입니다. `r007-r008-drift-advisor.sh`는 표준 훅의 `.agent_id`를 읽으므로 이 릴리즈 설명만으로 그 payload 계약을 바꾸지 않습니다. 검토한 훅 설정은 유지하며 새 코드 변경은 제안하지 않습니다. 실제 Claude Code 세션의 Agent 반환·훅 payload·백그라운드 권한·예약 작업은 이번 정적 검토에서 실행 검증하지 않았습니다.
+
+## v2.1.291 (2026-10-06) — 호환성 정적 검토
+
+> Issue: #1844
+> Sources: [official release](https://github.com/anthropics/claude-code/releases/tag/v2.1.291) · [version CHANGELOG section](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#21291)
+
+- (291) 클라우드 세션이 권한 프롬프트 답변을 누락할 수 있던 2.1.290 회귀가 수정되었습니다. 이 플랫폼 수정에서 프로젝트 권한 모드 변경이나 Codex 도구 변경을 추론하지 않습니다.
+- (291) 세션을 종료할 때 마지막 메시지를 잃을 수 있던 2.1.288 회귀가 수정되었습니다. 수정된 버전의 기록 보존 검증과 이미 유실된 메시지의 복구는 별개이며, 과거 메시지가 복구됐다고 주장하지 않습니다.
+
+(291) 공식 릴리즈와 해당 버전 CHANGELOG를 대조했으며 선정한 문장은 이슈 본문과 일치합니다. 에이전트 정의·CLAUDE.md·훅 설정 변경은 제안하지 않습니다. Claude Code 2.1.291 실제 세션의 클라우드 권한 답변·종료 시 기록 보존 호환성은 검증하지 않았으며, Codex 실행 결과로 대체하지 않습니다.
+
 ## Known Platform Issues & Workarounds
 
 ### Agent tool malformed parsing on long / special-character prompts (#1241)
