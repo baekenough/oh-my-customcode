@@ -47,8 +47,9 @@ Tier를 섞으면(예: frontmatter에 Tier-3 전용 값을 쓰거나 그 반대)
 | Full ID | Use Case |
 |---------|----------|
 | `claude-haiku-4-5` | Fast, cheap tasks |
+| `claude-haiku-5-5` | Default Haiku model on the Anthropic API (v2.1.293+); 1M context |
 | `claude-sonnet-5` | Native 1M context; previous-generation Sonnet (v2.1.197+; on the Anthropic API, `claude-sonnet-5-5` is now the default Sonnet model, v2.1.284+) |
-| `claude-sonnet-5-5` | Now the default Sonnet model on the Anthropic API (v2.1.284+); 1M context, $2/$10 per Mtok, $0.20/Mtok cache reads |
+| `claude-sonnet-5-5` | Now the default Sonnet model on the Anthropic API (v2.1.284+); 1M context, $2/$10 per Mtok, $0.10/Mtok cache reads in CC cost figures (v2.1.296; was $0.20) |
 | `claude-opus-4-6` | Opus, previous generation |
 | `claude-opus-4-8` | Opus, previous generation; supports xhigh effort |
 | `claude-opus-5` | Opus, previous generation (GA); native 1M context, fast mode at $10/$50 per Mtok |
@@ -164,7 +165,7 @@ Settings-level 가용성/과부하 failover — per-agent `model:` frontmatter�
 ### Safe Mode & Bundled Skill Control (CC v2.1.169+)
 
 <!-- ARCHIVED CC version note (historical):
-> **v2.1.169+**: `--safe-mode` (and `CLAUDE_CODE_SAFE_MODE`) starts Claude Code with ALL customizations disabled (CLAUDE.md, plugins, skills, hooks, MCP servers) — use it to isolate whether a project customization (agent/skill/hook) causes a regression. The `disableBundledSkills` setting (and `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` env) hides bundled skills, workflows, and built-in slash commands from the model — useful when bundled skills conflict with or duplicate project skills (R006 skill-surface management). Note: `disableBundledSkills` hides skills from the model but is a CC platform setting, distinct from the advisory `skills:` frontmatter field (which is documentation metadata, not a runtime allowlist).
+> **v2.1.169+**: `--safe-mode` (and `CLAUDE_CODE_SAFE_MODE`) starts Claude Code with ALL customizations disabled (CLAUDE.md, plugins, skills, hooks, MCP servers) — use it to isolate whether a project customization (agent/skill/hook) causes a regression. The `disableBundledSkills` setting (and `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` env) hides bundled skills, workflows, and built-in slash commands from the model — useful when bundled skills conflict with or duplicate project skills (R006 skill-surface management). Note: `disableBundledSkills` hides skills from the model but is a CC platform setting, distinct from the `skills:` frontmatter field (which preloads the listed skills into the subagent but is not a runtime allowlist).
 -->
 
 <!-- ARCHIVED CC version notes (historical):
@@ -193,9 +194,9 @@ Key optional fields: `memory`, `effort`, `skills`, `soul`, `isolation`, `backgro
 ### Note on `skills:` field
 
 <!-- DETAIL: skills: field full rationale
-The `skills:` frontmatter field is **advisory metadata** consumed by oh-my-customcode tooling (graph-builder, mgr-sauron) for documentation and validation. It is **NOT a runtime allowlist** — Claude Code does not filter the available skills based on this field, and subagents can invoke any registered skill regardless of what `skills:` declares. Use it to document a subagent's intended skill dependencies; do not rely on it for access control.
+The `skills:` frontmatter field is read by oh-my-customcode tooling (graph-builder, mgr-sauron) for documentation and validation, and Claude Code itself PRELOADS the listed skills into the subagent (context cost; v2.1.295: "Changed subagents to preload at most 32 skills from the `skills` field, each once; a subagent with the Skill tool can still invoke the rest" — preloading predates 2.1.295: the 2.0.43 CHANGELOG entry is the primary source — "Added skills frontmatter field to declare skills to auto-load for subagents" — and the 2.1.265 entry also refers to "preloaded skills"). It is **NOT a runtime allowlist** — Claude Code does not restrict skill access based on this field, so do not rely on it for access control.
 -->
-`skills:` frontmatter는 **advisory metadata일 뿐 runtime allowlist가 아닙니다** — CC는 이 필드로 스킬 접근을 제한하지 않으므로, access control로 의존하지 마세요(문서화 용도로만 사용).
+`skills:` frontmatter는 **runtime allowlist가 아닙니다** — CC는 이 필드로 스킬 접근을 제한하지 않으므로, access control로 의존하지 마세요(나열 스킬은 사전 로드됩니다, 최대 32개).
 
 <!-- DETAIL: skills: field issue reference
 Reference: research findings on issue #1055 (closed not-planned).

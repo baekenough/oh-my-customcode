@@ -33,8 +33,9 @@ Values: `sonnet` | `opus` | `haiku` | `fable` — **only these four**. Does NOT 
 | Full Model ID | Cost | Speed | Use Case |
 |---------------|------|-------|----------|
 | `claude-haiku-4-5` | $ | Fast | Search, simple edits, file discovery |
+| `claude-haiku-5-5` | $ | — | 1M context; now the default Haiku model on the Anthropic API (v2.1.293+), $0.10/$0.50 per Mtok ($0.50/$2.50 for prompts over 100K) |
 | `claude-sonnet-4-6` | $$ | Moderate | Code generation, general tasks — historically what the Tier 1 `sonnet` alias resolved to; CC's actual resolution target can drift (see Tier 1 above) |
-| `claude-sonnet-5-5` | $$ | Moderate | Native 1M context; now the default Sonnet model on the Anthropic API, $2/$10 per Mtok with $0.20/Mtok cache reads |
+| `claude-sonnet-5-5` | $$ | Moderate | Native 1M context; now the default Sonnet model on the Anthropic API, $2/$10 per Mtok with $0.10/Mtok cache reads in Claude Code's cost figures (`/cost`, status line, `--max-budget-usd`, SDK; v2.1.296; was $0.20) |
 | `claude-sonnet-5` | $$ | Moderate | Previous-generation Sonnet; native 1M context — use as an explicit frontmatter pin |
 | `claude-opus-4-6` | $$$ | Slower | Complex reasoning, architecture, planning |
 | `claude-opus-5-5` | $$$ | — | Latest Opus (GA), default Opus model; native 1M context, $4/$20 per Mtok, $0.20/Mtok cache reads |

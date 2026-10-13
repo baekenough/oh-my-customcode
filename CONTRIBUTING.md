@@ -394,7 +394,7 @@ New agents are created and structurally validated via `mgr-creator` (R010 Protec
 
 1. Create directory structure: `.claude/skills/{skill-name}/SKILL.md` (kebab-case directory, `SKILL.md` required fields `name`, `description`; see R006 Skill Frontmatter for optional fields).
 2. Mirror to `templates/.claude/skills/{skill-name}/SKILL.md` and bump the skill count in the same doc set as above.
-3. Reference the skill from relevant agents' `skills:` frontmatter (advisory metadata, not a runtime allowlist — R006).
+3. Reference the skill from relevant agents' `skills:` frontmatter (Claude Code preloads the listed skills into the subagent; not a runtime allowlist — R006).
 4. **Add tests** to verify the skill is loaded correctly.
 
 ### Editing Hooks

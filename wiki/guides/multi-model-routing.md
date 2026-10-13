@@ -1,7 +1,7 @@
 ---
 title: "Multi-Model Routing Guide"
 type: guide
-updated: 2026-09-29
+updated: 2026-10-13
 sources:
   - guides/multi-model-routing/README.md
 related:
@@ -21,10 +21,10 @@ Model specification is 3-tier — see [[r006]] "3-tier model specification" (the
 | Tier | Where valid | Values |
 |------|-------------|--------|
 | 1. CC native alias | Frontmatter `model:` AND Agent tool `model` param | `sonnet` \| `opus` \| `haiku` \| `opusplan` \| `inherit` — resolved by CC itself |
-| 2. Full model ID | Frontmatter `model:` only (recommended) | `claude-sonnet-5-5` \| `claude-sonnet-5` \| `claude-opus-5-5` \| `claude-opus-5` \| `claude-haiku-4-5` \| `claude-opus-4-6` \| `claude-opus-4-8` \| `claude-fable-5` (+ optional `[1m]` suffix) |
+| 2. Full model ID | Frontmatter `model:` only (recommended) | `claude-sonnet-5-5` \| `claude-sonnet-5` \| `claude-haiku-5-5` \| `claude-opus-5-5` \| `claude-opus-5` \| `claude-haiku-4-5` \| `claude-opus-4-6` \| `claude-opus-4-8` \| `claude-fable-5` (+ optional `[1m]` suffix) |
 | 3. Agent tool `model` param (enum) | Agent tool call only | `sonnet` \| `opus` \| `haiku` \| `fable` — exactly these 4 |
 
-The Tier-1 base `sonnet` and `opus` aliases are **resolved by CC itself, not pinned by this project** — a spawn using the bare alias runs whatever CC currently maps that alias to, and this can and does drift as CC ships new defaults (measured: a frontmatter `model: sonnet` agent executed as `claude-sonnet-5`, the v2.1.197-era default, not a project-fixed `claude-sonnet-4-6`). Documentation claiming otherwise does not change what CC actually runs — see [[r006]] Tier 1. `claude-sonnet-5-5` (v2.1.284+, now the default Sonnet model on the Anthropic API; 1M context, $2/$10 per Mtok, $0.20/Mtok cache reads) and `claude-opus-5-5` (v2.1.280+, latest Opus, default Opus model; 1M context, $4/$20 per Mtok) are the current defaults; `claude-sonnet-5` and `claude-opus-5` (native 1M context, fast mode at $10/$50 per Mtok) are previous-generation; agents that need a version-stable model regardless of future CC default changes MUST opt in via the explicit Tier-2 full ID in frontmatter — **not** via `sonnet5`/`opus5` shorthand aliases, which CC does not interpret (a spawn using them fails; this was confirmed by a same-session incident). `opus48`/`claude-opus-4-8` is now the previous-generation Opus tier. Fable 5 (`fable`) remains a tier above Opus 4.8, but its relative standing versus Opus 5 and Opus 5.5 is not officially confirmed and is not asserted here.
+The Tier-1 base `sonnet` and `opus` aliases are **resolved by CC itself, not pinned by this project** — a spawn using the bare alias runs whatever CC currently maps that alias to, and this can and does drift as CC ships new defaults (measured: a frontmatter `model: sonnet` agent executed as `claude-sonnet-5`, the v2.1.197-era default, not a project-fixed `claude-sonnet-4-6`). Documentation claiming otherwise does not change what CC actually runs — see [[r006]] Tier 1. `claude-sonnet-5-5` (v2.1.284+, now the default Sonnet model on the Anthropic API; 1M context, $2/$10 per Mtok, $0.10/Mtok cache reads in Claude Code's cost figures since v2.1.296, was $0.20) and `claude-opus-5-5` (v2.1.280+, latest Opus, default Opus model; 1M context, $4/$20 per Mtok) are the current defaults; `claude-sonnet-5` and `claude-opus-5` (native 1M context, fast mode at $10/$50 per Mtok) are previous-generation; `claude-haiku-5-5` (v2.1.293+, now the default Haiku model on the Anthropic API; 1M context, $0.10/$0.50 per Mtok, $0.50/$2.50 for prompts over 100K) joins the Tier-2 catalog; agents that need a version-stable model regardless of future CC default changes MUST opt in via the explicit Tier-2 full ID in frontmatter — **not** via `sonnet5`/`opus5` shorthand aliases, which CC does not interpret (a spawn using them fails; this was confirmed by a same-session incident). `opus48`/`claude-opus-4-8` is now the previous-generation Opus tier. Fable 5 (`fable`) remains a tier above Opus 4.8, but its relative standing versus Opus 5 and Opus 5.5 is not officially confirmed and is not asserted here.
 
 ## Role-Based Routing (frontmatter, Tier 2)
 
