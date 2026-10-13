@@ -47,7 +47,7 @@ jobs:
             bun-${{ runner.os }}-
 
       - name: Setup Node.js for npm
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
@@ -160,7 +160,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js for npm
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
@@ -214,7 +214,7 @@ jobs:
 
       # Re-configure for GitHub Packages
       - name: Setup Node.js for GitHub Packages
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
         with:
           node-version: '20'
           registry-url: 'https://npm.pkg.github.com'
@@ -330,7 +330,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Node.js for npm
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
@@ -407,7 +407,7 @@ jobs:
           exit 1
 
       - name: Setup Node.js for GitHub Packages
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
         with:
           node-version: '20'
           registry-url: 'https://npm.pkg.github.com'
