@@ -56,7 +56,7 @@ harness|benchmark|eval|evaluation framework|agent framework|코드 리뷰 자동
 
 ## Cost Controls
 
-Layer 2 runs at most **5 /scout executions per cron invocation**. Each /scout call costs ~$0.5–1.5 (sonnet). Remaining `pending-scout` issues are processed in the next scheduled run.
+Layer 2 runs at most **5 /scout executions per cron invocation**. Each /scout call costs ~USD 0.5–1.5 (sonnet). Remaining `pending-scout` issues are processed in the next scheduled run.
 
 ## Deployment
 
@@ -67,3 +67,4 @@ K8s CronJob hosted on the `ubuntu-ext` cluster. Infrastructure files in `infra/h
 - `.claude/skills/hada-scout/SKILL.md` — skill definition
 - `infra/hada-scout/` — K8s deployment manifests
 - Content-drift resync 2026-10-25: source relevance-filter prompt now states "50 agents, 114 skills" (was 115); no other change.
+- Content-drift resync 2026-10-25 (v2.0.6, #1879): source cost figures now written as USD n; no wiki-stated claim changed.

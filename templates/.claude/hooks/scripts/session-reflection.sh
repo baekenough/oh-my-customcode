@@ -167,6 +167,9 @@ JQ_REFLECT='
 split("\n")
 | map(select(length > 0) | (fromjson? // empty))
 | map(select((.isSidechain // false) != true))
+# (#1876) api-request-blob records are request copies, not conversation lines — same filter as
+# r007-r008-drift-advisor.sh (shared verdict; fixing one side only re-contaminates).
+| map(select((.type? // "") != "api-request-blob"))
 | [ foreach .[] as $l (0;
       (if ($l.message.role? == "user")
           and ( (($l.message.content | type) == "string")

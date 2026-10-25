@@ -97,9 +97,9 @@ byte_dump=$(mktemp /tmp/omcustom-gh-byte-dump.XXXXXX) || exit 1
 trap 'command rm -f -- "$byte_dump"' 0
 trap 'exit 1' HUP INT TERM
 check_file() {
-  [ -f "$1" ] || return 1
-  command od -A n -v -t u1 "$1" > "$byte_dump" || return 1
-  command awk -v kind="$2" '
+  [ -f "${1}" ] || return 1
+  command od -A n -v -t u1 "${1}" > "$byte_dump" || return 1
+  command awk -v kind="${2}" '
     { for (i = 1; i <= NF; i++) {
         b = $i + 0; n++;
         if (b == 0) bad = 1;
@@ -231,9 +231,9 @@ byte_dump=$(mktemp /tmp/omcustom-gh-byte-dump.XXXXXX) || exit 1
 trap 'command rm -f -- "$byte_dump"' 0
 trap 'exit 1' HUP INT TERM
 check_file() {
-  [ -f "$1" ] || return 1
-  command od -A n -v -t u1 "$1" > "$byte_dump" || return 1
-  command awk -v kind="$2" '
+  [ -f "${1}" ] || return 1
+  command od -A n -v -t u1 "${1}" > "$byte_dump" || return 1
+  command awk -v kind="${2}" '
     { for (i = 1; i <= NF; i++) {
         b = $i + 0; n++;
         if (b == 0) bad = 1;
@@ -285,9 +285,9 @@ byte_dump=$(mktemp /tmp/omcustom-gh-byte-dump.XXXXXX) || exit 1
 trap 'command rm -f -- "$byte_dump"' 0
 trap 'exit 1' HUP INT TERM
 check_file() {
-  [ -f "$1" ] || return 1
-  command od -A n -v -t u1 "$1" > "$byte_dump" || return 1
-  command awk -v kind="$2" '
+  [ -f "${1}" ] || return 1
+  command od -A n -v -t u1 "${1}" > "$byte_dump" || return 1
+  command awk -v kind="${2}" '
     { for (i = 1; i <= NF; i++) {
         b = $i + 0; n++;
         if (b == 0) bad = 1;

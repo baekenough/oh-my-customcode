@@ -1009,7 +1009,7 @@ steps:
         찐빠 #3).
       - Delegations that create files, binaries, worktrees, or branches (artifact-creating
         delegations only — text-only edits are excluded) MUST include measured output in their
-        completion report — `file <bin>` for binaries, `ls -la <path>` for created paths, `git
+        completion report — `file <bin>` for binaries, `ls -la <path>` for created paths (the orchestrator re-runs `ls -la` itself, R006 #1858), `git
         worktree list` for worktrees, `git branch --list` for branches, as applicable — and the
         orchestrator MUST confirm architecture/path from that measured output before using the
         artifact, not from the agent's self-report alone (R020 Subagent Self-Report

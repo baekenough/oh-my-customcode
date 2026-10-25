@@ -11,7 +11,9 @@
 #
 # Turn-boundary definition (R020 「자율 루프 세션의 턴 경계 정의」):
 #   1. Pre-filter to JSONL records whose `.message.role` exists (drop meta/event lines).
-#   2. Exclude `isSidechain: true` records from boundary/assistant detection entirely — this
+#   2. Exclude `type == "api-request-blob"` records (#1876: request copies, not conversation
+#      lines — mirrors the advisor's own blob filter) and `isSidechain: true` records from
+#      boundary/assistant detection entirely — this
 #      mirrors the advisor's own `map(select((.isSidechain // false) != true))` filter, applied
 #      internally before its turn-boundary logic runs. A sidechain record is never treated as
 #      an assistant record or as a boundary, so a sidechain `role=="user"` line cannot create a
@@ -114,7 +116,7 @@ fi
 jq -s -r '
   . as $L
   | range(0; ($L | length)) as $i
-  | (($L[$i].isSidechain? // false) != true) as $not_sidechain
+  | ((($L[$i].isSidechain? // false) != true) and (($L[$i].type? // "") != "api-request-blob")) as $not_sidechain
   | [ $i,
       (if $not_sidechain and ($L[$i].message.role? == "assistant") then 1 else 0 end),
       (if $not_sidechain and ($L[$i].message.role? == "user")

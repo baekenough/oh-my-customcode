@@ -169,7 +169,7 @@ Before each release PR, the [auto-dev workflow](../../.claude/skills/pipeline/wo
 ## Relationships
 
 - **Delegates to**: [[goal]] (objective wrapper + R020 verification), [[pipeline]] (auto-dev release pipeline per iteration), [[homework]] (retrospective gate per iteration), [[mgr-gitnerd]] (git operations and PR merges)
-- **Related**: [[omcustom-loop]] (SubagentStop command hooks record outcomes and emit advisories only — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`), and `auto-continue-guard.sh` has no exit-2 path and its stdout carries no `decision` field, so it never blocks; none of the hooks continues the orchestrator's workflow — the orchestrator drives each next step)
+- **Related**: [[omcustom-loop]] (SubagentStop command hooks record outcomes and emit advisories only — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`), and `auto-continue-guard.sh` has no `exit 2` statement (its only explicit exit is `exit 0`), echoes the payload, and the CC 2.1.310 SubagentStop payload has no top-level `decision`/`continue` key (#1880), so it does not block; none of the hooks continues the orchestrator's workflow — the orchestrator drives each next step)
 - **Rules**: [R001](../rules/r001.md), [R009](../rules/r009.md), [R010](../rules/r010.md), [R015](../rules/r015.md), [R017](../rules/r017.md), [R020](../rules/r020.md)
 
 ## Sources

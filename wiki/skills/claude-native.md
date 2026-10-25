@@ -1,7 +1,7 @@
 ---
 title: Claude Native
 type: skill
-updated: 2026-10-06
+updated: 2026-10-25
 sources:
   - .claude/skills/claude-native/SKILL.md
 related:
@@ -47,3 +47,4 @@ Phase 4에서는 [[agents/mgr-creator|mgr-creator]]가 Write로 완성 제목과
 - `.claude/skills/claude-native/SKILL.md` — skill definition
 - Content-drift resync 2026-09-24 (v1.1.77, #1717): added two action-item checklist entries routing new CC knowledge to `guides/claude-code/15-version-compatibility.md` per rule and capping rule-body additions at one behavioral line, gated by [[r016]]'s new 140,000-char instruction-budget check. See [[r016]] for the full policy this issues from.
 - Content-drift resync 2026-10-03 (#1774): SessionStart hook example now uses the anchored `${CLAUDE_PROJECT_DIR:-.}` form and is marked illustrative.
+- Content-drift resync 2026-10-25 (v2.0.6, #1879): source edited (shell-block arg placeholders / USD n wording); no wiki-stated claim changed.

@@ -1,7 +1,7 @@
 ---
 title: Omcustom Feedback
 type: skill
-updated: 2026-10-06
+updated: 2026-10-25
 sources:
   - .claude/skills/omcustom-feedback/SKILL.md
 related:
@@ -62,3 +62,4 @@ label 생성 실패와 label 때문에 발생한 issue 생성 실패를 확인�
 ## Sources
 
 - [`.claude/skills/omcustom-feedback/SKILL.md`](../../.claude/skills/omcustom-feedback/SKILL.md) — skill definition
+- Content-drift resync 2026-10-25 (v2.0.6, #1879): source edited (shell-block arg placeholders / USD n wording); no wiki-stated claim changed.

@@ -227,6 +227,10 @@ JQ_LAST_TURN='
 split("\n")
 | map(select(length > 0) | (fromjson? // empty))
 | map(select((.isSidechain // false) != true))
+# (#1876) api-request-blob records carry a copy of the request message (role=assistant/user,
+# no isSidechain) — they are NOT conversation lines. Left in, a trailing assistant blob is picked
+# as $last and double-counts tool_use/announce blocks, and a user blob acts as a turn boundary.
+| map(select((.type? // "") != "api-request-blob"))
 | . as $L
 | ($L | length) as $n
 | [ range(0; $n) | select($L[.].message.role? == "assistant") ] as $ai

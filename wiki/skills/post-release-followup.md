@@ -1,7 +1,7 @@
 ---
 title: Post-Release Followup
 type: skill
-updated: 2026-10-06
+updated: 2026-10-25
 sources:
   - .claude/skills/post-release-followup/SKILL.md
 related:
@@ -52,3 +52,4 @@ Results written to `.claude/outputs/sessions/{date}/`. Auto-registered GitHub is
 - `.claude/skills/post-release-followup/SKILL.md` — skill definition; auto-register behavior added #1238
 - Content-drift resync 2026-09-03 (v1.1.60, #1652 #3-2): added the anchor-based code-location convention for auto-registered issue bodies — cite function names/unique strings instead of line numbers, since line numbers went stale by the next release commit and cost two implementation agents a re-search.
 - Content-drift resync 2026-09-24 (v1.1.81, #1725): added the `[가설]` tag requirement for unverified proposed fixes in `## 권장 조치` — tagging only the root-cause diagnosis while leaving the proposed fix stated as settled fact was found to carry forward unverified-fix risk into a later session.
+- Content-drift resync 2026-10-25 (v2.0.6, #1879): source edited (shell-block arg placeholders / USD n wording); no wiki-stated claim changed.

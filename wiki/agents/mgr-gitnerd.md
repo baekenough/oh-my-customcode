@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-10-06
+updated: 2026-10-25
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -189,3 +189,4 @@ commit dispatcher는 source 정정·영향 재검증 뒤 mandatory source Sauron
 - Issue #1593 — lockfile-generation mechanism undocumented, caused silent stale `templateVersion` in v1.1.47; 3-way assertion added (2026-08-15)
 - Content-drift resync 2026-09-03 (v1.1.59, #1645): added the "Commit Timeout Budget" section — the main-worktree `.husky/pre-commit` hook runs the full test suite (~165s measured), so `git commit` delegations require Bash `timeout: ≥400000`; the default 120000ms is killed mid-hook with exit 143, which is not evidence of commit failure.
 - Content-drift resync 2026-10-03 (#1779): replaced the hardcoded `Co-Authored-By` model-name trailer with a delegation-supplied trailer (used verbatim; no trailer given means do not commit and report).
+- Sync check 2026-10-25 (#1858): `auto-dev.yaml` (a source here) changed its artifact-reporting rule at :1012 (orchestrator re-runs `ls -la` itself); this page does not state that rule, so no body change.

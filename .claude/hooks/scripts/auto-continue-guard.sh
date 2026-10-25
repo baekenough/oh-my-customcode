@@ -4,7 +4,7 @@ set -euo pipefail
 # Auto-Continue Guard
 # Trigger: SubagentStop
 # Purpose: Count consecutive subagent completions and warn when auto-continue limit reached
-# Protocol: stdin JSON -> count check -> stdout pass-through, exit 0 always (R021)
+# Protocol: stdin JSON -> count check -> stdout pass-through, the only explicit exit is exit 0 (R021); under set -u a corrupt counter file can exit 1 (non-blocking for SubagentStop)
 
 input=$(cat)
 
