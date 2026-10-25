@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.2",
-  "generatedAt": "2026-10-13T08:20:47.972Z",
-  "templateVersion": "2.0.2",
+  "generatorVersion": "2.0.3",
+  "generatedAt": "2026-10-25T09:19:57.884Z",
+  "templateVersion": "2.0.3",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -1540,8 +1540,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "33850ccc00fca8d3085ae9d5ac0a6dc9b1ca867acb18b4311114238f36cb11c8",
-      "size": 322583,
+      "templateHash": "847db2778d972afe0f103d1c40d2d1b0f9bea5e7dc18361e8567ded603d677e7",
+      "size": 468986,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
