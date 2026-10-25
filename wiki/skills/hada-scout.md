@@ -1,7 +1,7 @@
 ---
 title: Hada Scout
 type: skill
-updated: 2026-04-13
+updated: 2026-10-25
 sources:
   - .claude/skills/hada-scout/SKILL.md
 related:
@@ -66,3 +66,4 @@ K8s CronJob hosted on the `ubuntu-ext` cluster. Infrastructure files in `infra/h
 
 - `.claude/skills/hada-scout/SKILL.md` — skill definition
 - `infra/hada-scout/` — K8s deployment manifests
+- Content-drift resync 2026-10-25: source relevance-filter prompt now states "50 agents, 114 skills" (was 115); no other change.

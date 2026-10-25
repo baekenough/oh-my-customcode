@@ -1,7 +1,7 @@
 ---
 title: Agent Eval Guide
 type: guide
-updated: 2026-07-19
+updated: 2026-10-25
 sources:
   - guides/agent-eval/README.md
 related:

@@ -4,7 +4,7 @@
 
 ## 1. 시스템 개요
 
-oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 49개의 사전 구축된 서브에이전트, 114개의 스킬, 23개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 레퍼런스 라이브러리에는 에이전트 설계, 베스트 프랙티스, 통합 패턴을 다루는 56개의 가이드 문서가 포함됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
+oh-my-customcode는 Claude Code를 위한 배터리 포함형 에이전트 하네스입니다. 50개의 사전 구축된 서브에이전트, 114개의 스킬, 23개의 거버넌스 규칙, 훅 시스템이 모두 연결되어 있어 추가 설정 없이 Claude Code 세션에 완전한 멀티 에이전트 운영 모델이 적용됩니다. 레퍼런스 라이브러리에는 에이전트 설계, 베스트 프랙티스, 통합 패턴을 다루는 56개의 가이드 문서가 포함됩니다. 핵심 철학: **"전문가가 없으면? 만들고, 지식을 연결하고, 사용한다."** 매칭되는 전문가가 없는 작업이 들어오면 시스템이 자동으로 관련 스킬과 가이드를 탐색하여 새 에이전트를 생성한 뒤 즉시 작업을 실행합니다.
 
 npm 패키지명 `oh-my-customcode`, CLI: `omcustom`. 현재 버전은 `package.json` 참조.
 
@@ -32,7 +32,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 
 ## 3. 컴포넌트 인벤토리
 
-### 3.1 규칙 시스템 (R000--R022, R014 없음)
+### 3.1 규칙 시스템 (R000--R023, R014 없음)
 
 | ID | 우선순위 | 이름 | 설명 |
 |----|----------|------|------|
@@ -58,6 +58,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | R020 | MUST | 완료 검증 | 작업 완료 선언 전 task-type-specific 검증 |
 | R021 | MUST | Enforcement Policy | Advisory-first 시행 모델, 강화 승격 기준 |
 | R022 | SHOULD | Wiki 동기화 | 에이전트/스킬/규칙/가이드 변경 시 위키 자동 동기화 |
+| R023 | SHOULD | 검증 래더 | 검증 비용 래더: 결정론적 검증 우선, human 최후 (shift-left) |
 
 ### 3.2 에이전트 분류 (50개)
 
@@ -77,7 +78,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | 시스템 | 4 | sys-memory-keeper, sys-naggy, wiki-curator, tracker-checkpoint |
 | **합계** | **50** | |
 
-### 3.3 스킬 카탈로그 (115개)
+### 3.3 스킬 카탈로그 (114개)
 
 **라우팅 스킬 (4개, context: fork, 캡 12)**
 
@@ -100,9 +101,9 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-improve-report, omcustom-feedback, omcustom-web, omcustom-loop, fsd, sdd-dev, sdd, harness-synthesizer, goal, idea, homework, profile, pipeline, wiki, wiki-rag, post-release-followup, token-efficiency-audit
 
-**시스템 / 내부 스킬 (27개)**
+**시스템 / 내부 스킬 (26개)**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, action-validator, adaptive-harness, agent-eval-framework, claude-native, crg-integration, harness-eval, instinct-extractor, omcustom-auto-improve, pipeline-guards, playwright-compress, pre-generation-arch-check, rtk-exec, sec-agentshield-wrapper, semble-integration, hada-scout
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, action-validator, adaptive-harness, agent-eval-framework, claude-native, crg-integration, harness-eval, instinct-extractor, omcustom-auto-improve, pipeline-guards, playwright-compress, pre-generation-arch-check, sec-agentshield-wrapper, semble-integration, hada-scout
 
 **디자인 & 제품 스킬 (5개)**
 
@@ -515,7 +516,7 @@ v0.123.0에서 추가된 스킬 프로필 시스템입니다. `/profile` 커맨�
 | 항목 | 대략적 크기 |
 |------|------------|
 | CLAUDE.md | ~5K 토큰 |
-| 규칙 (22개 파일) | ~29K 토큰 |
+| 규칙 (23개 파일) | ~29K 토큰 |
 | 세션당 필수 로드 합계 | ~33K 토큰 |
 
 스킬과 가이드는 호출될 때만 온디맨드로 로드됩니다 -- 사전 로드하지 않습니다.

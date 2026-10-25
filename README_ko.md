@@ -208,7 +208,7 @@ Agent(arch-documenter):haiku      ┘
 | 커맨드 | 기능 |
 |--------|------|
 | `/omcustom:monitoring-setup` | OTel 모니터링 토글 |
-| `/omcustom-loop` | 백그라운드 에이전트 워크플로우 자동 이어가기 (3회 연속 안전 제한) |
+| `/omcustom-loop` | 백그라운드 에이전트 작업 중 SubagentStop 권고 훅 (결과 기록, 연속 완료 권고) |
 | `/omcustom:lists` | 전체 커맨드 표시 |
 | `/omcustom:status` | 시스템 상태 확인 |
 

@@ -16,7 +16,7 @@ Valid in BOTH agent frontmatter `model:` AND the Agent tool `model` parameter. *
 
 ### Tier 2 — Full Model ID (frontmatter only)
 
-Values: `claude-sonnet-5-5` | `claude-sonnet-5` | `claude-opus-5-5` | `claude-opus-5` | `claude-haiku-4-5` | `claude-opus-4-6` | `claude-opus-4-8` | `claude-fable-5`, etc.
+Values: `claude-sonnet-5-5` | `claude-sonnet-5` | `claude-opus-5-5` | `claude-opus-5` | `claude-haiku-5-5` | `claude-haiku-4-5` | `claude-opus-4-6` | `claude-opus-4-8` | `claude-fable-5` | `claude-fable-5-1`, etc.
 
 Valid ONLY in frontmatter `model:` — the Agent tool `model` parameter does NOT accept full model IDs. Use a Tier 2 ID when you want the agent pinned to a specific model regardless of any future drift in what CC's Tier 1 aliases resolve to.
 
@@ -26,7 +26,7 @@ Values: `sonnet` | `opus` | `haiku` | `fable` — **only these four**. Does NOT 
 
 ### Deprecated / Invalid Names
 
-`sonnet5`, `opus5`, and `opus48` are **not recognized by CC in any context** (neither frontmatter nor the Agent tool parameter) — they were project-invented names previously documented in this repo as aliases, but the platform does not interpret them; using them causes an immediate spawn/resolution failure. Bare `fable` (without the `claude-` prefix) is valid ONLY as a Tier 3 Agent tool parameter value — it is NOT a valid frontmatter alias; use the full ID `claude-fable-5` in frontmatter instead.
+`sonnet5`, `opus5`, and `opus48` are **not recognized by CC in any context** (neither frontmatter nor the Agent tool parameter) — they were project-invented names previously documented in this repo as aliases, but the platform does not interpret them; using them causes an immediate spawn/resolution failure. Bare `fable` (without the `claude-` prefix) is valid ONLY as a Tier 3 Agent tool parameter value — it is NOT a valid frontmatter alias; use a full ID in frontmatter instead (`claude-fable-5-1` pins what bare `fable` currently resolves to — Fable 5.1, except Claude apps gateway sessions, which stay on Fable 5; `claude-fable-5` pins Fable 5).
 
 ## Model Catalog (Tier 2 full IDs)
 
@@ -42,8 +42,9 @@ Values: `sonnet` | `opus` | `haiku` | `fable` — **only these four**. Does NOT 
 | `claude-opus-5` | $$$ | Fast mode available | Previous-generation Opus (GA); native 1M context, fast mode at $10/$50 per Mtok |
 | `claude-opus-4-8` | $$$ | Slower | Previous-generation Opus; supports xhigh effort |
 | `claude-fable-5` | $$$$ | Slower | Mythos-class; use the full ID in frontmatter (bare `fable` is Tier 3 Agent-tool-only) |
+| `claude-fable-5-1` | $$$$ | — | Mythos-class; Fable 5.1 — the default Fable model since v2.1.257; 1M context |
 
-Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`). Sonnet 5, Sonnet 5.5, Opus 5, Opus 5.5, and Fable 5 include 1M context by default — no `[1m]` suffix needed.
+Extended context: `[1m]` suffix enables 1M token context (e.g., `claude-opus-4-6[1m]`). Haiku 5.5, Sonnet 5, Sonnet 5.5, Opus 5, Opus 5.5, Fable 5, and Fable 5.1 include 1M context by default — no `[1m]` suffix needed.
 
 > Relative standing of Fable 5 vs Opus 5 and Opus 5.5 is not officially confirmed — do not assert an ordering.
 

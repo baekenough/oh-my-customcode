@@ -1,7 +1,7 @@
 ---
 title: Middleware Patterns Guide
 type: guide
-updated: 2026-10-03
+updated: 2026-10-25
 sources:
   - guides/middleware-patterns/README.md
 related:
@@ -29,7 +29,7 @@ LangChain 6-stage lifecycle middleware 모델을 oh-my-customcode 기존 자산�
 | `wrap_model_call` | Tier 4 permission gate, `bypassPermissions` | Bash/WebFetch 승인 |
 | `wrap_tool_call` | `PreToolUse(*) + PostToolUse(*)` | action-validator, rule-deletion-guard |
 | `after_model` | `PostToolUse(Agent)`, `result-aggregation` | 병렬 결과 합산, evaluator-optimizer |
-| `after_agent` | `Stop`, `SubagentStop` | sys-memory-keeper, omcustom-loop |
+| `after_agent` | `Stop`, `SubagentStop` | sys-memory-keeper, SubagentStop 어드바이저리 훅 (omcustom-loop 참조) |
 
 ## 주요 패턴 3종
 

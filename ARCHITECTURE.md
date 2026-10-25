@@ -4,7 +4,7 @@
 
 ## 1. System Overview
 
-oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 50 pre-built subagents, 115 skills, 23 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 56 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
+oh-my-customcode is a batteries-included agent harness for Claude Code. It ships 50 pre-built subagents, 114 skills, 23 governing rules, and a comprehensive hook system — all wired together so that any Claude Code session inherits a complete multi-agent operating model without additional configuration. The reference library ships 56 guide documents spanning agent design, best practices, and integration patterns. The core philosophy is: **"No expert? CREATE one, connect knowledge, and USE it."** When a task arrives with no matching specialist, the system auto-creates one by discovering relevant skills and guides, then immediately executes the task.
 
 The harness operates on three engineering pillars — **Context Engineering** (what goes into the prompt), **Architectural Constraints** (rules that shape agent behavior), and **Entropy Management** (hooks, verification, and observability that keep the system coherent at scale).
 
@@ -42,7 +42,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 ## 3. Component Inventory
 
-### 3.1 Rule System (R000–R022, no R014)
+### 3.1 Rule System (R000–R023, no R014)
 
 | ID | Priority | Name | Description |
 |----|----------|------|-------------|
@@ -68,6 +68,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
 | R021 | MUST | Enforcement Policy | Advisory-first enforcement model, promotion criteria |
 | R022 | SHOULD | Wiki Sync | Wiki pages auto-update on agent/skill/rule/guide changes |
+| R023 | SHOULD | Verification Ladder | Verification cost ladder: deterministic first, human last (shift-left) |
 
 ### 3.2 Agent Taxonomy (50 agents)
 
@@ -89,7 +90,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 
 Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
 
-### 3.3 Skill Catalog (115 skills)
+### 3.3 Skill Catalog (114 skills)
 
 **Routing skills (4, context: fork)**
 
@@ -112,9 +113,9 @@ go-best-practices, go-backend-best-practices, python-best-practices, rust-best-p
 
 analysis, create-agent, update-docs, update-external, audit-agents, fix-refs, dev-review, dev-refactor, monitoring-setup, npm-publish, npm-version, npm-audit, optimize-analyze, optimize-bundle, optimize-report, research, deep-plan, sauron-watch, structured-dev-cycle, omcustom-release-notes, omcustom-takeover, skill-extractor, lists, status, help, adversarial-review, ambiguity-gate, scout, professor-triage, release-plan, deep-verify, omcustom-improve-report, omcustom-feedback, omcustom-web, omcustom-loop, fsd, sdd-dev, sdd, harness-synthesizer, goal, idea, homework, profile, pipeline, wiki, wiki-rag, post-release-followup, token-efficiency-audit
 
-**System / internal skills (27)**
+**System / internal skills (26)**
 
-intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, action-validator, adaptive-harness, agent-eval-framework, claude-native, crg-integration, harness-eval, instinct-extractor, omcustom-auto-improve, pipeline-guards, playwright-compress, pre-generation-arch-check, rtk-exec, sec-agentshield-wrapper, semble-integration, hada-scout
+intent-detection, model-escalation, stuck-recovery, result-aggregation, multi-model-verification, pr-auto-improve, claude-code-bible, cve-triage, skills-sh-search, reasoning-sandwich, evaluator-optimizer, systematic-debugging, action-validator, adaptive-harness, agent-eval-framework, claude-native, crg-integration, harness-eval, instinct-extractor, omcustom-auto-improve, pipeline-guards, playwright-compress, pre-generation-arch-check, sec-agentshield-wrapper, semble-integration, hada-scout
 
 **Design & product skills (5)**
 
@@ -677,7 +678,7 @@ Key current-baseline facts (measured, v1.1.74 / CC v2.1.277):
 | Item | Approximate Size |
 |------|-----------------|
 | CLAUDE.md | ~5K tokens |
-| Rules (21 files) | ~28K tokens |
+| Rules (23 files) | ~28K tokens |
 | Total mandatory load | ~33K tokens / session |
 
 Skills and guides are loaded on-demand when invoked — not pre-loaded. The `context: fork` designation (10 active, 12 cap) provides isolated context for routing and orchestration skills, preventing skill execution from consuming the main conversation's context.

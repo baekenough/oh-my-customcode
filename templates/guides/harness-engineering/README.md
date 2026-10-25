@@ -333,7 +333,7 @@ oh-my-customcode 내에서 이 주기는 다음으로 구현됩니다:
 | 3 | **Sandboxes** | 실행 환경 격리 | R006 `isolation: worktree \| sandbox` + `sandboxFailIfUnavailable: true` | ✅ 완비 |
 | 4 | **Memory & Search** | 세션 간 지식 유지 + 검색 | native auto-memory + `.claude/agent-memory/` (R011) | ✅ 완비 |
 | 5 | **Context Management** | 컨텍스트 예산 관리 + 압축 | R013 ecomode + auto-injection + Deep Insight Context Handoff Pattern | ✅ 완비 |
-| 6 | **Long-Horizon Execution** | 장기 실행 + 복수 에이전트 조율 | Agent Teams + `worker-reviewer-pipeline` + `omcustom-loop` SubagentStop hook | ✅ 완비 |
+| 6 | **Long-Horizon Execution** | 장기 실행 + 복수 에이전트 조율 | Agent Teams + `worker-reviewer-pipeline` + `omcustom-loop` (SubagentStop 어드바이저리 훅, 오케스트레이터 워크플로 계속 프롬프트 주입 없음) | ✅ 완비 |
 
 5개 컴포넌트는 완전히 매핑되며, 1개의 갭이 식별됩니다.
 
@@ -378,7 +378,7 @@ oh-my-customcode 내에서 이 주기는 다음으로 구현됩니다:
 ```
 단기 실행 (< 3분):      Agent Tool + R009 병렬 실행
 중기 실행 (3-10분):     Agent Teams + shared task list (R018)
-장기 실행 (> 10분):     omcustom-loop + SubagentStop hook + tracker-checkpoint
+장기 실행 (> 10분):     omcustom-loop(SubagentStop 어드바이저리 훅) + tracker-checkpoint
 장기 + 재시작 필요:     /tmp/.claude-pipeline-{PPID}.json checkpoint → resume
 ```
 

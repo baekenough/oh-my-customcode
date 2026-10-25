@@ -1,7 +1,7 @@
 ---
 title: Omcustom Loop
 type: skill
-updated: 2026-07-19
+updated: 2026-10-25
 sources:
   - .claude/skills/omcustom-loop/SKILL.md
 related:
@@ -14,27 +14,33 @@ related:
 
 # Omcustom Loop
 
-Prevent session idle during background subagent work by auto-continuing the orchestrator through a `SubagentStop` prompt hook.
+SubagentStop advisory hooks that run during background subagent work: outcome recording and a consecutive-completion advisory, with no orchestrator-workflow continuation.
 
 ## Overview
 
-`omcustom-loop` addresses a Claude Code platform constraint: the turn-based model goes idle once a background subagent finishes, unless something nudges it forward. The skill wires a `SubagentStop` prompt hook (configured in `.claude/hooks/hooks.json`, alongside the existing `task-outcome-recorder.sh` command hook) that fires when a background subagent completes. The hook injects a message asking the orchestrator to check for pending workflow steps — if any exist, the orchestrator proceeds automatically; otherwise it reports results and waits for user input. This makes long-running multi-step workflows (e.g. [[pipeline]], [[dag-orchestration]], [[fsd]]) resilient to background-agent completion gaps without requiring the user to manually re-prompt.
+`omcustom-loop` documents the `SubagentStop` hooks configured in `.claude/hooks/hooks.json`. When background subagents complete, five `type: command` hooks run: `task-outcome-recorder.sh` (records an outcome entry, but SubagentStop exposes no failure signal, so entries are always outcome=success), `stall-detection-advisor.sh` (stderr advisory on stalled parallel agents; stderr on exit 0 is visible to humans in transcript/debug, not fed to the model), `auto-continue-guard.sh` (counts consecutive completions), `r007-r008-drift-advisor.sh` (R007/R008 drift advisory), and `subagent-failure-advisor.sh` (reads `.tool_output.is_error`, which is absent from the SubagentStop payload, so its warning can never trigger on this path until #1656 G — closed unfixed, tracked in #1775).
 
-The skill is explicitly marked **PoC status** — an experimental mechanism, not a guaranteed continuation contract. Its own docs recommend falling back to foreground parallel agents ([[r009]]) when guaranteed continuation is required, since the prompt hook can only fire on subagent completion and cannot wake the model from true idle state.
+None of them continues the orchestrator's workflow; the orchestrator decides the next workflow step itself from the returned results. Exception: when `r007-r008-drift-advisor.sh` emits an advisory on SubagentStop, Claude Code delivers the `additionalContext` to the stopping subagent, which continues its turn to respond (CHANGELOG 2.1.163). History: the "check pending steps" instruction was dropped from the prompt hook in v1.1.32 (commit 1dd0abef), and the remaining failure-gate prompt hook was replaced by an advisory command hook in d393db06 (#1631).
+
+The skill is marked **PoC status**: the hooks only record and advise. Claude Code's turn-based model means these SubagentStop command hooks only fire when a subagent completes — none of them wakes the model from true idle state (no `asyncRewake` is configured in `.claude/hooks/hooks.json` or `.claude/settings.json`), and none of them continues the orchestrator's workflow — so foreground parallel agents ([[r009]]) are preferred when deterministic follow-up is needed. Long-running workflows ([[pipeline]], [[dag-orchestration]], [[fsd]]) are driven by the orchestrator itself.
 
 ## Key Details
 
 - **Scope**: core
 - **User-invocable**: yes
-- **Command**: `/omcustom-loop` (also `/omcustom-loop status`) — shows current auto-continuation status; the feature itself is active by default via hooks.json, no explicit activation needed
-- **Safety limits**: max 3 consecutive auto-continues before pausing for user input; [[r021]]'s stuck-detector intervenes if the same action repeats 3+ times; cost-cap-advisor continues monitoring cost during auto-continuation
+- **Command**: `/omcustom-loop` is a skill entry point; no status command exists, and the consecutive-completion counter lives in `/tmp/.claude-loop-count-${PPID}`
+- **Activation**: active by default — `.claude/hooks/hooks.json` is the source and Claude Code loads the generated `.claude/settings.json` in this repo ([[r021]]); installed projects get the wiring merged into `.claude/settings.local.json` when the hooks component is installed. No explicit activation needed
+- **Consecutive-completion advisory**: `auto-continue-guard.sh` counts SubagentStop events (counter resets after 60s idle); from the 4th completion within the window (count >= 4) it prints a stderr line "limit (3) reached. Pausing." (human-visible only, not a model-visible signal) and has no exit-2 path and its stdout carries no `decision` field, so it never blocks. Among these five SubagentStop hooks only `r007-r008-drift-advisor.sh` uses `additionalContext`
+- **Independent monitors**: the PostToolUse stuck-detector intervenes if the same action repeats 3+ times, and cost-cap-advisor monitoring is independent of these hooks
 
 ## Relationships
 
 - **Depends on**: `SubagentStop` hook event (`.claude/hooks/hooks.json`)
-- **Related skills**: [[pipeline]], [[dag-orchestration]], [[fsd]] (session continuity for long-running loops)
+- **Related skills**: [[pipeline]], [[dag-orchestration]], [[fsd]]
 - **See also**: [[r009]] (foreground-agent fallback), [[r021]] (stuck-detector/cost-cap-advisor enforcement)
 
 ## Sources
 
 - `.claude/skills/omcustom-loop/SKILL.md` — skill definition
+- Content-drift resync 2026-10-25: replaced the "session auto-continuation via SubagentStop prompt hook" framing with the source's advisory-only command-hook description (five hooks, no orchestrator-workflow continuation, drift-advisor `additionalContext` exception, consecutive-completion advisory instead of an auto-continue limit, no `status` subcommand).
+- Content-drift resync 2026-10-25 (final corrections): narrowed idle-wake and guard-blocking statements to "these SubagentStop command hooks" (no `asyncRewake`; guard has no exit-2 path and no `decision` field; none continues the orchestrator's workflow).
