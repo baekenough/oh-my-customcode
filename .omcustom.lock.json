@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.3",
-  "generatedAt": "2026-10-25T10:10:37.379Z",
-  "templateVersion": "2.0.3",
+  "generatorVersion": "2.0.4",
+  "generatedAt": "2026-10-25T10:19:57.457Z",
+  "templateVersion": "2.0.4",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
