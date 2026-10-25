@@ -1,22 +1,26 @@
 # Agents Reference
 
-oh-my-customcode includes 34 pre-built agents organized by category.
+oh-my-customcode includes 50 pre-built agents organized by category.
 
 ## Overview
 
-| Category | Count | Purpose |
-|----------|-------|---------|
-| Manager | 6 | System management and automation |
-| System | 2 | Core system functionality |
-| SW Engineer/Frontend | 3 | Frontend development |
-| SW Engineer/Backend | 5 | Backend development |
-| SW Engineer/Language | 6 | Language-specific expertise |
-| SW Engineer/Tooling | 3 | Build tools and optimization |
-| SW Engineer/Database | 1 | Database expertise |
-| SW Architect | 2 | Architecture and documentation |
-| Infra Engineer | 2 | Infrastructure and DevOps |
-| QA Team | 3 | Quality assurance |
-| Tutor | 1 | Learning and education |
+| Category (name prefix) | Count | Purpose |
+|-----------------------|-------|---------|
+| Manager (`mgr-`) | 6 | System management and automation |
+| System (`sys-`) | 2 | Core system functionality |
+| Frontend (`fe-`) | 5 | Frontend development |
+| Backend (`be-`) | 6 | Backend development |
+| Language (`lang-`) | 6 | Language-specific expertise |
+| Tooling (`tool-`) | 3 | Build tools and optimization |
+| Database (`db-`) | 4 | Database expertise |
+| Data Engineering (`de-`) | 6 | Data pipelines and warehouses |
+| Architecture (`arch-`) | 2 | Architecture and documentation |
+| Infrastructure (`infra-`) | 2 | Infrastructure and DevOps |
+| QA (`qa-`) | 3 | Quality assurance |
+| Security (`sec-`) | 1 | Security analysis |
+| Other | 4 | `agora-runner`, `slack-cli-expert`, `tracker-checkpoint`, `wiki-curator` |
+
+Counts are derived from `.claude/agents/*.md` name prefixes. For the authoritative list see `wiki/agents/` (50 pages) or `.claude/agents/` (50 `.md` files); the sections below cover a representative subset, not all 50 agents.
 
 ## Manager Agents
 
@@ -61,6 +65,13 @@ Managers handle system-level operations and automation.
 - Monitors agent activities
 - Tracks resource usage
 - Reports system health
+
+### mgr-claude-code-bible
+
+**Role**: Fetch official Claude Code documentation and verify compliance.
+
+- Fetches latest docs from code.claude.com
+- Verifies agents/skills frontmatter against the official spec
 
 ## System Agents
 
@@ -298,27 +309,15 @@ System agents provide core functionality.
 - Test frameworks
 - Bug reporting
 
-## Tutor Agents
-
-### tutor-go
-
-**Role**: Go language learning and tutorials.
-
-- Interactive Go lessons
-- Exercise guidance
-- Concept explanations
-- Practice problems
-
 ## Agent Structure
 
 Each agent follows this structure:
 
 ```
-agents/{category}/{agent-name}/
-├── AGENT.md       # Role and capabilities
-├── index.yaml     # Metadata and configuration
-└── refs/          # Links to skills and guides
+.claude/agents/{agent-name}.md   # single file: YAML frontmatter + role/workflow body
 ```
+
+Skills live in `.claude/skills/{name}/SKILL.md` and guides in `guides/`; agents reference them rather than embedding them (R006).
 
 ## Using Agents
 

@@ -7,7 +7,12 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Task/Agent Outcome Recorder Hook
 # Trigger: SubagentStop (settings.json wires this script to that event and no other)
 # Purpose: Record agent outcomes for model escalation decisions
-# Protocol: stdin JSON -> process -> stdout pass-through, exit 0 always
+# Protocol: stdin JSON -> process -> stdout pass-through
+# Exit status (MEASURED, bash 3.2, `set -euo pipefail`): the only explicit exits are `exit 0`, but
+# there is no trap, so it is NOT guaranteed. rc=0 for a well-formed payload, malformed JSON, empty
+# stdin, array/scalar payloads and a corrupt AGENT_START_FILE, with start_epoch exceptions: "abc" gives
+# rc=1 (`set -u`: "abc: unbound variable"); arithmetic-syntax values ("1792939922.5", "09") print an
+# error but give rc=0 (bash 3.2 drops the line; duration stays 0); "" gives rc=0.
 #
 # MEASURED SubagentStop payload (CC 2.1.259 embedded hook schema; #1656 B):
 #   session_id, transcript_path, cwd, prompt_id?, permission_mode?, effort?,
@@ -61,7 +66,8 @@ description=$(printf '%s\n' "$input" | jq -r '
 # Extract skill name from description or prompt
 skill_name=""
 # `|| true`: a no-match grep exits 1 and `set -euo pipefail` would abort the hook
-# (measured rc=1 on empty stdin AND on a well-formed object with no skill name).
+# (this line's guard: rc=1 when text passes the gate below but not the name pattern; the later guard: rc=1 on {"agent_type":"X"}).
+# Empty stdin now exits at the non-object guard above.
 if echo "$description" | grep -qiE '(skill:|routing|→.*skill)'; then
   skill_name=$(echo "$description" | grep -oiE '[a-z]+-[a-z]+(-[a-z]+)*-?(routing|skill|practices|detection|decomposition|orchestration|pipeline|guards|cycle|plan|review|refactor|publish|version|audit|exec|analyze|bundle|report|setup|watch|lists|status|help|save|recall)' | head -1 || true)
 fi

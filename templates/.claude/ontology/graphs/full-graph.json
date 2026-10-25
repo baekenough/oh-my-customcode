@@ -22,7 +22,7 @@
       "type": "Agent",
       "class": "LanguageExpert"
     },
-    "lang-java21-expert": {
+    "lang-java-expert": {
       "type": "Agent",
       "class": "LanguageExpert"
     },
@@ -693,7 +693,7 @@
     },
     {
       "source": "dev-lead-routing",
-      "target": "lang-java21-expert",
+      "target": "lang-java-expert",
       "relation": "routes_to"
     },
     {
@@ -883,7 +883,7 @@
         "dev-lead-routing"
       ]
     },
-    "lang-java21-expert": {
+    "lang-java-expert": {
       "requires": [],
       "routed_by": [
         "dev-lead-routing"
@@ -1389,7 +1389,7 @@
         "lang-rust-expert",
         "lang-kotlin-expert",
         "lang-typescript-expert",
-        "lang-java21-expert",
+        "lang-java-expert",
         "fe-vercel-agent",
         "fe-vuejs-agent",
         "fe-svelte-agent",

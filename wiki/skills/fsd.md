@@ -2,7 +2,7 @@
 title: FSD (Full Self Driving)
 type: skill
 scope: harness
-updated: 2026-10-25
+updated: 2026-10-26
 sources:
   - .claude/skills/fsd/SKILL.md
 related:
@@ -169,7 +169,7 @@ Before each release PR, the [auto-dev workflow](../../.claude/skills/pipeline/wo
 ## Relationships
 
 - **Delegates to**: [[goal]] (objective wrapper + R020 verification), [[pipeline]] (auto-dev release pipeline per iteration), [[homework]] (retrospective gate per iteration), [[mgr-gitnerd]] (git operations and PR merges)
-- **Related**: [[omcustom-loop]] (SubagentStop command hooks record outcomes and emit advisories only — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`), and `auto-continue-guard.sh` has no `exit 2` statement (its only explicit exit is `exit 0`), echoes the payload, and the CC 2.1.310 SubagentStop payload has no top-level `decision`/`continue` key (#1880), so it does not block; none of the hooks continues the orchestrator's workflow — the orchestrator drives each next step)
+- **Related**: [[omcustom-loop]] (SubagentStop command hooks record outcomes and emit advisories only — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`), and `auto-continue-guard.sh` has no `exit 2` statement (its only explicit exit is `exit 0`), echoes the payload, and the CC 2.1.310 SubagentStop payload has no top-level `decision`/`continue` key (CC 2.1.310 binary SubagentStop payload builder, inspected during the v2.0.6/v2.0.7 reviews), so it does not block; none of the hooks continues the orchestrator's workflow — the orchestrator drives each next step)
 - **Rules**: [R001](../rules/r001.md), [R009](../rules/r009.md), [R010](../rules/r010.md), [R015](../rules/r015.md), [R017](../rules/r017.md), [R020](../rules/r020.md)
 
 ## Sources
@@ -186,3 +186,4 @@ Before each release PR, the [auto-dev workflow](../../.claude/skills/pipeline/wo
 - Content-drift resync 2026-09-18 (v1.1.69, #1688): added the "Pre-Declaration Artifact Gate" subsection — right before declaring convergence (not a third convergence condition) FSD counts this session's `homework-*.md` artifacts across every UTC-midnight-spanning date directory and compares against the iteration count; a mismatch means recording the missing artifact recall-based (`[recall]`), not running another iteration. Updated Iteration Flow's `[FSD Done]` branch and the inline-execution minimum contract to reference this gate. Origin: the v1.1.65 iteration's homework artifact was never recorded and the gap surfaced only after Iteration 4 (#1688 Iteration 2 #1).
 - Content-drift resync 2026-09-25 (v1.1.83, #1733/#1734): renamed the excluded triage label to `triage-complete` (meaning unchanged: triaged but not selected into this auto-dev scope) throughout, matching [[skills/professor-triage|professor-triage]] and [[pipeline]]. Added "Convergence hold on a pending user-execution constraint" — FSD MUST NOT declare convergence while a release step (step 0a) is holding on a user-executed command, even if issue/PR counts read zero. Added a PR-merge user-execution constraint check applying the same step-0a check before any table-driven PR merge (#1733 찐빠 #2).
 - Content-drift resync 2026-10-06 (#1824, #1828): added the issue author trust filter to issue eligibility, the unattended PR merge boundary (`pr-boundary`) to Open PR Processing Rules, the Issue Trust Boundary subsection, and replaced the user-scope-only effective-mode guardrail with the three-scope read that defers precedence to [[r010]] Self-Check 1.
+- Content-drift resync 2026-10-26 (v2.0.7): the `omcustom-loop` evidence note now cites the CC 2.1.310 binary SubagentStop payload builder (inspected during the v2.0.6/v2.0.7 reviews) instead of "(#1880)", per `.claude/skills/fsd/SKILL.md` line 244.

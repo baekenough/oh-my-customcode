@@ -17,7 +17,7 @@ const ALL_AGENTS: &[&str] = &[
     "lang-rust-expert",
     "lang-kotlin-expert",
     "lang-typescript-expert",
-    "lang-java21-expert",
+    "lang-java-expert",
     "be-fastapi-expert",
     "be-springboot-expert",
     "be-go-backend-expert",

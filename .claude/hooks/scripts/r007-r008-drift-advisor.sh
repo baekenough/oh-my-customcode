@@ -20,7 +20,10 @@
 # This is the PROACTIVE complement to the retroactive session-reflection.sh (Stop hook, #1190).
 # Detection patterns are shared with session-reflection.sh.
 #
-# Advisory-only: ALWAYS exits 0, NEVER blocks.
+# Advisory-only: NEVER blocks. Exit status (MEASURED, bash 3.2, `set -euo pipefail`): rc=0 in every
+# probe (4 hook events x valid/corrupt/missing transcript, plus malformed JSON, empty stdin, array and
+# scalar payloads); the final statement is `exit 0` but the script is not trap-protected, so rc=0 is
+# observed, not proven for all inputs.
 #
 # Scope gate (#1650 D): the advisor judges the ORCHESTRATOR's turns only. When the hook fires
 # from INSIDE a subagent session (the payload carries `agent_id`) it exits immediately — see
@@ -230,6 +233,11 @@ split("\n")
 # (#1876) api-request-blob records carry a copy of the request message (role=assistant/user,
 # no isSidechain) — they are NOT conversation lines. Left in, a trailing assistant blob is picked
 # as $last and double-counts tool_use/announce blocks, and a user blob acts as a turn boundary.
+# Denylist (not an allowlist on .type): in the review corpus, records with `.message.role` were type
+# user 10606 / assistant 19846 / api-request-blob 351, none lacking `.type` (#1882 review).
+# NOTE: this filter runs AFTER `tail -n 200`, so blob lines occupy part of the 200-line window. Review
+# measurement: no false positives, only #1628 saturation-guard silence (judgment skipped when the
+# window has no boundary). Do not reorder without re-measuring.
 | map(select((.type? // "") != "api-request-blob"))
 | . as $L
 | ($L | length) as $n

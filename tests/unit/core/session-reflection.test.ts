@@ -801,6 +801,32 @@ describe('session-reflection.sh — Fixture 7: api-request-blob exclusion (#1876
     expect(log).toContain('Total assistant turns analyzed: 1');
   }, 15000);
 
+  it('a role=user api-request-blob with string content inside a turn does not split it (negative)', async () => {
+    const sid = `sr-blob-user-${Date.now()}`;
+    const first = [
+      { type: 'text', text: '┌─ Agent: claude (default)\n[claude][sonnet] → Tool: Read' },
+      { type: 'tool_use', id: 'sr-blob-3', name: 'Read', input: { file_path: 'a.md' } },
+    ];
+    const userBlob = JSON.stringify({
+      type: 'api-request-blob',
+      hash: 'h-sr-user',
+      sessionId: 'blob-session',
+      message: { role: 'user', content: 'request copy as bare string' },
+    });
+    const logPath = await writeTranscript(sid, [
+      ...userTurn('read it'),
+      ...assistantTurn(first),
+      userBlob, // a string-content user record would be a turn boundary if not filtered
+      ...assistantTurn([{ type: 'text', text: 'done' }]),
+    ]);
+
+    await runScript(stopInput(sid), testEnv());
+
+    const log = await waitForLog(logPath, '**R007 violations**');
+    expect(log).toContain('Total assistant turns analyzed: 1');
+    expect(log).toContain('**R007 violations**: 0');
+  }, 15000);
+
   it('a real unannounced tool_use still counts exactly once with a blob copy present (positive)', async () => {
     const sid = `sr-blob-pos-${Date.now()}`;
     const blocks = [

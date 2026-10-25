@@ -241,7 +241,7 @@ That session ran 2 iterations (v0.177.0 and v0.178.0) before converging with 0 e
 | Skill / Rule | Role |
 |--------------|------|
 | `goal` | Disciplined goal-to-execution wrapper — objective parse, gap detection, R020 verification |
-| `omcustom-loop` | SubagentStop command hooks (outcome recording and advisories only) — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`) and `auto-continue-guard.sh` has no `exit 2` statement (its only explicit exit is `exit 0`), echoes the payload, and the CC 2.1.310 SubagentStop payload has no top-level `decision`/`continue` key (#1880 L2), so it does not block |
+| `omcustom-loop` | SubagentStop command hooks (outcome recording and advisories only) — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`) and `auto-continue-guard.sh` has no `exit 2` statement (its only explicit exit is `exit 0`), echoes the payload, and the CC 2.1.310 SubagentStop payload has no top-level `decision`/`continue` key (CC 2.1.310 binary SubagentStop payload builder, inspected during the v2.0.6/v2.0.7 reviews), so it does not block |
 | `pipeline` | `/pipeline auto-dev` — the core release pipeline per iteration |
 | `homework` | Retrospective 찐빠 audit gate per iteration |
 | `mgr-gitnerd` | PR merge operations — all open PR merges delegated here (R010) |

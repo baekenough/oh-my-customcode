@@ -169,6 +169,8 @@ split("\n")
 | map(select((.isSidechain // false) != true))
 # (#1876) api-request-blob records are request copies, not conversation lines — same filter as
 # r007-r008-drift-advisor.sh (shared verdict; fixing one side only re-contaminates).
+# Denylist chosen: in the review corpus, records with `.message.role` were type user 10606 /
+# assistant 19846 / api-request-blob 351, none lacking `.type` (#1882 review).
 | map(select((.type? // "") != "api-request-blob"))
 | [ foreach .[] as $l (0;
       (if ($l.message.role? == "user")
