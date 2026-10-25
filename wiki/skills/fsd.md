@@ -2,7 +2,7 @@
 title: FSD (Full Self Driving)
 type: skill
 scope: harness
-updated: 2026-10-06
+updated: 2026-10-25
 sources:
   - .claude/skills/fsd/SKILL.md
 related:
@@ -169,7 +169,7 @@ Before each release PR, the [auto-dev workflow](../../.claude/skills/pipeline/wo
 ## Relationships
 
 - **Delegates to**: [[goal]] (objective wrapper + R020 verification), [[pipeline]] (auto-dev release pipeline per iteration), [[homework]] (retrospective gate per iteration), [[mgr-gitnerd]] (git operations and PR merges)
-- **Session continuity**: [[omcustom-loop]] (SubagentStop hook keeps session alive during background agent work)
+- **Related**: [[omcustom-loop]] (SubagentStop command hooks record outcomes and emit advisories only — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`), and `auto-continue-guard.sh` has no exit-2 path and its stdout carries no `decision` field, so it never blocks; none of the hooks continues the orchestrator's workflow — the orchestrator drives each next step)
 - **Rules**: [R001](../rules/r001.md), [R009](../rules/r009.md), [R010](../rules/r010.md), [R015](../rules/r015.md), [R017](../rules/r017.md), [R020](../rules/r020.md)
 
 ## Sources
@@ -180,6 +180,8 @@ Before each release PR, the [auto-dev workflow](../../.claude/skills/pipeline/wo
 - Content-drift resync 2026-09-03 (v1.1.60, #1650 C / #1652 #4): added the "Unattended-Mode Marker — Deterministic Detection Signal" subsection (a `/tmp/.claude-fsd-$PPID` marker written at entry and removed at convergence replaces prose inference for `unattended_mode`, feeding [[pipeline]] pre-triage Phase 0.6), the `[FSD Entry]`/`rm -f` marker lines in Iteration Flow, and the "Homework submission-gate bundling" paragraph (opt-in only on explicit user instruction — bundling it unilaterally was retrospectively flagged as a contract deviation in the v1.1.59/60 sessions).
 - Content-drift resync 2026-09-03 (v1.1.61, #1650 C): grounded the marker section explicitly in [[r010]]'s new PPID-scoped `/tmp` runtime state marker carve-out (vs. `tracker-checkpoint`-delegated structured pipeline state); documented the every-iteration re-write + 360-minute (6h) stale guard that treats an old marker as absent; enumerated all four exit paths that clear the marker (convergence, release cap, safety-classifier block, user interrupt); added the `[FSD Stop]` branch to the Iteration Flow diagram (cap/classifier-block vs. next-iteration re-write); and stated explicitly that homework-gate bundling is never derived from `unattended_mode` — only an explicit user instruction triggers it.
 - Content-drift resync 2026-09-03: added a cost-cap advisory row to Safety and Discipline — `CLAUDE_COST_CAP`-driven cost-cap advisory is a notification surfaced at the gate, not a loop-stop signal; FSD reports and continues.
+- Content-drift resync 2026-10-25 (final corrections): narrowed the `omcustom-loop` hook statements to "these SubagentStop command hooks" (no `asyncRewake`; guard has no exit-2 path and no `decision` field) per `.claude/skills/fsd/SKILL.md` lines 244 and 259.
+- Content-drift resync 2026-10-25: reframed `omcustom-loop` from session auto-continuation to advisory-only SubagentStop command hooks (no orchestrator-workflow continuation); `goal`/`/loop` remain optional expressions of the loop contract and `omcustom-loop` hooks are advisory only.
 - Content-drift resync 2026-09-18 (v1.1.67, #1683): documented inline execution as a sanctioned equivalent to `/goal`/`/loop` — the orchestrator may drive iterations directly as long as it holds the minimum per-iteration contract (marker refresh, pipeline→homework artifact→open-PR processing, measured convergence check, marker removal on any exit path).
 - Content-drift resync 2026-09-18 (v1.1.69, #1688): added the "Pre-Declaration Artifact Gate" subsection — right before declaring convergence (not a third convergence condition) FSD counts this session's `homework-*.md` artifacts across every UTC-midnight-spanning date directory and compares against the iteration count; a mismatch means recording the missing artifact recall-based (`[recall]`), not running another iteration. Updated Iteration Flow's `[FSD Done]` branch and the inline-execution minimum contract to reference this gate. Origin: the v1.1.65 iteration's homework artifact was never recorded and the gap surfaced only after Iteration 4 (#1688 Iteration 2 #1).
 - Content-drift resync 2026-09-25 (v1.1.83, #1733/#1734): renamed the excluded triage label to `triage-complete` (meaning unchanged: triaged but not selected into this auto-dev scope) throughout, matching [[skills/professor-triage|professor-triage]] and [[pipeline]]. Added "Convergence hold on a pending user-execution constraint" — FSD MUST NOT declare convergence while a release step (step 0a) is holding on a user-executed command, even if issue/PR counts read zero. Added a PR-merge user-execution constraint check applying the same step-0a check before any table-driven PR merge (#1733 찐빠 #2).

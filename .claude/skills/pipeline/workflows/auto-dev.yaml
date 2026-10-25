@@ -1115,6 +1115,21 @@ steps:
         지정합니다 — 원문에 있는지와 이 버전의 원문인지를 같은 검사로 취급하면 다른 버전
         문장이 섞여도 통과하므로, #1757 찐빠 #4).
         For a bundled multi-version note (R017 「묶음 버전 노트 위임서 — 문장별 (NNN) 태그와 합쇼체 예시」), cut one section file per version and verify each quote against its own version's file.
+      - The FIRST drafting delegation of a `claude-code-release` CC-note (and of any document
+        that makes many repository-impact claims — i.e. whose sentences assert repository facts,
+        counts, or absences) MUST include, as a completion criterion, an exclusive/universal-claim
+        sweep over its own new text; every later correction delegation that adds new claim
+        sentences MUST run the same sweep over those sentences: find every exclusive or universal
+        claim (keywords such as 뿐, 만, 전부, 모두, 0건, 없습니다, "only", "all", "none", and
+        enumerations presented as complete) and give each exactly one of three treatments —
+        (1) attach the full measuring command with its pathspec, (2) narrow it to
+        "관측한 범위(<full literal command>)", or (3) tag it [가설]. Occurrences inside quoted
+        source text (e.g. CHANGELOG quotations) or their translations are excluded from the
+        verdict. The completion report MUST list each swept claim with its treatment and, for
+        every cited command, name its grep blind spots (e.g. line continuations, commands invoked
+        through a variable binary, case/hyphen variants, files outside the pathspec, text inside
+        HTML `<!-- DETAIL -->` comments) (배타·전칭 서술이 반례 하나로 깨지는 리뷰 지적 계열
+        방지 — v2.0.2 라운드 2에 스윕 도입 후 다음 리뷰의 신규 Medium 이상 11→4, #1860).
       - Any delegation correcting a fact (the issue states an existing statement in a target file
         is wrong) — not only `claude-code-release` CC-notes — MUST include, as a completion
         criterion, an exhaustive `grep` across the target file(s) for the claim's key terms (the terms in a file written with the Write tool, run through the quote-verify block of the fixed constraint (c) as a search, not a pass/fail check), not

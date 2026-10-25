@@ -18,7 +18,7 @@ features:
     title: 50 Pre-built Agents
     details: Specialized agents for development, testing, documentation, infrastructure, and more. Each agent has a clear role and expertise.
   - icon: "⚡"
-    title: 115 Skills
+    title: 114 Skills
     details: Development best practices, orchestration patterns, and system utilities. Skills encapsulate knowledge that agents can use.
   - icon: "📜"
     title: 23 Rules
@@ -51,13 +51,18 @@ That's it! Your project now has a full agent system ready to use with Claude Cod
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| Orchestrator Agents | 4 | planner, secretary, dev-lead, qa-lead |
-| Manager Agents | 7 | creator, updater, supplier, gitnerd, sync-checker |
-| System Agents | 2 | memory-keeper, naggy |
-| SW Engineer Agents | 17 | golang, python, fastapi, springboot |
-| Architect Agents | 2 | documenter, speckit-agent |
-| Infra Agents | 2 | docker-expert, aws-expert |
-| QA Agents | 3 | qa-planner, qa-writer, qa-engineer |
+| SW Engineer / Language | 6 | lang-golang-expert, lang-python-expert, lang-rust-expert |
+| SW Engineer / Backend | 6 | be-fastapi-expert, be-springboot-expert, be-django-expert |
+| SW Engineer / Frontend | 5 | fe-vercel-agent, fe-vuejs-agent, fe-flutter-agent |
+| SW Engineer / Tooling | 4 | tool-npm-expert, tool-bun-expert, slack-cli-expert |
+| Data Engineering | 6 | de-airflow-expert, de-dbt-expert, de-kafka-expert |
+| Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert |
+| Security | 1 | sec-codeql-expert |
+| Architecture | 3 | arch-documenter, arch-speckit-agent, agora-runner |
+| Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
+| QA | 3 | qa-planner, qa-writer, qa-engineer |
+| Manager | 6 | mgr-creator, mgr-updater, mgr-gitnerd, mgr-sauron |
+| System | 4 | sys-memory-keeper, sys-naggy, wiki-curator, tracker-checkpoint |
 
 ## Why oh-my-customcode?
 

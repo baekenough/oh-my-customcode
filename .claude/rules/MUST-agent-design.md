@@ -40,13 +40,13 @@ Tier를 섞으면(예: frontmatter에 Tier-3 전용 값을 쓰거나 그 반대)
 | `opusplan` | Opus + plan mode; architecture planning with approval gates |
 | `inherit` | Inherit the parent session's model |
 
-**CC resolves these, not this project.** This project cannot "pin" an alias to a specific version — measured: a frontmatter `model: sonnet` agent executed as `claude-sonnet-5` (the v2.1.197-era default), not a project-fixed `claude-sonnet-4-6`. Treat any "currently resolves to X" statement as a snapshot that changes when CC's own default changes.
+**CC resolves these, not this project.** This project cannot "pin" an alias to a specific version; treat any "currently resolves to X" statement as a snapshot that changes when CC's own default changes (measured example via Read tool). <!-- DETAIL: measured example — a frontmatter `model: sonnet` agent executed as `claude-sonnet-5` (the v2.1.197-era default), not a project-fixed `claude-sonnet-4-6`. -->
 
 #### Tier 2 — Full model IDs (frontmatter `model:` ONLY — recommended for stability)
 
 | Full ID | Use Case |
 |---------|----------|
-| `claude-haiku-4-5` | Fast, cheap tasks |
+| `claude-haiku-4-5` | Haiku, previous generation; fast, cheap tasks |
 | `claude-haiku-5-5` | Default Haiku model on the Anthropic API (v2.1.293+); 1M context |
 | `claude-sonnet-5` | Native 1M context; previous-generation Sonnet (v2.1.197+; on the Anthropic API, `claude-sonnet-5-5` is now the default Sonnet model, v2.1.284+) |
 | `claude-sonnet-5-5` | Now the default Sonnet model on the Anthropic API (v2.1.284+); 1M context, $2/$10 per Mtok, $0.10/Mtok cache reads in CC cost figures (v2.1.296; was $0.20) |
@@ -57,7 +57,7 @@ Tier를 섞으면(예: frontmatter에 Tier-3 전용 값을 쓰거나 그 반대)
 | `claude-fable-5` | Mythos-class; tier above Opus (access via CC v2.1.170+) |
 | `claude-fable-5-1` | Mythos-class; Fable 5.1 — v2.1.257부터 기본 Fable 모델, 1M context |
 
-Full IDs are valid ONLY in agent frontmatter — the Agent tool's `model:` spawn parameter does NOT accept them (see Tier 3). Writing the full ID directly (not a project-invented shorthand) pins the agent regardless of future CC default changes. This is the recommended way to opt into Sonnet 5.5 / Opus 5.5 / Fable 5 explicitly rather than riding CC's Tier-1 default resolution.
+Full IDs are valid ONLY in agent frontmatter — the Agent tool's `model:` spawn parameter does NOT accept them (see Tier 3). Writing the full ID directly pins the agent regardless of future CC default changes. This is the recommended way to opt into Haiku 5.5 / Sonnet 5.5 / Opus 5.5 / Fable 5 / 5.1 explicitly rather than riding CC's Tier-1 default resolution.
 
 Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
 
@@ -372,7 +372,7 @@ RETIRED (은퇴 릴리즈 v1.1.50, 보존 기준 v2.1.230 미만): > **v2.1.204+
 
 ## Permission Mode Guidance
 
-> Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions". Below CC 2.1.212, CC defaults per-call `mode` to `acceptEdits` — pass `mode: "bypassPermissions"` explicitly. From 2.1.212 the parameter is ignored: subagents inherit the parent session's mode, and frontmatter `permissionMode` (modes in the table below) may override it. Keep passing `mode` for compatibility; see R010 for the version table and self-check.
+> Canonical source: R010 (MUST-orchestrator-coordination.md) "Universal bypassPermissions". Below CC 2.1.212 pass `mode: "bypassPermissions"` explicitly (default `acceptEdits`); from 2.1.212 the `mode` parameter is ignored (parent mode inherited; frontmatter `permissionMode`, table below, may override). Keep passing `mode`; see R010's version table and self-check. <!-- DETAIL: pre-compression wording — Below CC 2.1.212, CC defaults per-call `mode` to `acceptEdits` — pass `mode: "bypassPermissions"` explicitly. From 2.1.212 the parameter is ignored: subagents inherit the parent session's mode, and frontmatter `permissionMode` (modes in the table below) may override it. Keep passing `mode` for compatibility; see R010 for the version table and self-check. -->
 
 | Mode | Behavior |
 |------|----------|
@@ -457,7 +457,7 @@ Optional per-agent identity layer. `soul: true` in frontmatter enables personali
 
 ## Artifact Output Convention
 
-Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HHmmss}.md`. Opt-in, git-untracked. Final subagent writes (R010).
+Skills persist output to `.claude/outputs/sessions/{YYYY-MM-DD}/{skill-name}-{HHmmss}.md`. Opt-in, git-untracked. Final subagent writes (R010). Observed (#1858, CC 2.1.296/2.1.310): a subagent Write of a report-named file (`report-*.md`) was refused; trigger unmeasured [가설]. On refusal the subagent returns the content as text and reports the refusal; if a downstream agent needs a file, the orchestrator delegates a separate writer with a filename outside report/summary/findings/analysis names [가설]. The orchestrator confirms every file deliverable with its own `ls -la` (stricter than auto-dev.yaml's agent-reported `ls -la`). <!-- DETAIL: #1858 measurement (CC 2.1.310, 2026-10-25, mgr-updater subagent, scratchpad dir): Write `report-probe.md` → refused "Subagents should return findings as text, not write report files. Include this content in your final response instead."; `homework-probe.md` and `result-probe.md` → created; `ls -la` showed only the latter two. Trigger observed for a report-named file; whether filename, path, or content decides is unmeasured [가설]. 2.1.296 also saw a subagent falsely report a refused write as success, hence the orchestrator `ls -la` check. -->
 
 ### Sensitive Path Handling
 
@@ -490,14 +490,14 @@ CC v2.1.121+: `bypassPermissions`에서 `.claude/**`(templates 미러 포함)·`
 
 ### Artifact Channel Protocol
 
-에이전트 간 결과 핸드오프 시 **아티팩트 파일을 채널로 사용**하는 프로토콜. 기존 Artifact Output Convention의 경로 규약을 에이전트 통신 계약으로 승격합니다.
+에이전트 간 결과 핸드오프 시 **아티팩트 파일을 채널로 사용**하는 프로토콜. <!-- DETAIL: Artifact Output Convention 경로 규약의 통신 계약 승격. -->
 
 #### 원칙
 
 | 원칙 | 내용 |
 |------|------|
-| Path-only transfer | 다음 에이전트에 전달할 때 **파일 경로만 전달**, 본문 inline 전달 금지 |
-| Read-write 분리 | 생산 에이전트는 Write, 소비 에이전트는 Read (파일 경쟁 방지) |
+| Path-only transfer | 다음 에이전트에 전달할 때 **파일 경로만 전달**, 본문 inline 전달 금지(거부 중계 시 별도 writer 1회 제외 — 위 Convention) |
+| Read-write 분리 | 생산 에이전트는 Write(거부 시 위 Convention의 중계 경로), 소비 에이전트는 Read (파일 경쟁 방지) |
 | Session-scoped | 아티팩트는 세션 범위 — `{YYYY-MM-DD}` 디렉토리로 격리 |
 | Single-writer | 한 아티팩트는 하나의 에이전트만 작성. 후속 에이전트는 새 아티팩트 생성 |
 
@@ -532,13 +532,13 @@ Agent body: purpose, capabilities overview, workflow. NOT detailed instructions 
 
 ## Fast Mode
 
-Fast Mode uses the same model with faster output. Activated via `/fast` toggle or `fastMode` setting. Does NOT switch to a different model.
-
+Fast Mode keeps the configured model (does NOT switch models): ~2.5x faster output, reduced reasoning depth. Activated via `/fast` or `fastMode` setting.
+<!-- DETAIL: former table
 | Aspect | Normal | Fast Mode |
 |--------|--------|-----------|
 | Model | As configured | Same model |
 | Output speed | Standard | ~2.5x faster |
-| Reasoning depth | Full | Reduced |
+| Reasoning depth | Full | Reduced | -->
 
 See activation, effort interaction, and default effort change details via Read tool.
 
@@ -656,7 +656,7 @@ Default: `core` (when field is omitted)
 
 ### Context Fork Criteria
 
-Use `context: fork` for multi-agent orchestration skills only. Cap: **12 total**. Current: 10/12 (secretary/dev-lead/de-lead/qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage, roundtable-debate).
+Use `context: fork` for multi-agent orchestration skills only. Cap: **12 total**. Current: 10/12 (list via Read tool). <!-- DETAIL: context:fork skills (10) — secretary/dev-lead/de-lead/qa-lead-routing, dag-orchestration, task-decomposition, worker-reviewer-pipeline, deep-plan, professor-triage, roundtable-debate. -->
 
 <!-- DETAIL: Context Fork decision table
 | Use context:fork | Do NOT use context:fork |

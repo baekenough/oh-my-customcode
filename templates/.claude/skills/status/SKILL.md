@@ -36,7 +36,7 @@ Agents:
   Total:           50 agents
 
 Skills:
-  Total:          115 skills
+  Total:          114 skills
 
 Guides:            56 loaded
 Commands:          60+ available

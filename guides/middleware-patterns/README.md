@@ -22,12 +22,12 @@ LangChain이 정의한 6개의 lifecycle hook은 다음과 같습니다. 각 단
 
 | LangChain Hook | 설명 | oh-my-customcode 대응 | 스킬/훅 예시 |
 |---|---|---|---|
-| `before_agent` | 에이전트 전체 실행 시작 전 | `SessionStart`, `UserPromptSubmit` hook | MEMORY.md 자동 주입, omcustom-loop 초기화 |
+| `before_agent` | 에이전트 전체 실행 시작 전 | `SessionStart`, `UserPromptSubmit` hook | MEMORY.md 자동 주입 |
 | `before_model` | 모델 호출 직전 (매 추론 루프마다) | `PreToolUse(Agent)`, pre-generation-arch-check | pre-generation-arch-check 스킬 |
 | `wrap_model_call` | 모델 호출 자체를 래핑 (실제 호출 제어) | Tier 4 permission approval (Bash/WebFetch) | permission hooks, bypassPermissions 게이트 |
 | `wrap_tool_call` | 도구 호출을 래핑 (전후 모두 제어) | `PreToolUse(*) + PostToolUse(*)` | action-validator, task-outcome-recorder |
 | `after_model` | 모델 응답 수신 직후 | `PostToolUse(Agent)`, result-aggregation | result-aggregation 스킬, evaluator-optimizer |
-| `after_agent` | 에이전트 전체 실행 완료 후 | `Stop`, `SubagentStop`, post-release-followup | omcustom-loop SubagentStop hook |
+| `after_agent` | 에이전트 전체 실행 완료 후 | `Stop`, `SubagentStop`, post-release-followup | SubagentStop 어드바이저리 훅 (omcustom-loop 참조) |
 
 ### 매핑 해설
 
@@ -53,7 +53,7 @@ LangChain이 정의한 6개의 lifecycle hook은 다음과 같습니다. 각 단
 
 **`after_agent` → Stop / SubagentStop**
 
-에이전트 실행 전체가 완료된 후 클린업, 메모리 저장, 후속 작업 트리거를 수행합니다. oh-my-customcode의 `Stop` 훅(세션 종료 시 메모리 저장 권고)과 `SubagentStop` 훅(서브에이전트 완료 후 omcustom-loop 계속 여부 결정)이 여기에 해당합니다.
+에이전트 실행 전체가 완료된 후 클린업, 메모리 저장, 후속 작업 트리거를 수행합니다. oh-my-customcode의 `Stop` 훅(세션 종료 시 메모리 저장 권고)과 `SubagentStop` 훅(서브에이전트 완료 후 결과 기록·어드바이저리 출력, 계속 여부는 오케스트레이터가 판단)이 여기에 해당합니다.
 
 ---
 
@@ -177,8 +177,8 @@ oh-my-customcode에서 이 패턴은 R004의 재시도 정책으로 명문화되
 | 자산 | 유형 | 역할 |
 |---|---|---|
 | `Stop` hook | 훅 이벤트 | 세션 종료 시 메모리 저장 권고 |
-| `SubagentStop` hook | 훅 이벤트 | 서브에이전트 완료 후 omcustom-loop 계속 여부 결정 |
-| `omcustom-loop` | 스킬 | 파이프라인 완료 후 다음 사이클 트리거 |
+| `SubagentStop` hook | 훅 이벤트 | 서브에이전트 완료 후 결과 기록·어드바이저리 출력 (오케스트레이터 워크플로 계속 프롬프트 주입 없음) |
+| `omcustom-loop` | 스킬 | SubagentStop 훅 어드바이저리 안내 (오케스트레이터 워크플로 계속 프롬프트 주입 없음) |
 | sys-memory-keeper | 에이전트 | 세션 종료 시 MEMORY.md 업데이트 |
 | `SubagentStart` hook | 훅 이벤트 | 서브에이전트 시작 시 HUD 이벤트 발행 |
 

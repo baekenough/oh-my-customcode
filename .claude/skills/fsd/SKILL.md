@@ -241,7 +241,7 @@ That session ran 2 iterations (v0.177.0 and v0.178.0) before converging with 0 e
 | Skill / Rule | Role |
 |--------------|------|
 | `goal` | Disciplined goal-to-execution wrapper — objective parse, gap detection, R020 verification |
-| `omcustom-loop` | Session auto-continuation via SubagentStop hook — keeps the loop alive during background agent work |
+| `omcustom-loop` | SubagentStop command hooks (outcome recording and advisories only) — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`) and `auto-continue-guard.sh` has no exit-2 path and its stdout carries no `decision` field, so it never blocks |
 | `pipeline` | `/pipeline auto-dev` — the core release pipeline per iteration |
 | `homework` | Retrospective 찐빠 audit gate per iteration |
 | `mgr-gitnerd` | PR merge operations — all open PR merges delegated here (R010) |
@@ -256,12 +256,12 @@ That session ran 2 iterations (v0.177.0 and v0.178.0) before converging with 0 e
 
 This skill is intentionally a **thin alias**. It does NOT duplicate:
 - Issue polling logic (owned by `pipeline`)
-- Loop cadence / auto-continuation (owned by `omcustom-loop` + SubagentStop hook)
+- Loop cadence (no SubagentStop-hook-driven continuation of the orchestrator loop — the orchestrator drives each next step; `omcustom-loop`'s SubagentStop hooks only record outcomes and emit advisories)
 - Release pipeline steps (owned by `pipeline auto-dev`)
 - Retrospective analysis (owned by `homework`)
 - PR merge execution (owned by `mgr-gitnerd`)
 - Completion verification (owned by R020 + `goal`)
-- Loop driving itself — the main conversation may run the iteration inline (see 「인라인 실행 허용」); `goal`/`omcustom-loop` are optional expressions of the same contract
+- Loop driving itself — the main conversation may run the iteration inline (see 「인라인 실행 허용」); `goal`/`/loop` are optional expressions of the same contract; `omcustom-loop` hooks are advisory only
 
 If any of those underlying skills evolve, FSD automatically benefits — its only responsibility is declaring the intent and forwarding to the right components.
 

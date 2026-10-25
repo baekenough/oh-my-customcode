@@ -1,7 +1,7 @@
 ---
 title: Status
 type: skill
-updated: 2026-07-19
+updated: 2026-10-25
 sources:
   - .claude/skills/status/SKILL.md
 related:
@@ -35,3 +35,4 @@ Displays a comprehensive system status: rules loaded, agent counts by category, 
 ## Sources
 
 - `.claude/skills/status/SKILL.md` — skill definition
+- Content-drift resync 2026-10-25: source sample output now shows "Total: 114 skills" (was 115); no other change.
