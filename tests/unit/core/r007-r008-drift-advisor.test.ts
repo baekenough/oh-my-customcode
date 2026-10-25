@@ -41,7 +41,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -2158,5 +2158,92 @@ describe('r007-r008-drift-advisor.sh — Fixture 13: stdin guard', () => {
 
     expect(r.exitCode).toBe(0);
     expect(r.stdout.trim()).toBe('');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 14: api-request-blob records are not conversation lines (#1876)
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 14: api-request-blob exclusion (#1876)', () => {
+  let blobRoot: string;
+  let blobTranscriptDir: string;
+  let blobMarkerDir: string;
+
+  beforeEach(async () => {
+    blobRoot = await mkdtemp(join(tmpdir(), 'drift-advisor-blob-'));
+    blobTranscriptDir = join(blobRoot, 'transcripts');
+    blobMarkerDir = join(blobRoot, 'markers');
+    await mkdir(blobTranscriptDir, { recursive: true });
+    await mkdir(blobMarkerDir, { recursive: true });
+  });
+
+  afterEach(async () => {
+    await rm(blobRoot, { recursive: true, force: true });
+  });
+
+  /** Real blob shape: top-level keys are only hash/message/sessionId/type (no isSidechain). */
+  function blobLine(role: 'assistant' | 'user', content: unknown, idx: number): string {
+    return JSON.stringify({
+      type: 'api-request-blob',
+      hash: `hash-${idx}`,
+      sessionId: 'blob-session',
+      message: { role, content },
+    });
+  }
+
+  async function runOn(sid: string, lines: string[]): Promise<ScriptResult> {
+    await writeFile(join(blobTranscriptDir, `${sid}.jsonl`), `${lines.join('\n')}\n`);
+    return runScript(postToolUseInput(sid), {
+      OMCUSTOM_TRANSCRIPT_BASE: blobTranscriptDir,
+      OMCUSTOM_R007_MARKER_DIR: blobMarkerDir,
+    });
+  }
+
+  const dupBlocks = [
+    { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: two calls' },
+    { type: 'text', text: '[claude][sonnet] → Tool: Read' },
+    { type: 'tool_use', id: 'bl-1', name: 'Read', input: { file_path: 'a.md' } },
+    { type: 'tool_use', id: 'bl-2', name: 'Grep', input: { pattern: 'x' } },
+  ];
+
+  it('B1: a trailing assistant blob duplicating the turn does not change the R008 miss count', async () => {
+    const base = [...userTurn('Do two things'), ...assistantTurn(dupBlocks)];
+    const without = await runOn('blob-neg', base);
+    const withBlob = await runOn('blob-pos', [...base, blobLine('assistant', dupBlocks, 1)]);
+
+    const ctxWithout = parseAdvisoryOutput(without.stdout).hookSpecificOutput.additionalContext;
+    const ctxWith = parseAdvisoryOutput(withBlob.stdout).hookSpecificOutput.additionalContext;
+    expect(ctxWithout).toContain('R008 도구 식별 접두사 누락 1건');
+    expect(ctxWith).toContain('R008 도구 식별 접두사 누락 1건');
+    expect(ctxWith).toBe(ctxWithout);
+  });
+
+  it('B2: a user blob between the two halves of one assistant turn is not a turn boundary', async () => {
+    const half1 = assistantTurn([
+      { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: split turn' },
+      { type: 'text', text: '[claude][sonnet] → Tool: Read' },
+      { type: 'tool_use', id: 'sp-1', name: 'Read', input: { file_path: 'a.md' } },
+    ]);
+    const half2 = assistantTurn([
+      { type: 'text', text: 'Result analysis follows.' },
+      { type: 'text', text: '[claude][sonnet] → Tool: Grep' },
+      { type: 'tool_use', id: 'sp-2', name: 'Grep', input: { pattern: 'x' } },
+    ]);
+    const base = [...userTurn('Go'), ...half1, ...toolResultLine('sp-1'), ...half2];
+    const without = await runOn('blobuser-neg', base);
+    const withBlob = await runOn('blobuser-pos', [
+      ...userTurn('Go'),
+      ...half1,
+      blobLine('user', 'a blob user prompt (string content)', 2),
+      ...toolResultLine('sp-1'),
+      ...half2,
+    ]);
+
+    // Whole turn: first text is the R007 header, 2 announces == 2 tool_use → silent.
+    expect(without.exitCode).toBe(0);
+    expect(without.stdout.trim()).toBe('');
+    expect(withBlob.exitCode).toBe(0);
+    expect(withBlob.stdout.trim()).toBe(without.stdout.trim());
   });
 });

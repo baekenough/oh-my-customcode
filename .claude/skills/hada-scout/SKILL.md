@@ -33,7 +33,7 @@ eliminating the external CronJob dependency for user-invoked runs.
 2. Agent evaluates each title against oh-my-customcode's domain (see prompt template below)
 3. Returns relevance score (0–100) and a 1-line reason for each item
 4. Threshold: ≥ 60 passes to Phase 3 (configurable via `--threshold` or `HADA_SCOUT_THRESHOLD`)
-5. Cost: ~$0.01–0.05 for 50 items
+5. Cost: ~USD 0.01–0.05 for 50 items
 
 ### Phase 3 — Scout Dispatch
 
@@ -105,9 +105,9 @@ Items:
 
 | Stage | Model | Estimated Cost |
 |-------|-------|----------------|
-| Pre-scout (Phase 2) | haiku | ~$0.01–0.05 per run (50 items) |
-| Full scout (Phase 3) | sonnet | ~$0.5–1.5 per item, max 5 per run |
-| Total max per invocation | — | ~$8 |
+| Pre-scout (Phase 2) | haiku | ~USD 0.01–0.05 per run (50 items) |
+| Full scout (Phase 3) | sonnet | ~USD 0.5–1.5 per item, max 5 per run |
+| Total max per invocation | — | ~USD 8 |
 
 ## Environment Variables
 
@@ -135,7 +135,7 @@ Items:
 | Filtering | Regex keyword match | LLM relevance scoring (haiku) |
 | Invocation | External CronJob only | User-invocable `/hada-scout` + CronJob |
 | Precision | Low (keyword false positives) | High (context-aware scoring) |
-| Cost per scan | $0 (regex) + $2.5–7.5 (/scout) | $0.05 (pre-scout) + $2.5–7.5 (/scout) |
+| Cost per scan | USD 0 (regex) + USD 2.5–7.5 (/scout) | USD 0.05 (pre-scout) + USD 2.5–7.5 (/scout) |
 | False positive rate | ~30–40% | ~5–10% |
 | Scope | `package` | `core` |
 

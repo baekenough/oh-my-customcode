@@ -338,4 +338,37 @@ describe('count-r007-r008.sh — positive/negative pair', () => {
     // Same transcript minus the sidechain records must yield IDENTICAL counts.
     expect(withParsed).toEqual(withoutParsed);
   });
+  it('excludes api-request-blob records from boundary detection (#1876 M2)', async () => {
+    // 7 lines: prompt -> header + UNprefixed Read -> role=user blob with bare-string content
+    // (shape-matches a boundary) -> tool_result -> prefixed Grep. The blob must not split the
+    // single turn: expected turns 1 / r008 1 (2 tool_use, 1 announce), same as without the blob.
+    const blob = JSON.stringify({
+      type: 'api-request-blob',
+      hash: 'h-1',
+      sessionId: 'blob-session',
+      message: { role: 'user', content: 'request copy' },
+    });
+    const lines = [
+      ...userTurn('go'),
+      ...assistantTurn([{ type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: t' }]),
+      ...assistantTurn([{ type: 'tool_use', id: 'tu-b1', name: 'Read', input: {} }]),
+      blob,
+      ...toolResultLine('tu-b1'),
+      ...assistantTurn([{ type: 'text', text: '[claude][fable] → Tool: Grep' }]),
+      ...assistantTurn([{ type: 'tool_use', id: 'tu-b2', name: 'Grep', input: {} }]),
+    ];
+    expect(lines.length).toBe(7);
+    const withBlob = await writeTranscript('blob-with', lines);
+    const without = await writeTranscript(
+      'blob-without',
+      lines.filter((l) => l !== blob)
+    );
+
+    const a = JSON.parse((await runCounter([withBlob, '--json'])).stdout.trim());
+    const b = JSON.parse((await runCounter([without, '--json'])).stdout.trim());
+
+    expect(b.turns).toBe(1);
+    expect(b.r008_missing).toBe(1);
+    expect(a).toEqual(b);
+  });
 });

@@ -21,13 +21,13 @@ When background subagents complete, `SubagentStop` command hooks record outcomes
 
 ## Consecutive-Completion Advisory
 
-- **Consecutive-completion counter**: `auto-continue-guard.sh` counts SubagentStop events (counter resets after 60s idle); from the 4th completion onward within the window (count >= 4) it prints a stderr line "limit (3) reached. Pausing." (human-visible only, not a model-visible signal; among these five SubagentStop hooks only `r007-r008-drift-advisor.sh` uses `additionalContext`) and has no exit-2 path and its stdout carries no `decision` field, so it never blocks
+- **Consecutive-completion counter**: `auto-continue-guard.sh` counts SubagentStop events (counter resets after 60s idle); from the 4th completion onward within the window (count >= 4) it prints a stderr line "limit (3) reached. Pausing." (human-visible only, not a model-visible signal; among these five SubagentStop hooks only `r007-r008-drift-advisor.sh` uses `additionalContext`) and its script contains no `exit 2` statement (its only explicit exit is `exit 0`); it echoes the input payload to stdout, and the CC 2.1.310 SubagentStop payload has no top-level `decision`/`continue` key (measured by a reviewer from the binary's payload builder), so it does not block
 - **stuck-detector integration**: If the same action repeats 3+ times, the independent PostToolUse stuck-detector hook intervenes
 - **cost-cap-advisor**: Cost monitoring is independent of these hooks
 
 ## Configuration
 
-The hooks are configured in `.claude/hooks/hooks.json` under `SubagentStop`. All five hooks are `type: command` and advisory (none has an exit-2 path or emits a `decision`/`continue` field outside comments, so they never block; grep of the five scripts for `exit 2`, `"decision"`, `decision:`, `"continue"` hit only comments in `r007-r008-drift-advisor.sh`).
+The hooks are configured in `.claude/hooks/hooks.json` under `SubagentStop`. All five hooks are `type: command` and advisory (none contains an `exit 2` statement or emits a `decision`/`continue` field outside comments, so none blocks; the grep pattern covered `exit 2`, `"decision"`, `decision:`, `"continue"` and hit only comments in `r007-r008-drift-advisor.sh`. Four of the five hooks echo the CC payload to stdout, which carries no top-level `decision`/`continue` key in CC 2.1.310. The drift advisor's `additionalContext` makes the stopping subagent continue its own turn; that continuation is not a block).
 
 ## Limitations
 
@@ -38,7 +38,7 @@ The hooks are configured in `.claude/hooks/hooks.json` under `SubagentStop`. All
 ## Usage
 
 ```bash
-/omcustom-loop          # Skill entry point (no status command exists; the consecutive-completion counter lives in `/tmp/.claude-loop-count-${PPID}`)
+/omcustom-loop          # Skill entry point (no status command exists; the consecutive-completion counter lives in /tmp/.claude-loop-count-${PPID})
 ```
 
 The hooks are active by default: `.claude/hooks/hooks.json` is the source, and Claude Code loads the generated `.claude/settings.json` in this repo (R021); installed projects get the wiring merged into `.claude/settings.local.json` when the hooks component is installed (`src/core/installer.ts` returns early if `hooks.json` is absent). No explicit activation needed.

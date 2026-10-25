@@ -1,7 +1,7 @@
 ---
 title: Scout
 type: skill
-updated: 2026-10-06
+updated: 2026-10-25
 sources:
   - .claude/skills/scout/SKILL.md
 related:
@@ -42,3 +42,4 @@ Phase 3 분석 담당자가 Write로 기존 제목 형식까지 완성한 title/
 ## Sources
 
 - `.claude/skills/scout/SKILL.md` — skill definition
+- Content-drift resync 2026-10-25 (v2.0.6, #1879): source edited (shell-block arg placeholders / USD n wording); no wiki-stated claim changed.

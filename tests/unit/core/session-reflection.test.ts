@@ -329,6 +329,7 @@ async function workerJqEnv(mode: 'hold' | 'fail'): Promise<Record<string, string
     wrapper,
     `${[
       '#!/bin/bash',
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal bash ${1:-} in fixture script
       'if [ "${1:-}" = -Rsr ]; then',
       '  printf "%s\\n" "[fixture] worker jq diagnostic" >&2',
       '  printf "%s\\n" entered > "$OMCC_WORKER_ENTERED"',
@@ -767,5 +768,54 @@ describe('session-reflection.sh — Fixture 6: turn reconstruction & sidechain',
     expect(log).toContain('Total assistant turns analyzed: 1');
     expect(log).toContain('**R007 violations**: 0');
     expect(log).toContain('**R008 violations**: 0');
+  }, 15000);
+});
+
+describe('session-reflection.sh — Fixture 7: api-request-blob exclusion (#1876)', () => {
+  /** Real blob shape: request copy of (part of) an assistant message, no isSidechain. */
+  function blobCopy(blocks: object[]): string {
+    return JSON.stringify({
+      type: 'api-request-blob',
+      hash: 'h-sr',
+      sessionId: 'blob-session',
+      message: { role: 'assistant', content: blocks },
+    });
+  }
+
+  it('a trailing assistant blob duplicating a compliant turn adds no R008 violation (negative)', async () => {
+    const sid = `sr-blob-neg-${Date.now()}`;
+    const blocks = [
+      { type: 'text', text: '┌─ Agent: claude (default)\n[claude][sonnet] → Tool: Read' },
+      { type: 'tool_use', id: 'sr-blob-1', name: 'Read', input: { file_path: 'a.md' } },
+    ];
+    const logPath = await writeTranscript(sid, [
+      ...userTurn('read it'),
+      ...assistantTurn(blocks),
+      blobCopy([blocks[1]]),
+    ]);
+
+    await runScript(stopInput(sid), testEnv());
+
+    const log = await waitForLog(logPath, '**R008 violations**');
+    expect(log).toContain('**R008 violations**: 0');
+    expect(log).toContain('Total assistant turns analyzed: 1');
+  }, 15000);
+
+  it('a real unannounced tool_use still counts exactly once with a blob copy present (positive)', async () => {
+    const sid = `sr-blob-pos-${Date.now()}`;
+    const blocks = [
+      { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: t' },
+      { type: 'tool_use', id: 'sr-blob-2', name: 'Read', input: { file_path: 'a.md' } },
+    ];
+    const logPath = await writeTranscript(sid, [
+      ...userTurn('read it'),
+      ...assistantTurn(blocks),
+      blobCopy([blocks[1]]),
+    ]);
+
+    await runScript(stopInput(sid), testEnv());
+
+    const log = await waitForLog(logPath, '**R008 violations**: 1');
+    expect(log).toContain('**R008 violations**: 1');
   }, 15000);
 });

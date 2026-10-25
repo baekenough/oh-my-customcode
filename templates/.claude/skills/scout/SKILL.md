@@ -74,7 +74,7 @@ Before execution, show the plan:
 ├── Phase 3: 적합성 분석 (sonnet)
 └── Phase 4: 이슈 생성
 
-예상: ~1분 | 비용: ~$0.5-1.5
+예상: ~1분 | 비용: ~USD 0.5-1.5
 실행하시겠습니까? [Y/n]
 ```
 
@@ -185,9 +185,9 @@ byte_dump=$(mktemp /tmp/omcustom-gh-byte-dump.XXXXXX) || exit 1
 trap 'command rm -f -- "$byte_dump"' 0
 trap 'exit 1' HUP INT TERM
 check_file() {
-  [ -f "$1" ] || return 1
-  command od -A n -v -t u1 "$1" > "$byte_dump" || return 1
-  command awk -v kind="$2" '
+  [ -f "${1}" ] || return 1
+  command od -A n -v -t u1 "${1}" > "$byte_dump" || return 1
+  command awk -v kind="${2}" '
     { for (i = 1; i <= NF; i++) {
         b = $i + 0; n++;
         if (b == 0) bad = 1;
@@ -297,7 +297,7 @@ When verdict is `INTERNALIZE` and integration effort is M or L:
 |--------|--------|-----------|
 | Purpose | Quick fit evaluation | Deep multi-dimensional analysis |
 | Teams | 1 agent | 10 teams |
-| Cost | ~$0.5-1.5 | ~$8-15 |
+| Cost | ~USD 0.5-1.5 | ~USD 8-15 |
 | Duration | 1-2 min | 10-20 min |
 | Output | Issue with verdict | Full report with ADOPT/ADAPT/AVOID |
 | When | First contact with new link | Deep dive after scout recommends |

@@ -6,7 +6,6 @@ oh-my-customcode includes 34 pre-built agents organized by category.
 
 | Category | Count | Purpose |
 |----------|-------|---------|
-| Orchestrator | 4 | Coordinate and manage other agents |
 | Manager | 6 | System management and automation |
 | System | 2 | Core system functionality |
 | SW Engineer/Frontend | 3 | Frontend development |
@@ -18,42 +17,6 @@ oh-my-customcode includes 34 pre-built agents organized by category.
 | Infra Engineer | 2 | Infrastructure and DevOps |
 | QA Team | 3 | Quality assurance |
 | Tutor | 1 | Learning and education |
-
-## Orchestrator Agents
-
-Orchestrators coordinate other agents and manage complex workflows.
-
-### planner
-
-**Role**: Master orchestrator for complex multi-step tasks.
-
-- Plans and decomposes large tasks
-- Coordinates multiple agents
-- Tracks progress and dependencies
-
-### secretary
-
-**Role**: Task coordination and agent delegation.
-
-- Routes requests to appropriate agents
-- Manages agent lifecycle
-- Aggregates results from multiple agents
-
-### dev-lead
-
-**Role**: Development team coordination.
-
-- Coordinates SW engineer agents
-- Manages code review workflows
-- Oversees implementation tasks
-
-### qa-lead
-
-**Role**: QA team coordination.
-
-- Coordinates QA agents
-- Manages testing workflows
-- Ensures quality standards
 
 ## Manager Agents
 
@@ -229,9 +192,9 @@ System agents provide core functionality.
 - Type system
 - TypeScript tooling
 
-### lang-java21-expert
+### lang-java-expert
 
-**Role**: Java 21 language expertise.
+**Role**: Java language expertise.
 
 - Modern Java features
 - Java patterns

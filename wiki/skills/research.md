@@ -1,7 +1,7 @@
 ---
 title: Research
 type: skill
-updated: 2026-10-06
+updated: 2026-10-25
 sources:
   - .claude/skills/research/SKILL.md
 related:
@@ -35,3 +35,4 @@ Spawns 10 parallel research agents (Agent Teams when available, R018) to analyze
 ## Sources
 
 - `.claude/skills/research/SKILL.md` — skill definition (teams-compatible flag added; sensitive-path bypass documented #1045)
+- Content-drift resync 2026-10-25 (v2.0.6, #1879): source edited (shell-block arg placeholders / USD n wording); no wiki-stated claim changed.

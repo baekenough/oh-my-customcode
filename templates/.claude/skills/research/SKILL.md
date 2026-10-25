@@ -34,7 +34,7 @@ Orchestrates 10 parallel research teams for comprehensive deep analysis of any t
 
 ## Pre-flight Guards
 
-Before executing the 10-team research workflow, the agent MUST run these checks. Research is a high-cost operation (~$8-15) — these guards prevent wasteful execution.
+Before executing the 10-team research workflow, the agent MUST run these checks. Research is a high-cost operation (~USD 8-15) — these guards prevent wasteful execution.
 
 ### Guard Levels
 
@@ -67,7 +67,7 @@ indicators_complex:
   - Query references a repository or ecosystem for deep analysis
 ```
 
-**Action (GATE)**: `[Pre-flight] GATE: Query appears to be a simple factual question. Use direct answer or single WebSearch instead. 10-team research (~$8-15) would be wasteful. Override with /research --force if intended.`
+**Action (GATE)**: `[Pre-flight] GATE: Query appears to be a simple factual question. Use direct answer or single WebSearch instead. 10-team research (~USD 8-15) would be wasteful. Override with /research --force if intended.`
 
 ### Guard 2: Single-File Review Detection
 
@@ -128,7 +128,7 @@ fi
 ├── Known solution: PASS
 └── Context budget: WARN — context at 45%, research adds ~35%
 Result: PROCEED WITH CAUTION (0 GATE, 1 WARN, 0 INFO)
-Cost estimate: ~$8-15 for 10-team parallel research
+Cost estimate: ~USD 8-15 for 10-team parallel research
 ```
 
 If any GATE: block and suggest alternative. User can override with `--force`.
@@ -407,7 +407,7 @@ Before execution:
 
 Estimated: {time} | Teams: 10 | Models: sonnet → opus
 Stopping: max 30 verification rounds, convergence at 0 contradictions
-Cost: ~$8-15 (10 teams × sonnet + opus verification)
+Cost: ~USD 8-15 (10 teams × sonnet + opus verification)
 Execute? [Y/n]
 ```
 
@@ -464,7 +464,7 @@ Agent(
 
 - Each Teams member running research still respects R009 (max 4 concurrent sub-agents)
 - Batching order remains: T1-T4 → T5-T8 → T9-T10
-- Cost is identical to orchestrator mode (~$8-15 per research invocation)
+- Cost is identical to orchestrator mode (~USD 8-15 per research invocation)
 - Multiple Teams members running research simultaneously will multiply costs proportionally
 
 ## Integration
