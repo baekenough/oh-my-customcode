@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.5",
-  "generatedAt": "2026-10-25T13:29:58.438Z",
-  "templateVersion": "2.0.5",
+  "generatorVersion": "2.0.6",
+  "generatedAt": "2026-10-25T14:32:34.357Z",
+  "templateVersion": "2.0.6",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -290,8 +290,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-continue-guard.sh": {
-      "templateHash": "a26db6ab9d47d9648e2fe0e282e056d44b403de62144070190ab582c4f6ea7e6",
-      "size": 873,
+      "templateHash": "8da2d8e9464adfb5067046d7e34a9c90a6b0236ffb76a20901658f88ade361d3",
+      "size": 972,
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-dev-token-summary.sh": {
@@ -385,8 +385,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "53b18f6535ab61dcbeac89666f4719982bdd0e5b77afb3485c49f1e6bc389ce7",
-      "size": 30145,
+      "templateHash": "8ed2d4e1baf9c72818e8ef54806bd1157dfe5b37552b6f7c5684b1ad84fa57d8",
+      "size": 30486,
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
@@ -420,8 +420,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-reflection.sh": {
-      "templateHash": "b89f27ad0052f9eb92636aa7674b4e1279968907e75aab790f4f23d194a040df",
-      "size": 13541,
+      "templateHash": "5b98572a69a36f0f6404c95b3fc53f6bbe5f564e39268466be9c5aa69dc66ace",
+      "size": 13775,
       "component": "hooks"
     },
     ".claude/hooks/scripts/skill-extractor-analyzer.sh": {
@@ -535,8 +535,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "28957e4f2b46a252dc9ce687d82d46d1f3770f1910e7259e9acb341ca89690da",
-      "size": 71953,
+      "templateHash": "51070a96d7cc238b1504a4c00448355b1cf09fde2cbdcb5e431adce01abc7fc8",
+      "size": 71897,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -745,8 +745,8 @@
       "component": "skills"
     },
     ".claude/skills/claude-native/SKILL.md": {
-      "templateHash": "6cb266d8aed6627655048246a61e371131aa65e1d90274b0784ebbc6275e0963",
-      "size": 9386,
+      "templateHash": "3b445fc9527dd9e0af4c70cecd889295194b904d44620857afe4963d96a8dce9",
+      "size": 9392,
       "component": "skills"
     },
     ".claude/skills/create-agent/SKILL.md": {
@@ -845,8 +845,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "2ea4a8d6ed429581f6cb5a121cc8c8323010cf8b9077c0b818c958e4b2669765",
-      "size": 24248,
+      "templateHash": "063b26f47dcf921172f7af1b6ece729f937060776739d7f5f0588c14fe5629cc",
+      "size": 24372,
       "component": "skills"
     },
     ".claude/skills/go-backend-best-practices/SKILL.md": {
@@ -885,8 +885,8 @@
       "component": "skills"
     },
     ".claude/skills/hada-scout/SKILL.md": {
-      "templateHash": "67fd29e208e1401dd1bf0fdb2b1ce6ae7f3bbbd7a66f7dfaa962525980a92513",
-      "size": 5444,
+      "templateHash": "c20f2f97d79e7327ae7f05d8720aa505d2445d8502dd34827e1bf86ac7dd6413",
+      "size": 5468,
       "component": "skills"
     },
     ".claude/skills/harness-eval/SKILL.md": {
@@ -990,8 +990,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-feedback/SKILL.md": {
-      "templateHash": "c638bbcf474fb395645bda431d500955a3291bcdb2b0429f2d207f91080abc65",
-      "size": 9797,
+      "templateHash": "16309c8d391104b231420f60e4a1035935d78b26a588709a98026c0a36a26b7b",
+      "size": 9803,
       "component": "skills"
     },
     ".claude/skills/omcustom-improve-report/SKILL.md": {
@@ -1000,8 +1000,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-loop/SKILL.md": {
-      "templateHash": "2d797905e471cf7af499ff0719d6be39808dc80f265782550338b576c02c1b40",
-      "size": 4275,
+      "templateHash": "81891ccb9b69185f6c546ff62ec60824242345e8db5e4e6000e2105ee88df175",
+      "size": 4728,
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
@@ -1060,8 +1060,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "64fdce9f439126a593d23cb7930fb213f290a34c3fcc48e84bc2787df53b41f8",
-      "size": 153757,
+      "templateHash": "a757c01ff591b47985b5549c46b35f64f56a5fb0e8b83f12a22172d635b62dba",
+      "size": 153812,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1070,8 +1070,8 @@
       "component": "skills"
     },
     ".claude/skills/post-release-followup/SKILL.md": {
-      "templateHash": "208af36282e1e3f03515b8c5f88c38698f80654761601cc959f5cd6bad334558",
-      "size": 15826,
+      "templateHash": "37df2ee54208bc7192558ae6dca254f6a0856b55f3aa6019b2d3f15692c7d06e",
+      "size": 15844,
       "component": "skills"
     },
     ".claude/skills/postgres-best-practices/SKILL.md": {
@@ -1135,8 +1135,8 @@
       "component": "skills"
     },
     ".claude/skills/research/SKILL.md": {
-      "templateHash": "d08a09a1dd5088cfcf5d5d6de28e0fb76ded12f5ab3f24df337e725b69f6d9e6",
-      "size": 18608,
+      "templateHash": "e3733b4bc2367c3ab920411bab646ff23ce1d75ca4ff266f9b37259586eee531",
+      "size": 18623,
       "component": "skills"
     },
     ".claude/skills/result-aggregation/SKILL.md": {
@@ -1160,8 +1160,8 @@
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
-      "templateHash": "86002c3e818f08e9e2cbca5ce740930733d4939940b7517e00260520b5e9b5df",
-      "size": 12399,
+      "templateHash": "fea8a62c96f640b4e5b8973a1c05163a231e01352a790cba3a893336987347af",
+      "size": 12414,
       "component": "skills"
     },
     ".claude/skills/sdd-dev/SKILL.md": {
@@ -1485,8 +1485,8 @@
       "component": "guides"
     },
     "guides/claude-code/04-agent-skills.md": {
-      "templateHash": "daf1b6ed7da15dbcdfaa39276da5e94a0289203dcf35fa402f87da32f86c08e8",
-      "size": 3571,
+      "templateHash": "e2c4846fd68615fc33eb6206b4c1fc7d63187cb896fb8c98e7d0b8b1ec9ca944",
+      "size": 4645,
       "component": "guides"
     },
     "guides/claude-code/05-agent-sdk.md": {
@@ -1540,8 +1540,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "370d9f39e21992b6d183a8a9da827cce286edc65ec4726498c3e7f42c95d6d37",
-      "size": 575774,
+      "templateHash": "353c9ec323bf16b99ee3033aeb72471baa5340e6018aca5accb07b63e8e46255",
+      "size": 575909,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
