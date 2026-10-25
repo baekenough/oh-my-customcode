@@ -22,7 +22,7 @@
 #   3. A boundary = a `role == "user"` record whose content is a bare string, OR an array with
 #      no `tool_result` block. Tool-result lines are role=="user" but are NOT boundaries — the
 #      assistant turn continues across them.
-#   4. A "turn" is the run of consecutive (non-sidechain) assistant records between one
+#   4. A "turn" is the run of consecutive (non-sidechain, non-blob) assistant records between one
 #      boundary (exclusive) and the next (exclusive), or end-of-file.
 # This is boundary-DETECTION only. It is NOT the advisor's pass/fail logic — that stays
 # entirely inside the advisor and is never duplicated here.
@@ -111,15 +111,17 @@ if [ ! -s "$CANONICAL" ]; then
 fi
 
 # ── Turn-boundary metadata: per line index, is it an assistant record, and is it a boundary?
-# `isSidechain: true` records are excluded from both checks — mirrors the advisor's
-# `(.isSidechain // false) != true` filter (see comment block above). ──
+# `isSidechain: true` and `type == "api-request-blob"` records are excluded from both checks
+# (`$is_conv` = a conversation line) — mirrors the advisor's sidechain and blob filters (see comment
+# block above). Denylist chosen: in the review corpus, records with `.message.role` were type user
+# 10606 / assistant 19846 / api-request-blob 351, none lacking `.type` (#1882 review). ──
 jq -s -r '
   . as $L
   | range(0; ($L | length)) as $i
-  | ((($L[$i].isSidechain? // false) != true) and (($L[$i].type? // "") != "api-request-blob")) as $not_sidechain
+  | ((($L[$i].isSidechain? // false) != true) and (($L[$i].type? // "") != "api-request-blob")) as $is_conv
   | [ $i,
-      (if $not_sidechain and ($L[$i].message.role? == "assistant") then 1 else 0 end),
-      (if $not_sidechain and ($L[$i].message.role? == "user")
+      (if $is_conv and ($L[$i].message.role? == "assistant") then 1 else 0 end),
+      (if $is_conv and ($L[$i].message.role? == "user")
           and ( (($L[$i].message.content? // "" | type) == "string")
                 or (([ $L[$i].message.content[]? | select(.type? == "tool_result") ] | length) == 0) )
        then 1 else 0 end)

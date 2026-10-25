@@ -15,7 +15,13 @@ command -v jq >/dev/null 2>&1 || exit 0
 #   with no dedup, observed to repeat 8-10x per session before manual override.
 # Fix: replace the blocking LLM judge with a plain stderr-only warning that never
 #   triggers the Stop-hook-feedback re-injection path. No block, no LLM call, no loop.
-# Protocol: stdin JSON -> read tool_output.is_error -> stderr warning if failed -> pass through -> exit 0 (always)
+# Protocol: stdin JSON -> read tool_output.is_error -> stderr warning if failed -> pass through -> exit 0
+# Exit status (MEASURED, bash 3.2, `set -euo pipefail`): rc=0 in every probe (well-formed payload,
+# is_error=true payload, malformed JSON, empty stdin, array/scalar payloads) except one synthetic case:
+# the jq calls for is_error and agent_type are guarded with `|| echo`, but the error_summary pipeline
+# (`jq ... | head -c 200`) is not; with is_error=true and a 300KB `tool_output.output` it gave rc=141
+# (SIGPIPE under pipefail, 3/3). SubagentStop payloads have no `tool_output`, so is_error is always
+# false there and that path is unreachable at runtime.
 
 input=$(cat)
 

@@ -3,10 +3,11 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 /**
- * Regression for #1879: Claude Code substitutes `$N` (single digit, 0-based)
- * with the invocation arguments anywhere in SKILL.md (observed on CC 2.1.310):
- * shell fences AND prose AND every other fence type. `${N}` is not substituted,
- * and out-of-range indices stay literal. So a SKILL.md body must contain no
+ * Regression for #1879: Claude Code substitutes in-range `$N` (0-based) with the
+ * invocation arguments in SKILL.md (observed on CC 2.1.310 in a bash fence and
+ * in prose; whether only single digits are recognized is undetermined [가설],
+ * `$10` stayed literal with 3 args). `${N}` is not substituted, and the
+ * out-of-range index observed (prose `$5`) stayed literal. So a SKILL.md body must contain no
  * `$<digit>` at all, except the `${N}` form. Dollar amounts are written
  * `USD 5`, never `$5` (with one URL argument `$0.01` would render as `<url>.01`).
  *

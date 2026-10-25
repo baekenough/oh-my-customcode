@@ -4,7 +4,16 @@ set -euo pipefail
 # Stall Detection Advisor
 # Trigger: SubagentStop
 # Purpose: Detect stalled parallel agents and advise adaptive splitting (R009)
-# Protocol: stdin JSON -> analyze durations -> stderr advisory, stdout pass-through, exit 0 always (R021)
+# Protocol: stdin JSON -> analyze durations -> stderr advisory, stdout pass-through (R021: advisory, never intends to block)
+# Exit status (MEASURED, bash 3.2, `set -euo pipefail`): only explicit exit is `exit 0`, not guaranteed.
+# With no AGENT_START_FILE the early exit below gives rc=0 for any stdin. With a start file present
+# (the normal runtime state, written by agent-start-recorder.sh on SubagentStart): malformed JSON and
+# array/scalar payloads gave rc=5 (unguarded `jq` agent_type extraction); a well-formed payload with a
+# 300KB `.description` gave rc=141 (5/5; 70KB rc=0; boundary near 81,920 bytes here, platform-dependent; `| head -c 80` SIGPIPE under pipefail). CC sends objects and
+# SubagentStop has no `.description`, so these paths are not reached at runtime.
+# Start-record `start_epoch`: "abc" gives rc=1 (`set -u`: "abc: unbound variable"); arithmetic-syntax
+# values ("1792939922.5", "09") print an error and give rc=1 (`set -u`: "duration_seconds: unbound
+# variable"); "" gives rc=0.
 
 # ORDERING: This hook MUST run AFTER task-outcome-recorder.sh in hooks.json SubagentStop array.
 # Reason: This script removes consumed entries from AGENT_START_FILE; task-outcome-recorder reads them first.
