@@ -928,6 +928,19 @@ steps:
         각 변수에 최소 한 값 변경 대조 조건을 두게 하십시오. 측정 writer는 조건·결과 표를 제출하고
         일반화 문장에 측정 조건을 함께 적으십시오. dispatcher는 대조가 없는 함의를 가설로
         제한하며 표 없는 runtime 일반화를 완료로 받지 마십시오(#1833 P5).
+      - Line-anchor drift sweep: a delegation that adds or removes lines in any file MUST, as a
+        completion condition, run `git grep -n -E '<escaped basename>:[0-9]'` across the
+        repository (the BASENAME, not the path — basename-only anchors such as
+        `task-outcome-recorder.sh:218` carry no directory) and also check every sentence that
+        mentions the file for bare continuation anchors (`:[0-9]+` after a path mention, e.g.
+        `stall-detection-advisor.sh:44/:124` or `:451-:453`), then either re-derive each anchor
+        whose target text moved or replace it with a content anchor (function name / unique
+        string). Anchors into generated files (e.g. `.claude/settings.json`, regenerated from
+        hooks.json) MUST be content anchors, not line numbers. The completion report lists each
+        anchor (file:line, old target, new line).
+        (줄 수를 바꾸는 위임의 완료 조건에 그 파일을 가리키는 `file:line` 앵커 — basename 전용·
+        연속 `:N` 형태 포함 — 의 전수 grep과 재도출 또는 내용 앵커 전환을 넣어야 하며, 생성 파일
+        앵커는 줄 번호가 아닌 내용 앵커여야 합니다) (#1884 item 8).
       - No state-changing command (`gh issue create/edit/close`, `gh pr create/edit/close/merge`,
         `git push`, label changes) — including the orchestrator's own direct commands, not only
         delegated ones — MAY use a `||` fallback that prints success-looking output; the observed

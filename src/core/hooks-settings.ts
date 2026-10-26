@@ -28,6 +28,9 @@
  *          original command only if it holds, otherwise pass stdin through unchanged
  *          (matches the "실행 불가/조건 불충족 시 무음 통과" advisory principle).
  *
+ * FileChanged is the exception to the matcher DSL: its matcher is a `|`-separated list of
+ * literal filenames (see `analyzeFileChangedMatcher`), passed through verbatim.
+ *
  * Any matcher expression this module cannot parse or classify falls back conservatively
  * (see `analyzeMatcher` and `convertEntry`) and is surfaced via `warnings` rather than
  * silently mis-converted (R020 "attempt ≠ outcome" / R016 "text ≠ wiring").
@@ -481,6 +484,29 @@ export function analyzeMatcher(raw: string | undefined): MatcherAnalysis {
   return analyzeMixedAndExpr(ast, raw);
 }
 
+/** One literal filename segment of a FileChanged matcher: conservative charset, no `/`, no glob
+ * characters, and not made only of dots (`.`, `..`). */
+const FILE_CHANGED_LITERAL_SEGMENT = /^(?!\.+$)[A-Za-z0-9._-]+$/;
+
+/**
+ * FileChanged-only matcher conversion. Per the official hooks docs, a FileChanged matcher is
+ * split on `|` and every segment is registered as a literal filename in the working
+ * directory — it is NOT a tool-name regex or a boolean expression, and `"*"` watches a file
+ * literally named `*`. A `|`-separated list of literal filenames (e.g.
+ * `CLAUDE.md|bun.lock`) therefore passes through verbatim.
+ *
+ * Returns `null` for anything else (empty/`*`/glob/path/empty segment), so the caller keeps
+ * the generic {@link analyzeMatcher} behavior unchanged for those values.
+ */
+export function analyzeFileChangedMatcher(raw: string | undefined): MatcherAnalysis | null {
+  if (raw === undefined) return null;
+  const segments = raw.split('|');
+  if (!segments.every((segment) => FILE_CHANGED_LITERAL_SEGMENT.test(segment))) {
+    return null;
+  }
+  return { toolRegex: raw, fieldNode: null };
+}
+
 // ---------------------------------------------------------------------------
 // fieldNode -> jq boolean expression compiler
 // ---------------------------------------------------------------------------
@@ -576,10 +602,11 @@ export interface ClassificationEntry {
 export const CLASSIFICATION_TABLE: ClassificationEntry[] = [
   {
     event: 'PreToolUse',
-    description: 'Block dev servers outside tmux - ensures you can access logs',
+    description:
+      'Advise (additionalContext, never blocks) when a foreground dev server starts outside tmux/run_in_background - keeps logs accessible',
     decision: 'wrap-guard',
     reason:
-      'inline script unconditionally `exit 1`-blocks on ANY match once invoked; it never re-parses tool_input.command, so widening the matcher to bare "Bash" would block every Bash call',
+      'inline script is an advisory (always exit 0, additionalContext only); it re-parses tool_input.command for a dev command at command position and stays silent for tmux, `run_in_background: true`, backgrounded and mention-only commands, but the wrap-guard is kept as a cheap pre-filter so non-matching Bash calls do not spawn the POSIX-sh segment parser',
   },
   {
     event: 'PreToolUse',
@@ -597,10 +624,10 @@ export const CLASSIFICATION_TABLE: ClassificationEntry[] = [
   },
   {
     event: 'PreToolUse',
-    description: 'Block creation of random .md files - keeps docs consolidated',
+    description: 'Non-blocking notice on new .md/.txt files (exit 1) - keeps docs consolidated',
     decision: 'drop-condition',
     reason:
-      'inline script re-parses tool_input.file_path via jq and re-tests both the `\\.(md|txt)$` and the README/CLAUDE/AGENT/SKILL exclusion with its own [[ =~ ]] checks before blocking — the matcher condition is fully redundant with the script body',
+      'inline script re-parses tool_input.file_path via jq and re-tests both the `\\.(md|txt)$` and the README/CLAUDE/AGENT/SKILL exclusion with its own POSIX `case` patterns before printing its non-blocking exit-1 notice (per a CC 2.1.310 runtime probe, neither the tool block nor the stderr of an exit-1 PreToolUse hook reaches the model) — the matcher condition is fully redundant with the script body',
   },
   {
     event: 'PreToolUse',
@@ -725,6 +752,30 @@ export function convertHookCommand(
   };
 }
 
+/**
+ * FileChanged matchers are literal filenames. A value that is not a valid literal list still
+ * converts (via the generic matcher analysis) but would watch a file of that exact name, so
+ * surface a conversion warning instead of converting silently.
+ */
+function warnNonLiteralFileChangedMatcher(
+  event: string,
+  rawMatcher: string | undefined,
+  analysis: MatcherAnalysis,
+  context: string,
+  warnCollector: { push: (msg: string) => void }
+): void {
+  if (
+    event !== 'FileChanged' ||
+    rawMatcher === undefined ||
+    analyzeFileChangedMatcher(rawMatcher) !== null
+  ) {
+    return;
+  }
+  warnCollector.push(
+    `hooks: ${context} — FileChanged matcher ${JSON.stringify(rawMatcher)} is not a |-separated list of literal filenames; FileChanged matchers are literal filenames (not tool-name regexes, globs, or expressions), so the converted matcher ${JSON.stringify(analysis.toolRegex)} would watch a file of that exact name — use e.g. "CLAUDE.md|bun.lock"`
+  );
+}
+
 export function convertHooksEntry(
   event: string,
   entry: RawHookEntry,
@@ -734,7 +785,9 @@ export function convertHooksEntry(
 
   let analysis: MatcherAnalysis;
   try {
-    analysis = analyzeMatcher(entry.matcher);
+    analysis =
+      (event === 'FileChanged' ? analyzeFileChangedMatcher(entry.matcher) : null) ??
+      analyzeMatcher(entry.matcher);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     warnCollector.push(
@@ -742,6 +795,8 @@ export function convertHooksEntry(
     );
     return null;
   }
+
+  warnNonLiteralFileChangedMatcher(event, entry.matcher, analysis, context, warnCollector);
 
   let decision: HookDecision | 'auto' = 'auto';
   if (analysis.fieldNode !== null) {

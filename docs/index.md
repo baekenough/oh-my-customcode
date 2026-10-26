@@ -58,7 +58,8 @@ That's it! Your project now has a full agent system ready to use with Claude Cod
 | Data Engineering | 6 | de-airflow-expert, de-dbt-expert, de-kafka-expert |
 | Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert |
 | Security | 1 | sec-codeql-expert |
-| Architecture | 3 | arch-documenter, arch-speckit-agent, agora-runner |
+| Architecture | 2 | arch-documenter, arch-speckit-agent |
+| Agora | 1 | agora-runner |
 | Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-gitnerd, mgr-sauron |

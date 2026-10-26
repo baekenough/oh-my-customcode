@@ -437,7 +437,21 @@ describe('mergeHookBlocks', () => {
     it('registers exactly the descriptions found in git history', () => {
       expect(LEGACY_OMCUSTOM_DESCRIPTIONS).toContain(LEGACY_SUBAGENT_STOP);
       expect(LEGACY_OMCUSTOM_DESCRIPTIONS).toContain(LEGACY_SESSION_START);
-      expect(LEGACY_OMCUSTOM_DESCRIPTIONS).toHaveLength(2);
+      // v2.0.8 (#1856): dev-server and .md-notice group descriptions retired.
+      expect(LEGACY_OMCUSTOM_DESCRIPTIONS).toContain(
+        'Block dev servers outside tmux - ensures you can access logs'
+      );
+      expect(LEGACY_OMCUSTOM_DESCRIPTIONS).toContain(
+        'Block creation of random .md files - keeps docs consolidated'
+      );
+      // v2.0.8 (#1880): SubagentStop and FileChanged group descriptions reworded.
+      expect(LEGACY_OMCUSTOM_DESCRIPTIONS).toContain(
+        'Record agent outcomes + auto-continue workflow + R007/R008 drift advisory + failure advisory on subagent completion (autonomous-loop re-entry, #1545; #1631 replaced the self-referential prompt-type judge hook with an advisory-only command hook)'
+      );
+      expect(LEGACY_OMCUSTOM_DESCRIPTIONS).toContain(
+        'Validate externally modified files — advisory staleness warning (v2.1.83+)'
+      );
+      expect(LEGACY_OMCUSTOM_DESCRIPTIONS).toHaveLength(6);
     });
 
     it('drops the v1.1.53-v1.1.55 SubagentStop auto-continue prompt group', () => {

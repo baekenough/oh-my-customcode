@@ -71,7 +71,8 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | 데이터 엔지니어링 | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | 데이터베이스 | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | 보안 | 1 | sec-codeql-expert |
-| 아키텍처 | 3 | arch-documenter, arch-speckit-agent, agora-runner |
+| 아키텍처 | 2 | arch-documenter, arch-speckit-agent |
+| Agora | 1 | agora-runner |
 | 인프라 | 2 | infra-docker-expert, infra-aws-expert |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 매니저 | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
@@ -113,14 +114,14 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 
 | 스킬 | 설명 |
 |------|------|
-| agora | 익명 다중 라운드 합의 리뷰 — 설계·결정 주제를 3개 독립 벤더 CLI에 걸쳐 봉인된 A/B/C 라벨로 검토시키고, 라운드마다 모델이 바뀌는 심판이 판정한다. 익명성은 결정적으로 보장되지 않으며 그 한계가 스킬 본문에 명시돼 있다. `agora-runner`(3.2 에이전트 분류)가 위임받아 라운드 1개를 실행하고 verdict 요약만 반환한다. |
+| agora | 익명 다중 라운드 합의 리뷰 — 설계·결정 주제를 3개 독립 벤더 CLI에 걸쳐 봉인된 A/B/C 라벨로 검토시키고, 라운드마다 모델이 바뀌는 심판이 판정한다. 익명성은 결정적으로 보장되지 않으며 그 한계가 스킬 본문에 명시돼 있다. `agora-runner`(3.2 에이전트 분류, Agora)가 위임받아 라운드 1개를 실행하고 verdict 요약만 반환한다. |
 
 ### 3.4 가이드 라이브러리 (56개 토픽)
 
 | 카테고리 | 가이드 |
 |----------|--------|
 | 내부 | claude-code, git-worktree-workflow, worktree-lifecycle, skill-bundle-design, agents-md-quality, hook-data-flow, multi-model-routing |
-| 언어 | golang, python, rust, kotlin, typescript, java21 |
+| 언어 | golang, python, rust, kotlin, typescript, java |
 | 프론트엔드 | flutter, web-design |
 | 백엔드 | fastapi, springboot, go-backend, django-best-practices |
 | 인프라 | docker, aws |
@@ -134,9 +135,9 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 
 ### 3.5 훅 시스템
 
-훅 시스템은 모든 에이전트 작업에 횡단 관심사(cross-cutting concerns)를 제공합니다. 훅은 설계상 어드바이저리 우선(R021)입니다: 대부분의 PostToolUse/PreToolUse 훅은 경고하거나 상태를 기록할 뿐 차단하지 않으며, 소수(stage-blocker, dev 서버 tmux 강제, rule-deletion-guard)만 `exit 2`로 하드 블록합니다.
+훅 시스템은 모든 에이전트 작업에 횡단 관심사(cross-cutting concerns)를 제공합니다. 훅은 설계상 어드바이저리 우선(R021)입니다: 대부분의 PostToolUse/PreToolUse 훅은 경고하거나 상태를 기록할 뿐 차단하지 않으며, 소수(stage-blocker, rule-deletion-guard)만 `exit 2`로 하드 블록합니다. dev 서버 tmux 훅은 어드바이저리 전용입니다(항상 exit 0).
 
-**소스 → 빌드 산출물**: `.claude/hooks/hooks.json`은 **소스 파일**입니다 — Claude Code가 이 파일을 직접 로드하지 않습니다. 실제 로드 경로는 `.claude/settings.json`(+ `.claude/settings.local.json`, + `templates/` 미러) 내부의 `hooks` 블록이며, `src/core/hooks-settings.ts`가 `hooks.json`으로부터 컴파일하고 `omcustom init` 시 `installer.ts`가 병합합니다. `hooks.json`만 편집하면 settings 파일이 재생성되기 전까지 런타임 동작이 바뀌지 않습니다 — 이 소스/빌드 분리는 v1.1.53에서 발견·수정되었으며, 그 이전 릴리즈들에서는 `hooks.json`이 조용히 미로드 상태였습니다. 실측(verify-template-sync 출력): 훅 스크립트 42개, 훅 matcher 57개.
+**소스 → 빌드 산출물**: `.claude/hooks/hooks.json`은 **소스 파일**입니다 — Claude Code가 이 파일을 직접 로드하지 않습니다. 실제 로드 경로는 `.claude/settings.json`(+ `.claude/settings.local.json`, + `templates/` 미러) 내부의 `hooks` 블록이며, `src/core/hooks-settings.ts`가 `hooks.json`으로부터 컴파일하고 `omcustom init` 시 `installer.ts`가 병합합니다. `hooks.json`만 편집하면 settings 파일이 재생성되기 전까지 런타임 동작이 바뀌지 않습니다 — 이 소스/빌드 분리는 v1.1.53에서 발견·수정되었으며, 그 이전 릴리즈들에서는 `hooks.json`이 조용히 미로드 상태였습니다. 실측(verify-template-sync 출력): 훅 스크립트 42개, 훅 matcher 58개.
 
 **앵커된 명령 형식과 동기화**: 훅 명령은 `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/<path>"` 형식을 사용합니다. 훅이 세션 cwd에서 실행되므로(CC 2.1.288에서 `claude -p` 프로브로 실측), cwd 상대 경로는 cwd가 프로젝트 루트가 아닐 때 깨지기 때문입니다. Claude Code가 훅 프로세스에 `CLAUDE_PROJECT_DIR`을 주입하며, 미설정 시 `:-.`가 기존 동작을 유지합니다. 흐름: `.claude/hooks/hooks.json`(단일 소스) → `bun run sync:hooks`(`scripts/sync-hooks-settings.ts`, 로직은 `src/core/hooks-settings-sync.ts`)로 생성되는 `.claude/settings.json`(+ `templates/`)이며, `bun run build`는 이 단계로 끝나고 `tests/unit/core/hooks-wiring.test.ts`가 드리프트를 감시합니다. 설치된 프로젝트에서는 `omcustom update`(전체 업데이트 또는 hooks 컴포넌트)와 `omcustom init --backup`이 `.claude/settings.local.json`의 기존 상대 경로 훅 명령을 재작성합니다(`src/core/hook-command-migration.ts`). 이 마이그레이션은 재작성 전용이며 사용자 정의 훅은 건드리지 않습니다. 수용된 동작 변경: `isolation: worktree`로 스폰된 서브에이전트는 메인 체크아웃의 훅 스크립트를 실행합니다(`CLAUDE_PROJECT_DIR` = 메인 체크아웃, cwd = 워크트리).
 
@@ -144,7 +145,8 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 |--------|------------------|------|
 | SessionStart | session-env-check.sh, stale-todo-scanner.sh | codex CLI + Agent Teams 가용성 감지; 오래된 TODO 스캔 |
 | PreToolUse (Write/Edit) | stage-blocker.sh | implement 단계 외 쓰기 차단 |
-| PreToolUse (Bash dev server) | 인라인 스크립트 | dev 서버를 tmux로 강제 |
+| PreToolUse (Bash dev server) | 인라인 스크립트 | 어드바이저리(항상 exit 0): tmux/백그라운드 밖에서 포그라운드 dev 서버 시작 시 additionalContext 전달 |
+| PreToolUse (Bash) | bash-cd-advisor.sh | 어드바이저리(차단 없음): Bash 명령에 최상위 지속 `cd`가 있으면 additionalContext 전달 |
 | PreToolUse (Edit) | content-hash-validator.sh | 콘텐츠 해시 기반 스탈 편집 경고 (어드바이저리) |
 | PreToolUse (Write/Edit/Bash) | schema-validator.sh | 도구 입력 구조 스키마 검증 (어드바이저리) |
 | PreToolUse (Agent/Task) | HUD 표시, git-delegation-guard.sh, agent-teams-advisor.sh, model-escalation-advisor.sh | 스폰 표시, R010 강제, R018 어드바이저리, 에스컬레이션 어드바이저리 |
@@ -159,8 +161,9 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 | PostToolUse (모든 도구) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode 어드바이저리, 반복 루프 감지, 비용 모니터링 |
 | PostCompact | compact-rules-reinforcement (인라인) | 컨텍스트 압축 후 R007/R008/R009/R010/R018 규칙 재주입 |
 | SubagentStart | HUD 인라인 표시 | 서브에이전트 시작 시 agent type:model 로그 |
-| SubagentStop | task-outcome-recorder.sh | 최종 결과 기록 |
-| Stop | stop-console-audit.sh, eval-core-batch-save.sh, feedback-collector.sh, R011 프롬프트 | 최종 감사, 배치 평가 저장, 세션 피드백 추출 및 improvementActions 삽입, 메모리 체크포인트 |
+| PostToolUseFailure | failure-ledger.sh, subagent-failure-advisor.sh (Agent/Task) | 무출력 실패 계측; additionalContext로 서브에이전트 실패 어드바이저리 |
+| SubagentStop | task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh(연속 완료 가드), r007-r008-drift-advisor.sh | 최종 결과 기록; 정체, 연속 완료, R007/R008 드리프트 어드바이저리(워크플로를 이어가거나 차단하지 않음) |
+| Stop | stop-console-audit.sh, eval-core-batch-save.sh, feedback-collector.sh, session-reflection.sh, skill-extractor-analyzer.sh, auto-dev-token-summary.sh | 최종 감사, 배치 평가 저장, 세션 피드백 추출 및 improvementActions 삽입, 세션 회고, 스킬 추출 분석, auto-dev 토큰 요약 |
 
 #### 관측성 훅 (Harness Engineering)
 

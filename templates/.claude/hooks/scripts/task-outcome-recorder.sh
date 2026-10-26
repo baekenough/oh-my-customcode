@@ -10,9 +10,10 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Protocol: stdin JSON -> process -> stdout pass-through
 # Exit status (MEASURED, bash 3.2, `set -euo pipefail`): the only explicit exits are `exit 0`, but
 # there is no trap, so it is NOT guaranteed. rc=0 for a well-formed payload, malformed JSON, empty
-# stdin, array/scalar payloads and a corrupt AGENT_START_FILE, with start_epoch exceptions: "abc" gives
-# rc=1 (`set -u`: "abc: unbound variable"); arithmetic-syntax values ("1792939922.5", "09") print an
-# error but give rc=0 (bash 3.2 drops the line; duration stays 0); "" gives rc=0.
+# stdin, array/scalar payloads and a corrupt AGENT_START_FILE. A start_epoch that is not a positive
+# decimal integer without a leading zero ("", "0", "null", "abc", "1792939922.5", "09", "-5") is
+# treated as no start record: rc=0 and duration_seconds 0 (measured on bash 3.2; before this check
+# "abc" gave rc=1 and "" recorded now_epoch, about 1.79e9, as the duration).
 #
 # MEASURED SubagentStop payload (CC 2.1.259 embedded hook schema; #1656 B):
 #   session_id, transcript_path, cwd, prompt_id?, permission_mode?, effort?,
@@ -35,8 +36,8 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Outcome caveat: SubagentStop exposes no failure signal, so entries recorded
 # from that event are always outcome=success. There is no working hand-off for
 # that gap today: SubagentStop payload carries no failure signal;
-# subagent-failure-advisor.sh currently reads `.tool_output.is_error`, which is
-# absent here, so failure detection on this path is 0 until #1656 G is resolved.
+# subagent-failure-advisor.sh reads `.error` from PostToolUseFailure (Agent/Task) payloads,
+# not from SubagentStop, so this recorder still has no failure hand-off (#1656 G, #1775).
 
 input=$(cat)
 
@@ -65,8 +66,11 @@ description=$(printf '%s\n' "$input" | jq -r '
 
 # Extract skill name from description or prompt
 skill_name=""
-# `|| true`: a no-match grep exits 1 and `set -euo pipefail` would abort the hook
-# (this line's guard: rc=1 when text passes the gate below but not the name pattern; the later guard: rc=1 on {"agent_type":"X"}).
+# `|| true`: a no-match grep exits 1 and `set -euo pipefail` would abort the hook.
+# Two guards follow. The `|| true` at the end of the `grep -oiE '[a-z]+-[a-z]+...'` line inside the
+# `if` below covers the case where the text passes the `grep -qiE` gate but not the name pattern.
+# The `|| true` at the end of the later `grep -oiE 'Skill:...'` line covers a payload with no
+# "Skill:" text, e.g. {"agent_type":"X"} (rc=1 without it).
 # Empty stdin now exits at the non-object guard above.
 if echo "$description" | grep -qiE '(skill:|routing|→.*skill)'; then
   skill_name=$(echo "$description" | grep -oiE '[a-z]+-[a-z]+(-[a-z]+)*-?(routing|skill|practices|detection|decomposition|orchestration|pipeline|guards|cycle|plan|review|refactor|publish|version|audit|exec|analyze|bundle|report|setup|watch|lists|status|help|save|recall)' | head -1 || true)
@@ -159,7 +163,10 @@ AGENT_START_FILE="/tmp/.claude-agent-starts-${PPID}"
 duration_seconds=0
 if [ -f "$AGENT_START_FILE" ]; then
   start_epoch=$(grep -F "\"agent_type\":\"${agent_type}\"" "$AGENT_START_FILE" 2>/dev/null | tail -1 | jq -r '.start_epoch // "0"' 2>/dev/null || echo "0")
-  if [ "$start_epoch" != "0" ] && [ "$start_epoch" != "null" ]; then
+  # Only a positive decimal integer without a leading zero is a usable epoch. Anything else
+  # ("", "0", "null", "abc", "1792939922.5", "09", negatives) takes the no-start-record path
+  # (duration 0): bash arithmetic would otherwise read "" as 0 and record now_epoch as the duration.
+  if [[ "$start_epoch" =~ ^[1-9][0-9]*$ ]]; then
     now_epoch=$(date +%s)
     duration_seconds=$((now_epoch - start_epoch))
   fi

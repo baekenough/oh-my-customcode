@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { exec, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { chmod, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
@@ -1736,8 +1736,13 @@ describe('reviewers.sh --run', () => {
     // spec §11: one timed-out vendor is not a failed round — two are.
     it('still reports a successful round when a single vendor times out', async () => {
       const marker = uniqueMarker();
+      // #1802 B3: the stub hangs only on its first call and fails fast on the retry
+      // (state file in a private mkdtemp dir), so the 5 s budget is paid once, not twice.
+      // The both-attempts-hang scenario stays covered by 'times out a hanging vendor
+      // and treats it as missing' and the other `sleep 30` / process-group cases.
+      const stateDir = await mkdtemp(join(tmpdir(), 'agora-rv-f1-state-'));
       const bin = await makeStubBin({
-        claude: `sleep ${marker}`,
+        claude: `if [ -e '${stateDir}/hung' ]; then exit 1; fi\n: > '${stateDir}/hung'\nexec sleep ${marker}`,
         omx: OK_STUB,
         agy: OK_STUB,
       });
@@ -1768,6 +1773,7 @@ describe('reviewers.sh --run', () => {
         expect(existsSync(join(dir, 'SEALED/raw/round-1/agy.json'))).toBe(true);
       } finally {
         await execAsync(`pkill -f 'sleep ${marker}' 2>/dev/null || true`).catch(() => {});
+        await rm(stateDir, { recursive: true, force: true });
         await rm(bin, { recursive: true, force: true });
         await rm(dir, { recursive: true, force: true });
       }

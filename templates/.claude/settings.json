@@ -15,11 +15,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"(npm run dev|pnpm( run)? dev|yarn dev|bun run dev)\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/bash\ninput=$(cat)\ncmd=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.command // \"\"')\n\n# Block dev servers that aren't run in tmux\necho '[Hook] BLOCKED: Dev server must run in tmux for log access' >&2\necho '[Hook] Use this command instead:' >&2\necho \"[Hook] tmux new-session -d -s dev 'npm run dev'\" >&2\necho '[Hook] Then: tmux attach -t dev' >&2\nexit 1\n  )\nelse\n  printf '%s' \"$input\"\nfi"
+            "command": "input=$(cat)\nif printf '%s' \"$input\" | jq -e '((.tool_input.command // \"\") | test(\"(npm run dev|pnpm( run)? dev|yarn dev|bun run dev)\"))' >/dev/null 2>&1; then\n  printf '%s' \"$input\" | (\n#!/bin/sh\ninput=$(cat)\ncmd=$(printf '%s' \"$input\" | jq -r '.tool_input.command // \"\"' 2>/dev/null)\nbg=$(printf '%s' \"$input\" | jq -r '.tool_input.run_in_background // false' 2>/dev/null)\n\n# Advisory only: never blocks (always exit 0). Stay silent for background runs, tmux-wrapped commands,\n# mentions of the dev command in other commands, and variants like dev:test / develop / devtools.\n[ \"$bg\" = \"true\" ] && exit 0\nif printf '%s' \"$cmd\" | grep -Eq '^[[:space:]]*tmux([[:space:]]|$)'; then exit 0; fi\n\n# Drop quoted strings, then split into segments at && || ; | ( ) and newlines\nsegs=$(printf '%s' \"$cmd\" | sed -e 's/\"[^\"]*\"//g' -e \"s/'[^']*'//g\" -e 's/&&/;/g' -e 's/||/;/g' | tr ';|()\\n' '\\n\\n\\n\\n\\n')\n\n# Command position (optionally after VAR=value), word boundary after the dev command, segment not backgrounded with &\nhit=$(printf '%s\\n' \"$segs\" | grep -E '^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*(npm run dev|pnpm( run)? dev|yarn dev|bun run dev)([[:space:])]|$)' | grep -Ev '(^|[^>&])&([^&>]|$)' | head -n 1)\n\nif [ -n \"$hit\" ]; then\n  printf '%s\\n' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"[Hook] 포그라운드 dev 서버 시작이 감지되었습니다. 로그 접근을 위해 run_in_background: true 로 실행하거나 tmux 세션(예: tmux new-session -d -s dev) 안에서 실행하는 것을 권장합니다. 이 알림은 차단하지 않습니다.\"}}'\nfi\nexit 0\n  )\nelse\n  printf '%s' \"$input\"\nfi"
           }
         ],
         "matcher": "Bash",
-        "description": "Block dev servers outside tmux - ensures you can access logs"
+        "description": "Advise (additionalContext, never blocks) when a foreground dev server starts outside tmux/run_in_background - keeps logs accessible"
       },
       {
         "hooks": [
@@ -45,11 +45,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\nif [[ \"$file_path\" =~ \\.(md|txt)$ ]] && [[ ! \"$file_path\" =~ (README|CLAUDE|AGENT|SKILL)\\.md$ ]]; then\n  echo \"[Hook] BLOCKED: Unnecessary documentation file creation\" >&2\n  echo \"[Hook] File: $file_path\" >&2\n  echo \"[Hook] Use README.md or AGENT.md for documentation instead\" >&2\n  exit 1\nfi\n\nprintf '%s\\n' \"$input\""
+            "command": "#!/bin/sh\ninput=$(cat)\nfile_path=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.file_path // \"\"')\n\ncase \"$file_path\" in\n  *README.md|*CLAUDE.md|*AGENT.md|*SKILL.md) ;;\n  *.md|*.txt)\n    echo \"[Hook] NOTICE (non-blocking): new documentation file - the write is not blocked\" >&2\n    echo \"[Hook] File: $file_path\" >&2\n    echo \"[Hook] Prefer README.md or AGENT.md for documentation if this is not a deliberate new doc\" >&2\n    exit 1\n    ;;\nesac\n\nprintf '%s\\n' \"$input\""
           }
         ],
         "matcher": "Write",
-        "description": "Block creation of random .md files - keeps docs consolidated"
+        "description": "Non-blocking notice on new .md/.txt files (exit 1) - keeps docs consolidated"
       },
       {
         "hooks": [
@@ -100,6 +100,16 @@
         ],
         "matcher": "Bash",
         "description": "Block rule file deletion — requires individual user confirmation per rule (R001 safety)"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/bash-cd-advisor.sh\""
+          }
+        ],
+        "matcher": "Bash",
+        "description": "Advise against top-level (non-subshell) cd in Bash commands; cd persists as session cwd (R005, #1834/#1816 H2)"
       },
       {
         "hooks": [
@@ -272,14 +282,10 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/r007-r008-drift-advisor.sh\""
-          },
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/subagent-failure-advisor.sh\""
           }
         ],
         "matcher": "*",
-        "description": "Record agent outcomes + auto-continue workflow + R007/R008 drift advisory + failure advisory on subagent completion (autonomous-loop re-entry, #1545; #1631 replaced the self-referential prompt-type judge hook with an advisory-only command hook)"
+        "description": "Record agent outcomes + stall and consecutive-completion advisories + R007/R008 drift advisory on subagent completion — advisory-only, never continues or blocks the workflow (autonomous-loop re-entry, #1545; #1631 replaced the self-referential prompt-type judge hook with an advisory-only command hook; #1880)"
       }
     ],
     "CwdChanged": [
@@ -302,8 +308,8 @@
             "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/file-change-validator.sh\""
           }
         ],
-        "matcher": "*",
-        "description": "Validate externally modified files — advisory staleness warning (v2.1.83+)"
+        "matcher": "CLAUDE.md|bun.lock|yarn.lock|Cargo.lock|poetry.lock|package-lock.json|pnpm-lock.yaml",
+        "description": "Warn on external changes to CLAUDE.md and the bun/yarn/Cargo/poetry/npm/pnpm lock files in the working directory — stderr shown to the user only, never blocks; the matcher lists literal filenames because CC registers each |-separated segment as a literal file to watch (v2.1.83+, #1775)"
       }
     ],
     "Notification": [
@@ -383,7 +389,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "#!/bin/bash\ninput=$(cat)\ncmd=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.command')\n\nif echo \"$cmd\" | grep -qE 'gh pr create'; then\n  output=$(printf '%s\\n' \"$input\" | jq -r '.tool_output.output // \"\"')\n  pr_url=$(echo \"$output\" | grep -oE 'https://github.com/[^/]+/[^/]+/pull/[0-9]+')\n  \n  if [ -n \"$pr_url\" ]; then\n    echo \"[Hook] PR created: $pr_url\" >&2\n    echo \"[Hook] Checking GitHub Actions status...\" >&2\n    repo=$(echo \"$pr_url\" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/[0-9]+|\\1|')\n    pr_num=$(echo \"$pr_url\" | sed -E 's|.*/pull/([0-9]+)|\\1|')\n    echo \"[Hook] To review PR: gh pr review $pr_num --repo $repo\" >&2\n  fi\nfi\n\nprintf '%s\\n' \"$input\""
+            "command": "#!/bin/bash\ninput=$(cat)\ncmd=$(printf '%s\\n' \"$input\" | jq -r '.tool_input.command')\n\nif echo \"$cmd\" | grep -qE 'gh pr create'; then\n  output=$(printf '%s\\n' \"$input\" | jq -r '.tool_response.stdout // .tool_output.output // \"\"')\n  pr_url=$(echo \"$output\" | grep -oE 'https://github.com/[^/]+/[^/]+/pull/[0-9]+')\n  \n  if [ -n \"$pr_url\" ]; then\n    echo \"[Hook] PR created: $pr_url\" >&2\n    echo \"[Hook] Checking GitHub Actions status...\" >&2\n    repo=$(echo \"$pr_url\" | sed -E 's|https://github.com/([^/]+/[^/]+)/pull/[0-9]+|\\1|')\n    pr_num=$(echo \"$pr_url\" | sed -E 's|.*/pull/([0-9]+)|\\1|')\n    echo \"[Hook] To review PR: gh pr review $pr_num --repo $repo\" >&2\n  fi\nfi\n\nprintf '%s\\n' \"$input\""
           }
         ],
         "matcher": "Bash",
@@ -631,6 +637,16 @@
         ],
         "matcher": "*",
         "description": "FAIL-axis instrumentation — append tool failures to the error ledger (JSONL). Never blocks; feeds fail-axis-cause-advisor.sh (#1561)"
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/subagent-failure-advisor.sh\""
+          }
+        ],
+        "matcher": "Task|Agent",
+        "description": "Advise on failed Agent/Task spawns via additionalContext (e.g. unknown subagent_type). Advisory only (additionalContext); the script's only explicit exit is exit 0 (#1775)"
       }
     ]
   }

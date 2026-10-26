@@ -1073,90 +1073,77 @@ describe('agent-teams-advisor.sh', () => {
 });
 
 // -------------------------------------------------------------------
-// subagent-failure-advisor.sh (#1631)
+// subagent-failure-advisor.sh (#1631, rewritten for PostToolUseFailure in #1775)
 //
 // Replaces the removed `type: "prompt"` SubagentStop hook, which asked an LLM judge
 // whether the CURRENT session's own background_tasks entry had reached "completed"
 // before allowing Stop. That transition only happens AFTER the SubagentStop hook chain
 // resolves, so a subagent judging its OWN stop always observed "running" — producing an
 // un-deduped `Stop hook feedback:` re-injection loop (8-10x per session, observed live).
-// This script is advisory-only: it inspects tool_output.is_error and, on failure, prints
-// a stderr warning — never invoking the Stop-hook-feedback / LLM-judge path, and never
-// blocking (always exit 0).
+// The script is advisory: it consumes a PostToolUseFailure payload for Agent/Task,
+// prints hookSpecificOutput.additionalContext JSON on stdout, exits 0, and never intends
+// to block (no `decision` field).
+//
+// The payload-field matrix (failure / Task / interrupt / non-Agent tool / missing error /
+// invalid stdin / SubagentStop-shaped / mutation) lives in hook-event-fields-1775.test.ts.
+// Only cases specific to the replaced SubagentStop/stdin-pass-through contract are kept here.
 // -------------------------------------------------------------------
 
 describe('subagent-failure-advisor.sh', () => {
-  function makeSubagentStopInput(
-    isError: boolean,
-    agentType = 'lang-typescript-expert',
-    output = ''
-  ): string {
+  function makeFailureInput(error: string, toolName = 'Agent'): string {
     return JSON.stringify({
-      agent_type: agentType,
-      tool_output: {
-        is_error: isError,
-        output,
-      },
+      hook_event_name: 'PostToolUseFailure',
+      tool_name: toolName,
+      tool_input: { subagent_type: 'lang-golang-expert', description: 'Build module' },
+      error,
+      is_interrupt: false,
     });
   }
 
-  // --- Basic pass-through behavior (never blocks) ---
-
-  it('should always exit with code 0 on failure input', async () => {
-    const input = makeSubagentStopInput(
-      true,
-      'lang-golang-expert',
-      'panic: nil pointer dereference'
-    );
+  it('should exit 0 and emit PostToolUseFailure additionalContext JSON on failure', async () => {
+    const input = makeFailureInput('compile error: undefined symbol');
     const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
     expect(result.exitCode).toBe(0);
+    const out = JSON.parse(result.stdout);
+    expect(out.hookSpecificOutput.hookEventName).toBe('PostToolUseFailure');
+    expect(out.hookSpecificOutput.additionalContext).toContain('Subagent Failure Advisor');
+    expect(out.hookSpecificOutput.additionalContext).toContain('lang-golang-expert');
+    expect(out.hookSpecificOutput.additionalContext).toContain('compile error: undefined symbol');
   });
 
-  it('should always exit with code 0 on success input', async () => {
-    const input = makeSubagentStopInput(false);
+  it('should not pass stdin through to stdout (stdout is the advisory JSON, not the payload)', async () => {
+    const input = makeFailureInput('build failed');
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    expect(result.stdout.trim()).not.toBe(input);
+    expect(result.stdout).not.toContain('PostToolUseFailure","tool_name"');
+  });
+
+  it('should never emit a blocking decision field', async () => {
+    const result = await runHookScript(
+      SUBAGENT_FAILURE_ADVISOR_SCRIPT,
+      makeFailureInput('boom', 'Task')
+    );
+    expect(result.exitCode).toBe(0);
+    const out = JSON.parse(result.stdout);
+    expect(out.decision).toBeUndefined();
+    expect(out.continue).toBeUndefined();
+  });
+
+  it('should stay silent on the old tool_output.is_error contract (no .error field)', async () => {
+    const input = JSON.stringify({
+      agent_type: 'lang-golang-expert',
+      tool_output: { is_error: true, output: 'panic: nil pointer dereference' },
+    });
     const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
     expect(result.exitCode).toBe(0);
-  });
-
-  it('should pass stdin through to stdout unchanged', async () => {
-    const input = makeSubagentStopInput(true, 'lang-golang-expert', 'build failed');
-    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
-    expect(result.stdout.trim()).toBe(input);
-  });
-
-  // --- Positive case: is_error=true -> stderr warning ---
-
-  it('should emit a stderr warning when tool_output.is_error is true', async () => {
-    const input = makeSubagentStopInput(
-      true,
-      'lang-golang-expert',
-      'compile error: undefined symbol'
-    );
-    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
-    expect(result.stderr).toContain('Subagent Failure Advisor');
-    expect(result.stderr).toContain('lang-golang-expert');
-    expect(result.stderr).toContain('compile error: undefined symbol');
-  });
-
-  // --- Negative case: is_error=false (or absent) -> silence ---
-
-  it('should NOT emit a warning when tool_output.is_error is false', async () => {
-    const input = makeSubagentStopInput(false, 'lang-python-expert');
-    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
-    expect(result.stderr).not.toContain('Subagent Failure Advisor');
-  });
-
-  it('should NOT emit a warning when tool_output.is_error is absent', async () => {
-    const input = JSON.stringify({ agent_type: 'lang-python-expert', tool_output: {} });
-    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
-    expect(result.stderr).not.toContain('Subagent Failure Advisor');
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('');
   });
 
   // --- Never triggers the removed prompt/LLM-judge/Stop-hook-feedback path ---
 
   it('should never reference background_tasks or Stop hook feedback (no self-referential judge path)', async () => {
-    const input = makeSubagentStopInput(true, 'lang-golang-expert', 'error');
-    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, input);
+    const result = await runHookScript(SUBAGENT_FAILURE_ADVISOR_SCRIPT, makeFailureInput('error'));
     expect(result.stdout + result.stderr).not.toContain('background_tasks');
     expect(result.stdout + result.stderr).not.toContain('Stop hook feedback');
   });
@@ -2346,6 +2333,7 @@ describe('Script file validation', () => {
     'failure-ledger.sh',
     'fail-axis-cause-advisor.sh',
     'subagent-failure-advisor.sh',
+    'bash-cd-advisor.sh',
   ] as const;
 
   it('all expected scripts should exist in the templates directory', async () => {
@@ -3026,6 +3014,14 @@ describe('Issue #1656 A: scalar-shaped tool_input/tool_response', () => {
       return { exitCode: result.exitCode, records: raw.split('\n').filter(Boolean) };
     }
 
+    function parseFirstRecord(records: string[]): Record<string, unknown> {
+      const first = records[0];
+      if (first === undefined) {
+        throw new Error('expected at least one ledger record');
+      }
+      return JSON.parse(first) as Record<string, unknown>;
+    }
+
     for (const [label, shape] of SCALAR_SHAPES) {
       it(`still records the failure when tool_input is a ${label}`, async () => {
         const base = makeShapeInput(shape, 'PostToolUseFailure', 'Bash');
@@ -3036,7 +3032,7 @@ describe('Issue #1656 A: scalar-shaped tool_input/tool_response', () => {
         // The pre-fix behaviour lost the whole record here (jq indexing error
         // swallowed by `2>/dev/null || true`), so length 1 is the assertion.
         expect(records).toHaveLength(1);
-        const rec = JSON.parse(records[0]!) as Record<string, unknown>;
+        const rec = parseFirstRecord(records);
         expect(rec.tool).toBe('Bash');
         expect(rec.err).toBe('boom boom');
         expect(rec.target).toBe('');
@@ -3054,7 +3050,7 @@ describe('Issue #1656 A: scalar-shaped tool_input/tool_response', () => {
       const { exitCode, records } = await runLedger(input);
       expect(exitCode).toBe(0);
       expect(records).toHaveLength(1);
-      expect((JSON.parse(records[0]!) as Record<string, unknown>).target).toBe('ls -la');
+      expect(parseFirstRecord(records).target).toBe('ls -la');
     });
 
     it('falls back to tool_input.file_path when no command is present', async () => {
@@ -3068,9 +3064,7 @@ describe('Issue #1656 A: scalar-shaped tool_input/tool_response', () => {
       const { exitCode, records } = await runLedger(input);
       expect(exitCode).toBe(0);
       expect(records).toHaveLength(1);
-      expect((JSON.parse(records[0]!) as Record<string, unknown>).target).toBe(
-        '/tmp/omc-1656a.txt'
-      );
+      expect(parseFirstRecord(records).target).toBe('/tmp/omc-1656a.txt');
     });
 
     it('keeps the pre-existing scalar tool_response guard intact', async () => {
@@ -3083,7 +3077,7 @@ describe('Issue #1656 A: scalar-shaped tool_input/tool_response', () => {
       const { exitCode, records } = await runLedger(input);
       expect(exitCode).toBe(0);
       expect(records).toHaveLength(1);
-      expect((JSON.parse(records[0]!) as Record<string, unknown>).err).toBe('plain-string-error');
+      expect(parseFirstRecord(records).err).toBe('plain-string-error');
     });
   });
 

@@ -17,7 +17,8 @@ classes:
       go-backend-best-practices, docker-best-practices, aws-best-practices,
       postgres-best-practices, redis-best-practices, supabase-postgres-best-practices,
       airflow-best-practices, dbt-best-practices, kafka-best-practices,
-      spark-best-practices, snowflake-best-practices, pipeline-architecture-patterns
+      spark-best-practices, snowflake-best-practices, pipeline-architecture-patterns,
+      java-best-practices, django-best-practices, alembic-best-practices
     ]
     description: "Language/framework best practices and architecture patterns"
 
@@ -533,3 +534,66 @@ skills:
     summary: "UI code review guidelines for accessibility, performance, and UX best practices"
     keywords: [ui, accessibility, ux, performance, design]
     rule_references: []
+
+  java-best-practices:
+    class: BestPracticeSkill
+    description: "Modern Java 25 LTS patterns from Virtual Threads, Pattern Matching, Records, and Sealed Classes"
+    user_invocable: false
+    model_invocable: true
+    scope: core
+
+  agora:
+    description: "Use when a design or decision needs adversarial multi-round scrutiny from several independent model vendors. Runs anonymized A/B/C reviewer rounds with a rotating judge and produces a consensus report."
+    user_invocable: true
+    model_invocable: true
+    scope: core
+
+  django-best-practices:
+    class: BestPracticeSkill
+    description: "Django patterns for production-ready Python web applications"
+    user_invocable: false
+    model_invocable: true
+    scope: core
+
+  alembic-best-practices:
+    class: BestPracticeSkill
+    description: "Alembic migration patterns for naming conventions, safety checks, expand-contract, env.py configuration, and CI integration"
+    user_invocable: false
+    model_invocable: true
+    scope: core
+
+  impeccable-design:
+    description: "AI design language for production-grade UI — 10 commands covering typography, color, motion, layout, and UX writing quality"
+    user_invocable: false
+    model_invocable: true
+    scope: core
+
+  diagram-design:
+    description: "Brand-consistent editorial diagrams — SVG generation for release notes, architecture docs, and marketing materials"
+    user_invocable: true
+    model_invocable: true
+    scope: package
+
+  cve-triage:
+    description: "CVE triage workflow for vulnerability analysis, reproduction assessment, and patch verification"
+    user_invocable: false
+    model_invocable: true
+    scope: core
+
+  adversarial-review:
+    description: "Adversarial code review using attacker mindset — trust boundary, attack surface, business logic, and defense evaluation"
+    user_invocable: true
+    model_invocable: true
+    scope: core
+
+  dag-orchestration:
+    description: "YAML-based DAG workflow engine with topological execution and failure strategies"
+    user_invocable: false
+    model_invocable: true
+    scope: core
+
+  pipeline-guards:
+    description: "Safety constraints and quality gates for pipeline and workflow execution"
+    user_invocable: false
+    model_invocable: true
+    scope: core

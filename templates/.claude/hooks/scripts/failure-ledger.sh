@@ -18,6 +18,15 @@
 #   - 어떤 실패에도 exit 0 — 원장 기록 실패가 본 작업을 막아서는 안 된다 (R021 advisory-first).
 #   - 명령/에러 문자열은 절단하여 기록한다 (원장 비대화 방지).
 #
+# exit_code 필드 (#1834 / #1814 R2):
+#   PostToolUseFailure에는 숫자 exit code 필드가 없고 `error` 문자열("Exit code 3")만 온다
+#   (실측: CC 2.1.310, `claude -p`, haiku, 1회, `sh -c 'exit 3'`). 그래서 `^Exit code ([0-9]+)`
+#   일 때만 정수를 파싱해 exit_code로 기록하고, 아니면 null이다.
+#   기대 exit 화이트리스트는 두지 않는다 — 동기였던 `git grep` no-match(exit 1)는 같은
+#   조건에서 PostToolUseFailure를 발생시키지 않고, returnCodeInterpretation "No matches found"를
+#   가진 PostToolUse로만 도달했다(실측). `false`, 일반 `grep` 등 다른 exit-1 명령, 대화형 세션,
+#   다른 모델/버전은 미측정이다.
+#
 # 환경변수 override:
 #   OMCUSTOM_FAILURE_LEDGER=off   — 기록 완전 비활성화
 #   OMCUSTOM_ERROR_LEDGER=<path>  — 원장 경로 override (기본: ~/.claude/error-ledger.jsonl)
@@ -36,6 +45,14 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 0
 fi
 
+# HOME guard: with no override, skip when HOME is unset, empty or not absolute
+# (otherwise `set -u` exits 1 on an unset HOME, or the ledger lands in a relative path).
+if [ -z "${OMCUSTOM_ERROR_LEDGER:-}" ]; then
+  case "${HOME:-}" in
+    /*) ;;
+    *) exit 0 ;;
+  esac
+fi
 LEDGER="${OMCUSTOM_ERROR_LEDGER:-${HOME}/.claude/error-ledger.jsonl}"
 
 if ! mkdir -p "$(dirname "$LEDGER")" 2>/dev/null; then
@@ -68,6 +85,7 @@ printf '%s' "$input" \
                     then (.tool_input.command // .tool_input.file_path // "")
                     else "" end) | tostring | .[0:160]),
         interrupt: (.is_interrupt == true),
+        exit_code: ((.error | if type == "string" then (capture("^Exit code (?<c>[0-9]+)") | .c | tonumber) else null end) // null),
         err:     ((.error
                    // .tool_error
                    // (if (.tool_response | type) == "object"

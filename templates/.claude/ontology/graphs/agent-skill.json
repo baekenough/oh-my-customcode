@@ -17,7 +17,9 @@
     "lang-typescript-expert": [
       "typescript-best-practices"
     ],
-    "lang-java-expert": [],
+    "lang-java-expert": [
+      "java-best-practices"
+    ],
     "be-fastapi-expert": [
       "fastapi-best-practices"
     ],
@@ -105,7 +107,32 @@
       "claude-code-bible"
     ],
     "sys-memory-keeper": [],
-    "sys-naggy": []
+    "sys-naggy": [],
+    "agora-runner": [
+      "agora"
+    ],
+    "be-django-expert": [
+      "django-best-practices"
+    ],
+    "db-alembic-expert": [
+      "alembic-best-practices",
+      "postgres-best-practices"
+    ],
+    "fe-design-expert": [
+      "impeccable-design",
+      "web-design-guidelines",
+      "diagram-design"
+    ],
+    "sec-codeql-expert": [
+      "cve-triage",
+      "adversarial-review"
+    ],
+    "slack-cli-expert": [],
+    "tracker-checkpoint": [
+      "dag-orchestration",
+      "pipeline-guards"
+    ],
+    "wiki-curator": []
   },
   "reverse": {
     "go-best-practices": [
@@ -136,7 +163,8 @@
       "fe-vercel-agent"
     ],
     "web-design-guidelines": [
-      "fe-vercel-agent"
+      "fe-vercel-agent",
+      "fe-design-expert"
     ],
     "vercel-deploy": [
       "fe-vercel-agent"
@@ -163,7 +191,8 @@
       "de-pipeline-expert"
     ],
     "postgres-best-practices": [
-      "db-postgres-expert"
+      "db-postgres-expert",
+      "db-alembic-expert"
     ],
     "redis-best-practices": [
       "db-redis-expert"
@@ -225,7 +254,37 @@
     "lists": [],
     "monitoring-setup": [],
     "result-aggregation": [],
-    "status": []
+    "status": [],
+    "java-best-practices": [
+      "lang-java-expert"
+    ],
+    "agora": [
+      "agora-runner"
+    ],
+    "django-best-practices": [
+      "be-django-expert"
+    ],
+    "alembic-best-practices": [
+      "db-alembic-expert"
+    ],
+    "impeccable-design": [
+      "fe-design-expert"
+    ],
+    "diagram-design": [
+      "fe-design-expert"
+    ],
+    "cve-triage": [
+      "sec-codeql-expert"
+    ],
+    "adversarial-review": [
+      "sec-codeql-expert"
+    ],
+    "dag-orchestration": [
+      "tracker-checkpoint"
+    ],
+    "pipeline-guards": [
+      "tracker-checkpoint"
+    ]
   },
   "nodes": [],
   "links": []

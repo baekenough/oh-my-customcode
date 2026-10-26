@@ -117,13 +117,14 @@ Agent(arch-documenter):haiku      ┘
 
 | 카테고리 | 수 | 에이전트 |
 |---------|-----|---------|
-| 언어 | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java21 |
+| 언어 | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java |
 | 백엔드 | 6 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs, be-django |
 | 프론트엔드 | 5 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter, fe-design |
 | 데이터 엔지니어링 | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | 데이터베이스 | 4 | db-supabase, db-postgres, db-redis, db-alembic |
 | 툴링 | 4 | tool-npm, tool-optimizer, tool-bun, slack-cli |
-| 아키텍처 | 3 | arch-documenter, arch-speckit, agora-runner |
+| 아키텍처 | 2 | arch-documenter, arch-speckit |
+| Agora | 1 | agora-runner |
 | 인프라 | 2 | infra-docker, infra-aws |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | 보안 | 1 | sec-codeql |

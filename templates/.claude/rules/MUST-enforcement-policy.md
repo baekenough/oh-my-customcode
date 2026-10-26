@@ -16,12 +16,12 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 
 | Tier | Mechanism | Rules | Behavior |
 |------|-----------|-------|----------|
-| Hard Block | PreToolUse hook, exit 2 | stage-blocker, dev-server tmux, rule-deletion-guard | Prevents tool execution |
+| Hard Block | PreToolUse hook, exit 2 | stage-blocker, rule-deletion-guard | Prevents tool execution |
 | Soft Block | Stop hook prompt | R011 session-end saves | Auto-performs then approves |
 | Conversation Block | PostToolUse hook + `continueOnBlock` (CC v2.1.139+), exit 2 | stuck-detector, context-budget-advisor, cost-cap-advisor | Feeds rejection reason into conversation; Claude continues with awareness |
 | Advisory | PostToolUse hooks | R007, R008, R009, R010, R018 | Warns via stderr, never blocks |
 | Advisory (proactive) | UserPromptSubmit + SubagentStop + PostToolUse hooks | R007, R008 (`r007-r008-drift-advisor.sh` — #1229 UserPromptSubmit, #1545 SubagentStop, #1553 PostToolUse) | Reads last assistant turn; emits advisory if header/prefix absent. SubagentStop wiring (#1545) covers subagent stops in no-user-input loops (`/fsd`); PostToolUse (#1553) covers the orchestrator-only stretch before the first subagent spawn. Complements retroactive Stop-hook (`session-reflection.sh`, #1190). **v1.1.43부터 실제 발화**(파서 셀렉터 `.role`→`.message.role` 수정 — 상세는 Read 도구로 원문 주석 참조). v1.1.49부터 역방향(announce > tool_use) 신호 포함, 기본 off 옵트인 (#1595 #6). v1.1.73의 narration 채널 분리 옵션(`OMCUSTOM_R008_NARRATION`, #1701 #2)은 실 세션 5건(CC 2.1.233~2.1.274) 실측에서 narration 마커 매칭 0/354·판정 on/off 동일로 전제가 성립하지 않아 v1.1.74에서 은퇴했습니다(#1703) — R008 누락은 채널 오선택이 아니라 마커 미직렬화 형태입니다. **v1.1.62(#1650 D)부터 서브에이전트 세션에서는 침묵**: hook stdin의 `agent_id`(CC 스키마상 서브에이전트 내부 발화에만 존재)가 있으면 exit 0 — 단 `SubagentStart`/`SubagentStop`은 `agent_id`가 대상 식별자라 예외(판정 수행). 중첩 서브에이전트 안의 SubagentStop은 억제 못 함(R010 정책상 도달 불가 경로). 완료 보고가 advisory 응답으로 대체되던 훅 피드백 잠식(R020 8항, #1652 #3)의 advisory 계열 차단. |
-| Advisory (telemetry) | PostToolUseFailure hook | — (계측 전용, 규칙 강제 없음) | `failure-ledger.sh` (#1561, v1.1.44) — 도구 실패를 JSONL 원장에 append. stdout/stderr 무출력이라 모델에 도달하지 않으며 절대 차단하지 않음 |
+| Advisory (telemetry + advisory) | PostToolUseFailure hook | — (계측+어드바이저리, 규칙 강제 없음) | `failure-ledger.sh` (#1561, v1.1.44) — 실패를 JSONL 원장에 append, 무출력(모델 미도달)·비차단. 같은 이벤트의 `subagent-failure-advisor.sh`(Agent/Task)는 additionalContext advisory 전달 |
 | Advisory (proactive) | UserPromptSubmit hook | R020 (원인 진단) | `fail-axis-cause-advisor.sh` (#1561, v1.1.44) — 원장에 실패 기록이 있는데 원인 진술 없는 재촉 프롬프트가 오면 `hookSpecificOutput.additionalContext`로 "원인 가설 되묻기" advisory 전달. 원장 부재 시 조용히 통과 |
 | Prompt-based | CLAUDE.md + rules/ + `SessionStart` 재주입(matcher `*`; PostCompact 이벤트 배선은 유지되나 효과 미보장[^postcompact]) | All MUST rules | Behavioral guidance in context |
 
@@ -54,7 +54,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 <!-- DETAIL: CC version notes (v2.1.211-v2.1.275)
 > **v2.1.211/212/214+**: 훅의 enforcement 결정이 auto/unattended 모드에서 안정적으로 존중되도록 세 건이 수정되었습니다 — (211) auto mode가 unsandboxed Bash에 대한 PreToolUse 훅의 `ask` 결정을 덮어쓰던 문제가 수정되어 훅 `ask`가 최소 prompt로 floor되고, (212) `continue:false` 훅의 halt가 도구 실패·중간 완료 시 누락되던 문제 및 훅 인프라 오류가 user rejection으로 오보고되던 문제가 수정되었으며, (214) 훅 stdout JSON이 스키마 검증에 실패할 때 exit code 2가 문서대로 차단하지 못하던 문제가 수정되었습니다. R021 Enforcement Tiers(Hard Block=exit 2, Conversation Block=continueOnBlock exit 2, Advisory)가 훅의 block/ask 결정 존중에 의존하므로, 세 수정 모두 hard-block·advisory 훅(stage-blocker, rule-deletion-guard, stuck-detector 등)의 강제 신뢰성을 강화합니다 — v2.1.210 훅 timeout phantom-rejection 수정의 연장선.
 
-> **v2.1.222+**: PreToolUse auto-allow 훅이 background agent task(summaries/compaction/renames)에서 tool restriction을 우회하던 문제가 수정되었습니다. 즉 위 Enforcement Tiers 표의 **Hard Block 계층(stage-blocker, dev-server tmux, rule-deletion-guard)이 background agent task 경로에서 우회될 수 있었다**는 뜻이며, background agent를 쓰는 장기 무인 루프에서 hard-block 훅이 실제로는 강제되지 않는 구간이 존재했습니다. v2.1.211/212/214 훅 결정 존중 체인의 연장선입니다.
+> **v2.1.222+**: PreToolUse auto-allow 훅이 background agent task(summaries/compaction/renames)에서 tool restriction을 우회하던 문제가 수정되었습니다. 즉 위 Enforcement Tiers 표의 **Hard Block 계층(stage-blocker, rule-deletion-guard)이 background agent task 경로에서 우회될 수 있었다**는 뜻이며, background agent를 쓰는 장기 무인 루프에서 hard-block 훅이 실제로는 강제되지 않는 구간이 존재했습니다. v2.1.211/212/214 훅 결정 존중 체인의 연장선입니다.
 
 > **v2.1.247+**: 훅 또는 background agent가 수 메가바이트의 error 출력을 찍어 대화를 overflow시켜 세션이 "Prompt is too long"으로 멈추던 결함이 수정되었습니다. 같은 릴리즈에서 hook/background task의 output file을 쓸 수 없을 때 무한 메모리 증가하던 문제도 수정되어, 이제 출력이 소실된 위치를 파일에 남깁니다. 이 저장소는 advisory 훅(`r007-r008-drift-advisor.sh`, `failure-ledger.sh`, `fail-axis-cause-advisor.sh` 등)을 다수 운용하므로, 훅 출력 폭주가 세션 자체를 wedge시키는 이 실패 클래스에 해당합니다 — v2.1.211/212/214/222 훅 신뢰성 계열의 연장선입니다.
 

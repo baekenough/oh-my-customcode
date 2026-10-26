@@ -549,7 +549,7 @@ References: #1226 (item 3), #1227.
 -->
 
 <!-- DETAIL: v2.1.271/273+ background dedup/resume file-read/blockReadsOutside
-> **v2.1.271/273+**: (271) 대화가 compact된 뒤에도 계속 돌고 있던 백그라운드 명령(watch task, dev server)의 **중복 사본**이 새로 시작되던 결함이 수정되었습니다 — 구버전에서 post-compact 중복 프로세스는 지시가 아니라 compaction 아티팩트였습니다(cross-ref R010 dev-server tmux hard block). (271) `/resume`·`/teleport`가 이전 대화의 파일-읽음 추적을 그대로 유지해, 재개된 대화가 **한 번도 읽지 않은 파일**을 편집할 수 있던 결함이 수정되었습니다(cross-ref R005 v2.1.228 read-before-write 노트). (271) claude.ai에서 동기화된 스킬이 로그아웃 후에도 디스크에 남아있던 결함이 수정되어, `cleanupPeriodDays` 내 갱신되지 않은 사본은 이제 복구 가능한 휴지통으로 이동합니다. (273) `permissions.blockReadsOutsideWorkingDirectories`: 저장소 settings가 지정한 메모리 디렉토리는 더 이상 프롬프트에 로드·회상·색인·memory extraction에 사용되지 않습니다 — 이 규칙의 `autoMemoryDirectory`와 관련됩니다: 이 설정 하에서는 저장소가 지정한 메모리 디렉토리가 제외됩니다.
+> **v2.1.271/273+**: (271) 대화가 compact된 뒤에도 계속 돌고 있던 백그라운드 명령(watch task, dev server)의 **중복 사본**이 새로 시작되던 결함이 수정되었습니다 — 구버전에서 post-compact 중복 프로세스는 지시가 아니라 compaction 아티팩트였습니다(cross-ref #1856: dev-server tmux hook is an advisory). (271) `/resume`·`/teleport`가 이전 대화의 파일-읽음 추적을 그대로 유지해, 재개된 대화가 **한 번도 읽지 않은 파일**을 편집할 수 있던 결함이 수정되었습니다(cross-ref R005 v2.1.228 read-before-write 노트). (271) claude.ai에서 동기화된 스킬이 로그아웃 후에도 디스크에 남아있던 결함이 수정되어, `cleanupPeriodDays` 내 갱신되지 않은 사본은 이제 복구 가능한 휴지통으로 이동합니다. (273) `permissions.blockReadsOutsideWorkingDirectories`: 저장소 settings가 지정한 메모리 디렉토리는 더 이상 프롬프트에 로드·회상·색인·memory extraction에 사용되지 않습니다 — 이 규칙의 `autoMemoryDirectory`와 관련됩니다: 이 설정 하에서는 저장소가 지정한 메모리 디렉토리가 제외됩니다.
 -->
 
 <!-- DETAIL: v2.1.275+ CHANGELOG memory age note/resume malformed block

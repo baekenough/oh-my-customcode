@@ -16,7 +16,7 @@ Autonomous release loop. Can be expressed as running:
 /goal "모든 이슈가 처리될 때까지" /loop "/pipeline auto-dev -> /homework"
 ```
 
-> The main conversation may also drive the same loop inline without invoking `goal`/`loop` — see 「인라인 실행 허용 — 계약과 실측의 정합 (#1683 #4)」 below.
+> The main conversation may also drive the same loop inline without invoking `/goal`/`/loop` — see 「인라인 실행 허용 — 계약과 실측의 정합 (#1683 #4)」 below.
 
 This is a **thin alias / orchestrator skill**. It does not implement loop, issue-polling, release, or verification logic — it delegates entirely to existing skills.
 
@@ -33,9 +33,10 @@ No arguments are required. The default behavior runs until the auto-dev-eligible
 
 FSD expands into:
 
-1. **`/goal` wrapper** — applies disciplined goal-to-execution workflow:
-   - Objective: "모든 이슈가 처리될 때까지"
-   - Delegates planning, gap detection, and R020 completion verification to the `goal` skill
+1. **`/goal` completion condition** — Claude Code's built-in command (CHANGELOG 2.1.139: "Added `/goal` command: set a completion condition and Claude keeps working across turns until it's met."), here with the objective "모든 이슈가 처리될 때까지"
+   - The `omcustom:goal` skill (`/omcustom:goal`) is a separate planning workflow, renamed in v0.130.0 (commit 6e57404b) so that bare `/goal` reaches the built-in; the expression above does not invoke it
+   - Completion verification is owned by R020 and this skill's own loop contract (see 「인라인 실행 허용」 below)
+   - [가설 — 2026-05-12 이름 변경 이후 세션이라 내장 `/goal`로 추정, 세션 기록 미확인] Session 114's bare `/goal` (see 「Session 114 Precedent」)
 2. **`/loop` recurrence** — self-paced loop (model decides cadence), each iteration runs:
    1. `/pipeline auto-dev` — full release pipeline for the next eligible issue
    2. `/homework` — retrospective 찐빠 audit gate
@@ -159,7 +160,7 @@ printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "/tmp/.claude-fsd-$PPID"
 
 ### 인라인 실행 허용 — 계약과 실측의 정합 (#1683 #4)
 
-FSD의 루프 드라이버는 **메인 대화(오케스트레이터) 자신**입니다. `/goal`·`/loop`(ScheduleWakeup) 스킬 호출은 루프를 표현하는 한 방법일 뿐 필수 호출이 아니며, 오케스트레이터가 아래 최소 계약을 지키면 스킬 호출 없이 인라인으로 반복을 진행하는 것도 이 스킬의 정상 실행입니다. v1.1.64 반복이 인라인으로 실행된 것을 계약 이탈로 회고한 것(#1683 찐빠 #4)이 이 절의 기원이며, 같은 세션의 v1.1.65·v1.1.66 반복도 인라인으로 실행되었습니다(세션 실측, 이슈 범위 밖).
+FSD의 루프 드라이버는 **메인 대화(오케스트레이터) 자신**입니다. `/goal`·`/loop`(ScheduleWakeup) 호출은 루프를 표현하는 한 방법일 뿐 필수 호출이 아니며, 오케스트레이터가 아래 최소 계약을 지키면 명령/스킬 호출 없이 인라인으로 반복을 진행하는 것도 이 스킬의 정상 실행입니다. v1.1.64 반복이 인라인으로 실행된 것을 계약 이탈로 회고한 것(#1683 찐빠 #4)이 이 절의 기원이며, 같은 세션의 v1.1.65·v1.1.66 반복도 인라인으로 실행되었습니다(세션 실측, 이슈 범위 밖).
 
 | 반복마다 지켜야 할 최소 계약 | 근거 |
 |------------------------------|------|
@@ -169,7 +170,7 @@ FSD의 루프 드라이버는 **메인 대화(오케스트레이터) 자신**입
 | 종료 경로와 무관하게 마커 제거(`command rm -f`) | 「무인 모드 마커」 |
 | 반복의 릴리즈는 PR 생성 전에 auto-dev 릴리즈 단계의 마일스톤 배정 게이트가 PASS여야 합니다(마일스톤 vX.Y.Z가 open이고 스코프 이슈 전부가 배정됨) | auto-dev.yaml release 단계 "Milestone assignment gate", #1789 찐빠 #2(인라인 루프가 scope-selection의 마일스톤 생성·배정 부수효과를 건너뛰어 릴리즈가 마일스톤 없이 나감) |
 
-`/goal`·`/loop`를 호출하는 경로는 여전히 유효하며, 세션이 무인(`claude -p`, 예약 실행)이라 자기 페이싱이 필요할 때 권장됩니다. 대화형 세션에서는 인라인 실행이 스킬 호출 오버헤드 없이 같은 계약을 만족합니다.
+`/goal`·`/loop`를 호출하는 경로는 여전히 유효하며, 세션이 무인(`claude -p`, 예약 실행)이라 자기 페이싱이 필요할 때 권장됩니다. 대화형 세션에서는 인라인 실행이 명령/스킬 호출 오버헤드 없이 같은 계약을 만족합니다.
 
 ## Safety and Discipline
 
@@ -240,7 +241,7 @@ That session ran 2 iterations (v0.177.0 and v0.178.0) before converging with 0 e
 
 | Skill / Rule | Role |
 |--------------|------|
-| `goal` | Disciplined goal-to-execution wrapper — objective parse, gap detection, R020 verification |
+| `omcustom:goal` | Separate planning workflow skill (`/omcustom:goal`); not invoked by the `/goal` in the expression above (built-in command) |
 | `omcustom-loop` | SubagentStop command hooks (outcome recording and advisories only) — no orchestrator-workflow continuation; these hooks do not wake an idle model (no `asyncRewake` configured in `.claude/hooks/hooks.json` or `.claude/settings.json`) and `auto-continue-guard.sh` has no `exit 2` statement (its only explicit exit is `exit 0`), echoes the payload, and the CC 2.1.310 SubagentStop payload has no top-level `decision`/`continue` key (CC 2.1.310 binary SubagentStop payload builder, inspected during the v2.0.6/v2.0.7 reviews), so it does not block |
 | `pipeline` | `/pipeline auto-dev` — the core release pipeline per iteration |
 | `homework` | Retrospective 찐빠 audit gate per iteration |
@@ -260,8 +261,8 @@ This skill is intentionally a **thin alias**. It does NOT duplicate:
 - Release pipeline steps (owned by `pipeline auto-dev`)
 - Retrospective analysis (owned by `homework`)
 - PR merge execution (owned by `mgr-gitnerd`)
-- Completion verification (owned by R020 + `goal`)
-- Loop driving itself — the main conversation may run the iteration inline (see 「인라인 실행 허용」); `goal`/`/loop` are optional expressions of the same contract; `omcustom-loop` hooks are advisory only
+- Completion verification (owned by R020 + this skill's loop contract)
+- Loop driving itself — the main conversation may run the iteration inline (see 「인라인 실행 허용」); `/goal`/`/loop` are optional expressions of the same contract; `omcustom-loop` hooks are advisory only
 
 If any of those underlying skills evolve, FSD automatically benefits — its only responsibility is declaring the intent and forwarding to the right components.
 

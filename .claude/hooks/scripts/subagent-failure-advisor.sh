@@ -5,38 +5,57 @@ set -euo pipefail
 command -v jq >/dev/null 2>&1 || exit 0
 
 # Subagent Failure Advisor Hook
-# Trigger: SubagentStop
-# Purpose: Advisory-only replacement for the removed `type: "prompt"` SubagentStop hook
-#   (#1631). The prompt hook asked an LLM judge whether the CURRENT session's own
-#   background_tasks entry had transitioned to "completed" before allowing Stop —
-#   but that transition only happens AFTER the SubagentStop hook chain resolves, so the
-#   judgment was structurally always "not yet completed" for a subagent evaluating its
-#   OWN stop. That produced a self-referential `Stop hook feedback:` re-injection loop
-#   with no dedup, observed to repeat 8-10x per session before manual override.
-# Fix: replace the blocking LLM judge with a plain stderr-only warning that never
-#   triggers the Stop-hook-feedback re-injection path. No block, no LLM call, no loop.
-# Protocol: stdin JSON -> read tool_output.is_error -> stderr warning if failed -> pass through -> exit 0
-# Exit status (MEASURED, bash 3.2, `set -euo pipefail`): rc=0 in every probe (well-formed payload,
-# is_error=true payload, malformed JSON, empty stdin, array/scalar payloads) except one synthetic case:
-# the jq calls for is_error and agent_type are guarded with `|| echo`, but the error_summary pipeline
-# (`jq ... | head -c 200`) is not; with is_error=true and a 300KB `tool_output.output` it gave rc=141
-# (SIGPIPE under pipefail, 3/3). SubagentStop payloads have no `tool_output`, so is_error is always
-# false there and that path is unreachable at runtime.
+# Trigger: PostToolUseFailure (matcher: Agent / Task tool)
+# Purpose: Advisory-only. When an Agent/Task tool call fails, tell the model not to
+#   auto-continue as if the subagent had succeeded. Replaces the removed
+#   `type: "prompt"` SubagentStop hook (#1631), whose LLM judge was structurally
+#   always "not yet completed" and produced a Stop-hook-feedback re-injection loop.
+# Why not SubagentStop (#1775): the SubagentStop payload has no tool_response /
+#   tool_output / is_error (measured keys on CC 2.1.310, `claude -p`, haiku, one run, see
+#   https://github.com/baekenough/oh-my-customcode/issues/1775#issuecomment-6404861043: agent_id, agent_transcript_path, agent_type,
+#   background_tasks, cwd, effort, hook_event_name, last_assistant_message,
+#   permission_mode, prompt_id, session_crons, session_id, stop_hook_active,
+#   transcript_path), so a failure check there can never fire.
+# Input (PostToolUseFailure; measured on CC 2.1.310, `claude -p`, haiku, one run, unknown
+#   subagent_type; additionalContext delivery evidence is weak because the probe prompt named
+#   the marker; measured fields only: tool_name, is_interrupt, error (string), see
+#   https://github.com/baekenough/oh-my-customcode/issues/1775#issuecomment-6405197553).
+#   Other fields (tool_input sub-fields, duration_ms, tool_use_id, hook_event_name, ...) come from
+#   the PostToolUseFailure input table in https://code.claude.com/docs/en/hooks.md, not measured.
+# Output: stdout JSON {"hookSpecificOutput":{"hookEventName":"PostToolUseFailure",
+#   "additionalContext": "..."}} -- observed as delivered to the model (weak evidence, see above).
+#   Never a `decision` field; the only explicit exit is exit 0. Silent for interrupts, non-Agent/Task tools,
+#   missing error, or non-object stdin.
 
 input=$(cat)
 
-is_error=$(printf '%s\n' "$input" | jq -r '.tool_output.is_error // false' 2>/dev/null || echo "false")
+# Single jq pass; any parse failure or non-object stdin -> silent exit 0.
+fields=$(printf '%s' "$input" | jq -r '
+  if type == "object" then
+    [ (.tool_name // ""),
+      (if .is_interrupt == true then "1" else "0" end),
+      ((.tool_input.subagent_type // "unknown") | tostring | .[0:80]),
+      ((.tool_input.description // "") | tostring | gsub("[\n\r\t]"; " ") | .[0:120]),
+      ((.error // "") | tostring | gsub("[\n\r\t]"; " ") | .[0:200])
+    ] | join("\u001f")
+  else empty end' 2>/dev/null || true)
 
-if [ "$is_error" = "true" ]; then
-  agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // .agent_type // "unknown"' 2>/dev/null || echo "unknown")
-  error_summary=$(printf '%s\n' "$input" | jq -r '.tool_output.output // ""' 2>/dev/null | head -c 200)
-  echo "" >&2
-  echo "--- [Subagent Failure Advisor] background subagent (${agent_type}) reported an error ---" >&2
-  echo "  ${error_summary}" >&2
-  echo "  If it FAILED, do NOT auto-continue -- report the failure and wait for user input." >&2
-  echo "-----------------------------------------------------------------------------------" >&2
-fi
+[ -n "$fields" ] || exit 0
 
-# Always pass through -- advisory only, never blocks, never triggers Stop hook feedback re-injection
-printf '%s\n' "$input"
+IFS=$'\x1f' read -r tool_name is_interrupt subagent_type description error_text <<EOT
+$fields
+EOT
+
+case "$tool_name" in
+  Agent|Task) ;;
+  *) exit 0 ;;
+esac
+[ "$is_interrupt" = "0" ] || exit 0
+[ -n "$error_text" ] || exit 0
+
+msg="[Subagent Failure Advisor] ${tool_name} call failed (subagent_type=${subagent_type}"
+[ -z "$description" ] || msg="${msg}, description=${description}"
+msg="${msg}): ${error_text}. Fix the arguments (e.g. the subagent_type) and retry once; if the failure is a permission denial or repeats, report it and do not pretend the subagent ran."
+
+jq -n --arg ctx "$msg" '{hookSpecificOutput:{hookEventName:"PostToolUseFailure",additionalContext:$ctx}}' 2>/dev/null || true
 exit 0

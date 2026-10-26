@@ -9,16 +9,16 @@ classes:
     agents: [lang-golang-expert, lang-python-expert, lang-rust-expert, lang-kotlin-expert, lang-typescript-expert, lang-java-expert]
     description: "Programming language specialists"
   BackendExpert:
-    agents: [be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert]
+    agents: [be-fastapi-expert, be-springboot-expert, be-go-backend-expert, be-express-expert, be-nestjs-expert, be-django-expert]
     description: "Backend framework specialists"
   FrontendExpert:
-    agents: [fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent]
+    agents: [fe-vercel-agent, fe-vuejs-agent, fe-svelte-agent, fe-flutter-agent, fe-design-expert]
     description: "Frontend framework specialists"
   DataEngineer:
     agents: [de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert]
     description: "Data engineering specialists"
   DatabaseExpert:
-    agents: [db-postgres-expert, db-redis-expert, db-supabase-expert]
+    agents: [db-postgres-expert, db-redis-expert, db-supabase-expert, db-alembic-expert]
     description: "Database specialists"
   ToolingExpert:
     agents: [tool-npm-expert, tool-optimizer, tool-bun-expert]
@@ -103,14 +103,14 @@ agents:
 
   lang-java-expert:
     class: LanguageExpert
-    description: "Expert Java 21 developer for modern Java with Virtual Threads, Pattern Matching, Record Patterns, and Sequenced Collections. Use for Java files (*.java, pom.xml, build.gradle), Java-related keywords, high-concurrency systems, data-centric APIs with Records, and migrating from older Java versions."
+    description: "Expert Java 25 LTS developer for modern Java with Virtual Threads, Pattern Matching, Record Patterns, and Sequenced Collections. Use for Java files (*.java, pom.xml, build.gradle), Java-related keywords, high-concurrency systems, data-centric APIs with Records, and migrating from older Java versions."
     model: sonnet
     memory: project
     effort: high
-    skills: []
+    skills: [java-best-practices]
     tools: [Read, Write, Edit, Grep, Glob, Bash]
-    summary: "Java 21 expert for modern features including virtual threads and pattern matching"
-    keywords: [java, java21, virtual-threads, pattern-matching, records, sequenced-collections]
+    summary: "Java 25 LTS expert for modern features including virtual threads and pattern matching"
+    keywords: [java, java25, virtual-threads, pattern-matching, records, sequenced-collections]
     file_patterns: ["*.java", "pom.xml", "build.gradle", "build.gradle.kts"]
 
   be-fastapi-expert:
@@ -544,3 +544,67 @@ agents:
     summary: "Task tracker with proactive reminders for TODO management"
     keywords: [todo, tasks, reminders, tracking, deadlines, project-momentum]
     file_patterns: ["TODO.md", "*.todo"]
+
+  agora-runner:
+    description: "Executes exactly one agora session step (start, one round, or finish) via the skill scripts and returns only a verdict summary. Never returns reviewer text, vendor attribution or sealed paths."
+    model: claude-sonnet-5-5
+    skills: [agora]
+    tools: [Bash, Read, Write, Glob]
+
+  be-django-expert:
+    class: BackendExpert
+    description: "Expert Django developer for production-ready Python web applications. Use for Django projects, models/views/templates, Django REST Framework, authentication, admin customization, and deployment optimization."
+    model: claude-sonnet-5-5
+    memory: local
+    effort: high
+    skills: [django-best-practices]
+    tools: [Read, Write, Edit, Grep, Glob, Bash]
+
+  db-alembic-expert:
+    class: DatabaseExpert
+    description: "Alembic migration specialist for generating, reviewing, fixing, and advising on SQLAlchemy database migrations"
+    model: claude-opus-5-5
+    memory: local
+    effort: high
+    skills: [alembic-best-practices, postgres-best-practices]
+    tools: [Read, Write, Edit, Grep, Glob, Bash]
+
+  fe-design-expert:
+    class: FrontendExpert
+    description: "Use for design system review, typography audit, color palette evaluation, motion design, and AI-generated design quality assessment"
+    model: claude-sonnet-5-5
+    memory: local
+    effort: medium
+    skills: [impeccable-design, web-design-guidelines, diagram-design]
+    tools: [Read, Write, Edit, Grep, Glob]
+
+  sec-codeql-expert:
+    description: "Expert security code analyst using CodeQL for vulnerability detection, call graph analysis, and SARIF output. Use for security audits, CVE triage, code pattern analysis, and vulnerability validation."
+    model: claude-opus-5-5
+    memory: local
+    effort: high
+    skills: [cve-triage, adversarial-review]
+    tools: [Read, Write, Grep, Bash]
+
+  slack-cli-expert:
+    description: "Expert Slack CLI developer for Slack app management, deployment, triggers, and workspace automation"
+    model: claude-sonnet-5-5
+    effort: medium
+    skills: []
+    tools: [Read, Write, Edit, Grep, Glob, Bash]
+
+  tracker-checkpoint:
+    description: "Pipeline execution state tracker with checkpoint persistence. Reads/writes /tmp/.claude-pipeline-*-{PPID}.json state files and validates state transitions. Used by dag-orchestration for resume-after-failure and pipeline-guards for quality gate state."
+    model: haiku
+    memory: local
+    effort: medium
+    skills: [dag-orchestration, pipeline-guards]
+    tools: [Read, Write, Edit, Bash, Glob, Grep]
+
+  wiki-curator:
+    description: "Dedicated wiki page CRUD agent — creates, updates, and maintains wiki/ markdown pages for the codebase knowledge base"
+    model: claude-sonnet-5-5
+    memory: local
+    effort: medium
+    skills: []
+    tools: [Read, Write, Edit, Glob, Grep, Bash]
