@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.8",
-  "generatedAt": "2026-10-26T01:11:28.170Z",
-  "templateVersion": "2.0.8",
+  "generatorVersion": "2.0.9",
+  "generatedAt": "2026-10-26T04:41:09.427Z",
+  "templateVersion": "2.0.9",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -260,13 +260,13 @@
       "component": "agents"
     },
     ".claude/hooks/PARALLEL-GROUPS.md": {
-      "templateHash": "5ee39805a53c20f23650efb48cbde332d8e131eb1e781e2b615fc552ca9dcf8e",
-      "size": 9222,
+      "templateHash": "6f87b48b8d6d374e83945a10f2c274f730b1ce9cca4cb58050f4579008fa6eaf",
+      "size": 9383,
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "143468771f6b150651c736db57be496789ab1b64eadb95cfcca17ef5d31dfde6",
-      "size": 32458,
+      "templateHash": "5ae06ac7a6ef53f68eb930f521af79e9c20c5e85b64cd52066a0827b1d348443",
+      "size": 32499,
       "component": "hooks"
     },
     ".claude/hooks/scripts/adaptive-harness-scan.sh": {
@@ -280,8 +280,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/agent-teams-advisor.sh": {
-      "templateHash": "b6fa228052b53bc0bca9931d125b603aecd45027e5d59108f4009c8f1d74b3bd",
-      "size": 3557,
+      "templateHash": "519aacda2d824d2d9e36c07d5010c521c2409e4e4c4321dceb85e437c73ce8f8",
+      "size": 4909,
       "component": "hooks"
     },
     ".claude/hooks/scripts/audit-log.sh": {
@@ -315,8 +315,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/content-hash-validator.sh": {
-      "templateHash": "3d55c669597f4ad96892036948dcb216eb316e30e7fd7f5ca5b1eede7466d7be",
-      "size": 3119,
+      "templateHash": "3d1ec80ebead9ea0e9a6b2fa77c4ad9bd7ca8aaf82090246d90b7888b6b1da14",
+      "size": 4166,
       "component": "hooks"
     },
     ".claude/hooks/scripts/context-budget-advisor.sh": {
@@ -335,8 +335,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/destructive-git-guard.sh": {
-      "templateHash": "9f88a5c327d0f8469adb504da9a48826e9206f33bd0691f62880660b3b0738bc",
-      "size": 2834,
+      "templateHash": "6d3ab13f4b5cb27e66f04e56aaed950fcd7c98a985bcb54e6b3aea720a1e0f2c",
+      "size": 3844,
       "component": "hooks"
     },
     ".claude/hooks/scripts/eval-core-batch-save.sh": {
@@ -365,13 +365,13 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/git-delegation-guard.sh": {
-      "templateHash": "56bb6a056cbf6db57c8511a0a730e5af93ea4dff80ac816554d52f8b29f931c2",
-      "size": 2790,
+      "templateHash": "8066716dc412889fd18b386e583cddce95e57d3d7219b6f08255bb90f74fc04d",
+      "size": 11649,
       "component": "hooks"
     },
     ".claude/hooks/scripts/model-escalation-advisor.sh": {
-      "templateHash": "c805c9447ec2ed8eac961acdb63f79adf28b3f39e41521c12ccf72a3f68ca4fa",
-      "size": 4429,
+      "templateHash": "d796621d3cce0b6a77e9b7fd353a82d2ebc5ff1a5610995cdac834d2e6872759",
+      "size": 5930,
       "component": "hooks"
     },
     ".claude/hooks/scripts/omcustom-auto-update.sh": {
@@ -400,8 +400,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/schema-validator.sh": {
-      "templateHash": "df4fed7940dc893226c8046f4fb2f9a32ae5d63ea7af36d1c08c8fb090adc7c5",
-      "size": 4131,
+      "templateHash": "d0f41d6e20177a2195fa6f0b371e111ac4e779a5e9c9d04c7767cdf14c5ea10a",
+      "size": 4412,
       "component": "hooks"
     },
     ".claude/hooks/scripts/secret-filter.sh": {
@@ -540,8 +540,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "51070a96d7cc238b1504a4c00448355b1cf09fde2cbdcb5e431adce01abc7fc8",
-      "size": 71897,
+      "templateHash": "a906f11c82523c96f7604d38ddb10050a90ca9e16eb860c520e3c29228166710",
+      "size": 71240,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -565,8 +565,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "f6b5f3b4315a219d3adceff2dc424ef72ec1e456ef2986ba76e07f1455059b24",
-      "size": 24694,
+      "templateHash": "e7e0c6af02b598fa984ae070fff163c2d94ac0ea1781002506f4872f6a59e54c",
+      "size": 24915,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -960,8 +960,8 @@
       "component": "skills"
     },
     ".claude/skills/model-escalation/SKILL.md": {
-      "templateHash": "452951a02456915b8e37d267cc4cb071801e432356c21d9563b926f24c09248e",
-      "size": 1757,
+      "templateHash": "f7e5e97332e0b3a1ed55e21238a4ce3993974ec8183070a6e15b24dc9478c707",
+      "size": 2481,
       "component": "skills"
     },
     ".claude/skills/monitoring-setup/SKILL.md": {
@@ -1545,8 +1545,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "8ae833921a4c405cff5276e3dc54b35447d4bc427f6863177e2bdab7c899feeb",
-      "size": 579453,
+      "templateHash": "3c3c796c157cb27c4fd2c855e156b5aa38d947ec8f79b1b95fc96e59d868f486",
+      "size": 591956,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
@@ -1675,8 +1675,8 @@
       "component": "guides"
     },
     "guides/git-safety/README.md": {
-      "templateHash": "48ab90e90a9831adc71e9bb189f0354d8224bd2121cc2ad2c791303d7b10d351",
-      "size": 3512,
+      "templateHash": "a6703ab739fb158e7054dfc8c8fa02f5bc32eba4e102200cc536f7354b5b0b9f",
+      "size": 5284,
       "component": "guides"
     },
     "guides/git-worktree-workflow/README.md": {
@@ -1800,8 +1800,8 @@
       "component": "guides"
     },
     "guides/middleware-patterns/README.md": {
-      "templateHash": "b496d90460192db5b186282f5f816cee952f5934a8093a5381b9909d7c3d57b1",
-      "size": 21832,
+      "templateHash": "abcf6868461aebea5463e536bed2f7cc50179ae0901386d30def427ab41ffe45",
+      "size": 22008,
       "component": "guides"
     },
     "guides/multi-agent-debate-patterns/README.md": {
@@ -1810,8 +1810,8 @@
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {
-      "templateHash": "6d3bb6fc62b63acf24f73484aa18191a33830866b192f5f50b9cae1f293cb5df",
-      "size": 8471,
+      "templateHash": "9f67778df03075cfdc77a06fd726f5ff9813ad500ac54ef9b862b68f9dca8186",
+      "size": 8624,
       "component": "guides"
     },
     "guides/multi-provider-exec/README.md": {
