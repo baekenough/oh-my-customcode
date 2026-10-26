@@ -2,8 +2,10 @@
 # Schema Validator Hook — PreToolUse input validation
 # Trigger: PreToolUse on Write, Edit, Bash
 # Purpose: Validate tool inputs against JSON Schema definitions
-# Phase 1: Advisory only (exit 0 with stderr warning)
-# Protocol: stdin JSON -> validate -> stdout pass-through
+# Phase 1: Advisory only (exit 0; warnings via stdout JSON additionalContext, #1885)
+# Protocol: stdin JSON -> validate -> exit 0
+# Channel (#1885): exit-0 stderr never reaches the model (CC 2.1.310 probe, #1775 comment 6405197553);
+#   warnings are delivered as stdout JSON hookSpecificOutput.additionalContext. No stdin passthrough.
 
 set -euo pipefail
 
@@ -29,7 +31,6 @@ SCHEMA_FILE="$ROOT/.claude/schemas/tool-inputs.json"
 
 # Skip if schema file doesn't exist
 if [ ! -f "$SCHEMA_FILE" ]; then
-  printf '%s\n' "$input"
   exit 0
 fi
 
@@ -72,7 +73,7 @@ case "$tool_name" in
     fi
 
     # Check dangerous patterns
-    if echo "$command" | grep -qE 'rm\s+-rf\s+/[^.]'; then
+    if echo "$command" | grep -qE 'rm\s+-rf\s+["'"'"']?/["'"'"']?(\s|\*|[;&|)]|$)'; then
       warnings+=("[Schema] Bash: DANGER — recursive delete from root detected")
     fi
     if echo "$command" | grep -qE '^\s*sudo\s+'; then
@@ -102,14 +103,10 @@ case "$tool_name" in
     ;;
 esac
 
-# Output warnings (advisory only)
+# Output warnings (advisory only) via additionalContext
 if [ ${#warnings[@]} -gt 0 ]; then
-  for w in "${warnings[@]}"; do
-    echo "$w" >&2
-  done
-  echo "[Schema] Phase 1: advisory only — not blocking" >&2
+  ctx=$(printf '%s\n' "${warnings[@]}"; printf '%s' "[Schema] Phase 1: advisory only — not blocking")
+  jq -cn --arg ctx "$ctx" '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}'
 fi
 
-# Always pass through (Phase 1)
-printf '%s\n' "$input"
 exit 0

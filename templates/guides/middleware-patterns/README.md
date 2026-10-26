@@ -25,9 +25,9 @@ LangChain이 정의한 6개의 lifecycle hook은 다음과 같습니다. 각 단
 | `before_agent` | 에이전트 전체 실행 시작 전 | `SessionStart`, `UserPromptSubmit` hook | MEMORY.md 자동 주입 |
 | `before_model` | 모델 호출 직전 (매 추론 루프마다) | `PreToolUse(Agent)`, pre-generation-arch-check | pre-generation-arch-check 스킬 |
 | `wrap_model_call` | 모델 호출 자체를 래핑 (실제 호출 제어) | Tier 4 permission approval (Bash/WebFetch) | permission hooks, bypassPermissions 게이트 |
-| `wrap_tool_call` | 도구 호출을 래핑 (전후 모두 제어) | `PreToolUse(*) + PostToolUse(*)` | action-validator, task-outcome-recorder |
+| `wrap_tool_call` | 도구 호출을 래핑 (전후 모두 제어) | `PreToolUse(*) + PostToolUse(*)` | action-validator |
 | `after_model` | 모델 응답 수신 직후 | `PostToolUse(Agent)`, result-aggregation | result-aggregation 스킬, evaluator-optimizer |
-| `after_agent` | 에이전트 전체 실행 완료 후 | `Stop`, `SubagentStop`, post-release-followup | SubagentStop 어드바이저리 훅 (omcustom-loop 참조) |
+| `after_agent` | 에이전트 전체 실행 완료 후 | `Stop`, `SubagentStop`, post-release-followup | SubagentStop 어드바이저리 훅 (omcustom-loop 참조), task-outcome-recorder.sh |
 
 ### 매핑 해설
 
@@ -158,9 +158,8 @@ oh-my-customcode에서 이 패턴은 R004의 재시도 정책으로 명문화되
 | `PreToolUse(*)` | 훅 이벤트 | 모든 도구 호출 직전 검증 |
 | `PostToolUse(*)` | 훅 이벤트 | 모든 도구 호출 직후 결과 기록 |
 | `action-validator` | 스킬 | 에이전트가 선언된 도구 범위 내에서 실행하는지 pre-flight 검사 |
-| `task-outcome-recorder` | 스킬 | 도구 호출 결과를 구조화된 형식으로 기록 |
 | rule-deletion-guard.sh | 훅 스크립트 | 규칙 파일 삭제 시도 하드 블록 (exit 2) |
-| `git-delegation-guard.sh` | 훅 스크립트 | git 직접 실행 시도 감지 및 경고 |
+| `git-delegation-guard.sh` | 훅 스크립트 | mgr-gitnerd 외 에이전트로 보내는 위임 프롬프트의 git 쓰기 키워드(commit, branch, checkout 등) 감지 및 어드바이저리 전달 (additionalContext, 차단 없음) |
 
 ### after_model 단계
 
@@ -178,6 +177,7 @@ oh-my-customcode에서 이 패턴은 R004의 재시도 정책으로 명문화되
 |---|---|---|
 | `Stop` hook | 훅 이벤트 | 세션 종료 시 메모리 저장 권고 |
 | `SubagentStop` hook | 훅 이벤트 | 서브에이전트 완료 후 결과 기록·어드바이저리 출력 (오케스트레이터 워크플로 계속 프롬프트 주입 없음) |
+| `task-outcome-recorder.sh` | 훅 스크립트 (SubagentStop) | 서브에이전트 완료 기록(항상 outcome=success) |
 | `omcustom-loop` | 스킬 | SubagentStop 훅 어드바이저리 안내 (오케스트레이터 워크플로 계속 프롬프트 주입 없음) |
 | sys-memory-keeper | 에이전트 | 세션 종료 시 MEMORY.md 업데이트 |
 | `SubagentStart` hook | 훅 이벤트 | 서브에이전트 시작 시 HUD 이벤트 발행 |

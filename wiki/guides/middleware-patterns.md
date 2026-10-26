@@ -1,7 +1,7 @@
 ---
 title: Middleware Patterns Guide
 type: guide
-updated: 2026-10-25
+updated: 2026-10-26
 sources:
   - guides/middleware-patterns/README.md
 related:
@@ -27,9 +27,9 @@ LangChain 6-stage lifecycle middleware 모델을 oh-my-customcode 기존 자산�
 | `before_agent` | `SessionStart`, `UserPromptSubmit` | 세션 시작 컨텍스트 로드, R007 헤더 |
 | `before_model` | `PreToolUse(Agent)`, `pre-generation-arch-check` | 아키텍처 경계 검사 |
 | `wrap_model_call` | Tier 4 permission gate, `bypassPermissions` | Bash/WebFetch 승인 |
-| `wrap_tool_call` | `PreToolUse(*) + PostToolUse(*)` | action-validator, rule-deletion-guard |
+| `wrap_tool_call` | `PreToolUse(*) + PostToolUse(*)` | action-validator, rule-deletion-guard (task-outcome-recorder는 SubagentStop으로 이동) |
 | `after_model` | `PostToolUse(Agent)`, `result-aggregation` | 병렬 결과 합산, evaluator-optimizer |
-| `after_agent` | `Stop`, `SubagentStop` | sys-memory-keeper, SubagentStop 어드바이저리 훅 (omcustom-loop 참조) |
+| `after_agent` | `Stop`, `SubagentStop` | sys-memory-keeper, SubagentStop 어드바이저리 훅 (omcustom-loop 참조), task-outcome-recorder.sh (항상 outcome=success) |
 
 ## 주요 패턴 3종
 
@@ -58,6 +58,10 @@ LangChain 6-stage lifecycle middleware 모델을 oh-my-customcode 기존 자산�
 ```
 
 SKILL.md `description` 첫 줄에 `[lifecycle: <단계>]` 명시 권장.
+
+## git-delegation-guard 정정
+
+`git-delegation-guard.sh`는 git 직접 실행 시도가 아니라 mgr-gitnerd 외 에이전트로 보내는 위임 프롬프트의 git 쓰기 키워드(commit, branch, checkout 등)를 감지해 `additionalContext` 어드바이저리로 전달합니다(차단 없음).
 
 ## 훅 등록·테스트 예시 (#1774)
 

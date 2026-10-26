@@ -7,7 +7,13 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Model Escalation Advisor Hook
 # Trigger: PreToolUse, tool == "Task" || tool == "Agent"
 # Purpose: Advise model escalation when failure patterns detected
-# Protocol: stdin JSON -> process -> stdout pass-through, exit 0 always
+# Protocol: stdin JSON -> process -> exit 0 always
+# Once per session (#1885): each distinct advisory key is shown at most once, claimed atomically via a
+# per-key marker dir under /tmp/.claude-model-advisory-shown-${PPID}.d/ (parallel-hook safe).
+# De-escalation is opt-in (OMCUSTOM_MODEL_DEESCALATION=on): task-outcome-recorder.sh records every
+# SubagentStop as outcome=success (no error signal), so "N consecutive successes" only means N agents finished (#1885).
+# Channel (#1885): exit-0 stderr never reaches the model; advice is delivered via stdout JSON
+# hookSpecificOutput.additionalContext (measured CC 2.1.310, #1775). No stdin passthrough, no stderr.
 
 input=$(cat)
 
@@ -24,9 +30,24 @@ OUTCOME_FILE="/tmp/.claude-task-outcomes-${PPID}"
 
 # Skip if no history
 if [ ! -f "$OUTCOME_FILE" ]; then
-  printf '%s\n' "$input"
   exit 0
 fi
+
+ctx=""
+SHOWN_DIR="/tmp/.claude-model-advisory-shown-${PPID}.d"
+# fresh KEY: atomic claim via mkdir of a per-key marker dir (hash of KEY; no shared file, so no
+# check-then-append race and no newline pollution). Success => emit. State failures are silent;
+# if the marker dir itself is unusable we fail open (emit) rather than lose the advisory.
+fresh() {
+  { mkdir -p "$SHOWN_DIR"; } 2>/dev/null || true
+  [ -d "$SHOWN_DIR" ] || return 0
+  local h
+  h=$(printf '%s' "$1" | cksum | cut -d' ' -f1) || h=""
+  [ -n "$h" ] || return 0
+  if { mkdir "$SHOWN_DIR/$h"; } 2>/dev/null; then return 0; fi
+  return 1
+}
+add() { if [ -z "$ctx" ]; then ctx="$1"; else ctx="${ctx}"$'\n'"$1"; fi; }
 
 # Thresholds
 FAILURE_THRESHOLD=2
@@ -85,20 +106,20 @@ if [ -n "$next_model" ]; then
     reason="${consecutive_failures} consecutive failures"
   fi
 
-  if [ "$should_advise" = true ]; then
-    echo "" >&2
-    echo "--- [Model Escalation Advisory] ---" >&2
-    echo "  Agent type: ${agent_type}" >&2
-    echo "  Current model: ${current_model}" >&2
-    echo "  ⚡ Recommended: Escalate to ${next_model}" >&2
-    echo "  Cost impact: ${cost_multiplier} per task" >&2
-    echo "  Reason: ${reason}" >&2
-    echo "------------------------------------" >&2
+  if [ "$should_advise" = true ] && fresh "esc:${agent_type}:${current_model}->${next_model}"; then
+    add ""
+    add "--- [Model Escalation Advisory] ---"
+    add "  Agent type: ${agent_type}"
+    add "  Current model: ${current_model}"
+    add "  ⚡ Recommended: Escalate to ${next_model}"
+    add "  Cost impact: ${cost_multiplier} per task"
+    add "  Reason: ${reason}"
+    add "------------------------------------"
   fi
 fi
 
 # De-escalation check
-if [ "$current_model" != "haiku" ] && [ "$current_model" != "inherit" ] && [ "$current_model" != "" ]; then
+if [ "${OMCUSTOM_MODEL_DEESCALATION:-}" = "on" ] && [ "$current_model" != "haiku" ] && [ "$current_model" != "inherit" ] && [ "$current_model" != "" ]; then
   # Same `grep -c` hygiene as above (#1656 E).
   recent_successes=$(tail -${COOLDOWN} "$OUTCOME_FILE" 2>/dev/null | grep -c '"outcome":"success"' 2>/dev/null || true)
   recent_successes=${recent_successes:-0}
@@ -111,16 +132,18 @@ if [ "$current_model" != "haiku" ] && [ "$current_model" != "inherit" ] && [ "$c
       sonnet) lower_model="haiku" ;;
     esac
 
-    if [ -n "$lower_model" ]; then
-      echo "" >&2
-      echo "--- [Model De-escalation Advisory] ---" >&2
-      echo "  ↓ Consider: ${current_model} → ${lower_model}" >&2
-      echo "  ${recent_successes} consecutive successes" >&2
-      echo "--------------------------------------" >&2
+    if [ -n "$lower_model" ] && fresh "deesc:${current_model}->${lower_model}"; then
+      add ""
+      add "--- [Model De-escalation Advisory] ---"
+      add "  ↓ Consider: ${current_model} → ${lower_model}"
+      add "  ${recent_successes} consecutive successes"
+      add "--------------------------------------"
     fi
   fi
 fi
 
-# Pass through
-printf '%s\n' "$input"
+# Emit advisory to the model (#1885); silent when nothing to advise.
+if [ -n "$ctx" ]; then
+  jq -cn --arg ctx "$ctx" '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}'
+fi
 exit 0

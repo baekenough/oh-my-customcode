@@ -7,7 +7,11 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Agent Teams Advisor Hook
 # Trigger: PreToolUse, tool == "Task" || tool == "Agent"
 # Purpose: Track Agent/Task tool usage count per session and warn when Agent Teams may be more appropriate
-# Protocol: stdin JSON -> process -> stdout pass-through, exit 0 always (advisory only)
+# Protocol: stdin JSON -> process -> exit 0 always (advisory only)
+# Once per session (#1885): each distinct advisory key is shown at most once, claimed atomically via a
+# per-key marker dir under /tmp/.claude-teams-advisory-shown-${PPID}.d/ (parallel-hook safe).
+# Channel (#1885): exit-0 stderr never reaches the model (CC 2.1.310 probe, #1775 comment 6405197553);
+#   the advisory is delivered as stdout JSON hookSpecificOutput.additionalContext. No stdin passthrough.
 
 input=$(cat)
 
@@ -25,7 +29,6 @@ ENV_STATUS="/tmp/.claude-env-status-${PPID}"
 if [ -f "$ENV_STATUS" ]; then
   teams_status=$(grep "agent_teams=" "$ENV_STATUS" 2>/dev/null | cut -d= -f2 || echo "unknown")
   if [ "$teams_status" != "enabled" ]; then
-    printf '%s\n' "$input"
     exit 0
   fi
 fi
@@ -36,6 +39,9 @@ BATCH_ISSUES=0
 WORKFLOW_FILE=$(ls /tmp/.claude-workflow-*-"${PPID}".json 2>/dev/null | head -1 || true)
 if [ -n "$WORKFLOW_FILE" ] && [ -f "$WORKFLOW_FILE" ]; then
   BATCH_ISSUES=$(jq -r '.issue_count // 0' "$WORKFLOW_FILE" 2>/dev/null || echo 0)
+  # Sanitize before arithmetic: non-numeric/over-long -> 0; 10# avoids base-8 errors on leading zeros.
+  case "$BATCH_ISSUES" in ''|*[!0-9]*|??????????*) BATCH_ISSUES=0 ;; esac
+  BATCH_ISSUES=$((10#$BATCH_ISSUES))
 fi
 
 # Also check release-plan context (existence only — if file exists, treat as batch)
@@ -48,38 +54,57 @@ fi
 
 # Extract task info from input
 agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type? // "unknown"')
-prompt_preview=$(printf '%s\n' "$input" | jq -r '.tool_input.description? // ""' | head -c 60)
+prompt_preview=$(printf '%s\n' "$input" | jq -r '(.tool_input.description? // "") | tostring | .[0:60]')
 
 # Session-scoped counter using parent PID as session identifier
 COUNTER_FILE="/tmp/.claude-task-count-${PPID}"
 
 # Read and increment counter
 if [ -f "$COUNTER_FILE" ]; then
-  COUNT=$(cat "$COUNTER_FILE")
+  COUNT=$(cat "$COUNTER_FILE" 2>/dev/null || echo 0)
+  case "$COUNT" in ''|*[!0-9]*|??????????*) COUNT=0 ;; esac
+  COUNT=$((10#$COUNT))
   COUNT=$((COUNT + 1))
 else
   COUNT=1
 fi
-echo "$COUNT" > "$COUNTER_FILE"
+{ echo "$COUNT" > "$COUNTER_FILE"; } 2>/dev/null || true
+
+SHOWN_DIR="/tmp/.claude-teams-advisory-shown-${PPID}.d"
+# fresh KEY: atomic claim via mkdir of a per-key marker dir (hash of KEY; no shared file, so no
+# check-then-append race and no newline pollution). Success => emit. State failures are silent;
+# if the marker dir itself is unusable we fail open (emit) rather than lose the advisory.
+fresh() {
+  { mkdir -p "$SHOWN_DIR"; } 2>/dev/null || true
+  [ -d "$SHOWN_DIR" ] || return 0
+  local h
+  h=$(printf '%s' "$1" | cksum | cut -d' ' -f1) || h=""
+  [ -n "$h" ] || return 0
+  if { mkdir "$SHOWN_DIR/$h"; } 2>/dev/null; then return 0; fi
+  return 1
+}
 
 # Warn when batch context detected (even on first call) or from 2nd call onward
-if [ "$BATCH_ISSUES" -ge 3 ] && [ "$COUNT" -eq 1 ]; then
-  echo "" >&2
-  echo "--- [R018 Advisor] Batch context detected (${BATCH_ISSUES} issues) ---" >&2
-  echo "  RECOMMENDATION: Use Agent Teams (TeamCreate) for this batch." >&2
-  echo "  Current: Agent(${agent_type}) -- ${prompt_preview}" >&2
-  echo "-----------------------------------------------------------" >&2
-elif [ "$COUNT" -ge 2 ]; then
-  echo "" >&2
-  echo "--- [R018 Advisor] Agent/Task tool call #${COUNT} in this session ---" >&2
-  echo "  WARNING: Multiple Task calls detected. Consider Agent Teams if:" >&2
-  echo "    * 3+ agents needed for this work" >&2
-  echo "    * Review -> fix -> re-review cycle exists" >&2
-  echo "    * Agents need shared state or coordination" >&2
-  echo "  Current: Agent(${agent_type}) -- ${prompt_preview}" >&2
-  echo "-----------------------------------------------------------" >&2
+ctx=""
+if [ "$BATCH_ISSUES" -ge 3 ] && [ "$COUNT" -eq 1 ] && fresh "batch:${BATCH_ISSUES}"; then
+  ctx="
+--- [R018 Advisor] Batch context detected (${BATCH_ISSUES} issues) ---
+  RECOMMENDATION: Use Agent Teams (TeamCreate) for this batch.
+  Current: Agent(${agent_type}) -- ${prompt_preview}
+-----------------------------------------------------------"
+elif [ "$COUNT" -ge 2 ] && fresh "repeat"; then
+  ctx="
+--- [R018 Advisor] Agent/Task tool call #${COUNT} in this session ---
+  WARNING: Multiple Task calls detected. Consider Agent Teams if:
+    * 3+ agents needed for this work
+    * Review -> fix -> re-review cycle exists
+    * Agents need shared state or coordination
+  Current: Agent(${agent_type}) -- ${prompt_preview}
+-----------------------------------------------------------"
 fi
 
-# Always pass through -- advisory only, never blocks
-printf '%s\n' "$input"
+# Advisory only, never blocks: emit additionalContext when there is something to say
+if [ -n "$ctx" ]; then
+  jq -cn --arg ctx "$ctx" '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}'
+fi
 exit 0

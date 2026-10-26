@@ -147,22 +147,21 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 | PreToolUse (Write/Edit) | stage-blocker.sh | implement 단계 외 쓰기 차단 |
 | PreToolUse (Bash dev server) | 인라인 스크립트 | 어드바이저리(항상 exit 0): tmux/백그라운드 밖에서 포그라운드 dev 서버 시작 시 additionalContext 전달 |
 | PreToolUse (Bash) | bash-cd-advisor.sh | 어드바이저리(차단 없음): Bash 명령에 최상위 지속 `cd`가 있으면 additionalContext 전달 |
-| PreToolUse (Edit) | content-hash-validator.sh | 콘텐츠 해시 기반 스탈 편집 경고 (어드바이저리) |
-| PreToolUse (Write/Edit/Bash) | schema-validator.sh | 도구 입력 구조 스키마 검증 (어드바이저리) |
-| PreToolUse (Agent/Task) | HUD 표시, git-delegation-guard.sh, agent-teams-advisor.sh, model-escalation-advisor.sh | 스폰 표시, R010 강제, R018 어드바이저리, 에스컬레이션 어드바이저리 |
+| PreToolUse (Edit) | content-hash-validator.sh | 콘텐츠 해시 기반 스탈 편집 경고 (어드바이저리, additionalContext로 전달) |
+| PreToolUse (Write/Edit/Bash) | schema-validator.sh | 도구 입력 구조 스키마 검증 (어드바이저리, additionalContext로 전달) |
+| PreToolUse (Agent/Task) | HUD 표시, git-delegation-guard.sh, agent-teams-advisor.sh, model-escalation-advisor.sh | 스폰 표시, R010 git 위임 어드바이저리, R018 어드바이저리, 에스컬레이션 어드바이저리 (어드바이저리는 additionalContext로 전달) |
 | PostToolUse (Edit TS/JS) | prettier, tsc, console.log 탐지 | JS/TS 자동 포맷 + 타입 체크 |
 | PostToolUse (Edit Go) | gofmt | Go 파일 자동 포맷 |
 | PostToolUse (Edit Py) | ruff, ty | Python 자동 포맷 + 타입 체크 |
 | PostToolUse (Bash) | PR URL 로거 | `gh pr create` 후 PR URL 기록 |
-| PostToolUse (Agent/Task) | task-outcome-recorder.sh | 모델 에스컬레이션 결과 기록 |
-| PostToolUse (Read) | content-hash-validator.sh | 스탈 감지를 위한 콘텐츠 해시 저장 |
+| PostToolUse (Read/Edit/Write) | content-hash-validator.sh | 스탈 감지를 위한 콘텐츠 해시 저장·갱신 |
 | PostToolUse (Bash/Read) | secret-filter.sh | 출력에서 잠재적 시크릿 탐지 (어드바이저리) |
 | PostToolUse (Edit/Write/Bash/Agent) | audit-log.sh | 상태 변경 작업의 추가 전용 감사 로그 |
 | PostToolUse (모든 도구) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode 어드바이저리, 반복 루프 감지, 비용 모니터링 |
 | PostCompact | compact-rules-reinforcement (인라인) | 컨텍스트 압축 후 R007/R008/R009/R010/R018 규칙 재주입 |
 | SubagentStart | HUD 인라인 표시 | 서브에이전트 시작 시 agent type:model 로그 |
 | PostToolUseFailure | failure-ledger.sh, subagent-failure-advisor.sh (Agent/Task) | 무출력 실패 계측; additionalContext로 서브에이전트 실패 어드바이저리 |
-| SubagentStop | task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh(연속 완료 가드), r007-r008-drift-advisor.sh | 최종 결과 기록; 정체, 연속 완료, R007/R008 드리프트 어드바이저리(워크플로를 이어가거나 차단하지 않음) |
+| SubagentStop | task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh(연속 완료 가드), r007-r008-drift-advisor.sh | 완료 기록(항상 outcome=success, 이 이벤트에는 실패 신호 없음); 정체, 연속 완료, R007/R008 드리프트 어드바이저리(워크플로를 이어가거나 차단하지 않음) |
 | Stop | stop-console-audit.sh, eval-core-batch-save.sh, feedback-collector.sh, session-reflection.sh, skill-extractor-analyzer.sh, auto-dev-token-summary.sh | 최종 감사, 배치 평가 저장, 세션 피드백 추출 및 improvementActions 삽입, 세션 회고, 스킬 추출 분석, auto-dev 토큰 요약 |
 
 #### 관측성 훅 (Harness Engineering)
@@ -173,8 +172,8 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 |----|------|------|
 | audit-log.sh | PostToolUse | 모든 상태 변경 도구 호출(Edit, Write, Bash, Agent)의 추가 전용 감사 추적. `/tmp/.claude-audit-$PPID.jsonl`에 기록. |
 | secret-filter.sh | PostToolUse | Bash/Read 출력에서 시크릿(API 키, 토큰, 패스워드) 패턴 기반 탐지. 어드바이저리 경고만 출력. |
-| schema-validator.sh | PreToolUse | 도구 입력 구조를 예상 스키마와 대조 검증. Phase 1 어드바이저리 모드. |
-| content-hash-validator.sh | Pre+PostToolUse | Read 시 MD5 해시 저장, 마지막 Read 이후 파일이 변경된 경우 Edit 시 경고 (스탈 편집 감지). |
+| schema-validator.sh | PreToolUse | 도구 입력 구조를 예상 스키마와 대조 검증. Phase 1 어드바이저리 모드. 결과는 `additionalContext`(stdout JSON)로 전달되며 문제가 없으면 출력하지 않음. |
+| content-hash-validator.sh | Pre+PostToolUse | PostToolUse Read/Edit/Write에서 파일의 MD5 해시를 저장·갱신(Edit/Write 도구로 한 편집은 오경고를 유발하지 않음; 해시는 `/tmp/.claude-content-hashes-${PPID}.d/`에 경로별 원자적 항목으로 저장). PreToolUse Edit에서는 그 사이 PostToolUse 없이 파일이 바뀐 경우(외부 변경)에만 `additionalContext`로 경고. 이후 파일이 다시 쓰이면(병렬로 실행되는 PostToolUse 포매터 훅 또는 Bash 편집) 경고가 여전히 발생할 수 있음. |
 
 ---
 
@@ -383,17 +382,17 @@ MCP 저장은 논블로킹 -- 실패해도 세션 종료를 막지 않습니다.
   <img src="assets/diagrams/10-feedback-loop.png" alt="Feedback Analysis Loop" width="800" />
 </p>
 
-`task-outcome-recorder.sh` 훅이 모든 서브에이전트 실행의 성공/실패를 기록합니다. 이 데이터는 model-escalation 어드바이저리 시스템에 피드백됩니다.
+`task-outcome-recorder.sh` 훅(SubagentStop에만 배선)이 서브에이전트 완료를 에이전트 타입별로 기록합니다. SubagentStop에는 실패 신호와 모델 정보가 없으므로 모든 항목은 outcome=success, model "inherit"입니다. 이 데이터는 model-escalation 어드바이저리 시스템이 읽습니다.
 
 | 메트릭 | 기록 위치 | 용도 |
 |--------|----------|------|
-| 에이전트별 성공/실패 횟수 | `/tmp/.claude-escalation-*` | 모델 에스컬레이션 임계값 판단 |
+| 에이전트별 완료 기록(현재는 항상 success) | `/tmp/.claude-task-outcomes-$PPID` | 모델 에스컬레이션 임계값 판단 |
 | 비용 누적량 | statusline API | 비용 모니터링 + cost-cap 게이트 |
 | 컨텍스트 사용량 | statusline API | Ecomode 트리거 |
 
 ### 7.2 스킬 효과성 추적
 
-에이전트 프론트매터에 `escalation.enabled: true`를 설정하면 해당 에이전트 타입의 성공률이 추적됩니다. 실패 횟수가 `threshold`를 초과하면 에스컬레이션 어드바이저리가 발행됩니다.
+에이전트 타입의 실패가 2회 이상 기록되었거나 최근 3건의 결과가 모두 실패이면(임계값은 스크립트에 하드코딩되어 있으며 프론트매터 스위치는 없음) 에스컬레이션 어드바이저리(model-escalation-advisor.sh)가 `additionalContext`(모델에 보이는 채널)로 발행되도록(haiku -> sonnet -> opus) 설계되어 있습니다. 그러나 현재 배선에서는 이 경로가 도달 불가능합니다: 레코더가 outcome=success만 기록하므로 실패 횟수는 항상 0입니다. 또한 스폰의 `model` 파라미터가 haiku 또는 sonnet일 때만 평가됩니다. 서로 다른 어드바이저리는 세션당 최대 1회만 표시되며(키별 원자적 마커 디렉토리), 이는 마커 디렉토리가 존재하거나 생성 가능할 때에 한합니다. 생성할 수 없으면 호출마다 반복되고(fail-open), 읽기 전용 마커 디렉토리가 미리 있으면 침묵합니다. 디에스컬레이션 어드바이저리는 `OMCUSTOM_MODEL_DEESCALATION=on`일 때만 동작하는 옵트인인데, 레코더가 모든 서브에이전트 완료를 성공으로 기록하여 연속 "성공"이 신호가 되지 못하기 때문입니다. 차단하지 않으며 수용 여부는 오케스트레이터가 결정합니다.
 
 ```
 haiku -> sonnet -> opus (에스컬레이션 경로)

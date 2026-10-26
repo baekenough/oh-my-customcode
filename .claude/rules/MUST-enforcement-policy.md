@@ -19,7 +19,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 | Hard Block | PreToolUse hook, exit 2 | stage-blocker, rule-deletion-guard | Prevents tool execution |
 | Soft Block | Stop hook prompt | R011 session-end saves | Auto-performs then approves |
 | Conversation Block | PostToolUse hook + `continueOnBlock` (CC v2.1.139+), exit 2 | stuck-detector, context-budget-advisor, cost-cap-advisor | Feeds rejection reason into conversation; Claude continues with awareness |
-| Advisory | PostToolUse hooks | R007, R008, R009, R010, R018 | Warns via stderr, never blocks |
+| Advisory | PreToolUse + PostToolUse + SubagentStop hooks | R007, R008, R009, R010, R018 | Warns via stderr or stdout `additionalContext`, never blocks |
 | Advisory (proactive) | UserPromptSubmit + SubagentStop + PostToolUse hooks | R007, R008 (`r007-r008-drift-advisor.sh` — #1229 UserPromptSubmit, #1545 SubagentStop, #1553 PostToolUse) | Reads last assistant turn; emits advisory if header/prefix absent. SubagentStop wiring (#1545) covers subagent stops in no-user-input loops (`/fsd`); PostToolUse (#1553) covers the orchestrator-only stretch before the first subagent spawn. Complements retroactive Stop-hook (`session-reflection.sh`, #1190). **v1.1.43부터 실제 발화**(파서 셀렉터 `.role`→`.message.role` 수정 — 상세는 Read 도구로 원문 주석 참조). v1.1.49부터 역방향(announce > tool_use) 신호 포함, 기본 off 옵트인 (#1595 #6). v1.1.73의 narration 채널 분리 옵션(`OMCUSTOM_R008_NARRATION`, #1701 #2)은 실 세션 5건(CC 2.1.233~2.1.274) 실측에서 narration 마커 매칭 0/354·판정 on/off 동일로 전제가 성립하지 않아 v1.1.74에서 은퇴했습니다(#1703) — R008 누락은 채널 오선택이 아니라 마커 미직렬화 형태입니다. **v1.1.62(#1650 D)부터 서브에이전트 세션에서는 침묵**: hook stdin의 `agent_id`(CC 스키마상 서브에이전트 내부 발화에만 존재)가 있으면 exit 0 — 단 `SubagentStart`/`SubagentStop`은 `agent_id`가 대상 식별자라 예외(판정 수행). 중첩 서브에이전트 안의 SubagentStop은 억제 못 함(R010 정책상 도달 불가 경로). 완료 보고가 advisory 응답으로 대체되던 훅 피드백 잠식(R020 8항, #1652 #3)의 advisory 계열 차단. |
 | Advisory (telemetry + advisory) | PostToolUseFailure hook | — (계측+어드바이저리, 규칙 강제 없음) | `failure-ledger.sh` (#1561, v1.1.44) — 실패를 JSONL 원장에 append, 무출력(모델 미도달)·비차단. 같은 이벤트의 `subagent-failure-advisor.sh`(Agent/Task)는 additionalContext advisory 전달 |
 | Advisory (proactive) | UserPromptSubmit hook | R020 (원인 진단) | `fail-axis-cause-advisor.sh` (#1561, v1.1.44) — 원장에 실패 기록이 있는데 원인 진술 없는 재촉 프롬프트가 오면 `hookSpecificOutput.additionalContext`로 "원인 가설 되묻기" advisory 전달. 원장 부재 시 조용히 통과 |
@@ -80,14 +80,14 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 3. **Composability**: External skills and internal rules can coexist without deadlocks
 4. **Post-compact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction via `SessionStart`(matcher `*`/`compact`) — not via the PostCompact event itself[^postcompact]
 
-## Hard Enforcement Candidates — R010 git-delegation-guard (conditional), R007/R008 advisory **implemented & firing** (#1229 UserPromptSubmit, proactive) + **#1545 SubagentStop** (covers subagent stops) + **#1553 PostToolUse** + retroactive Stop-hook (#1190); `additionalContext` 전달 경로는 #1547(v1.1.40)에서 구현됐으나 파서 셀렉터 결함으로 v1.1.42까지 **양 계층 모두 미발화**였고, **v1.1.43에서 수정 완료·발화 확인**(#1553); hard-block variant still candidate if advisory insufficient (#1096). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
+## Hard Enforcement Candidates — R007/R008 advisory **implemented & firing** (#1229 UserPromptSubmit, proactive) + **#1545 SubagentStop** (covers subagent stops) + **#1553 PostToolUse** + retroactive Stop-hook (#1190); `additionalContext` 전달 경로는 #1547(v1.1.40)에서 구현됐으나 파서 셀렉터 결함으로 v1.1.42까지 **양 계층 모두 미발화**였고, **v1.1.43에서 수정 완료·발화 확인**(#1553); hard-block variant still candidate if advisory insufficient (#1096). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
 
 <!-- DETAIL: Hard Enforcement Candidates (Future)
 If advisory enforcement proves insufficient for specific rules, these are candidates for promotion to hard-block:
 
 | Rule | Candidate Hook | Status | Condition for Promotion |
 |------|---------------|--------|------------------------|
-| R010 | git-delegation-guard.sh | Candidate | If orchestrator-direct-write violations exceed 3/session |
+| R010 | git-delegation-guard.sh | Advisory (not a candidate) | Flags git keywords in delegation prompts to non-mgr-gitnerd agents; does not detect orchestrator direct writes; transcript replays found no clear true positive among residual fires (five borderline), so hard-block promotion is not supported (#1885) |
 | R007/R008 | `r007-r008-drift-advisor.sh` (UserPromptSubmit #1229 + SubagentStop #1545 + PostToolUse #1553) | **Advisory implemented and firing** — proactive pre-response check wired to three trigger points; the SubagentStop leg (#1545) covers subagent stops in no-user-input loops (`/fsd`), and the PostToolUse leg (#1553) covers the orchestrator-only stretch before the first subagent spawn. Retroactive: `session-reflection.sh` (Stop, #1190). Two-layer drift detection: proactive (#1229/#1545/#1553) + retroactive (#1190). **Historical defect (v1.1.40–v1.1.42): delivery path implemented but never fired** — #1547 (v1.1.40) switched delivery from stderr (never model-visible on exit 0) to `hookSpecificOutput.additionalContext` on JSON stdout, non-blocking (no top-level `decision`/`continue`/`stopReason`), but both scripts short-circuited BEFORE emitting: `jq -r '.role'` read a key absent at transcript top level (it is `.message.role`), so `last_assistant` was always empty and the script exited 0 silently. Measured then: 0 `"additionalContext":` occurrences across 771 transcripts; live probe emitted 0 bytes on both streams. **Resolved in v1.1.43** — parser fix on both layers + `PostToolUse` wiring, first fire confirmed by live probe (#1553). Follow-ups: v1.1.44 turn-level R008 prefix counting (#1563), v1.1.45 Skill-tool exemption (#1569), v1.1.49 reverse signal — announce > tool_use, own anchored regex, fires only when ALL tool_use blocks (Skill included) are 0, opt-in via `OMCUSTOM_R008_REVERSE=on` and NOT replicated into `session-reflection.sh` (#1595 #6). | Promote to hard-block if advisory proves insufficient (#1096) |
 
 Promotion requires: (1) measured violation rate data, (2) user approval, (3) rollback plan.
@@ -103,6 +103,6 @@ Promotion requires: (1) measured violation rate data, (2) user approval, (3) rol
 
 | Rule | Interaction |
 |------|-------------|
-| R010 | git-delegation-guard.sh is advisory; could promote to blocking |
+| R010 | git-delegation-guard.sh is model-visible advisory (#1885) |
 | R016 | Violations trigger rule updates, not enforcement changes |
 | SessionStart (compact re-entry) | Re-injects critical rules to combat context compaction amnesia — see [^postcompact] |

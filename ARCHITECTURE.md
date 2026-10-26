@@ -89,7 +89,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | System | 4 | sys-memory-keeper, sys-naggy, wiki-curator, tracker-checkpoint |
 | **Total** | **50** | |
 
-Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, escalation policy, isolation mode).
+Each agent is defined in `.claude/agents/{name}.md` with YAML frontmatter specifying model, tools, skills, memory scope, and optional features (soul identity, isolation mode).
 
 ### 3.3 Skill Catalog (114 skills)
 
@@ -159,22 +159,21 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 | PreToolUse (Write/Edit) | stage-blocker.sh | Block writes outside implement stage |
 | PreToolUse (Bash dev server) | inline script | Advisory (always exit 0): additionalContext when a foreground dev server starts outside tmux/background |
 | PreToolUse (Bash) | bash-cd-advisor.sh | Advisory (never blocks): additionalContext when a Bash command contains a top-level persistent `cd` |
-| PreToolUse (Edit) | content-hash-validator.sh | Advisory staleness warning via content hash |
-| PreToolUse (Write/Edit/Bash) | schema-validator.sh | Schema-based tool input validation (advisory) |
-| PreToolUse (Agent/Task) | HUD display, git-delegation-guard.sh, agent-teams-advisor.sh, model-escalation-advisor.sh | Spawn display, R010 enforcement, R018 advisory, escalation advisory |
+| PreToolUse (Edit) | content-hash-validator.sh | Advisory staleness warning via content hash (delivered as additionalContext) |
+| PreToolUse (Write/Edit/Bash) | schema-validator.sh | Schema-based tool input validation (advisory, delivered as additionalContext) |
+| PreToolUse (Agent/Task) | HUD display, git-delegation-guard.sh, agent-teams-advisor.sh, model-escalation-advisor.sh | Spawn display, R010 git-delegation advisory, R018 advisory, escalation advisory (advisories delivered as additionalContext) |
 | PostToolUse (Edit TS/JS) | prettier, tsc, console.log detector | Auto-format + type-check JS/TS |
 | PostToolUse (Edit Go) | gofmt | Auto-format Go files |
 | PostToolUse (Edit Py) | ruff, ty | Auto-format + type-check Python |
 | PostToolUse (Bash) | PR URL logger | Log PR URL after `gh pr create` |
-| PostToolUse (Agent/Task) | task-outcome-recorder.sh | Record outcomes for model escalation |
-| PostToolUse (Read) | content-hash-validator.sh | Store content hashes for staleness detection |
+| PostToolUse (Read/Edit/Write) | content-hash-validator.sh | Store/refresh content hashes for staleness detection |
 | PostToolUse (Bash/Read) | secret-filter.sh | Detect potential secrets in output (advisory) |
 | PostToolUse (Edit/Write/Bash/Agent) | audit-log.sh | Append-only audit log for state-changing operations |
 | PostToolUse (any tool) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode advisory, loop detection, cost monitoring |
 | PostCompact | compact-rules-reinforcement (inline) | Re-inject R007/R008/R009/R010/R018 identity and delegation rules after context compaction |
 | SubagentStart | HUD inline display | Log agent type:model when subagent starts |
 | PostToolUseFailure | failure-ledger.sh, subagent-failure-advisor.sh (Agent/Task) | Silent failure telemetry; subagent failure advisory via additionalContext |
-| SubagentStop | task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh (consecutive-completion guard), r007-r008-drift-advisor.sh | Record final outcome; stall, consecutive-completion and R007/R008 drift advisories (never continues or blocks the workflow) |
+| SubagentStop | task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh (consecutive-completion guard), r007-r008-drift-advisor.sh | Record each completion (always outcome=success; no failure signal on this event); stall, consecutive-completion and R007/R008 drift advisories (never continues or blocks the workflow) |
 | Stop | stop-console-audit.sh, eval-core-batch-save.sh, feedback-collector.sh, session-reflection.sh, skill-extractor-analyzer.sh, auto-dev-token-summary.sh | Final audit, batch evaluation save, session feedback extraction and improvementActions insert, session reflection, skill extraction analysis, auto-dev token summary |
 
 #### Observability Hooks (Harness Engineering)
@@ -185,8 +184,8 @@ Four hooks form the observability backbone, added as part of the Harness Enginee
 |------|------|-------------|
 | audit-log.sh | PostToolUse | Append-only audit trail of all state-changing tool calls (Edit, Write, Bash, Agent). Writes to `/tmp/.claude-audit-$PPID.jsonl`. |
 | secret-filter.sh | PostToolUse | Pattern-based detection of secrets (API keys, tokens, passwords) in Bash/Read output. Advisory warning only. |
-| schema-validator.sh | PreToolUse | Validates tool input structure against expected schemas. Phase 1 advisory mode. |
-| content-hash-validator.sh | Pre+PostToolUse | Stores MD5 hashes on Read, warns on Edit if file changed since last Read (stale edit detection). |
+| schema-validator.sh | PreToolUse | Validates tool input structure against expected schemas. Phase 1 advisory mode; findings are delivered as `additionalContext` (stdout JSON), silent when clean. |
+| content-hash-validator.sh | Pre+PostToolUse | On PostToolUse Read/Edit/Write, stores or refreshes the file's MD5 hash (so edits made through the Edit/Write tools do not trigger a false warning; hashes are stored as per-path atomic entries in `/tmp/.claude-content-hashes-${PPID}.d/`). On PreToolUse Edit, warns via `additionalContext` only if the file changed with no PostToolUse in between (external change). A file rewritten afterwards (a PostToolUse formatter hook running in parallel, or a Bash edit) can still trigger the warning. |
 
 ---
 
@@ -458,9 +457,9 @@ MCP saves are non-blocking — failure does not prevent session end.
   <img src="assets/diagrams/10-feedback-loop.png" alt="Feedback Analysis Loop" width="800" />
 </p>
 
-The task-outcome-recorder hook (PostToolUse + SubagentStop) records success/failure for each agent type and model combination. This data feeds two systems:
+The task-outcome-recorder hook (wired to SubagentStop only) records each subagent completion per agent type. SubagentStop carries no failure signal and no model, so every entry is outcome=success with model "inherit". This data feeds two systems:
 
-**Model Escalation (model-escalation-advisor.sh)**: When an agent type accumulates failures exceeding the configured threshold, the hook advises the orchestrator to escalate to a higher model (e.g., haiku -> sonnet -> opus). This is advisory-only — the orchestrator decides whether to accept.
+**Model Escalation (model-escalation-advisor.sh)**: Designed to advise the orchestrator, via `additionalContext` (model-visible), to escalate to a higher model (haiku -> sonnet -> opus) when an agent type has 2 or more recorded failures, or the last 3 outcomes are all failures (thresholds hard-coded in the script, no frontmatter switch). Under the current wiring this path is unreachable: the recorder only writes outcome=success, so the failure count is always 0. It is also evaluated only when the spawn's `model` parameter is haiku or sonnet. Each distinct advisory is shown at most once per session (atomic per-key marker directory), provided the marker directory exists or can be created; if it cannot be created the advisory repeats on every call (fail-open), and a pre-existing read-only marker directory makes it silent. The de-escalation advisory is opt-in via `OMCUSTOM_MODEL_DEESCALATION=on`, because the recorder logs every subagent completion as success, so consecutive "successes" carry no signal. This is advisory-only — the orchestrator decides whether to accept.
 
 **Skill Effectiveness**: Routing skills can correlate suggested skills with task outcomes to identify which skill combinations yield the highest success rates. This data accumulates in PPID-scoped temp files (`/tmp/.claude-task-outcomes-$PPID`) during a session and informs memory updates at session end.
 

@@ -212,10 +212,6 @@ source:                    # For external agents
   origin: github | npm
   url: https://...
   version: 1.0.0
-escalation:              # Model escalation policy (optional)
-  enabled: true          # Enable auto-escalation advisory
-  path: haiku → sonnet → opus  # Escalation sequence (Tier-3 Agent-tool aliases only)
-  threshold: 2           # Failures before advisory
 soul: true                 # Enable SOUL.md identity injection
 isolation: worktree | sandbox  # worktree = git worktree, sandbox = restricted bash
 sandboxFailIfUnavailable: true  # Exit if sandbox unavailable (v2.1.83+)
@@ -422,13 +418,7 @@ The `limitations` field declares what an agent explicitly CANNOT or SHOULD NOT d
 
 ### Escalation Policy
 
-When `escalation.enabled: true`, the model-escalation hooks will track outcomes for this agent type and advise escalation when failures exceed the threshold. This is advisory-only — the orchestrator decides whether to accept the recommendation.
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `enabled` | false | Enable escalation tracking for this agent |
-| `path` | haiku → sonnet → opus | Model upgrade sequence (Tier-3 Agent-tool aliases only) |
-| `threshold` | 2 | Failure count before escalation advisory |
+Model escalation is not configured via agent frontmatter; thresholds are hard-coded in model-escalation-advisor.sh; see the model-escalation skill.
 -->
 
 ## Memory Scopes

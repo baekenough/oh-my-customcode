@@ -1,7 +1,7 @@
 ---
 title: "Multi-Model Routing Guide"
 type: guide
-updated: 2026-10-25
+updated: 2026-10-26
 sources:
   - guides/multi-model-routing/README.md
 related:
@@ -37,7 +37,7 @@ The Tier-1 base `sonnet` and `opus` aliases are **resolved by CC itself, not pin
 
 ## Escalation Pattern (Agent-tool spawn, Tier 3)
 
-When a lower-tier model fails, escalate: `haiku → sonnet → opus` (de-escalation: `opus → sonnet → haiku`; `opus` is the top tier, so no further escalation target exists above it). This operates at Agent-tool spawn time, so it uses the Tier-3 enum (`sonnet`\|`opus`\|`haiku`\|`fable`) — not full model IDs, and not `sonnet5`/`opus5`. Configured in agent frontmatter via the `escalation` field with a `threshold` (failures before advisory); see [[model-escalation]] skill.
+When a lower-tier model fails, escalate: `haiku → sonnet → opus` (de-escalation: `opus → sonnet → haiku`; `opus` is the top tier, so no further escalation target exists above it). This operates at Agent-tool spawn time, so it uses the Tier-3 enum (`sonnet`\|`opus`\|`haiku`\|`fable`) — not full model IDs, and not `sonnet5`/`opus5`. There is no agent-frontmatter switch for escalation: `model-escalation-advisor.sh` reads no frontmatter, its thresholds are hard-coded, and it evaluates every haiku/sonnet spawn. It is currently unreachable because the outcome recorder never writes failures; see [[model-escalation]] skill.
 
 ## PROJECT Override (frontmatter, Tier 2)
 
