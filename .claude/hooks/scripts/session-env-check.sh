@@ -139,8 +139,10 @@ if [ "$HOME_ABSOLUTE" = true ] && command -v git >/dev/null 2>&1 && git rev-pars
 fi
 
 # --- CI Status Check ---
-# Check last CI run status if gh CLI is available
-if command -v gh &>/dev/null; then
+# Check last CI run status if gh CLI is available.
+# Skipped when HOME is not absolute (HOME_ABSOLUTE, set above): external CLIs keep state under
+# $HOME and would write it into the cwd (the project dir) instead (#1775).
+if [ "$HOME_ABSOLUTE" = true ] && command -v gh &>/dev/null; then
   ci_status=$(gh run list --limit 1 --json conclusion -q '.[0].conclusion' 2>/dev/null || echo "unknown")
   ci_name=$(gh run list --limit 1 --json name -q '.[0].name' 2>/dev/null || echo "unknown")
   if [ "$ci_status" = "failure" ]; then

@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "2.0.8",
-  "generatedAt": "2026-10-26T00:59:08.486Z",
+  "generatedAt": "2026-10-26T01:11:28.170Z",
   "templateVersion": "2.0.8",
   "files": {
     ".claude/agents/agora-runner.md": {
@@ -420,8 +420,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-env-check.sh": {
-      "templateHash": "3d4bd8acfe3fa19d5c96f5994cb897a8b3e2fde4b724ac23a22b39380eec3781",
-      "size": 12830,
+      "templateHash": "150cc325980c8614776462f230e095d99f62ecb332e433fdbadeeacb28d6b8c9",
+      "size": 13032,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-reflection.sh": {

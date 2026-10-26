@@ -94,6 +94,13 @@ beforeAll(() => {
   writeFileSync(join(binDir, 'npm'), `#!/bin/bash\necho "$*" >> "${npmLog}"\necho 1.0.0\n`);
   // Stub timeout: drop the duration argument and run the command.
   writeFileSync(join(binDir, 'timeout'), '#!/bin/bash\nshift\nexec "$@"\n');
+  // Stub gh: mimics a CI-runner gh that keeps state under $HOME (device-id). With an invalid
+  // HOME that path lands inside the cwd, so the negative fixtures prove the hook never calls gh.
+  writeFileSync(
+    join(binDir, 'gh'),
+    '#!/bin/bash\nb="${HOME:-.}"\nmkdir -p "$b/.local/state/gh" && : > "$b/.local/state/gh/device-id"\nexit 0\n'
+  );
+  chmodSync(join(binDir, 'gh'), 0o755);
   chmodSync(join(binDir, 'npm'), 0o755);
   chmodSync(join(binDir, 'timeout'), 0o755);
 });
