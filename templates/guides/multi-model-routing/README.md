@@ -117,13 +117,7 @@ When a task fails at a lower model tier, escalate. Escalation is executed by re-
 haiku → sonnet → opus
 ```
 
-Configuration in agent frontmatter:
-```yaml
-escalation:
-  enabled: true
-  path: haiku → sonnet → opus
-  threshold: 2  # failures before escalation advisory
-```
+There is no agent-frontmatter switch for escalation: `model-escalation-advisor.sh` reads no frontmatter, its thresholds are hard-coded constants in the script, and it evaluates every haiku/sonnet spawn. It is currently unreachable because the outcome recorder never writes failures. See the `model-escalation` skill.
 
 ## Fast Mode Interaction
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
+import { existsSync, readdirSync } from 'node:fs';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -44,6 +45,12 @@ const GIT_DELEGATION_GUARD_SCRIPT = join(SCRIPTS_DIR, 'git-delegation-guard.sh')
 const OUTCOME_FILE = `/tmp/.claude-task-outcomes-${process.pid}`;
 const TASK_COUNT_FILE = `/tmp/.claude-task-count-${process.pid}`;
 const R010_VIOLATION_FILE = `/tmp/.claude-r010-violations-${process.pid}`;
+// #1885: model-escalation-advisor.sh shows each distinct advisory key once per session
+// (state keyed by $PPID = this bun process, shared by every test file in the run).
+// Atomic per-key marker DIRECTORY: one entry per shown key (cksum of the key).
+// #1885: count-line marker dir of git-delegation-guard.sh (claimed once per session).
+const R010_THRESHOLD_DIR = `/tmp/.claude-r010-threshold-${process.pid}`;
+const MODEL_ADVISORY_SHOWN_DIR = `/tmp/.claude-model-advisory-shown-${process.pid}.d`;
 
 // runHookScript resolves on child close, after audit-log's final performance write.
 afterEach(async () => {
@@ -54,6 +61,26 @@ interface ScriptResult {
   stdout: string;
   stderr: string;
   exitCode: number;
+}
+
+interface PreToolUseAdvisory {
+  hookSpecificOutput: { hookEventName: string; additionalContext: string };
+}
+
+/**
+ * #1885: a PreToolUse advisory hook that fires prints exactly one line of JSON on stdout
+ * (`hookSpecificOutput.additionalContext`), nothing on stderr, and exits 0. Asserts that
+ * contract and returns the additionalContext text for content assertions.
+ */
+function preToolUseContext(result: ScriptResult): string {
+  expect(result.exitCode).toBe(0);
+  expect(result.stderr).toBe('');
+  expect(result.stdout.endsWith('\n')).toBe(true);
+  expect(result.stdout.trimEnd().split('\n')).toHaveLength(1);
+  const parsed = JSON.parse(result.stdout.trim()) as PreToolUseAdvisory;
+  expect(parsed.hookSpecificOutput.hookEventName).toBe('PreToolUse');
+  expect(typeof parsed.hookSpecificOutput.additionalContext).toBe('string');
+  return parsed.hookSpecificOutput.additionalContext;
 }
 
 /** Run a hook script by spawning bash, piping `stdinInput`, and collecting its streams. */
@@ -454,12 +481,26 @@ describe('#1656 E: model-escalation-advisor.sh emits no integer-expression noise
     await writeFile(OUTCOME_FILE, `${entries.map((e) => JSON.stringify(e)).join('\n')}\n`);
   }
 
+  // De-escalation is opt-in via OMCUSTOM_MODEL_DEESCALATION=on. A developer shell that already
+  // exports it would change the "default" cases, so it is scrubbed here and restored after.
+  let savedDeescalationEnv: string | undefined;
+  const DEESC_ON = { OMCUSTOM_MODEL_DEESCALATION: 'on' };
+
   beforeEach(async () => {
+    savedDeescalationEnv = process.env.OMCUSTOM_MODEL_DEESCALATION;
+    delete process.env.OMCUSTOM_MODEL_DEESCALATION;
     await rm(OUTCOME_FILE, { force: true });
+    await rm(MODEL_ADVISORY_SHOWN_DIR, { recursive: true, force: true });
   });
 
   afterEach(async () => {
+    if (savedDeescalationEnv === undefined) {
+      delete process.env.OMCUSTOM_MODEL_DEESCALATION;
+    } else {
+      process.env.OMCUSTOM_MODEL_DEESCALATION = savedDeescalationEnv;
+    }
     await rm(OUTCOME_FILE, { force: true });
+    await rm(MODEL_ADVISORY_SHOWN_DIR, { recursive: true, force: true });
   });
 
   it('escalates on an all-failure ledger without integer-expression errors', async () => {
@@ -473,9 +514,9 @@ describe('#1656 E: model-escalation-advisor.sh emits no integer-expression noise
       makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' })
     );
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stderr).not.toContain('integer expression expected');
-    expect(result.stderr).toContain('Model Escalation Advisory');
+    // #1885: the advisory travels as additionalContext JSON on stdout; stderr stays empty,
+    // which also proves no integer-expression noise leaks there.
+    expect(preToolUseContext(result)).toContain('Model Escalation Advisory');
   });
 
   it('stays silent, and error-free, on a ledger with no matching failures', async () => {
@@ -486,21 +527,313 @@ describe('#1656 E: model-escalation-advisor.sh emits no integer-expression noise
     );
 
     expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe('');
     expect(result.stderr).toBe('');
   });
 
-  it('still de-escalates after a run of successes', async () => {
+  it('still de-escalates after a run of successes when OMCUSTOM_MODEL_DEESCALATION=on', async () => {
     await seedLedger(
       Array.from({ length: 5 }, () => ({ agent_type: 'qa-engineer', outcome: 'success' }))
     );
+    const result = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' }),
+      DEESC_ON
+    );
+
+    expect(preToolUseContext(result)).toContain('De-escalation Advisory');
+  });
+
+  it('is silent about de-escalation by default (opt-in), even after a run of successes', async () => {
+    await seedLedger(
+      Array.from({ length: 5 }, () => ({ agent_type: 'qa-engineer', outcome: 'success' }))
+    );
+    const input = makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' });
+
+    for (const env of [
+      {},
+      { OMCUSTOM_MODEL_DEESCALATION: '' },
+      { OMCUSTOM_MODEL_DEESCALATION: 'off' },
+    ]) {
+      const result = await runHookScript(MODEL_ESCALATION_SCRIPT, input, env);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe('');
+    }
+    // Nothing was claimed either.
+    expect(existsSync(MODEL_ADVISORY_SHOWN_DIR)).toBe(false);
+  });
+
+  it('stays silent (empty stdout and stderr, exit 0) when no outcome ledger exists', async () => {
     const result = await runHookScript(
       MODEL_ESCALATION_SCRIPT,
       makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' })
     );
 
     expect(result.exitCode).toBe(0);
-    expect(result.stderr).not.toContain('integer expression expected');
-    expect(result.stderr).toContain('De-escalation Advisory');
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('');
+  });
+
+  // --- Once per session (#1885): each distinct key is shown at most once ---
+
+  const FAILURES_FOR_QA = [
+    { agent_type: 'qa-engineer', outcome: 'failure' },
+    { agent_type: 'qa-engineer', outcome: 'failure' },
+    { agent_type: 'qa-engineer', outcome: 'failure' },
+  ];
+
+  it('shows the escalation advisory once: the second identical run is silent', async () => {
+    await seedLedger(FAILURES_FOR_QA);
+    const input = makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' });
+
+    const first = await runHookScript(MODEL_ESCALATION_SCRIPT, input);
+    expect(preToolUseContext(first)).toContain('Model Escalation Advisory');
+    // One marker dir entry for the claimed key.
+    expect(readdirSync(MODEL_ADVISORY_SHOWN_DIR)).toHaveLength(1);
+
+    const second = await runHookScript(MODEL_ESCALATION_SCRIPT, input);
+    expect(second.exitCode).toBe(0);
+    expect(second.stdout).toBe('');
+    expect(second.stderr).toBe('');
+    expect(readdirSync(MODEL_ADVISORY_SHOWN_DIR)).toHaveLength(1);
+  });
+
+  it('still emits for a different escalation key (other model, other agent)', async () => {
+    await seedLedger([
+      ...FAILURES_FOR_QA,
+      ...FAILURES_FOR_QA.map((e) => ({ ...e, agent_type: 'be-fastapi-expert' })),
+    ]);
+
+    const sonnet = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' })
+    );
+    expect(preToolUseContext(sonnet)).toContain('Escalate to opus');
+
+    // Different `from`->`to` pair: esc:qa-engineer:haiku->sonnet
+    const haiku = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'haiku' })
+    );
+    expect(preToolUseContext(haiku)).toContain('Escalate to sonnet');
+
+    // Different agent: esc:be-fastapi-expert:sonnet->opus
+    const other = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'be-fastapi-expert', model: 'sonnet' })
+    );
+    expect(preToolUseContext(other)).toContain('be-fastapi-expert');
+
+    // Three distinct keys -> three marker entries; a repeat of the first stays silent.
+    expect(readdirSync(MODEL_ADVISORY_SHOWN_DIR)).toHaveLength(3);
+    const repeat = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' })
+    );
+    expect(repeat.stdout).toBe('');
+    expect(readdirSync(MODEL_ADVISORY_SHOWN_DIR)).toHaveLength(3);
+  });
+
+  it('shows the de-escalation advisory once, and emits again for a different from->to pair', async () => {
+    await seedLedger(
+      Array.from({ length: 5 }, () => ({ agent_type: 'qa-engineer', outcome: 'success' }))
+    );
+
+    const first = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' }),
+      DEESC_ON
+    );
+    expect(preToolUseContext(first)).toContain('De-escalation Advisory');
+
+    const again = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' }),
+      DEESC_ON
+    );
+    expect(again.exitCode).toBe(0);
+    expect(again.stdout).toBe('');
+    expect(again.stderr).toBe('');
+
+    // deesc:opus->sonnet is a different key
+    const opus = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'opus' }),
+      DEESC_ON
+    );
+    expect(preToolUseContext(opus)).toContain('opus → sonnet');
+
+    expect(readdirSync(MODEL_ADVISORY_SHOWN_DIR)).toHaveLength(2);
+  });
+
+  it('fails open: still emits (rc 0, empty stderr) when the marker dir cannot be created', async () => {
+    // A regular file at the marker-dir path makes `mkdir -p` fail.
+    await writeFile(MODEL_ADVISORY_SHOWN_DIR, 'not a directory');
+    await seedLedger(FAILURES_FOR_QA);
+    const input = makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' });
+
+    for (let i = 0; i < 2; i++) {
+      const result = await runHookScript(MODEL_ESCALATION_SCRIPT, input);
+      expect(preToolUseContext(result)).toContain('Model Escalation Advisory');
+    }
+  });
+
+  it('an agent_type with an embedded newline cannot suppress a later legitimate key', async () => {
+    // Under the old line-based shown file, a key containing "\ndeesc:sonnet->haiku\n" would
+    // have written a line that equals the legitimate de-escalation key and silenced it.
+    await seedLedger(FAILURES_FOR_QA);
+    const poisoned = makePreToolUseAgentInput({
+      subagent_type: 'x\ndeesc:sonnet->haiku\nz',
+      model: 'sonnet',
+    });
+    expect(preToolUseContext(await runHookScript(MODEL_ESCALATION_SCRIPT, poisoned))).toContain(
+      'Model Escalation Advisory'
+    );
+
+    await seedLedger(
+      Array.from({ length: 5 }, () => ({ agent_type: 'qa-engineer', outcome: 'success' }))
+    );
+    const legitimate = await runHookScript(
+      MODEL_ESCALATION_SCRIPT,
+      makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' }),
+      DEESC_ON
+    );
+    expect(preToolUseContext(legitimate)).toContain('De-escalation Advisory');
+  });
+
+  // --- Boundary pins for the hard-coded constants ---
+  //
+  // NOTE: in production the recorder (task-outcome-recorder.sh) only ever sees SubagentStop, which
+  // carries no error signal, so it NEVER writes outcome=failure. The escalation branch below is
+  // therefore currently unreachable from real sessions (the docs say so too); these tests pin the
+  // thresholds so they stay correct if a failure source is ever wired in.
+  //
+  // Ledger lines use the exact shape task-outcome-recorder.sh appends (`jq -cn`, insertion order:
+  // timestamp, agent_type, model, outcome, pattern_used, skill, description, error_summary,
+  // duration_seconds), because the advisor greps `"agent_type":"X".*"outcome":"failure"`.
+
+  function outcome(agent: string, result: 'success' | 'failure'): Record<string, unknown> {
+    return {
+      timestamp: '2026-10-26T00:00:00Z',
+      agent_type: agent,
+      model: 'sonnet',
+      outcome: result,
+      pattern_used: 'single',
+      skill: '',
+      description: 'boundary fixture',
+      error_summary: '',
+      duration_seconds: 1,
+    };
+  }
+  const sonnetInput = (agent: string) =>
+    makePreToolUseAgentInput({ subagent_type: agent, model: 'sonnet' });
+
+  async function runAdvisor(agent: string, env?: Record<string, string>) {
+    return runHookScript(MODEL_ESCALATION_SCRIPT, sonnetInput(agent), env);
+  }
+
+  describe('FAILURE_THRESHOLD = 2 (per agent type)', () => {
+    it('1 failure of the agent type is silent', async () => {
+      await seedLedger([
+        outcome('qa-engineer', 'failure'),
+        outcome('qa-engineer', 'success'),
+        outcome('qa-engineer', 'success'),
+        outcome('qa-engineer', 'success'),
+      ]);
+      const result = await runAdvisor('qa-engineer');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe('');
+    });
+
+    it('2 failures of the agent type fire, with the per-type reason', async () => {
+      await seedLedger([
+        outcome('qa-engineer', 'failure'),
+        outcome('qa-engineer', 'success'),
+        outcome('qa-engineer', 'success'),
+        outcome('qa-engineer', 'success'),
+        outcome('qa-engineer', 'failure'),
+      ]);
+      const context = preToolUseContext(await runAdvisor('qa-engineer'));
+      expect(context).toContain('Model Escalation Advisory');
+      expect(context).toContain('Reason: qa-engineer failed 2x with sonnet');
+    });
+
+    it('failures of ANOTHER agent type do not count toward the per-type threshold', async () => {
+      // Two failures, but both belong to other agents, and they are not in the last 3 entries.
+      await seedLedger([
+        outcome('be-fastapi-expert', 'failure'),
+        outcome('be-fastapi-expert', 'failure'),
+        outcome('qa-engineer', 'success'),
+        outcome('qa-engineer', 'success'),
+        outcome('qa-engineer', 'success'),
+      ]);
+      const result = await runAdvisor('qa-engineer');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+    });
+  });
+
+  describe('CONSECUTIVE_THRESHOLD = 3 (last 3 entries, any agent)', () => {
+    it('2 failures in the last 3 entries (other agent, none for this type) are silent', async () => {
+      await seedLedger([
+        outcome('be-fastapi-expert', 'success'),
+        outcome('be-fastapi-expert', 'failure'),
+        outcome('be-fastapi-expert', 'failure'),
+        outcome('be-fastapi-expert', 'success'),
+      ]);
+      expect((await runAdvisor('qa-engineer')).stdout).toBe('');
+    });
+
+    it('3 failures in the last 3 entries fire, with the consecutive reason', async () => {
+      await seedLedger([
+        outcome('be-fastapi-expert', 'success'),
+        outcome('be-fastapi-expert', 'failure'),
+        outcome('be-fastapi-expert', 'failure'),
+        outcome('be-fastapi-expert', 'failure'),
+      ]);
+      const context = preToolUseContext(await runAdvisor('qa-engineer'));
+      expect(context).toContain('Reason: 3 consecutive failures');
+    });
+  });
+
+  describe('COOLDOWN = 5 (de-escalation, opt-in)', () => {
+    it('4 successes in the last 5 entries are silent even with the opt-in on', async () => {
+      await seedLedger(Array.from({ length: 4 }, () => outcome('qa-engineer', 'success')));
+      const result = await runAdvisor('qa-engineer', DEESC_ON);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toBe('');
+    });
+
+    it('4 successes preceded by a failure (5 entries, 4 successes) are silent', async () => {
+      await seedLedger([
+        outcome('qa-engineer', 'failure'),
+        ...Array.from({ length: 4 }, () => outcome('qa-engineer', 'success')),
+      ]);
+      expect((await runAdvisor('qa-engineer', DEESC_ON)).stdout).toBe('');
+    });
+
+    it('5 successes fire with the opt-in on', async () => {
+      await seedLedger(Array.from({ length: 5 }, () => outcome('qa-engineer', 'success')));
+      const context = preToolUseContext(await runAdvisor('qa-engineer', DEESC_ON));
+      expect(context).toContain('De-escalation Advisory');
+      expect(context).toContain('5 consecutive successes');
+    });
+  });
+
+  it('does not echo the stdin payload to stdout when it advises', async () => {
+    await seedLedger([
+      { agent_type: 'qa-engineer', outcome: 'failure' },
+      { agent_type: 'qa-engineer', outcome: 'failure' },
+      { agent_type: 'qa-engineer', outcome: 'failure' },
+    ]);
+    const input = makePreToolUseAgentInput({ subagent_type: 'qa-engineer', model: 'sonnet' });
+    const result = await runHookScript(MODEL_ESCALATION_SCRIPT, input);
+
+    preToolUseContext(result);
+    expect(result.stdout.trim()).not.toBe(input);
   });
 });
 
@@ -513,10 +846,12 @@ describe('#1656 E: model-escalation-advisor.sh emits no integer-expression noise
 describe('#1656 F: git-delegation-guard.sh stdin guard and advisory behaviour', () => {
   beforeEach(async () => {
     await rm(R010_VIOLATION_FILE, { force: true });
+    await rm(R010_THRESHOLD_DIR, { recursive: true, force: true });
   });
 
   afterEach(async () => {
     await rm(R010_VIOLATION_FILE, { force: true });
+    await rm(R010_THRESHOLD_DIR, { recursive: true, force: true });
   });
 
   function makeSpawnInput(subagentType: string, prompt: string): string {
@@ -532,9 +867,10 @@ describe('#1656 F: git-delegation-guard.sh stdin guard and advisory behaviour', 
     const input = makeSpawnInput('lang-rust-expert', 'Please git commit the refactor.');
     const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, input);
 
-    expect(result.exitCode).toBe(0);
-    expect(result.stderr).toContain('R010 violation detected');
-    expect(result.stdout.trim()).toBe(input);
+    const context = preToolUseContext(result);
+    expect(context).toContain("mentions 'git commit'");
+    expect(context).toContain('R010');
+    expect(result.stdout.trim()).not.toBe(input);
   });
 
   it('stays silent when the delegate is mgr-gitnerd', async () => {
@@ -542,8 +878,17 @@ describe('#1656 F: git-delegation-guard.sh stdin guard and advisory behaviour', 
     const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, input);
 
     expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe('');
     expect(result.stderr).toBe('');
-    expect(result.stdout.trim()).toBe(input);
+  });
+
+  it('stays silent when the git keyword sits in a prohibition (excluded occurrence)', async () => {
+    const input = makeSpawnInput('lang-rust-expert', 'Forbidden: git commit, push.');
+    const result = await runHookScript(GIT_DELEGATION_GUARD_SCRIPT, input);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toBe('');
   });
 
   it('exits 0 and writes nothing on non-object stdin', async () => {

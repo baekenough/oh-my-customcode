@@ -505,7 +505,7 @@
         "description": "Advisory cost cap monitoring — warn when session cost approaches configurable limit"
       },
       {
-        "matcher": "tool == \"Read\"",
+        "matcher": "tool == \"Read\" || tool == \"Edit\" || tool == \"Write\"",
         "hooks": [
           {
             "type": "command",

@@ -17,8 +17,8 @@ which hooks are theoretically parallelizable and which require serial ordering.
 | `context-budget-advisor.sh` | Edit, Write, Agent, Task, Read, Glob, Grep, Bash | `/tmp/.claude-context-budget-$PPID` | `/tmp/.claude-context-budget-$PPID` | never (exit 0) |
 | `stuck-detector.sh` | Edit, Write, Bash, Task, Agent | `/tmp/.claude-tool-history-$PPID` | `/tmp/.claude-tool-history-$PPID` | exits 1 on hard-block only |
 | `cost-cap-advisor.sh` | Edit, Write, Bash, Task, Agent | `/tmp/.claude-cost-$PPID`, `/tmp/.claude-cost-advisory-$PPID` | `/tmp/.claude-cost-advisory-$PPID` | never (exit 0) |
-| `content-hash-validator.sh` (PostToolUse/Read) | Read | none | `/tmp/.claude-content-hashes-$PPID` | never (exit 0) |
-| `content-hash-validator.sh` (PreToolUse/Edit) | Edit (PreToolUse) | `/tmp/.claude-content-hashes-$PPID` | none | never (exit 0) |
+| `content-hash-validator.sh` (PostToolUse/Read+Edit+Write) | Read, Edit, Write | none | `/tmp/.claude-content-hashes-${PPID}.d/` | never (exit 0) |
+| `content-hash-validator.sh` (PreToolUse/Edit) | Edit (PreToolUse) | `/tmp/.claude-content-hashes-${PPID}.d/` | none | never (exit 0) |
 | `secret-filter.sh` | Bash, Read, Grep | none (scans stdin output) | none | never (exit 0) |
 | `prettier` (inline) | Edit .ts/.tsx/.js/.jsx | filesystem (file being edited) | filesystem (file being edited) | never (exit 0) |
 | `tsc check` (inline) | Edit .ts/.tsx | filesystem (tsconfig, files) | none (noEmit) | never (exit 0) |
@@ -38,8 +38,8 @@ These hooks only WRITE to independent, non-overlapping state files.
 No other hook reads their output during the same tool invocation.
 
 - **`audit-log.sh`** → writes `~/.claude/audit.jsonl` (append-only, independent path)
-- **`content-hash-validator.sh` (PostToolUse/Read mode)** → writes `/tmp/.claude-content-hashes-$PPID`
-  - Written when tool == "Read"; read only by PreToolUse/Edit (different trigger, different invocation)
+- **`content-hash-validator.sh` (PostToolUse/Read+Edit+Write store mode)** → writes `/tmp/.claude-content-hashes-${PPID}.d/`
+  - Written on PostToolUse Read/Edit/Write; read only by PreToolUse/Edit (for Edit, validate fires before the call and store after it, same call)
 
 **Parallelizable**: Yes — each writes to a distinct file; no hook in this group reads another's output.
 
@@ -91,7 +91,7 @@ These hooks have explicit ordering requirements with other hooks or with the too
 
 - **`stage-blocker.sh`** (PreToolUse/Write+Edit) — MUST run before any Write/Edit tool
   executes; blocks the tool entirely if stage check fails.
-- **`content-hash-validator.sh`** (PreToolUse/Edit) — MUST run after the PostToolUse/Read
+- **`content-hash-validator.sh`** (PreToolUse/Edit) — MUST run after the PostToolUse Read/Edit/Write
   instance has stored the hash (cross-invocation ordering: Read invocation → Edit invocation).
 - **`schema-validator.sh`** (PreToolUse/Write+Edit+Bash) — MUST run before the tool executes
   to validate tool input structure.
@@ -110,7 +110,7 @@ stdin JSON (hook input)
        │
        ├──[A: independent writers]──────────────────────── can be parallel
        │      audit-log.sh
-       │      content-hash-validator.sh (Read mode)
+       │      content-hash-validator.sh (store mode: Read/Edit/Write)
        │
        ├──[B: advisory readers]──────────────────────────── can be parallel
        │      context-budget-advisor.sh
@@ -130,11 +130,11 @@ stdin JSON (hook input)
 
 | Group | Hooks | Strategy |
 |-------|-------|----------|
-| A (state-recording) | audit-log.sh, content-hash-validator.sh (Read) | Safe to parallelize — no read dependencies between them |
+| A (state-recording) | audit-log.sh, content-hash-validator.sh (Read/Edit/Write) | Safe to parallelize — no read dependencies between them |
 | B (advisory) | context-budget-advisor.sh, cost-cap-advisor.sh, secret-filter.sh | Safe to parallelize — read-only advisory, no shared output |
 | B+ (advisory+block) | stuck-detector.sh | Safe to parallelize with Group B, but exit code must be checked |
 | C (formatters) | prettier, tsc, gofmt, ruff, ty | Must be sequential — file mutation with ordering within language |
-| D (PreToolUse gates) | stage-blocker, content-hash-validator (Edit), schema-validator, git/teams/escalation advisors | Must be sequential — gate the tool execution itself |
+| D (PreToolUse gates) | stage-blocker, content-hash-validator (Edit), schema-validator, git/teams/escalation advisors | Must be sequential — run before the tool executes; advisors do not gate it |
 
 **Theoretical maximum parallelism**: Groups A + B can all run concurrently (6 hooks in parallel
 on Edit/Write/Bash invocations). This would reduce serial hook time from ~6× to ~1× for those groups.

@@ -86,7 +86,7 @@ Rules that may be promoted to hard-block if advisory enforcement proves insuffic
 
 | Rule | Candidate Hook | Promotion Condition |
 |------|---------------|---------------------|
-| R010 | `git-delegation-guard.sh` | Orchestrator-direct-write violations > 3/session |
+| R010 | `git-delegation-guard.sh` | Advisory, not a candidate: no clear true positive in transcript replays (#1885) |
 | R007/R008 | (new hook) | Identification omission rate > 20% |
 
 ## Relationships

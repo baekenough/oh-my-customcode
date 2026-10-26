@@ -249,6 +249,18 @@ function actualSkillCount(): number {
     .filter((line) => line.length > 0).length;
 }
 
+// #1885: schema-validator.sh delivers its advisory as one stdout line of PreToolUse
+// additionalContext JSON (stderr stays empty), so "schema file found" is observed there.
+function schemaAdvisoryContext(r: SpawnOutcome): string {
+  expect(r.stderr).toBe('');
+  expect(r.stdout.trimEnd().split('\n')).toHaveLength(1);
+  const parsed = JSON.parse(r.stdout.trim()) as {
+    hookSpecificOutput: { hookEventName: string; additionalContext: string };
+  };
+  expect(parsed.hookSpecificOutput.hookEventName).toBe('PreToolUse');
+  return parsed.hookSpecificOutput.additionalContext;
+}
+
 describe('hooks wiring: mid-session scripts locate the repo root themselves (#1767)', () => {
   it('fixture sanity: subdirectory cwd and schema file exist', () => {
     expect(existsSync(SUBDIR_CWD)).toBe(true);
@@ -256,23 +268,32 @@ describe('hooks wiring: mid-session scripts locate the repo root themselves (#17
     expect(actualSkillCount()).toBeGreaterThan(0);
   });
 
-  describe('schema-validator.sh (observable: [Schema] advisory emitted = schema file found)', () => {
+  describe('schema-validator.sh (observable: additionalContext containing [Schema] = schema file found)', () => {
     it('control: repo-root cwd, no CLAUDE_PROJECT_DIR -> advisory emitted', () => {
       const r = runScript(SCHEMA_VALIDATOR, DANGEROUS_BASH_INPUT, REPO_ROOT, null);
       expect(r.exitCode).toBe(0);
-      expect(r.stderr).toContain('[Schema]');
+      expect(schemaAdvisoryContext(r)).toContain('[Schema]');
     });
 
     it('subdirectory cwd, CLAUDE_PROJECT_DIR deleted -> still validates', () => {
       const r = runScript(SCHEMA_VALIDATOR, DANGEROUS_BASH_INPUT, SUBDIR_CWD, null);
       expect(r.exitCode).toBe(0);
-      expect(r.stderr).toContain('[Schema]');
+      expect(schemaAdvisoryContext(r)).toContain('[Schema]');
     });
 
     it('subdirectory cwd, CLAUDE_PROJECT_DIR=<repo root> -> validates', () => {
       const r = runScript(SCHEMA_VALIDATOR, DANGEROUS_BASH_INPUT, SUBDIR_CWD, REPO_ROOT);
       expect(r.exitCode).toBe(0);
-      expect(r.stderr).toContain('[Schema]');
+      expect(schemaAdvisoryContext(r)).toContain('[Schema]');
+    });
+
+    // Negative control (#1885): when the schema file is NOT found the script stays silent,
+    // so a [Schema] additionalContext really does mean "schema file found".
+    it('CLAUDE_PROJECT_DIR without a schema file -> silent (empty stdout and stderr)', () => {
+      const r = runScript(SCHEMA_VALIDATOR, DANGEROUS_BASH_INPUT, SUBDIR_CWD, tmpdir());
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout).toBe('');
+      expect(r.stderr).toBe('');
     });
   });
 

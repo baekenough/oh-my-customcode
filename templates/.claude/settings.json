@@ -510,7 +510,7 @@
             "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/content-hash-validator.sh\""
           }
         ],
-        "matcher": "Read",
+        "matcher": "Read|Edit|Write",
         "description": "Store content hashes for Read operations — enables Edit staleness detection"
       },
       {

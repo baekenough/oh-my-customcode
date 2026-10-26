@@ -1,7 +1,7 @@
 ---
 title: "Git Safety Guide"
 type: guide
-updated: 2026-05-15
+updated: 2026-10-26
 sources:
   - guides/git-safety/README.md
 related:
@@ -28,6 +28,13 @@ This guide catalogs destructive git commands that require explicit user approval
 | `git clean -fd` / `-fdx` | Permanently deletes untracked files | Run `git clean -nd` dry-run first; explicit approval |
 | `git branch -D <name>` (unmerged) | Loses unmerged work | Show `git log <branch>` first; confirm pushed elsewhere |
 | `git push --force` (shared branch) | Rewrites shared history | NEVER on main/master; explicit approval for feature branches |
+
+## Advisory Detection Hooks
+
+Two PreToolUse hooks always exit 0 and deliver warnings as `additionalContext` (#1885); both stay silent when nothing matches.
+
+- `destructive-git-guard.sh` (R001) detects: `git reset --hard`; `git clean` with any short-flag cluster containing `f` (`-f`, `-df`, `-nf` too) or `--force`; any `git restore`; `git checkout -- .`/`*`/`/`; `git branch -D`. `git -C <path>` and `git -c k=v` forms are handled. `-n`, `--dry-run`, `-nd` stay silent.
+- `git-delegation-guard.sh` (R010) flags git write keywords in delegation prompts to agents other than `mgr-gitnerd`. It skips negated keywords, prohibition blocks (`Forbidden:`-style), read-only `git branch`/`git tag` queries, and bare noun uses; the advisory is conditional on a match.
 
 ## Pre-Flight Checks
 

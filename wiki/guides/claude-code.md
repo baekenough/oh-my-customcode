@@ -103,3 +103,4 @@ related:
 - Content-drift resync 2026-10-26 (v2.0.8): `04-agent-skills.md` wording narrowed from "out-of-range index" to "index known to be out of range" (prose `$5` only). `15-version-compatibility.md` changes (Lows fixed, anchors re-derived to content anchors, v2.0.8 notes on the dev-server advisory, SubagentStop 5→4 hooks and hook counts) are not restated on this page.
 
 See also: [Token Efficiency guide](token-efficiency.md), [[cc-token-saver]], [[agent-teams]], [[r016]] (instruction-budget policy that now routes new content here), and [R017 sync verification](../rules/r017.md) for when this guide requires re-sync.
+- Content-drift resync 2026-10-26 (v2.0.9, #1885): `15-version-compatibility.md` gained v2.0.9 notes (the six PreToolUse advisory hooks now emit stdout JSON `additionalContext` instead of stderr; the (292)/(296)/(307) hook-count snapshots were re-measured). This page does not restate those notes.
