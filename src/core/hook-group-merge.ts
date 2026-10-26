@@ -43,6 +43,14 @@ export const LEGACY_OMCUSTOM_DESCRIPTIONS: readonly string[] = [
   'Record agent outcomes + auto-continue workflow + R007/R008 drift advisory on subagent completion (autonomous-loop re-entry, #1545)',
   // SessionStart re-inject group; present in v1.1.53..v1.1.56, superseded by a reworded one.
   'Re-inject project CLAUDE.md into model context on session start/resume/clear and compact re-entry — matcher "*" covers all SessionStart sources including "compact" (#1617)',
+  // PreToolUse dev-server group; description reworded in v2.0.8 (#1856, now a non-blocking advisory: always exit 0, additionalContext only).
+  'Block dev servers outside tmux - ensures you can access logs',
+  // PreToolUse .md/.txt group; description reworded in v2.0.8 (#1856, honest non-blocking notice).
+  'Block creation of random .md files - keeps docs consolidated',
+  // SubagentStop group; description reworded in v2.0.8 (#1880): auto-continue/failure advisory wording dropped, failure advisor moved to PostToolUseFailure.
+  'Record agent outcomes + auto-continue workflow + R007/R008 drift advisory + failure advisory on subagent completion (autonomous-loop re-entry, #1545; #1631 replaced the self-referential prompt-type judge hook with an advisory-only command hook)',
+  // FileChanged group; description reworded in v2.0.8 (#1775) together with its matcher ("*" registered a literal file named "*").
+  'Validate externally modified files — advisory staleness warning (v2.1.83+)',
 ];
 
 /**

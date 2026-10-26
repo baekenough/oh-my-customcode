@@ -24,7 +24,18 @@ LOG_FILE="/tmp/auto-dev-spend-${PPID}.json"
 agent_type=$(printf '%s\n' "$input" | jq -r '.tool_input.subagent_type // "unknown"' 2>/dev/null || echo "unknown")
 description=$(printf '%s\n' "$input" | jq -r '.tool_input.description // ""' 2>/dev/null || echo "")
 prompt_text=$(printf '%s\n' "$input" | jq -r '.tool_input.prompt // ""' 2>/dev/null || echo "")
-output_text=$(printf '%s\n' "$input" | jq -r '.tool_output.output // .tool_output // ""' 2>/dev/null || echo "")
+# PostToolUse carries "tool_response", not "tool_output" (#1775; probe: CC 2.1.310,
+# "claude -p", one run, haiku). Measured async Agent launch shape: object {agentId,
+# canContinueAgent, canReadOutputFile, description, isAsync, outputFile, prompt,
+# resolvedModel, status:"async_launched"} - it has NO subagent result text, so the
+# tokens_out estimate is 0 for async launches. A synchronous Agent result shape was
+# NOT measured [가설]; a string tool_response or an object .stdout/.output string is
+# used when present, then the legacy .tool_output fallback.
+output_text=$(printf '%s\n' "$input" | jq -r '
+  (.tool_response) as $r
+  | if ($r | type) == "string" then $r
+    elif ($r | type) == "object" and (($r.stdout // $r.output | type) == "string") then ($r.stdout // $r.output)
+    else (.tool_output.output // .tool_output // "") end' 2>/dev/null || echo "")
 
 # Derive phase from pipeline state (current_phase) or fallback to description prefix
 phase=$(jq -r '.current_phase // .phase // "unknown"' "$PIPELINE_STATE" 2>/dev/null || echo "unknown")

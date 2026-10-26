@@ -20,7 +20,7 @@ oh-my-customcode includes 50 pre-built agents organized by category.
 | Security (`sec-`) | 1 | Security analysis |
 | Other | 4 | `agora-runner`, `slack-cli-expert`, `tracker-checkpoint`, `wiki-curator` |
 
-Counts are derived from `.claude/agents/*.md` name prefixes. For the authoritative list see `wiki/agents/` (50 pages) or `.claude/agents/` (50 `.md` files); the sections below cover a representative subset, not all 50 agents.
+This table groups agents by name prefix, while docs/index.md, README and CLAUDE.md group them by type. Counts are derived from `.claude/agents/*.md` name prefixes. For the authoritative list see `wiki/agents/` (50 pages) or `.claude/agents/` (50 `.md` files); the sections below cover a representative subset, not all 50 agents.
 
 ## Manager Agents
 
@@ -60,11 +60,7 @@ Managers handle system-level operations and automation.
 
 ### mgr-sauron
 
-**Role**: System-wide monitoring and oversight.
-
-- Monitors agent activities
-- Tracks resource usage
-- Reports system health
+**Role**: Automated verification of R017 compliance, executing mandatory multi-round verification (5 manager rounds + 3 deep review rounds, with rounds 3-4 conditionally skipped when rounds 1-2 return 0 issues) before commits.
 
 ### mgr-claude-code-bible
 
@@ -93,7 +89,7 @@ System agents provide core functionality.
 - Sends reminders
 - Manages task priorities
 
-## SW Engineer Agents - Frontend
+## Frontend Agents
 
 ### fe-vercel-agent
 
@@ -119,7 +115,7 @@ System agents provide core functionality.
 - SvelteKit applications
 - Svelte stores
 
-## SW Engineer Agents - Backend
+## Backend Agents
 
 ### be-fastapi-expert
 
@@ -161,7 +157,7 @@ System agents provide core functionality.
 - NestJS modules
 - Enterprise Node.js
 
-## SW Engineer Agents - Language
+## Language Agents
 
 ### lang-golang-expert
 
@@ -211,7 +207,7 @@ System agents provide core functionality.
 - Java patterns
 - JVM ecosystem
 
-## SW Engineer Agents - Tooling
+## Tooling Agents
 
 ### tool-npm-expert
 
@@ -237,7 +233,7 @@ System agents provide core functionality.
 - Bun tooling
 - Bun ecosystem
 
-## SW Engineer Agents - Database
+## Database Agents
 
 ### db-supabase-expert
 
@@ -247,7 +243,7 @@ System agents provide core functionality.
 - PostgreSQL database
 - Supabase auth and storage
 
-## SW Architect Agents
+## Architecture Agents
 
 ### arch-documenter
 
@@ -265,7 +261,7 @@ System agents provide core functionality.
 - System design
 - Technical specs
 
-## Infra Engineer Agents
+## Infrastructure Agents
 
 ### infra-docker-expert
 
@@ -283,7 +279,7 @@ System agents provide core functionality.
 - AWS services
 - Cloud deployment
 
-## QA Team Agents
+## QA Agents
 
 ### qa-planner
 

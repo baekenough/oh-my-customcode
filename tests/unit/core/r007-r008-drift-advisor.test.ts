@@ -19,7 +19,7 @@
  * - Deduplicates per TURN: PostToolUse fires on every tool call, so the same turn must not
  *   produce a second advisory. The marker is the turn's first assistant-line `uuid`, stored
  *   under OMCUSTOM_R007_MARKER_DIR — derived purely from transcript content (no date/random).
- * - ALWAYS exits 0 (never blocks).
+ * - Advisory, never intends to block (exits 0 on every path).
  *
  * ── Transcript schema (this is the part that was previously wrong) ──────────────────────
  * Measured 2026-08-05 against 771 real transcripts: JSONL lines carry NO top-level

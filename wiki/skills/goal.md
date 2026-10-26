@@ -2,7 +2,7 @@
 title: Goal
 type: skill
 scope: core
-updated: 2026-10-06
+updated: 2026-10-26
 sources:
   - .claude/skills/goal/SKILL.md
 related:
@@ -26,7 +26,7 @@ A thin orchestrator skill that wires together the full task lifecycle in a fixed
 
 - **Scope**: core
 - **User-invocable**: yes
-- **Command**: `/goal`
+- **Command**: `/omcustom:goal` (renamed from bare `/goal` in v0.130.0 so that bare `/goal` reaches Claude Code's built-in completion-condition command; see [[fsd]])
 - **Argument hint**: `<objective or task description>`
 - **Issue**: #1109
 
@@ -76,3 +76,4 @@ A thin orchestrator skill that wires together the full task lifecycle in a fixed
 ## Sources
 
 - `.claude/skills/goal/SKILL.md` — skill definition
+- Content-drift resync 2026-10-26 (v2.0.8): the skill's usage, example, description trigger and stability note now use `/omcustom:goal` instead of `/goal`.

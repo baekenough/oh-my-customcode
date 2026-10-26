@@ -209,7 +209,7 @@ When the user explicitly signals full-delegation intent, the orchestrator operat
 - **R001 (Safety)**: All safety rules remain absolute — no exceptions
 - **R007/R008 (Identification)**: Agent/tool identification still required for traceability
 - **File Write/Edit delegation**: Still requires specialist agents — autonomous mode only relaxes git and gate overhead
-- **Hard-block hooks**: stage-blocker, dev-server tmux, .md creation blocker remain active
+- **Hard-block hooks**: stage-blocker, rule-deletion-guard remain active
 - **R009 (Parallel execution)**: Still required for efficiency
 
 ### Scope and Lifetime

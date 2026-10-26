@@ -30,8 +30,20 @@ if ! [ -c /dev/tty ] 2>/dev/null; then
 fi
 
 # --- Configuration ---
-CACHE_DIR="$HOME/.oh-my-customcode"
-CACHE_FILE="${CACHE_DIR}/self-update-cache.json"
+# Cache location. Deliberate difference from the TS resolver (src/utils/home.ts
+# resolveHomeDir, which falls back to the OS/passwd home): when HOME is unset, empty or not
+# an absolute path, this hook SKIPS the cache entirely (no read, no write, no mkdir) rather
+# than resolving to "/.oh-my-customcode" or a passwd home (#1775).
+CACHE_ENABLED=true
+CACHE_DIR=""
+CACHE_FILE=""
+case "${HOME:-}" in
+  /*)
+    CACHE_DIR="$HOME/.oh-my-customcode"
+    CACHE_FILE="${CACHE_DIR}/self-update-cache.json"
+    ;;
+  *) CACHE_ENABLED=false ;;
+esac
 CACHE_MAX_AGE=3600  # 1 hour in seconds
 NPM_TIMEOUT=3       # seconds for npm view
 INPUT_TIMEOUT=10     # seconds for user prompt
@@ -69,10 +81,12 @@ LATEST_VERSION=""
 CACHE_HIT=false
 
 # Ensure cache directory exists
-mkdir -p "$CACHE_DIR" 2>/dev/null
+if [ "$CACHE_ENABLED" = true ]; then
+  mkdir -p "$CACHE_DIR" 2>/dev/null
+fi
 
 # Check cache freshness
-if [ -f "$CACHE_FILE" ]; then
+if [ "$CACHE_ENABLED" = true ] && [ -f "$CACHE_FILE" ]; then
   CACHE_TIMESTAMP=$(grep -o '"timestamp"[[:space:]]*:[[:space:]]*[0-9]*' "$CACHE_FILE" 2>/dev/null | grep -o '[0-9]*$')
   CACHED_VERSION=$(grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' "$CACHE_FILE" 2>/dev/null | grep -o '"[^"]*"$' | tr -d '"')
 
@@ -93,7 +107,7 @@ if [ "$CACHE_HIT" = false ]; then
     LATEST_VERSION=$(timeout "$NPM_TIMEOUT" npm view "$PACKAGE_NAME" version 2>/dev/null || echo "")
 
     # Update cache on successful fetch
-    if [ -n "$LATEST_VERSION" ]; then
+    if [ -n "$LATEST_VERSION" ] && [ "$CACHE_ENABLED" = true ]; then
       NOW=$(date +%s)
       cat > "$CACHE_FILE" << EOF
 {

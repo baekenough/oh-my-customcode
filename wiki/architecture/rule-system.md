@@ -1,7 +1,7 @@
 ---
 title: Rule Enforcement System
 type: architecture
-updated: 2026-10-03
+updated: 2026-10-26
 sources:
   - .claude/rules/MUST-enforcement-policy.md
   - .claude/rules/MUST-continuous-improvement.md
@@ -37,7 +37,7 @@ Rules live in `.claude/rules/` and are auto-injected into the system prompt. Aft
 
 | Tier | Mechanism | Rules Covered | Behavior |
 |------|-----------|---------------|----------|
-| **Hard Block** | PreToolUse hook, `exit 2` | `stage-blocker`, `dev-server-tmux`, `rule-deletion-guard` | Prevents tool execution entirely |
+| **Hard Block** | PreToolUse hook, `exit 2` | `stage-blocker`, `rule-deletion-guard` | Prevents tool execution entirely |
 | **Soft Block** | Stop hook prompt | R011 session-end saves | Auto-performs required action, then approves |
 | **Advisory** | PostToolUse hooks | R007, R008, R009, R010, R018 | Emits warning to stderr, never blocks |
 | **Prompt-based** | CLAUDE.md + rules/ + PostCompact | All MUST rules | Behavioral guidance injected into model context |
@@ -103,3 +103,4 @@ Rules that may be promoted to hard-block if advisory enforcement proves insuffic
 - Count resync 2026-08-05: rule count corrected 21→23, SHOULD count corrected 6→8 (measured: `ls .claude/rules/*.md` = 23 total, MUST=14, SHOULD=8, MAY=1). MUST/MAY counts were already accurate and left unchanged.
 - Content-drift resync 2026-08-29 (v1.1.50, #1617): documented the new `claude-md-reinject.sh` SessionStart hook (full CLAUDE.md re-injection on startup/resume/clear/compact) alongside the existing PostCompact summary re-injection.
 - Content-drift resync 2026-08-29 (v1.1.53, #1623): documented the hooks.json (source) → settings.json `hooks` block (build artifact) conversion pipeline (`src/core/hooks-settings.ts`) — CC never loads `.claude/hooks/hooks.json` directly; only the converted `settings.json`/`.local.json`/`templates/` mirror is loaded. First session-level firing measurement recorded.
+- Content-drift resync 2026-10-26 (v2.0.8, #1856): the Hard Block row of the enforcement-tiers table now lists `stage-blocker` and `rule-deletion-guard` only (the dev-server tmux hook is an advisory).

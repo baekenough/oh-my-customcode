@@ -15,11 +15,13 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { LEGACY_OMCUSTOM_DESCRIPTIONS } from '../../../src/core/hook-group-merge.js';
 import {
+  analyzeFileChangedMatcher,
   analyzeMatcher,
   buildGuardedCommand,
   CLASSIFICATION_TABLE,
   type ClassificationEntry,
   convertHookCommand,
+  convertHooksEntry,
   convertHooksJson,
   fieldNodeToJq,
   type MatcherAstNode,
@@ -270,7 +272,7 @@ describe('convertHooksJson (real .claude/hooks/hooks.json)', () => {
     // Redundant fixed assertion: catches unnoticed drift in hooks.json entry count.
     // Update this literal (and re-verify the 12-entry classification table) if
     // hooks.json intentionally gains/loses entries.
-    expect(sourceCount).toBe(56);
+    expect(sourceCount).toBe(58);
 
     const { hooks, warnings } = convertHooksJson(hooksJson);
     expect(warnings).toEqual([]);
@@ -729,5 +731,79 @@ describe('convertHooksJson warnings', () => {
     expect(result.warnings[0]).toContain('EXCLUDED');
     expect(result.hooks.PreToolUse).toHaveLength(1);
     expect(result.hooks.PreToolUse?.[0]?.matcher).toBe('Bash');
+  });
+});
+
+describe('FileChanged literal filename matcher', () => {
+  const cmd = [{ type: 'command', command: 'echo x' }];
+
+  it('passes a |-separated literal filename list through verbatim', () => {
+    expect(analyzeFileChangedMatcher('CLAUDE.md|bun.lock')).toEqual({
+      toolRegex: 'CLAUDE.md|bun.lock',
+      fieldNode: null,
+    });
+    expect(analyzeFileChangedMatcher('CLAUDE.md')?.toolRegex).toBe('CLAUDE.md');
+    const out = convertHooksJson({
+      hooks: { FileChanged: [{ matcher: 'CLAUDE.md|bun.lock', hooks: cmd }] },
+    });
+    expect(out.warnings).toEqual([]);
+    expect(out.hooks.FileChanged?.[0]?.matcher).toBe('CLAUDE.md|bun.lock');
+  });
+
+  it.each([
+    '*',
+    'a/b',
+    'x*',
+    'a||b',
+    '',
+    '|a',
+    'a|',
+    '..',
+    'a|.',
+    'a b',
+    'a?',
+  ])('does not treat %p as a literal list', (raw) => {
+    expect(analyzeFileChangedMatcher(raw)).toBeNull();
+  });
+
+  it('keeps the generic conversion but warns for non-literal FileChanged matchers', () => {
+    // "*", "" and expression-style values still convert as before (no exclusion), now with a warning.
+    const cases: Array<[string, string]> = [
+      ['*', '*'],
+      ['', '*'],
+      ['tool == "Write"', 'Write'],
+    ];
+    for (const [raw, converted] of cases) {
+      const warnings: string[] = [];
+      const collector = { push: (m: string) => warnings.push(m) };
+      expect(
+        convertHooksEntry('FileChanged', { matcher: raw, hooks: cmd }, collector)?.matcher
+      ).toBe(converted);
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain('literal filenames');
+      expect(warnings[0]).toContain(JSON.stringify(raw));
+      expect(warnings[0]).toContain(`would watch a file of that exact name`);
+    }
+    // A literal list produces no warning, and non-FileChanged events are unaffected.
+    const quiet: string[] = [];
+    const quietCollector = { push: (m: string) => quiet.push(m) };
+    convertHooksEntry('FileChanged', { matcher: 'CLAUDE.md|bun.lock', hooks: cmd }, quietCollector);
+    convertHooksEntry('SessionStart', { matcher: '*', hooks: cmd }, quietCollector);
+    expect(quiet).toEqual([]);
+    // An unconvertible value is still EXCLUDED with the existing warning.
+    const warnings: string[] = [];
+    const collector = { push: (m: string) => warnings.push(m) };
+    expect(convertHooksEntry('FileChanged', { matcher: 'a/b', hooks: cmd }, collector)).toBeNull();
+    expect(warnings[0]).toContain('EXCLUDED');
+  });
+
+  it('keeps the old analysis for the same |-list under other events', () => {
+    const warnings: string[] = [];
+    const collector = { push: (m: string) => warnings.push(m) };
+    expect(
+      convertHooksEntry('PreToolUse', { matcher: 'CLAUDE.md|bun.lock', hooks: cmd }, collector)
+    ).toBeNull();
+    expect(warnings[0]).toContain('EXCLUDED');
+    expect(() => analyzeMatcher('CLAUDE.md|bun.lock')).toThrow();
   });
 });

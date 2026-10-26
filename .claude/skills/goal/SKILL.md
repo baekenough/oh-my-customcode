@@ -1,21 +1,21 @@
 ---
 name: omcustom:goal
-description: Disciplined goal-to-execution workflow for any user task. Parses objective, asks only for materially missing requirements via ambiguity-gate, inspects repo via idea, plans via sdd-dev or deep-plan, executes safely under project conventions, verifies completion per R020, and reports changed files with evidence. Use when user invokes /goal <task>.
+description: Disciplined goal-to-execution workflow for any user task. Parses objective, asks only for materially missing requirements via ambiguity-gate, inspects repo via idea, plans via sdd-dev or deep-plan, executes safely under project conventions, verifies completion per R020, and reports changed files with evidence. Use when user invokes /omcustom:goal <task>.
 version: 1.0.0
 scope: core
 ---
 
-# /goal — Disciplined Goal-to-Execution Workflow
+# /omcustom:goal — Disciplined Goal-to-Execution Workflow
 
 Apply project discipline (planning, verification, cleanup, review) to any user-provided task. Acts as a thin orchestrator that routes to existing oh-my-customcode skills rather than duplicating logic.
 
 ## Usage
 
 ```
-/goal <task description>
+/omcustom:goal <task description>
 ```
 
-Example: `/goal Add a /weekly-summary command that aggregates last 7 days of git activity`
+Example: `/omcustom:goal Add a /weekly-summary command that aggregates last 7 days of git activity`
 
 ## Workflow
 
@@ -73,7 +73,7 @@ This skill is intentionally a **thin wrapper / orchestrator**. It does NOT dupli
 - Stable entry point that routes to whichever underlying skills are best at the moment
 - Documented contract that callers can rely on regardless of internal skill evolution
 
-If a future skill replaces `idea` or `sdd-dev`, only the integration table updates — `/goal` remains stable.
+If a future skill replaces `idea` or `sdd-dev`, only the integration table updates — `/omcustom:goal` remains stable.
 
 ## Cross-References
 

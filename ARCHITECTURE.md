@@ -81,7 +81,8 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | Data Engineering | 6 | de-airflow-expert, de-dbt-expert, de-spark-expert, de-kafka-expert, de-snowflake-expert, de-pipeline-expert |
 | Database | 4 | db-supabase-expert, db-postgres-expert, db-redis-expert, db-alembic-expert |
 | Security | 1 | sec-codeql-expert |
-| Architecture | 3 | arch-documenter, arch-speckit-agent, agora-runner |
+| Architecture | 2 | arch-documenter, arch-speckit-agent |
+| Agora | 1 | agora-runner |
 | Infrastructure | 2 | infra-docker-expert, infra-aws-expert |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Manager | 6 | mgr-creator, mgr-updater, mgr-supplier, mgr-gitnerd, mgr-sauron, mgr-claude-code-bible |
@@ -125,14 +126,14 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 
 | Skill | Description |
 |-------|-------------|
-| agora | Anonymous multi-round consensus review — reviews design/decision topics across 3 independent vendor CLIs under sealed A/B/C labels, judged each round by a rotating-model judge. Anonymity is not guaranteed deterministic; the limitation is documented in the skill body. `agora-runner` (Architecture, 3.2) executes a single round on delegation and returns only the verdict summary. |
+| agora | Anonymous multi-round consensus review — reviews design/decision topics across 3 independent vendor CLIs under sealed A/B/C labels, judged each round by a rotating-model judge. Anonymity is not guaranteed deterministic; the limitation is documented in the skill body. `agora-runner` (Agora, 3.2) executes a single round on delegation and returns only the verdict summary. |
 
 ### 3.4 Guide Library (56 topics)
 
 | Category | Guides |
 |----------|--------|
 | Internal | claude-code, git-worktree-workflow, worktree-lifecycle, skill-bundle-design, agents-md-quality, hook-data-flow, multi-model-routing |
-| Language | golang, python, rust, kotlin, typescript, java21 |
+| Language | golang, python, rust, kotlin, typescript, java |
 | Frontend | flutter, web-design |
 | Backend | fastapi, springboot, go-backend, django-best-practices |
 | Infrastructure | docker, aws |
@@ -146,9 +147,9 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 
 ### 3.5 Hook System
 
-The hook system provides cross-cutting concerns across all agent operations. Hooks are advisory-first by design (R021): most PostToolUse/PreToolUse hooks warn or record state but never block; a small set (stage-blocker, dev-server tmux enforcement, rule-deletion-guard) hard-blocks via `exit 2`.
+The hook system provides cross-cutting concerns across all agent operations. Hooks are advisory-first by design (R021): most PostToolUse/PreToolUse hooks warn or record state but never block; a small set (stage-blocker, rule-deletion-guard) hard-blocks via `exit 2`. The dev-server tmux hook is advisory only (always exit 0).
 
-**Source → build artifact**: `.claude/hooks/hooks.json` is a **source file** — Claude Code does not load it directly. The actual load path is the `hooks` block inside `.claude/settings.json` (+ `.claude/settings.local.json`, + `templates/` mirrors), compiled from `hooks.json` by `src/core/hooks-settings.ts` and merged in during `omcustom init` via `installer.ts`. Editing `hooks.json` alone does not change runtime behavior until the settings files are regenerated — this source/build split was discovered and fixed in v1.1.53 after `hooks.json` had silently gone unloaded for prior releases. Measured (verify-template-sync output): 42 hook scripts, 57 hook matchers.
+**Source → build artifact**: `.claude/hooks/hooks.json` is a **source file** — Claude Code does not load it directly. The actual load path is the `hooks` block inside `.claude/settings.json` (+ `.claude/settings.local.json`, + `templates/` mirrors), compiled from `hooks.json` by `src/core/hooks-settings.ts` and merged in during `omcustom init` via `installer.ts`. Editing `hooks.json` alone does not change runtime behavior until the settings files are regenerated — this source/build split was discovered and fixed in v1.1.53 after `hooks.json` had silently gone unloaded for prior releases. Measured (verify-template-sync output): 42 hook scripts, 58 hook matchers.
 
 **Anchored command form and sync**: Hook commands use `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/<path>"` because hooks run in the session cwd (measured with a `claude -p` probe on CC 2.1.288), so a cwd-relative path breaks when the cwd is not the project root. Claude Code injects `CLAUDE_PROJECT_DIR` into hook processes, and `:-.` keeps the old behavior if it is unset. Flow: `.claude/hooks/hooks.json` (source of truth) → generated `.claude/settings.json` (+ `templates/`) via `bun run sync:hooks` (`scripts/sync-hooks-settings.ts`, logic in `src/core/hooks-settings-sync.ts`); `bun run build` ends with this step, and `tests/unit/core/hooks-wiring.test.ts` guards against drift. In installed projects, `omcustom update` (full update or hooks component) and `omcustom init --backup` rewrite old relative hook commands in `.claude/settings.local.json` (`src/core/hook-command-migration.ts`); the migration is rewrite-only and leaves custom hooks untouched. Accepted behavior change: subagents spawned with `isolation: worktree` run the main checkout's hook scripts (`CLAUDE_PROJECT_DIR` = main checkout, cwd = worktree).
 
@@ -156,7 +157,8 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 |-------|--------------------|---------|
 | SessionStart | session-env-check.sh, stale-todo-scanner.sh | Detect codex CLI + Agent Teams availability; scan for stale TODOs |
 | PreToolUse (Write/Edit) | stage-blocker.sh | Block writes outside implement stage |
-| PreToolUse (Bash dev server) | inline script | Force dev servers into tmux |
+| PreToolUse (Bash dev server) | inline script | Advisory (always exit 0): additionalContext when a foreground dev server starts outside tmux/background |
+| PreToolUse (Bash) | bash-cd-advisor.sh | Advisory (never blocks): additionalContext when a Bash command contains a top-level persistent `cd` |
 | PreToolUse (Edit) | content-hash-validator.sh | Advisory staleness warning via content hash |
 | PreToolUse (Write/Edit/Bash) | schema-validator.sh | Schema-based tool input validation (advisory) |
 | PreToolUse (Agent/Task) | HUD display, git-delegation-guard.sh, agent-teams-advisor.sh, model-escalation-advisor.sh | Spawn display, R010 enforcement, R018 advisory, escalation advisory |
@@ -171,8 +173,9 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 | PostToolUse (any tool) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode advisory, loop detection, cost monitoring |
 | PostCompact | compact-rules-reinforcement (inline) | Re-inject R007/R008/R009/R010/R018 identity and delegation rules after context compaction |
 | SubagentStart | HUD inline display | Log agent type:model when subagent starts |
-| SubagentStop | task-outcome-recorder.sh | Record final outcome |
-| Stop | stop-console-audit.sh, eval-core-batch-save.sh, feedback-collector.sh, R011 prompt | Final audit, batch evaluation save, session feedback extraction and improvementActions insert, memory checkpoint |
+| PostToolUseFailure | failure-ledger.sh, subagent-failure-advisor.sh (Agent/Task) | Silent failure telemetry; subagent failure advisory via additionalContext |
+| SubagentStop | task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh (consecutive-completion guard), r007-r008-drift-advisor.sh | Record final outcome; stall, consecutive-completion and R007/R008 drift advisories (never continues or blocks the workflow) |
+| Stop | stop-console-audit.sh, eval-core-batch-save.sh, feedback-collector.sh, session-reflection.sh, skill-extractor-analyzer.sh, auto-dev-token-summary.sh | Final audit, batch evaluation save, session feedback extraction and improvementActions insert, session reflection, skill extraction analysis, auto-dev token summary |
 
 #### Observability Hooks (Harness Engineering)
 

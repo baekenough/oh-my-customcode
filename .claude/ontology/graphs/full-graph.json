@@ -433,6 +433,66 @@
     "R005": {
       "type": "Rule",
       "class": "MayRule"
+    },
+    "java-best-practices": {
+      "type": "Skill",
+      "class": "BestPracticeSkill"
+    },
+    "agora": {
+      "type": "Skill"
+    },
+    "django-best-practices": {
+      "type": "Skill",
+      "class": "BestPracticeSkill"
+    },
+    "alembic-best-practices": {
+      "type": "Skill",
+      "class": "BestPracticeSkill"
+    },
+    "impeccable-design": {
+      "type": "Skill"
+    },
+    "diagram-design": {
+      "type": "Skill"
+    },
+    "cve-triage": {
+      "type": "Skill"
+    },
+    "adversarial-review": {
+      "type": "Skill"
+    },
+    "dag-orchestration": {
+      "type": "Skill"
+    },
+    "pipeline-guards": {
+      "type": "Skill"
+    },
+    "agora-runner": {
+      "type": "Agent"
+    },
+    "be-django-expert": {
+      "type": "Agent",
+      "class": "BackendExpert"
+    },
+    "db-alembic-expert": {
+      "type": "Agent",
+      "class": "DatabaseExpert"
+    },
+    "fe-design-expert": {
+      "type": "Agent",
+      "class": "FrontendExpert"
+    },
+    "sec-codeql-expert": {
+      "type": "Agent"
+    },
+    "slack-cli-expert": {
+      "type": "Agent"
+    },
+    "tracker-checkpoint": {
+      "type": "Agent"
+    },
+    "wiki-curator": {
+      "type": "Agent"
     }
   },
   "edges": [
@@ -722,6 +782,66 @@
       "relation": "requires"
     },
     {
+      "source": "lang-java-expert",
+      "target": "java-best-practices",
+      "relation": "requires"
+    },
+    {
+      "source": "agora-runner",
+      "target": "agora",
+      "relation": "requires"
+    },
+    {
+      "source": "be-django-expert",
+      "target": "django-best-practices",
+      "relation": "requires"
+    },
+    {
+      "source": "db-alembic-expert",
+      "target": "alembic-best-practices",
+      "relation": "requires"
+    },
+    {
+      "source": "db-alembic-expert",
+      "target": "postgres-best-practices",
+      "relation": "requires"
+    },
+    {
+      "source": "fe-design-expert",
+      "target": "impeccable-design",
+      "relation": "requires"
+    },
+    {
+      "source": "fe-design-expert",
+      "target": "web-design-guidelines",
+      "relation": "requires"
+    },
+    {
+      "source": "fe-design-expert",
+      "target": "diagram-design",
+      "relation": "requires"
+    },
+    {
+      "source": "sec-codeql-expert",
+      "target": "cve-triage",
+      "relation": "requires"
+    },
+    {
+      "source": "sec-codeql-expert",
+      "target": "adversarial-review",
+      "relation": "requires"
+    },
+    {
+      "source": "tracker-checkpoint",
+      "target": "dag-orchestration",
+      "relation": "requires"
+    },
+    {
+      "source": "tracker-checkpoint",
+      "target": "pipeline-guards",
+      "relation": "requires"
+    },
+    {
       "source": "dev-lead-routing",
       "target": "be-fastapi-expert",
       "relation": "routes_to"
@@ -884,7 +1004,9 @@
       ]
     },
     "lang-java-expert": {
-      "requires": [],
+      "requires": [
+        "java-best-practices"
+      ],
       "routed_by": [
         "dev-lead-routing"
       ]
@@ -1219,7 +1341,8 @@
     },
     "web-design-guidelines": {
       "required_by": [
-        "fe-vercel-agent"
+        "fe-vercel-agent",
+        "fe-design-expert"
       ],
       "depends_on": []
     },
@@ -1267,7 +1390,8 @@
     },
     "postgres-best-practices": {
       "required_by": [
-        "db-postgres-expert"
+        "db-postgres-expert",
+        "db-alembic-expert"
       ],
       "depends_on": []
     },
@@ -1527,6 +1651,115 @@
     },
     "R018": {
       "referenced_by": []
+    },
+    "java-best-practices": {
+      "required_by": [
+        "lang-java-expert"
+      ],
+      "depends_on": []
+    },
+    "agora": {
+      "required_by": [
+        "agora-runner"
+      ],
+      "depends_on": []
+    },
+    "django-best-practices": {
+      "required_by": [
+        "be-django-expert"
+      ],
+      "depends_on": []
+    },
+    "alembic-best-practices": {
+      "required_by": [
+        "db-alembic-expert"
+      ],
+      "depends_on": []
+    },
+    "impeccable-design": {
+      "required_by": [
+        "fe-design-expert"
+      ],
+      "depends_on": []
+    },
+    "diagram-design": {
+      "required_by": [
+        "fe-design-expert"
+      ],
+      "depends_on": []
+    },
+    "cve-triage": {
+      "required_by": [
+        "sec-codeql-expert"
+      ],
+      "depends_on": []
+    },
+    "adversarial-review": {
+      "required_by": [
+        "sec-codeql-expert"
+      ],
+      "depends_on": []
+    },
+    "dag-orchestration": {
+      "required_by": [
+        "tracker-checkpoint"
+      ],
+      "depends_on": []
+    },
+    "pipeline-guards": {
+      "required_by": [
+        "tracker-checkpoint"
+      ],
+      "depends_on": []
+    },
+    "agora-runner": {
+      "requires": [
+        "agora"
+      ],
+      "routed_by": []
+    },
+    "be-django-expert": {
+      "requires": [
+        "django-best-practices"
+      ],
+      "routed_by": []
+    },
+    "db-alembic-expert": {
+      "requires": [
+        "alembic-best-practices",
+        "postgres-best-practices"
+      ],
+      "routed_by": []
+    },
+    "fe-design-expert": {
+      "requires": [
+        "impeccable-design",
+        "web-design-guidelines",
+        "diagram-design"
+      ],
+      "routed_by": []
+    },
+    "sec-codeql-expert": {
+      "requires": [
+        "cve-triage",
+        "adversarial-review"
+      ],
+      "routed_by": []
+    },
+    "slack-cli-expert": {
+      "requires": [],
+      "routed_by": []
+    },
+    "tracker-checkpoint": {
+      "requires": [
+        "dag-orchestration",
+        "pipeline-guards"
+      ],
+      "routed_by": []
+    },
+    "wiki-curator": {
+      "requires": [],
+      "routed_by": []
     }
   }
 }

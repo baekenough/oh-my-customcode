@@ -11,9 +11,11 @@ set -euo pipefail
 # array/scalar payloads gave rc=5 (unguarded `jq` agent_type extraction); a well-formed payload with a
 # 300KB `.description` gave rc=141 (5/5; 70KB rc=0; boundary near 81,920 bytes here, platform-dependent; `| head -c 80` SIGPIPE under pipefail). CC sends objects and
 # SubagentStop has no `.description`, so these paths are not reached at runtime.
-# Start-record `start_epoch`: "abc" gives rc=1 (`set -u`: "abc: unbound variable"); arithmetic-syntax
-# values ("1792939922.5", "09") print an error and give rc=1 (`set -u`: "duration_seconds: unbound
-# variable"); "" gives rc=0.
+# Start-record `start_epoch` (also the still-running-agent `running_start`): a value that is not a
+# positive decimal integer without a leading zero ("", "0", "null", "abc", "1792939922.5", "09", "-5")
+# is treated as no start record: rc=0, nothing recorded for the completing agent, and the loop skips
+# that running entry (measured on bash 3.2; before this check "abc"/"1792939922.5"/"09" gave rc=1 and
+# "" recorded now_epoch, about 1.79e9, as the duration).
 
 # ORDERING: This hook MUST run AFTER task-outcome-recorder.sh in hooks.json SubagentStop array.
 # Reason: This script removes consumed entries from AGENT_START_FILE; task-outcome-recorder reads them first.
@@ -36,7 +38,9 @@ description=$(printf '%s\n' "$input" | jq -r '.description // ""' | head -c 80)
 # --- 2. Calculate duration from start record ---
 start_epoch=$(grep -F "\"agent_type\":\"${agent_type}\"" "$AGENT_START_FILE" 2>/dev/null | tail -1 | jq -r '.start_epoch // "0"' 2>/dev/null || echo "0")
 
-if [ "$start_epoch" = "0" ] || [ "$start_epoch" = "null" ]; then
+# Only a positive decimal integer without a leading zero is a usable epoch; anything else
+# ("", "0", "null", "abc", "1792939922.5", "09", negatives) is treated as no start record.
+if ! [[ "$start_epoch" =~ ^[1-9][0-9]*$ ]]; then
   printf '%s\n' "$input"
   exit 0
 fi
@@ -70,7 +74,7 @@ if [ "$completed_count" -ge 1 ]; then
         running_desc=$(printf '%s\n' "$line" | jq -r '.description // ""' 2>/dev/null || true)
         running_model=$(printf '%s\n' "$line" | jq -r '.model // "inherit"' 2>/dev/null || true)
 
-        if [ "$running_start" = "0" ] || [ "$running_start" = "null" ]; then continue; fi
+        if ! [[ "$running_start" =~ ^[1-9][0-9]*$ ]]; then continue; fi
 
         elapsed=$((now_epoch - running_start))
 

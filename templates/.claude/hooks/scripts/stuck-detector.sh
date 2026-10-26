@@ -545,6 +545,7 @@ extraction_mode=$(printf '%s' "$input" | jq -er '
   elif ((.tool_name // "unknown" | type) != "string") then "legacy"
   elif ((.tool_input != null) and ((.tool_input | type) != "object")) then "legacy"
   elif ((.tool_output != null) and ((.tool_output | type) != "object")) then "legacy"
+  elif ((.tool_response != null) and ((.tool_response | type) != "object")) then "legacy"
   elif ((.tool_input.file_path // "" | type) != "string")
     or ((.tool_input.command // "" | type) != "string")
     or ((.tool_input.old_string // .tool_input.content // .tool_input.new_string // "" | type) != "string")
@@ -579,6 +580,22 @@ _read_stuck_fields() {
 
 TARGET_KEY_CAP=1000
 
+# PostToolUse carries "tool_response", never "tool_output" (#1775; probe: CC
+# 2.1.310, "claude -p", one run, model haiku). Measured Bash shape: object
+# {interrupted,isImage,noOutputExpected,stderr,stdout}; no measured PostToolUse
+# shape has is_error. Bash failures arrive via PostToolUseFailure (a Bash exit 3
+# produced PostToolUseFailure with error "Exit code 3"), which this hook is not
+# wired to, so the is_error path stays inert for Bash. Read tool_response first;
+# ".tool_output" is a legacy fallback only. A non-object tool_response routes to
+# the "legacy" extraction path (see extraction_mode) and is used as text only
+# when it is a string.
+JQ_IS_ERROR='((.tool_response | if type == "object" then .is_error else null end) // .tool_output.is_error // false)'
+JQ_OUTPUT_PREVIEW='((.tool_response) as $r
+  | if ($r | type) == "object" and (($r.stdout | type) == "string") then $r.stdout
+    elif ($r | type) == "string" then $r
+    else (.tool_output.output // "") end
+  | tostring)[0:200]'
+
 truncate_key() {
   local v="$1"
   if [ "${#v}" -gt "$TARGET_KEY_CAP" ]; then
@@ -595,7 +612,7 @@ if [ "$extraction_mode" = "batched" ]; then
     (if (.tool_name // "unknown") == "Bash"
       then (.tool_input.command // .tool_input.file_path // "")
       else (.tool_input.file_path // "") end), "\u0000",
-    (.tool_output.is_error // false), "\u0000"'
+    '"$JQ_IS_ERROR"', "\u0000"'
   [ "${#STUCK_FIELDS[@]}" -eq 3 ] || exit 1
   tool_name="${STUCK_FIELDS[0]}"
   if [ "$tool_name" = "Bash" ]; then
@@ -608,7 +625,7 @@ if [ "$extraction_mode" = "batched" ]; then
   fi
   is_error="${STUCK_FIELDS[2]}"
   output_preview=$(printf '%s' "$input" \
-    | jq -r '(.tool_output.output // "" | tostring)[0:200]' \
+    | jq -r "$JQ_OUTPUT_PREVIEW" \
     | head -c 200 || true)
   _read_stuck_fields '(.tool_input.command // ""), "\u0000",
     (if (.tool_name == "Edit" or .tool_name == "Write")
@@ -653,7 +670,7 @@ else
   file_path=$(printf '%s' "$file_path_full" | head -c "$TARGET_KEY_CAP" || true)
   target_key=$(truncate_key "$file_path_full")
 fi
-is_error=$(printf '%s' "$input" | jq -r '.tool_output.is_error // false')
+is_error=$(printf '%s' "$input" | jq -r "$JQ_IS_ERROR")
 # "head -c 200" closes the pipe after 200 bytes. Once tool_output.output is
 # larger than the pipe buffer (~64 KB), jq keeps writing, dies of SIGPIPE
 # (exit 141), and "set -o pipefail" + "set -e" aborted the ENTIRE hook before
@@ -664,7 +681,7 @@ is_error=$(printf '%s' "$input" | jq -r '.tool_output.is_error // false')
 # enforced by head (jq slices by codepoint, head by byte, and 200 codepoints
 # are always >= 200 bytes, so the resulting bytes are unchanged).
 output_preview=$(printf '%s' "$input" \
-  | jq -r '(.tool_output.output // "" | tostring)[0:200]' \
+  | jq -r "$JQ_OUTPUT_PREVIEW" \
   | head -c 200 || true)
 raw_command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
 

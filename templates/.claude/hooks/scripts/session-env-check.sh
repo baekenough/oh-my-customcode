@@ -99,7 +99,14 @@ fi
 
 # Drift Detection: compare git HEAD between sessions
 DRIFT_STATUS="not-git"
-if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+# When HOME is unset, empty or not an absolute path, skip the session-state write entirely
+# (no mkdir, no state file; drift stays "not-git") instead of aborting under set -eu or
+# writing to "/.claude/..." (#1775; same rule as the self-update cache below).
+HOME_ABSOLUTE=false
+case "${HOME:-}" in
+  /*) HOME_ABSOLUTE=true ;;
+esac
+if [ "$HOME_ABSOLUTE" = true ] && command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   SESSION_STATE_DIR="$HOME/.claude/session-state"
   mkdir -p "$SESSION_STATE_DIR"
 
@@ -132,8 +139,10 @@ if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/n
 fi
 
 # --- CI Status Check ---
-# Check last CI run status if gh CLI is available
-if command -v gh &>/dev/null; then
+# Check last CI run status if gh CLI is available.
+# Skipped when HOME is not absolute (HOME_ABSOLUTE, set above): external CLIs keep state under
+# $HOME and would write it into the cwd (the project dir) instead (#1775).
+if [ "$HOME_ABSOLUTE" = true ] && command -v gh &>/dev/null; then
   ci_status=$(gh run list --limit 1 --json conclusion -q '.[0].conclusion' 2>/dev/null || echo "unknown")
   ci_name=$(gh run list --limit 1 --json name -q '.[0].name' 2>/dev/null || echo "unknown")
   if [ "$ci_status" = "failure" ]; then
@@ -179,8 +188,14 @@ fi
 # the hard-coded "latestVersion" lookup matched nothing. Read `latestVersion` first, then fall
 # back to `version`. The `"version"` pattern includes the opening quote, so it cannot
 # accidentally match the tail of `"latestVersion"`.
-CACHE_FILE="$HOME/.oh-my-customcode/self-update-cache.json"
-if [ -f "$CACHE_FILE" ]; then
+# Deliberate difference from the TS resolver (src/utils/home.ts resolveHomeDir falls back to
+# the OS/passwd home): when HOME is unset, empty or not an absolute path, skip the cache
+# entirely instead of reading "/.oh-my-customcode/..." (#1775).
+CACHE_FILE=""
+case "${HOME:-}" in
+  /*) CACHE_FILE="$HOME/.oh-my-customcode/self-update-cache.json" ;;
+esac
+if [ -n "$CACHE_FILE" ] && [ -f "$CACHE_FILE" ]; then
   CACHED_LATEST=$(json_string_field "$CACHE_FILE" "latestVersion")
   if [ -z "$CACHED_LATEST" ]; then
     CACHED_LATEST=$(json_string_field "$CACHE_FILE" "version")

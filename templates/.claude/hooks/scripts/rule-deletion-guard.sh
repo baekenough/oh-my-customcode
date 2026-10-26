@@ -9,7 +9,31 @@
 # destructive verb, destructive verb in a non-head position, unresolvable expansion in a target,
 # opaque constructs such as eval / sh -c / $(...) / backticks / source, parse errors, unknown cwd,
 # analyzer exceptions) -> strict legacy regex check (blocks if the pre-#1782 logic would block).
+# Opaque markers are looked for outside quoted text (#1859): markers inside a quoted string whose last
+# path component contains whitespace no longer force the fallback (the shell does not run them as a
+# command); single-quoted `$(`/backticks are likewise ignored. `$(` and backticks inside double quotes,
+# and any other quoted string (it may be the command, e.g. "eval", "/my dir/bash"), stay opaque.
+# The fallback fires only if the raw command AND its masked copy both match.
 # No python3: legacy regex check (needs jq). Neither python3 nor jq: fail-open (exit 0).
+#
+# Intended limitation (#1784): the blocked set is the one modelled above (v1.1.95, #1782: rm/unlink/
+# rmdir/shred/truncate, mv, find, xargs, git rm|mv|clean, writing redirects); the exclusion of the
+# overwrite/interpreter forms is recorded at
+# https://github.com/baekenough/oh-my-customcode/issues/1784#issuecomment-6405528206 . Content-overwrite
+# forms (cp /dev/null, tee, dd of=, sed -i, ln -sf, install, rsync --delete, tar --remove-files,
+# git checkout -- / restore / stash), interpreter one-liners (perl -e, python -c, node -e) and shell
+# aliases and git clean -f without -d run from an ancestor of a rule dir (e.g. the project root, where it can still remove untracked files inside the rule dirs; a target or cwd inside a rule dir is blocked) are NOT blocked: they are edit-class or interpreter forms whose blocking
+# would raise false positives like #1859, and git history is the recovery path.
+#
+# Residual limits accepted with the #1859 change: (a) a quoted payload that carries an opaque marker
+# and is handed to an executor the analyzer does not model (ssh, su -c, script -c, ..., or stdin piped
+# to a shell: `| bash`, `| sh`) is no longer forced to the fallback, so it is not inspected - the same
+# as such payloads without a marker always were; `env -S` / `--split-string` is likewise not parsed:
+# unwrap() sends it to the legacy regex check only; (b) the quoted-option gap predates it: `bash "-c"
+# ...` is not recognised as `-c`, because the marker pattern needs whitespace right before an unquoted
+# `-`; (c) a quoted string is treated as text
+# only when its last path component (after the final `/`) contains whitespace, so a lone quoted word
+# or path to a binary stays visible and still falls back (conservative).
 
 set -uo pipefail
 
@@ -259,6 +283,97 @@ def low(s):
     return s.lower()
 
 
+def _blank_quoted(body, double):
+    """Blank the inside of one quoted string for the OPAQUE scan (#1859).
+
+    A string whose last path component (after the final `/`) contains whitespace cannot name a shell
+    binary or `eval`/`source`, so the markers in it are not run as a command by that shell: everything
+    is blanked, except `$(` and backticks inside double quotes (the shell expands those). This does
+    not make the text safe: a payload handed to another executor (ssh, su -c, ...) is not inspected.
+    Any other string may BE the command (`"eval"`, `'sh'`, `"/my dir/bash"`), so it stays visible;
+    only the `$(`/backtick of a single-quoted one, which the shell never expands, is neutralised.
+    """
+    if not any(ch.isspace() for ch in body.rsplit('/', 1)[-1]):
+        return body if double else body.replace('$(', '_(').replace('`', '_')
+    if not double:
+        return '_' * len(body)
+    res, k = [], 0
+    while k < len(body):
+        if body.startswith('$(', k):
+            res.append('$(')
+            k += 2
+        else:
+            res.append(body[k] if body[k] == '`' else '_')
+            k += 1
+    return ''.join(res)
+
+
+def mask_quoted(s):
+    """Copy of `s` for the OPAQUE scan with non-executable quoted text blanked (#1859).
+
+    Mirrors the quote handling of lex(). When unsure (heredoc operator, unterminated quote) the rest
+    of the text is returned unmasked, so the scan is then at least as strict as on the raw command.
+    Unquoted text, comments and `$'...'` strings are never touched.
+    """
+    out, n, i = [], len(s), 0
+    wordstart = True
+    while i < n:
+        c = s[i]
+        if c in ' \t\n':
+            out.append(c)
+            i += 1
+            wordstart = True
+        elif s.startswith('<<<', i):
+            out.append('<<<')
+            i += 3
+            wordstart = True
+        elif s.startswith('<<', i):
+            return ''.join(out) + s[i:]  # heredoc body is skipped by lex(): quote state is unknowable
+        elif c in ';&|<>()':
+            out.append(c)
+            i += 1
+            wordstart = True
+        elif c == '#' and wordstart:
+            j = s.find('\n', i)
+            j = n if j < 0 else j
+            out.append(s[i:j])
+            i = j
+        elif c == '\\':
+            out.append(s[i:i + 2])
+            i += 2
+            wordstart = False
+        elif c == '$' and s.startswith("$'", i):
+            j = i + 2
+            while j < n and s[j] != "'":
+                j += 2 if s[j] == '\\' else 1
+            if j >= n:
+                return ''.join(out) + s[i:]
+            out.append(s[i:j + 1])
+            i = j + 1
+            wordstart = False
+        elif c == "'":
+            j = s.find("'", i + 1)
+            if j < 0:
+                return ''.join(out) + s[i:]
+            out.append("'" + _blank_quoted(s[i + 1:j], False) + "'")
+            i = j + 1
+            wordstart = False
+        elif c == '"':
+            j = i + 1
+            while j < n and s[j] != '"':
+                j += 2 if s[j] == '\\' and j + 1 < n and s[j + 1] in '$`"\\\n' else 1
+            if j >= n:
+                return ''.join(out) + s[i:]
+            out.append('"' + _blank_quoted(s[i + 1:j], True) + '"')
+            i = j + 1
+            wordstart = False
+        else:
+            out.append(c)
+            i += 1
+            wordstart = False
+    return ''.join(out)
+
+
 def main(d, cmd):
     start = d.get('cwd')
     if isinstance(start, str) and os.path.isdir(start):
@@ -280,7 +395,9 @@ def main(d, cmd):
             low(os.path.join(root, 'templates', '.claude', 'rules'))]
 
     cmd = cmd.replace('\r', '').replace('\\\n', '')
-    if OPAQUE.search(cmd):
+    # Fall back only when BOTH scans match: masking must never add a fallback the raw scan lacks
+    # (blanking `; | & \n` inside quotes can otherwise create an `sh ... -c` match, #1859 review F1).
+    if OPAQUE.search(cmd) and OPAQUE.search(mask_quoted(cmd)):
         return 3
     try:
         toks = lex(cmd)

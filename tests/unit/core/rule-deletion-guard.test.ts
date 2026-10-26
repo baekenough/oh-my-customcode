@@ -571,3 +571,110 @@ describe('rule-deletion-guard: never weaker than the legacy regex guard', () => 
     });
   }
 });
+
+describe('rule-deletion-guard: opaque markers inside quoted text (#1859)', () => {
+  const RULE_Y = '.claude/rules/MUST-y.md';
+  // A read-only search over two rule files, in the same command line as an echo whose quoted string
+  // names a delete verb and shell `-c` notation (this used to fall back to the strict regex: exit 2).
+  const search = `git grep -n foo -- ${RULE} ${RULE_Y}`;
+
+  expectAllows([
+    {
+      name: 'double-quoted echo with a delete verb and sh -c notation next to a two-path search',
+      command: `echo "diag: ${RM} then sh x -c" ; ${search}`,
+    },
+    {
+      name: 'single-quoted echo with a delete verb and sh -c notation next to a two-path search',
+      command: `echo 'diag: ${RM} then sh x -c' ; ${search}`,
+    },
+    {
+      name: 'single-quoted command substitution text next to a two-path search',
+      command: `echo '${RM} $(x y)' ; ${search}`,
+    },
+    {
+      name: 'quoted heredoc and eval/source words next to a two-path search',
+      command: `echo "${RM} sh x <<  eval source" ; ${search}`,
+    },
+  ]);
+
+  expectBlocks([
+    { name: 'bash -c with a single-quoted payload', command: `bash -c '${RM} ${RULE}'` },
+    { name: 'bash -c with a double-quoted payload', command: `bash -c "${RM} ${RULE}"` },
+    { name: 'command substitution inside double quotes', command: `echo "$(${RM} ${RULE})"` },
+    { name: 'backticks inside double quotes', command: `echo "\`${RM} ${RULE}\`"` },
+    { name: 'plain delete of a rule file', command: `${RM} ${RULE}` },
+    { name: 'quoted shell name as the command', command: `"bash" -c '${RM} ${RULE}'` },
+    { name: 'quoted eval as the command', command: `"eval" '${RM} ${RULE}'` },
+    {
+      name: 'wrapped bash -c after a quoted string',
+      command: `echo 'a b' && env A=1 bash -c '${RM} ${RULE}'`,
+    },
+    {
+      name: 'quoted marker text followed by a real delete',
+      command: `echo "sh x -c" ; ${RM} ${RULE}`,
+    },
+    {
+      name: 'apostrophe in a comment before bash -c',
+      command: `echo hi # don't\nbash -c '${RM} ${RULE}'`,
+    },
+    {
+      name: 'ANSI-C string with an escaped quote before bash -c',
+      command: `echo $'a\\'b c'; bash -c '${RM} ${RULE}'`,
+    },
+    {
+      name: 'backslash-escaped single quote outside quotes before bash -c',
+      command: `echo \\' x; bash -c '${RM} ${RULE}'`,
+    },
+    {
+      name: 'escaped double quote inside double quotes before bash -c',
+      command: `echo "a \\" b"; bash -c '${RM} ${RULE}'`,
+    },
+    {
+      name: 'unterminated quote with bash -c',
+      command: `echo 'a b ; bash -c '${RM} ${RULE}'`,
+    },
+    { name: 'unquoted source', command: `source ./x.sh; ${RM} ${RULE}` },
+    { name: 'xargs bash -c', command: `echo x | xargs bash -c '${RM} ${RULE}'` },
+    { name: 'ssh host sh -c', command: `ssh h sh -c '${RM} ${RULE}'` },
+    { name: 'bash heredoc', command: `bash <<EOF\n${RM} ${RULE}\nEOF` },
+    {
+      // F1: masking `;` inside the quotes must not turn this into a legacy-fallback line that
+      // misses the write redirect (raw scan: no sh ... -c match, so the analyzer must run).
+      name: 'shell word, quoted "x; y", -c, then a write redirect onto a rule',
+      command: `bash "x; y" -c ; echo hi > ${RULE}`,
+    },
+    {
+      name: 'the same shape split over lines',
+      command: `bash "x; y" -c\necho hi > ${RULE}`,
+    },
+    {
+      // F2: a quoted path with a space still names the shell binary, so -c stays opaque.
+      name: 'quoted spaced path to a shell binary with -c and a deletion payload',
+      command: `"/tmp/my dir/bash" -c '${RM} ${RULE}'`,
+    },
+    {
+      name: 'single-quoted spaced path to a shell binary with -c and a deletion payload',
+      command: `'/tmp/my dir/sh' -c "${RM} ${RULE}"`,
+    },
+    {
+      name: 'heredoc body apostrophe before bash -c',
+      command: `cat <<EOF\nit's\nEOF\necho 'a b' ; bash -c '${RM} ${RULE}' ; echo 'c`,
+    },
+  ]);
+});
+
+describe('rule-deletion-guard: scope limits', () => {
+  // The blocked set is the deletion/move verb list from v1.1.95 (#1782). Excluding content-overwrite
+  // and interpreter forms is recorded as an intended limitation in #1784 (issuecomment-6405528206):
+  // edit-class forms whose blocking would raise false positives like #1859; recovery is git history.
+  it('documents content-overwrite and interpreter forms as an intended limitation (#1784)', () => {
+    const commands = [
+      `cp /dev/null ${RULE}`,
+      `echo x | tee ${RULE}`,
+      `python3 -c "import os; os.remove('${RULE}')"`,
+    ];
+    for (const command of commands) {
+      expect(runBash(command, project).code).toBe(0);
+    }
+  });
+});

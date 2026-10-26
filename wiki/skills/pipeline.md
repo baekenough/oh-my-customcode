@@ -1,7 +1,7 @@
 ---
 title: Pipeline
 type: skill
-updated: 2026-10-25
+updated: 2026-10-26
 sources:
   - .claude/skills/pipeline/SKILL.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -422,3 +422,4 @@ commit은 원본 unique log·실제 exit/HEAD·실패 줄과 앞 40줄을 읽고
 - Content-drift resync 2026-10-25 (#1860): added the `claude-code-release` exclusive/universal-claim sweep bullet to the implement-step gates.
 - Content-drift resync 2026-10-06: reflected explicit user version/bump priority and PATCH-PREFERRED skill/agent/integration lifecycle policy, including RTK retirement; feature/hook approval alone does not authorize major/minor. Added the existing implement-stage factual-clause evidence table and independent read-only wording-review instructions, without claiming automatic runtime enforcement.
 - Content-drift resync 2026-10-25 (#1858): the artifact-creating delegation reporting bullet now notes that, for created paths, the orchestrator re-runs `ls -la` itself (all four `auto-dev.yaml` copies, :1012).
+- Content-drift resync 2026-10-26 (v2.0.8, #1884 item 8): added the implement-step "Line-anchor drift sweep" bullet — a delegation that adds or removes lines in a file must, as a completion condition, `git grep -n -E '<escaped basename>:[0-9]'` across the repository (basename, not path) and check sentences mentioning the file for bare continuation anchors (`:[0-9]+` after a path mention), then re-derive each moved anchor or replace it with a content anchor; anchors into generated files (e.g. `.claude/settings.json`) must be content anchors; the completion report lists each anchor (file:line, old target, new line).

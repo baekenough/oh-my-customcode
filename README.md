@@ -117,13 +117,14 @@ Soft default is 4 concurrent agents, hard cap 5. Agent Teams (shared task list, 
 
 | Category | Count | Agents |
 |----------|-------|--------|
-| Languages | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java21 |
+| Languages | 6 | lang-golang, lang-python, lang-rust, lang-kotlin, lang-typescript, lang-java |
 | Backend | 6 | be-fastapi, be-springboot, be-go-backend, be-express, be-nestjs, be-django |
 | Frontend | 5 | fe-vercel, fe-vuejs, fe-svelte, fe-flutter, fe-design |
 | Data Engineering | 6 | de-airflow, de-dbt, de-spark, de-kafka, de-snowflake, de-pipeline |
 | Database | 4 | db-supabase, db-postgres, db-redis, db-alembic |
 | Tooling | 4 | tool-npm, tool-optimizer, tool-bun, slack-cli |
-| Architecture | 3 | arch-documenter, arch-speckit, agora-runner |
+| Architecture | 2 | arch-documenter, arch-speckit |
+| Agora | 1 | agora-runner |
 | Infrastructure | 2 | infra-docker, infra-aws |
 | QA | 3 | qa-planner, qa-writer, qa-engineer |
 | Security | 1 | sec-codeql |

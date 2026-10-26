@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.7",
-  "generatedAt": "2026-10-25T15:30:21.484Z",
-  "templateVersion": "2.0.7",
+  "generatorVersion": "2.0.8",
+  "generatedAt": "2026-10-26T01:11:28.170Z",
+  "templateVersion": "2.0.8",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -265,8 +265,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "5f5c9923cd1e77b4bf678dd4efd337abc8257f16f05e0215056015531374ecbd",
-      "size": 30132,
+      "templateHash": "143468771f6b150651c736db57be496789ab1b64eadb95cfcca17ef5d31dfde6",
+      "size": 32458,
       "component": "hooks"
     },
     ".claude/hooks/scripts/adaptive-harness-scan.sh": {
@@ -290,8 +290,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-continue-guard.sh": {
-      "templateHash": "8da2d8e9464adfb5067046d7e34a9c90a6b0236ffb76a20901658f88ade361d3",
-      "size": 972,
+      "templateHash": "3591156ce9a67ab21f1c1d2dff09f103940b48a1b8b3eebeb7f979a859bb5add",
+      "size": 1196,
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-dev-token-summary.sh": {
@@ -300,8 +300,13 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/auto-dev-token-tracker.sh": {
-      "templateHash": "1d74474d840143941e948b16c7951195481fa7bbfc4ac4937cd8a31ef4a488fd",
-      "size": 2289,
+      "templateHash": "54fd64d9bb83f97a28bfa60a5db6a0569267a3ed6dfaab08c551b0900bb54025",
+      "size": 3045,
+      "component": "hooks"
+    },
+    ".claude/hooks/scripts/bash-cd-advisor.sh": {
+      "templateHash": "daa5d99eb995b1946196cfa2b698eabd47d3013fa17fdc60ae6048b9a4309441",
+      "size": 8719,
       "component": "hooks"
     },
     ".claude/hooks/scripts/claude-md-reinject.sh": {
@@ -340,13 +345,13 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/fail-axis-cause-advisor.sh": {
-      "templateHash": "77b9aa92ca9562870ad90fce75f0018bbf72e60fa4302e9e954fdd8d34f1ceed",
-      "size": 7239,
+      "templateHash": "e1cd5b504c7a6dba759c95f1464165c2f262cf51f8f195241c9e35d836e89a5c",
+      "size": 7361,
       "component": "hooks"
     },
     ".claude/hooks/scripts/failure-ledger.sh": {
-      "templateHash": "db1a09cf53439ccfe74c5e1d3f958a1df7fd7e24ec57259e7ce943ab47178722",
-      "size": 3825,
+      "templateHash": "49014b85e21747226b2a200002d67755aec643e3699a88347e01913f0b8b6513",
+      "size": 4947,
       "component": "hooks"
     },
     ".claude/hooks/scripts/feedback-collector.sh": {
@@ -355,8 +360,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/file-change-validator.sh": {
-      "templateHash": "435361b37a30a03de25d4c6c37b8a2ff177ea668766faeaa8271286308e1f1bc",
-      "size": 785,
+      "templateHash": "04fcc9e46af9abeed589d8b508acd2045f9ae78233961b810d10855904bd1cdb",
+      "size": 1109,
       "component": "hooks"
     },
     ".claude/hooks/scripts/git-delegation-guard.sh": {
@@ -370,8 +375,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/omcustom-auto-update.sh": {
-      "templateHash": "3d15d5297a7c8d6e1588c1a200853147bc989f83fea4231741d63286fdd6c248",
-      "size": 5709,
+      "templateHash": "40a4e52ebd53227ed3edd4fff87a88a969bdb2cc8e8149d14c44eaff0b11f77c",
+      "size": 6264,
       "component": "hooks"
     },
     ".claude/hooks/scripts/playwright-compress.sh": {
@@ -390,8 +395,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
-      "templateHash": "1885ebb762130804758f03ee075b6cf62c71628d9cc0e5a6131acc092ca4a931",
-      "size": 34592,
+      "templateHash": "d72f19529540bbe21966f1e47e4cfbebe7dd585468c190d60c12dd8a565d302d",
+      "size": 40428,
       "component": "hooks"
     },
     ".claude/hooks/scripts/schema-validator.sh": {
@@ -415,8 +420,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-env-check.sh": {
-      "templateHash": "c6764df19ce8a1d5ae609a615ec83806a68c5dfb84491484331dc0731c21afab",
-      "size": 12150,
+      "templateHash": "150cc325980c8614776462f230e095d99f62ecb332e433fdbadeeacb28d6b8c9",
+      "size": 13032,
       "component": "hooks"
     },
     ".claude/hooks/scripts/session-reflection.sh": {
@@ -440,8 +445,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stall-detection-advisor.sh": {
-      "templateHash": "347053bc14443d127758c9c8e503d66105a1fa2795dbe97935e7f70ee3425be7",
-      "size": 5678,
+      "templateHash": "db7bd4336aa862d123501bc4e2600cd97acf1f26f2f2d6681c9d0924c571a9f1",
+      "size": 6057,
       "component": "hooks"
     },
     ".claude/hooks/scripts/stop-console-audit.sh": {
@@ -450,18 +455,18 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/stuck-detector.sh": {
-      "templateHash": "1c3b8b5da5c5d8e764decbacaff0f9dab86483388351a6e8c140abb880e7aa1b",
-      "size": 40619,
+      "templateHash": "fc8ab75a69495b6689f85560fd29e4a8d904d658ca539aca39c9217c8e0c7cc3",
+      "size": 41626,
       "component": "hooks"
     },
     ".claude/hooks/scripts/subagent-failure-advisor.sh": {
-      "templateHash": "19d61bcfdd6e8db023c1fd5ae9c9a888b904de6d33aaa42c730b1a552cfc09c2",
-      "size": 2483,
+      "templateHash": "55db28282cddc495e43154935ba8af9f1f66cd03ba9a60f645462a26d6ce9327",
+      "size": 3199,
       "component": "hooks"
     },
     ".claude/hooks/scripts/task-outcome-recorder.sh": {
-      "templateHash": "357db991a22d069d7836bdd923357f7313b5168b270dd0d4fe4e504f62d998eb",
-      "size": 10325,
+      "templateHash": "f12729d91ac49f72e6917bf7ffed2d46b8ed8603a478bbf3a4fee8370accae12",
+      "size": 10920,
       "component": "hooks"
     },
     ".claude/hooks/scripts/task-state-precompact.sh": {
@@ -490,18 +495,18 @@
       "component": "ontology"
     },
     ".claude/ontology/agents.yaml": {
-      "templateHash": "b79c0210121740a998957638332c144cd94441d19f0e882cba7d29efe9f1c517",
-      "size": 28596,
+      "templateHash": "4965e1db5fa399910121a5f56b2a592788b738dca296211a33baa6e936016f83",
+      "size": 31512,
       "component": "ontology"
     },
     ".claude/ontology/graphs/agent-skill.json": {
-      "templateHash": "984947718b2860fe80f0a6e4da757f5c1ffa3bd4707c61cbc14a76a77e9bd873",
-      "size": 4830,
+      "templateHash": "3dbbd4148d17738652bde08f51eba4f031005deaf4f29c23c771f61236897a53",
+      "size": 6034,
       "component": "ontology"
     },
     ".claude/ontology/graphs/full-graph.json": {
-      "templateHash": "ec12d071c863e3e7b2356366d7273b0281080a6519990e48852c96f5bb59870e",
-      "size": 31656,
+      "templateHash": "2399191918e60db1699e6f93473286c8b2544cc34d76bc394fa655362b9ececb",
+      "size": 36436,
       "component": "ontology"
     },
     ".claude/ontology/graphs/routing.json": {
@@ -525,8 +530,8 @@
       "component": "ontology"
     },
     ".claude/ontology/skills.yaml": {
-      "templateHash": "2e546ed6ad94d7c26096be5a73b03db8a7c704bb6215fda8148ee21f614ca875",
-      "size": 21807,
+      "templateHash": "7f8f9363a14cb5bc47ccf8c2db787ccca869c052c8d54ac6e470380c51af8390",
+      "size": 24144,
       "component": "ontology"
     },
     ".claude/rules/MAY-optimization.md": {
@@ -560,8 +565,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "75a313866c544d550123ce1c66f931eeb0f5285fb18daee3c270276f758634c9",
-      "size": 24663,
+      "templateHash": "f6b5f3b4315a219d3adceff2dc424ef72ec1e456ef2986ba76e07f1455059b24",
+      "size": 24694,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -575,8 +580,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-orchestrator-coordination.md": {
-      "templateHash": "a051ace3c37e8b64636793c1f6f45a148bcf00f57e612650ed4d2dc1b2e93266",
-      "size": 106404,
+      "templateHash": "962af0a6998142e6321511e5424adeb0777f12238ce00d0e456a6d139f4051e7",
+      "size": 106386,
       "component": "rules"
     },
     ".claude/rules/MUST-parallel-execution.md": {
@@ -625,8 +630,8 @@
       "component": "rules"
     },
     ".claude/rules/SHOULD-memory-integration.md": {
-      "templateHash": "96e61b7f066ed1088b0ce3071a4cfb0ce2593f10e6359feacd59b2d2038a4506",
-      "size": 34314,
+      "templateHash": "389e4581a1c4821aba0c00c8ba2f65472cea9c95867a7a28f90915c2e2afcf9a",
+      "size": 34325,
       "component": "rules"
     },
     ".claude/rules/SHOULD-ontology-rag-routing.md": {
@@ -845,8 +850,8 @@
       "component": "skills"
     },
     ".claude/skills/fsd/SKILL.md": {
-      "templateHash": "7424e28b9f5926e0ca653a81815093d93616896ae7f15898dc743f86c09c92e2",
-      "size": 24454,
+      "templateHash": "62cc7b7031582e348bdcd32ca524dcd9fc86f7f175917b94e5bf7cc5366d2ef6",
+      "size": 25064,
       "component": "skills"
     },
     ".claude/skills/go-backend-best-practices/SKILL.md": {
@@ -860,8 +865,8 @@
       "component": "skills"
     },
     ".claude/skills/goal/SKILL.md": {
-      "templateHash": "f13ed958a26f112aad154c801de3d4932047e02556e654ec65501a5174434acd",
-      "size": 3986,
+      "templateHash": "839d35d9392a65b01585cc2c0cc29a5925aa4749bbaaaa3d2625b543d373bd33",
+      "size": 4031,
       "component": "skills"
     },
     ".claude/skills/grill-with-docs/ADR-FORMAT.md": {
@@ -1000,8 +1005,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-loop/SKILL.md": {
-      "templateHash": "a00c3cd7315df9c4b3cc497d169026f3868e867363b79110b31817c3cf3cea66",
-      "size": 4849,
+      "templateHash": "d1f51901ef48ff9060c0618f105a726ac0aa60d034c8d050ad4ada881034055d",
+      "size": 5990,
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
@@ -1060,8 +1065,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "a757c01ff591b47985b5549c46b35f64f56a5fb0e8b83f12a22172d635b62dba",
-      "size": 153812,
+      "templateHash": "f34ed80491d35145147f0228f444d23d9c72edf54b58952edbf352c428f1941b",
+      "size": 155035,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1485,8 +1490,8 @@
       "component": "guides"
     },
     "guides/claude-code/04-agent-skills.md": {
-      "templateHash": "33029dd81a7dc62bcd739240fd926c41eb61a0d5bdba86484e9e46b0fa486467",
-      "size": 4697,
+      "templateHash": "29baed7f242f71ba0e1ccad3176dcd5fac1a755f0cd9738af5d9563f10b3867e",
+      "size": 4727,
       "component": "guides"
     },
     "guides/claude-code/05-agent-sdk.md": {
@@ -1540,8 +1545,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "9f6009535db1c6a35a57ca02f34cb6252a53829b017b582f3a27a165dbdf38b0",
-      "size": 575923,
+      "templateHash": "8ae833921a4c405cff5276e3dc54b35447d4bc427f6863177e2bdab7c899feeb",
+      "size": 579453,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
