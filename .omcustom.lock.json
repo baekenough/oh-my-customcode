@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.7",
-  "generatedAt": "2026-10-26T00:33:40.538Z",
-  "templateVersion": "2.0.7",
+  "generatorVersion": "2.0.8",
+  "generatedAt": "2026-10-26T00:59:08.486Z",
+  "templateVersion": "2.0.8",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -395,8 +395,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
-      "templateHash": "7f748319ad157592a22cf193ea5cf21ee78da5690b62c7ca60bcdb06bdf89738",
-      "size": 40256,
+      "templateHash": "d72f19529540bbe21966f1e47e4cfbebe7dd585468c190d60c12dd8a565d302d",
+      "size": 40428,
       "component": "hooks"
     },
     ".claude/hooks/scripts/schema-validator.sh": {
@@ -1545,8 +1545,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "7821807f666c1aaac0ab0e1ca63ce9e88adc5e8b75bc2c73b4b2f498d41c1b96",
-      "size": 579260,
+      "templateHash": "8ae833921a4c405cff5276e3dc54b35447d4bc427f6863177e2bdab7c899feeb",
+      "size": 579453,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
