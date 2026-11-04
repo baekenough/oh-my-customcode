@@ -833,7 +833,9 @@ steps:
         실값 리터럴 금지) — the rule corpus is itself a grep target, and a real literal can
         contaminate the very command a clause cites (#1711 찐빠 #2); (h) any temporary file the
         delegation creates MUST live under a per-agent-unique path (`$TMPDIR` or the session
-        scratchpad), never a fixed shared path (#1722 찐빠 #7). This governs the agent's own
+        scratchpad), never a fixed shared path (#1722 찐빠 #7); command-output redirect targets
+        (e.g. `>`, `2>`, `tee`) count as temporary files under this constraint
+        (#1897 찐빠 #5). This governs the agent's own
         ad-hoc temp files; temp paths created at runtime by test code are governed by the
         separate test-code temp-path bullet below (#1778 찐빠 #4); (i) when the edit writes a runnable
         command or code snippet into rule/skill/guide/workflow text, the agent MUST copy that command OUT of the
@@ -1019,7 +1021,10 @@ steps:
         compare the file/rule where that content actually lives against the reported identifier
         before restating either — do not relay an unverified agent-reported count or identifier
         (R023 「리서치 위임의 결론 수치는 표에서 재계산해 병기」 #1707 #4 확장, #1709 #5, #1722
-        찐빠 #3).
+        찐빠 #3). The same applies to a CLASSIFICATION or VERDICT an agent or reviewer reported
+        (e.g. "<script> is a blocking guard"): before carrying it into the next prompt, read the
+        source it rests on once (e.g. the script's exit statements) and state as fact only what that
+        reading confirms (보고된 분류·판정도 근거 출처를 1회 읽어 재확인 후 전달, #1897 찐빠 #1).
       - Delegations that create files, binaries, worktrees, or branches (artifact-creating
         delegations only — text-only edits are excluded) MUST include measured output in their
         completion report — `file <bin>` for binaries, `ls -la <path>` for created paths (the orchestrator re-runs `ls -la` itself, R006 #1858), `git
@@ -1143,6 +1148,19 @@ steps:
         through a variable binary, case/hyphen variants, files outside the pathspec, text inside
         HTML `<!-- DETAIL -->` comments) (배타·전칭 서술이 반례 하나로 깨지는 리뷰 지적 계열
         방지 — v2.0.2 라운드 2에 스윕 도입 후 다음 리뷰의 신규 Medium 이상 11→4, #1860).
+      - The FIRST drafting delegation of a `claude-code-release` CC-note MUST also carry
+        three items (#1897 찐빠 #2, #9). (a) Pin the measuring commit: any measurement whose
+        pathspec covers a file this release changes (the CC-note
+        guide, its templates mirror, wiki pages, `wiki/.source-hashes.json`, other files changed
+        in the same release) uses a measuring-commit SHA instead of `HEAD` (e.g. a working-tree
+        measurement becomes `git grep <pattern> <sha>` / `git show <sha>:<path>`), and the result
+        sentence says "삽입 전(<sha>) 기준" (item (a) also binds later correction delegations
+        that add measurement sentences). (b) Pitfalls to list in the prompt: git pathspec `*`
+        crosses `/` (use `:(glob)`); macOS `git grep -E` lacks `\b` (use
+        `-P`); `git grep` also searches inside HTML comments, which are not auto-injected (count
+        on comment-stripped text when the claim concerns injected context). (c) Require the
+        agent to compare the issue body against the release body
+        (`gh release view v<X.Y.Z> -R anthropics/claude-code --json body --jq .body`).
       - Any delegation correcting a fact (the issue states an existing statement in a target file
         is wrong) — not only `claude-code-release` CC-notes — MUST include, as a completion
         criterion, an exhaustive `grep` across the target file(s) for the claim's key terms (the terms in a file written with the Write tool, run through the quote-verify block of the fixed constraint (c) as a search, not a pass/fail check), not
@@ -1339,6 +1357,10 @@ steps:
       verify-build로 돌리고 실패·새 델타가 review도 무효화하는지 판정하십시오. clean 동일
       환경의 same-harness coverage 비교와 authentic bait proof는 구별하고 LCOV identity
       한계는 implement coverage clause대로 보고하십시오. 바뀐 상태에 옛 green을 쓰지 마십시오.
+      정정 writer 위임서는 1차부터 "삭제·축소 우선, 새 주장 문장마다 측정 명령/관측 범위/[가설]
+      중 하나, 추가 문장 수 보고"를 포함하십시오(정정에서 새로 덧붙인 주장 문장이 새 결함의
+      주된 출처였습니다, #1897 찐빠 #3). 델타 계수는 `diff <before> <after> | grep -c '^[<>]'`를
+      쓰십시오. `diff -u … | grep -c '^[+-][^+-]'`는 내용이 `-`·`+`로 시작하는 줄(예: 들여쓰지 않은 markdown 불릿)과 빈 줄을 과소 계수합니다(#1897 찐빠 #7).
       정정 round는 최초 구현 리뷰를 제외하고 최대 3차입니다. 각 correction delta마다 그 영역의
       이전 리뷰에 참여하지 않은 fresh reviewer에게 독립 재리뷰를 발주하고 새 Medium+ 건수,
       기존 미해결 지적, writer/reviewer identity와 델타를 기록하십시오. 마지막 델타의 새
