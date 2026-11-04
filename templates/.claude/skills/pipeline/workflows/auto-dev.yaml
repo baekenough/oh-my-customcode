@@ -200,7 +200,7 @@ steps:
          or backticks, not only issue text. Key phrases taken from a rule, a skill or a document
          (for example a sentence that quotes a backticked command) are not typed into a
          double-quoted `grep -F "..."` either: the shell runs the backticked part as a command.
-         Write such phrases to a file with the Write tool. To confirm that each phrase is present,
+         A delegated agent writes such phrases to a file with the Write tool (the orchestrator does not write this file; implement Rules 「The orchestrator captures verification output in-process」). To confirm that each phrase is present,
          use the canonical quote-verify block of the implement step (it prints a count per
          phrase and fails on 0); a single `grep -F -f <file>` is any-match, so it passes when
          only one phrase matches and is not used for that check.
@@ -346,9 +346,9 @@ steps:
       # END path-precheck
       A target the block above cannot extract (a path with a character outside the set, a path
       under a top-level name that is not tracked, a new root file, a bare file name) is read from
-      the issue by the model and measured through channel (c): write the candidate paths, one per
-      line, to a file with the Write tool, then run the block below with `<path-file>` replaced
-      once by the absolute path of that file. It reads the file line by line, keeps a last line
+      the issue by the model and measured through channel (c): a delegated agent writes the candidate paths, one per
+      line, to a file with the Write tool and runs the block below with `<path-file>` replaced once by the absolute path of that file; the orchestrator reads the raw output and exit code.
+      The block reads the file line by line, keeps a last line
       without a trailing newline, skips blank lines, never executes a path string, and runs in a
       subshell pinned to the repository root. Each tracked-path lookup is checked with pipefail;
       a lookup failure returns non-zero with HALT, and any partial output is NOT a completed
@@ -930,6 +930,10 @@ steps:
         각 변수에 최소 한 값 변경 대조 조건을 두게 하십시오. 측정 writer는 조건·결과 표를 제출하고
         일반화 문장에 측정 조건을 함께 적으십시오. dispatcher는 대조가 없는 함의를 가설로
         제한하며 표 없는 runtime 일반화를 완료로 받지 마십시오(#1833 P5).
+        위임서가 개수 산식·계수 명령을 인용할 때는 대상 문서에 적힌 정본을 축약 없이 그대로
+        복사하십시오(#1904 P2). 실행 가능한 블록을 추가·수정하는 위임은 리뷰 위임까지 implement
+        Rules의 「Verify a runnable block that a skill, workflow, or document adds or edits」
+        항목을 위임서에 실으십시오(#1904 P1).
       - Line-anchor drift sweep: a delegation that adds or removes lines in any file MUST, as a
         completion condition, run `git grep -n -E '<escaped basename>:[0-9]'` across the
         repository (the BASENAME, not the path — basename-only anchors such as
@@ -980,6 +984,21 @@ steps:
         (줄 수를 바꾸는 위임의 완료 조건에 그 파일을 가리키는 `file:line` 앵커 — basename 전용·
         연속 `:N` 형태 포함 — 의 전수 grep과 재도출 또는 내용 앵커 전환을 넣어야 하며, 생성 파일
         앵커는 줄 번호가 아닌 내용 앵커여야 합니다) (#1884 item 8).
+      - Verify a runnable block that a skill, workflow, or document adds or edits exactly as
+        that document instructs: copy it out and run it with every preparation step the document
+        requires (e.g. removing common indentation), and give each such step a negative control
+        that must fail (non-zero exit, or an output assertion that detects the wrong result)
+        when the step is skipped. The writer's completion report for a delegation that adds or edits such a block, the
+        orchestrator's own run of it, and every fresh review of a draft or correction delta
+        containing it (deep-verify 「Correction dispatcher」 included) carry this; an extraction
+        path of your own is not a verification of the document. It applies even where the #1752
+        fixture bullet lets a correction rely on an earlier pass, whenever the correction touches the
+        runnable block (#1904 P1).
+      - The orchestrator captures verification output in-process (e.g. `$(...)` with the exit code
+        read first, or a pipe when the exit code is not needed or is preserved) and writes no
+        files, scratchpad included; a check that needs a file is delegated. The only carve-out is
+        R010's PPID-scoped one-line `/tmp` state marker (e.g. `/tmp/.claude-fsd-$PPID`; R010 「Exception: Simple Tasks」);
+        it never holds verification output (#1904 P3).
       - No state-changing command (`gh issue create/edit/close`, `gh pr create/edit/close/merge`,
         `git push`, label changes) — including the orchestrator's own direct commands, not only
         delegated ones — MAY use a `||` fallback that prints success-looking output; the observed
@@ -1378,6 +1397,8 @@ steps:
       - owned hook-like 환경·index hash 불변·corpus floor 또는 isolation 귀속 증거의 실패/누락
 
       Halt → report exact command + stderr + delta details. Do NOT proceed to release on any halt.
+      The orchestrator's capture of this step's verification output follows the implement Rules bullet 「The orchestrator captures
+      verification output in-process」 (#1904 P3).
     description: "Auto-detected build + test verification (bun test with baseline delta guard)"
     depends_on: implement
 
@@ -1416,7 +1437,9 @@ steps:
       close 근거로 사용하지 마십시오(#1830 P1/P2, #1833 P4/P6).
       예외는 Low만 남은 기계적 문구 치환이고 새 동작/메커니즘/측정 주장/보장 변화가 없을 때만
       허용하십시오. dispatcher는 해당 근거와 미러 cmp·예산·치환 계수·해당 설정 JSON 유효성을
-      Tier 1로 읽고 닫을 수 있습니다. purported Low가 위 조건을 바꾸면 fresh review를 생략하지
+      Tier 1로 읽고(캡처는 implement Rules의 「The orchestrator captures verification output
+      in-process」 항목을 따르십시오) 닫을 수 있습니다.
+      purported Low가 위 조건을 바꾸면 fresh review를 생략하지
       마십시오. 이 예외는 mandatory source Sauron/전역 불변식/actual precommit을 면제하지 않습니다.
       branch 체크는 첫 정정 수렴, 3차 잔여 Medium, 3차 새 Medium, strict Low-only, behavior를
       바꾼 Low 거부, 표 누락 HALT를 실제 발주·완료 기록에 대응하십시오. 산문 지시를 가짜
@@ -1570,8 +1593,8 @@ steps:
            vX.Y.Z exists and is open, and that EVERY issue of this release's scope is assigned to it. The scope includes issues
            admitted mid-run by scope-selection rule 7 (Plan-stage admission), not only the issues listed at selection time.
            `--paginate` is REQUIRED on the milestone query for the same reason as in scope-selection Step 0 (a single page of a
-           repository with 100+ milestones can drop the newest entry). Write the script below to a file with the Write tool,
-           substituting `vX.Y.Z` and the literal issue list (`<N1> <N2> ...`) once each, and run it as ONE Bash call, reading the exit code directly (no pipe):
+           repository with 100+ milestones can drop the newest entry). The orchestrator runs the script below inline as ONE Bash call with no file (it contains no issue text — only the version and issue-number literals — and its only external commands are read-only `gh api` GET queries),
+           substituting `vX.Y.Z` and the literal issue list (`<N1> <N2> ...`) once each and reading the exit code directly (no pipe):
              ms=$(gh api 'repos/{owner}/{repo}/milestones?state=all&per_page=100' --paginate --jq '.[] | select(.title == "vX.Y.Z" and .state == "open") | .number') || { echo "FAIL: milestone query failed"; exit 1; }
              if [ -z "$ms" ]; then echo "FAIL: milestone vX.Y.Z is absent or not open"; exit 1; fi
              fail=0
@@ -1590,7 +1613,7 @@ steps:
            b. mgr-gitnerd creates PR: gh pr create --base develop --head release/v{NEW} --title "chore(release): bump to v{NEW}" --body-file <pr-body-file>
               The PR body is a file channel, never an inline argument: in the same delegation, mgr-gitnerd writes the body with the Write tool to a unique git-ignored path (for example `.claude/outputs/sessions/{YYYY-MM-DD}/pr-body-v{NEW}.md`, which `.gitignore` covers through `.claude/*`) and passes only that path to `gh pr create … --body-file <pr-body-file>`. The body MUST include 'Closes #N' for EVERY issue this release resolves. Issue-derived text inside an inline `--body "…"` would be evaluated by the shell (`$(…)`, backticks) before gh runs (#1831 F9).
               ⚠ auto-tag.yml closes issues by grep'ing Closes/Fixes/Resolves keywords in the PR BODY — NOT by milestone membership NOR by commit message trailers. If the keywords are missing, no issues close and the workflow still reports success (#1531). Commit-message close keywords are explicitly forbidden during `implement` and step 1.g above (#1542) — the PR body is the ONLY place a close keyword should appear.
-              Before creating the PR, confirm the body file actually contains a Closes line per issue: run the quote-verify block (defined in the implement step's fixed constraint (c)) with the quotations being one `Closes #<N>` line per issue (written to a file with the Write tool) and the target being the PR body file. A count of 0 for any line blocks PR creation.
+              Before creating the PR, confirm the body file actually contains a Closes line per issue: run the quote-verify block (defined in the implement step's fixed constraint (c)) with the quotations being one `Closes #<N>` line per issue (mgr-gitnerd writes them to a file with the Write tool and runs the block in the same delegation) and the target being the PR body file. A count of 0 for any line blocks PR creation.
            c. mgr-gitnerd merges PR: gh pr merge {n} --merge --delete-branch (plain merge — NOT --admin).
               Ground-truth (measured 2026-08-15, `gh api repos/{owner}/{repo}/branches/develop/protection`):
               required status checks are exactly 6 — Test, Lint, Template Sync, Version Sync,
