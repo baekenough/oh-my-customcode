@@ -237,18 +237,18 @@ Reference documentation covering best practices, architecture decisions, and int
 
 ## Safety
 
-oh-my-customcode ships 41 lifecycle hook scripts covering security, drift detection, and rule reinforcement. A few examples:
+oh-my-customcode ships 42 lifecycle hook scripts covering security, drift detection, and rule reinforcement. A few examples:
 
 | Hook | Trigger | Action |
 |------|---------|--------|
-| secret-filter | Bash, Read output | Detects AWS keys, API tokens, private keys, bearer tokens |
+| secret-filter | Bash, Read, Grep output | Detects AWS keys, API tokens, private keys, bearer tokens |
 | audit-log | Edit, Write, Bash, Agent | Append-only JSONL at `~/.claude/audit.jsonl` |
 | schema-validator | Write, Edit, Bash input | Validates tool inputs, flags dangerous patterns |
-| claude-md-reinject | SessionStart (fresh session, resume, or compact) | Reinjects CLAUDE.md and the enforced rule set — prevents rule amnesia after context compaction |
+| claude-md-reinject | SessionStart (compact re-entry only) | Reinjects CLAUDE.md, including its enforced-rule table, after compaction — prevents rule amnesia |
 | stuck-detector | PostToolUse, repeated edits | Flags an agent looping on the same file/edit without progress |
 | r007-r008-drift-advisor | UserPromptSubmit, SubagentStop, PostToolUse | Advisory check that the last turn carried the required agent/tool identification headers |
 
-Most hooks are advisory (exit 0) — they warn but never block. A small number of hard-block hooks (e.g. `stage-blocker`, `rule-deletion-guard`) reject the tool call outright (exit 2). oh-my-customcode's own governance rules (`.claude/rules/`) follow an **advisory-first enforcement model**: prompt-based guidance is the default, and a rule is only promoted to a blocking hook after repeated, observed violations. Rules also retire — clauses tied to since-fixed platform bugs or that go unused for two minor releases are wrapped in HTML comments (still readable via the source file, invisible to the agent's context) rather than left to accumulate indefinitely.
+Most hooks are advisory (exit 0) — they warn but never block. A small number of hard-block hooks (e.g. `stage-blocker`, `rule-deletion-guard`) reject the tool call outright (exit 2). A third group — `stuck-detector`, `context-budget-advisor`, and `cost-cap-advisor` — runs as PostToolUse hooks with `continueOnBlock`: when their condition is reached they exit 2, but the tool call has already executed, so the reason is fed back into the conversation and the session continues. oh-my-customcode's own governance rules (`.claude/rules/`) follow an **advisory-first enforcement model**: prompt-based guidance is the default, and a rule is only promoted to a blocking hook after repeated, observed violations. Rules also retire — clauses tied to since-fixed platform bugs or that go unused for two minor releases are wrapped in HTML comments (still readable via the source file, invisible to the agent's context) rather than left to accumulate indefinitely.
 
 The hook source of truth is `.claude/hooks/hooks.json`; `omcustom init` merges it into the `hooks` block of `.claude/settings.local.json` (via `src/core/hooks-settings.ts`), one of the settings files Claude Code actually loads. This repository's own tracked `.claude/settings.json` (and its `templates/` mirror) is produced separately by the `sync:hooks` generator. Hook commands are anchored as `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/<path>"`, so hooks keep working when the session's working directory moves to a subdirectory. Contributors: do not hand-edit the `hooks` blocks in settings; edit `hooks.json` and run `bun run sync:hooks` (also run at the end of `bun run build`) to regenerate them. Existing installs need no manual step: `omcustom update` (full or hooks component) and `omcustom init --backup` automatically migrate old relative hook commands in `.claude/settings.local.json`, and custom hooks are left untouched. Re-running `omcustom init` against an existing `.claude/settings.local.json` merges the hooks instead of replacing them: omcustom-owned hook groups are refreshed, while your own hook groups, user-only hook events, and all other settings keys are preserved (a leading BOM is kept; `init` always rewrites the file with 2-space indentation, LF line endings and a trailing newline, while the `--backup` restore path keeps the user file's own trailing-newline convention). If the existing file cannot be parsed as a JSON object, it is left byte-identical and `init` prints a warning that the hooks were not installed.
 
@@ -285,7 +285,7 @@ your-project/
 │   ├── agents/                 # 50 agent definitions
 │   ├── skills/                 # 114 skill modules
 │   ├── rules/                  # 23 governance rules (R000-R023)
-│   ├── hooks/                  # 41 lifecycle hook scripts (hooks.json source; compiled into settings.json)
+│   ├── hooks/                  # 42 lifecycle hook scripts (hooks.json source; compiled into settings.json)
 │   ├── schemas/                # Tool input validation schemas
 │   ├── specs/                  # Extracted canonical specs
 │   ├── contexts/               # 4 shared context files
