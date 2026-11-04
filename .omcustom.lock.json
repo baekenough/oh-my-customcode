@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.12",
-  "generatedAt": "2026-11-04T06:58:42.499Z",
-  "templateVersion": "2.0.12",
+  "generatorVersion": "2.0.13",
+  "generatedAt": "2026-11-04T08:15:45.354Z",
+  "templateVersion": "2.0.13",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -1065,8 +1065,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "c266c6f52235dff9cdb7b7ebf9f6ea098811202c665a72ea061436a320c3363c",
-      "size": 161350,
+      "templateHash": "f877757b38814461dfbd952e4526181045a8a8ada8c256cea7d666c32e0faf90",
+      "size": 163888,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1545,7 +1545,7 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "ef3c89a7fdab4d2f5a950ed1c07ad0c2f5490bcc30e1f0bbf167aef9ec6deed2",
+      "templateHash": "6b836e63600e646ded45174a819ab4d0ca40a25f25e7ad2c3b96d85913bcfb71",
       "size": 698806,
       "component": "guides"
     },
