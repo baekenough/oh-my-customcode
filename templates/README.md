@@ -52,7 +52,7 @@ templates/
 │   ├── rules/                       # 전역 규칙 (R000–R023, 23개)
 │   ├── hooks/
 │   │   ├── hooks.json               # 훅 이벤트 설정 (PreToolUse/PostToolUse 등)
-│   │   └── scripts/                 # 훅 셸 스크립트 (41개)
+│   │   └── scripts/                 # 훅 셸 스크립트 (42개)
 │   ├── contexts/                    # 컨텍스트 설정 파일 (ecomode 등)
 │   └── ontology/                    # Ontology-RAG 지식 그래프
 └── guides/                          # 레퍼런스 문서 디렉토리 (56개)
@@ -116,7 +116,7 @@ CI의 `verify-template-sync.sh`가 소스와 templates/ 간 일치를 검증합�
 
 각 디렉토리는 단일 토픽에 대한 best practices, 튜토리얼, 또는 설계 가이드를 담습니다. 에이전트가 작업 중 참조합니다 (R006 관심사 분리).
 
-### Hooks (41)
+### Hooks (42)
 
 `.claude/hooks/scripts/*.sh` — 라이프사이클 훅 스크립트.
 

@@ -237,18 +237,18 @@ R018 (Agent Teams)은 조건부입니다: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=
 
 ## 보안
 
-oh-my-customcode는 보안, 드리프트 감지, 규칙 강화를 다루는 41개의 라이프사이클 훅 스크립트를 제공합니다. 몇 가지 예시:
+oh-my-customcode는 보안, 드리프트 감지, 규칙 강화를 다루는 42개의 라이프사이클 훅 스크립트를 제공합니다. 몇 가지 예시:
 
 | 훅 | 트리거 | 동작 |
 |----|--------|------|
-| secret-filter | Bash, Read 출력 | AWS 키, API 토큰, 개인 키, bearer 토큰 감지 |
+| secret-filter | Bash, Read, Grep 출력 | AWS 키, API 토큰, 개인 키, bearer 토큰 감지 |
 | audit-log | Edit, Write, Bash, Agent | `~/.claude/audit.jsonl`에 append-only JSONL 기록 |
 | schema-validator | Write, Edit, Bash 입력 | 도구 입력 검증, 위험 패턴 플래그 |
-| claude-md-reinject | SessionStart (새 세션, resume, 또는 compact) | CLAUDE.md와 강제 규칙 세트를 재주입 — 컨텍스트 압축 후 규칙 망각 방지 |
+| claude-md-reinject | SessionStart (compact 재진입 시에만) | 압축 후 CLAUDE.md(강제 규칙 표 포함)를 재주입 — 규칙 망각 방지 |
 | stuck-detector | PostToolUse, 반복 편집 | 에이전트가 진행 없이 같은 파일/편집을 반복하면 플래그 |
 | r007-r008-drift-advisor | UserPromptSubmit, SubagentStop, PostToolUse | 직전 턴이 필수 에이전트/도구 식별 헤더를 포함했는지 확인하는 어드바이저리 체크 |
 
-대부분의 훅은 어드바이저리(exit 0)입니다 — 경고만 하고 절대 차단하지 않습니다. 소수의 하드 블록 훅(예: `stage-blocker`, `rule-deletion-guard`)은 도구 호출 자체를 거부합니다(exit 2). oh-my-customcode 자체의 거버넌스 규칙(`.claude/rules/`)은 **어드바이저리 우선 집행 모델**을 따릅니다: 프롬프트 기반 가이드가 기본이며, 규칙이 차단 훅으로 승격되는 것은 반복적으로 관측된 위반이 있을 때뿐입니다. 규칙은 은퇴하기도 합니다 — 이미 수정된 플랫폼 버그에 묶인 조항이나 두 마이너 릴리즈 동안 발동되지 않은 조항은 무한히 누적되는 대신 HTML 주석으로 감싸집니다(소스 파일을 통해 여전히 읽을 수 있지만 에이전트의 컨텍스트에는 보이지 않음).
+대부분의 훅은 어드바이저리(exit 0)입니다 — 경고만 하고 절대 차단하지 않습니다. 소수의 하드 블록 훅(예: `stage-blocker`, `rule-deletion-guard`)은 도구 호출 자체를 거부합니다(exit 2). 세 번째 그룹인 `stuck-detector`, `context-budget-advisor`, `cost-cap-advisor`는 `continueOnBlock`이 설정된 PostToolUse 훅으로 실행됩니다. 조건에 도달하면 exit 2로 종료하지만 도구 호출은 이미 실행된 뒤이므로, 사유가 대화로 피드백되고 세션은 계속됩니다. oh-my-customcode 자체의 거버넌스 규칙(`.claude/rules/`)은 **어드바이저리 우선 집행 모델**을 따릅니다: 프롬프트 기반 가이드가 기본이며, 규칙이 차단 훅으로 승격되는 것은 반복적으로 관측된 위반이 있을 때뿐입니다. 규칙은 은퇴하기도 합니다 — 이미 수정된 플랫폼 버그에 묶인 조항이나 두 마이너 릴리즈 동안 발동되지 않은 조항은 무한히 누적되는 대신 HTML 주석으로 감싸집니다(소스 파일을 통해 여전히 읽을 수 있지만 에이전트의 컨텍스트에는 보이지 않음).
 
 훅의 소스 오브 트루스는 `.claude/hooks/hooks.json`입니다. `omcustom init`은 이를 `src/core/hooks-settings.ts`를 통해 `.claude/settings.local.json`의 `hooks` 블록으로 병합하며, 이 파일은 Claude Code가 실제로 로드하는 settings 파일 중 하나입니다. 이 저장소가 자체적으로 추적하는 `.claude/settings.json`(및 `templates/` 미러)은 `sync:hooks` 생성기가 별도로 생성합니다. 훅 명령은 `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/<path>"` 형태로 고정되어 있으므로, 세션의 작업 디렉터리가 하위 디렉터리로 이동해도 훅이 계속 동작합니다. 기여자는 settings의 `hooks` 블록을 직접 수정하지 말고, `hooks.json`을 수정한 뒤 `bun run sync:hooks`(`bun run build` 마지막에도 실행됨)로 재생성해야 합니다. 기존 설치본은 별도 조치가 필요 없습니다. `omcustom update`(전체 또는 hooks 컴포넌트)와 `omcustom init --backup`이 `.claude/settings.local.json`의 이전 상대 경로 훅 명령을 자동으로 마이그레이션하며, 사용자 정의 훅은 건드리지 않습니다. 기존 `.claude/settings.local.json`에 대해 `omcustom init`을 다시 실행하면 훅을 교체하지 않고 병합합니다. omcustom 소유 훅 그룹은 갱신되고, 사용자 고유의 훅 그룹, 사용자 전용 훅 이벤트, 그 밖의 모든 settings 키는 보존됩니다(선행 BOM은 유지되며, `init`은 항상 2칸 들여쓰기, LF 줄바꿈, 끝 개행으로 파일을 다시 쓰고, `--backup` 복원 경로는 사용자 파일 고유의 끝 개행 관례를 유지합니다). 기존 파일을 JSON 객체로 파싱할 수 없으면 바이트 단위로 그대로 두며, `init`은 훅이 설치되지 않았다는 경고를 출력합니다.
 
@@ -285,7 +285,7 @@ your-project/
 │   ├── agents/                 # 50개 에이전트 정의
 │   ├── skills/                 # 114개 스킬 모듈
 │   ├── rules/                  # 23개 거버넌스 규칙 (R000-R023)
-│   ├── hooks/                  # 41개 라이프사이클 훅 스크립트 (hooks.json이 소스; settings.json으로 컴파일됨)
+│   ├── hooks/                  # 42개 라이프사이클 훅 스크립트 (hooks.json이 소스; settings.json으로 컴파일됨)
 │   ├── schemas/                # 도구 입력 검증 스키마
 │   ├── specs/                  # 추출된 canonical spec
 │   ├── contexts/               # 4개 공유 컨텍스트 파일

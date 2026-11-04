@@ -939,7 +939,44 @@ steps:
         whose target text moved or replace it with a content anchor (function name / unique
         string). Anchors into generated files (e.g. `.claude/settings.json`, regenerated from
         hooks.json) MUST be content anchors, not line numbers. The completion report lists each
-        anchor (file:line, old target, new line).
+        anchor (file:line, old target, new line). Extract continuation anchors deterministically
+        instead of by reading; substitute the three `<…>` once each, remove the block's common
+        leading indentation before running (the `PY` terminator must start at column 0), take
+        `<pre-edit-rev>` as the revision before the edit (not one that already contains it), give
+        `<target-path>` repo-root-relative, and run from the repo root (#1901 찐빠 #2):
+        # BEGIN continuation-anchor-sweep (ONE Bash call)
+        python3 - <base> <pre-edit-rev> <target-path> <<'PY'
+        import re, subprocess, sys
+        base, rev, path = sys.argv[1:4]
+        old = subprocess.run(["git", "show", f"{rev}:{path}"], capture_output=True, text=True, check=True).stdout.split("\n")
+        new = open(path, encoding="utf-8").read().split("\n")
+        files = subprocess.run(["git", "ls-files", "-z"], capture_output=True, text=True, check=True).stdout.split("\0")
+        pat = re.compile(r"(?:" + re.escape(base) + r"|(?<![\w.])):(\d{1,5})(?:-:?(\d{1,5}))?")
+        print("source\tN\told-line\tnew-lines")
+        for f in filter(None, files):
+            try: lines = open(f, encoding="utf-8").read().split("\n")
+            except (OSError, UnicodeDecodeError): continue
+            for i, l in enumerate(lines, 1):
+                if base not in l: continue
+                seg = l[l.index(base):]
+                for m in pat.finditer(seg):
+                    for g in filter(None, m.groups()):
+                        n = int(g)
+                        if not 1 <= n <= len(old): continue
+                        if not old[n - 1].strip():
+                            print(f"{f}:{i}\t{n}\t''\tBLANK OLD LINE"); continue
+                        hits = [str(k) for k, x in enumerate(new, 1) if x == old[n - 1]]
+                        print(f"{f}:{i}\t{n}\t{old[n-1][:60]!r}\t{','.join(hits) or 'NO EXACT MATCH'}")
+        PY
+        # END continuation-anchor-sweep
+        (Limit: only numbers after the first mention of the basename on a line are read, so a
+        bare `:N` after that mention (even one meant for another file) is also listed, and
+        anchors before the mention are missed; there is no path check, so rows also include
+        anchors naming any other path whose basename equals or ends with `<base>` - open each
+        source line to confirm the anchor's path before re-deriving; only tracked files are
+        read, one physical line at a time, and an N outside 1..old length and
+        unreadable/non-UTF-8 files are skipped silently; `BLANK OLD LINE` rows are usually
+        anchors into another file.)
         (줄 수를 바꾸는 위임의 완료 조건에 그 파일을 가리키는 `file:line` 앵커 — basename 전용·
         연속 `:N` 형태 포함 — 의 전수 grep과 재도출 또는 내용 앵커 전환을 넣어야 하며, 생성 파일
         앵커는 줄 번호가 아닌 내용 앵커여야 합니다) (#1884 item 8).
@@ -1148,6 +1185,13 @@ steps:
         through a variable binary, case/hyphen variants, files outside the pathspec, text inside
         HTML `<!-- DETAIL -->` comments) (배타·전칭 서술이 반례 하나로 깨지는 리뷰 지적 계열
         방지 — v2.0.2 라운드 2에 스윕 도입 후 다음 리뷰의 신규 Medium 이상 11→4, #1860).
+        The same first draft MUST also pass a count-sentence sweep over the WHOLE draft (not only
+        sentences the prompt told it to write): every sentence with a number and unit (건/개/줄/자
+        etc.) carries its measuring command or is self-checked by an enumeration right before or
+        after it; every fresh review of that draft and of each correction delta to it (deep-verify
+        「Correction dispatcher」 included) applies the same sweep (개수 문장 스윕 — 초안 전체의
+        숫자 대상, #1901 찐빠 #1; the #1749 찐빠 #2 bullet covers only count sentences the prompt
+        orders).
       - The FIRST drafting delegation of a `claude-code-release` CC-note MUST also carry
         three items (#1897 찐빠 #2, #9). (a) Pin the measuring commit: any measurement whose
         pathspec covers a file this release changes (the CC-note
@@ -1155,7 +1199,9 @@ steps:
         in the same release) uses a measuring-commit SHA instead of `HEAD` (e.g. a working-tree
         measurement becomes `git grep <pattern> <sha>` / `git show <sha>:<path>`), and the result
         sentence says "삽입 전(<sha>) 기준" (item (a) also binds later correction delegations
-        that add measurement sentences). (b) Pitfalls to list in the prompt: git pathspec `*`
+        that add measurement sentences). A draft carried over across iterations or batches defines
+        its measuring commit ONCE at the section head (commit title, which sections it
+        precedes, and the measuring command), so "삽입 전(<sha>)" is never ambiguous (#1901 찐빠 #5). (b) Pitfalls to list in the prompt: git pathspec `*`
         crosses `/` (use `:(glob)`); macOS `git grep -E` lacks `\b` (use
         `-P`); `git grep` also searches inside HTML comments, which are not auto-injected (count
         on comment-stripped text when the claim concerns injected context). (c) Require the
@@ -1338,7 +1384,7 @@ steps:
   - name: deep-verify
     skill: deep-verify
     description: |
-      Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron:watch single-goal delegation in every tier (docs-only, lite, standard) + core self-check if lite. mgr-sauron:watch 단일 목표 위임은 모든 티어에서 커밋 전, 따라서 첫 push 전에 1회 실행하며 재실행 금지 목록(이미 실측한 bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)을 동봉합니다. 구조 표면이 없다는 것은 생략 사유가 아닙니다. 모든 릴리즈는 implement 단계의 필수 통합 커밋 순서를 따라 이 위임이 deep-verify 정정 뒤, 통합 커밋 앞에 오게 합니다(#1799 제안 1). MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주하십시오 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정하십시오 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). 검증 위임도 편집 위임과 동일하게 턴 산술(대상 파일 수 × 판단 항목 수)을 계산해 위임서에 명시하고, 예산을 넘으면 파일군별로 분할해야 합니다 — v1.1.77 sauron 1차 위임은 30여 파일 + 판단 4항목을 단일 위임에 넣어 판정 없이 25턴에서 절단됐습니다(#1722 찐빠 #2). 리뷰어의 수정 제안과 「변이 X가 생존/포착된다」는 주장은 (a) 시험 런타임에서 도달할 수 있는지(예: Bun은 os.homedir()을 프로세스 시작 시 고정합니다), (b) 그 변이가 시험 환경에서 동치인지를 확인한 뒤에만 채택하며, 리뷰어 위임서에는 이 근거를 함께 적게 합니다. 문서·텍스트 제안은 도달성 검사 예외입니다. 가설 접수 원칙은 R020 「원인 분석도 완료 보고와 같은 등급의 검증 대상」(MUST-completion-verification.md)을 따릅니다(#1807 제안 2, #1811 찐빠 #3). 리뷰어 위임서도 implement 단계 Rules의 Standard delegation-prompt block을 지니며, 그 항목 중 「$HOME 아래 프로브·임시 파일 금지」가 리뷰어에게 적용됩니다(#1811 제안 4). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688).
+      Multi-angle release quality verification — self-review checklist if docs-only; mgr-sauron:watch single-goal delegation in every tier (docs-only, lite, standard) + core self-check if lite. mgr-sauron:watch 단일 목표 위임은 모든 티어에서 커밋 전, 따라서 첫 push 전에 1회 실행하며 재실행 금지 목록(이미 실측한 bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)을 동봉합니다. 구조 표면이 없다는 것은 생략 사유가 아닙니다. 모든 릴리즈는 implement 단계의 필수 통합 커밋 순서를 따라 이 위임이 deep-verify 정정 뒤, 통합 커밋 앞에 오게 합니다(#1799 제안 1). MULTI-PHASE: 스킬을 그대로 spawn하지 말고 R020 「위임 경계를 Phase 개수로 설계」에 따라 단일 목표 위임으로 분할해 순차 발주하십시오 (#1595 #4). lite 분할 표준(#1652 #3-4): (1) mgr-sauron R017 구조 검증 단일 목표 위임 1건 + (2) 변경 성격별 적대적 리뷰 단일 목표 위임 1건 — 스크립트 변경이면 실행 재현 기반 adversarial-review, 룰/스킬/yaml 텍스트 변경이면 문구 정합·배선 리뷰. 훅·advisor 옵션 변경이면 합성 픽스처 외에 이 프로젝트 실 트랜스크립트 1건 계수 실측을 완료 조건에 포함(#1703 권장 2). 근거: v1.1.59/60 두 반복 연속 적대적 리뷰가 신규 회귀(M-3/M-4, heredoc 위조)를 실행 재현으로 포착. 검증 위임 표준 문안: 오케스트레이터가 이미 실측한 항목(bun test·lint·typecheck·template-sync·wiki-sync·validate-docs·미러 md5)은 위임서에 재실행 금지 목록으로 열거하고 재실측 대상만 지정하십시오 — v1.1.61 세션에서 금지 목록 없는 sauron 위임이 bun test를 재실행하다 25턴 절단됐고, 금지 목록을 명시한 재위임은 16 tool_uses로 완주했다(R020 maxTurns 절단 누적 7건째). 검증 위임도 편집 위임과 동일하게 턴 산술(대상 파일 수 × 판단 항목 수)을 계산해 위임서에 명시하고, 예산을 넘으면 파일군별로 분할해야 합니다 — v1.1.77 sauron 1차 위임은 30여 파일 + 판단 4항목을 단일 위임에 넣어 판정 없이 25턴에서 절단됐습니다(#1722 찐빠 #2). 리뷰어의 수정 제안과 「변이 X가 생존/포착된다」는 주장은 (a) 시험 런타임에서 도달할 수 있는지(예: Bun은 os.homedir()을 프로세스 시작 시 고정합니다), (b) 그 변이가 시험 환경에서 동치인지를 확인한 뒤에만 채택하며, 리뷰어 위임서에는 이 근거를 함께 적게 합니다. 문서·텍스트 제안은 도달성 검사 예외입니다. 가설 접수 원칙은 R020 「원인 분석도 완료 보고와 같은 등급의 검증 대상」(MUST-completion-verification.md)을 따릅니다(#1807 제안 2, #1811 찐빠 #3). 리뷰어 위임서도 implement 단계 Rules의 Standard delegation-prompt block을 지니며, 그 항목 중 「$HOME 아래 프로브·임시 파일 금지」가 리뷰어에게 적용됩니다(#1811 제안 4). CC-note 초안을 검토하는 리뷰 위임서(첫 리뷰 포함)는 implement 단계 Rules의 「개수 문장 스윕」도 반드시 지닙니다(#1901 찐빠 #1). Ordering: any wiki resync/manifest reseed for the changed rules/skills is dispatched after this step's findings are applied, not alongside it (#1688).
 
       ## Correction dispatcher
 
@@ -1361,9 +1407,9 @@ steps:
       중 하나, 추가 문장 수 보고"를 포함하십시오(정정에서 새로 덧붙인 주장 문장이 새 결함의
       주된 출처였습니다, #1897 찐빠 #3). 델타 계수는 `diff <before> <after> | grep -c '^[<>]'`를
       쓰십시오. `diff -u … | grep -c '^[+-][^+-]'`는 내용이 `-`·`+`로 시작하는 줄(예: 들여쓰지 않은 markdown 불릿)과 빈 줄을 과소 계수합니다(#1897 찐빠 #7).
-      정정 round는 최초 구현 리뷰를 제외하고 최대 3차입니다. 각 correction delta마다 그 영역의
-      이전 리뷰에 참여하지 않은 fresh reviewer에게 독립 재리뷰를 발주하고 새 Medium+ 건수,
-      기존 미해결 지적, writer/reviewer identity와 델타를 기록하십시오. 마지막 델타의 새
+      정정 round는 최초 구현 리뷰를 제외하고 최대 3차입니다. 각 correction delta마다 그 영역의 이전 리뷰에 참여하지 않은 fresh
+      reviewer에게 독립 재리뷰를 발주하되(CC-note 초안의 정정 델타 리뷰 위임에는 implement Rules의 「개수 문장 스윕」을 반드시 싣습니다,
+      #1901 찐빠 #1) 새 Medium+ 건수, 기존 미해결 지적, writer/reviewer identity와 델타를 기록하십시오. 마지막 델타의 새
       Medium+ 0건과 현재 소스의 미해결 Medium+ 0건을 모두 확인해야 종료할 수 있습니다.
       3차에도 기존 또는 신규 Medium+가 남으면 release를 HALT하십시오. 비차단 이월 항목은
       한 후속 이슈로 통합하되 상한 도달을 현재 source 결함 waiver나 부분 해결 이슈의 전체
@@ -1384,6 +1430,9 @@ steps:
       문구/relative ref와 인용별 원문 검증·변경 주장 단위의 이전 표현 잔존 검색을 완료 조건으로
       위임하십시오. Early wiki result classification and handoff의 pending-documentation 표와
       raw log도 함께 전달하고 각 행의 정정·잔존 여부를 wiki-curator 완료 표에 대응하십시오.
+      위임 전에 dispatcher가 대상 wiki 페이지 수를 각 페이지 frontmatter `sources:`에서 직접
+      실측해 위임서에 적으십시오. 본문 언급 수나 원천 키 수를 페이지 수로 옮겨 적지 마십시오
+      (#1901 찐빠 #7).
       잔존 검색은 본문뿐 아니라 변경 로그·요약까지 포함하고 hit가 있으면 관련성
       판정 근거를 보고하십시오. 의역은 인용으로 표시하지 마십시오. wiki 페이지 수정이 끝난
       뒤 documented source-hash script로 wiki/.source-hashes.json만 reseed하십시오.
