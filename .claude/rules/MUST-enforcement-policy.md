@@ -6,10 +6,10 @@
 
 oh-my-customcode uses an **advisory-first enforcement model**. Most rules are enforced through prompt engineering (CLAUDE.md, rules/, `SessionStart` re-injection[^postcompact]) rather than hard-blocking hooks. This is intentional — it preserves agent flexibility while maintaining behavioral standards.
 
-[^postcompact]: 재주입 보장 경로는 `SessionStart`(matcher `*`, `claude-md-reinject.sh`)다. PostCompact 배선은 유지되나 `additionalContext` 미정의로 효과 미보장. Origin: #1619 #7. 상세는 Read 도구로 열람.
+[^postcompact]: 재주입 보장 경로는 `SessionStart`(matcher `compact`, `claude-md-reinject.sh`)다. PostCompact 배선은 유지되나 `additionalContext` 미정의로 효과 미보장. Origin: #1619 #7. 상세는 Read 도구로 열람.
 
 <!-- DETAIL: [^postcompact] footnote (full text)
-[^postcompact]: compact 후 재주입의 문서상 보장 경로는 `SessionStart`(matcher `*`, `claude-md-reinject.sh` — v1.1.50 #1617)이다. 기존 PostCompact prompt 배선은 유지되나 공식 문서상 `additionalContext`가 정의돼 있지 않아 효과 미보장·발동 미검증(hook-events-audit 2026-08-29). 후속 바이너리 프로브(postcompact-probe 2026-08-29, CC 2.1.251)에서 dispatch 경로 실재가 확인됨(전용 실행 함수·payload 스키마 `trigger`/`compact_summary`·dispatch map 등록, PreCompact 대비 동형 구조). 따라서 '발동 미검증'은 'dispatch 실재하나 라이브 발동·prompt 핸들러 효과는 미검증'으로 좁혀진다 — `additionalContext` 미정의는 불변이므로 재주입 보장 경로는 여전히 SessionStart다. Origin: #1619 #7 — 최초 보고는 'PostCompact 공식 부재'였으나 감사 실측 결과 실재하되 additionalContext 미정의로 정정됨. 서브에이전트 보고의 검증 없는 인용이 틀린 전제를 회고 이슈까지 전파시킨 사례 (R020 원인 분석 검증 조항의 실증).
+[^postcompact]: compact 후 재주입의 문서상 보장 경로는 `SessionStart`(matcher `compact`, `claude-md-reinject.sh` — v1.1.50 #1617)이다. 기존 PostCompact prompt 배선은 유지되나 공식 문서상 `additionalContext`가 정의돼 있지 않아 효과 미보장·발동 미검증(hook-events-audit 2026-08-29). 후속 바이너리 프로브(postcompact-probe 2026-08-29, CC 2.1.251)에서 dispatch 경로 실재가 확인됨(전용 실행 함수·payload 스키마 `trigger`/`compact_summary`·dispatch map 등록, PreCompact 대비 동형 구조). 따라서 '발동 미검증'은 'dispatch 실재하나 라이브 발동·prompt 핸들러 효과는 미검증'으로 좁혀진다 — `additionalContext` 미정의는 불변이므로 재주입 보장 경로는 여전히 SessionStart다. Origin: #1619 #7 — 최초 보고는 'PostCompact 공식 부재'였으나 감사 실측 결과 실재하되 additionalContext 미정의로 정정됨. 서브에이전트 보고의 검증 없는 인용이 틀린 전제를 회고 이슈까지 전파시킨 사례 (R020 원인 분석 검증 조항의 실증).
 -->
 
 ## Enforcement Tiers
@@ -23,7 +23,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 | Advisory (proactive) | UserPromptSubmit + SubagentStop + PostToolUse hooks | R007, R008 (`r007-r008-drift-advisor.sh` — #1229 UserPromptSubmit, #1545 SubagentStop, #1553 PostToolUse) | Reads last assistant turn; emits advisory if header/prefix absent. SubagentStop wiring (#1545) covers subagent stops in no-user-input loops (`/fsd`); PostToolUse (#1553) covers the orchestrator-only stretch before the first subagent spawn. Complements retroactive Stop-hook (`session-reflection.sh`, #1190). **v1.1.43부터 실제 발화**(파서 셀렉터 `.role`→`.message.role` 수정 — 상세는 Read 도구로 원문 주석 참조). v1.1.49부터 역방향(announce > tool_use) 신호 포함, 기본 off 옵트인 (#1595 #6). v1.1.73의 narration 채널 분리 옵션(`OMCUSTOM_R008_NARRATION`, #1701 #2)은 실 세션 5건(CC 2.1.233~2.1.274) 실측에서 narration 마커 매칭 0/354·판정 on/off 동일로 전제가 성립하지 않아 v1.1.74에서 은퇴했습니다(#1703) — R008 누락은 채널 오선택이 아니라 마커 미직렬화 형태입니다. **v1.1.62(#1650 D)부터 서브에이전트 세션에서는 침묵**: hook stdin의 `agent_id`(CC 스키마상 서브에이전트 내부 발화에만 존재)가 있으면 exit 0 — 단 `SubagentStart`/`SubagentStop`은 `agent_id`가 대상 식별자라 예외(판정 수행). 중첩 서브에이전트 안의 SubagentStop은 억제 못 함(R010 정책상 도달 불가 경로). 완료 보고가 advisory 응답으로 대체되던 훅 피드백 잠식(R020 8항, #1652 #3)의 advisory 계열 차단. |
 | Advisory (telemetry + advisory) | PostToolUseFailure hook | — (계측+어드바이저리, 규칙 강제 없음) | `failure-ledger.sh` (#1561, v1.1.44) — 실패를 JSONL 원장에 append, 무출력(모델 미도달)·비차단. 같은 이벤트의 `subagent-failure-advisor.sh`(Agent/Task)는 additionalContext advisory 전달 |
 | Advisory (proactive) | UserPromptSubmit hook | R020 (원인 진단) | `fail-axis-cause-advisor.sh` (#1561, v1.1.44) — 원장에 실패 기록이 있는데 원인 진술 없는 재촉 프롬프트가 오면 `hookSpecificOutput.additionalContext`로 "원인 가설 되묻기" advisory 전달. 원장 부재 시 조용히 통과 |
-| Prompt-based | CLAUDE.md + rules/ + `SessionStart` 재주입(matcher `*`; PostCompact 이벤트 배선은 유지되나 효과 미보장[^postcompact]) | All MUST rules | Behavioral guidance in context |
+| Prompt-based | CLAUDE.md + rules/ + `SessionStart` 재주입(matcher `compact`; PostCompact 이벤트 배선은 유지되나 효과 미보장[^postcompact]) | All MUST rules | Behavioral guidance in context |
 
 훅 배선: `.claude/hooks/hooks.json`은 CC가 직접 로드하지 않는다 — 로드되는 것은 `.claude/settings.json`(+로컬+templates 미러)이며 `hooks-settings.ts`가 변환한다. 편집 후 재생성(빌드) 필수 — 누락 시 변경이 발화에 반영되지 않는다. Origin: #1623 (v1.1.53). 상세는 Read 도구로 열람.
 
@@ -78,7 +78,7 @@ oh-my-customcode uses an **advisory-first enforcement model**. Most rules are en
 1. **Agent flexibility**: Hard blocks can trap agents in unrecoverable states
 2. **Graceful degradation**: Missing dependencies (jq, etc.) don't break the session
 3. **Composability**: External skills and internal rules can coexist without deadlocks
-4. **Post-compact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction via `SessionStart`(matcher `*`/`compact`) — not via the PostCompact event itself[^postcompact]
+4. **Post-compact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction via `SessionStart`(matcher `compact`) — not via the PostCompact event itself[^postcompact]
 
 ## Hard Enforcement Candidates — R007/R008 advisory **implemented & firing** (#1229 UserPromptSubmit, proactive) + **#1545 SubagentStop** (covers subagent stops) + **#1553 PostToolUse** + retroactive Stop-hook (#1190); `additionalContext` 전달 경로는 #1547(v1.1.40)에서 구현됐으나 파서 셀렉터 결함으로 v1.1.42까지 **양 계층 모두 미발화**였고, **v1.1.43에서 수정 완료·발화 확인**(#1553); hard-block variant still candidate if advisory insufficient (#1096). Promoted: rule-deletion-guard.sh (2026-04-08). See details via Read tool.
 

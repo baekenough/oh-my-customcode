@@ -173,6 +173,103 @@ export async function validateAdditionalDocFiles(
   return mismatches;
 }
 
+/** A hook-script count claim found on one line of a README (#1903 B). */
+export interface HookCountClaim {
+  file: string;
+  /** 1-based line number of the claim. */
+  line: number;
+  documented: number;
+}
+
+/** A hook-script count claim that differs from the actual hook-script count. */
+export interface HookCountMismatch extends HookCountClaim {
+  actual: number;
+}
+
+/** README files that state how many hook scripts the project ships. */
+export const HOOK_COUNT_DOC_FILES: string[] = [
+  'README.md',
+  'README_ko.md',
+  path.join('templates', 'README.md'),
+];
+
+/**
+ * Hook-script count claim shapes observed in the READMEs (all must keep matching, see
+ * the non-vacuity test): "ships 42 lifecycle hook scripts", "# 42 lifecycle hook scripts",
+ * "42개의 라이프사이클 훅 스크립트", "42개 라이프사이클 훅 스크립트", "### Hooks (42)",
+ * "훅 셸 스크립트 (42개)". The lookbehind rejects version-like and thousands-separated
+ * prefixes ("v2 hook scripts", "1,042 hook scripts").
+ * Unlike DOC_COUNT_PATTERNS (first match wins) every claim on every line is checked,
+ * because each README states the count in more than one place.
+ */
+const HOOK_COUNT_CLAIM_PATTERNS: RegExp[] = [
+  /(?<![\w.,])(\d+)\s+(?:lifecycle\s+)?hook\s+scripts?\b/gi,
+  /(?<![\w.,])(\d+)\s*개(?:의)?\s*(?:라이프사이클\s*)?훅\s*스크립트/g,
+  /#{1,3}\s*Hooks?\s*\((\d+)\)/gi,
+  /훅\s*(?:셸\s*)?스크립트\s*\((\d+)\s*개?\)/g,
+];
+
+/**
+ * Counts the hook scripts a directory ships: regular files whose name ends in `.sh`
+ * directly inside `dir` (no recursion). A missing directory counts as 0.
+ */
+export function countHookScripts(dir: string): number {
+  if (!fs.existsSync(dir)) {
+    return 0;
+  }
+  return fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((d) => d.isFile() && d.name.endsWith('.sh')).length;
+}
+
+/**
+ * Extracts every hook-script count claim from a doc, ordered by line number.
+ * A doc without any claim yields an empty array (callers skip it, as with DOC_COUNT_PATTERNS).
+ */
+export function extractHookCountClaims(file: string, content: string): HookCountClaim[] {
+  const claims: HookCountClaim[] = [];
+  const lines = content.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    for (const pattern of HOOK_COUNT_CLAIM_PATTERNS) {
+      for (const match of lines[i].matchAll(pattern)) {
+        claims.push({ file, line: i + 1, documented: parseInt(match[1], 10) });
+      }
+    }
+  }
+
+  return claims;
+}
+
+/** Returns the claims in `content` whose count differs from `actual`. */
+export function validateHookCountClaims(
+  file: string,
+  content: string,
+  actual: number,
+): HookCountMismatch[] {
+  return extractHookCountClaims(file, content)
+    .filter((claim) => claim.documented !== actual)
+    .map((claim) => ({ ...claim, actual }));
+}
+
+/**
+ * Checks the hook-script count claims in README.md, README_ko.md and templates/README.md
+ * (resolved against `baseDir`) against `actual`. Missing files are skipped, like
+ * `validateAdditionalDocFiles`.
+ */
+export async function validateHookCountDocs(
+  actual: number,
+  baseDir: string = '.',
+): Promise<HookCountMismatch[]> {
+  const mismatches: HookCountMismatch[] = [];
+  for (const file of HOOK_COUNT_DOC_FILES) {
+    // A missing file reads as '' (extractReadmeClaims catches the error) -> no claims -> skipped.
+    const content = await extractReadmeClaims(path.join(baseDir, file));
+    mismatches.push(...validateHookCountClaims(file, content, actual));
+  }
+  return mismatches;
+}
+
 /**
  * Instruction budget thresholds (in visible chars, i.e. after HTML comments are
  * stripped). These mirror what Claude Code itself counts toward the fixed
@@ -356,11 +453,10 @@ export async function collectImplementationStats(): Promise<ImplementationStats>
       .filter((d) => d.isDirectory()).length;
   }
 
-  // Count hooks (files, not hidden)
-  const hooksDir = path.join(templatesDir, '.claude/hooks');
-  if (fs.existsSync(hooksDir)) {
-    stats.hook_count = fs.readdirSync(hooksDir).filter((f) => f.endsWith('.json')).length;
-  }
+  // Count hook scripts (*.sh files in templates/.claude/hooks/scripts, #1903 B).
+  // Previously this counted *.json files in templates/.claude/hooks (always 1: hooks.json),
+  // which no README claim refers to; hook_count has no other consumer.
+  stats.hook_count = countHookScripts(path.join(templatesDir, '.claude/hooks/scripts'));
 
   // Count contexts
   const contextsDir = path.join(templatesDir, '.claude/contexts');
@@ -669,6 +765,7 @@ function printProgrammaticResults(
   slashCommandValidation: SlashCommandValidation,
   additionalDocMismatches: DocCountMismatch[] = [],
   instructionBudget?: InstructionBudgetResult,
+  hookCountMismatches: HookCountMismatch[] = [],
 ): boolean {
   console.log('📋 Programmatic Validation Results');
 
@@ -680,6 +777,7 @@ function printProgrammaticResults(
     validation.countMismatches.length > 0 ||
     slashCommandValidation.phantom.length > 0 ||
     additionalDocMismatches.length > 0 ||
+    hookCountMismatches.length > 0 ||
     (instructionBudget !== undefined && instructionBudget.errors.length > 0);
 
   // Agent count line
@@ -775,6 +873,15 @@ function printProgrammaticResults(
     console.log('✅ Secondary docs (README_ko.md, templates/CLAUDE.md.*, templates/README.md): counts matched');
   }
 
+  // README hook-script count claims (#1903 B)
+  if (hookCountMismatches.length > 0) {
+    for (const m of hookCountMismatches) {
+      console.log(`❌ ${m.file}:${m.line}: hook script count=${m.documented}, actual=${m.actual}`);
+    }
+  } else {
+    console.log(`✅ Hook script count: ${stats.hook_count} (README.md, README_ko.md, templates/README.md matched)`);
+  }
+
   // Instruction budget (#1717): CLAUDE.md + .claude/rules/*.md, comment-stripped size
   if (instructionBudget) {
     const topFilesText = instructionBudget.topFiles
@@ -815,6 +922,7 @@ async function main() {
     const skillsDir = path.join('templates', '.claude/skills');
     const slashCommandValidation = validateSlashCommands(readmeEn, skillsDir);
     const additionalDocMismatches = await validateAdditionalDocFiles(stats);
+    const hookCountMismatches = await validateHookCountDocs(stats.hook_count);
     const instructionFiles = await collectInstructionFiles();
     const instructionBudget = measureInstructionBudget(instructionFiles);
 
@@ -825,6 +933,7 @@ async function main() {
         slashCommandValidation,
         additionalDocMismatches,
         instructionBudget,
+        hookCountMismatches,
       );
       const status = passed ? 'PASS' : 'FAIL';
       console.log(`\n<!-- VALIDATION_STATUS: ${status} -->`);
@@ -864,6 +973,13 @@ async function main() {
       }
     }
 
+    if (hookCountMismatches.length > 0) {
+      console.log('📋 README Hook Script Count Validation');
+      for (const m of hookCountMismatches) {
+        console.log(`❌ ${m.file}:${m.line}: hook script count=${m.documented}, actual=${m.actual}`);
+      }
+    }
+
     const topFilesText = instructionBudget.topFiles
       .map((f) => `${f.file} (${f.visibleLength.toLocaleString()})`)
       .join(', ');
@@ -887,6 +1003,7 @@ async function main() {
       validation.countMismatches.length > 0 ||
       slashCommandValidation.phantom.length > 0 ||
       additionalDocMismatches.length > 0 ||
+      hookCountMismatches.length > 0 ||
       instructionBudget.errors.length > 0;
     // Check for explicit LLM verdict first, fall back to marker detection
     const hasExplicitFail = /최종 판정[\s\S]*?\*\*(❌\s*)?FAIL\*\*/i.test(result);

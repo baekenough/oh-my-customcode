@@ -1,11 +1,23 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { existsSync, readdirSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import {
   buildPrompt,
   collectImplementationStats,
+  countHookScripts,
+  extractHookCountClaims,
   extractNamesFromReadme,
   extractSlashCommandsFromReadme,
+  HOOK_COUNT_DOC_FILES,
   type ImplementationStats,
   INSTRUCTION_VISIBLE_LENGTH_ERROR_LIMIT,
   INSTRUCTION_VISIBLE_LENGTH_WARN_LIMIT,
@@ -15,6 +27,8 @@ import {
   type SlashCommandValidation,
   stripHtmlComments,
   type ValidationResult,
+  validateHookCountClaims,
+  validateHookCountDocs,
 } from '../../../.github/scripts/validate-docs';
 
 // ---------------------------------------------------------------------------
@@ -1077,5 +1091,295 @@ describe('measureInstructionBudget', () => {
     expect(result.topFiles).toEqual([]);
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// README hook-script count claims (#1903 B)
+// ---------------------------------------------------------------------------
+
+describe('countHookScripts', () => {
+  let dir: string;
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'validate-docs-hooks-'));
+  });
+
+  afterAll(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('counts only regular *.sh files directly inside the directory', () => {
+    const scripts = join(dir, 'scripts');
+    mkdirSync(join(scripts, 'nested.sh'), { recursive: true }); // directory named *.sh
+    writeFileSync(join(scripts, 'a.sh'), '');
+    writeFileSync(join(scripts, 'b.sh'), '');
+    writeFileSync(join(scripts, 'notes.md'), '');
+    writeFileSync(join(scripts, 'config.json'), '');
+    writeFileSync(join(scripts, 'nested.sh', 'inner.sh'), '');
+
+    expect(countHookScripts(scripts)).toBe(2);
+  });
+
+  test('returns 0 for a missing directory', () => {
+    expect(countHookScripts(join(dir, 'does-not-exist'))).toBe(0);
+  });
+
+  test('collectImplementationStats().hook_count equals the *.sh files in templates/.claude/hooks/scripts', async () => {
+    const stats = await collectImplementationStats();
+    const expected = readdirSync(
+      join(REPO_ROOT, 'templates', '.claude', 'hooks', 'scripts')
+    ).filter((f) => f.endsWith('.sh')).length;
+
+    expect(expected).toBeGreaterThan(1); // the old *.json count was always 1
+    expect(stats.hook_count).toBe(expected);
+  });
+});
+
+describe('extractHookCountClaims', () => {
+  test('finds the English prose and tree-comment forms with line numbers', () => {
+    const content = [
+      '# Title',
+      'oh-my-customcode ships 42 lifecycle hook scripts covering security.',
+      '',
+      '│   ├── hooks/                  # 42 lifecycle hook scripts (hooks.json source)',
+    ].join('\n');
+
+    expect(extractHookCountClaims('README.md', content)).toEqual([
+      { file: 'README.md', line: 2, documented: 42 },
+      { file: 'README.md', line: 4, documented: 42 },
+    ]);
+  });
+
+  test('finds the Korean prose forms (with and without 의)', () => {
+    const content = [
+      '보안을 다루는 41개의 라이프사이클 훅 스크립트를 제공합니다.',
+      '│   ├── hooks/   # 40개 라이프사이클 훅 스크립트 (hooks.json이 소스)',
+    ].join('\n');
+
+    expect(
+      extractHookCountClaims('README_ko.md', content).map((c) => [c.line, c.documented])
+    ).toEqual([
+      [1, 41],
+      [2, 40],
+    ]);
+  });
+
+  test('finds the templates/README.md heading and tree forms', () => {
+    const content = [
+      '│   │   └── scripts/                 # 훅 셸 스크립트 (39개)',
+      '### Hooks (38)',
+    ].join('\n');
+
+    expect(
+      extractHookCountClaims('templates/README.md', content).map((c) => [c.line, c.documented])
+    ).toEqual([
+      [1, 39],
+      [2, 38],
+    ]);
+  });
+
+  test('returns [] when the doc has no hook-count sentence', () => {
+    const content =
+      'We have 12 agents and 5 skills.\nHooks are advisory.\nSee the hook scripts folder.';
+
+    expect(extractHookCountClaims('README.md', content)).toEqual([]);
+  });
+
+  test('ignores version-like prefixes such as "v2 hook scripts"', () => {
+    expect(extractHookCountClaims('README.md', 'The v2 hook scripts are new.')).toEqual([]);
+    expect(extractHookCountClaims('README.md', 'since 2.0 hook scripts changed')).toEqual([]);
+    expect(extractHookCountClaims('README_ko.md', '약 2.5개의 훅 스크립트')).toEqual([]);
+  });
+
+  test('ignores thousands-separated numbers such as "1,042 hook scripts"', () => {
+    expect(extractHookCountClaims('README.md', 'ships 1,042 hook scripts')).toEqual([]);
+    expect(extractHookCountClaims('README_ko.md', '1,042개 훅 스크립트')).toEqual([]);
+    expect(extractHookCountClaims('README.md', 'agents, 42 hook scripts')).toEqual([
+      { file: 'README.md', line: 1, documented: 42 },
+    ]);
+  });
+
+  test('reports every claim when one line holds two claims of the same phrasing', () => {
+    expect(
+      extractHookCountClaims('README.md', 'ships 42 hook scripts and 3 hook scripts').map(
+        (c) => c.documented
+      )
+    ).toEqual([42, 3]);
+  });
+
+  test('every README that states a hook count is recognised (non-vacuity guard on the real files)', () => {
+    // Minimum claims per file, measured 2026-11-05: each README states the count twice
+    // (prose + tree/heading). A floor, not an exact count, so adding a claim does not break it
+    // while rewording one of the two (which would silently drop it) does.
+    const MIN_CLAIMS: Record<string, number> = {
+      'README.md': 2,
+      'README_ko.md': 2,
+      [join('templates', 'README.md')]: 2,
+    };
+    expect(Object.keys(MIN_CLAIMS).sort()).toEqual([...HOOK_COUNT_DOC_FILES].sort());
+    for (const file of HOOK_COUNT_DOC_FILES) {
+      const claims = extractHookCountClaims(file, readFileSync(join(REPO_ROOT, file), 'utf8'));
+      expect(claims.length).toBeGreaterThanOrEqual(MIN_CLAIMS[file]);
+    }
+  });
+});
+
+describe('validateHookCountClaims', () => {
+  const README_OK = 'ships 42 lifecycle hook scripts\n# 42 lifecycle hook scripts\n';
+
+  test('negative fixture: correct count yields no mismatch', () => {
+    expect(validateHookCountClaims('README.md', README_OK, 42)).toEqual([]);
+  });
+
+  test('positive fixture: wrong count is reported with file, line, documented and actual', () => {
+    const readmeWrong = 'ships 41 lifecycle hook scripts\n# 42 lifecycle hook scripts\n';
+
+    expect(validateHookCountClaims('README.md', readmeWrong, 42)).toEqual([
+      { file: 'README.md', line: 1, documented: 41, actual: 42 },
+    ]);
+  });
+
+  test('every wrong claim in a file is reported, not only the first', () => {
+    const readmeWrong = 'ships 41 lifecycle hook scripts\n# 41 lifecycle hook scripts\n';
+
+    expect(validateHookCountClaims('README.md', readmeWrong, 42).map((m) => m.line)).toEqual([
+      1, 2,
+    ]);
+  });
+
+  test('a doc with no claim is skipped (no mismatch)', () => {
+    expect(validateHookCountClaims('README.md', 'no counts here', 42)).toEqual([]);
+  });
+});
+
+describe('validateHookCountDocs', () => {
+  let base: string;
+
+  const writeDoc = (file: string, content: string): void => {
+    mkdirSync(join(base, file, '..'), { recursive: true });
+    writeFileSync(join(base, file), content);
+  };
+
+  const writeAll = (en: number, ko: number, tpl: number): void => {
+    writeDoc('README.md', `ships ${en} lifecycle hook scripts\n# ${en} lifecycle hook scripts\n`);
+    writeDoc(
+      'README_ko.md',
+      `${ko}개의 라이프사이클 훅 스크립트\n# ${ko}개 라이프사이클 훅 스크립트\n`
+    );
+    writeDoc(join('templates', 'README.md'), `# 훅 셸 스크립트 (${tpl}개)\n### Hooks (${tpl})\n`);
+  };
+
+  beforeAll(() => {
+    base = mkdtempSync(join(tmpdir(), 'validate-docs-readmes-'));
+  });
+
+  afterAll(() => {
+    rmSync(base, { recursive: true, force: true });
+  });
+
+  test('negative fixture: all three READMEs state the actual count', async () => {
+    writeAll(42, 42, 42);
+
+    expect(await validateHookCountDocs(42, base)).toEqual([]);
+  });
+
+  test('positive fixture: a stale count in each of the three READMEs is reported per file', async () => {
+    writeAll(41, 41, 41);
+
+    const mismatches = await validateHookCountDocs(42, base);
+
+    expect(mismatches.map((m) => [m.file, m.line, m.documented, m.actual])).toEqual([
+      ['README.md', 1, 41, 42],
+      ['README.md', 2, 41, 42],
+      ['README_ko.md', 1, 41, 42],
+      ['README_ko.md', 2, 41, 42],
+      [join('templates', 'README.md'), 1, 41, 42],
+      [join('templates', 'README.md'), 2, 41, 42],
+    ]);
+  });
+
+  test('only the stale file is reported when the other two are correct', async () => {
+    writeAll(42, 41, 42);
+
+    const mismatches = await validateHookCountDocs(42, base);
+
+    expect([...new Set(mismatches.map((m) => m.file))]).toEqual(['README_ko.md']);
+  });
+
+  test('a missing README file is skipped', async () => {
+    const empty = mkdtempSync(join(tmpdir(), 'validate-docs-empty-'));
+    try {
+      expect(await validateHookCountDocs(42, empty)).toEqual([]);
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
+  });
+
+  test('the real READMEs state the real hook-script count', async () => {
+    const stats = await collectImplementationStats();
+
+    expect(stats.hook_count).toBeGreaterThan(0);
+    expect(await validateHookCountDocs(stats.hook_count, REPO_ROOT)).toEqual([]);
+  });
+});
+
+describe('validate-docs --programmatic-only CLI: README hook count wiring', () => {
+  const SCRIPT = join(REPO_ROOT, '.github', 'scripts', 'validate-docs.ts');
+  let root: string;
+
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), 'validate-docs-cli-'));
+    const scripts = join(root, 'templates', '.claude', 'hooks', 'scripts');
+    mkdirSync(scripts, { recursive: true });
+    for (const name of ['a.sh', 'b.sh', 'c.sh']) {
+      writeFileSync(join(scripts, name), '');
+    }
+  });
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  const run = (): { exitCode: number; stdout: string } => {
+    const proc = Bun.spawnSync([process.execPath, 'run', SCRIPT, '--programmatic-only'], {
+      cwd: root,
+    });
+    return { exitCode: proc.exitCode, stdout: proc.stdout.toString() };
+  };
+
+  test('exits 0 and prints a matched line when README.md states the actual count', () => {
+    writeFileSync(join(root, 'README.md'), 'ships 3 lifecycle hook scripts\n');
+
+    const { exitCode, stdout } = run();
+
+    expect(exitCode).toBe(0);
+    expect(stdout).toContain('Hook script count: 3');
+    expect(stdout).toContain('VALIDATION_STATUS: PASS');
+  });
+
+  test('exits 1 and names file:line when README.md states a wrong count', () => {
+    writeFileSync(join(root, 'README.md'), 'intro\nships 4 lifecycle hook scripts\n');
+
+    const { exitCode, stdout } = run();
+
+    expect(exitCode).toBe(1);
+    expect(stdout).toContain('README.md:2: hook script count=4, actual=3');
+    expect(stdout).not.toContain('Hook script count: 3');
+    expect(stdout).toContain('VALIDATION_STATUS: FAIL');
+  });
+
+  test('a wrong count only in README_ko.md also fails', () => {
+    writeFileSync(join(root, 'README.md'), 'ships 3 lifecycle hook scripts\n');
+    writeFileSync(join(root, 'README_ko.md'), '4개의 라이프사이클 훅 스크립트\n');
+
+    try {
+      const { exitCode, stdout } = run();
+
+      expect(exitCode).toBe(1);
+      expect(stdout).toContain('README_ko.md:1: hook script count=4, actual=3');
+    } finally {
+      rmSync(join(root, 'README_ko.md'), { force: true });
+    }
   });
 });

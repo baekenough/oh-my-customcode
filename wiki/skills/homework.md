@@ -1,7 +1,7 @@
 ---
 title: Homework
 type: skill
-updated: 2026-10-06
+updated: 2026-11-05
 sources:
   - .claude/skills/homework/SKILL.md
 related:
@@ -94,3 +94,4 @@ A delegation that writes the artifact or draft issue body must carry the Standar
 - `.claude/skills/homework/SKILL.md` — skill definition
 - Content-drift resync 2026-09-18 (v1.1.67, #1683): Phase 2a gained the advisor-reuse counting script (`scripts/count-r007-r008.sh`) as its first source, renumbering prior sources 2–4, and Limitations gained a "Count fidelity" note that only the advisor-reuse script reproduces the hook verdict.
 - Content resync 2026-10-03 (#1781): draft-time run-once norm for commands inside 하네스 제안 items, with observed result recorded beside the proposal.
+- Content-drift resync 2026-11-05 (v2.0.14, #1907 P1): Phase 2a records the `tool_use_after_tool_result_no_text` key of the `--json` output of `scripts/count-r007-r008.sh` as a separate adjacency count (not added to `r007_missing`/`r008_missing`, cause not recorded, "미측정" when absent); the issue template gained a counts line carrying it; a 하네스 제안 item that prescribes rule or workflow wording is compared before submission with the MUST rule sentence it touches, and that sentence is recorded beside the proposal.

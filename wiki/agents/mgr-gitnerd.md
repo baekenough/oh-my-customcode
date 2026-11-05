@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-11-04
+updated: 2026-11-05
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -193,3 +193,4 @@ commit dispatcher는 source 정정·영향 재검증 뒤 mandatory source Sauron
 - Sync check 2026-11-04 (v2.0.11, #1897): `auto-dev.yaml` (a source here) gained delegation-prompt clauses (redirect-target temp files, reported-verdict re-read, `claude-code-release` pinned measuring commit, correction-writer first-pass requirements); this page does not state them, so no body change.
 - Sync check 2026-11-04 (#1901): `auto-dev.yaml` (a source here) gained a count-sentence sweep for CC-note drafts and reviews, a `continuation-anchor-sweep` block for re-deriving `file:line` anchors, and a dispatcher rule to count wiki target pages from `sources:`; this page does not state these, so no body change.
 - Sync check 2026-11-04 (#1904): `auto-dev.yaml` (a source here) gained a runnable-block verification bullet, an in-process verification-output rule, and a release PR-body Closes-line check that names `mgr-gitnerd` as the writer; this page does not state these, so no body change.
+- Sync check 2026-11-05 (v2.0.14, #1906 A-3): `auto-dev.yaml` (a source here) now states that `mgr-gitnerd` writes the release-notes file with its Write tool (release step 2 and the non-npm `gh release create --notes-file` path) and that the orchestrator does not write it (R010 "Exception: Simple Tasks"), plus a `rule-deletion-guard.sh` Bash-command caution and `--body-file` delegation guidance (#1900); this page does not state the notes-file writer or those clauses, so no body change. The dated `:1012` anchor above is commit-pinned and unchanged.

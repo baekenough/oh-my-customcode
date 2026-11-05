@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "2.0.13",
-  "generatedAt": "2026-11-04T08:15:45.354Z",
+  "generatedAt": "2026-11-05T03:06:27.646Z",
   "templateVersion": "2.0.13",
   "files": {
     ".claude/agents/agora-runner.md": {
@@ -540,8 +540,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "a906f11c82523c96f7604d38ddb10050a90ca9e16eb860c520e3c29228166710",
-      "size": 71240,
+      "templateHash": "23016e263780325dd2421ec42355f2ecfea399fe54391e103235c19a27d9a8d1",
+      "size": 71246,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -565,8 +565,8 @@
       "component": "rules"
     },
     ".claude/rules/MUST-enforcement-policy.md": {
-      "templateHash": "e7e0c6af02b598fa984ae070fff163c2d94ac0ea1781002506f4872f6a59e54c",
-      "size": 24915,
+      "templateHash": "a70a71f1e925321c135681079f0c0095fd710465c5f49fc99c1992be0a39db63",
+      "size": 24929,
       "component": "rules"
     },
     ".claude/rules/MUST-intent-transparency.md": {
@@ -910,8 +910,8 @@
       "component": "skills"
     },
     ".claude/skills/homework/SKILL.md": {
-      "templateHash": "c3df40526051be014a5478a63faeabf7e8b047833c7aab1f669fb43275e3d783",
-      "size": 14875,
+      "templateHash": "74543db3a7a983a7b21e786df3597be69bf791fa8f691c59933446ecc27f425c",
+      "size": 16170,
       "component": "skills"
     },
     ".claude/skills/idea/SKILL.md": {
@@ -1010,8 +1010,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "20175c07c0bfdc717e7c7f9c01c783cd637506bb4703c438034492eab221285a",
-      "size": 8325,
+      "templateHash": "61c8006d07737a7365835cfd94d71fafe01c0b9c40ed6743aa130d721336fac2",
+      "size": 8570,
       "component": "skills"
     },
     ".claude/skills/omcustom-takeover/SKILL.md": {
@@ -1065,8 +1065,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "f877757b38814461dfbd952e4526181045a8a8ada8c256cea7d666c32e0faf90",
-      "size": 163888,
+      "templateHash": "6f8f659ab75a2dcc97e788efa57c0abe4ceedcc588a0fb4cd364ee58874f4407",
+      "size": 168221,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1545,8 +1545,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "6b836e63600e646ded45174a819ab4d0ca40a25f25e7ad2c3b96d85913bcfb71",
-      "size": 698806,
+      "templateHash": "d2a71e79521a393639bafdc8d50aa52dabe3f93285e8096e474cd43f067f4e4c",
+      "size": 715277,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
