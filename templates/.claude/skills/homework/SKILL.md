@@ -56,6 +56,8 @@ Attempt deterministic transcript extraction. Preferred sources (in order):
    ```
    이 스크립트는 `.claude/hooks/scripts/r007-r008-drift-advisor.sh`를 턴 단위로 호출해 R007 헤더 누락·R008 접두사 누락 건수를 **훅과 동일한 판정식**으로 셉니다. 자체 정규식으로 재구현하지 않습니다 — v1.1.64 세션에서 자가 계수가 3회 연속 방법 오류(레코드 분리 미인지, 병합 키 불일치, 중첩 중복 계상)로 실패한 것이 기원이며, R020 「자가 계수는 advisor 판정식을 재현한다」가 규범입니다. 스크립트가 없거나 실패하면 아래 소스로 내려가되, 회고에 "advisor 재사용 계수 미수행"을 명시합니다.
 
+   `--json` 출력에는 `tool_use_after_tool_result_no_text` 키도 있습니다(`scripts/count-r007-r008.sh`의 별도 인접 계수: tool_result 블록을 포함한 user 레코드가 연 assistant 구간에서 첫 text/tool_use 블록이 tool_use인 구간의 수). 회고에는 이 값을 `turns`, `r007_missing`, `r008_missing`과 함께 측정값 그대로 기록합니다. 이 값은 별도 지표이며 기존 `r007_missing`/`r008_missing`에 합산하지 않습니다. CC 2.1.251+의 text 블록 미기록이 섞여 있을 수 있으므로 원인은 기록하지 않습니다. 출력에 이 키가 없으면 "미측정"으로 적습니다.
+
 2. **Grep for rule-violation markers** in the current conversation context:
    - Safety classifier trip signals: `[Safety]`, `[R001]`, `[Warning]`, classifier denial messages
    - Self-corrections: "sorry", "I made an error", "let me correct", "이전 답변 수정", "죄송합니다"
@@ -131,6 +133,7 @@ Assemble a feedback issue in Korean using the #1266 format:
 
 ### 개요
 총 {N}건의 찐빠가 발견되었습니다 (Critical: {c}, High: {h}, Medium: {m}, Low: {l}).
+계수 (2a 소스 1 수행 시): turns {t}, r007_missing {a}, r008_missing {b}, tool_use_after_tool_result_no_text {x}
 
 ### 찐빠 목록
 
@@ -146,6 +149,8 @@ Assemble a feedback issue in Korean using the #1266 format:
 If `--severity` filter is active, include only findings at or above the threshold. Note the filter in the issue body.
 
 When a 하네스 제안 item contains a runnable command, run it once at draft time (positive and negative fixture where applicable) and record the observed exit code/output next to that proposal; a command that only reports failure must be caught here, not in review (e.g. `bunx biome check` exits 0 inside biome's `files.includes` scope but 1 outside it, so a norm requiring it for all TS/JS reports failure for out-of-scope files regardless of formatting). (#1781 찐빠 #1)
+
+When a 하네스 제안 item prescribes rule or workflow wording, check that wording before submission against the MUST rules it touches, and record next to the proposal the rule sentence it was compared with. Example: a proposal that has the orchestrator capture check output in a scratchpad file conflicts with R010 「Exception: Simple Tasks」, which states `"Simple" means READ-ONLY operations.`; such a proposal must either keep to that sentence or name the conflict explicitly. (#1907 P1; origin: #1907 찐빠 #2, #7)
 
 If no findings are discovered, output:
 ```

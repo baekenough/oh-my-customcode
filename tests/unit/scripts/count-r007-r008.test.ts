@@ -19,7 +19,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -370,5 +370,242 @@ describe('count-r007-r008.sh — positive/negative pair', () => {
     expect(b.turns).toBe(1);
     expect(b.r008_missing).toBe(1);
     expect(a).toEqual(b);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Separate metric: tool_use right after a tool_result with no text block (#1907 P3 / #1906 C)
+//
+// One counted event = one SEGMENT (the run of consecutive assistant records between two
+// role=="user" records) that is opened by a user record holding a tool_result block and whose
+// first text/tool_use content block (thinking and other blocks ignored) is a tool_use. The
+// metric is separate from r007_missing / r008_missing and does not call the advisor.
+// ════════════════════════════════════════════════════════════════
+
+const HEADER_TEXT = '┌─ Agent: claude (default)\n[claude][fable] → Tool: Bash';
+
+/** One assistant record carrying several content blocks (the splitter helper uses one each). */
+function assistantRecord(blocks: object[]): string {
+  return JSON.stringify({
+    type: 'assistant',
+    uuid: nextUuid(),
+    parentUuid: null,
+    isSidechain: false,
+    message: { role: 'assistant', content: blocks },
+  });
+}
+
+/** A bare-string user record flagged api-request-blob (shape-matches a boundary, must be ignored). */
+function blobUserLine(text: string): string {
+  return JSON.stringify({
+    type: 'api-request-blob',
+    hash: 'h-nt',
+    message: { role: 'user', content: text },
+  });
+}
+
+/** A meta line with no `.message` at all (progress/attachment style event). */
+function metaLine(): string {
+  return JSON.stringify({ type: 'progress', uuid: nextUuid(), data: { note: 'meta' } });
+}
+
+/** Top-level role/content shape (NOT the real schema): must not be treated as a conversation line. */
+function topLevelAssistantLine(blocks: object[]): string {
+  return JSON.stringify({ type: 'assistant', role: 'assistant', content: blocks });
+}
+
+const toolUse = (id: string): object => ({ type: 'tool_use', id, name: 'Bash', input: {} });
+const thinking: object = { type: 'thinking', thinking: 'x', signature: 's' };
+const textBlock = (text: string): object => ({ type: 'text', text });
+
+describe('count-r007-r008.sh — tool_use after tool_result with no text (separate metric)', () => {
+  beforeEach(() => {
+    tmpRoot = mkdtempSync(join(tmpdir(), 'count-r007-r008-notext-'));
+  });
+
+  afterEach(async () => {
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  async function measure(name: string, lines: string[]): Promise<Record<string, number>> {
+    const r = await runCounter([await writeTranscript(name, lines), '--json']);
+    expect(r.exitCode).toBe(0);
+    return JSON.parse(r.stdout.trim());
+  }
+
+  const FIELD = 'tool_use_after_tool_result_no_text';
+
+  it('POSITIVE: tool_result -> assistant record that is only a tool_use is counted once', async () => {
+    const parsed = await measure('pos', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(1);
+    // existing fields are untouched by the new metric: same values the pre-change script gave
+    // for this transcript (measured with the HEAD copy of the script, turns 1 / r007 0 / r008 1)
+    expect(parsed.turns).toBe(1);
+    expect(parsed.r007_missing).toBe(0);
+    expect(parsed.r008_missing).toBe(1);
+  });
+
+  it('NEGATIVE text-first: tool_result -> text then tool_use is not counted', async () => {
+    const parsed = await measure('neg-text', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      ...assistantTurn([textBlock('[claude][fable] → Tool: Read'), toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(0);
+  });
+
+  it('NEGATIVE plain-prompt: a plain user prompt followed by a bare tool_use is not counted', async () => {
+    const parsed = await measure('neg-prompt', [
+      ...userTurn('go'),
+      ...assistantTurn([toolUse('a')]),
+    ]);
+    expect(parsed[FIELD]).toBe(0);
+  });
+
+  it('thinking-skipped: tool_result -> thinking -> tool_use is counted (thinking is not text)', async () => {
+    const parsed = await measure('thinking', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      ...assistantTurn([thinking, toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(1);
+  });
+
+  it('split-record: text in an earlier record of the same segment suppresses the event', async () => {
+    const parsed = await measure('split', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      // three separate records: thinking, text, tool_use (one content block per JSONL line)
+      ...assistantTurn([thinking]),
+      ...assistantTurn([textBlock('[claude][fable] → Tool: Read')]),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(0);
+  });
+
+  it('same-record order: [text, tool_use] in one record is not counted, [thinking, tool_use] is', async () => {
+    const textFirst = await measure('same-record-text', [
+      ...userTurn('go'),
+      ...toolResultLine('x'),
+      assistantRecord([textBlock('hello'), toolUse('b')]),
+    ]);
+    const thinkingFirst = await measure('same-record-thinking', [
+      ...userTurn('go'),
+      ...toolResultLine('x'),
+      assistantRecord([thinking, toolUse('b')]),
+    ]);
+    expect(textFirst[FIELD]).toBe(0);
+    expect(thinkingFirst[FIELD]).toBe(1);
+  });
+
+  it('parallel tool_use / parallel tool_results: one segment is one event', async () => {
+    const parsed = await measure('parallel', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a'), toolUse('b')]),
+      ...toolResultLine('a'),
+      ...toolResultLine('b'),
+      ...assistantTurn([toolUse('c'), toolUse('d')]),
+    ]);
+    expect(parsed[FIELD]).toBe(1);
+  });
+
+  it('prompt-after-tool_result: the segment opened by a later plain prompt is not counted', async () => {
+    const parsed = await measure('prompt-reset', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      ...userTurn('interrupt with a new prompt'),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(0);
+  });
+
+  it('mixed user record: [text, tool_result] opens a tool_result segment', async () => {
+    const mixed = JSON.stringify({
+      type: 'user',
+      uuid: nextUuid(),
+      isSidechain: false,
+      message: {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'note' },
+          { type: 'tool_result', tool_use_id: 'a', content: 'ok' },
+        ],
+      },
+    });
+    const parsed = await measure('mixed', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      mixed,
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(1);
+  });
+
+  it('role-filter: lines without .message.role never count and never break a segment', async () => {
+    const topLevel = await measure('top-level-role', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      topLevelAssistantLine([toolUse('b')]),
+    ]);
+    const withMeta = await measure('meta-between', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      metaLine(),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(topLevel[FIELD]).toBe(0);
+    expect(withMeta[FIELD]).toBe(1);
+  });
+
+  it('sidechain / api-request-blob records are ignored (not counted, do not reset the segment)', async () => {
+    const sidechainEvent = await measure('sidechain-event', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...sidechainUserTurn('sub prompt'),
+      ...sidechainAssistantTurn([toolUse('sub')]),
+      ...toolResultLine('a'),
+    ]);
+    const blobBetween = await measure('blob-between', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      blobUserLine('request copy'),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    const sidechainUserBetween = await measure('sidechain-user-between', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      ...sidechainUserTurn('sub prompt'),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(sidechainEvent[FIELD]).toBe(0);
+    expect(blobBetween[FIELD]).toBe(1);
+    expect(sidechainUserBetween[FIELD]).toBe(1);
+  });
+
+  it('prints the metric in the human-readable output too', async () => {
+    const path = await writeTranscript('human', [
+      ...userTurn('go'),
+      ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+      ...toolResultLine('a'),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    const r = await runCounter([path]);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain('tool_use after tool_result, no text: 1');
+    expect(r.stdout).toContain('R007 header missing: 0');
+    expect(r.stdout).toContain('R008 prefix missing: 1');
   });
 });

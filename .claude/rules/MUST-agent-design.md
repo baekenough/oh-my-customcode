@@ -261,7 +261,7 @@ Hook JSON output `terminalSequence` field for desktop notifications, window titl
 `MessageDisplay`는 표시 전용(`additionalContext` 미지원, 모델 미도달) — advisory 훅은 SessionStart/Setup/SubagentStart/UserPromptSubmit/UserPromptExpansion/PreToolUse/PostToolUse류·Stop·SubagentStop에 배선하세요.
 
 <!-- DETAIL: hooks.md doc-lag diagnostic note
-> **문서 시차 노트 — `PreModelSwitch`/`PostModelSwitch` 및 `PostCompact`**: 33종 중 `PreModelSwitch`/`PostModelSwitch`(v2.1.251)는 CHANGELOG(2026-08-28)에는 명시되나 공식 hooks.md "Hook events" 카탈로그 페이지에는 실측일(2026-08-29) 기준 헤더가 없다 — changelog→hooks.md 반영 시차로 판단(오류 아님, hook-events-audit 2026-08-29 실측). 또한 `PostCompact`는 공식 문서상 `additionalContext`/decision-control이 정의돼 있지 않다 — 재주입(compact 후 규칙 재주입) 용도로는 `PostCompact`가 아니라 `SessionStart`(matcher `*`)를 쓸 것(cross-ref R021 「Prompt-based」 각주). PostCompact dispatch 경로는 바이너리 실측으로 실재 확인(2026-08-29 probe) — 상세는 R021 각주.
+> **문서 시차 노트 — `PreModelSwitch`/`PostModelSwitch` 및 `PostCompact`**: 33종 중 `PreModelSwitch`/`PostModelSwitch`(v2.1.251)는 CHANGELOG(2026-08-28)에는 명시되나 공식 hooks.md "Hook events" 카탈로그 페이지에는 실측일(2026-08-29) 기준 헤더가 없다 — changelog→hooks.md 반영 시차로 판단(오류 아님, hook-events-audit 2026-08-29 실측). 또한 `PostCompact`는 공식 문서상 `additionalContext`/decision-control이 정의돼 있지 않다 — 재주입(compact 후 규칙 재주입) 용도로는 `PostCompact`가 아니라 `SessionStart`(matcher `compact`)를 쓸 것(cross-ref R021 「Prompt-based」 각주). PostCompact dispatch 경로는 바이너리 실측으로 실재 확인(2026-08-29 probe) — 상세는 R021 각주.
 -->
 
 <!-- DETAIL: hook event trigger-timing detail

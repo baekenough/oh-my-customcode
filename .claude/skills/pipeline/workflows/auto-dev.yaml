@@ -346,8 +346,13 @@ steps:
       # END path-precheck
       A target the block above cannot extract (a path with a character outside the set, a path
       under a top-level name that is not tracked, a new root file, a bare file name) is read from
-      the issue by the model and measured through channel (c): a delegated agent writes the candidate paths, one per
-      line, to a file with the Write tool and runs the block below with `<path-file>` replaced once by the absolute path of that file; the orchestrator reads the raw output and exit code.
+      the issue by the model and measured through channel (c): the candidate paths (values
+      read from the issue body) travel to a delegated agent inside a nonce data block (shell
+      rule channel (a); instructions stay outside the block), and that agent writes the
+      candidate paths, one per
+      line, to a file with the Write tool and runs the block below with `<path-file>`
+      replaced once by the absolute path of that file; the orchestrator reads the raw output
+      and exit code.
       The block reads the file line by line, keeps a last line
       without a trailing newline, skips blank lines, never executes a path string, and runs in a
       subshell pinned to the repository root. Each tracked-path lookup is checked with pipefail;
@@ -429,6 +434,8 @@ steps:
           모든 릴리즈는 implement 단계의 필수 통합 커밋 순서를 따라 이 위임이
           deep-verify 정정 뒤, 통합 커밋 앞에 오게 합니다(Origin: v1.1.58 세션 — docs-only 티어였으나
           sauron이 R002/R010 모순 advisory 1건을 포착; #1799 제안 1).
+          범위에 CC-note 초안이 있으면 이 self-review 체크리스트도 implement Rules의 「개수 문장
+          스윕」을 적용합니다(첫 리뷰가 위임이 아니라 체크리스트이기 때문입니다, #1903 AH-1).
         - Wiki resync + manifest reseed (R022) run AFTER the deep-verify substitute for this tier (self-review checklist, plus the mandatory mgr-sauron:watch single-goal delegation, which runs in every tier) and any resulting corrections have landed — never in parallel with it; 이는 implement의 Early wiki result classification and handoff를 Tier 1에도 적용하는 순서입니다(#1688). Wiki pages summarize the rules, so a review-driven rule fix invalidates any wiki written earlier (v1.1.66: 3 pages reworked; v1.1.67 with review-first ordering: 0 rework — #1688 Iteration 3 #2).
         - Log: "[compression-mode] docs-only compression activated (scope={n}, all docs/yaml labels)"
         - ⚠ Analysis artifacts only. Every step's state-change side effect (milestone create/assign,
@@ -847,8 +854,10 @@ steps:
         item, that the agent copy the command OUT of the edited file and run it once on a positive
         fixture (the check-triggering case) and once on a negative fixture (the check-passing
         case), reporting both raw outputs (룰/스킬/워크플로 텍스트에 넣는 실행 명령은 편집 파일에서
-        그대로 복사해 양성·음성 픽스처로 실행한 출력을 완료 보고에 포함해야 합니다; 정정 위임은 이미
-        적용해 통과한 결과로 갈음합니다) (R023 「Sample-Value Assembly」, #1752 찐빠 #1).
+        그대로 복사해 양성·음성 픽스처로 실행한 출력을 완료 보고에 포함해야 합니다; 실행 가능
+        블록을 수정하지 않는 정정 위임에 한해 이미 적용해 통과한 결과로 갈음하고, 실행 가능
+        블록을 수정하는 정정 위임은 정정된 블록으로 양성·음성 픽스처를 다시 실행합니다)
+        (R023 「Sample-Value Assembly」, #1752 찐빠 #1).
       - The fixture-execution norm above (copy the command OUT of the edited file and run it,
         reporting raw output) extends to CI workflow scripts (e.g. GitHub Actions YAML steps)
         being verified during implement/verify-build/deep-verify: when the agent extracts a step
@@ -934,6 +943,13 @@ steps:
         복사하십시오(#1904 P2). 실행 가능한 블록을 추가·수정하는 위임은 리뷰 위임까지 implement
         Rules의 「Verify a runnable block that a skill, workflow, or document adds or edits」
         항목을 위임서에 실으십시오(#1904 P1).
+        한 Bash 호출에 따옴표 밖 `$(`·`rm`·`.claude/rules`를 함께 넣지 마십시오
+        (`rule-deletion-guard.sh`가 세 패턴이 한 명령에 있으면 차단하며 훅은 바꾸지 않습니다,
+        #1900). 이슈·코멘트 본문처럼 이 패턴을 서술하는 텍스트를 셸로 넘길 때는 위임받은
+        에이전트가 Write 도구로 만든 파일을 `--body-file <경로>`로 지정하십시오. 오케스트레이터는
+        그 파일을 직접 만들지 않고 그 명령을 위임합니다(R010 「Exception: Simple Tasks」에서
+        오케스트레이터가 직접 쓸 수 있는 것은 PPID 스코프 `/tmp` 1줄 마커뿐입니다). quoted
+        heredoc로 넘겨도 차단된 사례가 있습니다(#1900).
       - Line-anchor drift sweep: a delegation that adds or removes lines in any file MUST, as a
         completion condition, run `git grep -n -E '<escaped basename>:[0-9]'` across the
         repository (the BASENAME, not the path — basename-only anchors such as
@@ -955,22 +971,25 @@ steps:
         old = subprocess.run(["git", "show", f"{rev}:{path}"], capture_output=True, text=True, check=True).stdout.split("\n")
         new = open(path, encoding="utf-8").read().split("\n")
         files = subprocess.run(["git", "ls-files", "-z"], capture_output=True, text=True, check=True).stdout.split("\0")
-        pat = re.compile(r"(?:" + re.escape(base) + r"|(?<![\w.])):(\d{1,5})(?:-:?(\d{1,5}))?")
+        pat = re.compile(r"(?:" + re.escape(base) + r"|(?<![\w.])):(\d+(?:[-~,]:?\d+)*)")
+        pin = re.compile(r"\d{4}-\d{2}-\d{2}|\b(?=[0-9a-f]*\d)[0-9a-f]{7,40}:")
+        nold = len(old) - (old[-1] == "")
         print("source\tN\told-line\tnew-lines")
         for f in filter(None, files):
             try: lines = open(f, encoding="utf-8").read().split("\n")
             except (OSError, UnicodeDecodeError): continue
             for i, l in enumerate(lines, 1):
                 if base not in l: continue
-                seg = l[l.index(base):]
-                for m in pat.finditer(seg):
-                    for g in filter(None, m.groups()):
+                off = l.index(base)
+                for m in pat.finditer(l[off:]):
+                    tag = "\tPINNED?" if pin.search(l[:off + m.start()]) else ""
+                    for g in re.findall(r"\d+", m.group(1)):
                         n = int(g)
-                        if not 1 <= n <= len(old): continue
+                        if not 1 <= n <= nold: continue
                         if not old[n - 1].strip():
-                            print(f"{f}:{i}\t{n}\t''\tBLANK OLD LINE"); continue
+                            print(f"{f}:{i}\t{n}\t''\tBLANK OLD LINE{tag}"); continue
                         hits = [str(k) for k, x in enumerate(new, 1) if x == old[n - 1]]
-                        print(f"{f}:{i}\t{n}\t{old[n-1][:60]!r}\t{','.join(hits) or 'NO EXACT MATCH'}")
+                        print(f"{f}:{i}\t{n}\t{old[n-1][:60]!r}\t{','.join(hits) or 'NO EXACT MATCH'}{tag}")
         PY
         # END continuation-anchor-sweep
         (Limit: only numbers after the first mention of the basename on a line are read, so a
@@ -978,9 +997,17 @@ steps:
         anchors before the mention are missed; there is no path check, so rows also include
         anchors naming any other path whose basename equals or ends with `<base>` - open each
         source line to confirm the anchor's path before re-deriving; only tracked files are
-        read, one physical line at a time, and an N outside 1..old length and
-        unreadable/non-UTF-8 files are skipped silently; `BLANK OLD LINE` rows are usually
-        anchors into another file.)
+        read, one physical line at a time, and an N outside 1..the old file's line count (a
+        trailing newline adds no line) and unreadable/non-UTF-8 files are skipped silently;
+        `BLANK OLD LINE` rows are usually anchors into another file. Every digit run of an
+        anchor token (`:N`, `:N-:M`, `:N,M`, `:N~M`) is read as one whole number, so `:000012`
+        is N=12 and `:123456` is N=123456, skipped when beyond the old line count. This block
+        maps every anchor from `<pre-edit-rev>`: an anchor inside a dated history note (e.g.
+        a wiki "Sync check 2026-10-25 … `:1012`") or pinned to a commit
+        (`10a6ff48:<path>:1012`) is commit-pinned, not renumbered, so its row is a false drift
+        candidate and the anchor MUST stay unchanged; rows whose text before the anchor holds
+        a `YYYY-MM-DD` date or a `<hex>:` commit prefix end with `PINNED?` (a heuristic - read
+        the sentence; a date or commit written after the anchor is not flagged).)
         (줄 수를 바꾸는 위임의 완료 조건에 그 파일을 가리키는 `file:line` 앵커 — basename 전용·
         연속 `:N` 형태 포함 — 의 전수 grep과 재도출 또는 내용 앵커 전환을 넣어야 하며, 생성 파일
         앵커는 줄 번호가 아닌 내용 앵커여야 합니다) (#1884 item 8).
@@ -992,8 +1019,8 @@ steps:
         orchestrator's own run of it, and every fresh review of a draft or correction delta
         containing it (deep-verify 「Correction dispatcher」 included) carry this; an extraction
         path of your own is not a verification of the document. It applies even where the #1752
-        fixture bullet lets a correction rely on an earlier pass, whenever the correction touches the
-        runnable block (#1904 P1).
+        fixture bullet lets a correction rely on an earlier pass, whenever the correction edits
+        the runnable block (#1904 P1).
       - The orchestrator captures verification output in-process (e.g. `$(...)` with the exit code
         read first, or a pipe when the exit code is not needed or is preserved) and writes no
         files, scratchpad included; a check that needs a file is delegated. The only carve-out is
@@ -1070,7 +1097,11 @@ steps:
         (#1709 #4).
       - When forwarding a number OR an identifier (file path, rule number, issue number) an
         agent reported into a subsequent delegation prompt, recompute the number once via
-        diff/ls (e.g. `git diff -U0 -- <path> | grep -c '^+[^+]'`) AND re-check the
+        diff/ls (e.g. `git show <base-ref>:<path> | diff - <path> | grep -c '^>'` for added
+        lines; use `'^[<>]'` for the whole delta, the same counting standard as deep-verify
+        「Correction dispatcher」 — the older `git diff -U0 | grep -c '^+[^+]'` form undercounts
+        blank added lines and added lines whose content starts with `+`, AD-8 #1899) AND
+        re-check the
         identifier once via a corpus-wide grep of the reported CONTENT key, not the reported
         identifier itself (e.g. if an agent reports "<rule-N> covers <content key>", grep the
         content key — `git grep -n '<content key>' .claude/rules/` — not `<rule-N>`) and
@@ -1204,11 +1235,14 @@ steps:
         through a variable binary, case/hyphen variants, files outside the pathspec, text inside
         HTML `<!-- DETAIL -->` comments) (배타·전칭 서술이 반례 하나로 깨지는 리뷰 지적 계열
         방지 — v2.0.2 라운드 2에 스윕 도입 후 다음 리뷰의 신규 Medium 이상 11→4, #1860).
-        The same first draft MUST also pass a count-sentence sweep over the WHOLE draft (not only
-        sentences the prompt told it to write): every sentence with a number and unit (건/개/줄/자
-        etc.) carries its measuring command or is self-checked by an enumeration right before or
-        after it; every fresh review of that draft and of each correction delta to it (deep-verify
-        「Correction dispatcher」 included) applies the same sweep (개수 문장 스윕 — 초안 전체의
+        For a `claude-code-release` CC-note, the same first draft MUST also pass a count-sentence
+        sweep over the WHOLE draft (not only
+        sentences the prompt told it to write): every sentence with a number and a counting unit
+        (e.g. 건/개/줄/자) carries its measuring command or is self-checked by an enumeration right
+        before or after it; numbers inside quoted source text (e.g. CHANGELOG quotations) or their
+        translations are excluded, as in the sweep above; every fresh review of that draft and of
+        each correction delta to it (deep-verify 「Correction dispatcher」 included) applies
+        the same sweep (개수 문장 스윕 — 초안 전체의
         숫자 대상, #1901 찐빠 #1; the #1749 찐빠 #2 bullet covers only count sentences the prompt
         orders).
       - The FIRST drafting delegation of a `claude-code-release` CC-note MUST also carry
@@ -1218,14 +1252,23 @@ steps:
         in the same release) uses a measuring-commit SHA instead of `HEAD` (e.g. a working-tree
         measurement becomes `git grep <pattern> <sha>` / `git show <sha>:<path>`), and the result
         sentence says "삽입 전(<sha>) 기준" (item (a) also binds later correction delegations
-        that add measurement sentences). A draft carried over across iterations or batches defines
-        its measuring commit ONCE at the section head (commit title, which sections it
-        precedes, and the measuring command), so "삽입 전(<sha>)" is never ambiguous (#1901 찐빠 #5). (b) Pitfalls to list in the prompt: git pathspec `*`
-        crosses `/` (use `:(glob)`); macOS `git grep -E` lacks `\b` (use
-        `-P`); `git grep` also searches inside HTML comments, which are not auto-injected (count
+        that add OR rewrite measurement sentences, including re-measuring and correcting an
+        existing one; a carried-over draft's measuring commit is defined in the next bullet).
+        (b) Pitfalls to list in the prompt: git pathspec `*`
+        crosses `/` (use `:(glob)`); `git grep -E` (POSIX ERE) does not support `\b`·`\d`·`\s`
+        and can return 0 matches WITHOUT any error, so a silent 0 is not evidence of absence (macOS git
+        measured per R005, #1760; use `-P` or python); `git grep` also searches inside HTML comments, which are not auto-injected (count
         on comment-stripped text when the claim concerns injected context). (c) Require the
         agent to compare the issue body against the release body
-        (`gh release view v<X.Y.Z> -R anthropics/claude-code --json body --jq .body`).
+        (`gh release view v<X.Y.Z> -R anthropics/claude-code --json body --jq .body`) and
+        report the result as a per-row mismatch table; on a mismatch the release body (the primary
+        source) wins; if the tag is absent (rc≠0) do NOT skip the comparison — stop and report
+        (AD-6 #1899 maintainer decision).
+      - A `claude-code-release` CC-note draft carried over across iterations or batches defines
+        its measuring commit ONCE, at the section head, and every delegation that drafts or
+        corrects it (the first drafting delegation and each later correction delegation alike)
+        carries that definition: the commit title, which sections it precedes, and the command
+        each measurement sentence cites, so "삽입 전(<sha>)" is never ambiguous (#1901 찐빠 #5).
       - Any delegation correcting a fact (the issue states an existing statement in a target file
         is wrong) — not only `claude-code-release` CC-notes — MUST include, as a completion
         criterion, an exhaustive `grep` across the target file(s) for the claim's key terms (the terms in a file written with the Write tool, run through the quote-verify block of the fixed constraint (c) as a search, not a pass/fail check), not
@@ -1426,11 +1469,16 @@ steps:
       한계는 implement coverage clause대로 보고하십시오. 바뀐 상태에 옛 green을 쓰지 마십시오.
       정정 writer 위임서는 1차부터 "삭제·축소 우선, 새 주장 문장마다 측정 명령/관측 범위/[가설]
       중 하나, 추가 문장 수 보고"를 포함하십시오(정정에서 새로 덧붙인 주장 문장이 새 결함의
-      주된 출처였습니다, #1897 찐빠 #3). 델타 계수는 `diff <before> <after> | grep -c '^[<>]'`를
-      쓰십시오. `diff -u … | grep -c '^[+-][^+-]'`는 내용이 `-`·`+`로 시작하는 줄(예: 들여쓰지 않은 markdown 불릿)과 빈 줄을 과소 계수합니다(#1897 찐빠 #7).
-      정정 round는 최초 구현 리뷰를 제외하고 최대 3차입니다. 각 correction delta마다 그 영역의 이전 리뷰에 참여하지 않은 fresh
-      reviewer에게 독립 재리뷰를 발주하되(CC-note 초안의 정정 델타 리뷰 위임에는 implement Rules의 「개수 문장 스윕」을 반드시 싣습니다,
-      #1901 찐빠 #1) 새 Medium+ 건수, 기존 미해결 지적, writer/reviewer identity와 델타를 기록하십시오. 마지막 델타의 새
+      주된 출처였습니다, #1897 찐빠 #3). 정정 writer는 기준선 사본을 해당 라운드의 fresh 리뷰가
+      끝날 때까지 보존하고 그 경로를 보고하십시오. 사본과 임시 디렉토리의 정리는 writer가 아니라
+      이후 단계(Correction dispatcher)가 합니다(writer가 기준선을 지워 라운드 델타를 재구성하지
+      못했고 임시 디렉토리가 남았습니다, #1907 찐빠 #4·#5). 델타 계수는 `diff <before> <after> | grep -c '^[<>]'`를
+      쓰십시오. `diff -u … | grep -c '^[+-][^+-]'`는 내용이 `-`·`+`로 시작하는 줄(예: 들여쓰지
+      않은 markdown 불릿)과 빈 줄을 과소 계수합니다(#1897 찐빠 #7). 정정 round는 최초 구현
+      리뷰를 제외하고 최대 3차입니다. 각 correction delta마다 그 영역의 이전 리뷰에 참여하지
+      않은 fresh reviewer에게 독립 재리뷰를 발주하되(CC-note 초안의 정정 델타 리뷰 위임에는
+      implement Rules의 「개수 문장 스윕」을 반드시 싣습니다, #1901 찐빠 #1) 새 Medium+ 건수,
+      기존 미해결 지적, writer/reviewer identity와 델타를 기록하십시오. 마지막 델타의 새
       Medium+ 0건과 현재 소스의 미해결 Medium+ 0건을 모두 확인해야 종료할 수 있습니다.
       3차에도 기존 또는 신규 Medium+가 남으면 release를 HALT하십시오. 비차단 이월 항목은
       한 후속 이슈로 통합하되 상한 도달을 현재 source 결함 waiver나 부분 해결 이슈의 전체
@@ -1453,8 +1501,9 @@ steps:
       문구/relative ref와 인용별 원문 검증·변경 주장 단위의 이전 표현 잔존 검색을 완료 조건으로
       위임하십시오. Early wiki result classification and handoff의 pending-documentation 표와
       raw log도 함께 전달하고 각 행의 정정·잔존 여부를 wiki-curator 완료 표에 대응하십시오.
-      위임 전에 dispatcher가 대상 wiki 페이지 수를 각 페이지 frontmatter `sources:`에서 직접
-      실측해 위임서에 적으십시오. 본문 언급 수나 원천 키 수를 페이지 수로 옮겨 적지 마십시오
+      위임 전에 오케스트레이터가 대상 wiki 페이지 수를 각 페이지 frontmatter
+      `sources:`에서 직접 실측해 위임서에 적으십시오. 본문 언급 수나
+      `wiki/.source-hashes.json`의 키(원천 파일 경로) 수를 페이지 수로 옮겨 적지 마십시오
       (#1901 찐빠 #7).
       잔존 검색은 본문뿐 아니라 변경 로그·요약까지 포함하고 hit가 있으면 관련성
       판정 근거를 보고하십시오. 의역은 인용으로 표시하지 마십시오. wiki 페이지 수정이 끝난
@@ -1462,8 +1511,8 @@ steps:
 
       ## Post-wiki deterministic verification
 
-      wiki resync dispatcher는 wiki-curator 완료 표·실제 wiki artifact를 QA 검증 담당자에게
-      전달하십시오. QA는 link/quote/residual/hash 결과를 직접 재계산하고 dispatcher가 그 PASS를
+      오케스트레이터는 wiki-curator 완료 표·실제 wiki artifact를 QA 검증 담당자에게
+      전달하십시오. QA는 link/quote/residual/hash 결과를 직접 재계산하고 오케스트레이터가 그 PASS를
       읽어 mgr-gitnerd 통합 commit 전 조건에 전달하게 하십시오. QA는 조기 pending-documentation
       표의 모든 행이 해소됐는지와 실제 CI 전체 대응 결과의 현재 유효성을 함께 읽으십시오.
       미해결 행·표 누락·검사 실패는 commit/release를 HALT합니다. 유예를 최종 면제로 바꾸지 마십시오.
@@ -1587,7 +1636,7 @@ steps:
            - major: actual compatibility breaks in existing CLI flags or public APIs, or an explicit major milestone declaration (e.g., v1.0.0). Skill/agent/integration lifecycle changes alone are excluded; the user's explicit version or bump-level judgment takes precedence.
          - Previous tag is ahead of source version (e.g., tag v0.136.1, package.json 0.136.0): use next available skip-version (0.136.2)
 
-      2. Release notes via omcustom-release-notes skill
+      2. Release notes via omcustom-release-notes skill (mgr-gitnerd writes the notes file with its Write tool; the orchestrator does not write it, R010 「Exception: Simple Tasks」)
       3. Adapt release mechanism to project (determines how steps 3-5 execute):
          - Milestone assignment gate (all projects; run BEFORE any PR is created or tag is pushed below): confirm that milestone
            vX.Y.Z exists and is open, and that EVERY issue of this release's scope is assigned to it. The scope includes issues
@@ -1631,7 +1680,7 @@ steps:
          - Non-npm / no auto-tag.yml:
            mgr-gitnerd: git tag v{NEW} && git push origin v{NEW}
            mgr-gitnerd: gh release create v{NEW} --notes-file <release-notes-file>
-           The notes file follows the omcustom-release-notes convention: written with the Write tool to a git-ignored notes file (for example `.claude/outputs/sessions/{date}/release-notes-{VERSION}.md`), never inlined in the command line. The tracked root `release_notes.md` is not used as the `--notes-file` input.
+           The notes file follows the omcustom-release-notes convention: mgr-gitnerd writes it with its Write tool to a git-ignored notes file (for example `.claude/outputs/sessions/{date}/release-notes-{VERSION}.md`), never inlined in the command line. The tracked root `release_notes.md` is not used as the `--notes-file` input.
            Then proceed with items 4-5 below.
 
       4. Close milestone (non-auto-tag projects only — auto-tag.yml handles this for npm+PR projects):

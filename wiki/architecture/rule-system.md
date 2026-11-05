@@ -1,7 +1,7 @@
 ---
 title: Rule Enforcement System
 type: architecture
-updated: 2026-10-26
+updated: 2026-11-05
 sources:
   - .claude/rules/MUST-enforcement-policy.md
   - .claude/rules/MUST-continuous-improvement.md
@@ -29,7 +29,7 @@ oh-my-customcode uses an **advisory-first enforcement model**: most behavioral r
 | **SHOULD** | 8 | Prompt injection only |
 | **MAY** | 1 | Optional guidance |
 
-Rules live in `.claude/rules/` and are auto-injected into the system prompt. After context compaction, critical MUST rules are re-injected via PostCompact hooks to combat "compaction amnesia." A newer complement, `claude-md-reinject.sh` (SessionStart, matcher `*`, #1617), re-injects the full project `CLAUDE.md` text on every session start (startup/resume/clear) and on compact-resume — closing the gap where PostCompact only re-injects rule *summaries*, not the CLAUDE.md original. Opt-out via `OMCUSTOM_CLAUDEMD_REINJECT=off`; degrades silently (no-op) if `CLAUDE.md` or `jq` is missing.
+Rules live in `.claude/rules/` and are auto-injected into the system prompt. After context compaction, critical MUST rules are re-injected via PostCompact hooks to combat "compaction amnesia." A newer complement, `claude-md-reinject.sh` (SessionStart, matcher `compact`, #1617), re-injects the full project `CLAUDE.md` text on compact re-entry only (CC already auto-loads `CLAUDE.md` on normal starts) — closing the gap where PostCompact only re-injects rule *summaries*, not the CLAUDE.md original. Opt-out via `OMCUSTOM_CLAUDEMD_REINJECT=off`; degrades silently (no-op) if `CLAUDE.md` or `jq` is missing.
 
 **Hook wiring path (v1.1.53, #1623):** `.claude/hooks/hooks.json` is a **source** file, not something CC loads directly — the CC 2.1.251 binary has zero references to a `.claude/hooks` path, and `settings.json` has never historically carried a `hooks` key. What CC actually loads is the official `hooks` block inside `.claude/settings.json` (+ `.local.json`, + the `templates/` mirror), a **build artifact** produced by `src/core/hooks-settings.ts` (its matcher-condition DSL's 12 cases become 3 self-guarding scripts + 9 stdin-guard wrapper cases). `omcustom init` merges the result via `installHooksSettings()`. Editing only `hooks.json` without regenerating settings means the change never fires; regenerate with `bun run sync:hooks` (or `bun run build`), confirm settings.json (+local+templates) were regenerated, then commit. A fresh-session probe (2026-08-29) is the first confirmed session-level firing: 9 SessionStart `hook_success` events, 5 `[claude-md-reinject]` marker hits, and UserPromptSubmit/Stop firing observed.
 
@@ -104,3 +104,4 @@ Rules that may be promoted to hard-block if advisory enforcement proves insuffic
 - Content-drift resync 2026-08-29 (v1.1.50, #1617): documented the new `claude-md-reinject.sh` SessionStart hook (full CLAUDE.md re-injection on startup/resume/clear/compact) alongside the existing PostCompact summary re-injection.
 - Content-drift resync 2026-08-29 (v1.1.53, #1623): documented the hooks.json (source) → settings.json `hooks` block (build artifact) conversion pipeline (`src/core/hooks-settings.ts`) — CC never loads `.claude/hooks/hooks.json` directly; only the converted `settings.json`/`.local.json`/`templates/` mirror is loaded. First session-level firing measurement recorded.
 - Content-drift resync 2026-10-26 (v2.0.8, #1856): the Hard Block row of the enforcement-tiers table now lists `stage-blocker` and `rule-deletion-guard` only (the dev-server tmux hook is an advisory).
+- Content-drift resync 2026-11-05 (v2.0.14): the `claude-md-reinject.sh` SessionStart matcher is now stated as `compact` (the source's R021 `[^postcompact]` footnote and Prompt-based row changed from `*`); the Overview paragraph was corrected. The same paragraph's "every session start (startup/resume/clear)" claim was also corrected to "compact re-entry only", per the hook description in `.claude/hooks/hooks.json` :207 (and the matcher in the R021 footnote).

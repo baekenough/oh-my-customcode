@@ -39,10 +39,35 @@
 # transcript in production (it always tails the last 200 lines of the file it is given, and the
 # file only ever grows) — so per-turn results here are what the hook would actually have fired.
 #
+# SEPARATE metric (#1907 P3 / #1906 C): `tool_use_after_tool_result_no_text`. It is computed by
+# this script's own record-adjacency pass over the canonical lines (it never calls the advisor)
+# and is NEVER added into `r007_missing` / `r008_missing`; the advisor hook is not changed
+# (CC 2.1.251+ omits text blocks from some records even when text was written, so folding it
+# into the advisor verdict would mix platform omissions with real misses). Definition, measured
+# on a real transcript (one content block per JSONL record, so one response spans several
+# records: thinking, text and tool_use each get their own `.message.role == "assistant"` line):
+#   - Only conversation records count (same `$is_conv` filter as above: not isSidechain, not
+#     api-request-blob) and only `.message.role` of "user"/"assistant"; lines without it are
+#     ignored and never break a segment.
+#   - A "segment" = the run of consecutive assistant records between two role=="user" records.
+#     It is "after a tool_result" when the user record that opens it has at least one
+#     `tool_result` block (the same test the boundary rule uses). A plain user prompt, or a
+#     segment at the start of the file, is not. A user record with `isMeta: true` (e.g. the skill
+#     body that follows a Skill tool_result) is a plain user prompt here, i.e. a segment boundary,
+#     so the tool_use after it is not counted.
+#   - Walk the segment's content blocks in order, ignoring every block that is neither `text` nor
+#     `tool_use` (thinking etc.). If the FIRST remaining block is `tool_use`, the segment is ONE
+#     counted event; if it is `text`, nothing is counted. A text block in an earlier record of the
+#     same segment therefore suppresses the event (split records), and parallel tool_use blocks in
+#     one segment count once, not once per tool_use.
+# Counted events sit INSIDE the turns defined above (a tool_result line is not a boundary), so the
+# metric is not a turn-boundary claim; it only counts the adjacency shape. It reports the number
+# as measured and makes no statement about why the text block is absent.
+#
 # Usage: scripts/count-r007-r008.sh <transcript.jsonl> [--json]
 #
 # Output (default): human-readable summary.
-# Output (--json):  {"turns":N,"r007_missing":N,"r008_missing":N}
+# Output (--json):  {"turns":N,"r007_missing":N,"r008_missing":N,"tool_use_after_tool_result_no_text":N}
 #
 # macOS zsh-invoked bash: no GNU-only flags; `mktemp -d` uses the BSD-compatible template form.
 
@@ -149,6 +174,28 @@ if [ "$seen_assistant" = "1" ]; then
   echo "$((TOTAL_LINES - 1))" >> "$CUTPOINTS_FILE"
 fi
 
+# ── Separate metric: tool_use right after a tool_result with no text block (see header). One
+# reduce over the canonical records; state = {after_tr, decided, n}. A role=="user" record
+# (re)opens a segment and sets after_tr from its tool_result blocks; the first text/tool_use block
+# of the following assistant records decides the segment exactly once.
+tool_use_no_text_total=$(
+  jq -s '
+    def is_conv: ((.isSidechain? // false) != true) and ((.type? // "") != "api-request-blob");
+    def blocks: if ((.message.content? // "" | type) == "array") then (.message.content[]?) else empty end;
+    reduce (.[] | select(is_conv and ((.message.role? == "assistant") or (.message.role? == "user")))) as $r
+      ({after_tr: false, decided: true, n: 0};
+       if $r.message.role == "user" then
+         .after_tr = (([$r | blocks | select(type == "object" and .type? == "tool_result")] | length) > 0)
+         | .decided = false
+       elif (.after_tr and (.decided | not)) then
+         ([$r | blocks | select(type == "object" and (.type? == "text" or .type? == "tool_use"))] | first) as $f
+         | if $f == null then .
+           else .decided = true | (if $f.type == "tool_use" then .n += 1 else . end) end
+       else . end)
+    | .n
+  ' "$CANONICAL"
+)
+
 turns_scanned=0
 r007_missing_total=0
 r008_missing_total=0
@@ -202,9 +249,11 @@ if [ "$JSON_OUT" = "1" ]; then
     --argjson turns "$turns_scanned" \
     --argjson r007 "$r007_missing_total" \
     --argjson r008 "$r008_missing_total" \
-    '{turns: $turns, r007_missing: $r007, r008_missing: $r008}'
+    --argjson notext "$tool_use_no_text_total" \
+    '{turns: $turns, r007_missing: $r007, r008_missing: $r008, tool_use_after_tool_result_no_text: $notext}'
 else
   echo "turns scanned:       $turns_scanned"
   echo "R007 header missing: $r007_missing_total"
   echo "R008 prefix missing: $r008_missing_total"
+  echo "tool_use after tool_result, no text: $tool_use_no_text_total"
 fi
