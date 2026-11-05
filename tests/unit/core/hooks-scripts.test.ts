@@ -1442,11 +1442,12 @@ describe('destructive-git-guard.sh', () => {
     expect(reset).not.toContain('Branch deletion note');
   });
 
-  // --- Left boundary of the `git` token: GIT_PFX = (^|[;&|[:space:]])git ... ---
-  // The prefix requires start-of-line, `;`, `&`, `|` or whitespace right before `git`, so a longer
-  // word ending in "git" is not mistaken for the command. Shell separators still match.
-  // A path-qualified binary ("/usr/bin/git") has `/` before `git`, which is NOT in the set, so it
-  // is silent: a known gap pinned here as the observed behaviour, not an endorsement.
+  // --- Left boundary of the `git` token: GIT_BOUND (destructive-git-guard.sh) ---
+  // GIT_BOUND = (^|[;&|/(`"'[:space:]]) accepts start-of-line, a shell separator, `/` (path-qualified
+  // binary), `(` (subshell / `$(`), a backtick, a quote or whitespace right before `git`; letters
+  // before it (xgit, legit) do not count. GIT_PFX then allows the git global options GIT_OPT models
+  // between `git` and the subcommand, and GIT_END accepts `)` as a right edge.
+  // Tier 2 (the Pass 2 block) reuses the same GIT_BOUND via T2_HEAD.
 
   describe('git token left boundary', () => {
     for (const command of ['xgit reset --hard', 'legit reset --hard']) {
@@ -1461,21 +1462,15 @@ describe('destructive-git-guard.sh', () => {
       'true && git reset --hard',
       'ls;git reset --hard',
       'cat x | git reset --hard',
+      '/usr/bin/git reset --hard',
+      'git --no-pager reset --hard',
+      '(git reset --hard)',
     ]) {
       it(`warns for ${command}`, async () => {
         const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, makeBashInput(command));
         expect(preToolUseContext(result)).toContain("detected 'git reset --hard'");
       });
     }
-
-    it('stays silent for a path-qualified binary (documented gap: "/" is not a boundary)', async () => {
-      expectSilentPreToolUse(
-        await runHookScript(
-          DESTRUCTIVE_GIT_GUARD_SCRIPT,
-          makeBashInput('/usr/bin/git reset --hard')
-        )
-      );
-    });
   });
 
   // --- Fail-open on unwritable state ---
@@ -1534,7 +1529,9 @@ describe('destructive-git-guard.sh', () => {
     const entry = hooksConfig.hooks.PreToolUse.find(
       (hook: { matcher?: string; hooks?: { command?: string }[] }) =>
         hook.matcher?.includes('tool == "Bash"') &&
-        hook.matcher?.includes('git (reset|clean|checkout|restore|switch|rebase|merge)') &&
+        hook.matcher?.includes(
+          'git[^;&|]*(reset|clean|checkout|restore|switch|rebase|merge|branch)'
+        ) &&
         hook.hooks?.some((h) => h.command?.includes('destructive-git-guard.sh'))
     );
     expect(entry).toBeTruthy();

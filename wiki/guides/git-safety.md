@@ -1,7 +1,7 @@
 ---
 title: "Git Safety Guide"
 type: guide
-updated: 2026-10-26
+updated: 2026-11-05
 sources:
   - guides/git-safety/README.md
 related:
@@ -33,7 +33,7 @@ This guide catalogs destructive git commands that require explicit user approval
 
 Two PreToolUse hooks always exit 0 and deliver warnings as `additionalContext` (#1885); both stay silent when nothing matches.
 
-- `destructive-git-guard.sh` (R001) detects: `git reset --hard`; `git clean` with any short-flag cluster containing `f` (`-f`, `-df`, `-nf` too) or `--force`; any `git restore`; `git checkout -- .`/`*`/`/`; `git branch -D`. `git -C <path>` and `git -c k=v` forms are handled. `-n`, `--dry-run`, `-nd` stay silent.
+- `destructive-git-guard.sh` (R001) detects: `git reset --hard`; `git clean` with any short-flag cluster containing `f` (`-f`, `-df`, `-nf` too) or `--force`; any `git restore`; `git checkout -- .`/`*`/`/`; `git branch -D`. Global options in the forms the first tier models (`GIT_OPT`) may sit between `git` and the subcommand (`-C <path>`, `-c k=v`, `--git-dir <path>`, `--no-pager`, ...; quoted values accepted), and the `git` token may follow a separator, `/` (path-qualified binary), `(`, a backtick or a quote (`$(git ...)`, `sh -c "git ..."`). A second, fail-closed tier also warns when `git`, the destructive subcommand word (optionally quoted) and its destructive flag appear in one simple command (no `;`, `&` or `|` between) in a form the first tier does not model, so it can over-warn (`git restore` has no flag, so its second-tier form is narrower). `-n`, `--dry-run`, `-nd` stay silent.
 - `git-delegation-guard.sh` (R010) flags git write keywords in delegation prompts to agents other than `mgr-gitnerd`. It skips negated keywords, prohibition blocks (`Forbidden:`-style), read-only `git branch`/`git tag` queries, and bare noun uses; the advisory is conditional on a match.
 
 ## Pre-Flight Checks

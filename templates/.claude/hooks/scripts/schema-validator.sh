@@ -72,32 +72,33 @@ case "$tool_name" in
       warnings+=("[Schema] Bash: command is empty")
     fi
 
-    # Check dangerous patterns
-    if echo "$command" | grep -qE 'rm\s+-rf\s+["'"'"']?/["'"'"']?(\s|\*|[;&|)]|$)'; then
+    # Check dangerous patterns (#1887): `printf | grep ... >/dev/null`, never `grep -q` — grep reads all input, so printf gets no SIGPIPE under pipefail (tests: schema-validator-1887.test.ts, 320 KB tail)
+    # No here-string: bash 3.2.57 writes a temp file for it and the warning is lost when that write fails (`ulimit -f 0`, same test file)
+    if printf '%s\n' "$command" | grep -E 'rm\s+-rf\s+["'"'"']?/["'"'"']?(\s|\*|[;&|)]|$)' >/dev/null; then
       warnings+=("[Schema] Bash: DANGER — recursive delete from root detected")
     fi
-    if echo "$command" | grep -qE '^\s*sudo\s+'; then
+    if printf '%s\n' "$command" | grep -E '^\s*sudo\s+' >/dev/null; then
       warnings+=("[Schema] Bash: elevated privilege command detected")
     fi
-    if echo "$command" | grep -qE '> /dev/sd'; then
+    if printf '%s\n' "$command" | grep -E '> /dev/sd' >/dev/null; then
       warnings+=("[Schema] Bash: direct disk write detected")
     fi
-    if echo "$command" | grep -qE 'mkfs\.'; then
+    if printf '%s\n' "$command" | grep -E 'mkfs\.' >/dev/null; then
       warnings+=("[Schema] Bash: filesystem format command detected")
     fi
     # Remote code execution via pipe
-    if echo "$command" | grep -qE 'curl\s+.*\|\s*(ba)?sh'; then
+    if printf '%s\n' "$command" | grep -E 'curl\s+.*\|\s*(ba)?sh' >/dev/null; then
       warnings+=("[Schema] Bash: remote code execution pattern (curl | bash) detected")
     fi
-    if echo "$command" | grep -qE 'wget\s+.*\|\s*(ba)?sh'; then
+    if printf '%s\n' "$command" | grep -E 'wget\s+.*\|\s*(ba)?sh' >/dev/null; then
       warnings+=("[Schema] Bash: remote code execution pattern (wget | sh) detected")
     fi
     # Dynamic code execution
-    if echo "$command" | grep -qE 'eval\s+\$\('; then
+    if printf '%s\n' "$command" | grep -E 'eval\s+\$\(' >/dev/null; then
       warnings+=("[Schema] Bash: dynamic code execution (eval) detected")
     fi
     # Broad permission grant
-    if echo "$command" | grep -qE 'chmod\s+777'; then
+    if printf '%s\n' "$command" | grep -E 'chmod\s+777' >/dev/null; then
       warnings+=("[Schema] Bash: broad permission grant (chmod 777) detected")
     fi
     ;;

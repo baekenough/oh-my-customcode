@@ -634,7 +634,7 @@ export const CLASSIFICATION_TABLE: ClassificationEntry[] = [
     description: 'Warn before destructive git commands — advisory recovery guidance (R001/R021)',
     decision: 'drop-condition',
     reason:
-      'destructive-git-guard.sh re-parses tool_input.command via jq/python3 and re-greps for each destructive git subcommand (reset --hard, clean -f*, restore, checkout -- ., branch -D) itself before warning — matcher condition is redundant',
+      'destructive-git-guard.sh re-parses tool_input.command via jq/python3 and re-greps it itself before warning: tier 1 matches `reset --hard`, `clean` with a -f cluster or --force, `restore`, `checkout -- .|*|/` and `branch -D`, with the `git` token recognised after line start, a ; & | separator, `/`, `(`, a backtick or a quote and with only the global options it parses (-C, -c, six value-taking long options, --long[=value], -p/-P) before the subcommand; a second fail-closed tier (over-warning accepted, advisory exit 0) covers forms tier 1 does not parse, such as the subcommand and flag separated by other arguments or a quoted subcommand — matcher condition is redundant',
   },
   {
     event: 'PreToolUse',

@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "2.0.14",
-  "generatedAt": "2026-11-05T03:11:46.432Z",
+  "generatedAt": "2026-11-05T05:09:06.799Z",
   "templateVersion": "2.0.14",
   "files": {
     ".claude/agents/agora-runner.md": {
@@ -265,8 +265,8 @@
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
-      "templateHash": "5ae06ac7a6ef53f68eb930f521af79e9c20c5e85b64cd52066a0827b1d348443",
-      "size": 32499,
+      "templateHash": "1ceb63343a1151798a5226c43dbd1a5330fdd7a573942c77f6635453408cdb16",
+      "size": 32512,
       "component": "hooks"
     },
     ".claude/hooks/scripts/adaptive-harness-scan.sh": {
@@ -335,8 +335,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/destructive-git-guard.sh": {
-      "templateHash": "6d3ab13f4b5cb27e66f04e56aaed950fcd7c98a985bcb54e6b3aea720a1e0f2c",
-      "size": 3844,
+      "templateHash": "7c2d8ddd0951f582a6e4e167f4f571daf84d74f63350e113bfe9b5d454c2d7fa",
+      "size": 6352,
       "component": "hooks"
     },
     ".claude/hooks/scripts/eval-core-batch-save.sh": {
@@ -400,8 +400,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/schema-validator.sh": {
-      "templateHash": "d0f41d6e20177a2195fa6f0b371e111ac4e779a5e9c9d04c7767cdf14c5ea10a",
-      "size": 4412,
+      "templateHash": "58bac0ebd6a743828367e28c4826f5494c6091ddd3a973f10abc33bbb17bb928",
+      "size": 4878,
       "component": "hooks"
     },
     ".claude/hooks/scripts/secret-filter.sh": {
@@ -1545,8 +1545,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "d2a71e79521a393639bafdc8d50aa52dabe3f93285e8096e474cd43f067f4e4c",
-      "size": 715277,
+      "templateHash": "5cfe9eacc20c2a52465a6d5f9e2319e9a5ae07a4fb17f73ab602bf7482a6acb5",
+      "size": 715417,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
@@ -1675,8 +1675,8 @@
       "component": "guides"
     },
     "guides/git-safety/README.md": {
-      "templateHash": "a6703ab739fb158e7054dfc8c8fa02f5bc32eba4e102200cc536f7354b5b0b9f",
-      "size": 5284,
+      "templateHash": "1e6b8848552993c13641fe1924a200b192cf96ac7ac5e0e83a43fb185330d526",
+      "size": 5852,
       "component": "guides"
     },
     "guides/git-worktree-workflow/README.md": {
