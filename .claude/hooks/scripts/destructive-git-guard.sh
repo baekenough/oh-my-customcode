@@ -29,20 +29,61 @@ fi
 VIOLATION_FILE="/tmp/.claude-destructive-git-guard-${PPID}"
 matched=""
 ctx=""
-# Optional `-C <path>` / `-c <k=v>` option pairs between `git` and the subcommand (L10).
-GIT_PFX='(^|[;&|[:space:]])git([[:space:]]+(-C[[:space:]]+("[^"]*"|'"'"'[^'"'"']*'"'"'|[^[:space:]]+)|-c[[:space:]]+[^[:space:]]+))*[[:space:]]+'
 add() { if [ -z "$ctx" ]; then ctx="$1"; else ctx="${ctx}"$'\n'"$1"; fi; }
+# has <ERE>: does any line match? POSIX classes only (BSD/GNU differ on \b, \s). `>/dev/null`, not -q: -q stops at the first match and, with SIGPIPE ignored, printf then writes "write error" to stderr (bash 3.2.57, >64 KB).
+has() { printf '%s\n' "$command_text" | grep -E "$1" >/dev/null; }
+# kw <word>: cheap literal pre-filter (no grep spawn) - every pattern below needs its subcommand word.
+kw() { case "$command_text" in *"$1"*) return 0 ;; esac; return 1; }
 
-if printf '%s\n' "$command_text" | grep -Eq "${GIT_PFX}reset[[:space:]]+--hard([[:space:]]|$)"; then
+# Tier 1 (modelled forms). The `git` token may follow start-of-line, a shell separator, whitespace,
+# `/` (path-qualified binary), `(` (subshell / `$(`), a backtick or a quote (`sh -c "git ..."`,
+# `ssh host 'git ...'`); letters before it (xgit, legit) do not count. Between `git` and the subcommand: the global options GIT_OPT models (#1887 A2).
+GIT_BOUND='(^|[;&|/(`"'"'"'[:space:]])'
+GIT_VAL='("[^"]*"|'"'"'[^'"'"']*'"'"'|[^[:space:]]+)'
+GIT_OPT="(-C[[:space:]]+${GIT_VAL}|-c[[:space:]]+${GIT_VAL}|--(git-dir|work-tree|namespace|super-prefix|config-env|attr-source)[[:space:]]+${GIT_VAL}|--[A-Za-z][-A-Za-z0-9]*(=${GIT_VAL})?|-[pP])"
+GIT_PFX="${GIT_BOUND}git([[:space:]]+${GIT_OPT})*[[:space:]]+"
+# Right edge of the last token: whitespace, end of line, a separator, `)` or a closing quote/backtick,
+# so `(git reset --hard)`, `$(git clean -fd)` and `git reset --hard;` are seen.
+GIT_END='([[:space:];&|)`"'"'"']|$)'
+
+# Tier 2 (fail-closed, unmodelled forms): a boundary-delimited `git` token, the destructive
+# subcommand word (optionally quoted) and its destructive flag later in the same simple command
+# (no ; & | in between). Over-warning is acceptable for this advisory guard.
+T2_EDGE='[[:space:]"'"'"']'
+T2_QUOTE='["'"'"']?'
+T2_HEAD="${GIT_BOUND}git[[:space:]]+([^;&|]*${T2_EDGE})?${T2_QUOTE}"
+T2_GAP="${T2_QUOTE}[[:space:]]+([^;&|]*${T2_EDGE})?"
+T2_END="$GIT_END"
+# `restore` has no discriminating flag, so its tier-2 form is narrower: only option-like, $-expanded,
+# quoted or backtick tokens may sit between `git` and `restore` (keeps `git commit -m "restore x"` silent).
+T2_RESTORE="${GIT_BOUND}git([[:space:]]+[-\$\"'\`][^[:space:]]*)*[[:space:]]+${T2_QUOTE}restore${T2_QUOTE}${T2_END}"
+
+# Pass 1: tier 1, original branch order and labels.
+if kw reset && has "${GIT_PFX}reset[[:space:]]+--hard${GIT_END}"; then
   matched="git reset --hard"
-elif printf '%s\n' "$command_text" | grep -Eq "${GIT_PFX}clean[[:space:]]+([^;&|]*[[:space:]])?(-[A-Za-z]*f[A-Za-z]*|--force)([[:space:]]|$)"; then
+elif kw clean && has "${GIT_PFX}clean[[:space:]]+([^;&|]*[[:space:]])?(-[A-Za-z]*f[A-Za-z]*|--force)${GIT_END}"; then
   matched="git clean"
-elif printf '%s\n' "$command_text" | grep -Eq "${GIT_PFX}restore([[:space:]]+--[^;&|[:space:]]+)*([[:space:]]+(\.|\*|/|--worktree|--staged))*([[:space:]]|$)"; then
+elif kw restore && has "${GIT_PFX}restore([[:space:]]+--[^;&|[:space:]]+)*([[:space:]]+(\.|\*|/|--worktree|--staged))*${GIT_END}"; then
   matched="git restore"
-elif printf '%s\n' "$command_text" | grep -Eq "${GIT_PFX}checkout[[:space:]]+--[[:space:]]+(\.|\*|/)([[:space:]]|$)"; then
+elif kw checkout && has "${GIT_PFX}checkout[[:space:]]+--[[:space:]]+(\.|\*|/)${GIT_END}"; then
   matched="git checkout -- ."
-elif printf '%s\n' "$command_text" | grep -Eq "${GIT_PFX}branch[[:space:]]+-D([[:space:]]|$)"; then
+elif kw branch && has "${GIT_PFX}branch[[:space:]]+-D${GIT_END}"; then
   matched="git branch -D"
+fi
+
+# Pass 2: tier 2, only when tier 1 found nothing and the text has a `git` token at all.
+if [ -z "$matched" ] && kw git; then
+  if kw reset && has "${T2_HEAD}reset${T2_GAP}--hard${T2_END}"; then
+    matched="git reset --hard"
+  elif kw clean && has "${T2_HEAD}clean${T2_GAP}(-[A-Za-z]*f[A-Za-z]*|--force)${T2_END}"; then
+    matched="git clean"
+  elif kw restore && has "$T2_RESTORE"; then
+    matched="git restore"
+  elif kw checkout && has "${T2_HEAD}checkout${T2_GAP}--[[:space:]]+(\.|\*|/)${T2_END}"; then
+    matched="git checkout -- ."
+  elif kw branch && has "${T2_HEAD}branch${T2_GAP}-D${T2_END}"; then
+    matched="git branch -D"
+  fi
 fi
 
 if [ -n "$matched" ]; then
@@ -51,7 +92,7 @@ if [ -n "$matched" ]; then
   add "[Hook] Before proceeding, verify git status and preserve work with git stash or a WIP commit."
   add "[Hook] Recovery: use 'git reflog' to find prior HEADs; for deleted branches, check 'git reflog --all'."
 
-  if printf '%s\n' "$command_text" | grep -Eq "${GIT_PFX}branch[[:space:]]+-D([[:space:]]|$)"; then
+  if kw branch && { has "${GIT_PFX}branch[[:space:]]+-D${GIT_END}" || has "${T2_HEAD}branch${T2_GAP}-D${T2_END}"; }; then
     add "[Hook] Branch deletion note: prefer 'git branch -d' first so Git checks for unmerged commits."
   fi
 

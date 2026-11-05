@@ -83,7 +83,7 @@
         "description": "Schema-based tool input validation — Phase 1 advisory only"
       },
       {
-        "matcher": "tool == \"Bash\" && tool_input.command matches \"git (reset|clean|checkout|restore|switch|rebase|merge)\"",
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"git[^;&|]*(reset|clean|checkout|restore|switch|rebase|merge|branch)\"",
         "hooks": [
           {
             "type": "command",
