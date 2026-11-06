@@ -201,6 +201,13 @@ export const HOOK_COUNT_DOC_FILES: string[] = [
  * prefixes ("v2 hook scripts", "1,042 hook scripts").
  * Unlike DOC_COUNT_PATTERNS (first match wins) every claim on every line is checked,
  * because each README states the count in more than one place.
+ *
+ * Known boundaries (measured, not fixed): a claim written without a space after a comma
+ * ("a,42 hook scripts") is skipped, because the lookbehind treats that comma as a thousands
+ * separator; a space or apostrophe thousands separator ("1 042 hook scripts", "1'042 hook
+ * scripts", "1’042 hook scripts") is not rejected and reads as 42; and the default (LLM)
+ * mode of main() cannot be tested without an API key, so CI covers only the
+ * --programmatic-only wiring.
  */
 const HOOK_COUNT_CLAIM_PATTERNS: RegExp[] = [
   /(?<![\w.,])(\d+)\s+(?:lifecycle\s+)?hook\s+scripts?\b/gi,
@@ -212,6 +219,8 @@ const HOOK_COUNT_CLAIM_PATTERNS: RegExp[] = [
 /**
  * Counts the hook scripts a directory ships: regular files whose name ends in `.sh`
  * directly inside `dir` (no recursion). A missing directory counts as 0.
+ * Symbolic links are not counted, even when they point at a `.sh` file (`Dirent.isFile()`
+ * is false for a symlink), and neither is a directory whose name ends in `.sh`.
  */
 export function countHookScripts(dir: string): number {
   if (!fs.existsSync(dir)) {

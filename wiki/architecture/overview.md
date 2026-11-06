@@ -1,7 +1,7 @@
 ---
 title: System Architecture Overview
 type: architecture
-updated: 2026-10-06
+updated: 2026-11-06
 sources:
   - CLAUDE.md
   - .claude/rules/MUST-agent-design.md
@@ -36,7 +36,7 @@ Supporting this structure are `guides/` (56 reference topic directories) and `.c
 
 ## Component Roles
 
-**Rules** enforce system-wide behavior. They are classified MUST/SHOULD/MAY and enforced through a combination of prompt injection, PostCompact hooks, and a small number of hard-blocking PreToolUse hooks. See [[rule-system]] for the enforcement model.
+**Rules** enforce system-wide behavior. They are classified MUST/SHOULD/MAY and enforced through a combination of prompt injection, a `SessionStart` (matcher `compact`) re-injection hook, and a small number of hard-blocking PreToolUse hooks. See [[rule-system]] for the enforcement model.
 
 **Skills** are the "source code" of the system. A skill lives at `.claude/skills/{name}/SKILL.md` and contains reusable workflow instructions. Skills are stateless and domain-specific. Agents reference skills by name; the same skill can be used by multiple agents.
 

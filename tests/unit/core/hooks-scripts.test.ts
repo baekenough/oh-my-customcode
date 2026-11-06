@@ -1296,7 +1296,8 @@ describe('destructive-git-guard.sh', () => {
 
   it('adds the count line once, on the firing that first reaches count 3', async () => {
     const violationFile = `/tmp/.claude-destructive-git-guard-${process.pid}`;
-    // Two earlier warnings recorded: the next firing makes the count 3.
+    // Two earlier warnings recorded: the next firing makes the count 3. The seed lines carry no
+    // ` tier=` suffix: legacy untiered lines count as tier 1 (#1914 item 1).
     await writeFile(violationFile, 'seed git clean\nseed git restore\n');
     const input = makeBashInput('git reset --hard HEAD~1');
 
@@ -1319,6 +1320,7 @@ describe('destructive-git-guard.sh', () => {
 
   it('adds the count line exactly once even when the count is already above 3', async () => {
     const violationFile = `/tmp/.claude-destructive-git-guard-${process.pid}`;
+    // Legacy untiered seed lines (no ` tier=` suffix) count as tier 1 (#1914 item 1).
     await writeFile(violationFile, 'seed 1\nseed 2\nseed 3\nseed 4\n');
     const input = makeBashInput('git reset --hard HEAD~1');
 
@@ -1335,6 +1337,111 @@ describe('destructive-git-guard.sh', () => {
       expect(context).not.toContain('this session');
     }
     expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(false);
+  });
+
+  // --- #1914 item 1: tier-separated count. Tier-2 warnings are still emitted and recorded
+  // (trailing ` tier=2`), but only tier-1 lines (and legacy untiered lines) reach the count line. ---
+
+  describe('tier-separated count (#1914 item 1)', () => {
+    const VIOLATION_FILE = `/tmp/.claude-destructive-git-guard-${process.pid}`;
+    // Tier 1: modelled form. Tier 2: quoted subcommand (the option grammar cannot model it).
+    const TIER1 = 'git reset --hard HEAD~1';
+    const TIER2 = 'git "reset" --hard';
+
+    async function fire(command: string): Promise<{ result: ScriptResult; context: string }> {
+      const result = await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, makeBashInput(command));
+      // preToolUseContext also asserts exit 0, empty stderr and one-line valid JSON.
+      return { result, context: preToolUseContext(result) };
+    }
+
+    function stateLines(): string[] {
+      return readFileSync(VIOLATION_FILE, 'utf-8')
+        .split('\n')
+        .filter((line) => line !== '');
+    }
+
+    it('three tier-1 warnings: count line on the third, marker claimed, every line ends in tier=1', async () => {
+      const contexts: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        contexts.push((await fire(TIER1)).context);
+      }
+      expect(contexts[0]).not.toContain('this session');
+      expect(contexts[1]).not.toContain('this session');
+      expect(contexts[2]).toContain('Destructive git warnings: 3 this session');
+      expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(true);
+      const lines = stateLines();
+      expect(lines).toHaveLength(3);
+      for (const line of lines) {
+        expect(line.endsWith(' tier=1')).toBe(true);
+      }
+    });
+
+    it('tier-2 only: six warnings never reach the count line; each still warns', async () => {
+      for (let i = 0; i < 6; i++) {
+        const { result, context } = await fire(TIER2);
+        expect(context).toContain('DESTRUCTIVE GIT WARNING');
+        expect(context).not.toContain('this session');
+        expect(result.stderr).toBe('');
+        expect(result.exitCode).toBe(0);
+      }
+      expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(false);
+      const lines = stateLines();
+      expect(lines).toHaveLength(6);
+      for (const line of lines) {
+        expect(line.endsWith(' tier=2')).toBe(true);
+      }
+    });
+
+    it('mixed: five tier-2 then three tier-1 gives the count line only on the third tier-1, value 3', async () => {
+      const contexts: string[] = [];
+      for (let i = 0; i < 5; i++) {
+        contexts.push((await fire(TIER2)).context);
+      }
+      for (let i = 0; i < 3; i++) {
+        contexts.push((await fire(TIER1)).context);
+      }
+      // Calls 1-7 (five tier-2 + two tier-1): no count line, marker not yet claimed.
+      for (const context of contexts.slice(0, 7)) {
+        expect(context).not.toContain('this session');
+      }
+      expect(contexts[7]).toContain('Destructive git warnings: 3 this session');
+      expect(contexts[7]).not.toContain('8 this session');
+      expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(true);
+      const lines = stateLines();
+      expect(lines.filter((line) => line.endsWith(' tier=2'))).toHaveLength(5);
+      expect(lines.filter((line) => line.endsWith(' tier=1'))).toHaveLength(3);
+    });
+
+    it('interleaved: tier-2 between tier-1 warnings does not advance the count', async () => {
+      const contexts: string[] = [];
+      for (const command of [TIER1, TIER2, TIER1, TIER2, TIER1]) {
+        contexts.push((await fire(command)).context);
+      }
+      for (const context of contexts.slice(0, 4)) {
+        expect(context).not.toContain('this session');
+      }
+      expect(contexts[4]).toContain('Destructive git warnings: 3 this session');
+    });
+
+    it('legacy untiered lines count as tier 1, a tier-2 firing on top of them does not', async () => {
+      await writeFile(VIOLATION_FILE, 'seed git clean\nseed git restore\n');
+      const { context } = await fire(TIER2);
+      // Count stays 2 (two legacy lines; the new line is tier=2): no count line, no marker.
+      expect(context).toContain('DESTRUCTIVE GIT WARNING');
+      expect(context).not.toContain('this session');
+      expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(false);
+      // A tier-1 firing then makes it 3 (two legacy + one tier-1).
+      const third = await fire(TIER1);
+      expect(third.context).toContain('Destructive git warnings: 3 this session');
+    });
+
+    it('state-line format: <UTC timestamp> <label> tier=<n>, one line per warning', async () => {
+      await fire(TIER1);
+      await fire(TIER2);
+      expect(readFileSync(VIOLATION_FILE, 'utf-8')).toMatch(
+        /^\S+Z git reset --hard tier=1\n\S+Z git reset --hard tier=2\n$/
+      );
+    });
   });
 
   // --- `git -C <path>` / `git -c k=v` before the subcommand ---
@@ -1483,6 +1590,9 @@ describe('destructive-git-guard.sh', () => {
       makeBashInput('git reset --hard HEAD~1')
     );
     expect(preToolUseContext(result)).toContain('DESTRUCTIVE GIT WARNING');
+    // #1914 item 3: a failed state write stays silent and fail-open.
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr).toBe('');
   });
 
   // --- D4: python3 fallback when jq is absent ---

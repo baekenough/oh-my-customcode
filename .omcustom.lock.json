@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.15",
-  "generatedAt": "2026-11-05T05:22:11.376Z",
-  "templateVersion": "2.0.15",
+  "generatorVersion": "2.0.16",
+  "generatedAt": "2026-11-06T08:36:07.936Z",
+  "templateVersion": "2.0.16",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -260,8 +260,8 @@
       "component": "agents"
     },
     ".claude/hooks/PARALLEL-GROUPS.md": {
-      "templateHash": "6f87b48b8d6d374e83945a10f2c274f730b1ce9cca4cb58050f4579008fa6eaf",
-      "size": 9383,
+      "templateHash": "2b6effef57d92ec8b20990260822ed228a49d97d16cfa8f1057015a27089c7ac",
+      "size": 9828,
       "component": "hooks"
     },
     ".claude/hooks/hooks.json": {
@@ -335,8 +335,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/destructive-git-guard.sh": {
-      "templateHash": "7c2d8ddd0951f582a6e4e167f4f571daf84d74f63350e113bfe9b5d454c2d7fa",
-      "size": 6352,
+      "templateHash": "035a560b7bb025ba4cf791e17565c1e26104a9eeeafbc7b969f7342c99da86ff",
+      "size": 7433,
       "component": "hooks"
     },
     ".claude/hooks/scripts/eval-core-batch-save.sh": {
@@ -365,8 +365,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/git-delegation-guard.sh": {
-      "templateHash": "8066716dc412889fd18b386e583cddce95e57d3d7219b6f08255bb90f74fc04d",
-      "size": 11649,
+      "templateHash": "40263adf2e087e740527c533e39fbf4b163cae21951f6ceea8f7277f1e8edb63",
+      "size": 12196,
       "component": "hooks"
     },
     ".claude/hooks/scripts/model-escalation-advisor.sh": {
@@ -910,8 +910,8 @@
       "component": "skills"
     },
     ".claude/skills/homework/SKILL.md": {
-      "templateHash": "74543db3a7a983a7b21e786df3597be69bf791fa8f691c59933446ecc27f425c",
-      "size": 16170,
+      "templateHash": "967b60177fa39b0177069c1c2c6fbdf6bd78a3588a3c84cea86b32875da6e5b9",
+      "size": 16512,
       "component": "skills"
     },
     ".claude/skills/idea/SKILL.md": {
@@ -960,8 +960,8 @@
       "component": "skills"
     },
     ".claude/skills/model-escalation/SKILL.md": {
-      "templateHash": "f7e5e97332e0b3a1ed55e21238a4ce3993974ec8183070a6e15b24dc9478c707",
-      "size": 2481,
+      "templateHash": "271733e358dd27c19506142c2b2ccdf54accf17b2ad385bd58fca3ec72e1a2d6",
+      "size": 3618,
       "component": "skills"
     },
     ".claude/skills/monitoring-setup/SKILL.md": {
@@ -1010,8 +1010,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "61c8006d07737a7365835cfd94d71fafe01c0b9c40ed6743aa130d721336fac2",
-      "size": 8570,
+      "templateHash": "85e6b75337d66611a4a1efd2984f8d984d3e9f07e7fbe44faadabeb64f0d0c8a",
+      "size": 11159,
       "component": "skills"
     },
     ".claude/skills/omcustom-takeover/SKILL.md": {
@@ -1065,8 +1065,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "6f8f659ab75a2dcc97e788efa57c0abe4ceedcc588a0fb4cd364ee58874f4407",
-      "size": 168221,
+      "templateHash": "7d590f12905aa7b3f2ade6aa4f630d971b195c3c6f43d98425d9f0d8a299e745",
+      "size": 178360,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1545,8 +1545,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "5cfe9eacc20c2a52465a6d5f9e2319e9a5ae07a4fb17f73ab602bf7482a6acb5",
-      "size": 715417,
+      "templateHash": "587ecaea9cb6619267b0b56d02da7139ed0217f3551ccfff523670cc5b4fbed4",
+      "size": 719400,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
@@ -1675,8 +1675,8 @@
       "component": "guides"
     },
     "guides/git-safety/README.md": {
-      "templateHash": "1e6b8848552993c13641fe1924a200b192cf96ac7ac5e0e83a43fb185330d526",
-      "size": 5852,
+      "templateHash": "16b3b957feb6e271cbe8c3cc46ba569ce394781ba53f52e512384bf0163f5977",
+      "size": 5991,
       "component": "guides"
     },
     "guides/git-worktree-workflow/README.md": {
@@ -1725,8 +1725,8 @@
       "component": "guides"
     },
     "guides/hook-data-flow/README.md": {
-      "templateHash": "3e58172e0c5f072aef0371d11e0b87ca1324d3fbb2a1714af815cc5b6e096639",
-      "size": 7202,
+      "templateHash": "416fd5c8b2fb4bc40ef3c3d724c45bf8d053b73a719205b125fc82e5834256f4",
+      "size": 7641,
       "component": "guides"
     },
     "guides/iceberg/README.md": {
@@ -1810,8 +1810,8 @@
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {
-      "templateHash": "9f67778df03075cfdc77a06fd726f5ff9813ad500ac54ef9b862b68f9dca8186",
-      "size": 8624,
+      "templateHash": "5d3e114ec78d9df87a18ad9b0a4c6b8196af15ec987719ad95e4b8c119894797",
+      "size": 8891,
       "component": "guides"
     },
     "guides/multi-provider-exec/README.md": {

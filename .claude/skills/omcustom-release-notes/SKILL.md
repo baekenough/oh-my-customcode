@@ -102,7 +102,11 @@ The generated notes can be:
 
 ### Phase 5: Promote `## [Unreleased]` in CHANGELOG.md (Optional but Recommended)
 
-After generating release notes, promote any pending `## [Unreleased]` entries to a versioned section so `release.yml` (awk extract at line ~217) finds the authored notes instead of falling back to GitHub auto-generated content.
+**Precondition (run first)**: `command grep -c -E '^## \[Deprecated' CHANGELOG.md`. A count of 1 or more means the repository has deprecated its CHANGELOG (this repository did at v1.1.14, #1503), so skip Phase 5 and do not edit CHANGELOG.md. A count of 0 means the CHANGELOG is maintained and Phase 5 proceeds. If CHANGELOG.md does not exist, `grep -c` prints `No such file or directory` and exits 2 (measured in an empty directory) with no count, so skip Phase 5: there is no CHANGELOG to promote into.
+
+After generating release notes, promote any pending `## [Unreleased]` entries to a versioned section so `release.yml` (the awk extract in the line `NOTES=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)`) finds the authored notes instead of falling back to GitHub auto-generated content.
+
+Actors: arch-documenter applies the promotion to CHANGELOG.md with its Edit tool (R010 Root Meta-File Delegation: `CHANGELOG.md` belongs to arch-documenter), and mgr-gitnerd commits it. The Python snippet below is the specification of the transformation that arch-documenter applies with Edit; the orchestrator does not run it against CHANGELOG.md.
 
 ```bash
 # Promote [Unreleased] to [VERSION] with today's date
@@ -134,9 +138,9 @@ PY
 Behavior:
 - If `## [Unreleased]` content is empty, the promoted `## [VERSION]` will also be empty — `release.yml` falls back to auto-generated notes (existing behavior preserved).
 - If `## [VERSION]` already exists (re-run, manual edit), the script skips with a log message — no overwrite.
-- The skill caller commits the change: `git add CHANGELOG.md && git commit -m "chore(changelog): promote [Unreleased] to [VERSION]"`
+- mgr-gitnerd commits the change: `git add CHANGELOG.md && git commit -m "chore(changelog): promote [Unreleased] to [VERSION]"`
 
-This is **optional** — the skill's release-notes generation (Phases 1-4) works independently. Phase 5 only ensures CHANGELOG consistency for projects that maintain Keep a Changelog format.
+This is **optional** — the skill's release-notes generation (Phases 1-4) works independently. Phase 5 only ensures CHANGELOG consistency for projects that maintain Keep a Changelog format. When the precondition detection above returns 1 or more (this repository), Phase 5 is skipped and CHANGELOG.md is not edited.
 
 ## Backfill Mode
 
@@ -149,6 +153,10 @@ python3 scripts/backfill_changelog.py <START_TAG>..<END_TAG> [--output FILE]
 ```
 
 Or invoked via skill: `/omcustom-release-notes --backfill v0.36.0..v0.127.0`
+
+**Precondition (run first)**: `command grep -c -E '^## \[Deprecated' CHANGELOG.md`. A count of 1 or more means the repository has deprecated its CHANGELOG (this repository did at v1.1.14, #1503), so do not run Backfill Mode and do not edit CHANGELOG.md. A count of 0 means the CHANGELOG is maintained and Backfill Mode may run. If CHANGELOG.md does not exist, `grep -c` prints `No such file or directory` and exits 2 (measured in an empty directory) with no count, so do not run Backfill Mode: there is no CHANGELOG to paste into.
+
+Actors: mgr-gitnerd runs `python3 scripts/backfill_changelog.py <START_TAG>..<END_TAG> --output <file>` with a file other than CHANGELOG.md, which produces only that file; the orchestrator does not run the script. arch-documenter then pastes the generated text into CHANGELOG.md with its Edit tool (R010 Root Meta-File Delegation: `CHANGELOG.md` belongs to arch-documenter), and mgr-gitnerd commits it.
 
 ### Behavior
 
@@ -170,10 +178,11 @@ For each tag in range (in reverse semver order), the script:
 
 ### Output
 
-Markdown text suitable for prepending to CHANGELOG.md between `## [Unreleased]` and the first existing version section.
+Markdown text suitable for prepending to CHANGELOG.md between `## [Unreleased]` and the first existing version section. The script's only file write is `with open(args.output, "w", encoding="utf-8") as fh:` under `if args.output:` in `scripts/backfill_changelog.py` (lines 519-520; otherwise the text goes to stdout), so it writes CHANGELOG.md only if `--output` names that file, which would truncate it, and mgr-gitnerd passes another file. arch-documenter applies the output to CHANGELOG.md by hand with Edit.
 
 ### When to Use
 
+- Only repositories that maintain the CHANGELOG (the precondition above returns 0); not for a repository whose CHANGELOG is deprecated, such as this one
 - Adopting Keep a Changelog format on an existing project with N historical releases
 - Recovering after a CHANGELOG drift period
 - One-time bulk operation — afterward, use Phase 5 promotion (forward-looking) for ongoing maintenance
@@ -194,7 +203,7 @@ This skill is designed to be used during the release process:
 
 ```
 /omcustom:npm-version patch|minor|major  ->  version bump
-/omcustom-release-notes {version}         ->  generate notes + promote [Unreleased] (Phase 5)
+/omcustom-release-notes {version}         ->  generate notes + promote [Unreleased] (Phase 5, skipped when the CHANGELOG is deprecated)
 mgr-gitnerd: gh release create           ->  create release with notes
 ```
 

@@ -183,6 +183,8 @@ describe('F10: external text and quote-verify wording', () => {
       expect(text).toContain('ANY external or repository text');
       expect(text).toContain('use the canonical quote-verify block of the implement step');
       expect(text).toContain('# BEGIN quote-verify');
+      expect(text).toContain('bash scripts/verify-text-edit.sh --files');
+      expect(text).toContain('bash scripts/verify-text-edit.sh --quotes');
     });
   }
 });

@@ -52,14 +52,20 @@
 #   in this repo's corpus. The hook stays model-visible (additionalContext, worded as a
 #   conditional advisory) because the base rate in installed projects differs [가설].
 #
-# Known false negatives (accepted trade-offs):
+# Known false negatives (accepted trade-offs; fixture-measured 2026-11-06, each bullet reproduced
+#   with a silent positive and a warning control, one subagent_type `general-purpose` and the
+#   keywords `git commit`/`git push`/`git tag` only):
 #   - a real command after a negation word on the same line ("Do not skip this: git commit now"
-#     is read as a colon header and skipped with its block);
+#     is read as a colon header and skipped with its block; "Do not wait. Run git commit now"
+#     is silent too);
 #   - a real command inside a prohibition block not separated by a blank line (colon header) or
-#     placed in the first paragraph/list under a Forbidden heading;
-#   - prose "git tag"/"git branch" followed by a stop-listed word is treated as a noun.
-#   Known false positive (SOV trade-off): Korean "git commit 금지" (token after the keyword) is
-#   NOT excluded by (a) unless it sits in a block (b), so it still warns.
+#     placed in the first paragraph/list under a Forbidden heading (a blank line ends a colon
+#     block, and a second paragraph under the heading warns);
+#   - prose "git tag"/"git branch" followed by a stop-listed word is treated as a noun (measured
+#     with "git tag the release as v1.0"; the noun rows are pinned in hooks-scripts.test.ts).
+#   Known false positive (SOV trade-off; fixture-measured 2026-11-06): Korean "git commit 금지"
+#   (token after the keyword) is NOT excluded by (a) unless it sits in a block (b), so it still
+#   warns (pinned row 'Korean SOV "git commit 금지" (documented trade-off)').
 #
 # State writes (violation file, threshold marker) are best-effort: failures are silent and never
 #   abort or leak to stderr. The per-session count line is emitted once, when the count is >= 3

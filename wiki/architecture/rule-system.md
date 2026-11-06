@@ -1,7 +1,7 @@
 ---
 title: Rule Enforcement System
 type: architecture
-updated: 2026-11-05
+updated: 2026-11-06
 sources:
   - .claude/rules/MUST-enforcement-policy.md
   - .claude/rules/MUST-continuous-improvement.md
@@ -17,7 +17,7 @@ related:
 
 # Rule Enforcement System
 
-oh-my-customcode uses an **advisory-first enforcement model**: most behavioral rules are enforced through prompt engineering and PostCompact context injection rather than hard-blocking hooks. This preserves agent flexibility while maintaining behavioral standards.
+oh-my-customcode uses an **advisory-first enforcement model**: most behavioral rules are enforced through prompt engineering and `SessionStart` (matcher `compact`) context re-injection rather than hard-blocking hooks. This preserves agent flexibility while maintaining behavioral standards.
 
 ## Overview
 
@@ -25,11 +25,11 @@ oh-my-customcode uses an **advisory-first enforcement model**: most behavioral r
 
 | Priority | Count | Enforcement Mechanism |
 |----------|-------|-----------------------|
-| **MUST** | 14 | Prompt + PostCompact hooks; selective hard blocks |
+| **MUST** | 14 | Prompt + `SessionStart` (compact) re-injection; selective hard blocks |
 | **SHOULD** | 8 | Prompt injection only |
 | **MAY** | 1 | Optional guidance |
 
-Rules live in `.claude/rules/` and are auto-injected into the system prompt. After context compaction, critical MUST rules are re-injected via PostCompact hooks to combat "compaction amnesia." A newer complement, `claude-md-reinject.sh` (SessionStart, matcher `compact`, #1617), re-injects the full project `CLAUDE.md` text on compact re-entry only (CC already auto-loads `CLAUDE.md` on normal starts) — closing the gap where PostCompact only re-injects rule *summaries*, not the CLAUDE.md original. Opt-out via `OMCUSTOM_CLAUDEMD_REINJECT=off`; degrades silently (no-op) if `CLAUDE.md` or `jq` is missing.
+Rules live in `.claude/rules/` and are auto-injected into the system prompt. After context compaction, the guaranteed re-injection path is `SessionStart` (matcher `compact`, `claude-md-reinject.sh`, #1617), which combats "compaction amnesia." The PostCompact prompt wiring is kept, but its effect is not guaranteed (`additionalContext` is undefined for it; R021 footnote). `claude-md-reinject.sh` re-injects the full project `CLAUDE.md` text on compact re-entry only (CC already auto-loads `CLAUDE.md` on normal starts) — the PostCompact prompt carries only rule summaries, not the CLAUDE.md original. Opt-out via `OMCUSTOM_CLAUDEMD_REINJECT=off`; degrades silently (no-op) if `CLAUDE.md` or `jq` is missing.
 
 **Hook wiring path (v1.1.53, #1623):** `.claude/hooks/hooks.json` is a **source** file, not something CC loads directly — the CC 2.1.251 binary has zero references to a `.claude/hooks` path, and `settings.json` has never historically carried a `hooks` key. What CC actually loads is the official `hooks` block inside `.claude/settings.json` (+ `.local.json`, + the `templates/` mirror), a **build artifact** produced by `src/core/hooks-settings.ts` (its matcher-condition DSL's 12 cases become 3 self-guarding scripts + 9 stdin-guard wrapper cases). `omcustom init` merges the result via `installHooksSettings()`. Editing only `hooks.json` without regenerating settings means the change never fires; regenerate with `bun run sync:hooks` (or `bun run build`), confirm settings.json (+local+templates) were regenerated, then commit. A fresh-session probe (2026-08-29) is the first confirmed session-level firing: 9 SessionStart `hook_success` events, 5 `[claude-md-reinject]` marker hits, and UserPromptSubmit/Stop firing observed.
 
@@ -40,14 +40,14 @@ Rules live in `.claude/rules/` and are auto-injected into the system prompt. Aft
 | **Hard Block** | PreToolUse hook, `exit 2` | `stage-blocker`, `rule-deletion-guard` | Prevents tool execution entirely |
 | **Soft Block** | Stop hook prompt | R011 session-end saves | Auto-performs required action, then approves |
 | **Advisory** | PostToolUse hooks | R007, R008, R009, R010, R018 | Emits warning to stderr, never blocks |
-| **Prompt-based** | CLAUDE.md + rules/ + PostCompact | All MUST rules | Behavioral guidance injected into model context |
+| **Prompt-based** | CLAUDE.md + rules/ + `SessionStart` re-injection (matcher `compact`; PostCompact wiring kept, effect not guaranteed) | All MUST rules | Behavioral guidance injected into model context |
 
 ### Why Advisory-First
 
 1. **Agent flexibility**: Hard blocks can trap agents in unrecoverable states when dependencies (e.g., `jq`) are missing
 2. **Graceful degradation**: Missing tools don't break sessions
 3. **Composability**: External skills and internal rules can coexist without deadlocks
-4. **PostCompact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction
+4. **Post-compact reinforcement**: R007/R008/R009/R010/R018 are re-injected after context compaction via `SessionStart` (matcher `compact`), not via the PostCompact event itself
 
 ## MUST Rules Reference
 
@@ -105,3 +105,4 @@ Rules that may be promoted to hard-block if advisory enforcement proves insuffic
 - Content-drift resync 2026-08-29 (v1.1.53, #1623): documented the hooks.json (source) → settings.json `hooks` block (build artifact) conversion pipeline (`src/core/hooks-settings.ts`) — CC never loads `.claude/hooks/hooks.json` directly; only the converted `settings.json`/`.local.json`/`templates/` mirror is loaded. First session-level firing measurement recorded.
 - Content-drift resync 2026-10-26 (v2.0.8, #1856): the Hard Block row of the enforcement-tiers table now lists `stage-blocker` and `rule-deletion-guard` only (the dev-server tmux hook is an advisory).
 - Content-drift resync 2026-11-05 (v2.0.14): the `claude-md-reinject.sh` SessionStart matcher is now stated as `compact` (the source's R021 `[^postcompact]` footnote and Prompt-based row changed from `*`); the Overview paragraph was corrected. The same paragraph's "every session start (startup/resume/clear)" claim was also corrected to "compact re-entry only", per the hook description in `.claude/hooks/hooks.json` :207 (and the matcher in the R021 footnote).
+- Content-drift resync 2026-11-06 (v2.0.16, #1910 item 5): PostCompact is no longer presented as the re-injection mechanism; aligned with the R021 `[^postcompact]` footnote (guaranteed path = `SessionStart` matcher `compact`, `claude-md-reinject.sh`; PostCompact wiring kept, effect not guaranteed). Overview sentence aligned too.

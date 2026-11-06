@@ -382,7 +382,13 @@ MCP 저장은 논블로킹 -- 실패해도 세션 종료를 막지 않습니다.
   <img src="assets/diagrams/10-feedback-loop.png" alt="Feedback Analysis Loop" width="800" />
 </p>
 
-`task-outcome-recorder.sh` 훅(SubagentStop에만 배선)이 서브에이전트 완료를 에이전트 타입별로 기록합니다. SubagentStop에는 실패 신호와 모델 정보가 없으므로 모든 항목은 outcome=success, model "inherit"입니다. 이 데이터는 model-escalation 어드바이저리 시스템이 읽습니다.
+`task-outcome-recorder.sh` 훅(SubagentStop에만 배선)이 서브에이전트 완료를 에이전트 타입별로 기록합니다. SubagentStop에는 실패 신호와 모델 정보가 없으므로 모든 항목은 outcome=success, model "inherit"입니다. 이 원장은 `model-escalation-advisor.sh`와 다른 훅 3종(`feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh`)이 읽으며, 아래에서는 그중 두 가지 용도를 설명합니다.
+
+에이전트 타입의 실패가 2회 이상 기록되었거나 최근 3건의 결과가 모두 실패이면(임계값은 스크립트에 하드코딩되어 있으며 프론트매터 스위치는 없음) 에스컬레이션 어드바이저리(model-escalation-advisor.sh)가 `additionalContext`(모델에 보이는 채널)로 발행되도록(haiku -> sonnet -> opus) 설계되어 있습니다. 그러나 현재 배선에서는 이 경로가 도달 불가능합니다: 레코더가 outcome=success만 기록하므로 실패 횟수는 항상 0입니다. 이 원장에 실패 행을 기록하는 방안은 검토 후 채택하지 않았으므로(#1912) 어드바이저리는 계속 도달할 수 없습니다. 또한 스폰의 `model` 파라미터가 haiku 또는 sonnet일 때만 평가됩니다. 서로 다른 어드바이저리는 세션당 최대 1회만 표시되며(키별 원자적 마커 디렉토리), 이는 마커 디렉토리가 존재하거나 생성 가능할 때에 한합니다. 생성할 수 없으면 호출마다 반복되고(fail-open), 읽기 전용 마커 디렉토리가 미리 있으면 침묵합니다. 디에스컬레이션 어드바이저리는 `OMCUSTOM_MODEL_DEESCALATION=on`일 때만 동작하는 옵트인인데, 레코더가 모든 서브에이전트 완료를 성공으로 기록하여 연속 "성공"이 신호가 되지 못하기 때문입니다. 차단하지 않으며 수용 여부는 오케스트레이터가 결정합니다.
+
+```
+haiku -> sonnet -> opus (에스컬레이션 경로)
+```
 
 | 메트릭 | 기록 위치 | 용도 |
 |--------|----------|------|
@@ -392,11 +398,7 @@ MCP 저장은 논블로킹 -- 실패해도 세션 종료를 막지 않습니다.
 
 ### 7.2 스킬 효과성 추적
 
-에이전트 타입의 실패가 2회 이상 기록되었거나 최근 3건의 결과가 모두 실패이면(임계값은 스크립트에 하드코딩되어 있으며 프론트매터 스위치는 없음) 에스컬레이션 어드바이저리(model-escalation-advisor.sh)가 `additionalContext`(모델에 보이는 채널)로 발행되도록(haiku -> sonnet -> opus) 설계되어 있습니다. 그러나 현재 배선에서는 이 경로가 도달 불가능합니다: 레코더가 outcome=success만 기록하므로 실패 횟수는 항상 0입니다. 또한 스폰의 `model` 파라미터가 haiku 또는 sonnet일 때만 평가됩니다. 서로 다른 어드바이저리는 세션당 최대 1회만 표시되며(키별 원자적 마커 디렉토리), 이는 마커 디렉토리가 존재하거나 생성 가능할 때에 한합니다. 생성할 수 없으면 호출마다 반복되고(fail-open), 읽기 전용 마커 디렉토리가 미리 있으면 침묵합니다. 디에스컬레이션 어드바이저리는 `OMCUSTOM_MODEL_DEESCALATION=on`일 때만 동작하는 옵트인인데, 레코더가 모든 서브에이전트 완료를 성공으로 기록하여 연속 "성공"이 신호가 되지 못하기 때문입니다. 차단하지 않으며 수용 여부는 오케스트레이터가 결정합니다.
-
-```
-haiku -> sonnet -> opus (에스컬레이션 경로)
-```
+원장의 각 행에는 설명 텍스트(또는 마지막 어시스턴트 메시지)에서 추출한 `skill` 필드가 있으며, 일치하는 스킬 패턴이 없으면 이 필드는 빈 문자열입니다. 행에는 `pattern_used`, `description`, `error_summary`, `duration_seconds`도 담깁니다. 현재 SubagentStop 배선에서는 모든 행이 outcome=success이므로(레코더에 실패 분기가 남아 있지만 SubagentStop에는 없는 `is_error`가 필요합니다), 스킬별 성공률은 구조상 100%이며 스킬 조합의 순위를 매길 수 없고, 스킬별 실패 데이터는 원장에 없습니다. 이 데이터는 세션 중 PPID 범위 임시 파일(`/tmp/.claude-task-outcomes-$PPID`)에 누적됩니다.
 
 <p align="center">
   <img src="assets/diagrams/08-metrics-observability.png" alt="Metrics and Observability" width="800" />

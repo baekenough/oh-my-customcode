@@ -2,13 +2,17 @@
 # R001/R021 destructive git guard hook
 # Warns before commands that can discard working tree, untracked files, or branches.
 # Advisory tier only: emits guidance, records PPID-scoped warnings, exits 0.
-# Channel (#1885): exit-0 stderr never reaches the model; advice is delivered via stdout JSON
-# hookSpecificOutput.additionalContext (measured CC 2.1.310, #1775). No stdin passthrough, no stderr.
+# Channel (#1885): #1775 probe B measured CC 2.1.310, `claude -p`, haiku, bypassPermissions, project setting
+# sources, one run, a PreToolUse Bash hook: exit-0 stderr did not reach the model, stdout JSON
+# hookSpecificOutput.additionalContext did. Interactive sessions, other models and other versions were not
+# measured. This guard delivers advice via stdout JSON hookSpecificOutput.additionalContext. No stdin passthrough, no stderr.
 #
 # PPID Scoping Convention:
 #   Session-scoped temp files MUST use $PPID (Claude Code parent PID), not $$.
 #   Pattern: /tmp/.claude-{purpose}-${PPID}
 
+# Ignore SIGXFSZ: under `ulimit -f 0` the default action kills the shell (measured rc 153, advisory lost); ignored, a failed state write only returns EFBIG and the guard still exits 0.
+trap '' XFSZ
 input=$(cat)
 if command -v jq >/dev/null 2>&1; then
   command_text=$(printf '%s\n' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null)
@@ -58,6 +62,8 @@ T2_END="$GIT_END"
 # quoted or backtick tokens may sit between `git` and `restore` (keeps `git commit -m "restore x"` silent).
 T2_RESTORE="${GIT_BOUND}git([[:space:]]+[-\$\"'\`][^[:space:]]*)*[[:space:]]+${T2_QUOTE}restore${T2_QUOTE}${T2_END}"
 
+# tier records which pass produced the match; it is written to the state line as a trailing ` tier=<1|2>`.
+tier=1
 # Pass 1: tier 1, original branch order and labels.
 if kw reset && has "${GIT_PFX}reset[[:space:]]+--hard${GIT_END}"; then
   matched="git reset --hard"
@@ -73,6 +79,7 @@ fi
 
 # Pass 2: tier 2, only when tier 1 found nothing and the text has a `git` token at all.
 if [ -z "$matched" ] && kw git; then
+  tier=2
   if kw reset && has "${T2_HEAD}reset${T2_GAP}--hard${T2_END}"; then
     matched="git reset --hard"
   elif kw clean && has "${T2_HEAD}clean${T2_GAP}(-[A-Za-z]*f[A-Za-z]*|--force)${T2_END}"; then
@@ -97,8 +104,12 @@ if [ -n "$matched" ]; then
   fi
 
   # State writes are silent and non-fatal (no stderr, no abort).
-  { printf '%s %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$matched" >> "$VIOLATION_FILE"; } 2>/dev/null || true
-  violation_count=$(wc -l < "$VIOLATION_FILE" 2>/dev/null | tr -d ' ')
+  { printf '%s %s tier=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$matched" "$tier" >> "$VIOLATION_FILE"; } 2>/dev/null || true
+  # Count only lines NOT ending ` tier=2`: tier-1 lines and legacy untiered lines (written before the suffix existed) count; tier-2 warnings are still emitted and recorded but not counted.
+  violation_count=$(grep -c -v ' tier=2$' "$VIOLATION_FILE" 2>/dev/null)
+  # Sanitize to the first line, digits only, else 0: after a failed write (EFBIG) the shell's unflushed printf buffer can leak into the substitution and make `[` print "integer expression expected".
+  violation_count=${violation_count%%$'\n'*}
+  case "$violation_count" in ''|*[!0-9]*) violation_count=0 ;; esac
   # Count line once per session: count >= 3 AND the atomic marker mkdir wins (parallel-safe).
   if [ "${violation_count:-0}" -ge 3 ] && { mkdir "/tmp/.claude-destructive-git-threshold-${PPID}"; } 2>/dev/null; then
     add "[Hook] Destructive git warnings: ${violation_count} this session (advisory telemetry; R021 promotion needs user approval)"
