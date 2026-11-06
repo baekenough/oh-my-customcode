@@ -1,7 +1,7 @@
 ---
 title: "Hook Data Flow Guide"
 type: guide
-updated: 2026-10-03
+updated: 2026-11-06
 sources:
   - guides/hook-data-flow/README.md
 related:
@@ -21,6 +21,7 @@ Documents the three-script pipeline introduced in v0.78.0: `agent-start-recorder
 - Three-script pipeline: SubagentStart → SubagentStop (2 handlers in order)
 - Data flow through `/tmp/.claude-agent-starts-$PPID` and `/tmp/.claude-agent-durations-$PPID`
 - Stall detection logic: `avg_duration * 2` threshold against still-running agents
+- Outcome ledger `/tmp/.claude-task-outcomes-$PPID`: one writer (`task-outcome-recorder.sh`) and four readers (`model-escalation-advisor.sh`, `feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh`); under the current SubagentStop wiring it holds success rows only, because SubagentStop carries no failure signal, so the recorder's failure branch (and its stderr output) is unreachable
 - Advisory output format to stderr (R021 advisory-only, never blocks)
 - Hook ordering criticality in `hooks.json` array
 - Hook commands are anchored to the project root: `bash "${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/<name>.sh"` — Claude Code injects `CLAUDE_PROJECT_DIR` into hook processes, and the `:-.` fallback keeps relative-path behavior when it is unset

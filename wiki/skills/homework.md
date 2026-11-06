@@ -1,7 +1,7 @@
 ---
 title: Homework
 type: skill
-updated: 2026-11-05
+updated: 2026-11-06
 sources:
   - .claude/skills/homework/SKILL.md
 related:
@@ -55,7 +55,7 @@ Runs **before** `sys-memory-keeper`'s MEMORY.md update at session end (R011 orde
 
 **R020 read-before-characterize applies to the analysis itself**: do not characterize mistakes before reading the transcript evidence.
 
-**Phase 2a now leads with an advisor-reuse counting script (#1683 #2)**: when the transcript path is known, homework first runs `bash scripts/count-r007-r008.sh "$TRANSCRIPT" --json`, which drives `.claude/hooks/scripts/r007-r008-drift-advisor.sh` turn-by-turn so self-counted R007/R008 findings reproduce the hook's own verdict instead of a separately re-implemented regex. This follows [[R020]]'s "self-counting reproduces the advisor's judgment formula" principle — v1.1.64 saw self-counting fail three sessions in a row from ad-hoc method errors (record-boundary confusion, merge-key mismatch, nested double-counting) before this script was introduced. The prior sources (rule-violation-marker grep, JSONL transcript scan, model recall) are renumbered 2–4 and remain the fallback chain when the script is unavailable or fails — in which case the retrospective must explicitly note that advisor-reuse counting was not performed.
+**Phase 2a now leads with an advisor-reuse counting script (#1683 #2)**: when the transcript path is known, homework first runs `bash scripts/count-r007-r008.sh "$TRANSCRIPT" --json`, which drives `.claude/hooks/scripts/r007-r008-drift-advisor.sh` turn-by-turn so self-counted R007/R008 findings reproduce the hook's own verdict instead of a separately re-implemented regex. This follows [[R020]]'s "self-counting reproduces the advisor's judgment formula" principle — v1.1.64 saw self-counting fail three sessions in a row from ad-hoc method errors (record-boundary confusion, merge-key mismatch, nested double-counting) before this script was introduced. The script's separate `tool_use_after_tool_result_no_text` count counts a block as text only when its `.text` is a string containing at least one non-whitespace character (an empty string is no text; widening that to whitespace-only or absent `.text` is an interpretation beyond the decision). The prior sources (rule-violation-marker grep, JSONL transcript scan, model recall) are renumbered 2–4 and remain the fallback chain when the script is unavailable or fails — in which case the retrospective must explicitly note that advisor-reuse counting was not performed.
 
 **Draft-time command check (#1781 찐빠 #1)**: when a 하네스 제안 item contains a runnable command, it is run once at draft time (positive and negative fixture where applicable) and the observed exit code/output is recorded next to that proposal, so a command that only reports failure is caught at drafting, not in review. Example: `bunx biome check` exits 0 inside biome's `files.includes` scope and 1 outside it, so a norm requiring it for all TS/JS would report failure for out-of-scope files regardless of formatting.
 
@@ -95,3 +95,4 @@ A delegation that writes the artifact or draft issue body must carry the Standar
 - Content-drift resync 2026-09-18 (v1.1.67, #1683): Phase 2a gained the advisor-reuse counting script (`scripts/count-r007-r008.sh`) as its first source, renumbering prior sources 2–4, and Limitations gained a "Count fidelity" note that only the advisor-reuse script reproduces the hook verdict.
 - Content resync 2026-10-03 (#1781): draft-time run-once norm for commands inside 하네스 제안 items, with observed result recorded beside the proposal.
 - Content-drift resync 2026-11-05 (v2.0.14, #1907 P1): Phase 2a records the `tool_use_after_tool_result_no_text` key of the `--json` output of `scripts/count-r007-r008.sh` as a separate adjacency count (not added to `r007_missing`/`r008_missing`, cause not recorded, "미측정" when absent); the issue template gained a counts line carrying it; a 하네스 제안 item that prescribes rule or workflow wording is compared before submission with the MUST rule sentence it touches, and that sentence is recorded beside the proposal.
+- Content-drift resync 2026-11-06 (v2.0.16): the `tool_use_after_tool_result_no_text` count treats a text block as text only when `.text` is a string with at least one non-whitespace character; an empty string counts as no text, and extending that to whitespace-only or absent `.text` is marked as an interpretation in the source.

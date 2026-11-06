@@ -60,6 +60,14 @@
 #     counted event; if it is `text`, nothing is counted. A text block in an earlier record of the
 #     same segment therefore suppresses the event (split records), and parallel tool_use blocks in
 #     one segment count once, not once per tool_use.
+#   - A `text` block counts as text only when `.text` is a string containing at least one
+#     non-whitespace character (`test("\\S")`, #1910 item 4). A block whose `.text` is empty
+#     (`""`) is treated as absent, i.e. ignored like `thinking`, so it neither suppresses the
+#     event nor decides the segment; the next remaining block does. [해석] The #1910 decision
+#     comment names `""` only. This script also treats a whitespace-only `.text` and a text block
+#     with no `.text` key (or a non-string `.text`) as absent, on the reading that a block with no
+#     non-whitespace character cannot carry an R007/R008 marker either. This applies to this
+#     separate metric only: the advisor, `turns`, `r007_missing` and `r008_missing` are unchanged.
 # Counted events sit INSIDE the turns defined above (a tool_result line is not a boundary), so the
 # metric is not a turn-boundary claim; it only counts the adjacency shape. It reports the number
 # as measured and makes no statement about why the text block is absent.
@@ -176,8 +184,8 @@ fi
 
 # ── Separate metric: tool_use right after a tool_result with no text block (see header). One
 # reduce over the canonical records; state = {after_tr, decided, n}. A role=="user" record
-# (re)opens a segment and sets after_tr from its tool_result blocks; the first text/tool_use block
-# of the following assistant records decides the segment exactly once.
+# (re)opens a segment and sets after_tr from its tool_result blocks; the first tool_use block or
+# non-whitespace text block of the following assistant records decides the segment exactly once.
 tool_use_no_text_total=$(
   jq -s '
     def is_conv: ((.isSidechain? // false) != true) and ((.type? // "") != "api-request-blob");
@@ -188,7 +196,7 @@ tool_use_no_text_total=$(
          .after_tr = (([$r | blocks | select(type == "object" and .type? == "tool_result")] | length) > 0)
          | .decided = false
        elif (.after_tr and (.decided | not)) then
-         ([$r | blocks | select(type == "object" and (.type? == "text" or .type? == "tool_use"))] | first) as $f
+         ([$r | blocks | select(type == "object" and (.type? == "tool_use" or (.type? == "text" and ((.text? // "") | type == "string" and test("\\S")))))] | first) as $f
          | if $f == null then .
            else .decided = true | (if $f.type == "tool_use" then .n += 1 else . end) end
        else . end)

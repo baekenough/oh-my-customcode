@@ -478,6 +478,110 @@ describe('count-r007-r008.sh — tool_use after tool_result with no text (separa
     expect(parsed[FIELD]).toBe(1);
   });
 
+  // A text block counts only when `.text` is a string with a non-whitespace character (#1910
+  // item 4). turns / r007_missing / r008_missing are pinned to the values the HEAD script gave
+  // for the SAME transcripts before the change (the advisor is not touched by that change).
+  const opening = (): string[] => [
+    ...userTurn('go'),
+    ...assistantTurn([textBlock(HEADER_TEXT), toolUse('a')]),
+    ...toolResultLine('a'),
+  ];
+
+  it('POSITIVE empty text: tool_result -> text("") -> tool_use is counted (empty text is absent)', async () => {
+    const parsed = await measure('empty-text', [
+      ...opening(),
+      ...assistantTurn([textBlock('')]),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(1);
+    expect(parsed.turns).toBe(1);
+    expect(parsed.r007_missing).toBe(0);
+    expect(parsed.r008_missing).toBe(1);
+  });
+
+  it('POSITIVE whitespace-only text is absent too (interpretation: no marker can be in it)', async () => {
+    const parsed = await measure('ws-text', [
+      ...opening(),
+      ...assistantTurn([textBlock('  \n ')]),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(1);
+    expect(parsed.turns).toBe(1);
+    expect(parsed.r007_missing).toBe(0);
+    expect(parsed.r008_missing).toBe(1);
+  });
+
+  it('POSITIVE same record: [text(""), tool_use] in one record is counted', async () => {
+    const parsed = await measure('same-record-empty', [
+      ...opening(),
+      assistantRecord([textBlock(''), toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(1);
+    expect(parsed.turns).toBe(1);
+    expect(parsed.r007_missing).toBe(0);
+    expect(parsed.r008_missing).toBe(1);
+  });
+
+  it('POSITIVE text block without a .text key is absent', async () => {
+    const parsed = await measure('no-text-key', [
+      ...opening(),
+      ...assistantTurn([{ type: 'text' }]),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(1);
+    expect(parsed.turns).toBe(1);
+    expect(parsed.r007_missing).toBe(0);
+    expect(parsed.r008_missing).toBe(1);
+  });
+
+  // R0-1 L7: the `type == "string"` guard. Without it jq raises on `test()` of a non-string and the
+  // script exits non-zero; with it the block is absent like an empty text.
+  for (const [label, nonString] of [
+    ['number', 5],
+    ['true', true],
+    ['array', ['x']],
+    ['object', { a: 1 }],
+  ] as const) {
+    it(`POSITIVE non-string .text (${label}) is absent: counted once, exit 0`, async () => {
+      const parsed = await measure(`non-string-${label}`, [
+        ...opening(),
+        ...assistantTurn([{ type: 'text', text: nonString }]),
+        ...assistantTurn([toolUse('b')]),
+      ]);
+      expect(parsed[FIELD]).toBe(1);
+    });
+  }
+
+  it('NEGATIVE non-empty text after the tool_result is still not counted', async () => {
+    const parsed = await measure('nonempty-control', [
+      ...opening(),
+      ...assistantTurn([textBlock('[claude][fable] → Tool: Read')]),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(0);
+    expect(parsed.turns).toBe(1);
+    expect(parsed.r007_missing).toBe(0);
+    expect(parsed.r008_missing).toBe(0);
+  });
+
+  it('NEGATIVE empty block first, then non-empty text: the non-empty text decides (not counted)', async () => {
+    const parsed = await measure('empty-then-text', [
+      ...opening(),
+      ...assistantTurn([textBlock('')]),
+      ...assistantTurn([textBlock('[claude][fable] → Tool: Read')]),
+      ...assistantTurn([toolUse('b')]),
+    ]);
+    expect(parsed[FIELD]).toBe(0);
+    expect(parsed.turns).toBe(1);
+    expect(parsed.r007_missing).toBe(0);
+    expect(parsed.r008_missing).toBe(0);
+  });
+
+  it('script keeps the non-whitespace conjunct on text blocks (source pin)', async () => {
+    const src = await Bun.file(SCRIPT).text();
+    expect(src).toContain('test("\\\\S")');
+  });
+
   it('split-record: text in an earlier record of the same segment suppresses the event', async () => {
     const parsed = await measure('split', [
       ...userTurn('go'),

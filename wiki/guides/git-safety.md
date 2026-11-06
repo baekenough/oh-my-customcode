@@ -1,7 +1,7 @@
 ---
 title: "Git Safety Guide"
 type: guide
-updated: 2026-11-05
+updated: 2026-11-06
 sources:
   - guides/git-safety/README.md
 related:
@@ -33,7 +33,7 @@ This guide catalogs destructive git commands that require explicit user approval
 
 Two PreToolUse hooks always exit 0 and deliver warnings as `additionalContext` (#1885); both stay silent when nothing matches.
 
-- `destructive-git-guard.sh` (R001) detects: `git reset --hard`; `git clean` with any short-flag cluster containing `f` (`-f`, `-df`, `-nf` too) or `--force`; any `git restore`; `git checkout -- .`/`*`/`/`; `git branch -D`. Global options in the forms the first tier models (`GIT_OPT`) may sit between `git` and the subcommand (`-C <path>`, `-c k=v`, `--git-dir <path>`, `--no-pager`, ...; quoted values accepted), and the `git` token may follow a separator, `/` (path-qualified binary), `(`, a backtick or a quote (`$(git ...)`, `sh -c "git ..."`). A second, fail-closed tier also warns when `git`, the destructive subcommand word (optionally quoted) and its destructive flag appear in one simple command (no `;`, `&` or `|` between) in a form the first tier does not model, so it can over-warn (`git restore` has no flag, so its second-tier form is narrower). `-n`, `--dry-run`, `-nd` stay silent.
+- `destructive-git-guard.sh` (R001) detects: `git reset --hard`; `git clean` with any short-flag cluster containing `f` (`-f`, `-df`, `-nf` too) or `--force`; any `git restore`; `git checkout -- .`/`*`/`/`; `git branch -D`. Global options in the forms the first tier models (`GIT_OPT`) may sit between `git` and the subcommand (`-C <path>`, `-c k=v`, `--git-dir <path>`, `--no-pager`, ...; quoted values accepted), and the `git` token may follow a separator, `/` (path-qualified binary), `(`, a backtick or a quote (`$(git ...)`, `sh -c "git ..."`). A second, fail-closed tier also warns when `git`, the destructive subcommand word (optionally quoted) and its destructive flag appear in one simple command (no `;`, `&` or `|` between) in a form the first tier does not model, so it can over-warn (`git restore` has no flag, so its second-tier form is narrower). `-n`, `--dry-run`, `-nd` stay silent. The source states: "Second-tier warnings are still emitted and recorded" (the state line ends with ` tier=2`), "but they are not counted"; the once-per-session count line appears when the count of first-tier warnings reaches 3.
 - `git-delegation-guard.sh` (R010) flags git write keywords in delegation prompts to agents other than `mgr-gitnerd`. It skips negated keywords, prohibition blocks (`Forbidden:`-style), read-only `git branch`/`git tag` queries, and bare noun uses; the advisory is conditional on a match.
 
 ## Pre-Flight Checks
@@ -75,3 +75,4 @@ git reflog -n 20                 # baseline before any history-rewriting op
 - `guides/git-safety/README.md` — full reference with code examples and recovery pseudo-code
 - Issue #1146 — v0.136.0 working tree loss incident (origin of this guide)
 - v0.136.1 — release that formalized safety rules across R001 and mgr-gitnerd
+- Content-drift resync 2026-11-06 (v2.0.16): the source now states that `destructive-git-guard.sh`'s per-session count counts first-tier warnings only; second-tier warnings are still emitted and recorded with ` tier=2` but not counted. Reflected in the Advisory Detection Hooks section.

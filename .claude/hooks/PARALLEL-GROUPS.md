@@ -136,8 +136,11 @@ stdin JSON (hook input)
 | C (formatters) | prettier, tsc, gofmt, ruff, ty | Must be sequential — file mutation with ordering within language |
 | D (PreToolUse gates) | stage-blocker, content-hash-validator (Edit), schema-validator, git/teams/escalation advisors | Must be sequential — run before the tool executes; advisors do not gate it |
 
-**Theoretical maximum parallelism**: Groups A + B can all run concurrently (6 hooks in parallel
-on Edit/Write/Bash invocations). This would reduce serial hook time from ~6× to ~1× for those groups.
+**Theoretical maximum parallelism**: Groups A + B + B+ list six PostToolUse hooks, but at most 5 of them match a single invocation
+(Edit, Write or Bash); the six never co-occur. Upper bound, counted from the matchers in `.claude/settings.json` (the file Claude Code loads;
+`hooks.json` carries the same matchers as `tool == ...` expressions) and ignoring any `tool_input` predicates or in-script early exits:
+`jq -r '.hooks.PostToolUse[] | .matcher as $m | .hooks[] | "\($m)\t\(.command)"' .claude/settings.json`, then count the six scripts whose matcher contains the tool.
+This would reduce serial hook time from ~5× to ~1× for those groups.
 
 **Current constraint**: Claude Code's hook system runs all hooks in the order defined in `hooks.json`.
 True parallelism is not yet supported by the runtime. This document serves as the design intent

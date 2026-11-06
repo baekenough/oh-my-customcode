@@ -11,7 +11,7 @@
  * Test seam: DESTRUCTIVE_GIT_GUARD_UNDER_TEST points the suite at a scratch mutant copy of the
  * script (mutation proof); it is unset in normal runs.
  */
-import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -612,4 +612,94 @@ describe('6. SIGPIPE ignored: early match plus a >64 KB tail keeps stderr empty'
     expect(result.exitCode).toBe(0);
     expect(result.stderr).toBe('');
   });
+});
+
+// -------------------------------------------------------------------
+// 7. Hostile environment: RLIMIT_FSIZE 0 (#1914 item 3)
+// -------------------------------------------------------------------
+
+describe('7. hostile environment: ulimit -f 0 keeps the guard fail-open and silent', () => {
+  // Under `ulimit -f 0` the state write (`printf >> state file`) fails with EFBIG. With SIGXFSZ
+  // ignored the shell survives, and a leaked unflushed printf buffer used to reach the count
+  // substitution, so `[` printed "integer expression expected" on stderr. With SIGXFSZ left at its
+  // default the kernel killed the shell (exit 153, advisory lost). Pipes are not limited by
+  // RLIMIT_FSIZE, so stdout/stderr below are still captured. The only files written under the
+  // limit are this pid's two exact state paths (STATE_PATHS), reset around every test.
+  const HOSTILE_PRELUDES: ReadonlyArray<readonly [name: string, prelude: string]> = [
+    ['SIGXFSZ ignored and ulimit -f 0', 'trap "" XFSZ; ulimit -f 0'],
+    ['SIGXFSZ at its default and ulimit -f 0', 'ulimit -f 0'],
+  ];
+  const SEED_LINES =
+    '2026-01-01T00:00:00Z git clean tier=1\n2026-01-01T00:00:01Z git restore tier=1\n';
+  const THREE_TIER1_SEED_LINES = `${SEED_LINES}2026-01-01T00:00:02Z git branch -D tier=1\n`;
+
+  beforeEach(() => {
+    removeOwnState();
+  });
+
+  afterEach(() => {
+    removeOwnState();
+  });
+
+  function runHostile(
+    prelude: string,
+    command: string
+  ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    return new Promise((resolvePromise) => {
+      const child = spawn('sh', ['-c', `${prelude}; exec bash "$0"`, GUARD], {
+        env: { ...process.env, HOME: WORK_DIR },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (chunk: Buffer) => {
+        stdout += chunk.toString();
+      });
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+      child.on('close', (code) => {
+        resolvePromise({ stdout, stderr, exitCode: code ?? -1 });
+      });
+      child.stdin.end(JSON.stringify({ tool: 'Bash', tool_input: { command } }));
+    });
+  }
+
+  /** The whole stdout must be one JSON document: a state line leaked into stdout would break the parse. */
+  function expectCleanWarning(result: { stdout: string; stderr: string; exitCode: number }): void {
+    expect(result.stderr).toBe('');
+    expect(result.exitCode).toBe(0);
+    const parsed = JSON.parse(result.stdout) as {
+      hookSpecificOutput: { hookEventName: string; additionalContext: string };
+    };
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('PreToolUse');
+    expect(parsed.hookSpecificOutput.additionalContext).toContain('DESTRUCTIVE GIT WARNING');
+  }
+
+  for (const [name, prelude] of HOSTILE_PRELUDES) {
+    it(`${name}, fresh state: exit 0, one JSON warning, empty stderr`, async () => {
+      expectCleanWarning(await runHostile(prelude, 'git reset --hard HEAD~1'));
+    });
+
+    it(`${name}, pre-seeded state (2 lines): exit 0, one JSON warning, empty stderr`, async () => {
+      writeFileSync(STATE_PATHS[0] as string, SEED_LINES);
+      expectCleanWarning(await runHostile(prelude, 'git reset --hard HEAD~1'));
+    });
+
+    it(`${name}, tier-2 form: exit 0, one JSON warning, empty stderr`, async () => {
+      expectCleanWarning(await runHostile(prelude, 'git "reset" --hard'));
+    });
+
+    // R0-1 L1: 3 tier-1 lines are pre-seeded, the 4th write fails. The count line must still say 3
+    // (the count is the FIRST line of the substitution output; the sanitize step keeps it).
+    it(`${name}, pre-seeded state (3 tier-1 lines): the count line still says 3`, async () => {
+      writeFileSync(STATE_PATHS[0] as string, THREE_TIER1_SEED_LINES);
+      const result = await runHostile(prelude, 'git reset --hard HEAD~1');
+      expectCleanWarning(result);
+      const context = (
+        JSON.parse(result.stdout) as { hookSpecificOutput: { additionalContext: string } }
+      ).hookSpecificOutput.additionalContext;
+      expect(context).toContain('3 this session');
+    });
+  }
 });

@@ -34,7 +34,7 @@ SubagentStop event  [hooks execute in array order — ordering is critical]
   │       reads:  stdin JSON (agent_type, model, outcome)
   │       reads:  /tmp/.claude-agent-starts-$PPID  (duration calc — entry still present)
   │       writes: /tmp/.claude-task-outcomes-$PPID  (appends 1 JSON line with duration_seconds)
-  │       writes: stderr  (on failure only)
+  │       writes: stderr  (failure branch only; unreachable under SubagentStop: "SubagentStop carries no error signal", task-outcome-recorder.sh)
   │
   └─ [2] stall-detection-advisor.sh
           reads:  stdin JSON (agent_type, model, description)
@@ -74,7 +74,7 @@ The current agent's duration is recorded *after* stall detection so it does not 
 | File | Writer | Readers | Lifecycle |
 |------|--------|---------|-----------|
 | `/tmp/.claude-agent-starts-$PPID` | `agent-start-recorder.sh` (append) | `task-outcome-recorder.sh` (read), `stall-detection-advisor.sh` (read + remove entry) | Session-scoped via PPID; ring buffer 50 entries; entry removed after `stall-detection-advisor` consumes it |
-| `/tmp/.claude-task-outcomes-$PPID` | `task-outcome-recorder.sh` (append) | `feedback-collector.sh`, `eval-core-batch-save.sh` (at Stop) | Session-scoped via PPID; ring buffer 50 entries |
+| `/tmp/.claude-task-outcomes-$PPID` | `task-outcome-recorder.sh` (append) | `model-escalation-advisor.sh` (PreToolUse Agent/Task), `feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh` (at Stop) | Session-scoped via PPID; ring buffer 50 entries; success rows only — SubagentStop carries no failure signal and no currently wired hook path writes a failure row (the recorder's failure branch needs `is_error`, which SubagentStop never carries), so the escalation advisory's failure count stays 0 |
 | `/tmp/.claude-agent-durations-$PPID` | `stall-detection-advisor.sh` (append) | `stall-detection-advisor.sh` (read for average calculation) | Session-scoped via PPID; ring buffer 50 entries |
 
 ---

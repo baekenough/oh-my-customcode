@@ -1,7 +1,7 @@
 ---
 title: "Multi-Model Routing Guide"
 type: guide
-updated: 2026-10-26
+updated: 2026-11-06
 sources:
   - guides/multi-model-routing/README.md
 related:
@@ -37,7 +37,7 @@ The Tier-1 base `sonnet` and `opus` aliases are **resolved by CC itself, not pin
 
 ## Escalation Pattern (Agent-tool spawn, Tier 3)
 
-When a lower-tier model fails, escalate: `haiku → sonnet → opus` (de-escalation: `opus → sonnet → haiku`; `opus` is the top tier, so no further escalation target exists above it). This operates at Agent-tool spawn time, so it uses the Tier-3 enum (`sonnet`\|`opus`\|`haiku`\|`fable`) — not full model IDs, and not `sonnet5`/`opus5`. There is no agent-frontmatter switch for escalation: `model-escalation-advisor.sh` reads no frontmatter, its thresholds are hard-coded, and it evaluates every haiku/sonnet spawn. It is currently unreachable because the outcome recorder never writes failures; see [[model-escalation]] skill.
+When a lower-tier model fails, escalate: `haiku → sonnet → opus` (de-escalation: `opus → sonnet → haiku`; `opus` is the top tier, so no further escalation target exists above it). This operates at Agent-tool spawn time, so it uses the Tier-3 enum (`sonnet`\|`opus`\|`haiku`\|`fable`) — not full model IDs, and not `sonnet5`/`opus5`. There is no agent-frontmatter switch for escalation: `model-escalation-advisor.sh` reads no frontmatter, its thresholds are hard-coded, and "it exits early unless the session outcome ledger file" exists (`/tmp/.claude-task-outcomes-${PPID}`), then evaluates the escalation advisory only for haiku and sonnet spawns. That escalation advisory is currently unreachable because the outcome recorder writes success only ("it records success only") and never failures. The de-escalation advisory (`opus → sonnet → haiku`) is separate and opt-in via `OMCUSTOM_MODEL_DEESCALATION=on`; see [[model-escalation]] skill.
 
 ## PROJECT Override (frontmatter, Tier 2)
 
@@ -62,5 +62,6 @@ Fast Mode (`/fast`) uses the same model tier at ~2.5x output speed by reducing r
 ## Sources
 
 - `guides/multi-model-routing/README.md` — routing table, cost-quality matrix, escalation config, Fast Mode interaction, Opus 5 / Fable 5 alias and hierarchy notes
+- Content-drift resync 2026-11-06 (v2.0.16): the Escalation Pattern paragraph now follows the source: the advisor exits early unless the ledger file exists (the page previously said it evaluated every haiku/sonnet spawn), the escalation advisory is unreachable because the recorder writes success only, and de-escalation is separate and opt-in.
 - Content-drift resync 2026-09-29 (#1755, CC v2.1.284): Tier-2 value list and the role/override recommendation tables now use `claude-sonnet-5-5`/`claude-opus-5-5`; `claude-sonnet-5`/`claude-opus-5` described as previous-generation; "v2.1.197+ default" reworded to a dated snapshot.
 - Content-drift resync 2026-07-29 (false-green fix): removed the retracted claim that the Tier-1 base `sonnet`/`opus` aliases "stay pinned" to `claude-sonnet-4-6`/`claude-opus-4-6` — this contradicted the Tier table three lines above it ("resolved by CC itself"), and the source guide explicitly retracts the pin claim. Alias resolution is CC-controlled and drifts with platform defaults; version stability requires the Tier-2 full model ID.
