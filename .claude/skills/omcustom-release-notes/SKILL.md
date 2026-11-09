@@ -178,7 +178,7 @@ For each tag in range (in reverse semver order), the script:
 
 ### Output
 
-Markdown text suitable for prepending to CHANGELOG.md between `## [Unreleased]` and the first existing version section. The script's only file write is `with open(args.output, "w", encoding="utf-8") as fh:` under `if args.output:` in `scripts/backfill_changelog.py` (lines 519-520; otherwise the text goes to stdout), so it writes CHANGELOG.md only if `--output` names that file, which would truncate it, and mgr-gitnerd passes another file. arch-documenter applies the output to CHANGELOG.md by hand with Edit.
+Markdown text suitable for prepending to CHANGELOG.md between `## [Unreleased]` and the first existing version section. The script's only file write is `with open(args.output, "w", encoding="utf-8") as fh:` under `if args.output:` in `scripts/backfill_changelog.py` (otherwise the text goes to stdout), so it writes CHANGELOG.md only if `--output` names that file, which would truncate it, and mgr-gitnerd passes another file. arch-documenter applies the output to CHANGELOG.md by hand with Edit.
 
 ### When to Use
 

@@ -1,7 +1,7 @@
 ---
 title: Harness Engineering Guide
 type: guide
-updated: 2026-10-25
+updated: 2026-11-09
 sources:
   - guides/harness-engineering/README.md
 related:
@@ -37,7 +37,7 @@ related:
 
 - Per-agent 컨텍스트 예산: R013 task-type-aware thresholds (research 40% / impl 50% / review 60% / management 70%)
 - 아티팩트 핸드오프: `.claude/outputs/sessions/{날짜}/` 규약 (R006)
-- PostCompact 규칙 재주입: R021 PostCompact hook → R007/R008/R009/R010/R018 재로드
+- 컨텍스트 압축 후 규칙 재주입: R021 SessionStart hook(matcher `compact`, `claude-md-reinject.sh`) → CLAUDE.md의 R007/R008/R009/R010/R018 재로드 (PostCompact 배선은 유지되나 효과 미보장). 제안 단계: 컴팩션 감지 시 MEMORY.md 로드 추가 (구현됨은 CLAUDE.md 원문 재주입까지)
 
 ## Harness Skill Stack
 

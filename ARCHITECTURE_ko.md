@@ -143,7 +143,7 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 
 | 이벤트 | 스크립트 / 핸들러 | 목적 |
 |--------|------------------|------|
-| SessionStart | session-env-check.sh, stale-todo-scanner.sh | codex CLI + Agent Teams 가용성 감지; 오래된 TODO 스캔 |
+| SessionStart | session-env-check.sh, stale-todo-scanner.sh, claude-md-reinject.sh (matcher `compact`) | codex CLI + Agent Teams 가용성 감지; 오래된 TODO 스캔; 압축 재진입 시 CLAUDE.md 재주입 |
 | PreToolUse (Write/Edit) | stage-blocker.sh | implement 단계 외 쓰기 차단 |
 | PreToolUse (Bash dev server) | 인라인 스크립트 | 어드바이저리(항상 exit 0): tmux/백그라운드 밖에서 포그라운드 dev 서버 시작 시 additionalContext 전달 |
 | PreToolUse (Bash) | bash-cd-advisor.sh | 어드바이저리(차단 없음): Bash 명령에 최상위 지속 `cd`가 있으면 additionalContext 전달 |
@@ -158,7 +158,7 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 | PostToolUse (Bash/Read) | secret-filter.sh | 출력에서 잠재적 시크릿 탐지 (어드바이저리) |
 | PostToolUse (Edit/Write/Bash/Agent) | audit-log.sh | 상태 변경 작업의 추가 전용 감사 로그 |
 | PostToolUse (모든 도구) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode 어드바이저리, 반복 루프 감지, 비용 모니터링 |
-| PostCompact | compact-rules-reinforcement (인라인) | 컨텍스트 압축 후 R007/R008/R009/R010/R018 규칙 재주입 |
+| PostCompact | compact-rules-reinforcement (인라인) | 컨텍스트 압축 후 규칙 재활성화 프롬프트 (효과 미보장; 재주입 경로는 SessionStart matcher `compact`, R021) |
 | SubagentStart | HUD 인라인 표시 | 서브에이전트 시작 시 agent type:model 로그 |
 | PostToolUseFailure | failure-ledger.sh, subagent-failure-advisor.sh (Agent/Task) | 무출력 실패 계측; additionalContext로 서브에이전트 실패 어드바이저리 |
 | SubagentStop | task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh(연속 완료 가드), r007-r008-drift-advisor.sh | 완료 기록(항상 outcome=success, 이 이벤트에는 실패 신호 없음); 정체, 연속 완료, R007/R008 드리프트 어드바이저리(워크플로를 이어가거나 차단하지 않음) |
@@ -382,7 +382,7 @@ MCP 저장은 논블로킹 -- 실패해도 세션 종료를 막지 않습니다.
   <img src="assets/diagrams/10-feedback-loop.png" alt="Feedback Analysis Loop" width="800" />
 </p>
 
-`task-outcome-recorder.sh` 훅(SubagentStop에만 배선)이 서브에이전트 완료를 에이전트 타입별로 기록합니다. SubagentStop에는 실패 신호와 모델 정보가 없으므로 모든 항목은 outcome=success, model "inherit"입니다. 이 원장은 `model-escalation-advisor.sh`와 다른 훅 3종(`feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh`)이 읽으며, 아래에서는 그중 두 가지 용도를 설명합니다.
+`task-outcome-recorder.sh` 훅(SubagentStop에만 배선)이 서브에이전트 완료를 에이전트 타입별로 기록합니다. SubagentStop에는 실패 신호와 모델 정보가 없으므로 모든 항목은 outcome=success, model "inherit"입니다. 이 원장은 `model-escalation-advisor.sh`와 다른 훅 3종(`feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh`)이 읽으며, 훅 외에도 세션 종료 시 sys-memory-keeper 에이전트, eval-core(`packages/eval-core/src/collect/outcome-parser.ts`의 `parseOutcomeFile`, `eval-core-batch-save.sh`가 `eval-core collect --ppid`로 실행), serve 웹 UI(`packages/serve/src/lib/server/`의 `analytics.ts`와 `eval-reader.ts`, `/tmp/.claude-task-outcomes-*` 파일 전체를 읽음) 등이 읽습니다. 아래에서는 이 용도 중 두 가지를 설명합니다.
 
 에이전트 타입의 실패가 2회 이상 기록되었거나 최근 3건의 결과가 모두 실패이면(임계값은 스크립트에 하드코딩되어 있으며 프론트매터 스위치는 없음) 에스컬레이션 어드바이저리(model-escalation-advisor.sh)가 `additionalContext`(모델에 보이는 채널)로 발행되도록(haiku -> sonnet -> opus) 설계되어 있습니다. 그러나 현재 배선에서는 이 경로가 도달 불가능합니다: 레코더가 outcome=success만 기록하므로 실패 횟수는 항상 0입니다. 이 원장에 실패 행을 기록하는 방안은 검토 후 채택하지 않았으므로(#1912) 어드바이저리는 계속 도달할 수 없습니다. 또한 스폰의 `model` 파라미터가 haiku 또는 sonnet일 때만 평가됩니다. 서로 다른 어드바이저리는 세션당 최대 1회만 표시되며(키별 원자적 마커 디렉토리), 이는 마커 디렉토리가 존재하거나 생성 가능할 때에 한합니다. 생성할 수 없으면 호출마다 반복되고(fail-open), 읽기 전용 마커 디렉토리가 미리 있으면 침묵합니다. 디에스컬레이션 어드바이저리는 `OMCUSTOM_MODEL_DEESCALATION=on`일 때만 동작하는 옵트인인데, 레코더가 모든 서브에이전트 완료를 성공으로 기록하여 연속 "성공"이 신호가 되지 못하기 때문입니다. 차단하지 않으며 수용 여부는 오케스트레이터가 결정합니다.
 
@@ -553,7 +553,7 @@ v0.123.0에서 추가된 스킬 프로필 시스템입니다. `/profile` 커맨�
 | Agent maxTurns | 아니오 | 예 | 예 (프론트매터: maxTurns) |
 | Agent hooks | 아니오 | 예 | 예 (프론트매터: hooks) |
 | Agent permissionMode | 아니오 | 예 | 예 (프론트매터: permissionMode) |
-| PostCompact 훅 이벤트 | 아니오 | 예 (v2.1.72+) | 예 (v0.38.0+) -- 압축 후 규칙 재주입 |
+| PostCompact 훅 이벤트 | 아니오 | 예 (v2.1.72+) | 예 (v0.38.0+) -- 압축 후 규칙 재활성화 프롬프트 (효과 미보장; 재주입 경로는 SessionStart matcher `compact`) |
 | 스킬 effort 프론트매터 | 아니오 | 예 (v2.1.80+) | 예 (R006 문서화) |
 | 상태줄 rate_limits | 아니오 | 예 (v2.1.80+) | 예 (statusline.sh, R012) |
 | source: 'settings' 플러그인 | 아니오 | 예 (v2.1.80+) | 미채택 |
@@ -645,7 +645,7 @@ Claude Code v2.1.72 ~ v2.1.114+ 테스트 및 호환 확인 (규칙 레벨 버�
 | Takeover | 기존 프로젝트의 `.claude/` 구성을 oh-my-customcode 사양으로 역컴파일하는 패턴. |
 | Evaluator-Optimizer | 구현-평가-피드백 루프를 통한 반복적 품질 개선 패턴. |
 | 시간 감쇠 (Temporal Decay) | 메모리 항목의 관련성이 시간 경과에 따라 감소하는 수명 주기 모델. |
-| PostCompact 훅 | 컨텍스트 압축 후 발생하는 Claude Code 라이프사이클 이벤트 (v2.1.72+); 핵심 규칙 재주입에 사용. |
+| PostCompact 훅 | 컨텍스트 압축 후 발생하는 Claude Code 라이프사이클 이벤트 (v2.1.72+); 규칙 재활성화 프롬프트에 사용 (효과 미보장; 재주입 경로는 SessionStart matcher `compact`). |
 | eval-core | `packages/eval-core/` 독립형 패키지. SQLite 기반 세션/턴/결과 수집으로 오프라인 평가를 지원. |
 | Init 위자드 | 새 프로젝트에 `.claude/`를 구성하는 대화형 최초 설정 플로우 (`omcustom init`). |
 

@@ -6,6 +6,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -1121,6 +1122,16 @@ describe('countHookScripts', () => {
     expect(countHookScripts(scripts)).toBe(2);
   });
 
+  test('documented boundary: a symlink is not counted, even when it points at a regular *.sh file', () => {
+    const scripts = join(dir, 'symlink-scripts');
+    mkdirSync(scripts, { recursive: true });
+    writeFileSync(join(scripts, 'real.sh'), '');
+    symlinkSync(join(scripts, 'real.sh'), join(scripts, 'link.sh'));
+
+    expect(readdirSync(scripts).sort()).toEqual(['link.sh', 'real.sh']); // both entries exist
+    expect(countHookScripts(scripts)).toBe(1); // only the regular file counts
+  });
+
   test('returns 0 for a missing directory', () => {
     expect(countHookScripts(join(dir, 'does-not-exist'))).toBe(0);
   });
@@ -1196,6 +1207,29 @@ describe('extractHookCountClaims', () => {
     expect(extractHookCountClaims('README.md', 'ships 1,042 hook scripts')).toEqual([]);
     expect(extractHookCountClaims('README_ko.md', '1,042개 훅 스크립트')).toEqual([]);
     expect(extractHookCountClaims('README.md', 'agents, 42 hook scripts')).toEqual([
+      { file: 'README.md', line: 1, documented: 42 },
+    ]);
+  });
+
+  test('documented boundary: a claim with no space after a comma is skipped', () => {
+    expect(extractHookCountClaims('README.md', 'a,42 hook scripts')).toEqual([]);
+    expect(extractHookCountClaims('README_ko.md', 'a,42개 훅 스크립트')).toEqual([]);
+  });
+
+  test('documented boundary: a space thousands separator is not rejected and reads as 42', () => {
+    expect(extractHookCountClaims('README.md', 'ships 1 042 hook scripts')).toEqual([
+      { file: 'README.md', line: 1, documented: 42 },
+    ]);
+    expect(extractHookCountClaims('README_ko.md', '1 042개 훅 스크립트')).toEqual([
+      { file: 'README_ko.md', line: 1, documented: 42 },
+    ]);
+  });
+
+  test("documented boundary: an apostrophe thousands separator ('1'042' and U+2019) is not rejected and reads as 42", () => {
+    expect(extractHookCountClaims('README.md', "ships 1'042 hook scripts")).toEqual([
+      { file: 'README.md', line: 1, documented: 42 },
+    ]);
+    expect(extractHookCountClaims('README.md', 'ships 1’042 hook scripts')).toEqual([
       { file: 'README.md', line: 1, documented: 42 },
     ]);
   });

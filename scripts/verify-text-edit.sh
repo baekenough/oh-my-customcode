@@ -15,8 +15,9 @@
 #   verify-text-edit.sh --help
 #
 #   --stdin    read the added lines from stdin, as is (nothing is filtered; a leading `+` is harmless)
-#   --files    take the added lines of the given files from `git diff -U0` (tracked files) or the
-#              whole content (untracked files); absolute paths or paths relative to the repository
+#   --files    take the added lines of the given files from `git diff HEAD -U0` (tracked files; HEAD
+#              against the working tree) or the whole content (untracked files); absolute paths
+#              or paths relative to the repository
 #              root (derived from this script's own location, not from the caller's cwd)
 #   --quotes   file with one quotation per line (no blank line, LF endings); needs --target
 #   --target   file the quotations must appear in
@@ -43,6 +44,16 @@
 #   - `--files` drops the diff HEADER lines (`+++ b/<path>`) with a header/hunk state machine, so a
 #     path ending in 함/됨/필요/다 is not counted and a content line starting with `++ ` is kept.
 #     The yaml (a) command (`git diff -U0 ... | grep '^+'`) keeps the header lines.
+#   - `--files` compares tracked files against HEAD (`git diff HEAD -U0`, like the yaml's
+#     `git diff HEAD -U0` shell check), i.e. HEAD against the WORKING TREE: an edit that is only
+#     staged is still seen; the yaml (a) command uses a plain `git diff -U0` and misses it. A staged
+#     version that the working tree later overwrote is NOT checked (re-stage, or check before
+#     staging; pinned by the test 'a staged 반말 line overwritten in the working tree', git 2.52.0).
+#     In a repository with no commit yet the comparison base is the empty tree
+#     (`git hash-object -t tree /dev/null`), so the whole working-tree content counts as added.
+#   - `--files` pairs a `git mv`'d file with its source (`git diff -M --name-status`), so only the
+#     lines changed beyond the rename count (pinned by the 'git mv' tests); a plain `mv` is not a
+#     rename: the new path is untracked and counts whole.
 #   - `--files` treats an untracked file as fully added (a plain `git diff` shows nothing for it).
 #   - `--files` passes the paths as literal pathspecs (`git --literal-pathspecs`): `[xy].md` is a
 #     file name, not a glob that also matches `x.md`.
@@ -58,10 +69,10 @@ usage() {
   cat <<'USAGE'
 Usage: verify-text-edit.sh [--stdin | --files <edited-file>...] [--quotes <quotation-file> --target <target-file>]
   --stdin   added lines from stdin, as is
-  --files   added lines of the given files (git diff -U0; untracked = whole file)
+  --files   added lines of the given files (git diff HEAD -U0 = HEAD vs working tree; untracked = whole file)
   --quotes  quotation file, one quotation per line; requires --target
   --target  file the quotations are searched in
-Exit: 0 ok | 1 violation / 0-hit or empty quotation set | 2 usage or missing file | 3 grep/python3 disagree
+Exit: 0 ok | 1 violation / 0-hit or empty quotation set | 2 usage, missing file, or python3 missing or failing | 3 grep/python3 disagree
 USAGE
 }
 
@@ -131,9 +142,17 @@ mark_violation() {
 # Added lines of every given file, header lines removed: `diff `/`@@` switch between header and
 # hunk state, only `+` lines inside a hunk are content.
 collect_added_from_files() {
-  local f abs
+  local f abs base
   local tracked=()
   local untracked=()
+  # Tracked files are compared against HEAD so a staged-only edit is seen; with no commit yet
+  # (HEAD unborn) the empty tree is the base. hash-object gives the empty tree of the repo's own
+  # object format (sha1 or sha256).
+  base=HEAD
+  if ! git --literal-pathspecs -C "$ROOT" rev-parse --verify -q HEAD >/dev/null 2>&1; then
+    base="$(git --literal-pathspecs -C "$ROOT" hash-object -t tree /dev/null 2>/dev/null)" || base=""
+    [ -n "$base" ] || die_usage "cannot resolve HEAD or the empty tree in $ROOT"
+  fi
   for f in "${files[@]}"; do
     case "$f" in
       /*) abs="$f" ;;
@@ -148,9 +167,30 @@ collect_added_from_files() {
       die_usage "file not found: $f"
     fi
   done
+  # A `git mv`'d file: with only the new path in the pathspec git cannot see the rename and the
+  # whole old content would count as added. Add the source path of every rename (-M) whose target
+  # is one of the given files. `--relative` and ls-files both give paths relative to $ROOT.
+  if [ "${#tracked[@]}" -gt 0 ]; then
+    local given=() name st src dst
+    while IFS= read -r -d '' name; do
+      given+=("$name")
+    done < <(git --literal-pathspecs -C "$ROOT" ls-files -z -- "${tracked[@]}")
+    while IFS= read -r -d '' st && IFS= read -r -d '' src; do
+      case "$st" in
+        R*|C*) IFS= read -r -d '' dst || break ;;
+        *) continue ;;
+      esac
+      for name in "${given[@]}"; do
+        if [ "$name" = "$dst" ]; then
+          tracked+=("$src")
+          break
+        fi
+      done
+    done < <(git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff -M --relative --name-status -z "$base")
+  fi
   {
     if [ "${#tracked[@]}" -gt 0 ]; then
-      git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff -U0 -- "${tracked[@]}"
+      git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff -M -U0 "$base" -- "${tracked[@]}"
     fi
     for f in "${untracked[@]}"; do
       git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff --no-index -U0 -- /dev/null "$f"

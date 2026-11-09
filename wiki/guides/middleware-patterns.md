@@ -1,7 +1,7 @@
 ---
 title: Middleware Patterns Guide
 type: guide
-updated: 2026-10-26
+updated: 2026-11-09
 sources:
   - guides/middleware-patterns/README.md
 related:

@@ -20,7 +20,7 @@ oh-my-customcode는 이미 이 규율의 핵심 자산을 보유하고 있습니
 | # | 문제 | oh-my-customcode 매핑 |
 |---|------|----------------------|
 | 1 | **오케스트레이터 오염** — 조율자가 직접 작업을 실행해 단일 책임 원칙 붕괴 | R010: 오케스트레이터는 파일 수정 금지. 서브에이전트에 위임 |
-| 2 | **컨텍스트 압축 시 규칙 망각** — 컨텍스트 창 한계에서 MUST 규칙이 증발 | PostCompact hook이 R007/R008/R009/R010/R018을 재주입 |
+| 2 | **컨텍스트 압축 시 규칙 망각** — 컨텍스트 창 한계에서 MUST 규칙이 증발 | SessionStart hook(matcher `compact`)이 CLAUDE.md를 재주입해 R007/R008/R009/R010/R018을 다시 적용 (R021) |
 | 3 | **비구조적 병렬 실행** — 독립 작업을 순차 실행해 지연 누적 | R009: 2+ 독립 태스크는 반드시 병렬. 최대 5 동시 인스턴스 |
 | 4 | **핸드오프 불투명** — 에이전트 간 결과 전달 경로 불명확 | R015: 라우팅 의도 투명화. `[Intent Detected]` 형식 표시 |
 | 5 | **능력 초과 행동** — 에이전트가 선언된 도구 범위 밖을 실행 | action-validator 스킬이 프리-플라이트 경계 검사 담당 |
@@ -62,7 +62,7 @@ Deep Insight가 제안하는 4계층 구조는 oh-my-customcode에 이미 구현
 | **Per-agent budget allocation** | 태스크 유형별 컨텍스트 예산 분리 | R013 task-type-aware thresholds (research 40% / impl 50% / review 60% / management 70%) |
 | **Artifact handoff over inline transfer** | 대용량 결과는 메모리 전달 대신 파일 아티팩트로 핸드오프 | R006 Artifact Output Convention: `.claude/outputs/sessions/{날짜}/` |
 | **Result aggregation as compression** | 하위 에이전트 결과를 집약·압축해 상위 컨텍스트에 전달 | `result-aggregation` 스킬, R013 ecomode `[Batch Complete]` 형식 |
-| **PostCompact rule re-injection** | 컨텍스트 압축 후 핵심 규칙 재주입 | R021 PostCompact hook → R007/R008/R009/R010/R018 재로드 |
+| **SessionStart (compact) rule re-injection** | 컨텍스트 압축 후 핵심 규칙 재주입 | R021 SessionStart hook(matcher `compact`, `claude-md-reinject.sh`) → CLAUDE.md의 R007/R008/R009/R010/R018 재로드 (PostCompact 배선은 유지되나 효과 미보장) |
 
 ### oh-my-customcode 구현 현황
 
@@ -71,7 +71,7 @@ Deep Insight가 제안하는 4계층 구조는 oh-my-customcode에 이미 구현
 | Task-type budget | R013 SHOULD-ecomode.md | Per-agent dimension 추가 — 동일 태스크라도 에이전트 모델(haiku vs opus)에 따라 예산 차등 적용 검토 |
 | Artifact transfer | R006 Artifact Output Convention | "Channel Protocol" 용어 명문화 — 스킬 간 핸드오프 규약 표준화 |
 | Compression | `result-aggregation` + ecomode `concise` 출력 스타일 | Channel read pattern 추가 — 아티팩트 파일을 직접 읽는 패턴과 집약된 요약만 수신하는 패턴 구분 |
-| Compaction guard | PostCompact hook (SessionStart fallback) | 컴팩션 감지 시 즉시 MEMORY.md 로드 + 규칙 재활성화 |
+| Compaction guard | SessionStart hook (matcher `compact`; PostCompact 배선은 유지되나 효과 미보장) | 구현됨 (#1617, `claude-md-reinject.sh`: 컴팩션 직후 CLAUDE.md 원문 재주입) — 제안: 컴팩션 감지 시 MEMORY.md 로드 추가 (해당 스크립트의 `MEMORY` 문자열 `grep -c` = 0건) |
 
 ---
 

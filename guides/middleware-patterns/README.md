@@ -323,7 +323,7 @@ Q4. 모델 호출 자체를 제어/차단/교체해야 하는가?
 | `SubagentStop` | after_model | 서브에이전트 결과 수집, 루프 계속 여부 |
 | `Stop` | after_agent | 세션 종료 처리, 메모리 저장 |
 | `PreCompact` | wrap_model_call | 컨텍스트 압축 직전 중요 상태 checkpoint |
-| `PostCompact` | before_model | 압축 후 MUST 규칙 재주입 |
+| `PostCompact` | before_model | 압축 후 규칙 재활성화 안내 (효과 미보장 — 재주입 보장 경로는 `SessionStart` matcher `compact`, R021) |
 | `Notification` | after_model | 외부 알림 발송 (Slack 등) |
 
 ### 5-4. 신규 Hook 작성 예시

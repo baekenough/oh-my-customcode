@@ -20,6 +20,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -320,6 +321,15 @@ describe('Korean checks via --stdin', () => {
     expect(r.stderr).toContain('python3 failed');
   });
 
+  // R1-a A-1: both shims above print nothing, so the exit-status half of the check was unpinned.
+  test('a python3 that prints "0 0 0" but exits 1 -> rc 2 and the python3-failed message', () => {
+    const env = pythonShimEnv('shim-rc1', 'echo "0 0 0"\nexit 1');
+    const r = script(['--stdin'], linesOf(NEG_HAP), env);
+    expect(r.code).toBe(2);
+    expect(r.stderr).toContain('python3 failed (exit 1)');
+    expect(r.stderr).not.toContain('DISAGREE');
+  });
+
   // R0-1 L5: the python3-missing check was not pinned (deleting it still passed every test).
   test('python3 not on PATH -> rc 2 and "python3 not found"', () => {
     const bin = join(dir, 'nopy-bin');
@@ -459,6 +469,19 @@ describe('usage errors (rc 2)', () => {
     expect(r.code).toBe(0);
     expect(r.stdout).toContain('Usage: verify-text-edit.sh');
     expect(r.stdout).toContain('Exit: 0 ok');
+  });
+
+  // R1-a A-2: the usage Exit line names the python3 case of exit 2 (the header is the full contract).
+  test('--help names python3 missing or failing under exit 2', () => {
+    const r = script(['--help']);
+    expect(r.stdout).toMatch(/2 usage, missing file, or python3 missing or failing/);
+  });
+
+  // R-1 L-2: the usage line states what is compared (HEAD vs working tree), not "staged included".
+  test('--help states HEAD vs working tree for --files and no longer claims "staged edits included"', () => {
+    const r = script(['--help']);
+    expect(r.stdout).toContain('HEAD vs working tree');
+    expect(r.stdout).not.toContain('staged edits included');
   });
 });
 
@@ -657,6 +680,227 @@ describe('--files on a temp git repository', () => {
     const r = verify(['--files', 'docs/[ab].md']);
     expect(r.stdout).toContain('[korean] added-lines=0');
     expect(r.code).toBe(0);
+  });
+
+  // R0-1 L4: tracked files are compared against HEAD, so a staged-only edit is seen.
+  test('a staged-only 반말 line (git add, no worktree change) -> rc 1', () => {
+    const rel = commitFile(next('staged-pos'), '기존 문장입니다.\n');
+    writeFileSync(join(repo, rel), '기존 문장입니다.\n새 문장이다.\n');
+    expect(git(['add', '--', rel]).code).toBe(0);
+    expect(git(['diff', '--quiet', '--', rel]).code).toBe(0); // index == worktree: nothing unstaged
+    const r = verify(['--files', rel]);
+    expect(r.code).toBe(1);
+    expect(r.stdout).toContain('[korean] added-lines=1');
+    expect(parseGrep(r.stdout)).toEqual({ fam: 1, lf: 1, noun: 0 });
+    expect(r.stderr).not.toContain('no added lines');
+  });
+
+  test('a staged-only 합쇼체 line (git add) -> rc 0 with the line counted as added', () => {
+    const rel = commitFile(next('staged-neg'), '기존 문장이다.\n');
+    writeFileSync(join(repo, rel), '기존 문장이다.\n새 문장입니다.\n');
+    expect(git(['add', '--', rel]).code).toBe(0);
+    const r = verify(['--files', rel]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain('[korean] added-lines=1');
+    expect(parseGrep(r.stdout)).toEqual({ fam: 0, lf: 0, noun: 0 });
+  });
+
+  test('a staged line plus a further unstaged line are both checked', () => {
+    const rel = commitFile(next('staged-mixed'), '기존 문장입니다.\n');
+    writeFileSync(join(repo, rel), '기존 문장입니다.\n첫 문장입니다.\n');
+    expect(git(['add', '--', rel]).code).toBe(0);
+    writeFileSync(join(repo, rel), '기존 문장입니다.\n첫 문장입니다.\n둘째 문장이다.\n');
+    const r = verify(['--files', rel]);
+    expect(r.stdout).toContain('[korean] added-lines=2');
+    expect(r.code).toBe(1);
+  });
+
+  // R-1 L-2: the comparison is HEAD against the WORKING TREE, not against the index. A staged
+  // version that the working tree later overwrote is not checked (documented in the script header).
+  test('a staged 반말 line overwritten in the working tree is not checked (HEAD vs working tree)', () => {
+    const rel = commitFile(next('staged-overwritten'), '기존 문장입니다.\n');
+    writeFileSync(join(repo, rel), '기존 문장입니다.\n새 문장이다.\n');
+    expect(git(['add', '--', rel]).code).toBe(0);
+    writeFileSync(join(repo, rel), '기존 문장입니다.\n새 문장입니다.\n');
+    // the index still holds the 반말 line that a plain `git commit` would record
+    expect(git(['show', `:${rel}`]).stdout).toContain('새 문장이다.');
+    const r = verify(['--files', rel]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain('[korean] added-lines=1');
+    expect(parseGrep(r.stdout)).toEqual({ fam: 0, lf: 0, noun: 0 });
+  });
+
+  // R-1 L-1: a `git mv`'d file is paired with its source, so the old content is not "added".
+  describe('git mv', () => {
+    const OLD_BODY = '기존 문장이다.\n둘째 기존이다.\n셋째 기존이다.\n넷째 기존이다.\n';
+
+    function moved(prefix: string, body: string): string {
+      const from = commitFile(next(prefix), OLD_BODY);
+      const to = `docs/${next(`${prefix}-to`)}`;
+      expect(git(['mv', '--', from, to]).code).toBe(0);
+      writeFileSync(join(repo, to), body);
+      return to;
+    }
+
+    test('rename only (content unchanged) -> added-lines=0, rc 0', () => {
+      const to = moved('mv-same', OLD_BODY);
+      const r = verify(['--files', to]);
+      expect(r.stdout).toContain('[korean] added-lines=0');
+      expect(r.code).toBe(0);
+      expect(r.stderr).not.toContain('is untracked');
+    });
+
+    test('rename + one added 합쇼체 line -> only that line counts, rc 0', () => {
+      const to = moved('mv-neg', `${OLD_BODY}새 문장입니다.\n`);
+      const r = verify(['--files', to]);
+      expect(r.stdout).toContain('[korean] added-lines=1');
+      expect(r.code).toBe(0);
+      expect(parseGrep(r.stdout)).toEqual({ fam: 0, lf: 0, noun: 0 });
+    });
+
+    test('rename + one added 반말 line -> exactly that line is flagged, rc 1', () => {
+      const to = moved('mv-pos', `${OLD_BODY}새 문장이다.\n`);
+      const r = verify(['--files', to]);
+      expect(r.stdout).toContain('[korean] added-lines=1');
+      expect(r.code).toBe(1);
+      expect(parseGrep(r.stdout)).toEqual({ fam: 1, lf: 1, noun: 0 });
+    });
+
+    test('the repo-relative and the absolute path give the same verdict', () => {
+      const to = moved('mv-abs', `${OLD_BODY}새 문장입니다.\n`);
+      const a = verify(['--files', to]);
+      const b = verify(['--files', join(repo, to)]);
+      expect(a.stdout).toContain('[korean] added-lines=1');
+      expect(b.stdout).toBe(a.stdout);
+    });
+
+    test('a plain mv (not a rename for git) counts the new path as untracked, whole content', () => {
+      const from = commitFile(next('mv-plain'), OLD_BODY);
+      const to = `docs/${next('mv-plain-to')}`;
+      renameSync(join(repo, from), join(repo, to));
+      const r = verify(['--files', to]);
+      expect(r.stderr).toContain('is untracked');
+      expect(r.stdout).toContain('[korean] added-lines=4');
+      expect(r.code).toBe(1);
+    });
+
+    // $ROOT (the script's parent) is a subdirectory of the repository here: --relative keeps the
+    // rename source relative to $ROOT, like the given paths.
+    test('works when the script lives in a subdirectory of the repository', () => {
+      const sub = join(repo, 'pkg');
+      mkdirSync(join(sub, 'scripts'), { recursive: true });
+      mkdirSync(join(sub, 'docs'), { recursive: true });
+      copyFileSync(SCRIPT, join(sub, 'scripts', 'verify-text-edit.sh'));
+      writeFileSync(join(sub, 'docs', 'from.md'), OLD_BODY);
+      expect(git(['add', '--', 'pkg']).code).toBe(0);
+      expect(git(['commit', '-q', '-m', 'add pkg']).code).toBe(0);
+      expect(git(['mv', '--', 'pkg/docs/from.md', 'pkg/docs/to.md']).code).toBe(0);
+      const r = run(
+        ['bash', join(sub, 'scripts', 'verify-text-edit.sh'), '--files', 'docs/to.md'],
+        '',
+        gitEnv(),
+        tmpdir()
+      );
+      expect(r.stdout).toContain('[korean] added-lines=0');
+      expect(r.code).toBe(0);
+    });
+  });
+
+  // R0-1 L4: HEAD is unborn in a fresh repository -> the empty tree is the comparison base.
+  describe('a repository with no commit yet', () => {
+    let fresh = '';
+    const freshGit = (args: string[]): RunResult =>
+      run(['git', '-C', fresh, ...args], '', gitEnv(), fresh);
+    const freshVerify = (args: string[]): RunResult =>
+      run(['bash', join(fresh, 'scripts', 'verify-text-edit.sh'), ...args], '', gitEnv(), fresh);
+
+    beforeAll(() => {
+      fresh = mkdtempSync(join(tmpdir(), 'verify-text-edit-nocommit-'));
+      mkdirSync(join(fresh, 'scripts'), { recursive: true });
+      copyFileSync(SCRIPT, join(fresh, 'scripts', 'verify-text-edit.sh'));
+      expect(freshGit(['init', '-q']).code).toBe(0);
+      expect(freshGit(['rev-parse', '--verify', '-q', 'HEAD']).code).not.toBe(0); // unborn HEAD
+    });
+
+    afterAll(() => {
+      rmSync(fresh, { recursive: true, force: true });
+    });
+
+    test('a staged 반말 file (not committed) -> rc 1, the whole content is added', () => {
+      writeFileSync(join(fresh, 'nc-pos.md'), '첫 문장입니다.\n새 문장이다.\n');
+      expect(freshGit(['add', '--', 'nc-pos.md']).code).toBe(0);
+      const r = freshVerify(['--files', 'nc-pos.md']);
+      expect(r.code).toBe(1);
+      expect(r.stdout).toContain('[korean] added-lines=2');
+      expect(parseGrep(r.stdout)).toEqual({ fam: 1, lf: 1, noun: 0 });
+      expect(r.stderr).not.toContain('fatal');
+    });
+
+    test('a staged 합쇼체 file (not committed) -> rc 0, the whole content is added', () => {
+      writeFileSync(join(fresh, 'nc-neg.md'), '첫 문장입니다.\n둘째 문장입니다.\n');
+      expect(freshGit(['add', '--', 'nc-neg.md']).code).toBe(0);
+      const r = freshVerify(['--files', 'nc-neg.md']);
+      expect(r.code).toBe(0);
+      expect(r.stdout).toContain('[korean] added-lines=2');
+      expect(r.stderr).not.toContain('fatal');
+    });
+
+    test('an untracked file still works (whole content, with the warning)', () => {
+      writeFileSync(join(fresh, 'nc-untracked.md'), '새 문장이다.\n');
+      const r = freshVerify(['--files', 'nc-untracked.md']);
+      expect(r.code).toBe(1);
+      expect(r.stderr).toContain('is untracked');
+    });
+  });
+
+  // R-1 L-5: the empty tree is derived with `git hash-object -t tree /dev/null`, so it follows the
+  // repository's own object format. A hardcoded sha1 empty tree makes `git diff` fail here.
+  describe('an unborn-HEAD repository with --object-format=sha256', () => {
+    let sha = '';
+    let initRc: number | null = null;
+    let initErr = '';
+    const shaGit = (args: string[]): RunResult =>
+      run(['git', '-C', sha, ...args], '', gitEnv(), sha);
+
+    beforeAll(() => {
+      sha = mkdtempSync(join(tmpdir(), 'verify-text-edit-sha256-'));
+      mkdirSync(join(sha, 'scripts'), { recursive: true });
+      copyFileSync(SCRIPT, join(sha, 'scripts', 'verify-text-edit.sh'));
+      const init = shaGit(['init', '-q', '--object-format=sha256']);
+      initRc = init.code;
+      initErr = init.stderr;
+    });
+
+    afterAll(() => {
+      rmSync(sha, { recursive: true, force: true });
+    });
+
+    test('a staged 반말 file -> rc 1, added-lines=2 (the sha256 empty tree is the base)', () => {
+      if (initRc !== 0) {
+        // Reported skip: this git refuses sha256 repositories (needs git >= 2.29).
+        console.log(
+          `SKIPPED sha256 empty-tree test: git init --object-format=sha256 rc=${initRc}: ${initErr.trim()}`
+        );
+        return;
+      }
+      expect(shaGit(['rev-parse', '--verify', '-q', 'HEAD']).code).not.toBe(0); // unborn HEAD
+      // precondition: this repository really hashes with sha256 (64 hex digits, not 40)
+      expect(shaGit(['hash-object', '-t', 'tree', '/dev/null']).stdout.trim()).toMatch(
+        /^[0-9a-f]{64}$/
+      );
+      writeFileSync(join(sha, 'nc-sha.md'), '첫 문장입니다.\n새 문장이다.\n');
+      expect(shaGit(['add', '--', 'nc-sha.md']).code).toBe(0);
+      const r = run(
+        ['bash', join(sha, 'scripts', 'verify-text-edit.sh'), '--files', 'nc-sha.md'],
+        '',
+        gitEnv(),
+        sha
+      );
+      expect(r.stderr).not.toContain('fatal');
+      expect(r.stdout).toContain('[korean] added-lines=2');
+      expect(parseGrep(r.stdout)).toEqual({ fam: 1, lf: 1, noun: 0 });
+      expect(r.code).toBe(1);
+    });
   });
 
   test('--files together with --quotes runs both halves', () => {

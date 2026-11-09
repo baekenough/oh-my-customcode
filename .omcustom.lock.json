@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "2.0.17",
-  "generatedAt": "2026-11-09T05:51:04.623Z",
+  "generatedAt": "2026-11-09T09:28:18.417Z",
   "templateVersion": "2.0.17",
   "files": {
     ".claude/agents/agora-runner.md": {
@@ -960,8 +960,8 @@
       "component": "skills"
     },
     ".claude/skills/model-escalation/SKILL.md": {
-      "templateHash": "271733e358dd27c19506142c2b2ccdf54accf17b2ad385bd58fca3ec72e1a2d6",
-      "size": 3618,
+      "templateHash": "c572186b946ba5ee544c29951c05869389a8239d95a568f253584cf714b5bd46",
+      "size": 3819,
       "component": "skills"
     },
     ".claude/skills/monitoring-setup/SKILL.md": {
@@ -1010,8 +1010,8 @@
       "component": "skills"
     },
     ".claude/skills/omcustom-release-notes/SKILL.md": {
-      "templateHash": "85e6b75337d66611a4a1efd2984f8d984d3e9f07e7fbe44faadabeb64f0d0c8a",
-      "size": 11159,
+      "templateHash": "e44e47efca0680e1a215517e5a93b18f90f1740c1b5fcc02856d283e056d8d74",
+      "size": 11144,
       "component": "skills"
     },
     ".claude/skills/omcustom-takeover/SKILL.md": {
@@ -1065,8 +1065,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "7d590f12905aa7b3f2ade6aa4f630d971b195c3c6f43d98425d9f0d8a299e745",
-      "size": 178360,
+      "templateHash": "d17fda79adb01eeb6c3b8cd1a46da9e8afcf544bde9328badd8a653fb2490d72",
+      "size": 180477,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1545,8 +1545,8 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "c8e99ddfa864e9b6fc22af76cb2b671f3a86352fbfcc62d48b1abc36105c6c4d",
-      "size": 745200,
+      "templateHash": "4da09a9c7ab42f2e090db235a97fcc417baf58b79bf9a78d3667b62e9f5187fa",
+      "size": 745405,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
@@ -1720,8 +1720,8 @@
       "component": "guides"
     },
     "guides/harness-engineering/README.md": {
-      "templateHash": "9b1a4663ed0a440fb08395dc564385a874f57ea1cc79e9f8d981493fccd596bd",
-      "size": 24022,
+      "templateHash": "fedde0ecd4c3c9b4bfd2602320960e8b4eea6f00deeb3216ab1da002bb0e6bff",
+      "size": 24391,
       "component": "guides"
     },
     "guides/hook-data-flow/README.md": {
@@ -1800,8 +1800,8 @@
       "component": "guides"
     },
     "guides/middleware-patterns/README.md": {
-      "templateHash": "abcf6868461aebea5463e536bed2f7cc50179ae0901386d30def427ab41ffe45",
-      "size": 22008,
+      "templateHash": "2a3ade4f9b4dc8c394cf4a7b8d84b7415c52c07d23f7477503eab7c1db93a393",
+      "size": 22102,
       "component": "guides"
     },
     "guides/multi-agent-debate-patterns/README.md": {
