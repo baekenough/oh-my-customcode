@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.18",
-  "generatedAt": "2026-11-09T11:38:42.575Z",
-  "templateVersion": "2.0.18",
+  "generatorVersion": "2.0.19",
+  "generatedAt": "2026-11-09T12:12:58.813Z",
+  "templateVersion": "2.0.19",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -860,8 +860,8 @@
       "component": "skills"
     },
     ".claude/skills/go-best-practices/SKILL.md": {
-      "templateHash": "17c408a160a53875ad248aad2e98c479d9e19e432a1cfa4a8e5916663a46f6a1",
-      "size": 9388,
+      "templateHash": "8a89f2c07e86004cb1c850fbd1d5d3be1ff5a137b1f89bcf41b011c75f48f39b",
+      "size": 9667,
       "component": "skills"
     },
     ".claude/skills/goal/SKILL.md": {
@@ -1110,8 +1110,8 @@
       "component": "skills"
     },
     ".claude/skills/python-best-practices/SKILL.md": {
-      "templateHash": "9b540b72402ff826a407ed5ca6d9d4ce0de0b94e7066129270c2ed86afdadcd2",
-      "size": 8010,
+      "templateHash": "0e01584bf1e200c085d26c484d2339267679a5a9a5bc3d34f40a6ca01bd53528",
+      "size": 8198,
       "component": "skills"
     },
     ".claude/skills/qa-lead-routing/SKILL.md": {
@@ -1155,8 +1155,8 @@
       "component": "skills"
     },
     ".claude/skills/rust-best-practices/SKILL.md": {
-      "templateHash": "26a4b89bc17049bfbc84f8dac3dfeb883885874d42f701938bec717c3df2c3b2",
-      "size": 11399,
+      "templateHash": "697ed5239bda96de00e8e4053e3df91f395353fea169609830297486416693de",
+      "size": 11704,
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {
@@ -1700,8 +1700,8 @@
       "component": "guides"
     },
     "guides/golang/concurrency.md": {
-      "templateHash": "09990ce904e3a6647f1d8578bcd1de388d7ab42cee26a548a55cf64dd6783029",
-      "size": 5975,
+      "templateHash": "d1d32c6e2700bfdb50bcb209f7d51a9f4259db625cde0f09565e3f6c04a78fe6",
+      "size": 6149,
       "component": "guides"
     },
     "guides/golang/effective-go.md": {
