@@ -155,7 +155,7 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 
 | Event | Scripts / Handlers | Purpose |
 |-------|--------------------|---------|
-| SessionStart | session-env-check.sh, stale-todo-scanner.sh | Detect codex CLI + Agent Teams availability; scan for stale TODOs |
+| SessionStart | session-env-check.sh, stale-todo-scanner.sh, claude-md-reinject.sh (matcher `compact`) | Detect codex CLI + Agent Teams availability; scan for stale TODOs; re-inject CLAUDE.md on compact re-entry |
 | PreToolUse (Write/Edit) | stage-blocker.sh | Block writes outside implement stage |
 | PreToolUse (Bash dev server) | inline script | Advisory (always exit 0): additionalContext when a foreground dev server starts outside tmux/background |
 | PreToolUse (Bash) | bash-cd-advisor.sh | Advisory (never blocks): additionalContext when a Bash command contains a top-level persistent `cd` |
@@ -170,7 +170,7 @@ The hook system provides cross-cutting concerns across all agent operations. Hoo
 | PostToolUse (Bash/Read) | secret-filter.sh | Detect potential secrets in output (advisory) |
 | PostToolUse (Edit/Write/Bash/Agent) | audit-log.sh | Append-only audit log for state-changing operations |
 | PostToolUse (any tool) | context-budget-advisor.sh, stuck-detector.sh, cost-cap-advisor.sh | Ecomode advisory, loop detection, cost monitoring |
-| PostCompact | compact-rules-reinforcement (inline) | Re-inject R007/R008/R009/R010/R018 identity and delegation rules after context compaction |
+| PostCompact | compact-rules-reinforcement (inline) | Rule re-activation prompt after context compaction (effect not guaranteed; the re-injection path is SessionStart matcher `compact`, R021) |
 | SubagentStart | HUD inline display | Log agent type:model when subagent starts |
 | PostToolUseFailure | failure-ledger.sh, subagent-failure-advisor.sh (Agent/Task) | Silent failure telemetry; subagent failure advisory via additionalContext |
 | SubagentStop | task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh (consecutive-completion guard), r007-r008-drift-advisor.sh | Record each completion (always outcome=success; no failure signal on this event); stall, consecutive-completion and R007/R008 drift advisories (never continues or blocks the workflow) |
@@ -457,7 +457,7 @@ MCP saves are non-blocking — failure does not prevent session end.
   <img src="assets/diagrams/10-feedback-loop.png" alt="Feedback Analysis Loop" width="800" />
 </p>
 
-The task-outcome-recorder hook (wired to SubagentStop only) records each subagent completion per agent type. SubagentStop carries no failure signal and no model, so every entry is outcome=success with model "inherit". The ledger is read by `model-escalation-advisor.sh` and three other hooks (`feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh`); two uses are described below:
+The task-outcome-recorder hook (wired to SubagentStop only) records each subagent completion per agent type. SubagentStop carries no failure signal and no model, so every entry is outcome=success with model "inherit". The ledger is read by `model-escalation-advisor.sh` and three other hooks (`feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh`); it is also read outside the hooks, among other readers, by the sys-memory-keeper agent at session end, by eval-core (`parseOutcomeFile` in `packages/eval-core/src/collect/outcome-parser.ts`, run by `eval-core-batch-save.sh` via `eval-core collect --ppid`) and by the serve Web UI (`analytics.ts` and `eval-reader.ts` in `packages/serve/src/lib/server/`, reading all `/tmp/.claude-task-outcomes-*` files). Two of these uses are described below:
 
 **Model Escalation (model-escalation-advisor.sh)**: Designed to advise the orchestrator, via `additionalContext` (model-visible), to escalate to a higher model (haiku -> sonnet -> opus) when an agent type has 2 or more recorded failures, or the last 3 outcomes are all failures (thresholds hard-coded in the script, no frontmatter switch). Under the current wiring this path is unreachable: the recorder only writes outcome=success, so the failure count is always 0. Recording failure rows into this ledger was evaluated and not adopted (#1912), so the advisory stays unreachable. It is also evaluated only when the spawn's `model` parameter is haiku or sonnet. Each distinct advisory is shown at most once per session (atomic per-key marker directory), provided the marker directory exists or can be created; if it cannot be created the advisory repeats on every call (fail-open), and a pre-existing read-only marker directory makes it silent. The de-escalation advisory is opt-in via `OMCUSTOM_MODEL_DEESCALATION=on`, because the recorder logs every subagent completion as success, so consecutive "successes" carry no signal. This is advisory-only — the orchestrator decides whether to accept.
 
@@ -602,7 +602,7 @@ The omcustom-takeover skill enables reverse compilation: analyzing an existing c
 | Agent maxTurns | No | Yes | Yes (frontmatter: maxTurns) |
 | Agent hooks | No | Yes | Yes (frontmatter: hooks) |
 | Agent permissionMode | No | Yes | Yes (frontmatter: permissionMode) |
-| PostCompact hook event | No | Yes (v2.1.72+) | Yes (v0.38.0+) — rules reinforcement after compaction |
+| PostCompact hook event | No | Yes (v2.1.72+) | Yes (v0.38.0+) — rules re-activation prompt after compaction (effect not guaranteed; re-injection path is SessionStart matcher `compact`) |
 | Skill effort frontmatter | No | Yes (v2.1.80+) | Yes (R006 documented) |
 | Statusline rate_limits | No | Yes (v2.1.80+) | Yes (statusline.sh, R012) |
 | source: 'settings' plugins | No | Yes (v2.1.80+) | Not adopted |
@@ -722,7 +722,7 @@ The `context-budget-advisor.sh` PostToolUse hook monitors usage and emits adviso
 | Advisory hook | A hook that warns or suggests but never blocks execution — the dominant hook pattern in oh-my-customcode. |
 | Skill effectiveness | The correlation of skill combinations with task outcomes to identify high-success-rate patterns. |
 | Model escalation | Advisory mechanism that suggests upgrading an agent's model after repeated failures (haiku -> sonnet -> opus). |
-| PostCompact hook | A Claude Code lifecycle event (v2.1.72+) that fires after context compaction; used to re-inject critical rules. |
+| PostCompact hook | A Claude Code lifecycle event (v2.1.72+) that fires after context compaction; used for a rule re-activation prompt (effect not guaranteed; the re-injection path is SessionStart matcher `compact`). |
 | eval-core | Standalone `packages/eval-core/` package providing SQLite-backed session/turn/outcome collection for offline evaluation. |
 | Init wizard | Interactive first-run setup flow (`omcustom init`) that configures `.claude/` for a new project. |
 | User Model | Structured section in MEMORY.md maintained by sys-memory-keeper; tracks correction patterns, skill preferences, and expertise profile across sessions (v0.73.0+). |

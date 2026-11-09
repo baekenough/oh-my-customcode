@@ -1046,6 +1046,45 @@ describe('git-delegation-guard.sh', () => {
         '**Forbidden:**\n- git commit',
         'git commit',
       ],
+      // --- #1917 F7: warning controls for the documented false negatives (fixture-measured
+      // 2026-11-06, #1912 D6). Each control is the nearest prompt WITHOUT the excluding feature;
+      // the matching silent positive is in the MUST STAY SILENT table (rows tagged "documented
+      // trade-off: false negative"). Same pairing as the Korean SOV row above. ---
+      [
+        'FN1 control: no negation word on the line ("Run git commit now")',
+        'Run git commit now',
+        'git commit',
+      ],
+      [
+        'FN1 control: same colon, no negation word ("Skip this: git commit now")',
+        'Skip this: git commit now',
+        'git commit',
+      ],
+      [
+        'FN2 colon control: no header line before the command',
+        'Now run git commit -m x',
+        'git commit',
+      ],
+      [
+        'FN2 colon control: a blank line ends the "Forbidden:" block',
+        'Forbidden: editing .env\n\nNow run git commit -m x',
+        'git commit',
+      ],
+      [
+        'FN2 heading control: a non-prohibition heading ("## Notes")',
+        '## Notes\nrun git push origin main to publish',
+        'git push',
+      ],
+      [
+        'FN2 heading control: the command sits in the second paragraph under "## Forbidden"',
+        '## Forbidden\nediting .env\n\nrun git push origin main to publish',
+        'git push',
+      ],
+      [
+        'FN3 control: creation form "git tag v1.0" (no stop-listed word)',
+        'Please git tag v1.0',
+        'git tag',
+      ],
     ];
 
     for (const [name, prompt, keyword] of fires) {
@@ -1121,6 +1160,30 @@ describe('git-delegation-guard.sh', () => {
       ['left boundary: "a legit commit message" is not git commit', 'a legit commit message'],
       // --- L10: prose stop-list noun use ---
       ['L10 prose stop-list: "git branch is clean"', 'git branch is clean'],
+      // --- #1917 F7: documented false negatives, pinned as observed (fixture-measured 2026-11-06,
+      // #1912 D6). Each prompt below IS a real command and stays silent; the guard accepts that
+      // trade-off. Not endorsed: a fix must update these rows together with the script header
+      // ("Known false negatives"). The warning controls are in the MUST FIRE table. ---
+      [
+        'FN1 (documented trade-off: false negative): real command after "Do not skip this:" on the same line',
+        'Do not skip this: git commit now',
+      ],
+      [
+        'FN1 no-colon variant (documented trade-off: false negative): "Do not wait. Run git commit now"',
+        'Do not wait. Run git commit now',
+      ],
+      [
+        'FN2 colon header (documented trade-off: false negative): command in a "Forbidden:" block with no blank line',
+        'Forbidden: editing .env\nNow run git commit -m x',
+      ],
+      [
+        'FN2 heading (documented trade-off: false negative): command in the first paragraph under "## Forbidden"',
+        '## Forbidden\nrun git push origin main to publish',
+      ],
+      [
+        'FN3 stop-list (documented trade-off: false negative): "git tag the release as v1.0" read as a noun',
+        'Please git tag the release as v1.0',
+      ],
       // --- Fences count as block content under a Forbidden heading ---
       [
         'fence lines inside a Forbidden heading block stay block content',

@@ -38,7 +38,7 @@ Each distinct advisory is shown at most once per session (atomic per-key marker 
 ## Cost Guard
 
 - Advisory includes estimated cost multiplier
-- De-escalation (opt-in via `OMCUSTOM_MODEL_DEESCALATION=on`) suggested after `COOLDOWN` consecutive success rows while the spawn `model` parameter is neither haiku, inherit nor empty (`model-escalation-advisor.sh` de-escalation block)
+- De-escalation (opt-in via `OMCUSTOM_MODEL_DEESCALATION=on`) suggested after `COOLDOWN` consecutive success rows while the spawn `model` parameter is `opus` or `sonnet` (`model-escalation-advisor.sh` de-escalation block: the outer gate only excludes haiku, inherit and empty, but its `case` yields a lower model solely for opus→sonnet and sonnet→haiku, so any other value such as `fable` passes the gate and still gets no advisory)
 - The cost multiplier in the advisory is derived from the model tier by `model-escalation-advisor.sh`; ledger rows (PPID-scoped temp file) have no cost field
 
 ## Architecture

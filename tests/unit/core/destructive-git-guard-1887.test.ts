@@ -5,8 +5,9 @@
  * hook's stdin JSON, the oracle as lines of a text file). No git command is executed.
  *
  * State: the guard hardcodes /tmp/.claude-destructive-git-guard-$PPID and the threshold marker dir
- * /tmp/.claude-destructive-git-threshold-$PPID. $PPID is this bun process, so beforeAll/afterAll
- * remove exactly those two paths for process.pid (never a glob over other sessions' files).
+ * /tmp/.claude-destructive-git-threshold-$PPID. $PPID is this bun process, so a file-level
+ * beforeEach/afterEach removes exactly those two paths for process.pid around EVERY test in this
+ * file (per-test reset; never a glob over other sessions' files), and afterAll removes them once more.
  *
  * Test seam: DESTRUCTIVE_GIT_GUARD_UNDER_TEST points the suite at a scratch mutant copy of the
  * script (mutation proof); it is unset in normal runs.
@@ -14,7 +15,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -36,7 +37,13 @@ function removeOwnState(): void {
   }
 }
 
-beforeAll(() => {
+// #1917 F10: per-test reset at file level. Every suite (1-7) shares this pid's two state paths, so
+// without it a count or threshold marker written by one test leaks into the next.
+beforeEach(() => {
+  removeOwnState();
+});
+
+afterEach(() => {
   removeOwnState();
 });
 
@@ -337,6 +344,34 @@ describe('2. formerly silent forms now warn', () => {
     ]);
   });
 
+  // #1917 F10: placed right after a test that fires the guard (and so writes the state file). The
+  // file-level beforeEach must have removed that state; the positive control proves the guard writes
+  // exactly these paths, so "absent at test start" cannot pass through a path typo.
+  it('state paths are absent at test start (per-test reset), and a firing recreates them', async () => {
+    for (const path of STATE_PATHS) {
+      expect(existsSync(path)).toBe(false);
+    }
+    const fired = await runGuard('git reset --hard');
+    expect(fired.label).toBe(RESET);
+    expect(existsSync(STATE_PATHS[0] as string)).toBe(true);
+  });
+
+  // The test above cannot tell the file-level beforeEach from the file-level afterEach (either one
+  // alone leaves the paths absent at the next test start). Here state is seeded by a beforeAll that
+  // runs BEFORE this suite's first beforeEach, so only the file-level beforeEach can remove it.
+  describe('a state seed present before the first test of a suite', () => {
+    beforeAll(() => {
+      writeFileSync(STATE_PATHS[0] as string, '2026-01-01T00:00:00Z git clean tier=1\n');
+      mkdirSync(STATE_PATHS[1] as string, { recursive: true });
+    });
+
+    it('is removed by the file-level beforeEach before the test body runs', () => {
+      for (const path of STATE_PATHS) {
+        expect(existsSync(path)).toBe(false);
+      }
+    });
+  });
+
   it('left boundary "/" (path-qualified binary)', async () => {
     await expectWarns([
       ['/usr/bin/git reset --hard', RESET],
@@ -624,7 +659,8 @@ describe('7. hostile environment: ulimit -f 0 keeps the guard fail-open and sile
   // substitution, so `[` printed "integer expression expected" on stderr. With SIGXFSZ left at its
   // default the kernel killed the shell (exit 153, advisory lost). Pipes are not limited by
   // RLIMIT_FSIZE, so stdout/stderr below are still captured. The only files written under the
-  // limit are this pid's two exact state paths (STATE_PATHS), reset around every test.
+  // limit are this pid's two exact state paths (STATE_PATHS), reset around every test by the
+  // file-level beforeEach/afterEach.
   const HOSTILE_PRELUDES: ReadonlyArray<readonly [name: string, prelude: string]> = [
     ['SIGXFSZ ignored and ulimit -f 0', 'trap "" XFSZ; ulimit -f 0'],
     ['SIGXFSZ at its default and ulimit -f 0', 'ulimit -f 0'],
@@ -632,14 +668,6 @@ describe('7. hostile environment: ulimit -f 0 keeps the guard fail-open and sile
   const SEED_LINES =
     '2026-01-01T00:00:00Z git clean tier=1\n2026-01-01T00:00:01Z git restore tier=1\n';
   const THREE_TIER1_SEED_LINES = `${SEED_LINES}2026-01-01T00:00:02Z git branch -D tier=1\n`;
-
-  beforeEach(() => {
-    removeOwnState();
-  });
-
-  afterEach(() => {
-    removeOwnState();
-  });
 
   function runHostile(
     prelude: string,
