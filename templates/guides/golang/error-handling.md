@@ -164,30 +164,21 @@ func processFile(path string) (err error) {
 
 ### Error Aggregation
 
+Since Go 1.20, use `errors.Join` instead of a hand-written multi-error type:
+
 ```go
-type MultiError []error
-
-func (m MultiError) Error() string {
-    var msgs []string
-    for _, err := range m {
-        msgs = append(msgs, err.Error())
-    }
-    return strings.Join(msgs, "; ")
-}
-
 func validateAll(items []Item) error {
-    var errs MultiError
+    var errs []error
     for _, item := range items {
         if err := validate(item); err != nil {
             errs = append(errs, err)
         }
     }
-    if len(errs) > 0 {
-        return errs
-    }
-    return nil
+    return errors.Join(errs...) // nil when errs is empty or all nil
 }
 ```
+
+`errors.Join` discards nil errors and returns nil if every argument is nil. The result's `Error()` text is the wrapped messages separated by newlines, and `errors.Is` / `errors.As` match any of the joined errors. `fmt.Errorf` also accepts several `%w` verbs since Go 1.20.
 
 ## Panic and Recover
 

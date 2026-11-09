@@ -1,7 +1,7 @@
 {
   "lockfileVersion": 1,
   "generatorVersion": "2.0.18",
-  "generatedAt": "2026-11-09T09:41:50.282Z",
+  "generatedAt": "2026-11-09T11:38:42.575Z",
   "templateVersion": "2.0.18",
   "files": {
     ".claude/agents/agora-runner.md": {
@@ -220,8 +220,8 @@
       "component": "agents"
     },
     ".claude/agents/souls/lang-golang-expert.soul.md": {
-      "templateHash": "dc6611898a80800c182183ef7df19d83df3bc9af6a4d6dcd79e774761e15976a",
-      "size": 701,
+      "templateHash": "d56ed141500f4b3dfa5fc3d6298d1d3a31de7abfdee9cdd8d5c5f5ace72db3b3",
+      "size": 761,
       "component": "agents"
     },
     ".claude/agents/sys-memory-keeper.md": {
@@ -825,7 +825,7 @@
       "component": "skills"
     },
     ".claude/skills/docker-best-practices/SKILL.md": {
-      "templateHash": "510d3e01386e6de6efd33bc405163467b2fb27df8d7b9b2f57c3b46d2d6cfc69",
+      "templateHash": "f1040ffbfb89375e03b88192ecbacd03ed041f527c8106c445ac654e41ddc843",
       "size": 5334,
       "component": "skills"
     },
@@ -855,13 +855,13 @@
       "component": "skills"
     },
     ".claude/skills/go-backend-best-practices/SKILL.md": {
-      "templateHash": "4dfdbe5407ee855630ab6dc4bf4cbf3e38e90f08e52ca72ae81164121a87b517",
-      "size": 3269,
+      "templateHash": "3a24979efd34ef0ba29efa872b674cadd1c93f89c3f9c4e4c8a8d9dd24520066",
+      "size": 3315,
       "component": "skills"
     },
     ".claude/skills/go-best-practices/SKILL.md": {
-      "templateHash": "fb712d8cd70d7dbfe82a6581f42a2ecf7786920425f5fb4b52cca4feb335c5f3",
-      "size": 4945,
+      "templateHash": "17c408a160a53875ad248aad2e98c479d9e19e432a1cfa4a8e5916663a46f6a1",
+      "size": 9388,
       "component": "skills"
     },
     ".claude/skills/goal/SKILL.md": {
@@ -1110,8 +1110,8 @@
       "component": "skills"
     },
     ".claude/skills/python-best-practices/SKILL.md": {
-      "templateHash": "19e2ead2fa5edaf40610ccf4fdd0db912dc39c7621ddbd1baf554f5dca0f62e8",
-      "size": 5030,
+      "templateHash": "9b540b72402ff826a407ed5ca6d9d4ce0de0b94e7066129270c2ed86afdadcd2",
+      "size": 8010,
       "component": "skills"
     },
     ".claude/skills/qa-lead-routing/SKILL.md": {
@@ -1155,8 +1155,8 @@
       "component": "skills"
     },
     ".claude/skills/rust-best-practices/SKILL.md": {
-      "templateHash": "735a5f16e54ffacd4eb8116b21bde18c7afa397d2288397284a648029104a7f9",
-      "size": 5708,
+      "templateHash": "26a4b89bc17049bfbc84f8dac3dfeb883885874d42f701938bec717c3df2c3b2",
+      "size": 11399,
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {
@@ -1600,7 +1600,7 @@
       "component": "guides"
     },
     "guides/docker/dockerfile-best-practices.md": {
-      "templateHash": "07e98bce6eec0d72212f8d163358ac44d672239cced10ad6df58f68c89a57e12",
+      "templateHash": "7641de5a030ba421652747317a0dabd628d426ab5607c38ffb4573d53f01b7de",
       "size": 4089,
       "component": "guides"
     },
@@ -1700,8 +1700,8 @@
       "component": "guides"
     },
     "guides/golang/concurrency.md": {
-      "templateHash": "25916e9bedddb722fff7c32ebcb950e89a325b78d044b8c9f4bd304e780857ec",
-      "size": 4534,
+      "templateHash": "09990ce904e3a6647f1d8578bcd1de388d7ab42cee26a548a55cf64dd6783029",
+      "size": 5975,
       "component": "guides"
     },
     "guides/golang/effective-go.md": {
@@ -1710,8 +1710,8 @@
       "component": "guides"
     },
     "guides/golang/error-handling.md": {
-      "templateHash": "bf3956b9ed4d2b01075ff6e038ee998d88a5418aae6947408f8368569e98c4cd",
-      "size": 4386,
+      "templateHash": "c12711f56ed4be1e7f0341c05dad4e92774bc7e6d391dc7f717b376b978c8803",
+      "size": 4542,
       "component": "guides"
     },
     "guides/golang/index.yaml": {

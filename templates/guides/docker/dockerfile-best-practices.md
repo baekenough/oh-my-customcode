@@ -25,7 +25,7 @@ node_modules
 
 ```dockerfile
 # Build stage
-FROM golang:1.26 AS builder
+FROM golang:1.27 AS builder
 WORKDIR /app
 COPY . .
 RUN go build -o myapp
@@ -48,7 +48,7 @@ FROM ubuntu:24.04
 FROM node:20@sha256:abc123...
 
 # Use official images
-FROM python:3.14-slim
+FROM python:3.15-slim
 ```
 
 ### RUN
@@ -229,13 +229,13 @@ CMD ["node", "dist/server.js"]
 ### Python
 
 ```dockerfile
-FROM python:3.14-slim AS builder
+FROM python:3.15-slim AS builder
 WORKDIR /app
 RUN pip install --user pipenv
 COPY Pipfile Pipfile.lock ./
 RUN pipenv install --system --deploy
 
-FROM python:3.14-slim
+FROM python:3.15-slim
 WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 COPY . .
@@ -248,7 +248,7 @@ CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]
 ### Go
 
 ```dockerfile
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download

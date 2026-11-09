@@ -104,7 +104,7 @@ patterns:
   table_driven: for comprehensive coverage
   interfaces: for mocking
   parallel: for speed
-  tools: "gomock for mocks, cmp.Diff for assertions"
+  tools: "go.uber.org/mock (mockgen) for mocks (golang/mock is archived), cmp.Diff for assertions"
 ```
 
 Reference: guides/go-backend/uber-style.md

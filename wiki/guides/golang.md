@@ -1,9 +1,10 @@
 ---
 title: "Golang Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-11-09
 sources:
   - guides/golang/concurrency.md
+  - guides/golang/error-handling.md
 related:
   - [[lang-golang-expert]]
   - [[go-best-practices]]
@@ -20,9 +21,10 @@ Covers Go's core language philosophy and idiomatic patterns: goroutines, channel
 ## Key Topics
 
 - Goroutines and channel patterns (unbuffered vs buffered, directional)
-- Concurrency patterns: fan-out/fan-in, pipeline, worker pool, semaphore
+- Concurrency patterns: fan-out/fan-in (the fan-in example closes its output and uses a nil-channel step so it terminates), pipeline, worker pool, semaphore
+- `sync.WaitGroup` with Go 1.22 per-iteration loop variables and Go 1.25 `wg.Go`, with a Go 1.22-1.24 fallback (`wg.Add(1)` before `go`)
 - Context propagation for cancellation and timeouts
-- Error handling: `fmt.Errorf("%w")`, sentinel errors, custom error types
+- Error handling: `fmt.Errorf("%w")`, sentinel errors, custom error types, aggregation with `errors.Join` (Go 1.20) and multiple `%w`
 - Interface design principles (small, implicit, composable)
 - Naming conventions: package names, exported identifiers, acronyms
 - Testing: table-driven tests, subtests, `testify`
@@ -36,3 +38,4 @@ Covers Go's core language philosophy and idiomatic patterns: goroutines, channel
 ## Sources
 
 - `guides/golang/concurrency.md` — goroutines, channels, concurrency patterns
+- `guides/golang/error-handling.md` — error wrapping, `errors.Join` aggregation

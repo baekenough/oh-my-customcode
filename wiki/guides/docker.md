@@ -1,9 +1,10 @@
 ---
 title: "Docker Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-11-09
 sources:
   - guides/docker/compose-best-practices.md
+  - guides/docker/dockerfile-best-practices.md
 related:
   - [[infra-docker-expert]]
   - [[docker-best-practices]]
@@ -19,7 +20,7 @@ Covers Dockerfile optimization (multi-stage builds, layer caching, minimal image
 
 ## Key Topics
 
-- Dockerfile multi-stage build patterns
+- Dockerfile multi-stage build patterns (language examples use `golang:1.27`, `golang:1.27-alpine`, `python:3.15-slim`)
 - Docker Compose service dependencies and health checks
 - Environment variable management with `.env` files
 - Named volumes and bind mounts
@@ -36,3 +37,4 @@ Covers Dockerfile optimization (multi-stage builds, layer caching, minimal image
 ## Sources
 
 - `guides/docker/compose-best-practices.md` — Compose file structure, service config, networking
+- `guides/docker/dockerfile-best-practices.md` — Dockerfile instructions, multi-stage builds, per-language examples

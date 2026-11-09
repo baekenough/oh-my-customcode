@@ -1,7 +1,7 @@
 ---
 title: Docker Best Practices
 type: skill
-updated: 2026-04-12
+updated: 2026-11-09
 sources:
   - .claude/skills/docker-best-practices/SKILL.md
 related:
@@ -15,7 +15,7 @@ Docker patterns for optimized container builds and production deployment.
 
 ## Overview
 
-Reference patterns for Docker: multi-stage builds, minimal base images, layer caching optimization, non-root user setup, health checks, `.dockerignore` usage, secrets handling, and compose best practices. Used by `infra-docker-expert` when building or reviewing Dockerfiles and compose configurations.
+Reference patterns for Docker: multi-stage builds, minimal base images, layer caching optimization, non-root user setup, health checks, `.dockerignore` usage, secrets handling, and compose best practices. Example Dockerfiles use `golang:1.27`, `python:3.15-slim` and `python:3.15-alpine` base image tags. Used by `infra-docker-expert` when building or reviewing Dockerfiles and compose configurations.
 
 ## Key Details
 

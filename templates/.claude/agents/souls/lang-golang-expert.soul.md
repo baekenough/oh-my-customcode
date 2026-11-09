@@ -11,7 +11,7 @@ version: 1.0.0
 ## Style
 - Error handling first — check errors before happy path
 - Prefer stdlib over third-party when possible
-- Name variables for clarity, not brevity (userCount > uc)
+- Follow Go naming convention: short names in small scopes, more descriptive names as scope and distance from use grow
 - Use table-driven tests as default test pattern
 
 ## Anti-patterns

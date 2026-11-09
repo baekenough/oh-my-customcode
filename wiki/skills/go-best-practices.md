@@ -1,7 +1,7 @@
 ---
 title: Go Best Practices
 type: skill
-updated: 2026-04-12
+updated: 2026-11-09
 sources:
   - .claude/skills/go-best-practices/SKILL.md
 related:
@@ -11,11 +11,13 @@ related:
 
 # Go Best Practices
 
-Idiomatic Go patterns from Effective Go and the Uber style guide.
+Idiomatic Go patterns drawn from the official Go documentation (Effective Go), with version-tagged modern features.
 
 ## Overview
 
-Reference patterns for idiomatic Go: naming conventions (exported identifiers, acronyms), error handling (`fmt.Errorf` with `%w`, sentinel errors), interface design (small interfaces, accept interfaces/return structs), goroutine patterns (always know when they stop), channel idioms, package organization, and testing with table-driven tests. Used by `lang-golang-expert`.
+Reference patterns for idiomatic Go, organized as 14 numbered sections: formatting, naming conventions, control structures, functions, data, methods, interfaces, concurrency, error handling (`fmt.Errorf` with `%w`), and project structure, followed by four newer sections. Section 11 covers generics (when to use them, constraints, type inference), section 12 covers range-over-func iterators and `iter.Pull`, section 13 covers the `slices` and `maps` packages with Go version tags, and section 14 covers table-driven testing and `go vet` (including the Go 1.25 waitgroup analyzer, which catches only the simple form of `wg.Add` inside the goroutine). The skill opens with a version baseline: Go 1.26 and 1.27 are the supported releases as of 2026-11, and the baseline should be re-measured before relying on it. Feature headings carry the Go version that introduced the feature, so check the `go` directive in `go.mod` first. Used by `lang-golang-expert`.
+
+Not covered by this skill: the Uber style guide (see [[go-backend-best-practices]]) and sentinel-error patterns.
 
 ## Key Details
 

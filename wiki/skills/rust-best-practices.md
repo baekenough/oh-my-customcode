@@ -1,7 +1,7 @@
 ---
 title: Rust Best Practices
 type: skill
-updated: 2026-04-12
+updated: 2026-11-09
 sources:
   - .claude/skills/rust-best-practices/SKILL.md
 related:
@@ -10,11 +10,18 @@ related:
 
 # Rust Best Practices
 
-Idiomatic Rust patterns from official Rust API Guidelines and The Rust Book.
+Idiomatic Rust patterns from official Rust documentation, with an explicit edition/MSRV baseline.
 
 ## Overview
 
-Reference patterns for idiomatic Rust: ownership and borrowing patterns, error handling (`Result`, `?` operator, `thiserror`, `anyhow`), traits and generics, lifetimes, iterator adapters, async/await with Tokio, `clippy` lint compliance, `cargo` workspace organization, and unsafe code guidelines. Used by `lang-rust-expert`.
+The skill holds 12 rule sections for [[lang-rust-expert]]: naming conventions, ownership and borrowing, error handling, traits and generics, memory management, concurrency, API design, documentation, project structure, edition and MSRV, async (Tokio), and tooling and workspaces. Coverage is deliberately bounded: lifetimes appear only as the short-lowercase naming convention (`'a`), unsafe code only as the guidance to avoid unsafe unless necessary, and iterator adapters are not covered.
+
+## Key Rules by Section
+
+- **Error handling**: `Result<T, E>` with the `?` operator. The custom error example implements `Display` without repeating the wrapped error's message and exposes the wrapped error through `source()`. `thiserror` is shown as an alternative to the manual impls (use one, not both): `thiserror` for libraries, `anyhow` (with `.context(...)`) for applications, and no `anyhow::Error` in a library's public API.
+- **Edition and MSRV**: new crates target `edition = "2024"` and set `rust-version` explicitly; edition 2024 needs a toolchain of 1.85.0 or newer. The skill's version figures are marked "As of 2026-11" with source URLs and must be re-measured before use.
+- **Async (Tokio)**: Tokio as the runtime with only needed features enabled. Avoid blocking calls inside async code and holding a `std::sync::MutexGuard` across an `.await`. Prefer `tokio::join!`, `select!`, `timeout`, and `spawn_blocking` for bounded blocking work. `tokio::spawn` requires `Send + 'static` futures.
+- **Tooling and workspaces**: `cargo fmt --all --check` and `cargo clippy --all-targets --all-features -- -D warnings` in CI. A Cargo workspace shares one `Cargo.lock`, with metadata in `[workspace.package]` and dependency versions in `[workspace.dependencies]`.
 
 ## Key Details
 
