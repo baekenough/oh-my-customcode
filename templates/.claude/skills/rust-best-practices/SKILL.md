@@ -308,7 +308,7 @@ cargo_toml:
   - New crates target the 2024 edition: edition = "2024"
   - Set rust-version (MSRV) explicitly; edition 2024 needs a toolchain of 1.85.0 or newer
   - Raise rust-version deliberately and record it (changelog); do not let it drift
-  - Migrate an existing crate with cargo fix --edition, then change the edition key
+  - "Migrate an existing crate in the edition guide's order (https://doc.rust-lang.org/edition-guide/editions/transitioning-an-existing-project-to-a-new-edition.html): cargo update, cargo fix --edition, set the edition field in Cargo.toml, cargo build or cargo test, cargo fmt"
   - In a workspace, set edition and rust-version once in [workspace.package]
 ```
 
@@ -407,8 +407,9 @@ workspace:
   - Run cargo commands per workspace with --workspace, or per crate with -p <name>
 ```
 
+Root `Cargo.toml` (virtual workspace, no `[package]`):
+
 ```toml
-# Root Cargo.toml (virtual workspace)
 [workspace]
 members = ["crates/app-core", "crates/app-cli"]
 resolver = "3"
@@ -416,8 +417,11 @@ resolver = "3"
 [workspace.package]
 edition = "2024"
 rust-version = "1.85"
+```
 
-# crates/app-cli/Cargo.toml
+Member `crates/app-cli/Cargo.toml` (a separate file; do not paste it into the root):
+
+```toml
 [package]
 name = "app-cli"
 version = "0.1.0"

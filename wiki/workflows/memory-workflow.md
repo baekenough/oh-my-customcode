@@ -1,7 +1,7 @@
 ---
 title: Memory Workflow
 type: workflow
-updated: 2026-05-29
+updated: 2026-11-10
 sources:
   - .claude/rules/SHOULD-memory-integration.md
   - CLAUDE.md
@@ -68,6 +68,7 @@ Before confirming session end to the user:
 
 1. Did `sys-memory-keeper` update MEMORY.md? → YES required
 2. If `omcustom-feedback` is active and notable friction was observed → the model MAY draft a retrospective feedback issue (Phase 4A gate, user approves)
+3. Confirm no background processes or SSH tunnels started by the session remain (`pgrep -f <pattern> | wc -l` at 0)
 
 ## Failure Policy
 

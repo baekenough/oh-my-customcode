@@ -55,6 +55,8 @@ const THROUGH_LINK = '.claude/skills/old-linked/SKILL.md';
 const STILL_SHIPPED = '.claude/rules/MUST-safety.md';
 const RTK_PATH = '.claude/skills/rtk-exec/SKILL.md';
 const RTK_HOOK = '.claude/hooks/scripts/rtk-intercept.sh';
+const RTK_WRAPPER = '.claude/skills/rtk-exec/scripts/rtk-wrapper.cjs';
+const DEPRECATED = '.claude/rules/SHOULD-agent-teams.md';
 const ABSENT = '.claude/skills/old-absent/SKILL.md';
 const CUSTOM = '.claude/skills/my-custom/SKILL.md';
 
@@ -100,6 +102,26 @@ async function exists(path: string): Promise<boolean> {
 
 async function readLock(): Promise<{ files: Record<string, unknown> }> {
   return JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
+}
+
+const RTK_CONTENT: Record<string, string> = {
+  [RTK_PATH]: 'rtk skill\n',
+  [RTK_WRAPPER]: 'rtk wrapper\n',
+  [RTK_HOOK]: 'rtk hook\n',
+};
+
+/** Retired RTK files on disk, each owned (unmodified) in the old lock (#1939 A2). */
+async function seedRtk(): Promise<void> {
+  const lock = await readLock();
+  for (const [path, content] of Object.entries(RTK_CONTENT)) {
+    await put(path, content);
+    lock.files[path] = {
+      templateHash: sha256(content),
+      size: content.length,
+      component: path === RTK_HOOK ? 'hooks' : 'skills',
+    };
+  }
+  await writeFile(join(project, '.omcustom.lock.json'), JSON.stringify(lock));
 }
 
 /** Old install: leftovers, a custom skill, modified leftovers; the old lock records them all. */
@@ -159,6 +181,9 @@ async function seedOldInstall(): Promise<void> {
     })
   );
 }
+
+const errno = (code: string): NodeJS.ErrnoException =>
+  Object.assign(new Error(`${code}: simulated`), { code });
 
 function reasonOf(result: Awaited<ReturnType<typeof update>>, path: string): string | undefined {
   return result.orphanRetirement?.preserved.find((entry) => entry.path === path)?.reason;
@@ -346,7 +371,7 @@ describe('update orphan retirement (#1935)', () => {
     expect(await exists(UNMODIFIED_SKILL)).toBe(true);
   });
 
-  it('leaves RTK paths to the RTK flow, so a settings conflict still keeps an owned RTK hook', async () => {
+  it('leaves RTK paths to the RTK flow, which deletes them even with unparsable settings', async () => {
     await seedOldInstall();
     await put(RTK_HOOK, SHIPPED);
     const lock = await readLock();
@@ -357,11 +382,8 @@ describe('update orphan retirement (#1935)', () => {
     const result = await update({ targetDir: project, components: ['hooks'] });
 
     expect(result.success).toBe(true);
-    expect(await readFile(join(project, RTK_HOOK), 'utf8')).toBe(SHIPPED);
-    expect(result.rtkRetirement?.preserved).toContainEqual({
-      path: RTK_HOOK,
-      reason: 'settings retirement conflict',
-    });
+    expect(await exists(RTK_HOOK)).toBe(false);
+    expect(result.rtkRetirement?.removed).toEqual([RTK_HOOK]);
     expect(result.orphanRetirement?.removed).toEqual([]);
     expect(reasonOf(result, RTK_HOOK)).toBeUndefined();
   });
@@ -694,6 +716,93 @@ describe('orphan retirement when there are no component updates (#1935 follow-up
     expect(await exists('.omcustom.lock.json')).toBe(false);
   });
 
+  it('#1939 A2: deletes RTK files (no backup), moves orphans, and drops the RTK lock entries', async () => {
+    await seedUpToDate();
+    await seedRtk();
+
+    const result = await update({ targetDir: project });
+
+    expect(result.success).toBe(true);
+    expect(result.updatedComponents).toEqual([]);
+    expect(result.rtkRetirement?.removed.sort()).toEqual(Object.keys(RTK_CONTENT).sort());
+    for (const path of Object.keys(RTK_CONTENT)) expect(await exists(path)).toBe(false);
+    await expect(lstat(join(project, '.claude/skills/rtk-exec'))).rejects.toThrow();
+    // The backup holds the orphans only.
+    const backupDir = result.retiredBackupDir ?? '';
+    expect(backupDir).toBe(result.orphanRetirement?.backupDir ?? 'orphans did not move');
+    expect(await backupDirs()).toHaveLength(1);
+    await expect(lstat(join(backupDir, 'claude/skills/rtk-exec'))).rejects.toThrow();
+    await expect(lstat(join(backupDir, 'claude/hooks'))).rejects.toThrow();
+    const lock = await readLock();
+    for (const path of Object.keys(RTK_CONTENT)) expect(lock.files[path]).toBeUndefined();
+    expect(lock.files[TEMPLATE_RULE]).toBeDefined();
+  });
+
+  it('#1939 A2: deletes RTK files even with unparsable settings or a component selection', async () => {
+    await seedUpToDate();
+    await seedRtk();
+    await put('.claude/settings.local.json', '{ bad json');
+
+    const result = await update({ targetDir: project, components: ['guides'] });
+
+    expect(result.rtkRetirement?.removed.sort()).toEqual(Object.keys(RTK_CONTENT).sort());
+    expect(await readFile(join(project, '.claude/settings.local.json'), 'utf8')).toBe('{ bad json');
+    expect(result.rtkRetirement?.settingsConflicts).toContain('.claude/settings.local.json');
+    const lock = await readLock();
+    for (const path of Object.keys(RTK_CONTENT)) expect(lock.files[path]).toBeUndefined();
+  });
+
+  it('#1939 A2: an unreadable retired list still deletes RTK files and leaves orphan ownership alone', async () => {
+    await seedUpToDate();
+    await seedRtk();
+    loaderSpy.mockRejectedValue(new Error('corrupt list'));
+
+    const result = await update({ targetDir: project });
+
+    expect(result.rtkRetirement?.removed.sort()).toEqual(Object.keys(RTK_CONTENT).sort());
+    expect(result.orphanRetirement?.removed ?? []).toEqual([]);
+    expect(await exists(UNMODIFIED_SKILL)).toBe(true);
+    const lock = await readLock();
+    expect(lock.files[UNMODIFIED_SKILL]).toBeDefined();
+    expect(lock.files[MODIFIED]).toBeDefined();
+    for (const path of Object.keys(RTK_CONTENT)) expect(lock.files[path]).toBeUndefined();
+    expect(result.warnings.some((warning) => warning.includes('carried forward'))).toBe(false);
+  });
+
+  it('#1939 A2: dry-run lists the RTK deletions and changes nothing', async () => {
+    await seedUpToDate();
+    await seedRtk();
+    const before = await readFile(join(project, '.omcustom.lock.json'), 'utf8');
+
+    const result = await update({ targetDir: project, dryRun: true });
+
+    expect(result.rtkRetirement?.wouldRemove.sort()).toEqual(Object.keys(RTK_CONTENT).sort());
+    expect(result.rtkRetirement?.removed).toEqual([]);
+    for (const path of Object.keys(RTK_CONTENT)) expect(await exists(path)).toBe(true);
+    expect(await readFile(join(project, '.omcustom.lock.json'), 'utf8')).toBe(before);
+    expect(await backupDirs()).toEqual([]);
+  });
+
+  it('#1944 L4: an lstat error while carrying ownership keeps the old entry (no-update path)', async () => {
+    await seedUpToDate();
+    const guide = join(project, UNMODIFIED_GUIDE);
+    const realLstat = fsPromises.lstat;
+    const lstatSpy = spyOn(fsPromises, 'lstat').mockImplementation((async (path: string) => {
+      if (String(path) === guide) throw errno('EIO');
+      return realLstat(path);
+    }) as typeof fsPromises.lstat);
+    try {
+      const result = await update({ targetDir: project, confirmOrphanRemoval: async () => false });
+
+      expect(result.success).toBe(true);
+      expect((await readLock()).files[UNMODIFIED_GUIDE]).toMatchObject({
+        templateHash: sha256(SHIPPED),
+      });
+    } finally {
+      lstatSpy.mockRestore();
+    }
+  });
+
   it('reports a lock write failure as a warning', async () => {
     await seedUpToDate();
     const writeSpy = spyOn(lockfileModule, 'writeLockfile').mockRejectedValue(
@@ -708,6 +817,205 @@ describe('orphan retirement when there are no component updates (#1935 follow-up
     } finally {
       writeSpy.mockRestore();
     }
+  });
+});
+
+describe('deprecated files share the run backup; RTK is deleted outside it (#1939 A2)', () => {
+  const BACKUP_DIR = /\/\.omcustom-backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\/retired$/;
+  const DEPRECATED_CONTENT = 'deprecated rule bytes\n';
+  const realLink = fsPromises.link;
+  const errno = (code: string): NodeJS.ErrnoException =>
+    Object.assign(new Error(`${code}: simulated`), { code });
+
+  /** Old install with orphans, RTK files and a deprecated file. */
+  async function seedAll(): Promise<void> {
+    await seedOldInstall();
+    await seedRtk();
+    await put(DEPRECATED, DEPRECATED_CONTENT);
+  }
+
+  it('moves orphans and the deprecated file into one backup folder and deletes RTK outside it', async () => {
+    await seedAll();
+
+    const result = await update({ targetDir: project });
+
+    expect(result.success).toBe(true);
+    const backupDir = result.retiredBackupDir ?? '';
+    expect(backupDir).toMatch(BACKUP_DIR);
+    expect(result.orphanRetirement?.backupDir).toBe(backupDir);
+    expect(await backupDirs()).toHaveLength(1);
+    const moved: Record<string, string> = {
+      [DEPRECATED]: DEPRECATED_CONTENT,
+      [UNMODIFIED_GUIDE]: SHIPPED,
+    };
+    for (const [path, content] of Object.entries(moved)) {
+      expect(await exists(path)).toBe(false);
+      expect(await readFile(join(backupDir, path.replace(/^\.claude\//, 'claude/')), 'utf8')).toBe(
+        content
+      );
+      expect(result.removedDeprecatedFiles).toContain(path);
+    }
+    // RTK is deleted, not backed up.
+    expect(result.rtkRetirement?.removed.sort()).toEqual(Object.keys(RTK_CONTENT).sort());
+    for (const path of Object.keys(RTK_CONTENT)) expect(await exists(path)).toBe(false);
+    await expect(lstat(join(backupDir, 'claude/skills/rtk-exec'))).rejects.toThrow();
+    await expect(lstat(join(backupDir, 'claude/hooks'))).rejects.toThrow();
+    const lock = await readLock();
+    for (const path of [...Object.keys(RTK_CONTENT), DEPRECATED]) {
+      expect(lock.files[path]).toBeUndefined();
+    }
+    await expect(lstat(join(dirname(backupDir), '.claude'))).rejects.toThrow();
+  });
+
+  it('an RTK-only run creates no backup folder', async () => {
+    await seedOldInstall();
+    await seedRtk();
+    loaderSpy.mockResolvedValue([]);
+
+    const result = await update({ targetDir: project });
+
+    expect(result.rtkRetirement?.removed).toHaveLength(3);
+    expect(result.retiredBackupDir).toBeUndefined();
+    expect(await backupDirs()).toEqual([]);
+  });
+
+  it('a deprecated-file-only run creates the backup on the first move', async () => {
+    await seedOldInstall();
+    await put(DEPRECATED, DEPRECATED_CONTENT);
+    loaderSpy.mockResolvedValue([]);
+
+    const result = await update({ targetDir: project });
+
+    expect(result.retiredBackupDir).toMatch(BACKUP_DIR);
+    expect(result.orphanRetirement?.backupDir).toBeUndefined();
+    expect(await backupDirs()).toHaveLength(1);
+    expect(result.removedDeprecatedFiles).toContain(DEPRECATED);
+  });
+
+  it('dry-run deletes and moves nothing and creates no backup', async () => {
+    await seedAll();
+
+    const result = await update({ targetDir: project, dryRun: true });
+
+    expect(result.retiredBackupDir).toBeUndefined();
+    expect(await backupDirs()).toEqual([]);
+    expect(result.rtkRetirement?.wouldRemove).toHaveLength(3);
+    for (const path of [...Object.keys(RTK_CONTENT), DEPRECATED]) {
+      expect(await exists(path)).toBe(true);
+    }
+  });
+
+  it('a failed move keeps the deprecated file with a warning; RTK deletion is unaffected', async () => {
+    await seedAll();
+    loaderSpy.mockResolvedValue([]);
+    const linkSpy = spyOn(fsPromises, 'link').mockImplementation((async (
+      from: string,
+      to: string
+    ) => {
+      if (String(to).includes('/retired/')) throw errno('EACCES');
+      return realLink(from, to);
+    }) as typeof fsPromises.link);
+    try {
+      const result = await update({ targetDir: project });
+
+      expect(result.warnings).toContain(`Deprecated file kept ${DEPRECATED}: EACCES: simulated`);
+      expect(await readFile(join(project, DEPRECATED), 'utf8')).toBe(DEPRECATED_CONTENT);
+      expect(result.removedDeprecatedFiles).not.toContain(DEPRECATED);
+      expect(result.retiredBackupDir).toBeUndefined();
+      expect(await backupDirs()).toEqual([]);
+      expect(result.rtkRetirement?.removed).toHaveLength(3);
+      for (const path of Object.keys(RTK_CONTENT)) expect(await exists(path)).toBe(false);
+    } finally {
+      linkSpy.mockRestore();
+    }
+  });
+
+  it('L2: keeps a deprecated file covered by preserve settings, quietly, even when it was edited', async () => {
+    await seedOldInstall();
+    const config = getDefaultConfig();
+    config.version = '0.1.0';
+    config.preserveFiles = [DEPRECATED];
+    await saveConfig(project, config);
+    await put(DEPRECATED, 'edited by the user\n');
+
+    const result = await update({ targetDir: project });
+
+    expect(await readFile(join(project, DEPRECATED), 'utf8')).toBe('edited by the user\n');
+    expect(result.removedDeprecatedFiles).not.toContain(DEPRECATED);
+    expect(result.warnings.some((warning) => warning.includes(DEPRECATED))).toBe(false);
+  });
+
+  it('L2: an unreadable customization manifest keeps the deprecated file with a warning', async () => {
+    await seedOldInstall();
+    await put(DEPRECATED, DEPRECATED_CONTENT);
+    await writeFile(join(project, '.omcustom-customizations.json'), '{ not json');
+
+    const result = await update({ targetDir: project, forceOverwriteAll: true });
+
+    expect(await exists(DEPRECATED)).toBe(true);
+    expect(result.warnings).toContain(
+      `Deprecated file kept ${DEPRECATED}: customization manifest unreadable`
+    );
+  });
+
+  it('A6: a symlinked directory on the way keeps the deprecated file where it is', async () => {
+    await seedOldInstall();
+    const outside = `${project}-outside`;
+    await mkdir(outside, { recursive: true });
+    await writeFile(join(outside, 'SHOULD-agent-teams.md'), 'outside bytes\n');
+    await rm(join(project, '.claude/rules'), { recursive: true, force: true });
+    await symlink(outside, join(project, '.claude/rules'));
+    try {
+      const result = await update({ targetDir: project });
+
+      expect(result.warnings.some((w) => w.startsWith(`Deprecated file kept ${DEPRECATED}:`))).toBe(
+        true
+      );
+      expect(await readFile(join(outside, 'SHOULD-agent-teams.md'), 'utf8')).toBe(
+        'outside bytes\n'
+      );
+      expect(result.removedDeprecatedFiles).not.toContain(DEPRECATED);
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('N3: dry-run lists exactly what the real run moves (preserved and absent entries are left out)', async () => {
+    for (const scenario of ['present', 'preserved', 'absent'] as const) {
+      await rm(project, { recursive: true, force: true });
+      await mkdir(project, { recursive: true });
+      await seedOldInstall();
+      if (scenario !== 'absent') await put(DEPRECATED, DEPRECATED_CONTENT);
+      if (scenario === 'preserved') {
+        const config = getDefaultConfig();
+        config.version = '0.1.0';
+        config.preserveFiles = [DEPRECATED];
+        await saveConfig(project, config);
+      }
+
+      const dry = await update({ targetDir: project, dryRun: true });
+      expect(await exists(DEPRECATED)).toBe(scenario !== 'absent');
+      const real = await update({ targetDir: project });
+
+      expect(dry.removedDeprecatedFiles.includes(DEPRECATED)).toBe(scenario === 'present');
+      expect(real.removedDeprecatedFiles.includes(DEPRECATED)).toBe(scenario === 'present');
+    }
+  });
+
+  it('keeps a deprecated path that is not a regular file', async () => {
+    await seedOldInstall();
+    await put('outside-deprecated.md', 'elsewhere\n');
+    await mkdir(dirname(join(project, DEPRECATED)), { recursive: true });
+    await symlink(join(project, 'outside-deprecated.md'), join(project, DEPRECATED));
+
+    const result = await update({ targetDir: project });
+
+    expect(result.warnings).toContain(
+      `Deprecated file kept ${DEPRECATED}: not a regular owned file`
+    );
+    expect((await lstat(join(project, DEPRECATED))).isSymbolicLink()).toBe(true);
+    expect(await readFile(join(project, 'outside-deprecated.md'), 'utf8')).toBe('elsewhere\n');
+    expect(result.removedDeprecatedFiles).not.toContain(DEPRECATED);
   });
 });
 
@@ -1184,7 +1492,7 @@ describe('confirmation before orphan removal (#1941)', () => {
     const callsFor = (key: string): unknown[] =>
       infoSpy.mock.calls.filter((call: unknown[]) => call[0] === key).map((call) => call[1]);
 
-    it('orphans use update.retired_file_moved_to_backup; deprecated-files.json keeps its key', async () => {
+    it('orphans and deprecated-files.json have their own move log keys', async () => {
       await seedOldInstall();
       await put(DEPRECATED, 'old rule\n');
 
@@ -1203,12 +1511,17 @@ describe('confirmation before orphan removal (#1941)', () => {
       );
       expect(callsFor('update.retired_file_moved_to_backup')).toHaveLength(CANDIDATES.length);
       expect(callsFor('update.retired_file_removed')).toEqual([]);
-      expect(callsFor('update.deprecated_file_removed')).toEqual([
-        { path: DEPRECATED, reason: 'Renamed to MUST-agent-teams.md' },
+      expect(callsFor('update.deprecated_file_moved_to_backup')).toEqual([
+        {
+          path: DEPRECATED,
+          reason: 'Renamed to MUST-agent-teams.md',
+          backup: join(backupDir, 'claude/rules/SHOULD-agent-teams.md'),
+        },
       ]);
+      expect(callsFor('update.deprecated_file_removed')).toEqual([]);
     });
 
-    it('the two keys have distinct English and Korean messages', () => {
+    it('the two move keys have distinct English and Korean messages', () => {
       const saved = logger.getLoggerOptions();
       const messages: string[] = [];
       const sink = spyOn(console, 'error').mockImplementation((line: unknown) => {
@@ -1224,7 +1537,11 @@ describe('confirmation before orphan removal (#1941)', () => {
             prefix: undefined,
           });
           logger.error('update.retired_file_moved_to_backup', { path: 'a.md', backup: 'b/a.md' });
-          logger.error('update.deprecated_file_removed', { path: 'b.md', reason: 'r' });
+          logger.error('update.deprecated_file_moved_to_backup', {
+            path: 'b.md',
+            reason: 'r',
+            backup: 'x/b.md',
+          });
         }
       } finally {
         sink.mockRestore();
@@ -1234,11 +1551,11 @@ describe('confirmation before orphan removal (#1941)', () => {
       expect(joined).toContain(
         'Moved retired template file (identical to a shipped version) to the backup: a.md -> b/a.md'
       );
-      expect(joined).toContain('Removed deprecated file: b.md (r)');
+      expect(joined).toContain('Moved deprecated file to the backup: b.md -> x/b.md (r)');
       expect(joined).toContain(
         '더 이상 배포하지 않는 템플릿 파일(배포본과 동일)을 백업으로 옮겼습니다: a.md -> b/a.md'
       );
-      expect(joined).toContain('지원 중단 파일을 삭제했습니다: b.md (r)');
+      expect(joined).toContain('지원 중단 파일을 백업으로 이동했습니다: b.md -> x/b.md (r)');
       expect(joined).not.toContain('update.retired_file_moved_to_backup');
     });
   });
@@ -1252,7 +1569,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     [UNMODIFIED_GUIDE]: SHIPPED,
   };
   const BACKUP_DIR = /\/\.omcustom-backup-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\/retired$/;
-  const realRename = fsPromises.rename;
+  const realLink = fsPromises.link;
   const realCopyFile = fsPromises.copyFile;
   const realUnlink = fsPromises.unlink;
   const realMkdir = fsPromises.mkdir;
@@ -1279,13 +1596,13 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     return names;
   }
 
-  /** rename() fails with `code` for moves into the backup; other renames are real. */
-  function failRenameIntoBackup(code: string): void {
+  /** link() fails with `code` for moves into the backup; other links are real. */
+  function failLinkIntoBackup(code: string): void {
     spies.push(
-      spyOn(fsPromises, 'rename').mockImplementation((async (from: string, to: string) => {
+      spyOn(fsPromises, 'link').mockImplementation((async (from: string, to: string) => {
         if (inBackup(to)) throw errno(code);
-        return realRename(from, to);
-      }) as typeof fsPromises.rename)
+        return realLink(from, to);
+      }) as typeof fsPromises.link)
     );
   }
 
@@ -1362,7 +1679,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     for (const path of MOVED) expect(await exists(path)).toBe(true);
   });
 
-  it("uses this run's --backup directory, whose verbatim .claude copy is left as it is", async () => {
+  it("uses this run's --backup directory, whose claude/ copy is left as it is", async () => {
     await seedOldInstall();
 
     const result = await update({ targetDir: project, backup: true });
@@ -1374,8 +1691,10 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     expect(await readFile(join(root, 'retired/claude/skills/old-skill/SKILL.md'), 'utf8')).toBe(
       SHIPPED
     );
-    // The --backup copy keeps `.claude/` verbatim (reported, not changed, by #1938).
-    expect((await lstat(join(root, '.claude/skills/old-skill/SKILL.md'))).isFile()).toBe(true);
+    // The --backup copy stores `.claude/` as `claude/` (#1943) and is left untouched: the file
+    // was copied before it was retired, so the copy and the retired file sit side by side.
+    expect(await readFile(join(root, 'claude/skills/old-skill/SKILL.md'), 'utf8')).toBe(SHIPPED);
+    await expect(lstat(join(root, '.claude'))).rejects.toThrow();
   });
 
   it('tells the confirmation the backup directory before creating it', async () => {
@@ -1399,9 +1718,9 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     expect(result.orphanRetirement?.backupDir).toBe(contexts[0]?.backupDir);
   });
 
-  it('falls back to copy, hash check and unlink when rename crosses file systems (EXDEV)', async () => {
+  it('falls back to copy, hash check and unlink when the link crosses file systems (EXDEV)', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     const copySpy = spyOn(fsPromises, 'copyFile');
     spies.push(copySpy);
 
@@ -1420,7 +1739,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
 
   it('a copy that does not verify keeps the original with a warning and ownership; the next update moves it', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     spies.push(
       spyOn(fsPromises, 'copyFile').mockImplementation((async (from: string, to: string) => {
         if (!inBackup(to)) return realCopyFile(from, to);
@@ -1443,9 +1762,9 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     expect(next.orphanRetirement?.removed.sort()).toEqual(MOVED);
   });
 
-  it('a rename failure other than EXDEV keeps the original and leaves no backup directory', async () => {
+  it('a link failure that is no "links unsupported" code keeps the original and leaves no backup directory', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EACCES');
+    failLinkIntoBackup('EACCES');
 
     const result = await update({ targetDir: project });
 
@@ -1453,16 +1772,17 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     expect(await backupDirs()).toEqual([]);
   });
 
-  it('never overwrites a file that already exists in the backup', async () => {
+  it('never overwrites a file that already exists in the backup; earlier moves stay in the backup', async () => {
     await seedOldInstall();
     let occupied = '';
     let backupDirAsked = '';
 
+    // The guide is the third candidate: the skill and the script are moved before it fails.
     const result = await update({
       targetDir: project,
       confirmOrphanRemoval: async (_paths, { backupDir }) => {
         backupDirAsked = backupDir;
-        occupied = backupPathOf(backupDir, UNMODIFIED_SKILL);
+        occupied = backupPathOf(backupDir, UNMODIFIED_GUIDE);
         await mkdir(dirname(occupied), { recursive: true });
         await writeFile(occupied, 'already in the backup\n');
         return true;
@@ -1472,18 +1792,20 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     expect(await readFile(occupied, 'utf8')).toBe('already in the backup\n');
     await expectKeptForBackupFailure(
       result,
-      [UNMODIFIED_SKILL],
+      [UNMODIFIED_GUIDE],
       'a file already exists at the backup location'
     );
-    expect(result.orphanRetirement?.removed.sort()).toEqual(
-      [UNMODIFIED_GUIDE, UNMODIFIED_SCRIPT].sort()
-    );
+    const moved = [UNMODIFIED_SCRIPT, UNMODIFIED_SKILL].sort();
+    expect(result.orphanRetirement?.removed.sort()).toEqual(moved);
     expect(result.orphanRetirement?.backupDir).toBe(backupDirAsked);
+    for (const path of moved) {
+      expect(await readFile(backupPathOf(backupDirAsked, path), 'utf8')).toBe(CONTENT[path] ?? '');
+    }
   });
 
   it('a copy that meets an existing file (EEXIST) leaves that file alone', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     spies.push(
       spyOn(fsPromises, 'copyFile').mockImplementation((async (from: string, to: string) => {
         if (!inBackup(to)) return realCopyFile(from, to);
@@ -1503,7 +1825,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
 
   it('a copy that fails part-way is removed again', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     spies.push(
       spyOn(fsPromises, 'copyFile').mockImplementation((async (from: string, to: string) => {
         if (!inBackup(to)) return realCopyFile(from, to);
@@ -1520,7 +1842,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
 
   it('when the original cannot be unlinked after a verified copy, the copy is removed and the original kept', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     const source = join(project, UNMODIFIED_GUIDE);
     spies.push(
       spyOn(fsPromises, 'unlink').mockImplementation((async (path: string) => {
@@ -1538,7 +1860,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
 
   it('a copy that cannot be removed again stays in the backup; the original is still kept', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     const source = join(project, UNMODIFIED_GUIDE);
     spies.push(
       spyOn(fsPromises, 'unlink').mockImplementation((async (path: string) => {
@@ -1559,7 +1881,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
 
   it('an original that disappears after its copy was verified counts as moved', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     const source = join(project, UNMODIFIED_GUIDE);
     spies.push(
       spyOn(fsPromises, 'unlink').mockImplementation((async (path: string) => {
@@ -1580,11 +1902,11 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
   it('a file that disappears during the move is neither moved nor kept', async () => {
     await seedOldInstall();
     spies.push(
-      spyOn(fsPromises, 'rename').mockImplementation((async (from: string, to: string) => {
-        if (!inBackup(to)) return realRename(from, to);
+      spyOn(fsPromises, 'link').mockImplementation((async (from: string, to: string) => {
+        if (!inBackup(to)) return realLink(from, to);
         await realUnlink(from);
         throw errno('ENOENT');
-      }) as typeof fsPromises.rename)
+      }) as typeof fsPromises.link)
     );
 
     const result = await update({ targetDir: project, components: ['guides'] });
@@ -1633,7 +1955,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
 
   it('L1: a non-ENOENT unlink error after a verified copy counts as moved when the original is gone; the copy is kept', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     const source = join(project, UNMODIFIED_GUIDE);
     spies.push(
       spyOn(fsPromises, 'unlink').mockImplementation((async (path: string) => {
@@ -1653,13 +1975,15 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     expect(result.warnings.some((warning) => warning.includes(UNMODIFIED_GUIDE))).toBe(false);
   });
 
-  it('L2: a rename that reports an error after moving the file is recorded as moved', async () => {
+  it('L2: a move that reports an error after the file was moved is recorded as moved', async () => {
     await seedOldInstall();
     spies.push(
-      spyOn(fsPromises, 'rename').mockImplementation((async (from: string, to: string) => {
-        await realRename(from, to);
-        if (inBackup(to)) throw errno('EIO');
-      }) as typeof fsPromises.rename)
+      spyOn(fsPromises, 'link').mockImplementation((async (from: string, to: string) => {
+        await realLink(from, to);
+        if (!inBackup(to)) return;
+        await realUnlink(from);
+        throw errno('EIO');
+      }) as typeof fsPromises.link)
     );
 
     const result = await update({ targetDir: project, components: ['guides'] });
@@ -1676,7 +2000,7 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
 
   it('L3: an original edited between the copy and the unlink is kept as user-modified; the copy is removed', async () => {
     await seedOldInstall();
-    failRenameIntoBackup('EXDEV');
+    failLinkIntoBackup('EXDEV');
     spies.push(
       spyOn(fsPromises, 'copyFile').mockImplementation((async (from: string, to: string) => {
         await realCopyFile(from, to);
@@ -1802,12 +2126,184 @@ describe('retired leftovers are moved to a backup, not deleted (#1938)', () => {
     expect(result.orphanRetirement?.preserved.some((entry) => entry.path === ABSENT)).toBe(false);
   });
 
+  it('#1944 L-B: moves with a hard link, without copying, where the file system allows it', async () => {
+    await seedOldInstall();
+    const copySpy = spyOn(fsPromises, 'copyFile');
+    spies.push(copySpy);
+
+    const result = await update({ targetDir: project });
+
+    expect(result.orphanRetirement?.removed.sort()).toEqual(MOVED);
+    expect(copySpy.mock.calls.filter((call: unknown[]) => inBackup(call[1]))).toHaveLength(0);
+    const backupDir = result.orphanRetirement?.backupDir ?? '';
+    for (const path of MOVED) {
+      expect(await exists(path)).toBe(false);
+      expect(await readFile(backupPathOf(backupDir, path), 'utf8')).toBe(CONTENT[path] ?? '');
+    }
+  });
+
+  for (const code of ['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EMLINK']) {
+    it(`#1944 L-B: a link that reports ${code} falls back to the exclusive copy`, async () => {
+      await seedOldInstall();
+      failLinkIntoBackup(code);
+      const copySpy = spyOn(fsPromises, 'copyFile');
+      spies.push(copySpy);
+
+      const result = await update({ targetDir: project, components: ['guides'] });
+
+      expect(result.orphanRetirement?.removed).toEqual([UNMODIFIED_GUIDE]);
+      expect(copySpy.mock.calls.filter((call: unknown[]) => inBackup(call[1]))).toHaveLength(1);
+      const backupDir = result.orphanRetirement?.backupDir ?? '';
+      expect(await readFile(backupPathOf(backupDir, UNMODIFIED_GUIDE), 'utf8')).toBe(SHIPPED);
+      expect(await exists(UNMODIFIED_GUIDE)).toBe(false);
+    });
+  }
+
+  it('#1944 L-B: a file created at the destination after the existence check is never overwritten', async () => {
+    await seedOldInstall();
+    spies.push(
+      spyOn(fsPromises, 'link').mockImplementation((async (from: string, to: string) => {
+        // The racing process wins; the real link() then fails with EEXIST.
+        if (inBackup(to)) await writeFile(to, 'raced into place\n');
+        return realLink(from, to);
+      }) as typeof fsPromises.link)
+    );
+
+    const result = await update({ targetDir: project, components: ['guides'] });
+
+    expect(reasonOf(result, UNMODIFIED_GUIDE)).toContain('not moved to the backup: EEXIST');
+    expect(await readFile(join(project, UNMODIFIED_GUIDE), 'utf8')).toBe(SHIPPED);
+    const [root = ''] = await backupDirs();
+    expect(await readFile(join(project, root, 'retired/guides/old-guide/intro.md'), 'utf8')).toBe(
+      'raced into place\n'
+    );
+    expect(result.orphanRetirement?.removed).toEqual([]);
+    expect((await readLock()).files[UNMODIFIED_GUIDE]).toBeDefined();
+  });
+
+  it('#1944 L-B: an original edited in place right after the link is kept as user-modified; the link is removed', async () => {
+    await seedOldInstall();
+    spies.push(
+      spyOn(fsPromises, 'link').mockImplementation((async (from: string, to: string) => {
+        await realLink(from, to);
+        // Both names share the inode, so this edit changes the backup name too.
+        if (inBackup(to)) await writeFile(from, 'edited meanwhile\n');
+      }) as typeof fsPromises.link)
+    );
+
+    const result = await update({ targetDir: project, components: ['guides'] });
+
+    expect(await readFile(join(project, UNMODIFIED_GUIDE), 'utf8')).toBe('edited meanwhile\n');
+    expect(reasonOf(result, UNMODIFIED_GUIDE)).toBe('user-modified file');
+    expect(result.orphanRetirement?.removed).toEqual([]);
+    expect(await backupDirs()).toEqual([]);
+    expect((await readLock()).files[UNMODIFIED_GUIDE]).toBeUndefined();
+  });
+
+  it('#1944 L-A: an lstat error other than ENOENT/ENOTDIR is not read as "the original is gone"', async () => {
+    await seedOldInstall();
+    failLinkIntoBackup('EXDEV');
+    const source = join(project, UNMODIFIED_GUIDE);
+    const realLstat = fsPromises.lstat;
+    let unlinkAttempted = false;
+    // The three lstat calls that decide the move's outcome all hit the EIO; later ones are real.
+    let eioLeft = 3;
+    spies.push(
+      spyOn(fsPromises, 'unlink').mockImplementation((async (path: string) => {
+        if (String(path) !== source) return realUnlink(path);
+        unlinkAttempted = true;
+        throw errno('EPERM');
+      }) as typeof fsPromises.unlink),
+      spyOn(fsPromises, 'lstat').mockImplementation((async (path: string) => {
+        if (String(path) === source && unlinkAttempted && eioLeft > 0) {
+          eioLeft--;
+          throw errno('EIO');
+        }
+        return realLstat(path);
+      }) as typeof fsPromises.lstat)
+    );
+
+    const result = await update({ targetDir: project, components: ['guides'] });
+
+    expect(eioLeft).toBe(0);
+    expect(result.orphanRetirement?.removed).toEqual([]);
+    expect(await readFile(source, 'utf8')).toBe(SHIPPED);
+    expect(reasonOf(result, UNMODIFIED_GUIDE)).toBe('not moved to the backup: EPERM: simulated');
+    expect(result.warnings.filter((warning) => warning.includes(UNMODIFIED_GUIDE))).toHaveLength(1);
+    // The lock entry stays, so the next update tries again; the verified copy stays in the backup.
+    expect((await readLock()).files[UNMODIFIED_GUIDE]).toBeDefined();
+    const [root = ''] = await backupDirs();
+    expect(await readFile(join(project, root, 'retired/guides/old-guide/intro.md'), 'utf8')).toBe(
+      SHIPPED
+    );
+  });
+
+  it('#1944 L4: an lstat error while carrying ownership keeps the old lock entry (full update)', async () => {
+    await seedOldInstall();
+    const guide = join(project, UNMODIFIED_GUIDE);
+    const realLstat = fsPromises.lstat;
+    spies.push(
+      spyOn(fsPromises, 'lstat').mockImplementation((async (path: string) => {
+        if (String(path) === guide) throw errno('EIO');
+        return realLstat(path);
+      }) as typeof fsPromises.lstat)
+    );
+
+    const result = await update({
+      targetDir: project,
+      components: ['guides'],
+      confirmOrphanRemoval: async () => false,
+    });
+
+    expect(result.success).toBe(true);
+    // The unreadable state is neither "gone" nor "modified": the old entry is carried unchanged.
+    expect((await readLock()).files[UNMODIFIED_GUIDE]).toEqual({
+      templateHash: sha256(SHIPPED),
+      size: 1,
+      component: 'guides',
+    });
+  });
+
+  it('#1944 L4: a missing or modified leftover is still not carried', async () => {
+    await seedOldInstall();
+    await rm(join(project, UNMODIFIED_GUIDE));
+    await writeFile(join(project, UNMODIFIED_SCRIPT), 'edited since the lock\n');
+
+    await update({ targetDir: project, confirmOrphanRemoval: async () => false });
+
+    const lock = await readLock();
+    expect(lock.files[UNMODIFIED_GUIDE]).toBeUndefined();
+    expect(lock.files[UNMODIFIED_SCRIPT]).toBeUndefined();
+  });
+
+  describe('retiredBackupPath nested instruction files (A7)', () => {
+    it('gives CLAUDE.md, CLAUDE.local.md and AGENTS.md a .backup suffix at any depth', () => {
+      expect(retiredBackupPath('.claude/skills/go-best-practices/CLAUDE.md')).toBe(
+        'claude/skills/go-best-practices/CLAUDE.md.backup'
+      );
+      expect(retiredBackupPath('guides/x/AGENTS.md')).toBe('guides/x/AGENTS.md.backup');
+      expect(retiredBackupPath('guides/x/CLAUDE.local.md')).toBe('guides/x/CLAUDE.local.md.backup');
+      expect(retiredBackupPath('CLAUDE.md')).toBe('CLAUDE.md.backup');
+      expect(retiredBackupPath('guides/x/CLAUDE.md.bak')).toBe('guides/x/CLAUDE.md.bak');
+      expect(retiredBackupPath('guides/CLAUDE.md/notes.md')).toBe('guides/CLAUDE.md/notes.md');
+    });
+  });
+
   describe('retiredBackupPath', () => {
     it('drops the dot of a leading dot folder only', () => {
       expect(retiredBackupPath('.claude/skills/x/SKILL.md')).toBe('claude/skills/x/SKILL.md');
       expect(retiredBackupPath('.codex/agents/a.md')).toBe('codex/agents/a.md');
       expect(retiredBackupPath('guides/a/b.md')).toBe('guides/a/b.md');
       expect(retiredBackupPath('.claude/skills/.hidden/x')).toBe('claude/skills/.hidden/x');
+    });
+
+    it('rejects a path with a ".." segment instead of leaving the backup folder', () => {
+      expect(() => retiredBackupPath('../outside.md')).toThrow('leaves the backup folder');
+      expect(() => retiredBackupPath('.claude/skills/../../x.md')).toThrow(
+        'leaves the backup folder'
+      );
+      expect(() => retiredBackupPath('guides/a/..')).toThrow('leaves the backup folder');
+      expect(retiredBackupPath('guides/a..b/c.md')).toBe('guides/a..b/c.md');
     });
   });
 });

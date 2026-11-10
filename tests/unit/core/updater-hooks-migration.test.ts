@@ -307,7 +307,7 @@ describe('update exact RTK settings retirement', () => {
     });
   }
 
-  it('preserves different matcher/event, user arguments, absolute command and unknown shapes as reported conflicts', async () => {
+  it('strips the exact omcustom RTK command of any event or matcher; keeps arguments, pipelines, other paths and unknown shapes', async () => {
     const path = join(project, '.claude/settings.json');
     const group = (matcher: string, command: string) => ({
       matcher,
@@ -326,50 +326,36 @@ describe('update exact RTK settings retirement', () => {
       },
       unrelated: { preserve: true },
     };
-    const raw = JSON.stringify(original);
-    await writeFile(path, raw);
+    await writeFile(path, JSON.stringify(original));
     const result = await update({ targetDir: project, components: ['hooks'] });
     expect(result.success).toBe(true);
-    expect(await readFile(path, 'utf8')).toBe(raw);
+    const next = JSON.parse(await readFile(path, 'utf8'));
+    expect(next.hooks.PreToolUse).toEqual([
+      group('Bash', `${retired} --user`),
+      group('Bash', '/owned/user/rtk-intercept.sh'),
+      group('Bash', `${retired} | user-filter`),
+      { matcher: 'Bash', hooks: { user: 'rtk-intercept.sh' } },
+    ]);
+    expect(next.hooks.PostToolUse).toEqual([]);
+    expect(next.unrelated).toEqual({ preserve: true });
+    expect(result.rtkRetirement?.settingsChanged).toContain('.claude/settings.json');
     expect(result.rtkRetirement?.settingsConflicts).toContain('.claude/settings.json');
-    expect(result.rtkRetirement?.settingsChanged).toEqual([]);
     expect(
-      result.warnings.some((warning) => warning.includes('retained user or unknown wiring'))
+      result.warnings.some((warning) => warning.includes('RTK retirement kept 2 hook(s)'))
     ).toBe(true);
   });
 
-  it('reports malformed settings as conflict, preserves bytes and does not remove a hash-owned RTK file', async () => {
+  it('reports malformed settings, leaves their bytes alone and still deletes the RTK hook script', async () => {
     const settings = join(project, '.claude/settings.local.json');
     const hook = '.claude/hooks/scripts/rtk-intercept.sh';
     await mkdir(join(project, hook, '..'), { recursive: true });
-    const content = 'owned hook';
-    await writeFile(join(project, hook), content);
-    const { createHash } = await import('node:crypto');
-    await writeFile(
-      join(project, '.omcustom.lock.json'),
-      JSON.stringify({
-        lockfileVersion: 1,
-        generatorVersion: '0.1.0',
-        templateVersion: '0.1.0',
-        generatedAt: '2025-01-01T00:00:00Z',
-        files: {
-          [hook]: {
-            templateHash: createHash('sha256').update(content).digest('hex'),
-            size: content.length,
-            component: 'hooks',
-          },
-        },
-      })
-    );
+    await writeFile(join(project, hook), 'owned hook');
     await writeFile(settings, '{ bad json');
     const result = await update({ targetDir: project, components: ['hooks'] });
     expect(result.success).toBe(true);
     expect(await readFile(settings, 'utf8')).toBe('{ bad json');
-    expect(await readFile(join(project, hook), 'utf8')).toBe(content);
+    await expect(readFile(join(project, hook), 'utf8')).rejects.toThrow();
     expect(result.rtkRetirement?.settingsConflicts).toContain('.claude/settings.local.json');
-    expect(result.rtkRetirement?.preserved).toContainEqual({
-      path: hook,
-      reason: 'settings retirement conflict',
-    });
+    expect(result.rtkRetirement?.removed).toContain(hook);
   });
 });

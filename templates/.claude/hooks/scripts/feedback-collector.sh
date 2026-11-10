@@ -23,30 +23,27 @@ DB_PATH="${HOME}/.config/oh-my-customcode/eval-core.sqlite"
 LOG_FILE="/tmp/.claude-feedback-collector-${PPID}.log"
 
 # SQL injection safety: escape single quotes
-_sql_escape() { printf '%s' "${1//\'/\'\'}"; }
+# The quote is held in a variable: `${1//\'/\'\'}` keeps the backslashes under bash 3.2 (measured: the INSERT
+# then fails with 'unrecognized token "\"'), while bash 5 drops them.
+_sql_escape() { local q="'"; printf '%s' "${1//$q/$q$q}"; }
 
-# Count failures per agent type
-declare -A FAILURE_COUNTS
-declare -A TOTAL_COUNTS
-
-while IFS= read -r line; do
-  agent_type=$(printf '%s\n' "$line" | jq -r '.agent_type // empty' 2>/dev/null) || continue
-  outcome=$(printf '%s\n' "$line" | jq -r '.outcome // empty' 2>/dev/null) || continue
-  [ -z "$agent_type" ] && continue
-
-  TOTAL_COUNTS[$agent_type]=$(( ${TOTAL_COUNTS[$agent_type]:-0} + 1 ))
-  if [ "$outcome" = "failure" ]; then
-    FAILURE_COUNTS[$agent_type]=$(( ${FAILURE_COUNTS[$agent_type]:-0} + 1 ))
-  fi
-done < "$OUTCOMES_FILE"
+# Count failures per agent type. No associative arrays: `declare -A` needs bash 4, and this hook
+# runs under whatever `bash` is first on PATH (bash 3.2 on macOS fails with rc=2 on `declare -A`).
+# One jq pass emits "<agent_type><TAB><0|1>" per valid record (malformed lines are skipped); awk
+# aggregates and keeps only agent types with 3+ failures.
+STATS=$(jq -R -r 'fromjson? | select(type=="object") | select((.agent_type // "") != "") | [.agent_type, (if .outcome == "failure" then 1 else 0 end)] | @tsv' "$OUTCOMES_FILE" 2>/dev/null \
+  | awk -F'\t' '{ t[$1]++; f[$1] += $2 } END { for (a in t) if (f[a] >= 3) printf "%s\t%d\t%d\n", a, f[a], t[a] }') || {
+  # Under pipefail a jq/awk failure would otherwise drop every stat silently; record it (log file only).
+  echo "[feedback-collector] stats aggregation failed (jq/awk); no failure patterns evaluated" >> "$LOG_FILE" 2>/dev/null || true
+  STATS=""
+}
 
 # Detect repeated failure agents (3+ failures)
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 INSERTED=0
 
-for agent_type in "${!FAILURE_COUNTS[@]}"; do
-  count=${FAILURE_COUNTS[$agent_type]}
-  total=${TOTAL_COUNTS[$agent_type]:-0}
+while IFS=$'\t' read -r agent_type count total; do
+  [ -z "$agent_type" ] && continue
   [ "$count" -lt 3 ] && continue
 
   # Determine confidence
@@ -80,7 +77,7 @@ for agent_type in "${!FAILURE_COUNTS[@]}"; do
   }
 
   INSERTED=$((INSERTED + 1))
-done
+done <<< "$STATS"
 
 if [ "$INSERTED" -gt 0 ]; then
   echo "[feedback-collector] Extracted ${INSERTED} failure pattern(s) from session outcomes" >&2

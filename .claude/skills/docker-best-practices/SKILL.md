@@ -67,8 +67,9 @@ principles:
   - Don't store secrets in images
 
 patterns: |
-  # Pin version with digest
-  FROM node:20-slim@sha256:abc123...
+  # Pin version with digest (example digest of node:26-slim, resolved 2026-11-10;
+  # resolve your own with: docker buildx imagetools inspect node:26-slim)
+  FROM node:26-slim@sha256:5adad64f9a1fca2d51972caa65983634c8a774eb300d72b20f7f2a0f60368072
 
   # Create non-root user
   RUN groupadd -r appgroup && useradd -r -g appgroup appuser
@@ -95,7 +96,7 @@ strategies:
 
 minimal_bases:
   distroless: "gcr.io/distroless/static"
-  alpine: "alpine:3.19"
+  alpine: "alpine:3.24"
   slim: "debian:12-slim"
 
 patterns: |
@@ -103,8 +104,13 @@ patterns: |
   FROM python:3.15-alpine
   RUN apk add --no-cache gcc musl-dev
 
-  # Distroless for security
-  FROM gcr.io/distroless/python3
+  # Distroless for security (build in a full image, copy only the app)
+  FROM node:26-slim AS builder
+  WORKDIR /app
+  COPY . .
+  RUN npm ci --omit=dev
+
+  FROM gcr.io/distroless/nodejs26-debian13
   COPY --from=builder /app /app
 ```
 
@@ -224,12 +230,12 @@ pattern: |
 
 ```yaml
 nodejs: |
-  FROM node:20-slim AS builder
+  FROM node:26-slim AS builder
   WORKDIR /app
   COPY package*.json ./
-  RUN npm ci --only=production
+  RUN npm ci --omit=dev
 
-  FROM gcr.io/distroless/nodejs20
+  FROM gcr.io/distroless/nodejs26-debian13
   WORKDIR /app
   COPY --from=builder /app/node_modules ./node_modules
   COPY . .
@@ -237,14 +243,17 @@ nodejs: |
 
 python: |
   FROM python:3.15-slim AS builder
-  WORKDIR /app
-  RUN pip install --user -r requirements.txt
+  RUN python -m venv /opt/venv
+  ENV PATH=/opt/venv/bin:$PATH
+  COPY requirements.txt .
+  RUN pip install --no-cache-dir -r requirements.txt
 
   FROM python:3.15-slim
   WORKDIR /app
-  COPY --from=builder /root/.local /root/.local
+  COPY --from=builder /opt/venv /opt/venv
+  ENV PATH=/opt/venv/bin:$PATH
   COPY . .
-  ENV PATH=/root/.local/bin:$PATH
+  USER nobody
   CMD ["python", "app.py"]
 
 go: |

@@ -4,7 +4,8 @@
 # Purpose: Validate tool inputs against JSON Schema definitions
 # Phase 1: Advisory only (exit 0; warnings via stdout JSON additionalContext, #1885)
 # Protocol: stdin JSON -> validate -> exit 0
-# Channel (#1885): exit-0 stderr never reaches the model (CC 2.1.310 probe, #1775 comment 6405197553);
+# Channel (#1885): #1775 probe B (CC 2.1.310, `claude -p`, haiku, one PreToolUse Bash hook run) measured that
+#   exit-0 stderr did not reach the model; other events, modes and versions were not measured (#1775 comment 6405197553);
 #   warnings are delivered as stdout JSON hookSpecificOutput.additionalContext. No stdin passthrough.
 
 set -euo pipefail

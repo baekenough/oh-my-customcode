@@ -3,7 +3,17 @@
  */
 
 import { constants as fsConstants } from 'node:fs';
-import { copyFile, lstat, mkdir, realpath, rename, rmdir, unlink } from 'node:fs/promises';
+import {
+  copyFile,
+  link,
+  lstat,
+  mkdir,
+  readdir,
+  realpath,
+  rm,
+  rmdir,
+  unlink,
+} from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { dirname as posixDirname } from 'node:path/posix';
 import packageJson from '../../package.json';
@@ -20,12 +30,19 @@ import {
   writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
+import {
+  backupEntryName,
+  ensureBackupGitignore,
+  isInstructionFileName,
+  logBackupRestoreHint,
+  renameNestedInstructionFilesDetailed,
+} from './backup-layout.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, type OmccConfig, saveConfig } from './config.js';
 import { mergeEntryDoc, wrapInManagedMarkers } from './entry-merger.js';
 import { isProtectedFile } from './file-preservation.js';
 import { migrateHookCommands } from './hook-command-migration.js';
-import { retireRtkHookBlocks } from './hook-group-merge.js';
+import { findRtkInterceptMentions, stripRtkInterceptHooks } from './hook-group-merge.js';
 import { getProviderLayout } from './layout.js';
 import {
   computeFileHash,
@@ -42,6 +59,11 @@ import {
   loadRetiredTemplatePaths,
   type RetiredTemplatePathEntry,
 } from './retired-template-paths.js';
+import {
+  countSkillDirectories,
+  listSkippedPackageSkills,
+  withDeployedSkillCount,
+} from './scope-filter.js';
 
 /**
  * Options for update operation
@@ -148,6 +170,12 @@ export interface UpdateResult {
   syncedRootFiles: string[];
   /** Deprecated files that were removed (retired leftovers: moved to the backup) */
   removedDeprecatedFiles: string[];
+  /**
+   * The one backup folder of this run for everything it retired: orphan leftovers, RTK files and
+   * `deprecated-files.json` entries are moved here, never deleted. Created on the first move;
+   * present only when at least one file was moved.
+   */
+  retiredBackupDir?: string;
   /** Files whose frontmatter name: was synced from upstream */
   namespaceSynced: string[];
   /** True when the target was skipped because it is the source project itself */
@@ -379,46 +407,110 @@ export function deletionPreservedReason(
 /** `deletionPreservedReason` for a path the preserve settings cover. */
 const EXPLICITLY_PRESERVED = 'explicitly preserved';
 
-async function retireRtkFile(
-  path: string,
+/** What `update` deletes of the retired RTK feature, relative to the project root. */
+const RTK_DELETE_TARGETS = ['.claude/skills/rtk-exec', '.claude/hooks/scripts/rtk-intercept.sh'];
+
+/** Runs whose RTK settings wiring was already stripped, so it is not handled twice. */
+const rtkSettingsHandled = new WeakSet<UpdateResult>();
+
+/** Files at or below an RTK target without following symlinks (a symlink is one entry). */
+async function listRtkEntries(absolute: string, relativePath: string): Promise<string[]> {
+  if (!(await lstat(absolute)).isDirectory()) return [relativePath];
+  const entries: string[] = [];
+  for (const name of await readdir(absolute)) {
+    entries.push(...(await listRtkEntries(join(absolute, name), `${relativePath}/${name}`)));
+  }
+  return entries.length > 0 ? entries : [relativePath];
+}
+
+/** Warn when an RTK file is deleted although it was modified, unowned or preserved. */
+async function noteRtkDeletion(
   options: UpdateOptions,
   lockfile: Lockfile | null,
   result: UpdateResult,
+  path: string,
   preservedReason: string | null
 ): Promise<void> {
-  const retirement = getRtkRetirement(result);
+  const reasons: string[] = [];
+  const owned = ownedLockEntry(lockfile, path);
   try {
-    await validateOwnedTarget(options.targetDir, path);
-    if (preservedReason) throw new Error(preservedReason);
-    if (retirement.settingsConflicts.length > 0) throw new Error('settings retirement conflict');
-    const entry = lockfile?.files[path];
-    if (
-      !entry ||
-      typeof entry.templateHash !== 'string' ||
-      !/^[a-f0-9]{64}$/.test(entry.templateHash)
-    ) {
-      throw new Error('missing or invalid old ownership');
-    }
-    const fullPath = join(options.targetDir, path);
-    if ((await computeFileHash(fullPath)) !== entry.templateHash)
-      throw new Error('user-modified file');
-    if (options.dryRun) {
-      retirement.wouldRemove.push(path);
-      return;
-    }
-    await validateOwnedTarget(options.targetDir, path);
-    await unlink(fullPath);
-    retirement.removed.push(path);
-    result.removedDeprecatedFiles.push(path);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
-    const reason = err instanceof Error ? err.message : 'unreadable ownership or file';
-    retirement.preserved.push({ path, reason });
-    result.preservedFiles.push(path);
-    result.warnings.push(`RTK retirement preserved ${path}: ${reason}`);
+    const absolute = join(options.targetDir, path);
+    const unchanged =
+      owned !== null &&
+      (await lstat(absolute)).isFile() &&
+      (await computeFileHash(absolute)) === owned.templateHash;
+    if (!unchanged) reasons.push('modified or not recorded in the lockfile');
+  } catch {
+    reasons.push('modified or not recorded in the lockfile');
+  }
+  if (preservedReason) reasons.push('covered by your preserve settings');
+  if (reasons.length > 0) {
+    result.warnings.push(
+      `RTK is retired: ${options.dryRun ? 'would delete' : 'deleted'} ${path} although it was ${reasons.join(' and ')}`
+    );
   }
 }
 
+/**
+ * Delete one RTK target (a file, a directory tree or a symlink; a symlink is removed itself and
+ * never followed). The target's parent must resolve inside the project, else it is skipped with a
+ * warning. Any failure is a warning; the next update retries. Dry-run only lists.
+ */
+async function deleteRtkTarget(
+  relativePath: string,
+  options: UpdateOptions,
+  lockfile: Lockfile | null,
+  result: UpdateResult,
+  config: OmccConfig,
+  customizations: DeletionCustomizations
+): Promise<void> {
+  const retirement = getRtkRetirement(result);
+  const absolute = join(options.targetDir, relativePath);
+  try {
+    let isDirectory: boolean;
+    try {
+      isDirectory = (await lstat(absolute)).isDirectory();
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT' || code === 'ENOTDIR') return;
+      throw err;
+    }
+    const root = await realpath(options.targetDir);
+    const parent = await realpath(dirname(absolute));
+    if (parent !== root && !parent.startsWith(`${root}${sep}`)) {
+      throw new Error('its parent directory resolves outside the project');
+    }
+    const entries = isDirectory ? await listRtkEntries(absolute, relativePath) : [relativePath];
+    for (const path of entries) {
+      await noteRtkDeletion(
+        options,
+        lockfile,
+        result,
+        path,
+        deletionPreservedReason(path, config, customizations)
+      );
+    }
+    if (options.dryRun) {
+      retirement.wouldRemove.push(...entries);
+      return;
+    }
+    if (isDirectory) await rm(absolute, { recursive: true });
+    else await unlink(absolute);
+    retirement.removed.push(...entries);
+    result.removedDeprecatedFiles.push(...entries);
+  } catch (err) {
+    const reason = errorMessage(err, String(err));
+    retirement.preserved.push({ path: relativePath, reason });
+    result.warnings.push(`RTK retirement did not delete ${relativePath}: ${reason}`);
+  }
+}
+
+/**
+ * Delete the retired RTK feature (no backup): its settings wiring first (a hook must not point at
+ * a deleted script), then the skill directory and the hook script. Independent of lock ownership,
+ * modification, preserve settings, settings conflicts and the selected components. Returns the
+ * RTK lock paths for the lock regeneration.
+ */
 async function retireRtkFiles(
   options: UpdateOptions,
   lockfile: Lockfile | null,
@@ -426,25 +518,23 @@ async function retireRtkFiles(
   config: OmccConfig,
   customizations: DeletionCustomizations
 ): Promise<string[]> {
-  const fullUpdate = !options.components || options.components.length === 0;
-  const files = RETIRED_RTK_FILES.filter(
-    (file) => fullUpdate || options.components?.includes(file.component)
-  );
-  for (const file of files) {
-    await retireRtkFile(
-      file.path,
-      options,
-      lockfile,
-      result,
-      deletionPreservedReason(file.path, config, customizations)
-    );
+  getRtkRetirement(result);
+  if (!rtkSettingsHandled.has(result)) {
+    await migrateHookCommandsInSettingsLocal(options.targetDir, options, result, false);
   }
-  // Lock regeneration scans every component, regardless of the selected deletion scope.
+  for (const target of RTK_DELETE_TARGETS) {
+    await deleteRtkTarget(target, options, lockfile, result, config, customizations);
+  }
   return RETIRED_RTK_FILES.map((file) => file.path);
 }
 
-/** RTK paths stay on the dedicated RTK flow above (settings-conflict handling). */
+/** RTK paths stay on the dedicated RTK flow above (deleted, never moved to the backup). */
 const RTK_RETIRED_PATHS: ReadonlySet<string> = new Set(RETIRED_RTK_FILES.map((file) => file.path));
+
+/** A lock key of the retired RTK feature (its three template files). */
+function isRtkLockKey(path: string): boolean {
+  return RTK_RETIRED_PATHS.has(path) || path.startsWith('.claude/skills/rtk-exec/');
+}
 
 function isUpdateComponent(value: string): value is UpdateComponent {
   return (getAllUpdateComponents() as string[]).includes(value);
@@ -598,32 +688,64 @@ function backupTimestamp(): string {
  * `<targetDir>/.omcustom-backup-<timestamp>`.
  */
 function planRetiredBackup(targetDir: string, result: UpdateResult): RetiredBackup {
+  const planned = plannedBackups.get(result);
+  if (planned) return planned;
   const installationBackup = result.backedUpPaths[0];
   const root = installationBackup ?? join(targetDir, `.omcustom-backup-${backupTimestamp()}`);
-  return {
+  const backup: RetiredBackup = {
     root,
     dir: join(root, RETIRED_BACKUP_SUBDIR),
     created: new Set(),
   };
+  plannedBackups.set(result, backup);
+  return backup;
 }
+
+/**
+ * The backup planned for each run, so orphan leftovers, RTK files and deprecated files share one
+ * folder (and one timestamp) however many steps move something.
+ */
+const plannedBackups = new WeakMap<UpdateResult, RetiredBackup>();
 
 /**
  * Where a leftover goes inside the backup: its project-relative path, except that a leading dot
  * folder loses its dot (`.claude/skills/x/SKILL.md` -> `claude/skills/x/SKILL.md`), so the backup
- * holds no `.claude` directory for Claude Code to discover skills or agents in.
+ * holds no `.claude` directory for Claude Code to discover skills or agents in. A file named
+ * CLAUDE.md, CLAUDE.local.md or AGENTS.md gets a `.backup` suffix at any depth.
  */
 export function retiredBackupPath(path: string): string {
   const [first = '', ...rest] = path.split('/');
-  return [first.replace(/^\.+/, ''), ...rest].join('/');
+  // A `..` segment would leave the backup folder; the callers' path validation rejects it first.
+  if ([first, ...rest].includes('..')) throw new Error('backup path leaves the backup folder');
+  const parts = [first.replace(/^\.+/, ''), ...rest];
+  // Instruction files keep no loadable name at any depth (same suffix as the --backup layout).
+  const last = parts.length - 1;
+  if (isInstructionFileName(parts[last] ?? '')) parts[last] = `${parts[last]}.backup`;
+  return parts.join('/');
 }
 
-/** Whether something (a file, a directory or a symlink, even a dangling one) exists at `path`. */
+/**
+ * Whether something (a file, a directory or a symlink, even a dangling one) exists at `path`.
+ * Only ENOENT and ENOTDIR mean "absent"; any other lstat error (EIO, EACCES, ...) leaves the
+ * state unknown and is rethrown, so it is never read as "the file is gone" (#1944).
+ */
 async function pathExists(path: string): Promise<boolean> {
   try {
     await lstat(path);
     return true;
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') return false;
+    throw err;
+  }
+}
+
+/** `pathExists` for decisions that must not guess: a failed lstat is 'unknown'. */
+async function presenceOf(path: string): Promise<'present' | 'absent' | 'unknown'> {
+  try {
+    return (await pathExists(path)) ? 'present' : 'absent';
   } catch {
-    return false;
+    return 'unknown';
   }
 }
 
@@ -690,19 +812,30 @@ class SourceChangedError extends Error {
 }
 
 /**
- * Move `source` to `destination` (#1938). `rename` first; across file systems (EXDEV) copy without
- * overwriting, check that the copy has `expectedHash`, hash the original again (a user edit made
- * after the copy throws a {@link SourceChangedError}), then unlink the original. Throws when the
- * file was not moved; the original is then still in place, and a copy of ours is removed again.
- * Once the copy is verified, an original that is gone afterwards (whatever the unlink reported)
- * means the copy is the backup: the move counts as done and the copy is kept.
+ * Error codes of `link` that mean "no hard link here, copy instead": another file system (EXDEV),
+ * a file system without hard links or a policy that forbids them (EPERM, ENOTSUP, EOPNOTSUPP,
+ * ENOSYS), a file at its link limit (EMLINK). Any other code is a real failure.
  */
-async function moveFile(source: string, destination: string, expectedHash: string): Promise<void> {
+const LINK_UNSUPPORTED_CODES: ReadonlySet<string> = new Set([
+  'EXDEV',
+  'EPERM',
+  'ENOTSUP',
+  'EOPNOTSUPP',
+  'ENOSYS',
+  'EMLINK',
+]);
+
+/**
+ * Put a second name or a copy of `source` at `destination` without ever overwriting: `link` fails
+ * with EEXIST when something is there, and so does the COPYFILE_EXCL copy used when hard links are
+ * not available. Returns whether a hard link (the same file, not a copy) was made.
+ */
+async function placeInBackup(source: string, destination: string): Promise<boolean> {
   try {
-    await rename(source, destination);
-    return;
+    await link(source, destination);
+    return true;
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== 'EXDEV') throw err;
+    if (!LINK_UNSUPPORTED_CODES.has((err as NodeJS.ErrnoException).code ?? '')) throw err;
   }
   try {
     await copyFile(source, destination, fsConstants.COPYFILE_EXCL);
@@ -711,17 +844,38 @@ async function moveFile(source: string, destination: string, expectedHash: strin
     if ((err as NodeJS.ErrnoException).code !== 'EEXIST') await removeBackupCopy(destination);
     throw err;
   }
+  return false;
+}
+
+/**
+ * Move `source` to `destination` (#1938, #1944). A hard link (or, where links are unsupported, an
+ * exclusive copy) is made first, so an existing destination is never overwritten, even by a
+ * process that created it a moment ago. The new name must have `expectedHash`, the original is
+ * hashed again (a user edit made after that throws a {@link SourceChangedError}), then the original
+ * is unlinked. Throws when the file was not moved; the original is then still in place, and a
+ * copy or link of ours is removed again. Once the copy is verified, an original that is gone
+ * afterwards (whatever the unlink reported) means the copy is the backup: the move counts as done
+ * and the copy is kept. When the state of the original cannot be read (not ENOENT/ENOTDIR), the
+ * move is treated as failed, the original is kept and a verified copy is left in the backup.
+ */
+async function moveFile(source: string, destination: string, expectedHash: string): Promise<void> {
+  const linked = await placeInBackup(source, destination);
   let copyVerified = false;
   try {
     if ((await computeFileHash(destination)) !== expectedHash) {
-      throw new Error('the backup copy does not match the original');
+      // A hard link shares the original's bytes: a mismatch means the original changed.
+      throw linked
+        ? new SourceChangedError()
+        : new Error('the backup copy does not match the original');
     }
     copyVerified = true;
     if ((await computeFileHash(source)) !== expectedHash) throw new SourceChangedError();
     await unlink(source);
   } catch (err) {
-    if (copyVerified && !(await pathExists(source))) return;
-    await removeBackupCopy(destination);
+    const original = await presenceOf(source);
+    if (copyVerified && original === 'absent') return;
+    // Unknown state of a verified copy: keep it rather than risk losing the only copy.
+    if (!copyVerified || original === 'present') await removeBackupCopy(destination);
     throw err;
   }
 }
@@ -735,12 +889,36 @@ async function movedDespiteError(
   destination: string,
   expectedHash: string
 ): Promise<boolean> {
-  if (await pathExists(source)) return false;
+  if ((await presenceOf(source)) !== 'absent') return false;
   try {
     return (await computeFileHash(destination)) === expectedHash;
   } catch {
     return false;
   }
+}
+
+/**
+ * Move one file of the project into this run's backup (#1938): create its folders there (never
+ * through a symlink), then {@link moveFile}. Throws when the file was not moved. Records the
+ * run's backup folder in `result.retiredBackupDir` once the file is in it.
+ */
+async function moveIntoBackup(
+  targetDir: string,
+  backup: RetiredBackup,
+  result: UpdateResult,
+  path: string,
+  expectedHash: string
+): Promise<string> {
+  const source = join(targetDir, path);
+  const destination = join(backup.dir, retiredBackupPath(path));
+  await prepareBackupDestination(targetDir, destination, backup.created);
+  try {
+    await moveFile(source, destination, expectedHash);
+  } catch (err) {
+    if (!(await movedDespiteError(source, destination, expectedHash))) throw err;
+  }
+  result.retiredBackupDir = backup.dir;
+  return destination;
 }
 
 /**
@@ -756,8 +934,9 @@ async function keepAfterFailedMove(
   err: unknown
 ): Promise<false> {
   await removeCreatedEmptyDirectories(backup);
-  // The file disappeared meanwhile: neither moved nor kept, like a missing file.
-  if (!(await pathExists(source))) return false;
+  // The file disappeared meanwhile: neither moved nor kept, like a missing file. An unreadable
+  // state is not "disappeared": the file is kept.
+  if ((await presenceOf(source)) === 'absent') return false;
   const reason =
     err instanceof SourceChangedError
       ? err.message
@@ -789,18 +968,11 @@ async function moveOrphanToBackup(
     keepOrphanAfterError(result, path, err);
     return false;
   }
-  const destination = join(backup.dir, retiredBackupPath(path));
+  let destination: string;
   try {
-    await prepareBackupDestination(options.targetDir, destination, backup.created);
+    destination = await moveIntoBackup(options.targetDir, backup, result, path, candidate.diskHash);
   } catch (err) {
     return keepAfterFailedMove(backup, result, path, source, err);
-  }
-  try {
-    await moveFile(source, destination, candidate.diskHash);
-  } catch (err) {
-    if (!(await movedDespiteError(source, destination, candidate.diskHash))) {
-      return keepAfterFailedMove(backup, result, path, source, err);
-    }
   }
   getOrphanRetirement(result).removed.push(path);
   result.removedDeprecatedFiles.push(path);
@@ -996,16 +1168,19 @@ async function carriableEntry(
     if (shipped !== null && !shipped.includes(diskHash)) return null;
     const { size } = await lstat(fullPath);
     return { templateHash: diskHash, size, component: resolveLockfileComponent(path) };
-  } catch {
-    // Missing, not a regular file, escaping or unreadable: not provably owned any more.
-    return null;
+  } catch (err) {
+    // Missing (ENOENT/ENOTDIR), not a regular file or escaping (no errno code): not provably
+    // owned any more. Any other errno (EIO, ...) leaves the state unknown: keep the old entry.
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === undefined || code === 'ENOENT' || code === 'ENOTDIR') return null;
+    return oldEntry;
   }
 }
 
 /**
  * Old lock entries of leftovers to carry into the regenerated lock, so ownership survives a
  * partial update, a kept leftover or a list that fails to load. Never adds a path the old lock
- * does not have, and never deletes anything.
+ * does not have, and never deletes anything. RTK paths are not carried: update deletes them.
  *
  * With the retired list (`entries` non-empty): candidates are the listed paths, and the disk
  * hash must also be one of the listed shipped hashes. Without it (`entries` null — unreadable —
@@ -1052,24 +1227,35 @@ async function collectCarriedOwnership(
  * `update()` found no component updates (#1935 follow-up): still retire owned leftovers, so a
  * version bumped by an earlier partial update does not strand them. The lock is not regenerated
  * (that would record user-modified template files as unmodified); instead the evaluated leftover
- * entries that are no longer carriable — moved, modified, missing — are dropped from the old
- * lock, and it is written only when something was dropped. Dry-run and an unreadable list
- * change nothing.
+ * entries that are no longer carriable — moved, modified, missing — and every RTK entry are
+ * dropped from the old lock, and it is written only when something was dropped. The retired RTK
+ * feature is deleted here too, so doctor's RTK hint holds on an up-to-date project. Dry-run
+ * changes nothing; an unreadable list skips the orphans and leaves their ownership alone.
  */
 async function retireOrphansWithoutUpdates(
   options: UpdateOptions,
   result: UpdateResult,
   config: OmccConfig
 ): Promise<void> {
-  const entries = await loadRetiredList(result);
-  if (entries === null) return;
   const lockfile = await readLockfile(options.targetDir);
   const customizations = await loadDeletionCustomizations(options);
+  // Same order as a full update: RTK (settings wiring, then files), then the orphans. An
+  // unreadable retired list skips only the orphans.
+  await retireRtkFiles(options, lockfile, result, config, customizations);
+  const entries = await loadRetiredList(result);
   await retireOrphanTemplateFiles(options, entries, lockfile, result, config, customizations);
   if (options.dryRun || lockfile === null) return;
 
-  const carried = await collectCarriedOwnership(options.targetDir, lockfile, entries, result);
-  const dropped = new Set(carried.evaluated.filter((path) => !(path in carried.entries)));
+  // RTK entries always leave the lock (ownership no longer matters); orphan ownership is settled
+  // only when the retired list loaded.
+  const carried =
+    entries === null
+      ? { entries: {}, evaluated: [] }
+      : await collectCarriedOwnership(options.targetDir, lockfile, entries, result);
+  const dropped = new Set([
+    ...carried.evaluated.filter((path) => !(path in carried.entries)),
+    ...Object.keys(lockfile.files).filter(isRtkLockKey),
+  ]);
   if (dropped.size === 0) return;
 
   const files = Object.fromEntries(
@@ -1334,7 +1520,11 @@ async function updateEntryDoc(
     return;
   }
 
-  const templateContent = await readTextFile(templatePath);
+  // The template states the shipped skill count; state the deployed one (#1937).
+  const templateContent = withDeployedSkillCount(
+    await readTextFile(templatePath),
+    await countSkillDirectories(join(targetDir, layout.rootDir, 'skills'))
+  );
 
   if (await fileExists(entryPath)) {
     if (options.force) {
@@ -1418,10 +1608,42 @@ async function backfillStatusLineRefreshInterval(
 async function migrateHookCommandsInSettingsLocal(
   targetDir: string,
   options: UpdateOptions,
-  result: UpdateResult
+  result: UpdateResult,
+  rewriteCommands = true
 ): Promise<void> {
+  rtkSettingsHandled.add(result);
   for (const name of ['settings.json', 'settings.local.json']) {
-    await migrateRtkSettingsFile(targetDir, options, result, name);
+    await migrateRtkSettingsFile(targetDir, options, result, name, rewriteCommands);
+  }
+}
+
+/**
+ * Report hooks that still mention rtk-intercept.sh after the strip, naming event, matcher and the
+ * script path only (never the full command, which can hold inline secrets). Hooks running the
+ * deleted project script inside a longer command will fail and are warned about every run; a
+ * script of that name elsewhere is not deleted, so it is only mentioned on the run that changed
+ * the file.
+ */
+function warnAboutKeptRtkHooks(
+  result: UpdateResult,
+  path: string,
+  mentions: ReturnType<typeof findRtkInterceptMentions>,
+  changedFile: boolean
+): void {
+  const label = (m: (typeof mentions)[number]) => `${m.event}[${m.matcher}] ${m.script}`;
+  const failing = mentions.filter((m) => m.projectScript);
+  const elsewhere = mentions.filter((m) => !m.projectScript);
+  const retirement = getRtkRetirement(result);
+  if (failing.length > 0) {
+    retirement.settingsConflicts.push(path);
+    result.warnings.push(
+      `RTK retirement kept ${failing.length} hook(s) in ${path} that run the project script rtk-intercept.sh inside a longer command (${failing.map(label).join(', ')}); they will fail once the script is deleted — edit them yourself`
+    );
+  }
+  if (elsewhere.length > 0 && changedFile) {
+    result.warnings.push(
+      `RTK retirement kept ${elsewhere.length} hook(s) in ${path} that use an rtk-intercept.sh at another path (${elsewhere.map(label).join(', ')}); that script is not deleted`
+    );
   }
 }
 
@@ -1429,7 +1651,8 @@ async function migrateRtkSettingsFile(
   targetDir: string,
   options: UpdateOptions,
   result: UpdateResult,
-  name: string
+  name: string,
+  rewriteCommands: boolean
 ): Promise<void> {
   const layout = getProviderLayout();
   const path = `${layout.rootDir}/${name}`;
@@ -1446,17 +1669,20 @@ async function migrateRtkSettingsFile(
     }
 
     const current = parsed as Record<string, unknown>;
-    const hooks = retireRtkHookBlocks(current.hooks);
+    const projectDirs = [...new Set([targetDir, await realpath(targetDir)])];
+    const hooks = stripRtkInterceptHooks(current.hooks, projectDirs);
     const retired = hooks !== current.hooks;
     const input = retired ? { ...current, hooks } : current;
     const { settings, rewritten } =
-      name === 'settings.local.json'
+      name === 'settings.local.json' && rewriteCommands
         ? migrateHookCommands(input)
         : { settings: input, rewritten: 0 };
-    if (JSON.stringify(settings.hooks)?.includes('rtk-intercept.sh')) {
-      retirement.settingsConflicts.push(path);
-      result.warnings.push(`RTK retirement retained user or unknown wiring in ${path}`);
-    }
+    warnAboutKeptRtkHooks(
+      result,
+      path,
+      findRtkInterceptMentions(settings.hooks, projectDirs),
+      retired
+    );
     if (!retired && rewritten === 0) {
       return;
     }
@@ -1477,7 +1703,9 @@ async function migrateRtkSettingsFile(
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
     retirement.settingsConflicts.push(path);
-    result.warnings.push(`RTK retirement could not safely migrate ${path}`);
+    result.warnings.push(
+      `RTK retirement could not safely migrate ${path}; its RTK files are deleted anyway`
+    );
     // Non-blocking: parse/read/write failure should not abort the update
     warn('update.hook_commands_migration_failed', {
       path: settingsPath,
@@ -1505,7 +1733,7 @@ async function runFullUpdatePostProcessing(
     result.syncedRootFiles = synced;
     result.preservedFiles.push(...preserved);
 
-    const removed = await removeDeprecatedFiles(options.targetDir, options);
+    const removed = await removeDeprecatedFiles(options.targetDir, options, result, config);
     result.removedDeprecatedFiles = removed;
 
     if (!options.dryRun) {
@@ -1633,8 +1861,8 @@ async function regenerateLockfile(
 }
 
 /**
- * After the component updates: delete retired RTK files and move leftovers that are no longer
- * shipped into this run's backup (#1935, #1938), then regenerate the lockfile (#316), keeping
+ * After the component updates: move retired RTK files and leftovers that are no longer
+ * shipped into this run's backup (#1935, #1938, #1939), then regenerate the lockfile (#316), keeping
  * ownership of leftovers that were not moved so a later update can still move them. Both honour
  * every preservation source, even with forceOverwriteAll (overwrite ≠ delete or move).
  */
@@ -1738,6 +1966,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
       info('update.no_updates');
       result.skippedComponents = options.components || getAllUpdateComponents();
       await retireOrphansWithoutUpdates(options, result, config);
+      await ensureBackupGitignore(options.targetDir, { dryRun: options.dryRun });
       result.success = true;
       return result;
     }
@@ -1772,6 +2001,9 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     await runFullUpdatePostProcessing(options, result, config, customizations);
 
     await retireLeftoversAndRegenerateLockfile(options, lockfile, result, config);
+
+    // After every backup of this run (the --backup copy and the retired-file backup) exists
+    await ensureBackupGitignore(options.targetDir, { dryRun: options.dryRun });
 
     // Check Codex CLI after update
     if (!options.dryRun) checkAndInstallCodexAfterUpdate();
@@ -2137,6 +2369,15 @@ async function updateComponent(
   // Deduplicate after normalization
   const uniqueSkipPaths = [...new Set(normalizedSkipPaths)];
 
+  // Same scope rule as init: a package-scope skill the project does not have is not installed
+  // (#1937). Added after normalization because path.relative drops the trailing '/' that marks
+  // a directory skip.
+  if (component === 'skills') {
+    for (const name of await listSkippedPackageSkills(srcPath, destPath)) {
+      uniqueSkipPaths.push(`${name}/`);
+    }
+  }
+
   // Update component with skipPaths
   await copyDirectory(srcPath, destPath, {
     overwrite: true,
@@ -2243,10 +2484,16 @@ interface DeprecatedFilesManifest {
 }
 
 /**
- * Remove deprecated files from the target directory.
- * Reads templates/deprecated-files.json and removes listed files if they exist.
+ * Retire the files listed in templates/deprecated-files.json: each existing regular file is moved
+ * into this run's backup (#1939 A2; formerly deleted). Preserved entries, anything else at the
+ * path (a symlink, a directory) and any failed move are kept. Returns the moved paths.
  */
-async function removeDeprecatedFiles(targetDir: string, options: UpdateOptions): Promise<string[]> {
+async function removeDeprecatedFiles(
+  targetDir: string,
+  options: UpdateOptions,
+  result: UpdateResult,
+  config: OmccConfig
+): Promise<string[]> {
   const manifestPath = resolveTemplatePath('deprecated-files.json');
 
   if (!(await fileExists(manifestPath))) {
@@ -2259,40 +2506,104 @@ async function removeDeprecatedFiles(targetDir: string, options: UpdateOptions):
     return [];
   }
 
-  if (options.dryRun) {
-    return manifest.files.map((f) => f.path);
-  }
-
-  const fs = await import('node:fs/promises');
   const removed: string[] = [];
+  const customizations = await loadDeletionCustomizations(options);
 
   for (const entry of manifest.files) {
-    // Security: validate path is within targetDir
-    const validation = validatePreserveFilePath(entry.path, targetDir);
-    if (!validation.valid) {
-      warn('update.deprecated_file_invalid_path', {
-        path: entry.path,
-        reason: validation.reason ?? 'Invalid path',
-      });
-      continue;
-    }
-
-    const fullPath = join(targetDir, entry.path);
-    if (await fileExists(fullPath)) {
-      await fs.unlink(fullPath);
+    if (await retireDeprecatedEntry(entry, targetDir, options, result, config, customizations)) {
       removed.push(entry.path);
-      info('update.deprecated_file_removed', {
-        path: entry.path,
-        reason: entry.reason,
-      });
     }
   }
 
-  if (removed.length > 0) {
+  if (removed.length > 0 && !options.dryRun) {
     debug('update.deprecated_files_cleaned', { count: String(removed.length) });
   }
 
   return removed;
+}
+
+/**
+ * Move (or, in dry-run, only check) one deprecated entry. Dry-run lists exactly what a real run
+ * would move: preserved, absent and unsafe entries are left out of both.
+ */
+async function retireDeprecatedEntry(
+  entry: DeprecatedFileEntry,
+  targetDir: string,
+  options: UpdateOptions,
+  result: UpdateResult,
+  config: OmccConfig,
+  customizations: DeletionCustomizations
+): Promise<boolean> {
+  // Security: validate path is within targetDir
+  const validation = validatePreserveFilePath(entry.path, targetDir);
+  if (!validation.valid) {
+    warn('update.deprecated_file_invalid_path', {
+      path: entry.path,
+      reason: validation.reason ?? 'Invalid path',
+    });
+    return false;
+  }
+  if (keepPreservedDeprecated(entry.path, config, customizations, result)) return false;
+  if (options.dryRun) {
+    return validateOwnedTarget(targetDir, entry.path, true).then(
+      () => true,
+      () => false
+    );
+  }
+  const destination = await moveDeprecatedFile(targetDir, entry.path, result);
+  if (destination === null) return false;
+  info('update.deprecated_file_moved_to_backup', {
+    path: entry.path,
+    reason: entry.reason,
+    backup: destination,
+  });
+  return true;
+}
+
+/**
+ * Whether a deprecated entry stays because of preserve settings, like orphan leftovers: a
+ * deliberate keep is quiet, an unreadable customization manifest is warned about.
+ */
+function keepPreservedDeprecated(
+  path: string,
+  config: OmccConfig,
+  customizations: DeletionCustomizations,
+  result: UpdateResult
+): boolean {
+  const reason = deletionPreservedReason(path, config, customizations);
+  if (reason === null) return false;
+  if (reason !== EXPLICITLY_PRESERVED)
+    result.warnings.push(`Deprecated file kept ${path}: ${reason}`);
+  return true;
+}
+
+/**
+ * Move one deprecated file into the run's backup. Returns its backup path, or null when it is
+ * absent or kept (with a warning). The file must be a regular file at exactly its location
+ * (no symlinked directory on the way), like orphan leftovers.
+ */
+async function moveDeprecatedFile(
+  targetDir: string,
+  path: string,
+  result: UpdateResult
+): Promise<string | null> {
+  const backup = planRetiredBackup(targetDir, result);
+  try {
+    await validateOwnedTarget(targetDir, path, true);
+    return await moveIntoBackup(
+      targetDir,
+      backup,
+      result,
+      path,
+      await computeFileHash(join(targetDir, path))
+    );
+  } catch (err) {
+    await removeCreatedEmptyDirectories(backup);
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') return null;
+    result.warnings.push(`Deprecated file kept ${path}: ${errorMessage(err, String(err))}`);
+    return null;
+  }
 }
 
 /**
@@ -2443,23 +2754,29 @@ async function backupInstallation(targetDir: string): Promise<string> {
 
   await ensureDirectory(backupDir);
 
-  // Backup key directories
+  // Stored under backupEntryName so nothing in the backup loads as active configuration (#1943)
   const layout = getProviderLayout();
+  const backedUp: string[] = [];
   const dirsToBackup = [layout.rootDir, 'guides'];
   for (const dir of dirsToBackup) {
     const srcPath = join(targetDir, dir);
     if (await fileExists(srcPath)) {
-      const destPath = join(backupDir, dir);
+      const destPath = join(backupDir, backupEntryName(dir));
       await copyDirectory(srcPath, destPath, { overwrite: true });
+      backedUp.push(dir);
     }
   }
 
   // Backup entry doc
   const entryPath = join(targetDir, layout.entryFile);
   if (await fileExists(entryPath)) {
-    await fs.copyFile(entryPath, join(backupDir, layout.entryFile));
+    await fs.copyFile(entryPath, join(backupDir, backupEntryName(layout.entryFile)));
+    backedUp.push(layout.entryFile);
   }
 
+  // Instruction files deeper in the copied trees load from nested directories too
+  const nested = await renameNestedInstructionFilesDetailed(backupDir);
+  logBackupRestoreHint(backupDir, backedUp, nested.renamed, nested.collided);
   return backupDir;
 }
 

@@ -2,7 +2,7 @@
 title: FSD (Full Self Driving)
 type: skill
 scope: harness
-updated: 2026-10-26
+updated: 2026-11-10
 sources:
   - .claude/skills/fsd/SKILL.md
 related:
@@ -64,8 +64,8 @@ Each FSD iteration:
 ├── /homework              → retrospective 찐빠 audit gate (pauses for user confirmation if needed)
 ├── Open PR processing     → handle all open PRs (dependabot included)
 └── Check convergence: eligible issues = 0 AND open PRs = 0?
-    ├── YES → record any missing homework artifact (recall-based) → [FSD Done] converged naturally → rm -f /tmp/.claude-fsd-$PPID
-    └── NO  → cap reached or classifier block? → YES → [FSD Stop] → rm -f /tmp/.claude-fsd-$PPID
+    ├── YES → record any missing homework artifact (recall-based) → [FSD Done] converged naturally → rm /tmp/.claude-fsd-$PPID (if present)
+    └── NO  → cap reached or classifier block? → YES → [FSD Stop] → rm /tmp/.claude-fsd-$PPID (if present)
                                                 → NO  → next iteration (re-write marker first)
 ```
 
@@ -89,7 +89,7 @@ printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "/tmp/.claude-fsd-$PPID"
 
 **Re-written every iteration + 6-hour stale guard:** at the start of every iteration FSD re-runs the same `printf` command to refresh the marker's mtime. Phase 0.6 treats a marker older than 360 minutes (6 hours) as **absent**, not present — a guard against a marker surviving a process crash or PID reuse and causing a later *manual* `/pipeline auto-dev` invocation in the same session to be misclassified as unattended.
 
-**Cleared on every exit path:** `command rm -f "/tmp/.claude-fsd-$PPID"` runs regardless of how the loop ends — natural convergence (`[FSD Done]`), the release cap being reached, a safety-classifier block, or a user interrupt (`[FSD Stop]`). Leaving the marker behind on any of these paths would misclassify a later manual `/pipeline auto-dev` in the same session as unattended. `command` is prefixed because a shell with `rm` aliased to `trash` rejects `rm -f` (R005, measured).
+**Cleared on every exit path:** `[ -e "/tmp/.claude-fsd-$PPID" ] && rm "/tmp/.claude-fsd-$PPID"` runs regardless of how the loop ends — natural convergence (`[FSD Done]`), the release cap being reached, a safety-classifier block, or a user interrupt (`[FSD Stop]`). Leaving the marker behind on any of these paths would misclassify a later manual `/pipeline auto-dev` in the same session as unattended. If `rm` is a safety wrapper (a `trash` alias), the marker is removed without `-f` (trash rejects `-f` and errors on a missing file, hence the existence test) by the wrapper, or the failure is reported; it is never bypassed with `command rm`, `\rm` or `/bin/rm` (#1947).
 
 ## Open PR Processing Rules
 
@@ -103,6 +103,8 @@ After each `/homework` gate, FSD processes all open PRs before checking converge
 | User explicitly skipped | Respect skip per [R015](../rules/r015.md) directive persistence |
 
 In an unattended run only a PR inside the **unattended merge boundary** is merged (#1824): the head repository must be this repository (not a fork — `isCrossRepository` false and head owner equals the repository owner), and the author must have write permission or be `app/dependabot` / `app/github-actions`. A `pr-boundary` block evaluates both conditions in one Bash call and prints a single verdict line; anything other than `MERGE-OK` means defer and report the author and head repository. PR titles and bodies are never read or pasted into a command. Attended runs keep the user's per-merge judgement. The first two table rows apply only inside the boundary; a PR outside it is deferred, not merged.
+
+A "[Merge Without Review]" safety-classifier denial at the merge-delegation spawn is the expected path (#1930 P1, #1933 1): FSD stops, does not retry or reroute the merge through another agent, shows the user `! gh pr merge <N> --merge` (no `--admin`; no `--delete-branch`, because auto-tag.yml's "Delete merged release branch" step runs `git push origin --delete "$BRANCH"`), and waits.
 
 PR merge execution is always delegated to [[mgr-gitnerd]] ([R010](../rules/r010.md)). Post-merge ground-truth verification uses `gh pr view` ([R020](../rules/r020.md)).
 
@@ -137,7 +139,7 @@ FSD operates under full project rules without relaxation:
 | [R020](../rules/r020.md) | Each release and PR merge verified via ground-truth checks before `[Done]` |
 | Cost-cap advisory | `CLAUDE_COST_CAP`-driven cost-cap advisory is a **notification, not a loop-stop signal** — when the gate surfaces it, FSD reports it and continues the loop rather than halting on it |
 
-`/homework` is a mandatory retrospective gate between iterations — it is NOT skipped in automated mode. If homework requires user confirmation (e.g., to file a feedback issue), the loop pauses and waits.
+`/homework` is a mandatory retrospective gate between iterations — it is NOT skipped in automated mode. If homework requires user confirmation (e.g., to file a feedback issue), the loop pauses and waits. When a gate question asks whether to clean a shared directory whose ownership is unconfirmed (e.g. leftover probe files under `/tmp`), the choices include from the start "the user runs it via `!`" with the exact command, besides delegated deletion (#1919 P3).
 
 **Homework submission-gate bundling (opt-in, #1652 #4):** the default contract presents the gate **every iteration**, as above. Only when the user explicitly instructs it during the session (e.g., "bundle the homework gate at convergence") or declares an unattended run with bundling specified may the loop record the homework artifact (`homework-{HHmmss}.md`) each iteration while presenting the `omcustom-feedback` Phase 4A submission gate just **once**, at convergence (or release-cap) time — alongside any deferred `.claude/hooks/**` approval question. Whether to bundle is a user decision, not something the orchestrator selects unilaterally — a v1.1.59/60 session where the orchestrator bundled on its own was retrospectively flagged as a skill-contract deviation. **Bundling is never derived from `unattended_mode`** (the marker/env state above) — the deterministic marker signal is used solely for `.claude/hooks/**` issue deferral in scope-selection; the sole trigger for homework-gate bundling is an explicit user instruction. Once instructed, [[r015]] directive persistence keeps the bundling choice for the rest of the session.
 
@@ -188,3 +190,5 @@ Before each release PR, the [auto-dev workflow](../../.claude/skills/pipeline/wo
 - Content-drift resync 2026-10-06 (#1824, #1828): added the issue author trust filter to issue eligibility, the unattended PR merge boundary (`pr-boundary`) to Open PR Processing Rules, the Issue Trust Boundary subsection, and replaced the user-scope-only effective-mode guardrail with the three-scope read that defers precedence to [[r010]] Self-Check 1.
 - Content-drift resync 2026-10-26 (v2.0.7): the `omcustom-loop` evidence note now cites the CC 2.1.310 binary SubagentStop payload builder (inspected during the v2.0.6/v2.0.7 reviews) instead of "(#1880)", per `.claude/skills/fsd/SKILL.md` line 244.
 - Content-drift resync 2026-10-26 (v2.0.8): the expression's bare `/goal` is now described as Claude Code's built-in completion-condition command (CHANGELOG 2.1.139); the `omcustom:goal` skill (`/omcustom:goal`) is a separate planning workflow renamed in v0.130.0 and is not invoked by the expression. Completion verification is owned by R020 and this skill's own loop contract, so `[[goal]]` is no longer listed as a delegate; the inline-execution wording now reads `/goal`/`/loop` calls and "command/skill" overhead.
+- Content-drift resync 2026-11-10 (v2.0.22): documented the expected "[Merge Without Review]" classifier denial on PR merge delegation (stop, user runs `! gh pr merge <N> --merge`) and the user-runs-via-`!` choice in homework gate questions about unconfirmed shared directories.
+- Content-drift resync 2026-11-10 (v2.0.22, #1947): the unattended-mode marker is now removed with `[ -e ... ] && rm ...` (no `-f`, no `command rm` bypass of a safety wrapper) on every exit path; the diagram and the exit-path table were updated to match.

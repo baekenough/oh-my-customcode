@@ -31,18 +31,29 @@ SubagentStart event
 SubagentStop event  [hooks execute in array order — ordering is critical]
   │
   ├─ [1] task-outcome-recorder.sh
-  │       reads:  stdin JSON (agent_type, model, outcome)
+  │       reads:  stdin JSON — SubagentStop carries `agent_type` (+ `last_assistant_message`) but no `model`, no `description`, no `is_error`. Actual reads:
+  │               agent_type  = `(.agent_type? // .tool_input?.subagent_type? // "unknown") | tostring`
+  │               model       = `(.model? // .tool_input?.model? // "inherit") | tostring`  → always "inherit" here
+  │               description = first non-empty of `.tool_input?.description?`, `.description?`, `.last_assistant_message?` (strings only) → in practice `last_assistant_message`
+  │               is_error    = `(.tool_response?.is_error? // .tool_output?.is_error? // false) | tostring` → always false here, so outcome is always "success"
+  │               (`.outcome` is never read from stdin)
   │       reads:  /tmp/.claude-agent-starts-$PPID  (duration calc — entry still present)
   │       writes: /tmp/.claude-task-outcomes-$PPID  (appends 1 JSON line with duration_seconds)
   │       writes: stderr  (failure branch only; unreachable under SubagentStop: "SubagentStop carries no error signal", task-outcome-recorder.sh)
   │
-  └─ [2] stall-detection-advisor.sh
-          reads:  stdin JSON (agent_type, model, description)
-          reads:  /tmp/.claude-agent-starts-$PPID  (finds matching start entry for duration)
-          reads:  /tmp/.claude-agent-durations-$PPID  (peer durations for average calculation)
-          writes: /tmp/.claude-agent-durations-$PPID  (appends completed agent's duration)
-          writes: /tmp/.claude-agent-starts-$PPID  (removes consumed start entry)
-          writes: stderr  (advisory block if stall detected — R021 advisory-only)
+  ├─ [2] stall-detection-advisor.sh
+  │       reads:  stdin JSON (`.agent_type // "unknown"`; `.model // "inherit"` and `.description // ""` fall back to defaults because SubagentStop carries neither)
+  │       reads:  /tmp/.claude-agent-starts-$PPID  (finds matching start entry for duration)
+  │       reads:  /tmp/.claude-agent-durations-$PPID  (peer durations for average calculation)
+  │       writes: /tmp/.claude-agent-durations-$PPID  (appends completed agent's duration)
+  │       writes: /tmp/.claude-agent-starts-$PPID  (removes consumed start entry)
+  │       writes: stderr  (advisory block if stall detected — R021 advisory-only)
+  │
+  ├─ [3] auto-continue-guard.sh   (consecutive-completion counter; advisory from the 4th consecutive completion)
+  └─ [4] r007-r008-drift-advisor.sh   (R007/R008 header/prefix drift advisory; not part of the stall pipeline)
+
+Wired SubagentStop commands, in order (`jq '[.hooks.SubagentStop[].hooks[].command]' .claude/settings.json`; 4 entries, one matcher `*`):
+task-outcome-recorder.sh, stall-detection-advisor.sh, auto-continue-guard.sh, r007-r008-drift-advisor.sh.
 ```
 
 ### Stall Detection Logic

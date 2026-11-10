@@ -1,7 +1,7 @@
 ---
 title: Omcustom Feedback
 type: skill
-updated: 2026-10-25
+updated: 2026-11-10
 sources:
   - .claude/skills/omcustom-feedback/SKILL.md
 related:
@@ -41,6 +41,8 @@ Phase 4A의 preview를 명시적으로 승인받은 뒤에만 [[agents/mgr-gitne
 label 생성 실패와 label 때문에 발생한 issue 생성 실패를 확인한 때만 같은 승인 파일·preflight로 label 없는 재시도를 한 번 수행하십시오. 이때 실행 블록의 `LABEL_RETRY=false` 줄을 `LABEL_RETRY=true`로 바꾸십시오. export만 하면 블록이 false로 덮어쓰므로 재시도 분기가 선택되지 않습니다. 다른 실패는 기존 Phase 4D local fallback으로 넘기고 자기 파일만 정리하십시오.
 
 [source Phase 4A/4D](../../.claude/skills/omcustom-feedback/SKILL.md)의 동의·privacy·retry 경계를 참고하십시오.
+
+The skill's byte-dump snippet cleans up its `mktemp` file with `trap '[ -e "$byte_dump" ] && rm "$byte_dump"' 0`: no `-f` and no `command rm`, so a safety-wrapped `rm` (such as `trash`) is used as is (#1947).
 
 ## Key Details
 

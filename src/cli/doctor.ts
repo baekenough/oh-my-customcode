@@ -907,10 +907,9 @@ async function classifyOrphan(
 }
 
 /**
- * The retired RTK files. `omcustom update` handles these in a separate flow (retireRtkFile)
- * whose outcome also depends on `.claude/settings*.json` wiring, so doctor cannot predict it
- * with the generic orphan predicate. update's own helper is not exported, so doctor reports
- * them with a neutral message instead of mirroring that predicate (a copy could drift).
+ * The retired RTK files. `omcustom update` deletes these unconditionally in a separate flow
+ * (retireRtkFiles), so the generic orphan predicate does not apply; doctor reports them with a
+ * message that says so.
  */
 const RTK_RETIRED_PATHS: ReadonlySet<string> = new Set(RETIRED_RTK_PATHS);
 
@@ -925,8 +924,8 @@ const RTK_RETIRED_PATHS: ReadonlySet<string> = new Set(RETIRED_RTK_PATHS);
  * - unowned (shipped content the lock does not own with that hash): update keeps it, delete manually.
  * - preserved by your preserve settings: update keeps it, delete or unpreserve deliberately.
  * - modified (content is not a shipped version): review and delete manually.
- * - the three retired RTK files get a neutral message (no verdict): their removal is decided by
- *   update's RTK retirement, see RTK_RETIRED_PATHS.
+ * - the three retired RTK files: update deletes them (no backup, even when modified or
+ *   preserved), see RTK_RETIRED_PATHS.
  * Files that are not in the retired list (user custom files) are never flagged.
  *
  * Returns null when no lockfile exists (not an omcustom project). Never throws: a list, config

@@ -1,7 +1,7 @@
 ---
 title: lang-rust-expert
 type: agent
-updated: 2026-09-29
+updated: 2026-11-10
 sources:
   - .claude/agents/lang-rust-expert.md
 related:
@@ -18,7 +18,7 @@ Expert Rust developer for writing safe, performant, idiomatic Rust code with mas
 
 ## Overview
 
-`lang-rust-expert` handles all Rust language work — writing idiomatic code following the official Rust style guide, designing safe APIs that leverage Rust's type system for compile-time correctness, implementing zero-cost abstractions, correctly managing ownership/borrowing/lifetimes, writing efficient concurrent code with the fearless concurrency model, and optimizing for maximum performance without sacrificing safety.
+`lang-rust-expert` handles all Rust language work — writing idiomatic code following the official Rust style guide, designing safe APIs that leverage Rust's type system for compile-time correctness, implementing zero-cost abstractions, correctly managing ownership/borrowing/lifetimes, writing efficient concurrent code with the fearless concurrency model, optimizing for maximum performance without sacrificing safety, and setting and migrating the Cargo edition and `rust-version` (MSRV), including workspace inheritance.
 
 Uses `rust-best-practices` skill and `guides/rust/` for reference documentation.
 

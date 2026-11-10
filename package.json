@@ -19,7 +19,12 @@
   },
   "files": [
     "dist",
-    "templates"
+    "templates",
+    "packages/ontology-rag/pyproject.toml",
+    "packages/ontology-rag/README.md",
+    "packages/ontology-rag/src/ontology_rag",
+    "!**/__pycache__",
+    "!**/*.py[cod]"
   ],
   "publishConfig": {
     "access": "public",

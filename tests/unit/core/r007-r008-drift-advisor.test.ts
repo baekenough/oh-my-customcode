@@ -2247,3 +2247,124 @@ describe('r007-r008-drift-advisor.sh — Fixture 14: api-request-blob exclusion 
     expect(withBlob.stdout.trim()).toBe(without.stdout.trim());
   });
 });
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 15: #1947 item 3 — notification-turn R008 miss
+//
+// Observation (#1947): the orchestrator's Bash calls lacked the `[claude][opus] → Tool:` prefix in
+// the turn right after a subagent completion notification. Question: does this advisor flag that
+// shape on each wired event? The shape is a role=user message carrying a `<task-notification>` /
+// `<system-reminder>` and NO tool_result block (a turn boundary per the script's `$bi` test),
+// followed by an assistant turn that is only a tool_use (no text block). Measured on this tree:
+// it fires on UserPromptSubmit, SubagentStop and PostToolUse; no script change was needed.
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 15: notification-turn R008 miss (#1947)', () => {
+  const NOTIFICATION =
+    '<task-notification><task-id>a1</task-id><status>completed</status></task-notification>';
+  const SYSTEM_REMINDER = '<system-reminder>Background agent finished</system-reminder>';
+
+  /** A notification as the user line, in the two content shapes the script's boundary test accepts. */
+  function notificationLine(shape: 'string' | 'blocks', text: string): string[] {
+    if (shape === 'string') return userTurn(text);
+    return [
+      JSON.stringify({
+        type: 'user',
+        uuid: nextUuid(),
+        isSidechain: false,
+        message: { role: 'user', content: [{ type: 'text', text }] },
+      }),
+    ];
+  }
+
+  const EVENTS: ReadonlyArray<readonly [string, (sid: string) => string]> = [
+    ['UserPromptSubmit', (sid) => promptInput(sid)],
+    ['SubagentStop', (sid) => subagentStopInput(sid)],
+    ['PostToolUse', (sid) => postToolUseInput(sid)],
+  ];
+
+  for (const [event, makeInput] of EVENTS) {
+    for (const shape of ['string', 'blocks'] as const) {
+      for (const [label, text] of [
+        ['task-notification', NOTIFICATION],
+        ['system-reminder', SYSTEM_REMINDER],
+      ] as const) {
+        it(`${event}: fires on ${label} (${shape} content) followed by a tool_use-only turn (positive)`, async () => {
+          const sid = `n1947-pos-${event}-${shape}-${label}-${Date.now()}`;
+          await writeTranscript(sid, [
+            ...userTurn('start the work'),
+            ...assistantTurn([
+              { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: spawn' },
+              { type: 'text', text: '[claude][opus] → Tool: Agent' },
+              { type: 'tool_use', id: 'n-1', name: 'Agent', input: { prompt: 'x' } },
+            ]),
+            ...notificationLine(shape, text),
+            // Turn right after the notification: tool_use only, no text block at all.
+            ...assistantTurn([
+              { type: 'tool_use', id: 'n-2', name: 'Bash', input: { command: 'git status' } },
+            ]),
+          ]);
+
+          const r = await runScript(makeInput(sid), testEnv());
+
+          expect(r.exitCode).toBe(0);
+          const parsed = parseAdvisoryOutput(r.stdout);
+          expect(parsed.hookSpecificOutput.hookEventName).toBe(event);
+          const ctx = parsed.hookSpecificOutput.additionalContext;
+          expect(ctx).toContain('R008 도구 식별 접두사 누락 1건');
+          expect(ctx).toContain('미접두 도구: Bash');
+          // Measured: a turn with NO text block yields r007=0 (`$ftext` empty → 0), so only R008 is
+          // reported. Pinned so a change to that verdict is a conscious one.
+          expect(ctx).not.toContain('R007 에이전트 식별 헤더 누락');
+        });
+      }
+    }
+
+    it(`${event}: stays silent when the same turn carries the header and the prefix line (negative)`, async () => {
+      const sid = `n1947-neg-${event}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('start the work'),
+        ...assistantTurn([
+          { type: 'text', text: '┌─ Agent: claude (default)\n└─ Task: spawn' },
+          { type: 'text', text: '[claude][opus] → Tool: Agent' },
+          { type: 'tool_use', id: 'n-1', name: 'Agent', input: { prompt: 'x' } },
+        ]),
+        ...notificationLine('string', NOTIFICATION),
+        ...assistantTurn([
+          { type: 'text', text: '[claude] 통지 처리\n[claude][opus] → Tool: Bash' },
+          { type: 'tool_use', id: 'n-2', name: 'Bash', input: { command: 'git status' } },
+        ]),
+      ]);
+
+      const r = await runScript(makeInput(sid), testEnv());
+
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout.trim()).toBe('');
+    });
+  }
+
+  it('boundary is the notification: a compliant pre-notification turn does not mask the unprefixed call after it', async () => {
+    // Two announce lines BEFORE the notification must not be counted for the post-notification turn.
+    const sid = `n1947-mask-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('start'),
+      ...assistantTurn([
+        {
+          type: 'text',
+          text: '┌─ Agent: claude (default)\n[claude][opus] → Tool: Bash\n[claude][opus] → Tool: Bash',
+        },
+        { type: 'tool_use', id: 'm-1', name: 'Bash', input: { command: 'a' } },
+        { type: 'tool_use', id: 'm-2', name: 'Bash', input: { command: 'b' } },
+      ]),
+      ...notificationLine('string', NOTIFICATION),
+      ...assistantTurn([{ type: 'tool_use', id: 'm-3', name: 'Bash', input: { command: 'c' } }]),
+    ]);
+
+    const r = await runScript(postToolUseInput(sid), testEnv());
+
+    expect(r.exitCode).toBe(0);
+    expect(parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext).toContain(
+      'R008 도구 식별 접두사 누락 1건'
+    );
+  });
+});

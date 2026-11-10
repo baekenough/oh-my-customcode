@@ -41,7 +41,7 @@ describe('update command', () => {
   // Set to 'true' in beforeEach so that tests which call updateCommand({}) without
   // skipSelf do not trigger an actual self-update (which depends on ambient
   // process.env.CI and causes 13-test failures when rtk-installer.test.ts deletes
-  // CI from the environment, letting handleSelfUpdate → executeSelfUpdate run and
+  // CI from the environment, letting handleSelfUpdate → autoSelfUpdate run and
   // call process.exit on a 1.0.0 major-bump version).
   let savedSkipSelfUpdate: string | undefined;
 
@@ -1402,6 +1402,139 @@ describe('update command', () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
       expect(exitCode).toBeUndefined();
     });
+
+    describe('current directory already at the latest version (#1939)', () => {
+      function setupInteractive(
+        statusOfCwd: 'latest' | 'outdated',
+        selected: string[],
+        updateImpl?: (opts: { targetDir: string }) => Promise<unknown>
+      ) {
+        Object.defineProperty(process.stdout, 'isTTY', {
+          value: true,
+          writable: true,
+          configurable: true,
+        });
+        mock.module('../../../src/core/provider.js', () => ({
+          detectProvider: async () => ({
+            provider: 'claude',
+            source: 'override',
+            confidence: 'high',
+            reason: 'test',
+          }),
+        }));
+        const mockUpdate = mock(
+          updateImpl ??
+            (async (_opts: { targetDir: string }) => ({
+              success: true,
+              updatedComponents: [],
+              skippedComponents: [],
+              preservedFiles: [],
+              backedUpPaths: [],
+              previousVersion: '0.45.0',
+              newVersion: '0.45.0',
+              warnings: [],
+            }))
+        );
+        mock.module('../../../src/core/updater.js', () => ({ update: mockUpdate }));
+        mock.module('../../../src/cli/projects.js', () => ({
+          findProjects: async () => [
+            {
+              name: 'project-a',
+              path: '/tmp/project-a',
+              version: '0.44.0',
+              installedAt: null,
+              updatedAt: null,
+              status: 'outdated',
+              detectionMethod: 'lockfile',
+            },
+            {
+              name: 'cwd-project',
+              path: tempDir,
+              version: '0.45.0',
+              installedAt: null,
+              updatedAt: null,
+              status: statusOfCwd,
+              detectionMethod: 'lockfile',
+            },
+          ],
+        }));
+        mock.module('@inquirer/prompts', () => ({ checkbox: mock(async () => selected) }));
+        return mockUpdate;
+      }
+
+      const targets = (m: { mock: { calls: unknown[][] } }): string[] =>
+        m.mock.calls.map((call) => (call[0] as { targetDir: string }).targetDir);
+
+      it('also updates the current directory after the selected projects', async () => {
+        const mockUpdate = setupInteractive('latest', ['/tmp/project-a']);
+
+        const { updateCommand } = await import('../../../src/cli/update.js');
+        await updateCommand({});
+
+        expect(targets(mockUpdate)).toEqual(['/tmp/project-a', tempDir]);
+      });
+
+      it('updates the current directory even when nothing is selected', async () => {
+        const mockUpdate = setupInteractive('latest', []);
+
+        const { updateCommand } = await import('../../../src/cli/update.js');
+        await updateCommand({});
+
+        expect(targets(mockUpdate)).toEqual([tempDir]);
+      });
+
+      it('negative: leaves an outdated current directory alone unless it is selected', async () => {
+        const mockUpdate = setupInteractive('outdated', ['/tmp/project-a']);
+
+        const { updateCommand } = await import('../../../src/cli/update.js');
+        await updateCommand({});
+
+        expect(targets(mockUpdate)).toEqual(['/tmp/project-a']);
+      });
+
+      it('negative: does not touch the current directory when it is not a registered project', async () => {
+        const mockUpdate = setupInteractive('latest', ['/tmp/project-a']);
+        mock.module('../../../src/cli/projects.js', () => ({
+          findProjects: async () => [
+            {
+              name: 'project-a',
+              path: '/tmp/project-a',
+              version: '0.44.0',
+              installedAt: null,
+              updatedAt: null,
+              status: 'outdated',
+              detectionMethod: 'lockfile',
+            },
+            {
+              name: 'project-b',
+              path: '/tmp/project-b',
+              version: '0.45.0',
+              installedAt: null,
+              updatedAt: null,
+              status: 'latest',
+              detectionMethod: 'lockfile',
+            },
+          ],
+        }));
+
+        const { updateCommand } = await import('../../../src/cli/update.js');
+        await updateCommand({});
+
+        expect(targets(mockUpdate)).toEqual(['/tmp/project-a']);
+      });
+
+      it('reports a failing current-directory update without aborting', async () => {
+        setupInteractive('latest', [], async () => {
+          throw new Error('Disk full');
+        });
+
+        const { updateCommand } = await import('../../../src/cli/update.js');
+        await updateCommand({});
+
+        expect(consoleErrorSpy).toHaveBeenCalled();
+        expect(exitCode).toBeUndefined();
+      });
+    });
   });
 
   describe('updateCommand CLI self-update notification (--skip-self mode)', () => {
@@ -1569,9 +1702,9 @@ describe('update command', () => {
         update: mockUpdate,
       }));
 
-      // Mock executeSelfUpdate to return no-update (avoids actual npm install)
+      // Mock autoSelfUpdate to return up-to-date (avoids actual npm install)
       mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: () => ({ updated: false, fromVersion: '0.1.0', toVersion: '0.1.0' }),
+        autoSelfUpdate: () => 'up-to-date',
         checkSelfUpdate: () => ({
           checked: false,
           updateAvailable: false,
@@ -1616,9 +1749,9 @@ describe('update command', () => {
 
       let selfUpdateCalled = false;
       mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: () => {
+        autoSelfUpdate: () => {
           selfUpdateCalled = true;
-          return { updated: false, fromVersion: '0.1.0', toVersion: '0.1.0' };
+          return 'up-to-date';
         },
         checkSelfUpdate: () => ({
           checked: false,
@@ -1632,7 +1765,7 @@ describe('update command', () => {
 
       await updateCommand({ skipSelf: true });
 
-      // executeSelfUpdate must NOT be called when --skip-self is set
+      // autoSelfUpdate must NOT be called when --skip-self is set
       expect(selfUpdateCalled).toBe(false);
       // External update should still run
       expect(mockUpdate).toHaveBeenCalledTimes(1);
@@ -1665,7 +1798,7 @@ describe('update command', () => {
       }));
 
       mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: () => {
+        autoSelfUpdate: () => {
           throw new Error('npm registry unavailable');
         },
         checkSelfUpdate: () => ({
@@ -1777,18 +1910,82 @@ describe('update command', () => {
     });
   });
 
-  describe('updateCommand self-update re-exec (#860)', () => {
+  /**
+   * Self-update seams for updateCommand's third argument (#1946): the real autoSelfUpdate runs with
+   * injected npm lookup, install, spawn and exit, so no CLI is installed or re-executed.
+   */
+  function selfUpdateSeams(
+    options: {
+      latest?: string;
+      binaryVersion?: string | null;
+      extra?: Record<string, unknown>;
+    } = {}
+  ) {
+    const entry = '/fake/lib/node_modules/oh-my-customcode/dist/cli/index.js';
+    const exits: number[] = [];
+    const fetchLatest = mock(() => options.latest ?? '1.5.0');
+    const install = mock((_name: string, _version: string) => {});
+    const spawn = mock((_cmd: string, _args: string[], _opts: unknown) => ({
+      status: 0 as number | null,
+      signal: null as NodeJS.Signals | null,
+    }));
+    const binaryVersion = options.binaryVersion === undefined ? '1.5.0' : options.binaryVersion;
+    return {
+      entry,
+      exits,
+      fetchLatest,
+      install,
+      spawn,
+      overrides: {
+        currentVersion: '1.0.0',
+        cachePath: join(tempDir, 'self-update-cache.json'),
+        argv: ['node', entry, 'update'],
+        env: {} as NodeJS.ProcessEnv,
+        fetchLatestVersion: fetchLatest,
+        deps: {
+          installFn: install,
+          spawnFn: spawn,
+          exitFn: (code: number) => {
+            exits.push(code);
+          },
+          realpathFn: (path: string) => path,
+          globalRootFn: () => '/fake/lib/node_modules',
+          probeFn: () => options.latest ?? '1.5.0',
+          readFileFn: () => {
+            if (binaryVersion === null) throw new Error('ENOENT');
+            return JSON.stringify({ name: 'oh-my-customcode', version: binaryVersion });
+          },
+        },
+        ...options.extra,
+      },
+    };
+  }
+
+  function mockOkUpdater() {
+    const mockUpdate = mock(async () => ({
+      success: true,
+      updatedComponents: [],
+      skippedComponents: [],
+      preservedFiles: [],
+      backedUpPaths: [],
+      previousVersion: '1.0.0',
+      newVersion: '1.5.0',
+      warnings: [],
+    }));
+    mock.module('../../../src/core/updater.js', () => ({ update: mockUpdate }));
+    return mockUpdate;
+  }
+
+  describe('updateCommand self-update re-exec (#860, #1946)', () => {
     let originalEnv: NodeJS.ProcessEnv;
-    let spawnSyncMock: ReturnType<typeof mock>;
 
     beforeEach(() => {
       originalEnv = { ...process.env };
-      // Ensure re-exec guard is NOT set by default
-      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
+      // The real autoSelfUpdate runs here; the earlier tests in this file replace the module
+      mock.module('../../../src/core/self-update.js', () => realSelfUpdate);
     });
 
     afterEach(() => {
-      // Restore env
       for (const key of Object.keys(process.env)) {
         if (!(key in originalEnv)) {
           delete process.env[key];
@@ -1797,119 +1994,129 @@ describe('update command', () => {
       Object.assign(process.env, originalEnv);
     });
 
-    it('should call spawnSync and exit when executeSelfUpdate returns updated=true and guard is not set', async () => {
-      spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
-
-      mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: mock(() => ({
-          updated: true,
-          fromVersion: '0.87.1',
-          toVersion: '0.87.2',
-        })),
-        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
-      }));
-
-      mock.module('../../../src/core/updater.js', () => ({
-        update: mock(async () => ({
-          success: true,
-          updatedComponents: [],
-          skippedComponents: [],
-          preservedFiles: [],
-          backedUpPaths: [],
-          previousVersion: '0.87.1',
-          newVersion: '0.87.2',
-          warnings: [],
-        })),
-      }));
+    it('installs the latest CLI, verifies the binary and re-runs update on it', async () => {
+      const seams = selfUpdateSeams();
+      mockOkUpdater();
 
       const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({}, undefined, seams.overrides);
 
-      // mock.module 대신 주입형 spawnFn 사용 (다른 테스트 파일로의 모듈 모킹 누수 방지, #1760)
-      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
-
-      // spawnSync must have been called with process.execPath and argv re-exec args
-      expect(spawnSyncMock).toHaveBeenCalledTimes(1);
-      const callArgs = (spawnSyncMock.mock.calls as unknown[][])[0] as unknown[];
-      expect(callArgs[0]).toBe(process.execPath);
-      // Third argument is options — env should include the guard
-      const spawnOptions = callArgs[2] as { env?: Record<string, string> };
-      expect(spawnOptions.env?.OMCUSTOM_SKIP_SELF_UPDATE).toBe('true');
-
-      // process.exit must have been called with child.status (0)
-      expect(exitCode).toBe(0);
+      expect(seams.install).toHaveBeenCalledWith('oh-my-customcode', '1.5.0');
+      expect(seams.spawn).toHaveBeenCalledTimes(1);
+      const [command, args, spawnOptions] = seams.spawn.mock.calls[0] as [
+        string,
+        string[],
+        { env: Record<string, string> },
+      ];
+      expect(command).toBe(process.execPath);
+      expect(args).toEqual([seams.entry, 'update']);
+      expect(spawnOptions.env.OMCUSTOM_SKIP_SELF_UPDATE).toBe('true');
+      expect(seams.exits).toEqual([0]);
     });
 
-    it('should NOT call spawnSync when OMCUSTOM_SKIP_SELF_UPDATE=true is set', async () => {
-      process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
-
-      spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
-
-      // executeSelfUpdate itself short-circuits internally when the env guard is set,
-      // so it returns updated=false — spawnSync must not be called
-      mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: mock(() => ({
-          updated: false,
-          fromVersion: '0.87.2',
-          toVersion: '0.87.2',
-        })),
-        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
-      }));
-
-      mock.module('../../../src/core/updater.js', () => ({
-        update: mock(async () => ({
-          success: true,
-          updatedComponents: [],
-          skippedComponents: [],
-          preservedFiles: [],
-          backedUpPaths: [],
-          previousVersion: '0.87.2',
-          newVersion: '0.87.2',
-          warnings: [],
-        })),
-      }));
+    it('skips self-update entirely under --dry-run and says so', async () => {
+      const seams = selfUpdateSeams();
+      const mockUpdate = mockOkUpdater();
 
       const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({ dryRun: true }, undefined, seams.overrides);
 
-      // mock.module 대신 주입형 spawnFn 사용 (누수 방지, #1760)
-      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
-
-      expect(spawnSyncMock).not.toHaveBeenCalled();
-      // Should not call process.exit (no re-exec)
-      expect(exitCode).toBeUndefined();
+      expect(seams.fetchLatest).not.toHaveBeenCalled();
+      expect(seams.install).not.toHaveBeenCalled();
+      expect(seams.spawn).not.toHaveBeenCalled();
+      expect(consoleLogSpy.mock.calls.flat().join('\n')).toContain('--dry-run');
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
 
-    it('should NOT call spawnSync when executeSelfUpdate returns updated=false', async () => {
-      spawnSyncMock = mock(() => ({ status: 0, pid: 999 }));
-
-      mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: mock(() => ({
-          updated: false,
-          fromVersion: '0.87.2',
-          toVersion: '0.87.2',
-        })),
-        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
-      }));
-
-      mock.module('../../../src/core/updater.js', () => ({
-        update: mock(async () => ({
-          success: true,
-          updatedComponents: [],
-          skippedComponents: [],
-          preservedFiles: [],
-          backedUpPaths: [],
-          previousVersion: '0.87.2',
-          newVersion: '0.87.2',
-          warnings: [],
-        })),
-      }));
+    it('negative: a normal run (no --dry-run) queries npm', async () => {
+      const seams = selfUpdateSeams();
+      mockOkUpdater();
 
       const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({}, undefined, seams.overrides);
 
-      // mock.module 대신 주입형 spawnFn 사용 (누수 방지, #1760)
-      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
+      expect(seams.fetchLatest).toHaveBeenCalledTimes(1);
+    });
 
-      expect(spawnSyncMock).not.toHaveBeenCalled();
-      expect(exitCode).toBeUndefined();
+    it('exits with a non-zero child exit code', async () => {
+      const seams = selfUpdateSeams();
+      seams.spawn.mockImplementation(() => ({ status: 42, signal: null }));
+      mockOkUpdater();
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({}, undefined, seams.overrides);
+
+      expect(seams.exits).toEqual([42]);
+    });
+
+    it('does not query npm or re-run when OMCUSTOM_SKIP_SELF_UPDATE=true', async () => {
+      const seams = selfUpdateSeams({ extra: { env: { OMCUSTOM_SKIP_SELF_UPDATE: 'true' } } });
+      const mockUpdate = mockOkUpdater();
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({}, undefined, seams.overrides);
+
+      expect(seams.fetchLatest).not.toHaveBeenCalled();
+      expect(seams.spawn).not.toHaveBeenCalled();
+      expect(seams.exits).toEqual([]);
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not install or re-run when npm reports the current version', async () => {
+      const seams = selfUpdateSeams({ latest: '1.0.0' });
+      const mockUpdate = mockOkUpdater();
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({}, undefined, seams.overrides);
+
+      expect(seams.fetchLatest).toHaveBeenCalledTimes(1);
+      expect(seams.install).not.toHaveBeenCalled();
+      expect(seams.spawn).not.toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('continues with the current version when the binary cannot be verified', async () => {
+      const seams = selfUpdateSeams({ binaryVersion: '1.0.0' });
+      const mockUpdate = mockOkUpdater();
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({}, undefined, seams.overrides);
+
+      expect(seams.install).toHaveBeenCalledTimes(1);
+      expect(seams.spawn).not.toHaveBeenCalled();
+      expect(seams.exits).toEqual([]);
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('continues with the update when the install fails', async () => {
+      const seams = selfUpdateSeams();
+      seams.install.mockImplementation(() => {
+        throw new Error('EACCES: permission denied');
+      });
+      const mockUpdate = mockOkUpdater();
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({}, undefined, seams.overrides);
+
+      expect(seams.spawn).not.toHaveBeenCalled();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('catches a spawn that throws and still runs the update (#863)', async () => {
+      const seams = selfUpdateSeams();
+      seams.spawn.mockImplementation(() => {
+        throw new Error('spawn EACCES');
+      });
+      const mockUpdate = mockOkUpdater();
+
+      const { updateCommand } = await import('../../../src/cli/update.js');
+      await updateCommand({}, undefined, seams.overrides);
+
+      expect(seams.spawn).toHaveBeenCalledTimes(1);
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(mockUpdate).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -2154,226 +2361,4 @@ describe('update command', () => {
       expect(exitCode).toBeUndefined();
     });
   });
-
-  describe('exitWithChildStatus signal handling (#867)', () => {
-    // This describe block tests the re-exec path (executeSelfUpdate → updated:true →
-    // reexecUpdatedCli → spawnSync). The outer beforeEach sets OMCUSTOM_SKIP_SELF_UPDATE='true'
-    // to isolate unrelated tests, but the re-exec gate (src/cli/update.ts line 136) checks
-    // that same env var. We must clear it here so reexecUpdatedCli is actually called.
-    beforeEach(() => {
-      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
-    });
-
-    afterEach(() => {
-      // Outer afterEach restores savedSkipSelfUpdate; nothing extra needed here,
-      // but restore explicitly for clarity and safety.
-      process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
-    });
-
-    it('should exit 128+15 (143) when child terminated by SIGTERM (#867)', async () => {
-      const spawnSyncMock = mock(() => ({
-        status: null,
-        signal: 'SIGTERM' as NodeJS.Signals,
-        pid: 999,
-      }));
-
-      // Capture only the FIRST process.exit call. After exitWithChildStatus calls
-      // process.exit(143), the mock returns (doesn't actually exit), and the
-      // fallthrough path calls process.exit(null ?? 1). We record only the first.
-      let firstExitCode: number | undefined;
-      process.exit = ((code?: number) => {
-        if (firstExitCode === undefined) firstExitCode = code ?? 0;
-        exitCode = code ?? 0;
-      }) as typeof process.exit;
-
-      mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: mock(() => ({
-          updated: true,
-          fromVersion: '0.87.3',
-          toVersion: '0.88.0',
-        })),
-        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
-      }));
-
-      mock.module('../../../src/core/updater.js', () => ({
-        update: mock(async () => ({
-          success: true,
-          updatedComponents: [],
-          skippedComponents: [],
-          preservedFiles: [],
-          backedUpPaths: [],
-          previousVersion: '0.87.3',
-          newVersion: '0.88.0',
-          warnings: [],
-        })),
-      }));
-
-      const { updateCommand } = await import('../../../src/cli/update.js');
-      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
-
-      expect(spawnSyncMock).toHaveBeenCalledTimes(1);
-      expect(firstExitCode).toBe(143);
-    });
-  });
-
-  describe('reexecUpdatedCli argv guard (#867)', () => {
-    let originalArgv: string[];
-
-    beforeEach(() => {
-      originalArgv = process.argv;
-      // Clear the skip guard so that handleSelfUpdate proceeds to call
-      // reexecUpdatedCli (which then hits the argv guard under test).
-      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
-    });
-
-    afterEach(() => {
-      process.argv = originalArgv;
-      // Outer afterEach restores savedSkipSelfUpdate; pre-restore here for safety.
-      process.env.OMCUSTOM_SKIP_SELF_UPDATE = 'true';
-    });
-
-    it('should warn and skip re-exec when process.argv[1] is empty (#867)', async () => {
-      process.argv = ['node'];
-
-      const spawnSyncMock = mock(() => ({ status: 0, pid: 999, signal: null }));
-
-      mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: mock(() => ({
-          updated: true,
-          fromVersion: '0.87.3',
-          toVersion: '0.88.0',
-        })),
-        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
-      }));
-
-      mock.module('../../../src/core/updater.js', () => ({
-        update: mock(async () => ({
-          success: true,
-          updatedComponents: [],
-          skippedComponents: [],
-          preservedFiles: [],
-          backedUpPaths: [],
-          previousVersion: '0.87.3',
-          newVersion: '0.88.0',
-          warnings: [],
-        })),
-      }));
-
-      const { updateCommand } = await import('../../../src/cli/update.js');
-      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
-
-      expect(spawnSyncMock).not.toHaveBeenCalled();
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // D2: exit-code propagation and error swallowing (#863)
-  //
-  // These tests use injectable spawnFn to avoid mock.module('node:child_process')
-  // leakage. They are placed LAST in the file so that any mock.module leakage
-  // from this describe block does not affect the earlier tests.
-  // Bun 1.3.x mock.restore() does not reliably undo module mocks for modules
-  // that have already been cached via dynamic import.
-  // ---------------------------------------------------------------------------
-  // ⚠ DO NOT ADD TESTS BELOW THIS BLOCK ⚠
-  // This describe block uses mock.module() patterns that leak across files
-  // in Bun 1.3.x. Placing it as the LAST block in this file ensures no
-  // downstream tests are affected. New tests in this file MUST be added
-  // ABOVE this block, not below.
-  // ---------------------------------------------------------------------------
-  describe('reexecUpdatedCli exit-code and error swallowing (#863)', () => {
-    let originalEnv: NodeJS.ProcessEnv;
-    let spawnSyncMock: ReturnType<typeof mock>;
-
-    beforeEach(() => {
-      originalEnv = { ...process.env };
-      delete process.env.OMCUSTOM_SKIP_SELF_UPDATE;
-    });
-
-    afterEach(() => {
-      for (const key of Object.keys(process.env)) {
-        if (!(key in originalEnv)) {
-          delete process.env[key];
-        }
-      }
-      Object.assign(process.env, originalEnv);
-    });
-
-    it('should propagate non-zero child exit code via process.exit (#863)', async () => {
-      // Use injectable spawnFn instead of mock.module('node:child_process') to
-      // avoid leaking the replacement into other test files. Bun 1.3.x does not
-      // reliably restore node: built-in module mocks via mock.restore().
-      spawnSyncMock = mock(() => ({ status: 42, pid: 999, signal: null }));
-
-      mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: mock(() => ({
-          updated: true,
-          fromVersion: '0.87.2',
-          toVersion: '0.87.3',
-        })),
-        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
-      }));
-
-      mock.module('../../../src/core/updater.js', () => ({
-        update: mock(async () => ({
-          success: true,
-          updatedComponents: [],
-          skippedComponents: [],
-          preservedFiles: [],
-          backedUpPaths: [],
-          previousVersion: '0.87.2',
-          newVersion: '0.87.3',
-          warnings: [],
-        })),
-      }));
-
-      const { updateCommand } = await import('../../../src/cli/update.js');
-
-      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
-
-      expect(spawnSyncMock).toHaveBeenCalledTimes(1);
-      expect(exitCode).toBe(42);
-    });
-
-    it('should catch spawnSync thrown errors in outer try/catch and warn (#863)', async () => {
-      // Use injectable spawnFn instead of mock.module('node:child_process') to
-      // avoid leaking the replacement into other test files. Bun 1.3.x does not
-      // reliably restore node: built-in module mocks via mock.restore().
-      spawnSyncMock = mock(() => {
-        throw new Error('spawn EACCES');
-      });
-
-      mock.module('../../../src/core/self-update.js', () => ({
-        executeSelfUpdate: mock(() => ({
-          updated: true,
-          fromVersion: '0.87.2',
-          toVersion: '0.87.3',
-        })),
-        checkSelfUpdate: mock(() => ({ updateAvailable: false })),
-      }));
-
-      mock.module('../../../src/core/updater.js', () => ({
-        update: mock(async () => ({
-          success: true,
-          updatedComponents: [],
-          skippedComponents: [],
-          preservedFiles: [],
-          backedUpPaths: [],
-          previousVersion: '0.87.2',
-          newVersion: '0.87.3',
-          warnings: [],
-        })),
-      }));
-
-      const { updateCommand } = await import('../../../src/cli/update.js');
-
-      // Must NOT throw — outer try/catch in handleSelfUpdate must swallow
-      await updateCommand({ skipSelf: false }, undefined, spawnSyncMock as never);
-
-      expect(spawnSyncMock).toHaveBeenCalledTimes(1);
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-  });
 });
-// END OF FILE — see warning above. Do not add tests below this point.

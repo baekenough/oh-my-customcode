@@ -221,9 +221,11 @@ context_managers:
         f.close()
   note: |
     Pass encoding explicitly for text files. Before 3.15, open() without
-    encoding uses the locale encoding; from 3.15 (PEP 686) it uses UTF-8
-    unless UTF-8 mode is disabled (PYTHONUTF8=0 or -X utf8=0). Code that
-    must also run on earlier versions still passes encoding=.
+    encoding uses the locale encoding unless UTF-8 mode is on (-X utf8=1,
+    PYTHONUTF8=1, or automatically under the C/POSIX locale; PEP 540).
+    From 3.15 (PEP 686) UTF-8 mode is on by default, so open() uses UTF-8
+    unless it is disabled (PYTHONUTF8=0 or -X utf8=0). Code that must
+    also run on earlier versions still passes encoding=.
 
 unpacking:
   prefer: "a, b = b, a"
@@ -279,7 +281,8 @@ template_strings:
   - Use for safe interpolation (SQL, HTML); process the Template before use
 
 lazy_imports:
-  - PEP 810 explicit lazy imports (3.15+): "lazy import json" defers loading until first use (module scope only)
+  - PEP 810 explicit lazy imports (3.15+): "lazy import json" defers loading until first use
+  - Allowed only at module level: a lazy import inside a function, a class or a try/except block, a lazy star import and a lazy from __future__ import are SyntaxErrors (PEP 810)
   - Useful for startup time in CLI tools
 
 example: |
@@ -300,3 +303,5 @@ When writing or reviewing Python code:
 6. **Avoid** premature optimization
 7. **Use** list comprehensions when readable
 8. **Use** context managers for resources
+9. **Follow** the project's existing tooling for packaging, linting, type checking and tests (§8 Tooling)
+10. **Gate** newer language features on `requires-python` (§9; see also Supported Python Versions)

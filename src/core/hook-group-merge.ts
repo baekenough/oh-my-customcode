@@ -207,6 +207,124 @@ export function retireRtkHookBlocks(existing: unknown): unknown {
   return Object.keys(updates).length === 0 ? existing : { ...existing, ...updates };
 }
 
+const RTK_SCRIPT_TAIL = '.claude/hooks/scripts/rtk-intercept.sh';
+const PROJECT_DIR_VARIABLE = '\\$\\{CLAUDE_PROJECT_DIR(?::-\\.)?\\}|\\$CLAUDE_PROJECT_DIR';
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * The regex source of a path to the project RTK script: the project-relative path, optionally
+ * behind `./`, `$CLAUDE_PROJECT_DIR` (also braced, `:-.`, quoted) or one of the absolute project
+ * directories. Quotes around the variable and the path are tolerated.
+ */
+function projectScriptSource(projectDirs: readonly string[]): string {
+  const prefixes = [
+    PROJECT_DIR_VARIABLE,
+    ...projectDirs.map((dir) => escapeRegExp(dir.replace(/\/+$/, ''))),
+  ];
+  return `(?:(?:${prefixes.join('|')})"?\\/|\\.\\/)?${escapeRegExp(RTK_SCRIPT_TAIL)}`;
+}
+
+/**
+ * Whether a hook runs only the project RTK script (optionally `bash `-prefixed, quoted, behind
+ * `./`, `$CLAUDE_PROJECT_DIR` or the absolute project directory): no other command, argument,
+ * pipe or assignment.
+ */
+function isProjectRtkCommand(hook: unknown, projectDirs: readonly string[]): boolean {
+  if (!isRecord(hook) || hook.type !== 'command' || typeof hook.command !== 'string') {
+    return false;
+  }
+  return new RegExp(`^(?:bash )?"?${projectScriptSource(projectDirs)}"?$`).test(hook.command);
+}
+
+/**
+ * Removes every command hook that runs only the project RTK script (see
+ * {@link isProjectRtkCommand}; the forms omcustom wrote plus the `$CLAUDE_PROJECT_DIR` and
+ * absolute-path spellings), whatever its event or matcher: the script is deleted, so such a hook
+ * would fail on every call. Commands that do anything else as well, and scripts elsewhere
+ * (`$HOME/tools/hooks/scripts/rtk-intercept.sh`), are the user's and stay; see
+ * {@link findRtkInterceptMentions}. Pure and idempotent; unknown shapes and untouched values
+ * keep their references.
+ */
+export function stripRtkInterceptHooks(
+  existing: unknown,
+  projectDirs: readonly string[] = []
+): unknown {
+  if (!isRecord(existing)) {
+    return existing;
+  }
+  const updates: Record<string, unknown> = {};
+  for (const [event, value] of Object.entries(existing)) {
+    if (!Array.isArray(value)) {
+      continue;
+    }
+    const residual = value.flatMap((group): unknown[] => {
+      if (!isRecord(group) || !Array.isArray(group.hooks)) {
+        return [group];
+      }
+      const remaining = group.hooks.filter((hook) => !isProjectRtkCommand(hook, projectDirs));
+      if (remaining.length === group.hooks.length) {
+        return [group];
+      }
+      return remaining.length === 0 ? [] : [{ ...group, hooks: remaining }];
+    });
+    if (residual.length !== value.length || residual.some((g, i) => g !== value[i])) {
+      updates[event] = residual;
+    }
+  }
+  return Object.keys(updates).length === 0 ? existing : { ...existing, ...updates };
+}
+
+/** One hook that still mentions the RTK script after stripping; the command itself is not kept. */
+export interface RtkInterceptMention {
+  event: string;
+  matcher: string;
+  /** A script path as written (no arguments, no inline `NAME=value` assignments). */
+  script: string;
+  /** Whether the command runs the project script update deletes (in any spelling). */
+  projectScript: boolean;
+}
+
+/** The script path of a command that mentions the RTK script, or null; classifies every match. */
+function mentionOf(
+  command: string,
+  projectDirs: readonly string[]
+): { script: string; projectScript: boolean } | null {
+  // The path must start a word or follow a shell separator (`;|&(`): `/opt/x/.claude/hooks/...`
+  // is another project's script.
+  const project = new RegExp(`(?<![^\\s"';|&(])${projectScriptSource(projectDirs)}`).exec(command);
+  if (project) {
+    return { script: project[0], projectScript: true };
+  }
+  const other = /[^\s"';|&()=]*rtk-intercept\.sh/.exec(command);
+  return other ? { script: other[0], projectScript: false } : null;
+}
+
+/**
+ * Hooks that still mention the RTK script after stripping (user-owned wiring). A command that
+ * contains the project script anywhere counts as running it. Only a script path is returned,
+ * never the rest of the command: it can carry inline secrets.
+ */
+export function findRtkInterceptMentions(
+  hooks: unknown,
+  projectDirs: readonly string[] = []
+): RtkInterceptMention[] {
+  if (!isRecord(hooks)) {
+    return [];
+  }
+  return Object.entries(hooks).flatMap(([event, value]) =>
+    (Array.isArray(value) ? value : []).flatMap((group) =>
+      (isRecord(group) && Array.isArray(group.hooks) ? group.hooks : []).flatMap((hook) => {
+        const command = isRecord(hook) && typeof hook.command === 'string' ? hook.command : '';
+        const found = mentionOf(command, projectDirs);
+        return found ? [{ event, matcher: matcherKey(group), ...found }] : [];
+      })
+    )
+  );
+}
+
 /** Returns the part of one existing group that the user owns (0 or 1 group). */
 function userResidual(
   group: unknown,

@@ -89,6 +89,13 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.failed': 'Installation failed: {{error}}',
     'install.exists': 'Existing {{rootDir}} directory found',
     'install.backup': 'Backed up existing files to: {{path}}',
+    'backup.restore_hint':
+      'To restore from {{path}}, rename: {{renames}} (the backup uses these names so it does not load as active configuration)',
+    'backup.gitignore_updated': 'Added {{patterns}} to {{path}}',
+    'backup.gitignore_dry_run': 'Dry run: would add {{patterns}} to .gitignore',
+    'backup.gitignore_failed': 'Could not update .gitignore for the backup directory: {{error}}',
+    'backup.gitignore_negated':
+      '{{path}} un-ignores a backup directory; left unchanged — add the backup ignore pattern yourself if wanted',
     'install.directories_created': 'Directory structure created',
     'install.component_skipped': 'Skipped {{component}} (already exists)',
     'install.component_installed': 'Installed {{component}}',
@@ -160,6 +167,10 @@ const MESSAGES: Record<string, Record<string, string>> = {
       'Preserved {{files}} file(s) and {{dirs}} directory(ies) from the existing installation',
     'install.restored': 'Restored {{files}} file(s) and {{dirs}} directory(ies) after installation',
     'install.backup_failed': 'Failed to back up {{path}}: {{error}}',
+    'backup.instruction_rename_failed':
+      'Could not give {{path}} a .backup name (left as it was): {{error}}',
+    'install.entry_count_refresh_failed':
+      'Could not refresh the skill count in the entry doc: {{error}}',
     'install.hooks_settings_failed': 'Failed to merge hooks into settings.local.json: {{error}}',
     'preserve.cleanup_failed': 'Failed to clean up preservation directory {{dir}}: {{error}}',
     'preserve.extract_dir_failed': 'Failed to preserve directory {{dir}}: {{error}}',
@@ -172,7 +183,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.self_update_skipped': 'Skipped update: source project cannot update itself',
     'update.deprecated_file_invalid_path':
       'Skipped deprecated file with invalid path: {{path}} ({{reason}})',
-    'update.deprecated_file_removed': 'Removed deprecated file: {{path}} ({{reason}})',
+    'update.deprecated_file_moved_to_backup':
+      'Moved deprecated file to the backup: {{path}} -> {{backup}} ({{reason}})',
     'update.retired_file_moved_to_backup':
       'Moved retired template file (identical to a shipped version) to the backup: {{path}} -> {{backup}}',
     'update.entry_doc_created': 'Entry document created: {{path}}',
@@ -235,6 +247,13 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.failed': '설치 실패: {{error}}',
     'install.exists': '기존 {{rootDir}} 디렉토리 발견',
     'install.backup': '기존 파일 백업 완료: {{path}}',
+    'backup.restore_hint':
+      '{{path}}에서 복원하려면 이름을 되돌리십시오: {{renames}} (백업이 활성 설정으로 로드되지 않도록 이 이름으로 저장됩니다)',
+    'backup.gitignore_updated': '{{path}}에 {{patterns}}을(를) 추가했습니다',
+    'backup.gitignore_dry_run': '시험 실행: .gitignore에 {{patterns}}을(를) 추가할 예정입니다',
+    'backup.gitignore_failed': '백업 디렉토리용 .gitignore를 갱신하지 못했습니다: {{error}}',
+    'backup.gitignore_negated':
+      '{{path}}가 백업 디렉토리를 무시 대상에서 제외하고 있어 변경하지 않았습니다. 필요하면 백업 무시 패턴을 직접 추가하십시오',
     'install.directories_created': '디렉토리 구조 생성 완료',
     'install.component_skipped': '{{component}} 건너뜀 (이미 존재)',
     'install.component_installed': '{{component}} 설치 완료',
@@ -304,6 +323,9 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.preserved': '기존 설치에서 파일 {{files}}개와 디렉토리 {{dirs}}개를 보존했습니다',
     'install.restored': '설치 후 파일 {{files}}개와 디렉토리 {{dirs}}개를 복원했습니다',
     'install.backup_failed': '{{path}} 백업에 실패했습니다: {{error}}',
+    'backup.instruction_rename_failed':
+      '{{path}}에 .backup 이름을 붙이지 못했습니다(원래 상태 유지): {{error}}',
+    'install.entry_count_refresh_failed': '진입 문서의 스킬 수를 갱신하지 못했습니다: {{error}}',
     'install.hooks_settings_failed': 'settings.local.json에 훅을 병합하지 못했습니다: {{error}}',
     'preserve.cleanup_failed': '보존 디렉토리 {{dir}} 정리에 실패했습니다: {{error}}',
     'preserve.extract_dir_failed': '디렉토리 {{dir}} 보존에 실패했습니다: {{error}}',
@@ -317,7 +339,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
       '업데이트를 건너뜁니다: 소스 프로젝트는 스스로 업데이트할 수 없습니다',
     'update.deprecated_file_invalid_path':
       '경로가 유효하지 않아 지원 중단 파일을 건너뜁니다: {{path}} ({{reason}})',
-    'update.deprecated_file_removed': '지원 중단 파일을 삭제했습니다: {{path}} ({{reason}})',
+    'update.deprecated_file_moved_to_backup':
+      '지원 중단 파일을 백업으로 이동했습니다: {{path}} -> {{backup}} ({{reason}})',
     'update.retired_file_moved_to_backup':
       '더 이상 배포하지 않는 템플릿 파일(배포본과 동일)을 백업으로 옮겼습니다: {{path}} -> {{backup}}',
     'update.entry_doc_created': '진입 문서를 생성했습니다: {{path}}',

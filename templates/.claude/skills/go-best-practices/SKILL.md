@@ -169,6 +169,7 @@ principles:
   - Check errors immediately after call
   - Return errors, don't panic
   - Add context when propagating: fmt.Errorf("op failed: %w", err)
+  - Combine several errors with errors.Join (1.20): nil errors are discarded, the result is nil if all are nil, and errors.Is / errors.As inspect each joined error
 
 panic_recover:
   - Panic for unrecoverable errors only

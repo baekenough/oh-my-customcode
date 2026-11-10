@@ -10,7 +10,8 @@ command -v jq >/dev/null 2>&1 || exit 0
 # Protocol: stdin JSON -> process -> exit 0 always (advisory only)
 # Once per session (#1885): each distinct advisory key is shown at most once, claimed atomically via a
 # per-key marker dir under /tmp/.claude-teams-advisory-shown-${PPID}.d/ (parallel-hook safe).
-# Channel (#1885): exit-0 stderr never reaches the model (CC 2.1.310 probe, #1775 comment 6405197553);
+# Channel (#1885): #1775 probe B (CC 2.1.310, `claude -p`, haiku, one PreToolUse Bash hook run) measured that
+#   exit-0 stderr did not reach the model; other events, modes and versions were not measured (#1775 comment 6405197553);
 #   the advisory is delivered as stdout JSON hookSpecificOutput.additionalContext. No stdin passthrough.
 
 input=$(cat)

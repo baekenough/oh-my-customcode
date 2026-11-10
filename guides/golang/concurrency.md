@@ -132,7 +132,7 @@ func fanIn(ch1, ch2 <-chan int) <-chan int {
 }
 ```
 
-The fan-in goroutine exits, and `out` is closed, only after both inputs are closed and drained, so `for v := range fanIn(a, b)` terminates. Without the `close(out)` and the nil-channel step, the loop keeps sending zero values from the closed inputs, so the range never ends and the goroutine never exits (see Goroutine Leaks below). If the consumer may stop reading early, also select on `ctx.Done()` around the send.
+The fan-in goroutine exits, and `out` is closed, only after both inputs are closed and drained, so `for v := range fanIn(a, b)` terminates. Each part matters. Without `defer close(out)`, the consumer's `range` never ends. If the `if !ok { chN = nil; continue }` blocks are dropped entirely, every closed input keeps yielding zero values, so the loop sends them forever. If only the `chN = nil` assignments are dropped, the closed input stays ready and the loop never reaches its exit condition. In the two `if !ok` variants the goroutine never exits (see Goroutine Leaks below); without `close(out)` it exits, but the consumer blocks forever. If the consumer may stop reading early, also select on `ctx.Done()` around the send.
 
 ### Pipeline
 

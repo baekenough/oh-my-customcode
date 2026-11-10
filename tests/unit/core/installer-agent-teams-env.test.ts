@@ -7,6 +7,7 @@
  */
 
 import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -164,11 +165,13 @@ describe('installer Agent Teams env step (#1934)', () => {
         env: { FOO: 'bar', [KEY]: '1' },
         model: 'sonnet',
       });
-      // The pre-install settings.json also lives, unmodified, in the backup directory
+      // The pre-install settings.json also lives, unmodified, in the backup directory, which
+      // stores .claude as claude/ so it does not load as active configuration (#1943)
       const backupRoot = result.backedUpPaths[0] as string;
       const backedUp = JSON.parse(
-        await readFile(join(backupRoot, '.claude', 'settings.json'), 'utf-8')
+        await readFile(join(backupRoot, 'claude', 'settings.json'), 'utf-8')
       );
+      expect(existsSync(join(backupRoot, '.claude'))).toBe(false);
       expect(backedUp.env).toEqual({ FOO: 'bar' });
     });
 
@@ -207,9 +210,10 @@ describe('installer Agent Teams env step (#1934)', () => {
       expect(await readSettings()).toEqual({ env: { [KEY]: '1' } });
       // The user's original (invalid) file is still in the backup directory
       const backupRoot = result.backedUpPaths[0] as string;
-      expect(await readFile(join(backupRoot, '.claude', 'settings.json'), 'utf-8')).toBe(
+      expect(await readFile(join(backupRoot, 'claude', 'settings.json'), 'utf-8')).toBe(
         '{ not json'
       );
+      expect(existsSync(join(backupRoot, '.claude'))).toBe(false);
       expect((await readdir(tempDir)).some((n) => n.startsWith('.claude-backup-'))).toBe(true);
     });
 

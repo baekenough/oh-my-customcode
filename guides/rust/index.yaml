@@ -11,7 +11,9 @@ source:
     - https://doc.rust-lang.org/book/
     - https://rust-lang.github.io/api-guidelines/
     - https://doc.rust-lang.org/nightly/style-guide/
-  last_fetched: "2026-01-22"
+    - https://doc.rust-lang.org/edition-guide/
+    - https://doc.rust-lang.org/cargo/reference/
+  last_fetched: "2026-11-10"
 
 documents:
   - name: ownership
@@ -21,6 +23,10 @@ documents:
   - name: error-handling
     path: ./error-handling.md
     description: Error handling patterns in Rust
+
+  - name: edition-workspace-async
+    path: ./edition-workspace-async.md
+    description: Edition migration, rust-version (MSRV), Cargo workspaces, async basics
 
 used_by:
   - lang-rust-expert

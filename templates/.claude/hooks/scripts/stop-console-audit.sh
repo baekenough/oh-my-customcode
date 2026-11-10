@@ -12,7 +12,9 @@ input=$(cat)
 echo "[Stop] Session termination audit starting..." >&2
 
 # Check for background task output files (helps diagnose evaluator false positives)
-bg_task_files=$(find /tmp -maxdepth 1 -name "claude-*.output" 2>/dev/null | wc -l | tr -d ' ')
+# Trailing slash is required: on macOS /tmp is a symlink and `find /tmp` does not follow it (counts 0).
+# OMCUSTOM_STOP_AUDIT_TMPDIR exists only so tests can point the scan at a fixture dir (default /tmp/).
+bg_task_files=$(find "${OMCUSTOM_STOP_AUDIT_TMPDIR:-/tmp/}" -maxdepth 1 -name "claude-*.output" 2>/dev/null | wc -l | tr -d ' ')
 if [ "$bg_task_files" -gt 0 ]; then
   echo "[Stop] Background task output files found: ${bg_task_files} (informational only — these are normal)" >&2
 fi

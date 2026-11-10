@@ -806,6 +806,302 @@ describe('--files on a temp git repository', () => {
     });
   });
 
+  // #1929 R-1 L-3 / R-1 L-4 / RR-1 Low-1 / RR-1 Low-2. Each case uses its own repository so that
+  // corrupting an object or setting diff.renames=false cannot leak into the shared one above.
+  describe('fail-closed git steps, inherited GIT_*, rename pairing (#1929)', () => {
+    const OLD4 = '기존 첫째입니다.\n기존 둘째입니다.\n기존 셋째입니다.\n기존 넷째입니다.\n';
+    const made: string[] = [];
+
+    function gitIn(d: string, args: string[]): RunResult {
+      return run(
+        [
+          'git',
+          '-c',
+          'user.name=Test User',
+          '-c',
+          'user.email=test@example.invalid',
+          '-c',
+          'commit.gpgsign=false',
+          '-C',
+          d,
+          ...args,
+        ],
+        '',
+        gitEnv()
+      );
+    }
+
+    /** A fresh repository holding a copy of the tracked script (so ROOT is that repository). */
+    function mkRepo(config: Record<string, string> = {}): string {
+      const d = mkdtempSync(join(tmpdir(), 'verify-text-edit-iso-'));
+      made.push(d);
+      mkdirSync(join(d, 'scripts'), { recursive: true });
+      mkdirSync(join(d, 'docs'), { recursive: true });
+      copyFileSync(SCRIPT, join(d, 'scripts', 'verify-text-edit.sh'));
+      expect(gitIn(d, ['init', '-q']).code).toBe(0);
+      for (const [k, v] of Object.entries(config)) {
+        expect(gitIn(d, ['config', k, v]).code).toBe(0);
+      }
+      return d;
+    }
+
+    function commitIn(d: string, rel: string, body: string): void {
+      writeFileSync(join(d, rel), body);
+      expect(gitIn(d, ['add', '--', rel]).code).toBe(0);
+      expect(gitIn(d, ['commit', '-q', '-m', `add ${rel}`]).code).toBe(0);
+    }
+
+    /** A copy of the script inside the repository (ROOT stays that repository), mutated by `mutate`. */
+    function mutatedIn(d: string, name: string, mutate: (text: string) => string): string {
+      const mutated = mutate(SCRIPT_TEXT);
+      expect(mutated).not.toBe(SCRIPT_TEXT);
+      const p = join(d, 'scripts', `mut-${name}.sh`);
+      writeFileSync(p, mutated);
+      chmodSync(p, 0o755);
+      return p;
+    }
+
+    function verifyIn(
+      d: string,
+      args: string[],
+      env: Record<string, string> = {},
+      scriptPath = join(d, 'scripts', 'verify-text-edit.sh')
+    ): RunResult {
+      return run(['bash', scriptPath, ...args], '', { ...gitEnv(), ...env }, tmpdir());
+    }
+
+    let shimSeq = 0;
+    /** PATH prefix whose `git` fails (exit 128) for the step named by $VTE_FAIL, else runs the real git. */
+    function gitShimPath(): string {
+      const real = Bun.which('git');
+      expect(real).not.toBeNull();
+      shimSeq += 1;
+      const d = join(dir, `git-shim-${shimSeq}`);
+      mkdirSync(d, { recursive: true });
+      const body = [
+        '#!/bin/sh',
+        'case "$*" in',
+        '  *--no-index*) kind=noindex ;;',
+        '  *--name-status*) kind=discovery ;;',
+        '  *ls-files*" -z "*) kind=lsfiles ;;',
+        '  *" -U0 "*) kind=main ;;',
+        '  *) kind=other ;;',
+        'esac',
+        '[ "$kind" = "$VTE_FAIL" ] && exit 128',
+        `exec ${real} "$@"`,
+        '',
+      ].join('\n');
+      writeFileSync(join(d, 'git'), body);
+      chmodSync(join(d, 'git'), 0o755);
+      return `${d}:${process.env.PATH ?? ''}`;
+    }
+
+    afterAll(() => {
+      for (const d of made) {
+        rmSync(d, { recursive: true, force: true });
+      }
+    });
+
+    // --- R-1 L-3: fail closed ---------------------------------------------------------------
+    test('a HEAD blob that git cannot read -> rc 2 "no check result", not a pass (the same repo gives rc 1 before)', () => {
+      const d = mkRepo();
+      commitIn(d, 'docs/x.md', OLD4);
+      writeFileSync(join(d, 'docs/x.md'), `${OLD4}새로 확인한다.\n`);
+      const before = verifyIn(d, ['--files', 'docs/x.md']);
+      expect(before.code).toBe(1);
+      const blob = gitIn(d, ['rev-parse', 'HEAD:docs/x.md']).stdout.trim();
+      const obj = join(d, '.git', 'objects', blob.slice(0, 2), blob.slice(2));
+      chmodSync(obj, 0o644);
+      writeFileSync(obj, 'garbage');
+      const after = verifyIn(d, ['--files', 'docs/x.md']);
+      expect(after.code).toBe(2);
+      expect(after.stderr).toContain('no check result');
+      expect(after.stdout).not.toContain('[korean] added-lines=0');
+    });
+
+    const STEPS: Array<[string, string, string]> = [
+      ['lsfiles', 'git ls-files failed', 'tracked'],
+      ['discovery', 'git diff (rename discovery) failed', 'tracked'],
+      ['main', 'git diff failed', 'tracked'],
+      ['noindex', 'git diff --no-index failed', 'untracked'],
+    ];
+    for (const [kind, message, which] of STEPS) {
+      test(`${kind}: a failing git step -> rc 2 with "${message}"; without the failure the same input gives rc 1`, () => {
+        const d = mkRepo();
+        commitIn(d, 'docs/t.md', OLD4);
+        writeFileSync(join(d, 'docs/t.md'), `${OLD4}새로 확인한다.\n`);
+        writeFileSync(join(d, 'docs/u.md'), '새 파일이다.\n');
+        const file = which === 'tracked' ? 'docs/t.md' : 'docs/u.md';
+        expect(verifyIn(d, ['--files', file]).code).toBe(1);
+        const r = verifyIn(d, ['--files', file], { PATH: gitShimPath(), VTE_FAIL: kind });
+        expect(r.code).toBe(2);
+        expect(r.stderr).toContain(message);
+        expect(r.stderr).toContain('no check result');
+      });
+    }
+
+    test('an awk that fails -> rc 2 "awk failed"', () => {
+      const d = mkRepo();
+      commitIn(d, 'docs/t.md', OLD4);
+      writeFileSync(join(d, 'docs/t.md'), `${OLD4}새로 확인한다.\n`);
+      const shim = join(dir, 'awk-shim');
+      mkdirSync(shim, { recursive: true });
+      writeFileSync(join(shim, 'awk'), '#!/bin/sh\nexit 3\n');
+      chmodSync(join(shim, 'awk'), 0o755);
+      const r = verifyIn(d, ['--files', 'docs/t.md'], {
+        PATH: `${shim}:${process.env.PATH ?? ''}`,
+      });
+      expect(r.code).toBe(2);
+      expect(r.stderr).toContain('awk failed');
+    });
+
+    test('the one deliberate open path stays documented: an unchanged tracked file is rc 0 with a WARN', () => {
+      const d = mkRepo();
+      commitIn(d, 'docs/t.md', OLD4);
+      const r = verifyIn(d, ['--files', 'docs/t.md']);
+      expect(r.code).toBe(0);
+      expect(r.stderr).toContain('no added lines were checked');
+      expect(SCRIPT_TEXT).toContain('Fail-closed policy');
+    });
+
+    test('mutation: dropping the "exit 2" of any git/awk step turns its fail-closed case red', () => {
+      const d = mkRepo();
+      commitIn(d, 'docs/t.md', OLD4);
+      writeFileSync(join(d, 'docs/t.md'), `${OLD4}새로 확인한다.\n`);
+      writeFileSync(join(d, 'docs/u.md'), '새 파일이다.\n');
+      const cases: Array<[string, RegExp, string]> = [
+        ['lsfiles', /(git ls-files failed - no check result" >&2;) exit 2;()/, 'docs/t.md'],
+        ['discovery', /(rename discovery\) failed - no check result" >&2;) exit 2;()/, 'docs/t.md'],
+        ['main', /(git diff failed - no check result" >&2;) exit 2;()/, 'docs/t.md'],
+        ['noindex', /(- no check result" >&2;) exit 2;( \}\n {2}done)/, 'docs/u.md'],
+      ];
+      for (const [kind, re, file] of cases) {
+        const p = mutatedIn(d, `exit2-${kind}`, (t) =>
+          t.replace(re, (_m: string, a: string, b: string) => `${a}${b}`)
+        );
+        const r = verifyIn(d, ['--files', file], { PATH: gitShimPath(), VTE_FAIL: kind }, p);
+        expect([kind, r.code, r.stderr]).not.toEqual([kind, 2, r.stderr]);
+      }
+    });
+
+    // --- R-1 L-4: inherited GIT_* -----------------------------------------------------------
+    test('an inherited GIT_INDEX_FILE (empty index) does not change the verdict: added-lines=1, rc 1, no untracked WARN', () => {
+      const d = mkRepo();
+      commitIn(d, 'docs/t.md', OLD4);
+      writeFileSync(join(d, 'docs/t.md'), `${OLD4}새로 확인한다.\n`);
+      const plain = verifyIn(d, ['--files', 'docs/t.md']);
+      const hooked = verifyIn(d, ['--files', 'docs/t.md'], {
+        GIT_INDEX_FILE: join(dir, 'no-such-index'),
+      });
+      expect(plain.stdout).toContain('[korean] added-lines=1');
+      expect(hooked.stdout).toBe(plain.stdout);
+      expect(hooked.code).toBe(1);
+      expect(hooked.stderr).not.toContain('is untracked');
+    });
+
+    test('an inherited GIT_DIR of another repository does not redirect the git calls', () => {
+      const d = mkRepo();
+      commitIn(d, 'docs/t.md', OLD4);
+      writeFileSync(join(d, 'docs/t.md'), `${OLD4}새로 확인한다.\n`);
+      const decoy = mkRepo();
+      commitIn(decoy, 'docs/other.md', '다른 저장소입니다.\n');
+      const plain = verifyIn(d, ['--files', 'docs/t.md']);
+      const hooked = verifyIn(d, ['--files', 'docs/t.md'], { GIT_DIR: join(decoy, '.git') });
+      expect(hooked.stdout).toBe(plain.stdout);
+      expect(hooked.code).toBe(plain.code);
+      expect(plain.stdout).toContain('[korean] added-lines=1');
+    });
+
+    test('mutation: without the GIT_* unset loop both inherited-variable cases turn red', () => {
+      const d = mkRepo();
+      commitIn(d, 'docs/t.md', OLD4);
+      writeFileSync(join(d, 'docs/t.md'), `${OLD4}새로 확인한다.\n`);
+      const p = mutatedIn(d, 'noenvclear', (t) => t.replace('unset "$_v"', 'true'));
+      const idx = verifyIn(
+        d,
+        ['--files', 'docs/t.md'],
+        { GIT_INDEX_FILE: join(dir, 'no-such-index') },
+        p
+      );
+      expect(idx.stdout).not.toContain('[korean] added-lines=1');
+      const decoy = mkRepo();
+      commitIn(decoy, 'docs/other.md', '다른 저장소입니다.\n');
+      const gd = verifyIn(d, ['--files', 'docs/t.md'], { GIT_DIR: join(decoy, '.git') }, p);
+      expect(gd.stdout).not.toContain('[korean] added-lines=1');
+    });
+
+    // --- RR-1 Low-2: the two -M flags -------------------------------------------------------
+    // With git's default diff.renames=true the flags are redundant; only diff.renames=false makes
+    // them load-bearing, so the rename cases run in a repository configured that way.
+    describe('diff.renames=false (the -M flags are load-bearing)', () => {
+      function renamed(d: string, body: string): string {
+        commitIn(d, 'docs/from.md', OLD4);
+        expect(gitIn(d, ['mv', '--', 'docs/from.md', 'docs/to.md']).code).toBe(0);
+        writeFileSync(join(d, 'docs/to.md'), body);
+        return 'docs/to.md';
+      }
+
+      test('rename + one added 합쇼체 line -> added-lines=1, rc 0, with the rename NOTE', () => {
+        const d = mkRepo({ 'diff.renames': 'false' });
+        const to = renamed(d, `${OLD4}새 문장입니다.\n`);
+        const r = verifyIn(d, ['--files', to]);
+        expect(r.stdout).toContain('[korean] added-lines=1');
+        expect(r.code).toBe(0);
+        expect(r.stderr).toContain('is compared against its rename source docs/from.md');
+      });
+
+      test('rename + one added 반말 line -> exactly that line is flagged, rc 1', () => {
+        const d = mkRepo({ 'diff.renames': 'false' });
+        const to = renamed(d, `${OLD4}새 문장이다.\n`);
+        const r = verifyIn(d, ['--files', to]);
+        expect(r.stdout).toContain('[korean] added-lines=1');
+        expect(r.code).toBe(1);
+      });
+
+      test('M3 (main diff without -M) and M4 (discovery without -M) both turn it red: whole file counted', () => {
+        const d = mkRepo({ 'diff.renames': 'false' });
+        const to = renamed(d, `${OLD4}새 문장입니다.\n`);
+        const m3 = mutatedIn(d, 'm3', (t) =>
+          t.replace('--no-ext-diff -M -U0 "$base"', '--no-ext-diff -U0 "$base"')
+        );
+        const m4 = mutatedIn(d, 'm4', (t) =>
+          t.replace('--no-ext-diff -M --relative', '--no-ext-diff --relative')
+        );
+        for (const p of [m3, m4]) {
+          const r = verifyIn(d, ['--files', to], {}, p);
+          expect(r.stdout).not.toContain('[korean] added-lines=1');
+          expect(r.stdout).toContain('[korean] added-lines=5');
+        }
+      });
+    });
+
+    // --- RR-1 Low-1: rename partner ----------------------------------------------------------
+    test('KNOWN LIMIT: a more similar deleted file becomes the partner; its lines are not checked, and the NOTE names it', () => {
+      const d = mkRepo();
+      commitIn(
+        d,
+        'docs/old.md',
+        '원본 첫째입니다.\n원본 둘째입니다.\n원본 셋째입니다.\n원본 넷째입니다.\n'
+      );
+      commitIn(
+        d,
+        'docs/other.md',
+        '남의 첫째입니다.\n남의 둘째입니다.\n복사된 반말이다.\n남의 넷째입니다.\n남의 다섯째입니다.\n남의 여섯째입니다.\n'
+      );
+      expect(gitIn(d, ['mv', '--', 'docs/old.md', 'docs/new.md']).code).toBe(0);
+      expect(gitIn(d, ['rm', '-q', '--', 'docs/other.md']).code).toBe(0);
+      writeFileSync(
+        join(d, 'docs/new.md'),
+        '남의 첫째입니다.\n남의 둘째입니다.\n복사된 반말이다.\n남의 넷째입니다.\n남의 다섯째입니다.\n원본 첫째입니다.\n'
+      );
+      const r = verifyIn(d, ['--files', 'docs/new.md']);
+      expect(r.stderr).toContain('is compared against its rename source docs/other.md');
+      expect(r.stdout).toContain('[korean] added-lines=1');
+      expect(r.code).toBe(0); // the 반말 line "복사된 반말이다." is not checked: the documented limit
+      expect(SCRIPT_TEXT).toContain('KNOWN LIMIT');
+    });
+  });
+
   // R0-1 L4: HEAD is unborn in a fresh repository -> the empty tree is the comparison base.
   describe('a repository with no commit yet', () => {
     let fresh = '';

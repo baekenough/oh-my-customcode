@@ -1,17 +1,13 @@
 /**
- * Integration tests for self-update module (TTY-dependent code paths)
+ * Integration tests for self-update module (npm lookup, child exit codes, installed-version probe)
  *
- * These tests cover execution paths that require:
- * - Interactive session (TTY override)
- * - Child process execution (mocked execSync/spawnSync)
- * - User input via readline (mocked)
+ * The auto-update flow itself is covered in auto-self-update.test.ts.
  */
 
 import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { i18n, initI18n } from '../../../src/i18n/index.js';
 
 // ============================================================================
 // MOCK SETUP (before importing self-update)
@@ -21,9 +17,6 @@ import { i18n, initI18n } from '../../../src/i18n/index.js';
 const mockExecSync = mock((cmd: string) => {
   if (cmd.includes('npm view')) {
     return '"1.5.0"\n';
-  }
-  if (cmd.includes('npm install -g')) {
-    return '';
   }
   throw new Error(`Unexpected execSync call: ${cmd}`);
 });
@@ -49,29 +42,14 @@ mock.module('node:child_process', () => ({
 // 이 파일 종료 시 node:child_process를 원본으로 복원 (다른 테스트 파일의 spawnSync 등을 보호)
 afterAll(() => {
   mock.module('node:child_process', () => realChildProcess);
-  // node:readline/promises도 동일하게 원본으로 복원합니다 (#1761)
-  mock.module('node:readline/promises', () => realReadlinePromises);
 });
 
-// Mock readline/promises (모킹 전에 원본을 캡처해 afterAll에서 복원합니다, #1761)
-const realReadlinePromises = { ...(await import('node:readline/promises')) };
-let mockQuestionAnswer = 'y';
-const mockClose = mock(() => {});
-
-mock.module('node:readline/promises', () => ({
-  createInterface: () => ({
-    question: mock(async () => mockQuestionAnswer),
-    close: mockClose,
-  }),
-}));
-
 // Now import self-update (will use mocked modules)
-import type { ReexecSpawnFn, SelfUpdateOptions } from '../../../src/core/self-update.js';
 import {
+  autoSelfUpdate,
   exitCodeForChild,
   fetchLatestVersionFromNpm,
   findInstalledPackageVersion,
-  maybeHandleSelfUpdateForInit,
 } from '../../../src/core/self-update.js';
 
 // ============================================================================
@@ -80,71 +58,14 @@ import {
 
 describe('self-update integration tests', () => {
   let tempDir: string;
-  let originalStdinTTY: boolean | undefined;
-  let originalStdoutTTY: boolean | undefined;
-  let consoleLogSpy: ReturnType<typeof spyOn>;
-  let consoleWarnSpy: ReturnType<typeof spyOn>;
-  let processExitSpy: ReturnType<typeof spyOn>;
 
   beforeEach(() => {
-    // Create temp directory for cache
     tempDir = mkdtempSync(join(tmpdir(), 'omcustom-test-integration-'));
-
-    // Save original TTY values
-    originalStdinTTY = process.stdin.isTTY;
-    originalStdoutTTY = process.stdout.isTTY;
-
-    // Override TTY to simulate interactive session
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: true,
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: true,
-      writable: true,
-      configurable: true,
-    });
-
-    // Spy on console methods to prevent noise
-    consoleLogSpy = spyOn(console, 'log').mockImplementation(() => {});
-    consoleWarnSpy = spyOn(console, 'warn').mockImplementation(() => {});
-
-    // Spy on process.exit to prevent actual exit
-    processExitSpy = spyOn(process, 'exit').mockImplementation(
-      (code?: string | number | null | undefined) => {
-        throw new Error(`process.exit(${code}) called`);
-      }
-    );
-
-    // Reset mock counters
     mockExecSync.mockClear();
     mockSpawnSync.mockClear();
-    mockClose.mockClear();
-
-    // Reset readline answer
-    mockQuestionAnswer = 'y';
   });
 
   afterEach(() => {
-    // Restore TTY values
-    Object.defineProperty(process.stdin, 'isTTY', {
-      value: originalStdinTTY,
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(process.stdout, 'isTTY', {
-      value: originalStdoutTTY,
-      writable: true,
-      configurable: true,
-    });
-
-    // Restore spies
-    consoleLogSpy.mockRestore();
-    consoleWarnSpy.mockRestore();
-    processExitSpy.mockRestore();
-
-    // Clean up temp directory
     if (tempDir) {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -214,735 +135,170 @@ describe('self-update integration tests', () => {
     });
   });
 
-  // ==========================================================================
-  // maybeHandleSelfUpdateForInit integration tests
-  // ==========================================================================
+  describe('autoSelfUpdate default side effects (#1946)', () => {
+    const entry = '/fake/prefix/lib/node_modules/test-package/dist/cli/index.js';
+    let exitSpy: ReturnType<typeof spyOn>;
+    let logSpy: ReturnType<typeof spyOn>;
 
-  describe('maybeHandleSelfUpdateForInit with interactive session', () => {
-    it('should update global installation when user accepts (non-npx)', async () => {
+    beforeEach(() => {
+      exitSpy = spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+      logSpy = spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      exitSpy.mockRestore();
+      logSpy.mockRestore();
+    });
+
+    const base = {
+      currentVersion: '1.0.0',
+      command: 'init' as const,
+      packageName: 'test-package',
+      env: {},
+      fetchLatestVersion: () => '1.5.0',
+    };
+
+    const probeOk = (_cmd: string, args: string[]) => ({
+      status: 0,
+      signal: null,
+      stdout: args.includes('--version') ? '1.5.0\n' : '',
+    });
+
+    function mockNpm(root: string | Error): void {
       mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        if (cmd.includes('npm install -g')) return '';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have called npm install -g
-      expect(mockExecSync).toHaveBeenCalledWith(
-        'npm install -g test-package@1.5.0',
-        expect.objectContaining({
-          stdio: 'inherit',
-          timeout: 60000,
-        })
-      );
-
-      // Should have printed messages
-      expect(consoleLogSpy).toHaveBeenCalled();
-    });
-
-    it('should relaunch with npx when user accepts (npx invocation)', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      mockSpawnSync.mockImplementationOnce(() => ({
-        status: 0,
-        stdout: Buffer.from(''),
-        stderr: Buffer.from(''),
-        pid: 12345,
-        output: [],
-        signal: null,
-      }));
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await expect(maybeHandleSelfUpdateForInit(options)).rejects.toThrow('process.exit(0) called');
-
-      // Should have called spawnSync with npx
-      expect(mockSpawnSync).toHaveBeenCalledWith(
-        'npx',
-        ['-y', 'test-package@1.5.0', 'init'],
-        expect.objectContaining({
-          stdio: 'inherit',
-          env: expect.objectContaining({
-            OMCUSTOM_SKIP_SELF_UPDATE: 'true',
-          }),
-        })
-      );
-    });
-
-    it('should print declined message when user declines', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      mockQuestionAnswer = 'n';
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have printed declined message
-      expect(consoleLogSpy).toHaveBeenCalled();
-
-      // Should NOT have called npm install or npx
-      expect(mockExecSync).not.toHaveBeenCalledWith(
-        expect.stringContaining('npm install -g'),
-        expect.anything()
-      );
-      expect(mockSpawnSync).not.toHaveBeenCalled();
-    });
-
-    it('should return early when no update available', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.0.0"\n';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have checked version
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('npm view'),
-        expect.anything()
-      );
-
-      // Should NOT have prompted or installed
-      expect(mockSpawnSync).not.toHaveBeenCalled();
-    });
-
-    it('should return early when current version is invalid', async () => {
-      const options: SelfUpdateOptions = {
-        currentVersion: '',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should NOT have called anything
-      expect(mockExecSync).not.toHaveBeenCalled();
-      expect(mockSpawnSync).not.toHaveBeenCalled();
-    });
-
-    it('should return early when fetch fails', async () => {
-      mockExecSync.mockImplementation(() => {
-        throw new Error('Network error');
-      });
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have attempted to fetch
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('npm view'),
-        expect.anything()
-      );
-
-      // Should NOT have prompted or installed
-      expect(mockSpawnSync).not.toHaveBeenCalled();
-    });
-
-    it('should handle failed npx relaunch and print warning', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      mockSpawnSync.mockImplementationOnce(() => ({
-        status: 1,
-        stdout: Buffer.from(''),
-        stderr: Buffer.from('error output'),
-        pid: 12345,
-        output: [],
-        signal: null,
-      }));
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have called spawnSync
-      expect(mockSpawnSync).toHaveBeenCalled();
-
-      // Should have printed warning (not exited)
-      expect(consoleWarnSpy).toHaveBeenCalled();
-      expect(processExitSpy).not.toHaveBeenCalled();
-    });
-
-    it('should handle failed global update and print warning', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        if (cmd.includes('npm install -g')) {
-          throw new Error('Permission denied');
+        if (cmd === 'npm root -g') {
+          if (root instanceof Error) throw root;
+          return `${root}\n`;
         }
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have attempted npm install -g
-      expect(mockExecSync).toHaveBeenCalledWith(
-        'npm install -g test-package@1.5.0',
-        expect.anything()
-      );
-
-      // Should have printed warning
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should handle npx relaunch with null status', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      mockSpawnSync.mockImplementationOnce(() => ({
-        status: null,
-        stdout: Buffer.from(''),
-        stderr: Buffer.from(''),
-        pid: 12345,
-        output: [],
-        signal: 'SIGTERM',
-      }));
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have printed warning about failed relaunch
-      expect(consoleWarnSpy).toHaveBeenCalled();
-    });
-
-    it('should print continuation spacing after warnings', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        if (cmd.includes('npm install -g')) {
-          throw new Error('Failed');
-        }
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have called console.log('') for spacing
-      expect(consoleLogSpy).toHaveBeenCalledWith('');
-    });
-
-    it('should accept empty answer as yes', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
         if (cmd.includes('npm install -g')) return '';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      mockQuestionAnswer = '';
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have called npm install -g
-      expect(mockExecSync).toHaveBeenCalledWith(
-        'npm install -g test-package@1.5.0',
-        expect.anything()
-      );
-    });
-
-    it('should accept "yes" as affirmative', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        if (cmd.includes('npm install -g')) return '';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      mockQuestionAnswer = 'yes';
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have called npm install -g
-      expect(mockExecSync).toHaveBeenCalledWith(
-        'npm install -g test-package@1.5.0',
-        expect.anything()
-      );
-    });
-
-    it('should handle mixed-case answer', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        if (cmd.includes('npm install -g')) return '';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      mockQuestionAnswer = 'Y';
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have called npm install -g
-      expect(mockExecSync).toHaveBeenCalledWith(
-        'npm install -g test-package@1.5.0',
-        expect.anything()
-      );
-    });
-
-    it('should close readline interface after prompting', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        if (cmd.includes('npm install -g')) return '';
-        throw new Error(`Unexpected: ${cmd}`);
-      });
-
-      const options: SelfUpdateOptions = {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
-        cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', '/usr/local/bin/omcustom', 'init'],
-        env: {},
-      };
-
-      await maybeHandleSelfUpdateForInit(options);
-
-      // Should have closed readline
-      expect(mockClose).toHaveBeenCalled();
-    });
-  });
-  // ==========================================================================
-  // Re-exec after a successful global install on the init path (A2)
-  // ==========================================================================
-
-  describe('maybeHandleSelfUpdateForInit — re-exec after global install', () => {
-    const PKG_DIR = join('/fake', 'prefix', 'lib', 'node_modules', 'test-package');
-    const ENTRY = join(PKG_DIR, 'dist', 'cli', 'index.js');
-
-    function mockNpm(installBehavior: 'ok' | 'fail'): void {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        if (cmd.includes('npm install -g')) {
-          if (installBehavior === 'fail') throw new Error('EACCES: permission denied');
-          return '';
-        }
         throw new Error(`Unexpected: ${cmd}`);
       });
     }
 
-    /** Fake file system: paths resolve to themselves, only the listed files can be read. */
-    function fakeFs(files: Record<string, string>) {
-      return {
-        realpathFn: (path: string) => path,
-        readFileFn: (path: string) => {
-          const content = files[path];
-          if (content === undefined) throw new Error(`ENOENT: ${path}`);
-          return content;
+    it('installs without a timeout, probes and re-runs with spawnSync and process.exit', () => {
+      mockNpm('/fake/prefix/lib/node_modules');
+      mockSpawnSync.mockImplementation(probeOk as never);
+
+      const outcome = autoSelfUpdate({
+        ...base,
+        cachePath: join(tempDir, 'cache.json'),
+        argv: ['node', entry, 'init'],
+        deps: {
+          realpathFn: (p) => p,
+          readFileFn: () => '{"name":"test-package","version":"1.5.0"}',
         },
-      };
-    }
+      });
 
-    function pkgJson(version: string | undefined, name = 'test-package'): string {
-      return JSON.stringify(version === undefined ? { name } : { name, version });
-    }
+      expect(outcome).toBe('relaunched');
+      expect(mockExecSync).toHaveBeenCalledWith('npm install -g test-package@1.5.0', {
+        stdio: 'inherit',
+      });
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'npm root -g',
+        expect.objectContaining({ timeout: 5000 })
+      );
+      // probe (--version) first, then the real run
+      expect(mockSpawnSync).toHaveBeenCalledTimes(2);
+      const probeCall = mockSpawnSync.mock.calls[0] as unknown as [string, string[]];
+      expect(probeCall[1]).toEqual([entry, '--version']);
+      expect(exitSpy).toHaveBeenCalledWith(0);
+    });
 
-    function okSpawn(status: number | null = 0, signal: NodeJS.Signals | null = null) {
-      return mock<ReexecSpawnFn>(() => ({ status, signal }));
-    }
+    it('continues when the default probe fails to start the new CLI', () => {
+      mockNpm('/fake/prefix/lib/node_modules');
+      mockSpawnSync.mockImplementation((() => ({ status: 1, signal: null, stdout: '' })) as never);
 
-    function makeOptions(overrides: Partial<SelfUpdateOptions> = {}): SelfUpdateOptions {
-      return {
-        currentVersion: '1.0.0',
-        packageName: 'test-package',
+      const outcome = autoSelfUpdate({
+        ...base,
         cachePath: join(tempDir, 'cache.json'),
-        argv: ['node', ENTRY, 'init', '--lang', 'ko'],
-        env: { FOO: 'bar' },
-        ...overrides,
-      };
-    }
-
-    function warnings(): string[] {
-      return consoleWarnSpy.mock.calls.map((call: unknown[]) => String(call[0]));
-    }
-
-    beforeEach(async () => {
-      await initI18n('en');
-    });
-
-    afterEach(async () => {
-      await i18n.changeLanguage('en');
-    });
-
-    it('re-execs the new CLI with the skip env and the exact original args', async () => {
-      mockNpm('ok');
-      const spawnFn = okSpawn(0);
-      const exitFn = mock((_code: number) => {});
-
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: {
-            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.5.0') }),
-            spawnFn,
-            exitFn,
-          },
-        })
-      );
-
-      expect(spawnFn).toHaveBeenCalledTimes(1);
-      expect(spawnFn).toHaveBeenCalledWith(process.execPath, [ENTRY, 'init', '--lang', 'ko'], {
-        stdio: 'inherit',
-        env: { FOO: 'bar', OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
+        argv: ['node', entry, 'init'],
+        deps: {
+          realpathFn: (p) => p,
+          readFileFn: () => '{"name":"test-package","version":"1.5.0"}',
+        },
       });
-      expect(exitFn).toHaveBeenCalledTimes(1);
-      expect(exitFn).toHaveBeenCalledWith(0);
-      expect(mockSpawnSync).not.toHaveBeenCalled();
-      expect(consoleLogSpy.mock.calls.map((c: unknown[]) => String(c[0]))).toContain(
-        '↻ Restarting init with the updated CLI (v1.5.0)...'
-      );
-    });
 
-    it('propagates the child exit status', async () => {
-      mockNpm('ok');
-      const exitFn = mock((_code: number) => {});
-
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: {
-            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.5.0') }),
-            spawnFn: okSpawn(3),
-            exitFn,
-          },
-        })
-      );
-
-      expect(exitFn).toHaveBeenCalledWith(3);
-    });
-
-    it.each([
-      ['SIGTERM', 143],
-      ['SIGINT', 130],
-      ['SIGKILL', 137],
-    ] as const)('maps a child killed by %s to exit code %d', async (signal, expected) => {
-      mockNpm('ok');
-      const exitFn = mock((_code: number) => {});
-
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: {
-            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.5.0') }),
-            spawnFn: okSpawn(null, signal),
-            exitFn,
-          },
-        })
-      );
-
-      expect(exitFn).toHaveBeenCalledWith(expected);
-    });
-
-    it('uses the real spawnSync and process.exit when no deps are injected', async () => {
-      mockNpm('ok');
-      mockSpawnSync.mockImplementationOnce(() => ({
-        status: 0,
-        stdout: Buffer.from(''),
-        stderr: Buffer.from(''),
-        pid: 1,
-        output: [],
-        signal: null,
-      }));
-      // Real realpath/readFile against a real symlinked global-install layout
-      const prefix = join(tempDir, 'prefix');
-      const realPkgDir = join(prefix, 'lib', 'node_modules', 'test-package');
-      mkdirSync(join(realPkgDir, 'dist', 'cli'), { recursive: true });
-      mkdirSync(join(prefix, 'bin'), { recursive: true });
-      writeFileSync(join(realPkgDir, 'package.json'), pkgJson('1.5.0'));
-      writeFileSync(join(realPkgDir, 'dist', 'cli', 'index.js'), '// entry');
-      // A nameless nested package.json (like dist/package.json) must be walked past
-      writeFileSync(join(realPkgDir, 'dist', 'package.json'), '{"type":"module"}');
-      const binLink = join(prefix, 'bin', 'omcustom');
-      symlinkSync(join(realPkgDir, 'dist', 'cli', 'index.js'), binLink);
-
-      await expect(
-        maybeHandleSelfUpdateForInit(makeOptions({ argv: ['node', binLink, 'init'] }))
-      ).rejects.toThrow('process.exit(0) called');
-
+      expect(outcome).toBe('failed');
       expect(mockSpawnSync).toHaveBeenCalledTimes(1);
-      const call = mockSpawnSync.mock.calls[0] as unknown as [string, string[], unknown];
-      expect(call[0]).toBe(process.execPath);
-      expect(call[1]).toEqual([binLink, 'init']);
+      expect(exitSpy).not.toHaveBeenCalled();
     });
 
-    it('does not re-exec and warns with both versions when the binary is a different version', async () => {
-      mockNpm('ok');
-      const spawnFn = okSpawn(0);
-      const exitFn = mock((_code: number) => {});
-
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: {
-            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.0.0') }),
-            spawnFn,
-            exitFn,
-          },
-        })
-      );
-
-      expect(spawnFn).not.toHaveBeenCalled();
-      expect(exitFn).not.toHaveBeenCalled();
-      const text = warnings().join('\n');
-      expect(text).toContain('Installed v1.5.0');
-      expect(text).toContain('is v1.0.0');
-      expect(text).toContain('npm install -g test-package@latest');
-      expect(text).toContain('Continuing init with current version.');
-    });
-
-    it('does not re-exec and warns when the binary version cannot be resolved', async () => {
-      mockNpm('ok');
-      const spawnFn = okSpawn(0);
-      const exitFn = mock((_code: number) => {});
-
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: {
-            realpathFn: () => {
-              throw new Error('ENOENT');
-            },
-            readFileFn: () => {
-              throw new Error('unreachable');
-            },
-            spawnFn,
-            exitFn,
-          },
-        })
-      );
-
-      expect(spawnFn).not.toHaveBeenCalled();
-      expect(exitFn).not.toHaveBeenCalled();
-      const text = warnings().join('\n');
-      expect(text).toContain('Installed v1.5.0');
-      expect(text).toContain('this process loaded v1.0.0');
-      expect(text).toContain('npm install -g test-package@latest');
-      expect(text).toContain('Continuing init with current version.');
-    });
-
-    it('does not re-exec when argv has no entry path', async () => {
-      mockNpm('ok');
-      const spawnFn = okSpawn(0);
-      const exitFn = mock((_code: number) => {});
-
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({ argv: ['node'], reexecDeps: { spawnFn, exitFn } })
-      );
-
-      expect(spawnFn).not.toHaveBeenCalled();
-      expect(exitFn).not.toHaveBeenCalled();
-      expect(warnings().join('\n')).toContain('could not determine the version');
-    });
-
-    it('does not re-exec when the owning package.json has no version', async () => {
-      mockNpm('ok');
-      const spawnFn = okSpawn(0);
-      const exitFn = mock((_code: number) => {});
-
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: {
-            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson(undefined) }),
-            spawnFn,
-            exitFn,
-          },
-        })
-      );
-
-      expect(spawnFn).not.toHaveBeenCalled();
-      expect(exitFn).not.toHaveBeenCalled();
-      expect(warnings().join('\n')).toContain('could not determine the version');
-    });
-
-    it('prints the warnings in Korean when the language is ko', async () => {
-      mockNpm('ok');
-      await i18n.changeLanguage('ko');
-
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: {
-            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.0.0') }),
-            spawnFn: okSpawn(0),
-            exitFn: mock((_code: number) => {}),
-          },
-        })
-      );
-
-      const text = warnings().join('\n');
-      expect(text).toContain('v1.5.0를 설치했지만');
-      expect(text).toContain('v1.0.0');
-      expect(text).toContain('npm install -g test-package@latest');
-    });
-
-    it('continues with the current version when the re-exec child cannot be started', async () => {
-      mockNpm('ok');
-      const spawnFn = mock<ReexecSpawnFn>(() => ({
-        status: null,
+    it('treats a probe spawn error or missing stdout as a failed probe', () => {
+      mockNpm('/fake/prefix/lib/node_modules');
+      mockSpawnSync.mockImplementation((() => ({
+        status: 0,
         signal: null,
-        error: new Error('spawn ENOENT'),
-      }));
-      const exitFn = mock((_code: number) => {});
+        stdout: null,
+        error: new Error('ETIMEDOUT'),
+      })) as never);
 
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: {
-            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.5.0') }),
-            spawnFn,
-            exitFn,
+      expect(
+        autoSelfUpdate({
+          ...base,
+          cachePath: join(tempDir, 'cache.json'),
+          argv: ['node', entry, 'init'],
+          deps: {
+            realpathFn: (p) => p,
+            readFileFn: () => '{"name":"test-package","version":"1.5.0"}',
           },
         })
-      );
-
-      expect(spawnFn).toHaveBeenCalledTimes(1);
-      expect(exitFn).not.toHaveBeenCalled();
-      const text = warnings().join('\n');
-      expect(text).toContain('Could not restart with the updated CLI: spawn ENOENT');
-      expect(text).toContain('Continuing init with current version.');
+      ).toBe('failed');
     });
 
-    it('keeps the existing failure behaviour when the install fails (no re-exec)', async () => {
-      mockNpm('fail');
-      const spawnFn = okSpawn(0);
-      const exitFn = mock((_code: number) => {});
-      const readFileFn = mock((_path: string) => pkgJson('1.5.0'));
+    it('still installs when the default npm root -g lookup fails', () => {
+      mockNpm(new Error('npm root failed'));
+      mockSpawnSync.mockImplementation(probeOk as never);
 
-      await maybeHandleSelfUpdateForInit(
-        makeOptions({
-          reexecDeps: { realpathFn: (p: string) => p, readFileFn, spawnFn, exitFn },
-        })
-      );
-
-      expect(spawnFn).not.toHaveBeenCalled();
-      expect(exitFn).not.toHaveBeenCalled();
-      expect(readFileFn).not.toHaveBeenCalled();
-      const text = warnings().join('\n');
-      expect(text).toContain('Self-update failed: EACCES: permission denied');
-      expect(text).toContain('Continuing init with current version.');
-    });
-
-    it('keeps the npx path unchanged (npx relaunch, no global re-exec)', async () => {
-      mockExecSync.mockImplementation((cmd: string) => {
-        if (cmd.includes('npm view')) return '"1.5.0"\n';
-        throw new Error(`Unexpected: ${cmd}`);
+      const outcome = autoSelfUpdate({
+        ...base,
+        cachePath: join(tempDir, 'cache.json'),
+        argv: ['node', entry, 'init'],
+        deps: {
+          realpathFn: (p) => p,
+          readFileFn: () => '{"name":"test-package","version":"1.5.0"}',
+        },
       });
-      const spawnFn = okSpawn(0);
-      const exitFn = mock((_code: number) => {});
 
-      await expect(
-        maybeHandleSelfUpdateForInit(
-          makeOptions({
-            argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcustom', 'init'],
-            env: {},
-            reexecDeps: { spawnFn, exitFn },
-          })
-        )
-      ).rejects.toThrow('process.exit(0) called');
-
-      expect(mockSpawnSync).toHaveBeenCalledWith('npx', ['-y', 'test-package@1.5.0', 'init'], {
+      expect(outcome).toBe('relaunched');
+      expect(mockExecSync).toHaveBeenCalledWith('npm install -g test-package@1.5.0', {
         stdio: 'inherit',
-        env: { OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
       });
-      expect(spawnFn).not.toHaveBeenCalled();
-      expect(exitFn).not.toHaveBeenCalled();
     });
 
-    it('does not re-exec when the user declines the update', async () => {
-      mockNpm('ok');
-      mockQuestionAnswer = 'n';
-      const spawnFn = okSpawn(0);
+    it('treats an empty npm root -g output as unknown', () => {
+      mockNpm('');
+      mockSpawnSync.mockImplementation(probeOk as never);
 
-      await maybeHandleSelfUpdateForInit(makeOptions({ reexecDeps: { spawnFn } }));
+      expect(
+        autoSelfUpdate({
+          ...base,
+          cachePath: join(tempDir, 'cache.json'),
+          argv: ['node', entry, 'init'],
+          deps: {
+            realpathFn: (p) => p,
+            readFileFn: () => '{"name":"test-package","version":"1.5.0"}',
+          },
+        })
+      ).toBe('relaunched');
+    });
 
-      expect(spawnFn).not.toHaveBeenCalled();
+    it('re-runs through npx after a default npx probe', () => {
+      mockNpm('/unused');
+      mockSpawnSync.mockImplementation(probeOk as never);
+
+      const outcome = autoSelfUpdate({
+        ...base,
+        cachePath: join(tempDir, 'cache.json'),
+        argv: ['node', '/home/u/.npm/_npx/abc/node_modules/.bin/omcustom', 'init'],
+      });
+
+      expect(outcome).toBe('relaunched');
+      const probeCall = mockSpawnSync.mock.calls[0] as unknown as [string, string[]];
+      expect(probeCall[0]).toBe('npx');
+      expect(probeCall[1]).toEqual(['-y', 'test-package@1.5.0', '--version']);
+      const runCall = mockSpawnSync.mock.calls[1] as unknown as [string, string[]];
+      expect(runCall[1]).toEqual(['-y', 'test-package@1.5.0', 'init']);
+      expect(exitSpy).toHaveBeenCalledWith(0);
     });
   });
 
@@ -1019,6 +375,12 @@ describe('self-update integration tests', () => {
       });
 
       expect(version).toBeNull();
+    });
+
+    it('reads the real package.json by default when the entry exists', () => {
+      const entry = join(import.meta.dir, '..', '..', '..', 'src', 'core', 'self-update.ts');
+
+      expect(findInstalledPackageVersion(entry, 'oh-my-customcode')).toMatch(/^\d+\.\d+\.\d+/);
     });
 
     it('uses the real filesystem by default and returns null for a missing entry', () => {

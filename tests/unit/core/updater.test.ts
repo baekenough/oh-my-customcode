@@ -2,7 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import * as childProcess from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import * as fsPromises from 'node:fs/promises';
+import {
+  chmod,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, join as pathJoin } from 'node:path';
 import packageJson from '../../../package.json';
@@ -1565,21 +1576,28 @@ afterEach(() => {
   expect(syncCommandCalls).toBe(0);
 });
 
-describe('update RTK retirement lifecycle', () => {
+describe('update RTK retirement lifecycle (RTK is deleted, never kept)', () => {
   let project: string;
-  const skill = '.claude/skills/rtk-exec/SKILL.md';
-  const wrapper = '.claude/skills/rtk-exec/scripts/rtk-wrapper.cjs';
+  const skillDir = '.claude/skills/rtk-exec';
+  const skill = `${skillDir}/SKILL.md`;
+  const wrapper = `${skillDir}/scripts/rtk-wrapper.cjs`;
+  const extra = `${skillDir}/notes.txt`;
   const hook = '.claude/hooks/scripts/rtk-intercept.sh';
   const owned = 'old managed RTK content\n';
   const hash = createHash('sha256').update(owned).digest('hex');
   const paths = [skill, wrapper, hook];
+  const everything = [skill, wrapper, extra, hook];
+  const retiredNote = (path: string, why: string) =>
+    `RTK is retired: deleted ${path} although it was ${why}`;
+  const MODIFIED_NOTE = 'modified or not recorded in the lockfile';
+  const PRESERVED_NOTE = 'covered by your preserve settings';
 
   beforeEach(async () => {
     project = await mkdtemp(join(tmpdir(), 'omcustom-retirement-update-'));
     const config = getDefaultConfig();
     config.version = '0.1.0';
     await saveConfig(project, config);
-    for (const path of paths) {
+    for (const path of everything) {
       await mkdir(join(project, path, '..'), { recursive: true });
       await writeFile(join(project, path), owned);
     }
@@ -1609,103 +1627,82 @@ describe('update RTK retirement lifecycle', () => {
     await rm(project, { recursive: true, force: true });
   });
 
-  async function assertNewLockExcluded(excluded: string[]) {
+  async function expectAllGone(): Promise<void> {
+    for (const path of everything) await expect(lstat(join(project, path))).rejects.toThrow();
+    await expect(lstat(join(project, skillDir))).rejects.toThrow();
+  }
+
+  async function expectLockWithoutRtk(): Promise<void> {
     const lock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
-    for (const path of excluded) expect(lock.files[path]).toBeUndefined();
-    // The lock is template-owned (#1935): the user sentinel stays on disk but is not recorded.
+    for (const path of paths) expect(lock.files[path]).toBeUndefined();
     expect(lock.files['.claude/rules/user-sentinel.md']).toBeUndefined();
-    expect(await readFile(join(project, '.claude/rules/user-sentinel.md'), 'utf8')).toBe(
-      'non-RTK sentinel'
-    );
     expect(Object.keys(lock.files).length).toBeGreaterThan(0);
   }
 
-  it('removes only old-hash-owned RTK files and keeps a non-RTK corpus', async () => {
+  async function noBackupDirs(): Promise<void> {
+    expect((await readdir(project)).filter((name) => name.startsWith('.omcustom-backup-'))).toEqual(
+      []
+    );
+  }
+
+  it('deletes the RTK skill directory and hook script without a backup and keeps other files', async () => {
     const result = await update({ targetDir: project });
     expect(result.success).toBe(true);
-    expect(result.rtkRetirement?.removed.sort()).toEqual([...paths].sort());
-    for (const path of paths) await expect(access(join(project, path))).rejects.toThrow();
+    expect(result.rtkRetirement?.removed.sort()).toEqual([...everything].sort());
+    await expectAllGone();
     expect(await readFile(join(project, '.claude/rules/user-sentinel.md'), 'utf8')).toBe(
       'non-RTK sentinel'
     );
-    await assertNewLockExcluded(paths);
+    await expectLockWithoutRtk();
+    await noBackupDirs();
+    expect(result.retiredBackupDir).toBeUndefined();
+    // Unmodified, owned, unpreserved files are deleted without a note.
+    expect(result.warnings.filter((warning) => warning.startsWith('RTK is retired'))).toEqual([
+      retiredNote(extra, MODIFIED_NOTE),
+    ]);
     expect(codexCheckSpy).toHaveBeenCalledTimes(1);
     expect(codexInstallSpy).not.toHaveBeenCalled();
+
+    const repeat = await update({ targetDir: project, force: true });
+    expect(repeat.success).toBe(true);
+    expect(repeat.rtkRetirement?.removed).toEqual([]);
+    expect(repeat.rtkRetirement?.preserved).toEqual([]);
   });
 
-  it('preserves modified and unknown files without registering them in the new lock, including repeat update', async () => {
-    await writeFile(join(project, skill), '---\nname: user-owned-rtk\n---\nuser changes');
-    const oldLock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
-    delete oldLock.files[wrapper];
-    await writeFile(join(project, '.omcustom.lock.json'), JSON.stringify(oldLock));
-    for (let iteration = 0; iteration < 2; iteration++) {
-      const result = await update({ targetDir: project, force: true });
-      expect(result.success).toBe(true);
-      expect(result.rtkRetirement?.preserved.map((entry) => entry.path)).toEqual(
-        expect.arrayContaining([skill, wrapper])
-      );
-      expect(await readFile(join(project, skill), 'utf8')).toContain('user changes');
-      expect(await readFile(join(project, wrapper), 'utf8')).toBe(owned);
-      await assertNewLockExcluded(paths);
-    }
-    // A retained user-owned SKILL remains discoverable; this is not an inactive claim.
-    expect(await readFile(join(project, skill), 'utf8')).toContain('name: user-owned-rtk');
-  });
-
-  it('keeps retained RTK ownership excluded across full, rules-only, and full forced updates', async () => {
-    const modified = '---\nname: user-retained-rtk\n---\nuser changes';
-    await writeFile(join(project, skill), modified);
-    const oldLock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
-    delete oldLock.files[wrapper];
-    delete oldLock.files[hook];
-    await writeFile(join(project, '.omcustom.lock.json'), JSON.stringify(oldLock));
-
-    const stages: Array<UpdateComponent[] | undefined> = [undefined, ['rules'], undefined];
-    for (const [stage, components] of stages.entries()) {
-      const settingsBefore = await Promise.all(
-        ['.claude/settings.json', '.claude/settings.local.json'].map((path) =>
-          readFile(join(project, path)).catch(() => null)
-        )
-      );
-      const result = await update({
-        targetDir: project,
-        force: true,
-        components,
-      });
-      expect(result.success).toBe(true);
-      expect(result.rtkRetirement?.removed ?? []).toEqual([]);
-      expect(await readFile(join(project, skill), 'utf8')).toBe(modified);
-      expect(await readFile(join(project, wrapper), 'utf8')).toBe(owned);
-      expect(await readFile(join(project, hook), 'utf8')).toBe(owned);
-      await assertNewLockExcluded(paths);
-      expect(codexCheckSpy).toHaveBeenCalledTimes(stage + 1);
-      expect(codexInstallSpy).not.toHaveBeenCalled();
-      if (stage === 1) {
-        expect(result.rtkRetirement?.preserved ?? []).toEqual([]);
-        expect(result.rtkRetirement?.settingsChanged ?? []).toEqual([]);
-        for (const [index, path] of [
-          '.claude/settings.json',
-          '.claude/settings.local.json',
-        ].entries()) {
-          expect(await readFile(join(project, path)).catch(() => null)).toEqual(
-            settingsBefore[index]
-          );
-        }
-      } else {
-        expect(result.rtkRetirement?.preserved.map((entry) => entry.path)).toEqual(
-          expect.arrayContaining(paths)
-        );
-      }
-    }
-  });
-
-  it('preserves files with no prior lock and reports missing ownership', async () => {
-    await rm(join(project, '.omcustom.lock.json'));
+  it('deletes a modified file and says why', async () => {
+    await writeFile(join(project, wrapper), 'user-custom wrapper');
     const result = await update({ targetDir: project });
-    expect(result.success).toBe(true);
-    expect(result.rtkRetirement?.preserved).toHaveLength(3);
-    for (const path of paths) expect(await readFile(join(project, path), 'utf8')).toBe(owned);
-    await assertNewLockExcluded(paths);
+    expect(result.rtkRetirement?.removed).toContain(wrapper);
+    await expectAllGone();
+    expect(result.warnings).toContain(retiredNote(wrapper, MODIFIED_NOTE));
+    expect(result.warnings).not.toContain(retiredNote(skill, MODIFIED_NOTE));
+  });
+
+  it('deletes a file it cannot read and notes that it could not be checked', async () => {
+    await chmod(join(project, extra), 0o000);
+    const result = await update({ targetDir: project });
+    expect(result.rtkRetirement?.removed).toContain(extra);
+    expect(result.warnings).toContain(retiredNote(extra, MODIFIED_NOTE));
+    await expectAllGone();
+  });
+
+  it('deletes with no prior lock, an unreadable lock or a malformed ownership hash', async () => {
+    await rm(join(project, '.omcustom.lock.json'));
+    const unowned = await update({ targetDir: project });
+    expect(unowned.rtkRetirement?.removed.sort()).toEqual([...everything].sort());
+    for (const path of everything) {
+      expect(unowned.warnings).toContain(retiredNote(path, MODIFIED_NOTE));
+    }
+    await expectAllGone();
+
+    for (const path of everything) {
+      await mkdir(join(project, path, '..'), { recursive: true });
+      await writeFile(join(project, path), owned);
+    }
+    await writeFile(join(project, '.omcustom.lock.json'), '{ corrupt');
+    const corrupt = await update({ targetDir: project, force: true });
+    expect(corrupt.rtkRetirement?.removed.sort()).toEqual([...everything].sort());
+    await expectAllGone();
   });
 
   for (const options of [
@@ -1713,160 +1710,366 @@ describe('update RTK retirement lifecycle', () => {
     { forceOverwriteAll: true },
     { preserveCustomizations: false },
   ]) {
-    it(`keeps modified RTK data with ${JSON.stringify(options)}`, async () => {
-      await writeFile(join(project, wrapper), 'user-custom wrapper');
+    it(`deletes with ${JSON.stringify(options)}`, async () => {
       const result = await update({ targetDir: project, ...options });
-      expect(result.success).toBe(true);
-      expect(await readFile(join(project, wrapper), 'utf8')).toBe('user-custom wrapper');
-      expect(result.rtkRetirement?.preserved.some((entry) => entry.path === wrapper)).toBe(true);
-      await assertNewLockExcluded(paths);
+      expect(result.rtkRetirement?.removed.sort()).toEqual([...everything].sort());
+      await expectAllGone();
     });
   }
 
-  it('honors explicit config preservation even with forceOverwriteAll', async () => {
+  it('deletes files covered by config preserveFiles, even with forceOverwriteAll, and says so', async () => {
     const config = getDefaultConfig();
     config.version = '0.1.0';
-    config.preserveFiles = [skill];
+    config.preserveFiles = [skill, '.claude/skills/rtk-exec/scripts/'];
     await saveConfig(project, config);
     const result = await update({ targetDir: project, forceOverwriteAll: true });
     expect(result.success).toBe(true);
-    expect(await readFile(join(project, skill), 'utf8')).toBe(owned);
-    expect(result.rtkRetirement?.preserved).toContainEqual({
-      path: skill,
-      reason: 'explicitly preserved',
-    });
-    await assertNewLockExcluded(paths);
+    await expectAllGone();
+    expect(result.warnings).toContain(retiredNote(skill, PRESERVED_NOTE));
+    expect(result.warnings).toContain(retiredNote(wrapper, PRESERVED_NOTE));
+    expect(result.warnings).not.toContain(retiredNote(hook, PRESERVED_NOTE));
+    await expectLockWithoutRtk();
   });
 
-  for (const component of ['skills', 'hooks', 'rules'] as const) {
-    it(`retires only files for selected ${component} component`, async () => {
-      const result = await update({ targetDir: project, components: [component] });
-      expect(result.success).toBe(true);
-      const retired =
-        component === 'skills' ? [skill, wrapper] : component === 'hooks' ? [hook] : [];
-      expect(result.rtkRetirement?.removed ?? []).toEqual(retired);
-      for (const path of paths.filter((path) => !retired.includes(path))) {
-        expect(await readFile(join(project, path), 'utf8')).toBe(owned);
-      }
-      if (retired.length) await assertNewLockExcluded(retired);
-    });
-  }
-
-  it('honors ancestor custom-component ownership without deleting unchanged RTK data', async () => {
-    const config = getDefaultConfig();
-    config.version = '0.1.0';
-    config.customComponents = [
-      { type: 'skill', name: 'user-rtk', path: '.claude/skills/rtk-exec', managed: false },
-    ];
-    await saveConfig(project, config);
-    const result = await update({ targetDir: project, forceOverwriteAll: true });
-    expect(result.success).toBe(true);
-    for (const path of [skill, wrapper]) {
-      expect(await readFile(join(project, path), 'utf8')).toBe(owned);
-      expect(result.rtkRetirement?.preserved).toContainEqual({
-        path,
-        reason: 'explicitly preserved',
-      });
-    }
-    await assertNewLockExcluded(paths);
-  });
-
-  it('honors a manifest-preserved managed file under the default option', async () => {
+  it('deletes files covered by customization-manifest preservation and ancestor custom components', async () => {
     await saveCustomizationManifest(project, {
-      modifiedFiles: [],
-      preserveFiles: [wrapper],
-      customComponents: [],
-      lastUpdated: new Date().toISOString(),
-    });
-    const result = await update({ targetDir: project });
-    expect(result.success).toBe(true);
-    expect(await readFile(join(project, wrapper), 'utf8')).toBe(owned);
-    expect(result.rtkRetirement?.preserved).toContainEqual({
-      path: wrapper,
-      reason: 'explicitly preserved',
-    });
-    await assertNewLockExcluded(paths);
-  });
-
-  it('RTK retirement honors a config preserve entry written with a trailing slash', async () => {
-    const config = getDefaultConfig();
-    config.version = '0.1.0';
-    config.preserveFiles = ['.claude/skills/rtk-exec/'];
-    await saveConfig(project, config);
-    const result = await update({ targetDir: project });
-    expect(result.success).toBe(true);
-    for (const path of [skill, wrapper]) {
-      expect(await readFile(join(project, path), 'utf8')).toBe(owned);
-      expect(result.rtkRetirement?.preserved).toContainEqual({
-        path,
-        reason: 'explicitly preserved',
-      });
-    }
-  });
-
-  it('RTK retirement honors manifest entries with a trailing slash and a ./ prefix', async () => {
-    await saveCustomizationManifest(project, {
-      modifiedFiles: [],
+      modifiedFiles: [wrapper],
       preserveFiles: ['./.claude/skills/rtk-exec/scripts/'],
-      customComponents: [`./${skill}`],
+      customComponents: [`./${skill}`, '.claude/skills/rtk-exec'],
       lastUpdated: new Date().toISOString(),
     });
     const result = await update({ targetDir: project });
     expect(result.success).toBe(true);
-    for (const path of [skill, wrapper]) {
-      expect(await readFile(join(project, path), 'utf8')).toBe(owned);
-      expect(result.rtkRetirement?.preserved).toContainEqual({
-        path,
-        reason: 'explicitly preserved',
-      });
+    await expectAllGone();
+    expect(result.warnings).toContain(retiredNote(skill, PRESERVED_NOTE));
+    expect(result.warnings).toContain(retiredNote(wrapper, PRESERVED_NOTE));
+  });
+
+  for (const components of [['rules'], ['skills'], ['hooks']] as UpdateComponent[][]) {
+    it(`deletes everything with --components ${components.join(',')}`, async () => {
+      const result = await update({ targetDir: project, components });
+      expect(result.success).toBe(true);
+      expect(result.rtkRetirement?.removed.sort()).toEqual([...everything].sort());
+      await expectAllGone();
+      await expectLockWithoutRtk();
+    });
+  }
+
+  it('strips only the exact omcustom RTK hook commands, whatever the matcher, and keeps everything else', async () => {
+    const group = (matcher: string, ...commands: string[]) => ({
+      matcher,
+      hooks: commands.map((command) => ({ type: 'command', command })),
+    });
+    const retired = 'bash .claude/hooks/scripts/rtk-intercept.sh';
+    const anchored = `bash "\${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/scripts/rtk-intercept.sh"`;
+    const userAudit =
+      'bash .claude/hooks/scripts/my-audit.sh; bash .claude/hooks/scripts/rtk-intercept.sh';
+    const userHome = 'bash "$HOME/tools/hooks/scripts/rtk-intercept.sh"';
+    const settings = {
+      hooks: {
+        PreToolUse: [
+          group('Bash', retired, 'echo user-bash-hook'),
+          group('Write', anchored),
+          group('Bash', '/owned/user/rtk-intercept.sh'),
+          group('Bash', userAudit),
+          group('Bash', userHome),
+          group('Bash', `${retired} --user`),
+          group('Bash', `TOKEN=abc123 ${retired}`),
+        ],
+        PostToolUse: [group('Bash', `./.claude/hooks/scripts/rtk-intercept.sh`)],
+        SessionStart: [group('', 'echo hello')],
+      },
+      unrelated: { preserve: true },
+    };
+    await writeFile(join(project, '.claude/settings.json'), JSON.stringify(settings));
+    await writeFile(
+      join(project, '.claude/settings.local.json'),
+      JSON.stringify({ hooks: { PreToolUse: [group('Bash', retired)] }, mine: 1 })
+    );
+
+    const result = await update({ targetDir: project, components: ['agents'] });
+
+    expect(result.success).toBe(true);
+    await expectAllGone();
+    const next = JSON.parse(await readFile(join(project, '.claude/settings.json'), 'utf8'));
+    expect(next.hooks.PreToolUse).toEqual([
+      group('Bash', 'echo user-bash-hook'),
+      group('Bash', '/owned/user/rtk-intercept.sh'),
+      group('Bash', userAudit),
+      group('Bash', userHome),
+      group('Bash', `${retired} --user`),
+      group('Bash', `TOKEN=abc123 ${retired}`),
+    ]);
+    expect(next.hooks.PostToolUse).toEqual([]);
+    expect(next.hooks.SessionStart).toEqual([group('', 'echo hello')]);
+    expect(next.unrelated).toEqual({ preserve: true });
+    const local = JSON.parse(await readFile(join(project, '.claude/settings.local.json'), 'utf8'));
+    expect(local).toEqual({ hooks: { PreToolUse: [] }, mine: 1 });
+    expect(result.rtkRetirement?.settingsChanged.sort()).toEqual([
+      '.claude/settings.json',
+      '.claude/settings.local.json',
+    ]);
+    // Redacted warnings: event, matcher and script path only, split by whether the script is
+    // the deleted project one.
+    const failing = result.warnings.filter((warning) =>
+      warning.includes('RTK retirement kept 3 hook(s) in .claude/settings.json')
+    );
+    expect(failing).toHaveLength(1);
+    expect(failing[0]).toContain('they will fail once the script is deleted');
+    expect(failing[0]).toContain('PreToolUse[Bash] .claude/hooks/scripts/rtk-intercept.sh');
+    const elsewhere = result.warnings.filter((warning) =>
+      warning.includes('use an rtk-intercept.sh at another path')
+    );
+    expect(elsewhere).toHaveLength(1);
+    expect(elsewhere[0]).toContain('PreToolUse[Bash] /owned/user/rtk-intercept.sh');
+    expect(elsewhere[0]).toContain('PreToolUse[Bash] $HOME/tools/hooks/scripts/rtk-intercept.sh');
+    expect(elsewhere[0]).not.toContain('will fail');
+    expect(elsewhere[0]).toContain('that script is not deleted');
+    expect(result.warnings.join('\n')).not.toContain('abc123');
+    expect(result.warnings.join('\n')).not.toContain('TOKEN');
+    expect(result.warnings.join('\n')).not.toContain('my-audit');
+
+    // A second run does not repeat the note about the other-path scripts.
+    const repeat = await update({ targetDir: project, components: ['agents'], force: true });
+    expect(repeat.warnings.some((w) => w.includes('at another path'))).toBe(false);
+    expect(repeat.warnings.some((w) => w.includes('they will fail'))).toBe(true);
+  });
+
+  it('classifies every spelling of the project script: pure forms are stripped, anything else that runs it warns on every run', async () => {
+    const hooksOf = (...commands: string[]) => ({
+      hooks: {
+        PreToolUse: [
+          { matcher: 'Bash', hooks: commands.map((command) => ({ type: 'command', command })) },
+        ],
+      },
+    });
+    const dollarForm = 'bash "$CLAUDE_PROJECT_DIR"/.claude/hooks/scripts/rtk-intercept.sh';
+    const bracedForm = 'bash "${CLAUDE_PROJECT_DIR}/.claude/hooks/scripts/rtk-intercept.sh"';
+    const absoluteForm = `bash ${project}/.claude/hooks/scripts/rtk-intercept.sh`;
+    const orFallback =
+      'bash /opt/rtk/rtk-intercept.sh || bash .claude/hooks/scripts/rtk-intercept.sh';
+    const withSecret = 'API_TOKEN="s3cr3t value" bash .claude/hooks/scripts/rtk-intercept.sh --x';
+    const otherPath = 'bash /opt/rtk/rtk-intercept.sh';
+    const otherProject = 'bash /srv/other/.claude/hooks/scripts/rtk-intercept.sh';
+    const settingsPath = join(project, '.claude/settings.json');
+    await writeFile(
+      settingsPath,
+      JSON.stringify(
+        hooksOf(
+          dollarForm,
+          bracedForm,
+          absoluteForm,
+          orFallback,
+          withSecret,
+          otherPath,
+          otherProject
+        )
+      )
+    );
+
+    const first = await update({ targetDir: project, components: ['agents'] });
+
+    const next = JSON.parse(await readFile(settingsPath, 'utf8'));
+    expect(next.hooks.PreToolUse[0].hooks.map((h: { command: string }) => h.command)).toEqual([
+      orFallback,
+      withSecret,
+      otherPath,
+      otherProject,
+    ]);
+    const failing = first.warnings.filter((warning) => warning.includes('will fail'));
+    expect(failing).toHaveLength(1);
+    expect(failing[0]).toContain('kept 2 hook(s)');
+    expect(first.warnings.join('\n')).not.toContain('s3cr3t');
+    expect(first.warnings.join('\n')).not.toContain('API_TOKEN');
+    // The other-project script and the plain other path get the once-per-change notice.
+    expect(first.warnings.filter((w) => w.includes('at another path'))).toHaveLength(1);
+
+    const second = await update({ targetDir: project, components: ['agents'], force: true });
+    expect(second.warnings.filter((warning) => warning.includes('will fail'))).toHaveLength(1);
+    expect(second.warnings.some((w) => w.includes('at another path'))).toBe(false);
+    expect(JSON.parse(await readFile(settingsPath, 'utf8'))).toEqual(next);
+  });
+
+  it('does not treat look-alike paths as the script and classifies separator-prefixed ones as the project script', async () => {
+    const settingsPath = join(project, '.claude/settings.json');
+    const lookAlikes = [
+      'bash xclaude/hooks/scripts/rtk-intercept.sh',
+      'bash .claude/hooks/scripts/rtk-interceptXsh',
+    ];
+    const separated = [
+      'true&&.claude/hooks/scripts/rtk-intercept.sh',
+      '(.claude/hooks/scripts/rtk-intercept.sh)',
+    ];
+    await writeFile(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [...lookAlikes, ...separated].map((command) => ({ type: 'command', command })),
+            },
+          ],
+        },
+      })
+    );
+
+    const first = await update({ targetDir: project, components: ['agents'] });
+    const second = await update({ targetDir: project, components: ['agents'], force: true });
+
+    const commands = JSON.parse(await readFile(settingsPath, 'utf8')).hooks.PreToolUse[0].hooks.map(
+      (hook: { command: string }) => hook.command
+    );
+    // Nothing is stripped: look-alikes are not the script, separated ones are not "only the script".
+    expect(commands).toEqual([...lookAlikes, ...separated]);
+    for (const result of [first, second]) {
+      const failing = result.warnings.filter((warning) => warning.includes('will fail'));
+      expect(failing).toHaveLength(1);
+      expect(failing[0]).toContain('kept 2 hook(s)');
     }
   });
 
-  it('RTK retirement is not blocked by bare-slash or empty preserve entries', async () => {
-    const config = getDefaultConfig();
-    config.version = '0.1.0';
-    config.preserveFiles = ['/', './'];
-    await saveConfig(project, config);
-    await saveCustomizationManifest(project, {
-      modifiedFiles: [''],
-      preserveFiles: ['/', ''],
-      customComponents: ['./'],
-      lastUpdated: new Date().toISOString(),
+  it('leaves a settings file that only mentions an rtk-intercept.sh elsewhere untouched and silent', async () => {
+    const settingsPath = join(project, '.claude/settings.json');
+    const raw = JSON.stringify({
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: 'Bash',
+            hooks: [{ type: 'command', command: 'bash /opt/rtk/rtk-intercept.sh' }],
+          },
+        ],
+      },
     });
+    await writeFile(settingsPath, raw);
+
+    const result = await update({ targetDir: project, components: ['agents'] });
+
+    expect(await readFile(settingsPath, 'utf8')).toBe(raw);
+    expect(result.warnings.some((warning) => warning.includes('rtk-intercept.sh'))).toBe(false);
+  });
+
+  it('warns about a settings file it cannot parse, leaves it untouched and still deletes the RTK files', async () => {
+    await writeFile(join(project, '.claude/settings.local.json'), '{ bad json');
     const result = await update({ targetDir: project });
     expect(result.success).toBe(true);
-    expect(result.rtkRetirement?.removed).toContain(wrapper);
+    expect(await readFile(join(project, '.claude/settings.local.json'), 'utf8')).toBe('{ bad json');
+    expect(result.warnings).toContain(
+      'RTK retirement could not safely migrate .claude/settings.local.json; its RTK files are deleted anyway'
+    );
+    await expectAllGone();
   });
 
-  it('disables manifest preservation explicitly while keeping the old ownership hash guard', async () => {
-    await saveCustomizationManifest(project, {
-      modifiedFiles: [],
-      preserveFiles: [wrapper],
-      customComponents: [],
-      lastUpdated: new Date().toISOString(),
+  it('does not rewrite non-RTK hook commands when only other components are selected', async () => {
+    const settingsPath = join(project, '.claude/settings.local.json');
+    const raw = JSON.stringify({
+      hooks: {
+        PreToolUse: [
+          { matcher: 'Bash', hooks: [{ type: 'command', command: 'bash .claude/hooks/x.sh' }] },
+        ],
+      },
     });
-    const result = await update({ targetDir: project, preserveCustomizations: false });
+    await writeFile(settingsPath, raw);
+    const result = await update({ targetDir: project, components: ['rules'] });
     expect(result.success).toBe(true);
-    expect(result.rtkRetirement?.removed).toContain(wrapper);
-    await expect(access(join(project, wrapper))).rejects.toThrow();
-    await assertNewLockExcluded(paths);
+    expect(await readFile(settingsPath, 'utf8')).toBe(raw);
+    await expectAllGone();
   });
 
-  it('rejects malformed old ownership hashes without losing user data', async () => {
-    const oldLock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
-    oldLock.files[wrapper].templateHash = 'invalid hash';
-    await writeFile(join(project, '.omcustom.lock.json'), JSON.stringify(oldLock));
-    const result = await update({ targetDir: project });
-    expect(result.success).toBe(true);
-    expect(await readFile(join(project, wrapper), 'utf8')).toBe(owned);
-    expect(result.rtkRetirement?.preserved).toContainEqual({
-      path: wrapper,
-      reason: 'missing or invalid old ownership',
-    });
-    await assertNewLockExcluded(paths);
+  it('removes a symlinked RTK directory itself and never follows it', async () => {
+    for (const where of ['internal', 'external'] as const) {
+      await rm(join(project, skillDir), { recursive: true, force: true });
+      const target =
+        where === 'internal'
+          ? join(project, '.claude/sentinel-dir')
+          : join(project, '..', `${project.split('/').pop()}-outside`);
+      await mkdir(target, { recursive: true });
+      await writeFile(join(target, 'keep.txt'), 'protected sentinel');
+      await symlink(target, join(project, skillDir));
+      await writeFile(join(project, hook), owned);
+
+      const result = await update({ targetDir: project, force: true });
+
+      expect(result.rtkRetirement?.removed).toContain(skillDir);
+      await expect(lstat(join(project, skillDir))).rejects.toThrow();
+      expect(await readFile(join(target, 'keep.txt'), 'utf8')).toBe('protected sentinel');
+      if (where === 'external') await rm(target, { recursive: true, force: true });
+    }
   });
 
-  it('dry-run leaves file/settings/lock/config bytes and directory entries unchanged with backup requested', async () => {
+  it('removes a symlink inside the RTK directory without following it', async () => {
+    const outside = join(project, '..', `${project.split('/').pop()}-linked`);
+    await mkdir(outside, { recursive: true });
+    await writeFile(join(outside, 'keep.txt'), 'protected sentinel');
+    await symlink(outside, join(project, skillDir, 'linked'));
+    try {
+      const result = await update({ targetDir: project });
+      expect(result.rtkRetirement?.removed).toContain(`${skillDir}/linked`);
+      await expectAllGone();
+      expect(await readFile(join(outside, 'keep.txt'), 'utf8')).toBe('protected sentinel');
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('skips a target whose parent directory resolves outside the project', async () => {
+    const outside = join(project, '..', `${project.split('/').pop()}-escape`);
+    await mkdir(join(outside, 'rtk-exec'), { recursive: true });
+    await writeFile(join(outside, 'rtk-exec', 'SKILL.md'), 'outside sentinel');
+    await rm(join(project, '.claude/skills'), { recursive: true });
+    await symlink(outside, join(project, '.claude/skills'));
+    try {
+      const result = await update({ targetDir: project });
+      expect(result.success).toBe(true);
+      expect(result.rtkRetirement?.preserved).toContainEqual({
+        path: skillDir,
+        reason: 'its parent directory resolves outside the project',
+      });
+      expect(result.warnings).toContain(
+        `RTK retirement did not delete ${skillDir}: its parent directory resolves outside the project`
+      );
+      expect(await readFile(join(outside, 'rtk-exec', 'SKILL.md'), 'utf8')).toBe(
+        'outside sentinel'
+      );
+      // The hook script lives in a contained directory and is still deleted.
+      await expect(lstat(join(project, hook))).rejects.toThrow();
+    } finally {
+      await rm(outside, { recursive: true, force: true });
+    }
+  });
+
+  it('warns on a deletion failure, keeps the file and retries on the next run', async () => {
+    const realRm = fsPromises.rm;
+    const rmSpy = spyOn(fsPromises, 'rm').mockImplementation((async (
+      target: string,
+      rmOptions?: Parameters<typeof fsPromises.rm>[1]
+    ) => {
+      if (String(target).endsWith('rtk-exec')) {
+        throw Object.assign(new Error('EACCES: simulated'), { code: 'EACCES' });
+      }
+      return realRm(target, rmOptions);
+    }) as typeof fsPromises.rm);
+    try {
+      const failed = await update({ targetDir: project });
+      expect(failed.success).toBe(true);
+      expect(failed.rtkRetirement?.preserved).toContainEqual({
+        path: skillDir,
+        reason: 'EACCES: simulated',
+      });
+      expect(failed.warnings).toContain(
+        `RTK retirement did not delete ${skillDir}: EACCES: simulated`
+      );
+      expect(await readFile(join(project, skill), 'utf8')).toBe(owned);
+      await expect(lstat(join(project, hook))).rejects.toThrow();
+    } finally {
+      rmSpy.mockRestore();
+    }
+    const retry = await update({ targetDir: project, force: true });
+    expect(retry.rtkRetirement?.removed.sort()).toEqual([skill, wrapper, extra].sort());
+    await expectAllGone();
+  });
+
+  it('dry-run lists what would be deleted and changes nothing', async () => {
     const settingsPath = '.claude/settings.local.json';
     await writeFile(
       join(project, settingsPath),
@@ -1881,14 +2084,18 @@ describe('update RTK retirement lifecycle', () => {
         },
       })
     );
-    const snapshotPaths = [...paths, settingsPath, '.omcustom.lock.json', '.omcustomrc.json'];
+    await writeFile(join(project, wrapper), 'user-custom wrapper');
+    const snapshotPaths = [...everything, settingsPath, '.omcustom.lock.json', '.omcustomrc.json'];
     const before = await Promise.all(snapshotPaths.map((path) => readFile(join(project, path))));
     const entries = await readdir(project);
     const result = await update({ targetDir: project, dryRun: true, backup: true });
     expect(result.success).toBe(true);
-    expect(result.rtkRetirement?.wouldRemove.sort()).toEqual([...paths].sort());
+    expect(result.rtkRetirement?.wouldRemove.sort()).toEqual([...everything].sort());
     expect(result.rtkRetirement?.wouldChangeSettings).toContain(settingsPath);
     expect(result.rtkRetirement?.removed).toEqual([]);
+    expect(result.warnings).toContain(
+      `RTK is retired: would delete ${wrapper} although it was ${MODIFIED_NOTE}`
+    );
     expect(result.backedUpPaths).toEqual([]);
     expect(codexCheckSpy).not.toHaveBeenCalled();
     expect(codexInstallSpy).not.toHaveBeenCalled();

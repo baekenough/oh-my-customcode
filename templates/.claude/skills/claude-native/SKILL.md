@@ -86,7 +86,7 @@ for dependency in od awk cat mktemp gh; do
   command -v "$dependency" >/dev/null 2>&1 || { printf '%s\n' '[gh-file] HALT: missing prerequisite' >&2; exit 1; }
 done
 byte_dump=$(mktemp /tmp/omcustom-gh-byte-dump.XXXXXX) || exit 1
-trap 'command rm -f -- "$byte_dump"' 0
+trap '[ -e "$byte_dump" ] && rm "$byte_dump"' 0
 trap 'exit 1' HUP INT TERM
 check_file() {
   [ -f "${1}" ] || return 1

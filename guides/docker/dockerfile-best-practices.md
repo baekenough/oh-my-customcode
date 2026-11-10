@@ -31,7 +31,7 @@ COPY . .
 RUN go build -o myapp
 
 # Runtime stage
-FROM alpine:3.23
+FROM alpine:3.24
 COPY --from=builder /app/myapp /usr/local/bin/
 CMD ["myapp"]
 ```
@@ -44,8 +44,9 @@ CMD ["myapp"]
 # Pin versions
 FROM ubuntu:24.04
 
-# Use digest for reproducibility
-FROM node:20@sha256:abc123...
+# Use digest for reproducibility (example digest of node:26, resolved 2026-11-10;
+# resolve your own with: docker buildx imagetools inspect node:26)
+FROM node:26@sha256:438603bbb5cda404b9416f0b5c8026f61501ab911760d861ec28c36b5d675725
 
 # Use official images
 FROM python:3.15-slim
@@ -175,7 +176,7 @@ RUN rm -rf /var/lib/apt/lists/*
 ### Don't Run as Root
 
 ```dockerfile
-FROM node:20
+FROM node:26
 
 RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
 USER nodejs
@@ -202,7 +203,7 @@ FROM postgres:16
 
 # Minimal images
 FROM gcr.io/distroless/static
-FROM alpine:3.23
+FROM alpine:3.24
 ```
 
 ## Example Dockerfiles
@@ -210,14 +211,14 @@ FROM alpine:3.23
 ### Node.js
 
 ```dockerfile
-FROM node:20-slim AS builder
+FROM node:26-slim AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20-slim
+FROM node:26-slim
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
@@ -231,15 +232,18 @@ CMD ["node", "dist/server.js"]
 ```dockerfile
 FROM python:3.15-slim AS builder
 WORKDIR /app
-RUN pip install --user pipenv
+RUN python -m venv /opt/venv
+ENV PATH=/opt/venv/bin:$PATH
+RUN pip install --no-cache-dir pipenv
 COPY Pipfile Pipfile.lock ./
-RUN pipenv install --system --deploy
+RUN pipenv requirements > requirements.txt \
+    && pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.15-slim
 WORKDIR /app
-COPY --from=builder /root/.local /root/.local
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH=/opt/venv/bin:$PATH
 COPY . .
-ENV PATH=/root/.local/bin:$PATH
 USER nobody
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]
