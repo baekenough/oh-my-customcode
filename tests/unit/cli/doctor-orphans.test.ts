@@ -80,7 +80,28 @@ describe('checkOrphans', () => {
     expect(await checkOrphans(tempDir, listFile)).toBeNull();
   });
 
-  it('warns and says update removes a leftover the lock owns with a matching hash', async () => {
+  it('says update moves an owned unmodified leftover to a backup, in English and Korean (#1938)', async () => {
+    await writeLockfileFor(tempDir, { [SKILL]: { templateHash: sha256(SHIPPED_CONTENT) } });
+    await writeRetiredList([{ path: SKILL, sha256: [sha256(SHIPPED_CONTENT)] }]);
+    await writeProjectFile(SKILL, SHIPPED_CONTENT);
+
+    const english = (await checkOrphans(tempDir, listFile))?.details?.[0] ?? '';
+    let korean = '';
+    try {
+      await initI18n('ko');
+      korean = (await checkOrphans(tempDir, listFile))?.details?.[0] ?? '';
+    } finally {
+      await initI18n('en');
+    }
+
+    expect(english).toContain('.omcustom-backup-<timestamp>/retired/');
+    expect(english).not.toMatch(/removes it|deletes it/);
+    expect(korean).toContain(SKILL);
+    expect(korean).toContain('백업(.omcustom-backup-<timestamp>/retired/)으로 옮깁니다');
+    expect(korean).not.toMatch(/제거합니다|삭제합니다/);
+  });
+
+  it('warns and says update moves to a backup a leftover the lock owns with a matching hash', async () => {
     await writeLockfileFor(tempDir, { [SKILL]: { templateHash: sha256(SHIPPED_CONTENT) } });
     await writeRetiredList([{ path: SKILL, sha256: [sha256(SHIPPED_CONTENT)] }]);
     await writeProjectFile(SKILL, SHIPPED_CONTENT);
@@ -94,11 +115,11 @@ describe('checkOrphans', () => {
     expect(result?.details).toHaveLength(1);
     expect(result?.details?.[0]).toContain(SKILL);
     expect(result?.details?.[0]).toContain('unmodified leftover');
-    expect(result?.details?.[0]).toContain("'omcustom update' removes it");
+    expect(result?.details?.[0]).toContain("'omcustom update' moves it to a backup");
     expect(result?.details?.[0]).not.toContain('delete it manually');
   });
 
-  it('says delete manually, not "update removes it", when a template-owned lock omits the file', async () => {
+  it('says delete manually, not "update moves it to a backup", when a template-owned lock omits the file', async () => {
     // lock is empty: v2.0.20+ locks do not record leftovers
     await writeRetiredList([{ path: SKILL, sha256: [sha256(SHIPPED_CONTENT)] }]);
     await writeProjectFile(SKILL, SHIPPED_CONTENT);
@@ -112,7 +133,7 @@ describe('checkOrphans', () => {
     expect(result?.details?.[0]).toContain(SKILL);
     expect(result?.details?.[0]).toContain("'omcustom update' keeps it");
     expect(result?.details?.[0]).toContain('delete it manually');
-    expect(result?.details?.[0]).not.toContain('removes it');
+    expect(result?.details?.[0]).not.toContain('moves it to a backup');
   });
 
   it('says delete manually when the lock hash differs from the shipped-version disk hash', async () => {
@@ -126,7 +147,7 @@ describe('checkOrphans', () => {
 
     expect(result?.status).toBe('warn');
     expect(result?.details?.[0]).toContain("'omcustom update' keeps it");
-    expect(result?.details?.[0]).not.toContain('removes it');
+    expect(result?.details?.[0]).not.toContain('moves it to a backup');
   });
 
   it('says delete manually when the lock hash is not a valid sha256', async () => {
@@ -137,7 +158,7 @@ describe('checkOrphans', () => {
     const result = await checkOrphans(tempDir, listFile);
 
     expect(result?.details?.[0]).toContain("'omcustom update' keeps it");
-    expect(result?.details?.[0]).not.toContain('removes it');
+    expect(result?.details?.[0]).not.toContain('moves it to a backup');
   });
 
   it('reports a leftover preserved via config.preserveFiles as kept by preserve settings', async () => {
@@ -153,7 +174,7 @@ describe('checkOrphans', () => {
     expect(result?.fixable).toBe(false);
     expect(result?.details?.[0]).toContain(SKILL);
     expect(result?.details?.[0]).toContain('kept by your preserve settings');
-    expect(result?.details?.[0]).not.toContain('removes it');
+    expect(result?.details?.[0]).not.toContain('moves it to a backup');
   });
 
   it('treats a directory prefix in config.preserveFiles as preserving the leftover', async () => {
@@ -199,7 +220,7 @@ describe('checkOrphans', () => {
 
     expect(result?.status).toBe('warn');
     expect(result?.message).not.toContain('could not run');
-    expect(result?.details?.[0]).toContain("'omcustom update' removes it");
+    expect(result?.details?.[0]).toContain("'omcustom update' moves it to a backup");
   });
 
   it('honors manifest preserveFiles and modifiedFiles while another list is missing', async () => {
@@ -248,7 +269,7 @@ describe('checkOrphans', () => {
 
     const result = await checkOrphans(tempDir, listFile);
 
-    expect(result?.details?.[0]).toContain("'omcustom update' removes it");
+    expect(result?.details?.[0]).toContain("'omcustom update' moves it to a backup");
   });
 
   it('does not report as preserved when the preserve setting names another path', async () => {
@@ -259,7 +280,7 @@ describe('checkOrphans', () => {
 
     const result = await checkOrphans(tempDir, listFile);
 
-    expect(result?.details?.[0]).toContain("'omcustom update' removes it");
+    expect(result?.details?.[0]).toContain("'omcustom update' moves it to a backup");
     expect(result?.details?.[0]).not.toContain('preserve settings');
   });
 
@@ -279,7 +300,7 @@ describe('checkOrphans', () => {
     expect(result?.details?.[0]).toContain(SKILL);
     expect(result?.details?.[0]).toContain('modified leftover');
     expect(result?.details?.[0]).toContain('review it and delete it manually');
-    expect(result?.details?.[0]).not.toContain('removes it');
+    expect(result?.details?.[0]).not.toContain('moves it to a backup');
   });
 
   it('classifies several leftovers independently and keeps the list order', async () => {
@@ -299,7 +320,7 @@ describe('checkOrphans', () => {
 
     expect(result?.status).toBe('warn');
     expect(result?.message).toContain('3 leftover');
-    expect(result?.details?.[0]).toContain("'omcustom update' removes it");
+    expect(result?.details?.[0]).toContain("'omcustom update' moves it to a backup");
     expect(result?.details?.[1]).toContain("'omcustom update' keeps it");
     expect(result?.details?.[2]).toContain('review it and delete it manually');
   });
@@ -446,7 +467,7 @@ describe('checkOrphans', () => {
 
     expect(result?.status).toBe('warn');
     expect(result?.details?.[0]).toContain("'omcustom update' keeps it");
-    expect(result?.details?.[0]).not.toContain('removes it');
+    expect(result?.details?.[0]).not.toContain('moves it to a backup');
   });
 
   it('ignores a directory at a retired file path and a file where a parent directory is expected', async () => {
@@ -524,7 +545,7 @@ describe('checkOrphans', () => {
       const detail = result?.details?.[0] ?? '';
       expect(detail).toContain(RTK_HOOK);
       expect(detail).toContain('rtk-intercept.sh');
-      expect(detail).not.toContain("'omcustom update' removes it");
+      expect(detail).not.toContain("'omcustom update' moves it to a backup");
       expect(detail).not.toContain('unmodified leftover');
     });
 
@@ -561,7 +582,7 @@ describe('checkOrphans', () => {
 
       expect(result?.details).toHaveLength(1);
       expect(result?.details?.[0]).toContain(SKILL);
-      expect(result?.details?.[0]).toContain("'omcustom update' removes it");
+      expect(result?.details?.[0]).toContain("'omcustom update' moves it to a backup");
     });
 
     it('has Korean text for the RTK class without a removal promise', async () => {

@@ -265,6 +265,7 @@ omcustom sync                  # .claude/ 상태와 lockfile 간 드리프트 �
 omcustom sync --check          # 변경 없이 드리프트 확인
 omcustom sync --export         # 현재 상태를 팀 스냅샷으로 내보내기
 omcustom update                # 최신 버전 업데이트
+omcustom update --yes          # 잔존 파일 백업 확인 없이 업데이트
 omcustom list                  # 컴포넌트 목록
 omcustom doctor                # 설치 상태 검사
 omcustom doctor --fix          # 문제 자동 수정
@@ -277,8 +278,8 @@ omcustom serve-stop            # Web UI 중지
 
 - **Agent Teams 플래그**: 기본적으로 `init`은 프로젝트 `.claude/settings.json`에 `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"`을 기록합니다. 다른 키와 env 항목은 유지되며, 해당 키의 기존 값은 절대 덮어쓰지 않습니다. JSON 객체가 아닌 파일은 건드리지 않고 `init`이 경고를 출력합니다. `--no-agent-teams`는 아무것도 기록하지 않으며, `--from-snapshot`에는 적용되지 않습니다(팀의 settings를 그대로 복사). 이는 기본값이 `false`인 `.omcustomrc.json`의 `teamMode`와 별개입니다. 이 변수는 의도만 표현합니다. Agent Teams는 사용 중인 Claude Code 버전이 Agent Teams 도구를 제공할 때만 동작합니다.
 - **init 배너와 자체 업데이트**: init 배너에 CLI 버전(`oh-my-customcode vX.Y.Z`)이 표시됩니다. 자체 업데이트 프롬프트를 수락하면 `init`이 새로 설치된 CLI로 자신을 다시 실행합니다. 업데이트된 바이너리가 PATH의 것과 다르면 `init`은 경고를 출력하고 현재 버전으로 계속 진행합니다.
-- **잔존 파일**: `omcustom update`는 이전 버전에서 남은 파일을 다음 조건을 모두 만족할 때만 제거합니다: 경로가 `templates/retired-template-paths.json`(oh-my-customcode가 과거에 배포한 파일)에 있고, 내용이 배포된 버전과 일치하며, 이전 lockfile이 같은 hash로 해당 파일을 소유하고, 경로가 preserve 설정에 없어야 합니다. 그렇지 않으면 파일은 유지되고 경고가 출력됩니다. `--dry-run`은 제거 대상을 나열하며, 제거로 비게 된 디렉터리는 삭제됩니다.
-- **Orphans 검사**: `omcustom doctor`는 이러한 잔존 파일을 나열하고, 각 파일마다 `omcustom update`가 제거하는지 직접 삭제해야 하는지(lockfile 미소유, preserve 지정, 수정됨)를 알려줍니다. lockfile은 템플릿 파일과 이미 소유하던 retired 파일을 기록하지만, 소유한 적 없는 잔존 파일(예: 이전 설치 위에 init을 다시 실행해 남은 파일)은 기록하지 않으므로, "lockfile OK"만으로는 잔존 파일이 없다는 증거가 되지 않습니다.
+- **잔존 파일**: `omcustom update`는 이전 버전에서 남은 파일을 다음 조건을 모두 만족할 때만 백업으로 이동합니다(삭제하지 않습니다): 경로가 `templates/retired-template-paths.json`(oh-my-customcode가 과거에 배포한 파일)에 있고, 내용이 배포된 버전과 일치하며, 이전 lockfile이 같은 hash로 해당 파일을 소유하고, 경로가 preserve 설정에 없어야 합니다. 그렇지 않으면 파일은 유지됩니다. preserve 설정이 포함하여 유지된 파일은 더 이상 업데이트할 때마다 경고하지 않고, `update`가 개수를 한 줄로 출력합니다. 수정되었거나 소유되지 않은 잔존 파일은 검토할 수 있도록 계속 보고됩니다. 파일은 프로젝트 루트의 백업 폴더 `.omcustom-backup-<timestamp>/retired/`로 이동되며, 그 안에서 맨 앞의 `.claude/` 폴더는 `claude/`로 저장되므로 Claude Code가 백업된 스킬이나 에이전트를 로드하지 않습니다. 파일을 복원하려면 같은 경로로 다시 옮기십시오(백업의 `claude/`는 `.claude/`를 뜻합니다). 복원한 파일은 더 이상 oh-my-customcode가 설치한 파일로 추적되지 않으므로 업데이트할 때마다 경고가 나오고 `omcustom doctor`는 삭제를 권장합니다. 계속 사용하려면 `.omcustomrc.json`의 `preserveFiles`에 해당 경로를 추가하십시오. 그러면 업데이트가 조용히 유지합니다. 아래 확인 질문에 아니오로 답하고 다시 묻지 않게 하면서 파일을 유지하려는 경우에도 같은 곳에 경로를 추가하십시오. 같은 실행에서 `--backup`도 사용하면 파일은 해당 실행의 백업 폴더 안 `retired/`로 이동됩니다. 사용하지 않은 경우(예: 업데이트할 구성 요소가 없을 때) 백업 폴더에는 `retired/`만 들어 있습니다. `--dry-run`은 이동 대상을 나열하며 아무것도 생성하지 않고, 이동으로 비게 된 디렉터리는 삭제됩니다. 대화형 터미널에서는 `omcustom update`가 파일을 나열하고 백업으로 이동할지 확인을 요청합니다. 기본 답은 아니오이므로 파일은 유지되며 다음 업데이트에서 다시 묻습니다. `--yes`, `--all`, 비대화형 실행(TTY 없음), CI에서는 묻지 않고 자동으로 이동합니다. `--dry-run`은 묻지 않습니다. 참고: `.omcustom-backup-*` 폴더는 `.gitignore`에 자동으로 추가되지 않으므로 백업을 커밋하고 싶지 않다면 직접 추가하십시오.
+- **Orphans 검사**: `omcustom doctor`는 이러한 잔존 파일을 나열하고, 각 파일마다 `omcustom update`가 백업으로 이동하는지 직접 처리해야 하는지(lockfile 미소유, preserve 지정, 수정됨)를 알려줍니다. lockfile은 템플릿 파일과 이미 소유하던 retired 파일을 기록하지만, 소유한 적 없는 잔존 파일(예: 이전 설치 위에 init을 다시 실행해 남은 파일)은 기록하지 않으므로, "lockfile OK"만으로는 잔존 파일이 없다는 증거가 되지 않습니다.
 
 ### 문제 해결: `init`이 구버전을 설치하는 경우
 

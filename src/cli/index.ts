@@ -73,6 +73,7 @@ export function createProgram(): Command {
     .option('--hooks', i18n.t('cli.update.hooksOption'))
     .option('--contexts', i18n.t('cli.update.contextsOption'))
     .option('--all', i18n.t('cli.update.allOption'))
+    .option('--yes', i18n.t('cli.update.yesOption'))
     .option('--skip-self', 'Skip self-update of oh-my-customcode package')
     .action(async (options) => {
       await updateCommand(options);
