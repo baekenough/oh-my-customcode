@@ -53,12 +53,17 @@
       "declined": "현재 버전으로 계속 진행합니다.",
       "failed": "자체 업데이트 실패: {{error}}",
       "relaunchFailed": "npx 최신 버전 실행 실패 (status: {{status}}).",
-      "continueAfterFailure": "현재 버전으로 init을 계속 진행합니다."
+      "continueAfterFailure": "현재 버전으로 init을 계속 진행합니다.",
+      "reexec": "↻ 업데이트된 CLI(v{{version}})로 init을 다시 시작합니다...",
+      "reexecVersionMismatch": "⚠ v{{installed}}를 설치했지만 이 명령을 실행 중인 omcustom 바이너리는 v{{binary}}입니다 (npm이 다른 위치에 설치했을 수 있습니다). 이 바이너리를 관리하는 npm으로 `npm install -g {{package}}@latest`를 실행하세요.",
+      "reexecVersionUnknown": "⚠ v{{installed}}를 설치했지만 이 명령을 실행 중인 omcustom 바이너리의 버전을 확인할 수 없습니다 (이 프로세스는 v{{current}}를 로드했습니다). 이 바이너리를 관리하는 npm으로 `npm install -g {{package}}@latest`를 실행하세요.",
+      "reexecSpawnFailed": "⚠ 업데이트된 CLI로 다시 시작하지 못했습니다: {{error}}"
     },
     "init": {
       "description": "현재 디렉토리에 oh-my-customcode 초기화",
       "langOption": "템플릿 언어 (en 또는 ko)",
-      "start": "oh-my-customcode 초기화 중...",
+      "start": "oh-my-customcode v{{version}} 초기화 중...",
+      "noAgentTeamsOption": ".claude/settings.json에 Claude Code Agent Teams(CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS)를 활성화하지 않습니다",
       "exists": "기존 {{rootDir}} 디렉토리가 발견되었습니다.",
       "backing_up": "백업을 생성합니다...",
       "backedUp": "기존 설치가 백업되었습니다: {{path}}",
@@ -129,6 +134,10 @@
       "componentSkipped": "- {{component}} 건너뜀 (변경사항 없음)",
       "componentFailed": "✗ {{component}} 실패: {{error}}",
       "preservedFiles": "사용자 커스터마이징 파일 {{count}}개 보존됨",
+      "orphansRemoved": "oh-my-customcode가 더 이상 배포하지 않는 파일 {{count}}개를 삭제했습니다:",
+      "orphansWouldRemove": "oh-my-customcode가 더 이상 배포하지 않는 파일 {{count}}개를 삭제할 예정입니다:",
+      "orphansPreserved": "oh-my-customcode가 더 이상 배포하지 않는 파일 {{count}}개를 남겨 두었습니다(사유는 경고 참조). 더 이상 필요 없으면 직접 삭제하세요:",
+      "orphansPreservedWithReasons": "oh-my-customcode가 더 이상 배포하지 않는 파일 {{count}}개를 남겨 두었습니다(사유는 각 경로 뒤에 표시). 더 이상 필요 없으면 직접 삭제하세요:",
       "backupCreated": "백업 생성됨: {{path}}",
       "summary": "업데이트 완료: {{updated}}개 업데이트, {{skipped}}개 건너뜀",
       "summaryFailed": "업데이트 실패: {{error}}",
@@ -258,6 +267,16 @@
         "codex": {
           "pass": "Codex CLI 설치됨",
           "warn": "Codex CLI 미설치 — AI 개발 지원 불가"
+        },
+        "orphans": {
+          "pass": "폐기된 템플릿의 잔여 파일이 없습니다 (폐기 경로 {{count}}개 확인)",
+          "warn": "폐기된 템플릿의 잔여 파일 {{count}}개를 발견했습니다",
+          "unmodified": "{{path}} — 수정되지 않은 잔여물입니다. 'omcustom update'가 제거합니다",
+          "unowned": "{{path}} — 배포된 버전과 내용이 같지만 'omcustom update'는 이 파일을 유지합니다(lockfile이 이 내용으로 기록하지 않았거나 소유한 일반 파일이 아님). 직접 삭제하세요",
+          "preserved": "{{path}} — 보존 설정 때문에 유지되는 잔여물입니다. 직접 삭제하거나 보존 설정에서 의도적으로 제외하세요",
+          "rtk": "{{path}} — 폐기된 RTK 파일입니다. 제거 여부는 'omcustom update'가 결정합니다('.claude/settings*.json'의 자체 RTK 훅 연결은 자동으로 제거한 뒤, lockfile이 수정 없이 소유한 파일만 제거합니다. 파일이 수정되었거나 보존 설정 대상이거나, 해당 설정에 사용자가 추가했거나 인식되지 않는 rtk-intercept.sh 연결이 남아 있거나, 설정 파일을 파싱할 수 없으면 유지합니다). 'omcustom update'를 실행하고 RTK 보고를 확인하세요",
+          "modified": "{{path}} — 수정된 잔여물입니다. 내용을 검토한 뒤 직접 삭제하세요",
+          "loadFailed": "Orphans 검사를 실행하지 못했습니다: {{reason}}"
         }
       }
     },

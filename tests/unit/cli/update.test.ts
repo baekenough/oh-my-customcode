@@ -859,6 +859,61 @@ describe('update command', () => {
       expect(exitCode).toBeUndefined();
     });
 
+    for (const dryRun of [false, true]) {
+      it(`prints each project's orphan retirement with --all${dryRun ? ' --dry-run' : ''} (#1935)`, async () => {
+        mock.module('../../../src/core/provider.js', () => ({
+          detectProvider: async () => ({
+            provider: 'claude',
+            source: 'override',
+            confidence: 'high',
+            reason: 'test',
+          }),
+        }));
+        const mockUpdate = mock(async (options: { targetDir: string; dryRun?: boolean }) => ({
+          success: true,
+          updatedComponents: [],
+          skippedComponents: [],
+          preservedFiles: [],
+          backedUpPaths: [],
+          previousVersion: '0.46.1',
+          newVersion: '0.47.0',
+          warnings: ['not printed in batch mode'],
+          orphanRetirement: {
+            removed: options.dryRun ? [] : [`${options.targetDir}/removed.md`],
+            wouldRemove: options.dryRun ? [`${options.targetDir}/removed.md`] : [],
+            preserved: [{ path: `${options.targetDir}/kept.md`, reason: 'user-modified file' }],
+          },
+        }));
+        mock.module('../../../src/core/updater.js', () => ({ update: mockUpdate }));
+        const project = (name: string) => ({
+          name,
+          path: name,
+          version: '0.44.0',
+          installedAt: null,
+          updatedAt: null,
+          status: 'outdated',
+          detectionMethod: 'lockfile',
+        });
+        mock.module('../../../src/cli/projects.js', () => ({
+          findProjects: async () => [project('a'), project('b')],
+        }));
+
+        const { updateCommand } = await import('../../../src/cli/update.js');
+        await updateCommand({ all: true, dryRun });
+
+        const logs = consoleLogSpy.mock.calls.map((call: unknown[]) => String(call[0]));
+        const heading = dryRun
+          ? 'Would remove 1 file(s) that oh-my-customcode no longer ships:'
+          : 'Removed 1 file(s) that oh-my-customcode no longer ships:';
+        expect(logs.filter((line: string) => line === heading)).toHaveLength(2);
+        for (const name of ['a', 'b']) {
+          expect(logs).toContain(`  - ${name}/removed.md`);
+          expect(logs).toContain(`  - ${name}/kept.md (user-modified file)`);
+        }
+        expect(exitCode).toBeUndefined();
+      });
+    }
+
     it('should report no outdated projects when all are latest', async () => {
       mock.module('../../../src/core/provider.js', () => ({
         detectProvider: async () => ({

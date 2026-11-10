@@ -1,0 +1,323 @@
+{
+  "description": "Files oh-my-customcode once shipped under a lockfile component (.claude/rules, .claude/agents, .claude/skills, .claude/hooks, .claude/contexts, .claude/ontology, guides) and no longer ships (#1935). Generated from git history by scripts/generate-retired-template-paths.ts; do not edit by hand. schemaVersion 1: \"paths\" is sorted by \"path\" (code-unit order). Each \"path\" is install-relative with forward slashes. \"sha256\" lists, sorted, the lowercase hex SHA-256 of every regular-file content version shipped at that path. omcustom update removes a leftover only when it is a regular file whose hash matches both one of these hashes and its entry in the previous .omcustom.lock.json, and the path is not preserved.",
+  "schemaVersion": 1,
+  "paths": [
+    {
+      "path": ".claude/agents/lang-java21-expert.md",
+      "sha256": [
+        "0c70edf48ca57091f6b8e6e309c908c88d8d1125d5c6b6af97c100b5f6118022",
+        "0d2ad9c3f6e10900235ddb942a866a10f7b4c3b87a3e711d175ed0793da8631c",
+        "150c065c8c55903517361487ded4a4a59c6248669bea1a38d43e09bfdc67acb0",
+        "4ba78208cfd30084d27dee3750053efd442581f4f5ce895f788ca4f8088a1c91",
+        "628dd767e49e4a4e119405d000499d07326fb7a0ab009e30d638b8628c2ed1c2",
+        "6371de4c7d77b299da7ba723becb78636d062ac114cbb4e5eb8b67de1c2cf183",
+        "ce302235318eb6a82c55fc6eb8426d347deb2111cf241a73abec5b5cd0230d64"
+      ]
+    },
+    {
+      "path": ".claude/agents/mgr-sync-checker.md",
+      "sha256": [
+        "020dffef32ba01836c0e602b34628febd1b1212208cdd200996f79bd530c0fb5",
+        "4d5a1131418f875736c1b7be7e92da9862fa58fdb94a76b5bb9b902dc5f7ba68",
+        "79c972396984b2e595346616d40e692dd6135919389f5d1c08b754fffd7d97f5",
+        "d98f26e394aa68960acb7d159f39a33c87f4aa052f541825754f011ba8ba51b8"
+      ]
+    },
+    {
+      "path": ".claude/agents/tutor-go.md",
+      "sha256": [
+        "5f0905d8796a77ca0eddfc1fcbefb6fe3647eb3b9d597cc04c7d34f6fec7abac",
+        "7ea7f74954cb3d0bb7df8d51f56c23e34b31bf8950083baa778f2207b0819d0e"
+      ]
+    },
+    {
+      "path": ".claude/hooks/hud/index.yaml",
+      "sha256": [
+        "8545e08cb1076b518069e06befd564d082aef42c0e6734dad0f4650486a4e5a9"
+      ]
+    },
+    {
+      "path": ".claude/hooks/hud/update-status.sh",
+      "sha256": [
+        "e054a6a6ab7345e2997d04bcd001f7de85875a7020e6d324d9cdb6dc5db7f4f3"
+      ]
+    },
+    {
+      "path": ".claude/hooks/index.yaml",
+      "sha256": [
+        "4193723f3497e85d54d3f2050f905d234c04cc1c6a213eb4cdb8211a76281516"
+      ]
+    },
+    {
+      "path": ".claude/hooks/memory-persistence/pre-compact.sh",
+      "sha256": [
+        "efea6f42218f32bcb654e0d5c7b6b5288dea2af9395e008bbb188da9251ff844"
+      ]
+    },
+    {
+      "path": ".claude/hooks/memory-persistence/session-end.sh",
+      "sha256": [
+        "715232cc9c23f630be3a32f8f19533a83e43f30e3d71ebb9517c1757aa921d51"
+      ]
+    },
+    {
+      "path": ".claude/hooks/memory-persistence/session-start.sh",
+      "sha256": [
+        "630d5c322d86879aacc101506794360bdb2104a4a342d41955f61355d1213b68"
+      ]
+    },
+    {
+      "path": ".claude/hooks/scripts/rtk-intercept.sh",
+      "sha256": [
+        "5e936074a2dcc6e17ce05992778c72ed2fac5edc3cfd8ce63a480ea5a6a95947",
+        "ea4e05809d1d7791466dffc037d464c3bb96483808f0f551b4132185f4274e23"
+      ]
+    },
+    {
+      "path": ".claude/hooks/scripts/serve-autostart.sh",
+      "sha256": [
+        "0a967d86f410b9c647446b6a66596bde9e67d198c536e312de8ecd9a0cffe5e9"
+      ]
+    },
+    {
+      "path": ".claude/hooks/scripts/session-compliance-report.sh",
+      "sha256": [
+        "a5006202c6e285038a003d341f4031b0f31961407ce12b9606c5a59dcda91720"
+      ]
+    },
+    {
+      "path": ".claude/hooks/strategic-compact/suggest-compact.sh",
+      "sha256": [
+        "0b4743910b909591016ed47dc315d7475e36424e3b0939d8247182279f600b9a"
+      ]
+    },
+    {
+      "path": ".claude/rules/SHOULD-agent-teams.md",
+      "sha256": [
+        "285ac5ae785706bea1917137054cacd8e0eec0fb80433a45befcba55ed4016f7",
+        "3b89fcd55050f301da3afa8757535417b9e870ad56c95cbb436c5669ee51dd4f",
+        "5d0eea8a35d4fdb2ef5399d70a4b3b11768433c007ec1bb0eabc1faa7f0e3395",
+        "90aedd3123753b4782de5a20e917d328ffd2d84d250156dbf497c6f2525d24d4",
+        "d7688801f2b80d1c84c34b72e3795cba506c5d587b05e2d218e146bdfa55f602"
+      ]
+    },
+    {
+      "path": ".claude/rules/SHOULD-pipeline-mode.md",
+      "sha256": [
+        "371b7b405dc223d7d1732c5042679e3e25fe20c09d5e1d5e535787193195fe90",
+        "73dfb8c982787d059d183f8424491acce895f1175752676dc940be0bd5592574"
+      ]
+    },
+    {
+      "path": ".claude/skills/codex-exec/SKILL.md",
+      "sha256": [
+        "11f38df259b4213448bd55e68941c3aaa875e52af0a245387320ab6df4f3cf1b",
+        "2944d702fc991854aea86589f1bf7cc8a9f9972585385ccfbaf2063b0b9dc2ec",
+        "3805ab908127fec17ec096371fec07a8c1fb33f702bcf7da9bc72d5d0b381e46",
+        "3e751be45eb60a63d167a2a6faa5ed503aca2d439823117e77bf753f202a7f1d",
+        "61d7c4eb432f258bcfe958d70f106d8db08f4f64863541c0d2eb992543736395",
+        "7383e3f6645623a9b5cc174f0a344fd131af9583e8d94f80af7e0954276dcc32",
+        "7c815c5c449a7961e7f1d0a92093e63d6469beb9286d3c88050f68a284fea1f8",
+        "852f1caef6f276ac06c8bf1e36b2c48f7331397e0931ec189634067e3741737c",
+        "98eb58460c539c3fc53e4c13d25ddcd461801028b9198b89cd4ee010f10d6a36",
+        "d93e1940e11fa531ed32ce8eda443921ee81a6ad24c54564e309ae880ff91739"
+      ]
+    },
+    {
+      "path": ".claude/skills/codex-exec/scripts/codex-wrapper.cjs",
+      "sha256": [
+        "253cd3ea8eeade082100193ce8e5f443d8cef85548e0701e922d634ec6999016",
+        "79694feac6fd4216e0e3f8c026845f35ae03d72758890a0d3ce2259617911439"
+      ]
+    },
+    {
+      "path": ".claude/skills/codex-exec/scripts/codex-wrapper.js",
+      "sha256": [
+        "dc691a5ba646558bf6e2238b07d566570dd717c64eeeb841e71d132f1066c4ad"
+      ]
+    },
+    {
+      "path": ".claude/skills/gemini-exec/SKILL.md",
+      "sha256": [
+        "f66595a61e69442c1738ff83c4ed5020eb98ccd4c68f0b7792bd0a36dfbd135c"
+      ]
+    },
+    {
+      "path": ".claude/skills/gemini-exec/scripts/gemini-wrapper.cjs",
+      "sha256": [
+        "15eb89f1d7a360e7d53f92796b75c10115eccf76ff70e7ec950d7629235f05b0"
+      ]
+    },
+    {
+      "path": ".claude/skills/go-best-practices/CLAUDE.md",
+      "sha256": [
+        "1c2ae30a54968a776e82804c83c6247c0218c7d6b27cca5414a80b57e60524af",
+        "473eddd6cab01d5a123884b4221e94f49785de7c0178609e6742f88fc023a09e"
+      ]
+    },
+    {
+      "path": ".claude/skills/java21-best-practices/SKILL.md",
+      "sha256": [
+        "08bdb5c6c9cc7bac146968926255ed8334dd886951e962ac8b56d9c8ed3f61ae",
+        "15b57fe25d54db0ef79d25c7b2c96982b35dc9f1c64669fff13b136d0c7f3321"
+      ]
+    },
+    {
+      "path": ".claude/skills/jinja2-prompts/SKILL.md",
+      "sha256": [
+        "d589a29633d49a503558b0af93ee39223f8eb8e4f538e0fe7b3d53b05467680c",
+        "f82f8c05a9a62b6547866077f1e1899c09a99d0165b758e427a13d7665a251f0"
+      ]
+    },
+    {
+      "path": ".claude/skills/memory-management/SKILL.md",
+      "sha256": [
+        "24897f8657bad3963812696cab4058473d6ebdeecadd86ada71d564361e699e1",
+        "2915a078afc71bb0eb17dd0912e960adee9ce67e53e8e2d56896dd3bae81546e",
+        "3fc9e09475523831caa74ddcbaeaa5cc3e3bcb58cbe680834e68179d653e0d7d",
+        "4392a38adcc0c538d231339727368dd8f6a1051650c00e19f0d78ac05f8bdb63",
+        "e3bbbf4abafac70379c2536887249fabde9fc0efddad2308b4bbd9c94a9eb18e"
+      ]
+    },
+    {
+      "path": ".claude/skills/memory-recall/SKILL.md",
+      "sha256": [
+        "14e17119e6fc510af9335d941b791b4068f9dee4ef024dc84a1b8724142fa73e",
+        "22b2d518426b8d6baa0fa61a063491221ad25608b2e5ec67efcd71ea8d0fa08b",
+        "94d583ae6df09a0e5ee97bbe8112c8675634da4b032e6e2cf6ba6093bce7c669",
+        "ab0a61a1dec8d57b4a005826994816a6b28e96303bd4fa419bb29e1c9fe3d69d",
+        "b40223a46b0fa3e75aa3e78d871ad79c5a6c0acf4f837af6cab4e3b4a1a33734"
+      ]
+    },
+    {
+      "path": ".claude/skills/memory-save/SKILL.md",
+      "sha256": [
+        "05c29a3e9d51acb938917723f7b099c83926f91fe12402a292b4b7820b92ca76",
+        "534eccc3c45169433b1956b852e2eb7d345ba47097141474e3326ac483d1ce93",
+        "5c4cce467a5b222c14ce5bd6b810192047393f2f68243073a6c16f6ea8e61be4",
+        "c12d30ac860247ad0576188654096a1589f771055706328777242eafd66c6427"
+      ]
+    },
+    {
+      "path": ".claude/skills/peer-messaging/SKILL.md",
+      "sha256": [
+        "42eeb1b5ef13ad0a684eb8c58ba7a3a8fce2586c5d28bdc197be6ccbf4f46bd5",
+        "bba53afcf5345fefa4e7a4e4dae9cd4e62fb36b3ec87f9e9ba1b6d6fc6000ee4"
+      ]
+    },
+    {
+      "path": ".claude/skills/pipeline-execution/SKILL.md",
+      "sha256": [
+        "8bd89009e5c5e3984c04c33408eb317b4b23190f6c0c6892e42bdee927c8e39e"
+      ]
+    },
+    {
+      "path": ".claude/skills/pipeline-list/SKILL.md",
+      "sha256": [
+        "5b04fa18767a6dc2583bc895875defcf7850ccffee01868fd12d4edff5755e34"
+      ]
+    },
+    {
+      "path": ".claude/skills/pipeline-run/SKILL.md",
+      "sha256": [
+        "c9b63595881c84b0922b0e995123123ed8e8f3e777155c9046a580ecca5640fb"
+      ]
+    },
+    {
+      "path": ".claude/skills/rtk-exec/SKILL.md",
+      "sha256": [
+        "b9b39ca65327cb17357ad13f493c187836b4d76fa83984b21fd861fc077f4b29"
+      ]
+    },
+    {
+      "path": ".claude/skills/rtk-exec/scripts/rtk-wrapper.cjs",
+      "sha256": [
+        "19d0647e53d54d322cc5a90d0c2e87f694042d563ca4c7814764bbfaee5b76f1"
+      ]
+    },
+    {
+      "path": ".claude/skills/sdd-development/SKILL.md",
+      "sha256": [
+        "9a46b7f2a3038d84f5588a4376921cb626382e536d6058630799267e3e780264"
+      ]
+    },
+    {
+      "path": ".claude/skills/workflow-resume/SKILL.md",
+      "sha256": [
+        "3b996d003a9255e56a43f7733001cfdd4faf3adeae52c06dae976bfd91a75556",
+        "866bada1ca7d812ec05d72e3dbd047cbef04f71cb876fc6c36b1cfd2c20cb11d"
+      ]
+    },
+    {
+      "path": ".claude/skills/workflow-runner/SKILL.md",
+      "sha256": [
+        "712b2bd6630303d7e956c972349e7101f306829bf5695b4e359cd377c1070865",
+        "922bfe11058d8c4ef0703602afccbfc3998280ad269227ec8b8185ec4204d6b9"
+      ]
+    },
+    {
+      "path": ".claude/skills/workflow/SKILL.md",
+      "sha256": [
+        "ad6f2dfea47bcfe65aacbcbbe6612ebc73223049723db856975ab649f9b207d0",
+        "d16fd264b03e26c89497bba12aae5ae10bcea39e9cb3433be5b4b5e6ff49d44c",
+        "e948f51e84d580cb261a865b2bc78316478f31f170536141073815fc06295ef2"
+      ]
+    },
+    {
+      "path": ".claude/skills/writing-clearly-and-concisely/SKILL.md",
+      "sha256": [
+        "1fc6ee4371f75d4fe8759d3d14d481765b31bdc7fd48bb18848f479dffaa3c2d",
+        "241617e6c04d6aa88815c0b766d57a36cf76049301f71fac3e7a765a6df2eb49",
+        "65cddecc1f70ea73f58790129823a8cbb0bf33aee03274738d92f7a47829e12e"
+      ]
+    },
+    {
+      "path": "guides/agentmemory-migration/measure-step-zero.md",
+      "sha256": [
+        "cc69bd307cf538a583a66d8a160a5908a8cbfddf7b169d55db774bb2ec46ef52"
+      ]
+    },
+    {
+      "path": "guides/agentmemory-migration/phase-1-coexist.md",
+      "sha256": [
+        "05cd4d505999f64043c8dd6ae986f495c912b559fe0683c7bf3b3617919c95d6"
+      ]
+    },
+    {
+      "path": "guides/java21/index.yaml",
+      "sha256": [
+        "473a2da040160f7c4c6a84e9ab776013ffaaee42a586b8929b7ab38bfb6f2f3d"
+      ]
+    },
+    {
+      "path": "guides/java21/java-style-guide.md",
+      "sha256": [
+        "245af391a7b2524c13066ffa65ba41e8e2fd7cca3ac91476b9d792dbf4b9c251"
+      ]
+    },
+    {
+      "path": "guides/java21/modern-java21.md",
+      "sha256": [
+        "19e5fdda2aa15889fae02443b5d552af1d2549c5881a7b80723a198d8e096e07"
+      ]
+    },
+    {
+      "path": "guides/profiles/manifest-install.md",
+      "sha256": [
+        "f0dd38469b11c28fb61ac9e437d2c9de11c3a4092ae35bd150c4d3854fe3554a"
+      ]
+    },
+    {
+      "path": "guides/tech-review/README.md",
+      "sha256": [
+        "4f2c1d3753aee160ae57ed7accc4a8be733df360301b5d92532f48268ee1a25a"
+      ]
+    },
+    {
+      "path": "guides/tech-review/index.yaml",
+      "sha256": [
+        "4b8b5676e65150c7758d6c92d37853d9688b4b3f67150e746153948617348ee4"
+      ]
+    }
+  ]
+}

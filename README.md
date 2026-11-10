@@ -260,6 +260,7 @@ The hook source of truth is `.claude/hooks/hooks.json`; `omcustom init` merges i
 omcustom init                  # Interactive setup wizard (language, framework, team mode)
 omcustom init --lang ko        # Initialize with Korean
 omcustom init --from-snapshot  # Install from pre-configured team snapshot
+omcustom init --no-agent-teams # Do not write the Agent Teams env flag
 omcustom sync                  # Detect drift between .claude/ state and lockfile
 omcustom sync --check          # Check for drift without applying changes
 omcustom sync --export         # Export current state as team snapshot
@@ -273,6 +274,15 @@ omcustom update --all          # Batch update all outdated projects
 omcustom serve                 # Start built-in Web UI
 omcustom serve-stop            # Stop Web UI
 ```
+
+- **Agent Teams flag**: by default `init` writes `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"` to the project `.claude/settings.json`. Other keys and env entries are kept, and an existing value for that key is never overwritten. A file that is not a JSON object is left untouched and `init` prints a warning. `--no-agent-teams` writes nothing, and `--from-snapshot` does not apply it (the team's settings are copied verbatim). This is separate from `teamMode` in `.omcustomrc.json`, which stays `false` by default. The variable only expresses intent: Agent Teams works only if your Claude Code version exposes the Agent Teams tools.
+- **Init banner and self-update**: the init banner shows the CLI version (`oh-my-customcode vX.Y.Z`). If you accept the self-update prompt, `init` re-runs itself with the newly installed CLI. If the updated binary is not the one on your PATH, `init` warns and continues with the current version.
+- **Leftover files**: `omcustom update` removes files left over from older versions, only when all of these hold: the path is in `templates/retired-template-paths.json` (files oh-my-customcode once shipped), the content matches a shipped version, the previous lockfile owned the file with the same hash, and the path is not in your preserve settings. Otherwise the file is kept and a warning is printed. `--dry-run` lists what would be removed, and directories emptied by the removal are deleted.
+- **Orphans check**: `omcustom doctor` lists those leftover files and says, for each one, whether `omcustom update` removes it or whether you must delete it yourself (not owned by the lockfile, preserved, or modified). The lockfile records template files plus retired files it already owned, but not leftovers it never owned (for example, ones left by re-running init over an old install), so "lockfile OK" alone does not prove there are no leftovers.
+
+### Troubleshooting: `init` installs an old version
+
+A CLI older than 1.0.16 cannot detect 1.x or newer releases through `init` or `update`, so `omcustom init` silently installs the old version. Run `npm install -g oh-my-customcode@latest` once, then check with `omcustom --version`. If the version does not change, the `omcustom` on your PATH comes from a different npm prefix: compare `which -a omcustom` with `npm prefix -g`.
 
 ---
 

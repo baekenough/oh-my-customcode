@@ -71,6 +71,12 @@ function printDriftDetails(result: SyncCheckResult): void {
 async function runCheck(targetDir: string, options: SyncOptions): Promise<void> {
   const result = await syncCheck(targetDir, { reference: options.reference });
 
+  // The comparison could not be made: report why instead of a drift/in-sync summary.
+  if (result.error) {
+    console.error(`\nSync check failed: ${result.error}`);
+    process.exit(1);
+  }
+
   if (!result.referenceVersion) {
     console.error('\nNo lockfile found. Run omcustom init first.');
     process.exit(1);

@@ -14,6 +14,7 @@ import {
   diffLockfiles,
   generateLockfile,
   type Lockfile,
+  listTemplateFiles,
   readLockfile,
   writeLockfile,
 } from './lockfile.js';
@@ -35,6 +36,12 @@ export interface SyncCheckResult {
   currentVersion: string | null;
   /** Total number of files tracked in the current state */
   totalTracked: number;
+  /**
+   * Why the comparison could not be made (never set when it was made): the template directory
+   * that defines ownership has no component files, or the current snapshot could not be
+   * generated. `inSync` is then `false`.
+   */
+  error?: string;
 }
 
 export interface SyncExportResult {
@@ -64,13 +71,34 @@ async function loadVersions(): Promise<{ generatorVersion: string; templateVersi
  * Generate the current lockfile snapshot for a target directory.
  * Reads package and manifest versions from the installed package root.
  */
-async function generateCurrentLockfile(targetDir: string): Promise<Lockfile | null> {
+async function generateCurrentLockfile(
+  targetDir: string,
+  templateRoot?: string
+): Promise<Lockfile | null> {
   try {
     const { generatorVersion, templateVersion } = await loadVersions();
-    return await generateLockfile(targetDir, generatorVersion, templateVersion);
+    return await generateLockfile(
+      targetDir,
+      generatorVersion,
+      templateVersion,
+      templateRoot === undefined ? {} : { templateRoot }
+    );
   } catch {
     return null;
   }
+}
+
+/**
+ * Copy of `lockfile` without entries that have no counterpart in `templateFiles` (the files under
+ * the template root). Mirrors the filter `generateLockfile` applies to the current snapshot
+ * (`templateRoot` option), so entries the updater carried forward for leftovers that are no
+ * longer shipped are ignored here as well.
+ */
+function restrictToTemplateOwned(lockfile: Lockfile, templateFiles: ReadonlySet<string>): Lockfile {
+  const files = Object.fromEntries(
+    Object.entries(lockfile.files).filter(([path]) => templateFiles.has(path))
+  );
+  return { ...lockfile, files };
 }
 
 /**
@@ -80,10 +108,19 @@ async function generateCurrentLockfile(targetDir: string): Promise<Lockfile | nu
  * @param targetDir - Project root containing .omcustom.lock.json
  * @param options.reference - Optional path to an external snapshot directory;
  *   when omitted, uses the lockfile found in targetDir
+ * @param options.templateRoot - Template directory that defines ownership for the installed
+ *   lockfile comparison (default: this package's `templates/`); ignored with `reference`
+ *
+ * Without `reference`, the installed lockfile records only template-owned files (#1935), so both
+ * the lockfile and the current snapshot are restricted to paths that have a template counterpart.
+ * Custom files and leftovers (including entries an older, unfiltered lockfile still lists) are
+ * therefore neither "added" nor "removed". With `reference` the snapshot is compared unfiltered.
+ * A template directory without any component file (missing or empty) is an error, not an empty
+ * in-sync comparison: the result is not in sync and `error` says why.
  */
 export async function syncCheck(
   targetDir: string,
-  options?: { reference?: string }
+  options?: { reference?: string; templateRoot?: string }
 ): Promise<SyncCheckResult> {
   const empty: SyncCheckResult = {
     inSync: false,
@@ -103,15 +140,35 @@ export async function syncCheck(
     return empty;
   }
 
-  const current = await generateCurrentLockfile(targetDir);
+  const templateRoot =
+    options?.reference === undefined
+      ? (options?.templateRoot ?? join(getPackageRoot(), 'templates'))
+      : undefined;
+
+  let templateFiles: Set<string> | null = null;
+  if (templateRoot !== undefined) {
+    templateFiles = await listTemplateFiles(templateRoot);
+    if (templateFiles.size === 0) {
+      return {
+        ...empty,
+        referenceVersion: reference.generatorVersion,
+        error: `no template files found under ${templateRoot}`,
+      };
+    }
+  }
+
+  const current = await generateCurrentLockfile(targetDir, templateRoot);
   if (!current) {
     return {
       ...empty,
       referenceVersion: reference.generatorVersion,
+      error: 'cannot generate the current lockfile snapshot',
     };
   }
 
-  const diff = diffLockfiles(reference, current);
+  const base =
+    templateFiles === null ? reference : restrictToTemplateOwned(reference, templateFiles);
+  const diff = diffLockfiles(base, current);
 
   return {
     inSync: diff.added.length === 0 && diff.removed.length === 0 && diff.modified.length === 0,

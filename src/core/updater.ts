@@ -2,8 +2,9 @@
  * Updater module - Update agents from source
  */
 
-import { lstat, realpath, unlink } from 'node:fs/promises';
+import { lstat, realpath, rmdir, unlink } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname as posixDirname } from 'node:path/posix';
 import packageJson from '../../package.json';
 import { i18n } from '../i18n/index.js';
 import {
@@ -28,9 +29,18 @@ import { getProviderLayout } from './layout.js';
 import {
   computeFileHash,
   generateAndWriteLockfileForDir,
+  LOCKFILE_VERSION,
   type Lockfile,
+  type LockfileEntry,
   readLockfile,
+  resolveLockfileComponent,
+  writeLockfile,
 } from './lockfile.js';
+import {
+  isRetirablePath,
+  loadRetiredTemplatePaths,
+  type RetiredTemplatePathEntry,
+} from './retired-template-paths.js';
 
 /**
  * Options for update operation
@@ -105,6 +115,17 @@ export interface UpdateResult {
     wouldChangeSettings: string[];
     settingsConflicts: string[];
   };
+  /**
+   * Leftovers that oh-my-customcode no longer ships (templates/retired-template-paths.json,
+   * #1935). `removed` were deleted; dry-run lists them in `wouldRemove` instead. `preserved` were
+   * kept, with the reason; they are also in `preservedFiles` and `warnings`. Present when the
+   * retired list was evaluated.
+   */
+  orphanRetirement?: {
+    removed: string[];
+    wouldRemove: string[];
+    preserved: { path: string; reason: string }[];
+  };
 }
 
 /**
@@ -158,7 +179,7 @@ interface _ComponentVersions {
 /**
  * User customization manifest
  */
-interface CustomizationManifest {
+export interface CustomizationManifest {
   /** Files that have been modified by user */
   modifiedFiles: string[];
   /** Files that should be preserved during update */
@@ -189,8 +210,17 @@ function getRtkRetirement(result: UpdateResult) {
   return result.rtkRetirement;
 }
 
-/** Existing regular files only; neither target symlinks nor parent escapes are owned. */
-async function validateRtkTarget(targetDir: string, path: string): Promise<void> {
+/**
+ * Existing regular files only; neither target symlinks nor parent escapes are owned.
+ * With `exactLocation`, the file must also resolve to exactly `<realpath(targetDir)>/<path>`,
+ * so no directory on the way is a symlink (not even one that stays inside the project).
+ * Throws an ENOENT error when the file does not exist.
+ */
+export async function validateOwnedTarget(
+  targetDir: string,
+  path: string,
+  exactLocation = false
+): Promise<void> {
   const validation = validatePreserveFilePath(path, targetDir);
   if (!validation.valid) throw new Error('path escapes project');
   const fullPath = resolve(targetDir, path);
@@ -202,20 +232,91 @@ async function validateRtkTarget(targetDir: string, path: string): Promise<void>
   if (within === '' || within === '..' || within.startsWith(`..${sep}`) || isAbsolute(within)) {
     throw new Error('resolved path escapes project');
   }
+  if (exactLocation && resolvedFile !== resolve(root, path)) {
+    throw new Error('path goes through a symlinked directory');
+  }
 }
 
-function isRtkPathPreserved(
+/** String entries of a manifest list; anything else (a hand-edited manifest) is ignored. */
+function manifestPaths(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.length > 0)
+    : [];
+}
+
+/**
+ * A preserve-like entry as a plain project-relative prefix: leading `./` and trailing `/`
+ * (repeated) are removed, so `./.claude/skills/x/` and `.claude/skills/x` mean the same.
+ * Non-strings and entries that end up empty (`''`, `/`, `./`) yield null: they must never match
+ * (an empty prefix would preserve everything). Backslashes are left alone, as everywhere else
+ * these lists are read.
+ */
+function normalizePreserveEntry(entry: unknown): string | null {
+  if (typeof entry !== 'string') return null;
+  let normalized = entry;
+  while (normalized.startsWith('./')) normalized = normalized.slice(2);
+  while (normalized.endsWith('/')) normalized = normalized.slice(0, -1);
+  return normalized === '' ? null : normalized;
+}
+
+/**
+ * Whether `path` is kept by an explicit preservation source: config `preserveFiles` and
+ * `customComponents`, and the customization manifest's `preserveFiles`, `modifiedFiles` and
+ * `customComponents`. An entry preserves itself and everything below it (entries are normalized
+ * first, see `normalizePreserveEntry`). Used for deletion decisions only; overwrite semantics
+ * in `updateComponent` are separate.
+ */
+export function isPathPreserved(
   path: string,
   config: OmccConfig,
   customizations: CustomizationManifest | null
 ): boolean {
   const paths = [
-    ...(config.preserveFiles ?? []),
-    ...(customizations?.preserveFiles ?? []),
-    ...(customizations?.modifiedFiles ?? []),
-    ...(config.customComponents ?? []).map((component) => component.path),
+    ...(Array.isArray(config.preserveFiles) ? config.preserveFiles : []),
+    ...manifestPaths(customizations?.preserveFiles),
+    ...manifestPaths(customizations?.modifiedFiles),
+    ...manifestPaths(customizations?.customComponents),
+    ...(Array.isArray(config.customComponents) ? config.customComponents : []).map(
+      (component) => component?.path
+    ),
   ];
-  return paths.some((preserved) => path === preserved || path.startsWith(`${preserved}/`));
+  return paths.some((entry) => {
+    const preserved = normalizePreserveEntry(entry);
+    return preserved !== null && (path === preserved || path.startsWith(`${preserved}/`));
+  });
+}
+
+/** The manifest exists but cannot be read: every deletion candidate is kept. */
+export const UNREADABLE_MANIFEST = 'customization manifest unreadable';
+
+/**
+ * Preservation sources for deletions (RTK and orphan retirement). Overwrite is not delete:
+ * `forceOverwriteAll` bypasses preservation for template copies only, so the manifest is loaded
+ * here even then. Only `preserveCustomizations: false` (an explicit API opt-out; the CLI always
+ * passes `true`) leaves the manifest out. A manifest that exists but cannot be read keeps every
+ * candidate (fail closed) instead of failing the update.
+ */
+export type DeletionCustomizations = CustomizationManifest | null | typeof UNREADABLE_MANIFEST;
+
+export async function loadDeletionCustomizations(
+  options: UpdateOptions
+): Promise<DeletionCustomizations> {
+  if (options.preserveCustomizations === false) return null;
+  try {
+    return await loadCustomizationManifest(options.targetDir);
+  } catch {
+    return UNREADABLE_MANIFEST;
+  }
+}
+
+/** The reason a deletion candidate is kept by preservation, or null when it is not. */
+export function deletionPreservedReason(
+  path: string,
+  config: OmccConfig,
+  customizations: DeletionCustomizations
+): string | null {
+  if (customizations === UNREADABLE_MANIFEST) return UNREADABLE_MANIFEST;
+  return isPathPreserved(path, config, customizations) ? 'explicitly preserved' : null;
 }
 
 async function retireRtkFile(
@@ -223,12 +324,12 @@ async function retireRtkFile(
   options: UpdateOptions,
   lockfile: Lockfile | null,
   result: UpdateResult,
-  preserved: boolean
+  preservedReason: string | null
 ): Promise<void> {
   const retirement = getRtkRetirement(result);
   try {
-    await validateRtkTarget(options.targetDir, path);
-    if (preserved) throw new Error('explicitly preserved');
+    await validateOwnedTarget(options.targetDir, path);
+    if (preservedReason) throw new Error(preservedReason);
     if (retirement.settingsConflicts.length > 0) throw new Error('settings retirement conflict');
     const entry = lockfile?.files[path];
     if (
@@ -245,7 +346,7 @@ async function retireRtkFile(
       retirement.wouldRemove.push(path);
       return;
     }
-    await validateRtkTarget(options.targetDir, path);
+    await validateOwnedTarget(options.targetDir, path);
     await unlink(fullPath);
     retirement.removed.push(path);
     result.removedDeprecatedFiles.push(path);
@@ -263,7 +364,7 @@ async function retireRtkFiles(
   lockfile: Lockfile | null,
   result: UpdateResult,
   config: OmccConfig,
-  customizations: CustomizationManifest | null
+  customizations: DeletionCustomizations
 ): Promise<string[]> {
   const fullUpdate = !options.components || options.components.length === 0;
   const files = RETIRED_RTK_FILES.filter(
@@ -275,11 +376,300 @@ async function retireRtkFiles(
       options,
       lockfile,
       result,
-      isRtkPathPreserved(file.path, config, customizations)
+      deletionPreservedReason(file.path, config, customizations)
     );
   }
   // Lock regeneration scans every component, regardless of the selected deletion scope.
   return RETIRED_RTK_FILES.map((file) => file.path);
+}
+
+/** RTK paths stay on the dedicated RTK flow above (settings-conflict handling). */
+const RTK_RETIRED_PATHS: ReadonlySet<string> = new Set(RETIRED_RTK_FILES.map((file) => file.path));
+
+function isUpdateComponent(value: string): value is UpdateComponent {
+  return (getAllUpdateComponents() as string[]).includes(value);
+}
+
+function getOrphanRetirement(result: UpdateResult) {
+  result.orphanRetirement ??= { removed: [], wouldRemove: [], preserved: [] };
+  return result.orphanRetirement;
+}
+
+/** Whether `path` (relative to the package templates/) exists, including as a symlink. */
+export async function templatePathExists(path: string): Promise<boolean> {
+  try {
+    await lstat(resolveTemplatePath(path));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove the directories of `path` that became empty, deepest first, up to but not including
+ * the component root. Stops at the first directory that cannot be removed (not empty, missing,
+ * or not a directory).
+ */
+async function removeEmptyParentDirectories(
+  targetDir: string,
+  path: string,
+  componentRoot: string
+): Promise<void> {
+  for (
+    let dir = posixDirname(path);
+    dir !== componentRoot && dir.startsWith(`${componentRoot}/`);
+    dir = posixDirname(dir)
+  ) {
+    try {
+      await rmdir(join(targetDir, dir));
+    } catch {
+      return;
+    }
+  }
+}
+
+/**
+ * Remove one leftover, or keep it and record why. Removal requires: no template counterpart, a
+ * regular non-symlink file at exactly that location in the project, not preserved, an old lock
+ * entry with a valid sha256, disk hash == old lock hash, and disk hash == a shipped version.
+ */
+async function retireOrphanFile(
+  entry: RetiredTemplatePathEntry,
+  componentRoot: string,
+  options: UpdateOptions,
+  lockfile: Lockfile | null,
+  result: UpdateResult,
+  preservedReason: string | null
+): Promise<void> {
+  const { path } = entry;
+  const retirement = getOrphanRetirement(result);
+  try {
+    // Still shipped: not an orphan (the generator excludes these; this guards a stale list).
+    if (await templatePathExists(path)) return;
+    await validateOwnedTarget(options.targetDir, path, true);
+    if (preservedReason) throw new Error(preservedReason);
+    const lockEntry = ownedLockEntry(lockfile, path);
+    if (!lockEntry) {
+      throw new Error('missing or invalid old ownership');
+    }
+    const fullPath = join(options.targetDir, path);
+    const diskHash = await computeFileHash(fullPath);
+    if (diskHash !== lockEntry.templateHash) throw new Error('user-modified file');
+    if (!entry.sha256.includes(diskHash)) {
+      throw new Error('content does not match any shipped version');
+    }
+    if (options.dryRun) {
+      retirement.wouldRemove.push(path);
+      return;
+    }
+    await validateOwnedTarget(options.targetDir, path, true);
+    await unlink(fullPath);
+    retirement.removed.push(path);
+    result.removedDeprecatedFiles.push(path);
+    info('update.deprecated_file_removed', { path, reason: 'no longer shipped' });
+    await removeEmptyParentDirectories(options.targetDir, path, componentRoot);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+    const reason = err instanceof Error ? err.message : 'unreadable ownership or file';
+    retirement.preserved.push({ path, reason });
+    result.preservedFiles.push(path);
+    result.warnings.push(`Orphan retirement preserved ${path}: ${reason}`);
+  }
+}
+
+/** The old lock entry for `path` when it carries a valid sha256 ownership hash, else null. */
+function ownedLockEntry(lockfile: Lockfile | null, path: string): LockfileEntry | null {
+  const entry = lockfile && Object.hasOwn(lockfile.files, path) ? lockfile.files[path] : null;
+  if (
+    typeof entry !== 'object' ||
+    entry === null ||
+    typeof entry.templateHash !== 'string' ||
+    !SHA256_HEX.test(entry.templateHash)
+  ) {
+    return null;
+  }
+  return entry;
+}
+
+const SHA256_HEX = /^[a-f0-9]{64}$/;
+
+/**
+ * Load the retired template list (#1935). An unreadable or invalid list returns null with a
+ * warning: orphan retirement is then skipped, and ownership is carried forward without it (see
+ * {@link collectCarriedOwnership}).
+ */
+async function loadRetiredList(result: UpdateResult): Promise<RetiredTemplatePathEntry[] | null> {
+  try {
+    return await loadRetiredTemplatePaths();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    result.warnings.push(
+      `Orphan retirement skipped: cannot read retired template paths: ${message}`
+    );
+    return null;
+  }
+}
+
+/**
+ * Remove leftovers that oh-my-customcode no longer ships (#1935), scoped like the RTK flow:
+ * every component on a full update, otherwise only the selected components. RTK paths are
+ * excluded here. `entries` is the loaded retired list; null (unreadable list) skips the step.
+ */
+async function retireOrphanTemplateFiles(
+  options: UpdateOptions,
+  entries: readonly RetiredTemplatePathEntry[] | null,
+  lockfile: Lockfile | null,
+  result: UpdateResult,
+  config: OmccConfig,
+  customizations: DeletionCustomizations
+): Promise<void> {
+  if (entries === null) return;
+
+  getOrphanRetirement(result);
+  const fullUpdate = !options.components || options.components.length === 0;
+  for (const entry of entries) {
+    const component = resolveLockfileComponent(entry.path);
+    if (
+      RTK_RETIRED_PATHS.has(entry.path) ||
+      !isUpdateComponent(component) ||
+      !(fullUpdate || options.components?.includes(component))
+    ) {
+      continue;
+    }
+    await retireOrphanFile(
+      entry,
+      getComponentPath(component),
+      options,
+      lockfile,
+      result,
+      deletionPreservedReason(entry.path, config, customizations)
+    );
+  }
+}
+
+/** Ownership carried into the regenerated lock, and the leftover paths that were evaluated. */
+interface CarriedOwnership {
+  /**
+   * Entries to keep for paths the old lock owned (see `LockfileWriteOptions.carriedEntries`):
+   * the old ownership hash (equal to the disk hash), the disk size and the path's component.
+   */
+  entries: Record<string, LockfileEntry>;
+  /** Paths with an old lock entry that were evaluated, carried or not. */
+  evaluated: string[];
+}
+
+/**
+ * The old lock entry for a leftover, as it should be carried, or null when it must not be:
+ * requires a regular file at exactly that location, disk hash == old hash, and (when `shipped`
+ * is given) disk hash == a shipped version. The caller has already excluded shipped and RTK
+ * paths and entries without a valid ownership hash.
+ */
+async function carriableEntry(
+  targetDir: string,
+  path: string,
+  oldEntry: LockfileEntry,
+  shipped: readonly string[] | null
+): Promise<LockfileEntry | null> {
+  try {
+    await validateOwnedTarget(targetDir, path, true);
+    const fullPath = join(targetDir, path);
+    const diskHash = await computeFileHash(fullPath);
+    if (diskHash !== oldEntry.templateHash) return null;
+    if (shipped !== null && !shipped.includes(diskHash)) return null;
+    const { size } = await lstat(fullPath);
+    return { templateHash: diskHash, size, component: resolveLockfileComponent(path) };
+  } catch {
+    // Missing, not a regular file, escaping or unreadable: not provably owned any more.
+    return null;
+  }
+}
+
+/**
+ * Old lock entries of leftovers to carry into the regenerated lock, so ownership survives a
+ * partial update, a kept leftover or a list that fails to load. Never adds a path the old lock
+ * does not have, and never deletes anything.
+ *
+ * With the retired list (`entries` non-empty): candidates are the listed paths, and the disk
+ * hash must also be one of the listed shipped hashes. Without it (`entries` null — unreadable —
+ * or empty, as for a missing list file): candidates are the old lock paths inside a lockfile
+ * component that have no template counterpart, without the shipped-hash check, and a warning
+ * names how many were carried. That fallback can keep entries the list would not (an unmodified
+ * custom file that a legacy lock recorded), which is safe: carrying only keeps a lock entry,
+ * and deletion still requires the list. The next update with the list drops them again.
+ */
+async function collectCarriedOwnership(
+  targetDir: string,
+  lockfile: Lockfile | null,
+  entries: readonly RetiredTemplatePathEntry[] | null,
+  result: UpdateResult
+): Promise<CarriedOwnership> {
+  const carried: CarriedOwnership = { entries: {}, evaluated: [] };
+  if (lockfile === null) return carried;
+
+  const withList = entries !== null && entries.length > 0;
+  const candidates: Array<[string, readonly string[] | null]> = withList
+    ? entries.map((entry) => [entry.path, entry.sha256])
+    : Object.keys(lockfile.files)
+        .filter((path) => isRetirablePath(path))
+        .map((path) => [path, null]);
+
+  for (const [path, shipped] of candidates) {
+    const oldEntry = ownedLockEntry(lockfile, path);
+    if (!oldEntry || RTK_RETIRED_PATHS.has(path) || (await templatePathExists(path))) continue;
+    carried.evaluated.push(path);
+    const entry = await carriableEntry(targetDir, path, oldEntry, shipped);
+    if (entry) carried.entries[path] = entry;
+  }
+
+  const count = Object.keys(carried.entries).length;
+  if (!withList && count > 0) {
+    result.warnings.push(
+      `Lockfile ownership of ${count} file(s) without a template counterpart was carried forward without the retired template list; they are not removed until the list is available`
+    );
+  }
+  return carried;
+}
+
+/**
+ * `update()` found no component updates (#1935 follow-up): still remove owned leftovers, so a
+ * version bumped by an earlier partial update does not strand them. The lock is not regenerated
+ * (that would record user-modified template files as unmodified); instead the evaluated leftover
+ * entries that are no longer carriable — removed, modified, missing — are dropped from the old
+ * lock, and it is written only when something was dropped. Dry-run and an unreadable list
+ * change nothing.
+ */
+async function retireOrphansWithoutUpdates(
+  options: UpdateOptions,
+  result: UpdateResult,
+  config: OmccConfig
+): Promise<void> {
+  const entries = await loadRetiredList(result);
+  if (entries === null) return;
+  const lockfile = await readLockfile(options.targetDir);
+  const customizations = await loadDeletionCustomizations(options);
+  await retireOrphanTemplateFiles(options, entries, lockfile, result, config, customizations);
+  if (options.dryRun || lockfile === null) return;
+
+  const carried = await collectCarriedOwnership(options.targetDir, lockfile, entries, result);
+  const dropped = new Set(carried.evaluated.filter((path) => !(path in carried.entries)));
+  if (dropped.size === 0) return;
+
+  const files = Object.fromEntries(
+    Object.entries(lockfile.files).filter(([path]) => !dropped.has(path))
+  );
+  try {
+    await writeLockfile(options.targetDir, {
+      lockfileVersion: LOCKFILE_VERSION,
+      generatorVersion: lockfile.generatorVersion,
+      generatedAt: new Date().toISOString(),
+      templateVersion: lockfile.templateVersion,
+      files,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    result.warnings.push(`Lockfile update failed: ${message}`);
+    warn('update.lockfile_failed', { error: message });
+  }
 }
 
 /** Create initial update result */
@@ -451,7 +841,7 @@ function resolveConfigPreserveFiles(options: UpdateOptions, config: OmccConfig):
  * Resolve customizations from manifest and config
  */
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Security validation adds necessary complexity
-function resolveCustomizations(
+export function resolveCustomizations(
   customizations: CustomizationManifest | null,
   configPreserveFiles: string[],
   targetDir: string
@@ -628,7 +1018,7 @@ async function migrateRtkSettingsFile(
   const settingsPath = join(targetDir, path);
   const retirement = getRtkRetirement(result);
   try {
-    await validateRtkTarget(targetDir, path);
+    await validateOwnedTarget(targetDir, path);
     const raw = await readTextFile(settingsPath);
     // A leading UTF-8 BOM makes JSON.parse throw; strip it for parsing and restore it on write.
     const bom = raw.startsWith('﻿') ? '﻿' : '';
@@ -659,7 +1049,7 @@ async function migrateRtkSettingsFile(
     }
 
     const trailingNewline = raw.endsWith('\n') ? '\n' : '';
-    await validateRtkTarget(targetDir, path);
+    await validateOwnedTarget(targetDir, path);
     await writeTextFile(
       settingsPath,
       `${bom}${JSON.stringify(settings, null, 2)}${trailingNewline}`
@@ -806,10 +1196,14 @@ async function updateProjectRegistry(targetDir: string, newVersion: string): Pro
 async function regenerateLockfile(
   options: UpdateOptions,
   result: UpdateResult,
-  retiredPaths: readonly string[]
+  retiredPaths: readonly string[],
+  carriedEntries: Readonly<Record<string, LockfileEntry>>
 ): Promise<void> {
   if (options.dryRun) return;
-  const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir, { retiredPaths });
+  const lockfileResult = await generateAndWriteLockfileForDir(options.targetDir, {
+    retiredPaths,
+    carriedEntries,
+  });
   if (lockfileResult.warning) {
     result.warnings.push(lockfileResult.warning);
     warn('update.lockfile_failed', { error: lockfileResult.warning });
@@ -818,6 +1212,40 @@ async function regenerateLockfile(
       files: String(lockfileResult.fileCount),
     });
   }
+}
+
+/**
+ * After the component updates: retire RTK files and leftovers that are no longer shipped
+ * (#1935), then regenerate the lockfile (#316), keeping ownership of leftovers that were not
+ * removed so a later update can still remove them. Deletions honour every preservation source,
+ * even with forceOverwriteAll (overwrite ≠ delete).
+ */
+async function retireLeftoversAndRegenerateLockfile(
+  options: UpdateOptions,
+  lockfile: Lockfile | null,
+  result: UpdateResult,
+  config: OmccConfig
+): Promise<void> {
+  const deletionCustomizations = await loadDeletionCustomizations(options);
+  const retiredPaths = await retireRtkFiles(
+    options,
+    lockfile,
+    result,
+    config,
+    deletionCustomizations
+  );
+  const retiredList = await loadRetiredList(result);
+  await retireOrphanTemplateFiles(
+    options,
+    retiredList,
+    lockfile,
+    result,
+    config,
+    deletionCustomizations
+  );
+  if (options.dryRun) return;
+  const carried = await collectCarriedOwnership(options.targetDir, lockfile, retiredList, result);
+  await regenerateLockfile(options, result, retiredPaths, carried.entries);
 }
 
 /**
@@ -890,8 +1318,9 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     if (!updateCheck.hasUpdates && !options.force) {
       info('update.no_updates');
-      result.success = true;
       result.skippedComponents = options.components || getAllUpdateComponents();
+      await retireOrphansWithoutUpdates(options, result, config);
+      result.success = true;
       return result;
     }
 
@@ -924,10 +1353,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     await runFullUpdatePostProcessing(options, result, config, customizations);
 
-    const retiredPaths = await retireRtkFiles(options, lockfile, result, config, customizations);
-
-    // Regenerate lockfile after successful update (#316)
-    await regenerateLockfile(options, result, retiredPaths);
+    await retireLeftoversAndRegenerateLockfile(options, lockfile, result, config);
 
     // Check Codex CLI after update
     if (!options.dryRun) checkAndInstallCodexAfterUpdate();
@@ -1623,7 +2049,9 @@ async function backupInstallation(targetDir: string): Promise<string> {
 /**
  * Load customization manifest
  */
-async function loadCustomizationManifest(targetDir: string): Promise<CustomizationManifest | null> {
+export async function loadCustomizationManifest(
+  targetDir: string
+): Promise<CustomizationManifest | null> {
   const manifestPath = join(targetDir, CUSTOMIZATION_MANIFEST_FILE);
   if (await fileExists(manifestPath)) {
     return readJsonFile<CustomizationManifest>(manifestPath);

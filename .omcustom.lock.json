@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.19",
-  "generatedAt": "2026-11-09T12:12:58.813Z",
-  "templateVersion": "2.0.19",
+  "generatorVersion": "2.0.20",
+  "generatedAt": "2026-11-10T09:03:22.934Z",
+  "templateVersion": "2.0.20",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -1160,8 +1160,8 @@
       "component": "skills"
     },
     ".claude/skills/sauron-watch/SKILL.md": {
-      "templateHash": "51d5ee404002ff91360202a02acd785f240b95e14cc0ee4d9d7676faef136897",
-      "size": 8821,
+      "templateHash": "3483e56d4a54b8689519749012bdecad8057c0b1efef1a4d3e058275285c54bc",
+      "size": 9662,
       "component": "skills"
     },
     ".claude/skills/scout/SKILL.md": {
