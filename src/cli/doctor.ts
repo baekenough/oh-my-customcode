@@ -875,7 +875,7 @@ async function hashRegularFileInsideProject(
  * - preserved: the path is covered by preserve settings, update keeps it.
  * - modified: the disk hash is not any shipped version of the file.
  * - unmodified: a shipped version, the old lock records this path with the same hash and the
- *   location is an owned regular file, so update removes it.
+ *   location is an owned regular file, so update moves it to a backup (#1938).
  * - unowned: a shipped version, but update keeps it (lock entry missing, invalid or with a
  *   different hash, or the file sits behind a symlinked directory).
  */
@@ -921,7 +921,7 @@ const RTK_RETIRED_PATHS: ReadonlySet<string> = new Set(RETIRED_RTK_PATHS);
  * the lockfile only records files the current package ships.
  *
  * Each leftover is reported as `omcustom update` will actually treat it:
- * - unmodified (shipped content, owned by the lock, not preserved): update removes it.
+ * - unmodified (shipped content, owned by the lock, not preserved): update moves it to a backup.
  * - unowned (shipped content the lock does not own with that hash): update keeps it, delete manually.
  * - preserved by your preserve settings: update keeps it, delete or unpreserve deliberately.
  * - modified (content is not a shipped version): review and delete manually.

@@ -6,8 +6,9 @@
  * longer ships, together with the SHA-256 of every content version it shipped at that path.
  * It is generated from git history by scripts/generate-retired-template-paths.ts and committed.
  *
- * `omcustom update` uses it to remove leftovers that are provably unmodified copies of shipped
- * content; anything else stays on disk.
+ * `omcustom update` uses it to move leftovers that are provably unmodified copies of shipped
+ * content into a backup at the project root (`.omcustom-backup-<timestamp>/retired/`, #1938);
+ * anything else stays where it is.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -27,9 +28,10 @@ export const RETIRED_TEMPLATE_PATHS_DESCRIPTION =
   '(#1935). Generated from git history by scripts/generate-retired-template-paths.ts; do not edit ' +
   'by hand. schemaVersion 1: "paths" is sorted by "path" (code-unit order). Each "path" is ' +
   'install-relative with forward slashes. "sha256" lists, sorted, the lowercase hex SHA-256 of ' +
-  'every regular-file content version shipped at that path. omcustom update removes a leftover ' +
-  'only when it is a regular file whose hash matches both one of these hashes and its entry in ' +
-  'the previous .omcustom.lock.json, and the path is not preserved.';
+  'every regular-file content version shipped at that path. omcustom update moves a leftover ' +
+  'into .omcustom-backup-<timestamp>/retired/ at the project root only when it is a regular ' +
+  'file whose hash matches both one of these hashes and its entry in the previous ' +
+  '.omcustom.lock.json, and the path is not preserved.';
 
 /** One retired path. */
 export interface RetiredTemplatePathEntry {

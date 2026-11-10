@@ -882,6 +882,9 @@ describe('update command', () => {
             removed: options.dryRun ? [] : [`${options.targetDir}/removed.md`],
             wouldRemove: options.dryRun ? [`${options.targetDir}/removed.md`] : [],
             preserved: [{ path: `${options.targetDir}/kept.md`, reason: 'user-modified file' }],
+            ...(options.dryRun
+              ? {}
+              : { backupDir: `${options.targetDir}/.omcustom-backup-t/retired` }),
           },
         }));
         mock.module('../../../src/core/updater.js', () => ({ update: mockUpdate }));
@@ -902,11 +905,12 @@ describe('update command', () => {
         await updateCommand({ all: true, dryRun });
 
         const logs = consoleLogSpy.mock.calls.map((call: unknown[]) => String(call[0]));
-        const heading = dryRun
-          ? 'Would remove 1 file(s) that oh-my-customcode no longer ships:'
-          : 'Removed 1 file(s) that oh-my-customcode no longer ships:';
-        expect(logs.filter((line: string) => line === heading)).toHaveLength(2);
+        const heading = (name: string): string =>
+          dryRun
+            ? 'Would move 1 file(s) that oh-my-customcode no longer ships to a backup (.omcustom-backup-<timestamp>/retired):'
+            : `Moved 1 file(s) that oh-my-customcode no longer ships to a backup: ${name}/.omcustom-backup-t/retired`;
         for (const name of ['a', 'b']) {
+          expect(logs).toContain(heading(name));
           expect(logs).toContain(`  - ${name}/removed.md`);
           expect(logs).toContain(`  - ${name}/kept.md (user-modified file)`);
         }

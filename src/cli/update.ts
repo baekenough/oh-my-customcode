@@ -9,10 +9,16 @@
  */
 
 import { constants as osConstants } from 'node:os';
+import { createInterface } from 'node:readline/promises';
 
 import packageJson from '../../package.json';
 import { checkSelfUpdate, executeSelfUpdate } from '../core/self-update.js';
-import { type UpdateComponent, type UpdateOptions, update } from '../core/updater.js';
+import {
+  type OrphanRemovalConfirmation,
+  type UpdateComponent,
+  type UpdateOptions,
+  update,
+} from '../core/updater.js';
 import { i18n } from '../i18n/index.js';
 
 /**
@@ -45,6 +51,117 @@ export interface UpdateCommandOptions {
   all?: boolean;
   /** Skip self-update of oh-my-customcode package */
   skipSelf?: boolean;
+  /** Move retired template files to a backup without asking for confirmation (#1941, #1938) */
+  yes?: boolean;
+}
+
+/**
+ * Whether a CI variable marks a CI run: set and not empty, `false` or `0` (case-insensitive,
+ * surrounding spaces ignored), so `CI=false` or `CI=0` on a developer machine still asks.
+ */
+function isCiFlagSet(value: string | undefined): boolean {
+  const normalized = (value ?? '').trim().toLowerCase();
+  return normalized !== '' && normalized !== 'false' && normalized !== '0';
+}
+
+/**
+ * Whether to ask before moving retired template files to a backup (#1941): only when both stdin
+ * and stdout are terminals, outside CI (`CI`/`GITHUB_ACTIONS`, see {@link isCiFlagSet}), and not
+ * for `--all`, `--dry-run` or `--yes`. Otherwise they are moved when every safety condition holds.
+ */
+export function shouldConfirmOrphanRemoval(
+  options: UpdateCommandOptions,
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return false;
+  if (isCiFlagSet(env.CI) || isCiFlagSet(env.GITHUB_ACTIONS)) return false;
+  return !options.all && !options.dryRun && !options.yes;
+}
+
+/** Reads one answer line. */
+export type AskLine = (question: string) => Promise<string>;
+
+/** Ctrl+C at the prompt (#1941 review L1). */
+export class InputInterruptedError extends Error {
+  constructor() {
+    super('interrupted');
+    this.name = 'InputInterruptedError';
+  }
+}
+
+/**
+ * Ask `question` on the terminal (readline, like the self-update prompt) and return the answer.
+ * End of input (Ctrl+D) returns '' (the default answer); Ctrl+C rejects with
+ * {@link InputInterruptedError}. Both print a newline first, so later output starts on its own
+ * line instead of joining the prompt (#1941 review L2).
+ */
+export async function askLine(
+  question: string,
+  input: NodeJS.ReadableStream = process.stdin,
+  output: NodeJS.WritableStream = process.stdout
+): Promise<string> {
+  const rl = createInterface({ input, output });
+  let settled = false;
+  try {
+    return await new Promise<string>((resolve, reject) => {
+      const endLine = (): boolean => {
+        if (settled) return false;
+        settled = true;
+        output.write('\n');
+        return true;
+      };
+      rl.once('SIGINT', () => {
+        if (endLine()) reject(new InputInterruptedError());
+      });
+      rl.once('close', () => {
+        if (endLine()) resolve('');
+      });
+      rl.question(question).then(resolve, reject);
+    });
+  } finally {
+    // Closing the interface emits 'close'; after an answer that must not print another newline.
+    settled = true;
+    rl.close();
+  }
+}
+
+/**
+ * The confirmation passed to `update()` (#1941): prints the project, the backup directory and the
+ * files, then asks a y/N question. Only 'y' or 'yes' moves them to the backup; anything else,
+ * including an empty answer, keeps them. Ctrl+C keeps them too and says so (the update goes on:
+ * the components are already updated, and stopping now would leave a stale lock); any other
+ * failure of `ask` is passed on, and update() keeps the files with a warning.
+ */
+export function createOrphanRemovalPrompt(
+  targetDir: string,
+  ask: AskLine = askLine
+): OrphanRemovalConfirmation {
+  return async (paths, { backupDir }) => {
+    console.log(
+      i18n.t('cli.update.orphanConfirmHeader', {
+        count: String(paths.length),
+        path: targetDir,
+        backup: backupDir,
+      })
+    );
+    for (const path of paths) {
+      console.log(`  - ${path}`);
+    }
+    let answer: string;
+    try {
+      answer = await ask(i18n.t('cli.update.orphanConfirmPrompt'));
+    } catch (err) {
+      if (!(err instanceof InputInterruptedError)) throw err;
+      console.log(i18n.t('cli.update.orphanConfirmInterrupted'));
+      return false;
+    }
+    const normalized = answer.trim().toLowerCase();
+    const accepted = normalized === 'y' || normalized === 'yes';
+    if (!accepted) {
+      console.log(i18n.t('cli.update.orphanConfirmDeclined'));
+    }
+    return accepted;
+  };
 }
 
 /**
@@ -203,6 +320,9 @@ async function updateSingleProject(
     dryRun: options.dryRun,
     backup: options.backup,
     hard: options.hard,
+    confirmOrphanRemoval: shouldConfirmOrphanRemoval(options)
+      ? createOrphanRemovalPrompt(targetDir)
+      : undefined,
   };
 
   const result = await update(updateOptions);
@@ -403,31 +523,63 @@ function buildComponentsList(options: UpdateCommandOptions): UpdateComponent[] |
   return components.length > 0 ? components : undefined;
 }
 
+/** Where retired leftovers go, as a pattern: dry runs and results without `backupDir`. */
+const RETIRED_BACKUP_PATTERN = '.omcustom-backup-<timestamp>/retired';
+
+/** Print `paths` below a header, or nothing when there are none. */
+function printPathGroup(header: string, paths: readonly string[]): void {
+  if (paths.length === 0) return;
+  console.log(header);
+  for (const path of paths) {
+    console.log(`  - ${path}`);
+  }
+}
+
 /**
- * Print leftovers that oh-my-customcode no longer ships (#1935): removed files, dry-run
- * candidates, and kept files. Kept files' reasons are printed with the warnings on a single
+ * Print leftovers that oh-my-customcode no longer ships (#1935): files moved to the backup (with
+ * the backup directory and how to restore, #1938), dry-run candidates, and kept files.
+ *
+ * Kept files (#1938-1): those kept by the user's preserve settings get one count line; those kept
+ * because the user declined the confirmation are not repeated (the prompt already said so); the
+ * rest are listed for the user to act on. Their reasons are printed with the warnings on a single
  * project update; `withReasons` (used by `--all`, which prints no warnings) appends them.
  */
 function printOrphanRetirement(result: UpdateResult, withReasons = false): void {
   const orphans = result.orphanRetirement;
   if (!orphans) return;
-  const groups: Array<[string, readonly string[]]> = [
-    ['cli.update.orphansRemoved', orphans.removed],
-    ['cli.update.orphansWouldRemove', orphans.wouldRemove],
-    [
-      withReasons ? 'cli.update.orphansPreservedWithReasons' : 'cli.update.orphansPreserved',
-      orphans.preserved.map((entry) =>
-        withReasons ? `${entry.path} (${entry.reason})` : entry.path
-      ),
-    ],
-  ];
-  for (const [key, paths] of groups) {
-    if (paths.length === 0) continue;
-    console.log(i18n.t(key, { count: String(paths.length) }));
-    for (const path of paths) {
-      console.log(`  - ${path}`);
-    }
+  const count = (items: readonly unknown[]): string => String(items.length);
+  printPathGroup(
+    i18n.t('cli.update.orphansMoved', {
+      count: count(orphans.removed),
+      path: orphans.backupDir ?? RETIRED_BACKUP_PATTERN,
+    }),
+    orphans.removed
+  );
+  if (orphans.removed.length > 0) {
+    console.log(i18n.t('cli.update.orphansRestoreHint'));
   }
+  printPathGroup(
+    i18n.t('cli.update.orphansWouldMove', {
+      count: count(orphans.wouldRemove),
+      path: RETIRED_BACKUP_PATTERN,
+    }),
+    orphans.wouldRemove
+  );
+  const byPreserveSettings = orphans.preserved.filter(
+    (entry) => entry.keptBy === 'preserve-settings'
+  );
+  if (byPreserveSettings.length > 0) {
+    console.log(
+      i18n.t('cli.update.orphansKeptByPreserveSettings', { count: count(byPreserveSettings) })
+    );
+  }
+  const actionable = orphans.preserved.filter((entry) => entry.keptBy === undefined);
+  printPathGroup(
+    i18n.t(withReasons ? 'cli.update.orphansPreservedWithReasons' : 'cli.update.orphansPreserved', {
+      count: count(actionable),
+    }),
+    actionable.map((entry) => (withReasons ? `${entry.path} (${entry.reason})` : entry.path))
+  );
 }
 
 /**

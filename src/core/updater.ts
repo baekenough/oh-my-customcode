@@ -2,8 +2,9 @@
  * Updater module - Update agents from source
  */
 
-import { lstat, realpath, rmdir, unlink } from 'node:fs/promises';
-import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { constants as fsConstants } from 'node:fs';
+import { copyFile, lstat, mkdir, realpath, rename, rmdir, unlink } from 'node:fs/promises';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { dirname as posixDirname } from 'node:path/posix';
 import packageJson from '../../package.json';
 import { i18n } from '../i18n/index.js';
@@ -62,6 +63,49 @@ export interface UpdateOptions {
   backup?: boolean;
   /** Sync frontmatter name: field from upstream in unmodified files */
   hard?: boolean;
+  /**
+   * Asked once per update, with the sorted paths and the backup directory they would be moved to,
+   * before leftovers that oh-my-customcode no longer ships are moved into the backup folder at the
+   * project root, `.omcustom-backup-<timestamp>/retired/` (#1941, #1938). Called only when at
+   * least one file passed every retirement condition and this is not a dry run. `true` moves
+   * them; `false` keeps them all (recorded in `orphanRetirement.preserved`
+   * with `keptBy: 'declined'`, ownership carried forward so the next update can ask again); a
+   * throw or a rejection also keeps them all, as an actionable keep with a warning. Omitted: they
+   * are moved without asking.
+   */
+  confirmOrphanRemoval?: OrphanRemovalConfirmation;
+}
+
+/** What `UpdateOptions.confirmOrphanRemoval` is told besides the paths. */
+export interface OrphanRemovalContext {
+  /**
+   * The directory the files would be moved to: `<targetDir>/.omcustom-backup-<timestamp>/retired`
+   * (the same timestamped directory as `--backup` when that ran in this update). It is created
+   * only when the first file is moved.
+   */
+  backupDir: string;
+}
+
+/**
+ * Decides whether the listed leftovers may be moved to the backup (see
+ * `UpdateOptions.confirmOrphanRemoval`).
+ */
+export type OrphanRemovalConfirmation = (
+  paths: readonly string[],
+  context: OrphanRemovalContext
+) => Promise<boolean>;
+
+/**
+ * Why a leftover was kept on purpose (#1938): covered by the user's preserve settings, or the user
+ * declined the confirmation. Such keeps get no per-file warning and are not in `preservedFiles`.
+ */
+export type OrphanKeptBy = 'preserve-settings' | 'declined';
+
+/** A leftover that was kept, with the reason; `keptBy` is set only for a deliberate keep. */
+export interface OrphanKeep {
+  path: string;
+  reason: string;
+  keptBy?: OrphanKeptBy;
 }
 
 /**
@@ -86,7 +130,11 @@ export interface UpdateResult {
   updatedComponents: UpdateComponent[];
   /** Components that were skipped */
   skippedComponents: UpdateComponent[];
-  /** Files that were preserved (user customizations) */
+  /**
+   * Files that were preserved (user customizations). Retired leftovers are listed here only when
+   * they were kept for a reason that needs attention (modified, unowned, ...); leftovers kept on
+   * purpose (`orphanRetirement.preserved` entries with `keptBy`) are not.
+   */
   preservedFiles: string[];
   /** Backed up paths */
   backedUpPaths: string[];
@@ -98,7 +146,7 @@ export interface UpdateResult {
   warnings: string[];
   /** Root-level files that were synced */
   syncedRootFiles: string[];
-  /** Deprecated files that were removed */
+  /** Deprecated files that were removed (retired leftovers: moved to the backup) */
   removedDeprecatedFiles: string[];
   /** Files whose frontmatter name: was synced from upstream */
   namespaceSynced: string[];
@@ -117,14 +165,23 @@ export interface UpdateResult {
   };
   /**
    * Leftovers that oh-my-customcode no longer ships (templates/retired-template-paths.json,
-   * #1935). `removed` were deleted; dry-run lists them in `wouldRemove` instead. `preserved` were
-   * kept, with the reason; they are also in `preservedFiles` and `warnings`. Present when the
-   * retired list was evaluated.
+   * #1935). `removed` were moved into `backupDir`, the backup folder at the project root
+   * (`.omcustom-backup-<timestamp>/retired/`, #1938); dry-run lists them
+   * in `wouldRemove` instead and creates nothing. `preserved` were kept, with the reason; those
+   * without `keptBy` are also in `preservedFiles` and `warnings`, deliberate keeps (`keptBy`) are
+   * only here. Present when the retired list was evaluated.
    */
   orphanRetirement?: {
     removed: string[];
     wouldRemove: string[];
-    preserved: { path: string; reason: string }[];
+    preserved: OrphanKeep[];
+    /**
+     * Where `removed` went: `<targetDir>/.omcustom-backup-<timestamp>/retired`, keeping each
+     * project-relative path except that a leading dot folder loses its dot (`.claude/skills/x`
+     * is at `<backupDir>/claude/skills/x`), so Claude Code does not discover the backed-up files
+     * as live skills or agents. Present when at least one file was moved.
+     */
+    backupDir?: string;
   };
 }
 
@@ -316,8 +373,11 @@ export function deletionPreservedReason(
   customizations: DeletionCustomizations
 ): string | null {
   if (customizations === UNREADABLE_MANIFEST) return UNREADABLE_MANIFEST;
-  return isPathPreserved(path, config, customizations) ? 'explicitly preserved' : null;
+  return isPathPreserved(path, config, customizations) ? EXPLICITLY_PRESERVED : null;
 }
+
+/** `deletionPreservedReason` for a path the preserve settings cover. */
+const EXPLICITLY_PRESERVED = 'explicitly preserved';
 
 async function retireRtkFile(
   path: string,
@@ -428,10 +488,50 @@ async function removeEmptyParentDirectories(
   }
 }
 
+/** A leftover that passed every retirement condition, with the hash that was verified. */
+interface OrphanCandidate {
+  path: string;
+  componentRoot: string;
+  diskHash: string;
+}
+
 /**
- * Remove one leftover, or keep it and record why. Removal requires: no template counterpart, a
- * regular non-symlink file at exactly that location in the project, not preserved, an old lock
- * entry with a valid sha256, disk hash == old lock hash, and disk hash == a shipped version.
+ * Keep a leftover and record why in `orphanRetirement.preserved`. An actionable keep (no
+ * `keptBy`) is also added to `preservedFiles` and gets a warning; a deliberate keep (#1938: the
+ * user's preserve settings, or a declined confirmation) is reported once by the CLI instead.
+ */
+function keepOrphan(
+  result: UpdateResult,
+  path: string,
+  reason: string,
+  keptBy?: OrphanKeptBy
+): void {
+  const retirement = getOrphanRetirement(result);
+  if (keptBy) {
+    retirement.preserved.push({ path, reason, keptBy });
+    return;
+  }
+  retirement.preserved.push({ path, reason });
+  result.preservedFiles.push(path);
+  result.warnings.push(`Orphan retirement preserved ${path}: ${reason}`);
+}
+
+/** Record a failed check of a leftover as kept; a missing file (ENOENT) is not recorded. */
+function keepOrphanAfterError(result: UpdateResult, path: string, err: unknown): void {
+  if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+  keepOrphan(result, path, errorMessage(err, 'unreadable ownership or file'));
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
+/**
+ * Decide whether one leftover can be retired, or keep it and record why. Retirement requires: no
+ * template counterpart, a regular non-symlink file at exactly that location in the project, not
+ * preserved, an old lock entry with a valid sha256, disk hash == old lock hash, and disk hash ==
+ * a shipped version. Returns the candidate when every condition holds, else null. Nothing is
+ * moved here: see {@link moveOrphanToBackup}.
  */
 async function retireOrphanFile(
   entry: RetiredTemplatePathEntry,
@@ -440,40 +540,293 @@ async function retireOrphanFile(
   lockfile: Lockfile | null,
   result: UpdateResult,
   preservedReason: string | null
-): Promise<void> {
+): Promise<OrphanCandidate | null> {
   const { path } = entry;
-  const retirement = getOrphanRetirement(result);
   try {
     // Still shipped: not an orphan (the generator excludes these; this guards a stale list).
-    if (await templatePathExists(path)) return;
+    if (await templatePathExists(path)) return null;
+    if (preservedReason === EXPLICITLY_PRESERVED) {
+      // A deliberate keep, decided before the location check: a preserved path that is (or sits
+      // under) a symlink is kept quietly too. It is never moved; a missing one is not recorded.
+      if (await pathExists(join(options.targetDir, path))) {
+        keepOrphan(result, path, preservedReason, 'preserve-settings');
+      }
+      return null;
+    }
     await validateOwnedTarget(options.targetDir, path, true);
     if (preservedReason) throw new Error(preservedReason);
     const lockEntry = ownedLockEntry(lockfile, path);
     if (!lockEntry) {
       throw new Error('missing or invalid old ownership');
     }
-    const fullPath = join(options.targetDir, path);
-    const diskHash = await computeFileHash(fullPath);
+    const diskHash = await computeFileHash(join(options.targetDir, path));
     if (diskHash !== lockEntry.templateHash) throw new Error('user-modified file');
     if (!entry.sha256.includes(diskHash)) {
       throw new Error('content does not match any shipped version');
     }
-    if (options.dryRun) {
-      retirement.wouldRemove.push(path);
-      return;
-    }
-    await validateOwnedTarget(options.targetDir, path, true);
-    await unlink(fullPath);
-    retirement.removed.push(path);
-    result.removedDeprecatedFiles.push(path);
-    info('update.deprecated_file_removed', { path, reason: 'no longer shipped' });
-    await removeEmptyParentDirectories(options.targetDir, path, componentRoot);
+    return { path, componentRoot, diskHash };
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
-    const reason = err instanceof Error ? err.message : 'unreadable ownership or file';
-    retirement.preserved.push({ path, reason });
-    result.preservedFiles.push(path);
-    result.warnings.push(`Orphan retirement preserved ${path}: ${reason}`);
+    keepOrphanAfterError(result, path, err);
+    return null;
+  }
+}
+
+/** The folder inside a backup that receives retired leftovers (#1938). */
+const RETIRED_BACKUP_SUBDIR = 'retired';
+
+/** The backup directory of one `update()` run (#1938). */
+interface RetiredBackup {
+  /** `<targetDir>/.omcustom-backup-<timestamp>` */
+  root: string;
+  /** `<root>/retired`: the moved files go below it */
+  dir: string;
+  /**
+   * The directories this run created for the backup (absolute). Only these are ever removed
+   * again; the root of this run's `--backup` copy, or anything that existed before, never is.
+   */
+  created: Set<string>;
+}
+
+/** The `.omcustom-backup-<timestamp>` name part shared with `--backup`. */
+function backupTimestamp(): string {
+  return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+/**
+ * Plan (not create) this run's backup for retired leftovers: inside this run's `--backup` copy
+ * when there is one, so a run has one backup directory, else a new
+ * `<targetDir>/.omcustom-backup-<timestamp>`.
+ */
+function planRetiredBackup(targetDir: string, result: UpdateResult): RetiredBackup {
+  const installationBackup = result.backedUpPaths[0];
+  const root = installationBackup ?? join(targetDir, `.omcustom-backup-${backupTimestamp()}`);
+  return {
+    root,
+    dir: join(root, RETIRED_BACKUP_SUBDIR),
+    created: new Set(),
+  };
+}
+
+/**
+ * Where a leftover goes inside the backup: its project-relative path, except that a leading dot
+ * folder loses its dot (`.claude/skills/x/SKILL.md` -> `claude/skills/x/SKILL.md`), so the backup
+ * holds no `.claude` directory for Claude Code to discover skills or agents in.
+ */
+export function retiredBackupPath(path: string): string {
+  const [first = '', ...rest] = path.split('/');
+  return [first.replace(/^\.+/, ''), ...rest].join('/');
+}
+
+/** Whether something (a file, a directory or a symlink, even a dangling one) exists at `path`. */
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await lstat(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove the directories this run created in the backup that are empty now, deepest first (a
+ * child path is longer than its parent). Directories that existed before are never touched.
+ */
+async function removeCreatedEmptyDirectories(backup: RetiredBackup): Promise<void> {
+  const dirs = [...backup.created].sort((a, b) => b.length - a.length);
+  for (const dir of dirs) {
+    try {
+      await rmdir(dir);
+      backup.created.delete(dir);
+    } catch {
+      // Not empty (it holds a moved file or a copy that stays) or gone: keep it.
+    }
+  }
+}
+
+/** Remove a copy that must not stay in the backup; a failure leaves it there. */
+async function removeBackupCopy(path: string): Promise<void> {
+  try {
+    await unlink(path);
+  } catch {
+    // The copy stays; the original is intact either way.
+  }
+}
+
+/**
+ * Create the destination's directory one level at a time from `targetDir`, recording each
+ * directory created in `created`. Every level must be a real directory (lstat, no symlink), so
+ * nothing is ever created through a symlink; nothing may exist at the destination yet.
+ */
+async function prepareBackupDestination(
+  targetDir: string,
+  destination: string,
+  created: Set<string>
+): Promise<void> {
+  let dir = targetDir;
+  for (const part of relative(targetDir, dirname(destination)).split(sep)) {
+    dir = join(dir, part);
+    try {
+      await mkdir(dir);
+      created.add(dir);
+    } catch (err) {
+      // EEXIST: an existing entry, checked below like a created one.
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+    }
+    const dirStat = await lstat(dir);
+    if (dirStat.isSymbolicLink()) throw new Error('backup location goes through a symlink');
+    if (!dirStat.isDirectory()) throw new Error('backup location is not a directory');
+  }
+  if (await pathExists(destination)) {
+    throw new Error('a file already exists at the backup location');
+  }
+}
+
+/** The original changed after it was copied (#1938 L3); the move was undone. */
+class SourceChangedError extends Error {
+  constructor() {
+    super('user-modified file');
+    this.name = 'SourceChangedError';
+  }
+}
+
+/**
+ * Move `source` to `destination` (#1938). `rename` first; across file systems (EXDEV) copy without
+ * overwriting, check that the copy has `expectedHash`, hash the original again (a user edit made
+ * after the copy throws a {@link SourceChangedError}), then unlink the original. Throws when the
+ * file was not moved; the original is then still in place, and a copy of ours is removed again.
+ * Once the copy is verified, an original that is gone afterwards (whatever the unlink reported)
+ * means the copy is the backup: the move counts as done and the copy is kept.
+ */
+async function moveFile(source: string, destination: string, expectedHash: string): Promise<void> {
+  try {
+    await rename(source, destination);
+    return;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EXDEV') throw err;
+  }
+  try {
+    await copyFile(source, destination, fsConstants.COPYFILE_EXCL);
+  } catch (err) {
+    // EEXIST: something appeared at the destination meanwhile; it is not ours to remove.
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') await removeBackupCopy(destination);
+    throw err;
+  }
+  let copyVerified = false;
+  try {
+    if ((await computeFileHash(destination)) !== expectedHash) {
+      throw new Error('the backup copy does not match the original');
+    }
+    copyVerified = true;
+    if ((await computeFileHash(source)) !== expectedHash) throw new SourceChangedError();
+    await unlink(source);
+  } catch (err) {
+    if (copyVerified && !(await pathExists(source))) return;
+    await removeBackupCopy(destination);
+    throw err;
+  }
+}
+
+/**
+ * Whether a move that reported an error happened anyway (#1938 L2): the original is gone and the
+ * destination holds the expected content.
+ */
+async function movedDespiteError(
+  source: string,
+  destination: string,
+  expectedHash: string
+): Promise<boolean> {
+  if (await pathExists(source)) return false;
+  try {
+    return (await computeFileHash(destination)) === expectedHash;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Record a leftover whose move failed: remove the empty directories this run created in the
+ * backup, then keep the file with a warning (its ownership is carried, so the next update tries
+ * again), unless it disappeared meanwhile. Returns false (not moved).
+ */
+async function keepAfterFailedMove(
+  backup: RetiredBackup,
+  result: UpdateResult,
+  path: string,
+  source: string,
+  err: unknown
+): Promise<false> {
+  await removeCreatedEmptyDirectories(backup);
+  // The file disappeared meanwhile: neither moved nor kept, like a missing file.
+  if (!(await pathExists(source))) return false;
+  const reason =
+    err instanceof SourceChangedError
+      ? err.message
+      : `not moved to the backup: ${errorMessage(err, String(err))}`;
+  keepOrphan(result, path, reason);
+  return false;
+}
+
+/**
+ * Move a confirmed candidate into the backup (#1938). The location and the hash are checked again
+ * first: the confirmation may have waited on the user, and a file changed meanwhile is kept. A
+ * failed move keeps the file with a warning (see {@link keepAfterFailedMove}); a move that
+ * reported an error but happened is recorded as moved. Returns whether it was moved.
+ */
+async function moveOrphanToBackup(
+  candidate: OrphanCandidate,
+  options: UpdateOptions,
+  backup: RetiredBackup,
+  result: UpdateResult
+): Promise<boolean> {
+  const { path } = candidate;
+  const source = join(options.targetDir, path);
+  try {
+    await validateOwnedTarget(options.targetDir, path, true);
+    if ((await computeFileHash(source)) !== candidate.diskHash) {
+      throw new Error('user-modified file');
+    }
+  } catch (err) {
+    keepOrphanAfterError(result, path, err);
+    return false;
+  }
+  const destination = join(backup.dir, retiredBackupPath(path));
+  try {
+    await prepareBackupDestination(options.targetDir, destination, backup.created);
+  } catch (err) {
+    return keepAfterFailedMove(backup, result, path, source, err);
+  }
+  try {
+    await moveFile(source, destination, candidate.diskHash);
+  } catch (err) {
+    if (!(await movedDespiteError(source, destination, candidate.diskHash))) {
+      return keepAfterFailedMove(backup, result, path, source, err);
+    }
+  }
+  getOrphanRetirement(result).removed.push(path);
+  result.removedDeprecatedFiles.push(path);
+  info('update.retired_file_moved_to_backup', { path, backup: destination });
+  await removeEmptyParentDirectories(options.targetDir, path, candidate.componentRoot);
+  return true;
+}
+
+/** `confirmOrphanRemoval` answered false. */
+const DECLINED_BY_USER = 'declined by user';
+
+/**
+ * Ask `options.confirmOrphanRemoval` (when given) about the sorted candidate paths. Returns null
+ * when the move may proceed, else the reason to keep them all.
+ */
+async function orphanRemovalDeclineReason(
+  options: UpdateOptions,
+  paths: readonly string[],
+  context: OrphanRemovalContext
+): Promise<string | null> {
+  const confirm = options.confirmOrphanRemoval;
+  if (!confirm) return null;
+  try {
+    return (await confirm(paths, context)) ? null : DECLINED_BY_USER;
+  } catch (err) {
+    return `confirmation failed: ${errorMessage(err, String(err))}`;
   }
 }
 
@@ -511,9 +864,70 @@ async function loadRetiredList(result: UpdateResult): Promise<RetiredTemplatePat
 }
 
 /**
- * Remove leftovers that oh-my-customcode no longer ships (#1935), scoped like the RTK flow:
+ * Check every in-scope leftover (see {@link retireOrphanTemplateFiles}) and return the ones that
+ * pass every retirement condition; the others are kept and recorded.
+ */
+async function collectOrphanCandidates(
+  options: UpdateOptions,
+  entries: readonly RetiredTemplatePathEntry[],
+  lockfile: Lockfile | null,
+  result: UpdateResult,
+  config: OmccConfig,
+  customizations: DeletionCustomizations
+): Promise<OrphanCandidate[]> {
+  const fullUpdate = !options.components || options.components.length === 0;
+  const candidates: OrphanCandidate[] = [];
+  for (const entry of entries) {
+    const component = resolveLockfileComponent(entry.path);
+    if (
+      RTK_RETIRED_PATHS.has(entry.path) ||
+      !isUpdateComponent(component) ||
+      !(fullUpdate || options.components?.includes(component))
+    ) {
+      continue;
+    }
+    const candidate = await retireOrphanFile(
+      entry,
+      getComponentPath(component),
+      options,
+      lockfile,
+      result,
+      deletionPreservedReason(entry.path, config, customizations)
+    );
+    if (candidate) candidates.push(candidate);
+  }
+  return candidates;
+}
+
+/**
+ * Move the confirmed candidates into `backup` and record `backupDir` when at least one was moved.
+ * Each failed move removes the empty directories this run created (see `RetiredBackup.created`),
+ * so when none was moved no backup directory of this run is left.
+ */
+async function moveConfirmedOrphans(
+  candidates: readonly OrphanCandidate[],
+  options: UpdateOptions,
+  backup: RetiredBackup,
+  result: UpdateResult
+): Promise<void> {
+  let moved = 0;
+  for (const candidate of candidates) {
+    if (await moveOrphanToBackup(candidate, options, backup, result)) moved++;
+  }
+  // A failed move has already removed the empty directories this run created for it.
+  if (moved > 0) getOrphanRetirement(result).backupDir = backup.dir;
+}
+
+/**
+ * Retire leftovers that oh-my-customcode no longer ships (#1935), scoped like the RTK flow:
  * every component on a full update, otherwise only the selected components. RTK paths are
  * excluded here. `entries` is the loaded retired list; null (unreadable list) skips the step.
+ *
+ * Every leftover is checked first; the files that pass are listed in `wouldRemove` on a dry run
+ * (nothing is created), otherwise confirmed once through `options.confirmOrphanRemoval` (#1941)
+ * and then moved into this run's backup (#1938, see {@link planRetiredBackup}). When the
+ * confirmation declines or fails they are all kept; their lock entries stay carriable, so the
+ * next update asks again.
  */
 async function retireOrphanTemplateFiles(
   options: UpdateOptions,
@@ -525,26 +939,30 @@ async function retireOrphanTemplateFiles(
 ): Promise<void> {
   if (entries === null) return;
 
-  getOrphanRetirement(result);
-  const fullUpdate = !options.components || options.components.length === 0;
-  for (const entry of entries) {
-    const component = resolveLockfileComponent(entry.path);
-    if (
-      RTK_RETIRED_PATHS.has(entry.path) ||
-      !isUpdateComponent(component) ||
-      !(fullUpdate || options.components?.includes(component))
-    ) {
-      continue;
-    }
-    await retireOrphanFile(
-      entry,
-      getComponentPath(component),
-      options,
-      lockfile,
-      result,
-      deletionPreservedReason(entry.path, config, customizations)
-    );
+  const retirement = getOrphanRetirement(result);
+  const candidates = await collectOrphanCandidates(
+    options,
+    entries,
+    lockfile,
+    result,
+    config,
+    customizations
+  );
+  if (candidates.length === 0) return;
+
+  if (options.dryRun) {
+    retirement.wouldRemove.push(...candidates.map((candidate) => candidate.path));
+    return;
   }
+  const paths = candidates.map((candidate) => candidate.path).sort();
+  const backup = planRetiredBackup(options.targetDir, result);
+  const declineReason = await orphanRemovalDeclineReason(options, paths, { backupDir: backup.dir });
+  if (declineReason !== null) {
+    const keptBy = declineReason === DECLINED_BY_USER ? 'declined' : undefined;
+    for (const path of paths) keepOrphan(result, path, declineReason, keptBy);
+    return;
+  }
+  await moveConfirmedOrphans(candidates, options, backup, result);
 }
 
 /** Ownership carried into the regenerated lock, and the leftover paths that were evaluated. */
@@ -624,17 +1042,17 @@ async function collectCarriedOwnership(
   const count = Object.keys(carried.entries).length;
   if (!withList && count > 0) {
     result.warnings.push(
-      `Lockfile ownership of ${count} file(s) without a template counterpart was carried forward without the retired template list; they are not removed until the list is available`
+      `Lockfile ownership of ${count} file(s) without a template counterpart was carried forward without the retired template list; they are not moved to a backup until the list is available`
     );
   }
   return carried;
 }
 
 /**
- * `update()` found no component updates (#1935 follow-up): still remove owned leftovers, so a
+ * `update()` found no component updates (#1935 follow-up): still retire owned leftovers, so a
  * version bumped by an earlier partial update does not strand them. The lock is not regenerated
  * (that would record user-modified template files as unmodified); instead the evaluated leftover
- * entries that are no longer carriable — removed, modified, missing — are dropped from the old
+ * entries that are no longer carriable — moved, modified, missing — are dropped from the old
  * lock, and it is written only when something was dropped. Dry-run and an unreadable list
  * change nothing.
  */
@@ -1215,10 +1633,10 @@ async function regenerateLockfile(
 }
 
 /**
- * After the component updates: retire RTK files and leftovers that are no longer shipped
- * (#1935), then regenerate the lockfile (#316), keeping ownership of leftovers that were not
- * removed so a later update can still remove them. Deletions honour every preservation source,
- * even with forceOverwriteAll (overwrite ≠ delete).
+ * After the component updates: delete retired RTK files and move leftovers that are no longer
+ * shipped into this run's backup (#1935, #1938), then regenerate the lockfile (#316), keeping
+ * ownership of leftovers that were not moved so a later update can still move them. Both honour
+ * every preservation source, even with forceOverwriteAll (overwrite ≠ delete or move).
  */
 async function retireLeftoversAndRegenerateLockfile(
   options: UpdateOptions,
@@ -2020,8 +2438,7 @@ function getComponentPath(component: UpdateComponent): string {
  * Backup the current installation
  */
 async function backupInstallation(targetDir: string): Promise<string> {
-  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupDir = join(targetDir, `.omcustom-backup-${timestamp}`);
+  const backupDir = join(targetDir, `.omcustom-backup-${backupTimestamp()}`);
   const fs = await import('node:fs/promises');
 
   await ensureDirectory(backupDir);

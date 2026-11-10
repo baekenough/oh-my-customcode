@@ -173,6 +173,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.deprecated_file_invalid_path':
       'Skipped deprecated file with invalid path: {{path}} ({{reason}})',
     'update.deprecated_file_removed': 'Removed deprecated file: {{path}} ({{reason}})',
+    'update.retired_file_moved_to_backup':
+      'Moved retired template file (identical to a shipped version) to the backup: {{path}} -> {{backup}}',
     'update.entry_doc_created': 'Entry document created: {{path}}',
     'update.entry_doc_force_updated': 'Entry document force-updated: {{path}}',
     'update.entry_merge_warning': 'Entry document merge warning: {{warning}}',
@@ -316,6 +318,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.deprecated_file_invalid_path':
       '경로가 유효하지 않아 지원 중단 파일을 건너뜁니다: {{path}} ({{reason}})',
     'update.deprecated_file_removed': '지원 중단 파일을 삭제했습니다: {{path}} ({{reason}})',
+    'update.retired_file_moved_to_backup':
+      '더 이상 배포하지 않는 템플릿 파일(배포본과 동일)을 백업으로 옮겼습니다: {{path}} -> {{backup}}',
     'update.entry_doc_created': '진입 문서를 생성했습니다: {{path}}',
     'update.entry_doc_force_updated': '진입 문서를 강제로 업데이트했습니다: {{path}}',
     'update.entry_merge_warning': '진입 문서 병합 경고: {{warning}}',
