@@ -53,12 +53,17 @@
       "declined": "Continuing with current version.",
       "failed": "Self-update failed: {{error}}",
       "relaunchFailed": "Failed to launch latest version via npx (status: {{status}}).",
-      "continueAfterFailure": "Continuing init with current version."
+      "continueAfterFailure": "Continuing init with current version.",
+      "reexec": "↻ Restarting init with the updated CLI (v{{version}})...",
+      "reexecVersionMismatch": "⚠ Installed v{{installed}}, but the omcustom binary running this command is v{{binary}} (npm may have installed into a different location). Run `npm install -g {{package}}@latest` with the npm that owns this binary.",
+      "reexecVersionUnknown": "⚠ Installed v{{installed}}, but could not determine the version of the omcustom binary running this command (this process loaded v{{current}}). Run `npm install -g {{package}}@latest` with the npm that owns this binary.",
+      "reexecSpawnFailed": "⚠ Could not restart with the updated CLI: {{error}}"
     },
     "init": {
       "description": "Initialize oh-my-customcode in the current directory",
       "langOption": "Language for templates (en or ko)",
-      "start": "Initializing oh-my-customcode...",
+      "start": "Initializing oh-my-customcode v{{version}}...",
+      "noAgentTeamsOption": "Do not enable Claude Code Agent Teams (CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS) in .claude/settings.json",
       "exists": "Existing {{rootDir}} directory found.",
       "backing_up": "Creating backup...",
       "backedUp": "Backed up existing installation to: {{path}}",
@@ -129,6 +134,10 @@
       "componentSkipped": "- {{component}} skipped (no changes)",
       "componentFailed": "✗ {{component}} failed: {{error}}",
       "preservedFiles": "Preserved {{count}} user-customized files",
+      "orphansRemoved": "Removed {{count}} file(s) that oh-my-customcode no longer ships:",
+      "orphansWouldRemove": "Would remove {{count}} file(s) that oh-my-customcode no longer ships:",
+      "orphansPreserved": "Kept {{count}} file(s) that oh-my-customcode no longer ships (reasons in the warnings). Delete them yourself if you no longer need them:",
+      "orphansPreservedWithReasons": "Kept {{count}} file(s) that oh-my-customcode no longer ships (the reason follows each path). Delete them yourself if you no longer need them:",
       "backupCreated": "Backup created at {{path}}",
       "summary": "Update complete: {{updated}} updated, {{skipped}} skipped",
       "summaryFailed": "Update failed: {{error}}",
@@ -258,6 +267,16 @@
         "codex": {
           "pass": "Codex CLI installed",
           "warn": "Codex CLI not installed — AI-assisted development unavailable"
+        },
+        "orphans": {
+          "pass": "No leftover files from retired templates ({{count}} retired paths checked)",
+          "warn": "{{count}} leftover file(s) from retired templates found",
+          "unmodified": "{{path}} — unmodified leftover; 'omcustom update' removes it",
+          "unowned": "{{path}} — matches a shipped version, but 'omcustom update' keeps it (the lockfile does not record this file with this content, or it is not an owned regular file); delete it manually",
+          "preserved": "{{path}} — leftover kept by your preserve settings; delete it or remove it from the preserve settings deliberately",
+          "rtk": "{{path}} — retired RTK file; its removal is decided by 'omcustom update' (it removes its own RTK hook wiring from '.claude/settings*.json' automatically, then removes the file only when the lockfile owns it unmodified; it keeps the file when it was modified or is preserved, when those settings still have other user-added or unrecognized rtk-intercept.sh wiring, or when a settings file cannot be parsed). Run 'omcustom update' and read its RTK report",
+          "modified": "{{path}} — modified leftover; review it and delete it manually",
+          "loadFailed": "Orphan check could not run: {{reason}}"
         }
       }
     },

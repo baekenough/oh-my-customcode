@@ -26,6 +26,7 @@ import {
   writeTextFile,
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
+import { ensureAgentTeamsEnv } from './agent-teams-env.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, saveConfig } from './config.js';
 import {
@@ -78,6 +79,11 @@ export interface InstallOptions {
    * When undefined, all agents are installed (backward compatible).
    */
   domain?: string;
+  /**
+   * Write `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"` into the project settings.json (#1934).
+   * Off unless set: `omcustom init` passes `true` unless `--no-agent-teams` was given.
+   */
+  agentTeams?: boolean;
 }
 
 /**
@@ -508,6 +514,38 @@ async function installHooksSettings(
   }
 }
 
+/**
+ * Enable Claude Code Agent Teams in the project settings.json (#1934).
+ *
+ * MUST run after the `--backup` restore step: settings.json is a critical file that is moved
+ * away with `.claude/` and restored afterwards, and restoreCriticalFiles() deep-merges the
+ * user's old file over whatever is already there with the user's values winning. A write made
+ * before the restore could be silently replaced (e.g. by a user `"env": null`) or could stand
+ * in for a settings.json that restore failed to bring back; running last lets the helper see
+ * the final user-owned content and merge into it (or warn and leave it alone).
+ *
+ * No-op unless `options.agentTeams` is true (the `--no-agent-teams` opt-out).
+ */
+async function installAgentTeamsEnv(
+  targetDir: string,
+  options: InstallOptions,
+  result: InstallResult
+): Promise<void> {
+  if (!options.agentTeams) {
+    return;
+  }
+
+  const layout = getProviderLayout();
+  const settingsPath = join(targetDir, layout.rootDir, 'settings.json');
+  const outcome = await ensureAgentTeamsEnv(settingsPath);
+
+  // Surfaced through result.warnings only: init prints them, and logger.ts has no message
+  // entry for this step (an unknown logger key would print as a raw key).
+  if (outcome.warning) {
+    result.warnings.push(outcome.warning);
+  }
+}
+
 /** UTF-8 byte order mark, as decoded by readFile(..., 'utf-8'). */
 const BOM = '\uFEFF';
 
@@ -652,6 +690,9 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 
       await cleanupPreservation(preservation.tempDir);
     }
+
+    // Must stay after the restore block above (see installAgentTeamsEnv)
+    await installAgentTeamsEnv(options.targetDir, options, result);
 
     await updateInstallConfig(options.targetDir, options, result.installedComponents);
 

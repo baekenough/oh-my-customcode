@@ -2,10 +2,10 @@
  * Unit tests for the sync module (drift detection and snapshot export)
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import {
   LOCKFILE_NAME,
   LOCKFILE_VERSION,
@@ -32,6 +32,16 @@ function makeLockfile(overrides: Partial<Lockfile> = {}): Lockfile {
 async function writeTestLockfile(dir: string, overrides: Partial<Lockfile> = {}): Promise<void> {
   const lockfile = makeLockfile(overrides);
   await writeFile(join(dir, LOCKFILE_NAME), JSON.stringify(lockfile, null, 2), 'utf-8');
+}
+
+/** Create a temporary template root containing the given relative files. */
+async function makeTemplateRoot(paths: string[]): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), 'omcustom-sync-tpl-'));
+  for (const path of paths) {
+    await mkdir(dirname(join(root, path)), { recursive: true });
+    await writeFile(join(root, path), `template ${path}`, 'utf-8');
+  }
+  return root;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,25 +114,33 @@ describe('sync', () => {
       expect(result.removed).toHaveLength(0);
     });
 
-    it('detects files added after install', async () => {
-      // Create lockfile when only one file exists
-      const rulesDir = join(tempDir, '.claude', 'rules');
-      await mkdir(rulesDir, { recursive: true });
-      await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety', 'utf-8');
+    it('detects template-owned files added after install', async () => {
+      const templateRoot = await makeTemplateRoot([
+        '.claude/rules/MUST-safety.md',
+        '.claude/rules/MUST-new.md',
+      ]);
+      try {
+        // Create lockfile when only one file exists
+        const rulesDir = join(tempDir, '.claude', 'rules');
+        await mkdir(rulesDir, { recursive: true });
+        await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety', 'utf-8');
 
-      const { generateLockfile } = await import('../../../src/core/lockfile.js');
-      const lockfile = await generateLockfile(tempDir, '0.72.0', '0.72.0');
-      await writeLockfile(tempDir, lockfile);
+        const { generateLockfile } = await import('../../../src/core/lockfile.js');
+        const lockfile = await generateLockfile(tempDir, '0.72.0', '0.72.0', { templateRoot });
+        await writeLockfile(tempDir, lockfile);
 
-      // Add a new file that was not tracked at install time
-      await writeFile(join(rulesDir, 'MUST-new.md'), '# New rule', 'utf-8');
+        // Add a template-owned file that was not tracked at install time
+        await writeFile(join(rulesDir, 'MUST-new.md'), '# New rule', 'utf-8');
 
-      const result = await syncCheck(tempDir);
+        const result = await syncCheck(tempDir, { templateRoot });
 
-      expect(result.inSync).toBe(false);
-      expect(result.added).toContain('.claude/rules/MUST-new.md');
-      expect(result.modified).toHaveLength(0);
-      expect(result.removed).toHaveLength(0);
+        expect(result.inSync).toBe(false);
+        expect(result.added).toEqual(['.claude/rules/MUST-new.md']);
+        expect(result.modified).toHaveLength(0);
+        expect(result.removed).toHaveLength(0);
+      } finally {
+        await rm(templateRoot, { recursive: true, force: true });
+      }
     });
 
     it('detects files removed after install', async () => {
@@ -188,19 +206,186 @@ describe('sync', () => {
       expect(result.referenceVersion).toBe('0.55.0');
     });
 
-    it('returns totalTracked count of current files', async () => {
+    it('returns totalTracked count of current template-owned files', async () => {
+      const templateRoot = await makeTemplateRoot(['.claude/rules/a.md', '.claude/rules/b.md']);
+      try {
+        const rulesDir = join(tempDir, '.claude', 'rules');
+        await mkdir(rulesDir, { recursive: true });
+        await writeFile(join(rulesDir, 'a.md'), '# a', 'utf-8');
+        await writeFile(join(rulesDir, 'b.md'), '# b', 'utf-8');
+        await writeFile(join(rulesDir, 'custom.md'), '# custom', 'utf-8');
+
+        const { generateLockfile } = await import('../../../src/core/lockfile.js');
+        const lockfile = await generateLockfile(tempDir, '0.72.0', '0.72.0', { templateRoot });
+        await writeLockfile(tempDir, lockfile);
+
+        const result = await syncCheck(tempDir, { templateRoot });
+
+        expect(result.totalTracked).toBe(2);
+      } finally {
+        await rm(templateRoot, { recursive: true, force: true });
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  describe('syncCheck with template-owned lockfiles (#1935)', () => {
+    let templateRoot: string;
+    const entry = (hash: string) => ({ templateHash: hash, size: 1, component: 'skills' });
+
+    beforeEach(async () => {
+      templateRoot = await makeTemplateRoot(['.claude/rules/MUST-safety.md']);
+    });
+
+    afterEach(async () => {
+      await rm(templateRoot, { recursive: true, force: true });
+    });
+
+    async function install(): Promise<void> {
       const rulesDir = join(tempDir, '.claude', 'rules');
       await mkdir(rulesDir, { recursive: true });
-      await writeFile(join(rulesDir, 'a.md'), '# a', 'utf-8');
-      await writeFile(join(rulesDir, 'b.md'), '# b', 'utf-8');
-
+      await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety', 'utf-8');
       const { generateLockfile } = await import('../../../src/core/lockfile.js');
-      const lockfile = await generateLockfile(tempDir, '0.72.0', '0.72.0');
-      await writeLockfile(tempDir, lockfile);
+      await writeLockfile(
+        tempDir,
+        await generateLockfile(tempDir, '0.72.0', '0.72.0', { templateRoot })
+      );
+    }
+
+    it('regression: a custom skill under a lock component does not break the sync (real templates)', async () => {
+      const rulesDir = join(tempDir, '.claude', 'rules');
+      await mkdir(rulesDir, { recursive: true });
+      await writeFile(join(rulesDir, 'MUST-safety.md'), '# Safety', 'utf-8');
+      const { generateAndWriteLockfileForDir } = await import('../../../src/core/lockfile.js');
+      await generateAndWriteLockfileForDir(tempDir);
+      await mkdir(join(tempDir, '.claude', 'skills', 'my-skill'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'skills', 'my-skill', 'SKILL.md'), '# mine');
 
       const result = await syncCheck(tempDir);
 
-      expect(result.totalTracked).toBe(2);
+      expect(result.inSync).toBe(true);
+      expect(result.added).toHaveLength(0);
+    });
+
+    it('new-format lock plus a custom skill is in sync', async () => {
+      await install();
+      await mkdir(join(tempDir, '.claude', 'skills', 'my-skill'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'skills', 'my-skill', 'SKILL.md'), '# mine');
+
+      const result = await syncCheck(tempDir, { templateRoot });
+
+      expect(result.inSync).toBe(true);
+      expect(result.added).toHaveLength(0);
+      expect(result.removed).toHaveLength(0);
+      expect(result.unchanged).toBe(1);
+      expect(result.totalTracked).toBe(1);
+    });
+
+    it('old-format lock listing a custom file and a leftover is in sync', async () => {
+      await install();
+      const lock = JSON.parse(await readFile(join(tempDir, LOCKFILE_NAME), 'utf-8')) as Lockfile;
+      // Custom file still on disk, leftover no longer on disk and not shipped by templates
+      lock.files['.claude/skills/my-skill/SKILL.md'] = entry('custom-hash');
+      lock.files['.claude/skills/old-leftover/SKILL.md'] = entry('left-hash');
+      await writeFile(join(tempDir, LOCKFILE_NAME), JSON.stringify(lock), 'utf-8');
+      await mkdir(join(tempDir, '.claude', 'skills', 'my-skill'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'skills', 'my-skill', 'SKILL.md'), '# mine');
+
+      const result = await syncCheck(tempDir, { templateRoot });
+
+      expect(result.inSync).toBe(true);
+      expect(result.removed).toHaveLength(0);
+      expect(result.added).toHaveLength(0);
+      expect(result.modified).toHaveLength(0);
+    });
+
+    it('still detects a modified template-owned file (positive control)', async () => {
+      await install();
+      await writeFile(join(tempDir, '.claude', 'rules', 'MUST-safety.md'), '# Changed', 'utf-8');
+
+      const result = await syncCheck(tempDir, { templateRoot });
+
+      expect(result.inSync).toBe(false);
+      expect(result.modified).toEqual(['.claude/rules/MUST-safety.md']);
+    });
+
+    it('reports a template-owned file deleted from disk as removed', async () => {
+      await install();
+      await rm(join(tempDir, '.claude', 'rules', 'MUST-safety.md'));
+
+      const result = await syncCheck(tempDir, { templateRoot });
+
+      expect(result.inSync).toBe(false);
+      expect(result.removed).toEqual(['.claude/rules/MUST-safety.md']);
+      expect(result.added).toHaveLength(0);
+    });
+
+    it('--reference compares the unfiltered snapshot (custom file reported as added)', async () => {
+      await install();
+      const refDir = await mkdtemp(join(tmpdir(), 'omcustom-sync-ref-'));
+      try {
+        await writeFile(join(refDir, LOCKFILE_NAME), await readFile(join(tempDir, LOCKFILE_NAME)));
+        await mkdir(join(tempDir, '.claude', 'skills', 'my-skill'), { recursive: true });
+        await writeFile(join(tempDir, '.claude', 'skills', 'my-skill', 'SKILL.md'), '# mine');
+
+        const result = await syncCheck(tempDir, { reference: refDir, templateRoot });
+
+        expect(result.inSync).toBe(false);
+        expect(result.added).toEqual(['.claude/skills/my-skill/SKILL.md']);
+      } finally {
+        await rm(refDir, { recursive: true, force: true });
+      }
+    });
+
+    it('ignores a lock entry the updater carried for a leftover that is still on disk', async () => {
+      await install();
+      const leftover = '.claude/skills/old-leftover/SKILL.md';
+      await mkdir(join(tempDir, dirname(leftover)), { recursive: true });
+      await writeFile(join(tempDir, leftover), 'shipped once');
+      const lock = JSON.parse(await readFile(join(tempDir, LOCKFILE_NAME), 'utf-8')) as Lockfile;
+      lock.files[leftover] = entry('carried-hash');
+      await writeFile(join(tempDir, LOCKFILE_NAME), JSON.stringify(lock), 'utf-8');
+
+      const result = await syncCheck(tempDir, { templateRoot });
+
+      expect(result.inSync).toBe(true);
+      expect(result.error).toBeUndefined();
+      expect(result.totalTracked).toBe(1);
+    });
+
+    for (const [label, makeRoot] of [
+      ['an empty', () => mkdtemp(join(tmpdir(), 'omcustom-sync-empty-tpl-'))],
+      ['a missing', async () => join(tempDir, 'no-such-templates')],
+    ] as const) {
+      it(`reports ${label} template directory as an error, not as in sync`, async () => {
+        await install();
+        const root = await makeRoot();
+        try {
+          const result = await syncCheck(tempDir, { templateRoot: root });
+
+          expect(result.inSync).toBe(false);
+          expect(result.error).toBe(`no template files found under ${root}`);
+          expect(result.referenceVersion).toBe('0.72.0');
+          expect(result.totalTracked).toBe(0);
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
+      });
+    }
+
+    it('reports why when the current snapshot cannot be generated', async () => {
+      await install();
+      const lockfileModule = await import('../../../src/core/lockfile.js');
+      const spy = spyOn(lockfileModule, 'generateLockfile').mockRejectedValue(new Error('boom'));
+      try {
+        const result = await syncCheck(tempDir, { templateRoot });
+
+        expect(result.inSync).toBe(false);
+        expect(result.error).toBe('cannot generate the current lockfile snapshot');
+        expect(result.referenceVersion).toBe('0.72.0');
+      } finally {
+        spy.mockRestore();
+      }
     });
   });
 

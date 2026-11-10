@@ -19,6 +19,18 @@ import { getDefaultWizardResult, isInteractiveMode, runInitWizard } from './wiza
 export type { InitOptions, InitResult };
 
 /**
+ * Options accepted by `initCommand` — the shared {@link InitOptions} plus CLI-only flags.
+ */
+export interface InitCommandOptions extends InitOptions {
+  /**
+   * Write `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` into the project settings.json (#1934).
+   * Commander sets this to `true` by default and `false` for `--no-agent-teams`; programmatic
+   * callers that omit it get the default (enabled).
+   */
+  agentTeams?: boolean;
+}
+
+/**
  * Check if provider root directory already exists
  * @param targetDir - Target directory to check
  * @returns True if provider root exists
@@ -173,10 +185,13 @@ export async function initFromSnapshot(
  * @param options - Init command options
  * @returns Result of the init operation
  */
-export async function initCommand(options: InitOptions): Promise<InitResult> {
+export async function initCommand(options: InitCommandOptions): Promise<InitResult> {
   const targetDir = process.cwd();
 
-  // Snapshot mode: skip wizard and install from pre-configured snapshot
+  // Snapshot mode: skip wizard and install from pre-configured snapshot.
+  // The Agent Teams env is intentionally NOT written here: a snapshot is a verbatim copy of a
+  // team's own .claude/ (including its settings.json) and bypasses install() entirely, so
+  // `--no-agent-teams` / the default do not apply to it.
   if (options.fromSnapshot) {
     return installFromSnapshot(targetDir, options.fromSnapshot, options);
   }
@@ -186,7 +201,7 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
     return { success: false, message: i18n.t('cli.init.wizard.cancelled') };
   }
 
-  console.log(i18n.t('cli.init.start'));
+  console.log(i18n.t('cli.init.start', { version: packageJson.version }));
 
   try {
     const layout = getProviderLayout();
@@ -204,6 +219,7 @@ export async function initCommand(options: InitOptions): Promise<InitResult> {
       force: options.force ?? false,
       backup: exists,
       domain: resolved.domain,
+      agentTeams: options.agentTeams !== false,
     });
 
     if (!installResult.success) {

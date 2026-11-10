@@ -482,8 +482,11 @@ describe('lockfile', () => {
         await seedRetirementCorpus();
         const result =
           additionalPaths === undefined
-            ? await generateAndWriteLockfileForDir(tempDir)
-            : await generateAndWriteLockfileForDir(tempDir, { retiredPaths: additionalPaths });
+            ? await generateAndWriteLockfileForDir(tempDir, { templateOwned: false })
+            : await generateAndWriteLockfileForDir(tempDir, {
+                retiredPaths: additionalPaths,
+                templateOwned: false,
+              });
         expect(result.warning).toBeUndefined();
         expect(result.fileCount).toBe(retained.length);
         const lock = await readLockfile(tempDir);
@@ -517,7 +520,7 @@ describe('lockfile', () => {
 
     it('regeneration keeps retirement exclusions and idempotence while preserving RTK disk data', async () => {
       await seedRetirementCorpus();
-      const options = { retiredPaths: retired };
+      const options = { retiredPaths: retired, templateOwned: false };
       const first = await generateAndWriteLockfileForDir(tempDir, options);
       expect(first.warning).toBeUndefined();
       expect(first.fileCount).toBe(retained.length);
@@ -567,6 +570,202 @@ describe('lockfile', () => {
         })
       ).rejects.toThrow('exact canonical relative file paths');
       expect(await readdir(tempDir)).toEqual([]);
+    });
+  });
+
+  describe('template ownership (#1935)', () => {
+    const packageTemplates = join(
+      dirname(fileURLToPath(import.meta.url)),
+      '..',
+      '..',
+      '..',
+      'templates'
+    );
+
+    async function putIn(root: string, path: string, content: string): Promise<void> {
+      await mkdir(dirname(join(root, path)), { recursive: true });
+      await writeFile(join(root, path), content, 'utf-8');
+    }
+
+    it('generateLockfile with templateRoot records only paths that have a template counterpart', async () => {
+      const templateRoot = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-templates-'));
+      try {
+        await putIn(templateRoot, '.claude/rules/a.md', 'template a');
+        await putIn(templateRoot, '.claude/skills/s/SKILL.md', 'template s');
+        await putIn(templateRoot, 'guides/g/x.md', 'template guide');
+        await putIn(templateRoot, '.claude/rules/target.md', 'link target');
+        await symlink(
+          join(templateRoot, '.claude/rules/target.md'),
+          join(templateRoot, '.claude/rules/link.md')
+        );
+        await putIn(templateRoot, 'CLAUDE.md', 'not a component');
+
+        await putIn(tempDir, '.claude/rules/a.md', 'user modified a');
+        await putIn(tempDir, '.claude/skills/s/SKILL.md', 'template s');
+        await putIn(tempDir, 'guides/g/x.md', 'template guide');
+        await putIn(tempDir, '.claude/rules/link.md', 'installed copy');
+        await putIn(tempDir, '.claude/skills/custom/SKILL.md', 'user custom skill');
+        await putIn(tempDir, '.claude/skills/S2/SKILL.md', 'case neighbour');
+        await putIn(tempDir, 'guides/g/extra.md', 'user guide note');
+
+        const lockfile = await generateLockfile(tempDir, '1.0.0', '1.0.0', { templateRoot });
+
+        expect(Object.keys(lockfile.files)).toEqual([
+          '.claude/rules/a.md',
+          '.claude/rules/link.md',
+          '.claude/skills/s/SKILL.md',
+          'guides/g/x.md',
+        ]);
+        expect(lockfile.files['.claude/rules/a.md'].templateHash).toBe(
+          expectedSha256('user modified a')
+        );
+        const unfiltered = await generateLockfile(tempDir, '1.0.0', '1.0.0');
+        expect(Object.keys(unfiltered.files)).toContain('.claude/skills/custom/SKILL.md');
+        expect(Object.keys(unfiltered.files)).toContain('guides/g/extra.md');
+      } finally {
+        await rm(templateRoot, { recursive: true, force: true });
+      }
+    });
+
+    it('an absent templateRoot records nothing', async () => {
+      await putIn(tempDir, '.claude/rules/a.md', 'a');
+      const lockfile = await generateLockfile(tempDir, '1.0.0', '1.0.0', {
+        templateRoot: join(tempDir, 'no-such-templates'),
+      });
+      expect(lockfile.files).toEqual({});
+    });
+
+    it('generateAndWriteLockfileForDir defaults to the package templates: drops custom files and leftovers, keeps user-modified template files', async () => {
+      const safety = '.claude/rules/MUST-safety.md';
+      const agents = (await readdir(join(packageTemplates, '.claude', 'agents'))).filter((name) =>
+        name.endsWith('.md')
+      );
+      const modifiedAgent = `.claude/agents/${agents[0]}`;
+      await putIn(tempDir, safety, await readFile(join(packageTemplates, safety), 'utf-8'));
+      await putIn(tempDir, modifiedAgent, 'user-modified agent');
+      await putIn(tempDir, '.claude/skills/my-custom-skill/SKILL.md', 'custom');
+      await putIn(tempDir, '.claude/skills/memory-save/SKILL.md', 'leftover from an old release');
+      await putIn(tempDir, 'guides/agentmemory-migration/phase-1-coexist.md', 'leftover guide');
+
+      const result = await generateAndWriteLockfileForDir(tempDir);
+
+      expect(result.warning).toBeUndefined();
+      expect(result.fileCount).toBe(2);
+      const lock = await readLockfile(tempDir);
+      expect(Object.keys(lock?.files ?? {}).sort()).toEqual([modifiedAgent, safety].sort());
+      expect(lock?.files[modifiedAgent]?.templateHash).toBe(expectedSha256('user-modified agent'));
+      expect(lock?.files[safety]?.templateHash).toBe(
+        await computeFileHash(join(packageTemplates, safety))
+      );
+    });
+
+    it('templateOwned: false records every walked file and ignores templateRoot', async () => {
+      await putIn(tempDir, '.claude/skills/my-custom-skill/SKILL.md', 'custom');
+      await putIn(tempDir, '.claude/rules/MUST-safety.md', 'anything');
+
+      const all = await generateAndWriteLockfileForDir(tempDir, {
+        templateOwned: false,
+        templateRoot: join(tempDir, 'no-such-templates'),
+      });
+
+      expect(all.fileCount).toBe(2);
+      expect(Object.keys((await readLockfile(tempDir))?.files ?? {})).toEqual([
+        '.claude/rules/MUST-safety.md',
+        '.claude/skills/my-custom-skill/SKILL.md',
+      ]);
+    });
+
+    it('an explicit templateRoot overrides the package templates in the writer', async () => {
+      const templateRoot = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-templates-'));
+      try {
+        await putIn(templateRoot, '.claude/skills/my-custom-skill/SKILL.md', 'template');
+        await putIn(tempDir, '.claude/skills/my-custom-skill/SKILL.md', 'custom');
+        await putIn(tempDir, '.claude/rules/MUST-safety.md', 'anything');
+
+        const result = await generateAndWriteLockfileForDir(tempDir, { templateRoot });
+
+        expect(result.fileCount).toBe(1);
+        expect(Object.keys((await readLockfile(tempDir))?.files ?? {})).toEqual([
+          '.claude/skills/my-custom-skill/SKILL.md',
+        ]);
+      } finally {
+        await rm(templateRoot, { recursive: true, force: true });
+      }
+    });
+
+    for (const [label, makeRoot] of [
+      ['an empty', () => mkdtemp(join(tmpdir(), 'omcustom-lockfile-empty-templates-'))],
+      ['a missing', async () => join(tempDir, 'no-such-templates')],
+    ] as const) {
+      it(`the writer refuses ${label} template directory: warning, nothing written`, async () => {
+        const root = await makeRoot();
+        try {
+          await putIn(tempDir, '.claude/rules/a.md', 'a');
+          await writeFile(join(tempDir, LOCKFILE_NAME), 'previous bytes');
+
+          const result = await generateAndWriteLockfileForDir(tempDir, { templateRoot: root });
+
+          expect(result).toEqual({
+            fileCount: 0,
+            warning: `Lockfile generation failed: no template files found under ${root}`,
+          });
+          expect(await readFile(join(tempDir, LOCKFILE_NAME), 'utf8')).toBe('previous bytes');
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
+      });
+    }
+
+    it('carriedEntries adds old entries the walk did not record, in key order, and skips invalid ones', async () => {
+      const templateRoot = await mkdtemp(join(tmpdir(), 'omcustom-lockfile-templates-'));
+      try {
+        await putIn(templateRoot, '.claude/rules/a.md', 'template a');
+        await putIn(tempDir, '.claude/rules/a.md', 'template a');
+        const carried = (hash: string, component = 'skills') => ({
+          templateHash: hash,
+          size: 3,
+          component,
+        });
+        const carriedEntries = {
+          '.claude/skills/old/SKILL.md': carried('a'.repeat(64)),
+          'guides/old/x.md': carried('b'.repeat(64), 'guides'),
+          // The walk wins over a carried entry for the same key.
+          '.claude/rules/a.md': carried('c'.repeat(64), 'rules'),
+          // RTK paths are always excluded from the lock.
+          '.claude/skills/rtk-exec/SKILL.md': carried('d'.repeat(64)),
+          // Explicitly retired paths too.
+          '.claude/skills/retired/SKILL.md': carried('e'.repeat(64)),
+          // Not a canonical path, or outside every lockfile component.
+          '.claude/skills/../escape.md': carried('f'.repeat(64)),
+          'README.md': carried('f'.repeat(64)),
+        };
+        const snapshot = JSON.stringify(carriedEntries);
+
+        const options = {
+          templateRoot,
+          carriedEntries,
+          retiredPaths: ['.claude/skills/retired/SKILL.md'],
+        };
+        const result = await generateAndWriteLockfileForDir(tempDir, options);
+
+        expect(result).toEqual({ fileCount: 3 });
+        const lock = await readLockfile(tempDir);
+        expect(Object.keys(lock?.files ?? {})).toEqual([
+          '.claude/rules/a.md',
+          '.claude/skills/old/SKILL.md',
+          'guides/old/x.md',
+        ]);
+        expect(lock?.files['.claude/rules/a.md']?.templateHash).toBe(expectedSha256('template a'));
+        expect(lock?.files['guides/old/x.md']).toEqual(carried('b'.repeat(64), 'guides'));
+        expect(JSON.stringify(carriedEntries)).toBe(snapshot);
+
+        // Carrying the same entries again changes nothing, so the timestamp is kept.
+        const before = await readFile(join(tempDir, LOCKFILE_NAME), 'utf8');
+        expect(await generateAndWriteLockfileForDir(tempDir, options)).toEqual({ fileCount: 3 });
+        expect(await readFile(join(tempDir, LOCKFILE_NAME), 'utf8')).toBe(before);
+      } finally {
+        await rm(templateRoot, { recursive: true, force: true });
+      }
     });
   });
 
@@ -853,6 +1052,8 @@ describe('lockfile', () => {
     describe('idempotent rebuild (#1796)', () => {
       const OLD_STAMP = '2020-01-01T00:00:00.000Z';
       const lockfilePath = (): string => join(tempDir, LOCKFILE_NAME);
+      // Writer mechanics only: seeded names such as MUST-extra.md are not template files.
+      const RAW_WRITE = { templateOwned: false } as const;
 
       async function seedRule(name: string, content: string): Promise<void> {
         const rulesDir = join(tempDir, '.claude', 'rules');
@@ -869,10 +1070,10 @@ describe('lockfile', () => {
 
       it('keeps the file byte-identical when regenerated with unchanged content', async () => {
         await seedRule('MUST-safety.md', '# Safety rule');
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
         const pinned = await pinStamp();
 
-        const result = await generateAndWriteLockfileForDir(tempDir);
+        const result = await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
 
         expect(result.warning).toBeUndefined();
         expect(await readFile(lockfilePath(), 'utf-8')).toBe(pinned);
@@ -881,11 +1082,11 @@ describe('lockfile', () => {
 
       it('refreshes generatedAt when a file hash changes', async () => {
         await seedRule('MUST-safety.md', '# Safety rule');
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
         await pinStamp();
 
         await seedRule('MUST-safety.md', '# Safety rule v2');
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
 
         const lockfile = await readLockfile(tempDir);
         expect(lockfile?.generatedAt).not.toBe(OLD_STAMP);
@@ -896,11 +1097,11 @@ describe('lockfile', () => {
 
       it('refreshes generatedAt when a file is added', async () => {
         await seedRule('MUST-safety.md', '# Safety rule');
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
         await pinStamp();
 
         await seedRule('MUST-extra.md', '# Extra');
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
 
         const lockfile = await readLockfile(tempDir);
         expect(lockfile?.generatedAt).not.toBe(OLD_STAMP);
@@ -910,11 +1111,11 @@ describe('lockfile', () => {
       it('refreshes generatedAt when a file is removed', async () => {
         await seedRule('MUST-safety.md', '# Safety rule');
         await seedRule('MUST-extra.md', '# Extra');
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
         await pinStamp();
 
         await rm(join(tempDir, '.claude', 'rules', 'MUST-extra.md'));
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
 
         const lockfile = await readLockfile(tempDir);
         expect(lockfile?.generatedAt).not.toBe(OLD_STAMP);
@@ -923,13 +1124,13 @@ describe('lockfile', () => {
 
       it('refreshes generatedAt when the previous lockfile has a different generatorVersion', async () => {
         await seedRule('MUST-safety.md', '# Safety rule');
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
         const parsed = JSON.parse(await readFile(lockfilePath(), 'utf-8')) as Lockfile;
         parsed.generatorVersion = '0.0.0-previous';
         parsed.generatedAt = OLD_STAMP;
         await writeFile(lockfilePath(), JSON.stringify(parsed, null, 2), 'utf-8');
 
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
 
         const lockfile = await readLockfile(tempDir);
         expect(lockfile?.generatorVersion).not.toBe('0.0.0-previous');
@@ -940,7 +1141,7 @@ describe('lockfile', () => {
         await seedRule('MUST-safety.md', '# Safety rule');
         const before = Date.now();
 
-        await generateAndWriteLockfileForDir(tempDir);
+        await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
 
         const lockfile = await readLockfile(tempDir);
         expect(Date.parse(lockfile?.generatedAt ?? '')).toBeGreaterThanOrEqual(before);
@@ -951,7 +1152,7 @@ describe('lockfile', () => {
         await writeFile(lockfilePath(), '{ not valid json', 'utf-8');
         const before = Date.now();
 
-        const result = await generateAndWriteLockfileForDir(tempDir);
+        const result = await generateAndWriteLockfileForDir(tempDir, RAW_WRITE);
 
         expect(result.warning).toBeUndefined();
         const lockfile = await readLockfile(tempDir);
@@ -1528,7 +1729,7 @@ describe('lockfile', () => {
 
     it('generateAndWriteLockfileForDir applies the option and still keeps generatedAt', async () => {
       await seedRepo(tempDir);
-      const options = { excludeGitIgnored: true };
+      const options = { excludeGitIgnored: true, templateOwned: false };
 
       const first = await generateAndWriteLockfileForDir(tempDir, options);
       const before = await readFile(join(tempDir, LOCKFILE_NAME), 'utf-8');

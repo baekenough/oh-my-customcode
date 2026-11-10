@@ -8,9 +8,10 @@
  */
 
 import { afterAll, afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { i18n, initI18n } from '../../../src/i18n/index.js';
 
 // ============================================================================
 // MOCK SETUP (before importing self-update)
@@ -65,9 +66,11 @@ mock.module('node:readline/promises', () => ({
 }));
 
 // Now import self-update (will use mocked modules)
-import type { SelfUpdateOptions } from '../../../src/core/self-update.js';
+import type { ReexecSpawnFn, SelfUpdateOptions } from '../../../src/core/self-update.js';
 import {
+  exitCodeForChild,
   fetchLatestVersionFromNpm,
+  findInstalledPackageVersion,
   maybeHandleSelfUpdateForInit,
 } from '../../../src/core/self-update.js';
 
@@ -591,6 +594,435 @@ describe('self-update integration tests', () => {
 
       // Should have closed readline
       expect(mockClose).toHaveBeenCalled();
+    });
+  });
+  // ==========================================================================
+  // Re-exec after a successful global install on the init path (A2)
+  // ==========================================================================
+
+  describe('maybeHandleSelfUpdateForInit — re-exec after global install', () => {
+    const PKG_DIR = join('/fake', 'prefix', 'lib', 'node_modules', 'test-package');
+    const ENTRY = join(PKG_DIR, 'dist', 'cli', 'index.js');
+
+    function mockNpm(installBehavior: 'ok' | 'fail'): void {
+      mockExecSync.mockImplementation((cmd: string) => {
+        if (cmd.includes('npm view')) return '"1.5.0"\n';
+        if (cmd.includes('npm install -g')) {
+          if (installBehavior === 'fail') throw new Error('EACCES: permission denied');
+          return '';
+        }
+        throw new Error(`Unexpected: ${cmd}`);
+      });
+    }
+
+    /** Fake file system: paths resolve to themselves, only the listed files can be read. */
+    function fakeFs(files: Record<string, string>) {
+      return {
+        realpathFn: (path: string) => path,
+        readFileFn: (path: string) => {
+          const content = files[path];
+          if (content === undefined) throw new Error(`ENOENT: ${path}`);
+          return content;
+        },
+      };
+    }
+
+    function pkgJson(version: string | undefined, name = 'test-package'): string {
+      return JSON.stringify(version === undefined ? { name } : { name, version });
+    }
+
+    function okSpawn(status: number | null = 0, signal: NodeJS.Signals | null = null) {
+      return mock<ReexecSpawnFn>(() => ({ status, signal }));
+    }
+
+    function makeOptions(overrides: Partial<SelfUpdateOptions> = {}): SelfUpdateOptions {
+      return {
+        currentVersion: '1.0.0',
+        packageName: 'test-package',
+        cachePath: join(tempDir, 'cache.json'),
+        argv: ['node', ENTRY, 'init', '--lang', 'ko'],
+        env: { FOO: 'bar' },
+        ...overrides,
+      };
+    }
+
+    function warnings(): string[] {
+      return consoleWarnSpy.mock.calls.map((call: unknown[]) => String(call[0]));
+    }
+
+    beforeEach(async () => {
+      await initI18n('en');
+    });
+
+    afterEach(async () => {
+      await i18n.changeLanguage('en');
+    });
+
+    it('re-execs the new CLI with the skip env and the exact original args', async () => {
+      mockNpm('ok');
+      const spawnFn = okSpawn(0);
+      const exitFn = mock((_code: number) => {});
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: {
+            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.5.0') }),
+            spawnFn,
+            exitFn,
+          },
+        })
+      );
+
+      expect(spawnFn).toHaveBeenCalledTimes(1);
+      expect(spawnFn).toHaveBeenCalledWith(process.execPath, [ENTRY, 'init', '--lang', 'ko'], {
+        stdio: 'inherit',
+        env: { FOO: 'bar', OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
+      });
+      expect(exitFn).toHaveBeenCalledTimes(1);
+      expect(exitFn).toHaveBeenCalledWith(0);
+      expect(mockSpawnSync).not.toHaveBeenCalled();
+      expect(consoleLogSpy.mock.calls.map((c: unknown[]) => String(c[0]))).toContain(
+        '↻ Restarting init with the updated CLI (v1.5.0)...'
+      );
+    });
+
+    it('propagates the child exit status', async () => {
+      mockNpm('ok');
+      const exitFn = mock((_code: number) => {});
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: {
+            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.5.0') }),
+            spawnFn: okSpawn(3),
+            exitFn,
+          },
+        })
+      );
+
+      expect(exitFn).toHaveBeenCalledWith(3);
+    });
+
+    it.each([
+      ['SIGTERM', 143],
+      ['SIGINT', 130],
+      ['SIGKILL', 137],
+    ] as const)('maps a child killed by %s to exit code %d', async (signal, expected) => {
+      mockNpm('ok');
+      const exitFn = mock((_code: number) => {});
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: {
+            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.5.0') }),
+            spawnFn: okSpawn(null, signal),
+            exitFn,
+          },
+        })
+      );
+
+      expect(exitFn).toHaveBeenCalledWith(expected);
+    });
+
+    it('uses the real spawnSync and process.exit when no deps are injected', async () => {
+      mockNpm('ok');
+      mockSpawnSync.mockImplementationOnce(() => ({
+        status: 0,
+        stdout: Buffer.from(''),
+        stderr: Buffer.from(''),
+        pid: 1,
+        output: [],
+        signal: null,
+      }));
+      // Real realpath/readFile against a real symlinked global-install layout
+      const prefix = join(tempDir, 'prefix');
+      const realPkgDir = join(prefix, 'lib', 'node_modules', 'test-package');
+      mkdirSync(join(realPkgDir, 'dist', 'cli'), { recursive: true });
+      mkdirSync(join(prefix, 'bin'), { recursive: true });
+      writeFileSync(join(realPkgDir, 'package.json'), pkgJson('1.5.0'));
+      writeFileSync(join(realPkgDir, 'dist', 'cli', 'index.js'), '// entry');
+      // A nameless nested package.json (like dist/package.json) must be walked past
+      writeFileSync(join(realPkgDir, 'dist', 'package.json'), '{"type":"module"}');
+      const binLink = join(prefix, 'bin', 'omcustom');
+      symlinkSync(join(realPkgDir, 'dist', 'cli', 'index.js'), binLink);
+
+      await expect(
+        maybeHandleSelfUpdateForInit(makeOptions({ argv: ['node', binLink, 'init'] }))
+      ).rejects.toThrow('process.exit(0) called');
+
+      expect(mockSpawnSync).toHaveBeenCalledTimes(1);
+      const call = mockSpawnSync.mock.calls[0] as unknown as [string, string[], unknown];
+      expect(call[0]).toBe(process.execPath);
+      expect(call[1]).toEqual([binLink, 'init']);
+    });
+
+    it('does not re-exec and warns with both versions when the binary is a different version', async () => {
+      mockNpm('ok');
+      const spawnFn = okSpawn(0);
+      const exitFn = mock((_code: number) => {});
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: {
+            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.0.0') }),
+            spawnFn,
+            exitFn,
+          },
+        })
+      );
+
+      expect(spawnFn).not.toHaveBeenCalled();
+      expect(exitFn).not.toHaveBeenCalled();
+      const text = warnings().join('\n');
+      expect(text).toContain('Installed v1.5.0');
+      expect(text).toContain('is v1.0.0');
+      expect(text).toContain('npm install -g test-package@latest');
+      expect(text).toContain('Continuing init with current version.');
+    });
+
+    it('does not re-exec and warns when the binary version cannot be resolved', async () => {
+      mockNpm('ok');
+      const spawnFn = okSpawn(0);
+      const exitFn = mock((_code: number) => {});
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: {
+            realpathFn: () => {
+              throw new Error('ENOENT');
+            },
+            readFileFn: () => {
+              throw new Error('unreachable');
+            },
+            spawnFn,
+            exitFn,
+          },
+        })
+      );
+
+      expect(spawnFn).not.toHaveBeenCalled();
+      expect(exitFn).not.toHaveBeenCalled();
+      const text = warnings().join('\n');
+      expect(text).toContain('Installed v1.5.0');
+      expect(text).toContain('this process loaded v1.0.0');
+      expect(text).toContain('npm install -g test-package@latest');
+      expect(text).toContain('Continuing init with current version.');
+    });
+
+    it('does not re-exec when argv has no entry path', async () => {
+      mockNpm('ok');
+      const spawnFn = okSpawn(0);
+      const exitFn = mock((_code: number) => {});
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({ argv: ['node'], reexecDeps: { spawnFn, exitFn } })
+      );
+
+      expect(spawnFn).not.toHaveBeenCalled();
+      expect(exitFn).not.toHaveBeenCalled();
+      expect(warnings().join('\n')).toContain('could not determine the version');
+    });
+
+    it('does not re-exec when the owning package.json has no version', async () => {
+      mockNpm('ok');
+      const spawnFn = okSpawn(0);
+      const exitFn = mock((_code: number) => {});
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: {
+            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson(undefined) }),
+            spawnFn,
+            exitFn,
+          },
+        })
+      );
+
+      expect(spawnFn).not.toHaveBeenCalled();
+      expect(exitFn).not.toHaveBeenCalled();
+      expect(warnings().join('\n')).toContain('could not determine the version');
+    });
+
+    it('prints the warnings in Korean when the language is ko', async () => {
+      mockNpm('ok');
+      await i18n.changeLanguage('ko');
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: {
+            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.0.0') }),
+            spawnFn: okSpawn(0),
+            exitFn: mock((_code: number) => {}),
+          },
+        })
+      );
+
+      const text = warnings().join('\n');
+      expect(text).toContain('v1.5.0를 설치했지만');
+      expect(text).toContain('v1.0.0');
+      expect(text).toContain('npm install -g test-package@latest');
+    });
+
+    it('continues with the current version when the re-exec child cannot be started', async () => {
+      mockNpm('ok');
+      const spawnFn = mock<ReexecSpawnFn>(() => ({
+        status: null,
+        signal: null,
+        error: new Error('spawn ENOENT'),
+      }));
+      const exitFn = mock((_code: number) => {});
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: {
+            ...fakeFs({ [join(PKG_DIR, 'package.json')]: pkgJson('1.5.0') }),
+            spawnFn,
+            exitFn,
+          },
+        })
+      );
+
+      expect(spawnFn).toHaveBeenCalledTimes(1);
+      expect(exitFn).not.toHaveBeenCalled();
+      const text = warnings().join('\n');
+      expect(text).toContain('Could not restart with the updated CLI: spawn ENOENT');
+      expect(text).toContain('Continuing init with current version.');
+    });
+
+    it('keeps the existing failure behaviour when the install fails (no re-exec)', async () => {
+      mockNpm('fail');
+      const spawnFn = okSpawn(0);
+      const exitFn = mock((_code: number) => {});
+      const readFileFn = mock((_path: string) => pkgJson('1.5.0'));
+
+      await maybeHandleSelfUpdateForInit(
+        makeOptions({
+          reexecDeps: { realpathFn: (p: string) => p, readFileFn, spawnFn, exitFn },
+        })
+      );
+
+      expect(spawnFn).not.toHaveBeenCalled();
+      expect(exitFn).not.toHaveBeenCalled();
+      expect(readFileFn).not.toHaveBeenCalled();
+      const text = warnings().join('\n');
+      expect(text).toContain('Self-update failed: EACCES: permission denied');
+      expect(text).toContain('Continuing init with current version.');
+    });
+
+    it('keeps the npx path unchanged (npx relaunch, no global re-exec)', async () => {
+      mockExecSync.mockImplementation((cmd: string) => {
+        if (cmd.includes('npm view')) return '"1.5.0"\n';
+        throw new Error(`Unexpected: ${cmd}`);
+      });
+      const spawnFn = okSpawn(0);
+      const exitFn = mock((_code: number) => {});
+
+      await expect(
+        maybeHandleSelfUpdateForInit(
+          makeOptions({
+            argv: ['node', '/home/user/.npm/_npx/12345/node_modules/.bin/omcustom', 'init'],
+            env: {},
+            reexecDeps: { spawnFn, exitFn },
+          })
+        )
+      ).rejects.toThrow('process.exit(0) called');
+
+      expect(mockSpawnSync).toHaveBeenCalledWith('npx', ['-y', 'test-package@1.5.0', 'init'], {
+        stdio: 'inherit',
+        env: { OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
+      });
+      expect(spawnFn).not.toHaveBeenCalled();
+      expect(exitFn).not.toHaveBeenCalled();
+    });
+
+    it('does not re-exec when the user declines the update', async () => {
+      mockNpm('ok');
+      mockQuestionAnswer = 'n';
+      const spawnFn = okSpawn(0);
+
+      await maybeHandleSelfUpdateForInit(makeOptions({ reexecDeps: { spawnFn } }));
+
+      expect(spawnFn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('exitCodeForChild', () => {
+    it('returns the child status when it exited normally', () => {
+      expect(exitCodeForChild({ status: 0, signal: null })).toBe(0);
+      expect(exitCodeForChild({ status: 7, signal: null })).toBe(7);
+    });
+
+    it('maps a known signal to 128 + signal number', () => {
+      expect(exitCodeForChild({ status: null, signal: 'SIGTERM' })).toBe(143);
+    });
+
+    it('falls back to the status for an unknown signal name', () => {
+      expect(exitCodeForChild({ status: 9, signal: 'SIGNOPE' as NodeJS.Signals })).toBe(9);
+    });
+
+    it('returns 1 when neither status nor a known signal is available', () => {
+      expect(exitCodeForChild({ status: null, signal: null })).toBe(1);
+      expect(exitCodeForChild({ status: null, signal: 'SIGNOPE' as NodeJS.Signals })).toBe(1);
+    });
+  });
+
+  describe('findInstalledPackageVersion', () => {
+    function reader(files: Record<string, string>) {
+      return (path: string): string => {
+        const content = files[path];
+        if (content === undefined) throw new Error(`ENOENT: ${path}`);
+        return content;
+      };
+    }
+
+    it('walks up past a nameless, an invalid and a differently named package.json', () => {
+      const root = join('/fake', 'root', 'node_modules', 'test-package');
+      const entry = join(root, 'a', 'b', 'c', 'index.js');
+      const version = findInstalledPackageVersion(entry, 'test-package', {
+        realpathFn: (p) => p,
+        readFileFn: reader({
+          [join(root, 'a', 'b', 'c', 'package.json')]: '{"type":"module"}',
+          [join(root, 'a', 'b', 'package.json')]: '{ invalid',
+          [join(root, 'a', 'package.json')]: '{"name":"someone-else","version":"9.9.9"}',
+          [join(root, 'package.json')]: '{"name":"test-package","version":"v2.3.4-beta"}',
+        }),
+      });
+
+      // The package.json `version` is returned as stored; normalization is the caller's job
+      expect(version).toBe('v2.3.4-beta');
+    });
+
+    it('returns null for a non-object package.json and reaches the filesystem root', () => {
+      const version = findInstalledPackageVersion(join('/fake', 'x', 'index.js'), 'test-package', {
+        realpathFn: (p) => p,
+        readFileFn: () => '[1,2,3]',
+      });
+
+      expect(version).toBeNull();
+    });
+
+    it('returns null when the matching package.json has an empty version', () => {
+      const dir = join('/fake', 'pkg');
+      const version = findInstalledPackageVersion(join(dir, 'index.js'), 'test-package', {
+        realpathFn: (p) => p,
+        readFileFn: reader({ [join(dir, 'package.json')]: '{"name":"test-package","version":""}' }),
+      });
+
+      expect(version).toBeNull();
+    });
+
+    it('returns null when the entry path cannot be resolved', () => {
+      const version = findInstalledPackageVersion('/does/not/exist', 'test-package', {
+        realpathFn: () => {
+          throw new Error('ENOENT');
+        },
+      });
+
+      expect(version).toBeNull();
+    });
+
+    it('uses the real filesystem by default and returns null for a missing entry', () => {
+      expect(findInstalledPackageVersion(join(tempDir, 'missing', 'index.js'), 'x')).toBeNull();
     });
   });
 });

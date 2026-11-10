@@ -37,21 +37,26 @@ Ensure complete synchronization of agents, skills, documentation, and project st
 
 #### Round 5: Final Count Verification
 
-**Deterministic-script substitution (R023 shift-left, no loss)**: The items below marked `[script]` are already covered by existing deterministic scripts (`verify-template-sync.sh`, `verify-wiki-sync.sh`, `verify-version-sync.sh`, `validate-docs.ts`, pre-commit count-coverage hook). For those items, RUN the script and consume its PASS/FAIL result instead of re-deriving the same check via an LLM re-spawn. Items without `[script]` have no deterministic equivalent (semantic/philosophy checks) and MUST still be verified directly.
+**Deterministic-script substitution (R023 shift-left, no loss)**: The items below marked `[script]` are already covered by existing deterministic scripts (`verify-template-sync.sh`, `verify-wiki-sync.sh`, `verify-version-sync.sh`, `validate-docs.ts`, pre-commit count-coverage hook, `omcustom doctor`). For those items, RUN the script and consume its PASS/FAIL result instead of re-deriving the same check via an LLM re-spawn. Items without `[script]` have no deterministic equivalent (semantic/philosophy checks) and MUST still be verified directly.
 
 ```
 □ [script] Agent count matches: CLAUDE.md vs actual .md files (pre-commit coverage / validate-docs.ts)
 □ [script] Skill count matches: CLAUDE.md vs actual SKILL.md files (pre-commit coverage / validate-docs.ts)
-□ Memory field distribution correct
+□ Memory field distribution reported (informational; `memory` is optional per R006, a missing field is not a finding)
 □ [script] Hook/context/guide/rule counts match (validate-docs.ts / verify-version-sync.sh)
 □ All frontmatter valid
 □ All skill refs exist
-□ All memory scopes valid (project|user|local)
+□ `memory` scope valid (project|user|local) when present; absence is not a finding (R006: optional)
 □ Routing patterns updated
 □ [script] R006 Context Fork Criteria list matches actual SKILL.md frontmatter
   (run `bash .github/scripts/verify-fork-list.sh`)
 □ [script] templates/ mirror byte-identical to source (verify-template-sync.sh)
 □ [script] wiki pages current vs source (verify-wiki-sync.sh)
+□ [script] No template orphans in installed projects: consume the `Orphans` result of `omcustom doctor`
+  (files on disk listed in `templates/retired-template-paths.json`; reports whether `omcustom update`
+  removes them or manual review is needed). "lock N/N match" alone is NOT evidence of no leftovers —
+  owned leftovers appear as matching entries (locks before v2.0.20 also list unowned ones), and unowned leftovers on v2.0.20+ locks are absent. In the oh-my-customcode source repo this item
+  is covered by `verify-template-sync.sh` mirror parity.
 ```
 
 ### Phase 2: Deep Review (3 rounds)
@@ -121,14 +126,14 @@ All structural lints are **advisory** (WARN level) except circular dependencies 
 ```
 □ All skill references exist
 □ All agent frontmatter valid
-□ memory field values valid (user | project | local)
+□ memory field value valid (user | project | local) when present; missing `memory` is not a finding (R006: optional)
 □ No orphaned agents
 □ No circular references
 ```
 
 #### Deep Round 3: Philosophy Compliance
 ```
-□ R006: Agent design rules (including memory field spec)
+□ R006: Agent design rules (`memory` is an optional field)
 □ R007: Agent identification rules
 □ R008: Tool identification rules
 □ R009: Parallel execution rules
@@ -214,7 +219,8 @@ Starting full R017 verification...
   ✓ Skills: 55/55 match
   ✓ All frontmatter valid
   ✓ All skill refs valid
-  ✓ All memory scopes valid
+  ✓ memory scopes valid where present
+  ✓ No template orphans (omcustom doctor: Orphans)
 
 ═══════════════════════════════════════════════════════════
  PHASE 2: Deep Review (3 rounds)

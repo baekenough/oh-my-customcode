@@ -52,6 +52,7 @@ export function createProgram(): Command {
     )
     .option('--yes', 'Skip interactive wizard, use defaults')
     .option('--from-snapshot <path>', 'Install from a pre-configured team snapshot directory')
+    .option('--no-agent-teams', i18n.t('cli.init.noAgentTeamsOption'))
     .action(async (options) => {
       await initCommand(options);
     });

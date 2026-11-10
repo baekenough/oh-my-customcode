@@ -260,6 +260,7 @@ oh-my-customcode는 보안, 드리프트 감지, 규칙 강화를 다루는 42�
 omcustom init                  # 인터랙티브 설정 마법사 (언어, 프레임워크, 팀 모드)
 omcustom init --lang ko        # 한국어로 초기화
 omcustom init --from-snapshot  # 사전 구성된 팀 스냅샷에서 설치
+omcustom init --no-agent-teams # Agent Teams env 플래그를 기록하지 않음
 omcustom sync                  # .claude/ 상태와 lockfile 간 드리프트 감지
 omcustom sync --check          # 변경 없이 드리프트 확인
 omcustom sync --export         # 현재 상태를 팀 스냅샷으로 내보내기
@@ -273,6 +274,15 @@ omcustom update --all          # 모든 구버전 프로젝트 일괄 업데이�
 omcustom serve                 # 내장 Web UI 시작
 omcustom serve-stop            # Web UI 중지
 ```
+
+- **Agent Teams 플래그**: 기본적으로 `init`은 프로젝트 `.claude/settings.json`에 `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"`을 기록합니다. 다른 키와 env 항목은 유지되며, 해당 키의 기존 값은 절대 덮어쓰지 않습니다. JSON 객체가 아닌 파일은 건드리지 않고 `init`이 경고를 출력합니다. `--no-agent-teams`는 아무것도 기록하지 않으며, `--from-snapshot`에는 적용되지 않습니다(팀의 settings를 그대로 복사). 이는 기본값이 `false`인 `.omcustomrc.json`의 `teamMode`와 별개입니다. 이 변수는 의도만 표현합니다. Agent Teams는 사용 중인 Claude Code 버전이 Agent Teams 도구를 제공할 때만 동작합니다.
+- **init 배너와 자체 업데이트**: init 배너에 CLI 버전(`oh-my-customcode vX.Y.Z`)이 표시됩니다. 자체 업데이트 프롬프트를 수락하면 `init`이 새로 설치된 CLI로 자신을 다시 실행합니다. 업데이트된 바이너리가 PATH의 것과 다르면 `init`은 경고를 출력하고 현재 버전으로 계속 진행합니다.
+- **잔존 파일**: `omcustom update`는 이전 버전에서 남은 파일을 다음 조건을 모두 만족할 때만 제거합니다: 경로가 `templates/retired-template-paths.json`(oh-my-customcode가 과거에 배포한 파일)에 있고, 내용이 배포된 버전과 일치하며, 이전 lockfile이 같은 hash로 해당 파일을 소유하고, 경로가 preserve 설정에 없어야 합니다. 그렇지 않으면 파일은 유지되고 경고가 출력됩니다. `--dry-run`은 제거 대상을 나열하며, 제거로 비게 된 디렉터리는 삭제됩니다.
+- **Orphans 검사**: `omcustom doctor`는 이러한 잔존 파일을 나열하고, 각 파일마다 `omcustom update`가 제거하는지 직접 삭제해야 하는지(lockfile 미소유, preserve 지정, 수정됨)를 알려줍니다. lockfile은 템플릿 파일과 이미 소유하던 retired 파일을 기록하지만, 소유한 적 없는 잔존 파일(예: 이전 설치 위에 init을 다시 실행해 남은 파일)은 기록하지 않으므로, "lockfile OK"만으로는 잔존 파일이 없다는 증거가 되지 않습니다.
+
+### 문제 해결: `init`이 구버전을 설치하는 경우
+
+1.0.16보다 오래된 CLI는 `init`이나 `update`로 1.x 이상 릴리스를 감지하지 못하므로, `omcustom init`이 조용히 구버전을 설치합니다. `npm install -g oh-my-customcode@latest`를 한 번 실행한 뒤 `omcustom --version`으로 확인하십시오. 버전이 바뀌지 않으면 PATH의 `omcustom`이 다른 npm prefix에서 온 것입니다. `which -a omcustom`과 `npm prefix -g`를 비교하십시오.
 
 ---
 

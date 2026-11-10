@@ -310,6 +310,31 @@ jobs:
           command -v jq >/dev/null 2>&1 || { echo "::error::jq required for version sync"; exit 1; }
           bash .github/scripts/verify-version-sync.sh
 
+  retired-paths-fresh:
+    name: Retired Template Paths Freshness
+    needs: [changes]
+    runs-on: macos-latest
+    steps:
+      - name: Skip notice
+        if: github.event_name != 'pull_request' || needs.changes.outputs.merge_commit == 'true'
+        run: echo "Skipped — runs on pull requests only (PR-merge commits are already verified on the PR)."
+      - name: Checkout (full history)
+        if: github.event_name == 'pull_request' && needs.changes.outputs.merge_commit != 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      # No `bun install`: the script and its transitive src/ imports use only node: builtins.
+      - name: Setup Bun
+        if: github.event_name == 'pull_request' && needs.changes.outputs.merge_commit != 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: latest
+
+      - name: Verify templates/retired-template-paths.json is up to date
+        if: github.event_name == 'pull_request' && needs.changes.outputs.merge_commit != 'true'
+        run: bun run scripts/generate-retired-template-paths.ts --check
+
   template-sync:
     name: Template Sync
     needs: [changes]

@@ -4,7 +4,8 @@
  */
 
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { constants as osConstants } from 'node:os';
 import { dirname, isAbsolute, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import packageJson from '../../package.json';
@@ -94,6 +95,33 @@ export interface SelfUpdateCheckResult {
   reason?: string;
 }
 
+/** Result subset of `spawnSync` that the init re-exec reads. */
+export interface ReexecSpawnResult {
+  status: number | null;
+  signal: NodeJS.Signals | null;
+  /** Set when the child could not be started at all. */
+  error?: Error;
+}
+
+/** `spawnSync` signature used by the init re-exec. */
+export type ReexecSpawnFn = (
+  command: string,
+  args: string[],
+  options: { stdio: 'inherit'; env: NodeJS.ProcessEnv }
+) => ReexecSpawnResult;
+
+/**
+ * Injectable side effects of the init re-exec (all default to the real implementations).
+ * Tests inject fakes so no real CLI is ever re-executed and the process never exits.
+ */
+export interface InitReexecDeps {
+  spawnFn?: ReexecSpawnFn;
+  realpathFn?: (path: string) => string;
+  /** Reads a package.json as text; throws when the file is missing. */
+  readFileFn?: (path: string) => string;
+  exitFn?: (code: number) => void;
+}
+
 export interface SelfUpdateOptions {
   currentVersion: string;
   packageName?: string;
@@ -104,6 +132,8 @@ export interface SelfUpdateOptions {
   env?: NodeJS.ProcessEnv;
   fetchLatestVersion?: (packageName: string) => string | null;
   now?: number;
+  /** Test seam for the re-exec that follows a successful global install on the init path. */
+  reexecDeps?: InitReexecDeps;
 }
 
 /**
@@ -436,7 +466,11 @@ function runNpxRelaunch(
   printContinueCurrentVersion();
 }
 
-function runGlobalUpdate(packageName: string, latestVersion: string): void {
+/**
+ * Run `npm install -g` for the init self-update.
+ * Returns true when the install succeeded; failures are reported and are non-blocking.
+ */
+function runGlobalUpdate(packageName: string, latestVersion: string): boolean {
   try {
     console.log(i18n.t('cli.selfUpdate.updatingGlobal', { version: latestVersion }));
     execSync(`npm install -g ${packageName}@${latestVersion}`, {
@@ -445,11 +479,145 @@ function runGlobalUpdate(packageName: string, latestVersion: string): void {
     });
     console.log(i18n.t('cli.selfUpdate.updated', { version: latestVersion }));
     printContinuationSpacing();
+    return true;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.warn(i18n.t('cli.selfUpdate.failed', { error: errorMessage }));
     printContinueCurrentVersion();
+    return false;
   }
+}
+
+/**
+ * Exit code for a finished child process: 128 + signal number when it was killed by a known
+ * signal, otherwise its own status (1 when the status is unavailable).
+ */
+export function exitCodeForChild(child: {
+  status: number | null;
+  signal: NodeJS.Signals | null;
+}): number {
+  if (child.signal) {
+    const signalNumber = osConstants.signals[child.signal];
+    if (signalNumber !== undefined) {
+      return 128 + signalNumber;
+    }
+    // Unknown signal name — fall through to status-based exit
+  }
+  return child.status ?? 1;
+}
+
+/**
+ * `{ version }` when `<dir>/package.json` is the `packageName` package (version is null when it
+ * has none), undefined when there is no readable package.json for that package at this level.
+ */
+function readOwnPackageVersion(
+  dir: string,
+  packageName: string,
+  readText: (path: string) => string
+): { version: string | null } | undefined {
+  try {
+    const parsed: unknown = JSON.parse(readText(join(dir, 'package.json')));
+    if (isJsonRecord(parsed) && parsed.name === packageName) {
+      return { version: readNonEmptyString(parsed.version) };
+    }
+  } catch {
+    // Missing or invalid package.json at this level
+  }
+  return undefined;
+}
+
+/**
+ * Version of the `packageName` package that owns the CLI entry file, or null.
+ *
+ * Resolves symlinks (a global bin is a symlink into the package), then walks up the
+ * directories looking for a package.json whose `name` is `packageName`. Unreadable, invalid or
+ * differently named package.json files are skipped (e.g. a `dist/package.json` stub).
+ */
+export function findInstalledPackageVersion(
+  entryPath: string,
+  packageName: string,
+  deps: Pick<InitReexecDeps, 'realpathFn' | 'readFileFn'> = {}
+): string | null {
+  const realpath = deps.realpathFn ?? realpathSync;
+  const readText = deps.readFileFn ?? ((path: string) => readFileSync(path, 'utf-8'));
+
+  let startDir: string;
+  try {
+    startDir = dirname(realpath(entryPath));
+  } catch {
+    return null;
+  }
+
+  const search = (dir: string): string | null => {
+    const own = readOwnPackageVersion(dir, packageName, readText);
+    if (own) {
+      return own.version;
+    }
+    const parent = dirname(dir);
+    return parent === dir ? null : search(parent);
+  };
+  return search(startDir);
+}
+
+/**
+ * After a successful `npm install -g` on the init path, re-run the CLI so the rest of init uses
+ * the NEWLY installed code. Without this, init keeps the old in-memory modules and the old
+ * `packageJson.version` and silently installs the old templates.
+ *
+ * Re-exec only happens when the binary that is running resolves to a package whose version
+ * equals the version just installed. npm may have installed into a different prefix than the
+ * binary on PATH; in that case (or when the version cannot be determined) a warning naming both
+ * versions is printed and init continues with the current version.
+ *
+ * Returns true when the child was started and the exit function was called, false when init
+ * should continue in this process.
+ */
+function reexecAfterGlobalUpdate(
+  packageName: string,
+  installedVersion: string,
+  currentVersion: string,
+  argv: string[],
+  env: NodeJS.ProcessEnv,
+  deps: InitReexecDeps = {}
+): boolean {
+  const installed = normalizeVersion(installedVersion);
+  const entry = argv[1];
+  const binaryVersion = entry ? findInstalledPackageVersion(entry, packageName, deps) : null;
+  const warnParams = { installed, current: currentVersion, package: packageName };
+
+  if (!entry || binaryVersion === null) {
+    console.warn(i18n.t('cli.selfUpdate.reexecVersionUnknown', warnParams));
+    printContinueCurrentVersion();
+    return false;
+  }
+
+  if (normalizeVersion(binaryVersion) !== installed) {
+    console.warn(
+      i18n.t('cli.selfUpdate.reexecVersionMismatch', {
+        ...warnParams,
+        binary: normalizeVersion(binaryVersion),
+      })
+    );
+    printContinueCurrentVersion();
+    return false;
+  }
+
+  console.log(i18n.t('cli.selfUpdate.reexec', { version: installed }));
+  const spawn: ReexecSpawnFn = deps.spawnFn ?? spawnSync;
+  const child = spawn(process.execPath, [entry, ...argv.slice(2)], {
+    stdio: 'inherit',
+    env: { ...env, OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
+  });
+
+  if (child.error) {
+    console.warn(i18n.t('cli.selfUpdate.reexecSpawnFailed', { error: child.error.message }));
+    printContinueCurrentVersion();
+    return false;
+  }
+
+  const exit = deps.exitFn ?? ((code: number) => process.exit(code));
+  exit(exitCodeForChild(child));
+  return true;
 }
 
 export interface ExecuteSelfUpdateOptions {
@@ -708,5 +876,14 @@ export async function maybeHandleSelfUpdateForInit(options: SelfUpdateOptions): 
     return;
   }
 
-  runGlobalUpdate(packageName, latestVersion);
+  if (runGlobalUpdate(packageName, latestVersion)) {
+    reexecAfterGlobalUpdate(
+      packageName,
+      latestVersion,
+      currentVersion,
+      argv,
+      env,
+      options.reexecDeps
+    );
+  }
 }

@@ -142,6 +142,40 @@ export interface LockfileGenerationOptions {
    * No glob, prefix, case-folding or Unicode normalization matching is performed.
    */
   retiredPaths?: readonly string[];
+  /**
+   * Template directory that defines ownership (#1935). When set, a walked file is recorded only
+   * if the same relative path names a file under this directory (`templates/<path>`, following
+   * symlinks, exact code-unit match). That is the mapping `updateComponent` and the installer use
+   * to copy templates (`templates/<component path>/<rel>` → `<target>/<component path>/<rel>`),
+   * so files without a template counterpart — user-created custom files and leftovers that
+   * oh-my-customcode no longer ships — are not recorded. A user-modified template file is still
+   * recorded, with its on-disk hash. When unset, every walked file is recorded.
+   */
+  templateRoot?: string;
+}
+
+/**
+ * Options for {@link generateAndWriteLockfileForDir}.
+ */
+export interface LockfileWriteOptions extends LockfileGenerationOptions {
+  /**
+   * Record only template-owned files (default `true`): when `templateRoot` is unset, it defaults
+   * to this package's `templates/` directory. Installed projects (init/update) use the default
+   * (#1935). `false` records every walked file and ignores `templateRoot`; the source repository
+   * build (scripts/sync-source-lockfile.ts) opts out because its lockfile describes the
+   * repository's own `.claude/` and `guides/`, not an installation.
+   */
+  templateOwned?: boolean;
+  /**
+   * Entries of the previous lockfile to keep although the walk does not record them (#1935
+   * follow-up): leftovers of files oh-my-customcode no longer ships that are still unmodified
+   * shipped copies, so a later update can still prove ownership and remove them. The caller
+   * (the updater) decides which entries qualify; this function only adds them. A carried key is
+   * ignored when it is not an exact canonical relative file path inside a lockfile component,
+   * when it is a retired path (`retiredPaths`, including the built-in RTK paths), or when the
+   * walk already recorded it. Only `templateHash`, `size` and `component` are written.
+   */
+  carriedEntries?: Readonly<Record<string, LockfileEntry>>;
 }
 
 const execFileAsync = promisify(execFile);
@@ -365,11 +399,11 @@ export async function writeLockfile(targetDir: string, lockfile: Lockfile): Prom
 }
 
 /**
- * Determine the component name for a given file path.
- * Uses the first matching prefix from COMPONENT_PATHS.
+ * Determine the lockfile component name for a relative path (`.claude/skills/x/SKILL.md` →
+ * `skills`, `guides/x/y.md` → `guides`). Uses the first matching prefix from COMPONENT_PATHS.
  * Falls back to 'unknown' if no prefix matches.
  */
-function resolveComponent(relativePath: string): string {
+export function resolveLockfileComponent(relativePath: string): string {
   // Normalize to forward slashes for cross-platform matching
   const normalized = relativePath.replace(/\\/g, '/');
 
@@ -439,21 +473,31 @@ function sortFilesByPath(files: Record<string, LockfileEntry>): Record<string, L
   return Object.fromEntries(sorted.map((key) => [key, files[key]]));
 }
 
-const RETIRED_RTK_PATHS = [
+export const RETIRED_RTK_PATHS = [
   '.claude/skills/rtk-exec/SKILL.md',
   '.claude/skills/rtk-exec/scripts/rtk-wrapper.cjs',
   '.claude/hooks/scripts/rtk-intercept.sh',
 ] as const;
 
+/**
+ * Whether `path` is an exact canonical relative file path: forward slashes only, no empty, `.` or
+ * `..` segment (so no leading or trailing slash), and none of the characters `\ : * ? [ ] { }`
+ * or NUL. Such a path is matched literally — it cannot act as a glob, escape the project root
+ * or be absolute.
+ */
+export function isCanonicalRelativeFilePath(path: unknown): path is string {
+  return (
+    typeof path === 'string' &&
+    !/[\\:*?[\]{}\0]/.test(path) &&
+    !path.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')
+  );
+}
+
 /** Validates exact retirement keys before generation performs any filesystem work. */
 function getRetiredPaths(options: LockfileGenerationOptions): Set<string> {
   const retiredPaths = new Set([...RETIRED_RTK_PATHS, ...(options.retiredPaths ?? [])]);
   for (const path of retiredPaths) {
-    if (
-      typeof path !== 'string' ||
-      /[\\:*?[\]{}\0]/.test(path) ||
-      path.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')
-    ) {
+    if (!isCanonicalRelativeFilePath(path)) {
       throw new Error('retiredPaths must contain exact canonical relative file paths');
     }
   }
@@ -461,9 +505,47 @@ function getRetiredPaths(options: LockfileGenerationOptions): Set<string> {
 }
 
 /**
+ * Relative paths (forward slashes) of every file under the component roots of `templateRoot`,
+ * found with the same walk as the target. An absent template directory yields an empty set.
+ */
+export async function listTemplateFiles(templateRoot: string): Promise<Set<string>> {
+  const files = new Set<string>();
+  for (const [prefix] of COMPONENT_PATHS) {
+    for (const absolutePath of await collectFiles(
+      join(templateRoot, prefix),
+      templateRoot,
+      false
+    )) {
+      files.add(relative(templateRoot, absolutePath).replace(/\\/g, '/'));
+    }
+  }
+  return files;
+}
+
+/**
+ * Whether a walked path passes the optional git-visibility and template-ownership filters.
+ */
+function isRecordable(
+  relativePath: string,
+  gitVisible: GitVisiblePaths | null,
+  templateFiles: ReadonlySet<string> | null
+): boolean {
+  if (gitVisible !== null && !isGitVisible(gitVisible, relativePath)) {
+    debug('lockfile.entry_git_excluded', { path: relativePath });
+    return false;
+  }
+  if (templateFiles !== null && !templateFiles.has(relativePath)) {
+    debug('lockfile.entry_not_template_owned', { path: relativePath });
+    return false;
+  }
+  return true;
+}
+
+/**
  * Generate a lockfile by walking all installed template files in targetDir.
  * Computes SHA-256 for each file and resolves the component from the path.
  * With `options.excludeGitIgnored`, only files git would carry into a fresh clone are kept.
+ * With `options.templateRoot`, only files with a template counterpart are kept (#1935).
  */
 export async function generateLockfile(
   targetDir: string,
@@ -471,8 +553,32 @@ export async function generateLockfile(
   templateVersion: string,
   options: LockfileGenerationOptions = {}
 ): Promise<Lockfile> {
-  const files: Record<string, LockfileEntry> = {};
   const retiredPaths = getRetiredPaths(options);
+  const templateFiles =
+    options.templateRoot === undefined ? null : await listTemplateFiles(options.templateRoot);
+  return buildLockfile(
+    targetDir,
+    generatorVersion,
+    templateVersion,
+    options,
+    retiredPaths,
+    templateFiles
+  );
+}
+
+/**
+ * The walk behind {@link generateLockfile}, with the retired paths already validated and the
+ * template file set (or `null` for no ownership filter) already listed.
+ */
+async function buildLockfile(
+  targetDir: string,
+  generatorVersion: string,
+  templateVersion: string,
+  options: LockfileGenerationOptions,
+  retiredPaths: ReadonlySet<string>,
+  templateFiles: ReadonlySet<string> | null
+): Promise<Lockfile> {
+  const files: Record<string, LockfileEntry> = {};
   const gitVisible = options.excludeGitIgnored ? await listGitVisiblePaths(targetDir) : null;
 
   // Walk each component root that may exist in the target directory
@@ -492,8 +598,7 @@ export async function generateLockfile(
     for (const absolutePath of allFiles) {
       const relativePath = relative(targetDir, absolutePath).replace(/\\/g, '/');
 
-      if (gitVisible !== null && !isGitVisible(gitVisible, relativePath)) {
-        debug('lockfile.entry_git_excluded', { path: relativePath });
+      if (!isRecordable(relativePath, gitVisible, templateFiles)) {
         continue;
       }
 
@@ -509,7 +614,7 @@ export async function generateLockfile(
         continue;
       }
 
-      const component = resolveComponent(relativePath);
+      const component = resolveLockfileComponent(relativePath);
 
       files[relativePath] = {
         templateHash: hash,
@@ -606,30 +711,82 @@ export function preserveGeneratedAt(next: Lockfile, previous: Lockfile | null): 
 }
 
 /**
+ * Copy of `lockfile` with the carried entries added (see `LockfileWriteOptions.carriedEntries`):
+ * keys that are not canonical component paths, retired paths and keys the walk recorded are
+ * skipped. Keeps the code-unit key order. Never mutates its arguments.
+ */
+function addCarriedEntries(
+  lockfile: Lockfile,
+  carriedEntries: Readonly<Record<string, LockfileEntry>> | undefined,
+  retiredPaths: ReadonlySet<string>
+): Lockfile {
+  if (carriedEntries === undefined) {
+    return lockfile;
+  }
+  const files: Record<string, LockfileEntry> = { ...lockfile.files };
+  let added = false;
+  for (const [path, entry] of Object.entries(carriedEntries)) {
+    if (
+      !isCanonicalRelativeFilePath(path) ||
+      resolveLockfileComponent(path) === 'unknown' ||
+      retiredPaths.has(path) ||
+      Object.hasOwn(files, path)
+    ) {
+      debug('lockfile.entry_carry_skipped', { path });
+      continue;
+    }
+    files[path] = {
+      templateHash: entry.templateHash,
+      size: entry.size,
+      component: entry.component,
+    };
+    added = true;
+    debug('lockfile.entry_carried', { path });
+  }
+  return added ? { ...lockfile, files: sortFilesByPath(files) } : lockfile;
+}
+
+/**
  * Generate and write a lockfile for a target directory.
  * Reads package.json and manifest.json from the package root to determine versions.
  * Keeps the existing lockfile's `generatedAt` when nothing else changed (idempotent rebuild).
+ * Records only template-owned files unless `options.templateOwned` is `false` (#1935); a
+ * template directory without any component file is a failure (an empty template-owned lockfile
+ * would silently drop every ownership record). `options.carriedEntries` are added after the walk.
  * Non-throwing: on failure (including git failure when `options.excludeGitIgnored` is set)
  * returns `{ fileCount: 0, warning }` and writes nothing.
  */
 export async function generateAndWriteLockfileForDir(
   targetDir: string,
-  options: LockfileGenerationOptions = {}
+  options: LockfileWriteOptions = {}
 ): Promise<{ fileCount: number; warning?: string }> {
   try {
     const packageRoot = getPackageRoot();
+    const { templateOwned, carriedEntries, ...generationOptions } = options;
+    const retiredPaths = getRetiredPaths(generationOptions);
+    let templateFiles: Set<string> | null = null;
+    if (templateOwned !== false) {
+      const templateRoot = generationOptions.templateRoot ?? join(packageRoot, 'templates');
+      templateFiles = await listTemplateFiles(templateRoot);
+      if (templateFiles.size === 0) {
+        throw new Error(`no template files found under ${templateRoot}`);
+      }
+    }
     const manifest = await readJsonFile<{ version: string }>(
       join(packageRoot, 'templates', 'manifest.json')
     );
     const { version: generatorVersion } = await readJsonFile<{ version: string }>(
       join(packageRoot, 'package.json')
     );
-    const generated = await generateLockfile(
+    const walked = await buildLockfile(
       targetDir,
       generatorVersion,
       manifest.version,
-      options
+      generationOptions,
+      retiredPaths,
+      templateFiles
     );
+    const generated = addCarriedEntries(walked, carriedEntries, retiredPaths);
     const previous = await readLockfile(targetDir);
     const lockfile = preserveGeneratedAt(generated, previous);
     await writeLockfile(targetDir, lockfile);

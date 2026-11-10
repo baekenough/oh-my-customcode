@@ -219,27 +219,32 @@ async function updateSingleProject(
 type ProjectUpdateOutcome = 'updated' | 'failed' | 'skipped';
 
 /**
- * Log the result of a single project update and return the outcome.
+ * Log the result of a single project update (`--all`) and return the outcome, followed by the
+ * project's orphan retirement (removed, would-remove on a dry run, kept with the reason), which
+ * the batch output would otherwise hide (its warnings are not printed per project).
  * Extracted to keep updateAllProjects below the complexity limit.
  */
-function reportProjectUpdateResult(
+export function reportProjectUpdateResult(
   project: { name: string; version: string | null },
   result: UpdateResult,
   currentVersion: string
 ): ProjectUpdateOutcome {
-  if (result.success) {
-    if (result.skippedSource) {
-      console.log(i18n.t('cli.update.allProjectSkippedSource', { name: project.name }));
-      return 'skipped';
-    }
+  let outcome: ProjectUpdateOutcome;
+  if (result.success && result.skippedSource) {
+    console.log(i18n.t('cli.update.allProjectSkippedSource', { name: project.name }));
+    outcome = 'skipped';
+  } else if (result.success) {
     const from = result.previousVersion || project.version || 'unknown';
     const to = result.newVersion || currentVersion;
     console.log(i18n.t('cli.update.allProjectUpdated', { from, to }));
-    return 'updated';
+    outcome = 'updated';
+  } else {
+    const errorMsg = result.error ?? 'unknown error';
+    console.log(i18n.t('cli.update.allProjectFailed', { error: errorMsg }));
+    outcome = 'failed';
   }
-  const errorMsg = result.error ?? 'unknown error';
-  console.log(i18n.t('cli.update.allProjectFailed', { error: errorMsg }));
-  return 'failed';
+  printOrphanRetirement(result, true);
+  return outcome;
 }
 
 /**
@@ -399,9 +404,36 @@ function buildComponentsList(options: UpdateCommandOptions): UpdateComponent[] |
 }
 
 /**
+ * Print leftovers that oh-my-customcode no longer ships (#1935): removed files, dry-run
+ * candidates, and kept files. Kept files' reasons are printed with the warnings on a single
+ * project update; `withReasons` (used by `--all`, which prints no warnings) appends them.
+ */
+function printOrphanRetirement(result: UpdateResult, withReasons = false): void {
+  const orphans = result.orphanRetirement;
+  if (!orphans) return;
+  const groups: Array<[string, readonly string[]]> = [
+    ['cli.update.orphansRemoved', orphans.removed],
+    ['cli.update.orphansWouldRemove', orphans.wouldRemove],
+    [
+      withReasons ? 'cli.update.orphansPreservedWithReasons' : 'cli.update.orphansPreserved',
+      orphans.preserved.map((entry) =>
+        withReasons ? `${entry.path} (${entry.reason})` : entry.path
+      ),
+    ],
+  ];
+  for (const [key, paths] of groups) {
+    if (paths.length === 0) continue;
+    console.log(i18n.t(key, { count: String(paths.length) }));
+    for (const path of paths) {
+      console.log(`  - ${path}`);
+    }
+  }
+}
+
+/**
  * Print update results
  */
-function printUpdateResults(result: UpdateResult): void {
+export function printUpdateResults(result: UpdateResult): void {
   // Show updated components
   for (const component of result.updatedComponents) {
     console.log(i18n.t('cli.update.componentUpdated', { component }));
@@ -428,6 +460,8 @@ function printUpdateResults(result: UpdateResult): void {
       console.log(`  ↻ ${file}`);
     }
   }
+
+  printOrphanRetirement(result);
 
   // Show backup path
   if (result.backedUpPaths.length > 0) {

@@ -1612,7 +1612,11 @@ describe('update RTK retirement lifecycle', () => {
   async function assertNewLockExcluded(excluded: string[]) {
     const lock = JSON.parse(await readFile(join(project, '.omcustom.lock.json'), 'utf8'));
     for (const path of excluded) expect(lock.files[path]).toBeUndefined();
-    expect(lock.files['.claude/rules/user-sentinel.md']).toBeDefined();
+    // The lock is template-owned (#1935): the user sentinel stays on disk but is not recorded.
+    expect(lock.files['.claude/rules/user-sentinel.md']).toBeUndefined();
+    expect(await readFile(join(project, '.claude/rules/user-sentinel.md'), 'utf8')).toBe(
+      'non-RTK sentinel'
+    );
     expect(Object.keys(lock.files).length).toBeGreaterThan(0);
   }
 
@@ -1782,6 +1786,56 @@ describe('update RTK retirement lifecycle', () => {
       reason: 'explicitly preserved',
     });
     await assertNewLockExcluded(paths);
+  });
+
+  it('RTK retirement honors a config preserve entry written with a trailing slash', async () => {
+    const config = getDefaultConfig();
+    config.version = '0.1.0';
+    config.preserveFiles = ['.claude/skills/rtk-exec/'];
+    await saveConfig(project, config);
+    const result = await update({ targetDir: project });
+    expect(result.success).toBe(true);
+    for (const path of [skill, wrapper]) {
+      expect(await readFile(join(project, path), 'utf8')).toBe(owned);
+      expect(result.rtkRetirement?.preserved).toContainEqual({
+        path,
+        reason: 'explicitly preserved',
+      });
+    }
+  });
+
+  it('RTK retirement honors manifest entries with a trailing slash and a ./ prefix', async () => {
+    await saveCustomizationManifest(project, {
+      modifiedFiles: [],
+      preserveFiles: ['./.claude/skills/rtk-exec/scripts/'],
+      customComponents: [`./${skill}`],
+      lastUpdated: new Date().toISOString(),
+    });
+    const result = await update({ targetDir: project });
+    expect(result.success).toBe(true);
+    for (const path of [skill, wrapper]) {
+      expect(await readFile(join(project, path), 'utf8')).toBe(owned);
+      expect(result.rtkRetirement?.preserved).toContainEqual({
+        path,
+        reason: 'explicitly preserved',
+      });
+    }
+  });
+
+  it('RTK retirement is not blocked by bare-slash or empty preserve entries', async () => {
+    const config = getDefaultConfig();
+    config.version = '0.1.0';
+    config.preserveFiles = ['/', './'];
+    await saveConfig(project, config);
+    await saveCustomizationManifest(project, {
+      modifiedFiles: [''],
+      preserveFiles: ['/', ''],
+      customComponents: ['./'],
+      lastUpdated: new Date().toISOString(),
+    });
+    const result = await update({ targetDir: project });
+    expect(result.success).toBe(true);
+    expect(result.rtkRetirement?.removed).toContain(wrapper);
   });
 
   it('disables manifest preservation explicitly while keeping the old ownership hash guard', async () => {

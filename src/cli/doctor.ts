@@ -11,8 +11,17 @@ import { getCodexVersion, installCodex, isCodexInstalled } from '../core/codex-i
 import { loadConfig } from '../core/config.js';
 import { checkFrameworkVersion } from '../core/doctor-framework.js';
 import { getProviderLayout } from '../core/layout.js';
-import { computeFileHash, readLockfile } from '../core/lockfile.js';
+import { computeFileHash, RETIRED_RTK_PATHS, readLockfile } from '../core/lockfile.js';
+import { loadRetiredTemplatePaths } from '../core/retired-template-paths.js';
 import { checkSelfUpdate } from '../core/self-update.js';
+import {
+  type DeletionCustomizations,
+  deletionPreservedReason,
+  loadDeletionCustomizations,
+  templatePathExists,
+  UNREADABLE_MANIFEST,
+  validateOwnedTarget,
+} from '../core/updater.js';
 import { i18n } from '../i18n/index.js';
 
 /**
@@ -833,6 +842,182 @@ export async function checkLockfileDrift(targetDir: string): Promise<CheckResult
 }
 
 /**
+ * Hash a retired-path candidate on disk, or return null when it must not be classified.
+ * Only regular files are hashed: symlinks (lstat does not follow them), directories and missing
+ * paths yield null. A path whose parent directory resolves outside the project (a symlinked
+ * directory) is also skipped, so nothing outside the project is ever read.
+ */
+async function hashRegularFileInsideProject(
+  realRoot: string,
+  targetDir: string,
+  relativePath: string
+): Promise<string | null> {
+  try {
+    const absolutePath = path.join(targetDir, relativePath);
+    const stat = await fs.lstat(absolutePath);
+    if (!stat.isFile()) {
+      return null;
+    }
+    const realParent = await fs.realpath(path.dirname(absolutePath));
+    if (realParent !== realRoot && !realParent.startsWith(realRoot + path.sep)) {
+      return null;
+    }
+    return await computeFileHash(absolutePath);
+  } catch {
+    // Missing path, ENOTDIR, unreadable file: not a classifiable leftover
+    return null;
+  }
+}
+
+/**
+ * Classify one leftover the way `omcustom update` treats it (src/core/updater.ts
+ * `retireOrphanFile`; same predicates, same order):
+ * - preserved: the path is covered by preserve settings, update keeps it.
+ * - modified: the disk hash is not any shipped version of the file.
+ * - unmodified: a shipped version, the old lock records this path with the same hash and the
+ *   location is an owned regular file, so update removes it.
+ * - unowned: a shipped version, but update keeps it (lock entry missing, invalid or with a
+ *   different hash, or the file sits behind a symlinked directory).
+ */
+async function classifyOrphan(
+  entry: { path: string; sha256: string[] },
+  diskHash: string,
+  context: {
+    targetDir: string;
+    lockfile: NonNullable<Awaited<ReturnType<typeof readLockfile>>>;
+    preserved: boolean;
+  }
+): Promise<'unmodified' | 'unowned' | 'preserved' | 'modified'> {
+  if (context.preserved) {
+    return 'preserved';
+  }
+  if (!entry.sha256.includes(diskHash)) {
+    return 'modified';
+  }
+  const lockHash = context.lockfile.files[entry.path]?.templateHash;
+  if (typeof lockHash !== 'string' || !/^[a-f0-9]{64}$/.test(lockHash) || lockHash !== diskHash) {
+    return 'unowned';
+  }
+  try {
+    await validateOwnedTarget(context.targetDir, entry.path, true);
+  } catch {
+    return 'unowned';
+  }
+  return 'unmodified';
+}
+
+/**
+ * The retired RTK files. `omcustom update` handles these in a separate flow (retireRtkFile)
+ * whose outcome also depends on `.claude/settings*.json` wiring, so doctor cannot predict it
+ * with the generic orphan predicate. update's own helper is not exported, so doctor reports
+ * them with a neutral message instead of mirroring that predicate (a copy could drift).
+ */
+const RTK_RETIRED_PATHS: ReadonlySet<string> = new Set(RETIRED_RTK_PATHS);
+
+/**
+ * Check for orphans: files on disk whose path is in the retired template path list
+ * (`templates/retired-template-paths.json`), i.e. components an older version shipped and the
+ * current package no longer ships (#1935). Lockfile hash comparison cannot find them because
+ * the lockfile only records files the current package ships.
+ *
+ * Each leftover is reported as `omcustom update` will actually treat it:
+ * - unmodified (shipped content, owned by the lock, not preserved): update removes it.
+ * - unowned (shipped content the lock does not own with that hash): update keeps it, delete manually.
+ * - preserved by your preserve settings: update keeps it, delete or unpreserve deliberately.
+ * - modified (content is not a shipped version): review and delete manually.
+ * - the three retired RTK files get a neutral message (no verdict): their removal is decided by
+ *   update's RTK retirement, see RTK_RETIRED_PATHS.
+ * Files that are not in the retired list (user custom files) are never flagged.
+ *
+ * Returns null when no lockfile exists (not an omcustom project). Never throws: a list, config
+ * or customization manifest that cannot be loaded yields a 'warn'. Never fixable: removal
+ * belongs to `omcustom update`.
+ * @param targetDir - Project directory containing .omcustom.lock.json
+ * @param retiredPathsFile - Override for the retired paths file (defaults to the packaged one)
+ * @returns Check result named 'Orphans', or null if no lockfile exists
+ */
+export async function checkOrphans(
+  targetDir: string,
+  retiredPathsFile?: string
+): Promise<CheckResult | null> {
+  const lockfile = await readLockfile(targetDir);
+
+  if (!lockfile) {
+    return null;
+  }
+
+  let retired: Awaited<ReturnType<typeof loadRetiredTemplatePaths>>;
+  let config: Awaited<ReturnType<typeof loadConfig>>;
+  let customizations: DeletionCustomizations;
+  try {
+    retired = await loadRetiredTemplatePaths(retiredPathsFile);
+    // Same sources and predicate as update()'s deletion path: config preserve settings plus the
+    // raw customization manifest, judged by deletionPreservedReason
+    config = await loadConfig(targetDir);
+    customizations = await loadDeletionCustomizations({ targetDir });
+    if (customizations === UNREADABLE_MANIFEST) {
+      throw new Error(UNREADABLE_MANIFEST);
+    }
+  } catch (err) {
+    return {
+      name: 'Orphans',
+      status: 'warn',
+      message: i18n.t('cli.doctor.checks.orphans.loadFailed', {
+        reason: err instanceof Error ? err.message : String(err),
+      }),
+      fixable: false,
+    };
+  }
+
+  let realRoot: string;
+  try {
+    realRoot = await fs.realpath(targetDir);
+  } catch {
+    realRoot = path.resolve(targetDir);
+  }
+
+  const details: string[] = [];
+  for (const entry of retired) {
+    // Still shipped: not an orphan (guards a stale list, as update does)
+    if (await templatePathExists(entry.path)) {
+      continue;
+    }
+    const diskHash = await hashRegularFileInsideProject(realRoot, targetDir, entry.path);
+    if (diskHash === null) {
+      continue;
+    }
+    // RTK paths follow update's dedicated RTK retirement, not the generic orphan predicate
+    if (RTK_RETIRED_PATHS.has(entry.path)) {
+      details.push(i18n.t('cli.doctor.checks.orphans.rtk', { path: entry.path }));
+      continue;
+    }
+    const kind = await classifyOrphan(entry, diskHash, {
+      targetDir,
+      lockfile,
+      preserved: deletionPreservedReason(entry.path, config, customizations) !== null,
+    });
+    details.push(i18n.t(`cli.doctor.checks.orphans.${kind}`, { path: entry.path }));
+  }
+
+  if (details.length === 0) {
+    return {
+      name: 'Orphans',
+      status: 'pass',
+      message: i18n.t('cli.doctor.checks.orphans.pass', { count: retired.length }),
+      fixable: false,
+    };
+  }
+
+  return {
+    name: 'Orphans',
+    status: 'warn',
+    message: i18n.t('cli.doctor.checks.orphans.warn', { count: details.length }),
+    fixable: false,
+    details,
+  };
+}
+
+/**
  * Check if the installed framework version (in .omcustomrc.json) is behind the CLI version
  * @param targetDir - Project directory containing .omcustomrc.json
  * @param currentVersion - The CLI's own version (latest)
@@ -937,10 +1122,16 @@ async function runAllChecks(
     ? [...checksWithFramework, lockfileCheck]
     : checksWithFramework;
 
+  // Orphan check (runs with the lockfile check: leftovers from retired templates, #1935)
+  const orphansCheck = await checkOrphans(targetDir);
+  const checksWithOrphans = orphansCheck
+    ? [...checksWithLockfile, orphansCheck]
+    : checksWithLockfile;
+
   // Optionally append update check
   return includeUpdates
-    ? [...checksWithLockfile, checkUpdateAvailable(packageVersion)]
-    : checksWithLockfile;
+    ? [...checksWithOrphans, checkUpdateAvailable(packageVersion)]
+    : checksWithOrphans;
 }
 
 /**
