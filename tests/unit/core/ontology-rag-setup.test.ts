@@ -9,7 +9,9 @@ import {
   createVenvWithPython3,
   createVenvWithUv,
   installOntologyRagEditable,
+  isNpmInstalledPackageRoot,
   parsePythonVersion,
+  resolveOntologyRagPath,
   setupOntologyRag,
 } from '../../../src/core/ontology-rag-setup.js';
 import * as fsUtils from '../../../src/utils/fs.js';
@@ -210,6 +212,57 @@ describe('ontology-rag-setup', () => {
       const call = String(execSyncSpy.mock.calls[0]?.[0] ?? '');
       expect(call).toContain(' -e ');
     });
+
+    it('installs non-editable with uv when the package root is inside node_modules', () => {
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
+      const npmRoot = join(tempDir, 'lib', 'node_modules', 'oh-my-customcode');
+      installOntologyRagEditable(tempDir, true, npmRoot);
+      const call = String(execSyncSpy.mock.calls[0]?.[0] ?? '');
+      expect(call).toBe(
+        `uv pip install --python .venv/bin/python "${join(npmRoot, 'packages', 'ontology-rag')}"`
+      );
+      expect(call).not.toContain(' -e ');
+    });
+
+    it('installs non-editable with pip when the package root is inside node_modules', () => {
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
+      const npmRoot = join(tempDir, 'node_modules', 'oh-my-customcode');
+      installOntologyRagEditable(tempDir, false, npmRoot);
+      const call = String(execSyncSpy.mock.calls[0]?.[0] ?? '');
+      expect(call).toBe(`.venv/bin/pip install "${join(npmRoot, 'packages', 'ontology-rag')}"`);
+    });
+
+    it('stays editable for a repository checkout root', () => {
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation(() => Buffer.from(''));
+      const repoRoot = join(tempDir, 'workspace', 'oh-my-customcode');
+      installOntologyRagEditable(tempDir, true, repoRoot);
+      const call = String(execSyncSpy.mock.calls[0]?.[0] ?? '');
+      expect(call).toContain(' -e "');
+    });
+  });
+
+  describe('isNpmInstalledPackageRoot', () => {
+    it('is true when a node_modules segment is present (posix and windows separators)', () => {
+      expect(isNpmInstalledPackageRoot('/usr/lib/node_modules/oh-my-customcode')).toBe(true);
+      expect(isNpmInstalledPackageRoot('C:\\npm\\node_modules\\oh-my-customcode')).toBe(true);
+    });
+
+    it('is false for a checkout path, including look-alike segment names', () => {
+      expect(isNpmInstalledPackageRoot('/work/oh-my-customcode')).toBe(false);
+      expect(isNpmInstalledPackageRoot('/work/my_node_modules_backup/oh-my-customcode')).toBe(
+        false
+      );
+    });
+  });
+
+  describe('resolveOntologyRagPath', () => {
+    it('joins packages/ontology-rag onto the given root', () => {
+      expect(resolveOntologyRagPath('/a/b')).toBe(join('/a/b', 'packages', 'ontology-rag'));
+    });
+
+    it('defaults to the real package root, where the sources exist', async () => {
+      expect(await fsUtils.fileExists(join(resolveOntologyRagPath(), 'pyproject.toml'))).toBe(true);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -376,6 +429,28 @@ describe('ontology-rag-setup', () => {
 
       expect(result.success).toBe(false);
       expect(result.statusLine).toContain('skipped');
+
+      fileExistsSpy.mockRestore();
+    });
+
+    it('skips without calling uv/pip or creating a venv when ontology-rag sources are missing', async () => {
+      const fileExistsSpy = spyOn(fsUtils, 'fileExists').mockImplementation(
+        async (path: string) => !path.includes('packages')
+      );
+      const calls: string[] = [];
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd: unknown) => {
+        calls.push(String(cmd));
+        if (String(cmd).includes('python3 --version')) return Buffer.from('Python 3.12.0');
+        return Buffer.from('');
+      });
+
+      const result = await setupOntologyRag(tempDir);
+
+      expect(result.success).toBe(false);
+      expect(result.statusLine).toBe('ontology-rag MCP: skipped (install failed)');
+      expect(result.reason).toContain('ontology-rag sources not found');
+      expect(result.reason).toContain('uv pip install');
+      expect(calls.some((c) => c.includes('venv') || c.includes('pip install'))).toBe(false);
 
       fileExistsSpy.mockRestore();
     });

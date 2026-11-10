@@ -1,7 +1,7 @@
 ---
 title: "Docker Guide"
 type: guide
-updated: 2026-11-09
+updated: 2026-11-10
 sources:
   - guides/docker/compose-best-practices.md
   - guides/docker/dockerfile-best-practices.md
@@ -20,7 +20,9 @@ Covers Dockerfile optimization (multi-stage builds, layer caching, minimal image
 
 ## Key Topics
 
-- Dockerfile multi-stage build patterns (language examples use `golang:1.27`, `golang:1.27-alpine`, `python:3.15-slim`)
+- Dockerfile multi-stage build patterns (language examples use `golang:1.27`, `golang:1.27-alpine`, `alpine:3.24`, `node:26` / `node:26-slim`, `python:3.15-slim`)
+- Digest pinning for reproducibility (the guide's example pins `node:26@sha256:…`, resolved 2026-11-10; resolve your own with `docker buildx imagetools inspect node:26`)
+- Python multi-stage example builds a `venv` at `/opt/venv`, installs via `pipenv requirements` + `pip install --no-cache-dir`, and copies the venv into the runtime stage
 - Docker Compose service dependencies and health checks
 - Environment variable management with `.env` files
 - Named volumes and bind mounts

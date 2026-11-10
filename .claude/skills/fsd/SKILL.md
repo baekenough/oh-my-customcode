@@ -66,7 +66,7 @@ When open PRs are found during an iteration:
 
 | PR state | Action |
 |----------|--------|
-| CI passing, auto-mergeable, PR inside the unattended merge boundary (below) | Merge via mgr-gitnerd (R010) |
+| CI passing, auto-mergeable, PR inside the unattended merge boundary (below) | Merge via mgr-gitnerd (R010); a "[Merge Without Review]" classifier denial at the spawn is the expected path — stop, do not retry or reroute through another agent, show the user `! gh pr merge <N> --merge` (no `--admin`; no `--delete-branch`, unlike the release step's command, because auto-tag.yml's "Delete merged release branch" step runs `git push origin --delete "$BRANCH"`) and wait (#1930 P1, #1933 1) |
 | CI failing with known pattern (e.g., dependabot frozen-lockfile cascade → `bun install` lockfile regeneration), PR inside the boundary | Fix CI, then merge |
 | PR outside the unattended merge boundary (below) | Do NOT merge; defer and report the author and head repository to the user |
 | CI failing with unknown cause | Diagnose; if fixable within iteration, fix and merge; otherwise defer |
@@ -138,9 +138,9 @@ printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "/tmp/.claude-fsd-$PPID"
   오래된 마커를 **부재로 취급**한다 — 프로세스 크래시·PID 재사용으로 남은 마커가 이후 수동
   `/pipeline auto-dev`를 무인으로 오판하지 않게 하는 가드다.
 - 수렴(`[FSD Done]`), 릴리즈 cap 도달, safety classifier 차단으로 인한 중단, 사용자 인터럽트 — **어느
-  경로로 끝나든** `command rm -f "/tmp/.claude-fsd-$PPID"`로 마커를 제거한다 — 남겨두면
-  같은 세션의 이후 수동 `/pipeline auto-dev`가 무인으로 오판된다. `rm`이 alias(`trash`)로 셰이딩된
-  셸에서 `rm -f`는 거부되므로 `command`를 붙인다(R005, 2026-09-03 실측).
+  경로로 끝나든** `[ -e "/tmp/.claude-fsd-$PPID" ] && rm "/tmp/.claude-fsd-$PPID"`로 마커를 제거한다 — 남겨두면
+  같은 세션의 이후 수동 `/pipeline auto-dev`가 무인으로 오판된다. `rm`이 안전 래퍼(`trash` alias)면
+  `-f` 없이(trash는 `-f`를 거부하고 없는 파일에는 오류를 낸다) 래퍼로 지우거나 보고하고 `command rm`·`\rm`·`/bin/rm`으로 우회하지 않는다(#1947).
 
 ### Iteration Flow (per iteration)
 
@@ -153,8 +153,8 @@ printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "/tmp/.claude-fsd-$PPID"
 │                                                  fix-then-merge (known CI failure pattern)
 │                                                  defer+surface (design decision needed)
 └── Check convergence: eligible issues = 0 AND open PRs = 0 (merged or deferred)?
-    ├── YES → record any missing homework artifact (recall-based) → [FSD Done] converged naturally → command rm -f /tmp/.claude-fsd-$PPID
-    └── NO  → cap reached or classifier block? → YES → [FSD Stop] → command rm -f /tmp/.claude-fsd-$PPID
+    ├── YES → record any missing homework artifact (recall-based) → [FSD Done] converged naturally → rm /tmp/.claude-fsd-$PPID (if present)
+    └── NO  → cap reached or classifier block? → YES → [FSD Stop] → rm /tmp/.claude-fsd-$PPID (if present)
                                                  → NO  → next iteration (re-write marker first)
 ```
 
@@ -167,7 +167,7 @@ FSD의 루프 드라이버는 **메인 대화(오케스트레이터) 자신**입
 | 반복 시작 시 무인 마커 갱신(`/tmp/.claude-fsd-$PPID`) | 위 「무인 모드 마커」 |
 | `/pipeline auto-dev` 1회 → homework 아티팩트 1개 기록 → 열린 PR 처리 | 「Iteration Flow」 |
 | 반복 끝에 수렴 판정(적격 이슈 0 AND 열린 PR 0)을 실측으로 수행하고, 선언 직전 **반복 수 == homework 아티팩트 수**를 `ls .claude/outputs/sessions/{YYYY-MM-DD}/homework-*.md`로 대조 — 세션이 UTC 자정을 넘길 수 있으므로 세션이 걸친 **모든 날짜 디렉토리**를 포함합니다(예: `ls .claude/outputs/sessions/2026-09-1[78]/homework-*.md`) | R020, #1688 |
-| 종료 경로와 무관하게 마커 제거(`command rm -f`) | 「무인 모드 마커」 |
+| 종료 경로와 무관하게 마커 제거(`rm`, 안전 래퍼면 옵션 없이) | 「무인 모드 마커」 |
 | 반복의 릴리즈는 PR 생성 전에 auto-dev 릴리즈 단계의 마일스톤 배정 게이트가 PASS여야 합니다(마일스톤 vX.Y.Z가 open이고 스코프 이슈 전부가 배정됨) | auto-dev.yaml release 단계 "Milestone assignment gate", #1789 찐빠 #2(인라인 루프가 scope-selection의 마일스톤 생성·배정 부수효과를 건너뛰어 릴리즈가 마일스톤 없이 나감) |
 
 `/goal`·`/loop`를 호출하는 경로는 여전히 유효하며, 세션이 무인(`claude -p`, 예약 실행)이라 자기 페이싱이 필요할 때 권장됩니다. 대화형 세션에서는 인라인 실행이 명령/스킬 호출 오버헤드 없이 같은 계약을 만족합니다.
@@ -186,7 +186,7 @@ Each iteration operates under full project rules — no relaxation because FSD i
 | R020 (completion verification) | Each release verified via `npm view`, `gh release view`, closed issues before `[Done]`. PR merges verified via `gh pr view` ground-truth before declaring iteration complete. |
 | cost-cap advisory (`cost-cap-advisor.sh`, Conversation Block) | FSD는 사용자가 명시 호출한 다중 릴리즈 루프라 세션 비용이 상한(기본 USD 5)을 필연적으로 넘는다. advisory 발화는 루프를 멈추는 신호가 아니며, 오케스트레이터는 발화 사실과 누적 비용을 반복 경계(homework 게이트)에서 사용자에게 고지한다. 상한을 올리려면 `CLAUDE_COST_CAP`(v1.1.61 세션 실측: 착수 직후 USD 5.38에서 발화). |
 
-`/homework` runs as a **retrospective gate** between iterations — findings go through `omcustom-feedback`'s Phase 4A confirmation gate. The loop does NOT skip homework on the grounds that it is "automated". If homework requires user confirmation (e.g., to file a feedback issue), the loop pauses and waits.
+`/homework` runs as a **retrospective gate** between iterations — findings go through `omcustom-feedback`'s Phase 4A confirmation gate. The loop does NOT skip homework on the grounds that it is "automated". If homework requires user confirmation (e.g., to file a feedback issue), the loop pauses and waits. When a gate question asks whether to clean a shared directory whose ownership is unconfirmed (e.g. leftover probe files under `/tmp`), the choices include from the start "the user runs it via `!`" with the exact command, besides delegated deletion (#1919 P3).
 
 **Homework 제출 게이트 묶음 (opt-in, #1652 #4)**: 기본 계약은 위와 같이 **반복마다** 게이트를
 제시하는 것이다. 사용자가 세션 중 명시적으로 지시하거나(예: "homework 게이트는 수렴 시점에 1회로

@@ -2,6 +2,9 @@
  * Scope-based filtering for skill installation
  */
 
+import { lstat, readdir, readFile, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+
 /**
  * Valid scope values for skill filtering.
  * Keep in sync with:
@@ -10,6 +13,69 @@
  * - .claude/rules/MUST-agent-design.md (R006) skill scope table
  */
 export type SkillScope = 'core' | 'harness' | 'package';
+
+/**
+ * Names of the shipped skills that update must not install: `package`-scope skills that the
+ * project does not have yet. One that is already installed stays and keeps being updated.
+ */
+export async function listSkippedPackageSkills(
+  srcSkillsDir: string,
+  destSkillsDir: string
+): Promise<string[]> {
+  const skipped: string[] = [];
+  for (const entry of await readdir(srcSkillsDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    let content: string;
+    try {
+      content = await readFile(join(srcSkillsDir, entry.name, 'SKILL.md'), 'utf-8');
+    } catch {
+      continue;
+    }
+    if (shouldInstallSkill(getSkillScope(content))) continue;
+    try {
+      await lstat(join(destSkillsDir, entry.name));
+    } catch {
+      skipped.push(entry.name);
+    }
+  }
+  return skipped;
+}
+
+/**
+ * Number of skill directories actually present in `skillsDir` (0 when it does not exist):
+ * non-hidden entries that are directories, following symlinks.
+ */
+export async function countSkillDirectories(skillsDir: string): Promise<number> {
+  try {
+    let count = 0;
+    for (const entry of await readdir(skillsDir, { withFileTypes: true })) {
+      if (entry.name.startsWith('.')) continue;
+      if (entry.isDirectory()) {
+        count++;
+      } else if (entry.isSymbolicLink()) {
+        // A symlinked skill directory counts; a dangling or file link does not
+        try {
+          if ((await stat(join(skillsDir, entry.name))).isDirectory()) count++;
+        } catch {}
+      }
+    }
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Rewrite the skill count in the entry doc's directory tree line
+ * (`skills/ ... # 스킬 (114 디렉토리)` / `# Skills (114 directories)`) to the deployed count.
+ * Text without that line is returned unchanged.
+ */
+export function withDeployedSkillCount(content: string, count: number): string {
+  return content.replace(
+    /^(.*\bskills\/[^\n(]*\()\d+( 디렉토리\)| directories\))/m,
+    (_match, head: string, tail: string) => `${head}${count}${tail}`
+  );
+}
 
 /**
  * Valid domain values for agent domain gating

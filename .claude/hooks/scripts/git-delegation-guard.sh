@@ -4,8 +4,9 @@
 # Warns when a delegation prompt to a non-mgr-gitnerd agent mentions git write keywords.
 # Advisory only: always exit 0, never blocks, never modifies tool input.
 #
-# Delivery (#1885): exit 0 + stderr never reaches the model (measured, #1775 comment
-#   6405197553). The warning is therefore emitted as ONE stdout JSON line
+# Delivery (#1885): #1775 probe B (CC 2.1.310, `claude -p`, haiku, one PreToolUse Bash hook run; comment
+#   6405197553) measured that exit-0 stderr did not reach the model; other events, modes and versions were not
+#   measured. The warning is therefore emitted as ONE stdout JSON line
 #   hookSpecificOutput.additionalContext; nothing is written to stderr and the input is
 #   no longer echoed back. No warning -> no output.
 #

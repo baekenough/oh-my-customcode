@@ -669,12 +669,26 @@ describe('7. hostile environment: ulimit -f 0 keeps the guard fail-open and sile
     '2026-01-01T00:00:00Z git clean tier=1\n2026-01-01T00:00:01Z git restore tier=1\n';
   const THREE_TIER1_SEED_LINES = `${SEED_LINES}2026-01-01T00:00:02Z git branch -D tier=1\n`;
 
+  // The unflushed-printf-buffer leak these tests guard against is bash-3.2-only (measured: /bin/bash
+  // 3.2.57 leaked `raw=[0\nt git reset tier=1]`, Debian bash 5.2.15/5.2.37 gave `raw=[0]`). So run
+  // the guard with /bin/bash when it exists and is 3.x; otherwise fall back to the PATH `bash`, in
+  // which case these tests only document the guard and cannot kill the leak mutations (#1929 A-3).
+  const HOSTILE_BASH = (() => {
+    try {
+      const v = spawnSync('/bin/bash', ['-c', 'echo "$BASH_VERSION"'], { encoding: 'utf-8' });
+      if (v.status === 0 && /^3\./.test(v.stdout.trim())) return '/bin/bash';
+    } catch {
+      // fall through to PATH bash
+    }
+    return 'bash';
+  })();
+
   function runHostile(
     prelude: string,
     command: string
   ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     return new Promise((resolvePromise) => {
-      const child = spawn('sh', ['-c', `${prelude}; exec bash "$0"`, GUARD], {
+      const child = spawn('sh', ['-c', `${prelude}; exec "$1" "$0"`, GUARD, HOSTILE_BASH], {
         env: { ...process.env, HOME: WORK_DIR },
         stdio: ['pipe', 'pipe', 'pipe'],
       });

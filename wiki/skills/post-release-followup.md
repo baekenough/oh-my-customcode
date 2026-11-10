@@ -1,7 +1,7 @@
 ---
 title: Post-Release Followup
 type: skill
-updated: 2026-10-25
+updated: 2026-11-10
 sources:
   - .claude/skills/post-release-followup/SKILL.md
 related:
@@ -24,6 +24,8 @@ After PR creation in a release workflow, collects unaddressed findings from mult
 - **User Confirmation (A–C menu)**: Required only for "즉시 실행" (immediate, code-changing) items — actions that modify source code, configs, or other files in the current session. The A–C menu presents: (A) execute now, (B) register as issue instead, (C) skip.
 - **Excluded from auto-registration**: Pure cosmetic notes and personal preference observations that carry no actionable defect signal.
 - **`[가설]` tag required for unverified fixes in `## 권장 조치` (v1.1.81)**: When the proposed fix written into `{권장 사항}` has not been verified by execution/testing, the sentence must be prefixed with a `[가설]` tag and state what would confirm it. Tagging only the root-cause diagnosis while leaving the proposed fix asserted as settled fact carries the risk that applying that fix as-is fails into a later session ([[r020]] Diagnostic Hypothesis Verification, Origin: #1725).
+
+The skill's three byte-dump snippets clean up its `mktemp` file with `trap '[ -e "$byte_dump" ] && rm "$byte_dump"' 0`: no `-f` and no `command rm`, so a safety-wrapped `rm` (such as `trash`) is used as is (#1947).
 
 ## Key Details
 

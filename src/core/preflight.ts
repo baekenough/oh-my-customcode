@@ -4,6 +4,7 @@
  */
 
 import { execSync } from 'node:child_process';
+import { isCiEnvironment } from '../utils/ci.js';
 
 /**
  * CLI tool information
@@ -98,8 +99,7 @@ interface BrewOutdated {
  * Check if running in CI environment
  */
 export function isCI(): boolean {
-  const ciEnvVars = ['CI', 'GITHUB_ACTIONS', 'OMCUSTOM_SKIP_PREFLIGHT'];
-  return ciEnvVars.some((envVar) => process.env[envVar] === 'true');
+  return isCiEnvironment() || process.env.OMCUSTOM_SKIP_PREFLIGHT === 'true';
 }
 
 /**
@@ -167,8 +167,16 @@ function getToolInfoFromBrew(toolName: string): CliTool {
   return tool;
 }
 
+/** Executable name on PATH for a Homebrew tool name (the `claude-code` cask installs `claude`). */
+function binaryNameFor(toolName: string): string {
+  return toolName === 'claude-code' ? 'claude' : toolName;
+}
+
 /**
- * Get tool information from npm/npx
+ * Get tool information from the executable on PATH.
+ *
+ * Never uses `npx`: off a TTY it assumes yes and would download and run an unrelated npm package
+ * named after the tool (`claude-code` is not Anthropic's package).
  */
 function getToolInfoFromNpm(toolName: string): CliTool {
   const tool: CliTool = {
@@ -181,20 +189,21 @@ function getToolInfoFromNpm(toolName: string): CliTool {
   };
 
   try {
-    // Try to get version via npx
-    const versionOutput = execSync(`npx ${toolName} --version`, {
+    const versionOutput = execSync(`${binaryNameFor(toolName)} --version`, {
       encoding: 'utf-8',
       stdio: 'pipe',
       timeout: 3000,
     });
 
-    const version = versionOutput.trim();
+    // e.g. "2.1.296 (Claude Code)" -> "2.1.296"
+    const trimmed = versionOutput.trim();
+    const version = trimmed.match(/\d+\.\d+\.\d+\S*/)?.[0] ?? trimmed;
     if (version) {
       tool.installed = true;
       tool.currentVersion = version;
     }
   } catch {
-    // Tool not available via npm
+    // Executable not found or not runnable
   }
 
   return tool;

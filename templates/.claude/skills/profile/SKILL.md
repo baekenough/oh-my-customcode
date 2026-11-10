@@ -86,7 +86,7 @@ IMPORTANT: Restart this Claude Code session for plugin changes to take effect.
 
 ## Workflow: `/profile reset`
 
-1. Remove `.claude/profiles/.active` marker via direct `Bash: /bin/rm .claude/profiles/.active` (under `bypassPermissions` permission mode)
+1. Remove `.claude/profiles/.active` marker via direct `Bash: [ -e .claude/profiles/.active ] && rm .claude/profiles/.active` (no `-f`, no `/bin/rm`; an `rm` that resolves to a safety wrapper is used as is) (under `bypassPermissions` permission mode)
 2. Print: `[Done] Profile marker removed. Full plugin set will be active after restart.`
 3. Note: does NOT revert `~/.claude/settings.json` — user should re-run `/profile load <other>` or manually restore
 

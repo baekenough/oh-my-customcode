@@ -22,5 +22,9 @@ documents:
     path: ./zen-of-python.md
     description: PEP 20 - The Zen of Python
 
+  - name: modern-python-practices
+    path: ./modern-python-practices.md
+    description: Type hints, encoding, tooling and version-gated features (companion to the python-best-practices skill)
+
 used_by:
   - lang-python-expert

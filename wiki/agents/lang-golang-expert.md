@@ -1,7 +1,7 @@
 ---
 title: lang-golang-expert
 type: agent
-updated: 2026-09-29
+updated: 2026-11-10
 sources:
   - .claude/agents/lang-golang-expert.md
 related:
@@ -15,11 +15,11 @@ related:
 
 # lang-golang-expert
 
-Expert Go developer for writing idiomatic, performant Go code following Effective Go guidelines, with specializations in concurrent systems, error handling patterns, and standard project layout.
+Expert Go developer for writing idiomatic, performant Go code following Effective Go guidelines, with specializations in concurrent systems, error handling patterns, and module organization per the official Go guidance.
 
 ## Overview
 
-`lang-golang-expert` is the primary agent for Go language work — writing idiomatic code following Effective Go, reviewing/refactoring existing code, designing concurrent systems with goroutines and channels, implementing proper error handling, and structuring projects with the standard Go layout. It has a `soul: true` identity layer for consistent personality.
+`lang-golang-expert` is the primary agent for Go language work — writing idiomatic code following Effective Go, reviewing/refactoring existing code, designing concurrent systems with goroutines and channels, implementing proper error handling, and organizing Go modules following the official guidance (go.dev "Organizing a Go module"). It has a `soul: true` identity layer for consistent personality.
 
 Pairs naturally with [[be-go-backend-expert]] for backend service concerns beyond the language itself. Uses `go-best-practices` skill and `guides/golang/`.
 

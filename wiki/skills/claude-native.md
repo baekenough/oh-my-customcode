@@ -1,7 +1,7 @@
 ---
 title: Claude Native
 type: skill
-updated: 2026-10-25
+updated: 2026-11-10
 sources:
   - .claude/skills/claude-native/SKILL.md
 related:
@@ -27,6 +27,8 @@ Phase 4에서는 [[agents/mgr-creator|mgr-creator]]가 Write로 완성 제목과
 셸 변환 전에 원본 제목 bytes에서 NUL·CR·내부/추가 LF·빈 값·space/tab-only를 거부하고 마지막 LF는 0개 또는 1개만 허용하십시오. 의미 있는 공백은 보존하십시오. 본문은 regular file 읽기 성공과 NUL 부재를 확인하십시오. Write-produced UTF-8 텍스트의 구조 검사이며 universal strict UTF-8 검증기로 일반화하지 마십시오. 파일 제목은 quoted argv, 본문은 body-file로 전달하고 도구·읽기·구조 오류이면 제출을 중단하십시오. 기존 빈 release fallback·2000자 body 제한, dedup·dry-run·version 범위와 조회 상한을 유지하십시오.
 
 [source Phase 4](../../.claude/skills/claude-native/SKILL.md)의 문안·제출 역할 및 live preflight를 참고하십시오.
+
+The skill's byte-dump snippet cleans up its `mktemp` file with `trap '[ -e "$byte_dump" ] && rm "$byte_dump"' 0`: no `-f` and no `command rm`, so a safety-wrapped `rm` (such as `trash`) is used as is (#1947).
 
 ## Key Details
 

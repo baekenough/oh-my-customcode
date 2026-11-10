@@ -27,6 +27,12 @@ import {
 } from '../utils/fs.js';
 import { debug, error, info, success, warn } from '../utils/logger.js';
 import { ensureAgentTeamsEnv } from './agent-teams-env.js';
+import {
+  backupEntryName,
+  ensureBackupGitignore,
+  logBackupRestoreHint,
+  renameNestedInstructionFilesDetailed,
+} from './backup-layout.js';
 import { installCodex, isCodexInstalled } from './codex-installer.js';
 import { loadConfig, saveConfig } from './config.js';
 import {
@@ -51,10 +57,12 @@ import {
 } from './layout.js';
 import { generateAndWriteLockfileForDir } from './lockfile.js';
 import {
+  countSkillDirectories,
   getAgentDomain,
   getSkillScope,
   shouldInstallAgent,
   shouldInstallSkill,
+  withDeployedSkillCount,
 } from './scope-filter.js';
 
 /**
@@ -646,6 +654,46 @@ function installCodexIfNeeded(result: InstallResult): void {
 }
 
 /**
+ * Restore the critical user files extracted before `--backup` moved them away, then clean up
+ */
+async function restorePreserved(
+  targetDir: string,
+  preservation: PreservationResult,
+  result: InstallResult
+): Promise<void> {
+  const layout = getProviderLayout();
+  const rootDir = join(targetDir, layout.rootDir);
+  const restoration = await restoreCriticalFiles(rootDir, preservation);
+
+  if (restoration.restoredFiles.length > 0 || restoration.restoredDirs.length > 0) {
+    info('install.restored', {
+      files: String(restoration.restoredFiles.length),
+      dirs: String(restoration.restoredDirs.length),
+    });
+  }
+
+  for (const failure of restoration.failures) {
+    result.warnings.push(`Failed to restore ${failure.path}: ${failure.reason}`);
+  }
+
+  await migrateRestoredHookCommands(targetDir, result);
+
+  await cleanupPreservation(preservation.tempDir);
+
+  // Restored skill directories change the count the entry doc was written with
+  if (result.installedComponents.includes('entry-md')) {
+    try {
+      await refreshEntryDocSkillCount(targetDir);
+    } catch (err) {
+      // Cosmetic: a stale count must not fail an install that otherwise succeeded
+      const message = err instanceof Error ? err.message : String(err);
+      result.warnings.push(`Could not refresh the skill count in the entry doc: ${message}`);
+      warn('install.entry_count_refresh_failed', { error: message });
+    }
+  }
+}
+
+/**
  * Install oh-my-customcode templates to target directory
  */
 export async function install(options: InstallOptions): Promise<InstallResult> {
@@ -669,26 +717,7 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
 
     // Restore critical user files AFTER installation
     if (preservation) {
-      const layout = getProviderLayout();
-      const rootDir = join(options.targetDir, layout.rootDir);
-      const restoration = await restoreCriticalFiles(rootDir, preservation);
-
-      if (restoration.restoredFiles.length > 0 || restoration.restoredDirs.length > 0) {
-        info('install.restored', {
-          files: String(restoration.restoredFiles.length),
-          dirs: String(restoration.restoredDirs.length),
-        });
-      }
-
-      if (restoration.failures.length > 0) {
-        for (const failure of restoration.failures) {
-          result.warnings.push(`Failed to restore ${failure.path}: ${failure.reason}`);
-        }
-      }
-
-      await migrateRestoredHookCommands(options.targetDir, result);
-
-      await cleanupPreservation(preservation.tempDir);
+      await restorePreserved(options.targetDir, preservation, result);
     }
 
     // Must stay after the restore block above (see installAgentTeamsEnv)
@@ -703,6 +732,10 @@ export async function install(options: InstallOptions): Promise<InstallResult> {
       warn('install.lockfile_failed', { error: lockfileResult.warning });
     } else {
       info('install.lockfile_generated', { files: String(lockfileResult.fileCount) });
+    }
+
+    if (result.backedUpPaths.length > 0) {
+      await ensureBackupGitignore(options.targetDir);
     }
 
     // Install Codex CLI for AI-assisted development
@@ -913,6 +946,18 @@ function renderGitWorkflowSection(targetDir: string, language: 'en' | 'ko'): str
   return language === 'ko' ? renderGitWorkflowKO(result) : renderGitWorkflowEN(result);
 }
 
+/** Re-state the deployed skill count in the entry doc this run wrote (#1937). */
+async function refreshEntryDocSkillCount(targetDir: string): Promise<void> {
+  const layout = getProviderLayout();
+  const entryPath = join(targetDir, layout.entryFile);
+  const content = await fsReadFile(entryPath, 'utf-8');
+  const updated = withDeployedSkillCount(
+    content,
+    await countSkillDirectories(join(targetDir, layout.rootDir, 'skills'))
+  );
+  if (updated !== content) await fsWriteFile(entryPath, updated, 'utf-8');
+}
+
 /**
  * Install entry doc with the selected language
  *
@@ -949,6 +994,12 @@ async function installEntryDoc(
     content = content.replace(GIT_WORKFLOW_PLACEHOLDER, workflowSection);
   }
 
+  // The template states the shipped count; package-scope skills are not installed (#1937).
+  content = withDeployedSkillCount(
+    content,
+    await countSkillDirectories(join(targetDir, layout.rootDir, 'skills'))
+  );
+
   await fsWriteFile(destPath, content, 'utf-8');
   debug('install.entry_md_installed', { language, entry: layout.entryFile });
   return true;
@@ -958,8 +1009,7 @@ async function installEntryDoc(
  * Backup existing directory or file
  */
 async function backupExisting(sourcePath: string, backupDir: string): Promise<string> {
-  const name = basename(sourcePath);
-  const backupPath = join(backupDir, name);
+  const backupPath = join(backupDir, backupEntryName(basename(sourcePath)));
 
   await rename(sourcePath, backupPath);
   return backupPath;
@@ -1002,12 +1052,14 @@ async function backupExistingInstallation(targetDir: string): Promise<string[]> 
   await ensureDirectory(backupDir);
 
   const backedUpPaths: string[] = [];
+  const backedUpNames: string[] = [];
 
   for (const relativePath of existingPaths) {
     const fullPath = join(targetDir, relativePath);
     try {
       const backupPath = await backupExisting(fullPath, backupDir);
       backedUpPaths.push(backupPath);
+      backedUpNames.push(relativePath);
       debug('install.backed_up', { from: relativePath, to: backupPath });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -1015,5 +1067,7 @@ async function backupExistingInstallation(targetDir: string): Promise<string[]> 
     }
   }
 
+  const nested = await renameNestedInstructionFilesDetailed(backupDir);
+  logBackupRestoreHint(backupDir, backedUpNames, nested.renamed, nested.collided);
   return backedUpPaths.length > 0 ? [backupDir] : [];
 }

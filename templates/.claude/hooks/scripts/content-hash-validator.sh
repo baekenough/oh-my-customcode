@@ -5,7 +5,7 @@
 # Protocol (#1885, per event):
 #   PostToolUse (Read|Edit|Write): store/refresh hash of .tool_input.file_path, stdin pass-through to stdout.
 #   PreToolUse (Edit): validate; stdout is one JSON line (hookSpecificOutput.additionalContext) or nothing.
-#     No stderr, no passthrough (exit-0 stderr never reaches the model; measured CC 2.1.310, #1775).
+#     No stderr, no passthrough (#1775 probe B: exit-0 stderr did not reach the model in CC 2.1.310 `claude -p`, haiku, one PreToolUse Bash hook run; other events/modes/versions not measured).
 #   Missing hook_event_name: Read and Write store, Edit VALIDATES (Edit was historically PreToolUse-only).
 # Store: per-path atomic files in /tmp/.claude-content-hashes-${PPID}.d/<cksum of path>
 #   (line 1 = hash, line 2 = path). Each entry is written to a unique temp file in the same dir, then

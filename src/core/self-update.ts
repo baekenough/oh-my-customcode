@@ -1,15 +1,14 @@
 /**
- * Self-update check for oh-my-customcode CLI
- * Runs before `omcustom init` in interactive sessions.
+ * Self-update for the oh-my-customcode CLI.
+ * `omcustom init` and `omcustom update` call {@link autoSelfUpdate} before doing any work.
  */
 
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { constants as osConstants } from 'node:os';
-import { dirname, isAbsolute, join } from 'node:path';
-import { createInterface } from 'node:readline/promises';
-import packageJson from '../../package.json';
+import { dirname, isAbsolute, join, sep } from 'node:path';
 import { i18n } from '../i18n/index.js';
+import { isCiEnvironment } from '../utils/ci.js';
 import { type HomeSources, resolveHomeDir } from '../utils/home.js';
 
 const DEFAULT_PACKAGE_NAME = 'oh-my-customcode';
@@ -132,8 +131,6 @@ export interface SelfUpdateOptions {
   env?: NodeJS.ProcessEnv;
   fetchLatestVersion?: (packageName: string) => string | null;
   now?: number;
-  /** Test seam for the re-exec that follows a successful global install on the init path. */
-  reexecDeps?: InitReexecDeps;
 }
 
 /**
@@ -217,33 +214,51 @@ export function isVersionPlausible(
 }
 
 /**
- * Interactive session check (prompt-safe).
+ * True when `path` is inside `dir` after symlink resolution (a global bin is a symlink into the
+ * package under npm's global root). Unresolvable paths are compared as given.
  */
-export function isInteractiveSession(
-  stdin: Pick<NodeJS.ReadStream, 'isTTY'> = process.stdin,
-  stdout: Pick<NodeJS.WriteStream, 'isTTY'> = process.stdout
+export function isPathInside(
+  path: string,
+  dir: string,
+  realpathFn: (p: string) => string = realpathSync
 ): boolean {
-  return Boolean(stdin.isTTY && stdout.isTTY);
+  if (!path || !dir) return false;
+  const real = (p: string): string => {
+    try {
+      return realpathFn(p);
+    } catch {
+      return p;
+    }
+  };
+  const root = real(dir);
+  return real(path).startsWith(root.endsWith(sep) ? root : `${root}${sep}`);
 }
 
 /**
  * Detect npx / npm exec style invocation.
+ *
+ * The decision rests on argv[1] (an `_npx` cache path). The `npm_*` environment signals are
+ * inherited by every child of `npm exec`/`npm run`, so they only count when argv[1] is not inside
+ * npm's global root (`globalRoot`, when known): a global binary started from such a shell is not
+ * an npx run.
  */
 export function isNpxInvocation(
   argv: string[] = process.argv,
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
+  globalRoot?: string | null,
+  realpathFn?: (p: string) => string
 ): boolean {
   const argv1 = argv[1] || '';
+  if (argv1.includes('/_npx/') || argv1.includes('\\_npx\\')) {
+    return true;
+  }
+  if (globalRoot && isPathInside(argv1, globalRoot, realpathFn)) {
+    return false;
+  }
+
   const npmExecPath = env.npm_execpath || '';
   const npmCommand = env.npm_command || '';
-
-  return (
-    argv1.includes('/_npx/') ||
-    argv1.includes('\\_npx\\') ||
-    npmExecPath.includes('npx') ||
-    npmCommand === 'exec' ||
-    env.npm_lifecycle_event === 'npx'
-  );
+  return npmExecPath.includes('npx') || npmCommand === 'exec' || env.npm_lifecycle_event === 'npx';
 }
 
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
@@ -436,58 +451,6 @@ function printContinuationSpacing(): void {
   console.log('');
 }
 
-function printContinueCurrentVersion(): void {
-  console.warn(i18n.t('cli.selfUpdate.continueAfterFailure'));
-  printContinuationSpacing();
-}
-
-function runNpxRelaunch(
-  packageName: string,
-  latestVersion: string,
-  argv: string[],
-  env: NodeJS.ProcessEnv
-): void {
-  console.log(i18n.t('cli.selfUpdate.updatingNpx', { version: latestVersion }));
-  const forwardedArgs = argv.slice(2);
-  const child = spawnSync('npx', ['-y', `${packageName}@${latestVersion}`, ...forwardedArgs], {
-    stdio: 'inherit',
-    env: {
-      ...env,
-      OMCUSTOM_SKIP_SELF_UPDATE: 'true',
-    },
-  });
-
-  if ((child.status ?? 1) === 0) {
-    process.exit(0);
-  }
-
-  const status = child.status ?? -1;
-  console.warn(i18n.t('cli.selfUpdate.relaunchFailed', { status }));
-  printContinueCurrentVersion();
-}
-
-/**
- * Run `npm install -g` for the init self-update.
- * Returns true when the install succeeded; failures are reported and are non-blocking.
- */
-function runGlobalUpdate(packageName: string, latestVersion: string): boolean {
-  try {
-    console.log(i18n.t('cli.selfUpdate.updatingGlobal', { version: latestVersion }));
-    execSync(`npm install -g ${packageName}@${latestVersion}`, {
-      stdio: 'inherit',
-      timeout: 60000,
-    });
-    console.log(i18n.t('cli.selfUpdate.updated', { version: latestVersion }));
-    printContinuationSpacing();
-    return true;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(i18n.t('cli.selfUpdate.failed', { error: errorMessage }));
-    printContinueCurrentVersion();
-    return false;
-  }
-}
-
 /**
  * Exit code for a finished child process: 128 + signal number when it was killed by a known
  * signal, otherwise its own status (1 when the status is unavailable).
@@ -560,180 +523,6 @@ export function findInstalledPackageVersion(
 }
 
 /**
- * After a successful `npm install -g` on the init path, re-run the CLI so the rest of init uses
- * the NEWLY installed code. Without this, init keeps the old in-memory modules and the old
- * `packageJson.version` and silently installs the old templates.
- *
- * Re-exec only happens when the binary that is running resolves to a package whose version
- * equals the version just installed. npm may have installed into a different prefix than the
- * binary on PATH; in that case (or when the version cannot be determined) a warning naming both
- * versions is printed and init continues with the current version.
- *
- * Returns true when the child was started and the exit function was called, false when init
- * should continue in this process.
- */
-function reexecAfterGlobalUpdate(
-  packageName: string,
-  installedVersion: string,
-  currentVersion: string,
-  argv: string[],
-  env: NodeJS.ProcessEnv,
-  deps: InitReexecDeps = {}
-): boolean {
-  const installed = normalizeVersion(installedVersion);
-  const entry = argv[1];
-  const binaryVersion = entry ? findInstalledPackageVersion(entry, packageName, deps) : null;
-  const warnParams = { installed, current: currentVersion, package: packageName };
-
-  if (!entry || binaryVersion === null) {
-    console.warn(i18n.t('cli.selfUpdate.reexecVersionUnknown', warnParams));
-    printContinueCurrentVersion();
-    return false;
-  }
-
-  if (normalizeVersion(binaryVersion) !== installed) {
-    console.warn(
-      i18n.t('cli.selfUpdate.reexecVersionMismatch', {
-        ...warnParams,
-        binary: normalizeVersion(binaryVersion),
-      })
-    );
-    printContinueCurrentVersion();
-    return false;
-  }
-
-  console.log(i18n.t('cli.selfUpdate.reexec', { version: installed }));
-  const spawn: ReexecSpawnFn = deps.spawnFn ?? spawnSync;
-  const child = spawn(process.execPath, [entry, ...argv.slice(2)], {
-    stdio: 'inherit',
-    env: { ...env, OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
-  });
-
-  if (child.error) {
-    console.warn(i18n.t('cli.selfUpdate.reexecSpawnFailed', { error: child.error.message }));
-    printContinueCurrentVersion();
-    return false;
-  }
-
-  const exit = deps.exitFn ?? ((code: number) => process.exit(code));
-  exit(exitCodeForChild(child));
-  return true;
-}
-
-export interface ExecuteSelfUpdateOptions {
-  /** Current package version. Defaults to the version in package.json. */
-  currentVersion?: string;
-  silent?: boolean;
-  packageName?: string;
-  cachePath?: string;
-  cacheTtlMs?: number;
-  /** Bypass self-update-cache.json TTL and always query npm view fresh. */
-  forceRefresh?: boolean;
-  fetchLatestVersion?: (packageName: string) => string | null;
-  now?: number;
-  argv?: string[];
-  env?: NodeJS.ProcessEnv;
-}
-
-export interface ExecuteSelfUpdateResult {
-  updated: boolean;
-  fromVersion: string;
-  toVersion: string;
-}
-
-/**
- * Returns true when the environment indicates self-update should be skipped.
- */
-function shouldSkipEnvironmentUpdate(argv: string[], env: NodeJS.ProcessEnv): boolean {
-  if (isNpxInvocation(argv, env)) return true;
-  if (env.CI === 'true' || env.GITHUB_ACTIONS === 'true') return true;
-  if (env.OMCUSTOM_SKIP_SELF_UPDATE === 'true') return true;
-  return false;
-}
-
-/**
- * Run `npm install -g` to install the given package version.
- * Returns true if the installation succeeded.
- */
-function installGlobalPackage(packageName: string, version: string, silent: boolean): boolean {
-  try {
-    execSync(`npm install -g ${packageName}@${version}`, {
-      stdio: silent ? 'pipe' : 'inherit',
-      timeout: 60000,
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Execute self-update for `omcustom update` command.
- *
- * Unlike `maybeHandleSelfUpdateForInit`, this function:
- * - Does NOT prompt the user (always updates if outdated)
- * - Does NOT call process.exit()
- * - Returns a result object so the caller can continue
- * - Skips silently for npx invocations (npx always fetches latest)
- */
-export function executeSelfUpdate(options: ExecuteSelfUpdateOptions = {}): ExecuteSelfUpdateResult {
-  const packageName = options.packageName || DEFAULT_PACKAGE_NAME;
-  const argv = options.argv || process.argv;
-  const env = options.env || process.env;
-  const currentVersion = normalizeVersion(
-    options.currentVersion || (packageJson.version as string) || ''
-  );
-
-  const noUpdate: ExecuteSelfUpdateResult = {
-    updated: false,
-    fromVersion: currentVersion,
-    toVersion: currentVersion,
-  };
-
-  if (shouldSkipEnvironmentUpdate(argv, env)) {
-    return noUpdate;
-  }
-
-  const checkOptions: SelfUpdateOptions = {
-    currentVersion,
-    packageName,
-    cachePath: options.cachePath,
-    cacheTtlMs: options.forceRefresh ? 0 : options.cacheTtlMs,
-    fetchLatestVersion: options.fetchLatestVersion,
-    now: options.now,
-    argv,
-    env,
-  };
-
-  const result = checkSelfUpdate(checkOptions);
-
-  if (!result.checked || !result.updateAvailable || !result.latestVersion) {
-    return noUpdate;
-  }
-
-  const latestVersion = result.latestVersion;
-
-  if (!options.silent) {
-    console.log(i18n.t('cli.selfUpdate.updatingGlobal', { version: latestVersion }));
-  }
-
-  const installed = installGlobalPackage(packageName, latestVersion, options.silent ?? false);
-
-  if (installed) {
-    if (!options.silent) {
-      console.log(i18n.t('cli.selfUpdate.updated', { version: latestVersion }));
-      printContinuationSpacing();
-    }
-    return { updated: true, fromVersion: currentVersion, toVersion: latestVersion };
-  }
-
-  if (!options.silent) {
-    console.warn(i18n.t('cli.selfUpdate.failed', { error: 'npm install failed' }));
-  }
-  return noUpdate;
-}
-
-/**
  * Core check with cache support.
  *
  * Never throws because of the cache: a missing, unreadable or unwritable cache only means
@@ -799,91 +588,266 @@ export function checkSelfUpdate(options: SelfUpdateOptions): SelfUpdateCheckResu
   };
 }
 
-async function promptForSelfUpdate(): Promise<boolean> {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-  try {
-    const answer = await rl.question(i18n.t('cli.selfUpdate.prompt'));
-    const normalized = answer.trim().toLowerCase();
-    return normalized === '' || normalized === 'y' || normalized === 'yes';
-  } finally {
-    rl.close();
-  }
+export type AutoSelfUpdateCommand = 'init' | 'update';
+
+/** Runs a command and returns its trimmed stdout, or null when it failed or timed out. */
+export type ProbeFn = (command: string, args: string[], env: NodeJS.ProcessEnv) => string | null;
+
+/** Injectable side effects of {@link autoSelfUpdate}; tests replace npm, spawn and exit. */
+export interface AutoSelfUpdateDeps extends InitReexecDeps {
+  /** Installs `<packageName>@<version>` globally; throws when the install fails. */
+  installFn?: (packageName: string, version: string) => void;
+  /** `npm root -g`, or null when it cannot be determined. */
+  globalRootFn?: () => string | null;
+  /** Starts the target with `--version` before the real re-exec. */
+  probeFn?: ProbeFn;
 }
 
-function shouldSkipSelfUpdate(options: SelfUpdateOptions): boolean {
-  const env = options.env || process.env;
-  const argv = options.argv || process.argv;
-
-  if (options.skip) {
-    return true;
-  }
-  if (argv.includes('--skip-version-check')) {
-    return true;
-  }
-  if (env.OMCUSTOM_SKIP_SELF_UPDATE === 'true') {
-    return true;
-  }
-  if (env.CI === 'true' || env.GITHUB_ACTIONS === 'true') {
-    return true;
-  }
-  if (!isInteractiveSession()) {
-    return true;
-  }
-  return false;
+export interface AutoSelfUpdateOptions extends Omit<SelfUpdateOptions, 'cacheTtlMs'> {
+  /** Command being run; named in the restart notice. */
+  command: AutoSelfUpdateCommand;
+  deps?: AutoSelfUpdateDeps;
 }
 
 /**
- * Prompt self-update before `init` in interactive local sessions.
+ * What {@link autoSelfUpdate} did:
+ * - `skipped`: a skip condition applied, npm was not queried
+ * - `up-to-date`: npm reports no newer version
+ * - `failed`: lookup or install failed, the CLI is not managed by npm, or the new CLI could not be
+ *   verified or started
+ * - `relaunched`: the command was re-run on the new CLI and the exit function was called
  */
-export async function maybeHandleSelfUpdateForInit(options: SelfUpdateOptions): Promise<void> {
-  if (shouldSkipSelfUpdate(options)) {
-    return;
+export type AutoSelfUpdateOutcome = 'skipped' | 'up-to-date' | 'failed' | 'relaunched';
+
+/**
+ * True when no self-update must run: the caller's `skip`, `--skip-version-check`, `--skip-self`,
+ * `OMCUSTOM_SKIP_SELF_UPDATE=true`, or a CI environment (see {@link isCiEnvironment}). TTY state
+ * does not matter.
+ */
+export function shouldSkipAutoSelfUpdate(
+  options: Pick<SelfUpdateOptions, 'skip' | 'argv' | 'env'>
+): boolean {
+  const env = options.env || process.env;
+  const argv = options.argv || process.argv;
+  return (
+    Boolean(options.skip) ||
+    argv.includes('--skip-version-check') ||
+    argv.includes('--skip-self') ||
+    env.OMCUSTOM_SKIP_SELF_UPDATE === 'true' ||
+    isCiEnvironment(env)
+  );
+}
+
+// No timeout: npm may be mid-reify when a timer would SIGTERM it, and the user sees its progress.
+function installGlobalPackage(packageName: string, version: string): void {
+  execSync(`npm install -g ${packageName}@${version}`, { stdio: 'inherit' });
+}
+
+function npmGlobalRoot(): string | null {
+  try {
+    const output = execSync('npm root -g', { encoding: 'utf-8', stdio: 'pipe', timeout: 5000 });
+    return output.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function probeVersion(command: string, args: string[], env: NodeJS.ProcessEnv): string | null {
+  // npx may download the package first, a local binary starts at once
+  const child = spawnSync(command, args, {
+    encoding: 'utf-8',
+    stdio: 'pipe',
+    timeout: command === 'npx' ? 120000 : 30000,
+    env,
+  });
+  return child.error || child.status !== 0 ? null : String(child.stdout ?? '').trim();
+}
+
+/** First line of an error message, so the failure notice stays on one line. */
+function firstLine(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.split('\n')[0]?.trim() || 'unknown error';
+}
+
+/** True when `--version` output names exactly `expected`. */
+function reportsVersion(output: string | null, expected: string): boolean {
+  const wanted = normalizeVersion(expected);
+  return output?.split(/\s+/).some((token) => normalizeVersion(token) === wanted) ?? false;
+}
+
+/** Prints the one-line failure notice: the reason, the manual command and `--skip-self`. */
+function warnAutoFailed(packageName: string, currentVersion: string, reason: string): void {
+  console.warn(
+    i18n.t('cli.selfUpdate.autoFailed', { package: packageName, current: currentVersion, reason })
+  );
+}
+
+interface RelaunchContext {
+  packageName: string;
+  currentVersion: string;
+  /** Version that was just resolved from npm (npx) or installed (global). */
+  version: string;
+  argv: string[];
+  env: NodeJS.ProcessEnv;
+  deps: AutoSelfUpdateDeps;
+}
+
+/**
+ * Prove that the target starts (`<target> --version` reports `version`), then run it with the
+ * original arguments and exit with its exit code. Returns false (after the one-line notice) when
+ * the probe or the start fails, so the caller continues with the current version.
+ */
+function probeAndRelaunch(
+  context: RelaunchContext,
+  command: string,
+  prefixArgs: string[],
+  announce: () => void
+): boolean {
+  const { packageName, currentVersion, version, argv, deps } = context;
+  const env = { ...context.env, OMCUSTOM_SKIP_SELF_UPDATE: 'true' };
+
+  const probe = deps.probeFn ?? probeVersion;
+  if (!reportsVersion(probe(command, [...prefixArgs, '--version'], env), version)) {
+    warnAutoFailed(packageName, currentVersion, i18n.t('cli.selfUpdate.reasonProbe', { version }));
+    return false;
+  }
+
+  announce();
+  const spawn: ReexecSpawnFn = deps.spawnFn ?? spawnSync;
+  const child = spawn(command, [...prefixArgs, ...argv.slice(2)], { stdio: 'inherit', env });
+  if (child.error) {
+    warnAutoFailed(packageName, currentVersion, child.error.message);
+    return false;
+  }
+  const exit = deps.exitFn ?? ((code: number) => process.exit(code));
+  exit(exitCodeForChild(child));
+  return true;
+}
+
+/**
+ * Re-run the command through `npx -y <package>@<version>` (the version npm just reported, so the
+ * probe and the real run use the same package).
+ */
+function relaunchViaNpx(context: RelaunchContext): boolean {
+  // Announced before the probe: the first `npx -y` run may download the package for a while
+  console.log(i18n.t('cli.selfUpdate.updatingNpx', { version: context.version }));
+  return probeAndRelaunch(
+    context,
+    'npx',
+    ['-y', `${context.packageName}@${context.version}`],
+    () => {}
+  );
+}
+
+/**
+ * After a successful `npm install -g`, re-run the CLI so the rest of `init`/`update` uses the NEWLY
+ * installed code. Without this, the command keeps the old in-memory modules and the old
+ * `packageJson.version` and silently installs the old templates.
+ *
+ * Re-exec only happens when the binary that is running resolves to a package whose version equals
+ * the version just installed and that binary answers `--version` with it. Otherwise one notice is
+ * printed and the command continues with the current version.
+ */
+function relaunchAfterGlobalInstall(context: RelaunchContext, command: AutoSelfUpdateCommand) {
+  const { packageName, currentVersion, argv, deps } = context;
+  const installed = normalizeVersion(context.version);
+  const entry = argv[1];
+  const binaryVersion = entry ? findInstalledPackageVersion(entry, packageName, deps) : null;
+  const warnParams = { installed, current: currentVersion, package: packageName };
+
+  if (!entry || binaryVersion === null) {
+    console.warn(i18n.t('cli.selfUpdate.reexecVersionUnknown', warnParams));
+    return false;
+  }
+  if (normalizeVersion(binaryVersion) !== installed) {
+    console.warn(
+      i18n.t('cli.selfUpdate.reexecVersionMismatch', {
+        ...warnParams,
+        binary: normalizeVersion(binaryVersion),
+      })
+    );
+    return false;
+  }
+
+  return probeAndRelaunch(context, process.execPath, [entry], () =>
+    console.log(i18n.t('cli.selfUpdate.reexec', { version: installed, command }))
+  );
+}
+
+/** `npm install -g` of the resolved version; prints the one-line notice and returns false on failure. */
+function installLatest(context: RelaunchContext): boolean {
+  const { packageName, currentVersion, version, deps } = context;
+  try {
+    console.log(i18n.t('cli.selfUpdate.updatingGlobal', { version }));
+    (deps.installFn ?? installGlobalPackage)(packageName, version);
+  } catch (error) {
+    warnAutoFailed(packageName, currentVersion, firstLine(error));
+    return false;
+  }
+  console.log(i18n.t('cli.selfUpdate.updated', { version }));
+  printContinuationSpacing();
+  return true;
+}
+
+/**
+ * Route to the right update path for how this CLI was started: npx re-run, a CLI that npm does not
+ * manage (left alone), or a global install followed by a verified re-run.
+ */
+function updateAndRelaunch(context: RelaunchContext, command: AutoSelfUpdateCommand): boolean {
+  const { argv, env, deps } = context;
+  // A definite npx run (argv[1] in the _npx cache) needs no `npm root -g`
+  if (isNpxInvocation(argv, {})) {
+    return relaunchViaNpx(context);
+  }
+  const globalRoot = (deps.globalRootFn ?? npmGlobalRoot)();
+  if (isNpxInvocation(argv, env, globalRoot, deps.realpathFn)) {
+    return relaunchViaNpx(context);
+  }
+  if (globalRoot && !isPathInside(argv[1] ?? '', globalRoot, deps.realpathFn)) {
+    console.warn(i18n.t('cli.selfUpdate.notNpmGlobal', { path: argv[1] ?? '', root: globalRoot }));
+    return false;
+  }
+  return installLatest(context) && relaunchAfterGlobalInstall(context, command);
+}
+
+/**
+ * Update the CLI to the latest published version before `init` or `update` does any work.
+ *
+ * No prompt, in TTY and non-TTY sessions alike; npm is queried fresh on every run (no cache TTL).
+ * Under npx the command is re-run through `npx -y <package>@<version>`. Otherwise, when the running
+ * CLI lives under npm's global root, the latest version is installed globally and the running
+ * binary's version is verified. Either way the target must answer `--version` with the expected
+ * version before the command is re-run on it with `OMCUSTOM_SKIP_SELF_UPDATE=true` (the child's
+ * exit code becomes this process's exit code). A CLI installed by another package manager is left
+ * alone. Every failure prints one notice naming the manual command and lets the command continue.
+ */
+export function autoSelfUpdate(options: AutoSelfUpdateOptions): AutoSelfUpdateOutcome {
+  if (shouldSkipAutoSelfUpdate(options)) {
+    return 'skipped';
   }
 
   const packageName = options.packageName || DEFAULT_PACKAGE_NAME;
-  const currentVersion = normalizeVersion(options.currentVersion);
   const argv = options.argv || process.argv;
   const env = options.env || process.env;
+  const deps = options.deps ?? {};
+  const currentVersion = normalizeVersion(options.currentVersion);
 
-  if (!currentVersion) {
-    return;
+  const result = checkSelfUpdate({ ...options, cacheTtlMs: 0 });
+  if (!result.checked || !result.latestVersion) {
+    warnAutoFailed(packageName, currentVersion, i18n.t('cli.selfUpdate.reasonLookup'));
+    return 'failed';
+  }
+  if (!result.updateAvailable) {
+    return 'up-to-date';
   }
 
-  console.log(i18n.t('cli.selfUpdate.checking'));
-  const result = checkSelfUpdate(options);
-
-  if (!result.checked || !result.updateAvailable || !result.latestVersion) {
-    return;
-  }
-
-  const latestVersion = result.latestVersion;
-  console.log(
-    i18n.t('cli.selfUpdate.available', { current: currentVersion, latest: latestVersion })
-  );
-
-  const wantsUpdate = await promptForSelfUpdate();
-  if (!wantsUpdate) {
-    console.log(i18n.t('cli.selfUpdate.declined'));
-    printContinuationSpacing();
-    return;
-  }
-
-  if (isNpxInvocation(argv, env)) {
-    runNpxRelaunch(packageName, latestVersion, argv, env);
-    return;
-  }
-
-  if (runGlobalUpdate(packageName, latestVersion)) {
-    reexecAfterGlobalUpdate(
-      packageName,
-      latestVersion,
-      currentVersion,
-      argv,
-      env,
-      options.reexecDeps
-    );
-  }
+  const context: RelaunchContext = {
+    packageName,
+    currentVersion,
+    version: result.latestVersion,
+    argv,
+    env,
+    deps,
+  };
+  return updateAndRelaunch(context, options.command) ? 'relaunched' : 'failed';
 }

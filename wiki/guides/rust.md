@@ -1,9 +1,10 @@
 ---
 title: "Rust Guide"
 type: guide
-updated: 2026-04-12
+updated: 2026-11-10
 sources:
   - guides/rust/error-handling.md
+  - guides/rust/edition-workspace-async.md
 related:
   - [[lang-rust-expert]]
   - [[rust-best-practices]]
@@ -26,6 +27,10 @@ Covers Rust's ownership model, borrowing and lifetimes, error handling with `Res
 - Trait objects vs generics trade-offs
 - Async/await with Tokio runtime
 - `cargo clippy` and idiomatic code patterns
+- Edition 2024 (Rust 1.85.0) and the `cargo fix --edition` migration steps
+- `rust-version` (MSRV) semantics: Cargo errors on unsupported toolchains, `--ignore-rust-version` opts out, `cargo add` picks compatible dependency versions
+- Cargo workspaces: virtual manifests, explicit `resolver` (`"3"` is the edition 2024 default, Rust 1.84+), `[workspace.package]` inheritance
+- Async basics: futures are inert until polled by a runtime; Tokio specifics live in the `rust-best-practices` skill
 
 ## Relationships
 
@@ -36,3 +41,4 @@ Covers Rust's ownership model, borrowing and lifetimes, error handling with `Res
 ## Sources
 
 - `guides/rust/error-handling.md` — Result type, match patterns, ? operator, custom errors
+- `guides/rust/edition-workspace-async.md` — edition migration, rust-version (MSRV), workspaces, async basics

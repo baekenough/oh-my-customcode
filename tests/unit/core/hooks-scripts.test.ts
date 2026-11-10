@@ -644,6 +644,52 @@ describe('stop-console-audit.sh', () => {
     expect(result.stderr).toContain('[Stop]');
   });
 
+  // #1929 F3: `find /tmp` counts 0 on macOS (/tmp is a symlink); the script uses `/tmp/`. The scan dir is
+  // overridable (OMCUSTOM_STOP_AUDIT_TMPDIR) so the fixture lives in a private dir, never in real /tmp.
+  it('counts claude-*.output files in the scan dir (positive) and stays silent without them (negative)', async () => {
+    const scanDir = mkdtempSync(join(tmpdir(), 'omcc-stop-audit-'));
+    try {
+      const env = { OMCUSTOM_STOP_AUDIT_TMPDIR: `${scanDir}/` };
+      const empty = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), env, nonGitDir);
+      expect(empty.exitCode).toBe(0);
+      expect(empty.stderr).not.toContain('Background task output files found');
+
+      await writeFile(join(scanDir, 'claude-x.output'), 'task output\n');
+      await writeFile(join(scanDir, 'claude-y.output'), 'task output\n');
+      await writeFile(join(scanDir, 'other.txt'), 'not counted\n');
+      const filled = await runHookScript(
+        STOP_CONSOLE_AUDIT_SCRIPT,
+        makeStopInput(),
+        env,
+        nonGitDir
+      );
+      expect(filled.exitCode).toBe(0);
+      expect(filled.stderr).toContain('Background task output files found: 2');
+    } finally {
+      await rm(scanDir, { recursive: true, force: true });
+    }
+  });
+
+  it('follows a symlinked scan dir when given the trailing-slash form (the macOS /tmp case)', async () => {
+    const base = mkdtempSync(join(tmpdir(), 'omcc-stop-audit-link-'));
+    try {
+      const real = join(base, 'real');
+      await mkdir(real);
+      await writeFile(join(real, 'claude-z.output'), 'task output\n');
+      const link = join(base, 'link');
+      symlinkSync(real, link);
+      const result = await runHookScript(
+        STOP_CONSOLE_AUDIT_SCRIPT,
+        makeStopInput(),
+        { OMCUSTOM_STOP_AUDIT_TMPDIR: `${link}/` },
+        nonGitDir
+      );
+      expect(result.stderr).toContain('Background task output files found: 1');
+    } finally {
+      await rm(base, { recursive: true, force: true });
+    }
+  });
+
   it('should exit 0 and write to stderr regardless of background task file count', async () => {
     // Scenario: no background task files
     const result = await runHookScript(STOP_CONSOLE_AUDIT_SCRIPT, makeStopInput(), {}, nonGitDir);
@@ -1368,7 +1414,7 @@ describe('destructive-git-guard.sh', () => {
     const thirdContext = preToolUseContext(third);
     expect(thirdContext).toContain('DESTRUCTIVE GIT WARNING');
     expect(thirdContext).toContain(
-      '[Hook] Destructive git warnings: 3 this session (advisory telemetry; R021 promotion needs user approval)'
+      '[Hook] First-tier destructive git warnings: 3 this session (second-tier warnings are emitted and recorded but not counted; advisory telemetry; R021 promotion needs user approval)'
     );
     expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(true);
 
@@ -1388,7 +1434,7 @@ describe('destructive-git-guard.sh', () => {
     const input = makeBashInput('git reset --hard HEAD~1');
 
     const first = preToolUseContext(await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input));
-    expect(first).toContain('Destructive git warnings: 5 this session');
+    expect(first).toContain('First-tier destructive git warnings: 5 this session');
     const second = preToolUseContext(await runHookScript(DESTRUCTIVE_GIT_GUARD_SCRIPT, input));
     expect(second).not.toContain('this session');
   });
@@ -1430,7 +1476,7 @@ describe('destructive-git-guard.sh', () => {
       }
       expect(contexts[0]).not.toContain('this session');
       expect(contexts[1]).not.toContain('this session');
-      expect(contexts[2]).toContain('Destructive git warnings: 3 this session');
+      expect(contexts[2]).toContain('First-tier destructive git warnings: 3 this session');
       expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(true);
       const lines = stateLines();
       expect(lines).toHaveLength(3);
@@ -1467,12 +1513,21 @@ describe('destructive-git-guard.sh', () => {
       for (const context of contexts.slice(0, 7)) {
         expect(context).not.toContain('this session');
       }
-      expect(contexts[7]).toContain('Destructive git warnings: 3 this session');
+      expect(contexts[7]).toContain('First-tier destructive git warnings: 3 this session');
       expect(contexts[7]).not.toContain('8 this session');
       expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(true);
       const lines = stateLines();
       expect(lines.filter((line) => line.endsWith(' tier=2'))).toHaveLength(5);
-      expect(lines.filter((line) => line.endsWith(' tier=1'))).toHaveLength(3);
+      const tier1Lines = lines.filter((line) => line.endsWith(' tier=1'));
+      expect(tier1Lines).toHaveLength(3);
+      // Text and number agree (#1929 L2): the wording names the counted tier, the number is that
+      // tier's recorded line count (not the 8 total warnings), and the uncounted tier is disclosed.
+      expect(contexts[7]).toContain(
+        `First-tier destructive git warnings: ${tier1Lines.length} this session`
+      );
+      expect(contexts[7]).toContain(
+        'second-tier warnings are emitted and recorded but not counted'
+      );
     });
 
     it('interleaved: tier-2 between tier-1 warnings does not advance the count', async () => {
@@ -1483,7 +1538,7 @@ describe('destructive-git-guard.sh', () => {
       for (const context of contexts.slice(0, 4)) {
         expect(context).not.toContain('this session');
       }
-      expect(contexts[4]).toContain('Destructive git warnings: 3 this session');
+      expect(contexts[4]).toContain('First-tier destructive git warnings: 3 this session');
     });
 
     it('legacy untiered lines count as tier 1, a tier-2 firing on top of them does not', async () => {
@@ -1495,7 +1550,7 @@ describe('destructive-git-guard.sh', () => {
       expect(existsSync(DESTRUCTIVE_THRESHOLD_DIR)).toBe(false);
       // A tier-1 firing then makes it 3 (two legacy + one tier-1).
       const third = await fire(TIER1);
-      expect(third.context).toContain('Destructive git warnings: 3 this session');
+      expect(third.context).toContain('First-tier destructive git warnings: 3 this session');
     });
 
     it('state-line format: <UTC timestamp> <label> tier=<n>, one line per warning', async () => {
@@ -2842,7 +2897,8 @@ describe('stale-todo-scanner root contracts (#1784 B-L1/B-L2)', () => {
  * Two axes are pinned here, because fixing either alone leaves the hook silent:
  *   selector  — `.prompt` first, `.user_input` retained as a back-compat fallback
  *   delivery  — hints reach the model via `hookSpecificOutput.additionalContext` on stdout
- *               (stderr on exit 0 never reaches the model; it is a human audit trail only)
+ *               (#1775 probe B, CC 2.1.310 `claude -p`, haiku, one PreToolUse Bash hook run: exit-0
+ *               stderr did not reach the model; other events/modes/versions not measured)
  *
  * Every detection case is paired: a positive (must emit) and a negative (must stay silent).
  */
@@ -3378,6 +3434,20 @@ describe('fail-axis-cause-advisor.sh', () => {
     const result = await runHookScript(SCRIPT, makePrompt(atBoundary), baseEnv());
     expect(advisoryOf(result.stdout)).toContain('FAIL Advisory');
   });
+
+  // #1929 locale item: bash `${#var}` counts bytes under C/POSIX/unset LANG (37 ASCII + 3 Hangul =
+  // 40 characters but 46 bytes), so the 40-character rule must not depend on the caller's locale.
+  for (const locale of ['C', 'POSIX', 'en_US.UTF-8', 'xx_YY.UTF-8']) {
+    it(`counts characters, not bytes, under LC_ALL=${locale}: 40 fires, 41 stays silent`, async () => {
+      const env = baseEnv({ LC_ALL: locale, LANG: locale, LC_CTYPE: locale });
+      const atBoundary = `${'a'.repeat(37)}계속해`;
+      const fired = await runHookScript(SCRIPT, makePrompt(atBoundary), env);
+      expect(advisoryOf(fired.stdout)).toContain('FAIL Advisory');
+      const over = `${'a'.repeat(38)}계속해`;
+      const silent = await runHookScript(SCRIPT, makePrompt(over), env);
+      expect(advisoryOf(silent.stdout)).toBe('');
+    });
+  }
 
   it('should stay silent when the prompt is not a progress nudge', async () => {
     const result = await runHookScript(SCRIPT, makePrompt('파일 읽어줘'), baseEnv());
@@ -4506,4 +4576,155 @@ describe('Issue #1656 A: scalar-shaped tool_input/tool_response', () => {
     expect(body).toContain('(.tool_input | type) == "object"');
     expect(body).toContain('(.tool_response | type) == "object"');
   });
+});
+
+// -------------------------------------------------------------------
+// feedback-collector.sh under /bin/bash (3.2 on macOS) — #1929 F8
+// -------------------------------------------------------------------
+
+describe('feedback-collector.sh under /bin/bash (bash 3.2 compatibility, #1929 F8)', () => {
+  const SCRIPT = join(SCRIPTS_DIR, 'feedback-collector.sh');
+  const outcomesFile = `/tmp/.claude-task-outcomes-${process.pid}`;
+  const logFile = `/tmp/.claude-feedback-collector-${process.pid}.log`;
+  const haveSqlite = (() => {
+    try {
+      execFileSync('sqlite3', ['-version'], { stdio: 'pipe' });
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  const haveJq = (() => {
+    try {
+      execFileSync('jq', ['--version'], { stdio: 'pipe' });
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  let home: string;
+  let db: string;
+
+  beforeEach(() => {
+    home = mkdtempSync(join(tmpdir(), 'omcc-fc-home-'));
+    mkdirSync(join(home, '.config', 'oh-my-customcode'), { recursive: true });
+    db = join(home, '.config', 'oh-my-customcode', 'eval-core.sqlite');
+    if (haveSqlite) {
+      execFileSync(
+        'sqlite3',
+        [
+          db,
+          'CREATE TABLE improvement_actions (id INTEGER PRIMARY KEY, target_type TEXT, target_name TEXT, action_type TEXT, description TEXT, confidence TEXT, feedback_source TEXT, status TEXT, created_at TEXT);',
+        ],
+        { stdio: 'pipe' }
+      );
+    }
+  });
+
+  afterEach(() => {
+    rmSync(outcomesFile, { force: true });
+    rmSync(logFile, { force: true });
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  function runUnderBinBash(extraEnv: Record<string, string> = {}): {
+    stdout: string;
+    status: number;
+  } {
+    // /bin/bash explicitly: macOS ships bash 3.2 there, where `declare -A` is an invalid option.
+    try {
+      const stdout = execFileSync('/bin/bash', [SCRIPT], {
+        input: '{"hook_event_name":"Stop"}',
+        env: { ...gitFixtureEnv(), HOME: home, ...extraEnv },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).toString();
+      return { stdout, status: 0 };
+    } catch (error) {
+      const e = error as { status?: number; stdout?: Buffer };
+      return { stdout: e.stdout?.toString() ?? '', status: e.status ?? -1 };
+    }
+  }
+
+  function rows(): string[] {
+    return execFileSync(
+      'sqlite3',
+      [
+        db,
+        "select target_name||'|'||action_type||'|'||confidence from improvement_actions order by id;",
+      ],
+      { stdio: 'pipe' }
+    )
+      .toString()
+      .split('\n')
+      .filter((l) => l !== '');
+  }
+
+  it.skipIf(!haveSqlite || !haveJq)(
+    'inserts one row per agent type with 3+ failures, skips malformed lines and agents below 3',
+    () => {
+      const lines = [
+        'not json',
+        ...Array(3).fill('{"agent_type":"a","outcome":"failure"}'),
+        '{"agent_type":"a","outcome":"success"}',
+        '{"agent_type":"b","outcome":"failure"}',
+        ...Array(5).fill('{"agent_type":"c","outcome":"failure"}'),
+      ];
+      writeFileSync(outcomesFile, `${lines.join('\n')}\n`);
+      const result = runUnderBinBash();
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('"hook_event_name":"Stop"'); // stdin passthrough
+      expect(rows().sort()).toEqual(['a|augment|medium', 'c|escalate|high']);
+    }
+  );
+
+  it.skipIf(!haveSqlite || !haveJq)(
+    'escapes a single quote in the agent type (SQL stays valid under bash 3.2)',
+    () => {
+      writeFileSync(
+        outcomesFile,
+        `${Array(3).fill('{"agent_type":"o\'x","outcome":"failure"}').join('\n')}\n`
+      );
+      const result = runUnderBinBash();
+      expect(result.status).toBe(0);
+      expect(rows()).toEqual(["o'x|augment|medium"]);
+    }
+  );
+
+  it.skipIf(!haveSqlite || !haveJq)(
+    'logs a line (log file only) and still exits 0 when the stats pipeline fails (jq shim exits 1)',
+    () => {
+      const shimDir = mkdtempSync(join(tmpdir(), 'omcc-fc-shim-'));
+      try {
+        // The dependency check (`command -v jq`) passes; the aggregation call then fails.
+        writeFileSync(join(shimDir, 'jq'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+        writeFileSync(
+          outcomesFile,
+          `${Array(3).fill('{"agent_type":"a","outcome":"failure"}').join('\n')}\n`
+        );
+        const result = runUnderBinBash({ PATH: `${shimDir}:${process.env.PATH ?? ''}` });
+        expect(result.status).toBe(0);
+        expect(result.stdout).toContain('"hook_event_name":"Stop"');
+        expect(result.stdout).not.toContain('stats aggregation failed'); // log file only
+        expect(readFileSync(logFile, 'utf-8')).toContain(
+          '[feedback-collector] stats aggregation failed'
+        );
+        expect(rows()).toEqual([]);
+      } finally {
+        rmSync(shimDir, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it.skipIf(!haveSqlite || !haveJq)(
+    'writes nothing below the failure threshold and still exits 0',
+    () => {
+      writeFileSync(
+        outcomesFile,
+        `${Array(2).fill('{"agent_type":"a","outcome":"failure"}').join('\n')}\n`
+      );
+      const result = runUnderBinBash();
+      expect(result.status).toBe(0);
+      expect(rows()).toEqual([]);
+    }
+  );
 });

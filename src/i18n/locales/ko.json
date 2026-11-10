@@ -44,20 +44,17 @@
       "timeout": "버전 확인 시간 초과, 계속 진행합니다..."
     },
     "selfUpdate": {
-      "checking": "oh-my-customcode 업데이트 확인 중...",
-      "available": "📦 새 버전 사용 가능: v{{current}} → v{{latest}}",
-      "prompt": "먼저 oh-my-customcode를 업데이트할까요? (Y/n): ",
       "updatingGlobal": "⬆️ oh-my-customcode를 전역으로 v{{version}}로 업데이트 중...",
       "updatingNpx": "⬆️ npx로 최신 버전(v{{version}})을 실행합니다...",
       "updated": "✅ v{{version}}로 업데이트되었습니다",
-      "declined": "현재 버전으로 계속 진행합니다.",
-      "failed": "자체 업데이트 실패: {{error}}",
-      "relaunchFailed": "npx 최신 버전 실행 실패 (status: {{status}}).",
-      "continueAfterFailure": "현재 버전으로 init을 계속 진행합니다.",
-      "reexec": "↻ 업데이트된 CLI(v{{version}})로 init을 다시 시작합니다...",
+      "autoFailed": "⚠ oh-my-customcode를 자동으로 업데이트하지 못했습니다 ({{reason}}). `npm install -g {{package}}@latest`를 직접 실행하거나 --skip-self를 사용하세요. v{{current}}로 계속 진행합니다.",
+      "reasonLookup": "npm에서 최신 버전을 조회하지 못했습니다",
+      "reasonProbe": "새 CLI를 --version으로 실행했을 때 v{{version}}이(가) 보고되지 않았습니다",
+      "notNpmGlobal": "⚠ 자체 업데이트를 건너뜁니다: 이 CLI({{path}})는 npm 전역 경로 {{root}} 아래에 없어 npm으로 업데이트할 수 없습니다. 설치한 도구로 업데이트하거나, 링크된 체크아웃이면 다시 링크하세요 (이 검사를 건너뛰려면 --skip-self를 사용하세요).",
+      "skippedDryRun": "자체 업데이트를 건너뜁니다 (--dry-run).",
+      "reexec": "↻ 업데이트된 CLI(v{{version}})로 `omcustom {{command}}`를 다시 시작합니다...",
       "reexecVersionMismatch": "⚠ v{{installed}}를 설치했지만 이 명령을 실행 중인 omcustom 바이너리는 v{{binary}}입니다 (npm이 다른 위치에 설치했을 수 있습니다). 이 바이너리를 관리하는 npm으로 `npm install -g {{package}}@latest`를 실행하세요.",
-      "reexecVersionUnknown": "⚠ v{{installed}}를 설치했지만 이 명령을 실행 중인 omcustom 바이너리의 버전을 확인할 수 없습니다 (이 프로세스는 v{{current}}를 로드했습니다). 이 바이너리를 관리하는 npm으로 `npm install -g {{package}}@latest`를 실행하세요.",
-      "reexecSpawnFailed": "⚠ 업데이트된 CLI로 다시 시작하지 못했습니다: {{error}}"
+      "reexecVersionUnknown": "⚠ v{{installed}}를 설치했지만 이 명령을 실행 중인 omcustom 바이너리의 버전을 확인할 수 없습니다 (이 프로세스는 v{{current}}를 로드했습니다). 이 바이너리를 관리하는 npm으로 `npm install -g {{package}}@latest`를 실행하세요."
     },
     "init": {
       "description": "현재 디렉토리에 oh-my-customcode 초기화",
@@ -135,7 +132,7 @@
       "componentFailed": "✗ {{component}} 실패: {{error}}",
       "preservedFiles": "사용자 커스터마이징 파일 {{count}}개 보존됨",
       "orphansMoved": "oh-my-customcode가 더 이상 배포하지 않는 파일 {{count}}개를 백업으로 옮겼습니다: {{path}}",
-      "orphansRestoreHint": "파일을 되돌리려면 백업에서 프로젝트의 같은 경로로 다시 옮기세요(백업의 'claude/' 같은 맨 앞 폴더는 '.claude/'에 해당합니다). 되돌린 파일은 더 이상 설치된 파일로 추적되지 않으므로, 계속 사용하려면 .omcustomrc.json의 'preserveFiles'에 그 경로를 추가하세요. 그러면 update가 경고 없이 남겨 둡니다.",
+      "orphansRestoreHint": "파일을 되돌리려면 백업에서 프로젝트의 같은 경로로 다시 옮기세요(백업의 'claude/' 같은 맨 앞 폴더는 '.claude/'에 해당하고, CLAUDE.md, CLAUDE.local.md, AGENTS.md는 '.backup' 접미사가 붙어 저장되므로 되돌릴 때 접미사를 지우세요). 되돌린 파일은 더 이상 설치된 파일로 추적되지 않으므로, 계속 사용하려면 .omcustomrc.json의 'preserveFiles'에 그 경로를 추가하세요. 그러면 update가 경고 없이 남겨 둡니다.",
       "orphansWouldMove": "oh-my-customcode가 더 이상 배포하지 않는 파일 {{count}}개를 백업({{path}})으로 옮길 예정입니다:",
       "orphansKeptByPreserveSettings": "보존 설정에 따라 남겨 둔 폐기된 템플릿 파일 {{count}}개",
       "orphansPreserved": "oh-my-customcode가 더 이상 배포하지 않는 파일 {{count}}개를 남겨 두었습니다(사유는 경고 참조). 더 이상 필요 없으면 직접 삭제하세요:",
@@ -164,10 +161,7 @@
       "interactiveUpdating": "선택된 프로젝트 업데이트 중...",
       "projectLatestSuffix": "(최신)",
       "newVersionAvailable": "[정보] oh-my-customcode v{{latest}} 사용 가능 (현재: v{{current}}). 'npm i -g oh-my-customcode'를 실행하여 업그레이드하세요.",
-      "selfUpdateDone": "✓ oh-my-customcode 업데이트 완료 ({{from}} → {{to}})",
       "selfUpdateFailed": "⚠ 자체 업데이트 확인 실패 — 외부 업데이트를 계속 진행합니다",
-      "selfUpdateReexec": "↻ 새 CLI(v{{version}})로 재실행 중...",
-      "reexecArgvMissing": "⚠ 재실행 불가: process.argv[1]이 비어있습니다 — 재실행 없이 계속합니다",
       "allProjectSkippedSource": "  ℹ 스킵: {{name}} (소스 프로젝트는 자체 업데이트할 수 없음)",
       "codexMissing": "[Codex] Codex CLI가 설치되지 않았습니다. 설치를 시도합니다...",
       "codexInstalled": "[Codex] ✓ Codex CLI 설치 완료"
@@ -281,7 +275,7 @@
           "unmodified": "{{path}} — 수정되지 않은 잔여물입니다. 'omcustom update'가 백업(.omcustom-backup-<timestamp>/retired/)으로 옮깁니다",
           "unowned": "{{path}} — 배포된 버전과 내용이 같지만 'omcustom update'는 이 파일을 유지합니다(lockfile이 이 내용으로 기록하지 않았거나 소유한 일반 파일이 아님). 직접 삭제하세요",
           "preserved": "{{path}} — 보존 설정 때문에 유지되는 잔여물입니다. 직접 삭제하거나 보존 설정에서 의도적으로 제외하세요",
-          "rtk": "{{path}} — 폐기된 RTK 파일입니다. 제거 여부는 'omcustom update'가 결정합니다('.claude/settings*.json'의 자체 RTK 훅 연결은 자동으로 제거한 뒤, lockfile이 수정 없이 소유한 파일만 제거합니다. 파일이 수정되었거나 보존 설정 대상이거나, 해당 설정에 사용자가 추가했거나 인식되지 않는 rtk-intercept.sh 연결이 남아 있거나, 설정 파일을 파싱할 수 없으면 유지합니다). 'omcustom update'를 실행하고 RTK 보고를 확인하세요",
+          "rtk": "{{path}} — 폐기된 RTK 파일입니다. 'omcustom update'를 실행하면 RTK 잔여물(스킬 디렉터리와 훅 스크립트)을 백업 없이 삭제하고, 수정되었거나 보존 설정 대상이어도 삭제하며, '.claude/settings*.json'의 RTK 훅 연결도 제거합니다",
           "modified": "{{path}} — 수정된 잔여물입니다. 내용을 검토한 뒤 직접 삭제하세요",
           "loadFailed": "Orphans 검사를 실행하지 못했습니다: {{reason}}"
         }

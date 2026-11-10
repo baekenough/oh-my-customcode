@@ -1,9 +1,10 @@
 ---
 title: "Python Guide"
 type: guide
-updated: 2026-10-06
+updated: 2026-11-10
 sources:
   - guides/python/pep8-style-guide.md
+  - guides/python/modern-python-practices.md
 related:
   - [[lang-python-expert]]
   - [[python-best-practices]]
@@ -26,6 +27,7 @@ Covers PEP 8 style guide (indentation, line length, imports, naming), Pythonic i
 - Comprehensions vs generator expressions
 - `pathlib` over `os.path`, f-strings over `.format()`
 - `pytest` patterns and fixtures
+- Modern practices (companion to `python-best-practices`): `X | None` and built-in generics, PEP 695 type parameters (3.12+), lazy annotations (3.14+); explicit `encoding="utf-8"` (UTF-8 mode default from 3.15); tooling defaults (`pyproject.toml`, uv, ruff, mypy, pytest) as non-mandatory; version-gated features (free-threaded build, t-strings 3.14+, `lazy import` 3.15+) — check `requires-python` first
 
 ## Relationships
 
@@ -36,3 +38,4 @@ Covers PEP 8 style guide (indentation, line length, imports, naming), Pythonic i
 ## Sources
 
 - `guides/python/pep8-style-guide.md` — PEP 8 conventions, indentation, naming, imports
+- `guides/python/modern-python-practices.md` — type hints, text encoding, tooling, version-gated language features

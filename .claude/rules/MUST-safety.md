@@ -96,6 +96,10 @@ Before delegating ANY destructive git command (the table above), the orchestrato
 
 사용자가 지목한 증상뿐 아니라 의도된 미커밋 편집까지 전부 열거하고, 가능하면 `git stash` 등 비파괴적 대안을 우선합니다.
 
+사용자가 승인한 비가역 삭제(원격 `sudo rm` 등)를 위임할 때는 사용자에게 정확한 대상 + 바로 실행 가능한 `!` 명령 + 가역 대안(보관 이동·휴지통)을 미리 함께 제시하고, 분류기가 1회 차단하면 다른 경로로 재시도하지 않고 그 `!` 명령을 제시합니다(#1947).
+
+삭제 명령(`rm` 등)이 안전 래퍼(`trash` alias/함수 등)로 해석되면 래퍼를 쓰거나 보고합니다 — `command rm`·`\rm`·`/bin/rm`으로 우회하지 않으며 위임서 금지 문구에 포함합니다(#1947).
+
 <!-- DETAIL: enumerate all affected work
 Enumerate ALL affected work — intended uncommitted edits (rule changes, new skills/guides) count too, not just the symptom the user named. Prefer a non-destructive alternative (`git stash`) when the user's goal (e.g., "reach remote state") can be met without permanent loss.
 -->
@@ -174,11 +178,12 @@ Cross-reference: the Ask-before-scan note above (discovery scans), R010 Subagent
 > Origin: #1335 ④ — with a standing user constraint "절대 시크릿 건드리지 마" plus a classifier block, an `.env.local` edit (DATABASE_URL, LLM_MAX_TOKENS) was retried and blocked repeatedly instead of handing the edit to the user.
 -->
 
-When the user has a STANDING "don't touch X" constraint AND the safety classifier blocks an action on X even once, immediately switch to the `!` user-runs pattern — surface the exact command for the user to run themselves — and do NOT retry the blocked edit. A standing deny + one classifier trip is a hard signal to delegate to the user, not to find another path in.
+When the user has a STANDING "don't touch X" constraint AND the safety classifier blocks an action on X even once, immediately switch to the `!` user-runs pattern — surface the exact command for the user to run themselves — and do NOT retry the blocked edit. A standing deny + one classifier trip is a hard signal to delegate to the user, not to find another path in. An approved irreversible deletion blocked once (no standing deny) also takes the `!` path (#1947) — see the Pre-Delegation paragraph above and the last row below.
 
 | Anti-pattern | Required |
 |--------------|----------|
 | Retry a blocked edit on a user-deny-listed path via a different mechanism | Stop after the first block; emit the command for the user to run via `!` and wait |
+| 사용자가 승인한 비가역 삭제 위임이 분류기에 1회 차단됨(상시 거부 없음)에도 다른 경로로 재시도 | 첫 차단에서 중단, 정확한 대상 + `!` 명령 + 가역 대안을 제시하고 대기(#1947) |
 
 Cross-reference: R010 STOP Protocol(2-trip), R015 Retry Discipline, R002 permission tiers.
 

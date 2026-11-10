@@ -524,7 +524,7 @@ describe('checkOrphans', () => {
       const detail = result?.details?.[0] ?? '';
       expect(detail).toContain(RTK_SKILL);
       expect(detail).toContain('retired RTK file');
-      expect(detail).toContain("'omcustom update' and read its RTK report");
+      expect(detail).toContain("'omcustom update' — it deletes RTK leftovers");
       expect(detail).not.toContain('modified leftover');
       expect(detail).not.toContain('delete it manually');
     });
@@ -585,7 +585,7 @@ describe('checkOrphans', () => {
       expect(result?.details?.[0]).toContain("'omcustom update' moves it to a backup");
     });
 
-    it('has Korean text for the RTK class without a removal promise', async () => {
+    it('has Korean text for the RTK class that says update deletes it', async () => {
       await initI18n('ko');
       try {
         await writeRetiredList([{ path: RTK_SKILL, sha256: [sha256(SHIPPED_CONTENT)] }]);
@@ -596,6 +596,7 @@ describe('checkOrphans', () => {
         const detail = result?.details?.[0] ?? '';
         expect(detail).toContain(RTK_SKILL);
         expect(detail).toContain('RTK');
+        expect(detail).toContain('삭제');
         expect(detail).not.toContain('{{');
       } finally {
         await initI18n('en');

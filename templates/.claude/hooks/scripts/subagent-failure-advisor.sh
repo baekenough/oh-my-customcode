@@ -22,6 +22,11 @@ command -v jq >/dev/null 2>&1 || exit 0
 #   https://github.com/baekenough/oh-my-customcode/issues/1775#issuecomment-6405197553).
 #   Other fields (tool_input sub-fields, duration_ms, tool_use_id, hook_event_name, ...) come from
 #   the PostToolUseFailure input table in https://code.claude.com/docs/en/hooks.md, not measured.
+# When it fires (#1912 probe, CC 2.1.318, `claude -p`, haiku, hooks wired through a separate --settings file, scratch cwd):
+#   fired for an unknown subagent_type (spawn error) and for an API error after SubagentStart (custom agent with an
+#   invalid model ID; error "Agent terminated early due to an API error: ..."); did NOT fire when a subagent exhausted
+#   maxTurns (CC reported PostToolUse status=completed, failed=0). Not observed: interactive sessions, failure after
+#   several successful turns (e.g. 529), background subagents that fail after starting.
 # Output: stdout JSON {"hookSpecificOutput":{"hookEventName":"PostToolUseFailure",
 #   "additionalContext": "..."}} -- observed as delivered to the model (weak evidence, see above).
 #   Never a `decision` field; the only explicit exit is exit 0. Silent for interrupts, non-Agent/Task tools,

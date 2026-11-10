@@ -17,15 +17,14 @@ input=$(cat)
 if command -v jq >/dev/null 2>&1; then
   command_text=$(printf '%s\n' "$input" | jq -r '.tool_input.command // ""' 2>/dev/null)
 elif command -v python3 >/dev/null 2>&1; then
-  command_text=$(INPUT_JSON="$input" python3 - <<'PY' 2>/dev/null
-import json, os
+  # python3 -c, not a here-doc: bash 3.2 backs a here-doc with a temp file, which fails under `ulimit -f 0`
+  # ("cannot create temp file for here document: File too large", measured) and loses the advisory.
+  command_text=$(INPUT_JSON="$input" python3 -c 'import json, os
 try:
-    data = json.loads(os.environ.get('INPUT_JSON', ''))
-    print(data.get('tool_input', {}).get('command', ''))
+    data = json.loads(os.environ.get("INPUT_JSON", ""))
+    print(data.get("tool_input", {}).get("command", ""))
 except Exception:
-    print('')
-PY
-)
+    print("")' 2>/dev/null)
 else
   command_text=""
 fi
@@ -112,7 +111,7 @@ if [ -n "$matched" ]; then
   case "$violation_count" in ''|*[!0-9]*) violation_count=0 ;; esac
   # Count line once per session: count >= 3 AND the atomic marker mkdir wins (parallel-safe).
   if [ "${violation_count:-0}" -ge 3 ] && { mkdir "/tmp/.claude-destructive-git-threshold-${PPID}"; } 2>/dev/null; then
-    add "[Hook] Destructive git warnings: ${violation_count} this session (advisory telemetry; R021 promotion needs user approval)"
+    add "[Hook] First-tier destructive git warnings: ${violation_count} this session (second-tier warnings are emitted and recorded but not counted; advisory telemetry; R021 promotion needs user approval)"
   fi
 fi
 

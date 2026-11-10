@@ -38,6 +38,9 @@ command -v jq >/dev/null 2>&1 || exit 0
 # that gap today: SubagentStop payload carries no failure signal;
 # subagent-failure-advisor.sh reads `.error` from PostToolUseFailure (Agent/Task) payloads,
 # not from SubagentStop, so this recorder still has no failure hand-off (#1656 G, #1775).
+# #1912 probe (CC 2.1.318, `claude -p`, haiku): SubagentStop fired only for the normally completed run, not for the
+# maxTurns-exhausted runs or the API-error run, and PostToolUseFailure fired for spawn and API errors but not for
+# maxTurns exhaustion. Interactive sessions and background subagents were not observed.
 
 input=$(cat)
 

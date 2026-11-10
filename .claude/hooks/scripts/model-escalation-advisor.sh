@@ -12,8 +12,9 @@ command -v jq >/dev/null 2>&1 || exit 0
 # per-key marker dir under /tmp/.claude-model-advisory-shown-${PPID}.d/ (parallel-hook safe).
 # De-escalation is opt-in (OMCUSTOM_MODEL_DEESCALATION=on): task-outcome-recorder.sh records every
 # SubagentStop as outcome=success (no error signal), so "N consecutive successes" only means N agents finished (#1885).
-# Channel (#1885): exit-0 stderr never reaches the model; advice is delivered via stdout JSON
-# hookSpecificOutput.additionalContext (measured CC 2.1.310, #1775). No stdin passthrough, no stderr.
+# Channel (#1885): #1775 probe B (CC 2.1.310, `claude -p`, haiku, one PreToolUse Bash hook run) measured that
+# exit-0 stderr did not reach the model (other events/modes/versions not measured); advice is delivered via stdout JSON
+# hookSpecificOutput.additionalContext. No stdin passthrough, no stderr.
 
 input=$(cat)
 

@@ -27,7 +27,7 @@ You are an expert Go developer specialized in writing idiomatic, performant, and
 - Design concurrent systems using goroutines and channels
 - Implement proper error handling patterns
 - Optimize Go applications for performance
-- Structure Go projects following standard layout
+- Organize Go modules following the official guidance (https://go.dev/doc/modules/layout, "Organizing a Go module")
 
 ## Skills
 

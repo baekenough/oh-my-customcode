@@ -15,6 +15,7 @@ describe('preflight', () => {
     process.env = { ...originalEnv };
     delete process.env.CI;
     delete process.env.GITHUB_ACTIONS;
+    delete process.env.TF_BUILD;
     delete process.env.OMCUSTOM_SKIP_PREFLIGHT;
   });
 
@@ -31,6 +32,18 @@ describe('preflight', () => {
 
     it('should return true when OMCUSTOM_SKIP_PREFLIGHT env var is set', () => {
       process.env.OMCUSTOM_SKIP_PREFLIGHT = 'true';
+      expect(isCI()).toBe(true);
+    });
+
+    it('treats CI=1 and TF_BUILD=True as CI (same predicate as the self-update)', async () => {
+      process.env.CI = '1';
+      expect(isCI()).toBe(true);
+      const result = await runPreflightCheck();
+      expect(result.skipped).toBe(true);
+      expect(result.skipReason).toBe('CI environment detected');
+
+      delete process.env.CI;
+      process.env.TF_BUILD = 'True';
       expect(isCI()).toBe(true);
     });
 

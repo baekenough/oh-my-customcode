@@ -1,7 +1,7 @@
 ---
 title: mgr-gitnerd
 type: agent
-updated: 2026-11-09
+updated: 2026-11-10
 sources:
   - .claude/agents/mgr-gitnerd.md
   - .claude/skills/pipeline/workflows/auto-dev.yaml
@@ -196,3 +196,4 @@ commit dispatcher는 source 정정·영향 재검증 뒤 mandatory source Sauron
 - Sync check 2026-11-05 (v2.0.14, #1906 A-3): `auto-dev.yaml` (a source here) now states that `mgr-gitnerd` writes the release-notes file with its Write tool (release step 2 and the non-npm `gh release create --notes-file` path) and that the orchestrator does not write it (R010 "Exception: Simple Tasks"), plus a `rule-deletion-guard.sh` Bash-command caution and `--body-file` delegation guidance (#1900); this page does not state the notes-file writer or those clauses, so no body change. The dated `:1012` anchor above is commit-pinned and unchanged.
 - Sync check 2026-11-06 (v2.0.16, #1910, #1911): `auto-dev.yaml` (a source here) gained a persistent-`cd` substitute-forms bullet, a decision-comment clause, `verify-text-edit.sh` pointers, a separate CC-note comparison delegation, a verify-build omission condition with `/tmp/` counting, Standard block item (5) and a deep-verify platform axis; this page does not state these, so no body change. The dated `:1012` anchor above is commit-pinned and unchanged.
 - Sync check 2026-11-09 (v2.0.18, #1917): `auto-dev.yaml` (a source here) reworded its decision-comment bullet, the `--comments` clause, the `verify-text-edit.sh` input-difference note, the cc-note-compare file location, Standard block item (5), the marker-count block and the `docker run` measurement wording; this page does not state these, so no body change. The dated `:1012` anchor above is commit-pinned and unchanged.
+- Sync check 2026-11-10 (v2.0.22, #1930, #1933): `auto-dev.yaml` (a source here) now states that a "[Merge Without Review]" safety-classifier denial at the spawn delegating the release PR merge to this agent is the expected path: the orchestrator stops, does not retry or reroute the delegation, and shows the user `! gh pr merge <N> --merge` (no `--admin`, no `--delete-branch`, because auto-tag.yml deletes the merged release branch). It also requires delegation prompts to report the count of top-level `cd` used (#1922 P3).

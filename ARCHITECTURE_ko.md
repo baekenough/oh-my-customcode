@@ -143,7 +143,7 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 
 | 이벤트 | 스크립트 / 핸들러 | 목적 |
 |--------|------------------|------|
-| SessionStart | session-env-check.sh, stale-todo-scanner.sh, claude-md-reinject.sh (matcher `compact`) | codex CLI + Agent Teams 가용성 감지; 오래된 TODO 스캔; 압축 재진입 시 CLAUDE.md 재주입 |
+| SessionStart | omcustom-auto-update.sh, session-env-check.sh, stale-todo-scanner.sh, adaptive-harness-scan.sh, session-autofix.sh, plugin-cache-check.sh, claude-md-reinject.sh (matcher `compact`) | oh-my-customcode 업데이트 확인 및 안내; codex CLI + Agent Teams 가용성 감지; 오래된 TODO 스캔; 프로젝트 프로파일 스탈 여부 확인; 이전 세션 문제 감지(미커밋 변경, 템플릿 동기화, 카운트, 위키 스탈); node_modules가 없는 공유 플러그인 캐시 감지; 압축 재진입 시 CLAUDE.md 재주입 |
 | PreToolUse (Write/Edit) | stage-blocker.sh | implement 단계 외 쓰기 차단 |
 | PreToolUse (Bash dev server) | 인라인 스크립트 | 어드바이저리(항상 exit 0): tmux/백그라운드 밖에서 포그라운드 dev 서버 시작 시 additionalContext 전달 |
 | PreToolUse (Bash) | bash-cd-advisor.sh | 어드바이저리(차단 없음): Bash 명령에 최상위 지속 `cd`가 있으면 additionalContext 전달 |
@@ -382,7 +382,7 @@ MCP 저장은 논블로킹 -- 실패해도 세션 종료를 막지 않습니다.
   <img src="assets/diagrams/10-feedback-loop.png" alt="Feedback Analysis Loop" width="800" />
 </p>
 
-`task-outcome-recorder.sh` 훅(SubagentStop에만 배선)이 서브에이전트 완료를 에이전트 타입별로 기록합니다. SubagentStop에는 실패 신호와 모델 정보가 없으므로 모든 항목은 outcome=success, model "inherit"입니다. 이 원장은 `model-escalation-advisor.sh`와 다른 훅 3종(`feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh`)이 읽으며, 훅 외에도 세션 종료 시 sys-memory-keeper 에이전트, eval-core(`packages/eval-core/src/collect/outcome-parser.ts`의 `parseOutcomeFile`, `eval-core-batch-save.sh`가 `eval-core collect --ppid`로 실행), serve 웹 UI(`packages/serve/src/lib/server/`의 `analytics.ts`와 `eval-reader.ts`, `/tmp/.claude-task-outcomes-*` 파일 전체를 읽음) 등이 읽습니다. 아래에서는 이 용도 중 두 가지를 설명합니다.
+`task-outcome-recorder.sh` 훅(SubagentStop에만 배선)이 서브에이전트 완료를 에이전트 타입별로 기록합니다. SubagentStop에는 실패 신호와 모델 정보가 없으므로 모든 항목은 outcome=success, model "inherit"입니다. 이 원장은 `model-escalation-advisor.sh`와 다른 훅 3종(`feedback-collector.sh`, `eval-core-batch-save.sh`, `skill-extractor-analyzer.sh`)이 읽습니다. `eval-core-batch-save.sh`는 eval-core(`packages/eval-core/src/collect/outcome-parser.ts`의 `parseOutcomeFile`, `eval-core collect --ppid`로 실행)를 통해 읽으므로, eval-core는 별도 독자가 아니라 이 훅의 읽기 경로입니다. 훅 외에도 세션 종료 시 sys-memory-keeper 에이전트, serve 웹 UI(`packages/serve/src/lib/server/`의 `analytics.ts`와 `eval-reader.ts`, `/tmp/.claude-task-outcomes-*` 파일 전체를 읽음) 등이 읽습니다. 아래에서는 이 용도 중 두 가지를 설명합니다.
 
 에이전트 타입의 실패가 2회 이상 기록되었거나 최근 3건의 결과가 모두 실패이면(임계값은 스크립트에 하드코딩되어 있으며 프론트매터 스위치는 없음) 에스컬레이션 어드바이저리(model-escalation-advisor.sh)가 `additionalContext`(모델에 보이는 채널)로 발행되도록(haiku -> sonnet -> opus) 설계되어 있습니다. 그러나 현재 배선에서는 이 경로가 도달 불가능합니다: 레코더가 outcome=success만 기록하므로 실패 횟수는 항상 0입니다. 이 원장에 실패 행을 기록하는 방안은 검토 후 채택하지 않았으므로(#1912) 어드바이저리는 계속 도달할 수 없습니다. 또한 스폰의 `model` 파라미터가 haiku 또는 sonnet일 때만 평가됩니다. 서로 다른 어드바이저리는 세션당 최대 1회만 표시되며(키별 원자적 마커 디렉토리), 이는 마커 디렉토리가 존재하거나 생성 가능할 때에 한합니다. 생성할 수 없으면 호출마다 반복되고(fail-open), 읽기 전용 마커 디렉토리가 미리 있으면 침묵합니다. 디에스컬레이션 어드바이저리는 `OMCUSTOM_MODEL_DEESCALATION=on`일 때만 동작하는 옵트인인데, 레코더가 모든 서브에이전트 완료를 성공으로 기록하여 연속 "성공"이 신호가 되지 못하기 때문입니다. 차단하지 않으며 수용 여부는 오케스트레이터가 결정합니다.
 

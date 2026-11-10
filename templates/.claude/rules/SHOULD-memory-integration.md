@@ -469,7 +469,7 @@ User signals session end
 
 ### Session-End Self-Check (MANDATORY)
 
-(1) sys-memory-keeper가 MEMORY.md 갱신했는가? (2) omcustom-feedback 활성 시, 마찰·학습이 관측되면 모델이 회고 이슈 초안을 Phase 4A 게이트로 제시할 수 있습니다(선택, MAY) — 또는 수동 트리거를 안내합니다. 확인 후 사용자에게 완료 보고합니다.
+(1) sys-memory-keeper가 MEMORY.md 갱신했는가? (2) omcustom-feedback 활성 시, 마찰·학습이 관측되면 모델이 회고 이슈 초안을 Phase 4A 게이트로 제시할 수 있습니다(선택, MAY) — 또는 수동 트리거를 안내합니다. (3) 세션이 띄운 백그라운드 프로세스·SSH 터널의 잔여가 0인지 확인했는가(`pgrep -f <패턴> | wc -l`)? 확인 후 사용자에게 완료 보고합니다.
 
 <!-- DETAIL: session-end self-check full text
 (1) sys-memory-keeper updated MEMORY.md? (2) If `omcustom-feedback` skill is active, model MAY draft a retrospective feedback issue for user approval — or prompt user to trigger it manually. Both required before confirming to user. See full self-check via Read tool.

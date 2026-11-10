@@ -28,6 +28,8 @@ export interface InitCommandOptions extends InitOptions {
    * callers that omit it get the default (enabled).
    */
   agentTeams?: boolean;
+  /** Skip the self-update that runs before init (read by the CLI pre-action hook, #1946). */
+  skipSelf?: boolean;
 }
 
 /**

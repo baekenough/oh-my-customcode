@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 import { Command } from 'commander';
 import { formatPreflightWarnings, runPreflightCheck } from '../core/preflight.js';
 import { unregisterProject } from '../core/registry.js';
-import { maybeHandleSelfUpdateForInit } from '../core/self-update.js';
+import { autoSelfUpdate } from '../core/self-update.js';
 import { detectLanguage, i18n, initI18n } from '../i18n/index.js';
 import { doctorCommand } from './doctor.js';
 import { initCommand } from './init.js';
@@ -28,6 +28,21 @@ import {
 // Read version from package.json
 const require = createRequire(import.meta.url);
 const packageJson = require('../../package.json');
+
+/** Self-update before init; a failure only prints the one-line notice. */
+function runInitSelfUpdate(skip: boolean): void {
+  try {
+    autoSelfUpdate({ currentVersion: packageJson.version, command: 'init', skip });
+  } catch (error) {
+    console.warn(
+      i18n.t('cli.selfUpdate.autoFailed', {
+        package: 'oh-my-customcode',
+        current: packageJson.version,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+}
 
 /**
  * Creates and configures the CLI program
@@ -53,6 +68,7 @@ export function createProgram(): Command {
     .option('--yes', 'Skip interactive wizard, use defaults')
     .option('--from-snapshot <path>', 'Install from a pre-configured team snapshot directory')
     .option('--no-agent-teams', i18n.t('cli.init.noAgentTeamsOption'))
+    .option('--skip-self', 'Skip self-update of oh-my-customcode package')
     .action(async (options) => {
       await initCommand(options);
     });
@@ -236,10 +252,7 @@ export function createProgram(): Command {
     }
 
     if (cmdName === 'init') {
-      await maybeHandleSelfUpdateForInit({
-        currentVersion: packageJson.version,
-        skip: skipCheck,
-      });
+      runInitSelfUpdate(skipCheck || Boolean(actionCommand.opts().skipSelf));
     }
 
     const result = await runPreflightCheck({ skip: skipCheck });

@@ -5,7 +5,8 @@
  *  1. Detect python3 and verify >= 3.10
  *  2. Detect uv (preferred) or fall back to python3 -m venv
  *  3. Create .venv/ in the project root
- *  4. Install packages/ontology-rag in editable mode
+ *  4. Install packages/ontology-rag: editable from a repo checkout, regular
+ *     (non-editable) from an npm install so upgrades/uninstalls cannot break the venv
  *  5. Verify .venv/bin/python exists post-install
  *  6. Print a clear summary line
  *
@@ -119,24 +120,43 @@ export function createVenvWithPython3(targetDir: string): void {
 }
 
 /**
- * Install the local `packages/ontology-rag` package in editable mode.
- *
- * The package root is resolved via `getPackageRoot()` so this works both in
- * the monorepo development layout and when installed as an npm package.
+ * Whether the package root sits inside a `node_modules` directory, i.e. the CLI
+ * runs from an npm install rather than a repository checkout.
  */
-export function installOntologyRagEditable(targetDir: string, useUv: boolean): void {
-  const packageRoot = getPackageRoot();
-  const ontologyPkgPath = join(packageRoot, 'packages', 'ontology-rag');
+export function isNpmInstalledPackageRoot(packageRoot: string): boolean {
+  return packageRoot.split(/[\\/]/).includes('node_modules');
+}
+
+/** Absolute path of the bundled ontology-rag Python package. */
+export function resolveOntologyRagPath(packageRoot: string = getPackageRoot()): string {
+  return join(packageRoot, 'packages', 'ontology-rag');
+}
+
+/**
+ * Install the bundled `packages/ontology-rag` package into the project .venv.
+ *
+ * The package root is resolved via `getPackageRoot()`. From a repository
+ * checkout the install is editable. From an npm install it is a regular
+ * (non-editable) install, because an editable install would point the venv at
+ * node_modules and break on the next npm upgrade or uninstall.
+ */
+export function installOntologyRagEditable(
+  targetDir: string,
+  useUv: boolean,
+  packageRoot: string = getPackageRoot()
+): void {
+  const ontologyPkgPath = resolveOntologyRagPath(packageRoot);
+  const editableFlag = isNpmInstalledPackageRoot(packageRoot) ? '' : '-e ';
 
   if (useUv) {
     // Note: ontologyPkgPath is derived from import.meta.url — no user input.
-    execSync(`uv pip install --python .venv/bin/python -e "${ontologyPkgPath}"`, {
+    execSync(`uv pip install --python .venv/bin/python ${editableFlag}"${ontologyPkgPath}"`, {
       cwd: targetDir,
       stdio: 'pipe',
       timeout: INSTALL_TIMEOUT_MS,
     });
   } else {
-    execSync(`.venv/bin/pip install -e "${ontologyPkgPath}"`, {
+    execSync(`.venv/bin/pip install ${editableFlag}"${ontologyPkgPath}"`, {
       cwd: targetDir,
       stdio: 'pipe',
       timeout: INSTALL_TIMEOUT_MS,
@@ -151,8 +171,9 @@ export function installOntologyRagEditable(targetDir: string, useUv: boolean): v
  *  1. Verify python3 >= 3.10 is present
  *  2. Prefer uv; fall back to python3 -m venv when uv is missing
  *  3. Create .venv in targetDir
- *  4. Install packages/ontology-rag editable
- *  5. Verify .venv/bin/python exists
+ *  4. Skip (no uv/pip call) when the ontology-rag sources are missing
+ *  5. Install packages/ontology-rag
+ *  6. Verify .venv/bin/python exists
  *
  * Never throws. Returns a structured result so the caller can print a summary.
  */
@@ -198,7 +219,21 @@ export async function setupOntologyRag(targetDir: string): Promise<OntologyRagSe
     console.warn('Install uv (https://docs.astral.sh/uv/) for faster Python environment setup.');
   }
 
-  // Step 3: Create .venv
+  // Step 3: Bail out before touching uv/pip when the bundled sources are absent
+  const ontologyPkgPath = resolveOntologyRagPath();
+  if (!(await fileExists(join(ontologyPkgPath, 'pyproject.toml')))) {
+    const reason =
+      `ontology-rag sources not found at ${ontologyPkgPath}. ` +
+      'Install manually: uv pip install --python .venv/bin/python <path-to>/packages/ontology-rag';
+    console.warn(`Warning: ${reason}`);
+    return {
+      success: false,
+      statusLine: 'ontology-rag MCP: skipped (install failed)',
+      reason,
+    };
+  }
+
+  // Step 4: Create .venv
   try {
     if (uvAvailable) {
       createVenvWithUv(targetDir);
@@ -216,7 +251,7 @@ export async function setupOntologyRag(targetDir: string): Promise<OntologyRagSe
     };
   }
 
-  // Step 4: Install ontology-rag editable
+  // Step 5: Install ontology-rag (editable from a checkout, regular from npm)
   try {
     installOntologyRagEditable(targetDir, uvAvailable);
   } catch (err) {
@@ -230,7 +265,7 @@ export async function setupOntologyRag(targetDir: string): Promise<OntologyRagSe
     };
   }
 
-  // Step 5: Verify .venv/bin/python is present
+  // Step 6: Verify .venv/bin/python is present
   const venvPython = join(targetDir, '.venv', 'bin', 'python');
   const venvReady = await fileExists(venvPython);
 

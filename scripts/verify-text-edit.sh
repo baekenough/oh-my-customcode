@@ -31,14 +31,29 @@
 # Exit codes:
 #   0  all requested checks passed
 #   1  violation: a Korean count > 0, a quotation with count 0, or an empty quotation set (HALT)
-#   2  usage error, missing file, or python3 missing or failing (no check result)
+#   2  usage error, missing file, python3 missing or failing, or a git/awk command failing while the
+#      added lines are collected for --files (no check result)
 #   3  grep and python3 disagree on the Korean counts (investigate the cause, do not dismiss it;
 #      takes precedence over 1)
+#
+# Fail-closed policy (#1929 R-1 L-3): every error that would leave the added-line set unknown ends
+#   in exit 2 with a message, never in a pass. The one deliberate open path is an EMPTY but
+#   successfully collected set (`--stdin` with empty input, `--files` on an unchanged tracked file):
+#   it exits 0 with `added-lines=0` and a WARN, because "nothing was added" is a documented valid
+#   result (pinned by the 'unchanged tracked file' and 'empty stdin' tests); read the WARN.
+#
+# Environment: repository-local GIT_* variables (GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE, ... as set
+#   by git hooks and `git commit -a`) are unset at start, so the git calls below always read
+#   $ROOT's own repository (#1929 R-1 L-4).
 #
 # Locale: measured on macOS (BSD grep 2.6.0-FreeBSD, /bin/bash 3.2) and reported for GNU grep 3.8 in
 #   review R0-1: under `LC_ALL=C` or with LANG/LC_* unset, `이다。` counts line-final 1 in python3 and
 #   0 in grep (`。` is a byte bracket there), so the exit code is 3; under a UTF-8 locale both
-#   give 1. Other hosts were not measured. Run under a UTF-8 LC_CTYPE.
+#   give 1. Re-measured on Linux for #1929 F11 (docker, the three grep commands only, 5 fixtures:
+#   6 반말 positives, 6 합쇼체 negatives, 4 noun-ending positives, 4 negatives, `이다。`): GNU grep 3.8
+#   (Debian 12) and 3.11 (Debian 13) give the same counts as BSD grep under LC_ALL=C.utf8 and under
+#   LC_ALL=C (only `이다。` differs under C: line-final 0, as on macOS). ugrep was not available and
+#   python3 was absent from the images, so the full script was not run on Linux. Run under a UTF-8 LC_CTYPE.
 #
 # Interpretations (see the test file for the fixtures):
 #   - `--files` drops the diff HEADER lines (`+++ b/<path>`) with a header/hunk state machine, so a
@@ -52,8 +67,17 @@
 #     In a repository with no commit yet the comparison base is the empty tree
 #     (`git hash-object -t tree /dev/null`), so the whole working-tree content counts as added.
 #   - `--files` pairs a `git mv`'d file with its source (`git diff -M --name-status`), so only the
-#     lines changed beyond the rename count (pinned by the 'git mv' tests); a plain `mv` is not a
-#     rename: the new path is untracked and counts whole.
+#     lines changed beyond the rename count (pinned by the 'git mv' tests, including under
+#     `diff.renames=false`, which is what makes the two `-M` flags load-bearing); a plain `mv` is not
+#     a rename: the new path is untracked and counts whole. Each pairing is reported as a
+#     `[korean] NOTE: ... rename source ...` line on stderr.
+#     KNOWN LIMIT (#1929 RR-1 Low-1, reproduced): rename detection picks the most similar deleted
+#     file of the WHOLE repository, not the file the author moved. When another deleted file is
+#     more similar to the new file than the true source, the new file is compared against that
+#     partner: a line of the new file that also exists in the unrelated partner counts as
+#     unchanged and is NOT checked (narrow fail-open), while lines inherited from the true source
+#     count as added (fail-closed). The script cannot know the author's intent; check the NOTE
+#     line for the partner.
 #   - `--files` treats an untracked file as fully added (a plain `git diff` shows nothing for it).
 #   - `--files` passes the paths as literal pathspecs (`git --literal-pathspecs`): `[xy].md` is a
 #     file name, not a glob that also matches `x.md`.
@@ -65,6 +89,13 @@
 SCRIPT_DIR="$(cd -P "$(dirname "$0")" >/dev/null 2>&1 && pwd -P)" || exit 2
 ROOT="$(cd -P "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd -P)" || exit 2
 
+# Drop the repository-local GIT_* variables git itself lists (GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE,
+# GIT_OBJECT_DIRECTORY, GIT_CONFIG_*, ...): inherited from a hook they would redirect every git
+# call below away from $ROOT.
+for _v in $(git rev-parse --local-env-vars 2>/dev/null); do
+  unset "$_v"
+done
+
 usage() {
   cat <<'USAGE'
 Usage: verify-text-edit.sh [--stdin | --files <edited-file>...] [--quotes <quotation-file> --target <target-file>]
@@ -72,7 +103,7 @@ Usage: verify-text-edit.sh [--stdin | --files <edited-file>...] [--quotes <quota
   --files   added lines of the given files (git diff HEAD -U0 = HEAD vs working tree; untracked = whole file)
   --quotes  quotation file, one quotation per line; requires --target
   --target  file the quotations are searched in
-Exit: 0 ok | 1 violation / 0-hit or empty quotation set | 2 usage, missing file, or python3 missing or failing | 3 grep/python3 disagree
+Exit: 0 ok | 1 violation / 0-hit or empty quotation set | 2 usage, missing file, or python3 missing or failing (also a failing git/awk step) | 3 grep/python3 disagree
 USAGE
 }
 
@@ -128,8 +159,18 @@ fi
 
 rc=0
 tmp=""
+extra_tmps=()
 cleanup() {
+  local t
   [ -z "$tmp" ] || command rm -f "$tmp"
+  for t in "${extra_tmps[@]}"; do
+    command rm -f "$t"
+  done
+}
+# Sets NEWTMP (a function call in $(...) would lose the registration for cleanup).
+new_tmp() {
+  NEWTMP="$(mktemp "${TMPDIR:-/tmp}/verify-text-edit.XXXXXX")" || return 1
+  extra_tmps+=("$NEWTMP")
 }
 trap cleanup EXIT
 trap 'exit 130' HUP INT TERM
@@ -170,11 +211,20 @@ collect_added_from_files() {
   # A `git mv`'d file: with only the new path in the pathspec git cannot see the rename and the
   # whole old content would count as added. Add the source path of every rename (-M) whose target
   # is one of the given files. `--relative` and ls-files both give paths relative to $ROOT.
+  # Every git/awk step writes to a file and its exit status is checked: a failure (corrupt object,
+  # unreadable index, missing awk) must end in exit 2, not in an empty set that reads as a pass.
+  local disc raw irc
   if [ "${#tracked[@]}" -gt 0 ]; then
     local given=() name st src dst
+    new_tmp || { echo "verify-text-edit: mktemp failed - no check result" >&2; exit 2; }
+    disc="$NEWTMP"
+    git --literal-pathspecs -C "$ROOT" ls-files -z -- "${tracked[@]}" > "$disc" \
+      || { echo "verify-text-edit: git ls-files failed - no check result" >&2; exit 2; }
     while IFS= read -r -d '' name; do
       given+=("$name")
-    done < <(git --literal-pathspecs -C "$ROOT" ls-files -z -- "${tracked[@]}")
+    done < "$disc"
+    git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff -M --relative --name-status -z "$base" > "$disc" \
+      || { echo "verify-text-edit: git diff (rename discovery) failed - no check result" >&2; exit 2; }
     while IFS= read -r -d '' st && IFS= read -r -d '' src; do
       case "$st" in
         R*|C*) IFS= read -r -d '' dst || break ;;
@@ -183,19 +233,26 @@ collect_added_from_files() {
       for name in "${given[@]}"; do
         if [ "$name" = "$dst" ]; then
           tracked+=("$src")
+          printf '[korean] NOTE: %s is compared against its rename source %s\n' "$dst" "$src" >&2
           break
         fi
       done
-    done < <(git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff -M --relative --name-status -z "$base")
+    done < "$disc"
   fi
-  {
-    if [ "${#tracked[@]}" -gt 0 ]; then
-      git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff -M -U0 "$base" -- "${tracked[@]}"
-    fi
-    for f in "${untracked[@]}"; do
-      git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff --no-index -U0 -- /dev/null "$f"
-    done
-  } | awk '/^diff /{h=1; next} /^@@/{h=0; next} h==0 && /^\+/{print}'
+  new_tmp || { echo "verify-text-edit: mktemp failed - no check result" >&2; exit 2; }
+  raw="$NEWTMP"
+  if [ "${#tracked[@]}" -gt 0 ]; then
+    git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff -M -U0 "$base" -- "${tracked[@]}" > "$raw" \
+      || { echo "verify-text-edit: git diff failed - no check result" >&2; exit 2; }
+  fi
+  for f in "${untracked[@]}"; do
+    # --no-index implies --exit-code: 1 = differences (expected), >1 = error
+    git --literal-pathspecs -C "$ROOT" diff --no-color --no-ext-diff --no-index -U0 -- /dev/null "$f" >> "$raw"
+    irc=$?
+    [ "$irc" -le 1 ] || { echo "verify-text-edit: git diff --no-index failed for $f (exit $irc) - no check result" >&2; exit 2; }
+  done
+  awk '/^diff /{h=1; next} /^@@/{h=0; next} h==0 && /^\+/{print}' "$raw" \
+    || { echo "verify-text-edit: awk failed - no check result" >&2; exit 2; }
 }
 
 if [ -n "$mode" ]; then

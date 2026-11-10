@@ -211,6 +211,8 @@ describe('printUpdateResults orphan retirement output', () => {
     expect(i18n.t('cli.update.orphansMoved', { count: '3', path: PATTERN })).toContain(PATTERN);
     expect(i18n.t('cli.update.orphansWouldMove', { count: '3', path: PATTERN })).toContain(PATTERN);
     expect(i18n.t('cli.update.orphansRestoreHint')).toContain("'.claude/'");
+    expect(i18n.t('cli.update.orphansRestoreHint')).toContain("'.backup'");
+    expect(i18n.t('cli.update.orphansRestoreHint')).toContain('CLAUDE.md');
     expect(i18n.t('cli.update.orphansRestoreHint')).not.toBe('cli.update.orphansRestoreHint');
   });
 
@@ -231,6 +233,8 @@ describe('printUpdateResults orphan retirement output', () => {
       await initI18n(locale);
       const hint = i18n.t('cli.update.orphansRestoreHint');
       expect(hint).toContain("'preserveFiles'");
+      expect(hint).toContain('.backup');
+      expect(hint).toContain('AGENTS.md');
       expect(hint).toContain('.omcustomrc.json');
       expect(hint).toContain("'.claude/'");
       expect(hint).not.toMatch(/delet|삭제/i);

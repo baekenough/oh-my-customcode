@@ -60,7 +60,11 @@ fi
 
 # ── 조건 1: 짧은 발화만 대상 (긴 발화는 이미 맥락을 담고 있다고 본다) ──
 # 실측 p75가 27자이므로 40자를 상한으로 둔다.
-if [ "${#prompt}" -gt 40 ]; then
+# Count characters, not bytes, independent of the caller's locale: bash `${#prompt}` counts bytes
+# under C/POSIX/unset LANG (measured: ASCII 37 + Hangul 3 = 46 under `env -i`, 40 under UTF-8).
+# Under LC_ALL=C, deleting UTF-8 continuation bytes (0x80-0xBF) leaves one byte per character.
+prompt_chars=$(printf '%s' "$prompt" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' ')
+if [ "${prompt_chars:-0}" -gt 40 ]; then
   exit 0
 fi
 

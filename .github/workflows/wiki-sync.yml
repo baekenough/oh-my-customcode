@@ -56,7 +56,9 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: latest
+          # Pin via .bun-version when present; fall back to latest silently when the file is absent (user projects)
+          bun-version: ${{ hashFiles('.bun-version') == '' && 'latest' || '' }}
+          bun-version-file: .bun-version
 
       - name: Install verification dependencies
         run: bun install --frozen-lockfile --ignore-scripts

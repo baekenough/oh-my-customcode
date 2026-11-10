@@ -1,7 +1,7 @@
 ---
 title: Scout
 type: skill
-updated: 2026-10-25
+updated: 2026-11-10
 sources:
   - .claude/skills/scout/SKILL.md
 related:
@@ -25,6 +25,8 @@ Phase 3 분석 담당자가 Write로 기존 제목 형식까지 완성한 title/
 제목 원본 bytes의 NUL·CR·내부/추가 LF·빈 값·space/tab-only를 거부하며 마지막 LF 0개/1개와 의미 있는 공백을 유지하십시오. 본문은 regular file 읽기와 NUL 부재를 확인한 뒤 quoted title argv와 body-file로 제출하십시오. Write-produced UTF-8 텍스트의 구조 검사이며 범용 UTF-8 검증은 아닙니다. 기존 적합성 평가·추천·제목·label 선택과 단계 순서를 바꾸지 마십시오. 도구·읽기·구조 오류는 중단하고 자기 문안 파일만 정리하십시오.
 
 [source Phase 4와 Model Assignment](../../.claude/skills/scout/SKILL.md)의 writer/submit 분리를 참고하십시오.
+
+The skill's byte-dump snippet cleans up its `mktemp` file with `trap '[ -e "$byte_dump" ] && rm "$byte_dump"' 0`: no `-f` and no `command rm`, so a safety-wrapped `rm` (such as `trash`) is used as is (#1947).
 
 ## Key Details
 

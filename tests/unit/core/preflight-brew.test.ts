@@ -150,7 +150,7 @@ describe('preflight - Homebrew integration', () => {
             ],
             formulae: [],
           }),
-          'npx claude-code --version': () => {
+          'claude --version': () => {
             throw new Error('npx failed');
           },
           'brew outdated --json=v2': JSON.stringify({ casks: [], formulae: [] }),
@@ -242,7 +242,7 @@ describe('preflight - Homebrew integration', () => {
             casks: [],
             formulae: [],
           }),
-          'npx npm-tool --version': '4.5.6\n',
+          'npm-tool --version': '4.5.6\n',
           'brew outdated --json=v2': JSON.stringify({ casks: [], formulae: [] }),
         })
       );
@@ -259,12 +259,48 @@ describe('preflight - Homebrew integration', () => {
       expect(tool.installMethod).toBe('npm');
     });
 
+    it('runs the claude binary for claude-code and never spawns a download-capable npx', async () => {
+      execSyncMock.mockImplementation(
+        createExecSyncMock({
+          'which brew': '/opt/homebrew/bin/brew\n',
+          'brew info --json=v2 claude-code': JSON.stringify({ casks: [], formulae: [] }),
+          'claude --version': '2.1.296 (Claude Code)\n',
+          'brew outdated --json=v2': JSON.stringify({ casks: [], formulae: [] }),
+        })
+      );
+
+      const result = await runPreflightCheck({ tools: ['claude-code'] });
+
+      const tool = result.tools[0];
+      expect(tool.installed).toBe(true);
+      expect(tool.currentVersion).toBe('2.1.296');
+      const commands = execSyncMock.mock.calls.map((call: unknown[]) => String(call[0]));
+      expect(commands).toContain('claude --version');
+      expect(commands.some((command: string) => /\bnpx\b/.test(command))).toBe(false);
+    });
+
+    it('does not spawn npx when the executable is missing either', async () => {
+      execSyncMock.mockImplementation(
+        createExecSyncMock({
+          'which brew': '/opt/homebrew/bin/brew\n',
+          'brew info --json=v2 claude-code': JSON.stringify({ casks: [], formulae: [] }),
+          'brew outdated --json=v2': JSON.stringify({ casks: [], formulae: [] }),
+        })
+      );
+
+      const result = await runPreflightCheck({ tools: ['claude-code'] });
+
+      expect(result.tools[0].installed).toBe(false);
+      const commands = execSyncMock.mock.calls.map((call: unknown[]) => String(call[0]));
+      expect(commands.some((command: string) => /\bnpx\b/.test(command))).toBe(false);
+    });
+
     it('should handle npx failure', async () => {
       execSyncMock.mockImplementation(
         createExecSyncMock({
           'which brew': '/opt/homebrew/bin/brew\n',
           'brew info --json=v2 missing-tool': JSON.stringify({ casks: [], formulae: [] }),
-          'npx missing-tool --version': () => {
+          'missing-tool --version': () => {
             throw new Error('npx failed');
           },
           'brew outdated --json=v2': JSON.stringify({ casks: [], formulae: [] }),
@@ -764,7 +800,7 @@ describe('preflight - Homebrew integration', () => {
             formulae: [],
           }),
           'brew info --json=v2 missing-tool': JSON.stringify({ casks: [], formulae: [] }),
-          'npx missing-tool --version': () => {
+          'missing-tool --version': () => {
             throw new Error('npm command failed');
           },
           'brew outdated --json=v2': JSON.stringify({ casks: [], formulae: [] }),

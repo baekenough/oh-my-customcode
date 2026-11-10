@@ -8,11 +8,16 @@
  * 3. Interactive (TTY, no --all): checkbox UI to select which projects to update
  */
 
-import { constants as osConstants } from 'node:os';
+import { realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 
 import packageJson from '../../package.json';
-import { checkSelfUpdate, executeSelfUpdate } from '../core/self-update.js';
+import {
+  type AutoSelfUpdateOptions,
+  autoSelfUpdate,
+  checkSelfUpdate,
+} from '../core/self-update.js';
 import {
   type OrphanRemovalConfirmation,
   type UpdateComponent,
@@ -20,6 +25,7 @@ import {
   update,
 } from '../core/updater.js';
 import { i18n } from '../i18n/index.js';
+import { isCiEnvironment } from '../utils/ci.js';
 
 /**
  * CLI options for the update command
@@ -56,17 +62,8 @@ export interface UpdateCommandOptions {
 }
 
 /**
- * Whether a CI variable marks a CI run: set and not empty, `false` or `0` (case-insensitive,
- * surrounding spaces ignored), so `CI=false` or `CI=0` on a developer machine still asks.
- */
-function isCiFlagSet(value: string | undefined): boolean {
-  const normalized = (value ?? '').trim().toLowerCase();
-  return normalized !== '' && normalized !== 'false' && normalized !== '0';
-}
-
-/**
  * Whether to ask before moving retired template files to a backup (#1941): only when both stdin
- * and stdout are terminals, outside CI (`CI`/`GITHUB_ACTIONS`, see {@link isCiFlagSet}), and not
+ * and stdout are terminals, outside CI (see {@link isCiEnvironment}), and not
  * for `--all`, `--dry-run` or `--yes`. Otherwise they are moved when every safety condition holds.
  */
 export function shouldConfirmOrphanRemoval(
@@ -74,7 +71,7 @@ export function shouldConfirmOrphanRemoval(
   env: NodeJS.ProcessEnv = process.env
 ): boolean {
   if (!process.stdin.isTTY || !process.stdout.isTTY) return false;
-  if (isCiFlagSet(env.CI) || isCiFlagSet(env.GITHUB_ACTIONS)) return false;
+  if (isCiEnvironment(env)) return false;
   return !options.all && !options.dryRun && !options.yes;
 }
 
@@ -186,74 +183,17 @@ async function checkCliVersion(checkFn: typeof checkSelfUpdate): Promise<void> {
 }
 
 /**
- * Exit with a status that reflects the child process result, mapping signal
- * termination to the conventional 128 + signal-number exit code.
+ * Update the CLI to the latest version and re-run `update` on it before any project is touched
+ * (#860: the old process keeps stale imports and project updates fail with "Downgrade prevented").
+ * Shared with `init` (#1946); `overrides` is the test seam for npm, spawn and exit.
  */
-function exitWithChildStatus(child: {
-  status: number | null;
-  signal: NodeJS.Signals | null;
-}): never {
-  if (child.signal) {
-    const signalNumber = osConstants.signals[child.signal];
-    if (signalNumber !== undefined) {
-      process.exit(128 + signalNumber);
-    }
-    // Unknown signal name — fall through to status-based exit
-  }
-  process.exit(child.status ?? 1);
-}
-
-/** Minimal spawnSync signature used by reexecUpdatedCli — injectable for tests. */
-type SpawnSyncFn = (
-  command: string,
-  args: string[],
-  options: { stdio: 'inherit'; env: NodeJS.ProcessEnv }
-) => { status: number | null; signal: NodeJS.Signals | null };
-
-/**
- * Re-exec the current process with OMCUSTOM_SKIP_SELF_UPDATE=true so the child
- * process loads the newly-installed package version. Without this, the running
- * process retains stale top-level imports and downstream project updates fail
- * with "Downgrade prevented" (#860).
- */
-async function reexecUpdatedCli(toVersion: string, spawnFn?: SpawnSyncFn): Promise<void> {
-  const cliEntry = process.argv[1];
-  if (!cliEntry) {
-    console.warn(i18n.t('cli.update.reexecArgvMissing'));
-    return;
-  }
-  console.log(i18n.t('cli.update.selfUpdateReexec', { version: toVersion }));
-  // Dynamic import used intentionally: avoids static binding to node:child_process,
-  // which allows mock.module('node:child_process') in tests to work correctly.
-  const { spawnSync } = await import('node:child_process');
-  const child = (spawnFn ?? spawnSync)(process.execPath, [cliEntry, ...process.argv.slice(2)], {
-    stdio: 'inherit',
-    env: { ...process.env, OMCUSTOM_SKIP_SELF_UPDATE: 'true' },
-  });
-  exitWithChildStatus(child); // helper added in D3
-}
-
-/**
- * Handle self-update of the oh-my-customcode package.
- * Performs re-exec if an update was installed and the guard env var is not set.
- */
-async function handleSelfUpdate(spawnFn?: SpawnSyncFn): Promise<void> {
+function handleSelfUpdate(overrides: Partial<AutoSelfUpdateOptions> = {}): void {
   try {
-    // forceRefresh: always query npm view fresh to avoid installing a stale
-    // cached latest version (#862). Cache is intended for the init prompt path,
-    // not for explicit `omcustom update`.
-    const selfUpdateResult = executeSelfUpdate({ forceRefresh: true });
-    if (selfUpdateResult.updated) {
-      console.log(
-        i18n.t('cli.update.selfUpdateDone', {
-          from: selfUpdateResult.fromVersion,
-          to: selfUpdateResult.toVersion,
-        })
-      );
-      if (process.env.OMCUSTOM_SKIP_SELF_UPDATE !== 'true') {
-        await reexecUpdatedCli(selfUpdateResult.toVersion, spawnFn);
-      }
-    }
+    autoSelfUpdate({
+      currentVersion: packageJson.version as string,
+      command: 'update',
+      ...overrides,
+    });
   } catch {
     // Non-blocking: self-update failure must not stop the external update workflow
     console.warn(i18n.t('cli.update.selfUpdateFailed'));
@@ -266,11 +206,14 @@ async function handleSelfUpdate(spawnFn?: SpawnSyncFn): Promise<void> {
 export async function updateCommand(
   options: UpdateCommandOptions = {},
   cliVersionCheck: typeof checkSelfUpdate = checkSelfUpdate,
-  spawnFn?: SpawnSyncFn
+  selfUpdateOverrides?: Partial<AutoSelfUpdateOptions>
 ): Promise<void> {
   // Step 0: Self-update oh-my-customcode package before external updates
-  if (!options.skipSelf) {
-    await handleSelfUpdate(spawnFn);
+  if (options.dryRun) {
+    // A dry run must not install anything or re-run the command
+    console.log(i18n.t('cli.selfUpdate.skippedDryRun'));
+  } else if (!options.skipSelf) {
+    handleSelfUpdate(selfUpdateOverrides);
   } else {
     // Fallback: notification-only version check when self-update is skipped
     await checkCliVersion(cliVersionCheck);
@@ -479,19 +422,38 @@ async function maybeRunInteractiveUpdate(options: UpdateCommandOptions): Promise
 
   if (selected.length === 0) {
     console.log(i18n.t('cli.update.interactiveNoneSelected'));
-    return true;
+  } else {
+    console.log(i18n.t('cli.update.interactiveUpdating'));
+    for (const projectPath of selected) {
+      await updateSingleProject(projectPath, options).catch(reportProjectFailure);
+    }
   }
 
-  console.log(i18n.t('cli.update.interactiveUpdating'));
-
-  for (const projectPath of selected) {
-    await updateSingleProject(projectPath, options).catch((error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(i18n.t('cli.update.allProjectFailed', { error: errorMessage }));
-    });
+  // The checkbox disables projects already at the CLI version, so the current directory would
+  // never reach the orphan retirement that runs inside update() (#1939). Run it for that one.
+  const cwd = process.cwd();
+  if (projects.some((p) => p.status === 'latest' && isSamePath(p.path, cwd))) {
+    await updateSingleProject(cwd, options).catch(reportProjectFailure);
   }
 
   return true;
+}
+
+function reportProjectFailure(error: unknown): void {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  console.error(i18n.t('cli.update.allProjectFailed', { error: errorMessage }));
+}
+
+/** Same directory after symlink resolution (`/var` vs `/private/var`); falls back to resolve(). */
+function isSamePath(a: string, b: string): boolean {
+  const real = (path: string): string => {
+    try {
+      return realpathSync(path);
+    } catch {
+      return resolve(path);
+    }
+  };
+  return real(a) === real(b);
 }
 
 /**
