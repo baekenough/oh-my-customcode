@@ -1,7 +1,7 @@
 ---
 title: lang-python-expert
 type: agent
-updated: 2026-09-29
+updated: 2026-11-09
 sources:
   - .claude/agents/lang-python-expert.md
 related:
@@ -32,6 +32,7 @@ Uses `python-best-practices` skill and `guides/python/`.
 - **Skills**: `python-best-practices`
 - **Memory**: local (`.claude/agent-memory-local/lang-python-expert/`)
 - **Effort**: high
+- **Permission Mode**: bypassPermissions
 
 ## Relationships
 

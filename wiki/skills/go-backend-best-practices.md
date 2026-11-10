@@ -1,7 +1,7 @@
 ---
 title: Go Backend Best Practices
 type: skill
-updated: 2026-04-12
+updated: 2026-11-09
 sources:
   - .claude/skills/go-backend-best-practices/SKILL.md
 related:
@@ -15,7 +15,7 @@ Go backend patterns from Uber style guide for production-grade services.
 
 ## Overview
 
-Reference patterns for Go backend services: HTTP handler structure, middleware patterns, error wrapping and propagation, structured logging (zap/slog), context propagation, graceful shutdown, connection pooling, rate limiting, and service-layer organization. Extends `go-best-practices` with backend-specific patterns. Used by `be-go-backend-expert`.
+Reference patterns for Go backend services: HTTP handler structure, middleware patterns, error wrapping and propagation, structured logging (zap/slog), context propagation, graceful shutdown, connection pooling, rate limiting, and service-layer organization. The testing section recommends table-driven tests, interfaces for mocking, and `go.uber.org/mock (mockgen)` for mocks (the older `golang/mock` is archived), with `cmp.Diff` for assertions. Extends `go-best-practices` with backend-specific patterns. Used by `be-go-backend-expert`.
 
 ## Key Details
 

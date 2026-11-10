@@ -9,6 +9,21 @@ user-invocable: false
 
 Apply idiomatic Python patterns and best practices from official Python documentation.
 
+## Supported Python Versions
+
+```yaml
+baseline:
+  - Target Python 3.11 or newer unless the project pins another version
+  - Check requires-python in pyproject.toml before using newer syntax
+  - Gate version-specific features (3.12+, 3.14+, 3.15+) on that setting
+
+measured_2026-11:
+  - Supported branches: 3.15 and 3.14 (bugfix), 3.13, 3.12 and 3.11 (security)
+  - 3.10 is end-of-life since 2026-10-01
+  - Source: https://devguide.python.org/versions/
+  - Latest release at measurement time: 3.15.2 (https://www.python.org/downloads/)
+```
+
 ## The Zen of Python (PEP 20)
 
 ```
@@ -171,6 +186,18 @@ type_hints:
   - Follow PEP 484 syntax
   - Space after colon in annotations
   - No space before colon
+  - Write optional values as X | None (PEP 604), not Optional[X]
+  - Use built-in generics (list[int], dict[str, int]) instead of typing.List / typing.Dict
+  - "3.12+: use PEP 695 type parameter syntax (def first[T](items: list[T]) -> T) and the type statement"
+  - "3.14+: annotations are evaluated lazily (PEP 649/749), so forward references in annotations need no quotes or from __future__ import annotations"
+  - "Code that must also run on versions before 3.14 keeps quoted forward references or uses from __future__ import annotations"
+
+example: |
+  def find_user(user_id: int) -> str | None:
+      ...
+
+  def first[T](items: list[T]) -> T:  # Python 3.12+ (PEP 695)
+      return items[0]
 ```
 
 ### 7. Pythonic Idioms
@@ -185,13 +212,18 @@ list_comprehension:
             result.append(x*2)
 
 context_managers:
-  prefer: "with open('file') as f:"
+  prefer: "with open('file', encoding='utf-8') as f:"
   over: |
     f = open('file')
     try:
         ...
     finally:
         f.close()
+  note: |
+    Pass encoding explicitly for text files. Before 3.15, open() without
+    encoding uses the locale encoding; from 3.15 (PEP 686) it uses UTF-8
+    unless UTF-8 mode is disabled (PYTHONUTF8=0 or -X utf8=0). Code that
+    must also run on earlier versions still passes encoding=.
 
 unpacking:
   prefer: "a, b = b, a"
@@ -207,6 +239,53 @@ enumerate:
 dictionary:
   prefer: "d.get(key, default)"
   over: "d[key] if key in d else default"
+```
+
+### 8. Tooling
+
+```yaml
+note: Defaults below are widely documented tools, not a mandate. Follow the tools the project already uses.
+
+packaging:
+  - Declare project metadata and dependencies in pyproject.toml (PEP 621)
+  - requires-python states the supported baseline
+  - uv manages environments, dependencies and lockfiles (https://docs.astral.sh/uv/)
+  - pip with the standard-library venv module remains the baseline fallback
+
+linting_formatting:
+  - ruff provides linting and formatting (https://docs.astral.sh/ruff/)
+  - Configure it under [tool.ruff] in pyproject.toml
+
+type_checking:
+  - mypy checks type hints (https://mypy.readthedocs.io/)
+  - Run it in CI so annotations stay correct
+
+testing:
+  - pytest runs tests (https://docs.pytest.org/)
+  - Keep tests under tests/ and name files test_*.py
+```
+
+### 9. Optional: Newer Language Features (version-gated)
+
+```yaml
+note: Use only when requires-python allows it. Do not apply to projects that target older versions.
+
+free_threading:
+  - Free-threaded build (GIL disabled; PEP 703, experimental in 3.13; officially supported from 3.14 per PEP 779)
+  - Opt-in build; verify that C-extension dependencies support it
+
+template_strings:
+  - PEP 750 t-strings (3.14+): t"Hello {name}" yields a Template, not a str
+  - Use for safe interpolation (SQL, HTML); process the Template before use
+
+lazy_imports:
+  - PEP 810 explicit lazy imports (3.15+): "lazy import json" defers loading until first use (module scope only)
+  - Useful for startup time in CLI tools
+
+example: |
+  name = "world"
+  template = t"Hello {name}"  # 3.14+ only
+  print(type(template).__name__)
 ```
 
 ## Application

@@ -106,12 +106,53 @@ patterns: |
       Ok(contents)
   }
 
-  // Custom error type
+  // Custom error type: Debug + Display + Error (+ From for `?`)
   #[derive(Debug)]
   enum MyError {
       Io(io::Error),
       Parse(ParseIntError),
   }
+
+  impl fmt::Display for MyError {
+      fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+          match self {
+              MyError::Io(_) => write!(f, "IO error"),
+              MyError::Parse(_) => write!(f, "Parse error"),
+          }
+      }
+  }
+
+  impl std::error::Error for MyError {
+      fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+          match self {
+              MyError::Io(e) => Some(e),
+              MyError::Parse(e) => Some(e),
+          }
+      }
+  }
+
+  impl From<io::Error> for MyError {
+      fn from(e: io::Error) -> Self { MyError::Io(e) }
+  }
+
+  impl From<ParseIntError> for MyError {
+      fn from(e: ParseIntError) -> Self { MyError::Parse(e) }
+  }
+
+  // Alternative to the manual impls above (use one, not both): thiserror derives Display, Error and From
+  // The wrapped error is exposed via source(), so the message does not repeat it
+  #[derive(thiserror::Error, Debug)]
+  enum MyError {
+      #[error("IO error")]
+      Io(#[from] io::Error),
+      #[error("Parse error")]
+      Parse(#[from] ParseIntError),
+  }
+
+crate_choice:
+  - thiserror for libraries (typed, matchable error enums)
+  - anyhow for applications (anyhow::Result and .context("...") for call-site context)
+  - Do not expose anyhow::Error in a library's public API
 ```
 
 ### 4. Traits and Generics
@@ -254,6 +295,139 @@ modules:
   - pub use for re-exports
 ```
 
+### 10. Edition and MSRV
+
+```yaml
+baseline: |
+  As of 2026-11: latest stable Rust is 1.99.1 (2026-10-15), https://blog.rust-lang.org/releases/
+  The Rust 2024 edition was stabilized in 1.85.0 (2025-02-20),
+  https://doc.rust-lang.org/edition-guide/rust-2024/index.html
+  Re-measure both against those pages before relying on them.
+
+cargo_toml:
+  - New crates target the 2024 edition: edition = "2024"
+  - Set rust-version (MSRV) explicitly; edition 2024 needs a toolchain of 1.85.0 or newer
+  - Raise rust-version deliberately and record it (changelog); do not let it drift
+  - Migrate an existing crate with cargo fix --edition, then change the edition key
+  - In a workspace, set edition and rust-version once in [workspace.package]
+```
+
+```toml
+[package]
+name = "my-crate"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+```
+
+### 11. Async (Tokio)
+
+```yaml
+basics:
+  - async fn returns a Future; it does nothing until awaited or spawned
+  - Use Tokio as the runtime; enable only the features you need (rt, rt-multi-thread, macros, time, sync)
+  - Libraries stay runtime-agnostic where possible; the application picks the runtime
+  - Use #[tokio::main] on main and #[tokio::test] for async tests
+
+avoid:
+  - Blocking calls inside async code (std::thread::sleep, blocking file/network IO, heavy CPU)
+  - Holding a std::sync::MutexGuard across an .await
+  - Detached tasks whose errors are never observed
+
+prefer:
+  - tokio::time::sleep over std::thread::sleep
+  - tokio::task::spawn_blocking for bounded blocking work that eventually finishes
+  - For many or heavy CPU-bound jobs, bound concurrency (e.g. tokio::sync::Semaphore) or use a CPU-bound executor such as rayon
+  - tokio::join! for concurrent futures, tokio::select! for racing them
+  - tokio::sync::mpsc / oneshot for message passing between tasks
+  - tokio::sync::Mutex only when the lock must be held across an .await; otherwise std Mutex
+  - tokio::time::timeout around external calls
+  - Keep the JoinHandle and handle its Result
+
+spawn_bounds:
+  - tokio::spawn requires the future and its output to be Send + 'static
+  - Move owned data (Arc::clone) into the task instead of borrowing from the caller
+
+select_cancellation:
+  - In a select! loop, or when a dropped future's partial progress matters, use cancellation-safe futures (the losing branches are dropped)
+```
+
+```toml
+[dependencies]
+tokio = { version = "<tokio-version>", features = ["rt-multi-thread", "macros", "time"] }
+```
+
+```rust
+use std::time::Duration;
+use tokio::time::{sleep, timeout};
+
+async fn fetch(id: u32) -> Result<String, std::io::Error> {
+    sleep(Duration::from_millis(10)).await;
+    Ok(format!("item-{id}"))
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Run two futures concurrently
+    let (a, b) = tokio::join!(fetch(1), fetch(2));
+    println!("{} {}", a?, b?);
+
+    // Spawn a task and observe its result
+    let handle = tokio::spawn(async { fetch(3).await });
+    println!("{}", handle.await??);
+
+    // Bound an external call with a timeout
+    let v = timeout(Duration::from_secs(1), fetch(4)).await??;
+    println!("{v}");
+    Ok(())
+}
+```
+
+### 12. Tooling and Workspaces
+
+```yaml
+rustfmt:
+  - cargo fmt --all formats the whole workspace
+  - cargo fmt --all --check in CI (non-zero exit when formatting differs)
+  - Keep a rustfmt.toml only for deliberate deviations from the default style
+
+clippy:
+  - cargo clippy --all-targets --all-features -- -D warnings in CI
+  - Fix the lint before adding #[allow(...)]; scope any allow narrowly and add a reason
+
+cargo_checks:
+  - cargo check for fast feedback, cargo test for unit, integration and doc tests
+  - cargo doc --no-deps to build the docs
+
+workspace:
+  - Use a Cargo workspace for multiple related crates sharing one Cargo.lock and target directory
+  - Root Cargo.toml has [workspace] with members; a virtual root has no [package]
+  - Share metadata with [workspace.package] and dependency versions with [workspace.dependencies]
+  - Members inherit with edition.workspace = true and dep.workspace = true
+  - Run cargo commands per workspace with --workspace, or per crate with -p <name>
+```
+
+```toml
+# Root Cargo.toml (virtual workspace)
+[workspace]
+members = ["crates/app-core", "crates/app-cli"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+
+# crates/app-cli/Cargo.toml
+[package]
+name = "app-cli"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+app-core = { path = "../app-core" }
+```
+
 ## Application
 
 When writing or reviewing Rust code:
@@ -265,4 +439,6 @@ When writing or reviewing Rust code:
 5. **Implement** standard traits (Debug, Clone, etc.)
 6. **Document** public APIs with examples
 7. **Avoid** unsafe unless necessary
-8. **Use** clippy for linting
+8. **Use** rustfmt and clippy (Section 12)
+9. **Set** `edition` and `rust-version` in Cargo.toml (Section 10)
+10. **Keep** blocking work out of async code (Section 11)

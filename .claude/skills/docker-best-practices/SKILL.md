@@ -43,7 +43,7 @@ purpose:
 
 pattern: |
   # Build stage
-  FROM golang:1.21 AS builder
+  FROM golang:1.27 AS builder
   WORKDIR /app
   COPY go.mod go.sum ./
   RUN go mod download
@@ -100,7 +100,7 @@ minimal_bases:
 
 patterns: |
   # Alpine for size
-  FROM python:3.12-alpine
+  FROM python:3.15-alpine
   RUN apk add --no-cache gcc musl-dev
 
   # Distroless for security
@@ -236,11 +236,11 @@ nodejs: |
   CMD ["server.js"]
 
 python: |
-  FROM python:3.12-slim AS builder
+  FROM python:3.15-slim AS builder
   WORKDIR /app
   RUN pip install --user -r requirements.txt
 
-  FROM python:3.12-slim
+  FROM python:3.15-slim
   WORKDIR /app
   COPY --from=builder /root/.local /root/.local
   COPY . .
@@ -248,7 +248,7 @@ python: |
   CMD ["python", "app.py"]
 
 go: |
-  FROM golang:1.21 AS builder
+  FROM golang:1.27 AS builder
   WORKDIR /app
   COPY go.* ./
   RUN go mod download

@@ -110,11 +110,20 @@ func main() {
 func fanIn(ch1, ch2 <-chan int) <-chan int {
     out := make(chan int)
     go func() {
-        for {
+        defer close(out) // signal the consumer once both inputs are drained
+        for ch1 != nil || ch2 != nil {
             select {
-            case v := <-ch1:
+            case v, ok := <-ch1:
+                if !ok {
+                    ch1 = nil // a nil channel blocks forever, so select skips it
+                    continue
+                }
                 out <- v
-            case v := <-ch2:
+            case v, ok := <-ch2:
+                if !ok {
+                    ch2 = nil
+                    continue
+                }
                 out <- v
             }
         }
@@ -122,6 +131,8 @@ func fanIn(ch1, ch2 <-chan int) <-chan int {
     return out
 }
 ```
+
+The fan-in goroutine exits, and `out` is closed, only after both inputs are closed and drained, so `for v := range fanIn(a, b)` terminates. Without the `close(out)` and the nil-channel step, the loop keeps sending zero values from the closed inputs, so the range never ends and the goroutine never exits (see Goroutine Leaks below). If the consumer may stop reading early, also select on `ctx.Done()` around the send.
 
 ### Pipeline
 
@@ -195,16 +206,29 @@ default:
 ```go
 var wg sync.WaitGroup
 
-for i := 0; i < 5; i++ {
-    wg.Add(1)
-    go func(id int) {
-        defer wg.Done()
-        // work
-    }(i)
+for i := range 5 {
+    wg.Go(func() { // Go 1.25+: Add(1) and Done() are handled for you
+        // work; i is a fresh variable per iteration (Go 1.22+)
+        fmt.Println(i)
+    })
 }
 
 wg.Wait()  // blocks until all done
 ```
+
+Since Go 1.22 each loop iteration has its own copy of the loop variable, so a closure can capture `i` directly; the `go func(id int){...}(i)` argument-passing idiom is no longer needed. This applies to modules whose `go.mod` declares `go 1.22` or later. `wg.Go` requires Go 1.25; on Go 1.22–1.24, call `wg.Add(1)` before the `go` statement and `defer wg.Done()` inside the goroutine:
+
+```go
+for i := range 5 {
+    wg.Add(1) // call Add before starting the goroutine, never inside it
+    go func() {
+        defer wg.Done()
+        fmt.Println(i)
+    }()
+}
+```
+
+`go vet` has a `waitgroup` analyzer (Go 1.25+) that reports misplaced `wg.Add` calls (it catches the simple form: `wg.Add` as the first statement of a `go func` literal; observed on go1.25.6).
 
 ### sync.Mutex
 
