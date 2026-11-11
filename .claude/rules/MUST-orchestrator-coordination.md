@@ -319,7 +319,7 @@ Cross-reference: the Subagent Scope-Creep STOP Protocol (reactive halt after tri
 
 | Anti-pattern | Required |
 |--------------|----------|
-| 우회 플래그(`--admin` 등)만 지시하고 근거 없음 | 실측 branch protection과 대조 후, 플래그가 실제로 필요할 때만 우회 대상·근거를 명시 — 예: "required status check 6종 전부 pass 확인함. `enforce_admins=false`이므로 `--admin`이 우회하는 것은 **그 6종 CI 게이트**뿐이며, [사유]로 이를 승인한다" |
+| 우회 플래그(`--admin` 등)만 지시하고 근거 없음 | 실측 branch protection과 대조 후, 플래그가 실제로 필요할 때만 우회 대상·근거를 명시 — 예: "required status check N종 전부 pass 확인함. `enforce_admins=false`이므로 `--admin`이 우회하는 것은 **그 N종 CI 게이트**뿐이며, [사유]로 이를 승인한다" |
 
 <!-- DETAIL: 목적 clarification
 목적은 권한 확보가 아니라 **감사 추적**이다. 승인의 인용이 아니라 우회 범위의 사실 서술이므로 아래 「Delegation Prompt Framing — 승인 인용 금지」와 충돌하지 않는다.

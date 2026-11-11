@@ -60,7 +60,7 @@ Batch these into 1-2 PRs for maximum efficiency.
 
 | # | Title | Category | Effort | Notes |
 |---|-------|----------|--------|-------|
-| #294 | ontology-rag: evaluate, integrate, or remove | Investigation | 4 hours | 30-day zero usage — decide fate |
+| #294 | ontology-rag: evaluate, integrate, or remove | Investigation | 4 hours | Resolved by removal in v2.0.24 (#1960) |
 | #287 | Workspace rules duplication | Investigation | 1 hour | Verify if .claude/ deletion succeeded |
 | #282 | Docs validator as release gate | CI/Feature | 2 hours | Depends on #291 |
 

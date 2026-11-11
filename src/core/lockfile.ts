@@ -28,7 +28,10 @@ export interface LockfileEntry {
   templateHash: string;
   /** File size in bytes at install time */
   size: number;
-  /** Component this file belongs to (rules, agents, skills, guides, hooks, contexts, ontology) */
+  /**
+   * Component this file belongs to (rules, agents, skills, guides, hooks, contexts, or the
+   * retired ontology, see RETIRED_LOCKFILE_COMPONENT_PATHS)
+   */
   component: string;
 }
 
@@ -87,17 +90,42 @@ const LOCKFILE_COMPONENTS: readonly InstallComponent[] = [
   'skills',
   'hooks',
   'contexts',
-  'ontology',
   'guides',
 ] as const;
 
 /**
  * Component path mapping: directory path prefix -> component name.
- * Computed from layout.ts getComponentPath().
+ * Computed from layout.ts getComponentPath(). Only these roots are walked and listed.
  */
 const COMPONENT_PATHS: ReadonlyArray<readonly [string, string]> = LOCKFILE_COMPONENTS.map(
   (component) => [getComponentPath(component), component] as const
 );
+
+/** A component oh-my-customcode no longer installs (#1960). */
+export type RetiredLockfileComponent = 'ontology';
+
+/**
+ * Retired components: directory path prefix -> component name. Never walked or listed (nothing is
+ * installed there any more), but {@link resolveLockfileComponent} still resolves their paths, so
+ * leftovers of an earlier install stay retirable (`isRetirablePath`, the retired-paths generator)
+ * and their old lock entries can still be carried.
+ */
+export const RETIRED_LOCKFILE_COMPONENT_PATHS: ReadonlyArray<
+  readonly [string, RetiredLockfileComponent]
+> = [['.claude/ontology', 'ontology']];
+
+/** Whether `component` (a {@link resolveLockfileComponent} result) is a retired component. */
+export function isRetiredLockfileComponent(
+  component: string
+): component is RetiredLockfileComponent {
+  return RETIRED_LOCKFILE_COMPONENT_PATHS.some(([, name]) => name === component);
+}
+
+/** Every prefix {@link resolveLockfileComponent} recognizes: the active ones first. */
+const RESOLVABLE_COMPONENT_PATHS: ReadonlyArray<readonly [string, string]> = [
+  ...COMPONENT_PATHS,
+  ...RETIRED_LOCKFILE_COMPONENT_PATHS,
+];
 
 /**
  * Options for lockfile generation.
@@ -400,14 +428,15 @@ export async function writeLockfile(targetDir: string, lockfile: Lockfile): Prom
 
 /**
  * Determine the lockfile component name for a relative path (`.claude/skills/x/SKILL.md` →
- * `skills`, `guides/x/y.md` → `guides`). Uses the first matching prefix from COMPONENT_PATHS.
- * Falls back to 'unknown' if no prefix matches.
+ * `skills`, `guides/x/y.md` → `guides`, `.claude/ontology/x.yaml` → the retired `ontology`). Uses
+ * the first matching prefix from RESOLVABLE_COMPONENT_PATHS. Falls back to 'unknown' if no prefix
+ * matches.
  */
 export function resolveLockfileComponent(relativePath: string): string {
   // Normalize to forward slashes for cross-platform matching
   const normalized = relativePath.replace(/\\/g, '/');
 
-  for (const [prefix, component] of COMPONENT_PATHS) {
+  for (const [prefix, component] of RESOLVABLE_COMPONENT_PATHS) {
     if (normalized === prefix || normalized.startsWith(`${prefix}/`)) {
       return component;
     }

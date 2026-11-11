@@ -56,11 +56,7 @@ full_qa_cycle      → all agents (sequential)
 
 > **Permission Mode**: Pass `mode: "bypassPermissions"` on Agent calls for compatibility: it is required on CC < 2.1.212 (the per-call default, `acceptEdits`, overrides agent frontmatter `permissionMode`) and ignored on 2.1.212+, where subagents inherit the parent session's permission mode (adjustable via agent frontmatter `permissionMode`). Verify the effective mode before unattended runs: see R010 "Universal bypassPermissions".
 
-### Ontology-RAG Enrichment (R019)
-
-If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
-
-### Wiki-RAG Enrichment
+### Wiki-RAG Enrichment (R019)
 
 For ambiguous routing (confidence < 90%), query the wiki for context:
 

@@ -64,7 +64,7 @@ The takeover pattern — reverse-compiling an existing codebase into structured 
 | R016 | MUST | Continuous Improvement | Rule violation -> update rule -> continue |
 | R017 | MUST | Sync Verification | 5+3 round verification before push |
 | R018 | MUST (conditional) | Agent Teams | Mandatory when CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 AND `TeamCreate` tool present; otherwise dormant |
-| R019 | SHOULD | Ontology-RAG Routing | Enriches agent selection with contextual skill suggestions |
+| R019 | SHOULD | Routing Enrichment | Wiki-RAG lookup (`wiki/index.yaml`) when routing confidence is below 90% |
 | R020 | MUST | Completion Verification | Task-type-specific verification before declaring [Done] |
 | R021 | MUST | Enforcement Policy | Advisory-first enforcement model, promotion criteria |
 | R022 | SHOULD | Wiki Sync | Wiki pages auto-update on agent/skill/rule/guide changes |
@@ -205,11 +205,11 @@ The main conversation is the **sole orchestrator**. It coordinates via routing s
   <img src="assets/diagrams/03-routing-architecture.png" alt="Routing Architecture" width="800" />
 </p>
 
-### 4.3 Ontology-RAG Enrichment (R019)
+> Note: this diagram predates v2.0.24 and still shows the removed "Ontology RAG MCP R019" node (ontology-rag was removed in v2.0.24). It will be regenerated in a follow-up issue (#1961).
 
-After static routing selects an agent, the orchestrator optionally calls `get_agent_for_task(query)` via MCP to extract `suggested_skills`. These are prepended to the spawned agent's prompt as contextual hints. MCP failure is silently ignored — Ontology-RAG is advisory only and never blocks routing.
+### 4.3 Wiki-RAG Enrichment (R019)
 
-Known limitation: `context: fork` skills cannot access MCP tools, so `get_agent_for_task` in routing SKILL.md files is effectively dead letter. The call must be made at the orchestrator level before spawning the agent.
+When static routing confidence is below 90%, the routing skill looks up `wiki/index.yaml` for relevant agent/skill/guide pages and injects the findings into the spawned agent's prompt as supplementary routing context. Enrichment is advisory only: if `wiki/index.yaml` is missing or the lookup fails or returns nothing, it is skipped silently and routing proceeds unchanged.
 
 ### 4.4 Dynamic Agent Creation
 
@@ -493,7 +493,6 @@ The task-outcome-recorder hook (wired to SubagentStop only) records each subagen
 |-----|----------|---------|
 | Lint | ci.yml | biome check on source files |
 | Test | ci.yml | bun test with coverage threshold |
-| Rust Tests | ci.yml | cargo test for Rust components |
 | Version Sync | ci.yml | manifest.json matches package.json (+ lockfile 3-way check) |
 | Template Sync | ci.yml | Verify template files match source, skill script file parity |
 | Dependency Security Audit | security-audit.yml | Automated vulnerability scanning |

@@ -2459,6 +2459,38 @@ describe('r007-r008-drift-advisor.sh — Fixture 16: text-less turn signal (#195
     expect(th.stdout.trim()).toBe('');
   });
 
+  it('empty first text block followed by header-less prose is text-less only, not r007_missing (#1959 positive)', async () => {
+    const sid = `n1959-pos-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '' },
+        { type: 'text', text: 'Sure, working on it.' },
+        { type: 'tool_use', id: 't-1959', name: 'Read', input: {} },
+      ]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    expect(r.exitCode).toBe(0);
+    const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+    expect(ctx).toContain('text 블록이 없는 응답 턴 1건');
+    expect(ctx).not.toContain('R007 에이전트 식별 헤더 누락');
+  });
+
+  it('empty first text block followed by a short-form [agent] header is NOT text-less (#1959 negative)', async () => {
+    const sid = `n1959-neg-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '' },
+        { type: 'text', text: '[claude] reading...\n[claude][opus] → Tool: Read' },
+        { type: 'tool_use', id: 't-1959b', name: 'Read', input: {} },
+      ]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
   it('empty first text block followed by a header block is NOT text-less (L1 negative)', async () => {
     const sid = `n1950-l1-${Date.now()}`;
     await writeTranscript(sid, [

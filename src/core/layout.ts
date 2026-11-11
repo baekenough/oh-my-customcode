@@ -12,8 +12,7 @@ export type InstallComponent =
   | 'skills'
   | 'guides'
   | 'hooks'
-  | 'contexts'
-  | 'ontology';
+  | 'contexts';
 
 export interface ProviderLayout {
   rootDir: '.claude';
@@ -37,7 +36,6 @@ const CLAUDE_LAYOUT: ProviderLayout = {
     '.claude/contexts',
     '.claude/agents',
     '.claude/skills',
-    '.claude/ontology',
     'guides',
   ],
 };

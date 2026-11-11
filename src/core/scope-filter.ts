@@ -8,7 +8,6 @@ import { join } from 'node:path';
 /**
  * Valid scope values for skill filtering.
  * Keep in sync with:
- * - packages/ontology-rag ontology schema (packages/ontology-rag/src/ontology_rag/ontology.py SkillInfo.scope)
  * - templates/.claude/skills/ SKILL.md frontmatter (scope field)
  * - .claude/rules/MUST-agent-design.md (R006) skill scope table
  */

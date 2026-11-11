@@ -1,13 +1,12 @@
 ---
 title: External Tools Guide
 type: guide
-updated: 2026-10-06
+updated: 2026-11-11
 sources:
   - guides/external-tools/graphify-integration.md
   - guides/external-tools/ecc-absorption-decisions.md
 related:
   - [[skills/wiki-rag]]
-  - "ontology-rag MCP integration"
   - [[skills/profile]]
   - [[R019]]
   - [[R006]]
@@ -36,24 +35,23 @@ graphify는 code/docs/paper corpus를 queryable knowledge graph로 전환하는 
 ### 기존 RAG 스택과의 위치
 
 ```
-[Layer-1] ontology-rag MCP  ← 내부 온톨로지 그래프
-[Layer-2] wiki-rag (wiki/index.yaml)  ← 프로젝트 위키 인덱스
-[Layer-3 후보] graphify  ← 외부 corpus / 대규모 이종 소스 — 현재 deferred
+[Wiki-RAG] wiki-rag (wiki/index.yaml)  ← 프로젝트 위키 인덱스 (R019, 유일한 enrichment 계층)
+[추가 후보] graphify  ← 외부 corpus / 대규모 이종 소스 — 현재 deferred
 ```
 
 ### 통합 옵션 (v0.105.0 권고)
 
 - **옵션 A (현재)**: 독립 도구로 유지, 이 가이드를 reference로만 활용
 - **옵션 B (v0.106.0+ 검토)**: `scope: package` 외부 스킬로 등록
-- **옵션 C (별도 이슈)**: R019 Layer-3 라우팅 enrichment 통합
+- **옵션 C (별도 이슈)**: R019 라우팅 enrichment 통합 (Wiki-RAG와 함께)
 
-옵션 B 격상 조건: corpus 1,000+ 파일 성장 OR wiki-rag/ontology-rag 한계 명확 OR graphify 업스트림 major 버전 출시.
+옵션 B 격상 조건: corpus 1,000+ 파일 성장 OR wiki-rag 한계 명확 OR graphify 업스트림 major 버전 출시.
 
 ## Relationships
 
-- **Rules**: [[R019]] (dual-layer enrichment — graphify는 Layer-3 후보)
+- **Rules**: [[R019]] (Wiki-RAG enrichment — graphify는 추가 후보)
 - **Skills**: [[skills/wiki-rag]]
-- **외부 연동**: `ontology-rag`는 R019 Layer-1의 MCP 서버 연동입니다.
+- **변경 (v2.0.24, #1960)**: ontology-rag(패키지·MCP 서버·`.claude/ontology` 데이터)가 완전히 제거되어 R019는 Wiki-RAG 단일 계층입니다.
 - **Background**: issue #977 (scout:integrate)
 
 ## ECC Absorption Decisions

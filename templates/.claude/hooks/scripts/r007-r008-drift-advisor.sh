@@ -291,7 +291,20 @@ split("\n")
     # asserting a violation — CC 2.1.251+ may not record text blocks (#1706).
     | (if ([ $blocks[] | select((.type? // "") != "redacted_thinking") ] | length) > 0
           and ([ $blocks[] | select((.type? == "text") and ((.text? // "") | type == "string" and length > 0)) ] | length) == 0
-       then 1 else 0 end) as $textless
+       then 1 else 0 end) as $textless_old
+    # (#1959 ①) Empty-first-block turn: the FIRST text block is empty ($ftext, the same operand $r007
+    # reads, so $r007 stays 0 and unchanged) while a LATER non-empty text block exists and its first line
+    # carries no R007 header (same two header regexes as $r007). The header cannot be checked on the
+    # first block, so it joins the r007_textless signal instead of being silently passed. Only the first
+    # line of the FIRST non-empty text block is checked: if that line carries a header the turn is not
+    # counted, whatever later blocks contain. Turns with no non-empty text block at all are already
+    # covered by $textless_old. Whitespace-only first blocks have length > 0 and stay on the $r007 path.
+    | ([ $blocks[] | select(.type? == "text") | (.text? // "") | select(type == "string" and length > 0) ][0] // "") as $ntext
+    | (($ntext | split("\n") | .[0]) // "") as $nline
+    | (if ($ftext | length) == 0 and ($ntext | length) > 0
+          and (($nline | test("^┌─ Agent:")) or ($nline | test("^\\[.+\\]"))) == false
+       then 1 else 0 end) as $textless_empty_first
+    | (if $textless_old == 1 or $textless_empty_first == 1 then 1 else 0 end) as $textless
     | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_tool
     # Core Rule 접두사 중 Agent 스폰을 가리키는 것만 따로 센다 — 아래 스폰 표기 중복 차감용.
     | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool: ?Agent")) ] | length) as $an_tool_agent
@@ -459,6 +472,7 @@ fi
 # text 블록이 없는 턴 (#1950): 위반 단정이 아니다 — 헤더 유무를 확인할 수 없다는 사실만 전한다.
 # 플랫폼이 text 블록을 기록하지 않는 경우(CC 2.1.251+, #1706 [가설])와 실제 헤더 생략을 이 신호만으로
 # 구분할 수 없으므로 문구는 "확인 불가"로 한정하고 r007_missing 문구와 겹치지 않게 분리한다.
+# 집계 대상 턴에는 첫 text 블록이 비어 있고 첫 비어있지 않은 블록의 첫 줄에 헤더가 없는 턴(#1959)도 포함된다.
 if [ "$r007_textless" -gt 0 ]; then
   advisory_text="${advisory_text} [R007 확인 불가] text 블록이 없는 응답 턴 ${r007_textless}건 — R007 헤더 확인 불가 (플랫폼 미기록일 수 있어 위반으로 단정하지 않습니다). 이번 응답은 text 블록에 ┌─ Agent: 헤더를 먼저 쓰십시오."
 fi

@@ -71,11 +71,7 @@ batch           → multiple (parallel)
 
 **auto-improve keywords**: "auto-improve", "자동 개선", "개선 적용", "apply improvements", "improvement suggestions" → invoke `omcustom-auto-improve` skill (worktree isolation, sauron verification, PR creation)
 
-### Ontology-RAG Enrichment (R019)
-
-If `get_agent_for_task` MCP tool is available, call it with the original query and inject `suggested_skills` into the agent prompt. Skip silently on failure.
-
-### Step 4b: Wiki-RAG Enrichment
+### Step 4: Wiki-RAG Enrichment (R019)
 
 If the user's request is ambiguous or confidence is below 90%, query the wiki for additional context:
 

@@ -53,8 +53,7 @@ templates/
 │   ├── hooks/
 │   │   ├── hooks.json               # 훅 이벤트 설정 (PreToolUse/PostToolUse 등)
 │   │   └── scripts/                 # 훅 셸 스크립트 (42개)
-│   ├── contexts/                    # 컨텍스트 설정 파일 (ecomode 등)
-│   └── ontology/                    # Ontology-RAG 지식 그래프
+│   └── contexts/                    # 컨텍스트 설정 파일 (ecomode 등)
 └── guides/                          # 레퍼런스 문서 디렉토리 (56개)
 ```
 
@@ -149,7 +148,7 @@ omcustom init
 ```
 
 `omcustom init`은 이 `templates/` 디렉토리의 내용을 대상 프로젝트에 복사합니다:
-1. `.claude/` 전체 (agents, skills, rules, hooks, contexts, ontology)
+1. `.claude/` 전체 (agents, skills, rules, hooks, contexts)
 2. `guides/` 전체
 3. `CLAUDE.md` (프로젝트 진입점)
 

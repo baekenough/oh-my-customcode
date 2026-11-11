@@ -53,10 +53,6 @@ Search the [skills.sh](https://skills.sh/) marketplace for reusable AI agent ski
    │       ├── source-type: skills-sh
    │       └── source-origin: <owner/repo>
    └── mgr-creator validates R006 frontmatter compliance
-
-5. Ontology sync
-   ├── Notify: run "omcustom ontology build" to register new skill
-   └── Or manually add to skills.yaml if ontology CLI unavailable
 ```
 
 ## Namespace Conflict Check
@@ -102,8 +98,6 @@ Skill: <skill-name>
 Source: <owner/repo>
 Location: .claude/skills/<skill-name>/SKILL.md
 Adapted: ✓ (added user-invocable, source metadata)
-
-Next: Run "omcustom ontology build" to register in ontology.
 ```
 
 ### Install Failure
@@ -206,6 +200,6 @@ Installed agentskills.io skills are tracked with `source-type: agentskills-io` m
 
 - **Read-only by default**: Search does not modify anything
 - **Explicit install**: Installation requires `--install` flag or user confirmation
-- **No auto-execution**: Installed skills are not auto-invoked without ontology registration
+- **Install does not run the skill**: Installing only places the files; once installed, the skill is model-invocable unless `disable-model-invocation: true` is set in its frontmatter (R006)
 - **Conflict protection**: Never overwrites existing skills
 - **Telemetry opt-out**: Set `DISABLE_TELEMETRY=1` to disable skills CLI telemetry

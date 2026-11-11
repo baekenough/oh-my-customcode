@@ -82,7 +82,7 @@ NO EXCEPTIONS. NO EXCUSES.
 | R011 | Memory Integration | Session memory persistence |
 | R012 | HUD Statusline | Real-time status display |
 | R013 | Ecomode | Token efficiency for batch ops |
-| R019 | Ontology-RAG Routing | Ontology-RAG enrichment for routing skills |
+| R019 | Wiki-RAG Routing | Wiki-RAG enrichment for routing skills (wiki/index.yaml lookup, advisory) |
 | R022 | Wiki Sync | Auto-sync wiki when agents/skills/rules/guides change |
 | R023 | Verification Ladder | Verification cost ladder: Tier 1 (deterministic) → Tier 4 (human), shift-left |
 

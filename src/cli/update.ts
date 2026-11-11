@@ -307,6 +307,7 @@ export function reportProjectUpdateResult(
     outcome = 'failed';
   }
   printOrphanRetirement(result, true);
+  printOntologyRagRetirement(result);
   return outcome;
 }
 
@@ -544,6 +545,52 @@ function printOrphanRetirement(result: UpdateResult, withReasons = false): void 
   );
 }
 
+/** i18n key for each reason an `ontology-rag` entry was left in `.mcp.json`. */
+const MCP_KEPT_REASON_KEYS = {
+  modified: 'cli.update.ontologyRagMcpKeptModified',
+  preserved: 'cli.update.ontologyRagMcpKeptPreserved',
+  'manifest-unreadable': 'cli.update.ontologyRagMcpKeptManifestUnreadable',
+  'not-regular': 'cli.update.ontologyRagMcpKeptNotRegular',
+  changed: 'cli.update.ontologyRagMcpKeptChanged',
+} as const;
+
+/** The status line for the `ontology-rag` server entry in `.mcp.json`. */
+function ontologyRagMcpLine(
+  status: NonNullable<NonNullable<UpdateResult['ontologyRagRetirement']>['mcpServer']>
+): string {
+  switch (status.status) {
+    case 'removed':
+      return i18n.t('cli.update.ontologyRagMcpRemoved', { path: status.backupPath });
+    case 'would-remove':
+      return i18n.t('cli.update.ontologyRagMcpWouldRemove');
+    case 'kept':
+      return i18n.t(MCP_KEPT_REASON_KEYS[status.reason]);
+    case 'unreadable':
+      return i18n.t('cli.update.ontologyRagMcpUnreadable', { reason: status.detail });
+    case 'failed':
+      return i18n.t('cli.update.ontologyRagMcpFailed', { reason: status.detail });
+  }
+}
+
+/**
+ * Print what update did about the retired ontology-rag (#1960), one line per status; nothing
+ * when the result has none. These are not repeated in `warnings`, so `--all` (which prints no
+ * warnings) shows them too.
+ */
+function printOntologyRagRetirement(result: UpdateResult): void {
+  const retirement = result.ontologyRagRetirement;
+  if (!retirement) return;
+  if (retirement.mcpServer) {
+    const line = ontologyRagMcpLine(retirement.mcpServer);
+    const failed =
+      retirement.mcpServer.status === 'unreadable' || retirement.mcpServer.status === 'failed';
+    if (failed) console.warn(line);
+    else console.log(line);
+  }
+  if (retirement.ontologyDirLeft) console.log(i18n.t('cli.update.ontologyDirLeft'));
+  if (retirement.venvHasOntologyRag) console.log(i18n.t('cli.update.ontologyRagVenvNotice'));
+}
+
 /**
  * Print update results
  */
@@ -576,6 +623,7 @@ export function printUpdateResults(result: UpdateResult): void {
   }
 
   printOrphanRetirement(result);
+  printOntologyRagRetirement(result);
 
   // Show backup path
   if (result.backedUpPaths.length > 0) {

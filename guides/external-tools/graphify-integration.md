@@ -23,21 +23,20 @@ graphify는 code/docs/paper corpus를 queryable knowledge graph로 전환하는 
 |------|----------|----------------|
 | 코드베이스 검색 | Grep, Glob, Explore agent | 구조화된 엔티티-관계 질의 — 키워드 매칭이 아닌 그래프 트래버설 |
 | 문서 검색 | wiki-rag (wiki/index.yaml) | 자동 엔티티 추출 + 외부 corpus(arXiv 논문 등) 포함 가능 |
-| 온톨로지 | ontology-rag MCP | 외부 corpus 포함, 대규모 이종 소스 통합에 특화 |
-| RAG enrichment | R019 dual-layer (Layer-1: ontology-rag, Layer-2: wiki-rag) | Layer-3 후보로 식별됨 — 통합 deferred |
+| RAG enrichment | R019 Wiki-RAG (wiki/index.yaml, 라우팅 신뢰도 90% 미만 시 조회) | 추가 enrichment 후보로 식별됨 — 통합 deferred |
 
 ### 현재 스택 위치
 
 ```
 사용자 질의
   ↓
-[Layer-1] ontology-rag MCP  ← 내부 온톨로지 그래프 기반
+정적 라우팅 (신뢰도 90% 미만이면 아래 단계 수행)
   ↓
-[Layer-2] wiki-rag (wiki/index.yaml)  ← 프로젝트 위키 인덱스 기반
+[Wiki-RAG] wiki/index.yaml 조회  ← 프로젝트 위키 인덱스 기반, advisory
   ↓
-에이전트 라우팅 결정
+에이전트 라우팅 결정 (매칭 결과는 suggested_context로 프롬프트에 주입)
 
-[Layer-3 후보] graphify  ← 외부 corpus / 대규모 이종 소스 — 현재 deferred
+[추가 후보] graphify  ← 외부 corpus / 대규모 이종 소스 — 현재 deferred
 ```
 
 ## 통합 옵션
@@ -46,7 +45,7 @@ graphify는 code/docs/paper corpus를 queryable knowledge graph로 전환하는 
 |------|------|------|
 | A. 참고만 | graphify를 독립 도구로 유지, 필요 시 수동 활용 | 권고 (v0.105.0) |
 | B. 외부 스킬 등록 | `scope: package` + `source.external`로 공식 통합 | v0.106.0+ 검토 |
-| C. R019 Layer-3 통합 | ontology-rag/wiki-rag와 함께 라우팅 enrichment에 활용 | 별도 이슈 이관 |
+| C. R019 enrichment 통합 | Wiki-RAG와 함께 라우팅 enrichment에 활용 | 별도 이슈 이관 |
 
 ### 옵션 B 스킬 등록 예시 (참고용)
 
@@ -70,19 +69,18 @@ source:
 
 **조건부 격상 (v0.106.0+)**: 다음 조건 중 하나 충족 시 옵션 B 검토:
 - 프로젝트 내 corpus가 1,000+ 파일 규모로 성장
-- wiki-rag/ontology-rag 한계가 명확히 드러남 (false positive율 상승, 다중 corpus 질의 실패 등)
+- wiki-rag 한계가 명확히 드러남 (false positive율 상승, 다중 corpus 질의 실패 등)
 - graphify 업스트림이 안정화 (major version 출시)
 
 ## Deferred
 
 - 실제 graphify 스킬 등록 (옵션 B) — 사용 케이스 축적 후 재평가
-- R019 Layer-3 라우팅 enrichment 통합 (옵션 C) — 별도 이슈 등록 예정
-- graphify query interface를 MCP 도구로 래핑 — ontology-rag MCP 패턴 참고
+- R019 라우팅 enrichment 통합 (옵션 C) — 별도 이슈 등록 예정
+- graphify query interface를 MCP 도구로 래핑
 
 ## 참조
 
 - `.claude/skills/wiki/SKILL.md` — 위키 생성/유지 스킬 (Karpathy LLM Wiki 패턴)
 - `.claude/skills/wiki-rag/SKILL.md` — wiki/index.yaml 기반 RAG 조회 스킬
-- ontology-rag MCP 서버 (R019 참조) — 라우팅 enrichment Layer-1 (`.claude/rules/SHOULD-ontology-rag-routing.md`)
-- `.claude/rules/SHOULD-ontology-rag-routing.md` — R019 dual-layer enrichment 규칙
+- `.claude/rules/SHOULD-ontology-rag-routing.md` — R019 Wiki-RAG enrichment 규칙
 - 내재화 배경: issue #977

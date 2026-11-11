@@ -9,6 +9,8 @@
 
 ## Compatibility Baseline
 
+> **Note (ontology-rag 제거, #1960 — v2.0.24)**: oh-my-customcode v2.0.24에서 ontology-rag(패키지, MCP 서버, `.claude/ontology` 데이터, R019 Layer 1)가 제거되었습니다. 이 가이드 아래에 날짜가 기록된 ontology-rag 언급은 당시의 역사적 기록입니다.
+
 oh-my-customcode v1.1.9 targets Claude Code v2.1.201+ (v2.1.197부터 Sonnet 5가 CC 기본 Sonnet 모델이었고, v2.1.284부터 Anthropic API의 기본 Sonnet 모델은 Sonnet 5.5). 이 파일에 정리된 v2.1.117-160 항목은 하위호환이며 config 변경이 불필요합니다.
 
 ## v2.1.117 (2026-04-22)

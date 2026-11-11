@@ -126,7 +126,7 @@ Delegate to mgr-creator with the proposal context:
 - Confidence level
 - Any overlap warnings
 
-mgr-creator handles: SKILL.md creation, template sync, ontology registration.
+mgr-creator handles: SKILL.md creation, template sync.
 
 ## Selection Discipline (evidence-gated)
 

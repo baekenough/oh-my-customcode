@@ -261,6 +261,10 @@ wiki-curator 완료 표는 early pending의 각 행에 정정/잔존 근거를 �
 
 Step 3.c's merge instruction was corrected from `gh pr merge {n} --merge --delete-branch --admin` to a **plain merge, explicitly annotated "NOT --admin"**. Ground-truth measurement (`gh api repos/{owner}/{repo}/branches/develop/protection`, 2026-08-15) found `develop` protection requires exactly **6** status checks (`Test`, `Lint`, `Template Sync`, `Version Sync`, `Dependency Security Audit`, `Rust Tests`), `enforce_admins=false`, and **no** `required_pull_request_reviews` block — there is no reviewer-approval gate to bypass in the first place. v1.1.47 merged cleanly via `gh pr merge 1585 --merge --delete-branch` with no `--admin`. The step now instructs: attempt the plain merge once all 6 checks are green; if merge is rejected, re-run the protection query to re-measure the actual blocker rather than reflexively adding `--admin` ([[r010]] bypass-flag pre-check — name what a bypass flag bypasses, measured, before using it).
 
+### release step 3.c: required-check set after v2.0.24 (#1960)
+
+The merge instruction no longer fixes the required-check count at 6: from v2.0.24 "Rust Tests" is not a required check (removed at merge because the rust-test job is deleted in that release), so the expected set is the other 5 (Dependency Security Audit, Lint, Template Sync, Test, Version Sync; strict=true), and the step tells the agent to re-measure with `gh api repos/{owner}/{repo}/branches/develop/protection/required_status_checks`. `--admin` is still not used for a plain merge.
+
 ### deep-plan: research-conclusion figures must be recomputed from the artifact table (#1707 #4)
 
 The `deep-plan` step description now adds: a research/measurement delegation's completion criteria must require every number appearing in the conclusion sentence to be recomputed from the artifact's own table (jq/awk) and paired alongside it. Cross-ref [[r023]] 「리서치 위임의 결론 수치는 표에서 재계산해 병기」.

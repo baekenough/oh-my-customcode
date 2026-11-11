@@ -92,6 +92,91 @@
       ]
     },
     {
+      "path": ".claude/ontology/agents.yaml",
+      "sha256": [
+        "451fc483869b72f49432bff861828993a5e277d6fe2088e14619d4b299d5b077",
+        "4965e1db5fa399910121a5f56b2a592788b738dca296211a33baa6e936016f83",
+        "981050da40417b0fd9e85cbf77ce40dd5e71ea1884d2f3fe751ee15dab0ef84b",
+        "9bc34ccdcdeaeec02597ca4039bdf235077b9dfb2a145ec6c70ebe8f8e4864ca",
+        "9c04a49196ee3a860926750e729f1106f3ebc76af2ce3501824204ec5e01bb5d",
+        "b79c0210121740a998957638332c144cd94441d19f0e882cba7d29efe9f1c517"
+      ]
+    },
+    {
+      "path": ".claude/ontology/graphs/agent-skill.json",
+      "sha256": [
+        "100f98c93121d46a69f9088330406011c8a182959fc1d9f24dbb520b1a7ff485",
+        "3dbbd4148d17738652bde08f51eba4f031005deaf4f29c23c771f61236897a53",
+        "52ebf33a980ebb2cc86e31989414b5b4804d1304363dcbecf394683c74879276",
+        "6b4a0079205ccb7190489c52d54eed34ae8c5920590e2a068bd6927ecd97de59",
+        "81b409aee5a9aebc8c5bcc62feddcf4dddb16c1e7738fac62c38a0a1f4bb030e",
+        "984947718b2860fe80f0a6e4da757f5c1ffa3bd4707c61cbc14a76a77e9bd873",
+        "ac2c507a0c3b33211aadbece4aab8795819c0e83226a01b1f59bb4de7d390051"
+      ]
+    },
+    {
+      "path": ".claude/ontology/graphs/full-graph.json",
+      "sha256": [
+        "2399191918e60db1699e6f93473286c8b2544cc34d76bc394fa655362b9ececb",
+        "613eebd1180a81c9a02b0ce6edb4cb45ee4c4c22d445d8369d6d1f85a5c30409",
+        "996b3427eb0a0c18a5a519856e25321d9c2c70f89388c6215c5154cd23368b61",
+        "9b49472e2fe005b9b5f30ca0a9b3f435835ca6e894c1b6380d4484884723de8c",
+        "a327cef2d247d430142466a352eee94473c0fb15e3d14b73d60eb001e2808bca",
+        "a5e1a35fe7f49b39eb6a97c6041f4684cfd352bdf5ef97be3333fe111dc0d00c",
+        "d58cd7b7125d127604a5ef3a36b6518344d79abd8e59d22d5060e3b81daaf672",
+        "ec12d071c863e3e7b2356366d7273b0281080a6519990e48852c96f5bb59870e",
+        "fe92f66105a52d685d4feff33a6e7526cda904b1fb8101aae094879a68fca7dd"
+      ]
+    },
+    {
+      "path": ".claude/ontology/graphs/routing.json",
+      "sha256": [
+        "171ecad73b368bdf50529539374878fb0f1d91cd630b44b15d76f450ce14b604",
+        "6491d0287f268c114581422a57b10c51164293c81f310bd7a76b81919c22653e",
+        "c7a4202641dcb0483458cd1f7b581ba6b720ffefe970566798f3617f5f2aea5f",
+        "e545044e1f7cb41ad49e83adb9639a6b06d5aac48d5733cf1922d64205aaf0fc"
+      ]
+    },
+    {
+      "path": ".claude/ontology/graphs/skill-rule.json",
+      "sha256": [
+        "4aa3cb34a7b5fb2ae1fb8d022176dad88786dde1ffeb8dbf9c72fa66428705e9",
+        "5e9406de80ea6a386bd978feac21a4dd086df6df98d84d2fcaf218271475fac5",
+        "6bc5e4a273dad296517e2295c145f0e2ca0529a9fc2eb71fb0efef842b0b5efb",
+        "8cd6831cfac3faf54516270d22b022b8b63ef8e17c34ff8e581e3400196b1c2f"
+      ]
+    },
+    {
+      "path": ".claude/ontology/rules.yaml",
+      "sha256": [
+        "4cf6ff8b7a010b00350c6f37244f2e901e4613ee13b97152cf5c9e91362dac94",
+        "5cb074b0dce4d217d6b4406cd4b2d34412c0bbde710d0ba549782d8d1176078a",
+        "6f933684b26640e3aa803316147ab4d0cd51bb182dbcd7f556c4ba1c89e8672c"
+      ]
+    },
+    {
+      "path": ".claude/ontology/schema.yaml",
+      "sha256": [
+        "65e174158c24f1770b4f7b3b9be47bc471e3de9be9e700d4ba421a4a21d64f53",
+        "a39faf485152914ca5dbd244d539ad7b2d3ba7bb80abffaaa1755b72603c26ec"
+      ]
+    },
+    {
+      "path": ".claude/ontology/skills.yaml",
+      "sha256": [
+        "2e546ed6ad94d7c26096be5a73b03db8a7c704bb6215fda8148ee21f614ca875",
+        "4ad9d5a18942204710d0be47a3788bb895aab19d289c72cc957fdfefa8f409fa",
+        "6e79d87f5e09823d13550c52cff60177ad442d3a775b182f5bfd9ac49eca69ad",
+        "7f8f9363a14cb5bc47ccf8c2db787ccca869c052c8d54ac6e470380c51af8390",
+        "89bca7eec7043b3ba91e895a83f3e368068cd3a40f4888d321b7092a926b3c09",
+        "b50d36e8a1b158def52c91115e62015821d9ae7f02a1d21a39103adabda283a4",
+        "bf3d72038d045637878cef487fe550c04bead908628d8bc9b13b6439242e5421",
+        "c6c96971d6b42b0d7dc1e431c89d9f0f88188538813fc0d570aa94b3b9fcec4c",
+        "f4ac5fad977f3238b5d53c33137fb5f6ae58764a508784d5575c0911fc43b37a",
+        "f63d54a1123ea4601920ad704a1d375cad9511731f7f86fc2c074ed08c08a0a9"
+      ]
+    },
+    {
       "path": ".claude/rules/SHOULD-agent-teams.md",
       "sha256": [
         "285ac5ae785706bea1917137054cacd8e0eec0fb80433a45befcba55ed4016f7",

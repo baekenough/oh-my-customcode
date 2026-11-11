@@ -608,10 +608,7 @@ describe('orphan retirement when there are no component updates (#1935 follow-up
     config.version = version;
     config.preserveFiles = [PRESERVED];
     config.componentVersions = Object.fromEntries(
-      ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts', 'ontology'].map((c) => [
-        c,
-        version,
-      ])
+      ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'].map((c) => [c, version])
     );
     await saveConfig(project, config);
     await put(TEMPLATE_RULE, userRule);
@@ -632,7 +629,7 @@ describe('orphan retirement when there are no component updates (#1935 follow-up
 
     expect(result.success).toBe(true);
     expect(result.updatedComponents).toEqual([]);
-    expect(result.skippedComponents).toHaveLength(7);
+    expect(result.skippedComponents).toHaveLength(6);
     expect(result.orphanRetirement?.removed.sort()).toEqual(
       [UNMODIFIED_GUIDE, UNMODIFIED_SCRIPT, UNMODIFIED_SKILL].sort()
     );
@@ -1458,7 +1455,7 @@ describe('confirmation before orphan removal (#1941)', () => {
       config.version = manifest.version;
       config.preserveFiles = [PRESERVED];
       config.componentVersions = Object.fromEntries(
-        ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts', 'ontology'].map((c) => [
+        ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'].map((c) => [
           c,
           manifest.version,
         ])

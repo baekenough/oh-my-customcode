@@ -171,7 +171,6 @@ describe('updater fallback paths', () => {
         guides: '0.0.0',
         hooks: '0.0.0',
         contexts: '0.0.0',
-        ontology: '0.0.0',
       });
 
       const result = await checkForUpdates(tempDir);

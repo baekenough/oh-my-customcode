@@ -764,6 +764,37 @@ describe('count-r007-r008.sh — text-less turns (#1950) and notification sub-co
     expect(p.r007_textless).toBe(0);
   });
 
+  it('POSITIVE: empty first text block + header-less prose counts r007_textless only (#1959)', async () => {
+    const p = await measure('tl-empty-first', [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '' },
+        { type: 'text', text: 'prose without header' },
+        { type: 'tool_use', id: 'a', name: 'Read', input: {} },
+      ]),
+    ]);
+    expect(p.r007_textless).toBe(1);
+    expect(p.r007_missing).toBe(0);
+  });
+
+  it('NEGATIVE: empty first text block + header block counts 0 text-less (#1959)', async () => {
+    for (const [name, text] of [
+      ['full', '┌─ Agent: claude (default)\n[claude][opus] → Tool: Read'],
+      ['short', '[claude] reading\n[claude][opus] → Tool: Read'],
+    ] as const) {
+      const p = await measure(`tl-empty-first-neg-${name}`, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: '' },
+          { type: 'text', text },
+          { type: 'tool_use', id: 'a', name: 'Read', input: {} },
+        ]),
+      ]);
+      expect(p.r007_textless).toBe(0);
+      expect(p.r007_missing).toBe(0);
+    }
+  });
+
   it('POSITIVE: text-less turn right after a task-notification boundary is also counted in the sub-count', async () => {
     const p = await measure('tl-notif', [
       ...userTurn('go'),
