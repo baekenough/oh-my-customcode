@@ -10,6 +10,7 @@ import {
   LEGACY_OMCUSTOM_DESCRIPTIONS,
   mergeHookBlocks,
   retireRtkHookBlocks,
+  stripRtkInterceptHooks,
 } from '../../../src/core/hook-group-merge.js';
 
 const anchored = (script: string): string =>
@@ -611,5 +612,37 @@ describe('mergeHookBlocks', () => {
       const merged = mergeHookBlocks({ PostToolUse: [user] }, makeGenerated());
       expect(merged.PostToolUse).toEqual([...makeGenerated().PostToolUse, user]);
     });
+  });
+});
+
+describe('stripRtkInterceptHooks quote pairing (#1949)', () => {
+  const tail = '.claude/hooks/scripts/rtk-intercept.sh';
+  const strip = (command: string) =>
+    stripRtkInterceptHooks({ PreToolUse: [userGroup(command)] }, ['/opt/project']) as {
+      PreToolUse: unknown[];
+    };
+
+  // Positive fixtures: unquoted and correctly paired quotes are the script's wiring
+  it.each([
+    `bash ${tail}`,
+    `bash "${tail}"`,
+    `bash "./${tail}"`,
+    `bash "\${CLAUDE_PROJECT_DIR:-.}/${tail}"`,
+    `bash "$CLAUDE_PROJECT_DIR"/${tail}`,
+    `bash "/opt/project/${tail}"`,
+    `bash "/opt/project"/${tail}`,
+  ])('removes %s', (command) => {
+    expect(strip(command).PreToolUse).toEqual([]);
+  });
+
+  // Negative fixtures: an unpaired quote is a broken user command and stays
+  it.each([
+    `bash "${tail}`,
+    `bash ${tail}"`,
+    `bash "$CLAUDE_PROJECT_DIR/${tail}`,
+    `bash $CLAUDE_PROJECT_DIR"/${tail}`,
+    `bash "/opt/project"/${tail}"`,
+  ])('keeps %s', (command) => {
+    expect(strip(command).PreToolUse).toEqual([userGroup(command)]);
   });
 });

@@ -713,3 +713,89 @@ describe('count-r007-r008.sh — tool_use after tool_result with no text (separa
     expect(r.stdout).toContain('R008 prefix missing: 1');
   });
 });
+
+describe('count-r007-r008.sh — text-less turns (#1950) and notification sub-count (#1954)', () => {
+  beforeEach(() => {
+    tmpRoot = mkdtempSync(join(tmpdir(), 'count-r007-r008-textless-'));
+  });
+
+  afterEach(async () => {
+    await rm(tmpRoot, { recursive: true, force: true });
+  });
+
+  async function measure(name: string, lines: string[]): Promise<Record<string, number>> {
+    const r = await runCounter([await writeTranscript(name, lines), '--json']);
+    expect(r.exitCode).toBe(0);
+    return JSON.parse(r.stdout.trim());
+  }
+
+  const NOTIF = '<task-notification><task-id>a1</task-id></task-notification>';
+  const toolOnly = (id: string) =>
+    assistantTurn([{ type: 'tool_use', id, name: 'Read', input: {} }]);
+
+  it('POSITIVE: a text-less turn counts as r007_textless and NOT as r007_missing', async () => {
+    const p = await measure('tl-pos', [...userTurn('go'), ...toolOnly('a')]);
+    expect(p.r007_textless).toBe(1);
+    expect(p.r007_missing).toBe(0);
+    expect(p.r007_textless_after_notification).toBe(0);
+  });
+
+  it('NEGATIVE: a turn with a header counts 0 text-less', async () => {
+    const p = await measure('tl-neg', [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n[claude][opus] → Tool: Read' },
+        { type: 'tool_use', id: 'a', name: 'Read', input: {} },
+      ]),
+    ]);
+    expect(p.r007_textless).toBe(0);
+    expect(p.r007_missing).toBe(0);
+  });
+
+  it('NEGATIVE: text without a header is r007_missing only, not r007_textless', async () => {
+    const p = await measure('tl-mixed', [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: 'Sure.\n[claude][opus] → Tool: Read' },
+        { type: 'tool_use', id: 'a', name: 'Read', input: {} },
+      ]),
+    ]);
+    expect(p.r007_missing).toBe(1);
+    expect(p.r007_textless).toBe(0);
+  });
+
+  it('POSITIVE: text-less turn right after a task-notification boundary is also counted in the sub-count', async () => {
+    const p = await measure('tl-notif', [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '┌─ Agent: claude (default)\n[claude][opus] → Tool: Agent' },
+        { type: 'tool_use', id: 'a', name: 'Agent', input: {} },
+      ]),
+      ...userTurn(NOTIF),
+      ...toolOnly('b'),
+    ]);
+    expect(p.r007_textless).toBe(1);
+    expect(p.r007_textless_after_notification).toBe(1);
+  });
+
+  it('NEGATIVE: text-less turn after a plain prompt is not in the sub-count; a notification quoted mid-string is not a notification', async () => {
+    const plain = await measure('tl-plain', [...userTurn('go'), ...toolOnly('a')]);
+    expect(plain.r007_textless).toBe(1);
+    expect(plain.r007_textless_after_notification).toBe(0);
+
+    const quoted = await measure('tl-quoted', [
+      ...userTurn(`This session is being continued. It quoted ${NOTIF} earlier.`),
+      ...toolOnly('b'),
+    ]);
+    expect(quoted.r007_textless).toBe(1);
+    expect(quoted.r007_textless_after_notification).toBe(0);
+  });
+
+  it('prints both metrics in the human-readable output', async () => {
+    const path = await writeTranscript('tl-human', [...userTurn(NOTIF), ...toolOnly('a')]);
+    const r = await runCounter([path]);
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain('R007 unverifiable (text-less turns): 1');
+    expect(r.stdout).toContain('of which after a notification:     1');
+  });
+});

@@ -55,9 +55,10 @@ Tier를 섞으면(예: frontmatter에 Tier-3 전용 값을 쓰거나 그 반대)
 | `claude-opus-5` | Opus, previous generation (GA); native 1M context, fast mode at $10/$50 per Mtok |
 | `claude-opus-5-5` | Latest Opus (GA), default Opus model (v2.1.280+); 1M context, $4/$20 per Mtok, $0.20/Mtok cache reads |
 | `claude-fable-5` | Mythos-class; tier above Opus (access via CC v2.1.170+) |
-| `claude-fable-5-1` | Mythos-class; Fable 5.1 — v2.1.257부터 기본 Fable 모델, 1M context |
+| `claude-fable-5-1` | Mythos-class; Fable 5.1, previous generation; 1M context |
+| `claude-fable-5-2` | Mythos-class; Fable 5.2, now the default Fable model (v2.1.321+); 1M context, $8/$40 per Mtok with $0.20/Mtok cache reads |
 
-Full IDs are valid ONLY in agent frontmatter — the Agent tool's `model:` spawn parameter does NOT accept them (see Tier 3). Writing the full ID directly pins the agent regardless of future CC default changes. This is the recommended way to opt into Haiku 5.5 / Sonnet 5.5 / Opus 5.5 / Fable 5 / 5.1 explicitly rather than riding CC's Tier-1 default resolution.
+Full IDs are valid ONLY in agent frontmatter — the Agent tool's `model:` spawn parameter does NOT accept them (see Tier 3). Writing the full ID directly pins the agent regardless of future CC default changes. <!-- DETAIL: opt-in advice (non-normative): This is the recommended way to opt into Haiku 5.5 / Sonnet 5.5 / Opus 5.5 / Fable 5 / 5.1 / 5.2 explicitly rather than riding CC's Tier-1 default resolution. -->
 
 Extended context suffix: `[1m]` (e.g., `claude-opus-4-6[1m]`) — enables 1M token context window.
 

@@ -220,11 +220,26 @@ function escapeRegExp(value: string): string {
  * directories. Quotes around the variable and the path are tolerated.
  */
 function projectScriptSource(projectDirs: readonly string[]): string {
-  const prefixes = [
+  return `(?:(?:${projectPrefixes(projectDirs)})"?\\/|\\.\\/)?${escapeRegExp(RTK_SCRIPT_TAIL)}`;
+}
+
+function projectPrefixes(projectDirs: readonly string[]): string {
+  return [
     PROJECT_DIR_VARIABLE,
     ...projectDirs.map((dir) => escapeRegExp(dir.replace(/\/+$/, ''))),
-  ];
-  return `(?:(?:${prefixes.join('|')})"?\\/|\\.\\/)?${escapeRegExp(RTK_SCRIPT_TAIL)}`;
+  ].join('|');
+}
+
+/**
+ * The regex source of a whole command that runs only the project RTK script. Quotes must pair:
+ * unquoted, the whole path quoted (`"$DIR/x"`), or only the directory part quoted (`"$DIR"/x`).
+ * A lone quote is a broken command and is not the script's wiring.
+ */
+function projectRtkCommandSource(projectDirs: readonly string[]): string {
+  const prefixes = projectPrefixes(projectDirs);
+  const tail = escapeRegExp(RTK_SCRIPT_TAIL);
+  const bare = `(?:(?:${prefixes})\\/|\\.\\/)?${tail}`;
+  return `(?:"${bare}"|"(?:${prefixes})"\\/${tail}|${bare})`;
 }
 
 /**
@@ -236,7 +251,7 @@ function isProjectRtkCommand(hook: unknown, projectDirs: readonly string[]): boo
   if (!isRecord(hook) || hook.type !== 'command' || typeof hook.command !== 'string') {
     return false;
   }
-  return new RegExp(`^(?:bash )?"?${projectScriptSource(projectDirs)}"?$`).test(hook.command);
+  return new RegExp(`^(?:bash )?${projectRtkCommandSource(projectDirs)}$`).test(hook.command);
 }
 
 /**

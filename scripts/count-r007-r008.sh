@@ -72,10 +72,22 @@
 # metric is not a turn-boundary claim; it only counts the adjacency shape. It reports the number
 # as measured and makes no statement about why the text block is absent.
 #
+# SEPARATE metric (#1950): `r007_textless` — turns whose advisor output carries the text-less
+# statement ("text 블록이 없는 응답 턴 N건"). Such a turn has NO text block, so the advisor cannot
+# judge R007 for it; it is counted apart from `r007_missing` (a turn WITH text but no header) and is
+# never folded into it. The count is taken from the advisor's own output, so it matches the hook 1:1.
+# Sub-count `r007_textless_after_notification` (#1954 찐빠 #1): of those text-less turns, the ones whose
+# opening boundary record is a notification. MEASURED on a real transcript (10170 lines): a
+# notification is an ordinary boundary record — `type:"user"`, `.message.content` a bare string whose
+# first non-space characters are `<task-notification>` (20 records) or `<system-reminder>` — so it is
+# distinguishable by that anchored prefix on the boundary record. A text-block array content, or the
+# marker appearing mid-string (e.g. a "session is being continued" summary quoting one), does not count.
+#
 # Usage: scripts/count-r007-r008.sh <transcript.jsonl> [--json]
 #
 # Output (default): human-readable summary.
-# Output (--json):  {"turns":N,"r007_missing":N,"r008_missing":N,"tool_use_after_tool_result_no_text":N}
+# Output (--json):  {"turns":N,"r007_missing":N,"r008_missing":N,"tool_use_after_tool_result_no_text":N,
+#                    "r007_textless":N,"r007_textless_after_notification":N}
 #
 # macOS zsh-invoked bash: no GNU-only flags; `mktemp -d` uses the BSD-compatible template form.
 
@@ -129,6 +141,7 @@ trap cleanup EXIT
 CANONICAL="${WORK_DIR}/canonical.jsonl"
 META="${WORK_DIR}/meta.tsv"
 CUTPOINTS_FILE="${WORK_DIR}/cutpoints.txt"
+NOTIF_FILE="${WORK_DIR}/notification_boundaries.txt"
 MARKER_DIR="${WORK_DIR}/markers"
 mkdir -p "$MARKER_DIR"
 
@@ -161,6 +174,20 @@ jq -s -r '
     ] | @tsv
 ' "$CANONICAL" > "$META"
 
+# ── Notification boundaries (#1954 찐빠 #1): 0-indexed canonical lines that are boundary records whose
+# content is a bare string starting with a notification marker (see header). Same $is_conv and
+# boundary test as the META pass above.
+jq -s -r '
+  . as $L
+  | range(0; ($L | length)) as $i
+  | $L[$i] as $r
+  | select((($r.isSidechain? // false) != true) and (($r.type? // "") != "api-request-blob")
+           and ($r.message.role? == "user")
+           and (($r.message.content? // "" | type) == "string")
+           and ($r.message.content | test("^\\s*<(task-notification|system-reminder)>")))
+  | $i
+' "$CANONICAL" > "$NOTIF_FILE"
+
 TOTAL_LINES=$(wc -l < "$CANONICAL" | tr -d '[:space:]')
 
 # ── Derive cut points: the 0-indexed CANONICAL-line where each turn ENDS. A turn ends either
@@ -169,17 +196,21 @@ TOTAL_LINES=$(wc -l < "$CANONICAL" | tr -d '[:space:]')
 # run of consecutive user-boundary lines with nothing in between is not a "turn").
 : > "$CUTPOINTS_FILE"
 seen_assistant=0
+cur_boundary=-1
 while IFS=$'\t' read -r idx is_assistant is_boundary; do
   if [ "$is_boundary" = "1" ] && [ "$idx" != "0" ] && [ "$seen_assistant" = "1" ]; then
-    echo "$((idx - 1))" >> "$CUTPOINTS_FILE"
+    printf '%s\t%s\n' "$((idx - 1))" "$cur_boundary" >> "$CUTPOINTS_FILE"
     seen_assistant=0
+  fi
+  if [ "$is_boundary" = "1" ]; then
+    cur_boundary="$idx"
   fi
   if [ "$is_assistant" = "1" ]; then
     seen_assistant=1
   fi
 done < "$META"
 if [ "$seen_assistant" = "1" ]; then
-  echo "$((TOTAL_LINES - 1))" >> "$CUTPOINTS_FILE"
+  printf '%s\t%s\n' "$((TOTAL_LINES - 1))" "$cur_boundary" >> "$CUTPOINTS_FILE"
 fi
 
 # ── Separate metric: tool_use right after a tool_result with no text block (see header). One
@@ -207,9 +238,11 @@ tool_use_no_text_total=$(
 turns_scanned=0
 r007_missing_total=0
 r008_missing_total=0
+r007_textless_total=0
+r007_textless_after_notification_total=0
 
 turn_no=0
-while IFS= read -r cutpoint; do
+while IFS=$'\t' read -r cutpoint boundary_idx; do
   [ -n "$cutpoint" ] || continue
   turn_no=$((turn_no + 1))
   prefix_file="${WORK_DIR}/prefix_${turn_no}.jsonl"
@@ -229,6 +262,7 @@ while IFS= read -r cutpoint; do
 
   r007_n=0
   r008_n=0
+  textless_n=0
   if [ -n "$advisor_out" ]; then
     ctx=$(printf '%s' "$advisor_out" | jq -r '.hookSpecificOutput.additionalContext // ""' 2>/dev/null) || ctx=""
     # NOTE: the label itself contains digits ("R007"/"R008"), so the count must be extracted
@@ -236,6 +270,14 @@ while IFS= read -r cutpoint; do
     # matched substring would also pick up "007"/"008" from the rule-name label.
     r007_match=$(printf '%s' "$ctx" | grep -oE 'R007 에이전트 식별 헤더 누락 [0-9]+건' || true)
     r008_match=$(printf '%s' "$ctx" | grep -oE 'R008 도구 식별 접두사 누락 [0-9]+건' || true)
+    # #1950: the text-less statement is its own phrase — it does not contain "헤더 누락", so the
+    # r007_missing anchor above can never match it.
+    textless_match=$(printf '%s' "$ctx" | grep -oE 'text 블록이 없는 응답 턴 [0-9]+건' || true)
+    if [ -n "$textless_match" ]; then
+      textless_suffixed=$(printf '%s' "$textless_match" | grep -oE '[0-9]+건' || true)
+      textless_n="${textless_suffixed%건}"
+      : "${textless_n:=0}"
+    fi
     if [ -n "$r007_match" ]; then
       r007_suffixed=$(printf '%s' "$r007_match" | grep -oE '[0-9]+건' || true)
       r007_n="${r007_suffixed%건}"
@@ -250,6 +292,10 @@ while IFS= read -r cutpoint; do
 
   r007_missing_total=$((r007_missing_total + r007_n))
   r008_missing_total=$((r008_missing_total + r008_n))
+  r007_textless_total=$((r007_textless_total + textless_n))
+  if [ "$textless_n" -gt 0 ] && [ "$boundary_idx" != "-1" ] && grep -qx "$boundary_idx" "$NOTIF_FILE"; then
+    r007_textless_after_notification_total=$((r007_textless_after_notification_total + textless_n))
+  fi
 done < "$CUTPOINTS_FILE"
 
 if [ "$JSON_OUT" = "1" ]; then
@@ -258,10 +304,14 @@ if [ "$JSON_OUT" = "1" ]; then
     --argjson r007 "$r007_missing_total" \
     --argjson r008 "$r008_missing_total" \
     --argjson notext "$tool_use_no_text_total" \
-    '{turns: $turns, r007_missing: $r007, r008_missing: $r008, tool_use_after_tool_result_no_text: $notext}'
+    --argjson textless "$r007_textless_total" \
+    --argjson textless_notif "$r007_textless_after_notification_total" \
+    '{turns: $turns, r007_missing: $r007, r008_missing: $r008, tool_use_after_tool_result_no_text: $notext, r007_textless: $textless, r007_textless_after_notification: $textless_notif}'
 else
   echo "turns scanned:       $turns_scanned"
   echo "R007 header missing: $r007_missing_total"
   echo "R008 prefix missing: $r008_missing_total"
   echo "tool_use after tool_result, no text: $tool_use_no_text_total"
+  echo "R007 unverifiable (text-less turns): $r007_textless_total"
+  echo "  of which after a notification:     $r007_textless_after_notification_total"
 fi

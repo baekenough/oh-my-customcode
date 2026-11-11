@@ -54,6 +54,7 @@ import {
   resolveLockfileComponent,
   writeLockfile,
 } from './lockfile.js';
+import { refreshOntologyRag } from './ontology-rag-setup.js';
 import {
   isRetirablePath,
   loadRetiredTemplatePaths,
@@ -2000,6 +2001,8 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     await runFullUpdatePostProcessing(options, result, config, customizations);
 
+    await refreshOntologyRagAfterUpdate(options, result);
+
     await retireLeftoversAndRegenerateLockfile(options, lockfile, result, config);
 
     // After every backup of this run (the --backup copy and the retired-file backup) exists
@@ -2019,6 +2022,26 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
   }
 
   return result;
+}
+
+/**
+ * Refresh an already-installed project ontology-rag so it gets the new bundled sources. Runs on
+ * a full update that applies changes (or `--force`: the up-to-date early return is bypassed).
+ * Never creates a venv; a failure is a warning and the update continues.
+ */
+async function refreshOntologyRagAfterUpdate(
+  options: UpdateOptions,
+  result: UpdateResult
+): Promise<void> {
+  // Same full-update predicate as the orphan sweep and root-file sync: no filter or an empty list.
+  // A non-empty component filter leaves the venv alone.
+  if (options.components && options.components.length > 0) return;
+  const refresh = await refreshOntologyRag(options.targetDir, { dryRun: options.dryRun });
+  if (refresh.status === 'refreshed') info('update.ontology_rag_refreshed');
+  else if (refresh.status === 'would-refresh') info('update.ontology_rag_would_refresh');
+  else if (refresh.status === 'failed') {
+    result.warnings.push(`ontology-rag was not refreshed: ${refresh.reason ?? 'unknown error'}`);
+  }
 }
 
 /**
@@ -2545,10 +2568,19 @@ async function retireDeprecatedEntry(
   }
   if (keepPreservedDeprecated(entry.path, config, customizations, result)) return false;
   if (options.dryRun) {
-    return validateOwnedTarget(targetDir, entry.path, true).then(
-      () => true,
-      () => false
-    );
+    try {
+      await validateOwnedTarget(targetDir, entry.path, true);
+      return true;
+    } catch (err) {
+      // Same outcome as a real run: an absent entry is quiet, an unsafe one is warned about
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== 'ENOENT' && code !== 'ENOTDIR') {
+        result.warnings.push(
+          `Deprecated file kept ${entry.path}: ${errorMessage(err, String(err))}`
+        );
+      }
+      return false;
+    }
   }
   const destination = await moveDeprecatedFile(targetDir, entry.path, result);
   if (destination === null) return false;

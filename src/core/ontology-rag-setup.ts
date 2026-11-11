@@ -17,6 +17,7 @@
  */
 
 import { execSync } from 'node:child_process';
+import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileExists, getPackageRoot } from '../utils/fs.js';
 
@@ -150,11 +151,16 @@ export function installOntologyRagEditable(
 
   if (useUv) {
     // Note: ontologyPkgPath is derived from import.meta.url — no user input.
-    execSync(`uv pip install --python .venv/bin/python ${editableFlag}"${ontologyPkgPath}"`, {
-      cwd: targetDir,
-      stdio: 'pipe',
-      timeout: INSTALL_TIMEOUT_MS,
-    });
+    // --reinstall-package: the package version stays 0.3.0 across CLI releases and the npm
+    // tarball has fixed mtimes, so without it uv can satisfy the install from its cache.
+    execSync(
+      `uv pip install --python .venv/bin/python --reinstall-package ontology-rag ${editableFlag}"${ontologyPkgPath}"`,
+      {
+        cwd: targetDir,
+        stdio: 'pipe',
+        timeout: INSTALL_TIMEOUT_MS,
+      }
+    );
   } else {
     execSync(`.venv/bin/pip install ${editableFlag}"${ontologyPkgPath}"`, {
       cwd: targetDir,
@@ -286,4 +292,59 @@ export async function setupOntologyRag(targetDir: string): Promise<OntologyRagSe
     success: true,
     statusLine: 'ontology-rag MCP: ready',
   };
+}
+
+/**
+ * Whether the project `.venv` already has ontology-rag installed — the state `init` leaves
+ * behind (a regular or editable install both write an `ontology_rag-*.dist-info`). Local
+ * filesystem check only: no subprocess, no network.
+ */
+export async function isOntologyRagInstalled(targetDir: string): Promise<boolean> {
+  try {
+    const lib = join(targetDir, '.venv', 'lib');
+    if (!(await fileExists(join(targetDir, '.venv', 'bin', 'python')))) return false;
+    for (const entry of await readdir(lib)) {
+      if (!entry.startsWith('python')) continue;
+      const packages = await readdir(join(lib, entry, 'site-packages')).catch(() => [] as string[]);
+      if (packages.some((name) => /^ontology_rag-.*\.dist-info$/i.test(name))) return true;
+    }
+  } catch {
+    // no venv or unreadable layout: not installed
+  }
+  return false;
+}
+
+/** Outcome of {@link refreshOntologyRag}. */
+export interface OntologyRagRefreshResult {
+  status: 'refreshed' | 'would-refresh' | 'skipped' | 'failed';
+  reason?: string;
+}
+
+/**
+ * Re-install the bundled ontology-rag into a project `.venv` that already has it, so `update`
+ * delivers the new sources (the package version stays unchanged across CLI releases).
+ *
+ * Never creates a venv, never prompts, honours OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP=1, only
+ * reports in a dry run, and never throws: a failure is returned for the caller to warn about.
+ */
+export async function refreshOntologyRag(
+  targetDir: string,
+  options: { dryRun?: boolean } = {}
+): Promise<OntologyRagRefreshResult> {
+  if (process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP === '1') {
+    return { status: 'skipped', reason: 'OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP=1' };
+  }
+  if (!(await isOntologyRagInstalled(targetDir))) {
+    return { status: 'skipped', reason: 'ontology-rag is not installed in the project .venv' };
+  }
+  if (!(await fileExists(join(resolveOntologyRagPath(), 'pyproject.toml')))) {
+    return { status: 'skipped', reason: 'bundled ontology-rag sources not found' };
+  }
+  if (options.dryRun) return { status: 'would-refresh' };
+  try {
+    installOntologyRagEditable(targetDir, checkUvAvailableForSetup());
+    return { status: 'refreshed' };
+  } catch (err) {
+    return { status: 'failed', reason: err instanceof Error ? err.message : String(err) };
+  }
 }

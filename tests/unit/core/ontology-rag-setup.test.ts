@@ -10,7 +10,9 @@ import {
   createVenvWithUv,
   installOntologyRagEditable,
   isNpmInstalledPackageRoot,
+  isOntologyRagInstalled,
   parsePythonVersion,
+  refreshOntologyRag,
   resolveOntologyRagPath,
   setupOntologyRag,
 } from '../../../src/core/ontology-rag-setup.js';
@@ -219,7 +221,7 @@ describe('ontology-rag-setup', () => {
       installOntologyRagEditable(tempDir, true, npmRoot);
       const call = String(execSyncSpy.mock.calls[0]?.[0] ?? '');
       expect(call).toBe(
-        `uv pip install --python .venv/bin/python "${join(npmRoot, 'packages', 'ontology-rag')}"`
+        `uv pip install --python .venv/bin/python --reinstall-package ontology-rag "${join(npmRoot, 'packages', 'ontology-rag')}"`
       );
       expect(call).not.toContain(' -e ');
     });
@@ -506,6 +508,87 @@ describe('ontology-rag-setup', () => {
         expect(execSyncSpy).toHaveBeenCalled();
         expect(result.statusLine).not.toContain('OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP');
       });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // refreshOntologyRag (update path, #1949)
+  // ---------------------------------------------------------------------------
+  describe('refreshOntologyRag', () => {
+    async function seedInstalledVenv(): Promise<void> {
+      await mkdir(join(tempDir, '.venv', 'bin'), { recursive: true });
+      await writeFile(join(tempDir, '.venv', 'bin', 'python'), '#!/usr/bin/env python3\n');
+      const sitePackages = join(tempDir, '.venv', 'lib', 'python3.12', 'site-packages');
+      await mkdir(join(sitePackages, 'ontology_rag-0.3.0.dist-info'), { recursive: true });
+    }
+
+    function stubExec(fail = false): string[] {
+      const calls: string[] = [];
+      execSyncSpy = spyOn(childProcess, 'execSync').mockImplementation((cmd: unknown) => {
+        calls.push(String(cmd));
+        if (fail && String(cmd).includes('pip install')) throw new Error('network down');
+        return Buffer.from('');
+      });
+      return calls;
+    }
+
+    const installCalls = (calls: string[]) => calls.filter((c) => c.includes('pip install'));
+
+    it('detects an install from the dist-info and nothing else', async () => {
+      expect(await isOntologyRagInstalled(tempDir)).toBe(false);
+      await mkdir(join(tempDir, '.venv', 'bin'), { recursive: true });
+      await writeFile(join(tempDir, '.venv', 'bin', 'python'), '');
+      expect(await isOntologyRagInstalled(tempDir)).toBe(false);
+      await seedInstalledVenv();
+      expect(await isOntologyRagInstalled(tempDir)).toBe(true);
+    });
+
+    it('installed: runs the install with --reinstall-package', async () => {
+      await seedInstalledVenv();
+      const calls = stubExec();
+      const result = await refreshOntologyRag(tempDir);
+      expect(result.status).toBe('refreshed');
+      const installs = installCalls(calls);
+      expect(installs).toHaveLength(1);
+      expect(installs[0]).toContain('--reinstall-package ontology-rag');
+    });
+
+    it('not installed: no subprocess at all and no venv is created', async () => {
+      const calls = stubExec();
+      const result = await refreshOntologyRag(tempDir);
+      expect(result.status).toBe('skipped');
+      expect(calls).toEqual([]);
+      expect(await fsUtils.fileExists(join(tempDir, '.venv'))).toBe(false);
+    });
+
+    it('failure: reports failed with the reason and does not throw', async () => {
+      await seedInstalledVenv();
+      stubExec(true);
+      const result = await refreshOntologyRag(tempDir);
+      expect(result.status).toBe('failed');
+      expect(result.reason).toContain('network down');
+    });
+
+    it('dry-run: reports would-refresh and installs nothing', async () => {
+      await seedInstalledVenv();
+      const calls = stubExec();
+      const result = await refreshOntologyRag(tempDir, { dryRun: true });
+      expect(result.status).toBe('would-refresh');
+      expect(installCalls(calls)).toEqual([]);
+    });
+
+    it('honours OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP=1', async () => {
+      await seedInstalledVenv();
+      const calls = stubExec();
+      const previous = process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP;
+      process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP = '1';
+      try {
+        expect((await refreshOntologyRag(tempDir)).status).toBe('skipped');
+      } finally {
+        if (previous === undefined) process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP = undefined;
+        else process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP = previous;
+      }
+      expect(calls).toEqual([]);
     });
   });
 });

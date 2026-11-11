@@ -1,8 +1,8 @@
 {
   "lockfileVersion": 1,
-  "generatorVersion": "2.0.22",
-  "generatedAt": "2026-11-10T13:10:28.600Z",
-  "templateVersion": "2.0.22",
+  "generatorVersion": "2.0.23",
+  "generatedAt": "2026-11-11T02:37:39.495Z",
+  "templateVersion": "2.0.23",
   "files": {
     ".claude/agents/agora-runner.md": {
       "templateHash": "78ce9a4caada3977a84b47ff521a5c02285de899d86e212763119fd0dfc95c10",
@@ -390,8 +390,8 @@
       "component": "hooks"
     },
     ".claude/hooks/scripts/r007-r008-drift-advisor.sh": {
-      "templateHash": "224207de7bc98ee55d70c74e42f72f94bc5c3dcbf6b61f74cfce32196ed91ce1",
-      "size": 31240,
+      "templateHash": "b983f383bf1ddb8278ec5a90a2fd8095e8910d3ab5773d7ff6678df6cabf183b",
+      "size": 33020,
       "component": "hooks"
     },
     ".claude/hooks/scripts/rule-deletion-guard.sh": {
@@ -535,13 +535,13 @@
       "component": "ontology"
     },
     ".claude/rules/MAY-optimization.md": {
-      "templateHash": "1f2c61d2b53780e2c02d29e6f1548ec3446de5be7c3d04e0de89eb14739deac6",
-      "size": 32529,
+      "templateHash": "b2287003f1223692fb23bfc886575fc524f4a737973a3f3695aa242b047c2114",
+      "size": 33025,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-design.md": {
-      "templateHash": "23016e263780325dd2421ec42355f2ecfea399fe54391e103235c19a27d9a8d1",
-      "size": 71246,
+      "templateHash": "af6da5ff1f4d7d4a2a4d59254f4c731bda4470c3b4e6c5ecbef6dbc52da0318e",
+      "size": 71429,
       "component": "rules"
     },
     ".claude/rules/MUST-agent-identification.md": {
@@ -1065,8 +1065,8 @@
       "component": "skills"
     },
     ".claude/skills/pipeline/workflows/auto-dev.yaml": {
-      "templateHash": "0897559500b0440d94875e0e080a6e341eb0300b8b32d27714248e623cf31bf5",
-      "size": 185563,
+      "templateHash": "ee37d3f40d92141dce67a09dbff2f5a13452f7a5240d4c39490146f7fed0ed3a",
+      "size": 187709,
       "component": "skills"
     },
     ".claude/skills/playwright-compress/SKILL.md": {
@@ -1545,13 +1545,13 @@
       "component": "guides"
     },
     "guides/claude-code/15-version-compatibility.md": {
-      "templateHash": "4da09a9c7ab42f2e090db235a97fcc417baf58b79bf9a78d3667b62e9f5187fa",
-      "size": 745405,
+      "templateHash": "18641c4eef569b2e8286eca80d2d4fbc3c5cdfd91a0f07be4fac0a1430f9b115",
+      "size": 760949,
       "component": "guides"
     },
     "guides/claude-code/16-fable5-prompting.md": {
-      "templateHash": "63d23f8dd67f6c8d70e33adcc396c554666bdd7ccef20b9298882c7823995d1d",
-      "size": 7250,
+      "templateHash": "8d16afe0d14c81e1be1408489e3a660e53c716c0a9886a5eb112afeb2559c2eb",
+      "size": 7382,
       "component": "guides"
     },
     "guides/claude-code/index.yaml": {
@@ -1810,8 +1810,8 @@
       "component": "guides"
     },
     "guides/multi-model-routing/README.md": {
-      "templateHash": "5d3e114ec78d9df87a18ad9b0a4c6b8196af15ec987719ad95e4b8c119894797",
-      "size": 8891,
+      "templateHash": "d601a2db433715df07a1450bb4df8e8dd8218e84ad3143e3490b7780d342aeab",
+      "size": 9427,
       "component": "guides"
     },
     "guides/multi-provider-exec/README.md": {
