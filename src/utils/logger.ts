@@ -90,12 +90,12 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.exists': 'Existing {{rootDir}} directory found',
     'install.backup': 'Backed up existing files to: {{path}}',
     'backup.restore_hint':
-      'To restore from {{path}}, rename: {{renames}} (the backup uses these names so it does not load as active configuration)',
+      'To restore from {{path}}, rename these (only files this run changed; the backup uses these names so it does not load as active configuration):\n  {{renames}}',
     'backup.gitignore_updated': 'Added {{patterns}} to {{path}}',
     'backup.gitignore_dry_run': 'Dry run: would add {{patterns}} to .gitignore',
     'backup.gitignore_failed': 'Could not update .gitignore for the backup directory: {{error}}',
     'backup.gitignore_negated':
-      '{{path}} un-ignores a backup directory; left unchanged — add the backup ignore pattern yourself if wanted',
+      '{{path}} un-ignores backup directories matching {{patterns}}; not adding {{patterns}} to {{target}} — add the ignore pattern yourself if wanted',
     'install.directories_created': 'Directory structure created',
     'install.component_skipped': 'Skipped {{component}} (already exists)',
     'install.component_installed': 'Installed {{component}}',
@@ -133,6 +133,8 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.components_synced': 'Components synced (version {{version}}): {{components}}',
     'update.failed': 'Update failed: {{error}}',
     'update.no_updates': 'Already up to date',
+    'update.ontology_rag_refreshed': 'Refreshed ontology-rag in the project .venv',
+    'update.ontology_rag_would_refresh': 'Dry run: would refresh ontology-rag in the project .venv',
     'update.backup_created': 'Backup created at: {{path}}',
     'update.dry_run': 'Would update {{component}}',
     'update.component_updated': 'Updated {{component}}',
@@ -248,12 +250,12 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'install.exists': '기존 {{rootDir}} 디렉토리 발견',
     'install.backup': '기존 파일 백업 완료: {{path}}',
     'backup.restore_hint':
-      '{{path}}에서 복원하려면 이름을 되돌리십시오: {{renames}} (백업이 활성 설정으로 로드되지 않도록 이 이름으로 저장됩니다)',
+      '{{path}}에서 복원하려면 아래 이름을 되돌리십시오(이번 실행이 바꾼 파일만 해당하며, 백업이 활성 설정으로 로드되지 않도록 이 이름으로 저장됩니다):\n  {{renames}}',
     'backup.gitignore_updated': '{{path}}에 {{patterns}}을(를) 추가했습니다',
     'backup.gitignore_dry_run': '시험 실행: .gitignore에 {{patterns}}을(를) 추가할 예정입니다',
     'backup.gitignore_failed': '백업 디렉토리용 .gitignore를 갱신하지 못했습니다: {{error}}',
     'backup.gitignore_negated':
-      '{{path}}가 백업 디렉토리를 무시 대상에서 제외하고 있어 변경하지 않았습니다. 필요하면 백업 무시 패턴을 직접 추가하십시오',
+      '{{path}}가 {{patterns}}에 해당하는 백업 디렉토리를 무시 대상에서 제외하고 있어 {{patterns}}은(는) {{target}}에 추가하지 않습니다. 필요하면 무시 패턴을 직접 추가하십시오',
     'install.directories_created': '디렉토리 구조 생성 완료',
     'install.component_skipped': '{{component}} 건너뜀 (이미 존재)',
     'install.component_installed': '{{component}} 설치 완료',
@@ -290,6 +292,9 @@ const MESSAGES: Record<string, Record<string, string>> = {
     'update.components_synced': '컴포넌트 동기화 완료 (버전 {{version}}): {{components}}',
     'update.failed': '업데이트 실패: {{error}}',
     'update.no_updates': '이미 최신 버전입니다',
+    'update.ontology_rag_refreshed': '프로젝트 .venv의 ontology-rag를 갱신했습니다',
+    'update.ontology_rag_would_refresh':
+      '시험 실행: 프로젝트 .venv의 ontology-rag를 갱신할 예정입니다',
     'update.backup_created': '백업 생성됨: {{path}}',
     'update.dry_run': '{{component}} 업데이트 예정',
     'update.component_updated': '{{component}} 업데이트 완료',

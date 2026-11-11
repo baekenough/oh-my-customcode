@@ -6,7 +6,8 @@
  */
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn as spawnAsync, spawnSync } from 'node:child_process';
+import { chmodSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import {
@@ -15,6 +16,7 @@ import {
   isNpxInvocation,
   isPathInside,
   shouldSkipAutoSelfUpdate,
+  withSigintIgnored,
 } from '../../../src/core/self-update.js';
 import { initI18n } from '../../../src/i18n/index.js';
 import { isCiEnvironment } from '../../../src/utils/ci.js';
@@ -306,7 +308,8 @@ describe('autoSelfUpdate (#1946)', () => {
     });
 
     it('does not re-run when argv has no entry path', () => {
-      expect(autoSelfUpdate(options({ argv: ['node'] }))).toBe('failed');
+      // no entry path: the notNpmGlobal notice ("Self-update skipped") is printed, outcome agrees (#1948)
+      expect(autoSelfUpdate(options({ argv: ['node'] }))).toBe('skipped');
 
       expect(spawn).not.toHaveBeenCalled();
       expect(exit).not.toHaveBeenCalled();
@@ -485,7 +488,7 @@ describe('autoSelfUpdate (#1946)', () => {
     const bunGlobal = '/home/u/.bun/install/global/node_modules/test-package/dist/cli/index.js';
 
     it('does not install, probe or re-run, and names the situation', () => {
-      expect(autoSelfUpdate(options({ argv: ['node', bunGlobal, 'update'] }))).toBe('failed');
+      expect(autoSelfUpdate(options({ argv: ['node', bunGlobal, 'update'] }))).toBe('skipped');
 
       expect(install).not.toHaveBeenCalled();
       expect(probe).not.toHaveBeenCalled();
@@ -603,4 +606,227 @@ describe('autoSelfUpdate (#1946)', () => {
       expect(install).not.toHaveBeenCalled();
     });
   });
+});
+
+describe('SIGINT while a child runs (#1948)', () => {
+  const selfUpdateSource = join(import.meta.dir, '../../../src/core/self-update.ts');
+  const nodePath = spawnSync('node', ['--version']).error ? null : 'node';
+  let dir: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'omcustom-sigint-'));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  /** Kills a still-running parent (whole group when detached); ESRCH means it already ended. */
+  function killParent(pid: number | undefined, detached: boolean): void {
+    if (pid === undefined) return;
+    try {
+      process.kill(detached ? -pid : pid, 'SIGKILL');
+    } catch {
+      // already gone
+    }
+  }
+
+  function leftoverProcesses(): string {
+    return spawnSync('pgrep', ['-f', dir]).stdout.toString().trim();
+  }
+
+  it('removes its handler once the run returns, even when it throws', () => {
+    const before = process.listenerCount('SIGINT');
+
+    expect(withSigintIgnored(() => process.listenerCount('SIGINT'))).toBe(before + 1);
+    expect(() =>
+      withSigintIgnored(() => {
+        throw new Error('boom');
+      })
+    ).toThrow('boom');
+    expect(process.listenerCount('SIGINT')).toBe(before);
+  });
+
+  interface Scenario {
+    runtime: 'bun' | 'node';
+    /** `group`: SIGINT goes to the whole process group like a terminal Ctrl+C. */
+    target: 'parent' | 'group';
+    guard: boolean;
+    /** True: the child handles SIGINT and exits 7 later; false: the child has no handler. */
+    childTraps: boolean;
+  }
+
+  /** Runs a parent that re-runs a child with spawnSync and delivers SIGINT per the scenario. */
+  async function interrupt({ runtime, target, guard, childTraps }: Scenario) {
+    const marker = join(dir, 'child-after-sigint');
+    const childPath = join(dir, 'child.js');
+    const parentPath = join(dir, 'parent.mjs');
+    writeFileSync(
+      childPath,
+      `${childTraps ? "process.on('SIGINT', () => {});" : ''}
+console.log('child-ready');
+setTimeout(() => {
+  require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'done');
+  process.exit(7);
+}, 1200);
+`
+    );
+    let moduleUrl = selfUpdateSource;
+    if (runtime === 'node') {
+      // The published CLI runs on Node: bundle the real module and run the parent under node
+      const built = spawnSync(
+        process.execPath,
+        ['build', selfUpdateSource, '--outdir', dir, '--target', 'node'],
+        { encoding: 'utf-8' }
+      );
+      expect(built.status).toBe(0);
+      moduleUrl = join(dir, 'self-update.js');
+    }
+    writeFileSync(
+      parentPath,
+      `import { spawnSync } from 'node:child_process';
+import { exitCodeForChild, withSigintIgnored } from ${JSON.stringify(moduleUrl)};
+const run = () => spawnSync(process.execPath, [${JSON.stringify(childPath)}], { stdio: 'inherit' });
+const child = ${guard ? 'withSigintIgnored(run)' : 'run()'};
+process.exit(exitCodeForChild(child));
+`
+    );
+    const parent = spawnAsync(runtime === 'node' ? 'node' : process.execPath, [parentPath], {
+      stdio: ['ignore', 'pipe', 'inherit'],
+      detached: target === 'group',
+    });
+    let ready = '';
+    parent.stdout?.on('data', (chunk) => {
+      ready += String(chunk);
+    });
+    const result = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) =>
+      parent.on('exit', (code, signal) => resolve({ code, signal }))
+    );
+    try {
+      for (let i = 0; i < 100 && !ready.includes('child-ready'); i++) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(ready).toContain('child-ready');
+      if (target === 'group') {
+        process.kill(-(parent.pid as number), 'SIGINT');
+      } else {
+        parent.kill('SIGINT');
+      }
+      const exited = await result;
+      // let any orphaned child finish so no process outlives the test
+      await new Promise((r) => setTimeout(r, 1500));
+      return { ...exited, markerWritten: await Bun.file(marker).exists() };
+    } finally {
+      killParent(parent.pid, target === 'group');
+    }
+  }
+
+  /**
+   * Runs the real autoSelfUpdate against a fake `npm` on PATH whose `npm view` sleeps, sends a
+   * group SIGINT while it runs and reports how the parent ended. A `npm root -g` call means the
+   * flow continued after the interrupt.
+   */
+  async function interruptLookup(runtime: 'bun' | 'node') {
+    const started = join(dir, 'view-started');
+    const continued = join(dir, 'continued');
+    writeFileSync(
+      join(dir, 'npm'),
+      `#!/bin/sh
+case "$1" in
+  view) : > ${JSON.stringify(started)}; sleep 2; echo '"9.9.9"' ;;
+  root) : > ${JSON.stringify(continued)}; echo /nonexistent/global/root ;;
+  *) exit 1 ;;
+esac
+`
+    );
+    chmodSync(join(dir, 'npm'), 0o755);
+    let moduleUrl = selfUpdateSource;
+    if (runtime === 'node') {
+      const built = spawnSync(
+        process.execPath,
+        ['build', selfUpdateSource, '--outdir', dir, '--target', 'node'],
+        { encoding: 'utf-8' }
+      );
+      expect(built.status).toBe(0);
+      moduleUrl = join(dir, 'self-update.js');
+    }
+    const parentPath = join(dir, 'lookup-parent.mjs');
+    writeFileSync(
+      parentPath,
+      `import { autoSelfUpdate } from ${JSON.stringify(moduleUrl)};
+autoSelfUpdate({
+  currentVersion: '1.0.0',
+  command: 'init',
+  argv: ['node', '/x/y/cli.js', 'init'],
+  env: {},
+  cachePath: ${JSON.stringify(join(dir, 'cache.json'))},
+});
+process.exit(99); // reached only when the interrupt did not stop the flow
+`
+    );
+    const parent = spawnAsync(runtime === 'node' ? 'node' : process.execPath, [parentPath], {
+      stdio: 'ignore',
+      detached: true,
+      env: { ...process.env, PATH: `${dir}:${process.env.PATH}` },
+    });
+    const result = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) =>
+      parent.on('exit', (code, signal) => resolve({ code, signal }))
+    );
+    try {
+      for (let i = 0; i < 100 && !existsSync(started); i++) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      expect(existsSync(started)).toBe(true);
+      process.kill(-(parent.pid as number), 'SIGINT');
+      const exited = await result;
+      await new Promise((r) => setTimeout(r, 2200)); // let the orphaned `sleep` end
+      return { ...exited, continued: existsSync(continued) };
+    } finally {
+      killParent(parent.pid, true);
+    }
+  }
+
+  const runtimes: Array<Scenario['runtime']> = ['bun', ...(nodePath ? (['node'] as const) : [])];
+  if (!nodePath) {
+    it.skip('node variants skipped: `node` is not on PATH', () => {});
+  }
+
+  for (const runtime of runtimes) {
+    for (const target of ['parent', 'group'] as const) {
+      it(`${runtime}, SIGINT to ${target}: the parent waits and exits with the child's code`, async () => {
+        const out = await interrupt({ runtime, target, guard: true, childTraps: true });
+
+        expect(out.signal).toBeNull();
+        expect(out.code).toBe(7);
+        expect(out.markerWritten).toBe(true);
+        expect(leftoverProcesses()).toBe('');
+      }, 20000);
+    }
+
+    it(`${runtime}, SIGINT to group: a child killed by SIGINT gives exit code 130`, async () => {
+      const out = await interrupt({ runtime, target: 'group', guard: true, childTraps: false });
+
+      expect(out.signal).toBeNull();
+      expect(out.code).toBe(130);
+      expect(out.markerWritten).toBe(false);
+      expect(leftoverProcesses()).toBe('');
+    }, 20000);
+
+    it(`${runtime}, SIGINT during npm view stops with 130 and does not continue`, async () => {
+      const out = await interruptLookup(runtime);
+
+      expect(out.signal).toBeNull();
+      expect(out.code).toBe(130);
+      expect(out.continued).toBe(false);
+      expect(leftoverProcesses()).toBe('');
+    }, 20000);
+
+    it(`${runtime}, negative control: without the guard the parent dies on SIGINT`, async () => {
+      const out = await interrupt({ runtime, target: 'parent', guard: false, childTraps: true });
+
+      expect(out.signal).toBe('SIGINT');
+      expect(out.markerWritten).toBe(true); // the child outlived the parent
+      expect(leftoverProcesses()).toBe('');
+    }, 20000);
+  }
 });

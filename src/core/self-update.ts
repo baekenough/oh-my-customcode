@@ -420,14 +420,19 @@ function isCacheFresh(cache: SelfUpdateCache, now: number, cacheTtlMs: number): 
  * Fetch latest package version from npm registry via npm CLI.
  */
 export function fetchLatestVersionFromNpm(
-  packageName: string = DEFAULT_PACKAGE_NAME
+  packageName: string = DEFAULT_PACKAGE_NAME,
+  exit: (code: number) => void = defaultExit
 ): string | null {
   try {
-    const output = execSync(`npm view ${packageName} version --json`, {
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      timeout: 3000,
-    }).trim();
+    const output = runChild(
+      () =>
+        execSync(`npm view ${packageName} version --json`, {
+          encoding: 'utf-8',
+          stdio: 'pipe',
+          timeout: 3000,
+        }),
+      exit
+    ).trim();
 
     if (!output) {
       return null;
@@ -442,7 +447,10 @@ export function fetchLatestVersionFromNpm(
 
     const normalized = normalizeVersion(version);
     return normalized || null;
-  } catch {
+  } catch (error) {
+    if (error instanceof SelfUpdateInterruptedError) {
+      throw error;
+    }
     return null;
   }
 }
@@ -611,13 +619,20 @@ export interface AutoSelfUpdateOptions extends Omit<SelfUpdateOptions, 'cacheTtl
 
 /**
  * What {@link autoSelfUpdate} did:
- * - `skipped`: a skip condition applied, npm was not queried
+ * - `skipped`: a skip condition applied (npm was not queried), or the CLI is not under npm's
+ *   global root so nothing was installed (the "Self-update skipped" notice was printed)
  * - `up-to-date`: npm reports no newer version
- * - `failed`: lookup or install failed, the CLI is not managed by npm, or the new CLI could not be
- *   verified or started
+ * - `failed`: lookup or install failed, or the new CLI could not be verified or started
  * - `relaunched`: the command was re-run on the new CLI and the exit function was called
+ * - `interrupted`: Ctrl+C ended a child (npm view/root/install, the `--version` probe); the exit
+ *   function was called with 130 (only observable when it is replaced, as in tests)
  */
-export type AutoSelfUpdateOutcome = 'skipped' | 'up-to-date' | 'failed' | 'relaunched';
+export type AutoSelfUpdateOutcome =
+  | 'skipped'
+  | 'up-to-date'
+  | 'failed'
+  | 'relaunched'
+  | 'interrupted';
 
 /**
  * True when no self-update must run: the caller's `skip`, `--skip-version-check`, `--skip-self`,
@@ -639,27 +654,46 @@ export function shouldSkipAutoSelfUpdate(
 }
 
 // No timeout: npm may be mid-reify when a timer would SIGTERM it, and the user sees its progress.
-function installGlobalPackage(packageName: string, version: string): void {
-  execSync(`npm install -g ${packageName}@${version}`, { stdio: 'inherit' });
+function installGlobalPackage(
+  packageName: string,
+  version: string,
+  exit: (code: number) => void
+): void {
+  runChild(() => execSync(`npm install -g ${packageName}@${version}`, { stdio: 'inherit' }), exit);
 }
 
-function npmGlobalRoot(): string | null {
+function npmGlobalRoot(exit: (code: number) => void): string | null {
   try {
-    const output = execSync('npm root -g', { encoding: 'utf-8', stdio: 'pipe', timeout: 5000 });
+    const output = runChild(
+      () => execSync('npm root -g', { encoding: 'utf-8', stdio: 'pipe', timeout: 5000 }),
+      exit
+    );
     return output.trim() || null;
-  } catch {
+  } catch (error) {
+    if (error instanceof SelfUpdateInterruptedError) {
+      throw error;
+    }
     return null;
   }
 }
 
-function probeVersion(command: string, args: string[], env: NodeJS.ProcessEnv): string | null {
+function probeVersion(
+  command: string,
+  args: string[],
+  env: NodeJS.ProcessEnv,
+  exit: (code: number) => void
+): string | null {
   // npx may download the package first, a local binary starts at once
-  const child = spawnSync(command, args, {
-    encoding: 'utf-8',
-    stdio: 'pipe',
-    timeout: command === 'npx' ? 120000 : 30000,
-    env,
-  });
+  const child = runChild(
+    () =>
+      spawnSync(command, args, {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: command === 'npx' ? 120000 : 30000,
+        env,
+      }),
+    exit
+  );
   return child.error || child.status !== 0 ? null : String(child.stdout ?? '').trim();
 }
 
@@ -680,6 +714,76 @@ function warnAutoFailed(packageName: string, currentVersion: string, reason: str
   console.warn(
     i18n.t('cli.selfUpdate.autoFailed', { package: packageName, current: currentVersion, reason })
   );
+}
+
+/** Thrown after the exit function returned (tests only): stops the update flow at once. */
+export class SelfUpdateInterruptedError extends Error {
+  constructor() {
+    super('self-update interrupted by SIGINT');
+    this.name = 'SelfUpdateInterruptedError';
+  }
+}
+
+const SIGINT_EXIT_CODE = 130;
+const defaultExit = (code: number): void => process.exit(code);
+
+/**
+ * True when a finished child (a `spawnSync` result or the error `execSync` throws) ended because
+ * of Ctrl+C: killed by SIGINT, or exited 130 after handling it. Measured on Node 25.6.1 with a
+ * group SIGINT: a child without a handler gives `signal: 'SIGINT'`, a child that traps SIGINT and
+ * calls `exit 130` gives `status: 130` and no signal.
+ */
+function endedBySigint(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const { status, signal } = value as { status?: unknown; signal?: unknown };
+  return signal === 'SIGINT' || status === SIGINT_EXIT_CODE;
+}
+
+/** Ctrl+C ended a child: stop with exit code 130 instead of carrying on into project updates. */
+function abortOnSigint(exit: (code: number) => void): never {
+  exit(SIGINT_EXIT_CODE);
+  throw new SelfUpdateInterruptedError();
+}
+
+/**
+ * Runs a child with SIGINT held by this process (see {@link withSigintIgnored}). If Ctrl+C ended
+ * the child, the process exits 130 through `exit` rather than treating it as an ordinary failure.
+ * The check happens on the child's result, not in a SIGINT listener: the event loop is blocked
+ * while a sync child runs, so no listener ordering is assumed.
+ */
+function runChild<T>(run: () => T, exit: (code: number) => void): T {
+  let result: T;
+  try {
+    result = withSigintIgnored(run);
+  } catch (error) {
+    if (endedBySigint(error)) {
+      abortOnSigint(exit);
+    }
+    throw error;
+  }
+  if (endedBySigint(result)) {
+    abortOnSigint(exit);
+  }
+  return result;
+}
+
+/**
+ * Runs `run` with SIGINT ignored by this process (#1948). Ctrl+C reaches the whole foreground
+ * process group, so the re-run child already receives it; without a handler the parent would die
+ * at once and the shell would see the parent's signal death while a child that handles SIGINT
+ * keeps running. With the handler installed the signal is held until the child exits, and the
+ * child's own exit code (or terminating signal) is what the parent reports.
+ */
+export function withSigintIgnored<T>(run: () => T): T {
+  const ignore = (): void => {};
+  process.on('SIGINT', ignore);
+  try {
+    return run();
+  } finally {
+    process.off('SIGINT', ignore);
+  }
 }
 
 interface RelaunchContext {
@@ -706,7 +810,8 @@ function probeAndRelaunch(
   const { packageName, currentVersion, version, argv, deps } = context;
   const env = { ...context.env, OMCUSTOM_SKIP_SELF_UPDATE: 'true' };
 
-  const probe = deps.probeFn ?? probeVersion;
+  const exit = deps.exitFn ?? defaultExit;
+  const probe = deps.probeFn ?? ((cmd, args, probeEnv) => probeVersion(cmd, args, probeEnv, exit));
   if (!reportsVersion(probe(command, [...prefixArgs, '--version'], env), version)) {
     warnAutoFailed(packageName, currentVersion, i18n.t('cli.selfUpdate.reasonProbe', { version }));
     return false;
@@ -714,12 +819,13 @@ function probeAndRelaunch(
 
   announce();
   const spawn: ReexecSpawnFn = deps.spawnFn ?? spawnSync;
-  const child = spawn(command, [...prefixArgs, ...argv.slice(2)], { stdio: 'inherit', env });
+  const child = withSigintIgnored(() =>
+    spawn(command, [...prefixArgs, ...argv.slice(2)], { stdio: 'inherit', env })
+  );
   if (child.error) {
     warnAutoFailed(packageName, currentVersion, child.error.message);
     return false;
   }
-  const exit = deps.exitFn ?? ((code: number) => process.exit(code));
   exit(exitCodeForChild(child));
   return true;
 }
@@ -779,8 +885,15 @@ function installLatest(context: RelaunchContext): boolean {
   const { packageName, currentVersion, version, deps } = context;
   try {
     console.log(i18n.t('cli.selfUpdate.updatingGlobal', { version }));
-    (deps.installFn ?? installGlobalPackage)(packageName, version);
+    const exit = deps.exitFn ?? defaultExit;
+    (deps.installFn ?? ((name, ver) => installGlobalPackage(name, ver, exit)))(
+      packageName,
+      version
+    );
   } catch (error) {
+    if (error instanceof SelfUpdateInterruptedError) {
+      throw error;
+    }
     warnAutoFailed(packageName, currentVersion, firstLine(error));
     return false;
   }
@@ -793,21 +906,26 @@ function installLatest(context: RelaunchContext): boolean {
  * Route to the right update path for how this CLI was started: npx re-run, a CLI that npm does not
  * manage (left alone), or a global install followed by a verified re-run.
  */
-function updateAndRelaunch(context: RelaunchContext, command: AutoSelfUpdateCommand): boolean {
+function updateAndRelaunch(
+  context: RelaunchContext,
+  command: AutoSelfUpdateCommand
+): Extract<AutoSelfUpdateOutcome, 'skipped' | 'failed' | 'relaunched'> {
   const { argv, env, deps } = context;
+  const outcome = (ok: boolean) => (ok ? 'relaunched' : 'failed');
   // A definite npx run (argv[1] in the _npx cache) needs no `npm root -g`
   if (isNpxInvocation(argv, {})) {
-    return relaunchViaNpx(context);
+    return outcome(relaunchViaNpx(context));
   }
-  const globalRoot = (deps.globalRootFn ?? npmGlobalRoot)();
+  const globalRoot = (deps.globalRootFn ?? (() => npmGlobalRoot(deps.exitFn ?? defaultExit)))();
   if (isNpxInvocation(argv, env, globalRoot, deps.realpathFn)) {
-    return relaunchViaNpx(context);
+    return outcome(relaunchViaNpx(context));
   }
   if (globalRoot && !isPathInside(argv[1] ?? '', globalRoot, deps.realpathFn)) {
+    // The notice says "Self-update skipped", so the outcome agrees (#1948)
     console.warn(i18n.t('cli.selfUpdate.notNpmGlobal', { path: argv[1] ?? '', root: globalRoot }));
-    return false;
+    return 'skipped';
   }
-  return installLatest(context) && relaunchAfterGlobalInstall(context, command);
+  return outcome(installLatest(context) && relaunchAfterGlobalInstall(context, command));
 }
 
 /**
@@ -820,8 +938,21 @@ function updateAndRelaunch(context: RelaunchContext, command: AutoSelfUpdateComm
  * version before the command is re-run on it with `OMCUSTOM_SKIP_SELF_UPDATE=true` (the child's
  * exit code becomes this process's exit code). A CLI installed by another package manager is left
  * alone. Every failure prints one notice naming the manual command and lets the command continue.
+ * Ctrl+C is not a failure: when it ends any child, the process exits 130 and does not continue.
  */
 export function autoSelfUpdate(options: AutoSelfUpdateOptions): AutoSelfUpdateOutcome {
+  try {
+    return runAutoSelfUpdate(options);
+  } catch (error) {
+    // The exit function already ran with 130; only reached when it returns (tests)
+    if (error instanceof SelfUpdateInterruptedError) {
+      return 'interrupted';
+    }
+    throw error;
+  }
+}
+
+function runAutoSelfUpdate(options: AutoSelfUpdateOptions): AutoSelfUpdateOutcome {
   if (shouldSkipAutoSelfUpdate(options)) {
     return 'skipped';
   }
@@ -832,7 +963,13 @@ export function autoSelfUpdate(options: AutoSelfUpdateOptions): AutoSelfUpdateOu
   const deps = options.deps ?? {};
   const currentVersion = normalizeVersion(options.currentVersion);
 
-  const result = checkSelfUpdate({ ...options, cacheTtlMs: 0 });
+  const result = checkSelfUpdate({
+    ...options,
+    cacheTtlMs: 0,
+    fetchLatestVersion:
+      options.fetchLatestVersion ??
+      ((name) => fetchLatestVersionFromNpm(name, deps.exitFn ?? defaultExit)),
+  });
   if (!result.checked || !result.latestVersion) {
     warnAutoFailed(packageName, currentVersion, i18n.t('cli.selfUpdate.reasonLookup'));
     return 'failed';
@@ -849,5 +986,5 @@ export function autoSelfUpdate(options: AutoSelfUpdateOptions): AutoSelfUpdateOu
     env,
     deps,
   };
-  return updateAndRelaunch(context, options.command) ? 'relaunched' : 'failed';
+  return updateAndRelaunch(context, options.command);
 }

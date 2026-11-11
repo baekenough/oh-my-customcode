@@ -2313,9 +2313,11 @@ describe('r007-r008-drift-advisor.sh — Fixture 15: notification-turn R008 miss
           const ctx = parsed.hookSpecificOutput.additionalContext;
           expect(ctx).toContain('R008 도구 식별 접두사 누락 1건');
           expect(ctx).toContain('미접두 도구: Bash');
-          // Measured: a turn with NO text block yields r007=0 (`$ftext` empty → 0), so only R008 is
-          // reported. Pinned so a change to that verdict is a conscious one.
+          // #1950: a turn with NO text block still yields r007=0 (`$ftext` empty → 0), so it is NOT
+          // reported as a missing header; it is reported through the separate text-less signal.
           expect(ctx).not.toContain('R007 에이전트 식별 헤더 누락');
+          expect(ctx).toContain('text 블록이 없는 응답 턴 1건');
+          expect(ctx).toContain('R007 헤더 확인 불가');
         });
       }
     }
@@ -2366,5 +2368,144 @@ describe('r007-r008-drift-advisor.sh — Fixture 15: notification-turn R008 miss
     expect(parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext).toContain(
       'R008 도구 식별 접두사 누락 1건'
     );
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Fixture 16: #1950 — text-less turn is a separate signal (r007_textless), not r007_missing
+// ════════════════════════════════════════════════════════════════
+
+describe('r007-r008-drift-advisor.sh — Fixture 16: text-less turn signal (#1950)', () => {
+  const EVENTS: ReadonlyArray<readonly [string, (sid: string) => string]> = [
+    ['UserPromptSubmit', (sid) => promptInput(sid)],
+    ['SubagentStop', (sid) => subagentStopInput(sid)],
+    ['PostToolUse', (sid) => postToolUseInput(sid)],
+  ];
+  const TEXTLESS = 'text 블록이 없는 응답 턴 1건';
+
+  for (const [event, makeInput] of EVENTS) {
+    it(`${event}: text-less turn (tool_use only, prefix irrelevant) emits the text-less line only (positive)`, async () => {
+      const sid = `n1950-pos-${event}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([{ type: 'tool_use', id: 't-1', name: 'Read', input: {} }]),
+      ]);
+
+      const r = await runScript(makeInput(sid), testEnv());
+
+      expect(r.exitCode).toBe(0);
+      const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+      expect(ctx).toContain(TEXTLESS);
+      expect(ctx).toContain('위반으로 단정하지 않습니다');
+      expect(ctx).not.toContain('R007 에이전트 식별 헤더 누락');
+    });
+
+    it(`${event}: header + prefix present emits nothing (negative)`, async () => {
+      const sid = `n1950-neg-${event}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: '┌─ Agent: claude (default)\n[claude][opus] → Tool: Read' },
+          { type: 'tool_use', id: 't-2', name: 'Read', input: {} },
+        ]),
+      ]);
+
+      const r = await runScript(makeInput(sid), testEnv());
+
+      expect(r.exitCode).toBe(0);
+      expect(r.stdout.trim()).toBe('');
+    });
+
+    it(`${event}: text without a header reports r007_missing only, not the text-less line (negative pair)`, async () => {
+      const sid = `n1950-mix-${event}-${Date.now()}`;
+      await writeTranscript(sid, [
+        ...userTurn('go'),
+        ...assistantTurn([
+          { type: 'text', text: 'Sure, working on it.\n[claude][opus] → Tool: Read' },
+          { type: 'tool_use', id: 't-3', name: 'Read', input: {} },
+        ]),
+      ]);
+
+      const r = await runScript(makeInput(sid), testEnv());
+
+      expect(r.exitCode).toBe(0);
+      const ctx = parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext;
+      expect(ctx).toContain('R007 에이전트 식별 헤더 누락 1건');
+      expect(ctx).not.toContain('text 블록이 없는 응답 턴');
+    });
+  }
+
+  it('whitespace-only text block is text (r007_missing), not text-less; thinking-only turn emits nothing', async () => {
+    const sidWs = `n1950-ws-${Date.now()}`;
+    await writeTranscript(sidWs, [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '  \n ' },
+        { type: 'tool_use', id: 't-4', name: 'Read', input: {} },
+      ]),
+    ]);
+    const ws = await runScript(promptInput(sidWs), testEnv());
+    const wsCtx = parseAdvisoryOutput(ws.stdout).hookSpecificOutput.additionalContext;
+    expect(wsCtx).toContain('R007 에이전트 식별 헤더 누락 1건');
+    expect(wsCtx).not.toContain('text 블록이 없는 응답 턴');
+
+    const sidTh = `n1950-th-${Date.now()}`;
+    await writeTranscript(sidTh, [
+      ...userTurn('go'),
+      ...assistantTurn([{ type: 'thinking', thinking: 'hmm' }]),
+    ]);
+    const th = await runScript(promptInput(sidTh), testEnv());
+    expect(th.exitCode).toBe(0);
+    expect(th.stdout.trim()).toBe('');
+  });
+
+  it('empty first text block followed by a header block is NOT text-less (L1 negative)', async () => {
+    const sid = `n1950-l1-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '' },
+        { type: 'text', text: '┌─ Agent: claude (default)\n[claude][opus] → Tool: Read' },
+        { type: 'tool_use', id: 't-l1', name: 'Read', input: {} },
+      ]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+  });
+
+  it('empty-only text block with a tool_use is text-less (L1 positive)', async () => {
+    const sid = `n1950-l1p-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'text', text: '' },
+        { type: 'tool_use', id: 't-l1p', name: 'Read', input: {} },
+      ]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    expect(parseAdvisoryOutput(r.stdout).hookSpecificOutput.additionalContext).toContain(TEXTLESS);
+  });
+
+  it('redacted_thinking-only turn emits nothing; with a tool_use it is text-less (L2)', async () => {
+    const sid = `n1950-l2-${Date.now()}`;
+    await writeTranscript(sid, [
+      ...userTurn('go'),
+      ...assistantTurn([{ type: 'redacted_thinking', data: 'xx' }]),
+    ]);
+    const r = await runScript(promptInput(sid), testEnv());
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout.trim()).toBe('');
+
+    const sid2 = `n1950-l2b-${Date.now()}`;
+    await writeTranscript(sid2, [
+      ...userTurn('go'),
+      ...assistantTurn([
+        { type: 'redacted_thinking', data: 'xx' },
+        { type: 'tool_use', id: 't-l2', name: 'Read', input: {} },
+      ]),
+    ]);
+    const r2 = await runScript(promptInput(sid2), testEnv());
+    expect(parseAdvisoryOutput(r2.stdout).hookSpecificOutput.additionalContext).toContain(TEXTLESS);
   });
 });

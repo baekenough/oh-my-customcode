@@ -1017,6 +1017,29 @@ describe('deprecated files share the run backup; RTK is deleted outside it (#193
     expect(await readFile(join(project, 'outside-deprecated.md'), 'utf8')).toBe('elsewhere\n');
     expect(result.removedDeprecatedFiles).not.toContain(DEPRECATED);
   });
+
+  it('dry-run warns about an unsafe deprecated path exactly like the real run (#1949)', async () => {
+    await seedOldInstall();
+    await put('outside-deprecated.md', 'elsewhere\n');
+    await mkdir(dirname(join(project, DEPRECATED)), { recursive: true });
+    await symlink(join(project, 'outside-deprecated.md'), join(project, DEPRECATED));
+
+    const dry = await update({ targetDir: project, dryRun: true });
+
+    expect(dry.warnings).toContain(`Deprecated file kept ${DEPRECATED}: not a regular owned file`);
+    expect(dry.removedDeprecatedFiles).not.toContain(DEPRECATED);
+    expect((await lstat(join(project, DEPRECATED))).isSymbolicLink()).toBe(true);
+  });
+
+  it('dry-run stays quiet about an absent deprecated entry (#1949)', async () => {
+    await seedOldInstall();
+
+    const dry = await update({ targetDir: project, dryRun: true });
+
+    expect(dry.warnings.some((w) => w.startsWith(`Deprecated file kept ${DEPRECATED}:`))).toBe(
+      false
+    );
+  });
 });
 
 describe('orphan deletion honours every preservation source (#1935 follow-up, L3)', () => {

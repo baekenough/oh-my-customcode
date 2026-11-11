@@ -283,6 +283,15 @@ split("\n")
        elif ($fline | test("^┌─ Agent:")) or ($fline | test("^\\[.+\\]")) then 0
        else 1 end) as $r007
     | ([ $blocks[] | select(.type? == "text") | (.text? // "") ] | join("\n") | split("\n")) as $lines
+    # (#1950) TEXT-LESS turn: ZERO non-empty text blocks in the whole turn, while the turn has at
+    # least one block that is neither `thinking` nor `redacted_thinking` (a thinking-only stub is not a
+    # response). Counted over ALL text blocks, independent of the $r007 predicate (which looks at the
+    # first text block only): `[text(""), text("┌─ Agent: …"), tool_use]` is NOT text-less. $r007 itself
+    # is unchanged; this separate signal lets the advisory SAY the header could not be checked, without
+    # asserting a violation — CC 2.1.251+ may not record text blocks (#1706).
+    | (if ([ $blocks[] | select((.type? // "") != "redacted_thinking") ] | length) > 0
+          and ([ $blocks[] | select((.type? == "text") and ((.text? // "") | type == "string" and length > 0)) ] | length) == 0
+       then 1 else 0 end) as $textless
     | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_tool
     # Core Rule 접두사 중 Agent 스폰을 가리키는 것만 따로 센다 — 아래 스폰 표기 중복 차감용.
     | ([ $lines[] | select(test("\\[.+\\]\\[.+\\] ?(→|->|—>) ?Tool: ?Agent")) ] | length) as $an_tool_agent
@@ -338,7 +347,7 @@ split("\n")
     | ([ $lines[] | select(test("^\\[[^\\]]+\\]\\[[^\\]]+\\] ?(→|->|—>) ?Tool:")) ] | length) as $an_anchored
     # $nall_tools는 위 forward r008 가드에서 이미 바인딩됨 — 재바인딩하지 않고 재사용한다.
     | (if $nall_tools == 0 and $an_anchored > 0 then $an_anchored else 0 end) as $r008rev
-    | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring), ($tool_names_list | join(","))] | @tsv
+    | [$tuuid, ($r007 | tostring), ($r008 | tostring), ($r008rev | tostring), ($tool_names_list | join(",")), ($textless | tostring)] | @tsv
       )
       end
   end
@@ -364,10 +373,13 @@ r008_violations=$(printf '%s' "$result" | cut -f3)
 r008_reverse=$(printf '%s' "$result" | cut -f4)
 # 미접두 도구 이름 목록 (#1687) — $ntools와 동일 필터의 순서 보존 목록, "," join.
 tool_names=$(printf '%s' "$result" | cut -f5)
+# text 블록 없는 턴 (#1950) — r007 판정과 별개 신호(필드 6)
+r007_textless=$(printf '%s' "$result" | cut -f6)
 
 : "${r007_violations:=0}"
 : "${r008_violations:=0}"
 : "${r008_reverse:=0}"
+: "${r007_textless:=0}"
 
 # 역방향 신호는 OPT-IN, 기본 off.
 # 측정 정밀도는 3/3이지만 표본이 3건뿐이고, 배선 구조상 "예방"이 불가능하다:
@@ -378,7 +390,8 @@ if [ "${OMCUSTOM_R008_REVERSE:-off}" != "on" ]; then
 fi
 
 # ── 위반이 없으면 아무것도 출력하지 않는다 (오탐 방지) ──
-if [ "$r007_violations" -eq 0 ] && [ "$r008_violations" -eq 0 ] && [ "$r008_reverse" -eq 0 ]; then
+if [ "$r007_violations" -eq 0 ] && [ "$r008_violations" -eq 0 ] && [ "$r008_reverse" -eq 0 ] \
+  && [ "$r007_textless" -eq 0 ]; then
   exit 0
 fi
 
@@ -441,6 +454,13 @@ if [ -n "$violation_desc" ]; then
   advisory_text="[R007/R008 Advisory] 직전 응답에서 ${violation_desc} 감지. ${instruction}"
 else
   advisory_text="[R007/R008 Advisory]"
+fi
+
+# text 블록이 없는 턴 (#1950): 위반 단정이 아니다 — 헤더 유무를 확인할 수 없다는 사실만 전한다.
+# 플랫폼이 text 블록을 기록하지 않는 경우(CC 2.1.251+, #1706 [가설])와 실제 헤더 생략을 이 신호만으로
+# 구분할 수 없으므로 문구는 "확인 불가"로 한정하고 r007_missing 문구와 겹치지 않게 분리한다.
+if [ "$r007_textless" -gt 0 ]; then
+  advisory_text="${advisory_text} [R007 확인 불가] text 블록이 없는 응답 턴 ${r007_textless}건 — R007 헤더 확인 불가 (플랫폼 미기록일 수 있어 위반으로 단정하지 않습니다). 이번 응답은 text 블록에 ┌─ Agent: 헤더를 먼저 쓰십시오."
 fi
 
 if [ "$r008_reverse" -gt 0 ]; then

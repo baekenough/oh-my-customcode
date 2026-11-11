@@ -40,6 +40,11 @@ steps:
          - Latest tag: git tag --sort=-v:refname | head -1
          - Local HEAD: git rev-parse --short HEAD
          - Behind state: synced or 0
+         - Pre-implementation untracked baseline (#1954 찐빠 #3): run
+           `git status --short | grep '^??'` and write the sorted path list (count + list) into the
+           pipeline artifact `.claude/outputs/sessions/{YYYY-MM-DD}/pipeline-auto-dev-{HHmmss}.md`
+           (same path as fsd SKILL.md "Pipeline artifacts"); the verify-build `git add -N` step reads
+           the baseline from that file, not from conversation memory.
 
       5. Cross-reference checks (advisory, do NOT halt):
          a. Memory vs git consistency (G7):
@@ -509,7 +514,7 @@ steps:
       | plan | none (analysis only) — compressible |
       | deep-plan | none (analysis only) — compressible |
       | implement | `gh issue edit <N> --add-label in-progress --add-assignee @me`; `gh issue comment <N>` (start notice); on success remove in-progress + add verify-ready; on failure remove in-progress + add needs-review + `gh issue comment <N> --body-file <file>` via the implement 「Failure comment file channel」 preflight |
-      | verify-build | none (gate only) |
+      | verify-build | `git add -N` (intent-to-add) of THIS release's new untracked paths only, delegated to mgr-gitnerd and serialized (#1954 찐빠 #3); otherwise gate only |
       | deep-verify | analysis output only is compressible; correction/wiki file edits and Post-wiki deterministic verification results are not waived; no new GitHub mutation is authorized here |
       | release | PR body MUST carry `Closes #N` for every resolved issue (auto-tag.yml greps the PR body); non-auto-tag projects additionally: `gh api .../milestones/{n} --method PATCH --field state=closed`, `gh issue close {n}`, label needs-review issues "Deferred from v{version}" |
       | ci-check | `gh issue edit <N> --remove-label in-progress` for stale labels; `gh issue edit <N> --remove-label verify-ready` for THIS release's CLOSED scoped issues only (past closed issues excluded, #1734) |
@@ -1171,7 +1176,7 @@ steps:
         .claude/rules | sort -V | tail -1`=Y) so the subagent can distinguish a CLI-install
         version from a rule-corpus coverage ceiling (#1709 #3).
       - Before delegating an edit/commit to an EXISTING file (not a newly-created target, which
-        is by definition untracked), confirm the path is git-tracked via `git ls-files -- <path>` (take the result from the scope-selection Step 3 `tracked=` output, or run the check in a `while IFS= read -r p || [ -n "$p" ]; do [ -n "$p" ] || continue; ... "$p" ...; done` loop per the shell rule — a path taken from issue text is never typed into the command)
+        is by definition untracked), confirm the path is git-tracked via `git ls-files -- <path>` (take the result from the scope-selection Step 3 `tracked=` output, or run the check in a `while IFS= read -r p || [ -n "$p" ]; do [ -n "$p" ] || continue; ... "$p" ...; done` loop per the R005 ad hoc loop clause (MAY-optimization.md: arrays / `xargs` / `bash -c`, not unquoted zsh variables) — a path taken from issue text is never typed into the command)
         — not just existence via Glob/ls. An existing-but-untracked path — verify with
         `git check-ignore -v --no-index <path>` to confirm intentional exclusion (e.g. a
         `.gitignore` rule) — MUST be excluded from delegation scope, or its tracked status
@@ -1455,6 +1460,21 @@ steps:
   - name: verify-build
     prompt: |
       Project-specific build + test verification.
+
+      Before item 1, make this release's new files visible to `git ls-files`-based scan tests
+      (#1954 찐빠 #3 — [recall, low-confidence] in the issue): such tests (e.g.
+      `tests/unit/utils/logger-keys.test.ts`) do not see untracked files, so the local final gate
+      can differ from CI. Delegate to mgr-gitnerd, serialized (a local git state change — R010;
+      R009 「File-Disjoint ≠ Independent」), a `git add -N` limited to the new untracked paths this
+      release created: compare the current `git status --short | grep '^??'` output with the baseline
+      recorded in pre-triage Phase 0 item 4, and add only paths absent from that baseline. Never run a blanket
+      `git add -N .` and never touch pre-existing unrelated untracked files; pass each path as an
+      argument (loop per the R005 ad hoc loop clause: arrays / `xargs` / `bash -c`, not unquoted zsh variables). Afterwards confirm with `git ls-files -- <path>` that every
+      new path is listed, then run the gate below. A gitignored new path is rejected by `git add -N`
+      (measured: exit 1, "ignored by one of your .gitignore files") — skip it, list it in the report;
+      `git ls-files` scans do not see it either. After `git add -N`, `git status --short` shows
+      ` A <path>` instead of `??` and `git diff --cached --name-only` stays empty (measured), so the
+      R017 「Release Commit Staging Hygiene」 enumeration (c) must also include ` A` paths, not only `^??`.
 
       For Node/Bun projects (this repo):
       1. frozen-lockfile install로 lockfile 정합을 확인하고 drift이면 중단하십시오. 새 dependency

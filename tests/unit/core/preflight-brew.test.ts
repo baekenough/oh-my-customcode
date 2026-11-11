@@ -58,6 +58,7 @@ describe('preflight - Homebrew integration', () => {
   beforeEach(() => {
     process.env = { ...originalEnv };
     delete process.env.CI;
+    delete process.env.TF_BUILD;
     delete process.env.GITHUB_ACTIONS;
     delete process.env.OMCUSTOM_SKIP_PREFLIGHT;
     execSyncMock.mockReset();

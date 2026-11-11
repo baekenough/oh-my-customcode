@@ -13,6 +13,7 @@ import {
 } from '../../../src/core/backup-layout.js';
 import * as codexInstaller from '../../../src/core/codex-installer.js';
 import { install } from '../../../src/core/installer.js';
+import * as logger from '../../../src/utils/logger.js';
 
 async function writeTree(root: string, files: Record<string, string>): Promise<void> {
   for (const [path, content] of Object.entries(files)) {
@@ -94,6 +95,49 @@ describe('ensureBackupGitignore asks git per prefix', () => {
     await writeFile(join(dir, '.git/info/exclude'), '!.omcustom-backup-1/\n');
     expect(await ensureBackupGitignore(dir)).toBe(false);
     expect(existsSync(join(dir, '.gitignore'))).toBe(false);
+  });
+
+  it('names the file that holds the negation, not always .gitignore (#1949)', async () => {
+    await mkdir(join(dir, '.omcustom-backup-1'));
+    await writeFile(join(dir, '.git/info/exclude'), '!.omcustom-backup-1/\n');
+    const infoSpy = spyOn(logger, 'info').mockImplementation(() => undefined);
+    try {
+      expect(await ensureBackupGitignore(dir)).toBe(false);
+      const call = infoSpy.mock.calls.find((c: unknown[]) => c[0] === 'backup.gitignore_negated');
+      const params = call?.[1] as { path: string; target: string };
+      expect(params.path).toBe('.git/info/exclude');
+      expect(params.target).toBe(join(dir, '.gitignore'));
+    } finally {
+      infoSpy.mockRestore();
+    }
+  });
+
+  it('mixed run: the notice names the negated pattern and stays true next to "Added" (#1949)', async () => {
+    await mkdir(join(dir, '.omcustom-backup-1'));
+    await mkdir(join(dir, '.claude-backup-1'));
+    await writeFile(join(dir, '.git/info/exclude'), '!.omcustom-backup-1/\n');
+    const infoSpy = spyOn(console, 'info').mockImplementation(() => undefined);
+    const previous = logger.getLoggerOptions();
+    logger.setLocale('en');
+    logger.setLogLevel('info');
+    try {
+      expect(await ensureBackupGitignore(dir)).toBe(true);
+      const lines = infoSpy.mock.calls.map((c: unknown[]) => String(c[0]));
+      const negated = lines.find((l) => l.includes('un-ignores')) ?? '';
+      const added = lines.find((l) => l.includes('Added')) ?? '';
+      expect(negated).toContain('.git/info/exclude');
+      expect(negated).toContain('not adding .omcustom-backup-*/');
+      expect(negated).not.toContain('left unchanged');
+      expect(added).toContain('.claude-backup-*/');
+      expect(added).not.toContain('.omcustom-backup-*/');
+      const text = await readFile(join(dir, '.gitignore'), 'utf-8');
+      expect(text).toContain('.claude-backup-*/');
+      expect(text).not.toContain('.omcustom-backup-*/');
+    } finally {
+      logger.setLocale(previous.locale);
+      logger.setLogLevel(previous.level);
+      infoSpy.mockRestore();
+    }
   });
 
   it('decides per prefix: a claude-backup negation does not block the omcustom pattern', async () => {

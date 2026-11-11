@@ -62,6 +62,34 @@ describe('restore hint after a name collision', () => {
     expect(text).toBe('nested *.md.backup (3) -> drop the .backup suffix');
   });
 
+  it('prints one rename per line and says it covers only files this run changed (#1949)', () => {
+    logBackupRestoreHint(dir, ['.claude', 'CLAUDE.md'], 2, []);
+    expect(hintText().split('\n')).toEqual([
+      'claude -> .claude',
+      '  CLAUDE.md.backup -> CLAUDE.md',
+      '  nested *.md.backup (2) -> drop the .backup suffix',
+    ]);
+  });
+
+  it('the rendered hint states its scope (#1949)', () => {
+    infoSpy.mockRestore();
+    const logSpy = spyOn(console, 'info').mockImplementation(() => undefined);
+    const previous = logger.getLoggerOptions();
+    logger.setLocale('en');
+    logger.setLogLevel('info');
+    try {
+      logBackupRestoreHint(dir, ['.claude'], 0, []);
+      const printed = logSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n');
+      expect(printed).toContain('only files this run changed');
+      expect(printed).toContain('\n  claude -> .claude');
+    } finally {
+      logger.setLocale(previous.locale);
+      logger.setLogLevel(previous.level);
+      logSpy.mockRestore();
+      infoSpy = spyOn(logger, 'info').mockImplementation(() => undefined);
+    }
+  });
+
   it('prints only the collided entries when every rename collided', () => {
     logBackupRestoreHint(dir, [], 1, [{ stored: 'a/AGENTS.md.backup-1', original: 'a/AGENTS.md' }]);
     expect(hintText()).not.toContain('nested *.md.backup');

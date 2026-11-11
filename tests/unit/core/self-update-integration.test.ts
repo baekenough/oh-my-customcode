@@ -92,6 +92,19 @@ describe('self-update integration tests', () => {
       );
     });
 
+    it('holds SIGINT while npm view runs (#1948)', () => {
+      const baseline = process.listenerCount('SIGINT');
+      let during = -1;
+      mockExecSync.mockImplementationOnce(() => {
+        during = process.listenerCount('SIGINT');
+        return '"1.5.0"\n';
+      });
+
+      expect(fetchLatestVersionFromNpm('test-package')).toBe('1.5.0');
+      expect(during).toBe(baseline + 1);
+      expect(process.listenerCount('SIGINT')).toBe(baseline);
+    });
+
     it('should parse version from non-JSON output', () => {
       mockExecSync.mockImplementationOnce(() => '2.3.4\n');
 
@@ -202,6 +215,150 @@ describe('self-update integration tests', () => {
       const probeCall = mockSpawnSync.mock.calls[0] as unknown as [string, string[]];
       expect(probeCall[1]).toEqual([entry, '--version']);
       expect(exitSpy).toHaveBeenCalledWith(0);
+    });
+
+    it('holds SIGINT during npm root -g, the install, the --version probe and the re-run (#1948)', () => {
+      const seen: Record<string, number> = {};
+      const baseline = process.listenerCount('SIGINT');
+      mockExecSync.mockImplementation((cmd: string) => {
+        if (cmd === 'npm root -g') {
+          seen.root = process.listenerCount('SIGINT');
+          return '/fake/prefix/lib/node_modules\n';
+        }
+        if (cmd.includes('npm install -g')) {
+          seen.install = process.listenerCount('SIGINT');
+          return '';
+        }
+        throw new Error(`Unexpected: ${cmd}`);
+      });
+      mockSpawnSync.mockImplementation(((_cmd: string, args: string[]) => {
+        seen[args.includes('--version') ? 'probe' : 'rerun'] = process.listenerCount('SIGINT');
+        return probeOk(_cmd, args);
+      }) as never);
+
+      autoSelfUpdate({
+        ...base,
+        cachePath: join(tempDir, 'cache.json'),
+        argv: ['node', entry, 'init'],
+        deps: {
+          realpathFn: (p) => p,
+          readFileFn: () => '{"name":"test-package","version":"1.5.0"}',
+        },
+      });
+
+      expect(seen).toEqual({
+        root: baseline + 1,
+        install: baseline + 1,
+        probe: baseline + 1,
+        rerun: baseline + 1,
+      });
+      expect(process.listenerCount('SIGINT')).toBe(baseline);
+    });
+
+    describe('Ctrl+C ends a child: exit 130 and no continuation (#1948)', () => {
+      const exitFn = mock((_code: number): void => {});
+      let warnSpy: ReturnType<typeof spyOn>;
+      const root = '/fake/prefix/lib/node_modules';
+
+      beforeEach(() => {
+        exitFn.mockReset();
+        warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
+      });
+
+      afterEach(() => {
+        warnSpy.mockRestore();
+      });
+
+      function run(overrides: { fetch?: boolean } = {}) {
+        return autoSelfUpdate({
+          ...base,
+          ...(overrides.fetch ? { fetchLatestVersion: undefined } : {}),
+          cachePath: join(tempDir, 'cache.json'),
+          argv: ['node', entry, 'init'],
+          deps: {
+            exitFn,
+            realpathFn: (p) => p,
+            readFileFn: () => '{"name":"test-package","version":"1.5.0"}',
+          },
+        });
+      }
+
+      const bySignal = () =>
+        Object.assign(new Error('Command failed'), { status: null, signal: 'SIGINT' });
+      const byStatus130 = () => Object.assign(new Error('Command failed'), { status: 130 });
+
+      function expectAborted(outcome: string): void {
+        expect(outcome).toBe('interrupted');
+        expect(exitFn).toHaveBeenCalledTimes(1);
+        expect(exitFn).toHaveBeenCalledWith(130);
+        expect(exitSpy).not.toHaveBeenCalled();
+        expect(warnSpy).not.toHaveBeenCalled(); // not reported as a lookup/install failure
+      }
+
+      it.each([
+        ['signal SIGINT', bySignal],
+        ['status 130', byStatus130],
+      ])('npm view ended by %s', (_label, makeError) => {
+        mockExecSync.mockImplementation((cmd: string) => {
+          if (cmd.startsWith('npm view')) throw makeError();
+          throw new Error(`Unexpected: ${cmd}`);
+        });
+
+        expectAborted(run({ fetch: true }));
+        expect(mockExecSync).toHaveBeenCalledTimes(1); // npm root -g / install never ran
+        expect(mockSpawnSync).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        ['signal SIGINT', bySignal],
+        ['status 130', byStatus130],
+      ])('npm root -g ended by %s', (_label, makeError) => {
+        mockExecSync.mockImplementation((cmd: string) => {
+          if (cmd === 'npm root -g') throw makeError();
+          throw new Error(`Unexpected: ${cmd}`);
+        });
+
+        expectAborted(run());
+        expect(mockExecSync).toHaveBeenCalledTimes(1); // no install after the interrupted lookup
+        expect(mockSpawnSync).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        ['signal SIGINT', bySignal],
+        ['status 130', byStatus130],
+      ])('npm install -g ended by %s', (_label, makeError) => {
+        mockExecSync.mockImplementation((cmd: string) => {
+          if (cmd === 'npm root -g') return `${root}\n`;
+          if (cmd.includes('npm install -g')) throw makeError();
+          throw new Error(`Unexpected: ${cmd}`);
+        });
+
+        expectAborted(run());
+        expect(mockSpawnSync).not.toHaveBeenCalled(); // no probe, no re-run
+      });
+
+      it.each([
+        ['signal SIGINT', { status: null, signal: 'SIGINT', stdout: '' }],
+        ['status 130', { status: 130, signal: null, stdout: '' }],
+      ])('--version probe ended by %s', (_label, result) => {
+        mockNpm(root);
+        mockSpawnSync.mockImplementation((() => result) as never);
+
+        expectAborted(run());
+        expect(mockSpawnSync).toHaveBeenCalledTimes(1); // the real re-run never started
+      });
+
+      it('negative: an ordinary install failure is still a failure, not an abort', () => {
+        mockExecSync.mockImplementation((cmd: string) => {
+          if (cmd === 'npm root -g') return `${root}\n`;
+          if (cmd.includes('npm install -g'))
+            throw Object.assign(new Error('EACCES'), { status: 243 });
+          throw new Error(`Unexpected: ${cmd}`);
+        });
+
+        expect(run()).toBe('failed');
+        expect(exitFn).not.toHaveBeenCalled();
+      });
     });
 
     it('continues when the default probe fails to start the new CLI', () => {

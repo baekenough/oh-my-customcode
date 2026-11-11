@@ -3220,6 +3220,86 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - 룰 변경 후보는 없습니다. 룰 예산이 139,985자이고 한도가 140,000자라 순증 편집을 하지 않았습니다(R016 「예산 게이트」의 python3 한 줄을 2fc46acf 블롭의 `CLAUDE.md`와 `.claude/rules/*.md`에 적용한 합계가 139985이고, 작업 트리에 같은 한 줄을 적용한 합계도 139985이며 `git diff --stat 2fc46acf -- CLAUDE.md .claude/rules`는 출력이 비어 있었습니다).
 - 후속 실측 후보는 위 `[가설 — …]` 표기에 적었습니다. 판정 기준을 충족하는 측정이 이루어지기 전에는 결론으로 쓰지 않습니다.
 
+## v2.1.321 (2026-11-09)
+
+> Issue: #1953 — Claude Code v2.1.321 compatibility documentation
+> Scope-ceiling check (R017): 조사 시점(2026-11-11)의 최신 릴리즈는 2.1.322입니다(`claude --version`=2.1.322 (Claude Code), `npm view @anthropic-ai/claude-code version`=2.1.322). 이 절과 아래 v2.1.322 절만 다루며 2.1.322보다 늦은 릴리즈는 관측되지 않았습니다.
+> 이슈 본문의 `## What's changed` 절 불릿은 118개이며, 인용은 파일로 저장한 `gh issue view 1953` 출력에서 스크립트로 추출했습니다(수기 입력 없음).
+> 이 절의 저장소 측정은 기준 커밋 f5a68b7c의 `git grep`·`git show`입니다. `git grep`은 HTML 주석 안도 검색하므로 룰 본문 히트는 주석 안팎을 구분하지 않습니다.
+
+### 모델
+
+- CHANGELOG 원문: "Added Claude Fable 5.2 (`claude-fable-5-2`), now the default Fable model — 1M context, $8/$40 per Mtok with $0.20/Mtok cache reads"
+  (321) Claude Fable 5.2(`claude-fable-5-2`)가 추가되어 기본 Fable 모델이 되었으며 1M 컨텍스트, Mtok당 $8/$40(캐시 읽기 $0.20/Mtok)입니다. f5a68b7c의 R006 Tier-2 표는 `claude-fable-5-1`을 v2.1.257부터의 기본 Fable 모델로 적고 있어(`git grep -n -F 'claude-fable-5-1' f5a68b7c -- .claude/rules/MUST-agent-design.md`의 첫 히트 58행) 이 노트와 기본값 서술이 어긋납니다. `guides/multi-model-routing/README.md` 45행에도 같은 서술이 있으며 둘 다 이 가이드 절의 편집 범위 밖입니다. 16 문서에는 5.1을 기본으로 부르는 문장이 없었고(`git grep -n -F -e 'fable-5-1' -e 'Fable 5.1' f5a68b7c -- guides/claude-code/16-fable5-prompting.md | wc -l` = 0) 개요에 5.2 기본값 문장을 추가했습니다.
+- CHANGELOG 원문: "Changed saved Fable 5.1 model picks to move to `fable`: on Pro and Max plans at once, on Team and Enterprise plans once your organization allows it; use `/model claude-fable-5-1` to switch back"
+  (321) 저장된 Fable 5.1 모델 선택이 `fable`로 옮겨지며(Pro·Max는 즉시, Team·Enterprise는 조직이 허용한 뒤) `/model claude-fable-5-1`로 되돌릴 수 있습니다. 이 문장은 저장된 모델 선택에 관한 것이며 에이전트 frontmatter `model:` 핀의 처리는 원문에 없습니다. 이 저장소 `.claude/agents`에서 `claude-fable-5-1` 핀을 가진 파일은 0개입니다(`git grep -l -F 'claude-fable-5-1' f5a68b7c -- .claude/agents | wc -l`).
+- CHANGELOG 원문: "Fixed fast mode losing replies, switching models or retrying for minutes when fast serving is rate-limited, overloaded or failing; it now tries standard speed on the same model first"
+  (321) 빠른 모드가 rate limit·과부하·실패일 때 응답을 잃거나 모델을 바꾸거나 수 분간 재시도하던 결함이 수정되어, 같은 모델의 표준 속도를 먼저 시도합니다. R006 Fast Mode 절은 "does NOT switch models" 서술을 갖고 있어(`git grep -c -F 'does NOT switch models' f5a68b7c -- .claude/rules/MUST-agent-design.md` = 1, 대조: `Fast Mode`는 5줄) 이 수정은 그 서술과 같은 방향입니다. 룰 변경은 필요하지 않습니다.
+
+### Bash 도구 · 권한
+
+- CHANGELOG 원문: "Fixed Bash commands sometimes running in the wrong folder when Claude sent several at once and an earlier one changed folders"
+  (321) 여러 Bash 명령을 한꺼번에 보냈을 때 앞선 명령이 폴더를 바꾸면 뒤 명령이 엉뚱한 폴더에서 실행되던 결함이 수정되었습니다. R005의 지속 `cd` 금지 조항(#1778)은 보이는 텍스트에 있으며(`git grep -c -F '#1778' f5a68b7c -- .claude/rules/MAY-optimization.md` = 1) 절대 경로·서브셸 규범은 훅 명령·상대 경로 스크립트 축에서도 필요하므로 이 수정으로 바뀌지 않습니다 (이것은 조항 문장을 읽은 추론입니다). 룰 변경은 필요하지 않습니다.
+- CHANGELOG 원문: "Fixed deny rules and protected-file prompts not applying to the file that a `cp` or `mv` into a directory writes"
+  (321) `cp`·`mv`를 디렉터리로 실행할 때 실제로 쓰이는 파일에 deny 규칙과 보호 파일 프롬프트가 적용되지 않던 결함이 수정되었습니다. 추적되는 프로젝트 settings의 `permissions`는 키 목록·deny 개수·ask 개수가 `[["_comment_defaultMode","allow","defaultMode"],0,0]`로 deny·ask 규칙이 없어(`git show f5a68b7c:.claude/settings.json | jq -c '[(.permissions|keys), (.permissions.deny|length), (.permissions.ask|length)]'`) 이 저장소의 추적 설정 기준으로는 영향 규칙이 관측되지 않았습니다. 사용자·managed settings는 보지 않았습니다.
+- CHANGELOG 원문: "Changed `cp` and `mv` spelled by a path, such as `/bin/cp`, to get the same path checks as `cp` and `mv`"
+  (321) `/bin/cp`처럼 경로로 쓴 `cp`·`mv`도 일반 `cp`·`mv`와 같은 경로 검사를 받습니다. 위 항목과 같은 측정(추적 settings에 deny·ask 규칙 없음)이 적용되며 룰 변경은 필요하지 않습니다.
+- CHANGELOG 원문: "Fixed `/config` showing Manual as the default permission mode when new sessions start in auto mode; pressing Space on "Auto (default)" now saves Don't Ask, not Plan"
+  (321) 새 세션이 auto mode로 시작하는데도 `/config`가 기본 permission mode를 Manual로 표시하던 결함이 수정되었고, "Auto (default)"에서 Space를 누르면 Plan이 아니라 Don't Ask가 저장됩니다. R010 Self-Check 1은 유효 모드를 `/config` 표시가 아니라 `jq -r '.permissions.defaultMode // "unset"'` 세 파일 실측과 실행 플래그로 정하므로(`git grep -c -F 'permissions.defaultMode // "unset"' f5a68b7c -- .claude/rules/MUST-orchestrator-coordination.md` = 1) 이 표시 수정은 그 절차를 바꾸지 않습니다. 원문은 표시와 저장값에 관한 서술이며 유효 모드 결정 로직의 변경은 서술하지 않습니다.
+
+### 서브에이전트 · 백그라운드 에이전트
+
+- CHANGELOG 원문: "Fixed auto mode losing a background subagent's report that had started a turn when the conversation was compacted before Claude answered it"
+  (321) compaction이 Claude의 응답보다 먼저 일어나면 턴을 시작시킨 background 서브에이전트의 보고가 사라지던 auto mode 결함이 수정되었습니다. R009의 결과 수집 문장("완료 알림에 보고 본문이 없으면…")은 보이는 텍스트에 있고(`git grep -c -F '완료 알림에 보고 본문이 없으면' f5a68b7c -- .claude/rules/MUST-parallel-execution.md` = 1) 이 수정으로 바뀌지 않습니다. 이 저장소의 세션에서 이 결함이 발생했는지는 측정하지 않았습니다. 룰 변경은 필요하지 않습니다.
+- CHANGELOG 원문: "Improved auto mode in headless sessions, the desktop app and VS Code: reports from background subagents that wait together are answered in one model call, as in the terminal"
+  (321) headless 세션·데스크톱 앱·VS Code의 auto mode에서 함께 대기하는 background 서브에이전트 보고가 터미널처럼 한 번의 모델 호출로 처리됩니다. R009의 결과 수집 서술(위 항목)과 충돌하지 않습니다.
+- CHANGELOG 원문: "Fixed one request carrying far more background agent reports than intended after Claude was stopped while several were waiting"
+  (321) 여러 보고가 대기하는 중 Claude가 멈췄을 때 한 요청이 의도보다 훨씬 많은 background 에이전트 보고를 싣던 결함이 수정되었습니다. 이 결함이 R013 ecomode의 컨텍스트 압박 진단에 영향을 줬는지는 측정하지 않았습니다.
+
+### 훅
+
+- CHANGELOG 원문: "Fixed a large hook output pointing Claude to a file that held another hook's output from the same tool call"
+  (321) 큰 훅 출력이 같은 도구 호출의 다른 훅 출력이 담긴 파일을 가리키던 결함이 수정되었습니다. 추적되는 프로젝트 settings의 PreToolUse 훅 명령은 15개로 같은 도구 호출에 여러 훅이 붙을 수 있는 구성입니다(`git show f5a68b7c:.claude/settings.json | jq '[.hooks.PreToolUse[]?.hooks[]?]|length'`). 큰 훅 출력이 실제로 발생했는지는 측정하지 않았습니다. R021 어드바이저리 모델은 바뀌지 않습니다.
+- CHANGELOG 원문: "Fixed a PreToolUse hook's `ask` being lost when another hook's `defer` finished first and could not be honored"
+  (321) 한 훅의 `defer`가 먼저 끝나 지킬 수 없을 때 다른 훅의 PreToolUse `ask`가 사라지던 결함이 수정되었습니다. 이 저장소 훅 스크립트에서 `ask` 또는 `defer` 단어를 쓰는 파일은 0개입니다(`git grep -l -P '\b(ask|defer)\b' f5a68b7c -- .claude/hooks | wc -l`, 대조: `permissionDecision`은 1개 파일이며 주석 줄). 이 저장소의 훅은 어드바이저리 위주여서 영향 경로는 관측되지 않았습니다. 릴리즈 노트에서 이 항목보다 앞에 있는 "Fixed apps that embed Claude Code getting their own PreToolUse hook's `ask` reason…" 항목은 두 훅이 모두 `ask`할 때 어느 훅의 `ask` 사유가 전달되는지에 관한 수정으로, 위 `ask` 유실 수정과 같은 결함인지는 원문에 서술이 없습니다. [추론] 둘 다 PreToolUse `ask` 처리와 관련되므로 같은 측정(`ask`/`defer`를 쓰는 훅 스크립트 수)을 적용했으며, 이 관계는 원문이 아니라 항목 제목을 읽은 판단입니다.
+
+### 컨텍스트 · 워크플로
+
+- CHANGELOG 원문: "Changed background command notifications and TaskStop results to show Claude only the start and end of a command over 1,000 characters, which saves context"
+  (321) background 명령 알림과 TaskStop 결과가 1,000자를 넘는 명령은 시작과 끝만 Claude에게 보여 컨텍스트를 아낍니다. R013의 v2.1.261+ 노트(`SHOULD-ecomode.md` 97행)는 `bashOutputMaxChars`를 기본으로 올리지 않고 독립적인 exit-code 조회를 우선하라고 하므로, 이 변경 아래에서는 중간 출력 줄에 기대는 pass/fail 판정이 더 취약해집니다 (이것은 조항과 원문을 읽은 추론입니다). 룰 변경은 필요하지 않습니다.
+- CHANGELOG 원문: "Fixed Claude not being told when you stop or pause a running workflow, so it no longer says the workflow is still running"
+  (321) 사용자가 실행 중인 워크플로를 멈추거나 일시정지해도 Claude가 계속 실행 중이라고 말하던 결함이 수정되었습니다. 워크플로 완료 판정은 R020 ground-truth 실측이 소유하며 이 수정은 그 원칙을 바꾸지 않습니다.
+
+### 스킬 탐색 · 세션 시작
+
+- CHANGELOG 원문: "Fixed project skills, commands and agents staying missing after their folder was removed and came back mid-session, such as with `git stash`, including after entering a worktree"
+  (321) 세션 도중 폴더가 제거됐다가 `git stash` 등으로 돌아온 뒤에도 프로젝트 skills·commands·agents가 사라진 채 남던 결함이 수정되었습니다(worktree 진입 후 포함). R001은 `git stash`를 비파괴 대안으로 권합니다(`git grep -c -F 'git stash' f5a68b7c -- .claude/rules/MUST-safety.md` = 4줄). 이 수정은 그 권고를 바꾸지 않으며 stash 뒤 스킬 목록이 비어 보이면 구버전 증상일 수 있습니다 [가설 — 실측이 반대면 반대로 기재: 이 저장소에서 stash 뒤 스킬 누락이 관측된 적이 없습니다. 판정 기준은 `git stash` 직후 같은 세션에서 `/omcustom:lists`가 스킬을 모두 보이는지 보는 것입니다].
+- CHANGELOG 원문: "Changed nested skill loading: `.claude/skills` folders inside `~/.claude/plugins` no longer load when Claude works on files there"
+  (321) `~/.claude/plugins` 안의 `.claude/skills` 폴더는 Claude가 그곳의 파일을 다룰 때 더 이상 로드되지 않습니다. `CLAUDE.md`와 `.claude/rules`에서 `.claude/plugins`를 참조하는 파일은 0개입니다(`git grep -l -F '.claude/plugins' f5a68b7c -- CLAUDE.md .claude/rules | wc -l`, 대조: `~/.claude/`는 4파일). 영향 경로는 관측되지 않았습니다.
+- CHANGELOG 원문: "Fixed the git status given to Claude at session start reading as clean when git status failed; it now reads as unavailable"
+  (321) 세션 시작 시 Claude에게 주어지는 git status가 실패했을 때 clean으로 읽히던 결함이 수정되어 이제 unavailable로 읽힙니다. R001·R017의 `git status` 실측 절차는 세션 시작 스냅샷에 의존하지 않으므로 바뀌지 않습니다.
+- CHANGELOG 원문: "Fixed the git status given to Claude at session start showing the first listed file as staged when its changes were not staged"
+  (321) 세션 시작 git status에서 첫 파일이 staged가 아닌데도 staged로 보이던 결함이 수정되었습니다. 위 항목과 같은 이유로 룰 변경은 필요하지 않습니다.
+
+### 기타 항목
+
+이 릴리즈는 118개 항목이고 위에서 18개를 `CHANGELOG 원문`으로 인용했으므로 기타는 118 − 18 = 100개입니다. 기타 항목은 이슈 본문을 읽었으나 이 저장소의 룰·스킬·훅과의 접점을 항목별로 `git grep`하지 않았습니다(원격 제어·VS Code·gateway·Windows·플러그인 마켓플레이스 항목 포함, `claude -p`의 30분/10분 안내 문구·headless의 `.claude/skills` 변경 감시·`grep -r foo "$PWD/src"` 권한 프롬프트 항목은 읽었지만 인용하지 않았습니다) [가설 — 실측이 반대면 반대로 기재: 접점이 없습니다. 판정 기준은 항목의 키워드를 f5a68b7c에서 `git grep -n -i`로 검색해 히트가 없는지 보는 것입니다].
+
+**Action items**:
+- 룰 변경 후보는 R006 Tier-2 표의 `claude-fable-5-2` 행(기본 Fable 모델 서술 갱신)뿐이며 이 가이드 절의 편집 범위 밖입니다. 이 절의 서술은 기준 커밋 f5a68b7c 상태이며, R006은 같은 릴리즈(v2.0.23)에서 갱신되어 Tier-2 표에 `claude-fable-5-2` 행이 추가되고 `claude-fable-5-1`이 이전 세대로 표시되었습니다. 그 밖의 인용 항목은 룰 변경이 필요하지 않다고 판단했습니다(근거는 항목별 서술).
+- 후속 실측 후보는 위 `[가설 — …]` 표기에 적었습니다. 판정 기준을 충족하는 측정이 이루어지기 전에는 결론으로 쓰지 않습니다.
+
+## v2.1.322 (2026-11-10)
+
+> Issue: #1952 — Claude Code v2.1.322 compatibility documentation
+> Scope-ceiling check (R017): 조사 시점(2026-11-11)의 최신 릴리즈는 2.1.322입니다(`claude --version`=2.1.322 (Claude Code), `npm view @anthropic-ai/claude-code version`=2.1.322). 이 릴리즈보다 늦은 릴리즈는 관측되지 않았습니다.
+> 이슈 본문의 `## What's changed` 절 불릿은 1개입니다.
+
+- CHANGELOG 원문: "Added fast mode on Vertex in the global, us and eu regions, falling back to standard speed if Vertex refuses it"
+  (322) Vertex의 global·us·eu 리전에서 빠른 모드가 추가되었고 Vertex가 거부하면 표준 속도로 되돌립니다. 이 저장소의 settings·hooks·src·package.json에서 Vertex를 참조하는 파일은 0개입니다(`git grep -l -i -F 'vertex' f5a68b7c -- .claude/settings.json .claude/hooks src package.json | wc -l`, 대조: R006에서 `Fast Mode`는 5줄). 영향 없음, 룰 변경은 필요하지 않습니다.
+
+**Action items**: 없음.
+
 ## Known Platform Issues & Workarounds
 
 ### Agent tool malformed parsing on long / special-character prompts (#1241)
@@ -3299,6 +3379,8 @@ Opus 4.8에서 thinking blocks가 수정되어 API 오류가 발생하던 버그
 - #1894 — Claude Code v2.1.317 compatibility documentation
 - #1908 — Claude Code v2.1.318 compatibility documentation
 - #1918 — Claude Code v2.1.319 compatibility documentation
+- #1953 — Claude Code v2.1.321 compatibility documentation
+- #1952 — Claude Code v2.1.322 compatibility documentation
 - `.claude/skills/claude-native/` — auto-generation source
 - `.claude/rules/SHOULD-hud-statusline.md` — R012 statusline integration
 - `.claude/rules/MUST-agent-design.md` — R006 agent frontmatter spec

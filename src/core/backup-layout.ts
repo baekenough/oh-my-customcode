@@ -219,7 +219,7 @@ export function logBackupRestoreHint(
     renames.push(`${c.stored} -> ${c.original} (the existing .backup file next to it stays)`);
   }
   if (renames.length === 0) return;
-  info('backup.restore_hint', { path: backupDir, renames: renames.join(', ') });
+  info('backup.restore_hint', { path: backupDir, renames: renames.join('\n  ') });
 }
 
 async function git(cwd: string, args: string[]): Promise<boolean> {
@@ -239,7 +239,10 @@ type IgnoreStatus = 'ignored' | 'negated' | 'none' | 'unknown';
  * `check-ignore -v --no-index` prints `<source>:<line>:<pattern>\t<path>`; a pattern starting with
  * `!` is a negation. Exit 1 means no pattern matches; any other failure is 'unknown'.
  */
-async function ignoreStatus(cwd: string, name: string): Promise<IgnoreStatus> {
+async function ignoreStatus(
+  cwd: string,
+  name: string
+): Promise<{ status: IgnoreStatus; source?: string }> {
   try {
     const { stdout } = await execFileAsync(
       'git',
@@ -248,9 +251,10 @@ async function ignoreStatus(cwd: string, name: string): Promise<IgnoreStatus> {
         cwd,
       }
     );
-    return /^[^\t]*?:\d+:!/.test(stdout) ? 'negated' : 'ignored';
+    const negation = /^([^\t]*?):\d+:!/.exec(stdout);
+    return negation ? { status: 'negated', source: negation[1] } : { status: 'ignored' };
   } catch (err) {
-    return (err as { code?: unknown }).code === 1 ? 'none' : 'unknown';
+    return { status: (err as { code?: unknown }).code === 1 ? 'none' : 'unknown' };
   }
 }
 
@@ -271,15 +275,18 @@ async function classifyPrefixes(
   targetDir: string,
   backupNames: readonly string[],
   gitignore: string
-): Promise<{ missing: string[]; negated: string[] }> {
+): Promise<{ missing: string[]; negated: string[]; negationSources: string[] }> {
   const lines = new Set(gitignore.split(/\r?\n/).map((line) => line.trim()));
   const missing: string[] = [];
   const negated: string[] = [];
+  const negationSources = new Set<string>();
   for (const prefix of BACKUP_PREFIXES) {
     const pattern = `${prefix}*/`;
     const statuses: IgnoreStatus[] = [];
     for (const name of backupNames.filter((n) => n.startsWith(prefix))) {
-      statuses.push(await ignoreStatus(targetDir, name));
+      const found = await ignoreStatus(targetDir, name);
+      statuses.push(found.status);
+      if (found.source) negationSources.add(found.source);
     }
     if (
       statuses.includes('negated') ||
@@ -290,7 +297,7 @@ async function classifyPrefixes(
       missing.push(pattern);
     }
   }
-  return { missing, negated };
+  return { missing, negated, negationSources: [...negationSources] };
 }
 
 /**
@@ -318,10 +325,19 @@ export async function ensureBackupGitignore(
     const existing = (await fileExists(gitignorePath))
       ? await readFile(gitignorePath, 'utf-8')
       : '';
-    const { missing, negated } = await classifyPrefixes(targetDir, backupNames, existing);
+    const { missing, negated, negationSources } = await classifyPrefixes(
+      targetDir,
+      backupNames,
+      existing
+    );
     if (negated.length > 0) {
-      // An appended pattern would override the user's deliberate un-ignore
-      info('backup.gitignore_negated', { path: gitignorePath });
+      // An appended pattern would override the user's deliberate un-ignore. Name the file git
+      // reports (e.g. .git/info/exclude), or the .gitignore when git could not say.
+      info('backup.gitignore_negated', {
+        path: negationSources.length > 0 ? negationSources.join(', ') : gitignorePath,
+        target: gitignorePath,
+        patterns: negated.join(', '),
+      });
     }
     if (missing.length === 0) return false;
     if (options.dryRun) {
