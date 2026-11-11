@@ -54,7 +54,7 @@ oh-my-customcode는 에이전트 시스템을 "소스 코드"로, 실행 중인 
 | R016 | MUST | 지속적 개선 | 규칙 위반 시 -> 규칙 업데이트 -> 계속 |
 | R017 | MUST | 동기화 검증 | 푸시 전 5+3 라운드 검증 |
 | R018 | MUST (조건부) | Agent Teams | CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 AND `TeamCreate` 도구 실재 시 필수; 아니면 dormant |
-| R019 | SHOULD | Ontology-RAG 라우팅 | 라우팅 스킬의 ontology-RAG enrichment |
+| R019 | SHOULD | 라우팅 Enrichment | 라우팅 신뢰도 90% 미만 시 Wiki-RAG 조회 (`wiki/index.yaml`) |
 | R020 | MUST | 완료 검증 | 작업 완료 선언 전 task-type-specific 검증 |
 | R021 | MUST | Enforcement Policy | Advisory-first 시행 모델, 강화 승격 기준 |
 | R022 | SHOULD | Wiki 동기화 | 에이전트/스킬/규칙/가이드 변경 시 위키 자동 동기화 |
@@ -193,6 +193,8 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
   <img src="assets/diagrams/03-routing-architecture.png" alt="Routing Architecture" width="800" />
 </p>
 
+> 참고: 이 다이어그램은 v2.0.24 이전 상태이며, 제거된 "Ontology RAG MCP R019" 노드(ontology-rag는 v2.0.24에서 제거됨)가 아직 표시됩니다. 후속 이슈(#1961)에서 다시 생성할 예정입니다.
+
 ### 4.3 동적 에이전트 생성
 
 라우팅에서 매칭되는 전문가를 찾지 못할 경우:
@@ -218,9 +220,9 @@ design-shotgun, diagram-design, impeccable-design, product-strategy, grill-with-
 | 70--89% | 확인 요청, 대안 표시 |
 | < 70% | 사용자가 선택할 수 있는 옵션 목록 표시 |
 
-### 4.5 Ontology-RAG Enrichment (R019)
+### 4.5 Wiki-RAG Enrichment (R019)
 
-라우팅 스킬이 에이전트를 선택한 후, `get_agent_for_task` MCP 도구를 호출하여 `suggested_skills`를 추출합니다. 이 스킬 힌트가 스폰되는 에이전트의 프롬프트에 주입되어 컨텍스트 풍부한 실행을 가능하게 합니다. MCP 장애 시 무음 스킵 -- 라우팅을 차단하지 않습니다.
+정적 라우팅 신뢰도가 90% 미만이면 라우팅 스킬이 `wiki/index.yaml`에서 관련 에이전트/스킬/가이드 페이지를 조회하고, 그 결과를 스폰되는 에이전트의 프롬프트에 보조 라우팅 컨텍스트로 주입합니다. Enrichment는 advisory 전용입니다: `wiki/index.yaml`이 없거나 조회가 실패하거나 결과가 비어 있으면 무음 스킵하고 라우팅은 그대로 진행됩니다.
 
 ---
 
@@ -433,7 +435,6 @@ haiku -> sonnet -> opus (에스컬레이션 경로)
 |----|-----------|------|
 | Lint | ci.yml | 소스 파일 biome check |
 | Test | ci.yml | bun test 커버리지 임계값 포함 |
-| Rust Tests | ci.yml | Rust 컴포넌트 cargo test |
 | Version Sync | ci.yml | manifest.json과 package.json 일치 여부 (+ lockfile 3-way 검사) |
 | Template Sync | ci.yml | 템플릿 파일과 소스 일치 검증, 스킬 스크립트 파일 패리티 |
 | Dependency Security Audit | security-audit.yml | 자동 취약점 스캔 |

@@ -110,11 +110,11 @@ describe('installer', () => {
       expect(componentNames).toContain('skills');
     });
 
-    it('should return exactly 7 components (commands and pipelines removed, ontology added)', async () => {
+    it('should return exactly 6 components (commands, pipelines and ontology removed)', async () => {
       const manifest = await getTemplateManifest();
 
-      // getAllComponents() returns 7 items: rules, agents, skills, guides, hooks, contexts, ontology
-      expect(manifest.components.length).toBe(7);
+      // getAllComponents() returns 6 items: rules, agents, skills, guides, hooks, contexts
+      expect(manifest.components.length).toBe(6);
 
       const componentNames = manifest.components.map((c) => c.name);
       expect(componentNames).toContain('rules');
@@ -123,7 +123,7 @@ describe('installer', () => {
       expect(componentNames).toContain('guides');
       expect(componentNames).toContain('hooks');
       expect(componentNames).toContain('contexts');
-      expect(componentNames).toContain('ontology');
+      expect(componentNames).not.toContain('ontology'); // ontology removed (#1960)
       expect(componentNames).not.toContain('commands'); // commands removed
       expect(componentNames).not.toContain('pipelines'); // pipelines removed
     });
@@ -174,6 +174,15 @@ describe('installer', () => {
       expect(Array.isArray(result.installedComponents)).toBe(true);
       expect(Array.isArray(result.skippedComponents)).toBe(true);
       expect(Array.isArray(result.warnings)).toBe(true);
+    });
+
+    it('creates no .claude/ontology (ontology-rag removed in v2.0.24, #1960)', async () => {
+      const result = await install({ targetDir: tempDir, skipConfirm: true });
+
+      expect(result.success).toBe(true);
+      // Positive control: the real templates were installed into the same .claude folder.
+      expect(await fileExists(join(tempDir, '.claude', 'rules'))).toBe(true);
+      expect(await fileExists(join(tempDir, '.claude', 'ontology'))).toBe(false);
     });
 
     it('should handle backup option', async () => {
@@ -288,16 +297,16 @@ describe('installer', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle install with all components (7 total, no commands or pipelines)', async () => {
+    it('should handle install with all components (6 total, no commands, pipelines or ontology)', async () => {
       const result = await install({
         targetDir: tempDir,
-        components: ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts', 'ontology'],
+        components: ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'],
         skipConfirm: true,
       });
 
       expect(result).toBeDefined();
       expect(Array.isArray(result.installedComponents)).toBe(true);
-      // getAllComponents() should return 7 items (commands and pipelines removed, ontology added)
+      // getAllComponents() should return 6 items (commands, pipelines and ontology removed)
     });
 
     it('should skip entry-md component in components list', async () => {

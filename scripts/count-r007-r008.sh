@@ -73,9 +73,13 @@
 # as measured and makes no statement about why the text block is absent.
 #
 # SEPARATE metric (#1950): `r007_textless` — turns whose advisor output carries the text-less
-# statement ("text 블록이 없는 응답 턴 N건"). Such a turn has NO text block, so the advisor cannot
-# judge R007 for it; it is counted apart from `r007_missing` (a turn WITH text but no header) and is
-# never folded into it. The count is taken from the advisor's own output, so it matches the hook 1:1.
+# statement ("text 블록이 없는 응답 턴 N건"). Such a turn has NO text block, or (#1959) an empty first
+# text block followed by a non-empty text block whose first line carries no R007 header (only the first
+# line of the FIRST non-empty block is checked; a header there means the turn is not counted).
+# `r007_missing` reads the first text block, which is absent or empty in both shapes, so the advisor
+# cannot judge R007 from it. It is counted apart from `r007_missing` (a turn WITH text but no header)
+# and is never folded into it. The count is taken from the advisor's own output, so it matches the
+# hook 1:1.
 # Sub-count `r007_textless_after_notification` (#1954 찐빠 #1): of those text-less turns, the ones whose
 # opening boundary record is a notification. MEASURED on a real transcript (10170 lines): a
 # notification is an ordinary boundary record — `type:"user"`, `.message.content` a bare string whose

@@ -1835,11 +1835,14 @@ steps:
               Before creating the PR, confirm the body file actually contains a Closes line per issue: run the quote-verify block (defined in the implement step's fixed constraint (c)) with the quotations being one `Closes #<N>` line per issue (mgr-gitnerd writes them to a file with the Write tool and runs the block in the same delegation) and the target being the PR body file. A count of 0 for any line blocks PR creation.
            c. mgr-gitnerd merges PR: gh pr merge {n} --merge --delete-branch (plain merge — NOT --admin).
               Ground-truth (measured 2026-08-15, `gh api repos/{owner}/{repo}/branches/develop/protection`):
-              required status checks are exactly 6 — Test, Lint, Template Sync, Version Sync,
-              Dependency Security Audit, Rust Tests (strict=true); enforce_admins=false; NO
-              required_pull_request_reviews (no reviewer-approval requirement exists). v1.1.47 merged with a
-              plain `gh pr merge 1585 --merge --delete-branch` — no --admin needed. A plain merge succeeds
-              once all 6 checks report green. If the merge is rejected, do NOT reflexively add --admin —
+              enforce_admins=false; NO required_pull_request_reviews (no reviewer-approval requirement
+              exists). v1.1.47 merged with a plain `gh pr merge 1585 --merge --delete-branch` — no --admin
+              needed. Required status checks: from v2.0.24 (#1960) "Rust Tests" is no longer a required
+              check (removed at merge, because the rust-test job is deleted in that release), so the expected
+              set is the other 5 — Dependency Security Audit, Lint, Template Sync, Test, Version Sync
+              (strict=true). Re-measure with
+              `gh api repos/{owner}/{repo}/branches/develop/protection/required_status_checks`.
+              A plain merge succeeds once all required checks report green. If the merge is rejected, do NOT reflexively add --admin —
               re-run the protection query above to re-measure current requirements and report the actual
               blocker (R010 bypass-flag pre-check: name what is bypassed and why before ever using --admin).
               A "[Merge Without Review]" safety-classifier denial at the Agent spawn that delegates this merge is the

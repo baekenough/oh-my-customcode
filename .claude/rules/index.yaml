@@ -148,7 +148,7 @@ rules:
     priority: MUST
     scope: all
 
-  # Ontology-RAG Routing - SHOULD
+  # Routing Enrichment (Wiki-RAG) - SHOULD
   - id: R019
     name: ontology-rag-routing
     title: Routing Enrichment Rules

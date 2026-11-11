@@ -588,8 +588,8 @@ pages:
       title: "R018: Agent Teams Rules"
       summary: "When Agent Teams is enabled, qualifying collaborative tasks must use Agent Teams"
     - file: rules/r019.md
-      title: "R019: Ontology-RAG Assisted Routing"
-      summary: "Routing skills SHOULD enrich agent selection by calling get_agent_for_task from ontology"
+      title: "R019: Routing Enrichment Rules (Wiki-RAG)"
+      summary: "Routing skills SHOULD enrich agent selection by querying wiki/index.yaml (Wiki-RAG), advisory only"
     - file: rules/r020.md
       title: "R020: Completion Verification Rules"
       summary: "Before declaring any task [Done], verify actual completion against task-type-specific"
@@ -657,7 +657,7 @@ pages:
       summary: "Reference documentation for clear, concise writing based on Strunk's classic style guide"
     - file: guides/external-tools.md
       title: "External Tools Guide"
-      summary: "Reference for external tools integrating with oh-my-customcode — graphify (Layer-3 RAG candidate) and ECC absorption decision archive (v0.142.0: 3 ACCEPT, 1 REJECT cross-harness export #1176)"
+      summary: "Reference for external tools integrating with oh-my-customcode — graphify (additional RAG candidate) and ECC absorption decision archive (v0.142.0: 3 ACCEPT, 1 REJECT cross-harness export #1176)"
     - file: guides/fastapi.md
       title: "FastAPI Guide"
       summary: "Reference documentation for FastAPI high-performance Python web API patterns"

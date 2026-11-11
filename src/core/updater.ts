@@ -4,15 +4,18 @@
 
 import { constants as fsConstants } from 'node:fs';
 import {
+  chmod,
   copyFile,
   link,
   lstat,
   mkdir,
   readdir,
+  readFile,
   realpath,
   rm,
   rmdir,
   unlink,
+  writeFile,
 } from 'node:fs/promises';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { dirname as posixDirname } from 'node:path/posix';
@@ -47,6 +50,7 @@ import { getProviderLayout } from './layout.js';
 import {
   computeFileHash,
   generateAndWriteLockfileForDir,
+  isRetiredLockfileComponent,
   LOCKFILE_VERSION,
   type Lockfile,
   type LockfileEntry,
@@ -54,7 +58,14 @@ import {
   resolveLockfileComponent,
   writeLockfile,
 } from './lockfile.js';
-import { refreshOntologyRag } from './ontology-rag-setup.js';
+import {
+  hasOntologyRagInVenv,
+  MCP_CONFIG_FILE,
+  type McpConfigBackup,
+  type McpConfigPreservedBy,
+  type McpEntryRetirement,
+  retireOntologyRagMcpServer,
+} from './ontology-rag-retirement.js';
 import {
   isRetirablePath,
   loadRetiredTemplatePaths,
@@ -72,7 +83,7 @@ import {
 export interface UpdateOptions {
   /** Target directory to update */
   targetDir: string;
-  /** Specific components to update (default: all) */
+  /** Specific components to update; omitted or empty (`[]`) means a full update of all */
   components?: UpdateComponent[];
   /** Whether to force update even if no changes */
   force?: boolean;
@@ -134,14 +145,7 @@ export interface OrphanKeep {
 /**
  * Components that can be updated
  */
-export type UpdateComponent =
-  | 'rules'
-  | 'agents'
-  | 'skills'
-  | 'guides'
-  | 'hooks'
-  | 'contexts'
-  | 'ontology';
+export type UpdateComponent = 'rules' | 'agents' | 'skills' | 'guides' | 'hooks' | 'contexts';
 
 /**
  * Result of update operation
@@ -173,8 +177,9 @@ export interface UpdateResult {
   removedDeprecatedFiles: string[];
   /**
    * The one backup folder of this run for everything it retired: orphan leftovers, RTK files and
-   * `deprecated-files.json` entries are moved here, never deleted. Created on the first move;
-   * present only when at least one file was moved.
+   * `deprecated-files.json` entries are moved here, never deleted, and the original `.mcp.json`
+   * is copied here when its `ontology-rag` server is removed. Created on the first move or copy;
+   * present only when at least one file was moved or copied.
    */
   retiredBackupDir?: string;
   /** Files whose frontmatter name: was synced from upstream */
@@ -191,6 +196,19 @@ export interface UpdateResult {
     settingsChanged: string[];
     wouldChangeSettings: string[];
     settingsConflicts: string[];
+  };
+  /**
+   * What a full update did about the retired ontology-rag (#1960). Present only when there is
+   * something to report: `mcpServer` when `.mcp.json` has an `ontology-rag` server entry (removed
+   * only when it is exactly what init wrote, the original then backed up in `retiredBackupDir`),
+   * `ontologyDirLeft` when `.claude/ontology` still exists after a non-dry run (files that were
+   * modified or not shipped stay, as do files kept by a declined prompt or by preserve settings), `venvHasOntologyRag` when the project `.venv` has it installed
+   * (`.venv` is never touched).
+   */
+  ontologyRagRetirement?: {
+    mcpServer?: McpEntryRetirement;
+    ontologyDirLeft?: true;
+    venvHasOntologyRag?: true;
   };
   /**
    * Leftovers that oh-my-customcode no longer ships (templates/retired-template-paths.json,
@@ -539,6 +557,19 @@ function isRtkLockKey(path: string): boolean {
 
 function isUpdateComponent(value: string): value is UpdateComponent {
   return (getAllUpdateComponents() as string[]).includes(value);
+}
+
+/**
+ * Whether `options` asks for a full update: no component list or an empty one (#1958). Every
+ * full-update-only step and the component list itself use this, so `[]` never means "nothing".
+ */
+function isFullUpdate(options: UpdateOptions): boolean {
+  return !options.components || options.components.length === 0;
+}
+
+/** The components `options` updates: all of them on a full update (see {@link isFullUpdate}). */
+function componentsToUpdate(options: UpdateOptions): UpdateComponent[] {
+  return isFullUpdate(options) ? getAllUpdateComponents() : [...(options.components ?? [])];
 }
 
 function getOrphanRetirement(result: UpdateResult) {
@@ -1048,20 +1079,15 @@ async function collectOrphanCandidates(
   config: OmccConfig,
   customizations: DeletionCustomizations
 ): Promise<OrphanCandidate[]> {
-  const fullUpdate = !options.components || options.components.length === 0;
   const candidates: OrphanCandidate[] = [];
   for (const entry of entries) {
-    const component = resolveLockfileComponent(entry.path);
-    if (
-      RTK_RETIRED_PATHS.has(entry.path) ||
-      !isUpdateComponent(component) ||
-      !(fullUpdate || options.components?.includes(component))
-    ) {
-      continue;
-    }
+    const componentRoot = RTK_RETIRED_PATHS.has(entry.path)
+      ? null
+      : orphanComponentRoot(resolveLockfileComponent(entry.path), options);
+    if (componentRoot === null) continue;
     const candidate = await retireOrphanFile(
       entry,
-      getComponentPath(component),
+      componentRoot,
       options,
       lockfile,
       result,
@@ -1070,6 +1096,22 @@ async function collectOrphanCandidates(
     if (candidate) candidates.push(candidate);
   }
   return candidates;
+}
+
+/**
+ * The root below which emptied directories of a leftover in `component` are removed, or null when
+ * this update does not cover the component. A retired component (#1960: `.claude/ontology`) is
+ * covered by full updates only, with the layout root as its root, so its own emptied directory
+ * goes too.
+ */
+function orphanComponentRoot(component: string, options: UpdateOptions): string | null {
+  if (isRetiredLockfileComponent(component)) {
+    return isFullUpdate(options) ? getProviderLayout().rootDir : null;
+  }
+  if (!isUpdateComponent(component)) return null;
+  return isFullUpdate(options) || options.components?.includes(component)
+    ? getComponentPath(component)
+    : null;
 }
 
 /**
@@ -1136,6 +1178,88 @@ async function retireOrphanTemplateFiles(
     return;
   }
   await moveConfirmedOrphans(candidates, options, backup, result);
+}
+
+/**
+ * Write the original `.mcp.json` bytes into this run's backup (`<backup>/retired/mcp.json`, see
+ * {@link retiredBackupPath}) without overwriting anything, and verify the copy. The copy is
+ * created with the permission bits `mode` of `.mcp.json` (narrowed by the umask, never wider)
+ * and then set to exactly those bits, so a 0600 `.mcp.json` (it may hold other servers' tokens)
+ * never has a wider backup. A failure removes what this run created there and throws.
+ */
+async function backupMcpConfig(
+  targetDir: string,
+  result: UpdateResult,
+  original: Buffer,
+  mode: number
+): Promise<McpConfigBackup> {
+  const backup = planRetiredBackup(targetDir, result);
+  const destination = join(backup.dir, retiredBackupPath(MCP_CONFIG_FILE));
+  try {
+    await prepareBackupDestination(targetDir, destination, backup.created);
+  } catch (err) {
+    await removeCreatedEmptyDirectories(backup);
+    throw err;
+  }
+  try {
+    await writeFile(destination, original, { flag: 'wx', mode: mode & 0o777 });
+    await chmod(destination, mode & 0o777);
+    if (!(await readFile(destination)).equals(original)) {
+      throw new Error('the backup copy does not match the original');
+    }
+  } catch (err) {
+    // EEXIST: something appeared at the destination meanwhile; it is not ours to remove.
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') await removeBackupCopy(destination);
+    await removeCreatedEmptyDirectories(backup);
+    throw err;
+  }
+  return {
+    path: destination,
+    discard: async () => {
+      await removeBackupCopy(destination);
+      await removeCreatedEmptyDirectories(backup);
+    },
+  };
+}
+
+/** Which kind of {@link deletionPreservedReason} keeps `.mcp.json`, for its own status line. */
+function mcpConfigPreservedBy(preservedReason: string | null): McpConfigPreservedBy | null {
+  if (preservedReason === null) return null;
+  return preservedReason === UNREADABLE_MANIFEST ? 'unreadable-manifest' : 'preserve-settings';
+}
+
+/**
+ * Full updates only (#1960): remove init's `ontology-rag` server from `.mcp.json` (see
+ * {@link retireOntologyRagMcpServer}; preserve settings keep it, a dry run only reports), and note
+ * a `.claude/ontology` that is left after a non-dry run and an ontology-rag install in `.venv`.
+ * Runs after the orphan retirement, which moved the unmodified shipped `.claude/ontology` files.
+ */
+async function retireOntologyRag(
+  options: UpdateOptions,
+  result: UpdateResult,
+  config: OmccConfig,
+  customizations: DeletionCustomizations
+): Promise<void> {
+  if (!isFullUpdate(options)) return;
+  const retirement: NonNullable<UpdateResult['ontologyRagRetirement']> = {};
+  const preservedReason = deletionPreservedReason(MCP_CONFIG_FILE, config, customizations);
+  const mcpServer = await retireOntologyRagMcpServer(options.targetDir, {
+    dryRun: options.dryRun === true,
+    preservedBy: mcpConfigPreservedBy(preservedReason),
+    backup: (original, mode) => backupMcpConfig(options.targetDir, result, original, mode),
+  });
+  if (mcpServer !== null) {
+    retirement.mcpServer = mcpServer;
+    if (mcpServer.status === 'removed') {
+      result.retiredBackupDir = planRetiredBackup(options.targetDir, result).dir;
+    }
+  }
+  const ontologyDir = join(options.targetDir, getProviderLayout().rootDir, 'ontology');
+  if (!options.dryRun && (await presenceOf(ontologyDir)) === 'present') {
+    retirement.ontologyDirLeft = true;
+  }
+  if (await hasOntologyRagInVenv(options.targetDir)) retirement.venvHasOntologyRag = true;
+  if (Object.keys(retirement).length > 0) result.ontologyRagRetirement = retirement;
 }
 
 /** Ownership carried into the regenerated lock, and the leftover paths that were evaluated. */
@@ -1245,6 +1369,7 @@ async function retireOrphansWithoutUpdates(
   await retireRtkFiles(options, lockfile, result, config, customizations);
   const entries = await loadRetiredList(result);
   await retireOrphanTemplateFiles(options, entries, lockfile, result, config, customizations);
+  await retireOntologyRag(options, result, config, customizations);
   if (options.dryRun || lockfile === null) return;
 
   // RTK entries always leave the lock (ownership no longer matters); orphan ownership is settled
@@ -1723,9 +1848,9 @@ async function runFullUpdatePostProcessing(
   config: OmccConfig,
   customizations: CustomizationManifest | null
 ): Promise<void> {
-  const isFullUpdate = !options.components || options.components.length === 0;
+  const fullUpdate = isFullUpdate(options);
 
-  if (isFullUpdate) {
+  if (fullUpdate) {
     const { synced, preserved } = await syncRootLevelFiles(
       options.targetDir,
       options,
@@ -1745,7 +1870,7 @@ async function runFullUpdatePostProcessing(
 
   // The hooks component copies a new-form hooks.json, but CC reads the installed
   // settings.local.json, so migrate it on full updates and hooks-component updates (#1767).
-  if (isFullUpdate || options.components?.includes('hooks')) {
+  if (fullUpdate || options.components?.includes('hooks')) {
     await migrateHookCommandsInSettingsLocal(options.targetDir, options, result);
   }
 
@@ -1890,6 +2015,7 @@ async function retireLeftoversAndRegenerateLockfile(
     config,
     deletionCustomizations
   );
+  await retireOntologyRag(options, result, config, deletionCustomizations);
   if (options.dryRun) return;
   const carried = await collectCarriedOwnership(options.targetDir, lockfile, retiredList, result);
   await regenerateLockfile(options, result, retiredPaths, carried.entries);
@@ -1965,7 +2091,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
 
     if (!updateCheck.hasUpdates && !options.force) {
       info('update.no_updates');
-      result.skippedComponents = options.components || getAllUpdateComponents();
+      result.skippedComponents = componentsToUpdate(options);
       await retireOrphansWithoutUpdates(options, result, config);
       await ensureBackupGitignore(options.targetDir, { dryRun: options.dryRun });
       result.success = true;
@@ -1987,7 +2113,7 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     const lockfile = await readLockfile(options.targetDir);
 
     // Update all components
-    const components = options.components || getAllUpdateComponents();
+    const components = componentsToUpdate(options);
     await updateAllComponents(
       options.targetDir,
       components,
@@ -2000,8 +2126,6 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
     );
 
     await runFullUpdatePostProcessing(options, result, config, customizations);
-
-    await refreshOntologyRagAfterUpdate(options, result);
 
     await retireLeftoversAndRegenerateLockfile(options, lockfile, result, config);
 
@@ -2022,26 +2146,6 @@ export async function update(options: UpdateOptions): Promise<UpdateResult> {
   }
 
   return result;
-}
-
-/**
- * Refresh an already-installed project ontology-rag so it gets the new bundled sources. Runs on
- * a full update that applies changes (or `--force`: the up-to-date early return is bypassed).
- * Never creates a venv; a failure is a warning and the update continues.
- */
-async function refreshOntologyRagAfterUpdate(
-  options: UpdateOptions,
-  result: UpdateResult
-): Promise<void> {
-  // Same full-update predicate as the orphan sweep and root-file sync: no filter or an empty list.
-  // A non-empty component filter leaves the venv alone.
-  if (options.components && options.components.length > 0) return;
-  const refresh = await refreshOntologyRag(options.targetDir, { dryRun: options.dryRun });
-  if (refresh.status === 'refreshed') info('update.ontology_rag_refreshed');
-  else if (refresh.status === 'would-refresh') info('update.ontology_rag_would_refresh');
-  else if (refresh.status === 'failed') {
-    result.warnings.push(`ontology-rag was not refreshed: ${refresh.reason ?? 'unknown error'}`);
-  }
 }
 
 /**
@@ -2119,7 +2223,7 @@ export async function preserveCustomizations(
  * Get all update components
  */
 function getAllUpdateComponents(): UpdateComponent[] {
-  return ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts', 'ontology'];
+  return ['rules', 'agents', 'skills', 'guides', 'hooks', 'contexts'];
 }
 
 /**

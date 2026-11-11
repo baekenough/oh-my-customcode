@@ -40,7 +40,6 @@ describe('E2E: omcustom init self-update wiring', () => {
     const env: Record<string, string | undefined> = {
       ...process.env,
       HOME: homeDir,
-      OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP: '1',
       ...envOverrides,
     };
     // A CI or skip variable inherited from the machine would hide the wiring under test
@@ -185,7 +184,6 @@ esac
       ...process.env,
       HOME: homeDir,
       PATH: `${binDir}:${process.env.PATH}`,
-      OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP: '1',
     };
     for (const name of ['CI', 'GITHUB_ACTIONS', 'TF_BUILD', 'OMCUSTOM_SKIP_SELF_UPDATE']) {
       delete env[name];

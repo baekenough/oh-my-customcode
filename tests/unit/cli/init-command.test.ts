@@ -15,7 +15,6 @@ import { i18n, initI18n } from '../../../src/i18n/index.js';
 
 const realInstaller = { ...(await import('../../../src/core/installer.js')) };
 const realRegistry = { ...(await import('../../../src/core/registry.js')) };
-const realOntologySetup = { ...(await import('../../../src/core/ontology-rag-setup.js')) };
 const realClack = { ...(await import('@clack/prompts')) };
 
 const installMock = mock(
@@ -31,10 +30,6 @@ const installMock = mock(
 
 const registerProjectMock = mock(async (_path: string, _version: string): Promise<void> => {});
 
-// The ontology-rag setup spawns python3/uv subprocesses; by default it keeps the real behaviour
-// (skipped through OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP), tests override single calls.
-const setupOntologyRagMock = mock(realOntologySetup.setupOntologyRag);
-
 // The wizard prompts read the real TTY; replace them with scripted answers.
 const CANCEL = Symbol('test-cancel');
 let selectAnswers: unknown[] = [];
@@ -46,10 +41,6 @@ mock.module('../../../src/core/installer.js', () => ({ ...realInstaller, install
 mock.module('../../../src/core/registry.js', () => ({
   ...realRegistry,
   registerProject: registerProjectMock,
-}));
-mock.module('../../../src/core/ontology-rag-setup.js', () => ({
-  ...realOntologySetup,
-  setupOntologyRag: setupOntologyRagMock,
 }));
 mock.module('@clack/prompts', () => ({
   ...realClack,
@@ -63,7 +54,6 @@ mock.module('@clack/prompts', () => ({
 afterAll(() => {
   mock.module('../../../src/core/installer.js', () => realInstaller);
   mock.module('../../../src/core/registry.js', () => realRegistry);
-  mock.module('../../../src/core/ontology-rag-setup.js', () => realOntologySetup);
   mock.module('@clack/prompts', () => realClack);
 });
 
@@ -76,18 +66,14 @@ describe('initCommand', () => {
   let cwdSpy: ReturnType<typeof spyOn>;
   let logSpy: ReturnType<typeof spyOn>;
   let warnSpy: ReturnType<typeof spyOn>;
-  let originalSkipOntology: string | undefined;
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'omcustom-init-command-test-'));
     cwdSpy = spyOn(process, 'cwd').mockReturnValue(tempDir);
     logSpy = spyOn(console, 'log').mockImplementation(() => {});
     warnSpy = spyOn(console, 'warn').mockImplementation(() => {});
-    originalSkipOntology = process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP;
-    process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP = '1';
     installMock.mockClear();
     registerProjectMock.mockClear();
-    setupOntologyRagMock.mockClear();
     selectMock.mockClear();
     confirmMock.mockClear();
     selectAnswers = [];
@@ -99,11 +85,6 @@ describe('initCommand', () => {
     cwdSpy.mockRestore();
     logSpy.mockRestore();
     warnSpy.mockRestore();
-    if (originalSkipOntology === undefined) {
-      delete process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP;
-    } else {
-      process.env.OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP = originalSkipOntology;
-    }
     await i18n.changeLanguage('en');
     await rm(tempDir, { recursive: true, force: true });
   });
@@ -334,52 +315,19 @@ describe('initCommand', () => {
     });
   });
 
-  describe('ontology-rag MCP config', () => {
-    async function createOntologyDir(): Promise<void> {
-      await mkdir(join(tempDir, '.claude', 'ontology'), { recursive: true });
-    }
-
-    const readySetup = async () => ({ success: true, statusLine: 'ontology-rag MCP: ready' });
-
-    it('prints the setup status line and skips .mcp.json when the setup did not succeed', async () => {
-      await createOntologyDir();
-
-      await initCommand({ yes: true, lang: 'en' });
-
-      expect(setupOntologyRagMock).toHaveBeenCalledWith(tempDir);
-      expect(logged().some((line) => line.startsWith('  ontology-rag MCP: '))).toBe(true);
-      await expect(stat(join(tempDir, '.mcp.json'))).rejects.toThrow();
-    });
-
-    it('writes .mcp.json once the ontology-rag environment is ready', async () => {
-      await createOntologyDir();
-      setupOntologyRagMock.mockImplementationOnce(readySetup);
-
-      await initCommand({ yes: true, lang: 'en' });
-
-      expect(logged()).toContain('  ontology-rag MCP: ready');
-      const config = JSON.parse(await readFile(join(tempDir, '.mcp.json'), 'utf-8'));
-      expect(config.mcpServers['ontology-rag']).toEqual({
-        type: 'stdio',
-        command: '.venv/bin/python',
-        args: ['-m', 'ontology_rag.mcp_server'],
-        env: { ONTOLOGY_DIR: join('.claude', 'ontology') },
-      });
-    });
-
-    it('warns but still succeeds when .mcp.json cannot be written', async () => {
-      await createOntologyDir();
-      // A directory at the .mcp.json path makes both the merge read and the fallback write fail.
-      await mkdir(join(tempDir, '.mcp.json'));
-      setupOntologyRagMock.mockImplementationOnce(readySetup);
-
+  describe('no ontology-rag setup (removed in v2.0.24, #1960)', () => {
+    // The installer is mocked here; installer.test.ts checks that it creates no .claude/ontology.
+    it('writes no .mcp.json', async () => {
       const result = await initCommand({ yes: true, lang: 'en' });
 
       expect(result.success).toBe(true);
-      const warnings = warnSpy.mock.calls.map((c: unknown[]) => String(c[0]));
-      expect(
-        warnings.some((w: string) => w.startsWith('Warning: Failed to write .mcp.json: '))
-      ).toBe(true);
+      await expect(stat(join(tempDir, '.mcp.json'))).rejects.toThrow();
+    });
+
+    it('does not print an ontology-rag status line', async () => {
+      await initCommand({ yes: true, lang: 'en' });
+
+      expect(logged().some((line) => line.includes('ontology-rag'))).toBe(false);
     });
   });
 

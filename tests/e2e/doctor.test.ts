@@ -66,7 +66,6 @@ describe('E2E: omcustom doctor', { timeout: 30000 }, () => {
         ...process.env,
         PATH: `${codexStubDir}${delimiter}${process.env.PATH ?? ''}`,
         OMCUSTOM_REGISTRY_DIR: join(tempDir, '.omcustom-registry'),
-        OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP: '1',
       },
     });
 

@@ -263,35 +263,6 @@ jobs:
 
           echo "Coverage check passed: Function $FUNC_COV%, Line $LINE_COV% (threshold: $THRESHOLD%)"
 
-  rust-test:
-    name: Rust Tests
-    needs: [changes]
-    runs-on: macos-latest
-    steps:
-      - name: Docs-only skip notice
-        if: needs.changes.outputs.code != 'true' || needs.changes.outputs.merge_commit == 'true'
-        run: echo "Skipped — docs-only change or PR-merge commit already verified on the PR."
-      - name: Checkout
-        if: needs.changes.outputs.code == 'true' && needs.changes.outputs.merge_commit != 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Rust
-        if: needs.changes.outputs.code == 'true' && needs.changes.outputs.merge_commit != 'true'
-        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable
-
-      - name: Rust Cache
-        if: needs.changes.outputs.code == 'true' && needs.changes.outputs.merge_commit != 'true'
-        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
-        with:
-          prefix-key: "rust-test-v2-${{ runner.os }}"
-          workspaces: packages/ontology-rag
-          save-if: ${{ github.ref == 'refs/heads/develop' }}
-
-      - name: Run Rust tests
-        if: needs.changes.outputs.code == 'true' && needs.changes.outputs.merge_commit != 'true'
-        working-directory: packages/ontology-rag
-        run: cargo test --all
-
   version-sync:
     name: Version Sync
     needs: [changes]

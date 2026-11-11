@@ -1,7 +1,7 @@
 ---
 title: QA Lead Routing
 type: skill
-updated: 2026-10-05
+updated: 2026-11-11
 sources:
   - .claude/skills/qa-lead-routing/SKILL.md
 related:
@@ -16,7 +16,7 @@ Coordinates QA workflow across planner, writer, and engineer agents.
 
 ## Overview
 
-Routes QA-related tasks to the appropriate QA agent: `qa-planner` for test strategy and planning, `qa-writer` for test case authoring, and `qa-engineer` for test execution and CI integration. Determines the right specialist based on task type (planning vs. writing vs. executing). Supports R019 ontology-RAG enrichment and falls back to dynamic agent creation for novel QA scenarios.
+Routes QA-related tasks to the appropriate QA agent: `qa-planner` for test strategy and planning, `qa-writer` for test case authoring, and `qa-engineer` for test execution and CI integration. Determines the right specialist based on task type (planning vs. writing vs. executing). Supports R019 Wiki-RAG enrichment and falls back to dynamic agent creation for novel QA scenarios.
 
 ## Key Details
 

@@ -1,7 +1,7 @@
 ---
 title: Secretary Routing
 type: skill
-updated: 2026-10-05
+updated: 2026-11-11
 sources:
   - .claude/skills/secretary-routing/SKILL.md
 related:
@@ -19,7 +19,7 @@ Routes agent management tasks to the correct manager agent.
 
 ## Overview
 
-Routes management tasks to the appropriate manager: `mgr-creator` (create), `mgr-updater` (update/sync), `mgr-supplier` (audit), `mgr-gitnerd` (git), `mgr-sauron` (verify), `mgr-claude-code-bible` (spec check), `sys-memory-keeper` (memory), `sys-naggy` (todos). Evaluates Agent Teams eligibility before spawning (R018). Supports `improve-report` and `auto-improve` keywords for skill invocation. Includes ontology-RAG enrichment (R019).
+Routes management tasks to the appropriate manager: `mgr-creator` (create), `mgr-updater` (update/sync), `mgr-supplier` (audit), `mgr-gitnerd` (git), `mgr-sauron` (verify), `mgr-claude-code-bible` (spec check), `sys-memory-keeper` (memory), `sys-naggy` (todos). Evaluates Agent Teams eligibility before spawning (R018). Supports `improve-report` and `auto-improve` keywords for skill invocation. Includes Wiki-RAG enrichment (R019).
 
 ## Key Details
 

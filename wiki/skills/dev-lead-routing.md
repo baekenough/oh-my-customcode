@@ -1,7 +1,7 @@
 ---
 title: Dev Lead Routing
 type: skill
-updated: 2026-10-05
+updated: 2026-11-11
 sources:
   - .claude/skills/dev-lead-routing/SKILL.md
 related:
@@ -20,7 +20,7 @@ Routes development tasks to the correct language/framework expert agent.
 
 ## Overview
 
-Routing skill for software development tasks. Detects the appropriate language or framework expert based on file extensions, keywords, and project context, then delegates via the Agent tool. Targets all language experts (Go, Python, TypeScript, Rust, Kotlin, Java) and backend/frontend specialists. Supports R019 ontology-RAG enrichment for skill suggestions. Falls back to dynamic agent creation via `mgr-creator` when no specialist matches.
+Routing skill for software development tasks. Detects the appropriate language or framework expert based on file extensions, keywords, and project context, then delegates via the Agent tool. Targets all language experts (Go, Python, TypeScript, Rust, Kotlin, Java) and backend/frontend specialists. Supports R019 Wiki-RAG enrichment for skill suggestions. Falls back to dynamic agent creation via `mgr-creator` when no specialist matches.
 
 ## Routing Order
 

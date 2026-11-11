@@ -84,7 +84,7 @@ oh-my-customcode로 구동됩니다.
 | R011 | 메모리 통합 | 세션 메모리 지속성 |
 | R012 | HUD 상태줄 | 실시간 상태 표시 |
 | R013 | Ecomode | 배치 작업 토큰 효율성 |
-| R019 | Ontology-RAG 라우팅 | 라우팅 스킬의 ontology-RAG enrichment |
+| R019 | Wiki-RAG 라우팅 | 라우팅 스킬의 wiki-RAG enrichment (wiki/index.yaml 조회, advisory) |
 | R022 | Wiki 동기화 | 에이전트/스킬/룰/가이드 변경 시 위키 자동 동기화 |
 | R023 | Verification Ladder | 검증 비용 ladder: Tier 1(결정론적) → Tier 4(human) shift-left |
 

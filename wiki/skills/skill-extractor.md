@@ -1,7 +1,7 @@
 ---
 title: Skill Extractor
 type: skill
-updated: 2026-10-05
+updated: 2026-11-11
 sources:
   - .claude/skills/skill-extractor/SKILL.md
 related:

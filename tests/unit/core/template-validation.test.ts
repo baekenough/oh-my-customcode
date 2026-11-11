@@ -155,20 +155,6 @@ async function countHooksFiles(fullPath: string): Promise<number> {
   return entries.filter((e) => e.isFile() && e.name.endsWith('.json')).length;
 }
 
-async function countOntologyFiles(fullPath: string): Promise<number> {
-  const entries = await readdir(fullPath, { withFileTypes: true });
-  let count = 0;
-  for (const entry of entries) {
-    if (entry.isFile()) {
-      count++;
-    } else if (entry.isDirectory()) {
-      const subEntries = await readdir(join(fullPath, entry.name), { withFileTypes: true });
-      count += subEntries.filter((e) => e.isFile()).length;
-    }
-  }
-  return count;
-}
-
 async function countMdFiles(fullPath: string): Promise<number> {
   const entries = await readdir(fullPath, { withFileTypes: true });
   return entries.filter((e) => e.isFile() && e.name.endsWith('.md')).length;
@@ -180,7 +166,6 @@ async function countActualFiles(componentPath: string, componentName: string): P
   if (componentName === 'skills') return countSkillDirectories(fullPath);
   if (componentName === 'guides') return countGuidesDirectories(fullPath);
   if (componentName === 'hooks') return countHooksFiles(fullPath);
-  if (componentName === 'ontology') return countOntologyFiles(fullPath);
 
   // Default: count only .md files to exclude metadata files like index.yaml
   return countMdFiles(fullPath);

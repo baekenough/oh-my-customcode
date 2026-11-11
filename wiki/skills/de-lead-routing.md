@@ -1,7 +1,7 @@
 ---
 title: DE Lead Routing
 type: skill
-updated: 2026-10-05
+updated: 2026-11-11
 sources:
   - .claude/skills/de-lead-routing/SKILL.md
 related:
@@ -19,7 +19,7 @@ Routes data engineering tasks to the correct DE/pipeline specialist agent.
 
 ## Overview
 
-Routing skill for data engineering tasks. Detects the appropriate DE expert based on keywords, file patterns, and technology indicators, then delegates via the Agent tool. Targets: `de-airflow-expert` (DAG/Airflow), `de-dbt-expert` (SQL models), `de-spark-expert` (PySpark/Scala), `de-kafka-expert` (streaming), `de-snowflake-expert` (warehouse), `de-pipeline-expert` (general pipelines). Supports R019 ontology-RAG enrichment.
+Routing skill for data engineering tasks. Detects the appropriate DE expert based on keywords, file patterns, and technology indicators, then delegates via the Agent tool. Targets: `de-airflow-expert` (DAG/Airflow), `de-dbt-expert` (SQL models), `de-spark-expert` (PySpark/Scala), `de-kafka-expert` (streaming), `de-snowflake-expert` (warehouse), `de-pipeline-expert` (general pipelines). Supports R019 Wiki-RAG enrichment.
 
 ## Routing Order
 

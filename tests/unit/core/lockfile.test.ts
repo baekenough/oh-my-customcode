@@ -21,11 +21,14 @@ import {
   diffLockfiles,
   generateAndWriteLockfileForDir,
   generateLockfile,
+  isRetiredLockfileComponent,
   LOCKFILE_NAME,
   LOCKFILE_VERSION,
   type Lockfile,
   preserveGeneratedAt,
+  RETIRED_LOCKFILE_COMPONENT_PATHS,
   readLockfile,
+  resolveLockfileComponent,
   writeLockfile,
 } from '../../../src/core/lockfile.js';
 
@@ -289,7 +292,6 @@ describe('lockfile', () => {
         '.claude/skills': 'skills',
         '.claude/hooks': 'hooks',
         '.claude/contexts': 'contexts',
-        '.claude/ontology': 'ontology',
         guides: 'guides',
       };
 
@@ -306,6 +308,26 @@ describe('lockfile', () => {
         const entryKey = `${dirPath}/${fileName}`;
         expect(lockfile.files[entryKey]?.component).toBe(expectedComponent);
       }
+    });
+
+    it('does not walk the retired .claude/ontology but still resolves its paths (#1960)', async () => {
+      await mkdir(join(tempDir, '.claude', 'ontology', 'graphs'), { recursive: true });
+      await writeFile(join(tempDir, '.claude', 'ontology', 'agents.yaml'), 'a: 1\n', 'utf-8');
+      await writeFile(
+        join(tempDir, '.claude', 'ontology', 'graphs', 'routing.json'),
+        '{}',
+        'utf-8'
+      );
+
+      const lockfile = await generateLockfile(tempDir, '0.31.0', '0.31.0');
+
+      expect(Object.keys(lockfile.files)).toEqual([]);
+      expect(resolveLockfileComponent('.claude/ontology/agents.yaml')).toBe('ontology');
+      expect(resolveLockfileComponent('.claude/ontology')).toBe('ontology');
+      expect(resolveLockfileComponent('.claude/ontologyx/a.yaml')).toBe('unknown');
+      expect(isRetiredLockfileComponent('ontology')).toBe(true);
+      expect(isRetiredLockfileComponent('rules')).toBe(false);
+      expect(RETIRED_LOCKFILE_COMPONENT_PATHS).toEqual([['.claude/ontology', 'ontology']]);
     });
 
     it('skips missing component directories without error', async () => {

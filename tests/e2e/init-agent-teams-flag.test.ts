@@ -43,7 +43,6 @@ describe('E2E: omcustom init --no-agent-teams', () => {
         HOME: homeDir,
         CI: 'true',
         OMCUSTOM_SKIP_SELF_UPDATE: 'true',
-        OMCUSTOM_SKIP_ONTOLOGY_RAG_SETUP: '1',
       },
     });
     const [stdout, stderr] = await Promise.all([

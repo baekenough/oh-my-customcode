@@ -1,7 +1,7 @@
 ---
 title: Skills.sh Search
 type: skill
-updated: 2026-04-12
+updated: 2026-11-11
 sources:
   - .claude/skills/skills-sh-search/SKILL.md
 related:
@@ -16,7 +16,7 @@ Search and install skills from skills.sh marketplace when internal skills are in
 
 ## Overview
 
-Searches [skills.sh](https://skills.sh/) (and optionally [agentskills.io](https://agentskills.io/)) for reusable agent skills via `npx --yes skills find "<query>"`. Presents results with install counts, checks for namespace conflicts, installs via `npx skills add`, and delegates SKILL.md frontmatter adaptation to `mgr-creator` for R006 compliance. `--install` flag required for installation; search is read-only by default.
+Searches [skills.sh](https://skills.sh/) (and optionally [agentskills.io](https://agentskills.io/)) for reusable agent skills via `npx --yes skills find "<query>"`. Presents results with install counts, checks for namespace conflicts, installs via `npx skills add`, and delegates SKILL.md frontmatter adaptation to `mgr-creator` for R006 compliance. `--install` flag required for installation; search is read-only by default. Installing only places the files (no ontology registration step exists since v2.0.24, #1960); an installed skill is model-invocable unless `disable-model-invocation: true` is set in its frontmatter (R006).
 
 ## Key Details
 

@@ -1,5 +1,5 @@
 {
-  "version": "2.0.23",
+  "version": "2.0.24",
   "lastUpdated": "2026-11-11",
   "omcustomMinClaudeCode": "2.1.121",
   "omcustomMinClaudeCodeReason": "Sensitive-path direct Write/Edit on .claude/** under bypassPermissions (R010 deprecation, #1101)",
@@ -39,12 +39,6 @@
       "path": ".claude/contexts",
       "description": "Context configuration files",
       "files": 4
-    },
-    {
-      "name": "ontology",
-      "path": ".claude/ontology",
-      "description": "Ontology knowledge graph for RAG-powered agent context",
-      "files": 8
     }
   ],
   "source": "https://github.com/baekenough/oh-my-customcode"

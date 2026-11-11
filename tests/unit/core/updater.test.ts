@@ -266,7 +266,6 @@ describe('updater', () => {
         guides: MANIFEST_VERSION,
         hooks: MANIFEST_VERSION,
         contexts: MANIFEST_VERSION,
-        ontology: MANIFEST_VERSION,
       });
 
       const result = await checkForUpdates(tempDir);
@@ -310,7 +309,7 @@ describe('updater', () => {
       const result = await checkForUpdates(tempDir);
 
       // All components should be updatable
-      expect(result.updatableComponents.length).toBe(7); // rules, agents, skills, guides, hooks, contexts, ontology
+      expect(result.updatableComponents.length).toBe(6); // rules, agents, skills, guides, hooks, contexts
     });
   });
 
@@ -346,7 +345,6 @@ describe('updater', () => {
         guides: MANIFEST_VERSION,
         hooks: MANIFEST_VERSION,
         contexts: MANIFEST_VERSION,
-        ontology: MANIFEST_VERSION,
       });
 
       const result = await update({
@@ -355,7 +353,7 @@ describe('updater', () => {
 
       expect(result.success).toBe(true);
       expect(result.updatedComponents.length).toBe(0);
-      expect(result.skippedComponents.length).toBe(7); // All components skipped
+      expect(result.skippedComponents.length).toBe(6); // All components skipped
     });
 
     it('should force update all components with --force flag', async () => {

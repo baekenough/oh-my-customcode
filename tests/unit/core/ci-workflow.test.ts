@@ -150,7 +150,8 @@ describe('ci.yml — structural safeguards', () => {
 
   it('should preserve the exact job names used as required status checks', async () => {
     const content = await readWorkflow();
-    const requiredNames = ['Lint', 'Test', 'Rust Tests', 'Version Sync', 'Template Sync'];
+    // 'Rust Tests' is intentionally absent: the rust-test job was removed with ontology-rag (#1960).
+    const requiredNames = ['Lint', 'Test', 'Version Sync', 'Template Sync'];
     for (const name of requiredNames) {
       // Anchor to end-of-line so a rename like "Lint" -> "Linting" does NOT
       // satisfy this check via substring containment.
@@ -176,9 +177,10 @@ describe('ci.yml — structural safeguards', () => {
 // ---------------------------------------------------------------------------
 
 describe('ci.yml — gate application scope', () => {
-  it('should apply the merge_commit gate to the execution steps of all 4 code-gated jobs', async () => {
+  it('should apply the merge_commit gate to the execution steps of all 3 code-gated jobs', async () => {
     const content = await readWorkflow();
-    const codeGatedJobs = ['lockfile-sync:', 'lint:', 'test:', 'rust-test:'];
+    // rust-test was the 4th code-gated job; it was removed with ontology-rag (#1960).
+    const codeGatedJobs = ['lockfile-sync:', 'lint:', 'test:'];
     for (const jobId of codeGatedJobs) {
       const jobIndex = content.indexOf(`\n  ${jobId}`);
       expect(jobIndex).toBeGreaterThan(-1);

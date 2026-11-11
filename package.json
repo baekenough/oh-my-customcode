@@ -3,7 +3,7 @@
   "workspaces": [
     "packages/*"
   ],
-  "version": "2.0.23",
+  "version": "2.0.24",
   "description": "Batteries-included agent harness for Claude Code",
   "type": "module",
   "bin": {
@@ -19,12 +19,7 @@
   },
   "files": [
     "dist",
-    "templates",
-    "packages/ontology-rag/pyproject.toml",
-    "packages/ontology-rag/README.md",
-    "packages/ontology-rag/src/ontology_rag",
-    "!**/__pycache__",
-    "!**/*.py[cod]"
+    "templates"
   ],
   "publishConfig": {
     "access": "public",
